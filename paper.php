@@ -470,7 +470,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
 
     // upload paper if appropriate
-    if (fileUploaded($_FILES['paperUpload'], $Conf)) {
+    $paperUploaded = fileUploaded($_FILES["paperUpload"], $Conf);
+    if ($paperUploaded) {
 	if ($newPaper)
 	    loadRows();
 	if (!uploadPaper($isSubmitFinal))
@@ -478,6 +479,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
 
     // submit paper if appropriate
+    $wasSubmitted = !$newPaper && $prow->timeSubmitted > 0;
     if ($isSubmitFinal || $isSubmit) {
 	loadRows();
 	if (($isSubmitFinal ? $prow->finalPaperStorageId : $prow->paperStorageId) <= 1
@@ -499,78 +501,62 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
     // confirmation message
     loadRows();
-    $subject = "[%CONFSHORTNAME%] ";
     if ($isSubmitFinal) {
-	$actiontext = "Submitted final copy for";
-	$subject .= "Updated paper #$paperId final copy";
-	$confirmtext = "submission of a final copy for";
-    } else if ($isSubmit) {
+	$actiontext = "Updated final version of";
+	$template = "@submitfinalpaper";
+    } else if ($isSubmit && !$wasSubmitted) {
 	$actiontext = "Submitted";
-	$subject .= "Submitted paper #$paperId";
-	$confirmtext = "submission of";
+	$template = "@submitpaper";
     } else if ($newPaper) {
 	$actiontext = "Registered new";
-	$subject .= "Registered paper #$paperId";
-	$confirmtext = "registration of";
+	$template = "@registerpaper";
     } else {
 	$actiontext = "Updated";
-	$subject .= "Updated paper #$paperId";
-	$confirmtext = "update of";
+	$template = "@updatepaper";
     }
 
     // additional information
-    $extratext = "";
+    $notes = "";
     if ($isSubmitFinal) {
 	$deadline = $Conf->printableTimeSetting("final_soft");
 	if ($deadline != "N/A" && $Conf->settingsAfter("final_soft"))
-	    $extratext = "<strong>The deadline for submitting final copies was $deadline.</strong>";
+	    $notes = "<strong>The deadline for submitting final versions was $deadline.</strong>";
 	else if ($deadline != "N/A")
-	    $extratext = "You have until $deadline to make further changes.";
+	    $notes = "You have until $deadline to make further changes.";
     } else {
 	if ($isSubmit || $prow->timeSubmitted > 0)
-	    $extratext = "You will receive email when reviews are available.";
-	else if ($Conf->setting("sub_freeze") > 0)
-	    $extratext = "You have not yet submitted a final version of this paper.";
+	    $notes = "You will receive email when reviews are available.";
 	else if ($prow->size == 0 && !defval($Opt, "noPapers"))
-	    $extratext = "You have not yet uploaded the paper itself.";
+	    $notes = "The paper has not yet been uploaded.";
+	else if ($Conf->setting("sub_freeze") > 0)
+	    $notes = "The paper has not yet been submitted.";
 	else
-	    $extratext = "This version of the paper is marked as not ready for review.";
+	    $notes = "This version of the paper is marked as not ready for review.";
 	$deadline = $Conf->printableTimeSetting("sub_update");
 	if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
-	    $extratext .= "  You have until $deadline to update the paper further.";
+	    $notes .= "  Further updates are allowed until $deadline.";
 	$deadline = $Conf->printableTimeSetting("sub_sub");
 	if ($deadline != "N/A" && $prow->timeSubmitted <= 0)
-	    $extratext .= "  <strong>If you do not submit the paper by $deadline, it will not be considered for the conference.</strong>";
+	    $notes .= "  <strong>If the paper has not been submitted by $deadline, it will not be considered for the conference.</strong>";
     }
 
     // HTML confirmation
     if ($isSubmitFinal || $prow->timeSubmitted > 0)
-	$Conf->confirmMsg($actiontext . " paper #$paperId.  " . $extratext);
+	$Conf->confirmMsg($actiontext . " paper #$paperId.  " . $notes);
     else
-	$Conf->warnMsg($actiontext . " paper #$paperId.  " . $extratext);
+	$Conf->warnMsg($actiontext . " paper #$paperId.  " . $notes);
 
-    // mail confirmation
-    $m = "This mail confirms the $confirmtext paper #$paperId at the %CONFNAME% submission site.
-
-       Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper$ConfSiteSuffix?p=%NUMBER%\n\n";
-    if ($extratext !== "")
-	$m .= preg_replace("|</?strong>|", "", $extratext) . "\n\n";
-    if ($Me->privChair && isset($_REQUEST["emailNote"]))
-	$m .= "A conference administrator provided the following reason for this update: %REASON%\n\n";
-    else if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
-	$m .= "A conference administrator performed this update.\n\n";
-    $m .= "Contact the site administrator, %ADMIN%, with any questions or concerns.
-
-- %CONFSHORTNAME% Submissions\n";
-
-    // send email to all contact authors
+    // mail confirmation to all contact authors
     if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {
 	require_once("Code/mailtemplate.inc");
-	Mailer::sendContactAuthors(array("subject" => "$subject %TITLEHINT%",
-					 "body" => $m),
-				   $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
+	$options = array("infoNames" => 1);
+	if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
+	    $options["adminupdate"] = true;
+	if ($Me->privChair && isset($_REQUEST["emailNote"]))
+	    $options["reason"] = $_REQUEST["emailNote"];
+	if ($notes !== "")
+	    $options["notes"] = preg_replace("|</?strong>|", "", $notes) . "\n\n";
+	Mailer::sendContactAuthors($template, $prow, null, $options);
     }
 
     $Conf->log($actiontext, $Me, $paperId);

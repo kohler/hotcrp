@@ -135,7 +135,7 @@ Thank you,
      array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER% refused",
 	   "body" => "Dear %NAME%,
 
-%OTHERCONTACT% cannot complete the review of %CONFNAME% paper #%NUMBER% that you requested.  %IF(REASON)%They gave the reason \"%REASON%\".  %ENDIF%You may want to find an alternate reviewer.
+%OTHERCONTACT% cannot complete the review of %CONFNAME% paper #%NUMBER% that you requested.  %IF(REASON)%They gave the following reason: %REASON%  %ENDIF%You may want to find an alternate reviewer.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -187,7 +187,7 @@ Authors can voluntarily withdraw a submission at any time, as can the chair.  %R
      Authors: %OPT(AUTHORS)%
   Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
-You are not expected to complete your review; in fact the system will not allow it unless the paper is revived.
+You are not expected to complete your review (and the system will not allow it unless the paper is revived).
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -197,7 +197,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Deleted paper #%NUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
 
-Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by an administrator.  This is usually done to remove duplicate papers.  %IF(REASON)%The following reason was provided for deleting the paper: %REASON%%ENDIF%
+Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by an administrator.  This can be done to remove duplicate papers.  %IF(REASON)%The following reason was provided for deleting the paper: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -290,7 +290,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "commentnotify" =>
      array("subject" => "[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
-	   "body" => "A comment for %CONFNAME% paper #%NUMBER% is available as shown below.  For the most up-to-date comments, or to turn off comment emails, see the paper site.
+	   "body" => "A comment for %CONFNAME% paper #%NUMBER% is available as shown below.  For the most up-to-date comments, or to turn off notification emails, see the paper site.
 
   Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
@@ -302,7 +302,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "responsenotify" =>
      array("subject" => "[%CONFSHORTNAME%] Response for #%NUMBER% %TITLEHINT%",
-	   "body" => "The authors' response for %CONFNAME% paper #%NUMBER% is available as shown below.  The authors may still update their response; for the most up-to-date version, or to turn off comment emails, see the paper site.
+	   "body" => "The authors' response for %CONFNAME% paper #%NUMBER% is available as shown below.  The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the paper site.
 
   Paper site: %URL%/paper%PHP%?p=%NUMBER%
 
@@ -380,6 +380,70 @@ Thank you for your help -- we appreciate that reviewing is hard work.
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
+- %CONFSHORTNAME% Submissions\n"),
+
+     "registerpaper" =>
+     array("subject" => "[%CONFSHORTNAME%] Registered paper #%NUMBER% %TITLEHINT%",
+	   "body" => "Paper #%PAPER% has been registered at the %CONFNAME% submissions site.
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+
+%NOTES%%IF(REASON)%An administrator provided the following reason for this registration: %REASON%
+
+%ELSEIF(ADMINUPDATE)%An administrator performed this registration.
+
+%ENDIF%Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions\n"),
+
+     "updatepaper" =>
+     array("subject" => "[%CONFSHORTNAME%] Updated paper #%NUMBER% %TITLEHINT%",
+	   "body" => "Paper #%PAPER% has been updated at the %CONFNAME% submissions site.
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+
+%NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
+
+%ELSEIF(ADMINUPDATE)%An administrator performed this update.
+
+%ENDIF%Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions\n"),
+
+     "submitpaper" =>
+     array("subject" => "[%CONFSHORTNAME%] Submitted paper #%NUMBER% %TITLEHINT%",
+	   "body" => "Paper #%PAPER% has been submitted to the %CONFNAME% submissions site.
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+
+%NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
+
+%ELSEIF(ADMINUPDATE)%An administrator performed this update.
+
+%ENDIF%Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions\n"),
+
+     "submitfinalpaper" =>
+     array("subject" => "[%CONFSHORTNAME%] Updated final paper #%NUMBER% %TITLEHINT%",
+	   "body" => "The final version for paper #%PAPER% has been updated at the %CONFNAME% submissions site.
+
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+
+%NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
+
+%ELSEIF(ADMINUPDATE)%An administrator performed this update.
+
+%ENDIF%Contact the site administrator, %ADMIN%, with any questions or concerns.
+
 - %CONFSHORTNAME% Submissions\n")
 
 );
@@ -447,6 +511,8 @@ class Mailer {
     var $hideSensitive;
     var $hideReviews;
     var $reason;
+    var $adminupdate;
+    var $notes;
     var $rrow;
     var $reviewNumber;
     var $commentId;
@@ -464,6 +530,8 @@ class Mailer {
 	$this->textstart = 0;
 	$this->hideSensitive = defval($rest, "hideSensitive", false);
 	$this->reason = defval($rest, "reason", "");
+	$this->adminupdate = defval($rest, "adminupdate", false);
+	$this->notes = defval($rest, "notes", "");
 	$this->rrow = defval($rest, "rrow", null);
 	$this->reviewNumber = defval($rest, "reviewNumber", "");
 	$this->commentId = defval($rest, "commentId", null);
@@ -497,6 +565,20 @@ class Mailer {
 		$this->textstart = strlen($this->text);
 	    return false;
 	}
+    }
+
+    function _handleIf($condition, $haselse, $what) {
+	assert($condition || $haselse);
+	if ($haselse) {
+	    $yes = $this->_popIf();
+	    if ($yes !== null)
+		$yes = !$yes;
+	} else
+	    $yes = true;
+	if ($yes && $condition)
+	    $yes = $this->expandvar($condition, true);
+	$this->_pushIf($yes);
+	return ($yes === null ? $what : "");
     }
 
     function _expandContact($contact, $out) {
@@ -542,15 +624,15 @@ class Mailer {
 	global $Conf, $ConfSiteSuffix, $Opt;
 	$len = strlen($what);
 
-	if ($len > 6 && substr($what, 0, 4) == "%IF(" && substr($what, $len - 2) == ")%") {
-	    $inner = "%" . substr($what, 4, $len - 6) . "%";
-	    $this->_pushIf(($yes = $this->expandvar($inner, true)));
-	    return ($yes === null ? $what : "");
-	} else if ($what == "%ELSE%") {
-	    $yes = $this->_popIf();
-	    $this->_pushIf($yes === null ? $yes : !$yes);
-	    return ($yes === null ? $what : "");
-	} if ($what == "%ENDIF%") {
+	if ($len > 6 && substr($what, 0, 4) == "%IF(" && substr($what, $len - 2) == ")%")
+	    return $this->_handleIf("%" . substr($what, 4, $len - 6) . "%", false, $what);
+	else if ($what == "%ELSE%")
+	    return $this->_handleIf(false, true, $what);
+	else if ($len > 9 && substr($what, 0, 7) == "%ELSIF(" && substr($what, $len - 2) == ")%")
+	    return $this->_handleIf("%" . substr($what, 7, $len - 9) . "%", true, $what);
+	else if ($len > 10 && substr($what, 0, 8) == "%ELSEIF(" && substr($what, $len - 2) == ")%")
+	    return $this->_handleIf("%" . substr($what, 8, $len - 10) . "%", true, $what);
+	else if ($what == "%ENDIF%") {
 	    $yes = $this->_popIf();
 	    return ($yes === null ? $what : "");
 	}
@@ -664,6 +746,10 @@ class Mailer {
 
 	if ($what == "%REASON%")
 	    return $this->reason;
+	if ($what == "%ADMINUPDATE%")
+	    return $this->adminupdate ? "An administrator performed this update.  " : "";
+	if ($what == "%NOTES%")
+	    return $this->notes;
 
 	// rest is only there if we have a real paper
 	if (!$this->row || defval($this->row, "paperId") <= 0) {
@@ -843,17 +929,29 @@ class Mailer {
 	    $width = $this->width;
 	}
 
+	// expand out %IF% and %ELSE% and %ENDIF%.  Need to do this first,
+	// or we get confused with wordwrapping.
+	$text = cleannl($text);
+	$this->text = "";
+	while (preg_match('/\A(.*?)(%(?:IF|ELSE?IF)\(\w+\)%|%ELSE%|%ENDIF%)(.*)\z/s', $text, $m)) {
+	    $this->text .= $m[1];
+	    $this->text .= $this->expandvar($m[2]);
+	    $text = $m[3];
+	}
+	$this->text .= $text;
+
 	// separate text into lines
-	$lines = explode("\n", cleannl($text));
+	$lines = explode("\n", $this->text);
 	if (count($lines) && $lines[count($lines) - 1] === "")
 	    array_pop($lines);
 
 	$this->text = "";
-	for ($i = 0; $i < count($lines); $i++) {
+	for ($i = 0; $i < count($lines); ++$i) {
 	    $line = rtrim($lines[$i]);
 	    if ($line == "")
 		$this->text .= "\n";
-	    else if (preg_match('/^%[\w()]+%$/', $line)) {
+	    else if (preg_match('/^%[\w()]+%$/', $line)
+		     && ($line == "%REVIEWS%" || $line == "%COMMENTS%")) {
 		if (($m = $this->expandvar($line, false)) != "")
 		    $this->text .= $m . "\n";
 	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%OPT\([\w()]+\)%)$/', $line, $m)) {
