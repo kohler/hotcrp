@@ -408,27 +408,7 @@ class Conference {
 
 
     function go($url) {
-	// The URL is often a relative one; make it absolute if possible.
-	if (!preg_match('|\A[a-z]+://|', $url)
-	    && ($absuri = requestAbsoluteURI(true))) {
-	    if (substr($url, 0, 1) == "/")
-		$url = preg_replace('|\A(.*?//[^/]+).*|', '\1', $absuri) . $url;
-	    else {
-		$absuri = preg_replace('|[^/]+\z|', "", $absuri);
-		while (strlen($url) >= 3 && substr($url, 0, 3) == "../") {
-		    $absuri = preg_replace('|\A(.*?)/+[^/]+/*\z|', '\1', $absuri) . "/";
-		    $url = substr($url, 3);
-		}
-		$url = $absuri . $url;
-	    }
-	}
-
-	header("Location: $url");
-
-	echo "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">";
-	echo "<body><p>You should not be here. ",
-	    "You need to <a href=\"$url\">login</a>.</p></body></html>";
-	exit();
+	go($url);
     }
 
 
