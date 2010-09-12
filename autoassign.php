@@ -23,11 +23,13 @@ if (isset($_REQUEST["pcs"]) && is_array($_REQUEST["pcs"])) {
 	    $pcsel[$p] = 1;
 } else
     $pcsel = pcMembers();
-if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
-    $_REQUEST["pap"] = preg_split('/\s+/', $_REQUEST["pap"]);
-if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && !isset($_REQUEST["requery"])) {
+if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
+    $_REQUEST["p"] = $_REQUEST["pap"];
+if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
+    $_REQUEST["p"] = preg_split('/\s+/', $_REQUEST["p"]);
+if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"]) && !isset($_REQUEST["requery"])) {
     $papersel = array();
-    foreach ($_REQUEST["pap"] as $p)
+    foreach ($_REQUEST["p"] as $p)
 	if (($p = cvtint($p)) > 0)
 	    $papersel[] = $p;
 } else {
@@ -39,7 +41,7 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && !isset($_REQUEST["r
 sort($papersel);
 if ((isset($_REQUEST["prevt"]) && isset($_REQUEST["t"]) && $_REQUEST["prevt"] != $_REQUEST["t"])
     || (isset($_REQUEST["prevq"]) && isset($_REQUEST["q"]) && $_REQUEST["prevq"] != $_REQUEST["q"])) {
-    if (isset($_REQUEST["pap"]) && isset($_REQUEST["assign"]))
+    if (isset($_REQUEST["p"]) && isset($_REQUEST["assign"]))
 	$Conf->infoMsg("You changed the paper search.  Please review the resulting paper list.");
     unset($_REQUEST["assign"]);
     $_REQUEST["requery"] = 1;
@@ -630,7 +632,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	if (defval($_REQUEST, "bpb$i"))
 	    echo "<input type='hidden' name='bpb$i' value=\"", htmlspecialchars($_REQUEST["bpb$i"]), "\" />\n";
     }
-    echo "<input type='hidden' name='pap' value=\"", join(" ", $papersel), "\" />\n";
+    echo "<input type='hidden' name='p' value=\"", join(" ", $papersel), "\" />\n";
 
     // save the assignment
     echo "<input type='hidden' name='ass' value=\"";

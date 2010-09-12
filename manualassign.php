@@ -19,10 +19,12 @@ if (!isset($_REQUEST["t"]))
 $kind = defval($_REQUEST, "kind", "a");
 if ($kind != "a" && $kind != "c")
     $kind = "a";
-if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
-    $_REQUEST["pap"] = preg_split('/\s+/', $_REQUEST["pap"]);
-if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]) && $kind == "c") {
-    foreach ($_REQUEST["pap"] as $p)
+if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
+    $_REQUEST["p"] = $_REQUEST["pap"];
+if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
+    $_REQUEST["p"] = preg_split('/\s+/', $_REQUEST["p"]);
+if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"]) && $kind == "c") {
+    foreach ($_REQUEST["p"] as $p)
 	if (($p = cvtint($p)) > 0)
 	    $_REQUEST["assrev$p"] = -1;
 }

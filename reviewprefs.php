@@ -22,8 +22,8 @@ else if (isset($_REQUEST["default"]))
 
 if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
     $_REQUEST["get"] = $_REQUEST["getaction"];
-if ((defval($_REQUEST, "get") == "revpref" || defval($_REQUEST, "get") == "revprefx") && !isset($_REQUEST["pap"]))
-    $_REQUEST["pap"] = "all";
+if ((defval($_REQUEST, "get") == "revpref" || defval($_REQUEST, "get") == "revprefx") && !isset($_REQUEST["pap"]) && !isset($_REQUEST["p"]))
+    $_REQUEST["p"] = "all";
 
 
 // Update preferences

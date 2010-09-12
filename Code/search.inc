@@ -2070,16 +2070,18 @@ class PaperSearch {
 
     function parsePapersel() {
 	global $Me, $papersel, $paperselmap;
-	if (isset($_REQUEST["pap"]) && $_REQUEST["pap"] == "all") {
+	if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
+	    $_REQUEST["p"] = $_REQUEST["pap"];
+	if (isset($_REQUEST["p"]) && $_REQUEST["p"] == "all") {
 	    $s = new PaperSearch($Me, $_REQUEST);
-	    $_REQUEST["pap"] = $s->paperList();
+	    $_REQUEST["p"] = $s->paperList();
 	}
-	if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
-	    $_REQUEST["pap"] = preg_split('/\s+/', $_REQUEST["pap"]);
-	if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
+	if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
+	    $_REQUEST["p"] = preg_split('/\s+/', $_REQUEST["p"]);
+	if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"])) {
 	    $papersel = array();
 	    $paperselmap = array();
-	    foreach ($_REQUEST["pap"] as $p)
+	    foreach ($_REQUEST["p"] as $p)
 		if (($p = cvtint($p)) > 0 && !isset($paperselmap[$p])) {
 		    $paperselmap[$p] = count($papersel);
 		    $papersel[] = $p;

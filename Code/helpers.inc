@@ -202,6 +202,8 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
     $sep = "?";
     if (isset($_REQUEST["paperId"]) && !isset($_REQUEST["p"]))
 	$_REQUEST["p"] = $_REQUEST["paperId"];
+    if (isset($_REQUEST["pap"]) && !isset($_REQUEST["p"]))
+	$_REQUEST["p"] = $_REQUEST["pap"];
     if (isset($_REQUEST["reviewId"]) && !isset($_REQUEST["r"]))
 	$_REQUEST["r"] = $_REQUEST["reviewId"];
     if (isset($_REQUEST["commentId"]) && !isset($_REQUEST["c"]))

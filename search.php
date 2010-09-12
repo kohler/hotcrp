@@ -756,7 +756,7 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 	$Conf->errorMsg("Only the PC chairs can send mail.");
     else {
 	$r = (in_array($_REQUEST["recipients"], array("au", "rev")) ? $_REQUEST["recipients"] : "all");
-	$Me->go("mail$ConfSiteSuffix?pap=" . join($papersel, "+") . "&recipients=$r");
+	$Me->go("mail$ConfSiteSuffix?p=" . join($papersel, "+") . "&recipients=$r");
     }
 }
 
