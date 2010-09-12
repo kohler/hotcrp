@@ -137,11 +137,16 @@ function checkMailPrologue($send) {
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
     if ($send) {
-	echo "<div id='foldmail' class='foldc'><div class='fn merror'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br /><span id='mailcount'></span></div><div id='mailwarnings'></div><div class='fx'><div class='confirm'>Sent mail as follows.</div>
+	echo "<div id='foldmail' class='foldc fold2c'>",
+	    "<div class='fn fx2 merror'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br /><span id='mailcount'></span></div>",
+	    "<div id='mailwarnings'></div>",
+	    "<div class='fx'><div class='confirm'>Sent mail as follows.</div>
 	<div class='aa'>
 	<input class='b' type='submit' name='go' value='Prepare more mail' />
-	</div>
-</div></div>";
+	</div></div>",
+	    // This next is only displayed when Javascript is off
+	    "<div class='fn2 warning'>Sending mail.  <strong>Do not leave this page until it finishes rendering!</strong></div>",
+	    "</div>";
     } else {
 	if (isset($_REQUEST["emailBody"]) && $Me->privChair
 	    && (strpos($_REQUEST["emailBody"], "%REVIEWS%")
@@ -151,12 +156,19 @@ function checkMailPrologue($send) {
 	    else if (!$Conf->timeAuthorViewReviews(true))
 		echo "<div class='warning'>Mails to users who have not completed their own reviews will not include reviews or comments.  (<a href='settings$ConfSiteSuffix?group=dec' class='nowrap'>Change the setting</a>)</div>\n";
 	}
-	echo "<div id='foldmail' class='foldc'><div class='fn merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div><div id='mailwarnings'></div><div class='fx info'>Examine the mails to verify that you've gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
+	echo "<div id='foldmail' class='foldc fold2c'>",
+	    "<div class='fn fx2 merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div>",
+	    "<div id='mailwarnings'></div>",
+	    "<div class='fx info'>Examine the mails to verify that you've gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
         <div class='aa fx'>
 	<input class='b' type='submit' name='send' value='Send' /> &nbsp;
 	<input class='b' type='submit' name='cancel' value='Cancel' />
-        </div>\n";
+        </div>",
+	    // This next is only displayed when Javascript is off
+	    "<div class='fn2 warning'>Scroll down to send the prepared mail once the page finishes loading.</div>",
+	    "</div>\n";
     }
+    $Conf->echoScript("fold('mail',0,2)");
 }
 
 function checkMail($send) {
