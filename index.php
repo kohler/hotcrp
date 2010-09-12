@@ -224,6 +224,10 @@ if ($Me->privChair) {
     $max_file_size = ini_get_bytes("upload_max_filesize");
     if (($row = edb_row($result)) && $row[1] < $max_file_size)
 	$Conf->warnMsg("MySQL's <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.");
+    // Any -100 preferences around?
+    $result = $Conf->qx("select PRP.paperId from PaperReviewPreference PRP join PCMember PCM on (PCM.contactId=PRP.contactId) left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId) where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0 limit 1");
+    if (($row = edb_row($result)))
+	$Conf->warnMsg("Some PC members have indicated potential paper conflicts (using preferences of &minus;100 or less) that aren't yet reflected as actual conflicts.  <a href='autoassign$ConfSiteSuffix?a=prefconflict&amp;assign=1' class='nowrap'>Assign these conflicts</a>");
 }
 
 

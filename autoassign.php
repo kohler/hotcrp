@@ -49,6 +49,8 @@ if ((isset($_REQUEST["prevt"]) && isset($_REQUEST["t"]) && $_REQUEST["prevt"] !=
 if (!isset($_REQUEST["assign"]) && !isset($_REQUEST["requery"]) && isset($_REQUEST["default"])
     && ($_REQUEST["default"] == "assign" || $_REQUEST["default"] == "requery"))
     $_REQUEST[$_REQUEST["default"]] = 1;
+if (!isset($_REQUEST["pctyp"]))
+    $_REQUEST["pctyp"] = "all";
 
 // bad pairs
 $badpairs = array();
@@ -728,7 +730,7 @@ echo "</div></div>\n";
 //echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
 
 echo "<h3>PC members</h3><table><tr><td>";
-doRadio('pctyp', 'all', '');
+doRadio("pctyp", "all", "");
 echo "</td><td>", tagg_label("Use entire PC", "pctyp_all"), "</td></tr>\n";
 
 $pctags = pcTags();
