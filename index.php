@@ -227,7 +227,7 @@ if ($Me->privChair) {
     // Any -100 preferences around?
     $result = $Conf->qx("select PRP.paperId from PaperReviewPreference PRP join PCMember PCM on (PCM.contactId=PRP.contactId) left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId) where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0 limit 1");
     if (($row = edb_row($result)))
-	$Conf->warnMsg("Some PC members have indicated potential paper conflicts (using preferences of &minus;100 or less) that aren't yet reflected as actual conflicts.  <a href='autoassign$ConfSiteSuffix?a=prefconflict&amp;assign=1' class='nowrap'>Assign these conflicts</a>");
+	$Conf->warnMsg("Some potential paper conflicts (indicated by preferences of &minus;100 or less) aren't yet reflected as actual conflicts.  <a href='autoassign$ConfSiteSuffix?a=prefconflict&amp;assign=1' class='nowrap'>Assign these conflicts</a>");
 }
 
 
