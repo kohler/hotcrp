@@ -1888,27 +1888,32 @@ div.cmthint {
 /* mail */
 .mail {
 	background-color: #e6e1cf;
-	padding: 8px;
 	margin: 8px 0;
 }
 .mail td.mhx {
 	padding: 0 1em;
 }
-.mail td.mhn {
+.mail td.mhcb {
+	padding: 0 0 0 8px;
+}
+.mail td.mhn, .mail td.mhnp {
 	text-align: right;
 	font-weight: bold;
 }
-.mail td.mhn, .mail td.mhd, .mail td.mhdd {
-	padding: 2px 4px;
+.mail td.mhnp {
+	padding: 2px 4px 2px 12px;
+}
+.mail td.mhdd, .mail td.mhdp {
+	padding: 2px 12px 2px 4px;
 }
 .mail td.mhb {
-	padding: 4px 2em 4px 0;
+	padding: 4px 12px 4px 4px;
 }
 .mail td.mhb pre {
 	background-color: #ffffff;
 	padding: 4px 8px;
 }
-.mail td.mhd {
+.mail td.mhdp {
 	font-size: smaller;
 	font-family: monospace;
 }

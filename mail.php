@@ -231,26 +231,23 @@ function checkMail($send) {
 	    }
 
 	    echo "<table class='mail'>",
-		"<tr><td class='mhpad'></td><td></td><td></td><td class='mhpad'></td></tr>",
-		"<tr><td></td>\n";
+		"<tr><td class='mhpad'></td><td></td><td class='mhpad'></td></tr>";
 	    if ($send)
-		echo "<td class='mhx'></td>";
+		$cbtd = "<td class='mhx'></td>";
 	    else
-		echo "<td><input type='checkbox' class='cb' name='$checker' value='1' checked='checked' /> &nbsp;</td>";
-
-	    echo "<td><table>\n";
+		$cbtd = "<td class='mhcb'><input type='checkbox' class='cb' name='$checker' value='1' checked='checked' /> &nbsp;</td>";
 	    foreach (array("fullTo" => "To", "cc" => "Cc", "bcc" => "Bcc",
 			   "replyto" => "Reply-To", "subject" => "Subject") as $k => $t)
 		if (isset($show_preparation[$k])) {
 		    $x = htmlspecialchars(Mailer::mimeHeaderUnquote($show_preparation[$k]));
-		    echo "  <tr><td class='mhn'>", $t, ":</td>",
-			"<td class='mhd'>", $x, "</td></tr>\n";
+		    echo " <tr>", $cbtd, "<td class='mhnp'>", $t, ":</td>",
+			"<td class='mhdp'>", $x, "</td></tr>\n";
+		    $cbtd = "<td class='mhpad'></td>";
 		}
-	    echo " </table></td></tr>\n";
 
-	    echo " <tr><td></td><td></td><td colspan='2' class='mhb'>",
+	    echo " <tr><td></td><td></td><td class='mhb'>",
 		"<pre class='email'>", htmlspecialchars($show_preparation["body"]), "</pre></td></tr>\n",
-		"<tr><td class='mhpad'></td><td></td><td></td><td class='mhpad'></td></tr>",
+		"<tr><td class='mhpad'></td><td></td><td class='mhpad'></td></tr>",
 		"</table>\n";
 	}
 	if ($nwarnings != $rest["mstate"]->nwarnings()) {
@@ -421,9 +418,8 @@ echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "
 </div>
 
 <table class='mail'>
- <tr><td class='mhpad'></td><td></td><td></td><td class='mhpad'></td></tr>
- <tr><td></td><td class='mhx'></td><td><table>
-  <tr><td class='mhn'>To:</td><td class='mhdd'>",
+ <tr><td class='mhpad'></td><td class='mhpad'></td></tr>
+ <tr><td class='mhnp'>To:</td><td class='mhdd'>",
     tagg_select("recipients", $recip, $_REQUEST["recipients"], array("onchange" => "setmailpsel(this)")),
     "<div class='g'></div>\n";
 
@@ -448,7 +444,7 @@ if ($Me->privChair) {
     foreach ($mailHeaders as $n => $t)
 	if ($n != "bcc") {
 	    $ec = (isset($Error[$n]) ? " error" : "");
-	    echo "  <tr><td class='mhn$ec'>$t:</td><td class='mhd$ec'>",
+	    echo "  <tr><td class='mhnp$ec'>$t:</td><td class='mhdp$ec'>",
 		"<input type='text' class='textlite-tt' name='$n' value=\"",
 		htmlspecialchars($_REQUEST[$n]), "\" size='64' />",
 		($n == "replyto" ? "<div class='g'></div>" : ""),
@@ -456,11 +452,10 @@ if ($Me->privChair) {
 	}
 }
 
-echo "  <tr><td class='mhn'>Subject:</td><td class='mhd'>",
+echo "  <tr><td class='mhnp'>Subject:</td><td class='mhdp'>",
     "<tt>[", htmlspecialchars($Opt["shortName"]), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td></tr>
- </table></td></tr>
 
- <tr><td></td><td></td><td class='mhb'>
+ <tr><td></td><td class='mhb'>
   <textarea class='tt' rows='20' name='emailBody' cols='80'>", htmlspecialchars($_REQUEST["emailBody"]), "</textarea>
  </td></tr>
 
