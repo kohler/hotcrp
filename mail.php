@@ -230,7 +230,9 @@ function checkMail($send) {
 		$rest["hideSensitive"] = false;
 	    }
 
-	    echo "<div class='mail'><table><tr>\n";
+	    echo "<table class='mail'>",
+		"<tr><td class='mhpad'></td><td></td><td></td><td class='mhpad'></td></tr>",
+		"<tr><td></td>\n";
 	    if ($send)
 		echo "<td class='mhx'></td>";
 	    else
@@ -246,9 +248,10 @@ function checkMail($send) {
 		}
 	    echo " </table></td></tr>\n";
 
-	    echo " <tr><td></td><td colspan='2' class='mhb'>",
+	    echo " <tr><td></td><td></td><td colspan='2' class='mhb'>",
 		"<pre class='email'>", htmlspecialchars($show_preparation["body"]), "</pre></td></tr>\n",
-		"</table></div>\n";
+		"<tr><td class='mhpad'></td><td></td><td></td><td class='mhpad'></td></tr>",
+		"</table>\n";
 	}
 	if ($nwarnings != $rest["mstate"]->nwarnings()) {
 	    $nwarnings = $rest["mstate"]->nwarnings();
@@ -417,8 +420,9 @@ echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "
  <span class='hint'>Templates are mail texts tailored for common conference tasks.</span>
 </div>
 
-<div class='mail'><table>
- <tr><td class='mhx'></td><td><table>
+<table class='mail'>
+ <tr><td class='mhpad'></td><td></td><td></td><td class='mhpad'></td></tr>
+ <tr><td></td><td class='mhx'></td><td><table>
   <tr><td class='mhn'>To:</td><td class='mhdd'>",
     tagg_select("recipients", $recip, $_REQUEST["recipients"], array("onchange" => "setmailpsel(this)")),
     "<div class='g'></div>\n";
@@ -456,10 +460,12 @@ echo "  <tr><td class='mhn'>Subject:</td><td class='mhd'>",
     "<tt>[", htmlspecialchars($Opt["shortName"]), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td></tr>
  </table></td></tr>
 
- <tr><td></td><td class='mhb'>
+ <tr><td></td><td></td><td class='mhb'>
   <textarea class='tt' rows='20' name='emailBody' cols='80'>", htmlspecialchars($_REQUEST["emailBody"]), "</textarea>
  </td></tr>
-</table></div>
+
+ <tr><td class='mhpad'></td><td></td><td></td><td class='mhpad'></td></tr>
+</table>
 
 <div class='aa'>
   <input type='submit' value='Prepare mail' class='b' /> &nbsp; <span class='hint'>You'll be able to review the mails before they are sent.</span>

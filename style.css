@@ -935,7 +935,6 @@ input.textlite, textarea {
 }
 input.textlite-tt, textarea.tt {
 	font-family: monospace;
-	white-space: nowrap;
 }
 .papertext {
 	width: 96%;
@@ -1887,32 +1886,34 @@ div.cmthint {
 
 
 /* mail */
-div.mail {
+.mail {
 	background-color: #e6e1cf;
 	padding: 8px;
 	margin: 8px 0;
-	float: left;
 }
-div.mail td.mhx {
+.mail td.mhx {
 	padding: 0 1em;
 }
-div.mail td.mhn {
+.mail td.mhn {
 	text-align: right;
 	font-weight: bold;
 }
-div.mail td.mhn, div.mail td.mhd, div.mail td.mhdd {
+.mail td.mhn, .mail td.mhd, .mail td.mhdd {
 	padding: 2px 4px;
 }
-div.mail td.mhb {
+.mail td.mhb {
 	padding: 4px 2em 4px 0;
 }
-div.mail td.mhb pre {
+.mail td.mhb pre {
 	background-color: #ffffff;
 	padding: 4px 8px;
 }
-div.mail td.mhd {
+.mail td.mhd {
 	font-size: smaller;
 	font-family: monospace;
+}
+.mail td.mhpad {
+	padding: 4px;
 }
 
 
