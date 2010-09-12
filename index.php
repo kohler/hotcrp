@@ -308,23 +308,6 @@ if ($Conf->timeAuthorViewDecision()) {
 }
 echo "  </ul>\n</div>\n";
 
-
-// Profile
-if ($Me->valid()) {
-    echo "<div id='homeacct'>\n  ";
-    if (($nh = contactNameHtml($Me)))
-	echo "Welcome, ", $nh, ".";
-    else
-	echo "Welcome.";
-    echo "
-  <ul>
-    <li><h4><a href='account$ConfSiteSuffix'>Your Profile</a></h4></li>
-    <li><a href='mergeaccounts$ConfSiteSuffix'>Merge accounts</a></li>
-    <li><a href='index$ConfSiteSuffix?signout=1'>Sign out</a></li>
-  </ul>
-</div>\n";
-}
-
 echo "</div></div>\n\n";
 // End sidebar
 
