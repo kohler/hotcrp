@@ -160,11 +160,9 @@ if ($MergeError)
 else
     $Conf->infoMsg(
 "You may have multiple accounts registered with the "
-. $Opt["shortName"] . " conference, usually because "
+. $Opt["shortName"] . " conference; perhaps "
 . "multiple people asked you to review a paper using "
 . "different email addresses. "
-. "This can make it "
-. "harder to keep track of your papers. "
 . "If you have been informed of multiple accounts, "
 . "enter the email address and the password "
 . "of the secondary account. This will merge all the information from "
@@ -196,7 +194,7 @@ echo "<form method='post' action=\"mergeaccounts$ConfSiteSuffix\" accept-charset
   ?></td>
 </tr>
 
-<tr><td class='caption'></td><td class='entry'><input class='b' type='submit' value='Merge Account' name='merge' /></td></tr>
+<tr><td class='caption'></td><td class='entry'><input class='b' type='submit' value='Merge accounts' name='merge' /></td></tr>
 <tr class='last'><td class='caption'></td></tr>
 </table>
 </form>

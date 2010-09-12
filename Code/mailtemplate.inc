@@ -22,7 +22,7 @@ To sign in directly, either click the link below or paste it into your web brows
 
 %LOGINURL%
 
-If you already have an account under a different email address, you may merge this new account into that one.  Sign in to the site and select \"Merge accounts\".
+If you already have an account under a different email address, you may merge this new account into that one.  Go to your profile page and select \"Merge with another account\".
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 

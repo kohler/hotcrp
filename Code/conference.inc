@@ -1339,8 +1339,10 @@ class Conference {
 	echo "</h1></div><div id='header_right'>";
 	if ($_SESSION["Me"]->valid()) {
 	    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-	    echo "<strong>", htmlspecialchars($_SESSION["Me"]->email),
-		"</strong>", $xsep;
+	    echo "<a class='q' href='${ConfSiteBase}account$ConfSiteSuffix'><strong>",
+		htmlspecialchars($_SESSION["Me"]->email),
+		"</strong></a> &nbsp; <a href='${ConfSiteBase}account$ConfSiteSuffix'>Profile</a>",
+		$xsep;
 	    if (!$_SESSION["Me"]->privChair && $_SESSION["Me"]->chairContactId > 0)
 		echo "<a href=\"", selfHref(array("chairMode" => 0)), "\">Admin&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Return to administrator view]' /></a>", $xsep;
 	    echo "<a href='${ConfSiteBase}help$ConfSiteSuffix";

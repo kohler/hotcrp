@@ -319,7 +319,8 @@ if (isset($_REQUEST["register"]) && $newProfile
 	else
 	    redirectSelf();
     }
-}
+ } else if (isset($_REQUEST["merge"]) && !$newProfile && $Acct->contactId == $Me->contactId)
+    $Me->go("mergeaccounts$ConfSiteSuffix");
 
 function databaseTracks($who) {
     global $Conf;
@@ -559,8 +560,8 @@ if ($Conf->setting("acct_addr") || $Acct->amReviewer()
 	&& ($Conf->setting("acct_addr") || $any_address)) {
 	echofield(0, false, "Address line 1", textinput("addressLine1", crpformvalue("addressLine1"), 52));
 	echofield(0, false, "Address line 2", textinput("addressLine2", crpformvalue("addressLine2"), 52));
-	echofield(1, false, "City", textinput("city", crpformvalue("city"), 32));
-	echofield(2, false, "State/Province/Region", textinput("state", crpformvalue("state"), 24));
+	echofield(0, false, "City", textinput("city", crpformvalue("city"), 52));
+	echofield(1, false, "State/Province/Region", textinput("state", crpformvalue("state"), 24));
 	echofield(3, false, "ZIP/Postal code", textinput("zipCode", crpformvalue("zipCode"), 12));
 	echofield(0, false, "Country", countrySelector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : $Acct->country)));
     }
@@ -731,6 +732,8 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   </form></div>");
     }
 }
+if (!$newProfile && $Acct->contactId == $Me->contactId)
+    $buttons[] = "<input class='b' type='submit' value='Merge with another account' name='merge' style='margin-left:2ex' />";
 echo "    <tr>\n";
 foreach ($buttons as $b) {
     $x = (is_array($b) ? $b[0] : $b);

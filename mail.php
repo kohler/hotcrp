@@ -230,7 +230,7 @@ function checkMail($send) {
 		$rest["hideSensitive"] = false;
 	    }
 
-	    echo "<div class='mail'><table>\n";
+	    echo "<div class='mail'><table><tr>\n";
 	    if ($send)
 		echo "<td class='mhx'></td>";
 	    else
