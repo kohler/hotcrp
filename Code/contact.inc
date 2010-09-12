@@ -204,9 +204,18 @@ class Contact {
 	if (!$this->valid()) {
 	    $x = array("afterLogin" => 1, "blind" => 1);
 	    $rf = reviewForm();
+	    // Preserve review form values.
 	    foreach ($rf->reviewFields as $k => $v)
 		if (isset($_REQUEST[$k]))
 		    $x[$k] = $_REQUEST[$k];
+	    // Preserve comments and other long-to-type things.
+	    foreach (array("comment", "visibility", "override", "plimit",
+			   "subject", "emailBody", "cc", "recipients",
+			   "replyto") as $k)
+		if (isset($_REQUEST[$k]))
+		    $x[$k] = $_REQUEST[$k];
+	    // NB: selfHref automagically preserves common parameters like
+	    // "p", "q", etc.
 	    $_SESSION["afterLogin"] = selfHref($x, null, false);
 	    $this->goAlert(false, "You have invalid credentials and need to sign in.");
 	}
