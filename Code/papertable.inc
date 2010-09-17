@@ -404,7 +404,7 @@ class PaperTable {
 		echo "</td><td>", tagg_label("<strong>This is the final submission.</strong>"),
 		    "</td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
 	    else
-		echo tagg_label("This submission is ready for review.");
+		echo tagg_label("The paper is ready for review.");
 	    echo "</td></tr></table></div>\n";
 	    $Conf->footerScript("hotcrp_onload.push(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
 	} else
@@ -443,7 +443,7 @@ class PaperTable {
 	    cleanAuthor($prow);
 
 	echo $this->papt("authorInformation", "Authors <span class='papfnh'>(<a href='javascript:void authorfold(\"auedit\",1,1)'>More</a> | <a href='javascript:void authorfold(\"auedit\",1,-1)'>Fewer</a>)</span>"),
-	    "<div class='paphint'>List the paper's authors one per line, including their email addresses and affiliations.";
+	    "<div class='paphint'>List the paper&rsquo;s authors one per line, including their email addresses and affiliations.";
 	if ($Conf->blindSubmission() == BLIND_ALWAYS)
 	    echo " Submission is blind, so reviewers will not be able to see author information.";
 	echo "  Any author with an account on this site can edit the paper.</div>",
@@ -1255,24 +1255,26 @@ class PaperTable {
 	    $submitDeadline = $this->deadlineSettingIs("sub_sub");
 	    if ($prow->timeWithdrawn > 0) {
 		if ($timeUpdate)
-		    $m .= "<div class='xinfo'>" . "This paper has been withdrawn, but you can still revive it.$updateDeadline" . "</div>";
+		    $m .= "<div class='xinfo'>This paper has been withdrawn, but you can still revive it.$updateDeadline</div>";
 		// otherwise no message
 	    } else if ($timeUpdate) {
 		if ($prow->timeSubmitted <= 0) {
-		    if ($prow->paperStorageId <= 1)
-			$m .= "<div class='xwarning'>" . "You haven&rsquo;t uploaded a paper yet.$updateDeadline" . "</div>";
-		    else if ($Conf->setting('sub_freeze'))
-			$m .= "<div class='xwarning'>" . "You must submit a final version of this paper before it can be reviewed.$updateDeadline" . "</div>";
+		    $m .= "<div class='xwarning'>";
+		    if ($Conf->setting('sub_freeze'))
+			$m .= "A final version of this paper must be submitted before it can be reviewed.";
+		    else if ($prow->paperStorageId <= 1)
+			$m .= "The paper is not ready for review and will not be considered as is, but you can still make changes.";
 		    else
-			$m .= "<div class='xwarning'>" . "The current version of the paper is marked as not ready for review.  If you don&rsquo;t submit a reviewable version of the paper, it will not be considered.$updateDeadline" . "</div>";
+			$m .= "The paper is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
+		    $m .= $updateDeadline . "</div>";
 		} else if ($this->mode == "pe")
-		    $m .= "<div class='xconfirm'>" . "This paper is ready and will be considered for review.  You still have time to make changes if necessary.$updateDeadline" . "</div>";
+		    $m .= "<div class='xconfirm'>This paper is ready and will be considered for review.  You can still make changes if necessary.$updateDeadline</div>";
 	    } else if ($timeSubmit)
-		$m .= "<div class='xwarning'>" . "You cannot make any changes as the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override" . "</div>";
+		$m .= "<div class='xwarning'>You cannot make any changes as the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override</div>";
 	    else if ($Conf->settingsBetween("", "sub_grace", "sub_sub"))
-		$m .= "<div class='xwarning'>" . "The site is not open for submission updates at the moment.$override" . "</div>";
+		$m .= "<div class='xwarning'>The site is not open for submission updates at the moment.$override</div>";
 	    else
-		$m .= "<div class='xwarning'>" . "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override" . "</div>";
+		$m .= "<div class='xwarning'>The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override</div>";
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0
 		   && $Conf->timeSubmitFinalPaper()) {
 	    $updateDeadline = $this->deadlineSettingIs("final_soft");
@@ -1294,7 +1296,7 @@ class PaperTable {
 	echo "<div class='aa'><table class='pt_buttons'>\n";
 	$buttons = array();
 	if (!$prow)
-	    $buttons[] = "<input class='bb' type='submit' name='update' value='Register paper' />";
+	    $buttons[] = "<input class='bb' type='submit' name='update' value='Save paper' />";
 	else if ($prow->timeWithdrawn > 0
 		 && ($Conf->timeFinalizePaper($prow) || $Me->privChair))
 	    $buttons[] = "<input class='b' type='submit' name='revive' value='Revive paper' />";
@@ -1306,10 +1308,10 @@ class PaperTable {
 		&& $this->mode == "pe")
 		$buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Submit final copy' />", "");
 	    if ($Conf->timeUpdatePaper($prow) && $this->mode == "pe")
-		$buttons[] = array("<input class='bb' type='submit' name='update' value='Submit paper' />", "");
+		$buttons[] = array("<input class='bb' type='submit' name='update' value='Save changes' />", "");
 	    else if ($Me->privChair && $this->mode == "pe") {
 		$class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "b" : "bb");
-		$buttons[] = array("<input class='$class' type='submit' name='update' value='Submit paper' />", "(admin only)");
+		$buttons[] = array("<input class='$class' type='submit' name='update' value='Save changes' />", "(admin only)");
 	    }
 	    if ($prow->timeSubmitted <= 0)
 		$buttons[] = "<input class='b' type='submit' name='withdraw' value='Withdraw paper' />";

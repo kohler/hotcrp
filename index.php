@@ -219,15 +219,15 @@ if ($Me->privChair) {
     if (get_magic_quotes_runtime())
 	$Conf->errorMsg("The PHP <code>magic_quotes_runtime</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP's <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_runtime</code> in your <code>php.ini</code> configuration file.");
     if ($Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
-	$Conf->warnMsg("The systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP's preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users will likely be booted off the system earlier than you expect.");
+	$Conf->warnMsg("PHP&rsquo;s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP&rsquo;s preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect.");
     $result = $Conf->qx("show variables like 'max_allowed_packet'");
     $max_file_size = ini_get_bytes("upload_max_filesize");
     if (($row = edb_row($result)) && $row[1] < $max_file_size)
-	$Conf->warnMsg("MySQL's <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.");
+	$Conf->warnMsg("MySQL&rsquo;s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.");
     // Any -100 preferences around?
     $result = $Conf->qx("select PRP.paperId from PaperReviewPreference PRP join PCMember PCM on (PCM.contactId=PRP.contactId) left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId) where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0 limit 1");
     if (($row = edb_row($result)))
-	$Conf->warnMsg("Some potential paper conflicts (indicated by review preferences of &minus;100 or less) aren't yet reflected as actual conflicts.  <a href='autoassign$ConfSiteSuffix?a=prefconflict&amp;assign=1' class='nowrap'>Assign these conflicts</a>");
+	$Conf->warnMsg("PC members have indicated paper conflicts (using review preferences of &minus;100 or less) that aren&rsquo;t yet confirmed.  <a href='autoassign$ConfSiteSuffix?a=prefconflict&amp;assign=1' class='nowrap'>Confirm these conflicts</a>");
 }
 
 

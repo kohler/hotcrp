@@ -539,13 +539,19 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	else if ($Conf->setting("sub_freeze") > 0)
 	    $notes = "The paper has not yet been submitted.";
 	else
-	    $notes = "This version of the paper is marked as not ready for review.";
+	    $notes = "The paper is marked as not ready for review.";
 	$deadline = $Conf->printableTimeSetting("sub_update");
 	if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
 	    $notes .= "  Further updates are allowed until $deadline.";
 	$deadline = $Conf->printableTimeSetting("sub_sub");
-	if ($deadline != "N/A" && $prow->timeSubmitted <= 0)
-	    $notes .= "  <strong>If the paper has not been submitted by $deadline, it will not be considered for the conference.</strong>";
+	if ($deadline != "N/A" && $prow->timeSubmitted <= 0) {
+	    $notes .= "  <strong>If the paper ";
+	    if ($Conf->setting("sub_freeze") > 0)
+		$notes .= "has not been submitted";
+	    else
+		$notes .= "is not ready for review";
+	    $notes .= " by $deadline, it will not be considered for the conference.</strong>";
+	}
     }
 
     // HTML confirmation
