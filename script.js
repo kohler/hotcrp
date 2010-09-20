@@ -187,21 +187,34 @@ function shiftPassword(direction) {
 // paper selection
 function papersel(onoff, name) {
     var ins = document.getElementsByTagName("input");
-    name = (name ? name : "pap[]");
+    name = name || "pap[]";
     for (var i = 0; i < ins.length; i++)
 	if (ins[i].name == name)
 	    ins[i].checked = onoff;
     return false;
 }
 
-var paperselDocheck = true;
+var papersel_check_safe = false;
 function paperselCheck(name) {
-    if (!paperselDocheck)
+    var ins, i, e, values, check_safe = papersel_check_safe;
+    papersel_check_safe = false;
+    if ((e = $$("sel_papstandin")))
+	e.parentNode.removeChild(e);
+    ins = document.getElementsByTagName("input");
+    for (i = 0, values = []; i < ins.length; i++)
+	if ((e = ins[i]).name == "pap[]") {
+	    if (e.checked)
+		return true;
+	    else
+		values.push(e.value);
+	}
+    if (check_safe) {
+	e = document.createElement("div");
+	e.id = "sel_papstandin";
+	e.innerHTML = "<input type='hidden' name='pap' value=\"" + values.join(" ") + "\" />";
+	$$("sel").appendChild(e);
 	return true;
-    var ins = document.getElementsByTagName("input");
-    for (var i = 0; i < ins.length; i++)
-	if (ins[i].name == "pap[]" && ins[i].checked)
-	    return true;
+    }
     alert("Select one or more papers first.");
     return false;
 }

@@ -1066,7 +1066,7 @@ class PaperList extends BaseList {
 	}
 	$t .= tagg_select("getaction", $sel_opt, defval($_REQUEST, "getaction"),
 			  array("id" => "plact${nlll}_d", "tabindex" => 6))
-	    . "&nbsp; <input type='submit' class='b' name='getgo' value='Go' tabindex='6' /></td>";
+	    . "&nbsp; <input type='submit' class='b' name='getgo' value='Go' tabindex='6' onclick='return (papersel_check_safe=true)' /></td>";
 	$nlll++;
 
 	// Upload preferences (review preferences only)
