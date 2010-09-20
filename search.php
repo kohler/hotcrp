@@ -41,7 +41,9 @@ if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
 PaperSearch::parsePapersel();
 
 function paperselPredicate($papersel, $prefix = "") {
-    if (count($papersel) == 1)
+    if (count($papersel) == 0)
+	return "${prefix}paperId=-1";
+    else if (count($papersel) == 1)
 	return "${prefix}paperId=$papersel[0]";
     else
 	return "${prefix}paperId in (" . join(", ", $papersel) . ")";
