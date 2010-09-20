@@ -232,7 +232,7 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
 	    $sep = "&";
 	}
     foreach ($extra as $key => $value)
-	if ($key != "anchor") {
+	if ($key != "anchor" && $value !== null) {
 	    $x .= "$sep$key=" . urlencode($value);
 	    $sep = "&";
 	}

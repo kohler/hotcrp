@@ -39,6 +39,8 @@ if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
 
 // paper selection
 PaperSearch::parsePapersel();
+PaperSearch::clearPaperselRequest();	// Don't want "p=" and "pap=" to
+					// clutter up URLs
 
 function paperselPredicate($papersel, $prefix = "") {
     if (count($papersel) == 0)

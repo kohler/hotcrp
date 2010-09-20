@@ -2093,6 +2093,11 @@ class PaperSearch {
 	}
     }
 
+    function clearPaperselRequest() {
+	unset($_REQUEST["p"]);
+	unset($_REQUEST["pap"]);
+    }
+
     function searchTypes($me) {
 	global $Conf;
 	$tOpt = array();

@@ -90,6 +90,7 @@ if (isset($_REQUEST["setpaprevpref"]) || isset($_REQUEST["get"])) {
     if (!isset($papersel))
 	$Conf->errorMsg("No papers selected.");
 }
+PaperSearch::clearPaperselRequest();
 
 
 // Set multiple paper preferences
