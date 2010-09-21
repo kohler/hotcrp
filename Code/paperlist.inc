@@ -1050,10 +1050,11 @@ class PaperList extends BaseList {
 		$sel_opt["revz"] = "All reviews (zip)";
 	    }
 	}
-	if ($this->contact->privChair || ($this->contact->isReviewer && $Conf->blindSubmission() < BLIND_ALWAYS))
+	if ($this->contact->privChair)
+	    $sel_opt["authors"] = "Authors &amp; contacts";
+	else if ($this->contact->isReviewer && $Conf->blindSubmission() < BLIND_ALWAYS)
 	    $sel_opt["authors"] = "Authors";
 	if ($this->contact->privChair) {
-	    $sel_opt["contact"] = "Contact emails";
 	    $sel_opt["pcconf"] = "PC conflicts";
 	    $sel_opt["checkformat"] = "Format check";
 	}

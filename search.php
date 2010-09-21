@@ -412,9 +412,27 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 // download text author information for selected papers
 if ($getaction == "authors" && isset($papersel)
     && ($Me->privChair || ($Me->isPC && $Conf->blindSubmission() < BLIND_ALWAYS))) {
-    $idq = paperselPredicate($papersel);
+    $idq = paperselPredicate($papersel, "Paper.");
     if (!$Me->privChair && $Conf->blindSubmission() == BLIND_OPTIONAL)
 	$idq = "($idq) and blind=0";
+
+    // first fetch contacts if chair
+    $contactline = array();
+    if ($Me->privChair) {
+	$result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq", "while fetching contacts");
+	while (($row = edb_orow($result))) {
+	    $key = $row->paperId . " " . $row->email;
+	    $t = $row->paperId . "\t" . $row->title . "\t";
+	    if ($row->firstName && $row->lastName)
+		$t .= $row->firstName . " " . $row->lastName;
+	    else
+		$t .= $row->firstName . $row->lastName;
+	    $t .= "\t" . $row->email . "\t" . $row->affiliation . "\tcontact_only\n";
+	    $contactline[$key] = $t;
+	}
+    }
+
+    // first fetch authors
     $result = $Conf->qe("select paperId, title, authorInformation from Paper where $idq", "while fetching authors");
     if ($result) {
 	$texts = array();
@@ -426,12 +444,36 @@ if ($getaction == "authors" && isset($papersel)
 		    $t .= $au[0] . " " . $au[1];
 		else
 		    $t .= $au[0] . $au[1];
-		$t .= "\t" . $au[2] . "\t" . $au[3] . "\n";
-		defappend($texts[$paperselmap[$row->paperId]], $t);
+		$t .= "\t" . $au[2] . "\t" . $au[3];
+
+		$autype = "author";
+		if ($Me->privChair && $au[2]) {
+		    $key = $row->paperId . " " . $au[2];
+		    if (isset($contactline[$key])) {
+			unset($contactline[$key]);
+			$autype = "contact_author";
+		    }
+		}
+		if ($Me->privChair)
+		    $t .= "\t" . $autype;
+
+		defappend($texts[$paperselmap[$row->paperId]], $t . "\n");
+		if ($au[2])
+		    $authormap[$row->paperId . " " . $au[2]] = true;
 	    }
 	}
+
+	// If chair, append the remaining non-author contacts
+	if ($Me->privChair)
+	    foreach ($contactline as $key => $line) {
+		$paperId = (int) $key;
+		defappend($texts[$paperselmap[$paperId]], $line);
+	    }
+
 	ksort($texts);
-	$text = "#paper\ttitle\tauthor name\temail\taffiliation\n" . join("", $texts);
+	$text = "#paper\ttitle\tname\temail\taffiliation"
+	    . ($Me->privChair ? "\ttype" : "") . "\n"
+	    . join("", $texts);
 	downloadText($text, $Opt['downloadPrefix'] . "authors.txt", "authors");
 	exit;
     }
