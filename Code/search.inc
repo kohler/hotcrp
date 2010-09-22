@@ -744,7 +744,8 @@ class PaperSearch {
 	// check for paper number
 	if (preg_match('/\A#?(\d+)(?:-#?(\d+))?(,((?:#?\d+(?:-#?\d+)?,?)*))?\z/', $word, $m)) {
 	    $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
-	    $rest .= (isset($m[4]) && $m[4] ? $m[4] : "");
+	    if (isset($m[4]) && $m[4])
+		$rest = $m[4] . " " . $rest;
 	    return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
 	}
 
