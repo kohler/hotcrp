@@ -742,8 +742,9 @@ class PaperSearch {
 	global $searchTags, $ratingTypes, $Conf;
 
 	// check for paper number
-	if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $word, $m)) {
+	if (preg_match('/\A#?(\d+)(?:-#?(\d+))?(,((?:#?\d+(?:-#?\d+)?,?)*))?\z/', $word, $m)) {
 	    $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
+	    $rest .= (isset($m[4]) && $m[4] ? $m[4] : "");
 	    return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
 	}
 
