@@ -445,7 +445,7 @@ $Conf->footerScript("fold(\"psel\",!\$\$(\"plimit\").checked,8)");
 echo "<span class='fx8'>:</span><br />
 <div class='fx8'>";
 $q = defval($_REQUEST, "q", "(All)");
-echo "<input id='q' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
+echo "Search&nbsp; <input id='q' class='textlite' type='text' size='36' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     tagg_select("t", $tOpt, $_REQUEST["t"], array("id" => "t")),
     "</div>
    </td></tr></table>
