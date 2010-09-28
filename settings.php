@@ -1175,8 +1175,8 @@ function doAccGroup() {
 
     echo "<p><a href='account$ConfSiteSuffix?new=1' class='button'>Create account</a> &nbsp;|&nbsp; ",
 	"Select a user's name to edit a profile or change PC/administrator status.</p>\n";
-    $pl = new ContactList(false);
-    echo $pl->text("pcadminx", $Me, "contacts$ConfSiteSuffix?t=pcadmin");
+    $pl = new ContactList($Me, false);
+    echo $pl->text("pcadminx", "contacts$ConfSiteSuffix?t=pcadmin");
 }
 
 // Messages

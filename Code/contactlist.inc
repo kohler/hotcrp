@@ -38,7 +38,7 @@ class ContactList extends BaseList {
     var $listNumber;
     var $contactLinkArgs;
 
-    function ContactList($sortable = true, $list = false) {
+    function ContactList($contact, $sortable = true) {
 	global $contactListFields;
 	$this->showHeader = true;
 
@@ -55,8 +55,9 @@ class ContactList extends BaseList {
 	$this->haveAffrow = $this->haveTopics = null;
 	$this->rf = reviewForm();
 
+	$this->contact = $contact;
 	$this->contactLinkArgs = "";
-	$this->listNumber = $list;
+	$this->listNumber = $contact->privChair;
     }
 
     function _normalizeField($fieldId) {
@@ -402,54 +403,9 @@ class ContactList extends BaseList {
 	return $t . "</td></tr>\n";
     }
 
-    function text($listname, $me, $url, $listtitle = "") {
-	global $Conf, $ConfSiteSuffix, $contactListFields;
+    function _rows($queryOptions) {
+	global $Conf;
 
-	$this->contact = $me;
-	$this->count = 0;
-	$this->anySelector = 0;
-	$colorizer = null;
-	if ($me->isPC) {
-	    require_once("tags.inc");
-	    $colorizer = new TagColorizer($me);
-	}
-
-	// PC tags
-	$mainwhere = array();
-	if (substr($listname, 0, 3) == "pc:") {
-	    $mainwhere[] = "(ContactInfo.contactTags like '% " . sqlq_for_like(substr($listname, 3)) . " %')";
-	    $listname = "pc";
-	}
-
-	// get paper list
-	if (!($baseFieldId = $this->listFields($listname))) {
-	    $Conf->errorMsg("There is no people list query named '" . htmlspecialchars($listname) . "'.");
-	    return null;
-	}
-	$this->limit = array_shift($baseFieldId);
-
-	if ($this->listNumber === true) {
-	    $this->listNumber = allocateListNumber("a:" . $this->limit . "::");
-	    $this->contactLinkArgs .= "&amp;ls=" . $this->listNumber;
-	}
-
-	if (!in_array($this->sortField, $baseFieldId))
-	    $this->sortField = null;
-
-	// get field array
-	$fieldDef = array();
-	$ncol = 0;
-	$queryOptions = array();
-	foreach ($baseFieldId as $fid) {
-	    if ($this->selector($fid, $queryOptions) === false)
-		continue;
-	    $normFid = self::_normalizeField($fid);
-	    $fieldDef[$fid] = $contactListFields[$normFid];
-	    if ($contactListFields[$normFid][1] == 1)
-		$ncol++;
-	}
-
-	// prepare query text
 	$aulimit = (strlen($this->limit) >= 2 && $this->limit[0] == 'a' && $this->limit[1] == 'u');
 	$pq = "select ContactInfo.contactId,
 	ContactInfo.contactId as paperId,
@@ -495,7 +451,7 @@ class ContactList extends BaseList {
 		$pq .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contact->contactId . ")";
 	    if (isset($queryOptions["revratings"])) {
 		require_once("search.inc");
-		$badratings = PaperSearch::unusableRatings($me->privChair, $me->contactId);
+		$badratings = PaperSearch::unusableRatings($this->contact->privChair, $this->contact->contactId);
 		$pq .= " left join ReviewRating on (ReviewRating.reviewId=PaperReview.reviewId";
 		if (count($badratings) > 0)
 		    $pq .= " and not (ReviewRating.reviewId in (" . join(",", $badratings) . "))";
@@ -526,6 +482,10 @@ class ContactList extends BaseList {
 	    $pq .= "\tjoin Paper on (Paper.paperId=PaperConflict.paperId and Paper.timeSubmitted<=0)\n";
 	if ($this->limit == "all")
 	    $pq .= "\tleft join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")\n";
+
+	$mainwhere = array();
+	if (isset($queryOptions["where"]))
+	    $mainwhere[] = $queryOptions["where"];
 	if ($this->limit == "admin")
 	    $mainwhere[] = "(Chair.contactId is not null or ChairAssistant.contactId is not null)";
 	if ($this->limit == "pcadmin" || $this->limit == "pcadminx")
@@ -547,8 +507,55 @@ class ContactList extends BaseList {
 	$rows = array();
 	while (($row = edb_orow($result)))
 	    $rows[] = $row;
+	return $rows;
+    }
+
+    function text($listname, $url, $listtitle = "") {
+	global $Conf, $ConfSiteSuffix, $contactListFields;
+
+	// PC tags
+	$queryOptions = array();
+	if (substr($listname, 0, 3) == "pc:") {
+	    $queryOptions["where"] = "(ContactInfo.contactTags like '% " . sqlq_for_like(substr($listname, 3)) . " %')";
+	    $listname = "pc";
+	}
+
+	// get paper list
+	if (!($baseFieldId = $this->listFields($listname))) {
+	    $Conf->errorMsg("There is no people list query named '" . htmlspecialchars($listname) . "'.");
+	    return null;
+	}
+	$this->limit = array_shift($baseFieldId);
+
+	// get field array
+	$fieldDef = array();
+	$this->anySelector = 0;
+	$ncol = 0;
+	foreach ($baseFieldId as $fid) {
+	    if ($this->selector($fid, $queryOptions) === false)
+		continue;
+	    $normFid = self::_normalizeField($fid);
+	    $fieldDef[$fid] = $contactListFields[$normFid];
+	    if ($contactListFields[$normFid][1] == 1)
+		$ncol++;
+	}
+
+	// run query
+	$rows = ContactList::_rows($queryOptions);
+	if (!$rows)
+	    return NULL;
+	if (count($rows) == 0)
+	    return "No matching people";
+
+	// list number
+	if ($this->listNumber === true) {
+	    $this->listNumber = allocateListNumber("a:" . $this->limit . "::");
+	    $this->contactLinkArgs .= "&amp;ls=" . $this->listNumber;
+	}
 
 	// sort rows
+	if (!in_array($this->sortField, $baseFieldId))
+	    $this->sortField = null;
 	$srows = $this->_sort($rows);
 
 	// count non-callout columns
@@ -560,6 +567,13 @@ class ContactList extends BaseList {
 		++$skipcallout;
 
 	// collect row data
+	$this->count = 0;
+	$colorizer = null;
+	if ($this->contact->isPC) {
+	    require_once("tags.inc");
+	    $colorizer = new TagColorizer($this->contact);
+	}
+
 	$anyData = array();
 	$body = '';
 	$extrainfo = false;
@@ -676,6 +690,25 @@ class ContactList extends BaseList {
 	}
 
 	return $x;
+    }
+
+    function rows($listname) {
+	// PC tags
+	$queryOptions = array();
+	if (substr($listname, 0, 3) == "pc:") {
+	    $queryOptions["where"] = "(ContactInfo.contactTags like '% " . sqlq_for_like(substr($listname, 3)) . " %')";
+	    $listname = "pc";
+	}
+
+	// get paper list
+	if (!($baseFieldId = $this->listFields($listname))) {
+	    $Conf->errorMsg("There is no people list query named '" . htmlspecialchars($listname) . "'.");
+	    return null;
+	}
+	$this->limit = array_shift($baseFieldId);
+
+	// run query
+	return ContactList::_rows($queryOptions);
     }
 
 }

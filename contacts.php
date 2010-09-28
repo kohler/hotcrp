@@ -52,7 +52,9 @@ if (!isset($_REQUEST["t"]))
 
 // paper selection and download actions
 function paperselPredicate($papersel) {
-    if (count($papersel) == 1)
+    if (count($papersel) == 0)
+	return "contactId=-1";
+    else if (count($papersel) == 1)
 	return "contactId=$papersel[0]";
     else
 	return "contactId in (" . join(", ", $papersel) . ")";
@@ -61,15 +63,22 @@ function paperselPredicate($papersel) {
 if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
     $_REQUEST["pap"] = preg_split('/\s+/', $_REQUEST["pap"]);
 if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
+    $allowed_papers = array();
+    $pl = new ContactList($Me, true);
+    // Ensure that we only select contacts we're allowed to see.
+    if (($rows = $pl->rows($_REQUEST["t"]))) {
+	foreach ($rows as $row)
+	    $allowed_papers[$row->paperId] = true;
+    }
     $papersel = array();
     foreach ($_REQUEST["pap"] as $p)
-	if (($p = cvtint($p)) > 0)
+	if (($p = cvtint($p)) > 0 && isset($allowed_papers[$p]))
 	    $papersel[] = $p;
     if (count($papersel) == 0)
 	unset($papersel);
 }
 
-if ($getaction == "nameemail" && isset($papersel)) {
+if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
     $result = $Conf->qe("select firstName, lastName, email from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
     $text = "#name\temail\n";
     while ($row = edb_row($result))
@@ -81,7 +90,7 @@ if ($getaction == "nameemail" && isset($papersel)) {
     exit;
 }
 
-if ($getaction == "address" && isset($papersel)) {
+if ($getaction == "address" && isset($papersel) && $Me->isPC) {
     $result = $Conf->qe("select firstName, lastName, email, voicePhoneNumber, faxPhoneNumber, ContactAddress.* from ContactInfo left join ContactAddress using (contactId) where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
     $text = "#name\temail\taddress line 1\taddress line 2\tcity\tstate/province/region\tzip/postal code\tcountry\tvoice phone\tfax\n";
     while ($row = edb_orow($result)) {
@@ -126,8 +135,8 @@ else
 $Conf->header($title, "accounts", actionBar());
 
 
-$pl = new ContactList(true, $Me->privChair);
-$pl_text = $pl->text($_REQUEST["t"], $Me, "contacts$ConfSiteSuffix?t=" . $_REQUEST["t"], $tOpt[$_REQUEST["t"]]);
+$pl = new ContactList($Me, true);
+$pl_text = $pl->text($_REQUEST["t"], "contacts$ConfSiteSuffix?t=" . $_REQUEST["t"], $tOpt[$_REQUEST["t"]]);
 
 
 // form
