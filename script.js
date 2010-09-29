@@ -719,7 +719,24 @@ var plinfo_title = {
     pcconf: "PC conflicts", collab: "Collaborators", authors: "Authors",
     aufull: "Authors"
 };
-var plinfo_needload = { };
+var plinfo_needload = {}, plinfo_aufull = {};
+function make_plloadform_callback(which, type, dofold) {
+    var xtype = ({au: 1, anonau: 1, aufull: 1}[type] ? "authors" : type);
+    return function (rv) {
+	var elt, eltx, h6 = plinfo_title[type] ? "<h6>" + plinfo_title[type] + ":</h6> " : "";
+	for (var i in rv)
+	    if (i.substr(0, xtype.length) == xtype && (elt = $$(i))) {
+		if (rv[i] == "")
+		    elt.innerHTML = "";
+		else
+		    elt.innerHTML = h6 + rv[i];
+	    }
+	plinfo_needload[xtype] = false;
+	fold(which, dofold, xtype);
+	if (type == "aufull")
+	    plinfo_aufull[!!dofold] = rv;
+    };
+}
 function foldplinfo(dofold, type, which) {
     var elt, i, divs, h6, callback;
 
@@ -739,7 +756,9 @@ function foldplinfo(dofold, type, which) {
 	h6 = "";
 
     // may need to load information by ajax
-    if ((!dofold || type == "aufull") && plinfo_needload[type]) {
+    if (type == "aufull" && plinfo_aufull[!!dofold])
+	make_plloadform_callback(which, type, dofold)(plinfo_aufull[!!dofold]);
+    else if ((!dofold || type == "aufull") && plinfo_needload[type]) {
 	// set up "loading" display
 	if ((elt = $$("fold" + which))) {
 	    divs = elt.getElementsByTagName("div");
@@ -757,20 +776,8 @@ function foldplinfo(dofold, type, which) {
 	    e_value("plloadform_aufull", (dofold ? "" : "1"));
 	} else
 	    e_value("plloadform_get", type);
-	Miniajax.submit(["plloadform", type + "loadform"], function (rv) {
-		var elt, eltx;
-		if ({au: 1, anonau: 1, aufull: 1}[type])
-		    type = "authors";
-		for (var i in rv)
-		    if (i.substr(0, type.length) == type && (elt = $$(i))) {
-			if (rv[i] == "")
-			    elt.innerHTML = "";
-			else
-			    elt.innerHTML = h6 + rv[i];
-		    }
-		plinfo_needload[type] = false;
-		fold(which, dofold, type);
-	    });
+	Miniajax.submit(["plloadform", type + "loadform"],
+			make_plloadform_callback(which, type, dofold));
     }
 
     return false;
