@@ -655,16 +655,28 @@ class PaperList extends BaseList {
 	cleanAuthor($row);
 	$aus = array();
 	if ($full) {
+	    $lastaff = "";
+	    $affaus = array();
 	    foreach ($row->authorTable as $au) {
+		if ($au[3] != $lastaff && count($aus)) {
+		    $affaus[] = array($aus, $lastaff);
+		    $aus = array();
+		}
+		$lastaff = $au[3];
 		$n = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $au[2];
-		if ($au[3] != "")
-		    $n .= " ($au[3])";
-		$n = htmlspecialchars($n);
 		if ($highlight !== "")
 		    $n = highlightMatch($highlight, $n);
 		$aus[] = $n;
 	    }
-	    return join(", ", $aus);
+	    if (count($aus))
+		$affaus[] = array($aus, $lastaff);
+	    foreach ($affaus as &$ax) {
+		$aff = htmlspecialchars($ax[1]);
+		if ($highlight !== "")
+		    $aff = highlightMatch($highlight, $aff);
+		$ax = commajoin($ax[0]) . ($aff ? " ($aff)" : "");
+	    }
+	    return commajoin($affaus);
 	} else if ($highlight === "") {
 	    foreach ($row->authorTable as $au)
 		$aus[] = abbreviateName($au[0], $au[1], $au[2]);
