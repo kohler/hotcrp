@@ -656,7 +656,7 @@ class PaperList extends BaseList {
 	$aus = array();
 	if ($full) {
 	    foreach ($row->authorTable as $au) {
-		$n = trim("$au[0] $au[1]");
+		$n = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $au[2];
 		if ($au[3] != "")
 		    $n .= " ($au[3])";
 		$n = htmlspecialchars($n);
@@ -667,7 +667,7 @@ class PaperList extends BaseList {
 	    return join(", ", $aus);
 	} else if ($highlight === "") {
 	    foreach ($row->authorTable as $au)
-		$aus[] = abbreviateName($au[0], $au[1]);
+		$aus[] = abbreviateName($au[0], $au[1], $au[2]);
 	    return htmlspecialchars(join(", ", $aus));
 	} else {
 	    foreach ($row->authorTable as $au) {

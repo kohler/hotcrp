@@ -476,7 +476,7 @@ function authorTable($aus, $viewAs = null) {
     return $out;
 }
 
-function abbreviateName($f, $l) {
+function abbreviateName($f, $l, $email = "") {
     if ($f != "" && $l == "")
 	return $f;
     else if ($f != "" && ctype_upper($f[0]))
@@ -484,7 +484,7 @@ function abbreviateName($f, $l) {
     else if ($l != "")
 	return $l;
     else
-	return "???";
+	return $email ? $email : "???";
 }
 
 function highlightMatch($match, $text, &$n = null) {
