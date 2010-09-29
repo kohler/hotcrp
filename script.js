@@ -732,7 +732,7 @@ function foldplinfo(dofold, type, which) {
     if (type == "aufull" && !dofold && (elt = $$("showau")) && !elt.checked)
 	elt.click();
     if (window.foldplinfo_extra)
-	foldplinfo_extra();
+	foldplinfo_extra(type, dofold);
     if (plinfo_title[type])
 	h6 = "<h6>" + plinfo_title[type] + ":</h6> ";
     else

@@ -211,7 +211,12 @@ $pl_text = $pl->text("editReviewPreference", $Me, "pltable_full");
 echo "<table id='searchform' class='tablinks1'>
 <tr><td>"; // <div class='tlx'><div class='tld1'>";
 
-echo "<form method='get' action='reviewprefs$ConfSiteSuffix' accept-charset='UTF-8' id='redisplayform'>\n<table>";
+$showing_au = ($Conf->blindSubmission() <= BLIND_OPTIONAL && strpos($pldisplay, " au ") !== false);
+$showing_anonau = (($Conf->blindSubmission() >= BLIND_OPTIONAL || $Me->privChair) && strpos($pldisplay, " anonau ") !== false);
+
+echo "<form method='get' action='reviewprefs$ConfSiteSuffix' accept-charset='UTF-8' id='redisplayform' class='",
+    ($showing_au || $showing_anonau ? "fold10o" : "fold10c"),
+    "'>\n<table>";
 
 if ($Me->privChair) {
     echo "<tr><td class='lxcaption'><strong>Preferences:</strong> &nbsp;</td><td class='lentry'>";
@@ -248,17 +253,29 @@ if ($Conf->blindSubmission() <= BLIND_OPTIONAL) {
     echo $sep,
 	tagg_checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
 		      array("disabled" => ($Conf->blindSubmission() == BLIND_OPTIONAL && !($pl->headerInfo["authors"] & 1)),
-			    "onchange" => "fold('pl',!this.checked,'au')")),
+			    "onchange" => "foldplinfo(this,'au')",
+			    "id" => "showau")),
 	"&nbsp;", tagg_label("Authors");
     $sep = "<span class='sep'></span>\n";
+    $loadforms .= "<div id='auloadformresult'></div>";
 }
 if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair) {
     echo $sep,
 	tagg_checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
 		      array("disabled" => !($pl->headerInfo["authors"] & 2),
-			    "onchange" => "fold('pl',!this.checked,'anonau')")),
+			    "onchange" => "foldplinfo(this,'anonau')",
+			    "id" => ($Conf->blindSubmission() == BLIND_OPTIONAL ? "showanonau" : "showau"))),
 	"&nbsp;", tagg_label($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors");
     $sep = "<span class='sep'></span>\n";
+    $loadforms .= "<div id='anonauloadformresult'></div>";
+}
+if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $Me->privChair) {
+    echo "<span class='fx10'>", $sep,
+	tagg_checkbox("showaufull", 1, strpos($pldisplay, " aufull ") !== false,
+		      array("onchange" => "foldplinfo(this,'aufull')")),
+	"&nbsp;", tagg_label("Full author info"), "</span>";
+    $Conf->footerScript("function foldplinfo_extra(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked),y=(type=='anonau'?!dofold:(\$\$('showanonau')||{}).checked);fold('redisplayform',!(x||y),10)}");
+    $loadforms .= "<div id='aufullloadformresult'></div>";
 }
 if ($pl->headerInfo["abstract"]) {
     echo $sep,
