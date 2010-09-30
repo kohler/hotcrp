@@ -695,7 +695,7 @@ class PaperList extends BaseList {
     }
 
     function wrapConflict($text) {
-	return "<span class='fn20'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Show</a></span><span class='fx20'>$text</span>";
+	return "<span class='fn20'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Override conflicts</a></span><span class='fx20'>$text</span>";
     }
 
     function contentEmpty($fieldId, $row) {
