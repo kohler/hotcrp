@@ -698,6 +698,16 @@ class PaperList extends BaseList {
 	return "<span class='fn20'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Override conflicts</a></span><span class='fx20'>$text</span>";
     }
 
+    function _contentPC($contactId, $visible) {
+	if (!$visible && !$this->contact->privChair)
+	    return "";
+	$pcm = pcMembers();
+	if (!isset($pcm[$contactId]))
+	    return "";
+	$t = contactNameHtml($contactId);
+	return $visible ? $t : $this->wrapConflict($t);
+    }
+
     function contentEmpty($fieldId, $row) {
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_REVIEWER_TYPE:
@@ -996,23 +1006,15 @@ class PaperList extends BaseList {
 				$this->search->orderTags);
 	    return $t;
 	case self::FIELD_LEAD:
-	    if (!$this->contact->actPC($row, true) || !$row->leadContactId)
+	    if (!$row->leadContactId)
 		return "";
-	    $pcm = pcMembers();
-	    if (isset($pcm[$row->leadContactId]))
-		return contactNameHtml($pcm[$row->leadContactId]);
-	    else
-		return "";
+	    $visible = $this->contact->actPC($row);
+	    return $this->_contentPC($row->leadContactId, $visible);
 	case self::FIELD_SHEPHERD:
-	    if ((!$this->contact->actPC($row, true)
-		 && !$this->contact->canViewDecision($row))
-		|| !$row->shepherdContactId)
+	    if (!$row->shepherdContactId)
 		return "";
-	    $pcm = pcMembers();
-	    if (isset($pcm[$row->shepherdContactId]))
-		return contactNameHtml($pcm[$row->shepherdContactId]);
-	    else
-		return "";
+	    $visible = $this->contact->actPC($row) || $this->contact->canViewDecision($row);
+	    return $this->_contentPC($row->shepherdContactId, $visible);
 	case self::FIELD_COLLABORATORS:
 	    if ($row->collaborators == ""
 		|| strcasecmp($row->collaborators, "None") == 0
