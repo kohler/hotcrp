@@ -1011,6 +1011,8 @@ if ($pl) {
 	($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors())
 	|| $_REQUEST["t"] == "a";
 
+    displayOptionText("<strong>Show:</strong>" . foldsessionpixel("pl", "pldisplay", null), 1);
+
     // Authors group
     if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors) {
 	$onchange = "fold('pl',!this.checked,'au')";
@@ -1071,7 +1073,7 @@ if ($pl) {
 	    if ($rf->authorView[$field] > $revViewScore
 		&& isset($rf->options[$field])) {
 		if (count($displayOptions) == $n)
-		    displayOptionText("<strong>Scores</strong>", 3);
+		    displayOptionText("<strong>Scores:</strong>", 3);
 		displayOptionCheckbox($field, 3, htmlspecialchars($rf->shortName[$field]));
 		if ($displayOptions[count($displayOptions) - 1]->checked)
 		    ++$nchecked;
@@ -1167,33 +1169,34 @@ if ($pl && $pl->count > 0) {
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
 
-    echo "<table><tr>
-  <td class='pad nowrap' colspan='2'><strong>Show:</strong>",
-	foldsessionpixel("pl", "pldisplay", null);
+    echo "<table>";
 
-    foreach ($displayOptions as $do)
-	if ($do->fold) {
-	    echo "<span class='sep'></span>",
-		"<a class='fn4' href='javascript:void fold(\"searchform\",0,4)'>More &#187;</a>",
-		"<a class='fx4' href='javascript:void fold(\"searchform\",1,4)'>&#171; Fewer</a>";
-	    break;
-	}
-
-    echo "</td></tr>\n";
-    echo "<tr><td class='top'><table>";
     $column = 0;
+    $cheaders = array();
+    $cbodies = array();
     foreach ($displayOptions as $do) {
-	if ($column && $do->column != $column)
-	    echo "</table></td><td class='top'><table>";
-	$column = $do->column;
-	echo "<tr><td class='padb";
-	if ($do->fold)
-	    echo " fx4";
-	if ($do->indent)
-	    echo "' style='padding-left:2em";
-	echo "'>", $do->text, "</td></tr>\n";
+	if (preg_match('/\A<strong>/', $do->text)
+	    && !isset($cheaders[$do->column]))
+	    $cheaders[$do->column] = $do->text;
+	else {
+	    $t = "<tr><td class='padb";
+	    if ($do->indent)
+		$t .= "' style='padding-left:2em";
+	    $t .= "'>" . $do->text . "</td></tr>\n";
+	    defappend($cbodies[$do->column], $t);
+	}
     }
-    echo "</table></td>\n";
+
+    $header = $body = "";
+    for ($i = 1; $i < 10; ++$i)
+	if (isset($cbodies[$i]) && $cbodies[$i]) {
+	    if (isset($cheaders[$i]))
+		$header .= "  <td class='pad nowrap'>" . $cheaders[$i] . "</td>\n";
+	    else
+		$header .= "  <td></td>\n";
+	    $body .= "  <td class='top'><table>" . $cbodies[$i] . "</table></td>\n";
+	}
+    echo "<tr>\n", $header, "</tr><tr>\n", $body;
 
     // "Redisplay" column
     echo "<td class='top padl'>";
