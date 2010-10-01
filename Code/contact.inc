@@ -201,7 +201,10 @@ class Contact {
     }
 
     function goIfInvalid() {
+	global $Conf;
 	if (!$this->valid()) {
+	    if (defval($_REQUEST, "ajax"))
+		$Conf->ajaxExit(array("ok" => 0, "loggedout" => 1));
 	    $x = array("afterLogin" => 1, "blind" => 1);
 	    $rf = reviewForm();
 	    // Preserve review form values.

@@ -682,7 +682,7 @@ Miniajax.submit = function (formname, callback, timeout) {
 	clearTimeout(timer);
 	if (req.status == 200) {
 	    resultelt.innerHTML = "";
-	    var rv = eval(req.responseText);
+	    var rv = eval("(" + req.responseText + ")");
 	    callback(rv);
 	    if (rv.ok)
 		hiliter(form, true);

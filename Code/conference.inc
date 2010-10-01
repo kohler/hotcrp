@@ -1400,7 +1400,7 @@ class Conference {
 	    $values["response"] = $t;
 	unset($_SESSION["msgs"]);
 	header("Content-Type: text/json");
-	echo "({ ";
+	echo "{ ";
 	$sep = "";
 	foreach ($values as $name => $value) {
 	    echo $sep, "\"", $name, "\": ";
@@ -1412,7 +1412,7 @@ class Conference {
 		echo "\"", addcslashes($value, "\r\n\"\\"), "\"";
 	    $sep = ", ";
 	}
-	echo " })";
+	echo " }";
 	exit;
     }
 
