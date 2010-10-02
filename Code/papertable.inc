@@ -399,7 +399,7 @@ class PaperTable {
 	    echo "<div id='foldisready' class='",
 		(($prow && $prow->paperStorageId > 1) || defval($Opt, "noPapers") ? "foldo" : "foldc"),
 		"'$s><table class='fx'><tr><td class='nowrap'>",
-		tagg_checkbox_h("submit", 1, $checked), "&nbsp;";
+		tagg_checkbox_h("submit", 1, $checked, array("id" => "paperisready")), "&nbsp;";
 	    if ($Conf->setting('sub_freeze'))
 		echo "</td><td>", tagg_label("<strong>This is the final submission.</strong>"),
 		    "</td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
@@ -1536,7 +1536,11 @@ class PaperTable {
 
 	$form = "<form method='post' action=\"paper$ConfSiteSuffix?p="
 	    . ($prow ? $prow->paperId : "new")
-	    . "&amp;post=1&amp;m=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'>";
+	    . "&amp;post=1&amp;m=pe$linkExtra\"";
+	if ($prow && $prow->paperStorageId > 1 && $prow->timeSubmitted > 0
+	    && !$Conf->setting('sub_freeze'))
+	    $form .= " onsubmit='return docheckpaperstillready()'";
+	$form .= " enctype='multipart/form-data' accept-charset='UTF-8'>";
 
 	$this->echoDivEnter($prow);
 	if ($this->editable) {

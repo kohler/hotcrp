@@ -813,6 +813,14 @@ function dosubmitdecision() {
     return Miniajax.submit("decisionform");
 }
 
+function docheckpaperstillready() {
+    var e = $$("paperisready");
+    if (e && !e.checked)
+	return window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered.");
+    else
+	return true;
+}
+
 
 // mail
 function setmailpsel(sel) {
