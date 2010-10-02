@@ -695,7 +695,7 @@ class PaperSearch {
 		    else if (count($xval) == 1)
 			$xval = $ocompar . $xval[0];
 		    else if ($ocompar != "=" && $ocompar != "!=") {
-			$this->warn("Submission option &ldquo;" . htmlspecialchars("$oname:$oval") . "&rdquo; matches multiple values, can't use " . htmlspecialchars($ocompar) . ".");
+			$this->warn("Submission option &ldquo;" . htmlspecialchars("$oname:$oval") . "&rdquo; matches multiple values, can&rsquo;t use " . htmlspecialchars($ocompar) . ".");
 			$option_failure = true;
 			continue;
 		    } else
@@ -726,7 +726,7 @@ class PaperSearch {
 	if (count($qo) == 0 && ($option_failure || $error)) {
 	    $qo[] = new SearchTerm("f");
 	    if (!$option_failure)
-		$this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn't match a submission option.");
+		$this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn&rsquo;t match a submission option.");
 	}
 	$qt = array_merge($qt, $qo);
 	return count($qo) != 0;
@@ -879,7 +879,7 @@ class PaperSearch {
 		$rf = reviewForm();
 		$value = matchValue($rf->options["outcome"], $word, true);
 		if (count($value) == 0) {
-		    $this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn't match a decision.");
+		    $this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn&rsquo;t match a decision.");
 		    $value[] = -10000000;
 		}
 		$value = self::_sqlNumericSet($value);
@@ -916,7 +916,7 @@ class PaperSearch {
 		$x = simplifyWhitespace($word);
 		$rounds = matchValue($Conf->settings["rounds"], $x);
 		if (count($rounds) == 0) {
-		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; doesn't match a review round.");
+		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; doesn&rsquo;t match a review round.");
 		    $qt[] = new SearchTerm("f");
 		} else
 		    $qt[] = new SearchTerm("revadj", 0, array("round" => $rounds));

@@ -1008,7 +1008,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['dbError']))
 	$text .= $whyNot['dbError'] . "  ";
     if (isset($whyNot['permission']))
-	$text .= "You don't have permission to $action $thisPaper.  ";
+	$text .= "You don&rsquo;t have permission to $action $thisPaper.  ";
     if (isset($whyNot['withdrawn']))
 	$text .= ucfirst($thisPaper) . " has been withdrawn.  ";
     if (isset($whyNot['notWithdrawn']))
@@ -1020,15 +1020,15 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['updateSubmitted']))
 	$text .= ucfirst($thisPaper) . " has already been submitted and can no longer be updated.  ";
     if (isset($whyNot['notUploaded']))
-	$text .= ucfirst($thisPaper) . " can't be submitted because you haven't yet uploaded the paper itself.  Upload the paper and try again.  ";
+	$text .= ucfirst($thisPaper) . " can&rsquo;t be submitted because you haven't yet uploaded the paper itself.  Upload the paper and try again.  ";
     if (isset($whyNot['reviewNotSubmitted']))
 	$text .= "This review is not yet ready for others to see.  ";
     if (isset($whyNot['reviewNotComplete']))
-	$text .= "Your own review for $thisPaper is not complete, so you can't view other people's reviews.  ";
+	$text .= "Your own review for $thisPaper is not complete, so you can&rsquo;t view other people&rsquo;s reviews.  ";
     if (isset($whyNot['responseNotReady']))
-	$text .= "The authors' response for $thisPaper is not yet ready for reviewers to view.  ";
+	$text .= "The authors&rsquo; response for $thisPaper is not yet ready for reviewers to view.  ";
     if (isset($whyNot['reviewsOutstanding']))
-	$text .= "You will get access to the reviews for your submitted papers once you complete <a href=\"search$ConfSiteSuffix?q=&amp;t=r\">your assigned reviews for other papers</a>.  If you can't complete your reviews, please let the conference organizers know via the &ldquo;Refuse review&rdquo; links.  ";
+	$text .= "You will get access to the reviews for your submitted papers once you complete <a href=\"search$ConfSiteSuffix?q=&amp;t=r\">your assigned reviews for other papers</a>.  If you can&rsquo;t complete your reviews, please let the conference organizers know via the &ldquo;Refuse review&rdquo; links.  ";
     if (isset($whyNot['reviewNotAssigned']))
 	$text .= "You are not assigned to review $thisPaper.  ";
     if (isset($whyNot['deadline'])) {
@@ -1042,9 +1042,9 @@ function whyNotText($whyNot, $action) {
 	$end = $Conf->setting($dname, -1);
 	$now = time();
 	if ($start <= 0)
-	    $text .= "You can't $action $thisPaper yet.  ";
+	    $text .= "You can&rsquo;t $action $thisPaper yet.  ";
 	else if ($start > 0 && $now < $start)
-	    $text .= "You can't $action $thisPaper until " . $Conf->printableTime($start) . ".  ";
+	    $text .= "You can&rsquo;t $action $thisPaper until " . $Conf->printableTime($start) . ".  ";
 	else if ($end > 0 && $now > $end) {
 	    if ($dname == "sub_reg")
 		$text .= "The paper registration deadline has passed.  ";
@@ -1061,11 +1061,11 @@ function whyNotText($whyNot, $action) {
 	    $text .= "It was " . $Conf->printableTime($end) . ".  ";
 	} else if ($dname == "au_seerev") {
 	    if ($Conf->setting("au_seerev") == AU_SEEREV_YES)
-		$text .= "Authors who are also reviewers can't see reviews for their papers while they still have <a href='search$ConfSiteSuffix?t=rout&amp;q='>incomplete reviews</a> of their own.  ";
+		$text .= "Authors who are also reviewers can&rsquo;t see reviews for their papers while they still have <a href='search$ConfSiteSuffix?t=rout&amp;q='>incomplete reviews</a> of their own.  ";
 	    else
-		$text .= "Authors can't view paper reviews at the moment.  ";
+		$text .= "Authors can&rsquo;t view paper reviews at the moment.  ";
 	} else
-	    $text .= "You can't $action $thisPaper at the moment.  ";
+	    $text .= "You can&rsquo;t $action $thisPaper at the moment.  ";
 	$text .= "(<a class='nowrap' href='deadlines$ConfSiteSuffix'>View deadlines</a>)  ";
 	if (isset($whyNot['override']) && $whyNot['override'])
 	    $text .= "Select the &ldquo;Override deadlines&rdquo; checkbox to override this deadline as an administrator.  ";
@@ -1073,13 +1073,13 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind.  ";
     if (isset($whyNot['author']))
-	$text .= "You aren't a contact for $thisPaper.  ";
+	$text .= "You aren&rsquo;t a contact for $thisPaper.  ";
     if (isset($whyNot['conflict']))
 	$text .= "You have a conflict with $thisPaper.  ";
     if (isset($whyNot['externalReviewer']))
 	$text .= "External reviewers may not view other reviews for the papers they review.  ";
     if (isset($whyNot['differentReviewer']))
-	$text .= "You didn't write this review, so you can't change it.  ";
+	$text .= "You didn&rsquo;t write this review, so you can't change it.  ";
     if (isset($whyNot['reviewToken']))
 	$text .= "If you know a valid review token, enter it above to edit that review.  ";
     // finish it off

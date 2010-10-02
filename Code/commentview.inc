@@ -114,7 +114,7 @@ class CommentView {
 	$this->commentIdentityTime($prow, $crow, false);
 
 	if ($crow && $editMode && $crow->contactId != $Me->contactId)
-	    echo "<div class='hint'>You didn't write this comment, but as an administrator you can still make changes.</div>\n";
+	    echo "<div class='hint'>You didn&rsquo;t write this comment, but as an administrator you can still make changes.</div>\n";
 
 	echo "</div><div class='cmtv", (!$crow && $editMode && $foldnew ? " fx" : ""), "'>";
 
@@ -216,15 +216,15 @@ class CommentView {
 
 	if ($editMode) {
 	    $limittext = ($wordlimit ? ": the conference system will enforce a limit of $wordlimit words" : "");
-	    echo "<div class='hint'>The authors' response is intended to address
+	    echo "<div class='hint'>The authors&rsquo; response is intended to address
 reviewer concerns and correct misunderstandings.
 The response should be addressed to the program committee, who
-will consider it when making their decision.  Don't try to
-augment the paper's content or form&mdash;the conference deadline
+will consider it when making their decision.  Don&rsquo;t try to
+augment the paper&rsquo;s content or form&mdash;the conference deadline
 has passed.  Please keep the response short and to the point",
 		$limittext, ".</div>\n";
 	    if ($prow->conflictType < CONFLICT_AUTHOR)
-		echo "<div class='hint'>Although you aren't a contact for this paper, as an administrator you can edit the authors' response.</div>\n";
+		echo "<div class='hint'>Although you aren&rsquo;t a contact for this paper, as an administrator you can edit the authors&rsquo; response.</div>\n";
 	}
 
 	echo "</td><td></td></tr>
@@ -236,9 +236,9 @@ has passed.  Please keep the response short and to the point",
 
 	if (!$editMode) {
 	    if ($Me->privChair && $crow->forReviewers == 0)
-		echo "<i>The <a href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>authors' response</a> is not yet ready for reviewers to view.</i>";
+		echo "<i>The <a href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>authors&rsquo; response</a> is not yet ready for reviewers to view.</i>";
 	    else if (!$Me->canViewComment($prow, $crow))
-		echo "<i>The authors' response is not yet ready for reviewers to view.</i>";
+		echo "<i>The authors&rsquo; response is not yet ready for reviewers to view.</i>";
 	    else
 		echo htmlWrapText(htmlspecialchars($crow->comment));
 	    echo "</td><td></td></tr>\n", tagg_cbox("cmt", true),

@@ -24,7 +24,7 @@ class PaperActions {
 		$Error["decision"] = true;
 	    }
 	} else
-	    $Conf->errorMsg("You can't set the decision for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : ""));
+	    $Conf->errorMsg("You can&rsquo;t set the decision for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : ""));
 	if ($ajax)
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "decision")));
     }
@@ -43,7 +43,7 @@ class PaperActions {
 	    else
 		$Error["revpref"] = true;
 	} else {
-	    $Conf->errorMsg($ajax ? "Preferences must be small positive or negative integers." : "Preferences must be small integers.  0 means don't care; positive numbers mean you want to review a paper, negative numbers mean you don't.  The greater the absolute value, the stronger your feelings.");
+	    $Conf->errorMsg($ajax ? "Preferences must be small positive or negative integers." : "Preferences must be small integers.  0 means don&rsquo;t care; positive numbers mean you want to review a paper, negative numbers mean you don&rsquo;t.  The greater the absolute value, the stronger your feelings.");
 	    $Error["revpref"] = true;
 	}
 	if ($ajax)
@@ -55,7 +55,7 @@ class PaperActions {
 	$ajax = defval($_REQUEST, "ajax", false);
 	$tag = $Conf->settingText("tag_rank", "");
 	if (!$Me->canSetRank($prow)) {
-	    $Conf->errorMsg("You don't have permission to rank this paper.");
+	    $Conf->errorMsg("You don&rsquo;t have permission to rank this paper.");
 	    $Error["rank"] = true;
 	} else if (isset($_REQUEST["rank"])) {
 	    $rank = trim($_REQUEST["rank"]);
@@ -91,7 +91,7 @@ class PaperActions {
 	$ajax = defval($_REQUEST, "ajax", false);
 	$tag = $Conf->settingText("tag_rank", "");
 	if (!$Me->canSetRank($prow)) {
-	    $Conf->errorMsg("You don't have permission to rank this paper.");
+	    $Conf->errorMsg("You don&rsquo;t have permission to rank this paper.");
 	    $Error["rank"] = true;
 	} else {
 	    $result = $Conf->qe("select Paper.paperId, title, tagIndex from Paper join PaperTag on (PaperTag.paperId=Paper.paperId and PaperTag.tag='" . sqlq($Me->contactId . "~" . $tag) . "') order by tagIndex, Paper.paperId", "while loading paper ranks");
@@ -118,7 +118,7 @@ class PaperActions {
         global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
 	if (!$Me->actChair($prow)) {
-	    $Conf->errorMsg("You don't have permission to set the $type.");
+	    $Conf->errorMsg("You don&rsquo;t have permission to set the $type.");
 	    $Error[$type] = true;
 	} else if (isset($_REQUEST[$type])
 		   && ($_REQUEST[$type] === "0"
@@ -153,7 +153,7 @@ class PaperActions {
 	    require_once("Code/tags.inc");
 	    setTags($prow->paperId, defval($_REQUEST, "tags", ""), 'p', $Me->privChair);
 	} else
-	    $Error["tags"] = "You can't set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
+	    $Error["tags"] = "You can&rsquo;t set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
 	if ($ajax)
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "tags")));
 	redirectSelf();
@@ -183,7 +183,7 @@ class PaperActions {
 		    $r = "Unallocated <a href='help$ConfSiteSuffix?t=votetags'>votes</a>: $r";
 	    }
 	} else {
-	    $Conf->errorMsg("You can't view tags for paper #$prow->paperId.");
+	    $Conf->errorMsg("You can&rsquo;t view tags for paper #$prow->paperId.");
 	    $Error["tags"] = true;
 	}
 	if ($return)

@@ -310,7 +310,7 @@ class ReviewForm {
 	if (isset($req["reviewerEmail"]) && $rrow
 	    && $rrow->email != $req["reviewerEmail"]
 	    && (!isset($req["reviewerName"]) || $req["reviewerName"] != trim("$rrow->firstName $rrow->lastName"))) {
-	    self::tfError($tf, true, "This review form claims to be written by " . htmlspecialchars($req["reviewerEmail"]) . " rather than the review's owner, " . contactHtml($rrow) . ".  If you want to upload it anyway, remove the &ldquo;<code>==+==&nbsp;Reviewer</code>&rdquo; line from the form and try again.", "reviewerEmail");
+	    self::tfError($tf, true, "This review form claims to be written by " . htmlspecialchars($req["reviewerEmail"]) . " rather than the review&rsquo;s owner, " . contactHtml($rrow) . ".  If you want to upload it anyway, remove the &ldquo;<code>==+==&nbsp;Reviewer</code>&rdquo; line from the form and try again.", "reviewerEmail");
 	    return 0;
 	}
 	if (isset($outofrange)) {
@@ -869,7 +869,7 @@ $blind\n";
 	}
 
 	if ($nfields == 0 && $tf['firstLineno'] == 1)
-	    self::tfError($tf, true, "That didn't appear to be a review form; I was not able to extract any information from it.  Please check its formatting and try again.", $lineno);
+	    self::tfError($tf, true, "That didn&rsquo;t appear to be a review form; I was not able to extract any information from it.  Please check its formatting and try again.", $lineno);
 
 	$tf['text'] = $text;
 	$tf['lineno'] = $lineno - 1;
@@ -885,7 +885,7 @@ $blind\n";
 		 && ($pid = cvtint(trim($req["paperNumber"]), -1)) > 0)
 	    $req["paperId"] = $tf["paperId"] = $pid;
 	else if ($nfields > 0) {
-	    self::tfError($tf, true, "This review form doesn't report which paper number it is for.  Make sure you've entered the paper number in the right place and try again.", defval($tf["fieldLineno"], "paperNumber", $lineno));
+	    self::tfError($tf, true, "This review form doesn&rsquo;t report which paper number it is for.  Make sure you've entered the paper number in the right place and try again.", defval($tf["fieldLineno"], "paperNumber", $lineno));
 	    $nfields = 0;
 	}
 
@@ -1297,7 +1297,7 @@ $blind\n";
 	// message?
 	if ($rrow && $rrow->contactId != $Me->contactId
 	    && !isset($prow->myReviewId) && $Me->privChair)
-	    echo "<div class='hint'>You didn't write this review, but as an administrator you can still make changes.</div>\n";
+	    echo "<div class='hint'>You didn&rsquo;t write this review, but as an administrator you can still make changes.</div>\n";
 
 	// download?
 	echo "<div class='clear'></div></td><td></td></tr>
@@ -1323,7 +1323,7 @@ $blind\n";
 		tagg_checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))),
 		"&nbsp;", tagg_label("Anonymous review"),
 		"</span><div class='clear'></div></div>\n",
-		"<div class='revhint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won't know who wrote the review).</div>\n",
+		"<div class='revhint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won&rsquo;t know who wrote the review).</div>\n",
 		"<div class='g'></div>\n";
 	}
 

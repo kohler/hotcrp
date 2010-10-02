@@ -746,7 +746,7 @@ class PaperTable {
 	assert(!!$this->editable);
 	echo $this->papt("blind", tagg_checkbox_h("blind", 1, $blind)
 			 . "&nbsp;" . tagg_label("Anonymous submission")),
-	    "<div class='paphint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won't be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
+	    "<div class='paphint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won&rsquo;t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
 	    "<div class='papv'></div>\n\n";
     }
 
@@ -1284,7 +1284,7 @@ class PaperTable {
 	    if ($this->mode == "pe")
 		$m .= "<div class='xinfo'>" . "This paper is under review and can no longer be changed, although you may still withdraw it from the conference.$override2" . "</div>";
 	} else
-	    $m .= "<div class='xinfo'>" . "You aren't a contact for this paper, but as an administrator you can still make changes." . "</div>";
+	    $m .= "<div class='xinfo'>" . "You aren&rsquo;t a contact for this paper, but as an administrator you can still make changes." . "</div>";
 
 	return $m;
     }
@@ -1719,7 +1719,7 @@ class PaperTable {
 
 	if (!$Me->canViewReview($this->prow, null, $whyNot)
 	    && $this->rrows)
-	    $this->_paptabSepContaining("You can't see the reviews for this paper.  " . whyNotText($whyNot, "review"));
+	    $this->_paptabSepContaining("You can&rsquo;t see the reviews for this paper.  " . whyNotText($whyNot, "review"));
 
 	if ($this->mode != "pe")
 	    $this->_paptabReviewLinks(false, null, "");
@@ -1739,7 +1739,7 @@ class PaperTable {
 	$viewall = $Me->canViewReview($prow, null, $whyNot, true);
 	$msgs = array();
 	if (!$this->rrow && $this->prow->reviewType <= 0)
-	    $msgs[] = "You haven't been assigned to review this paper, but you can review it anyway.";
+	    $msgs[] = "You haven&rsquo;t been assigned to review this paper, but you can review it anyway.";
 	if ($forceShow && !$viewall) {
 	    $msgs[] = "You have used administrator privileges to view and edit reviews for this paper. (<a href=\"" . selfHref(array("forceShow" => 0)) . "\">Unprivileged view</a>)";
 	} else if (!$viewall && isset($whyNot["reviewNotComplete"])
