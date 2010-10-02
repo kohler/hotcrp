@@ -379,6 +379,7 @@ class ReviewForm {
 	$now = time();
 	if ($rrow && $rrow->reviewModified && $rrow->reviewModified > $now)
 	    $now = $rrow->reviewModified + 1;
+	$donotify = false;
 
 	// potentially assign review ordinal (requires table locking since
 	// mySQL is stupid)
@@ -420,8 +421,10 @@ class ReviewForm {
 	    $q[] = "reviewModified=" . $now;
 	    // do not notify on updates within 3 hours
 	    if ($submit && (!$rrow || !$rrow->reviewNotified
-			    || $rrow->reviewNotified + 10800 < $now))
+			    || $rrow->reviewNotified + 10800 < $now)) {
 		$q[] = "reviewNotified=" . $now;
+		$donotify = true;
+	    }
 	}
 
 	// actually affect database
@@ -457,7 +460,8 @@ class ReviewForm {
 	}
 
 	// potentially email chair and authors
-	if ($submit && ($Conf->timeEmailChairAboutReview() || $Conf->timeEmailAuthorsAboutReview())) {
+	if ($submit && $donotify && ($Conf->timeEmailChairAboutReview()
+				     || $Conf->timeEmailAuthorsAboutReview())) {
 
 	    // fetch review ordinal
 	    if (!$rrow || !$rrow->reviewSubmitted) {
