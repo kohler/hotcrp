@@ -1093,7 +1093,11 @@ if ($pl) {
     // Formulas group
     if (count($paperListFormulas)) {
 	displayOptionText("<div style='padding-top:2ex'><strong>Formulas</strong> <span class='barsep'>&nbsp;|&nbsp;</span> <a href=\"" . selfHref(array("tab" => "formulas")) . "\" onclick='return fold(\"searchform\",0,3)'>Edit formulas</a></div>", 3);
+	$formulas = array();
 	foreach ($paperListFormulas as $formula)
+	    $formulas[strtolower($formula->name)] = $formula;
+	ksort($formulas);
+	foreach ($formulas as $formula)
 	    displayOptionCheckbox("formula" . $formula->formulaId, 3, htmlspecialchars($formula->name));
     } else if ($Me->isPC && $Conf->sversion >= 32)
 	displayOptionText("<div style='padding-top:2ex'><strong><a href=\"" . selfHref(array("tab" => "formulas")) . "\" onclick='return fold(\"searchform\",0,3)'>Add formulas</a></strong></div>", 3);
