@@ -360,7 +360,7 @@ class PaperTable {
 	// uploader
 	$uploader = "";
 	if (!defval($Opt, "noPapers")) {
-	    $uploader = ($doc ? "<div class='g'></div>\nUpload new version:" : "Upload:")
+	    $uploader = ($doc ? "<div class='g'></div>\nReplacement upload:" : "Upload:")
 		. "&nbsp; <input id='paperUpload' class='textlite' type='file' name='paperUpload' accept='"
 		. (defval($Opt, "disablePDF") ? "" : "application/pdf ")
 		. (defval($Opt, "disablePS") ? "" : "application/postscript ")
@@ -868,7 +868,7 @@ class PaperTable {
 			echo "<table><tr>", $d, "</tr></table>\n";
 		    }
 		}
-		echo ($doc ? "<div class='g'></div>\nUpload new version:" : "Upload:"),
+		echo ($doc ? "<div class='g'></div>\nReplacement upload:" : "Upload:"),
 		    "&nbsp; <input class='textlite' type='file' name='$optid' accept='application/pdf' size='30' onchange='hiliter(this)' />",
 		    "</div>\n\n";
 	    }
