@@ -198,6 +198,11 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperWatch modify `watch` int(11) NOT NULL default '0'")
 	&& $Conf->q("update Settings set value=36 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 36;
+    if ($Conf->settings["allowPaperOption"] == 36
+	&& $Conf->q("alter table PaperReview add `reviewNotified` int(1) default NULL")
+	&& $Conf->q("alter table PaperReviewArchive add `reviewNotified` int(1) default NULL")
+	&& $Conf->q("update Settings set value=37 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 37;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

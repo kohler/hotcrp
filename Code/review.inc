@@ -199,6 +199,8 @@ class ReviewForm {
 	    . join(", ", array_keys($this->reviewFields));
 	if ($Conf->sversion >= 11)
 	    $fields .= ", reviewRound";
+	if ($Conf->sversion >= 37)
+	    $fields .= ", reviewNotified";
 	// compensate for 2.12 schema error
 	if ($Conf->sversion == 8)
 	    $fields = str_replace(", textField7, textField8", "", $fields);
@@ -373,11 +375,16 @@ class ReviewForm {
 		$q[] = "$field='" . sqlq($fval) . "'";
 	    }
 
+	// get the current time
+	$now = time();
+	if ($rrow && $rrow->reviewModified && $rrow->reviewModified > $now)
+	    $now = $rrow->reviewModified + 1;
+
 	// potentially assign review ordinal (requires table locking since
 	// mySQL is stupid)
 	$locked = false;
 	if ($submit && (!$rrow || !$rrow->reviewSubmitted)) {
-	    $q[] = "reviewSubmitted=" . time() . ", reviewNeedsSubmit=0";
+	    $q[] = "reviewSubmitted=$now, reviewNeedsSubmit=0";
 	    if (!$rrow || !$rrow->reviewOrdinal) {
 		$result = $Conf->qe("lock tables PaperReview write", $while);
 		if (!$result)
@@ -409,8 +416,13 @@ class ReviewForm {
 	    && $req["version"] > defval($rrow, "reviewEditVersion")
 	    && $Conf->sversion >= 17)
 	    $q[] = "reviewEditVersion=" . $req["version"];
-	if (!$rrow || $different)
-	    $q[] = "reviewModified=" . time();
+	if (!$rrow || $different) {
+	    $q[] = "reviewModified=" . $now;
+	    // do not notify on updates within 3 hours
+	    if ($submit && (!$rrow || !$rrow->reviewNotified
+			    || $rrow->reviewNotified + 10800 < $now))
+		$q[] = "reviewNotified=" . $now;
+	}
 
 	// actually affect database
 	if ($rrow) {
