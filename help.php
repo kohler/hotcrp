@@ -807,7 +807,7 @@ weights low expertise just slightly less than high expertise.</p>
     _alternateRow("", "greatest(<em>e</em>, <em>e</em>, ...)", "Maximum");
     _alternateRow("", "least(<em>e</em>, <em>e</em>, ...)", "Minimum");
     _alternateRow("", "null", "The blank value");
-    _alternateRow("Tags", "tag:<em>tagname</em>", "True if this paper has tag <em>tagname</em>");
+    _alternateRow("Tags", "tag:<em>tagname</em>", "True if this paper has tag <em>tagname</em> (returns 0 or 1)");
     _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or blank if this paper doesn't have that tag");
     _alternateRow("Review scores", "overall-merit", "This paper's Overall merit score");
     _alternateRow("", "OveMer", "Abbreviations are also accepted");

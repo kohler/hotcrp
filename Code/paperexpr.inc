@@ -279,7 +279,7 @@ class PaperExpr {
 	    $t_tagpos = self::_addgtemp($state, "strpos($t_tags, \" $e_tag#\")", "tagpos $e[2]");
 	    $t_tagval = self::_addgtemp($state, "($t_tagpos === false ? null : (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . "))", "tagval $e[2]");
 	    if ($op == "tag")
-		return "($t_tagval === 0 ? true : $t_tagval)";
+		return "($t_tagval !== null)";
 	    else
 		return $t_tagval;
 	}
