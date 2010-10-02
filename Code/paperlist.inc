@@ -1831,6 +1831,10 @@ class PaperListField {
 	return $f;
     }
 
+    function _formula_compar($a, $b) {
+	return strcasecmp($a->name, $b->name);
+    }
+
     function initialize() {
 	global $paperListFields, $paperListFolds, $paperListFormulas,
 	    $reviewScoreNames, $Conf;
@@ -1895,6 +1899,7 @@ class PaperListField {
 		$paperListFormulas[$fid] = $row;
 		++$nextfold;
 	    }
+	    uasort($paperListFormulas, array("PaperListField", "_formula_compar"));
 	}
     }
 

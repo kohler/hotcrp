@@ -49,8 +49,7 @@ class PaperExprCompileState {
 
 class PaperExpr {
 
-    const UNARY_OPERATOR_REGEX = '/\A[-+!]/';
-    const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%\&^\|]|[=!]=|\*\*?|\&\&|\|\||<[<=]?|>[>=]?)/';
+    const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|[=!]=|<[<=]?|>[>=]?)/';
 
     function parse($t, $noErrors = false) {
 	global $Conf;
@@ -307,13 +306,21 @@ class PaperExpr {
 
 	if (count($e) == 3 && isset($paperExprOperators["u$op"])) {
 	    $t = self::_addltemp($state, self::_compile($state, $e[2]));
-	    return "($t === null ? $t : $op$t)";
+	    if ($op == "!")
+		return "$op$t";
+	    else
+		return "($t === null ? $t : $op$t)";
 	}
 
 	if (count($e) == 4 && isset($paperExprOperators[$op])) {
 	    $t1 = self::_addltemp($state, self::_compile($state, $e[2]));
 	    $t2 = self::_addltemp($state, self::_compile($state, $e[3]));
-	    return "($t1 === null || $t2 === null ? null : $t1 $op $t2)";
+	    if ($op == "&&")
+		return "($t1 === null || ($t1 && $t2 === null) ? null : $t1 $op $t2)";
+	    else if ($op == "||")
+		return "($t1 === null && $t2 === null ? null : $t1 $op $t2)";
+	    else
+		return "($t1 === null || $t2 === null ? null : $t1 $op $t2)";
 	}
 
 	if (count($e) == 3 && $op == "min")

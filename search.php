@@ -1093,11 +1093,7 @@ if ($pl) {
     // Formulas group
     if (count($paperListFormulas)) {
 	displayOptionText("<div style='padding-top:2ex'><strong>Formulas</strong> <span class='barsep'>&nbsp;|&nbsp;</span> <a href=\"" . selfHref(array("tab" => "formulas")) . "\" onclick='return fold(\"searchform\",0,3)'>Edit formulas</a></div>", 3);
-	$formulas = array();
 	foreach ($paperListFormulas as $formula)
-	    $formulas[strtolower($formula->name)] = $formula;
-	ksort($formulas);
-	foreach ($formulas as $formula)
 	    displayOptionCheckbox("formula" . $formula->formulaId, 3, htmlspecialchars($formula->name));
     } else if ($Me->isPC && $Conf->sversion >= 32)
 	displayOptionText("<div style='padding-top:2ex'><strong><a href=\"" . selfHref(array("tab" => "formulas")) . "\" onclick='return fold(\"searchform\",0,3)'>Add formulas</a></strong></div>", 3);
@@ -1245,28 +1241,18 @@ if ($pl && $pl->count > 0) {
 	    if (isset($_REQUEST[$x]))
 		echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />";
 
-	$fs = array();
-	$ftexts = array();
-	foreach ($paperListFormulas as $fdef)
-	    $fs[$fdef->formulaId] = strtolower($fdef->name);
-	asort($fs);
-	$fs["n"] = "(New formula)";
-	$fold = 10;
-
 	echo "<p style='width:44em;margin-top:0'><strong>Formulas</strong> are calculated
 from review statistics.  For example, &ldquo;sum(OveMer)&rdquo;
-would display the sum of a paper's Overall merit scores.
+would display the sum of a paper&rsquo;s Overall merit scores.
 <a class='hint' href='help$ConfSiteSuffix?t=formulas' target='_blank'>Learn more</a></p>";
 
 	echo "<table id='formuladefinitions'><thead><tr>",
 	    "<th></th><th class='f-c'>Name</th><th class='f-c'>Definition</th>",
 	    "</tr></thead><tbody>";
 	$any = 0;
-	foreach ($fs as $formulaId => $name) {
-	    if ($formulaId == "n")
-		$fdef = (object) array("formulaId" => "n", "name" => "", "expression" => "", "createdBy" => 0);
-	    else
-		$fdef = $paperListFormulas[$formulaId];
+	$fs = $paperListFormulas;
+	$fs["n"] = (object) array("formulaId" => "n", "name" => "", "expression" => "", "createdBy" => 0);
+	foreach ($fs as $formulaId => $fdef) {
 	    $name = defval($_REQUEST, "name_$formulaId", $fdef->name);
 	    $expression = defval($_REQUEST, "expression_$formulaId", $fdef->expression);
 	    $disabled = ($Me->privChair || $fdef->createdBy > 0 ? "" : " disabled='disabled'");
