@@ -656,11 +656,13 @@ class PaperList extends BaseList {
 	$aus = array();
 	if ($full) {
 	    $lastaff = "";
+	    $anyaff = false;
 	    $affaus = array();
 	    foreach ($row->authorTable as $au) {
 		if ($au[3] != $lastaff && count($aus)) {
 		    $affaus[] = array($aus, $lastaff);
 		    $aus = array();
+		    $anyaff = $anyaff || ($au[3] != "");
 		}
 		$lastaff = $au[3];
 		$n = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $au[2];
@@ -672,6 +674,8 @@ class PaperList extends BaseList {
 		$affaus[] = array($aus, $lastaff);
 	    foreach ($affaus as &$ax) {
 		$aff = htmlspecialchars($ax[1]);
+		if ($aff == "" && $anyaff)
+		    $aff = "unaffiliated";
 		if ($highlight !== "")
 		    $aff = highlightMatch($highlight, $aff);
 		$ax = commajoin($ax[0]) . ($aff ? " ($aff)" : "");
