@@ -776,11 +776,11 @@ foreach ($pcm as $id => $p) {
 	$c .= "0 reviews";
     else {
 	$c .= "<a href=\"search$ConfSiteSuffix?q=re:"
-	    . htmlspecialchars($p->email)
+	    . urlencode($p->email)
 	    . "\">" . plural($nreviews[$id], "review") . "</a>";
 	if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
 	    $c .= "&nbsp; (<a href=\"search$ConfSiteSuffix?q=pri:"
-		. htmlspecialchars($p->email)
+		. urlencode($p->email)
 		. "\">" . $nprimary[$id] . " primary</a>)";
     }
     $c .= "</td></tr>";
