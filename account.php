@@ -98,7 +98,9 @@ function createUser(&$tf, $newProfile) {
 	} else if (isset($Opt["ldapLogin"])) {
 	    if ($_REQUEST["uemail"] == "")
 		return tfError($tf, "newUsername", "Not a valid LDAP username.");
-	} else if (!validateEmail($_REQUEST["uemail"]))
+	} else if ($_REQUEST["uemail"] == "")
+	    return tfError($tf, "uemail", "You must supply an email address.");
+	else if (!validateEmail($_REQUEST["uemail"]))
 	    return tfError($tf, "uemail", "&ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo; is not a valid email address.");
     }
     if (isset($_REQUEST["preferredEmail"]) && !validateEmail($_REQUEST["preferredEmail"]))
