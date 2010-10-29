@@ -1645,6 +1645,14 @@ class PaperTable {
 	return $empty;
     }
 
+    function _privilegeMessage() {
+	global $Conf;
+	$a = "<a href=\"" . selfHref(array("forceShow" => 0)) . "\">";
+	return $a . $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg")
+	    . "</a>&nbsp;You have used administrator privileges to view and edit "
+	    . "reviews for this paper. (" . $a . "Unprivileged view</a>)";
+    }
+
     function paptabEndWithReviews() {
 	global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow, $linkExtra;
 	if (!$rf)
@@ -1652,10 +1660,7 @@ class PaperTable {
 	$prow = $this->prow;
 
 	if ($forceShow && !$Me->canViewReview($prow, null, $fakeWhyNotView, true))
-	    $this->_paptabSepContaining("<div class='inpapcc'>"
-		. "You have used administrator privileges to view and edit "
-		. "reviews for this paper. (<a href=\"" . selfHref(array("forceShow" => 0)) . "\">Unprivileged view</a>)"
-		. "</div>");
+	    $this->_paptabSepContaining("<div class='inpapcc'>" . $this->_privilegeMessage() . "</div>");
 
 	$empty = $this->_paptabReviewLinks(true, null, "<div class='hint'>There are no reviews or comments for you to view.</div>");
 	if ($empty)
@@ -1745,7 +1750,7 @@ class PaperTable {
 	if (!$this->rrow && $this->prow->reviewType <= 0)
 	    $msgs[] = "You haven&rsquo;t been assigned to review this paper, but you can review it anyway.";
 	if ($forceShow && !$viewall) {
-	    $msgs[] = "You have used administrator privileges to view and edit reviews for this paper. (<a href=\"" . selfHref(array("forceShow" => 0)) . "\">Unprivileged view</a>)";
+	    $msgs[] = $this->_privilegeMessage();
 	} else if (!$viewall && isset($whyNot["reviewNotComplete"])
 		   && ($Me->isPC || $Conf->setting("extrev_view"))) {
 	    $nother = 0;
