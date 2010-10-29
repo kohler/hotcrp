@@ -1397,4 +1397,44 @@ $blind\n";
 	    return 0;
     }
 
+
+    function reviewFlowEntry($contact, $rrow, $trclass) {
+	// See also CommentView::commentFlowEntry
+	global $ConfSiteSuffix, $Conf;
+	$barsep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+	$a = "<a href='paper$ConfSiteSuffix?p=$rrow->paperId#review" . unparseReviewOrdinal($rrow) . "'>";
+	$t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a
+	    . $Conf->cacheableImage("review24.png", "[Review]", null, "dlimg")
+	    . "</a></td><td class='pl_activityid'>"
+	    . $a . "#$rrow->paperId</a></td><td class='pl_activitymain'><small>"
+	    . $a . htmlspecialchars($rrow->shortTitle);
+	if (strlen($rrow->shortTitle) != strlen($rrow->title))
+	    $t .= "...";
+	$t .= "</a>";
+	if ($contact->canViewReviewerIdentity($rrow, $rrow, true))
+	    $t .= $barsep . "<span class='hint'>review by</span> " . contactHtml($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
+	$t .= $barsep . "<span class='hint'>submitted</span> " . $Conf->parseableTime($rrow->reviewSubmitted, false);
+	$t .= "</small><br /><a class='q'" . substr($a, 3);
+
+	$revViewScore = $contact->viewReviewFieldsScore($rrow, $rrow);
+	if ($rrow->reviewSubmitted) {
+	    $t .= "Review #" . unparseReviewOrdinal($rrow) . " submitted";
+	    $xbarsep = $barsep;
+	} else
+	    $xbarsep = "";
+	foreach ($this->fieldOrder as $field) {
+	    if ($this->authorView[$field] <= $revViewScore
+		|| !$rrow->$field)
+		continue;
+	    if (isset($this->options[$field])) {
+		$t .= $xbarsep . htmlspecialchars($this->shortName[$field])
+		    . "&nbsp;<span class='sc" . $rrow->$field . "'>"
+		    . $this->unparseOption($field, $rrow->$field) . "</span>";
+		$xbarsep = $barsep;
+	    }
+	}
+
+	return $t . "</a></td></tr>";
+    }
+
 }

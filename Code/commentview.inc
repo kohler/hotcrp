@@ -273,33 +273,8 @@ has passed.  Please keep the response short and to the point",
     }
 
 
-    function commentFlowQuery($contact, $t0, $limit, $offset) {
-	$q = "select PaperComment.*,
-		substring(PaperComment.comment from 1 for 300) as shortComment,
-		Paper.title,
-		substring(Paper.title from 1 for 80) as shortTitle,
-		Paper.timeSubmitted,
-		Paper.timeWithdrawn,
-		ContactInfo.firstName as reviewFirstName,
-		ContactInfo.lastName as reviewLastName,
-		ContactInfo.email as reviewEmail,
-		PaperConflict.conflictType,
-		MyPaperReview.reviewType as myReviewType,
-		MyPaperReview.reviewSubmitted as myReviewSubmitted,
-		MyPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit
-		from PaperComment
-		join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
-		join Paper on (Paper.paperId=PaperComment.paperId)
-		left join PaperConflict on (PaperConflict.paperId=PaperComment.paperId and PaperConflict.contactId=$contact->contactId)
-		left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperComment.paperId and MyPaperReview.contactId=$contact->contactId)
-		where timeModified>=$t0
-		order by timeModified desc, commentId desc";
-	if ($limit)
-	    $q .= " limit $limit" . ($offset ? " offset $offset" : "");
-	return $q;
-    }
-
     function commentFlowEntry($contact, $crow, $trclass) {
+	// See also ReviewForm::reviewFlowEntry
 	global $ConfSiteSuffix, $Conf;
 	$a = "<a href='paper$ConfSiteSuffix?p=$crow->paperId#comment$crow->commentId'>";
 	$t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a

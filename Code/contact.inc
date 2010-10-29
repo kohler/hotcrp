@@ -938,6 +938,15 @@ class Contact {
 	return false;
     }
 
+    function canViewCommentReviewWheres() {
+	global $Conf;
+	if ($this->privChair
+	    || ($this->isPC && $Conf->setting("pc_seeallrev") > 0))
+	    return array();
+	else
+	    return array("(PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " or MyPaperReview.reviewId is not null)");
+    }
+
 
     function amPaperAuthor($paperId, $prow = null) {
 	global $Conf;
