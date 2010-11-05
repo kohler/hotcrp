@@ -68,11 +68,16 @@ if (isset($_REQUEST["badpairs"]))
 // score selector
 $scoreselector = array();
 $rf = reviewForm();
-if (in_array("overAllMerit", $rf->fieldOrder))
-    $scoreselector["overAllMerit"] = htmlspecialchars($rf->shortName["overAllMerit"]);
+if (in_array("overAllMerit", $rf->fieldOrder)) {
+    $scoreselector["+overAllMerit"] = "high " . htmlspecialchars($rf->shortName["overAllMerit"]) . " scores";
+    $scoreselector["-overAllMerit"] = "low " . htmlspecialchars($rf->shortName["overAllMerit"]) . " scores";
+}
 foreach ($rf->fieldOrder as $field)
-    if (!isset($scoreselector[$field]) && isset($rf->options[$field]))
-	$scoreselector[$field] = htmlspecialchars($rf->shortName[$field]);
+    if (!isset($scoreselector[$field]) && isset($rf->options[$field])) {
+	$scoreselector["+$field"] = "high " . htmlspecialchars($rf->shortName[$field]) . " scores";
+	$scoreselector["-$field"] = "low " . htmlspecialchars($rf->shortName[$field]) . " scores";
+    }
+$scoreselector["x"] = "(no score preference)";
 
 $Error = array();
 
@@ -262,16 +267,20 @@ function doAssign() {
     // get preferences
     if (($atype == "lead" || $atype == "shepherd")
 	&& isset($_REQUEST["${atype}score"])
-	&& isset($scoreselector[$_REQUEST["${atype}score"]]))
+	&& isset($scoreselector[$_REQUEST["${atype}score"]])) {
 	$score = $_REQUEST["${atype}score"];
-    else
-	$score = "overAllMerit";
+	if ($score == "x")
+	    $score = "1";
+	else
+	    $score = "PaperReview." . substr($score, 1);
+    } else
+	$score = "PaperReview.overAllMerit";
     $result = $Conf->qe("select Paper.paperId, PCMember.contactId,
 	coalesce(PaperConflict.conflictType, 0) as conflictType,
 	coalesce(PaperReviewPreference.preference, 0) as preference,
 	coalesce(PaperReview.reviewType, 0) as reviewType,
 	coalesce(PaperReview.reviewSubmitted, 0) as reviewSubmitted,
-	coalesce(PaperReview.$score, 0) as reviewScore,
+	coalesce($score, 0) as reviewScore,
 	topicInterestScore
 	from Paper join PCMember
 	left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PCMember.contactId=PaperConflict.contactId)
@@ -293,7 +302,7 @@ function doAssign() {
 		$prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
 	}
     } else {
-	$scoredir = (defval($_REQUEST, "${atype}scoredir", "h") == "l" ? -1 : 1);
+	$scoredir = (substr(defval($_REQUEST, "${atype}score", "x"), 0, 1) == "-" ? -1 : 1);
 	// First, collect score extremes
 	$scoreextreme = array();
 	$rows = array();
@@ -752,16 +761,11 @@ doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review prefe
 echo "<br />\n";
 
 doRadio('a', 'lead', 'Assign discussion lead from reviewers, preferring&nbsp; ');
-doSelect('leadscoredir', array("h" => "high", "l" => "low"));
-echo "&nbsp; ";
 doSelect('leadscore', $scoreselector);
-echo "&nbsp; scores<br />\n";
+echo "<br />\n";
 
 doRadio('a', 'shepherd', 'Assign shepherd from reviewers, preferring&nbsp; ');
-doSelect('shepherdscoredir', array("h" => "high", "l" => "low"));
-echo "&nbsp; ";
 doSelect('shepherdscore', $scoreselector);
-echo "&nbsp; scores";
 
 echo "<div class='g'></div>", divClass("clear");
 doRadio('a', 'clear', 'Clear all &nbsp;');
