@@ -293,17 +293,32 @@ function doAssign() {
 		$prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
 	}
     } else {
-	$scoredir = (defval($_REQUEST, "${atype}scoredir", "h") == "l" ? -50 : 50);
+	$scoredir = (defval($_REQUEST, "${atype}scoredir", "h") == "l" ? -1 : 1);
+	// First, collect score extremes
+	$scoreextreme = array();
+	$rows = array();
 	while (($row = edb_orow($result))) {
 	    $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
 	    if ($row->conflictType > 0 || $row->reviewType == 0
 		|| $row->reviewSubmitted == 0 || $row->reviewScore == 0)
-		$prefs[$row->contactId][$row->paperId] = -1000001;
-	    else
-		$prefs[$row->contactId][$row->paperId] = max($row->reviewScore * $scoredir + $row->preference + ($row->topicInterestScore / 100), -1000000);
+		/* ignore row */;
+	    else {
+		if (!isset($scoreextreme[$row->paperId])
+		    || $scoredir * $row->reviewScore > $scoredir * $scoreextreme[$row->paperId])
+		    $scoreextreme[$row->paperId] = $row->reviewScore;
+		$rows[] = $row;
+	    }
+	}
+	// Then, collect preferences; ignore score differences farther
+	// than 1 score away from the relevant extreme
+	foreach ($rows as $row) {
+	    $scoredifference = $scoredir * ($row->reviewScore - $scoreextreme[$row->paperId]);
+	    if ($scoredifference >= -1)
+		$prefs[$row->contactId][$row->paperId] = max($scoredifference * 1001 + max(min($row->preference, 1000), -1000) + ($row->topicInterestScore / 100), -1000000);
 	}
 	$badpairs = array();	// bad pairs only relevant for reviews,
 				// not discussion leads or shephers
+	unset($rows);		// don't need the memory any more
     }
 
     // sort preferences
