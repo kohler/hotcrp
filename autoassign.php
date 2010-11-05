@@ -278,11 +278,12 @@ function doAssign() {
 		$prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
 	}
     } else {
+	$scoredir = (defval($_REQUEST, "${atype}scoredir", "h") == "l" ? -50 : 50);
 	while (($row = edb_orow($result))) {
 	    if ($row->conflictType > 0 || $row->reviewType == 0)
 		$prefs[$row->contactId][$row->paperId] = -1000001;
 	    else
-		$prefs[$row->contactId][$row->paperId] = max($row->overAllMerit * 50 + $row->preference + ($row->topicInterestScore / 100), -1000000);
+		$prefs[$row->contactId][$row->paperId] = max($row->overAllMerit * $scoredir + $row->preference + ($row->topicInterestScore / 100), -1000000);
 	}
 	$badpairs = array();	// bad pairs only relevant for reviews,
 				// not discussion leads or shephers
@@ -721,10 +722,14 @@ echo "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"
 doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');
 echo "<br />\n";
 
-doRadio('a', 'lead', 'Assign discussion lead from reviewers, preferring high scores');
+doRadio('a', 'lead', 'Assign discussion lead from reviewers, preferring&nbsp; ');
+doSelect('leadscoredir', array("h" => "high", "l" => "low"));
+echo "&nbsp; scores";
 echo "<br />\n";
 
-doRadio('a', 'shepherd', 'Assign shepherd from reviewers, preferring high scores');
+doRadio('a', 'shepherd', 'Assign shepherd from reviewers, preferring&nbsp; ');
+doSelect('shepherdscoredir', array("h" => "high", "l" => "low"));
+echo "&nbsp; scores";
 
 echo "<div class='g'></div>", divClass("clear");
 doRadio('a', 'clear', 'Clear all &nbsp;');
