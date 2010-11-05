@@ -170,11 +170,13 @@ function doAssign() {
     if (!checkRequest($atype, $reviewtype, false))
 	return false;
 
-    // fetch PC members, initialize preferences arrays
+    // fetch PC members, initialize preferences and results arrays
     $pcm = pcMembers();
     $prefs = array();
     foreach ($pcm as $pc)
 	$prefs[$pc->contactId] = array();
+    $assignments = array();
+    $assignprefs = array();
 
     // choose PC members to use for assignment
     if ($_REQUEST["pctyp"] == "sel") {
@@ -192,8 +194,6 @@ function doAssign() {
     if ($atype == "prefconflict") {
 	$papers = array_fill_keys($papersel, 1);
 	$result = $Conf->qe("select paperId, contactId, preference from PaperReviewPreference where preference<=-100", "while fetching preferences");
-	$assignments = array();
-	$assignprefs = array();
 	while (($row = edb_row($result))) {
 	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
 		continue;
@@ -219,8 +219,6 @@ function doAssign() {
 	else if ($reviewtype === "lead" || $reviewtype === "shepherd")
 	    $q = "select paperId, ${reviewtype}ContactId from Paper where ${reviewtype}ContactId!=0";
 	$result = $Conf->qe($q, "while checking clearable assignments");
-	$assignments = array();
-	$assignprefs = array();
 	while (($row = edb_row($result))) {
 	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
 		continue;
@@ -273,6 +271,7 @@ function doAssign() {
 
     if ($atype == "rev" || $atype == "revadd") {
 	while (($row = edb_orow($result))) {
+	    $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
 	    if ($row->conflictType > 0 || $row->reviewType > 0)
 		$prefs[$row->contactId][$row->paperId] = -1000001;
 	    else
@@ -281,6 +280,7 @@ function doAssign() {
     } else {
 	$scoredir = (defval($_REQUEST, "${atype}scoredir", "h") == "l" ? -50 : 50);
 	while (($row = edb_orow($result))) {
+	    $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
 	    if ($row->conflictType > 0 || $row->reviewType == 0
 		|| $row->reviewSubmitted == 0)
 		$prefs[$row->contactId][$row->paperId] = -1000001;
@@ -319,8 +319,6 @@ function doAssign() {
 
     // now, loop forever
     $pcids = array_keys($pcm);
-    $assignments = array();
-    $assignprefs = array();
     $progress = false;
     while (count($pcm)) {
 	// choose a pc member at random, equalizing load
@@ -346,7 +344,6 @@ function doAssign() {
 		if (!isset($assignments[$pid]))
 		    $assignments[$pid] = array();
 		$assignments[$pid][] = $pc;
-		$assignprefs["$pid:$pc"] = round($pref);
 		$prefs[$pc][$pid] = -1000001;
 		$papers[$pid]--;
 		$load[$pc]++;
