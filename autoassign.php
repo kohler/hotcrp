@@ -257,6 +257,7 @@ function doAssign() {
 	coalesce(PaperConflict.conflictType, 0) as conflictType,
 	coalesce(PaperReviewPreference.preference, 0) as preference,
 	coalesce(PaperReview.reviewType, 0) as reviewType,
+	coalesce(PaperReview.reviewSubmitted, 0) as reviewSubmitted,
 	coalesce(PaperReview.overAllMerit, 0) as overAllMerit,
 	topicInterestScore
 	from Paper join PCMember
@@ -280,7 +281,8 @@ function doAssign() {
     } else {
 	$scoredir = (defval($_REQUEST, "${atype}scoredir", "h") == "l" ? -50 : 50);
 	while (($row = edb_orow($result))) {
-	    if ($row->conflictType > 0 || $row->reviewType == 0)
+	    if ($row->conflictType > 0 || $row->reviewType == 0
+		|| $row->reviewSubmitted == 0)
 		$prefs[$row->contactId][$row->paperId] = -1000001;
 	    else
 		$prefs[$row->contactId][$row->paperId] = max($row->overAllMerit * $scoredir + $row->preference + ($row->topicInterestScore / 100), -1000000);
