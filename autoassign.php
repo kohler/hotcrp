@@ -304,6 +304,13 @@ function doAssign() {
 	while (($row = edb_row($result)))
 	    if (isset($papers[$row[0]]))
 		$papers[$row[0]] -= $row[1];
+    } else if ($atype == "lead" || $atype == "shepherd") {
+	$papers = array();
+	$xpapers = array_fill_keys($papersel, 1);
+	$result = $Conf->qe("select paperId from Paper where ${atype}ContactId=0", "while selecting reviews");
+	while (($row = edb_row($result)))
+	    if (isset($xpapers[$row[0]]))
+		$papers[$row[0]] = 1;
     } else
 	$papers = array_fill_keys($papersel, 1);
 
