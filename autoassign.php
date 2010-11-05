@@ -65,6 +65,15 @@ if (isset($_REQUEST["badpairs"]))
 	    $badpairs[$_REQUEST["bpb$i"]][$_REQUEST["bpa$i"]] = 1;
 	}
 
+// score selector
+$scoreselector = array();
+$rf = reviewForm();
+if (in_array("overAllMerit", $rf->fieldOrder))
+    $scoreselector["overAllMerit"] = htmlspecialchars($rf->shortName["overAllMerit"]);
+foreach ($rf->fieldOrder as $field)
+    if (!isset($scoreselector[$field]) && isset($rf->options[$field]))
+	$scoreselector[$field] = htmlspecialchars($rf->shortName[$field]);
+
 $Error = array();
 
 
@@ -164,7 +173,7 @@ function noBadPair($pc, $pid, $prefs) {
 }
 
 function doAssign() {
-    global $Conf, $ConfSiteSuffix, $papersel, $pcsel, $assignments, $assignprefs, $badpairs;
+    global $Conf, $ConfSiteSuffix, $papersel, $pcsel, $assignments, $assignprefs, $badpairs, $scoreselector;
 
     // check request
     if (!checkRequest($atype, $reviewtype, false))
@@ -251,12 +260,18 @@ function doAssign() {
     }
 
     // get preferences
+    if (($atype == "lead" || $atype == "shepherd")
+	&& isset($_REQUEST["${atype}score"])
+	&& isset($scoreselector[$_REQUEST["${atype}score"]]))
+	$score = $_REQUEST["${atype}score"];
+    else
+	$score = "overAllMerit";
     $result = $Conf->qe("select Paper.paperId, PCMember.contactId,
 	coalesce(PaperConflict.conflictType, 0) as conflictType,
 	coalesce(PaperReviewPreference.preference, 0) as preference,
 	coalesce(PaperReview.reviewType, 0) as reviewType,
 	coalesce(PaperReview.reviewSubmitted, 0) as reviewSubmitted,
-	coalesce(PaperReview.overAllMerit, 0) as overAllMerit,
+	coalesce(PaperReview.$score, 0) as reviewScore,
 	topicInterestScore
 	from Paper join PCMember
 	left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PCMember.contactId=PaperConflict.contactId)
@@ -282,10 +297,10 @@ function doAssign() {
 	while (($row = edb_orow($result))) {
 	    $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
 	    if ($row->conflictType > 0 || $row->reviewType == 0
-		|| $row->reviewSubmitted == 0)
+		|| $row->reviewSubmitted == 0 || $row->reviewScore == 0)
 		$prefs[$row->contactId][$row->paperId] = -1000001;
 	    else
-		$prefs[$row->contactId][$row->paperId] = max($row->overAllMerit * $scoredir + $row->preference + ($row->topicInterestScore / 100), -1000000);
+		$prefs[$row->contactId][$row->paperId] = max($row->reviewScore * $scoredir + $row->preference + ($row->topicInterestScore / 100), -1000000);
 	}
 	$badpairs = array();	// bad pairs only relevant for reviews,
 				// not discussion leads or shephers
@@ -723,11 +738,14 @@ echo "<br />\n";
 
 doRadio('a', 'lead', 'Assign discussion lead from reviewers, preferring&nbsp; ');
 doSelect('leadscoredir', array("h" => "high", "l" => "low"));
-echo "&nbsp; scores";
-echo "<br />\n";
+echo "&nbsp; ";
+doSelect('leadscore', $scoreselector);
+echo "&nbsp; scores<br />\n";
 
 doRadio('a', 'shepherd', 'Assign shepherd from reviewers, preferring&nbsp; ');
 doSelect('shepherdscoredir', array("h" => "high", "l" => "low"));
+echo "&nbsp; ";
+doSelect('shepherdscore', $scoreselector);
 echo "&nbsp; scores";
 
 echo "<div class='g'></div>", divClass("clear");
