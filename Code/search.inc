@@ -360,6 +360,30 @@ class PaperSearch {
 	return $a;
     }
 
+    function _reviewerMatcher($word, $quoted) {
+	if (!$quoted && ($word == "" || strcasecmp($word, "pc") == 0))
+	    return array_keys(pcMembers());
+	else if (!$quoted && strcasecmp($word, "me") == 0)
+	    return array($this->contactId);
+	else if (!$quoted && $this->amPC && count(($pctags = pcTags()))) {
+	    $negtag = $word[0] == "-";
+	    $tag = $negtag ? substr($word, 1) : $word;
+	    if (isset($pctags[$tag])) {
+		$ids = self::_pcContactIdsWithTag($tag);
+		if ($negtag) {
+		    $this->contactmatch[] = "\2contactId" . self::_sqlNumericSet($ids, true);
+		    $this->contactmatchPC = false;
+		    return "\1" . (count($this->contactmatch) - 1) . "\1";
+		} else
+		    return $ids;
+	    }
+	}
+
+	$this->contactmatch[] = sqlq_for_like($word);
+	$this->contactmatchPC = false;
+	return "\1" . (count($this->contactmatch) - 1) . "\1";
+    }
+
     function _searchReviewer($word, $rtype, &$qt, $quoted) {
 	global $Conf;
 
@@ -384,26 +408,11 @@ class PaperSearch {
 	if ($m[1] == "") {
 	    $type = "nre";
 	    $value = array(null, $m[2]);
-	}
-
-	if (!$type && $m[1] != "" && $this->amPC && !$quoted
-	    && count($pctags = pcTags())) {
-	    $negtag = $m[1][0] == "-";
-	    $tag = $negtag ? substr($m[1], 1) : $m[1];
-	    if (isset($pctags[$tag])) {
-		$this->contactmatch[] = "\2contactId" . self::_sqlNumericSet(self::_pcContactIdsWithTag($tag), $negtag);
-		if ($negtag)
-		    $this->contactmatchPC = false;
-		$type = "re";
-		$value = array("\1" . (count($this->contactmatch) - 1) . "\1", $m[2]);
-	    }
-	}
-
-	if (!$type) {
-	    $this->contactmatch[] = sqlq_for_like($m[0]);
-	    $this->contactmatchPC = false;
+	} else {
 	    $type = "re";
-	    $value = array("\1" . (count($this->contactmatch) - 1) . "\1", $m[2]);
+	    $value = array($this->_reviewerMatcher($m[1], $quoted), $m[2]);
+	    if (is_array($value[0]))
+		$value[0] = self::_sqlNumericSet($value[0]);
 	}
 
 	$nqt = count($qt);
@@ -463,21 +472,7 @@ class PaperSearch {
 	    return;
 	}
 
-	$value = null;
-	$self_search = false;
-	if (!$quoted && ($m[1] == "" || strcasecmp($m[1], "pc") == 0))
-	    $value = array_keys(pcMembers());
-	else if (!$quoted && strcasecmp($m[1], "me") == 0)
-	    $value = array($this->contactId);
-	else if (!$quoted && count(($pctags = pcTags()))
-		 && isset($pctags[$m[1]]))
-	    $value = self::_pcContactIdsWithTag($m[1]);
-	else {
-	    $this->contactmatch[] = sqlq_for_like($word);
-	    $this->contactmatchPC = false;
-	    $value = "\1" . (count($this->contactmatch) - 1) . "\1";
-	}
-
+	$value = $this->_reviewerMatcher($m[1], $quoted);
 	if ($this->privChair
 	    || (is_array($value) && count($value) == 1 && $value[0] == $this->contactId))
 	    $qt[] = new SearchTerm("conflict", 0, array($value, $m[2]));
