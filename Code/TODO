@@ -86,6 +86,15 @@
 
 - In meeting mode PC members can see conflicts. [rtm]
 
+- HotCRP already has the very lovely "conflict" keyword, but I think
+  it might be nice to have two more keywords:
+
+  "pref": e.g., "pref:<0" to find papers where an assigned reviewer
+  has expressed a preference <0
+
+  "topicpref": likewise, but for an assigned reviewer's topic preferences
+  (e.g., "topicpref:<0" for low, "topicprof:>0" for high) [Jeff Mogul]
+
 - it would be really nice if email replies to comments became comments.
   yes, there is an auth/anti-spam issue.  but you know the emails of the
   reviewer set.
