@@ -614,7 +614,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	if ($atype == "clear")
 	    $t = "remove $t";
 	if (isset($conflictedPapers[$pid]))
-	    $t = PaperList::wrapConflict($t);
+	    $t = PaperList::wrapChairConflict($t);
 	$atext[$pid] = "<h6>Proposed $reviewtypename:</h6> $t";
     }
 

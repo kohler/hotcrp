@@ -1051,10 +1051,10 @@ if ($pl) {
 	displayOptionCheckbox("rownum", 1, "Row numbers", array("onchange" => "fold('pl',!this.checked,'rownum')"));
 
     // Reviewers group
-    if ($Me->privChair) {
+    if ($Me->canViewReviewerIdentity(true, null))
 	displayOptionCheckbox("reviewers", 2, "Reviewers");
+    if ($Me->privChair)
 	displayOptionCheckbox("pcconf", 2, "PC conflicts");
-    }
     if ($Me->isPC && $pl->headerInfo["lead"])
 	displayOptionCheckbox("lead", 2, "Discussion leads");
     if ($Me->isPC && $pl->headerInfo["shepherd"])

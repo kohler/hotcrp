@@ -506,7 +506,9 @@ function decorateNumber($n) {
 	return 0;
 }
 
-function preferenceSpan($preference, $topicInterestScore) {
+function preferenceSpan($preference, $topicInterestScore = 0) {
+    if (is_array($preference))
+	list($preference, $topicInterestScore) = $preference;
     if ($preference != 0)
 	$type = ($preference > 0 ? 1 : -1);
     else

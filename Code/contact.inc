@@ -996,6 +996,13 @@ class Contact {
 	    $rrow_contactId = $rrow->reviewContactId;
 	else if ($rrow && isset($rrow->contactId))
 	    $rrow_contactId = $rrow->contactId;
+	// If $prow === true, be as permissive as possible: return true
+	// iff there could exist a paper for which canViewReviewerIdentity
+	// is true.
+	if ($prow === true)
+	    $prow = (object) array("conflictType" => 0,
+			"myReviewType" => ($this->amReviewer() ? 1 : 0),
+			"myReviewSubmitted" => 1);
 	if (($this->privChair && $forceShow)
 	    || ($rrow && $rrow_contactId == $this->contactId)
 	    || ($rrow && $this->ownReview($rrow))

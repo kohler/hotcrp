@@ -151,15 +151,14 @@ class PaperList extends BaseList {
 		$queryOptions["topics"] = 1;
 	    break;
 	case self::FIELD_ALL_REVIEWER_NAMES:
-	    if (!$this->contact->privChair)
-		return false;
-	    $queryOptions["reviewList"] = 1;
-	    break;
 	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
-	    if (!$this->contact->privChair)
+	    if (!$this->contact->canViewReviewerIdentity(true, null))
 		return false;
-	    if (!$folded)
+	    if ($fieldId == self::FIELD_ALL_REVIEWER_NAMES || !$folded) {
 		$queryOptions["reviewList"] = 1;
+		if ($this->contact->privChair)
+		    $queryOptions["allReviewerPreference"] = $queryOptions["topics"] = 1;
+	    }
 	    break;
 	case self::FIELD_REVIEWER_PREFERENCE:
 	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
@@ -698,18 +697,60 @@ class PaperList extends BaseList {
 	}
     }
 
-    function wrapConflict($text) {
+    function wrapChairConflict($text) {
 	return "<span class='fn20'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Override conflicts</a></span><span class='fx20'>$text</span>";
     }
 
+    function maybeConflict($text, $visible) {
+	if ($visible)
+	    return $text;
+	else if ($this->contact->privChair)
+	    return self::wrapChairConflict($text);
+	else
+	    return "";
+    }
+
     function _contentPC($contactId, $visible) {
-	if (!$visible && !$this->contact->privChair)
-	    return "";
 	$pcm = pcMembers();
-	if (!isset($pcm[$contactId]))
+	if (isset($pcm[$contactId]))
+	    return self::maybeConflict(contactNameHtml($pcm[$contactId]), $visible);
+	else
 	    return "";
-	$t = contactNameHtml($pcm[$contactId]);
-	return $visible ? $t : $this->wrapConflict($t);
+    }
+
+    function _rowPreferences($row) {
+	// reviewer preferences
+	$prefs = array();
+	if (isset($row->allReviewerPreference))
+	    foreach (explode(',', $row->allReviewerPreference) as $rp) {
+		$what = explode(' ', $rp);
+		if (count($what) == 2 && $what[1])
+		    $prefs[$what[0]] = $what[1];
+	    }
+	// if conflict, reviewer preference is set to "X"
+	if (isset($row->allConflictType))
+	    foreach (explode(',', $row->allConflictType) as $rp) {
+		$what = explode(' ', $rp);
+		if (count($what) == 2 && $what[1])
+		    $prefs[$what[0]] = false;
+	    }
+	// topic interest scores (except for conflicts)
+	if (isset($row->topicIds) && $row->topicIds != "") {
+	    $topicids = split(" ", $row->topicIds);
+	    foreach (pcMembers() as $pcid => $pc) {
+		$pref = defval($prefs, $pcid, 0);
+		if ($pref !== false) {
+		    $tscore = 0;
+		    foreach ($topicids as $t) {
+			$i = defval($pc->topicInterest, $t, 1);
+			$tscore += ($i == 2 ? 2 : $i - 1);
+		    }
+		    if ($tscore)
+			$prefs[$pcid] = array($pref, $tscore);
+		}
+	    }
+	}
+	return $prefs;
     }
 
     function contentEmpty($fieldId, $row) {
@@ -745,8 +786,52 @@ class PaperList extends BaseList {
 	}
     }
 
+    function _reviewAnalysis($row) {
+	global $ConfSiteSuffix;
+	$ranal = (object) array("completion" => "", "delegated" => false,
+				"needsSubmit" => false, "round" => "",
+				"link1" => "", "link2" => "");
+	if ($row->reviewId) {
+	    $ranal->needsSubmit = !isset($row->reviewSubmitted) || !$row->reviewSubmitted;
+	    if (!$ranal->needsSubmit)
+		$ranal->completion = "Complete";
+	    else if ($row->reviewType == REVIEW_SECONDARY
+		     && $row->reviewNeedsSubmit <= 0) {
+		$ranal->completion = "Delegated";
+		$ranal->delegated = true;
+	    } else if ($row->reviewModified == 0)
+		$ranal->completion = "Not&nbsp;started";
+	    else
+		$ranal->completion = "In&nbsp;progress";
+	    if ($ranal->needsSubmit)
+		$link = "review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs;
+	    else
+		$link = "paper$ConfSiteSuffix?p=" . $row->paperId . $this->paperLinkArgs . "#review" . unparseReviewOrdinal($row);
+	    $ranal->link1 = "<a href=\"$link\">";
+	    $ranal->link2 = "</a>";
+	    if ($row->reviewRound) {
+		$t = defval($Conf->settings["rounds"], $row->reviewRound);
+		$ranal->round = $t ? htmlspecialchars($t) : "?$row->reviewRound?";
+	    }
+	}
+	return $ranal;
+    }
+
+    function _reviewIcon($row, $ranal, $includeLink) {
+	global $reviewTypeName, $Conf;
+	$alt = $reviewTypeName[$row->reviewType] . " review";
+	if ($ranal->needsSubmit)
+	    $alt .= " (" . strtolower($ranal->completion) . ")";
+	$t = $Conf->cacheableImage("_.gif", $alt, $alt, "ass" . $row->reviewType . ($ranal->needsSubmit ? "n" : ""));
+	if ($includeLink)
+	    $t = $ranal->link1 . $t . $ranal->link2;
+	if ($ranal->round)
+	    $t .= "&nbsp;<span class='revround' title='Review round'>" . $ranal->round . "</span>";
+	return $t;
+    }
+
     function content($fieldId, $row, $reviewList) {
-	global $ConfSiteSuffix, $Conf, $reviewTypeName, $reviewScoreNames;
+	global $ConfSiteSuffix, $Conf, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	    $pl = $this->_paperLink($row);
@@ -778,82 +863,51 @@ class PaperList extends BaseList {
 	    $t = contactHtml($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail) . "<br /><small>Last login: ";
 	    return $t . ($row->reviewLastLogin ? $Conf->printableTimeShort($row->reviewLastLogin) : "Never") . "</small>";
 	case self::FIELD_REVIEWER_TYPE:
-	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
-		$this->needSubmitReview++;
-	    if ($row->reviewId) {
-		$a1 = "<a href=\"review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">";
-		$a2 = "</a>&nbsp;";
-		if ($row->reviewSubmitted)
-		    $a2 .= "<span class='rstat'>(Complete)</span>";
-		else if ($row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit <= 0)
-		    $a2 .= "<span class='rstat'>(Delegated)</span>";
-		else if ($row->reviewModified == 0)
-		    $a2 .= "<span class='rstat'>(Not&nbsp;started)</span>";
-		else
-		    $a2 .= "<span class='rstat'>(In&nbsp;progress)</span>";
-	    } else
-		$a1 = $a2 = "";
 	    if ($row->reviewType == REVIEW_PRIMARY)
-		return "$a1<span class='rtype rtype_pri'>Primary</span>$a2";
+		$t = "Primary";
 	    else if ($row->reviewType == REVIEW_SECONDARY)
-		return "$a1<span class='rtype rtype_sec'>Secondary</span>$a2";
+		$t = "Secondary";
 	    else if ($row->reviewType == REVIEW_EXTERNAL)
-		return "$a1<span class='rtype rtype_req'>External</span>$a2";
+		$t = "External";
 	    else if ($row->reviewType)
-		return "$a1<span class='rtype'>Review</span>$a2";
+		$t = "Review";
 	    else if ($row->conflictType >= CONFLICT_AUTHOR)
 		return "<span class='rtype rtype_con'>Author</span>";
 	    else if ($row->conflictType > 0)
 		return "<span class='rtype rtype_con'>Conflict</span>";
 	    else
 		return "";
-	case self::FIELD_REVIEWER_STATUS:
-	    if ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted))
+	    $ranal = $this->_reviewAnalysis($row);
+	    if ($ranal->needsSubmit)
 		$this->needSubmitReview++;
+	    $t = "$ranal->link1<span class='rtype'>$t</span>$ranal->link2";
+	    if ($ranal->completion)
+		$t .= "&nbsp;<span class='rstat'>($ranal->completion)</span>";
+	    return $t;
+	case self::FIELD_REVIEWER_STATUS:
 	    if (!$row->reviewId)
 		return "";
-	    else {
-		if ($row->reviewSubmitted)
-		    return "<a href=\"review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">Complete</a>";
-		else if ($row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit <= 0)
-		    return "Delegated";
-		else if ($row->reviewModified == 0)
-		    return "<strong class='overdue'>Not&nbsp;started</strong>";
-		else
-		    return "<strong class='overdue'>In&nbsp;progress</strong>";
-	    }
-	case self::FIELD_REVIEWER_TYPE_ICON:
-	    $needSubmit = ($row->reviewType > 0 && (!isset($row->reviewSubmitted) || !$row->reviewSubmitted));
-	    if ($needSubmit)
+	    $ranal = $this->_reviewAnalysis($row);
+	    if ($ranal->needsSubmit)
 		$this->needSubmitReview++;
-	    $a1 = $a2 = $a3 = "";
-	    if ($row->reviewId) {
-		$a1 = "<a href=\"review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs . "\">";
-		$a2 = "</a>";
+	    $t = $ranal->completion;
+	    if ($ranal->needsSubmit && !$ranal->delegated)
+		$t = "<strong class='overdue'>$t</strong>";
+	    if (!$ranal->needsSubmit)
+		$t = $ranal->link1 . $t . $ranal->link2;
+	    return $t;
+	case self::FIELD_REVIEWER_TYPE_ICON:
+	    $a1 = $a2 = "";
+	    if ($row->conflictType > 0 && $this->showConflict)
+		return $Conf->cacheableImage("_.gif", "Conflict", "Conflict", "ass-1");
+	    else if ($row->reviewType === null)
+		return $Conf->cacheableImage("_.gif", "", "", "ass0");
+	    else {
+		$ranal = $this->_reviewAnalysis($row);
+		if ($ranal->needsSubmit)
+		    $this->needSubmitReview++;
+		return self::_reviewIcon($row, $ranal, true);
 	    }
-	    if ($row->conflictType > 0 && $this->showConflict) {
-		$alt = "Conflict";
-		$class = "-1";
-	    } else if ($row->reviewType === null) {
-		$alt = "";
-		$class = "0";
-	    } else {
-		$class = $row->reviewType;
-		$alt = $reviewTypeName[$row->reviewType] . " review";
-		if ($needSubmit) {
-		    $class .= "n";
-		    $alt .= " (not complete)";
-		}
-		if (!$row->reviewRound)
-		    /* nada */;
-		else if (($t = defval($Conf->settings["rounds"], $row->reviewRound)))
-		    $a3 = htmlspecialchars($t);
-		else
-		    $a3 = "?$row->reviewRound";
-		if ($a3)
-		    $a3 = "&nbsp;<span class='revround' title='Review round'>" . htmlspecialchars($a3) . "</span>";
-	    }
-	    return $a1 . $Conf->cacheableImage("_.gif", $alt, $alt, "ass$class") . $a2 . $a3;
 	case self::FIELD_REVIEWS_STATUS:
 	    // see also _sortReviewsStatus
 	    if ($row->conflictType > 0 && !$this->contact->privChair
@@ -899,20 +953,21 @@ class PaperList extends BaseList {
 	    return join(", ", $this->rf->webTopicArray($row->topicIds, defval($row, "topicInterest")));
 	case self::FIELD_ALL_REVIEWER_NAMES:
 	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
+	    $prefs = self::_rowPreferences($row);
 	    $n = "";
 	    // see also search.php > getaction == "reviewers"
 	    if (isset($reviewList[$row->paperId])) {
 		foreach ($reviewList[$row->paperId] as $xrow)
 		    if ($xrow->lastName) {
+			$ranal = $this->_reviewAnalysis($xrow);
 			$n .= ($n ? ", " : "");
 			$n .= contactHtml($xrow->firstName, $xrow->lastName);
-			if ($xrow->reviewType == REVIEW_PRIMARY)
-			    $n .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_PRIMARY . ".gif", "Primary");
-			else if ($xrow->reviewType == REVIEW_SECONDARY)
-			    $n .= "&nbsp;" . $Conf->cacheableImage("ass" . REVIEW_SECONDARY . ".gif", "Secondary");
+			if ($xrow->reviewType >= REVIEW_SECONDARY)
+			    $n .= "&nbsp;" . self::_reviewIcon($xrow, $ranal, false);
+			if (($pref = defval($prefs, $xrow->contactId, null)))
+			    $n .= preferenceSpan($pref);
 		    }
-		if (!$this->contact->canViewReviewerIdentity($row, null, true))
-		    $n = $this->wrapConflict($n);
+		$n = self::maybeConflict($n, $this->contact->canViewReviewerIdentity($row, null, true));
 	    }
 	    return $n;
 	case self::FIELD_OPT_PC_CONFLICTS:
@@ -932,34 +987,14 @@ class PaperList extends BaseList {
 	case self::FIELD_DESIRABILITY:
 	    return (isset($row->desirability) ? htmlspecialchars($row->desirability) : "0");
 	case self::FIELD_ALL_PREFERENCES:
-	    $x = array();
-	    foreach (explode(',', $row->allReviewerPreference) as $rp) {
-		$what = explode(' ', $rp);
-		if (count($what) == 2 && $what[1])
-		    $x[$what[0]] = $what[1];
-	    }
-	    foreach (explode(',', $row->allConflictType) as $rp) {
-		$what = explode(' ', $rp);
-		if (count($what) == 2 && $what[1])
-		    $x[$what[0]] = "X";
-	    }
+	    $prefs = self::_rowPreferences($row);
 	    $text = "";
-	    $topicids = split(" ", $row->topicIds);
-	    foreach (pcMembers() as $pc) {
-		$pref = defval($x, $pc->contactId, 0);
-		if ($pref === "X")
-		    continue;
-		$tis = 0;
-		foreach ($topicids as $t)
-		    if (($i = defval($pc->topicInterest, $t, 1)) == 2)
-			$tis += 2;
-		    else
-			$tis += $i - 1;
-		if ($tis || $pref)
+	    foreach (pcMembers() as $pcid => $pc)
+		if (($pref = defval($prefs, $pcid, null))) {
 		    $text .= ($text == "" ? "" : ", ")
 			. contactHtml($pc->firstName, $pc->lastName)
-			. preferenceSpan($pref, $tis);
-	    }
+			. preferenceSpan($pref);
+		}
 	    return $text;
 	case self::FIELD_SCORE:
 	    $scoreidx = $fieldId - self::FIELD_SCORE;
@@ -1426,7 +1461,7 @@ class PaperList extends BaseList {
 	$reviewList = array();
 	if (isset($queryOptions['reviewList'])) {
 	    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
-		reviewSubmitted, reviewModified,
+		reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
 		PaperReview.contactId, lastName, firstName, email
 		from Paper
 		join PaperReview using (paperId)
@@ -1764,7 +1799,7 @@ class PaperList extends BaseList {
 	$reviewList = array();
 	if (isset($queryOptions['reviewList'])) {
 	    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
-		reviewSubmitted, reviewModified,
+		reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
 		PaperReview.contactId, lastName, firstName, email
 		from Paper
 		join PaperReview using (paperId)
