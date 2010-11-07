@@ -773,15 +773,12 @@ td.llentry {
 }
 td.hint {
 	padding: 0 0.5em;
-	font-size: smaller;
-	color: #555555;
 }
 div.hint {
-	font-size: smaller;
 	margin-bottom: 0.5ex;
-	color: #555555;
 }
-span.hint {
+td.hint, div.hint, span.hint,
+.revvis, .revevis {
 	font-size: smaller;
 	color: #555555;
 }
@@ -1765,8 +1762,11 @@ div.revt span.revfn {
 	font-weight: bold;
 	float: left;
 }
-div.revt span.hint {
+.revvis {
 	float: right;
+}
+.revevis {
+	clear: both;
 }
 div.revv {
 	padding: 2px 0 1em 7px;

@@ -228,11 +228,11 @@ class ReviewForm {
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    $c = "<span class='revfn'>" . $n . "</span>";
 	    if ($this->authorView[$field] < -1)
-		$c .= "<span class='hint'>(secret)</span>";
+		$c .= "<div class='revevis'>(secret)</div>";
 	    else if ($this->authorView[$field] < 0)
-		$c .= "<span class='hint'>(shown only to chairs)</span>";
+		$c .= "<div class='revevis'>(shown only to chairs)</div>";
 	    else if ($this->authorView[$field] == 0)
-		$c .= "<span class='hint'>(hidden from authors)</span>";
+		$c .= "<div class='revevis'>(hidden from authors)</div>";
 
 	    $x .= "<div class='revt";
 	    if (isset($ReviewFormError[$field]))
@@ -985,11 +985,11 @@ $blind\n";
 	    }
 	    $c .= "</span>";
 	    if ($this->authorView[$field] < -1)
-		$c .= "<span class='hint'>(secret)</span>";
+		$c .= "<div class='revvis'>(secret)</div>";
 	    else if ($this->authorView[$field] < 0)
-		$c .= "<span class='hint'>(shown only to chairs)</span>";
+		$c .= "<div class='revvis'>(shown only to chairs)</div>";
 	    else if ($this->authorView[$field] == 0)
-		$c .= "<span class='hint'>(hidden from authors)</span>";
+		$c .= "<div class='revvis'>(hidden from authors)</div>";
 
 	    if ($disp & self::WEB_RIGHT)
 		$x .= "  <td class='revce'></td>\n";

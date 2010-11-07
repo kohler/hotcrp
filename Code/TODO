@@ -111,8 +111,6 @@
 
 - comments that can only be seen by chairs [Ernst Biersack/S. Keshav]
 
-- visibility of review fields is too subtle on web form [David Evans]
-
 - An external reviewer can refuse their review using the site, but there is
   no link to explicitly accept the review. [Moses Charikar]
 
