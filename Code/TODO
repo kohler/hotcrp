@@ -12,19 +12,6 @@
   if i receive an email and respond to it, the response will have the same
   level of distribution as the message to which one is responding. [Randy Bush]
 
-- As far as I can tell, after the reviews have been assigned, a PC member
-  who then discovers a conflict (e.g., I just hired the author as an
-  intern) has no way to get HotCRP to record this.  That is, I can set my
-  preference for the paper to -100, but that in itself doesn't seem to
-  cause HotCRP to realize that I now should be treated as conflicted wrt
-  the paper.
-
-  Obviously, one approach is to have the PC members report their conflicts
-  to the PC chair, but it seems like there should be some way to do this
-  in-band.  (If so, this should perhaps not be allowed if the PC member has
-  already been assigned to review the paper -- then the PC chair needs to
-  be explicitly involved.) [Jeff Mogul]
-
 -  1) discussion list during the PC meeting
 
   we created a separate page for the paper discussion list for the meeting,
