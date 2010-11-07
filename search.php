@@ -1061,6 +1061,7 @@ if ($pl) {
 	displayOptionCheckbox("shepherd", 2, "Shepherds");
 
     // Scores group
+    $anyScores = false;
     if (isset($pl->scoreMax)) {
 	$rf = reviewForm();
 	if ($Me->amReviewer() && $_REQUEST["t"] != "a")
@@ -1088,11 +1089,13 @@ if ($pl) {
 		. tagg_select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
 		. "</div>", 3);
 	}
+	$anyScores = count($displayOptions) != $n;
     }
 
     // Formulas group
     if (count($paperListFormulas)) {
-	displayOptionText("<div style='padding-top:2ex'><strong>Formulas</strong> <span class='barsep'>&nbsp;|&nbsp;</span> <a href=\"" . selfHref(array("tab" => "formulas")) . "\" onclick='return fold(\"searchform\",0,3)'>Edit formulas</a></div>", 3);
+	$style = $anyScores ? " style='padding-top:2ex'" : "";
+	displayOptionText("<div$style><strong>Formulas</strong> <span class='barsep'>&nbsp;|&nbsp;</span> <a href=\"" . selfHref(array("tab" => "formulas")) . "\" onclick='return fold(\"searchform\",0,3)'>Edit formulas</a></div>", 3);
 	foreach ($paperListFormulas as $formula)
 	    displayOptionCheckbox("formula" . $formula->formulaId, 3, htmlspecialchars($formula->name));
     } else if ($Me->isPC && $Conf->sversion >= 32)
