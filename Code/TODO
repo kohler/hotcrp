@@ -76,9 +76,9 @@
   offline and then defined a discussion order in HotCRP by listing the
   papers explicitly.) [Stephanie Weirich]
 
-- I was never confident about when emails would be sent for new
-  comments and when they would not be. Especially comments that were
-  visible to authors. [Stephanie Weirich]
+- I could see defining "saved searches", accessible by simple
+  strings, where "search:foo" might be defined as "blah THEN blah
+  THEN blah". / Yes, "saved searches" could be really helpful. [Jeff Mogul]
 
 - In meeting mode PC members can see conflicts. [rtm]
 
