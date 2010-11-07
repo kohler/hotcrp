@@ -708,7 +708,7 @@ class PaperList extends BaseList {
 	$pcm = pcMembers();
 	if (!isset($pcm[$contactId]))
 	    return "";
-	$t = contactNameHtml($contactId);
+	$t = contactNameHtml($pcm[$contactId]);
 	return $visible ? $t : $this->wrapConflict($t);
     }
 
