@@ -2,6 +2,84 @@
 
 - Show PC when authors can see reviews.
 
+- I would like even more expressive searching. Or hierarchical tags.
+  I'd love to create compound tags such as "foo:bar" and be able to
+  search "tag:foo:*". This doesn't seem to work currently. [Stephanie
+  Weirich]
+
+- It would have been useful to have a "mail reviewer" link on the
+  reviews page for communicating with individual reviewers about
+  specific papers. [Stephanie Weirich]
+
+- For chair conflicts I used the review tokens (managed by a third
+  party) to create anonymous reviews for my conflicts. This worked
+  well, for the most part. Except:
+    o I've learned to prepend all searches with "-conflict:weirich" to
+    avoid information leakage from searching. For example, "ovemer:AB"
+    returns a conflicted paper, carefully hiding its score, but I have
+    a good idea what the score is now. Seems like the default should
+    be to exclude conflicted papers from searches, unless I
+    specifically override.
+    o Also, cutting and pasting search results reveals information. I
+    wanted to send a list of my conflicts to another PC member who was
+    helping me out (b/c he couldn't search for them). So I selected the
+    search result and sent him an email. But the extracted text had
+    more information than was shown on the screen.
+    o The default comment notification is PC+externals, but that is a
+    little dangerous because of the tendency to compare papers in
+    comments ("this paper is much better than paper 32!"), and the
+    nontrivial likelihood that an external reviewers would be an
+    author of paper 32. I'd like to be able to change this default to
+    "PC only" (still leaving the option to include externals for each
+    particular message) to be just a little more paranoid.
+  [Stephanie Weirich]
+
+- The only complaint was the treatment of supplementary material and
+  submission options. It is common in our community to submit
+  appendices containing detailed proofs/etc. These are read at the
+  discretion of the reviewers, and due to the length restrictions must
+  be submitted individually. Several reviewers missed that there was
+  additional material available for some of the submissions because
+  they did not see it on the paper's page.  Others missed that some of
+  the papers were submitted in a different category (which uses
+  different evaluation criteria.)  Is there any way to make the
+  supplementary material/submission category more obvious?
+
+  [Related note, did I tell you already that it would help if we could
+  submit additional material in non PDF format?  In particular, some
+  of these supplemental proofs are actually zipfiles of proof
+  assistant scripts.] [Stephanie Weirich]
+
+- a way for the PC members to see the semantics of the colors on the
+  search result page. I told them what tags I was using, but of
+  course, not everyone heard me. [Stephanie Weirich]
+
+- a way to see the distribution of topics for
+  submitted/selected/accepted papers. I computed this information
+  manually, but it would be nice if the system could automatically
+  display the info. [Stephanie Weirich]
+
+- a place to put notes for each paper. I tried using the tags, but my
+  notes got too mixed up with stuff for managing the
+  meeting. [Stephanie Weirich]
+
+- better search support for comments. I can list all papers with
+  reviews by a certain person, but not comments by a certain person. I
+  would expect "comment:weirich" to show all papers that I have
+  commented on. [Stephanie Weirich]
+
+- a way to list the accepted papers w/ authors suitable for posting on
+  the conference website. Did I miss how to do this? [Stephanie
+  Weirich]
+
+- a way to define a random order for paper discussion. (I randomized
+  offline and then defined a discussion order in HotCRP by listing the
+  papers explicitly.) [Stephanie Weirich]
+
+- I was never confident about when emails would be sent for new
+  comments and when they would not be. Especially comments that were
+  visible to authors. [Stephanie Weirich]
+
 - In meeting mode PC members can see conflicts. [rtm]
 
 - it would be really nice if email replies to comments became comments.
