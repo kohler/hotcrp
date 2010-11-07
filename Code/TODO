@@ -98,9 +98,6 @@
 
 - comments that can only be seen by chairs [Ernst Biersack/S. Keshav]
 
-- An external reviewer can refuse their review using the site, but there is
-  no link to explicitly accept the review. [Moses Charikar]
-
 - make sure that refused reviewers do not get emails on comments
 
 - generic (no names, passwords) emails to contact authors should be grouped
