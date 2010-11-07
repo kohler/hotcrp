@@ -16,33 +16,56 @@ function e_value(id, value) {
 	elt.value = value;
 }
 
-var hotcrp_onload = [];
-function hotcrpLoad(servtime, servzone, hr24) {
-    var elt = $$("usertime"), x;
-    function update_local_time(elt, d) {
-	var s, hr;
+setLocalTime = (function () {
+var servoffset = 0, servhr24, showdifference = false;
+function setLocalTime(elt, servtime) {
+    var d, s, hr;
+    if (elt && typeof elt == "string")
+	elt = $$(elt);
+    if (elt && showdifference) {
+	d = new Date(servtime * 1000 + servoffset);
 	s = ["Sun", "Mon", "Tues", "Wednes", "Thurs", "Fri", "Satur"][d.getDay()];
 	s += "day " + d.getDate() + " ";
 	s += ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
 	s += " " + d.getFullYear();
 	hr = d.getHours();
-	s += " " + (hr24 ? hr : ((hr + 11) % 12) + 1);
+	s += " " + (servhr24 ? hr : ((hr + 11) % 12) + 1);
 	s += ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
 	s += ":" + (d.getSeconds() < 10 ? "0" : "") + d.getSeconds();
-	if (!hr24)
+	if (!servhr24)
 	    s += (hr < 12 ? "am" : "pm");
-	elt.innerHTML = "Your local time: " + s;
+	s += " your time";
+	if (elt.tagName.toUpperCase() == "SPAN") {
+	    elt.innerHTML = " (" + s + ")";
+	    elt.style.display = "inline";
+	} else {
+	    elt.innerHTML = s;
+	    elt.style.display = "block";
+	}
     }
-    if (elt && Math.abs) {
-	x = new Date();
-	// print local time if local time is more than 10 minutes off,
-	// or if server time is more than 3 time zones distant
-	if (Math.abs(x.getTime()/1000 - servtime) > 10 * 60
-	    || Math.abs(x.getTimezoneOffset() - servzone) > 3 * 60)
-	    update_local_time(elt, x);
-    }
+}
+setLocalTime.initialize = function (servtime, servzone, hr24) {
+    var now = new Date(), nowgmt = new Date(servtime * 1000), x;
+    servoffset = now.getTime() - servtime * 1000;
+    // hide differences of 10 seconds or less
+    if (Math.abs && (x = Math.abs(now.getSeconds() - nowgmt.getSeconds())) <= 10)
+	servoffset -= x * 1000;
+    servhr24 = hr24;
+    // print local time if local time is more than 10 minutes off,
+    // or if server time is in a different time zone
+    showdifference = Math.abs && (Math.abs(servoffset) > 600000 || Math.abs(now.getTimezoneOffset() - servzone) >= 60);
+};
+return setLocalTime;
+})();
+
+var hotcrp_onload = [];
+function hotcrpLoad() {
     for (x = 0; x < hotcrp_onload.length; ++x)
 	hotcrp_onload[x]();
+}
+hotcrpLoad.time = function (servtime, servzone, hr24) {
+    setLocalTime.initialize(servtime, servzone, hr24);
+    setLocalTime("usertime", servtime);
 }
 
 function highlightUpdate(which, off) {

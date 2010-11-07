@@ -1212,7 +1212,7 @@ class PaperTable {
 
     function deadlineSettingIs($dname) {
 	global $Conf;
-	$deadline = $Conf->printableTimeSetting($dname);
+	$deadline = $Conf->printableTimeSetting($dname, "span");
 	if ($deadline == "N/A")
 	    return "";
 	else if (time() < $Conf->setting($dname))

@@ -526,7 +526,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // additional information
     $notes = "";
     if ($isSubmitFinal) {
-	$deadline = $Conf->printableTimeSetting("final_soft");
+	$deadline = $Conf->printableTimeSetting("final_soft", "span");
 	if ($deadline != "N/A" && $Conf->settingsAfter("final_soft"))
 	    $notes = "<strong>The deadline for submitting final versions was $deadline.</strong>";
 	else if ($deadline != "N/A")
@@ -540,10 +540,10 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    $notes = "The paper has not yet been submitted.";
 	else
 	    $notes = "The paper is marked as not ready for review.";
-	$deadline = $Conf->printableTimeSetting("sub_update");
+	$deadline = $Conf->printableTimeSetting("sub_update", "span");
 	if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
 	    $notes .= "  Further updates are allowed until $deadline.";
-	$deadline = $Conf->printableTimeSetting("sub_sub");
+	$deadline = $Conf->printableTimeSetting("sub_sub", "span");
 	if ($deadline != "N/A" && $prow->timeSubmitted <= 0) {
 	    $notes .= "  <strong>If the paper ";
 	    if ($Conf->setting("sub_freeze") > 0)

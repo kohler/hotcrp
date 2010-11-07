@@ -24,7 +24,7 @@ div#header_right {
 	text-align: right;
 	float: right;
 }
-span#usertime {
+div#usertime, .usertime {
 	padding-top: 1px;
 	font-size: smaller;
 }

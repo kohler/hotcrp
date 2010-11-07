@@ -1046,7 +1046,7 @@ function whyNotText($whyNot, $action) {
 	if ($start <= 0)
 	    $text .= "You can&rsquo;t $action $thisPaper yet.  ";
 	else if ($start > 0 && $now < $start)
-	    $text .= "You can&rsquo;t $action $thisPaper until " . $Conf->printableTime($start) . ".  ";
+	    $text .= "You can&rsquo;t $action $thisPaper until " . $Conf->printableTime($start, "span") . ".  ";
 	else if ($end > 0 && $now > $end) {
 	    if ($dname == "sub_reg")
 		$text .= "The paper registration deadline has passed.  ";
@@ -1060,7 +1060,7 @@ function whyNotText($whyNot, $action) {
 		$text .= "The PC review deadline has passed.  ";
 	    else
 		$text .= "The deadline to $action $thisPaper has passed.  ";
-	    $text .= "It was " . $Conf->printableTime($end) . ".  ";
+	    $text .= "It was " . $Conf->printableTime($end, "span") . ".  ";
 	} else if ($dname == "au_seerev") {
 	    if ($Conf->setting("au_seerev") == AU_SEEREV_YES)
 		$text .= "Authors who are also reviewers can&rsquo;t see reviews for their papers while they still have <a href='search$ConfSiteSuffix?t=rout&amp;q='>incomplete reviews</a> of their own.  ";

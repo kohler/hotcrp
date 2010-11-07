@@ -58,21 +58,21 @@ $sub_sub = $Conf->setting('sub_sub');
 
 if ($sub_reg && $sub_update != $sub_reg) {
     echo "<tr><td class='rcaption nowrap'>Paper registration deadline</td>";
-    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('sub_reg'), "</td>";
+    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('sub_reg', "div"), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($sub_reg - $now), "</td>";
     echo "<td>You can register new papers until this deadline.</td></tr>\n";
 }
 
 if ($sub_update && $sub_sub != $sub_update) {
     echo "<tr><td class='rcaption nowrap'>Paper update deadline</td>";
-    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('sub_update'), "</td>";
+    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('sub_update', "div"), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($sub_update - $now), "</td>";
     echo "<td>You can upload new versions of your paper and change other paper information until this deadline.</td></tr>\n";
 }
 
 if ($sub_sub) {
     echo "<tr><td class='rcaption nowrap'>Paper submission deadline</td>";
-    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('sub_sub'), "</td>";
+    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('sub_sub', "div"), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($sub_sub - $now), "</td>";
     echo "<td>Only papers submitted by this deadline will be reviewed.</td></tr>\n";
 }
@@ -81,7 +81,7 @@ $resp_done = $Conf->setting('resp_done');
 
 if ($Conf->setting('resp_open') > 0 && $resp_done) {
     echo "<tr><td class='rcaption nowrap'>Response deadline</td>";
-    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('resp_done'), "</td>";
+    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('resp_done', "div"), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($resp_done - $now), "</td>";
     echo "<td>This deadline controls when you can submit a response to the reviews.</td></tr>\n";
 }
@@ -94,25 +94,25 @@ $extrev_hard = $Conf->setting('extrev_hard');
 
 if ($Me->isPC && $rev_open && $pcrev_soft && $pcrev_soft > $now) {
     echo "<tr><td class='rcaption nowrap'>PC review deadline</td>";
-    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('pcrev_soft'), "</td>";
+    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('pcrev_soft', "div"), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($pcrev_soft - $now), "</td>";
     echo "<td>Reviews are requested by this deadline.</td></tr>\n";
 } else if ($Me->isPC && $rev_open && $pcrev_hard) {
     echo "<tr><td class='rcaption nowrap'>PC review hard deadline</td>";
-    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('pcrev_hard'), "</td>";
+    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('pcrev_hard', "div"), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($pcrev_hard - $now), "</td>";
     echo "<td>This deadline controls when you can submit or change your reviews.</td></tr>\n";
 }
 
 if ($Me->amReviewer() && $rev_open && $extrev_soft && $extrev_soft > $now) {
     echo "<tr><td class='rcaption nowrap'>External review deadline</td>";
-    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('extrev_soft'), "</td>";
+    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('extrev_soft', "div"), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($extrev_soft - $now), "</td>";
     echo "<td>Reviews are requested by this deadline.</td></tr>\n";
 } else if (($Me->amReviewer() && $rev_open && $extrev_hard)
            || ($Me->isPC && $rev_open && $extrev_hard)) {
     echo "<tr><td class='rcaption nowrap'>External review hard deadline</td>";
-    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('extrev_hard'), "</td>";
+    echo "<td class='nowrap entry'>", $Conf->printableTimeSetting('extrev_hard', "div"), "</td>";
     echo "<td class='nowrap entry'>", printableInterval($extrev_hard - $now), "</td>";
     echo "<td>This deadline controls when you can submit or change your reviews.</td></tr>\n";
 }

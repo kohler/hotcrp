@@ -20,6 +20,7 @@ class Conference {
     var $scriptStuff;
     var $footerStuff;
     var $footerScripting;
+    var $usertimeId;
 
     function Conference() {
 	global $Opt;
@@ -31,6 +32,7 @@ class Conference {
 	$this->scriptStuff = "";
 	$this->footerStuff = "";
 	$this->footerScripting = false;
+	$this->usertimeId = 1;
 
 	// unpack dsn and connect to database
 	if (!isset($Opt['dsn']))
@@ -271,33 +273,35 @@ class Conference {
 	else
 	    return date("j M Y g:i:sa" . $zone, $value);
     }
-    function printableTime($value) {
+    function _printableTime($value, $dayformat, $useradjust) {
 	global $Opt;
 	if ($value <= 0)
 	    return "N/A";
-	else if (defval($Opt, "time24hour"))
-	    return date("l j M Y H:i:s T", $value);
-	else
-	    return date("l j M Y g:i:sa T", $value);
+	$hourformat = (defval($Opt, "time24hour") ? "H:i:s" : "g:i:sa");
+	$t = date("$dayformat $hourformat T", $value);
+	if ($useradjust) {
+	    $sp = strpos($useradjust, " ");
+	    $t .= "<$useradjust class='usertime' id='usertime$this->usertimeId' style='display:none'></" . ($sp ? substr($useradjust, 0, $sp) : $useradjust) . ">";
+	    $this->footerScript("setLocalTime('usertime$this->usertimeId',$value)");
+	    ++$this->usertimeId;
+	}
+	return $t;
     }
-    function printableTimeShort($value) {
-	global $Opt;
-	if ($value <= 0)
-	    return "N/A";
-	else if (defval($Opt, "time24hour"))
-	    return date("j M Y H:i:s", $value);
-	else
-	    return date("j M Y g:i:sa", $value);
+    function printableTime($value, $useradjust = false) {
+	return $this->_printableTime($value, "l j M Y", $useradjust);
+    }
+    function printableTimeShort($value, $useradjust = false) {
+	return $this->_printableTime($value, "j M Y", $useradjust);
     }
 
-    function printableTimeSetting($what) {
-	return $this->printableTime(defval($this->settings, $what, 0));
+    function printableTimeSetting($what, $useradjust = false) {
+	return $this->printableTime(defval($this->settings, $what, 0), $useradjust);
     }
-    function printableDeadlineSetting($what) {
+    function printableDeadlineSetting($what, $useradjust = false) {
 	if (!isset($this->settings[$what]) || $this->settings[$what] <= 0)
 	    return "No deadline";
 	else
-	    return "Deadline: " . $this->printableTime($this->settings[$what]);
+	    return "Deadline: " . $this->printableTime($this->settings[$what], $useradjust);
     }
 
     function settingsAfter($name, $grace = null) {
@@ -1468,13 +1472,12 @@ class Conference {
 
 	$this->header_head($title);
 	$time = time();
-	// JavaScript's idea of a timezone offset is the negative of PHP's
 	echo "</head><body";
 	if ($id)
 	    echo " id='$id'";
-	echo " onload='hotcrpLoad($time, ", -date("Z", $time) / 60, ", ",
-	    (defval($Opt, "time24hour") ? 1 : 0), ")'>\n",
-	    "<div id='header'>\n",
+	// JavaScript's idea of a timezone offset is the negative of PHP's
+	$this->footerScript("hotcrpLoad.time($time," . (-date("Z", $time) / 60) . "," . (defval($Opt, "time24hour") ? 1 : 0) . ")");
+	echo " onload='hotcrpLoad()'\n<div id='header'>\n",
 	    "  <div id='header_left_conf'><h1>";
 	if ($title && $showTitle && $title == "Home")
 	    echo "<a class='q' href='${ConfSiteBase}index$ConfSiteSuffix' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a>";
@@ -1497,7 +1500,7 @@ class Conference {
 	    echo "'>Help</a>", $xsep;
 	    echo "<a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>Sign&nbsp;out</a>", $xsep;
 	}
-	echo $this->printableTime($time), "<br /><span id='usertime'></span></div>\n";
+	echo $this->printableTime($time), "<div id='usertime' style='display:none'></div></div>\n";
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", htmlspecialchars($Opt["shortName"]), " Public Site</a></div>\n";
 
 	print "  <div class='clear'></div>\n";
