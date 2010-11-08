@@ -316,7 +316,7 @@ function tagaction() {
 
     $act = $_REQUEST["tagtype"];
     $tag = $_REQUEST["tag"];
-    if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao" || $act == "sos" || $act == "aos" || $act == "da"))
+    if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao" || $act == "sos" || $act == "sor" || $act == "aos" || $act == "da"))
 	setTags($papers, $tag, $act, $Me->privChair);
     else if (count($papers) && $act == "cr" && $Me->privChair
 	     && checkTag($tag, CHECKTAG_NOINDEX | CHECKTAG_NOPRIVATE | CHECKTAG_ERRORARRAY)) {

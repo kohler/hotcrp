@@ -217,7 +217,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
     // delete tags
     if ($mode != "a" && $mode != "ao" && $mode != "aos") {
 	$q = "delete from PaperTag where ";
-	if ($mode == "s" || $mode == "so" || $mode == "sos")
+	if ($mode == "s" || $mode == "so" || $mode == "sos" || $mode == "sor")
 	    $q .= "true";
 	else
 	    $q .= "paperId in (" . join(",", $pids) . ")";
@@ -272,7 +272,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
     $tagIndex = array();
     $explicitIndex = array();
     $modeOrdered = ($mode == "so" || $mode == "ao" || $mode == "sos"
-		    || $mode == "aos");
+		    || $mode == "sor" || $mode == "aos");
     foreach ($tags as $tag) {
 	$base = tagBase($tag);
 	if (strlen($base) + 1 < strlen($tag)) {
@@ -304,8 +304,10 @@ function setTags($pids, $tagtext, $mode, $chair) {
     if ($mode != "d" && $mode != "da" && count($tags)) {
 	$q_keepold = $q_keepnew = "";
 	$delvotes = array();
-	foreach ($pids as $pid) {
-	    foreach ($tags as $tag) {
+	foreach ($tags as $tag) {
+	    if ($mode == "sor")
+		shuffle($pids);
+	    foreach ($pids as $pid) {
 		$base = tagBase($tag);
 		// choose index, bump running index in ordered mode
 		$index = defval($tagIndex, $base, 0);
