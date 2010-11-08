@@ -188,8 +188,6 @@
   been assigned to them, and did not manage to find it. Is this feature
   supported? If not, would it be an easy fix? [Dina Papagiannaki]
 
-- User/Author Agreement: click I Agree [Michael Kaminsky]
-
 - Author response word counting function [Mike Marty]
 
 - It would be great to be able to assign reviews manually, but then ask the
@@ -246,19 +244,6 @@
   this could be specified when the comment is entered (this will be hard to
   do if the group of relevant papers is large.) [Moses Charikar]
 
-- We found the graphical display of score distributions for PC members
-  very useful. Two suggestions: a. It would be useful to have the option of
-  displaying distributions corresponding to scores given by a PC member
-  together with scores assigned by external reviewers invited by this PC
-  member. b. One PC member suggested that these distributions be displayed
-  on every paper page next to the reviewer names, so that they can be
-  factored in while interpreting the scores assigned. [Moses Charikar]
-
-- I had mentioned that "review delegated" stays on even if an external
-  reviewer refuses the review. You tried to debug this earlier and thought
-  it was something to do with the chair. Apparently this happened also with
-  other PC members. [Moses Charikar]
-
 - One PC member said "The server lost the name of my external reviewer
   that I entered in the name field (on two occasions; see, e.g., #21), and
   rudely addressed the person by their email address.  :) Now it does not
@@ -278,50 +263,12 @@
   final versions (and archives original submissions). Would there be a way
   for the authors to submit additional files too ? [Moses Charikar]
 
-- I was very grateful for your implementation of the ability for PC members
-  to edit their own external reviews - that was very useful. One thing that
-  I realized later was this: PC members would sometimes leave information
-  in the comments to PC section that they would rather not be visible to
-  the external reviewers (yes, this should be left as a comment rather than
-  an edit to the review, but editing the review directly is more
-  convenient). Also PC members sometimes adjusted scores from external
-  reviewers, and this was visible to the reviewers if they logged in
-  again. It would be useful to have a feature that prevents external
-  reviewers from having access to their report after having submitted it -
-  perhaps the PC member clicks a button to indicate that the review is now
-  private ? [Moses Charikar]
-
-- Another related issue that I am sure other conferences grapple with:
-  external reviewers are comfortable giving absolute ratings
-  (accept/reject/borderline etc), but they really aren't in a good position
-  to estimate the percentile ranking of the submission (top 20%, bottom
-  50%, etc).  PC members on the other hand are much better placed to pass
-  judgement on percentile ranking. I had descriptive names for scores
-  (accept/reject etc), but also tied them to suggested percentile
-  ranges. In retrospect, it would have been convenient to have external
-  reviewers give an overall rating suggestion, which would have to be
-  finalized by the PC member. (By default the final rating could be same as
-  the suggestion by the reviewer). Again, it would be convenient to have
-  this final rating invisible to the external reviewer. ... maybe this is
-  asking for too much, but this is usually the way PCs for theory
-  conferences work. [Moses Charikar]
-
-- 1. We had an author withdraw their paper several weeks after submission.
-  As a result, the paper, all its reviews and the review assignments also
-  vanished.  And not only that, even though we actually reviewed 176
-  papers, the system tells everyone it was only 175 (this means more to me
-  than is healthy)!!! Need to restrict this to the chair after the
-  submission deadline. [Rebecca Isaacs]
-
 - 2. It would be helpful to store information about reviews outstanding by
   reviewing round eg paper n has 1/3 for the first round and 4/5 for the
   second.  In fact it would also be great to be able to look at paper
   rankings by round to see how things changed.  I would really like stats
   to see the value of multiple reviewing rounds - how much first round
   reviews predict the eventual outcome etc. [Rebecca Isaacs]
-
-- 3. The line endings in the email composition page are messed up for
-  me. [Rebecca Isaacs]
 
 - 4. Can you list both authors and institutions in the conflicts page?  And
   for that matter it would be helpful (to the chair at least) if the source
@@ -407,15 +354,6 @@
   every paper whatsoever?  (Or does this already happen for the PC chair?)
   [Benjamin Pierce]
 
-* Meta-comment: One problem with several areas of HotCRP's interface is
-  that, although it is doing something reasonable, it is hard for users to
-  see or predict what it is doing.  This could be corrected by writing a
-  longer manual, of course, but I think it's probably more useful to find
-  ways of adding little snippets of text here and there that give better
-  hints of what is going to happen.  (If the snippets start getting too
-  cluttered, there could be a way to disable them selectively.) [Benjamin
-  Pierce]
-
 * But maybe instead of sending a literal CC, the PC member could be sent a
   redacted copy [of the external review request] with the password blanked
   out? [Benjamin Pierce]
@@ -426,10 +364,6 @@
   that they don't have a copy of the email in their files, so they can't do
   things like forward it with "PING" added to the subject line... :-)
   [Benjamin Pierce]
-
-* Clarify on paper submission page the difference between authors and
-  contact authors.  We had some papers that didn't list some of the contact
-  authors as authors. [Mark Gebhart, MICRO 41]
 
 * Ability to search accepted papers for those that have / have not
   submitted final copies of their paper [Mark Gebhart, MICRO 41]
@@ -509,10 +443,6 @@
   selected PC member.  I can't quite work out what it is - I thought at
   first that it was the viewer's list, but it seems to change if the PC
   member changes, so I'm not quite sure what's going on. [John Wilkes]
-
-3. Having to hit "Go" on the "Change PC member" proved a fruitful source of
-  user-errors - we kept on forgetting to push the go button.  Please can it
-  just happen automagically? [John Wilkes]
 
 4. It's somewhat of tedious to flip back and forth between per-paper and
   per-PC member review assignments.  Could some better navigation shortcuts
@@ -602,43 +532,3 @@ Minor features
   to authors
 - send mail from contacts.php
 - scrub author information from PDFs
-
-Tiny features
-- fold review form
-- send mail to authors when a review was submitted during response period
-
-Internals
-- double-check contact policies (UGH)
-
-     $Conf->infoMsg( '<P>Please see <a href="../Reviewer/ratings.html" ' .
-                     'target="_blank"> rating description information</a> ' .
-                     'to decide your review scores.</P><P>' .
-                     'The tone of your review is important. When you write ' .
-		     'an anonymous review, you are acting as a ' .
-		     'representative of our field. It is <em> always </em> ' .
-		     'possible to be constructive.</P>'
-		    );
-
-Please read in detail ALL of the reviews and the authors rebuttal. After
-you have done that, please enter a PC grade for the paper. During this
-process only PC members will be entering a PC grade. If your grade differs
-from other PC members, please send email and discuss the issues over the
-next few days to arrive at an agreed upon grade. You can update the grades
-as often as you like up until the end of the grading period specified by
-the above date.
-
-In addition to entering a PC grade you can enter additional comments for
-the program committee and/or authors to see. These may be additional
-comments you have after reading the other reviews or the rebuttal, or
-additional comments to back up your PC grade. To enter additional comments
-click on the paper link, and enter comments at the bottom.
-
-You should only use "Accept, I will Champion this paper" if you are willing
-to champion the paper for an accept at the PC meeting. Likewise, you also
-should only use "Reject, I will argue against accept" if you are willing to
-argue against the paper from being accepted at the PC meeting.
-
-Note, if you are not going to be at the PC meeting, and want to choose an A
-or E for the PC grade, make sure you communicate to another PC member your
-praises/arguments ( someone else who is also a reviewer of the paper) so
-they can express them at the PC meeting.
