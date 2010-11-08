@@ -49,7 +49,7 @@ if ((isset($_REQUEST["prevt"]) && isset($_REQUEST["t"]) && $_REQUEST["prevt"] !=
 if (!isset($_REQUEST["assign"]) && !isset($_REQUEST["requery"]) && isset($_REQUEST["default"])
     && ($_REQUEST["default"] == "assign" || $_REQUEST["default"] == "requery"))
     $_REQUEST[$_REQUEST["default"]] = 1;
-if (!isset($_REQUEST["pctyp"]))
+if (!isset($_REQUEST["pctyp"]) || ($_REQUEST["pctyp"] != "all" && $_REQUEST["pctyp"] != "sel"))
     $_REQUEST["pctyp"] = "all";
 
 // bad pairs
@@ -781,29 +781,26 @@ echo "<h3>PC members</h3><table><tr><td>";
 doRadio("pctyp", "all", "");
 echo "</td><td>", tagg_label("Use entire PC", "pctyp_all"), "</td></tr>\n";
 
+echo "<tr><td>";
+doRadio('pctyp', 'sel', '');
+echo "</td><td>", tagg_label("Use selected PC members:", "pctyp_sel"), " &nbsp; (Select ";
+$pctyp_sel = array(array(1, "All"), array(0, "None"));
 $pctags = pcTags();
 if (count($pctags)) {
-    echo "<tr><td>";
-    doRadio("pctyp", "tag", "", array("onclick" => "pcselSetTag()"));
-    if (defval($_REQUEST, "pctag", "") == "") {
-	$pctags[""] = "&mdash;";
-	ksort($pctags);
-    }
-    echo "</td><td>", tagg_label("Use PC members tagged", "pctyp_tag"), " &nbsp;";
-    doSelect('pctag', $pctags, array("id" => "pctag", "onclick" => "pcselSetTag()", "onchange" => "pcselSetTag()", "disabled" => array("" => true)));
-    echo "</td></tr>\n";
     $tagsjson = array();
     foreach (pcMembers() as $pc)
 	if ($pc->contactTags)
 	    $tagsjson[] = "\"$pc->contactId\":\"$pc->contactTags\"";
-    $Conf->footerScript("pc_tags_json={" . join(",", $tagsjson) . "}");
+    $Conf->footerScript("pc_tags_json={" . join(",", $tagsjson) . "};");
+    foreach ($pctags as $tagname => $pctag)
+	$pctyp_sel[] = array("pc_tags_members(\"$tagname\")", "&ldquo;$tagname&rdquo;&nbsp;tag");
 }
-
-echo "<tr><td>";
-doRadio('pctyp', 'sel', '');
-echo "</td><td>", tagg_label("Use selected PC members:", "pctyp_sel"), " &nbsp; ",
-    "(<a href='javascript:papersel(1,\"pcs[]\");void (\$\$(\"pctyp_sel\").checked=true)'>All</a> | <a href='javascript:papersel(0,\"pcs[]\");void (\$\$(\"pctyp_sel\").checked=true)'>None</a>)";
-echo "</td></tr>\n<tr><td></td><td><table class='pctb'><tr><td class='pctbcolleft'><table>";
+$sep = "";
+foreach ($pctyp_sel as $pctyp) {
+    echo $sep, "<a href='javascript:papersel(", $pctyp[0], ",\"pcs[]\");void(\$\$(\"pctyp_sel\").checked=true)'>", $pctyp[1], "</a>";
+    $sep = ", ";
+}
+echo ")</td></tr>\n<tr><td></td><td><table class='pctb'><tr><td class='pctbcolleft'><table>";
 
 $pcm = pcMembers();
 countReviews($nreviews, $nprimary, $nsecondary);

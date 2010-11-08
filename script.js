@@ -6,6 +6,12 @@ function $$(id) {
     return document.getElementById(id);
 }
 
+isArray = (function (toString) {
+    return function (x) {
+	return toString.call(x) === "[object Array]";
+    };
+})(Object.prototype.toString);
+
 e = $$;				// old version
 
 function e_value(id, value) {
@@ -208,12 +214,22 @@ function shiftPassword(direction) {
 
 
 // paper selection
-function papersel(onoff, name) {
-    var ins = document.getElementsByTagName("input");
+function papersel(value, name) {
+    var ins = document.getElementsByTagName("input"),
+	xvalue = value, value_hash = true, i;
     name = name || "pap[]";
+
+    if (isArray(value)) {
+	xvalue = {};
+	for (i = value.length; i >= 0; --i)
+	    xvalue[value[i]] = 1;
+    } else if (value === null || typeof value !== "object")
+	value_hash = false;
+
     for (var i = 0; i < ins.length; i++)
 	if (ins[i].name == name)
-	    ins[i].checked = onoff;
+	    ins[i].checked = !!(value_hash ? xvalue[ins[i].value] : xvalue);
+
     return false;
 }
 
@@ -265,21 +281,13 @@ function pselClick(evt, elt, thisnum, name) {
     return true;
 }
 
-function pcselSetTag() {
-    var ins = document.getElementsByTagName("input"), tags,
-	elt = $$("pctag"),
-	thetag = " " + elt.options[elt.selectedIndex].value + " ";
-    if (thetag != "  ") {
-	if (elt.options[0].value == "")
-	    elt.options[0] = null;
-	for (var i = 0; i < ins.length; i++)
-	    if (ins[i].name == "pcs[]") {
-		tags = pc_tags_json[ins[i].value];
-		ins[i].checked = !!(tags && tags.indexOf(thetag) >= 0);
-	    }
-	$$("pctyp_tag").checked = true;
-    }
-    return false;
+function pc_tags_members(tag) {
+    var pc_tags = pc_tags_json, answer = [], pc, tags;
+    tag = " " + tag + " ";
+    for (pc in pc_tags)
+	if (pc_tags[pc].indexOf(tag) >= 0)
+	    answer.push(pc);
+    return answer;
 }
 
 function defact(what) {
