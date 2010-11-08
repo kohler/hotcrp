@@ -634,7 +634,7 @@ class PaperSearch {
 	} else if ($twiddle === 0 && $tagword[1] === "~")
 	    $twiddlecid = "";
 
-	if (($e = checkTagError($tagword, CHECKTAG_ALLOWRESERVED | CHECKTAG_NOINDEX | ($this->privChair ? CHECKTAG_CHAIR : 0)))) {
+	if (($e = checkTagError($tagword, CHECKTAG_ALLOWRESERVED | CHECKTAG_NOINDEX | ($this->privChair ? CHECKTAG_CHAIR : 0) | ($special == "tag" ? CHECKTAG_ALLOWSTAR : 0)))) {
 	    $this->warn(htmlspecialchars($e));
 	    $qt[] = new SearchTerm("f");
 	    return;
@@ -649,6 +649,8 @@ class PaperSearch {
 	$extra = null;
 	if ($special == "order" || $special == "rorder" || !$special)
 	    $extra = array("tagorder" => (object) array("tag" => $value, "reverse" => $special == "rorder"));
+	if (strpos($value, "*") !== false)
+	    $value = "\3 like '" . str_replace("*", "%", sqlq_for_like($value)) . "'";
 	$qt[] = new SearchTerm("tag", $rt, $compar ? array($value, $compar) : $value, $extra);
     }
 
@@ -1350,6 +1352,8 @@ class PaperSearch {
 		$tdef = array("left join", $table, "false");
 	} else if ($value[0] == "\1") {
 	    $tdef = array("left join", $table, str_replace("\3", "$thistab.$field", "\3$value"));
+	} else if ($value[0] == "\3") {
+	    $tdef = array("left join", $table, str_replace("\3", "$thistab.$field", $value));
 	} else {
 	    $tdef = array("left join", $table, "$thistab.$field='" . sqlq($value) . "'");
 	}

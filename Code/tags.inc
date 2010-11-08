@@ -13,6 +13,7 @@ define("CHECKTAG_NOINDEX", 4);
 define("CHECKTAG_CHAIR", 8);
 define("CHECKTAG_QUIET", 16);
 define("CHECKTAG_ERRORARRAY", 32);
+define("CHECKTAG_ALLOWSTAR", 64);
 
 define("TAG_REGEX", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*');
 define("TAG_REGEX_OPTVALUE", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?');
@@ -22,8 +23,9 @@ function checkTagError($tag, $flags) {
 	return "Empty tag.";
     else if (strlen($tag) > TAG_MAXLEN)
 	return "Tag \"$tag\" too long; maximum " . TAG_MAXLEN . " characters.";
-    else if (!preg_match('/\A' . TAG_REGEX_OPTVALUE . '\z/', $tag, $m))
-	return "Tag \"$tag\" contains odd characters.";
+    else if (!preg_match('/\A' . TAG_REGEX_OPTVALUE . '\z/', $tag, $m)
+	     || (!($flags & CHECKTAG_ALLOWSTAR) && strpos($tag, "*") !== false))
+	return "Tag \"$tag\" contains characters not allowed in tags.";
     else if (count($m) > 1 && $m[1] && ($flags & CHECKTAG_NOINDEX))
 	return "Tag numbers not allowed here.";
     else if ($tag[0] === "~" && $tag[1] === "~" && !($flags & CHECKTAG_CHAIR))

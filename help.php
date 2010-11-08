@@ -245,6 +245,7 @@ function searchQuickref() {
     _searchQuickrefRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "tag:discuss", "tagged &ldquo;discuss&rdquo;");
     _searchQuickrefRow("", "-tag:discuss", "not tagged &ldquo;discuss&rdquo;");
     _searchQuickrefRow("", "order:discuss", "tagged &ldquo;discuss&rdquo;, sort by tag order (&ldquo;rorder:&rdquo; for reverse order)");
+    _searchQuickrefRow("", "tag:disc*", "matches any tag that <em>starts with</em> &ldquo;disc&rdquo;");
     _searchQuickrefRow("Reviews", "re:fdabek", "&ldquo;fdabek&rdquo; in reviewer name/email");
     if ($retag) {
 	_searchQuickrefRow("", "re:$retag", "has a reviewer tagged &ldquo;$retag&rdquo;");

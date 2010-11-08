@@ -2,11 +2,6 @@
 
 - Show PC when authors can see reviews.
 
-- I would like even more expressive searching. Or hierarchical tags.
-  I'd love to create compound tags such as "foo:bar" and be able to
-  search "tag:foo:*". This doesn't seem to work currently. [Stephanie
-  Weirich]
-
 - It would have been useful to have a "mail reviewer" link on the
   reviews page for communicating with individual reviewers about
   specific papers. [Stephanie Weirich]
