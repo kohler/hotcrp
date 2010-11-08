@@ -287,7 +287,8 @@ function searchQuickref() {
     _searchQuickrefRow("Decision", "dec:$qdec", "decision is &ldquo;$dec&rdquo; (partial matches OK)");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
     _searchQuickrefRow("", "dec:no", "one of the reject decisions");
-    _searchQuickrefRow("", "dec:?", "decision unspecified");
+    _searchQuickrefRow("", "dec:any", "decision specified");
+    _searchQuickrefRow("", "dec:none", "decision unspecified");
 
     // find names of review fields to demonstrate syntax
     $rf = reviewForm();

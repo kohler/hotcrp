@@ -866,12 +866,14 @@ class PaperSearch {
 	    }
 	}
 	if ($special ? $special == "decision" : isset($this->fields['decision'])) {
-	    if (strcasecmp($word, "yes") == 0)
+	    if (!$quoted && strcasecmp($word, "yes") == 0)
 		$value = ">0";
-	    else if (strcasecmp($word, "no") == 0)
+	    else if (!$quoted && strcasecmp($word, "no") == 0)
 		$value = "<0";
-	    else if ($word == "?")
+	    else if ($word == "?" || (!$quoted && strcasecmp($word, "none") == 0))
 		$value = "=0";
+	    else if (!$quoted && strcasecmp($word, "any") == 0)
+		$value = "!=0";
 	    else {
 		$rf = reviewForm();
 		$value = matchValue($rf->options["outcome"], $word, true);
