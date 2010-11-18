@@ -271,6 +271,11 @@ $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 // Sidebar
 echo "<div class='homeside'>";
 
+echo "<noscript><div class='homeinside'>",
+    "<strong>HotCRP requires Javascript.</strong> ",
+    "Many features will work without Javascript, but not all.<br />",
+    "<a style='font-size:smaller' href='http://www.cs.ucla.edu/~kohler/hotcrp/'>Report bad compatibility problems</a></div></noscript>";
+
 // Conference management
 if ($Me->privChair) {
     echo "<div id='homemgmt' class='homeinside'>
