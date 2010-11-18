@@ -1477,7 +1477,7 @@ class Conference {
 	    echo " id='$id'";
 	// JavaScript's idea of a timezone offset is the negative of PHP's
 	$this->footerScript("hotcrpLoad.time($time," . (-date("Z", $time) / 60) . "," . (defval($Opt, "time24hour") ? 1 : 0) . ")");
-	echo " onload='hotcrpLoad()'\n<div id='header'>\n",
+	echo " onload='hotcrpLoad()'>\n<div id='header'>\n",
 	    "  <div id='header_left_conf'><h1>";
 	if ($title && $showTitle && $title == "Home")
 	    echo "<a class='q' href='${ConfSiteBase}index$ConfSiteSuffix' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a>";
