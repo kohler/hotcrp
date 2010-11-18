@@ -148,14 +148,14 @@ class PaperSearch {
 
     var $_matchTable;
 
-    function __construct($me, $opt) {
+    function __construct($me, $opt, $searchContactId = 0) {
 	global $Conf, $ConfSiteSuffix;
 
 	// contact facts
 	$this->contactId = $me->contactId;
 	$this->privChair = $me->privChair;
-	if ($this->privChair && rcvtint($opt["c"]) > 0)
-	    $this->contactId = rcvtint($opt["c"]);
+	if ($this->privChair && $searchContactId > 0)
+	    $this->contactId = $searchContactId;
 	$this->amPC = $me->isPC;
 	$this->reviewsOutstanding = $me->reviewsOutstanding;
 

@@ -197,9 +197,9 @@ list.</p>");
 
 
 // search
-$search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "c" => $reviewer,
+$search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
 				     "urlbase" => "reviewprefs$ConfSiteSuffix?reviewer=$reviewer",
-				     "q" => defval($_REQUEST, "q", "")));
+				     "q" => defval($_REQUEST, "q", "")), $reviewer);
 $pl = new PaperList($search, true, true);
 $pl->showHeader = PaperList::HEADER_TITLES;
 $pl->foldtype = "pf";
