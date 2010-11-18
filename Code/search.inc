@@ -153,9 +153,9 @@ class PaperSearch {
 
 	// contact facts
 	$this->contactId = $me->contactId;
+	$this->privChair = $me->privChair;
 	if ($this->privChair && rcvtint($opt["c"]) > 0)
 	    $this->contactId = rcvtint($opt["c"]);
-	$this->privChair = $me->privChair;
 	$this->amPC = $me->isPC;
 	$this->reviewsOutstanding = $me->reviewsOutstanding;
 

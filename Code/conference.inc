@@ -1044,7 +1044,7 @@ class Conference {
 		$pq .= ", PaperComment.commentId";
 	}
 
-	//$this->infoMsg(htmlspecialchars($pq));
+	//$this->infoMsg("<pre>" . htmlspecialchars($pq) . "</pre>");
 	return $pq . "\n";
     }
 
