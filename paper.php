@@ -221,6 +221,7 @@ function requestSameAsPaper($prow) {
 	while (($row = edb_row($result))) {
 	    $got = defval($_REQUEST, "opt$row[0]", "");
 	    if (($row[2] == 4 && fileUploaded($_FILES["opt$row[0]"], $Conf))
+		|| ($row[2] == 4 && defval($_REQUEST, "remove_opt$row[0]"))
 		|| ($row[2] == 3 && simplifyWhitespace($got) != $row[3])
 		|| (($row[2] == 0 || $row[2] == 1 || $row[2] == 2)
 		    && cvtint($got, 0) != $row[1]))
@@ -313,7 +314,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    unset($_REQUEST[$oname]);
 	    if (fileUploaded($_FILES[$oname], $Conf))
 		uploadOption($opt);
-	    else
+	    else if (!defval($_REQUEST, "remove_opt" . $opt->optionId))
 		$no_delete_options[] = $opt->optionId;
 	}
     }

@@ -852,6 +852,27 @@ function docheckpaperstillready() {
 	return true;
 }
 
+function doremovedocument(button, name) {
+    var e = $$("remove_" + name), estk = [], tn, i;
+    if (e) {
+	e.value = 1;
+	if ((e = $$("current_" + name))) {
+	    estk = [e];
+	    while (estk.length) {
+		e = estk.pop();
+		tn = e.nodeType == 1 ? e.tagName.toUpperCase() : "";
+		if (tn == "TD")
+		    e.style.textDecoration = "line-through";
+		else if (tn == "TABLE" || tn == "TBODY" || tn == "TR")
+		    for (i = e.childNodes.length - 1; i >= 0; --i)
+			estk.push(e.childNodes[i]);
+	    }
+	}
+	fold("replacement_" + name);
+	hiliter(button);
+    }
+}
+
 
 // mail
 function setmailpsel(sel) {
