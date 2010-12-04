@@ -200,7 +200,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 		$cids[] = $cr->commentId;
 		$n = "<a class='nowrap' href='#comment$cr->commentId'>";
 		if ($Me->canViewCommentIdentity($prow, $cr))
-		    $n .= htmlspecialchars(abbreviateName($cr->firstName, $cr->lastName));
+		    $n .= abbreviateNameHtml($cr->firstName, $cr->lastName);
 		else
 		    $n .= "anonymous";
 		if ($cr->forAuthors > 1 && $cr->forReviewers != 0)

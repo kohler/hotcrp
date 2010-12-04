@@ -476,15 +476,27 @@ function authorTable($aus, $viewAs = null) {
     return $out;
 }
 
-function abbreviateName($f, $l, $email = "") {
-    if ($f != "" && $l == "")
-	return $f;
-    else if ($f != "" && ctype_upper($f[0]))
-	return $f[0] . ". " . $l;
-    else if ($l != "")
-	return $l;
+function abbreviateNameHtml($f, $l, $email = "") {
+    $front = $rest = "";
+    if ($l != "")
+	$rest = $l;
+    else if ($f != "")
+	$rest = $f;
     else
-	return $email ? $email : "???";
+	$rest = $email ? $email : "???";
+    if ($f != "" && $l != "") {
+	if (ctype_alpha($f[0]))
+	    $front = $f[0];
+	else if (preg_match("/^(\\pL)/us", $f, $m))
+	    $front = $m[1];
+	// Don't add a period if first name is a single letter
+	if ($front != "" && $front != $f && substr($f, 0, strlen($front) + 1) != $front . " ")
+	    $front .= ".";
+    }
+    if ($front == "")
+	return htmlspecialchars($rest);
+    else
+	return htmlspecialchars($front) . "&nbsp;" . htmlspecialchars($rest);
 }
 
 function highlightMatch($match, $text, &$n = null) {

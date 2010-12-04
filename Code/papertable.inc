@@ -482,12 +482,11 @@ class PaperTable {
 	$names = array();
 	if ($type == "last") {
 	    foreach ($table as $au) {
-		$n = abbreviateName($au[0], $au[1]);
+		$n = abbreviateNameHtml($au[0], $au[1]);
 		if ($highpreg !== false) {
-		    $n = highlightMatch($highpreg, htmlspecialchars($n), $nm);
+		    $n = highlightMatch($highpreg, $n, $nm);
 		    $this->entryMatches += $nm;
-		} else
-		    $n = htmlspecialchars($n);
+		}
 		$names[] = $n;
 	    }
 	    return join(", ", $names);

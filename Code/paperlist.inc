@@ -682,8 +682,8 @@ class PaperList extends BaseList {
 	    return commajoin($affaus);
 	} else if ($highlight === "") {
 	    foreach ($row->authorTable as $au)
-		$aus[] = abbreviateName($au[0], $au[1], $au[2]);
-	    return htmlspecialchars(join(", ", $aus));
+		$aus[] = abbreviateNameHtml($au[0], $au[1], $au[2]);
+	    return join(", ", $aus);
 	} else {
 	    foreach ($row->authorTable as $au) {
 		$first = htmlspecialchars($au[0]);
