@@ -360,10 +360,14 @@ class PaperTable {
 	// uploader
 	$uploader = "";
 	if (!defval($Opt, "noPapers")) {
+	    $accepts = array();
+	    if (!defval($Opt, "disablePDF"))
+		$accepts[] = "application/pdf";
+	    if (!defval($Opt, "disablePS"))
+		$accepts[] = "application/postscript";
 	    $uploader = ($doc ? "<div class='g'></div>\nUpload replacement:" : "Upload:")
 		. "&nbsp; <input id='paperUpload' class='textlite' type='file' name='paperUpload' accept='"
-		. (defval($Opt, "disablePDF") ? "" : "application/pdf ")
-		. (defval($Opt, "disablePS") ? "" : "application/postscript ")
+		. join(", ", $accepts)
 		. "' size='30' onchange='hiliter(this)";
 	    if (!$final)
 		$uploader .= ";fold(\"isready\",0)";
