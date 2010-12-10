@@ -24,12 +24,12 @@ function e_value(id, value) {
 
 setLocalTime = (function () {
 var servoffset = 0, servhr24, showdifference = false;
-function setLocalTime(elt, servtime) {
+function setLocalTime(elt, servtime, no_round) {
     var d, s, hr;
     if (elt && typeof elt == "string")
 	elt = $$(elt);
     if (elt && showdifference) {
-	d = new Date(servtime * 1000 + servoffset);
+	d = new Date(servtime * 1000 + (no_round ? servoffset : 0));
 	s = ["Sun", "Mon", "Tues", "Wednes", "Thurs", "Fri", "Satur"][d.getDay()];
 	s += "day " + d.getDate() + " ";
 	s += ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
@@ -54,7 +54,7 @@ setLocalTime.initialize = function (servtime, servzone, hr24) {
     var now = new Date(), nowgmt = new Date(servtime * 1000), x;
     servoffset = now.getTime() - servtime * 1000;
     // hide differences of 10 seconds or less
-    if (Math.abs && (x = Math.abs(now.getSeconds() - nowgmt.getSeconds())) <= 10)
+    if ((x = Math.abs(now.getSeconds() - nowgmt.getSeconds())) <= 10)
 	servoffset -= x * 1000;
     servhr24 = hr24;
     // print local time if local time is more than 10 minutes off,
@@ -71,7 +71,7 @@ function hotcrpLoad() {
 }
 hotcrpLoad.time = function (servtime, servzone, hr24) {
     setLocalTime.initialize(servtime, servzone, hr24);
-    setLocalTime("usertime", servtime);
+    setLocalTime("usertime", servtime, true);
 }
 
 function highlightUpdate(which, off) {
