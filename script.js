@@ -12,8 +12,6 @@ isArray = (function (toString) {
     };
 })(Object.prototype.toString);
 
-e = $$;				// old version
-
 function e_value(id, value) {
     var elt = $$(id);
     if (value == null)
@@ -22,14 +20,15 @@ function e_value(id, value) {
 	elt.value = value;
 }
 
+
 setLocalTime = (function () {
-var servoffset = 0, servhr24, showdifference = false;
-function setLocalTime(elt, servtime, no_round) {
+var servhr24, showdifference = false;
+function setLocalTime(elt, servtime) {
     var d, s, hr;
     if (elt && typeof elt == "string")
 	elt = $$(elt);
     if (elt && showdifference) {
-	d = new Date(servtime * 1000 + (no_round ? servoffset : 0));
+	d = new Date(servtime * 1000);
 	s = ["Sun", "Mon", "Tues", "Wednes", "Thurs", "Fri", "Satur"][d.getDay()];
 	s += "day " + d.getDate() + " ";
 	s += ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
@@ -51,18 +50,107 @@ function setLocalTime(elt, servtime, no_round) {
     }
 }
 setLocalTime.initialize = function (servtime, servzone, hr24) {
-    var now = new Date(), nowgmt = new Date(servtime * 1000), x;
-    servoffset = now.getTime() - servtime * 1000;
-    // hide differences of 10 seconds or less
-    if ((x = Math.abs(now.getSeconds() - nowgmt.getSeconds())) <= 10)
-	servoffset -= x * 1000;
+    var now = new Date(), x;
+    if (Math.abs(now.getTime() - servtime * 1000) >= 300000
+	&& (x = $$("clock_drift_container")))
+	x.innerHTML = "<div class='warning'>The HotCRP server's clock is more than 5 minutes off from your computer's clock.  If your computer's clock is correct, you should update the server's clock.</div>";
     servhr24 = hr24;
-    // print local time if local time is more than 10 minutes off,
-    // or if server time is in a different time zone
-    showdifference = Math.abs && (Math.abs(servoffset) > 600000 || Math.abs(now.getTimezoneOffset() - servzone) >= 60);
+    // print local time if server time is in a different time zone
+    showdifference = Math.abs(now.getTimezoneOffset() - servzone) >= 60;
 };
 return setLocalTime;
 })();
+
+
+loadDeadlines = (function () {
+var dl, dlname, dltime, dlurl, reload_timeout;
+
+// this logic is repeated in the back end
+function displayDeadlines() {
+    var s = "", amt, what = null, x, subtype,
+	time_since_load = new Date().getTime() / 1000 - +dl.load,
+	now = +dl.now + time_since_load,
+	elt = $$("maindeadline");
+    if (!elt)
+	return;
+
+    dlname = "";
+    dltime = 0;
+    if (dl.sub_open) {
+	x = {"sub_reg": "registration", "sub_update": "update",
+	     "sub_sub": "submission"};
+	for (subtype in x)
+	    if (+dl.now <= +dl[subtype] ? now - 120 <= +dl[subtype]
+		: dl[subtype + "_ingrace"]) {
+		dlname = "Paper " + x[subtype] + " deadline";
+		dltime = +dl[subtype];
+		break;
+	    }
+    }
+
+    if (dlname) {
+	s = dlname + " ";
+	amt = dltime - now;
+	if (!dltime || amt <= 0)
+	    s += "is NOW";
+	else {
+	    s += "in ";
+	    if (amt > 259200 /* 3 days */) {
+		amt = Math.ceil(amt / 86400);
+		what = "day";
+	    } else if (amt > 28800 /* 8 hours */) {
+		amt = Math.ceil(amt / 3600);
+		what = "hour";
+	    } else if (amt > 3600 /* 1 hour */) {
+		amt = Math.ceil(amt / 1800) / 2;
+		what = "hour";
+	    } else if (amt > 180) {
+		amt = Math.ceil(amt / 60);
+		what = "minute";
+	    } else {
+		amt = Math.ceil(amt);
+		what = "second";
+	    }
+	    s += amt + " " + what + (amt == 1 ? "" : "s");
+	}
+	if (!dltime || amt <= 180)
+	    s = "<span class='impending'>" + s + "</span>";
+    }
+
+    elt.innerHTML = s;
+    elt.style.display = s ? (elt.tagName.toUpperCase() == "SPAN" ? "inline" : "block") : "none";
+    if (what == "second")
+	setTimeout(displayDeadlines, 250);
+    else if (what == "minute")
+	setTimeout(displayDeadlines, 15000);
+}
+
+function reloadDeadlines() {
+    reload_timeout = null;
+    Miniajax.get(dlurl, loadDeadlines, 10000);
+}
+
+function loadDeadlines(dlx) {
+    var t;
+    if (dlx) {
+	dl = dlx;
+	dl.load = new Date().getTime() / 1000;
+    }
+    displayDeadlines();
+    if (dlurl && !reload_timeout) {
+	t = (dlname && (!dltime || dltime - dl.load <= 120) ? 45000 : 300000);
+	reload_timeout = setTimeout(reloadDeadlines, t);
+    }
+}
+
+loadDeadlines.init = function (dlx, dlurlx) {
+    dlurl = dlurlx;
+    loadDeadlines(dlx);
+};
+
+return loadDeadlines;
+})();
+
 
 var hotcrp_onload = [];
 function hotcrpLoad() {
@@ -71,8 +159,8 @@ function hotcrpLoad() {
 }
 hotcrpLoad.time = function (servtime, servzone, hr24) {
     setLocalTime.initialize(servtime, servzone, hr24);
-    setLocalTime("usertime", servtime, true);
-}
+};
+
 
 function highlightUpdate(which, off) {
     var ins, i, result;
@@ -674,7 +762,7 @@ Miniajax.onload = function (formname) {
     var req = Miniajax.newRequest();
     if (req)
 	fold($$(formname), 1, 7);
-}
+};
 Miniajax.submit = function (formname, callback, timeout) {
     var form, req = Miniajax.newRequest(), resultname;
     if (typeof formname !== "string") {
@@ -722,7 +810,7 @@ Miniajax.submit = function (formname, callback, timeout) {
 	    form.onsubmit = "";
 	    fold(form, 0, 7);
 	}
-    }
+    };
 
     // collect form value
     var pairs = [], regexp = /%20/g;
@@ -739,6 +827,27 @@ Miniajax.submit = function (formname, callback, timeout) {
     req.open("POST", form.action);
     req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     req.send(pairs.join("&"));
+    return false;
+};
+Miniajax.get = function (url, callback, timeout) {
+    var req = Miniajax.newRequest(), timer;
+    if (!timeout)
+	timeout = 4000;
+    timer = setTimeout(function () {
+	    req.abort();
+	    callback(null);
+	}, timeout);
+    req.onreadystatechange = function () {
+	if (req.readyState != 4)
+	    return;
+	clearTimeout(timer);
+	if (req.status == 200)
+	    callback(eval("(" + req.responseText + ")"));
+	else
+	    callback(null);
+    };
+    req.open("GET", url);
+    req.send();
     return false;
 };
 

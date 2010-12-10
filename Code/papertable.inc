@@ -1284,7 +1284,7 @@ class PaperTable {
 		    $m .= "<div class='xconfirm'>This paper is ready and will be considered for review.  You can still make changes if necessary.$updateDeadline</div>";
 	    } else if ($timeSubmit)
 		$m .= "<div class='xwarning'>You cannot make any changes as the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override</div>";
-	    else if ($Conf->settingsBetween("", "sub_sub", "sub_grace"))
+	    else if ($Conf->deadlinesBetween("", "sub_sub", "sub_grace"))
 		$m .= "<div class='xwarning'>The site is not open for submission updates at the moment.$override</div>";
 	    else
 		$m .= "<div class='xwarning'>The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override</div>";

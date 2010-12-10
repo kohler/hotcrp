@@ -10,6 +10,7 @@ class Conference {
     var $settings;
     var $settingTexts;
     var $sversion;
+    var $deadlineCache;
 
     var $saveMessages;
     var $headerPrinted;
@@ -77,6 +78,7 @@ class Conference {
 	global $Opt, $OK;
 	$this->settings = array();
 	$this->settingTexts = array();
+	$this->deadlineCache = null;
 	$result = $this->q("select name, value, data from Settings");
 	while (($row = edb_row($result))) {
 	    $this->settings[$row[0]] = $row[1];
@@ -265,6 +267,46 @@ class Conference {
     }
 
 
+    // times
+
+    function deadlines() {
+	// Return all deadline-relevant settings as integers.
+	if (!$this->deadlineCache) {
+	    $dl = array("now" => time());
+	    foreach (array("sub_open", "sub_reg", "sub_update", "sub_sub",
+			   "sub_grace",
+			   "resp_open", "resp_done", "resp_grace",
+			   "rev_open", "pcrev_soft", "pcrev_hard",
+			   "extrev_soft", "extrev_hard", "rev_grace",
+			   "final_open", "final_soft", "final_done",
+			   "final_grace") as $x)
+		$dl[$x] = isset($this->settings[$x]) ? +$this->settings[$x] : 0;
+	    $this->deadlineCache = $dl;
+	}
+	return $this->deadlineCache;
+    }
+
+    function printableInterval($amt) {
+	if ($amt > 259200 /* 3 days */) {
+	    $amt = ceil($amt / 86400);
+	    $what = "day";
+	} else if ($amt > 28800 /* 8 hours */) {
+	    $amt = ceil($amt / 3600);
+	    $what = "hour";
+	} else if ($amt > 3600 /* 1 hour */) {
+	    $amt = ceil($amt / 1800) / 2;
+	    $what = "hour";
+	} else if ($amt > 180) {
+	    $amt = ceil($amt / 60);
+	    $what = "minute";
+	} else if ($amt > 0) {
+	    $amt = ceil($amt);
+	    $what = "second";
+	} else
+	    return "past";
+	return plural($amt, $what);
+    }
+
     function parseableTime($value, $include_zone) {
 	global $Opt;
 	$zone = $include_zone ? " T" : "";
@@ -304,32 +346,38 @@ class Conference {
 	    return "Deadline: " . $this->printableTime($this->settings[$what], $useradjust);
     }
 
-    function settingsAfter($name, $grace = null) {
+    function settingsAfter($name) {
+	$dl = $this->deadlines();
 	$t = defval($this->settings, $name, null);
-	if ($t !== null && $t > 0 && $grace && isset($this->settings[$grace]))
-	    $t += $this->settings[$grace];
-	return ($t !== null && $t > 0 && $t <= time());
+	return ($t !== null && $t > 0 && $t <= $dl["now"]);
     }
-    function settingsBetween($name1, $name2, $grace = null) {
-	$now = time();
-	$t = defval($this->settings, $name1, null);
-	if (($t === null || ($t <= 0 && $t > $now)) && $name1)
+    function deadlinesAfter($name, $grace = null) {
+	$dl = $this->deadlines();
+	$t = defval($dl, $name, null);
+	if ($t !== null && $t > 0 && $grace && isset($dl[$grace]))
+	    $t += $dl[$grace];
+	return ($t !== null && $t > 0 && $t <= $dl["now"]);
+    }
+    function deadlinesBetween($name1, $name2, $grace = null) {
+	$dl = $this->deadlines();
+	$t = defval($dl, $name1, null);
+	if (($t === null || ($t <= 0 && $t > $dl["now"])) && $name1)
 	    return false;
-	$t = defval($this->settings, $name2, null);
-	if ($t !== null && $t > 0 && $grace && isset($this->settings[$grace]))
-	    $t += $this->settings[$grace];
-	return ($t === null || $t <= 0 || $t >= $now);
+	$t = defval($dl, $name2, null);
+	if ($t !== null && $t > 0 && $grace && isset($dl[$grace]))
+	    $t += $dl[$grace];
+	return ($t === null || $t <= 0 || $t >= $dl["now"]);
     }
 
     function timeStartPaper() {
-	return $this->settingsBetween('sub_open', 'sub_reg', 'sub_grace');
+	return $this->deadlinesBetween("sub_open", "sub_reg", "sub_grace");
     }
     function timeUpdatePaper($prow = null) {
-	return $this->settingsBetween('sub_open', 'sub_update', 'sub_grace')
+	return $this->deadlinesBetween("sub_open", "sub_update", "sub_grace")
 	    && (!$prow || $prow->timeSubmitted <= 0 || $this->setting('sub_freeze') <= 0);
     }
     function timeFinalizePaper($prow = null) {
-	return $this->settingsBetween('sub_open', 'sub_sub', 'sub_grace')
+	return $this->deadlinesBetween("sub_open", "sub_sub", "sub_grace")
 	    && (!$prow || $prow->timeSubmitted <= 0 || $this->setting('sub_freeze') <= 0);
     }
     function collectFinalPapers() {
@@ -337,7 +385,7 @@ class Conference {
     }
     function timeSubmitFinalPaper() {
 	return $this->timeAuthorViewDecision()
-	    && $this->settingsBetween('final_open', 'final_done', 'final_grace');
+	    && $this->deadlinesBetween("final_open", "final_done", "final_grace");
     }
     function timeAuthorViewReviews($reviewsOutstanding = false) {
 	// also used to determine when authors can see review counts
@@ -346,14 +394,14 @@ class Conference {
 	return $s == AU_SEEREV_ALWAYS || ($s > 0 && !$reviewsOutstanding);
     }
     function timeAuthorRespond() {
-	return $this->settingsBetween('resp_open', 'resp_done', 'resp_grace');
+	return $this->deadlinesBetween("resp_open", "resp_done", "resp_grace");
     }
     function timeAuthorViewDecision() {
 	return $this->setting("seedec") == SEEDEC_ALL;
     }
     function timeReviewOpen() {
-	$st = defval($this->settings, 'rev_open', 0);
-	return $st > 0 && time() >= $st;
+	$dl = $this->deadlines();
+	return $dl["rev_open"] > 0 && $dl["now"] >= $dl["rev_open"];
     }
     function timeReviewPaper($isPC = false, $requested = true, $hard = true,
 			     $assumeOpen = false) {
@@ -361,7 +409,7 @@ class Conference {
 	    return false;
 	$od = ($assumeOpen ? "" : "rev_open");
 	$d = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
-	return $this->settingsBetween($od, $d, 'rev_grace') > 0;
+	return $this->deadlinesBetween($od, $d, "rev_grace") > 0;
     }
     function timePCReviewPreferences() {
 	return defval($this->settings, "papersub") > 0;
@@ -388,7 +436,7 @@ class Conference {
 	else if ($prow->timeSubmitted > 0)
 	    return true;
 	    //return !$download || $this->setting('sub_freeze') > 0
-	    //	|| $this->settingsAfter('sub_sub', 'sub_grace')
+	    //	|| $this->deadlinesAfter("sub_sub", "sub_grace")
 	    //	|| $this->setting('sub_open') <= 0;
 	else
 	    return !$download && $this->setting('pc_seeall') > 0;
@@ -1464,19 +1512,21 @@ class Conference {
     }
 
     function header($title, $id = "", $actionBar = null, $showTitle = true) {
-	global $ConfSiteBase, $ConfSiteSuffix, $Opt;
+	global $ConfSiteBase, $ConfSiteSuffix, $Me, $Opt;
 	if ($this->headerPrinted >= 2)
 	    return;
 	if ($actionBar === null)
 	    $actionBar = actionBar();
 
 	$this->header_head($title);
-	$time = time();
+	$dl = $Me->deadlines();
+	$now = $dl["now"];
 	echo "</head><body";
 	if ($id)
 	    echo " id='$id'";
 	// JavaScript's idea of a timezone offset is the negative of PHP's
-	$this->footerScript("hotcrpLoad.time($time," . (-date("Z", $time) / 60) . "," . (defval($Opt, "time24hour") ? 1 : 0) . ")");
+	$this->footerScript("hotcrpLoad.time($now," . (-date("Z", $now) / 60) . "," . (defval($Opt, "time24hour") ? 1 : 0) . ")");
+	$this->footerScript("loadDeadlines.init(" . simple_array_to_json($dl) . ",\"" . urlencode("${ConfSiteBase}deadlines$ConfSiteSuffix") . "?ajax=1\")");
 	echo " onload='hotcrpLoad()'>\n<div id='header'>\n",
 	    "  <div id='header_left_conf'><h1>";
 	if ($title && $showTitle && $title == "Home")
@@ -1498,9 +1548,33 @@ class Conference {
 	    else if ($id == "settings")
 		echo "?t=chair";
 	    echo "'>Help</a>", $xsep;
-	    echo "<a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>Sign&nbsp;out</a>", $xsep;
+	    echo "<a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>Sign&nbsp;out</a>";
 	}
-	echo $this->printableTime($time), "<div id='usertime' style='display:none'></div></div>\n";
+	echo "<div id='maindeadline' style='display:none'>";
+
+	// This is repeated in script.js:loadDeadlines
+	$dlname = "";
+	$dltime = 0;
+	if ($dl["sub_open"]) {
+	    foreach (array("sub_reg" => "registration", "sub_update" => "update", "sub_sub" => "submission") as $subtype => $subname)
+		if (isset($dl["${subtype}_ingrace"]) || $now <= defval($dl, $subtype, 0)) {
+		    $dlname = "Paper $subname deadline";
+		    $dltime = defval($dl, $subtype, 0);
+		    break;
+		}
+	}
+	if ($dlname) {
+	    $s = $dlname . " ";
+	    if (!$dltime || $dltime <= $now)
+		$s .= "is NOW";
+	    else
+		$s .= "in " . $this->printableInterval($dltime - $now);
+	    if (!$dltime || $dltime - $now <= 180)
+		$s = "<span class='impending'>$s</span>";
+	    echo $s;
+	}
+
+	echo "</div></div>\n";
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", htmlspecialchars($Opt["shortName"]), " Public Site</a></div>\n";
 
 	print "  <div class='clear'></div>\n";
@@ -1567,19 +1641,7 @@ class Conference {
 	    $values["response"] = $t;
 	unset($_SESSION["msgs"]);
 	header("Content-Type: text/json");
-	echo "{ ";
-	$sep = "";
-	foreach ($values as $name => $value) {
-	    echo $sep, "\"", $name, "\": ";
-	    if ($value === null || $value === 0 || $value === false)
-		echo "0";
-	    else if ($value === true || $value === 1)
-		echo "1";
-	    else
-		echo "\"", addcslashes($value, "\r\n\"\\"), "\"";
-	    $sep = ", ";
-	}
-	echo " }";
+	echo simple_array_to_json($values);
 	exit;
     }
 

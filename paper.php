@@ -528,7 +528,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     $notes = "";
     if ($isSubmitFinal) {
 	$deadline = $Conf->printableTimeSetting("final_soft", "span");
-	if ($deadline != "N/A" && $Conf->settingsAfter("final_soft"))
+	if ($deadline != "N/A" && $Conf->deadlinesAfter("final_soft"))
 	    $notes = "<strong>The deadline for submitting final versions was $deadline.</strong>";
 	else if ($deadline != "N/A")
 	    $notes = "You have until $deadline to make further changes.";

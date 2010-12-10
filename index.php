@@ -267,6 +267,9 @@ if (isset($_REQUEST["cleartokens"]) && $Me->valid())
 $Conf->header($Me->valid() ? "Home" : "Sign in", "home", actionBar());
 $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 
+if ($Me->privChair)
+    echo "<div id='clock_drift_container'></div>";
+
 
 // Sidebar
 echo "<div class='homeside'>";
@@ -516,7 +519,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	echo $sep, "<a href='reviewprefs$ConfSiteSuffix'>Preferences</a>";
 	$sep = $xsep;
     }
-    if ($Conf->settingsAfter("rev_open") || $Me->privChair) {
+    if ($Conf->deadlinesAfter("rev_open") || $Me->privChair) {
 	echo $sep, "<a href='offline$ConfSiteSuffix'>Offline reviewing</a>";
 	$sep = $xsep;
     }
@@ -630,7 +633,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 	if (!$Conf->timeFinalizePaper()) {
 	    // Be careful not to refer to a future deadline; perhaps an admin
 	    // just turned off submissions.
-	    if ($Conf->settingsBetween("", "sub_sub", "sub_grace"))
+	    if ($Conf->deadlinesBetween("", "sub_sub", "sub_grace"))
 		$deadlines[] = "The site is not open for submissions at the moment.";
 	    else
 		$deadlines[] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting papers has passed.";
@@ -643,14 +646,14 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 	    $deadlines[] = "You have until $time to submit papers.";
     }
     if (!$startable && !count($deadlines)) {
-	if ($Conf->settingsAfter('sub_open'))
+	if ($Conf->deadlinesAfter("sub_open"))
 	    $deadlines[] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for registering new papers has passed.";
 	else
 	    $deadlines[] = "The site is not open for submissions at the moment.";
     }
     if ($plist && $Conf->timeSubmitFinalPaper() && $plist->accepted > 0) {
 	$time = $Conf->printableTimeSetting("final_soft");
-	if ($Conf->settingsAfter("final_soft") && $plist->needFinalCopy > 0)
+	if ($Conf->deadlinesAfter("final_soft") && $plist->needFinalCopy > 0)
 	    $deadlines[] = "<strong class='overdue'>Final copies are overdue.</strong>  They were requested by $time.";
 	else if ($time != "N/A")
 	    $deadlines[] = "Submit final copies of your accepted papers by $time.";

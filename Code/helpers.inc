@@ -144,6 +144,29 @@ if (function_exists("iconv")) {
     }
 }
 
+function simple_array_to_json($x) {
+    $s = "{";
+    $sep = "";
+    foreach ($x as $name => $value) {
+	$s .= $sep . "\"" . $name . "\":";
+	if ($value === null)
+	    $s .= "null";
+	else if ($value === false)
+	    $s .= "false";
+	else if ($value === true)
+	    $s .= "true";
+	else if (is_int($value))
+	    $s .= $value;
+	else
+	    // XXX does not correctly escape all control characters, so does
+	    // not produce not true JSON.  (Currently OK since script.js uses
+	    // eval(), not JSON.parse.)
+	    $s .= "\"" . addcslashes($value, "\b\f\n\r\t\"\\") . "\"";
+	$sep = ",";
+    }
+    return $s . "}";
+}
+
 
 // web helpers
 

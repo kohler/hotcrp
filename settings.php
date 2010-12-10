@@ -83,7 +83,7 @@ $Group = defval($_REQUEST, "group");
 if (!isset($SettingGroups[$Group])) {
     if ($Conf->timeAuthorViewReviews())
 	$Group = "dec";
-    else if ($Conf->settingsAfter("sub_sub") || $Conf->timeReviewOpen())
+    else if ($Conf->deadlinesAfter("sub_sub") || $Conf->timeReviewOpen())
 	$Group = "rev";
     else
 	$Group = "sub";

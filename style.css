@@ -12,23 +12,26 @@ body {
 
 
 /* header */
-div#header {
+#header {
 	background-image: url("images/headgrad.png");
 	background-repeat: repeat-x;
 	background-position: top;
 	background-color: #ffffff;
 }
-div#header_right {
+#header_right {
 	padding: 8px 12px 0 12px;
 	font-size: smaller;
 	text-align: right;
 	float: right;
 }
-div#usertime, .usertime {
+#usertime, .usertime {
 	padding-top: 1px;
 	font-size: smaller;
 }
-div#header_left_conf {
+#maindeadline {
+	padding-top: 1px;
+}
+#header_left_conf {
 	float: left;
 	padding: 0.2em 0.8em 0.3em 0.8em;
 	border-bottom: 2px solid #b2a584;
@@ -38,7 +41,7 @@ div#header_left_conf {
 	background-repeat: repeat-x;
 	background-position: bottom;
 }
-div#header_left_page {
+#header_left_page {
 	float: left;
 	padding: 0.2em 0 0 0.8em;
 }
@@ -496,6 +499,10 @@ span.deadline {
 }
 strong.overdue {
 	color: red;
+}
+span.impending {
+	color: red;
+	font-weight: bold;
 }
 
 /* gopaper form */

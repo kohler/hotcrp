@@ -1135,6 +1135,70 @@ class Contact {
 	return true;
     }
 
+
+    function deadlines() {
+	// Return cleaned deadline-relevant settings that this user can see.
+	global $Conf;
+	$dlx = $Conf->deadlines();
+	$now = $dlx["now"];
+	$dl = array("now" => $now);
+	foreach (array("sub_open", "resp_open", "rev_open", "final_open") as $x)
+	    $dl[$x] = $dlx[$x] > 0;
+
+	if ($dlx["sub_reg"] && $dlx["sub_reg"] != $dlx["sub_update"])
+	    $dl["sub_reg"] = $dlx["sub_reg"];
+	if ($dlx["sub_update"] && $dlx["sub_update"] != $dlx["sub_sub"])
+	    $dl["sub_update"] = $dlx["sub_update"];
+	$dl["sub_sub"] = $dlx["sub_sub"];
+
+	$dl["resp_done"] = $dlx["resp_done"];
+
+	$dl["rev_open"] = $dl["rev_open"] && $this->amReviewer();
+	if ($this->isPC) {
+	    if ($dlx["pcrev_soft"] > $now)
+		$dl["pcrev_done"] = $dlx["pcrev_soft"];
+	    else if ($dlx["pcrev_hard"]) {
+		$dl["pcrev_done"] = $dlx["pcrev_hard"];
+		$dl["pcrev_ishard"] = true;
+	    }
+	}
+	if ($this->amReviewer()) {
+	    if ($dlx["extrev_soft"] > $now)
+		$dl["extrev_done"] = $dlx["extrev_soft"];
+	    else if ($dlx["extrev_hard"]) {
+		$dl["extrev_done"] = $dlx["extrev_hard"];
+		$dl["extrev_ishard"] = true;
+	    }
+	}
+
+	if ($dl["final_open"]) {
+	    if ($dlx["final_soft"] > $now)
+		$dl["final_done"] = $dlx["final_soft"];
+	    else {
+		$dl["final_done"] = $dlx["final_done"];
+		$dl["final_ishard"] = true;
+	    }
+	}
+
+	// mark grace periods
+	foreach (array("sub" => array("sub_reg", "sub_update", "sub_sub"),
+		       "resp" => array("resp_done"),
+		       "rev" => array("pcrev_done", "extrev_done"),
+		       "final" => array("final_done")) as $type => $dlnames) {
+	    if ($dl["${type}_open"] && ($grace = $dlx["${type}_grace"])) {
+		foreach ($dlnames as $dlname)
+		    // Give a minute's notice that there will be a grace
+		    // period to make the UI a little better.
+		    if (defval($dl, $dlname) && $dl[$dlname] + 60 < $now
+			&& $dl[$dlname] + $grace >= $now)
+			$dl["${dlname}_ingrace"] = true;
+	    }
+	}
+
+	return $dl;
+    }
+
+
     function paperStatus($paperId, $row, $long) {
 	global $Conf, $paperStatusCache;
 	if ($row->timeWithdrawn > 0)

@@ -167,7 +167,7 @@ if ((isset($_REQUEST["setvote"]) || isset($_REQUEST["setrank"]))
 
 $pastDeadline = !$Conf->timeReviewPaper($Me->isPC, true, true);
 
-if ($pastDeadline && !$Conf->settingsAfter("rev_open") && !$Me->privChair) {
+if ($pastDeadline && !$Conf->deadlinesAfter("rev_open") && !$Me->privChair) {
     $Conf->errorMsg("The site is not open for review.");
     $Me->go("index$ConfSiteSuffix");
 }
@@ -175,7 +175,7 @@ if ($pastDeadline && !$Conf->settingsAfter("rev_open") && !$Me->privChair) {
 $Conf->header("Offline Reviewing", 'offrev', actionBar());
 
 if ($Me->amReviewer()) {
-    if ($pastDeadline && !$Conf->settingsAfter("rev_open"))
+    if ($pastDeadline && !$Conf->deadlinesAfter("rev_open"))
 	$Conf->infoMsg("The site is not open for review.");
     else if ($pastDeadline)
 	$Conf->infoMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting reviews has passed.");
