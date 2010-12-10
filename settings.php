@@ -1218,7 +1218,7 @@ function doSubGroup() {
     echo "<div class='g'></div>\n<table id='foldpcconf' class='fold",
 	($Conf->setting("sub_pcconf") ? "o" : "c"), "'>\n";
     doCheckbox("sub_pcconf", "Collect authors&rsquo; PC conflicts", true,
-	       "hiliter(this);void fold(\"pcconf\",!this.checked)");
+	       "hiliter(this);void fold('pcconf',!this.checked)");
     if ($Conf->sversion >= 22) {
 	echo "<tr class='fx'><td></td><td>";
 	doCheckbox("sub_pcconfsel", "Collect PC conflict types (&ldquo;Advisor/student,&rdquo; &ldquo;Recent collaborator,&rdquo; etc.)");
