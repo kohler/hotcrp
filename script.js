@@ -113,7 +113,7 @@ function displayDeadlines() {
 	    }
 	    s += amt + " " + what + (amt == 1 ? "" : "s");
 	}
-	if (!dltime || amt <= 180)
+	if (!dltime || dltime - now <= 180)
 	    s = "<span class='impending'>" + s + "</span>";
     }
 
