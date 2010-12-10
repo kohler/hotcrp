@@ -504,6 +504,9 @@ span.impending {
 	color: red;
 	font-weight: bold;
 }
+span.impending a {
+	color: red;
+}
 
 /* gopaper form */
 div.gopaper {

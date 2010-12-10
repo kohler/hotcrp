@@ -1526,7 +1526,7 @@ class Conference {
 	    echo " id='$id'";
 	// JavaScript's idea of a timezone offset is the negative of PHP's
 	$this->footerScript("hotcrpLoad.time($now," . (-date("Z", $now) / 60) . "," . (defval($Opt, "time24hour") ? 1 : 0) . ")");
-	$this->footerScript("loadDeadlines.init(" . simple_array_to_json($dl) . ",\"" . urlencode("${ConfSiteBase}deadlines$ConfSiteSuffix") . "?ajax=1\")");
+	$this->footerScript("loadDeadlines.init(" . simple_array_to_json($dl) . ",\"" . urlencode("${ConfSiteBase}deadlines$ConfSiteSuffix") . "\")");
 	echo " onload='hotcrpLoad()'>\n<div id='header'>\n",
 	    "  <div id='header_left_conf'><h1>";
 	if ($title && $showTitle && $title == "Home")
@@ -1564,7 +1564,7 @@ class Conference {
 		}
 	}
 	if ($dlname) {
-	    $s = $dlname . " ";
+	    $s = "<a href=\"${ConfSiteBase}deadlines$ConfSiteSuffix\">$dlname</a> ";
 	    if (!$dltime || $dltime <= $now)
 		$s .= "is NOW";
 	    else

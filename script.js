@@ -63,7 +63,12 @@ return setLocalTime;
 
 
 loadDeadlines = (function () {
-var dl, dlname, dltime, dlurl, reload_timeout;
+var dl, dlname, dltime, dlurl, redisplay_timeout, reload_timeout;
+
+function redisplayDeadlines() {
+    redisplay_timeout = null;
+    displayDeadlines();
+}
 
 // this logic is repeated in the back end
 function displayDeadlines() {
@@ -89,7 +94,10 @@ function displayDeadlines() {
     }
 
     if (dlname) {
-	s = dlname + " ";
+	if (dlurl)
+	    s = "<a href=\"" + dlurl + "\">" + dlname + "</a> ";
+	else
+	    s = dlname + " ";
 	amt = dltime - now;
 	if (!dltime || amt <= 0)
 	    s += "is NOW";
@@ -119,15 +127,18 @@ function displayDeadlines() {
 
     elt.innerHTML = s;
     elt.style.display = s ? (elt.tagName.toUpperCase() == "SPAN" ? "inline" : "block") : "none";
-    if (what == "second")
-	setTimeout(displayDeadlines, 250);
-    else if (what == "minute")
-	setTimeout(displayDeadlines, 15000);
+
+    if (!redisplay_timeout) {
+	if (what == "second")
+	    redisplay_timeout = setTimeout(displayDeadlines, 250);
+	else if (what == "minute")
+	    redisplay_timeout = setTimeout(displayDeadlines, 15000);
+    }
 }
 
 function reloadDeadlines() {
     reload_timeout = null;
-    Miniajax.get(dlurl, loadDeadlines, 10000);
+    Miniajax.get(dlurl + "?ajax=1", loadDeadlines, 10000);
 }
 
 function loadDeadlines(dlx) {
