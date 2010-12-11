@@ -112,7 +112,8 @@ class PaperSearch {
     const F_TIMESUBMITTED = 0x01000;
     const F_AUTHORCOMMENT = 0x02000;
     const F_REVIEWERCOMMENT = 0x04000;
-    const F_FALSE = 0x08000;
+    const F_AUTHORRESPONSE = 0x08000;
+    const F_FALSE = 0x10000;
 
     var $contactId;
     var $privChair;
@@ -390,9 +391,11 @@ class PaperSearch {
 	    $qt[] = new SearchTerm($type, $rt, $value);
 	else {
 	    $deblinder = 0;
-	    if ($type == "re" && $Conf->blindReview() == BLIND_ALWAYS)
+	    if ($type != "re" && $type != "cmt")
+		/* $deblinder == 0 */;
+	    else if ($Conf->blindReview() == BLIND_ALWAYS)
 		$deblinder = self::F_FALSE;
-	    else if ($type == "re" && $Conf->blindReview() == BLIND_OPTIONAL)
+	    else if ($Conf->blindReview() == BLIND_OPTIONAL)
 		$deblinder = self::F_NONBLIND;
 
 	    if ($this->amPC && $type == "nre") {
@@ -491,34 +494,30 @@ class PaperSearch {
 	}
     }
 
-    function _searchComment($word, $ctype, &$qt) {
+    function _searchComment($word, $ctype, &$qt, $quoted) {
 	global $Conf;
 
-	if ($word == "" || $word == "any")
-	    $word = ">0";
-	else if ($word == "none")
-	    $word = "=0";
+	$m = self::_matchCompar($word, $quoted);
+	if (($type = self::_comparTautology($m))) {
+	    $qt[] = new SearchTerm($type);
+	    return;
+	}
 
-	if (preg_match('/\A([<>!]?=?\s*)?(\d+)\z/s', $word, $m))
-	    list($type, $value) = self::_typeCompar($m[1], $m[2], "ncmt");
-	else
-	    $type = "f";
+	if ($m[1] == "") {
+	    $type = "ncmt";
+	    $value = array(null, $m[2]);
+	} else {
+	    $type = "cmt";
+	    $value = array($this->_reviewerMatcher($m[1], $quoted), $m[2]);
+	    if (is_array($value[0]))
+		$value[0] = self::_sqlNumericSet($value[0]);
+	}
 
 	$rt = ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0);
 	$nqt = count($qt);
-	if ($type == "f" || $type == "t")
-	    $qt[] = new SearchTerm($type);
-	else if ($this->privChair)
-	    $qt[] = new SearchTerm($type, $rt, $value);
-	else {
-	    // XXX may expose information to the PC inappropriately
-	    if ($this->amPC)
-		$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
-	    else
-		$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_REVIEWERCOMMENT, $value);
-	    if ($Conf->timeAuthorViewReviews())
-		$qt[] = new SearchTerm($type, self::F_AUTHOR | self::F_AUTHORCOMMENT, $value);
-	}
+	$this->_searchCompleteReviewer($qt, $type, $rt, $value);
+	if (!$this->privChair && !$Conf->timeAuthorViewReviews())
+	    $qt[] = new SearchTerm($type, self::F_AUTHOR | self::F_AUTHORRESPONSE, $value);
 	if (count($qt) == $nqt)
 	    $qt[] = new SearchTerm("f");
     }
@@ -781,7 +780,7 @@ class PaperSearch {
 		$this->_searchReviewer($word, $rtype, $qt, $quoted);
 	foreach (array("cmt", "aucmt") as $ctype)
 	    if ($special ? $special == $ctype : isset($this->fields[$ctype]))
-		$this->_searchComment($word, $ctype, $qt);
+		$this->_searchComment($word, $ctype, $qt, $quoted);
 	if (($special ? $special == "lead" : isset($this->fields["lead"]))
 	    && $this->amPC) {
 	    if ($word == "none")
@@ -1445,6 +1444,33 @@ class PaperSearch {
 	return "(" . join(" and ", $q) . ")";
     }
 
+    function _clauseTermSetComments($thistab, $extrawhere,
+				    &$t, &$tables, &$columns) {
+	if (!isset($tables[$thistab])) {
+	    $where = array();
+	    if ($t->flags & self::F_REVIEWERCOMMENT)
+		$where[] = "forReviewers!=0";
+	    if ($t->flags & self::F_AUTHORRESPONSE)
+		$where[] = "forAuthors=2";
+	    else if ($t->flags & (self::F_AUTHOR | self::F_AUTHORCOMMENT))
+		$where[] = "forAuthors>0";
+	    if ($t->flags & self::F_NONBLIND)
+		$where[] = "blind=0";
+	    if ($extrawhere)
+		$where[] = $extrawhere;
+	    $wheretext = "";
+	    if (count($where))
+		$wheretext = " where " . join(" and ", $where);
+	    $tables[$thistab] = array("left join", "(select paperId, count(PaperComment.commentId) as ncmt from PaperComment$wheretext group by paperId)");
+	}
+	$q = array();
+	$this->_clauseTermSetFlags($t->flags, $q);
+	$q[] = "coalesce($thistab.ncmt,0)" . $t->value[1];
+	$columns[$thistab . "_matches"] = "$thistab.ncmt";
+	$t->link = $thistab . "_matches";
+	return "(" . join(" and ", $q) . ")";
+    }
+
     function _clauseTermSet(&$t, $negated, &$tables, &$columns, &$f) {
 	global $Conf;
 	$tt = $t->type;
@@ -1487,24 +1513,13 @@ class PaperSearch {
 				       "PaperConflict", "contactId", "",
 				       $tables, $columns, $f);
 	} else if ($tt == "ncmt") {
-	    $rtype = $t->flags & (self::F_REVIEWERCOMMENT | self::F_AUTHORCOMMENT);
-	    if (!isset($tables["Numcomments_$rtype"])) {
-		$where = array();
-		if ($rtype & self::F_REVIEWERCOMMENT)
-		    $where[] = "forReviewers!=0";
-		if ($rtype & self::F_AUTHORCOMMENT)
-		    $where[] = "forAuthors>0";
-		$wheretext = "";
-		if (count($where))
-		    $wheretext = " where " . join(" and ", $where);
-		$tables["Numcomments_$rtype"] = array("left join", "(select paperId, count(commentId) as ncmt from PaperComment$wheretext group by paperId)");
-	    }
-	    $columns["ncmt_$rtype"] = "Numcomments_$rtype.ncmt";
-	    $q = array();
-	    $this->_clauseTermSetFlags($t->flags, $q);
-	    $q[] = "coalesce(Numcomments_$rtype.ncmt,0)$t->value";
-	    $f[] = "(" . join(" and ", $q) . ")";
-	    $t->link = "ncmt_$rtype";
+	    $rtype = $t->flags & (self::F_REVIEWERCOMMENT | self::F_AUTHORCOMMENT | self::F_AUTHORRESPONSE);
+	    $f[] = $this->_clauseTermSetComments("Numcomments_$rtype", "", $t, $tables, $columns);
+	} else if ($tt == "cmt") {
+	    $thistab = "Comments_" . count($tables);
+	    if (!is_array($t->value))
+		$t->value = array($t->value, ">=1");
+	    $f[] = $this->_clauseTermSetComments($thistab, "contactId" . $t->value[0], $t, $tables, $columns);
 	} else if ($tt == "pn") {
 	    $q = array();
 	    if (count($t->value[0]))
@@ -1619,21 +1634,13 @@ class PaperSearch {
 	if ($tt == "ti" || $tt == "ab" || $tt == "au" || $tt == "co")
 	    return $this->_clauseTermCheckField($t, $row);
 	else if ($tt == "nre" || $tt == "re" || $tt == "rf"
-		 || $tt == "conflict") {
+		 || $tt == "conflict" || $tt == "ncmt" || $tt == "cmt") {
 	    if (!$this->_clauseTermCheckFlags($t->flags, $row))
 		return false;
 	    else {
 		$fieldname = $t->link;
 		$x = $row->$fieldname;
 		return eval("return \$x" . $t->value[1] . ";");
-	    }
-	} else if ($tt == "ncmt") {
-	    if (!$this->_clauseTermCheckFlags($t->flags, $row))
-		return false;
-	    else {
-		$fieldname = $t->link;
-		$x = $row->$fieldname;
-		return eval("return \$x$t->value;");
 	    }
 	} else if ($tt == "pn") {
 	    if (count($t->value[0]) && array_search($row->paperId, $t->value[0]) === false)

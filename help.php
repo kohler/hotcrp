@@ -268,6 +268,7 @@ function searchQuickref() {
 	_searchQuickrefRow("", "rate:+", "review was rated positively (&ldquo;rate:-&rdquo; and &ldquo;rate:+>2&rdquo; also work; can combine with &ldquo;re:&rdquo;)");
     _searchQuickrefRow("Comments", "cmt:>0", "at least one comment visible to PC (including authors' response)");
     _searchQuickrefRow("", "aucmt:>0", "at least one comment visible to authors (including authors' response)");
+    _searchQuickrefRow("", "cmt:sylvia", "&ldquo;sylvia&rdquo; (in name/email) wrote at least one comment visible to PC; can combine with counts, use reviewer tags");
     _searchQuickrefRow("Leads", "lead:fdabek", "&ldquo;fdabek&rdquo; (in name/email) is discussion lead");
     _searchQuickrefRow("", "lead:none", "no assigned discussion lead");
     _searchQuickrefRow("", "lead:any", "some assigned discussion lead");
