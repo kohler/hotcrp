@@ -872,6 +872,7 @@ class Conference {
 		PaperReview.reviewId,
 		PaperReview.reviewModified,
 		PaperReview.reviewSubmitted,
+		PaperReview.reviewNeedsSubmit,
 		PaperReview.reviewOrdinal,
 		PaperReview.reviewBlind,
 		PaperReview.contactId as reviewContactId,
