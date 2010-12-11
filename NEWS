@@ -1,5 +1,56 @@
 HotCRP NEWS
 
+Version 2.41
+
+* The "Recent activity" on the home page includes information about
+  submitted reviews as well as submitted comments (frequent request,
+  including from Ratul Mahajan).
+
+* Deadlines: Replace the previous "the server's time is XXX" display with a
+  new countdown to the submission deadline.  Use Javascript and Ajax loads
+  to keep the countdown up to date.
+
+* Search improvements
+
+** Add support for "cmt:REVIEWER".
+
+** Add support for "re:me", "re:pc", and "re:-PCTAG".
+
+** Improve "conflict:" support.
+
+** "tag:FOO*BAR" searches for any tag that matches FOO*BAR, using glob
+   matching.
+
+** Allow comma- as well as space-separated paper lists.
+
+** Always show all display options ("More>>" distracted).
+
+* Assignment bug fixes and improvements: autoassign lead/shepherd no longer
+  resets existing assignments; autoassign lead/shepherd gains more options;
+  manual assignment shows correct user preferences.
+
+* Display improvements: better HTML formatting on mail page (IE6 was
+  broken); paper list authors are grouped by affiliation in search lists;
+  remove the low-value "Welcome, YOUR NAME!" home page section; Web forms
+  show review field visibility more clearly; better name abbreviation.
+
+* Usability improvements: don't lose comments if user's session expires.
+  Wording improvements and additional dialog boxes avoid confusing users
+  about paper "versions" and prevent discourage turning a paper from ready
+  to not-ready-for-review.  Warn users who have turned off Javascript.
+  Show the chair a warning if PC members have -100 preferences that don't
+  correspond to conflicts.
+
+* Security improvements: reduce scope for IE XSS attacks, don't leak
+  contact emails to unauthorized users, don't leak shepherds & leads to
+  chairs who are conflicted.
+
+* Thanks to Jeff Mogul, Casey Henderson, Juan Caballero, Adam Barth,
+  Jane-Ellen Long, Andrew Hume, Mooly Sagiv, David Schultz, David Evans,
+  Petros Efstathopoulos, Stephanie Weinrich, David A. Padua, and David
+  Andersen.
+
+
 Version 2.40   30.Jul.2010
 
 * Search expression improvements: Allow parenthesized expressions, "AND"
