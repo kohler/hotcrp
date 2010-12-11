@@ -384,6 +384,54 @@ class PaperSearch {
 	return "\1" . (count($this->contactmatch) - 1) . "\1";
     }
 
+    function _searchCompleteReviewer(&$qt, $type, $rt, $value) {
+	global $Conf;
+	if ($this->privChair)
+	    $qt[] = new SearchTerm($type, $rt, $value);
+	else {
+	    $deblinder = 0;
+	    if ($type == "re" && $Conf->blindReview() == BLIND_ALWAYS)
+		$deblinder = self::F_FALSE;
+	    else if ($type == "re" && $Conf->blindReview() == BLIND_OPTIONAL)
+		$deblinder = self::F_NONBLIND;
+
+	    if ($this->amPC && $type == "nre") {
+		// 28.Nov.2008 -- PC users can always count reviews for
+		// non-conflicted papers.  The "can see all reviews" settings
+		// only apply to reviewer names.  This is a change from prior
+		// behavior, but prior behavior wasn't particularly consistent
+		// (the "can review any submitted paper" setting was affecting
+		// visibility; it shouldn't).
+		$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
+
+	    } else if ($this->amPC) {
+		$pc_seeallrev = $Conf->setting("pc_seeallrev");
+		$pc_seeblindrev = $Conf->setting("pc_seeblindrev");
+		if ($pc_seeallrev == 4 && !$this->reviewsOutstanding)
+		    $pc_seeallrev = 1;
+
+		if ($pc_seeallrev == 1
+		    && ($deblinder == 0 || $pc_seeblindrev == 0))
+		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
+		else {
+		    $qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
+		    if ($pc_seeallrev == 1)
+			$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT | $deblinder, $value);
+		    if ($pc_seeallrev == 3)
+			$qt[] = new SearchTerm($type, $rt | self::F_NONREVIEWER | self::F_NONCONFLICT | $deblinder, $value);
+		}
+
+	    } else if ($Conf->setting("extrev_view") == 2)
+		$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
+
+	    else if ($Conf->setting("extrev_view") == 1)
+		$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT | $deblinder, $value);
+
+	    if ($Conf->timeAuthorViewReviews())
+		$qt[] = new SearchTerm($type, ($rt & ~self::F_TYPEMASK) | self::F_AUTHOR | self::F_COMPLETE | $deblinder, $value);
+	}
+    }
+
     function _searchReviewer($word, $rtype, &$qt, $quoted) {
 	global $Conf;
 
@@ -416,49 +464,7 @@ class PaperSearch {
 	}
 
 	$nqt = count($qt);
-	if ($this->privChair)
-	    $qt[] = new SearchTerm($type, $rt, $value);
-	else {
-	    $deblinder = 0;
-	    if ($type == "re" && $Conf->blindReview() == BLIND_ALWAYS)
-		$deblinder = self::F_FALSE;
-	    else if ($type == "re" && $Conf->blindReview() == BLIND_OPTIONAL)
-		$deblinder = self::F_NONBLIND;
-
-	    if ($this->amPC && $type != "re") {
-		// 28.Nov.2008 -- PC users can always count reviews for
-		// non-conflicted papers.  The "can see all reviews" settings
-		// only apply to reviewer names.  This is a change from prior
-		// behavior, but prior behavior wasn't particularly consistent
-		// (the "can review any submitted paper" setting was affecting
-		// visibility; it shouldn't).
-		$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
-
-	    } else if ($this->amPC) {
-		$pc_seeallrev = $Conf->setting("pc_seeallrev");
-		$pc_seeblindrev = $Conf->setting("pc_seeblindrev");
-		if ($pc_seeallrev == 4 && !$this->reviewsOutstanding)
-		    $pc_seeallrev = 1;
-
-		if ($pc_seeallrev == 1
-		    && ($deblinder == 0 || $pc_seeblindrev == 0))
-		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
-		else {
-		    $qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
-		    if ($pc_seeallrev == 1)
-			$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT | $deblinder, $value);
-		    if ($pc_seeallrev == 3)
-			$qt[] = new SearchTerm($type, $rt | self::F_NONREVIEWER | self::F_NONCONFLICT | $deblinder, $value);
-		}
-
-	    } else if ($Conf->setting("extrev_view") == 2)
-		$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
-	    else if ($Conf->setting("extrev_view") == 1)
-		$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT | $deblinder, $value);
-
-	    if ($Conf->timeAuthorViewReviews())
-		$qt[] = new SearchTerm($type, ($rt & ~self::F_TYPEMASK) | self::F_AUTHOR | self::F_COMPLETE | $deblinder, $value);
-	}
+	$this->_searchCompleteReviewer($qt, $type, $rt, $value);
 	if (count($qt) == $nqt)
 	    $qt[] = new SearchTerm("f");
     }
@@ -573,27 +579,7 @@ class PaperSearch {
 	}
 
 	$nqt = count($qt);
-	$rt = self::F_COMPLETE;
-	if ($this->privChair)
-	    $qt[] = new SearchTerm("rf", $rt, $value);
-	else {
-	    if ($this->amPC) {
-		$pc_seeallrev = $Conf->setting("pc_seeallrev");
-		if ($pc_seeallrev == 4 && !$this->reviewsOutstanding)
-		    $pc_seeallrev = 1;
-
-		if ($pc_seeallrev == 1)
-		    $qt[] = new SearchTerm("rf", $rt | self::F_NONCONFLICT, $value);
-		else {
-		    $qt[] = new SearchTerm("rf", $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
-		    if ($pc_seeallrev == 3)
-			$qt[] = new SearchTerm("rf", $rt | self::F_NONREVIEWER | self::F_NONCONFLICT, $value);
-		}
-	    } else if ($Conf->setting("extrev_view") >= 1)
-		$qt[] = new SearchTerm("rf", $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
-	    if ($Conf->timeAuthorViewReviews())
-		$qt[] = new SearchTerm("rf", ($rt & ~self::F_TYPEMASK) | self::F_AUTHOR | self::F_COMPLETE, $value);
-	}
+	$this->_searchCompleteReviewer("rf", self::F_COMPLETE, $value);
 	return count($qt) != $nqt;
     }
 
@@ -1423,6 +1409,42 @@ class PaperSearch {
 	$where[] = $rate;
     }
 
+    function _clauseTermSetReviews($thistab, $extrawhere,
+				   &$t, &$tables, &$columns) {
+	if (!isset($tables[$thistab])) {
+	    $where = array();
+	    $reviewtable = "PaperReview";
+	    if ($t->flags & self::F_TYPEMASK)
+		$where[] = "reviewType=" . ($t->flags & self::F_TYPEMASK);
+	    if ($t->flags & self::F_NONBLIND)
+		$where[] = "reviewBlind=0";
+	    if ($t->flags & self::F_COMPLETE)
+		$where[] = "reviewSubmitted>0";
+	    else if ($t->flags & self::F_INCOMPLETE)
+		$where[] = "reviewNeedsSubmit>0";
+	    if (isset($t->extra) && isset($t->extra["round"])) {
+		if (count($t->extra["round"]) == 0)
+		    $where[] = "false";
+		else
+		    $where[] = "reviewRound in (" . join(",", $t->extra["round"]) . ")";
+	    }
+	    if (isset($t->extra) && isset($t->extra["rate"]))
+		$this->_clauseTermSetRating($reviewtable, $where, $t->extra["rate"]);
+	    if ($extrawhere)
+		$where[] = $extrawhere;
+	    $wheretext = "";
+	    if (count($where))
+		$wheretext = " where " . join(" and ", $where);
+	    $tables[$thistab] = array("left join", "(select paperId, count(PaperReview.reviewId) as nre from $reviewtable$wheretext group by paperId)");
+	}
+	$q = array();
+	$this->_clauseTermSetFlags($t->flags, $q);
+	$q[] = "coalesce($thistab.nre,0)" . $t->value[1];
+	$columns[$thistab . "_matches"] = "$thistab.nre";
+	$t->link = $thistab . "_matches";
+	return "(" . join(" and ", $q) . ")";
+    }
+
     function _clauseTermSet(&$t, $negated, &$tables, &$columns, &$f) {
 	global $Conf;
 	$tt = $t->type;
@@ -1446,74 +1468,20 @@ class PaperSearch {
 				       "PaperConflict", "contactId", " and %.conflictType>=" . CONFLICT_AUTHOR,
 				       $tables, $columns, $f);
 	} else if ($tt == "nre") {
-	    $rflags = $t->flags & (self::F_TYPEMASK | self::F_NONBLIND | self::F_COMPLETE | self::F_INCOMPLETE);
-	    $rtype = $rflags;
 	    if (isset($t->extra))
-		$rtype = "X" . count($tables);
-	    if (!isset($tables["Numreviews_$rtype"])) {
-		$where = array();
-		$reviewtable = "PaperReview";
-		if ($rflags & self::F_TYPEMASK)
-		    $where[] = "reviewType=" . ($rflags & self::F_TYPEMASK);
-		if ($rflags & self::F_NONBLIND)
-		    $where[] = "reviewBlind=0";
-		if ($rflags & self::F_COMPLETE)
-		    $where[] = "reviewSubmitted>0";
-		else if ($rflags & self::F_INCOMPLETE)
-		    $where[] = "reviewNeedsSubmit>0";
-		if (isset($t->extra) && isset($t->extra["round"])) {
-		    if (count($t->extra["round"]) == 0)
-			$where[] = "false";
-		    else
-			$where[] = "reviewRound in (" . join(",", $t->extra["round"]) . ")";
-		}
-		if (isset($t->extra) && isset($t->extra["rate"]))
-		    $this->_clauseTermSetRating($reviewtable, $where, $t->extra["rate"]);
-		$wheretext = "";
-		if (count($where))
-		    $wheretext = " where " . join(" and ", $where);
-		$tables["Numreviews_$rtype"] = array("left join", "(select paperId, count(PaperReview.reviewId) as nre from $reviewtable$wheretext group by paperId)");
-	    }
-	    $columns["nre_$rtype"] = "Numreviews_$rtype.nre";
-	    $q = array();
-	    $this->_clauseTermSetFlags($t->flags, $q);
-	    $q[] = "coalesce(Numreviews_$rtype.nre,0)" . $t->value[1];
-	    $f[] = "(" . join(" and ", $q) . ")";
-	    $t->link = "nre_$rtype";
+		$thistab = "Numreviews_X" . count($tables);
+	    else
+		$thistab = "Numreviews_" . ($t->flags & (self::F_TYPEMASK | self::F_NONBLIND | self::F_COMPLETE | self::F_INCOMPLETE));
+	    $f[] = $this->_clauseTermSetReviews($thistab, "", $t, $tables, $columns);
 	} else if ($tt == "re" || $tt == "rf") {
 	    $thistab = "Reviews_" . count($tables);
-	    $reviewtable = "PaperReview";
-	    $where = array();
-	    if ($t->flags & self::F_TYPEMASK)
-		$where[] = "reviewType=" . ($t->flags & self::F_TYPEMASK);
-	    if ($t->flags & self::F_NONBLIND)
-		$where[] = "reviewBlind=0";
-	    if ($t->flags & self::F_COMPLETE)
-		$where[] = "reviewSubmitted>0";
-	    else if ($t->flags & self::F_INCOMPLETE)
-		$where[] = "reviewNeedsSubmit>0";
-	    if (isset($t->extra) && isset($t->extra["round"])) {
-		if (count($t->extra["round"]) == 0)
-		    $where[] = "false";
-		else
-		    $where[] = "reviewRound in (" . join(",", $t->extra["round"]) . ")";
-	    }
-	    if (isset($t->extra) && isset($t->extra["rate"]))
-		$this->_clauseTermSetRating($reviewtable, $where, $t->extra["rate"]);
 	    if (!is_array($t->value))
 		$t->value = array($t->value, ">=1");
 	    if ($tt == "re")
-		$where[] = "contactId" . $t->value[0];
+		$extrawhere = "contactId" . $t->value[0];
 	    else
-		$where[] = $t->value[0];
-	    $wheretext = " where " . join(" and ", $where);
-	    $tables[$thistab] = array("left join", "(select paperId, count(PaperReview.reviewId) as nre from $reviewtable$wheretext group by paperId)");
-	    $columns[$thistab . "_matches"] = "$thistab.nre";
-	    $q = array();
-	    $this->_clauseTermSetFlags($t->flags, $q);
-	    $q[] = "coalesce($thistab.nre,0)" . $t->value[1];
-	    $f[] = "(" . join(" and ", $q) . ")";
-	    $t->link = $thistab . "_matches";
+		$extrawhere = $t->value[0];
+	    $f[] = $this->_clauseTermSetReviews($thistab, $extrawhere, $t, $tables, $columns);
 	} else if ($tt == "conflict") {
 	    $this->_clauseTermSetTable($t, $t->value[0], $t->value[1], "Conflict",
 				       "PaperConflict", "contactId", "",
