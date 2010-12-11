@@ -259,7 +259,7 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
 	    $x .= "$sep$key=" . urlencode($value);
 	    $sep = "&";
 	}
-    if (isset($CurrentList) && $CurrentList > 0)
+    if (isset($CurrentList) && $CurrentList > 0 && !isset($_REQUEST["ls"]) && !isset($extra["ls"]))
 	$x .= $sep . "ls=" . $CurrentList;
     if (isset($extra["anchor"]))
 	$x .= "#" . $extra["anchor"];
