@@ -1,10 +1,14 @@
 HotCRP NEWS
 
-Version 2.41
+Version 2.41   13.Dec.2010
 
 * The "Recent activity" on the home page includes information about
   submitted reviews as well as submitted comments (frequent request,
   including from Ratul Mahajan).
+
+* Manual assignment nasty bug fix: As of 2.40 the manual assignment page
+  would always show the CHAIR'S preferences & conflicts.  Now it shows the
+  selected PC member's preferences & conflicts.
 
 * Deadlines: Replace the previous "the server's time is XXX" display with a
   new countdown to the submission deadline.  Use Javascript and Ajax loads
@@ -12,7 +16,7 @@ Version 2.41
 
 * Search improvements
 
-** Add support for "cmt:REVIEWER".
+** Add support for "cmt:REVIEWERNAME".
 
 ** Add support for "re:me", "re:pc", and "re:-PCTAG".
 
@@ -26,8 +30,7 @@ Version 2.41
 ** Always show all display options ("More>>" distracted).
 
 * Assignment bug fixes and improvements: autoassign lead/shepherd no longer
-  resets existing assignments; autoassign lead/shepherd gains more options;
-  manual assignment shows correct user preferences.
+  resets existing assignments; autoassign lead/shepherd gains more options.
 
 * Display improvements: better HTML formatting on mail page (IE6 was
   broken); paper list authors are grouped by affiliation in search lists;
