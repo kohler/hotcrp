@@ -212,6 +212,7 @@ class ContactList extends BaseList {
 	    foreach ($rows as $row)
 		$this->_setSortRow($row, $scoreName, $scoreMax, $scoresort);
 	    usort($rows, array($this, "_sortScoreNum"));
+	    break;
 	}
 	if ($this->reverseSort)
 	    return array_reverse($rows);
@@ -563,7 +564,7 @@ class ContactList extends BaseList {
 
 	// fetch data
 	if (edb_nrows($result) == 0)
-	    return "No matching people";
+	    return array();
 	$rows = array();
 	while (($row = edb_orow($result)))
 	    $rows[] = $row;
@@ -602,9 +603,7 @@ class ContactList extends BaseList {
 
 	// run query
 	$rows = ContactList::_rows($queryOptions);
-	if (!$rows)
-	    return NULL;
-	if (count($rows) == 0)
+	if (!$rows || count($rows) == 0)
 	    return "No matching people";
 
 	// list number
