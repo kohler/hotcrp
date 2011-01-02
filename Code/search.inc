@@ -740,7 +740,7 @@ class PaperSearch {
     }
 
     function _searchPopWord(&$str) {
-	preg_match('/\A(-?"[^"]*"?|-?[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?|[^"\s()]+)/s', $str, $m);
+	preg_match('/\A(-?"[^"]*"?|-?[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?[^\s()]*|[^"\s()]+)/s', $str, $m);
 	$str = ltrim(substr($str, strlen($m[0])));
 	return $m[0];
     }
