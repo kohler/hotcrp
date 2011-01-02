@@ -395,8 +395,12 @@ class PaperSearch {
 	    }
 	}
 
-	$this->contactmatch[] = sqlq_for_like($word);
-	$this->contactmatchPC = false;
+	$qword = sqlq_for_like($word);
+	if (!count($this->contactmatch)
+	    || $this->contactmatch[count($this->contactmatch) - 1] != $qword) {
+	    $this->contactmatch[] = sqlq_for_like($word);
+	    $this->contactmatchPC = false;
+	}
 	return "\1" . (count($this->contactmatch) - 1) . "\1";
     }
 
@@ -530,9 +534,18 @@ class PaperSearch {
 	    $qt[] = new SearchTerm("f");
     }
 
-    function _searchReviews($word, $rf, $field, &$qt) {
+    function _searchReviews($word, $rf, $field, &$qt, $quoted) {
 	global $Conf;
 	$countexpr = ">0";
+	$contacts = null;
+	$contactword = "";
+
+	if (preg_match('/\A(.+?)([:=<>!])(.*)\z/s', $word, $m)
+	    && !ctype_digit($m[1])) {
+	    $contacts = $this->_reviewerMatcher($m[1], $quoted);
+	    $word = ($m[2] == ":" ? $m[3] : $m[2] . $m[3]);
+	    $contactword = $m[1] . ":";
+	}
 
 	if (isset($rf->options[$field])) {
 	    $letters = $rf->reviewFields[$field] > 1;
@@ -569,11 +582,11 @@ class PaperSearch {
 		       ? preg_match('/\A\s*([A-Za-z])\s*-?\s*([A-Za-z])\s*\z/s', $word, $m)
 		       : preg_match('/\A\s*(\d+)\s*-\s*(\d+)\s*\z/s', $word, $m)) {
 		$qo = array();
-		$this->_searchReviews($m[1], $rf, $field, $qo);
-		$this->_searchReviews($m[2], $rf, $field, $qo);
-		if ($this->_searchReviews("<" . $m[1], $rf, $field, $qo))
+		$this->_searchReviews($contactword . $m[1], $rf, $field, $qo, $quoted);
+		$this->_searchReviews($contactword . $m[2], $rf, $field, $qo, $quoted);
+		if ($this->_searchReviews($contactword . "<" . $m[1], $rf, $field, $qo, $quoted))
 		    $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
-		if ($this->_searchReviews(">" . $m[2], $rf, $field, $qo))
+		if ($this->_searchReviews($contactword . ">" . $m[2], $rf, $field, $qo, $quoted))
 		    $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
 		$qt[] = new SearchTerm("and", 0, $qo);
 		return;
@@ -589,7 +602,7 @@ class PaperSearch {
 	}
 
 	$nqt = count($qt);
-	$value = new SearchReviewValue($countexpr, null, $value);
+	$value = new SearchReviewValue($countexpr, $contacts, $value);
 	$this->_searchCompleteReviewer($qt, "re", self::F_COMPLETE, $value);
 	return count($qt) != $nqt;
     }
@@ -974,7 +987,7 @@ class PaperSearch {
 	if ($special && !isset($searchTags[$special]) && count($qt) == 0) {
 	    $rf = reviewForm();
 	    if (($field = $rf->unabbreviateField($special))) {
-		if (!$this->_searchReviews($word, $rf, $field, $qt))
+		if (!$this->_searchReviews($word, $rf, $field, $qt, $quoted))
 		    $qt[] = new SearchTerm("f");
 	    } else if (!$this->_searchOptions("$special:$word", $qt, false)
 		       && $unrecognized_keyword_error) {

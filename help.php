@@ -307,12 +307,15 @@ function searchQuickref() {
 	$revname = $rf->abbreviateField($rf->shortName[$f[0]], 1);
 	$revhtml = htmlspecialchars($rf->shortName[$f[0]]);
 	_searchQuickrefRow($t, "$revname:$score", "at least one completed review has $revhtml score $score");
+	$revname = $rf->abbreviateField($rf->shortName[$f[0]]);
+	_searchQuickrefRow("", "$revname:$score", "other abbreviations accepted");
 	$scorerange = ctype_digit("$score") ? "$score0-$score" : "$score0$score";
 	_searchQuickrefRow("", "$revname:$scorerange", "completed reviews&rsquo; $revhtml scores fill the $score0&ndash;$score range");
 	_searchQuickrefRow("", "$revname:>$score", "at least one completed review has $revhtml score greater than $score");
 	_searchQuickrefRow("", "$revname:2<=$score", "at least two completed reviews have $revhtml score less than or equal to $score");
-	$revname = $rf->abbreviateField($rf->shortName[$f[0]]);
-	_searchQuickrefRow("", "$revname:$score", "other abbreviations accepted");
+	_searchQuickrefRow("", "$revname:pc>$score", "at least one completed PC review has $revhtml score greater than $score");
+	_searchQuickrefRow("", "$revname:pc:2>$score", "at least two completed PC reviews have $revhtml score greater than $score");
+	_searchQuickrefRow("", "$revname:sylvia=$score", "&ldquo;sylvia&rdquo; (reviewer name/email) gave $revhtml score $score");
 	$t = "";
     }
     if ($f[1]) {
