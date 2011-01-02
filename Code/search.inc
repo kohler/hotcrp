@@ -42,7 +42,7 @@ class SearchKeyword {
     var $op;
     var $unary;
     var $precedence;
-    function SearchKeyword($what, $unary, $precedence) {
+    function __construct($what, $unary, $precedence) {
 	$this->op = $what;
 	$this->unary = $unary;
 	$this->precedence = $precedence;
@@ -71,7 +71,7 @@ class SearchTerm {
     var $value;
     var $extra;
 
-    function SearchTerm($t, $f = 0, $v = null, $extra = null) {
+    function __construct($t, $f = 0, $v = null, $extra = null) {
 	$this->type = $t;
 	$this->link = false;
 	$this->flags = $f;
@@ -94,6 +94,21 @@ class SearchTerm {
 	    return $term->value;
 	else
 	    return new SearchTerm("not", 0, $term);
+    }
+}
+
+class SearchReviewValue {
+    var $countexpr;
+    var $contactsql;
+    var $fieldsql;
+
+    function __construct($countexpr, $contacts = null, $fieldsql = null) {
+	$this->countexpr = $countexpr;
+	if (!$contacts || is_string($contacts))
+	    $this->contactsql = $contacts;
+	else
+	    $this->contactsql = PaperSearch::_sqlNumericSet($contacts);
+	$this->fieldsql = $fieldsql;
     }
 }
 
@@ -391,14 +406,15 @@ class PaperSearch {
 	    $qt[] = new SearchTerm($type, $rt, $value);
 	else {
 	    $deblinder = 0;
-	    if ($type != "re" && $type != "cmt")
+	    if (!$value->contactsql)
 		/* $deblinder == 0 */;
 	    else if ($Conf->blindReview() == BLIND_ALWAYS)
 		$deblinder = self::F_FALSE;
 	    else if ($Conf->blindReview() == BLIND_OPTIONAL)
 		$deblinder = self::F_NONBLIND;
 
-	    if ($this->amPC && $type == "nre") {
+	    if ($this->amPC && $type == "re"
+		&& !$value->contactsql && !$value->fieldsql) {
 		// 28.Nov.2008 -- PC users can always count reviews for
 		// non-conflicted papers.  The "can see all reviews" settings
 		// only apply to reviewer names.  This is a change from prior
@@ -456,18 +472,11 @@ class PaperSearch {
 	    return;
 	}
 
-	if ($m[1] == "") {
-	    $type = "nre";
-	    $value = array(null, $m[2]);
-	} else {
-	    $type = "re";
-	    $value = array($this->_reviewerMatcher($m[1], $quoted), $m[2]);
-	    if (is_array($value[0]))
-		$value[0] = self::_sqlNumericSet($value[0]);
-	}
+	$contacts = ($m[1] == "" ? null : $this->_reviewerMatcher($m[1], $quoted));
+	$value = new SearchReviewValue($m[2], $contacts);
 
 	$nqt = count($qt);
-	$this->_searchCompleteReviewer($qt, $type, $rt, $value);
+	$this->_searchCompleteReviewer($qt, "re", $rt, $value);
 	if (count($qt) == $nqt)
 	    $qt[] = new SearchTerm("f");
     }
@@ -481,16 +490,16 @@ class PaperSearch {
 	    return;
 	}
 
-	$value = $this->_reviewerMatcher($m[1], $quoted);
+	$contacts = $this->_reviewerMatcher($m[1], $quoted);
 	if ($this->privChair
-	    || (is_array($value) && count($value) == 1 && $value[0] == $this->contactId))
-	    $qt[] = new SearchTerm("conflict", 0, array($value, $m[2]));
+	    || (is_array($contacts) && count($contacts) == 1 && $contacts[0] == $this->contactId))
+	    $qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[2], $contacts));
 	else {
-	    $qt[] = new SearchTerm("conflict", self::F_PAPERNONBLIND, array($value, $m[2]));
-	    if (!is_array($value))
-		$qt[] = new SearchTerm("conflict", 0, array("$value and \3=" . $this->contactId, $m[2]));
-	    else if (in_array($this->contactId, $value))
-		$qt[] = new SearchTerm("conflict", 0, array(array($this->contactId), $m[2]));
+	    $qt[] = new SearchTerm("conflict", self::F_PAPERNONBLIND, new SearchReviewValue($m[2], $contacts));
+	    if (!is_array($contacts))
+		$qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[2], "$contacts and \3=" . $this->contactId));
+	    else if (in_array($this->contactId, $contacts))
+		$qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[2], array($this->contactId)));
 	}
     }
 
@@ -505,13 +514,12 @@ class PaperSearch {
 
 	if ($m[1] == "") {
 	    $type = "ncmt";
-	    $value = array(null, $m[2]);
+	    $contacts = null;
 	} else {
 	    $type = "cmt";
-	    $value = array($this->_reviewerMatcher($m[1], $quoted), $m[2]);
-	    if (is_array($value[0]))
-		$value[0] = self::_sqlNumericSet($value[0]);
+	    $contacts = $this->_reviewerMatcher($m[1], $quoted);
 	}
+	$value = new SearchReviewValue($m[2], $contacts);
 
 	$rt = ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0);
 	$nqt = count($qt);
@@ -524,6 +532,7 @@ class PaperSearch {
 
     function _searchReviews($word, $rf, $field, &$qt) {
 	global $Conf;
+	$countexpr = ">0";
 
 	if (isset($rf->options[$field])) {
 	    $letters = $rf->reviewFields[$field] > 1;
@@ -551,8 +560,10 @@ class PaperSearch {
 			|| ($m[3] == count($rf->options[$field]) && $m[2] == ">")
 			|| ($m[3] > count($rf->options[$field]) && ($m[2][0] == ">" || $m[2][0] == "=")))
 			return false;
-		    else
-			$value = array($field . $m[2] . $m[3], ">=" . $m[1]);
+		    else {
+			$countexpr = ">=" . $m[1];
+			$value = $field . $m[2] . $m[3];
+		    }
 		}
 	    } else if ($letters
 		       ? preg_match('/\A\s*([A-Za-z])\s*-?\s*([A-Za-z])\s*\z/s', $word, $m)
@@ -578,7 +589,8 @@ class PaperSearch {
 	}
 
 	$nqt = count($qt);
-	$this->_searchCompleteReviewer($qt, "rf", self::F_COMPLETE, $value);
+	$value = new SearchReviewValue($countexpr, null, $value);
+	$this->_searchCompleteReviewer($qt, "re", self::F_COMPLETE, $value);
 	return count($qt) != $nqt;
     }
 
@@ -1178,11 +1190,12 @@ class PaperSearch {
     // apply rounds to reviewer searches
     function _queryMakeAdjustedReviewSearch($roundterm) {
 	if ($this->limitName == "r" || $this->limitName == "rout")
-	    return new SearchTerm("re", 0, "=" . $this->contactId, $roundterm->value);
+	    $value = new SearchReviewValue(">0", array($this->contactId));
 	else if ($this->limitName == "req" || $this->limitName == "reqrevs")
-	    return new SearchTerm("rf", 0, "requestedBy=" . $this->contactId . " and reviewType=" . REVIEW_EXTERNAL, $roundterm->value);
+	    $value = new SearchReviewValue(">0", null, "requestedBy=" . $this->contactId . " and reviewType=" . REVIEW_EXTERNAL);
 	else
-	    return new SearchTerm("nre", 0, array(null, ">0"), $roundterm->value);
+	    $value = new SearchReviewValue(">0");
+	return new SearchTerm("re", 0, $value, $roundterm->value);
     }
 
     function _queryAdjustReviews($qe, $revadj) {
@@ -1216,7 +1229,7 @@ class PaperSearch {
 	} else if ($qe->type == "or" || $qe->type == "then") {
 	    for ($i = 0; $i < count($qe->value); ++$i)
 		$this->_queryAdjustReviews($qe->value[$i], $revadj);
-	} else if (($qe->type == "re" || $qe->type == "nre" || $qe->type == "rf") && $revadj) {
+	} else if ($qe->type == "re" && $revadj) {
 	    $qe->extra = $revadj->value;
 	    $revadj->extra = true;
 	} else if ($qe->type == "revadj") {
@@ -1241,7 +1254,7 @@ class PaperSearch {
 	}
 	if ($top && $qe->type == "re") {
 	    if ($this->reviewerContact === false) {
-		$v = $qe->value[0];
+		$v = $qe->value->contactsql;
 		if ($v[0] == "=")
 		    $this->reviewerContact = (int) substr($v, 1);
 		else if ($v[0] == "\1") {
@@ -1438,7 +1451,7 @@ class PaperSearch {
 	}
 	$q = array();
 	$this->_clauseTermSetFlags($t->flags, $q);
-	$q[] = "coalesce($thistab.nre,0)" . $t->value[1];
+	$q[] = "coalesce($thistab.nre,0)" . $t->value->countexpr;
 	$columns[$thistab . "_matches"] = "$thistab.nre";
 	$t->link = $thistab . "_matches";
 	return "(" . join(" and ", $q) . ")";
@@ -1465,7 +1478,7 @@ class PaperSearch {
 	}
 	$q = array();
 	$this->_clauseTermSetFlags($t->flags, $q);
-	$q[] = "coalesce($thistab.ncmt,0)" . $t->value[1];
+	$q[] = "coalesce($thistab.ncmt,0)" . $t->value->countexpr;
 	$columns[$thistab . "_matches"] = "$thistab.ncmt";
 	$t->link = $thistab . "_matches";
 	return "(" . join(" and ", $q) . ")";
@@ -1493,23 +1506,20 @@ class PaperSearch {
 	    $this->_clauseTermSetTable($t, $t->value, null, "AuthorConflict",
 				       "PaperConflict", "contactId", " and %.conflictType>=" . CONFLICT_AUTHOR,
 				       $tables, $columns, $f);
-	} else if ($tt == "nre") {
-	    if (isset($t->extra))
-		$thistab = "Numreviews_X" . count($tables);
-	    else
+	} else if ($tt == "re") {
+	    $extrawhere = array();
+	    if ($t->value->contactsql)
+		$extrawhere[] = "contactId" . $t->value->contactsql;
+	    if ($t->value->fieldsql)
+		$extrawhere[] = $t->value->fieldsql;
+	    $extrawhere = join(" and ", $extrawhere);
+	    if ($extrawhere == "" && !isset($t->extra))
 		$thistab = "Numreviews_" . ($t->flags & (self::F_TYPEMASK | self::F_NONBLIND | self::F_COMPLETE | self::F_INCOMPLETE));
-	    $f[] = $this->_clauseTermSetReviews($thistab, "", $t, $tables, $columns);
-	} else if ($tt == "re" || $tt == "rf") {
-	    $thistab = "Reviews_" . count($tables);
-	    if (!is_array($t->value))
-		$t->value = array($t->value, ">=1");
-	    if ($tt == "re")
-		$extrawhere = "contactId" . $t->value[0];
 	    else
-		$extrawhere = $t->value[0];
+		$thistab = "Reviews_" . count($tables);
 	    $f[] = $this->_clauseTermSetReviews($thistab, $extrawhere, $t, $tables, $columns);
 	} else if ($tt == "conflict") {
-	    $this->_clauseTermSetTable($t, $t->value[0], $t->value[1], "Conflict",
+	    $this->_clauseTermSetTable($t, "\3" . $t->value->contactsql, $t->value->countexpr, "Conflict",
 				       "PaperConflict", "contactId", "",
 				       $tables, $columns, $f);
 	} else if ($tt == "ncmt") {
@@ -1517,9 +1527,7 @@ class PaperSearch {
 	    $f[] = $this->_clauseTermSetComments("Numcomments_$rtype", "", $t, $tables, $columns);
 	} else if ($tt == "cmt") {
 	    $thistab = "Comments_" . count($tables);
-	    if (!is_array($t->value))
-		$t->value = array($t->value, ">=1");
-	    $f[] = $this->_clauseTermSetComments($thistab, "contactId" . $t->value[0], $t, $tables, $columns);
+	    $f[] = $this->_clauseTermSetComments($thistab, "contactId" . $t->value->contactsql, $t, $tables, $columns);
 	} else if ($tt == "pn") {
 	    $q = array();
 	    if (count($t->value[0]))
@@ -1633,14 +1641,13 @@ class PaperSearch {
 	// collect columns
 	if ($tt == "ti" || $tt == "ab" || $tt == "au" || $tt == "co")
 	    return $this->_clauseTermCheckField($t, $row);
-	else if ($tt == "nre" || $tt == "re" || $tt == "rf"
-		 || $tt == "conflict" || $tt == "ncmt" || $tt == "cmt") {
+	else if ($tt == "re" || $tt == "conflict" || $tt == "ncmt" || $tt == "cmt") {
 	    if (!$this->_clauseTermCheckFlags($t->flags, $row))
 		return false;
 	    else {
 		$fieldname = $t->link;
 		$x = $row->$fieldname;
-		return eval("return \$x" . $t->value[1] . ";");
+		return eval("return \$x" . $t->value->countexpr . ";");
 	    }
 	} else if ($tt == "pn") {
 	    if (count($t->value[0]) && array_search($row->paperId, $t->value[0]) === false)
