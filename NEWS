@@ -1,5 +1,15 @@
 HotCRP NEWS
 
+Version 2.42   2.Jan.2011
+
+* Correct 2.41 bug that broke "ovemer:3" searches (ouch).
+
+* Add searches like "ovemer:pc>3", which check scores given by subsets of
+  reviewers.
+
+* Style nits (paragraph breaks in abstracts, reviewer icon alignment).
+
+
 Version 2.41   13.Dec.2010
 
 * The "Recent activity" on the home page includes information about
