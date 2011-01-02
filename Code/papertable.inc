@@ -229,6 +229,16 @@ class PaperTable {
 
 	if ($authorTable == "col" && !$this->editable)
 	    $text = nl2br($text);
+	else if ($authorTable == "p" && !$this->editable) {
+	    $pars = preg_split("/\n([ \t\r\v\f]*\n)+/", $text);
+	    $text = "";
+	    for ($i = 0; $i < count($pars); ++$i) {
+		$style = ($i == 0 ? "margin-top:0" : "");
+		if ($i == count($pars) - 1)
+		    $style .= ($style ? ";" : "") . "margin-bottom:0";
+		$text .= "<p" . ($style ? " style='$style'" : "") . ">" . $pars[$i] . "</p>";
+	    }
+	}
 
 	if ($this->editable)
 	    $text = "<textarea class='textlite papertext' name='$fieldName' rows='" . $textAreaRows[$fieldName] . "' cols='60' onchange='hiliter(this)'>" . $text . "</textarea>";
@@ -420,9 +430,10 @@ class PaperTable {
     }
 
     function paptabAbstract($prow) {
-	$data = $this->entryData("abstract", $prow);
+	$data = $this->entryData("abstract", $prow, "p");
 	if ($this->allFolded && strlen($data) > 190) {
-	    $shortdata = preg_replace("/\\S+(<[^>]+)?\\Z/", "", substr($data, 0, 180));
+	    $shortdata = trim(preg_replace(",</?p.*?>,", "\n", $data));
+	    $shortdata = preg_replace("/\\S+(<[^>]+)?\\Z/", "", utf8_substr($shortdata, 0, 180));
 	    if ($shortdata != "") { /* "" might happen if really long word */
 		echo $this->papt("abstract", "Abstract",
 				 array("fold" => "paper", "foldnum" => 6,
