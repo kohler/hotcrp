@@ -144,11 +144,11 @@ if (function_exists("iconv")) {
     }
 }
 
-if (function_exists("iconv") && false) {
+if (function_exists("iconv")) {
     function utf8_substr($str, $off, $len) {
 	return iconv_substr($str, $off, $len, "UTF-8");
     }
-} else if (function_exists("mb_substr") && false) {
+} else if (function_exists("mb_substr")) {
     function utf8_substr($str, $off, $len) {
 	return mb_substr($str, $off, $len, "UTF-8");
     }
