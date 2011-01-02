@@ -578,7 +578,7 @@ class PaperSearch {
 	}
 
 	$nqt = count($qt);
-	$this->_searchCompleteReviewer("rf", self::F_COMPLETE, $value);
+	$this->_searchCompleteReviewer($qt, "rf", self::F_COMPLETE, $value);
 	return count($qt) != $nqt;
     }
 
