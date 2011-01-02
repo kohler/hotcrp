@@ -569,6 +569,7 @@ class PaperList extends BaseList {
 	case self::FIELD_SELECTOR_ON:
 	case self::FIELD_SELECTOR_CONFLICT:
 	case self::FIELD_TOPIC_INTEREST:
+	case self::FIELD_REVIEWER_TYPE_ICON:
 	case self::FIELD_REVIEWER_PREFERENCE:
 	case self::FIELD_DESIRABILITY:
 	case self::FIELD_SCORE:
