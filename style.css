@@ -1267,11 +1267,18 @@ table.pltable th.pl_selector {
 	text-align: center;
 	white-space: nowrap;
 }
-.pl_revtypei, table.pltable th.pl_revtypei {
+table.pltable th.pl_revtypei {
 	text-align: center;
 	padding-left: 3px;
 	padding-right: 3px;
+}
+td.pl_revtypei {
+	padding-left: 1.5em;
+	padding-right: 1.5em;
 	white-space: nowrap;
+}
+div.pl_revtypeiround {
+	margin-right: -1.2em;
 }
 .pl_revstat, table.pltable th.pl_revstat, table.pltable th.pl_formula {
 	text-align: center;

@@ -906,7 +906,11 @@ class PaperList extends BaseList {
 		$ranal = $this->_reviewAnalysis($row);
 		if ($ranal->needsSubmit)
 		    $this->needSubmitReview++;
-		return self::_reviewIcon($row, $ranal, true);
+		$t = self::_reviewIcon($row, $ranal, true);
+		if ($ranal->round)
+		    return "<div class='pl_revtypeiround'>" . $t . "</div>";
+		else
+		    return $t;
 	    }
 	case self::FIELD_REVIEWS_STATUS:
 	    // see also _sortReviewsStatus
