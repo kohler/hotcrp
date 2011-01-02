@@ -33,17 +33,23 @@ $_REQUEST["acct"] = trim(defval($_REQUEST, "acct", ""));
 $_REQUEST["n"] = trim(defval($_REQUEST, "n", "25"));
 $_REQUEST["date"] = trim(defval($_REQUEST, "date", "now"));
 
-if ($_REQUEST["pap"] && !preg_match('/\A[\d\s]+\z/', $_REQUEST["pap"])) {
+if ($_REQUEST["pap"] && !preg_match('/\A(?:#?\d+(?:-#?\d+)?[\s,]+)+\z/', $_REQUEST["pap"] . " ")) {
     $Conf->errorMsg("The \"Concerning paper(s)\" field requires space-separated paper numbers.");
     $Eclass["pap"] = " error";
 } else if ($_REQUEST["pap"]) {
     $where = array();
-    foreach (preg_split('/\s+/', $_REQUEST["pap"]) as $pap) {
-	$where[] = "paperId=$pap";
-	$where[] = "action like '%(papers% $pap,%'";
-	$where[] = "action like '%(papers% $pap)%'";
+    foreach (preg_split('/[\s,]+/', $_REQUEST["pap"]) as $term) {
+	if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $term, $m)) {
+	    $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
+	    foreach (range($m[1], $m[2]) as $pap) {
+		$where[] = "paperId=$pap";
+		$where[] = "action like '%(papers% $pap,%'";
+		$where[] = "action like '%(papers% $pap)%'";
+	    }
+	}
     }
-    $wheres[] = "(" . join(" or ", $where) . ")";
+    if (count($where))
+	$wheres[] = "(" . join(" or ", $where) . ")";
 }
 
 if ($_REQUEST["acct"]) {
@@ -169,6 +175,7 @@ if (!$firstDate && $page !== false) {
     $query .= " limit $start,$maxNrows";
 }
 
+//$Conf->infoMsg(nl2br(htmlspecialchars($query)));
 $result = $Conf->qe($query);
 $nrows = edb_nrows($result);
 if ($firstDate || $page === false)
