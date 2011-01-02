@@ -1,6 +1,6 @@
 <?php
 // mergeaccounts.php -- HotCRP account merging page
-// HotCRP is Copyright (c) 2006-2010 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 include('Code/header.inc');

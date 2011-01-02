@@ -1,6 +1,6 @@
 <?php
 // comment.php -- HotCRP paper comment display/edit page
-// HotCRP is Copyright (c) 2006-2010 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");

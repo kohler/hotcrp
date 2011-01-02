@@ -1,6 +1,6 @@
 <?php
 // paperactions.inc -- HotCRP helpers for common paper actions
-// HotCRP is Copyright (c) 2008-2010 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2008-2011 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperActions {

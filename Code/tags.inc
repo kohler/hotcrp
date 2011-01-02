@@ -1,6 +1,6 @@
 <?php
 // tags.inc -- HotCRP helper functions for dealing with tags
-// HotCRP is Copyright (c) 2006-2010 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 // Note that tags MUST NOT contain HTML or URL special characters:
