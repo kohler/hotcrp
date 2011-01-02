@@ -144,6 +144,28 @@ if (function_exists("iconv")) {
     }
 }
 
+if (function_exists("iconv") && false) {
+    function utf8_substr($str, $off, $len) {
+	return iconv_substr($str, $off, $len, "UTF-8");
+    }
+} else if (function_exists("mb_substr") && false) {
+    function utf8_substr($str, $off, $len) {
+	return mb_substr($str, $off, $len, "UTF-8");
+    }
+} else {
+    function utf8_substr($str, $off, $len) {
+	$x = substr($str, $off, $len);
+	$poff = 0;
+	while (($n = preg_match_all("/[\200-\277]/", $x, $m, PREG_PATTERN_ORDER, $poff))) {
+	    $poff = strlen($x);
+	    $x .= substr($str, $poff, $n);
+	}
+	if (preg_match("/\\A([\200-\277]+)/", substr($str, strlen($x)), $m))
+	    $x .= $m[1];
+	return $x;
+    }
+}
+
 function simple_array_to_json($x) {
     $s = "{";
     $sep = "";
@@ -1231,17 +1253,11 @@ function titleWords($title, $chars = 40) {
     if (strlen($title) <= $chars)
 	return $title;
     // don't over-shorten due to UTF-8
-    if (preg_match('/[\200-\377]/', $title)) {
-	for ($i = 0; $i < $chars && $chars < strlen($title); ++$i)
-	    if (ord($title[$i]) >= 0200 && ord($title[$i]) <= 277)
-		++$chars;
-	if (strlen($title) <= $chars)
-	    return $title;
-    }
-    $title = substr($title, 0, $chars);
-    if (($pos = strrpos($title, " ")) > 0)
-	$title = substr($title, 0, $pos);
-    return $title . "...";
+    $xtitle = utf8_substr($title, 0, $chars);
+    if (($pos = strrpos($xtitle, " ")) > 0
+	&& substr($title, strlen($xtitle), 1) != " ")
+	$xtitle = substr($xtitle, 0, $pos);
+    return $xtitle . "...";
 }
 
 function downloadText($text, $filename, $description, $inline = false, $length = true) {
