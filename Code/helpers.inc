@@ -183,7 +183,7 @@ function simple_array_to_json($x) {
 	    // XXX does not correctly escape all control characters, so does
 	    // not produce not true JSON.  (Currently OK since script.js uses
 	    // eval(), not JSON.parse.)
-	    $s .= "\"" . addcslashes($value, "\b\f\n\r\t\"\\") . "\"";
+	    $s .= "\"" . addcslashes($value, "\010\f\n\r\t\"\\") . "\"";
 	$sep = ",";
     }
     return $s . "}";
