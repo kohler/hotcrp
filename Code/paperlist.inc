@@ -178,15 +178,6 @@ class PaperList extends BaseList {
 	case self::FIELD_ALL_PREFERENCES:
 	    $queryOptions['allReviewerPreference'] = $queryOptions['topics']
 		= $queryOptions['allConflictType'] = 1;
-	    $ord = 0;
-	    $pcm = pcMembers();
-	    foreach ($pcm as $pc) {
-		$pc->prefOrdinal = sprintf("-0.%04d", $ord++);
-		$pc->topicInterest = array();
-	    }
-	    $result = $Conf->qe("select contactId, topicId, interest from TopicInterest", "while finding topic interests");
-	    while (($row = edb_row($result)))
-		$pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
 	    break;
 	case self::FIELD_SCORE:
 	    if (!$this->scoresOk)
@@ -478,7 +469,7 @@ class PaperList extends BaseList {
 	}
     }
 
-    function header($fieldId, $ordinal, $row = null, $reviewList = null) {
+    function header($fieldId, $ordinal, $row = null) {
 	global $reviewScoreNames, $paperListFields, $paperListFormulas;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
@@ -511,10 +502,10 @@ class PaperList extends BaseList {
 	case self::FIELD_OPT_TOPIC_NAMES:
 	    return "Topics";
 	case self::FIELD_ALL_REVIEWER_NAMES:
-	    if ($row === null || !isset($reviewList[$row->paperId]))
+	    if ($row === null || !isset($this->reviewList[$row->paperId]))
 		return "Reviewers";
 	    else
-		return "Reviewers (" . count($reviewList[$row->paperId]) . ")";
+		return "Reviewers (" . count($this->reviewList[$row->paperId]) . ")";
 	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
 	    return "Reviewers";
 	case self::FIELD_OPT_PC_CONFLICTS:
@@ -832,7 +823,7 @@ class PaperList extends BaseList {
 	return $t;
     }
 
-    function content($fieldId, $row, $reviewList) {
+    function content($fieldId, $row) {
 	global $ConfSiteSuffix, $Conf, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
@@ -962,8 +953,8 @@ class PaperList extends BaseList {
 	    $prefs = self::_rowPreferences($row);
 	    $n = "";
 	    // see also search.php > getaction == "reviewers"
-	    if (isset($reviewList[$row->paperId])) {
-		foreach ($reviewList[$row->paperId] as $xrow)
+	    if (isset($this->reviewList[$row->paperId])) {
+		foreach ($this->reviewList[$row->paperId] as $xrow)
 		    if ($xrow->lastName) {
 			$ranal = $this->_reviewAnalysis($xrow);
 			$n .= ($n ? ", " : "");
@@ -1377,6 +1368,51 @@ class PaperList extends BaseList {
 	$Conf->footerHtml($t);
     }
 
+    function _prepareQuery($me, $queryOptions) {
+	global $Conf;
+
+	// prepare review query (see also search > getaction == "reviewers")
+	$this->reviewList = array();
+	if (isset($queryOptions['reviewList'])) {
+	    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
+		reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
+		reviewOrdinal,
+		PaperReview.contactId, lastName, firstName, email
+		from Paper
+		join PaperReview using (paperId)
+		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
+		where " . ($this->search->limitName != 'a' ? "timeSubmitted>0" : "paperId=-1") . "
+		order by lastName, firstName, email", "while fetching reviews");
+	    while (($row = edb_orow($result)))
+		$this->reviewList[$row->paperId][] = $row;
+	}
+
+	// prepare PC topic interests
+	if (isset($queryOptions["allReviewerPreference"])) {
+	    $ord = 0;
+	    $pcm = pcMembers();
+	    foreach ($pcm as $pc) {
+		$pc->prefOrdinal = sprintf("-0.%04d", $ord++);
+		$pc->topicInterest = array();
+	    }
+	    $result = $Conf->qe("select contactId, topicId, interest from TopicInterest", "while finding topic interests");
+	    while (($row = edb_row($result)))
+		$pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
+	}
+
+	if (isset($queryOptions["scores"]))
+	    $queryOptions["scores"] = array_keys($queryOptions["scores"]);
+
+	// prepare query text
+	if ($me->contactId == $this->search->contactId)
+	    $pq = $Conf->paperQuery($me, $queryOptions);
+	else
+	    $pq = $Conf->paperQuery($this->search->contactId, $queryOptions);
+
+	// make query
+	return $Conf->qe($pq, "while selecting papers");
+    }
+
     function text($listname, $me, $extra_class = "") {
 	global $Conf, $ConfSiteSuffix, $paperListFields, $paperListFolds,
 	    $reviewScoreNames;
@@ -1463,31 +1499,8 @@ class PaperList extends BaseList {
 	}
 	$unfolded = $this->unfolded;
 
-	// prepare review query (see also search > getaction == "reviewers")
-	$reviewList = array();
-	if (isset($queryOptions['reviewList'])) {
-	    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
-		reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
-		PaperReview.contactId, lastName, firstName, email
-		from Paper
-		join PaperReview using (paperId)
-		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
-		where " . ($this->search->limitName != 'a' ? "timeSubmitted>0" : "paperId=-1") . "
-		order by lastName, firstName, email", "while fetching reviews");
-	    while (($row = edb_orow($result)))
-		$reviewList[$row->paperId][] = $row;
-	}
-	if (isset($queryOptions["scores"]))
-	    $queryOptions["scores"] = array_keys($queryOptions["scores"]);
-
-	// prepare query text
-	if ($me->contactId == $this->search->contactId)
-	    $pq = $Conf->paperQuery($me, $queryOptions);
-	else
-	    $pq = $Conf->paperQuery($this->search->contactId, $queryOptions);
-
 	// make query
-	$result = $Conf->qe($pq, "while selecting papers");
+	$result = $this->_prepareQuery($me, $queryOptions);
 	if (!$result)
 	    return NULL;
 
@@ -1547,7 +1560,7 @@ class PaperList extends BaseList {
 		    $t .= $td . "\" id=\"$foldname.$row->paperId\"></td>\n";
 		    $anyData[$fieldId] = 1;
 		} else {
-		    $c = $this->content($fieldId, $row, $reviewList);
+		    $c = $this->content($fieldId, $row);
 		    $t .= $td . "\">" . $c . "</td>\n";
 		    if ($c !== "")
 			$anyData[$fieldId] = 1;
@@ -1569,12 +1582,12 @@ class PaperList extends BaseList {
 		    $folds[$foldname][] = $row->paperId;
 		    $tt .= "<div id=\"$foldname.$row->paperId\"></div>";
 		} else {
-		    $c = $this->content($fieldId, $row, $reviewList);
+		    $c = $this->content($fieldId, $row);
 		    if ($c !== "") {
 			$tt .= "<div id=\"$foldname.$row->paperId\"";
 			if ($fdef->foldnum > 2)
 			    $tt .= " class=\"fx$foldnum\"";
-			$tt .= "><h6>" . $this->header($fieldId, -1, $row, $reviewList) . ":</h6> " . $c . "</div>";
+			$tt .= "><h6>" . $this->header($fieldId, -1, $row) . ":</h6> " . $c . "</div>";
 		    }
 		}
 	    }
@@ -1801,31 +1814,8 @@ class PaperList extends BaseList {
 	    return null;
 	$unfolded = $this->unfolded;
 
-	// prepare review query (see also search > getaction == "reviewers")
-	$reviewList = array();
-	if (isset($queryOptions['reviewList'])) {
-	    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
-		reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
-		PaperReview.contactId, lastName, firstName, email
-		from Paper
-		join PaperReview using (paperId)
-		join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
-		where " . ($this->search->limitName != 'a' ? "timeSubmitted>0" : "paperId=-1") . "
-		order by lastName, firstName, email", "while fetching reviews");
-	    while (($row = edb_orow($result)))
-		$reviewList[$row->paperId][] = $row;
-	}
-	if (isset($queryOptions["scores"]))
-	    $queryOptions["scores"] = array_keys($queryOptions["scores"]);
-
-	// prepare query text
-	if ($me->contactId == $this->search->contactId)
-	    $pq = $Conf->paperQuery($me, $queryOptions);
-	else
-	    $pq = $Conf->paperQuery($this->search->contactId, $queryOptions);
-
 	// make query
-	$result = $Conf->qe($pq, "while selecting papers");
+	$result = $this->_prepareQuery($me, $queryOptions);
 	if (!$result)
 	    return null;
 
@@ -1836,7 +1826,7 @@ class PaperList extends BaseList {
 	    if ($this->contentEmpty($fieldId, $row))
 		$c = "";
 	    else
-		$c = $this->content($fieldId, $row, $reviewList);
+		$c = $this->content($fieldId, $row);
 	    $data["$foldname.$row->paperId"] = $c;
 	}
 
