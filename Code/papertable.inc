@@ -667,7 +667,7 @@ class PaperTable {
 		    $om = explode("\n", $o->optionValues);
 		    if (defval($om, $ov, "") != "")
 			$ox = htmlspecialchars($om[$ov]);
-		} else if ($o->type == OPTIONTYPE_NUMERIC && $ov != "")
+		} else if ($o->type == OPTIONTYPE_NUMERIC && $ov != "" && $ov != "0")
 		    $ox = htmlspecialchars($ov);
 		else if ($o->type == OPTIONTYPE_TEXT && $ov != "") {
 		    if ($optdata == null) {
