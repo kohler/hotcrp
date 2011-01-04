@@ -1463,6 +1463,8 @@ function paperOptions() {
 		$row->type = ($row->optionValues ? OPTIONTYPE_SELECTOR : OPTIONTYPE_CHECKBOX);
 	    $row->optionAbbrev = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", strtolower($row->optionName)));
 	    $row->sortOrder = $order++;
+	    if (!isset($row->displayType))
+		$row->displayType = 0;
 	    $opt[$row->optionId] = $row;
 	}
 	$_SESSION["paperOption"] = array($Conf->setting("paperOption"), $opt);

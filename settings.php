@@ -525,6 +525,9 @@ function doCleanOptionValues($id) {
 
     $pcview = cvtint(defval($_REQUEST, "optp$id", 0));
     $_REQUEST["optp$id"] = min(max($pcview, 0), 2);
+
+    $displaytype = cvtint(defval($_REQUEST, "optdt$id", 0));
+    $_REQUEST["optdt$id"] = min(max($displaytype, 0), 1);
 }
 
 function doCleanOptionFormPositions() {
@@ -621,10 +624,11 @@ function doOptions($set) {
 	if (isset($_REQUEST["optn$id"])
 	    && ($_REQUEST["optn$id"] != $o->optionName
 		|| defval($_REQUEST, "optd$id") != $o->description
-		|| defval($_REQUEST, "optp$id", 0) != $o->pcView
+		|| $_REQUEST["optp$id"] != $o->pcView
 		|| defval($_REQUEST, "optv$id", "") != defval($o, "optionValues", "")
 		|| defval($_REQUEST, "optvt$id", 0) != defval($o, "type", 0)
-		|| defval($_REQUEST, "optfp$id", $o->sortOrder) != $o->sortOrder)) {
+		|| defval($_REQUEST, "optfp$id", $o->sortOrder) != $o->sortOrder
+		|| $_REQUEST["optdt$id"] != $o->displayType)) {
 	    $q = "update OptionType set optionName='" . sqlq($_REQUEST["optn$id"])
 		. "', description='" . sqlq(defval($_REQUEST, "optd$id", ""))
 		. "', pcView=" . $_REQUEST["optp$id"];
@@ -634,6 +638,8 @@ function doOptions($set) {
 		$q .= ", type='" . defval($_REQUEST, "optvt$id", 0) . "'";
 	    if ($Conf->sversion >= 29)
 		$q .= ", sortOrder=" . defval($_REQUEST, "optfp$id", $o->sortOrder);
+	    if ($Conf->sversion >= 38)
+		$q .= ", displayType=" . $_REQUEST["optdt$id"];
 	    $Conf->qe($q . " where optionId=$id", $while);
 	    $ochange = true;
 	}
@@ -656,6 +662,10 @@ function doOptions($set) {
 	if ($Conf->sversion >= 29) {
 	    $qa .= ", sortOrder";
 	    $qb .= ", '" . sqlq(defval($_REQUEST, "optfpn", 0)) . "'";
+	}
+	if ($Conf->sversion >= 38) {
+	    $qa .= ", displayType";
+	    $qb .= ", '" . $_REQUEST["optdtn"] . "'";
 	}
 	$Conf->qe("insert into OptionType ($qa) values ($qb)", $while);
 	$ochange = $anyo = true;
@@ -1315,7 +1325,7 @@ function doOptGroupOption($o) {
 	    "</div></div></td>";
     }
 
-    echo "</tr>\n  <tr><td><table><tr>";
+    echo "</tr>\n  <tr><td colspan='2'><table><tr>";
 
     if ($Conf->sversion >= 14) {
 	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
@@ -1339,7 +1349,7 @@ function doOptGroupOption($o) {
 
     if ($Conf->sversion >= 29) {
 	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
-	    decorateSettingName("optfp$id", "Form position"), "</div><div class='f-e'>";
+	    decorateSettingName("optfp$id", "Form order"), "</div><div class='f-e'>";
 	$opt = paperOptions();
 	$x = array();
 	for ($i = 0; $i <= count($opt); ++$i)
@@ -1347,6 +1357,15 @@ function doOptGroupOption($o) {
 	if ($id !== "n")
 	    $x["delete"] = "Delete option";
 	echo tagg_select("optfp$id", $x, $o->sortOrder, array("onchange" => "hiliter(this)")),
+	    "</div></div></td>";
+    }
+
+    if ($Conf->sversion >= 38) {
+	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
+	    decorateSettingName("optdt$id", "Display"), "</div><div class='f-e'>";
+	$optdt = (count($Error) > 0 ? defval($_REQUEST, "optdt$id", 0) : $o->displayType);
+	echo tagg_select("optdt$id", array("Group with other options", "Display separately"), $optdt,
+			 array("onchange" => "hiliter(this)")),
 	    "</div></div></td>";
     }
 
@@ -1387,7 +1406,7 @@ function doOptGroup() {
 
 	echo $sep;
 
-	doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "type" => 0, "optionValues" => "", "sortOrder" => count($opt)));
+	doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "type" => 0, "optionValues" => "", "sortOrder" => count($opt), "displayType" => 0));
 
 	echo "</table>\n";
     }

@@ -29,18 +29,7 @@
     particular message) to be just a little more paranoid.
   [Stephanie Weirich]
 
-- The only complaint was the treatment of supplementary material and
-  submission options. It is common in our community to submit
-  appendices containing detailed proofs/etc. These are read at the
-  discretion of the reviewers, and due to the length restrictions must
-  be submitted individually. Several reviewers missed that there was
-  additional material available for some of the submissions because
-  they did not see it on the paper's page.  Others missed that some of
-  the papers were submitted in a different category (which uses
-  different evaluation criteria.)  Is there any way to make the
-  supplementary material/submission category more obvious?
-
-  [Related note, did I tell you already that it would help if we could
+- [Related note, did I tell you already that it would help if we could
   submit additional material in non PDF format?  In particular, some
   of these supplemental proofs are actually zipfiles of proof
   assistant scripts.] [Stephanie Weirich]

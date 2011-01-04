@@ -118,6 +118,7 @@ CREATE TABLE `OptionType` (
   `pcView` tinyint(1) NOT NULL default '1',
   `optionValues` text NOT NULL default '',
   `sortOrder` tinyint(1) NOT NULL default '0',
+  `displayType` tinyint(1) NOT NULL default '0'
   PRIMARY KEY  (`optionId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -507,7 +508,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 37);
+insert into Settings (name, value) values ('allowPaperOption', 38);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

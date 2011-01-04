@@ -1734,6 +1734,9 @@ div.paphint, div.pshint {
 div.papv {
 	padding: 2px 0 1em 7px;
 }
+div.papvx {
+	padding: 2px 0 0.5em 7px;
+}
 
 /* reviews */
 table.revc {
