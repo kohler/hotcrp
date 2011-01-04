@@ -789,7 +789,7 @@ class PaperList extends BaseList {
     }
 
     function _reviewAnalysis($row) {
-	global $ConfSiteSuffix;
+	global $Conf, $ConfSiteSuffix;
 	$ranal = (object) array("completion" => "", "delegated" => false,
 				"needsSubmit" => false, "round" => "",
 				"link1" => "", "link2" => "");
