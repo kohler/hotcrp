@@ -137,7 +137,7 @@ class Contact {
 	return $this->contactId > 0 && $this->confDsn == $Opt["dsn"];
     }
 
-    function _addressKeys() {
+    static function _addressKeys() {
 	return array("addressLine1", "addressLine2", "city", "state",
 		     "zipCode", "country");
     }
@@ -274,7 +274,7 @@ class Contact {
     function initialize($email, $useRequest = false) {
 	global $Conf;
 	$this->email = trim($email);
-	$this->password = $this->generatePassword(10);
+	$this->password = self::generatePassword(10);
 
 	// update paper authorship based on authorInformation fields
 	// (ignore errors)
@@ -382,7 +382,7 @@ class Contact {
 	}
     }
 
-    function makeMinicontact($o) {
+    static function makeMinicontact($o) {
 	// If you change this function, search for its callers to ensure
 	// they provide all necessary information.
 	$c = new Contact();
@@ -1245,7 +1245,7 @@ class Contact {
     }
 
 
-    function generatePassword($length) {
+    static function generatePassword($length) {
 	global $Opt;
 	if (isset($Opt["ldapLogin"]))
 	    return "<stored in LDAP>";

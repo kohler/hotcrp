@@ -79,7 +79,7 @@ class SearchTerm {
 	if ($extra)
 	    $this->extra = $extra;
     }
-    function combine($combiner, $terms) {
+    static function combine($combiner, $terms) {
 	if (count($terms) == 0)
 	    return null;
 	else if (count($terms) == 1)
@@ -87,7 +87,7 @@ class SearchTerm {
 	else
 	    return new SearchTerm($combiner, 0, $terms);
     }
-    function negate($term) {
+    static function negate($term) {
 	if (!$term)
 	    return null;
 	else if ($term->type == "not")
@@ -278,7 +278,7 @@ class PaperSearch {
     // including "and", "or", and "not" expressions (which point at other
     // expressions).
 
-    function _fieldPreg($word) {
+    static function _fieldPreg($word) {
 	if (ctype_alnum($word))
 	    return '\b' . $word . '\b';
 	else {
@@ -316,7 +316,7 @@ class PaperSearch {
 	}
     }
 
-    function _cleanCompar($compar) {
+    static function _cleanCompar($compar) {
 	$compar = trim($compar);
 	if ($compar == "" || $compar == "==")
 	    return "=";
@@ -326,7 +326,7 @@ class PaperSearch {
 	    return $compar;
     }
 
-    function _matchCompar($text, $quoted = true) {
+    static function _matchCompar($text, $quoted = true) {
 	$text = trim($text);
 	if (($text == "any" || $text == "") && !$quoted)
 	    return array("any", "", ">0");
@@ -340,7 +340,7 @@ class PaperSearch {
 	    return array($text, $text, ">0");
     }
 
-    function _comparTautology($m) {
+    static function _comparTautology($m) {
 	if ($m[2] == "<0")
 	    return "f";
 	else if ($m[2] == ">=0")
@@ -349,7 +349,7 @@ class PaperSearch {
 	    return null;
     }
 
-    function _typeCompar($compar, $value, $type) {
+    static function _typeCompar($compar, $value, $type) {
 	$compar = self::_cleanCompar($compar);
 	if ($value == 0 && $compar == "<")
 	    return array("f", null);
@@ -359,7 +359,7 @@ class PaperSearch {
 	    return array($type, $compar . $value);
     }
 
-    function _sqlNumericSet($a, $neg = false) {
+    static function _sqlNumericSet($a, $neg = false) {
 	if (count($a) == 0)
 	    return ($neg ? "!" : "") . "=-1";
 	else if (count($a) == 1)
@@ -1393,7 +1393,7 @@ class PaperSearch {
 	$f[] = "(" . join(" and ", $q) . ")";
     }
 
-    function unusableRatings($privChair, $contactId) {
+    static function unusableRatings($privChair, $contactId) {
 	global $Conf;
 	if ($privChair || $Conf->timePCViewAllReviews())
 	    return array();
@@ -2066,7 +2066,7 @@ class PaperSearch {
 	return $this->decorateSessionList($this->paperList(), $this->limitName);
     }
 
-    function parsePapersel() {
+    static function parsePapersel() {
 	global $Me, $papersel, $paperselmap;
 	if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
 	    $_REQUEST["p"] = $_REQUEST["pap"];
@@ -2091,12 +2091,12 @@ class PaperSearch {
 	}
     }
 
-    function clearPaperselRequest() {
+    static function clearPaperselRequest() {
 	unset($_REQUEST["p"]);
 	unset($_REQUEST["pap"]);
     }
 
-    function searchTypes($me) {
+    static function searchTypes($me) {
 	global $Conf;
 	$tOpt = array();
 	if ($me->isPC && $Conf->setting("pc_seeall") > 0)
@@ -2124,7 +2124,7 @@ class PaperSearch {
 	return $tOpt;
     }
 
-    function searchTypeSelector($tOpt, $type, $tabindex) {
+    static function searchTypeSelector($tOpt, $type, $tabindex) {
 	if (count($tOpt) > 1) {
 	    $sel_opt = array();
 	    foreach ($tOpt as $k => $v) {

@@ -184,7 +184,7 @@ function expandMailTemplate($name, $default) {
 	$nullMailer = new Mailer(null, null);
 	$nullMailer->width = 10000000;
     }
-    return $nullMailer->expandTemplate($name, true, $default);
+    return $nullMailer->expandTemplate($name, $default);
 }
 
 function _cleanXHTMLError(&$err, $etype) {

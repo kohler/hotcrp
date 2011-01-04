@@ -110,7 +110,7 @@ class Conference {
 	}
 	$this->settings["rounds"] = array("");
 	if (isset($this->settingTexts["tag_rounds"])) {
-	    foreach (split(" ", $this->settingTexts["tag_rounds"]) as $r)
+	    foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r)
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}

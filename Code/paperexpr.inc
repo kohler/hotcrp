@@ -34,7 +34,7 @@ class PaperExprCompileState {
     var $indent;
     var $queryOptions;
 
-    function PaperExprCompileState($contact) {
+    function __construct($contact) {
 	$this->contact = $contact;
 	$this->rf = reviewForm();
 	$this->gtmp = array();
@@ -51,7 +51,7 @@ class PaperExpr {
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|[=!]=|<[<=]?|>[>=]?)/';
 
-    function parse($t, $noErrors = false) {
+    static function parse($t, $noErrors = false) {
 	global $Conf;
 	$e = self::_parse_ternary($t);
 	if ($t !== "") {
@@ -72,7 +72,7 @@ class PaperExpr {
 	}
     }
 
-    function _parse_ternary(&$t) {
+    static function _parse_ternary(&$t) {
 	$e = self::_parse_expr($t, 0);
 	if (!$e || ($t = ltrim($t)) === "" || $t[0] !== "?")
 	    return $e;
@@ -88,7 +88,7 @@ class PaperExpr {
 	return null;
     }
 
-    function _parse_function($op, &$t, $allow_aggregate) {
+    static function _parse_function($op, &$t, $allow_aggregate) {
 	global $paperExprOperators;
 	$t = ltrim($t);
 	$e = array($op, false);
@@ -125,7 +125,7 @@ class PaperExpr {
 	return $e;
     }
 
-    function _parse_expr(&$t, $level) {
+    static function _parse_expr(&$t, $level) {
 	global $paperExprOperators;
 
 	if (($t = ltrim($t)) === "")
@@ -204,7 +204,7 @@ class PaperExpr {
     }
 
 
-    function _addgtemp($state, $expr, $name) {
+    static function _addgtemp($state, $expr, $name) {
 	if (isset($state->gtmp[$name]))
 	    return $state->gtmp[$name];
 	$tname = "\$tg" . count($state->gtmp);
@@ -213,7 +213,7 @@ class PaperExpr {
 	return $tname;
     }
 
-    function _addltemp($state, $expr = "null", $always_var = false) {
+    static function _addltemp($state, $expr = "null", $always_var = false) {
 	if (!$always_var && preg_match('/\A(?:[\d.]+|\$\w+|null)\z/', $expr))
 	    return $expr;
 	$tname = "\$t" . $state->lprefix . "_" . count($state->lstmt);
@@ -221,7 +221,7 @@ class PaperExpr {
 	return $tname;
     }
 
-    function _addnumscores($state) {
+    static function _addnumscores($state) {
 	if (!isset($state->gtmp["numScores"])) {
 	    $state->gtmp["numscores"] = "\$numScores";
 	    $state->gstmt[] = "\$numScores = (\$forceShow || \$contact->canViewReview(\$prow, null, \$fakeWhyNotView, true) ? \$prow->numScores : 0);";
@@ -229,7 +229,7 @@ class PaperExpr {
 	return "\$numScores";
     }
 
-    function _compilereviewloop($state, $initial_value, $combiner, $e, $e2 = null) {
+    static function _compilereviewloop($state, $initial_value, $combiner, $e, $e2 = null) {
 	$t_result = self::_addltemp($state, $initial_value, true);
 	$combiner = str_replace("~r~", $t_result, $combiner);
 
@@ -263,7 +263,7 @@ class PaperExpr {
 	return $t_result;
     }
 
-    function _compile($state, $e) {
+    static function _compile($state, $e) {
 	global $paperExprOperators;
 
 	$op = $e[0];
@@ -360,7 +360,7 @@ class PaperExpr {
 	return "null";
     }
 
-    function compile_function_body($e, $contact) {
+    static function compile_function_body($e, $contact) {
 	global $Conf;
 	$state = new PaperExprCompileState($contact);
 	$e = self::_compile($state, $e);
@@ -383,17 +383,17 @@ class PaperExpr {
 	return $t;
     }
 
-    function compile_function($e, $contact) {
+    static function compile_function($e, $contact) {
 	return create_function("\$prow, \$contact, \$format = null, \$forceShow = false", self::compile_function_body($e, $contact));
     }
 
-    function add_query_options(&$queryOptions, $e, $contact) {
+    static function add_query_options(&$queryOptions, $e, $contact) {
 	$state = new PaperExprCompileState($contact);
 	$state->queryOptions =& $queryOptions;
 	self::_compile($state, $e);
     }
 
-    function expression_view_score($e, $contact) {
+    static function expression_view_score($e, $contact) {
 	global $paperExprOperators;
 
 	$op = $e[0];

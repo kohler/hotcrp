@@ -112,7 +112,7 @@ class CheckFormat {
     var $errors;
     var $pages;
 
-    function CheckFormat() {
+    function __construct() {
 	$this->msgs = array();
 	$this->errors = 0;
 	$this->pages = 0;

@@ -602,7 +602,7 @@ class ContactList extends BaseList {
 	}
 
 	// run query
-	$rows = ContactList::_rows($queryOptions);
+	$rows = $this->_rows($queryOptions);
 	if (!$rows || count($rows) == 0)
 	    return "No matching people";
 
@@ -767,7 +767,7 @@ class ContactList extends BaseList {
 	$this->limit = array_shift($baseFieldId);
 
 	// run query
-	return ContactList::_rows($queryOptions);
+	return $this->_rows($queryOptions);
     }
 
 }

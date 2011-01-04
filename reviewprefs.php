@@ -115,7 +115,7 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     $lineno = 0;
     $successes = 0;
     $errors = array();
-    foreach (split("\n", $text) as $line) {
+    foreach (explode("\n", $text) as $line) {
 	$line = trim($line);
 	$lineno++;
 

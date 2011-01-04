@@ -434,8 +434,8 @@ function saveAssign() {
     // parse assignment
     $pcm = pcMembers();
     $ass = array();
-    foreach (split(" ", $_REQUEST["ass"]) as $req) {
-	$a = split(",", $req);
+    foreach (explode(" ", $_REQUEST["ass"]) as $req) {
+	$a = explode(",", $req);
 	if (count($a) == 0 || ($pid = cvtint($a[0])) <= 0)
 	    continue;
 	$ass[$pid] = array();

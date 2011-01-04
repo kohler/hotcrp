@@ -37,7 +37,7 @@ function updateSchema($Conf) {
 	    $result = $Conf->q("select paperId, tag from PaperTag where tag like '%~%'");
 	    $rrs = array();
 	    while (($row = edb_row($result))) {
-		list($contact, $round) = split("~", $row[1]);
+		list($contact, $round) = explode("~", $row[1]);
 		if (($round = array_search($round, $Conf->settings["rounds"]))) {
 		    if (!isset($rrs[$round]))
 			$rrs[$round] = array();

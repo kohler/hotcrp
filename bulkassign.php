@@ -33,7 +33,7 @@ function parseBulkFile($text, $filename, $type) {
     $ass = array();
     $lnameemail = array();
     $doemail = defval($_REQUEST, "email");
-    $mailtemplate = $nullMailer->expandTemplate("requestreview", true, false);
+    $mailtemplate = $nullMailer->expandTemplate("requestreview");
     if (isset($_REQUEST["email_requestreview"]))
 	$mailtemplate["body"] = $_REQUEST["email_requestreview"];
 
@@ -241,7 +241,7 @@ if (!isset($_REQUEST["rev_roundtag"]))
     $rev_roundtag = $Conf->settingText("rev_roundtag");
 else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
     $rev_roundtag = "";
-$t = $nullMailer->expandTemplate("requestreview", true, false);
+$t = $nullMailer->expandTemplate("requestreview");
 echo "<div id='foldemail' class='foldo'><table class='fx'>
 <tr><td>", tagg_checkbox("email", 1, true), "&nbsp;</td>
 <td>", tagg_label("Send email to external reviewers:"), "</td></tr>

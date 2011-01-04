@@ -85,8 +85,9 @@ class PaperList extends BaseList {
     var $papersel;
     var $rf;
     var $formulas;
+    var $reviewList;
 
-    function PaperList($search, $sortable = true, $list = false, $extraText = null) {
+    function __construct($search, $sortable = true, $list = false, $extraText = null) {
 	global $paperListFields, $scoreSorts, $Conf;
 	$this->showHeader = self::HEADER_ALL;
 
@@ -698,7 +699,7 @@ class PaperList extends BaseList {
 	}
     }
 
-    function wrapChairConflict($text) {
+    static function wrapChairConflict($text) {
 	return "<span class='fn20'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Override conflicts</a></span><span class='fx20'>$text</span>";
     }
 
@@ -737,7 +738,7 @@ class PaperList extends BaseList {
 	    }
 	// topic interest scores (except for conflicts)
 	if (isset($row->topicIds) && $row->topicIds != "") {
-	    $topicids = split(" ", $row->topicIds);
+	    $topicids = explode(" ", $row->topicIds);
 	    foreach (pcMembers() as $pcid => $pc) {
 		$pref = defval($prefs, $pcid, 0);
 		if ($pref !== false) {
@@ -1268,7 +1269,7 @@ class PaperList extends BaseList {
 	return $a;
     }
 
-    function listDescription($listname) {
+    static function listDescription($listname) {
 	switch ($listname) {
 	  case "a":
 	  case "authorHome":
@@ -1853,7 +1854,7 @@ class PaperListField {
     var $foldnum;
     var $sortable;
 
-    function PaperListField($id, $cssname, $type, $foldnum, $sortable) {
+    function __construct($id, $cssname, $type, $foldnum, $sortable) {
 	$this->id = $id;
 	$this->cssname = $cssname;
 	$this->foldname = ($foldnum ? $cssname : "NOFOLD");
@@ -1862,7 +1863,7 @@ class PaperListField {
 	$this->sortable = $sortable;
     }
 
-    function make($id, $cssname, $type, $foldnum = 0, $sortable = false) {
+    static function make($id, $cssname, $type, $foldnum = 0, $sortable = false) {
 	global $paperListFields, $paperListFolds;
 	if ($foldnum === true && $sortable === false) {
 	    $foldnum = 0;
@@ -1875,11 +1876,11 @@ class PaperListField {
 	return $f;
     }
 
-    function _formula_compar($a, $b) {
+    static function _formula_compar($a, $b) {
 	return strcasecmp($a->name, $b->name);
     }
 
-    function initialize() {
+    static function initialize() {
 	global $paperListFields, $paperListFolds, $paperListFormulas,
 	    $reviewScoreNames, $Conf;
 

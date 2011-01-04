@@ -1815,7 +1815,7 @@ class PaperTable {
 
     // Functions for loading papers
 
-    function _maybeSearchPaperId() {
+    static function _maybeSearchPaperId() {
 	global $Conf, $Me, $ConfSiteSuffix, $CurrentList;
 
 	// if a number, don't search
@@ -1875,7 +1875,7 @@ class PaperTable {
 	}
     }
 
-    function paperRow(&$whyNot) {
+    static function paperRow(&$whyNot) {
 	global $Conf, $Me;
 
 	if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["p"]))

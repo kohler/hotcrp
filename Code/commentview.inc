@@ -273,7 +273,7 @@ has passed.  Please keep the response short and to the point",
     }
 
 
-    function commentFlowEntry($contact, $crow, $trclass) {
+    static function commentFlowEntry($contact, $crow, $trclass) {
 	// See also ReviewForm::reviewFlowEntry
 	global $ConfSiteSuffix, $Conf;
 	$a = "<a href='paper$ConfSiteSuffix?p=$crow->paperId#comment$crow->commentId'>";

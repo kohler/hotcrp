@@ -1001,25 +1001,27 @@ class Mailer {
 	return $this->text;
     }
 
-    function expandTemplate($templateName, $expand = false, $default = false) {
+    static function getTemplate($templateName, $default = false) {
 	global $Conf, $mailTemplates;
 	$m = $mailTemplates[$templateName];
 	if (!$default && ($t = $Conf->settingText("mailsubj_" . $templateName)) !== false)
 	    $m["subject"] = $t;
 	if (!$default && ($t = $Conf->settingText("mailbody_" . $templateName)) !== false)
 	    $m["body"] = $t;
-	if ($expand)
-	    $m = $this->expand($m);
 	return $m;
     }
 
-    function prepareToSend($template, $row, $contact, $otherContact = null,
-			   &$rest = array()) {
+    function expandTemplate($templateName, $default = false) {
+	return $this->expand(self::getTemplate($templateName, $default));
+    }
+
+    static function prepareToSend($template, $row, $contact,
+				  $otherContact = null, &$rest = array()) {
 	global $Conf, $mailHeaders, $mailTemplates;
 
 	// look up template
 	if (is_string($template) && $template[0] == "@")
-	    $template = self::expandTemplate(substr($template, 1));
+	    $template = self::getTemplate(substr($template, 1));
 	// add rest fields to template for expansion
 	foreach ($mailHeaders as $f => $x)
 	    if (isset($rest[$f]))
@@ -1073,7 +1075,7 @@ class Mailer {
 	return $m;
     }
 
-    function sendPrepared($preparation) {
+    static function sendPrepared($preparation) {
 	global $Conf, $Opt;
 	if ($preparation["allowEmail"]) {
 	    // set sendmail parameters
@@ -1102,13 +1104,13 @@ class Mailer {
 	    return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\n" . $preparation["headers"] . "Subject: " . $preparation["subject"] . "\n\n" . $preparation["body"]) . "</pre>");
     }
 
-    function send($template, $row, $contact, $otherContact = null, $rest = array()) {
+    static function send($template, $row, $contact, $otherContact = null, $rest = array()) {
 	$preparation = self::prepareToSend($template, $row, $contact, $otherContact, $rest);
 	if ($preparation)
 	    self::sendPrepared($preparation);
     }
 
-    function sendContactAuthors($template, $row, $otherContact = null, $rest = array()) {
+    static function sendContactAuthors($template, $row, $otherContact = null, $rest = array()) {
 	global $Conf, $Me, $mailTemplates;
 	$qa = ($Conf->sversion >= 25 ? ", preferredEmail" : "");
 
@@ -1139,7 +1141,7 @@ class Mailer {
 	}
     }
 
-    function sendReviewers($template, $row, $otherContact = null, $rest = array()) {
+    static function sendReviewers($template, $row, $otherContact = null, $rest = array()) {
 	global $Conf, $Me, $Opt, $mailTemplates;
 	$qa = ($Conf->sversion >= 25 ? ", preferredEmail" : "");
 
@@ -1173,7 +1175,7 @@ class Mailer {
 
 
     /// Quote potentially non-ASCII header text a la RFC2047 and/or RFC822.
-    function mimeAppend(&$result, &$linelen, $str, $utf8) {
+    static function mimeAppend(&$result, &$linelen, $str, $utf8) {
 	if ($utf8) {
 	    // replace all special characters used by the encoder
 	    $str = str_replace(array('=',   '_',   '?',   ' '),
@@ -1244,7 +1246,7 @@ class Mailer {
 	}
     }
 
-    function mimeEmailHeader($header, $str) {
+    static function mimeEmailHeader($header, $str) {
 	if (preg_match('/[\r\n]/', $str))
 	    $str = simplifyWhitespace($str);
 
@@ -1315,7 +1317,7 @@ class Mailer {
 	return $text;
     }
 
-    function mimeHeader($header, $str) {
+    static function mimeHeader($header, $str) {
 	if (preg_match('/[\r\n]/', $str))
 	    $str = simplifyWhitespace($str);
 
@@ -1328,7 +1330,7 @@ class Mailer {
 	return $text;
     }
 
-    function mimeHeaderUnquote($text) {
+    static function mimeHeaderUnquote($text) {
 	if (strlen($text) > 2 && $text[0] == '=' && $text[1] == '?') {
 	    $out = '';
 	    while (preg_match('/\A=\?utf-8\?q\?(.*?)\?=(\r?\n )?/i', $text, $m)) {

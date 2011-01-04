@@ -5,7 +5,7 @@
 
 class PaperActions {
 
-    function setDecision($prow) {
+    static function setDecision($prow) {
 	global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
 	if ($Me->canSetOutcome($prow)) {
@@ -29,7 +29,7 @@ class PaperActions {
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "decision")));
     }
 
-    function setReviewPreference($prow) {
+    static function setReviewPreference($prow) {
 	global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
 	if (!$Me->privChair
@@ -50,7 +50,7 @@ class PaperActions {
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "revpref")));
     }
 
-    function setRank($prow) {
+    static function setRank($prow) {
 	global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
 	$tag = $Conf->settingText("tag_rank", "");
@@ -86,7 +86,7 @@ class PaperActions {
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "rank")));
     }
 
-    function rankContext($prow) {
+    static function rankContext($prow) {
 	global $Conf, $ConfSiteSuffix, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
 	$tag = $Conf->settingText("tag_rank", "");
@@ -114,7 +114,7 @@ class PaperActions {
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "rank")), true);
     }
 
-    function setLeadOrShepherd($prow, $type, $ajaxexit = true) {
+    static function setLeadOrShepherd($prow, $type, $ajaxexit = true) {
         global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
 	if (!$Me->actChair($prow)) {
@@ -144,7 +144,7 @@ class PaperActions {
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, $type)));
     }
 
-    function setTags($prow) {
+    static function setTags($prow) {
 	global $Conf, $Me, $Error, $OK, $forceShow;
 	if (isset($_REQUEST["cancelsettags"]))
 	    return;
@@ -160,7 +160,7 @@ class PaperActions {
 	// NB normally redirectSelf() does not return
     }
 
-    function tagReport($prow, $return = false) {
+    static function tagReport($prow, $return = false) {
 	global $Conf, $ConfSiteSuffix, $Me, $Error, $OK, $forceShow;
 	$ajax = defval($_REQUEST, "ajax", false);
 	$r = "";
