@@ -1,5 +1,12 @@
 HotCRP NEWS
 
+Version 2.43   3.Jan.2011
+
+* Correct 2.41 bug that could cause SQL errors on the home page when users
+  had many comments to view.  Double ouch!  Apologies to Tony Del Porto and
+  Usenix.
+
+
 Version 2.42   2.Jan.2011
 
 * Correct 2.41 bug that broke "ovemer:3" searches (ouch).
