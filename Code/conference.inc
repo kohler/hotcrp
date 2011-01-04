@@ -1282,7 +1282,7 @@ class Conference {
 	self::_flowQueryWheres($where, "PaperComment", $t0);
 	if (count($where))
 	    $q .= " where " . join(" and ", $where);
-	$q .= "	order by PaperComment.timeModified asc, PaperComment.contactId desc, PaperComment.paperId desc";
+	$q .= "	order by PaperComment.timeModified desc, PaperComment.contactId asc, PaperComment.paperId asc";
 	if ($limit)
 	    $q .= " limit $limit";
 	return $q;
@@ -1310,7 +1310,7 @@ class Conference {
 	self::_flowQueryWheres($where, "PaperReview", $t0);
 	$where[] = "PaperReview.reviewSubmitted>0";
 	$q .= " where " . join(" and ", $where);
-	$q .= "	order by PaperReview.reviewSubmitted asc, PaperReview.contactId desc, PaperReview.paperId desc";
+	$q .= "	order by PaperReview.reviewSubmitted desc, PaperReview.contactId asc, PaperReview.paperId asc";
 	if ($limit)
 	    $q .= " limit $limit";
 	return $q;
@@ -1360,7 +1360,7 @@ class Conference {
 		    continue;
 		}
 	    } else if ($ct0) {
-		$crows = $this->commentRows(self::_commentFlowQuery($contact, $ct0, $limit));
+		$crows = array_reverse($this->commentRows(self::_commentFlowQuery($contact, $ct0, $limit)));
 		if (count($crows) == $limit)
 		    $ct0 = array($crows[0]->timeModified, $crows[0]->contactId, $crows[0]->paperId);
 		else
@@ -1377,7 +1377,7 @@ class Conference {
 		    continue;
 		}
 	    } else if ($rt0) {
-		$rrows = $this->reviewRows(self::_reviewFlowQuery($contact, $rt0, $limit));
+		$rrows = array_reverse($this->reviewRows(self::_reviewFlowQuery($contact, $rt0, $limit)));
 		if (count($rrows) == $limit)
 		    $rt0 = array($rrows[0]->reviewSubmitted, $rrows[0]->contactId, $rrows[0]->paperId);
 		else
