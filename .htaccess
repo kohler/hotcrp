@@ -31,7 +31,7 @@ RewriteRule ^doc/.*$ %1.php%2 [L]
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteCond %{REQUEST_URI} ^(.*)$
 RewriteRule ^.*$ %1.php [L]
-RewriteCond %{REQUEST_URI} ^.*/(CVS|\.svn|\.git)(/|$)
+RewriteCond %{REQUEST_URI} ^.*/(CVS|\.svn|\.git|test)(/|$)
 RewriteRule ^(.*) $1 [F]
 </IfModule>
 
