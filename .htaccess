@@ -31,6 +31,8 @@ RewriteRule ^doc/.*$ %1.php%2 [L]
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteCond %{REQUEST_URI} ^(.*)$
 RewriteRule ^.*$ %1.php [L]
+RewriteCond %{REQUEST_URI} ^.*/(CVS|\.svn|\.git)(/|$)
+RewriteRule ^(.*) $1 [F]
 </IfModule>
 
 # Uncomment this line to grant access only via https.  Requires mod_ssl.
