@@ -333,7 +333,7 @@ function papersel(value, name) {
 }
 
 var papersel_check_safe = false;
-function paperselCheck(name) {
+function paperselCheck() {
     var ins, i, e, values, check_safe = papersel_check_safe;
     papersel_check_safe = false;
     if ((e = $$("sel_papstandin")))
