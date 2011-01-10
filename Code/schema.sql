@@ -118,7 +118,7 @@ CREATE TABLE `OptionType` (
   `pcView` tinyint(1) NOT NULL default '1',
   `optionValues` text NOT NULL default '',
   `sortOrder` tinyint(1) NOT NULL default '0',
-  `displayType` tinyint(1) NOT NULL default '0'
+  `displayType` tinyint(1) NOT NULL default '0',
   PRIMARY KEY  (`optionId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
