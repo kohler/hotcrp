@@ -228,6 +228,10 @@ if ($Me->privChair) {
     $result = $Conf->qx("select PRP.paperId from PaperReviewPreference PRP join PCMember PCM on (PCM.contactId=PRP.contactId) left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId) where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0 limit 1");
     if (($row = edb_row($result)))
 	$Conf->warnMsg("PC members have indicated paper conflicts (using review preferences of &minus;100 or less) that aren&rsquo;t yet confirmed.  <a href='autoassign$ConfSiteSuffix?a=prefconflict&amp;assign=1' class='nowrap'>Confirm these conflicts</a>");
+    // Weird URLs?
+    foreach (array("conferenceSite", "paperSite") as $k)
+	if ($Opt[$k] && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', $Opt[$k]))
+	    $Conf->warnMsg("The <code>\$Opt[\"$k\"]</code> setting, <code>&laquo;" . htmlspecialchars($Opt[$k]) . "&raquo;</code>, is not a valid URL.  Edit the <code>Code/options.inc</code> file to fix this problem.");
 }
 
 
