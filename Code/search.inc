@@ -758,7 +758,7 @@ class PaperSearch {
 
 	// Allow searches like "ovemer>2"; parse as "ovemer:>2".
 	if (preg_match('/\A([-_A-Za-z0-9]+)([<>!=]=?[^:]+)\z/', $word, $m)) {
-	    if (($qe = $this->_searchQueryWord($m[1] . ":" . $m[2], $rest, $qt, false)))
+	    if (($qe = $this->_searchQueryWord($m[1] . ":" . $m[2], $rest, false)))
 		return $qe;
 	}
 
