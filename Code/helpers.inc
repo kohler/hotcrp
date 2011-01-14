@@ -180,10 +180,9 @@ function simple_array_to_json($x) {
 	else if (is_int($value))
 	    $s .= $value;
 	else
-	    // XXX does not correctly escape all control characters, so does
-	    // not produce not true JSON.  (Currently OK since script.js uses
-	    // eval(), not JSON.parse.)
-	    $s .= "\"" . addcslashes($value, "\010\f\n\r\t\"\\") . "\"";
+	    // XXX Not tested that it produces true JSON.  (Currently OK since
+	    // script.js uses eval(), not JSON.parse.)
+	    $s .= "\"" . addcslashes($value, "\000..\037\"\\") . "\"";
 	$sep = ",";
     }
     return $s . "}";
