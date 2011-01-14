@@ -27,6 +27,8 @@ Options -MultiViews
 RewriteEngine on
 RewriteBase /
 RewriteRule ^(CVS|\.svn|\.git|test).* $1 [F]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^.*$ - [L]
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteCond %{REQUEST_URI} ^(.*)$
 RewriteRule ^[^/]*$ %1.php [L]
