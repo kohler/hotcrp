@@ -17,6 +17,10 @@ if (defval($_REQUEST, "mode") == "edit")
     $_REQUEST["mode"] = "pe";
 else if (defval($_REQUEST, "mode") == "view")
     $_REQUEST["mode"] = "p";
+if (!isset($_REQUEST["p"]) && !isset($_REQUEST["paperId"])
+    && isset($_SERVER["PATH_INFO"])
+    && preg_match(',\A/(?:new|\d+)\z,i', $_SERVER["PATH_INFO"]))
+    $_REQUEST["p"] = substr($_SERVER["PATH_INFO"], 1);
 
 
 // header

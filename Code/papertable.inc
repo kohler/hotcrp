@@ -1919,6 +1919,12 @@ class PaperTable {
 	    $_REQUEST["reviewId"] = $_REQUEST["r"];
 	if (!isset($_REQUEST["commentId"]) && isset($_REQUEST["c"]))
 	    $_REQUEST["commentId"] = $_REQUEST["c"];
+	if (!isset($_REQUEST["paperId"]) && isset($_SERVER["PATH_INFO"])
+	    && preg_match(',\A/(?:new|\d+)\z,i', $_SERVER["PATH_INFO"]))
+	    $_REQUEST["paperId"] = substr($_SERVER["PATH_INFO"], 1);
+	else if (!isset($_REQUEST["reviewId"]) && isset($_SERVER["PATH_INFO"])
+		 && preg_match(',\A/\d+[A-Z]+\z,i', $_SERVER["PATH_INFO"]))
+	    $_REQUEST["reviewId"] = substr($_SERVER["PATH_INFO"], 1);
 
 	if (isset($_REQUEST["paperId"]) && $_REQUEST["paperId"] == "new")
 	    return null;
