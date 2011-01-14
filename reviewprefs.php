@@ -311,7 +311,7 @@ echo "</div></form>\n\n";
 
 // main form
 echo "<form class='assignpc' method='post' action=\"reviewprefs$ConfSiteSuffix?reviewer=$reviewer",
-    (defval($_REQUEST, "q") ? "&amp;q=" . htmlspecialchars($_REQUEST["q"]) : ""),
+    (defval($_REQUEST, "q") ? "&amp;q=" . urlencode($_REQUEST["q"]) : ""),
     "&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>",
     "<div class='inform'>",
     "<input id='defaultact' type='hidden' name='defaultact' value='' />",

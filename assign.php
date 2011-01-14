@@ -601,14 +601,14 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 	    "<div class='papv'>",
 	    "<table class='reviewers'>\n";
 	while (($row = edb_orow($result))) {
+	    $reason = defval($row, "reason", "");
+	    $reason = ($reason == "" ? "" : "&amp;reason=" . urlencode($reason));
 	    echo "<tr><td>", htmlspecialchars($row->name), "</td><td>&lt;",
 		"<a href=\"mailto:", urlencode($row->email), "\">",
 		htmlspecialchars($row->email), "</a>&gt;</td>",
 		"<td><a class='button_small' href=\"assign$ConfSiteSuffix?p=$prow->paperId&amp;name=",
-		urlencode($row->name), "&amp;email=", urlencode($row->email);
-	    if (defval($row, "reason", ""))
-		echo "&amp;reason=", htmlspecialchars($row->reason);
-	    echo "&amp;add=1\">Approve</a>&nbsp; ",
+		urlencode($row->name), "&amp;email=", urlencode($row->email),
+		$reason, "&amp;add=1\">Approve</a>&nbsp; ",
 		"<a class='button_small' href=\"assign$ConfSiteSuffix?p=$prow->paperId&amp;name=",
 		urlencode($row->name), "&amp;email=", urlencode($row->email),
 		"&amp;deny=1\">Deny</a></td></tr>\n",

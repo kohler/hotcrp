@@ -742,7 +742,7 @@ function listLinks($id, $baseUrl, $args, $listtype) {
 
     $urlrest = "&amp;ls=" . $CurrentList;
     foreach ($args as $what => $val)
-	$urlrest .= "&amp;" . htmlspecialchars($what) . "=" . htmlspecialchars($val);
+	$urlrest .= "&amp;" . urlencode($what) . "=" . urlencode($val);
 
     $x = "";
     if ($k > 0)
