@@ -186,13 +186,10 @@ class Contact {
     }
 
     function goAlert($url, $message = "") {
-	global $Conf, $ConfSiteSuffix;
+	global $Conf, $ConfSiteBase, $ConfSiteSuffix;
 	$Conf->errorMsg($message);
-	if ($url === false) {
-	    $url = "index" . $ConfSiteSuffix;
-	    if (preg_match("|/doc(\.php)?/|", $_SERVER["PHP_SELF"]))
-		$url = "../" . $url;
-	}
+	if ($url === false)
+	    $url = "${ConfSiteBase}index$ConfSiteSuffix";
 	go($url);
     }
 
