@@ -365,6 +365,11 @@ function hoturlx($page) {
     return $ConfSiteBase . $page;
 }
 
+function hoturl_absolute($page, $options = null) {
+    global $Opt, $ConfSiteBase;
+    return $Opt["paperSite"] . "/" . substr(hoturl($page, $options), strlen($ConfSiteBase));
+}
+
 function go($url) {
     // The URL is often a relative one; make it absolute if possible.
     if (!preg_match('|\A[a-z]+://|', $url)

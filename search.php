@@ -398,7 +398,7 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 	    . "# marks a paper with the same rank as the preceding paper.  A line that starts\n"
 	    . "# with \">>\", \">>>\", and so forth indicates a rank gap between the preceding\n"
 	    . "# paper and the current paper.  When you are done, upload the file at\n"
-	    . "#   " . $Opt["paperSite"] . "/offline$ConfSiteSuffix\n\n"
+	    . "#   " . hoturl_absolute("offline") . "\n\n"
 	    . "Tag: " . trim($_REQUEST["tag"]) . "\n"
 	    . "\n"
 	    . $real . $null;

@@ -64,14 +64,14 @@ On behalf of the %CONFNAME% program committee, %OTHERCONTACT% would like to soli
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 If you are willing to review this paper, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))%  Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%
 
 Once you've decided, please take a moment to accept or refuse this review request by using one of these links.  You may also contact %OTHERNAME% directly or refuse the request using the conference site.
 
-      Accept: %URL%/review%PHP%?p=%NUMBER%&accept=1&%LOGINURLPARTS%
-      Refuse: %URL%/review%PHP%?p=%NUMBER%&refuse=1&%LOGINURLPARTS%
+      Accept: %URL(review, p=%NUMBER%&accept=1&%LOGINURLPARTS%)%
+      Refuse: %URL(review, p=%NUMBER%&refuse=1&%LOGINURLPARTS%)%
 
 For reference, your account information is as follows.
 
@@ -112,7 +112,7 @@ Visit the assignment page to approve or deny the request.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/assign%PHP%?p=%NUMBER%
+  Paper site: %URL(assign, p=%NUMBER%)%
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -124,7 +124,7 @@ Your proposal that %OTHERCONTACT% review %CONFNAME% paper #%NUMBER% has been den
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -139,7 +139,7 @@ Thank you,
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -151,7 +151,7 @@ An author of %CONFNAME% paper #%NUMBER% has withdrawn the paper from considerati
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -166,7 +166,7 @@ Thank you,
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 %IF(REASON)%The paper was withdrawn by an administrator, who provided the following reason: %REASON%%ELSE%The paper was withdrawn by an administrator.%ENDIF%
 
@@ -185,7 +185,7 @@ Authors can voluntarily withdraw a submission at any time, as can the chair.  %R
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 You are not expected to complete your review (and the system will not allow it unless the paper is revived).
 
@@ -212,7 +212,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted.  The review is available at the paper site.
 
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
@@ -227,7 +227,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated.  The review is available at the paper site.
 
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
@@ -247,7 +247,7 @@ The %CONFNAME% program committee is delighted to inform you that your paper #%NU
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions.  Congratulations!
 
@@ -273,7 +273,7 @@ The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 %NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.
 
@@ -292,7 +292,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
 	   "body" => "A comment for %CONFNAME% paper #%NUMBER% is available as shown below.  For the most up-to-date comments, or to turn off notification emails, see the paper site.
 
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -304,7 +304,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Response for #%NUMBER% %TITLEHINT%",
 	   "body" => "The authors' response for %CONFNAME% paper #%NUMBER% is available as shown below.  The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the paper site.
 
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -316,7 +316,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Updated final paper #%NUMBER% %TITLEHINT%",
 	   "body" => "The final version for %CONFNAME% paper #%NUMBER% has been updated.  The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the paper site.
 
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -333,7 +333,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 Your message here.
 
        Title: %TITLE%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
 
@@ -355,7 +355,7 @@ This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REV
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
 
@@ -380,7 +380,7 @@ This is a reminder from %OTHERCONTACT% to finish your review for %CONFNAME% pape
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
 
@@ -398,7 +398,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this registration: %REASON%
 
@@ -414,7 +414,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
 
@@ -430,7 +430,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
 
@@ -446,7 +446,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL%/paper%PHP%?p=%NUMBER%
+  Paper site: %URL(paper, p=%NUMBER%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
 
@@ -647,7 +647,7 @@ class Mailer {
     }
 
     function expandvar($what, $isbool = false) {
-	global $Conf, $ConfSiteSuffix, $Opt;
+	global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Opt;
 	$len = strlen($what);
 
 	if ($len > 6 && substr($what, 0, 4) == "%IF(" && substr($what, $len - 2) == ")%")
@@ -717,6 +717,12 @@ class Mailer {
 	    return $this->_expandContact((object) array("fullName" => $Opt["contactName"], "email" => $Opt["contactEmail"]), "ne");
 	if ($what == "%URL%")
 	    return $Opt["paperSite"];
+	else if ($len > 7 && substr($what, 0, 5) == "%URL(" && substr($what, $len - 2) == ")%") {
+	    $a = preg_split('/\s*,\s*/', substr($what, 5, $len - 7));
+	    if (count($a) == 2 && $a[1] != "")
+		$a[1] = $this->expandvar($a[1], false);
+	    return hoturl_absolute($a[0], isset($a[1]) ? $a[1] : "");
+	}
 	if ($what == "%PHP%")
 	    return $ConfSiteSuffix;
 	if (($what == "%NUMACCEPTED%" || $what == "%NUMSUBMITTED%")
@@ -986,12 +992,12 @@ class Mailer {
 		    $this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $width) . "\n";
 		else if ($yes === null)
 		    $this->text .= $line . "\n";
-	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%[\w()]+%)$/', $line, $m))
+	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%\w+(?:|\([^\)]*\))%)$/', $line, $m))
 		$this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $width) . "\n";
-	    else if (preg_match('/^([ \t][ \t]*.*?: )(%URL%\S*)$/', $line, $m)) {
+	    else if (preg_match('/^([ \t][ \t]*.*?: )(%URL(?:|\([^\)]*\))%\S*)$/', $line, $m)) {
 		// do not wrap lines that start with %URL%
 		$this->textstart = strlen($this->text);
-		while (preg_match('/^(.*?)(%[\w()]+%)(.*)$/s', $line, $m)) {
+		while (preg_match('/^(.*?)(%\w+(?:|\([^\)]*\))%)(.*)$/s', $line, $m)) {
 		    $this->text .= $m[1];
 		    $this->text .= $this->expandvar($m[2]);
 		    $line = $m[3];
@@ -999,7 +1005,7 @@ class Mailer {
 		$this->text .= $line . "\n";
 	    } else if (strpos($line, '%') !== false) {
 		$this->textstart = strlen($this->text);
-		while (preg_match('/^(.*?)(%[\w()]+%)(.*)$/s', $line, $m)) {
+		while (preg_match('/^(.*?)(%\w+(?:|\([^\)]*\))%)(.*)$/s', $line, $m)) {
 		    $this->text .= $m[1];
 		    $this->text .= $this->expandvar($m[2]);
 		    $line = $m[3];

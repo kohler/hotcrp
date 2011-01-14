@@ -642,8 +642,8 @@ class Conference {
 
 	    // prepare data
 	    $subject = "[" . $Opt["shortName"] . "] Paper #$paperId upload";
-	    $message = "           Paper: " . $Opt["paperSite"] . "/paper$ConfSiteSuffix?p=$paperId
-       Submitted: " . $this->printableTime($doc->timestamp) . "\n\n"
+	    $message = "           Paper: " . hoturl_absolute("paper", "p=$paperId") . "\n"
+		. "       Submitted: " . $this->printableTime($doc->timestamp) . "\n\n"
 		. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
 		. wordWrapIndent(trim($prow->abstract), "Abstract: ") . "\n\n"
 		. wordWrapIndent(cleanAuthorText($prow), "Authors: ") . "\n"
