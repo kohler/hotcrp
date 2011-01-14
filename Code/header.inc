@@ -103,18 +103,22 @@ function setPathVariables() {
 	$ConfSitePATH = "/var/www/html";
 
     // Determine relative path to conference home in URLs
-    $toplev = array("Code" => 1, "doc" => 1, "doc.php" => 1);
-    $url = $_SERVER["PHP_SELF"];
-    $ndotdot = 0;
-    $ConfSiteBase = "";
-    while (($rpos = strrpos($url, "/")) !== false) {
-	$last = substr($url, $rpos + 1);
-	if (isset($toplev[$last])) {
-	    $ConfSiteBase = str_repeat("../", $ndotdot);
-	    break;
+    if (isset($_SERVER["PATH_INFO"]))
+	$ConfSiteBase = str_repeat("../", substr_count($_SERVER["PATH_INFO"], "/"));
+    else {
+	$toplev = array("Code" => 1, "doc" => 1, "doc.php" => 1);
+	$url = $_SERVER["PHP_SELF"];
+	$ndotdot = 0;
+	$ConfSiteBase = "";
+	while (($rpos = strrpos($url, "/")) !== false) {
+	    $last = substr($url, $rpos + 1);
+	    if (isset($toplev[$last])) {
+		$ConfSiteBase = str_repeat("../", $ndotdot);
+		break;
+	    }
+	    $ndotdot++;
+	    $url = substr($url, 0, $rpos);
 	}
-	$ndotdot++;
-	$url = substr($url, 0, $rpos);
     }
 
     // Determine whether to include the .php suffix
