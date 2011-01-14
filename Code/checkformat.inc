@@ -247,7 +247,9 @@ class CheckFormat {
 		    $minval = min($minval, $pp);
 		}
 	    }
-	    if ($bodypages == 0 || $bodypages <= 0.5 * count($pi))
+	    if ($bodypages == 0)
+		$pie[] = "Warning: No pages seemed to contain body text; results may be off";
+	    else if ($bodypages <= 0.5 * count($pi))
 		$pie[] = "Warning: Only " . plural($bodypages, "page") . " seemed to contain body text; results may be off";
 	    if (count($px) > 0) {
 		$pie[] = "Body font too small: minimum ${p}pt, saw values as small as ${minval}pt on " . pluralx($px, "page") . " " . commarangejoin($px);
