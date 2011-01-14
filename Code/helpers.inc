@@ -207,6 +207,9 @@ function go($url) {
 	}
     }
 
+    // Might have an HTML-encoded URL; decode at least &amp;.
+    $url = str_replace("&amp;", "&", $url);
+
     if (preg_match('|\A[a-z]+://|', $url))
 	header("Location: $url");
 
@@ -220,7 +223,7 @@ function go($url) {
 <script type='text/javascript'>
   location=\"$url\";
 </script></head><body>
-<p>You should be automatically redirected <a href='$url'>to here</a>.</p>
+<p>You should be automatically redirected <a href='", htmlspecialchars($url), "'>to here</a>.</p>
 </body></html>\n";
     exit();
 }
