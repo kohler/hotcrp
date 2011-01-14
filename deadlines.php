@@ -26,7 +26,7 @@ submission and review functions can be accessed.
 Each time is specified in the time zone of the conference server.";
 
 if ($Me->privChair)
-    echo " As PC chair, you can also <a href='settings$ConfSiteSuffix'>change the deadlines</a>.";
+    echo " As PC chair, you can also <a href='", hoturl("settings"), "'>change the deadlines</a>.";
 
 echo "</p>
 

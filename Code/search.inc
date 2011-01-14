@@ -217,7 +217,7 @@ class PaperSearch {
     var $_matchTable;
 
     function __construct($me, $opt, $searchContactId = 0) {
-	global $Conf, $ConfSiteSuffix;
+	global $Conf;
 
 	// contact facts
 	$this->contactId = $me->contactId;
@@ -291,7 +291,7 @@ class PaperSearch {
 	if (isset($opt["urlbase"]))
 	    $this->urlbase = $opt["urlbase"];
 	else {
-	    $this->urlbase = "search$ConfSiteSuffix?t=" . urlencode($this->limitName);
+	    $this->urlbase = hoturl("search", "t=" . urlencode($this->limitName));
 	    if ($qtype != "n")
 		$this->urlbase .= "&qt=" . urlencode($qtype);
 	}
@@ -2226,7 +2226,11 @@ class PaperSearch {
     }
 
     function decorateSessionList($l, $listname, $sort = "") {
+	global $ConfSiteBase;
 	$l["url"] = $this->url();
+	if ($ConfSiteBase
+	    && substr($l["url"], 0, strlen($ConfSiteBase)) == $ConfSiteBase)
+	    $l["url"] = substr($l["url"], strlen($ConfSiteBase));
 	$l["description"] = $this->description($listname);
 	$l["timestamp"] = time();
 	$l["listid"] = $this->listId($sort);

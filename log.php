@@ -99,9 +99,9 @@ if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"]))
     }
 
 function searchbar() {
-    global $Conf, $ConfSiteSuffix, $Eclass, $page, $start, $count, $nrows, $maxNrows, $offset;
+    global $Conf, $Eclass, $page, $start, $count, $nrows, $maxNrows, $offset;
 
-    echo "<form method='get' action='log$ConfSiteSuffix' accept-charset='UTF-8'>
+    echo "<form method='get' action='", hoturl("log"), "' accept-charset='UTF-8'>
 <table id='searchform'><tr>
   <td class='lxcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
   <td class='lentry", $Eclass['q'], "'><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>
@@ -126,7 +126,7 @@ function searchbar() {
 	foreach (array("q", "pap", "acct", "n", "offset") as $x)
 	    if ($_REQUEST[$x])
 		$urls[] = "$x=" . urlencode($_REQUEST[$x]);
-	$url = "log$ConfSiteSuffix?" . join("&amp;", $urls);
+	$url = hoturl("log", join("&amp;", $urls));
 	echo "<table class='lognav'><tr><td id='newest'><div>";
 	if ($page > 1)
 	    echo "<a href='$url&amp;page=1'><strong>Newest</strong></a> &nbsp;|&nbsp;&nbsp;";
@@ -152,7 +152,7 @@ function searchbar() {
 	    echo "&nbsp;&nbsp;|&nbsp; <a href='$url&amp;page=earliest'><strong>Oldest</strong></a>";
 	/* echo "</div></td><td id='gopage'><div>";
 	if ($page > 1 || $nrows > $count) {
-	    echo "&nbsp;&nbsp;|&nbsp; Page: <form method='get' action='log$ConfSiteSuffix' accept-charset='UTF-8'>";
+	    echo "&nbsp;&nbsp;|&nbsp; Page: <form method='get' action='", hoturl("log"), "' accept-charset='UTF-8'>";
 	    foreach (array("q", "pap", "acct", "n", "offset") as $x)
 		if ($_REQUEST[$x])
 		    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />";
@@ -228,27 +228,26 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
 
     $act = $row->action;
     if (preg_match('/^Review (\d+)/', $act, $m)) {
-	echo "<a href=\"review$ConfSiteSuffix?r=$m[1]\">Review ",
+	echo "<a href=\"", hoturl("review", "r=$m[1]"), "\">Review ",
 	    $m[1], "</a>";
 	$act = substr($act, strlen($m[0]));
     }
     if (preg_match('/^Comment (\d+)/', $act, $m)) {
-	echo "<a href=\"comment$ConfSiteSuffix?c=$m[1]\">Comment ",
+	echo "<a href=\"", hoturl("comment", "c=$m[1]"), "\">Comment ",
 	    $m[1], "</a>";
 	$act = substr($act, strlen($m[0]));
     }
     if (preg_match('/ \(papers ([\d, ]+)\)?$/', $act, $m)) {
 	echo htmlspecialchars(substr($act, 0, strlen($act) - strlen($m[0]))),
-	    " (<a href=\"search$ConfSiteSuffix?t=all&amp;q=",
-	    preg_replace('/[\s,]+/', "+", $m[1]),
+	    " (<a href=\"", hoturl("search", "t=all&amp;q=" . preg_replace('/[\s,]+/', "+", $m[1])),
 	    "\">papers</a> ",
-	    preg_replace('/(\d+)/', "<a href=\"paper$ConfSiteSuffix?p=\$1\">\$1</a>", $m[1]),
+	    preg_replace('/(\d+)/', "<a href=\"" . hoturl("paper", "p=\$1") . "\">\$1</a>", $m[1]),
 	    ")";
     } else
 	echo htmlspecialchars($act);
 
     if ($row->paperId)
-	echo " (paper <a href=\"paper$ConfSiteSuffix?p=", urlencode($row->paperId), "\">", htmlspecialchars($row->paperId), "</a>)";
+	echo " (paper <a href=\"", hoturl("paper", "p=" . urlencode($row->paperId)), "\">", htmlspecialchars($row->paperId), "</a>)";
     echo "</td>";
     echo "</tr>\n";
 }

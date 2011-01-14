@@ -161,7 +161,7 @@ class PaperTable {
     }
 
     function papt($what, $name, $extra = array()) {
-	global $Error, $Conf, $ConfSiteSuffix;
+	global $Error, $Conf;
 	$type = defval($extra, "type", "pap");
 	$c = "<div class='${type}t";
 	if (isset($Error[$what]))
@@ -276,7 +276,7 @@ class PaperTable {
     }
 
     function paptabDownload($prow) {
-	global $Conf, $Me, $ConfSiteSuffix;
+	global $Conf, $Me;
 	assert(!$this->editable);
 	$final = ($prow->outcome > 0 && $Conf->collectFinalPapers());
 	$out = array();
@@ -322,13 +322,13 @@ class PaperTable {
 	if ($Me->isPC && $prow->conflictType <= 0
 	    && $Conf->timeUpdatePaper($prow) && $this->mode != "assign"
 	    && $this->mode != "contact")
-	    $out[] = "<div class='xwarning'>The authors still have <a href='deadlines$ConfSiteSuffix'>time</a> to make changes.</div>";
+	    $out[] = "<div class='xwarning'>The authors still have <a href='" . hoturl("deadlines") . "'>time</a> to make changes.</div>";
 
 	echo join("<div class='g'></div>\n", $out);
     }
 
     function echoUploadRow($prow, $flags) {
-	global $Conf, $ConfSiteSuffix, $Me, $Opt;
+	global $Conf, $Me, $Opt;
 	$final = ($prow && $prow->outcome > 0
 		  && ($Me->canSubmitFinalPaper($prow, $whyNot, true)
 		      || defval($whyNot, "deadline") == "final_done"));
@@ -391,10 +391,7 @@ class PaperTable {
 	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
 	    && $Conf->setting("sub_banal")) {
 	    echo "<div id='foldcheckformat' class='foldc'><div id='checkformatformresult' class='fx'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
-	    $Conf->footerHtml("<form id='checkformatform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId");
-	    if ($final)
-		$Conf->footerHtml("&amp;final=1");
-	    $Conf->footerHtml("' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform\")'><input type='hidden' name='checkformat' value='1' /></form>");
+	    $Conf->footerHtml("<form id='checkformatform' class='fold7o' method='post' action='" . hoturl("paper", "p=$prow->paperId" . ($final ? "&amp;final=1" : "")) . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform\")'><input type='hidden' name='checkformat' value='1' /></form>");
 	}
 
 	if (!$final && (!$doc || $Conf->setting("sub_freeze"))) {
@@ -759,7 +756,7 @@ class PaperTable {
     }
 
     function echoContactAuthor($prow, $editMode = null) {
-	global $Conf, $ConfSiteSuffix, $Me;
+	global $Conf, $Me;
 	$result = $Conf->qe("select firstName, lastName, email, contactId
 		from ContactInfo
 		join PaperConflict using (contactId)
@@ -774,7 +771,7 @@ class PaperTable {
 	    echo authorTable($aus, $Me);
 	}
 	if ($editMode || ($editMode === false && ($this->editable || $Me->privChair)))
-	    echo "(<a href='contactauthors$ConfSiteSuffix?p=$prow->paperId'>Edit&nbsp;contacts</a>)";
+	    echo "(<a href='" . hoturl("contactauthors", "p=$prow->paperId") . "'>Edit&nbsp;contacts</a>)";
 	echo "</div>\n\n";
     }
 
@@ -789,7 +786,7 @@ class PaperTable {
     }
 
     function echoCollaborators($prow) {
-	global $Conf, $ConfSiteSuffix;
+	global $Conf;
 	if (!$Conf->setting("sub_collab"))
 	    return;
 	$sub_pcconf = $Conf->setting("sub_pcconf");
@@ -805,7 +802,7 @@ class PaperTable {
 	else
 	    echo "List people and institutions with which the authors have
 	conflicts of interest.  ", $Conf->conflictDefinitionText(), "
-	Be sure to include conflicted <a href='contacts$ConfSiteSuffix?t=pc'>PC members</a>.
+	Be sure to include conflicted <a href='", hoturl("contacts", "t=pc"), "'>PC members</a>.
 	We use this information when assigning PC and external reviews.";
 	echo "  List one conflict per line.  For example: &ldquo;<tt>Jelena Markovic (EPFL)</tt>&rdquo; or, for a whole institution, &ldquo;<tt>EPFL</tt>&rdquo;.</div>",
 	    "<div class='papv'>",
@@ -814,7 +811,7 @@ class PaperTable {
     }
 
     function papstripCollaborators($prow) {
-	global $Conf, $ConfSiteSuffix;
+	global $Conf;
 	if (!$Conf->setting("sub_collab") || !$prow->collaborators
 	    || strcasecmp(trim($prow->collaborators), "None") == 0)
 	    return;
@@ -1030,7 +1027,7 @@ class PaperTable {
     }
 
     function _papstripLeadShepherd($prow, $type, $name, $showedit, $wholefold) {
-	global $Conf, $ConfSiteSuffix, $Me, $Error, $linkExtra;
+	global $Conf, $Me, $Error, $linkExtra;
 	$editable = $Me->actChair($prow);
 
 	$field = $type . "ContactId";
@@ -1040,7 +1037,7 @@ class PaperTable {
 	$pc = pcMembers();
 
 	if ($editable) {
-	    echo "<form id='${type}form' class='fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"${type}form\")'>",
+	    echo "<form id='${type}form' class='fold7o' method='post' action='", hoturl("review", "p=" . $prow->paperId . "&amp;post=1$linkExtra"), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"${type}form\")'>",
 		"<div id='fold$type' class='", ($showedit ? "foldo" : "foldc"), ($wholefold ? " fold2c" : " fold2o"), " inform'><div class='fx2'>",
 		"<input type='hidden' name='set$type' value='1' />";
 	    $Conf->footerScript("Miniajax.onload(\"${type}form\")");
@@ -1086,7 +1083,7 @@ class PaperTable {
     }
 
     function papstripTags($prow, $site = null) {
-	global $Conf, $ConfSiteSuffix, $Me, $Error, $forceShow, $linkExtra;
+	global $Conf, $Me, $Error, $forceShow, $linkExtra;
 	if ($site || defval($prow, "paperTags", "") !== "") {
 	    // Note that tags MUST NOT contain HTML special characters.
 	    require_once("tags.inc");
@@ -1105,7 +1102,7 @@ class PaperTable {
 		"<div class='psv'>";
 	    if ($editable) {
 		// tag report form
-		$Conf->footerHtml("<form id='tagreportform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><div class='aahc'><input type='hidden' name='tagreport' value='1' /></div></form>");
+		$Conf->footerHtml("<form id='tagreportform' class='fold7o' method='post' action='" . hoturl("paper", "p=$prow->paperId$linkExtra") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><div class='aahc'><input type='hidden' name='tagreport' value='1' /></div></form>");
 
 		$t = tagsToText($prow, false, $Me, true);
 		echo "<div class='fn'>", ($tx == "" ? "None" : $tx),
@@ -1123,7 +1120,7 @@ class PaperTable {
 		    "<input class='bsm' type='submit' name='cancelsettags' value='Cancel' onclick='return fold(\"tags\",1)' />",
 		    " &nbsp;<input class='bsm' type='submit' value='Save' />",
 		    "</div>",
-		    "<span class='hint'><a href='help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
+		    "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
 		    "</div>";
 	    } else
 		echo ($tx == "" ? "None" : $tx);
@@ -1138,13 +1135,13 @@ class PaperTable {
     }
 
     function papstripOutcomeSelector($prow, $showedit) {
-	global $Conf, $ConfSiteSuffix, $rf, $Error, $linkExtra;
+	global $Conf, $rf, $Error, $linkExtra;
 	if (!$rf)
 	    $rf = reviewForm();
 	echo "<div id='folddecision' class='",
 	    ($showedit || defval($_REQUEST, "atab") == "decision" ? "foldo" : "foldc"), "'>",
 	    $this->papt("decision", "Decision", array("type" => "ps", "editfolder" => ($showedit ? 0 : "decision"))),
-	    "<div class='psv'><form id='decisionform' class='fx fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitdecision()'>",
+	    "<div class='psv'><form id='decisionform' class='fx fold7o' method='post' action='", hoturl("review", "p=" . $prow->paperId . "&amp;post=1$linkExtra"), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitdecision()'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setdecision' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
@@ -1159,9 +1156,9 @@ class PaperTable {
     }
 
     function papstripReviewPreference($prow) {
-	global $Conf, $ConfSiteSuffix, $linkExtra, $CurrentList;
+	global $Conf, $linkExtra, $CurrentList;
 	echo $this->papt("revpref", "Review preference", array("type" => "ps")),
-	    "<div class='psv'><form id='revprefform' class='fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"revprefform\")'>",
+	    "<div class='psv'><form id='revprefform' class='fold7o' method='post' action='", hoturl("review", "p=" . $prow->paperId . "&amp;post=1$linkExtra"), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"revprefform\")'>",
 	    "<div class='aahc inform'>",
 	    "<input type='hidden' name='setrevpref' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
@@ -1180,7 +1177,7 @@ class PaperTable {
     }
 
     function papstripRank($prow) {
-	global $Conf, $ConfSiteSuffix, $Me, $linkExtra;
+	global $Conf, $Me, $linkExtra;
 	if (!($tag = $Conf->settingText("tag_rank")))
 	    return;
 
@@ -1199,11 +1196,11 @@ class PaperTable {
 	    $rp = "";
 
 	// rank context form
-	$Conf->footerHtml("<form id='rankctxform' class='fold7o' method='post' action='paper$ConfSiteSuffix?p=$prow->paperId' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><div class='aahc'><input type='hidden' name='rankctx' value='1' /></div></form>");
+	$Conf->footerHtml("<form id='rankctxform' class='fold7o' method='post' action='" . hoturl("paper", "p=$prow->paperId") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><div class='aahc'><input type='hidden' name='rankctx' value='1' /></div></form>");
 
 	echo "<div id='foldrank' class='foldc fold2c'>",
 	    $this->papt("rank", "Your rank", array("type" => "ps", "editfolder" => "rank")),
-	    "<div class='psv'><form id='rankform' class='fx fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankform\")'>",
+	    "<div class='psv'><form id='rankform' class='fx fold7o' method='post' action='" . hoturl("review", "p=" . $prow->paperId . "&amp;post=1$linkExtra") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankform\")'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setrank' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
@@ -1211,7 +1208,7 @@ class PaperTable {
 	echo "<input id='foldrank_d' class='textlite' type='text' size='4' name='rank' value=\"$rp\" onchange='Miniajax.submit(\"rankform\")' tabindex='1' />",
 	    " <input class='b fx7' type='submit' value='Save' />",
 	    " <span id='rankformresult'></span>",
-	    " <div class='hint'><strong>Tip:</strong> Use <a href='offline$ConfSiteSuffix'>offline reviewing</a> to rank many papers at once.</div>",
+	    " <div class='hint'><strong>Tip:</strong> Use <a href='", hoturl("offline"), "'>offline reviewing</a> to rank many papers at once.</div>",
 	    "</div></form>",
 	    "<div class='fn'>",
 	    ($rp === "" ? "None" : $rp);
@@ -1224,7 +1221,7 @@ class PaperTable {
     }
 
     function papstripWatch($prow) {
-	global $Conf, $ConfSiteSuffix, $Me, $linkExtra;
+	global $Conf, $Me, $linkExtra;
 	if (!($this->watchCheckbox
 	      && $Conf->sversion >= 6
 	      && $prow->timeSubmitted > 0
@@ -1236,7 +1233,7 @@ class PaperTable {
 	$result = $Conf->q("select ContactInfo.contactId, reviewType, commentId, conflictType, watch from ContactInfo left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId) left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId) where ContactInfo.contactId=$Me->contactId");
 	$row = edb_row($result);
 
-	echo "<form id='watchform' class='fold7o' action=\"comment$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra\" method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"watchform\")'>",
+	echo "<form id='watchform' class='fold7o' action=\"", hoturl("comment", "p=$prow->paperId&amp;post=1$linkExtra"), "\" method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"watchform\")'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setwatch' value='1' />";
 
@@ -1276,7 +1273,7 @@ class PaperTable {
     }
 
     function editMessage() {
-	global $Conf, $ConfSiteSuffix, $Me;
+	global $Conf, $Me;
 	$prow = $this->prow;
 	$m = "";
 
@@ -1288,7 +1285,7 @@ class PaperTable {
 		if ($Conf->setting("sub_open") <= 0)
 		    $msg = "You can&rsquo;t register new papers because the conference site has not been opened for submissions.$override";
 		else
-		    $msg = "You can&rsquo;t register new papers since the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed.$startDeadline$override";
+		    $msg = "You can&rsquo;t register new papers since the <a href='" . hoturl("deadlines") . "'>deadline</a> has passed.$startDeadline$override";
 		if (!$Me->privChair)
 		    errorMsgExit($msg);
 		$m .= "<div class='xinfo'>" . $msg . "</div>";
@@ -1324,11 +1321,11 @@ class PaperTable {
 		} else if ($this->mode == "pe")
 		    $m .= "<div class='xconfirm'>This paper is ready and will be considered for review.  You can still make changes if necessary.$updateDeadline</div>";
 	    } else if ($timeSubmit)
-		$m .= "<div class='xwarning'>You cannot make any changes as the <a href='deadlines$ConfSiteSuffix'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override</div>";
+		$m .= "<div class='xwarning'>You cannot make any changes as the <a href='" . hoturl("deadlines") . "'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override</div>";
 	    else if ($Conf->deadlinesBetween("", "sub_sub", "sub_grace"))
 		$m .= "<div class='xwarning'>The site is not open for submission updates at the moment.$override</div>";
 	    else
-		$m .= "<div class='xwarning'>The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override</div>";
+		$m .= "<div class='xwarning'>The <a href='" . hoturl("deadlines") . "'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override</div>";
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0
 		   && $Conf->timeSubmitFinalPaper()) {
 	    $updateDeadline = $this->deadlineSettingIs("final_soft");
@@ -1344,7 +1341,7 @@ class PaperTable {
     }
 
     function echoActions() {
-	global $Conf, $ConfSiteSuffix, $Me, $linkExtra;
+	global $Conf, $Me, $linkExtra;
 	$prow = $this->prow;
 
 	echo "<div class='aa'><table class='pt_buttons'>\n";
@@ -1355,7 +1352,7 @@ class PaperTable {
 		 && ($Conf->timeFinalizePaper($prow) || $Me->privChair))
 	    $buttons[] = "<input class='b' type='submit' name='revive' value='Revive paper' />";
 	else if ($prow->timeWithdrawn > 0)
-	    $buttons[] = "The paper has been withdrawn, and the <a href='deadlines$ConfSiteSuffix'>deadline</a> for reviving it has passed.";
+	    $buttons[] = "The paper has been withdrawn, and the <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving it has passed.";
 	else {
 	    if ($prow->outcome > 0 && $Conf->collectFinalPapers()
 		&& ($Conf->timeSubmitFinalPaper() || $Me->privChair)
@@ -1378,7 +1375,7 @@ class PaperTable {
 		$Conf->footerHtml("<div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this paper from consideration and/or
   publication?  $admins</p>
-  <form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'>
+  <form method='post' action=\"" . hoturl("paper", "p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
     <div class='popup_actions'>
       <input class='popup_populate' type='hidden' name='doemail' value='1' />
       <input class='popup_populate' type='hidden' name='emailNote' value='' />
@@ -1388,14 +1385,14 @@ class PaperTable {
   </form></div>");
 	    }
 	    if (!$this->editable)
-		$buttons[] = "<button type='button' class='b' onclick='window.location=\"contactauthors$ConfSiteSuffix?p=" . $prow->paperId . "$linkExtra\"'>Edit contacts</button>";
+		$buttons[] = "<button type='button' class='b' onclick='window.location=\"" . hoturl("contactauthors", "p=" . $prow->paperId . $linkExtra) . "\"'>Edit contacts</button>";
 	}
 	if ($Me->privChair && $prow) {
 	    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this,'d',0,true)\">Delete paper</button>", "(admin only)");
 	    $Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   paper from the database and <strong>cannot be undone</strong>.</p>
-  <form method='post' action=\"paper$ConfSiteSuffix?p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'>
+  <form method='post' action=\"" . hoturl("paper", "p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
     <div class='popup_actions'>
       <input class='popup_populate' type='hidden' name='doemail' value='1' />
       <input class='popup_populate' type='hidden' name='emailNote' value='' />
@@ -1431,10 +1428,10 @@ class PaperTable {
     // Functions for overall paper table viewing
 
     function _papstrip() {
-	global $Conf, $ConfSiteSuffix, $Me, $forceShow, $linkExtra;
+	global $Conf, $Me, $forceShow, $linkExtra;
 	$prow = $this->prow;
 	if ($Me->canViewTags($prow, $forceShow))
-	    $this->papstripTags($prow, "review$ConfSiteSuffix?p=$prow->paperId$linkExtra");
+	    $this->papstripTags($prow, hoturl("review", "p=$prow->paperId$linkExtra"));
 	if ($Me->canSetRank($prow))
 	    $this->papstripRank($prow);
 	$this->papstripWatch($prow);
@@ -1460,7 +1457,7 @@ class PaperTable {
     }
 
     function paptabBegin($contentopener = "") {
-	global $Conf, $ConfSiteSuffix, $Me, $forceShow, $linkExtra;
+	global $Conf, $Me, $forceShow, $linkExtra;
 	$prow = $this->prow;
 	$paperId = ($prow ? $prow->paperId : "new");
 
@@ -1485,10 +1482,8 @@ class PaperTable {
 		"<div class='psmodec'><div class='psmode'>";
 
 	    // home link
-	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId";
-	    if ($this->mode == "pe" || $this->mode == "re")
-		$a .= "&amp;m=p";
-	    $a .= "$linkExtra'>";
+	    $a = ($this->mode == "pe" || $this->mode == "re" ? "&amp;m=p" : "");
+	    $a = "<a href='" . hoturl("paper", "p=$prow->paperId$a$linkExtra") . "'>";
 	    $highlight = ($this->mode != "assign" && $this->mode != "pe"
 			  && $this->mode != "contact" && $this->mode != "re");
 	    echo "<div class='", ($highlight ? "papmodex" : "papmode"),
@@ -1496,21 +1491,21 @@ class PaperTable {
 		"</a>&nbsp;", $a, "Main</a></div>\n";
 
 	    if ($canEdit) {
-		$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;m=pe$linkExtra'>";
+		$a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;m=pe$linkExtra") . "'>";
 		echo "<div class='", ($this->mode == "pe" ? "papmodex" : "papmode"),
 		    "'>", $a, $Conf->cacheableImage("edit18.png", "[Edit]", null, "b"),
 		    "</a>&nbsp;", $a, "Edit</a></div>\n";
 	    }
 
 	    if ($canReview) {
-		$a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;m=re$linkExtra'>";
+		$a = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=re$linkExtra") . "'>";
 		echo "<div class='", ($this->mode == "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId) ? "papmodex" : "papmode"),
 		    "'>", $a, $Conf->cacheableImage("review18.png", "[Review]", null, "b"),
 		    "</a>&nbsp;", $a, "Review</a></div>\n";
 	    }
 
 	    if ($canAssign) {
-		$a = "<a href='assign$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
+		$a = "<a href='" . hoturl("assign", "p=$prow->paperId$linkExtra") . "'>";
 		echo "<div class='", ($this->mode == "assign" ? "papmodex" : "papmode"),
 		    "'>", $a, $Conf->cacheableImage("assign18.png", "[Assign]", null, "b"),
 		    "</a>&nbsp;", $a, "Assign</a></div>\n";
@@ -1523,7 +1518,7 @@ class PaperTable {
 	$pboxclass = ($prow ? "pbox" : "pboxn");
 	echo "<tr>\n    <td class='${pboxclass}i'>";
 	if ($prow) {
-	    $pa = "<a href='paper$ConfSiteSuffix?p=$paperId$linkExtra' class='q'>";
+	    $pa = "<a href='" . hoturl("paper", "p=$paperId$linkExtra") . "' class='q'>";
 	    echo "<div class='papnum'><h2>", $pa, "#", $this->prow->paperId, "</a></h2></div>";
 
 	    // paper strip
@@ -1542,10 +1537,8 @@ class PaperTable {
 	    $t = "";
 	    if ($prow && ($this->mode == "assign" || $this->mode == "pe"
 			  || $this->mode == "contact")) {
-		$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId";
-		if ($this->mode == "pe")
-		    $a .= "&amp;m=p";
-		$a .= "$linkExtra'>";
+		$a = ($this->mode == "pe" ? "&amp;m=p" : "");
+		$a = "<a href='" . hoturl("paper", "p=$prow->paperId$a$linkExtra") . "'>";
 		if ($t != "")
 		    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
 		$t .= $a . $Conf->cacheableImage("view24.png", "[View]", null, "b elimg")
@@ -1553,7 +1546,7 @@ class PaperTable {
 	    }
 	    if ($prow && $this->mode != "assign" && $this->mode != "pe"
 		&& $Me->canEditPaper($prow)) {
-		$a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;m=pe$linkExtra'>";
+		$a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;m=pe$linkExtra") . "'>";
 		if ($t != "")
 		    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
 		$t .= $a . $Conf->cacheableImage("edit24.png", "[Edit]", null, "b elimg")
@@ -1561,7 +1554,7 @@ class PaperTable {
 	    }
 	    if ($prow && $this->mode != "assign" && $this->mode != "contact"
 		&& $Me->actChair($prow)) {
-		$a = "<a href='assign$ConfSiteSuffix?p=$prow->paperId$linkExtra'>";
+		$a = "<a href='" . hoturl("assign", "p=$prow->paperId$linkExtra") . "'>";
 		if ($t != "")
 		    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
 		$t .= $a . $Conf->cacheableImage("assign24.png", "[Assign]", null, "b elimg")
@@ -1588,9 +1581,10 @@ class PaperTable {
 	    $Conf->cacheableImage("_.gif", "", null, "_"),
 	    "</td><td class='papct'><div class='inpapct'>";
 
-	$form = "<form method='post' action=\"paper$ConfSiteSuffix?p="
-	    . ($prow ? $prow->paperId : "new")
-	    . "&amp;post=1&amp;m=pe$linkExtra\"";
+	$form = "<form method='post' action=\""
+	    . hoturl("paper", "p="
+		     . ($prow ? $prow->paperId : "new")
+		     . "&amp;post=1&amp;m=pe$linkExtra") . "\"";
 	if ($prow && $prow->paperStorageId > 1 && $prow->timeSubmitted > 0
 	    && !$Conf->setting('sub_freeze'))
 	    $form .= " onsubmit='return docheckpaperstillready()'";
@@ -1710,7 +1704,7 @@ class PaperTable {
     }
 
     function paptabEndWithReviews() {
-	global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow, $linkExtra;
+	global $Conf, $Me, $rf, $forceShow, $linkExtra;
 	if (!$rf)
 	    $rf = reviewForm();
 	$prow = $this->prow;
@@ -1735,7 +1729,7 @@ class PaperTable {
 		break;
 	    }
 	if (count($viewable)) {
-	    $a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;m=r&amp;text=1$linkExtra'>";
+	    $a = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=r&amp;text=1$linkExtra") . "'>";
 	    echo "<div class='relative'>",
 		"<table class='pbox'><tr><td class='pboxl'></td>",
 		"<td class='pboxr'>", $a,
@@ -1755,8 +1749,7 @@ class PaperTable {
     }
 
     function paptabComments() {
-	global $Conf, $ConfSiteSuffix, $Me, $forceShow, $linkExtra,
-	    $useRequest;
+	global $Conf, $Me, $forceShow, $linkExtra, $useRequest;
 	$prow = $this->prow;
 
 	// show comments as well
@@ -1790,7 +1783,7 @@ class PaperTable {
     }
 
     function paptabEndWithReviewMessage() {
-	global $Conf, $ConfSiteSuffix, $Me, $linkExtra;
+	global $Conf, $Me, $linkExtra;
 
 	if (!$Me->canViewReview($this->prow, null, $whyNot)
 	    && $this->rrows)
@@ -1803,7 +1796,7 @@ class PaperTable {
     }
 
     function paptabEndWithEditableReview() {
-	global $Conf, $ConfSiteSuffix, $Me, $rf, $forceShow, $linkExtra;
+	global $Conf, $Me, $rf, $forceShow, $linkExtra;
 	if (!$rf)
 	    $rf = reviewForm();
 	$prow = $this->prow;
@@ -1845,7 +1838,7 @@ class PaperTable {
 		    $opt["edit"] = false;
 	    }
 	    if (!$Conf->timeReviewPaper($actPC, true, true, true))
-		$opt["editmessage"] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override";
+		$opt["editmessage"] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override";
 	    else
 		$opt["editmessage"] = "The site is not open for reviewing, so the review cannot be changed.$override";
 	} else if (!$Me->canReview($prow, $this->editrrow))
@@ -1858,7 +1851,7 @@ class PaperTable {
     // Functions for loading papers
 
     static function _maybeSearchPaperId() {
-	global $Conf, $Me, $ConfSiteSuffix;
+	global $Conf, $Me;
 
 	// if a number, don't search
 	if (isset($_REQUEST["paperId"]) && $_REQUEST["paperId"] != "") {
@@ -1912,7 +1905,7 @@ class PaperTable {
 	    return true;
 	} else {
 	    $t = (defval($_REQUEST, "t", 0) ? "&t=" . urlencode($_REQUEST["t"]) : "");
-	    $Conf->go("search$ConfSiteSuffix?q=" . urlencode($_REQUEST["paperId"]) . $t);
+	    $Conf->go(hoturl("search", "q=" . urlencode($_REQUEST["paperId"]) . $t));
 	    exit;
 	}
     }

@@ -51,7 +51,7 @@ function tfError(&$tf, $errorField, $text) {
 }
 
 function createUser(&$tf, $newProfile) {
-    global $Conf, $ConfSiteSuffix, $Acct, $Me, $Opt, $OK;
+    global $Conf, $Acct, $Me, $Opt, $OK;
 
     if (!isset($Opt["ldapLogin"]))
 	$_REQUEST["uemail"] = trim(defval($_REQUEST, "uemail", ""));
@@ -92,7 +92,7 @@ function createUser(&$tf, $newProfile) {
 	if ($Conf->getContactId($_REQUEST["uemail"])) {
 	    $msg = "An account is already registered with email address &ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo;.";
 	    if (!$newProfile)
-		$msg .= "You may want to <a href='mergeaccounts$ConfSiteSuffix'>merge these accounts</a>.";
+		$msg .= "You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
 	    return tfError($tf, "uemail", $msg);
 	} else if (isset($Opt["ldapLogin"])) {
 	    if ($_REQUEST["uemail"] == "")
@@ -256,7 +256,7 @@ function createUser(&$tf, $newProfile) {
 }
 
 function parseBulkFile($text, $filename) {
-    global $Conf, $ConfSiteSuffix, $Acct;
+    global $Conf, $Acct;
     $text = cleannl($text);
     if (!is_valid_utf8($text))
 	$text = windows_1252_to_utf8($text);
@@ -282,7 +282,7 @@ function parseBulkFile($text, $filename) {
 	list($_REQUEST["firstName"], $_REQUEST["lastName"],
 	     $_REQUEST["uemail"]) = splitName(simplifyWhitespace($line), true);
 	if (createUser($tf, true))
-	    $success[] = "<a href=\"account$ConfSiteSuffix?contact=" . urlencode($Acct->email) . "\">" . htmlspecialchars(contactText($Acct->firstName, $Acct->lastName, $Acct->email)) . "</a>";
+	    $success[] = "<a href=\"" . hoturl("account", "contact=" . urlencode($Acct->email)) . "\">" . htmlspecialchars(contactText($Acct->firstName, $Acct->lastName, $Acct->email)) . "</a>";
     }
 
     if (count($tf["err"]) > 0) {
@@ -311,17 +311,17 @@ if (isset($_REQUEST["register"]) && $newProfile
     $tf = array();
     if (createUser($tf, $newProfile)) {
 	if ($newProfile) {
-	    $Conf->confirmMsg("Created <a href=\"account$ConfSiteSuffix?contact=" . urlencode($Acct->email) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now create another account.");
+	    $Conf->confirmMsg("Created <a href=\"" . hoturl("account", "contact=" . urlencode($Acct->email)) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now create another account.");
 	    $_REQUEST["uemail"] = $_REQUEST["newUsername"] = $_REQUEST["firstName"] = $_REQUEST["lastName"] = $_REQUEST["affiliation"] = "";
 	} else
 	    $Conf->confirmMsg("Account profile updated.");
 	if (isset($_REQUEST["redirect"]))
-	    $Me->go("index$ConfSiteSuffix");
+	    $Me->go(hoturl("index"));
 	else
 	    redirectSelf();
     }
  } else if (isset($_REQUEST["merge"]) && !$newProfile && $Acct->contactId == $Me->contactId)
-    $Me->go("mergeaccounts$ConfSiteSuffix");
+    $Me->go(hoturl("mergeaccounts"));
 
 function databaseTracks($who) {
     global $Conf;
@@ -360,9 +360,8 @@ function databaseTracks($who) {
 }
 
 function textArrayPapers($pids) {
-    global $ConfSiteSuffix;
     $ls = "&amp;list=" . join("+", $pids);
-    return commajoin(preg_replace('/(\d+)/', "<a href='paper$ConfSiteSuffix?p=\$1$ls'>\$1</a>", $pids));
+    return commajoin(preg_replace('/(\d+)/', "<a href='" . hoturl("paper", "p=\$1$ls") . "'>\$1</a>", $pids));
 }
 
 if (isset($_REQUEST["delete"]) && $OK) {
@@ -402,7 +401,7 @@ if (isset($_REQUEST["delete"]) && $OK) {
 	    // done
 	    $Conf->confirmMsg("Permanently deleted user " . htmlspecialchars($Acct->email) . ".");
 	    $Conf->log("Permanently deleted user " . htmlspecialchars($Acct->email) . " ($Acct->contactId)", $Me);
-	    $Me->go("contacts$ConfSiteSuffix?t=all");
+	    $Me->go(hoturl("contacts", "t=all"));
 	}
     }
 }
@@ -503,8 +502,8 @@ else if ($Me->contactId != $Acct->contactId)
     $params[] = "contact=" . $Acct->contactId;
 if (isset($_REQUEST["ls"]))
     $params[] = "ls=" . urlencode($_REQUEST["ls"]);
-echo "<form id='accountform' method='post' action='account$ConfSiteSuffix",
-    (count($params) ? "?" . join("&amp;", $params) : ""),
+echo "<form id='accountform' method='post' action='",
+    hoturl("account", (count($params) ? join("&amp;", $params) : "")),
     "' enctype='multipart/form-data' accept-charset='UTF-8' autocomplete='off'><div class='aahc'>\n";
 if (isset($_REQUEST["redirect"]))
     echo "<input type='hidden' name='redirect' value=\"", htmlspecialchars($_REQUEST["redirect"]), "\" />\n";
@@ -674,7 +673,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 	    echo "<div class='", feclass("contactTags"), "'>",
 		textinput("contactTags", trim(crpformvalue("contactTags")), 60),
 		"</div>
-  <div class='hint'>Administrators can set tags to define PC subgroups.  Separate tags by spaces.  Example: &ldquo;heavy&rdquo;.<br /><strong>Tip:</strong>&nbsp;Use <a href='settings${ConfSiteSuffix}?group=rev&amp;tagcolor=1#tagcolor'>tag colors</a> to highlight subgroups in review lists.</div></td>
+  <div class='hint'>Administrators can set tags to define PC subgroups.  Separate tags by spaces.  Example: &ldquo;heavy&rdquo;.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=rev&amp;tagcolor=1#tagcolor"), "'>tag colors</a> to highlight subgroups in review lists.</div></td>
 </tr>\n\n";
 	} else {
 	    echo trim($Acct->contactTags), "
@@ -725,7 +724,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   <p>Be careful: This will permanently delete all information about this
   user from the database and <strong>cannot be undone</strong>.</p>
   $dialog
-  <form method='post' action=\"account$ConfSiteSuffix?contact=" . $Acct->contactId . "&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>
+  <form method='post' action=\"" . hoturl("account", "contact=" . $Acct->contactId . "&amp;post=1") . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
     <div class='popup_actions'>
       <button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button>
       &nbsp;<input class='bb' type='submit' name='delete' value='Delete user' />

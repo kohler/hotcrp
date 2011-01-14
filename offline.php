@@ -77,7 +77,7 @@ function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
 }
 
 function setTagIndexes() {
-    global $Conf, $ConfSiteSuffix, $Me, $Error;
+    global $Conf, $Me, $Error;
     require_once("Code/tags.inc");
     if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["file"], $Conf)) {
 	if (($text = file_get_contents($_FILES["file"]["tmp_name"])) === false) {
@@ -157,7 +157,7 @@ function setTagIndexes() {
     else if (isset($_REQUEST["setvote"]))
 	$Conf->confirmMsg("Votes saved.");
     else
-	$Conf->confirmMsg("Ranking saved.  To view it, <a href='search$ConfSiteSuffix?q=order:" . urlencode($tag) . "'>search for &ldquo;order:$tag&rdquo;</a>.");
+	$Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=order:" . urlencode($tag)) . "'>search for &ldquo;order:$tag&rdquo;</a>.");
 }
 if ((isset($_REQUEST["setvote"]) || isset($_REQUEST["setrank"]))
     && $Me->amReviewer())
@@ -168,7 +168,7 @@ $pastDeadline = !$Conf->timeReviewPaper($Me->isPC, true, true);
 
 if ($pastDeadline && !$Conf->deadlinesAfter("rev_open") && !$Me->privChair) {
     $Conf->errorMsg("The site is not open for review.");
-    $Me->go("index$ConfSiteSuffix");
+    $Me->go(hoturl("index"));
 }
 
 $Conf->header("Offline Reviewing", 'offrev', actionBar());
@@ -177,7 +177,7 @@ if ($Me->amReviewer()) {
     if ($pastDeadline && !$Conf->deadlinesAfter("rev_open"))
 	$Conf->infoMsg("The site is not open for review.");
     else if ($pastDeadline)
-	$Conf->infoMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting reviews has passed.");
+	$Conf->infoMsg("The <a href='" . hoturl("deadlines") . "'>deadline</a> for submitting reviews has passed.");
     $Conf->infoMsg("Use this page to download a blank review form, or to upload review forms you've already filled out.");
 } else
     $Conf->infoMsg("You aren't registered as a reviewer or PC member for this conference, but for your information, you may download the review form anyway.");
@@ -188,19 +188,19 @@ echo "<table id='offlineform'>";
 // Review forms
 echo "<tr><td><h3>Download forms</h3>\n<div>";
 if ($Me->amReviewer()) {
-    echo "<a href='search$ConfSiteSuffix?get=revform&amp;q=&amp;t=r&amp;pap=all'>Your reviews</a><br />\n";
+    echo "<a href='", hoturl("search", "get=revform&amp;q=&amp;t=r&amp;pap=all"), "'>Your reviews</a><br />\n";
     if ($Me->reviewsOutstanding)
-	echo "<a href='search$ConfSiteSuffix?get=revform&amp;q=&amp;t=rout&amp;pap=all'>Your incomplete reviews</a><br />\n";
-    echo "<a href='offline$ConfSiteSuffix?downloadForm=1'>Blank form</a></div>
+	echo "<a href='", hoturl("search", "get=revform&amp;q=&amp;t=rout&amp;pap=all"), "'>Your incomplete reviews</a><br />\n";
+    echo "<a href='", hoturl("offline", "downloadForm=1"), "'>Blank form</a></div>
 <div class='g'></div>
-<span class='hint'><strong>Tip:</strong> Use <a href='search$ConfSiteSuffix?q='>Search</a> &gt; Download to choose individual papers.\n";
+<span class='hint'><strong>Tip:</strong> Use <a href='", hoturl("search", "q="), "'>Search</a> &gt; Download to choose individual papers.\n";
 } else
-    echo "<a href='offline$ConfSiteSuffix?downloadForm=1'>Blank form</a></div>\n";
+    echo "<a href='", hoturl("offline", "downloadForm=1"), "'>Blank form</a></div>\n";
 echo "</td>\n";
 if ($Me->amReviewer()) {
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
     echo "<td><h3>Upload filled-out forms</h3>
-<form action='offline$ConfSiteSuffix?uploadForm=1&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+<form action='", hoturl("offline", "uploadForm=1&amp;post=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 	<input type='hidden' name='postnonempty' value='1' />
 	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Upload' $disabled/>";
     if ($pastDeadline && $Me->privChair)
@@ -216,19 +216,19 @@ if ($Conf->setting("tag_rank") && $Me->amReviewer()) {
     $ranktag = $Conf->settingText("tag_rank");
     echo "<tr><td><div class='g'></div></td></tr>\n",
 	"<tr><td><h3>Download ranking file</h3>\n<div>";
-    echo "<a href=\"search$ConfSiteSuffix?get=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=r&amp;pap=all\">Your reviews</a>";
+    echo "<a href=\"", hoturl("search", "get=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=r&amp;pap=all"), "\">Your reviews</a>";
     if ($Me->isPC)
-	echo "<br />\n<a href=\"search$ConfSiteSuffix?get=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=s&amp;pap=all\">All submitted papers</a>";
+	echo "<br />\n<a href=\"", hoturl("search", "get=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=s&amp;pap=all"), "\">All submitted papers</a>";
     echo "</div></td>\n";
 
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
     echo "<td><h3>Upload ranking file</h3>
-<form action='offline$ConfSiteSuffix?setrank=1&amp;tag=%7E$ranktag&amp;post=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+<form action='", hoturl("offline", "setrank=1&amp;tag=%7E$ranktag&amp;post=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 	<input type='hidden' name='upload' value='1' />
 	<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Upload' $disabled/>";
     if ($pastDeadline && $Me->privChair)
 	echo "<br />", tagg_checkbox("override"), "&nbsp;", tagg_label("Override&nbsp;deadlines");
-    echo "<br /><span class='hint'><strong>Tip:</strong> &ldquo;<a href='search$ConfSiteSuffix?q=order:%7E$ranktag'>order:~$ranktag</a>&rdquo; searches by your ranking.</span>";
+    echo "<br /><span class='hint'><strong>Tip:</strong> &ldquo;<a href='", hoturl("search", "q=order:%7E$ranktag"), "'>order:~$ranktag</a>&rdquo; searches by your ranking.</span>";
     echo "</div></form></td>\n";
     echo "</tr>\n";
 }

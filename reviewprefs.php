@@ -192,7 +192,7 @@ paper’s detail page.  You may also upload preferences from a text file; see th
 
 // search
 $search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
-				     "urlbase" => "reviewprefs$ConfSiteSuffix?reviewer=$reviewer",
+				     "urlbase" => hoturl("reviewprefs", "reviewer=$reviewer"),
 				     "q" => defval($_REQUEST, "q", "")), $reviewer);
 $pl = new PaperList($search, array("sort" => true, "list" => true, "foldtype" => "pf"));
 $pl->showHeader = PaperList::HEADER_TITLES;
@@ -208,7 +208,7 @@ echo "<table id='searchform' class='tablinks1'>
 $showing_au = (!$Conf->subBlindAlways() && strpos($pldisplay, " au ") !== false);
 $showing_anonau = ((!$Conf->subBlindNever() || $Me->privChair) && strpos($pldisplay, " anonau ") !== false);
 
-echo "<form method='get' action='reviewprefs$ConfSiteSuffix' accept-charset='UTF-8' id='redisplayform' class='",
+echo "<form method='get' action='", hoturl("reviewprefs"), "' accept-charset='UTF-8' id='redisplayform' class='",
     ($showing_au || $showing_anonau ? "fold10o" : "fold10c"),
     "'>\n<table>";
 
@@ -294,7 +294,7 @@ echo "</td></tr></table>\n";
 
 
 // ajax preferences form
-echo "<form id='prefform' method='post' action=\"paper$ConfSiteSuffix\" enctype='multipart/form-data' accept-charset='UTF-8'><div>",
+echo "<form id='prefform' method='post' action=\"", hoturl("paper"), "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>",
     "<input type='hidden' name='setrevpref' value='1' />",
     "<input type='hidden' name='p' value='' />",
     "<input type='hidden' name='revpref' value='' />";
@@ -304,9 +304,8 @@ echo "</div></form>\n\n";
 
 
 // main form
-echo "<form class='assignpc' method='post' action=\"reviewprefs$ConfSiteSuffix?reviewer=$reviewer",
-    (defval($_REQUEST, "q") ? "&amp;q=" . urlencode($_REQUEST["q"]) : ""),
-    "&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>",
+echo "<form class='assignpc' method='post' action=\"", hoturl("reviewprefs", "reviewer=$reviewer" . (defval($_REQUEST, "q") ? "&amp;q=" . urlencode($_REQUEST["q"]) : "") . "&amp;post=1"),
+    "\" enctype='multipart/form-data' accept-charset='UTF-8'>",
     "<div class='inform'>",
     "<input id='defaultact' type='hidden' name='defaultact' value='' />",
     "<input class='hidden' type='submit' name='default' value='1' />",

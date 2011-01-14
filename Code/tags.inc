@@ -118,7 +118,7 @@ function orderedTagStep($mode) {
 }
 
 function setTags($pids, $tagtext, $mode, $chair) {
-    global $Conf, $ConfSiteSuffix, $Me, $Error;
+    global $Conf, $Me, $Error;
     if (!is_array($pids))
 	$pids = array($pids);
     $contactId = (is_int($chair) ? $chair : $Me->contactId);
@@ -425,10 +425,10 @@ function setTags($pids, $tagtext, $mode, $chair) {
 	$vtext = array();
 	$q = "";
 	foreach ($vreduced as $k => $v) {
-	    $vtext[] = "<a href=\"search$ConfSiteSuffix?q=rorder:$k&amp;showtags=1\">" . htmlspecialchars($k) . "</a>";
+	    $vtext[] = "<a href=\"" . hoturl("search", "q=rorder:$k&amp;showtags=1") . "\">" . htmlspecialchars($k) . "</a>";
 	    $q .= ($q === "" ? "" : "+") . "rorder:$k";
 	}
-	defappend($Error["tags"], "You exhausted your vote allotment for " . commajoin($vtext) . ".  You may want to change <a href=\"search$ConfSiteSuffix?q=$q&amp;showtags=1\">your other votes</a> and try again.<br />\n");
+	defappend($Error["tags"], "You exhausted your vote allotment for " . commajoin($vtext) . ".  You may want to change <a href=\"" . hoturl("search", "q=$q&amp;showtags=1") . "\">your other votes</a> and try again.<br />\n");
     }
 
     $modeexplanation = array("so" => "define order", "ao" => "add to order", "sos" => "define gapless order", "aos" => "add to gapless order", "d" => "remove", "da" => "clear twiddle", "s" => "define", "a" => "add", "p" => "set");
@@ -439,7 +439,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 
 function tagsToText($prow, $makeUrls, $contact, $drop = false,
 		    $highlight = false) {
-    global $Conf, $ConfSiteSuffix;
+    global $Conf;
     $t = defval($prow, "paperTags", "");
     if ($drop || $makeUrls !== false)
 	$vtags = voteTags();
@@ -482,8 +482,6 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false,
 	return $t;
 
     // decorate with URL matches
-    if (!is_string($makeUrls))
-	$makeUrls = "";
     $tt = "";
 
     // clean $highlight
@@ -517,7 +515,7 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false,
 	    $link = ($base === $tag ? "tag" : "order");
 	    $title = "Tag search";
 	}
-	$tx = "<a class='q' href=\"${makeUrls}search$ConfSiteSuffix?q=$link:$base\" title=\"$title\">" . $base . "</a>" . substr($tag, strlen($base));
+	$tx = "<a class='q' href=\"" . hoturl("search", "q=$link:$base") . "\" title=\"$title\">" . $base . "</a>" . substr($tag, strlen($base));
 	if (isset($byhighlight[$base])) {
 	    $byhighlight[$base] .= "<strong>" . $tx . "</strong> ";
 	    $anyhighlight = true;

@@ -177,7 +177,7 @@ function noBadPair($pc, $pid, $prefs) {
 }
 
 function doAssign() {
-    global $Conf, $ConfSiteSuffix, $papersel, $pcsel, $assignments, $assignprefs, $badpairs, $scoreselector;
+    global $Conf, $papersel, $pcsel, $assignments, $assignprefs, $badpairs, $scoreselector;
 
     // check request
     if (!checkRequest($atype, $reviewtype, false))
@@ -404,9 +404,9 @@ function doAssign() {
 	$b = array();
 	$pidx = join("+", $badpids);
 	foreach ($badpids as $pid)
-	    $b[] = "<a href='paper$ConfSiteSuffix?p=$pid&amp;list=$pidx'>$pid</a>";
+	    $b[] = "<a href='" . hoturl("paper", "p=$pid&amp;list=$pidx") . "'>$pid</a>";
 	$x = ($atype == "rev" || $atype == "revadd" ? ", possibly because of some conflicts in the PC members you selected" : "");
-	$Conf->warnMsg("I wasn't able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a class='nowrap' href='search$ConfSiteSuffix?q=$pidx'>list them</a>).");
+	$Conf->warnMsg("I wasn't able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a class='nowrap' href='" . hoturl("search", "q=$pidx") . "'>list them</a>).");
     }
     if (count($assignments) == 0) {
 	$Conf->warnMsg("Nothing to assign.");
@@ -523,9 +523,9 @@ else if (isset($_REQUEST["saveassign"]) && isset($_REQUEST["a"]) && isset($_REQU
 
 
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
-$abar .= actionTab("Automatic", "autoassign$ConfSiteSuffix", true);
-$abar .= actionTab("Manual", "manualassign$ConfSiteSuffix", false);
-$abar .= actionTab("Offline", "bulkassign$ConfSiteSuffix", false);
+$abar .= actionTab("Automatic", hoturl("autoassign"), true);
+$abar .= actionTab("Manual", hoturl("manualassign"), false);
+$abar .= actionTab("Offline", hoturl("bulkassign"), false);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
@@ -557,10 +557,10 @@ function divClass($name) {
 // Help list
 $helplist = "<div class='helpside'><div class='helpinside'>
 Assignment methods:
-<ul><li><a href='autoassign$ConfSiteSuffix' class='q'><strong>Automatic</strong></a></li>
- <li><a href='manualassign$ConfSiteSuffix'>Manual by PC member</a></li>
- <li><a href='assign$ConfSiteSuffix'>Manual by paper</a></li>
- <li><a href='bulkassign$ConfSiteSuffix'>Offline (bulk upload)</a></li>
+<ul><li><a href='" . hoturl("autoassign") . "' class='q'><strong>Automatic</strong></a></li>
+ <li><a href='" . hoturl("manualassign") . "'>Manual by PC member</a></li>
+ <li><a href='" . hoturl("assign") . "'>Manual by paper</a></li>
+ <li><a href='" . hoturl("bulkassign") . "'>Offline (bulk upload)</a></li>
 </ul>
 <hr class='hr' />
 Types of PC assignment:
@@ -664,7 +664,7 @@ if (isset($assignments) && count($assignments) > 0) {
     }
 
     echo "<div class='g'></div>",
-	"<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n",
+	"<form method='post' action='", hoturl("autoassign"), "' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n",
 	"<input type='submit' class='b' name='saveassign' value='Save assignment' />\n",
 	"&nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />\n";
     foreach (array("t", "q", "a", "revaddtype", "revtype", "cleartype", "revct", "revaddct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
@@ -692,7 +692,7 @@ if (isset($assignments) && count($assignments) > 0) {
     exit;
 }
 
-echo "<form method='post' action='autoassign$ConfSiteSuffix' accept-charset='UTF-8'><div class='aahc'>", $helplist,
+echo "<form method='post' action='", hoturl("autoassign"), "' accept-charset='UTF-8'><div class='aahc'>", $helplist,
     "<input id='defaultact' type='submit' class='hidden' name='default' value='1' />";
 
 // paper selection
@@ -753,7 +753,7 @@ if (!$rev_roundtag)
 echo "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag),
     "\" onfocus=\"tempText(this, '(None)', 1);defact('assign')\" onblur=\"tempText(this, '(None)', 0)\" />",
-    " &nbsp;<a class='hint' href='help$ConfSiteSuffix?t=revround'>What is this?</a></div>
+    " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a></div>
 <div class='g'></div>\n";
 
 doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');
@@ -819,12 +819,10 @@ foreach ($pcm as $id => $p) {
     if ($nreviews[$id] == 0)
 	$c .= "0 reviews";
     else {
-	$c .= "<a href=\"search$ConfSiteSuffix?q=re:"
-	    . urlencode($p->email)
+	$c .= "<a href=\"" . hoturl("search", "q=re:" . urlencode($p->email))
 	    . "\">" . plural($nreviews[$id], "review") . "</a>";
 	if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
-	    $c .= "&nbsp; (<a href=\"search$ConfSiteSuffix?q=pri:"
-		. urlencode($p->email)
+	    $c .= "&nbsp; (<a href=\"" . hoturl("search", "q=pri:" . urlencode($p->email))
 		. "\">" . $nprimary[$id] . " primary</a>)";
     }
     $c .= "</td></tr>";

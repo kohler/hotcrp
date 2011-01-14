@@ -767,7 +767,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != "" && 
     else if ($mt == "xauto") {
 	$t = (in_array($_REQUEST["t"], array("acc", "s")) ? $_REQUEST["t"] : "all");
 	$q = join($papersel, "+");
-	$Me->go("autoassign$ConfSiteSuffix?pap=" . join($papersel, "+") . "&t=$t&q=$q");
+	$Me->go(hoturl("autoassign", "pap=" . join($papersel, "+") . "&t=$t&q=$q"));
     } else if ($mt == "xpcpaper" || $mt == "xunpcpaper") {
 	$Conf->qe("update Paper set pcPaper=" . ($mt == "xpcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
 	$Conf->log("Change PC paper status", $Me, $papersel);
@@ -818,7 +818,7 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 	$Conf->errorMsg("Only the PC chairs can send mail.");
     else {
 	$r = (in_array($_REQUEST["recipients"], array("au", "rev")) ? $_REQUEST["recipients"] : "all");
-	$Me->go("mail$ConfSiteSuffix?p=" . join($papersel, "+") . "&recipients=$r");
+	$Me->go(hoturl("mail", "p=" . join($papersel, "+") . "&recipients=$r"));
     }
 }
 
@@ -1162,7 +1162,7 @@ if ($pl) {
 		$onchange .= ";foldplinfo_extra()";
 	    displayOptionText("<div style='padding-top:1ex'>Sort by: &nbsp;"
 		. tagg_select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
-		. "<a class='help' href='help$ConfSiteSuffix?t=scoresort' target='_blank' title='Learn more'>?</a></div>", 3);
+		. "<a class='help' href='" . hoturl("help", "t=scoresort") . "' target='_blank' title='Learn more'>?</a></div>", 3);
 	}
 	$anyScores = count($displayOptions) != $n;
     }
@@ -1179,7 +1179,7 @@ if ($pl) {
 echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas'>\n<tr><td><div class='tlx'><div class='tld1'>";
 
 // Basic search
-echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>
+echo "<form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'><div class='inform'>
   <input id='searchform1_d' class='textlite' type='text' size='40' style='width:30em' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;
   <input class='b' type='submit' value='Search' />
 </div></form>";
@@ -1187,7 +1187,7 @@ echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><
 echo "</div><div class='tld2'>";
 
 // Advanced search
-echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'>
+echo "<form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'>
 <table><tr>
   <td class='lxcaption'>Search these papers</td>
   <td class='lentry'>$tselect</td>
@@ -1230,7 +1230,7 @@ echo tagg_select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 </tr>
 <tr>
   <td class='lxcaption'></td>
-  <td><span style='font-size: x-small'><a href='help$ConfSiteSuffix?t=search'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a></span></td>
+  <td><span style='font-size: x-small'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a></span></td>
 </tr></table></form>";
 
 echo "</div>";
@@ -1254,15 +1254,15 @@ if ($Me->isPC || $Me->privChair) {
 	echo "<div class='tld4' style='padding-bottom:1ex'>";
 	ksort($ss);
 	foreach ($ss as $sn => $sv) {
-	    echo "<a href=\"search$ConfSiteSuffix?q=ss%3A", urlencode($sn);
+	    $x = "q=ss%3A" . urlencode($sn);
 	    foreach (array("qt", "t", "sort", "display") as $k)
 		if (isset($sv->$k))
-		    echo "&amp;", $k, "=", urlencode($sv->$k);
-	    echo "\">", htmlspecialchars($sn), "</a><br />\n";
+		    $x .= "&amp;" . $k . "=" . urlencode($sv->$k);
+	    echo "<a href=\"", hoturl("search", $x), "\">", htmlspecialchars($sn), "</a><br />\n";
 	}
 	if (count($ss))
 	    echo "<div class='g'></div>\n";
-	echo "<form method='post' action='search$ConfSiteSuffix?savesearch=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+	echo "<form method='post' action='", hoturl("search", "savesearch=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
 	echo_request_as_hidden_inputs(true);
 	echo "Save this search as:&nbsp; ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;<input type='submit' value='Save' tabindex='8' />";
 	echo "</div></form>";
@@ -1277,7 +1277,7 @@ if ($Me->isPC || $Me->privChair) {
 if ($pl && $pl->count > 0) {
     echo "<div class='tld3' style='padding-bottom:1ex'>";
 
-    echo "<form id='foldredisplay' class='fn3 fold5c' method='post' action='search$ConfSiteSuffix?redisplay=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
+    echo "<form id='foldredisplay' class='fn3 fold5c' method='post' action='", hoturl("search", "redisplay=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
     echo_request_as_hidden_inputs();
 
     echo "<table>";
@@ -1331,7 +1331,7 @@ if ($pl && $pl->count > 0) {
     // "Set default display"
     if ($Me->privChair) {
 	echo "<button type='button' class='b' id='savedisplayoptionsbutton' onclick='savedisplayoptions()' disabled='disabled'>Make default</button>&nbsp; ";
-	$Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='search$ConfSiteSuffix?savedisplayoptions=1' enctype='multipart/form-data' accept-charset='UTF-8'>"
+	$Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='" . hoturl("search", "savedisplayoptions=1") . "' enctype='multipart/form-data' accept-charset='UTF-8'>"
 . "<div><input id='scoresortsave' type='hidden' name='scoresort' value='"
 . $_SESSION["scoresort"] . "' /></div></form>");
 	$Conf->footerScript("function foldplinfo_extra() { $$('savedisplayoptionsbutton').disabled = false; }");
@@ -1352,13 +1352,13 @@ if ($pl && $pl->count > 0) {
 
     // Formulas
     if ($Me->isPC && $Conf->sversion >= 32) {
-	echo "<form class='fx3' method='post' action='search$ConfSiteSuffix?saveformulas=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+	echo "<form class='fx3' method='post' action='", hoturl("search", "saveformulas=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
 	echo_request_as_hidden_inputs();
 
 	echo "<p style='width:44em;margin-top:0'><strong>Formulas</strong> are calculated
 from review statistics.  For example, &ldquo;sum(OveMer)&rdquo;
 would display the sum of a paper&rsquo;s Overall merit scores.
-<a class='hint' href='help$ConfSiteSuffix?t=formulas' target='_blank'>Learn more</a></p>";
+<a class='hint' href='", hoturl("help", "t=formulas"), "' target='_blank'>Learn more</a></p>";
 
 	echo "<table id='formuladefinitions'><thead><tr>",
 	    "<th></th><th class='f-c'>Name</th><th class='f-c'>Definition</th>",
@@ -1417,7 +1417,7 @@ if ($pl) {
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
     if ($pl->anySelector)
-	echo "<form method='post' action=\"", selfHref(array("selector" => 1), "search$ConfSiteSuffix"), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck()'><div class='inform'>\n",
+	echo "<form method='post' action=\"", selfHref(array("selector" => 1), hoturl("search")), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck()'><div class='inform'>\n",
 	    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
 	    "<input class='hidden' type='submit' name='default' value='1' />";
 
@@ -1430,7 +1430,7 @@ if ($pl) {
 	reset($tOpt);
 	echo " in ", strtolower($tOpt[$_REQUEST["t"]]);
 	if (key($tOpt) != $_REQUEST["t"] && $_REQUEST["t"] !== "all")
-	    echo " (<a href=\"search$ConfSiteSuffix?", join("&amp;", $a), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
+	    echo " (<a href=\"", hoturl("search", join("&amp;", $a)), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
     }
 
     if ($pl->anySelector)

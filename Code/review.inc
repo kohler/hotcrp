@@ -366,14 +366,14 @@ class ReviewForm {
     }
 
     function saveRequest($req, $rrow, $prow) {
-	global $Conf, $ConfSiteSuffix, $Opt;
+	global $Conf, $Opt;
 	$Me = $_SESSION['Me'];
 	$submit = defval($req, "ready", false) && !defval($req, "unready", false);
 	$while = "while storing review";
 
 	if (!$Me->timeReview($prow, $rrow)
 	    && (!isset($req['override']) || !$Me->privChair))
-	    return $Conf->errorMsg("The <a href='deadlines$ConfSiteSuffix'>deadline</a> for entering this review has passed." . ($Me->privChair ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
+	    return $Conf->errorMsg("The <a href='" . hoturl("deadlines") . "'>deadline</a> for entering this review has passed." . ($Me->privChair ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
 
 	$q = array();
 	$different = false;
@@ -943,7 +943,7 @@ $blind\n";
     }
 
     function webDisplayRows($rrow, $revViewScore) {
-	global $ReviewFormError, $scoreHelps, $Conf, $ConfSiteSuffix;
+	global $ReviewFormError, $scoreHelps, $Conf;
 
 	// Which fields are options?
 	$fshow = array();
@@ -997,7 +997,7 @@ $blind\n";
 
 	    $c = "<span class='revfn'>" . $n;
 	    if ($disp & self::WEB_OPTIONS) {
-		$c .= " <a class='scorehelp' href='scorehelp$ConfSiteSuffix?f=$field'>(?)</a>";
+		$c .= " <a class='scorehelp' href='" . hoturl("scorehelp", "f=$field") . "'>(?)</a>";
 		if (count($scoreHelps) == 0)
 		    $Conf->footerScript("addScoreHelp()");
 		if (!isset($scoreHelps[$field])) {
@@ -1128,7 +1128,7 @@ $blind\n";
     }
 
     function show($prow, $rrows, $rrow, &$options) {
-	global $Conf, $ConfSiteSuffix, $Opt, $Me, $forceShow,
+	global $Conf, $Opt, $Me, $forceShow,
 	    $linkExtra, $useRequest, $ratingTypes;
 
 	if (!$options)
@@ -1136,9 +1136,9 @@ $blind\n";
 	$editmode = defval($options, "edit", false);
 
 	$reviewOrdinal = unparseReviewOrdinal($rrow);
-	$reviewLinkBase = "review$ConfSiteSuffix?p=$prow->paperId"
-	    . ($rrow ? "&amp;r=$reviewOrdinal" : "")
-	    . $linkExtra . "&amp;m=re&amp;";
+	$reviewLinkBase = hoturl("review", "p=$prow->paperId"
+				 . ($rrow ? "&amp;r=$reviewOrdinal" : "")
+				 . $linkExtra . "&amp;m=re&amp;");
 	$reviewLink = $reviewLinkBase . "post=1";
 	if ($editmode) {
 	    echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",
@@ -1159,12 +1159,12 @@ $blind\n";
 	if ($rrow) {
 	    echo "<div class='floatright'>";
 	    if (!$editmode && $Me->canReview($prow, $rrow)) {
-		$a = "<a href='review$ConfSiteSuffix?r=$reviewOrdinal$linkExtra'>";
+		$a = "<a href='" . hoturl("review", "r=$reviewOrdinal$linkExtra") . "'>";
 		echo $a,
 		    $Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
 		    "</a>&nbsp;", $a, "Edit</a><br />";
 	    }
-	    $a = "<a href='review$ConfSiteSuffix?r=$reviewOrdinal&amp;text=1$linkExtra'>";
+	    $a = "<a href='" . hoturl("review", "r=$reviewOrdinal&amp;text=1$linkExtra") . "'>";
 	    echo $a, $Conf->cacheableImage("txt.png", "[Text]", null, "b"),
 		"</a>&nbsp;", $a, "Plain text</a>",
 		"</div>";
@@ -1172,7 +1172,7 @@ $blind\n";
 
 	echo "<h3>";
 	if ($rrow) {
-	    echo "<a href='review$ConfSiteSuffix?r=$reviewOrdinal$linkExtra' name='review$reviewOrdinal' class='",
+	    echo "<a href='", hoturl("review", "r=$reviewOrdinal$linkExtra"), "' name='review$reviewOrdinal' class='",
 		($editmode ? "q'>Edit " : "u'>"), "Review";
 	    if ($rrow->reviewSubmitted)
 		echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
@@ -1237,7 +1237,7 @@ $blind\n";
 		    $ratesep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
 		}
 		if ($rrow->contactId != $Me->contactId) {
-		    $ratinglink = "review$ConfSiteSuffix?r=$reviewOrdinal";
+		    $ratinglink = hoturl("review", "r=$reviewOrdinal");
 		    if (!isset($_REQUEST["reviewId"]))
 		        $ratinglink .= "&amp;allr=1";
 		    echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
@@ -1267,7 +1267,7 @@ $blind\n";
 			. "<input id='ratingval_$reviewOrdinal' type='hidden' name='rating' value='' />"
 			. "</div></form>"); */
 		}
-		echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=revrate'>What is this?</a></div>";
+		echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=revrate"), "'>What is this?</a></div>";
 	    }
 
 	    if (defval($options, "editmessage"))
@@ -1316,7 +1316,7 @@ $blind\n";
 		    $ndelegated++;
 
 	    if ($ndelegated == 0)
-		echo "As a secondary reviewer, you can <a href=\"assign$ConfSiteSuffix?p=$rrow->paperId$linkExtra\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
+		echo "As a secondary reviewer, you can <a href=\"", hoturl("assign", "p=$rrow->paperId$linkExtra"), "\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
 	    else if ($rrow->reviewNeedsSubmit == 0)
 		echo "A delegated external reviewer has submitted their review, but you can still complete your own if you'd like.";
 	    else
@@ -1339,7 +1339,7 @@ $blind\n";
       <td></td>
       <td><a href='${reviewLinkBase}downloadForm=1'>Download form</a>
       &nbsp;<span class='barsep'>|</span>&nbsp;
-      <span class='hint'><strong>Tip:</strong> Use <a href='search$ConfSiteSuffix'>Search</a> or <a href='offline$ConfSiteSuffix'>Offline reviewing</a> to download or upload many forms at once.</span></td>
+      <span class='hint'><strong>Tip:</strong> Use <a href='", hoturl("search"), "'>Search</a> or <a href='", hoturl("offline"), "'>Offline reviewing</a> to download or upload many forms at once.</span></td>
     </tr></table></td><td></td></tr>\n";
 
 	// top save changes button
@@ -1426,9 +1426,9 @@ $blind\n";
 
     function reviewFlowEntry($contact, $rrow, $trclass) {
 	// See also CommentView::commentFlowEntry
-	global $ConfSiteSuffix, $Conf;
+	global $Conf;
 	$barsep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
-	$a = "<a href='paper$ConfSiteSuffix?p=$rrow->paperId#review" . unparseReviewOrdinal($rrow) . "'>";
+	$a = "<a href='" . hoturl("paper", "p=$rrow->paperId#review" . unparseReviewOrdinal($rrow)) . "'>";
 	$t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a
 	    . $Conf->cacheableImage("review24.png", "[Review]", null, "dlimg")
 	    . "</a></td><td class='pl_activityid'>"

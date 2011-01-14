@@ -21,9 +21,9 @@ $Error = array();
 
 // header
 function confHeader() {
-    global $prow, $Conf, $ConfSiteSuffix, $linkExtra, $CurrentList;
+    global $prow, $Conf, $linkExtra, $CurrentList;
     if ($prow)
-	$title = "<a href='paper$ConfSiteSuffix?p=$prow->paperId' class='q'>Paper #$prow->paperId</a>";
+	$title = "<a href='" . hoturl("paper", "p=$prow->paperId") . "' class='q'>Paper #$prow->paperId</a>";
     else
 	$title = "Paper Review Assignments";
     $Conf->header($title, "assign", actionBar("assign", $prow), false);
@@ -41,13 +41,13 @@ function errorMsgExit($msg) {
 
 // grab paper row
 function loadRows() {
-    global $prow, $rrows, $Conf, $ConfSiteSuffix, $Me;
+    global $prow, $rrows, $Conf, $Me;
     if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
     if (!$Me->canRequestReview($prow, false, $whyNot)) {
 	$wnt = whyNotText($whyNot, "request reviews for");
 	if (!$Conf->headerPrinted)
-	    $Me->goAlert("paper$ConfSiteSuffix?p=$prow->paperId", $wnt);
+	    $Me->goAlert(hoturl("paper", "p=$prow->paperId"), $wnt);
 	else
 	    errorMsgExit($wnt);
     }
@@ -466,7 +466,7 @@ $paperTable->initialize(false, false);
 
 
 // begin form and table
-$loginFormBegin = "action='assign$ConfSiteSuffix?p=$prow->paperId&amp;post=1$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
+$loginFormBegin = "action='" . hoturl("assign", "p=$prow->paperId&amp;post=1$linkExtra") . "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
 $loginFormEnd = "</div></form>\n\n";
 
 $paperTable->paptabBegin("<form id='ass' " . $loginFormBegin);
@@ -533,7 +533,7 @@ if ($Me->actChair($prow)) {
 	    echo "<td id='ass$p->contactId' class='pctbname-2 pctbl'>",
 		str_replace(' ', "&nbsp;", contactNameHtml($p)),
 		"</td><td class='pctbass'>",
-		"<img class='ass-2' alt='(Author)' title='Author' src='images/_.gif' />",
+		"<img class='ass-2' alt='(Author)' title='Author' src='", hoturlx("images/_.gif"), "' />",
 		"</td>";
 	} else {
 	    $cid = ($p->conflictType > 0 ? -1 : $p->reviewType + 0);
@@ -543,7 +543,7 @@ if ($Me->actChair($prow)) {
 		&& ($p->preference || $p->topicInterestScore))
 		echo preferenceSpan($p->preference, $p->topicInterestScore);
 	    echo "</td><td class='pctbass'>";
-	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'><img class='ass$cid' id='assimg$p->contactId' src='images/_.gif' alt='Assignment' /><img class='next' src='images/_.gif' alt='&gt;' /></a>&nbsp;";
+	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'><img class='ass$cid' id='assimg$p->contactId' src='", hoturlx("images/_.gif"), "' alt='Assignment' /><img class='next' src='", hoturlx("images/_.gif"), "' alt='&gt;' /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
 	    echo tagg_select("pcs$p->contactId",
 			     array(0 => "None", REVIEW_PRIMARY => "Primary",
@@ -568,12 +568,12 @@ if ($Me->actChair($prow)) {
 	if (!$numReviews)
 	    echo "0 reviews";
 	else {
-	    echo "<a class='q' href=\"search", $ConfSiteSuffix, "?q=re:",
-		urlencode($p->email), "\">",
+	    echo "<a class='q' href=\"",
+		hoturl("search", "q=re:" . urlencode($p->email)), "\">",
 		plural($numReviews, "review"), "</a>";
 	    if ($numPrimary && $numPrimary < $numReviews)
-		echo "&nbsp; (<a class='q' href=\"search", $ConfSiteSuffix, "?q=pri:",
-		    urlencode($p->email), "\">",
+		echo "&nbsp; (<a class='q' href=\"",
+		    hoturl("search", "q=pri:" . urlencode($p->email)), "\">",
 		    $numPrimary, " primary</a>)";
 	}
 	echo "</td></tr>\n";
@@ -605,12 +605,12 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 	    echo "<tr><td>", htmlspecialchars($row->name), "</td><td>&lt;",
 		"<a href=\"mailto:", urlencode($row->email), "\">",
 		htmlspecialchars($row->email), "</a>&gt;</td>",
-		"<td><a class='button_small' href=\"assign$ConfSiteSuffix?p=$prow->paperId&amp;name=",
-		urlencode($row->name), "&amp;email=", urlencode($row->email),
-		$reason, "&amp;add=1\">Approve</a>&nbsp; ",
-		"<a class='button_small' href=\"assign$ConfSiteSuffix?p=$prow->paperId&amp;name=",
-		urlencode($row->name), "&amp;email=", urlencode($row->email),
-		"&amp;deny=1\">Deny</a></td></tr>\n",
+		"<td><a class='button_small' href=\"",
+		hoturl("assign", "p=$prow->paperId&amp;name=" . urlencode($row->name) . "&amp;email=" . urlencode($row->email) . $reason . "&amp;add=1"),
+		"\">Approve</a>&nbsp; ",
+		"<a class='button_small' href=\"",
+		hoturl("assign", "p=$prow->paperId&amp;name=" . urlencode($row->name) . "&amp;email=" . urlencode($row->email) . "&amp;deny=1"),
+		"\">Deny</a></td></tr>\n",
 		"<tr><td colspan='3'><small>Requester: ", contactHtml($row->reqFirstName, $row->reqLastName), "</small></td></tr>\n";
 	}
 	echo "</table></div>\n\n",

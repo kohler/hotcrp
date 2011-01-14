@@ -99,7 +99,7 @@ function doLDAPLogin() {
 }
 
 function doLogin() {
-    global $Conf, $Opt, $ConfSiteSuffix, $Me, $email_class, $password_class;
+    global $Conf, $Opt, $Me, $email_class, $password_class;
 
     // In all cases, we need to look up the account information
     // to determine if the user is registered
@@ -176,12 +176,10 @@ function doLogin() {
     else if (isset($_SESSION["afterLogin"]))
 	$where = $_SESSION["afterLogin"];
     else
-	$where = "index$ConfSiteSuffix";
+	$where = hoturl("index");
 
     setcookie("CRPTestCookie", false);
     unset($_SESSION["afterLogin"]);
-    //if ($where == "index$ConfSiteSuffix")
-    //    return true;
     $Me->go($where);
     exit;
 }
@@ -206,7 +204,7 @@ if ($Me->valid() && (($_SESSION["AskedYouToUpdateContactInfo"] < 2
 			 && ($Me->roles & Contact::ROLE_PC)
 			 && !$Me->collaborators))) {
     $_SESSION["AskedYouToUpdateContactInfo"] = 1;
-    $Me->go("account$ConfSiteSuffix?redirect=1");
+    $Me->go(hoturl("account", "redirect=1"));
 }
 
 // check global system settings
@@ -226,7 +224,7 @@ if ($Me->privChair) {
     // Any -100 preferences around?
     $result = $Conf->qx("select PRP.paperId from PaperReviewPreference PRP join PCMember PCM on (PCM.contactId=PRP.contactId) left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId) where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0 limit 1");
     if (($row = edb_row($result)))
-	$Conf->warnMsg("PC members have indicated paper conflicts (using review preferences of &minus;100 or less) that aren&rsquo;t yet confirmed.  <a href='autoassign$ConfSiteSuffix?a=prefconflict&amp;assign=1' class='nowrap'>Confirm these conflicts</a>");
+	$Conf->warnMsg("PC members have indicated paper conflicts (using review preferences of &minus;100 or less) that aren&rsquo;t yet confirmed.  <a href='" . hoturl("autoassign", "a=prefconflict&amp;assign=1") . "' class='nowrap'>Confirm these conflicts</a>");
     // Weird URLs?
     foreach (array("conferenceSite", "paperSite") as $k)
 	if ($Opt[$k] && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', $Opt[$k]))
@@ -245,11 +243,11 @@ if (isset($_REQUEST["token"]) && $Me->valid() && $Conf->sversion >= 13) {
 	else if (!($token = decodeToken($x)))
 	    $Conf->errorMsg("Invalid review token &ldquo;" . htmlspecialchars($token) . ".&rdquo;  Check your typing and try again.");
 	else if (defval($_SESSION, "rev_token_fail", 0) >= 5)
-	    $Conf->errorMsg("Too many failed attempts to use a review token.  <a href='index$ConfSiteSuffix?signout=1'>Sign out</a> and in to try again.");
+	    $Conf->errorMsg("Too many failed attempts to use a review token.  <a href='" . hoturl("index", "signout=1") . "'>Sign out</a> and in to try again.");
 	else {
 	    $result = $Conf->qe("select paperId from PaperReview where reviewToken=$token", "while searching for review token");
 	    if (($row = edb_row($result))) {
-		$tokeninfo[] = "Review token &ldquo;" . htmlspecialchars($x) . "&rdquo; lets you review <a href='paper$ConfSiteSuffix?p=$row[0]'>paper #" . $row[0] . "</a>.";
+		$tokeninfo[] = "Review token &ldquo;" . htmlspecialchars($x) . "&rdquo; lets you review <a href='" . hoturl("paper", "p=$row[0]") . "'>paper #" . $row[0] . "</a>.";
 		if (!isset($_SESSION["rev_tokens"]) || array_search($token, $_SESSION["rev_tokens"]) === false)
 		    $_SESSION["rev_tokens"][] = $token;
 		$Me->isReviewer = true;
@@ -287,11 +285,11 @@ if ($Me->privChair) {
     echo "<div id='homemgmt' class='homeinside'>
   <h4>Administration</h4>
   <ul>
-    <li><a href='settings$ConfSiteSuffix'>Settings</a></li>
-    <li><a href='contacts$ConfSiteSuffix?t=all'>Users</a></li>
-    <li><a href='autoassign$ConfSiteSuffix'>Assign reviews</a></li>
-    <li><a href='mail$ConfSiteSuffix'>Send mail</a></li>
-    <li><a href='log$ConfSiteSuffix'>Action log</a></li>
+    <li><a href='", hoturl("settings"), "'>Settings</a></li>
+    <li><a href='", hoturl("contacts", "t=all"), "'>Users</a></li>
+    <li><a href='", hoturl("autoassign"), "'>Assign reviews</a></li>
+    <li><a href='", hoturl("mail"), "'>Send mail</a></li>
+    <li><a href='", hoturl("log"), "'>Action log</a></li>
   </ul>
 </div>\n";
 }
@@ -306,9 +304,9 @@ if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting(
     || ($Me->isAuthor && $Conf->setting('resp_open') > 0 && $Conf->setting('resp_done'))
     || ($Me->isPC && $Conf->setting('rev_open') && $Conf->setting('pcrev_hard'))
     || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard'))) {
-    echo "    <li><a href='deadlines$ConfSiteSuffix'>Deadlines</a></li>\n";
+    echo "    <li><a href='", hoturl("deadlines"), "'>Deadlines</a></li>\n";
 }
-echo "    <li><a href='contacts$ConfSiteSuffix?t=pc'>Program committee</a></li>\n";
+echo "    <li><a href='", hoturl("contacts", "t=pc"), "'>Program committee</a></li>\n";
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo "    <li><a href='", $Opt['conferenceSite'], "'>Conference site</a></li>\n";
 if ($Conf->timeAuthorViewDecision()) {
@@ -346,7 +344,7 @@ Sign in to submit or review papers.";
     echo "</div>
 <hr class='home' />
 <div class='homegrp' id='homeacct'>
-<form method='post' action='index$ConfSiteSuffix' accept-charset='UTF-8'><div class='f-contain'>
+<form method='post' action='", hoturl("index"), "' accept-charset='UTF-8'><div class='f-contain'>
 <input type='hidden' name='cookie' value='1' />
 <div class='f-ii'>
   <div class='f-c", $email_class, "'>",
@@ -397,7 +395,7 @@ if ($homelist) {
 
     $tOpt = PaperSearch::searchTypes($Me);
     $q = defval($_REQUEST, "q", "(All)");
-    echo "  <td><form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>
+    echo "  <td><form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'><div class='inform'>
     <input class='textlite' type='text' size='32' name='q' value=\"",
 	htmlspecialchars($q),
 	"\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' />
@@ -405,7 +403,7 @@ if ($homelist) {
 	PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; <input class='b' type='submit' value='Search' />
   </div></form><br />
-  <span style='font-size: x-small'><a href='help$ConfSiteSuffix?t=search'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='search$ConfSiteSuffix?tab=advanced'>Advanced search</a></span>
+  <span style='font-size: x-small'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("search", "tab=advanced"), "'>Advanced search</a></span>
   </td></tr></table>
 </div>
 <hr class='home' />\n";
@@ -414,7 +412,7 @@ if ($homelist) {
 
 // Review token printing
 function reviewTokenGroup($close_hr) {
-    global $reviewTokenGroupPrinted, $ConfSiteSuffix;
+    global $reviewTokenGroupPrinted;
     if ($reviewTokenGroupPrinted)
 	return;
 
@@ -424,7 +422,7 @@ function reviewTokenGroup($close_hr) {
     foreach (defval($_SESSION, "rev_tokens", array()) as $tt)
 	$tokens[] = encodeToken($tt);
     echo "  <h4>Review tokens: &nbsp;</h4> ",
-	"<form action='index$ConfSiteSuffix' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
+	"<form action='", hoturl("index"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
 	"<input class='textlite' type='text' name='token' size='15' value=\"",
 	htmlspecialchars(join(" ", $tokens)), "\" />",
 	" &nbsp;<input class='b' type='submit' value='Go' />",
@@ -464,9 +462,9 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     }
     if ($myrow) {
 	if ($myrow[2] == 1 && $myrow[1] <= 1)
-	    echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='search$ConfSiteSuffix?q=&amp;t=r'>review</a>";
+	    echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='", hoturl("search", "q=&amp;t=r"), "'>review</a>";
 	else
-	    echo "You have submitted ", $myrow[1], " of <a href='search$ConfSiteSuffix?q=&amp;t=r'>", plural($myrow[2], "review"), "</a>";
+	    echo "You have submitted ", $myrow[1], " of <a href='", hoturl("search", "q=&amp;t=r"), "'>", plural($myrow[2], "review"), "</a>";
 	if (in_array("overAllMerit", $rf->fieldOrder) && $myrow[1])
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", unparseScoreAverage($myrow[3]->avg, $rf->reviewFields["overAllMerit"]);
 	echo ".<br />\n";
@@ -477,7 +475,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", unparseScoreAverage($sumpcScore / $npcScore, $rf->reviewFields["overAllMerit"]);
 	echo ".";
 	if ($Me->isPC || $Me->privChair)
-	    echo "&nbsp; <small>(<a href='contacts$ConfSiteSuffix?t=pc&amp;score%5B%5D=0'>Details</a>)</small>";
+	    echo "&nbsp; <small>(<a href='", hoturl("contacts", "t=pc&amp;score%5B%5D=0"), "'>Details</a>)</small>";
 	echo "<br />\n";
     }
     if ($myrow && $myrow[1] < $myrow[2]) {
@@ -491,7 +489,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	} else if ($Conf->timeReviewPaper($Me->isPC, true, true))
 	    echo "  <span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".</span><br />\n";
 	else if (!$Conf->timeReviewPaper($Me->isPC, true, true, true))
-	    echo "  <span class='deadline'>The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />\n";
+	    echo "  <span class='deadline'>The <a href='", hoturl("deadlines"), "'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />\n";
 	else
 	    echo "  <span class='deadline'>The site is not open for reviewing.</span><br />\n";
     } else if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)) {
@@ -500,9 +498,9 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo "  <span class='deadline'>The review deadline is $d.</span><br />\n";
     }
     if ($Me->isPC && $Conf->timeReviewPaper(true, false, true))
-	echo "  <span class='hint'>As a PC member, you may review <a href='search$ConfSiteSuffix?q=&amp;t=s'>any submitted paper</a>.</span><br />\n";
+	echo "  <span class='hint'>As a PC member, you may review <a href='", hoturl("search", "q=&amp;t=s"), "'>any submitted paper</a>.</span><br />\n";
     else if ($Me->privChair)
-	echo "  <span class='hint'>As an administrator, you may review <a href='search$ConfSiteSuffix?q=&amp;t=s'>any submitted paper</a>.</span><br />\n";
+	echo "  <span class='hint'>As an administrator, you may review <a href='", hoturl("search", "q=&amp;t=s"), "'>any submitted paper</a>.</span><br />\n";
 
     if (($myrow || $Me->privChair) && $npc)
 	echo "</div>\n<div id='foldre' class='homegrp foldo'>";
@@ -510,24 +508,24 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     // Actions
     $sep = "";
     if ($myrow) {
-	echo $sep, foldbutton("re", "review list"), "&nbsp;<a href=\"search$ConfSiteSuffix?q=&amp;t=r\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
+	echo $sep, foldbutton("re", "review list"), "&nbsp;<a href=\"", hoturl("search", "q=&amp;t=r"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->setting("paperlead") > 0
 	&& $Me->amDiscussionLead(0)) {
-	echo $sep, "<a href=\"search$ConfSiteSuffix?q=&amp;t=lead\" class='nowrap'>Your discussion leads</a>";
+	echo $sep, "<a href=\"", hoturl("search", "q=&amp;t=lead"), "\" class='nowrap'>Your discussion leads</a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->timePCReviewPreferences()) {
-	echo $sep, "<a href='reviewprefs$ConfSiteSuffix'>Preferences</a>";
+	echo $sep, "<a href='", hoturl("reviewprefs"), "'>Preferences</a>";
 	$sep = $xsep;
     }
     if ($Conf->deadlinesAfter("rev_open") || $Me->privChair) {
-	echo $sep, "<a href='offline$ConfSiteSuffix'>Offline reviewing</a>";
+	echo $sep, "<a href='", hoturl("offline"), "'>Offline reviewing</a>";
 	$sep = $xsep;
     }
     if ($Me->isRequester) {
-	echo $sep, "<a href='mail$ConfSiteSuffix?monreq=1'>Monitor external reviews</a>";
+	echo $sep, "<a href='", hoturl("mail", "monreq=1"), "'>Monitor external reviews</a>";
 	$sep = $xsep;
     }
 
@@ -540,10 +538,10 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    $a = array();
 	    while (($row = edb_row($result)))
 		if (isset($ratingTypes[$row[0]]))
-		    $a[] = "<a href=\"search$ConfSiteSuffix?q=rate:%22" . urlencode($ratingTypes[$row[0]]) . "%22\" title='List rated reviews'>$row[1] of your reviews</a> as " . htmlspecialchars($ratingTypes[$row[0]]);
+		    $a[] = "<a href=\"" . hoturl("search", "q=rate:%22" . urlencode($ratingTypes[$row[0]]) . "%22") . "\" title='List rated reviews'>$row[1] of your reviews</a> as " . htmlspecialchars($ratingTypes[$row[0]]);
 	    if (count($a) > 0) {
 		echo "<div class='hint g'>\nOther reviewers ",
-		    "<a href='help$ConfSiteSuffix?t=revrate' title='What is this?'>rated</a> ",
+		    "<a href='", hoturl("help", "t=revrate"), "' title='What is this?'>rated</a> ",
 		    commajoin($a);
 		if (count($a) > 1)
 		    echo " (these sets might overlap)";
@@ -555,13 +553,13 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    $a = array();
 	    while (($row = edb_row($result)))
 		if (isset($ratingTypes[$row[0]]))
-		    $a[] = "<a href=\"search$ConfSiteSuffix?q=rate:%22" . urlencode($ratingTypes[$row[0]]) . "%22\" title='List rated reviews'>$row[1] &ldquo;" . htmlspecialchars($ratingTypes[$row[0]]) . "&rdquo; " . pluralx($row[1], "rating") . "</a>";
+		    $a[] = "<a href=\"" . hoturl("search", "q=rate:%22" . urlencode($ratingTypes[$row[0]]) . "%22") . "\" title='List rated reviews'>$row[1] &ldquo;" . htmlspecialchars($ratingTypes[$row[0]]) . "&rdquo; " . pluralx($row[1], "rating") . "</a>";
 	    if (count($a) > 0) {
 		echo "<div class='hint g'>\nYour reviews have received ",
 		    commajoin($a);
 		if (count($a) > 1)
 		    echo " (these sets might overlap)";
-		echo ".<a class='help' href='help$ConfSiteSuffix?t=revrate' title='About ratings'>?</a></div>\n";
+		echo ".<a class='help' href='", hoturl("help", "t=revrate"), "' title='About ratings'>?</a></div>\n";
 	    }
 	}
     }
@@ -617,7 +615,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     if ($startable && !$Me->valid())
 	echo "<span class='deadline'>", $Conf->printableDeadlineSetting('sub_reg'), "</span><br />\n<small>You must sign in to register papers.</small>";
     else if ($startable || $Me->privChair) {
-	echo "<strong><a href='paper$ConfSiteSuffix?p=new'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting('sub_reg'), ")</span>";
+	echo "<strong><a href='", hoturl("paper", "p=new"), "'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting('sub_reg'), ")</span>";
 	if ($Me->privChair)
 	    echo "<br />\n<span class='hint'>As an administrator, you can start a paper regardless of deadlines and on behalf of others.</span>";
     }
@@ -639,9 +637,9 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 	    if ($Conf->deadlinesBetween("", "sub_sub", "sub_grace"))
 		$deadlines[] = "The site is not open for submissions at the moment.";
 	    else
-		$deadlines[] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for submitting papers has passed.";
+		$deadlines[] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for submitting papers has passed.";
 	} else if (!$Conf->timeUpdatePaper()) {
-	    $deadlines[] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for updating papers has passed, but you can still submit.";
+	    $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for updating papers has passed, but you can still submit.";
 	    $time = $Conf->printableTimeSetting('sub_sub');
 	    if ($time != 'N/A')
 		$deadlines[] = "You have until $time to submit papers.";
@@ -650,7 +648,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     }
     if (!$startable && !count($deadlines)) {
 	if ($Conf->deadlinesAfter("sub_open"))
-	    $deadlines[] = "The <a href='deadlines$ConfSiteSuffix'>deadline</a> for registering new papers has passed.";
+	    $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for registering new papers has passed.";
 	else
 	    $deadlines[] = "The site is not open for submissions at the moment.";
     }

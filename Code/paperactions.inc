@@ -87,7 +87,7 @@ class PaperActions {
     }
 
     static function rankContext($prow) {
-	global $Conf, $ConfSiteSuffix, $Me, $Error, $OK;
+	global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
 	$tag = $Conf->settingText("tag_rank", "");
 	if (!$Me->canSetRank($prow)) {
@@ -98,7 +98,7 @@ class PaperActions {
 	    $x = array();
 	    $prowIndex = -1;
 	    while (($row = edb_row($result))) {
-		$t = "$row[2]. <a class='q' href='paper$ConfSiteSuffix?p=$row[0]'>#$row[0] " . htmlspecialchars(titleWords($row[1], 48)) . "</a>";
+		$t = "$row[2]. <a class='q' href='" . hoturl("paper", "p=$row[0]") . "'>#$row[0] " . htmlspecialchars(titleWords($row[1], 48)) . "</a>";
 		if ($row[0] == $prow->paperId) {
 		    $prowIndex = count($x);
 		    $t = "<div class='rankctx_h'>" . $t . "</div>";
@@ -161,7 +161,7 @@ class PaperActions {
     }
 
     static function tagReport($prow, $return = false) {
-	global $Conf, $ConfSiteSuffix, $Me, $Error, $OK, $forceShow;
+	global $Conf, $Me, $Error, $OK, $forceShow;
 	$ajax = defval($_REQUEST, "ajax", false);
 	$r = "";
 	if ($Me->canViewTags($prow, $forceShow)) {
@@ -178,9 +178,9 @@ class PaperActions {
 		ksort($vt);
 		foreach ($vt as $tag => $v)
 		    if (max($v, 0) > 0)
-			$r .= ($r === "" ? "" : ", ") . "<a class='q' href=\"search$ConfSiteSuffix?q=rorder:~$tag&amp;showtags=1\">~$tag</a>#" . max($v, 0);
+			$r .= ($r === "" ? "" : ", ") . "<a class='q' href=\"" . hoturl("search", "q=rorder:~$tag&amp;showtags=1") . "\">~$tag</a>#" . max($v, 0);
 		if ($r !== "")
-		    $r = "Unallocated <a href='help$ConfSiteSuffix?t=votetags'>votes</a>: $r";
+		    $r = "Unallocated <a href='" . hoturl("help", "t=votetags") . "'>votes</a>: $r";
 	    }
 	} else {
 	    $Conf->errorMsg("You can&rsquo;t view tags for paper #$prow->paperId.");

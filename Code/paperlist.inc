@@ -619,11 +619,11 @@ class PaperList extends BaseList {
     }
 
     function _paperLink($row) {
-	global $Conf, $ConfSiteSuffix;
+	global $Conf;
 	if (!($pl = $this->paperLink))
 	    $pl = "paper";
 	$px = $pl;
-	$pl .= $ConfSiteSuffix . "?p=" . $row->paperId;
+	$pl = hoturl($pl, "p=" . $row->paperId);
 	$doreview = isset($row->reviewId) && ($this->search->reviewerContact || isset($row->reviewFirstName));
 	if ($doreview) {
 	    $rord = unparseReviewOrdinal($row);
@@ -793,7 +793,7 @@ class PaperList extends BaseList {
     }
 
     function _reviewAnalysis($row) {
-	global $Conf, $ConfSiteSuffix;
+	global $Conf;
 	$ranal = (object) array("completion" => "", "delegated" => false,
 				"needsSubmit" => false, "round" => "",
 				"link1" => "", "link2" => "");
@@ -810,9 +810,9 @@ class PaperList extends BaseList {
 	    else
 		$ranal->completion = "In&nbsp;progress";
 	    if ($ranal->needsSubmit)
-		$link = "review$ConfSiteSuffix?r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs;
+		$link = hoturl("review", "r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs);
 	    else
-		$link = "paper$ConfSiteSuffix?p=" . $row->paperId . $this->paperLinkArgs . "#review" . unparseReviewOrdinal($row);
+		$link = hoturl("paper", "p=" . $row->paperId . $this->paperLinkArgs . "#review" . unparseReviewOrdinal($row));
 	    $ranal->link1 = "<a href=\"$link\">";
 	    $ranal->link2 = "</a>";
 	    if ($row->reviewRound) {
@@ -837,7 +837,7 @@ class PaperList extends BaseList {
     }
 
     function content($fieldId, $row) {
-	global $ConfSiteSuffix, $Conf, $reviewScoreNames;
+	global $Conf, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	    $pl = $this->_paperLink($row);
@@ -993,7 +993,7 @@ class PaperList extends BaseList {
 	    if ($row->conflictType > 0)
 		return "N/A";
 	    $x = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
-	    return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' value=\"$x\" tabindex='2' /> <img id='revpref" . $row->paperId . "ok' src='images/_.gif' alt='' class='ajaxcheck' />";
+	    return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' value=\"$x\" tabindex='2' /> <img id='revpref" . $row->paperId . "ok' src='" . hoturlx("images/_.gif") . "' alt='' class='ajaxcheck' />";
 	case self::FIELD_DESIRABILITY:
 	    return (isset($row->desirability) ? htmlspecialchars($row->desirability) : "0");
 	case self::FIELD_ALL_PREFERENCES:
@@ -1082,7 +1082,7 @@ class PaperList extends BaseList {
     }
 
     function footer($ncol, $listname, $trclass) {
-	global $Conf, $ConfSiteSuffix;
+	global $Conf;
 	if ($this->count == 0 || !$this->footer)
 	    return "";
 
@@ -1162,7 +1162,7 @@ class PaperList extends BaseList {
 		|| defval($_REQUEST, "atab") == "tags")
 		$whichlll = $nlll;
 	    $t .= $barsep;
-	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Tag</a></td><td id='foldplacttags' class='lld$nlll foldc fold99c'><table><tr><td><b>:</b><a class='help' href='help$ConfSiteSuffix?t=tags' target='_blank' title='Learn more'>?</a> &nbsp;";
+	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Tag</a></td><td id='foldplacttags' class='lld$nlll foldc fold99c'><table><tr><td><b>:</b><a class='help' href='" . hoturl("help", "t=tags") . "' target='_blank' title='Learn more'>?</a> &nbsp;";
 	    $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order");
 	    $tagextra = array("class" => "b", "id" => "placttagtype");
 	    if ($this->contact->privChair) {
@@ -1362,8 +1362,8 @@ class PaperList extends BaseList {
     }
 
     function _addAjaxLoadForm($pap, $extra = "") {
-	global $Conf, $ConfSiteSuffix;
-	$t = "<div><form id='plloadform' method='post' action='search$ConfSiteSuffix?ajax=1" . $this->paperLinkArgs . "' accept-charset='UTF-8'>"
+	global $Conf;
+	$t = "<div><form id='plloadform' method='post' action='" . hoturl("search", "ajax=1" . $this->paperLinkArgs) . "' accept-charset='UTF-8'>"
 	    . "<div class='inform'>";
 	$s = $this->search;
 	if ($s->qx)
@@ -1428,7 +1428,7 @@ class PaperList extends BaseList {
     }
 
     function text($listname, $me, $extra_class = "") {
-	global $Conf, $ConfSiteSuffix, $paperListFields, $paperListFolds,
+	global $Conf, $ConfSiteBase, $paperListFields, $paperListFolds,
 	    $reviewScoreNames;
 	require_once("tags.inc"); // for TagColorizer
 
@@ -1666,7 +1666,7 @@ class PaperList extends BaseList {
 	    $this->_addAjaxLoadForm($ids);
 	}
 
-	$t .= "<img id='foldplactsession' alt='' src='sessionvar$ConfSiteSuffix?var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1' width='1' height='1' />";
+	$t .= "<img id='foldplactsession' alt='' src='" . hoturl("sessionvar", "var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1") . "' width='1' height='1' />";
 
 	// columns
 	foreach ($fieldDef as $fieldId => $fdef) {
@@ -1767,6 +1767,9 @@ class PaperList extends BaseList {
 	    $idx = $this->search->decorateSessionList($ids, $listname, $this->sortdef());
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
+	    if ($ConfSiteBase
+		&& substr($url, 0, strlen($ConfSiteBase)) == $ConfSiteBase)
+		$url = substr($url, strlen($ConfSiteBase));
 	    $idx["url"] = $url;
 	    $_SESSION["l"][$this->listNumber] = $idx;
 	}
@@ -1787,7 +1790,7 @@ class PaperList extends BaseList {
     }
 
     function ajaxColumn($fieldId, $me) {
-	global $Conf, $ConfSiteSuffix, $paperListFields;
+	global $Conf, $paperListFields;
 
 	$this->contact = $me;
 	$this->count = 0;

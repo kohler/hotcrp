@@ -10,7 +10,7 @@ $Me->goIfInvalid();
 
 // header
 function confHeader() {
-    global $ConfSiteSuffix, $prow, $Conf;
+    global $prow, $Conf;
     $title = ($prow ? "Paper #$prow->paperId Contacts" : "Paper Contacts");
     $Conf->header($title, "contactauthors", actionBar("contactauthors", $prow), false);
 }
@@ -97,7 +97,7 @@ if ($OK) {
     $paperTable->paptabBegin();
 
     // Contact authors
-    $t = "<form method='post' action=\"contactauthors$ConfSiteSuffix?p=$prow->paperId&amp;post=1\" enctype='multipart/form-data' accept-charset='UTF-8'>"
+    $t = "<form method='post' action=\"" . hoturl("contactauthors", "p=$prow->paperId&amp;post=1") . "\" enctype='multipart/form-data' accept-charset='UTF-8'>"
 	. "<div class='papt'>Paper contacts</div>"
 	. "<div class='paphint'>A paper's contacts are HotCRP users who can edit paper information and view reviews.  Every paper author with a HotCRP account is a contact by default, but you can add additional contacts who aren't in the author list.  Every paper must have at least one contact.</div>"
 	. "<div class='papv'>"

@@ -14,7 +14,7 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
     foreach (array("paperId", "reviewId", "commentId", "p", "r", "c", "accept", "refuse") as $opt)
 	if (isset($_REQUEST[$opt]))
 	    $after .= ($after === "" ? "" : "&") . $opt . "=" . urlencode($_REQUEST[$opt]);
-    $Me->go("index$ConfSiteSuffix?email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode("review$ConfSiteSuffix?$after"));
+    $Me->go(hoturl("index", "email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode(hoturl("review", $after))));
 }
 
 $Me->goIfInvalid();
@@ -51,8 +51,7 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $ConfSiteSuffix, $linkExtra, $prow, $paperTable,
-	$editRrowLogname;
+    global $Conf, $Me, $linkExtra, $prow, $paperTable, $editRrowLogname;
     if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
     $paperTable = new PaperTable($prow);
@@ -86,7 +85,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     if (!($req = $rf->parseTextForm($tf)))
 	/* error already reported */;
     else if (isset($req['paperId']) && $req['paperId'] != $prow->paperId)
-	$rf->tfError($tf, true, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.<br /><a class='button_small' href='review$ConfSiteSuffix?p=" . $req['paperId'] . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='offline$ConfSiteSuffix'>General review upload site</a>");
+	$rf->tfError($tf, true, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.<br /><a class='button_small' href='" . hoturl("review", "p=" . $req['paperId']) . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='" . hoturl("offline") . "'>General review upload site</a>");
     else if (!$Me->canSubmitReview($prow, $paperTable->editrrow, $whyNot))
 	$rf->tfError($tf, true, whyNotText($whyNot, "review"));
     else {
@@ -98,7 +97,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     }
 
     if (count($tf['err']) == 0 && $rf->parseTextForm($tf))
-	$rf->tfError($tf, false, "Only the first review form in the file was parsed.  <a href='offline$ConfSiteSuffix'>Upload multiple-review files here.</a>");
+	$rf->tfError($tf, false, "Only the first review form in the file was parsed.  <a href='" . hoturl("offline") . "'>Upload multiple-review files here.</a>");
 
     $rf->textFormMessages($tf);
     loadRows();
@@ -320,7 +319,7 @@ if (isset($_REQUEST['refuse'])) {
     else if ($paperTable->editrrow->reviewSubmitted)
 	$Conf->errorMsg("This review has already been submitted; you can't refuse it now.");
     else if ($_REQUEST["refuse"] == "1") {
-	$Conf->confirmMsg("<p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like, or just select &ldquo;Refuse review.&rdquo;</p><div class='g'></div><form method='post' action=\"review$ConfSiteSuffix?p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId . "$linkExtra\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>
+	$Conf->confirmMsg("<p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like, or just select &ldquo;Refuse review.&rdquo;</p><div class='g'></div><form method='post' action=\"" . hoturl("review", "p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId . "$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>
   <input type='hidden' name='refuse' value='refuse' />
   <textarea name='reason' rows='3' cols='40'></textarea>
   <span class='sep'></span>
@@ -390,7 +389,7 @@ if (!$viewAny && !$editAny) {
 	errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
 	$Conf->errorMsg("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
-	$Conf->go("paper$ConfSiteSuffix?p=$prow->paperId$linkExtra");
+	$Conf->go(hoturl("paper", "p=$prow->paperId$linkExtra"));
     }
 }
 
@@ -399,7 +398,7 @@ if (!$viewAny && !$editAny) {
 if ($paperTable->mode == "r" || $paperTable->mode == "re")
     $paperTable->fixReviewMode();
 if ($paperTable->mode == "pe")
-    $Conf->go("paper$ConfSiteSuffix?p=$prow->paperId$linkExtra");
+    $Conf->go(hoturl("paper", "p=$prow->paperId$linkExtra"));
 
 
 // page header

@@ -185,7 +185,7 @@ function rf_getField($row, $name, $ordinalOrder = null) {
 }
 
 function rf_formFieldText($row, $ordinalOrder, $numRows) {
-    global $rf, $Error, $rowidx, $captions, $Conf, $ConfSiteSuffix, $scoreHelps;
+    global $rf, $Error, $rowidx, $captions, $Conf, $scoreHelps;
 
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     $trclass = "tr class='k" . ($rowidx % 2) . "'";
@@ -227,7 +227,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 			    -2 => "Secret"),
 		      max(min(cvtint(rf_getField($row, "authorView"), -10000), 1), -2),
 		      array("onchange" => "hiliter(this)"))
-	. " &nbsp;<a class='scorehelp small' href='scorehelp$ConfSiteSuffix?f=vis'>(What is this?)</a>"
+	. " &nbsp;<a class='scorehelp small' href='" . hoturl("scorehelp", "f=vis") . "'>(What is this?)</a>"
 	. "</td><td class='hint'></td></tr>\n";
 
     // description

@@ -66,7 +66,7 @@ class CommentView {
     }
 
     function show($prow, $crow, $useRequest, $editMode, $foldnew = true) {
-	global $Conf, $ConfSiteSuffix, $Me, $forceShow, $linkExtra;
+	global $Conf, $Me, $forceShow, $linkExtra;
 
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->showResponse($prow, $crow, $useRequest, $editMode);
@@ -80,10 +80,8 @@ class CommentView {
 	$this->ncomment++;
 
 	if ($editMode) {
-	    echo "<form action='comment$ConfSiteSuffix?p=$prow->paperId&amp;c=",
-		($crow ? $crow->commentId : "new"),
-		"$linkExtra&amp;post=1";
-	    echo "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>";
+	    echo "<form action='", hoturl("comment", "p=$prow->paperId&amp;c=" . ($crow ? $crow->commentId : "new") . "$linkExtra&amp;post=1"),
+		"' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>";
 	    if (!$crow && $foldnew)
 		echo "<div class='aahc foldc' id='foldaddcomment'>";
 	    else
@@ -100,7 +98,7 @@ class CommentView {
 	// Links
 	if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair)
 	    && !$editMode && $Me->canComment($prow, $crow)) {
-	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId'>";
+	    $a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId") . "'>";
 	    echo "<div class='floatright'>", $a,
 		$Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
 		"</a>&nbsp;", $a, "Edit</a></div>";
@@ -174,7 +172,7 @@ class CommentView {
     }
 
     function showResponse($prow, $crow, $useRequest, $editMode) {
-	global $Conf, $ConfSiteSuffix, $Me, $forceShow, $linkExtra;
+	global $Conf, $Me, $forceShow, $linkExtra;
 
 	$this->endTable();
 	if ($editMode && !$Me->canRespond($prow, $crow)
@@ -184,12 +182,7 @@ class CommentView {
 	$wordlimit = $Conf->setting("resp_words", 0);
 
 	if ($editMode) {
-	    echo "<form action='comment$ConfSiteSuffix?";
-	    if ($crow)
-		echo "c=$crow->commentId";
-	    else
-		echo "p=$prow->paperId";
-	    echo "$linkExtra&amp;response=1&amp;post=1";
+	    echo "<form action='", hoturl("comment", ($crow ? "c=$crow->commentId" : "p=$prow->paperId") . "$linkExtra&amp;response=1&amp;post=1");
 	    if ($crow)
 		echo "#comment$crow->commentId";
 	    echo "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
@@ -204,7 +197,7 @@ class CommentView {
 	// Links
 	if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair)
 	    && !$editMode && $Me->canRespond($prow, $crow)) {
-	    $a = "<a href='paper$ConfSiteSuffix?p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId'>";
+	    $a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId") . "'>";
 	    echo "<div class='floatright'>", $a,
 		$Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
 		"</a>&nbsp;", $a, "Edit</a></div>";
@@ -240,7 +233,7 @@ has passed.  Please keep the response short and to the point",
 
 	if (!$editMode) {
 	    if ($Me->privChair && $crow->forReviewers == 0)
-		echo "<i>The <a href='comment$ConfSiteSuffix?c=$crow->commentId$linkExtra'>authors&rsquo; response</a> is not yet ready for reviewers to view.</i>";
+		echo "<i>The <a href='", hoturl("comment", "c=$crow->commentId$linkExtra"), "'>authors&rsquo; response</a> is not yet ready for reviewers to view.</i>";
 	    else if (!$Me->canViewComment($prow, $crow))
 		echo "<i>The authors&rsquo; response is not yet ready for reviewers to view.</i>";
 	    else
@@ -279,8 +272,8 @@ has passed.  Please keep the response short and to the point",
 
     static function commentFlowEntry($contact, $crow, $trclass) {
 	// See also ReviewForm::reviewFlowEntry
-	global $ConfSiteSuffix, $Conf;
-	$a = "<a href='paper$ConfSiteSuffix?p=$crow->paperId#comment$crow->commentId'>";
+	global $Conf;
+	$a = "<a href='" . hoturl("paper", "p=$crow->paperId#comment$crow->commentId") . "'>";
 	$t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a
 	    . $Conf->cacheableImage("comment24.png", "[Comment]", null, "dlimg")
 	    . "</a></td><td class='pl_activityid'>"

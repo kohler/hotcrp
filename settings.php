@@ -1185,7 +1185,7 @@ function doActionArea() {
 
 // Accounts
 function doAccGroup() {
-    global $Conf, $ConfSiteSuffix, $Me, $belowHr;
+    global $Conf, $Me, $belowHr;
 
     if ($Conf->sversion >= 5)
 	doCheckbox("acct_addr", "Collect users&rsquo; addresses and phone numbers");
@@ -1194,15 +1194,15 @@ function doAccGroup() {
 
     echo "<hr class='hr' /><h3>Program committee &amp; system administrators</h3>";
 
-    echo "<p><a href='account$ConfSiteSuffix?new=1' class='button'>Create account</a> &nbsp;|&nbsp; ",
+    echo "<p><a href='", hoturl("account", "new=1"), "' class='button'>Create account</a> &nbsp;|&nbsp; ",
 	"Select a user&rsquo;s name to edit a profile or change PC/administrator status.</p>\n";
     $pl = new ContactList($Me, false);
-    echo $pl->text("pcadminx", "contacts$ConfSiteSuffix?t=pcadmin");
+    echo $pl->text("pcadminx", hoturl("contacts", "t=pcadmin"));
 }
 
 // Messages
 function doMsgGroup() {
-    global $Conf, $ConfSiteSuffix, $Opt;
+    global $Conf, $Opt;
 
     echo "<div class='f-c'>", decorateSettingName("opt.shortName", "Conference abbreviation"), "</div>
 <input class='textlite' name='opt.shortName' size='20' onchange='hiliter(this)' value=\"", htmlspecialchars($Opt["shortName"]), "\" />
@@ -1288,7 +1288,7 @@ function checkOptionNameUnique($oname) {
 }
 
 function doOptGroupOption($o) {
-    global $Conf, $ConfSiteSuffix, $Error;
+    global $Conf, $Error;
     $id = $o->optionId;
     if (count($Error) > 0 && isset($_REQUEST["optn$id"]))
 	$o = (object) array("optionId" => $id,
@@ -1331,7 +1331,7 @@ function doOptGroupOption($o) {
 	}
 	if (strstr($oabbrev, " ") !== false)
 	    $oabbrev = "\"$oabbrev\"";
-	echo "&ldquo;<a href=\"search$ConfSiteSuffix?q=opt:", urlencode($oabbrev), "\">",
+	echo "&ldquo;<a href=\"", hoturl("search", "q=opt:" . urlencode($oabbrev)), "\">",
 	    "opt:", htmlspecialchars($oabbrev), "</a>&rdquo;",
 	    "</div></div></td>";
     }
@@ -1397,7 +1397,7 @@ function doOptGroupOption($o) {
 }
 
 function doOptGroup() {
-    global $Conf, $ConfSiteSuffix, $rf;
+    global $Conf, $rf;
 
     if ($Conf->sversion >= 1) {
 	echo "<h3>Submission options</h3>\n";
@@ -1454,7 +1454,7 @@ function doOptGroup() {
 	    $oabbrev = strtolower($rf->topicName[$tid]);
 	    if (strstr($oabbrev, " ") !== false)
 		$oabbrev = "\"$oabbrev\"";
-	    echo "&ldquo;<a href=\"search$ConfSiteSuffix?q=topic:", urlencode($oabbrev), "\">",
+	    echo "&ldquo;<a href=\"", hoturl("search", "q=topic:" . urlencode($oabbrev)), "\">",
 		"topic:", htmlspecialchars($oabbrev), "</a>&rdquo;",
 		"<div class='hint'>Topic abbreviations are also allowed.</div>";
 	    if ($ninterests)
@@ -1477,7 +1477,7 @@ function doOptGroup() {
 
 // Reviews
 function doRevGroup() {
-    global $Conf, $Error, $ConfSiteSuffix, $DateExplanation;
+    global $Conf, $Error, $DateExplanation;
 
     doCheckbox('rev_open', '<b>Open site for reviewing</b>');
     doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
@@ -1523,7 +1523,7 @@ function doRevGroup() {
     doDateRow("pcrev_hard", array("Hard deadline", "Reviews <em>cannot be entered or changed</em> after the hard deadline.  If set, this should generally be after the PC meeting.<br />$date_text"));
     if (!($rev_roundtag = settingText("rev_roundtag")))
 	$rev_roundtag = "(None)";
-    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo; &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=revround'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
+    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo; &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
     echo "</table>\n";
 
     echo "<div class='g'></div>\n";
@@ -1550,7 +1550,7 @@ function doRevGroup() {
     echo "<table id='foldmailbody_requestreview' class='foldc'>",
 	"<tr><td>", foldbutton("mailbody_requestreview", ""), "&nbsp;</td>",
 	"<td><a href='javascript:void fold(\"mailbody_requestreview\")' class='q'><strong>Mail template for external review requests</strong></a>",
-	" <span class='fx'>(<a href='mail$ConfSiteSuffix'>keywords</a> allowed)<br /></span>
+	" <span class='fx'>(<a href='", hoturl("mail"), "'>keywords</a> allowed)<br /></span>
 <textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20' onchange='hiliter(this)'>", htmlspecialchars($t["body"]), "</textarea>",
 	"</td></tr></table>\n";
 
@@ -1580,14 +1580,14 @@ function doRevGroup() {
 	    $x .= "$n#$v ";
 	$v = trim($x);
     }
-    echo "<td><input type='text' class='textlite' name='tag_vote' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>&ldquo;vote#10&rdquo; declares a voting tag named &ldquo;vote&rdquo; with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=votetags'>What is this?</a></div></td></tr>";
+    echo "<td><input type='text' class='textlite' name='tag_vote' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>&ldquo;vote#10&rdquo; declares a voting tag named &ldquo;vote&rdquo; with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lcaption'>", decorateSettingName("tag_rank", "Ranking tag"), "</td>";
     if (count($Error) > 0)
 	$v = defval($_REQUEST, "tag_rank", "");
     else
 	$v = $Conf->settingText("tag_rank", "");
-    echo "<td><input type='text' class='textlite' name='tag_rank' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>If set, the <a href='offline$ConfSiteSuffix'>offline reviewing page</a> will expose support for uploading rankings by this tag. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='help$ConfSiteSuffix?t=ranking'>What is this?</a></div></td></tr>";
+    echo "<td><input type='text' class='textlite' name='tag_rank' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>If set, the <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
     echo "</table>";
 
     echo "<div class='g'></div>\n";
@@ -1618,7 +1618,7 @@ function doRevGroup() {
     // Tags
     echo "<h3>Review ratings</h3>\n";
 
-    echo "Should HotCRP collect ratings of reviews? &nbsp; <a class='hint' href='help$ConfSiteSuffix?t=revrate'>(Learn more)</a><br />\n";
+    echo "Should HotCRP collect ratings of reviews? &nbsp; <a class='hint' href='", hoturl("help", "t=revrate"), "'>(Learn more)</a><br />\n";
     doRadio("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"));
 }
 
@@ -1711,7 +1711,7 @@ function doDecGroup() {
 
 $belowHr = true;
 
-echo "<form method='post' action='settings$ConfSiteSuffix?post=1' enctype='multipart/form-data' accept-charset='UTF-8'><div><input type='hidden' name='group' value='$Group' />\n";
+echo "<form method='post' action='", hoturl("settings", "post=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div><input type='hidden' name='group' value='$Group' />\n";
 
 echo "<table class='settings'><tr><td class='caption initial final'>";
 echo "<table class='lhsel'>";
@@ -1724,9 +1724,9 @@ foreach (array("acc" => "Accounts",
 	       "dec" => "Decisions") as $k => $v) {
     echo "<tr><td>";
     if ($Group == $k)
-	echo "<div class='lhl1'><a class='q' href='settings$ConfSiteSuffix?group=$k'>$v</a></div>";
+	echo "<div class='lhl1'><a class='q' href='", hoturl("settings", "group=$k"), "'>$v</a></div>";
     else
-	echo "<div class='lhl0'><a href='settings$ConfSiteSuffix?group=$k'>$v</a></div>";
+	echo "<div class='lhl0'><a href='", hoturl("settings", "group=$k"), "'>$v</a></div>";
     echo "</td></tr>";
 }
 echo "</table></td><td class='top'><div class='lht'>";

@@ -199,9 +199,9 @@ if (isset($_REQUEST['upload']) && fileUploaded($_FILES['uploadedFile'], $Conf)
 
 
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
-$abar .= actionTab("Automatic", "autoassign$ConfSiteSuffix", false);
-$abar .= actionTab("Manual", "manualassign$ConfSiteSuffix", false);
-$abar .= actionTab("Offline", "bulkassign$ConfSiteSuffix", true);
+$abar .= actionTab("Automatic", hoturl("autoassign"), false);
+$abar .= actionTab("Manual", hoturl("manualassign"), false);
+$abar .= actionTab("Offline", hoturl("bulkassign"), true);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
@@ -211,10 +211,10 @@ $Conf->header("Review Assignments", "bulkassign", $abar);
 // Help list
 echo "<div class='helpside'><div class='helpinside'>
 Assignment methods:
-<ul><li><a href='autoassign$ConfSiteSuffix'>Automatic</a></li>
- <li><a href='manualassign$ConfSiteSuffix'>Manual by PC member</a></li>
- <li><a href='assign$ConfSiteSuffix'>Manual by paper</a></li>
- <li><a href='bulkassign$ConfSiteSuffix' class='q'><strong>Offline (bulk upload)</strong></a></li>
+<ul><li><a href='", hoturl("autoassign"), "'>Automatic</a></li>
+ <li><a href='", hoturl("manualassign"), "'>Manual by PC member</a></li>
+ <li><a href='", hoturl("assign"), "'>Manual by paper</a></li>
+ <li><a href='", hoturl("bulkassign"), "' class='q'><strong>Offline (bulk upload)</strong></a></li>
 </ul>
 <hr class='hr' />
 Types of PC assignment:
@@ -225,7 +225,7 @@ Types of PC assignment:
 
 echo "<h2 style='margin-top:1em'>Upload assignments</h2>
 
-<form action='bulkassign$ConfSiteSuffix?upload=1' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+<form action='", hoturl("bulkassign", "upload=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 Assign &nbsp;",
     tagg_select("t", array(REVIEW_PRIMARY => "primary",
 			   REVIEW_SECONDARY => "secondary",
@@ -252,7 +252,7 @@ echo "'>Review round: &nbsp;",
     "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"),
     "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
-    " &nbsp;<a class='hint' href='help$ConfSiteSuffix?t=revround'>What is this?</a></div></div>
+    " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a></div></div>
 
 <div class='g'></div>
 

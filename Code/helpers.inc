@@ -354,6 +354,17 @@ if (!function_exists("json_decode")) {
 
 // web helpers
 
+function hoturl($page, $options = null) {
+    global $ConfSiteBase, $ConfSiteSuffix;
+    $t = $ConfSiteBase . $page . $ConfSiteSuffix;
+    return ($options ? $t . "?" . $options : $t);
+}
+
+function hoturlx($page) {
+    global $ConfSiteBase;
+    return $ConfSiteBase . $page;
+}
+
 function go($url) {
     // The URL is often a relative one; make it absolute if possible.
     if (!preg_match('|\A[a-z]+://|', $url)
@@ -490,8 +501,6 @@ function validateEmail($email) {
 }
 
 function foldsessionpixel($name, $var, $sub = false) {
-    global $ConfSiteSuffix;
-
     $val = "&amp;val=";
     if ($sub === false)
 	$val .= defval($_SESSION, $var, 1);
@@ -506,7 +515,7 @@ function foldsessionpixel($name, $var, $sub = false) {
 	$val = "&amp;sub=" . $sub . $val;
     }
 
-    return "<img id='foldsession." . $name . "' alt='' src='sessionvar$ConfSiteSuffix?var=" . $var . $val . "&amp;cache=1' width='1' height='1' />";
+    return "<img id='foldsession." . $name . "' alt='' src='" . hoturl("sessionvar", "var=" . $var . $val . "&amp;cache=1") . "' width='1' height='1' />";
 }
 
 function foldbutton($foldtype, $title, $foldnum = 0) {
@@ -851,10 +860,14 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
 	$result = $Conf->qx("select email from ContactInfo where contactId=$id");
 	$row = edb_row($result);
 	$paperText = ($row ? htmlspecialchars($row[0]) : "#$id");
-    } else
+	$urlrest = "contact=" . $id . $urlrest;
+    } else {
 	$paperText = "#$id";
+	$urlrest = "p=" . $id . $urlrest;
+    }
     return "<a id=\"quicklink_" . ($isprev ? "prev" : "next")
-	. "\" href=\"$baseUrl$id$urlrest\" onclick=\"return !Miniajax.isoutstanding('revprefform', make_link_callback(this))\">"
+	. "\" href=\"" . hoturl($baseUrl, $urlrest)
+	. "\" onclick=\"return !Miniajax.isoutstanding('revprevform', make_link_callback(this))\">"
 	. ($isprev ? $Conf->cacheableImage("_.gif", "&lt;-", null, "prev") : "")
 	. $paperText
 	. ($isprev ? "" : $Conf->cacheableImage("_.gif", "-&gt;", null, "next"))
@@ -862,7 +875,7 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
 }
 
 function quicklinks($id, $baseUrl, $args, $listtype) {
-    global $Me, $ConfSiteSuffix, $Conf, $CurrentList;
+    global $Me, $Conf, $CurrentList;
 
     $list = false;
     $CurrentList = 0;
@@ -917,7 +930,7 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
     if (isset($list["description"])) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
 	if (defval($list, "url"))
-	    $x .= "<a href=\"" . htmlspecialchars($list["url"]) . "\">" . $list["description"] . "</a>";
+	    $x .= "<a href=\"" . $ConfSiteBase . htmlspecialchars($list["url"]) . "\">" . $list["description"] . "</a>";
 	else
 	    $x .= $list["description"];
     }
@@ -929,16 +942,12 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
 }
 
 function goPaperForm($baseUrl = null, $args = array()) {
-    global $Conf, $ConfSiteSuffix, $CurrentList;
+    global $Conf, $CurrentList;
     if (!$_SESSION["Me"]->valid())
 	return "";
-    if ($baseUrl !== null && substr($baseUrl, -3) === "?p")
-	$baseUrl = substr($baseUrl, 0, -3);
-    else if ($_SESSION["Me"]->isPC && $Conf->setting("rev_open"))
-	$baseUrl = "review$ConfSiteSuffix";
-    else
-	$baseUrl = "paper$ConfSiteSuffix";
-    $x = "<form class='gopaper' action='$baseUrl' method='get' accept-charset='UTF-8'><div class='inform'>";
+    if ($baseUrl === null)
+	$baseUrl = ($_SESSION["Me"]->isPC && $Conf->setting("rev_open") ? "review" : "paper");
+    $x = "<form class='gopaper' action='" . hoturl($baseUrl) . "' method='get' accept-charset='UTF-8'><div class='inform'>";
     $x .= "<input class='textlite' type='text' size='10' name='p' title='Enter paper numbers or search terms' />";
     foreach ($args as $what => $val)
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
@@ -1201,7 +1210,7 @@ function ini_get_bytes($varname) {
 }
 
 function whyNotText($whyNot, $action) {
-    global $Conf, $ConfSiteSuffix;
+    global $Conf;
     if (!is_array($whyNot))
 	$whyNot = array($whyNot => 1);
     $paperId = (isset($whyNot['paperId']) ? $whyNot['paperId'] : -1);
@@ -1240,7 +1249,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['responseNotReady']))
 	$text .= "The authors&rsquo; response for $thisPaper is not yet ready for reviewers to view.  ";
     if (isset($whyNot['reviewsOutstanding']))
-	$text .= "You will get access to the reviews for your submitted papers once you complete <a href=\"search$ConfSiteSuffix?q=&amp;t=r\">your assigned reviews for other papers</a>.  If you can&rsquo;t complete your reviews, please let the conference organizers know via the &ldquo;Refuse review&rdquo; links.  ";
+	$text .= "You will get access to the reviews for your submitted papers once you complete <a href=\"" . hoturl("search", "q=&amp;t=r") . "\">your assigned reviews for other papers</a>.  If you can&rsquo;t complete your reviews, please let the conference organizers know via the &ldquo;Refuse review&rdquo; links.  ";
     if (isset($whyNot['reviewNotAssigned']))
 	$text .= "You are not assigned to review $thisPaper.  ";
     if (isset($whyNot['deadline'])) {
@@ -1273,12 +1282,12 @@ function whyNotText($whyNot, $action) {
 	    $text .= "It was " . $Conf->printableTime($end, "span") . ".  ";
 	} else if ($dname == "au_seerev") {
 	    if ($Conf->setting("au_seerev") == AU_SEEREV_YES)
-		$text .= "Authors who are also reviewers can&rsquo;t see reviews for their papers while they still have <a href='search$ConfSiteSuffix?t=rout&amp;q='>incomplete reviews</a> of their own.  ";
+		$text .= "Authors who are also reviewers can&rsquo;t see reviews for their papers while they still have <a href='" . hoturl("search", "t=rout&amp;q=") . "'>incomplete reviews</a> of their own.  ";
 	    else
 		$text .= "Authors can&rsquo;t view paper reviews at the moment.  ";
 	} else
 	    $text .= "You can&rsquo;t $action $thisPaper at the moment.  ";
-	$text .= "(<a class='nowrap' href='deadlines$ConfSiteSuffix'>View deadlines</a>)  ";
+	$text .= "(<a class='nowrap' href='" . hoturl("deadlines") . "'>View deadlines</a>)  ";
 	if (isset($whyNot['override']) && $whyNot['override'])
 	    $text .= "Select the &ldquo;Override deadlines&rdquo; checkbox to override this deadline as an administrator.  ";
     }
@@ -1300,7 +1309,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['forceShow']))
 	$text .= "(<a class='nowrap' href=\"". selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)  ";
     if ($text && $action == "view")
-	$text .= "Enter a paper number above, or <a href='search$ConfSiteSuffix?q='>list the papers you can view</a>.  ";
+	$text .= "Enter a paper number above, or <a href='" . hoturl("search", "q=") . "'>list the papers you can view</a>.  ";
     return ($text ? substr($text, 0, -2) : $text);
 }
 
@@ -1332,29 +1341,30 @@ function actionTab($text, $url, $default) {
 }
 
 function actionBar($mode = "", $prow = null) {
-    global $Me, $Conf, $ConfSiteSuffix, $CurrentList;
+    global $Me, $Conf, $CurrentList;
     $forceShow = ($Me->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
 
-    $goBase = "paper$ConfSiteSuffix?p=";
+    $goBase = "paper";
+    $paperArg = "p=*";
     $xmode = array();
     $listtype = "p";
 
     if ($mode == "assign")
-	$goBase = "assign$ConfSiteSuffix?p=";
+	$goBase = "assign";
     else if ($mode == "r" || $mode == "re" || $mode == "review")
-	$goBase = "review$ConfSiteSuffix?p=";
+	$goBase = "review";
     else if ($mode == "c" || $mode == "comment")
-	$goBase = "comment$ConfSiteSuffix?p=";
+	$goBase = "comment";
     else if ($mode == "contactauthors")
-	$goBase = "contactauthors$ConfSiteSuffix?p=";
+	$goBase = "contactauthors";
     else if ($mode == "account") {
 	$listtype = "a";
 	if ($Me->privChair)
-	    $goBase = "account$ConfSiteSuffix?contact=";
+	    $goBase = "account";
 	else
 	    $prow = null;
     } else if ($mode == "" && $Me->isPC && $Conf->setting("rev_open"))
-	$goBase = "review$ConfSiteSuffix?p=";
+	$goBase = "review";
     else if (($wantmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"))))
 	$xmode["m"] = $wantmode;
 

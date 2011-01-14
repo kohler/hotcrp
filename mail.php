@@ -132,8 +132,8 @@ function contactQuery($type) {
 }
 
 function checkMailPrologue($send) {
-    global $Conf, $ConfSiteSuffix, $Me;
-    echo "<form method='post' action='mail$ConfSiteSuffix' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
+    global $Conf, $Me;
+    echo "<form method='post' action='", hoturl("mail"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
     foreach (array("recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
@@ -153,9 +153,9 @@ function checkMailPrologue($send) {
 	    && (strpos($_REQUEST["emailBody"], "%REVIEWS%")
 		|| strpos($_REQUEST["emailBody"], "%COMMENTS%"))) {
 	    if (!$Conf->timeAuthorViewReviews())
-		echo "<div class='warning'>Although these mails contain reviews and/or comments, authors can't see reviews or comments on the site.  (<a href='settings$ConfSiteSuffix?group=dec' class='nowrap'>Change this setting</a>)</div>\n";
+		echo "<div class='warning'>Although these mails contain reviews and/or comments, authors can't see reviews or comments on the site.  (<a href='", hoturl("settings", "group=dec"), "' class='nowrap'>Change this setting</a>)</div>\n";
 	    else if (!$Conf->timeAuthorViewReviews(true))
-		echo "<div class='warning'>Mails to users who have not completed their own reviews will not include reviews or comments.  (<a href='settings$ConfSiteSuffix?group=dec' class='nowrap'>Change the setting</a>)</div>\n";
+		echo "<div class='warning'>Mails to users who have not completed their own reviews will not include reviews or comments.  (<a href='", hoturl("settings", "group=dec"), "' class='nowrap'>Change the setting</a>)</div>\n";
 	}
 	echo "<div id='foldmail' class='foldc fold2c'>",
 	    "<div class='fn fx2 merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div>",
@@ -173,7 +173,7 @@ function checkMailPrologue($send) {
 }
 
 function checkMail($send) {
-    global $Conf, $ConfSiteSuffix, $Me, $Error, $subjectPrefix, $recip,
+    global $Conf, $Me, $Error, $subjectPrefix, $recip,
 	$checkReviewNeedsSubmit, $mailHeaders;
     $q = contactQuery($_REQUEST["recipients"]);
     if (!$q)
@@ -397,13 +397,13 @@ if (isset($_REQUEST["monreq"])) {
     $plist = new PaperList(new PaperSearch($Me, array("t" => "reqrevs", "q" => "")), array("list" => true));
     $ptext = $plist->text("reqrevs", $Me);
     if ($plist->count == 0)
-	$Conf->infoMsg("You have not requested any external reviews.  <a href='index$ConfSiteSuffix'>Return home</a>");
+	$Conf->infoMsg("You have not requested any external reviews.  <a href='", hoturl("index"), "'>Return home</a>");
     else {
 	echo "<h2>Requested reviews</h2>\n\n", $ptext, "<div class='info'>";
 	if ($plist->needSubmitReview > 0)
 	    echo "Some of your requested external reviewers have not completed their reviews.  To send them an email reminder, check the text below and then select &ldquo;Prepare mail.&rdquo;  You'll get a chance to review the emails and select specific reviewers to remind.";
 	else
-	    echo "All of your requested external reviewers have completed their reviews.  <a href='index$ConfSiteSuffix'>Return home</a>";
+	    echo "All of your requested external reviewers have completed their reviews.  <a href='", hoturl("index"), "'>Return home</a>";
 	echo "</div>\n";
     }
     if ($plist->needSubmitReview == 0) {
@@ -412,7 +412,7 @@ if (isset($_REQUEST["monreq"])) {
     }
 }
 
-echo "<form method='post' action='mail$ConfSiteSuffix?check=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+echo "<form method='post' action='", hoturl("mail", "check=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 <input class='hidden' type='submit' name='default' value='1' />
 
 <div class='aa'>

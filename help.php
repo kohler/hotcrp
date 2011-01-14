@@ -26,19 +26,19 @@ if (!isset($topicTitles[$topic]))
     $topic = "topics";
 
 $abar = "<div class='vbar'><table class='vbar'><tr><td id='vbartabs'><table><tr>\n";
-$abar .= actionTab("Help topics", "help$ConfSiteSuffix?t=topics", $topic == "topics");
+$abar .= actionTab("Help topics", hoturl("help", "t=topics"), $topic == "topics");
 if ($topic == "search" || $topic == "keywords")
-    $abar .= actionTab("Search help", "help$ConfSiteSuffix?t=search", $topic == "search");
+    $abar .= actionTab("Search help", hoturl("help", "t=search"), $topic == "search");
 if ($topic == "search" || $topic == "keywords")
-    $abar .= actionTab("Search keywords", "help$ConfSiteSuffix?t=keywords", $topic == "keywords");
+    $abar .= actionTab("Search keywords", hoturl("help", "t=keywords"), $topic == "keywords");
 if ($topic != "topics" && $topic != "search" && $topic != "keywords")
-    $abar .= actionTab($topicTitles[$topic], "help$ConfSiteSuffix?t=$topic", true);
+    $abar .= actionTab($topicTitles[$topic], hoturl("help", "t=$topic"), true);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 if ($topic == "topics")
     $Conf->header("Help", null, $abar);
 else
-    $Conf->header("<a href='help$ConfSiteSuffix'>Help</a>", null, $abar);
+    $Conf->header("<a href='" . hoturl("help") . "'>Help</a>", null, $abar);
 
 
 function _alternateRow($caption, $entry, $next = null) {
@@ -55,29 +55,27 @@ function _alternateRow($caption, $entry, $next = null) {
 
 
 function topics() {
-    global $ConfSiteSuffix;
     echo "<table>";
-    _alternateRow("<a href='help$ConfSiteSuffix?t=chair'>Chair’s guide</a>", "How to run a conference using HotCRP.");
-    _alternateRow("<a href='help$ConfSiteSuffix?t=search'>Search</a>", "About paper searching.");
-    _alternateRow("<a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a>", "Quick reference to search keywords and search syntax.");
-    _alternateRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
-    _alternateRow("<a href='help$ConfSiteSuffix?t=scoresort'>Sorting scores</a>", "How scores are sorted in paper lists.");
-    _alternateRow("<a href='help$ConfSiteSuffix?t=revround'>Review rounds</a>", "Defining review rounds.");
-    _alternateRow("<a href='help$ConfSiteSuffix?t=revrate'>Review ratings</a>", "Rating reviews.");
-    _alternateRow("<a href='help$ConfSiteSuffix?t=votetags'>Voting tags</a>", "Voting for papers.");
-    _alternateRow("<a href='help$ConfSiteSuffix?t=ranking'>Paper ranking</a>", "Ranking papers using tags.");
-    _alternateRow("<a href='help$ConfSiteSuffix?t=formulas'>Formulas</a>", "Creating score formulas.");
+    _alternateRow("<a href='" . hoturl("help", "t=chair") . "'>Chair’s guide</a>", "How to run a conference using HotCRP.");
+    _alternateRow("<a href='" . hoturl("help", "t=search") . "'>Search</a>", "About paper searching.");
+    _alternateRow("<a href='" . hoturl("help", "t=keywords") . "'>Search keywords</a>", "Quick reference to search keywords and search syntax.");
+    _alternateRow("<a href='" . hoturl("help", "t=tags") . "'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
+    _alternateRow("<a href='" . hoturl("help", "t=scoresort") . "'>Sorting scores</a>", "How scores are sorted in paper lists.");
+    _alternateRow("<a href='" . hoturl("help", "t=revround") . "'>Review rounds</a>", "Defining review rounds.");
+    _alternateRow("<a href='" . hoturl("help", "t=revrate") . "'>Review ratings</a>", "Rating reviews.");
+    _alternateRow("<a href='" . hoturl("help", "t=votetags") . "'>Voting tags</a>", "Voting for papers.");
+    _alternateRow("<a href='" . hoturl("help", "t=ranking") . "'>Paper ranking</a>", "Ranking papers using tags.");
+    _alternateRow("<a href='" . hoturl("help", "t=formulas") . "'>Formulas</a>", "Creating score formulas.");
     echo "</table>";
 }
 
 
 function _searchForm($forwhat, $other = null) {
-    global $ConfSiteSuffix;
     $text = "";
     if ($other && preg_match_all('/(\w+)=([^&]*)/', $other, $matches, PREG_SET_ORDER))
 	foreach ($matches as $m)
 	    $text .= "<input type='hidden' name='$m[1]' value=\"" . htmlspecialchars(urldecode($m[2])) . "\" />";
-    return "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'>"
+    return "<form method='get' action='" . hoturl("search") . "' accept-charset='UTF-8'>"
 	. "<input type='text' class='textlite' name='q' value=\""
 	. htmlspecialchars($forwhat) . "\" size='20' /> &nbsp;"
 	. "<input type='submit' class='b' name='go' value='Search' />"
@@ -85,7 +83,6 @@ function _searchForm($forwhat, $other = null) {
 }
 
 function search() {
-    global $ConfSiteSuffix;
     echo "<table>";
     _alternateRow("Search basics", "
 All HotCRP paper lists are obtained through search, search syntax is flexible,
@@ -98,7 +95,7 @@ and it's possible to download all matching papers and/or reviews at once.
 <li>" . _searchForm("12") . "&nbsp; finds paper #12.  When entered from a
  <a href='#quicklinks'>quicksearch</a> box, this search will jump to
  paper #12 directly.</li>
-<li><a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a>
+<li><a href='" . hoturl("help", "t=keywords") . "'>Search keywords</a>
  let you search specific fields, review scores, and more.</li>
 <li>Use <a href='#quicklinks'>quicklinks</a> on paper pages to navigate
  through search results.</li>
@@ -115,7 +112,7 @@ To search for papers that match <em>some</em> of the terms,
 type “term1 OR term2”.
 To search for papers that <em>don't</em> match a term,
 try “-term”.  Or select
-<a href='search$ConfSiteSuffix?opt=1'>Advanced search</a>
+<a href='" . hoturl("search", "opt=1") . "'>Advanced search</a>
 and use \"With <b>any</b> of the words\" and \"<b>Without</b> the words\".
 
 <p>You can search in several paper classes, depending on your role in the
@@ -133,13 +130,13 @@ authors can only search their own submissions, and if the conference used
 anonymous submission, then only the PC chairs can search by author.</p>
 
 <p>By default, search examines paper titles, abstracts, and authors.
-<a href='search$ConfSiteSuffix?opt=1'>Advanced search</a>
+<a href='" . hoturl("search", "opt=1") . "'>Advanced search</a>
 can search other fields, including authors/collaborators and reviewers.
 Also, <b>keywords</b> search specific characteristics such as titles,
 authors, reviewer names, and numbers of reviewers.  For example,
 \"ti:foo\" means \"search for 'foo' in paper
 titles\".  Keywords are listed in the
-<a href='help$ConfSiteSuffix?t=keywords'>search keywords reference</a>.</p>");
+<a href='" . hoturl("help", "t=keywords") . "'>search keywords reference</a>.</p>");
     _alternateRow("Search results", "
 Click on a paper number or title to jump to that paper.
 Search matches are <span class='match'>highlighted</span> on paper screens,
@@ -149,7 +146,7 @@ to navigate through the rest of the search matches.
 
 <p>Underneath the paper list is the action area:</p>
 
-<img src='images/exsearchaction.png' alt='[Search action area example]' /><br />
+<img src='" . hoturlx("images/exsearchaction.png") . "' alt='[Search action area example]' /><br />
 
 <p>Use the checkboxes to select some papers, then choose an action.
 You can:</p>
@@ -159,7 +156,7 @@ You can:</p>
 <li>Download all reviews for the selected papers.</li>
 <li>Download tab-separated text files with authors, PC
  conflicts, review scores, and so forth (some options chairs only).</li>
-<li>Add, remove, and define <a href='help$ConfSiteSuffix?t=tags'>tags</a>.</li>
+<li>Add, remove, and define <a href='" . hoturl("help", "t=tags") . "'>tags</a>.</li>
 <li>Assign reviewers and mark conflicts (chairs only).</li>
 <li>Set decisions (chairs only).</li>
 <li>Send mail to paper authors or reviewers (chairs only).</li>
@@ -173,13 +170,13 @@ tag.</p>
 ");
     _alternateRow("<a name='quicklinks'>Quicksearch<br />and quicklinks</a>", "
 Most screens have a quicksearch box in the upper right corner:<br />
-<img src='images/quicksearchex.png' alt='[Quick search example]' /><br />
+<img src='" . hoturlx("images/quicksearchex.png") . "' alt='[Quick search example]' /><br />
 This box supports the full search syntax.  Enter
 a paper number, or search terms that match exactly
 one paper, to go directly to that paper.
 
 <p>Paper screens have quicklinks that step through search results:<br />
-<img src='images/pageresultsex.png' alt='[Result paging example]' /><br />
+<img src='" . hoturlx("images/pageresultsex.png") . "' alt='[Result paging example]' /><br />
 Click on the search description (here, “Submitted papers search”) to return
 to the search results.  On many pages, you can press “<code>j</code>” or
 “<code>k</code>” to go to the previous or next paper in the list.</p>
@@ -197,7 +194,7 @@ function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
 }
 
 function searchQuickref() {
-    global $rowidx, $Conf, $ConfSiteSuffix, $Me;
+    global $rowidx, $Conf, $Me;
 
     // how to report author searches?
     if ($Conf->subBlindNever())
@@ -241,7 +238,7 @@ function searchQuickref() {
     _searchQuickrefRow("Topics", "topic:link", "selected topics match “link”");
     _searchQuickrefRow("Options", "opt:shadow", "selected submission options match “shadow”");
     _searchQuickrefRow("", "budget:>1000", "numerical submission option “budget” has value &gt; 1000");
-    _searchQuickrefRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "tag:discuss", "tagged “discuss”");
+    _searchQuickrefRow("<a href='" . hoturl("help", "t=tags") . "'>Tags</a>", "tag:discuss", "tagged “discuss”");
     _searchQuickrefRow("", "-tag:discuss", "not tagged “discuss”");
     _searchQuickrefRow("", "order:discuss", "tagged “discuss”, sort by tag order (“rorder:” for reverse order)");
     _searchQuickrefRow("", "tag:disc*", "matches any tag that <em>starts with</em> “disc”");
@@ -326,21 +323,20 @@ function searchQuickref() {
 
 
 function _currentVoteTags() {
-    global $ConfSiteSuffix;
     require_once("Code/tags.inc");
     $vt = array_keys(voteTags());
     if (count($vt)) {
 	sort($vt);
 	$votetags = " (currently ";
 	foreach ($vt as $v)
-	    $votetags .= "“<a href=\"search$ConfSiteSuffix?q=rorder:$v\">$v</a>”, ";
+	    $votetags .= "“<a href=\"" . hoturl("search", "q=rorder:$v") . "\">$v</a>”, ";
 	return substr($votetags, 0, strlen($votetags) - 2) . ")";
     } else
 	return "";
 }
 
 function tags() {
-    global $Conf, $ConfSiteSuffix, $Me;
+    global $Conf, $Me;
 
     // get current tag settings
     $chairtags = "";
@@ -357,14 +353,14 @@ function tags() {
 	    sort($ct);
 	    $chairtags = " (currently ";
 	    foreach ($ct as $c)
-		$chairtags .= "“<a href=\"search$ConfSiteSuffix?q=tag:$c\">$c</a>”, ";
+		$chairtags .= "“<a href=\"" . hoturl("search", "q=tag:$c") . "\">$c</a>”, ";
 	    $chairtags = substr($chairtags, 0, strlen($chairtags) - 2) . ")";
 	}
 
 	$votetags = _currentVoteTags();
 
 	if ($Me->privChair)
-	    $setting = "  (<a href='settings$ConfSiteSuffix?group=rev'>Change this setting</a>)";
+	    $setting = "  (<a href='" . hoturl("settings", "group=rev") . "'>Change this setting</a>)";
 
 	if ($Conf->setting("tag_seeall") > 0) {
 	    $conflictmsg3 = "Currently PC members can see tags for any paper, including conflicts.";
@@ -394,19 +390,19 @@ Here are some example ways to use tags.
 <ul>
 <li><strong>Avoid discussing low-ranked submissions at the PC meeting.</strong>
  Mark low-ranked submissions with tag “nodiscuss”, then ask the PC to
- <a href='search$ConfSiteSuffix?q=tag:nodiscuss'>search for “tag:nodiscuss”</a>.
+ <a href='" . hoturl("search", "q=tag:nodiscuss") . "'>search for “tag:nodiscuss”</a>.
  PC members can easily check the list for controversial papers they'd like to discuss despite their ranking.
  They can email the chairs about such papers, or, even easier, add a “discussanyway” tag.
  (You might make the “nodiscuss” tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but it's usually better to trust the PC.)</li>
 
 <li><strong>Mark controversial papers that would benefit from additional review.</strong>
  PC members could add the “controversy” tag when the current reviewers disagree.
- A <a href='search$ConfSiteSuffix?q=tag:controversy'>search</a> shows where the PC thinks more review is needed.</li>
+ A <a href='" . hoturl("search", "q=tag:controversy") . "'>search</a> shows where the PC thinks more review is needed.</li>
 
 <li><strong>Mark PC-authored papers for extra scrutiny.</strong>
- First, <a href='search$ConfSiteSuffix?t=s&amp;qt=au'>search for PC members' last names in author fields</a>.
+ First, <a href='" . hoturl("search", "t=s&amp;qt=au") . "'>search for PC members' last names in author fields</a>.
  Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag “pcpaper”.
- A <a href='search$ConfSiteSuffix?t=s&amp;qx=tag:pcpaper'>search</a> shows papers without PC authors.
+ A <a href='" . hoturl("search", "t=s&amp;qx=tag:pcpaper") . "'>search</a> shows papers without PC authors.
  (Since PC members can see whether a paper is tagged “pcpaper”, you may want to delay defining the tag until just before the meeting.)</li>
 
 <li><strong>Vote for papers.</strong>
@@ -414,17 +410,17 @@ Here are some example ways to use tags.
  Each PC member is assigned an allotment of votes to distribute among papers.
  For instance, if “v” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “~v#5”.
  The system automatically sums PC members' votes into the public “v” tag.
- To search for papers by vote count, search for “<a href='search$ConfSiteSuffix?t=s&amp;q=rorder:v'>rorder:v</a>”. (<a href='help$ConfSiteSuffix?t=votetags'>Learn more</a>)</li>
+ To search for papers by vote count, search for “<a href='" . hoturl("search", "t=s&amp;q=rorder:v") . "'>rorder:v</a>”. (<a href='" . hoturl("help", "t=votetags") . "'>Learn more</a>)</li>
 
 <li><strong>Rank papers.</strong>
  Each PC member can set tags indicating their preference ranking for papers.
  For instance, a PC member's favorite paper would get tag “~rank#1”, the next favorite “~rank#2”, and so forth.
  The chair can then combine these rankings into a global preference order using a Condorcet method.
- (<a href='help$ConfSiteSuffix?t=ranking'>Learn more</a>)</li>
+ (<a href='" . hoturl("help", "t=ranking") . "'>Learn more</a>)</li>
 
 <li><strong>Define a discussion order for the PC meeting.</strong>
  Publishing the order lets PC members prepare to discuss upcoming papers.
- Define an ordered tag such as “discuss” (see below for how), then ask the PC to <a href='search$ConfSiteSuffix?q=order:discuss'>search for “order:discuss”</a>.
+ Define an ordered tag such as “discuss” (see below for how), then ask the PC to <a href='" . hoturl("search", "q=order:discuss") . "'>search for “order:discuss”</a>.
  The PC can now see the order and use quick links to go from paper to paper.$conflictmsg2</li>
 
 <li><strong>Mark tentative decisions during the PC meeting</strong> either
@@ -436,7 +432,7 @@ Here are some example ways to use tags.
     _alternateRow("Finding tags", "
 A paper's tags are shown like this:
 
-<p><img src='images/extagsnone.png' alt='[Tag list on review screen]' /></p>
+<p><img src='" . hoturlx("images/extagsnone.png") . "' alt='[Tag list on review screen]' /></p>
 
 To find all papers with tag “discuss”:&nbsp; " . _searchForm("tag:discuss") . "
 
@@ -445,17 +441,17 @@ $conflictmsg3$setting
 Additionally, twiddle tags, which have names like “~tag”, are
 visible only to their creators; each PC member has an independent set.</p>");
     _alternateRow("<a name='changing'>Changing tags</a>", "
-To change a paper's tags, click the Tags box's <img src='images/edit.png'
+To change a paper's tags, click the Tags box's <img src='" . hoturlx("images/edit.png") . "'
 alt='[Edit]' />&nbsp;Edit link, then enter one or more alphanumeric tags
 separated by spaces.
 
-<p><img src='images/extagsset.png' alt='[Tags entry on review screen]' /></p>
+<p><img src='" . hoturlx("images/extagsset.png") . "' alt='[Tags entry on review screen]' /></p>
 
 <p>To tag multiple papers at once, find the papers in a
-<a href='search$ConfSiteSuffix'>search</a>, select
+<a href='" . hoturl("search") . "'>search</a>, select
 their checkboxes, and add tags using the action area.</p>
 
-<p><img src='images/extagssearch.png' alt='[Setting tags on the search page]' /></p>
+<p><img src='" . hoturlx("images/extagssearch.png") . "' alt='[Setting tags on the search page]' /></p>
 
 <p><b>Add</b> adds tags to the selected papers, <b>Remove</b> removes existing
 tags from the selected papers, and <b>Define</b> adds the tag to all selected
@@ -467,20 +463,20 @@ most tags, only PC chairs can change certain tags$chairtags.  $setting</p>");
     _alternateRow("Tag values<br />and discussion orders", "
 Tags have optional per-paper numeric values, which are displayed as
 “tag#100”.  Searching for a tag with “<a
-href='search$ConfSiteSuffix?q=order:tagname'>order:tagname</a>” will
+href='" . hoturl("search", "q=order:tagname") . "'>order:tagname</a>” will
 return the papers sorted by the tag value.  This is useful, for example, for
 PC meeting discussion orders.  Change the order by editing the tag values.
 Search for specific values with search terms like “<a
-href='search$ConfSiteSuffix?q=tag:discuss%232'>tag:discuss#2</a>”
+href='" . hoturl("search", "q=tag:discuss%232") . "'>tag:discuss#2</a>”
 or “<a
-href='search$ConfSiteSuffix?q=tag:discuss%3E1'>tag:discuss>1</a>”.
+href='" . hoturl("search", "q=tag:discuss%3E1") . "'>tag:discuss>1</a>”.
 
 <p>It's common to assign increasing tag values to a set of papers.  Do this
-using the <a href='search$ConfSiteSuffix'>search screen</a>.  Search for the
+using the <a href='" . hoturl("search") . "'>search screen</a>.  Search for the
 papers you want, sort them into the right order, select their checkboxes, and
 choose <b>Define order</b> in the tag action area.  If no sort gives what
 you want, search for the desired paper numbers in order&mdash;for instance,
-you might search for “<a href='search$ConfSiteSuffix?q=4+1+12+9'>4 1 12
+you might search for “<a href='" . hoturl("search", "q=4+1+12+9") . "'>4 1 12
 19</a>”&mdash;then <b>Select all</b> and <b>Define order</b>.  To add
 new papers at the end of an existing discussion order, use <b>Add to order</b>.
 To insert papers into an existing order, use <b>Add to order</b> with a tag
@@ -503,9 +499,9 @@ The tag names “red”, “orange”, “yellow”,
 “red” will appear red in paper lists (for people who can see that
 tag).  Tag a paper “~red” to make it red on your displays, but not
 others'.  System administrators can <a
-href='settings$ConfSiteSuffix?group=rev'>associate other tags with colors</a>
+href='" . hoturl("settings", "group=rev") . "'>associate other tags with colors</a>
 so that, for example, “<a
-href='search$ConfSiteSuffix?q=tag:reject'>tag:reject</a>” papers show up
+href='" . hoturl("search", "q=tag:reject") . "'>tag:reject</a>” papers show up
 as grey.");
     echo "</table>\n";
 }
@@ -513,7 +509,7 @@ as grey.");
 
 
 function revround() {
-    global $Conf, $ConfSiteSuffix, $Me;
+    global $Conf, $Me;
 
     echo "<table>";
     _alternateRow("Review round basics", "
@@ -521,7 +517,7 @@ Many conferences divide reviews into multiple <em>rounds</em>.
 HotCRP lets chairs label assignments in each round with names, such as
 “R1” or “lastround”.
 (We suggest very short names like “R1”.)
-To list another PC member’s round “R1” review assignments, <a href='search$ConfSiteSuffix?q=re:membername+round:R1'>search for “re:membername round:R1”</a>.");
+To list another PC member’s round “R1” review assignments, <a href='" . hoturl("search", "q=re:membername+round:R1") . "'>search for “re:membername round:R1”</a>.");
 
     // get current tag settings
     if (!$Me->isPC)
@@ -533,7 +529,7 @@ To list another PC member’s round “R1” review assignments, <a href='search
 
     _alternateRow("Assigning rounds", "
 New assignments are marked by default with the current round defined in
-<a href='settings$ConfSiteSuffix?group=rev'>review settings</a>.
+<a href='" . hoturl("settings", "group=rev") . "'>review settings</a>.
 The automatic and bulk assignment pages also let you set a review round.");
 
     echo "</table>\n";
@@ -541,7 +537,7 @@ The automatic and bulk assignment pages also let you set a review round.");
 
 
 function revrate() {
-    global $Conf, $ConfSiteSuffix, $ratingTypes, $Me;
+    global $Conf, $ratingTypes, $Me;
     $rf = reviewForm();
 
     echo "<table>";
@@ -587,11 +583,11 @@ their reviews.  The interface appears above each visible review:
   never shows rating counts to authors.</p>
 
 <p>To find which of your reviews might need work, simply
-<a href='search$ConfSiteSuffix?q=rate:-'>search for “rate:&minus;”</a>.
+<a href='" . hoturl("search", "q=rate:-") . "'>search for “rate:&minus;”</a>.
 To find all reviews with positive ratings,
-<a href='search$ConfSiteSuffix?q=re:any+rate:%2B'>search for “re:any&nbsp;rate:+”</a>.
+<a href='" . hoturl("search", "q=re:any+rate:%2B") . "'>search for “re:any&nbsp;rate:+”</a>.
 You may also search for reviews with specific ratings; for instance,
-<a href='search$ConfSiteSuffix?q=rate:helpful'>search for “rate:helpful”</a>.</p>");
+<a href='" . hoturl("search", "q=rate:helpful") . "'>search for “rate:helpful”</a>.</p>");
     if ($Conf->setting("rev_ratings") == REV_RATINGS_PC)
 	$what = "only PC members";
     else if ($Conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
@@ -600,7 +596,7 @@ You may also search for reviews with specific ratings; for instance,
 	$what = "no one";
     _alternateRow("Settings", "
 Chairs set how ratings work on the <a
-href='settings$ConfSiteSuffix?group=rev'>review settings
+href='" . hoturl("settings", "group=rev") . "'>review settings
 page</a>." . ($Me->amReviewer() ? "  Currently, $what can rate reviews." : ""));
     _alternateRow("Visibility", "
 A review's ratings are visible to any unconflicted PC members who can see
@@ -614,7 +610,7 @@ author.");
 
 
 function scoresort() {
-    global $Conf, $ConfSiteSuffix, $Me;
+    global $Conf, $Me;
 
     echo "<table>";
     _alternateRow("Sorting scores", "
@@ -652,7 +648,7 @@ darker colored square.</dd>
 
 
 function showvotetags() {
-    global $Conf, $ConfSiteSuffix, $Me;
+    global $Conf, $Me;
 
     echo "<table>";
     _alternateRow("Voting tags basics", "
@@ -662,8 +658,8 @@ arbitrarily among unconflicted papers.
 The PC's aggregated vote totals might help determine
 which papers to discuss.
 
-<p>HotCRP supports voting through the <a href='help$ConfSiteSuffix?t=tags'>tags system</a>.
-The chair can <a href='settings$ConfSiteSuffix?group=rev'>define a set of voting tags</a> and allotments" . _currentVoteTags() . ".
+<p>HotCRP supports voting through the <a href='" . hoturl("help", "t=tags") . "'>tags system</a>.
+The chair can <a href='" . hoturl("settings", "group=rev") . "'>define a set of voting tags</a> and allotments" . _currentVoteTags() . ".
 PC members vote by assigning the corresponding twiddle tags;
 the aggregated PC vote is visible in the public tag.</p>
 
@@ -674,14 +670,14 @@ The system ensures no PC member exceeds the allotment.
 The publicly visible “vote” tag is automatically set to the total number of PC votes for each paper.
 Hover to learn how the PC voted:</p>
 
-<p><img src='images/extagvotehover.png' alt='[Hovering over a voting tag]' /></p>");
+<p><img src='" . hoturlx("images/extagvotehover.png") . "' alt='[Hovering over a voting tag]' /></p>");
 
     echo "</table>\n";
 }
 
 
 function showranking() {
-    global $Conf, $ConfSiteSuffix, $Me;
+    global $Conf, $Me;
 
     echo "<table>";
     _alternateRow("Ranking basics", "
@@ -691,20 +687,20 @@ algorithm, <a href='http://en.wikipedia.org/wiki/Schulze_method'>the Schulze
 method</a> by default, combines these rankings into a global preference order.
 
 <p>HotCRP supports ranking through the <a
-href='help$ConfSiteSuffix?t=tags'>tags system</a>.  The chair can <a
-href='settings$ConfSiteSuffix?group=rev'>define a tag to be used for
+href='" . hoturl("help", "t=tags") . "'>tags system</a>.  The chair can <a
+href='" . hoturl("settings", "group=rev") . "'>define a tag to be used for
 ranking</a>.  PC members vote by assigning the corresponding twiddle tags.
 For instance, a paper tagged “~rank#1” is the user's first
 preference, a paper tagged “~rank#2” is the second preference,
 and so forth.  To combine PC rankings into a global preference order, the PC
-chair goes to the <a href='search$ConfSiteSuffix?q='>search page</a>, selects
+chair goes to the <a href='" . hoturl("search", "q=") . "'>search page</a>, selects
 all papers, and chooses Tags &gt; Calculate&nbsp;rank, entering
 “rank” for the tag.  At that point, the global rank can be viewed
-by a <a href='search$ConfSiteSuffix?q=order:rank'>search for
+by a <a href='" . hoturl("search", "q=order:rank") . "'>search for
 “order:rank”</a>.</p>
 
 <p>PC members may enter rankings by manipulating tags directly, but it will
-generally be easier to use the <a href='offline$ConfSiteSuffix'>offline
+generally be easier to use the <a href='" . hoturl("offline") . "'>offline
 ranking form</a>.  Download a ranking file, rearrange the lines to create a
 rank, and upload the form again.  For example, here is an initial ranking
 file:</p>
@@ -769,7 +765,7 @@ X	11	Analyzing Scatter/Gather I/O Using Encrypted Epistemologies
 
 
 function showformulas() {
-    global $Conf, $ConfSiteSuffix, $Me;
+    global $Conf, $Me;
 
     echo "<table>";
     _alternateRow("Formulas basics", "
@@ -780,7 +776,7 @@ merit among reviewers with high Reviewer expertise.
 Formula values become display options that show up on paper search screens.
 
 <p>Add new formulas using <a
-href=\"search$ConfSiteSuffix?q=&amp;tab=formulas\">Search &gt; Display options
+href=\"" . hoturl("search", "q=&amp;tab=formulas") . "\">Search &gt; Display options
 &gt; More</a>.  Each formula has a name and a definition.  The definition uses
 a familiar expression language.  Formulas do not work well for alphabetical
 scores.</p>
@@ -840,25 +836,24 @@ Use an aggregate function to calculate a property over all review scores.</p>");
 
 
 function chair() {
-    global $ConfSiteSuffix;
     echo "<table>";
     _alternateRow("Submission time", "
 Follow these steps to prepare to accept paper submissions.
 
 <ol>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=acc'>Set up PC
+<li><p><strong><a href='" . hoturl("settings", "group=acc") . "'>Set up PC
   member accounts</a></strong> and decide whether to collect authors'
   snail-mail addresses and phone numbers.</li>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=sub'>Set submission
+<li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Set submission
   policies</a></strong>, including whether submission is blind, whether
   authors check off conflicted PC members (“Collect authors' PC conflicts
   with checkboxes”), and whether authors must enter additional non-PC collaborators,
   which can help detect conflicts with external reviewers (“Collect authors'
   other collaborators as text”).</p></li>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=sub'>Set submission
+<li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Set submission
   deadlines.</a></strong> Authors first <em>register</em>, then <em>submit</em>
   their papers, possibly multiple times; they choose for each submitted
   version whether that version is ready for review.  Normally, HotCRP allows
@@ -874,15 +869,15 @@ Follow these steps to prepare to accept paper submissions.
   protection against last-minute server overload and gives authors
   some slack.</p></li>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=opt'>Define
+<li><p><strong><a href='" . hoturl("settings", "group=opt") . "'>Define
   submission options (optional).</a></strong>  You can add
   additional checkboxes to the submission form, such as \"Consider this
   paper for the Best Student Paper award\" or \"Provide this paper to the
   European shadow PC.\"  You can
-  <a href='search$ConfSiteSuffix'>search</a> for papers with or without
+  <a href='" . hoturl("search") . "'>search</a> for papers with or without
   each option.</p></li>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=opt'>Define paper
+<li><p><strong><a href='" . hoturl("settings", "group=opt") . "'>Define paper
   topics (optional).</a></strong> Authors can select topics, such as
   \"Applications\" or \"Network databases,\" that characterize their
   paper's subject areas.  PC members express topics for which they have high,
@@ -891,7 +886,7 @@ Follow these steps to prepare to accept paper submissions.
   busy PC members might not specify their preferences; topic matching lets you
   do a reasonable job at assigning papers anyway.</p></li>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=sub'>Set
+<li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Set
   up the automated format checker (optional).</a></strong> This adds a
   “Check format” button to the Edit Paper screen.
   Clicking the button checks the paper for formatting errors, such as going
@@ -899,10 +894,10 @@ Follow these steps to prepare to accept paper submissions.
   since the checker itself can make mistakes, but the automated checker leaves
   cheating authors no excuse.</p></li>
 
-<li><p>Take a look at a <a href='paper$ConfSiteSuffix?p=new'>paper
+<li><p>Take a look at a <a href='" . hoturl("paper", "p=new") . "'>paper
   submission page</a> to make sure it looks right.</p></li>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=sub'>Open the site
+<li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Open the site
   for submissions.</a></strong> Submissions will be accepted only until the
   listed deadline.</p></li>
 
@@ -913,64 +908,64 @@ After the submission deadline has passed:
 <ol>
 
 <li><p>Consider looking through <a
-  href='search$ConfSiteSuffix?q=&amp;t=all'>all papers</a> for
+  href='" . hoturl("search", "q=&amp;t=all") . "'>all papers</a> for
   anomalies.  Withdraw and/or delete duplicates or update details on the <a
-  href='paper$ConfSiteSuffix'>paper pages</a> (via “Edit paper”).
+  href='" . hoturl("paper") . "'>paper pages</a> (via “Edit paper”).
   Also consider contacting the authors of <a
-  href='search$ConfSiteSuffix?q=status:unsub&amp;t=all'>papers that
+  href='" . hoturl("search", "q=status:unsub&amp;t=all") . "'>papers that
   were never officially submitted</a>, especially if a PDF document was
   uploaded (you can tell from the icon in the search list).  Sometimes a
   user will uncheck “The paper is ready for review” by mistake.</p></li>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=rfo'>Prepare the
+<li><p><strong><a href='" . hoturl("settings", "group=rfo") . "'>Prepare the
   review form.</a></strong> Take a look at the templates to get
   ideas.</p></li>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=rev'>Set review
+<li><p><strong><a href='" . hoturl("settings", "group=rev") . "'>Set review
   policies and deadlines</a></strong>, including reviewing deadlines, whether
   review is blind, and whether PC members may review any paper
   (usually “yes” is the right answer).</p></li>
 
-<li><p><strong><a href='reviewprefs$ConfSiteSuffix'>Collect review
+<li><p><strong><a href='" . hoturl("reviewprefs") . "'>Collect review
   preferences from the PC.</a></strong> PC members can rank-order papers they
   want or don't want to review.  They can either set their preferences <a
-  href='reviewprefs$ConfSiteSuffix'>all at once</a>, or (often more
+  href='" . hoturl("reviewprefs") . "'>all at once</a>, or (often more
   convenient) page through the <a
-  href='search$ConfSiteSuffix?q=&amp;t=s'>list of submitted papers</a>
+  href='" . hoturl("search", "q=&amp;t=s") . "'>list of submitted papers</a>
   setting their preferences on the <a
-  href='paper$ConfSiteSuffix'>paper pages</a>.</p>
+  href='" . hoturl("paper") . "'>paper pages</a>.</p>
 
   <p>If you'd like, you can collect review preferences before the submission
-  deadline.  Select <a href='settings$ConfSiteSuffix?group=sub'>“PC can
+  deadline.  Select <a href='" . hoturl("settings", "group=sub") . "'>“PC can
   see <em>all registered papers</em> until submission deadline”</a>, which
   allows PC members to see abstracts for registered papers that haven't yet
   been submitted.</p></li>
 
-<li><p><strong><a href='manualassign$ConfSiteSuffix?kind=c'>Assign
+<li><p><strong><a href='" . hoturl("manualassign", "kind=c") . "'>Assign
   conflicts.</a></strong> You can assign conflicts <a
-  href='manualassign$ConfSiteSuffix?kind=c'>by PC member</a> or, if
+  href='" . hoturl("manualassign", "kind=c") . "'>by PC member</a> or, if
   PC members have entered preferences, <a
-  href='autoassign$ConfSiteSuffix'>automatically</a> by searching for
+  href='" . hoturl("autoassign") . "'>automatically</a> by searching for
   preferences of &minus;100 or less.</p></li>
 
-<li><p><strong><a href='manualassign$ConfSiteSuffix'>Assign
+<li><p><strong><a href='" . hoturl("manualassign") . "'>Assign
   reviews.</a></strong> You can make assignments <a
-  href='assign$ConfSiteSuffix'>by paper</a>, <a
-  href='manualassign$ConfSiteSuffix'>by PC member</a>, <a
-  href='bulkassign$ConfSiteSuffix'>by uploading an assignments
+  href='" . hoturl("assign") . "'>by paper</a>, <a
+  href='" . hoturl("manualassign") . "'>by PC member</a>, <a
+  href='" . hoturl("bulkassign") . "'>by uploading an assignments
   file</a>, or, even easier, <a
-  href='autoassign$ConfSiteSuffix'>automatically</a>.  PC
+  href='" . hoturl("autoassign") . "'>automatically</a>.  PC
   review assignments can be “primary” or “secondary”; the difference is
   that primary reviewers are expected to complete their review, but a
   secondary reviewer can choose to delegate their review to someone else.</p>
 
   <p>The default assignments pages apply to all submitted papers.  You can
   also assign subsets of papers obtained through <a
-  href='help$ConfSiteSuffix?t=search'>search</a>, such as <a
-  href='search$ConfSiteSuffix?q=cre:%3C3&amp;t=s'>papers
+  href='" . hoturl("help", "t=search") . "'>search</a>, such as <a
+  href='" . hoturl("search", "q=cre:%3C3&amp;t=s") . "'>papers
   with fewer than three completed reviews</a>.</p></li>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=rev'>Open the site
+<li><p><strong><a href='" . hoturl("settings", "group=rev") . "'>Open the site
   for reviewing.</a></strong></p></li>
 
 </ol>
@@ -985,7 +980,7 @@ mechanism.  For each chair conflict:
 <ol>
 
 <li>A chair or system administrator goes to the paper's <a
-  href='assign$ConfSiteSuffix'>assignment page</a> and clicks
+  href='" . hoturl("assign") . "'>assignment page</a> and clicks
   on “Request review” without entering a name or email address.
   This creates a new, completely anonymous review slot and reports a
   corresponding <em>review token</em>, a short string of letters and numbers
@@ -1016,7 +1011,7 @@ mechanism.  For each chair conflict:
 ");
     _alternateRow("Before the meeting", "
 Before the meeting, you will generally <a
-href='settings$ConfSiteSuffix?group=rev'>set “PC can see all
+href='" . hoturl("settings", "group=rev") . "'>set “PC can see all
 reviews”</a>, allowing the program committee to view reviews and scores for
 non-conflicted papers.  (In many conferences, PC members are initially
 prevented from seeing a paper's reviews until they have completed their own
@@ -1024,53 +1019,53 @@ review for that paper; this supposedly reduces bias.)
 
 <ol>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=dec'>Collect
+<li><p><strong><a href='" . hoturl("settings", "group=dec") . "'>Collect
   authors' responses to the reviews (optional).</a></strong> Some conferences
   allow authors to respond to the reviews before decisions are made, giving
   them a chance to correct misconceptions and such.  Responses are entered
   into the system as <a
-  href='comment$ConfSiteSuffix'>comments</a>.  On the <a
-  href='settings$ConfSiteSuffix?group=dec'>decision settings page</a>,
+  href='" . hoturl("comment") . "'>comments</a>.  On the <a
+  href='" . hoturl("settings", "group=dec") . "'>decision settings page</a>,
   update “Can authors see reviews” and “Collect responses to the
-  reviews,” then <a href='mail$ConfSiteSuffix'>send mail to
+  reviews,” then <a href='" . hoturl("mail") . "'>send mail to
   authors</a> informing them of the response deadlines.  PC members will still
   be able to update their reviews, assuming it's before the <a
-  href='settings$ConfSiteSuffix?group=rev'>review deadline</a>; authors
+  href='" . hoturl("settings", "group=rev") . "'>review deadline</a>; authors
   are informed via email of any review changes.  At the end of the response
   period it's generally good to <a
-  href='settings$ConfSiteSuffix?group=dec'>turn off “Authors can see
+  href='" . hoturl("settings", "group=dec") . "'>turn off “Authors can see
   reviews”</a> so PC members can update their reviews in peace.</p></li>
 
-<li><p>Set <strong><a href='settings$ConfSiteSuffix?group=rev'>PC can
+<li><p>Set <strong><a href='" . hoturl("settings", "group=rev") . "'>PC can
   see all reviews</a></strong> if you haven't already.</p></li>
 
-<li><p><strong><a href='search$ConfSiteSuffix?q=&amp;t=s&amp;sort=50'>Examine
+<li><p><strong><a href='" . hoturl("search", "q=&amp;t=s&amp;sort=50") . "'>Examine
   paper scores</a></strong>, either one at a time or en masse, and decide
   which papers will be discussed.  The <a
-  href='help$ConfSiteSuffix?t=tags'>tags</a> system lets you prepare
-  discussion sets.  Use <a href='help$ConfSiteSuffix?t=keywords'>search
+  href='" . hoturl("help", "t=tags") . "'>tags</a> system lets you prepare
+  discussion sets.  Use <a href='" . hoturl("help", "t=keywords") . "'>search
   keywords</a> to, for example, find all papers with at least two overall
   merit ratings of 2 or better.</p></li>
 
 <li><p><strong>Assign discussion order using <a
-  href='help$ConfSiteSuffix?t=tags'>tags</a></strong> (optional).  Common
+  href='" . hoturl("help", "t=tags") . "'>tags</a></strong> (optional).  Common
   discussion orders include sorted by overall ranking (high-to-low,
   low-to-high, or alternating) and sorted by topic.  Explicit tag-based orders
   make it easier for the PC to follow along.</p></li>
 
-<li><p><strong><a href='autoassign$ConfSiteSuffix'>Assign discussion leads
+<li><p><strong><a href='" . hoturl("autoassign") . "'>Assign discussion leads
   (optional).</a></strong> Discussion leads are expected to be able to
   summarize the paper and the reviews.  You can assign leads either <a
-  href='assign$ConfSiteSuffix'>paper by paper</a> or <a
-  href='autoassign$ConfSiteSuffix'>automatically</a>.</p></li>
+  href='" . hoturl("assign") . "'>paper by paper</a> or <a
+  href='" . hoturl("autoassign") . "'>automatically</a>.</p></li>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=dec'>Define decision
+<li><p><strong><a href='" . hoturl("settings", "group=dec") . "'>Define decision
   types (optional).</a></strong> By default, HotCRP has two decision types,
   “accept” and “reject,” but you can add other types of acceptance and
   rejection, such as “accept as short paper.”</p></li>
 
 <li><p>The night before the meeting, <strong><a
-  href='search$ConfSiteSuffix?q=&amp;t=s'>download all
+  href='" . hoturl("search", "q=&amp;t=s") . "'>download all
   reviews onto a laptop</a></strong> (Download &gt; All reviews) in case the
   Internet explodes and you can't reach HotCRP from the meeting
   place.</p></li>
@@ -1082,20 +1077,20 @@ review for that paper; this supposedly reduces bias.)
 
 <li><p>It's often useful to have a PC member or scribe capture the discussion
   about a paper and enter it as a <a
-  href='comment$ConfSiteSuffix'>comment</a> for the authors'
+  href='" . hoturl("comment") . "'>comment</a> for the authors'
   reference.</p></li>
 
 <li><p><strong>Paper decisions</strong> can be recorded on the <a
-  href='review$ConfSiteSuffix'>paper pages</a> or en masse via <a
-  href='search$ConfSiteSuffix?q=&amp;t=s'>search</a>.  Use <a
-  href='settings$ConfSiteSuffix?group=dec'>decision settings</a> to expose
+  href='" . hoturl("review") . "'>paper pages</a> or en masse via <a
+  href='" . hoturl("search", "q=&amp;t=s") . "'>search</a>.  Use <a
+  href='" . hoturl("settings", "group=dec") . "'>decision settings</a> to expose
   decisions to PC members if desired.</p></li>
 
 <li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either <a
-  href='assign$ConfSiteSuffix'>paper by paper</a> on the
+  href='" . hoturl("assign") . "'>paper by paper</a> on the
   assignments screen or <a
-  href='autoassign$ConfSiteSuffix?t=acc'>automatically</a>.</p></li>
+  href='" . hoturl("autoassign", "t=acc") . "'>automatically</a>.</p></li>
 
 </ol>
 ");
@@ -1103,29 +1098,29 @@ review for that paper; this supposedly reduces bias.)
 <ol>
 
 <li><p><strong><a
-  href='search$ConfSiteSuffix?q=&amp;t=s'>Enter
+  href='" . hoturl("search", "q=&amp;t=s") . "'>Enter
   decisions</a> and <a
-  href='search$ConfSiteSuffix?q=dec:yes&amp;t=s'>shepherds</a></strong>
+  href='" . hoturl("search", "q=dec:yes&amp;t=s") . "'>shepherds</a></strong>
   if you didn't do this at the meeting.</p></li>
 
 <li><p>Give reviewers some time to <strong>update their reviews</strong> in
   response to PC discussion (optional).</p></li>
 
-<li><p>Set <a href='settings$ConfSiteSuffix?group=dec'>“Who can
+<li><p>Set <a href='" . hoturl("settings", "group=dec") . "'>“Who can
   <strong>see decisions?</strong>”</a> to “Authors, PC members,
   and reviewers.”</p></li>
 
-<li><p><strong><a href='mail$ConfSiteSuffix'>Send mail to
+<li><p><strong><a href='" . hoturl("mail") . "'>Send mail to
   authors</a></strong> informing them that reviews and decisions are
   available.  The mail can also contain the reviews and comments
   themselves.</p></li>
 
-<li><p><strong><a href='settings$ConfSiteSuffix?group=dec'>Collect final
+<li><p><strong><a href='" . hoturl("settings", "group=dec") . "'>Collect final
   papers (optional).</a></strong> If you're putting together the program
   yourself, it can be convenient to collect final copies using HotCRP.
   Authors upload final copies the same way they did the submission, although
   the submitted version is archived for reference.  You can then <a
-  href='search$ConfSiteSuffix?q=dec:yes&amp;t=s'>download
+  href='" . hoturl("search", "q=dec:yes&amp;t=s") . "'>download
   all final copies as a <tt>.zip</tt> archive</a>.</p></li>
 
 </ol>

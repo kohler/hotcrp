@@ -104,7 +104,7 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
 	    $_SESSION["info"] = array();
 	$_SESSION["info"]["nbanal"] = defval($_SESSION["info"], "nbanal", 0) + 1;
 	if ($_SESSION["info"]["nbanal"] >= 3 && $_SESSION["info"]["nbanal"] <= 6)
-	    $cf->msg("info", "To run the format checker for many papers, use Download &gt; Format check on the <a href='search$ConfSiteSuffix?q='>search page</a>.");
+	    $cf->msg("info", "To run the format checker for many papers, use Download &gt; Format check on the <a href='" . hoturl("search", "q=") . "'>search page</a>.");
     }
 
     $cf->reportMessages();
@@ -253,7 +253,7 @@ function final_submit_watch_callback($prow, $minic) {
 }
 
 function updatePaper($Me, $isSubmit, $isSubmitFinal) {
-    global $ConfSiteSuffix, $paperId, $newPaper, $Error, $Conf, $Opt, $prow;
+    global $paperId, $newPaper, $Error, $Conf, $Opt, $prow;
     $contactId = $Me->contactId;
     if ($isSubmitFinal)
 	$isSubmit = false;

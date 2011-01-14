@@ -1567,19 +1567,19 @@ class Conference {
 	    echo " id='$id'";
 	// JavaScript's idea of a timezone offset is the negative of PHP's
 	$this->footerScript("hotcrpLoad.time($now," . (-date("Z", $now) / 60) . "," . (defval($Opt, "time24hour") ? 1 : 0) . ")");
-	$this->footerScript("loadDeadlines.init(" . json_encode($dl) . ",\"" . urlencode("${ConfSiteBase}deadlines$ConfSiteSuffix") . "\")");
+	$this->footerScript("loadDeadlines.init(" . json_encode($dl) . ",\"" . hoturl("deadlines") . "\")");
 	echo " onload='hotcrpLoad()'>\n<div id='header'>\n",
 	    "  <div id='header_left_conf'><h1>";
 	if ($title && $showTitle && $title == "Home")
-	    echo "<a class='q' href='${ConfSiteBase}index$ConfSiteSuffix' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a>";
+	    echo "<a class='q' href='", hoturl("index"), "' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a>";
 	else
-	    echo "<a class='x' href='${ConfSiteBase}index$ConfSiteSuffix' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a></h1></div><div id='header_left_page'><h1>", $title;
+	    echo "<a class='x' href='", hoturl("index"), "' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a></h1></div><div id='header_left_page'><h1>", $title;
 	echo "</h1></div><div id='header_right'>";
 	if ($Me->valid()) {
 	    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-	    echo "<a class='q' href='${ConfSiteBase}account$ConfSiteSuffix'><strong>",
+	    echo "<a class='q' href='", hoturl("account"), "'><strong>",
 		htmlspecialchars($Me->email),
-		"</strong></a> &nbsp; <a href='${ConfSiteBase}account$ConfSiteSuffix'>Profile</a>",
+		"</strong></a> &nbsp; <a href='", hoturl("account"), "'>Profile</a>",
 		$xsep;
 	    if ($Me->chairContact) {
 		if (!$Me->privChair)
@@ -1587,13 +1587,9 @@ class Conference {
 		else if (!is_int($Me->chairContact))
 		    echo "<a href=\"", selfHref(array("viewContact" => $Me->chairContact)), "\">", htmlspecialchars($Me->chairContact), "&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Unprivileged view]' /></a>", $xsep;
 	    }
-	    echo "<a href='${ConfSiteBase}help$ConfSiteSuffix";
-	    if ($id == "search")
-		echo "?t=", $id;
-	    else if ($id == "settings")
-		echo "?t=chair";
-	    echo "'>Help</a>", $xsep;
-	    echo "<a href='${ConfSiteBase}index$ConfSiteSuffix?signout=1'>Sign&nbsp;out</a>";
+	    $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
+	    echo "<a href='", hoturl("help", $x), "'>Help</a>", $xsep,
+		"<a href='", hoturl("index", "signout=1"), "'>Sign&nbsp;out</a>";
 	}
 	echo "<div id='maindeadline' style='display:none'>";
 
@@ -1609,7 +1605,7 @@ class Conference {
 		}
 	}
 	if ($dlname) {
-	    $s = "<a href=\"${ConfSiteBase}deadlines$ConfSiteSuffix\">$dlname</a> ";
+	    $s = "<a href=\"" . hoturl("deadlines") . "\">$dlname</a> ";
 	    if (!$dltime || $dltime <= $now)
 		$s .= "is NOW";
 	    else

@@ -54,9 +54,9 @@ if ($rev_roundtag) {
 
 
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
-$abar .= actionTab("Automatic", "autoassign$ConfSiteSuffix", false);
-$abar .= actionTab("Manual", "manualassign$ConfSiteSuffix", true);
-$abar .= actionTab("Offline", "bulkassign$ConfSiteSuffix", false);
+$abar .= actionTab("Automatic", hoturl("autoassign"), false);
+$abar .= actionTab("Manual", hoturl("manualassign"), true);
+$abar .= actionTab("Offline", hoturl("bulkassign"), false);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
@@ -120,10 +120,10 @@ else if (isset($_REQUEST["update"]))
 // Help list
 echo "<div class='helpside'><div class='helpinside'>
 Assignment methods:
-<ul><li><a href='autoassign$ConfSiteSuffix'>Automatic</a></li>
- <li><a href='manualassign$ConfSiteSuffix' class='q'><strong>Manual by PC member</strong></a></li>
- <li><a href='assign$ConfSiteSuffix'>Manual by paper</a></li>
- <li><a href='bulkassign$ConfSiteSuffix'>Offline (bulk upload)</a></li>
+<ul><li><a href='", hoturl("autoassign"), "'>Automatic</a></li>
+ <li><a href='", hoturl("manualassign"), "' class='q'><strong>Manual by PC member</strong></a></li>
+ <li><a href='", hoturl("assign"), "'>Manual by paper</a></li>
+ <li><a href='", hoturl("bulkassign"), "'>Offline (bulk upload)</a></li>
 </ul>
 <hr class='hr' />\n";
 if ($kind == "a")
@@ -133,7 +133,7 @@ if ($kind == "a")
 <hr class='hr' />\n";
 echo "<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>\n";
 if ($kind == "a")
-    echo "<dt>Preference</dt><dd><a href='reviewprefs$ConfSiteSuffix'>Review preference</a></dd>
+    echo "<dt>Preference</dt><dd><a href='", hoturl("reviewprefs"), "'>Review preference</a></dd>
   <dt>Topic score</dt><dd>+2 for each high interest paper topic, &minus;1 for each low interest paper topic</dd>
   <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd>\n";
 echo "</dl>\nClick a heading to sort.\n</div></div>";
@@ -147,7 +147,7 @@ else
 
 
 // Change PC member
-echo "<table><tr><td><div class='aahc assignpc_pcsel'><form method='get' action='manualassign$ConfSiteSuffix' accept-charset='UTF-8' id='selectreviewerform'><div class='inform'>\n";
+echo "<table><tr><td><div class='aahc assignpc_pcsel'><form method='get' action='", hoturl("manualassign"), "' accept-charset='UTF-8' id='selectreviewerform'><div class='inform'>\n";
 
 $query = "select ContactInfo.contactId, firstName, lastName,
 		count(reviewId) as reviewCount
@@ -196,7 +196,7 @@ if ($kind == "a")
 	"Review round: &nbsp;</td>",
 	"<td><input id='assrevroundtag' class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
 	(isset($Error["rev_roundtag"]) ? "</span>" : ""),
-	" &nbsp;<a class='hint' href='help$ConfSiteSuffix?t=revround'>What is this?</a>\n",
+	" &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a>\n",
 	"</td></tr>";
 
 echo "<tr><td colspan='2'><div class='aax' style='text-align:right'>",
@@ -247,7 +247,7 @@ if ($reviewer > 0) {
 	$col[2][] = "<div class='f-c'>Conflict search terms for paper collaborators</div><div class='f-e'>"
 	    . htmlspecialchars(substr($showco, 0, strlen($showco) - 1))
 	    . "</div>";
-	$col[2][] = "<a href=\"search$ConfSiteSuffix?q=" . urlencode(join(" OR ", $search)) . "&amp;linkto=assign\">Search for potential conflicts</a>";
+	$col[2][] = "<a href=\"" . hoturl("search", "q=" . urlencode(join(" OR ", $search)) . "&amp;linkto=assign") . "\">Search for potential conflicts</a>";
     }
 
     // Topic links
@@ -278,7 +278,7 @@ if ($reviewer > 0) {
     }
 
     // ajax assignment form
-    echo "<form id='assrevform' method='post' action=\"assign$ConfSiteSuffix?update=1\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='clear'>",
+    echo "<form id='assrevform' method='post' action=\"", hoturl("assign", "update=1"), "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='clear'>",
 	"<input type='hidden' name='kind' value='$kind' />",
 	"<input type='hidden' name='p' value='' />",
 	"<input type='hidden' name='pcs$reviewer' value='' />",
@@ -289,7 +289,7 @@ if ($reviewer > 0) {
     // main assignment form
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
 					 "q" => $_REQUEST["q"],
-					 "urlbase" => "manualassign$ConfSiteSuffix?reviewer=$reviewer"), $reviewer);
+					 "urlbase" => hoturl("manualassign", "reviewer=$reviewer")), $reviewer);
     $paperList = new PaperList($search, array("sort" => true, "list" => true));
     if (isset($showau)) {
 	$search->overrideMatchPreg = true;
@@ -299,10 +299,9 @@ if ($reviewer > 0) {
 	if ($showco)
 	    $search->matchPreg["collaborators"] = "\\b" . str_replace(" ", "\\b|\\b", preg_quote(substr($showau, 0, strlen($showco) - 1))) . "\\b";
     }
-    echo "<div class='aahc'><form class='assignpc' method='post' action=\"manualassign$ConfSiteSuffix?reviewer=$reviewer&amp;kind=$kind&amp;post=1";
-    if (isset($_REQUEST["sort"]))
-	echo "&amp;sort=", urlencode($_REQUEST["sort"]);
-    echo "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
+    $a = isset($_REQUEST["sort"]) ? "&amp;sort=" . urlencode($_REQUEST["sort"]) : "";
+    echo "<div class='aahc'><form class='assignpc' method='post' action=\"", hoturl("manualassign", "reviewer=$reviewer&amp;kind=$kind&amp;post=1$a"),
+	"\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
 	"<input type='hidden' name='t' value='", $_REQUEST["t"], "' />",
 	"<input type='hidden' name='q' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />",
 	"<input type='hidden' name='papx' value='", join(" ", $search->paperList()), "' />",

@@ -202,13 +202,13 @@ function saveComment($text, $locked) {
 }
 
 function saveResponse($text) {
-    global $Me, $Conf, $prow, $crow, $linkExtra, $ConfSiteSuffix;
+    global $Me, $Conf, $prow, $crow, $linkExtra;
 
     // make sure there is exactly one response
     if (!$crow) {
 	$result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and forAuthors>1");
 	if (($row = edb_row($result)))
-	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"comment$ConfSiteSuffix?c=$row[0]$linkExtra\">Edit that response</a>");
+	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"" . hoturl("comment", "c=$row[0]$linkExtra") . "\">Edit that response</a>");
     }
 
     $Conf->qe("lock tables Paper write, PaperComment write, ActionLog write");
@@ -264,7 +264,7 @@ if (!$viewAny && !$editAny) {
 	errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
 	$Conf->errorMsg("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
-	$Conf->go("paper$ConfSiteSuffix?p=$prow->paperId$linkExtra");
+	$Conf->go(hoturl("paper", "p=$prow->paperId$linkExtra"));
     }
 }
 
@@ -273,7 +273,7 @@ if (!$viewAny && !$editAny) {
 if ($paperTable->mode == "r" || $paperTable->mode == "re")
     $paperTable->fixReviewMode();
 if ($paperTable->mode == "pe")
-    $Conf->go("paper$ConfSiteSuffix?p=$prow->paperId$linkExtra");
+    $Conf->go(hoturl("paper", "p=$prow->paperId$linkExtra"));
 
 
 // page header
