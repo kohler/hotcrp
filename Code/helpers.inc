@@ -191,12 +191,6 @@ function simple_array_to_json($x) {
 
 // web helpers
 
-function alert($string = "") {
-    print "<script type='text/javascript'>\n";
-    print "alert(\"" . addslashes($string).  "\");";
-    print "</script>";
-}
-
 function go($url) {
     // The URL is often a relative one; make it absolute if possible.
     if (!preg_match('|\A[a-z]+://|', $url)

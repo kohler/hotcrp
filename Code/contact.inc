@@ -185,10 +185,6 @@ class Contact {
 	go($url);
     }
 
-    function alert($string = "") {
-	alert($string);
-    }
-
     function goAlert($url, $message = "") {
 	global $Conf, $ConfSiteSuffix;
 	$Conf->errorMsg($message);
