@@ -185,7 +185,8 @@ function highlightUpdate(which, off) {
     if (!which)
 	which = document;
 
-    if (which.tagName != "INPUT" && which.tagName != "BUTTON") {
+    i = which.tagName.toUpperCase();
+    if (i != "INPUT" && i != "BUTTON") {
 	ins = which.getElementsByTagName("input");
 	for (i = 0; i < ins.length; i++)
 	    if (ins[i].className.substr(0, 2) == "hb")
@@ -200,7 +201,7 @@ function highlightUpdate(which, off) {
 
 function hiliter(which, off) {
     var elt = which;
-    while (elt && (elt.tagName != "DIV" || elt.className.substr(0, 4) != "aahc"))
+    while (elt && (elt.tagName.toUpperCase() != "DIV" || elt.className.substr(0, 4) != "aahc"))
 	elt = elt.parentNode;
 
     if (!elt)
@@ -279,7 +280,7 @@ function crpSubmitKeyFilter(elt, event) {
     if (e.ctrlKey || e.altKey || e.shiftKey || code != 13)
 	return true;
     form = elt;
-    while (form && form.tagName != "FORM")
+    while (form && form.tagName.toUpperCase() != "FORM")
 	form = form.parentNode;
     if (form) {
 	elt.blur();
@@ -740,7 +741,7 @@ function popup(anchor, which, dofold, populate) {
 	for (i = 0; i < elts.length; ++i)
 	    if (elts[i].className.indexOf("popup_populate") >= 0)
 		populates[elts[i].name] = elts[i];
-	for (form = anchor; form && form.tagName != "FORM"; )
+	for (form = anchor; form && form.tagName.toUpperCase() != "FORM"; )
 	    form = form.parentNode;
 	elts = (form ? form.getElementsByTagName("input") : []);
 	for (i = 0; i < elts.length; ++i)
