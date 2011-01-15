@@ -289,6 +289,12 @@ function crpSubmitKeyFilter(elt, event) {
 	return true;
 }
 
+function make_link_callback(elt) {
+    return function () {
+	window.location = elt.href;
+    };
+}
+
 
 // accounts
 function contactPulldown(which) {
@@ -751,36 +757,38 @@ function popup(anchor, which, dofold, populate) {
 
 
 // Thank you David Flanagan
-var Miniajax = {};
-Miniajax._factories = [
-    function () { return new XMLHttpRequest(); },
-    function () { return new ActiveXObject("Msxml2.XMLHTTP"); },
-    function () { return new ActiveXObject("Microsoft.XMLHTTP"); }
-];
-Miniajax.newRequest = function () {
-    while (Miniajax._factories.length) {
+var Miniajax = (function () {
+var Miniajax = {}, outstanding = {},
+    _factories = [
+	function () { return new XMLHttpRequest(); },
+	function () { return new ActiveXObject("Msxml2.XMLHTTP"); },
+	function () { return new ActiveXObject("Microsoft.XMLHTTP"); }
+    ];
+function newRequest() {
+    while (_factories.length) {
 	try {
-	    var req = Miniajax._factories[0]();
+	    var req = _factories[0]();
 	    if (req != null)
 		return req;
 	} catch (err) {
 	}
-	Miniajax._factories.shift();
+	_factories.shift();
     }
     return null;
-};
+}
 Miniajax.onload = function (formname) {
-    var req = Miniajax.newRequest();
+    var req = newRequest();
     if (req)
 	fold($$(formname), 1, 7);
 };
 Miniajax.submit = function (formname, callback, timeout) {
-    var form, req = Miniajax.newRequest(), resultname;
+    var form, req = newRequest(), resultname, myoutstanding;
     if (typeof formname !== "string") {
 	resultname = formname[1];
 	formname = formname[0];
     } else
 	resultname = formname;
+    outstanding[formname] = myoutstanding = [];
 
     form = $$(formname);
     if (!form || !req || form.method != "post") {
@@ -807,6 +815,7 @@ Miniajax.submit = function (formname, callback, timeout) {
 			   }, timeout);
 
     req.onreadystatechange = function () {
+	var i;
 	if (req.readyState != 4)
 	    return;
 	clearTimeout(timer);
@@ -821,6 +830,9 @@ Miniajax.submit = function (formname, callback, timeout) {
 	    form.onsubmit = "";
 	    fold(form, 0, 7);
 	}
+	for (i = 0; i < myoutstanding.length; ++i)
+	    myoutstanding[i]();
+	delete outstanding[formname];
     };
 
     // collect form value
@@ -841,7 +853,7 @@ Miniajax.submit = function (formname, callback, timeout) {
     return false;
 };
 Miniajax.get = function (url, callback, timeout) {
-    var req = Miniajax.newRequest(), timer;
+    var req = newRequest(), timer;
     if (!timeout)
 	timeout = 4000;
     timer = setTimeout(function () {
@@ -861,6 +873,13 @@ Miniajax.get = function (url, callback, timeout) {
     req.send();
     return false;
 };
+Miniajax.isoutstanding = function (formname, callback) {
+    var myoutstanding = outstanding[formname];
+    myoutstanding && callback && myoutstanding.push(callback);
+    return !!myoutstanding;
+};
+return Miniajax;
+})();
 
 
 // ajax loading of paper information

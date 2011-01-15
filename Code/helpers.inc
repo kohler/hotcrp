@@ -690,7 +690,7 @@ function _oneListLink($id, $baseUrl, $urlrest, $listtype, $isprev) {
 	$paperText = ($row ? htmlspecialchars($row[0]) : "#$id");
     } else
 	$paperText = "#$id";
-    return "<a href=\"$baseUrl$id$urlrest\">"
+    return "<a href=\"$baseUrl$id$urlrest\" onclick=\"return !Miniajax.isoutstanding('revprefform', make_link_callback(this))\">"
 	. ($isprev ? $Conf->cacheableImage("_.gif", "&lt;-", null, "prev") : "")
 	. $paperText
 	. ($isprev ? "" : $Conf->cacheableImage("_.gif", "-&gt;", null, "next"))

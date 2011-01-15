@@ -1382,7 +1382,7 @@ class PaperTable {
   </form></div>");
 	    }
 	    if (!$this->editable)
-		$buttons[] = "<button type='button' class='b' onclick='document.location=\"contactauthors$ConfSiteSuffix?p=" . $prow->paperId . "$linkExtra\"'>Edit contacts</button>";
+		$buttons[] = "<button type='button' class='b' onclick='window.location=\"contactauthors$ConfSiteSuffix?p=" . $prow->paperId . "$linkExtra\"'>Edit contacts</button>";
 	}
 	if ($Me->privChair && $prow) {
 	    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this,'d',0,true)\">Delete paper</button>", "(admin only)");
