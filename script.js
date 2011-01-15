@@ -830,9 +830,9 @@ Miniajax.submit = function (formname, callback, timeout) {
 	    form.onsubmit = "";
 	    fold(form, 0, 7);
 	}
+	delete outstanding[formname];
 	for (i = 0; i < myoutstanding.length; ++i)
 	    myoutstanding[i]();
-	delete outstanding[formname];
     };
 
     // collect form value
