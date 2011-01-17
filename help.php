@@ -303,6 +303,10 @@ function searchQuickref() {
 	$r = $rf->analyzeField($f[0][0]);
 	_searchQuickrefRow($t, "$r->abbrevName1:$r->typScore", "at least one completed review has $r->shortHtml score $r->typScore");
 	_searchQuickrefRow("", "$r->abbrevName:$r->typScore", "other abbreviations accepted");
+	if (count($f[0]) > 1) {
+	    $r2 = $rf->analyzeField($f[0][1]);
+	    _searchQuickrefRow("", "$r2->abbrevName:$r2->typScore", "other fields accepted (here, $r2->shortHtml)");
+	}
 	_searchQuickrefRow("", "$r->abbrevName:$r->typScoreRange", "completed reviews&rsquo; $r->shortHtml scores fill the $r->lowScore&ndash;$r->typScore range");
 	_searchQuickrefRow("", "$r->abbrevName:>$r->typScore", "at least one completed review has $r->shortHtml score greater than $r->typScore");
 	_searchQuickrefRow("", "$r->abbrevName:2<=$r->typScore", "at least two completed reviews have $r->shortHtml score less than or equal to $r->typScore");
