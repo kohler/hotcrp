@@ -33,7 +33,7 @@ class ReviewForm {
     var $topicName;
     var $topicOrder;
 
-    function ReviewForm($conf) {
+    function __construct($conf) {
 	$this->updatedWhen = 0;
 
 	$this->reviewFields = array('paperSummary' => 0,
@@ -62,7 +62,7 @@ class ReviewForm {
 	$this->updateFromDB($conf);
     }
 
-    function abbreviateField($name, $type = 0) {
+    static function abbreviateField($name, $type = 0) {
 	$a = preg_split("/\s+/", ucwords($name));
 
 	// try to filter out noninteresting words
@@ -122,6 +122,32 @@ class ReviewForm {
 	return ($opt1 <= 1 ? $value : chr($opt1 - $value));
     }
 
+    function analyzeField($field) {
+	if (!isset($this->reviewFields[$field]))
+	    return null;
+	$sn = $this->shortName[$field];
+	$an = $this->abbrevName[$field];
+	$an1 = self::abbreviateField($sn, 1);
+	$a = (object) array("name" => $field,
+			    "shortName" => $sn,
+			    "shortHtml" => htmlspecialchars($sn),
+			    "abbrevName" => $an,
+			    "abbrevHtml" => htmlspecialchars($an),
+			    "abbrevName1" => $an1,
+			    "abbrevHtml1" => htmlspecialchars($an1),
+			    "options" => defval($this->options, $field, null));
+	if ($a->options) {
+	    $scores = array_keys($a->options);
+	    $a->lowScore = $scores[0];
+	    $a->typScore = $scores[1];
+	    if (ctype_digit($scores[1]))
+		$a->typScoreRange = $scores[0] . "-" . $scores[1];
+	    else
+		$a->typScoreRange = $scores[0] . $scores[1];
+	}
+	return $a;
+    }
+
     function updateFromDB($conf) {
 	$this->fieldOrder = array();
 	$this->shortName = array();
@@ -145,7 +171,7 @@ class ReviewForm {
 		$this->fieldOrder[] = $row->fieldName;
 	    $this->shortName[$n] = $row->shortName;
 	    $this->fieldName[strtolower($row->shortName)] = $n;
-	    $this->abbrevName[$n] = $this->abbreviateField($row->shortName);
+	    $this->abbrevName[$n] = self::abbreviateField($row->shortName);
 	    $this->description[$n] = $row->description;
 	    $this->fieldRows[$n] = $row->rows;
 	    if (!$this->reviewFields[$n] && $row->rows < 3)
