@@ -570,7 +570,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if ($Me->privChair && isset($_REQUEST["emailNote"]))
 	    $options["reason"] = $_REQUEST["emailNote"];
 	if ($notes !== "")
-	    $options["notes"] = preg_replace("|</?strong>|", "", $notes) . "\n\n";
+	    $options["notes"] = preg_replace(",</?(?:span.*?|strong)>,", "", $notes) . "\n\n";
 	Mailer::sendContactAuthors($template, $prow, null, $options);
     }
 
