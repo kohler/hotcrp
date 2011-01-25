@@ -368,8 +368,10 @@ if (substr($_REQUEST["subject"], 0, strlen($subjectPrefix)) == $subjectPrefix)
     $_REQUEST["subject"] = substr($_REQUEST["subject"], strlen($subjectPrefix));
 if (isset($_REQUEST["cc"]) && $Me->privChair)
     $_REQUEST["cc"] = simplifyWhitespace($_REQUEST["cc"]);
+else if (isset($Opt["emailCc"]))
+    $_REQUEST["cc"] = $Opt["emailCc"] ? $Opt["emailCc"] : "";
 else
-    $_REQUEST["cc"] = defval($Opt, "emailCc", $Opt["contactName"] . " <" . $Opt["contactEmail"] . ">");
+    $_REQUEST["cc"] = $Opt["contactName"] . " <" . $Opt["contactEmail"] . ">";
 if (isset($_REQUEST["replyto"]) && $Me->privChair)
     $_REQUEST["replyto"] = simplifyWhitespace($_REQUEST["replyto"]);
 else
