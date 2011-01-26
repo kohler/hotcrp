@@ -101,6 +101,8 @@ class SearchReviewValue {
     var $countexpr;
     var $contactsql;
     var $fieldsql;
+    var $compar;
+    var $allowed;
 
     function __construct($countexpr, $contacts = null, $fieldsql = null) {
 	$this->countexpr = $countexpr;
@@ -109,6 +111,24 @@ class SearchReviewValue {
 	else
 	    $this->contactsql = PaperSearch::_sqlNumericSet($contacts);
 	$this->fieldsql = $fieldsql;
+	$this->allowed = $this->compar = 0;
+	if (preg_match('/\A([!<>]?=|[<>])(\d+)\z/', $countexpr, $m)) {
+	    if ($m[1] == "!=" || substr($m[1], 0, 1) == ">")
+		$this->allowed |= 4;
+	    if (substr($m[1], strlen($m[1]) - 1) == "=")
+		$this->allowed |= 2;
+	    if ($m[1] == "!=" || substr($m[1], 0, 1) == "<")
+		$this->allowed |= 1;
+	    $this->compar = (int) $m[2];
+	}
+    }
+    function test($n) {
+	if ($n > $this->compar)
+	    return ($this->allowed & 4) != 0;
+	else if ($n == $this->compar)
+	    return ($this->allowed & 2) != 0;
+	else
+	    return ($this->allowed & 1) != 0;
     }
 }
 
@@ -1657,8 +1677,7 @@ class PaperSearch {
 		return false;
 	    else {
 		$fieldname = $t->link;
-		$x = $row->$fieldname;
-		return eval("return \$x" . $t->value->countexpr . ";");
+		return $t->value->test((int) $row->$fieldname);
 	    }
 	} else if ($tt == "pn") {
 	    if (count($t->value[0]) && array_search($row->paperId, $t->value[0]) === false)
