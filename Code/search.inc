@@ -1344,6 +1344,12 @@ class PaperSearch {
 	if ($v && $v[strlen($v) - 1] == "*")
 	    $v = substr($v, 0, strlen($v) - 1);
 	if ($negated)
+	    // The purpose of _clauseTermSetField is to match AT LEAST those
+	    // papers that contain "$t->value" as a word in the $field field.
+	    // A substring match contains at least those papers; but only if
+	    // the current term is positive (= not negated).  If the current
+	    // term is negated, we say NO paper matches this clause.  (NOT no
+	    // paper is every paper.)  Later code will check for a substring.
 	    $f[] = "false";
 	else if (!ctype_alnum($v))
 	    $f[] = "true";
@@ -1600,21 +1606,21 @@ class PaperSearch {
 	    $f[] = "(" . join(" and ", $q) . ")";
 	} else if ($tt == "not") {
 	    $ff = array();
-	    $this->_clauseTermSet($t->value, true, $tables, $columns, $ff);
+	    $this->_clauseTermSet($t->value, !$negated, $tables, $columns, $ff);
 	    if (!count($ff))
 		$ff[] = "false";
 	    $f[] = "not (" . join(" or ", $ff) . ")";
 	} else if ($tt == "and") {
 	    $ff = array();
 	    foreach ($t->value as $subt)
-		$this->_clauseTermSet($subt, false, $tables, $columns, $ff);
+		$this->_clauseTermSet($subt, $negated, $tables, $columns, $ff);
 	    if (!count($ff))
 		$ff[] = "false";
 	    $f[] = "(" . join(" and ", $ff) . ")";
 	} else if ($tt == "or" || $tt == "then") {
 	    $ff = array();
 	    foreach ($t->value as $subt)
-		$this->_clauseTermSet($subt, false, $tables, $columns, $ff);
+		$this->_clauseTermSet($subt, $negated, $tables, $columns, $ff);
 	    if (!count($ff))
 		$ff[] = "false";
 	    $f[] = "(" . join(" or ", $ff) . ")";
