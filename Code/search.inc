@@ -1729,6 +1729,8 @@ class PaperSearch {
 
     function _search() {
 	global $Conf, $searchMatchNumber;
+	if ($this->_matchTable === false)
+	    return false;
 	assert($this->_matchTable === null);
 	$this->_matchTable = "PaperMatches_" . $searchMatchNumber;
 	++$searchMatchNumber;
@@ -1988,7 +1990,7 @@ class PaperSearch {
 
     function paperList() {
 	global $Conf;
-	if ($this->_matchTable === null && !$this->_search())
+	if (!$this->_matchTable && !$this->_search())
 	    return array();
 	$x = array();
 	$result = $Conf->q("select paperId from $this->_matchTable");
