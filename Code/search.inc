@@ -1336,14 +1336,16 @@ class PaperSearch {
 	    $q[] = "false";
     }
 
-    function _clauseTermSetField(&$t, $field, &$f) {
+    function _clauseTermSetField(&$t, $field, $negated, &$f) {
 	$this->needflags |= $t->flags;
 	$v = $t->value;
 	if ($v && $v[0] == "*")
 	    $v = substr($v, 1);
 	if ($v && $v[strlen($v) - 1] == "*")
 	    $v = substr($v, 0, strlen($v) - 1);
-	if (!ctype_alnum($v))
+	if ($negated)
+	    $f[] = "false";
+	else if (!ctype_alnum($v))
 	    $f[] = "true";
 	else {
 	    $q = array();
@@ -1515,7 +1517,7 @@ class PaperSearch {
 	return "(" . join(" and ", $q) . ")";
     }
 
-    function _clauseTermSet(&$t, &$tables, &$columns, &$f) {
+    function _clauseTermSet(&$t, $negated, &$tables, &$columns, &$f) {
 	global $Conf;
 	$tt = $t->type;
 	$thistab = null;
@@ -1523,16 +1525,16 @@ class PaperSearch {
 	// collect columns
 	if ($tt == "ti") {
 	    $columns["title"] = "Paper.title";
-	    $this->_clauseTermSetField($t, "title", $f);
+	    $this->_clauseTermSetField($t, "title", $negated, $f);
 	} else if ($tt == "ab") {
 	    $columns["abstract"] = "Paper.abstract";
-	    $this->_clauseTermSetField($t, "abstract", $f);
+	    $this->_clauseTermSetField($t, "abstract", $negated, $f);
 	} else if ($tt == "au") {
 	    $columns["authorInformation"] = "Paper.authorInformation";
-	    $this->_clauseTermSetField($t, "authorInformation", $f);
+	    $this->_clauseTermSetField($t, "authorInformation", $negated, $f);
 	} else if ($tt == "co") {
 	    $columns["collaborators"] = "Paper.collaborators";
-	    $this->_clauseTermSetField($t, "collaborators", $f);
+	    $this->_clauseTermSetField($t, "collaborators", $negated, $f);
 	} else if ($tt == "au_cid") {
 	    $this->_clauseTermSetTable($t, $t->value, null, "AuthorConflict",
 				       "PaperConflict", "contactId", " and %.conflictType>=" . CONFLICT_AUTHOR,
@@ -1598,21 +1600,21 @@ class PaperSearch {
 	    $f[] = "(" . join(" and ", $q) . ")";
 	} else if ($tt == "not") {
 	    $ff = array();
-	    $this->_clauseTermSet($t->value, $tables, $columns, $ff);
+	    $this->_clauseTermSet($t->value, true, $tables, $columns, $ff);
 	    if (!count($ff))
 		$ff[] = "false";
 	    $f[] = "not (" . join(" or ", $ff) . ")";
 	} else if ($tt == "and") {
 	    $ff = array();
 	    foreach ($t->value as $subt)
-		$this->_clauseTermSet($subt, $tables, $columns, $ff);
+		$this->_clauseTermSet($subt, false, $tables, $columns, $ff);
 	    if (!count($ff))
 		$ff[] = "false";
 	    $f[] = "(" . join(" and ", $ff) . ")";
 	} else if ($tt == "or" || $tt == "then") {
 	    $ff = array();
 	    foreach ($t->value as $subt)
-		$this->_clauseTermSet($subt, $tables, $columns, $ff);
+		$this->_clauseTermSet($subt, false, $tables, $columns, $ff);
 	    if (!count($ff))
 		$ff[] = "false";
 	    $f[] = "(" . join(" or ", $ff) . ")";
@@ -1790,7 +1792,7 @@ class PaperSearch {
 	$filters = array();
 	$this->preciseQuery = false;
 	$this->needflags = 0;
-	$this->_clauseTermSet($qe, $tables, $columns, $filters);
+	$this->_clauseTermSet($qe, false, $tables, $columns, $filters);
 	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($filters, true)))));
 
 	// status limitation parts
