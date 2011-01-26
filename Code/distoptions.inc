@@ -109,6 +109,12 @@ $Opt["emailSubmissions"] = 0;
 //                   for a list.
 //   time24hour      Set to true to use 24-hour timestamps, rather than the
 //                   default am/pm.
+//   stylesheets     Optional array of additional stylesheet filenames/URIs to
+//                   be included after "style.css".  Example: array("x.css").
+//   extraFooter     Optional extra HTML text shown at the bottom of every
+//                   page, before the HotCRP link.  If set, should generally
+//                   end with " <span class='barsep'>|</span> ".
+//   noFooterVersion Set to true to avoid a version comment in footer HTML.
 //   disablePDF      Set to true to disable PDF format submissions.
 //   disablePS       Set to true to disable PostScript format submissions.
 //   disableSHA1     Set to true to not store SHA-1 hashes of submissions.
@@ -121,13 +127,9 @@ $Opt["emailSubmissions"] = 0;
 //                   string must have the form "LDAP_URL DN_PATTERN", where
 //                   DN_PATTERN contains a "*" character to be replaced by
 //                   the username.  Example: "ldaps://ldapserver/ uid=*,o=ORG"
-//   stylesheets     Optional array of additional stylesheet filenames/URIs to
-//                   be included after "style.css".  Example: array("x.css").
-//   extraFooter     Optional extra HTML text shown at the bottom of every
-//                   page, before the HotCRP link.  If set, should generally
-//                   end with " <span class='barsep'>|</span> ".
-//   noFooterVersion Set to true to avoid a version comment in footer HTML.
 //   zipCommand      Set to the path to the "zip" executable.  Defaults to
 //                   "zip".
+//   disableCSV      Set to true if all downloaded tabular text files should be
+//                   tab-separated rather than CSV.
 
 $Opt["disablePS"] = true;

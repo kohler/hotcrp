@@ -119,7 +119,7 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
 
     if (count($texts)) {
 	ksort($texts);
-	downloadText(join("", $texts), $Opt['downloadPrefix'] . "abstract$rfSuffix.txt", "abstracts");
+	downloadText(join("", $texts), "abstract$rfSuffix", "abstracts");
 	exit;
     }
 }
@@ -217,7 +217,7 @@ function downloadReviews(&$texts, &$errors) {
 	} else if (count($warnings))
 	    $text .= join("\n", $warnings) . "\n\n";
 	$text .= join("", $texts);
-	downloadText($text, $Opt['downloadPrefix'] . "$rfname.txt", "review forms");
+	downloadText($text, $rfname, "review forms");
 	exit;
     } else {
 	$files = array();
@@ -242,7 +242,7 @@ if (($getaction == "revform" || $getaction == "revformz")
     $rf = reviewForm();
     $text = $rf->textFormHeader("blank")
 	. $rf->textForm(null, null, $Me, null) . "\n";
-    downloadText($text, $Opt['downloadPrefix'] . "review.txt", "review form");
+    downloadText($text, "review", "review form");
     exit;
 } else if ($getaction == "revform" || $getaction == "revformz") {
     $rf = reviewForm();
@@ -362,7 +362,7 @@ if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
 	ksort($texts);
 	$text = "# Tag: " . trim($_REQUEST["tag"]) . "\n"
 	    . "#votes\tpaper\ttitle\n" . join("", $texts);
-	downloadText($text, $Opt['downloadPrefix'] . "votes.txt", "votes");
+	downloadText($text, "votes", "votes");
 	exit;
     }
 }
@@ -403,7 +403,7 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 	    . "Tag: " . trim($_REQUEST["tag"]) . "\n"
 	    . "\n"
 	    . $real . $null;
-	downloadText($text, $Opt['downloadPrefix'] . "rank.txt", "rank");
+	downloadText($text, "rank", "rank");
 	exit;
     }
 }
@@ -474,7 +474,7 @@ if ($getaction == "authors" && isset($papersel)
 	$text = "#paper\ttitle\tname\temail\taffiliation"
 	    . ($Me->privChair ? "\ttype" : "") . "\n"
 	    . join("", $texts);
-	downloadText($text, $Opt['downloadPrefix'] . "authors.txt", "authors");
+	downloadText($text, "authors", "authors");
 	exit;
     }
 }
@@ -503,7 +503,7 @@ if ($getaction == "pcconf" && isset($papersel) && $Me->privChair) {
 	}
 	ksort($texts);
 	$text = "#paper\ttitle\tPC conflicts\n" . join("", $texts);
-	downloadText($text, $Opt['downloadPrefix'] . "pcconflicts.txt", "PC conflicts");
+	downloadText($text, "pcconflicts", "PC conflicts");
 	exit;
     }
 }
@@ -529,7 +529,7 @@ if (($getaction == "lead" || $getaction == "shepherd")
 			  . $row->email . "\t" . trim("$row->firstName $row->lastName") . "\n");
 	ksort($texts);
 	$text = "#paper\ttitle\t${getaction}email\t${getaction}name\n" . join("", $texts);
-	downloadText($text, $Opt['downloadPrefix'] . "${getaction}s.txt", "${getaction}s");
+	downloadText($text, "${getaction}s", "${getaction}s");
 	exit;
     }
 }
@@ -547,7 +547,7 @@ if ($getaction == "contact" && $Me->privChair && isset($papersel)) {
 	}
 	ksort($texts);
 	$text = "#paper\ttitle\tlast, first\temail\n" . join("", $texts);
-	downloadText($text, $Opt['downloadPrefix'] . "contacts.txt", "contacts");
+	downloadText($text, "contacts", "contacts");
 	exit;
     }
 }
@@ -598,7 +598,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	$Conf->errorMsg(join("", $errors) . "No papers selected.");
     else {
 	ksort($texts);
-	downloadText($header . join("", $texts), $Opt['downloadPrefix'] . "scores.txt", "scores");
+	downloadText($header . join("", $texts), "scores", "scores");
 	exit;
     }
 }
@@ -645,7 +645,7 @@ function downloadRevpref($extended) {
     if (count($texts)) {
 	ksort($texts);
 	$header = "#paper\tpreference\ttitle\n";
-	downloadText($header . join("", $texts), $Opt['downloadPrefix'] . "revprefs.txt", "review preferences");
+	downloadText($header . join("", $texts), "revprefs", "review preferences");
 	exit;
     }
 }
@@ -664,11 +664,11 @@ if ($getaction == "topics" && isset($papersel)) {
     while ($row = edb_orow($result)) {
 	if (!$Me->canViewPaper($row) || $row->topicIds === "")
 	    continue;
-	$topicIds = explode(",", $row->topicIds);
 	$out = array();
-	for ($i = 0; $i < count($topicIds); ++$i)
-	    $out[$rf->topicOrder[$topicIds[$i]]] =
-		$row->paperId . "\t" . $row->title . "\t" . $rf->topicName[$topicIds[$i]] . "\n";
+	foreach (explode(",", $row->topicIds) as $tid)
+	    if ($tid != "")
+		$out[$rf->topicOrder[$tid]] =
+		    $row->paperId . "\t" . $row->title . "\t" . $rf->topicName[$tid] . "\n";
 	ksort($out);
 	defappend($texts[$paperselmap[$row->paperId]], join("", $out));
     }
@@ -678,7 +678,7 @@ if ($getaction == "topics" && isset($papersel)) {
     else {
 	ksort($texts);
 	$text = "#paper\ttitle\ttopic\n" . join("", $texts);
-	downloadText($text, $Opt['downloadPrefix'] . "topics.txt", "topics");
+	downloadText($text, "topics", "topics");
 	exit;
     }
 }
@@ -693,7 +693,7 @@ if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
 
     // generate output gradually since this takes so long
     $text = "#paper\tformat\tpages\ttitle\n";
-    downloadText($text, $Opt['downloadPrefix'] . "formatcheck.txt", "format checker", false, false);
+    downloadText($text, "formatcheck", "format checker", false, false);
 
     // compose report
     $texts = array();

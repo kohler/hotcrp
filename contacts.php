@@ -86,7 +86,7 @@ if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
 	    $text .= "$row[1], $row[0]\t$row[2]\n";
 	else
 	    $text .= "$row[1]$row[0]\t$row[2]\n";
-    downloadText($text, $Opt['downloadPrefix'] . "accounts.txt", "accounts");
+    downloadText($text, "accounts", "accounts");
     exit;
 }
 
@@ -104,7 +104,7 @@ if ($getaction == "address" && isset($papersel) && $Me->isPC) {
 	    $text .= "\t" . addcslashes($row->$k, "\\\r\n\t");
 	$text .= "\n";
     }
-    downloadText($text, $Opt['downloadPrefix'] . "addresses.txt", "addresses");
+    downloadText($text, "addresses", "addresses");
     exit;
 }
 
