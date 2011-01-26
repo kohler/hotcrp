@@ -483,27 +483,39 @@ if ($getaction == "authors" && isset($papersel)
 // download text PC conflict information for selected papers
 if ($getaction == "pcconf" && isset($papersel) && $Me->privChair) {
     $idq = paperselPredicate($papersel, "Paper.");
-    $result = $Conf->qe("select Paper.paperId, title, group_concat(PaperConflict.contactId separator ' ')
+    $result = $Conf->qe("select Paper.paperId, title, group_concat(concat(PaperConflict.contactId, ':', conflictType) separator ' ')
 		from Paper
 		left join PaperConflict on (PaperConflict.paperId=Paper.paperId)
 		where $idq
 		group by Paper.paperId", "while fetching PC conflicts");
-    $pcm = pcMembers();
+
+    $pcme = array();
+    foreach (pcMembers() as $pc)
+	$pcme[$pc->contactId] = $pc->email;
+    asort($pcme);
+
+    $allConflictTypes = $authorConflictTypes;
+    $allConflictTypes[CONFLICT_CHAIRMARK] = "Chair-confirmed";
+    $allConflictTypes[CONFLICT_AUTHOR] = "Author";
+    $allConflictTypes[CONFLICT_CONTACTAUTHOR] = "Contact author";
+
     if ($result) {
 	$texts = array();
 	while (($row = edb_row($result))) {
-	    $x = " " . $row[2] . " ";
-	    $y = array();
-	    foreach ($pcm as $pc)
-		if (strpos($x, " $pc->contactId ") !== false)
-		    $y[] = $pc->email;
-	    sort($y);
-	    if (count($y))
-		defappend($texts[$paperselmap[$row[0]]], $row[0] . "\t" . $row[1] . "\t" . join(" ", $y) . "\n");
+	    $x = " " . $row[2];
+	    foreach ($pcme as $pcid => $pcemail) {
+		$pcid = " $pcid:";
+		if (($p = strpos($x, $pcid)) !== false) {
+		    $ctype = (int) substr($x, $p + strlen($pcid));
+		    $ctype = defval($allConflictTypes, $ctype, "Conflict $ctype");
+		    arrayappend($texts[$paperselmap[$row[0]]], array($row[0], $row[1], $pcemail, $ctype));
+		}
+	    }
 	}
 	ksort($texts);
-	$text = "#paper\ttitle\tPC conflicts\n" . join("", $texts);
-	downloadText($text, "pcconflicts", "PC conflicts");
+	downloadCSV($texts,
+		    array("paper", "title", "PC email", "conflict type"),
+		    "pcconflicts", "PC conflicts");
 	exit;
     }
 }

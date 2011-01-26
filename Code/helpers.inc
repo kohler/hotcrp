@@ -16,6 +16,13 @@ function defappend(&$var, $str) {
     $var .= $str;
 }
 
+function arrayappend(&$var, $value) {
+    if (isset($var))
+	$var[] = $value;
+    else
+	$var = array($value);
+}
+
 
 // database helpers
 
