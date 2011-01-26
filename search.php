@@ -353,16 +353,15 @@ if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
     && $Me->isPC) {
     require_once("Code/tags.inc");
     if (($tag = checkTag($_REQUEST["tag"], CHECKTAG_NOINDEX)) !== false) {
+	$showtag = trim($_REQUEST["tag"]); // no "23~" prefix
 	$q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag));
 	$result = $Conf->qe($q, "while selecting papers");
 	$texts = array();
 	while (($row = edb_orow($result)))
 	    if ($Me->canViewTags($row))
-		defappend($texts[$paperselmap[$row->paperId]], "(" . (int) $row->tagIndex . ")\t$row->paperId\t$row->title\n");
+		arrayappend($texts[$paperselmap[$row->paperId]], array($showtag, (int) $row->tagIndex, $row->paperId, $row->title));
 	ksort($texts);
-	$text = "# Tag: " . trim($_REQUEST["tag"]) . "\n"
-	    . "#votes\tpaper\ttitle\n" . join("", $texts);
-	downloadText($text, "votes", "votes");
+	downloadCSV($texts, array("tag", "votes", "paper", "title"), "votes", "votes");
 	exit;
     }
 }
@@ -422,13 +421,11 @@ if ($getaction == "authors" && isset($papersel)
 	$result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq", "while fetching contacts");
 	while (($row = edb_orow($result))) {
 	    $key = $row->paperId . " " . $row->email;
-	    $t = $row->paperId . "\t" . $row->title . "\t";
 	    if ($row->firstName && $row->lastName)
-		$t .= $row->firstName . " " . $row->lastName;
+		$a = $row->firstName . " " . $row->lastName;
 	    else
-		$t .= $row->firstName . $row->lastName;
-	    $t .= "\t" . $row->email . "\t" . $row->affiliation . "\tcontact_only\n";
-	    $contactline[$key] = $t;
+		$a = $row->firstName . $row->lastName;
+	    $contactline[$key] = array($row->paperId, $row->title, $a, $row->email, $row->affiliation, "contact_only");
 	}
     }
 
@@ -439,25 +436,22 @@ if ($getaction == "authors" && isset($papersel)
 	while (($row = edb_orow($result))) {
 	    cleanAuthor($row);
 	    foreach ($row->authorTable as $au) {
-		$t = $row->paperId . "\t" . $row->title . "\t";
 		if ($au[0] && $au[1])
-		    $t .= $au[0] . " " . $au[1];
+		    $a = $au[0] . " " . $au[1];
 		else
-		    $t .= $au[0] . $au[1];
-		$t .= "\t" . $au[2] . "\t" . $au[3];
+		    $a = $au[0] . $au[1];
+		$line = array($row->paperId, $row->title, $a, $au[2], $au[3]);
 
-		$autype = "author";
-		if ($Me->privChair && $au[2]) {
-		    $key = $row->paperId . " " . $au[2];
+		if ($Me->privChair) {
+		    $key = $au[2] ? $row->paperId . " " . $au[2] : "XXX";
 		    if (isset($contactline[$key])) {
 			unset($contactline[$key]);
-			$autype = "contact_author";
-		    }
+			$line[] = "contact_author";
+		    } else
+			$line[] = "author";
 		}
-		if ($Me->privChair)
-		    $t .= "\t" . $autype;
 
-		defappend($texts[$paperselmap[$row->paperId]], $t . "\n");
+		arrayappend($texts[$paperselmap[$row->paperId]], $line);
 		if ($au[2])
 		    $authormap[$row->paperId . " " . $au[2]] = true;
 	    }
@@ -467,14 +461,14 @@ if ($getaction == "authors" && isset($papersel)
 	if ($Me->privChair)
 	    foreach ($contactline as $key => $line) {
 		$paperId = (int) $key;
-		defappend($texts[$paperselmap[$paperId]], $line);
+		arrayappend($texts[$paperselmap[$paperId]], $line);
 	    }
 
 	ksort($texts);
-	$text = "#paper\ttitle\tname\temail\taffiliation"
-	    . ($Me->privChair ? "\ttype" : "") . "\n"
-	    . join("", $texts);
-	downloadText($text, "authors", "authors");
+	$header = array("paper", "title", "name", "email", "affiliation");
+	if ($Me->privChair)
+	    $header[] = "type";
+	downloadCSV($texts, $header, "authors", "authors");
 	exit;
     }
 }
@@ -536,12 +530,10 @@ if (($getaction == "lead" || $getaction == "shepherd")
 	$texts = array();
 	while (($row = edb_orow($result)))
 	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row)))
-		defappend($texts[$paperselmap[$row->paperId]],
-			  $row->paperId . "\t" . $row->title . "\t"
-			  . $row->email . "\t" . trim("$row->firstName $row->lastName") . "\n");
+		arrayappend($texts[$paperselmap[$row->paperId]],
+			    array($row->paperId, $row->title, $row->email, trim("$row->firstName $row->lastName")));
 	ksort($texts);
-	$text = "#paper\ttitle\t${getaction}email\t${getaction}name\n" . join("", $texts);
-	downloadText($text, "${getaction}s", "${getaction}s");
+	downloadCSV($texts, array("paper", "title", "${getaction}email", "${getaction}name"), "${getaction}s", "${getaction}s");
 	exit;
     }
 }
@@ -555,11 +547,11 @@ if ($getaction == "contact" && $Me->privChair && isset($papersel)) {
     if ($result) {
 	$texts = array();
 	while (($row = edb_row($result))) {
-	    defappend($texts[$paperselmap[$row[0]]], $row[0] . "\t" . $row[1] . "\t" . $row[3] . ", " . $row[2] . "\t" . $row[4] . "\n");
+	    $a = ($row[3] && $row[2] ? "$row[3], $row[2]" : "$row[3]$row[2]");
+	    arrayappend($texts[$paperselmap[$row[0]]], array($row[0], $row[1], $a, $row[4]));
 	}
 	ksort($texts);
-	$text = "#paper\ttitle\tlast, first\temail\n" . join("", $texts);
-	downloadText($text, "contacts", "contacts");
+	downloadCSV($texts, array("paper", "title", "name", "email"), "contacts", "contacts");
 	exit;
     }
 }
@@ -578,13 +570,14 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	    && isset($rf->options[$field]))
 	    $scores[] = $field;
 
-    $header = '#paper';
+    $header = array("paper");
     if ($Conf->blindSubmission() == BLIND_OPTIONAL)
-	$header .= "\tblind";
-    $header .= "\tdecision";
+	$header[] = "blind";
+    $header[] = "decision";
     foreach ($scores as $score)
-	$header .= "\t" . $rf->abbrevName[$score];
-    $header .= "\trevieweremail\treviewername\n";
+	$header[] = $rf->abbrevName[$score];
+    $header[] = "revieweremail";
+    $header[] = "reviewername";
 
     $errors = array();
     if ($Me->privChair)
@@ -594,15 +587,17 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	if (!$Me->canViewReview($row, null, $whyNot))
 	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
 	else if ($row->reviewSubmitted) {
-	    $text = $row->paperId;
+	    $a = array($row->paperId);
 	    if ($Conf->blindSubmission() == BLIND_OPTIONAL)
-		$text .= "\t" . $row->blind;
-	    $text .= "\t" . $row->outcome;
+		$a[] = $row->blind;
+	    $a[] = $row->outcome;
 	    foreach ($scores as $score)
-		$text .= "\t" . $rf->unparseOption($score, $row->$score);
-	    if ($Me->canViewReviewerIdentity($row, $row))
-		$text .= "\t" . $row->reviewEmail . "\t" . trim($row->reviewFirstName . " " . $row->reviewLastName);
-	    defappend($texts[$paperselmap[$row->paperId]], $text . "\n");
+		$a[] = $rf->unparseOption($score, $row->$score);
+	    if ($Me->canViewReviewerIdentity($row, $row)) {
+		$a[] = $row->reviewEmail;
+		$a[] = trim($row->reviewFirstName . " " . $row->reviewLastName);
+	    }
+	    arrayappend($texts[$paperselmap[$row->paperId]], $a);
 	}
     }
 
@@ -610,7 +605,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	$Conf->errorMsg(join("", $errors) . "No papers selected.");
     else {
 	ksort($texts);
-	downloadText($header . join("", $texts), "scores", "scores");
+	downloadCSV($texts, $header, "scores", "scores");
 	exit;
     }
 }
@@ -680,17 +675,16 @@ if ($getaction == "topics" && isset($papersel)) {
 	foreach (explode(",", $row->topicIds) as $tid)
 	    if ($tid != "")
 		$out[$rf->topicOrder[$tid]] =
-		    $row->paperId . "\t" . $row->title . "\t" . $rf->topicName[$tid] . "\n";
+		    array($row->paperId, $row->title, $rf->topicName[$tid]);
 	ksort($out);
-	defappend($texts[$paperselmap[$row->paperId]], join("", $out));
+	arrayappend($texts[$paperselmap[$row->paperId]], $out);
     }
 
     if (count($texts) == "")
 	$Conf->errorMsg(join("", $errors) . "No papers selected.");
     else {
 	ksort($texts);
-	$text = "#paper\ttitle\ttopic\n" . join("", $texts);
-	downloadText($text, "topics", "topics");
+	downloadCSV($texts, array("paper", "title", "topic"), "topics", "topics");
 	exit;
     }
 }
