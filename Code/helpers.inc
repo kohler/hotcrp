@@ -1275,7 +1275,6 @@ function titleWords($title, $chars = 40) {
 function __downloadCSV(&$row, $csv) {
     $t = array();
     reset($row);
-    error_log(var_export(current($row), true));
     if (count($row) == 0)
 	return "";
     else if (is_array(current($row))) {
