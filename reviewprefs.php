@@ -51,9 +51,6 @@ function savePreferences($reviewer) {
 	return;
 
     $while = "while saving review preferences";
-    $result = $Conf->qe("lock tables PaperReviewPreference write", $while);
-    if (!$result)
-	return $result;
 
     $deletes = array();
     for ($p = 1; $p <= $pmax; $p++)
@@ -74,9 +71,8 @@ function savePreferences($reviewer) {
 	if (isset($setting[$p]) && $setting[$p] != 0)
 	    $q .= "($p, $reviewer, $setting[$p]), ";
     if (strlen($q))
-	$Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values " . substr($q, 0, strlen($q) - 2), $while);
+	$Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values " . substr($q, 0, strlen($q) - 2) . " on duplicate key update preference=values(preference)", $while);
 
-    $Conf->qe("unlock tables", $while);
     if ($OK)
 	$Conf->confirmMsg("Preferences saved.");
 }
