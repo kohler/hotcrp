@@ -35,7 +35,7 @@ function savePreferences($reviewer) {
     $pmax = 0;
     foreach ($_REQUEST as $k => $v)
 	if (strlen($k) > 7 && $k[0] == "r" && substr($k, 0, 7) == "revpref"
-	    && ($p = rcvtint(substr($k, 7))) > 0) {
+	    && ($p = cvtint(substr($k, 7))) > 0) {
 	    if (($v = cvtpref($v)) >= -1000000) {
 		$setting[$p] = $v;
 		$pmax = max($pmax, $p);
