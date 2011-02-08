@@ -1,5 +1,18 @@
 HotCRP NEWS
 
+Version 2.44   8.Feb.2011
+
+* Correct recent bugs: improve Ajax return values (which lacked "b"
+  characters due to a quoting mishap); do not ask authors for responses
+  when responses are not open; don't include HTML in textual email.
+
+* Other small improvements: add conflict types to PC conflict reports; CSV
+  reports; fix searches for terms like "re:heavy=0"; fix negated search
+  terms; add paper option display type.
+
+* Thanks especially to Jeff Mogul and John Byers.
+
+
 Version 2.43   3.Jan.2011
 
 * Correct 2.41 bug that could cause SQL errors on the home page when users
