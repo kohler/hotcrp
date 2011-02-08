@@ -360,7 +360,6 @@ class Conference {
     }
     function deadlinesBetween($name1, $name2, $grace = null) {
 	$dl = $this->deadlines();
-	error_log(var_export($dl, true));
 	$t = defval($dl, $name1, null);
 	if (($t === null || $t <= 0 || $t > $dl["now"]) && $name1)
 	    return false;
