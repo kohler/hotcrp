@@ -764,15 +764,6 @@ class Conference {
 	else if (count($paperIds) == 1)
 	    return $this->__downloadPaper($paperIds[0], 1, $final ? -1 : 0);
 
-	// paper query
-	$q = "select Paper.paperId, paper, PaperStorage.mimetype, compression from PaperStorage join Paper on (PaperStorage.paperStorageId=Paper." . ($final ? "finalPaperStorageId" : "paperStorageId") . ") where (";
-	foreach ($paperIds as $paperId)
-	    $downloadQ[] = "Paper.paperId=$paperId";
-	$q .= join(" or ", $downloadQ) . ")";
-	$result = $this->q($q);
-	if (!$result)
-	    return new PEAR_Error("Database error while downloading papers: " . mysql_error($this->dblink));
-
 	// set up temporary directory
 	if (($tmpdir = tempdir(null, "crp")) === false)
 	    return new PEAR_Error("Could not create temporary directory!");
@@ -780,14 +771,32 @@ class Conference {
 	// write papers into temporary directory
 	$warnings = array();
 	$files = array();
-	while ($row = edb_row($result)) {
-	    if ($row[3] == 1)
-		$row[1] = gzinflate($row[1]);
-	    if (strlen($row[1]) == 0)
-		$warnings[] = "Paper #$row[0] has not been uploaded yet.";
-	    else
-		$this->zipAdd($tmpdir, $this->downloadPaperName($row[0], $row[2], $final ? -1 : 0), $row[1], $warnings, $files);
+	$batch = 3;
+
+	for ($pidno = 0; $pidno < count($paperIds); $pidno += $batch) {
+	    // paper query
+	    // do in groups of 3 papers at a time to avoid database killage
+	    $q = "select Paper.paperId, paper, PaperStorage.mimetype, compression from PaperStorage join Paper on (PaperStorage.paperStorageId=Paper." . ($final ? "finalPaperStorageId" : "paperStorageId") . ") where (";
+	    for ($xpidno = $pidno;
+		 $xpidno < count($paperIds) && $xpidno < $pidno + $batch;
+		 ++$xpidno)
+		$downloadQ[] = "Paper.paperId=" . $paperIds[$xpidno];
+	    $q .= join(" or ", $downloadQ) . ")";
+	    $result = $this->q($q);
+	    if (!$result)
+		return new PEAR_Error("Database error while downloading papers: " . mysql_error($this->dblink));
+
+	    while ($row = edb_row($result)) {
+		if ($row[3] == 1)
+		    $row[1] = gzinflate($row[1]);
+		if (strlen($row[1]) == 0)
+		    $warnings[] = "Paper #$row[0] has not been uploaded yet.";
+		else
+		    $this->zipAdd($tmpdir, $this->downloadPaperName($row[0], $row[2], $final ? -1 : 0), $row[1], $warnings, $files);
+	    }
 	}
+
+	// complete
 	if (!count($files))
 	    return new PEAR_Error("No papers could successfully be downloaded.");
 	if (count($warnings))
