@@ -181,9 +181,9 @@ one paper, to go directly to that paper.
 
 <p>Paper screens have quicklinks that step through search results:<br />
 <img src='images/pageresultsex.png' alt='[Result paging example]' /><br />
-Keyboard shortcuts “<code>j</code>” and “<code>k</code>” go to the
-previous and next papers in the list.  Click on the search description
-(here, “Submitted papers search”) to return to the search results.</p>
+Click on the search description (here, “Submitted papers search”) to return
+to the search results.  On many pages, you can press “<code>j</code>” or
+“<code>k</code>” to go to the previous or next paper in the list.</p>
 ");
     echo "</table>\n";
 }

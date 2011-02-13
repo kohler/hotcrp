@@ -1663,6 +1663,9 @@ class PaperTable {
 	    echo "</form>";
 	    $this->_paptabSepEnd();
 	}
+
+	if ($this->mode == "p" || $this->mode == "r")
+	    $Conf->footerScript("add_quicklink_shortcuts(document)");
     }
 
     function _paptabSepBegin() {
