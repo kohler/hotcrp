@@ -1229,8 +1229,10 @@ function actionBar($mode = "", $prow = null) {
 
     // collect actions
     $x = "<div class='nvbar'><table class='vbar'><tr><td class='spanner'></td>\n";
-    if ($quicklinks_txt)
+    if ($quicklinks_txt) {
 	$x .= "  <td class='quicklinks nowrap'>" . $quicklinks_txt . "</td>\n";
+	$Conf->footerScript("add_quicklink_shortcuts(document)");
+    }
 
     $x .= "  <td class='gopaper nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
 

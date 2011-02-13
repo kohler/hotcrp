@@ -519,6 +519,41 @@ function setajaxcheck(elt, rv) {
     }
 }
 
+// quicklink shortcuts
+add_quicklink_shortcuts = (function () {
+
+function quicklink_shortcut_keypress(event) {
+    var code, a, f;
+    event = event || window.event;
+    code = event.charCode || event.keyCode;
+    if (code == 0 || event.altKey || event.ctrlKey || event.metaKey
+	|| (code != 106 && code != 107))
+	return true;
+    a = $$(code == 106 ? "quicklink_prev" : "quicklink_next");
+    if (a && a.focus) {
+	a.focus();
+	f = make_link_callback(a);
+	if (!Miniajax.isoutstanding("revprefform", f))
+	    f();
+    }
+    if (event.preventDefault)
+	event.preventDefault();
+    if (event.returnValue)
+	event.returnValue = false;
+    return false;
+}
+
+return function (e) {
+    if (e) {
+	if (e.addEventListener)
+	    e.addEventListener("keypress", quicklink_shortcut_keypress, false);
+	else
+	    e.onkeypress = quicklink_shortcut_keypress;
+    }
+};
+
+})();
+
 // review preferences
 addRevprefAjax = (function () {
 

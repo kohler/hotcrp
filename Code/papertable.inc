@@ -1170,7 +1170,7 @@ class PaperTable {
 	    " <input class='b fx7' type='submit' value='Save' />",
 	    " <span id='revprefformresult'></span>",
 	    "</div></form></div>\n";
-	$Conf->footerScript("Miniajax.onload(\"revprefform\")");
+	$Conf->footerScript("Miniajax.onload(\"revprefform\");add_quicklink_shortcuts(\$\$('revprefform_d'))");
     }
 
     function papstripRank($prow) {
@@ -1840,7 +1840,7 @@ class PaperTable {
     // Functions for loading papers
 
     static function _maybeSearchPaperId() {
-	global $Conf, $Me, $ConfSiteSuffix, $CurrentList;
+	global $Conf, $Me, $ConfSiteSuffix;
 
 	// if a number, don't search
 	if (isset($_REQUEST["paperId"]) && $_REQUEST["paperId"] != "") {

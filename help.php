@@ -175,15 +175,15 @@ tag.</p>
     _alternateRow("<a name='quicklinks'>Quicksearch<br />and quicklinks</a>", "
 Most screens have a quicksearch box in the upper right corner:<br />
 <img src='images/quicksearchex.png' alt='[Quick search example]' /><br />
-This box supports the full search syntax.  Also, entering
+This box supports the full search syntax.  Enter
 a paper number, or search terms that match exactly
-one paper, will take you directly to that paper.
+one paper, to go directly to that paper.
 
-<p>All paper screens have quicklinks in the upper right corner that navigate
-through the most recent search results:<br />
+<p>Paper screens have quicklinks that step through search results:<br />
 <img src='images/pageresultsex.png' alt='[Result paging example]' /><br />
-Using these links can speed up many tasks.  Click on the search description
-(here, \"This search\") to return to the search results.</p>
+Keyboard shortcuts “<code>j</code>” and “<code>k</code>” go to the
+previous and next papers in the list.  Click on the search description
+(here, “Submitted papers search”) to return to the search results.</p>
 ");
     echo "</table>\n";
 }
