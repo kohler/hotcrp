@@ -114,10 +114,10 @@ div#header_left a {
 	font-weight: normal;
 	text-decoration: none;
 }
-.vbtab a, td.listlinks a {
+.vbtab a, td.quicklinks a {
 	text-decoration: none;
 }
-.vbtab a:hover, .vbtab1 a:hover, td.listlinks a:hover,
+.vbtab a:hover, .vbtab1 a:hover, td.quicklinks a:hover,
 div#header_left a:hover {
 	text-decoration: underline;
 }
@@ -125,7 +125,7 @@ table.vbar td.gopaper {
 	vertical-align: middle;
 	padding: 4px 0.5em;
 }
-table.vbar td.listlinks {
+table.vbar td.quicklinks {
 	vertical-align: middle;
 	padding: 4px 0.75em 4px 0.5em;
 }

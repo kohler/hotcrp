@@ -698,7 +698,7 @@ function _tryNewList($opt, $listtype) {
     }
 }
 
-function _oneListLink($id, $baseUrl, $urlrest, $listtype, $isprev) {
+function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
     global $Conf;
     if ($listtype == "a") {
 	$result = $Conf->qx("select email from ContactInfo where contactId=$id");
@@ -706,14 +706,15 @@ function _oneListLink($id, $baseUrl, $urlrest, $listtype, $isprev) {
 	$paperText = ($row ? htmlspecialchars($row[0]) : "#$id");
     } else
 	$paperText = "#$id";
-    return "<a href=\"$baseUrl$id$urlrest\" onclick=\"return !Miniajax.isoutstanding('revprefform', make_link_callback(this))\">"
+    return "<a id=\"quicklink_" . ($isprev ? "prev" : "next")
+	. "\" href=\"$baseUrl$id$urlrest\" onclick=\"return !Miniajax.isoutstanding('revprefform', make_link_callback(this))\">"
 	. ($isprev ? $Conf->cacheableImage("_.gif", "&lt;-", null, "prev") : "")
 	. $paperText
 	. ($isprev ? "" : $Conf->cacheableImage("_.gif", "-&gt;", null, "next"))
 	. "</a>";
 }
 
-function listLinks($id, $baseUrl, $args, $listtype) {
+function quicklinks($id, $baseUrl, $args, $listtype) {
     global $Me, $ConfSiteSuffix, $Conf, $CurrentList;
 
     $list = false;
@@ -765,7 +766,7 @@ function listLinks($id, $baseUrl, $args, $listtype) {
 
     $x = "";
     if ($k > 0)
-	$x .= _oneListLink($list[$k - 1], $baseUrl, $urlrest, $listtype, true);
+	$x .= _one_quicklink($list[$k - 1], $baseUrl, $urlrest, $listtype, true);
     if (isset($list["description"])) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
 	if (defval($list, "url"))
@@ -775,7 +776,7 @@ function listLinks($id, $baseUrl, $args, $listtype) {
     }
     if (isset($list[$k + 1])) {
 	$x .= ($k > 0 || isset($list["description"]) ? "&nbsp;&nbsp;" : "");
-	$x .= _oneListLink($list[$k + 1], $baseUrl, $urlrest, $listtype, false);
+	$x .= _one_quicklink($list[$k + 1], $baseUrl, $urlrest, $listtype, false);
     }
     return $x;
 }
@@ -1218,18 +1219,18 @@ function actionBar($mode = "", $prow = null) {
 	$xmode["m"] = $wantmode;
 
     $listarg = $forceShow;
-    $listlinks_txt = "";
+    $quicklinks_txt = "";
     if ($prow) {
 	$id = ($listtype === "a" ? $prow->contactId : $prow->paperId);
-	$listlinks_txt = listLinks($id, $goBase, $xmode, $listtype);
+	$quicklinks_txt = quicklinks($id, $goBase, $xmode, $listtype);
 	if (isset($CurrentList) && $CurrentList > 0)
 	    $listarg .= "&amp;ls=$CurrentList";
     }
 
     // collect actions
     $x = "<div class='nvbar'><table class='vbar'><tr><td class='spanner'></td>\n";
-    if ($listlinks_txt)
-	$x .= "  <td class='listlinks nowrap'>" . $listlinks_txt . "</td>\n";
+    if ($quicklinks_txt)
+	$x .= "  <td class='quicklinks nowrap'>" . $quicklinks_txt . "</td>\n";
 
     $x .= "  <td class='gopaper nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
 
