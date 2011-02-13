@@ -18,7 +18,7 @@ $topicTitles = array("topics" => "Help topics",
 		     "scoresort" => "Sorting scores",
 		     "ranking" => "Paper ranking",
 		     "formulas" => "Formulas",
-		     "chair" => "Chair's guide");
+		     "chair" => "Chair’s guide");
 
 $topic = defval($_REQUEST, "t", "topics");
 if ($topic == "syntax")
@@ -58,7 +58,7 @@ function _alternateRow($caption, $entry, $next = null) {
 function topics() {
     global $ConfSiteSuffix;
     echo "<table>";
-    _alternateRow("<a href='help$ConfSiteSuffix?t=chair'>Chair's guide</a>", "How to run a conference using HotCRP.");
+    _alternateRow("<a href='help$ConfSiteSuffix?t=chair'>Chair’s guide</a>", "How to run a conference using HotCRP.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=search'>Search</a>", "About paper searching.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=keywords'>Search keywords</a>", "Quick reference to search keywords and search syntax.");
     _alternateRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
@@ -111,11 +111,11 @@ and it's possible to download all matching papers and/or reviews at once.
 The default search box returns papers that match
 <em>all</em> of the space-separated terms you enter.
 To search for words that <em>start</em> with
-a prefix, try &ldquo;term*&rdquo;.
+a prefix, try “term*”.
 To search for papers that match <em>some</em> of the terms,
-type &ldquo;term1 OR term2&rdquo;.
+type “term1 OR term2”.
 To search for papers that <em>don't</em> match a term,
-try &ldquo;-term&rdquo;.  Or select
+try “-term”.  Or select
 <a href='search$ConfSiteSuffix?opt=1'>Advanced search</a>
 and use \"With <b>any</b> of the words\" and \"<b>Without</b> the words\".
 
@@ -219,62 +219,62 @@ function searchQuickref() {
 
     echo "<table>\n";
     _searchQuickrefRow("Basics", "", "all papers in the search category");
-    _searchQuickrefRow("", "story", "&ldquo;story&rdquo; in title, abstract, authors$aunote");
+    _searchQuickrefRow("", "story", "“story” in title, abstract, authors$aunote");
     _searchQuickrefRow("", "119", "paper #119");
-    _searchQuickrefRow("", "1 2 5 12-24 kernel", "papers in the numbered set with &ldquo;kernel&rdquo; in title, abstract, authors");
-    _searchQuickrefRow("", "\"802\"", "&ldquo;802&rdquo; in title, abstract, authors (not paper #802)");
-    _searchQuickrefRow("", "very new", "&ldquo;very&rdquo; <em>and</em> &ldquo;new&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "1 2 5 12-24 kernel", "papers in the numbered set with “kernel” in title, abstract, authors");
+    _searchQuickrefRow("", "\"802\"", "“802” in title, abstract, authors (not paper #802)");
+    _searchQuickrefRow("", "very new", "“very” <em>and</em> “new” in title, abstract, authors");
     _searchQuickrefRow("", "very AND new", "the same");
-    _searchQuickrefRow("", "\"very new\"", "the phrase &ldquo;very new&rdquo; in title, abstract, authors");
-    _searchQuickrefRow("", "very OR new", "<em>either</em> &ldquo;very&rdquo; <em>or</em> &ldquo;new&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "\"very new\"", "the phrase “very new” in title, abstract, authors");
+    _searchQuickrefRow("", "very OR new", "<em>either</em> “very” <em>or</em> “new” in title, abstract, authors");
     _searchQuickrefRow("", "(very AND new) OR newest", "use parentheses to group");
-    _searchQuickrefRow("", "very -new", "&ldquo;very&rdquo; <em>but not</em> &ldquo;new&rdquo; in title, abstract, authors");
+    _searchQuickrefRow("", "very -new", "“very” <em>but not</em> “new” in title, abstract, authors");
     _searchQuickrefRow("", "very NOT new", "the same");
-    _searchQuickrefRow("", "ve*", "words that <em>start with</em> &ldquo;ve&rdquo; in title, abstract, authors");
-    _searchQuickrefRow("", "*me*", "words that <em>contain</em> &ldquo;me&rdquo; in title, abstract, authors");
-    _searchQuickrefRow("", "very THEN new", "like &ldquo;very OR new&rdquo;, but papers matching &ldquo;very&rdquo; appear earlier in the sorting order");
-    _searchQuickrefRow("Title", "ti:flexible", "title contains &ldquo;flexible&rdquo;");
-    _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains &ldquo;very novel&rdquo;");
-    _searchQuickrefRow("Authors", "au:poletto", "author list contains &ldquo;poletto&rdquo;");
+    _searchQuickrefRow("", "ve*", "words that <em>start with</em> “ve” in title, abstract, authors");
+    _searchQuickrefRow("", "*me*", "words that <em>contain</em> “me” in title, abstract, authors");
+    _searchQuickrefRow("", "very THEN new", "like “very OR new”, but papers matching “very” appear earlier in the sorting order");
+    _searchQuickrefRow("Title", "ti:flexible", "title contains “flexible”");
+    _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains “very novel”");
+    _searchQuickrefRow("Authors", "au:poletto", "author list contains “poletto”");
     if ($Me->isPC)
 	_searchQuickrefRow("", "au:pc", "one or more authors are PC members");
-    _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains &ldquo;liskov&rdquo;");
-    _searchQuickrefRow("Topics", "topic:link", "selected topics match &ldquo;link&rdquo;");
-    _searchQuickrefRow("Options", "opt:shadow", "selected submission options match &ldquo;shadow&rdquo;");
-    _searchQuickrefRow("", "budget:>1000", "numerical submission option &ldquo;budget&rdquo; has value &gt; 1000");
-    _searchQuickrefRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "tag:discuss", "tagged &ldquo;discuss&rdquo;");
-    _searchQuickrefRow("", "-tag:discuss", "not tagged &ldquo;discuss&rdquo;");
-    _searchQuickrefRow("", "order:discuss", "tagged &ldquo;discuss&rdquo;, sort by tag order (&ldquo;rorder:&rdquo; for reverse order)");
-    _searchQuickrefRow("", "tag:disc*", "matches any tag that <em>starts with</em> &ldquo;disc&rdquo;");
-    _searchQuickrefRow("Reviews", "re:fdabek", "&ldquo;fdabek&rdquo; in reviewer name/email");
+    _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains “liskov”");
+    _searchQuickrefRow("Topics", "topic:link", "selected topics match “link”");
+    _searchQuickrefRow("Options", "opt:shadow", "selected submission options match “shadow”");
+    _searchQuickrefRow("", "budget:>1000", "numerical submission option “budget” has value &gt; 1000");
+    _searchQuickrefRow("<a href='help$ConfSiteSuffix?t=tags'>Tags</a>", "tag:discuss", "tagged “discuss”");
+    _searchQuickrefRow("", "-tag:discuss", "not tagged “discuss”");
+    _searchQuickrefRow("", "order:discuss", "tagged “discuss”, sort by tag order (“rorder:” for reverse order)");
+    _searchQuickrefRow("", "tag:disc*", "matches any tag that <em>starts with</em> “disc”");
+    _searchQuickrefRow("Reviews", "re:fdabek", "“fdabek” in reviewer name/email");
     if ($retag) {
-	_searchQuickrefRow("", "re:$retag", "has a reviewer tagged &ldquo;$retag&rdquo;");
-	_searchQuickrefRow("", "re:\"$retag\"", "&ldquo;$retag&rdquo; in reviewer name/email");
+	_searchQuickrefRow("", "re:$retag", "has a reviewer tagged “$retag”");
+	_searchQuickrefRow("", "re:\"$retag\"", "“$retag” in reviewer name/email");
     }
-    _searchQuickrefRow("", "cre:fdabek", "&ldquo;fdabek&rdquo; (in reviewer name/email) has completed a review");
+    _searchQuickrefRow("", "cre:fdabek", "“fdabek” (in reviewer name/email) has completed a review");
     _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
     if ($retag)
-	_searchQuickrefRow("", "re:$retag>1", "at least two reviewers (assigned and/or completed) tagged &ldquo;$retag&rdquo;");
+	_searchQuickrefRow("", "re:$retag>1", "at least two reviewers (assigned and/or completed) tagged “$retag”");
     _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
     _searchQuickrefRow("", "ire:>0", "at least one incomplete review");
-    _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (&ldquo;cpri:&rdquo;, &ldquo;ipri:&rdquo;, and reviewer name/email also work)");
-    _searchQuickrefRow("", "sec:pai", "&ldquo;pai&rdquo; (reviewer name/email) is secondary reviewer (&ldquo;csec:&rdquo;, &ldquo;isec:&rdquo;, and review counts also work)");
+    _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (“cpri:”, “ipri:”, and reviewer name/email also work)");
+    _searchQuickrefRow("", "sec:pai", "“pai” (reviewer name/email) is secondary reviewer (“csec:”, “isec:”, and review counts also work)");
     if (($roundtags = $Conf->settingText("tag_rounds"))) {
 	preg_match('/ (\S+) /', $roundtags, $m);
-	_searchQuickrefRow("", "round:$m[1]", "review assignment is &ldquo;$m[1]&rdquo;");
+	_searchQuickrefRow("", "round:$m[1]", "review assignment is “$m[1]”");
     }
     if ($Conf->sversion >= 12
 	&& $Conf->setting("rev_ratings") != REV_RATINGS_NONE)
-	_searchQuickrefRow("", "rate:+", "review was rated positively (&ldquo;rate:-&rdquo; and &ldquo;rate:+>2&rdquo; also work; can combine with &ldquo;re:&rdquo;)");
+	_searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");
     _searchQuickrefRow("Comments", "cmt:>0", "at least one comment visible to PC (including authors' response)");
     _searchQuickrefRow("", "aucmt:>0", "at least one comment visible to authors (including authors' response)");
-    _searchQuickrefRow("", "cmt:sylvia", "&ldquo;sylvia&rdquo; (in name/email) wrote at least one comment visible to PC; can combine with counts, use reviewer tags");
-    _searchQuickrefRow("Leads", "lead:fdabek", "&ldquo;fdabek&rdquo; (in name/email) is discussion lead");
+    _searchQuickrefRow("", "cmt:sylvia", "“sylvia” (in name/email) wrote at least one comment visible to PC; can combine with counts, use reviewer tags");
+    _searchQuickrefRow("Leads", "lead:fdabek", "“fdabek” (in name/email) is discussion lead");
     _searchQuickrefRow("", "lead:none", "no assigned discussion lead");
     _searchQuickrefRow("", "lead:any", "some assigned discussion lead");
-    _searchQuickrefRow("Shepherds", "shep:fdabek", "&ldquo;fdabek&rdquo; (in name/email) is shepherd (&ldquo;none&rdquo; and &ldquo;any&rdquo; also work)");
+    _searchQuickrefRow("Shepherds", "shep:fdabek", "“fdabek” (in name/email) is shepherd (“none” and “any” also work)");
     _searchQuickrefRow("Conflicts", "conflict:me", "you have a conflict with a paper");
-    _searchQuickrefRow("", "conflict:fdabek", "&ldquo;fdabek&rdquo; (in name/email) has a conflict with the paper<br /><span class='hint'>This search is only available to chairs and to PC members who can see the paper&rsquo;s author list.</span>");
+    _searchQuickrefRow("", "conflict:fdabek", "“fdabek” (in name/email) has a conflict with the paper<br /><span class='hint'>This search is only available to chairs and to PC members who can see the paper’s author list.</span>");
     _searchQuickrefRow("", "conflict:pc", "some PC member has a conflict with the paper");
     _searchQuickrefRow("", "conflict:pc>2", "at least three PC members have conflicts with the paper");
     _searchQuickrefRow("Status", "status:sub", "paper is submitted for review", "t=all");
@@ -285,7 +285,7 @@ function searchQuickref() {
     foreach ($rf->options["outcome"] as $dec)
 	$dec = simplifyWhitespace(strtolower($dec));
     $qdec = (strpos($dec, " ") !== false ? "\"$dec\"" : $dec);
-    _searchQuickrefRow("Decision", "dec:$qdec", "decision is &ldquo;$dec&rdquo; (partial matches OK)");
+    _searchQuickrefRow("Decision", "dec:$qdec", "decision is “$dec” (partial matches OK)");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
     _searchQuickrefRow("", "dec:no", "one of the reject decisions");
     _searchQuickrefRow("", "dec:any", "decision specified");
@@ -307,17 +307,17 @@ function searchQuickref() {
 	    $r2 = $rf->analyzeField($f[0][1]);
 	    _searchQuickrefRow("", "$r2->abbrevName:$r2->typScore", "other fields accepted (here, $r2->shortHtml)");
 	}
-	_searchQuickrefRow("", "$r->abbrevName:$r->typScoreRange", "completed reviews&rsquo; $r->shortHtml scores fill the $r->lowScore&ndash;$r->typScore range");
+	_searchQuickrefRow("", "$r->abbrevName:$r->typScoreRange", "completed reviews’ $r->shortHtml scores fill the $r->lowScore&ndash;$r->typScore range");
 	_searchQuickrefRow("", "$r->abbrevName:>$r->typScore", "at least one completed review has $r->shortHtml score greater than $r->typScore");
 	_searchQuickrefRow("", "$r->abbrevName:2<=$r->typScore", "at least two completed reviews have $r->shortHtml score less than or equal to $r->typScore");
 	_searchQuickrefRow("", "$r->abbrevName:pc>$r->typScore", "at least one completed PC review has $r->shortHtml score greater than $r->typScore");
 	_searchQuickrefRow("", "$r->abbrevName:pc:2>$r->typScore", "at least two completed PC reviews have $r->shortHtml score greater than $r->typScore");
-	_searchQuickrefRow("", "$r->abbrevName:sylvia=$r->typScore", "&ldquo;sylvia&rdquo; (reviewer name/email) gave $r->shortHtml score $r->typScore");
+	_searchQuickrefRow("", "$r->abbrevName:sylvia=$r->typScore", "“sylvia” (reviewer name/email) gave $r->shortHtml score $r->typScore");
 	$t = "";
     }
     if (count($f[1])) {
 	$r = $rf->analyzeField($f[1][0]);
-	_searchQuickrefRow($t, "$r->abbrevName1:finger", "at least one completed review has &ldquo;finger&rdquo; in the $r->shortHtml field");
+	_searchQuickrefRow($t, "$r->abbrevName1:finger", "at least one completed review has “finger” in the $r->shortHtml field");
 	_searchQuickrefRow($t, "$r->abbrevName:finger", "other abbreviations accepted");
 	_searchQuickrefRow($t, "$r->abbrevName:any", "at least one completed review has text in the $r->shortHtml field");
     }
@@ -333,7 +333,7 @@ function _currentVoteTags() {
 	sort($vt);
 	$votetags = " (currently ";
 	foreach ($vt as $v)
-	    $votetags .= "&ldquo;<a href=\"search$ConfSiteSuffix?q=rorder:$v\">$v</a>&rdquo;, ";
+	    $votetags .= "“<a href=\"search$ConfSiteSuffix?q=rorder:$v\">$v</a>”, ";
 	return substr($votetags, 0, strlen($votetags) - 2) . ")";
     } else
 	return "";
@@ -357,7 +357,7 @@ function tags() {
 	    sort($ct);
 	    $chairtags = " (currently ";
 	    foreach ($ct as $c)
-		$chairtags .= "&ldquo;<a href=\"search$ConfSiteSuffix?q=tag:$c\">$c</a>&rdquo;, ";
+		$chairtags .= "“<a href=\"search$ConfSiteSuffix?q=tag:$c\">$c</a>”, ";
 	    $chairtags = substr($chairtags, 0, strlen($chairtags) - 2) . ")";
 	}
 
@@ -380,12 +380,12 @@ function tags() {
 PC members and administrators can attach tag names to papers.
 Papers can have many tags, and you can invent new tags on the fly.
 Tags are never shown to authors$conflictmsg1.
-It&rsquo;s easy to add and remove tags and to list all papers with a given tag,
+It’s easy to add and remove tags and to list all papers with a given tag,
 and <em>ordered</em> tags preserve a particular paper order.
 Tags also affect color highlighting in paper lists.
 
-<p><em>Twiddle tags</em>, with names like &ldquo;~tag&rdquo;, are visible only
-to their creators.  Tags with two twiddles, such as &ldquo;~~tag&rdquo;, are
+<p><em>Twiddle tags</em>, with names like “~tag”, are visible only
+to their creators.  Tags with two twiddles, such as “~~tag”, are
 visible only to PC chairs.  All other tags are visible to the entire PC.</p>");
 
     _alternateRow("Using tags", "
@@ -393,43 +393,43 @@ Here are some example ways to use tags.
 
 <ul>
 <li><strong>Avoid discussing low-ranked submissions at the PC meeting.</strong>
- Mark low-ranked submissions with tag &ldquo;nodiscuss&rdquo;, then ask the PC to
- <a href='search$ConfSiteSuffix?q=tag:nodiscuss'>search for &ldquo;tag:nodiscuss&rdquo;</a>.
+ Mark low-ranked submissions with tag “nodiscuss”, then ask the PC to
+ <a href='search$ConfSiteSuffix?q=tag:nodiscuss'>search for “tag:nodiscuss”</a>.
  PC members can easily check the list for controversial papers they'd like to discuss despite their ranking.
- They can email the chairs about such papers, or, even easier, add a &ldquo;discussanyway&rdquo; tag.
- (You might make the &ldquo;nodiscuss&rdquo; tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but it's usually better to trust the PC.)</li>
+ They can email the chairs about such papers, or, even easier, add a “discussanyway” tag.
+ (You might make the “nodiscuss” tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but it's usually better to trust the PC.)</li>
 
 <li><strong>Mark controversial papers that would benefit from additional review.</strong>
- PC members could add the &ldquo;controversy&rdquo; tag when the current reviewers disagree.
+ PC members could add the “controversy” tag when the current reviewers disagree.
  A <a href='search$ConfSiteSuffix?q=tag:controversy'>search</a> shows where the PC thinks more review is needed.</li>
 
 <li><strong>Mark PC-authored papers for extra scrutiny.</strong>
  First, <a href='search$ConfSiteSuffix?t=s&amp;qt=au'>search for PC members' last names in author fields</a>.
- Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag &ldquo;pcpaper&rdquo;.
+ Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag “pcpaper”.
  A <a href='search$ConfSiteSuffix?t=s&amp;qx=tag:pcpaper'>search</a> shows papers without PC authors.
- (Since PC members can see whether a paper is tagged &ldquo;pcpaper&rdquo;, you may want to delay defining the tag until just before the meeting.)</li>
+ (Since PC members can see whether a paper is tagged “pcpaper”, you may want to delay defining the tag until just before the meeting.)</li>
 
 <li><strong>Vote for papers.</strong>
  The chair can define special voting tags$votetags$setting.
  Each PC member is assigned an allotment of votes to distribute among papers.
- For instance, if &ldquo;v&rdquo; were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag &ldquo;~v#5&rdquo;.
- The system automatically sums PC members' votes into the public &ldquo;v&rdquo; tag.
- To search for papers by vote count, search for &ldquo;<a href='search$ConfSiteSuffix?t=s&amp;q=rorder:v'>rorder:v</a>&rdquo;. (<a href='help$ConfSiteSuffix?t=votetags'>Learn more</a>)</li>
+ For instance, if “v” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “~v#5”.
+ The system automatically sums PC members' votes into the public “v” tag.
+ To search for papers by vote count, search for “<a href='search$ConfSiteSuffix?t=s&amp;q=rorder:v'>rorder:v</a>”. (<a href='help$ConfSiteSuffix?t=votetags'>Learn more</a>)</li>
 
 <li><strong>Rank papers.</strong>
  Each PC member can set tags indicating their preference ranking for papers.
- For instance, a PC member's favorite paper would get tag &ldquo;~rank#1&rdquo;, the next favorite &ldquo;~rank#2&rdquo;, and so forth.
+ For instance, a PC member's favorite paper would get tag “~rank#1”, the next favorite “~rank#2”, and so forth.
  The chair can then combine these rankings into a global preference order using a Condorcet method.
  (<a href='help$ConfSiteSuffix?t=ranking'>Learn more</a>)</li>
 
 <li><strong>Define a discussion order for the PC meeting.</strong>
  Publishing the order lets PC members prepare to discuss upcoming papers.
- Define an ordered tag such as &ldquo;discuss&rdquo; (see below for how), then ask the PC to <a href='search$ConfSiteSuffix?q=order:discuss'>search for &ldquo;order:discuss&rdquo;</a>.
+ Define an ordered tag such as “discuss” (see below for how), then ask the PC to <a href='search$ConfSiteSuffix?q=order:discuss'>search for “order:discuss”</a>.
  The PC can now see the order and use quick links to go from paper to paper.$conflictmsg2</li>
 
 <li><strong>Mark tentative decisions during the PC meeting</strong> either
- using decision selectors or, perhaps, &ldquo;accept&rdquo; and
- &ldquo;reject&rdquo; tags.</li>
+ using decision selectors or, perhaps, “accept” and
+ “reject” tags.</li>
 
 </ul>
 ");
@@ -438,11 +438,11 @@ A paper's tags are shown like this:
 
 <p><img src='images/extagsnone.png' alt='[Tag list on review screen]' /></p>
 
-To find all papers with tag &ldquo;discuss&rdquo;:&nbsp; " . _searchForm("tag:discuss") . "
+To find all papers with tag “discuss”:&nbsp; " . _searchForm("tag:discuss") . "
 
 <p>Tags are only shown to PC members and administrators.
 $conflictmsg3$setting
-Additionally, twiddle tags, which have names like &ldquo;~tag&rdquo;, are
+Additionally, twiddle tags, which have names like “~tag”, are
 visible only to their creators; each PC member has an independent set.</p>");
     _alternateRow("<a name='changing'>Changing tags</a>", "
 To change a paper's tags, click the Tags box's <img src='images/edit.png'
@@ -466,46 +466,46 @@ twiddle</b> action removes a tag and all users' matching twiddle tags.</p>
 most tags, only PC chairs can change certain tags$chairtags.  $setting</p>");
     _alternateRow("Tag values<br />and discussion orders", "
 Tags have optional per-paper numeric values, which are displayed as
-&ldquo;tag#100&rdquo;.  Searching for a tag with &ldquo;<a
-href='search$ConfSiteSuffix?q=order:tagname'>order:tagname</a>&rdquo; will
+“tag#100”.  Searching for a tag with “<a
+href='search$ConfSiteSuffix?q=order:tagname'>order:tagname</a>” will
 return the papers sorted by the tag value.  This is useful, for example, for
 PC meeting discussion orders.  Change the order by editing the tag values.
-Search for specific values with search terms like &ldquo;<a
-href='search$ConfSiteSuffix?q=tag:discuss%232'>tag:discuss#2</a>&rdquo;
-or &ldquo;<a
-href='search$ConfSiteSuffix?q=tag:discuss%3E1'>tag:discuss>1</a>&rdquo;.
+Search for specific values with search terms like “<a
+href='search$ConfSiteSuffix?q=tag:discuss%232'>tag:discuss#2</a>”
+or “<a
+href='search$ConfSiteSuffix?q=tag:discuss%3E1'>tag:discuss>1</a>”.
 
 <p>It's common to assign increasing tag values to a set of papers.  Do this
 using the <a href='search$ConfSiteSuffix'>search screen</a>.  Search for the
 papers you want, sort them into the right order, select their checkboxes, and
 choose <b>Define order</b> in the tag action area.  If no sort gives what
 you want, search for the desired paper numbers in order&mdash;for instance,
-you might search for &ldquo;<a href='search$ConfSiteSuffix?q=4+1+12+9'>4 1 12
-19</a>&rdquo;&mdash;then <b>Select all</b> and <b>Define order</b>.  To add
+you might search for “<a href='search$ConfSiteSuffix?q=4+1+12+9'>4 1 12
+19</a>”&mdash;then <b>Select all</b> and <b>Define order</b>.  To add
 new papers at the end of an existing discussion order, use <b>Add to order</b>.
 To insert papers into an existing order, use <b>Add to order</b> with a tag
 value; for example, to insert starting at value 5, use <b>Add to order</b> with
-&ldquo;tag#5&rdquo;.  The rest of the order is renumbered to accomodate the
+“tag#5”.  The rest of the order is renumbered to accomodate the
 insertion.</p>
 
-<p><b>Define order</b> might assign values &ldquo;tag#1&rdquo;,
-&ldquo;tag#3&rdquo;, &ldquo;tag#6&rdquo;, and &ldquo;tag#7&rdquo;
+<p><b>Define order</b> might assign values “tag#1”,
+“tag#3”, “tag#6”, and “tag#7”
 to adjacent papers.  The gaps make it harder to infer
 conflicted papers' positions.  (Any given gap might or might not hold a
 conflicted paper.)  In contrast, the <b>Define gapless order</b> action assigns
-strictly sequential values, like &ldquo;tag#1&rdquo;,
-&ldquo;tag#2&rdquo;, &ldquo;tag#3&rdquo;, &ldquo;tag#4&rdquo;.
+strictly sequential values, like “tag#1”,
+“tag#2”, “tag#3”, “tag#4”.
 <b>Define order</b> is better for most purposes.</p>");
     _alternateRow("Tag colors", "
-The tag names &ldquo;red&rdquo;, &ldquo;orange&rdquo;, &ldquo;yellow&rdquo;,
-&ldquo;green&rdquo;, &ldquo;blue&rdquo;, &ldquo;purple&rdquo;, and
-&ldquo;grey&rdquo; act as highlight colors.  For example, papers tagged with
-&ldquo;red&rdquo; will appear red in paper lists (for people who can see that
-tag).  Tag a paper &ldquo;~red&rdquo; to make it red on your displays, but not
+The tag names “red”, “orange”, “yellow”,
+“green”, “blue”, “purple”, and
+“grey” act as highlight colors.  For example, papers tagged with
+“red” will appear red in paper lists (for people who can see that
+tag).  Tag a paper “~red” to make it red on your displays, but not
 others'.  System administrators can <a
 href='settings$ConfSiteSuffix?group=rev'>associate other tags with colors</a>
-so that, for example, &ldquo;<a
-href='search$ConfSiteSuffix?q=tag:reject'>tag:reject</a>&rdquo; papers show up
+so that, for example, “<a
+href='search$ConfSiteSuffix?q=tag:reject'>tag:reject</a>” papers show up
 as grey.");
     echo "</table>\n";
 }
@@ -519,15 +519,15 @@ function revround() {
     _alternateRow("Review round basics", "
 Many conferences divide reviews into multiple <em>rounds</em>.
 HotCRP lets chairs label assignments in each round with names, such as
-&ldquo;R1&rdquo; or &ldquo;lastround&rdquo;.
-(We suggest very short names like &ldquo;R1&rdquo;.)
-To list another PC member&rsquo;s round &ldquo;R1&rdquo; review assignments, <a href='search$ConfSiteSuffix?q=re:membername+round:R1'>search for &ldquo;re:membername round:R1&rdquo;</a>.");
+“R1” or “lastround”.
+(We suggest very short names like “R1”.)
+To list another PC member’s round “R1” review assignments, <a href='search$ConfSiteSuffix?q=re:membername+round:R1'>search for “re:membername round:R1”</a>.");
 
     // get current tag settings
     if (!$Me->isPC)
 	/* do nothing */;
     else if (($rounds = trim($Conf->settingText("tag_rounds"))))
-	_alternateRow("Defined rounds", "So far the following review rounds have been defined: &ldquo;" . join("&rdquo;, &ldquo;", preg_split('/\s+/', htmlspecialchars($rounds))) . "&rdquo;.");
+	_alternateRow("Defined rounds", "So far the following review rounds have been defined: “" . join("”, “", preg_split('/\s+/', htmlspecialchars($rounds))) . "”.");
     else
 	_alternateRow("Defined rounds", "So far no review rounds have been defined.");
 
@@ -587,11 +587,11 @@ their reviews.  The interface appears above each visible review:
   never shows rating counts to authors.</p>
 
 <p>To find which of your reviews might need work, simply
-<a href='search$ConfSiteSuffix?q=rate:-'>search for &ldquo;rate:&minus;&rdquo;</a>.
+<a href='search$ConfSiteSuffix?q=rate:-'>search for “rate:&minus;”</a>.
 To find all reviews with positive ratings,
-<a href='search$ConfSiteSuffix?q=re:any+rate:%2B'>search for &ldquo;re:any&nbsp;rate:+&rdquo;</a>.
+<a href='search$ConfSiteSuffix?q=re:any+rate:%2B'>search for “re:any&nbsp;rate:+”</a>.
 You may also search for reviews with specific ratings; for instance,
-<a href='search$ConfSiteSuffix?q=rate:helpful'>search for &ldquo;rate:helpful&rdquo;</a>.</p>");
+<a href='search$ConfSiteSuffix?q=rate:helpful'>search for “rate:helpful”</a>.</p>");
     if ($Conf->setting("rev_ratings") == REV_RATINGS_PC)
 	$what = "only PC members";
     else if ($Conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
@@ -667,11 +667,11 @@ The chair can <a href='settings$ConfSiteSuffix?group=rev'>define a set of voting
 PC members vote by assigning the corresponding twiddle tags;
 the aggregated PC vote is visible in the public tag.</p>
 
-<p>For example, assume that an administrator defines a voting tag &ldquo;vote&rdquo; with an allotment of 10 votes.
-To vote for a paper, PC members add the &ldquo;~vote&rdquo; tag.
-Adding &ldquo;~vote#2&rdquo; assigns two votes, and so forth.
+<p>For example, assume that an administrator defines a voting tag “vote” with an allotment of 10 votes.
+To vote for a paper, PC members add the “~vote” tag.
+Adding “~vote#2” assigns two votes, and so forth.
 The system ensures no PC member exceeds the allotment.
-The publicly visible &ldquo;vote&rdquo; tag is automatically set to the total number of PC votes for each paper.
+The publicly visible “vote” tag is automatically set to the total number of PC votes for each paper.
 Hover to learn how the PC voted:</p>
 
 <p><img src='images/extagvotehover.png' alt='[Hovering over a voting tag]' /></p>");
@@ -694,14 +694,14 @@ method</a> by default, combines these rankings into a global preference order.
 href='help$ConfSiteSuffix?t=tags'>tags system</a>.  The chair can <a
 href='settings$ConfSiteSuffix?group=rev'>define a tag to be used for
 ranking</a>.  PC members vote by assigning the corresponding twiddle tags.
-For instance, a paper tagged &ldquo;~rank#1&rdquo; is the user's first
-preference, a paper tagged &ldquo;~rank#2&rdquo; is the second preference,
+For instance, a paper tagged “~rank#1” is the user's first
+preference, a paper tagged “~rank#2” is the second preference,
 and so forth.  To combine PC rankings into a global preference order, the PC
 chair goes to the <a href='search$ConfSiteSuffix?q='>search page</a>, selects
 all papers, and chooses Tags &gt; Calculate&nbsp;rank, entering
-&ldquo;rank&rdquo; for the tag.  At that point, the global rank can be viewed
+“rank” for the tag.  At that point, the global rank can be viewed
 by a <a href='search$ConfSiteSuffix?q=order:rank'>search for
-&ldquo;order:rank&rdquo;</a>.</p>
+“order:rank”</a>.</p>
 
 <p>PC members may enter rankings by manipulating tags directly, but it will
 generally be easier to use the <a href='offline$ConfSiteSuffix'>offline
@@ -758,10 +758,10 @@ X	11	Analyzing Scatter/Gather I/O Using Encrypted Epistemologies
 <tr><td class='pad'>#4</td><td class='pad'>Deploying Congestion Control Using Homogeneous Modalities</td><td class='pad'>~rank#5</td></tr></table></p>
 
 <p>Since #6, #10, and #11 still had X prefixes, they were not assigned a rank.
- The user can search for &ldquo;order:~rank&rdquo; to see their ranking, and
+ The user can search for “order:~rank” to see their ranking, and
  inside the system; an administrator can search for
- &ldquo;order:<i>pcname</i>~rank&rdquo; to see a particular user's ranking.
- Once a global ranking is assigned, &ldquo;order:rank&rdquo; will show it.</p>
+ “order:<i>pcname</i>~rank” to see a particular user's ranking.
+ Once a global ranking is assigned, “order:rank” will show it.</p>
 ");
 
     echo "</table>\n";
@@ -815,13 +815,13 @@ weights low expertise just slightly less than high expertise.</p>
     _alternateRow("", "OveMer", "Abbreviations are also accepted");
     _alternateRow("Aggregate functions", "Aggregate functions calculate a
 value based on all of a paper's visible reviews.  For instance,
-&ldquo;max(OveMer)&rdquo; would return the maximum Overall merit score
+“max(OveMer)” would return the maximum Overall merit score
 assigned to a paper.
 
 <p>An aggregate function's argument is calculated once per visible review.
-For instance, &ldquo;max(OveMer/RevExp)&rdquo; calculates the maximum value of
-&ldquo;OveMer/RevExp&rdquo; for any review, whereas
-&ldquo;max(OveMer)/max(RevExp)&rdquo; divides the maximum overall merit by the
+For instance, “max(OveMer/RevExp)” calculates the maximum value of
+“OveMer/RevExp” for any review, whereas
+“max(OveMer)/max(RevExp)” divides the maximum overall merit by the
 maximum reviewer expertise.</p>
 
 <p>The top-level value of a formula expression cannot be a raw review score.
@@ -830,7 +830,7 @@ Use an aggregate function to calculate a property over all review scores.</p>");
     _alternateRow("", "count(<em>e</em>)", "Number of reviews where <em>e</em> is not blank");
     _alternateRow("", "sum(<em>e</em>)", "Sum");
     _alternateRow("", "avg(<em>e</em>)", "Average");
-    _alternateRow("", "wavg(<em>e</em>, <em>weight</em>)", "Weighted average; equals &ldquo;sum(<em>e</em> * <em>weight</em>) / sum(<em>weight</em>)&rdquo;");
+    _alternateRow("", "wavg(<em>e</em>, <em>weight</em>)", "Weighted average; equals “sum(<em>e</em> * <em>weight</em>) / sum(<em>weight</em>)”");
     _alternateRow("", "stddev(<em>e</em>)", "Sample standard deviation");
     _alternateRow("", "var(<em>e</em>)", "Sample variance");
     _alternateRow("", "stddev_pop(<em>e</em>), var_pop(<em>e</em>)", "Population standard deviation, population variance");
@@ -853,17 +853,17 @@ Follow these steps to prepare to accept paper submissions.
 
 <li><p><strong><a href='settings$ConfSiteSuffix?group=sub'>Set submission
   policies</a></strong>, including whether submission is blind, whether
-  authors check off conflicted PC members (&ldquo;Collect authors' PC conflicts
-  with checkboxes&rdquo;), and whether authors must enter additional non-PC collaborators,
-  which can help detect conflicts with external reviewers (&ldquo;Collect authors'
-  other collaborators as text&rdquo;).</p></li>
+  authors check off conflicted PC members (“Collect authors' PC conflicts
+  with checkboxes”), and whether authors must enter additional non-PC collaborators,
+  which can help detect conflicts with external reviewers (“Collect authors'
+  other collaborators as text”).</p></li>
 
 <li><p><strong><a href='settings$ConfSiteSuffix?group=sub'>Set submission
   deadlines.</a></strong> Authors first <em>register</em>, then <em>submit</em>
   their papers, possibly multiple times; they choose for each submitted
   version whether that version is ready for review.  Normally, HotCRP allows
   authors to update their papers until the deadline, but you can also require
-  that authors &ldquo;freeze&rdquo; each submission explicitly; only
+  that authors “freeze” each submission explicitly; only
   administrators can update frozen submissions.
   The only deadline that really matters is the paper submission
   deadline, but HotCRP also supports a separate paper registration deadline,
@@ -893,7 +893,7 @@ Follow these steps to prepare to accept paper submissions.
 
 <li><p><strong><a href='settings$ConfSiteSuffix?group=sub'>Set
   up the automated format checker (optional).</a></strong> This adds a
-  &ldquo;Check format&rdquo; button to the Edit Paper screen.
+  “Check format” button to the Edit Paper screen.
   Clicking the button checks the paper for formatting errors, such as going
   over the page limit.  Papers with formatting errors may still be submitted,
   since the checker itself can make mistakes, but the automated checker leaves
@@ -915,12 +915,12 @@ After the submission deadline has passed:
 <li><p>Consider looking through <a
   href='search$ConfSiteSuffix?q=&amp;t=all'>all papers</a> for
   anomalies.  Withdraw and/or delete duplicates or update details on the <a
-  href='paper$ConfSiteSuffix'>paper pages</a> (via &ldquo;Edit paper&rdquo;).
+  href='paper$ConfSiteSuffix'>paper pages</a> (via “Edit paper”).
   Also consider contacting the authors of <a
   href='search$ConfSiteSuffix?q=status:unsub&amp;t=all'>papers that
   were never officially submitted</a>, especially if a PDF document was
   uploaded (you can tell from the icon in the search list).  Sometimes a
-  user will uncheck &ldquo;The paper is ready for review&rdquo; by mistake.</p></li>
+  user will uncheck “The paper is ready for review” by mistake.</p></li>
 
 <li><p><strong><a href='settings$ConfSiteSuffix?group=rfo'>Prepare the
   review form.</a></strong> Take a look at the templates to get
@@ -929,7 +929,7 @@ After the submission deadline has passed:
 <li><p><strong><a href='settings$ConfSiteSuffix?group=rev'>Set review
   policies and deadlines</a></strong>, including reviewing deadlines, whether
   review is blind, and whether PC members may review any paper
-  (usually &ldquo;yes&rdquo; is the right answer).</p></li>
+  (usually “yes” is the right answer).</p></li>
 
 <li><p><strong><a href='reviewprefs$ConfSiteSuffix'>Collect review
   preferences from the PC.</a></strong> PC members can rank-order papers they
@@ -941,8 +941,8 @@ After the submission deadline has passed:
   href='paper$ConfSiteSuffix'>paper pages</a>.</p>
 
   <p>If you'd like, you can collect review preferences before the submission
-  deadline.  Select <a href='settings$ConfSiteSuffix?group=sub'>&ldquo;PC can
-  see <em>all registered papers</em> until submission deadline&rdquo;</a>, which
+  deadline.  Select <a href='settings$ConfSiteSuffix?group=sub'>“PC can
+  see <em>all registered papers</em> until submission deadline”</a>, which
   allows PC members to see abstracts for registered papers that haven't yet
   been submitted.</p></li>
 
@@ -960,7 +960,7 @@ After the submission deadline has passed:
   href='bulkassign$ConfSiteSuffix'>by uploading an assignments
   file</a>, or, even easier, <a
   href='autoassign$ConfSiteSuffix'>automatically</a>.  PC
-  review assignments can be &ldquo;primary&rdquo; or &ldquo;secondary&rdquo;; the difference is
+  review assignments can be “primary” or “secondary”; the difference is
   that primary reviewers are expected to complete their review, but a
   secondary reviewer can choose to delegate their review to someone else.</p>
 
@@ -986,10 +986,10 @@ mechanism.  For each chair conflict:
 
 <li>A chair or system administrator goes to the paper's <a
   href='assign$ConfSiteSuffix'>assignment page</a> and clicks
-  on &ldquo;Request review&rdquo; without entering a name or email address.
+  on “Request review” without entering a name or email address.
   This creates a new, completely anonymous review slot and reports a
   corresponding <em>review token</em>, a short string of letters and numbers
-  such as &ldquo;9HDZYUB&rdquo;.  The chair creates as many slots as
+  such as “9HDZYUB”.  The chair creates as many slots as
   desired.</li>
 
 <li>The chair sends the resulting review tokens to a PC member designated as
@@ -1002,22 +1002,22 @@ mechanism.  For each chair conflict:
 
 </ol>
 
-<p>Reviews entered using this procedure appear to be authored by &ldquo;Jane
-  Q. Public.&rdquo; Chairs can still see (and edit) the reviews if they
+<p>Reviews entered using this procedure appear to be authored by “Jane
+  Q. Public.” Chairs can still see (and edit) the reviews if they
   override their conflicts, but reviewer identities are not stored in the
   database at all.</p>
 
 <p>Alternately, the trusted manager can send the reviewers the paper and an
   offline review form via email (not using HotCRP).  The reviewers complete
   the offline forms and send them to the manager, who uploads them into the
-  &ldquo;Jane Q. Public&rdquo; review slots using the review tokens.  This
+  “Jane Q. Public” review slots using the review tokens.  This
   way, even web server access logs store only the manager's identity.</p>
 
 ");
     _alternateRow("Before the meeting", "
 Before the meeting, you will generally <a
-href='settings$ConfSiteSuffix?group=rev'>set &ldquo;PC can see all
-reviews&rdquo;</a>, allowing the program committee to view reviews and scores for
+href='settings$ConfSiteSuffix?group=rev'>set “PC can see all
+reviews”</a>, allowing the program committee to view reviews and scores for
 non-conflicted papers.  (In many conferences, PC members are initially
 prevented from seeing a paper's reviews until they have completed their own
 review for that paper; this supposedly reduces bias.)
@@ -1031,15 +1031,15 @@ review for that paper; this supposedly reduces bias.)
   into the system as <a
   href='comment$ConfSiteSuffix'>comments</a>.  On the <a
   href='settings$ConfSiteSuffix?group=dec'>decision settings page</a>,
-  update &ldquo;Can authors see reviews&rdquo; and &ldquo;Collect responses to the
-  reviews,&rdquo; then <a href='mail$ConfSiteSuffix'>send mail to
+  update “Can authors see reviews” and “Collect responses to the
+  reviews,” then <a href='mail$ConfSiteSuffix'>send mail to
   authors</a> informing them of the response deadlines.  PC members will still
   be able to update their reviews, assuming it's before the <a
   href='settings$ConfSiteSuffix?group=rev'>review deadline</a>; authors
   are informed via email of any review changes.  At the end of the response
   period it's generally good to <a
-  href='settings$ConfSiteSuffix?group=dec'>turn off &ldquo;Authors can see
-  reviews&rdquo;</a> so PC members can update their reviews in peace.</p></li>
+  href='settings$ConfSiteSuffix?group=dec'>turn off “Authors can see
+  reviews”</a> so PC members can update their reviews in peace.</p></li>
 
 <li><p>Set <strong><a href='settings$ConfSiteSuffix?group=rev'>PC can
   see all reviews</a></strong> if you haven't already.</p></li>
@@ -1066,8 +1066,8 @@ review for that paper; this supposedly reduces bias.)
 
 <li><p><strong><a href='settings$ConfSiteSuffix?group=dec'>Define decision
   types (optional).</a></strong> By default, HotCRP has two decision types,
-  &ldquo;accept&rdquo; and &ldquo;reject,&rdquo; but you can add other types of acceptance and
-  rejection, such as &ldquo;accept as short paper.&rdquo;</p></li>
+  “accept” and “reject,” but you can add other types of acceptance and
+  rejection, such as “accept as short paper.”</p></li>
 
 <li><p>The night before the meeting, <strong><a
   href='search$ConfSiteSuffix?q=&amp;t=s'>download all
@@ -1111,9 +1111,9 @@ review for that paper; this supposedly reduces bias.)
 <li><p>Give reviewers some time to <strong>update their reviews</strong> in
   response to PC discussion (optional).</p></li>
 
-<li><p>Set <a href='settings$ConfSiteSuffix?group=dec'>&ldquo;Who can
-  <strong>see decisions?</strong>&rdquo;</a> to &ldquo;Authors, PC members,
-  and reviewers.&rdquo;</p></li>
+<li><p>Set <a href='settings$ConfSiteSuffix?group=dec'>“Who can
+  <strong>see decisions?</strong>”</a> to “Authors, PC members,
+  and reviewers.”</p></li>
 
 <li><p><strong><a href='mail$ConfSiteSuffix'>Send mail to
   authors</a></strong> informing them that reviews and decisions are
