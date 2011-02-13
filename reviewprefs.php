@@ -169,27 +169,26 @@ $rf = reviewForm();
 if (count($rf->topicName)) {
     $topicnote = " and their topics.  You have high
 interest in <span class='topic2'>bold topics</span> and low interest in <span
-class='topic0'>grey topics</span>.  &ldquo;Topic score&rdquo; is higher the more you
-are interested in the paper's topics";
+class='topic0'>grey topics</span>.  High “Topic score” means you
+are interested in the paper’s topics";
     $topicnote2 = ", using topic scores to break ties";
 } else
     $topicnote = $topicnote2 = "";
 
 $Conf->infoMsg("<p>A review preference is a small integer that indicates how much you want to
 review a paper.  Positive numbers mean you want to review the paper, negative
-numbers mean you don&rsquo;t.  The further from 0, the stronger you feel; the
-default, 0, means you&rsquo;re indifferent.  &minus;100 means you think you have a conflict, and
+numbers mean you don’t.  The further from 0, the stronger you feel; the
+default, 0, means you’re indifferent.  &minus;100 means you think you have a conflict, and
 &minus;20 to 20 is a typical range for real preferences.  Multiple papers can
-have the same preference.  The system&rsquo;s automatic assignment algorithm
-attempts to assign reviews in preference order$topicnote2.  Different users&rsquo;
+have the same preference.  The automatic assignment algorithm
+attempts to assign reviews in descending preference order$topicnote2.  Different users’
 preference values are not compared and need not use the same
 scale.</p>
 
 <p>The list shows all submitted papers$topicnote.  Select a column heading
-to sort by that column.  Enter preferences in the text boxes or by following
-the paper links.  You may also upload preferences from a text file; see the
-&ldquo;Download&rdquo; and &ldquo;Upload&rdquo; links below the paper
-list.</p>");
+to sort by that column.  Enter preferences in the text boxes, or on each
+paper’s detail page.  You may also upload preferences from a text file; see the
+“Download” and “Upload” links below the paper list.</p>");
 
 
 // search
@@ -201,6 +200,7 @@ $pl->showHeader = PaperList::HEADER_TITLES;
 $pl->foldtype = "pf";
 $pl->footer = "<div id='plactr'><input class='hb' type='submit' name='update' value='Save changes' /></div>";
 $pl_text = $pl->text("editReviewPreference", $Me, "pltable_full");
+$_SESSION["l"][$pl->listNumber]["revprefs"] = true;
 
 
 // DISPLAY OPTIONS

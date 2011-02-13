@@ -266,6 +266,8 @@ function crpfocus(id, subfocus, seltype) {
     var felt = $$(id + (subfocus ? subfocus : "") + "_d");
     if (felt && !(felt.type == "text" && felt.value && seltype == 1))
 	felt.focus();
+    if (felt && felt.type == "text" && seltype == 3 && felt.select)
+	felt.select();
     if ((selt || felt) && window.event)
 	window.event.returnValue = false;
     if (seltype && seltype >= 1)

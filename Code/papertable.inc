@@ -1157,7 +1157,7 @@ class PaperTable {
     }
 
     function papstripReviewPreference($prow) {
-	global $Conf, $ConfSiteSuffix, $linkExtra;
+	global $Conf, $ConfSiteSuffix, $linkExtra, $CurrentList;
 	echo $this->papt("revpref", "Review preference", array("type" => "ps")),
 	    "<div class='psv'><form id='revprefform' class='fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"revprefform\")'>",
 	    "<div class='aahc inform'>",
@@ -1171,6 +1171,10 @@ class PaperTable {
 	    " <span id='revprefformresult'></span>",
 	    "</div></form></div>\n";
 	$Conf->footerScript("Miniajax.onload(\"revprefform\");add_quicklink_shortcuts(\$\$('revprefform_d'))");
+	if (isset($CurrentList) && $CurrentList
+	    && defval($_SESSION["l"][$CurrentList], "revprefs")
+	    && ($this->mode == "p" || $this->mode == "r"))
+	    $Conf->footerScript("crpfocus('revprefform',null,3)");
     }
 
     function papstripRank($prow) {
