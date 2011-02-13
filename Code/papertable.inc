@@ -1160,7 +1160,7 @@ class PaperTable {
 	global $Conf, $ConfSiteSuffix, $linkExtra;
 	echo $this->papt("revpref", "Review preference", array("type" => "ps")),
 	    "<div class='psv'><form id='revprefform' class='fold7o' method='post' action='review$ConfSiteSuffix?p=", $prow->paperId, "&amp;post=1$linkExtra' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"revprefform\")'>",
-	    "<div class='inform'>",
+	    "<div class='aahc inform'>",
 	    "<input type='hidden' name='setrevpref' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
