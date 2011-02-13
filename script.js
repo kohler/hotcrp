@@ -498,7 +498,7 @@ function staged_foreach(a, f, backwards) {
     stagef();
 }
 
-// temporary text and review preferences
+// temporary text
 function tempText(elt, text, on) {
     if (on && elt.value == text)
 	elt.value = "";
@@ -506,14 +506,7 @@ function tempText(elt, text, on) {
 	elt.value = text;
 }
 
-function maketemptext(input, text, on, do_defact) {
-    return function () {
-	tempText(input, text, on);
-	if (do_defact)
-	    defact("");
-    };
-}
-
+// check marks for ajax saves
 function setajaxcheck(elt, rv) {
     if (typeof elt == "string")
 	elt = $$(elt);
@@ -526,28 +519,43 @@ function setajaxcheck(elt, rv) {
     }
 }
 
-function makerevprefajax(input, paperId) {
-    return function () {
-	var form = $$("prefform");
-	if (form && form.p && form.revpref) {
-	    form.p.value = paperId;
-	    form.revpref.value = input.value;
-	    Miniajax.submit("prefform", function (rv) { setajaxcheck("revpref" + paperId + "ok", rv); });
-	}
-    };
+// review preferences
+addRevprefAjax = (function () {
+
+function revpref_focus() {
+    tempText(this, "0", 1);
+    defact("");
 }
 
-function addRevprefAjax() {
-    var inputs = document.getElementsByTagName("input");
+function revpref_blur() {
+    tempText(this, "0", 0);
+}
+
+function revpref_change() {
+    var form = $$("prefform"), whichpaper = this.name.substr(7);
+    form.p.value = whichpaper;
+    form.revpref.value = this.value;
+    Miniajax.submit("prefform", function (rv) {
+	    setajaxcheck("revpref" + whichpaper + "ok", rv);
+	});
+}
+
+return function () {
+    var inputs = document.getElementsByTagName("input"),
+	form = $$("prefform");
+    if (!(form && form.p && form.revpref))
+	form = null;
     staged_foreach(inputs, function (elt) {
 	if (elt.type == "text" && elt.name.substr(0, 7) == "revpref") {
-	    var whichpaper = elt.name.substr(7);
-	    elt.onfocus = maketemptext(elt, "0", 1, true);
-	    elt.onblur = maketemptext(elt, "0", 0);
-	    elt.onchange = makerevprefajax(elt, whichpaper);
+	    elt.onfocus = revpref_focus;
+	    elt.onblur = revpref_blur;
+	    if (form)
+		elt.onchange = revpref_change;
 	}
     });
-}
+};
+
+})();
 
 function makeassrevajax(select, pcs, paperId) {
     return function () {

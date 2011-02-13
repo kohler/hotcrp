@@ -1286,7 +1286,7 @@ class PaperList extends BaseList {
 	  case "conflict":
 	    return "Potential conflicts";
 	  case "editReviewPreference":
-	    return "Reviewer preferences";
+	    return "Review preferences";
 	  case "reviewers":
 	  case "reviewersSel":
 	    return "Proposed assignments";
