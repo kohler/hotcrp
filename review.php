@@ -222,12 +222,15 @@ function downloadView($prow, $rr, $editable) {
 
 function downloadForm($editable) {
     global $rf, $Conf, $Me, $prow, $paperTable, $Opt;
+    $explicit = true;
     if ($paperTable->rrow)
 	$downrrows = array($paperTable->rrow);
     else if ($editable)
 	$downrrows = array();
-    else
+    else {
 	$downrrows = $paperTable->rrows;
+	$explicit = false;
+    }
     $text = "";
     foreach ($downrrows as $rr)
 	if ($rr->reviewSubmitted
@@ -235,11 +238,12 @@ function downloadForm($editable) {
 	    $text .= downloadView($prow, $rr, $editable);
     foreach ($downrrows as $rr)
 	if (!$rr->reviewSubmitted
-	    && $Me->canViewReview($prow, $rr, $whyNot))
+	    && $Me->canViewReview($prow, $rr, $whyNot)
+	    && ($explicit || $rr->reviewModified))
 	    $text .= downloadView($prow, $rr, $editable);
     if (count($downrrows) == 0)
 	$text .= downloadView($prow, null, $editable);
-    if (!$editable && !$paperTable->rrow) {
+    if (!$explicit) {
 	$paperTable->resolveComments();
 	foreach ($paperTable->crows as $cr)
 	    if ($Me->canViewComment($prow, $cr, $whyNot, true))
@@ -252,9 +256,9 @@ function downloadForm($editable) {
     downloadText($text, "review-" . $prow->paperId, "review form", !$editable);
     exit;
 }
-if (isset($_REQUEST['downloadForm']))
+if (isset($_REQUEST["downloadForm"]))
     downloadForm(true);
-else if (isset($_REQUEST['text']))
+else if (isset($_REQUEST["text"]))
     downloadForm(false);
 
 

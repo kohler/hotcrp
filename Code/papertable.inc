@@ -1722,15 +1722,25 @@ class PaperTable {
 	    return;
 
 	// text format link
-	if ($Me->canViewReview($prow, null)
-	    && count($this->rrows) + count($this->crows) > 0) {
+	$viewable = array();
+	foreach ($this->rrows as $rr)
+	    if ($rr->reviewModified > 0 && $Me->canViewReview($prow, $rr)) {
+		$viewable[] = "reviews";
+		break;
+	    }
+	foreach ($this->crows as $cr)
+	    if ($Me->canViewComment($prow, $cr)) {
+		$viewable[] = "comments";
+		break;
+	    }
+	if (count($viewable)) {
 	    $a = "<a href='review$ConfSiteSuffix?p=$prow->paperId&amp;m=r&amp;text=1$linkExtra'>";
 	    echo "<div class='relative'>",
 		"<table class='pbox'><tr><td class='pboxl'></td>",
 		"<td class='pboxr'>", $a,
 		$Conf->cacheableImage("txt24.png", "[Text]", null, "dlimg"),
-		"</a>&nbsp;", $a, "Reviews and comments in plain text</a>",
-		"</td></tr></table></div>\n";
+		"</a>&nbsp;", $a, ucfirst(join(" and ", $viewable)),
+		" in plain text</a></td></tr></table></div>\n";
 	}
 
 	$opt = array("edit" => false);
