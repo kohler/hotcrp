@@ -764,11 +764,15 @@ function doBanal($set) {
 
     if (($s = trim(defval($_REQUEST, "sub_banal_pagelimit", ""))) != ""
 	&& strcasecmp($s, "N/A") != 0) {
-	if (($s = cvtint($s, -1)) <= 0) {
+	if (($sx = cvtint($s, -1)) > 0)
+	    $bs[1] = $sx;
+	else if (preg_match('/\A(\d+)\s*-\s*(\d+)\z/', $s, $m)
+		 && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2])
+	    $bs[1] = +$m[1] . "-" . +$m[2];
+	else {
 	    $Highlight["sub_banal_pagelimit"] = true;
-	    $Error[] = "Page limit must be a whole number bigger than 0.";
-	} else
-	    $bs[1] = $s;
+	    $Error[] = "Page limit must be a whole number bigger than 0, or a page range such as <code>2-4</code>.";
+	}
     }
 
     if (($s = trim(defval($_REQUEST, "sub_banal_textblock", ""))) != ""

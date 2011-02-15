@@ -195,9 +195,12 @@ class CheckFormat {
 
 	// number of pages
 	if (count($banal_desired) > 1 && $banal_desired[1]
-	    && ($p = cvtint($banal_desired[1])) > 0) {
-	    if (count($pi) > $p) {
-		$pie[] = "Too many pages: the page limit is " . plural($p, "page") . ", found " . count($pi);
+	    && preg_match('/\A(\d+)(?:-(\d+))?\z/', $banal_desired[1], $m)) {
+	    if ($m[2] && count($pi) < $m[1]) {
+		$pie[] = "Too few pages: expected " . plural($m[1], "or more page") . ", found " . count($pi);
+		$this->errors |= self::ERR_PAGELIMIT;
+	    } else if (count($pi) > ($m[2] ? $m[2] : $m[1])) {
+		$pie[] = "Too many pages: the limit is " . plural($m[2] ? $m[2] : $m[1], "page") . ", found " . count($pi);
 		$this->errors |= self::ERR_PAGELIMIT;
 	    }
 	}
