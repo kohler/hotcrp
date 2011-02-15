@@ -916,7 +916,7 @@ function genericWatch($prow, $watchtype, $callback) {
 
 
 // text helpers
-function commajoin($what) {
+function commajoin($what, $joinword = "and") {
     $what = array_values($what);
     $c = count($what);
     if ($c == 0)
@@ -924,9 +924,9 @@ function commajoin($what) {
     else if ($c == 1)
 	return $what[0];
     else if ($c == 2)
-	return $what[0] . " and " . $what[1];
+	return $what[0] . " " . $joinword . " " . $what[1];
     else
-	return join(", ", array_slice($what, 0, -1)) . ", and " . $what[count($what) - 1];
+	return join(", ", array_slice($what, 0, -1)) . ", " . $joinword . " " . $what[count($what) - 1];
 }
 
 function pluralx($n, $what) {

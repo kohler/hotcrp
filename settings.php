@@ -747,11 +747,19 @@ function doBanal($set) {
     $bs = array_fill(0, 6, "");
     if (($s = trim(defval($_REQUEST, "sub_banal_papersize", ""))) != ""
 	&& strcasecmp($s, "N/A") != 0) {
-	if (!cvtdimen($s, 2)) {
-	    $Highlight["sub_banal_papersize"] = true;
-	    $Error[] = "Invalid paper size.";
-	} else
-	    $bs[0] = $s;
+	$ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
+	$sout = array();
+	foreach ($ses as $ss)
+	    if ($ss != "" && cvtdimen($ss, 2))
+		$sout[] = $ss;
+	    else if ($ss != "") {
+		$Highlight["sub_banal_papersize"] = true;
+		$Error[] = "Invalid paper size.";
+		$sout = null;
+		break;
+	    }
+	if ($sout && count($sout))
+	    $bs[0] = join(" OR ", $sout);
     }
 
     if (($s = trim(defval($_REQUEST, "sub_banal_pagelimit", ""))) != ""
@@ -1245,7 +1253,7 @@ function doSubGroup() {
 	for ($i = 0; $i < 6; $i++)
 	    if (defval($bsetting, $i, "") == "")
 		$bsetting[$i] = "N/A";
-	doTextRow("sub_banal_papersize", array("Paper size", "Examples: &ldquo;letter&rdquo;, &ldquo;A4&rdquo;, &ldquo;8.5in&nbsp;x&nbsp;14in&rdquo;"), setting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
+	doTextRow("sub_banal_papersize", array("Paper size", "Examples: &ldquo;letter&rdquo;, &ldquo;A4&rdquo;, &ldquo;8.5in&nbsp;x&nbsp;14in&rdquo;,<br />&ldquo;letter OR A4&rdquo;"), setting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
 	doTextRow("sub_banal_pagelimit", "Page limit", setting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
 	doTextRow("sub_banal_textblock", array("Text block", "Examples: &ldquo;6.5in&nbsp;x&nbsp;9in&rdquo;, &ldquo;1in&nbsp;margins&rdquo;"), setting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
 	echo "</table></td><td><span class='sep'></span></td><td class='top'><table>";

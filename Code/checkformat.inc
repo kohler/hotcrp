@@ -169,17 +169,26 @@ class CheckFormat {
 	$pie = array();
 
 	// paper size
-	if (count($banal_desired) > 0 && $banal_desired[0]
-	    && ($p = cvtdimen($banal_desired[0], 2))) {
-	    if (abs($p[0] - $papersize[0]) >= 9
-		|| abs($p[1] - $papersize[1]) >= 9) {
+	if (count($banal_desired) > 0 && $banal_desired[0]) {
+	    $psdefs = array();
+	    $ok = false;
+	    foreach (explode(" OR ", $banal_desired[0]) as $p) {
+		if (!($p = cvtdimen($p, 2)))
+		    continue;
+		if (abs($p[0] - $papersize[0]) < 9
+		    && abs($p[1] - $papersize[1]) < 9) {
+		    $ok = true;
+		    break;
+		}
 		if (abs($p[0] - 612) <= 5 && abs($p[1] - 792) <= 5)
-		    $px = "Paper size mismatch: expected letter paper (8.5in x 11in)";
+		    $psdefs[] = "letter paper (8.5in x 11in)";
 		else if (abs($p[0] - 595.27) <= 5 && abs($p[1] - 841.89) <= 5)
-		    $px = "Paper size mismatch: expected A4 paper (210mm x 297mm)";
+		    $psdefs[] = "A4 paper (210mm x 297mm)";
 		else
-		    $px = "Paper size mismatch: expected " . unparsedimen($p);
-		$pie[] = $px . ", found " . unparsedimen($papersize);
+		    $psdefs[] = unparsedimen($p);
+	    }
+	    if (!$ok && count($psdefs)) {
+		$pie[] = "Paper size mismatch: expected " . commajoin($psdefs, "or");
 		$this->errors |= self::ERR_PAPERSIZE;
 	    }
 	}
