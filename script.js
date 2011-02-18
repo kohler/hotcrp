@@ -522,39 +522,44 @@ function setajaxcheck(elt, rv) {
 }
 
 // quicklink shortcuts
-add_quicklink_shortcuts = (function () {
+function add_quicklink_shortcuts(elt) {
+    if (!elt)
+	return;
 
-function quicklink_shortcut_keypress(event) {
-    var code, a, f;
-    event = event || window.event;
-    code = event.charCode || event.keyCode;
-    if (code == 0 || event.altKey || event.ctrlKey || event.metaKey
-	|| (code != 106 && code != 107))
-	return true;
-    a = $$(code == 106 ? "quicklink_prev" : "quicklink_next");
-    if (a && a.focus) {
-	a.focus();
-	f = make_link_callback(a);
-	if (!Miniajax.isoutstanding("revprefform", f))
-	    f();
-    }
-    if (event.preventDefault)
-	event.preventDefault();
-    if (event.returnValue)
-	event.returnValue = false;
-    return false;
-}
-
-return function (e) {
-    if (e) {
-	if (e.addEventListener)
-	    e.addEventListener("keypress", quicklink_shortcut_keypress, false);
+    function quicklink_shortcut_keypress(event) {
+	var code, a, f, target, x;
+	event = event || window.event;
+	code = event.charCode || event.keyCode;
+	target = event.target || event.srcElement;
+	if (code == 0 || event.altKey || event.ctrlKey || event.metaKey
+	    || (code != 106 && code != 107)
+	    || (target && target.tagName && target != elt
+		&& (x = target.tagName.toUpperCase())
+		&& (x == "TEXTAREA"
+		    || x == "SELECT"
+		    || (x == "INPUT"
+			&& (target.type == "file" || target.type == "password"
+			    || target.type == "text")))))
+	    return true;
+	a = $$(code == 106 ? "quicklink_prev" : "quicklink_next");
+	if (a && a.focus) {
+	    a.focus();
+	    f = make_link_callback(a);
+	    if (!Miniajax.isoutstanding("revprefform", f))
+		f();
+	}
+	if (event.preventDefault)
+	    event.preventDefault();
 	else
-	    e.onkeypress = quicklink_shortcut_keypress;
+	    event.returnValue = false;
+	return false;
     }
-};
 
-})();
+    if (elt.addEventListener)
+	elt.addEventListener("keypress", quicklink_shortcut_keypress, false);
+    else
+	elt.onkeypress = quicklink_shortcut_keypress;
+}
 
 // review preferences
 addRevprefAjax = (function () {
