@@ -594,21 +594,21 @@ class PaperList extends BaseList {
 	    return "&nbsp;<small><a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $documentType) . "\">[Download]</a></small>";
     }
 
-    function _joinMatches($m) {
-	$x = array();
-	$out = "";
-	foreach ($m[0] as $T) {
-	    $t = strtolower($T);
-	    if (!isset($x[$t])) {
-		$x[$t] = 1;
-		$out .= $T . " ";
+    function _conflictMatches($input, $preg) {
+	preg_match_all("{\n(.*(?:$preg).*)\n}i", "\n$input\n", $matches);
+	$amp_preg = str_replace("&", "&amp;", $preg);
+	$text = "";
+	foreach ($matches[0] as $line) {
+	    if ($line != "")
+		$line = htmlspecialchars(trim($line));
+	    if ($line != "") {
+		$text .= ($text ? "; " : "");
+		$text .= highlightMatch($amp_preg, $line);
 	    }
 	}
-	if ($out) {
+	if ($text != "")
 	    $this->unfolded = true;
-	    return htmlspecialchars(substr($out, 0, strlen($out) - 1));
-	} else
-	    return "";
+	return $text;
     }
 
     function _paperLink($row) {
@@ -1014,15 +1014,15 @@ class PaperList extends BaseList {
 	    else
 		return $t;
 	case self::FIELD_AUTHOR_MATCH:
-	    if (defval($this->search->matchPreg, "authorInformation", "") == "")
+	    $m = defval($this->search->matchPreg, "authorInformation", "");
+	    if ($m == "")
 		return "";
-	    preg_match_all("{(" . $this->search->matchPreg["authorInformation"] . ")}i", $row->authorInformation, $matches);
-	    return $this->_joinMatches($matches);
+	    return $this->_conflictMatches($row->authorInformation, $m);
 	case self::FIELD_COLLABORATORS_MATCH:
-	    if (defval($this->search->matchPreg, "collaborators", "") == "")
+	    $m = defval($this->search->matchPreg, "collaborators", "");
+	    if ($m == "")
 		return "";
-	    preg_match_all("{(" . $this->search->matchPreg["collaborators"] . ")}i", $row->collaborators, $matches);
-	    return $this->_joinMatches($matches);
+	    return $this->_conflictMatches($row->collaborators, $m);
 	case self::FIELD_OPT_AUTHORS:
 	    $highlight = defval($this->search->matchPreg, "authorInformation", "");
 	    return self::authorInfo($row, $this->contact, $this->aufull,
