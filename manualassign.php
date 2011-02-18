@@ -230,24 +230,26 @@ if ($reviewer > 0) {
     // Conflict information
     $result = $Conf->qe("select firstName, lastName, affiliation, collaborators from ContactInfo where contactId=$reviewer");
     if ($result && ($row = edb_orow($result))) {
+	$useless_words = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1, "none" => 1, "a" => 1, "an" => 1, "jr" => 1, "sr" => 1, "iii" => 1);
+
 	// search outline from old CRP, done here in a very different way
-	preg_match_all('/[a-z]{3,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation), $match);
-	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1, "none" => 1);
+	preg_match_all('/[a-z&]{2,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation), $match);
+	$useless = $useless_words;
 	$search = array();
 	$showco = "";
 	foreach ($match[0] as $s)
 	    if (!isset($useless[$s])) {
-		$search[] = "co:" . $s;
+		$search[] = "co:" . (ctype_alnum($s) ? $s : "\"$s\"");
 		$showco .= $s . " ";
 		$useless[$s] = 1;
 	    }
 
-	preg_match_all('/[a-z]{3,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation . " " . $row->collaborators), $match);
-	$useless = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1, "none" => 1);
+	preg_match_all('/[a-z&]{2,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation . " " . $row->collaborators), $match);
+	$useless = $useless_words;
 	$showau = "";
 	foreach ($match[0] as $s)
 	    if (!isset($useless[$s])) {
-		$search[] = "au:" . $s;
+		$search[] = "au:" . (ctype_alnum($s) ? $s : "\"$s\"");
 		$showau .= $s . " ";
 		$useless[$s] = 1;
 	    }
