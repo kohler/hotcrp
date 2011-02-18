@@ -106,11 +106,15 @@ class CommentView {
 		"</a>&nbsp;", $a, "Edit</a></div>";
 	}
 
-	if (!$crow && $editMode && $foldnew)
-	    echo "<h3><a class='q fn' href=\"", selfHref(array("c" => "new")),
-		"\" onclick='fold(\"addcomment\", 0);location.hash=\"#commentnew\";return false'>+&nbsp;Add Comment</a><span class='fx'>Add Comment</span></h3>";
-	else if (!$crow)
-	    echo "<h3>Add Comment</h3>";
+	if (!$crow) {
+	    if ($editMode && $foldnew)
+		echo "<h3><a class='q fn' href=\"",
+		    selfHref(array("c" => "new")),
+		    "\" onclick='return open_new_comment(1)'>+&nbsp;Add Comment</a><span class='fx'>Add Comment</span></h3>";
+	    else
+		echo "<h3>Add Comment</h3>";
+	    $Conf->footerScript("hotcrpLoad('opencomment')");
+	}
 	$this->commentIdentityTime($prow, $crow, false);
 
 	if ($crow && $editMode && $crow->contactId != $Me->contactId)

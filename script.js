@@ -164,12 +164,21 @@ return loadDeadlines;
 
 
 var hotcrp_onload = [];
-function hotcrpLoad() {
-    for (x = 0; x < hotcrp_onload.length; ++x)
-	hotcrp_onload[x]();
+function hotcrpLoad(arg) {
+    if (!arg)
+	for (x = 0; x < hotcrp_onload.length; ++x)
+	    hotcrp_onload[x]();
+    else if (typeof arg === "string")
+	hotcrp_onload.push(hotcrpLoad[arg]);
+    else
+	hotcrp_onload.push(arg);
 }
 hotcrpLoad.time = function (servtime, servzone, hr24) {
     setLocalTime.initialize(servtime, servzone, hr24);
+};
+hotcrpLoad.opencomment = function () {
+    if (location.hash.match(/^\#?commentnew$/))
+	open_new_comment();
 };
 
 
@@ -519,6 +528,19 @@ function setajaxcheck(elt, rv) {
 	elt.setAttribute("alt", rv.ok ? "Saved" : "Error");
 	elt.className = c + " ajaxcheck_" + (rv.ok ? "good" : "bad");
     }
+}
+
+// open new comment
+function open_new_comment(sethash) {
+    var x;
+    fold("addcomment", 0);
+    x = $$("foldaddcomment");
+    x = x ? x.getElementsByTagName("textarea") : null;
+    if (x && x.length)
+	setTimeout(function () { x[0].focus(); }, 0);
+    if (sethash)
+	location.hash = "#commentnew";
+    return false;
 }
 
 // quicklink shortcuts

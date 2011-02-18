@@ -261,7 +261,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     // new comment
     if (!$allreviewslink && $mode != "assign" && $mode != "contact"
 	&& $Me->canComment($prow, null)) {
-	$a = "<a href=\"" . selfHref(array("c" => "new")) . "#commentnew\" onclick='fold(\"addcomment\", 0);location.hash=\"#commentnew\";return false'>";
+	$a = "<a href=\"" . selfHref(array("c" => "new")) . "#commentnew\" onclick='return open_new_comment(1)'>";
 	$x = $a . $Conf->cacheableImage("comment24.png", "[Add comment]", null, "dlimg") . "</a>&nbsp;" . $a . "Add comment</a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
