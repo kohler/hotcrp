@@ -1664,7 +1664,7 @@ class PaperTable {
 	    $this->_paptabSepEnd();
 	}
 
-	if ($this->mode == "p" || $this->mode == "r")
+	if ($this->mode == "p" || $this->mode == "r" || $this->mode == "re")
 	    $Conf->footerScript("add_quicklink_shortcuts(document)");
     }
 

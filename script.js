@@ -549,10 +549,12 @@ function add_quicklink_shortcuts(elt) {
 	return;
 
     function quicklink_shortcut_keypress(event) {
-	var code, a, f, target, x;
+	var code, a, f, target, x, i, j;
+	// IE compatibility
 	event = event || window.event;
 	code = event.charCode || event.keyCode;
 	target = event.target || event.srcElement;
+	// reject modified keys, non-j/k, interesting targets
 	if (code == 0 || event.altKey || event.ctrlKey || event.metaKey
 	    || (code != 106 && code != 107)
 	    || (target && target.tagName && target != elt
@@ -563,13 +565,24 @@ function add_quicklink_shortcuts(elt) {
 			&& (target.type == "file" || target.type == "password"
 			    || target.type == "text")))))
 	    return true;
+	// reject if any forms have outstanding data
+	x = document.getElementsByTagName("form");
+	for (i = 0; i < x.length; ++i)
+	    for (j = 0; j < x[i].childNodes.length; ++j) {
+		a = x[i].childNodes[j];
+		if (a.nodeType == 1 && a.tagName.toUpperCase() == "DIV"
+		    && a.className.match(/\baahc\b.*\balert\b/))
+		    return true;
+	    }
+	// find the quicklink, reject if not found
 	a = $$(code == 106 ? "quicklink_prev" : "quicklink_next");
-	if (a && a.focus) {
-	    a.focus();
-	    f = make_link_callback(a);
-	    if (!Miniajax.isoutstanding("revprefform", f))
-		f();
-	}
+	if (!a || !a.focus)
+	    return true;
+	// focus (for visual feedback), call callback
+	a.focus();
+	f = make_link_callback(a);
+	if (!Miniajax.isoutstanding("revprefform", f))
+	    f();
 	if (event.preventDefault)
 	    event.preventDefault();
 	else
