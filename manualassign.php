@@ -142,7 +142,7 @@ echo "</dl>\nClick a heading to sort.\n</div></div>";
 
 $pcm = pcMembers();
 if ($reviewer > 0)
-    echo "<h2 style='margin-top:1em'>Assignments for ", contactNameHtml($pcm[$reviewer]), "</h2>\n";
+    echo "<h2 style='margin-top:1em'>Assignments for ", contactNameHtml($pcm[$reviewer]), ($pcm[$reviewer]->affiliation ? " (" . htmlspecialchars($pcm[$reviewer]->affiliation) . ")" : ""), "</h2>\n";
 else
     echo "<h2 style='margin-top:1em'>Assignments by PC member</h2>\n";
 
@@ -208,28 +208,16 @@ echo "<tr><td colspan='2'><div class='aax' style='text-align:right'>",
 
 // Current PC member information
 if ($reviewer > 0) {
-    // Topic links
-    $result = $Conf->qe("select topicName, interest from TopicArea join TopicInterest using (topicId) where contactId=$reviewer order by topicName");
-    $interest = array();
-    while (($row = edb_row($result)))
-	$interest[$row[1]][] = htmlspecialchars($row[0]);
-
-    echo "<table>";
-    $x = array();
-    if (isset($interest[2]))
-	$x[] = "<div class='f-c'>High interest topics</div><div class='f-e'><span class='topic2'>"
-	    . join("</span>, <span class='topic2'>", $interest[2])
-	    . "</span></div>";
-    if (isset($interest[0]))
-	$x[] = "<div class='f-c'>Low interest topics</div><div class='f-e'><span class='topic0'>"
-	    . join("</span>, <span class='topic0'>", $interest[0])
-	    . "</span></div>";
-    if (count($x))
-	echo "<tr><td style='padding:0 2em 1ex 0'>", join("</td><td style='padding:0 2em 1ex 0'>", $x), "</td></tr>\n";
+    $col = array(array(), array(), array());
 
     // Conflict information
     $result = $Conf->qe("select firstName, lastName, affiliation, collaborators from ContactInfo where contactId=$reviewer");
     if ($result && ($row = edb_orow($result))) {
+	if ($row->collaborators)
+	    $col[1][] = "<div class='f-c'>Collaborators</div><div class='f-e'>"
+		. nl2br(htmlspecialchars($row->collaborators))
+		. "</div>";
+
 	$useless_words = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1, "none" => 1, "a" => 1, "an" => 1, "jr" => 1, "sr" => 1, "iii" => 1);
 
 	// search outline from old CRP, done here in a very different way
@@ -254,17 +242,41 @@ if ($reviewer > 0) {
 		$useless[$s] = 1;
 	    }
 
-	$x = array();
-	$x[] = "<div class='f-c'>Potential conflicts in authors</div><div class='f-e'>"
+	$col[2][] = "<div class='f-c'>Conflict search terms for paper authors</div><div class='f-e'>"
 	    . htmlspecialchars(substr($showau, 0, strlen($showau) - 1))
 	    . "</div>";
-	$x[] = "<div class='f-c'>Potential conflicts in collaborators</div><div class='f-e'>"
+	$col[2][] = "<div class='f-c'>Conflict search terms for paper collaborators</div><div class='f-e'>"
 	    . htmlspecialchars(substr($showco, 0, strlen($showco) - 1))
 	    . "</div>";
-	echo "<tr><td style='padding:0 2em 1ex 0'>", join("</td><td style='padding:0 2em 1ex 0'>", $x), "</td></tr>\n";
-	echo "<tr><td colspan='2' style='padding:0 2em 1ex 0'><a href=\"search$ConfSiteSuffix?q=", urlencode(join(" OR ", $search)), "&amp;linkto=assign\">Search for potential conflicts</a></td></tr>\n";
+	$col[2][] = "<a href=\"search$ConfSiteSuffix?q=" . urlencode(join(" OR ", $search)) . "&amp;linkto=assign\">Search for potential conflicts</a>";
     }
-    echo "</table>\n";
+
+    // Topic links
+    $result = $Conf->qe("select topicName, interest from TopicArea join TopicInterest using (topicId) where contactId=$reviewer order by topicName");
+    $interest = array();
+    while (($row = edb_row($result)))
+	$interest[$row[1]][] = htmlspecialchars($row[0]);
+    if (isset($interest[2]))
+	$col[0][] = "<div class='f-c'>High interest topics</div><div class='f-e'><span class='topic2'>"
+	    . join("</span>, <span class='topic2'>", $interest[2])
+	    . "</span></div>";
+    if (isset($interest[0]))
+	$col[0][] = "<div class='f-c'>Low interest topics</div><div class='f-e'><span class='topic0'>"
+	    . join("</span>, <span class='topic0'>", $interest[0])
+	    . "</span></div>";
+
+    // Table
+    if (count($col[0]) || count($col[1]) || count($col[2])) {
+	echo "<table><tr>\n";
+	foreach ($col as $thecol)
+	    if (count($thecol)) {
+		echo "<td class='top'><table>";
+		foreach ($thecol as $td)
+		    echo "<tr><td style='padding:0 2em 1ex 0'>", $td, "</td></tr>";
+		echo "</table></td>\n";
+	    }
+	echo "</tr></table>\n";
+    }
 
     // ajax assignment form
     echo "<form id='assrevform' method='post' action=\"assign$ConfSiteSuffix?update=1\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='clear'>",
