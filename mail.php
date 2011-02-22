@@ -102,7 +102,10 @@ function contactQuery($type) {
 	$where[] = "PaperReview.requestedBy=" . $Me->contactId;
 
     // build query
-    if ($type == "pc" || substr($type, 0, 3) == "pc:") {
+    if ($type == "all") {
+	$q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo";
+	$orderby = "email";
+    } else if ($type == "pc" || substr($type, 0, 3) == "pc:") {
 	$q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo join PCMember using (contactId)";
 	$orderby = "email";
 	if ($type != "pc")
@@ -353,6 +356,8 @@ if (count($pctags)) {
     foreach ($pctags as $t)
 	$recip["pc:$t"] = "PC members tagged &ldquo;$t&rdquo;";
 }
+if ($Me->privChair)
+    $recip["all"] = "All users";
 
 if (!isset($_REQUEST["recipients"]) || !isset($recip[$_REQUEST["recipients"]]))
     $_REQUEST["recipients"] = key($recip);
