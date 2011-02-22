@@ -486,17 +486,33 @@ class MailerState {
 	return count($this->unexpanded) + count($this->tagless);
     }
 
+    function _unexpanded_warning() {
+	$ispaper = false;
+	$papertags = array("%NUMBER%" => 1, "%TITLE%" => 1, "%TITLEHINT%" => 1,
+			   "%PAPER%" => 1, "%AUTHOR%" => 1, "%AUTHORS%" => 1,
+			   "%REVIEWS%" => 1, "%COMMENTS%" => 1);
+	foreach ($this->unexpanded as $t => $x)
+	    if (isset($papertags[$t]))
+		$ispaper = true;
+
+	$a = array_keys($this->unexpanded);
+	natcasesort($a);
+	for ($i = 0; $i < count($a); ++$i)
+	    $a[$i] = "<tt>" . htmlspecialchars($a[$i]) . "</tt>";
+
+	if (count($this->unexpanded) == 1)
+	    $m = "Keyword-like string " . commajoin($a) . " was not recognized.";
+	else
+	    $m = "Keyword-like strings " . commajoin($a) . " were not recognized.";
+	if ($ispaper)
+	    $m .= "  (Paper-specific keywords like <code>%NUMBER%</code> weren’t recognized because this set of recipients is not linked to a paper collection.)";
+	return $m;
+    }
+
     function warnings() {
 	$e = array();
-	if (count($this->unexpanded) == 1)
-	    $e[] = "Keyword-like string <tt>" . htmlspecialchars(join("", array_keys($this->unexpanded))) . "</tt> was not recognized as a keyword.";
-	else if (count($this->unexpanded)) {
-	    $a = array_keys($this->unexpanded);
-	    natcasesort($a);
-	    for ($i = 0; $i < count($a); ++$i)
-		$a[$i] = "<tt>" . htmlspecialchars($a[$i]) . "</tt>";
-	    $e[] = "Keyword-like strings " . commajoin($a) . " were not recognized as keywords.";
-	}
+	if (count($this->unexpanded))
+	    $e[] = $this->_unexpanded_warning();
 	if (count($this->tagless)) {
 	    $a = array_keys($this->tagless);
 	    sort($a, SORT_NUMERIC);
