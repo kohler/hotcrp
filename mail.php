@@ -125,9 +125,8 @@ function contactQuery($type) {
 	$orderby = "email, Paper.paperId";
     }
 
-    if (count($where))
-	$q .= " where " . join(" and ", $where);
-    return $q . " order by " . $orderby;
+    $where[] = "email not regexp '^anonymous[0-9]*\$'";
+    return $q . " where " . join(" and ", $where) . " order by " . $orderby;
 }
 
 function checkMailPrologue($send) {
