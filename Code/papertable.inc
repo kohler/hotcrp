@@ -459,7 +459,7 @@ class PaperTable {
 
 	echo $this->papt("authorInformation", "Authors <span class='papfnh'>(<a href='javascript:void authorfold(\"auedit\",1,1)'>More</a> | <a href='javascript:void authorfold(\"auedit\",1,-1)'>Fewer</a>)</span>"),
 	    "<div class='paphint'>List the paper&rsquo;s authors one per line, including their email addresses and affiliations.";
-	if ($Conf->blindSubmission() == BLIND_ALWAYS)
+	if ($Conf->subBlindAlways())
 	    echo " Submission is blind, so reviewers will not be able to see author information.";
 	echo "  Any author with an account on this site can edit the paper.</div>",
 	    "<div class='papv'><table id='auedittable' class='auedittable'><tr><th></th><th>Name</th><th>Email</th><th>Affiliation</th></tr>\n";
@@ -595,7 +595,7 @@ class PaperTable {
 	    $afterauthors = "</div>\n";
 	} else {
 	    $inauthors = $afterauthors = "";
-	    if ($Conf->blindSubmission() == BLIND_OPTIONAL && $prow->blind)
+	    if ($Conf->subBlindOptional() && $prow->blind)
 		$inauthors = "[blind] ";
 	}
 
@@ -1613,8 +1613,7 @@ class PaperTable {
 		$this->echoNewContactAuthor($Me->privChair);
 	    else
 		$this->echoContactAuthor($prow, $this->mode == "pe" || $prow->conflictType >= CONFLICT_AUTHOR);
-	    if ($Conf->blindSubmission() == BLIND_OPTIONAL
-		&& $this->editable !== "f")
+	    if ($Conf->subBlindOptional() && $this->editable !== "f")
 		$this->echoAnonymity($prow);
 
 	    echo $spacer;

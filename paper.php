@@ -374,11 +374,11 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // blind?
     if ($isSubmitFinal)
 	/* do nothing */;
-    else if ($Conf->blindSubmission() > BLIND_OPTIONAL
-	     || ($Conf->blindSubmission() == BLIND_OPTIONAL && defval($_REQUEST, 'blind')))
-	$q .= "blind=1, ";
-    else
+    else if ($Conf->subBlindNever()
+	     || ($Conf->subBlindOptional() && !defval($_REQUEST, "blind")))
 	$q .= "blind=0, ";
+    else
+	$q .= "blind=1, ";
 
     // update Paper table
     if ($newPaper)

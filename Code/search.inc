@@ -226,7 +226,7 @@ class PaperSearch {
 	// track other information
 	$this->allowAuthor = false;
 	if ($me->privChair || $me->isAuthor
-	    || ($this->amPC && $Conf->blindSubmission() <= BLIND_OPTIONAL))
+	    || ($this->amPC && !$Conf->subBlindAlways()))
 	    $this->allowAuthor = true;
 	$this->warnings = null;
 
@@ -320,10 +320,10 @@ class PaperSearch {
 
 	if ($this->privChair
 	    || ($this->amPC && !$blind)
-	    || ($this->amPC && $Conf->blindSubmission() == BLIND_NEVER))
+	    || ($this->amPC && $Conf->subBlindNever()))
 	    $qt[] = new SearchTerm($rtype, 0, $word, $extra);
 	else {
-	    if ($blind && $Conf->blindSubmission() == BLIND_ALWAYS
+	    if ($blind && $Conf->subBlindAlways()
 		&& !$Conf->timeReviewerViewAcceptedAuthors())
 		/* only look at papers you submitted */;
 	    else if ($this->amPC)
@@ -1310,9 +1310,9 @@ class PaperSearch {
 
 	// Maybe we don't actually need to check blindness.
 	if ($flags & self::F_PAPERNONBLIND) {
-	    if ($Conf->blindSubmission() == BLIND_NEVER)
+	    if ($Conf->subBlindNever())
 		$flags &= ~self::F_PAPERNONBLIND;
-	    else if ($Conf->blindSubmission() == BLIND_ALWAYS)
+	    else if ($Conf->subBlindAlways())
 		$flags = ($flags & ~self::F_PAPERNONBLIND) | self::F_FALSE;
 	}
 
@@ -1654,8 +1654,8 @@ class PaperSearch {
 	    return false;
 	// NB: F_REVIEWER must be set by caller if necessary
 	if (($flags & self::F_PAPERNONBLIND)
-	    && $Conf->blindSubmission() != BLIND_NEVER
-	    && ($row->paperBlind || $Conf->blindSubmission() == BLIND_ALWAYS)
+	    && !$Conf->subBlindNever()
+	    && ($row->paperBlind || $Conf->subBlindAlways())
 	    && !($row->outcome > 0 && $Conf->timeReviewerViewAcceptedAuthors()))
 	    return false;
 	if ($flags & self::F_FALSE)

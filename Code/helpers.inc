@@ -819,13 +819,6 @@ function tempdir($dir, $prefix, $mode = 0700) {
 }
 
 
-function paperBlind($prow) {
-    global $Conf;
-    $bs = $Conf->blindSubmission();
-    return $bs == BLIND_ALWAYS
-	|| ($bs == BLIND_OPTIONAL && (!$prow || $prow->blind));
-}
-
 function reviewBlind($rrow) {
     global $Conf;
     $br = $Conf->blindReview();

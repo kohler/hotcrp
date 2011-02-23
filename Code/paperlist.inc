@@ -642,7 +642,8 @@ class PaperList extends BaseList {
     }
 
     function authorInfo($row, $contact, $full, $highlight) {
-	if (!$contact->privChair && paperBlind($row))
+	global $Conf;
+	if (!$contact->privChair && $Conf->paperBlind($row))
 	    return "";
 	cleanAuthor($row);
 	$aus = array();
@@ -747,6 +748,7 @@ class PaperList extends BaseList {
     }
 
     function contentEmpty($fieldId, $row) {
+	global $Conf;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_REVIEWER_TYPE:
 	    return !$row->reviewType && $row->conflictType <= 0;
@@ -773,7 +775,7 @@ class PaperList extends BaseList {
 	case self::FIELD_COLLABORATORS:
 	    return ($row->collaborators == ""
 		    || strcasecmp($row->collaborators, "None") == 0
-		    || (!$this->contact->privChair && paperBlind($row)));
+		    || (!$this->contact->privChair && $Conf->paperBlind($row)));
 	default:
 	    return false;
 	}
@@ -1054,7 +1056,7 @@ class PaperList extends BaseList {
 	case self::FIELD_COLLABORATORS:
 	    if ($row->collaborators == ""
 		|| strcasecmp($row->collaborators, "None") == 0
-		|| (!$this->contact->privChair && paperBlind($row)))
+		|| (!$this->contact->privChair && $Conf->paperBlind($row)))
 		return "";
 	    $x = "";
 	    foreach (explode("\n", $row->collaborators) as $c)
@@ -1102,7 +1104,7 @@ class PaperList extends BaseList {
 	}
 	if ($this->contact->privChair)
 	    $sel_opt["authors"] = "Authors &amp; contacts";
-	else if ($this->contact->isReviewer && $Conf->blindSubmission() < BLIND_ALWAYS)
+	else if ($this->contact->isReviewer && !$Conf->subBlindAlways())
 	    $sel_opt["authors"] = "Authors";
 	if ($this->contact->privChair) {
 	    $sel_opt["pcconf"] = "PC conflicts";
@@ -1575,7 +1577,7 @@ class PaperList extends BaseList {
 		$foldname = $fdef->foldname;
 		if ($fdef->foldnum > 2) {
 		    if (($foldnum = $fdef->foldnum) == 3)
-			$foldnum = (paperBlind($row) ? 2 : 1);
+			$foldnum = ($Conf->paperBlind($row) ? 2 : 1);
 		    $foldinfo[$foldnum] = true;
 		}
 		if (isset($folds[$foldname]) && $folds[$foldname] !== false) {
@@ -1672,7 +1674,7 @@ class PaperList extends BaseList {
 	    if ((isset($foldinfo[1]) || isset($foldinfo[2]))
 		&& $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
-		if ($Conf->blindSubmission() == BLIND_NEVER)
+		if ($Conf->subBlindNever())
 		    $titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
 		else if ($this->contact->privChair && isset($foldinfo[2]) && !isset($foldinfo[1]))
 		    $titleextra .= "<a class='fn2' href=\"javascript:void fold('pl',0,'anonau')\">Show authors</a><a class='fx2' href=\"javascript:void fold('pl',1,'anonau')\">Hide authors</a>";

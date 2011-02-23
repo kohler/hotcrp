@@ -201,9 +201,9 @@ function searchQuickref() {
     global $rowidx, $Conf, $ConfSiteSuffix, $Me;
 
     // how to report author searches?
-    if ($Conf->blindSubmission() == BLIND_NEVER)
+    if ($Conf->subBlindNever())
 	$aunote = "";
-    else if ($Conf->blindSubmission() == BLIND_OPTIONAL)
+    else if (!$Conf->subBlindAlways())
 	$aunote = "<br /><span class='hint'>Search only examines visible fields.  For example, PC member searches do not examine anonymous authors.</span>";
     else
 	$aunote = "<br /><span class='hint'>Search only examines visible fields.  For example, PC member searches do not examine authors.</span>";

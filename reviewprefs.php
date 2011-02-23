@@ -207,8 +207,8 @@ $_SESSION["l"][$pl->listNumber]["revprefs"] = true;
 echo "<table id='searchform' class='tablinks1'>
 <tr><td>"; // <div class='tlx'><div class='tld1'>";
 
-$showing_au = ($Conf->blindSubmission() <= BLIND_OPTIONAL && strpos($pldisplay, " au ") !== false);
-$showing_anonau = (($Conf->blindSubmission() >= BLIND_OPTIONAL || $Me->privChair) && strpos($pldisplay, " anonau ") !== false);
+$showing_au = (!$Conf->subBlindAlways() && strpos($pldisplay, " au ") !== false);
+$showing_anonau = ((!$Conf->subBlindNever() || $Me->privChair) && strpos($pldisplay, " anonau ") !== false);
 
 echo "<form method='get' action='reviewprefs$ConfSiteSuffix' accept-charset='UTF-8' id='redisplayform' class='",
     ($showing_au || $showing_anonau ? "fold10o" : "fold10c"),
@@ -245,27 +245,27 @@ echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;",
     "</td><td colspan='2' class='lentry'>";
 $sep = "";
 $loadforms = "";
-if ($Conf->blindSubmission() <= BLIND_OPTIONAL) {
+if (!$Conf->subBlindAlways()) {
     echo $sep,
 	tagg_checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
-		      array("disabled" => ($Conf->blindSubmission() == BLIND_OPTIONAL && !($pl->headerInfo["authors"] & 1)),
+		      array("disabled" => ($Conf->subBlindOptional() && !($pl->headerInfo["authors"] & 1)),
 			    "onchange" => "foldplinfo(this,'au')",
 			    "id" => "showau")),
 	"&nbsp;", tagg_label("Authors");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='auloadformresult'></div>";
 }
-if ($Conf->blindSubmission() >= BLIND_OPTIONAL && $Me->privChair) {
+if (!$Conf->subBlindNever() && $Me->privChair) {
     echo $sep,
 	tagg_checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
 		      array("disabled" => !($pl->headerInfo["authors"] & 2),
 			    "onchange" => "foldplinfo(this,'anonau')",
-			    "id" => ($Conf->blindSubmission() == BLIND_OPTIONAL ? "showanonau" : "showau"))),
-	"&nbsp;", tagg_label($Conf->blindSubmission() == BLIND_OPTIONAL ? "Anonymous authors" : "Authors");
+			    "id" => ($Conf->subBlindOptional() ? "showanonau" : "showau"))),
+	"&nbsp;", tagg_label($Conf->subBlindOptional() ? "Anonymous authors" : "Authors");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='anonauloadformresult'></div>";
 }
-if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $Me->privChair) {
+if (!$Conf->subBlindAlways() || $Me->privChair) {
     echo "<span class='fx10'>", $sep,
 	tagg_checkbox("showaufull", 1, strpos($pldisplay, " aufull ") !== false,
 		      array("onchange" => "foldplinfo(this,'aufull')")),

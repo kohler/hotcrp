@@ -451,9 +451,21 @@ class Conference {
 	return $this->settingsAfter('au_seerev');
     }
 
-    function blindSubmission() {
-	return $this->settings['sub_blind'];
+    function subBlindAlways() {
+	return $this->settings["sub_blind"] >= BLIND_ALWAYS;
     }
+    function subBlindNever() {
+	return $this->settings["sub_blind"] == BLIND_NEVER;
+    }
+    function subBlindOptional() {
+	return $this->settings["sub_blind"] == BLIND_OPTIONAL;
+    }
+    function paperBlind($prow) {
+	$bs = $this->settings["sub_blind"];
+	return $bs == BLIND_ALWAYS
+	    || ($bs == BLIND_OPTIONAL && (!$prow || $prow->blind));
+    }
+
     function blindReview() {
 	return $this->settings['rev_blind'];
     }

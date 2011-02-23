@@ -410,9 +410,9 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 
 // download text author information for selected papers
 if ($getaction == "authors" && isset($papersel)
-    && ($Me->privChair || ($Me->isPC && $Conf->blindSubmission() < BLIND_ALWAYS))) {
+    && ($Me->privChair || ($Me->isPC && !$Conf->subBlindAlways()))) {
     $idq = paperselPredicate($papersel, "Paper.");
-    if (!$Me->privChair && $Conf->blindSubmission() == BLIND_OPTIONAL)
+    if (!$Me->privChair && $Conf->subBlindOptional())
 	$idq = "($idq) and blind=0";
 
     // first fetch contacts if chair
@@ -571,7 +571,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	    $scores[] = $field;
 
     $header = array("paper");
-    if ($Conf->blindSubmission() == BLIND_OPTIONAL)
+    if ($Conf->subBlindOptional())
 	$header[] = "blind";
     $header[] = "decision";
     foreach ($scores as $score)
@@ -588,7 +588,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
 	else if ($row->reviewSubmitted) {
 	    $a = array($row->paperId);
-	    if ($Conf->blindSubmission() == BLIND_OPTIONAL)
+	    if ($Conf->subBlindOptional())
 		$a[] = $row->blind;
 	    $a[] = $row->outcome;
 	    foreach ($scores as $score)
@@ -1020,22 +1020,20 @@ if ($pl) {
     displayOptionText("<strong>Show:</strong>" . foldsessionpixel("pl", "pldisplay", null), 1);
 
     // Authors group
-    if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors) {
+    if (!$Conf->subBlindAlways() || $viewAllAuthors) {
 	$onchange = "fold('pl',!this.checked,'au')";
 	if ($viewAllAuthors)
 	    $onchange .= ";fold('pl',!this.checked,'anonau')";
 	if ($Me->privChair)
 	    $onchange .= ";foldplinfo_extra()";
 	displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "unfold" => true));
-    } else if ($Conf->blindSubmission() > BLIND_OPTIONAL && $Me->privChair) {
+    } else if ($Conf->subBlindAlways() && $Me->privChair) {
 	$onchange = "fold('pl',!this.checked,'anonau');foldplinfo_extra()";
 	displayOptionCheckbox("anonau", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "unfold" => true));
     }
-    if ($Conf->blindSubmission() <= BLIND_OPTIONAL || $viewAllAuthors
-	|| $Me->privChair)
+    if (!$Conf->subBlindAlways() || $viewAllAuthors || $Me->privChair)
 	displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
-    if ($Conf->blindSubmission() == BLIND_OPTIONAL && !$viewAllAuthors
-	&& $Me->privChair) {
+    if ($Conf->subBlindOptional() && !$viewAllAuthors && $Me->privChair) {
 	$onchange = "fold('pl',!this.checked,'anonau');foldplinfo_extra()";
 	displayOptionCheckbox("anonau", 1, "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "indent" => true));
     }
@@ -1131,10 +1129,10 @@ echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'>
   <td class='lentry'>";
 $qtOpt = array("ti" => "Title",
 	       "ab" => "Abstract");
-if ($Me->privChair || $Conf->blindSubmission() == BLIND_NEVER) {
+if ($Me->privChair || $Conf->subBlindNever()) {
     $qtOpt["au"] = "Authors";
     $qtOpt["n"] = "Title, abstract, and authors";
-} else if ($Conf->blindSubmission() == BLIND_OPTIONAL) {
+} else if ($Conf->subBlindOptional()) {
     $qtOpt["au"] = "Non-blind authors";
     $qtOpt["n"] = "Title, abstract, and non-blind authors";
 } else
