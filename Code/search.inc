@@ -1327,7 +1327,8 @@ class PaperSearch {
 	if ($flags & self::F_NONREVIEWER)
 	    $q[] = "MyReview.reviewNeedsSubmit is null";
 	if ($flags & self::F_PAPERNONBLIND) {
-	    if ($Conf->timeReviewerViewAcceptedAuthors())
+	    if ($Conf->timeReviewerViewAcceptedAuthors()
+		|| $Conf->subBlindUntilReview())
 		$this->preciseQuery = true;
 	    else
 		$q[] = "Paper.blind=0";
@@ -1654,8 +1655,7 @@ class PaperSearch {
 	    return false;
 	// NB: F_REVIEWER must be set by caller if necessary
 	if (($flags & self::F_PAPERNONBLIND)
-	    && !$Conf->subBlindNever()
-	    && ($row->paperBlind || $Conf->subBlindAlways())
+	    && $Conf->paperBlind($row)
 	    && !($row->outcome > 0 && $Conf->timeReviewerViewAcceptedAuthors()))
 	    return false;
 	if ($flags & self::F_FALSE)
@@ -1841,17 +1841,21 @@ class PaperSearch {
 	    $tables["PaperConflict"] = array("left join", "PaperConflict", "PaperConflict.contactId=$this->contactId");
 	    $columns["conflictType"] = "PaperConflict.conflictType";
 	}
-	if ($this->needflags & (self::F_REVIEWER | self::F_NONREVIEWER)) {
+	if (($this->needflags & (self::F_REVIEWER | self::F_NONREVIEWER))
+	    || (($this->needflags & self::F_PAPERNONBLIND)
+		&& $Conf->subBlindUntilReview())) {
 	    $qb = "";
 	    if (isset($_SESSION["rev_tokens"]))
-		$qb = " or MyReview.reviewToken in (" . join(", ", $_SESSION["rev_tokens"]) . ")";
+		$qb = " or MyReview.reviewToken in (" . join(",", $_SESSION["rev_tokens"]) . ")";
 	    $tables["MyReview"] = array("left join", "PaperReview", "(MyReview.contactId=$this->contactId$qb)");
 	    $columns["myReviewNeedsSubmit"] = "MyReview.reviewNeedsSubmit";
+	    if (($this->needflags & self::F_PAPERNONBLIND)
+		&& $Conf->subBlindUntilReview())
+		$columns["myReviewSubmitted"] = "MyReview.reviewSubmitted";
 	}
 	if ($this->needflags & self::F_PAPERNONBLIND) {
 	    $columns["paperBlind"] = "Paper.blind";
-	    if ($Conf->timeReviewerViewAcceptedAuthors())
-		$columns["outcome"] = "Paper.outcome";
+	    $columns["outcome"] = "Paper.outcome";
 	}
 
 	// search contacts

@@ -452,7 +452,7 @@ class Conference {
     }
 
     function subBlindAlways() {
-	return $this->settings["sub_blind"] >= BLIND_ALWAYS;
+	return $this->settings["sub_blind"] == BLIND_ALWAYS;
     }
     function subBlindNever() {
 	return $this->settings["sub_blind"] == BLIND_NEVER;
@@ -460,10 +460,17 @@ class Conference {
     function subBlindOptional() {
 	return $this->settings["sub_blind"] == BLIND_OPTIONAL;
     }
-    function paperBlind($prow) {
+    function subBlindUntilReview() {
+	return $this->settings["sub_blind"] == BLIND_UNTILREVIEW;
+    }
+    function paperBlind($prow, $contact = null) {
 	$bs = $this->settings["sub_blind"];
 	return $bs == BLIND_ALWAYS
-	    || ($bs == BLIND_OPTIONAL && (!$prow || $prow->blind));
+	    || ($bs == BLIND_OPTIONAL && (!$prow || $prow->blind))
+	    || ($bs == BLIND_UNTILREVIEW
+		&& (!$prow
+		    || (!defval($prow, "myReviewSubmitted")
+			&& (!$contact || !$contact->privChair))));
     }
 
     function blindReview() {

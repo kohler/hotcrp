@@ -643,7 +643,7 @@ class PaperList extends BaseList {
 
     function authorInfo($row, $contact, $full, $highlight) {
 	global $Conf;
-	if (!$contact->privChair && $Conf->paperBlind($row))
+	if (!$contact->privChair && $Conf->paperBlind($row, $contact))
 	    return "";
 	cleanAuthor($row);
 	$aus = array();
@@ -775,7 +775,8 @@ class PaperList extends BaseList {
 	case self::FIELD_COLLABORATORS:
 	    return ($row->collaborators == ""
 		    || strcasecmp($row->collaborators, "None") == 0
-		    || (!$this->contact->privChair && $Conf->paperBlind($row)));
+		    || (!$this->contact->privChair
+			&& $Conf->paperBlind($row, $this->contact)));
 	default:
 	    return false;
 	}
@@ -1056,7 +1057,8 @@ class PaperList extends BaseList {
 	case self::FIELD_COLLABORATORS:
 	    if ($row->collaborators == ""
 		|| strcasecmp($row->collaborators, "None") == 0
-		|| (!$this->contact->privChair && $Conf->paperBlind($row)))
+		|| (!$this->contact->privChair
+		    && $Conf->paperBlind($row, $this->contact)))
 		return "";
 	    $x = "";
 	    foreach (explode("\n", $row->collaborators) as $c)
@@ -1577,7 +1579,7 @@ class PaperList extends BaseList {
 		$foldname = $fdef->foldname;
 		if ($fdef->foldnum > 2) {
 		    if (($foldnum = $fdef->foldnum) == 3)
-			$foldnum = ($Conf->paperBlind($row) ? 2 : 1);
+			$foldnum = ($Conf->paperBlind($row, $this->contact) ? 2 : 1);
 		    $foldinfo[$foldnum] = true;
 		}
 		if (isset($folds[$foldname]) && $folds[$foldname] !== false) {

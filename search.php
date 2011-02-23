@@ -412,8 +412,18 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 if ($getaction == "authors" && isset($papersel)
     && ($Me->privChair || ($Me->isPC && !$Conf->subBlindAlways()))) {
     $idq = paperselPredicate($papersel, "Paper.");
-    if (!$Me->privChair && $Conf->subBlindOptional())
-	$idq = "($idq) and blind=0";
+    $join = "";
+    if (!$Me->privChair) {
+	if ($Conf->subBlindOptional())
+	    $idq = "($idq) and blind=0";
+	else if ($Conf->subBlindUntilReview()) {
+	    $idq = "($idq) and MyReview.reviewSubmitted>0";
+	    $qb = "";
+	    if (isset($_SESSION["rev_tokens"]))
+		$qb = " or MyReview.reviewToken in (" . join(",", $_SESSION["rev_tokens"]) . ")";
+	    $join = " left join PaperReview MyReview on (MyReview.paperId=Paper.paperId and (MyReview.contactId=$Me->contactId$qb))";
+	}
+    }
 
     // first fetch contacts if chair
     $contactline = array();
@@ -430,7 +440,7 @@ if ($getaction == "authors" && isset($papersel)
     }
 
     // first fetch authors
-    $result = $Conf->qe("select paperId, title, authorInformation from Paper where $idq", "while fetching authors");
+    $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper$join where $idq", "while fetching authors");
     if ($result) {
 	$texts = array();
 	while (($row = edb_orow($result))) {
@@ -1132,7 +1142,7 @@ $qtOpt = array("ti" => "Title",
 if ($Me->privChair || $Conf->subBlindNever()) {
     $qtOpt["au"] = "Authors";
     $qtOpt["n"] = "Title, abstract, and authors";
-} else if ($Conf->subBlindOptional()) {
+} else if (!$Conf->subBlindAlways()) {
     $qtOpt["au"] = "Non-blind authors";
     $qtOpt["n"] = "Title, abstract, and non-blind authors";
 } else

@@ -25,7 +25,7 @@ $SettingGroups = array("acc" => array(
 			     "next" => "sub"),
 		       "sub" => array(
 			     "sub_open" => "cdate",
-			     "sub_blind" => 2,
+			     "sub_blind" => 3,
 			     "sub_reg" => "date",
 			     "sub_sub" => "date",
 			     "sub_grace" => "grace",
@@ -1229,7 +1229,7 @@ function doSubGroup() {
 
     echo "<div class='g'></div>\n";
     echo "<strong>Blind submission:</strong> Are author names hidden from reviewers?<br />\n";
-    doRadio("sub_blind", array(BLIND_ALWAYS => "Yes&mdash;submissions are anonymous", BLIND_NEVER => "No&mdash;author names are visible to reviewers", BLIND_OPTIONAL => "Depends&mdash;authors decide whether to expose their names"));
+    doRadio("sub_blind", array(BLIND_ALWAYS => "Yes&mdash;submissions are anonymous", BLIND_NEVER => "No&mdash;author names are visible to reviewers", BLIND_UNTILREVIEW => "Yes, at first&mdash;author names become visible after review submission", BLIND_OPTIONAL => "Depends&mdash;authors decide whether to expose their names"));
 
     echo "<div class='g'></div>\n<table>\n";
     doDateRow("sub_reg", "Paper registration deadline", "sub_sub");

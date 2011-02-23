@@ -1822,7 +1822,7 @@ class PaperTable {
 		if (!$Me->ownReview($rr) && $rr->reviewSubmitted)
 		    $nother++;
 	    if ($nother > 0)
-		$msgs[] = "You'll be able to see " . plural($nother, "other review") . " once you complete your own.";
+		$msgs[] = "You’ll be able to see " . plural($nother, "other review") . " once you complete your own.";
 	}
 	if (count($msgs) > 0)
 	    $this->_paptabSepContaining(join("<br />\n", $msgs));

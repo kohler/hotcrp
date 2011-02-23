@@ -588,7 +588,7 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
-	$pblind = $Conf->paperBlind($prow);
+	$pblind = $Conf->paperBlind($prow, $this);
 	if (($prow->conflictType >= CONFLICT_AUTHOR
 	     && (!$this->isPC || !$blindWins || !$pblind))
 	    || ($prow->myReviewType > 0 && !$pblind
