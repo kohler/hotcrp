@@ -1,6 +1,9 @@
 - What we would like is the option of sending a single message to all
   authors of a paper at once. [Jeff Mogul]
 
+- Code/createdb: Support creating a database that runs on a remote machine
+  [Manolis Stamatogiannakis]
+
 - Add "Full author info" checkbox to manual assignment page [Jeff Mogul]
 
 - Button/mechanism to turn authors (email) to contact authors [Jeff Mogul]
