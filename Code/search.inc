@@ -36,7 +36,9 @@ $searchTags = array('ti' => 'ti', 'title' => 'ti',
 		    'shepherd' => 'shepherd', 'shep' => 'shepherd',
 		    'conflict' => 'conflict', 'conf' => 'conflict',
 		    'status' => 'status',
-		    'rating' => 'rate', 'rate' => 'rate');
+		    'rating' => 'rate', 'rate' => 'rate',
+		    'revpref' => 'revpref', 'pref' => 'revpref',
+		    'repref' => 'revpref');
 
 class SearchKeyword {
     var $op;
@@ -112,7 +114,7 @@ class SearchReviewValue {
 	    $this->contactsql = PaperSearch::_sqlNumericSet($contacts);
 	$this->fieldsql = $fieldsql;
 	$this->allowed = $this->compar = 0;
-	if (preg_match('/\A([!<>]?=|[<>])(\d+)\z/', $countexpr, $m)) {
+	if (preg_match('/\A([!<>]?=|[<>])(-?\d+)\z/', $countexpr, $m)) {
 	    if ($m[1] == "!=" || $m[1] == ">" || $m[1] == ">=")
 		$this->allowed |= 4;
 	    if ($m[1] == "=" || $m[1] == ">=" || $m[1] == "<=")
@@ -129,6 +131,14 @@ class SearchReviewValue {
 	    return ($this->allowed & 2) != 0;
 	else
 	    return ($this->allowed & 1) != 0;
+    }
+    static function negateCountexpr($countexpr) {
+	$t = new SearchReviewValue($countexpr);
+	if ($t->allowed) {
+	    $x = array("", "<", "=", "<=", ">", "!=", ">=");
+	    return $x[$t->allowed ^ 7] . $t->compar;
+	} else
+	    return $countexpr;
     }
 }
 
@@ -627,6 +637,35 @@ class PaperSearch {
 	return count($qt) != $nqt;
     }
 
+    function _searchRevpref($word, &$qt, $quoted) {
+	$contacts = null;
+	if (preg_match('/\A(.*?[^:=<>!])([:=<>!])(.*)\z/s', $word, $m)
+	    && !ctype_digit($m[1])) {
+	    $contacts = $this->_reviewerMatcher($m[1], $quoted);
+	    $word = ($m[2] == ":" ? $m[3] : $m[2] . $m[3]);
+	}
+
+	if (ctype_digit($word))
+	    $mx = array(">0", "=" . $word);
+	else if (preg_match('/\A(\d*)\s*([<>!]|[<>!=]?=)\s*(-?\d+)\z/s', $word, $m))
+	    $mx = array($m[1] == "" ? ">0" : ">=$m[1]", self::_cleanCompar($m[2]) . $m[3]);
+	else {
+	    $qt[] = new SearchTerm("f");
+	    return;
+	}
+
+	// since 0 preferences are not stored, we must negate the sense of the
+	// comparison if a preference of 0 might match
+	$scratch = new SearchReviewValue($mx[1]);
+	if ($scratch->test(0)) {
+	    $mx[0] = SearchReviewValue::negateCountexpr($mx[0]);
+	    $mx[1] = SearchReviewValue::negateCountexpr($mx[1]);
+	}
+
+	$value = new SearchReviewValue($mx[0], $contacts, "preference" . $mx[1]);
+	$qt[] = new SearchTerm("revpref", 0, $value);
+    }
+
     function _searchTags($word, $special, &$qt) {
 	global $Conf;
 	require_once("tags.inc");
@@ -826,6 +865,9 @@ class PaperSearch {
 	foreach (array("cmt", "aucmt") as $ctype)
 	    if ($special ? $special == $ctype : isset($this->fields[$ctype]))
 		$this->_searchComment($word, $ctype, $qt, $quoted);
+	if (($special ? $special == "revpref" : isset($this->fields["revpref"]))
+	    && $this->privChair)
+	    $this->_searchRevpref($word, $qt, $quoted);
 	if (($special ? $special == "lead" : isset($this->fields["lead"]))
 	    && $this->amPC) {
 	    if ($word == "none")
@@ -1487,12 +1529,32 @@ class PaperSearch {
 	    $wheretext = "";
 	    if (count($where))
 		$wheretext = " where " . join(" and ", $where);
-	    $tables[$thistab] = array("left join", "(select paperId, count(PaperReview.reviewId) as nre from $reviewtable$wheretext group by paperId)");
+	    $tables[$thistab] = array("left join", "(select paperId, count(PaperReview.reviewId) as count from $reviewtable$wheretext group by paperId)");
 	}
 	$q = array();
 	$this->_clauseTermSetFlags($t->flags, $q);
-	$q[] = "coalesce($thistab.nre,0)" . $t->value->countexpr;
-	$columns[$thistab . "_matches"] = "$thistab.nre";
+	$q[] = "coalesce($thistab.count,0)" . $t->value->countexpr;
+	$columns[$thistab . "_matches"] = "$thistab.count";
+	$t->link = $thistab . "_matches";
+	return "(" . join(" and ", $q) . ")";
+    }
+
+    function _clauseTermSetRevpref($thistab, $extrawhere,
+				   &$t, &$tables, &$columns) {
+	if (!isset($tables[$thistab])) {
+	    $where = array();
+	    $reviewtable = "PaperReviewPreference";
+	    if ($extrawhere)
+		$where[] = $extrawhere;
+	    $wheretext = "";
+	    if (count($where))
+		$wheretext = " where " . join(" and ", $where);
+	    $tables[$thistab] = array("left join", "(select paperId, count(PaperReviewPreference.preference) as count from $reviewtable$wheretext group by paperId)");
+	}
+	$q = array();
+	$this->_clauseTermSetFlags($t->flags, $q);
+	$q[] = "coalesce($thistab.count,0)" . $t->value->countexpr;
+	$columns[$thistab . "_matches"] = "$thistab.count";
 	$t->link = $thistab . "_matches";
 	return "(" . join(" and ", $q) . ")";
     }
@@ -1514,12 +1576,12 @@ class PaperSearch {
 	    $wheretext = "";
 	    if (count($where))
 		$wheretext = " where " . join(" and ", $where);
-	    $tables[$thistab] = array("left join", "(select paperId, count(PaperComment.commentId) as ncmt from PaperComment$wheretext group by paperId)");
+	    $tables[$thistab] = array("left join", "(select paperId, count(PaperComment.commentId) as count from PaperComment$wheretext group by paperId)");
 	}
 	$q = array();
 	$this->_clauseTermSetFlags($t->flags, $q);
-	$q[] = "coalesce($thistab.ncmt,0)" . $t->value->countexpr;
-	$columns[$thistab . "_matches"] = "$thistab.ncmt";
+	$q[] = "coalesce($thistab.count,0)" . $t->value->countexpr;
+	$columns[$thistab . "_matches"] = "$thistab.count";
 	$t->link = $thistab . "_matches";
 	return "(" . join(" and ", $q) . ")";
     }
@@ -1558,6 +1620,15 @@ class PaperSearch {
 	    else
 		$thistab = "Reviews_" . count($tables);
 	    $f[] = $this->_clauseTermSetReviews($thistab, $extrawhere, $t, $tables, $columns);
+	} else if ($tt == "revpref") {
+	    $extrawhere = array();
+	    if ($t->value->contactsql)
+		$extrawhere[] = "contactId" . $t->value->contactsql;
+	    if ($t->value->fieldsql)
+		$extrawhere[] = $t->value->fieldsql;
+	    $extrawhere = join(" and ", $extrawhere);
+	    $thistab = "Revpref_" . count($tables);
+	    $f[] = $this->_clauseTermSetRevpref($thistab, $extrawhere, $t, $tables, $columns);
 	} else if ($tt == "conflict") {
 	    $this->_clauseTermSetTable($t, "\3" . $t->value->contactsql, $t->value->countexpr, "Conflict",
 				       "PaperConflict", "contactId", "",
@@ -1680,7 +1751,8 @@ class PaperSearch {
 	// collect columns
 	if ($tt == "ti" || $tt == "ab" || $tt == "au" || $tt == "co")
 	    return $this->_clauseTermCheckField($t, $row);
-	else if ($tt == "re" || $tt == "conflict" || $tt == "ncmt" || $tt == "cmt") {
+	else if ($tt == "re" || $tt == "conflict" || $tt == "revpref"
+		 || $tt == "ncmt" || $tt == "cmt") {
 	    if (!$this->_clauseTermCheckFlags($t->flags, $row))
 		return false;
 	    else {
