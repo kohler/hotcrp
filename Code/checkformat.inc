@@ -196,6 +196,7 @@ class CheckFormat {
 	// number of pages
 	if (count($banal_desired) > 1 && $banal_desired[1]
 	    && preg_match('/\A(\d+)(?:-(\d+))?\z/', $banal_desired[1], $m)) {
+	    $m[2] = (isset($m[2]) ? $m[2] : 0);
 	    if ($m[2] && count($pi) < $m[1]) {
 		$pie[] = "Too few pages: expected " . plural($m[1], "or more page") . ", found " . count($pi);
 		$this->errors |= self::ERR_PAGELIMIT;
