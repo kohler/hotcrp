@@ -155,47 +155,17 @@ DELETE FROM user WHERE user='$DBNAME';
 INSERT INTO user SET
     Host='127.0.0.1',
     User='$DBNAME',
-    Password=PASSWORD('`sql_dbpass`'),
-    Select_priv='Y',
-    Insert_priv='Y',
-    Update_priv='Y',
-    Delete_priv='Y',
-    Create_priv='Y',
-    Drop_priv='Y',
-    Index_priv='Y',
-    Alter_priv='Y',
-    Lock_tables_priv='Y',
-    Create_tmp_table_priv='Y';
+    Password=PASSWORD('`sql_dbpass`');
 
 INSERT INTO user SET
     Host='localhost.localdomain',
     User='$DBNAME',
-    Password=PASSWORD('`sql_dbpass`'),
-    Select_priv='Y',
-    Insert_priv='Y',
-    Update_priv='Y',
-    Delete_priv='Y',
-    Create_priv='Y',
-    Drop_priv='Y',
-    Index_priv='Y',
-    Alter_priv='Y',
-    Lock_tables_priv='Y',
-    Create_tmp_table_priv='Y';
+    Password=PASSWORD('`sql_dbpass`');
 
 INSERT INTO user SET
     Host='localhost',
     User='$DBNAME',
-    Password=PASSWORD('`sql_dbpass`'),
-    Select_priv='Y',
-    Insert_priv='Y',
-    Update_priv='Y',
-    Delete_priv='Y',
-    Create_priv='Y',
-    Drop_priv='Y',
-    Index_priv='Y',
-    Alter_priv='Y',
-    Lock_tables_priv='Y',
-    Create_tmp_table_priv='Y';
+    Password=PASSWORD('`sql_dbpass`');
 
 DELETE FROM db WHERE db='$DBNAME';
 INSERT INTO db SET
