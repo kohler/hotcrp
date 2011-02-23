@@ -349,21 +349,21 @@ class PaperSearch {
     static function _matchCompar($text, $quoted = true) {
 	$text = trim($text);
 	if (($text == "any" || $text == "") && !$quoted)
-	    return array("any", "", ">0");
+	    return array("", ">0");
 	else if ($text == "none" && !$quoted)
-	    return array("none", "", "=0");
+	    return array("", "=0");
 	else if (ctype_digit($text))
-	    return array($text, "", "=" . $text);
+	    return array("", "=" . $text);
 	else if (preg_match('/\A(.*?)([<>!]|[<>!=]?=\s*)(\d+)\z/s', $text, $m))
-	    return array($m[0], $m[1], self::_cleanCompar($m[2]) . $m[3]);
+	    return array($m[1], self::_cleanCompar($m[2]) . $m[3]);
 	else
-	    return array($text, $text, ">0");
+	    return array($text, ">0");
     }
 
     static function _comparTautology($m) {
-	if ($m[2] == "<0")
+	if ($m[1] == "<0")
 	    return "f";
-	else if ($m[2] == ">=0")
+	else if ($m[1] == ">=0")
 	    return "t";
 	else
 	    return null;
@@ -496,8 +496,8 @@ class PaperSearch {
 	    return;
 	}
 
-	$contacts = ($m[1] == "" ? null : $this->_reviewerMatcher($m[1], $quoted));
-	$value = new SearchReviewValue($m[2], $contacts);
+	$contacts = ($m[0] == "" ? null : $this->_reviewerMatcher($m[0], $quoted));
+	$value = new SearchReviewValue($m[1], $contacts);
 
 	$nqt = count($qt);
 	$this->_searchCompleteReviewer($qt, "re", $rt, $value);
@@ -514,16 +514,16 @@ class PaperSearch {
 	    return;
 	}
 
-	$contacts = $this->_reviewerMatcher($m[1], $quoted);
+	$contacts = $this->_reviewerMatcher($m[0], $quoted);
 	if ($this->privChair
 	    || (is_array($contacts) && count($contacts) == 1 && $contacts[0] == $this->contactId))
-	    $qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[2], $contacts));
+	    $qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[1], $contacts));
 	else {
-	    $qt[] = new SearchTerm("conflict", self::F_PAPERNONBLIND, new SearchReviewValue($m[2], $contacts));
+	    $qt[] = new SearchTerm("conflict", self::F_PAPERNONBLIND, new SearchReviewValue($m[1], $contacts));
 	    if (!is_array($contacts))
-		$qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[2], "$contacts and \3=" . $this->contactId));
+		$qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[1], "$contacts and \3=" . $this->contactId));
 	    else if (in_array($this->contactId, $contacts))
-		$qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[2], array($this->contactId)));
+		$qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[1], array($this->contactId)));
 	}
     }
 
@@ -536,14 +536,14 @@ class PaperSearch {
 	    return;
 	}
 
-	if ($m[1] == "") {
+	if ($m[0] == "") {
 	    $type = "ncmt";
 	    $contacts = null;
 	} else {
 	    $type = "cmt";
-	    $contacts = $this->_reviewerMatcher($m[1], $quoted);
+	    $contacts = $this->_reviewerMatcher($m[0], $quoted);
 	}
-	$value = new SearchReviewValue($m[2], $contacts);
+	$value = new SearchReviewValue($m[1], $contacts);
 
 	$rt = ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0);
 	$nqt = count($qt);
