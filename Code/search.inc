@@ -113,11 +113,11 @@ class SearchReviewValue {
 	$this->fieldsql = $fieldsql;
 	$this->allowed = $this->compar = 0;
 	if (preg_match('/\A([!<>]?=|[<>])(\d+)\z/', $countexpr, $m)) {
-	    if ($m[1] == "!=" || substr($m[1], 0, 1) == ">")
+	    if ($m[1] == "!=" || $m[1] == ">" || $m[1] == ">=")
 		$this->allowed |= 4;
-	    if (substr($m[1], strlen($m[1]) - 1) == "=")
+	    if ($m[1] == "=" || $m[1] == ">=" || $m[1] == "<=")
 		$this->allowed |= 2;
-	    if ($m[1] == "!=" || substr($m[1], 0, 1) == "<")
+	    if ($m[1] == "!=" || $m[1] == "<" || $m[1] == "<=")
 		$this->allowed |= 1;
 	    $this->compar = (int) $m[2];
 	}
