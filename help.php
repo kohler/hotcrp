@@ -248,20 +248,20 @@ function searchQuickref() {
     _searchQuickrefRow("", "tag:disc*", "matches any tag that <em>starts with</em> “disc”");
     _searchQuickrefRow("Reviews", "re:fdabek", "“fdabek” in reviewer name/email");
     if ($retag) {
-	_searchQuickrefRow("", "re:$retag", "has a reviewer tagged “$retag”");
-	_searchQuickrefRow("", "re:\"$retag\"", "“$retag” in reviewer name/email");
+	_searchQuickrefRow("", "re:$retag", "has a reviewer tagged “" . $retag . "”");
+	_searchQuickrefRow("", "re:\"$retag\"", "“" . $retag . "” in reviewer name/email");
     }
     _searchQuickrefRow("", "cre:fdabek", "“fdabek” (in reviewer name/email) has completed a review");
     _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
     if ($retag)
-	_searchQuickrefRow("", "re:$retag>1", "at least two reviewers (assigned and/or completed) tagged “$retag”");
+	_searchQuickrefRow("", "re:$retag>1", "at least two reviewers (assigned and/or completed) tagged “" . $retag . "”");
     _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
     _searchQuickrefRow("", "ire:>0", "at least one incomplete review");
     _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (“cpri:”, “ipri:”, and reviewer name/email also work)");
     _searchQuickrefRow("", "sec:pai", "“pai” (reviewer name/email) is secondary reviewer (“csec:”, “isec:”, and review counts also work)");
     if (($roundtags = $Conf->settingText("tag_rounds"))) {
 	preg_match('/ (\S+) /', $roundtags, $m);
-	_searchQuickrefRow("", "round:$m[1]", "review assignment is “$m[1]”");
+	_searchQuickrefRow("", "round:$m[1]", "review assignment is “" . $m[1] . "”");
     }
     if ($Conf->sversion >= 12
 	&& $Conf->setting("rev_ratings") != REV_RATINGS_NONE)
@@ -285,7 +285,7 @@ function searchQuickref() {
     foreach ($rf->options["outcome"] as $dec)
 	$dec = simplifyWhitespace(strtolower($dec));
     $qdec = (strpos($dec, " ") !== false ? "\"$dec\"" : $dec);
-    _searchQuickrefRow("Decision", "dec:$qdec", "decision is “$dec” (partial matches OK)");
+    _searchQuickrefRow("Decision", "dec:$qdec", "decision is “" . $dec . "” (partial matches OK)");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
     _searchQuickrefRow("", "dec:no", "one of the reject decisions");
     _searchQuickrefRow("", "dec:any", "decision specified");
