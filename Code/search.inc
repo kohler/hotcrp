@@ -354,7 +354,7 @@ class PaperSearch {
 	    return array("", "=0");
 	else if (ctype_digit($text))
 	    return array("", "=" . $text);
-	else if (preg_match('/\A(.*?)([<>!]|[<>!=]?=\s*)(\d+)\z/s', $text, $m))
+	else if (preg_match('/\A(.*?)([<>!]|[<>!=]?=)\s*(\d+)\z/s', $text, $m))
 	    return array($m[1], self::_cleanCompar($m[2]) . $m[3]);
 	else
 	    return array($text, ">0");
@@ -560,7 +560,7 @@ class PaperSearch {
 	$contacts = null;
 	$contactword = "";
 
-	if (preg_match('/\A(.+?)([:=<>!])(.*)\z/s', $word, $m)
+	if (preg_match('/\A(.+*[^:=<>!])([:=<>!])(.*)\z/s', $word, $m)
 	    && !ctype_digit($m[1])) {
 	    $contacts = $this->_reviewerMatcher($m[1], $quoted);
 	    $word = ($m[2] == ":" ? $m[3] : $m[2] . $m[3]);
