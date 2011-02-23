@@ -580,7 +580,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	    && isset($rf->options[$field]))
 	    $scores[] = $field;
 
-    $header = array("paper");
+    $header = array("paper", "title");
     if ($Conf->subBlindOptional())
 	$header[] = "blind";
     $header[] = "decision";
@@ -597,7 +597,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	if (!$Me->canViewReview($row, null, $whyNot))
 	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
 	else if ($row->reviewSubmitted) {
-	    $a = array($row->paperId);
+	    $a = array($row->paperId, $row->title);
 	    if ($Conf->subBlindOptional())
 		$a[] = $row->blind;
 	    $a[] = $row->outcome;
