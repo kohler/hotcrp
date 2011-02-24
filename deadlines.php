@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-$Me = $_SESSION["Me"];
 
 
 // *** NB If you change this script, also change the logic in index.php ***

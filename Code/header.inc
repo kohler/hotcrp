@@ -250,9 +250,11 @@ if ($zlib_output_compression) {
 session_name($Opt['sessionName']);
 session_start();
 
-if (!isset($_SESSION['Me']))
-    $_SESSION['Me'] = new Contact();
-$_SESSION['Me']->validated = 0;
+global $Me;
+if (!isset($_SESSION["Me"]))
+    $_SESSION["Me"] = new Contact();
+$_SESSION["Me"]->validated = 0;
+$Me = $_SESSION["Me"];
 
 if (!isset($_SESSION['AskedYouToUpdateContactInfo']))
     $_SESSION['AskedYouToUpdateContactInfo'] = 0;

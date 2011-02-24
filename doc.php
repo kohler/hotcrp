@@ -8,7 +8,6 @@
 // naming work for some browsers.
 
 require_once("Code/header.inc");
-$Me = $_SESSION['Me'];
 $Me->goIfInvalid();
 
 // Determine the intended paper

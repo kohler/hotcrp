@@ -7,7 +7,6 @@ require_once("Code/header.inc");
 require_once("Code/papertable.inc");
 require_once("Code/reviewtable.inc");
 require_once("Code/tags.inc");
-$Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->privChair)
     $linkExtra = "&amp;forceShow=1";

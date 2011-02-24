@@ -7,7 +7,6 @@ require_once("Code/header.inc");
 require_once("Code/paperlist.inc");
 require_once("Code/search.inc");
 
-$Me = $_SESSION["Me"];
 $email_class = '';
 $password_class = '';
 

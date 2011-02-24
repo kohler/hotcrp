@@ -5,7 +5,6 @@
 
 require_once("Code/header.inc");
 require_once("Code/papertable.inc");
-$Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $useRequest = false;
 $forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);

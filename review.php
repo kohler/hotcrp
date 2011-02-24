@@ -5,7 +5,6 @@
 
 require_once("Code/header.inc");
 require_once("Code/papertable.inc");
-$Me = $_SESSION["Me"];
 
 // special case: if "accept" or "refuse" is set, and "email" and "password"
 // are both set, vector through the signin page

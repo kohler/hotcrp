@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 include('Code/header.inc');
-$Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $MergeError = "";
 
@@ -41,7 +40,7 @@ if (isset($_REQUEST["merge"])) {
 	    // Do they prefer the account they named?
 	    if (defval($_REQUEST, 'prefer')) {
 		$mm = $Me;
-		$_REQUEST["Me"] = $Me = $MiniMe;
+		$_SESSION["Me"] = $Me = $MiniMe;
 		$MiniMe = $mm;
 	    }
 

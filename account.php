@@ -5,7 +5,6 @@
 
 require_once("Code/header.inc");
 require_once("Code/countries.inc");
-$Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $newProfile = false;
 $Error = array();

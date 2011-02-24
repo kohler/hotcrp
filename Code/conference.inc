@@ -688,7 +688,7 @@ class Conference {
     }
 
     function __downloadPaper($paperId, $saveit, $documentType) {
-	global $zlib_output_compression;
+	global $Me, $zlib_output_compression;
 
 	// Database query
 	if ($documentType <= 0)
@@ -696,7 +696,7 @@ class Conference {
 	else
 	    $result = $this->q("select s.mimetype, s.paper, s.paperStorageId, s.compression from PaperOption o left join PaperStorage s on (s.paperStorageId=o.value) where o.paperId=$paperId and o.optionId=$documentType");
 	if (!$result) {
-	    $this->log("Error downloading for review: " . mysql_error($this->dblink), $_SESSION["Me"], $paperId);
+	    $this->log("Error downloading for review: " . mysql_error($this->dblink), $Me, $paperId);
 	    return new PEAR_Error("Database error while downloading paper.");
 	} else if (edb_nrows($result) == 0)
 	    return new PEAR_Error("No such document.");
@@ -727,11 +727,12 @@ class Conference {
     }
 
     function downloadPaper($paperId, $saveit, $documentType = 0) {
+	global $Me;
 	$result = $this->__downloadPaper($paperId, $saveit, $documentType);
 	if (PEAR::isError($result))
 	    $this->errorMsg($result->getMessage());
 	else
-	    $this->log("Downloaded paper", $_SESSION["Me"], $paperId);
+	    $this->log("Downloaded paper", $Me, $paperId);
 	return $result;
     }
 
@@ -826,11 +827,12 @@ class Conference {
     }
 
     function downloadPapers($paperIds, $final = false) {
+	global $Me;
 	$result = $this->__downloadPapers($paperIds, $tmpdir, $final);
 	if (PEAR::isError($result))
 	    $this->errorMsg($result->getMessage());
 	else
-	    $this->log("Downloaded papers", $_SESSION["Me"], $paperIds);
+	    $this->log("Downloaded papers", $Me, $paperIds);
 	if (isset($tmpdir) && $tmpdir)
 	    exec("/bin/rm -rf $tmpdir");
 	return $result;
@@ -1563,13 +1565,13 @@ class Conference {
 	else
 	    echo "<a class='x' href='${ConfSiteBase}index$ConfSiteSuffix' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a></h1></div><div id='header_left_page'><h1>", $title;
 	echo "</h1></div><div id='header_right'>";
-	if ($_SESSION["Me"]->valid()) {
+	if ($Me->valid()) {
 	    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 	    echo "<a class='q' href='${ConfSiteBase}account$ConfSiteSuffix'><strong>",
-		htmlspecialchars($_SESSION["Me"]->email),
+		htmlspecialchars($Me->email),
 		"</strong></a> &nbsp; <a href='${ConfSiteBase}account$ConfSiteSuffix'>Profile</a>",
 		$xsep;
-	    if (!$_SESSION["Me"]->privChair && $_SESSION["Me"]->chairContactId > 0)
+	    if (!$Me->privChair && $Me->chairContactId > 0)
 		echo "<a href=\"", selfHref(array("chairMode" => 0)), "\">Admin&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Return to administrator view]' /></a>", $xsep;
 	    echo "<a href='${ConfSiteBase}help$ConfSiteSuffix";
 	    if ($id == "search")

@@ -6,7 +6,6 @@
 require_once("Code/header.inc");
 require_once("Code/search.inc");
 require_once("Code/mailtemplate.inc");
-$Me = $_SESSION["Me"];
 $Me->goIfInvalid();
 $Me->goIfNotPC();
 $rf = reviewForm();
