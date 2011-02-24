@@ -247,8 +247,7 @@ if ($zlib_output_compression) {
     header("Vary: Accept-Encoding", false);
 }
 
-session_name($Opt['sessionName']);
-session_start();
+$Conf->ensureSession();
 
 global $Me;
 if (!isset($_SESSION["Me"]))

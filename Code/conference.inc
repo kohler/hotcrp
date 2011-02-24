@@ -23,7 +23,7 @@ class Conference {
     var $footerScripting;
     var $usertimeId;
 
-    function Conference() {
+    function __construct() {
 	global $Opt;
 
 	$this->saveMessages = true;
@@ -70,9 +70,18 @@ class Conference {
 	    die("Package misconfigured: \$Opt[\"paperSite\"] is not set.  Perhaps the web server cannot read <tt>Code/options.inc</tt>?");
     }
 
+
     //
     // Initialization functions
     //
+
+    function ensureSession() {
+	if (!session_id()) {
+	    global $Opt;
+	    session_name($Opt["sessionName"]);
+	    session_start();
+	}
+    }
 
     function updateSettings() {
 	global $Opt, $OK;
@@ -1441,9 +1450,10 @@ class Conference {
 
     function msg($text, $type) {
 	$x = "<div class=\"$type\">$text</div>\n";
-	if ($this->saveMessages)
+	if ($this->saveMessages) {
+	    $this->ensureSession();
 	    $_SESSION["msgs"][] = $x;
-	else if ($this->tableMessages) {
+	} else if ($this->tableMessages) {
 	    echo "<tr>
   <td class='caption'></td>
   <td class='entry' colspan='", $this->tableMessages, "'>", $x, "</td>

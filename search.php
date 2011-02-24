@@ -70,6 +70,7 @@ if ($getaction == "paper" && isset($papersel)) {
 	    $downloads[] = $row->paperId;
     }
 
+    session_write_close();	// to allow concurrent clicks
     $result = $Conf->downloadPapers($downloads);
     if (!PEAR::isError($result))
 	exit;

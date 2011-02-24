@@ -50,6 +50,7 @@ if (!isset($Error) && !$Me->canDownloadPaper($paperId, $whyNot))
 
 // Actually download paper.
 if (!isset($Error)) {
+    session_write_close();	// to allow concurrent clicks
     $result = $Conf->downloadPaper($paperId, rcvtint($_REQUEST["save"]) > 0, $documentType);
     if (!PEAR::isError($result))
 	exit;
