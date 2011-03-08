@@ -102,6 +102,7 @@ class SearchTerm {
 class SearchReviewValue {
     var $countexpr;
     var $contactsql;
+    var $_contactset;
     var $fieldsql;
     var $compar;
     var $allowed;
@@ -112,6 +113,7 @@ class SearchReviewValue {
 	    $this->contactsql = $contacts;
 	else
 	    $this->contactsql = PaperSearch::_sqlNumericSet($contacts);
+	$this->_contactset = $contacts;
 	$this->fieldsql = $fieldsql;
 	$this->allowed = $this->compar = 0;
 	if (preg_match('/\A([!<>]?=|[<>])(-?\d+)\z/', $countexpr, $m)) {
@@ -139,6 +141,24 @@ class SearchReviewValue {
 	    return $x[$t->allowed ^ 7] . $t->compar;
 	} else
 	    return $countexpr;
+    }
+    function onlyContact($contactid) {
+	return is_array($this->_contactset) && count($this->_contactset) == 1
+	    && $this->_contactset[0] == $contactid;
+    }
+    function restrictContact($contactid) {
+	if (!$this->_contactset)
+	    $cset = array($contactid);
+	else if (!is_array($this->_contactset))
+	    $cset = $this->_contactset . " and \3=$contactid";
+	else if (in_array($contactid, $this->_contactset))
+	    $cset = array($contactid);
+	else
+	    return null;
+	return new SearchReviewValue($this->countexpr, $cset, $this->fieldsql);
+    }
+    function contactWhere($fieldname) {
+	return str_replace("\3", $fieldname, "\3" . $this->contactsql);
     }
 }
 
@@ -467,18 +487,25 @@ class PaperSearch {
 		    && ($deblinder == 0 || $pc_seeblindrev == 0))
 		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
 		else {
-		    $qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
+		    if (!$value->onlyContact($this->contactId))
+			$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
 		    if ($pc_seeallrev == 1)
 			$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT | $deblinder, $value);
 		    if ($pc_seeallrev == 3)
 			$qt[] = new SearchTerm($type, $rt | self::F_NONREVIEWER | self::F_NONCONFLICT | $deblinder, $value);
+		    if (($newvalue = $value->restrictContact($this->contactId)))
+			$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
 		}
 
-	    } else if ($Conf->setting("extrev_view") == 2)
-		$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
-
-	    else if ($Conf->setting("extrev_view") == 1)
-		$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT | $deblinder, $value);
+	    } else {
+		if (!$value->onlyContact($this->contactId)) {
+		    $extrev_view = $Conf->setting("extrev_view");
+		    if ($extrev_view == 1 || $extrev_view == 2)
+			$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT | ($extrev_view == 1 ? $deblinder : 0), $value);
+		}
+		if (($newvalue = $value->restrictContact($this->contactId)))
+		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
+	    }
 
 	    if ($Conf->timeAuthorViewReviews())
 		$qt[] = new SearchTerm($type, ($rt & ~self::F_TYPEMASK) | self::F_AUTHOR | self::F_COMPLETE | $deblinder, $value);
@@ -529,11 +556,10 @@ class PaperSearch {
 	    || (is_array($contacts) && count($contacts) == 1 && $contacts[0] == $this->contactId))
 	    $qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[1], $contacts));
 	else {
-	    $qt[] = new SearchTerm("conflict", self::F_PAPERNONBLIND, new SearchReviewValue($m[1], $contacts));
-	    if (!is_array($contacts))
-		$qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[1], "$contacts and \3=" . $this->contactId));
-	    else if (in_array($this->contactId, $contacts))
-		$qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[1], array($this->contactId)));
+	    $value = new SearchReviewValue($m[1], $contacts);
+	    $qt[] = new SearchTerm("conflict", self::F_PAPERNONBLIND, $value);
+	    if (($newvalue = $value->restrictContact($this->contactId)))
+		$qt[] = new SearchTerm("conflict", 0, $newvalue);
 	}
     }
 
@@ -1611,7 +1637,7 @@ class PaperSearch {
 	} else if ($tt == "re") {
 	    $extrawhere = array();
 	    if ($t->value->contactsql)
-		$extrawhere[] = "contactId" . $t->value->contactsql;
+		$extrawhere[] = $t->value->contactWhere("contactId");
 	    if ($t->value->fieldsql)
 		$extrawhere[] = $t->value->fieldsql;
 	    $extrawhere = join(" and ", $extrawhere);
@@ -1623,7 +1649,7 @@ class PaperSearch {
 	} else if ($tt == "revpref") {
 	    $extrawhere = array();
 	    if ($t->value->contactsql)
-		$extrawhere[] = "contactId" . $t->value->contactsql;
+		$extrawhere[] = $t->value->contactWhere("contactId");
 	    if ($t->value->fieldsql)
 		$extrawhere[] = $t->value->fieldsql;
 	    $extrawhere = join(" and ", $extrawhere);
@@ -1638,7 +1664,7 @@ class PaperSearch {
 	    $f[] = $this->_clauseTermSetComments("Numcomments_$rtype", "", $t, $tables, $columns);
 	} else if ($tt == "cmt") {
 	    $thistab = "Comments_" . count($tables);
-	    $f[] = $this->_clauseTermSetComments($thistab, "contactId" . $t->value->contactsql, $t, $tables, $columns);
+	    $f[] = $this->_clauseTermSetComments($thistab, $t->value->contactWhere("contactId"), $t, $tables, $columns);
 	} else if ($tt == "pn") {
 	    $q = array();
 	    if (count($t->value[0]))
