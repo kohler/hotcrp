@@ -478,30 +478,52 @@ class PaperSearch {
 		$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
 
 	    } else if ($this->amPC) {
-		$pc_seeallrev = $Conf->setting("pc_seeallrev");
-		$pc_seeblindrev = $Conf->setting("pc_seeblindrev");
-		if ($pc_seeallrev == 4 && !$this->reviewsOutstanding)
+		// Can PC member see all reviews?  PC member can generally see
+		// all assignments (under control of pc_seeblindrev), so if
+		// query doesn't involve text or score, ignore the setting.
+		if (!$value->fieldsql)
 		    $pc_seeallrev = 1;
-
-		if ($pc_seeallrev == 1
-		    && ($deblinder == 0 || $pc_seeblindrev == 0))
-		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
 		else {
-		    if (!$value->onlyContact($this->contactId))
-			$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT, $value);
-		    if ($pc_seeallrev == 1)
-			$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT | $deblinder, $value);
-		    if ($pc_seeallrev == 3)
-			$qt[] = new SearchTerm($type, $rt | self::F_NONREVIEWER | self::F_NONCONFLICT | $deblinder, $value);
-		    if (($newvalue = $value->restrictContact($this->contactId)))
-			$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
+		    $pc_seeallrev = $Conf->setting("pc_seeallrev");
+		    if ($pc_seeallrev == 4 && !$this->reviewsOutstanding)
+			$pc_seeallrev = 1;
 		}
+		// Can blind reviews be searched?  Yes, if the search doesn't
+		// check reviewer name, or pc_seeblindrev allows it.  In *all*
+		// cases PC members can see who wrote blind reviews once they
+		// submit their own review.
+		if (!$value->contactsql || $Conf->setting("pc_seeblindrev") == 0)
+		    $xdeblinder = 0;
+		else
+		    $xdeblinder = $deblinder;
+
+		// Add terms for reviews not written by current contact
+		$limit = array();
+		if (!$value->onlyContact($this->contactId)) {
+		    if ($pc_seeallrev == 1)
+			$limit[] = self::F_NONCONFLICT | $xdeblinder;
+		    else if ($pc_seeallrev == 3)
+			$limit[] = self::F_NONCONFLICT | self::F_NONREVIEWER | $xdeblinder;
+		    if (!count($limit) || $limit[0] != self::F_NONCONFLICT)
+			$limit[] = self::F_NONCONFLICT | self::F_REVIEWER;
+		    foreach ($limit as $l)
+			if (!($l & self::F_FALSE))
+			    $qt[] = new SearchTerm($type, $rt | $l, $value);
+		}
+
+		// Add more liberal term for reviews written by current
+		// contact
+		if (($newvalue = $value->restrictContact($this->contactId))
+		    && (!count($limit) || $limit[0] != self::F_NONCONFLICT))
+		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
 
 	    } else {
 		if (!$value->onlyContact($this->contactId)) {
 		    $extrev_view = $Conf->setting("extrev_view");
-		    if ($extrev_view == 1 || $extrev_view == 2)
-			$qt[] = new SearchTerm($type, $rt | self::F_REVIEWER | self::F_NONCONFLICT | ($extrev_view == 1 ? $deblinder : 0), $value);
+		    $xdeblinder = ($extrev_view == 2 || !$value->contactsql ? 0 : $deblinder);
+		    if (($extrev_view == 1 || $extrev_view == 2)
+			&& $xdeblinder != self::F_FALSE)
+			$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT | self::F_REVIEWER | $xdeblinder, $value);
 		}
 		if (($newvalue = $value->restrictContact($this->contactId)))
 		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
