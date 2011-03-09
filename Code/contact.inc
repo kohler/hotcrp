@@ -44,7 +44,7 @@ class Contact {
     var $privChair;
     var $contactTags;
     var $reviewsOutstanding;
-    var $chairContactId;
+    var $chairContact;
     var $validated;
 
 
@@ -103,25 +103,26 @@ class Contact {
 		}
 		$this->isPC = ($this->roles & (self::ROLE_PC | self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
 		$this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
-		if ($this->privChair)
-		    $this->chairContactId = $this->contactId;
-		if ($this->chairContactId == $this->contactId
-		    && !$this->privChair)
-		    $this->chairContactId = 0;
+		if (!$this->privChair
+		    && $this->chairContact == $this->contactId)
+		    $this->chairContact = null;
 		// change view ID or chair mode
-		if ($this->privChair || $this->chairContactId > 0) {
+		if ($this->privChair || $this->chairContact) {
 		    $viewContact = rcvtint($_REQUEST["viewContact"]);
 		    if ($viewContact <= 0 && isset($_REQUEST["viewContact"]))
 			$viewContact = $Conf->getContactId($_REQUEST["viewContact"]);
-		    $chairMode = rcvtint($_REQUEST["chairMode"]);
 		    if ($viewContact > 0) {
+			if ($this->privChair)
+			    $this->chairContact = $this->contactId;
 			$this->contactId = $viewContact;
 			unset($_REQUEST["viewContact"]);
 			unset($_SESSION["l"]);
 			return $this->valid(true);
 		    }
-		    if ($chairMode >= 0 && !$this->privChair) {
-			$this->contactId = $this->chairContactId;
+		    $chairMode = rcvtint($_REQUEST["chairMode"]);
+		    if (!$this->privChair && $chairMode >= 0) {
+			$this->contactId = $this->chairContact;
+			$this->chairContact = $this->email;
 			unset($_REQUEST["chairMode"]);
 			return $this->valid(true);
 		    }
@@ -160,7 +161,7 @@ class Contact {
 	$this->roles = 0;
 	$this->isAuthor = $this->isReviewer = $this->isPC = $this->privChair = false;
 	$this->reviewsOustanding = false;
-	$this->chairContactId = 0;
+	$this->chairContact = null;
     }
 
     function amReviewer() {

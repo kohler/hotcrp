@@ -1581,8 +1581,12 @@ class Conference {
 		htmlspecialchars($Me->email),
 		"</strong></a> &nbsp; <a href='${ConfSiteBase}account$ConfSiteSuffix'>Profile</a>",
 		$xsep;
-	    if (!$Me->privChair && $Me->chairContactId > 0)
-		echo "<a href=\"", selfHref(array("chairMode" => 0)), "\">Admin&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Return to administrator view]' /></a>", $xsep;
+	    if ($Me->chairContact) {
+		if (!$Me->privChair)
+		    echo "<a href=\"", selfHref(array("chairMode" => 0)), "\">Admin&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Return to administrator view]' /></a>", $xsep;
+		else if (!is_int($Me->chairContact))
+		    echo "<a href=\"", selfHref(array("viewContact" => $Me->chairContact)), "\">", htmlspecialchars($Me->chairContact), "&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Unprivileged view]' /></a>", $xsep;
+	    }
 	    echo "<a href='${ConfSiteBase}help$ConfSiteSuffix";
 	    if ($id == "search")
 		echo "?t=", $id;
