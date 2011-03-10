@@ -1122,7 +1122,7 @@ $Conf->footerScript("fold('searchform',1,4)");
 
 // Basic search
 echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>
-  <input id='searchform1_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;
+  <input id='searchform1_d' class='textlite' type='text' size='40' style='width:30em' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;
   <input class='b' type='submit' value='Search' />
 </div></form>";
 
@@ -1161,14 +1161,14 @@ echo tagg_select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 <tr><td><div class='g'></div></td></tr>
 <tr>
   <td class='lxcaption'>With <b>all</b> the words</td>
-  <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /><span class='sep'></span></td>
+  <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' style='width:30em' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /><span class='sep'></span></td>
   <td rowspan='3'><input class='b' type='submit' value='Search' tabindex='2' /></td>
 </tr><tr>
   <td class='lxcaption'>With <b>any</b> of the words</td>
-  <td class='lentry'><input class='textlite' type='text' size='40' name='qo' value=\"", htmlspecialchars(defval($_REQUEST, "qo", "")), "\" tabindex='1' /></td>
+  <td class='lentry'><input class='textlite' type='text' size='40' name='qo' style='width:30em' value=\"", htmlspecialchars(defval($_REQUEST, "qo", "")), "\" tabindex='1' /></td>
 </tr><tr>
   <td class='lxcaption'><b>Without</b> the words</td>
-  <td class='lentry'><input class='textlite' type='text' size='40' name='qx' value=\"", htmlspecialchars(defval($_REQUEST, "qx", "")), "\" tabindex='1' /></td>
+  <td class='lentry'><input class='textlite' type='text' size='40' name='qx' style='width:30em' value=\"", htmlspecialchars(defval($_REQUEST, "qx", "")), "\" tabindex='1' /></td>
 </tr>
 <tr>
   <td class='lxcaption'></td>
