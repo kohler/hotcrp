@@ -1,3 +1,20 @@
+- Can we save the review forms from this offering of the WQE for use in the
+  next offering of the WQE?  Since the WQE is not an actual conference, the
+  standard conference-style review forms are less useful, so it would be
+  useful to keep what we develop for future offerings. [Amit Sahai]
+
+- Cookie Stealing Vulnerability [Aditya K Sood]
+
+- The download list is limited (what if I want authors AND scores at the
+  same time).  Doesn't it seem cleaner to use the existing diplay options to
+  select fields, then have download > "list as tabbed text" that gets
+  whatever you've selected?  It would be also good to work this in to the
+  chair help page for someone who reads the documentation. [John Heidemann]
+
+- HotCRP Feature Request: PDF Anonymization [Matt Johnson]
+
+- Online TPC meeting support [Richard Mortier]
+
 - What we would like is the option of sending a single message to all
   authors of a paper at once. [Jeff Mogul]
 
