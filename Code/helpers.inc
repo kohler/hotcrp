@@ -244,6 +244,113 @@ if (!function_exists("json_encode")) {
     }
 }
 
+if (!function_exists("json_decode")) {
+    global $json_string_unmap;
+    $json_string_unmap = array("\\\"" => "\"", "\\\\" => "\\", "\\/" => "/",
+			       "\\b" => "\010", "\\t" => "\011", "\\n" => "\012",
+			       "\\f" => "\014", "\\r" => "\015");
+
+    function xjson_decode_escape($e) {
+	global $json_string_unmap;
+	if ($e[1] == "u") {
+	    $v = intval(substr($e, 2), 16);
+	    if ($v < 0x80)
+		return chr($v);
+	    else if ($v < 0x800)
+		return chr(0xC0 + ($v >> 6)) . chr(0x80 + ($v & 0x3F));
+	    else if ($v < 0x10000)
+		return chr(0xE0 + ($v >> 12)) . chr(0x80 + (($v >> 6) & 0x3F))
+		    . chr(0x80 + ($v & 0x3F));
+	    else
+		return chr(0xF0 + ($v >> 18)) . chr(0x80 + (($v >> 12) & 0x3F))
+		    . chr(0x80 + (($v >> 6) & 0x3F)) . chr(0x80 + ($v & 0x3F));
+	} else
+	    return $json_string_unmap[$e];
+    }
+
+    function xjson_decode_part(&$x, $assoc, $depth, $options) {
+	$x = ltrim($x);
+	if ($x === "")
+	    return ($x = null);
+	else if (substr($x, 0, 4) === "null") {
+	    $x = substr($x, 4);
+	    return null;
+	} else if (substr($x, 0, 5) === "false") {
+	    $x = substr($x, 5);
+	    return false;
+	} else if (substr($x, 0, 4) === "true") {
+	    $x = substr($x, 4);
+	    return true;
+	} else if ($x[0] == "\"") {
+	    if (preg_match(',\A"((?:[^\\\\"\000-\037]|\\\\["\\\\/bfnrt]|\\\\u[0-9a-fA-F]{4})*)"(.*)\z,', $x, $m)) {
+		$x = $m[2];
+		return preg_replace(',(\\\\(?:["\\\\/bfnrt]|u[0-9a-fA-F]{4})),e', 'xjson_decode_escape("\1")', $m[1]);
+	    } else
+		return ($x = null);
+	} else if ($x[0] == "{") {
+	    if ($depth < 0)
+		return ($x = null);
+	    $arr = array();
+	    $x = substr($x, 1);
+	    while (1) {
+		if (!is_string($x))
+		    return ($x = null);
+		$x = ltrim($x);
+		if ($x[0] == "}") {
+		    $x = substr($x, 1);
+		    break;
+		} else if (count($arr)) {
+		    if ($x[0] != ",")
+			return ($x = null);
+		    $x = substr($x, 1);
+		}
+
+		$k = xjson_decode_part($x, $assoc, $depth - 1, $options);
+		if (!is_string($k) || !is_string($x))
+		    return ($x = null);
+		$x = ltrim($x);
+		if ($x[0] != ":")
+		    return ($x = null);
+		$x = substr($x, 1);
+		$v = xjson_decode_part($x, $assoc, $depth - 1, $options);
+		$arr[$k] = $v;
+	    }
+	    return $assoc ? $arr : (object) $arr;
+	} else if ($x[0] == "[") {
+	    if ($depth < 0)
+		return ($x = null);
+	    $arr = array();
+	    $x = substr($x, 1);
+	    while (1) {
+		if (!is_string($x))
+		    return ($x = null);
+		$x = ltrim($x);
+		if ($x[0] == "]") {
+		    $x = substr($x, 1);
+		    break;
+		} else if (count($arr)) {
+		    if ($x[0] != ",")
+			return ($x = null);
+		    $x = substr($x, 1);
+		}
+
+		$v = xjson_decode_part($x, $assoc, $depth - 1, $options);
+		$arr[] = $v;
+	    }
+	    return $arr;
+	} else if (preg_match('/\A(-?(?:0|[1-9]\d*))((?:\.\d+)?(?:[Ee][-+]?\d+)?)(.*)\z/', $x, $m)) {
+	    $x = $m[3];
+	    return $m[2] ? floatval($m[1] . $m[2]) : intval($m[1]);
+	} else
+	    return ($x = null);
+    }
+
+    function json_decode($x, $assoc = false, $depth = 512, $options = 0) {
+	$v = xjson_decode_part($x, $assoc, $depth, $options);
+	return ($x === null || ($x && !ctype_space($x)) ? null : $v);
+    }
+}
+
 
 // web helpers
 
