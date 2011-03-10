@@ -38,7 +38,8 @@ $searchTags = array('ti' => 'ti', 'title' => 'ti',
 		    'status' => 'status',
 		    'rating' => 'rate', 'rate' => 'rate',
 		    'revpref' => 'revpref', 'pref' => 'revpref',
-		    'repref' => 'revpref');
+		    'repref' => 'revpref',
+		    'ss' => 'ss', 'search' => 'ss');
 
 class SearchKeyword {
     var $op;
@@ -1089,6 +1090,20 @@ class PaperSearch {
 		}
 	    } else {
 		$this->warn("Bad review rating query &ldquo;" . htmlspecialchars($word) . "&rdquo;.");
+		$qt[] = new SearchTerm("f");
+	    }
+	}
+	if ($special ? $special == "ss" : isset($this->fields["ss"])) {
+	    $t = $Conf->settingText("ss:" . $word, "");
+	    $search = json_decode($t);
+	    if ($t == "") {
+		$this->warn("There is no saved search called “" . htmlspecialchars($word) . "”.");
+		$qt[] = new SearchTerm("f");
+	    } else if ($search && is_object($search) && isset($search->q)
+		       && ($qe = $this->_searchQueryType($search->q, "all")))
+		$qt[] = $qe;
+	    else {
+		$this->warn("The “" . htmlspecialchars($word) . "” saved search is defined incorrectly.");
 		$qt[] = new SearchTerm("f");
 	    }
 	}
