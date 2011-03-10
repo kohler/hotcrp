@@ -182,26 +182,66 @@ if (function_exists("iconv")) {
     }
 }
 
-function simple_array_to_json($x) {
-    $s = "{";
-    $sep = "";
-    foreach ($x as $name => $value) {
-	$s .= $sep . "\"" . $name . "\":";
-	if ($value === null)
-	    $s .= "null";
-	else if ($value === false)
-	    $s .= "false";
-	else if ($value === true)
-	    $s .= "true";
-	else if (is_int($value))
-	    $s .= $value;
-	else
-	    // XXX Not tested that it produces true JSON.  (Currently OK since
-	    // script.js uses eval(), not JSON.parse.)
-	    $s .= "\"" . addcslashes($value, "\000..\037\"\\") . "\"";
-	$sep = ",";
+if (!function_exists("json_encode")) {
+    global $json_string_map;
+    $json_string_map = array("\\" => "\\\\", "\"" => "\\\"",
+			     "\000" => "\\u0000", "\001" => "\\u0001", "\002" => "\\u0002",
+			     "\003" => "\\u0003", "\004" => "\\u0004", "\005" => "\\u0005",
+			     "\006" => "\\u0006", "\007" => "\\u0007", "\010" => "\\b",
+			     "\011" => "\\t", "\012" => "\\n", "\013" => "\\u000B",
+			     "\014" => "\\f", "\015" => "\\r", "\016" => "\\u000E",
+			     "\017" => "\\u000F", "\020" => "\\u0010", "\021" => "\\u0011",
+			     "\022" => "\\u0012", "\023" => "\\u0013", "\024" => "\\u0014",
+			     "\025" => "\\u0015", "\026" => "\\u0016", "\027" => "\\u0017",
+			     "\030" => "\\u0018", "\031" => "\\u0019", "\032" => "\\u001A",
+			     "\033" => "\\u001B", "\034" => "\\u001C", "\035" => "\\u001D",
+			     "\036" => "\\u001E", "\037" => "\\u001F");
+    define("JSON_FORCE_OBJECT", 1);
+
+    // XXX not a full emulation of json_encode(); hopefully that won't matter
+    // in the fullness of time
+    function json_encode($x, $options = 0) {
+	global $json_string_map;
+	if ($x === null)
+	    return "null";
+	else if ($x === false)
+	    return "false";
+	else if ($x === true)
+	    return "true";
+	else if (is_int($x) || is_float($x))
+	    return (string) $x;
+	else if (is_string($x))
+	    return "\"" . preg_replace('/([\\"\000-\037])/e', '$json_string_map["\1"]', $x) . "\"";
+	else if (is_object($x) || is_array($x)) {
+	    $as_object = null;
+	    $as_array = array();
+	    $nextkey = 0;
+	    foreach ($x as $k => $v) {
+		if ((!is_int($k) && !is_string($k))
+		    || ($v = json_encode($v, $options)) === null)
+		    continue;
+		if ($as_array !== null && $k !== $nextkey) {
+		    $as_object = array();
+		    foreach ($as_array as $kk => $vv)
+			$as_object[] = "\"$kk\":$vv";
+		    $as_array = null;
+		}
+		if ($as_array === null)
+		    $as_object[] = json_encode((string) $k) . ":" . $v;
+		else {
+		    $as_array[] = $v;
+		    ++$nextkey;
+		}
+	    }
+	    if ($as_array === null)
+		return "{" . join(",", $as_object) . "}";
+	    else if (count($as_array) == 0)
+		return (is_object($x) || ($options & JSON_FORCE_OBJECT)) ? "{}" : "[]";
+	    else
+		return "[" . join(",", $as_array) . "]";
+	} else
+	    return null;
     }
-    return $s . "}";
 }
 
 
