@@ -1109,7 +1109,7 @@ class PaperTable {
 
 		$t = tagsToText($prow, false, $Me, true);
 		echo "<div class='fn'>", ($tx == "" ? "None" : $tx),
-		    "</div><div class='fx'><div id='tagreportformresult'>";
+		    "</div><div class='fx' style='padding-top:0.5ex'><div id='tagreportformresult'>";
 		if ($unfolded) {
 		    require_once("paperactions.inc");
 		    echo PaperActions::tagReport($prow, true);
@@ -1117,10 +1117,12 @@ class PaperTable {
 		echo "</div>";
 		if (isset($Error["tags"]))
 		    echo "<div class='xmerror'>", $Error["tags"], "</div>";
-		echo "<textarea id='foldtags_d' cols='20' rows='2' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea><br />",
+		echo "<textarea id='foldtags_d' cols='20' rows='2' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea>",
+		    "<div style='padding:1ex 0;text-align:right'>",
 		    "<input type='hidden' name='settingtags' value='1' />",
-		    "<input class='bsm' type='submit' value='Save' /> &nbsp; ",
-		    "<input class='bsm' type='submit' name='cancelsettags' value='Cancel' onclick='return fold(\"tags\", 1)' /><br />",
+		    "<input class='bsm' type='submit' name='cancelsettags' value='Cancel' onclick='return fold(\"tags\",1)' />",
+		    " &nbsp;<input class='bsm' type='submit' value='Save' />",
+		    "</div>",
 		    "<span class='hint'><a href='help$ConfSiteSuffix?t=tags'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
 		    "</div>";
 	    } else
