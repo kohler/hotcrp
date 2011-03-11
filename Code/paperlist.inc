@@ -75,7 +75,7 @@ class PaperList extends BaseList {
     var $scoreMax;
     var $search;
     var $extraText;
-    var $foldtype;
+    var $display;
     var $unfolded;
     var $aufull;
     var $paperLink;
@@ -129,7 +129,10 @@ class PaperList extends BaseList {
 	$this->showConflict = true;
 	$this->papersel = null;
 	$this->footer = true;
-	$this->foldtype = "pl";
+	if (is_string(defval($args, "display", null)))
+	    $this->display = " " . $args["display"] . " ";
+	else
+	    $this->display = defval($_SESSION, defval($args, "foldtype", "pl") . "display", "");
 	$this->rf = reviewForm();
 	$this->formulas = array();
     }
@@ -1454,10 +1457,9 @@ class PaperList extends BaseList {
 
 	// check what is folded
 	$folds = array();
-	$pldisplay = defval($_SESSION, $this->foldtype . "display", "");
 	foreach ($paperListFolds as $n => $fdef) {
 	    if (!defval($_REQUEST, "show$n")
-		&& strpos($pldisplay, " $n ") === false)
+		&& strpos($this->display, " $n ") === false)
 		$folds[$n] = array();
 	    else
 		$folds[$n] = false;
@@ -1647,7 +1649,7 @@ class PaperList extends BaseList {
 	    $x .= " fold3c";
 	if ($this->anySelector) {
 	    $foldmap[] = "\"rownum\":6";
-	    $x .= " fold6" . (strpos($pldisplay, " rownum ") === false ? "c" : "o");
+	    $x .= " fold6" . (strpos($this->display, " rownum ") === false ? "c" : "o");
 	}
 	if ($this->contact->privChair) {
 	    $foldmap[] = "\"force\":20";
@@ -1802,8 +1804,7 @@ class PaperList extends BaseList {
 	    || $Conf->timeAuthorViewReviews();
 
 	// check what is folded
-	$pldisplay = defval($_SESSION, $this->foldtype . "display", "");
-	$this->aufull = defval($_REQUEST, "showaufull") || strpos($pldisplay, " aufull ") !== false;
+	$this->aufull = defval($_REQUEST, "showaufull") || strpos($this->display, " aufull ") !== false;
 
 	// check paper link destination
 	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))

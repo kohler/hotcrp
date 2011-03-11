@@ -955,6 +955,7 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"])) {
     $pl = new PaperList($Search, array("sort" => true, "list" => true));
     $pl->showHeader = PaperList::HEADER_TITLES;
     $pl_text = $pl->text($Search->limitName, $Me, "pltable_full");
+    $pldisplay = $pl->display;
 } else
     $pl = null;
 
