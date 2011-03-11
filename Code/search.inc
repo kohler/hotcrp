@@ -211,6 +211,7 @@ class PaperSearch {
     var $reviewAdjust;
     var $_reviewAdjustError;
     var $_thenError;
+    var $_ssRecursion;
     var $thenmap;
 
     var $_matchTable;
@@ -309,6 +310,7 @@ class PaperSearch {
 	$this->orderTags = array();
 	$this->reviewerContact = false;
 	$this->_matchTable = null;
+	$this->_ssRecursion = array();
     }
 
     function __destruct() {
@@ -1096,16 +1098,21 @@ class PaperSearch {
 	if ($special ? $special == "ss" : isset($this->fields["ss"])) {
 	    $t = $Conf->settingText("ss:" . $word, "");
 	    $search = json_decode($t);
-	    if ($t == "") {
+	    $qe = null;
+	    if (isset($this->_ssRecursion[$word]))
+		$this->warn("Saved search “" . htmlspecialchars($word) . "” is defined recursively.");
+	    else if ($t == "")
 		$this->warn("There is no saved search called “" . htmlspecialchars($word) . "”.");
-		$qt[] = new SearchTerm("f");
-	    } else if ($search && is_object($search) && isset($search->q)
-		       && ($qe = $this->_searchQueryType($search->q, "all")))
-		$qt[] = $qe;
 	    else {
-		$this->warn("The “" . htmlspecialchars($word) . "” saved search is defined incorrectly.");
-		$qt[] = new SearchTerm("f");
+		if ($search && is_object($search) && isset($search->q)) {
+		    $this->_ssRecursion[$word] = true;
+		    $qe = $this->_searchQueryType($search->q, "all");
+		    unset($this->_ssRecursion[$word]);
+		}
+		if (!$qe)
+		    $this->warn("The “" . htmlspecialchars($word) . "” saved search is defined incorrectly.");
 	    }
+	    $qt[] = ($qe ? $qe : new SearchTerm("f"));
 	}
 
 	// Finally, look for a review field.
