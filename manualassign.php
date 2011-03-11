@@ -290,7 +290,7 @@ if ($reviewer > 0) {
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
 					 "q" => $_REQUEST["q"],
 					 "urlbase" => "manualassign$ConfSiteSuffix?reviewer=$reviewer"), $reviewer);
-    $paperList = new PaperList($search, true, true);
+    $paperList = new PaperList($search, array("sort" => true, "list" => true));
     if (isset($showau)) {
 	$search->overrideMatchPreg = true;
 	$search->matchPreg = array();

@@ -80,7 +80,7 @@ if ($getaction == "paper" && isset($papersel)) {
 // download selected abstracts
 if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $Search = new PaperSearch($Me, $_REQUEST);
-    $pl = new PaperList($Search, true, true);
+    $pl = new PaperList($Search);
     $response = $pl->ajaxColumn(PaperList::FIELD_OPT_ABSTRACT, $Me);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
@@ -130,7 +130,7 @@ if ($getaction == "authors" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $full = defval($_REQUEST, "aufull", 0);
     displayOptionsSet("pldisplay", "aufull", $full);
     $Search = new PaperSearch($Me, $_REQUEST);
-    $pl = new PaperList($Search, true, true);
+    $pl = new PaperList($Search);
     $response = $pl->ajaxColumn(PaperList::FIELD_OPT_AUTHORS, $Me);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
@@ -141,7 +141,7 @@ if ($getaction == "authors" && isset($papersel) && defval($_REQUEST, "ajax")) {
 if ($getaction && ($fdef = defval($paperListFolds, $getaction))
     && isset($fdef->id) && defval($_REQUEST, "ajax")) {
     $Search = new PaperSearch($Me, $_REQUEST);
-    $pl = new PaperList($Search, true, true);
+    $pl = new PaperList($Search);
     $response = $pl->ajaxColumn($fdef->id, $Me);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
@@ -952,7 +952,7 @@ $Conf->header("Search", 'search', actionBar());
 unset($_REQUEST["urlbase"]);
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"])) {
-    $pl = new PaperList($Search, true, true);
+    $pl = new PaperList($Search, array("sort" => true, "list" => true));
     $pl->showHeader = PaperList::HEADER_TITLES;
     $pl_text = $pl->text($Search->limitName, $Me, "pltable_full");
 } else

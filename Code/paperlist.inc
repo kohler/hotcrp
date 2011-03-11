@@ -87,11 +87,12 @@ class PaperList extends BaseList {
     var $formulas;
     var $reviewList;
 
-    function __construct($search, $sortable = true, $list = false, $extraText = null) {
+    function __construct($search, $args = array()) {
 	global $paperListFields, $scoreSorts, $Conf;
 	$this->showHeader = self::HEADER_ALL;
 
-	$s = ($sortable ? defval($_REQUEST, "sort", "") : "");
+	$this->sortable = !!defval($args, "sort");
+	$s = ($this->sortable ? defval($_REQUEST, "sort", "") : "");
 	$this->reverseSort = false;
 	while (strlen($s)) {
 	    $x = strtoupper($s[strlen($s) - 1]);
@@ -111,18 +112,17 @@ class PaperList extends BaseList {
 	    $this->sortField = (int) $s;
 	else
 	    $this->sortField = null;
-	$this->sortable = $sortable;
 
 	$this->paperLink = "";
 	$this->paperLinkArgs = "";
-	if ($list) {
+	if (defval($args, "list")) {
 	    $this->listNumber = allocateListNumber($search->listId($this->_sortdef()));
 	    $this->paperLinkArgs .= "&amp;ls=" . $this->listNumber;
 	} else
 	    $this->listNumber = 0;
 
 	$this->search = $search;
-	$this->extraText = $extraText;
+	$this->extraText = defval($args, "extraText");
 	$this->scoresOk = false;
 	$this->showConflict = true;
 	$this->papersel = null;
