@@ -187,7 +187,7 @@ class PaperList extends BaseList {
 	case self::FIELD_SCORE:
 	    if (!$this->scoresOk)
 		return false;
-	    if (!$folded) {
+	    if (!$folded || $fieldId == $this->sortField) {
 		$score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 		$revView = $this->contact->viewReviewFieldsScore(null, true);
 		if ($this->rf->authorView[$score] <= $revView)
