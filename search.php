@@ -1160,21 +1160,19 @@ if ($pl) {
 	    $onchange = "highlightUpdate(\"redisplay\")";
 	    if ($Me->privChair)
 		$onchange .= ";foldplinfo_extra()";
-	    displayOptionText("<div style='padding-top:1ex'>Sort by:<a class='help' href='help$ConfSiteSuffix?t=scoresort' target='_blank' title='Learn more'>?</a> &nbsp;"
+	    displayOptionText("<div style='padding-top:1ex'>Sort by: &nbsp;"
 		. tagg_select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
-		. "</div>", 3);
+		. "<a class='help' href='help$ConfSiteSuffix?t=scoresort' target='_blank' title='Learn more'>?</a></div>", 3);
 	}
 	$anyScores = count($displayOptions) != $n;
     }
 
     // Formulas group
     if (count($paperListFormulas)) {
-	$style = $anyScores ? " style='padding-top:2ex'" : "";
-	displayOptionText("<div$style><strong>Formulas</strong> <span class='barsep'>&nbsp;|&nbsp;</span> <a href=\"" . selfHref(array("tab" => "formulas")) . "\" onclick='return fold(\"searchform\",0,3)'>Edit formulas</a></div>", 3);
+	displayOptionText("<strong>Formulas:</strong>", 4);
 	foreach ($paperListFormulas as $formula)
-	    displayOptionCheckbox("formula" . $formula->formulaId, 3, htmlspecialchars($formula->name));
-    } else if ($Me->isPC && $Conf->sversion >= 32)
-	displayOptionText("<div style='padding-top:2ex'><strong><a href=\"" . selfHref(array("tab" => "formulas")) . "\" onclick='return fold(\"searchform\",0,3)'>Add formulas</a></strong></div>", 3);
+	    displayOptionCheckbox("formula" . $formula->formulaId, 4, htmlspecialchars($formula->name));
+    }
 }
 
 
@@ -1263,48 +1261,51 @@ if ($pl && $pl->count > 0) {
 	    && !isset($cheaders[$do->column]))
 	    $cheaders[$do->column] = $do->text;
 	else {
-	    $t = "<tr><td class='padb";
+	    $t = "<tr><td";
 	    if ($do->indent)
-		$t .= "' style='padding-left:2em";
-	    $t .= "'>" . $do->text . "</td></tr>\n";
+		$t .= " style='padding-left:2em'";
+	    $t .= ">" . $do->text . "</td></tr>\n";
 	    defappend($cbodies[$do->column], $t);
 	}
     }
 
     $header = $body = "";
+    $ncolumns = 0;
     for ($i = 1; $i < 10; ++$i)
 	if (isset($cbodies[$i]) && $cbodies[$i]) {
+	    $klass = $ncolumns ? "padlb " : "";
 	    if (isset($cheaders[$i]))
-		$header .= "  <td class='pad nowrap'>" . $cheaders[$i] . "</td>\n";
+		$header .= "  <td class='${klass}nowrap'>" . $cheaders[$i] . "</td>\n";
 	    else
 		$header .= "  <td></td>\n";
-	    $body .= "  <td class='top'><table>" . $cbodies[$i] . "</table></td>\n";
+	    $body .= "  <td class='${klass}top'><table>" . $cbodies[$i] . "</table></td>\n";
+	    ++$ncolumns;
 	}
-    echo "<tr>\n", $header, "</tr><tr>\n", $body;
+    echo "<tr>\n", $header, "</tr><tr>\n", $body, "</tr>";
 
-    // "Redisplay" column
-    echo "<td class='top padl'>";
+    // "Redisplay" row
+    echo "<tr><td colspan='$ncolumns' style='padding-top:2ex'><table style='margin:0 0 0 auto'><tr>";
 
     // Conflict display
     if ($Me->privChair)
-	echo tagg_checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
-			   array("id" => "showforce", "class" => "cbx",
-				 "onchange" => "fold('pl',!this.checked,'force')")),
-	    "&nbsp;", tagg_label("Override conflicts", "showforce"),
-	    "<div class='g'></div>\n";
+	echo "<td class='padlb'>",
+	    tagg_checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
+			  array("id" => "showforce", "class" => "cbx",
+				"onchange" => "fold('pl',!this.checked,'force')")),
+	    "&nbsp;", tagg_label("Override conflicts", "showforce"), "</td>";
 
-    echo "<input id='redisplay' class='b' type='submit' value='Redisplay' />";
+    // Formulas link
+    if (count($paperListFormulas) || ($Me->isPC && $Conf->sversion >= 32))
+	echo "<td class='padlb'><button type='button' class='b' onclick='fold(\"searchform\",0,3)'>Edit formulas</button></td>";
 
+    echo "<td class='padlb'>";
     // "Set default display"
     if ($Me->privChair) {
-	echo "\n<div class='g'></div>
-    <a class='fx5' href='javascript:void savedisplayoptions()'>",
-	    "Make this the default display</a>",
-	    " <span id='savedisplayoptionsformcheck' class='fn5'></span>";
+	echo "<button type='button' class='b' id='savedisplayoptionsbutton' onclick='savedisplayoptions()' disabled='disabled'>Make default</button>&nbsp; ";
 	$Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='search$ConfSiteSuffix?savedisplayoptions=1' enctype='multipart/form-data' accept-charset='UTF-8'>"
 . "<div><input id='scoresortsave' type='hidden' name='scoresort' value='"
 . $_SESSION["scoresort"] . "' /></div></form>");
-	$Conf->footerScript("function foldplinfo_extra() { fold('redisplay', 0, 5); }");
+	$Conf->footerScript("function foldplinfo_extra() { $$('savedisplayoptionsbutton').disabled = false; }");
 	// strings might be in different orders, so sort before comparing
 	$pld = explode(" ", trim($Conf->settingText("pldisplay_default", " overAllMerit ")));
 	sort($pld);
@@ -1313,7 +1314,9 @@ if ($pl && $pl->count > 0) {
 	    $Conf->footerScript("foldplinfo_extra()");
     }
 
-    echo "</td>";
+    echo "<input id='redisplay' class='b' type='submit' value='Redisplay' /></td>";
+
+    echo "</tr></table></td>";
 
     // Done
     echo "</tr></table></div></form>";
@@ -1352,7 +1355,7 @@ would display the sum of a paper&rsquo;s Overall merit scores.
 		"<input class='textlite' type='text' style='width:30em' name='expression_$formulaId'$disabled tabindex='8' value=\"" . htmlspecialchars($expression) . "\" />",
 		"</td></tr>\n";
 	}
-	echo "<tr><td colspan='3' style='padding:1ex 0;text-align:right'>",
+	echo "<tr><td colspan='3' style='padding:1ex 0 0;text-align:right'>",
 	    "<input type='reset' value='Cancel' onclick='fold(\"searchform\",1,3)' tabindex='8' />",
 	    "&nbsp; <input type='submit' style='font-weight:bold' value='Save changes' tabindex='8' />",
 	    "</td></tr></tbody></table></div></form>\n";

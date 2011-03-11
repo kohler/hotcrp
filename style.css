@@ -523,13 +523,13 @@ input.button, button.button, a.button, input.hbutton, input.hb {
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
-	text-decoration: none;
-	color: black;
 	white-space: nowrap;
 }
-input.b, button.b, select.b, input.bsm, button.bsm, select.bsm {
+a.button {
 	text-decoration: none;
 	color: black;
+}
+input.b, button.b, select.b, input.bsm, button.bsm, select.bsm {
 	white-space: nowrap;
 }
 input.bsm, button.bsm, select.bsm {
@@ -559,12 +559,12 @@ input.button_small, a.button_small, button.button_small {
 	border-left: 2px solid #eeee66;
 	border-bottom: 1px solid #999966;
 	border-right: 2px solid #999966;
-	text-decoration: none;
-	color: black;
 	white-space: nowrap;
 }
 a.button, a.button_small {
 	padding: 1px 0.25em;
+	text-decoration: none;
+	color: black;
 }
 input.button_small.alert, a.button_small.alert, button.button_small.alert {
 	font-size: smaller;
@@ -574,8 +574,6 @@ input.button_small.alert, a.button_small.alert, button.button_small.alert {
 	border-left: 2px solid #ee6666;
 	border-bottom: 1px solid #996666;
 	border-right: 2px solid #996666;
-	text-decoration: none;
-	color: black;
 	white-space: nowrap;
 }
 a.button_small.on, a.button.on {
@@ -875,6 +873,9 @@ td.padb, th.padb {
 	padding-right: 2em;
 }
 td.padl, th.padl {
+	padding-left: 1em;
+}
+td.padlb, th.padlb {
 	padding-left: 2em;
 }
 td.error, td.error input, div.error, div.error input {

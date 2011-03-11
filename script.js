@@ -1041,17 +1041,12 @@ function foldplinfo(dofold, type, which) {
 }
 
 function savedisplayoptions() {
-    var elt = $$("savedisplayoptionsformcheck");
     $$("scoresortsave").value = $$("scoresort").value;
     Miniajax.submit("savedisplayoptionsform", function (rv) {
-	    fold("redisplay", 1, 5);
 	    if (rv.ok)
-		elt.innerHTML = "<span class='confirm'>Preferences saved</span>";
+		$$("savedisplayoptionsbutton").disabled = true;
 	    else
-		elt.innerHTML = "<span class='error'>Preferences not saved</span>";
-	    setTimeout(function () {
-		    elt.innerHTML = "";
-		}, rv.ok ? 2000 : 4000);
+		alert("Unable to save current display options as default.");
 	});
 }
 
