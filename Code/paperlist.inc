@@ -615,13 +615,16 @@ class PaperList extends BaseList {
 	global $Conf, $ConfSiteSuffix;
 	if (!($pl = $this->paperLink))
 	    $pl = "paper";
+	$px = $pl;
 	$pl .= $ConfSiteSuffix . "?p=" . $row->paperId;
 	$doreview = isset($row->reviewId) && ($this->search->reviewerContact || isset($row->reviewFirstName));
 	if ($doreview) {
 	    $rord = unparseReviewOrdinal($row);
-	    $pl .= "&amp;r=" . $rord;
-	    if ($row->reviewSubmitted > 0)
-		$pl .= "&amp;m=r";
+	    if ($px != "paper" || $row->reviewSubmitted <= 0) {
+		$pl .= "&amp;r=" . $rord;
+		if ($row->reviewSubmitted > 0)
+		    $pl .= "&amp;m=r";
+	    }
 	}
 	$pl .= $this->paperLinkArgs;
 	if ($doreview && $row->reviewSubmitted > 0)
