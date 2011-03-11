@@ -847,7 +847,7 @@ if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
     if ($_SESSION["pldisplay"] != " overAllMerit ") {
 	$pldisplay = explode(" ", trim($_SESSION["pldisplay"]));
 	sort($pldisplay);
-	$_SESSION["pldisplay"] = " " . ltrim(join(" ", $pldisplay) . " ");
+	$_SESSION["pldisplay"] = " " . simplifyWhitespace(join(" ", $pldisplay)) . " ";
 	$Conf->qe("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($_SESSION["pldisplay"]) . "') on duplicate key update data=values(data)", $while);
     } else
 	$Conf->qe("delete from Settings where name='pldisplay_default'", $while);
