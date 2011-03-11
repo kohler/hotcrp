@@ -203,7 +203,7 @@ class PaperTable {
 		. "\" onclick='" . $x . ($x ? ";" : "")
 		. "return fold(\"$editfolder\", 0)' title='Edit'>";
 	    $c .= "<span class='hint'>" . $a
-		. $Conf->cacheableImage("edit.png", "[Edit]", null, "b")
+		. $Conf->cacheableImage("edit.png", "[Edit]", null, "bm")
 		. "</a>&nbsp;" . $a . "Edit</a></span>";
 	}
 	$c .= "<div class='clear'></div></div>";

@@ -1319,6 +1319,11 @@ td.pl_conflictconfirm {
 td.pl_title img, img.b {
 	vertical-align: text-bottom;
 }
+img.bm {
+	vertical-align: middle;
+	position: relative;
+	bottom: 1px;
+}
 td.pl_lastvisit, td.al_time {
 	padding-left: 0.125em;
 	padding-right: 0.4em;
