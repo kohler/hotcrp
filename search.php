@@ -1117,8 +1117,7 @@ if ($pl) {
 }
 
 
-echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas fold4o'>\n<tr><td><div class='tlx'><div class='tld1'>";
-$Conf->footerScript("fold('searchform',1,4)");
+echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas'>\n<tr><td><div class='tlx'><div class='tld1'>";
 
 // Basic search
 echo "<form method='get' action='search$ConfSiteSuffix' accept-charset='UTF-8'><div class='inform'>
