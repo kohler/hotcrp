@@ -60,6 +60,7 @@ class PaperList extends BaseList {
     var $sortInfo;
     var $sortAverage;
     var $reverseSort;
+    var $scoreSort;
     var $sortable;
     var $count;
     var $accepted;
@@ -88,12 +89,13 @@ class PaperList extends BaseList {
     var $reviewList;
 
     function __construct($search, $args = array()) {
-	global $paperListFields, $scoreSorts, $Conf;
+	global $paperListFields, $scoreSorts, $defaultScoreSort, $Conf;
 	$this->showHeader = self::HEADER_ALL;
 
 	$this->sortable = !!defval($args, "sort");
 	$s = ($this->sortable ? defval($_REQUEST, "sort", "") : "");
 	$this->reverseSort = false;
+	$this->scoreSort = defval($_SESSION, "scoresort", $defaultScoreSort);
 	while (strlen($s)) {
 	    $x = strtoupper($s[strlen($s) - 1]);
 	    if ($x == "R")
@@ -101,9 +103,9 @@ class PaperList extends BaseList {
 	    else if ($x == "N")
 		$this->reverseSort = false;
 	    else if ($x == "M")
-		$_SESSION["scoresort"] = "C";
+		$this->scoreSort = "C";
 	    else if (isset($scoreSorts[$x]))
-		$_SESSION["scoresort"] = $x;
+		$this->scoreSort = $x;
 	    else
 		break;
 	    $s = substr($s, 0, strlen($s) - 1);
@@ -116,7 +118,7 @@ class PaperList extends BaseList {
 	$this->paperLink = "";
 	$this->paperLinkArgs = "";
 	if (defval($args, "list")) {
-	    $this->listNumber = allocateListNumber($search->listId($this->_sortdef()));
+	    $this->listNumber = allocateListNumber($search->listId($this->sortdef()));
 	    $this->paperLinkArgs .= "&amp;ls=" . $this->listNumber;
 	} else
 	    $this->listNumber = 0;
@@ -355,7 +357,7 @@ class PaperList extends BaseList {
     }
 
     function _sort($rows, $pidarray) {
-	global $Conf, $reviewScoreNames, $defaultScoreSort;
+	global $Conf, $reviewScoreNames;
 	switch (self::_normalizeField($this->sortField)) {
 	case self::FIELD_ID:
 	    ksort($rows);
@@ -404,15 +406,14 @@ class PaperList extends BaseList {
 	    $scoreName .= "Scores";
 	    $this->sortInfo = array();
 	    $this->sortAverage = array();
-	    $scoresort = defval($_SESSION, "scoresort", $defaultScoreSort);
 	    foreach ($rows as $row)
 		if ($this->contact->canViewReview($row, null))
-		    $this->_setSortRow($row, $scoreName, $scoreMax, $scoresort);
+		    $this->_setSortRow($row, $scoreName, $scoreMax, $this->scoreSort);
 		else {
 		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
 		    $this->sortAverage[$row->paperId] = 0;
 		}
-	    usort($rows, array($this, ($scoresort == "M" || $scoresort == "C" || $scoresort == "Y" ? "_sortScore" : "_sortScoreNum")));
+	    usort($rows, array($this, ($this->scoreSort == "M" || $this->scoreSort == "C" || $this->scoreSort == "Y" ? "_sortScore" : "_sortScoreNum")));
 	    break;
 	case self::FIELD_FORMULA:
 	    $formulaf = $this->formulas[$this->sortField];
@@ -436,12 +437,15 @@ class PaperList extends BaseList {
 	return $rows;
     }
 
-    function _sortdef() {
-	global $defaultScoreSort;
-	if ($this->sortField && defval($_REQUEST, "sort", "") != ""
-	    && ($this->sortField != 1 || $this->reverseSort))
-	    return $this->sortField . ($this->reverseSort ? "R" : "") . defval($_SESSION, "scoresort", $defaultScoreSort);
-	else
+    function sortdef($always = false) {
+	if ($this->sortField
+	    && ($always || defval($_REQUEST, "sort", "") != "")
+	    && ($this->sortField != 1 || $this->reverseSort)) {
+	    $t = $this->sortField . ($this->reverseSort ? "R" : "");
+	    if (self::_normalizeField($this->sortField) == self::FIELD_SCORE)
+		$t .= $this->scoreSort;
+	    return $t;
+	} else
 	    return "";
     }
 
@@ -1758,7 +1762,7 @@ class PaperList extends BaseList {
 
 	// session variable to remember the list
 	if ($this->listNumber) {
-	    $idx = $this->search->decorateSessionList($ids, $listname, $this->_sortdef());
+	    $idx = $this->search->decorateSessionList($ids, $listname, $this->sortdef());
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
 	    $idx["url"] = $url;
