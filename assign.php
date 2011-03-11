@@ -580,7 +580,7 @@ if ($Me->actChair($prow)) {
     }
 
     echo "    </table></td></tr></table></div>\n\n",
-	"<div class='aa'>",
+	"<div class='aa' style='margin-bottom:0'>",
 	"<input type='submit' class='bb' name='update' value='Save assignments' />",
 	" &nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />",
 	" <span id='assresult' style='padding-left:1em'></span></div>\n\n",

@@ -1532,7 +1532,7 @@ class PaperTable {
 	echo "</td>\n";
 
 	// main paper table
-	echo "    <td class='${pboxclass}t'><table class='papc'>
+	echo "    <td class='${pboxclass}t'><table class='papcbar'>
 	<tr><td class='papculs'></td><td></td><td class='papcur'></td></tr>
 	<tr><td></td><td>";
 
@@ -1581,7 +1581,7 @@ class PaperTable {
     <td class='${pboxclass}j'></td>
 </tr><tr>
     <td class='${pboxclass}l'></td>
-    <td class='${pboxclass}r'>", $contentopener, "<table class='papc'>
+    <td class='${pboxclass}r'>", $contentopener, "<table class='papcpap'>
 	<tr><td class='papcl'>",
 	    $Conf->cacheableImage("_.gif", "", null, "_"),
 	    "</td><td class='papct'><div class='inpapct'>";
