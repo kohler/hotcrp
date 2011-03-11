@@ -932,6 +932,64 @@ if (isset($_REQUEST["saveformulas"]) && $Me->isPC && $Conf->sversion >= 32)
     saveformulas();
 
 
+// save formula
+function savesearch() {
+    global $Conf, $Me, $paperListFormulas, $OK;
+    require_once("Code/tags.inc");
+    $while = "while saving search";
+
+    $name = simplifyWhitespace(defval($_REQUEST, "ssname", ""));
+    if (!checkTag($name, CHECKTAG_NOPRIVATE | CHECKTAG_QUIET | CHECKTAG_NOINDEX)) {
+	if ($name == "")
+	    return $Conf->errorMsg("You must supply a name for the saved search.");
+	else
+	    return $Conf->errorMsg("“" . htmlspecialchars($name) . "” contains characters not allowed in saved search names.  Stick to letters, numbers, and simple punctuation.");
+    }
+
+    // support directly recursive definition (to e.g. change display options)
+    if (($t = $Conf->settingText("ss:$name")) && ($t = json_decode($t))) {
+	foreach (array("q", "qo", "qx") as $k)
+	    if (isset($_REQUEST[$k]) && $_REQUEST[$k] == "ss:$name")
+		$_REQUEST[$k] = (isset($t->$k) ? $t->$k : "");
+    }
+
+    $arr = array();
+    foreach (array("q", "qo", "qx", "qt", "t", "sort") as $k)
+	if (isset($_REQUEST[$k]))
+	    $arr[$k] = $_REQUEST[$k];
+
+    // clean display settings
+    if (isset($_SESSION["pldisplay"])) {
+	global $reviewScoreNames, $paperListFormulas;
+	$acceptable = array("abstract" => 1, "topics" => 1, "tags" => 1,
+			    "rownum" => 1, "reviewers" => 1,
+			    "pcconf" => 1, "lead" => 1, "shepherd" => 1);
+	if (!$Conf->subBlindAlways() || $Me->privChair)
+	    $acceptable["au"] = $acceptable["aufull"] = $acceptable["collab"] = 1;
+	if ($Me->privChair && !$Conf->subBlindNever())
+	    $acceptable["anonau"] = 1;
+	foreach ($reviewScoreNames as $x)
+	    $acceptable[$x] = 1;
+	foreach ($paperListFormulas as $x)
+	    $acceptable["formula" . $x->formulaId] = 1;
+	$display = array();
+	foreach (preg_split('/\s+/', $_SESSION["pldisplay"]) as $x)
+	    if (isset($acceptable[$x]))
+		$display[$x] = true;
+	ksort($display);
+	$arr["display"] = trim(join(" ", array_keys($display)));
+    }
+
+    $Conf->qe("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode($arr)) . "') on duplicate key update value=values(value), data=values(data)", $while);
+    redirectSelf(array("q" => "ss:" . $name, "qo" => null, "qx" => null));
+}
+
+if (isset($_REQUEST["savesearch"]) && $Me->isPC) {
+    savesearch();
+    $_REQUEST["tab"] = "ss";
+}
+
+
 // exit early if Ajax
 if (defval($_REQUEST, "ajax"))
     $Conf->ajaxExit(array("response" => ""));
@@ -952,7 +1010,8 @@ $Conf->header("Search", 'search', actionBar());
 unset($_REQUEST["urlbase"]);
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"])) {
-    $pl = new PaperList($Search, array("sort" => true, "list" => true));
+    $pl = new PaperList($Search, array("sort" => true, "list" => true,
+				       "display" => defval($_REQUEST, "display")));
     $pl->showHeader = PaperList::HEADER_TITLES;
     $pl_text = $pl->text($Search->limitName, $Me, "pltable_full");
     $pldisplay = $pl->display;
@@ -968,7 +1027,8 @@ else if (defval($_REQUEST, "qx", "") != "" || defval($_REQUEST, "qo", "") != ""
     $activetab = 2;
 else
     $activetab = 1;
-$tabs = array("display" => 3, "advanced" => 2, "normal" => 1);
+$tabs = array("display" => 3, "advanced" => 2, "basic" => 1, "normal" => 1,
+	      "ss" => 4);
 $searchform_formulas = "c";
 if (isset($tabs[defval($_REQUEST, "tab", "x")]))
     $activetab = $tabs[$_REQUEST["tab"]];
@@ -1177,14 +1237,21 @@ echo tagg_select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 
 echo "</div>";
 
+function echo_request_as_hidden_inputs($specialscore = false) {
+    global $pl;
+    foreach (array("q", "qx", "qo", "qt", "t", "sort") as $x)
+	if (isset($_REQUEST[$x]) && ($x != "sort" || !$specialscore || !$pl))
+	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
+    if ($specialscore && $pl)
+	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($pl->sortdef(true)), "\" />\n";
+}
+
 // Display options
 if ($pl && $pl->count > 0) {
     echo "<div class='tld3' style='padding-bottom:1ex'>";
 
     echo "<form id='foldredisplay' class='fn3 fold5c' method='post' action='search$ConfSiteSuffix?redisplay=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
-    foreach (array("q", "qx", "qo", "qt", "t", "sort") as $x)
-	if (isset($_REQUEST[$x]))
-	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
+    echo_request_as_hidden_inputs();
 
     echo "<table>";
 
@@ -1254,9 +1321,7 @@ if ($pl && $pl->count > 0) {
     // Formulas
     if ($Me->isPC && $Conf->sversion >= 32) {
 	echo "<form class='fx3' method='post' action='search$ConfSiteSuffix?saveformulas=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
-	foreach (array("q", "qx", "qo", "qt", "t", "sort") as $x)
-	    if (isset($_REQUEST[$x]))
-		echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />";
+	echo_request_as_hidden_inputs();
 
 	echo "<p style='width:44em;margin-top:0'><strong>Formulas</strong> are calculated
 from review statistics.  For example, &ldquo;sum(OveMer)&rdquo;
@@ -1296,15 +1361,46 @@ would display the sum of a paper&rsquo;s Overall merit scores.
     echo "</div>";
 }
 
+// Saved searches
+$ss = array();
+if ($Me->isPC || $Me->privChair) {
+    foreach ($Conf->settingTexts as $k => $v)
+	if (substr($k, 0, 3) == "ss:" && ($v = json_decode($v)))
+	    $ss[substr($k, 3)] = $v;
+    if (count($ss) > 0 || $pl) {
+	echo "<div class='tld4' style='padding-bottom:1ex'>";
+	ksort($ss);
+	foreach ($ss as $sn => $sv) {
+	    echo "<a href=\"search$ConfSiteSuffix?q=ss%3A", urlencode($sn);
+	    foreach (array("qt", "t", "sort", "display") as $k)
+		if (isset($sv->$k))
+		    echo "&amp;", $k, "=", urlencode($sv->$k);
+	    echo "\">", htmlspecialchars($sn), "</a><br />\n";
+	}
+	if (count($ss))
+	    echo "<div class='g'></div>\n";
+	echo "<form method='post' action='search$ConfSiteSuffix?savesearch=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+	echo_request_as_hidden_inputs(true);
+	echo "Save this search as:&nbsp; ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;<input type='submit' value='Save' tabindex='8' />";
+	echo "</div></form>";
+
+	echo "</div>";
+	$ss = true;
+    } else
+	$ss = false;
+}
+
 echo "</div>";
 
 // Tab selectors
 echo "</td></tr>
 <tr><td class='tllx'><table><tr>
-  <td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\", 1)' href=\"", selfHref(array("tab" => "basic")), "\">Basic search</a></div></td>
+  <td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\", 1)' href=\"", selfHref(array("tab" => "basic")), "\">Search</a></div></td>
   <td><div class='tll2'><a class='tla' onclick='return crpfocus(\"searchform\", 2)' href=\"", selfHref(array("tab" => "advanced")), "\">Advanced search</a></div></td>\n";
 if ($pl && $pl->count > 0)
     echo "  <td><div class='tll3'><a class='tla' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
+if ($ss)
+    echo "  <td><div class='tll4'><a class='tla' onclick='fold(\"searchform\",1,4);return crpfocus(\"searchform\",4)' href=\"", selfHref(array("tab" => "ss")), "\">Saved searches</a></div></td>\n";
 echo "</tr></table></td></tr>
 </table>\n\n";
 
