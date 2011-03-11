@@ -1244,6 +1244,35 @@ function echo_request_as_hidden_inputs($specialscore = false) {
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($pl->sortdef(true)), "\" />\n";
 }
 
+// Saved searches
+$ss = array();
+if ($Me->isPC || $Me->privChair) {
+    foreach ($Conf->settingTexts as $k => $v)
+	if (substr($k, 0, 3) == "ss:" && ($v = json_decode($v)))
+	    $ss[substr($k, 3)] = $v;
+    if (count($ss) > 0 || $pl) {
+	echo "<div class='tld4' style='padding-bottom:1ex'>";
+	ksort($ss);
+	foreach ($ss as $sn => $sv) {
+	    echo "<a href=\"search$ConfSiteSuffix?q=ss%3A", urlencode($sn);
+	    foreach (array("qt", "t", "sort", "display") as $k)
+		if (isset($sv->$k))
+		    echo "&amp;", $k, "=", urlencode($sv->$k);
+	    echo "\">", htmlspecialchars($sn), "</a><br />\n";
+	}
+	if (count($ss))
+	    echo "<div class='g'></div>\n";
+	echo "<form method='post' action='search$ConfSiteSuffix?savesearch=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+	echo_request_as_hidden_inputs(true);
+	echo "Save this search as:&nbsp; ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;<input type='submit' value='Save' tabindex='8' />";
+	echo "</div></form>";
+
+	echo "</div>";
+	$ss = true;
+    } else
+	$ss = false;
+}
+
 // Display options
 if ($pl && $pl->count > 0) {
     echo "<div class='tld3' style='padding-bottom:1ex'>";
@@ -1364,35 +1393,6 @@ would display the sum of a paper&rsquo;s Overall merit scores.
     echo "</div>";
 }
 
-// Saved searches
-$ss = array();
-if ($Me->isPC || $Me->privChair) {
-    foreach ($Conf->settingTexts as $k => $v)
-	if (substr($k, 0, 3) == "ss:" && ($v = json_decode($v)))
-	    $ss[substr($k, 3)] = $v;
-    if (count($ss) > 0 || $pl) {
-	echo "<div class='tld4' style='padding-bottom:1ex'>";
-	ksort($ss);
-	foreach ($ss as $sn => $sv) {
-	    echo "<a href=\"search$ConfSiteSuffix?q=ss%3A", urlencode($sn);
-	    foreach (array("qt", "t", "sort", "display") as $k)
-		if (isset($sv->$k))
-		    echo "&amp;", $k, "=", urlencode($sv->$k);
-	    echo "\">", htmlspecialchars($sn), "</a><br />\n";
-	}
-	if (count($ss))
-	    echo "<div class='g'></div>\n";
-	echo "<form method='post' action='search$ConfSiteSuffix?savesearch=1' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
-	echo_request_as_hidden_inputs(true);
-	echo "Save this search as:&nbsp; ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;<input type='submit' value='Save' tabindex='8' />";
-	echo "</div></form>";
-
-	echo "</div>";
-	$ss = true;
-    } else
-	$ss = false;
-}
-
 echo "</div>";
 
 // Tab selectors
@@ -1400,10 +1400,10 @@ echo "</td></tr>
 <tr><td class='tllx'><table><tr>
   <td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\", 1)' href=\"", selfHref(array("tab" => "basic")), "\">Search</a></div></td>
   <td><div class='tll2'><a class='tla' onclick='return crpfocus(\"searchform\", 2)' href=\"", selfHref(array("tab" => "advanced")), "\">Advanced search</a></div></td>\n";
-if ($pl && $pl->count > 0)
-    echo "  <td><div class='tll3'><a class='tla' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
 if ($ss)
     echo "  <td><div class='tll4'><a class='tla' onclick='fold(\"searchform\",1,4);return crpfocus(\"searchform\",4)' href=\"", selfHref(array("tab" => "ss")), "\">Saved searches</a></div></td>\n";
+if ($pl && $pl->count > 0)
+    echo "  <td><div class='tll3'><a class='tla' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
 echo "</tr></table></td></tr>
 </table>\n\n";
 
