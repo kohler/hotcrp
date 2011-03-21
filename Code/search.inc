@@ -621,7 +621,7 @@ class PaperSearch {
 	$contacts = null;
 	$contactword = "";
 
-	if (preg_match('/\A(.+*[^:=<>!])([:=<>!])(.*)\z/s', $word, $m)
+	if (preg_match('/\A(.+?[^:=<>!])([:=<>!])(.*)\z/s', $word, $m)
 	    && !ctype_digit($m[1])) {
 	    $contacts = $this->_reviewerMatcher($m[1], $quoted);
 	    $word = ($m[2] == ":" ? $m[3] : $m[2] . $m[3]);
