@@ -140,7 +140,7 @@ class ReviewForm {
 	    $scores = array_keys($a->options);
 	    $a->lowScore = $scores[0];
 	    $a->typScore = $scores[1];
-	    if (ctype_digit($scores[1]))
+	    if (is_int($scores[1]) || ctype_digit($scores[1]))
 		$a->typScoreRange = $scores[0] . "-" . $scores[1];
 	    else
 		$a->typScoreRange = $scores[0] . $scores[1];
