@@ -413,8 +413,8 @@ function defact(what) {
 	elt.value = what;
 }
 
-function placttagtype_fold() {
-    var elt = $$("placttagtype"), folded;
+function plactions_dofold() {
+    var elt = $$("placttagtype"), folded, x, i;
     if (elt) {
 	folded = elt.selectedIndex < 0 || elt.options[elt.selectedIndex].value != "cr";
 	fold("placttags", folded, 99);
@@ -427,6 +427,14 @@ function placttagtype_fold() {
 		|| (elt.tagcr_gapless && elt.tagcr_gapless.checked))
 		fold("placttags", false);
 	}
+    }
+    if ((elt = $$("foldass"))) {
+        x = elt.getElementsByTagName("select");
+	for (i = 0; i < x.length; ++i)
+	    if (x[i].name == "marktype") {
+		folded = x[i].selectedIndex < 0 || x[i].options[x[i].selectedIndex].value.charAt(0) == "x";
+		fold("ass", folded);
+	    }
     }
 }
 

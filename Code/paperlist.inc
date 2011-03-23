@@ -1090,6 +1090,7 @@ class PaperList extends BaseList {
 	$nlll = 1;
 	$revpref = ($listname == "editReviewPreference");
 	$whichlll = 1;
+	$want_plactions_dofold = false;
 
 	// Download
 	if (defval($_REQUEST, "atab") == "download")
@@ -1169,8 +1170,8 @@ class PaperList extends BaseList {
 		$tagopt["xxxb"] = null;
 		$tagopt["da"] = "Clear twiddle";
 		$tagopt["cr"] = "Calculate rank";
-		$tagextra["onchange"] = "placttagtype_fold()";
-		$Conf->footerScript("placttagtype_fold()");
+		$tagextra["onchange"] = "plactions_dofold()";
+		$want_plactions_dofold = true;
 	    }
 	    $t .= tagg_select("tagtype", $tagopt, defval($_REQUEST, "tagtype"),
 			      $tagextra) . " &nbsp;";
@@ -1201,7 +1202,7 @@ class PaperList extends BaseList {
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "assign")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Assign</a></td><td id='foldass' class='lld$nlll foldo'><b>:</b> &nbsp;";
-	    $Conf->footerScript("fold('ass')");
+	    $want_plactions_dofold = true;
 	    $t .= tagg_select("marktype",
 			      array("xauto" => "Automatic assignments",
 				    "zzz1" => null,
@@ -1213,7 +1214,7 @@ class PaperList extends BaseList {
 				    "assign0" => "Unassign reviews"),
 			      defval($_REQUEST, "marktype"),
 			      array("id" => "plact${nlll}_d",
-				    "onchange" => "fold(\"ass\", (this.value[0] == \"x\"))"))
+				    "onchange" => "plactions_dofold()"))
 		. "<span class='fx'> &nbsp;for &nbsp;";
 	    // <option value='-2' disabled='disabled'></option>
 	    // <option value='xpcpaper'>Mark as PC-authored</option>
@@ -1247,6 +1248,9 @@ class PaperList extends BaseList {
 		. " &nbsp;<input type='submit' class='b' name='sendmail' value='Go' /></td>";
 	    $nlll++;
 	}
+
+	if ($want_plactions_dofold)
+	    $Conf->footerScript("plactions_dofold()");
 
 	// Linelinks container
 	$extraFooter = ($this->footer && $this->footer !== true ? $this->footer : "");
