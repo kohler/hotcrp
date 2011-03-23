@@ -1221,7 +1221,7 @@ class PaperList extends BaseList {
 	    $pc = pcMembers();
 	    $sel_opt = array();
 	    foreach ($pc as $id => $row)
-		$sel_opt[htmlspecialchars($row->email)] = contactHtml($row->firstName, $row->lastName);
+		$sel_opt[htmlspecialchars($row->email)] = htmlspecialchars(contactNameText($row));
 	    $t .= tagg_select("markpc", $sel_opt, defval($_REQUEST, "markpc"),
 			      array("id" => "markpc"))
 		. "</span> &nbsp;<input type='submit' class='b' name='setassign' value='Go' />";
