@@ -179,12 +179,15 @@ if (isset($_REQUEST['update']) && $Me->privChair) {
     pcAssignments();
     $Conf->qe("unlock tables");
     $Conf->updateRevTokensSetting(false);
-    if (defval($_REQUEST, "ajax")) {
-	if ($OK)
-	    $Conf->confirmMsg("Assignments saved.");
+    if ($OK)
+	$Conf->confirmMsg("Assignments saved.");
+    if (defval($_REQUEST, "ajax"))
 	$Conf->ajaxExit(array("ok" => $OK));
+    else {
+	redirectSelf();
+	// NB normally redirectSelf() does not return
+	loadRows();
     }
-    loadRows();
 } else if (isset($_REQUEST["update"]) && defval($_REQUEST, "ajax")) {
     $Conf->errorMsg("Only administrators can assign papers.");
     $Conf->ajaxExit(array("ok" => 0));
