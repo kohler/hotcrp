@@ -231,9 +231,9 @@ class ContactList extends BaseList {
 	case self::FIELD_AFFILIATION_ROW:
 	    return "Affiliation";
 	case self::FIELD_VISITS:
-	    return "Visits";
+	    return "Logins";
 	case self::FIELD_LASTVISIT:
-	    return "Last visit";
+	    return "Last login";
 	case self::FIELD_HIGHTOPICS:
 	    return "High-interest topics";
 	case self::FIELD_LOWTOPICS:
