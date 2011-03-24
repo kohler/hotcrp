@@ -429,7 +429,7 @@ function plactions_dofold() {
 	}
     }
     if ((elt = $$("foldass"))) {
-        x = elt.getElementsByTagName("select");
+	x = elt.getElementsByTagName("select");
 	for (i = 0; i < x.length; ++i)
 	    if (x[i].name == "marktype") {
 		folded = x[i].selectedIndex < 0 || x[i].options[x[i].selectedIndex].value.charAt(0) == "x";

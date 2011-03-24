@@ -26,6 +26,12 @@ $tOpt["req"] = "Your review requests";
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = key($tOpt);
 
+// template options
+if (isset($_REQUEST["monreq"]))
+    $_REQUEST["template"] = "myreviewremind";
+if (isset($_REQUEST["template"]) && !isset($_REQUEST["check"]))
+    $_REQUEST["loadtmpl"] = 1;
+
 // paper selection
 if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
     $_REQUEST["q"] = "";
@@ -53,10 +59,6 @@ if (isset($papersel) && count($papersel) == 0) {
     unset($_REQUEST["check"]);
     unset($_REQUEST["send"]);
 }
-if (isset($_REQUEST["monreq"]))
-    $_REQUEST["template"] = "myreviewremind";
-if (isset($_REQUEST["template"]) && !isset($_REQUEST["check"]))
-    $_REQUEST["loadtmpl"] = 1;
 
 if (isset($_REQUEST["monreq"]))
     $Conf->header("Monitor External Reviews", "mail", actionBar());
