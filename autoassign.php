@@ -52,9 +52,38 @@ if (!isset($_REQUEST["pctyp"]) || ($_REQUEST["pctyp"] != "all" && $_REQUEST["pct
     $_REQUEST["pctyp"] = "all";
 
 // bad pairs
+// load defaults from last autoassignment or save entry to default
+$pcm = pcMembers();
+if (!isset($_REQUEST["bpcount"]) || !ctype_digit($_REQUEST["bpcount"]))
+    $_REQUEST["bpcount"] = "50";
+if (!isset($_REQUEST["badpairs"]) && !isset($_REQUEST["assign"]) && !count($_POST)) {
+    $x = preg_split('/\s+/', $Conf->settingText("autoassign_badpairs", ""), null, PREG_SPLIT_NO_EMPTY);
+    $bpnum = 1;
+    for ($i = 0; $i < count($x) - 1; $i += 2)
+	if (isset($pcm[$x[$i]]) && isset($pcm[$x[$i+1]])) {
+	    $_REQUEST["bpa$bpnum"] = $x[$i];
+	    $_REQUEST["bpb$bpnum"] = $x[$i+1];
+	    ++$bpnum;
+	}
+    $_REQUEST["bpcount"] = $bpnum - 1;
+    if ($Conf->setting("autoassign_badpairs"))
+	$_REQUEST["badpairs"] = 1;
+} else if (count($_POST) && isset($_REQUEST["assign"])) {
+    $x = array();
+    for ($i = 1; $i <= $_REQUEST["bpcount"]; ++$i)
+	if (defval($_REQUEST, "bpa$i") && defval($_REQUEST, "bpb$i")
+	    && isset($pcm[$_REQUEST["bpa$i"]]) && isset($pcm[$_REQUEST["bpb$i"]])) {
+	    $x[] = $_REQUEST["bpa$i"];
+	    $x[] = $_REQUEST["bpb$i"];
+	}
+    if (count($x) || $Conf->settingText("autoassign_badpairs")
+	|| (!isset($_REQUEST["badpairs"]) != !$Conf->setting("autoassign_badpairs")))
+	$Conf->q("insert into Settings (name, value, data) values ('autoassign_badpairs', " . (isset($_REQUEST["badpairs"]) ? 1 : 0) . ", '" . sqlq(join(" ", $x)) . "') on duplicate key update data=values(data), value=values(value)");
+}
+// set $badpairs array
 $badpairs = array();
 if (isset($_REQUEST["badpairs"]))
-    for ($i = 1; $i <= defval($_REQUEST, "bpcount", 20); $i++)
+    for ($i = 1; $i <= $_REQUEST["bpcount"]; ++$i)
 	if (defval($_REQUEST, "bpa$i") && defval($_REQUEST, "bpb$i")) {
 	    if (!isset($badpairs[$_REQUEST["bpa$i"]]))
 		$badpairs[$_REQUEST["bpa$i"]] = array();
@@ -839,40 +868,39 @@ echo "</table></td></tr></table></td></tr></table>";
 
 // Bad pairs
 $numBadPairs = 1;
+$badPairSelector = null;
 
 function bpSelector($i, $which) {
-    global $numBadPairs;
-    $sel_opt = array("0" => "(PC member)");
-    foreach (pcMembers() as $pc)
-	$sel_opt[$pc->contactId] = htmlspecialchars(contactNameText($pc));
-    $selected = isset($_REQUEST["badpairs"]) ? defval($_REQUEST, "bp$which$i") : "0";
-    if ($selected && isset($sel_opt[$selected]))
+    global $numBadPairs, $badPairSelector, $pcm;
+    if (!$badPairSelector) {
+	$badPairSelector = array("0" => "(PC member)");
+	foreach ($pcm as $pc)
+	    $badPairSelector[$pc->contactId] = htmlspecialchars(contactNameText($pc));
+    }
+    $selected = ($i <= $_REQUEST["bpcount"] ? defval($_REQUEST, "bp$which$i") : "0");
+    if ($selected && isset($badPairSelector[$selected]))
 	$numBadPairs = max($i, $numBadPairs);
-    $sel_extra = array();
-    if ($i == 1)
-	$sel_extra["onchange"] = "if (!((x=\$\$(\"badpairs\")).checked)) x.click()";
-    return tagg_select("bp$which$i", $sel_opt, $selected, $sel_extra);
+    return tagg_select("bp$which$i", $badPairSelector, $selected,
+		       array("onchange" => "if(!((x=\$\$(\"badpairs\")).checked)) x.click()"));
 }
 
-echo "<div class='g'></div><div class='relative'><div id='foldbadpair' class='",
-    (isset($_REQUEST["badpairs"]) ? "foldo" : "foldc"),
-    "'><table id='bptable'>\n";
-for ($i = 1; $i <= 20; $i++) {
-    echo "    <tr id='bp$i' class='auedito'><td class='rentry nowrap'>";
+echo "<div class='g'></div><div class='relative'><table id='bptable'>\n";
+for ($i = 1; $i <= 50; $i++) {
+    $selector_text = bpSelector($i, "a") . " &nbsp;and&nbsp; " . bpSelector($i, "b");
+    echo "    <tr id='bp$i' class='", ($numBadPairs >= $i ? "auedito" : "aueditc"),
+	"'><td class='rentry nowrap'>";
     if ($i == 1)
 	echo tagg_checkbox("badpairs", 1, isset($_REQUEST["badpairs"]),
-			   array("id" => "badpairs",
-				 "onchange" => "fold('badpair', !this.checked);authorfold('bp', this.checked?1:-1, 0)")),
+			   array("id" => "badpairs")),
 	    "&nbsp;", tagg_label("Don't assign", "badpairs"), " &nbsp;";
     else
 	echo "or &nbsp;";
-    echo "</td><td class='lentry'>", bpSelector($i, "a"),
-	" &nbsp;and&nbsp; ", bpSelector($i, "b");
+    echo "</td><td class='lentry'>", $selector_text;
     if ($i == 1)
-	echo " &nbsp;to the same paper<span class='fx'> &nbsp;(<a href='javascript:void authorfold(\"bp\",1,1)'>More</a> | <a href='javascript:void authorfold(\"bp\",1,-1)'>Fewer</a>)</span>";
+	echo " &nbsp;to the same paper &nbsp;(<a href='javascript:void authorfold(\"bp\",1,1)'>More</a> | <a href='javascript:void authorfold(\"bp\",1,-1)'>Fewer</a>)";
     echo "</td></tr>\n";
 }
-echo "</table></div><input id='bpcount' type='hidden' name='bpcount' value='20' />";
+echo "</table><input id='bpcount' type='hidden' name='bpcount' value='50' />";
 $Conf->echoScript("authorfold(\"bp\",0,$numBadPairs)");
 echo "</div>\n";
 

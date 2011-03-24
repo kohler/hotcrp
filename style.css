@@ -452,7 +452,7 @@ body#revpref table.pltable, body#accounts table.ppltable {
 div.homegrp {
 	margin: 0.8em 0 0;
 }
-div#homelist h4, div#homemgmt h4, div#homerev h4, div#homeau h4, 
+div#homelist h4, div#homemgmt h4, div#homerev h4, div#homeau h4,
 div#homeacct h4, div#homeinfo h4, div#homeactivity h4 {
 	display: inline;
 }
