@@ -687,14 +687,15 @@ algorithm, <a href='http://en.wikipedia.org/wiki/Schulze_method'>the Schulze
 method</a> by default, combines these rankings into a global preference order.
 
 <p>HotCRP supports ranking through the <a
-href='" . hoturl("help", "t=tags") . "'>tags system</a>.  The chair can <a
-href='" . hoturl("settings", "group=rev") . "'>define a tag to be used for
-ranking</a>.  PC members vote by assigning the corresponding twiddle tags.
-For instance, a paper tagged “~rank#1” is the user's first
-preference, a paper tagged “~rank#2” is the second preference,
+href='" . hoturl("help", "t=tags") . "'>tags system</a>.  The chair chooses
+a tag for ranking—“rank” is a good default—and enters it on <a
+href='" . hoturl("settings", "group=rev") . "'>the settings page</a>.
+PC members then rank papers using their private versions of this tag,
+tagging their first preference with “~rank#1”,
+their second preference with “~rank#2”,
 and so forth.  To combine PC rankings into a global preference order, the PC
-chair goes to the <a href='" . hoturl("search", "q=") . "'>search page</a>, selects
-all papers, and chooses Tags &gt; Calculate&nbsp;rank, entering
+chair selects all papers on the <a href='" . hoturl("search", "q=") . "'>search page</a>
+and chooses Tags &gt; Calculate&nbsp;rank, entering
 “rank” for the tag.  At that point, the global rank can be viewed
 by a <a href='" . hoturl("search", "q=order:rank") . "'>search for
 “order:rank”</a>.</p>
@@ -754,9 +755,9 @@ X	11	Analyzing Scatter/Gather I/O Using Encrypted Epistemologies
 <tr><td class='pad'>#4</td><td class='pad'>Deploying Congestion Control Using Homogeneous Modalities</td><td class='pad'>~rank#5</td></tr></table></p>
 
 <p>Since #6, #10, and #11 still had X prefixes, they were not assigned a rank.
- The user can search for “order:~rank” to see their ranking, and
- inside the system; an administrator can search for
- “order:<i>pcname</i>~rank” to see a particular user's ranking.
+ Searching for “order:~rank” returns the user’s personal ranking;
+ administrators can search for
+ “order:<i>pcname</i>~rank” to see a PC member’s ranking.
  Once a global ranking is assigned, “order:rank” will show it.</p>
 ");
 
