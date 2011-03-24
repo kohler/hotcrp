@@ -880,7 +880,7 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
 }
 
 function quicklinks($id, $baseUrl, $args, $listtype) {
-    global $Me, $Conf, $CurrentList;
+    global $Me, $Conf, $ConfSiteBase, $CurrentList;
 
     $list = false;
     $CurrentList = 0;
