@@ -445,27 +445,11 @@
 * Do not log updates to reviews made using chair power, if those reviews
   are explicitly anonymous. [John Wilkes]
 
-2. [possible defect] When looking at possible conflicts for a paper using
-  "search for potential conflicts" on "Assign papers - manual by PC
-  member", the set of "reviews to be done" doesn't seem to be that of the
-  selected PC member.  I can't quite work out what it is - I thought at
-  first that it was the viewer's list, but it seems to change if the PC
-  member changes, so I'm not quite sure what's going on. [John Wilkes]
-
 4. It's somewhat of tedious to flip back and forth between per-paper and
   per-PC member review assignments.  Could some better navigation shortcuts
   be made available? [John Wilkes]
 
 Multi-round assignment process.  Doing this showed up a couple of issues:
-
-5. On the automatic assignments page, there's an option to specify "Don't
-  assign PC member 1 and 2 to the same paper."  That has to be re-entered
-  each time - it's not sticky, whereas I think it should be. [John Wilkes]
-
-6. It would also be nice to be able to specify a simple list, rather than
-  having to provide everything as pairwise restrictions.  (We had a clump
-  of 4 people, which turned into a lot of separate rules of this form.)
-  [John Wilkes]
 
 8. Review types.  HotCRP has the notion of primary and secondary reviews.
   Great!  But their meanings seem to be hard-wired.  We wanted to use them
@@ -495,9 +479,6 @@ Format checker: This worked really nicely.  But ...
   the format checker, rather than editing the individual settings by hand,
   which tended to confuse people about what the real rules were. [John
   Wilkes]
-
-12. It would also be nice to be able to say "we need either A4 or US paper"
-  - at moment, you cannot. [John Wilkes]
 
 * it would be nice if there was an easy way to send email from one of a
   paper's pages to the author(s) or reviewers.  As it is, it seems I have
