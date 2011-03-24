@@ -418,7 +418,7 @@ echo "<form method='post' action='", hoturl("mail", "check=1"), "' enctype='mult
 <input class='hidden' type='submit' name='default' value='1' />
 
 <div class='aa'>
-  <strong>Templates:</strong> &nbsp;";
+  <strong>Template:</strong> &nbsp;";
 $tmpl = array();
 foreach ($mailTemplates as $k => $v) {
     if (isset($v["mailtool_name"])
