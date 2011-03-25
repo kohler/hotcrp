@@ -903,9 +903,17 @@ class Conference {
 	$pq = "select Paper.*, PaperConflict.conflictType,
 		count(AllReviews.reviewSubmitted) as reviewCount,
 		count(if(AllReviews.reviewNeedsSubmit<=0,AllReviews.reviewSubmitted,AllReviews.reviewId)) as startedReviewCount";
-	$myPaperReview = null;
+	$myPaperReview = $highlightPaperReview = null;
 	if (!isset($options['author'])) {
-	    $myPaperReview = ($allReviewerQuery ? "MyPaperReview" : "PaperReview");
+	    if ($allReviewerQuery) {
+		$myPaperReview = $highlightPaperReview = "MyPaperReview";
+		if ($reviewContactId != $contactId)
+		    $highlightPaperReview = "HighlightPaperReview";
+	    } else if ($reviewContactId != $contactId) {
+		$myPaperReview = "MyPaperReview";
+		$highlightPaperReview = "PaperReview";
+	    } else
+		$myPaperReview = $highlightPaperReview = "PaperReview";
 	    $pq .= ",
 		PaperReview.reviewType,
 		PaperReview.reviewId,
@@ -920,8 +928,7 @@ class Conference {
 		min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit";
 	    if ($this->sversion >= 11)
 		$pq .= ",
-		PaperReview.reviewRound,
-		$myPaperReview.reviewRound as myReviewRound";
+		PaperReview.reviewRound";
 	} else
 	    $pq .= ",\nnull as myReviewType";
 	if (isset($options['reviewerName']))
@@ -973,8 +980,8 @@ class Conference {
 	if (isset($options['scores'])) {
 	    foreach ($options['scores'] as $field) {
 		$pq .= ",\n		PaperScores.${field}Scores";
-		if ($myPaperReview)
-		    $pq .= ",\n		$myPaperReview.$field";
+		if ($highlightPaperReview)
+		    $pq .= ",\n		$highlightPaperReview.$field";
 	    }
 	    $pq .= ",\n		PaperScores.numScores";
 	}
@@ -1018,19 +1025,21 @@ class Conference {
 	if (isset($_SESSION["rev_tokens"]))
 	    $qr = " or PaperReview.reviewToken in (" . join(", ", $_SESSION["rev_tokens"]) . ")";
 	if (isset($options['myReviewRequests']))
-	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$reviewContactId and PaperReview.reviewType=" . REVIEW_EXTERNAL . ")\n";
+	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$contactId and PaperReview.reviewType=" . REVIEW_EXTERNAL . ")\n";
 	else if (isset($options['myReviews']))
-	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$reviewContactId$qr))\n";
+	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))\n";
 	else if (isset($options['myOutstandingReviews']))
-	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$reviewContactId$qr) and PaperReview.reviewNeedsSubmit!=0)\n";
+	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr) and PaperReview.reviewNeedsSubmit!=0)\n";
 	else if (isset($options['myReviewsOpt']))
-	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$reviewContactId$qr))\n";
+	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))\n";
 	else if (isset($options['allReviews']) || isset($options['allReviewScores']))
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
 	else if (!isset($options['author']))
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$reviewContactId$qr))\n";
-	if ($allReviewerQuery)
-	    $pq .= "		left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$reviewContactId)\n";
+	if ($myPaperReview == "MyPaperReview")
+	    $pq .= "		left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$contactId)\n";
+	if ($highlightPaperReview == "HighlightPaperReview")
+	    $pq .= "		left join PaperReview as HighlightPaperReview on (HighlightPaperReview.paperId=Paper.paperId and HighlightPaperReview.contactId=$reviewContactId)\n";
 	if (isset($options['allComments']))
 	    $pq .= "		join PaperComment on (PaperComment.paperId=Paper.paperId)
 		left join PaperConflict as CommentConflict on (CommentConflict.paperId=PaperComment.paperId and CommentConflict.contactId=PaperComment.contactId)\n";
