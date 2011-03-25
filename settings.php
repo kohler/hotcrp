@@ -49,7 +49,7 @@ $SettingGroups = array("acc" => array(
 			     "pcrev_hard" => "date",
 			     "x_rev_roundtag" => "special",
 			     "pc_seeallrev" => 4,
-			     "pc_seeblindrev" => 2,
+			     "pc_seeblindrev" => 1,
 			     "pcrev_editdelegate" => "check",
 			     "extrev_chairreq" => "check",
 			     "x_tag_chair" => "special",
@@ -1504,7 +1504,7 @@ function doRevGroup() {
     echo "<div class='g'></div>\n";
     echo "Can PC members see <strong>reviewer names</strong> except for conflicts?<br />\n";
     doRadio("pc_seeblindrev", array(1 => "Only after completing a review for the same paper",
-				    2 => "Yes, unless reviews are hidden",
+				    /* 2 => "Yes, unless reviews are hidden", */
 				    0 => "Yes"));
 
     echo "<div class='g'></div>";
