@@ -481,10 +481,11 @@ class PaperSearch {
 		$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
 
 	    } else if ($this->amPC) {
+		$pc_seeblindrev = $Conf->setting("pc_seeblindrev");
 		// Can PC member see all reviews?  PC member can generally see
 		// all assignments (under control of pc_seeblindrev), so if
 		// query doesn't involve text or score, ignore the setting.
-		if (!$value->fieldsql)
+		if (!$value->fieldsql && $pc_seeblindrev != 2)
 		    $pc_seeallrev = 1;
 		else {
 		    $pc_seeallrev = $Conf->setting("pc_seeallrev");
@@ -495,7 +496,7 @@ class PaperSearch {
 		// check reviewer name, or pc_seeblindrev allows it.  In *all*
 		// cases PC members can see who wrote blind reviews once they
 		// submit their own review.
-		if (!$value->contactsql || $Conf->setting("pc_seeblindrev") == 0)
+		if (!$value->contactsql || $pc_seeblindrev != 1)
 		    $xdeblinder = 0;
 		else
 		    $xdeblinder = $deblinder;

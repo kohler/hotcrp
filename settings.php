@@ -49,7 +49,7 @@ $SettingGroups = array("acc" => array(
 			     "pcrev_hard" => "date",
 			     "x_rev_roundtag" => "special",
 			     "pc_seeallrev" => 4,
-			     "pc_seeblindrev" => 1,
+			     "pc_seeblindrev" => 2,
 			     "pcrev_editdelegate" => "check",
 			     "extrev_chairreq" => "check",
 			     "x_tag_chair" => "special",
@@ -1502,13 +1502,14 @@ function doRevGroup() {
 				  1 => "Yes"));
 
     echo "<div class='g'></div>\n";
-    echo "Can PC members see who wrote blind reviews?<br />\n";
-    doRadio("pc_seeblindrev", array(0 => "Yes",
-				    1 => "Only after completing a review for the same paper"));
+    echo "Can PC members see <strong>reviewer names</strong> except for conflicts?<br />\n";
+    doRadio("pc_seeblindrev", array(1 => "Only after completing a review for the same paper",
+				    2 => "Yes, unless reviews are hidden",
+				    0 => "Yes"));
 
     echo "<div class='g'></div>";
     echo "Can external reviewers see the other reviews for their assigned papers, once they&rsquo;ve submitted their own?<br />\n";
-    doRadio("extrev_view", array(0 => "No", 2 => "Yes", 1 => "Yes, but they can&rsquo;t see who wrote blind reviews"));
+    doRadio("extrev_view", array(0 => "No", 1 => "Yes, but they can&rsquo;t see who wrote blind reviews", 2 => "Yes"));
 
     echo "<hr class='hr' />";
 

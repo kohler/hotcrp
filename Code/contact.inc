@@ -409,7 +409,7 @@ class Contact {
 	if (!is_object($prow))
 	    return $Conf->paperRow($prow, $this->contactId, $whyNot);
 	else {
-	    $whyNot = array('paperId' => $prow->paperId);
+	    $whyNot = array("paperId" => $prow->paperId);
 	    return $prow;
 	}
     }
@@ -996,13 +996,16 @@ class Contact {
 	if ($prow === true)
 	    $prow = (object) array("conflictType" => 0,
 			"myReviewType" => ($this->amReviewer() ? 1 : 0),
-			"myReviewSubmitted" => 1);
+			"myReviewSubmitted" => 1,
+			"paperId" => 1, "timeSubmitted" => 1);
 	if (($this->privChair && $forceShow)
 	    || ($rrow && $rrow_contactId == $this->contactId)
 	    || ($rrow && $this->ownReview($rrow))
 	    || ($this->privChair && $prow && $prow->conflictType == 0)
 	    || ($this->isPC && $prow && $prow->conflictType == 0
-		&& !$Conf->setting("pc_seeblindrev"))
+		&& (!($pc_seeblindrev = $Conf->setting("pc_seeblindrev"))
+		    || ($pc_seeblindrev == 2
+			&& $this->canViewReview($prow, $rrow, $whyNot, $ignoreForceShow))))
 	    || ($prow && $prow->myReviewType > 0
 		&& (defval($prow, "myReviewSubmitted") > 0
 		    || defval($prow, "myReviewNeedsSubmit", 1) == 0)
