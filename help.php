@@ -849,9 +849,9 @@ Follow these steps to prepare to accept paper submissions.
 
 <li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Set submission
   policies</a></strong>, including whether submission is blind, whether
-  authors check off conflicted PC members (“Collect authors' PC conflicts
+  authors check off conflicted PC members (“Collect authors’ PC conflicts
   with checkboxes”), and whether authors must enter additional non-PC collaborators,
-  which can help detect conflicts with external reviewers (“Collect authors'
+  which can help detect conflicts with external reviewers (“Collect authors’
   other collaborators as text”).</p></li>
 
 <li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Set submission
@@ -1011,34 +1011,31 @@ mechanism.  For each chair conflict:
 
 ");
     _alternateRow("Before the meeting", "
-Before the meeting, you will generally <a
-href='" . hoturl("settings", "group=rev") . "'>set “PC can see all
-reviews”</a>, allowing the program committee to view reviews and scores for
-non-conflicted papers.  (In many conferences, PC members are initially
-prevented from seeing a paper's reviews until they have completed their own
-review for that paper; this supposedly reduces bias.)
-
 <ol>
 
 <li><p><strong><a href='" . hoturl("settings", "group=dec") . "'>Collect
-  authors' responses to the reviews (optional).</a></strong> Some conferences
-  allow authors to respond to the reviews before decisions are made, giving
-  them a chance to correct misconceptions and such.  Responses are entered
+  authors’ responses to the reviews (optional).</a></strong>  Authors’ responses
+  (also called rebuttals) let authors correct reviewer misconceptions
+  before decisions are made.  Responses are entered
   into the system as <a
   href='" . hoturl("comment") . "'>comments</a>.  On the <a
   href='" . hoturl("settings", "group=dec") . "'>decision settings page</a>,
   update “Can authors see reviews” and “Collect responses to the
   reviews,” then <a href='" . hoturl("mail") . "'>send mail to
-  authors</a> informing them of the response deadlines.  PC members will still
-  be able to update their reviews, assuming it's before the <a
+  authors</a> informing them of the response deadline.  PC members can still
+  update their reviews up to the <a
   href='" . hoturl("settings", "group=rev") . "'>review deadline</a>; authors
   are informed via email of any review changes.  At the end of the response
-  period it's generally good to <a
+  period you should generally <a
   href='" . hoturl("settings", "group=dec") . "'>turn off “Authors can see
   reviews”</a> so PC members can update their reviews in peace.</p></li>
 
 <li><p>Set <strong><a href='" . hoturl("settings", "group=rev") . "'>PC can
-  see all reviews</a></strong> if you haven't already.</p></li>
+  see all reviews</a></strong> if you haven’t already, allowing the program
+  committee to see reviews and scores for
+  non-conflicted papers.  (During most conferences’ review periods, a PC member
+  can see a paper’s reviews only after completing their own
+  review for that paper.  This supposedly reduces bias.)</p></li>
 
 <li><p><strong><a href='" . hoturl("search", "q=&amp;t=s&amp;sort=50") . "'>Examine
   paper scores</a></strong>, either one at a time or en masse, and decide
@@ -1068,7 +1065,7 @@ review for that paper; this supposedly reduces bias.)
 <li><p>The night before the meeting, <strong><a
   href='" . hoturl("search", "q=&amp;t=s") . "'>download all
   reviews onto a laptop</a></strong> (Download &gt; All reviews) in case the
-  Internet explodes and you can't reach HotCRP from the meeting
+  Internet explodes and you can’t reach HotCRP from the meeting
   place.</p></li>
 
 </ol>
@@ -1076,9 +1073,9 @@ review for that paper; this supposedly reduces bias.)
     _alternateRow("At the meeting", "
 <ol>
 
-<li><p>It's often useful to have a PC member or scribe capture the discussion
+<li><p>It’s often useful to have a PC member or scribe capture the discussion
   about a paper and enter it as a <a
-  href='" . hoturl("comment") . "'>comment</a> for the authors'
+  href='" . hoturl("comment") . "'>comment</a> for the authors’
   reference.</p></li>
 
 <li><p><strong>Paper decisions</strong> can be recorded on the <a
@@ -1089,8 +1086,7 @@ review for that paper; this supposedly reduces bias.)
 
 <li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either <a
-  href='" . hoturl("assign") . "'>paper by paper</a> on the
-  assignments screen or <a
+  href='" . hoturl("paper") . "'>paper by paper</a> or <a
   href='" . hoturl("autoassign", "t=acc") . "'>automatically</a>.</p></li>
 
 </ol>
@@ -1102,7 +1098,7 @@ review for that paper; this supposedly reduces bias.)
   href='" . hoturl("search", "q=&amp;t=s") . "'>Enter
   decisions</a> and <a
   href='" . hoturl("search", "q=dec:yes&amp;t=s") . "'>shepherds</a></strong>
-  if you didn't do this at the meeting.</p></li>
+  if you didn’t do this at the meeting.</p></li>
 
 <li><p>Give reviewers some time to <strong>update their reviews</strong> in
   response to PC discussion (optional).</p></li>
@@ -1117,12 +1113,12 @@ review for that paper; this supposedly reduces bias.)
   themselves.</p></li>
 
 <li><p><strong><a href='" . hoturl("settings", "group=dec") . "'>Collect final
-  papers (optional).</a></strong> If you're putting together the program
+  papers (optional).</a></strong> If you’re putting together the program
   yourself, it can be convenient to collect final copies using HotCRP.
-  Authors upload final copies the same way they did the submission, although
-  the submitted version is archived for reference.  You can then <a
+  Authors upload final copies just as they did submissions.  You can then <a
   href='" . hoturl("search", "q=dec:yes&amp;t=s") . "'>download
-  all final copies as a <tt>.zip</tt> archive</a>.</p></li>
+  all final copies as a <tt>.zip</tt> archive</a>.  (Papers’ reviewed
+  versions are archived for reference.)</p></li>
 
 </ol>
 ");
