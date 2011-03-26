@@ -438,10 +438,10 @@ class PaperTable {
 				       "showtitle" => "Show full abstract",
 				       "hidetitle" => "Abbreviate abstract")),
 		    "<div class='papv abstract'>",
-		    "<span class='fn6'>", $shortdata,
+		    "<div class='fn6'>", $shortdata,
 		    " <a class='fn6' href='javascript:void fold(\"paper\", 0, 6)'>[more]</a>",
-		    "</span><span class='fx6'>", $data,
-		    "</span></div>\n\n";
+		    "</div><div class='fx6'>", $data,
+		    "</div></div>\n\n";
 		return;
 	    }
 	}
@@ -822,7 +822,7 @@ class PaperTable {
 	if ($this->entryMatches || !$this->allFolded)
 	    $fold = 0;
 
-	echo "<div id='foldpscollab' class='fold", ($fold ? "c" : "o"), "'>",
+	echo "<div id='foldpscollab' class='psc fold", ($fold ? "c" : "o"), "'>",
 	    $this->papt("collaborators", $name,
 			array("type" => "ps", "fold" => "pscollab",
 			      "foldsession" => "foldpscollab",
@@ -1022,8 +1022,9 @@ class PaperTable {
 	if (!count($pcconfs))
 	    $pcconfs[] = "None";
 
-	echo $this->papt("pcconflict", "PC conflicts", array("type" => "ps")),
-	    "<div class='psv'>", authorTable($pcconfs), "</div>\n";
+	echo "<div class='psc'>",
+	    $this->papt("pcconflict", "PC conflicts", array("type" => "ps")),
+	    "<div class='psv'>", authorTable($pcconfs), "</div></div>\n";
     }
 
     function _papstripLeadShepherd($prow, $type, $name, $showedit, $wholefold) {
@@ -1035,10 +1036,14 @@ class PaperTable {
 	    return;
 	$value = $prow->$field;
 	$pc = pcMembers();
+	echo "<div id='fold$type' class='psc";
+	if ($editable)
+	    echo ($showedit ? " foldo" : " foldc"), ($wholefold ? " fold2c" : " fold2o");
+	echo "'>";
 
 	if ($editable) {
 	    echo "<form id='${type}form' class='fold7o' method='post' action='", hoturl("review", "p=" . $prow->paperId . "&amp;post=1$linkExtra"), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"${type}form\")'>",
-		"<div id='fold$type' class='", ($showedit ? "foldo" : "foldc"), ($wholefold ? " fold2c" : " fold2o"), " inform'><div class='fx2'>",
+		"<div class='inform'><div class='fx2'>",
 		"<input type='hidden' name='set$type' value='1' />";
 	    $Conf->footerScript("Miniajax.onload(\"${type}form\")");
 	}
@@ -1071,7 +1076,7 @@ class PaperTable {
 	echo "</div>";
 	if ($editable)
 	    echo "</div></div></div></form>";
-	echo "\n";
+	echo "</div>\n";
     }
 
     function papstripLead($prow, $showedit) {
@@ -1091,12 +1096,16 @@ class PaperTable {
 	    $editable = $site && $Me->canSetTags($prow, $forceShow);
 	    $unfolded = $editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") == "tags");
 
+	    echo "<div id='foldtags' class='psc";
 	    if ($editable)
-		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div id='foldtags' class='", ($unfolded ? "foldo" : "foldc"), " inform'>";
-
+		echo ($unfolded ? " foldo" : " foldc");
 	    $colors = new TagColorizer($Me);
 	    if (($color = $colors->match($prow->paperTags)))
-		echo "<div class='", $color, "tag psshaper'>";
+		echo " ${color}tag";
+	    echo "'>";
+
+	    if ($editable)
+		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
 
 	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0), "oneditunfold" => "Miniajax.submit(\"tagreportform\")")),
 		"<div class='psv'>";
@@ -1126,11 +1135,9 @@ class PaperTable {
 		echo ($tx == "" ? "None" : $tx);
 	    echo "</div>";
 
-	    if ($color)
-		echo "</div>";
 	    if ($editable)
 		echo "</div></form>";
-	    echo "\n";
+	    echo "</div>\n";
 	}
     }
 
@@ -1138,7 +1145,7 @@ class PaperTable {
 	global $Conf, $rf, $Error, $linkExtra;
 	if (!$rf)
 	    $rf = reviewForm();
-	echo "<div id='folddecision' class='",
+	echo "<div id='folddecision' class='psc ",
 	    ($showedit || defval($_REQUEST, "atab") == "decision" ? "foldo" : "foldc"), "'>",
 	    $this->papt("decision", "Decision", array("type" => "ps", "editfolder" => ($showedit ? 0 : "decision"))),
 	    "<div class='psv'><form id='decisionform' class='fx fold7o' method='post' action='", hoturl("review", "p=" . $prow->paperId . "&amp;post=1$linkExtra"), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitdecision()'>",
@@ -1157,7 +1164,8 @@ class PaperTable {
 
     function papstripReviewPreference($prow) {
 	global $Conf, $linkExtra, $CurrentList;
-	echo $this->papt("revpref", "Review preference", array("type" => "ps")),
+	echo "<div class='psc'>",
+	    $this->papt("revpref", "Review preference", array("type" => "ps")),
 	    "<div class='psv'><form id='revprefform' class='fold7o' method='post' action='", hoturl("review", "p=" . $prow->paperId . "&amp;post=1$linkExtra"), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"revprefform\")'>",
 	    "<div class='aahc inform'>",
 	    "<input type='hidden' name='setrevpref' value='1' />";
@@ -1168,7 +1176,7 @@ class PaperTable {
 	echo "<input id='revprefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$rp\" onchange='Miniajax.submit(\"revprefform\")' tabindex='1' />",
 	    " <input class='b fx7' type='submit' value='Save' />",
 	    " <span id='revprefformresult'></span>",
-	    "</div></form></div>\n";
+	    "</div></form></div></div>\n";
 	$Conf->footerScript("Miniajax.onload(\"revprefform\");add_quicklink_shortcuts(\$\$('revprefform_d'))");
 	if (isset($CurrentList) && $CurrentList
 	    && defval($_SESSION["l"][$CurrentList], "revprefs")
@@ -1198,7 +1206,7 @@ class PaperTable {
 	// rank context form
 	$Conf->footerHtml("<form id='rankctxform' class='fold7o' method='post' action='" . hoturl("paper", "p=$prow->paperId") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><div class='aahc'><input type='hidden' name='rankctx' value='1' /></div></form>");
 
-	echo "<div id='foldrank' class='foldc fold2c'>",
+	echo "<div id='foldrank' class='psc foldc fold2c'>",
 	    $this->papt("rank", "Your rank", array("type" => "ps", "editfolder" => "rank")),
 	    "<div class='psv'><form id='rankform' class='fx fold7o' method='post' action='" . hoturl("review", "p=" . $prow->paperId . "&amp;post=1$linkExtra") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankform\")'>",
 	    "<div class='inform'>",
@@ -1233,7 +1241,8 @@ class PaperTable {
 	$result = $Conf->q("select ContactInfo.contactId, reviewType, commentId, conflictType, watch from ContactInfo left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId) left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId) where ContactInfo.contactId=$Me->contactId");
 	$row = edb_row($result);
 
-	echo "<form id='watchform' class='fold7o' action=\"", hoturl("comment", "p=$prow->paperId&amp;post=1$linkExtra"), "\" method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"watchform\")'>",
+	echo "<div class='psc'>",
+	    "<form id='watchform' class='fold7o' action=\"", hoturl("comment", "p=$prow->paperId&amp;post=1$linkExtra"), "\" method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"watchform\")'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setwatch' value='1' />";
 
@@ -1250,10 +1259,9 @@ class PaperTable {
 				       array("onchange" => "Miniajax.submit('watchform')"))
 			 . "&nbsp;" . tagg_label("Comment notification"),
 			 array("type" => "ps")),
-	    "<div class='pshint'>If selected, you will receive email when updated comments are available for this paper. <span id='watchformresult'></span></div>",
-	    "<div class='papv'>",
+	    "<div class='pshint'>If selected, you will receive email when updated comments are available for this paper. <span id='watchformresult'></span>",
 	    "<input class='b fx7' type='submit' value='Save' />",
-	    "</div></div></form>\n\n";
+	    "</div></div></form></div>\n\n";
 
 	$Conf->footerScript("Miniajax.onload(\"watchform\")");
     }

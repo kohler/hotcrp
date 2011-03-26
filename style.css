@@ -7,8 +7,12 @@ body {
 	font-family: verdana, tahoma, sans-serif;
 	font-size: 10.5pt;
 	color: black;
+	background-color: white;
 	margin: 0;
 }
+/*body#paper_view, body#paper_edit, body#review, body#contactauthors, body#assign {
+	background-color: #ccc;
+}*/
 
 
 /* header */
@@ -16,7 +20,6 @@ body {
 	background-image: url("images/headgrad.png");
 	background-repeat: repeat-x;
 	background-position: top;
-	background-color: #ffffff;
 }
 #header_right {
 	padding: 8px 12px 0 12px;
@@ -190,7 +193,6 @@ div.inform {
 /* body */
 div.body {
 	margin: 2px 12px;
-	background-color: #ffffff;
 	position: relative;
 	z-index: 3;
 }
@@ -1599,10 +1601,19 @@ div.papstrip textarea {
 div.papstrip select {
 	font-size: inherit;
 }
+div.psc {
+	background: white;
+	margin: 0.5em 0 0.75em;
+	border-radius: 4px;
+	-moz-border-radius: 4px;
+}
 div.pst {
-	margin-top: 0.5em;
 	padding: 0.25em 0.5em 0.25em 4px;
 	background: #eaeaea; /*#ffeaee;*/
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	-moz-border-radius-topleft: 4px;
+	-moz-border-radius-topright: 4px;
 }
 div.pst span.psfn {
 	font-variant: small-caps;
@@ -1613,7 +1624,7 @@ div.pst span.hint {
 	float: right;
 }
 div.psv {
-	padding: 2px 0 0.5em 4px;
+	padding: 2px 0 3px 4px;
 }
 
 div.psmodec {
