@@ -664,8 +664,8 @@ class Mailer {
 	    return $Opt["paperSite"];
 	else if ($len > 7 && substr($what, 0, 5) == "%URL(" && substr($what, $len - 2) == ")%") {
 	    $a = preg_split('/\s*,\s*/', substr($what, 5, $len - 7));
-	    if (count($a) == 2 && $a[1] != "")
-		$a[1] = $this->expandvar($a[1], false);
+	    for ($i = 0; $i < count($a); ++$i)
+		$a[$i] = $this->expand($a[$i], "urlpart");
 	    return hoturl_absolute($a[0], isset($a[1]) ? $a[1] : "");
 	}
 	if ($what == "%PHP%")
@@ -955,6 +955,7 @@ class Mailer {
 	    return "";
 
 	// width, expansion type based on field
+	$oldExpansionType = $this->expansionType;
 	$width = 100000;
 	if ($field == "to" || $field == "cc" || $field == "bcc"
 	    || $field == "replyto")
@@ -1017,6 +1018,7 @@ class Mailer {
 	if ($this->expansionType != self::EXPAND_BODY)
 	    $text = rtrim(preg_replace('/[\r\n\f\x0B]+/', ' ', $text));
 
+	$this->expansionType = $oldExpansionType;
 	return $text;
     }
 
