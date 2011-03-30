@@ -531,8 +531,6 @@ class Mailer {
     var $row;
     var $contact;
     var $otherContact;
-    var $text;
-    var $textstart;
     var $hideSensitive;
     var $hideReviews;
     var $reason;
@@ -550,8 +548,6 @@ class Mailer {
 	$this->row = $row;
 	$this->contact = $contact;
 	$this->otherContact = $otherContact;
-	$this->text = "";
-	$this->textstart = 0;
 	$this->hideSensitive = defval($rest, "hideSensitive", false);
 	$this->reason = defval($rest, "reason", "");
 	$this->adminupdate = defval($rest, "adminupdate", false);
@@ -979,50 +975,49 @@ class Mailer {
 	if (count($lines) && $lines[count($lines) - 1] === "")
 	    array_pop($lines);
 
-	$this->text = "";
+	$text = "";
+	$textstart = 0;
 	for ($i = 0; $i < count($lines); ++$i) {
 	    $line = rtrim($lines[$i]);
 	    if ($line == "")
-		$this->text .= "\n";
+		$text .= "\n";
 	    else if (preg_match('/^%[\w()]+%$/', $line)
 		     && ($line == "%REVIEWS%" || $line == "%COMMENTS%")) {
 		if (($m = $this->expandvar($line, false)) != "")
-		    $this->text .= $m . "\n";
+		    $text .= $m . "\n";
 	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%OPT\([\w()]+\)%)$/', $line, $m)) {
 
 		if (($yes = $this->expandvar($m[2], true)))
-		    $this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $width) . "\n";
+		    $text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $width) . "\n";
 		else if ($yes === null)
-		    $this->text .= $line . "\n";
+		    $text .= $line . "\n";
 	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%\w+(?:|\([^\)]*\))%)$/', $line, $m))
-		$this->text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $width) . "\n";
+		$text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $width) . "\n";
 	    else if (preg_match('/^([ \t][ \t]*.*?: )(%URL(?:|\([^\)]*\))%\S*)$/', $line, $m)) {
 		// do not wrap lines that start with %URL%
-		$this->textstart = strlen($this->text);
+		$textstart = strlen($text);
 		while (preg_match('/^(.*?)(%\w+(?:|\([^\)]*\))%)(.*)$/s', $line, $m)) {
-		    $this->text .= $m[1];
-		    $this->text .= $this->expandvar($m[2]);
+		    $text .= $m[1] . $this->expandvar($m[2]);
 		    $line = $m[3];
 		}
-		$this->text .= $line . "\n";
+		$text .= $line . "\n";
 	    } else if (strpos($line, '%') !== false) {
-		$this->textstart = strlen($this->text);
+		$textstart = strlen($text);
 		while (preg_match('/^(.*?)(%\w+(?:|\([^\)]*\))%)(.*)$/s', $line, $m)) {
-		    $this->text .= $m[1];
-		    $this->text .= $this->expandvar($m[2]);
+		    $text .= $m[1] . $this->expandvar($m[2]);
 		    $line = $m[3];
 		}
-		$this->text .= $line;
-		$this->text = substr($this->text, 0, $this->textstart) . wordWrapIndent(substr($this->text, $this->textstart), "", 0, $width) . "\n";
+		$text .= $line;
+		$text = substr($text, 0, $textstart) . wordWrapIndent(substr($text, $textstart), "", 0, $width) . "\n";
 	    } else
-		$this->text .= wordWrapIndent($line, "", 0, $width) . "\n";
+		$text .= wordWrapIndent($line, "", 0, $width) . "\n";
 	}
 
 	// lose newlines on header expansion
 	if ($this->expansionType != self::EXPAND_BODY)
-	    $this->text = rtrim(preg_replace('/[\r\n\f\x0B]+/', ' ', $this->text));
+	    $text = rtrim(preg_replace('/[\r\n\f\x0B]+/', ' ', $text));
 
-	return $this->text;
+	return $text;
     }
 
     static function getTemplate($templateName, $default = false) {
