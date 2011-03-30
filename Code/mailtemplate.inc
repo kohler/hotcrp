@@ -531,7 +531,6 @@ class Mailer {
     var $row;
     var $contact;
     var $otherContact;
-    var $ifstack;
     var $text;
     var $textstart;
     var $hideSensitive;
@@ -551,7 +550,6 @@ class Mailer {
 	$this->row = $row;
 	$this->contact = $contact;
 	$this->otherContact = $otherContact;
-	$this->ifstack = array();
 	$this->text = "";
 	$this->textstart = 0;
 	$this->hideSensitive = defval($rest, "hideSensitive", false);
@@ -569,42 +567,6 @@ class Mailer {
 	    $this->mstate = $rest["mstate"];
 	else
 	    $this->mstate = new MailerState();
-    }
-
-    function _pushIf($yes) {
-	if ($yes !== false && $yes !== true && $yes !== null)
-	    $yes = (bool) $yes;
-	if ($yes === true || $yes === null)
-	    array_push($this->ifstack, $yes);
-	else
-	    array_push($this->ifstack, $this->text);
-    }
-
-    function _popIf() {
-	if (count($this->ifstack) == 0)
-	    return null;
-	else if (($pop = array_pop($this->ifstack)) === true || $pop === null)
-	    return $pop;
-	else {
-	    $this->text = $pop;
-	    if ($this->textstart > strlen($this->text))
-		$this->textstart = strlen($this->text);
-	    return false;
-	}
-    }
-
-    function _handleIf($condition, $haselse, $what) {
-	assert($condition || $haselse);
-	if ($haselse) {
-	    $yes = $this->_popIf();
-	    if ($yes !== null)
-		$yes = !$yes;
-	} else
-	    $yes = true;
-	if ($yes && $condition)
-	    $yes = $this->expandvar($condition, true);
-	$this->_pushIf($yes);
-	return ($yes === null ? $what : "");
     }
 
     function _expandContact($contact, $out) {
@@ -649,19 +611,6 @@ class Mailer {
     function expandvar($what, $isbool = false) {
 	global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Opt;
 	$len = strlen($what);
-
-	if ($len > 6 && substr($what, 0, 4) == "%IF(" && substr($what, $len - 2) == ")%")
-	    return $this->_handleIf("%" . substr($what, 4, $len - 6) . "%", false, $what);
-	else if ($what == "%ELSE%")
-	    return $this->_handleIf(false, true, $what);
-	else if ($len > 9 && substr($what, 0, 7) == "%ELSIF(" && substr($what, $len - 2) == ")%")
-	    return $this->_handleIf("%" . substr($what, 7, $len - 9) . "%", true, $what);
-	else if ($len > 10 && substr($what, 0, 8) == "%ELSEIF(" && substr($what, $len - 2) == ")%")
-	    return $this->_handleIf("%" . substr($what, 8, $len - 10) . "%", true, $what);
-	else if ($what == "%ENDIF%") {
-	    $yes = $this->_popIf();
-	    return ($yes === null ? $what : "");
-	}
 
 	if ($len > 7 && substr($what, 0, 5) == "%OPT(" && substr($what, $len - 2) == ")%") {
 	    $inner = "%" . substr($what, 5, $len - 7) . "%";
@@ -884,6 +833,66 @@ class Mailer {
 	}
     }
 
+    function _pushIf(&$ifstack, $text, $yes) {
+	if ($yes !== false && $yes !== true && $yes !== null)
+	    $yes = (bool) $yes;
+	if ($yes === true || $yes === null)
+	    array_push($ifstack, $yes);
+	else
+	    array_push($ifstack, $text);
+    }
+
+    function _popIf(&$ifstack, &$text) {
+	if (count($ifstack) == 0)
+	    return null;
+	else if (($pop = array_pop($ifstack)) === true || $pop === null)
+	    return $pop;
+	else {
+	    $text = $pop;
+	    return false;
+	}
+    }
+
+    function _handleIf(&$ifstack, &$text, $cond, $haselse) {
+	assert($cond || $haselse);
+	if ($haselse) {
+	    $yes = $this->_popIf($ifstack, $text);
+	    if ($yes !== null)
+		$yes = !$yes;
+	} else
+	    $yes = true;
+	if ($yes && $cond)
+	    $yes = $this->expandvar("%" . substr($cond, 1, strlen($cond) - 2) . "%", true);
+	$this->_pushIf($ifstack, $text, $yes);
+	return $yes;
+    }
+
+    function _expandConditionals($rest) {
+	$text = "";
+	$ifstack = array();
+
+	while (preg_match('/\A(.*?)%(IF|ELSE?IF|ELSE|ENDIF)((?:\(\w+\))?)%(.*)\z/s', $rest, $m)) {
+	    $text .= $m[1];
+	    $rest = $m[4];
+
+	    if ($m[2] == "IF" && $m[3] != "")
+		$yes = $this->_handleIf($ifstack, $text, $m[3], false);
+	    else if (($m[2] == "ELSIF" || $m[2] == "ELSEIF") && $m[3] != "")
+		$yes = $this->_handleIf($ifstack, $text, $m[3], true);
+	    else if ($m[2] == "ELSE" && $m[3] == "")
+		$yes = $this->_handleIf($ifstack, $text, false, true);
+	    else if ($m[2] == "ENDIF" && $m[3] == "")
+		$yes = $this->_popIf($ifstack, $text);
+	    else
+		$yes = null;
+
+	    if ($yes === null)
+		$text .= "%" . $m[2] . $m[3] . "%";
+	}
+
+	return $text . $rest;
+    }
+
     function getReviews($contact, $finalized) {
 	global $Conf, $Me, $rf;
 	if ($this->hideReviews)
@@ -963,17 +972,10 @@ class Mailer {
 
 	// expand out %IF% and %ELSE% and %ENDIF%.  Need to do this first,
 	// or we get confused with wordwrapping.
-	$text = cleannl($text);
-	$this->text = "";
-	while (preg_match('/\A(.*?)(%(?:IF|ELSE?IF)\(\w+\)%|%ELSE%|%ENDIF%)(.*)\z/s', $text, $m)) {
-	    $this->text .= $m[1];
-	    $this->text .= $this->expandvar($m[2]);
-	    $text = $m[3];
-	}
-	$this->text .= $text;
+	$text = $this->_expandConditionals(cleannl($text));
 
 	// separate text into lines
-	$lines = explode("\n", $this->text);
+	$lines = explode("\n", $text);
 	if (count($lines) && $lines[count($lines) - 1] === "")
 	    array_pop($lines);
 
