@@ -1047,7 +1047,8 @@ function genericWatch($prow, $watchtype, $callback) {
     $result = $Conf->qe($q, "while processing email notifications");
     while (($row = edb_orow($result))) {
 	if ($row->contactId == $lastContactId
-	    || $row->contactId == $Me->contactId)
+	    || $row->contactId == $Me->contactId
+	    || preg_match('/\Aanonymous\d*\z/', $row->email))
 	    continue;
 	$lastContactId = $row->contactId;
 
