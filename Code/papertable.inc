@@ -16,8 +16,6 @@ class PaperTable {
     const STATUS_CONFLICTINFO_PC = 128;
     const STATUS_REVIEWERINFO = 256;
 
-    const PAPERLINKS_TYPE = 2;
-
     var $prow;
     var $rrows;
     var $crows;
@@ -1476,16 +1474,14 @@ class PaperTable {
 	$canHome = ($prow && ($canEdit || $canAssign || $this->mode == "contact"));
 
 	// a little extra space after messages
-	if ($prow && (self::PAPERLINKS_TYPE & 2)
-	    && ($canEdit || $canReview || $canAssign || $canHome)
+	if ($prow && ($canEdit || $canReview || $canAssign || $canHome)
 	    && $Conf->msgcount > 0)
 	    echo "<div class='msgpg'></div>\n";
 
 	echo "<table class='pbox'>";
 
 	// paper tabs
-	if ($prow && (self::PAPERLINKS_TYPE & 2)
-	    && ($canEdit || $canReview || $canAssign || $canHome)) {
+	if ($prow && ($canEdit || $canReview || $canAssign || $canHome)) {
 	    echo "<tr>\n    <td colspan='3' class='pboxt'>",
 		"<div class='psmodec'><div class='psmode'>";
 
@@ -1540,37 +1536,6 @@ class PaperTable {
 	echo "    <td class='${pboxclass}t'><table class='papcbar'>
 	<tr><td class='papculs'></td><td></td><td class='papcur'></td></tr>
 	<tr><td></td><td>";
-
-	if (self::PAPERLINKS_TYPE & 1) {
-	    $t = "";
-	    if ($prow && ($this->mode == "assign" || $this->mode == "pe"
-			  || $this->mode == "contact")) {
-		$a = ($this->mode == "pe" ? "&amp;m=p" : "");
-		$a = "<a href='" . hoturl("paper", "p=$prow->paperId$a$linkExtra") . "'>";
-		if ($t != "")
-		    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
-		$t .= $a . $Conf->cacheableImage("view24.png", "[View]", null, "b elimg")
-		    . "</a>&nbsp;" . $a . "View</a>";
-	    }
-	    if ($prow && $this->mode != "assign" && $this->mode != "pe"
-		&& $Me->canEditPaper($prow)) {
-		$a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;m=pe$linkExtra") . "'>";
-		if ($t != "")
-		    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
-		$t .= $a . $Conf->cacheableImage("edit24.png", "[Edit]", null, "b elimg")
-		    . "</a>&nbsp;" . $a . "Edit</a>";
-	    }
-	    if ($prow && $this->mode != "assign" && $this->mode != "contact"
-		&& $Me->actChair($prow)) {
-		$a = "<a href='" . hoturl("assign", "p=$prow->paperId$linkExtra") . "'>";
-		if ($t != "")
-		    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; ";
-		$t .= $a . $Conf->cacheableImage("assign24.png", "[Assign]", null, "b elimg")
-		    . "</a>&nbsp;" . $a . "Assign</a>";
-	    }
-	    if ($t != "")
-		echo "<div class='floatright'>", $t, "</div>";
-	}
 
 	echo "<h2>";
 	if ($prow) {
