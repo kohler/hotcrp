@@ -625,7 +625,7 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 echo tagg_cbox("pap", true), $loginFormEnd, "</td></tr></table>\n";
 
 // add external reviewers
-echo "<form ", $loginFormBegin, "<table class='pbox'><tr>
+echo "<div class='pboxc'><form ", $loginFormBegin, "<table class='pbox'><tr>
   <td class='pboxl'></td>
   <td class='pboxr'>";
 
@@ -662,6 +662,6 @@ if ($Me->actChair($prow))
     echo "<div class='f-i'>\n  ", tagg_checkbox("override"), "&nbsp;", tagg_label("Override deadlines and any previous refusal"), "\n</div>\n";
 
 echo "</td><td></td></tr>\n", tagg_cbox("rev", true),
-    "</td></tr></table>\n", $loginFormEnd;
+    "</td></tr></table>\n", $loginFormEnd, "</div>\n";
 
 $Conf->footer();

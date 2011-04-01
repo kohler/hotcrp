@@ -63,7 +63,6 @@ div.vbar {
 }
 div.nvbar {
 	padding: 0 12px;
-	margin-bottom: -4px;
 	position: relative;
 	clear: left;
 }
@@ -201,7 +200,14 @@ body#home div.body {
 }
 body#paper_view div.body, body#paper_edit div.body,
 body#review div.body, body#comment div.body, body#contactauthors div.body,
-body#assign div.body, body#offrev div.body,
+body#assign div.body, body#offrev div.body {
+	margin: 0 14px 0 12px;
+}
+body#paper_view, body#paper_edit,
+body#review, body#comment, body#contactauthors,
+body#assign, body#offrev {
+	background: #f0f0f0;
+}
 body#autoassign div.body, body#bulkassign div.body, body#assignpc div.body {
 	margin: 0 0.5em 0 0.75em;
 }
@@ -1567,71 +1573,12 @@ span.contactpulldown select {
 	vertical-align: top;
 }
 
-/* reviews and comments */
-table.pbox {
-	position: relative;
-	width: 100%;
-	margin: 0.5em 0;
-}
-td.pboxi, td.pboxl {
-	width: 13em;
-	vertical-align: top;
-}
-td.pboxni, td.pboxnl, td.pboxnj {
-	width: 3em;
-	vertical-align: top;
-}
-
-/* paper strip */
-div.papstripc {
-	width: 12em;
-	position: relative;
-	top: 1em;
-}
-div.papstrip {
-	position: absolute;
-	width: 100%;
-	z-index: 4;
-	font-size: smaller;
-	margin-top: -0.5em;
-}
-div.papstrip textarea {
-	font-size: small;
-}
-div.papstrip select {
-	font-size: inherit;
-}
-div.psc {
-	background: white;
-	margin: 0.5em 0 0.75em;
-	border-radius: 4px;
-	-moz-border-radius: 4px;
-}
-div.pst {
-	padding: 0.25em 0.5em 0.25em 4px;
-	background: #eaeaea; /*#ffeaee;*/
-	border-top-left-radius: 4px;
-	border-top-right-radius: 4px;
-	-moz-border-radius-topleft: 4px;
-	-moz-border-radius-topright: 4px;
-}
-div.pst span.psfn {
-	font-variant: small-caps;
-	font-weight: bold;
-	float: left;
-}
-div.pst span.hint {
-	float: right;
-}
-div.psv {
-	padding: 2px 0 3px 4px;
-}
-
+/* paper mode tabs */
 div.psmodec {
 	position: relative;
 	top: -2.4ex;
 	left: -5px;
-	z-index: -1;
+	z-index: 6;
 }
 div.psmode {
 	padding: 0 0 1em 0;
@@ -1665,6 +1612,96 @@ div.papmode img, div.papmodex img {
 	bottom: 10px;
 }
 
+/* paper banner */
+div.pban {
+	position: relative;
+	background: #cec1ff;
+	margin: 0 -14px 0 -12px;
+	padding: 0 14px 0 12px;
+	z-index: 5;
+}
+table.pban {
+	position: relative;
+	width: 100%;
+}
+td.pboxi div.papnum {
+	width: 13.5em;
+}
+td.pboxi h2 {
+	text-align: right;
+	padding: 8px;
+}
+td.pboxt h2 {
+	padding: 8px 0.5em;
+}
+
+div.pbanb {
+	padding: 0 14px 0 12px;
+	/*box-shadow: inset 0px 2px 3px #6e629a;
+	-moz-box-shadow: inset 0px 2px 3px 2px #6e629a;*/
+}
+
+/* reviews and comments */
+table.pbox {
+	position: relative;
+	width: 100%;
+	margin: 0.5em 0;
+}
+td.pboxi, td.pboxl {
+	width: 13.5em;
+	vertical-align: top;
+}
+td.pboxni, td.pboxnl, td.pboxnj {
+	width: 3em;
+	vertical-align: top;
+}
+
+/* paper strip */
+div.papstripc {
+	width: 12em;
+	position: relative;
+	left: 0.2em;
+}
+div.papstrip {
+	position: absolute;
+	width: 100%;
+	z-index: 4;
+	font-size: smaller;
+	padding-top: 0.5em;
+	background: white;
+	box-shadow: 0px 1px 5px #46678c;
+	-moz-box-shadow: 0px 1px 5px #46678c;
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	-moz-border-radius-bottomleft: 2px;
+	-moz-border-radius-bottomright: 2px;
+}
+div.papstrip textarea {
+	font-size: small;
+}
+div.papstrip select {
+	font-size: inherit;
+}
+div.psc {
+	background: white;
+	margin: 0.5em 0 0.75em;
+}
+div.pst {
+	padding: 0.25em 0.5em 0.25em 4px;
+	background: #eaeaea;
+}
+div.pst span.psfn {
+	font-variant: small-caps;
+	font-weight: bold;
+	float: left;
+}
+div.pst span.hint {
+	float: right;
+}
+div.psv {
+	padding: 2px 0 3px 4px;
+}
+
 /* ranks */
 div#rankctxformresult {
 	font-size: smaller;
@@ -1693,13 +1730,15 @@ table.papcbar {
 	-moz-border-radius-topright: 8px;
 }
 table.papcpap {
-	border-bottom-left-radius: 8px;
-	border-bottom-right-radius: 8px;
-	-moz-border-radius-bottomleft: 8px;
-	-moz-border-radius-bottomright: 8px;
+	box-shadow: 0px 1px 5px #46678c;
+	-moz-box-shadow: 0px 1px 5px #46678c;
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	-moz-border-radius-bottomleft: 2px;
+	-moz-border-radius-bottomright: 2px;
 }
 td.papculs, td.papcur, td.papcll, td.papclr {
-	width: 8px;
+	width: 5px;
 	height: 8px;
 }
 td.papcur {
@@ -1707,22 +1746,14 @@ td.papcur {
 	-moz-border-radius-topright: 8px;
 }
 td.papcl, td.papcr, td.papcl img._ {
-	width: 8px;
-}
-td.pboxi div.papnum {
-	width: 13em;
-	background: #cec1ff;
-}
-td.pboxi h2 {
-	text-align: right;
-	padding: 8px;
+	width: 5px;
 }
 table.papc h2, table.papcbar h2 {
 	padding-bottom: 8px;
 }
 td.papcc {
-	background: #ffffff;
-	padding: 0.5em;
+	background: #fff;
+	padding: 8px 12px;
 }
 td.papct {
 	background: #ffffff;
@@ -1740,7 +1771,7 @@ td.papcbot {
 	-moz-border-radius-bottomright: 5px;
 }
 div.inpapct {
-	margin: 0.4em 0.5em;
+	margin: 8px 12px;
 }
 td.papsep {
 	background: #cec1ff;
@@ -1799,29 +1830,34 @@ table.revc {
 	background: #fad5d5;
 	width: 100%;
 	position: relative;
-	border-radius: 8px;
-	-moz-border-radius: 8px;
+	box-shadow: 0px 1px 5px #46678c;
+	-moz-box-shadow: 0px 1px 5px #46678c;
+	border-radius: 2px;
+	-moz-border-radius: 2px;
 }
 td.revcul, td.revcur, td.revcll, td.revclr {
-	width: 8px;
+	width: 5px;
 	height: 8px;
 }
 td.revcc {
 	background: #ffffff;
-	padding: 0.5em;
-	border-radius: 5px;
-	-moz-border-radius: 5px;
+	padding: 8px 12px;
+	border-radius: 2px;
+	-moz-border-radius: 2px;
 }
 td.revct {
 	background: #ffffff;
-	border-radius: 5px;
-	-moz-border-radius: 5px;
+	border-radius: 2px;
+	-moz-border-radius: 2px;
 }
 div.inrevct {
-	margin: 0.5em;
+	margin: 7px 9px;
 }
 td.revcc div.aa, td.revct div.aa {
 	margin: 0.2em 0 0.3em;
+}
+td.revhead {
+	padding: 3px 0 4px 0;
 }
 td.revhead h3 {
 	display: inline;
@@ -1830,17 +1866,14 @@ td.revhead h3 {
 td.revhead span.revinfo {
 	font-size: smaller;
 }
-td.revhead {
-	padding: 0 0 4px 0;
-}
 div.revt {
 	font-size: smaller;
 	padding: 0.25em 1em 0.25em 8px;
 	background: #ffecef; /* #ffe6f8; */
-	border-top-left-radius: 5px;
-	border-top-right-radius: 5px;
-	-moz-border-radius-topleft: 5px;
-	-moz-border-radius-topright: 5px;
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	-moz-border-radius-topleft: 2px;
+	-moz-border-radius-topright: 2px;
 }
 div.revt span.revfn {
 	font-variant: small-caps;
@@ -1903,31 +1936,35 @@ table.cmtc {
 	width: 100%;
 	position: relative;
 	background: #e6e1cf;
-	border-radius: 8px;
-	-moz-border-radius: 8px;
+	box-shadow: 0px 1px 5px #46678c;
+	-moz-box-shadow: 0px 1px 5px #46678c;
+	border-radius: 2px;
+	-moz-border-radius: 2px;
 }
 table.cmtc.response {
 	background: #ffddc1;
 }
 td.cmtcul, td.cmtcur, td.cmtcll, td.cmtclr {
-	width: 8px;
+	width: 5px;
+}
+td.cmtcll, td.cmtclr {
 	height: 8px;
 }
 td.cmtcc {
 	background: #ffffff;
-	padding: 0.5em;
-	border-radius: 5px;
-	-moz-border-radius: 5px;
+	padding: 7px 9px;
+	border-radius: 2px;
+	-moz-border-radius: 2px;
 }
 td.cmtcc div.aa {
 	margin: 0.2em 0 0.3em;
 }
+td.cmthead {
+	padding: 3px 0 4px 0;
+}
 td.cmthead h3 {
 	display: inline;
 	padding: 0 0.5em 0 0;
-}
-td.cmthead {
-	padding: 0 0 4px 0;
 }
 td.cmthead span.cmtfn {
 	font-size: smaller;
@@ -1936,8 +1973,8 @@ div.cmtt {
 	font-size: smaller;
 	padding: 0.25em 1em 0.25em 8px;
 	background: #f7f1df; /*#ffeaee;*/
-	border-radius: 5px;
-	-moz-border-radius: 5px;
+	border-radius: 2px;
+	-moz-border-radius: 2px;
 }
 div.cmtt span.cmtfn {
 	float: left;

@@ -1462,28 +1462,26 @@ class PaperTable {
 	    $this->papstripReviewPreference($prow);
     }
 
-    function paptabBegin($contentopener = "") {
+    function _paptabBeginKnown() {
 	global $Conf, $Me, $forceShow, $linkExtra;
 	$prow = $this->prow;
-	$paperId = ($prow ? $prow->paperId : "new");
 
 	// what actions are supported?
-	$canEdit = ($prow && $Me->canEditPaper($prow));
-	$canReview = ($prow && $Me->canReview($prow, null));
-	$canAssign = ($prow && $Me->actChair($prow));
-	$canHome = ($prow && ($canEdit || $canAssign || $this->mode == "contact"));
+	$canEdit = $Me->canEditPaper($prow);
+	$canReview = $Me->canReview($prow, null);
+	$canAssign = $Me->actChair($prow);
+	$canHome = ($canEdit || $canAssign || $this->mode == "contact");
 
 	// a little extra space after messages
-	if ($prow && ($canEdit || $canReview || $canAssign || $canHome)
-	    && $Conf->msgcount > 0)
+	if ($Conf->msgcount > 0
+	    && ($canEdit || $canReview || $canAssign || $canHome))
 	    echo "<div class='msgpg'></div>\n";
 
-	echo "<table class='pbox'>";
+	echo "<div class='pban'>";
 
 	// paper tabs
-	if ($prow && ($canEdit || $canReview || $canAssign || $canHome)) {
-	    echo "<tr>\n    <td colspan='3' class='pboxt'>",
-		"<div class='psmodec'><div class='psmode'>";
+	if ($canEdit || $canReview || $canAssign || $canHome) {
+	    echo "<div class='psmodec'><div class='psmode'>";
 
 	    // home link
 	    $a = ($this->mode == "pe" || $this->mode == "re" ? "&amp;m=p" : "");
@@ -1515,41 +1513,48 @@ class PaperTable {
 		    "</a>&nbsp;", $a, "Assign</a></div>\n";
 	    }
 
-	    echo "<div class='clear'></div></div></div></td>\n</tr>\n";
+	    echo "<div class='clear'></div></div></div>\n";
 	}
 
 	// paper number
-	$pboxclass = ($prow ? "pbox" : "pboxn");
-	echo "<tr>\n    <td class='${pboxclass}i'>";
-	if ($prow) {
-	    $pa = "<a href='" . hoturl("paper", "p=$paperId$linkExtra") . "' class='q'>";
-	    echo "<div class='papnum'><h2>", $pa, "#", $this->prow->paperId, "</a></h2></div>";
+	$pa = "<a href='" . hoturl("paper", "p=$prow->paperId$linkExtra") . "' class='q'>";
+	echo "<table class='pban'><tr>
+    <td class='pboxi'><div class='papnum'>",
+	    "<h2>", $pa, "#", $prow->paperId, "</a></h2></div></td>\n";
 
-	    // paper strip
-	    echo "    <div class='papstripc'><div class='papstrip'>\n";
+	// paper title
+	echo "    <td class='pboxt'><h2>", $pa;
+	$this->echoTitle($prow);
+	echo "</a></h2></td>
+    <td class='pboxj'></td>
+</tr></table>\n";
+
+	echo "</div>\n";
+    }
+
+    function paptabBegin($contentopener = "") {
+	global $Conf, $Me, $forceShow, $linkExtra;
+	$prow = $this->prow;
+	$pboxclass = $prow ? "pbox" : "pboxn";
+
+	if ($prow) {
+	    $this->_paptabBeginKnown();
+	    echo "<table class='pbox' style='margin-top:0'><tr>\n",
+		"    <td class='pboxi'><div class='papstripc'><div class='papstrip'>\n";
 	    $this->_papstrip();
-	    echo "</div></div>";
+	    echo "</div></div></td>\n";
+	} else {
+	    echo "<table class='pbox'><tr>\n",
+		"    <td class='pboxni'></td>\n",
+		"    <td class='pboxnt'><table class='papcbar'>\n",
+		"	<tr><td class='papculs'></td><td></td><td class='papcur'></td></tr>\n",
+		"	<tr><td></td><td><h2>New paper</h2></td><td></td></tr>\n",
+		"    </table></td>\n",
+		"    <td class='pboxnj'></td>\n",
+		"</tr><tr>",
+		"    <td class='pboxnl'></td>\n";
 	}
-	echo "</td>\n";
-
-	// main paper table
-	echo "    <td class='${pboxclass}t'><table class='papcbar'>
-	<tr><td class='papculs'></td><td></td><td class='papcur'></td></tr>
-	<tr><td></td><td>";
-
-	echo "<h2>";
-	if ($prow) {
-	    echo $pa;
-	    $this->echoTitle($prow);
-	    echo "</a>";
-	} else
-	    echo "New paper";
-	echo "</h2></td><td></td></tr>
-    </table></td>
-    <td class='${pboxclass}j'></td>
-</tr><tr>
-    <td class='${pboxclass}l'></td>
-    <td class='${pboxclass}r'>", $contentopener, "<table class='papcpap'>
+	echo "    <td class='${pboxclass}r'>", $contentopener, "<table class='papcpap'>
 	<tr><td class='papcl'>",
 	    $Conf->cacheableImage("_.gif", "", null, "_"),
 	    "</td><td class='papct'><div class='inpapct'>";

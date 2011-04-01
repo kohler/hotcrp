@@ -1917,7 +1917,7 @@ function tagg_cbox($type, $bottom, $classextra="") {
 	return "	<tr><td class='${type}cll'></td><td></td><td class='${type}clr'></td></tr>\n</table>";
     else
 	return "<table class='${type}c" . ($classextra ? " $classextra" : "")
-	    . "'>\n	<tr><td class='${type}cul'></td><td></td><td class='${type}cur'></td></tr>\n";
+	    . "'>\n";
 }
 
 
