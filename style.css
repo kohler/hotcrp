@@ -11,7 +11,7 @@ body {
 	margin: 0;
 }
 /*body#paper_view, body#paper_edit, body#review, body#contactauthors, body#assign {
-	background-color: #ccc;
+	background-color: #cccccc;
 }*/
 
 
@@ -109,7 +109,7 @@ table.vbar div.vbtab1y {
 }
 .vbtab1 a {
 	text-decoration: none;
-	color: #000000;
+	color: black;
 	font-weight: bold;
 }
 div#header_left a {
@@ -138,7 +138,7 @@ td.spanner {
 
 /* generic horizontal styles */
 a.q, a.u {
-	color: inherit;
+	color: black;
 }
 a.q, a.x {
 	text-decoration: none;
@@ -443,7 +443,7 @@ table.ppltable td.pl_topics span.topic2 {
 	font-weight: normal;
 }
 span.optvalue {
-	color: #555;
+	color: #555555;
 }
 
 
@@ -1656,6 +1656,7 @@ table.pbox {
 td.pboxi, td.pboxl {
 	width: 14em;
 	vertical-align: top;
+	position: relative;
 }
 td.pboxni, td.pboxnl, td.pboxnj {
 	width: 3em;
@@ -1689,7 +1690,6 @@ div.papstrip textarea, div.papstrip select {
 	font-size: inherit;
 }
 div.psc {
-	background: white;
 	margin: 0 0 0.65em;
 	padding: 0.65em 0 0;
 	border-top: 1px solid #e8e8e8;
@@ -1701,6 +1701,9 @@ div.psc.psc1 {
 div.pst span.psfn {
 	font-variant: small-caps;
 	font-weight: bold;
+	color: #555555;
+}
+div.pst span.psfn a.q {
 	color: #555555;
 }
 div.pst span.hint {
@@ -1769,7 +1772,7 @@ table.papc h2, table.papcbar h2 {
 	padding-bottom: 8px;
 }
 td.papcc {
-	background: #fff;
+	background: #ffffff;
 	padding: 8px 12px;
 }
 td.papct {
@@ -1900,7 +1903,7 @@ span.revfn {
 }
 .revvis {
 	padding-left: 1em;
-	color: #888;
+	color: #888888;
 }
 .revevis {
 	clear: both;
@@ -1921,7 +1924,7 @@ div.revev {
 }
 div.revhint {
 	font-size: smaller;
-	color: #555;
+	color: #555555;
 	background: #fff9fb;
 	padding: 0.2em 1em 0.3em 8px;
 }
@@ -2020,11 +2023,11 @@ div.cmtg.cmtg1 {
 div.cmtt {
 	font-size: smaller;
 	padding: 2px 0;
-	color: #555;
+	color: #555555;
 }
 div.cmtt span.cmtvis {
 	font-size: smaller;
-	color: #888;
+	color: #888888;
 	padding-left: 1em;
 }
 div.cmtt div.floatright {

@@ -201,11 +201,11 @@ class PaperTable {
 	    $x = defval($extra, "oneditunfold", "");
 	    $a = "<a href=\"" . selfHref(array("atab" => $what))
 		. "\" onclick='" . $x . ($x ? ";" : "")
-		. "return fold(\"$editfolder\", 0)' title='Edit' class='fn'";
-	    $c .= "<span class='hint'>" . $a . " style='position:relative'>"
+		. "return fold(\"$editfolder\", 0)' title='Edit'>";
+	    $c .= "<span class='hint fn nowrap'>" . $a
+		. "<span style='display:inline-block;position:relative;width:15px'>"
 		. $Conf->cacheableImage("edit.png", "[Edit]", null, "bmabs")
-		. $Conf->cacheableImage("_.gif", "[Edit]", null, null, "width:15px;height:1px")
-		. "</a>&nbsp;" . $a . ">Edit</a></span>";
+		. "</span></a>&nbsp;" . $a . "Edit</a></span>";
 	}
 	$c .= "<div class='clear'></div></div>";
 	return $c;
