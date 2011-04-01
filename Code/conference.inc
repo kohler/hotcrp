@@ -492,13 +492,15 @@ class Conference {
     }
 
 
-    function cacheableImage($name, $alt, $title = null, $class = null) {
+    function cacheableImage($name, $alt, $title = null, $class = null, $style = null) {
 	global $ConfSiteBase, $ConfSitePATH;
 	$t = "<img src='${ConfSiteBase}images/$name' alt=\"$alt\"";
 	if ($title)
 	    $t .= " title=\"$title\"";
 	if ($class)
 	    $t .= " class=\"$class\"";
+	if ($style)
+	    $t .= " style=\"$style\"";
 	return $t . " />";
     }
 

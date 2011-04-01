@@ -138,7 +138,7 @@ td.spanner {
 
 /* generic horizontal styles */
 a.q, a.u {
-	color: black;
+	color: inherit;
 }
 a.q, a.x {
 	text-decoration: none;
@@ -201,7 +201,7 @@ body#home div.body {
 body#paper_view div.body, body#paper_edit div.body,
 body#review div.body, body#comment div.body, body#contactauthors div.body,
 body#assign div.body, body#offrev div.body {
-	margin: 0 14px 0 12px;
+	margin: 0 22px 0 12px;
 }
 body#paper_view, body#paper_edit,
 body#review, body#comment, body#contactauthors,
@@ -1332,6 +1332,10 @@ img.bm {
 	position: relative;
 	bottom: 1px;
 }
+img.bmabs {
+	position: absolute;
+	bottom: -2px;
+}
 td.pl_lastvisit, td.al_time {
 	padding-left: 0.125em;
 	padding-right: 0.4em;
@@ -1577,7 +1581,7 @@ span.contactpulldown select {
 div.psmodec {
 	position: relative;
 	top: -2.4ex;
-	left: -5px;
+	left: 1px;
 	z-index: 6;
 }
 div.psmode {
@@ -1616,8 +1620,8 @@ div.papmode img, div.papmodex img {
 div.pban {
 	position: relative;
 	background: #cec1ff;
-	margin: 0 -14px 0 -12px;
-	padding: 0 14px 0 12px;
+	margin: 0 -22px 0 -12px;
+	padding: 0 22px 0 12px;
 	z-index: 5;
 }
 table.pban {
@@ -1625,7 +1629,7 @@ table.pban {
 	width: 100%;
 }
 td.pboxi div.papnum {
-	width: 13.5em;
+	width: 14em;
 }
 td.pboxi h2 {
 	text-align: right;
@@ -1650,7 +1654,7 @@ table.pbox {
 	width: 100%;
 }
 td.pboxi, td.pboxl {
-	width: 13.5em;
+	width: 14em;
 	vertical-align: top;
 }
 td.pboxni, td.pboxnl, td.pboxnj {
@@ -1662,14 +1666,13 @@ td.pboxni, td.pboxnl, td.pboxnj {
 div.papstripc {
 	width: 12em;
 	position: relative;
-	left: 0.2em;
+	left: 0.7em;
 }
 div.papstrip {
 	position: absolute;
 	width: 100%;
 	z-index: 4;
 	font-size: smaller;
-	padding-top: 0.5em;
 	background: white;
 	box-shadow: 0px 1px 5px #46678c;
 	-moz-box-shadow: 0px 1px 5px #46678c;
@@ -1679,30 +1682,40 @@ div.papstrip {
 	-moz-border-radius-bottomleft: 2px;
 	-moz-border-radius-bottomright: 2px;
 }
-div.papstrip textarea {
-	font-size: small;
+div.papstripi {
+	padding: 0 8px 0.5em;
 }
-div.papstrip select {
+div.papstrip textarea, div.papstrip select {
 	font-size: inherit;
 }
 div.psc {
 	background: white;
-	margin: 0.5em 0 0.75em;
+	margin: 0 0 0.65em;
+	padding: 0.65em 0 0;
+	border-top: 1px solid #e8e8e8;
 }
-div.pst {
-	padding: 0.25em 0.5em 0.25em 4px;
-	background: #eaeaea;
+div.psc.psc1 {
+	border-top: 0 none;
+	margin-top: 0.45em;
 }
 div.pst span.psfn {
 	font-variant: small-caps;
 	font-weight: bold;
-	float: left;
+	color: #555555;
 }
 div.pst span.hint {
-	float: right;
+	padding-left: 1em;
+}
+div.pshint {
+	font-size: smaller;
+	color: #555555;
 }
 div.psv {
-	padding: 2px 0 3px 4px;
+	padding-top: 2px;
+}
+p.psname {
+	margin: 0 0 0 1.5em;
+	text-indent: -1.5em;
 }
 
 /* ranks */
@@ -1815,7 +1828,7 @@ div.papt span.papfnh {
 div.papt span.hint {
 	float: right;
 }
-div.paphint, div.pshint {
+div.paphint {
 	font-size: smaller;
 	margin-bottom: 0.5ex;
 	color: #555555;

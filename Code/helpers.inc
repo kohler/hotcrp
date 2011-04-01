@@ -1940,14 +1940,13 @@ function tagg_checkbox($name, $value = 1, $checked = false, $js = null) {
 	$t .= " name=\"$name\" value=\"" . htmlspecialchars($value) . "\"";
     if ($checked)
 	$t .= " checked=\"checked\"";
-    if ($js && isset($js["tabindex"]))
-	$t .= " tabindex=\"" . $js["tabindex"] . "\"";
-    if ($js && defval($js, "disabled"))
-	$t .= " disabled=\"disabled\"";
-    if ($js && defval($js, "onchange"))
-	$t .= " onchange=\"" . $js["onchange"] . "\"";
-    if ($js && isset($js["onclick"]))
-	$t .= " onclick=\"" . $js["onclick"] . "\"";
+    if ($js) {
+	if (defval($js, "disabled"))
+	    $t .= " disabled=\"disabled\"";
+	foreach (array("tabindex", "onchange", "onclick", "style") as $e)
+	    if (isset($js[$e]))
+		$t .= " $e=\"" . $js[$e] . "\"";
+    }
     return $t . " />";
 }
 

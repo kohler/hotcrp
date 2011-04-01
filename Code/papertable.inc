@@ -27,6 +27,7 @@ class PaperTable {
 
     var $editable;
     var $useRequest;
+    var $npapstrip;
     var $allFolded;
     var $foldState;
     var $highlight;
@@ -82,6 +83,7 @@ class PaperTable {
 
 	$this->editable = $editable;
 	$this->useRequest = $useRequest;
+	$this->npapstrip = 0;
 
 	$this->foldState = 1023;
 	$pfold = defval($_REQUEST, "pfold");
@@ -197,12 +199,13 @@ class PaperTable {
 	$c .= "</span>";
 	if ($editfolder) {
 	    $x = defval($extra, "oneditunfold", "");
-	    $a = "<a class='fn' href=\"" . selfHref(array("atab" => $what))
+	    $a = "<a href=\"" . selfHref(array("atab" => $what))
 		. "\" onclick='" . $x . ($x ? ";" : "")
-		. "return fold(\"$editfolder\", 0)' title='Edit'>";
-	    $c .= "<span class='hint'>" . $a
-		. $Conf->cacheableImage("edit.png", "[Edit]", null, "bm")
-		. "</a>&nbsp;" . $a . "Edit</a></span>";
+		. "return fold(\"$editfolder\", 0)' title='Edit' class='fn'";
+	    $c .= "<span class='hint'>" . $a . " style='position:relative'>"
+		. $Conf->cacheableImage("edit.png", "[Edit]", null, "bmabs")
+		. $Conf->cacheableImage("_.gif", "[Edit]", null, null, "width:15px;height:1px")
+		. "</a>&nbsp;" . $a . ">Edit</a></span>";
 	}
 	$c .= "<div class='clear'></div></div>";
 	return $c;
@@ -808,6 +811,21 @@ class PaperTable {
 	    "</div>\n\n";
     }
 
+    function _papstripBegin($foldid = null, $folded = null, $otherclasses = null) {
+	$x = "<div ";
+	if ($foldid)
+	    $x .= " id='fold$foldid'";
+	$x .= " class='psc";
+	if (!$this->npapstrip)
+	    $x .= " psc1";
+	if ($foldid)
+	    $x .= " fold" . ($folded ? "c" : "o");
+	if ($otherclasses)
+	    $x .= " " . $otherclasses;
+	++$this->npapstrip;
+	return $x . "'>";
+    }
+
     function papstripCollaborators($prow) {
 	global $Conf;
 	if (!$Conf->setting("sub_collab") || !$prow->collaborators
@@ -820,7 +838,7 @@ class PaperTable {
 	if ($this->entryMatches || !$this->allFolded)
 	    $fold = 0;
 
-	echo "<div id='foldpscollab' class='psc fold", ($fold ? "c" : "o"), "'>",
+	echo $this->_papstripBegin("pscollab", true, $fold),
 	    $this->papt("collaborators", $name,
 			array("type" => "ps", "fold" => "pscollab",
 			      "foldsession" => "foldpscollab",
@@ -949,7 +967,7 @@ class PaperTable {
 	$pcconfs = array();
 	if ($selectors) {
 	    foreach ($pcm as $id => $p) {
-		$c = "<tr><td class='pctbname0 pctbl'>". contactHtml($p->firstName, $p->lastName) . "</td><td class='pctbconfsel'>";
+		$c = "<tr><td class='pctbname0 pctbl'>". contactNameHtml($p) . "</td><td class='pctbconfsel'>";
 		if (isset($conflict[$id]) && $conflict[$id] > 0
 		    && ($conflict[$id] < CONFLICT_AUTHORMARK
 			|| $conflict[$id] > $maxauthormark)) {
@@ -975,7 +993,7 @@ class PaperTable {
 		$disabled = $checked && ($conflict[$id] < CONFLICT_AUTHORMARK || $conflict[$id] > $maxauthormark);
 		$cbox = tagg_checkbox_h("pcc$id", CONFLICT_AUTHORMARK, $checked, array($disabled => $disabled));
 		$aff = ($p->affiliation === "" ? "" : "<div class='pcconfaff'>" . htmlspecialchars($p->affiliation) . "</div>");
-		$label = tagg_label(contactHtml($p->firstName, $p->lastName) . $aff);
+		$label = tagg_label(contactNameHtml($p) . $aff);
 		if ($aff !== "")
 		    $pcconfs[] = "<table><tr><td>$cbox&nbsp;</td><td>$label</td></table>\n";
 		else
@@ -1014,15 +1032,17 @@ class PaperTable {
 	$pcconfs = array();
 	foreach ($pcm as $id => $p)
 	    if (defval($conflict, $id))
-		$pcconfs[] = contactHtml($p->firstName, $p->lastName);
+		$pcconfs[] = contactNameHtml($p);
 	if ($prow->pcPaper)
 	    $pcconfs[] = "<b>PC paper</b>";
 	if (!count($pcconfs))
 	    $pcconfs[] = "None";
 
-	echo "<div class='psc'>",
+	echo $this->_papstripBegin(),
 	    $this->papt("pcconflict", "PC conflicts", array("type" => "ps")),
-	    "<div class='psv'>", authorTable($pcconfs), "</div></div>\n";
+	    "<div class='psv psconf'><p class='psname'>",
+	    join("</p><p class='psname'>", $pcconfs),
+	    "</p></div></div>\n";
     }
 
     function _papstripLeadShepherd($prow, $type, $name, $showedit, $wholefold) {
@@ -1034,14 +1054,14 @@ class PaperTable {
 	    return;
 	$value = $prow->$field;
 	$pc = pcMembers();
-	echo "<div id='fold$type' class='psc";
 	if ($editable)
-	    echo ($showedit ? " foldo" : " foldc"), ($wholefold ? " fold2c" : " fold2o");
-	echo "'>";
+	    echo "<div id='fold$type' class='fold", ($showedit ? "o" : "c"),
+		" fold2", ($wholefold ? "c" : "o"), "'>";
+	echo $this->_papstripBegin(null, null, "fx2");
 
 	if ($editable) {
 	    echo "<form id='${type}form' class='fold7o' method='post' action='", hoturl("review", "p=" . $prow->paperId . "&amp;post=1$linkExtra"), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"${type}form\")'>",
-		"<div class='inform'><div class='fx2'>",
+		"<div class='inform'>",
 		"<input type='hidden' name='set$type' value='1' />";
 	    $Conf->footerScript("Miniajax.onload(\"${type}form\")");
 	}
@@ -1052,7 +1072,7 @@ class PaperTable {
 	if ($editable) {
 	    $opt = array("0" => "None");
 	    foreach ($pc as $row)
-		$opt[htmlspecialchars($row->email)] = contactHtml($row->firstName, $row->lastName);
+		$opt[htmlspecialchars($row->email)] = contactNameHtml($row);
 
 	    echo "<div class='fx'>",
 		tagg_select($type, $opt,
@@ -1061,7 +1081,7 @@ class PaperTable {
 				  "id" => "fold${type}_d")),
 		" <input class='b fx7' type='submit' value='Save' />",
 		" <span id='${type}formresult'></span>",
-		"</div><div class='fn'>";
+		"</div><div class='fn'><p class='psname'>";
 	}
 
 	if (!$value)
@@ -1069,11 +1089,11 @@ class PaperTable {
 	else if (!isset($pc[$value]))
 	    echo "Unknown!";
 	else
-	    echo contactHtml($pc[$value]->firstName, $pc[$value]->lastName);
+	    echo contactNameHtml($pc[$value]);
 
-	echo "</div>";
+	echo "</p></div>";
 	if ($editable)
-	    echo "</div></div></div></form>";
+	    echo "</div></div></form></div>";
 	echo "</div>\n";
     }
 
@@ -1094,13 +1114,9 @@ class PaperTable {
 	    $editable = $site && $Me->canSetTags($prow, $forceShow);
 	    $unfolded = $editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") == "tags");
 
-	    echo "<div id='foldtags' class='psc";
-	    if ($editable)
-		echo ($unfolded ? " foldo" : " foldc");
 	    $colors = new TagColorizer($Me);
-	    if (($color = $colors->match($prow->paperTags)))
-		echo " ${color}tag";
-	    echo "'>";
+	    $color = $colors->match($prow->paperTags);
+	    echo $this->_papstripBegin("tags", !$unfolded, ($color ? "${color}tag" : null));
 
 	    if ($editable)
 		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
@@ -1143,8 +1159,7 @@ class PaperTable {
 	global $Conf, $rf, $Error, $linkExtra;
 	if (!$rf)
 	    $rf = reviewForm();
-	echo "<div id='folddecision' class='psc ",
-	    ($showedit || defval($_REQUEST, "atab") == "decision" ? "foldo" : "foldc"), "'>",
+	echo $this->_papstripBegin("decision", !$showedit && defval($_REQUEST, "atab") != "decision"),
 	    $this->papt("decision", "Decision", array("type" => "ps", "editfolder" => ($showedit ? 0 : "decision"))),
 	    "<div class='psv'><form id='decisionform' class='fx fold7o' method='post' action='", hoturl("review", "p=" . $prow->paperId . "&amp;post=1$linkExtra"), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitdecision()'>",
 	    "<div class='inform'>",
@@ -1162,7 +1177,7 @@ class PaperTable {
 
     function papstripReviewPreference($prow) {
 	global $Conf, $linkExtra, $CurrentList;
-	echo "<div class='psc'>",
+	echo $this->_papstripBegin(),
 	    $this->papt("revpref", "Review preference", array("type" => "ps")),
 	    "<div class='psv'><form id='revprefform' class='fold7o' method='post' action='", hoturl("review", "p=" . $prow->paperId . "&amp;post=1$linkExtra"), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"revprefform\")'>",
 	    "<div class='aahc inform'>",
@@ -1204,7 +1219,7 @@ class PaperTable {
 	// rank context form
 	$Conf->footerHtml("<form id='rankctxform' class='fold7o' method='post' action='" . hoturl("paper", "p=$prow->paperId") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><div class='aahc'><input type='hidden' name='rankctx' value='1' /></div></form>");
 
-	echo "<div id='foldrank' class='psc foldc fold2c'>",
+	echo $this->_papstripBegin("rank", true, "fold2c"),
 	    $this->papt("rank", "Your rank", array("type" => "ps", "editfolder" => "rank")),
 	    "<div class='psv'><form id='rankform' class='fx fold7o' method='post' action='" . hoturl("review", "p=" . $prow->paperId . "&amp;post=1$linkExtra") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankform\")'>",
 	    "<div class='inform'>",
@@ -1239,7 +1254,7 @@ class PaperTable {
 	$result = $Conf->q("select ContactInfo.contactId, reviewType, commentId, conflictType, watch from ContactInfo left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId) left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId) where ContactInfo.contactId=$Me->contactId");
 	$row = edb_row($result);
 
-	echo "<div class='psc'>",
+	echo $this->_papstripBegin(),
 	    "<form id='watchform' class='fold7o' action=\"", hoturl("comment", "p=$prow->paperId&amp;post=1$linkExtra"), "\" method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"watchform\")'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setwatch' value='1' />";
@@ -1254,7 +1269,8 @@ class PaperTable {
 	echo $this->papt("watch",
 			 tagg_checkbox("watch", $this->watchCheckbox,
 				       $watchValue & $this->watchCheckbox,
-				       array("onchange" => "Miniajax.submit('watchform')"))
+				       array("onchange" => "Miniajax.submit('watchform')",
+					     "style" => "padding-left:0;margin-left:0"))
 			 . "&nbsp;" . tagg_label("Comment notification"),
 			 array("type" => "ps")),
 	    "<div class='pshint'>If selected, you will receive email when updated comments are available for this paper. <span id='watchformresult'></span>",
@@ -1540,9 +1556,9 @@ class PaperTable {
 	if ($prow) {
 	    $this->_paptabBeginKnown();
 	    echo "<table class='pbox' style='margin-top:0'><tr>\n",
-		"    <td class='pboxi'><div class='papstripc'><div class='papstrip'>\n";
+		"    <td class='pboxi'><div class='papstripc'><div class='papstrip'><div class='papstripi'>\n";
 	    $this->_papstrip();
-	    echo "</div></div></td>\n";
+	    echo "</div></div></div></td>\n";
 	} else {
 	    echo "<table class='pbox'><tr>\n",
 		"    <td class='pboxni'></td>\n",
