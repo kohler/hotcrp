@@ -1124,7 +1124,7 @@ $blind\n";
     }
 
     function _showWebDisplayBody($prow, $rrows, $rrow, $reviewOrdinal, &$options) {
-	global $Conf, $Me, $ratingTypes;
+	global $Conf, $Me, $ratingTypes, $linkExtra;
 
 	// Do not show rating counts if rater identity is unambiguous.
 	// See also PaperSearch::_clauseTermSetRating.
