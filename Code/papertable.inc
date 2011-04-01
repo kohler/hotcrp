@@ -1708,7 +1708,7 @@ class PaperTable {
 	    }
 	if (count($viewable)) {
 	    $a = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=r&amp;text=1$linkExtra") . "'>";
-	    echo "<div class='relative'>",
+	    echo "<div class='pboxc'>",
 		"<table class='pbox'><tr><td class='pboxl'></td>",
 		"<td class='pboxr'>", $a,
 		$Conf->cacheableImage("txt24.png", "[Text]", null, "dlimg"),

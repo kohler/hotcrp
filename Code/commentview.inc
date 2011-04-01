@@ -14,7 +14,7 @@ class CommentView {
     }
 
     function beginTable() {
-	echo "<table class='pbox'><tr>
+	echo "<div class='pboxc'><table class='pbox'><tr>
   <td class='pboxl'></td>
   <td class='pboxr'>", tagg_cbox("cmt", false),
 	    "\t<tr><td></td><td class='cmthead'><h3>Comments</h3></td><td></td></tr>
@@ -25,7 +25,7 @@ class CommentView {
     function endTable() {
 	if ($this->mode) {
 	    echo "</td><td></td></tr>\n", tagg_cbox("cmt", true),
-		"</td></tr>\n</table>\n\n";
+		"</td></tr>\n</table></div>\n\n";
 	    $this->mode = 0;
 	}
     }
@@ -188,7 +188,7 @@ class CommentView {
 	    echo "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
 	}
 
-	echo "<table class='pbox'>
+	echo "<div class='pboxc'><table class='pbox'>
 <tr>
   <td class='pboxl'></td>
   <td class='pboxr'>", tagg_cbox("cmt", false, "response"),
@@ -239,7 +239,7 @@ has passed.  Please keep the response short and to the point",
 	    else
 		echo htmlWrapText(htmlspecialchars($crow->comment));
 	    echo "</td><td></td></tr>\n", tagg_cbox("cmt", true),
-		"</td></tr>\n</table>\n";
+		"</td></tr>\n</table></div>\n";
 	    return;
 	}
 
@@ -266,7 +266,7 @@ has passed.  Please keep the response short and to the point",
 	    echo tagg_checkbox("override"), "&nbsp;", tagg_label("Override&nbsp;deadlines");
 
 	echo "</td><td></td></tr>\n", tagg_cbox("cmt", true),
-	    "</td></tr>\n</table>\n</div></form>\n\n";
+	    "</td></tr>\n</table>\n</div></div></form>\n\n";
     }
 
 

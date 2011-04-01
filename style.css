@@ -1642,10 +1642,12 @@ div.pbanb {
 }
 
 /* reviews and comments */
-table.pbox {
+div.pboxc {
 	position: relative;
+	margin: 16px 0;
+}
+table.pbox {
 	width: 100%;
-	margin: 0.5em 0;
 }
 td.pboxi, td.pboxl {
 	width: 13.5em;
