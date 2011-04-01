@@ -1127,9 +1127,75 @@ $blind\n";
 	return array_values($out);
     }
 
+    function _showWebDisplayBody($prow, $rrows, $rrow, $reviewOrdinal, &$options) {
+	global $Conf, $Me, $ratingTypes;
+
+	// Do not show rating counts if rater identity is unambiguous.
+	// See also PaperSearch::_clauseTermSetRating.
+	$visibleRatings = false;
+	if ($rrow->numRatings > 0) {
+	    if (!isset($options["nsubraters"])) {
+		$options["nsubraters"] = 0;
+		$rateset = $Conf->setting("rev_ratings");
+		foreach ($rrows as $rr)
+		    if ($rr->reviewSubmitted
+			&& ($rateset == REV_RATINGS_PC
+			    ? $rr->reviewType > REVIEW_EXTERNAL
+			    : $rateset == REV_RATINGS_PC_EXTERNAL))
+			$options["nsubraters"]++;
+	    }
+	    $visibleRatings = ($rrow->contactId != $Me->contactId
+		    || $Me->actChair($prow) || $options["nsubraters"] > 2
+		    || $Conf->timePCViewAllReviews()
+		    || strpos($rrow->allRatings, ",") !== false);
+	}
+	if ($Me->canRateReview($prow, $rrow)
+	    && ($rrow->contactId != $Me->contactId || $visibleRatings)) {
+	    $ratesep = "";
+	    echo "<div class='rev_rating'>";
+	    if ($visibleRatings) {
+		$rates = array();
+		foreach (explode(",", $rrow->allRatings) as $r)
+		    $rates[$r] = defval($rates, $r, 0) + 1;
+		echo "<span class='rev_rating_summary'>Ratings: ";
+		$ratearr = array();
+		foreach ($rates as $type => $count)
+		    if (isset($ratingTypes[$type]))
+			$ratearr[] = $count . " &ldquo;" . htmlspecialchars($ratingTypes[$type]) . "&rdquo;";
+		echo join(", ", $ratearr), "</span>";
+		$ratesep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+	    }
+	    if ($rrow->contactId != $Me->contactId) {
+		$ratinglink = hoturl("review", "r=$reviewOrdinal");
+		if (!isset($_REQUEST["reviewId"]))
+		    $ratinglink .= "&amp;allr=1";
+		echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
+		    "How helpful is this review? &nbsp;",
+		    tagg_select("rating", $ratingTypes, ($rrow->myRating === null ? "n" : $rrow->myRating)),
+		    " <input class='b fx7' type='submit' value='Save' />",
+		    "</div></form>",
+		    "<span id='ratingform_${reviewOrdinal}result'></span>";
+		if (!defval($options, "ratingsajax")) {
+		    $Conf->footerScript("addRatingAjax()");
+		    $options["ratingsajax"] = true;
+		}
+	    }
+	    echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=revrate"), "'>What is this?</a></div>";
+	}
+
+	if (defval($options, "editmessage"))
+	    echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
+
+	echo "<div class='clear'></div></td><td></td></tr>
+  <tr><td></td><td class='revct'><div class='inrevct'>",
+	    $this->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow)),
+	    "</div></td>",
+	    "<td></td></tr>\n", tagg_cbox("rev", true),
+	    "</td></tr>\n</table></div>\n\n";
+    }
+
     function show($prow, $rrows, $rrow, &$options) {
-	global $Conf, $Opt, $Me, $forceShow,
-	    $linkExtra, $useRequest, $ratingTypes;
+	global $Conf, $Opt, $Me, $linkExtra, $useRequest;
 
 	if (!$options)
 	    $options = array();
@@ -1201,84 +1267,7 @@ $blind\n";
 	    echo "</span>\n";
 
 	if (!$editmode) {
-	    // Do not show rating counts if rater identity is unambiguous.
-	    // See also PaperSearch::_clauseTermSetRating.
-	    $visibleRatings = false;
-	    if ($rrow->numRatings > 0) {
-		if (!isset($options["nsubraters"])) {
-		    $options["nsubraters"] = 0;
-		    $rateset = $Conf->setting("rev_ratings");
-		    foreach ($rrows as $rr)
-			if ($rr->reviewSubmitted
-			    && ($rateset == REV_RATINGS_PC
-				? $rr->reviewType > REVIEW_EXTERNAL
-				: $rateset == REV_RATINGS_PC_EXTERNAL))
-			    $options["nsubraters"]++;
-		}
-		$visibleRatings = ($rrow->contactId != $Me->contactId
-		    || $Me->actChair($prow) || $options["nsubraters"] > 2
-		    || $Conf->timePCViewAllReviews()
-		    || strpos($rrow->allRatings, ",") !== false);
-	    }
-	    if ($Me->canRateReview($prow, $rrow)
-		&& ($rrow->contactId != $Me->contactId || $visibleRatings)) {
-		$ratesep = "";
-		echo "<div class='rev_rating'>";
-		if ($visibleRatings) {
-		    $rates = array();
-		    foreach (explode(",", $rrow->allRatings) as $r)
-			$rates[$r] = defval($rates, $r, 0) + 1;
-		    echo "<span class='rev_rating_summary'>Ratings: ";
-		    $ratearr = array();
-		    foreach ($rates as $type => $count)
-			if (isset($ratingTypes[$type]))
-			    $ratearr[] = $count . " &ldquo;" . htmlspecialchars($ratingTypes[$type]) . "&rdquo;";
-		    echo join(", ", $ratearr), "</span>";
-		    $ratesep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
-		}
-		if ($rrow->contactId != $Me->contactId) {
-		    $ratinglink = hoturl("review", "r=$reviewOrdinal");
-		    if (!isset($_REQUEST["reviewId"]))
-		        $ratinglink .= "&amp;allr=1";
-		    echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
-			"How helpful is this review? &nbsp;",
-			tagg_select("rating", $ratingTypes, ($rrow->myRating === null ? "n" : $rrow->myRating)),
-			" <input class='b fx7' type='submit' value='Save' />",
-			"</div></form>",
-			"<span id='ratingform_${reviewOrdinal}result'></span>";
-		    if (!defval($options, "ratingsajax")) {
-			$Conf->footerScript("addRatingAjax()");
-			$options["ratingsajax"] = true;
-		    }
-		    /*echo $ratesep, "Your review rating: &nbsp; ";
-			"<a id='ratinglink_n_$reviewOrdinal' href='${ratinglink}rating=n$linkExtra' class='button",
-			($rrow->myRating === null ? " on" : ""), "'>Average</a> &nbsp; ",
-			"<a id='ratinglink_1_$reviewOrdinal' href='${ratinglink}rating=1$linkExtra' class='button",
-			($rrow->myRating > 0 ? " on" : ""), "'>Very helpful</a> &nbsp; ",
-			"<a id='ratinglink_0_$reviewOrdinal' href='${ratinglink}rating=0$linkExtra' class='button",
-			($rrow->myRating <= 0 && $rrow->myRating !== null ? " on" : ""), "'>Needs work</a>",
-			"<span id='ratingform_${reviewOrdinal}result'></span>";
-		    if (!defval($options, "ratingsajax")) {
-			$Conf->footerScript("addRatingAjax()");
-			$options["ratingsajax"] = true;
-		    }
-		    $Conf->footerHtml("<form id='ratingform_$reviewOrdinal' action='${ratinglink}$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"ratingform_$reviewOrdinal\")'>"
-			. "<div class='inform'>"
-			. "<input id='ratingval_$reviewOrdinal' type='hidden' name='rating' value='' />"
-			. "</div></form>"); */
-		}
-		echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=revrate"), "'>What is this?</a></div>";
-	    }
-
-	    if (defval($options, "editmessage"))
-		echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
-
-	    echo "<div class='clear'></div></td><td></td></tr>
-  <tr><td></td><td class='revct'><div class='inrevct'>",
-		$this->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow)),
-		"</div></td>",
-		"<td></td></tr>\n", tagg_cbox("rev", true),
-		"</td></tr>\n</table></div>\n\n";
+	    $this->_showWebDisplayBody($prow, $rrows, $rrow, $reviewOrdinal, $options);
 	    return;
 	}
 
