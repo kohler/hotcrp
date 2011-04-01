@@ -1782,11 +1782,15 @@ class Conference {
 	} else if ($style == 2) {
 	    $retstr = "<div class='sc'><img src=\"" . htmlspecialchars($url) . "&amp;s=2\" alt=\"$avgtext\" title=\"$avgtext\" /><br />";
 	    if ($levelChar > 1)
-		for ($key = $v->max; $key >= 1; $key--)
-		    $retstr .= ($key < $v->max ? " " : "") . "<span class='sc$key'>" . $v->v[$key] . "</span>";
+		for ($key = $v->max; $key >= 1; $key--) {
+		    $xkey = (int) (($key - 1) * 8.0 / ($v->max - 1) + 1.5);
+		    $retstr .= ($key < $v->max ? " " : "") . "<span class='sc$xkey'>" . $v->v[$key] . "</span>";
+		}
 	    else
-		for ($key = 1; $key <= $v->max; $key++)
-		    $retstr .= ($key > 1 ? " " : "") . "<span class='sc$key'>" . $v->v[$key] . "</span>";
+		for ($key = 1; $key <= $v->max; $key++) {
+		    $xkey = (int) (($key - 1) * 8.0 / ($v->max - 1) + 1.5);
+		    $retstr .= ($key > 1 ? " " : "") . "<span class='sc$xkey'>" . $v->v[$key] . "</span>";
+		}
 	    $retstr .= "<br /><span class='sc_sum'>" . $avgtext . "</span></div>";
 	}
 

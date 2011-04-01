@@ -115,11 +115,26 @@ class ReviewForm {
 	return ($opt1 <= 1 ? $text : $opt1 - ord($text));
     }
 
-    function unparseOption($optname, $value, $preserveEmpty = false) {
-	$opt1 = defval($this->reviewFields, $optname);
+    function unparseOption($field, $value, $preserveEmpty = false,
+			   $scclass = false) {
+	$opt1 = defval($this->reviewFields, $field);
 	if (!$value && !$preserveEmpty)
 	    return "";
-	return ($opt1 <= 1 ? $value : chr($opt1 - $value));
+	if ($opt1 <= 1)
+	    $x = $value;
+	else if (is_int($value) || ctype_digit($value))
+	    $x = chr($opt1 - $value);
+	else {
+	    $value = $opt1 - ord($value);
+	    $x = chr($opt1 - $value);
+	}
+	if ($scclass) {
+	    $nvalues = count($this->options[$field]);
+	    $sckey = (int) (($value - 1) * 8.0 / ($nvalues - 1) + 1.5);
+	    $class = ($scclass === true ? "sc$sckey" : "$scclass sc$sckey");
+	    return "<span class='$class'>$x</span>";
+	} else
+	    return $x;
     }
 
     function analyzeField($field) {
@@ -995,7 +1010,7 @@ $blind\n";
 		    $scoreHelps[$field] = 1;
 		    $help = "<div class='scorehelpc' id='scorehelp_$field'><strong>$n</strong> choices are:<br /><span class='rev_$field'>";
 		    foreach ($this->options[$field] as $val => $text)
-			$help .= "<span class='rev_num rev_num_$val'>$val.</span>&nbsp;" . htmlspecialchars($text) . "<br />";
+			$help .= "<span class='rev_num'>$val.</span>&nbsp;" . htmlspecialchars($text) . "<br />";
 		    $help .= "</span></div>";
 		    $Conf->footerHtml($help);
 		}
@@ -1026,9 +1041,13 @@ $blind\n";
 		. "</div><div class='revv'>";
 	    if ($disp & self::WEB_OPTIONS) {
 		if (!$fval || !isset($this->options[$field][$fval]))
-		    $x .= "<span class='rev_${field}_0 rev_unknown'>Unknown</span>";
-		else
-		    $x .= "<span class='rev_${field}_$fval'><span class='rev_num rev_num_$fval'>$fval.</span> " . htmlspecialchars($this->options[$field][$fval]) . "</span>";
+		    $x .= "<span class='rev_${field} rev_unknown'>Unknown</span>";
+		else {
+		    $xfval = substr($this->unparseOption($field, $fval, false, "rev_num"), 0, -7);
+		    $x .= "<span class='rev_${field}'>" . $xfval . ".</span> "
+			. htmlspecialchars($this->options[$field][$fval])
+			. "</span>";
+		}
 	    } else
 		$x .= htmlWrapText(htmlspecialchars($fval));
 	    $x .= "</div></div></div>";
@@ -1063,7 +1082,7 @@ $blind\n";
 	    if ($options) {
 		$x .= "<div class='rev_options'>Choices are:";
 		foreach ($this->options[$field] as $num => $val)
-		    $x .= "<br />\n<span class='rev_num rev_num_$num'>$num.</span> " . htmlspecialchars($val);
+		    $x .= "<br />\n<span class='rev_num'>$num.</span> " . htmlspecialchars($val);
 		$x .= "</div>";
 	    }
 
@@ -1098,7 +1117,9 @@ $blind\n";
 		&& isset($this->options[$field])) {
 		if ($view && $rrow->$field
 		    && $this->authorView[$field] > $revViewScore) {
-		    $x .= "<td class='revscore rs_$field'>" . $this->unparseOption($field, $rrow->$field) . "</td>";
+		    $x .= "<td class='revscore rs_$field'>"
+			. $this->unparseOption($field, $rrow->$field, false, true)
+			. "</td>";
 		    $anyScores = true;
 		} else
 		    $x .= "<td class='revscore rs_$field'></td>";
@@ -1439,8 +1460,8 @@ $blind\n";
 		continue;
 	    if (isset($this->options[$field])) {
 		$t .= $xbarsep . htmlspecialchars($this->shortName[$field])
-		    . "&nbsp;<span class='sc" . $rrow->$field . "'>"
-		    . $this->unparseOption($field, $rrow->$field) . "</span>";
+		    . "&nbsp;"
+		    . $this->unparseOption($field, $rrow->$field, false, true);
 		$xbarsep = $barsep;
 	    }
 	}
