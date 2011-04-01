@@ -1854,7 +1854,7 @@ td.revct {
 	-moz-border-radius: 2px;
 }
 div.inrevct {
-	margin: 7px 9px;
+	margin: 7px 12px;
 }
 td.revcc div.aa, td.revct div.aa {
 	margin: 0.2em 0 0.3em;
@@ -1878,13 +1878,14 @@ div.revt {
 	-moz-border-radius-topleft: 2px;
 	-moz-border-radius-topright: 2px;
 }
-div.revt span.revfn {
+span.revfn {
 	font-variant: small-caps;
 	font-weight: bold;
 	float: left;
 }
 .revvis {
-	float: right;
+	padding-left: 1em;
+	color: #888;
 }
 .revevis {
 	clear: both;
@@ -1897,8 +1898,7 @@ table.revoff {
 	font-size: smaller;
 }
 table.revoff span.revfn {
-	font-variant: small-caps;
-	font-weight: bold;
+	float: none;
 	padding: 0 1em 5px 0;
 }
 div.revev {
@@ -1906,7 +1906,7 @@ div.revev {
 }
 div.revhint {
 	font-size: smaller;
-	color: #555555;
+	color: #555;
 	background: #fff9fb;
 	padding: 0.2em 1em 0.3em 8px;
 }
@@ -1919,6 +1919,27 @@ div.rvl div.rv {
 }
 div.rvr div.rv {
 	padding-left: 10px;
+}
+div.rv div.revt {
+	padding: 0.25em 1em 0.25em 0;
+	background: none; /* #ffe6f8; */
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+	-moz-border-radius-topleft: 0;
+	-moz-border-radius-topright: 0;
+}
+div.rv span.revfn {
+	color: #555555;
+}
+div.rv div.revv {
+	padding: 0;
+}
+div.rvg, div.rvge {
+	border-top: 1px solid #ffecef;
+	padding-top: 5px;
+}
+div.rv {
+	padding-bottom: 8px;
 }
 
 /* review ratings */

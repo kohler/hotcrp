@@ -1002,11 +1002,11 @@ $blind\n";
 	    }
 	    $c .= "</span>";
 	    if ($this->authorView[$field] < -1)
-		$c .= "<div class='revvis'>(secret)</div>";
+		$c .= "<span class='revvis'>(secret)</span>";
 	    else if ($this->authorView[$field] < 0)
-		$c .= "<div class='revvis'>(shown only to chairs)</div>";
+		$c .= "<span class='revvis'>(shown only to chairs)</span>";
 	    else if ($this->authorView[$field] == 0)
-		$c .= "<div class='revvis'>(hidden from authors)</div>";
+		$c .= "<span class='revvis'>(hidden from authors)</span>";
 
 	    if (!($disp & self::WEB_RIGHT)) {
 		if ($x == "")
