@@ -1881,7 +1881,7 @@ td.revhead h3 {
 	display: inline;
 	padding: 0 0.5em 0 0;
 }
-td.revhead span.revinfo {
+span.revinfo {
 	font-size: smaller;
 }
 div.revt {
@@ -1992,7 +1992,7 @@ td.cmtcll, td.cmtclr {
 }
 td.cmtcc {
 	background: #ffffff;
-	padding: 7px 9px;
+	padding: 8px 12px 2px;
 	border-radius: 2px;
 	-moz-border-radius: 2px;
 }
@@ -2009,24 +2009,26 @@ td.cmthead h3 {
 td.cmthead span.cmtfn {
 	font-size: smaller;
 }
+div.cmtg {
+	border-top: 1px solid #f7f1df;
+	padding: 5px 0 9px;
+}
+div.cmtg.cmtg1 {
+	border-top: 0 none;
+	padding-top: 0;
+}
 div.cmtt {
 	font-size: smaller;
-	padding: 0.25em 1em 0.25em 8px;
-	background: #f7f1df; /*#ffeaee;*/
-	border-radius: 2px;
-	-moz-border-radius: 2px;
+	padding: 2px 0;
+	color: #555;
 }
-div.cmtt span.cmtfn {
-	float: left;
-}
-div.cmtt span.hint {
-	float: right;
+div.cmtt span.cmtvis {
+	font-size: smaller;
+	color: #888;
+	padding-left: 1em;
 }
 div.cmtt div.floatright {
 	padding-left: 0.5em;
-}
-div.cmtv {
-	padding: 2px 0 1em 7px;
 }
 div#foldaddcomment div.cmtv {
 	padding-bottom: 0;

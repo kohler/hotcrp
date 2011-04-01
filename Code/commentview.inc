@@ -37,17 +37,18 @@ class CommentView {
 	$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 	if ($crow && $Me->canViewCommentIdentity($prow, $crow)) {
 	    $blind = ($crow->blind && $crow->forAuthors > 0);
-	    echo $sep, ($blind ? "[" : ""), contactHtml($crow), ($blind ? "]" : "");
+	    echo $sep, "<span class='cmtname'>", ($blind ? "[" : ""),
+		contactHtml($crow), ($blind ? "]" : ""), "</span>";
 	    $sep = $xsep;
 	} else if ($crow && $Me->privChair) {
-	    echo $sep, "<span id='foldcid$crow->commentId' class='fold4c'>",
+	    echo $sep, "<span id='foldcid$crow->commentId' class='cmtname fold4c'>",
 		"<a class='q fn4' href=\"javascript:void fold('cid$crow->commentId', 0, 4)\" title='Show author'>+&nbsp;<i>Hidden for blind review</i></a>",
 		"<span class='fx4'><a class='fx4' href=\"javascript:void fold('cid$crow->commentId', 1, 4)\" title='Hide author'>[blind]</a> ", contactHtml($crow), "</span>",
 		"</span>";
 	    $sep = $xsep;
 	}
 	if ($crow && $crow->timeModified > 0) {
-	    echo $sep, $Conf->printableTime($crow->timeModified);
+	    echo $sep, "<span class='cmttime'>", $Conf->printableTime($crow->timeModified), "</span>";
 	    $sep = $xsep;
 	}
 	echo "</span>";
@@ -60,7 +61,7 @@ class CommentView {
 	    else
 		$x = "";
 	    if ($x)
-		echo "<span class='hint'>(", $x, ")</span>";
+		echo "<span class='cmtvis'>(", $x, ")</span>";
 	}
 	echo "<div class='clear'></div>";
     }
@@ -93,7 +94,7 @@ class CommentView {
 	    echo " id='comment$crow->commentId'";
 	else
 	    echo " id='commentnew'";
-	echo " class='cmtt'>";
+	echo " class='cmtg", ($this->ncomment == 1 ? " cmtg1" : ""), "'><div class='cmtt'>";
 
 	// Links
 	if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair)
@@ -125,7 +126,7 @@ class CommentView {
 	    echo $_SESSION["comment_msgs"][$crow->commentId];
 
 	if (!$editMode) {
-	    echo htmlWrapText(htmlspecialchars($crow->comment)), "</div>\n\n";
+	    echo htmlWrapText(htmlspecialchars($crow->comment)), "</div></div>\n\n";
 	    return;
 	}
 
@@ -232,13 +233,14 @@ has passed.  Please keep the response short and to the point",
 	    echo $_SESSION["comment_msgs"][$crow->commentId];
 
 	if (!$editMode) {
+	    echo "<div class='cmtg cmtg1'>";
 	    if ($Me->privChair && $crow->forReviewers == 0)
 		echo "<i>The <a href='", hoturl("comment", "c=$crow->commentId$linkExtra"), "'>authors&rsquo; response</a> is not yet ready for reviewers to view.</i>";
 	    else if (!$Me->canViewComment($prow, $crow))
 		echo "<i>The authors&rsquo; response is not yet ready for reviewers to view.</i>";
 	    else
 		echo htmlWrapText(htmlspecialchars($crow->comment));
-	    echo "</td><td></td></tr>\n", tagg_cbox("cmt", true),
+	    echo "</div></td><td></td></tr>\n", tagg_cbox("cmt", true),
 		"</td></tr>\n</table></div>\n";
 	    return;
 	}
@@ -266,7 +268,7 @@ has passed.  Please keep the response short and to the point",
 	    echo tagg_checkbox("override"), "&nbsp;", tagg_label("Override&nbsp;deadlines");
 
 	echo "</td><td></td></tr>\n", tagg_cbox("cmt", true),
-	    "</td></tr>\n</table>\n</div></div></form>\n\n";
+	    "</td></tr>\n</table>\n</div></div></div></form>\n\n";
     }
 
 
