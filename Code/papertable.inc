@@ -1114,9 +1114,10 @@ class PaperTable {
 	    $editable = $site && $Me->canSetTags($prow, $forceShow);
 	    $unfolded = $editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") == "tags");
 
+	    echo $this->_papstripBegin("tags", !$unfolded);
 	    $colors = new TagColorizer($Me);
-	    $color = $colors->match($prow->paperTags);
-	    echo $this->_papstripBegin("tags", !$unfolded, ($color ? "${color}tag" : null));
+	    if (($color = $colors->match($prow->paperTags)))
+		echo "<div class='pscopen ${color}tag'>";
 
 	    if ($editable)
 		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
@@ -1151,6 +1152,8 @@ class PaperTable {
 
 	    if ($editable)
 		echo "</div></form>";
+	    if ($color)
+		echo "</div>";
 	    echo "</div>\n";
 	}
     }

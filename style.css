@@ -964,7 +964,7 @@ input.textlite-tt, textarea.tt {
 .papertext {
 	width: 96%;
 }
-.reviewtext, textarea#foldtags_d, div#popup_ref textarea {
+.reviewtext, div#popup_ref textarea {
 	width: 99%;
 }
 
@@ -1684,19 +1684,26 @@ div.papstrip {
 	-moz-border-radius-bottomright: 2px;
 }
 div.papstripi {
-	padding: 0 8px 0.5em;
+	padding-bottom: 0.5em;
+	margin: 0 8px;
 }
 div.papstrip textarea, div.papstrip select {
 	font-size: inherit;
 }
 div.psc {
-	margin: 0 0 0.65em;
-	padding: 0.65em 0 0;
+	margin-bottom: 0.65em;
+	padding-top: 0.55em;
 	border-top: 1px solid #e8e8e8;
 }
 div.psc.psc1 {
 	border-top: 0 none;
 	margin-top: 0.45em;
+}
+div.pscopen {
+	margin: 0 -2px;
+}
+div.pscopen div.pst {
+	padding: 0 2px;
 }
 div.pst span.psfn {
 	font-variant: small-caps;
@@ -1716,9 +1723,16 @@ div.pshint {
 div.psv {
 	padding-top: 2px;
 }
+div.pscopen div.psv {
+	padding: 2px;
+}
 p.psname {
 	margin: 0 0 0 1.5em;
 	text-indent: -1.5em;
+}
+textarea#foldtags_d,
+select#foldlead_d, select#foldshepherd_d, select#folddecision_d {
+	width: 13em;
 }
 
 /* ranks */
