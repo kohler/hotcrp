@@ -968,14 +968,8 @@ $blind\n";
 		$disp |= self::WEB_LEFT;
 	    else
 		$disp |= self::WEB_FULL;
-	}
-	unset($disp);
-
-	// Analyze fields for initial or final position
-	foreach ($fdisp as $i => &$disp) {
-	    if ($i+1 == count($fdisp)
-		|| ($i+2 == count($fdisp) && ($disp & self::WEB_LEFT))
-		|| (($disp & self::WEB_RIGHT) && !($fdisp[$i+1] & self::WEB_LEFT)))
+	    if ($i + 1 == count($fdisp)
+		|| ($i + 2 == count($fdisp) && ($disp & self::WEB_LEFT)))
 		$disp |= self::WEB_FINAL;
 	}
 	unset($disp);
@@ -987,9 +981,6 @@ $blind\n";
 	    $fval = ($rrow ? $rrow->$field : "");
 	    if (($disp & self::WEB_OPTIONS) && $fval)
 		$fval = $this->unparseOption($field, $fval);
-
-	    if ($disp & (self::WEB_FULL | self::WEB_LEFT))
-		$x .= "\n<tr>\n";
 
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    if (preg_match("/\\A\\S+\\s+\\S+\\z/", $n))
@@ -1017,18 +1008,22 @@ $blind\n";
 	    else if ($this->authorView[$field] == 0)
 		$c .= "<div class='revvis'>(hidden from authors)</div>";
 
-	    if ($disp & self::WEB_RIGHT)
-		$x .= "  <td class='revce'></td>\n";
-	    $x .= "  <td class='reve rev_$field";
+	    if (!($disp & self::WEB_RIGHT)) {
+		if ($x == "")
+		    $x = "<div class='rvgb'>";
+		else if ($disp & self::WEB_FINAL)
+		    $x .= "<div class='rvge'>";
+		else
+		    $x .= "<div class='rvg'>";
+	    }
 	    if ($disp & self::WEB_LEFT)
-		$x .= " revle'>";
+		$x .= "<div class='rvl'>";
 	    else if ($disp & self::WEB_RIGHT)
-		$x .= " revre'>";
+		$x .= "<div class='rvr'>";
 	    else
-		$x .= " revbe' colspan='3'>";
-
-	    $x .= "<div class='revt'>" . $c . "<div class='clear'></div></div>\n";
-	    $x .= "<div class='revv'>";
+		$x .= "<div class='rvb'>";
+	    $x .= "<div class='rv rv_$field'><div class='revt'>" . $c . "<div class='clear'></div>"
+		. "</div><div class='revv'>";
 	    if ($disp & self::WEB_OPTIONS) {
 		if (!$fval || !isset($this->options[$field][$fval]))
 		    $x .= "<span class='rev_${field}_0 rev_unknown'>Unknown</span>";
@@ -1036,13 +1031,14 @@ $blind\n";
 		    $x .= "<span class='rev_${field}_$fval'><span class='rev_num rev_num_$fval'>$fval.</span> " . htmlspecialchars($this->options[$field][$fval]) . "</span>";
 	    } else
 		$x .= htmlWrapText(htmlspecialchars($fval));
-	    $x .= "</div></td>\n";
-
+	    $x .= "</div></div></div>";
+	    if ($disp & self::WEB_RIGHT)
+		$x .= "<div class='clear'></div>";
 	    if (!($disp & self::WEB_LEFT))
-		$x .= "</tr>\n";
+		$x .= "</div>\n";
 	}
 
-	return "<table class='revtab'>" . $x . "</table>\n";
+	return "<div class='rvtab'>" . $x . "</div>\n";
     }
 
     function webGuidanceRows($revViewScore, $extraclass="") {

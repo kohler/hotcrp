@@ -1671,6 +1671,7 @@ div.papstrip {
 	background: white;
 	box-shadow: 0px 1px 5px #46678c;
 	-moz-box-shadow: 0px 1px 5px #46678c;
+	-webkit-box-shadow: 0px 1px 5px #46678c;
 	border-bottom-left-radius: 2px;
 	border-bottom-right-radius: 2px;
 	-moz-border-radius-bottomleft: 2px;
@@ -1732,6 +1733,7 @@ table.papcbar {
 table.papcpap {
 	box-shadow: 0px 1px 5px #46678c;
 	-moz-box-shadow: 0px 1px 5px #46678c;
+	-webkit-box-shadow: 0px 1px 5px #46678c;
 	border-bottom-left-radius: 2px;
 	border-bottom-right-radius: 2px;
 	-moz-border-radius-bottomleft: 2px;
@@ -1832,6 +1834,7 @@ table.revc {
 	position: relative;
 	box-shadow: 0px 1px 5px #46678c;
 	-moz-box-shadow: 0px 1px 5px #46678c;
+	-webkit-box-shadow: 0px 1px 5px #46678c;
 	border-radius: 2px;
 	-moz-border-radius: 2px;
 }
@@ -1907,15 +1910,15 @@ div.revhint {
 	background: #fff9fb;
 	padding: 0.2em 1em 0.3em 8px;
 }
-table.revtab {
-	width: 100%;
-}
-td.revle, td.revre {
+div.rvl, div.rvr {
 	width: 50%;
-	vertical-align: top;
+	float: left;
 }
-td.revce {
-	padding: 0 0.5em;
+div.rvl div.rv {
+	padding-right: 10px;
+}
+div.rvr div.rv {
+	padding-left: 10px;
 }
 
 /* review ratings */
@@ -1938,6 +1941,7 @@ table.cmtc {
 	background: #e6e1cf;
 	box-shadow: 0px 1px 5px #46678c;
 	-moz-box-shadow: 0px 1px 5px #46678c;
+	-webkit-box-shadow: 0px 1px 5px #46678c;
 	border-radius: 2px;
 	-moz-border-radius: 2px;
 }
