@@ -126,11 +126,6 @@ Configuration
     Change your Apache configuration to "AllowOverride All" in the HotCRP
     directory, as our example does above.
 
-    If your server shows you a directory listing rather than the HotCRP
-    homepage, add the following line to the <Directory>:
-
-	        DirectoryIndex index.html index.php
-
   - You can set up everything else through the web site itself.
 
 * Configuration notes

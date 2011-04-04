@@ -12,6 +12,8 @@ php_flag magic_quotes_gpc off
 # Default to UTF-8 (most scripts will override this with <meta>).
 AddDefaultCharset UTF-8
 
+# Use index.php for directory access.
+DirectoryIndex index.php
 
 # Prevent access to SCM directories, test, README, etc.
 <FilesMatch "^(CVS|\.svn|\.git|README|LICENSE|test|.*\.sh)$">
