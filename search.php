@@ -1068,15 +1068,13 @@ function displayOptionCheckbox($type, $column, $title, $opt = array()) {
 	. "&nbsp;" . tagg_label($title) . $loadresult;
     $displayOptions[] = (object) array("type" => $type, "text" => $text,
 		"checked" => $checked, "column" => $column,
-		"indent" => defval($opt, "indent"),
-		"fold" => !$checked && !defval($opt, "unfold"));
+		"indent" => defval($opt, "indent"));
 }
 
 function displayOptionText($text, $column, $opt = array()) {
     global $displayOptions;
     $displayOptions[] = (object) array("text" => $text,
-		"column" => $column, "indent" => defval($opt, "indent"),
-		"fold" => !defval($opt, "unfold"));
+		"column" => $column, "indent" => defval($opt, "indent"));
 }
 
 // Create checkboxes
@@ -1097,10 +1095,10 @@ if ($pl) {
 	    $onchange .= ";fold('pl',!this.checked,'anonau')";
 	if ($Me->privChair)
 	    $onchange .= ";foldplinfo_extra()";
-	displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "unfold" => true));
+	displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange));
     } else if ($Conf->subBlindAlways() && $Me->privChair) {
 	$onchange = "fold('pl',!this.checked,'anonau');foldplinfo_extra()";
-	displayOptionCheckbox("anonau", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "unfold" => true));
+	displayOptionCheckbox("anonau", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2))));
     }
     if (!$Conf->subBlindAlways() || $viewAllAuthors || $Me->privChair)
 	displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
@@ -1113,13 +1111,15 @@ if ($pl) {
 
     // Abstract group
     if ($pl->headerInfo["abstract"])
-	displayOptionCheckbox("abstract", 1, "Abstracts", array("unfold" => true));
+	displayOptionCheckbox("abstract", 1, "Abstracts");
     if ($pl->headerInfo["topics"])
 	displayOptionCheckbox("topics", 1, "Topics");
 
     // Tags group
-    if ($Me->isPC && $pl->headerInfo["tags"])
-	displayOptionCheckbox("tags", 1, "Tags", array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair), "unfold" => true));
+    if ($Me->isPC && $pl->headerInfo["tags"]) {
+	$opt = array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair));
+	displayOptionCheckbox("tags", 1, "Tags", $opt);
+    }
 
     // Row numbers
     if ($pl->anySelector)
@@ -1154,8 +1154,6 @@ if ($pl) {
 		if ($displayOptions[count($displayOptions) - 1]->checked)
 		    ++$nchecked;
 	    }
-	if (count($displayOptions) > $n && $nchecked == 0)
-	    $displayOptions[$n + 1]->fold = false;
 	if (count($displayOptions) > $n) {
 	    $onchange = "highlightUpdate(\"redisplay\")";
 	    if ($Me->privChair)
