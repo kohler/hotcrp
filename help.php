@@ -498,7 +498,7 @@ The tag names “red”, “orange”, “yellow”,
 “grey” act as highlight colors.  For example, papers tagged with
 “red” will appear red in paper lists (for people who can see that
 tag).  Tag a paper “~red” to make it red on your displays, but not
-others'.  System administrators can <a
+others’.  System administrators can <a
 href='" . hoturl("settings", "group=rev") . "'>associate other tags with colors</a>
 so that, for example, “<a
 href='" . hoturl("search", "q=tag:reject") . "'>tag:reject</a>” papers show up
