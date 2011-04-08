@@ -15,7 +15,7 @@ if (isset($_REQUEST["var"])) {
 	    // the element is folded.  So add $sub to the session variable iff
 	    // "val" is NOT 1.
 	    $on = !(isset($_REQUEST["val"]) && intval($_REQUEST["val"]) > 0);
-	    if (preg_match('/\A[a-zA-Z0-9]+\z/', $_REQUEST["sub"]))
+	    if (preg_match('/\A[a-zA-Z0-9_]+\z/', $_REQUEST["sub"]))
 		displayOptionsSet($v, $_REQUEST["sub"], $on);
 	} else if (isset($_REQUEST["val"]))
 	    $_SESSION[$v] = intval($_REQUEST["val"]);
