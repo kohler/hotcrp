@@ -772,7 +772,7 @@ function showformulas() {
     _alternateRow("Formulas basics", "
 Program committee members and administrators can display <em>formulas</em>
 that calculate properties of paper scores&mdash;for instance, the
-standard deviation of papers' Overall merit scores, or average Overall
+standard deviation of papers’ Overall merit scores, or average Overall
 merit among reviewers with high Reviewer expertise.
 Formula values become display options that show up on paper search screens.
 
@@ -800,22 +800,23 @@ weights low expertise just slightly less than high expertise.</p>
     _alternateRow("", "<em>e</em> ** <em>e</em>", "Exponentiation");
     _alternateRow("", "<em>e</em> == <em>e</em>, <em>e</em> != <em>e</em>,<br /><em>e</em> &lt; <em>e</em>, <em>e</em> &gt; <em>e</em>, <em>e</em> &lt;= <em>e</em>, <em>e</em> &gt;= <em>e</em>", "Comparisons (return 0 or 1)");
     _alternateRow("", "!<em>e</em>", "Logical not (returns 0 or 1)");
-    _alternateRow("", "<em>e</em> &amp;&amp; <em>e</em>, <em>e</em> || <em>e</em>", "Logical and, logical or (return 0 or 1)");
+    _alternateRow("", "<em>e1</em> &amp;&amp; <em>e2</em>", "Logical and (returns <em>e1</em> if <em>e1</em> is false, otherwise returns <em>e2</em>)");
+    _alternateRow("", "<em>e1</em> || <em>e2</em>", "Logical or (returns <em>e1</em> if <em>e1</em> is true, otherwise returns <em>e2</em>)");
     _alternateRow("", "<em>test</em> ? <em>iftrue</em> : <em>iffalse</em>", "If-then-else operator");
     _alternateRow("", "(<em>e</em>)", "Parentheses");
     _alternateRow("", "greatest(<em>e</em>, <em>e</em>, ...)", "Maximum");
     _alternateRow("", "least(<em>e</em>, <em>e</em>, ...)", "Minimum");
-    _alternateRow("", "null", "The blank value");
+    _alternateRow("", "null", "The null value");
     _alternateRow("Tags", "tag:<em>tagname</em>", "True if this paper has tag <em>tagname</em> (returns 0 or 1)");
-    _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or blank if this paper doesn't have that tag");
-    _alternateRow("Review scores", "overall-merit", "This paper's Overall merit score");
+    _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or null if this paper doesn’t have that tag");
+    _alternateRow("Review scores", "overall-merit", "This paper’s Overall merit score");
     _alternateRow("", "OveMer", "Abbreviations are also accepted");
     _alternateRow("Aggregate functions", "Aggregate functions calculate a
-value based on all of a paper's visible reviews.  For instance,
+value based on all of a paper’s visible reviews.  For instance,
 “max(OveMer)” would return the maximum Overall merit score
 assigned to a paper.
 
-<p>An aggregate function's argument is calculated once per visible review.
+<p>An aggregate function’s argument is calculated once per visible review.
 For instance, “max(OveMer/RevExp)” calculates the maximum value of
 “OveMer/RevExp” for any review, whereas
 “max(OveMer)/max(RevExp)” divides the maximum overall merit by the
@@ -824,7 +825,7 @@ maximum reviewer expertise.</p>
 <p>The top-level value of a formula expression cannot be a raw review score.
 Use an aggregate function to calculate a property over all review scores.</p>");
     _alternateRow("", "max(<em>e</em>), min(<em>e</em>)", "Maximum, minimum");
-    _alternateRow("", "count(<em>e</em>)", "Number of reviews where <em>e</em> is not blank");
+    _alternateRow("", "count(<em>e</em>)", "Number of reviews where <em>e</em> is not null");
     _alternateRow("", "sum(<em>e</em>)", "Sum");
     _alternateRow("", "avg(<em>e</em>)", "Average");
     _alternateRow("", "wavg(<em>e</em>, <em>weight</em>)", "Weighted average; equals “sum(<em>e</em> * <em>weight</em>) / sum(<em>weight</em>)”");

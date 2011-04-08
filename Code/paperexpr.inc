@@ -316,9 +316,9 @@ class PaperExpr {
 	    $t1 = self::_addltemp($state, self::_compile($state, $e[2]));
 	    $t2 = self::_addltemp($state, self::_compile($state, $e[3]));
 	    if ($op == "&&")
-		return "($t1 === null || ($t1 && $t2 === null) ? null : $t1 $op $t2)";
+		return "($t1 ? $t2 : $t1)";
 	    else if ($op == "||")
-		return "($t1 === null && $t2 === null ? null : $t1 $op $t2)";
+		return "($t1 ? $t1 : $t2)";
 	    else
 		return "($t1 === null || $t2 === null ? null : $t1 $op $t2)";
 	}
