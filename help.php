@@ -778,7 +778,7 @@ Formula values become display options that show up on paper search screens.
 
 <p>Add new formulas using <a
 href=\"" . hoturl("search", "q=&amp;tab=formulas") . "\">Search &gt; Display options
-&gt; More</a>.  Each formula has a name and a definition.  The definition uses
+&gt; Edit formulas</a>.  Each formula has a name and a definition.  The definition uses
 a familiar expression language.  Formulas do not work well for alphabetical
 scores.</p>
 
