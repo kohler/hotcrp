@@ -492,7 +492,7 @@ class PaperList extends BaseList {
 	}
     }
 
-    function header($fieldId, $ordinal, $row = null) {
+    function header($fieldId, $ordinal = 0, $row = null) {
 	global $reviewScoreNames, $paperListFields, $paperListFormulas;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
@@ -1885,6 +1885,8 @@ class PaperList extends BaseList {
 	// collect row data
 	$data = array();
 	$foldname = $fdef->foldname;
+	if (($x = $this->header($fieldId)))
+	    $data["$foldname.title"] = $x;
 	while (($row = edb_orow($result))) {
 	    if ($this->contentEmpty($fieldId, $row))
 		$c = "";

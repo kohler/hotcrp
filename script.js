@@ -988,8 +988,12 @@ var plinfo_needload = {}, plinfo_aufull = {};
 function make_plloadform_callback(which, type, dofold) {
     var xtype = ({au: 1, anonau: 1, aufull: 1}[type] ? "authors" : type);
     return function (rv) {
-	var elt, eltx, h6 = plinfo_title[type] ? "<h6>" + plinfo_title[type] + ":</h6> " : "";
-	for (var i in rv)
+	var i, x, elt, eltx, h6 = "";
+	if ((x = rv[xtype + ".title"]))
+	    plinfo_title[type] = x;
+	if ((x = plinfo_title[type]))
+	    h6 = "<h6>" + x + ":</h6> ";
+	for (i in rv)
 	    if (i.substr(0, xtype.length) == xtype && (elt = $$(i))) {
 		if (rv[i] == "")
 		    elt.innerHTML = "";
