@@ -392,12 +392,12 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 	    }
 	$text = "# Edit the rank order by rearranging this file's lines.\n"
 	    . "# The first line has the highest rank.\n\n"
-	    . "# Lines that start with \"#\" are ignored.  Unranked papers appear at the end\n"
+	    . "# Lines starting with \"#\" are ignored.  Unranked papers appear at the end\n"
 	    . "# in lines starting with \"X\", sorted by overall merit.  Create a rank by\n"
-	    . "# removing the \"X\"s and rearranging the lines.  A line that starts with \"=\"\n"
-	    . "# marks a paper with the same rank as the preceding paper.  A line that starts\n"
-	    . "# with \">>\", \">>>\", and so forth indicates a rank gap between the preceding\n"
-	    . "# paper and the current paper.  When you are done, upload the file at\n"
+	    . "# removing the \"X\"s and rearranging the lines.  Lines starting with \"=\"\n"
+	    . "# mark papers with the same rank as the preceding papers.  Lines starting\n"
+	    . "# with \">>\", \">>>\", and so forth indicate rank gaps between papers.\n"
+	    . "# When you are done, upload the file at\n"
 	    . "#   " . hoturl_absolute("offline") . "\n\n"
 	    . "Tag: " . trim($_REQUEST["tag"]) . "\n"
 	    . "\n"
@@ -1117,8 +1117,15 @@ if ($pl) {
 
     // Tags group
     if ($Me->isPC && $pl->headerInfo["tags"]) {
+	require_once("Code/tags.inc");
 	$opt = array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair));
 	displayOptionCheckbox("tags", 1, "Tags", $opt);
+	if ($Me->privChair) {
+	    $vtags = voteTags(rankTags());
+	    ksort($vtags);
+	    foreach ($vtags as $tag => $value)
+		displayOptionCheckbox("tagrep_" . preg_replace('/\W+/', '_', $tag), 1, "“${tag}” tag report", $opt);
+	}
     }
 
     // Row numbers

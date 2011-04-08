@@ -92,18 +92,26 @@ function chairTags() {
 	return array();
 }
 
-function voteTags() {
+function voteTags($vt = array()) {
     global $Conf;
     if ($Conf->setting("tag_vote")) {
-	$vt = array();
 	foreach (preg_split('/\s+/', $Conf->settingText("tag_vote", "")) as $t)
 	    if (($p = strpos($t, "#")) > 0 || ($p = strpos($t, "=")) > 0)
 		$vt[substr($t, 0, $p)] = cvtint(substr($t, $p + 1));
-	    else
+	    else if ($t != "")
 		$vt[$t] = 1;
-	return $vt;
-    } else
-	return array();
+    }
+    return $vt;
+}
+
+function rankTags($vt = array()) {
+    global $Conf;
+    if ($Conf->setting("tag_rank")) {
+	foreach (preg_split('/\s+/', $Conf->settingText("tag_rank", "")) as $t)
+	    if (strpos($t, "#") === false && $t != "")
+		$vt[$t] = "rank";
+    }
+    return $vt;
 }
 
 global $orderedTagStepMap;
@@ -144,18 +152,18 @@ function setTags($pids, $tagtext, $mode, $chair) {
     $Conf->qe("lock tables PaperTag write", $while);
 
     // check chair tags
-    $deltags = array();
+    $badtags = array();
     if (!$chair) {
 	$chtags = chairTags();
 	$nexttags = array();
 	foreach ($tags as $tag) {
 	    if (isset($chtags[tagBase($tag)]))
-		$deltags[] = $tag;
+		$badtags[] = $tag;
 	    else
 		$nexttags[] = $tag;
 	}
 	if (count($nexttags) != count($tags))
-	    defappend($Error["tags"], "Tag &ldquo;" . htmlspecialchars($deltags[0]) . "&rdquo; can only be changed by the chair.<br />\n");
+	    defappend($Error["tags"], "Tag &ldquo;" . htmlspecialchars($badtags[0]) . "&rdquo; can only be changed by the chair.<br />\n");
 	$tags = $nexttags;
     }
 
@@ -169,7 +177,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 	    $base = tagBase($tag);
 	    $twiddle = strpos($base, "~");
 	    if (isset($vtags[$base]))
-		$deltags[] = $tag;
+		$badtags[] = $tag;
 	    else if ($twiddle > 0
 		     && isset($vtags[substr($base, $twiddle + 1)])) {
 		if (isset($vchanges[$base])) // only one vote per tag
@@ -185,24 +193,23 @@ function setTags($pids, $tagtext, $mode, $chair) {
 		$nexttags[] = $tag;
 	}
 	if (count($nexttags) + $multivote != count($tags)) {
-	    $t = htmlspecialchars(tagBase($deltags[count($deltags) - 1]));
+	    $t = htmlspecialchars(tagBase($badtags[count($badtags) - 1]));
 	    defappend($Error["tags"], "The shared tag &ldquo;$t&rdquo; keeps track of vote totals and cannot be modified.  Use the private tag &ldquo;~$t&rdquo; to change your vote (for instance, &ldquo;~$t#1&rdquo; is one vote).<br />\n");
 	}
 	$tags = $nexttags;
     }
 
     // check rank tag
-    if (!$chair && $Conf->setting("tag_rank")) {
-	$ranktag = $Conf->settingText("tag_rank");
+    if (!$chair && ($vtags = rankTags()) && count($vtags)) {
 	$nexttags = array();
 	foreach ($tags as $tag) {
-	    if (tagBase($tag) === $ranktag)
-		$deltags[] = $tag;
+	    if (isset($vtags[tagBase($tag)]))
+		$badtags[] = $tag;
 	    else
 		$nexttags[] = $tag;
 	}
 	if (count($nexttags) != count($tags)) {
-	    $t = htmlspecialchars(tagBase($deltags[count($deltags) - 1]));
+	    $t = htmlspecialchars(tagBase($badtags[count($badtags) - 1]));
 	    defappend($Error["tags"], "The shared tag &ldquo;$t&rdquo; keeps track of the global ranking and cannot be modified.  Use the private tag &ldquo;~$t&rdquo; to change your ranking.<br />\n");
 	}
 	$tags = $nexttags;
@@ -211,7 +218,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
     // exit if nothing to do
     if (count($tags) == 0 && $mode != 'p') {
 	$Conf->qe("unlock tables", $while);
-	if (count($deltags) == 0)
+	if (count($badtags) == 0)
 	    defappend($Error["tags"], "No tags specified.<br />\n");
 	return false;
     }

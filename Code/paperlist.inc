@@ -50,6 +50,7 @@ class PaperList extends BaseList {
     const FIELD_FOLD = 80;
 
     const FIELD_FORMULA = 100;
+    const FIELD_TAGREPORT = 101;
 
     const HEADER_ALL = 2;
     const HEADER_TITLES = 1;
@@ -250,6 +251,14 @@ class PaperList extends BaseList {
 	    break;
 	case self::FIELD_TAGS:
 	    if (!$this->contact->isPC)
+		return false;
+	    if (!$folded) {
+		require_once("tags.inc");
+		$queryOptions["tags"] = 1;
+	    }
+	    break;
+	case self::FIELD_TAGREPORT:
+	    if (!$this->contact->privChair)
 		return false;
 	    if (!$folded) {
 		require_once("tags.inc");
@@ -560,6 +569,8 @@ class PaperList extends BaseList {
 	    return "Authors";
 	case self::FIELD_TAGS:
 	    return "Tags";
+	case self::FIELD_TAGREPORT:
+	    return "“" . self::_fieldInfo($fieldId) . "” tag report";
 	case self::FIELD_OPT_ABSTRACT:
 	    return "Abstract";
 	case self::FIELD_LEAD:
@@ -792,6 +803,7 @@ class PaperList extends BaseList {
 	case self::FIELD_OPT_ABSTRACT:
 	    return $row->abstract == "";
 	case self::FIELD_TAGS:
+	case self::FIELD_TAGREPORT:
 	    return !$this->contact->canViewTags($row);
 	case self::FIELD_LEAD:
 	    return (!$this->contact->actPC($row, true) || !$row->leadContactId);
@@ -1069,6 +1081,19 @@ class PaperList extends BaseList {
 		$t = tagsToText($row, true, $this->contact, false,
 				$this->search->orderTags);
 	    return $t;
+	case self::FIELD_TAGREPORT:
+	    if (!$this->contact->canViewTags($row))
+		return "";
+	    $tag = self::_fieldInfo($fieldId);
+	    if (($t = $row->paperTags) === "")
+		return $t;
+	    $a = array();
+	    foreach (pcMembers() as $pcm) {
+		$mytag = " " . $pcm->contactId . "~" . $tag . "#";
+		if (($p = strpos($t, $mytag)) !== false)
+		    $a[] = contactNameHtml($pcm) . " (#" . ((int) substr($t, $p + strlen($mytag))) . ")";
+	    }
+	    return join(", ", $a);
 	case self::FIELD_LEAD:
 	    if (!$row->leadContactId)
 		return "";
@@ -1301,6 +1326,10 @@ class PaperList extends BaseList {
 		    continue;
 		foreach ($paperListFormulas as $formula)
 		    array_push($newFields, $formula->fieldId);
+	    } else if ($fid == self::FIELD_TAGREPORT) {
+		foreach ($paperListNormalizer as $newfid => $info)
+		    if ($info[0] == self::FIELD_TAGREPORT)
+			$newFields[] = $newfid;
 	    } else
 		$newFields[] = $fid;
 	}
@@ -1352,11 +1381,11 @@ class PaperList extends BaseList {
 	    break;
 	case "s":
 	case "acc":
-	    $fields = array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78, self::FIELD_SCORE, self::FIELD_FORMULA);
+	    $fields = array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78, self::FIELD_SCORE, self::FIELD_FORMULA);
 	    break;
 	case "all":
 	case "act":
-	    $fields = array(self::FIELD_SELECTOR, 1, 11, 20, 27, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78);
+	    $fields = array(self::FIELD_SELECTOR, 1, 11, 20, 27, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78);
 	    break;
 	case "reviewerHome":
 	    $this->paperLink = "review";
@@ -1365,19 +1394,19 @@ class PaperList extends BaseList {
 	case "r":
 	case "lead":
 	    $this->paperLink = "review";
-	    $fields = array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78, self::FIELD_SCORE, self::FIELD_FORMULA);
+	    $fields = array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78, self::FIELD_SCORE, self::FIELD_FORMULA);
 	    break;
 	case "rout":
 	    $this->paperLink = "review";
-	    $fields = array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78, self::FIELD_SCORE, self::FIELD_FORMULA);
+	    $fields = array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78, self::FIELD_SCORE, self::FIELD_FORMULA);
 	    break;
 	case "req":
 	    $this->paperLink = "review";
-	    $fields = array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78, self::FIELD_SCORE, self::FIELD_FORMULA);
+	    $fields = array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78, self::FIELD_SCORE, self::FIELD_FORMULA);
 	    break;
 	case "reqrevs":
 	    $this->paperLink = "review";
-	    $fields = array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78);
+	    $fields = array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78);
 	    break;
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
@@ -2007,6 +2036,19 @@ class PaperListField {
 		++$nextfield;
 	    }
 	    uasort($paperListFormulas, array("PaperListField", "_formula_compar"));
+	}
+
+	if ($Conf && ($Conf->setting("tag_vote") || $Conf->setting("tag_rank"))) {
+	    require_once("tags.inc");
+	    $vt = voteTags(rankTags());
+	    ksort($vt);
+	    foreach ($vt as $n => $t) {
+		$fdef = PaperListField::make($nextfield, "tagrep_" . preg_replace('/\W+/', '_', $n), 2, $nextfold);
+		$fdef->cssname = "tagrep";
+		$paperListNormalizer[$nextfield] = array(PaperList::FIELD_TAGREPORT, $n);
+		++$nextfold;
+		++$nextfield;
+	    }
 	}
     }
 
