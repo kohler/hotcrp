@@ -661,14 +661,17 @@ class PaperSearch {
 		    }
 		}
 	    } else if ($letters
-		       ? preg_match('/\A\s*([A-Za-z])\s*-?\s*([A-Za-z])\s*\z/s', $word, $m)
-		       : preg_match('/\A\s*(\d+)\s*-\s*(\d+)\s*\z/s', $word, $m)) {
+		       ? preg_match('/\A\s*([A-Za-z])\s*(-?|\.\.\.?)\s*([A-Za-z])\s*\z/s', $word, $m)
+		       : preg_match('/\A\s*(\d+)\s*(-|\.\.\.?)\s*(\d+)\s*\z/s', $word, $m)) {
 		$qo = array();
-		$this->_searchReviews($contactword . $m[1], $rf, $field, $qo, $quoted);
-		$this->_searchReviews($contactword . $m[2], $rf, $field, $qo, $quoted);
+		if ($m[2] == "-" || $m[2] == "") {
+		    $this->_searchReviews($contactword . $m[1], $rf, $field, $qo, $quoted);
+		    $this->_searchReviews($contactword . $m[3], $rf, $field, $qo, $quoted);
+		} else
+		    $this->_searchReviews($contactword . ">=" . $m[1], $rf, $field, $qo, $quoted);
 		if ($this->_searchReviews($contactword . "<" . $m[1], $rf, $field, $qo, $quoted))
 		    $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
-		if ($this->_searchReviews($contactword . ">" . $m[2], $rf, $field, $qo, $quoted))
+		if ($this->_searchReviews($contactword . ">" . $m[3], $rf, $field, $qo, $quoted))
 		    $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
 		$qt[] = new SearchTerm("and", 0, $qo);
 		return;

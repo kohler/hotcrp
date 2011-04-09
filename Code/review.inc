@@ -153,12 +153,21 @@ class ReviewForm {
 			    "options" => defval($this->options, $field, null));
 	if ($a->options) {
 	    $scores = array_keys($a->options);
-	    $a->lowScore = $scores[0];
-	    $a->typScore = $scores[1];
-	    if (is_int($scores[1]) || ctype_digit($scores[1]))
-		$a->typScoreRange = $scores[0] . "-" . $scores[1];
-	    else
-		$a->typScoreRange = $scores[0] . $scores[1];
+	    if (count($scores) == 1)
+		$a->typScore = $scores[0];
+	    else {
+		if (count($scores) == 2) {
+		    $a->typScore0 = $scores[0];
+		    $a->typScore = $scores[1];
+		} else {
+		    $a->typScore0 = $scores[1];
+		    $a->typScore = $scores[2];
+		}
+		if (is_int($a->typScore) || ctype_digit($a->typScore))
+		    $a->typScoreRange = $a->typScore0 . "-" . $a->typScore;
+		else
+		    $a->typScoreRange = $a->typScore0 . $a->typScore;
+	    }
 	}
 	return $a;
     }
