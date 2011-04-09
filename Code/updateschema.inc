@@ -207,6 +207,10 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table OptionType add `displayType` tinyint(1) NOT NULL default '0'")
 	&& $Conf->q("update Settings set value=38 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 38;
+    if ($Conf->settings["allowPaperOption"] == 38
+	&& $Conf->q("update PaperComment set forReviewers=1 where forReviewers=-1")
+	&& $Conf->q("update Settings set value=39 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 39;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;
