@@ -1496,20 +1496,19 @@ function doRevGroup() {
     echo "<h3>Review visibility</h3>\n";
 
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
-    doRadio("pc_seeallrev", array(0 => "No&mdash;a PC member can see a paper&rsquo;s reviews only after submitting their own review for that paper",
-				  4 => "Yes, once they&rsquo;ve completed all their assigned reviews",
+    doRadio("pc_seeallrev", array(1 => "Yes",
 				  3 => "Yes, unless they haven&rsquo;t completed an assigned review for the same paper",
-				  1 => "Yes"));
+				  4 => "Yes, after completing all their assigned reviews",
+				  0 => "Only after completing a review for the same paper"));
 
     echo "<div class='g'></div>\n";
     echo "Can PC members see <strong>reviewer names</strong> except for conflicts?<br />\n";
-    doRadio("pc_seeblindrev", array(1 => "Only after completing a review for the same paper",
-				    /* 2 => "Yes, unless reviews are hidden", */
-				    0 => "Yes"));
+    doRadio("pc_seeblindrev", array(0 => "Yes",
+				    1 => "Only after completing a review for the same paper (also hides comments)"));
 
     echo "<div class='g'></div>";
     echo "Can external reviewers see the other reviews for their assigned papers, once they&rsquo;ve submitted their own?<br />\n";
-    doRadio("extrev_view", array(0 => "No", 1 => "Yes, but they can&rsquo;t see who wrote blind reviews", 2 => "Yes"));
+    doRadio("extrev_view", array(2 => "Yes", 1 => "Yes, but they can&rsquo;t see who wrote blind reviews", 0 => "No"));
 
     echo "<hr class='hr' />";
 

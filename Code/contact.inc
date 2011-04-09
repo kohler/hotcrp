@@ -871,10 +871,7 @@ class Contact {
 	if ($crow && isset($crow->threadContacts)
 	    && isset($crow->threadContacts[$this->contactId]))
 	    $thread_contactId = $this->contactId;
-	if (!$crow || $crow->forReviewers == -1)
-	    $forReviewers = 1;
-	else
-	    $forReviewers = $crow->forReviewers;
+	$forReviewers = (!$crow || $crow->forReviewers == -1 ? 1 : $crow->forReviewers);
 	if ($crow_contactId == $this->contactId		// wrote this comment
 	    || ($prow->conflictType >= CONFLICT_AUTHOR	// author's response
 		&& $crow && $crow->forAuthors == 2)
@@ -885,6 +882,10 @@ class Contact {
 		&& ($prow->conflictType == 0 || $forceShow))
 	    || ($prow->conflictType == 0		// reviewer postrev
 		&& $this->canViewReview($prow, null, $xWhyNot, $ignoreForceShow)
+		&& (!$Conf->setting("pc_seeblindrev")
+		    || (defval($prow, "myReviewType") > 0
+			&& (defval($prow, "myReviewSubmitted") > 0
+			    || defval($prow, "myReviewNeedsSubmit", 1) == 0)))
 		&& ($forReviewers == 1 || ($forReviewers == 0 && $this->isPC))))
 	    return true;
 	// collect failure reasons
