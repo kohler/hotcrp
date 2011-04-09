@@ -104,9 +104,11 @@ function saveComment($text, $locked) {
 
     // options
     $visibility = defval($_REQUEST, "visibility", "r");
-    if ($visibility != "a" && $visibility != "r" && $visibility != "p")
+    if ($visibility != "a" && $visibility != "r" && $visibility != "p" && $visibility != "admin")
 	$visibility = "r";
-    $forReviewers = ($visibility == "p" ? 0 : -1);
+    $forReviewers = ($visibility == "p" ? 0 : 1);
+    if ($visibility == "admin")
+	$forReviewers = 2;
     $forAuthors = ($visibility == "a" ? 1 : 0);
     $blind = 0;
     if ($Conf->blindReview() > BLIND_OPTIONAL
@@ -114,7 +116,7 @@ function saveComment($text, $locked) {
 	$blind = 1;
     if (isset($_REQUEST["response"])) {
 	$forAuthors = 2;
-	$forReviewers = (defval($_REQUEST, "forReviewers") ? -1 : 0);
+	$forReviewers = (defval($_REQUEST, "forReviewers") ? 1 : 0);
 	$blind = $prow->blind;	// use $prow->blind setting on purpose
     }
 

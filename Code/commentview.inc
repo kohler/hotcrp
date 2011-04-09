@@ -54,7 +54,10 @@ class CommentView {
 	echo "</span>";
 	if ($crow && !$response
 	    && ($prow->conflictType == 0 || ($Me->privChair && $forceShow))) {
-	    if ($crow->forAuthors == 0 && $crow->forReviewers == 0)
+	    $forReviewers = ($crow->forReviewers == -1 ? 1 : $crow->forReviewers);
+	    if ($crow->forAuthors == 0 && $forReviewers == 2)
+		$x = "shown only to PC chairs";
+	    else if ($crow->forAuthors == 0 && $forReviewers == 0)
 		$x = "shown only to PC reviewers";
 	    else if ($crow->forAuthors == 0)
 		$x = "hidden from authors";
@@ -94,7 +97,10 @@ class CommentView {
 	    echo " id='comment$crow->commentId'";
 	else
 	    echo " id='commentnew'";
-	echo " class='cmtg", ($this->ncomment == 1 ? " cmtg1" : ""), "'><div class='cmtt'>";
+	echo " class='cmtg", ($this->ncomment == 1 ? " cmtg1" : ""), "'>";
+	if ($crow && !$editMode && $crow->forReviewers == 2)
+	    echo "<div class='cmtadminvis'>";
+	echo "<div class='cmtt'>";
 
 	// Links
 	if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair)
@@ -126,7 +132,10 @@ class CommentView {
 	    echo $_SESSION["comment_msgs"][$crow->commentId];
 
 	if (!$editMode) {
-	    echo htmlWrapText(htmlspecialchars($crow->comment)), "</div></div>\n\n";
+	    echo htmlWrapText(htmlspecialchars($crow->comment)), "</div>";
+	    if ($crow && $crow->forReviewers == 2)
+		echo "</div>";
+	    echo "</div>\n\n";
 	    return;
 	}
 
@@ -140,19 +149,24 @@ class CommentView {
 	echo "</textarea>
   <div class='g'></div>
   <table><tr><td>Show to: &nbsp; </td>
-    <td>", tagg_radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($crow && $crow->forAuthors == 0 && $crow->forReviewers == 0))),
-	    "&nbsp;", tagg_label("PC reviewers only"), "<br />\n";
-	echo tagg_radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : (!$crow || ($crow->forAuthors == 0 && $crow->forReviewers != 0)))),
-	    "&nbsp;", tagg_label("PC and external reviewers"), "<br />\n";
-	echo tagg_radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : ($crow && $crow->forAuthors != 0))),
+    <td>";
+	$forAuthors = $crow && $crow->forAuthors != 0;
+	$forReviewers = ($crow && $crow->forReviewers != -1 ? $crow->forReviewers : 1);
+	echo tagg_radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : ($forAuthors != 0))),
 	    "&nbsp;", tagg_label("Authors and reviewers");
 	// blind?
 	if ($Conf->blindReview() == BLIND_OPTIONAL) {
 	    echo " &nbsp; (",
 		tagg_checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, "blind") : !$crow || $crow->blind)),
-		"&nbsp;", tagg_label("Anonymous to authors"), ")\n";
+		"&nbsp;", tagg_label("Anonymous to authors"), ")<br />\n";
 	} else if ($Conf->blindReview() == BLIND_ALWAYS)
-	    echo " (anonymous to authors)";
+	    echo " (anonymous to authors)<br />\n";
+	echo tagg_radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : ($forAuthors == 0 && $forReviewers == 1))),
+	    "&nbsp;", tagg_label("PC and external reviewers"), "<br />\n";
+	echo tagg_radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($forAuthors == 0 && $forReviewers == 0))),
+	    "&nbsp;", tagg_label("PC reviewers only"), "<br />\n";
+	echo tagg_radio_h("visibility", "admin", ($useRequest ? defval($_REQUEST, "visibility") == "admin" : ($forAuthors == 0 && $forReviewers == 2))),
+	    "&nbsp;", tagg_label("PC chairs only"), "<br />\n";
 	echo "</td></tr></table>\n";
 
 	// review actions

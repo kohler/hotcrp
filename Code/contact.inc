@@ -852,6 +852,7 @@ class Contact {
 	// forAuthors 2, forReviewers 1     response, ready for reviewers
 	// forAuthors 2, forReviewers 0     response, not ready for reviewers
 	// forAuthors 1/0                   comment for authors/not for authors
+	// forAuthors 1/0, forReviewers 2   comment for PC chairs and admins
 	// forAuthors 1/0, forReviewers 1   comment for PC, reviewers
 	// forAuthors 1/0, forReviewers 0   comment for PC
 	// forAuthors 1/0, forReviewers -1  comment for PC, reviewers
@@ -870,6 +871,10 @@ class Contact {
 	if ($crow && isset($crow->threadContacts)
 	    && isset($crow->threadContacts[$this->contactId]))
 	    $thread_contactId = $this->contactId;
+	if (!$crow || $crow->forReviewers == -1)
+	    $forReviewers = 1;
+	else
+	    $forReviewers = $crow->forReviewers;
 	if ($crow_contactId == $this->contactId		// wrote this comment
 	    || ($prow->conflictType >= CONFLICT_AUTHOR	// author's response
 		&& $crow && $crow->forAuthors == 2)
@@ -880,10 +885,11 @@ class Contact {
 		&& ($prow->conflictType == 0 || $forceShow))
 	    || ($prow->conflictType == 0		// reviewer postrev
 		&& $this->canViewReview($prow, null, $xWhyNot, $ignoreForceShow)
-		&& (!$crow || $this->isPC || $crow->forReviewers != 0)))
+		&& ($forReviewers == 1 || ($forReviewers == 0 && $this->isPC))))
 	    return true;
 	// collect failure reasons
-	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)
+	if (($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)
+	    || (!$this->privChair && $forReviewers == 2))
 	    $whyNot['permission'] = 1;
 	else if ($prow->conflictType >= CONFLICT_AUTHOR)
 	    $whyNot['deadline'] = 'au_seerev';

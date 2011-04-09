@@ -2028,11 +2028,16 @@ td.cmthead span.cmtfn {
 }
 div.cmtg {
 	border-top: 1px solid #f7f1df;
-	padding: 5px 0 9px;
+	padding: 5px 0;
 }
 div.cmtg.cmtg1 {
 	border-top: 0 none;
 	padding-top: 0;
+}
+div.cmtadminvis {
+	background: #f3f3f3;
+	margin: 0 -4px;
+	padding: 2px 4px;
 }
 div.cmtt {
 	font-size: smaller;
@@ -2046,6 +2051,9 @@ div.cmtt span.cmtvis {
 }
 div.cmtt div.floatright {
 	padding-left: 0.5em;
+}
+div.cmtv {
+	padding: 0 0 4px;
 }
 div#foldaddcomment div.cmtv {
 	padding-bottom: 0;
