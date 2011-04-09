@@ -1638,7 +1638,9 @@ class PaperSearch {
 	if (!isset($tables[$thistab])) {
 	    $where = array();
 	    if ($t->flags & self::F_REVIEWERCOMMENT)
-		$where[] = "forReviewers!=0";
+		$where[] = "forReviewers=1";
+	    if (!$this->privChair)
+		$where[] = "(forReviewers!=2 or contactId=$this->contactId)";
 	    if ($t->flags & self::F_AUTHORRESPONSE)
 		$where[] = "forAuthors=2";
 	    else if ($t->flags & (self::F_AUTHOR | self::F_AUTHORCOMMENT))
