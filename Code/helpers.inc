@@ -1141,6 +1141,8 @@ function wordWrapIndent($text, $info, $indent = 18, $totWidth = 75, $rjinfo = tr
 
 function htmlWrapText($text) {
     $lines = explode("\n", $text);
+    while (count($lines) && $lines[count($lines) - 1] == "")
+	array_pop($lines);
     $text = "";
     for ($i = 0; $i < count($lines); $i++) {
 	$l = $lines[$i];
