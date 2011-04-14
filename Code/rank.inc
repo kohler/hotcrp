@@ -124,13 +124,14 @@ class PaperRank {
 	    $votes[count($this->papersel)] = $this->papershuffle[$p];
 
 	// now calculate ranks
+	$reverseorder = array();
 	while (count($papervotes)) {
 	    // sort by increasing number of top votes
 	    uasort($papervotes, array("PaperRank", "_comparRankIRV"));
 	    // the loser is the first paper in the sort order
 	    $loser = key($papervotes);
 	    //$Conf->infoMsg("choose $loser");
-	    $this->rank[$loser] = $this->_nextRank();
+	    $reverseorder[] = $loser;
 	    unset($papervotes[$loser]);
 	    // redistribute votes for the loser
 	    foreach ($regrank as $user => &$pap)
@@ -143,6 +144,10 @@ class PaperRank {
 		    }
 		}
 	}
+
+	// assign ranks
+	foreach (array_reverse($reverseorder) as $user)
+	    $this->rank[$user] = $this->_nextRank();
     }
 
 
