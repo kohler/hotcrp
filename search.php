@@ -325,8 +325,9 @@ function tagaction() {
 	if (checkTag($source_tag, CHECKTAG_NOINDEX | CHECKTAG_NOPRIVATE | CHECKTAG_ERRORARRAY)) {
 	    require_once("Code/rank.inc");
 	    ini_set("max_execution_time", 1200);
-	    $Conf->header("Search", 'search', actionBar());
-	    $r = new PaperRank($source_tag, $tag, $papers, defval($_REQUEST, "tagcr_gapless"));
+	    $r = new PaperRank($source_tag, $tag, $papers,
+			       defval($_REQUEST, "tagcr_gapless"),
+			       "Search", "search");
 	    $method = defval($_REQUEST, "tagcr_method");
 	    if ($method == "irv")
 		$r->irv();
@@ -343,6 +344,13 @@ function tagaction() {
     }
     if (isset($Error["tags"]))
 	$Conf->errorMsg($Error["tags"]);
+    else if (!$Conf->headerPrinted) {
+	$args = array();
+	foreach (array("tag", "tagtype", "tagact", "tagcr_method", "tagcr_source", "tagcr_gapless") as $arg)
+	    if (isset($_REQUEST[$arg]))
+		$args[$arg] = $_REQUEST[$arg];
+	redirectSelf($args);
+    }
 }
 if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel) && isset($_REQUEST["tag"]))
     tagaction();

@@ -19,15 +19,23 @@ class PaperRank {
     var $deletedpref;
     var $rank;
     var $currank;
-    var $info_printed;
 
-    function PaperRank($source_tag, $dest_tag, $papersel, $strict) {
+    var $info_printed;
+    var $header_title;
+    var $header_id;
+    var $starttime;
+
+    function __construct($source_tag, $dest_tag, $papersel, $strict,
+			 $header_title = null, $header_id = null) {
 	global $Conf;
 	$this->dest_tag = $dest_tag;
 	$this->ordertype = ($strict ? "aos" : "ao");
 	$this->papersel = $papersel;
 	$this->userrank = array();
 	$this->info_printed = false;
+	$this->header_title = $header_title;
+	$this->header_id = $header_id;
+	$this->starttime = time();
 
 	// generate random order for paper comparisons
 	if (count($papersel)) {
@@ -72,12 +80,16 @@ class PaperRank {
     }
 
     function _info() {
+	global $Conf;
 	$n = count($this->rank);
-	if (!count($this->papersel)
-	    || ($n >= count($this->papersel) && !$this->info_printed))
+	if (!$this->info_printed
+	    && (!count($this->papersel) || $n >= count($this->papersel)
+		|| time() - $this->starttime <= 4))
 	    return;
 	$pct = round($n / count($this->papersel) * 100);
 	if (!$this->info_printed) {
+	    if ($this->header_title)
+		$Conf->header($this->header_title, $this->header_id, actionBar());
 	    echo "<div id='foldrankcalculation' class='foldc'><div class='fn info'>Calculating ranks; this can take a while.  <span id='rankpercentage'>$pct</span>% of ranks assigned<span id='rankdeletedpref'></span>.</div></div>";
 	    $this->info_printed = true;
 	}
