@@ -1223,7 +1223,7 @@ class PaperList extends BaseList {
 	    $t .= "tag<span class='fn99'>(s)</span> &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value=\"" . htmlspecialchars(defval($_REQUEST, "tag", "")) . "\"' size='15' onfocus='defact(\"tagact\")' /> &nbsp;<input type='submit' class='b' name='tagact' value='Go' />";
 	    if ($this->contact->privChair) {
 		$t .= "<div class='fx'><div style='margin:2px 0'>"
-		    . tagg_checkbox("tagcr_gapless", 1, defval($_REQUEST, "tagcr_gapless"))
+		    . tagg_checkbox("tagcr_gapless", 1, defval($_REQUEST, "tagcr_gapless"), array("style" => "margin-left:0"))
 		    . "&nbsp;" . tagg_label("Gapless order") . "</div>"
 		    . "<div style='margin:2px 0'>Using: &nbsp;"
 		    . tagg_select("tagcr_method", array("schulze" => "Schulze method", "irv" => "Instant-runoff voting", "range" => "Range voting", "civs" => "CIVS Ranked Pairs"), defval($_REQUEST, "tagcr_method"))
