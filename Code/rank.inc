@@ -159,7 +159,7 @@ class PaperRank {
 	$minuserrank = $maxuserrank = array();
 	foreach ($this->userrank as $user => &$ranks) {
 	    foreach ($ranks as $rr) {
-		if (defval($minuserrank, $user, $rr[0] + 1) < $rr[0])
+		if (defval($minuserrank, $user, $rr[0] + 1) > $rr[0])
 		    $minuserrank[$user] = $rr[0];
 		if (defval($maxuserrank, $user, $rr[0] - 1) < $rr[0])
 		    $maxuserrank[$user] = $rr[0];
@@ -167,8 +167,8 @@ class PaperRank {
 	}
 
 	// map ranks to ranges
-	$paperrange = array_fill(0, count($this->papersel), 0);
-	$paperrangecount = array_fill(0, count($this->papersel), 0);
+	$paperrange = array_combine($this->papersel, array_fill(0, count($this->papersel), 0));
+	$paperrangecount = array_combine($this->papersel, array_fill(0, count($this->papersel), 0));
 	foreach ($this->userrank as $user => &$ranks)
 	    foreach ($ranks as $rr) {
 		$paperrange[$rr[1]] +=
