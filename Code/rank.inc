@@ -606,14 +606,16 @@ class PaperRank {
 
     // save calculated ranks
     function save() {
-	global $Conf;
+	global $Conf, $Me;
 	$sqltag = sqlq($this->dest_tag);
 	$values = array();
 	foreach ($this->rank as $p => $rank)
 	    $values[] = "($p, '$sqltag', $rank)";
 	$result = $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values " . join(", ", $values), "while saving ranks");
-	if ($result)
+	if ($result) {
 	    $Conf->confirmMsg("Ranks saved.");
+	    $Conf->log("Tag calculate rank: " . $this->dest_tag, $Me, array_keys($this->rank));
+	}
     }
 
 }
