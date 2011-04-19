@@ -106,6 +106,22 @@ CREATE TABLE `Formula` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
+-- Table structure for table `MailLog`
+--
+
+DROP TABLE IF EXISTS `MailLog`;
+CREATE TABLE `MailLog` (
+  `mailId` int(11) NOT NULL auto_increment,
+  `recipients` varchar(200) NOT NULL,
+  `paperIds` text,
+  `cc` text,
+  `replyto` text,
+  `subject` text,
+  `emailBody` text,
+  PRIMARY KEY  (`mailId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
 -- Table structure for table `OptionType`
 --
 
@@ -279,7 +295,7 @@ CREATE TABLE `PaperReview` (
 --
 
 DROP TABLE IF EXISTS `PaperReviewArchive`;
-CREATE TABLE `PaperReviewArchive` (  
+CREATE TABLE `PaperReviewArchive` (
   `reviewArchiveId` int(11) NOT NULL auto_increment,
   `reviewId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
@@ -508,7 +524,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 38);
+insert into Settings (name, value) values ('allowPaperOption', 40);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

@@ -211,6 +211,19 @@ function updateSchema($Conf) {
 	&& $Conf->q("update PaperComment set forReviewers=1 where forReviewers=-1")
 	&& $Conf->q("update Settings set value=39 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 39;
+    if ($Conf->settings["allowPaperOption"] == 39
+	&& $Conf->q("CREATE TABLE `MailLog` (
+  `mailId` int(11) NOT NULL auto_increment,
+  `recipients` varchar(200) NOT NULL,
+  `paperIds` text,
+  `cc` text,
+  `replyto` text,
+  `subject` text,
+  `emailBody` text,
+  PRIMARY KEY  (`mailId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8")
+	&& $Conf->q("update Settings set value=40 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 40;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

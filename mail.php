@@ -15,6 +15,17 @@ $checkReviewNeedsSubmit = false;
 $Error = array();
 $pctags = pcTags();
 
+// load mail from log
+if (isset($_REQUEST["fromlog"]) && ctype_digit($_REQUEST["fromlog"])
+    && $Conf->sversion >= 40 && $Me->privChair) {
+    $result = $Conf->qe("select * from MailLog where mailId=" . $_REQUEST["fromlog"], "while loading logged mail");
+    if (($row = edb_orow($result))) {
+	foreach (array("recipients", "cc", "replyto", "subject", "emailBody") as $field)
+	    if (isset($row->$field) && !isset($_REQUEST[$field]))
+		$_REQUEST[$field] = $row->$field;
+    }
+}
+
 // create options
 $tOpt = array();
 $tOpt["s"] = "Submitted papers";
@@ -187,8 +198,13 @@ function checkMail($send) {
     $subject = trim(defval($_REQUEST, "subject", ""));
     if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
 	$subject = $subjectPrefix . $subject;
-    if ($send)
-	$Conf->log("Mailing \"$subject\"", $Me->contactId);
+    if ($send) {
+	$mailId = "";
+	if ($Conf->sversion >= 40
+	    && $Conf->q("insert into MailLog (recipients, cc, replyto, subject, emailBody) values ('" . sqlq($_REQUEST["recipients"]) . "', '" . sqlq($_REQUEST["cc"]) . "', '" . sqlq($_REQUEST["replyto"]) . "', '" . sqlq($subject) . "', '" . sqlq($_REQUEST["emailBody"]) . "')"))
+	    $mailId = " #" . $Conf->lastInsertId();
+	$Conf->log("Sending mail$mailId \"$subject\"", $Me->contactId);
+    }
     $emailBody = $_REQUEST["emailBody"];
 
     $template = array("subject" => $subject, "body" => $emailBody);
@@ -229,7 +245,7 @@ function checkMail($send) {
 	    }
 	    if ($send) {
 		Mailer::sendPrepared($preparation);
-		$Conf->log("Receiver of mail \"" . $preparation["subject"] . "\"", $row->contactId, $row->paperId);
+		$Conf->log("Account was sent mail$mailId", $row->contactId, $row->paperId);
 	    }
 	    if ($nrows_print) {
 		$Conf->echoScript("\$\$('mailcount').innerHTML = \"$nrows_left mails remaining.\";");
