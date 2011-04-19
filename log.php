@@ -20,6 +20,7 @@ if ($offset == 0 || $page == 1) {
     $offset = 0;
 } else
     $start = ($page - 2) * $count + $offset;
+$nlinks = 4;
 
 $Conf->header("Log", "actionlog", actionBar());
 
@@ -99,7 +100,7 @@ if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"]))
     }
 
 function searchbar() {
-    global $Conf, $Eclass, $page, $start, $count, $nrows, $maxNrows, $offset;
+    global $Conf, $Eclass, $page, $start, $count, $nrows, $maxNrows, $nlinks, $offset;
 
     echo "<form method='get' action='", hoturl("log"), "' accept-charset='UTF-8'>
 <table id='searchform'><tr>
@@ -134,13 +135,13 @@ function searchbar() {
 	if ($page > 1)
 	    echo "<a href='$url&amp;page=", ($page - 1), "'><strong>", $Conf->cacheableImage("_.gif", "&lt;-", null, "prev"), " Newer</strong></a>";
 	echo "</div></td><td id='newnum'><div>";
-	if ($page - 4 > 0)
+	if ($page - $nlinks > 1)
 	    echo "&nbsp;...";
-	for ($p = max($page - 4, 0); $p + 1 < $page; $p++)
+	for ($p = max($page - $nlinks - 1, 0); $p + 1 < $page; $p++)
 	    echo "&nbsp;<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>";
 	echo "</div></td><td id='thisnum'><div><strong class='thispage'>&nbsp;", $page, "&nbsp;</strong></div></td><td id='oldnum'><div>";
 	$o = ($offset ? $offset - $count : 0);
-	for ($p = $page; $p * $count + $o < $start + min(3*$count + 1, $nrows); $p++)
+	for ($p = $page; $p * $count + $o < $start + min($nlinks * $count + 1, $nrows); $p++)
 	    echo "<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>&nbsp;";
 	if ($nrows == $maxNrows)
 	    echo "...&nbsp;";
@@ -170,7 +171,7 @@ if (count($wheres))
     $query .= " where " . join(" and ", $wheres);
 $query .= " order by logId desc";
 if (!$firstDate && $page !== false) {
-    $maxNrows = 3 * $count + 1;
+    $maxNrows = $nlinks * $count + 1;
     $query .= " limit $start,$maxNrows";
 }
 
@@ -180,8 +181,8 @@ $nrows = edb_nrows($result);
 if ($firstDate || $page === false)
     $maxNrows = $nrows;
 
-$k = 1;
 $n = 0;
+$trs = array();
 while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
     if ($firstDate && $row->timestamp > $firstDate) {
 	$start++;
@@ -205,59 +206,57 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
 	else if ($firstDate) {
 	    $offset = $start % $count;
 	    $page = (int) ($start / $count) + ($offset ? 2 : 1);
-	    $nrows = min(3 * $count + 1, $nrows);
-	    $maxNrows = min(3 * $count + 1, $maxNrows);
+	    $nrows = min($nlinks * $count + 1, $nrows);
+	    $maxNrows = min($nlinks * $count + 1, $maxNrows);
 	}
-	searchbar();
-	echo "<table class='altable'><tr class='al_headrow'>
-  <th class='pl_id'>#</th>
-  <th class='al_time'>Time</th>
-  <th class='al_ip'>IP</th>
-  <th class='pl_name'>Account</th>
-  <th class='al_act'>Action</th>
-</tr>\n";
     }
 
-    $k = 1 - $k;
-    echo "<tr class='k$k al'>";
-    echo "<td class='pl_id'>", htmlspecialchars($row->logId), "</td>";
-    echo "<td class='al_time'>", $Conf->printableTimeShort($row->timestamp), "</td>";
-    echo "<td class='al_ip'>", htmlspecialchars($row->ipaddr), "</td>";
-    echo "<td class='pl_name'>", contactHtml($row->firstName, $row->lastName, $row->email), "</td>";
-    echo "<td class='al_act'>";
+    $t = "<td class='pl_id'>" . htmlspecialchars($row->logId) . "</td>"
+	. "<td class='al_time'>" . $Conf->printableTimeShort($row->timestamp) . "</td>"
+	. "<td class='al_ip'>" . htmlspecialchars($row->ipaddr) . "</td>"
+	. "<td class='pl_name'>" . contactHtml($row) . "</td>"
+	. "<td class='al_act'>";
 
     $act = $row->action;
     if (preg_match('/^Review (\d+)/', $act, $m)) {
-	echo "<a href=\"", hoturl("review", "r=$m[1]"), "\">Review ",
-	    $m[1], "</a>";
+	$t .= "<a href=\"" . hoturl("review", "r=$m[1]") . "\">Review " . $m[1] . "</a>";
 	$act = substr($act, strlen($m[0]));
     }
     if (preg_match('/^Comment (\d+)/', $act, $m)) {
-	echo "<a href=\"", hoturl("comment", "c=$m[1]"), "\">Comment ",
-	    $m[1], "</a>";
+	$t .= "<a href=\"" . hoturl("comment", "c=$m[1]") . "\">Comment " . $m[1] . "</a>";
 	$act = substr($act, strlen($m[0]));
     }
     if (preg_match('/ \(papers ([\d, ]+)\)?$/', $act, $m)) {
-	echo htmlspecialchars(substr($act, 0, strlen($act) - strlen($m[0]))),
-	    " (<a href=\"", hoturl("search", "t=all&amp;q=" . preg_replace('/[\s,]+/', "+", $m[1])),
-	    "\">papers</a> ",
-	    preg_replace('/(\d+)/', "<a href=\"" . hoturl("paper", "p=\$1") . "\">\$1</a>", $m[1]),
-	    ")";
+	$t .= htmlspecialchars(substr($act, 0, strlen($act) - strlen($m[0])))
+	    . " (<a href=\"" . hoturl("search", "t=all&amp;q=" . preg_replace('/[\s,]+/', "+", $m[1]))
+	    . "\">papers</a> "
+	    . preg_replace('/(\d+)/', "<a href=\"" . hoturl("paper", "p=\$1") . "\">\$1</a>", $m[1])
+	    . ")";
     } else
-	echo htmlspecialchars($act);
+	$t .= htmlspecialchars($act);
 
     if ($row->paperId)
-	echo " (paper <a href=\"", hoturl("paper", "p=" . urlencode($row->paperId)), "\">", htmlspecialchars($row->paperId), "</a>)";
-    echo "</td>";
-    echo "</tr>\n";
+	$t .= " (paper <a href=\"" . hoturl("paper", "p=" . urlencode($row->paperId)) . "\">" . htmlspecialchars($row->paperId) . "</a>)";
+    $trs[] = $t . "</td>";
 }
 
-if ($n) {
-    echo "<tr class='pl_footgap k$k'><td colspan='5'></td></tr>";
-    echo "</table>\n";
-} else {
-    searchbar();
+searchbar();
+if (count($trs)) {
+    echo "<table class='altable'>
+  <col width='0*' /><col width='0*' /><col width='0*' /><col width='0*' />
+  <thead><tr class='al_headrow'>
+    <th class='pl_id'>#</th>
+    <th class='al_time'>Time</th>
+    <th class='al_ip'>IP</th>
+    <th class='pl_name'>Account</th>
+    <th class='al_act'>Action</th>
+  </tr></thead>
+  <tfoot><tr class='pl_footgap k", (count($trs) - 1) % 2, "'><td colspan='5'></td></tr></tfoot>
+  <tbody>\n";
+    for ($i = 0; $i < count($trs); ++$i)
+	echo "    <tr class='k", $i % 2, " al'>", $trs[$i], "</tr>\n";
+    echo "</tbody></table>\n";
+} else
     echo "No records\n";
-}
 
 $Conf->footer();

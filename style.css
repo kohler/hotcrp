@@ -1248,8 +1248,7 @@ table.pltable th a.fx1, table.pltable th a.fx2, table.pltable th a.fx4 {
 	padding-left: 1em;
 	float: right;
 }
-table.pltable th, table.ppltable th, table.altable th, table.setreviewform th,
-table.auedittable th {
+table.pltable th, table.ppltable th, table.setreviewform th, table.auedittable th {
 	text-align: left;
 	padding-right: 0.125em;
 	vertical-align: bottom;
@@ -1372,9 +1371,13 @@ tr.pl td, tr.al td {
 	padding-top: 2px;
 	padding-bottom: 2px;
 }
-tr.al td {
-	padding-left: 0.2em;
-	padding-right: 0.5em;
+tr.al td, tr.al_headrow th {
+	padding-left: 3px;
+	padding-right: 12px;
+}
+tr.al_headrow th {
+	text-align: left;
+	vertical-align: bottom;
 }
 tr.pl_headrow td, tr.pl_headrow th, tr.al_headrow th, table.setreviewform th {
 	border-bottom: 1px solid #999999;
