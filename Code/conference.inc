@@ -1556,6 +1556,19 @@ class Conference {
 		foreach ($Opt["stylesheets"] as $css)
 		    $this->header_css_link($css);
 
+	    // favicon
+	    if (($favicon = defval($Opt, "favicon", "images/review24.png"))) {
+		$url = (strpos($favicon, "://") !== false || $favicon[0] == "/" ? $favicon : $ConfSiteBase . $favicon);
+		if (substr($favicon, -4) == ".png")
+		    echo "<link rel=\"icon\" type=\"image/png\" href=\"$url\" />\n";
+		else if (substr($favicon, -4) == ".ico")
+		    echo "<link rel=\"shortcut icon\" href=\"$url\" />\n";
+		else if (substr($favicon, -4) == ".gif")
+		    echo "<link rel=\"icon\" type=\"image/gif\" href=\"$url\" />\n";
+		else
+		    echo "<link rel=\"icon\" href=\"$url\" />\n";
+	    }
+
 	    $this->scriptStuff = "<script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
 	    $this->scriptStuff .= "<!--[if lte IE 6]> <script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=supersleight.js'></script> <![endif]-->\n";
 	    echo "<title>", $title, " - ", htmlspecialchars($Opt["shortName"]), "</title>\n";

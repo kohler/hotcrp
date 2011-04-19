@@ -114,6 +114,7 @@ $Opt["emailSubmissions"] = 0;
 //   extraFooter     Optional extra HTML text shown at the bottom of every
 //                   page, before the HotCRP link.  If set, should generally
 //                   end with " <span class='barsep'>|</span> ".
+//   favicon         Optional link to favicon.  Default is images/review24.png.
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
 //   disablePDF      Set to true to disable PDF format submissions.
 //   disablePS       Set to true to disable PostScript format submissions.
