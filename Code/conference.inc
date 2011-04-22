@@ -1687,11 +1687,10 @@ class Conference {
 	    "<a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software";
 	if (!defval($Opt, "noFooterVersion", 0))
 	    echo "<!-- Version ", HOTCRP_VERSION, " -->";
+	echo "</div>\n  <div class='clear'></div></div>\n";
 	if ($this->footerScripting)
 	    $this->footerHtml("");
-	echo "</div>\n  <div class='clear'></div></div>\n",
-	    $this->scriptStuff, $this->footerStuff,
-	    "</body>\n</html>\n";
+	echo $this->scriptStuff, $this->footerStuff, "</body>\n</html>\n";
 	$this->scriptStuff = "";
     }
 
