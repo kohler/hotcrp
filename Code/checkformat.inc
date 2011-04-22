@@ -299,7 +299,7 @@ class CheckFormat {
 
     function _analyzePaper($paperId, $final, $spec, &$tmpdir) {
 	global $Conf, $prow, $Opt;
-	if (($tmpdir = tempdir(null, "crpbanal")) === false)
+	if (($tmpdir = tempdir()) === false)
 	    return $this->msg("error", "Cannot create temporary directory.");
 	$storefield = ($final ? "finalPaperStorageId" : "paperStorageId");
 	$result = $Conf->q("select PaperStorage.mimetype, paper, PaperStorage.paperStorageId, compression

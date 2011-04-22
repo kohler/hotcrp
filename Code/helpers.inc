@@ -962,17 +962,40 @@ function goPaperForm($baseUrl = null, $args = array()) {
     return $x;
 }
 
-function tempdir($dir, $prefix, $mode = 0700) {
-    if (!isset($dir) || !is_dir($dir)) {
-	if (function_exists("sys_get_temp_dir"))
-	    $dir = sys_get_temp_dir();
-	else
-	    $dir = "/tmp";
-    }
-    if (substr($dir, -1) != '/')
-	$dir .= '/';
+function clean_tempdirs() {
+    $dir = null;
+    if (function_exists("sys_get_temp_dir"))
+	$dir = sys_get_temp_dir();
+    if (!$dir)
+	$dir = "/tmp";
+    while (substr($dir, -1) == "/")
+	$dir = substr($dir, 0, -1);
+    $dirh = opendir($dir);
+    $now = time();
+    while (($fname = readdir($dirh)) !== false)
+	if (preg_match('/\Ahotcrptmp\d+\z/', $fname)
+	    && is_dir("$dir/$fname")
+	    && ($mtime = @filemtime("$dir/$fname")) !== false
+	    && $mtime < $now - 1800) {
+	    $xdirh = @opendir("$dir/$fname");
+	    while (($xfname = readdir($xdirh)) !== false)
+		@unlink("$dir/$fname/$xfname");
+	    @closedir("$dir/$fname");
+	    @rmdir("$dir/$fname");
+	}
+    closedir($dirh);
+}
+
+function tempdir($mode = 0700) {
+    $dir = null;
+    if (function_exists("sys_get_temp_dir"))
+	$dir = sys_get_temp_dir();
+    if (!$dir)
+	$dir = "/tmp";
+    while (substr($dir, -1) == "/")
+	$dir = substr($dir, 0, -1);
     for ($i = 0; $i < 100; $i++) {
-	$path = $dir . $prefix . mt_rand(0, 9999999);
+	$path = $dir . "/hotcrptmp" . mt_rand(0, 9999999);
 	if (mkdir($path, $mode))
 	    return $path;
     }

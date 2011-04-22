@@ -749,15 +749,21 @@ class Conference {
 
     function zipAdd(&$tmpdir, $name, $data, &$warnings, &$files) {
 	if (!isset($tmpdir) || !$tmpdir)
-	    if (($tmpdir = tempdir(null, "crp")) === false) {
+	    if (($tmpdir = tempdir()) === false) {
 		$warnings[] = "Could not create temporary directory!";
 		return false;
 	    }
-	if (($len = file_put_contents("$tmpdir/$name", $data)) != strlen($data)) {
+	$filename = "$tmpdir/$name";
+	$trylen = file_put_contents($filename, $data);
+	if ($trylen != strlen($data)) {
+	    clean_tempdirs();
+	    $trylen = file_put_contents($filename, $data);
+	}
+	if ($trylen != strlen($data)) {
 	    $warnings[] = "Could not save $name.";
 	    return false;
 	} else {
-	    $files[] = "$tmpdir/$name";
+	    $files[] = $filename;
 	    return true;
 	}
     }
@@ -796,7 +802,7 @@ class Conference {
 	    return $this->__downloadPaper($paperIds[0], 1, $final ? -1 : 0);
 
 	// set up temporary directory
-	if (($tmpdir = tempdir(null, "crp")) === false)
+	if (($tmpdir = tempdir()) === false)
 	    return new PEAR_Error("Could not create temporary directory!");
 
 	// write papers into temporary directory
