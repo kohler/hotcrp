@@ -34,12 +34,13 @@ $searchTags = array('ti' => 'ti', 'title' => 'ti',
 		    'option' => 'option', 'opt' => 'option',
 		    'lead' => 'lead',
 		    'shepherd' => 'shepherd', 'shep' => 'shepherd',
-		    'conflict' => 'conflict', 'conf' => 'conflict',
+		    "conflict" => "conflict", "conf" => "conflict",
+		    "reconflict" => "reconflict", "reconf" => "reconflict",
 		    'status' => 'status',
 		    'rating' => 'rate', 'rate' => 'rate',
 		    'revpref' => 'revpref', 'pref' => 'revpref',
 		    'repref' => 'revpref',
-		    'ss' => 'ss', 'search' => 'ss');
+		    "ss" => "ss", "search" => "ss");
 
 class SearchKeyword {
     var $op;
@@ -539,8 +540,6 @@ class PaperSearch {
     }
 
     function _searchReviewer($word, $rtype, &$qt, $quoted) {
-	global $Conf;
-
 	$rt = 0;
 	if ($rtype == "pri" || $rtype == "cpri" || $rtype == "ipri")
 	    $rt = REVIEW_PRIMARY;
@@ -569,8 +568,6 @@ class PaperSearch {
     }
 
     function _searchConflict($word, &$qt, $quoted) {
-	global $Conf;
-
 	$m = self::_matchCompar($word, $quoted);
 	if (($type = self::_comparTautology($m))) {
 	    $qt[] = new SearchTerm($type);
@@ -586,6 +583,25 @@ class PaperSearch {
 	    $qt[] = new SearchTerm("conflict", self::F_PAPERNONBLIND, $value);
 	    if (($newvalue = $value->restrictContact($this->contactId)))
 		$qt[] = new SearchTerm("conflict", 0, $newvalue);
+	}
+    }
+
+    function _searchReviewerConflict($word, &$qt, $quoted) {
+	global $Conf;
+	$args = array();
+	while (preg_match('/\A\s*(\d+)\s*,?\s*(.*)\z/s', $word, $m)) {
+	    $args[] = (int) $m[1];
+	    $word = $m[2];
+	}
+	if ($word != "" || count($args) == 0) {
+	    $this->warn("The <code>reconflict</code> keyword expects a list of paper numbers.");
+	    $qt[] = new SearchTerm("f");
+	} else {
+	    $result = $Conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", $args) . ")", "while evaluating reconflict keyword");
+	    $contacts = array();
+	    while (($row = edb_row($result)))
+		$contacts[] = $row[0];
+	    $qt[] = new SearchTerm("conflict", 0, new SearchReviewValue(">0", $contacts));
 	}
     }
 
@@ -1029,6 +1045,9 @@ class PaperSearch {
 	if (($special ? $special == "conflict" : isset($this->fields['conflict']))
 	    && $this->amPC)
 	    $this->_searchConflict($word, $qt, $quoted);
+	if (($special ? $special == "reconflict" : isset($this->fields["reconflict"]))
+	    && $this->privChair)
+	    $this->_searchReviewerConflict($word, $qt, $quoted);
 	if (($special ? $special == "round" : isset($this->fields["round"]))
 	    && $this->amPC) {
 	    $this->reviewAdjust = true;

@@ -269,10 +269,11 @@ function searchQuickref() {
     _searchQuickrefRow("", "lead:none", "no assigned discussion lead");
     _searchQuickrefRow("", "lead:any", "some assigned discussion lead");
     _searchQuickrefRow("Shepherds", "shep:fdabek", "“fdabek” (in name/email) is shepherd (“none” and “any” also work)");
-    _searchQuickrefRow("Conflicts", "conflict:me", "you have a conflict with a paper");
+    _searchQuickrefRow("Conflicts", "conflict:me", "you have a conflict with the paper");
     _searchQuickrefRow("", "conflict:fdabek", "“fdabek” (in name/email) has a conflict with the paper<br /><span class='hint'>This search is only available to chairs and to PC members who can see the paper’s author list.</span>");
     _searchQuickrefRow("", "conflict:pc", "some PC member has a conflict with the paper");
     _searchQuickrefRow("", "conflict:pc>2", "at least three PC members have conflicts with the paper");
+    _searchQuickrefRow("", "reconflict:\"1 2 3\"", "a reviewer of paper 1, 2, or 3 has a conflict with the paper");
     _searchQuickrefRow("Preferences", "pref:fdabek>0", "“fdabek” (in name/email) has review preference &gt;&nbsp;0");
     _searchQuickrefRow("Status", "status:sub", "paper is submitted for review", "t=all");
     _searchQuickrefRow("", "status:unsub", "paper is neither submitted nor withdrawn", "t=all");
