@@ -63,7 +63,7 @@ define("OPTIONTYPE_NUMERIC", 2);
 define("OPTIONTYPE_TEXT", 3);
 define("OPTIONTYPE_PDF", 4);
 
-define("HOTCRP_VERSION", "2.44");
+define("HOTCRP_VERSION", "2.45");
 
 global $rf;
 $rf = null;

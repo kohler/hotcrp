@@ -1,5 +1,32 @@
 HotCRP NEWS
 
+Version 2.45   24.Apr.2011
+
+* New, improved visual appearance for paper pages.
+
+* Keyboard shortcuts on paper pages: press "j" to go to the previous paper
+  in the list, "k" to go to the next.
+
+* Search improvements: Add review preference search, reviewer conflict
+  search, saved searches, and "tag reports" display options.
+
+* Usability improvements in manual conflict detection and assignment.
+
+* Speed improvements: Allow a user to open new pages while downloading a
+  large file.
+
+* New blindness settings: authors can be blind until reviewer submits
+  review; and comments can be made visible only to PC chairs.
+
+* Log mail bodies sent by the mail tool.
+
+* Several bug fixes (including to IRV assignment) and usability fixes.
+
+* Thanks especially to Jeff Mogul and John Wilkes, and to Paarijaat Aditya,
+  Stefan Savage, Jane-Ellen Long, Philippe Bonet, Christoph Mayer, Manolis
+  Stamatogiannakis, and Michael Hicks.
+
+
 Version 2.44   8.Feb.2011
 
 * Correct recent bugs: improve Ajax return values (which lacked "b"
