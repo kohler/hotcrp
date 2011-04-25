@@ -589,15 +589,17 @@ class PaperSearch {
     function _searchReviewerConflict($word, &$qt, $quoted) {
 	global $Conf;
 	$args = array();
-	while (preg_match('/\A\s*(\d+)\s*,?\s*(.*)\z/s', $word, $m)) {
-	    $args[] = (int) $m[1];
-	    $word = $m[2];
+	while (preg_match('/\A\s*#?(\d+)(?:-#?(\d+))?\s*,?\s*(.*)\z/s', $word, $m)) {
+	    $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
+	    foreach (range($m[1], $m[2]) as $p)
+		$args[$p] = true;
+	    $word = $m[3];
 	}
 	if ($word != "" || count($args) == 0) {
 	    $this->warn("The <code>reconflict</code> keyword expects a list of paper numbers.");
 	    $qt[] = new SearchTerm("f");
 	} else {
-	    $result = $Conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", $args) . ")", "while evaluating reconflict keyword");
+	    $result = $Conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")", "while evaluating reconflict keyword");
 	    $contacts = array();
 	    while (($row = edb_row($result)))
 		$contacts[] = $row[0];
