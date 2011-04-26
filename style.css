@@ -205,7 +205,7 @@ body#assign div.body, body#offrev div.body {
 }
 body#paper_view, body#paper_edit,
 body#review, body#comment, body#contactauthors,
-body#assign, body#offrev {
+body#assign {
 	background: #f0f0f0;
 }
 body#autoassign div.body, body#bulkassign div.body, body#assignpc div.body {
