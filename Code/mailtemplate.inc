@@ -751,7 +751,8 @@ class Mailer {
 	if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
 	    if ($Conf->paperBlind($this->row, $this->contact)
 		&& defval($this->row, "conflictType") < CONFLICT_AUTHOR
-		&& defval($this->contact, "conflictType") < CONFLICT_AUTHOR)
+		&& defval($this->contact, "conflictType") < CONFLICT_AUTHOR
+		&& !$this->contact->canViewAuthors($this->row, true))
 		return ($isbool ? false : "Hidden for blind review");
 	    cleanAuthor($this->row);
 	    return rtrim($this->row->authorInformation);

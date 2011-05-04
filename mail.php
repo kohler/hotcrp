@@ -80,10 +80,10 @@ $subjectPrefix = "[" . $Opt["shortName"] . "] ";
 
 function contactQuery($type) {
     global $Conf, $Me, $rf, $papersel, $checkReviewNeedsSubmit;
-    $contactInfo = "firstName, lastName, email, password, ContactInfo.contactId";
+    $contactInfo = "firstName, lastName, email, password, ContactInfo.contactId, (PCMember.contactId is not null) as isPC";
     if ($Conf->sversion >= 25)
 	$contactInfo .= ", preferredEmail";
-    $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.shepherdContactId";
+    $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.shepherdContactId";
 
     // paper limit
     $where = array();
@@ -115,7 +115,7 @@ function contactQuery($type) {
 
     // build query
     if ($type == "all") {
-	$q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo";
+	$q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo left join PCMember using (contactId)";
 	$orderby = "email";
     } else if ($type == "pc" || substr($type, 0, 3) == "pc:") {
 	$q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo join PCMember using (contactId)";
@@ -123,10 +123,10 @@ function contactQuery($type) {
 	if ($type != "pc")
 	    $where[] = "ContactInfo.contactTags like '% " . sqlq_for_like(substr($type, 3)) . " %'";
     } else if ($type == "rev" || $type == "crev" || $type == "uncrev" || $type == "extrev" || $type == "myextrev" || $type == "uncextrev" || $type == "myuncextrev") {
-	$q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId)";
+	$q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
 	$orderby = "email, Paper.paperId";
     } else if ($type == "lead" || $type == "shepherd") {
-	$q = "select $contactInfo, conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from Paper join ContactInfo on (ContactInfo.contactId=Paper.${type}ContactId) left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId)";
+	$q = "select $contactInfo, conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from Paper join ContactInfo on (ContactInfo.contactId=Paper.${type}ContactId) left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
 	$orderby = "email, Paper.paperId";
     } else {
 	if (!$Conf->timeAuthorViewReviews(true) && $Conf->timeAuthorViewReviews()) {
@@ -135,7 +135,7 @@ function contactQuery($type) {
 	    $checkReviewNeedsSubmit = true;
 	} else
 	    $qa = $qb = "";
-	$q = "select $contactInfo$qa, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId)$qb";
+	$q = "select $contactInfo$qa, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId)$qb left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
 	$where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
 	$orderby = "email, Paper.paperId";
     }
@@ -173,7 +173,7 @@ function checkMailPrologue($send) {
 	echo "<div id='foldmail' class='foldc fold2c'>",
 	    "<div class='fn fx2 merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div>",
 	    "<div id='mailwarnings'></div>",
-	    "<div class='fx info'>Examine the mails to verify that you've gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
+	    "<div class='fx info'>Examine the mails to verify that you’ve gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
         <div class='aa fx'>
 	<input class='b' type='submit' name='send' value='Send' /> &nbsp;
 	<input class='b' type='submit' name='cancel' value='Cancel' />
