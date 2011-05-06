@@ -554,7 +554,7 @@ else if (isset($_REQUEST["saveassign"]) && isset($_REQUEST["a"]) && isset($_REQU
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
 $abar .= actionTab("Automatic", hoturl("autoassign"), true);
 $abar .= actionTab("Manual", hoturl("manualassign"), false);
-$abar .= actionTab("Offline", hoturl("bulkassign"), false);
+$abar .= actionTab("Upload", hoturl("bulkassign"), false);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
@@ -589,7 +589,7 @@ Assignment methods:
 <ul><li><a href='" . hoturl("autoassign") . "' class='q'><strong>Automatic</strong></a></li>
  <li><a href='" . hoturl("manualassign") . "'>Manual by PC member</a></li>
  <li><a href='" . hoturl("assign") . "'>Manual by paper</a></li>
- <li><a href='" . hoturl("bulkassign") . "'>Offline (bulk upload)</a></li>
+ <li><a href='" . hoturl("bulkassign") . "'>Upload</a></li>
 </ul>
 <hr class='hr' />
 Types of PC assignment:

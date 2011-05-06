@@ -25,6 +25,7 @@ function tfError(&$tf, $lineno, $text) {
 
 function parseBulkFile($text, $filename, $type) {
     global $Conf, $Me, $nullMailer, $Error;
+    $while = "while uploading assignments";
     $text = cleannl($text);
     $lineno = 0;
     $tf = array('err' => array(), 'filename' => $filename);
@@ -104,7 +105,7 @@ function parseBulkFile($text, $filename, $type) {
 	$paperIds = join(", ", array_keys($ass));
 	$validPaperIds = array();
 	$unsubmittedPaperIds = array();
-	$result = $Conf->qe("select paperId, timeSubmitted, timeWithdrawn from Paper where paperId in ($paperIds)", "while doing bulk assignments");
+	$result = $Conf->qe("select paperId, timeSubmitted, timeWithdrawn from Paper where paperId in ($paperIds)", $while);
 	while (($row = edb_row($result)))
 	    if ($row[1] > 0 && $row[2] <= 0)
 		$validPaperIds[$row[0]] = true;
@@ -122,7 +123,7 @@ function parseBulkFile($text, $filename, $type) {
 	    unset($ass[$paperId]);
 	}
 
-	$result = $Conf->qe("select paperId, contactId from PaperReview where paperId in ($paperIds)", "while doing bulk assignments");
+	$result = $Conf->qe("select paperId, contactId from PaperReview where paperId in ($paperIds)", $while);
 	while (($row = edb_row($result)))
 	    if (isset($ass[$row[0]][$row[1]])) {
 		$lineno = $ass[$row[0]][$row[1]];
@@ -130,7 +131,10 @@ function parseBulkFile($text, $filename, $type) {
 		unset($ass[$row[0]][$row[1]]);
 	    }
 
-	$result = $Conf->qe("select paperId, contactId from PaperConflict where paperId in ($paperIds)", "while doing bulk assignments");
+	if ($type >= 0)
+	    $result = $Conf->qe("select paperId, contactId from PaperConflict where paperId in ($paperIds)", $while);
+	else
+	    $result = null;
 	while (($row = edb_row($result)))
 	    if (isset($ass[$row[0]][$row[1]])) {
 		$lineno = $ass[$row[0]][$row[1]];
@@ -141,11 +145,13 @@ function parseBulkFile($text, $filename, $type) {
 
 
     // set review round
-    if ($rev_roundtag) {
-	$Conf->settings["rev_roundtag"] = 1;
-	$Conf->settingTexts["rev_roundtag"] = $rev_roundtag;
-    } else
-	unset($Conf->settings["rev_roundtag"]);
+    if ($type >= 0) {
+	if ($rev_roundtag) {
+	    $Conf->settings["rev_roundtag"] = 1;
+	    $Conf->settingTexts["rev_roundtag"] = $rev_roundtag;
+	} else
+	    unset($Conf->settings["rev_roundtag"]);
+    }
 
     // perform assignment
     $nass = 0;
@@ -155,14 +161,17 @@ function parseBulkFile($text, $filename, $type) {
 	    $t = $type;
 	    if ($type == REVIEW_EXTERNAL && isset($pcm[$cid]))
 		$t = REVIEW_PC;
-	    $Me->assignPaper($paperId, null, $cid, $t, $Conf);
-	    if ($type == REVIEW_EXTERNAL && $doemail) {
-		$Them = new Contact();
-		$Them->lookupById($cid);
-		if (!$prow)
-		    $prow = $Conf->paperRow($paperId);
-		Mailer::send($mailtemplate, $prow, $Them, $Me);
-	    }
+	    if ($t >= 0) {
+		$Me->assignPaper($paperId, null, $cid, $t, $Conf);
+		if ($type == REVIEW_EXTERNAL && $doemail) {
+		    $Them = new Contact();
+		    $Them->lookupById($cid);
+		    if (!$prow)
+			$prow = $Conf->paperRow($paperId);
+		    Mailer::send($mailtemplate, $prow, $Them, $Me);
+		}
+	    } else
+		$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $cid, " . (-$t) . ") on duplicate key update conflictType=" . (-$t), $while);
 	    $nass++;
 	}
     }
@@ -189,7 +198,8 @@ function parseBulkFile($text, $filename, $type) {
 if (isset($_REQUEST['upload']) && fileUploaded($_FILES['uploadedFile'], $Conf)
     && isset($_REQUEST["t"]) && ($_REQUEST["t"] == REVIEW_PRIMARY
 				 || $_REQUEST["t"] == REVIEW_SECONDARY
-				 || $_REQUEST["t"] == REVIEW_EXTERNAL)) {
+				 || $_REQUEST["t"] == REVIEW_EXTERNAL
+				 || $_REQUEST["t"] == -CONFLICT_CHAIRMARK)) {
     if (($text = file_get_contents($_FILES['uploadedFile']['tmp_name'])) === false)
 	$Conf->errorMsg("Internal error: cannot read file.");
     else
@@ -201,7 +211,7 @@ if (isset($_REQUEST['upload']) && fileUploaded($_FILES['uploadedFile'], $Conf)
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
 $abar .= actionTab("Automatic", hoturl("autoassign"), false);
 $abar .= actionTab("Manual", hoturl("manualassign"), false);
-$abar .= actionTab("Offline", hoturl("bulkassign"), true);
+$abar .= actionTab("Upload", hoturl("bulkassign"), true);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
@@ -214,7 +224,7 @@ Assignment methods:
 <ul><li><a href='", hoturl("autoassign"), "'>Automatic</a></li>
  <li><a href='", hoturl("manualassign"), "'>Manual by PC member</a></li>
  <li><a href='", hoturl("assign"), "'>Manual by paper</a></li>
- <li><a href='", hoturl("bulkassign"), "' class='q'><strong>Offline (bulk upload)</strong></a></li>
+ <li><a href='", hoturl("bulkassign"), "' class='q'><strong>Upload</strong></a></li>
 </ul>
 <hr class='hr' />
 Types of PC assignment:
@@ -227,11 +237,13 @@ echo "<h2 style='margin-top:1em'>Upload assignments</h2>
 
 <form action='", hoturl("bulkassign", "upload=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 Assign &nbsp;",
-    tagg_select("t", array(REVIEW_PRIMARY => "primary",
-			   REVIEW_SECONDARY => "secondary",
-			   REVIEW_EXTERNAL => "external"), REVIEW_PRIMARY,
+    tagg_select("t", array(REVIEW_PRIMARY => "primary reviews",
+			   REVIEW_SECONDARY => "secondary reviews",
+			   REVIEW_EXTERNAL => "external reviews",
+			   -CONFLICT_CHAIRMARK => "PC conflicts"),
+		defval($_REQUEST, "t", REVIEW_PRIMARY),
 		array("id" => "tsel", "onchange" => "fold(\"email\",this.value!=" . REVIEW_EXTERNAL . ")")),
-    "&nbsp; reviews from file:&nbsp;
+    "&nbsp; from file:&nbsp;
 <input type='file' name='uploadedFile' accept='text/plain' size='30' />
 
 <div class='g'></div>\n\n";
@@ -240,7 +252,10 @@ if (!isset($_REQUEST["rev_roundtag"]))
     $rev_roundtag = $Conf->settingText("rev_roundtag");
 else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
     $rev_roundtag = "";
-$t = $nullMailer->expandTemplate("requestreview");
+if (isset($_REQUEST["email_requestreview"]))
+    $t = $_REQUEST["email_requestreview"];
+else
+    $t = $nullMailer->expandTemplate("requestreview");
 echo "<div id='foldemail' class='foldo'><table class='fx'>
 <tr><td>", tagg_checkbox("email", 1, true), "&nbsp;</td>
 <td>", tagg_label("Send email to external reviewers:"), "</td></tr>

@@ -56,7 +56,7 @@ if ($rev_roundtag) {
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
 $abar .= actionTab("Automatic", hoturl("autoassign"), false);
 $abar .= actionTab("Manual", hoturl("manualassign"), true);
-$abar .= actionTab("Offline", hoturl("bulkassign"), false);
+$abar .= actionTab("Upload", hoturl("bulkassign"), false);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
@@ -123,7 +123,7 @@ Assignment methods:
 <ul><li><a href='", hoturl("autoassign"), "'>Automatic</a></li>
  <li><a href='", hoturl("manualassign"), "' class='q'><strong>Manual by PC member</strong></a></li>
  <li><a href='", hoturl("assign"), "'>Manual by paper</a></li>
- <li><a href='", hoturl("bulkassign"), "'>Offline (bulk upload)</a></li>
+ <li><a href='", hoturl("bulkassign"), "'>Upload</a></li>
 </ul>
 <hr class='hr' />\n";
 if ($kind == "a")
