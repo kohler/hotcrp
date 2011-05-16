@@ -632,7 +632,10 @@ with fewer reviews than others, HotCRP adds phantom reviews with scores just
 below the paper's lowest real score.  Also known as Minshall score.</dd>
 
 <dt><strong>Average</strong></dt>
-<dd>Sort by the average score.</dd>
+<dd>Sort by the average (mean) score.</dd>
+
+<dt><strong>Median</strong></dt>
+<dd>Sort by the median score.</dd>
 
 <dt><strong>Variance</strong></dt>
 <dd>Sort by the variance in scores.</dd>

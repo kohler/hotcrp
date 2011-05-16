@@ -6,6 +6,7 @@
 global $scoreSorts, $defaultScoreSort;
 $scoreSorts = array("C" => "Counts",
 		    "A" => "Average",
+		    "E" => "Median",
 		    "V" => "Variance",
 		    "D" => "Max &minus; min",
 		    "Y" => "Your score");
@@ -63,13 +64,29 @@ class BaseList {
 	    $x = (count($x) == 0 ? "0" : implode($x));
 	    $x .= str_pad("", 14, chr(ord($x[strlen($x) - 1]) - 1));
 	    $this->sortInfo[$row->paperId] = $x;
+	} else if ($scoresort == "E") {
+	    $x = array();
+	    $sum = 0;
+	    foreach (preg_split('/[\s,]+/', $row->$scoreName) as $i)
+		if (($i = cvtint($i)) > 0) {
+		    $x[] = $i;
+		    $sum += $i;
+		}
+	    sort($x);
+	    $n = count($x);
+	    if ($n % 2 == 1)
+		$v = $x[($n-1)/2];
+	    else if ($n > 0)
+		$v = ($x[$n/2 - 1] + $x[$n/2]) / 2.0;
+	    $this->sortInfo[$row->paperId] = $n ? $v : 0;
+	    $this->sortAverage[$row->paperId] = $n ? $sum / $n : 0;
 	} else {
-	    $x = $x2 = $n = $max = 0;
+	    $sum = $sum2 = $n = $max = 0;
 	    $min = $scoreMax;
 	    foreach (preg_split('/[\s,]+/', $row->$scoreName) as $i)
 		if (($i = cvtint($i)) > 0) {
-		    $x += $i;
-		    $x2 += $i * $i;
+		    $sum += $i;
+		    $sum2 += $i * $i;
 		    $min = min($min, $i);
 		    $max = max($max, $i);
 		    $n++;
@@ -77,15 +94,15 @@ class BaseList {
 	    if ($n == 0)
 		$this->sortInfo[$row->paperId] = 0;
 	    else if ($scoresort == "A")
-		$this->sortInfo[$row->paperId] = $x / $n;
+		$this->sortInfo[$row->paperId] = $sum / $n;
 	    else if ($scoresort == "V") {
 		if ($n == 1)
 		    $this->sortInfo[$row->paperId] = 0;
 		else
-		    $this->sortInfo[$row->paperId] = ($x2 / ($n - 1)) - ($x * $x / (($n - 1) * $n));
+		    $this->sortInfo[$row->paperId] = ($sum2 / ($n - 1)) - ($sum * $sum / (($n - 1) * $n));
 	    } else
 		$this->sortInfo[$row->paperId] = $max - $min;
-	    $this->sortAverage[$row->paperId] = ($n ? $x / $n : 0);
+	    $this->sortAverage[$row->paperId] = ($n ? $sum / $n : 0);
 	}
     }
 
