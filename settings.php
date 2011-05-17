@@ -12,6 +12,7 @@ $Error = array();
 $Values = array();
 $rf = reviewForm();
 $DateExplanation = "Date examples: &ldquo;now&rdquo;, &ldquo;10 Dec 2006 11:59:59pm PST&rdquo; <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
+$TagStyles = "red|orange|yellow|green|blue|purple|grey|bold|italic|big|small";
 
 $SettingGroups = array("acc" => array(
 			     "acct_addr" => "check",
@@ -338,7 +339,7 @@ function parseValue($name, $type) {
 }
 
 function doTags($set, $what) {
-    global $Conf, $Values, $Error, $Highlight;
+    global $Conf, $Values, $Error, $Highlight, $TagStyles;
     require_once("Code/tags.inc");
 
     if (!$set && $what == "tag_chair" && isset($_REQUEST["tag_chair"])) {
@@ -441,7 +442,7 @@ function doTags($set, $what) {
     if (!$set && $what == "tag_color") {
 	$vs = array();
 	$any_set = false;
-	foreach (explode("|", "red|orange|yellow|green|blue|purple|grey") as $k)
+	foreach (explode("|", $TagStyles) as $k)
 	    if (isset($_REQUEST["tag_color_" . $k])) {
 		$any_set = true;
 		foreach (preg_split('/,*\s+/', $_REQUEST["tag_color_" . $k]) as $t)
@@ -1477,7 +1478,7 @@ function doOptGroup() {
 
 // Reviews
 function doRevGroup() {
-    global $Conf, $Error, $DateExplanation;
+    global $Conf, $Error, $DateExplanation, $TagStyles;
 
     doCheckbox('rev_open', '<b>Open site for reviewing</b>');
     doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
@@ -1602,7 +1603,7 @@ function doRevGroup() {
 	"<div class='smg fx'></div>",
 	"<table class='fx'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>";
     $t = $Conf->settingText("tag_color", "");
-    foreach (explode("|", "red|orange|yellow|green|blue|purple|grey|bold|italic|big|small") as $k) {
+    foreach (explode("|", $TagStyles) as $k) {
 	if (count($Error) > 0)
 	    $v = defval($_REQUEST, "tag_color_$k", "");
 	else {
