@@ -5,14 +5,11 @@
 /* page background */
 body {
 	font-family: verdana, tahoma, sans-serif;
-	font-size: 10.5pt;
+	font-size: 10.5pt; /* grep MAINSIZE */
 	color: black;
 	background-color: white;
 	margin: 0;
 }
-/*body#paper_view, body#paper_edit, body#review, body#contactauthors, body#assign {
-	background-color: #cccccc;
-}*/
 
 
 /* header */
@@ -2227,7 +2224,7 @@ div.scorehelpc, tr.aueditc td {
 	display: none;
 }
 div.scorehelpc span.rev_num, div.scorehelpo span.rev_num {
-	font-size: medium;
+	font-size: 10.5pt; /* MAINSIZE */
 }
 
 /* popup dialogs */
