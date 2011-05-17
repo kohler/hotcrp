@@ -1116,8 +1116,8 @@ class PaperTable {
 
 	    echo $this->_papstripBegin("tags", !$unfolded);
 	    $colors = new TagColorizer($Me);
-	    if (($color = $colors->match($prow->paperTags)))
-		echo "<div class='pscopen ${color}tag'>";
+	    if (($color = $colors->match_all($prow->paperTags)))
+		echo "<div class='pscopen ${color}'>";
 
 	    if ($editable)
 		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";

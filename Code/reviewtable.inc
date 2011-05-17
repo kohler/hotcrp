@@ -101,8 +101,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 		    require_once("tags.inc");
 		    $colorizer = new TagColorizer($Me);
 		}
-		if (($color = $colorizer->match($rr->contactTags)))
-		    $tclass = $color . "tag";
+		if (($color = $colorizer->match_all($rr->contactTags)))
+		    $tclass = $color;
 	    }
 	}
 

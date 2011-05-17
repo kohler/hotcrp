@@ -284,6 +284,8 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 div.xinfo, div.xconfirm, div.xwarning, div.xmerror {
 	padding: 0.5em;
 	margin: 4px 0;
+	font-weight: normal;
+	font-style: normal;
 }
 div.xinfo {
 	background: #eeeeff;
@@ -802,6 +804,8 @@ div.hint {
 td.hint, div.hint, span.hint,
 .revvis, .revevis {
 	font-size: smaller;
+	font-weight: normal;
+	font-style: normal;
 	color: #555555;
 }
 a.hint {
@@ -1494,79 +1498,103 @@ a.pl_sort_def_rev {
 }
 
 tr.k1 td {
-	background: #f2f2ff;
+	background: #f1f3ff;
 }
-tr.k0.red td, tr.k1.red td, .redtag, .psc.redtag, tr.redtag td {
-	background: #ffe4e4;
+.redtag, tr.redtag td, tr.redtag.k1 td, .redtag.psc {
+	background: #ffd8d8;
 }
-tr.pl.k0.red td, tr.pl.k1.red td {
-	border-top: 1px solid #f8dddd;
+tr.pl.redtag td {
+	border-top: 1px solid #f8d0d0;
 	padding-top: 1px;
 }
 .redtag div.pst {
-	background: #f8dddd;
+	background: #f8d0d0;
 }
-tr.k0.orange td, tr.k1.orange td, .orangetag, .psc.orangetag, tr.orangetag td {
-	background: #fdf0d6;
+.orangetag, tr.orangetag td, tr.orangetag.k1 td, .orangetag.psc {
+	background: #fdebcc;
 }
-tr.pl.k0.orange td, tr.pl.k1.orange td {
-	border-top: 1px solid #f2e4c8;
+tr.pl.orangetag td {
+	border-top: 1px solid #f2debb;
 	padding-top: 1px;
 }
 .orangetag div.pst {
-	background: #f5eed0;
+	background: #f2debb;
 }
-tr.k0.yellow td, tr.k1.yellow td, .yellowtag, .psc.yellowtag, tr.yellowtag td {
-	background: #ffffd5;
+.yellowtag, tr.yellowtag td, tr.yellowtag.k1 td, .yellowtag.psc {
+	background: #fdffcb;
 }
-tr.pl.k0.yellow td, tr.pl.k1.yellow td {
-	border-top: 1px solid #f3f3d0;
+tr.pl.yellowtag td {
+	border-top: 1px solid #f0eeb4;
 	padding-top: 1px;
 }
 .yellowtag div.pst {
-	background: #f6f6d8;
+	background: #f0eeb4;
 }
-tr.k0.green td, tr.k1.green td, .greentag, .psc.greentag, tr.greentag td {
-	background: #e4ffe4;
+.greentag, tr.greentag td, tr.greentag.k1 td, .greentag.psc {
+	background: #d8ffd8;
 }
-tr.pl.k0.green td, tr.pl.k1.green td {
-	border-top: 1px solid #d2f6d2;
+tr.pl.greentag td {
+	border-top: 1px solid #c4f2c4;
 	padding-top: 1px;
 }
 .greentag div.pst {
-	background: #ddf8dd;
+	background: #c4f2c4;
 }
-tr.k0.blue td, tr.k1.blue td, .bluetag, .psc.bluetag, tr.bluetag td {
-	background: #e0e0ff;
+.bluetag, tr.bluetag td, tr.bluetag.k1 td, .bluetag.psc {
+	background: #d8d8ff;
 }
-tr.pl.k0.blue td, tr.pl.k1.blue td {
-	border-top: 1px solid #d6d6f2;
+tr.pl.bluetag td {
+	border-top: 1px solid #ccccf2;
 	padding-top: 1px;
 }
 .bluetag div.pst {
-	background: #ddddf8;
+	background: #ccccf2;
 }
-tr.k0.purple td, tr.k0.violet td, tr.k1.purple td, tr.k1.violet td,
-.purpletag, .violettag, .psc.purpletag, .psc.violettag, tr.purpletag td, tr.violettag td {
-	background: #f2e0f8;
+.purpletag, tr.purpletag td, tr.purpletag.k1 td, .purpletag.psc,
+.violettag, tr.violettag td, tr.violettag.k1 td, .violettag.psc {
+	background: #f2d8f8;
 }
-tr.pl.k0.purple td, tr.pl.k1.purple td, tr.pl.k0.violet td, tr.pl.k1.violet td {
-	border-top: 1px solid #f0d8f0;
+tr.pl.purpletag td, tr.pl.violettag td {
+	border-top: 1px solid #eac7f2;
 	padding-top: 1px;
 }
 .purpletag div.pst, .violettag div.pst {
-	background: #f2dbf2;
+	background: #eac7f2;
 }
-tr.k0.grey td, tr.k0.gray td, tr.k1.grey td, tr.k1.gray td,
-.greytag, .graytag, .psc.greytag, .psc.graytag, tr.greytag td, tr.graytag td {
+.greytag, tr.greytag td, tr.greytag.k1 td, .greytag.psc,
+.graytag, tr.graytag td, tr.graytag.k1 td, .graytag.psc {
 	background: #e2e2e2;
 }
-tr.pl.k0.grey td, tr.pl.k1.grey td, tr.pl.k0.gray td, tr.pl.k1.gray td {
+tr.pl.greytag td, tr.pl.graytag td {
 	border-top: 1px solid #d9d9d9;
 	padding-top: 1px;
 }
 .greytag div.pst, .graytag div.pst {
-	background: #dddddd;
+	background: #d9d9d9;
+}
+.boldtag, tr.pl.boldtag td.pl_id, tr.pl.boldtag td.pl_title {
+	font-weight: bold;
+}
+tr.pl.boldtag {
+	font-weight: normal;
+}
+.italictag, tr.pl.italictag td.pl_id, tr.pl.italictag td.pl_title {
+	font-style: italic;
+}
+tr.pl.italictag {
+	font-style: normal;
+}
+.bigtag, tr.pl.bigtag td.pl_id, tr.pl.bigtag td.pl_title {
+	font-size: 140%;
+}
+tr.pl.bigtag {
+	font-size: 100%;
+}
+.smalltag, tr.pl.smalltag td.pl_id, tr.pl.smalltag td.pl_title {
+	font-size: 80%;
+}
+tr.pl.smalltag {
+	font-size: 100%;
 }
 
 body#offrev td#upload {

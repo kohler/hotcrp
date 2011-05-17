@@ -529,8 +529,8 @@ if ($Me->actChair($prow)) {
 	$p = $pcx[$i];
 
 	// first, name and assignment
-	$color = $colorizer->match($p->contactTags);
-	$color = ($color ? " class='${color}tag'" : "");
+	$color = $colorizer->match_all($p->contactTags);
+	$color = ($color ? " class='${color}'" : "");
 	echo "      <tr$color>";
 	if ($p->conflictType >= CONFLICT_AUTHOR) {
 	    echo "<td id='ass$p->contactId' class='pctbname-2 pctbl'>",

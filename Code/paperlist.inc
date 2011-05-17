@@ -1628,7 +1628,7 @@ class PaperList extends BaseList {
 	    $ids[] = $row->paperId;
 	    $trclass = "k" . ($this->count % 2);
 	    if (defval($row, "paperTags") && $this->contact->canViewTags($row)
-		&& ($m = $colors->match($row->paperTags)))
+		&& ($m = $colors->match_all($row->paperTags)))
 		$trclass .= " " . $m;
 	    $this->count++;
 	    $this->unfolded = $unfolded;

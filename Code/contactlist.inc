@@ -643,7 +643,7 @@ class ContactList extends BaseList {
 		continue;
 
 	    $trclass = "k" . ($this->count % 2);
-	    if ($colorizer && ($c = $colorizer->match($row->contactTags)))
+	    if ($colorizer && ($c = $colorizer->match_all($row->contactTags)))
 		$trclass .= " " . $c;
 	    $this->count++;
 	    $ids[] = $row->contactId;

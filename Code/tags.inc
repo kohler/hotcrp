@@ -547,20 +547,30 @@ class TagColorizer {
 	if ($contact)
 	    $this->re .= "(?:" . $contact->contactId . "~"
 		. ($contact->privChair ? "|~~" : "") . ")?";
-	$this->re .= "(red|orange|yellow|green|blue|violet|purple|grey|gray";
+	$this->re .= "(red|orange|yellow|green|blue|violet|purple|grey|gray|bold|italic|big|small";
 	$this->map = array();
 	foreach (explode(" ", $conf->settingText("tag_color", "")) as $k)
 	    if ($k != "" && ($i = strpos($k, "=")) !== false) {
-		$this->re .= "|" . substr($k, 0, $i);
-		$this->map[substr($k, 0, $i)] = substr($k, $i + 1);
+		$tname = substr($k, 0, $i);
+		$tvalue = substr($k, $i + 1) . "tag";
+		$this->re .= "|" . $tname;
+		if (isset($this->map[$tname]))
+		    $this->map[$tname] .= " " . $tvalue;
+		else
+		    $this->map[$tname] = $tvalue;
 	    }
 	$this->re .= ")[# ]/";
     }
 
-    function match($tags) {
-	if (preg_match($this->re, $tags, $m))
-	    return defval($this->map, $m[1], $m[1]);
-	else
+    function match_all($tags) {
+	if (!preg_match_all($this->re, $tags, $m))
 	    return false;
+	$t = array();
+	foreach ($m[1] as $mx)
+	    if (isset($this->map[$mx]))
+		$t[] = $this->map[$mx];
+	    else
+		$t[] = $mx . "tag";
+	return join(" ", $t);
     }
 }

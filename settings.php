@@ -1597,19 +1597,19 @@ function doRevGroup() {
     echo "<table id='foldtag_color' class='",
 	(defval($_REQUEST, "tagcolor") ? "foldo" : "foldc"), "'><tr>",
 	"<td>", foldbutton("tag_color", ""), "&nbsp;</td>",
-	"<td><a href='javascript:void fold(\"tag_color\")' name='tagcolor' class='q'><strong>Colors</strong></a><br />\n",
-	"<div class='hint fx'>Papers tagged with a color name, or with one of the associated tags (if any), will appear in that color in paper lists.</div>",
+	"<td><a href='javascript:void fold(\"tag_color\")' name='tagcolor' class='q'><strong>Styles and colors</strong></a><br />\n",
+	"<div class='hint fx'>Papers tagged with a style name, or with one of the associated tags (if any), will appear in that style in paper lists.</div>",
 	"<div class='smg fx'></div>",
-	"<table class='fx'><tr><th colspan='2'>Color name</th><th>Tags</th></tr>";
+	"<table class='fx'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>";
     $t = $Conf->settingText("tag_color", "");
-    foreach (explode("|", "red|orange|yellow|green|blue|purple|grey") as $k) {
+    foreach (explode("|", "red|orange|yellow|green|blue|purple|grey|bold|italic|big|small") as $k) {
 	if (count($Error) > 0)
 	    $v = defval($_REQUEST, "tag_color_$k", "");
 	else {
 	    preg_match_all("/(\\S+)=$k/", $t, $m);
 	    $v = join(" ", $m[1]);
 	}
-	echo "<tr class='k0 $k'><td class='lxcaption'></td><td class='lxcaption'>$k</td><td class='lentry'><input type='text' class='textlite' name='tag_color_$k' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /></td></tr>";
+	echo "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption'>$k</td><td class='lentry' style='font-size: medium'><input type='text' class='textlite' name='tag_color_$k' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /></td></tr>";
     }
     echo "</table></td></tr></table>\n";
 

@@ -667,8 +667,8 @@ if (isset($assignments) && count($assignments) > 0) {
 		$nreviews[$id] += $nnew;
 		$nsecondary[$id] += $nnew;
 	    }
-	    $color = $colorizer->match($p->contactTags);
-	    $color = ($color ? " class='${color}tag'" : "");
+	    $color = $colorizer->match_all($p->contactTags);
+	    $color = ($color ? " class='${color}'" : "");
 	    $c = "<tr$color><td class='pctbname pctbl'>"
 		. contactNameHtml($p)
 		. ": " . plural($nnew, "assignment")
@@ -836,8 +836,8 @@ $pcdesc = array();
 $colorizer = new TagColorizer($Me);
 foreach ($pcm as $id => $p) {
     $count = count($pcdesc) + 1;
-    $color = $colorizer->match($p->contactTags);
-    $color = ($color ? " class='${color}tag'" : "");
+    $color = $colorizer->match_all($p->contactTags);
+    $color = ($color ? " class='${color}'" : "");
     $c = "<tr$color><td class='pctbl'>"
 	. tagg_checkbox("pcs[]", $id, isset($pcsel[$id]),
 			array("id" => "pcsel$count",
