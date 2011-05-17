@@ -949,7 +949,7 @@ function savesearch() {
     $name = simplifyWhitespace(defval($_REQUEST, "ssname", ""));
     if (!checkTag($name, CHECKTAG_NOPRIVATE | CHECKTAG_QUIET | CHECKTAG_NOINDEX)) {
 	if ($name == "")
-	    return $Conf->errorMsg("You must supply a name for the saved search.");
+	    return $Conf->errorMsg("Saved search name missing.");
 	else
 	    return $Conf->errorMsg("“" . htmlspecialchars($name) . "” contains characters not allowed in saved search names.  Stick to letters, numbers, and simple punctuation.");
     }
@@ -959,12 +959,18 @@ function savesearch() {
 	foreach (array("q", "qo", "qx") as $k)
 	    if (isset($_REQUEST[$k]) && $_REQUEST[$k] == "ss:$name")
 		$_REQUEST[$k] = (isset($t->$k) ? $t->$k : "");
+	if (isset($t->owner) && !$Me->privChair && $t->owner != $Me->contactId)
+	    return $Conf->errorMsg("You don’t have permission to change “ss:" . htmlspecialchars($name) . "”.");
     }
 
     $arr = array();
     foreach (array("q", "qo", "qx", "qt", "t", "sort") as $k)
 	if (isset($_REQUEST[$k]))
 	    $arr[$k] = $_REQUEST[$k];
+    if ($Me->privChair)
+	$arr["owner"] = "chair";
+    else
+	$arr["owner"] = $Me->contactId;
 
     // clean display settings
     if (isset($_SESSION["pldisplay"])) {
@@ -988,11 +994,17 @@ function savesearch() {
 	$arr["display"] = trim(join(" ", array_keys($display)));
     }
 
-    $Conf->qe("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode($arr)) . "') on duplicate key update value=values(value), data=values(data)", $while);
-    redirectSelf(array("q" => "ss:" . $name, "qo" => null, "qx" => null));
+    if (isset($_REQUEST["deletesearch"])) {
+	$Conf->qe("delete from Settings where name='ss:" . sqlq($name) . "'", $while);
+	redirectSelf();
+    } else {
+	$Conf->qe("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode($arr)) . "') on duplicate key update value=values(value), data=values(data)", $while);
+	redirectSelf(array("q" => "ss:" . $name, "qo" => null, "qx" => null));
+    }
 }
 
-if (isset($_REQUEST["savesearch"]) && $Me->isPC) {
+if ((isset($_REQUEST["savesearch"]) || isset($_REQUEST["deletesearch"]))
+    && $Me->isPC) {
     savesearch();
     $_REQUEST["tab"] = "ss";
 }
@@ -1266,19 +1278,39 @@ if ($Me->isPC || $Me->privChair) {
     if (count($ss) > 0 || $pl) {
 	echo "<div class='tld4' style='padding-bottom:1ex'>";
 	ksort($ss);
-	foreach ($ss as $sn => $sv) {
-	    $x = "q=ss%3A" . urlencode($sn);
-	    foreach (array("qt", "t", "sort", "display") as $k)
-		if (isset($sv->$k))
-		    $x .= "&amp;" . $k . "=" . urlencode($sv->$k);
-	    echo "<a href=\"", hoturl("search", $x), "\">", htmlspecialchars($sn), "</a><br />\n";
-	}
-	if (count($ss))
+	if (count($ss)) {
+	    $n = 0;
+	    foreach ($ss as $sn => $sv) {
+		echo "<table id='ssearch$n' class='foldc'><tr><td>",
+		    foldbutton("ssearch$n", "saved search information"),
+		    "&nbsp;</td><td>";
+		$arest = "";
+		foreach (array("qt", "t", "sort", "display") as $k)
+		    if (isset($sv->$k))
+			$arest .= "&amp;" . $k . "=" . urlencode($sv->$k);
+		echo "<a href=\"", hoturl("search", "q=ss%3A" . urlencode($sn) . $arest), "\">", htmlspecialchars($sn), "</a><div class='fx' style='padding-bottom:0.5ex;font-size:smaller'>",
+		    "Definition: “<a href=\"", hoturl("search", "q=" . urlencode(defval($sv, "q", "")) . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
+		if ($Me->privChair || !defval($sv, "owner") || $sv->owner == $Me->contactId)
+		    echo " &nbsp;<span class='barsep'>|</span>&nbsp; ",
+			"<a href=\"", selfHref(array("deletesearch" => 1, "ssname" => $sn)), "\">Delete</a>";
+		echo "</div></td></tr></table>";
+		++$n;
+	    }
 	    echo "<div class='g'></div>\n";
+	}
 	echo "<form method='post' action='", hoturl("search", "savesearch=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
 	echo_request_as_hidden_inputs(true);
-	echo "Save this search as:&nbsp; ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;<input type='submit' value='Save' tabindex='8' />";
-	echo "</div></form>";
+	echo "<table id='ssearchnew' class='foldc'>",
+	    "<tr><td>", foldbutton("ssearchnew", "saved search options"), "&nbsp;</td>",
+	    "<td><a class='q fn' href='javascript:void fold(\"ssearchnew\")'>New saved search</a><div class='fx'>",
+	    "Save ";
+	if (defval($_REQUEST, "q"))
+	    echo "search “", htmlspecialchars($_REQUEST["q"]), "”";
+	else
+	    echo "empty search";
+	echo " as:<br />ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;<input type='submit' value='Save' tabindex='8' />",
+	    "</div></td></tr></table>",
+	    "</div></form>";
 
 	echo "</div>";
 	$ss = true;

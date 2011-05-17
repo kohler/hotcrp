@@ -1125,7 +1125,7 @@ class PaperSearch {
 	    $search = json_decode($t);
 	    $qe = null;
 	    if (isset($this->_ssRecursion[$word]))
-		$this->warn("Saved search “" . htmlspecialchars($word) . "” is defined recursively.");
+		$this->warn("Saved search “" . htmlspecialchars($word) . "” is incorrectly defined in terms of itself.");
 	    else if ($t == "")
 		$this->warn("There is no saved search called “" . htmlspecialchars($word) . "”.");
 	    else {

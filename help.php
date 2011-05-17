@@ -786,10 +786,8 @@ Formula values become display options that show up on paper search screens.
 <p>Add new formulas using <a
 href=\"" . hoturl("search", "q=&amp;tab=formulas") . "\">Search &gt; Display options
 &gt; Edit formulas</a>.  Each formula has a name and a definition.  The definition uses
-a familiar expression language.  Formulas do not work well for alphabetical
-scores.</p>
-
-<p>As an example, the following formula calculates a weighted average of the
+a familiar expression language.
+For example, the following formula calculates a weighted average of the
 Overall merit score, where reviews are weighted proportional to the Reviewer
 expertise score (so low expertise has low weight):</p>
 
@@ -799,6 +797,8 @@ expertise score (so low expertise has low weight):</p>
 weights low expertise just slightly less than high expertise.</p>
 
 <blockquote>wavg(OveMer, RevExp < 3 ? 0.8 : 1)</blockquote>
+
+<p>Formulas do not work well for alphabetical scores.</p>
 
 <p>Formula expressions are built from the following parts:</p>");
     _alternateRow("Arithmetic", "2", "Numbers");
