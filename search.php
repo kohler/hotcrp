@@ -32,8 +32,19 @@ if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
 }
 if (!isset($_REQUEST["t"]))
     $_REQUEST["t"] = key($tOpt);
+
+// search canonicalization
 if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
     $_REQUEST["q"] = "";
+if ((isset($_REQUEST["qa"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"]))
+    && !isset($_REQUEST["q"])) {
+    $_REQUEST["qa"] = defval($_REQUEST, "qa", "");
+    $_REQUEST["q"] = PaperSearch::canonicalizeQuery($_REQUEST["qa"], defval($_REQUEST, "qo"), defval($_REQUEST, "qx"));
+} else {
+    unset($_REQUEST["qa"]);
+    unset($_REQUEST["qo"]);
+    unset($_REQUEST["qx"]);
+}
 
 
 // paper selection
@@ -956,15 +967,14 @@ function savesearch() {
 
     // support directly recursive definition (to e.g. change display options)
     if (($t = $Conf->settingText("ss:$name")) && ($t = json_decode($t))) {
-	foreach (array("q", "qo", "qx") as $k)
-	    if (isset($_REQUEST[$k]) && $_REQUEST[$k] == "ss:$name")
-		$_REQUEST[$k] = (isset($t->$k) ? $t->$k : "");
+	if (isset($_REQUEST["q"]) && $_REQUEST["q"] == "ss:$name")
+	    $_REQUEST["q"] = (isset($t->q) ? $t->q : "");
 	if (isset($t->owner) && !$Me->privChair && $t->owner != $Me->contactId)
 	    return $Conf->errorMsg("You don’t have permission to change “ss:" . htmlspecialchars($name) . "”.");
     }
 
     $arr = array();
-    foreach (array("q", "qo", "qx", "qt", "t", "sort") as $k)
+    foreach (array("q", "qt", "t", "sort") as $k)
 	if (isset($_REQUEST[$k]))
 	    $arr[$k] = $_REQUEST[$k];
     if ($Me->privChair)
@@ -999,7 +1009,7 @@ function savesearch() {
 	redirectSelf();
     } else {
 	$Conf->qe("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode($arr)) . "') on duplicate key update value=values(value), data=values(data)", $while);
-	redirectSelf(array("q" => "ss:" . $name, "qo" => null, "qx" => null));
+	redirectSelf(array("q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null));
     }
 }
 
@@ -1029,7 +1039,7 @@ if ($Me->privChair) {
 $Conf->header("Search", 'search', actionBar());
 unset($_REQUEST["urlbase"]);
 $Search = new PaperSearch($Me, $_REQUEST);
-if (isset($_REQUEST["q"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"])) {
+if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, array("sort" => true, "list" => true,
 				       "display" => defval($_REQUEST, "display")));
     $pl->showHeader = PaperList::HEADER_TITLES;
@@ -1042,8 +1052,7 @@ if (isset($_REQUEST["q"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"])) {
 // set up the search form
 if (isset($_REQUEST["redisplay"]))
     $activetab = 3;
-else if (defval($_REQUEST, "qx", "") != "" || defval($_REQUEST, "qo", "") != ""
-	 || defval($_REQUEST, "qt", "n") != "n")
+else if (isset($_REQUEST["qa"]) || defval($_REQUEST, "qt", "n") != "n")
     $activetab = 2;
 else
     $activetab = 1;
@@ -1244,7 +1253,7 @@ echo tagg_select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 <tr><td><div class='g'></div></td></tr>
 <tr>
   <td class='lxcaption'>With <b>all</b> the words</td>
-  <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' style='width:30em' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /><span class='sep'></span></td>
+  <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' style='width:30em' name='qa' value=\"", htmlspecialchars(defval($_REQUEST, "qa", defval($_REQUEST, "q", ""))), "\" tabindex='1' /><span class='sep'></span></td>
   <td rowspan='3'><input class='b' type='submit' value='Search' tabindex='2' /></td>
 </tr><tr>
   <td class='lxcaption'>With <b>any</b> of the words</td>
@@ -1262,8 +1271,10 @@ echo "</div>";
 
 function echo_request_as_hidden_inputs($specialscore = false) {
     global $pl;
-    foreach (array("q", "qx", "qo", "qt", "t", "sort") as $x)
-	if (isset($_REQUEST[$x]) && ($x != "sort" || !$specialscore || !$pl))
+    foreach (array("q", "qa", "qo", "qx", "qt", "t", "sort") as $x)
+	if (isset($_REQUEST[$x])
+	    && ($x != "q" || !isset($_REQUEST["qa"]))
+	    && ($x != "sort" || !$specialscore || !$pl))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
     if ($specialscore && $pl)
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($pl->sortdef(true)), "\" />\n";
@@ -1469,8 +1480,9 @@ if ($pl) {
     echo $pl_text;
     if ($pl->count == 0 && $_REQUEST["t"] != "s") {
 	$a = array();
-	foreach (array("q", "qo", "qx", "qt", "sort", "showtags") as $xa)
-	    if (isset($_REQUEST[$xa]))
+	foreach (array("q", "qa", "qo", "qx", "qt", "sort", "showtags") as $xa)
+	    if (isset($_REQUEST[$xa])
+		&& ($xa != "q" || !isset($_REQUEST["qa"])))
 		$a[] = "$xa=" . urlencode($_REQUEST[$xa]);
 	reset($tOpt);
 	echo " in ", strtolower($tOpt[$_REQUEST["t"]]);

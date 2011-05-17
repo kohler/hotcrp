@@ -198,8 +198,6 @@ class PaperSearch {
     var $warnings;
 
     var $q;
-    var $qo;
-    var $qx;
 
     var $regex;
     var $overrideMatchPreg;
@@ -285,8 +283,6 @@ class PaperSearch {
 
 	// the query itself
 	$this->q = trim(defval($opt, "q", ""));
-	$this->qo = trim(defval($opt, "qo", ""));
-	$this->qx = trim(defval($opt, "qx", ""));
 
 	// URL base
 	if (isset($opt["urlbase"]))
@@ -871,20 +867,12 @@ class PaperSearch {
 	return count($qo) != 0;
     }
 
-    function _searchPopWord(&$str) {
-	preg_match('/\A(-?"[^"]*"?|-?[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?[^\s()]*|[^"\s()]+)/s', $str, $m);
-	$str = ltrim(substr($str, strlen($m[0])));
-	return $m[0];
-    }
-
-    function _searchQueryWord($word, &$rest, $unrecognized_keyword_error) {
+    function _searchQueryWord($word, $unrecognized_keyword_error) {
 	global $searchTags, $ratingTypes, $Conf;
 
 	// check for paper number
-	if (preg_match('/\A#?(\d+)(?:-#?(\d+))?(,((?:#?\d+(?:-#?\d+)?,?)*))?\z/', $word, $m)) {
+	if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $word, $m)) {
 	    $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
-	    if (isset($m[4]) && $m[4])
-		$rest = $m[4] . " " . $rest;
 	    return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
 	}
 
@@ -908,8 +896,6 @@ class PaperSearch {
 		$special = $x;
 		$word = substr($word, $colon + 1);
 	    }
-	    if ($special !== null && $word === false)
-		$word = $this->_searchPopWord($rest);
 	}
 
 	$quoted = ($word[0] == '"');
@@ -1131,7 +1117,7 @@ class PaperSearch {
 	    else {
 		if ($search && is_object($search) && isset($search->q)) {
 		    $this->_ssRecursion[$word] = true;
-		    $qe = $this->_searchQueryType($search->q, "all");
+		    $qe = $this->_searchQueryType($search->q);
 		    unset($this->_ssRecursion[$word]);
 		}
 		if (!$qe)
@@ -1157,14 +1143,43 @@ class PaperSearch {
 	return $negated ? SearchTerm::negate($qe) : $qe;
     }
 
-    function _searchPopKeyword($str) {
+    static function _searchPopWord(&$str) {
+	global $searchTags;
+	$wordre = '/\A-?"[^"]*"?|-?[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?[^\s()]*|[^"\s()]+/s';
+
+	preg_match($wordre, $str, $m);
+	$str = ltrim(substr($str, strlen($m[0])));
+	$word = $m[0];
+
+	// commas in paper number strings turn into separate words
+	if (preg_match('/\A(#?\d+(?:-#?\d+)?),((?:#?\d+(?:-#?\d+)?,?)*)\z/', $word, $m)) {
+	    $word = $m[1];
+	    if ($m[2] != "")
+		$str = $m[2] . ($str == "" ? "" : " " . $str);
+	}
+
+	// allow a space after a keyword
+	if (($colon = strpos($word, ":")) !== false) {
+	    $x = substr($word, 0, $colon);
+	    if ((isset($searchTags[$x]) || strpos($x, '"') === false)
+		&& strlen($word) <= $colon + 1) {
+		preg_match($wordre, $str, $m);
+		$word .= $m[0];
+		$str = ltrim(substr($str, strlen($m[0])));
+	    }
+	}
+
+	return $word;
+    }
+
+    static function _searchPopKeyword($str) {
 	if (preg_match('/\A([-+()]|(?:AND|OR|NOT|THEN)(?=[\s\(]))/s', $str, $m))
 	    return array($m[1], ltrim(substr($str, strlen($m[0]))));
 	else
 	    return array(null, $str);
     }
 
-    function _searchPopStack($curqe, &$stack) {
+    static function _searchPopStack($curqe, &$stack) {
 	$x = array_pop($stack);
 	if (!$curqe)
 	    return $x->leftqe;
@@ -1179,14 +1194,12 @@ class PaperSearch {
 	    return SearchTerm::combine($x->kw->op, array($x->leftqe, $curqe));
     }
 
-    function _searchQueryType($str, $type) {
+    function _searchQueryType($str) {
 	global $searchKeywords, $Conf;
 
 	$stack = array();
 	$parens = 0;
-	$defaultop = ($type == "all" ? "XAND" : "XOR");
 	$curqe = null;
-	$lastprec = 1000;
 
 	while ($str !== "") {
 	    list($kwstr, $nextstr) = self::_searchPopKeyword($str);
@@ -1194,12 +1207,12 @@ class PaperSearch {
 
 	    if ($curqe && (!$kw || $kw->unary)) {
 		list($kwstr, $kw, $nextstr) =
-		    array("", $searchKeywords[$parens ? "XAND" : $defaultop], $str);
+		    array("", $searchKeywords["XAND"], $str);
 	    }
 
 	    if ($kwstr === null) {
 		$word = self::_searchPopWord($nextstr);
-		$curqe = $this->_searchQueryWord($word, $nextstr, true);
+		$curqe = $this->_searchQueryWord($word, true);
 	    } else if ($kwstr == ")") {
 		while (count($stack)
 		       && $stack[count($stack) - 1]->kw->op != "(")
@@ -1234,7 +1247,98 @@ class PaperSearch {
 
 	while (count($stack))
 	    $curqe = self::_searchPopStack($curqe, $stack);
-	return $type == "none" ? SearchTerm::negate($curqe) : $curqe;
+	return $curqe;
+    }
+
+    static function _canonicalizePopStack($curqe, &$stack) {
+	$x = array_pop($stack);
+	if ($curqe)
+	    $x->qe[] = $curqe;
+	if (!count($x->qe))
+	    return null;
+	if ($x->kw->unary) {
+	    $qe = $x->qe[0];
+	    if ($x->kw->op == "NOT") {
+		if (preg_match('/\A(?:[(-]|NOT )/', $qe))
+		    $qe = "NOT $qe";
+		else
+		    $qe = "-$qe";
+	    }
+	    return $qe;
+	} else if (count($x->qe) == 1)
+	    return $x->qe[0];
+	else if ($x->kw->op == "and" && $x->kw->precedence == 2)
+	    return "(" . join(" ", $x->qe) . ")";
+	else
+	    return "(" . join(strtoupper(" " . $x->kw->op . " "), $x->qe) . ")";
+    }
+
+    static function _canonicalizeQueryType($str, $type) {
+	global $searchKeywords, $Conf;
+
+	$stack = array();
+	$parens = 0;
+	$defaultop = ($type == "all" ? "XAND" : "XOR");
+	$curqe = null;
+	$t = "";
+
+	while ($str !== "") {
+	    list($kwstr, $nextstr) = self::_searchPopKeyword($str);
+	    $kw = $kwstr ? $searchKeywords[$kwstr] : null;
+
+	    if ($curqe && (!$kw || $kw->unary)) {
+		list($kwstr, $kw, $nextstr) =
+		    array("", $searchKeywords[$parens ? "XAND" : $defaultop], $str);
+	    }
+
+	    if ($kwstr === null) {
+		$curqe = self::_searchPopWord($nextstr);
+	    } else if ($kwstr == ")") {
+		while (count($stack)
+		       && $stack[count($stack) - 1]->kw->op != "(")
+		    $curqe = self::_canonicalizePopStack($curqe, $stack);
+		if (count($stack)) {
+		    array_pop($stack);
+		    --$parens;
+		}
+	    } else if ($kwstr == "(") {
+		assert(!$curqe);
+		$stack[] = (object) array("kw" => $kw, "qe" => array());
+		++$parens;
+	    } else {
+		while (count($stack)
+		       && $stack[count($stack) - 1]->kw->precedence > $kw->precedence)
+		    $curqe = self::_canonicalizePopStack($curqe, $stack);
+		$top = count($stack) ? $stack[count($stack) - 1] : null;
+		if ($top && !$kw->unary && $top->kw->op == $kw->op)
+		    $top->qe[] = $curqe;
+		else
+		    $stack[] = (object) array("kw" => $kw, "qe" => array($curqe));
+		$curqe = null;
+	    }
+
+	    $str = $nextstr;
+	}
+
+	if ($type == "none")
+	    array_unshift($stack, (object) array("kw" => $searchKeywords["NOT"], "qe" => array()));
+	while (count($stack))
+	    $curqe = self::_canonicalizePopStack($curqe, $stack);
+	return $curqe;
+    }
+
+    static function canonicalizeQuery($qa, $qo = null, $qx = null) {
+	$x = array();
+	if ($qa && ($qa = self::_canonicalizeQueryType($qa, "all")))
+	    $x[] = $qa;
+	if ($qo && ($qo = self::_canonicalizeQueryType($qo, "any")))
+	    $x[] = $qo;
+	if ($qx && ($qx = self::_canonicalizeQueryType($qx, "none")))
+	    $x[] = $qx;
+	if (count($x) == 1)
+	    return preg_replace('/\A\((.*)\)\z/', '$1', join("", $x));
+	else
+	    return join(" AND ", $x);
     }
 
 
@@ -1938,17 +2042,8 @@ class PaperSearch {
 		return true;
 	}
 
-	// collect query terms
-	$qt = array();
-	if (($qe = $this->_searchQueryType($this->q, "all")))
-	    $qt[] = $qe;
-	if (($qe = $this->_searchQueryType($this->qo, "any")))
-	    $qt[] = $qe;
-	if (($qe = $this->_searchQueryType($this->qx, "none")))
-	    $qt[] = $qe;
-
-	// clean the query
-	$qe = $this->_queryClean(SearchTerm::combine("and", $qt));
+	// parse and clean the query
+	$qe = $this->_queryClean($this->_searchQueryType($this->q));
 	if (!$qe)
 	    $qe = new SearchTerm("t");
 
@@ -2134,7 +2229,7 @@ class PaperSearch {
     }
 
     function complexSearch(&$queryOptions) {
-	if ($this->q || $this->qo || $this->qx)
+	if ($this->q)
 	    return true;
 	if ($this->limitName == "s" || $this->limitName == "revs")
 	    $queryOptions["finalized"] = 1;
@@ -2163,7 +2258,7 @@ class PaperSearch {
     }
 
     function simplePaperList() {
-	if (!$this->qo && !$this->qx && preg_match('/\A\s*#?\d[-#\d\s]*\z/s', $this->q)) {
+	if (preg_match('/\A\s*#?\d[-#\d\s]*\z/s', $this->q)) {
 	    $a = array();
 	    foreach (preg_split('/\s+/', $this->q) as $word) {
 		if ($word[0] == "#" && preg_match('/\A#\d+(-#?\d+)?/', $word))
@@ -2176,9 +2271,7 @@ class PaperSearch {
 		    return null;
 	    }
 	    return $a;
-	} else if (!$this->qx && !$this->q && preg_match('/\A\s*#?(\d+)\s*\z/s', $this->qo, $m))
-	    return array($m[1]);
-	else
+	} else
 	    return null;
     }
 
@@ -2203,39 +2296,36 @@ class PaperSearch {
 	$url = $this->urlbase;
 	if (substr($this->urlbase, 0, 6) == "search" || $this->q != "")
 	    $url .= "&q=" . urlencode($this->q);
-	if ($this->qo != "")
-	    $url .= "&qo=" . urlencode($this->qo);
-	if ($this->qx != "")
-	    $url .= "&qx=" . urlencode($this->qx);
 	return $url;
     }
 
     function _tagDescription() {
-	if (($this->q == "" ? 0 : 1) + ($this->qo == "" ? 0 : 1)
-	    + ($this->qx == "" ? 0 : 1) != 1)
+	if ($this->q == "")
 	    return false;
-	$d = trim($this->q == "" ? ($this->qo == "" ? $this->qx : $this->qo) : $this->q);
-	if (substr($d, 0, 4) == "tag:")
-	    $t = substr($d, 4);
-	else if (substr($d, 0, 6) == "notag:" || substr($d, 0, 6) == "order:")
-	    $t = substr($d, 6);
-	else if (substr($d, 0, 7) == "rorder:")
-	    $t = substr($d, 7);
+	else if (substr($this->q, 0, 4) == "tag:")
+	    $t = substr($this->q, 4);
+	else if (substr($this->q, 0, 5) == "-tag:")
+	    $t = substr($this->q, 5);
+	else if (substr($this->q, 0, 6) == "notag:"
+		 || substr($this->q, 0, 6) == "order:")
+	    $t = substr($this->q, 6);
+	else if (substr($this->q, 0, 7) == "rorder:")
+	    $t = substr($this->q, 7);
 	else
 	    return false;
 	require_once("tags.inc");
 	if (!checkTag($t, CHECKTAG_QUIET))
 	    return false;
-	if ($d[0] == "o" && !$this->qx)
-	    return $d;
+	if ($this->q[0] == "-")
+	    return "no" . substr($this->q, 1);
 	else
-	    return (($d[0] == "n") == ($this->qx == "") ? "notag:" : "tag:") . $t;
+	    return $this->q;
     }
 
     function description($listname) {
 	require_once("paperlist.inc");
 	$desc = PaperList::listDescription($listname);
-	if ($this->q == "" && $this->qo == "" && $this->qx == "")
+	if ($this->q == "")
 	    return $desc;
 	if (($td = $this->_tagDescription())) {
 	    if ($desc == "Submitted papers")
@@ -2248,8 +2338,7 @@ class PaperSearch {
 
     function listId($sort = "") {
 	return "p:" . $this->limitName . ":" . addcslashes($this->q, "\\:")
-	    . ":" . addcslashes($this->qo, "\\:")
-	    . ":" . addcslashes($this->qx, "\\:") . ":" . $sort;
+	    . ":::" . $sort;
     }
 
     function decorateSessionList($l, $listname, $sort = "") {

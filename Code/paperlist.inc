@@ -1443,11 +1443,7 @@ class PaperList extends BaseList {
 	$t = "<div><form id='plloadform' method='post' action='" . hoturl("search", "ajax=1" . $this->paperLinkArgs) . "' accept-charset='UTF-8'>"
 	    . "<div class='inform'>";
 	$s = $this->search;
-	if ($s->qx)
-	    $t .= "<input type='hidden' name='qx' value=\"" . htmlspecialchars($s->qx) . "\" />";
-	if ($s->qo)
-	    $t .= "<input type='hidden' name='qo' value=\"" . htmlspecialchars($s->qx) . "\" />";
-	if ($s->q || (!$s->qx && !$s->qo))
+	if ($s->q)
 	    $t .= "<input type='hidden' name='q' value=\"" . htmlspecialchars($s->q) . "\" />";
 	if ($s->qt)
 	    $t .= "<input type='hidden' name='qt' value=\"" . htmlspecialchars($s->qt) . "\" />";
