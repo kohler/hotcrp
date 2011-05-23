@@ -169,6 +169,12 @@ else
 );
 
 echo "<form method='post' action=\"", hoturl("mergeaccounts"), "\" accept-charset='UTF-8'>\n";
+
+// Try to prevent glasses interactions from screwing up merges
+if ($Me->privChair)
+    echo "<input type='hidden' name='chairMode' value='1' />";
+else if ($Me->chairContact)
+    echo "<input type='hidden' name='viewContact' value='", $Me->contactId, "' />";
 ?>
 
 <table class='form'>
