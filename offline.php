@@ -29,11 +29,8 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 	if (($prow = $Conf->paperRow($req['paperId'], $Me->contactId, $whyNot))
 	    && $Me->canSubmitReview($prow, null, $whyNot)) {
 	    $rrow = $Conf->reviewRow(array('paperId' => $prow->paperId, 'contactId' => $Me->contactId));
-	    if ($rf->checkRequestFields($req, $rrow, $tf)) {
-		$result = $rf->saveRequest($req, $rrow, $prow);
-		if ($result)
-		    $tf['confirm'][] = (isset($req['submit']) ? "Submitted" : "Uploaded") . " review for paper #$prow->paperId.";
-	    }
+	    if ($rf->checkRequestFields($req, $rrow, $tf))
+		$rf->saveRequest($req, $rrow, $prow, $tf);
 	} else
 	    $rf->tfError($tf, true, whyNotText($whyNot, "review"));
     }

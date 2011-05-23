@@ -389,7 +389,7 @@ class ReviewForm {
 	return ($nokfields > 0);
     }
 
-    function saveRequest($req, $rrow, $prow) {
+    function saveRequest($req, $rrow, $prow, &$tf = null) {
 	global $Conf, $Opt;
 	$Me = $_SESSION['Me'];
 	$submit = defval($req, "ready", false) && !defval($req, "unready", false);
@@ -435,6 +435,7 @@ class ReviewForm {
 	// mySQL is stupid)
 	$locked = false;
 	if ($submit && (!$rrow || !$rrow->reviewSubmitted)) {
+	    $different = true;
 	    $q[] = "reviewSubmitted=$now, reviewNeedsSubmit=0";
 	    if (!$rrow || !$rrow->reviewOrdinal) {
 		$result = $Conf->qe("lock tables PaperReview write", $while);
@@ -500,7 +501,7 @@ class ReviewForm {
 	$req['reviewId'] = $reviewId;
 
 	// log updates -- but not if review token is used
-	if (!$usedReviewToken) {
+	if (!$usedReviewToken && $different) {
 	    $reviewLogname = "Review $reviewId";
 	    if ($rrow && $Me->contactId != $rrow->contactId)
 		$reviewLogname .= " by $rrow->email";
@@ -560,6 +561,15 @@ class ReviewForm {
 	if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL && $submit
 	    && $Conf->sversion >= 3)
 	    $Conf->q("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
+
+	if ($tf) {
+	    if ($submit && (!$rrow || !$rrow->reviewSubmitted))
+		$tf["newlySubmitted"][] = "#$prow->paperId";
+	    else if ($different)
+		$tf["updated"][] = "#$prow->paperId";
+	    else
+		$tf["unchanged"][] = "#$prow->paperId";
+	}
 
 	return $result;
     }
@@ -862,7 +872,7 @@ $blind\n";
 		    $req['paperId'] = $tf['paperId'] = $match[1];
 		    $req['blind'] = 1;
 		    $tf['firstLineno'] = $lineno;
-		} else if (preg_match('/^==\+== Reviewer:\s*(.*?)\s*<(\S+?)>/', $line, $match)) {
+		} else if (preg_match('/^==\+== Reviewer:\s*(.*)\s*<(\S+?)>/', $line, $match)) {
 		    $tf["fieldLineno"]["reviewerEmail"] = $lineno;
 		    $req["reviewerName"] = $match[1];
 		    $req["reviewerEmail"] = $match[2];
@@ -951,19 +961,38 @@ $blind\n";
 	    return $req;
     }
 
+    static function _paperCommaJoin($pl, $a) {
+	foreach ($a as &$x)
+	    if (preg_match('/\A(#?)(\d+)\z/', $x, $m))
+		$x = "<a href=\"" . hoturl("paper", "p=$m[2]") . "\">" . $x . "</a>";
+	while (preg_match('/\b(\w+)\*/', $pl, $m))
+	    $pl = preg_replace('/\b' . $m[1] . '\*/', pluralx(count($a), $m[1]), $pl);
+	return $pl . commajoin($a);
+    }
+
     function textFormMessages(&$tf) {
 	global $Conf;
 
-	if (isset($tf["ignoredBlank"]) && count($tf["ignoredBlank"]) > 0) {
-	    unset($tf["paperId"]);
-	    self::tfError($tf, false, "Ignored blank " . pluralx(count($tf["ignoredBlank"]), "review form") . " for " . pluralx(count($tf["ignoredBlank"]), "paper") . " " . commajoin($tf["ignoredBlank"]) . ".");
-	}
 	if (count($tf['err']) > 0) {
 	    $Conf->msg("There were " . (defval($tf, 'anyErrors') && defval($tf, 'anyWarnings') ? "errors and warnings" : (defval($tf, 'anyErrors') ? "errors" : "warnings")) . " while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>",
 		       defval($tf, 'anyErrors') ? "merror" : "warning");
 	}
-	if (count($tf['confirm']) > 0)
-	    $Conf->confirmMsg("<div class='parseerr'><p>" . join("</p>\n<p>", $tf['confirm']) . "</p></div>");
+
+	$confirm = array();
+	if (isset($tf["confirm"]) && count($tf["confirm"]) > 0)
+	    $confirm = array_merge($confirm, $tf["confirm"]);
+	if (isset($tf["newlySubmitted"]) && count($tf["newlySubmitted"]) > 0)
+	    $confirm[] = self::_paperCommaJoin("Submitted new review* for paper* ", $tf["newlySubmitted"]) . ".";
+	if (isset($tf["updated"]) && count($tf["updated"]) > 0)
+	    $confirm[] = self::_paperCommaJoin("Updated review* for paper* ", $tf["updated"]) . ".";
+	$nconfirm = count($confirm);
+	if (isset($tf["unchanged"]) && count($tf["unchanged"]) > 0)
+	    $confirm[] = self::_paperCommaJoin("Review* for paper* ", $tf["unchanged"]) . " unchanged.";
+	if (isset($tf["ignoredBlank"]) && count($tf["ignoredBlank"]) > 0)
+	    $confirm[] = self::_paperCommaJoin("Ignored blank review form* for paper* ", $tf["ignoredBlank"]) . ".";
+	// self::tfError($tf, false, "Ignored blank " . pluralx(count($tf["ignoredBlank"]), "review form") . " for " . self::_paperCommaJoin("review form* for paper*", $tf["ignoredBlank"]) . ".");
+	if (count($confirm))
+	    $Conf->msg("<div class='parseerr'><p>" . join("</p>\n<p>", $confirm) . "</p></div>", $nconfirm ? "confirm" : "warning");
     }
 
     function webDisplayRows($rrow, $revViewScore) {
