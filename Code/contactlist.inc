@@ -431,6 +431,7 @@ class ContactList extends BaseList {
 	// Begin linelinks
 	$t .= "<span class='lll1'><a href='javascript:void crpfocus(\"pplact\",1)'>Download</a></span><span class='lld1'><b>:</b> &nbsp;"
 	    . tagg_select("getaction", array("nameemail" => "Names and emails",
+					     "nameaffemail" => "Names, affiliations, and emails",
 					     "address" => "Addresses"),
 			  null, array("id" => "pplact1_d"))
 	    . "&nbsp; <input type='submit' class='bsm' name='getgo' value='Go' /></span>";

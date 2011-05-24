@@ -79,31 +79,50 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
 
 if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
     $result = $Conf->qe("select firstName, lastName, email from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
-    $text = "#name\temail\n";
+    $people = array();
     while ($row = edb_row($result))
-	if ($row[0] && $row[1])
-	    $text .= "$row[1], $row[0]\t$row[2]\n";
-	else
-	    $text .= "$row[1]$row[0]\t$row[2]\n";
-    downloadText($text, "accounts", "accounts");
+	$people[] = array($row[0] && $row[1] ? "$row[1], $row[0]" : "$row[1]$row[0]", $row[2]);
+    downloadCSV($people, array("name", "email"), "accounts", "accounts");
+    exit;
+}
+
+if ($getaction == "nameaffemail" && isset($papersel) && $Me->isPC) {
+    $result = $Conf->qe("select firstName, lastName, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
+    $people = array();
+    while ($row = edb_row($result))
+	$people[] = array($row[0] && $row[1] ? "$row[1], $row[0]" : "$row[1]$row[0]", $row[3], $row[2]);
+    downloadCSV($people, array("name", "affiliation", "email"), "accounts", "accounts");
     exit;
 }
 
 if ($getaction == "address" && isset($papersel) && $Me->isPC) {
     $result = $Conf->qe("select firstName, lastName, email, voicePhoneNumber, faxPhoneNumber, ContactAddress.* from ContactInfo left join ContactAddress using (contactId) where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
-    $text = "#name\temail\taddress line 1\taddress line 2\tcity\tstate/province/region\tzip/postal code\tcountry\tvoice phone\tfax\n";
+    $people = array();
+    $phone = $fax = false;
     while ($row = edb_orow($result)) {
+	$p = array(null, $row->email, $row->addressLine1, $row->addressLine2,
+		   $row->city, $row->state, $row->zipCode, $row->country);
+	if ($row->voicePhoneNumber || $row->faxPhoneNumber) {
+	    $phone = true;
+	    $p[] = $row->voicePhoneNumber;
+	}
+	if ($row->faxPhoneNumber) {
+	    $fax = true;
+	    $p[] = $row->faxPhoneNumber;
+	}
 	if ($row->firstName && $row->lastName)
-	    $text .= "$row->lastName, $row->firstName";
+	    $p[0] = "$row->lastName, $row->firstName";
 	else
-	    $text .= "$row->lastName$row->firstName";
-	foreach (array("email", "addressLine1", "addressLine2", "city",
-		       "state", "zipCode", "country", "voicePhoneNumber",
-		       "faxPhoneNumber") as $k)
-	    $text .= "\t" . addcslashes($row->$k, "\\\r\n\t");
-	$text .= "\n";
+	    $p[0] = "$row->lastName$row->firstName";
+	$people[] = $p;
     }
-    downloadText($text, "addresses", "addresses");
+    $header = array("name", "email", "address line 1", "address line 2",
+		    "city", "state/province/region", "zip/postal code", "country");
+    if ($phone)
+	$header[] = "voice phone";
+    if ($fax)
+	$header[] = "fax";
+    downloadCSV($people, $header, "addresses", "addresses");
     exit;
 }
 
