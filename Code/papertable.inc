@@ -1491,11 +1491,6 @@ class PaperTable {
 	$canAssign = $Me->actChair($prow);
 	$canHome = ($canEdit || $canAssign || $this->mode == "contact");
 
-	// a little extra space after messages
-	if ($Conf->msgcount > 0
-	    && ($canEdit || $canReview || $canAssign || $canHome))
-	    echo "<div class='msgpg'></div>\n";
-
 	echo "<div class='pban'>";
 
 	// paper tabs
@@ -1558,12 +1553,12 @@ class PaperTable {
 
 	if ($prow) {
 	    $this->_paptabBeginKnown();
-	    echo "<table class='pbox' style='margin-top:0'><tr>\n",
+	    echo "<div class='pbox1'><table class='pbox'><tr>\n",
 		"    <td class='pboxi'><div class='papstripc'><div class='papstrip'><div class='papstripi'>\n";
 	    $this->_papstrip();
 	    echo "</div></div></div></td>\n";
 	} else {
-	    echo "<table class='pbox'><tr>\n",
+	    echo "<div class='pbox1'><table class='pbox'><tr>\n",
 		"    <td class='pboxni'></td>\n",
 		"    <td class='pboxnt'><table class='papcbar'>\n",
 		"	<tr><td class='papculs'></td><td></td><td class='papcur'></td></tr>\n",
@@ -1688,7 +1683,7 @@ class PaperTable {
 	if (($empty = ($t == "")))
 	    $t = $ifempty;
 	$this->_paptabSepContaining($t);
-	echo tagg_cbox("pap", true), "</td></tr></table>\n";
+	echo tagg_cbox("pap", true), "</td></tr></table></div>\n";
 	return $empty;
     }
 
@@ -1789,7 +1784,7 @@ class PaperTable {
 	if ($this->mode != "pe")
 	    $this->_paptabReviewLinks(false, null, "");
 	else
-	    echo tagg_cbox("pap", true), "</td></tr></table>\n";
+	    echo tagg_cbox("pap", true), "</td></tr></table></div>\n";
     }
 
     function paptabEndWithEditableReview() {

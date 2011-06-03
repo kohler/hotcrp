@@ -1598,8 +1598,11 @@ class Conference {
 	// JavaScript's idea of a timezone offset is the negative of PHP's
 	$this->footerScript("hotcrpLoad.time($now," . (-date("Z", $now) / 60) . "," . (defval($Opt, "time24hour") ? 1 : 0) . ")");
 	$this->footerScript("loadDeadlines.init(" . json_encode($dl) . ",\"" . hoturl("deadlines") . "\")");
-	echo " onload='hotcrpLoad()'>\n<div id='header'>\n",
-	    "  <div id='header_left_conf'><h1>";
+	echo " onload='hotcrpLoad()'>\n";
+
+	echo "<div id='prebody'>\n";
+
+	echo "<div id='header'>\n<div id='header_left_conf'><h1>";
 	if ($title && $showTitle && $title == "Home")
 	    echo "<a class='q' href='", hoturl("index"), "' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a>";
 	else
@@ -1648,22 +1651,25 @@ class Conference {
 	echo "</div></div>\n";
 	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", htmlspecialchars($Opt["shortName"]), " Public Site</a></div>\n";
 
-	print "  <div class='clear'></div>\n";
+	echo "  <div class='clear'></div>\n";
 
-	print $actionBar;
+	echo $actionBar;
 
-	print "</div><div class='body'>\n";
+	echo "</div>\n";
 
 	if (isset($_SESSION["msgs"])) {
+	    echo "<div id='initialmsgs'>\n";
 	    foreach ($_SESSION["msgs"] as $m) {
 		echo $m;
 		$this->msgcount++;
 	    }
 	    unset($_SESSION["msgs"]);
+	    echo "</div>\n";
 	}
 	$this->saveMessages = false;
 
 	$this->headerPrinted = 2;
+	echo "</div>\n<div class='body'>\n";
     }
 
     function closeTableMessages() {
@@ -1682,7 +1688,8 @@ class Conference {
     function footer() {
 	global $Opt;
 	$this->closeTableMessages();
-	echo "</div>\n<div id='footer'>\n  <div id='footer_crp'>",
+	echo "</div>\n", // class='body'
+	    "<div id='footer'>\n  <div id='footer_crp'>",
 	    defval($Opt, "extraFooter", ""),
 	    "<a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software";
 	if (!defval($Opt, "noFooterVersion", 0))
