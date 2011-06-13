@@ -94,7 +94,7 @@ function contactQuery($type) {
     else if ($type == "unsub")
 	$where[] = "Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0";
     else if (substr($type, 0, 4) == "dec:") {
-	foreach ($rf->options['outcome'] as $num => $what)
+	foreach ($rf->options["outcome"] as $num => $what)
 	    if (strcasecmp($what, substr($type, 4)) == 0) {
 		$where[] = "Paper.timeSubmitted>0 and Paper.outcome=$num";
 		break;
@@ -553,15 +553,3 @@ echo "  <tr><td class='mhnp'>Subject:</td><td class='mhdp'>",
 </div></form>\n";
 
 $Conf->footer();
-
-
-//   } else if ($who == "author-late-review") {
-//       $query = "SELECT DISTINCT firstName, lastName, email, Paper.paperId, Paper.title, Paper.authorInformation, Paper.blind "
-//              . "FROM ContactInfo, Paper, PaperReview, Settings "
-//	     . "WHERE Paper.timeSubmitted>0 "
-//	     . "AND PaperReview.paperId = Paper.paperId "
-//	     . "AND Paper.contactId = ContactInfo.contactId "
-//	     . "AND PaperReview.reviewSubmitted>0 "
-//	     . "AND PaperReview.reviewModified > Settings.value "
-//	     . "AND Settings.name = 'resp_open' "
-//	     . " $group_order";
