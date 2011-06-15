@@ -79,7 +79,7 @@ $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 global $allowedSessionVars;
 $allowedSessionVars = array("foldassigna", "foldpaperp", "foldpaperb",
 			    "foldpapert", "foldpscollab", "foldhomeactivity",
-			    "pfdisplay", "pldisplay");
+			    "pfdisplay", "pldisplay", "ppldisplay");
 
 global $authorConflictTypes;
 $authorConflictTypes = array(0 => "No conflict", 3 => "Advisor/student",

@@ -1759,6 +1759,8 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
 	$x = $_SESSION[$sessionvar];
     else if ($sessionvar == "pldisplay")
 	$x = $Conf->settingText("pldisplay_default", " overAllMerit ");
+    else if ($sessionvar == "ppldisplay")
+	$x = $Conf->settingText("ppldisplay_default", " tags ");
     else
 	$x = "";
     if ($x == null || $x == "")

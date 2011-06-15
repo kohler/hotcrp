@@ -1261,7 +1261,6 @@ table.pltable th, table.ppltable th, table.setreviewform th, table.auedittable t
 	vertical-align: bottom;
 }
 .pl_title, .pl_reviewer, .pl_name, .pl_email, .pl_affiliation {
-	padding-left: 0.125em;
 	padding-right: 1em;
 }
 .pl_activityicon {
@@ -1309,6 +1308,9 @@ div.pl_revtypeiround {
 .pl_selector, .pl_footselector {
 	text-align: right;
 	white-space: nowrap;
+}
+table.ppltable td.pl_selector {
+	padding-right: 3px;
 }
 .pl_confselector {
 	text-align: center;
@@ -1393,7 +1395,7 @@ tr.pl_headrow td, td.pl_footer, tr.pl_headrow th, tr.al_headrow th,
 table.setreviewform th, table.auedittable th {
 	font-size: smaller;
 }
-td.pl_selector, td.pl_footer {
+td.pl_footer {
 	padding-top: 3px;
 }
 tr.pl_headgap td {

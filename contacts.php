@@ -19,6 +19,8 @@ $tOpt["pc"] = "Program committee";
 if ($Me->isPC && count($pctags = pcTags())) {
     foreach ($pctags as $t)
 	$tOpt["pc:$t"] = "PC members tagged &ldquo;$t&rdquo;";
+    if (!isset($_SESSION["foldppltags"]))
+	$_SESSION["foldppltags"] = 0;
 }
 if ($Me->isPC)
     $tOpt["admin"] = "System administrators";
@@ -129,8 +131,10 @@ if ($getaction == "address" && isset($papersel) && $Me->isPC) {
 
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {
-    $_SESSION["foldpplaff"] = !defval($_REQUEST, "showaff", 0);
-    $_SESSION["foldppltopics"] = !defval($_REQUEST, "showtop", 0);
+    $_SESSION["ppldisplay"] = "";
+    displayOptionsSet("ppldisplay", "aff", defval($_REQUEST, "showaff", 0));
+    displayOptionsSet("ppldisplay", "topics", defval($_REQUEST, "showtop", 0));
+    displayOptionsSet("ppldisplay", "tags", defval($_REQUEST, "showtags", 0));
     $_SESSION["pplscores"] = 0;
 }
 if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
@@ -182,12 +186,20 @@ if (count($tOpt) > 1) {
     if ($pl->haveAffrow !== null) {
 	echo tagg_checkbox("showaff", 1, $pl->haveAffrow,
 			   array("onchange" => "fold('ppl',!this.checked,2)")),
-	    "&nbsp;", tagg_label("Affiliations"), "<br />\n";
+	    "&nbsp;", tagg_label("Affiliations"),
+	    foldsessionpixel("ppl2", "ppldisplay", "aff"), "<br />\n";
+    }
+    if ($pl->haveTags !== null) {
+	echo tagg_checkbox("showtags", 1, $pl->haveTags,
+			   array("onchange" => "fold('ppl',!this.checked,3)")),
+	    "&nbsp;", tagg_label("Tags"),
+	    foldsessionpixel("ppl3", "ppldisplay", "tags"), "<br />\n";
     }
     if ($pl->haveTopics !== null) {
 	echo tagg_checkbox("showtop", 1, $pl->haveTopics,
 			   array("onchange" => "fold('ppl',!this.checked,1)")),
-	    "&nbsp;", tagg_label("Topic interests"), "<br />\n";
+	    "&nbsp;", tagg_label("Topic interests"),
+	    foldsessionpixel("ppl1", "ppldisplay", "topics"), "<br />\n";
     }
     echo "</td>";
     if (isset($pl->scoreMax)) {

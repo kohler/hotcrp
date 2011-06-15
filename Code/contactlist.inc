@@ -24,6 +24,7 @@ class ContactList extends BaseList {
     const FIELD_REVIEW_RATINGS = 12;
     const FIELD_LEADS = 13;
     const FIELD_SHEPHERDS = 14;
+    const FIELD_TAGS = 15;
 
     var $showHeader;
     var $sortField;
@@ -36,6 +37,7 @@ class ContactList extends BaseList {
     var $limit;
     var $haveAffrow;
     var $haveTopics;
+    var $haveTags;
     var $rf;
     var $listNumber;
     var $contactLinkArgs;
@@ -54,7 +56,7 @@ class ContactList extends BaseList {
 	else
 	    $this->sortField = null;
 	$this->sortable = $sortable;
-	$this->haveAffrow = $this->haveTopics = null;
+	$this->haveAffrow = $this->haveTopics = $this->haveTags = null;
 	$this->rf = reviewForm();
 
 	$this->contact = $contact;
@@ -98,6 +100,8 @@ class ContactList extends BaseList {
 	    $queryOptions['repapers'] = true;
 	if ($fieldId == self::FIELD_AFFILIATION_ROW)
 	    $this->haveAffrow = true;
+	if ($fieldId == self::FIELD_TAGS)
+	    $this->haveTags = true;
 	if (self::_normalizeField($fieldId) == self::FIELD_SCORE) {
 	    // XXX scoresOk
 	    $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
@@ -251,6 +255,8 @@ class ContactList extends BaseList {
 	case self::FIELD_PAPERS:
 	case self::FIELD_REVIEW_PAPERS:
 	    return "Papers";
+	case self::FIELD_TAGS:
+	    return "Tags";
 	case self::FIELD_SCORE: {
 	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 	    return $this->rf->webFieldAbbrev($scoreName);
@@ -366,6 +372,19 @@ class ContactList extends BaseList {
 	    foreach ($x as $k => $v)
 		$m[] = "<a href=\"" . hoturl("review", "r=$v$extra") . "\">$k</a>";
 	    return join(", ", $m);
+	case self::FIELD_TAGS:
+	    if (!$this->contact->isPC || !$row->contactTags)
+		return "";
+	    require_once("tags.inc");
+	    $t = $row->contactTags;
+	    if (strpos($t, "~") !== false) {
+		$t = str_replace(" " . $this->contact->contactId . "~", " ~", " $t ");
+		if ($this->contact->privChair)
+		    $t = trim(preg_replace('/ \d+~\S+/', '', $t));
+		else
+		    $t = trim(preg_replace('/ [\d~]+~\S+/', '', $t));
+	    }
+	    return trim($t);
 	case self::FIELD_SCORE:
 	    if (!$row->pc && !$this->contact->privChair
 		&& $this->limit != "req")
@@ -397,7 +416,7 @@ class ContactList extends BaseList {
 	case "pc":
 	case "admin":
 	case "pcadmin":
-	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_LEADS, self::FIELD_SHEPHERDS));
+	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_LEADS, self::FIELD_SHEPHERDS));
 	case "pcadminx":
 	    return array($listname, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS);
 	  case "re":
@@ -619,12 +638,18 @@ class ContactList extends BaseList {
 	$srows = $this->_sort($rows);
 
 	// count non-callout columns
-	$skipcallout = 0;
+	$firstcallout = $lastcallout = null;
+	$n = 0;
 	foreach ($fieldDef as $fieldId => $fdef)
-	    if ($fieldId < self::FIELD_SELECTOR)
-		break;
-	    else
-		++$skipcallout;
+	    if ($fdef[1] == 1) {
+		if ($firstcallout === null && $fieldId < self::FIELD_SELECTOR)
+		    $firstcallout = $n;
+		if ($fieldId < self::FIELD_SCORE)
+		    $lastcallout = $n + 1;
+		++$n;
+	    }
+	$firstcallout = $firstcallout ? $firstcallout : 0;
+	$lastcallout = ($lastcallout ? $lastcallout : $ncol) - $firstcallout;
 
 	// collect row data
 	$this->count = 0;
@@ -649,46 +674,58 @@ class ContactList extends BaseList {
 	    $this->count++;
 	    $ids[] = $row->contactId;
 
-	    $t = "  <tr class=\"pl $trclass\">\n";
-	    foreach ($fieldDef as $fieldId => $fdef)
-		if ($fdef[1] == 1) {
-		    $c = $this->content($fieldId, $row);
-		    $t .= "    <td class=\"pl_$fdef[0]\">$c</td>\n";
-		    if ($c != "")
-			$anyData[$fieldId] = 1;
-		}
-	    $t .= "  </tr>\n";
-
+	    // First create the expanded callout row
 	    $tt = "";
 	    foreach ($fieldDef as $fieldId => $fdef)
 		if ($fdef[1] >= 2
 		    && ($d = $this->content($fieldId, $row)) !== "") {
 		    $tt .= "<div";
 		    //$t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
-		    if ($fdef[1] == 3 || $fdef[1] == 4)
+		    if ($fdef[1] >= 3)
 			$tt .= " class=\"fx" . ($fdef[1] - 2) . "\"";
 		    $tt .= "\"><h6>" . $this->header($fieldId, -1, $row)
 			. ":</h6> " . $d . "</div>";
 		}
 
 	    if ($tt !== "") {
-		$t .= "  <tr class=\"plx $trclass\">";
-		if ($skipcallout > 0)
-		    $t .= "<td colspan=\"$skipcallout\"></td>";
-		$t .= "<td colspan=\"" . ($ncol - $skipcallout) . "\">$tt</td></tr>\n";
+		$x = "  <tr class=\"plx $trclass\">";
+		if ($firstcallout > 0)
+		    $x .= "<td colspan=\"$firstcallout\"></td>";
+		$tt = $x . "<td colspan=\"" . ($lastcallout - $firstcallout)
+		    . "\">" . $tt . "</td></tr>\n";
 	    }
 
-	    $body .= $t;
+	    // Now the normal row
+	    $t = "  <tr class=\"pl $trclass\">\n";
+	    $n = 0;
+	    foreach ($fieldDef as $fieldId => $fdef)
+		if ($fdef[1] == 1) {
+		    $c = $this->content($fieldId, $row);
+		    $t .= "    <td class=\"pl_$fdef[0]\"";
+		    if ($n >= $lastcallout && $tt != "")
+			$t .= " rowspan=\"2\"";
+		    $t .= ">" . $c . "</td>\n";
+		    if ($c != "")
+			$anyData[$fieldId] = 1;
+		    ++$n;
+		}
+	    $t .= "  </tr>\n";
+
+	    $body .= $t . $tt;
 	}
 
 	$x = "<table class=\"ppltable plt_" . htmlspecialchars($listname);
 	if ($this->haveAffrow !== null) {
-	    $this->haveAffrow = (defval($_SESSION, "foldpplaff", 0) == 0);
+	    $this->haveAffrow = strpos(displayOptionsSet("ppldisplay"), " aff ") !== false;
 	    $x .= ($this->haveAffrow ? " fold2o" : " fold2c");
 	}
 	if ($this->haveTopics !== null) {
-	    $this->haveTopics = (defval($_SESSION, "foldppltopics", 1) == 0);
+	    $this->haveTopics = strpos(displayOptionsSet("ppldisplay"), " topics ") !== false;
 	    $x .= ($this->haveTopics ? " fold1o" : " fold1c");
+	}
+	if ($this->haveTags !== null) {
+	    $this->haveTags = strpos(displayOptionsSet("ppldisplay"), " tags ") !== false;
+	    $x .= ($this->haveTags ? " fold3o" : " fold3c");
 	}
 	$x .= "\" id=\"foldppl\">\n";
 
@@ -792,5 +829,6 @@ $contactListFields = array(
 	ContactList::FIELD_REVIEW_PAPERS => array('papers', 1, 1),
 	ContactList::FIELD_SCORE => array('score', 1, 1),
 	ContactList::FIELD_LEADS => array('revstat', 1, 1),
-	ContactList::FIELD_SHEPHERDS => array('revstat', 1, 1)
+	ContactList::FIELD_SHEPHERDS => array('revstat', 1, 1),
+	ContactList::FIELD_TAGS => array('tags', 5, 0)
 	);
