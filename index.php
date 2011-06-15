@@ -216,15 +216,17 @@ if ($Me->privChair) {
     if (get_magic_quotes_runtime())
 	$Conf->errorMsg("The PHP <code>magic_quotes_runtime</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP's <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_runtime</code> in your <code>php.ini</code> configuration file.");
     if ($Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
-	$Conf->warnMsg("PHP&rsquo;s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP&rsquo;s preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect.");
+	$Conf->warnMsg("PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect.");
     $result = $Conf->qx("show variables like 'max_allowed_packet'");
     $max_file_size = ini_get_bytes("upload_max_filesize");
     if (($row = edb_row($result)) && $row[1] < $max_file_size)
-	$Conf->warnMsg("MySQL&rsquo;s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.");
+	$Conf->warnMsg("MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.");
+    if (!function_exists("imagecreate"))
+	$Conf->warnMsg("This PHP installation lacks support for the GD library, so HotCRP cannot generate score charts.  You should update your PHP installation; on Ubuntu Linux, for example, try installing the <code>php5-gd</code> package.");
     // Any -100 preferences around?
     $result = $Conf->qx("select PRP.paperId from PaperReviewPreference PRP join PCMember PCM on (PCM.contactId=PRP.contactId) left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId) where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0 limit 1");
     if (($row = edb_row($result)))
-	$Conf->warnMsg("PC members have indicated paper conflicts (using review preferences of &minus;100 or less) that aren&rsquo;t yet confirmed.  <a href='" . hoturl("autoassign", "a=prefconflict&amp;assign=1") . "' class='nowrap'>Confirm these conflicts</a>");
+	$Conf->warnMsg("PC members have indicated paper conflicts (using review preferences of &minus;100 or less) that aren’t yet confirmed.  <a href='" . hoturl("autoassign", "a=prefconflict&amp;assign=1") . "' class='nowrap'>Confirm these conflicts</a>");
     // Weird URLs?
     foreach (array("conferenceSite", "paperSite") as $k)
 	if ($Opt[$k] && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', $Opt[$k]))
