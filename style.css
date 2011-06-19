@@ -552,7 +552,8 @@ input.b, button.b, select.b, input.bsm, button.bsm, select.bsm {
 input.bsm, button.bsm, select.bsm {
 	font-size: smaller;
 }
-#plact input, #plact button, #plact select {
+#plact input, #plact button, #plact select,
+#pplact input, #pplact button, #pplact select {
 	font-size: 100%;
 }
 input.b.alert, input.bsm.alert {
@@ -1309,7 +1310,8 @@ div.pl_revtypeiround {
 	text-align: right;
 	white-space: nowrap;
 }
-table.ppltable td.pl_selector {
+table.ppltable td.pl_selector,
+table.ppltable td.pl_footselector {
 	padding-right: 3px;
 }
 .pl_confselector {
