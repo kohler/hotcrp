@@ -106,10 +106,12 @@ function contactQuery($type) {
     // reviewer limit
     if ($type == "crev")
 	$where[] = "PaperReview.reviewSubmitted>0";
-    else if ($type == "uncrev" || $type == "myuncextrev" || $type == "uncextrev")
+    else if ($type == "uncrev" || $type == "myuncextrev" || $type == "uncextrev" || $type == "uncpcrev")
 	$where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0";
     if ($type == "extrev" || $type == "myextrev" || $type == "uncextrev" || $type == "myuncextrev")
 	$where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
+    else if ($type == "pcrev" || $type == "uncpcrev")
+	$where[] = "PaperReview.reviewType>" . REVIEW_EXTERNAL;
     if ($type == "myextrev" || $type == "myuncextrev")
 	$where[] = "PaperReview.requestedBy=" . $Me->contactId;
 
@@ -122,7 +124,7 @@ function contactQuery($type) {
 	$orderby = "email";
 	if ($type != "pc")
 	    $where[] = "ContactInfo.contactTags like '% " . sqlq_for_like(substr($type, 3)) . " %'";
-    } else if ($type == "rev" || $type == "crev" || $type == "uncrev" || $type == "extrev" || $type == "myextrev" || $type == "uncextrev" || $type == "myuncextrev") {
+    } else if ($type == "rev" || $type == "crev" || $type == "uncrev" || $type == "extrev" || $type == "myextrev" || $type == "uncextrev" || $type == "myuncextrev" || $type == "pcrev" || $type == "uncpcrev") {
 	$q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
 	$orderby = "email, Paper.paperId";
     } else if ($type == "lead" || $type == "shepherd") {
@@ -359,6 +361,8 @@ if ($Me->privChair) {
     $recip["rev"] = "Reviewers";
     $recip["crev"] = "Reviewers with complete reviews";
     $recip["uncrev"] = "Reviewers with incomplete reviews";
+    $recip["pcrev"] = "PC reviewers";
+    $recip["uncpcrev"] = "PC reviewers with incomplete reviews";
     $recip["extrev"] = "External reviewers";
     $recip["uncextrev"] = "External reviewers with incomplete reviews";
     if ($anyLead)
