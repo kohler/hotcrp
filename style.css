@@ -1582,26 +1582,26 @@ tr.pl.greytag td, tr.pl.graytag td {
 .boldtag, tr.pl.boldtag td.pl_id, tr.pl.boldtag td.pl_title {
 	font-weight: bold;
 }
-tr.pl.boldtag {
-	font-weight: normal;
+tr.pl.boldtag, tr.plx.boldtag {
+	font-weight: inherit;
 }
 .italictag, tr.pl.italictag td.pl_id, tr.pl.italictag td.pl_title {
 	font-style: italic;
 }
-tr.pl.italictag {
-	font-style: normal;
+tr.pl.italictag, tr.plx.italictag {
+	font-style: inherit;
 }
 .bigtag, tr.pl.bigtag td.pl_id, tr.pl.bigtag td.pl_title {
 	font-size: 140%;
 }
-tr.pl.bigtag {
-	font-size: 100%;
+tr.pl.bigtag, tr.plx.bigtag {
+	font-size: inherit;
 }
 .smalltag, tr.pl.smalltag td.pl_id, tr.pl.smalltag td.pl_title {
 	font-size: 80%;
 }
-tr.pl.smalltag {
-	font-size: 100%;
+tr.pl.smalltag, tr.plx.smalltag {
+	font-size: inherit;
 }
 
 body#offrev td#upload {
@@ -1715,7 +1715,7 @@ div.papstrip {
 	position: absolute;
 	width: 100%;
 	z-index: 4;
-	font-size: smaller;
+	font-size: 8.7pt; /* 10.5pt / 1.2 */
 	background: white;
 	box-shadow: 0px 1px 5px #46678c;
 	-moz-box-shadow: 0px 1px 5px #46678c;
@@ -1724,6 +1724,9 @@ div.papstrip {
 	border-bottom-right-radius: 2px;
 	-moz-border-radius-bottomleft: 2px;
 	-moz-border-radius-bottomright: 2px;
+}
+div#papstriptagsedit {
+	font-size: 8.7pt;
 }
 div.papstripi {
 	padding-bottom: 0.5em;

@@ -1130,7 +1130,7 @@ class PaperTable {
 
 		$t = tagsToText($prow, false, $Me, true);
 		echo "<div class='fn'>", ($tx == "" ? "None" : $tx),
-		    "</div><div class='fx' style='padding-top:0.5ex'><div id='tagreportformresult'>";
+		    "</div><div id='papstriptagsedit' class='fx' style='padding-top:0.5ex'><div id='tagreportformresult'>";
 		if ($unfolded) {
 		    require_once("paperactions.inc");
 		    echo PaperActions::tagReport($prow, true);
