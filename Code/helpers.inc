@@ -639,7 +639,7 @@ function topicTable($prow, $active = 0) {
     // read from paper row if appropriate
     if ($paperId > 0 && $active < 0 && isset($prow->topicIds)) {
 	$top = $rf->webTopicArray($prow->topicIds, defval($prow, "topicInterest"));
-	return join(" <span class='sep'></span> ", $top);
+	return join(" <span class='sep'>&nbsp;</span> ", $top);
     }
 
     // get current topics

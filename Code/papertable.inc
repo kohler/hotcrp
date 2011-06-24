@@ -1625,17 +1625,17 @@ class PaperTable {
 	    echo "</div></form>";
 
 	} else {
-	    echo "<table class='paptab'><tr><td class='papbe' colspan='3'>";
+	    echo "<table class='paptab'><tr><td class='papbe' colspan='2'>";
 	    if ($this->mode == "pe" && ($m = $this->editMessage()))
 		echo $m, "<div class='g'></div>\n";
 	    $this->paptabDownload($prow);
 	    echo "</td></tr>
-	<tr><td class='paple'>";
+	<tr><td class='paple'><div class='paple'>";
 	    $this->paptabAbstract($prow);
-	    echo "</td><td class='papce'></td><td class='papre'>";
+	    echo "</div></td><td class='papre'><div class='papre'>";
 	    $this->paptabAuthors($prow);
 	    $this->paptabTopicsOptions($prow, $Me->actChair($prow));
-	    echo "</td></tr></table>";
+	    echo "</div></td></tr></table>";
 	}
 	$this->echoDivExit();
 

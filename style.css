@@ -1867,8 +1867,11 @@ td.paple, td.papre {
 	vertical-align: top;
 	font-size: smaller;
 }
-td.papce {
-	padding: 0 0.5em;
+div.paple {
+	padding-right: 0.75em;
+}
+div.papre {
+	padding-left: 0.75em;
 }
 div.papt {
 	padding: 0.25em 1em 0.25em 8px;
