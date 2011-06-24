@@ -426,7 +426,7 @@ class PaperSearch {
 	return $a;
     }
 
-    function _reviewerMatcher($word, $quoted) {
+    function _reviewerMatcher($word, $quoted, $pc_only = false) {
 	if (!$quoted && ($word == "" || strcasecmp($word, "pc") == 0))
 	    return array_keys(pcMembers());
 	else if (!$quoted && strcasecmp($word, "me") == 0)
@@ -438,7 +438,8 @@ class PaperSearch {
 		$ids = self::_pcContactIdsWithTag($tag);
 		if ($negtag) {
 		    $this->contactmatch[] = "\2contactId" . self::_sqlNumericSet($ids, true);
-		    $this->contactmatchPC = false;
+		    if (!$pc_only)
+			$this->contactmatchPC = false;
 		    return "\1" . (count($this->contactmatch) - 1) . "\1";
 		} else
 		    return $ids;
@@ -449,7 +450,8 @@ class PaperSearch {
 	if (!count($this->contactmatch)
 	    || $this->contactmatch[count($this->contactmatch) - 1] != $qword) {
 	    $this->contactmatch[] = sqlq_for_like($word);
-	    $this->contactmatchPC = false;
+	    if (!$pc_only)
+		$this->contactmatchPC = false;
 	}
 	return "\1" . (count($this->contactmatch) - 1) . "\1";
     }
@@ -933,10 +935,8 @@ class PaperSearch {
 		$x = "=0";
 	    else if ($word == "any")
 		$x = "!=0";
-	    else {
-		$this->contactmatch[] = sqlq_for_like($word);
-		$x = "\1" . (count($this->contactmatch) - 1) . "\1";
-	    }
+	    else
+		$x = $this->_reviewerMatcher($word, $quoted, true);
 	    $rt = ($this->privChair ? 0 : self::F_NONCONFLICT);
 	    $qt[] = new SearchTerm("pf", $rt, array("leadContactId", $x));
 	}
@@ -947,10 +947,8 @@ class PaperSearch {
 		$x = "=0";
 	    else if ($word == "any")
 		$x = "!=0";
-	    else {
-		$this->contactmatch[] = sqlq_for_like($word);
-		$x = "\1" . (count($this->contactmatch) - 1) . "\1";
-	    }
+	    else
+		$x = $this->_reviewerMatcher($word, $quoted, true);
 	    $rt = ($this->privChair ? 0 : self::F_NONCONFLICT);
 	    $qt[] = new SearchTerm("pf", $rt, array("shepherdContactId", $x));
 	}
@@ -1852,8 +1850,12 @@ class PaperSearch {
 	} else if ($tt == "pf") {
 	    $q = array();
 	    $this->_clauseTermSetFlags($t->flags, $q);
-	    for ($i = 0; $i < count($t->value); $i += 2)
-		$q[] = "Paper." . $t->value[$i] . $t->value[$i + 1];
+	    for ($i = 0; $i < count($t->value); $i += 2) {
+		if (is_array($t->value[$i + 1]))
+		    $q[] = "Paper." . $t->value[$i] . " in (" . join(",", $t->value[$i + 1]) . ")";
+		else
+		    $q[] = "Paper." . $t->value[$i] . $t->value[$i + 1];
+	    }
 	    $f[] = "(" . join(" and ", $q) . ")";
 	} else if ($tt == "tag" && is_array($t->value)) {
 	    $this->_clauseTermSetTable($t, $t->value[0], null, "Tag",
@@ -1975,7 +1977,9 @@ class PaperSearch {
 		for ($i = 0; $ans && $i < count($t->value); $i += 2) {
 		    $fieldname = $t->value[$i];
 		    $expr = $t->value[$i + 1];
-		    if ($expr[0] == '=')
+		    if (is_array($expr))
+			$ans = in_array($row->$fieldname, $expr);
+		    else if ($expr[0] == '=')
 			$ans = $row->$fieldname == substr($expr, 1);
 		    else if ($expr[0] == '!')
 			$ans = $row->$fieldname != substr($expr, 2);
