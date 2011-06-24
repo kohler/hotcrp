@@ -1171,12 +1171,12 @@ function htmlWrapText($text) {
 	$l = $lines[$i];
 	while (($pos = strpos($l, "\t")) !== false)
 	    $l = substr($l, 0, $pos) . substr('        ', 0, 8 - ($pos % 8)) . substr($l, $pos + 1);
-	if (preg_match("/\\A  +.*[^.?!-'\"]   +/", $l))
-	    $l = str_replace(" ", "&nbsp;", $l);
+	if (preg_match("/\\A  +.*[^\s.?!-'\")]   +/", $l))
+	    $l = str_replace(" ", "\xC2\xA0", $l);
 	else if (strlen($l) && $l[0] == " ") {
 	    for ($x = 0; $x < strlen($l) && $l[$x] == " "; $x++)
 		/* nada */;
-	    $l = str_repeat('&nbsp;', $x) . substr($l, $x);
+	    $l = str_repeat("\xC2\xA0", $x) . substr($l, $x);
 	}
 	$lines[$i] = $l . "<br />\n";
     }
