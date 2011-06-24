@@ -510,12 +510,12 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     // Actions
     $sep = "";
     if ($myrow) {
-	echo $sep, foldbutton("re", "review list"), "&nbsp;<a href=\"", hoturl("search", "q=&amp;t=r"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
+	echo $sep, foldbutton("re", "review list"), "&nbsp;<a href=\"", hoturl("search", "q=re%3Ame"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->setting("paperlead") > 0
 	&& $Me->amDiscussionLead(0)) {
-	echo $sep, "<a href=\"", hoturl("search", "q=&amp;t=lead"), "\" class='nowrap'>Your discussion leads</a>";
+	echo $sep, "<a href=\"", hoturl("search", "q=lead%3Ame"), "\" class='nowrap'>Your discussion leads</a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->timePCReviewPreferences()) {
