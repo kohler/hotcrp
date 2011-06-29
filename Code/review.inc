@@ -9,6 +9,7 @@ $scoreHelps = array();
 global $ratingTypes;
 $ratingTypes = array("n" => "average", 1 => "very helpful",
 		     0 => "too short", -1 => "too vague",
+		     -4 => "too narrow",
 		     -2 => "not constructive", -3 => "not correct");
 
 class ReviewForm {

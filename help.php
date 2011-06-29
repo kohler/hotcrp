@@ -546,7 +546,7 @@ function revrate() {
 
     echo "<table>";
     _alternateRow("Review ratings basics", "
-PC members and, optionally, external reviewers can rate one another's
+PC members and, optionally, external reviewers can rate one another’s
 reviews.  We hope this feedback will help reviewers improve the quality of
 their reviews.  The interface appears above each visible review:
 
@@ -560,7 +560,7 @@ their reviews.  The interface appears above each visible review:
 
 <p>When rating a review, please consider its value for both the program
   committee and the authors.  Helpful reviews are specific, clear, technically
-  focused, and, when possible, provide direction for the authors' future work.
+  focused, and, when possible, provide direction for the authors’ future work.
   The rating options are:</p>
 
 <dl>
@@ -573,10 +573,13 @@ their reviews.  The interface appears above each visible review:
 <dt><strong>Too short</strong></dt>
 <dd>The review is incomplete or too terse.</dd>
 <dt><strong>Too vague</strong></dt>
-<dd>The review's arguments are weak, mushy, or otherwise technically
+<dd>The review’s arguments are weak, mushy, or otherwise technically
   unconvincing.</dd>
+<dt><strong>Too narrow</strong></dt>
+<dd>The review’s perspective seems limited; for instance, it might
+  overly privilege the reviewer’s own work.</dd>
 <dt><strong>Not constructive</strong></dt>
-<dd>The review's tone is unnecessarily aggressive or gives little useful
+<dd>The review’s tone is unnecessarily aggressive or gives little useful
   direction.</dd>
 <dt><strong>Not correct</strong></dt>
 <dd>The review misunderstands the paper.</dd>
@@ -603,10 +606,10 @@ Chairs set how ratings work on the <a
 href='" . hoturl("settings", "group=rev") . "'>review settings
 page</a>." . ($Me->amReviewer() ? "  Currently, $what can rate reviews." : ""));
     _alternateRow("Visibility", "
-A review's ratings are visible to any unconflicted PC members who can see
+A review’s ratings are visible to any unconflicted PC members who can see
 the review, but HotCRP tries to hide ratings from review authors if they
 could figure out who assigned the rating: if only one PC member could
-rate a review, then that PC member's rating is hidden from the review
+rate a review, then that PC member’s rating is hidden from the review
 author.");
 
     echo "</table>\n";
