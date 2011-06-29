@@ -1659,22 +1659,25 @@ class PaperList extends BaseList {
 		if ($fdef->type != 2 || $this->contentEmpty($fieldId, $row))
 		    continue;
 		$foldname = $fdef->foldname;
+		$foldtext = "";
 		if ($fdef->foldnum > 2) {
 		    if (($foldnum = $fdef->foldnum) == 3)
 			$foldnum = ($Conf->paperBlind($row, $this->contact) ? 2 : 1);
 		    $foldinfo[$foldnum] = true;
+		    if ($foldnum == 2)
+			$foldtext = " class=\"fx1 fx2\"";
+		    else
+			$foldtext = " class=\"fx$foldnum\"";
 		}
 		if (isset($folds[$foldname]) && $folds[$foldname] !== false) {
 		    $folds[$foldname][] = $row->paperId;
 		    $tt .= "<div id=\"$foldname.$row->paperId\"></div>";
 		} else {
 		    $c = $this->content($fieldId, $row);
-		    if ($c !== "") {
-			$tt .= "<div id=\"$foldname.$row->paperId\"";
-			if ($fdef->foldnum > 2)
-			    $tt .= " class=\"fx$foldnum\"";
-			$tt .= "><h6>" . $this->header($fieldId, -1, $row) . ":</h6> " . $c . "</div>";
-		    }
+		    if ($c !== "")
+			$tt .= "<div id=\"$foldname.$row->paperId\"" . $foldtext
+			    . "><h6>" . $this->header($fieldId, -1, $row)
+			    . ":</h6> " . $c . "</div>";
 		}
 	    }
 
