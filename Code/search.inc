@@ -1554,7 +1554,7 @@ class PaperSearch {
 	if ($flags & self::F_PAPERNONBLIND) {
 	    if ($Conf->subBlindNever())
 		$flags &= ~self::F_PAPERNONBLIND;
-	    else if ($Conf->subBlindAlways())
+	    else if ($Conf->subBlindAlways() && !$Conf->timeReviewerViewAcceptedAuthors())
 		$flags = ($flags & ~self::F_PAPERNONBLIND) | self::F_FALSE;
 	}
 
