@@ -182,10 +182,10 @@ class PaperSearch {
     const F_AUTHORRESPONSE = 0x08000;
     const F_FALSE = 0x10000;
 
+    var $contact;
     var $contactId;
     var $privChair;
     var $amPC;
-    var $reviewsOutstanding;
 
     var $limitName;
     var $qt;
@@ -219,12 +219,12 @@ class PaperSearch {
 	global $Conf;
 
 	// contact facts
-	$this->contactId = $me->contactId;
+	$this->contact = $me;
 	$this->privChair = $me->privChair;
+	$this->amPC = $me->isPC;
+	$this->contactId = $me->contactId;
 	if ($this->privChair && $searchContactId > 0)
 	    $this->contactId = $searchContactId;
-	$this->amPC = $me->isPC;
-	$this->reviewsOutstanding = $me->reviewsOutstanding;
 
 	// paper selection
 	$ptype = defval($opt, "t", "");
@@ -488,7 +488,7 @@ class PaperSearch {
 		    $pc_seeallrev = 1;
 		else {
 		    $pc_seeallrev = $Conf->setting("pc_seeallrev");
-		    if ($pc_seeallrev == 4 && !$this->reviewsOutstanding)
+		    if ($pc_seeallrev == 4 && !$this->contact->reviewsOutstanding)
 			$pc_seeallrev = 1;
 		}
 		// Can blind reviews be searched?  Yes, if the search doesn't
@@ -1932,8 +1932,7 @@ class PaperSearch {
 	    return false;
 	// NB: F_REVIEWER must be set by caller if necessary
 	if (($flags & self::F_PAPERNONBLIND)
-	    && $Conf->paperBlind($row)
-	    && !($row->outcome > 0 && $Conf->timeReviewerViewAcceptedAuthors()))
+	    && $Conf->paperBlind($row, $this->contact))
 	    return false;
 	if ($flags & self::F_FALSE)
 	    return false;

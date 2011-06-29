@@ -472,7 +472,11 @@ class Conference {
     function subBlindUntilReview() {
 	return $this->settings["sub_blind"] == BLIND_UNTILREVIEW;
     }
-    function paperBlind($prow, $contact = null) {
+    function paperBlind($prow, $contact) {
+	if ($prow && $prow->outcome > 0
+	    && $contact && ($contact->isPC || $prow->myReviewType > 0)
+	    && $this->timeReviewerViewAcceptedAuthors())
+	    return false;
 	$bs = $this->settings["sub_blind"];
 	return $bs == BLIND_ALWAYS
 	    || ($bs == BLIND_OPTIONAL && (!$prow || $prow->blind))

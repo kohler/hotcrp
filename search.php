@@ -1111,16 +1111,17 @@ function displayOptionText($text, $column, $opt = array()) {
 $displayOptions = array();
 
 if ($pl) {
-    $viewAllAuthors =
-	($_REQUEST["t"] == "acc" && $Conf->timeReviewerViewAcceptedAuthors())
-	|| $_REQUEST["t"] == "a";
+    $viewAcceptedAuthors =
+	$Me->amReviewer() && $Conf->timeReviewerViewAcceptedAuthors();
+    $viewAllAuthors = ($_REQUEST["t"] == "a"
+		       || ($_REQUEST["t"] == "acc" && $viewAcceptedAuthors));
 
     displayOptionText("<strong>Show:</strong>" . foldsessionpixel("pl", "pldisplay", null), 1);
 
     // Authors group
-    if (!$Conf->subBlindAlways() || $viewAllAuthors) {
+    if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors) {
 	$onchange = "fold('pl',!this.checked,'au')";
-	if ($viewAllAuthors)
+	if ($Me->privChair && $viewAllAuthors)
 	    $onchange .= ";fold('pl',!this.checked,'anonau')";
 	if ($Me->privChair)
 	    $onchange .= ";foldplinfo_extra()";
@@ -1129,9 +1130,9 @@ if ($pl) {
 	$onchange = "fold('pl',!this.checked,'anonau');foldplinfo_extra()";
 	displayOptionCheckbox("anonau", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2))));
     }
-    if (!$Conf->subBlindAlways() || $viewAllAuthors || $Me->privChair)
+    if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
 	displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
-    if ($Conf->subBlindOptional() && !$viewAllAuthors && $Me->privChair) {
+    if ($Me->privChair && !$viewAllAuthors && ($Conf->subBlindOptional() || $viewAcceptedAuthors)) {
 	$onchange = "fold('pl',!this.checked,'anonau');foldplinfo_extra()";
 	displayOptionCheckbox("anonau", 1, "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "indent" => true));
     }
@@ -1234,9 +1235,12 @@ $qtOpt = array("ti" => "Title",
 if ($Me->privChair || $Conf->subBlindNever()) {
     $qtOpt["au"] = "Authors";
     $qtOpt["n"] = "Title, abstract, and authors";
+} else if ($Conf->subBlindAlways() && $Me->amReviewer() && $Conf->timeReviewerViewAcceptedAuthors()) {
+    $qtOpt["au"] = "Accepted authors";
+    $qtOpt["n"] = "Title and abstract, and accepted authors";
 } else if (!$Conf->subBlindAlways()) {
     $qtOpt["au"] = "Non-blind authors";
-    $qtOpt["n"] = "Title, abstract, and non-blind authors";
+    $qtOpt["n"] = "Title and abstract, and non-blind authors";
 } else
     $qtOpt["n"] = "Title and abstract";
 if ($Me->privChair)

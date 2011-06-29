@@ -595,9 +595,6 @@ class Contact {
 	    || ($prow->myReviewType > 0 && !$pblind
 		&& $Conf->timeReviewerViewSubmittedPaper())
 	    || ($prow->timeSubmitted > 0 && !$pblind && $this->isPC)
-	    || ($prow->outcome > 0
-		&& ($this->isPC || $prow->myReviewType > 0)
-		&& $Conf->timeReviewerViewAcceptedAuthors())
 	    || ($this->isPC && !$pblind && $prow->timeWithdrawn <= 0
 		&& $Conf->setting("pc_seeall") > 0))
 	    return true;
