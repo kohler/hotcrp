@@ -1078,6 +1078,9 @@ class PaperSearch {
 			   || $m[1] == "\xE2\x88\x92" /* unicode MINUS */) {
 		    $this->interestingRatings["bad"] = "<1";
 		    $term = "nrate_bad";
+		} else if ($m[1] === "any") {
+		    $this->interestingRatings["any"] = "!=100";
+		    $term = "nrate_any";
 		} else {
 		    $rf = reviewForm();	/* load for $ratingTypes */
 		    $x = array_diff(matchValue($ratingTypes, $m[1]),
