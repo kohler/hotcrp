@@ -147,7 +147,7 @@ function contactQuery($type) {
 }
 
 function checkMailPrologue($send) {
-    global $Conf, $Me;
+    global $Conf, $Me, $recip;
     echo "<form method='post' action='", hoturl("mail"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
     foreach (array("recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit") as $x)
 	if (isset($_REQUEST[$x]))
@@ -175,7 +175,12 @@ function checkMailPrologue($send) {
 	echo "<div id='foldmail' class='foldc fold2c'>",
 	    "<div class='fn fx2 merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div>",
 	    "<div id='mailwarnings'></div>",
-	    "<div class='fx info'>Examine the mails to verify that you’ve gotten the results you want, then select &ldquo;Send&rdquo; to send the checked mails.</div>
+	    "<div class='fx info'>Verify that the mails look correct, then select “Send” to send the checked mails.<br />",
+	    "<strong>To:</strong>&nbsp;", $recip[$_REQUEST["recipients"]];
+	if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $_REQUEST["recipients"])
+	    && defval($_REQUEST, "plimit") && $_REQUEST["q"] !== "")
+	    echo "<br /><strong>Paper selection:</strong>&nbsp;", htmlspecialchars($_REQUEST["q"]);
+	echo "</div>
         <div class='aa fx'>
 	<input class='b' type='submit' name='send' value='Send' /> &nbsp;
 	<input class='b' type='submit' name='cancel' value='Cancel' />
@@ -459,16 +464,17 @@ echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "
 <table class='mail'>
  <tr><td class='mhpad'></td><td class='mhpad'></td></tr>
  <tr><td class='mhnp'>To:</td><td class='mhdd'>",
-    tagg_select("recipients", $recip, $_REQUEST["recipients"], array("onchange" => "setmailpsel(this)")),
+    tagg_select("recipients", $recip, $_REQUEST["recipients"], array("id" => "recipients", "onchange" => "setmailpsel(this)")),
     "<div class='g'></div>\n";
 
 // paper selection
-echo "<table id='foldpsel' class='fold8c'><tr><td>",
+echo "<div id='foldpsel' class='fold8c fold9o'><table class='fx9'><tr><td>",
     tagg_checkbox("plimit", 1, isset($_REQUEST["plimit"]),
 		  array("id" => "plimit",
 			"onchange" => "fold('psel', !this.checked, 8)")),
     "&nbsp;</td><td>", tagg_label("Choose individual papers", "plimit");
-$Conf->footerScript("fold(\"psel\",!\$\$(\"plimit\").checked,8)");
+$Conf->footerScript("fold(\"psel\",!\$\$(\"plimit\").checked,8);"
+		    . "setmailpsel(\$\$(\"recipients\"))");
 echo "<span class='fx8'>:</span><br />
 <div class='fx8'>";
 $q = defval($_REQUEST, "q", "(All)");
@@ -476,7 +482,7 @@ echo "Search&nbsp; <input id='q' class='textlite' type='text' size='36' name='q'
     tagg_select("t", $tOpt, $_REQUEST["t"], array("id" => "t")),
     "</div>
    </td></tr></table>
-<div class='g'></div></td>
+<div class='g fx9'></div></div></td>
 </tr>\n";
 
 if ($Me->privChair) {

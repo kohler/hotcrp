@@ -1109,8 +1109,6 @@ function doremovedocument(button, name) {
 
 // mail
 function setmailpsel(sel) {
-    if (sel.value == "pc") {
-	$$("plimit").checked = false;
-	fold("psel", 1, 8);
-    }
+    var dofold = !!sel.value.match(/^(?:pc$|pc:|all$)/);
+    fold("psel", dofold, 9);
 }
