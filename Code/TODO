@@ -1,3 +1,19 @@
+- Feature 1: Multi-paper discussion.  A few times per conference, I want to
+  write on a review "This paper is better/worse than paper X because ..."
+  or similar. The problem is that such comments are hard to do without
+  risking anonymity. When I enter a comment for a paper, it would be great
+  to be able to, say, enter the number of another paper(s) and treat this
+  comment as conflicting to people for whom those papers are
+  conflicting. [Mike Dahlin]
+
+- Feature 2: Cluster-based assignment.  Walfish and I were discussing how
+  useful it is to make sure that there is good overlap of reviewers across
+  papers on the same topic. The thought was that it might not be too
+  difficult to make the automatic review assignment tools identify clusters
+  of likely-related papers (based on co-citation, abstract text, keywords,
+  body text, ...) and to help the chair get reviewer overlaps within
+  clusters. [Mike Dahlin]
+
 - Can we save the review forms from this offering of the WQE for use in the
   next offering of the WQE?  Since the WQE is not an actual conference, the
   standard conference-style review forms are less useful, so it would be
