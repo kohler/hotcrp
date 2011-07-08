@@ -14,6 +14,41 @@
   body text, ...) and to help the chair get reviewer overlaps within
   clusters. [Mike Dahlin]
 
+- In any case, it occurred to me that it would be very useful to have a
+  semi-analogous feature that allows us to specify something like
+
+   Assign at least [N] common reviewers to papers [X] and [Y]
+
+  This seems to come up fairly often -- someone realizes that two papers
+  cover very similar problems and/or approaches, but either they don't feel
+  completely comfortable being the only reviewer who has read both papers,
+  or they is us, and we want to make sure that some PC member has done a
+  true review of both papers.
+
+  I assume that this kind of request can overconstrain the assigner, but it
+  seems like the kind of thing that might rank fairly high in the
+  prioritization of assigning reviews (e.g., perhaps somewhat more
+  important than minor differences in review preferences or workload.)
+
+  In any case, I think we would want to do these overlapping assignments as
+  early as possible in the process, as opposed to the seemingly usual
+  practice of deciding during the PC meeting that "Eddie should read paper
+  #97 during lunch".  So if we don't get automated support from HotCRP, we
+  will try to do it by hand. [Jeff Mogul]
+
+- HTTPS-only redirect: [Jeff Chase]
+
+  RewriteEngine on
+  RewriteCond %{HTTPS} !=on
+  RewriteRule .* https://%{SERVER_NAME}%{REQUEST_URI} [R,L]
+
+- Send Mail semantics: When sending an e-mail to contact authors X, Y, and
+  Z of a paper P, the current HotCRP behavior is to send three separate
+  emails to each respective author rather than one where all recipients are
+  visible on the "To:" line.  The latter seems more natural to me and gives
+  contact authors an explicit hint that only 3 of the 10 authors received
+  this Accept/Reject notification, for example. [John Byers]
+
 - Can we save the review forms from this offering of the WQE for use in the
   next offering of the WQE?  Since the WQE is not an actual conference, the
   standard conference-style review forms are less useful, so it would be
