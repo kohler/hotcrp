@@ -217,7 +217,7 @@ if ($reviewer > 0) {
 		. nl2br(htmlspecialchars($row->collaborators))
 		. "</div>";
 
-	$useless_words = array("university" => 1, "the" => 1, "and" => 1, "univ" => 1, "none" => 1, "a" => 1, "an" => 1, "jr" => 1, "sr" => 1, "iii" => 1);
+	$useless_words = array("university" => 1, "the" => 1, "and" => 1, "of" => 1, "univ" => 1, "none" => 1, "a" => 1, "an" => 1, "jr" => 1, "sr" => 1, "iii" => 1);
 
 	// search outline from old CRP, done here in a very different way
 	preg_match_all('/[a-z&]{2,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation), $match);
