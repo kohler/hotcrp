@@ -5,12 +5,12 @@
 
 class CommentView {
 
-    var $ncomment;
+    var $ncomment_in_table;
     var $nresponse;
     var $mode;
 
     function CommentView() {
-	$this->ncomment = $this->nresponse = $this->mode = 0;
+	$this->ncomment_in_table = $this->nresponse = $this->mode = 0;
     }
 
     function beginTable() {
@@ -20,6 +20,7 @@ class CommentView {
 	    "\t<tr><td></td><td class='cmthead'><h3>Comments</h3></td><td></td></tr>
   <tr><td></td><td class='cmtcc'>";
 	$this->mode = 1;
+	$this->ncomment_in_table = 0;
     }
 
     function endTable() {
@@ -81,7 +82,7 @@ class CommentView {
 	    $this->beginTable();
 	if ($editMode && !$Me->canComment($prow, $crow))
 	    $editMode = false;
-	$this->ncomment++;
+	$this->ncomment_in_table++;
 
 	if ($editMode) {
 	    echo "<form action='", hoturl("comment", "p=$prow->paperId&amp;c=" . ($crow ? $crow->commentId : "new") . "$linkExtra&amp;post=1"),
@@ -97,7 +98,7 @@ class CommentView {
 	    echo " id='comment$crow->commentId'";
 	else
 	    echo " id='commentnew'";
-	echo " class='cmtg", ($this->ncomment == 1 ? " cmtg1" : ""), "'>";
+	echo " class='cmtg", ($this->ncomment_in_table == 1 ? " cmtg1" : ""), "'>";
 	if ($crow && !$editMode && $crow->forReviewers == 2)
 	    echo "<div class='cmtadminvis'>";
 	echo "<div class='cmtt'>";
