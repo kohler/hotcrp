@@ -1532,6 +1532,10 @@ function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
     return $text . "  </select>";
 }
 
+function _sort_pcMember($a, $b) {
+    return strcasecmp($a->sorter, $b->sorter);
+}
+
 function pcMembers() {
     global $Conf;
     if (!isset($_SESSION["pcmembers"]) || !is_array($_SESSION["pcmembers"])
@@ -1542,9 +1546,12 @@ function pcMembers() {
 	|| count($_SESSION["pcmembers"][1]) == 0) {
 	$pc = array();
 	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "");
-	$result = $Conf->q("select firstName, lastName, affiliation, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair$qa from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId) order by lastName, firstName");
-	while (($row = edb_orow($result)))
+	$result = $Conf->q("select firstName, lastName, affiliation, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair$qa from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId)");
+	while (($row = edb_orow($result))) {
+	    $row->sorter = trim($row->firstName . " " . $row->lastName . " " . $row->email);
 	    $pc[$row->contactId] = $row;
+	}
+	uasort($pc, "_sort_pcMember");
 	$_SESSION["pcmembers"] = array($Conf->setting('pc'), $pc);
     }
     return $_SESSION["pcmembers"][1];

@@ -503,11 +503,13 @@ if ($Me->actChair($prow)) {
 	left join PaperReviewPreference on (PaperReviewPreference.contactId=ContactInfo.contactId and PaperReviewPreference.paperId=$prow->paperId)
 	left join (select PaperReview.contactId, group_concat(reviewType separator '') as allReviews from PaperReview join Paper on (Paper.paperId=PaperReview.paperId and timeWithdrawn<=0) group by PaperReview.contactId) as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
 	left join (select contactId, sum(if(interest=2,2,interest-1)) as topicInterestScore from PaperTopic join TopicInterest using (topicId) where paperId=$prow->paperId group by contactId) as PaperTopics on (PaperTopics.contactId=ContactInfo.contactId)
-	group by email
-	order by lastName, firstName, email", "while looking up PC");
+	group by email", "while looking up PC");
     $pcx = array();
-    while (($row = edb_orow($result)))
+    while (($row = edb_orow($result))) {
+	$row->sorter = trim($row->firstName . " " . $row->lastName . " " . $row->email);
 	$pcx[] = $row;
+    }
+    uasort($pcx, "_sort_pcMember");
 
     // PC conflicts row
     echo "	<tr><td colspan='3' class='papsep'></td></tr>
