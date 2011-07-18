@@ -1,3 +1,7 @@
+- Submission options: Use a separate Delete button instead of Form position.
+
+- Submission options: Add submission options that are set by administrators.
+
 - We didn't use HotCRP for sending the acceptance letter.  The chairs have
   been passing down a bunch of shell scripts through the years that
   generate the accept/reject emails and it would be much nicer if hotcrp
