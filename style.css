@@ -1364,12 +1364,13 @@ table.ppltable td.pl_score {
 tr.plx td {
 	font-size: smaller;
 }
-tr.plx td h6 {
+tr.plx h6 {
 	display: inline;
 	font-size: inherit;
 	font-weight: normal;
 	font-style: italic;
 	padding-right: 0.25em;
+	color: #555;
 }
 #autoassign tr.plx td div.plextra, #autoassign tr.plx td div.plextra h6 {
 	font-weight: bold;

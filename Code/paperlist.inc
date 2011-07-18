@@ -562,9 +562,9 @@ class PaperList extends BaseList {
 		return htmlspecialchars($x);
 	}
 	case self::FIELD_AUTHOR_MATCH:
-	    return "<span class='match'>Potential conflict in authors</span>";
+	    return "<strong>Potential conflict in authors</strong>";
 	case self::FIELD_COLLABORATORS_MATCH:
-	    return "<span class='match'>Potential conflict in collaborators</span>";
+	    return "<strong>Potential conflict in collaborators</strong>";
 	case self::FIELD_OPT_AUTHORS:
 	    return "Authors";
 	case self::FIELD_TAGS:
