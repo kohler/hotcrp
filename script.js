@@ -519,10 +519,13 @@ function staged_foreach(a, f, backwards) {
 
 // temporary text
 function tempText(elt, text, on) {
-    if (on && elt.value == text)
+    if (on && elt.value == text) {
 	elt.value = "";
-    else if (!on && elt.value == "")
+	elt.className = elt.className.replace(/\btemptext\b/, "temptextoff");
+    } else if (!on && elt.value == "") {
 	elt.value = text;
+	elt.className = elt.className.replace(/\btemptextoff\b/, "temptext");
+    }
 }
 
 // check marks for ajax saves

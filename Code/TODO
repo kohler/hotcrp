@@ -6,11 +6,9 @@
   hindsight, we should have used HotCRP anyway: it would have been less
   work over-all even if we had to forgo the day/time info. [Tony Limoncelli]
 
-- Two questions we got constantly were "How do I get the full list of
-  papers?" (click "search" with nothing in the search box), and "how do I
-  get back to the main menu?" (click the name of the conference in the
-  upper left corner).  Both of these indicate areas of improvement for the
-  GUI. [Tony Limoncelli]
+- Two questions we got constantly were ... "how do I get back to the main
+  menu?" (click the name of the conference in the upper left corner).  Both
+  of these indicate areas of improvement for the GUI. [Tony Limoncelli]
 
 - Add a "bulk update" that shows the papers in a spreadsheet-like grid with
   number, name, shepherd, accept status, submission type, and so on.  Let

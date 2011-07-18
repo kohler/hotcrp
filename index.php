@@ -398,7 +398,9 @@ if ($homelist) {
     $tOpt = PaperSearch::searchTypes($Me);
     $q = defval($_REQUEST, "q", "(All)");
     echo "  <td><form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'><div class='inform'>
-    <input class='textlite' type='text' size='32' name='q' value=\"",
+    <input class='textlite temptext",
+	($q == "(All)" ? "" : "off"),
+	"' type='text' size='32' name='q' value=\"",
 	htmlspecialchars($q),
 	"\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' />
     &nbsp;in&nbsp; ",
