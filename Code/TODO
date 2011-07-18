@@ -1,3 +1,38 @@
+- We didn't use HotCRP for sending the acceptance letter.  The chairs have
+  been passing down a bunch of shell scripts through the years that
+  generate the accept/reject emails and it would be much nicer if hotcrp
+  could do the process for us.  The hotcrp formletter system can't insert
+  the day and time of the session the paper will be presented in.  In
+  hindsight, we should have used HotCRP anyway: it would have been less
+  work over-all even if we had to forgo the day/time info. [Tony Limoncelli]
+
+- Two questions we got constantly were "How do I get the full list of
+  papers?" (click "search" with nothing in the search box), and "how do I
+  get back to the main menu?" (click the name of the conference in the
+  upper left corner).  Both of these indicate areas of improvement for the
+  GUI. [Tony Limoncelli]
+
+- Add a "bulk update" that shows the papers in a spreadsheet-like grid with
+  number, name, shepherd, accept status, submission type, and so on.  Let
+  the user edit any of the data in the grid. [Tony Limoncelli]
+
+- We have to collect information for the program such as "name as to
+  appear in the program". It would be nice to have a facility to collect
+  all that information AND be able to collect whether the author has
+  approved/acknowledge it to be correct.  (If we could do this for ITs
+  and Gurus, this could produce the entire program) [Tony Limoncelli]
+
+- The little 'glasses' icons to become another user were a little
+  nonobvious to me. I discovered them by accident. Very cool, but I ended
+  up submitting a comment as another user accidentally. [Doug Hughes]
+
+- It really needs some tabs or links at the top to quickly get from users
+  to settings to papers and back instead of having to click on the upper
+  left corner logo and go through some more clicks. [Doug Hughes]
+
+- A way to easily see the list of papers assigned to a user and which reviews
+  are complete would be really useful! [Doug Hughes]
+
 - Feature 1: Multi-paper discussion.  A few times per conference, I want to
   write on a review "This paper is better/worse than paper X because ..."
   or similar. The problem is that such comments are hard to do without
