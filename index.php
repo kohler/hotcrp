@@ -374,7 +374,7 @@ Sign in to submit or review papers.";
 	echo tagg_radio("action", "forgot", false, array("tabindex" => 2)),
 	    "&nbsp;", tagg_label("I forgot my password, email it to me"), "<br />\n";
 	echo tagg_radio("action", "new", false, array("tabindex" => 2)),
-	    "&nbsp;", tagg_label("I'm a new user and want to create an account using this email address");
+	    "&nbsp;", tagg_label("I’m a new user and want to create an account using this email address");
 	echo "\n</div>\n";
     }
     echo "<div class='f-i'>
