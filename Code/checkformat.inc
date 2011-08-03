@@ -310,28 +310,23 @@ class CheckFormat {
 	}
     }
 
-    function _analyzePaper($paperId, $final, $spec, &$tmpdir) {
+    function _analyzePaper($paperId, $documentType, $spec, &$tmpdir) {
 	global $Conf, $prow, $Opt;
 	if (($tmpdir = tempdir()) === false)
 	    return $this->msg("error", "Cannot create temporary directory.");
-	$storefield = ($final ? "finalPaperStorageId" : "paperStorageId");
-	$result = $Conf->q("select PaperStorage.mimetype, paper, PaperStorage.paperStorageId, compression
-	from Paper
-	left join PaperStorage on (PaperStorage.paperStorageId=Paper.$storefield)
-	where Paper.paperId=$paperId");
-	if (!($row = edb_row($result)))
+	$result = $Conf->paperStorageRow($paperId, $documentType);
+	if (!($row = edb_orow($result)))
 	    return $this->msg("error", "No such paper.");
-	else if ($row[0] != "application/pdf")
+	else if ($row->mimetype != "application/pdf")
 	    return $this->msg("error", "The format checker only works for PDF files.");
-	$content = $row[1];
-	if ($row[3])
-	    $content = gzinflate($content);
-	if (file_put_contents("$tmpdir/paper.pdf", $content) != strlen($content))
+	if ($row->compression == 1)
+	    $row->content = gzinflate($row->content);
+	if (file_put_contents("$tmpdir/paper.pdf", $row->content) != strlen($row->content))
 	    return $this->msg("error", "Failed to save PDF to temporary file for analysis.");
 	return $this->analyzeFile("$tmpdir/paper.pdf", $spec);
     }
 
-    function analyzePaper($paperId, $final, $spec) {
+    function analyzePaper($paperId, $documentType, $spec) {
 	global $Conf, $Opt;
 	// constrain the number of concurrent banal executions to banalLimit
 	// (counter resets every 2 seconds)
@@ -343,7 +338,7 @@ class CheckFormat {
 	if ($limit > 0)
 	    $Conf->q("insert into Settings (name,value,data) values ('banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
 
-	$status = $this->_analyzePaper($paperId, $final, $spec, $tmpdir);
+	$status = $this->_analyzePaper($paperId, $documentType, $spec, $tmpdir);
 	if (isset($tmpdir) && $tmpdir)
 	    exec("/bin/rm -rf $tmpdir");
 

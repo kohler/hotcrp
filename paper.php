@@ -100,7 +100,7 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
     $ajax = defval($_REQUEST, "ajax", 0);
     require_once("Code/checkformat.inc");
     $cf = new CheckFormat();
-    $status = $cf->analyzePaper($prow->paperId, false, $Conf->settingText("sub_banal", ""));
+    $status = $cf->analyzePaper($prow->paperId, requestDocumentType($_REQUEST), $Conf->settingText("sub_banal", ""));
 
     // chairs get a hint message about multiple checking
     if ($Me->privChair) {
