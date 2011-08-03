@@ -225,22 +225,35 @@ class CheckFormat {
 	if (count($banal_desired) > 3 && $banal_desired[3]
 	    && ($p = cvtdimen($banal_desired[3], 2))) {
 	    $px = array();
-	    $maxpct = 0;
-	    $minpct = 1000;
+	    $py = array();
+	    $maxx = $maxy = 0;
 	    foreach ($pi as $pg)
-		if (($pp = defval($pg, "block"))
-		    && ($pp[0] - $p[0] >= 9 || $pp[1] - $p[1] >= 9)) {
-		    $px[] = $pg["pageno"];
-		    $pct = (int) (100 * max(max($pp[0], $p[0]) / $p[0], max($pp[1], $p[1]) / $p[1]) + .5) - 100;
-		    $maxpct = max($maxpct, $pct);
-		    $minpct = min($minpct, $pct);
+		if (($pp = defval($pg, "block"))) {
+		    if ($pp[0] - $p[0] >= 9) {
+			$px[] = $pg["pageno"];
+			$maxx = max($maxx, $pp[0]);
+		    }
+		    if ($pp[1] - $p[1] >= 9) {
+			$py[] = $pg["pageno"];
+			$maxy = max($maxy, $pp[1]);
+		    }
 		}
 	    if (count($px) > 0) {
-		$pie[] = "Margins too small: text block bigger than maximum "
-		    . unparsedimen($p) . " on "
-		    . pluralx($px, "page") . " " . commarangejoin($px) . " by "
-		    . ($minpct == $maxpct ? "" : "$minpct&ndash;")
-		    . $maxpct . "% in at least one dimension";
+		$pie[] = "Margins too small: text width exceeds "
+		    . unparsedimen($p[0]) . " by "
+		    . (count($px) > 1 ? "up to " : "")
+		    . ((int) (100 * $maxx / $p[0] + .5) - 100)
+		    . "% on " . pluralx($px, "page") . " "
+		    . commarangejoin($px);
+		$this->errors |= self::ERR_TEXTBLOCK;
+	    }
+	    if (count($py) > 0) {
+		$pie[] = "Margins too small: text height exceeds "
+		    . unparsedimen($p[1]) . " by "
+		    . (count($py) > 1 ? "up to " : "")
+		    . ((int) (100 * $maxy / $p[1] + .5) - 100)
+		    . "% on " . pluralx($py, "page") . " "
+		    . commarangejoin($py);
 		$this->errors |= self::ERR_TEXTBLOCK;
 	    }
 	}
@@ -292,7 +305,7 @@ class CheckFormat {
 	    $this->msg("warn", "This paper appears to violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
 	    return 1;
 	} else {
-	    $this->msg("confirm", "Congratulations, this paper appears to comply with the basic submission format requirements.  However, there may be requirements that the automated checker doesn&rsquo;t check.  You should verify yourself that your paper meets all stated requirements.");
+	    $this->msg("confirm", "Congratulations, this paper appears to comply with the basic submission format requirements.  However, there may be requirements that the automated checker doesn’t check.  You should verify yourself that your paper meets all stated requirements.");
 	    return 2;
 	}
     }
