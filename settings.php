@@ -1101,7 +1101,7 @@ function settingText($name, $defval = null) {
 function doCheckbox($name, $text, $tr = false, $js = "hiliter(this)") {
     $x = setting($name);
     echo ($tr ? "<tr><td class='nowrap'>" : ""),
-	tagg_checkbox($name, 1, $x !== null && $x > 0, array("onchange" => $js)),
+	tagg_checkbox($name, 1, $x !== null && $x > 0, array("onchange" => $js, "id" => "cb$name")),
 	"&nbsp;", ($tr ? "</td><td>" : ""),
 	decorateSettingName($name, $text, true),
 	($tr ? "</td></tr>\n" : "<br />\n");
@@ -1639,12 +1639,13 @@ function doDecGroup() {
     echo "Can <b>authors see reviews and comments</b> for their papers?<br />";
     doRadio("au_seerev", array(AU_SEEREV_NO => "No", AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they&rsquo;ve completed any requested reviews"));
 
-    echo "<div class='g'></div>\n<table>";
-    doCheckbox('resp_open', "<b>Collect authors&rsquo; responses to the reviews:</b>", true);
-    echo "<tr><td></td><td><table>";
+    echo "<div class='g'></div>\n<table id='foldauresp' class='foldo'>";
+    doCheckbox('resp_open', "<b>Collect authors&rsquo; responses to the reviews<span class='fx'>:</span></b>", true, "void fold('auresp',!this.checked)");
+    echo "<tr class='fx'><td></td><td><table>";
     doDateRow('resp_done', 'Hard deadline', null, "lxcaption");
     doGraceRow('resp_grace', 'Grace period', "lxcaption");
     echo "</table></td></tr></table>";
+    $Conf->footerScript("fold('auresp',!\$\$('cbresp_open').checked)");
 
     echo "<div class='g'></div>\n<hr class='hr' />\n",
 	"Who can see a paper&rsquo;s <b>decision</b> (accept/reject)?<br />\n";
@@ -1703,13 +1704,14 @@ function doDecGroup() {
     // Final copies
     echo "<hr class='hr' />";
     echo "<h3>Final copies</h3>\n";
-    echo "<table>";
-    doCheckbox('final_open', '<b>Collect final copies of accepted papers:</b>', true);
-    echo "<tr><td></td><td><table>";
+    echo "<table id='foldfinal' class='foldo'>";
+    doCheckbox('final_open', "<b>Collect final copies of accepted papers<span class='fx'>:</span></b>", true, "void fold('final',!this.checked)");
+    echo "<tr class='fx'><td></td><td><table>";
     doDateRow("final_soft", "Deadline", "final_done", "lxcaption");
     doDateRow("final_done", "Hard deadline", null, "lxcaption");
     doGraceRow("final_grace", "Grace period", "lxcaption");
     echo "</table></td></tr></table>\n\n";
+    $Conf->footerScript("fold('final',!\$\$('cbfinal_open').checked)");
 }
 
 $belowHr = true;
