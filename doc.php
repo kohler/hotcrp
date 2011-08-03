@@ -31,8 +31,7 @@ else {
 	    $documentType = DOCUMENT_FINAL;
 	else if ($pt != "paper") {
 	    foreach (paperOptions() as $o)
-		if ($o->optionAbbrev == $pt
-		    && $Me->canViewPaperOption($paperId, $o))
+		if ($o->optionAbbrev == $pt)
 		    $documentType = $o->optionId;
 	    if ($documentType <= 0 && !isset($Error))
 		$Error = "Invalid paper name &ldquo;" . htmlspecialchars($paper) . "&rdquo;.";
@@ -41,12 +40,13 @@ else {
 	$Error = "Invalid paper name &ldquo;" . htmlspecialchars($paper) . "&rdquo;.";
 }
 
-
 // Security checks - people who can download all paperss
 // are assistants, chairs & PC members. Otherwise, you need
 // to be a contact person for that paper.
 if (!isset($Error) && !$Me->canDownloadPaper($paperId, $whyNot))
     $Error = whyNotText($whyNot, "view");
+if ($documentType > 0 && !$Me->canViewPaperOption($paperId, $documentType))
+    $Error = "You don’t have permission to view this document.";
 
 // Actually download paper.
 if (!isset($Error)) {

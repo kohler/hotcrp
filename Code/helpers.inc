@@ -1682,9 +1682,9 @@ function matchValue($a, $word, $allowKey = false) {
 	return $outc;
 }
 
-function paperOptions() {
+function paperOptions($id = null) {
     global $Conf;
-    if ($Conf->setting('paperOption') <= 0 || $Conf->sversion <= 0)
+    if ($Conf->setting("paperOption") <= 0 || $Conf->sversion <= 0)
 	return array();
     if (!isset($_SESSION["paperOption"]) || !is_array($_SESSION["paperOption"])
 	|| $_SESSION["paperOption"][0] <= $Conf->setting("paperOption")) {
@@ -1693,12 +1693,14 @@ function paperOptions() {
 	$result = $Conf->q("select * from OptionType order by $orderby");
 	$order = 0;
 	while (($row = edb_orow($result))) {
-	    if (!isset($row->optionValues))	   // backwards compatibility
+	    // begin backwards compatibility to old schema versions
+	    if (!isset($row->optionValues))
 		$row->optionValues = "";
 	    if (!isset($row->type) && $row->optionValues == "\x7Fi")
 		$row->type = OPTIONTYPE_NUMERIC;
 	    else if (!isset($row->type))
 		$row->type = ($row->optionValues ? OPTIONTYPE_SELECTOR : OPTIONTYPE_CHECKBOX);
+	    // end backwards compatibility to old schema versions
 	    $row->optionAbbrev = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", strtolower($row->optionName)));
 	    $row->sortOrder = $order++;
 	    if (!isset($row->displayType))
@@ -1707,7 +1709,8 @@ function paperOptions() {
 	}
 	$_SESSION["paperOption"] = array($Conf->setting("paperOption"), $opt);
     }
-    return $_SESSION["paperOption"][1];
+    $opts = $_SESSION["paperOption"][1];
+    return $id ? defval($opts, $id, null) : $opts;
 }
 
 function scoreCounts($text, $max = null) {

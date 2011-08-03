@@ -615,6 +615,10 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
+	if (!is_object($opt) && !($opt = paperOptions($opt))) {
+	    $whyNot["invalidId"] = "paper";
+	    return false;
+	}
 	// policy
 	if ($prow->conflictType >= CONFLICT_AUTHOR
 	    || $this->privChair)
