@@ -744,13 +744,13 @@ class Conference {
 	if (!$zlib_output_compression)
 	    header("Content-Length: " . strlen($row->content));
 	print $row->content;
-	return 1;
+	return true;
     }
 
     function downloadPaper($paperId, $saveit, $documentType = 0) {
 	global $Me;
 	$result = $this->__downloadPaper($paperId, $saveit, $documentType);
-	if (PEAR::isError($result))
+	if ($result !== true)
 	    $this->errorMsg($result->getMessage());
 	else
 	    $this->log("Downloaded paper", $Me, $paperId);
@@ -799,7 +799,7 @@ class Conference {
 	ob_clean();
 	flush();
 	readfile("$tmpdir/x.zip");
-	return 1;
+	return true;
     }
 
     function __downloadPapers($paperIds, &$tmpdir, $final) {
@@ -856,7 +856,7 @@ class Conference {
     function downloadPapers($paperIds, $final = false) {
 	global $Me;
 	$result = $this->__downloadPapers($paperIds, $tmpdir, $final);
-	if (PEAR::isError($result))
+	if ($result !== true)
 	    $this->errorMsg($result->getMessage());
 	else
 	    $this->log("Downloaded papers", $Me, $paperIds);

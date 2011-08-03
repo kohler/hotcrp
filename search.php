@@ -83,7 +83,7 @@ if ($getaction == "paper" && isset($papersel)) {
 
     session_write_close();	// to allow concurrent clicks
     $result = $Conf->downloadPapers($downloads);
-    if (!PEAR::isError($result))
+    if ($result === true)
 	exit;
 }
 
@@ -172,7 +172,7 @@ if ($getaction == "final" && isset($papersel)) {
     }
 
     $result = $Conf->downloadPapers($downloads, true);
-    if (!PEAR::isError($result))
+    if ($result === true)
 	exit;
 }
 
@@ -240,7 +240,7 @@ function downloadReviews(&$texts, &$errors) {
 	$result = $Conf->zipFinish($tmpdir, $Opt['downloadPrefix'] . "reviews.zip", $files);
 	if (isset($tmpdir) && $tmpdir)
 	    exec("/bin/rm -rf $tmpdir");
-	if (!PEAR::isError($result))
+	if ($result === true)
 	    exit;
     }
 }

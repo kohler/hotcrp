@@ -41,7 +41,7 @@ if ($documentType > 0 && !$Me->canViewPaperOption($paperId, $documentType))
 if (!isset($Error)) {
     session_write_close();	// to allow concurrent clicks
     $result = $Conf->downloadPaper($paperId, rcvtint($_REQUEST["save"]) > 0, $documentType);
-    if (!PEAR::isError($result))
+    if ($result === true)
 	exit;
 }
 
