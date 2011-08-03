@@ -1065,12 +1065,12 @@ function savedisplayoptions() {
 	});
 }
 
-function docheckformat() {
-    var form = $$("checkformatform");
+function docheckformat(dt) {
+    var form = $$("checkformatform" + dt);
     if (!form.onsubmit)
 	return true;
-    fold('checkformat', 0);
-    return Miniajax.submit('checkformatform', null, 10000);
+    fold("checkformat" + dt, 0);
+    return Miniajax.submit("checkformatform" + dt, null, 10000);
 }
 
 function dosubmitdecision() {

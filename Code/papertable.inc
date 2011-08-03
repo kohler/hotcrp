@@ -328,39 +328,34 @@ class PaperTable {
 	echo join("<div class='g'></div>\n", $out);
     }
 
-    function echoUploadRow($prow, $flags) {
+    function echoDocumentUploadRow($prow, $documentType, $documentTypeName, $storageId, $flags) {
 	global $Conf, $Me, $Opt;
-	$final = ($prow && $prow->outcome > 0
-		  && ($Me->canSubmitFinalPaper($prow, $whyNot, true)
-		      || defval($whyNot, "deadline") == "final_done"));
 	$maxsize = " <span class='papfnh'>(max size "
 	    . ini_get("upload_max_filesize") . "B)</span>";
 
-	if (defval($Opt, "noPapers"))
-	    $t = ($final ? null : "Status");
-	else if (defval($Opt, "disablePS"))
-	    $t = "PDF file" . $maxsize;
+	if (defval($Opt, "noPapers")) {
+	    $filetype = ($documentType != DOCUMENT_SUBMISSION ? null : "Status");
+	    $maxsize = "";
+	} else if (defval($Opt, "disablePS"))
+	    $filetype = "PDF";
 	else if (defval($Opt, "disablePDF"))
-	    $t = "PostScript file" . $maxsize;
+	    $filetype = "PostScript file";
 	else
-	    $t = "PDF/PostScript file" . $maxsize;
-	if ($t !== null && $final)
-	    $t = "Final copy $t";
-	if ($t !== null)
-	    echo $this->papt("paper", $t);
+	    $filetype = "PDF/PostScript file";
+	if ($filetype !== null)
+	    echo $this->papt("paper", ($documentTypeName ? $documentTypeName . " " : "") . $filetype . $maxsize);
 	echo "<div class='papv'>";
 
 	// current version, if any
 	$d = "";
 	$doc = null;
-	if ($prow && $Me->canDownloadPaper($prow)
-	    && ($final ? $prow->finalPaperStorageId > 0 : $prow->paperStorageId > 1)) {
-	    $doc = paperDocumentData($prow, $final ? -1 : 0);
+	if ($prow && $Me->canDownloadPaper($prow) && $storageId > 1) {
+	    $doc = paperDocumentData($prow, $documentType);
 	    if ($doc) {
 		$d .= "<td class='nowrap'>" . documentDownload($doc) . "</td>";
 		if ($doc->mimetype == "application/pdf"
 		    && $Conf->setting("sub_banal"))
-		    $d .= "<td><span class='sep'></span></td><td><input class='b' type='submit' name='checkformat' value='Check format' onclick='return docheckformat()' /></td>";
+		    $d .= "<td><span class='sep'></span></td><td><input class='b' type='submit' name='checkformat$documentType' value='Check format' onclick='return docheckformat($documentType)' /></td>";
 		if (($stamps = $this->pdfStamps($doc)))
 		    $d .= "<td><span class='sep'></span></td><td>$stamps</td>";
 	    }
@@ -376,40 +371,40 @@ class PaperTable {
 		$accepts[] = "application/pdf";
 	    if (!defval($Opt, "disablePS"))
 		$accepts[] = "application/postscript";
-	    $uploader = ($doc ? "<div class='g'></div>\nUpload replacement:" : "Upload:")
+	    $uploader = ($doc ? "<div class='g'></div>\nUpload replacement $filetype:" : "Upload:")
 		. "&nbsp; <input id='paperUpload' class='textlite' type='file' name='paperUpload' accept='"
 		. join(", ", $accepts)
 		. "' size='30' onchange='hiliter(this)";
-	    if (!$final)
+	    if ($documentType == DOCUMENT_SUBMISSION)
 		$uploader .= ";fold(\"isready\",0)";
 	    if ($flags & self::ENABLESUBMIT)
 		$uploader .= ";form.submit.disabled=false";
 	    $uploader .= "' />";
 	}
 
-	if ($prow
-	    && ($final ? $prow->finalPaperStorageId : $prow->paperStorageId) > 0
+	if ($prow && $storageId > 1
 	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
 	    && $Conf->setting("sub_banal")) {
-	    echo "<div id='foldcheckformat' class='foldc'><div id='checkformatformresult' class='fx'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
-	    $Conf->footerHtml("<form id='checkformatform' class='fold7o' method='post' action='" . hoturl("paper", "p=$prow->paperId" . ($final ? "&amp;final=1" : "")) . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform\")'><input type='hidden' name='checkformat' value='1' /></form>");
+	    echo "<div id='foldcheckformat$documentType' class='foldc'><div id='checkformatform${documentType}result' class='fx'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
+	    $Conf->footerHtml("<form id='checkformatform$documentType' class='fold7o' method='post' action='" . hoturl("paper", "p=$prow->paperId&amp;dt=$documentType") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform$documentType\")'><input type='hidden' name='checkformat' value='1' /></form>");
 	}
 
-	if (!$final && (!$doc || $Conf->setting("sub_freeze"))) {
+	if ($documentType == DOCUMENT_SUBMISSION
+	    && (!$doc || $Conf->setting("sub_freeze"))) {
 	    echo $uploader;
 	    $uploader = "";
 	}
 
-	if (!$final) {
+	if ($documentType == DOCUMENT_SUBMISSION) {
 	    if ($this->useRequest)
 		$checked = defval($_REQUEST, "submit");
 	    else if ($Conf->setting('sub_freeze'))
 		$checked = $prow && $prow->timeSubmitted > 0;
 	    else
-		$checked = !$prow || $prow->paperStorageId <= 1 || $prow->timeSubmitted > 0;
+		$checked = !$prow || $storageId <= 1 || $prow->timeSubmitted > 0;
 	    $s = ($doc ? " style='margin-top: 0.5ex'" : "");
 	    echo "<div id='foldisready' class='",
-		(($prow && $prow->paperStorageId > 1) || defval($Opt, "noPapers") ? "foldo" : "foldc"),
+		(($prow && $storageId > 1) || defval($Opt, "noPapers") ? "foldo" : "foldc"),
 		"'$s><table class='fx'><tr><td class='nowrap'>",
 		tagg_checkbox_h("submit", 1, $checked, array("id" => "paperisready")), "&nbsp;";
 	    if ($Conf->setting('sub_freeze'))
@@ -425,6 +420,16 @@ class PaperTable {
 	echo $uploader;
 
 	echo "</div>\n\n";
+    }
+
+    function echoUploadRow($prow, $flags) {
+	global $Me;
+	if ($prow && $prow->outcome > 0
+	    && ($Me->canSubmitFinalPaper($prow, $whyNot, true)
+		|| defval($whyNot, "deadline") == "final_done"))
+	    $this->echoDocumentUploadRow($prow, DOCUMENT_FINAL, "Final copy", $prow->finalPaperStorageId, $flags);
+	else
+	    $this->echoDocumentUploadRow($prow, DOCUMENT_SUBMISSION, null, $prow->paperStorageId, $flags);
     }
 
     function paptabAbstract($prow) {
