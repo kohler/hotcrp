@@ -1138,10 +1138,17 @@ function commajoin($what, $joinword = "and") {
 function pluralx($n, $what) {
     if (is_array($n))
 	$n = count($n);
+    if ($n == 1)
+	return $what;
     if ($what == "this")
-	return ($n == 1 ? "this" : "these");
-    else
-	return ($n == 1 ? $what : $what . "s");
+	return "these";
+    if (preg_match('/\A.*?(?:s|sh|ch|[bcdfgjklmnpqrstvxz][oy])\z/', $what)) {
+	if (substr($what, -1) == "y")
+	    return substr($what, 0, -1) . "ies";
+	else
+	    return $what . "es";
+    } else
+	return $what . "s";
 }
 
 function plural($n, $what) {
