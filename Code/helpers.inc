@@ -1722,7 +1722,7 @@ function paperOptions($id = null) {
     if ($Conf->setting("paperOption") <= 0 || $Conf->sversion <= 0)
 	return array();
     if (!isset($_SESSION["paperOption"]) || !is_array($_SESSION["paperOption"])
-	|| $_SESSION["paperOption"][0] <= $Conf->setting("paperOption")) {
+	|| $_SESSION["paperOption"][0] < $Conf->setting("paperOption")) {
 	$opt = array();
 	$orderby = ($Conf->sversion >= 29 ? "sortOrder, " : "") . "optionName";
 	$result = $Conf->q("select * from OptionType order by $orderby");
