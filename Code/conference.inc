@@ -686,30 +686,39 @@ class Conference {
     function downloadPaperName($paperId, $mimetype, $documentType) {
 	global $Opt;
 	$title = $Opt["downloadPrefix"];
-	if ($documentType == DOCUMENT_FINAL)
-	    $title .= "final";
-	else if ($documentType == DOCUMENT_SUBMISSION)
-	    $title .= "paper";
-	else {
-	    $opt = paperOptions();
-	    if (($o = $opt[$documentType]) && $o->type == OPTIONTYPE_PDF)
-		$title .= $o->optionAbbrev;
-	    else
-		$title .= "xxx";
-	}
+	$dtn = documentTypeName($documentType);
+	$title .= ($dtn ? $dtn : "xxx");
 	if (ctype_digit($title[strlen($title) - 1]))
 	    $title .= "-";
 	return $title . $paperId . $this->getFileExtension($mimetype);
+    }
+
+    function paperStorageRow($prow, $documentType) {
+	if (is_array($prow) && count($prow) <= 1)
+	    $prow = (count($prow) ? $prow[0] : -1);
+	if (is_numeric($prow))
+	    $paperMatch = "=" . $prow;
+	else if (is_array($prow))
+	    $paperMatch = " in (" . join(",", $prow) . ")";
+	else
+	    $paperMatch = "=" . $prow->paperId;
+	$q = "select p.paperId, s.mimetype, s.paper as content, s.paperStorageId, s.compression from Paper p";
+	if ($documentType == DOCUMENT_SUBMISSION)
+	    $sjoin = "p.paperStorageId";
+	else if ($documentType == DOCUMENT_FINAL)
+	    $sjoin = "p.finalPaperStorageId";
+	else {
+	    $q .= " left join PaperOption o on (o.paperId=p.paperId and o.optionId=$documentType)";
+	    $sjoin = "o.value";
+	}
+	return $this->q($q . " left join PaperStorage s on (s.paperStorageId=$sjoin) where p.paperId$paperMatch");
     }
 
     function __downloadPaper($paperId, $saveit, $documentType) {
 	global $Me, $zlib_output_compression;
 
 	// Database query
-	if ($documentType <= 0)
-	    $result = $this->q("select s.mimetype, s.paper, s.paperStorageId, s.compression from Paper p left join PaperStorage s on (s.paperStorageId=p." . ($documentType < 0 ? "finalPaperStorageId" : "paperStorageId") . ") where p.paperId=$paperId");
-	else
-	    $result = $this->q("select s.mimetype, s.paper, s.paperStorageId, s.compression from PaperOption o left join PaperStorage s on (s.paperStorageId=o.value) where o.paperId=$paperId and o.optionId=$documentType");
+	$result = $this->paperStorageRow($paperId, $documentType);
 	if (!$result) {
 	    $this->log("Error downloading for review: " . mysql_error($this->dblink), $Me, $paperId);
 	    return new PEAR_Error("Database error while downloading paper.");
@@ -717,27 +726,24 @@ class Conference {
 	    return new PEAR_Error("No such document.");
 
 	// Check data
-	$row = edb_row($result);
-	$mimetype = $row[0];
-	$content = $row[1];
-	$compression = $row[3];
-	if ($row[2] <= 1)
+	$row = edb_orow($result);
+	if ($row->paperStorageId <= 1)
 	    return new PEAR_Error("Paper #$paperId has not been uploaded yet.");
-	else if (strlen($content) == 0)
+	else if (strlen($row->content) == 0)
 	    return new PEAR_Error("Paper #$paperId appears to be empty.");
 
 	// Print paper
-	header("Content-Type: $mimetype");
+	header("Content-Type: $row->mimetype");
 	header("Content-Description: PHP Generated Data");
-	$name = $this->downloadPaperName($paperId, $mimetype, $documentType);
+	$name = $this->downloadPaperName($paperId, $row->mimetype, $documentType);
 	header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
 	// reduce likelihood of XSS attacks in IE
 	header("X-Content-Type-Options: nosniff");
-	if ($compression == 1)
-	    $content = gzinflate($content);
+	if ($row->compression == 1)
+	    $row->content = gzinflate($row->content);
 	if (!$zlib_output_compression)
-	    header("Content-Length: " . strlen($content));
-	print $content;
+	    header("Content-Length: " . strlen($row->content));
+	print $row->content;
 	return 1;
     }
 
@@ -813,27 +819,27 @@ class Conference {
 	$warnings = array();
 	$files = array();
 	$batch = 3;
+	$documentType = ($final ? DOCUMENT_FINAL : DOCUMENT_SUBMISSION);
 
 	for ($pidno = 0; $pidno < count($paperIds); $pidno += $batch) {
 	    // paper query
 	    // do in groups of 3 papers at a time to avoid database killage
-	    $q = "select Paper.paperId, paper, PaperStorage.mimetype, compression from PaperStorage join Paper on (PaperStorage.paperStorageId=Paper." . ($final ? "finalPaperStorageId" : "paperStorageId") . ") where (";
+	    $downloadP = array();
 	    for ($xpidno = $pidno;
 		 $xpidno < count($paperIds) && $xpidno < $pidno + $batch;
 		 ++$xpidno)
-		$downloadQ[] = "Paper.paperId=" . $paperIds[$xpidno];
-	    $q .= join(" or ", $downloadQ) . ")";
-	    $result = $this->q($q);
+		$downloadP[] = $paperIds[$xpidno];
+	    $result = $this->paperStorageRow($downloadP, $documentType);
 	    if (!$result)
 		return new PEAR_Error("Database error while downloading papers: " . mysql_error($this->dblink));
 
-	    while ($row = edb_row($result)) {
-		if ($row[3] == 1)
-		    $row[1] = gzinflate($row[1]);
-		if (strlen($row[1]) == 0)
-		    $warnings[] = "Paper #$row[0] has not been uploaded yet.";
+	    while ($row = edb_orow($result)) {
+		if ($row->compression == 1)
+		    $row->content = gzinflate($row->content);
+		if ($row->paperStorageId <= 1 || strlen($row->content) == 0)
+		    $warnings[] = "Paper #$row->paperId has not been uploaded yet.";
 		else
-		    $this->zipAdd($tmpdir, $this->downloadPaperName($row[0], $row[2], $final ? -1 : 0), $row[1], $warnings, $files);
+		    $this->zipAdd($tmpdir, $this->downloadPaperName($row->paperId, $row->mimetype, $documentType), $row->content, $warnings, $files);
 	    }
 	}
 
@@ -844,7 +850,7 @@ class Conference {
 	    $this->zipAdd($tmpdir, "README-warnings.txt", join("\n", $warnings) . "\n", $warnings, $files);
 
 	// run zip
-	return $this->zipFinish($tmpdir, $Opt['downloadPrefix'] . "papers.zip", $files);
+	return $this->zipFinish($tmpdir, $Opt["downloadPrefix"] . pluralx(2, documentTypeName($documentType)) . ".zip", $files);
     }
 
     function downloadPapers($paperIds, $final = false) {

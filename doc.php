@@ -11,11 +11,7 @@ require_once("Code/header.inc");
 $Me->goIfInvalid();
 
 // Determine the intended paper
-
-if (defval($_REQUEST, "final", 0) != 0)
-    $documentType = DOCUMENT_FINAL;
-else
-    $documentType = cvtint(defval($_REQUEST, "dt", DOCUMENT_SUBMISSION), DOCUMENT_SUBMISSION);
+$documentType = requestDocumentType($_REQUEST);
 
 if (isset($_REQUEST["p"]))
     $paperId = rcvtint($_REQUEST["p"]);
@@ -26,18 +22,11 @@ else {
     if (preg_match("|^\\/?(" . $Opt["downloadPrefix"] . ")?([-A-Za-z0-9_]*?)?-?(\\d+)\\..*$|", $paper, $match)
 	&& $match[3] > 0) {
 	$paperId = $match[3];
-	$pt = strtolower($match[2]);
-	if ($pt == "final")
-	    $documentType = DOCUMENT_FINAL;
-	else if ($pt != "paper") {
-	    foreach (paperOptions() as $o)
-		if ($o->optionAbbrev == $pt)
-		    $documentType = $o->optionId;
-	    if ($documentType <= 0 && !isset($Error))
-		$Error = "Invalid paper name &ldquo;" . htmlspecialchars($paper) . "&rdquo;.";
-	}
+	$documentType = requestDocumentType(array("dt" => $match[2]), null);
+	if ($documentType === null)
+	    $Error = "Invalid paper name “" . htmlspecialchars($paper) . "”.";
     } else
-	$Error = "Invalid paper name &ldquo;" . htmlspecialchars($paper) . "&rdquo;.";
+	$Error = "Invalid paper name “" . htmlspecialchars($paper) . "”.";
 }
 
 // Security checks - people who can download all paperss

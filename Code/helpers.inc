@@ -631,6 +631,34 @@ function paperDownload($prow, $final = false) {
     return $data ? documentDownload($data) : "";
 }
 
+function requestDocumentType($req, $default = DOCUMENT_SUBMISSION) {
+    if (($dt = defval($req, "dt"))) {
+	if (preg_match('/\A-?\d+\z/', $dt))
+	    return (int) $dt;
+	$dt = strtolower($dt);
+	if ($dt == "paper")
+	    return DOCUMENT_SUBMISSION;
+	if ($dt == "final")
+	    return DOCUMENT_FINAL;
+	foreach (paperOptions() as $o)
+	    if ($dt == $o->optionAbbrev)
+		return $o->optionId;
+    }
+    if (defval($req, "final", 0) != 0)
+	return DOCUMENT_FINAL;
+    return $default;
+}
+
+function documentTypeName($documentType) {
+    if ($documentType == DOCUMENT_SUBMISSION)
+	return "paper";
+    if ($documentType == DOCUMENT_FINAL)
+	return "final";
+    if (($o = paperOptions($documentType)) && $o->type == OPTIONTYPE_PDF)
+	return $o->optionAbbrev;
+    return null;
+}
+
 function topicTable($prow, $active = 0) {
     global $Conf;
     $rf = reviewForm();
@@ -1702,6 +1730,8 @@ function paperOptions($id = null) {
 		$row->type = ($row->optionValues ? OPTIONTYPE_SELECTOR : OPTIONTYPE_CHECKBOX);
 	    // end backwards compatibility to old schema versions
 	    $row->optionAbbrev = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", strtolower($row->optionName)));
+	    if ($row->optionAbbrev == "paper" || $row->optionAbbrev == "final")
+		$row->optionAbbrev = "opt" . $row->optionId;
 	    $row->sortOrder = $order++;
 	    if (!isset($row->displayType))
 		$row->displayType = 0;
