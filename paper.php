@@ -223,12 +223,19 @@ function requestSameAsPaper($prow) {
 	$result = $Conf->q("select ot.optionId, coalesce(po.value, 0), $qa from OptionType ot left join PaperOption po on po.paperId=$prow->paperId and po.optionId=ot.optionId");
 	while (($row = edb_row($result))) {
 	    $got = defval($_REQUEST, "opt$row[0]", "");
-	    if (($row[2] == 4 && fileUploaded($_FILES["opt$row[0]"], $Conf))
-		|| ($row[2] == 4 && defval($_REQUEST, "remove_opt$row[0]"))
-		|| ($row[2] == 3 && simplifyWhitespace($got) != $row[3])
-		|| (($row[2] == 0 || $row[2] == 1 || $row[2] == 2)
-		    && cvtint($got, 0) != $row[1]))
-		return false;
+	    $t = $row[2];
+	    if ($t == OPTIONTYPE_CHECKBOX || $t == OPTIONTYPE_SELECTOR
+		|| $t == OPTIONTYPE_NUMERIC) {
+		if (cvtint($got, 0) != $row[1])
+		    return false;
+	    } else if ($t == OPTIONTYPE_TEXT) {
+		if (simplifyWhitespace($got) != $row[3])
+		    return false;
+	    } else if ($t == OPTIONTYPE_PDF || $t == OPTIONTYPE_FINALPDF) {
+		if (fileUploaded($_FILES["opt$row[0]"], $Conf)
+		    || defval($_REQUEST, "remove_opt$row[0]"))
+		    return false;
+	    }
 	}
     }
     return true;
@@ -265,7 +272,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // XXX lock tables
 
     // clear 'isSubmit' if no paper has been uploaded
-    if (!fileUploaded($_FILES['paperUpload'], $Conf)
+    if (!fileUploaded($_FILES["paperUpload"], $Conf)
 	&& ($newPaper || $prow->size == 0)
 	&& !defval($Opt, "noPapers"))
 	$isSubmit = false;
@@ -313,12 +320,15 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    }
 	} else if ($opt->type == OPTIONTYPE_TEXT)
 	    $_REQUEST[$oname] = simplifyWhitespace($v);
-	else if ($opt->type == OPTIONTYPE_PDF) {
+	else if ($opt->type == OPTIONTYPE_PDF
+		 || $opt->type == OPTIONTYPE_FINALPDF) {
 	    unset($_REQUEST[$oname]);
-	    if (fileUploaded($_FILES[$oname], $Conf))
-		uploadOption($opt);
-	    else if (!defval($_REQUEST, "remove_opt" . $opt->optionId))
-		$no_delete_options[] = $opt->optionId;
+	    if ($opt->type != OPTIONTYPE_FINALPDF || $isSubmitFinal) {
+		if (fileUploaded($_FILES[$oname], $Conf))
+		    uploadOption($opt);
+		else if (!defval($_REQUEST, "remove_opt" . $opt->optionId))
+		    $no_delete_options[] = $opt->optionId;
+	    }
 	}
     }
 
@@ -356,7 +366,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    if (fileUploaded($_FILES["paperUpload"], $Conf))
 		uploadPaper($isSubmitFinal);
 	    foreach (paperOptions() as $o)
-		if ($o->type == OPTIONTYPE_PDF
+		if (($o->type == OPTIONTYPE_PDF
+		     || $o->type == OPTIONTYPE_FINALPDF)
 		    && isset($_REQUEST["opt$o->optionId"]))
 		    $Conf->qe("insert into PaperOption (paperId, optionId, value, data) values ($prow->paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null) on duplicate key update value=VALUES(value)", "while uploading option PDF");
 	}
@@ -364,7 +375,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     } else if ($collaborators_error // a warning, not an error
 	       && !$isSubmitFinal
 	       && (!$isSubmit || $Conf->setting("sub_freeze") <= 0))
-	$Conf->warnMsg("Please enter the authors' potential conflicts in the $collaborators_field field.  If none of the authors have potential conflicts, just enter &ldquo;None&rdquo;.");
+	$Conf->warnMsg("Please enter the authors’ potential conflicts in the $collaborators_field field.  If none of the authors have potential conflicts, just enter “None”.");
 
     // defined contact ID
     if ($newPaper && (isset($_REQUEST["contact_email"]) || isset($_REQUEST["contact_name"])) && $Me->privChair)
@@ -456,7 +467,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	// update PaperStorage.paperId for newly registered papers' PDF uploads
 	if ($newPaper)
 	    foreach (paperOptions() as $o)
-		if ($o->type == OPTIONTYPE_PDF
+		if (($o->type == OPTIONTYPE_PDF
+		     || $o->type == OPTIONTYPE_FINALPDF)
 		    && isset($_REQUEST["opt$o->optionId"]))
 		    $Conf->qe("update PaperStorage set paperId=$paperId where paperStorageId=" . $_REQUEST["opt$o->optionId"], $while);
     }

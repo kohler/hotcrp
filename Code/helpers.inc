@@ -417,7 +417,7 @@ function fileUploaded(&$var, $conf) {
 	return false;
     case UPLOAD_ERR_INI_SIZE:
     case UPLOAD_ERR_FORM_SIZE:
-	$conf->errorMsg("You tried to upload a file that's too big for our system to accept.  The maximum size is " . ini_get("upload_max_filesize") . "B.");
+	$conf->errorMsg("You tried to upload a file that’s too big for our system to accept.  The maximum size is " . ini_get("upload_max_filesize") . "B.");
 	return false;
     case UPLOAD_ERR_PARTIAL:
 	$conf->errorMsg("You appear to have interrupted the upload process; I am not storing that file.");
@@ -567,16 +567,16 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
     return $x;
 }
 
-function documentDownload($data) {
+function documentDownload($data, $dlimg_class = "dlimg") {
     global $Conf;
     $mimetype = defval($data, "mimetype", "");
     $documentType = defval($data, "documentType", DOCUMENT_SUBMISSION);
     $p = $Conf->makeDownloadPath($data->paperId, $mimetype, $documentType);
     $finalsuffix = ($documentType < 0 ? "f" : "");
     if ($mimetype == "application/postscript")
-	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("postscript${finalsuffix}24.png", "[PS]", null, "dlimg");
+	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("postscript${finalsuffix}24.png", "[PS]", null, $dlimg_class);
     else if ($mimetype == "application/pdf")
-	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("pdf${finalsuffix}24.png", "[PDF]", null, "dlimg");
+	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("pdf${finalsuffix}24.png", "[PDF]", null, $dlimg_class);
     else
 	$x = "<a href=\"$p\" class='nowrap'>View paper";
     if (defval($data, "size", 0) > 0)
@@ -593,7 +593,7 @@ function paperDocumentData($prow, $documentType = DOCUMENT_SUBMISSION, $paperSto
 	$paperStorageId = $prow->finalPaperStorageId;
     else if ($paperStorageId == 0)
 	$paperStorageId = $prow->paperStorageId;
-    if ($paperStorageId == 1)
+    if ($paperStorageId <= 1)
 	return null;
 
     // pre-load document object from paper
@@ -654,7 +654,8 @@ function documentTypeName($documentType) {
 	return "paper";
     if ($documentType == DOCUMENT_FINAL)
 	return "final";
-    if (($o = paperOptions($documentType)) && $o->type == OPTIONTYPE_PDF)
+    if (($o = paperOptions($documentType))
+	&& ($o->type == OPTIONTYPE_PDF || $o->type == OPTIONTYPE_FINALPDF))
 	return $o->optionAbbrev;
     return null;
 }

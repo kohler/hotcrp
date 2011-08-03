@@ -285,17 +285,27 @@ class PaperTable {
 	// status and download
 	if ($prow && $Me->canDownloadPaper($prow)) {
 	    $t = "<td class='nowrap'>" . $Me->paperStatus($prow->paperId, $prow, 0) . "</td>";
-	    if ($prow->outcome > 0 && $prow->finalPaperStorageId > 0
-		&& $Conf->collectFinalPapers()) {
-		$data = paperDocumentData($prow, -1);
-		$t .= "<td class='nowrap'>Final copy: &nbsp;"
-		    . documentDownload($data)
-		    . "<br /><small><a class='black' href=\""
-		    . $Conf->makeDownloadPath($prow->paperId, null, 0)
-		    . "\">Submission version</a></small></td>";
+	    if ($prow->outcome > 0 && $Conf->collectFinalPapers()) {
+		$x = array();
+		if ($prow->finalPaperStorageId > 1) {
+		    $data = paperDocumentData($prow, DOCUMENT_FINAL);
+		    $x[] = "Final copy: &nbsp;" . documentDownload($data);
+		} else if (($data = paperDocumentData($prow, DOCUMENT_SUBMISSION)))
+		    $x[] = documentDownload($data);
+		foreach (paperOptions() as $id => $o)
+		    if ($o->type == OPTIONTYPE_FINALPDF) {
+			$match = preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m);
+			if ($match && $m[1] > 1)
+			    $x[] = htmlspecialchars($o->optionName) . ": &nbsp;" . documentDownload(paperDocumentData($prow, $id, $m[1]), count($x) ? "dlimgsp" : "dlimg");
+		    }
+		if ($prow->finalPaperStorageId > 1 && $prow->paperStorageId > 1)
+		    $x[] = "<small><a class='black' href=\""
+			. $Conf->makeDownloadPath($prow->paperId, null, 0)
+			. "\">Submission version</a></small>";
+		if (count($x))
+		    $t .= "<td class='nowrap'>" . join("<br />", $x) . "</td>";
 	    } else {
-		$data = paperDocumentData($prow, 0);
-		if ($data && $data->paperStorageId > 1)
+		if (($data = paperDocumentData($prow, DOCUMENT_SUBMISSION)))
 		    $t .= "<td class='nowrap'>" . documentDownload($data) . "</td>";
 	    }
 	    if ($data && ($stamps = $this->pdfStamps($data)))
@@ -328,7 +338,7 @@ class PaperTable {
 	echo join("<div class='g'></div>\n", $out);
     }
 
-    function echoDocumentUploadRow($prow, $documentType, $documentTypeName, $storageId, $flags) {
+    function echoDocumentUploadRow($prow, $documentType, $documentTypeName, $documentTypeHint, $storageId, $flags) {
 	global $Conf, $Me, $Opt;
 	$maxsize = " <span class='papfnh'>(max size "
 	    . ini_get("upload_max_filesize") . "B)</span>";
@@ -344,13 +354,15 @@ class PaperTable {
 	    $filetype = "PDF/PostScript file";
 	if ($filetype !== null)
 	    echo $this->papt("paper", ($documentTypeName ? $documentTypeName . " " : "") . $filetype . $maxsize);
+	if ($documentTypeHint)
+	    echo "<div class='paphint'>", $documentTypeHint, "</div>";
 	echo "<div class='papv'>";
 
 	// current version, if any
 	$d = "";
 	$doc = null;
 	if ($prow && $Me->canDownloadPaper($prow) && $storageId > 1) {
-	    $doc = paperDocumentData($prow, $documentType);
+	    $doc = paperDocumentData($prow, $documentType, $storageId);
 	    if ($doc) {
 		$d .= "<td class='nowrap'>" . documentDownload($doc) . "</td>";
 		if ($doc->mimetype == "application/pdf"
@@ -371,8 +383,12 @@ class PaperTable {
 		$accepts[] = "application/pdf";
 	    if (!defval($Opt, "disablePS"))
 		$accepts[] = "application/postscript";
+	    if ($documentType == DOCUMENT_SUBMISSION || $documentType == DOCUMENT_FINAL)
+		$inputid = "paperUpload";
+	    else
+		$inputid = "opt" . $documentType;
 	    $uploader = ($doc ? "<div class='g'></div>\nUpload replacement $filetype:" : "Upload:")
-		. "&nbsp; <input id='paperUpload' class='textlite' type='file' name='paperUpload' accept='"
+		. "&nbsp; <input id='$inputid' class='textlite' type='file' name='$inputid' accept='"
 		. join(", ", $accepts)
 		. "' size='30' onchange='hiliter(this)";
 	    if ($documentType == DOCUMENT_SUBMISSION)
@@ -414,7 +430,7 @@ class PaperTable {
 		echo tagg_label("The paper is ready for review.");
 	    echo "</td></tr></table></div>\n";
 	    $Conf->footerScript("hotcrp_onload.push(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
-	} else
+	} else if ($documentType == DOCUMENT_FINAL)
 	    echo "<input type='hidden' name='submit' value='1' />";
 
 	echo $uploader;
@@ -426,10 +442,15 @@ class PaperTable {
 	global $Me;
 	if ($prow && $prow->outcome > 0
 	    && ($Me->canSubmitFinalPaper($prow, $whyNot, true)
-		|| defval($whyNot, "deadline") == "final_done"))
-	    $this->echoDocumentUploadRow($prow, DOCUMENT_FINAL, "Final copy", $prow->finalPaperStorageId, $flags);
-	else
-	    $this->echoDocumentUploadRow($prow, DOCUMENT_SUBMISSION, null, $prow->paperStorageId, $flags);
+		|| defval($whyNot, "deadline") == "final_done")) {
+	    $this->echoDocumentUploadRow($prow, DOCUMENT_FINAL, "Final copy", null, $prow->finalPaperStorageId, $flags);
+	    foreach (paperOptions() as $id => $o)
+		if ($o->type == OPTIONTYPE_FINALPDF) {
+		    $match = preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m);
+		    $this->echoDocumentUploadRow($prow, $id, htmlspecialchars($o->optionName), $o->description, $match ? $m[1] : 0, $flags);
+		}
+	} else
+	    $this->echoDocumentUploadRow($prow, DOCUMENT_SUBMISSION, null, null, $prow->paperStorageId, $flags);
     }
 
     function paptabAbstract($prow) {
@@ -658,6 +679,7 @@ class PaperTable {
 	    foreach ($options as $o) {
 		$ov = defval($optsel, $o->optionId, 0);
 		if ((!$ov && !$o->type)
+		    || $o->type == OPTIONTYPE_FINALPDF
 		    || (!$showAllOptions && !$Me->canViewPaperOption($prow, $o)))
 		    continue;
 
@@ -875,6 +897,8 @@ class PaperTable {
 	    $optsel[$m[1][$i]] = $m[2][$i];
 	$optdata = null;
 	foreach ($opt as $o) {
+	    if ($o->type == OPTIONTYPE_FINALPDF)
+		continue;
 	    $optid = "opt$o->optionId";
 	    if ($this->useRequest)
 		$myval = defval($_REQUEST, $optid);

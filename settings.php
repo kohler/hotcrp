@@ -531,13 +531,12 @@ function doCleanOptionValues($id) {
 }
 
 function doCleanOptionFormPositions() {
-    $opt = paperOptions();
-
     // valid keys for options, and whether the position is new
     $optname = array();
     $optreorder = array();
-    foreach ($opt as $id => $o)
-	if (defval($_REQUEST, "optn$id", "") != "") {
+    foreach (paperOptions() as $id => $o)
+	if ($o->type != OPTIONTYPE_FINALPDF
+	    && defval($_REQUEST, "optn$id", "") != "") {
 	    $optname[$id] = defval($_REQUEST, "optn$id", $o->optionName);
 	    $_REQUEST["optfp$id"] = defval($_REQUEST, "optfp$id", $o->sortOrder);
 	    $optreorder[$id] = $_REQUEST["optfp$id"] != $o->sortOrder;
@@ -579,7 +578,10 @@ function doCleanOptionFormPositions() {
 function doOptions($set) {
     global $Conf, $Values, $Error, $Highlight;
     if (!$set) {
-	$optkeys = array_keys(paperOptions());
+	$optkeys = array();
+	foreach (paperOptions() as $id => $o)
+	    if ($o->type != OPTIONTYPE_FINALPDF)
+		$optkeys[] = $id;
 	$optkeys[] = "n";
 	$optabbrs = array("paper" => -1, "final" => -1);
 	foreach ($optkeys as $id) {
@@ -607,6 +609,8 @@ function doOptions($set) {
     $ochange = false;
     $anyo = false;
     foreach (paperOptions() as $id => $o) {
+	if ($o->type == OPTIONTYPE_FINALPDF)
+	    continue;
 	doCleanOptionValues($id);
 
 	if (isset($_REQUEST["optn$id"]) && $_REQUEST["optn$id"] === "") {
@@ -1364,10 +1368,10 @@ function doOptGroupOption($o) {
     if ($Conf->sversion >= 29) {
 	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
 	    decorateSettingName("optfp$id", "Form order"), "</div><div class='f-e'>";
-	$opt = paperOptions();
 	$x = array();
-	for ($i = 0; $i <= count($opt); ++$i)
-	    $x[$i] = ordinal($i + 1);
+	foreach (paperOptions() as $o)
+	    if ($o->type != OPTIONTYPE_FINALPDF)
+		$x[count($x)] = ordinal(count($x) + 1);
 	if ($id !== "n")
 	    $x["delete"] = "Delete option";
 	echo tagg_select("optfp$id", $x, $o->sortOrder, array("onchange" => "hiliter(this)")),
@@ -1410,17 +1414,19 @@ function doOptGroup() {
 	echo "Add options one at a time.\n";
 	echo "<div class='g'></div>\n";
 	echo "<table>";
-	$opt = paperOptions();
 	$sep = "";
-	foreach ($opt as $o) {
-	    echo $sep;
-	    doOptGroupOption($o);
-	    $sep = "<tr><td colspan='2'><hr class='hr' /></td></tr>\n";
-	}
+	$nopt = 0;
+	foreach (paperOptions() as $o)
+	    if ($o->type != OPTIONTYPE_FINALPDF) {
+		echo $sep;
+		doOptGroupOption($o);
+		$sep = "<tr><td colspan='2'><hr class='hr' /></td></tr>\n";
+		++$nopt;
+	    }
 
 	echo $sep;
 
-	doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "type" => 0, "optionValues" => "", "sortOrder" => count($opt), "displayType" => 0));
+	doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "type" => 0, "optionValues" => "", "sortOrder" => $nopt, "displayType" => 0));
 
 	echo "</table>\n";
     }

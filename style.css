@@ -933,14 +933,19 @@ div.helpinside {
 	font-size: smaller;
 }
 
-img.dlimg, img.placthook {
+img.dlimg, img.dlimgsp, img.placthook {
 	position: relative;
 	bottom: -6px;
+}
+img.dlimg, img.placthook {
 	margin-top: -6px;
+}
+img.dlimgsp {
+	margin-top: -2px;
 }
 img.placthook {
 	width: 12px;
-	width: 12px;
+	height: 12px;
 	background-image: url(images/sprite.png?2);
 	background-position: -40px 0;
 }

@@ -62,6 +62,7 @@ define("OPTIONTYPE_SELECTOR", 1);
 define("OPTIONTYPE_NUMERIC", 2);
 define("OPTIONTYPE_TEXT", 3);
 define("OPTIONTYPE_PDF", 4);
+define("OPTIONTYPE_FINALPDF", 100);
 
 define("HOTCRP_VERSION", "2.45");
 
