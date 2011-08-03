@@ -1388,7 +1388,7 @@ class PaperTable {
 		&& ($Conf->timeSubmitFinalPaper() || $Me->privChair)
 		&& $this->mode == "pe")
 		$buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Submit final copy' />", "");
-	    if ($Conf->timeUpdatePaper($prow) && $this->mode == "pe")
+	    else if ($Conf->timeUpdatePaper($prow) && $this->mode == "pe")
 		$buttons[] = array("<input class='bb' type='submit' name='update' value='Save changes' />", "");
 	    else if ($Me->privChair && $this->mode == "pe") {
 		$class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "b" : "bb");
