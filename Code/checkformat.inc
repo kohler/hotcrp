@@ -194,9 +194,12 @@ class CheckFormat {
 	}
 
 	// number of pages
+	$minpages = $maxpages = null;
 	if (count($banal_desired) > 1 && $banal_desired[1]
 	    && preg_match('/\A(\d+)(?:-(\d+))?\z/', $banal_desired[1], $m)) {
 	    $m[2] = (isset($m[2]) ? $m[2] : 0);
+	    $minpages = ($m[2] ? $m[1] : null);
+	    $maxpages = ($m[2] ? $m[2] : $m[1]);
 	    if ($m[2] && count($pi) < $m[1]) {
 		$pie[] = "Too few pages: expected " . plural($m[1], "or more page") . ", found " . count($pi);
 		$this->errors |= self::ERR_PAGELIMIT;
@@ -215,7 +218,7 @@ class CheckFormat {
 		if (($pp = cvtint(defval($pg, "columns"))) > 0 && $pp != $p
 		    && defval($pg, "type") == "body")
 		    $px[] = $pg["pageno"];
-	    if (count($px) > 0) {
+	    if (count($px) > ($maxpages ? max(0, $maxpages * 0.75) : 0)) {
 		$pie[] = "Wrong number of columns: expected " . plural($p, "column") . ", different on " . pluralx($px, "page") . " " . commarangejoin($px);
 		$this->errors |= self::ERR_COLUMNS;
 	    }
@@ -302,7 +305,7 @@ class CheckFormat {
 
 	// results
 	if (count($pie) > 0) {
-	    $this->msg("warn", "This paper appears to violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
+	    $this->msg("warn", "This paper may violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
 	    return 1;
 	} else {
 	    $this->msg("confirm", "Congratulations, this paper appears to comply with the basic submission format requirements.  However, there may be requirements that the automated checker doesn’t check.  You should verify yourself that your paper meets all stated requirements.");

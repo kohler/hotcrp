@@ -751,7 +751,7 @@ function doBanal($set) {
     $old_error_count = count($Error);
     $bs = array_fill(0, 6, "");
     if (($s = trim(defval($_REQUEST, "sub_banal_papersize", ""))) != ""
-	&& strcasecmp($s, "N/A") != 0) {
+	&& strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
 	$ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
 	$sout = array();
 	foreach ($ses as $ss)
@@ -780,8 +780,18 @@ function doBanal($set) {
 	}
     }
 
+    if (($s = trim(defval($_REQUEST, "sub_banal_columns", ""))) != ""
+	&& strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
+	if (($sx = cvtint($s, -1)) >= 0)
+	    $bs[2] = ($sx > 0 ? $sx : $bs[2]);
+	else {
+	    $Highlight["sub_banal_columns"] = true;
+	    $Error[] = "Columns must be a whole number.";
+	}
+    }
+
     if (($s = trim(defval($_REQUEST, "sub_banal_textblock", ""))) != ""
-	&& strcasecmp($s, "N/A") != 0) {
+	&& strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
 	// change margin specifications into text block measurements
 	if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
 	    $s = $m[1];
@@ -825,7 +835,7 @@ function doBanal($set) {
     }
 
     if (($s = trim(defval($_REQUEST, "sub_banal_bodyfontsize", ""))) != ""
-	&& strcasecmp($s, "N/A") != 0) {
+	&& strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
 	if (!is_numeric($s) || $s <= 0) {
 	    $Highlight["sub_banal_bodyfontsize"] = true;
 	    $Error[] = "Minimum body font size must be a number bigger than 0.";
@@ -834,7 +844,7 @@ function doBanal($set) {
     }
 
     if (($s = trim(defval($_REQUEST, "sub_banal_bodyleading", ""))) != ""
-	&& strcasecmp($s, "N/A") != 0) {
+	&& strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
 	if (!is_numeric($s) || $s <= 0) {
 	    $Highlight["sub_banal_bodyleading"] = true;
 	    $Error[] = "Minimum body leading must be a number bigger than 0.";
@@ -1266,8 +1276,9 @@ function doSubGroup() {
 	doTextRow("sub_banal_pagelimit", "Page limit", setting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
 	doTextRow("sub_banal_textblock", array("Text block", "Examples: &ldquo;6.5in&nbsp;x&nbsp;9in&rdquo;, &ldquo;1in&nbsp;margins&rdquo;"), setting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
 	echo "</table></td><td><span class='sep'></span></td><td class='top'><table>";
-	doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp; pt"), setting("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
-	doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp; pt"), setting("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
+	doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), setting("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
+	doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), setting("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
+	doTextRow("sub_banal_columns", array("Columns", null), setting("sub_banal_columns", $bsetting[2]), 4, "lxcaption", "N/A");
 	echo "</table></td></tr></table>";
     }
 
