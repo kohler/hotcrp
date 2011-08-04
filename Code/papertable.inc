@@ -1914,6 +1914,8 @@ class PaperTable {
 
 	// actually try to search
 	require_once("search.inc");
+	if ($_REQUEST["paperId"] == "(All)")
+	    $_REQUEST["paperId"] = "";
 	$search = new PaperSearch($Me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
 	$pl = $search->paperList();
 	if (count($pl) == 1) {
