@@ -611,7 +611,7 @@ class PaperList extends BaseList {
 	if ($row->finalPaperStorageId != 0) {
 	    $this->anyFinalPaper = true;
 	    $finalsuffix = "f";
-	    $finaltitle = "Final copy";
+	    $finaltitle = "Final version";
 	    $documentType = DOCUMENT_FINAL;
 	} else {
 	    $finalsuffix = "";

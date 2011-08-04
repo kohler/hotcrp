@@ -1125,10 +1125,10 @@ mechanism.  For each chair conflict:
 
 <li><p><strong><a href='" . hoturl("settings", "group=dec") . "'>Collect final
   papers (optional).</a></strong> If you’re putting together the program
-  yourself, it can be convenient to collect final copies using HotCRP.
-  Authors upload final copies just as they did submissions.  You can then <a
+  yourself, it can be convenient to collect final versions using HotCRP.
+  Authors upload final versions just as they did submissions.  You can then <a
   href='" . hoturl("search", "q=dec:yes&amp;t=s") . "'>download
-  all final copies as a <tt>.zip</tt> archive</a>.  (Papers’ reviewed
+  all final versions as a <tt>.zip</tt> archive</a>.  (The submitted
   versions are archived for reference.)</p></li>
 
 </ol>

@@ -659,9 +659,9 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     if ($plist && $Conf->timeSubmitFinalPaper() && $plist->accepted > 0) {
 	$time = $Conf->printableTimeSetting("final_soft");
 	if ($Conf->deadlinesAfter("final_soft") && $plist->needFinalCopy > 0)
-	    $deadlines[] = "<strong class='overdue'>Final copies are overdue.</strong>  They were requested by $time.";
+	    $deadlines[] = "<strong class='overdue'>Final versions are overdue.</strong>  They were requested by $time.";
 	else if ($time != "N/A")
-	    $deadlines[] = "Submit final copies of your accepted papers by $time.";
+	    $deadlines[] = "Submit final versions of your accepted papers by $time.";
     }
     if (count($deadlines) > 0) {
 	if ($plist && $plist->count > 0)

@@ -289,7 +289,7 @@ class PaperTable {
 		$x = array();
 		if ($prow->finalPaperStorageId > 1) {
 		    $data = paperDocumentData($prow, DOCUMENT_FINAL);
-		    $x[] = "Final copy: &nbsp;" . documentDownload($data);
+		    $x[] = "Final version: &nbsp;" . documentDownload($data);
 		} else if (($data = paperDocumentData($prow, DOCUMENT_SUBMISSION)))
 		    $x[] = documentDownload($data);
 		foreach (paperOptions() as $id => $o)
@@ -443,7 +443,7 @@ class PaperTable {
 	if ($prow && $prow->outcome > 0
 	    && ($Me->canSubmitFinalPaper($prow, $whyNot, true)
 		|| defval($whyNot, "deadline") == "final_done")) {
-	    $this->echoDocumentUploadRow($prow, DOCUMENT_FINAL, "Final copy", null, $prow->finalPaperStorageId, $flags);
+	    $this->echoDocumentUploadRow($prow, DOCUMENT_FINAL, "Final version", null, $prow->finalPaperStorageId, $flags);
 	    foreach (paperOptions() as $id => $o)
 		if ($o->type == OPTIONTYPE_FINALPDF) {
 		    $match = preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m);
@@ -1383,7 +1383,7 @@ class PaperTable {
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0
 		   && $Conf->timeSubmitFinalPaper()) {
 	    $updateDeadline = $this->deadlineSettingIs("final_soft");
-	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final copy for the paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or edit paper contacts, allowing others to view reviews and make changes." . "</div>";
+	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final version for the paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or edit paper contacts, allowing others to view reviews and make changes." . "</div>";
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR) {
 	    $override2 = ($Me->privChair ? "  However, as an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
 	    if ($this->mode == "pe")
@@ -1411,7 +1411,7 @@ class PaperTable {
 	    if ($prow->outcome > 0 && $Conf->collectFinalPapers()
 		&& ($Conf->timeSubmitFinalPaper() || $Me->privChair)
 		&& $this->mode == "pe")
-		$buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Submit final copy' />", "");
+		$buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Submit final version' />", "");
 	    else if ($Conf->timeUpdatePaper($prow) && $this->mode == "pe")
 		$buttons[] = array("<input class='bb' type='submit' name='update' value='Save changes' />", "");
 	    else if ($Me->privChair && $this->mode == "pe") {

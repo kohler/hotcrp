@@ -128,9 +128,9 @@ $SettingText = array(
 	"rev_ratings" => "Review ratings setting",
 	"au_seerev" => "Authors can see reviews setting",
 	"seedec" => "Decision visibility",
-	"final_open" => "Collect final copies setting",
-	"final_soft" => "Final copy upload deadline",
-	"final_done" => "Final copy upload hard deadline",
+	"final_open" => "Collect final versions setting",
+	"final_soft" => "Final version upload deadline",
+	"final_done" => "Final version upload hard deadline",
 	"homemsg" => "Home page message",
 	"conflictdefmsg" => "Definition of conflict of interest",
 	"mailbody_requestreview" => "Mail template for external review requests"
@@ -1005,7 +1005,7 @@ if (isset($_REQUEST["update"])) {
 	&& (array_key_exists("seedec", $Values)
 	    ? $Values["seedec"] != SEEDEC_ALL
 	    : $Conf->setting("seedec") != SEEDEC_ALL))
-	$Conf->warnMsg("Authors cannot submit final copies until they know their papers have been accepted.  You should change the &ldquo;Who can see a paper&rsquo;s decision&rdquo; setting to &ldquo;The paper&rsquo;s <strong>authors</strong>....&rdquo;");
+	$Conf->warnMsg("Authors cannot submit final versions until they know their papers have been accepted.  You should change the &ldquo;Who can see a paper&rsquo;s decision&rdquo; setting to &ldquo;The paper&rsquo;s <strong>authors</strong>....&rdquo;");
 
     // unset text messages that equal the default
     if (array_key_exists("conflictdefmsg", $Values)
@@ -1361,7 +1361,7 @@ function doOptGroupOption($o) {
 	    $otypes[OPTIONTYPE_PDF] = "PDF";
 	if ($Conf->sversion >= 28
 	    && ($Conf->collectFinalPapers() || $optvt == OPTIONTYPE_FINALPDF))
-	    $otypes[OPTIONTYPE_FINALPDF] = "Final copy PDF";
+	    $otypes[OPTIONTYPE_FINALPDF] = "Final version PDF";
 	echo tagg_select("optvt$id", $otypes, $optvt, array("onchange" => "doopttype(this)", "id" => "optvt$id")),
 	    "</div></div></td>";
 	$Conf->footerScript("doopttype(\$\$('optvt$id'),true)");
@@ -1397,7 +1397,7 @@ function doOptGroupOption($o) {
     }
 
     if ($Conf->sversion >= 28 && isset($otypes[OPTIONTYPE_FINALPDF]))
-	echo "<td class='pad fx2'><div class='f-i'><div class='f-c'>&nbsp;</div><div class='f-e hint' style='margin-top:0.7ex'>(Set by accepted authors during final copy submission period)</div></div></td>";
+	echo "<td class='pad fx2'><div class='f-i'><div class='f-c'>&nbsp;</div><div class='f-e hint' style='margin-top:0.7ex'>(Set by accepted authors during final version submission period)</div></div></td>";
 
     echo "</tr></table>";
 
@@ -1718,17 +1718,17 @@ function doDecGroup() {
 	    "&nbsp;<span class='error'>", tagg_label("Confirm"), "</span></td>";
     echo "</tr>\n</table>\n";
 
-    // Final copies
+    // Final versions
     echo "<hr class='hr' />";
-    echo "<h3>Final copies</h3>\n";
+    echo "<h3>Final versions</h3>\n";
     echo "<table id='foldfinal' class='foldo'>";
-    doCheckbox('final_open', "<b>Collect final copies of accepted papers<span class='fx'>:</span></b>", true, "void fold('final',!this.checked)");
+    doCheckbox('final_open', "<b>Collect final versions of accepted papers<span class='fx'>:</span></b>", true, "void fold('final',!this.checked)");
     echo "<tr class='fx'><td></td><td><table>";
     doDateRow("final_soft", "Deadline", "final_done", "lxcaption");
     doDateRow("final_done", "Hard deadline", null, "lxcaption");
     doGraceRow("final_grace", "Grace period", "lxcaption");
     echo "</table><div class='gs'></div>",
-	"<small>To collect <em>multiple</em> final copies, such as one in 9pt and one in 11pt, add “Final copy PDF” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</small>",
+	"<small>To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Final version PDF” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</small>",
 	"</div></td></tr></table>\n\n";
     $Conf->footerScript("fold('final',!\$\$('cbfinal_open').checked)");
 }

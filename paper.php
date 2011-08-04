@@ -509,10 +509,10 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if (($isSubmitFinal ? $prow->finalPaperStorageId : $prow->paperStorageId) <= 1
 	    && !defval($Opt, "noPapers")) {
 	    $Error["paper"] = 1;
-	    return $Conf->errorMsg(whyNotText("notUploaded", ($isSubmitFinal ? "submit a final copy for" : "submit"), $paperId));
+	    return $Conf->errorMsg(whyNotText("notUploaded", ($isSubmitFinal ? "submit a final version for" : "submit"), $paperId));
 	}
 	$result = $Conf->qe("update Paper set " . ($isSubmitFinal ? "timeFinalSubmitted" : "timeSubmitted") . "=" . time() . " where paperId=$paperId",
-			    ($isSubmitFinal ? "while submitting final copy for paper" : "while submitting paper"));
+			    ($isSubmitFinal ? "while submitting final version for paper" : "while submitting paper"));
 	if (!$result)
 	    return false;
     } else if (!$isSubmitFinal) {
@@ -619,7 +619,7 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
     // actually update
     if (!$ok) {
 	if (isset($_REQUEST["submitfinal"]))
-	    $action = "submit final copy for";
+	    $action = "submit final version for";
 	else
 	    $action = ($newPaper ? "register" : "update");
 	$Conf->errorMsg(whyNotText($whyNot, $action));
