@@ -632,6 +632,8 @@ function paperDownload($prow, $final = false) {
 }
 
 function requestDocumentType($req, $default = DOCUMENT_SUBMISSION) {
+    if (is_string($req))
+	$req = array("dt" => $req);
     if (($dt = defval($req, "dt"))) {
 	if (preg_match('/\A-?\d+\z/', $dt))
 	    return (int) $dt;
@@ -640,6 +642,8 @@ function requestDocumentType($req, $default = DOCUMENT_SUBMISSION) {
 	    return DOCUMENT_SUBMISSION;
 	if ($dt == "final")
 	    return DOCUMENT_FINAL;
+	if (substr($dt, 0, 4) == "opt-")
+	    $dt = substr($dt, 4);
 	foreach (paperOptions() as $o)
 	    if ($dt == $o->optionAbbrev)
 		return $o->optionId;

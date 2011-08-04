@@ -22,7 +22,7 @@ else {
     if (preg_match("|^\\/?(" . $Opt["downloadPrefix"] . ")?([-A-Za-z0-9_]*?)?-?(\\d+)\\..*$|", $paper, $match)
 	&& $match[3] > 0) {
 	$paperId = $match[3];
-	$documentType = requestDocumentType(array("dt" => $match[2]), null);
+	$documentType = requestDocumentType($match[2], null);
 	if ($documentType === null)
 	    $Error = "Invalid paper name “" . htmlspecialchars($paper) . "”.";
     } else

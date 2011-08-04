@@ -1142,8 +1142,11 @@ class PaperList extends BaseList {
 	    $sel_opt["revprefx"] = "Preference file with abstracts";
 	    $sel_opt["abstract"] = "Abstracts";
 	} else {
-	    if ($this->contact->isPC && $this->anyFinalPaper) {
+	    if ($this->anyFinalPaper) {
 		$sel_opt["final"] = "Final papers";
+		foreach (paperOptions() as $id => $o)
+		    if ($o->type == OPTIONTYPE_FINALPDF)
+			$sel_opt["opt-" . $o->optionAbbrev] = htmlspecialchars($o->optionName) . " papers";
 		$sel_opt["paper"] = "Submitted papers";
 	    } else
 		$sel_opt["paper"] = "Papers";

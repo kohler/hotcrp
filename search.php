@@ -70,7 +70,9 @@ function cleanAjaxResponse(&$response, $type) {
 
 
 // download selected papers
-if ($getaction == "paper" && isset($papersel)) {
+if (($getaction == "paper" || $getaction == "final" || substr($getaction, 0, 4) == "opt-")
+    && isset($papersel)
+    && ($dt = requestDocumentType($getaction, null)) !== null) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
     $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
@@ -82,7 +84,7 @@ if ($getaction == "paper" && isset($papersel)) {
     }
 
     session_write_close();	// to allow concurrent clicks
-    $result = $Conf->downloadPapers($downloads);
+    $result = $Conf->downloadPapers($downloads, $dt);
     if ($result === true)
 	exit;
 }
@@ -156,24 +158,6 @@ if ($getaction && ($fdef = defval($paperListFolds, $getaction))
     $response = $pl->ajaxColumn($fdef->id, $Me);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
-}
-
-
-// download selected final copies
-if ($getaction == "final" && isset($papersel)) {
-    $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
-    $result = $Conf->qe($q, "while selecting papers");
-    $downloads = array();
-    while ($row = edb_orow($result)) {
-	if (!$Me->canViewPaper($row, $whyNot))
-	    $Conf->errorMsg(whyNotText($whyNot, "view"));
-	else
-	    $downloads[] = $row->paperId;
-    }
-
-    $result = $Conf->downloadPapers($downloads, true);
-    if ($result === true)
-	exit;
 }
 
 

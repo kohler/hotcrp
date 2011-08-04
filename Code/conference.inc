@@ -802,14 +802,14 @@ class Conference {
 	return true;
     }
 
-    function __downloadPapers($paperIds, &$tmpdir, $final) {
+    function __downloadPapers($paperIds, &$tmpdir, $documentType) {
 	global $Opt, $zlib_output_compression;
 
 	// special cases
 	if (count($paperIds) == 0)
 	    return new PEAR_Error("No papers selected for download.");
 	else if (count($paperIds) == 1)
-	    return $this->__downloadPaper($paperIds[0], 1, $final ? -1 : 0);
+	    return $this->__downloadPaper($paperIds[0], 1, $documentType);
 
 	// set up temporary directory
 	if (($tmpdir = tempdir()) === false)
@@ -819,7 +819,6 @@ class Conference {
 	$warnings = array();
 	$files = array();
 	$batch = 3;
-	$documentType = ($final ? DOCUMENT_FINAL : DOCUMENT_SUBMISSION);
 
 	for ($pidno = 0; $pidno < count($paperIds); $pidno += $batch) {
 	    // paper query
@@ -853,9 +852,9 @@ class Conference {
 	return $this->zipFinish($tmpdir, $Opt["downloadPrefix"] . pluralx(2, documentTypeName($documentType)) . ".zip", $files);
     }
 
-    function downloadPapers($paperIds, $final = false) {
+    function downloadPapers($paperIds, $documentType) {
 	global $Me;
-	$result = $this->__downloadPapers($paperIds, $tmpdir, $final);
+	$result = $this->__downloadPapers($paperIds, $tmpdir, $documentType);
 	if ($result !== true)
 	    $this->errorMsg($result->getMessage());
 	else
