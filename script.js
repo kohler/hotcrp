@@ -1115,3 +1115,15 @@ function setmailpsel(sel) {
     var dofold = !!sel.value.match(/^(?:pc$|pc:|all$)/);
     fold("psel", dofold, 9);
 }
+
+
+// settings
+function doopttype(e, nohilite) {
+    var m;
+    if (!nohilite)
+	hiliter(e);
+    if ((m = e.name.match(/^optvt(.*)$/))) {
+	fold("optv" + m[1], e.value != 1);
+	fold("optvis" + m[1], e.value != 100, 2);
+    }
+}

@@ -509,9 +509,12 @@ function doCleanOptionValues($id) {
     }
 
     $optvt = cvtint(defval($_REQUEST, "optvt$id", 0));
-    if ($optvt < 0 || $optvt > 4 || ($Conf->sversion < 27 && $optvt > 1))
+    if (($optvt != OPTIONTYPE_CHECKBOX && $optvt != OPTIONTYPE_SELECTOR
+	 && $optvt != OPTIONTYPE_NUMERIC && $optvt != OPTIONTYPE_TEXT
+	 && $optvt != OPTIONTYPE_PDF && $optvt != OPTIONTYPE_FINALPDF)
+	|| ($Conf->sversion < 27 && $optvt > 1))
 	$optvt = $_REQUEST["optvt$id"] = 0;
-    if ($optvt == 1) {
+    if ($optvt == OPTIONTYPE_SELECTOR) {
 	$v = "";
 	foreach (explode("\n", rtrim(cleannl($_REQUEST["optv$id"]))) as $t)
 	    $v .= trim($t) . "\n";
@@ -522,6 +525,10 @@ function doCleanOptionValues($id) {
 	    $_REQUEST["optv$id"] = substr($v, 0, strlen($v) - 1);
     } else
 	unset($_REQUEST["optv$id"]);
+    if ($optvt == OPTIONTYPE_FINALPDF) {
+	$_REQUEST["optp$id"] = 1;
+	$_REQUEST["optdt$id"] = 0;
+    }
 
     $pcview = cvtint(defval($_REQUEST, "optp$id", 0));
     $_REQUEST["optp$id"] = min(max($pcview, 0), 2);
@@ -535,8 +542,7 @@ function doCleanOptionFormPositions() {
     $optname = array();
     $optreorder = array();
     foreach (paperOptions() as $id => $o)
-	if ($o->type != OPTIONTYPE_FINALPDF
-	    && defval($_REQUEST, "optn$id", "") != "") {
+	if (defval($_REQUEST, "optn$id", "") != "") {
 	    $optname[$id] = defval($_REQUEST, "optn$id", $o->optionName);
 	    $_REQUEST["optfp$id"] = defval($_REQUEST, "optfp$id", $o->sortOrder);
 	    $optreorder[$id] = $_REQUEST["optfp$id"] != $o->sortOrder;
@@ -578,10 +584,7 @@ function doCleanOptionFormPositions() {
 function doOptions($set) {
     global $Conf, $Values, $Error, $Highlight;
     if (!$set) {
-	$optkeys = array();
-	foreach (paperOptions() as $id => $o)
-	    if ($o->type != OPTIONTYPE_FINALPDF)
-		$optkeys[] = $id;
+	$optkeys = array_keys(paperOptions());
 	$optkeys[] = "n";
 	$optabbrs = array("paper" => -1, "final" => -1);
 	foreach ($optkeys as $id) {
@@ -609,8 +612,6 @@ function doOptions($set) {
     $ochange = false;
     $anyo = false;
     foreach (paperOptions() as $id => $o) {
-	if ($o->type == OPTIONTYPE_FINALPDF)
-	    continue;
 	doCleanOptionValues($id);
 
 	if (isset($_REQUEST["optn$id"]) && $_REQUEST["optn$id"] === "") {
@@ -1343,24 +1344,30 @@ function doOptGroupOption($o) {
 	    "</div></div></td>";
     }
 
-    echo "</tr>\n  <tr><td colspan='2'><table><tr>";
+    echo "</tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2o'><tr>";
 
     if ($Conf->sversion >= 14) {
 	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
 	    decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
 	$oval = $o->optionValues;
 	$optvt = (count($Error) > 0 ? defval($_REQUEST, "optvt$id", 0) : $o->type);
-	$otypes = array("Checkbox", "Selector");
-	if ($Conf->sversion >= 27)
-	    array_push($otypes, "Numeric", "Text");
+	$otypes = array(OPTIONTYPE_CHECKBOX => "Checkbox",
+			OPTIONTYPE_SELECTOR => "Selector");
+	if ($Conf->sversion >= 27) {
+	    $otypes[OPTIONTYPE_NUMERIC] = "Numeric";
+	    $otypes[OPTIONTYPE_TEXT] = "Text";
+	}
 	if ($Conf->sversion >= 28)
-	    array_push($otypes, "PDF upload");
-	echo tagg_select("optvt$id", $otypes, $optvt,
-			 array("onchange" => "hiliter(this);void fold(\"optv$id\",this.value!=1)")),
+	    $otypes[OPTIONTYPE_PDF] = "PDF";
+	if ($Conf->sversion >= 28
+	    && ($Conf->collectFinalPapers() || $optvt == OPTIONTYPE_FINALPDF))
+	    $otypes[OPTIONTYPE_FINALPDF] = "Final copy PDF";
+	echo tagg_select("optvt$id", $otypes, $optvt, array("onchange" => "doopttype(this)", "id" => "optvt$id")),
 	    "</div></div></td>";
+	$Conf->footerScript("doopttype(\$\$('optvt$id'),true)");
     }
 
-    echo "<td class='pad'><div class='f-i'><div class='f-c'>",
+    echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
 	decorateSettingName("optp$id", "Visibility"), "</div><div class='f-e'>",
 	tagg_select("optp$id", array("Administrators only", "Visible to reviewers", "Visible if authors are visible"), $o->pcView, array("onchange" => "hiliter(this)")),
 	"</div></div></td>";
@@ -1369,23 +1376,28 @@ function doOptGroupOption($o) {
 	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
 	    decorateSettingName("optfp$id", "Form order"), "</div><div class='f-e'>";
 	$x = array();
-	foreach (paperOptions() as $o)
-	    if ($o->type != OPTIONTYPE_FINALPDF)
-		$x[count($x)] = ordinal(count($x) + 1);
-	if ($id !== "n")
+	// can't use "foreach (paperOptions())" because caller uses cursor
+	for ($n = 0; $n < count(paperOptions()); ++$n)
+	    $x[$n] = ordinal($n + 1);
+	if ($id === "n")
+	    $x[$n] = ordinal($n + 1);
+	else
 	    $x["delete"] = "Delete option";
 	echo tagg_select("optfp$id", $x, $o->sortOrder, array("onchange" => "hiliter(this)")),
 	    "</div></div></td>";
     }
 
     if ($Conf->sversion >= 38) {
-	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
+	echo "<td class='pad fn2'><div class='f-i'><div class='f-c'>",
 	    decorateSettingName("optdt$id", "Display"), "</div><div class='f-e'>";
 	$optdt = (count($Error) > 0 ? defval($_REQUEST, "optdt$id", 0) : $o->displayType);
 	echo tagg_select("optdt$id", array("Group with other options", "Display separately"), $optdt,
 			 array("onchange" => "hiliter(this)")),
 	    "</div></div></td>";
     }
+
+    if ($Conf->sversion >= 28 && isset($otypes[OPTIONTYPE_FINALPDF]))
+	echo "<td class='pad fx2'><div class='f-i'><div class='f-c'>&nbsp;</div><div class='f-e hint' style='margin-top:0.7ex'>(Set by accepted authors during final copy submission period)</div></div></td>";
 
     echo "</tr></table>";
 
@@ -1395,7 +1407,7 @@ function doOptGroupOption($o) {
 	    $value = "";
 	echo "<div id='foldoptv$id' class='", ($optvt == 1 ? "foldo" : "foldc"),
 	    "'><div class='fx'>",
-	    "<div class='hint'>Enter the selector choices one per line.  The first choice will be the default.</div>",
+	    "<div class='hint' style='margin-top:1ex'>Enter the selector choices one per line.  The first choice will be the default.</div>",
 	    "<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='hiliter(this)'>", htmlspecialchars($value), "</textarea>",
 	    "</div></div>";
     }
@@ -1416,13 +1428,12 @@ function doOptGroup() {
 	echo "<table>";
 	$sep = "";
 	$nopt = 0;
-	foreach (paperOptions() as $o)
-	    if ($o->type != OPTIONTYPE_FINALPDF) {
-		echo $sep;
-		doOptGroupOption($o);
-		$sep = "<tr><td colspan='2'><hr class='hr' /></td></tr>\n";
-		++$nopt;
-	    }
+	foreach (paperOptions() as $o) {
+	    echo $sep;
+	    doOptGroupOption($o);
+	    $sep = "<tr><td colspan='2'><hr class='hr' /></td></tr>\n";
+	    ++$nopt;
+	}
 
 	echo $sep;
 
@@ -1716,7 +1727,9 @@ function doDecGroup() {
     doDateRow("final_soft", "Deadline", "final_done", "lxcaption");
     doDateRow("final_done", "Hard deadline", null, "lxcaption");
     doGraceRow("final_grace", "Grace period", "lxcaption");
-    echo "</table></td></tr></table>\n\n";
+    echo "</table><div class='gs'></div>",
+	"<small>To collect <em>multiple</em> final copies, such as one in 9pt and one in 11pt, add “Final copy PDF” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</small>",
+	"</div></td></tr></table>\n\n";
     $Conf->footerScript("fold('final',!\$\$('cbfinal_open').checked)");
 }
 
