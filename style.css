@@ -457,6 +457,9 @@ table.ppltable td.pl_topics span.topic2 {
 span.optvalue {
 	color: #555555;
 }
+span.dim {
+	color: #777777;
+}
 
 
 table.center {
@@ -2140,35 +2143,33 @@ div.cmthint {
 .mail {
 	background-color: #e6e1cf;
 	margin: 8px 0;
+	padding: 8px 12px 2px;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+	display: table;
 }
-.mail td.mhx {
+.mhx {
 	padding: 0 1em;
 }
-.mail td.mhcb {
-	padding: 0 0 0 8px;
-}
-.mail td.mhn, .mail td.mhnp {
+.mhn, .mhnp {
 	text-align: right;
 	font-weight: bold;
 }
-.mail td.mhnp {
-	padding: 2px 4px 2px 12px;
+.mhnp, .mhdd, .mhdp {
+	padding: 2px 4px;
 }
-.mail td.mhdd, .mail td.mhdp {
-	padding: 2px 12px 2px 4px;
+.mhb {
+	padding: 4px;
 }
-.mail td.mhb {
-	padding: 4px 12px 4px 4px;
-}
-.mail td.mhb pre {
+.mhb pre {
 	background-color: #ffffff;
 	padding: 4px 8px;
 }
-.mail td.mhdp {
+.mhdp {
 	font-size: smaller;
 	font-family: monospace;
 }
-.mail td.mhpad {
+.mhpad {
 	padding: 4px;
 }
 

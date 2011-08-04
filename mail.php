@@ -176,10 +176,10 @@ function checkMailPrologue($send) {
 	    "<div class='fn fx2 merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div>",
 	    "<div id='mailwarnings'></div>",
 	    "<div class='fx info'>Verify that the mails look correct, then select “Send” to send the checked mails.<br />",
-	    "<strong>To:</strong>&nbsp;", $recip[$_REQUEST["recipients"]];
+	    "Mailing to:&nbsp;", $recip[$_REQUEST["recipients"]];
 	if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $_REQUEST["recipients"])
 	    && defval($_REQUEST, "plimit") && $_REQUEST["q"] !== "")
-	    echo "<br /><strong>Paper selection:</strong>&nbsp;", htmlspecialchars($_REQUEST["q"]);
+	    echo "<br />Paper selection:&nbsp;", htmlspecialchars($_REQUEST["q"]);
 	echo "</div>
         <div class='aa fx'>
 	<input class='b' type='submit' name='send' value='Send' /> &nbsp;
@@ -268,8 +268,7 @@ function checkMail($send) {
 		$rest["hideSensitive"] = false;
 	    }
 
-	    echo "<table class='mail'>",
-		"<tr><td class='mhpad'></td><td></td><td class='mhpad'></td></tr>";
+	    echo "<div class='mail'><table>";
 	    if ($send)
 		$cbtd = "<td class='mhx'></td>";
 	    else
@@ -286,7 +285,7 @@ function checkMail($send) {
 	    echo " <tr><td></td><td></td><td class='mhb'>",
 		"<pre class='email'>", htmlspecialchars($show_preparation["body"]), "</pre></td></tr>\n",
 		"<tr><td class='mhpad'></td><td></td><td class='mhpad'></td></tr>",
-		"</table>\n";
+		"</table></div>\n";
 	}
 	if ($nwarnings != $rest["mstate"]->nwarnings()) {
 	    $nwarnings = $rest["mstate"]->nwarnings();
@@ -442,7 +441,7 @@ if (isset($_REQUEST["monreq"])) {
 echo "<form method='post' action='", hoturl("mail", "check=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 <input class='hidden' type='submit' name='default' value='1' />
 
-<div class='aa'>
+<div class='aa' style='padding-left:8px'>
   <strong>Template:</strong> &nbsp;";
 $tmpl = array();
 foreach ($mailTemplates as $k => $v) {
@@ -461,8 +460,7 @@ echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "
  <span class='hint'>Templates are mail texts tailored for common conference tasks.</span>
 </div>
 
-<table class='mail'>
- <tr><td class='mhpad'></td><td class='mhpad'></td></tr>
+<div class='mail' style='float:left;margin:4px 1em 12px 0'><table>
  <tr><td class='mhnp'>To:</td><td class='mhdd'>",
     tagg_select("recipients", $recip, $_REQUEST["recipients"], array("id" => "recipients", "onchange" => "setmailpsel(this)")),
     "<div class='g'></div>\n";
@@ -506,11 +504,25 @@ echo "  <tr><td class='mhnp'>Subject:</td><td class='mhdp'>",
  <tr><td></td><td class='mhb'>
   <textarea class='tt' rows='20' name='emailBody' cols='80'>", htmlspecialchars($_REQUEST["emailBody"]), "</textarea>
  </td></tr>
+</table></div>\n\n";
 
- <tr><td class='mhpad'></td><td></td><td></td><td class='mhpad'></td></tr>
-</table>
 
-<div class='aa'>
+if ($Me->privChair && $Conf->sversion >= 40) {
+    $result = $Conf->qe("select * from MailLog order by mailId desc limit 18", "while loading logged mail");
+    if (edb_nrows($result)) {
+	echo "<div style='padding-top:12px'>",
+	    "<strong>Recent mails:</strong>\n";
+	while (($row = edb_orow($result))) {
+	    echo "<div class='mhdd'><div style='position:relative;overflow:hidden'>",
+		"<div style='position:absolute;white-space:nowrap'><a class='q' href=\"", hoturl("mail", "fromlog=" . $row->mailId), "\">", htmlspecialchars($row->subject), " &ndash; <span class='dim'>", htmlspecialchars($row->emailBody), "</span></a></div>",
+		"<br /></div></div>\n";
+	}
+	echo "</div>\n\n";
+    }
+}
+
+
+echo "<div class='aa' style='clear:both'>
   <input type='submit' value='Prepare mail' class='b' /> &nbsp; <span class='hint'>You'll be able to review the mails before they are sent.</span>
 </div>
 
