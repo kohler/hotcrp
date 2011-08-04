@@ -1179,8 +1179,8 @@ function doGraceRow($name, $text, $capclass = "lcaption") {
     doTextRow($name, $text, unparseGrace(setting($name)), 15, $capclass, "none");
 }
 
-function doActionArea() {
-    echo "<div class='aa'>
+function doActionArea($top) {
+    echo "<div class='aa'", ($top ? " style='margin-top:0'" : ""), ">
   <input type='submit' class='bb' name='update' value='Save changes' />
   &nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />
 </div>";
@@ -1747,7 +1747,7 @@ if (!function_exists("imagecreate"))
     $Conf->warnMsg("Your PHP installation appears to lack GD support, which is required for drawing graphs.  You may want to fix this problem and restart Apache.", true);
 
 echo "<div class='aahc'>";
-doActionArea();
+doActionArea(true);
 
 if ($Group == "acc")
     doAccGroup();
@@ -1764,7 +1764,7 @@ else if ($Group == "rfo")
 else
     doDecGroup();
 
-doActionArea();
+doActionArea(false);
 echo "</div></div></td></tr>
 </table></div></form>\n";
 
