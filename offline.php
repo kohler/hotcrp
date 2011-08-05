@@ -40,7 +40,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     $Me->validated = false;
     $Me->valid();
 } else if (isset($_REQUEST['uploadForm']))
-    $Conf->errorMsg("Select a review form to upload.");
+    $Conf->errorMsg("Choose a file first.");
 
 
 // upload tag indexes action
@@ -83,7 +83,7 @@ function setTagIndexes() {
 	}
 	$filename = htmlspecialchars($_FILES["file"]["name"]) . ":";
     } else if (!($text = defval($_REQUEST, "data"))) {
-	$Conf->errorMsg("Tag data missing.");
+	$Conf->errorMsg("Choose a file first.");
 	return;
     } else
 	$filename = "line ";
@@ -199,7 +199,7 @@ if ($Me->amReviewer()) {
     echo "<td><h3>Upload filled-out forms</h3>
 <form action='", hoturl("offline", "uploadForm=1&amp;post=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 	<input type='hidden' name='postnonempty' value='1' />
-	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Upload' $disabled/>";
+	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Go' $disabled/>";
     if ($pastDeadline && $Me->privChair)
 	echo "<br />", tagg_checkbox("override"), "&nbsp;", tagg_label("Override&nbsp;deadlines");
     echo "<br /><span class='hint'><strong>Tip:</strong> You may upload a file containing several forms.</span>";
@@ -222,7 +222,7 @@ if ($Conf->setting("tag_rank") && $Me->amReviewer()) {
     echo "<td><h3>Upload ranking file</h3>
 <form action='", hoturl("offline", "setrank=1&amp;tag=%7E$ranktag&amp;post=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 	<input type='hidden' name='upload' value='1' />
-	<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Upload' $disabled/>";
+	<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Go' $disabled/>";
     if ($pastDeadline && $Me->privChair)
 	echo "<br />", tagg_checkbox("override"), "&nbsp;", tagg_label("Override&nbsp;deadlines");
     echo "<br /><span class='hint'><strong>Tip:</strong> &ldquo;<a href='", hoturl("search", "q=order:%7E$ranktag"), "'>order:~$ranktag</a>&rdquo; searches by your ranking.</span>";
