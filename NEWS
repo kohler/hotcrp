@@ -1,5 +1,16 @@
 HotCRP NEWS
 
+Version 2.46   5.Aug.2011
+
+* Support multiple final-version uploads.
+
+* Usability improvements: allow uploading conflict assignments; new tag
+  colors: "bold", "italic", "big", "small"; more consistent reviewer
+  searches, e.g. "lead:me"; etc.
+
+* Other bug fixes.
+
+
 Version 2.45   24.Apr.2011
 
 * New, improved visual appearance for paper pages.

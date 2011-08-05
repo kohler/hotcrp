@@ -3,6 +3,8 @@
 // HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+define("HOTCRP_VERSION", "2.46");
+
 // All review types must be 1 digit
 define("REVIEW_PRIMARY", 4);
 define("REVIEW_SECONDARY", 3);
@@ -63,8 +65,6 @@ define("OPTIONTYPE_NUMERIC", 2);
 define("OPTIONTYPE_TEXT", 3);
 define("OPTIONTYPE_PDF", 4);
 define("OPTIONTYPE_FINALPDF", 100);
-
-define("HOTCRP_VERSION", "2.45");
 
 global $rf;
 $rf = null;
