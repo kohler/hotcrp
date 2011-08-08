@@ -14,7 +14,8 @@ if ($reviewer <= 0 || !$Me->privChair)
 $_REQUEST["t"] = ($Conf->setting("pc_seeall") > 0 ? "act" : "s");
 
 // choose a sensible default action (if someone presses enter on a form element)
-if (isset($_REQUEST["default"]) && defval($_REQUEST, "defaultact"))
+if (isset($_REQUEST["default"]) && isset($_REQUEST["defaultact"])
+    && ($_REQUEST["defaultact"] == "getgo" || $_REQUEST["defaultact"] == "update" || $_REQUEST["defaultact"] == "upload" || $_REQUEST["defaultact"] == "setpaprevpref"))
     $_REQUEST[$_REQUEST["defaultact"]] = true;
 else if (isset($_REQUEST["default"]))
     $_REQUEST["update"] = true;

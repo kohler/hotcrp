@@ -45,9 +45,10 @@ if ((isset($_REQUEST["prevt"]) && isset($_REQUEST["t"]) && $_REQUEST["prevt"] !=
     unset($_REQUEST["assign"]);
     $_REQUEST["requery"] = 1;
 }
-if (!isset($_REQUEST["assign"]) && !isset($_REQUEST["requery"]) && isset($_REQUEST["default"])
-    && ($_REQUEST["default"] == "assign" || $_REQUEST["default"] == "requery"))
-    $_REQUEST[$_REQUEST["default"]] = 1;
+if (!isset($_REQUEST["assign"]) && !isset($_REQUEST["requery"])
+    && isset($_REQUEST["default"]) && isset($_REQUEST["defaultact"])
+    && ($_REQUEST["defaultact"] == "assign" || $_REQUEST["defaultact"] == "requery"))
+    $_REQUEST[$_REQUEST["defaultact"]] = true;
 if (!isset($_REQUEST["pctyp"]) || ($_REQUEST["pctyp"] != "all" && $_REQUEST["pctyp"] != "sel"))
     $_REQUEST["pctyp"] = "all";
 
@@ -435,7 +436,7 @@ function doAssign() {
 	foreach ($badpids as $pid)
 	    $b[] = "<a href='" . hoturl("paper", "p=$pid&amp;list=$pidx") . "'>$pid</a>";
 	$x = ($atype == "rev" || $atype == "revadd" ? ", possibly because of some conflicts in the PC members you selected" : "");
-	$Conf->warnMsg("I wasn't able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a class='nowrap' href='" . hoturl("search", "q=$pidx") . "'>list them</a>).");
+	$Conf->warnMsg("I wasn’t able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a class='nowrap' href='" . hoturl("search", "q=$pidx") . "'>list them</a>).");
     }
     if (count($assignments) == 0) {
 	$Conf->warnMsg("Nothing to assign.");
@@ -722,7 +723,8 @@ if (isset($assignments) && count($assignments) > 0) {
 }
 
 echo "<form method='post' action='", hoturl("autoassign"), "' accept-charset='UTF-8'><div class='aahc'>", $helplist,
-    "<input id='defaultact' type='submit' class='hidden' name='default' value='1' />";
+    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
+    "<input class='hidden' type='submit' name='default' value='1' />";
 
 // paper selection
 echo divClass("pap"), "<h3>Paper selection</h3>";
@@ -735,7 +737,7 @@ $tOpt = array("s" => "Submitted papers",
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = "all";
 $q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
-echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1);defact('requery')\" onblur=\"tempText(this, '(All)', 0)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
+echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1);autosub('requery',this)\" onblur=\"tempText(this, '(All)', 0)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
     " &nbsp; <input id='requery' class='b' name='requery' type='submit' value='List' />\n";
 if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
@@ -761,13 +763,13 @@ echo "</div>\n";
 // action
 echo divClass("ass"), "<h3>Action</h3>", divClass("rev");
 doRadio('a', 'rev', 'Ensure each paper has <i>at least</i>');
-echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' onfocus='defact(\"assign\")' />&nbsp; ";
+echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ";
 doSelect('revtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
 echo "&nbsp; review(s)</div>\n";
 
 echo divClass("revadd");
 doRadio('a', 'revadd', 'Assign');
-echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' onfocus='defact(\"assign\")' />&nbsp; ",
+echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ",
     "<i>additional</i>&nbsp; ";
 doSelect('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
 echo "&nbsp; review(s) per paper</div>\n";
@@ -781,7 +783,7 @@ if (!$rev_roundtag)
     $rev_roundtag = "(None)";
 echo "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag),
-    "\" onfocus=\"tempText(this, '(None)', 1);defact('assign')\" onblur=\"tempText(this, '(None)', 0)\" />",
+    "\" onfocus=\"tempText(this, '(None)', 1);autosub('assign',this)\" onblur=\"tempText(this, '(None)', 0)\" />",
     " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a></div>
 <div class='g'></div>\n";
 
@@ -892,7 +894,7 @@ for ($i = 1; $i <= 50; $i++) {
     if ($i == 1)
 	echo tagg_checkbox("badpairs", 1, isset($_REQUEST["badpairs"]),
 			   array("id" => "badpairs")),
-	    "&nbsp;", tagg_label("Don't assign", "badpairs"), " &nbsp;";
+	    "&nbsp;", tagg_label("Don’t assign", "badpairs"), " &nbsp;";
     else
 	echo "or &nbsp;";
     echo "</td><td class='lentry'>", $selector_text;

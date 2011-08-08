@@ -407,11 +407,38 @@ function pc_tags_members(tag) {
     return answer;
 }
 
-function defact(what) {
-    var elt = $$("defaultact");
-    if (elt)
-	elt.value = what;
+autosub = (function () {
+
+function autosub_kp(event) {
+    var code, form, inputs, i;
+    event = event || window.event;
+    code = event.charCode || event.keyCode;
+    if (code != 13 || event.ctrlKey || event.altKey || event.shiftKey)
+	return true;
+    form = this;
+    while (form && form.tagName && form.tagName.toUpperCase() != "FORM")
+	form = form.parentNode;
+    if (form && form.tagName) {
+	inputs = form.getElementsByTagName("input");
+	for (i = 0; i < inputs.length; ++i)
+	    if (inputs[i].name == "default") {
+		this.blur();
+		inputs[i].click();
+		return false;
+	    }
+    }
+    return true;
 }
+
+return function (name, elt) {
+    var da = $$("defaultact");
+    if (da)
+	da.value = name;
+    if (elt && !elt.onkeypress && elt.tagName.toUpperCase() == "INPUT")
+	elt.onkeypress = autosub_kp;
+};
+
+})();
 
 function plactions_dofold() {
     var elt = $$("placttagtype"), folded, x, i;
@@ -611,12 +638,12 @@ function add_quicklink_shortcuts(elt) {
 addRevprefAjax = (function () {
 
 function revpref_focus() {
-    tempText(this, "0", 1);
-    defact("");
+    tempText(this, "0", true);
+    autosub("update", this);
 }
 
 function revpref_blur() {
-    tempText(this, "0", 0);
+    tempText(this, "0", false);
 }
 
 function revpref_change() {
