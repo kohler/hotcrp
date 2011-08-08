@@ -55,8 +55,10 @@ $Opt["paperSite"] = "http://your.site.here.com/";
 //                   defaults to something like "www-data@yourservername".
 //                   This email address should be connected to a valid mailbox
 //                   or certain spam filters will reject email from HotCRP.
-//   emailCc         Default "Cc:" address for email sent by HotCRP.  If not
-//                   set, the default Cc is $Opt["contactEmail"].
+//   emailCc         Default "Cc:" address for email sent by HotCRP to
+//                   reviewers and via the mail tool.  (Does not apply to most
+//                   email automatically sent to submitters.)  If not set, the
+//                   default Cc is $Opt["contactEmail"].
 //   emailReplyTo    If set, default "Reply-To:" address for email sent by
 //                   HotCRP.
 //   sendmailParam   Extra parameters to be passed to PHP's mail() function.
