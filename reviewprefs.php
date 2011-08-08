@@ -72,8 +72,10 @@ function savePreferences($reviewer) {
     if (strlen($q))
 	$Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values " . substr($q, 0, strlen($q) - 2) . " on duplicate key update preference=values(preference)", $while);
 
-    if ($OK)
+    if ($OK) {
 	$Conf->confirmMsg("Preferences saved.");
+	redirectSelf();
+    }
 }
 if (isset($_REQUEST["update"]))
     savePreferences($reviewer);
