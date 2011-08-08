@@ -655,6 +655,16 @@ function revpref_change() {
 	});
 }
 
+function revpref_keypress(elt, event) {
+    var e = event || window.event, code = e.charCode || e.keyCode;
+    if (e.ctrlKey || e.altKey || e.shiftKey || code != 13)
+	return true;
+    else {
+	revpref_change.apply(this);
+	return false;
+    }
+}
+
 return function () {
     var inputs = document.getElementsByTagName("input"),
 	form = $$("prefform");
@@ -664,8 +674,10 @@ return function () {
 	if (elt.type == "text" && elt.name.substr(0, 7) == "revpref") {
 	    elt.onfocus = revpref_focus;
 	    elt.onblur = revpref_blur;
-	    if (form)
+	    if (form) {
 		elt.onchange = revpref_change;
+		elt.onkeypress = revpref_keypress;
+	    }
 	}
     });
 };
