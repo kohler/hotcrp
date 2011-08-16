@@ -89,8 +89,7 @@ class ContactList extends BaseList {
 	if ($fieldId == self::FIELD_SHEPHERDS)
 	    $queryOptions["shepherds"] = true;
 	if ($fieldId == self::FIELD_REVIEW_RATINGS) {
-	    if ($Conf->setting("rev_ratings") == REV_RATINGS_NONE
-		|| $Conf->sversion < 12)
+	    if ($Conf->setting("rev_ratings") == REV_RATINGS_NONE)
 		return false;
 	    $queryOptions["revratings"] = $queryOptions["reviews"] = true;
 	}

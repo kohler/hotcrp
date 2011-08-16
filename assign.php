@@ -83,9 +83,8 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
     // NB caller unlocks tables
 
     // check for outstanding review request
-    $qa = ($Conf->sversion >= 13 ? ", reviewToken" : "");
     $result = $Conf->qe("select reviewType, reviewModified, reviewSubmitted, requestedBy, paperId,
-		firstName, lastName, email, password$qa
+		firstName, lastName, email, password, reviewToken
 		from PaperReview
 		join ContactInfo using (contactId)
 		where reviewId=$reviewId", $while);
@@ -294,13 +293,8 @@ function proposeReview($email) {
 	return $result;
 
     // check for outstanding review request
-    $qa = "paperId, name, email, requestedBy";
-    $qb = "$prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->contactId";
-    if ($Conf->sversion >= 7) {
-	$qa .= ", reason";
-	$qb .= ", '" . sqlq(trim($_REQUEST["reason"])) . "'";
-    }
-    $result = $Conf->qe("insert into ReviewRequest ($qa) values ($qb) on duplicate key update paperId=paperId", $while);
+    $result = $Conf->qe("insert into ReviewRequest (paperId, name, email, requestedBy, reason)
+	values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->contactId, '" . sqlq(trim($_REQUEST["reason"])) . "') on duplicate key update paperId=paperId", $while);
 
     // send confirmation email
     require_once("Code/mailtemplate.inc");
@@ -353,29 +347,20 @@ function createAnonymousReview() {
 	$row = edb_row($result);
 	$reqId = $row[0];
     } else {
-	$qa = "firstName, lastName, email, affiliation, password";
-	$qb = "'Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '" . sqlq(Contact::generatePassword(20)) . "'";
-	if ($Conf->sversion >= 4) {
-	    $qa .= ", creationTime";
-	    $qb .= ", " . time();
-	}
-	$result = $Conf->qe("insert into ContactInfo ($qa) values ($qb)", $while);
+	$result = $Conf->qe("insert into ContactInfo
+		(firstName, lastName, email, affiliation, password, creationTime)
+		values ('Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '" . sqlq(Contact::generatePassword(20)) . "', " . time() . ")", $while);
 	if (!$result)
 	    return $result;
 	$reqId = $Conf->lastInsertId($while);
     }
 
     // store the review request
-    $qa = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn";
-    $qb = ") values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, current_timestamp";
-    if ($Conf->sversion >= 13) {
-	$token = unassignedReviewToken();
-	$Conf->qe($qa . ", reviewToken" . $qb . ", $token)", $while);
-	$Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId.  The review token is " . encodeToken($token) . ".");
-    } else {
-	$Conf->qe($qa . $qb . ")", $while);
-	$Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId.");
-    }
+    $token = unassignedReviewToken();
+    $Conf->qe("insert into PaperReview
+		(paperId, contactId, reviewType, requestedBy, requestedOn, reviewToken)
+		values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, current_timestamp, $token)", $while);
+    $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId.  The review token is " . encodeToken($token) . ".");
 
     $Conf->qx("unlock tables");
     $Conf->log("Created $contactemail review", $Me, $prow->paperId);
@@ -595,8 +580,7 @@ if ($Me->actChair($prow)) {
 
 // outstanding requests
 if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
-    $qa = ($Conf->sversion >= 7 ? ", reason" : "");
-    $result = $Conf->qe("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy$qa from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId", "while finding outstanding requests");
+    $result = $Conf->qe("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy, reason from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId", "while finding outstanding requests");
     if (edb_nrows($result) > 0) {
 	echo "	<tr><td colspan='3' class='papsep'></td></tr>
 	<tr><td></td><td class='papcc'>",
@@ -650,8 +634,7 @@ echo "<div class='f-i'><div class='f-ix'>
   <div class='f-e'><input class='textlite' type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST, "email", "")), "\" size='28' tabindex='1' /></div>
 </div><div class='clear'></div></div>\n\n";
 
-if ($Conf->sversion >= 7)
-    echo "<div class='f-i'>
+echo "<div class='f-i'>
   <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
   <div class='f-e'><textarea class='papertext' name='reason' rows='2' cols='60' tabindex='1'>", htmlspecialchars(defval($_REQUEST, "reason", "")), "</textarea></div>
 <div class='clear'></div></div>\n\n";

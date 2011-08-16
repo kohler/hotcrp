@@ -9,8 +9,7 @@ function rf_checkOptions(&$var, &$options, &$order, &$levelChar) {
 	return false;
 
     $var = cleannl($var);
-    $letters = ($var && ord($var[0]) >= 65 && ord($var[0]) <= 90
-		&& $Conf->sversion >= 9);
+    $letters = ($var && ord($var[0]) >= 65 && ord($var[0]) <= 90);
     $expect = ($letters ? "[A-Z]" : "[1-9]");
 
     $opts = array();
@@ -60,7 +59,6 @@ function rf_checkOptions(&$var, &$options, &$order, &$levelChar) {
 
 function rf_update($lock) {
     global $Conf, $rf, $Error;
-    $letterOptions = $Conf->sversion >= 9;
 
     if (isset($_REQUEST['loadsample']) && isset($_REQUEST['sample'])) {
 	require_once('reviewtemplate.inc');
@@ -132,8 +130,7 @@ function rf_update($lock) {
 		$result = $Conf->qe("update PaperReview set $field=0 where $field>" . count($options), $while);
 		if (edb_nrows_affected($result) > 0)
 		    $scoreModified[] = htmlspecialchars($_REQUEST["shortName_$field"]);
-		if ($letterOptions)
-		    $req .= "levelChar=" . ($rf->reviewFields[$field] ? $levelChar : 0) . ", ";
+		$req .= "levelChar=" . ($rf->reviewFields[$field] ? $levelChar : 0) . ", ";
 
 		unset($_REQUEST["options_$field"]);
 		$updates = 1;
@@ -155,7 +152,7 @@ function rf_update($lock) {
     if (isset($shortNameError))
 	$Conf->errorMsg("Each review field should have a name.  Please edit the highlighted fields and save again.");
     if (isset($optionError))
-	$Conf->errorMsg("Review fields with options must have at least two choices, numbered sequentially from 1" . ($letterOptions ? " or with consecutive uppercase letters" : "") . ".  Enter them like this:  <pre>1. Low quality
+	$Conf->errorMsg("Review fields with options must have at least two choices, numbered sequentially from 1 or with consecutive uppercase letters.  Enter them like this:  <pre>1. Low quality
 2. Medium quality
 3. High quality</pre>  Please edit the highlighted fields and save again.");
 
@@ -267,7 +264,6 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 
 function rf_show() {
     global $Conf, $captions;
-    $letterOptions = $Conf->sversion >= 9;
     $result = $Conf->qe("select * from ReviewFormField", "while loading review form");
     if (!$result)
 	return;
@@ -280,9 +276,7 @@ function rf_show() {
 	<pre class='entryexample'>1. Reject
 2. Weak reject
 3. Weak accept
-4. Accept</pre>");
-    if ($letterOptions)
-	$captions["options"] .= " Or use consecutive capital letters (lower letters are better).";
+4. Accept</pre> Or use consecutive capital letters (lower letters are better).");
 
     echo "<table><tr><td><div class='hgrp'><b>Templates:</b>&nbsp; ",
 	tagg_select("sample",

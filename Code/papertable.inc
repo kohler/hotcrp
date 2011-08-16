@@ -1276,7 +1276,6 @@ class PaperTable {
     function papstripWatch($prow) {
 	global $Conf, $Me, $linkExtra;
 	if (!($this->watchCheckbox
-	      && $Conf->sversion >= 6
 	      && $prow->timeSubmitted > 0
 	      && ($prow->conflictType >= CONFLICT_AUTHOR
 		  || $prow->conflictType <= 0

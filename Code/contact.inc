@@ -58,27 +58,17 @@ class Contact {
 	    $qr = "";
 	    if (isset($_SESSION["rev_tokens"]))
 		$qr = " or PaperReview.reviewToken in (" . join(", ", $_SESSION["rev_tokens"]) . ")";
-	    $qa = "select max(conflictType),
+	    $result = $Conf->qe("select max(conflictType),
 		PaperReview.contactId as reviewer,
 		max(PaperReview.reviewNeedsSubmit) as reviewNeedsSubmit,
-		count(ExtPaperReview.requestedBy) as requester";
-	    $qb = "left join PaperReview on (PaperReview.contactId=ContactInfo.contactId$qr)
+		count(ExtPaperReview.requestedBy) as requester,
+		ContactInfo.roles
+		from ContactInfo
+		left join PaperReview on (PaperReview.contactId=ContactInfo.contactId$qr)
 		left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId)
-		left join PaperReview as ExtPaperReview on (ExtPaperReview.requestedBy=ContactInfo.contactId)";
-	    if ($Conf->sversion >= 6)
-		$qa .= ",
-		ContactInfo.roles, 0, 0, 0";
-	    else {
-		$qa .= ",
-		0, PCMember.contactId as isPC,
-		ChairAssistant.contactId as isAssistant,
-		Chair.contactId as isChair";
-		$qb .= "
-		left join PCMember on (PCMember.contactId=ContactInfo.contactId)
-		left join ChairAssistant on (ChairAssistant.contactId=ContactInfo.contactId)
-		left join Chair on (Chair.contactId=ContactInfo.contactId)";
-	    }
-	    $result = $Conf->qe("$qa from ContactInfo $qb where ContactInfo.contactId=$this->contactId group by ContactInfo.contactId");
+		left join PaperReview as ExtPaperReview on (ExtPaperReview.requestedBy=ContactInfo.contactId)
+		where ContactInfo.contactId=$this->contactId
+		group by ContactInfo.contactId");
 	    if (edb_nrows($result) == 0)
 		$this->invalidate();
 	    else {
@@ -94,12 +84,7 @@ class Contact {
 			$this->reviewsOutstanding = true;
 		    if ($row[3] > 0)
 			$this->isRequester = true;
-		    if (($row[4] & self::ROLE_PC) || $row[5] > 0)
-			$this->roles |= self::ROLE_PC;
-		    if (($row[4] & self::ROLE_ADMIN) || $row[6] > 0)
-			$this->roles |= self::ROLE_ADMIN;
-		    if (($row[4] & self::ROLE_CHAIR) || $row[7] > 0)
-			$this->roles |= self::ROLE_CHAIR;
+		    $this->roles |= $row[4] & (self::ROLE_PC | self::ROLE_ADMIN | self::ROLE_CHAIR);
 		}
 		$this->isPC = ($this->roles & (self::ROLE_PC | self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
 		$this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
@@ -231,9 +216,7 @@ class Contact {
     function updateDB($where = "") {
 	global $Conf;
 	$this->trim();
-	$qa = "";
-	if ($Conf->sversion >= 6)
-	    $qa .= ", roles='$this->roles', defaultWatch='$this->defaultWatch'";
+	$qa = ", roles='$this->roles', defaultWatch='$this->defaultWatch'";
 	if ($Conf->sversion >= 25 && $this->preferredEmail != "")
 	    $qa .= ", preferredEmail='" . sqlq($this->preferredEmail) . "'";
 	if ($Conf->sversion >= 35) {
@@ -254,7 +237,7 @@ class Contact {
 			 sqlq($this->collaborators),
 			 $this->contactId);
 	$result = $Conf->qe($query, $where);
-	if (!$result || $Conf->sversion < 5)
+	if (!$result)
 	    return $result;
 	$Conf->qx("delete from ContactAddress where contactId=$this->contactId");
 	if ($this->addressLine1 || $this->addressLine2 || $this->city
@@ -290,8 +273,8 @@ class Contact {
 		}
 	}
 
-	$qa = "email, password";
-	$qb = "'" . sqlq($this->email) . "', '" . sqlq($this->password) . "'";
+	$qa = "email, password, creationTime";
+	$qb = "'" . sqlq($this->email) . "', '" . sqlq($this->password) . "', " . time();
 	foreach (array("firstName", "lastName", "affiliation", "collaborators",
 		       "voicePhoneNumber", "faxPhoneNumber", "preferredEmail")
 		 as $k) {
@@ -304,10 +287,6 @@ class Contact {
 		$qa .= ", $k";
 		$qb .= ", '" . sqlq($this->$k) . "'";
 	    }
-	}
-	if ($Conf->sversion >= 4) {
-	    $qa .= ", creationTime";
-	    $qb .= ", " . time();
 	}
 	$result = $Conf->q("insert into ContactInfo ($qa) values ($qb)");
 	if (!$result)
@@ -366,14 +345,12 @@ class Contact {
 
     function lookupAddress() {
 	global $Conf;
-	if ($Conf->sversion >= 5) {
-	    $result = $Conf->qx("select * from ContactAddress where contactId=$this->contactId");
+	$result = $Conf->qx("select * from ContactAddress where contactId=$this->contactId");
+	foreach (self::_addressKeys() as $k)
+	    $this->$k = null;
+	if (($row = edb_orow($result)))
 	    foreach (self::_addressKeys() as $k)
-		$this->$k = null;
-	    if (($row = edb_orow($result)))
-		foreach (self::_addressKeys() as $k)
-		    $this->$k = $row->$k;
-	}
+		$this->$k = $row->$k;
     }
 
     static function makeMinicontact($o) {
@@ -779,8 +756,6 @@ class Contact {
 
     function canRateReview($prow, $rrow) {
 	global $Conf;
-	if ($Conf->sversion < 12)
-	    return false;
 	$rs = $Conf->setting("rev_ratings");
 	if ($rs == REV_RATINGS_PC)
 	    return $this->actPC($prow);
@@ -1296,8 +1271,7 @@ class Contact {
 	if ($type > 0 && (!$row || !$row->reviewType)) {
 	    $roundqa = $roundqb = "";
 	    if (($type == REVIEW_PRIMARY || $type == REVIEW_SECONDARY)
-		&& ($t = $conf->settingText("rev_roundtag"))
-		&& $conf->settings["allowPaperOption"] >= 11) {
+		&& ($t = $conf->settingText("rev_roundtag"))) {
 		if (!($k = array_search($t, $conf->settings["rounds"]))) {
 		    $rounds = $conf->settingText("tag_rounds", "");
 		    $rounds = ($rounds ? "$rounds$t " : " $t ");

@@ -90,7 +90,7 @@ function comment_watch_callback($prow, $minic) {
 function watch() {
     global $Conf, $Me, $prow, $savedCrow;
     $apo = $Conf->sversion;
-    if ($apo < 6 || !$savedCrow
+    if (!$savedCrow
 	// ignore changes to a comment within 3 hours (see saveComment())
 	|| ($apo >= 21 && $savedCrow->timeNotified != $savedCrow->timeModified))
 	return;

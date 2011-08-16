@@ -627,15 +627,13 @@ class Conference {
 
 	$while = "while storing paper in database";
 
-	$sha1 = "";
-	if ($this->sversion >= 10)
-	    $sha1 = ", sha1='" . sqlq($doc->sha1) . "'";
 	if (!$this->qe("update Paper set "
 		. ($final ? "finalPaperStorageId" : "paperStorageId") . "=" . $doc->paperStorageId
 		. ", size=" . $doc->size
 		. ", mimetype='" . sqlq($doc->mimetype)
-		. "', timestamp=" . $doc->timestamp . $sha1
-		. " where paperId=$paperId and timeWithdrawn<=0", $while))
+		. "', timestamp=" . $doc->timestamp
+		. ", sha1='" . sqlq($doc->sha1)
+		. "' where paperId=$paperId and timeWithdrawn<=0", $while))
 	    return false;
 
 	// potentially email the paper to Greg Minshall
@@ -942,9 +940,7 @@ class Conference {
 		PaperReview.contactId as reviewContactId,
 		max($myPaperReview.reviewType) as myReviewType,
 		max($myPaperReview.reviewSubmitted) as myReviewSubmitted,
-		min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit";
-	    if ($this->sversion >= 11)
-		$pq .= ",
+		min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit,
 		PaperReview.reviewRound";
 	} else
 	    $pq .= ",\nnull as myReviewType";
@@ -956,8 +952,7 @@ class Conference {
 		ReviewerContactInfo.lastLogin as reviewLastLogin";
 	if ($reviewerQuery || $scoresQuery) {
 	    $rf = reviewForm();
-	    if ($this->sversion >= 17)
-		$pq .= ",\n\t\tPaperReview.reviewEditVersion as reviewEditVersion";
+	    $pq .= ",\n\t\tPaperReview.reviewEditVersion as reviewEditVersion";
 	    foreach ($rf->fieldOrder as $k)
 		if (!$scoresQuery || $rf->reviewFields[$k])
 		    $pq .= ",\n\t\tPaperReview.$k as $k";
@@ -971,9 +966,7 @@ class Conference {
 		PaperComment.comment,
 		PaperComment.forReviewers,
 		PaperComment.forAuthors,
-		PaperComment.blind as commentBlind";
-	    if ($this->sversion >= 19)
-		$pq .= ",
+		PaperComment.blind as commentBlind,
 		PaperComment.replyTo";
 	}
 	if (isset($options['topics']))
@@ -1245,11 +1238,6 @@ class Conference {
 		$whyNot['invalidId'] = 'paper';
 		return null;
 	    }
-	}
-	if ((isset($selector["ratings"]) || isset($selector["myRating"]))
-	    && $this->sversion < 12) {
-	    unset($selector["ratings"]);
-	    unset($selector["myRating"]);
 	}
 	$contactTags = "NULL as contactTags";
 	if ($this->sversion >= 35)

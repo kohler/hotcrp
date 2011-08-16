@@ -601,7 +601,7 @@ function doOptions($set) {
 		    $optabbrs[$oabbr] = "optn$id";
 	    }
 	}
-	if ($Conf->sversion >= 1 && count($Error) == 0)
+	if (count($Error) == 0)
 	    $Values["options"] = true;
 	return;
     }
@@ -636,9 +636,8 @@ function doOptions($set) {
 		|| $_REQUEST["optdt$id"] != $o->displayType)) {
 	    $q = "update OptionType set optionName='" . sqlq($_REQUEST["optn$id"])
 		. "', description='" . sqlq(defval($_REQUEST, "optd$id", ""))
-		. "', pcView=" . $_REQUEST["optp$id"];
-	    if ($Conf->sversion >= 14)
-		$q .= ", optionValues='" . sqlq(defval($_REQUEST, "optv$id", "")) . "'";
+		. "', pcView=" . $_REQUEST["optp$id"]
+		. ", optionValues='" . sqlq(defval($_REQUEST, "optv$id", "")) . "'";
 	    if ($Conf->sversion >= 27)
 		$q .= ", type='" . defval($_REQUEST, "optvt$id", 0) . "'";
 	    if ($Conf->sversion >= 29)
@@ -652,14 +651,11 @@ function doOptions($set) {
 
     if (isset($_REQUEST["optnn"])) {
 	doCleanOptionValues("n");
-	$qa = "optionName, description, pcView";
+	$qa = "optionName, description, pcView, optionValues";
 	$qb = "'" . sqlq($_REQUEST["optnn"])
 	    . "', '" . sqlq(defval($_REQUEST, "optdn", ""))
-	    . "', " . $_REQUEST["optpn"];
-	if ($Conf->sversion >= 14) {
-	    $qa .= ", optionValues";
-	    $qb .= ", '" . sqlq(defval($_REQUEST, "optvn", "")) . "'";
-	}
+	    . "', " . $_REQUEST["optpn"]
+	    . ", '" . sqlq(defval($_REQUEST, "optvn", "")) . "'";
 	if ($Conf->sversion >= 27) {
 	    $qa .= ", type";
 	    $qb .= ", '" . sqlq(defval($_REQUEST, "optvtn", 0)) . "'";
@@ -1026,9 +1022,7 @@ if (isset($_REQUEST["update"])) {
     // make settings
     if (count($Error) == 0 && count($Values) > 0) {
 	$while = "updating settings";
-	$tables = "Settings write, TopicArea write, PaperTopic write";
-	if ($Conf->sversion >= 1)
-	    $tables .= ", OptionType write, PaperOption write";
+	$tables = "Settings write, TopicArea write, PaperTopic write, OptionType write, PaperOption write";
 	if (isset($Values['decisions']) || isset($Values['reviewform']))
 	    $tables .= ", ReviewFormOptions write";
 	else
@@ -1203,10 +1197,7 @@ function doActionArea($top) {
 function doAccGroup() {
     global $Conf, $Me, $belowHr;
 
-    if ($Conf->sversion >= 5)
-	doCheckbox("acct_addr", "Collect users&rsquo; addresses and phone numbers");
-    else
-	doCheckbox("acct_addr", "Collect users&rsquo; phone numbers");
+    doCheckbox("acct_addr", "Collect users&rsquo; addresses and phone numbers");
 
     echo "<hr class='hr' /><h3>Program committee &amp; system administrators</h3>";
 
@@ -1357,26 +1348,24 @@ function doOptGroupOption($o) {
 
     echo "</tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2o'><tr>";
 
-    if ($Conf->sversion >= 14) {
-	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
-	    decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
-	$oval = $o->optionValues;
-	$optvt = (count($Error) > 0 ? defval($_REQUEST, "optvt$id", 0) : $o->type);
-	$otypes = array(OPTIONTYPE_CHECKBOX => "Checkbox",
-			OPTIONTYPE_SELECTOR => "Selector");
-	if ($Conf->sversion >= 27) {
-	    $otypes[OPTIONTYPE_NUMERIC] = "Numeric";
-	    $otypes[OPTIONTYPE_TEXT] = "Text";
-	}
-	if ($Conf->sversion >= 28)
-	    $otypes[OPTIONTYPE_PDF] = "PDF";
-	if ($Conf->sversion >= 28
-	    && ($Conf->collectFinalPapers() || $optvt == OPTIONTYPE_FINALPDF))
-	    $otypes[OPTIONTYPE_FINALPDF] = "Final version PDF";
-	echo tagg_select("optvt$id", $otypes, $optvt, array("onchange" => "doopttype(this)", "id" => "optvt$id")),
-	    "</div></div></td>";
-	$Conf->footerScript("doopttype(\$\$('optvt$id'),true)");
+    echo "<td class='pad'><div class='f-i'><div class='f-c'>",
+	decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
+    $oval = $o->optionValues;
+    $optvt = (count($Error) > 0 ? defval($_REQUEST, "optvt$id", 0) : $o->type);
+    $otypes = array(OPTIONTYPE_CHECKBOX => "Checkbox",
+		    OPTIONTYPE_SELECTOR => "Selector");
+    if ($Conf->sversion >= 27) {
+	$otypes[OPTIONTYPE_NUMERIC] = "Numeric";
+	$otypes[OPTIONTYPE_TEXT] = "Text";
     }
+    if ($Conf->sversion >= 28)
+	$otypes[OPTIONTYPE_PDF] = "PDF";
+    if ($Conf->sversion >= 28
+	&& ($Conf->collectFinalPapers() || $optvt == OPTIONTYPE_FINALPDF))
+	$otypes[OPTIONTYPE_FINALPDF] = "Final version PDF";
+    echo tagg_select("optvt$id", $otypes, $optvt, array("onchange" => "doopttype(this)", "id" => "optvt$id")),
+	"</div></div></td>";
+    $Conf->footerScript("doopttype(\$\$('optvt$id'),true)");
 
     echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
 	decorateSettingName("optp$id", "Visibility"), "</div><div class='f-e'>",
@@ -1412,16 +1401,14 @@ function doOptGroupOption($o) {
 
     echo "</tr></table>";
 
-    if ($Conf->sversion >= 14) {
-	$value = $o->optionValues;
-	if ($optvt != 1)
-	    $value = "";
-	echo "<div id='foldoptv$id' class='", ($optvt == 1 ? "foldo" : "foldc"),
-	    "'><div class='fx'>",
-	    "<div class='hint' style='margin-top:1ex'>Enter the selector choices one per line.  The first choice will be the default.</div>",
-	    "<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='hiliter(this)'>", htmlspecialchars($value), "</textarea>",
-	    "</div></div>";
-    }
+    $value = $o->optionValues;
+    if ($optvt != 1)
+	$value = "";
+    echo "<div id='foldoptv$id' class='", ($optvt == 1 ? "foldo" : "foldc"),
+	"'><div class='fx'>",
+	"<div class='hint' style='margin-top:1ex'>Enter the selector choices one per line.  The first choice will be the default.</div>",
+	"<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='hiliter(this)'>", htmlspecialchars($value), "</textarea>",
+	"</div></div>";
 
     echo "</div></td></tr>\n";
 }
@@ -1429,29 +1416,27 @@ function doOptGroupOption($o) {
 function doOptGroup() {
     global $Conf, $rf;
 
-    if ($Conf->sversion >= 1) {
-	echo "<h3>Submission options</h3>\n";
-	echo "Options are selected by authors at submission time.  Examples have included &ldquo;PC-authored paper,&rdquo; &ldquo;Consider this paper for a Best Student Paper award,&rdquo; and &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief (&ldquo;PC paper,&rdquo; &ldquo;Best Student Paper,&rdquo; &ldquo;Shadow PC&rdquo;).  The optional description can explain further and may use XHTML.  ";
-	if ($Conf->sversion < 29)
-	    echo "To delete an option, delete its name.  ";
-	echo "Add options one at a time.\n";
-	echo "<div class='g'></div>\n";
-	echo "<table>";
-	$sep = "";
-	$nopt = 0;
-	foreach (paperOptions() as $o) {
-	    echo $sep;
-	    doOptGroupOption($o);
-	    $sep = "<tr><td colspan='2'><hr class='hr' /></td></tr>\n";
-	    ++$nopt;
-	}
-
+    echo "<h3>Submission options</h3>\n";
+    echo "Options are selected by authors at submission time.  Examples have included &ldquo;PC-authored paper,&rdquo; &ldquo;Consider this paper for a Best Student Paper award,&rdquo; and &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief (&ldquo;PC paper,&rdquo; &ldquo;Best Student Paper,&rdquo; &ldquo;Shadow PC&rdquo;).  The optional description can explain further and may use XHTML.  ";
+    if ($Conf->sversion < 29)
+	echo "To delete an option, delete its name.  ";
+    echo "Add options one at a time.\n";
+    echo "<div class='g'></div>\n";
+    echo "<table>";
+    $sep = "";
+    $nopt = 0;
+    foreach (paperOptions() as $o) {
 	echo $sep;
-
-	doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "type" => 0, "optionValues" => "", "sortOrder" => $nopt, "displayType" => 0));
-
-	echo "</table>\n";
+	doOptGroupOption($o);
+	$sep = "<tr><td colspan='2'><hr class='hr' /></td></tr>\n";
+	++$nopt;
     }
+
+    echo $sep;
+
+    doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "type" => 0, "optionValues" => "", "sortOrder" => $nopt, "displayType" => 0));
+
+    echo "</table>\n";
 
 
     // Topics
@@ -1566,8 +1551,7 @@ function doRevGroup() {
     // External reviews
     echo "<h3>External reviews</h3>\n";
 
-    if ($Conf->sversion >= 2)
-	doCheckbox('extrev_chairreq', "PC chair must approve proposed external reviewers");
+    doCheckbox('extrev_chairreq', "PC chair must approve proposed external reviewers");
     doCheckbox("pcrev_editdelegate", "PC members can edit external reviews they requested");
     echo "<div class='g'></div>";
 

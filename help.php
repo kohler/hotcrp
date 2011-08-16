@@ -259,8 +259,7 @@ function searchQuickref() {
 	preg_match('/ (\S+) /', $roundtags, $m);
 	_searchQuickrefRow("", "round:$m[1]", "review assignment is “" . $m[1] . "”");
     }
-    if ($Conf->sversion >= 12
-	&& $Conf->setting("rev_ratings") != REV_RATINGS_NONE)
+    if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE)
 	_searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");
     _searchQuickrefRow("Comments", "cmt:>0", "at least one comment visible to PC (including authors' response)");
     _searchQuickrefRow("", "aucmt:>0", "at least one comment visible to authors (including authors' response)");

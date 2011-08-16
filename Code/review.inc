@@ -43,6 +43,8 @@ class ReviewForm {
 				    'commentsToAddress' => 0,
 				    'weaknessOfPaper' => 0,
 				    'strengthOfPaper' => 0,
+				    'textField7' => 0,
+				    'textField8' => 0,
 				    'potential' => 1,
 				    'fixability' => 1,
 				    'overAllMerit' => 1,
@@ -54,11 +56,6 @@ class ReviewForm {
 				    'grammar' => 1,
 				    'likelyPresentation' => 1,
 				    'suitableForShort' => 1);
-
-	if ($conf->sversion >= 8) {
-	    $this->reviewFields["textField7"] = 0;
-	    $this->reviewFields["textField8"] = 0;
-	}
 
 	$this->updateFromDB($conf);
     }
@@ -247,14 +244,10 @@ class ReviewForm {
         $fields = "reviewId, paperId, contactId, reviewType, requestedBy,
 		requestedOn, reviewModified, reviewSubmitted,
 		reviewNeedsSubmit, "
-	    . join(", ", array_keys($this->reviewFields));
-	if ($Conf->sversion >= 11)
-	    $fields .= ", reviewRound";
+	    . join(", ", array_keys($this->reviewFields))
+	    . ", reviewRound";
 	if ($Conf->sversion >= 37)
 	    $fields .= ", reviewNotified";
-	// compensate for 2.12 schema error
-	if ($Conf->sversion == 8)
-	    $fields = str_replace(", textField7, textField8", "", $fields);
 	return $fields;
     }
 
@@ -466,8 +459,7 @@ class ReviewForm {
 	    && $Me->isPC && !$usedReviewToken)
 	    $q[] = "reviewType=" . REVIEW_PC;
 	if ($rrow && $different && isset($req["version"])
-	    && $req["version"] > defval($rrow, "reviewEditVersion")
-	    && $Conf->sversion >= 17)
+	    && $req["version"] > defval($rrow, "reviewEditVersion"))
 	    $q[] = "reviewEditVersion=" . $req["version"];
 	if (!$rrow || $different) {
 	    $q[] = "reviewModified=" . $now;
@@ -559,8 +551,7 @@ class ReviewForm {
 	}
 
 	// if external, forgive the requestor from finishing their review
-	if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL && $submit
-	    && $Conf->sversion >= 3)
+	if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL && $submit)
 	    $Conf->q("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
 
 	if ($tf) {

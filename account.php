@@ -556,8 +556,7 @@ $any_address = ($Acct->addressLine1 || $Acct->addressLine2 || $Acct->city
 if ($Conf->setting("acct_addr") || $Acct->amReviewer()
     || $any_address || $Acct->voicePhoneNumber || $Acct->faxPhoneNumber) {
     echo "<div class='g'></div>\n";
-    if ($Conf->sversion >= 5
-	&& ($Conf->setting("acct_addr") || $any_address)) {
+    if ($Conf->setting("acct_addr") || $any_address) {
 	echofield(0, false, "Address line 1", textinput("addressLine1", crpformvalue("addressLine1"), 52));
 	echofield(0, false, "Address line 2", textinput("addressLine2", crpformvalue("addressLine2"), 52));
 	echofield(0, false, "City", textinput("city", crpformvalue("city"), 52));
@@ -586,24 +585,22 @@ Adams, John Quincy &lt;quincy@whitehouse.gov&gt;
 
 echo "</div></td>\n</tr>\n\n";
 
-if ($Conf->sversion >= 6) {
-    echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n\n",
-	"<tr><td class='caption'>Email notification</td><td class='entry'>";
-    if ((!$newProfile && $Acct->isPC) || $Me->privChair) {
-	echo "<table><tr><td>Send mail on: &nbsp;</td>",
-	    "<td>", tagg_checkbox_h("watchcomment", 1, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
-	    tagg_label("New comments for authored or reviewed papers"), "</td></tr>",
-	    "<tr><td></td><td>", tagg_checkbox_h("watchcommentall", 1, $Acct->defaultWatch & WATCH_ALLCOMMENTS), "&nbsp;",
-	    tagg_label("New comments for <i>any</i> paper"), "</td></tr>";
-	if ($Me->privChair)
-	    echo "<tr><td></td><td>", tagg_checkbox_h("watchfinalall", 1, $Acct->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL)), "&nbsp;",
-		tagg_label("Updates to final versions"), "</td></tr>";
-	echo "</table>";
-    } else
-	echo tagg_checkbox_h("watchcomment", WATCH_COMMENT, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
-	    tagg_label("Send mail on new comments for authored or reviewed papers");
-    echo "</td></tr>\n\n";
-}
+echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n\n",
+    "<tr><td class='caption'>Email notification</td><td class='entry'>";
+if ((!$newProfile && $Acct->isPC) || $Me->privChair) {
+    echo "<table><tr><td>Send mail on: &nbsp;</td>",
+	"<td>", tagg_checkbox_h("watchcomment", 1, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
+	tagg_label("New comments for authored or reviewed papers"), "</td></tr>",
+	"<tr><td></td><td>", tagg_checkbox_h("watchcommentall", 1, $Acct->defaultWatch & WATCH_ALLCOMMENTS), "&nbsp;",
+	tagg_label("New comments for <i>any</i> paper"), "</td></tr>";
+    if ($Me->privChair)
+	echo "<tr><td></td><td>", tagg_checkbox_h("watchfinalall", 1, $Acct->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL)), "&nbsp;",
+	    tagg_label("Updates to final versions"), "</td></tr>";
+    echo "</table>";
+} else
+    echo tagg_checkbox_h("watchcomment", WATCH_COMMENT, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
+	tagg_label("Send mail on new comments for authored or reviewed papers");
+echo "</td></tr>\n\n";
 
 
 if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
