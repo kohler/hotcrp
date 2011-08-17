@@ -541,16 +541,22 @@ class Contact {
 	return false;
     }
 
-    function actAuthorView($prow) {
-	return $prow->conflictType >= CONFLICT_AUTHOR
-	    || (isset($this->capabilities)
-		&& isset($this->capabilities[$prow->paperId])
-		&& ($this->capabilities[$prow->paperId] & self::CAP_AUTHORVIEW) != 0);
+    function actAuthorView($prow, $download = false) {
+	global $Conf;
+	// If an author-view capability is set, then use it -- unless this
+	// user is a PC member or reviewer, which takes priority.
+	if (isset($this->capabilities)
+	    && isset($this->capabilities[$prow->paperId])
+	    && ($this->capabilities[$prow->paperId] & self::CAP_AUTHORVIEW)
+	    && !$this->isPC
+	    && $prow->myReviewType <= 0)
+	    return true;
+	return $prow->conflictType >= CONFLICT_AUTHOR;
     }
 
     function actAuthorSql($table, $only_if_complex = false) {
 	$m = array("$table.conflictType>=" . CONFLICT_AUTHOR);
-	if (isset($this->capabilities))
+	if (isset($this->capabilities) && !$this->isPC)
 	    foreach ($this->capabilities as $pid => $cap)
 		if ($cap & Contact::CAP_AUTHORVIEW)
 		    $m[] = "Paper.paperId=$pid";
@@ -566,7 +572,7 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
-	$auview = $this->actAuthorView($prow);
+	$auview = $this->actAuthorView($prow, $download);
 	if ($auview || $this->privChair
 	    || ($prow->myReviewType > 0 && $Conf->timeReviewerViewSubmittedPaper())
 	    || ($this->isPC && $Conf->timePCViewPaper($prow, $download)))

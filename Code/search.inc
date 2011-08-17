@@ -2249,9 +2249,12 @@ class PaperSearch {
 	    $queryOptions["myReviews"] = 1;
 	else if ($this->limitName == "rout")
 	    $queryOptions["myOutstandingReviews"] = 1;
-	else if ($this->limitName == "a")
+	else if ($this->limitName == "a") {
+	    // If complex author SQL, always do search the long way
+	    if ($this->contact->actAuthorSql("%", true))
+		return true;
 	    $queryOptions["author"] = 1;
-	else if ($this->limitName == "req" || $this->limitName == "reqrevs")
+	} else if ($this->limitName == "req" || $this->limitName == "reqrevs")
 	    $queryOptions["myReviewRequests"] = 1;
 	else if ($this->limitName == "act")
 	    $queryOptions["active"] = 1;
