@@ -20,7 +20,7 @@ if (isset($_REQUEST["signin"]) || isset($_REQUEST["signout"])) {
     if ($Me->valid() && isset($_REQUEST["signout"]))
 	$Conf->confirmMsg("You have been signed out.  Thanks for using the system.");
     $Me->invalidate();
-    unset($_SESSION["AskedYouToUpdateContactInfo"]);
+    $Me->fresh = true;
     unset($_SESSION["l"]);
     unset($_SESSION["info"]);
     unset($_SESSION["rev_tokens"]);
@@ -195,15 +195,20 @@ if (!$Me->valid())
     setcookie("CRPTestCookie", true);
 
 // perhaps redirect through account
-if ($Me->valid() && !isset($_SESSION["AskedYouToUpdateContactInfo"]))
-    $_SESSION["AskedYouToUpdateContactInfo"] = 0;
-if ($Me->valid() && (($_SESSION["AskedYouToUpdateContactInfo"] < 2
-		      && (!$Me->lastName || !$Me->affiliation))
-		     || ($_SESSION["AskedYouToUpdateContactInfo"] < 3
-			 && ($Me->roles & Contact::ROLE_PC)
-			 && !$Me->collaborators))) {
-    $_SESSION["AskedYouToUpdateContactInfo"] = 1;
-    $Me->go(hoturl("account", "redirect=1"));
+if ($Me->valid() && isset($Me->fresh) && $Me->fresh === true) {
+    $needti = false;
+    if (($Me->roles & Contact::ROLE_PC) && !$Me->isReviewer) {
+	$result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
+	$needti = ($row = edb_row($result)) && $row[0] && !$row[1];
+    }
+    if (!($Me->firstName || $Me->lastName)
+	|| !$Me->affiliation
+	|| (($Me->roles & Contact::ROLE_PC) && !$Me->collaborators)
+	|| $needti) {
+	$Me->fresh = "redirect";
+	$Me->go(hoturl("account", "redirect=1"));
+    } else
+	unset($Me->fresh);
 }
 
 // check global system settings

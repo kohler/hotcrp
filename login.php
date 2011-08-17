@@ -6,7 +6,7 @@
 require_once("Code/header.inc");
 
 // If they're here, the contact is invalid.
-$_SESSION['Me']->invalidate();
-unset($_SESSION["AskedYouToUpdateContactInfo"]);
+$_SESSION["Me"]->invalidate();
+$_SESSION["Me"]->fresh = true;
 
 include('index.php');

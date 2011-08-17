@@ -251,13 +251,12 @@ if ($zlib_output_compression) {
 $Conf->ensureSession();
 
 global $Me;
-if (!isset($_SESSION["Me"]))
+if (!isset($_SESSION["Me"])) {
     $_SESSION["Me"] = new Contact();
+    $_SESSION["Me"]->fresh = true;
+}
 $_SESSION["Me"]->validated = 0;
 $Me = $_SESSION["Me"];
-
-if (!isset($_SESSION['AskedYouToUpdateContactInfo']))
-    $_SESSION['AskedYouToUpdateContactInfo'] = 0;
 
 // Mark as already expired to discourage caching, but allow the browser
 // to cache for history buttons

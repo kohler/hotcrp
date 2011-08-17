@@ -468,30 +468,37 @@ else
 
 if (isset($UpdateError))
     $Conf->errorMsg($UpdateError);
-else if ($_SESSION["AskedYouToUpdateContactInfo"] == 1) {
+else if (isset($Me->fresh) && $Me->fresh === "redirect") {
     $ispc = ($Acct->roles & Contact::ROLE_PC) != 0;
-    $_SESSION["AskedYouToUpdateContactInfo"] = $ispc ? 3 : 2;
-    if (!$Me->lastName)
-	$msg = "Please take a moment to enter your last name and update your other contact information.";
-    else
-	$msg = "Please take a moment to update your contact information.";
+    unset($Me->fresh);
+    $msgs = array();
+    $amsg = "";
+    if (!$Me->firstName && !$Me->lastName)
+	$msgs[] = "enter your name";
+    if (!$Me->affiliation)
+	$msgs[] = "enter your affiliation";
+    if ($ispc && !$Me->collaborators)
+	$msgs[] = "list your recent collaborators";
+    $msgs[] = "update your " . (count($msgs) ? "other " : "") . "contact information";
     if (!$Me->affiliation || ($ispc && !$Me->collaborators)) {
-	$msg .= "  We use your ";
+	$amsg .= "  We use your ";
 	if (!$Me->affiliation)
-	    $msg .= "affiliation ";
+	    $amsg .= "affiliation ";
 	if ($ispc && !$Me->collaborators)
-	    $msg .= ($Me->affiliation ? "" : "and ") . "recent collaborators ";
-	$msg .= "to detect paper conflicts.  Enter \"None\"";
+	    $amsg .= ($Me->affiliation ? "" : "and ") . "recent collaborators ";
+	$amsg .= "to detect paper conflicts; enter “None”";
 	if (!$Me->affiliation)
-	    $msg .= " or \"Unaffiliated\"";
-	$msg .= " if you have none.";
+	    $amsg .= " or “Unaffiliated”";
+	$amsg .= " if you have none.";
     }
     if ($ispc) {
-	$result = $Conf->q("select * from TopicArea");
-	if (edb_nrows($result) > 0)
-	    $msg .= "  Additionally, we use your topic interests to assign you papers you might like.";
+	$result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
+	if (($row = edb_row($result)) && $row[0] && !$row[1]) {
+	    $msgs[] = "tell us your topic interests";
+	    $amsg .= "  We use your topic interests to assign you papers you might like.";
+	}
     }
-    $Conf->infoMsg($msg);
+    $Conf->infoMsg("Please take a moment to " . commajoin($msgs) . "." . $amsg);
 }
 
 
