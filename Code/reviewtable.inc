@@ -89,7 +89,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	    if (!$showtoken || !preg_match('/^anonymous\d*$/', $rr->email))
 		$n = contactHtml($rr->firstName, $rr->lastName);
 	    else
-		$n = "[Token " . encodeToken($rr->reviewToken) . "]";
+		$n = "[Token " . encodeToken((int) $rr->reviewToken) . "]";
 	    $t .= "<td>" . $n . ($x ? " $x" : "");
 	    if ($Me->privChair && $rr->email != $Me->email)
 		$t .= " <a href=\"" . selfHref(array("viewContact" => $rr->email)) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . contactHtml($rr->firstName, $rr->lastName)) . "</a>";

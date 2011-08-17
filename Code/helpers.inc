@@ -1936,33 +1936,54 @@ function reviewForm() {
 function encodeToken($x) {
     $s = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     $t = "";
-    while ($x > 0) {
-	$t .= $s[$x & 31];
-	$x >>= 5;
+    if (is_int($x))
+	$x = pack("V", $x);
+    $i = 0;
+    $have = 0;
+    $n = 0;
+    while ($have > 0 || $i < strlen($x)) {
+	if ($have < 5 && $i < strlen($x)) {
+	    $n += ord($x[$i]) << $have;
+	    $have += 8;
+	    ++$i;
+	}
+	$t .= $s[$n & 31];
+	$n >>= 5;
+	$have -= 5;
     }
-    return $t;
+    return preg_replace('/A*\z/', "", $t);
 }
 
 function decodeToken($x) {
+    $t = "";
     $n = 0;
+    $have = 0;
+    $i = 0;
     $x = trim(strtoupper($x));
-    while (($l = strlen($x))) {
-	$o = ord($x[$l - 1]);
-	$x = substr($x, 0, $l - 1);
+    while ($i < strlen($x)) {
+	$o = ord($x[$i]);
 	if ($o >= 65 && $o <= 72)
-	    $n = ($n << 5) + ($o - 65);
+	    $o -= 65;
 	else if ($o >= 74 && $o <= 78)
-	    $n = ($n << 5) + ($o - 74 + 8);
+	    $o -= (74 - 8);
 	else if ($o >= 80 && $o <= 90)
-	    $n = ($n << 5) + ($o - 80 + 13);
+	    $o -= (80 - 13);
 	else if ($o >= 50 && $o <= 57)
-	    $n = ($n << 5) + ($o - 50 + 24);
+	    $o -= (50 - 24);
 	else if ($o == 46 /*.*/ || $o == 34 /*"*/)
 	    continue;
 	else
 	    return 0;
+	$n += $o << $have;
+	$have += 5;
+	++$i;
+	if ($have >= 8 || $i == strlen($x)) {
+	    $t .= chr($n & 255);
+	    $n >>= 8;
+	    $have -= 8;
+	}
     }
-    return $n;
+    return $t;
 }
 
 
