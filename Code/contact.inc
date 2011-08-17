@@ -145,7 +145,7 @@ class Contact {
 
 	$this->roles = 0;
 	$this->isAuthor = $this->isReviewer = $this->isPC = $this->privChair = false;
-	$this->reviewsOustanding = false;
+	$this->reviewsOutstanding = false;
 	$this->chairContact = null;
     }
 
