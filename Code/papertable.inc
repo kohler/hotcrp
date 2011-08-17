@@ -1467,12 +1467,15 @@ class PaperTable {
 	}
 	echo "    </tr>\n  </table></div>\n";
 	if ($Me->privChair) {
+	    $v = defval($_REQUEST, "emailNote", "");
 	    echo "  <div class='g'></div>\n  <table>\n",
 		"    <tr><td>",
 		tagg_checkbox("doemail", 1, true), "&nbsp;",
 		tagg_label("Email authors, including:"), "&nbsp; ",
-		"<input id='emailNote' type='text' class='textlite temptext' name='emailNote' size='30' value='Optional explanation' /></td></tr>\n",
-		"    <tr><td>", tagg_checkbox("override"), "&nbsp;",
+		"<input id='emailNote' type='text' class='textlite temptext' name='emailNote' size='30' value='",
+		htmlspecialchars($v == "" ? "Optional explanation" : $v),
+		"' /></td></tr>\n    <tr><td>",
+		tagg_checkbox("override"), "&nbsp;",
 		tagg_label("Override deadlines"), "</td></tr>\n",
 		"  </table>\n";
 	    $Conf->footerScript("mktemptext('emailNote','Optional explanation')");

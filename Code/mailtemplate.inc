@@ -247,13 +247,11 @@ The %CONFNAME% program committee is delighted to inform you that your paper #%NU
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+  Paper site: %URL(paper, p=%NUMBER%%AUTHORVIEWCAPABILITY%)%
 
 Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions.  Congratulations!
 
-Reviews and comments on your paper are appended to this email.  The submissions site also has the paper's reviews and comments, as well as more information about review scores.  To sign in, either click the link below or paste it into your web browser's location field.
-
-%LOGINURL%
+Reviews and comments on your paper are appended to this email.  The submissions site also has the paper's reviews and comments, as well as more information about review scores.%LOGINNOTICE%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -273,13 +271,11 @@ The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+  Paper site: %URL(paper, p=%NUMBER%%AUTHORVIEWCAPABILITY%)%
 
 %NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.
 
-Reviews and comments on your paper are appended to this email.  The submissions site also has the paper's reviews and comments, as well as more information about review scores.  To sign in, either click the link below or paste it into your web browser's location field.
-
-%LOGINURL%
+Reviews and comments on your paper are appended to this email.  The submissions site also has the paper's reviews and comments, as well as more information about review scores.%LOGINNOTICE%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -398,7 +394,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+  Paper site: %URL(paper, p=%NUMBER%%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this registration: %REASON%
 
@@ -414,7 +410,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+  Paper site: %URL(paper, p=%NUMBER%%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
 
@@ -430,7 +426,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+  Paper site: %URL(paper, p=%NUMBER%%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
 
@@ -446,7 +442,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+  Paper site: %URL(paper, p=%NUMBER%%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
 
@@ -506,6 +502,8 @@ class MailerState {
 	    $m = "Keyword-like strings " . commajoin($a) . " were not recognized.";
 	if ($ispaper)
 	    $m .= "  (Paper-specific keywords like <code>%NUMBER%</code> weren’t recognized because this set of recipients is not linked to a paper collection.)";
+	if (isset($this->unexpanded["%AUTHORVIEWCAPABILITY%"]))
+	    $m .= "  (Author view capabilities weren’t recognized because this mail isn’t meant for paper authors.)";
 	return $m;
     }
 
@@ -670,6 +668,15 @@ class Mailer {
 	}
 	if ($what == "%PHP%")
 	    return $ConfSiteSuffix;
+	if ($what == "%AUTHORVIEWCAPABILITY%"
+	    && isset($Opt["disableCapabilities"]))
+	    return "";
+	if ($what == "%LOGINNOTICE%") {
+	    if (isset($Opt["disableCapabilities"]))
+		return $this->expand(defval($Opt, "mailtool_loginNotice", "  To sign in, either click the link below or paste it into your web browser's location field.\n\n%LOGINURL%"), $isbool);
+	    else
+		return "";
+	}
 	if (($what == "%NUMACCEPTED%" || $what == "%NUMSUBMITTED%")
 	    && $this->statistics === null) {
 	    $this->statistics = array(0, 0);
@@ -757,7 +764,9 @@ class Mailer {
 	    cleanAuthor($this->row);
 	    return rtrim($this->row->authorInformation);
 	}
-
+	if ($what == "%AUTHORVIEWCAPABILITY%" && isset($this->row->capVersion)
+	    && $this->contact->actAuthorView($this->row))
+	    return "&cap=" . $Conf->capabilityText($this->row, "a");
 	if ($what == "%SHEPHERD%" || $what == "%SHEPHERDNAME%"
 	    || $what == "%SHEPHERDEMAIL%") {
 	    $pc = pcMembers();

@@ -84,6 +84,8 @@ function contactQuery($type) {
     if ($Conf->sversion >= 25)
 	$contactInfo .= ", preferredEmail";
     $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.shepherdContactId";
+    if ($Conf->sversion >= 41)
+	$paperInfo .= ", Paper.capVersion";
 
     // paper limit
     $where = array();

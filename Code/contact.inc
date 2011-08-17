@@ -162,6 +162,22 @@ class Contact {
 	$this->validated = false;
     }
 
+    function changeCapability($pid, $c, $on) {
+	global $CapabilitiesOK;
+	$newcap = defval($this, "capabilities", array());
+	$v = (defval($newcap, $pid, 0) | ($on ? $c : 0)) & ~($on ? 0 : $c);
+	if ($v)
+	    $newcap[$pid] = $v;
+	else
+	    unset($newcap[$pid]);
+	if (count($newcap))
+	    $this->capabilities = $newcap;
+	else
+	    unset($this->capabilities);
+	if ($on)
+	    $CapabilitiesOK = true;
+    }
+
     function amReviewer() {
 	return $this->isPC || $this->isReviewer;
     }

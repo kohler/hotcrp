@@ -170,6 +170,7 @@ CREATE TABLE `Paper` (
   `outcome` tinyint(1) NOT NULL default '0',
   `leadContactId` int(11) NOT NULL default '0',
   `shepherdContactId` int(11) NOT NULL default '0',
+  `capVersion` int(1) NOT NULL default '0',
   # next 3 fields copied from PaperStorage to reduce joins
   `size` int(11) NOT NULL default '0',
   `mimetype` varchar(40) NOT NULL default '',
@@ -524,7 +525,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 40);
+insert into Settings (name, value) values ('allowPaperOption', 41);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

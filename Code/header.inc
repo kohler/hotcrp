@@ -235,10 +235,10 @@ if (!isset($Opt["sessionLifetime"]))
     $Opt["sessionLifetime"] = 86400;
 ini_set('session.gc_maxlifetime', defval($Opt, "sessionLifetime", 86400));
 
-// Allow lots of memory.
+// Allow lots of memory
 ini_set('memory_limit', defval($Opt, "memoryLimit", "128M"));
 
-// Check and fix Zlib output compression.
+// Check and fix Zlib output compression
 global $zlib_output_compression;
 $zlib_output_compression = false;
 if (function_exists("zlib_get_coding_type"))
@@ -258,28 +258,46 @@ if (!isset($_SESSION["Me"])) {
 $Me = $_SESSION["Me"];
 $Me->validated = false;
 
-if (isset($Opt["testCapabilities"]) && $Opt["testCapabilities"]
-    && isset($_REQUEST["testcap"])) {
-    function setCapabilities() {
-	global $Me;
-	$newcap = defval($Me, "capabilities", array());
+// Handle capabilities
+function setCapabilities() {
+    global $Conf, $Opt, $Me, $CapabilitiesOK;
+    if (isset($Opt["disableCapabilities"]) && !$Opt["disableCapabilities"])
+	unset($Opt["disableCapabilities"]);
+    if (!isset($Opt["disableCapabilities"]) && !$Conf->setting("cap_key")) {
+	$key = false;
+	if (function_exists("openssl_random_pseudo_bytes")) {
+	    $key = openssl_random_pseudo_bytes(16, $strong);
+	    $key = ($strong ? $key : false);
+	}
+	if (!$key)
+	    $key = file_get_contents("/dev/urandom", false, null, 0, 16);
+	if (!$key)
+	    $key = pack("VVVVVV", mt_rand(), mt_rand(), mt_rand(), mt_rand(), mt_rand(), mt_rand());
+	if ($key && ($key = base64_encode($key))
+	    && $Conf->qx("insert into Settings (name, value, data) values ('cap_key', 1, '" . sqlq($key) . "')"))
+	    $Conf->updateSettings();
+	else
+	    $Opt["disableCapabilities"] = true;
+    }
+    if (!isset($Opt["disableCapabilities"]) && isset($_REQUEST["cap"])
+	&& $_REQUEST["cap"][0] == "0") {
+	if (preg_match('/\A0([1-9]\d*)a(\w+)\z/', $_REQUEST["cap"], $m)
+	    && ($result = $Conf->qx("select paperId, capVersion from Paper where paperId=$m[1]"))
+	    && ($row = edb_orow($result))
+	    && $_REQUEST["cap"] == $Conf->capabilityText($row, "a"))
+	    $Me->changeCapability($m[1], Contact::CAP_AUTHORVIEW, true);
+    }
+    if (isset($Opt["testCapabilities"]) && $Opt["testCapabilities"]
+	&& isset($_REQUEST["testcap"])) {
 	if (preg_match_all('/([-+]?)([1-9]\d*)([A-Za-z]+)/',
 			   $_REQUEST["testcap"], $m, PREG_SET_ORDER))
 	    foreach ($m as $mm) {
 		$c = ($mm[3] == "a" ? Contact::CAP_AUTHORVIEW : 0);
-		$newcap[$mm[2]] =
-		    (defval($newcap, $mm[2], 0) | ($mm[1] == "-" ? 0 : $c))
-		    & ~($mm[1] == "-" ? $c : 0);
+		$Me->changeCapability($mm[2], $c, $mm[1] != "-");
 	    }
-	$Me->capabilities = array();
-	foreach ($newcap as $pid => $cap)
-	    if ($cap)
-		$Me->capabilities[$pid] = $cap;
-	if (!count($Me->capabilities))
-	    unset($Me->capabilities);
     }
-    setCapabilities();
 }
+setCapabilities();
 
 // Mark as already expired to discourage caching, but allow the browser
 // to cache for history buttons

@@ -224,6 +224,10 @@ function updateSchema($Conf) {
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8")
 	&& $Conf->q("update Settings set value=40 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 40;
+    if ($Conf->settings["allowPaperOption"] == 40
+	&& $Conf->q("alter table Paper add `capVersion` int(1) NOT NULL default '0'")
+	&& $Conf->q("update Settings set value=41 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 41;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;
