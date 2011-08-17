@@ -737,9 +737,10 @@ $tOpt = array("s" => "Submitted papers",
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = "all";
 $q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
-echo "<input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1);autosub('requery',this)\" onblur=\"tempText(this, '(All)', 0)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
+echo "<input id='autoassignq' class='textlite temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"autosub('requery',this)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
     " &nbsp; <input id='requery' class='b' name='requery' type='submit' value='List' />\n";
+$Conf->footerScript("mktemptext('autoassignq','(All)')");
 if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
     echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>
 <div class='g'></div>";
@@ -781,11 +782,12 @@ echo "Review round: &nbsp;";
 $rev_roundtag = defval($_REQUEST, "rev_roundtag", $Conf->settingText("rev_roundtag"));
 if (!$rev_roundtag)
     $rev_roundtag = "(None)";
-echo "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"",
+echo "<input id='rev_roundtag' class='textlite temptextoff' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag),
-    "\" onfocus=\"tempText(this, '(None)', 1);autosub('assign',this)\" onblur=\"tempText(this, '(None)', 0)\" />",
+    "\" onfocus=\"autosub('assign',this)\" />",
     " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a></div>
 <div class='g'></div>\n";
+$Conf->footerScript("mktemptext('rev_roundtag','(None)')");
 
 doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');
 echo "<br />\n";

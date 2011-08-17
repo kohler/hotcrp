@@ -402,11 +402,11 @@ if ($homelist) {
     $tOpt = PaperSearch::searchTypes($Me);
     $q = defval($_REQUEST, "q", "(All)");
     echo "  <td><form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'><div class='inform'>
-    <input class='textlite temptext",
+    <input id='homeq' class='textlite temptext",
 	($q == "(All)" ? "" : "off"),
 	"' type='text' size='32' name='q' value=\"",
 	htmlspecialchars($q),
-	"\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" title='Enter paper numbers or search terms' />
+	"\" title='Enter paper numbers or search terms' />
     &nbsp;in&nbsp; ",
 	PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; <input class='b' type='submit' value='Search' />
@@ -415,6 +415,7 @@ if ($homelist) {
   </td></tr></table>
 </div>
 <hr class='home' />\n";
+    $Conf->footerScript("mktemptext('homeq','(All)')");
 }
 
 

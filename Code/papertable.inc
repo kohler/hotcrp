@@ -1470,10 +1470,11 @@ class PaperTable {
 		"    <tr><td>",
 		tagg_checkbox("doemail", 1, true), "&nbsp;",
 		tagg_label("Email authors, including:"), "&nbsp; ",
-		"<input type='text' class='textlite' name='emailNote' size='30' value='Optional explanation' onfocus=\"tempText(this, 'Optional explanation', 1)\" onblur=\"tempText(this, 'Optional explanation', 0)\" /></td></tr>\n",
+		"<input id='emailNote' type='text' class='textlite temptext' name='emailNote' size='30' value='Optional explanation' /></td></tr>\n",
 		"    <tr><td>", tagg_checkbox("override"), "&nbsp;",
 		tagg_label("Override deadlines"), "</td></tr>\n",
 		"  </table>\n";
+	    $Conf->footerScript("mktemptext('emailNote','Optional explanation')");
 	}
     }
 

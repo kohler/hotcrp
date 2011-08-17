@@ -555,6 +555,37 @@ function tempText(elt, text, on) {
     }
 }
 
+mktemptext = (function () {
+function setclass(e, on) {
+    e.className = e.className.replace(on ? /\btemptextoff\b/ : /\btemptext\b/,
+				      on ? "temptext" : "temptextoff");
+}
+function blank() {
+}
+
+return function (e, text) {
+    if (typeof e === "string")
+	e = $$(e);
+    var onfocus = e.onfocus || blank, onblur = e.onblur || blank;
+    e.onfocus = function (evt) {
+	if (this.value == text) {
+	    this.value = "";
+	    setclass(this, false);
+	}
+	onfocus.call(this, evt);
+    };
+    e.onblur = function (evt) {
+	if (this.value == "" || this.value == text) {
+	    this.value = text;
+	    setclass(this, true);
+	}
+	onblur.call(this, evt);
+    };
+    setclass(e, e.value == text);
+};
+})();
+
+
 // check marks for ajax saves
 function setajaxcheck(elt, rv) {
     if (typeof elt == "string")

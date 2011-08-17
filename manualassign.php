@@ -177,10 +177,11 @@ if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = "s";
 $q = (defval($_REQUEST, "q", "") == "" ? "(All)" : $_REQUEST["q"]);
 echo "<tr><td>Paper selection: &nbsp;</td>",
-    "<td><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" onchange='hiliter(this)' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
+    "<td><input id='manualassignq' class='textlite temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onchange='hiliter(this)' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "hiliter(this)")),
     "</td></tr>\n",
     "<tr><td colspan='2'><div class='g'></div>\n";
+$Conf->footerScript("mktemptext('manualassignq','(All)')");
 
 echo tagg_radio("kind", "a", $kind == "a",
 	       array("onchange" => "hiliter(this)")),
@@ -189,15 +190,17 @@ echo tagg_radio("kind", "a", $kind == "a",
 	       array("onchange" => "hiliter(this)")),
     "&nbsp;", tagg_label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
 
-if ($kind == "a")
+if ($kind == "a") {
     echo "<tr><td colspan='2'><div class='g'></div></td></tr>\n",
 	"<tr><td>",
 	(isset($Error["rev_roundtag"]) ? "<span class='error'>" : ""),
 	"Review round: &nbsp;</td>",
-	"<td><input id='assrevroundtag' class='textlite' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
+	"<td><input id='assrevroundtag' class='textlite temptextoff' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" />",
 	(isset($Error["rev_roundtag"]) ? "</span>" : ""),
 	" &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a>\n",
 	"</td></tr>";
+    $Conf->footerScript("mktemptext('assrevroundtag','(None)')");
+}
 
 echo "<tr><td colspan='2'><div class='aax' style='text-align:right'>",
     "<input class='bb' type='submit' value='Go' />",

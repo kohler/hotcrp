@@ -986,7 +986,8 @@ function goPaperForm($baseUrl = null, $args = array()) {
     if ($baseUrl === null)
 	$baseUrl = ($_SESSION["Me"]->isPC && $Conf->setting("rev_open") ? "review" : "paper");
     $x = "<form class='gopaper' action='" . hoturl($baseUrl) . "' method='get' accept-charset='UTF-8'><div class='inform'>";
-    $x .= "<input class='textlite temptext' type='text' size='10' name='p' onfocus=\"tempText(this, '(All)', 1)\" onblur=\"tempText(this, '(All)', 0)\" value='(All)' title='Enter paper numbers or search terms' />";
+    $x .= "<input id='quicksearchq' class='textlite temptext' type='text' size='10' name='p' value='(All)' title='Enter paper numbers or search terms' />";
+    $Conf->footerScript("mktemptext('quicksearchq','(All)')");
     foreach ($args as $what => $val)
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
     if (isset($CurrentList) && $CurrentList > 0)

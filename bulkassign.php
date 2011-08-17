@@ -264,9 +264,9 @@ echo "<div id='foldemail' class='foldo'><table class='fx'>
 if (isset($Error["rev_roundtag"]))
     echo " error";
 echo "'>Review round: &nbsp;",
-    "<input class='textlite' type='text' size='15' name='rev_roundtag' value=\"",
+    "<input id='rev_roundtag' class='textlite temptextoff' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"),
-    "\" onfocus=\"tempText(this, '(None)', 1)\" onblur=\"tempText(this, '(None)', 0)\" />",
+    "\" />",
     " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a></div></div>
 
 <div class='g'></div>
@@ -298,6 +298,6 @@ identifies the PC member uniquely.  For example:</p>
 100	feldmann
 </pre></td></tr></table>\n";
 
-
+$Conf->footerScript("mktemptext('rev_roundtag','(None)')");
 $Conf->footerScript("fold('email',\$\$('tsel').value!=" . REVIEW_EXTERNAL . ")");
 $Conf->footer();
