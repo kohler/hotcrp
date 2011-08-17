@@ -45,6 +45,8 @@ class Contact {
     var $contactTags;
     var $reviewsOutstanding;
     var $chairContact;
+    const CAP_AUTHORVIEW = 1;
+    var $capabilities;
     var $validated;
 
 
@@ -116,11 +118,20 @@ class Contact {
 		    $this->lookupById($this->contactId);
 		$this->validated = true;
 	    }
-	} else if (isset($Opt['validatorContact']) && $Opt['validatorContact'] && !$this->contactId && isset($_REQUEST['validator'])) {
-	    $this->lookupByEmail($Opt['validatorContact']);
+	} else if (isset($Opt["validatorContact"]) && $Opt["validatorContact"]
+		   && !$this->contactId && isset($_REQUEST["validator"])) {
+	    $this->lookupByEmail($Opt["validatorContact"]);
 	    return $this->valid($update);
 	}
-	return $this->contactId > 0 && $this->confDsn == $Opt["dsn"];
+	if (isset($this->capabilities))
+	    foreach ($this->capabilities as $pid => $cap)
+		if ($cap & self::CAP_AUTHORVIEW)
+		    $this->isAuthor = $this->validated = true;
+	return $this->validated && $this->confDsn == $Opt["dsn"];
+    }
+
+    function validContact() {
+	return $this->valid() && $this->contactId > 0;
     }
 
     static function _addressKeys() {
@@ -136,7 +147,7 @@ class Contact {
 	foreach (array("firstName", "lastName", "email", "preferredEmail",
 		       "affiliation", "voicePhoneNumber", "faxPhoneNumber",
 		       "password", "collaborators") as $k)
-	    $this->$k = '';
+	    $this->$k = "";
 	foreach (self::_addressKeys() as $k)
 	    $this->$k = null;
 	$this->contactTags = null;
@@ -147,6 +158,8 @@ class Contact {
 	$this->isAuthor = $this->isReviewer = $this->isPC = $this->privChair = false;
 	$this->reviewsOutstanding = false;
 	$this->chairContact = null;
+
+	$this->validated = false;
     }
 
     function amReviewer() {
@@ -168,14 +181,15 @@ class Contact {
     }
 
     function go($url) {
+	global $ConfSiteBase, $ConfSiteSuffix;
+	if ($url === false)
+	    $url = "${ConfSiteBase}index$ConfSiteSuffix";
 	go($url);
     }
 
     function goAlert($url, $message = "") {
-	global $Conf, $ConfSiteBase, $ConfSiteSuffix;
+	global $Conf;
 	$Conf->errorMsg($message);
-	if ($url === false)
-	    $url = "${ConfSiteBase}index$ConfSiteSuffix";
 	go($url);
     }
 
@@ -527,19 +541,38 @@ class Contact {
 	return false;
     }
 
+    function actAuthorView($prow) {
+	return $prow->conflictType >= CONFLICT_AUTHOR
+	    || (isset($this->capabilities)
+		&& isset($this->capabilities[$prow->paperId])
+		&& ($this->capabilities[$prow->paperId] & self::CAP_AUTHORVIEW) != 0);
+    }
+
+    function actAuthorSql($table, $only_if_complex = false) {
+	$m = array("$table.conflictType>=" . CONFLICT_AUTHOR);
+	if (isset($this->capabilities))
+	    foreach ($this->capabilities as $pid => $cap)
+		if ($cap & Contact::CAP_AUTHORVIEW)
+		    $m[] = "Paper.paperId=$pid";
+	if (count($m) > 1)
+	    return "(" . join(" or ", $m) . ")";
+	else
+	    return $only_if_complex ? false : $m[0];
+    }
+
     function canViewPaper($prow, &$whyNot = null, $download = false) {
 	global $Conf;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
-	if ($prow->conflictType >= CONFLICT_AUTHOR
-	    || $this->privChair
+	$auview = $this->actAuthorView($prow);
+	if ($auview || $this->privChair
 	    || ($prow->myReviewType > 0 && $Conf->timeReviewerViewSubmittedPaper())
 	    || ($this->isPC && $Conf->timePCViewPaper($prow, $download)))
 	    return true;
 	// collect failure reasons
-	if (!$this->isPC && $prow->conflictType < CONFLICT_AUTHOR && $prow->myReviewType <= 0) {
+	if (!$this->isPC && !$auview && $prow->myReviewType <= 0) {
 	    $whyNot["permission"] = 1;
 	    return false;
 	}
@@ -567,7 +600,7 @@ class Contact {
 	    return false;
 	// policy
 	$pblind = $Conf->paperBlind($prow, $this);
-	if (($prow->conflictType >= CONFLICT_AUTHOR
+	if (($this->actAuthorView($prow)
 	     && (!$this->isPC || !$blindWins || !$pblind))
 	    || ($prow->myReviewType > 0 && !$pblind
 		&& $Conf->timeReviewerViewSubmittedPaper())
@@ -597,8 +630,7 @@ class Contact {
 	    return false;
 	}
 	// policy
-	if ($prow->conflictType >= CONFLICT_AUTHOR
-	    || $this->privChair)
+	if ($this->actAuthorView($prow) || $this->privChair)
 	    return true;
 	if (!$this->canViewPaper($prow, $whyNot))
 	    return false;	// $whyNot already set
@@ -626,11 +658,12 @@ class Contact {
 	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
 	$rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
 	$pc_seeallrev = ($this->isPC ? $Conf->setting("pc_seeallrev") : 0);
+	$auview = $this->actAuthorView($prow);
 	if ($this->privChair && $forceShow)
 	    return true;
 	if (($prow->timeSubmitted > 0
 	     || defval($prow, "myReviewType") > 0)
-	    && (($prow->conflictType >= CONFLICT_AUTHOR
+	    && (($auview
 		 && $Conf->timeAuthorViewReviews($this->reviewsOutstanding && $this->isReviewer)
 		 && $rrowSubmitted)
 		|| ($this->privChair && $prow->conflictType == 0)
@@ -654,14 +687,14 @@ class Contact {
 	    $whyNot["withdrawn"] = 1;
 	else if ($prow->timeSubmitted <= 0)
 	    $whyNot["notSubmitted"] = 1;
-	else if ($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)
+	else if (!$auview && !$this->isPC && $prow->myReviewType <= 0)
 	    $whyNot['permission'] = 1;
-	else if ($prow->conflictType >= CONFLICT_AUTHOR && $Conf->timeAuthorViewReviews()
+	else if ($auview && $Conf->timeAuthorViewReviews()
 		 && $this->reviewsOutstanding && $this->isReviewer)
 	    $whyNot['reviewsOutstanding'] = 1;
-	else if ($prow->conflictType >= CONFLICT_AUTHOR && !$rrowSubmitted)
+	else if ($auview && !$rrowSubmitted)
 	    $whyNot['permission'] = 1;
-	else if ($prow->conflictType >= CONFLICT_AUTHOR)
+	else if ($auview)
 	    $whyNot['deadline'] = 'au_seerev';
 	else if ($prow->conflictType > 0)
 	    $whyNot['conflict'] = 1;
@@ -848,10 +881,10 @@ class Contact {
 	    && isset($crow->threadContacts[$this->contactId]))
 	    $thread_contactId = $this->contactId;
 	$forReviewers = (!$crow || $crow->forReviewers == -1 ? 1 : $crow->forReviewers);
+	$auview = $this->actAuthorView($prow);
 	if ($crow_contactId == $this->contactId		// wrote this comment
-	    || ($prow->conflictType >= CONFLICT_AUTHOR	// author's response
-		&& $crow && $crow->forAuthors == 2)
-	    || ($prow->conflictType >= CONFLICT_AUTHOR	// author viewable
+	    || ($auview && $crow && $crow->forAuthors == 2) // author's response
+	    || ($auview					// author viewable
 		&& $Conf->timeAuthorViewReviews()
 		&& (!$crow || $crow->forAuthors != 0))
 	    || ($this->privChair			// chair privilege
@@ -865,10 +898,10 @@ class Contact {
 		&& ($forReviewers == 1 || ($forReviewers == 0 && $this->isPC))))
 	    return true;
 	// collect failure reasons
-	if (($prow->conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)
+	if ((!$auview && !$this->isPC && $prow->myReviewType <= 0)
 	    || (!$this->privChair && $forReviewers == 2))
 	    $whyNot['permission'] = 1;
-	else if ($prow->conflictType >= CONFLICT_AUTHOR)
+	else if ($auview)
 	    $whyNot['deadline'] = 'au_seerev';
 	else if ($prow->conflictType > 0)
 	    $whyNot['conflict'] = 1;
@@ -921,7 +954,8 @@ class Contact {
 	    || ($this->isPC && $Conf->setting("pc_seeallrev") > 0))
 	    return array();
 	else
-	    return array("(PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " or MyPaperReview.reviewId is not null)");
+	    return array("(" . $this->actAuthorSql("PaperConflict")
+			 . " or MyPaperReview.reviewId is not null)");
     }
 
 
@@ -1052,7 +1086,7 @@ class Contact {
 	    return -3;
 
 	// author can see author information
-	if (($prow && $prow->conflictType > 0)
+	if (($prow && $this->actAuthorView($prow))
 	    || (!$prow && !$this->amReviewer()))
 	    return 0;
 

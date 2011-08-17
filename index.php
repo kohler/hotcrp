@@ -7,8 +7,8 @@ require_once("Code/header.inc");
 require_once("Code/paperlist.inc");
 require_once("Code/search.inc");
 
-$email_class = '';
-$password_class = '';
+$email_class = "";
+$password_class = "";
 
 // signin links
 if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])) {
@@ -16,11 +16,14 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])) {
     $_REQUEST["signin"] = defval($_REQUEST, "signin", "go");
 }
 
-if (isset($_REQUEST["signin"]) || isset($_REQUEST["signout"])) {
+if ((isset($_REQUEST["email"]) && isset($_REQUEST["password"]) && isset($_REQUEST["signin"]))
+    || isset($_REQUEST["signout"])) {
     if ($Me->valid() && isset($_REQUEST["signout"]))
 	$Conf->confirmMsg("You have been signed out.  Thanks for using the system.");
     $Me->invalidate();
     $Me->fresh = true;
+    if (isset($_REQUEST["signout"]))
+	unset($Me->capabilities);
     unset($_SESSION["l"]);
     unset($_SESSION["info"]);
     unset($_SESSION["rev_tokens"]);
@@ -51,13 +54,13 @@ function doFirstUser($msg) {
 function doCreateAccount() {
     global $Conf, $Opt, $Me, $email_class;
 
-    if ($Me->valid() && $Me->visits > 0) {
+    if ($Me->validContact() && $Me->visits > 0) {
 	$email_class = " error";
 	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select &ldquo;I forgot my password, email it to me.&rdquo;");
     } else if (!validateEmail($_REQUEST["email"])) {
 	$email_class = " error";
 	return $Conf->errorMsg("&ldquo;" . htmlspecialchars($_REQUEST["email"]) . "&rdquo; is not a valid email address.");
-    } else if (!$Me->valid()) {
+    } else if (!$Me->validContact()) {
 	$result = $Me->initialize($_REQUEST["email"]);
 	if (!$result)
 	    return $Conf->errorMsg($Conf->dbErrorText(true, "while adding your account"));
@@ -137,7 +140,7 @@ function doLogin() {
 	$_REQUEST["password"] = $Me->password;
     }
 
-    if (!$Me->valid()) {
+    if (!$Me->validContact()) {
 	if (isset($Opt["ldapLogin"])) {
 	    $result = $Me->initialize($_REQUEST["email"], true);
 	    if (!$result)
@@ -191,11 +194,11 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["action"]) && isset($_REQUEST["
 }
 
 // set a cookie to test that their browser supports cookies
-if (!$Me->valid())
+if (!$Me->valid() || isset($_REQUEST["signin"]))
     setcookie("CRPTestCookie", true);
 
 // perhaps redirect through account
-if ($Me->valid() && isset($Me->fresh) && $Me->fresh === true) {
+if ($Me->validContact() && isset($Me->fresh) && $Me->fresh === true) {
     $needti = false;
     if (($Me->roles & Contact::ROLE_PC) && !$Me->isReviewer) {
 	$result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
@@ -271,7 +274,8 @@ if (isset($_REQUEST["cleartokens"]) && $Me->valid())
     unset($_SESSION["rev_tokens"]);
 
 
-$Conf->header($Me->valid() ? "Home" : "Sign in", "home", actionBar());
+$title = ($Me->valid() && !isset($_REQUEST["signin"]) ? "Home" : "Sign in");
+$Conf->header($title, "home", actionBar());
 $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 
 if ($Me->privChair)
@@ -337,7 +341,7 @@ if (($v = $Conf->settingText("homemsg")))
 
 
 // Sign in
-if (!$Me->valid()) {
+if (!$Me->valid() || isset($_REQUEST["signin"])) {
     $confname = $Opt["longName"];
     if ($Opt["shortName"] && $Opt["shortName"] != $Opt["longName"])
 	$confname .= " (" . $Opt["shortName"] . ")";
@@ -620,7 +624,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 	echo "<h4>Submissions: &nbsp;</h4> ";
 
     $startable = $Conf->timeStartPaper();
-    if ($startable && !$Me->valid())
+    if ($startable && !$Me->validContact())
 	echo "<span class='deadline'>", $Conf->printableDeadlineSetting('sub_reg'), "</span><br />\n<small>You must sign in to register papers.</small>";
     else if ($startable || $Me->privChair) {
 	echo "<strong><a href='", hoturl("paper", "p=new"), "'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting('sub_reg'), ")</span>";

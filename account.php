@@ -6,6 +6,8 @@
 require_once("Code/header.inc");
 require_once("Code/countries.inc");
 $Me->goIfInvalid();
+if (!$Me->validContact())
+    $Me->go(false);
 $newProfile = false;
 $Error = array();
 

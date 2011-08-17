@@ -1559,7 +1559,7 @@ class PaperSearch {
 	if ($flags & self::F_NONCONFLICT)
 	    $q[] = "PaperConflict.conflictType is null";
 	if ($flags & self::F_AUTHOR)
-	    $q[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
+	    $q[] = $this->contact->actAuthorSql("PaperConflict");
 	if ($flags & self::F_REVIEWER)
 	    $q[] = "MyReview.reviewNeedsSubmit=0";
 	if ($flags & self::F_NONREVIEWER)
@@ -1804,7 +1804,8 @@ class PaperSearch {
 	    $this->_clauseTermSetField($t, "collaborators", $negated, $f);
 	} else if ($tt == "au_cid") {
 	    $this->_clauseTermSetTable($t, $t->value, null, "AuthorConflict",
-				       "PaperConflict", "contactId", " and %.conflictType>=" . CONFLICT_AUTHOR,
+				       "PaperConflict", "contactId",
+				       " and " . $this->contact->actAuthorSql("%"),
 				       $tables, $columns, $f);
 	} else if ($tt == "re") {
 	    $extrawhere = array();
@@ -1915,7 +1916,7 @@ class PaperSearch {
 
     function _clauseTermCheckFlags($flags, &$row) {
 	global $Conf;
-	if (($flags & self::F_AUTHOR) && $row->conflictType < CONFLICT_AUTHOR)
+	if (($flags & self::F_AUTHOR) && $this->actAuthorView($row))
 	    return false;
 	if (($flags & self::F_REVIEWER)
 	    && $row->myReviewNeedsSubmit !== 0
@@ -2086,13 +2087,13 @@ class PaperSearch {
 
 	// other search limiters
 	if ($this->limitName == "a") {
-	    $filters[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
+	    $filters[] = $this->contact->actAuthorSql("PaperConflict");
 	    $this->needflags |= self::F_AUTHOR;
 	} else if ($this->limitName == "r") {
 	    $filters[] = "MyReview.reviewType is not null";
 	    $this->needflags |= self::F_REVIEWER;
 	} else if ($this->limitName == "ar") {
-	    $filters[] = "(PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " or MyReview.reviewType is not null)";
+	    $filters[] = "(" . $this->contact->actAuthorSql("PaperConflict") . " or MyReview.reviewType is not null)";
 	    $this->needflags |= self::F_AUTHOR | self::F_REVIEWER;
 	} else if ($this->limitName == "rout") {
 	    $filters[] = "MyReview.reviewNeedsSubmit!=0";

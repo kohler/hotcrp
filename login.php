@@ -9,4 +9,4 @@ require_once("Code/header.inc");
 $_SESSION["Me"]->invalidate();
 $_SESSION["Me"]->fresh = true;
 
-include('index.php');
+include("index.php");

@@ -909,10 +909,16 @@ class Conference {
 	$reviewerQuery = isset($options['myReviews']) || isset($options['allReviews']) || isset($options['myReviewRequests']) || isset($options['myReviewsOpt']) || isset($options['myOutstandingReviews']);
 	$allReviewerQuery = isset($options['allReviews']) || isset($options['allReviewScores']);
 	$scoresQuery = !$reviewerQuery && isset($options['allReviewScores']);
-	$contactId = (is_object($contact) ? $contact->contactId : $contact);
+	if (is_object($contact))
+	    $contactId = $contact->contactId;
+	else {
+	    $contactId = $contact;
+	    $contact = null;
+	}
 	$reviewContactId = $contactId;
 	if (isset($options['reviewerContact']))
 	    $reviewContactId = $options['reviewerContact'];
+	$where = array();
 
 	// fields
 	$pq = "select Paper.*, PaperConflict.conflictType,
@@ -1020,7 +1026,11 @@ class Conference {
 	if (isset($options['commentId']))
 	    $pq .= "		join PaperComment as CommentSelector on (CommentSelector.paperId=Paper.paperId)\n";
 
-	if (isset($options['author']))
+	$aujoinwhere = null;
+	if (isset($options["author"]) && $contact
+	    && ($aujoinwhere = $contact->actAuthorSql("PaperConflict", true)))
+	    $where[] = $aujoinwhere;
+	if (isset($options["author"]) && !$aujoinwhere)
 	    $pq .= "		join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . " and PaperConflict.contactId=$contactId)\n";
 	else
 	    $pq .= "		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)\n";
@@ -1103,7 +1113,6 @@ class Conference {
 
 
 	// conditions
-	$where = array();
 	if (isset($options['paperId']))
 	    $where[] = $this->_paperQuery_where($options['paperId'], "Paper.paperId");
 	if (isset($options["reviewId"])) {
@@ -1607,10 +1616,12 @@ class Conference {
 	echo "</h1></div><div id='header_right'>";
 	if ($Me->valid()) {
 	    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-	    echo "<a class='q' href='", hoturl("account"), "'><strong>",
-		htmlspecialchars($Me->email),
-		"</strong></a> &nbsp; <a href='", hoturl("account"), "'>Profile</a>",
-		$xsep;
+	    if ($Me->contactId > 0) {
+		echo "<a class='q' href='", hoturl("account"), "'><strong>",
+		    htmlspecialchars($Me->email),
+		    "</strong></a> &nbsp; <a href='", hoturl("account"), "'>Profile</a>",
+		    $xsep;
+	    }
 	    if ($Me->chairContact) {
 		if (!$Me->privChair)
 		    echo "<a href=\"", selfHref(array("chairMode" => 0)), "\">Admin&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Return to administrator view]' /></a>", $xsep;
@@ -1618,8 +1629,11 @@ class Conference {
 		    echo "<a href=\"", selfHref(array("viewContact" => $Me->chairContact)), "\">", htmlspecialchars($Me->chairContact), "&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Unprivileged view]' /></a>", $xsep;
 	    }
 	    $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
-	    echo "<a href='", hoturl("help", $x), "'>Help</a>", $xsep,
-		"<a href='", hoturl("index", "signout=1"), "'>Sign&nbsp;out</a>";
+	    echo "<a href='", hoturl("help", $x), "'>Help</a>", $xsep;
+	    if ($Me->contactId > 0)
+		echo "<a href='", hoturl("index", "signout=1"), "'>Sign&nbsp;out</a>";
+	    else
+		echo "<a href='", hoturl("index", "signin=1"), "'>Sign&nbsp;in</a>";
 	}
 	echo "<div id='maindeadline' style='display:none'>";
 

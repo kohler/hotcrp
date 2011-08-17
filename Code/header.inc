@@ -255,8 +255,31 @@ if (!isset($_SESSION["Me"])) {
     $_SESSION["Me"] = new Contact();
     $_SESSION["Me"]->fresh = true;
 }
-$_SESSION["Me"]->validated = 0;
 $Me = $_SESSION["Me"];
+$Me->validated = false;
+
+if (isset($Opt["testCapabilities"]) && $Opt["testCapabilities"]
+    && isset($_REQUEST["testcap"])) {
+    function setCapabilities() {
+	global $Me;
+	$newcap = defval($Me, "capabilities", array());
+	if (preg_match_all('/([-+]?)([1-9]\d*)([A-Za-z]+)/',
+			   $_REQUEST["testcap"], $m, PREG_SET_ORDER))
+	    foreach ($m as $mm) {
+		$c = ($mm[3] == "a" ? Contact::CAP_AUTHORVIEW : 0);
+		$newcap[$mm[2]] =
+		    (defval($newcap, $mm[2], 0) | ($mm[1] == "-" ? 0 : $c))
+		    & ~($mm[1] == "-" ? $c : 0);
+	    }
+	$Me->capabilities = array();
+	foreach ($newcap as $pid => $cap)
+	    if ($cap)
+		$Me->capabilities[$pid] = $cap;
+	if (!count($Me->capabilities))
+	    unset($Me->capabilities);
+    }
+    setCapabilities();
+}
 
 // Mark as already expired to discourage caching, but allow the browser
 // to cache for history buttons
