@@ -721,7 +721,7 @@ class Conference {
 	return $title . $paperId . $this->getFileExtension($mimetype);
     }
 
-    function paperStorageRow($prow, $documentType) {
+    function paperStorageResult($prow, $documentType) {
 	if (is_array($prow) && count($prow) <= 1)
 	    $prow = (count($prow) ? $prow[0] : -1);
 	if (is_numeric($prow))
@@ -742,11 +742,20 @@ class Conference {
 	return $this->q($q . " left join PaperStorage s on (s.paperStorageId=$sjoin) where p.paperId$paperMatch");
     }
 
+    function paperStorageRow($result) {
+	global $mimetypeMap;
+	if (($row = edb_orow($result))) {
+	    if ($row->compression == 1)
+		$row->content = gzinflate($row->content);
+	}
+	return $row;
+    }
+
     function __downloadPaper($paperId, $saveit, $documentType) {
 	global $Me, $zlib_output_compression;
 
 	// Database query
-	$result = $this->paperStorageRow($paperId, $documentType);
+	$result = $this->paperStorageResult($paperId, $documentType);
 	if (!$result) {
 	    $this->log("Error downloading for review: " . mysql_error($this->dblink), $Me, $paperId);
 	    return new PEAR_Error("Database error while downloading paper.");
@@ -754,7 +763,7 @@ class Conference {
 	    return new PEAR_Error("No such document.");
 
 	// Check data
-	$row = edb_orow($result);
+	$row = $this->paperStorageRow($result);
 	if ($row->paperStorageId <= 1)
 	    return new PEAR_Error("Paper #$paperId has not been uploaded yet.");
 	else if (strlen($row->content) == 0)
@@ -767,8 +776,6 @@ class Conference {
 	header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
 	// reduce likelihood of XSS attacks in IE
 	header("X-Content-Type-Options: nosniff");
-	if ($row->compression == 1)
-	    $row->content = gzinflate($row->content);
 	if (!$zlib_output_compression)
 	    header("Content-Length: " . strlen($row->content));
 	print $row->content;
@@ -856,13 +863,11 @@ class Conference {
 		 $xpidno < count($paperIds) && $xpidno < $pidno + $batch;
 		 ++$xpidno)
 		$downloadP[] = $paperIds[$xpidno];
-	    $result = $this->paperStorageRow($downloadP, $documentType);
+	    $result = $this->paperStorageResult($downloadP, $documentType);
 	    if (!$result)
 		return new PEAR_Error("Database error while downloading papers: " . mysql_error($this->dblink));
 
-	    while ($row = edb_orow($result)) {
-		if ($row->compression == 1)
-		    $row->content = gzinflate($row->content);
+	    while ($row = $this->paperStorageRow($result)) {
 		if ($row->paperStorageId <= 1 || strlen($row->content) == 0)
 		    $warnings[] = "Paper #$row->paperId has not been uploaded yet.";
 		else

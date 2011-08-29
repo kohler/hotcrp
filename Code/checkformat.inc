@@ -317,13 +317,11 @@ class CheckFormat {
 	global $Conf, $prow, $Opt;
 	if (($tmpdir = tempdir()) === false)
 	    return $this->msg("error", "Cannot create temporary directory.");
-	$result = $Conf->paperStorageRow($paperId, $documentType);
-	if (!($row = edb_orow($result)))
+	$result = $Conf->paperStorageResult($paperId, $documentType);
+	if (!($row = $Conf->paperStorageRow($result)))
 	    return $this->msg("error", "No such paper.");
 	else if ($row->mimetype != "application/pdf")
 	    return $this->msg("error", "The format checker only works for PDF files.");
-	if ($row->compression == 1)
-	    $row->content = gzinflate($row->content);
 	if (file_put_contents("$tmpdir/paper.pdf", $row->content) != strlen($row->content))
 	    return $this->msg("error", "Failed to save PDF to temporary file for analysis.");
 	return $this->analyzeFile("$tmpdir/paper.pdf", $spec);
