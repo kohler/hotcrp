@@ -169,7 +169,7 @@ function pcAssignments() {
 
 	// manage assignments
 	$val = max($val, 0);
-	if ($val != $row->reviewType && ($val == 0 || $val == REVIEW_PRIMARY || $val == REVIEW_SECONDARY))
+	if ($val != $row->reviewType && ($val == 0 || $val == REVIEW_PRIMARY || $val == REVIEW_SECONDARY || $val == REVIEW_PC))
 	    $Me->assignPaper($prow->paperId, $row, $row->contactId, $val, $Conf);
     }
 }
@@ -428,7 +428,7 @@ if (isset($_REQUEST['addpc']) && $Me->privChair) {
     if (($pcid = rcvtint($_REQUEST["pcid"])) <= 0)
 	$Conf->errorMsg("Enter a PC member.");
     else if (($pctype = rcvtint($_REQUEST["pctype"])) == REVIEW_PRIMARY
-	     || $pctype == REVIEW_SECONDARY) {
+	     || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC) {
 	$Me->assignPaper($prow->paperId, findRrow($pcid), $pcid, $pctype, $Conf);
 	$Conf->updateRevTokensSetting(false);
     }
@@ -546,11 +546,12 @@ if ($Me->actChair($prow)) {
 	    echo tagg_select("pcs$p->contactId",
 			     array(0 => "None", REVIEW_PRIMARY => "Primary",
 				   REVIEW_SECONDARY => "Secondary",
+				   REVIEW_PC => "Optional",
 				   -1 => "Conflict"),
 			     ($p->conflictType == 0 ? $p->reviewType : -1),
 			     array("id" => "pcs$p->contactId",
 				   "class" => "fx",
-				   "size" => 4,
+				   "size" => 5,
 				   "onchange" => "selassign(this, $p->contactId)",
 				   "onclick" => "selassign(null, $p->contactId)",
 				   "onblur" => "selassign(0, $p->contactId)",

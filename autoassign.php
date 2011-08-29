@@ -162,7 +162,8 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     else if ($atype == "revadd")
 	$reviewtype = defval($_REQUEST, "revaddtype", "");
     if (($atype == "rev" || $atype == "revadd")
-	&& ($reviewtype != REVIEW_PRIMARY && $reviewtype != REVIEW_SECONDARY)) {
+	&& ($reviewtype != REVIEW_PRIMARY && $reviewtype != REVIEW_SECONDARY
+	    && $reviewtype != REVIEW_PC)) {
 	$Error["ass"] = true;
 	return $Conf->errorMsg("Malformed request!");
     }
@@ -170,6 +171,7 @@ function checkRequest(&$atype, &$reviewtype, $save) {
 	$reviewtype = defval($_REQUEST, "cleartype", "");
     if ($atype == "clear"
 	&& ($reviewtype != REVIEW_PRIMARY && $reviewtype != REVIEW_SECONDARY
+	    && $reviewtype != REVIEW_PC
 	    && $reviewtype !== "conflict" && $reviewtype !== "lead"
 	    && $reviewtype !== "shepherd")) {
 	$Error["clear"] = true;
@@ -255,7 +257,8 @@ function doAssign() {
     // clear is another special case
     if ($atype == "clear") {
 	$papers = array_fill_keys($papersel, 1);
-	if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY)
+	if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY
+	    || $reviewtype == REVIEW_PC)
 	    $q = "select paperId, contactId from PaperReview where reviewType=" . $reviewtype;
 	else if ($reviewtype === "conflict")
 	    $q = "select paperId, contactId from PaperConflict where conflictType>0 and conflictType<" . CONFLICT_AUTHOR;
@@ -505,7 +508,8 @@ function saveAssign() {
 	$Conf->qe($q, "while storing conflicts");
 	$Conf->log("stored conflicts based on preferences", $Me);
     } else if ($atype == "clear") {
-	if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY) {
+	if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY
+	    || $reviewtype == REVIEW_PC) {
 	    $result = $Conf->qe("select PCMember.contactId, paperId,
 		reviewId, reviewType, reviewModified
 		from PCMember join PaperReview using (contactId)
@@ -596,9 +600,10 @@ Assignment methods:
  <li><a href='" . hoturl("bulkassign") . "'>Upload</a></li>
 </ul>
 <hr class='hr' />
-Types of PC assignment:
-<dl><dt><img class='ass" . REVIEW_PRIMARY . "' src='images/_.gif' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
-  <dt><img class='ass" . REVIEW_SECONDARY . "' src='images/_.gif' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
+Types of PC review:
+<dl><dt><img class='ass" . REVIEW_PRIMARY . "' src='images/_.gif' alt='Primary' /> Primary</dt><dd>Mandatory, may not be delegated</dd>
+  <dt><img class='ass" . REVIEW_SECONDARY . "' src='images/_.gif' alt='Secondary' /> Secondary</dt><dd>Mandatory, may be delegated to external reviewers</dd>
+  <dt><img class='ass" . REVIEW_PC . "' src='images/_.gif' alt='PC' /> Optional</dt><dd>May be declined</dd></dl>
 </div></div>\n";
 
 
@@ -615,7 +620,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	$reviewtype = $_REQUEST["${atype}type"];
     else
 	$reviewtype = 0;
-    if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY)
+    if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY || $reviewtype == REVIEW_PC)
 	$reviewtypename = strtolower($reviewTypeName[$reviewtype]) . " assignment";
     else if ($reviewtype === "conflict" || $atype == "prefconflict")
 	$reviewtypename = "conflict assignment";
@@ -766,14 +771,14 @@ echo "</div>\n";
 echo divClass("ass"), "<h3>Action</h3>", divClass("rev");
 doRadio('a', 'rev', 'Ensure each paper has <i>at least</i>');
 echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ";
-doSelect('revtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
+doSelect('revtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
 echo "&nbsp; review(s)</div>\n";
 
 echo divClass("revadd");
 doRadio('a', 'revadd', 'Assign');
 echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ",
     "<i>additional</i>&nbsp; ";
-doSelect('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary"));
+doSelect('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
 echo "&nbsp; review(s) per paper</div>\n";
 
 // Review round
@@ -802,7 +807,7 @@ doSelect('shepherdscore', $scoreselector);
 
 echo "<div class='g'></div>", divClass("clear");
 doRadio('a', 'clear', 'Clear all &nbsp;');
-doSelect('cleartype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", "conflict" => "conflict", "lead" => "discussion lead", "shepherd" => "shepherd"));
+doSelect('cleartype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", "conflict" => "conflict", "lead" => "discussion lead", "shepherd" => "shepherd"));
 echo " &nbsp;assignments for selected papers and PC members";
 echo "</div></div>\n";
 

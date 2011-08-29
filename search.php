@@ -796,7 +796,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != "" && 
 	while (($row = edb_orow($result))) {
 	    if ($asstype && $row->conflictType > 0)
 		$conflicts[] = $row->paperId;
-	    else if ($asstype && $row->reviewType > REVIEW_PC && $asstype != $row->reviewType)
+	    else if ($asstype && $row->reviewType >= REVIEW_PC && $asstype != $row->reviewType)
 		$assigned[] = $row->paperId;
 	    else {
 		$Me->assignPaper($row->paperId, $row, $pc->contactId, $asstype, $Conf);

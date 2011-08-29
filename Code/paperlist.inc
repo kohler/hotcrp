@@ -981,6 +981,7 @@ class PaperList extends BaseList {
 	    return tagg_select("assrev$row->paperId",
 			       array(0 => "None", REVIEW_PRIMARY => "Primary",
 				     REVIEW_SECONDARY => "Secondary",
+				     REVIEW_PC => "Optional",
 				     -1 => "Conflict"), $rt,
 			       array("tabindex" => 3, "onchange" => "hiliter(this)"))
 		. "<span id='assrev" . $row->paperId . "ok'></span>";
@@ -1254,6 +1255,7 @@ class PaperList extends BaseList {
 				    "zzz3" => null,
 				    "assign" . REVIEW_PRIMARY => "Assign primary review",
 				    "assign" . REVIEW_SECONDARY => "Assign secondary review",
+				    "assign" . REVIEW_PC => "Assign optional review",
 				    "assign0" => "Unassign reviews"),
 			      defval($_REQUEST, "marktype"),
 			      array("id" => "plact${nlll}_d",

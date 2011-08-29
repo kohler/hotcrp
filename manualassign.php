@@ -127,9 +127,10 @@ Assignment methods:
 </ul>
 <hr class='hr' />\n";
 if ($kind == "a")
-    echo "Types of PC assignment:
-<dl><dt><img class='ass", REVIEW_PRIMARY, "' src='images/_.gif' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
-  <dt><img class='ass", REVIEW_SECONDARY, "' src='images/_.gif' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
+    echo "Types of PC review:
+<dl><dt><img class='ass" . REVIEW_PRIMARY . "' src='images/_.gif' alt='Primary' /> Primary</dt><dd>Mandatory, may not be delegated</dd>
+  <dt><img class='ass" . REVIEW_SECONDARY . "' src='images/_.gif' alt='Secondary' /> Secondary</dt><dd>Mandatory, may be delegated to external reviewers</dd>
+  <dt><img class='ass" . REVIEW_PC . "' src='images/_.gif' alt='PC' /> Optional</dt><dd>May be declined</dd></dl>
 <hr class='hr' />\n";
 echo "<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>\n";
 if ($kind == "a")

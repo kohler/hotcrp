@@ -198,6 +198,7 @@ function parseBulkFile($text, $filename, $type) {
 if (isset($_REQUEST['upload']) && fileUploaded($_FILES['uploadedFile'], $Conf)
     && isset($_REQUEST["t"]) && ($_REQUEST["t"] == REVIEW_PRIMARY
 				 || $_REQUEST["t"] == REVIEW_SECONDARY
+				 || $_REQUEST["t"] == REVIEW_PC
 				 || $_REQUEST["t"] == REVIEW_EXTERNAL
 				 || $_REQUEST["t"] == -CONFLICT_CHAIRMARK)) {
     if (($text = file_get_contents($_FILES['uploadedFile']['tmp_name'])) === false)
@@ -227,9 +228,10 @@ Assignment methods:
  <li><a href='", hoturl("bulkassign"), "' class='q'><strong>Upload</strong></a></li>
 </ul>
 <hr class='hr' />
-Types of PC assignment:
-<dl><dt><img class='ass", REVIEW_PRIMARY, "' src='images/_.gif' alt='Primary' /> Primary</dt><dd>Expected to review the paper themselves</dd>
-  <dt><img class='ass", REVIEW_SECONDARY, "' src='images/_.gif' alt='Secondary' /> Secondary</dt><dd>May delegate to external reviewers</dd></dl>
+Types of PC review:
+<dl><dt><img class='ass" . REVIEW_PRIMARY . "' src='images/_.gif' alt='Primary' /> Primary</dt><dd>Mandatory, may not be delegated</dd>
+  <dt><img class='ass" . REVIEW_SECONDARY . "' src='images/_.gif' alt='Secondary' /> Secondary</dt><dd>Mandatory, may be delegated to external reviewers</dd>
+  <dt><img class='ass" . REVIEW_PC . "' src='images/_.gif' alt='PC' /> Optional</dt><dd>May be declined</dd></dl>
 </div></div>";
 
 
@@ -239,6 +241,7 @@ echo "<h2 style='margin-top:1em'>Upload assignments</h2>
 Assign &nbsp;",
     tagg_select("t", array(REVIEW_PRIMARY => "primary reviews",
 			   REVIEW_SECONDARY => "secondary reviews",
+			   REVIEW_PC => "optional PC reviews",
 			   REVIEW_EXTERNAL => "external reviews",
 			   -CONFLICT_CHAIRMARK => "PC conflicts"),
 		defval($_REQUEST, "t", REVIEW_PRIMARY),
@@ -288,9 +291,9 @@ proposed reviewer's name and email address.  For example:</p>
 11	Manny Ramirez &lt;slugger@manny.com&gt;
 </pre></td></tr></table>
 
-<p>Primary and secondary reviewers must be PC members, so for those reviewer
-types you don't need a full name or email address, just some substring that
-identifies the PC member uniquely.  For example:</p>
+<p>Primary, secondary, and optional PC reviews must be PC members, so for
+those reviewer types you don't need a full name or email address, just some
+substring that identifies the PC member uniquely.  For example:</p>
 
 <table style='width:60%'><tr><td><pre class='entryexample'>
 24	sylvia
