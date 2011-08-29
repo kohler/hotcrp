@@ -310,7 +310,8 @@ function doAssign() {
 	coalesce(PaperReview.reviewType, 0) as reviewType,
 	coalesce(PaperReview.reviewSubmitted, 0) as reviewSubmitted,
 	coalesce($score, 0) as reviewScore,
-	topicInterestScore
+	topicInterestScore,
+	coalesce(PRR.contactId, 0) as refused
 	from Paper join PCMember
 	left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PCMember.contactId=PaperConflict.contactId)
 	left join PaperReviewPreference on (Paper.paperId=PaperReviewPreference.paperId and PCMember.contactId=PaperReviewPreference.contactId)
@@ -320,12 +321,14 @@ function doAssign() {
 		from PaperTopic join PCMember
 		join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId)
 		group by paperId, PCMember.contactId) as PaperTopics on (Paper.paperId=PaperTopics.paperId and PCMember.contactId=PaperTopics.contactId)
+	left join PaperReviewRefused PRR on (Paper.paperId=PRR.paperId and PCMember.contactId=PRR.contactId)
 	group by Paper.paperId, PCMember.contactId");
 
     if ($atype == "rev" || $atype == "revadd") {
 	while (($row = edb_orow($result))) {
 	    $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
-	    if ($row->conflictType > 0 || $row->reviewType > 0)
+	    if ($row->conflictType > 0 || $row->reviewType > 0
+		|| $row->refused > 0)
 		$prefs[$row->contactId][$row->paperId] = -1000001;
 	    else
 		$prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
@@ -434,8 +437,8 @@ function doAssign() {
 	$b = array();
 	$pidx = join("+", $badpids);
 	foreach ($badpids as $pid)
-	    $b[] = "<a href='" . hoturl("paper", "p=$pid&amp;list=$pidx") . "'>$pid</a>";
-	$x = ($atype == "rev" || $atype == "revadd" ? ", possibly because of some conflicts in the PC members you selected" : "");
+	    $b[] = "<a href='" . hoturl("assign", "p=$pid&amp;list=$pidx") . "'>$pid</a>";
+	$x = ($atype == "rev" || $atype == "revadd" ? ", possibly because of conflicts or previously declined reviews in the PC members you selected" : "");
 	$Conf->warnMsg("I wasn’t able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a class='nowrap' href='" . hoturl("search", "q=$pidx") . "'>list them</a>).");
     }
     if (count($assignments) == 0) {
