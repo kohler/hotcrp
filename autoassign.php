@@ -703,9 +703,7 @@ if (isset($assignments) && count($assignments) > 0) {
     foreach (array("t", "q", "a", "revaddtype", "revtype", "cleartype", "revct", "revaddct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
 	if (isset($_REQUEST[$t]))
 	    echo "<input type='hidden' name='$t' value=\"", htmlspecialchars($_REQUEST[$t]), "\" />\n";
-    foreach ($pcm as $id => $p)
-	if (isset($_REQUEST["pcs$id"]))
-	    echo "<input type='hidden' name='pcs$id' value='1' />\n";
+    echo "<input type='hidden' name='pcs' value='", join(" ", array_keys($pcsel)), "' />\n";
     for ($i = 1; $i <= 20; $i++) {
 	if (defval($_REQUEST, "bpa$i"))
 	    echo "<input type='hidden' name='bpa$i' value=\"", htmlspecialchars($_REQUEST["bpa$i"]), "\" />\n";
