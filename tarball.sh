@@ -113,6 +113,7 @@ images/_.gif
 images/GenChart.php
 images/allreviews24.png
 images/asprite.gif
+images/ass-3.png
 images/ass-2.png
 images/ass-1.png
 images/ass0.gif

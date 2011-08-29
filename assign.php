@@ -480,7 +480,8 @@ if ($Me->actChair($prow)) {
 	PaperConflict.conflictType,
 	PaperReview.reviewType,	coalesce(preference, 0) as preference,
 	coalesce(allReviews,'') as allReviews,
-	coalesce(PaperTopics.topicInterestScore,0) as topicInterestScore
+	coalesce(PaperTopics.topicInterestScore,0) as topicInterestScore,
+	coalesce(PRR.paperId,0) as refused
 	from ContactInfo
 	join PCMember using (contactId)
 	left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId)
@@ -488,6 +489,7 @@ if ($Me->actChair($prow)) {
 	left join PaperReviewPreference on (PaperReviewPreference.contactId=ContactInfo.contactId and PaperReviewPreference.paperId=$prow->paperId)
 	left join (select PaperReview.contactId, group_concat(reviewType separator '') as allReviews from PaperReview join Paper on (Paper.paperId=PaperReview.paperId and timeWithdrawn<=0) group by PaperReview.contactId) as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
 	left join (select contactId, sum(if(interest=2,2,interest-1)) as topicInterestScore from PaperTopic join TopicInterest using (topicId) where paperId=$prow->paperId group by contactId) as PaperTopics on (PaperTopics.contactId=ContactInfo.contactId)
+	left join PaperReviewRefused PRR on (PRR.paperId=$prow->paperId and PRR.contactId=ContactInfo.contactId)
 	group by email", "while looking up PC");
     $pcx = array();
     while (($row = edb_orow($result))) {
@@ -526,14 +528,20 @@ if ($Me->actChair($prow)) {
 		"<img class='ass-2' alt='(Author)' title='Author' src='", hoturlx("images/_.gif"), "' />",
 		"</td>";
 	} else {
-	    $cid = ($p->conflictType > 0 ? -1 : $p->reviewType + 0);
+	    if ($p->conflictType > 0)
+		$cid = -1;
+	    else if ($p->reviewType)
+		$cid = $p->reviewType;
+	    else
+		$cid = ($p->refused ? -3 : 0);
+	    $title = ($cid == -3 ? "' title='Review previously declined" : "");
 	    echo "<td id='ass$p->contactId' class='pctbname$cid pctbl'>";
 	    echo str_replace(' ', "&nbsp;", contactNameHtml($p));
 	    if ($p->conflictType == 0
 		&& ($p->preference || $p->topicInterestScore))
 		echo preferenceSpan($p->preference, $p->topicInterestScore);
 	    echo "</td><td class='pctbass'>";
-	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'><img class='ass$cid' id='assimg$p->contactId' src='", hoturlx("images/_.gif"), "' alt='Assignment' /><img class='next' src='", hoturlx("images/_.gif"), "' alt='&gt;' /></a>&nbsp;";
+	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'><img class='ass$cid' id='assimg$p->contactId' src='", hoturlx("images/_.gif"), $title, "' alt='Assignment' /><img class='next' src='", hoturlx("images/_.gif"), "' alt='&gt;' /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
 	    echo tagg_select("pcs$p->contactId",
 			     array(0 => "None", REVIEW_PRIMARY => "Primary",
