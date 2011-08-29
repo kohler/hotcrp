@@ -9,9 +9,10 @@ require_once("Code/papertable.inc");
 // special case: if "accept" or "refuse" is set, and "email" and "password"
 // are both set, vector through the signin page
 if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
-    && (isset($_REQUEST["accept"]) || isset($_REQUEST["refuse"]))) {
+    && (isset($_REQUEST["accept"]) || isset($_REQUEST["refuse"])
+	|| isset($_REQUEST["decline"]))) {
     $after = "";
-    foreach (array("paperId", "reviewId", "commentId", "p", "r", "c", "accept", "refuse") as $opt)
+    foreach (array("paperId", "reviewId", "commentId", "p", "r", "c", "accept", "refuse", "decline") as $opt)
 	if (isset($_REQUEST[$opt]))
 	    $after .= ($after === "" ? "" : "&") . $opt . "=" . urlencode($_REQUEST[$opt]);
     $Me->go(hoturl("index", "email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode(hoturl("review", $after))));
@@ -282,7 +283,9 @@ function refuseReview() {
     $result = $Conf->qe("delete from PaperReview where reviewId=$rrow->reviewId", $while);
     if (!$result)
 	return;
-    $reason = defval($_REQUEST, 'reason', "");
+    $reason = defval($_REQUEST, "reason", "");
+    if ($reason == "Optional explanation")
+	$reason = "";
     $result = $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($rrow->paperId, $rrow->contactId, $rrow->requestedBy, '" . sqlqtrim($reason) . "')", $while);
     if (!$result)
 	return;
@@ -307,23 +310,25 @@ function refuseReview() {
 
     $prow = null;
     confHeader();
+    $Conf->footer();
     exit;
 }
 
-if (isset($_REQUEST['refuse'])) {
+if (isset($_REQUEST["refuse"]) || isset($_REQUEST["decline"])) {
     if (!$paperTable->editrrow
 	|| (!$Me->ownReview($paperTable->editrrow) && !$Me->privChair))
-	$Conf->errorMsg("This review was not assigned to you, so you cannot refuse it.");
+	$Conf->errorMsg("This review was not assigned to you, so you can’t decline it.");
     else if ($paperTable->editrrow->reviewType >= REVIEW_SECONDARY)
-	$Conf->errorMsg("PC members cannot refuse reviews that were explicitly assigned to them.  Contact the PC chairs directly if you really cannot finish this review.");
+	$Conf->errorMsg("PC members can’t decline their primary or secondary reviews.  Contact the PC chairs directly if you really cannot finish this review.");
     else if ($paperTable->editrrow->reviewSubmitted)
-	$Conf->errorMsg("This review has already been submitted; you can't refuse it now.");
-    else if ($_REQUEST["refuse"] == "1") {
-	$Conf->confirmMsg("<p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you'd like, or just select &ldquo;Refuse review.&rdquo;</p><div class='g'></div><form method='post' action=\"" . hoturl("review", "p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId . "$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>
+	$Conf->errorMsg("This review has already been submitted; you can’t decline it now.");
+    else if (defval($_REQUEST, "refuse") == "1"
+	     || defval($_REQUEST, "decline") == "1") {
+	$Conf->confirmMsg("<p>Thank you for telling us that you cannot complete your review.  You may give a few words of explanation if you’d like, or just select “Decline review.”</p><div class='g'></div><form method='post' action=\"" . hoturl("review", "p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId . "$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>
   <input type='hidden' name='refuse' value='refuse' />
   <textarea name='reason' rows='3' cols='40'></textarea>
   <span class='sep'></span>
-  <input class='b' type='submit' value='Refuse review' />
+  <input class='b' type='submit' value='Decline review' />
   </div></form>");
     } else {
 	refuseReview();

@@ -1324,19 +1324,19 @@ $blind\n";
 
 	// refuse?
 	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY) {
-	    echo "\n<div class='revref'><a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Refuse review</a> if you are unable or unwilling to complete it</div>\n";
+	    echo "\n<div class='revref'><a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Decline review</a> if you are unable or unwilling to complete it</div>\n";
 	    // Also see $_REQUEST["refuse"] case in review.php.
 	    $Conf->footerHtml("<div id='popup_ref' class='popupc'>
-  <p>Thank you for telling us that you cannot complete your review.  You
-  may give a few words of explanation if you'd like.</p>
+  <p style='margin:0 0 0.3em'>Select “Decline review” to decline this review, and thank you for keeping us informed.</p>
   <form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
     <input type='hidden' name='refuse' value='refuse' />
-    <textarea name='reason' rows='3' cols='40'></textarea>
+    <textarea id='refusereviewreason' class='temptext' name='reason' rows='3' cols='40'>Optional explanation</textarea>
     <div class='popup_actions'>
       <button type='button' class='b' onclick=\"popup(null, 'ref', 1)\">Cancel</button>
-      &nbsp;<input class='bb' type='submit' value='Refuse review' />
+      &nbsp;<input class='bb' type='submit' value='Decline review' />
     </div>
   </div></form></div>");
+	    $Conf->footerScript("mktemptext('refusereviewreason','Optional explanation')");
 	}
 
 	// delegate?
@@ -1352,7 +1352,7 @@ $blind\n";
 		    $ndelegated++;
 
 	    if ($ndelegated == 0)
-		echo "As a secondary reviewer, you can <a href=\"", hoturl("assign", "p=$rrow->paperId$linkExtra"), "\">delegate this review to an external reviewer</a>, but if your external reviewer refuses to review the paper, you should complete the review yourself.";
+		echo "As a secondary reviewer, you can <a href=\"", hoturl("assign", "p=$rrow->paperId$linkExtra"), "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete the review yourself.";
 	    else if ($rrow->reviewNeedsSubmit == 0)
 		echo "A delegated external reviewer has submitted their review, but you can still complete your own if you'd like.";
 	    else

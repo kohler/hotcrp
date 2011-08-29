@@ -68,10 +68,10 @@ On behalf of the %CONFNAME% program committee, %OTHERCONTACT% would like to soli
 
 If you are willing to review this paper, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))%  Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%
 
-Once you've decided, please take a moment to accept or refuse this review request by using one of these links.  You may also contact %OTHERNAME% directly or refuse the request using the conference site.
+Once you've decided, please take a moment to accept or decline this review request by using one of these links.  You may also contact %OTHERNAME% directly or decline the review using the conference site.
 
       Accept: %URL(review, p=%NUMBER%&accept=1&%LOGINURLPARTS%)%
-      Refuse: %URL(review, p=%NUMBER%&refuse=1&%LOGINURLPARTS%)%
+     Decline: %URL(review, p=%NUMBER%&decline=1&%LOGINURLPARTS%)%
 
 For reference, your account information is as follows.
 
@@ -132,7 +132,7 @@ Thank you,
 - %CONFSHORTNAME% Submissions\n"),
 
      "refusereviewrequest" =>
-     array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER% refused",
+     array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER% declined",
 	   "body" => "Dear %NAME%,
 
 %OTHERCONTACT% cannot complete the review of %CONFNAME% paper #%NUMBER% that you requested.  %IF(REASON)%They gave the following reason: %REASON%  %ENDIF%You may want to find an alternate reviewer.
@@ -347,7 +347,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 	   "subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
 
-This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please \"refuse\" the review using the site or contact the person who requested the review directly.
+This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please decline the review using the site or contact the person who requested the review directly.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -372,7 +372,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 	   "subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
 
-This is a reminder from %OTHERCONTACT% to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please \"refuse\" the review using the site or contact %OTHERNAME% directly.
+This is a reminder from %OTHERCONTACT% to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please decline the review using the site or contact %OTHERNAME% directly.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
