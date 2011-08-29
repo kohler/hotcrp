@@ -460,6 +460,7 @@ if (file_exists("$ConfSitePATH/Code/mailtemplate-local.inc"))
     require_once("$ConfSitePATH/Code/mailtemplate-local.inc");
 
 // set HOTCRP_EOL
+global $Opt;
 if (!isset($Opt["postfixEOL"]) || !$Opt["postfixEOL"])
     define("HOTCRP_EOL", "\r\n");
 else if ($Opt["postfixEOL"] === true)

@@ -297,14 +297,17 @@ function refuseReview() {
 	    $Conf->qe("update PaperReview set reviewNeedsSubmit=" . ($row && $row[1] ? -1 : 1) . " where reviewType=" . REVIEW_SECONDARY . " and paperId=$rrow->paperId and contactId=$rrow->requestedBy and reviewSubmitted is null", $while);
     }
 
+    $Conf->qe("unlock tables");
+
     // send confirmation email
     require_once("Code/mailtemplate.inc");
-    $Requester = (object) array("firstName" => $rrow->reqFirstName, "lastName" => $rrow->reqLastName, "email" => $rrow->reqEmail);
-    Mailer::send("@refusereviewrequest", $prow, $Requester, $rrow, array("reason" => $reason));
+    $Requester = new Contact();
+    $Requester->lookupById((int) $rrow->reqContactId);
+    $reqprow = $Conf->paperRow($prow->paperId, $rrow->reqContactId);
+    Mailer::send("@refusereviewrequest", $reqprow, $Requester, $rrow, array("reason" => $reason));
 
     // confirmation message
-    $Conf->confirmMsg("The request for you to review paper #$prow->paperId has been removed.  Mail was sent to the person who originally requested the review.");
-    $Conf->qe("unlock tables");
+    $Conf->confirmMsg("The request that you review paper #$prow->paperId has been removed.  Mail was sent to the person who originally requested the review.");
     if ($hadToken)
 	$Conf->updateRevTokensSetting(true);
 
