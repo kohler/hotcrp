@@ -72,7 +72,7 @@ function saveAssignments($reviewer) {
     global $Conf, $Me, $kind;
 
     $while = "while saving review assignments";
-    $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperConflict write" . $Conf->tagRoundLocker($kind == "a"), $while);
+    $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperReviewRefused write, PaperConflict write" . $Conf->tagRoundLocker($kind == "a"), $while);
     if (!$result)
 	return $result;
 

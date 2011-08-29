@@ -148,7 +148,7 @@ function pcAssignments() {
     }
 
     $while = "while updating PC assignments";
-    $Conf->qe("lock tables PaperReview write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write" . $Conf->tagRoundLocker(true), $while);
+    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write" . $Conf->tagRoundLocker(true), $while);
 
     // don't record separate PC conflicts on author conflicts
     $result = $Conf->qe("select PCMember.contactId,

@@ -1356,6 +1356,8 @@ class Contact {
 	    if ($row && defval($row, "reviewToken", 0) != 0 && $type <= 0)
 		$conf->settings["rev_tokens"] = -1;
 	    $conf->log("Added $reviewTypeName[$type] reviewer " . (is_object($reviewer) ? $reviewer->email : $reviewer), $this, $paperId);
+	    if ($q[0] == "i")
+		$conf->qx("delete from PaperReviewRefused where paperId=$paperId and contactId=$reviewerContactId");
 	}
     }
 
