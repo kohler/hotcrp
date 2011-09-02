@@ -90,6 +90,7 @@ Code/header.inc
 Code/helpers.inc
 Code/ldaplogin.inc
 Code/mailtemplate.inc
+Code/mimetypes.inc
 Code/paperactions.inc
 Code/paperexpr.inc
 Code/paperlist.inc

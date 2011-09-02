@@ -87,6 +87,16 @@ $authorConflictTypes = array(0 => "No conflict", 3 => "Advisor/student",
 			     2 => "Recent collaborator", 4 => "Institutional",
 			     5 => "Personal", 6 => "Other");
 
+global $mimetypeMap;
+$mimetypeMap = array("pdf" => "application/pdf",
+		     "application/pdf" => "pdf",
+		     "ps" => "application/postscript",
+		     "application/postscript" => "ps",
+		     "ppt" => "application/vnd.ms-powerpoint",
+		     "application/vnd.ms-powerpoint" => "ppt",
+		     "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+		     "application/vnd.openxmlformats-officedocument.presentationml.presentation" => "pptx");
+
 global $OK;
 $OK = 1;
 

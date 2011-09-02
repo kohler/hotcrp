@@ -570,7 +570,8 @@ class Conference {
     //
 
     function storePDF($uploadId, $paperId, $documentType, $mimetypes = null) {
-	global $Opt;
+	global $Opt, $mimetypeMap, $mimetypeSynonyms, $mimetypeNames;
+	require_once("mimetypes.inc");
 	$while = "while storing paper in database";
 
 	if (!$uploadId
@@ -586,25 +587,34 @@ class Conference {
 	// Check if paper one of the allowed mimetypes.
 	// We prefer to look at data since MacOS browsers get this wrong.
 	if (strncmp("%PDF-", $contents, 5) == 0)
-	    $mimetype = "application/pdf";
+	    $mimetype = $mimetypeMap["pdf"];
 	else if (strncmp("%!PS-", $contents, 5) == 0)
-	    $mimetype = "application/postscript";
+	    $mimetype = $mimetypeMap["ps"];
+	else if (substr($contents, 512, 4) == "\x00\x6E\x1E\xF0")
+	    $mimetype = $mimetypeMap["ppt"];
 	else
 	    $mimetype = defval($_FILES[$uploadId], "type", "application/octet-stream");
+	if (isset($mimetypeSynonyms[$mimetype]))
+	    $mimetype = $mimetypeSynonyms[$mimetype];
+
 	if (!$mimetypes)
 	    $mimetypes = array("application/pdf");
 	if (array_search($mimetype, $mimetypes) === false) {
-	    $message = "Your uploaded file does not appear to be ";
-	    if (count($mimetypes) == 1 && $mimetypes[0] == "application/pdf")
-		$message .= "a PDF.  ";
-	    else if (count($mimetypes) == 1 && $mimetypes[0] == "application/postscript")
-		$message .= "a PostScript file.  ";
-	    else if (count($mimetypes) == 2 && $mimetypes[0] == "application/pdf" && $mimetypes[1] == "application/postscript")
-		$message .= "a PDF or PostScript file.  ";
-	    else if (count($mimetypes) > 0)
-		$message .= "a valid type (one of " . join(", ", $mimetypes) . ").  ";
+	    $x = array();
+	    foreach ($mimetypes as $mt)
+		if (isset($mimetypeNames[$mt]))
+		    $x[] = $mimetypeNames[$mt];
+		else {
+		    $x = null;
+		    break;
+		}
+	    $message = "Your uploaded file does not appear to ";
+	    if ($x)
+		$message .= "be a " . commajoin($x, "or") . ".  ";
+	    else if (count($mimetypes))
+		$message .= "have a valid type (" . commajoin($mimetypes, "or") . ").  ";
 	    else
-		$message .= "valid (internal error: there are no valid formats).  ";
+		$message .= "be valid (internal error: there are no valid formats).  ";
 	    $message .= "(Your file has MIME type &ldquo;" . htmlentities($mimetype) . "&rdquo; and starts with &ldquo;" . htmlspecialchars(substr($contents, 0, 5)) . "&rdquo;.)<br />Please convert your file to a supported type and try again.";
 	    return $this->errorMsg($message);
 	}
@@ -1795,14 +1805,11 @@ class Conference {
     //
 
     function getFileExtension(&$mimetype) {
+	global $mimetypeMap;
 	if (!isset($mimetype) || $mimetype == null || $mimetype == "")
 	    return "";
-	else if ($mimetype == "application/postscript")
-	    return ".ps";
-	else if ($mimetype == "application/pdf")
-	    return ".pdf";
-	else if ($mimetype == "text/plain")
-	    return ".txt";
+	else if (isset($mimetypeMap[$mimetype]))
+	    return "." . $mimetypeMap[$mimetype];
 	else
 	    return "";
     }
