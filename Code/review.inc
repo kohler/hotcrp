@@ -858,6 +858,9 @@ $blind\n";
 		    $this->garbageMessage($tf, $lineno, $garbage);
 		    self::tfError($tf, true, "This review form appears to be for the wrong conference!  (I was expecting \"" . htmlentities($Opt["shortName"]) . " Paper Review Form\", but found \"" . htmlentities($m[1]) . " Paper Review Form\".)", $lineno);
 		    return null;
+		} else if (preg_match('/^==\+== Begin Review/i', $line)) {
+		    if ($nfields > 0)
+			break;
 		} else if (preg_match('/^==\+== Paper #?(\d+)/i', $line, $match)) {
 		    if ($nfields > 0)
 			break;
