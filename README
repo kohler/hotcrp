@@ -22,7 +22,7 @@ Apache is preloaded on most Linux distributions.  You may need to install
 additional packages for PHP, MySQL, GD, and PEAR, such as:
 
 * Fedora Linux: php-mysql, php-pear, php-gd
-* Debian Linux: php5-common, php5-gd, php5-mysql, php-pear, 
+* Debian Linux: php5-common, php5-gd, php5-mysql, php-pear,
   libapache2-mod-php5 (or libapache-mod-php5 for Apache 1.x)
 * Ubuntu Linux: php5-common, php5-gd, php5-mysql, php-pear,
   libapache2-mod-php5 (or libapache-mod-php5 for Apache 1.x), and a package
@@ -185,5 +185,5 @@ using the web interface.
 
 License
 -------
-HotCRP is available under the Click license, a BSD-like license. See the 
+HotCRP is available under the Click license, a BSD-like license. See the
 LICENSE file for full license terms.
