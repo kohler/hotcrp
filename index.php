@@ -37,7 +37,7 @@ if ((isset($_REQUEST["email"]) && isset($_REQUEST["password"]) && isset($_REQUES
 
 function doFirstUser($msg) {
     global $Conf, $Opt, $Me;
-    $msg .= "As the first user, you have been automatically signed in and assigned system administrator privilege.";
+    $msg .= "  As the first user, you have been automatically signed in and assigned system administrator privilege.";
     if (!isset($Opt["ldapLogin"]))
 	$msg .= "  Your password is &ldquo;<tt>" . htmlspecialchars($Me->password) . "</tt>&rdquo;.  All later users will have to sign in normally.";
     $while = "while granting system administrator privilege";
@@ -68,23 +68,23 @@ function doCreateAccount() {
 
     $Me->sendAccountInfo($Conf, true, true);
     $Conf->log("Account created", $Me);
-    $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".  ";
+    $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".";
 
     // handle setup phase
     if (defval($Conf->settings, "setupPhase", false))
 	return doFirstUser($msg);
 
     if ($Conf->allowEmailTo($Me->email))
-	$msg .= "A password has been emailed to you.  Return here when you receive it to complete the registration process.  If you don't receive the email, check your spam folders and verify that you entered the correct address.";
+	$msg .= "  A password has been emailed to you.  Return here when you receive it to complete the registration process.  If you don't receive the email, check your spam folders and verify that you entered the correct address.";
     else {
 	if ($Opt['sendEmail'])
-	    $msg .= "The email address you provided seems invalid.";
+	    $msg .= "  The email address you provided seems invalid.";
 	else
-	    $msg .= "The conference system is not set up to mail passwords at this time.";
-	$msg .= "Although an account was created for you, you need the site administrator's help to retrieve your password.  The site administrator is " . htmlspecialchars($Opt["contactName"] . " <" . $Opt["contactEmail"] . ">") . ".";
+	    $msg .= "  The conference system is not set up to mail passwords at this time.";
+	$msg .= "  Although an account was created for you, you need the site administrator's help to retrieve your password.  The site administrator is " . htmlspecialchars($Opt["contactName"] . " <" . $Opt["contactEmail"] . ">") . ".";
     }
     if (isset($_REQUEST["password"]) && $_REQUEST["password"] != "")
-	$msg .= "Note that the password you supplied on the login screen was ignored.";
+	$msg .= "  Note that the password you supplied on the login screen was ignored.";
     $Conf->confirmMsg($msg);
     return null;
 }
