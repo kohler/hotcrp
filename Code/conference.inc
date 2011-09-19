@@ -776,7 +776,7 @@ class Conference {
 	header("Content-Type: $row->mimetype");
 	header("Content-Description: PHP Generated Data");
 	$name = $this->downloadPaperName($paperId, $row->mimetype, $documentType);
-	header("Content-Disposition: " . ($saveit ? "attachment" : "inline") . "; filename=$name");
+	header("Content-Disposition: " . ($saveit || $row->mimetype != "application/pdf" ? "attachment" : "inline") . "; filename=$name");
 	// reduce likelihood of XSS attacks in IE
 	header("X-Content-Type-Options: nosniff");
 	if (!$zlib_output_compression)
