@@ -803,7 +803,7 @@ class PaperTable {
 	    echo authorTable($aus, $Me);
 	}
 	if ($editMode || ($editMode === false && ($this->editable || $Me->privChair)))
-	    echo "(<a href='" . hoturl("contactauthors", "p=$prow->paperId") . "'>Edit&nbsp;contacts</a>)";
+	    echo "<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("contactauthors", "p=$prow->paperId") . "'>Edit&nbsp;contacts</a>";
 	echo "</div>\n\n";
     }
 
