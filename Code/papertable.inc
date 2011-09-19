@@ -338,69 +338,73 @@ class PaperTable {
 	echo join("<div class='g'></div>\n", $out);
     }
 
-    function echoDocumentUploadRow($prow, $documentType, $documentTypeName, $documentTypeHint, $storageId, $flags) {
-	global $Conf, $Me, $Opt;
-	$maxsize = " <span class='papfnh'>(max size "
-	    . ini_get("upload_max_filesize") . "B)</span>";
+    function echoDocumentUploadRow($prow, $opt, $storageId, $flags) {
+	global $Conf, $Me, $Opt, $mimetypeMap;
 
+	$documentType = $opt->optionId;
+	$optionType = $opt->type;
+	$banal = $Conf->setting("sub_banal");
+
+	$filetypes = array();
+	$accepts = array();
 	if (defval($Opt, "noPapers")) {
-	    $filetype = ($documentType != DOCUMENT_SUBMISSION ? null : "Status");
-	    $maxsize = "";
-	} else if (defval($Opt, "disablePS"))
-	    $filetype = "PDF";
-	else if (defval($Opt, "disablePDF"))
-	    $filetype = "PostScript file";
-	else
-	    $filetype = "PDF/PostScript file";
-	if ($filetype !== null)
-	    echo $this->papt("paper", ($documentTypeName ? $documentTypeName . " " : "") . $filetype . $maxsize);
-	if ($documentTypeHint)
-	    echo "<div class='paphint'>", $documentTypeHint, "</div>";
+	    if ($documentType == DOCUMENT_SUBMISSION)
+		echo $this->papt("paper", "Status");
+	} else {
+	    if ($optionType !== null || !defval($Opt, "disablePDF")) {
+		$filetypes[] = "PDF";
+		$accepts[] = $mimetypeMap["pdf"];
+	    }
+	    if ($optionType === null && !defval($Opt, "disablePS")) {
+		$filetypes[] = "PostScript file";
+		$accepts[] = $mimetypeMap["ps"];
+	    }
+	    if (count($filetypes))
+		echo $this->papt("paper", htmlspecialchars($opt->optionName) . " <span class='papfnh'>(" . commajoin($filetypes, "or") . ", max size " . ini_get("upload_max_filesize") . "B)</span>");
+	}
+	if (isset($opt->description) && $opt->description)
+	    echo "<div class='paphint'>", $opt->description, "</div>";
 	echo "<div class='papv'>";
 
 	// current version, if any
-	$d = "";
 	$doc = null;
-	if ($prow && $Me->canDownloadPaper($prow) && $storageId > 1) {
-	    $doc = paperDocumentData($prow, $documentType, $storageId);
-	    if ($doc) {
-		$d .= "<td class='nowrap'>" . documentDownload($doc) . "</td>";
-		if ($doc->mimetype == "application/pdf"
-		    && $Conf->setting("sub_banal"))
-		    $d .= "<td><span class='sep'></span></td><td><input class='b' type='submit' name='checkformat$documentType' value='Check format' onclick='return docheckformat($documentType)' /></td>";
-		if (($stamps = $this->pdfStamps($doc)))
-		    $d .= "<td><span class='sep'></span></td><td>$stamps</td>";
-	    }
+	if ($prow && $Me->canDownloadPaper($prow) && $storageId > 1
+	    && (($doc = paperDocumentData($prow, $documentType, $storageId)))) {
+	    echo "<table id='current_$documentType'><tr>",
+		"<td class='nowrap'>", documentDownload($doc), "</td>";
+	    if ($doc->mimetype == "application/pdf" && $banal)
+		echo "<td><span class='sep'></span></td><td><a href='javascript:docheckformat($documentType)'>Check format</a></td>";
+	    if (($stamps = $this->pdfStamps($doc)))
+		echo "<td><span class='sep'></span></td><td>$stamps</td>";
+	    echo "</tr></table>\n";
 	}
-	if ($d)
-	    echo "<table><tr>", $d, "</tr></table>\n";
 
 	// uploader
 	$uploader = "";
-	if (!defval($Opt, "noPapers")) {
-	    $accepts = array();
-	    if (!defval($Opt, "disablePDF"))
-		$accepts[] = "application/pdf";
-	    if (!defval($Opt, "disablePS"))
-		$accepts[] = "application/postscript";
-	    if ($documentType == DOCUMENT_SUBMISSION || $documentType == DOCUMENT_FINAL)
-		$inputid = "paperUpload";
-	    else
-		$inputid = "opt" . $documentType;
-	    $uploader = ($doc ? "<div class='g'></div>\nUpload replacement $filetype:" : "Upload:")
-		. "&nbsp; <input id='$inputid' class='textlite' type='file' name='$inputid' accept='"
-		. join(", ", $accepts)
-		. "' size='30' onchange='hiliter(this)";
+	if (count($accepts)) {
+	    $uploader = "";
+	    if ($doc)
+		$uploader .= "<div class='g'></div><div id='replacement_$documentType' class='foldo'><span class='fx'>Replace:&nbsp; ";
+	    $inputid = ($optionType ? "opt" . $documentType : "paperUpload");
+	    $uploader .= "<input id='$inputid' type='file' name='$inputid' accept='" . join(", ", $accepts) . "' size='30' onchange='hiliter(this)";
 	    if ($documentType == DOCUMENT_SUBMISSION)
 		$uploader .= ";fold(\"isready\",0)";
 	    if ($flags & self::ENABLESUBMIT)
 		$uploader .= ";form.submit.disabled=false";
 	    $uploader .= "' />";
+	    if ($doc && $optionType)
+		$uploader .= " &nbsp;<span class='barsep'>|</span>&nbsp; "
+		    . "<a id='remover_$documentType' href='javascript:doremovedocument(\"$documentType\")'>Delete</a>";
+	    $uploader .= "</span>";
+	    if ($doc && $optionType)
+		$uploader .= "<span class='fn'><em>Option marked for deletion</em></span>"
+		    . "<input id='remove_$documentType' type='hidden' name='remove_$documentType' value='' />";
+	    if ($doc)
+		$uploader .= "</div>";
 	}
 
-	if ($prow && $storageId > 1
-	    && defval($prow, "mimetype", "application/pdf") == "application/pdf"
-	    && $Conf->setting("sub_banal")) {
+	if ($prow && $storageId > 1 && $banal
+	    && defval($prow, "mimetype", "application/pdf") == "application/pdf") {
 	    echo "<div id='foldcheckformat$documentType' class='foldc'><div id='checkformatform${documentType}result' class='fx'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
 	    $Conf->footerHtml("<form id='checkformatform$documentType' class='fold7o' method='post' action='" . hoturl("paper", "p=$prow->paperId&amp;dt=$documentType") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform$documentType\")'><input type='hidden' name='checkformat' value='1' /></form>");
 	}
@@ -443,14 +447,14 @@ class PaperTable {
 	if ($prow && $prow->outcome > 0
 	    && ($Me->canSubmitFinalPaper($prow, $whyNot, true)
 		|| defval($whyNot, "deadline") == "final_done")) {
-	    $this->echoDocumentUploadRow($prow, DOCUMENT_FINAL, "Final version", null, $prow->finalPaperStorageId, $flags);
+	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DOCUMENT_FINAL, "optionName" => "Final version", "type" => null), $prow->finalPaperStorageId, $flags);
 	    foreach (paperOptions() as $id => $o)
 		if ($o->type == OPTIONTYPE_FINALPDF) {
 		    $match = preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m);
-		    $this->echoDocumentUploadRow($prow, $id, htmlspecialchars($o->optionName), $o->description, $match ? $m[1] : 0, $flags);
+		    $this->echoDocumentUploadRow($prow, $o, $match ? $m[1] : 0, $flags);
 		}
 	} else
-	    $this->echoDocumentUploadRow($prow, DOCUMENT_SUBMISSION, null, null, $prow->paperStorageId, $flags);
+	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DOCUMENT_SUBMISSION, "optionName" => "Submission", "type" => null), $prow->paperStorageId, $flags);
     }
 
     function paptabAbstract($prow) {
@@ -930,38 +934,8 @@ class PaperTable {
 		    echo "<div class='papv'><input type='text' class='textlite' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
 		else
 		    echo "<div class='papv'><input type='text' class='textlite papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";
-	    } else {
-		echo $this->papt($optid, htmlspecialchars($o->optionName)
-				 . " <span class='papfnh'>(PDF, max size "
-				 . ini_get("upload_max_filesize")
-				 . "B)</span>");
-		if ($o->description)
-		    echo "<div class='paphint'>", $o->description, "</div>";
-		echo "<div class='papv'>";
-		$doc = null;
-		if (defval($optsel, $o->optionId)) {
-		    $doc = paperDocumentData($prow, $o->optionId, $optsel[$o->optionId]);
-		    if ($doc) {
-			$d = "<td class='nowrap'>" . documentDownload($doc) . "</td>";
-			if (($stamps = $this->pdfStamps($doc)))
-			    $d .= "<td><span class='sep'></span></td><td>$stamps</td>";
-			echo "<table id='current_$optid'><tr>", $d,
-			    "</tr></table>\n<div class='g'></div>\n",
-			    "<div id='replacement_$optid' class='foldo'>",
-			    "<span class='fx'>";
-		    }
-		}
-		echo ($doc ? "Upload replacement:" : "Upload:"),
-		    "&nbsp; <input class='textlite' type='file' name='$optid' accept='application/pdf' size='30' onchange='hiliter(this)' />";
-		if ($doc) {
-		    echo " &nbsp;<span class='barsep'>|</span>&nbsp; ",
-			"<button type='button' class='b' onclick='doremovedocument(this, \"$optid\")' />Remove option</button>",
-			"</span><span class='fn'><em>This option has been marked for removal.</em></span>",
-			"<input id='remove_$optid' type='hidden' name='remove_$optid' value='' />",
-			"</div>";
-		}
-		echo "</div>\n\n";
-	    }
+	    } else
+		$this->echoDocumentUploadRow($prow, $o, defval($optsel, $o->optionId), 0);
 	}
     }
 

@@ -899,8 +899,8 @@ Follow these steps to prepare to accept paper submissions.
 
 <li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Set
   up the automated format checker (optional).</a></strong> This adds a
-  “Check format” button to the Edit Paper screen.
-  Clicking the button checks the paper for formatting errors, such as going
+  “Check format” link to the Edit Paper screen.
+  Clicking the link checks the paper for formatting errors, such as going
   over the page limit.  Papers with formatting errors may still be submitted,
   since the checker itself can make mistakes, but the automated checker leaves
   cheating authors no excuse.</p></li>

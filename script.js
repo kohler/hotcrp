@@ -1158,7 +1158,7 @@ function docheckpaperstillready() {
 	return true;
 }
 
-function doremovedocument(button, name) {
+function doremovedocument(name) {
     var e = $$("remove_" + name), estk = [], tn, i;
     if (e) {
 	e.value = 1;
@@ -1175,7 +1175,7 @@ function doremovedocument(button, name) {
 	    }
 	}
 	fold("replacement_" + name);
-	hiliter(button);
+	hiliter($$("remover_" + name));
     }
 }
 
