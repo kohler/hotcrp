@@ -569,7 +569,7 @@ class Conference {
     // Paper storage
     //
 
-    function storePDF($uploadId, $paperId, $documentType, $mimetypes = null) {
+    function storePDF($uploadId, $paperId, $documentType) {
 	global $Opt, $mimetypeMap, $mimetypeSynonyms, $mimetypeNames;
 	require_once("mimetypes.inc");
 	$while = "while storing paper in database";
@@ -597,8 +597,7 @@ class Conference {
 	if (isset($mimetypeSynonyms[$mimetype]))
 	    $mimetype = $mimetypeSynonyms[$mimetype];
 
-	if (!$mimetypes)
-	    $mimetypes = array("application/pdf");
+	list($mimetypes, $accepts) = documentMimetypes($documentType);
 	if (array_search($mimetype, $mimetypes) === false) {
 	    $x = array();
 	    foreach ($mimetypes as $mt)
@@ -655,13 +654,7 @@ class Conference {
 	global $ConfSiteSuffix, $Opt;
 	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
 
-	$mimetypes = array();
-	if (!defval($Opt, "disablePDF"))
-	    $mimetypes[] = "application/pdf";
-	if (!defval($Opt, "disablePS"))
-	    $mimetypes[] = "application/postscript";
-
-	$doc = $this->storePDF($uploadId, $paperId, $final ? DOCUMENT_FINAL : DOCUMENT_SUBMISSION, $mimetypes);
+	$doc = $this->storePDF($uploadId, $paperId, $final ? DOCUMENT_FINAL : DOCUMENT_SUBMISSION);
 	if (!$doc)
 	    return false;
 

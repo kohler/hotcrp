@@ -236,7 +236,8 @@ function requestSameAsPaper($prow) {
 	    } else if ($t == OPTIONTYPE_TEXT) {
 		if (simplifyWhitespace($got) != $row[3])
 		    return false;
-	    } else if ($t == OPTIONTYPE_PDF || $t == OPTIONTYPE_FINALPDF) {
+	    } else if ($t == OPTIONTYPE_PDF || $t == OPTIONTYPE_FINALPDF
+		       || $t == OPTIONTYPE_SLIDES || $t == OPTIONTYPE_FINALSLIDES) {
 		if (fileUploaded($_FILES["opt$row[0]"], $Conf)
 		    || defval($_REQUEST, "remove_opt$row[0]"))
 		    return false;
@@ -325,15 +326,15 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    }
 	} else if ($opt->type == OPTIONTYPE_TEXT)
 	    $_REQUEST[$oname] = simplifyWhitespace($v);
-	else if ($opt->type == OPTIONTYPE_PDF
-		 || $opt->type == OPTIONTYPE_FINALPDF) {
+	else if ($opt->isDocument) {
 	    unset($_REQUEST[$oname]);
-	    if ($opt->type != OPTIONTYPE_FINALPDF || $isSubmitFinal) {
+	    if (!$opt->isFinal || $isSubmitFinal) {
 		if (fileUploaded($_FILES[$oname], $Conf))
 		    uploadOption($opt);
 		else if (!defval($_REQUEST, "remove_opt" . $opt->optionId))
 		    $no_delete_options[] = $opt->optionId;
-	    }
+	    } else
+		unset($_REQUEST["remove_opt" . $opt->optionId]);
 	}
     }
 
@@ -371,9 +372,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    if (fileUploaded($_FILES["paperUpload"], $Conf))
 		uploadPaper($isSubmitFinal);
 	    foreach (paperOptions() as $o)
-		if (($o->type == OPTIONTYPE_PDF
-		     || $o->type == OPTIONTYPE_FINALPDF)
-		    && isset($_REQUEST["opt$o->optionId"]))
+		if ($o->isDocument && isset($_REQUEST["opt$o->optionId"]))
 		    $Conf->qe("insert into PaperOption (paperId, optionId, value, data) values ($prow->paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null) on duplicate key update value=VALUES(value)", "while uploading option PDF");
 	}
 	return false;
@@ -472,9 +471,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	// update PaperStorage.paperId for newly registered papers' PDF uploads
 	if ($newPaper)
 	    foreach (paperOptions() as $o)
-		if (($o->type == OPTIONTYPE_PDF
-		     || $o->type == OPTIONTYPE_FINALPDF)
-		    && isset($_REQUEST["opt$o->optionId"]))
+		if ($o->isDocument && isset($_REQUEST["opt$o->optionId"]))
 		    $Conf->qe("update PaperStorage set paperId=$paperId where paperStorageId=" . $_REQUEST["opt$o->optionId"], $while);
     }
 

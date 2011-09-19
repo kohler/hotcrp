@@ -511,7 +511,8 @@ function doCleanOptionValues($id) {
     $optvt = cvtint(defval($_REQUEST, "optvt$id", 0));
     if (($optvt != OPTIONTYPE_CHECKBOX && $optvt != OPTIONTYPE_SELECTOR
 	 && $optvt != OPTIONTYPE_NUMERIC && $optvt != OPTIONTYPE_TEXT
-	 && $optvt != OPTIONTYPE_PDF && $optvt != OPTIONTYPE_FINALPDF)
+	 && $optvt != OPTIONTYPE_PDF && $optvt != OPTIONTYPE_FINALPDF
+	 && $optvt != OPTIONTYPE_SLIDES && $optvt != OPTIONTYPE_FINALSLIDES)
 	|| ($Conf->sversion < 27 && $optvt > 1))
 	$optvt = $_REQUEST["optvt$id"] = 0;
     if ($optvt == OPTIONTYPE_SELECTOR) {
@@ -528,7 +529,8 @@ function doCleanOptionValues($id) {
     if ($optvt == OPTIONTYPE_FINALPDF) {
 	$_REQUEST["optp$id"] = 1;
 	$_REQUEST["optdt$id"] = 0;
-    }
+    } else if ($optvt == OPTIONTYPE_FINALSLIDES)
+	$_REQUEST["optp$id"] = 1;
 
     $pcview = cvtint(defval($_REQUEST, "optp$id", 0));
     $_REQUEST["optp$id"] = min(max($pcview, 0), 2);
@@ -1346,23 +1348,33 @@ function doOptGroupOption($o) {
 	    "</div></div></td>";
     }
 
-    echo "</tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2o'><tr>";
+    echo "</tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2o fold3o'><tr>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
 	decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
     $oval = $o->optionValues;
     $optvt = (count($Error) > 0 ? defval($_REQUEST, "optvt$id", 0) : $o->type);
-    $otypes = array(OPTIONTYPE_CHECKBOX => "Checkbox",
-		    OPTIONTYPE_SELECTOR => "Selector");
+    $finalOptions = $Conf->sversion >= 28
+	&& ($Conf->collectFinalPapers() || $optvt >= OPTIONTYPE_FINALPDF);
+
+    $otypes = array();
+    if ($finalOptions)
+	$otypes["xxx1"] = array("optgroup", "Options for submissions");
+    $otypes[OPTIONTYPE_CHECKBOX] = "Checkbox";
+    $otypes[OPTIONTYPE_SELECTOR] = "Selector";
     if ($Conf->sversion >= 27) {
 	$otypes[OPTIONTYPE_NUMERIC] = "Numeric";
 	$otypes[OPTIONTYPE_TEXT] = "Text";
     }
-    if ($Conf->sversion >= 28)
+    if ($Conf->sversion >= 28) {
 	$otypes[OPTIONTYPE_PDF] = "PDF";
-    if ($Conf->sversion >= 28
-	&& ($Conf->collectFinalPapers() || $optvt == OPTIONTYPE_FINALPDF))
-	$otypes[OPTIONTYPE_FINALPDF] = "Final version PDF";
+	$otypes[OPTIONTYPE_SLIDES] = "Slides";
+    }
+    if ($finalOptions) {
+	$otypes["xxx2"] = array("optgroup", "Options for accepted papers");
+	$otypes[OPTIONTYPE_FINALPDF] = "Alternate final version";
+	$otypes[OPTIONTYPE_FINALSLIDES] = "Final slides";
+    }
     echo tagg_select("optvt$id", $otypes, $optvt, array("onchange" => "doopttype(this)", "id" => "optvt$id")),
 	"</div></div></td>";
     $Conf->footerScript("doopttype(\$\$('optvt$id'),true)");
@@ -1388,7 +1400,7 @@ function doOptGroupOption($o) {
     }
 
     if ($Conf->sversion >= 38) {
-	echo "<td class='pad fn2'><div class='f-i'><div class='f-c'>",
+	echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
 	    decorateSettingName("optdt$id", "Display"), "</div><div class='f-e'>";
 	$optdt = (count($Error) > 0 ? defval($_REQUEST, "optdt$id", 0) : $o->displayType);
 	echo tagg_select("optdt$id", array("Group with other options", "Display separately"), $optdt,
@@ -1723,7 +1735,7 @@ function doDecGroup() {
     doDateRow("final_done", "Hard deadline", null, "lxcaption");
     doGraceRow("final_grace", "Grace period", "lxcaption");
     echo "</table><div class='gs'></div>",
-	"<small>To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Final version PDF” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</small>",
+	"<small>To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</small>",
 	"</div></td></tr></table>\n\n";
     $Conf->footerScript("fold('final',!\$\$('cbfinal_open').checked)");
 }

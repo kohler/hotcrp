@@ -30,6 +30,7 @@ class PaperTable {
     var $watchCheckbox;
     var $initial;
     var $entryMatches;
+    var $canUploadFinal;
 
     function PaperTable($prow) {
 	global $Conf, $Me;
@@ -326,7 +327,9 @@ class PaperTable {
 
 	$documentType = $opt->optionId;
 	$optionType = $opt->type;
-	$banal = $Conf->setting("sub_banal");
+	$banal = $Conf->setting("sub_banal")
+	    && $optionType != OPTIONTYPE_SLIDES
+	    && $optionType != OPTIONTYPE_FINALSLIDES;
 
 	$filetypes = array();
 	$accepts = array();
@@ -334,14 +337,7 @@ class PaperTable {
 	    if ($documentType == DOCUMENT_SUBMISSION)
 		echo $this->papt("paper", "Status");
 	} else {
-	    if ($optionType !== null || !defval($Opt, "disablePDF")) {
-		$filetypes[] = "PDF";
-		$accepts[] = $mimetypeMap["pdf"];
-	    }
-	    if ($optionType === null && !defval($Opt, "disablePS")) {
-		$filetypes[] = "PostScript file";
-		$accepts[] = $mimetypeMap["ps"];
-	    }
+	    list($accepts, $filetypes) = documentMimetypes($documentType, $opt);
 	    if (count($filetypes))
 		echo $this->papt("paper", htmlspecialchars($opt->optionName) . " <span class='papfnh'>(" . commajoin($filetypes, "or") . ", max size " . ini_get("upload_max_filesize") . "B)</span>");
 	}
@@ -369,7 +365,10 @@ class PaperTable {
 	    if ($doc)
 		$uploader .= "<div class='g'></div><div id='replacement_$documentType' class='foldo'><span class='fx'>Replace:&nbsp; ";
 	    $inputid = ($optionType ? "opt" . $documentType : "paperUpload");
-	    $uploader .= "<input id='$inputid' type='file' name='$inputid' accept='" . join(", ", $accepts) . "' size='30' onchange='hiliter(this)";
+	    $uploader .= "<input id='$inputid' type='file' name='$inputid'";
+	    if (count($accepts) == 1)
+		$uploader .= " accept='" . $accepts[0] . "'";
+	    $uploader .= " size='30' onchange='hiliter(this)";
 	    if ($documentType == DOCUMENT_SUBMISSION)
 		$uploader .= ";fold(\"isready\",0)";
 	    if ($flags & self::ENABLESUBMIT)
@@ -427,9 +426,7 @@ class PaperTable {
 
     function echoUploadRow($prow, $flags) {
 	global $Me;
-	if ($prow && $prow->outcome > 0
-	    && ($Me->canSubmitFinalPaper($prow, $whyNot, true)
-		|| defval($whyNot, "deadline") == "final_done")) {
+	if ($this->canUploadFinal) {
 	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DOCUMENT_FINAL, "optionName" => "Final version", "type" => null), $prow->finalPaperStorageId, $flags);
 	    foreach (paperOptions() as $id => $o)
 		if ($o->type == OPTIONTYPE_FINALPDF) {
@@ -673,7 +670,6 @@ class PaperTable {
 		$show_on = true;
 		$on = htmlspecialchars($o->optionName);
 		$ox = "";
-		$isdocument = $o->type == OPTIONTYPE_PDF;
 		if ($o->type == OPTIONTYPE_CHECKBOX)
 		    $ox = true;
 		else if ($o->type == OPTIONTYPE_SELECTOR) {
@@ -691,11 +687,15 @@ class PaperTable {
 		    }
 		    if ($optdata[$o->optionId] != "")
 			$ox = htmlspecialchars($optdata[$o->optionId]);
-		} else if ($isdocument && $ov) {
+		} else if ($o->isDocument && $ov) {
 		    $show_on = false;
-		    /* make fake document */
-		    $doc = (object) array("paperId" => $prow->paperId, "mimetype" => "application/pdf", "documentType" => $o->optionId);
-		    $ox = documentDownload($doc, "sdlimg", $on);
+		    if ($o->type == OPTIONTYPE_PDF)
+			/* make fake document */
+			$doc = (object) array("paperId" => $prow->paperId, "mimetype" => "application/pdf", "documentType" => $o->optionId);
+		    else
+			$doc = paperDocumentData($prow, $o->optionId, $ov);
+		    if ($doc)
+			$ox = documentDownload($doc, "sdlimg", $on);
 		}
 
 		if ($ox == "")
@@ -714,7 +714,7 @@ class PaperTable {
 			$optionhtml[] = $on . ": <span class='optvalue'>" . $ox . "</span><br />\n";
 		    else
 			$optionhtml[] = $ox . "<br />\n";
-		    $ndocuments += $isdocument;
+		    $ndocuments += $o->isDocument ? 1 : 0;
 		}
 	    }
 
@@ -889,7 +889,8 @@ class PaperTable {
 	    $optsel[$m[1][$i]] = $m[2][$i];
 	$optdata = null;
 	foreach ($opt as $o) {
-	    if ($o->type == OPTIONTYPE_FINALPDF)
+	    if ($o->type == OPTIONTYPE_FINALPDF
+		|| ($o->isFinal && !$this->canUploadFinal))
 		continue;
 	    $optid = "opt$o->optionId";
 	    if ($this->useRequest)
@@ -912,7 +913,7 @@ class PaperTable {
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
 		echo "<div class='papv'></div>\n\n";
-	    } else if ($o->type < OPTIONTYPE_PDF) {
+	    } else if (!$o->isDocument) {
 		echo $this->papt($optid, htmlspecialchars($o->optionName));
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
@@ -1581,6 +1582,9 @@ class PaperTable {
 	if ($this->editable) {
 	    $spacer = "<div class='g'></div>\n\n";
 	    echo $form, "<div class='aahc'>";
+	    $this->canUploadFinal = $prow && $prow->outcome > 0
+		&& ($Me->canSubmitFinalPaper($prow, $whyNot, true)
+		    || defval($whyNot, "deadline") == "final_done");
 
 	    if (($m = $this->editMessage()))
 		echo $m, $spacer;

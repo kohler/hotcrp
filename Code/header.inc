@@ -63,8 +63,10 @@ define("OPTIONTYPE_CHECKBOX", 0);
 define("OPTIONTYPE_SELECTOR", 1); /* see also script.js:doopttype */
 define("OPTIONTYPE_NUMERIC", 2);
 define("OPTIONTYPE_TEXT", 3);
-define("OPTIONTYPE_PDF", 4);
+define("OPTIONTYPE_PDF", 4);	/* order matters */
+define("OPTIONTYPE_SLIDES", 5);
 define("OPTIONTYPE_FINALPDF", 100);
+define("OPTIONTYPE_FINALSLIDES", 101);
 
 global $rf;
 $rf = null;

@@ -1148,6 +1148,8 @@ class PaperList extends BaseList {
 		foreach (paperOptions() as $id => $o)
 		    if ($o->type == OPTIONTYPE_FINALPDF)
 			$sel_opt["opt-" . $o->optionAbbrev] = htmlspecialchars($o->optionName) . " papers";
+		    else if ($o->type == OPTIONTYPE_FINALSLIDES)
+			$sel_opt["opt-" . $o->optionAbbrev] = htmlspecialchars(pluralx($o->optionName, 2));
 		$sel_opt["paper"] = "Submitted papers";
 	    } else
 		$sel_opt["paper"] = "Papers";

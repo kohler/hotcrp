@@ -582,12 +582,14 @@ function documentDownload($data, $dlimg_class = "dlimg", $text = null) {
     else {
 	$x = "<a href=\"$p\" class='nowrap'>";
 	$sp = "";
-	$text = $text ? $text : "View";
+	$text = $text ? $text : "Download";
     }
     if ($text)
 	$x .= $sp . $text;
     if (defval($data, "size", 0) > 0)
-	$x .= "&nbsp;<span class='dlsize'>" . round($data->size/1024) . "kB</span>";
+	$x .= "&nbsp;<span class='dlsize'>" . ($text ? "(" : "")
+	    . round($data->size/1024) . "kB"
+	    . ($text ? ")" : "") . "</span>";
     return $x . "</a>";
 }
 
@@ -629,6 +631,32 @@ function paperDocumentData($prow, $documentType = DOCUMENT_SUBMISSION, $paperSto
     return $doc;
 }
 
+function documentMimetypes($documentType, $opt = null) {
+    global $Opt, $mimetypeMap;
+    if ($documentType <= 0)
+	$optionType = null;
+    else if (!$opt && !($opt = paperOptions($documentType)))
+	return null;
+    else
+	$optionType = $opt->type;
+    $names = $mimetypes = array();
+    if ($optionType !== null || !defval($Opt, "disablePDF")) {
+	$names[] = "PDF";
+	$mimetypes[] = $mimetypeMap["pdf"];
+    }
+    if ($optionType === null && !defval($Opt, "disablePS")) {
+	$names[] = "PostScript file";
+	$mimetypes[] = $mimetypeMap["ps"];
+    }
+    if ($optionType == OPTIONTYPE_SLIDES
+	|| $optionType == OPTIONTYPE_FINALSLIDES) {
+	$names[] = "PowerPoint file";
+	$mimetypes[] = $mimetypeMap["ppt"];
+	$mimetypes[] = $mimetypeMap["pptx"];
+    }
+    return array($mimetypes, $names);
+}
+
 function paperDownload($prow, $final = false) {
     global $Conf, $Me;
     // don't let PC download papers in progress
@@ -665,8 +693,7 @@ function documentTypeName($documentType) {
 	return "paper";
     if ($documentType == DOCUMENT_FINAL)
 	return "final";
-    if (($o = paperOptions($documentType))
-	&& ($o->type == OPTIONTYPE_PDF || $o->type == OPTIONTYPE_FINALPDF))
+    if (($o = paperOptions($documentType)) && $o->isDocument)
 	return $o->optionAbbrev;
     return null;
 }
@@ -1734,8 +1761,9 @@ function paperOptions($id = null) {
     global $Conf;
     if ($Conf->setting("paperOption") <= 0 || $Conf->sversion <= 0)
 	return array();
-    if (!isset($_SESSION["paperOption"]) || !is_array($_SESSION["paperOption"])
-	|| $_SESSION["paperOption"][0] < $Conf->setting("paperOption")) {
+    $svar = defval($_SESSION, "paperOption", null);
+    if (!$svar || !is_array($svar) || count($svar) < 3 || $svar[2] < 2
+	|| $svar[0] < $Conf->setting("paperOption")) {
 	$opt = array();
 	$orderby = ($Conf->sversion >= 29 ? "sortOrder, " : "") . "optionName";
 	$result = $Conf->q("select * from OptionType order by $orderby");
@@ -1755,12 +1783,13 @@ function paperOptions($id = null) {
 	    $row->sortOrder = $order++;
 	    if (!isset($row->displayType))
 		$row->displayType = 0;
+	    $row->isDocument = $row->type >= OPTIONTYPE_PDF;
+	    $row->isFinal = $row->type >= OPTIONTYPE_FINALPDF;
 	    $opt[$row->optionId] = $row;
 	}
-	$_SESSION["paperOption"] = array($Conf->setting("paperOption"), $opt);
+	$_SESSION["paperOption"] = $svar = array($Conf->setting("paperOption"), $opt, 2);
     }
-    $opts = $_SESSION["paperOption"][1];
-    return $id ? defval($opts, $id, null) : $opts;
+    return $id ? defval($svar[1], $id, null) : $svar[1];
 }
 
 function scoreCounts($text, $max = null) {
@@ -2004,10 +2033,11 @@ function tagg_select($name, $opt, $selected=null, $extra=null) {
     $x .= ">";
     if ($selected === null || !isset($opt[$selected]))
 	$selected = key($opt);
+    $optgroup = "";
     foreach ($opt as $value => $text)
 	if ($text === null)
 	    $x .= "<option disabled='disabled'></option>";
-	else {
+	else if (!is_array($text)) {
 	    $x .= "<option value='$value'";
 	    if (strcmp($value, $selected) == 0)
 		$x .= " selected='selected'";
@@ -2015,8 +2045,11 @@ function tagg_select($name, $opt, $selected=null, $extra=null) {
 		&& defval($extra["disabled"], $value))
 		$x .= " disabled='disabled'";
 	    $x .= ">" . $text . "</option>";
+	} else if ($text[0] == "optgroup") {
+	    $x .= $optgroup . "<optgroup label='" . $text[1] . "'>";
+	    $optgroup = "</optgroup>";
 	}
-    return $x . "</select>";
+    return $x . $optgroup . "</select>";
 }
 
 function tagg_cbox($type, $bottom, $classextra="") {
