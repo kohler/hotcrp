@@ -567,18 +567,25 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
     return $x;
 }
 
-function documentDownload($data, $dlimg_class = "dlimg") {
+function documentDownload($data, $dlimg_class = "dlimg", $text = null) {
     global $Conf;
     $mimetype = defval($data, "mimetype", "");
     $documentType = defval($data, "documentType", DOCUMENT_SUBMISSION);
     $p = $Conf->makeDownloadPath($data->paperId, $mimetype, $documentType);
     $finalsuffix = ($documentType < 0 ? "f" : "");
+    $sp = "&nbsp;";
+    $imgsize = ($dlimg_class[0] == "s" ? "" : "24");
     if ($mimetype == "application/postscript")
-	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("postscript${finalsuffix}24.png", "[PS]", null, $dlimg_class);
+	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("postscript${finalsuffix}${imgsize}.png", "[PS]", null, $dlimg_class);
     else if ($mimetype == "application/pdf")
-	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("pdf${finalsuffix}24.png", "[PDF]", null, $dlimg_class);
-    else
-	$x = "<a href=\"$p\" class='nowrap'>View paper";
+	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("pdf${finalsuffix}${imgsize}.png", "[PDF]", null, $dlimg_class);
+    else {
+	$x = "<a href=\"$p\" class='nowrap'>";
+	$sp = "";
+	$text = $text ? $text : "View";
+    }
+    if ($text)
+	$x .= $sp . $text;
     if (defval($data, "size", 0) > 0)
 	$x .= "&nbsp;<span class='dlsize'>" . round($data->size/1024) . "kB</span>";
     return $x . "</a>";

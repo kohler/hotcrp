@@ -690,6 +690,7 @@ class PaperTable {
 		$show_on = true;
 		$on = htmlspecialchars($o->optionName);
 		$ox = "";
+		$isdocument = $o->type == OPTIONTYPE_PDF;
 		if ($o->type == OPTIONTYPE_CHECKBOX)
 		    $ox = true;
 		else if ($o->type == OPTIONTYPE_SELECTOR) {
@@ -707,10 +708,11 @@ class PaperTable {
 		    }
 		    if ($optdata[$o->optionId] != "")
 			$ox = htmlspecialchars($optdata[$o->optionId]);
-		} else if ($o->type == OPTIONTYPE_PDF && $ov) {
+		} else if ($isdocument && $ov) {
 		    $show_on = false;
-		    $ox = "<a href=\"" . $Conf->makeDownloadPath($prow->paperId, "application/pdf", $o->optionId) . "\">" . $Conf->cacheableImage("pdf.png", "[PDF]", null, "sdlimg") . "&nbsp;" . $on . "</a>";
-		    ++$ndocuments;
+		    /* make fake document */
+		    $doc = (object) array("paperId" => $prow->paperId, "mimetype" => "application/pdf", "documentType" => $o->optionId);
+		    $ox = documentDownload($doc, "sdlimg", $on);
 		}
 
 		if ($ox == "")
@@ -722,12 +724,15 @@ class PaperTable {
 			echo ": ", $ox;
 		    echo "<div class='clear'></div></div>";
 		    $oseparator = "<div class='papvx'></div>\n";
-		} else if ($ox === true)
-		    $optionhtml[] = $on . "<br />\n";
-		else if ($show_on)
-		    $optionhtml[] = $on . ": <span class='optvalue'>" . $ox . "</span><br />\n";
-		else
-		    $optionhtml[] = $ox . "<br />\n";
+		} else {
+		    if ($ox === true)
+			$optionhtml[] = $on . "<br />\n";
+		    else if ($show_on)
+			$optionhtml[] = $on . ": <span class='optvalue'>" . $ox . "</span><br />\n";
+		    else
+			$optionhtml[] = $ox . "<br />\n";
+		    $ndocuments += $isdocument;
+		}
 	    }
 
 	    if ($oseparator)
