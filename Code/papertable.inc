@@ -11,11 +11,6 @@ class PaperTable {
 
     const ENABLESUBMIT = 8;
 
-    const STATUS_DATE = 16;
-    const STATUS_CONFLICTINFO = 64;
-    const STATUS_CONFLICTINFO_PC = 128;
-    const STATUS_REVIEWERINFO = 256;
-
     var $prow;
     var $rrows;
     var $crows;
@@ -314,22 +309,10 @@ class PaperTable {
 	}
 
 	// conflicts
-	$flags = self::STATUS_CONFLICTINFO;
-	if (($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType >= CONFLICT_AUTHOR)
+	if ($prow->conflictType >= CONFLICT_AUTHOR)
 	    $out[] = "You are an <span class='author'>author</span> of this paper.";
-	else if ((($flags & self::STATUS_CONFLICTINFO) && $prow->conflictType > 0)
-		 || (($flags & self::STATUS_CONFLICTINFO_PC) && $Me->isPC && $prow->conflictType > 0))
+	else if ($prow->conflictType > 0)
 	    $out[] = "You have a <span class='conflict'>conflict</span> with this paper.";
-	if ($prow->reviewType != null && ($flags & self::STATUS_REVIEWERINFO)) {
-	    if ($prow->reviewType == REVIEW_PRIMARY)
-		$out[] = "You are a primary reviewer for this paper.";
-	    else if ($prow->reviewType == REVIEW_SECONDARY)
-		$out[] = "You are a secondary reviewer for this paper.";
-	    else if ($prow->reviewType == REVIEW_EXTERNAL)
-		$out[] = "You were requested to review this paper.";
-	    else
-		$out[] = "You began a review for this paper.";
-	}
 	if ($Me->isPC && $prow->conflictType <= 0
 	    && $Conf->timeUpdatePaper($prow) && $this->mode != "assign"
 	    && $this->mode != "contact")
