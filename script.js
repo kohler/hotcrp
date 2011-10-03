@@ -682,7 +682,10 @@ function revpref_change() {
     form.p.value = whichpaper;
     form.revpref.value = this.value;
     Miniajax.submit("prefform", function (rv) {
+	    var e;
 	    setajaxcheck("revpref" + whichpaper + "ok", rv);
+	    if (rv.ok && rv.value != null && (e = $$("revpref" + whichpaper)))
+		e.value = rv.value;
 	});
 }
 

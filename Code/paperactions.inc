@@ -35,7 +35,8 @@ class PaperActions {
 	if (!$Me->privChair
 	    || ($contactId = rcvtint($_REQUEST["contactId"])) <= 0)
 	    $contactId = $Me->contactId;
-	if (($v = cvtpref($_REQUEST['revpref'])) >= -1000000) {
+	$v = cvtpref($_REQUEST["revpref"]);
+	if ($v >= -1000000) {
 	    $while = "while saving review preference";
 	    $result = $Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ($prow->paperId, $contactId, $v) on duplicate key update preference=values(preference)", $while);
 	    if ($result)
@@ -43,11 +44,13 @@ class PaperActions {
 	    else
 		$Error["revpref"] = true;
 	} else {
+	    $v = null;
 	    $Conf->errorMsg($ajax ? "Preferences must be small positive or negative integers." : "Preferences must be small integers.  0 means don&rsquo;t care; positive numbers mean you want to review a paper, negative numbers mean you don&rsquo;t.  The greater the absolute value, the stronger your feelings.");
 	    $Error["revpref"] = true;
 	}
 	if ($ajax)
-	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "revpref")));
+	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "revpref"),
+				  "value" => $v));
     }
 
     static function setRank($prow) {
