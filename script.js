@@ -686,7 +686,7 @@ function revpref_change() {
 	});
 }
 
-function revpref_keypress(elt, event) {
+function revpref_keypress(event) {
     var e = event || window.event, code = e.charCode || e.keyCode;
     if (e.ctrlKey || e.altKey || e.shiftKey || code != 13)
 	return true;
