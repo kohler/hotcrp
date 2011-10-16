@@ -4,11 +4,11 @@
 
 DROP TABLE IF EXISTS `ActionLog`;
 CREATE TABLE `ActionLog` (
-  `logId` int(11) NOT NULL auto_increment,
+  `logId` int(11) NOT NULL AUTO_INCREMENT,
   `contactId` int(11) NOT NULL,
-  `paperId` int(11) default NULL,
-  `time` timestamp NOT NULL default CURRENT_TIMESTAMP,
-  `ipaddr` varchar(16) default NULL,
+  `paperId` int(11) DEFAULT NULL,
+  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `ipaddr` varchar(16) DEFAULT NULL,
   `action` text NOT NULL,
   PRIMARY KEY  (`logId`),
   UNIQUE KEY `logId` (`logId`),
@@ -58,22 +58,22 @@ CREATE TABLE `ContactAddress` (
 
 DROP TABLE IF EXISTS `ContactInfo`;
 CREATE TABLE `ContactInfo` (
-  `contactId` int(11) NOT NULL auto_increment,
-  `visits` int(11) NOT NULL default '0',
-  `firstName` varchar(60) NOT NULL default '',
-  `lastName` varchar(60) NOT NULL default '',
+  `contactId` int(11) NOT NULL AUTO_INCREMENT,
+  `visits` int(11) NOT NULL DEFAULT '0',
+  `firstName` varchar(60) NOT NULL DEFAULT '',
+  `lastName` varchar(60) NOT NULL DEFAULT '',
   `email` varchar(120) NOT NULL,
-  `preferredEmail` varchar(120),
-  `affiliation` varchar(2048) NOT NULL default '',
-  `voicePhoneNumber` varchar(2048) NOT NULL default '',
-  `faxPhoneNumber` varchar(2048) NOT NULL default '',
+  `preferredEmail` varchar(120) DEFAULT NULL,
+  `affiliation` varchar(2048) NOT NULL DEFAULT '',
+  `voicePhoneNumber` varchar(2048) NOT NULL DEFAULT '',
+  `faxPhoneNumber` varchar(2048) NOT NULL DEFAULT '',
   `password` varchar(2048) NOT NULL,
   `note` mediumtext,
   `collaborators` mediumtext,
-  `creationTime` int(11) NOT NULL default '0',
-  `lastLogin` int(11) NOT NULL default '0',
-  `defaultWatch` int(11) NOT NULL default '2',
-  `roles` tinyint(1) NOT NULL default '0',
+  `creationTime` int(11) NOT NULL DEFAULT '0',
+  `lastLogin` int(11) NOT NULL DEFAULT '0',
+  `defaultWatch` int(11) NOT NULL DEFAULT '2',
+  `roles` tinyint(1) NOT NULL DEFAULT '0',
   `contactTags` text,
   PRIMARY KEY  (`contactId`),
   UNIQUE KEY `contactId` (`contactId`),
@@ -93,14 +93,14 @@ CREATE TABLE `ContactInfo` (
 
 DROP TABLE IF EXISTS `Formula`;
 CREATE TABLE `Formula` (
-  `formulaId` int(11) NOT NULL auto_increment,
+  `formulaId` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(200) NOT NULL,
-  `heading` varchar(200) NOT NULL default '',
-  `headingTitle` text NOT NULL default '',
+  `heading` varchar(200) NOT NULL DEFAULT '',
+  `headingTitle` text NOT NULL DEFAULT '',
   `expression` text NOT NULL,
-  `authorView` tinyint(1) NOT NULL default '1',
-  `createdBy` int(11) NOT NULL default '0',
-  `timeModified` int(11) NOT NULL default '0',
+  `authorView` tinyint(1) NOT NULL DEFAULT '1',
+  `createdBy` int(11) NOT NULL DEFAULT '0',
+  `timeModified` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY  (`formulaId`),
   UNIQUE KEY `formulaId` (`formulaId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -111,7 +111,7 @@ CREATE TABLE `Formula` (
 
 DROP TABLE IF EXISTS `MailLog`;
 CREATE TABLE `MailLog` (
-  `mailId` int(11) NOT NULL auto_increment,
+  `mailId` int(11) NOT NULL AUTO_INCREMENT,
   `recipients` varchar(200) NOT NULL,
   `paperIds` text,
   `cc` text,
@@ -127,14 +127,14 @@ CREATE TABLE `MailLog` (
 
 DROP TABLE IF EXISTS `OptionType`;
 CREATE TABLE `OptionType` (
-  `optionId` int(11) NOT NULL auto_increment,
+  `optionId` int(11) NOT NULL AUTO_INCREMENT,
   `optionName` varchar(200) NOT NULL,
   `description` text,
-  `type` tinyint(1) NOT NULL default '0',
-  `pcView` tinyint(1) NOT NULL default '1',
-  `optionValues` text NOT NULL default '',
-  `sortOrder` tinyint(1) NOT NULL default '0',
-  `displayType` tinyint(1) NOT NULL default '0',
+  `type` tinyint(1) NOT NULL DEFAULT '0',
+  `pcView` tinyint(1) NOT NULL DEFAULT '1',
+  `optionValues` text NOT NULL DEFAULT '',
+  `sortOrder` tinyint(1) NOT NULL DEFAULT '0',
+  `displayType` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY  (`optionId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -154,30 +154,30 @@ CREATE TABLE `PCMember` (
 
 DROP TABLE IF EXISTS `Paper`;
 CREATE TABLE `Paper` (
-  `paperId` int(11) NOT NULL auto_increment,
-  `title` varchar(200) default NULL,
+  `paperId` int(11) NOT NULL AUTO_INCREMENT,
+  `title` varchar(200) DEFAULT NULL,
   `authorInformation` text,
   `abstract` text,
   `collaborators` text,
-  `timeSubmitted` int(11) NOT NULL default '0',
-  `timeWithdrawn` int(11) NOT NULL default '0',
-  `timeFinalSubmitted` int(11) NOT NULL default '0',
-  `pcPaper` tinyint(1) NOT NULL default '0',
-  `paperStorageId` int(11) NOT NULL default '0',
-  `sha1` varbinary(20) NOT NULL default '',
-  `finalPaperStorageId` int(11) NOT NULL default '0',
-  `blind` tinyint(1) NOT NULL default '1',
-  `outcome` tinyint(1) NOT NULL default '0',
-  `leadContactId` int(11) NOT NULL default '0',
-  `shepherdContactId` int(11) NOT NULL default '0',
-  `capVersion` int(1) NOT NULL default '0',
+  `timeSubmitted` int(11) NOT NULL DEFAULT '0',
+  `timeWithdrawn` int(11) NOT NULL DEFAULT '0',
+  `timeFinalSubmitted` int(11) NOT NULL DEFAULT '0',
+  `pcPaper` tinyint(1) NOT NULL DEFAULT '0',
+  `paperStorageId` int(11) NOT NULL DEFAULT '0',
+  `sha1` varbinary(20) NOT NULL DEFAULT '',
+  `finalPaperStorageId` int(11) NOT NULL DEFAULT '0',
+  `blind` tinyint(1) NOT NULL DEFAULT '1',
+  `outcome` tinyint(1) NOT NULL DEFAULT '0',
+  `leadContactId` int(11) NOT NULL DEFAULT '0',
+  `shepherdContactId` int(11) NOT NULL DEFAULT '0',
+  `capVersion` int(1) NOT NULL DEFAULT '0',
   # next 3 fields copied from PaperStorage to reduce joins
-  `size` int(11) NOT NULL default '0',
-  `mimetype` varchar(40) NOT NULL default '',
-  `timestamp` int(11) NOT NULL default '0',
+  `size` int(11) NOT NULL DEFAULT '0',
+  `mimetype` varchar(40) NOT NULL DEFAULT '',
+  `timestamp` int(11) NOT NULL DEFAULT '0',
   # next 2 fields calculated from PaperComment to reduce joins
-  `numComments` int(11) NOT NULL default '0',
-  `numAuthorComments` int(11) NOT NULL default '0',
+  `numComments` int(11) NOT NULL DEFAULT '0',
+  `numAuthorComments` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY  (`paperId`),
   UNIQUE KEY `paperId` (`paperId`),
   KEY `title` (`title`),
@@ -195,17 +195,17 @@ CREATE TABLE `Paper` (
 
 DROP TABLE IF EXISTS `PaperComment`;
 CREATE TABLE `PaperComment` (
-  `commentId` int(11) NOT NULL auto_increment,
+  `commentId` int(11) NOT NULL AUTO_INCREMENT,
   `contactId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
   `timeModified` int(11) NOT NULL,
-  `timeNotified` int(11) NOT NULL default '0',
+  `timeNotified` int(11) NOT NULL DEFAULT '0',
   `comment` mediumtext NOT NULL,
-  `forReviewers` tinyint(1) NOT NULL default '0',
-  `forAuthors` tinyint(1) NOT NULL default '0',
-  `blind` tinyint(1) NOT NULL default '1',
+  `forReviewers` tinyint(1) NOT NULL DEFAULT '0',
+  `forAuthors` tinyint(1) NOT NULL DEFAULT '0',
+  `blind` tinyint(1) NOT NULL DEFAULT '1',
   `replyTo` int(11) NOT NULL,
-  `paperStorageId` int(11) NOT NULL default '0',
+  `paperStorageId` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY  (`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
@@ -222,7 +222,7 @@ DROP TABLE IF EXISTS `PaperConflict`;
 CREATE TABLE `PaperConflict` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
-  `conflictType` tinyint(1) NOT NULL default '0',
+  `conflictType` tinyint(1) NOT NULL DEFAULT '0',
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   UNIQUE KEY `contactPaperConflict` (`contactId`,`paperId`,`conflictType`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -235,7 +235,7 @@ DROP TABLE IF EXISTS `PaperOption`;
 CREATE TABLE `PaperOption` (
   `paperId` int(11) NOT NULL,
   `optionId` int(11) NOT NULL,
-  `value` int(11) NOT NULL default '0',
+  `value` int(11) NOT NULL DEFAULT '0',
   `data` text,
   UNIQUE KEY `paperOption` (`paperId`,`optionId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -246,38 +246,38 @@ CREATE TABLE `PaperOption` (
 
 DROP TABLE IF EXISTS `PaperReview`;
 CREATE TABLE `PaperReview` (
-  `reviewId` int(11) NOT NULL auto_increment,
+  `reviewId` int(11) NOT NULL AUTO_INCREMENT,
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
-  `reviewToken` int(11) NOT NULL default '0',
-  `reviewType` tinyint(1) NOT NULL default '0',
-  `reviewRound` tinyint(1) NOT NULL default '0',
-  `requestedBy` int(11) NOT NULL default '0',
-  `requestedOn` timestamp NOT NULL default CURRENT_TIMESTAMP,
-  `reviewBlind` tinyint(1) NOT NULL default '1',
-  `reviewModified` int(1) default NULL,
-  `reviewSubmitted` int(1) default NULL,
-  `reviewNotified` int(1) default NULL,
-  `reviewOrdinal` int(1) default NULL,
-  `reviewEditVersion` int(1) NOT NULL default '0',
-  `reviewNeedsSubmit` tinyint(1) NOT NULL default '1',
-  `overAllMerit` tinyint(1) NOT NULL default '0',
-  `reviewerQualification` tinyint(1) NOT NULL default '0',
-  `novelty` tinyint(1) NOT NULL default '0',
-  `technicalMerit` tinyint(1) NOT NULL default '0',
-  `interestToCommunity` tinyint(1) NOT NULL default '0',
-  `longevity` tinyint(1) NOT NULL default '0',
-  `grammar` tinyint(1) NOT NULL default '0',
-  `likelyPresentation` tinyint(1) NOT NULL default '0',
-  `suitableForShort` tinyint(1) NOT NULL default '0',
+  `reviewToken` int(11) NOT NULL DEFAULT '0',
+  `reviewType` tinyint(1) NOT NULL DEFAULT '0',
+  `reviewRound` tinyint(1) NOT NULL DEFAULT '0',
+  `requestedBy` int(11) NOT NULL DEFAULT '0',
+  `requestedOn` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `reviewBlind` tinyint(1) NOT NULL DEFAULT '1',
+  `reviewModified` int(1) DEFAULT NULL,
+  `reviewSubmitted` int(1) DEFAULT NULL,
+  `reviewNotified` int(1) DEFAULT NULL,
+  `reviewOrdinal` int(1) DEFAULT NULL,
+  `reviewEditVersion` int(1) NOT NULL DEFAULT '0',
+  `reviewNeedsSubmit` tinyint(1) NOT NULL DEFAULT '1',
+  `overAllMerit` tinyint(1) NOT NULL DEFAULT '0',
+  `reviewerQualification` tinyint(1) NOT NULL DEFAULT '0',
+  `novelty` tinyint(1) NOT NULL DEFAULT '0',
+  `technicalMerit` tinyint(1) NOT NULL DEFAULT '0',
+  `interestToCommunity` tinyint(1) NOT NULL DEFAULT '0',
+  `longevity` tinyint(1) NOT NULL DEFAULT '0',
+  `grammar` tinyint(1) NOT NULL DEFAULT '0',
+  `likelyPresentation` tinyint(1) NOT NULL DEFAULT '0',
+  `suitableForShort` tinyint(1) NOT NULL DEFAULT '0',
   `paperSummary` mediumtext NOT NULL,
   `commentsToAuthor` mediumtext NOT NULL,
   `commentsToPC` mediumtext NOT NULL,
   `commentsToAddress` mediumtext NOT NULL,
   `weaknessOfPaper` mediumtext NOT NULL,
   `strengthOfPaper` mediumtext NOT NULL,
-  `potential` tinyint(4) NOT NULL default '0',
-  `fixability` tinyint(4) NOT NULL default '0',
+  `potential` tinyint(4) NOT NULL DEFAULT '0',
+  `fixability` tinyint(4) NOT NULL DEFAULT '0',
   `textField7` mediumtext NOT NULL,
   `textField8` mediumtext NOT NULL,
   PRIMARY KEY  (`reviewId`),
@@ -297,37 +297,37 @@ CREATE TABLE `PaperReview` (
 
 DROP TABLE IF EXISTS `PaperReviewArchive`;
 CREATE TABLE `PaperReviewArchive` (
-  `reviewArchiveId` int(11) NOT NULL auto_increment,
+  `reviewArchiveId` int(11) NOT NULL AUTO_INCREMENT,
   `reviewId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
-  `reviewType` tinyint(1) NOT NULL default '0',
-  `reviewRound` tinyint(1) NOT NULL default '0',
-  `requestedBy` int(11) NOT NULL default '0',
-  `requestedOn` timestamp NOT NULL default CURRENT_TIMESTAMP,
-  `reviewBlind` tinyint(1) NOT NULL default '1',
-  `reviewModified` int(1),
-  `reviewSubmitted` int(1),
-  `reviewNotified` int(1),
-  `reviewOrdinal` int(1),
-  `reviewNeedsSubmit` tinyint(1) NOT NULL default '1',
-  `overAllMerit` tinyint(1) NOT NULL default '0',
-  `reviewerQualification` tinyint(1) NOT NULL default '0',
-  `novelty` tinyint(1) NOT NULL default '0',
-  `technicalMerit` tinyint(1) NOT NULL default '0',
-  `interestToCommunity` tinyint(1) NOT NULL default '0',
-  `longevity` tinyint(1) NOT NULL default '0',
-  `grammar` tinyint(1) NOT NULL default '0',
-  `likelyPresentation` tinyint(1) NOT NULL default '0',
-  `suitableForShort` tinyint(1) NOT NULL default '0',
+  `reviewType` tinyint(1) NOT NULL DEFAULT '0',
+  `reviewRound` tinyint(1) NOT NULL DEFAULT '0',
+  `requestedBy` int(11) NOT NULL DEFAULT '0',
+  `requestedOn` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `reviewBlind` tinyint(1) NOT NULL DEFAULT '1',
+  `reviewModified` int(1) DEFAULT NULL,
+  `reviewSubmitted` int(1) DEFAULT NULL,
+  `reviewNotified` int(1) DEFAULT NULL,
+  `reviewOrdinal` int(1) DEFAULT NULL,
+  `reviewNeedsSubmit` tinyint(1) NOT NULL DEFAULT '1',
+  `overAllMerit` tinyint(1) NOT NULL DEFAULT '0',
+  `reviewerQualification` tinyint(1) NOT NULL DEFAULT '0',
+  `novelty` tinyint(1) NOT NULL DEFAULT '0',
+  `technicalMerit` tinyint(1) NOT NULL DEFAULT '0',
+  `interestToCommunity` tinyint(1) NOT NULL DEFAULT '0',
+  `longevity` tinyint(1) NOT NULL DEFAULT '0',
+  `grammar` tinyint(1) NOT NULL DEFAULT '0',
+  `likelyPresentation` tinyint(1) NOT NULL DEFAULT '0',
+  `suitableForShort` tinyint(1) NOT NULL DEFAULT '0',
   `paperSummary` mediumtext NOT NULL,
   `commentsToAuthor` mediumtext NOT NULL,
   `commentsToPC` mediumtext NOT NULL,
   `commentsToAddress` mediumtext NOT NULL,
   `weaknessOfPaper` mediumtext NOT NULL,
   `strengthOfPaper` mediumtext NOT NULL,
-  `potential` tinyint(4) NOT NULL default '0',
-  `fixability` tinyint(4) NOT NULL default '0',
+  `potential` tinyint(4) NOT NULL DEFAULT '0',
+  `fixability` tinyint(4) NOT NULL DEFAULT '0',
   `textField7` mediumtext NOT NULL,
   `textField8` mediumtext NOT NULL,
   PRIMARY KEY  (`reviewArchiveId`),
@@ -349,7 +349,7 @@ DROP TABLE IF EXISTS `PaperReviewPreference`;
 CREATE TABLE `PaperReviewPreference` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
-  `preference` int(4) NOT NULL default '0',
+  `preference` int(4) NOT NULL DEFAULT '0',
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   KEY `paperId` (`paperId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -375,14 +375,14 @@ CREATE TABLE `PaperReviewRefused` (
 
 DROP TABLE IF EXISTS `PaperStorage`;
 CREATE TABLE `PaperStorage` (
-  `paperStorageId` int(11) NOT NULL auto_increment,
+  `paperStorageId` int(11) NOT NULL AUTO_INCREMENT,
   `paperId` int(11) NOT NULL,
   `timestamp` int(11) NOT NULL,
-  `mimetype` varchar(40) NOT NULL default '',
+  `mimetype` varchar(40) NOT NULL DEFAULT '',
   `paper` longblob,
-  `compression` tinyint(1) NOT NULL default '0',
-  `sha1` varbinary(20) NOT NULL default '',
-  `documentType` int(3) NOT NULL default '0',
+  `compression` tinyint(1) NOT NULL DEFAULT '0',
+  `sha1` varbinary(20) NOT NULL DEFAULT '',
+  `documentType` int(3) NOT NULL DEFAULT '0',
   PRIMARY KEY  (`paperStorageId`),
   UNIQUE KEY `paperStorageId` (`paperStorageId`),
   KEY `paperId` (`paperId`),
@@ -397,7 +397,7 @@ DROP TABLE IF EXISTS `PaperTag`;
 CREATE TABLE `PaperTag` (
   `paperId` int(11) NOT NULL,
   `tag` varchar(40) NOT NULL,		# see TAG_MAXLEN in header.php
-  `tagIndex` int(11) NOT NULL default '0',
+  `tagIndex` int(11) NOT NULL DEFAULT '0',
   UNIQUE KEY `paperTag` (`paperId`,`tag`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -420,7 +420,7 @@ DROP TABLE IF EXISTS `PaperWatch`;
 CREATE TABLE `PaperWatch` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
-  `watch` int(11) NOT NULL default '0',
+  `watch` int(11) NOT NULL DEFAULT '0',
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   UNIQUE KEY `contactPaperWatch` (`contactId`,`paperId`,`watch`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -434,10 +434,10 @@ CREATE TABLE `ReviewFormField` (
   `fieldName` varchar(25) NOT NULL,
   `shortName` varchar(40) NOT NULL,
   `description` text,
-  `sortOrder` tinyint(1) NOT NULL default '-1',
-  `rows` tinyint(1) NOT NULL default '0',
-  `authorView` tinyint(1) NOT NULL default '1',
-  `levelChar` tinyint(1) NOT NULL default '0',
+  `sortOrder` tinyint(1) NOT NULL DEFAULT '-1',
+  `rows` tinyint(1) NOT NULL DEFAULT '0',
+  `authorView` tinyint(1) NOT NULL DEFAULT '1',
+  `levelChar` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY  (`fieldName`),
   UNIQUE KEY `fieldName` (`fieldName`),
   KEY `shortName` (`shortName`)
@@ -464,7 +464,7 @@ DROP TABLE IF EXISTS `ReviewRating`;
 CREATE TABLE `ReviewRating` (
   `reviewId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
-  `rating` tinyint(1) NOT NULL default '0',
+  `rating` tinyint(1) NOT NULL DEFAULT '0',
   UNIQUE KEY `reviewContact` (`reviewId`,`contactId`),
   UNIQUE KEY `reviewContactRating` (`reviewId`,`contactId`,`rating`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -476,8 +476,8 @@ CREATE TABLE `ReviewRating` (
 DROP TABLE IF EXISTS `ReviewRequest`;
 CREATE TABLE `ReviewRequest` (
   `paperId` int(11) NOT NULL,
-  `name` varchar(120) default NULL,
-  `email` varchar(120) default NULL,
+  `name` varchar(120) DEFAULT NULL,
+  `email` varchar(120) DEFAULT NULL,
   `reason` text,
   `requestedBy` int(11) NOT NULL,
   KEY `paperId` (`paperId`),
@@ -503,8 +503,8 @@ CREATE TABLE `Settings` (
 
 DROP TABLE IF EXISTS `TopicArea`;
 CREATE TABLE `TopicArea` (
-  `topicId` int(11) NOT NULL auto_increment,
-  `topicName` varchar(80) default NULL,
+  `topicId` int(11) NOT NULL AUTO_INCREMENT,
+  `topicName` varchar(80) DEFAULT NULL,
   PRIMARY KEY  (`topicId`),
   UNIQUE KEY `topicId` (`topicId`),
   KEY `topicName` (`topicName`)
@@ -518,7 +518,7 @@ DROP TABLE IF EXISTS `TopicInterest`;
 CREATE TABLE `TopicInterest` (
   `contactId` int(11) NOT NULL,
   `topicId` int(11) NOT NULL,
-  `interest` int(1) default NULL,
+  `interest` int(1) DEFAULT NULL,
   UNIQUE KEY `contactTopic` (`contactId`,`topicId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
