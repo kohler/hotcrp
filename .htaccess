@@ -30,17 +30,17 @@ RewriteEngine on
 RewriteBase /
 RewriteRule ^(CVS|\.svn|\.git|test).* $1 [F]
 RewriteCond %{REQUEST_FILENAME} -f
-RewriteRule ^.*$ - [L]
+RewriteRule ^.*$ - [L,NE]
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteCond %{REQUEST_URI} ^(.*)$
-RewriteRule ^[^/]*$ %1.php [L]
+RewriteRule ^[^/]*$ %1.php [L,NE]
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteCond %{REQUEST_URI} ^(.*)/[^/]*$
-RewriteRule ^images(/[^/]*)$ %1$1.php [L]
+RewriteRule ^images(/[^/]*)$ %1$1.php [L,NE]
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteCond %{REQUEST_URI} ^(.*)/[^/]*$
-RewriteRule ^[^/]*(/[^/]*)$ %1.php$1 [L]
+RewriteRule ^[^/]*(/[^/]*)$ %1.php$1 [L,NE]
 </IfModule>
 
-# Uncomment this line to grant access only via https.  Requires mod_ssl.
+# Uncomment this line to ONLY grant access via https.  Requires mod_ssl.
 # SSLRequireSSL
