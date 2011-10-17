@@ -299,7 +299,7 @@ function parseBulkFile($text, $filename) {
 	    if (is_string($k))
 		$_REQUEST[$k] = $v;
 	list($_REQUEST["firstName"], $_REQUEST["lastName"], $_REQUEST["uemail"]) =
-	    array(defval($_REQUEST, "firstName", ""), defval($_REQUEST, "lastName", ""), defval($_REQUEST, "email", ""));
+	    array(defval($line, "firstName", ""), defval($line, "lastName", ""), defval($line, "email", ""));
 
 	if (createUser($tf, true, true))
 	    $success[] = "<a href=\"" . hoturl("account", "contact=" . urlencode($Acct->email)) . "\">" . htmlspecialchars(contactText($Acct->firstName, $Acct->lastName, $Acct->email)) . "</a>";
