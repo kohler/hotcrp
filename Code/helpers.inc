@@ -1545,7 +1545,7 @@ function csv_shift_line(&$str, $header = false, $ignore_comments = false) {
 	    preg_match('/\A"((?:[^"]|"")*)(?:"|\z),?(.*)\z/s', $str, $m);
 	    $m[1] = str_replace("\"\"", "\"", $m[1]);
 	} else
-	    preg_match('/\A([^"\n\r,]*),?(.*)\z/s', $str, $m);
+	    preg_match('/\A([^\n\r,]*),?(.*)\z/s', $str, $m);
 	if ($header && $i < count($header))
 	    $a[$header[$i]] = $m[1];
 	else
