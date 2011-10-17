@@ -100,6 +100,18 @@ function doLDAPLogin() {
     return ldapLoginAction();
 }
 
+function unquoteDoubleQuotedRequest() {
+    global $Conf;
+    if (strpos($_REQUEST["email"], "@") !== false
+	|| strpos($_REQUEST["email"], "%40") === false)
+	return false;
+    if (!$Conf->setting("bug_doubleencoding"))
+	$Conf->q("insert into Settings (name, value) values ('bug_doubleencoding', 1)");
+    foreach ($_REQUEST as $k => &$v)
+	$v = rawurldecode($v);
+    return true;
+}
+
 function doLogin() {
     global $Conf, $Opt, $Me, $email_class, $password_class;
 
@@ -134,6 +146,8 @@ function doLogin() {
     }
 
     $Me->lookupByEmail($_REQUEST["email"]);
+    if (!$Me->email && unquoteDoubleQuotedRequest())
+	$Me->lookupByEmail($_REQUEST["email"]);
     if ($_REQUEST["action"] == "new") {
 	if (!($reg = doCreateAccount()))
 	    return $reg;
@@ -168,7 +182,7 @@ function doLogin() {
 
     if ($Me->password != $_REQUEST["password"] && !isset($Opt["ldapLogin"])) {
 	$password_class = " error";
-	return $Conf->errorMsg("That password doesn't match.  If you've forgotten your password, enter your email address and use the &ldquo;I forgot my password, email it to me&rdquo; option.");
+	return $Conf->errorMsg("That password doesn’t match.  If you’ve forgotten your password, enter your email address and use the “I forgot my password, email it to me” option.");
     }
 
     $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=" . time() . " where contactId=" . $Me->contactId, "while recording login statistics");
@@ -216,6 +230,10 @@ if ($Me->validContact() && isset($Me->fresh) && $Me->fresh === true) {
 
 // check global system settings
 if ($Me->privChair) {
+    if (isset($_REQUEST["clearbug"])) {
+	$Conf->q("delete from Settings where name='bug_" . sqlq($_REQUEST["clearbug"]) . "'");
+	$Conf->updateSettings();
+    }
     if (preg_match("/^[1-4]\\./", phpversion()))
 	$Conf->warnMsg("HotCRP requires PHP version 5.2 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".");
     if (get_magic_quotes_gpc())
@@ -238,6 +256,9 @@ if ($Me->privChair) {
     foreach (array("conferenceSite", "paperSite") as $k)
 	if ($Opt[$k] && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', $Opt[$k]))
 	    $Conf->warnMsg("The <code>\$Opt[\"$k\"]</code> setting, <code>&laquo;" . htmlspecialchars($Opt[$k]) . "&raquo;</code>, is not a valid URL.  Edit the <code>Code/options.inc</code> file to fix this problem.");
+    // Double-encoding bugs found?
+    if ($Conf->setting("bug_doubleencoding"))
+	$Conf->warnMsg("Double-encoded URLs have been detected.  Incorrect uses of Apache’s <code>mod_rewrite</code>, and other middleware, can doubly-encoded URL parameters.  This can cause problems, for instance when users log in via links in email.  (“<code>a@b.com</code>” should be encoded as “<code>a%40b.com</code>”; a double encoding will produce “<code>a%2540b.com</code>”.)  HotCRP has tried to compensate, but you really should fix the problem.  For <code>mod_rewrite</code> add <a href='http://httpd.apache.org/docs/current/mod/mod_rewrite.html'>the <code>[NE]</code> option</a> to the relevant RewriteRule. <a href='index$ConfSiteSuffix?clearbug=doubleencoding'>(Clear&nbsp;this&nbsp;message)</a>");
 }
 
 
