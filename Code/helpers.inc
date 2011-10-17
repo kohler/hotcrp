@@ -1529,6 +1529,35 @@ function titleWords($title, $chars = 40) {
     return $xtitle . "...";
 }
 
+function csv_shift_line(&$str, $header = false, $ignore_comments = false) {
+    // blank lines, comments
+    if ($str == "")
+	return false;
+    if ($str[0] == "\n" || $str[0] == "\r" || ($ignore_comments && $str[0] == "#")) {
+	$str = (preg_match('/\A[^\n\r]*\r?\n(.*)\z/s', $str, $m) ? $m[1] : "");
+	return false;
+    }
+    // otherwise, nonblank
+    $i = 0;
+    $a = array();
+    while ($str != "" && $str[0] != "\n" && $str[0] != "\r") {
+	if ($str[0] == "\"") {
+	    preg_match('/\A"((?:[^"]|"")*)(?:"|\z),?(.*)\z/s', $str, $m);
+	    $m[1] = str_replace("\"\"", "\"", $m[1]);
+	} else
+	    preg_match('/\A([^"\n\r,]*),?(.*)\z/s', $str, $m);
+	if ($header && $i < count($header))
+	    $a[$header[$i]] = $m[1];
+	else
+	    $a[$i] = $m[1];
+	++$i;
+	$str = $m[2];
+    }
+    if ($str != "")
+	$str = substr($str, ($str[0] == "\r" && $str[1] == "\n" ? 2 : 1));
+    return $a;
+}
+
 function __downloadCSV(&$row, $csv) {
     $t = array();
     reset($row);

@@ -278,10 +278,12 @@ class Contact {
 	return $result;
     }
 
-    function initialize($email, $useRequest = false) {
+    function initialize($email, $useRequest = false, $useRequestPassword = false) {
 	global $Conf;
 	$this->email = trim($email);
-	$this->password = self::generatePassword(10);
+	if (!$useRequest || !$useRequestPassword || !isset($_REQUEST["password"])
+	    || ($this->password = trim($_REQUEST["password"])) == "")
+	    $this->password = self::generatePassword(10);
 
 	// update paper authorship based on authorInformation fields
 	// (ignore errors)

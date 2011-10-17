@@ -52,7 +52,7 @@ function tfError(&$tf, $errorField, $text) {
     return false;
 }
 
-function createUser(&$tf, $newProfile) {
+function createUser(&$tf, $newProfile, $useRequestPassword = false) {
     global $Conf, $Acct, $Me, $Opt, $OK;
 
     if (!isset($Opt["ldapLogin"]))
@@ -110,7 +110,7 @@ function createUser(&$tf, $newProfile) {
     // at this point we will create the account
     if ($newProfile) {
 	$Acct = new Contact();
-	$result = $Acct->initialize($_REQUEST["uemail"], true);
+	$result = $Acct->initialize($_REQUEST["uemail"], true, $useRequestPassword);
 	if (!$result)
 	    return tfError($tf, "uemail", "Database error, please try again");
 	$Acct->sendAccountInfo($Conf, true, false);
@@ -265,26 +265,54 @@ function parseBulkFile($text, $filename) {
     $tf = array("err" => array(), "filename" => $filename, "lineno" => 0);
     $success = array();
 
-    while ($text != "") {
-	$pos = strpos($text, "\n");
-	$line = ($pos === FALSE ? $text : substr($text, 0, $pos + 1));
+    $text_copy = $text;
+    do {
+	$line = csv_shift_line($text, false, true);
 	++$tf["lineno"];
-	$text = substr($text, strlen($line));
-	$line = trim($line);
+    } while ($text != "" && $line === false);
+    if ($line && array_search("email", $line) !== false)
+	$header = $line;
+    else {
+	$header = array("name", "email", "affiliation");
+	$text = $text_copy;
+	$tf["lineno"] = 0;
+    }
 
-	// skip blank lines
-	if ($line == "" || $line[0] == "#" || $line[0] == "!")
+    $original_request = $_REQUEST;
+
+    while ($text != "") {
+	$line = csv_shift_line($text, $header, true);
+	++$tf["lineno"];
+	if ($line === false)
 	    continue;
+	foreach (array("firstname" => "firstName", "first" => "firstName",
+		       "lastname" => "lastName", "last" => "lastName",
+		       "voice" => "voicePhoneNumber", "phone" => "voicePhoneNumber",
+		       "fax" => "faxPhoneNumber", "address1" => "addressLine1",
+		       "address2" => "addressLine2", "postalcode" => "zipCode",
+		       "zip" => "zipCode", "tags" => "contactTags") as $k => $x)
+	    if (isset($line[$k]) && !isset($line[$x]))
+		$line[$x] = $line[$k];
+	if (isset($line["name"]) && !isset($line["firstName"]) && !isset($line["lastName"]))
+	    list($line["firstName"], $line["lastName"]) = splitName(simplifyWhitespace($line["name"]));
+	foreach ($line as $k => $v)
+	    if (is_string($k))
+		$_REQUEST[$k] = $v;
+	list($_REQUEST["firstName"], $_REQUEST["lastName"], $_REQUEST["uemail"]) =
+	    array(defval($_REQUEST, "firstName", ""), defval($_REQUEST, "lastName", ""), defval($_REQUEST, "email", ""));
 
-	$_REQUEST["affiliation"] = "";
-	if (preg_match('/^(.*\@\S+)\s+(.*?)\s*$/', $line, $m)) {
-	    $line = $m[1];
-	    $_REQUEST["affiliation"] = simplifyWhitespace(preg_replace('/^"\s*(.*?)\s*"$/', '$1', $m[2]));
-	}
-	list($_REQUEST["firstName"], $_REQUEST["lastName"],
-	     $_REQUEST["uemail"]) = splitName(simplifyWhitespace($line), true);
-	if (createUser($tf, true))
+	if (createUser($tf, true, true))
 	    $success[] = "<a href=\"" . hoturl("account", "contact=" . urlencode($Acct->email)) . "\">" . htmlspecialchars(contactText($Acct->firstName, $Acct->lastName, $Acct->email)) . "</a>";
+
+	foreach (array("firstName", "lastName", "uemail", "affiliation", "preferredEmail",
+		       "voicePhoneNumber", "faxPhoneNumber", "collaborators",
+		       "addressLine1", "addressLine2", "city", "state", "zipCode", "country",
+		       "pctype", "pc", "chair", "ass",
+		       "watchcomment", "watchcommentall", "watchfinalall", "contactTags") as $k)
+	    if (isset($original_request[$k]))
+		$_REQUEST[$k] = $original_request[$k];
+	    else
+		unset($_REQUEST[$k]);
     }
 
     if (count($tf["err"]) > 0) {
@@ -583,12 +611,12 @@ if ($newProfile) {
     echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", "", 2),
 	"&nbsp;</td><td><a href=\"javascript:void fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
 	"<tr class='fx2'><td></td><td>",
-	"<p>Upload a text file with one line per account, giving name, email address, and (if any) affiliation.  Each new account's role and PC information is set from the form below.  Example:</p>\n",
+	"<p>Upload a CSV file with one line per account. Either specify a header like “<code>name,email,affiliation,address1</code>” or give name, email address, and affiliation, in that order.  Each new account's role and PC information is set from the form below.  Example:</p>\n",
 	"<pre class='entryexample'>
-John Adams &lt;john@earbox.org&gt; UC Berkeley
-Adams, John Quincy &lt;quincy@whitehouse.gov&gt;
+John Adams,john@earbox.org,UC Berkeley
+\"Adams, John Quincy\",quincy@whitehouse.gov
 </pre>\n",
-	"<div class='g'></div>Upload: <input type='file' name='bulk' accept='text/plain' size='30' onchange='hiliter(this)' />",
+	"<div class='g'></div>Upload: <input type='file' name='bulk' size='30' onchange='hiliter(this)' />",
 	"</td></tr></table></div>\n\n";
 }
 

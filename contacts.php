@@ -118,10 +118,10 @@ if ($getaction == "address" && isset($papersel) && $Me->isPC) {
 	    $p[0] = "$row->lastName$row->firstName";
 	$people[] = $p;
     }
-    $header = array("name", "email", "address line 1", "address line 2",
-		    "city", "state/province/region", "zip/postal code", "country");
+    $header = array("name", "email", "address1", "address2",
+		    "city", "state", "postalcode", "country");
     if ($phone)
-	$header[] = "voice phone";
+	$header[] = "phone";
     if ($fax)
 	$header[] = "fax";
     downloadCSV($people, $header, "addresses", "addresses");
