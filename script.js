@@ -1140,10 +1140,10 @@ function savedisplayoptions() {
 
 function docheckformat(dt) {
     var form = $$("checkformatform" + dt);
-    if (!form.onsubmit)
-	return true;
-    fold("checkformat" + dt, 0);
-    return Miniajax.submit("checkformatform" + dt, null, 10000);
+    if (form.onsubmit) {
+	fold("checkformat" + dt, 0);
+	Miniajax.submit("checkformatform" + dt, null, 10000);
+    }
 }
 
 function dosubmitdecision() {
