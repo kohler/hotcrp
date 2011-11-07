@@ -68,6 +68,9 @@ define("OPTIONTYPE_SLIDES", 5);
 define("OPTIONTYPE_FINALPDF", 100);
 define("OPTIONTYPE_FINALSLIDES", 101);
 
+define("TAG_REGEX", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*');
+define("TAG_REGEX_OPTVALUE", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?');
+
 global $rf;
 $rf = null;
 global $ReviewFormCache;

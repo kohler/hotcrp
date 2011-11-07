@@ -96,8 +96,15 @@ class SearchTerm {
 	    return null;
 	else if ($term->type == "not")
 	    return $term->value;
+	else if ($term->type == "f")
+	    return new SearchTerm("t");
+	else if ($term->type == "t")
+	    return new SearchTerm("f");
 	else
 	    return new SearchTerm("not", 0, $term);
+    }
+    function isfalse() {
+	return $type == "f";
     }
 }
 
@@ -869,18 +876,23 @@ class PaperSearch {
 	return count($qo) != 0;
     }
 
-    function _searchQueryWord($word, $unrecognized_keyword_error) {
+    function _searchQueryWord($word, $report_error) {
 	global $searchTags, $ratingTypes, $Conf;
 
-	// check for paper number
+	// check for paper number or "#TAG"
 	if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $word, $m)) {
 	    $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
 	    return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
+	} else if (preg_match('/\A(-?)#(' . TAG_REGEX_OPTVALUE . '[#<>!=\d]*)\z/', $word, $m)) {
+	    $qe = $this->_searchQueryWord($m[1] . "tag:" . $m[2], false);
+	    if (!$qe->isfalse())
+		return $qe;
 	}
 
 	// Allow searches like "ovemer>2"; parse as "ovemer:>2".
 	if (preg_match('/\A([-_A-Za-z0-9]+)([<>!=]=?[^:]+)\z/', $word, $m)) {
-	    if (($qe = $this->_searchQueryWord($m[1] . ":" . $m[2], $rest, false)))
+	    $qe = $this->_searchQueryWord($m[1] . ":" . $m[2], false);
+	    if (!$qe->isfalse())
 		return $qe;
 	}
 
@@ -1130,7 +1142,7 @@ class PaperSearch {
 		if (!$this->_searchReviews($word, $rf, $field, $qt, $quoted))
 		    $qt[] = new SearchTerm("f");
 	    } else if (!$this->_searchOptions("$special:$word", $qt, false)
-		       && $unrecognized_keyword_error) {
+		       && $report_error) {
 		$this->warn("Unrecognized keyword &ldquo;" . htmlspecialchars($special) . "&rdquo;.");
 		$qt[] = new SearchTerm("f");
 	    }

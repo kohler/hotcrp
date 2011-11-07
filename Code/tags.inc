@@ -15,9 +15,6 @@ define("CHECKTAG_QUIET", 16);
 define("CHECKTAG_ERRORARRAY", 32);
 define("CHECKTAG_ALLOWSTAR", 64);
 
-define("TAG_REGEX", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*');
-define("TAG_REGEX_OPTVALUE", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?');
-
 function checkTagError($tag, $flags) {
     if ($tag == "")
 	return "Empty tag.";
