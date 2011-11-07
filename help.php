@@ -238,10 +238,10 @@ function searchQuickref() {
     _searchQuickrefRow("Topics", "topic:link", "selected topics match “link”");
     _searchQuickrefRow("Options", "opt:shadow", "selected submission options match “shadow”");
     _searchQuickrefRow("", "budget:>1000", "numerical submission option “budget” has value &gt; 1000");
-    _searchQuickrefRow("<a href='" . hoturl("help", "t=tags") . "'>Tags</a>", "tag:discuss", "tagged “discuss”");
-    _searchQuickrefRow("", "-tag:discuss", "not tagged “discuss”");
+    _searchQuickrefRow("<a href='" . hoturl("help", "t=tags") . "'>Tags</a>", "#discuss", "tagged “discuss” (“tag:discuss” also works)");
+    _searchQuickrefRow("", "-#discuss", "not tagged “discuss”");
     _searchQuickrefRow("", "order:discuss", "tagged “discuss”, sort by tag order (“rorder:” for reverse order)");
-    _searchQuickrefRow("", "tag:disc*", "matches any tag that <em>starts with</em> “disc”");
+    _searchQuickrefRow("", "#disc*", "matches any tag that <em>starts with</em> “disc”");
     _searchQuickrefRow("Reviews", "re:fdabek", "“fdabek” in reviewer name/email");
     if ($retag) {
 	_searchQuickrefRow("", "re:$retag", "has a reviewer tagged “" . $retag . "”");
@@ -393,14 +393,15 @@ Here are some example ways to use tags.
 <ul>
 <li><strong>Avoid discussing low-ranked submissions at the PC meeting.</strong>
  Mark low-ranked submissions with tag “nodiscuss”, then ask the PC to
- <a href='" . hoturl("search", "q=tag:nodiscuss") . "'>search for “tag:nodiscuss”</a>.
+ <a href='" . hoturl("search", "q=%23nodiscuss") . "'>search for “#nodiscuss”</a>
+ (<a href='" . hoturl("search", "q=tag:nodiscuss") . "'>“tag:nodiscuss”</a> also works).
  PC members can easily check the list for controversial papers they'd like to discuss despite their ranking.
  They can email the chairs about such papers, or, even easier, add a “discussanyway” tag.
  (You might make the “nodiscuss” tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but it's usually better to trust the PC.)</li>
 
 <li><strong>Mark controversial papers that would benefit from additional review.</strong>
  PC members could add the “controversy” tag when the current reviewers disagree.
- A <a href='" . hoturl("search", "q=tag:controversy") . "'>search</a> shows where the PC thinks more review is needed.</li>
+ A <a href='" . hoturl("search", "q=%23controversy") . "'>search</a> shows where the PC thinks more review is needed.</li>
 
 <li><strong>Mark PC-authored papers for extra scrutiny.</strong>
  First, <a href='" . hoturl("search", "t=s&amp;qt=au") . "'>search for PC members' last names in author fields</a>.
@@ -437,7 +438,7 @@ A paper's tags are shown like this:
 
 <p><img src='" . hoturlx("images/extagsnone.png") . "' alt='[Tag list on review screen]' /></p>
 
-To find all papers with tag “discuss”:&nbsp; " . _searchForm("tag:discuss") . "
+To find all papers with tag “discuss”:&nbsp; " . _searchForm("#discuss") . "
 
 <p>Tags are only shown to PC members and administrators.
 $conflictmsg3$setting
@@ -470,9 +471,9 @@ href='" . hoturl("search", "q=order:tagname") . "'>order:tagname</a>” will
 return the papers sorted by the tag value.  This is useful, for example, for
 PC meeting discussion orders.  Change the order by editing the tag values.
 Search for specific values with search terms like “<a
-href='" . hoturl("search", "q=tag:discuss%232") . "'>tag:discuss#2</a>”
+href='" . hoturl("search", "q=%23discuss%232") . "'>#discuss#2</a>”
 or “<a
-href='" . hoturl("search", "q=tag:discuss%3E1") . "'>tag:discuss>1</a>”.
+href='" . hoturl("search", "q=%23discuss%3E1") . "'>#discuss>1</a>”.
 
 <p>It's common to assign increasing tag values to a set of papers.  Do this
 using the <a href='" . hoturl("search") . "'>search screen</a>.  Search for the
@@ -504,7 +505,7 @@ tag).  Tag a paper “~red” to make it red on your displays, but not
 others’.  System administrators can <a
 href='" . hoturl("settings", "group=rev") . "'>associate other tags with colors</a>
 so that, for example, “<a
-href='" . hoturl("search", "q=tag:reject") . "'>tag:reject</a>” papers show up
+href='" . hoturl("search", "q=%23reject") . "'>#reject</a>” papers show up
 as grey.");
     echo "</table>\n";
 }
