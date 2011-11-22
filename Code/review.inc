@@ -538,7 +538,7 @@ class ReviewForm {
 	    $rest = array("rrow" => $fake_rrow, "reviewNumber" => $prow->paperId . $reviewnum);
 
 	    if ($Conf->timeEmailChairAboutReview()) {
-		$chairContact = (object) array("email" => $Opt["contactEmail"], "fullName" => $Opt["contactName"], "privChair" => 1);
+		$chairContact = (object) array("email" => $Opt["contactEmail"], "fullName" => $Opt["contactName"], "privChair" => 1, "privSuperChair" => 1);
 		Mailer::send($tmpl, $prow, $chairContact, $submitter, $rest);
 	    }
 
