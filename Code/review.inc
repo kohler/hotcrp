@@ -1258,7 +1258,7 @@ $blind\n";
 	$reviewLink = $reviewLinkBase . "post=1";
 	if ($editmode) {
 	    echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",
-		"<div class='pboxc aahc'>",
+		"<div class='aahc pboxc'>",
 		"<input class='hidden' type='submit' name='default' value='' />";
 	    if ($rrow)
 		echo "<input type='hidden' name='version' value=\"", defval($rrow, "reviewEditVersion", 0) + 1, "\" />";
