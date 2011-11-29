@@ -199,7 +199,7 @@ function downloadReviews(&$texts, &$errors) {
 	$rfname .= $papersel[key($texts)];
 
     if ($getforms)
-	$header = $rf->textFormHeader(count($texts) > 1 && $gettext);
+	$header = $rf->textFormHeader(count($texts) > 1 && $gettext, true);
     else
 	$header = "";
 
@@ -235,7 +235,7 @@ function downloadReviews(&$texts, &$errors) {
 if (($getaction == "revform" || $getaction == "revformz")
     && !isset($papersel)) {
     $rf = reviewForm();
-    $text = $rf->textFormHeader("blank")
+    $text = $rf->textFormHeader("blank", true)
 	. $rf->textForm(null, null, $Me, null) . "\n";
     downloadText($text, "review", "review form");
     exit;

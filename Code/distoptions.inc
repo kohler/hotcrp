@@ -12,16 +12,16 @@ global $Opt;
 
 // CONFERENCE NAMES
 //
-//   dbName          Database name.  Use the name you supplied to
-//                   "Code/createdb.sh".  NO SPACES ALLOWED.
-//   dbUser          Database user name.  Defaults to $Opt["dbName"].
-//   dbPassword      Password for database user.  Defaults to $Opt["dbName"].
-//   shortName       Short name of the conference.  Examples: "SIGCOMM 2007",
-//                   "HotNets V".
-//   longName        Longer name of the conference.  Example: "ACM SIGCOMM
+//   dbName          Database name. Use the name you supplied to
+//                   "Code/createdb.sh". NO SPACES ALLOWED.
+//   dbUser          Database user name. Defaults to $Opt["dbName"].
+//   dbPassword      Password for database user. Defaults to $Opt["dbName"].
+//   shortName       Short name of the conference, including the year or
+//                   number. Examples: "SIGCOMM 2007", "HotNets V".
+//   longName        Longer name of the conference. Example: "ACM SIGCOMM
 //                   2007 Conference".
-//   downloadPrefix  Prefix for downloaded files, such as papers.  Should
-//                   end in a dash.  Example: "hotnets5-".  Defaults to
+//   downloadPrefix  Prefix for downloaded files, such as papers. Should
+//                   end in a dash. Example: "hotnets5-". Defaults to
 //                   $Opt["dbName"] plus a dash.
 //   If your mysql database isn't running on localhost, see $Opt["dsn"] below.
 
@@ -34,7 +34,7 @@ $Opt["downloadPrefix"] = "yourconf1-";
 // URLS
 //
 //   conferenceSite  Conference site URL (e.g., CFP, registration).
-//   paperSite       URL for this HotCRP installation.  Used in emails.
+//   paperSite       URL for this HotCRP installation. Used in emails.
 
 $Opt["conferenceSite"] = "http://your.site.here.com/";
 $Opt["paperSite"] = "http://your.site.here.com/";

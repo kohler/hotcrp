@@ -567,7 +567,7 @@ class ReviewForm {
     }
 
 
-    function textFormHeader($type, $editable = true) {
+    function textFormHeader($type, $editable) {
 	global $Conf, $ConfSiteSuffix, $Opt;
 
 	$x = "==+== " . $Opt["shortName"] . " Paper Review";
@@ -852,11 +852,10 @@ $blind\n";
 		    $req[$field] = "";
 
 		$anyDirectives++;
-		if (preg_match("/Paper Review Form/", $line)
-		    && !preg_match("{" . preg_quote($Opt["shortName"]) . " Paper Review Form}", $line)) {
-		    preg_match('/\A==\+==\s+(.*?)\s+Paper Review Form/', $line, $m);
+		if (preg_match('{\A==\+==\s+(.*?)\s+(Paper Review(?: Form)?s?)\s*\z}', $line, $m)
+		    && $m[1] != trim($Opt["shortName"])) {
 		    $this->garbageMessage($tf, $lineno, $garbage);
-		    self::tfError($tf, true, "This review form appears to be for the wrong conference!  (I was expecting \"" . htmlentities($Opt["shortName"]) . " Paper Review Form\", but found \"" . htmlentities($m[1]) . " Paper Review Form\".)", $lineno);
+		    self::tfError($tf, true, "Ignoring review form, which appears to be for a different conference.<br />(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars(trim($Opt["shortName"])) . " " . $m[2] . "</code>” and upload again.)", $lineno);
 		    return null;
 		} else if (preg_match('/^==\+== Begin Review/i', $line)) {
 		    if ($nfields > 0)

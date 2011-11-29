@@ -247,7 +247,7 @@ if ($Me->privChair) {
     if (($row = edb_row($result)) && $row[1] < $max_file_size)
 	$Conf->warnMsg("MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.");
     if (!function_exists("imagecreate"))
-	$Conf->warnMsg("This PHP installation lacks support for the GD library, so HotCRP cannot generate score charts.  You should update your PHP installation; on Ubuntu Linux, for example, try installing the <code>php5-gd</code> package.");
+	$Conf->warnMsg("This PHP installation lacks support for the GD library, so HotCRP cannot generate score charts. You should update your PHP installation. For example, on Ubuntu Linux, install the <code>php5-gd</code> package.");
     // Any -100 preferences around?
     $result = $Conf->qx("select PRP.paperId from PaperReviewPreference PRP join PCMember PCM on (PCM.contactId=PRP.contactId) left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId) where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0 limit 1");
     if (($row = edb_row($result)))
@@ -256,6 +256,11 @@ if ($Me->privChair) {
     foreach (array("conferenceSite", "paperSite") as $k)
 	if ($Opt[$k] && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', $Opt[$k]))
 	    $Conf->warnMsg("The <code>\$Opt[\"$k\"]</code> setting, <code>&laquo;" . htmlspecialchars($Opt[$k]) . "&raquo;</code>, is not a valid URL.  Edit the <code>Code/options.inc</code> file to fix this problem.");
+    // Weird options?
+    if (!isset($Opt["shortName"]) || $Opt["shortName"] == "")
+	$Conf->warnMsg("The <code>\$Opt[\"shortName\"]</code> setting is missing. Edit the <code>Code/options.inc</code> file to fix this problem.");
+    else if (simplifyWhitespace($Opt["shortName"]) != $Opt["shortName"])
+	$Conf->warnMsg("The <code>\$Opt[\"shortName\"]</code> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more). Edit the <code>Code/options.inc</code> file to fix this problem.");
     // Double-encoding bugs found?
     if ($Conf->setting("bug_doubleencoding"))
 	$Conf->warnMsg("Double-encoded URLs have been detected.  Incorrect uses of Apache’s <code>mod_rewrite</code>, and other middleware, can doubly-encoded URL parameters.  This can cause problems, for instance when users log in via links in email.  (“<code>a@b.com</code>” should be encoded as “<code>a%40b.com</code>”; a double encoding will produce “<code>a%2540b.com</code>”.)  HotCRP has tried to compensate, but you really should fix the problem.  For <code>mod_rewrite</code> add <a href='http://httpd.apache.org/docs/current/mod/mod_rewrite.html'>the <code>[NE]</code> option</a> to the relevant RewriteRule. <a href='index$ConfSiteSuffix?clearbug=doubleencoding'>(Clear&nbsp;this&nbsp;message)</a>");
