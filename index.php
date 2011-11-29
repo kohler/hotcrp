@@ -558,7 +558,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->timePCReviewPreferences()) {
-	echo $sep, "<a href='", hoturl("reviewprefs"), "'>Preferences</a>";
+	echo $sep, "<a href='", hoturl("reviewprefs"), "'>Review preferences</a>";
 	$sep = $xsep;
     }
     if ($Conf->deadlinesAfter("rev_open") || $Me->privChair) {
