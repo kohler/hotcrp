@@ -106,7 +106,7 @@ Thank you,
      array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER%",
 	   "body" => "Greetings,
 
-%OTHERCONTACT% would like %CONTACT% to review %CONFNAME% paper #%NUMBER%.%IF(REASON)%  They supplied this note: %REASON%%ENDIF%
+%OTHERCONTACT% would like %CONTACT3% to review %CONFNAME% paper #%NUMBER%.%IF(REASON)%  They supplied this note: %REASON%%ENDIF%
 
 Visit the assignment page to approve or deny the request.
 
@@ -1195,6 +1195,12 @@ class Mailer {
 	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
 	    $Conf->infoMsg("Sent email to paper #$row->paperId&rsquo;s " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . $endmsg);
 	}
+    }
+
+    static function sendAdmin($template, $row, $otherContact = null, $rest = array()) {
+	global $Opt;
+	$chairContact = (object) array("email" => $Opt["contactEmail"], "fullName" => $Opt["contactName"], "privChair" => 1, "privSuperChair" => 1);
+	Mailer::send($template, $row, $chairContact, $otherContact, $rest);
     }
 
 

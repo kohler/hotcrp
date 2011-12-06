@@ -83,9 +83,11 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
     // NB caller unlocks tables
 
     // check for outstanding review request
-    $result = $Conf->qe("select reviewType, reviewModified, reviewSubmitted, requestedBy, paperId,
-		firstName, lastName, email, password, reviewToken
-		from PaperReview
+    $q = "select reviewType, reviewModified, reviewSubmitted, requestedBy, paperId,
+		firstName, lastName, email, password, roles, reviewToken";
+    if ($Conf->sversion >= 25)
+	$q .= ", preferredEmail";
+    $result = $Conf->qe($q . " from PaperReview
 		join ContactInfo using (contactId)
 		where reviewId=$reviewId", $while);
     if (edb_nrows($result) == 0)
@@ -93,11 +95,11 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 
     $row = edb_orow($result);
     if ($row->paperId != $prow->paperId)
-	return $Conf->errorMsg("Weird!  Retracted review is for a different paper.");
+	return $Conf->errorMsg("Weird! Retracted review is for a different paper.");
     else if ($row->reviewModified > 0)
-	return $Conf->errorMsg("You can't retract that review request since the reviewer has already started their review.");
+	return $Conf->errorMsg("You can’t retract that review request since the reviewer has already started their review.");
     else if (!$Me->privChair && $Me->contactId != $row->requestedBy)
-	return $Conf->errorMsg("You can't retract that review request since you didn't make the request in the first place.");
+	return $Conf->errorMsg("You can’t retract that review request since you didn’t make the request in the first place.");
     if (defval($row, "reviewToken", 0) != 0)
 	$Conf->settings["rev_tokens"] = -1;
 
@@ -107,7 +109,8 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
     // send confirmation email, if the review site is open
     if ($Conf->timeReviewOpen()) {
 	require_once("Code/mailtemplate.inc");
-	Mailer::send("@retractrequest", $prow, $row, $Me, array("cc" => contactEmailTo($Me)));
+	$Requester = Contact::makeMinicontact($row);
+	Mailer::send("@retractrequest", loadReviewInfo($prow, $Requester, true), $Requester, $Me, array("cc" => contactEmailTo($Me)));
     }
 
     // confirmation message
@@ -266,7 +269,7 @@ function requestReview($email) {
 
     // send confirmation email
     require_once("Code/mailtemplate.inc");
-    Mailer::send("@requestreview", $prow, $Them, $Requester, array("reason" => $reason));
+    Mailer::send("@requestreview", loadReviewInfo($prow, $Them, true), $Them, $Requester, array("reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
@@ -298,7 +301,7 @@ function proposeReview($email) {
 
     // send confirmation email
     require_once("Code/mailtemplate.inc");
-    Mailer::send("@proposereview", $prow, (object) array("fullName" => $name, "email" => $email), $Me, array("emailTo" => $Opt['contactEmail'], "cc" => contactEmailTo($Me), "reason" => $reason));
+    Mailer::sendAdmin("@proposereview", $prow, $Me, array("permissionContact" => $Me, "cc" => contactEmailTo($Me), "contact3" => (object) array("fullName" => $name, "email" => $email), "reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");
@@ -402,17 +405,22 @@ if (isset($_REQUEST['add'])) {
 // deny review request
 if (isset($_REQUEST['deny']) && $Me->privChair
     && ($email = trim(defval($_REQUEST, 'email', "")))) {
-    $Conf->qe("lock tables ReviewRequest write, ContactInfo read, PaperReviewRefused write");
+    $Conf->qe("lock tables ReviewRequest write, ContactInfo read, PaperConflict read, PaperReview read, PaperReviewRefused write");
     $while = "while denying review request";
-    $result = $Conf->qe("select name, firstName, lastName, ContactInfo.email, ContactInfo.contactId from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($email) . "'", $while);
-    if (($Requester = edb_orow($result))) {
+    // Need to be careful and not expose inappropriate information:
+    // this email comes from the chair, who can see all, but goes to a PC
+    // member, who can see less.
+    $result = $Conf->qe("select requestedBy from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'", $while);
+    if (($row = edb_row($result))) {
+	$Requester = new Contact();
+	$Requester->lookupById((int) $row[0]);
 	$Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'", $while);
 	if (($reqId = $Conf->getContactId($email, false)) > 0)
 	    $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')", $while);
 
 	// send anticonfirmation email
 	require_once("Code/mailtemplate.inc");
-	Mailer::send("@denyreviewrequest", $prow, $Requester, (object) array("fullName" => trim(defval($_REQUEST, "name", "")), "email" => $email));
+	Mailer::send("@denyreviewrequest", loadReviewInfo($prow, $Requester, true), $Requester, (object) array("fullName" => trim(defval($_REQUEST, "name", "")), "email" => $email));
 
 	$Conf->confirmMsg("Proposed reviewer denied.");
     } else

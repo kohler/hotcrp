@@ -1095,6 +1095,23 @@ function setReviewInfo($dst, $src) {
     $dst->conflictType = $src->conflictType;
 }
 
+function loadReviewInfo($dst, $contact, $copy = false) {
+    global $Conf;
+    if ($copy)
+	$dst = clone $dst;
+    $result = $Conf->q("select reviewType as myReviewType,
+		reviewSubmitted as myReviewSubmitted,
+		reviewNeedsSubmit as myReviewNeedsSubmit,
+		conflictType
+		from ContactInfo
+		left join PaperConflict on (PaperConflict.paperId=$dst->paperId and PaperConflict.contactId=ContactInfo.contactID)
+		left join PaperReview on (PaperReview.paperId=$dst->paperId and PaperReview.contactId=ContactInfo.contactId)
+		where ContactInfo.contactId=$contact->contactId");
+    if (($row = edb_orow($result)))
+	setReviewInfo($dst, $row);
+    return $dst;
+}
+
 function saveWatchPreference($paperId, $contactId, $watchtype, $on) {
     global $Conf, $OK;
     $explicit = ($watchtype << WATCHSHIFT_EXPLICIT);
