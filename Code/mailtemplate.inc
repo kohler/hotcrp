@@ -529,7 +529,8 @@ class Mailer {
 
     var $row;
     var $contact;
-    var $otherContact;
+    var $permissionContact;
+    var $contacts;
     var $hideSensitive;
     var $hideReviews;
     var $reason;
@@ -546,7 +547,8 @@ class Mailer {
     function Mailer($row, $contact, $otherContact = null, $rest = array()) {
 	$this->row = $row;
 	$this->contact = $contact;
-	$this->otherContact = $otherContact;
+	$this->permissionContact = defval($rest, "permissionContact", $contact);
+	$this->contacts = array($contact, defval($rest, "contact2", $otherContact), defval($rest, "contact3", null));
 	$this->hideSensitive = defval($rest, "hideSensitive", false);
 	$this->reason = defval($rest, "reason", "");
 	$this->adminupdate = defval($rest, "adminupdate", false);
@@ -571,15 +573,15 @@ class Mailer {
 	if (is_object($contact) && defval($contact, "preferredEmail", "") != "")
 	    $email = $contact->preferredEmail;
 
-	if ($out[0] == "n")
+	if ($out == "NAME" || $out == "CONTACT")
 	    $t = trim("$firstName $lastName");
-	else if ($out[0] == "f")
+	else if ($out == "FIRST")
 	    $t = $firstName;
-	else if ($out[0] == "l")
+	else if ($out == "LAST")
 	    $t = $lastName;
 	else
 	    $t = "";
-	if ($t == "" && $out == "n" && $email
+	if ($t == "" && $out == "NAME" && $email
 	    && $this->expansionType != self::EXPAND_EMAIL)
 	    $t = $email;
 	if ($t != "" && $this->expansionType == self::EXPAND_EMAIL
@@ -588,16 +590,16 @@ class Mailer {
 
 	if ($email == "" && $this->expansionType == self::EXPAND_EMAIL)
 	    $email = "<none>";
-	if ($out == "e")
+	if ($out == "EMAIL")
 	    $t = $email;
-	else if ($out == "ne" && $this->expansionType == self::EXPAND_EMAIL) {
+	else if ($out == "CONTACT" && $this->expansionType == self::EXPAND_EMAIL) {
 	    if ($t == "")
 		$t = $email;
 	    else if ($email[0] == "<")
 		$t .= " $email";
 	    else
 		$t .= " <$email>";
-	} else if ($out == "ne" && $email != "")
+	} else if ($out == "CONTACT" && $email != "")
 	    $t = ($t == "" ? $email : "$t <$email>");
 
 	return $t;
@@ -658,7 +660,7 @@ class Mailer {
 	if ($what == "%CONFLONGNAME%")
 	    return $Opt["longName"];
 	if ($what == "%ADMIN%")
-	    return $this->_expandContact((object) array("fullName" => $Opt["contactName"], "email" => $Opt["contactEmail"]), "ne");
+	    return $this->_expandContact((object) array("fullName" => $Opt["contactName"], "email" => $Opt["contactEmail"]), "CONTACT");
 	if ($what == "%URL%")
 	    return $Opt["paperSite"];
 	else if ($len > 7 && substr($what, 0, 5) == "%URL(" && substr($what, $len - 2) == ")%") {
@@ -693,12 +695,12 @@ class Mailer {
 	if ($what == "%NUMACCEPTED%")
 	    return $this->statistics[1];
 
-	if ($what == "%OTHERCONTACT%" && $this->otherContact)
-	    return $this->_expandContact($this->otherContact, "ne");
-	if ($what == "%OTHERNAME%" && $this->otherContact)
-	    return $this->_expandContact($this->otherContact, "n");
-	if ($what == "%OTHEREMAIL%" && $this->otherContact)
-	    return $this->_expandContact($this->otherContact, "e");
+	if (preg_match('/\A%((?:OTHER)?)(CONTACT|NAME|EMAIL|FIRST|LAST)(|[1-9]\d*)%\z/', $what, $m)
+	    && ($m[1] == "" || $m[3] == "")) {
+	    $which = ($m[1] == "" && $m[3] == "" ? 0 : ($m[1] == "" ? (int) $m[3] - 1 : 1));
+	    if (($c = defval($this->contacts, $which, null)))
+		return $this->_expandContact($c, $m[2]);
+	}
 
 	// if no contact, this is a pre-expansion
 	if (!$this->contact) {
@@ -707,17 +709,6 @@ class Mailer {
 	    else
 		return ($isbool ? null : $what);
 	}
-
-	if ($what == "%CONTACT%")
-	    return $this->_expandContact($this->contact, "ne");
-	if ($what == "%NAME%")
-	    return $this->_expandContact($this->contact, "n");
-	if ($what == "%FIRST%")
-	    return $this->_expandContact($this->contact, "f");
-	if ($what == "%LAST%")
-	    return $this->_expandContact($this->contact, "l");
-	if ($what == "%EMAIL%")
-	    return $this->_expandContact($this->contact, "e");
 
 	$password = null;
 	if (!isset($Opt["ldapLogin"]) && isset($this->contact->password))
@@ -757,17 +748,17 @@ class Mailer {
 	if ($what == "%REVIEWNUMBER%")
 	    return $this->reviewNumber;
 	if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
-	    if ($Conf->paperBlind($this->row, $this->contact)
-		&& defval($this->row, "conflictType") < CONFLICT_AUTHOR
-		&& defval($this->contact, "conflictType") < CONFLICT_AUTHOR
-		&& !defval($this->contact, "privSuperChair")
-		&& !$this->contact->canViewAuthors($this->row, true))
+	    if ($Conf->paperBlind($this->row, $this->permissionContact)
+		&& defval($this->row, "conflictType", 0) < CONFLICT_AUTHOR
+		&& defval($this->permissionContact, "conflictType", 0) < CONFLICT_AUTHOR
+		&& !defval($this->permissionContact, "privSuperChair")
+		&& !$this->permissionContact->canViewAuthors($this->row, true))
 		return ($isbool ? false : "Hidden for blind review");
 	    cleanAuthor($this->row);
 	    return rtrim($this->row->authorInformation);
 	}
 	if ($what == "%AUTHORVIEWCAPABILITY%" && isset($this->row->capVersion)
-	    && $this->contact->actAuthorView($this->row))
+	    && $this->permissionContact->actAuthorView($this->row))
 	    return "&cap=" . $Conf->capabilityText($this->row, "a");
 	if ($what == "%SHEPHERD%" || $what == "%SHEPHERDNAME%"
 	    || $what == "%SHEPHERDEMAIL%") {
@@ -783,18 +774,18 @@ class Mailer {
 	    }
 	    $shep = $pc[$this->row->shepherdContactId];
 	    if ($what == "%SHEPHERD%")
-		return $this->_expandContact($shep, "ne");
+		return $this->_expandContact($shep, "CONTACT");
 	    else if ($what == "%SHEPHERDNAME%")
-		return $this->_expandContact($shep, "n");
+		return $this->_expandContact($shep, "NAME");
 	    else
-		return $this->_expandContact($shep, "e");
+		return $this->_expandContact($shep, "EMAIL");
 	}
 
-	if ($what == "%REVIEWAUTHOR%" && $this->otherContact) {
+	if ($what == "%REVIEWAUTHOR%" && $this->contacts[1]) {
 	    if (reviewBlind($this->rrow)
-		&& defval($this->contact, "privChair") <= 0
-		&& (!isset($this->contact->canViewReviewerIdentity)
-		    || !$this->contact->canViewReviewerIdentity($this->row, $this->rrow, true))) {
+		&& defval($this->permissionContact, "privChair") <= 0
+		&& (!isset($this->permissionContact->canViewReviewerIdentity)
+		    || !$this->permissionContact->canViewReviewerIdentity($this->row, $this->rrow, true))) {
 		if ($isbool)
 		    return false;
 		else if ($this->expansionType == self::EXPAND_EMAIL)
@@ -802,7 +793,7 @@ class Mailer {
 		else
 		    return "Hidden for blind review";
 	    }
-	    return $this->_expandContact($this->otherContact, "ne");
+	    return $this->_expandContact($this->contacts[1], "CONTACT");
 	}
 
 	if ($what == "%REVIEWS%")
