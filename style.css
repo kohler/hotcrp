@@ -137,10 +137,13 @@ td.spanner {
 a.q, a.u {
 	color: black;
 }
-a.q, a.x {
+a.qq, a.uu {
+	color: inherit;
+}
+a.q, a.qq, a.x {
 	text-decoration: none;
 }
-a.q:hover, a.x:hover {
+a.q:hover, a.qq:hover, a.x:hover {
 	text-decoration: underline;
 }
 a.small {
@@ -2093,6 +2096,9 @@ div.cmtg {
 	border-top: 1px solid #f7f1df;
 	padding: 5px 0;
 }
+span.cmtfn > span.barsep {
+	color: #eadeb7;
+}
 div.cmtg.cmtg1 {
 	border-top: 0 none;
 	padding-top: 0;
@@ -2105,7 +2111,7 @@ div.cmtadminvis {
 div.cmtt {
 	font-size: smaller;
 	padding: 2px 0;
-	color: #555555;
+	color: #666666;
 }
 div.cmtt span.cmtvis {
 	font-size: smaller;
@@ -2129,6 +2135,9 @@ table.cmtoff span.cmtfn {
 	font-variant: small-caps;
 	font-weight: bold;
 	padding: 0 1em 5px 0;
+}
+span.cmtnumhead span.cmtnumat {
+	color: #aaaaaa;
 }
 div.cmtev {
 	padding: 5px 0 1em 2px;

@@ -8,9 +8,11 @@ class CommentView {
     var $ncomment_in_table;
     var $nresponse;
     var $mode;
+    var $numbers;
 
-    function CommentView() {
+    function __construct() {
 	$this->ncomment_in_table = $this->nresponse = $this->mode = 0;
+	$this->numbers = array();
     }
 
     function beginTable() {
@@ -21,6 +23,7 @@ class CommentView {
   <tr><td></td><td class='cmtcc'>";
 	$this->mode = 1;
 	$this->ncomment_in_table = 0;
+	$this->numbers = array();
     }
 
     function endTable() {
@@ -31,11 +34,27 @@ class CommentView {
 	}
     }
 
+    function commentNumber($prow, $crow) {
+	if (($crow->forAuthors == 2 && $crow->forReviewers == 0)
+	    || $crow->forReviewers == 2)
+	    return null;
+	$p = ($crow->forAuthors ? "A" : "");
+	$n = defval($this->numbers, $p, 0) + 1;
+	$this->numbers[$p] = $n;
+	return $p . $n;
+    }
+
     function commentIdentityTime($prow, $crow, $response) {
 	global $Conf, $Me, $forceShow;
 	echo "<span class='cmtfn'>";
 	$sep = "";
 	$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
+	if ($crow && ($number = $this->commentNumber($prow, $crow))) {
+	    echo "<span class='cmtnumhead'><a class='qq' href='#comment",
+		$crow->commentId, "'><span class='cmtnumat'>@</span>",
+		"<span class='cmtnumnum'>", $number, "</span></a></span>";
+	    $sep = $xsep;
+	}
 	if ($crow && $Me->canViewCommentIdentity($prow, $crow)) {
 	    $blind = ($crow->blind && $crow->forAuthors > 0);
 	    echo $sep, "<span class='cmtname'>", ($blind ? "[" : ""),
@@ -154,14 +173,14 @@ class CommentView {
 	$forAuthors = $crow && $crow->forAuthors != 0;
 	$forReviewers = ($crow && $crow->forReviewers != -1 ? $crow->forReviewers : 1);
 	echo tagg_radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : ($forAuthors != 0))),
-	    "&nbsp;", tagg_label("Authors and reviewers");
+	    "&nbsp;", tagg_label("Authors and reviewers" . ($Conf->blindReview() == BLIND_ALWAYS ? " (anonymous to authors)" : ""));
 	// blind?
 	if ($Conf->blindReview() == BLIND_OPTIONAL) {
 	    echo " &nbsp; (",
 		tagg_checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, "blind") : !$crow || $crow->blind)),
-		"&nbsp;", tagg_label("Anonymous to authors"), ")<br />\n";
-	} else if ($Conf->blindReview() == BLIND_ALWAYS)
-	    echo " (anonymous to authors)<br />\n";
+		"&nbsp;", tagg_label("Anonymous to authors"), ")";
+	}
+	echo "<br />\n";
 	echo tagg_radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : ($forAuthors == 0 && $forReviewers == 1))),
 	    "&nbsp;", tagg_label("PC and external reviewers"), "<br />\n";
 	echo tagg_radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($forAuthors == 0 && $forReviewers == 0))),
