@@ -2084,7 +2084,7 @@ class PaperSearch {
 	if ($this->limitName == "s" || $this->limitName == "req"
 	    || $this->limitName == "acc" || $this->limitName == "und")
 	    $filters[] = "Paper.timeSubmitted>0";
-	else if ($this->limitName == "act")
+	else if ($this->limitName == "act" || $this->limitName == "r")
 	    $filters[] = "Paper.timeWithdrawn<=0";
 	else if ($this->limitName == "unsub")
 	    $filters[] = "(Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0)";
@@ -2105,7 +2105,7 @@ class PaperSearch {
 	    $filters[] = "MyReview.reviewType is not null";
 	    $this->needflags |= self::F_REVIEWER;
 	} else if ($this->limitName == "ar") {
-	    $filters[] = "(" . $this->contact->actAuthorSql("PaperConflict") . " or MyReview.reviewType is not null)";
+	    $filters[] = "(" . $this->contact->actAuthorSql("PaperConflict") . " or (Paper.timeWithdrawn<=0 and MyReview.reviewType is not null))";
 	    $this->needflags |= self::F_AUTHOR | self::F_REVIEWER;
 	} else if ($this->limitName == "rout") {
 	    $filters[] = "MyReview.reviewNeedsSubmit!=0";
