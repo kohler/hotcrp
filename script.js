@@ -1138,7 +1138,7 @@ function savedisplayoptions() {
 	});
 }
 
-function docheckformat(dt) {
+function docheckformat(dt) {	// NB must return void
     var form = $$("checkformatform" + dt);
     if (form.onsubmit) {
 	fold("checkformat" + dt, 0);
