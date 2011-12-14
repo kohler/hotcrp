@@ -224,6 +224,7 @@ function checkMail($send) {
     $nrows_left = edb_nrows($result);
     $nrows_print = false;
     $nwarnings = 0;
+    $cbcount = 0;
     $preperrors = array();
     while (($row = edb_orow($result))) {
 	$nrows_left--;
@@ -271,17 +272,21 @@ function checkMail($send) {
 	    }
 
 	    echo "<div class='mail'><table>";
-	    if ($send)
-		$cbtd = "<td class='mhx'></td>";
-	    else
-		$cbtd = "<td class='mhcb'><input type='checkbox' class='cb' name='$checker' value='1' checked='checked' /> &nbsp;</td>";
+	    $nprintrows = 0;
 	    foreach (array("fullTo" => "To", "cc" => "Cc", "bcc" => "Bcc",
 			   "replyto" => "Reply-To", "subject" => "Subject") as $k => $t)
 		if (isset($show_preparation[$k])) {
+		    echo " <tr>";
+		    if (++$nprintrows > 1)
+			echo "<td class='mhpad'></td>";
+		    else if ($send)
+			echo "<td class='mhx'></td>";
+		    else {
+			++$cbcount;
+			echo "<td class='mhcb'><input type='checkbox' class='cb' name='$checker' value='1' checked='checked' id='psel$cbcount' onclick='pselClick(event,this)' /> &nbsp;</td>";
+		    }
 		    $x = htmlspecialchars(Mailer::mimeHeaderUnquote($show_preparation[$k]));
-		    echo " <tr>", $cbtd, "<td class='mhnp'>", $t, ":</td>",
-			"<td class='mhdp'>", $x, "</td></tr>\n";
-		    $cbtd = "<td class='mhpad'></td>";
+		    echo "<td class='mhnp'>", $t, ":</td><td class='mhdp'>", $x, "</td></tr>\n";
 		}
 
 	    echo " <tr><td></td><td></td><td class='mhb'>",

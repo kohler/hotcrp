@@ -376,12 +376,13 @@ function paperselCheck() {
 }
 
 var pselclick_last = {};
-function pselClick(evt, elt, thisnum, name) {
-    var i, j, sel;
-    name = (name ? name : "psel");
-    if (!evt.shiftKey || !pselclick_last[name])
-	/* nada */;
-    else {
+function pselClick(evt, elt) {
+    var i, j, sel, name, thisnum;
+    if (!(i = elt.id.match(/^(.*?)(\d+)$/)))
+	return;
+    name = i[1];
+    thisnum = +i[2];
+    if (evt.shiftKey && pselclick_last[name]) {
 	if (pselclick_last[name] <= thisnum) {
 	    i = pselclick_last[name];
 	    j = thisnum - 1;

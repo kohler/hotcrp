@@ -851,7 +851,7 @@ foreach ($pcm as $id => $p) {
     $c = "<tr$color><td class='pctbl'>"
 	. tagg_checkbox("pcs[]", $id, isset($pcsel[$id]),
 			array("id" => "pcsel$count",
-			      "onchange" => "pselClick(event, this, $count, 'pcsel');\$\$('pctyp_sel').checked=true"))
+			      "onclick" => "pselClick(event,this);\$\$('pctyp_sel').checked=true"))
 	. "&nbsp;</td><td class='pctbname'>"
 	. tagg_label(contactNameHtml($p), "pcsel$count")
 	. "</td></tr><tr$color><td class='pctbl'></td><td class='pctbnrev'>";
