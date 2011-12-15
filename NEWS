@@ -1,5 +1,36 @@
 HotCRP NEWS
 
+Version 2.47   14.Dec.2011
+
+* Add author-view capabilities. These parameters, when appended to any
+  HotCRP URL, grant the client the right to view a paper like an author.
+
+  Capabilities will let us start removing passwords from emails, something
+  long desired. They are cryptographically hashed from information
+  including a per-conference secret, so a paper's capabilities are
+  unguessable without database access.
+
+* Support PowerPoint uploads.
+
+* Add a new PC review assignment: "optional" PC reviews (PC members are
+  asked to accept or decline).
+
+* Comments are numbered as @1, @2, @3, @4 (and @A1, @A2, ...). This will
+  hopefully facilitate cross-references among comments.
+
+* UI improvements and bug fixes for review preferences, bulk account
+  creation, mail tool, the "PC chairs must approve external reviewers"
+  setting, Chrome compatibility, offline reviewing, mod_rewrite
+  configuration bugs, and paper URLs. And "#tagname" is a valid search
+  string for "tag:tagname".
+
+* Information leak fixes: accept author lists, PC chair approvals for
+  external reviewers.
+
+* Thanks to Lars Eggert, Michael Hicks, John Wilkes, Jane-Ellen Long, Jeff
+  Mogul, Clay Shepard, Gareth Gale, and Amit Sahai.
+
+
 Version 2.46   5.Aug.2011
 
 * Support multiple final-version uploads.

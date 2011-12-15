@@ -1,4 +1,4 @@
-export VERSION=2.46
+export VERSION=2.47
 perl -pi -e 's/HotCRP: Conference Review Package 2\.\d+/HotCRP: Conference Review Package '$VERSION'/' README
 
 # check that schema.sql and updateschema.inc agree on schema version
@@ -22,7 +22,7 @@ mkdistdir () {
     crpd=hotcrp-$VERSION
     rm -rf $crpd
     mkdir $crpd
-    
+
     while read f; do
 	if [ -n "$f" ]; then
 	    d=`echo "$f" | sed 's/[^\/]*$//'`
