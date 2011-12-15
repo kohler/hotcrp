@@ -2320,6 +2320,8 @@ class PaperSearch {
     function _tagDescription() {
 	if ($this->q == "")
 	    return false;
+	else if (strlen($this->q) <= 24)
+	    return htmlspecialchars($this->q);
 	else if (substr($this->q, 0, 4) == "tag:")
 	    $t = substr($this->q, 4);
 	else if (substr($this->q, 0, 5) == "-tag:")
