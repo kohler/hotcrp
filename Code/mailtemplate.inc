@@ -947,6 +947,16 @@ class Mailer {
 	return $text;
     }
 
+    function _lineexpand($line, $info, $indent, $width) {
+	$text = "";
+	while (preg_match('/^(.*?)(%\w+(?:|\([^\)]*\))%)(.*)$/s', $line, $m)) {
+	    $text .= $m[1] . $this->expandvar($m[2], false);
+	    $line = $m[3];
+	}
+	$text .= $line;
+	return wordWrapIndent($text, $info, $indent, $width) . "\n";
+    }
+
     function expand($text, $field = null) {
 	if (is_array($text)) {
 	    $a = array();
@@ -997,25 +1007,11 @@ class Mailer {
 		    $text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $width) . "\n";
 		else if ($yes === null)
 		    $text .= $line . "\n";
-	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%\w+(?:|\([^\)]*\))%)$/', $line, $m))
-		$text .= wordWrapIndent($this->expandvar($m[2]), $m[1], tabLength($m[1], true), $width) . "\n";
-	    else if (preg_match('/^([ \t][ \t]*.*?: )(%URL(?:|\([^\)]*\))%\S*)$/', $line, $m)) {
-		// do not wrap lines that start with %URL%
-		$textstart = strlen($text);
-		while (preg_match('/^(.*?)(%\w+(?:|\([^\)]*\))%)(.*)$/s', $line, $m)) {
-		    $text .= $m[1] . $this->expandvar($m[2]);
-		    $line = $m[3];
-		}
-		$text .= $line . "\n";
-	    } else if (strpos($line, '%') !== false) {
-		$textstart = strlen($text);
-		while (preg_match('/^(.*?)(%\w+(?:|\([^\)]*\))%)(.*)$/s', $line, $m)) {
-		    $text .= $m[1] . $this->expandvar($m[2]);
-		    $line = $m[3];
-		}
-		$text .= $line;
-		$text = substr($text, 0, $textstart) . wordWrapIndent(substr($text, $textstart), "", 0, $width) . "\n";
-	    } else
+	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%\w+(?:|\([^\)]*\))%|\S+)\s*$/', $line, $m))
+		$text .= $this->_lineexpand($m[2], $m[1], tabLength($m[1], true), $width);
+	    else if (strpos($line, '%') !== false)
+		$text .= $this->_lineexpand($line, "", 0, $width);
+	    else
 		$text .= wordWrapIndent($line, "", 0, $width) . "\n";
 	}
 
