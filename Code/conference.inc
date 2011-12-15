@@ -154,7 +154,8 @@ class Conference {
 	// is a random string specific to the conference, stored in Settings
 	// under cap_key (created in header.inc).  Then hashPrefix
 	// is the base-64 encoding of the first 8 bytes of this hash, except
-	// that "+" is re-encoded as "-" and trailing "="s are removed.
+	// that "+" is re-encoded as "-", "/" is re-encoded as "_", and
+	// trailing "="s are removed.
 	//
 	// Any user who knows the conference's cap_key can construct any
 	// capability for any paper.  Longer term, one might set each paper's
@@ -165,7 +166,7 @@ class Conference {
 	    return false;
 	$start = "0" . $prow->paperId . $capType;
 	$hash = sha1($start . $prow->capVersion . $this->settingTexts["cap_key"], true);
-	$suffix = str_replace(array("+", "="), array("-", ""),
+	$suffix = str_replace(array("+", "/", "="), array("-", "_", ""),
 			      base64_encode(substr($hash, 0, 8)));
 	return $start . $suffix;
     }

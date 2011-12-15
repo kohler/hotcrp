@@ -296,11 +296,13 @@ function setCapabilities() {
     }
     if (!isset($Opt["disableCapabilities"]) && isset($_REQUEST["cap"])
 	&& $_REQUEST["cap"][0] == "0") {
-	if (preg_match('/\A0([1-9]\d*)a(\w+)\z/', $_REQUEST["cap"], $m)
+	if (preg_match('/\A0([1-9]\d*)a\S+\z/', $_REQUEST["cap"], $m)
 	    && ($result = $Conf->qx("select paperId, capVersion from Paper where paperId=$m[1]"))
-	    && ($row = edb_orow($result))
-	    && $_REQUEST["cap"] == $Conf->capabilityText($row, "a"))
-	    $Me->changeCapability($m[1], Contact::CAP_AUTHORVIEW, true);
+	    && ($row = edb_orow($result))) {
+	    $rowcap = $Conf->capabilityText($row, "a");
+	    if ($_REQUEST["cap"] == $rowcap || str_replace("/", "_", $_REQUEST["cap"]) == $rowcap)
+		$Me->changeCapability($m[1], Contact::CAP_AUTHORVIEW, true);
+	}
     }
     if (isset($Opt["testCapabilities"]) && $Opt["testCapabilities"]
 	&& isset($_REQUEST["testcap"])) {
