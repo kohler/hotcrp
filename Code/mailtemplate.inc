@@ -247,7 +247,7 @@ The %CONFNAME% program committee is delighted to inform you that your paper #%NU
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%%AUTHORVIEWCAPABILITY%)%
+  Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions.  Congratulations!
 
@@ -271,7 +271,7 @@ The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%%AUTHORVIEWCAPABILITY%)%
+  Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.
 
@@ -394,7 +394,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%%AUTHORVIEWCAPABILITY%)%
+  Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this registration: %REASON%
 
@@ -410,7 +410,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%%AUTHORVIEWCAPABILITY%)%
+  Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
 
@@ -426,7 +426,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%%AUTHORVIEWCAPABILITY%)%
+  Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
 
@@ -442,7 +442,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%%AUTHORVIEWCAPABILITY%)%
+  Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
 
@@ -665,8 +665,10 @@ class Mailer {
 	    return $Opt["paperSite"];
 	else if ($len > 7 && substr($what, 0, 5) == "%URL(" && substr($what, $len - 2) == ")%") {
 	    $a = preg_split('/\s*,\s*/', substr($what, 5, $len - 7));
-	    for ($i = 0; $i < count($a); ++$i)
+	    for ($i = 0; $i < count($a); ++$i) {
 		$a[$i] = $this->expand($a[$i], "urlpart");
+		$a[$i] = preg_replace('/\&(?=\&|\z)/', "", $a[$i]);
+	    }
 	    return hoturl_absolute($a[0], isset($a[1]) ? $a[1] : "");
 	}
 	if ($what == "%PHP%")
@@ -759,7 +761,7 @@ class Mailer {
 	}
 	if ($what == "%AUTHORVIEWCAPABILITY%" && isset($this->row->capVersion)
 	    && $this->permissionContact->actAuthorView($this->row))
-	    return "&cap=" . $Conf->capabilityText($this->row, "a");
+	    return "cap=" . $Conf->capabilityText($this->row, "a");
 	if ($what == "%SHEPHERD%" || $what == "%SHEPHERDNAME%"
 	    || $what == "%SHEPHERDEMAIL%") {
 	    $pc = pcMembers();
