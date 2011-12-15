@@ -355,9 +355,20 @@ if (!function_exists("json_decode")) {
 // web helpers
 
 function hoturl($page, $options = null) {
-    global $ConfSiteBase, $ConfSiteSuffix;
+    global $ConfSiteBase, $ConfSiteSuffix, $Opt;
     $t = $ConfSiteBase . $page . $ConfSiteSuffix;
-    return ($options ? $t . "?" . $options : $t);
+    if ($options && preg_match('/\A(|.*?(?:\&|\&amp;))p=(\d+|%\w+%)(.*)\z/', $options, $m)
+	&& !defval($Opt, "disableSlashURLs")
+	&& preg_match('/\A(?:paper|review|comment|contactauthors)\z/', $page)) {
+	$t .= "/" . $m[2];
+	$options = $m[1] . $m[3];
+    }
+    if ($options && preg_match('/\A\&(?:amp;)?(.*)\z/', $options, $m))
+	$options = $m[1];
+    if ($options)
+	return $t . "?" . $options;
+    else
+	return $t;
 }
 
 function hoturlx($page) {
