@@ -647,14 +647,13 @@ class PaperList extends BaseList {
 
     function _paperLink($row) {
 	global $Conf;
-	if (!($pl = $this->paperLink))
-	    $pl = "paper";
-	$px = $pl;
-	$pl = hoturl($pl, "p=" . $row->paperId);
+	if (!($pt = $this->paperLink))
+	    $pt = "paper";
+	$pl = "p=" . $row->paperId;
 	$doreview = isset($row->reviewId) && ($this->search->reviewerContact || isset($row->reviewFirstName));
 	if ($doreview) {
 	    $rord = unparseReviewOrdinal($row);
-	    if ($px != "paper" || $row->reviewSubmitted <= 0) {
+	    if ($pt != "paper" || $row->reviewSubmitted <= 0) {
 		$pl .= "&amp;r=" . $rord;
 		if ($row->reviewSubmitted > 0)
 		    $pl .= "&amp;m=r";
@@ -663,7 +662,7 @@ class PaperList extends BaseList {
 	$pl .= $this->paperLinkArgs;
 	if ($doreview && $row->reviewSubmitted > 0)
 	    $pl .= "#review" . $rord;
-	return $pl;
+	return hoturl($pt, $pl);
     }
 
     // content downloaders
