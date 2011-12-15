@@ -289,8 +289,9 @@ function checkMail($send) {
 		    echo "<td class='mhnp'>", $t, ":</td><td class='mhdp'>", $x, "</td></tr>\n";
 		}
 
-	    echo " <tr><td></td><td></td><td class='mhb'>",
-		"<pre class='email'>", htmlspecialchars($show_preparation["body"]), "</pre></td></tr>\n",
+	    echo " <tr><td></td><td></td><td class='mhb'><pre class='email'>",
+		preg_replace(',https?://\S+,', '<a href="$0">$0</a>', htmlspecialchars($show_preparation["body"])),
+		"</pre></td></tr>\n",
 		"<tr><td class='mhpad'></td><td></td><td class='mhpad'></td></tr>",
 		"</table></div>\n";
 	}
