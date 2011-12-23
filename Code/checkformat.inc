@@ -298,7 +298,7 @@ class CheckFormat {
 		    $minval = min($minval, $pp);
 		}
 	    if (count($px) > 0) {
-		$pie[] = "Leading too small: minimum ${p}pt, saw values as small as ${minval}pt on " . pluralx($px, "page") . " " . commarangejoin($px);
+		$pie[] = "<a href='http://en.wikipedia.org/wiki/Leading'>Leading</a> (line spacing) too small: minimum ${p}pt, saw values as small as ${minval}pt on " . pluralx($px, "page") . " " . commarangejoin($px);
 		$this->errors |= self::ERR_BODYLEADING;
 	    }
 	}
