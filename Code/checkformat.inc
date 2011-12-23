@@ -59,6 +59,14 @@ function cvtdimen($text, $ndimen = -1) {
 }
 
 function unparsedimen($n, $to = null) {
+    if ($to == "paper") {
+	if (is_array($n) && count($n) == 2 && abs($n[0] - 612) <= 5 && abs($n[1] - 792) <= 5)
+	    return "letter paper (8.5in x 11in)";
+	else if (is_array($n) && count($n) == 2 && abs($n[0] - 595.27) <= 5 && abs($n[1] - 841.89) <= 5)
+	    return "A4 paper (210mm x 297mm)";
+	else
+	    $to = null;
+    }
     if (is_array($n)) {
 	$t = "";
 	foreach ($n as $v)
@@ -180,15 +188,10 @@ class CheckFormat {
 		    $ok = true;
 		    break;
 		}
-		if (abs($p[0] - 612) <= 5 && abs($p[1] - 792) <= 5)
-		    $psdefs[] = "letter paper (8.5in x 11in)";
-		else if (abs($p[0] - 595.27) <= 5 && abs($p[1] - 841.89) <= 5)
-		    $psdefs[] = "A4 paper (210mm x 297mm)";
-		else
-		    $psdefs[] = unparsedimen($p);
+		$psdefs[] = unparsedimen($p, "paper");
 	    }
 	    if (!$ok && count($psdefs)) {
-		$pie[] = "Paper size mismatch: expected " . commajoin($psdefs, "or");
+		$pie[] = "Paper size mismatch: expected " . commajoin($psdefs, "or") . ", got " . unparsedimen($papersize, "paper");
 		$this->errors |= self::ERR_PAPERSIZE;
 	    }
 	}
