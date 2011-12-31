@@ -382,6 +382,10 @@ function hoturl_absolute($page, $options = null) {
 }
 
 function go($url) {
+    global $ConfSiteBase, $ConfSiteSuffix;
+    if ($url === false)
+	$url = "${ConfSiteBase}index$ConfSiteSuffix";
+
     // The URL is often a relative one; make it absolute if possible.
     if (!preg_match('|\A[a-z]+://|', $url)
 	&& ($absuri = requestAbsoluteURI(true))) {

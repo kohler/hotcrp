@@ -197,9 +197,6 @@ class Contact {
     }
 
     function go($url) {
-	global $ConfSiteBase, $ConfSiteSuffix;
-	if ($url === false)
-	    $url = "${ConfSiteBase}index$ConfSiteSuffix";
 	go($url);
     }
 
