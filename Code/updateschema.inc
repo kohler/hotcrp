@@ -1,4 +1,7 @@
 <?php
+// updateschema.inc -- HotCRP function for updating old schemata
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
 
 function updateSchema($Conf) {
     global $Opt, $OK;
@@ -228,6 +231,11 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table Paper add `capVersion` int(1) NOT NULL default '0'")
 	&& $Conf->q("update Settings set value=41 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 41;
+    if ($Conf->settings["allowPaperOption"] == 41
+	&& $Conf->q("alter table Paper modify `mimetype` varchar(80) NOT NULL default ''")
+	&& $Conf->q("alter table PaperStorage modify `mimetype` varchar(80) NOT NULL default ''")
+	&& $Conf->q("update Settings set value=42 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 42;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

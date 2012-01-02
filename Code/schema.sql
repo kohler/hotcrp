@@ -173,7 +173,7 @@ CREATE TABLE `Paper` (
   `capVersion` int(1) NOT NULL DEFAULT '0',
   # next 3 fields copied from PaperStorage to reduce joins
   `size` int(11) NOT NULL DEFAULT '0',
-  `mimetype` varchar(40) NOT NULL DEFAULT '',
+  `mimetype` varchar(80) NOT NULL DEFAULT '',
   `timestamp` int(11) NOT NULL DEFAULT '0',
   # next 2 fields calculated from PaperComment to reduce joins
   `numComments` int(11) NOT NULL DEFAULT '0',
@@ -378,7 +378,7 @@ CREATE TABLE `PaperStorage` (
   `paperStorageId` int(11) NOT NULL AUTO_INCREMENT,
   `paperId` int(11) NOT NULL,
   `timestamp` int(11) NOT NULL,
-  `mimetype` varchar(40) NOT NULL DEFAULT '',
+  `mimetype` varchar(80) NOT NULL DEFAULT '',
   `paper` longblob,
   `compression` tinyint(1) NOT NULL DEFAULT '0',
   `sha1` varbinary(20) NOT NULL DEFAULT '',
@@ -525,7 +525,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 41);
+insert into Settings (name, value) values ('allowPaperOption', 42);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
