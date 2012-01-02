@@ -512,7 +512,8 @@ function doCleanOptionValues($id) {
     if (($optvt != OPTIONTYPE_CHECKBOX && $optvt != OPTIONTYPE_SELECTOR
 	 && $optvt != OPTIONTYPE_NUMERIC && $optvt != OPTIONTYPE_TEXT
 	 && $optvt != OPTIONTYPE_PDF && $optvt != OPTIONTYPE_FINALPDF
-	 && $optvt != OPTIONTYPE_SLIDES && $optvt != OPTIONTYPE_FINALSLIDES)
+	 && $optvt != OPTIONTYPE_SLIDES && $optvt != OPTIONTYPE_FINALSLIDES
+	 && $optvt != OPTIONTYPE_VIDEO && $optvt != OPTIONTYPE_FINALVIDEO)
 	|| ($Conf->sversion < 27 && $optvt > 1))
 	$optvt = $_REQUEST["optvt$id"] = 0;
     if ($optvt == OPTIONTYPE_SELECTOR) {
@@ -529,7 +530,7 @@ function doCleanOptionValues($id) {
     if ($optvt == OPTIONTYPE_FINALPDF) {
 	$_REQUEST["optp$id"] = 1;
 	$_REQUEST["optdt$id"] = 0;
-    } else if ($optvt == OPTIONTYPE_FINALSLIDES)
+    } else if ($optvt == OPTIONTYPE_FINALSLIDES || $optvt == OPTIONTYPE_FINALVIDEO)
 	$_REQUEST["optp$id"] = 1;
 
     $pcview = cvtint(defval($_REQUEST, "optp$id", 0));
@@ -1369,11 +1370,13 @@ function doOptGroupOption($o) {
     if ($Conf->sversion >= 28) {
 	$otypes[OPTIONTYPE_PDF] = "PDF";
 	$otypes[OPTIONTYPE_SLIDES] = "Slides";
+	$otypes[OPTIONTYPE_VIDEO] = "Video";
     }
     if ($finalOptions) {
 	$otypes["xxx2"] = array("optgroup", "Options for accepted papers");
 	$otypes[OPTIONTYPE_FINALPDF] = "Alternate final version";
 	$otypes[OPTIONTYPE_FINALSLIDES] = "Final slides";
+	$otypes[OPTIONTYPE_FINALVIDEO] = "Final video";
     }
     echo tagg_select("optvt$id", $otypes, $optvt, array("onchange" => "doopttype(this)", "id" => "optvt$id")),
 	"</div></div></td>";

@@ -328,8 +328,8 @@ class PaperTable {
 	$documentType = $opt->optionId;
 	$optionType = $opt->type;
 	$banal = $Conf->setting("sub_banal")
-	    && $optionType != OPTIONTYPE_SLIDES
-	    && $optionType != OPTIONTYPE_FINALSLIDES;
+	    && ($optionType == null || $optionType == OPTIONTYPE_PDF
+		|| $optionType == OPTIONTYPE_FINALPDF);
 
 	$filetypes = array();
 	$accepts = array();

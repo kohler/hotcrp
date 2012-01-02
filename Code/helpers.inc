@@ -646,7 +646,7 @@ function paperDocumentData($prow, $documentType = DOCUMENT_SUBMISSION, $paperSto
     return $doc;
 }
 
-function documentMimetypes($documentType, $opt = null) {
+function documentMimetypes($documentType, $opt = null, $supplied = null) {
     global $Opt, $mimetypeMap;
     if ($documentType <= 0)
 	$optionType = null;
@@ -668,6 +668,12 @@ function documentMimetypes($documentType, $opt = null) {
 	$names[] = "PowerPoint file";
 	$mimetypes[] = $mimetypeMap["ppt"];
 	$mimetypes[] = $mimetypeMap["pptx"];
+    }
+    if ($optionType == OPTIONTYPE_VIDEO
+	|| $optionType == OPTIONTYPE_FINALVIDEO) {
+	$names[] = "video file (MP4 or AVI)";
+	$mimetypes[] = $mimetypeMap["mp4"];
+	$mimetypes[] = $mimetypeMap["avi"];
     }
     return array($mimetypes, $names);
 }

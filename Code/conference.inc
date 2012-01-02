@@ -598,7 +598,7 @@ class Conference {
 	if (isset($mimetypeSynonyms[$mimetype]))
 	    $mimetype = $mimetypeSynonyms[$mimetype];
 
-	list($mimetypes, $accepts) = documentMimetypes($documentType);
+	list($mimetypes, $accepts) = documentMimetypes($documentType, null, $mimetype);
 	if (array_search($mimetype, $mimetypes) === false) {
 	    $x = array();
 	    foreach ($mimetypes as $mt)

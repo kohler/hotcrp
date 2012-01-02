@@ -65,8 +65,10 @@ define("OPTIONTYPE_NUMERIC", 2);
 define("OPTIONTYPE_TEXT", 3);
 define("OPTIONTYPE_PDF", 4);	/* order matters */
 define("OPTIONTYPE_SLIDES", 5);
+define("OPTIONTYPE_VIDEO", 6);
 define("OPTIONTYPE_FINALPDF", 100);
 define("OPTIONTYPE_FINALSLIDES", 101);
+define("OPTIONTYPE_FINALVIDEO", 102);
 
 define("TAG_REGEX", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*');
 define("TAG_REGEX_OPTVALUE", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?');
@@ -100,7 +102,11 @@ $mimetypeMap = array("pdf" => "application/pdf",
 		     "ppt" => "application/vnd.ms-powerpoint",
 		     "application/vnd.ms-powerpoint" => "ppt",
 		     "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-		     "application/vnd.openxmlformats-officedocument.presentationml.presentation" => "pptx");
+		     "application/vnd.openxmlformats-officedocument.presentationml.presentation" => "pptx",
+		     "video/mp4" => "mp4",
+		     "mp4" => "video/mp4",
+		     "video/x-msvideo" => "avi",
+		     "avi" => "video/x-msvideo");
 
 global $OK;
 $OK = 1;

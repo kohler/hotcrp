@@ -237,7 +237,8 @@ function requestSameAsPaper($prow) {
 		if (simplifyWhitespace($got) != $row[3])
 		    return false;
 	    } else if ($t == OPTIONTYPE_PDF || $t == OPTIONTYPE_FINALPDF
-		       || $t == OPTIONTYPE_SLIDES || $t == OPTIONTYPE_FINALSLIDES) {
+		       || $t == OPTIONTYPE_SLIDES || $t == OPTIONTYPE_FINALSLIDES
+		       || $t == OPTIONTYPE_VIDEO || $t == OPTIONTYPE_FINALVIDEO) {
 		if (fileUploaded($_FILES["opt$row[0]"], $Conf)
 		    || defval($_REQUEST, "remove_opt$row[0]"))
 		    return false;

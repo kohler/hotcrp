@@ -12,4 +12,6 @@ $mimetypeSynonyms = array("application/mspowerpoint" => "application/vnd.ms-powe
 $mimetypeNames = array("application/pdf" => "PDF",
 		       "application/postscript" => "PostScript file",
 		       "application/vnd.ms-powerpoint" => "PowerPoint presentation",
-		       "application/vnd.openxmlformats-officedocument.presentationml.presentation" => "PowerPoint presentation");
+		       "application/vnd.openxmlformats-officedocument.presentationml.presentation" => "PowerPoint presentation",
+		       "video/mp4" => "MPEG4 video",
+		       "video/x-msvideo" => "AVI video");
