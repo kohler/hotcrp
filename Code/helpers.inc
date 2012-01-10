@@ -1567,32 +1567,75 @@ function titleWords($title, $chars = 40) {
     return $xtitle . "...";
 }
 
+function csv_take_line(&$str) {
+    $nl = strpos($str, "\n");
+    $cr = strpos($nl === false ? $str : substr($str, 0, $nl), "\r");
+    if ($cr !== false && ($nl === false || $cr < $nl))
+	$line = substr($str, 0, $cr + ($cr + 1 === $nl ? 2 : 1));
+    else if ($nl !== false)
+	$line = substr($str, 0, $nl + 1);
+    else
+	$line = $str . "\n";
+    $str = substr($str, strlen($line));
+    return $line;
+}
+
+function csv_linelen($line) {
+    $len = strlen($line);
+    if ($len > 0 && $line[$len - 1] == "\n")
+	--$len;
+    if ($len > 0 && $line[$len - 1] == "\r")
+	--$len;
+    return $len;
+}
+
 function csv_shift_line(&$str, $header = false, $ignore_comments = false) {
     // blank lines, comments
     if ($str == "")
 	return false;
     if ($str[0] == "\n" || $str[0] == "\r" || ($ignore_comments && $str[0] == "#")) {
-	$str = (preg_match('/\A[^\n\r]*\r?\n(.*)\z/s', $str, $m) ? $m[1] : "");
+	csv_take_line($str);
 	return false;
     }
     // otherwise, nonblank
     $i = 0;
     $a = array();
-    while ($str != "" && $str[0] != "\n" && $str[0] != "\r") {
-	if ($str[0] == "\"") {
-	    preg_match('/\A"((?:[^"]|"")*)(?:"|\z),?(.*)\z/s', $str, $m);
-	    $m[1] = str_replace("\"\"", "\"", $m[1]);
-	} else
-	    preg_match('/\A([^\n\r,]*),?(.*)\z/s', $str, $m);
+    $line = csv_take_line($str);
+    $linelen = csv_linelen($line);
+    $pos = 0;
+    while ($pos != $linelen) {
+	$bpos = $pos;
+	if ($line[$pos] == "\"") {
+	    while (1) {
+		$pos = strpos($line, "\"", $pos + 1);
+		if ($pos === false) {
+		    $pos = $linelen;
+		    $line .= csv_take_line($str);
+		    $linelen = csv_linelen($line);
+		    if ($pos == $linelen)
+			break;
+		} else if ($line[$pos + 1] == "\"")
+		    ++$pos;
+		else
+		    break;
+	    }
+	    $field = str_replace("\"\"", "\"", substr($line, $bpos + 1, $pos - $bpos - 1));
+	    if ($pos != $linelen)
+		++$pos;
+	} else {
+	    $pos = strpos($line, ",", $pos);
+	    if ($pos === false)
+		$pos = $linelen;
+	    $field = substr($line, $bpos, $pos - $bpos);
+	}
 	if ($header && $i < count($header))
-	    $a[$header[$i]] = $m[1];
+	    $a[$header[$i]] = $field;
 	else
-	    $a[$i] = $m[1];
+	    $a[$i] = $field;
 	++$i;
-	$str = $m[2];
+	if ($pos != $linelen && $line[$pos] == ",")
+	    ++$pos;
     }
-    if ($str != "")
-	$str = substr($str, ($str[0] == "\r" && $str[1] == "\n" ? 2 : 1));
     return $a;
 }
 
