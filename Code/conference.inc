@@ -266,8 +266,7 @@ class Conference {
 
 	// try to add them
 	$newguy = new Contact();
-	$result = $newguy->initialize($email);
-	if ($result) {
+	if ($newguy->initialize($email)) {
 	    // rigamarole to handle separate or joined first and last names
 	    if (isset($_REQUEST["${p}firstName"]) || isset($_REQUEST["${p}lastName"])) {
 		if (isset($_REQUEST["${p}firstName"]))
@@ -292,7 +291,8 @@ class Conference {
 
 	    // actually update database
 	    $result = $newguy->updateDB("while creating account for " . htmlspecialchars($email));
-	}
+	} else
+	    $result = false;
 
 	if ($result) {
 	    if ($Me->privChair)

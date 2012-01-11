@@ -61,8 +61,7 @@ function doCreateAccount() {
 	$email_class = " error";
 	return $Conf->errorMsg("&ldquo;" . htmlspecialchars($_REQUEST["email"]) . "&rdquo; is not a valid email address.");
     } else if (!$Me->validContact()) {
-	$result = $Me->initialize($_REQUEST["email"]);
-	if (!$result)
+	if (!$Me->initialize($_REQUEST["email"]))
 	    return $Conf->errorMsg($Conf->dbErrorText(true, "while adding your account"));
     }
 
@@ -156,8 +155,7 @@ function doLogin() {
 
     if (!$Me->validContact()) {
 	if (isset($Opt["ldapLogin"])) {
-	    $result = $Me->initialize($_REQUEST["email"], true);
-	    if (!$result)
+	    if (!$Me->initialize($_REQUEST["email"], true))
 		return $Conf->errorMsg($Conf->dbErrorText(true, "while adding your account"));
 	    if (defval($Conf->settings, "setupPhase", false))
 		return doFirstUser($msg);

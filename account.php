@@ -110,8 +110,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
     // at this point we will create the account
     if ($newProfile) {
 	$Acct = new Contact();
-	$result = $Acct->initialize($_REQUEST["uemail"], true, $useRequestPassword);
-	if (!$result)
+	if (!$Acct->initialize($_REQUEST["uemail"], true, $useRequestPassword))
 	    return tfError($tf, "uemail", "Database error, please try again");
 	$Acct->sendAccountInfo($Conf, true, false);
 	$Conf->log("Account created by $Me->email", $Acct);

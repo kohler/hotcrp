@@ -355,11 +355,12 @@ class Contact {
 
 	    $this->trim();
 	    $this->validated = false;
+	    return true;
 	} else {
 	    // Not found - zero out the context
 	    $this->invalidate();
+	    return false;
 	}
-	return $result;
     }
 
     function lookupByEmail($email) {
