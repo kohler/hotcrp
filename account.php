@@ -350,7 +350,7 @@ if (isset($_REQUEST["register"]) && $newProfile
 	else
 	    redirectSelf();
     }
- } else if (isset($_REQUEST["merge"]) && !$newProfile && $Acct->contactId == $Me->contactId)
+} else if (isset($_REQUEST["merge"]) && !$newProfile && $Acct->contactId == $Me->contactId)
     $Me->go(hoturl("mergeaccounts"));
 
 function databaseTracks($who) {

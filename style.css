@@ -900,16 +900,16 @@ span.f-cx {
 }
 
 
-td.pad, th.pad {
+td.pad, th.pad, div.pad {
 	padding-right: 1em;
 }
-td.padb, th.padb {
+td.padb, th.padb, div.padb {
 	padding-right: 2em;
 }
-td.padl, th.padl {
+td.padl, th.padl, div.padl {
 	padding-left: 1em;
 }
-td.padlb, th.padlb {
+td.padlb, th.padlb, div.padlb {
 	padding-left: 2em;
 }
 td.error, td.error input, div.error, div.error input {

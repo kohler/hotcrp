@@ -97,8 +97,8 @@ class PaperList extends BaseList {
 	$s = ($this->sortable ? defval($_REQUEST, "sort", "") : "");
 	$this->reverseSort = false;
 	$this->scoreSort = defval($_SESSION, "scoresort", $defaultScoreSort);
-	while (strlen($s)) {
-	    $x = strtoupper($s[strlen($s) - 1]);
+	for ($p = strlen($s) - 1; $p >= 0; --$p) {
+	    $x = strtoupper($s[$p]);
 	    if ($x == "R")
 		$this->reverseSort = true;
 	    else if ($x == "N")
@@ -109,9 +109,8 @@ class PaperList extends BaseList {
 		$this->scoreSort = $x;
 	    else
 		break;
-	    $s = substr($s, 0, strlen($s) - 1);
 	}
-	if (("x" . (int) $s) == ("x" . $s))
+	if (("x" . (int) $s) == ("x" . substr($s, 0, $p + 1)))
 	    $this->sortField = (int) $s;
 	else
 	    $this->sortField = null;
