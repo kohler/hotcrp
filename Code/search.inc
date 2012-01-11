@@ -1138,15 +1138,16 @@ class PaperSearch {
 	// Finally, look for a review field.
 	if ($special && !isset($searchTags[$special]) && count($qt) == 0) {
 	    $rf = reviewForm();
-	    if (($field = $rf->unabbreviateField($special))) {
-		if (!$this->_searchReviews($word, $rf, $field, $qt, $quoted))
-		    $qt[] = new SearchTerm("f");
-	    } else if (!$this->_searchOptions("$special:$word", $qt, false)
-		       && $report_error) {
+	    if (($field = $rf->unabbreviateField($special)))
+		$this->_searchReviews($word, $rf, $field, $qt, $quoted);
+	    else if (!$this->_searchOptions("$special:$word", $qt, false)
+		     && $report_error)
 		$this->warn("Unrecognized keyword &ldquo;" . htmlspecialchars($special) . "&rdquo;.");
-		$qt[] = new SearchTerm("f");
-	    }
 	}
+
+	// Must always return something
+	if (count($qt) == 0)
+	    $qt[] = new SearchTerm("f");
 
 	$qe = SearchTerm::combine("or", $qt);
 	return $negated ? SearchTerm::negate($qe) : $qe;
