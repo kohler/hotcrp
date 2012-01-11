@@ -503,7 +503,7 @@ function redirectSelf($extra = array()) {
     global $Conf;
     if (!($absuri = requestAbsoluteURI(true)))
 	return false;
-    $want = preg_replace('/\A.*\?/', "", selfHref($extra, null, false));
+    $want = preg_replace('/\A.*?(?:\?|\z)/', "", selfHref($extra, null, false));
     if ($want != "")
 	$absuri .= "?" . $want;
     $Conf->go($absuri);
