@@ -104,7 +104,7 @@ class SearchTerm {
 	    return new SearchTerm("not", 0, $term);
     }
     function isfalse() {
-	return $type == "f";
+	return $this->type == "f";
     }
 }
 
