@@ -81,7 +81,7 @@ Configuration
     installation in /home/kohler/hotcrp.
 
 	<Directory "/home/kohler/hotcrp">
-	        Options Indexes Includes FollowSymLinks MultiViews
+	        Options Indexes Includes FollowSymLinks
 	        AllowOverride all
 	        Order allow,deny
 	        Allow from all
