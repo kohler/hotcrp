@@ -90,7 +90,7 @@ class PaperList extends BaseList {
     var $reviewList;
 
     function __construct($search, $args = array()) {
-	global $paperListFields, $scoreSorts, $defaultScoreSort, $Conf;
+	global $scoreSorts, $defaultScoreSort, $Conf;
 	$this->showHeader = self::HEADER_ALL;
 
 	$this->sortable = !!defval($args, "sort");
@@ -154,7 +154,7 @@ class PaperList extends BaseList {
     }
 
     function selector($fieldId, &$queryOptions, $folded) {
-	global $Conf, $reviewScoreNames, $paperListFields, $paperListFormulas;
+	global $Conf, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_TOPIC_INTEREST:
 	    if (!count($this->rf->topicName))
@@ -501,7 +501,7 @@ class PaperList extends BaseList {
     }
 
     function header($fieldId, $ordinal = 0, $row = null) {
-	global $reviewScoreNames, $paperListFields, $paperListFormulas;
+	global $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_ID:
 	    return "ID";
@@ -1305,7 +1305,9 @@ class PaperList extends BaseList {
 	    . "    <td class='pl_footer' colspan='" . ($ncol - 1) . "'>"
 	    . "<table id='plact' class='linelinks$whichlll'><tr><td><a name='plact'><b>Select papers</b></a> (or <a href=\""
 	    . selfHref(array("selectall" => 1))
-	    . "#plact\" onclick='return papersel(true)'>select all " . $this->count . "</a>), then&nbsp;</td>"
+	    . "#plact\" onclick='return papersel(true)'>select all " . $this->count . "</a>), then&nbsp;"
+	    . "<img id='foldplactsession' alt='' src='" . hoturl("sessionvar", "var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1") . "' width='1' height='1' />"
+	    . "</td>"
 	    . $t . "</tr></td></table>" . $extraFooter . "</td></tr>\n"
 	    . " </tfoot>\n";
     }
@@ -1746,8 +1748,6 @@ class PaperList extends BaseList {
 	    $Conf->footerScript("plinfo_needload={" . join(",", $needloadmap) . "};");
 	    $this->_addAjaxLoadForm($ids);
 	}
-
-	$t .= "<img id='foldplactsession' alt='' src='" . hoturl("sessionvar", "var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1") . "' width='1' height='1' />";
 
 	// columns
 	foreach ($fieldDef as $fieldId => $fdef) {
