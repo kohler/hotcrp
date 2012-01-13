@@ -152,7 +152,7 @@ if (function_exists("mb_check_encoding")) {
 
 if (function_exists("iconv")) {
     function windows_1252_to_utf8($str) {
-	return iconv("Windows-1252", "UTF-8//TRANSLIT//IGNORE", $str);
+	return iconv("Windows-1252", "UTF-8//IGNORE", $str);
     }
 } else {
     function windows_1252_to_utf8($str) {
