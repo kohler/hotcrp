@@ -1092,8 +1092,6 @@ function displayOptionText($text, $column, $opt = array()) {
 
 // Create checkboxes
 
-$displayOptions = array();
-
 if ($pl) {
     $viewAcceptedAuthors =
 	$Me->amReviewer() && $Conf->timeReviewerViewAcceptedAuthors();
