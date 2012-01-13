@@ -264,23 +264,23 @@ function parseBulkFile($text, $filename) {
     $tf = array("err" => array(), "filename" => $filename, "lineno" => 0);
     $success = array();
 
-    $text_copy = $text;
+    $lines = csv_split_lines($text);
     do {
-	$line = csv_shift_line($text, false, true);
+	$line = csv_shift_line($lines, false, true);
 	++$tf["lineno"];
-    } while ($text != "" && $line === false);
+    } while (count($lines) && $line === false);
     if ($line && array_search("email", $line) !== false)
 	$header = $line;
     else {
 	$header = array("name", "email", "affiliation");
-	$text = $text_copy;
+	array_unshift($lines, $line);
 	$tf["lineno"] = 0;
     }
 
     $original_request = $_REQUEST;
 
-    while ($text != "") {
-	$line = csv_shift_line($text, $header, true);
+    while (count($lines)) {
+	$line = csv_shift_line($lines, $header, true);
 	++$tf["lineno"];
 	if ($line === false)
 	    continue;

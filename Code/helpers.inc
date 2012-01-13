@@ -1568,6 +1568,8 @@ function titleWords($title, $chars = 40) {
 }
 
 function csv_take_line(&$str) {
+    if (is_array($str))
+	return array_shift($str);
     $nl = strpos($str, "\n");
     $cr = strpos($nl === false ? $str : substr($str, 0, $nl), "\r");
     if ($cr !== false && ($nl === false || $cr < $nl))
@@ -1589,18 +1591,38 @@ function csv_linelen($line) {
     return $len;
 }
 
+function csv_split_lines($str) {
+    $a = preg_split('/([\r\n])/', $str, 0, PREG_SPLIT_DELIM_CAPTURE);
+    $n = count($a);
+    $b = array();
+    for ($i = 0; $i < $n; ) {
+	$t = $a[$i];
+	if ($t != "\n" && $t != "\r")
+	    ++$i;
+	else
+	    $t = "";
+	if ($i < $n && $a[$i] == "\r") {
+	    $t .= $a[$i];
+	    ++$i;
+	}
+	if ($i < $n && $a[$i] == "\n") {
+	    $t .= $a[$i];
+	    ++$i;
+	}
+	$b[] = $t;
+    }
+    return $b;
+}
+
 function csv_shift_line(&$str, $header = false, $ignore_comments = false) {
     // blank lines, comments
-    if ($str == "")
+    $line = csv_take_line($str);
+    if ($line == "" || $line[0] == "\n" || $line[0] == "\r"
+	|| ($ignore_comments && $line[0] == "#"))
 	return false;
-    if ($str[0] == "\n" || $str[0] == "\r" || ($ignore_comments && $str[0] == "#")) {
-	csv_take_line($str);
-	return false;
-    }
     // otherwise, nonblank
     $i = 0;
     $a = array();
-    $line = csv_take_line($str);
     $linelen = csv_linelen($line);
     $pos = 0;
     while ($pos != $linelen) {
