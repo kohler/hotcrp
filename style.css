@@ -1351,6 +1351,15 @@ td.pl_desirability, td.pl_visits, td.pl_formula {
 td.pl_conflictconfirm {
 	padding: 0;
 }
+td.plheading {
+	text-align: center;
+	font-weight: bold;
+	padding: 0.5ex 0 0.2ex;
+	background: #f0f0f0;
+}
+td.plheading_middle {
+	border-top: 1px solid #cccccc;
+}
 td.pl_title img, img.b {
 	vertical-align: text-bottom;
 }

@@ -1599,6 +1599,20 @@ class PaperList extends BaseList {
 	return $t;
     }
 
+    function _row_check_heading($rstate, $row, $lastheading, &$body) {
+	$heading = defval($this->search->headingmap, $row->paperId, "");
+	if ($heading != $lastheading) {
+	    if ($heading == "")
+		$body[] = "  <tr class=\"pl plheading_blank plheading_middle\"><td colspan=\"$rstate->ncol\" class=\"plheading_blank plheading_middle\"></td></tr>\n";
+	    else {
+		$middle = ($this->count == 1 ? "" : " plheading_middle");
+		$body[] = "  <tr class=\"pl plheading$middle\"><td colspan=\"$rstate->ncol\" class=\"plheading$middle\">" . htmlspecialchars($heading) . "</td></tr>\n";
+	    }
+	    $rstate->colorindex = 0;
+	}
+	return $heading;
+    }
+
     function _analyze_folds($rstate, $fieldDef) {
 	global $Conf;
 	$classes = $jsmap = $jsloadmap = $jsnotitlemap = array();
@@ -1756,8 +1770,11 @@ class PaperList extends BaseList {
 
 	// collect row data
 	$body = array();
+	$lastheading = ($this->search->headingmap === null ? false : "");
 	foreach ($srows as $row) {
 	    ++$this->count;
+	    if ($lastheading !== false)
+		$lastheading = $this->_row_check_heading($rstate, $row, $lastheading, $body);
 	    $body[] = $this->_row_text($rstate, $row, $fieldDef);
 	}
 
