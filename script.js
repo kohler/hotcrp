@@ -1183,6 +1183,13 @@ function doremovedocument(name) {
     }
 }
 
+function docmtvis(hilite) {
+    var e = $$("cmtvis_a"), dofold = !(e && e.checked);
+    fold("cmtvis", dofold, 2);
+    if (hilite)
+	hiliter(hilite);
+}
+
 
 // mail
 function setmailpsel(sel) {

@@ -169,25 +169,29 @@ class CommentView {
 	echo "</textarea>
   <div class='g'></div>
   <table><tr><td>Show to: &nbsp; </td>
-    <td>";
+    <td><table id='foldcmtvis' class='fold2o'>";
 	$forAuthors = $crow && $crow->forAuthors != 0;
 	$forReviewers = ($crow && $crow->forReviewers != -1 ? $crow->forReviewers : 1);
-	echo tagg_radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : ($forAuthors != 0))),
-	    "&nbsp;", tagg_label("Authors and reviewers" . ($Conf->blindReview() == BLIND_ALWAYS ? " (anonymous to authors)" : ""));
+	echo "<tr><td>", tagg_radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : ($forAuthors != 0)), array("id" => "cmtvis_a", "onchange" => "docmtvis(this)")),
+	    "&nbsp;</td><td>", tagg_label("Authors and reviewers" . ($Conf->blindReview() == BLIND_ALWAYS ? " (anonymous to authors)" : ""));
 	// blind?
-	if ($Conf->blindReview() == BLIND_OPTIONAL) {
+	if ($Conf->blindReview() == BLIND_OPTIONAL)
 	    echo " &nbsp; (",
 		tagg_checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, "blind") : !$crow || $crow->blind)),
 		"&nbsp;", tagg_label("Anonymous to authors"), ")";
-	}
-	echo "<br />\n";
-	echo tagg_radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : ($forAuthors == 0 && $forReviewers == 1))),
-	    "&nbsp;", tagg_label("PC and external reviewers"), "<br />\n";
-	echo tagg_radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($forAuthors == 0 && $forReviewers == 0))),
-	    "&nbsp;", tagg_label("PC reviewers only"), "<br />\n";
-	echo tagg_radio_h("visibility", "admin", ($useRequest ? defval($_REQUEST, "visibility") == "admin" : ($forAuthors == 0 && $forReviewers == 2))),
-	    "&nbsp;", tagg_label("PC chairs only"), "<br />\n";
-	echo "</td></tr></table>\n";
+	if ($Conf->timeAuthorViewReviews())
+	    echo "<br /><span class='fx2 hint'>Authors will be notified of new comments immediately.</span>";
+	else
+	    echo "<br /><span class='fx2 hint'>Authors cannot view comments at the moment.</span>";
+	echo "</td></tr>\n";
+	echo "<tr><td>", tagg_radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : ($forAuthors == 0 && $forReviewers == 1)), array("onchange" => "docmtvis(this)")),
+	    "&nbsp;</td><td>", tagg_label("PC and external reviewers"), "</td></tr>\n";
+	echo "<tr><td>", tagg_radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($forAuthors == 0 && $forReviewers == 0)), array("onchange" => "docmtvis(this)")),
+	    "&nbsp;</td><td>", tagg_label("PC reviewers only"), "</td></tr>\n";
+	echo "<tr><td>", tagg_radio_h("visibility", "admin", ($useRequest ? defval($_REQUEST, "visibility") == "admin" : ($forAuthors == 0 && $forReviewers == 2)), array("onchange" => "docmtvis(this)")),
+	    "&nbsp;</td><td>", tagg_label("PC chairs only"), "</td></tr>\n";
+	echo "</table></td></tr></table>\n";
+	$Conf->footerScript("docmtvis(false)");
 
 	// review actions
 	echo "<div class='aa'><table class='pt_buttons'>\n",
