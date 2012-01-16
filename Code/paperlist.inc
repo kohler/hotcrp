@@ -1,6 +1,6 @@
 <?php
 // paperlist.inc -- HotCRP helper class for producing paper lists
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("baselist.inc");
@@ -47,7 +47,6 @@ class PaperList extends BaseList {
     const FIELD_OPT_PC_CONFLICTS = 76;
     const FIELD_LEAD = 77;
     const FIELD_SHEPHERD = 78;
-    const FIELD_FOLD = 80;
 
     const FIELD_FORMULA = 100;
     const FIELD_TAGREPORT = 101;
@@ -70,6 +69,8 @@ class PaperList extends BaseList {
     var $needSubmitReview;
     var $anySelector;
     var $anyFinalPaper;
+    var $defaultFoldRows;
+    var $foldRow;
     var $listNumber;
     var $contact;
     var $scoresOk;
@@ -77,7 +78,6 @@ class PaperList extends BaseList {
     var $search;
     var $extraText;
     var $display;
-    var $unfolded;
     var $aufull;
     var $paperLink;
     var $paperLinkArgs;
@@ -229,9 +229,6 @@ class PaperList extends BaseList {
 		return false;
 	    PaperExpr::add_query_options($queryOptions, $expr, $this->contact);
 	    $this->formulas[$fieldId] = PaperExpr::compile_function($expr, $this->contact);
-	    break;
-	case self::FIELD_FOLD:
-	    $this->unfolded = false;
 	    break;
 	case self::FIELD_REVIEWER:
 	case self::FIELD_REVIEWER_MONITOR:
@@ -640,7 +637,7 @@ class PaperList extends BaseList {
 	    }
 	}
 	if ($text != "")
-	    $this->unfolded = true;
+	    $this->foldRow = false;
 	return $text;
     }
 
@@ -963,7 +960,7 @@ class PaperList extends BaseList {
 		 || ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0))
 		&& (!$this->papersel || defval($this->papersel, $row->paperId, 1))) {
 		$c .= " checked='checked'";
-		$this->unfolded = true;
+		$this->foldRow = false;
 	    }
 	    if ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType >= CONFLICT_AUTHOR)
 		$c .= " disabled='disabled'";
@@ -1380,7 +1377,7 @@ class PaperList extends BaseList {
 	}
     }
 
-    function listFields($listname) {
+    function _listFields($listname) {
 	switch ($listname) {
 	case "a":
 	case "authorHome":
@@ -1421,7 +1418,8 @@ class PaperList extends BaseList {
 	    break;
 	  case "conflict":
 	    $this->paperLink = "assign";
-	    $fields = array(self::FIELD_SELECTOR_CONFLICT, 1, 11, self::FIELD_CONFLICT_CONFIRM, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH, self::FIELD_FOLD);
+	    $this->defaultFoldRow = true;
+	    $fields = array(self::FIELD_SELECTOR_CONFLICT, 1, 11, self::FIELD_CONFLICT_CONFIRM, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH);
 	    break;
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
@@ -1507,6 +1505,146 @@ class PaperList extends BaseList {
 	return $Conf->qe($pq, "while selecting papers");
     }
 
+    function _field_is_folded($field) {
+	if (is_object($field))
+	    $field = $field->foldname;
+	return ($field
+		&& !defval($_REQUEST, "show$field")
+		&& strpos($this->display, " $field ") === false);
+    }
+
+    function _row_text($rstate, $row, $fieldDef) {
+	global $Conf;
+
+	$rstate->ids[] = $row->paperId;
+	$trclass = "k" . $rstate->colorindex;
+	if (defval($row, "paperTags") && $this->contact->canViewTags($row)
+	    && ($m = $rstate->colorizer->match_all($row->paperTags)))
+	    $trclass .= " " . $m;
+	$rstate->colorindex = 1 - $rstate->colorindex;
+	$rstate->last_trclass = $trclass;
+
+	$this->foldRow = $this->defaultFoldRow;
+
+	// main columns
+	$t = "";
+	foreach ($fieldDef as $fieldId => $fdef) {
+	    if ($fdef->type != 1)
+		continue;
+	    $td = "    <td class=\"pl_$fdef->cssname";
+	    if ($fdef->foldnum)
+		$td .= " fx$fdef->foldnum";
+	    if ($this->contentEmpty($fieldId, $row)) {
+		$t .= $td . "\"></td>\n";
+		continue;
+	    }
+	    if ($fdef->foldname && !isset($rstate->foldinfo[$fdef->foldname]))
+		$rstate->foldinfo[$fdef->foldname] = $this->_field_is_folded($fdef);
+	    if ($fdef->foldname && $rstate->foldinfo[$fdef->foldname]) {
+		$t .= $td . "\" id=\"$fdef->foldname.$row->paperId\"></td>\n";
+		$rstate->nonempty_fields[$fieldId] = true;
+	    } else {
+		$c = $this->content($fieldId, $row);
+		$t .= $td . "\">" . $c . "</td>\n";
+		if ($c !== "")
+		    $rstate->nonempty_fields[$fieldId] = true;
+	    }
+	}
+
+	// extension columns
+	$tt = "";
+	foreach ($fieldDef as $fieldId => $fdef) {
+	    if ($fdef->type != 2 || $this->contentEmpty($fieldId, $row))
+		continue;
+	    if ($fdef->foldname	&& !isset($rstate->foldinfo[$fdef->foldname]))
+		$rstate->foldinfo[$fdef->foldname] = $this->_field_is_folded($fdef);
+	    if ($fdef->foldname && $fdef->foldname != "authors"
+		&& $rstate->foldinfo[$fdef->foldname]) {
+		$tt .= "<div id=\"$fdef->foldname.$row->paperId\"></div>";
+		$rstate->nonempty_fields[$fieldId] = true;
+	    } else if (($c = $this->content($fieldId, $row)) !== "") {
+		$tt .= "<div id=\"$fdef->foldname.$row->paperId\" class=\"fx";
+		if ($fdef->foldname != "authors")
+		    $tt .= $fdef->foldnum;
+		else if (!$Conf->paperBlind($row, $this->contact)) {
+		    $tt .= "1";
+		    $rstate->nonempty_fields["au"] = true;
+		} else {
+		    $tt .= "1 fx2";
+		    $rstate->nonempty_fields["anonau"] = true;
+		}
+		$tt .= "\"><h6>" . $this->header($fieldId, -1, $row)
+		    . ":</h6> " . $c . "</div>";
+		$rstate->nonempty_fields[$fieldId] = true;
+	    }
+	}
+
+	if ($this->extraText && isset($this->extraText[$row->paperId]))
+	    $tt .= "<div id=\"plextra$row->paperId\" class=\"plextra\">" . $this->extraText[$row->paperId] . "</div>";
+
+	if ($this->foldRow) {
+	    $trclass .= " fx3";
+	    $rstate->foldinfo["wholerow"] = true;
+	}
+
+	$t = "  <tr class=\"pl $trclass\">\n" . $t . "  </tr>\n";
+
+	if ($tt !== "") {
+	    $t .= "  <tr class=\"plx $trclass\">";
+	    if ($rstate->skipcallout > 0)
+		$t .= "<td colspan=\"$rstate->skipcallout\"></td>";
+	    $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->skipcallout) . "\">$tt</td></tr>\n";
+	}
+
+	return $t;
+    }
+
+    function _analyze_folds($rstate, $fieldDef) {
+	global $Conf;
+	$classes = $jsmap = $jsloadmap = $jsnotitlemap = array();
+	foreach ($fieldDef as $fieldId => $fdef)
+	    if ($fdef->foldname && $fdef->foldname !== "authors"
+		&& isset($rstate->foldinfo[$fdef->foldname])) {
+		$closed = $rstate->foldinfo[$fdef->foldname];
+		$classes[] = "fold$fdef->foldnum" . ($closed ? "c" : "o");
+		$jsmap[] = "\"$fdef->foldname\":$fdef->foldnum";
+		if ($closed && isset($rstate->nonempty_fields[$fieldId]))
+		    $jsloadmap[] = "\"$fdef->foldname\":true";
+		if ($fdef->type == 1)
+		    $jsnotitlemap[] = "\"$fdef->foldname\":true";
+	    }
+	// authorship requires special handling
+	if (isset($rstate->nonempty_fields["au"]) || isset($rstate->nonempty_fields["anonau"])) {
+	    $classes[] = "fold1" . ($this->_field_is_folded("au") ? "c" : "o");
+	    $jsmap[] = "\"au\":1,\"aufull\":16";
+	    $jsloadmap[] = "\"aufull\":true";
+	}
+	if (isset($rstate->nonempty_fields["anonau"])) {
+	    $classes[] = "fold2" . ($this->_field_is_folded("anonau") ? "c" : "o");
+	    $jsmap[] = "\"anonau\":2";
+	}
+	// total folding, row number folding
+	if (isset($rstate->foldinfo["wholerow"]))
+	    $classes[] = "fold3c";
+	if ($this->anySelector) {
+	    $jsmap[] = "\"rownum\":6";
+	    $classes[] = "fold6" . ($this->_field_is_folded("rownum") ? "c" : "o");
+	}
+	if ($this->contact->privChair) {
+	    $jsmap[] = "\"force\":20";
+	    $classes[] = "fold20" . (defval($_REQUEST, "forceShow") ? "o" : "c");
+	}
+	if (count($jsmap))
+	    $Conf->footerScript("foldmap.pl={" . join(",", $jsmap) . "};");
+	if (count($jsloadmap)) {
+	    $Conf->footerScript("plinfo_needload={" . join(",", $jsloadmap) . "};");
+	    $this->_addAjaxLoadForm($rstate->ids);
+	}
+	if (count($jsnotitlemap))
+	    $Conf->footerScript("plinfo_notitle={" . join(",", $jsnotitlemap) . "};");
+	return $classes;
+    }
+
     function text($listname, $me, $extra_class = "") {
 	global $Conf, $ConfSiteBase, $paperListFields, $paperListFolds,
 	    $reviewScoreNames;
@@ -1520,6 +1658,7 @@ class PaperList extends BaseList {
 	$this->needSubmitReview = 0;
 	$this->anySelector = false;
 	$this->anyFinalPaper = false;
+	$this->defaultFoldRow = false;
 	$url = $this->search->url();
 
 	// check role type
@@ -1527,24 +1666,13 @@ class PaperList extends BaseList {
 	    || $Conf->timeAuthorViewReviews();
 
 	// get paper list
-	if (!($baseFieldId = $this->listFields($listname))) {
+	if (!($baseFieldId = $this->_listFields($listname))) {
 	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
 	    return null;
 	}
 	if (defval($_REQUEST, "selectall") > 0
 	    && $baseFieldId[0] == self::FIELD_SELECTOR)
 	    $baseFieldId[0] = self::FIELD_SELECTOR_ON;
-
-	// check what is folded
-	$folds = array();
-	foreach ($paperListFolds as $n => $fdef) {
-	    if (!defval($_REQUEST, "show$n")
-		&& strpos($this->display, " $n ") === false)
-		$folds[$n] = array();
-	    else
-		$folds[$n] = false;
-	}
-	$this->aufull = $folds["aufull"] === false;
 
 	// check paper link destination
 	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
@@ -1579,18 +1707,14 @@ class PaperList extends BaseList {
 	// get field array
 	$fieldDef = array();
 	$ncol = 0;
-	$this->unfolded = true;
-	foreach ($baseFieldId as $fid) {
-	    if (!($fdef = defval($paperListFields, $fid)))
-		continue;
-	    $folded = $fdef->foldname && defval($folds, $fdef->foldname, false) !== false;
-	    if ($this->selector($fid, $queryOptions, $folded)) {
+	foreach ($baseFieldId as $fid)
+	    if (($fdef = defval($paperListFields, $fid))
+		&& $this->selector($fid, $queryOptions, $this->_field_is_folded($fdef))) {
 		$fieldDef[$fid] = $fdef;
 		if ($fdef->type == 1)
 		    $ncol++;
 	    }
-	}
-	$unfolded = $this->unfolded;
+	$this->aufull = !$this->_field_is_folded("aufull");
 
 	// make query
 	$result = $this->_prepareQuery($me, $queryOptions);
@@ -1614,140 +1738,37 @@ class PaperList extends BaseList {
 	// count non-callout columns
 	$skipcallout = 0;
 	foreach ($fieldDef as $fieldId => $fdef)
-	    if ($fieldId < self::FIELD_SELECTOR && $fieldId > self::FIELD_ID)
+	    if ($fieldId > self::FIELD_ID && $fieldId < self::FIELD_SELECTOR)
 		break;
 	    else
 		++$skipcallout;
 
-	// tag colors
-	$colors = new TagColorizer($this->contact);
+	// create render state
+	$rstate = (object) array();
+	$rstate->colorizer = new TagColorizer($this->contact);
+	$rstate->ids = array();
+	$rstate->nonempty_fields = array();
+	$rstate->foldinfo = array();
+	$rstate->colorindex = 0;
+	$rstate->skipcallout = $skipcallout;
+	$rstate->ncol = $ncol;
+	$rstate->last_trclass = "";
 
 	// collect row data
-	$ids = array();
-	$anyData = array();
-	$body = '';
-	$foldinfo = array();
+	$body = array();
 	foreach ($srows as $row) {
-	    $ids[] = $row->paperId;
-	    $trclass = "k" . ($this->count % 2);
-	    if (defval($row, "paperTags") && $this->contact->canViewTags($row)
-		&& ($m = $colors->match_all($row->paperTags)))
-		$trclass .= " " . $m;
-	    $this->count++;
-	    $this->unfolded = $unfolded;
-
-	    $t = "  <tr class=\"pl $trclass\">\n";
-	    foreach ($fieldDef as $fieldId => $fdef) {
-		if ($fdef->type != 1)
-		    continue;
-		$foldname = $fdef->foldname;
-		$td = "    <td class=\"pl_$fdef->cssname";
-		if ($fdef->foldnum) {
-		    $td .= " fx$fdef->foldnum";
-		    $foldinfo[$fdef->foldnum] = true;
-		}
-		if ($this->contentEmpty($fieldId, $row))
-		    $t .= $td . "\"></td>\n";
-		else if (isset($folds[$foldname]) && $folds[$foldname] !== false) {
-		    $folds[$foldname][] = $row->paperId;
-		    $t .= $td . "\" id=\"$foldname.$row->paperId\"></td>\n";
-		    $anyData[$fieldId] = 1;
-		} else {
-		    $c = $this->content($fieldId, $row);
-		    $t .= $td . "\">" . $c . "</td>\n";
-		    if ($c !== "")
-			$anyData[$fieldId] = 1;
-		}
-	    }
-	    $t .= "  </tr>\n";
-
-	    $tt = "";
-	    foreach ($fieldDef as $fieldId => $fdef) {
-		if ($fdef->type != 2 || $this->contentEmpty($fieldId, $row))
-		    continue;
-		$foldname = $fdef->foldname;
-		$foldtext = "";
-		if ($fdef->foldnum > 2) {
-		    if (($foldnum = $fdef->foldnum) == 3)
-			$foldnum = ($Conf->paperBlind($row, $this->contact) ? 2 : 1);
-		    $foldinfo[$foldnum] = true;
-		    if ($foldnum == 2)
-			$foldtext = " class=\"fx1 fx2\"";
-		    else
-			$foldtext = " class=\"fx$foldnum\"";
-		}
-		if (isset($folds[$foldname]) && $folds[$foldname] !== false) {
-		    $folds[$foldname][] = $row->paperId;
-		    $tt .= "<div id=\"$foldname.$row->paperId\"></div>";
-		} else {
-		    $c = $this->content($fieldId, $row);
-		    if ($c !== "")
-			$tt .= "<div id=\"$foldname.$row->paperId\"" . $foldtext
-			    . "><h6>" . $this->header($fieldId, -1, $row)
-			    . ":</h6> " . $c . "</div>";
-		}
-	    }
-
-	    if ($this->extraText && isset($this->extraText[$row->paperId]))
-		$tt .= "<div id=\"plextra$row->paperId\" class=\"plextra\">" . $this->extraText[$row->paperId] . "</div>";
-
-	    if ($tt !== "") {
-		$t .= "  <tr class=\"plx $trclass\">";
-		if ($skipcallout > 0)
-		    $t .= "<td colspan=\"$skipcallout\"></td>";
-		$t .= "<td colspan=\"" . ($ncol - $skipcallout) . "\">$tt</td></tr>\n";
-	    }
-
-	    if (!$this->unfolded)
-		$t = str_replace("<tr class=\"", "<tr class=\"fx3 ", $t);
-
-	    $body .= $t;
+	    ++$this->count;
+	    $body[] = $this->_row_text($rstate, $row, $fieldDef);
 	}
 
+	// table skeleton including fold classes
+	$foldclasses = $this->_analyze_folds($rstate, $fieldDef);
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
 	if ($extra_class != "")
 	    $x .= " " . $extra_class;
-	$foldmap = array();
-	$needloadmap = array();
-	// Ajax load forms for extra fields
-	foreach ($paperListFolds as $n => $fdef) {
-	    if (isset($foldinfo[$fdef->foldnum])) {
-		$x .= " fold$fdef->foldnum" . ($folds[$n] !== false ? "c" : "o");
-		$foldmap[] = "\"$n\":$fdef->foldnum";
-		if ($folds[$n] !== false && count($folds[$n]))
-		    $needloadmap[] = "\"$n\":true";
-	    }
-	}
-	// full authorship is a special case
-	if (isset($foldinfo[1]))
-	    $foldmap[] = "\"au\":1";
-	if (isset($foldinfo[2]))
-	    $foldmap[] = "\"anonau\":2";
-	if (isset($foldinfo[1]) || isset($foldinfo[2])) {
-	    $foldmap[] = "\"aufull\":16";
-	    $needloadmap[] = "\"aufull\":true";
-	}
-	// total folding, row number folding
-	if (!$unfolded)
-	    $x .= " fold3c";
-	if ($this->anySelector) {
-	    $foldmap[] = "\"rownum\":6";
-	    $x .= " fold6" . (strpos($this->display, " rownum ") === false ? "c" : "o");
-	}
-	if ($this->contact->privChair) {
-	    $foldmap[] = "\"force\":20";
-	    $x .= " fold20" . (defval($_REQUEST, "forceShow") ? "o" : "c");
-	}
-	if (count($foldinfo) || !$unfolded || $this->anySelector
-	    || $this->contact->privChair)
-	    $x .= "\" id=\"foldpl";
+	if (count($foldclasses))
+	    $x .= " " . join(" ", $foldclasses) . "\" id=\"foldpl";
 	$x .= "\">\n";
-	if (count($foldmap) > 0)
-	    $Conf->footerScript("foldmap.pl={" . join(",", $foldmap) . "};");
-	if (count($needloadmap) > 0) {
-	    $Conf->footerScript("plinfo_needload={" . join(",", $needloadmap) . "};");
-	    $this->_addAjaxLoadForm($ids);
-	}
 
 	// columns
 	foreach ($fieldDef as $fieldId => $fdef) {
@@ -1761,21 +1782,22 @@ class PaperList extends BaseList {
 	    $ord = 0;
 
 	    $titleextra = "";
-	    if (!$unfolded)
+	    if (isset($rstate->foldinfo["wholerow"]))
 		$titleextra .= "<span class='sep'></span><a class='fn3' href=\"javascript:void fold('pl',0,3)\">Show all papers</a>";
-	    if ((isset($foldinfo[1]) || isset($foldinfo[2]))
+	    if ((isset($rstate->nonempty_fields["au"]) || isset($rstate->nonempty_fields["anonau"]))
 		&& $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		if ($Conf->subBlindNever())
 		    $titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
-		else if ($this->contact->privChair && isset($foldinfo[2]) && !isset($foldinfo[1]))
-		    $titleextra .= "<a class='fn2' href=\"javascript:void fold('pl',0,'anonau')\">Show authors</a><a class='fx2' href=\"javascript:void fold('pl',1,'anonau')\">Hide authors</a>";
-		else if ($this->contact->privChair && isset($foldinfo[2]))
-		    $titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show non-anonymous authors</a><a class='fx1 fn2' href=\"javascript:void fold('pl',0,'anonau')\">Show all authors</a><a class='fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
+		else if ($this->contact->privChair && isset($rstate->nonempty_fields["anonau"]) && !isset($rstate->nonempty_fields["au"]))
+		    $titleextra .= "<a class='fn1 fn2' href=\"javascript:fold('pl',0,'au');void fold('pl',0,'anonau')\">Show authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
+		else if ($this->contact->privChair && isset($rstate->nonempty_fields["anonau"]))
+		    $titleextra .= "<a class='fn1' href=\"javascript:fold('pl',0,'au');void fold('pl',1,'anonau')\">Show non-anonymous authors</a><a class='fx1 fn2' href=\"javascript:void fold('pl',0,'anonau')\">Show all authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
 		else
 		    $titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show non-anonymous authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
 	    }
-	    if (isset($foldinfo[4]) && $this->showHeader == self::HEADER_ALL) {
+	    if (isset($rstate->nonempty_fields[self::FIELD_TAGS])
+		&& $this->showHeader == self::HEADER_ALL) {
 		$titleextra .= "<span class='sep'></span>";
 		$titleextra .= "<a class='fn4' href='javascript:void foldplinfo(0,\"tags\")'>Show tags</a><a class='fx4' href='javascript:void foldplinfo(1,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
 	    }
@@ -1786,7 +1808,7 @@ class PaperList extends BaseList {
 		foreach ($fieldDef as $fieldId => $fdef) {
 		    if ($fdef->type != 1)
 			continue;
-		    else if (!isset($anyData[$fieldId])) {
+		    else if (!isset($rstate->nonempty_fields[$fieldId])) {
 			$x .= "    <th class=\"pl_$fdef->cssname\"></th>\n";
 			continue;
 		    }
@@ -1824,7 +1846,7 @@ class PaperList extends BaseList {
 
 	    } else {
 		foreach ($fieldDef as $fieldId => $fdef)
-		    if ($fdef->type == 1 && isset($anyData[$fieldId]))
+		    if ($fdef->type == 1 && isset($rstate->nonempty_fields[$fieldId]))
 			$x .= "    <th class=\"pl_$fdef->cssname\">"
 			    . $this->header($fieldId, $ord++) . "</th>\n";
 		    else if ($fdef->type == 1)
@@ -1839,13 +1861,13 @@ class PaperList extends BaseList {
 	reset($fieldDef);
 	if (key($fieldDef) == self::FIELD_SELECTOR
 	    || key($fieldDef) == self::FIELD_SELECTOR_ON)
-	    $x .= $this->footer($ncol, $listname, $trclass);
+	    $x .= $this->footer($ncol, $listname, $rstate->last_trclass);
 
-	$x .= " <tbody>\n" . $body . " </tbody>\n</table>";
+	$x .= " <tbody>\n" . join("", $body) . " </tbody>\n</table>";
 
 	// session variable to remember the list
 	if ($this->listNumber) {
-	    $idx = $this->search->decorateSessionList($ids, $listname, $this->sortdef());
+	    $idx = $this->search->decorateSessionList($rstate->ids, $listname, $this->sortdef());
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
 	    if ($ConfSiteBase
@@ -1856,15 +1878,15 @@ class PaperList extends BaseList {
 	}
 
 	$this->headerInfo = array(
-		"authors" => (isset($foldinfo[2]) ? 2 : 0) | (isset($foldinfo[1]) ? 1 : 0),
-		"tags" => defval($foldinfo, 4, false),
-		"abstract" => defval($foldinfo, 5, false),
-		"shepherd" => defval($foldinfo, 11, false),
-		"lead" => defval($foldinfo, 12, false),
-		"topics" => defval($foldinfo, 13, false),
-		"pcconf" => defval($foldinfo, 14, false),
-		"collab" => defval($foldinfo, 15, false),
-		"pap" => $ids
+		"authors" => (isset($rstate->nonempty_fields["anonau"]) ? 2 : 0) | (isset($rstate->nonempty_fields["au"]) ? 1 : 0),
+		"tags" => defval($rstate->nonempty_fields, self::FIELD_TAGS, false),
+		"abstract" => defval($rstate->nonempty_fields, self::FIELD_OPT_ABSTRACT, false),
+		"shepherd" => defval($rstate->nonempty_fields, self::FIELD_SHEPHERD, false),
+		"lead" => defval($rstate->nonempty_fields, self::FIELD_LEAD, false),
+		"topics" => defval($rstate->nonempty_fields, self::FIELD_OPT_TOPIC_NAMES, false),
+		"pcconf" => defval($rstate->nonempty_fields, self::FIELD_OPT_PC_CONFLICTS, false),
+		"collab" => defval($rstate->nonempty_fields, self::FIELD_COLLABORATORS, false),
+		"pap" => $rstate->ids
 	);
 
 	return $x;
@@ -1945,7 +1967,7 @@ class PaperListField {
     function __construct($id, $cssname, $type, $foldnum, $sortable) {
 	$this->id = $id;
 	$this->cssname = $cssname;
-	$this->foldname = ($foldnum ? $cssname : "NOFOLD");
+	$this->foldname = ($foldnum ? $cssname : null);
 	$this->type = $type;
 	$this->foldnum = $foldnum;
 	$this->sortable = $sortable;
@@ -2014,7 +2036,6 @@ class PaperListField {
 	PaperListField::make(PaperList::FIELD_SHEPHERD, "shepherd", 2, 11);
 	PaperListField::make(PaperList::FIELD_OPT_PC_CONFLICTS, "pcconf", 2, 14);
 	PaperListField::make(PaperList::FIELD_COLLABORATORS, "collab", 2, 15);
-	PaperListField::make(PaperList::FIELD_FOLD, "fold", 0);
 
 	$paperListNormalizer = array();
 	$nextfield = PaperList::FIELD_SCORE;

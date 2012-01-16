@@ -1061,14 +1061,14 @@ var plinfo_title = {
     pcconf: "PC conflicts", collab: "Collaborators", authors: "Authors",
     aufull: "Authors"
 };
-var plinfo_needload = {}, plinfo_aufull = {};
+var plinfo_needload = {}, plinfo_aufull = {}, plinfo_notitle = {};
 function make_plloadform_callback(which, type, dofold) {
     var xtype = ({au: 1, anonau: 1, aufull: 1}[type] ? "authors" : type);
     return function (rv) {
 	var i, x, elt, eltx, h6 = "";
 	if ((x = rv[xtype + ".title"]))
 	    plinfo_title[type] = x;
-	if ((x = plinfo_title[type]))
+	if ((x = plinfo_title[type]) && !plinfo_notitle[type])
 	    h6 = "<h6>" + x + ":</h6> ";
 	for (i in rv)
 	    if (i.substr(0, xtype.length) == xtype && (elt = $$(i))) {

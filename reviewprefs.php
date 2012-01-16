@@ -212,7 +212,7 @@ $showing_au = (!$Conf->subBlindAlways() && strpos($pldisplay, " au ") !== false)
 $showing_anonau = ((!$Conf->subBlindNever() || $Me->privChair) && strpos($pldisplay, " anonau ") !== false);
 
 echo "<form method='get' action='", hoturl("reviewprefs"), "' accept-charset='UTF-8' id='redisplayform' class='",
-    ($showing_au || $showing_anonau ? "fold10o" : "fold10c"),
+    ($showing_au ? "fold10o" : "fold10c"),
     "'>\n<table>";
 
 if ($Me->privChair) {
@@ -257,12 +257,12 @@ if (!$Conf->subBlindAlways()) {
     $loadforms .= "<div id='auloadformresult'></div>";
 }
 if (!$Conf->subBlindNever() && $Me->privChair) {
-    echo $sep,
+    echo "<span class='fx10'>", $sep,
 	tagg_checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
 		      array("disabled" => !($pl->headerInfo["authors"] & 2),
-			    "onchange" => "foldplinfo(this,'anonau')",
+			    "onchange" => ($Conf->subBlindOptional() ? "" : "foldplinfo(this,'au');") . "foldplinfo(this,'anonau')",
 			    "id" => ($Conf->subBlindOptional() ? "showanonau" : "showau"))),
-	"&nbsp;", tagg_label($Conf->subBlindOptional() ? "Anonymous authors" : "Authors");
+	"&nbsp;", tagg_label($Conf->subBlindOptional() ? "Anonymous authors" : "Authors"), "</span>";
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='anonauloadformresult'></div>";
 }
@@ -271,7 +271,7 @@ if (!$Conf->subBlindAlways() || $Me->privChair) {
 	tagg_checkbox("showaufull", 1, strpos($pldisplay, " aufull ") !== false,
 		      array("onchange" => "foldplinfo(this,'aufull')")),
 	"&nbsp;", tagg_label("Full author info"), "</span>";
-    $Conf->footerScript("function foldplinfo_extra(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked),y=(type=='anonau'?!dofold:(\$\$('showanonau')||{}).checked);fold('redisplayform',!(x||y),10)}");
+    $Conf->footerScript("function foldplinfo_extra(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked);fold('redisplayform',!x,10)}");
     $loadforms .= "<div id='aufullloadformresult'></div>";
 }
 if ($pl->headerInfo["abstract"]) {
