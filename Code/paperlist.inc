@@ -1614,8 +1614,9 @@ class PaperList extends BaseList {
 	return $t;
     }
 
-    function _row_check_heading($rstate, $row, $lastheading, &$body) {
-	$heading = defval($this->search->headingmap, $row->paperId, "");
+    function _row_check_heading($rstate, $srows, $row, $lastheading, &$body) {
+	$headingmap = $this->search->headingmap;
+	$heading = defval($headingmap, $row->paperId, "");
 	if ($this->count == 1)
 	    $rstate->headingstart = array(0);
 	if ($heading != $lastheading) {
@@ -1624,8 +1625,10 @@ class PaperList extends BaseList {
 	    if ($heading == "")
 		$body[] = "  <tr class=\"pl plheading_blank plheading_middle\"><td class=\"plheading_blank plheading_middle\" colspan=\"$rstate->ncol\"></td></tr>\n";
 	    else {
+		for ($i = $this->count; $i < count($srows) && defval($headingmap, $srows[$i]->paperId, "") == $heading; ++$i)
+		    /* do nothing */;
 		$middle = ($this->count == 1 ? "" : " plheading_middle");
-		$body[] = "  <tr class=\"pl plheading$middle\"><td class=\"plheading$middle\" colspan=\"$rstate->ncol\">" . htmlspecialchars($heading) . "</td></tr>\n";
+		$body[] = "  <tr class=\"pl plheading$middle\"><td class=\"plheading$middle\" colspan=\"$rstate->ncol\">" . htmlspecialchars($heading) . " <span class=\"plheading_count\">(" . plural($i - $this->count + 1, "paper") . ")</span></td></tr>\n";
 	    }
 	    $rstate->colorindex = 0;
 	}
@@ -1850,7 +1853,7 @@ class PaperList extends BaseList {
 	foreach ($srows as $row) {
 	    ++$this->count;
 	    if ($lastheading !== false)
-		$lastheading = $this->_row_check_heading($rstate, $row, $lastheading, $body);
+		$lastheading = $this->_row_check_heading($rstate, $srows, $row, $lastheading, $body);
 	    $body[] = $this->_row_text($rstate, $row, $fieldDef);
 	}
 

@@ -1369,6 +1369,11 @@ td.plheading {
 	padding: 0.5ex 0 0.2ex;
 	background: #f0f0f0;
 }
+span.plheading_count {
+	font-weight: normal;
+	font-size: smaller;
+	color: #555555;
+}
 td.plheading_blank {
 	height: 0.7ex;
 	background: #f0f0f0;
