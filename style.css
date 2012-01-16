@@ -1357,6 +1357,10 @@ td.plheading {
 	padding: 0.5ex 0 0.2ex;
 	background: #f0f0f0;
 }
+td.plheading_blank {
+	height: 0.7ex;
+	background: #f0f0f0;
+}
 td.plheading_middle {
 	border-top: 1px solid #cccccc;
 }
