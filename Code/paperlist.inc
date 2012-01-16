@@ -966,7 +966,7 @@ class PaperList extends BaseList {
 		$c .= " disabled='disabled'";
 	    if ($fieldId != self::FIELD_SELECTOR_CONFLICT)
 		$c .= " onclick='pselClick(event,this)'";
-	    return "<span class='pl_rownum fx6'>" . $this->count . ". </span>" . "<input type='checkbox' class='cb' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
+	    return "<span class=\"pl_rownum fx6\">" . $this->count . ". </span>" . "<input type='checkbox' class='cb' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
 	case self::FIELD_CONFLICT_CONFIRM:
 	    return "<span id='assrev" . $row->paperId . "ok'></span>";
 	case self::FIELD_ASSIGN_REVIEW:
@@ -1601,12 +1601,16 @@ class PaperList extends BaseList {
 
     function _row_check_heading($rstate, $row, $lastheading, &$body) {
 	$heading = defval($this->search->headingmap, $row->paperId, "");
+	if ($this->count == 1)
+	    $rstate->headingstart = array(0);
 	if ($heading != $lastheading) {
+	    if ($this->count != 1)
+		$rstate->headingstart[] = count($body);
 	    if ($heading == "")
-		$body[] = "  <tr class=\"pl plheading_blank plheading_middle\"><td colspan=\"$rstate->ncol\" class=\"plheading_blank plheading_middle\"></td></tr>\n";
+		$body[] = "  <tr class=\"pl plheading_blank plheading_middle\"><td class=\"plheading_blank plheading_middle\" colspan=\"$rstate->ncol\"></td></tr>\n";
 	    else {
 		$middle = ($this->count == 1 ? "" : " plheading_middle");
-		$body[] = "  <tr class=\"pl plheading$middle\"><td colspan=\"$rstate->ncol\" class=\"plheading$middle\">" . htmlspecialchars($heading) . "</td></tr>\n";
+		$body[] = "  <tr class=\"pl plheading$middle\"><td class=\"plheading$middle\" colspan=\"$rstate->ncol\">" . htmlspecialchars($heading) . "</td></tr>\n";
 	    }
 	    $rstate->colorindex = 0;
 	}
@@ -1657,6 +1661,63 @@ class PaperList extends BaseList {
 	if (count($jsnotitlemap))
 	    $Conf->footerScript("plinfo_notitle={" . join(",", $jsnotitlemap) . "};");
 	return $classes;
+    }
+
+    function _make_title_header_extra($rstate) {
+	global $Conf;
+	$titleextra = "";
+	if (isset($rstate->foldinfo["wholerow"]))
+	    $titleextra .= "<span class='sep'></span><a class='fn3' href=\"javascript:void fold('pl',0,3)\">Show all papers</a>";
+	if ((isset($rstate->nonempty_fields["au"]) || isset($rstate->nonempty_fields["anonau"]))
+	    && $this->showHeader == self::HEADER_ALL) {
+	    $titleextra .= "<span class='sep'></span>";
+	    if ($Conf->subBlindNever())
+		$titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
+	    else if ($this->contact->privChair && isset($rstate->nonempty_fields["anonau"]) && !isset($rstate->nonempty_fields["au"]))
+		$titleextra .= "<a class='fn1 fn2' href=\"javascript:fold('pl',0,'au');void fold('pl',0,'anonau')\">Show authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
+	    else if ($this->contact->privChair && isset($rstate->nonempty_fields["anonau"]))
+		$titleextra .= "<a class='fn1' href=\"javascript:fold('pl',0,'au');void fold('pl',1,'anonau')\">Show non-anonymous authors</a><a class='fx1 fn2' href=\"javascript:void fold('pl',0,'anonau')\">Show all authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
+	    else
+		$titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show non-anonymous authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
+	}
+	if (isset($rstate->nonempty_fields[self::FIELD_TAGS])
+	    && $this->showHeader == self::HEADER_ALL) {
+	    $titleextra .= "<span class='sep'></span>";
+	    $titleextra .= "<a class='fn4' href='javascript:void foldplinfo(0,\"tags\")'>Show tags</a><a class='fx4' href='javascript:void foldplinfo(1,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
+	}
+	return $titleextra ? "<span class='pl_titleextra'>$titleextra</span>" : "";
+    }
+
+    function _column_split($rstate, $colhead, &$body) {
+	if (!isset($rstate->headingstart) || count($rstate->headingstart) <= 1)
+	    return false;
+	$rstate->headingstart[] = count($body);
+	$rstate->split_ncol = count($rstate->headingstart) - 1;
+
+	$rownum_marker = "<span class=\"pl_rownum fx6\">";
+	$rownum_len = strlen($rownum_marker);
+	$nbody = array("<tr>");
+	for ($i = 1; $i < count($rstate->headingstart); ++$i) {
+	    $nbody[] = "<td class='pl_splitcol top' width='" . (100 / $rstate->split_ncol) . "%'><div class='pl_splitcol'><table width='100%'>";
+	    $nbody[] = $colhead . "  <tbody>\n";
+	    $number = 1;
+	    for ($j = $rstate->headingstart[$i - 1]; $j < $rstate->headingstart[$i]; ++$j) {
+		$x = $body[$j];
+		if (($pos = strpos($x, $rownum_marker)) !== false) {
+		    $pos += strlen($rownum_marker);
+		    $x = substr($x, 0, $pos) . preg_replace('/\A\d+/', $number, substr($x, $pos));
+		    ++$number;
+		} else if (strpos($x, "<tr class=\"pl plheading_blank") !== false)
+		    $x = "";
+		$nbody[] = $x;
+	    }
+	    $nbody[] = "  </tbody>\n</table></div></td>\n";
+	}
+	$nbody[] = "</tr>";
+
+	$body = $nbody;
+	$rstate->last_trclass = "k0";
+	return true;
     }
 
     function text($listname, $me, $extra_class = "") {
@@ -1778,6 +1839,69 @@ class PaperList extends BaseList {
 	    $body[] = $this->_row_text($rstate, $row, $fieldDef);
 	}
 
+	// columns
+	$colhead = "";
+	foreach ($fieldDef as $fieldId => $fdef) {
+	    if ($fdef->type == 1)
+		$colhead .= $this->col($fieldId);
+	}
+
+	// header cells
+	if ($this->showHeader) {
+	    $colhead .= " <thead>\n  <tr class=\"pl_headrow\">\n";
+	    $ord = 0;
+	    $titleextra = $this->_make_title_header_extra($rstate);
+
+	    if ($this->sortable && $url) {
+		$sortUrl = htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
+		$q = "<a class='pl_sort' title='Change sort' href=\"" . $sortUrl;
+	    } else
+		$sortUrl = false;
+
+	    foreach ($fieldDef as $fieldId => $fdef) {
+		if ($fdef->type != 1)
+		    continue;
+		if (!isset($rstate->nonempty_fields[$fieldId])) {
+		    $colhead .= "    <th class=\"pl_$fdef->cssname\"></th>\n";
+		    continue;
+		}
+		$colhead .= "    <th class=\"pl_$fdef->cssname";
+		if ($fdef->foldnum)
+		    $colhead .= " fx" . $fdef->foldnum;
+		$colhead .= "\">";
+		$ftext = $this->header($fieldId, $ord++);
+
+		$sortableSelector = $fieldId >= self::FIELD_SELECTOR
+		    && $fieldId <= self::FIELD_LAST_SELECTOR
+		    && $sortUrl && $specialSortable;
+		if ($sortableSelector && $specialSortable == self::FIELD_TAGINDEX)
+		    $ftext = "<span class='hastitle' title='Sort by tag order'>#</span>";
+		else if ($sortableSelector && $specialSortable == self::FIELD_PIDARRAY)
+		    $ftext = "<span class='hastitle' title='Sort by search term order'>#</span>";
+
+		if ($this->sortField == null && $sortUrl && $fieldId < 10)
+		    $this->sortField = $fieldId;
+		if ($fieldId == $this->sortField
+		    || ($sortableSelector && $this->sortField == $specialSortable))
+		    $colhead .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' title='Reverse sort' href=\"" . $sortUrl . $this->sortField . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";
+		else if ($fdef->sortable && $sortUrl)
+		    $colhead .= $q . $fieldId . "\">" . $ftext . "</a>";
+		else if ($sortableSelector)
+		    $colhead .= $q . $specialSortable . "\">" . $ftext . "</a>";
+		else
+		    $colhead .= $ftext;
+		if ($titleextra && $fdef->cssname == "title") {
+		    $colhead .= $titleextra;
+		    $titleextra = false;
+		}
+		$colhead .= "</th>\n";
+	    }
+
+	    $colhead .= "  </tr>\n"
+		. "  <tr><td class='pl_headgap' colspan='$ncol'></td></tr>\n"
+		. " </thead>\n";
+	}
+
 	// table skeleton including fold classes
 	$foldclasses = $this->_analyze_folds($rstate, $fieldDef);
 	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
@@ -1787,93 +1911,12 @@ class PaperList extends BaseList {
 	    $x .= " " . join(" ", $foldclasses) . "\" id=\"foldpl";
 	$x .= "\">\n";
 
-	// columns
-	foreach ($fieldDef as $fieldId => $fdef) {
-	    if ($fdef->type == 1)
-		$x .= $this->col($fieldId);
-	}
-
-	// header cells
-	if ($this->showHeader) {
-	    $x .= " <thead>\n  <tr class=\"pl_headrow\">\n";
-	    $ord = 0;
-
-	    $titleextra = "";
-	    if (isset($rstate->foldinfo["wholerow"]))
-		$titleextra .= "<span class='sep'></span><a class='fn3' href=\"javascript:void fold('pl',0,3)\">Show all papers</a>";
-	    if ((isset($rstate->nonempty_fields["au"]) || isset($rstate->nonempty_fields["anonau"]))
-		&& $this->showHeader == self::HEADER_ALL) {
-		$titleextra .= "<span class='sep'></span>";
-		if ($Conf->subBlindNever())
-		    $titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
-		else if ($this->contact->privChair && isset($rstate->nonempty_fields["anonau"]) && !isset($rstate->nonempty_fields["au"]))
-		    $titleextra .= "<a class='fn1 fn2' href=\"javascript:fold('pl',0,'au');void fold('pl',0,'anonau')\">Show authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
-		else if ($this->contact->privChair && isset($rstate->nonempty_fields["anonau"]))
-		    $titleextra .= "<a class='fn1' href=\"javascript:fold('pl',0,'au');void fold('pl',1,'anonau')\">Show non-anonymous authors</a><a class='fx1 fn2' href=\"javascript:void fold('pl',0,'anonau')\">Show all authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
-		else
-		    $titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show non-anonymous authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
-	    }
-	    if (isset($rstate->nonempty_fields[self::FIELD_TAGS])
-		&& $this->showHeader == self::HEADER_ALL) {
-		$titleextra .= "<span class='sep'></span>";
-		$titleextra .= "<a class='fn4' href='javascript:void foldplinfo(0,\"tags\")'>Show tags</a><a class='fx4' href='javascript:void foldplinfo(1,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
-	    }
-
-	    if ($this->sortable && $url) {
-		$sortUrl = htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
-		$q = "<a class='pl_sort' title='Change sort' href=\"" . $sortUrl;
-		foreach ($fieldDef as $fieldId => $fdef) {
-		    if ($fdef->type != 1)
-			continue;
-		    else if (!isset($rstate->nonempty_fields[$fieldId])) {
-			$x .= "    <th class=\"pl_$fdef->cssname\"></th>\n";
-			continue;
-		    }
-		    $x .= "    <th class=\"pl_$fdef->cssname";
-		    if ($fdef->foldnum)
-			$x .= " fx" . $fdef->foldnum;
-		    $x .= "\">";
-		    $ftext = $this->header($fieldId, $ord++);
-
-		    $sortableSelector = $fieldId >= self::FIELD_SELECTOR
-			&& $fieldId <= self::FIELD_LAST_SELECTOR
-			&& $specialSortable;
-		    if ($sortableSelector && $specialSortable == self::FIELD_TAGINDEX)
-			$ftext = "<span class='hastitle' title='Sort by tag order'>#</span>";
-		    else if ($sortableSelector && $specialSortable == self::FIELD_PIDARRAY)
-			$ftext = "<span class='hastitle' title='Sort by search term order'>#</span>";
-
-		    if ($this->sortField == null && $fieldId < 10)
-			$this->sortField = $fieldId;
-		    if ($fieldId == $this->sortField
-			|| ($sortableSelector && $this->sortField == $specialSortable))
-			$x .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' title='Reverse sort' href=\"" . $sortUrl . $this->sortField . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";
-		    else if ($fdef->sortable)
-			$x .= $q . $fieldId . "\">" . $ftext . "</a>";
-		    else if ($sortableSelector)
-			$x .= $q . $specialSortable . "\">" . $ftext . "</a>";
-		    else
-			$x .= $ftext;
-		    if ($titleextra && $fdef->cssname == "title") {
-			$x .= $titleextra;
-			$titleextra = false;
-		    }
-		    $x .= "</th>\n";
-		}
-
-	    } else {
-		foreach ($fieldDef as $fieldId => $fdef)
-		    if ($fdef->type == 1 && isset($rstate->nonempty_fields[$fieldId]))
-			$x .= "    <th class=\"pl_$fdef->cssname\">"
-			    . $this->header($fieldId, $ord++) . "</th>\n";
-		    else if ($fdef->type == 1)
-			$x .= "    <th class=\"pl_$fdef->cssname\"></th>\n";
-	    }
-
-	    $x .= "  </tr>\n"
-		. "  <tr><td class='pl_headgap' colspan='$ncol'></td></tr>\n"
-		. " </thead>\n";
-	}
+	// maybe make columns, maybe not
+	if (defval($this, "column_view") && count($rstate->ids)
+	    && $this->_column_split($rstate, $colhead, $body))
+	    $ncol = $rstate->split_ncol;
+	else
+	    $x .= $colhead;
 
 	reset($fieldDef);
 	if (key($fieldDef) == self::FIELD_SELECTOR

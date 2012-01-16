@@ -1027,6 +1027,8 @@ if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, array("sort" => true, "list" => true,
 				       "display" => defval($_REQUEST, "display")));
     $pl->showHeader = PaperList::HEADER_TITLES;
+    if (isset($_REQUEST["columnview"]))
+	$pl->column_view = true;
     $pl_text = $pl->text($Search->limitName, $Me, "pltable_full");
     $pldisplay = $pl->display;
 } else

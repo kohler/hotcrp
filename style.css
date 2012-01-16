@@ -1278,6 +1278,9 @@ table.pltable th, table.ppltable th, table.setreviewform th, table.auedittable t
 	padding-right: 0.125em;
 	vertical-align: bottom;
 }
+div.pl_splitcol {
+	padding-right: 2em;
+}
 .pl_title, .pl_reviewer, .pl_name, .pl_email, .pl_affiliation {
 	padding-right: 1em;
 }
