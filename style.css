@@ -1278,8 +1278,14 @@ table.pltable th, table.ppltable th, table.setreviewform th, table.auedittable t
 	padding-right: 0.125em;
 	vertical-align: bottom;
 }
-div.pl_splitcol {
-	padding-right: 2em;
+div.pl_splitcol, tr.pl_footgap.pl_splitcol > td {
+	padding-right: 1.5em;
+}
+div.pl_splitcol_ctr {
+	margin-right: -1.5em;
+}
+div.pl_splitcol_ctr_ctr {
+	overflow-x: hidden;
 }
 .pl_title, .pl_reviewer, .pl_name, .pl_email, .pl_affiliation {
 	padding-right: 1em;
@@ -1330,8 +1336,11 @@ div.pl_revtypeiround {
 	text-align: right;
 	white-space: nowrap;
 }
-table.ppltable td.pl_selector,
-table.ppltable td.pl_footselector {
+.pl_footselector {
+	vertical-align: top;
+	padding-right: 4px;
+}
+table.ppltable td.pl_selector {
 	padding-right: 3px;
 }
 .pl_confselector {
@@ -1437,9 +1446,12 @@ td.pl_footer {
 tr.pl_headgap td {
 	padding-top: 2px;
 }
-tr.pl_footgap td {
+div.pl_footgap {
 	padding-top: 3px;
 	border-bottom: 1px solid #ccb7a3; /* #9999cc; */
+}
+tr.pl_splitcol > td > div.pl_footgap {
+	padding-top: 8px;
 }
 table.plt_reviewerHome tr.pl_headrow th {
 	border-bottom: none;

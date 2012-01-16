@@ -87,6 +87,7 @@ class PaperList extends BaseList {
     var $papersel;
     var $rf;
     var $formulas;
+    var $view;
     var $reviewList;
 
     function __construct($search, $args = array()) {
@@ -135,6 +136,12 @@ class PaperList extends BaseList {
 	    $this->display = defval($_SESSION, defval($args, "foldtype", "pl") . "display", "");
 	$this->rf = reviewForm();
 	$this->formulas = array();
+	$this->view = "vd";
+	foreach (array("vmc", "vc", "vd") as $view)
+	    if (strpos($this->display, " $view ") !== false) {
+		$this->view = $view;
+		break;
+	    }
     }
 
     function _normalizeField($fieldId) {
@@ -1131,7 +1138,7 @@ class PaperList extends BaseList {
 	// Download
 	if (defval($_REQUEST, "atab") == "download")
 	    $whichlll = $nlll;
-	$t = "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "download")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Download</a></td><td class='lld$nlll'><b>:</b> &nbsp;";
+	$t = "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "download")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Download</a></td><td class='lld$nlll nowrap'><b>:</b> &nbsp;";
 	$sel_opt = array();
 	if ($revpref) {
 	    $sel_opt["revpref"] = "Preference file";
@@ -1182,7 +1189,7 @@ class PaperList extends BaseList {
 		|| defval($_REQUEST, "atab") == "uploadpref")
 		$whichlll = $nlll;
 	    $t .= $barsep;
-	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "uploadpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Upload</a></td><td class='lld$nlll'><b>&nbsp;preference file:</b> &nbsp;";
+	    $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "uploadpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Upload</a></td><td class='lld$nlll nowrap'><b>&nbsp;preference file:</b> &nbsp;";
 	    $t .= "<input id='plact${nlll}_d' type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='autosub(\"upload\",this)' />&nbsp; <input type='submit' class='b' name='upload' value='Go' tabindex='6' /></td>";
 	    $nlll++;
 	}
@@ -1193,7 +1200,7 @@ class PaperList extends BaseList {
 		|| defval($_REQUEST, "atab") == "setpref")
 		$whichlll = $nlll;
 	    $t .= $barsep;
-	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "setpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Set preferences</a></td><td class='lld$nlll'><b>:</b> &nbsp;";
+	    $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "setpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Set preferences</a></td><td class='lld$nlll nowrap'><b>:</b> &nbsp;";
 	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='autosub(\"setpaprevpref\",this)' /> &nbsp;<input type='submit' class='b' name='setpaprevpref' value='Go' tabindex='6' /></td>";
 	    $nlll++;
 	}
@@ -1204,7 +1211,7 @@ class PaperList extends BaseList {
 		|| defval($_REQUEST, "atab") == "tags")
 		$whichlll = $nlll;
 	    $t .= $barsep;
-	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Tag</a></td><td id='foldplacttags' class='lld$nlll foldc fold99c'><table><tr><td><b>:</b><a class='help' href='" . hoturl("help", "t=tags") . "' target='_blank' title='Learn more'>?</a> &nbsp;";
+	    $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Tag</a></td><td id='foldplacttags' class='lld$nlll nowrap foldc fold99c'><table><tr><td><b>:</b><a class='help' href='" . hoturl("help", "t=tags") . "' target='_blank' title='Learn more'>?</a> &nbsp;";
 	    $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order");
 	    $tagextra = array("class" => "b", "id" => "placttagtype");
 	    if ($this->contact->privChair) {
@@ -1296,11 +1303,16 @@ class PaperList extends BaseList {
 
 	// Linelinks container
 	$extraFooter = ($this->footer && $this->footer !== true ? $this->footer : "");
-	return " <tfoot>\n"
-	    . "  <tr class='pl_footgap $trclass'><td class='pl_blank' colspan='$ncol'></td></tr>\n"
-	    . "  <tr class='pl_footrow'>\n    <td class='pl_footselector' style='vertical-align: top; padding-right: 4px;'>" . $Conf->cacheableImage("_.gif", "^^", null, "placthook") . "</td>\n"
-	    . "    <td class='pl_footer' colspan='" . ($ncol - 1) . "'>"
-	    . "<table id='plact' class='linelinks$whichlll'><tr><td><a name='plact'><b>Select papers</b></a> (or <a href=\""
+	$foot = " <tfoot>\n"
+	    . "  <tr class='pl_footgap $trclass'><td colspan='$ncol'><div class='pl_footgap'></div></td></tr>\n"
+	    . "  <tr class='pl_footrow'>\n";
+	if ($this->view == "vmc" || $this->view == "vc")
+	    $foot .= "    <td class='pl_footer' colspan='$ncol'>";
+	else
+	    $foot .= "    <td class='pl_footselector'>"
+		. $Conf->cacheableImage("_.gif", "^^", null, "placthook")
+		. "</td>\n    <td class='pl_footer' colspan='" . ($ncol - 1) . "'>";
+	return $foot . "<table id='plact' class='linelinks$whichlll'><tr><td><a name='plact'><b>Select papers</b></a> (or <a href=\""
 	    . selfHref(array("selectall" => 1))
 	    . "#plact\" onclick='return papersel(true)'>select all " . $this->count . "</a>), then&nbsp;"
 	    . "<img id='foldplactsession' alt='' src='" . hoturl("sessionvar", "var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1") . "' width='1' height='1' />"
@@ -1309,33 +1321,36 @@ class PaperList extends BaseList {
 	    . " </tfoot>\n";
     }
 
-    function _addScores($fields) {
-	global $reviewScoreNames, $paperListFormulas, $paperListNormalizer;
+    function _canonicalize_fields($fields) {
+	global $reviewScoreNames, $paperListFormulas, $paperListNormalizer, $paperListFields;
+	$minimal = $this->view == "vmc";
 	$newFields = array();
 	foreach ($fields as $fid) {
+	    $nf = array();
 	    if ($fid == self::FIELD_SCORE) {
 		if (!$this->scoresOk)
 		    continue;
-		$x = array();
 		foreach ($paperListNormalizer as $newfid => $info)
 		    if ($info[0] == self::FIELD_SCORE
 			&& ($p = array_search($info[1], $this->rf->fieldOrder)) !== false)
-			$x[$newfid] = $p;
-		asort($x);
-		foreach ($x as $newfid => $v)
-		    $newFields[] = $newfid;
+			$nf[$newfid] = $p;
+		asort($nf);
+		$nf = array_keys($nf);
 		$this->scoreMax = array();
 	    } else if ($fid == self::FIELD_FORMULA) {
 		if (!$this->scoresOk)
 		    continue;
 		foreach ($paperListFormulas as $formula)
-		    array_push($newFields, $formula->fieldId);
+		    array_push($nf, $formula->fieldId);
 	    } else if ($fid == self::FIELD_TAGREPORT) {
 		foreach ($paperListNormalizer as $newfid => $info)
 		    if ($info[0] == self::FIELD_TAGREPORT)
-			$newFields[] = $newfid;
+			$nf[] = $newfid;
 	    } else
-		$newFields[] = $fid;
+		$nf[] = $fid;
+	    foreach ($nf as $newfid)
+		if (!$minimal || $paperListFields[$newfid]->minimal)
+		    $newFields[] = $newfid;
 	}
 	return $newFields;
     }
@@ -1440,7 +1455,7 @@ class PaperList extends BaseList {
 	  default:
 	    return null;
 	}
-	return $this->_addScores($fields);
+	return $this->_canonicalize_fields($fields);
     }
 
     function _addAjaxLoadForm($pap, $extra = "") {
@@ -1716,7 +1731,7 @@ class PaperList extends BaseList {
 	$nbody[] = "</tr>";
 
 	$body = $nbody;
-	$rstate->last_trclass = "k0";
+	$rstate->last_trclass = "k0 pl_splitcol";
 	return true;
     }
 
@@ -1904,26 +1919,29 @@ class PaperList extends BaseList {
 
 	// table skeleton including fold classes
 	$foldclasses = $this->_analyze_folds($rstate, $fieldDef);
-	$x = "<table class=\"pltable plt_" . htmlspecialchars($listname);
+	$enter = "<table class=\"pltable plt_" . htmlspecialchars($listname);
 	if ($extra_class != "")
-	    $x .= " " . $extra_class;
+	    $enter .= " " . $extra_class;
 	if (count($foldclasses))
-	    $x .= " " . join(" ", $foldclasses) . "\" id=\"foldpl";
-	$x .= "\">\n";
+	    $enter .= " " . join(" ", $foldclasses) . "\" id=\"foldpl";
+	$enter .= "\">\n";
+	$exit = "</table>";
 
 	// maybe make columns, maybe not
-	if (defval($this, "column_view") && count($rstate->ids)
-	    && $this->_column_split($rstate, $colhead, $body))
+	if (($this->view == "vc" || $this->view == "vmc") && count($rstate->ids)
+	    && $this->_column_split($rstate, $colhead, $body)) {
+	    $enter = "<div class='pl_splitcol_ctr_ctr'><div class='pl_splitcol_ctr'>" . $enter;
+	    $exit = $exit . "</div></div>";
 	    $ncol = $rstate->split_ncol;
-	else
-	    $x .= $colhead;
+	} else
+	    $enter .= $colhead;
 
 	reset($fieldDef);
 	if (key($fieldDef) == self::FIELD_SELECTOR
 	    || key($fieldDef) == self::FIELD_SELECTOR_ON)
-	    $x .= $this->footer($ncol, $listname, $rstate->last_trclass);
+	    $enter .= $this->footer($ncol, $listname, $rstate->last_trclass);
 
-	$x .= " <tbody>\n" . join("", $body) . " </tbody>\n</table>";
+	$x = $enter . " <tbody>\n" . join("", $body) . " </tbody>\n" . $exit;
 
 	// session variable to remember the list
 	if ($this->listNumber) {
@@ -2019,29 +2037,31 @@ class PaperList extends BaseList {
 class PaperListField {
     var $id;
     var $cssname;
+    var $foldnum;
     var $foldname;
     var $type;
-    var $foldnum;
     var $sortable;
+    var $minimal;
 
-    function __construct($id, $cssname, $type, $foldnum, $sortable) {
+    function __construct($id, $cssname, $type, $extra) {
 	$this->id = $id;
 	$this->cssname = $cssname;
-	$this->foldname = ($foldnum ? $cssname : null);
+	$this->foldnum = defval($extra, "foldnum", 0);
+	$this->foldname = ($this->foldnum ? $cssname : null);
 	$this->type = $type;
-	$this->foldnum = $foldnum;
-	$this->sortable = $sortable;
+	$this->sortable = defval($extra, "sortable", false);
+	$this->minimal = defval($extra, "minimal", false);
     }
 
-    static function make($id, $cssname, $type, $foldnum = 0, $sortable = false) {
+    static function make($id, $cssname, $type, $extra = 0) {
 	global $paperListFields, $paperListFolds;
-	if ($foldnum === true && $sortable === false) {
-	    $foldnum = 0;
-	    $sortable = true;
-	}
-	$f = new PaperListField($id, $cssname, $type, $foldnum, $sortable);
+	if ($extra === true)
+	    $extra = array("sortable" => true);
+	else if (is_int($extra))
+	    $extra = array("foldnum" => $extra);
+	$f = new PaperListField($id, $cssname, $type, $extra);
 	$paperListFields[$id] = $f;
-	if ($foldnum > 3  /* "authors" == 1 or 2, requires special handling */)
+	if ($f->foldnum > 3  /* "authors" == 1 or 2, requires special handling */)
 	    $paperListFolds[$f->foldname] = $f;
 	return $f;
     }
@@ -2061,11 +2081,11 @@ class PaperListField {
 				"force" => (object) array("foldnum" => 20));
 
 	$paperListFields = array();
-	PaperListField::make(PaperList::FIELD_SELECTOR, "selector", 1);
-	PaperListField::make(PaperList::FIELD_SELECTOR_ON, "selector", 1);
+	PaperListField::make(PaperList::FIELD_SELECTOR, "selector", 1, array("minimal" => true));
+	PaperListField::make(PaperList::FIELD_SELECTOR_ON, "selector", 1, array("minimal" => true));
 	PaperListField::make(PaperList::FIELD_SELECTOR_CONFLICT, "confselector", 1);
-	PaperListField::make(PaperList::FIELD_ID, "id", 1, true);
-	PaperListField::make(PaperList::FIELD_TITLE, "title", 1, true);
+	PaperListField::make(PaperList::FIELD_ID, "id", 1, array("minimal" => true, "sortable" => true));
+	PaperListField::make(PaperList::FIELD_TITLE, "title", 1, array("minimal" => true, "sortable" => true));
 	PaperListField::make(PaperList::FIELD_STATUS, "status", 1, true);
 	PaperListField::make(PaperList::FIELD_REVIEWER, "reviewer", 1, true);
 	PaperListField::make(PaperList::FIELD_REVIEWER_TYPE, "reviewer", 1, true);
@@ -2084,8 +2104,8 @@ class PaperListField {
 	PaperListField::make(PaperList::FIELD_REVIEWS_STATUS, "revstat", 1, true);
 	PaperListField::make(PaperList::FIELD_DESIRABILITY, "desirability", 1, true);
 	PaperListField::make(PaperList::FIELD_ALL_PREFERENCES, "allPreferences", 2);
-	PaperListField::make(PaperList::FIELD_SCORE, "score", 1, true);
-	PaperListField::make(PaperList::FIELD_FORMULA, "formula", 1, true);
+	PaperListField::make(PaperList::FIELD_SCORE, "score", 1, array("minimal" => true, "sortable" => true));
+	PaperListField::make(PaperList::FIELD_FORMULA, "formula", 1, array("minimal" => true, "sortable" => true));
 	PaperListField::make(PaperList::FIELD_AUTHOR_MATCH, "authorsMatch", 2);
 	PaperListField::make(PaperList::FIELD_COLLABORATORS_MATCH, "collaboratorsMatch", 2);
 	PaperListField::make(PaperList::FIELD_OPT_AUTHORS, "authors", 2, 3);
@@ -2100,7 +2120,7 @@ class PaperListField {
 	$paperListNormalizer = array();
 	$nextfield = PaperList::FIELD_SCORE;
 	foreach ($reviewScoreNames as $k => $n) {
-	    $fdef = PaperListField::make($nextfield, $n, 1, $nextfield, true);
+	    $fdef = PaperListField::make($nextfield, $n, 1, array("minimal" => true, "sortable" => true, "foldnum" => $nextfield));
 	    $fdef->cssname = "score";
 	    $paperListNormalizer[$nextfield] = array(PaperList::FIELD_SCORE, $n);
 	    ++$nextfield;
@@ -2112,7 +2132,7 @@ class PaperListField {
 	    $result = $Conf->q("select * from Formula");
 	    while (($row = edb_orow($result))) {
 		$fid = $row->formulaId;
-		$fdef = PaperListField::make($nextfield, "formula$fid", 1, $nextfold, true);
+		$fdef = PaperListField::make($nextfield, "formula$fid", 1, array("minimal" => true, "sortable" => true, "foldnum" => $nextfold));
 		$fdef->cssname = "formula";
 		$row->fieldId = $nextfield;
 		$paperListFormulas[$fid] = $row;
