@@ -1767,9 +1767,9 @@ class PaperList extends BaseList {
 	// collect view data
 	$this->viewmap = $this->search->viewmap;
 	if (defval($this->viewmap, "cc") || defval($this->viewmap, "compactcolumn")
-	    || defval($this->viewmap, "compactcolumns"))
+	    || defval($this->viewmap, "ccol") || defval($this->viewmap, "compactcolumns"))
 	    $this->viewmap["compactcolumns"] = $this->viewmap["columns"] = true;
-	if (defval($this->viewmap, "column"))
+	if (defval($this->viewmap, "column") || defval($this->viewmap, "col"))
 	    $this->viewmap["columns"] = true;
 
 	// get paper list
