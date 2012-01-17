@@ -87,7 +87,7 @@ class PaperList extends BaseList {
     var $papersel;
     var $rf;
     var $formulas;
-    var $view;
+    var $viewmap;
     var $reviewList;
 
     function __construct($search, $args = array()) {
@@ -136,12 +136,6 @@ class PaperList extends BaseList {
 	    $this->display = defval($_SESSION, defval($args, "foldtype", "pl") . "display", "");
 	$this->rf = reviewForm();
 	$this->formulas = array();
-	$this->view = "vd";
-	foreach (array("vmc", "vc", "vd") as $view)
-	    if (strpos($this->display, " $view ") !== false) {
-		$this->view = $view;
-		break;
-	    }
     }
 
     function _normalizeField($fieldId) {
@@ -1306,7 +1300,7 @@ class PaperList extends BaseList {
 	$foot = " <tfoot>\n"
 	    . "  <tr class='pl_footgap $trclass'><td colspan='$ncol'><div class='pl_footgap'></div></td></tr>\n"
 	    . "  <tr class='pl_footrow'>\n";
-	if ($this->view == "vmc" || $this->view == "vc")
+	if (defval($this->viewmap, "columns"))
 	    $foot .= "    <td class='pl_footer' colspan='$ncol'>";
 	else
 	    $foot .= "    <td class='pl_footselector'>"
@@ -1323,7 +1317,7 @@ class PaperList extends BaseList {
 
     function _canonicalize_fields($fields) {
 	global $reviewScoreNames, $paperListFormulas, $paperListNormalizer, $paperListFields;
-	$minimal = $this->view == "vmc";
+	$minimal = defval($this->viewmap, "compactcolumns");
 	$newFields = array();
 	foreach ($fields as $fid) {
 	    $nf = array();
@@ -1628,7 +1622,8 @@ class PaperList extends BaseList {
 		for ($i = $this->count; $i < count($srows) && defval($headingmap, $srows[$i]->paperId, "") == $heading; ++$i)
 		    /* do nothing */;
 		$middle = ($this->count == 1 ? "" : " plheading_middle");
-		$body[] = "  <tr class=\"pl plheading$middle\"><td class=\"plheading$middle\" colspan=\"$rstate->ncol\">" . htmlspecialchars($heading) . " <span class=\"plheading_count\">(" . plural($i - $this->count + 1, "paper") . ")</span></td></tr>\n";
+		$pheading = preg_replace('/(?:\A|\s)(?:-\s*|NOT\s*|)VIEW:\s*\S+/', "", $heading);
+		$body[] = "  <tr class=\"pl plheading$middle\"><td class=\"plheading$middle\" colspan=\"$rstate->ncol\">" . htmlspecialchars(trim($pheading)) . " <span class=\"plheading_count\">(" . plural($i - $this->count + 1, "paper") . ")</span></td></tr>\n";
 	    }
 	    $rstate->colorindex = 0;
 	}
@@ -1758,6 +1753,25 @@ class PaperList extends BaseList {
 	$this->scoresOk = $me->privChair || $me->amReviewer()
 	    || $Conf->timeAuthorViewReviews();
 
+	// initialize query
+	$queryOptions = array("joins" => array());
+	// need tags for row coloring
+	if ($this->contact->canViewTags(null))
+	    $queryOptions["tags"] = 1;
+	if ($this->search->complexSearch($queryOptions)) {
+	    if (!($table = $this->search->matchTable()))
+		return null;
+	    $queryOptions["joins"][] = "join $table on (Paper.paperId=$table.paperId)";
+	}
+
+	// collect view data
+	$this->viewmap = $this->search->viewmap;
+	if (defval($this->viewmap, "cc") || defval($this->viewmap, "compactcolumn")
+	    || defval($this->viewmap, "compactcolumns"))
+	    $this->viewmap["compactcolumns"] = $this->viewmap["columns"] = true;
+	if (defval($this->viewmap, "column"))
+	    $this->viewmap["columns"] = true;
+
 	// get paper list
 	if (!($baseFieldId = $this->_listFields($listname))) {
 	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
@@ -1770,17 +1784,6 @@ class PaperList extends BaseList {
 	// check paper link destination
 	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
 	    $this->paperLink = $_REQUEST["linkto"];
-
-	// initialize query
-	$queryOptions = array("joins" => array());
-	// need tags for row coloring
-	if ($this->contact->canViewTags(null))
-	    $queryOptions["tags"] = 1;
-	if ($this->search->complexSearch($queryOptions)) {
-	    if (!($table = $this->search->matchTable()))
-		return null;
-	    $queryOptions["joins"][] = "join $table on (Paper.paperId=$table.paperId)";
-	}
 
 	// paper list query?
 	$pidarray = null;
@@ -1931,7 +1934,7 @@ class PaperList extends BaseList {
 	$exit = "</table>";
 
 	// maybe make columns, maybe not
-	if (($this->view == "vc" || $this->view == "vmc") && count($rstate->ids)
+	if (defval($this->viewmap, "columns") && count($rstate->ids)
 	    && $this->_column_split($rstate, $colhead, $body)) {
 	    $enter = "<div class='pl_splitcol_ctr_ctr'><div class='pl_splitcol_ctr'>" . $enter;
 	    $exit = $exit . "</div></div>";

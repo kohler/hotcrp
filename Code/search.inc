@@ -1,6 +1,6 @@
 <?php
 // search.inc -- HotCRP helper class for searching for papers
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $searchKeywords;
@@ -41,7 +41,8 @@ $searchKeywords = array("ti" => "ti", "title" => "ti",
 	"revpref" => "revpref", "pref" => "revpref",
 	"repref" => "revpref",
 	"ss" => "ss", "search" => "ss",
-	"HEADING" => "HEADING", "heading" => "HEADING");
+	"HEADING" => "HEADING", "heading" => "HEADING",
+	"VIEW" => "VIEW", "view" => "VIEW");
 
 class SearchOperator {
     var $op;
@@ -56,15 +57,15 @@ class SearchOperator {
 
 global $searchOperators;
 $searchOperators = array("(" => new SearchOperator("(", true, null),
-			"NOT" => new SearchOperator("NOT", true, 5),
-			"-" => new SearchOperator("NOT", true, 5),
-			"+" => new SearchOperator("+", true, 5),
-			"AND" => new SearchOperator("and", false, 4),
-			"OR" => new SearchOperator("or", false, 3),
-			"XAND" => new SearchOperator("and", false, 2),
-			"XOR" => new SearchOperator("or", false, 2),
-			"THEN" => new SearchOperator("then", false, 1),
-			")" => null);
+			 "NOT" => new SearchOperator("NOT", true, 5),
+			 "-" => new SearchOperator("NOT", true, 5),
+			 "+" => new SearchOperator("+", true, 5),
+			 "AND" => new SearchOperator("and", false, 4),
+			 "OR" => new SearchOperator("or", false, 3),
+			 "XAND" => new SearchOperator("and", false, 2),
+			 "XOR" => new SearchOperator("or", false, 2),
+			 "THEN" => new SearchOperator("then", false, 1),
+			 ")" => null);
 
 global $searchMatchNumber;
 $searchMatchNumber = 0;
@@ -86,9 +87,14 @@ class SearchTerm {
 	}
     }
     static function combine($combiner, $terms) {
+	if (!is_array($terms) && $terms)
+	    $terms = array($terms);
 	if (count($terms) == 0)
 	    return null;
-	else if (count($terms) == 1)
+	else if ($combiner == "not") {
+	    assert(count($terms) == 1);
+	    return self::negate($terms[0]);
+	} else if (count($terms) == 1)
 	    return $terms[0];
 	else
 	    return new SearchTerm($combiner, 0, $terms);
@@ -105,14 +111,56 @@ class SearchTerm {
 	else
 	    return new SearchTerm("not", 0, $term);
     }
+    static function make_float($float) {
+	return new SearchTerm("float", 0, null, array("float" => $float));
+    }
+    static function merge_float(&$float1, $float2) {
+	if (!$float1 || !$float2)
+	    return $float1 ? $float1 : $float2;
+	else
+	    return array_merge_recursive($float1, $float2);
+    }
+    static function extract_float(&$float, $qe) {
+	if (!isset($float))
+	    $float = null;
+	if ($qe && ($qefloat = $qe->get("float"))) {
+	    $float = self::merge_float($float, $qefloat);
+	    return $qe->type == "float" ? null : $qe;
+	} else
+	    return $qe;
+    }
+    static function combine_float($float, $combiner, $terms) {
+	$qe = self::combine($combiner, $terms);
+	if ($float && !$qe)
+	    return SearchTerm::make_float($float);
+	else {
+	    if ($float)
+		$qe->set("float", $float);
+	    return $qe;
+	}
+    }
     function isfalse() {
 	return $this->type == "f";
+    }
+    function islistcombiner() {
+	return $this->type == "and" || $this->type == "or" || $this->type == "then";
     }
     function set($k, $v) {
 	$this->$k = $v;
     }
     function get($k, $defval = null) {
 	return isset($this->$k) ? $this->$k : $defval;
+    }
+    function set_float($k, $v) {
+	if (!isset($this->float))
+	    $this->float = array();
+	$this->float[$k] = $v;
+    }
+    function get_float($k, $defval = null) {
+	if (isset($this->float) && isset($this->float[$k]))
+	    return $this->float[$k];
+	else
+	    return $defval;
     }
 }
 
@@ -227,8 +275,8 @@ class PaperSearch {
     var $_thenError;
     var $_ssRecursion;
     var $thenmap;
-    var $_currentHeading;
     var $headingmap;
+    var $viewmap;
 
     var $_matchTable;
 
@@ -321,7 +369,6 @@ class PaperSearch {
 	$this->_reviewAdjustError = false;
 	$this->_thenError = false;
 	$this->thenmap = null;
-	$this->_currentHeading = null;
 	$this->headingmap = null;
 	$this->orderTags = array();
 	$this->reviewerContact = false;
@@ -1147,9 +1194,18 @@ class PaperSearch {
 	    $qt[] = ($qe ? $qe : new SearchTerm("f"));
 	}
 	if ($keyword == "HEADING") {
-	    if (($this->_currentHeading = simplifyWhitespace($word)) != "")
+	    if (($heading = simplifyWhitespace($word)) != "")
 		$this->headingmap = array();
-	    $qt[] = new SearchTerm("t");
+	    $qt[] = SearchTerm::make_float(array("heading" => $heading));
+	}
+	if ($keyword == "VIEW") {
+	    $views = array();
+	    foreach (preg_split('/\s+/', $word) as $w)
+		if ($w != "" && $w[0] == "-")
+		    $views[substr($w, 1)] = false;
+		else if ($w != "")
+		    $views[$w] = true;
+	    $qt[] = SearchTerm::make_float(array("view" => $views));
 	}
 
 	// Finally, look for a review field.
@@ -1227,6 +1283,7 @@ class PaperSearch {
 	$stack = array();
 	$parens = 0;
 	$curqe = null;
+	$xstr = $str;
 
 	while ($str !== "") {
 	    list($opstr, $nextstr) = self::_searchPopKeyword($str);
@@ -1252,13 +1309,15 @@ class PaperSearch {
 		assert(!$curqe);
 		$stack[] = (object) array("op" => $op, "leftqe" => null, "used" => false);
 		++$parens;
-	    } else {
+	    } else if (!$op->unary && !$curqe)
+		/* ignore bad operator */;
+	    else {
 		while (count($stack)
 		       && $stack[count($stack) - 1]->op->precedence > $op->precedence)
 		    $curqe = self::_searchPopStack($curqe, $stack);
-		if ($op->op == "then") {
-		    $curqe->set("heading", $this->_currentHeading);
-		    $this->_currentHeading = null;
+		if ($op->op == "then" && $curqe) {
+		    $curqe->set_float("substr", trim(substr($xstr, 0, -strlen($str))));
+		    $xstr = $nextstr;
 		}
 		$top = count($stack) ? $stack[count($stack) - 1] : null;
 		if ($top && !$op->unary && $top->op->op == $op->op) {
@@ -1276,6 +1335,8 @@ class PaperSearch {
 	    $str = $nextstr;
 	}
 
+	if ($curqe)
+	    $curqe->set_float("substr", trim($xstr));
 	while (count($stack))
 	    $curqe = self::_searchPopStack($curqe, $stack);
 	return $curqe;
@@ -1395,7 +1456,7 @@ class PaperSearch {
     }
 
     function _queryCleanNot($qe) {
-	$qe->value = $qv = $this->_queryClean($qe->value, true);
+	$qv = $this->_queryClean($qe->value, true);
 	if ($qv->type == "not")
 	    return $qv->value;
 	else if ($qv->type == "pn")
@@ -1407,16 +1468,21 @@ class PaperSearch {
 	    if (isset($qv->value["rate"]))
 		$x["rate"] = "not (" . $qv->value["rate"] . ")";
 	    return new SearchTerm("revadj", 0, $x);
-	} else
-	    return $qe;
+	} else {
+	    $float = $qe->get("float");
+	    $qv = SearchTerm::extract_float($float, $qv);
+	    return SearchTerm::combine_float($float, "not", $qv);
+	}
     }
 
     function _queryCleanOr($qe) {
 	$revadj = null;
+	$float = $qe->get("float");
+	$newvalues = array();
 
-	for ($i = 0; $i < count($qe->value); ) {
-	    $qv = $this->_queryClean($qe->value[$i], true);
-	    if ($qv->type == "revadj") {
+	foreach ($qe->value as $qv) {
+	    $qv = SearchTerm::extract_float($float, $this->_queryClean($qv, true));
+	    if ($qv && $qv->type == "revadj") {
 		if (!$revadj)
 		    $revadj = $qv;
 		else {
@@ -1425,31 +1491,29 @@ class PaperSearch {
 		    if (isset($qv->value["rate"]))
 			$revadj->value["rate"] = "(" . defval($revadj->value, "rate", "false") . ") or (" . $qv->value["rate"] . ")";
 		}
-		array_splice($qe->value, $i, 1);
-	    } else {
-		$qe->value[$i] = $qv;
-		++$i;
-	    }
+	    } else if ($qv)
+		$newvalues[] = $qv;
 	}
 
-	if ($revadj && count($qe->value) == 0)
+	if ($revadj && count($newvalues) == 0)
 	    return $revadj;
 	else if ($revadj)
 	    $this->_reviewAdjustError = true;
-	return SearchTerm::combine("or", $qe->value);
+	return SearchTerm::combine_float($float, "or", $newvalues);
     }
 
     function _queryCleanAnd($qe) {
 	$pn = array(array(), array());
 	$revadj = null;
+	$float = $qe->get("float");
+	$newvalues = array();
 
-	for ($i = 0; $i < count($qe->value); ) {
-	    $qe->value[$i] = $qv = $this->_queryClean($qe->value[$i], true);
-	    if ($qv->type == "pn") {
+	foreach ($qe->value as $qv) {
+	    $qv = SearchTerm::extract_float($float, $this->_queryClean($qv, true));
+	    if ($qv && $qv->type == "pn") {
 		$pn[0] = array_merge($pn[0], $qv->value[0]);
 		$pn[1] = array_merge($pn[1], $qv->value[1]);
-		array_splice($qe->value, $i, 1);
-	    } else if ($qv->type == "revadj") {
+	    } else if ($qv && $qv->type == "revadj") {
 		if (!$revadj)
 		    $revadj = $qv;
 		else {
@@ -1460,18 +1524,15 @@ class PaperSearch {
 		    if (isset($qv->value["rate"]))
 			$revadj->value["rate"] = "(" . defval($revadj->value, "rate", "true") . ") and (" . $qv->value["rate"] . ")";
 		}
-		array_splice($qe->value, $i, 1);
-	    } else {
-		$qe->value[$i] = $qv;
-		++$i;
-	    }
+	    } else if ($qv)
+		$newvalues[] = $qv;
 	}
 
 	if (count($pn[0]) || count($pn[1]))
-	    array_unshift($qe->value, new SearchTerm("pn", 0, $pn));
+	    array_unshift($newvalues, new SearchTerm("pn", 0, $pn));
 	if ($revadj)		// must be first
-	    array_unshift($qe->value, $revadj);
-	return SearchTerm::combine("and", $qe->value);
+	    array_unshift($newvalues, $revadj);
+	return SearchTerm::combine_float($float, "and", $newvalues);
     }
 
     function _queryCleanThen($qe, $below) {
@@ -1480,19 +1541,17 @@ class PaperSearch {
 	    $qe->type = "or";
 	    return $this->_queryCleanOr($qe);
 	}
+	$float = $qe->get("float");
 	for ($i = 0; $i < count($qe->value); ) {
 	    $qv = $qe->value[$i];
 	    if ($qv->type == "then")
 		array_splice($qe->value, $i, 1, $qv->value);
 	    else {
-		$qe->value[$i] = $this->_queryClean($qv, true);
-		$qe->value[$i]->set("heading", $qv->get("heading"));
+		$qe->value[$i] = SearchTerm::extract_float($float, $this->_queryClean($qv, true));
 		++$i;
 	    }
 	}
-	if (count($qe->value) > 0)
-	    $qe->value[count($qe->value) - 1]->set("heading", $this->_currentHeading);
-	return $qe;
+	return SearchTerm::combine_float($float, "then", $qe->value);
     }
 
     // apply rounds to reviewer searches
@@ -2081,7 +2140,9 @@ class PaperSearch {
 	}
 
 	// parse and clean the query
-	$qe = $this->_queryClean($this->_searchQueryType($this->q));
+	$qe = $this->_searchQueryType($this->q);
+	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($qe, true)))));
+	$qe = $this->_queryClean($qe);
 	if (!$qe)
 	    $qe = new SearchTerm("t");
 
@@ -2221,12 +2282,13 @@ class PaperSearch {
 	if (!$Conf->qe("create temporary table $this->_matchTable $q", "while performing search"))
 	    return ($this->_matchTable = false);
 
-	// correct query
+	// correct query, create thenmap and headingmap
 	$this->thenmap = ($qe->type == "then" ? array() : null);
-	if ($this->preciseQuery || $this->thenmap !== null
-	    || $this->headingmap !== null) {
+	$this->headingmap = array();
+	if ($this->preciseQuery || $this->thenmap !== null || $qe->get_float("heading")) {
 	    $delete = array();
 	    $result = $Conf->qe("select * from $this->_matchTable", "while performing search");
+	    $qe_heading = $qe->get_float("heading");
 	    while (($row = edb_orow($result))) {
 		if ($this->thenmap !== null) {
 		    $x = false;
@@ -2237,12 +2299,13 @@ class PaperSearch {
 		    $x = !!$this->_clauseTermCheck($qe, $row);
 		if ($x === false)
 		    $delete[] = $row->paperId;
-		else if ($this->thenmap !== null)
+		else if ($this->thenmap !== null) {
 		    $this->thenmap[$row->paperId] = $x;
-		if ($this->headingmap !== null && $this->thenmap !== null)
-		    $this->headingmap[$row->paperId] = $qe->value[$x]->get("heading");
-		else
-		    $this->headingmap[$row->paperId] = $this->_currentHeading;
+		    $qex = $qe->value[$x];
+		    $this->headingmap[$row->paperId] =
+			$qex->get_float("heading", $qex->get_float("substr", ""));
+		} else if ($qe_heading)
+		    $this->headingmap[$row->paperId] = $qe_heading;
 	    }
 	    if (count($delete)) {
 		$q = "delete from $this->_matchTable where paperId in (" . join(",", $delete) . ")";
@@ -2252,7 +2315,10 @@ class PaperSearch {
 		    return ($this->_matchTable = false);
 		}
 	    }
+	    if (!count($this->headingmap))
+		$this->headingmap = null;
 	}
+	$this->viewmap = $qe->get_float("view", array());
 
 	// extract regular expressions and set reviewerContact if the query is
 	// about exactly one reviewer

@@ -1,6 +1,6 @@
 <?php
 // help.php -- HotCRP help page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -70,14 +70,14 @@ function topics() {
 }
 
 
-function _searchForm($forwhat, $other = null) {
+function _searchForm($forwhat, $other = null, $size = 20) {
     $text = "";
     if ($other && preg_match_all('/(\w+)=([^&]*)/', $other, $matches, PREG_SET_ORDER))
 	foreach ($matches as $m)
 	    $text .= "<input type='hidden' name='$m[1]' value=\"" . htmlspecialchars(urldecode($m[2])) . "\" />";
     return "<form method='get' action='" . hoturl("search") . "' accept-charset='UTF-8'>"
 	. "<input type='text' class='textlite' name='q' value=\""
-	. htmlspecialchars($forwhat) . "\" size='20' /> &nbsp;"
+	. htmlspecialchars($forwhat) . "\" size='$size' /> &nbsp;"
 	. "<input type='submit' class='b' name='go' value='Search' />"
 	. $text . "</form>";
 }
@@ -189,7 +189,7 @@ function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     echo "<tr class='k", ($rowidx % 2), "'>";
     echo "<td class='srcaption nowrap'>", $caption, "</td>";
-    echo "<td class='sentry nowrap'>", _searchForm($search, $other), "</td>";
+    echo "<td class='sentry nowrap'>", _searchForm($search, $other, 36), "</td>";
     echo "<td class='sentry'>", $explanation, "<span class='sep'></span></td></tr>\n";
 }
 
@@ -229,6 +229,7 @@ function searchQuickref() {
     _searchQuickrefRow("", "ve*", "words that <em>start with</em> “ve” in title, abstract, authors");
     _searchQuickrefRow("", "*me*", "words that <em>contain</em> “me” in title, abstract, authors");
     _searchQuickrefRow("", "very THEN new", "like “very OR new”, but papers matching “very” appear earlier in the sorting order");
+    _searchQuickrefRow("", "1-5 THEN 6-10 VIEW:compactcolumns", "columnar display");
     _searchQuickrefRow("Title", "ti:flexible", "title contains “flexible”");
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains “very novel”");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains “poletto”");
