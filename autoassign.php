@@ -111,21 +111,76 @@ $scoreselector["x"] = "(no score preference)";
 $Error = array();
 
 
-function countReviews(&$reviews, &$primary, &$secondary) {
-    global $Conf;
-    $result = $Conf->qe("select PCMember.contactId, group_concat(reviewType separator '')
-	from PCMember
-	left join Paper on (Paper.timeWithdrawn<=0)
-	left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=PCMember.contactId)
-	group by PCMember.contactId", "while counting reviews");
-    $reviews = array();
-    $primary = array();
-    $secondary = array();
+function countReviews() {
+    global $Conf, $papersel;
+    $nrev = (object) array("any" => array(), "pri" => array(), "sec" => array());
+    $nrev->pset = (object) array("any" => array(), "pri" => array(), "sec" => array());
+
+    $result = $Conf->qe("select PC.contactId, group_concat(R.reviewType separator ''),
+		group_concat(R.reviewType separator '')
+	from PCMember PC
+	left join PaperReview R on (R.contactId=PC.contactId)
+	left join Paper P on (P.paperId=R.paperId)
+	where P.paperId is null or P.timeWithdrawn<=0
+	group by PC.contactId", "while counting reviews");
     while (($row = edb_row($result))) {
-	$reviews[$row[0]] = strlen($row[1]);
-	$primary[$row[0]] = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
-	$secondary[$row[0]] = preg_match_all("|" . REVIEW_SECONDARY . "|", $row[1], $matches);
+	$nrev->any[$row[0]] = strlen($row[1]);
+	$nrev->pri[$row[0]] = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
+	$nrev->sec[$row[0]] = preg_match_all("|" . REVIEW_SECONDARY . "|", $row[1], $matches);
     }
+
+    $result = $Conf->qe("select PC.contactId, group_concat(R.reviewType separator ''),
+		group_concat(R.reviewType separator '')
+	from PCMember PC
+	left join PaperReview R on (R.contactId=PC.contactId)
+	where R.paperId" . PaperSearch::sqlNumericSet($papersel) . "
+	group by PC.contactId", "while counting reviews");
+    while (($row = edb_row($result))) {
+	$nrev->pset->any[$row[0]] = strlen($row[1]);
+	$nrev->pset->pri[$row[0]] = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
+	$nrev->pset->sec[$row[0]] = preg_match_all("|" . REVIEW_SECONDARY . "|", $row[1], $matches);
+    }
+
+    return $nrev;
+}
+
+function _review_count_link($count, $word, $pl, $prefix, $pc, $suffix) {
+    $word = $pl ? plural($count, $word) : $count . "&nbsp;" . $word;
+    if ($count == 0)
+	return $word;
+    return "<a class=\"qq\" href=\"" . hoturl("search", "q=" . urlencode("$prefix:$pc->email$suffix"))
+	. "\">" . $word . "</a>";
+}
+
+function _review_count_report_one($nrev, $pc, $xq) {
+    $na = defval($nrev->any, $pc->contactId, 0);
+    $np = defval($nrev->pri, $pc->contactId, 0);
+    $ns = defval($nrev->sec, $pc->contactId, 0);
+    $t = _review_count_link($na, "review", true, "re", $pc, $xq);
+    $x = array();
+    if ($np != $na)
+	$x[] = _review_count_link($np, "primary", false, "pri", $pc, $xq);
+    if ($ns != 0 && $ns != $na && $np + $ns != $na)
+	$x[] = _review_count_link($np, "secondary", false, "sec", $pc, $xq);
+    if (count($x))
+	$t .= " (" . join(", ", $x) . ")";
+    return $t;
+}
+
+function review_count_report($nrev, $pc, $prefix) {
+    global $papersel, $Conf;
+    $row1 = _review_count_report_one($nrev, $pc, "");
+    if (defval($nrev->pset->any, $pc->contactId, 0) != defval($nrev->any, $pc->contactId, 0)) {
+	$row2 = "<span class=\"dim\">$row1 total</span>";
+	$row1 = _review_count_report_one($nrev->pset, $pc, " " . join(" ", $papersel)) . " in selection";
+    } else
+	$row2 = "";
+    if ($row2 != "" && $prefix)
+	return "<table><tr><td>$prefix</td><td>$row1</td></tr><tr><td></td><td>$row2</td></tr></table>";
+    else if ($row2 != "")
+	return $row1 . "<br />" . $row2;
+    else
+	return $prefix . $row1;
 }
 
 function conflictedPapers() {
@@ -634,7 +689,7 @@ if (isset($assignments) && count($assignments) > 0) {
     ksort($assignments);
     $atext = array();
     $pcm = pcMembers();
-    countReviews($nreviews, $nprimary, $nsecondary);
+    $nrev = countReviews();
     $conflictedPapers = conflictedPapers();
     $pc_nass = array();
     foreach ($assignments as $pid => $pcs) {
@@ -669,22 +724,25 @@ if (isset($assignments) && count($assignments) > 0) {
 	    $nnew = defval($pc_nass, $id, 0);
 	    if ($atype == "clear")
 		$nnew = -$nnew;
+	    if ($reviewtype >= REVIEW_PC && $reviewtype <= REVIEW_PRIMARY) {
+		$nrev->any[$id] += $nnew;
+		$nrev->pset->any[$id] += $nnew;
+	    }
 	    if ($reviewtype == REVIEW_PRIMARY) {
-		$nreviews[$id] += $nnew;
-		$nprimary[$id] += $nnew;
-	    } else if ($reviewtype == REVIEW_SECONDARY) {
-		$nreviews[$id] += $nnew;
-		$nsecondary[$id] += $nnew;
+		$nrev->pri[$id] += $nnew;
+		$nrev->pset->pri[$id] += $nnew;
+	    }
+	    if ($reviewtype == REVIEW_SECONDARY) {
+		$nrev->sec[$id] += $nnew;
+		$nrev->pset->sec[$id] += $nnew;
 	    }
 	    $color = $colorizer->match_all($p->contactTags);
 	    $color = ($color ? " class='${color}'" : "");
 	    $c = "<tr$color><td class='pctbname pctbl'>"
 		. contactNameHtml($p)
 		. ": " . plural($nnew, "assignment")
-		. "</td></tr><tr$color><td class='pctbnrev pctbl'>After assignment: "
-		. plural($nreviews[$id], "review");
-	    if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
-		$c .= "&nbsp; (" . $nprimary[$id] . " primary)";
+		. "</td></tr><tr$color><td class='pctbnrev pctbl'>"
+		. review_count_report($nrev, $p, "After assignment:&nbsp;");
 	    $pcdesc[] = $c . "</td></tr>\n";
 	}
 	$n = intval((count($pcdesc) + 2) / 3);
@@ -841,7 +899,7 @@ foreach ($pctyp_sel as $pctyp) {
 echo ")</td></tr>\n<tr><td></td><td><table class='pctb'><tr><td class='pctbcolleft'><table>";
 
 $pcm = pcMembers();
-countReviews($nreviews, $nprimary, $nsecondary);
+$nrev = countReviews();
 $pcdesc = array();
 $colorizer = new TagColorizer($Me);
 foreach ($pcm as $id => $p) {
@@ -854,17 +912,9 @@ foreach ($pcm as $id => $p) {
 			      "onclick" => "pselClick(event,this);\$\$('pctyp_sel').checked=true"))
 	. "&nbsp;</td><td class='pctbname'>"
 	. tagg_label(contactNameHtml($p), "pcsel$count")
-	. "</td></tr><tr$color><td class='pctbl'></td><td class='pctbnrev'>";
-    if ($nreviews[$id] == 0)
-	$c .= "0 reviews";
-    else {
-	$c .= "<a href=\"" . hoturl("search", "q=re:" . urlencode($p->email))
-	    . "\">" . plural($nreviews[$id], "review") . "</a>";
-	if ($nprimary[$id] && $nprimary[$id] < $nreviews[$id])
-	    $c .= "&nbsp; (<a href=\"" . hoturl("search", "q=pri:" . urlencode($p->email))
-		. "\">" . $nprimary[$id] . " primary</a>)";
-    }
-    $c .= "</td></tr>";
+	. "</td></tr><tr$color><td class='pctbl'></td><td class='pctbnrev'>"
+	. review_count_report($nrev, $p, "")
+	. "</td></tr>";
     $pcdesc[] = $c;
 }
 $n = intval((count($pcdesc) + 2) / 3);

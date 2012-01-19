@@ -177,7 +177,7 @@ class SearchReviewValue {
 	if (!$contacts || is_string($contacts))
 	    $this->contactsql = $contacts;
 	else
-	    $this->contactsql = PaperSearch::_sqlNumericSet($contacts);
+	    $this->contactsql = PaperSearch::sqlNumericSet($contacts);
 	$this->_contactset = $contacts;
 	$this->fieldsql = $fieldsql;
 	$this->allowed = $this->compar = 0;
@@ -475,7 +475,7 @@ class PaperSearch {
 	    return array($type, $compar . $value);
     }
 
-    static function _sqlNumericSet($a, $neg = false) {
+    static function sqlNumericSet($a, $neg = false) {
 	if (count($a) == 0)
 	    return ($neg ? "!" : "") . "=-1";
 	else if (count($a) == 1)
@@ -503,7 +503,7 @@ class PaperSearch {
 	    if (isset($pctags[$tag])) {
 		$ids = self::_pcContactIdsWithTag($tag);
 		if ($negtag) {
-		    $this->contactmatch[] = "\2contactId" . self::_sqlNumericSet($ids, true);
+		    $this->contactmatch[] = "\2contactId" . self::sqlNumericSet($ids, true);
 		    if (!$pc_only)
 			$this->contactmatchPC = false;
 		    return "\1" . (count($this->contactmatch) - 1) . "\1";
@@ -1081,7 +1081,7 @@ class PaperSearch {
 		    $this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn&rsquo;t match a decision.");
 		    $value[] = -10000000;
 		}
-		$value = self::_sqlNumericSet($value);
+		$value = self::sqlNumericSet($value);
 	    }
 	    $value = array("outcome", $value);
 	    $nqt = count($qt);
@@ -1122,7 +1122,7 @@ class PaperSearch {
 		    $qt[] = new SearchTerm("revadj", 0, array("round" => $rounds));
 	    }
 	}
-	if (($keyword ? $keyword == "rate" : isset($this->fields["rate"]))) {
+	if ($keyword ? $keyword == "rate" : isset($this->fields["rate"])) {
 	    $this->reviewAdjust = true;
 	    if (preg_match('/\A(.+?)\s*(|[<>!=]?=?)\s*(\d*)\z/', $word, $m)
 		&& ($m[3] !== "" || $m[2] === "")) {
@@ -2275,7 +2275,7 @@ class PaperSearch {
 	// clean up contact matches
 	if (count($this->contactmatch))
 	    for ($i = 0; $i < count($this->contactmatch); $i++)
-		$q = str_replace("\1$i\1", self::_sqlNumericSet($this->contactmatch[$i]), $q);
+		$q = str_replace("\1$i\1", self::sqlNumericSet($this->contactmatch[$i]), $q);
 	//$Conf->infoMsg(htmlspecialchars($q));
 
 	// actually perform query
