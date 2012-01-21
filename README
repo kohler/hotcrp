@@ -169,18 +169,28 @@ user, and password.  For instance:
                                            ^^^^^^^^
                                    last directory component
 
-Alternately, you may set $Opt["dbName"], $Opt["dbUser"],
-$Opt["dbPassword"], and so forth.  HotCRP will edit each of those settings
-to replace the "*" character with the last directory component.  (This
-replacement is also performed on the sessionName, downloadPrefix,
-conferenceSite, and paperSite options.)
+Alternately, you may set $Opt["dbName"], $Opt["dbUser"], and/or
+$Opt["dbPassword"]. HotCRP will edit each of those settings to replace the
+"*" character with the last directory component. (This replacement is also
+performed on the sessionName, downloadPrefix, conferenceSite, and paperSite
+options.)
 
 You will still need to create a new database for each conference using the
 "Code/createdb.sh" script, and convince your Apache to use the HotCRP
-install directory for all relevant URLs.  Note that the "Code/backupdb.sh"
-script doesn't work for multiconference installations, and that several
-important options, such as contactName and contactEmail, cannot yet be set
-using the web interface.
+install directory for all relevant URLs.
+
+To set other $Opt options per conference, such as the conference name and
+contact email, modify the conference's Settings database table. A Settings
+row with name "opt.XXX" takes precedence over option $Opt["XXX"]. For
+example, to set a conference's longName:
+
+    mysql> insert into Settings (name, value, data)
+	   values ('opt.longName', 1, 'My Conference 2012')
+	   on duplicate key update data=values(data);
+
+Note that the "Code/backupdb.sh" script doesn't work for multiconference
+installations, and that several important options, such as contactName and
+contactEmail, cannot yet be set using the web interface.
 
 
 License
