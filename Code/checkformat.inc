@@ -318,16 +318,19 @@ class CheckFormat {
 
     function _analyzePaper($paperId, $documentType, $spec, &$tmpdir) {
 	global $Conf, $prow, $Opt;
-	if (($tmpdir = tempdir()) === false)
-	    return $this->msg("error", "Cannot create temporary directory.");
 	$result = $Conf->paperStorageResult($paperId, $documentType);
 	if (!($row = $Conf->paperStorageRow($result)))
 	    return $this->msg("error", "No such paper.");
-	else if ($row->mimetype != "application/pdf")
+	if ($row->mimetype != "application/pdf")
 	    return $this->msg("error", "The format checker only works for PDF files.");
-	if (file_put_contents("$tmpdir/paper.pdf", $row->content) != strlen($row->content))
-	    return $this->msg("error", "Failed to save PDF to temporary file for analysis.");
-	return $this->analyzeFile("$tmpdir/paper.pdf", $spec);
+	if (!isset($row->filename)) {
+	    if (!$tmpdir && ($tmpdir = tempdir()) == false)
+		return $this->msg("error", "Cannot create temporary directory.");
+	    if (file_put_contents("$tmpdir/paper.pdf", $row->content) != strlen($row->content))
+		return $this->msg("error", "Failed to save PDF to temporary file for analysis.");
+	    $row->filename = "$tmpdir/paper.pdf";
+	}
+	return $this->analyzeFile($row->filename, $spec);
     }
 
     function analyzePaper($paperId, $documentType, $spec) {
@@ -342,8 +345,9 @@ class CheckFormat {
 	if ($limit > 0)
 	    $Conf->q("insert into Settings (name,value,data) values ('banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
 
+	$tmpdir = null;
 	$status = $this->_analyzePaper($paperId, $documentType, $spec, $tmpdir);
-	if (isset($tmpdir) && $tmpdir)
+	if ($tmpdir)
 	    exec("/bin/rm -rf $tmpdir");
 
 	if ($limit > 0)

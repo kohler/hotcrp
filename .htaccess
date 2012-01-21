@@ -16,7 +16,7 @@ AddDefaultCharset UTF-8
 DirectoryIndex index.php
 
 # Prevent access to SCM directories, test, README, etc.
-<FilesMatch "^(CVS|\.svn|\.git|README|LICENSE|test|.*\.sh)$">
+<FilesMatch "^(CVS|\.svn|\.git|README|LICENSE|filestore|test|.*\.sh)$">
 Order allow,deny
 Deny from all
 </FilesMatch>
@@ -28,7 +28,7 @@ Options -MultiViews
 <IfModule mod_rewrite.c>
 RewriteEngine on
 RewriteBase /
-RewriteRule ^(CVS|\.svn|\.git|test).* $1 [F]
+RewriteRule ^(CVS|\.svn|\.git|filestore|test).* $1 [F]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^.*$ - [L,NE]
 RewriteCond %{REQUEST_FILENAME}.php -f

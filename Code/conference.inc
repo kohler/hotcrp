@@ -725,7 +725,8 @@ class Conference {
 	return $title . $paperId . $this->getFileExtension($mimetype);
     }
 
-    function paperStorageResult($prow, $documentType) {
+    function paperStorageResult($prow, $documentType, $skip_content = false) {
+	global $Opt;
 	if (is_array($prow) && count($prow) <= 1)
 	    $prow = (count($prow) ? $prow[0] : -1);
 	if (is_numeric($prow))
@@ -734,7 +735,12 @@ class Conference {
 	    $paperMatch = " in (" . join(",", $prow) . ")";
 	else
 	    $paperMatch = "=" . $prow->paperId;
-	$q = "select p.paperId, s.mimetype, s.paper as content, s.paperStorageId, s.compression from Paper p";
+	$q = "select p.paperId, s.mimetype, ";
+	if (isset($Opt["filestore"]) && $Opt["filestore"] && $this->sversion >= 28)
+	    $q .= "s.sha1, ";
+	else if (!$skip_content)
+	    $q .= "s.paper as content, ";
+	$q .= "s.paperStorageId from Paper p";
 	if ($documentType == DOCUMENT_SUBMISSION)
 	    $sjoin = "p.paperStorageId";
 	else if ($documentType == DOCUMENT_FINAL)
@@ -746,12 +752,72 @@ class Conference {
 	return $this->q($q . " left join PaperStorage s on (s.paperStorageId=$sjoin) where p.paperId$paperMatch");
     }
 
-    function paperStorageRow($result) {
-	global $mimetypeMap;
-	if (($row = edb_orow($result))) {
-	    if ($row->compression == 1)
-		$row->content = gzinflate($row->content);
+    function _paper_storage_content($row) {
+	if (isset($row->content))
+	    return true;
+	$xresult = $this->q("select paper, compression from PaperStorage where paperStorageId=$row->paperStorageId");
+	if (!$xresult || !($xrow = edb_row($xresult)))
+	    return false;
+	if ($xrow[1] == 1)
+	    $row->content = gzinflate($xrow[0]);
+	else
+	    $row->content = $xrow[0];
+	return true;
+    }
+
+    function _paper_storage_filestore($row) {
+	global $Opt, $ConfSitePATH, $ConfMulticonf;
+
+	if ($row->sha1 == "") {
+	    if (!$this->_paper_storage_content($row))
+		return false;
+	    $row->sha1 = sha1($row->content, true);
+	    $this->q("update PaperStorage set sha1='" . sqlq($row->sha1) . "' where paperStorageId=$row->paperStorageId");
 	}
+
+	$filestore = $Opt["filestore"];
+	if ($filestore === true)
+	    $filestore = "$ConfSitePATH/filestore";
+	if (isset($Opt["multiconference"]) && $Opt["multiconference"])
+	    $filestore = str_replace("*", $ConfMulticonf, $filestore);
+	if (!is_dir($filestore)
+	    && (!@mkdir($filestore, 0700)
+		|| file_put_contents("$filestore/.htaccess", "Order deny,allow\nDeny from all\nphp_flag magic_quotes_gpc off\n") === false)) {
+	    @unlink("$filestore/.htaccess");
+	    @rmdir($filestore);
+	    return false;
+	}
+
+	$sha1 = bin2hex($row->sha1);
+	if (strlen($sha1) != 40)
+	    return false;
+	$superdir = $filestore . "/" . substr($sha1, 0, 3);
+	$filename = $superdir . "/" . $sha1 . $this->getFileExtension($row->mimetype);
+
+	if (!is_readable($filename)) {
+	    if (!is_dir($superdir) && !@mkdir($superdir, 0770))
+		return false;
+	    if (!$this->_paper_storage_content($row))
+		return false;
+	    if (file_put_contents($filename, $row->content) != strlen($row->content)) {
+		@unlink($filename);
+		return false;
+	    }
+	    @chmod($filename, 0660 & ~umask());
+	}
+
+	$row->filename = $filename;
+	return true;
+    }
+
+    function paperStorageRow($result) {
+	if (!($row = edb_orow($result)))
+	    return $row;
+	if (isset($row->sha1))
+	    $this->_paper_storage_filestore($row);
+	if (!isset($row->filename) && !isset($row->content)
+	    && !$this->_paper_storage_content($row))
+	    return null;
 	return $row;
     }
 
@@ -768,9 +834,9 @@ class Conference {
 
 	// Check data
 	$row = $this->paperStorageRow($result);
-	if ($row->paperStorageId <= 1)
-	    return new PEAR_Error("Paper #$paperId has not been uploaded yet.");
-	else if (strlen($row->content) == 0)
+	if (!$row || $row->paperStorageId <= 1)
+	    return new PEAR_Error("Paper #$paperId hasn’t been uploaded yet.");
+	else if (isset($row->content) && strlen($row->content) == 0)
 	    return new PEAR_Error("Paper #$paperId appears to be empty.");
 
 	// Print paper
@@ -780,9 +846,17 @@ class Conference {
 	header("Content-Disposition: " . ($saveit || $row->mimetype != "application/pdf" ? "attachment" : "inline") . "; filename=$name");
 	// reduce likelihood of XSS attacks in IE
 	header("X-Content-Type-Options: nosniff");
-	if (!$zlib_output_compression)
-	    header("Content-Length: " . strlen($row->content));
-	print $row->content;
+	if (isset($row->filename)) {
+	    if (!$zlib_output_compression)
+		header("Content-Length: " . filesize($row->filename));
+	    ob_clean();
+	    flush();
+	    readfile($row->filename);
+	} else {
+	    if (!$zlib_output_compression)
+		header("Content-Length: " . strlen($row->content));
+	    print $row->content;
+	}
 	return true;
     }
 
@@ -850,6 +924,11 @@ class Conference {
 	else if (count($paperIds) == 1)
 	    return $this->__downloadPaper($paperIds[0], 1, $documentType);
 
+	// read papers
+	$result = $this->paperStorageResult($paperIds, $documentType, true);
+	if (!$result)
+	    return new PEAR_Error("Database error while downloading papers: " . mysql_error($this->dblink));
+
 	// set up temporary directory
 	if (($tmpdir = tempdir()) === false)
 	    return new PEAR_Error("Could not create temporary directory!");
@@ -857,31 +936,21 @@ class Conference {
 	// write papers into temporary directory
 	$warnings = array();
 	$files = array();
-	$batch = 3;
-
-	for ($pidno = 0; $pidno < count($paperIds); $pidno += $batch) {
-	    // paper query
-	    // do in groups of 3 papers at a time to avoid database killage
-	    $downloadP = array();
-	    for ($xpidno = $pidno;
-		 $xpidno < count($paperIds) && $xpidno < $pidno + $batch;
-		 ++$xpidno)
-		$downloadP[] = $paperIds[$xpidno];
-	    $result = $this->paperStorageResult($downloadP, $documentType);
-	    if (!$result)
-		return new PEAR_Error("Database error while downloading papers: " . mysql_error($this->dblink));
-
-	    while ($row = $this->paperStorageRow($result)) {
-		if ($row->paperStorageId <= 1 || strlen($row->content) == 0)
-		    $warnings[] = "Paper #$row->paperId has not been uploaded yet.";
-		else
-		    $this->zipAdd($tmpdir, $this->downloadPaperName($row->paperId, $row->mimetype, $documentType), $row->content, $warnings, $files);
-	    }
+	while (($row = $this->paperStorageRow($result))) {
+	    $name = $this->downloadPaperName($row->paperId, $row->mimetype, $documentType);
+	    if ($row->paperStorageId <= 1)
+		$warnings[] = "Paper #$row->paperId has not been uploaded yet.";
+	    else if (isset($row->filename) && @symlink($row->filename, "$tmpdir/$name"))
+		$files[] = "$tmpdir/$name";
+	    else if ($this->_paper_storage_content($row))
+		$this->zipAdd($tmpdir, $name, $row->content, $warnings, $files);
+	    else
+		$warnings[] = "Could not save $name.";
 	}
 
 	// complete
 	if (!count($files))
-	    return new PEAR_Error("No papers could successfully be downloaded.");
+	    return new PEAR_Error("No papers were successfully downloaded.");
 	if (count($warnings))
 	    $this->zipAdd($tmpdir, "README-warnings.txt", join("\n", $warnings) . "\n", $warnings, $files);
 

@@ -97,6 +97,10 @@ $Opt["emailSubmissions"] = 0;
 //                   Example: "mysql://HotNetsV:HotNetsV@localhost/HotNetsV".
 //   multiconference Set to true to run multiple conferences out of this
 //                   installation.  See README.
+//   filestore       Set to true to serve papers and other downloads from a
+//                   cache on the local filesystem. By default this cache is
+//                   created in the "filestore" directory. You can also set
+//                   $Opt["filestore"] to a directory name.
 //   sessionName     Internal name used to distinguish conference sessions
 //                   running on the same server.  NO SPACES ALLOWED.  Defaults
 //                   to $Opt["dbName"].
@@ -121,6 +125,7 @@ $Opt["emailSubmissions"] = 0;
 //   disablePDF      Set to true to disable PDF format submissions.
 //   disablePS       Set to true to disable PostScript format submissions.
 //   disableSHA1     Set to true to not store SHA-1 hashes of submissions.
+//                   $Opt["filestore"] overrides this setting.
 //   noPapers        Set to true to collect abstracts only, not papers.
 //   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
 //                   paper format checker).

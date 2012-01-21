@@ -172,7 +172,7 @@ include("$ConfSitePATH/Code/options.inc");
 
 // Multi-conference support
 function setMulticonference() {
-    global $ConfSiteBase, $Opt;
+    global $ConfSiteBase, $ConfMulticonf, $Opt;
 
     $url = explode("/", $_SERVER["PHP_SELF"]);
     $npop = strlen($ConfSiteBase) / 3;
@@ -180,24 +180,24 @@ function setMulticonference() {
 	$npop++;
     if ($npop + 2 > count($url))
 	return;
-    $confabbr = $url[count($url) - $npop - 2];
+    $ConfMulticonf = $url[count($url) - $npop - 2];
 
     $nchanged = 0;
     foreach (array("dbName", "dbUser", "dbPassword", "dsn") as $k)
 	if (isset($Opt[$k])) {
-	    $Opt[$k] = str_replace("*", $confabbr, $Opt[$k]);
+	    $Opt[$k] = str_replace("*", $ConfMulticonf, $Opt[$k]);
 	    ++$nchanged;
 	}
     if ($nchanged == 0)
-	$Opt["dbName"] = $confabbr;
+	$Opt["dbName"] = $ConfMulticonf;
 
     foreach (array("sessionName", "downloadPrefix", "conferenceSite",
 		   "paperSite") as $k)
 	if (isset($Opt[$k]))
-	    $Opt[$k] = str_replace("*", $confabbr, $Opt[$k]);
+	    $Opt[$k] = str_replace("*", $ConfMulticonf, $Opt[$k]);
 
     if (!isset($Opt["downloadPrefix"]))
-	$Opt["downloadPrefix"] = $confabbr . "-";
+	$Opt["downloadPrefix"] = $ConfMulticonf . "-";
 }
 
 if (isset($Opt["multiconference"]) && $Opt["multiconference"])
