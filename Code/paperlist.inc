@@ -1722,6 +1722,8 @@ class PaperList extends BaseList {
 		    ++$number;
 		} else if (strpos($x, "<tr class=\"pl plheading_blank") !== false)
 		    $x = "";
+		else
+		    $x = str_replace(" plheading_middle\"", "\"", $x);
 		$nbody[] = $x;
 	    }
 	    $nbody[] = "  </tbody>\n</table></div></td>\n";
