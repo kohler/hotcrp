@@ -1204,7 +1204,7 @@ function doopttype(e, nohilite) {
     if (!nohilite)
 	hiliter(e);
     if ((m = e.name.match(/^optvt(.*)$/))) {
-	fold("optv" + m[1], e.value != 1);
+	fold("optv" + m[1], e.value != 1 && e.value != 7);
 	fold("optvis" + m[1], e.value < 100, 2);
 	fold("optvis" + m[1], e.value != 100, 3);
     }

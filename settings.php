@@ -512,7 +512,7 @@ function doCleanOptionValues($id) {
     $optvt = cvtint(defval($_REQUEST, "optvt$id", 0));
     if (!PaperOption::type_is_valid($optvt) || ($Conf->sversion < 27 && $optvt > 1))
 	$optvt = $_REQUEST["optvt$id"] = 0;
-    if ($optvt == PaperOption::T_SELECTOR) {
+    if (PaperOption::type_is_selectorlike($optvt)) {
 	$v = "";
 	foreach (explode("\n", rtrim(cleannl($_REQUEST["optv$id"]))) as $t)
 	    $v .= trim($t) . "\n";
@@ -1072,6 +1072,7 @@ if (isset($_REQUEST["update"])) {
 
     // update the review form in case it's changed
     $rf->validate($Conf, true);
+    redirectSelf();
 } else if ($Group == "rfo")
     rf_update(false);
 
@@ -1359,6 +1360,7 @@ function doOptGroupOption($o) {
     $otypes[PaperOption::T_CHECKBOX] = "Checkbox";
     $otypes[PaperOption::T_SELECTOR] = "Selector";
     if ($Conf->sversion >= 27) {
+	$otypes[PaperOption::T_RADIO] = "Radio buttons";
 	$otypes[PaperOption::T_NUMERIC] = "Numeric";
 	$otypes[PaperOption::T_TEXT] = "Text";
     }
@@ -1412,12 +1414,15 @@ function doOptGroupOption($o) {
     echo "</tr></table>";
 
     $value = $o->optionValues;
-    if ($optvt != 1)
+    $rows = 3;
+    if (PaperOption::type_is_selectorlike($optvt))
+	$rows = max(count(explode("\n", $value)), 3);
+    else
 	$value = "";
-    echo "<div id='foldoptv$id' class='", ($optvt == 1 ? "foldo" : "foldc"),
+    echo "<div id='foldoptv$id' class='", (PaperOption::type_is_selectorlike($optvt) ? "foldo" : "foldc"),
 	"'><div class='fx'>",
-	"<div class='hint' style='margin-top:1ex'>Enter the selector choices one per line.  The first choice will be the default.</div>",
-	"<textarea class='textlite' name='optv$id' rows='3' cols='50' onchange='hiliter(this)'>", htmlspecialchars($value), "</textarea>",
+	"<div class='hint' style='margin-top:1ex'>Enter choices one per line.  The first choice will be the default.</div>",
+	"<textarea class='textlite' name='optv$id' rows='", $rows, "' cols='50' onchange='hiliter(this)'>", htmlspecialchars($value), "</textarea>",
 	"</div></div>";
 
     echo "</div></td></tr>\n";

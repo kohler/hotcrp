@@ -877,6 +877,7 @@ class PaperSearch {
 
 	// match all options
 	$qo = array();
+	$qxo = array();
 	$option_failure = false;
 	foreach (paperOptions() as $oid => $o)
 	    // See also checkOptionNameUnique() in settings.php
@@ -887,18 +888,18 @@ class PaperSearch {
 		    if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
 			$xval = $ocompar . $m[1];
 		    else {
-			$this->warn("Submission option &ldquo;" . htmlspecialchars($o->optionName) . "&rdquo; takes integer values.");
+			$this->warn("Submission option “" . htmlspecialchars($o->optionName) . "” takes integer values.");
 			$option_failure = true;
 			continue;
 		    }
-		} else if ($oval !== "" && $o->type == PaperOption::T_SELECTOR) {
+		} else if ($oval !== "" && PaperOption::type_is_selectorlike($o->type)) {
 		    $xval = matchValue(explode("\n", $o->optionValues), $oval);
 		    if (count($xval) == 0)
 			continue;
 		    else if (count($xval) == 1)
 			$xval = $ocompar . $xval[0];
 		    else if ($ocompar != "=" && $ocompar != "!=") {
-			$this->warn("Submission option &ldquo;" . htmlspecialchars("$oname:$oval") . "&rdquo; matches multiple values, can&rsquo;t use " . htmlspecialchars($ocompar) . ".");
+			$this->warn("Submission option “" . htmlspecialchars("$oname:$oval") . "” matches multiple values, can’t use " . htmlspecialchars($ocompar) . ".");
 			$option_failure = true;
 			continue;
 		    } else
@@ -910,29 +911,39 @@ class PaperSearch {
 		    $xval = "=0";
 		else
 		    continue;
-
-		// add the query to $qo
-		if ($this->privChair || ($this->amPC && $o->pcView == 1))
-		    $qo[] = new SearchTerm($type, 0, array($oid, $xval));
-		else {
-		    if ($o->pcView) {
-			$rt = self::F_REVIEWER | ($o->pcView == 2 ? self::F_PAPERNONBLIND : 0);
-			$qo[] = new SearchTerm($type, $rt, array($oid, $xval));
-		    }
-		    $qo[] = new SearchTerm($type, self::F_AUTHOR, array($oid, $xval));
-		}
+		$qo[] = array($o, $xval);
+	    } else if (PaperOption::type_is_selectorlike($o->type)
+		       && ($ocompar == "=" || $ocompar == "!=") && $oval == "") {
+		foreach (matchValue(explode("\n", $o->optionValues), $oname) as $xval)
+		    $qxo[] = array($o, $ocompar . $xval);
 	    }
 
-	// if "none", negate
-	if (count($qo) > 0 && $oname === "none")
-	    $qo = array(SearchTerm::negate(SearchTerm::combine("or", $qo)));
-	if (count($qo) == 0 && ($option_failure || $error)) {
-	    $qo[] = new SearchTerm("f");
-	    if (!$option_failure)
-		$this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn&rsquo;t match a submission option.");
+	// report failure
+	if (count($qo) == 0 && count($qxo) == 0) {
+	    if ($option_failure || $error) {
+		$qt[] = new SearchTerm("f");
+		if (!$option_failure)
+		    $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a submission option.");
+	    }
+	    return false;
 	}
-	$qt = array_merge($qt, $qo);
-	return count($qo) != 0;
+
+	// add expressions
+	$qz = array();
+	foreach ((count($qo) ? $qo : $qxo) as $o)
+	    if ($this->privChair || ($this->amPC && $o[0]->pcView == 1))
+		$qz[] = new SearchTerm($type, 0, array($o[0]->optionId, $o[1]));
+	    else {
+		if ($o[0]->pcView) {
+		    $rt = self::F_REVIEWER | ($o[0]->pcView == 2 ? self::F_PAPERNONBLIND : 0);
+		    $qz[] = new SearchTerm($type, $rt, array($o[0]->optionId, $o[1]));
+		}
+		$qz[] = new SearchTerm($type, self::F_AUTHOR, array($o[0]->optionId, $o[1]));
+	    }
+	if ($oname === "none")
+	    $qz = array(SearchTerm::negate(SearchTerm::combine("or", $qz)));
+	$qt = array_merge($qt, $qz);
+	return true;
     }
 
     function _searchQueryWord($word, $report_error) {

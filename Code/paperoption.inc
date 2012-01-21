@@ -12,6 +12,7 @@ class PaperOption {
     const T_PDF = 4;
     const T_SLIDES = 5;
     const T_VIDEO = 6;
+    const T_RADIO = 7;
     const T_FINALPDF = 100;
     const T_FINALSLIDES = 101;
     const T_FINALVIDEO = 102;
@@ -25,6 +26,7 @@ class PaperOption {
 		     self::T_SELECTOR => 0,
 		     self::T_NUMERIC => 0,
 		     self::T_TEXT => 0,
+		     self::T_RADIO => 0,
 		     self::T_PDF => self::F_DOCUMENT + self::F_PDF,
 		     self::T_SLIDES => self::F_DOCUMENT + self::F_PDF,
 		     self::T_VIDEO => self::F_DOCUMENT,
@@ -36,6 +38,10 @@ class PaperOption {
     static function type_is_valid($t) {
 	global $paperOptionInfo;
 	return isset($paperOptionInfo[$t]);
+    }
+
+    static function type_is_selectorlike($t) {
+	return $t == self::T_RADIO || $t == self::T_SELECTOR;
     }
 
     static function type_is_document($t) {

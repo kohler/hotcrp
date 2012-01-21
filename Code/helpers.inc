@@ -1880,7 +1880,7 @@ function matchValue($a, $word, $allowKey = false) {
 	    $outa[] = $k;
 	else if (strcasecmp($word, $v) == 0)
 	    $outb[] = $k;
-	else if (strstr(strtolower($v), strtolower($word)) !== false)
+	else if (stripos($v, $word) !== false)
 	    $outc[] = $k;
     if (count($outa) > 0)
 	return $outa;

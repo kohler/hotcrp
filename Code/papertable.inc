@@ -672,7 +672,7 @@ class PaperTable {
 		$ox = "";
 		if ($o->type == PaperOption::T_CHECKBOX)
 		    $ox = true;
-		else if ($o->type == PaperOption::T_SELECTOR) {
+		else if (PaperOption::type_is_selectorlike($o->type)) {
 		    $om = explode("\n", $o->optionValues);
 		    if (defval($om, $ov, "") != "")
 			$ox = htmlspecialchars($om[$ov]);
@@ -919,7 +919,16 @@ class PaperTable {
 		    echo "<div class='paphint'>", $o->description, "</div>";
 		if ($o->type == PaperOption::T_SELECTOR)
 		    echo "<div class='papv'>", tagg_select("opt$o->optionId", explode("\n", $o->optionValues), $myval, array("onchange" => "hiliter(this)")), "</div>\n\n";
-		else if ($o->type == PaperOption::T_NUMERIC)
+		else if ($o->type == PaperOption::T_RADIO) {
+		    echo "<div class='papv'>";
+		    $values = explode("\n", $o->optionValues);
+		    $myval = isset($values[$myval]) ? $myval : 0;
+		    foreach ($values as $val => $text) {
+			echo tagg_radio("opt$o->optionId", $val, $val == $myval, array("onchange" => "hiliter(this)"));
+			echo "&nbsp;", tagg_label(htmlspecialchars($text)), "<br />\n";
+		    }
+		    echo "</div>\n\n";
+		} else if ($o->type == PaperOption::T_NUMERIC)
 		    echo "<div class='papv'><input type='text' class='textlite' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
 		else
 		    echo "<div class='papv'><input type='text' class='textlite papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";
