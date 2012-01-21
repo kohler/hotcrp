@@ -229,16 +229,16 @@ function requestSameAsPaper($prow) {
 	while (($row = edb_row($result))) {
 	    $got = defval($_REQUEST, "opt$row[0]", "");
 	    $t = $row[2];
-	    if ($t == OPTIONTYPE_CHECKBOX || $t == OPTIONTYPE_SELECTOR
-		|| $t == OPTIONTYPE_NUMERIC) {
+	    if ($t == PaperOption::T_CHECKBOX || $t == PaperOption::T_SELECTOR
+		|| $t == PaperOption::T_NUMERIC) {
 		if (cvtint($got, 0) != $row[1])
 		    return false;
-	    } else if ($t == OPTIONTYPE_TEXT) {
+	    } else if ($t == PaperOption::T_TEXT) {
 		if (simplifyWhitespace($got) != $row[3])
 		    return false;
-	    } else if ($t == OPTIONTYPE_PDF || $t == OPTIONTYPE_FINALPDF
-		       || $t == OPTIONTYPE_SLIDES || $t == OPTIONTYPE_FINALSLIDES
-		       || $t == OPTIONTYPE_VIDEO || $t == OPTIONTYPE_FINALVIDEO) {
+	    } else if ($t == PaperOption::T_PDF || $t == PaperOption::T_FINALPDF
+		       || $t == PaperOption::T_SLIDES || $t == PaperOption::T_FINALSLIDES
+		       || $t == PaperOption::T_VIDEO || $t == PaperOption::T_FINALVIDEO) {
 		if (fileUploaded($_FILES["opt$row[0]"], $Conf)
 		    || defval($_REQUEST, "remove_opt$row[0]"))
 		    return false;
@@ -314,18 +314,18 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     foreach (paperOptions() as $opt) {
 	$oname = "opt$opt->optionId";
 	$v = trim(defval($_REQUEST, $oname, ""));
-	if ($opt->type == OPTIONTYPE_CHECKBOX)
+	if ($opt->type == PaperOption::T_CHECKBOX)
 	    $_REQUEST[$oname] = ($v == 0 || $v == "" ? "" : 1);
-	else if ($opt->type == OPTIONTYPE_SELECTOR)
+	else if ($opt->type == PaperOption::T_SELECTOR)
 	    $_REQUEST[$oname] = cvtint($v, 0);
-	else if ($opt->type == OPTIONTYPE_NUMERIC) {
+	else if ($opt->type == PaperOption::T_NUMERIC) {
 	    if ($v == "" || ($v = cvtint($v, null)) !== null)
 		$_REQUEST[$oname] = ($v == "" ? "0" : $v);
 	    else {
 		$Error[$oname] = 1;
 		$emsg .= "&ldquo;" . htmlspecialchars($opt->optionName) . "&rdquo; must be an integer.  ";
 	    }
-	} else if ($opt->type == OPTIONTYPE_TEXT)
+	} else if ($opt->type == PaperOption::T_TEXT)
 	    $_REQUEST[$oname] = simplifyWhitespace($v);
 	else if ($opt->isDocument) {
 	    unset($_REQUEST[$oname]);
@@ -461,7 +461,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$q_optdata = ($Conf->sversion >= 27 ? ", null" : "");
 	foreach (paperOptions() as $o)
 	    if (defval($_REQUEST, "opt$o->optionId", "") != "") {
-		if ($o->type == OPTIONTYPE_TEXT)
+		if ($o->type == PaperOption::T_TEXT)
 		    $q .= "($paperId, $o->optionId, 1, '" . sqlq($_REQUEST["opt$o->optionId"]) . "'), ";
 		else
 		    $q .= "($paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . $q_optdata . "), ";

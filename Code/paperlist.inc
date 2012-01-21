@@ -1142,9 +1142,9 @@ class PaperList extends BaseList {
 	    if ($this->anyFinalPaper) {
 		$sel_opt["final"] = "Final papers";
 		foreach (paperOptions() as $id => $o)
-		    if ($o->type == OPTIONTYPE_FINALPDF)
+		    if ($o->type == PaperOption::T_FINALPDF)
 			$sel_opt["opt-" . $o->optionAbbrev] = htmlspecialchars($o->optionName) . " papers";
-		    else if ($o->type == OPTIONTYPE_FINALSLIDES)
+		    else if ($o->type == PaperOption::T_FINALSLIDES)
 			$sel_opt["opt-" . $o->optionAbbrev] = htmlspecialchars(pluralx($o->optionName, 2));
 		$sel_opt["paper"] = "Submitted papers";
 	    } else

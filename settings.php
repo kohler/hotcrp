@@ -5,6 +5,7 @@
 
 require_once("Code/header.inc");
 require_once("Code/tags.inc");
+require_once("Code/paperoption.inc");
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
 $Highlight = array();
@@ -509,14 +510,9 @@ function doCleanOptionValues($id) {
     }
 
     $optvt = cvtint(defval($_REQUEST, "optvt$id", 0));
-    if (($optvt != OPTIONTYPE_CHECKBOX && $optvt != OPTIONTYPE_SELECTOR
-	 && $optvt != OPTIONTYPE_NUMERIC && $optvt != OPTIONTYPE_TEXT
-	 && $optvt != OPTIONTYPE_PDF && $optvt != OPTIONTYPE_FINALPDF
-	 && $optvt != OPTIONTYPE_SLIDES && $optvt != OPTIONTYPE_FINALSLIDES
-	 && $optvt != OPTIONTYPE_VIDEO && $optvt != OPTIONTYPE_FINALVIDEO)
-	|| ($Conf->sversion < 27 && $optvt > 1))
+    if (!PaperOption::type_is_valid($optvt) || ($Conf->sversion < 27 && $optvt > 1))
 	$optvt = $_REQUEST["optvt$id"] = 0;
-    if ($optvt == OPTIONTYPE_SELECTOR) {
+    if ($optvt == PaperOption::T_SELECTOR) {
 	$v = "";
 	foreach (explode("\n", rtrim(cleannl($_REQUEST["optv$id"]))) as $t)
 	    $v .= trim($t) . "\n";
@@ -527,11 +523,10 @@ function doCleanOptionValues($id) {
 	    $_REQUEST["optv$id"] = substr($v, 0, strlen($v) - 1);
     } else
 	unset($_REQUEST["optv$id"]);
-    if ($optvt == OPTIONTYPE_FINALPDF) {
+    if (PaperOption::type_is_final($optvt))
 	$_REQUEST["optp$id"] = 1;
+    if ($optvt == PaperOption::T_FINALPDF)
 	$_REQUEST["optdt$id"] = 0;
-    } else if ($optvt == OPTIONTYPE_FINALSLIDES || $optvt == OPTIONTYPE_FINALVIDEO)
-	$_REQUEST["optp$id"] = 1;
 
     $pcview = cvtint(defval($_REQUEST, "optp$id", 0));
     $_REQUEST["optp$id"] = min(max($pcview, 0), 2);
@@ -1349,34 +1344,34 @@ function doOptGroupOption($o) {
 	    "</div></div></td>";
     }
 
-    echo "</tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2o fold3o'><tr>";
+    echo "</tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2c fold3o'><tr>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
 	decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
     $oval = $o->optionValues;
     $optvt = (count($Error) > 0 ? defval($_REQUEST, "optvt$id", 0) : $o->type);
     $finalOptions = $Conf->sversion >= 28
-	&& ($Conf->collectFinalPapers() || $optvt >= OPTIONTYPE_FINALPDF);
+	&& ($Conf->collectFinalPapers() || $optvt >= PaperOption::T_FINALPDF);
 
     $otypes = array();
     if ($finalOptions)
 	$otypes["xxx1"] = array("optgroup", "Options for submissions");
-    $otypes[OPTIONTYPE_CHECKBOX] = "Checkbox";
-    $otypes[OPTIONTYPE_SELECTOR] = "Selector";
+    $otypes[PaperOption::T_CHECKBOX] = "Checkbox";
+    $otypes[PaperOption::T_SELECTOR] = "Selector";
     if ($Conf->sversion >= 27) {
-	$otypes[OPTIONTYPE_NUMERIC] = "Numeric";
-	$otypes[OPTIONTYPE_TEXT] = "Text";
+	$otypes[PaperOption::T_NUMERIC] = "Numeric";
+	$otypes[PaperOption::T_TEXT] = "Text";
     }
     if ($Conf->sversion >= 28) {
-	$otypes[OPTIONTYPE_PDF] = "PDF";
-	$otypes[OPTIONTYPE_SLIDES] = "Slides";
-	$otypes[OPTIONTYPE_VIDEO] = "Video";
+	$otypes[PaperOption::T_PDF] = "PDF";
+	$otypes[PaperOption::T_SLIDES] = "Slides";
+	$otypes[PaperOption::T_VIDEO] = "Video";
     }
     if ($finalOptions) {
 	$otypes["xxx2"] = array("optgroup", "Options for accepted papers");
-	$otypes[OPTIONTYPE_FINALPDF] = "Alternate final version";
-	$otypes[OPTIONTYPE_FINALSLIDES] = "Final slides";
-	$otypes[OPTIONTYPE_FINALVIDEO] = "Final video";
+	$otypes[PaperOption::T_FINALPDF] = "Alternate final version";
+	$otypes[PaperOption::T_FINALSLIDES] = "Final slides";
+	$otypes[PaperOption::T_FINALVIDEO] = "Final video";
     }
     echo tagg_select("optvt$id", $otypes, $optvt, array("onchange" => "doopttype(this)", "id" => "optvt$id")),
 	"</div></div></td>";
@@ -1411,7 +1406,7 @@ function doOptGroupOption($o) {
 	    "</div></div></td>";
     }
 
-    if ($Conf->sversion >= 28 && isset($otypes[OPTIONTYPE_FINALPDF]))
+    if ($Conf->sversion >= 28 && isset($otypes[PaperOption::T_FINALPDF]))
 	echo "<td class='pad fx2'><div class='f-i'><div class='f-c'>&nbsp;</div><div class='f-e hint' style='margin-top:0.7ex'>(Set by accepted authors during final version submission period)</div></div></td>";
 
     echo "</tr></table>";

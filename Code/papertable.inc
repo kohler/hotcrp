@@ -289,7 +289,7 @@ class PaperTable {
 		} else if (($data = paperDocumentData($prow, DOCUMENT_SUBMISSION)))
 		    $x[] = documentDownload($data);
 		foreach (paperOptions() as $id => $o)
-		    if ($o->type == OPTIONTYPE_FINALPDF) {
+		    if ($o->type == PaperOption::T_FINALPDF) {
 			$match = preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m);
 			if ($match && $m[1] > 1)
 			    $x[] = htmlspecialchars($o->optionName) . ": &nbsp;" . documentDownload(paperDocumentData($prow, $id, $m[1]), count($x) ? "dlimgsp" : "dlimg");
@@ -328,8 +328,8 @@ class PaperTable {
 	$documentType = $opt->optionId;
 	$optionType = $opt->type;
 	$banal = $Conf->setting("sub_banal")
-	    && ($optionType == null || $optionType == OPTIONTYPE_PDF
-		|| $optionType == OPTIONTYPE_FINALPDF);
+	    && ($optionType == null || $optionType == PaperOption::T_PDF
+		|| $optionType == PaperOption::T_FINALPDF);
 
 	$filetypes = array();
 	$accepts = array();
@@ -429,7 +429,7 @@ class PaperTable {
 	if ($this->canUploadFinal) {
 	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DOCUMENT_FINAL, "optionName" => "Final version", "type" => null), $prow->finalPaperStorageId, $flags);
 	    foreach (paperOptions() as $id => $o)
-		if ($o->type == OPTIONTYPE_FINALPDF) {
+		if ($o->type == PaperOption::T_FINALPDF) {
 		    $match = preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m);
 		    $this->echoDocumentUploadRow($prow, $o, $match ? $m[1] : 0, $flags);
 		}
@@ -663,22 +663,22 @@ class PaperTable {
 	    foreach ($options as $o) {
 		$ov = defval($optsel, $o->optionId, 0);
 		if ((!$ov && !$o->type)
-		    || $o->type == OPTIONTYPE_FINALPDF
+		    || $o->type == PaperOption::T_FINALPDF
 		    || (!$showAllOptions && !$Me->canViewPaperOption($prow, $o)))
 		    continue;
 
 		$show_on = true;
 		$on = htmlspecialchars($o->optionName);
 		$ox = "";
-		if ($o->type == OPTIONTYPE_CHECKBOX)
+		if ($o->type == PaperOption::T_CHECKBOX)
 		    $ox = true;
-		else if ($o->type == OPTIONTYPE_SELECTOR) {
+		else if ($o->type == PaperOption::T_SELECTOR) {
 		    $om = explode("\n", $o->optionValues);
 		    if (defval($om, $ov, "") != "")
 			$ox = htmlspecialchars($om[$ov]);
-		} else if ($o->type == OPTIONTYPE_NUMERIC && $ov != "" && $ov != "0")
+		} else if ($o->type == PaperOption::T_NUMERIC && $ov != "" && $ov != "0")
 		    $ox = htmlspecialchars($ov);
-		else if ($o->type == OPTIONTYPE_TEXT && $ov != "") {
+		else if ($o->type == PaperOption::T_TEXT && $ov != "") {
 		    if ($optdata == null) {
 			$optdata = array();
 			$result = $Conf->qe("select optionId, data from PaperOption where paperId=$prow->paperId", "while selecting paper options");
@@ -689,7 +689,7 @@ class PaperTable {
 			$ox = htmlspecialchars($optdata[$o->optionId]);
 		} else if ($o->isDocument && $ov) {
 		    $show_on = false;
-		    if ($o->type == OPTIONTYPE_PDF)
+		    if ($o->type == PaperOption::T_PDF)
 			/* make fake document */
 			$doc = (object) array("paperId" => $prow->paperId, "mimetype" => "application/pdf", "documentType" => $o->optionId);
 		    else
@@ -889,13 +889,13 @@ class PaperTable {
 	    $optsel[$m[1][$i]] = $m[2][$i];
 	$optdata = null;
 	foreach ($opt as $o) {
-	    if ($o->type == OPTIONTYPE_FINALPDF
+	    if ($o->type == PaperOption::T_FINALPDF
 		|| ($o->isFinal && !$this->canUploadFinal))
 		continue;
 	    $optid = "opt$o->optionId";
 	    if ($this->useRequest)
 		$myval = defval($_REQUEST, $optid);
-	    else if ($o->type != OPTIONTYPE_TEXT)
+	    else if ($o->type != PaperOption::T_TEXT)
 		$myval = defval($optsel, $o->optionId);
 	    else {
 		if (!$optdata && $prow) {
@@ -907,7 +907,7 @@ class PaperTable {
 		$myval = defval($optdata, $o->optionId);
 	    }
 
-	    if ($o->type == OPTIONTYPE_CHECKBOX) {
+	    if ($o->type == PaperOption::T_CHECKBOX) {
 		echo $this->papt($optid, tagg_checkbox_h($optid, 1, $myval)
 				 . "&nbsp;" . tagg_label(htmlspecialchars($o->optionName)));
 		if ($o->description)
@@ -917,9 +917,9 @@ class PaperTable {
 		echo $this->papt($optid, htmlspecialchars($o->optionName));
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
-		if ($o->type == OPTIONTYPE_SELECTOR)
+		if ($o->type == PaperOption::T_SELECTOR)
 		    echo "<div class='papv'>", tagg_select("opt$o->optionId", explode("\n", $o->optionValues), $myval, array("onchange" => "hiliter(this)")), "</div>\n\n";
-		else if ($o->type == OPTIONTYPE_NUMERIC)
+		else if ($o->type == PaperOption::T_NUMERIC)
 		    echo "<div class='papv'><input type='text' class='textlite' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
 		else
 		    echo "<div class='papv'><input type='text' class='textlite papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";

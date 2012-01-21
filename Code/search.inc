@@ -883,7 +883,7 @@ class PaperSearch {
 	    if ($oname == "none" || $oname == "any"
 		|| strstr(strtolower($o->optionName), $oname) !== false) {
 		// find the relevant values
-		if ($oval !== "" && $o->type == OPTIONTYPE_NUMERIC) {
+		if ($oval !== "" && $o->type == PaperOption::T_NUMERIC) {
 		    if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
 			$xval = $ocompar . $m[1];
 		    else {
@@ -891,7 +891,7 @@ class PaperSearch {
 			$option_failure = true;
 			continue;
 		    }
-		} else if ($oval !== "" && $o->type == OPTIONTYPE_SELECTOR) {
+		} else if ($oval !== "" && $o->type == PaperOption::T_SELECTOR) {
 		    $xval = matchValue(explode("\n", $o->optionValues), $oval);
 		    if (count($xval) == 0)
 			continue;

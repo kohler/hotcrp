@@ -648,6 +648,7 @@ function paperDocumentData($prow, $documentType = DOCUMENT_SUBMISSION, $paperSto
 
 function documentMimetypes($documentType, $opt = null, $supplied = null) {
     global $Opt, $mimetypeMap;
+    require_once("paperoption.inc");
     if ($documentType <= 0)
 	$optionType = null;
     else if (!$opt && !($opt = paperOptions($documentType)))
@@ -655,9 +656,7 @@ function documentMimetypes($documentType, $opt = null, $supplied = null) {
     else
 	$optionType = $opt->type;
     $names = $mimetypes = array();
-    if (($optionType !== null || !defval($Opt, "disablePDF"))
-	&& $optionType != OPTIONTYPE_VIDEO
-	&& $optionType != OPTIONTYPE_FINALVIDEO) {
+    if (PaperOption::type_takes_pdf($optionType)) {
 	$names[] = "PDF";
 	$mimetypes[] = $mimetypeMap["pdf"];
     }
@@ -665,14 +664,14 @@ function documentMimetypes($documentType, $opt = null, $supplied = null) {
 	$names[] = "PostScript file";
 	$mimetypes[] = $mimetypeMap["ps"];
     }
-    if ($optionType == OPTIONTYPE_SLIDES
-	|| $optionType == OPTIONTYPE_FINALSLIDES) {
+    if ($optionType == PaperOption::T_SLIDES
+	|| $optionType == PaperOption::T_FINALSLIDES) {
 	$names[] = "PowerPoint file";
 	$mimetypes[] = $mimetypeMap["ppt"];
 	$mimetypes[] = $mimetypeMap["pptx"];
     }
-    if ($optionType == OPTIONTYPE_VIDEO
-	|| $optionType == OPTIONTYPE_FINALVIDEO) {
+    if ($optionType == PaperOption::T_VIDEO
+	|| $optionType == PaperOption::T_FINALVIDEO) {
 	$names[] = "video file (MP4 or AVI)";
 	$mimetypes[] = $mimetypeMap["mp4"];
 	$mimetypes[] = $mimetypeMap["avi"];
@@ -1895,6 +1894,7 @@ function paperOptions($id = null) {
     global $Conf;
     if ($Conf->setting("paperOption") <= 0 || $Conf->sversion <= 0)
 	return array();
+    require_once("paperoption.inc");
     $svar = defval($_SESSION, "paperOption", null);
     if (!$svar || !is_array($svar) || count($svar) < 3 || $svar[2] < 2
 	|| $svar[0] < $Conf->setting("paperOption")) {
@@ -1907,9 +1907,9 @@ function paperOptions($id = null) {
 	    if (!isset($row->optionValues))
 		$row->optionValues = "";
 	    if (!isset($row->type) && $row->optionValues == "\x7Fi")
-		$row->type = OPTIONTYPE_NUMERIC;
+		$row->type = PaperOption::T_NUMERIC;
 	    else if (!isset($row->type))
-		$row->type = ($row->optionValues ? OPTIONTYPE_SELECTOR : OPTIONTYPE_CHECKBOX);
+		$row->type = ($row->optionValues ? PaperOption::T_SELECTOR : PaperOption::T_CHECKBOX);
 	    // end backwards compatibility to old schema versions
 	    $row->optionAbbrev = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", strtolower($row->optionName)));
 	    if ($row->optionAbbrev == "paper" || $row->optionAbbrev == "final")
@@ -1917,8 +1917,8 @@ function paperOptions($id = null) {
 	    $row->sortOrder = $order++;
 	    if (!isset($row->displayType))
 		$row->displayType = 0;
-	    $row->isDocument = $row->type >= OPTIONTYPE_PDF;
-	    $row->isFinal = $row->type >= OPTIONTYPE_FINALPDF;
+	    $row->isDocument = PaperOption::type_is_document($row->type);
+	    $row->isFinal = PaperOption::type_is_final($row->type);
 	    $opt[$row->optionId] = $row;
 	}
 	$_SESSION["paperOption"] = $svar = array($Conf->setting("paperOption"), $opt, 2);
