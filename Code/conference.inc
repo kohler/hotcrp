@@ -794,7 +794,8 @@ class Conference {
 	$superdir = $filestore . "/" . substr($sha1, 0, 3);
 	$filename = $superdir . "/" . $sha1 . $this->getFileExtension($row->mimetype);
 
-	if (!is_readable($filename)) {
+	if (!is_readable($filename)
+	    || (isset($_REQUEST["nocache"]) && cvtint($_REQUEST["nocache"], 0))) {
 	    if (!is_dir($superdir) && !@mkdir($superdir, 0770))
 		return false;
 	    if (!$this->_paper_storage_content($row))
