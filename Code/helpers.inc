@@ -655,7 +655,9 @@ function documentMimetypes($documentType, $opt = null, $supplied = null) {
     else
 	$optionType = $opt->type;
     $names = $mimetypes = array();
-    if ($optionType !== null || !defval($Opt, "disablePDF")) {
+    if (($optionType !== null || !defval($Opt, "disablePDF"))
+	&& $optionType != OPTIONTYPE_VIDEO
+	&& $optionType != OPTIONTYPE_FINALVIDEO) {
 	$names[] = "PDF";
 	$mimetypes[] = $mimetypeMap["pdf"];
     }
