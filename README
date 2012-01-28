@@ -165,9 +165,9 @@ single installation.  Edit options.inc to set $Opt["multiconference"] to 1.
 The last directory component of the URL is used for the database name,
 user, and password.  For instance:
 
-   http://www.read.cs.ucla.edu/conferences/testconf/doc/testconf-paper1.pdf
-                                           ^^^^^^^^
-                                   last directory component
+   http://read.seas.harvard.edu/conferences/testconf/doc/testconf-paper1.pdf
+                                            ^^^^^^^^
+                                    last directory component
 
 Alternately, you may set $Opt["dbName"], $Opt["dbUser"], and/or
 $Opt["dbPassword"]. HotCRP will edit each of those settings to replace the
