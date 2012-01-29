@@ -280,7 +280,7 @@ class PaperTable {
 
 	// status and download
 	if ($prow && $Me->canDownloadPaper($prow)) {
-	    $t = "<td class='nowrap'>" . $Me->paperStatus($prow->paperId, $prow, 0) . "</td>";
+	    $t = "<td class='nowrap pad'>" . $Me->paperStatus($prow->paperId, $prow, 0) . "</td>";
 	    $pdfs = array();
 
 	    $dprefix = "";
@@ -313,9 +313,10 @@ class PaperTable {
 		    . $Conf->makeDownloadPath($prow->paperId, null, 0)
 		    . "\">Submission version</a></small>";
 
-	    if (count($pdfs))
-		$t .= "<td class='nowrap'>" . join("<br />", $pdfs) . "</td>";
-	    $out[] = "<table><tr>$t</tr></table>";
+	    $t .= "<td>";
+	    foreach ($pdfs as $p)
+		$t .= "<p class='od'>" . $p . "</p>";
+	    $out[] = "<table><tr>$t</td></tr></table>";
 	}
 
 	// conflicts
@@ -327,6 +328,8 @@ class PaperTable {
 	    && $Conf->timeUpdatePaper($prow) && $this->mode != "assign"
 	    && $this->mode != "contact")
 	    $out[] = "<div class='xwarning'>The authors still have <a href='" . hoturl("deadlines") . "'>time</a> to make changes.</div>";
+	if (count($out))
+	    $out[] = "";
 
 	echo join("<div class='g'></div>\n", $out);
     }
@@ -1642,12 +1645,10 @@ class PaperTable {
 	    echo "</div></form>";
 
 	} else {
-	    echo "<table class='paptab'><tr><td class='papbe' colspan='2'>";
 	    if ($this->mode == "pe" && ($m = $this->editMessage()))
 		echo $m, "<div class='g'></div>\n";
 	    $this->paptabDownload($prow);
-	    echo "</td></tr>
-	<tr><td class='paple'><div class='paple'>";
+	    echo "<table class='paptab'><tr><td class='paple'><div class='paple'>";
 	    $this->paptabAbstract($prow);
 	    echo "</div></td><td class='papre'><div class='papre'>";
 	    $this->paptabAuthors($prow);

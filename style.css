@@ -1010,15 +1010,9 @@ tr.pt_actions td, tr.pt_outcome td {
 tr.pt_paper input {
 	margin-top: 4px;
 }
-tr.pt_status span.pstat, table.paptab span.pstat {
-	margin-right: 1em;
-}
 span.author, span.conflict {
 	font-weight: bold;
 	color: #ff0000;
-}
-span.pstat {
-	white-space: nowrap;
 }
 pre.entryexample {
 	padding: 0.5em;
@@ -1218,6 +1212,7 @@ table.reviewers td.empty {
 
 span.pstat {
 	font-weight: bold;
+	white-space: nowrap;
 }
 tr.rs_heading td {
 	font-size: smaller;
@@ -1839,7 +1834,7 @@ div.psv {
 div.pscopen div.psv {
 	padding: 2px;
 }
-p.odname {
+p.od, p.odname {
 	margin: 0 0 0 1.5em;
 	text-indent: -1.5em;
 }
