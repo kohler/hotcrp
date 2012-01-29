@@ -86,7 +86,7 @@ function search() {
     echo "<table>";
     _alternateRow("Search basics", "
 All HotCRP paper lists are obtained through search, search syntax is flexible,
-and it's possible to download all matching papers and/or reviews at once.
+and it’s possible to download all matching papers and/or reviews at once.
 
 <p>Some useful hints for PC members and chairs:</p>
 
@@ -110,7 +110,7 @@ To search for words that <em>start</em> with
 a prefix, try “term*”.
 To search for papers that match <em>some</em> of the terms,
 type “term1 OR term2”.
-To search for papers that <em>don't</em> match a term,
+To search for papers that <em>don’t</em> match a term,
 try “-term”.  Or select
 <a href='" . hoturl("search", "opt=1") . "'>Advanced search</a>
 and use \"With <b>any</b> of the words\" and \"<b>Without</b> the words\".
@@ -122,10 +122,10 @@ conference. Options include:</p>
 <li><b>All papers</b> &mdash; all papers, including withdrawn and other non-submitted papers.</li>
 <li><b>Your submissions</b> &mdash; papers for which you're a contact.</li>
 <li><b>Your reviews</b> &mdash; papers you've been assigned to review.</li>
-<li><b>Your incomplete reviews</b> &mdash; papers you've been assigned to review, but haven't submitted a review yet.</li>
+<li><b>Your incomplete reviews</b> &mdash; papers you've been assigned to review, but haven’t submitted a review yet.</li>
 </ul>
 
-<p>Search won't show you information you aren't supposed to see.  For example,
+<p>Search won’t show you information you aren’t supposed to see.  For example,
 authors can only search their own submissions, and if the conference used
 anonymous submission, then only the PC chairs can search by author.</p>
 
@@ -262,8 +262,8 @@ function searchQuickref() {
     }
     if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE)
 	_searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");
-    _searchQuickrefRow("Comments", "cmt:>0", "at least one comment visible to PC (including authors' response)");
-    _searchQuickrefRow("", "aucmt:>0", "at least one comment visible to authors (including authors' response)");
+    _searchQuickrefRow("Comments", "cmt:>0", "at least one comment visible to PC (including authors’ response)");
+    _searchQuickrefRow("", "aucmt:>0", "at least one comment visible to authors (including authors’ response)");
     _searchQuickrefRow("", "cmt:sylvia", "“sylvia” (in name/email) wrote at least one comment visible to PC; can combine with counts, use reviewer tags");
     _searchQuickrefRow("Leads", "lead:fdabek", "“fdabek” (in name/email) is discussion lead");
     _searchQuickrefRow("", "lead:none", "no assigned discussion lead");
@@ -370,7 +370,7 @@ function tags() {
 	    $conflictmsg3 = "Currently PC members can see tags for any paper, including conflicts.";
 	} else {
 	    $conflictmsg1 = " or conflicted PC members";
-	    $conflictmsg2 = "  However, since PC members currently can't see tags for conflicted papers, each PC member might see a different list." . $setting;
+	    $conflictmsg2 = "  However, since PC members currently can’t see tags for conflicted papers, each PC member might see a different list." . $setting;
 	    $conflictmsg3 = "They are currently hidden from conflicted PC members&mdash;for instance, if a PC member searches for a tag, the results will never include conflicts.";
 	}
     }
@@ -398,7 +398,7 @@ Here are some example ways to use tags.
  (<a href='" . hoturl("search", "q=tag:nodiscuss") . "'>“tag:nodiscuss”</a> also works).
  PC members can easily check the list for controversial papers they'd like to discuss despite their ranking.
  They can email the chairs about such papers, or, even easier, add a “discussanyway” tag.
- (You might make the “nodiscuss” tag chair-only so an evil PC member couldn't add it to a high-ranked paper, but it's usually better to trust the PC.)</li>
+ (You might make the “nodiscuss” tag chair-only so an evil PC member couldn’t add it to a high-ranked paper, but it’s usually better to trust the PC.)</li>
 
 <li><strong>Mark controversial papers that would benefit from additional review.</strong>
  PC members could add the “controversy” tag when the current reviewers disagree.
@@ -419,7 +419,7 @@ Here are some example ways to use tags.
 
 <li><strong>Rank papers.</strong>
  Each PC member can set tags indicating their preference ranking for papers.
- For instance, a PC member's favorite paper would get tag “~rank#1”, the next favorite “~rank#2”, and so forth.
+ For instance, a PC member’s favorite paper would get tag “~rank#1”, the next favorite “~rank#2”, and so forth.
  The chair can then combine these rankings into a global preference order using a Condorcet method.
  (<a href='" . hoturl("help", "t=ranking") . "'>Learn more</a>)</li>
 
@@ -435,7 +435,7 @@ Here are some example ways to use tags.
 </ul>
 ");
     _alternateRow("Finding tags", "
-A paper's tags are shown like this:
+A paper’s tags are shown like this:
 
 <p><img src='" . hoturlx("images/extagsnone.png") . "' alt='[Tag list on review screen]' /></p>
 
@@ -446,7 +446,7 @@ $conflictmsg3$setting
 Additionally, twiddle tags, which have names like “~tag”, are
 visible only to their creators; each PC member has an independent set.</p>");
     _alternateRow("<a name='changing'>Changing tags</a>", "
-To change a paper's tags, click the Tags box's <img src='" . hoturlx("images/edit.png") . "'
+To change a paper’s tags, click the Tags box’s <img src='" . hoturlx("images/edit.png") . "'
 alt='[Edit]' />&nbsp;Edit link, then enter one or more alphanumeric tags
 separated by spaces.
 
@@ -476,7 +476,7 @@ href='" . hoturl("search", "q=%23discuss%232") . "'>#discuss#2</a>”
 or “<a
 href='" . hoturl("search", "q=%23discuss%3E1") . "'>#discuss>1</a>”.
 
-<p>It's common to assign increasing tag values to a set of papers.  Do this
+<p>It’s common to assign increasing tag values to a set of papers.  Do this
 using the <a href='" . hoturl("search") . "'>search screen</a>.  Search for the
 papers you want, sort them into the right order, select their checkboxes, and
 choose <b>Define order</b> in the tag action area.  If no sort gives what
@@ -633,7 +633,7 @@ options changes how scores are sorted.  There are five choices:
 <dd>Sort by the number of highest scores, then the number of second-highest
 scores, then the number of third-highest scores, and so on.  To sort a paper
 with fewer reviews than others, HotCRP adds phantom reviews with scores just
-below the paper's lowest real score.  Also known as Minshall score.</dd>
+below the paper’s lowest real score.  Also known as Minshall score.</dd>
 
 <dt><strong>Average</strong></dt>
 <dd>Sort by the average (mean) score.</dd>
@@ -666,7 +666,7 @@ function showvotetags() {
 Some conferences have PC members vote for papers.
 Each PC member is assigned a vote allotment, and can distribute that allotment
 arbitrarily among unconflicted papers.
-The PC's aggregated vote totals might help determine
+The PC’s aggregated vote totals might help determine
 which papers to discuss.
 
 <p>HotCRP supports voting through the <a href='" . hoturl("help", "t=tags") . "'>tags system</a>.
@@ -692,7 +692,7 @@ function showranking() {
 
     echo "<table>";
     _alternateRow("Ranking basics", "
-Paper ranking is an alternate method to extract the PC's preference order for
+Paper ranking is an alternate method to extract the PC’s preference order for
 submitted papers.  Each PC member ranks the submitted papers, and a voting
 algorithm, <a href='http://en.wikipedia.org/wiki/Schulze_method'>the Schulze
 method</a> by default, combines these rankings into a global preference order.
@@ -856,7 +856,7 @@ Follow these steps to prepare to accept paper submissions.
 <ol>
 
 <li><p><strong><a href='" . hoturl("settings", "group=acc") . "'>Set up PC
-  member accounts</a></strong> and decide whether to collect authors'
+  member accounts</a></strong> and decide whether to collect authors’
   snail-mail addresses and phone numbers.</li>
 
 <li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Set submission
@@ -884,16 +884,16 @@ Follow these steps to prepare to accept paper submissions.
 
 <li><p><strong><a href='" . hoturl("settings", "group=opt") . "'>Define
   submission options (optional).</a></strong>  You can add
-  additional checkboxes to the submission form, such as \"Consider this
-  paper for the Best Student Paper award\" or \"Provide this paper to the
-  European shadow PC.\"  You can
+  additional checkboxes to the submission form, such as “Consider this
+  paper for the Best Student Paper award” or “Provide this paper to the
+  European shadow PC.”  You can
   <a href='" . hoturl("search") . "'>search</a> for papers with or without
   each option.</p></li>
 
 <li><p><strong><a href='" . hoturl("settings", "group=opt") . "'>Define paper
   topics (optional).</a></strong> Authors can select topics, such as
-  \"Applications\" or \"Network databases,\" that characterize their
-  paper's subject areas.  PC members express topics for which they have high,
+  “Applications” or “Network databases,” that characterize their
+  paper’s subject areas.  PC members express topics for which they have high,
   medium, and low interest, improving automatic paper assignment.  Although
   explicit preferences (see below) are better than topic-based assignments,
   busy PC members might not specify their preferences; topic matching lets you
@@ -941,7 +941,7 @@ After the submission deadline has passed:
 
 <li><p><strong><a href='" . hoturl("reviewprefs") . "'>Collect review
   preferences from the PC.</a></strong> PC members can rank-order papers they
-  want or don't want to review.  They can either set their preferences <a
+  want or don’t want to review.  They can either set their preferences <a
   href='" . hoturl("reviewprefs") . "'>all at once</a>, or (often more
   convenient) page through the <a
   href='" . hoturl("search", "q=&amp;t=s") . "'>list of submitted papers</a>
@@ -951,7 +951,7 @@ After the submission deadline has passed:
   <p>If you'd like, you can collect review preferences before the submission
   deadline.  Select <a href='" . hoturl("settings", "group=sub") . "'>“PC can
   see <em>all registered papers</em> until submission deadline”</a>, which
-  allows PC members to see abstracts for registered papers that haven't yet
+  allows PC members to see abstracts for registered papers that haven’t yet
   been submitted.</p></li>
 
 <li><p><strong><a href='" . hoturl("manualassign", "kind=c") . "'>Assign
@@ -992,7 +992,7 @@ mechanism.  For each chair conflict:
 
 <ol>
 
-<li>A chair or system administrator goes to the paper's <a
+<li>A chair or system administrator goes to the paper’s <a
   href='" . hoturl("assign") . "'>assignment page</a> and clicks
   on “Request review” without entering a name or email address.
   This creates a new, completely anonymous review slot and reports a
@@ -1001,7 +1001,7 @@ mechanism.  For each chair conflict:
   desired.</li>
 
 <li>The chair sends the resulting review tokens to a PC member designated as
-  the paper's manager.  This trusted party decides which users should
+  the paper’s manager.  This trusted party decides which users should
   review the paper, and sends each reviewer one of the review tokens.</li>
 
 <li>When a reviewer signs in and enters their review token on the home page,
@@ -1019,7 +1019,7 @@ mechanism.  For each chair conflict:
   offline review form via email (not using HotCRP).  The reviewers complete
   the offline forms and send them to the manager, who uploads them into the
   “Jane Q. Public” review slots using the review tokens.  This
-  way, even web server access logs store only the manager's identity.</p>
+  way, even web server access logs store only the manager’s identity.</p>
 
 ");
     _alternateRow("Before the meeting", "
