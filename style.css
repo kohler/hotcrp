@@ -1541,7 +1541,7 @@ td.setrev_shortName input {
 	font-weight: bold;
 }
 
-a.pl_sort, a.black {
+a.pl_sort {
 	color: black;
 }
 a.pl_sort_def {
@@ -1945,9 +1945,11 @@ div.papt {
 	padding: 0.25em 1em 0.25em 8px;
 	background: #eaeaff; /*#ffeaee;*/
 }
-div.papt span.papfn {
+span.papfn {
 	font-variant: small-caps;
 	font-weight: bold;
+}
+div.papt span.papfn {
 	float: left;
 }
 body#paper_edit span.papfn {

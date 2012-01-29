@@ -532,7 +532,7 @@ function doCleanOptionValues($id) {
     $_REQUEST["optp$id"] = min(max($pcview, 0), 2);
 
     $displaytype = cvtint(defval($_REQUEST, "optdt$id", 0));
-    $_REQUEST["optdt$id"] = min(max($displaytype, 0), 1);
+    $_REQUEST["optdt$id"] = min(max($displaytype, 0), 2);
 }
 
 function doCleanOptionFormPositions() {
@@ -1403,7 +1403,9 @@ function doOptGroupOption($o) {
 	echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
 	    decorateSettingName("optdt$id", "Display"), "</div><div class='f-e'>";
 	$optdt = (count($Error) > 0 ? defval($_REQUEST, "optdt$id", 0) : $o->displayType);
-	echo tagg_select("optdt$id", array("Group with other options", "Display separately"), $optdt,
+	echo tagg_select("optdt$id", array("Grouped",
+					   "Separately",
+					   "Near submission"), $optdt,
 			 array("onchange" => "hiliter(this)")),
 	    "</div></div></td>";
     }

@@ -281,31 +281,40 @@ class PaperTable {
 	// status and download
 	if ($prow && $Me->canDownloadPaper($prow)) {
 	    $t = "<td class='nowrap'>" . $Me->paperStatus($prow->paperId, $prow, 0) . "</td>";
-	    if ($prow->outcome > 0 && $Conf->collectFinalPapers()) {
-		$x = array();
-		if ($prow->finalPaperStorageId > 1) {
-		    $data = paperDocumentData($prow, DOCUMENT_FINAL);
-		    $x[] = "Final version: &nbsp;" . documentDownload($data);
-		} else if (($data = paperDocumentData($prow, DOCUMENT_SUBMISSION)))
-		    $x[] = documentDownload($data);
-		foreach (paperOptions() as $id => $o)
-		    if ($o->type == PaperOption::T_FINALPDF) {
-			$match = preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m);
-			if ($match && $m[1] > 1)
-			    $x[] = htmlspecialchars($o->optionName) . ": &nbsp;" . documentDownload(paperDocumentData($prow, $id, $m[1]), count($x) ? "dlimgsp" : "dlimg");
-		    }
-		if ($prow->finalPaperStorageId > 1 && $prow->paperStorageId > 1)
-		    $x[] = "<small><a class='black' href=\""
-			. $Conf->makeDownloadPath($prow->paperId, null, 0)
-			. "\">Submission version</a></small>";
-		if (count($x))
-		    $t .= "<td class='nowrap'>" . join("<br />", $x) . "</td>";
-	    } else {
-		if (($data = paperDocumentData($prow, DOCUMENT_SUBMISSION)))
-		    $t .= "<td class='nowrap'>" . documentDownload($data) . "</td>";
+	    $pdfs = array();
+
+	    $dprefix = "";
+	    if ($final && $prow->finalPaperStorageId > 1) {
+		$data = paperDocumentData($prow, DOCUMENT_FINAL);
+		$dprefix = "Final version: &nbsp;";
+	    } else
+		$data = paperDocumentData($prow, DOCUMENT_SUBMISSION);
+	    if ($data) {
+		if (($stamps = $this->pdfStamps($data)))
+		    $stamps = "<span class='sep'></span>" . $stamps;
+		$pdfs[] = $dprefix . documentDownload($data) . $stamps;
 	    }
-	    if ($data && ($stamps = $this->pdfStamps($data)))
-		$t .= "<td><span class='sep'></span></td><td>$stamps</td>";
+
+	    foreach (paperOptions() as $id => $o)
+		if ($o->displayType == 2 && $o->isDocument
+		    && (!$o->isFinal || $final)) {
+		    if (preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m)
+			&& $m[1] > 1
+			&& ($d = paperDocumentData($prow, $id, $m[1])))
+			$pdfs[] = "<span class='papfn'>"
+			    . htmlspecialchars($o->optionName)
+			    . "</span>: &nbsp;"
+			    . documentDownload($d, count($pdfs) ? "dlimgsp" : "dlimg");
+		}
+
+	    if ($final && $prow->finalPaperStorageId > 1
+		&& $prow->paperStorageId > 1)
+		$pdfs[] = "<small><a class='u' href=\""
+		    . $Conf->makeDownloadPath($prow->paperId, null, 0)
+		    . "\">Submission version</a></small>";
+
+	    if (count($pdfs))
+		$t .= "<td class='nowrap'>" . join("<br />", $pdfs) . "</td>";
 	    $out[] = "<table><tr>$t</tr></table>";
 	}
 
@@ -662,7 +671,7 @@ class PaperTable {
 	    foreach ($options as $o) {
 		$ov = defval($optsel, $o->optionId, 0);
 		if ((!$ov && !$o->type)
-		    || $o->type == PaperOption::T_FINALPDF
+		    || ($o->displayType == 2 && $o->isDocument)
 		    || (!$showAllOptions && !$Me->canViewPaperOption($prow, $o)))
 		    continue;
 
@@ -876,7 +885,7 @@ class PaperTable {
 	}
     }
 
-    function echoOptions($prow, $showAll) {
+    function echoOptions($prow, $showAll, $displayTypeFlags) {
 	global $Conf;
 	$prow_optionIds = isset($prow->optionIds) ? $prow->optionIds : "";
 	if (!($opt = paperOptions()))
@@ -888,7 +897,7 @@ class PaperTable {
 	    $optsel[$m[1][$i]] = $m[2][$i];
 	$optdata = null;
 	foreach ($opt as $o) {
-	    if ($o->type == PaperOption::T_FINALPDF
+	    if (!($displayTypeFlags & (1 << $o->displayType))
 		|| ($o->isFinal && !$this->canUploadFinal))
 		continue;
 	    $optid = "opt$o->optionId";
@@ -1600,6 +1609,7 @@ class PaperTable {
 	    $this->paptabTitle($prow);
 	    $this->echoUploadRow($prow,
 		(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
+	    $this->echoOptions($prow, $Me->privChair, 4);
 
 	    // Authorship
 	    echo $spacer;
@@ -1617,7 +1627,7 @@ class PaperTable {
 	    // Topics and options
 	    echo $spacer;
 	    $this->echoTopics($prow);
-	    $this->echoOptions($prow, $Me->privChair);
+	    $this->echoOptions($prow, $Me->privChair, 3);
 
 	    // Potential conflicts
 	    if ($this->editable !== "f" || $Me->privChair) {
