@@ -704,7 +704,7 @@ class PaperList extends BaseList {
 		    $aff = "unaffiliated";
 		if ($highlight !== "")
 		    $aff = highlightMatch($highlight, $aff);
-		$ax = commajoin($ax[0]) . ($aff ? " ($aff)" : "");
+		$ax = commajoin($ax[0]) . ($aff ? " <span class='auaff'>($aff)</span>" : "");
 	    }
 	    return commajoin($affaus);
 	} else if ($highlight === "") {

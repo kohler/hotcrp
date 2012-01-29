@@ -494,7 +494,7 @@ class PaperTable {
 	$Conf->echoScript("authorfold(\"auedit\",0," . max(count($authorTable) + 1, 5) . ")");
     }
 
-    function authorData($table, $type, $viewAs = null) {
+    function authorData($table, $type, $viewAs = null, $prefix = "") {
 	global $Conf;
 	if ($this->highlight && isset($this->matchPreg["authorInformation"]))
 	    $highpreg = $this->matchPreg["authorInformation"];
@@ -512,20 +512,19 @@ class PaperTable {
 		}
 		$names[] = $n;
 	    }
-	    return join(", ", $names);
+	    return $prefix . join(", ", $names);
 
 	} else {
 	    foreach ($table as $au) {
-		$n = trim("$au[0] $au[1]");
+		$n = htmlspecialchars(trim("$au[0] $au[1]"));
 		if ($au[3] != "")
-		    $n .= " ($au[3])";
+		    $n .= " <span class='auaff'>(" . htmlspecialchars($au[3]) . ")</span>";
 		if ($au[2] != "")
-		    $n .= " <$au[2]>";
+		    $n .= htmlspecialchars(" <$au[2]>");
 		if ($highpreg !== false) {
-		    $n = highlightMatch($highpreg, htmlspecialchars($n), $nm);
+		    $n = highlightMatch($highpreg, $n, $nm);
 		    $this->entryMatches += $nm;
-		} else
-		    $n = htmlspecialchars($n);
+		}
 		if ($au[2] != "" && preg_match("/ &lt;.*&gt;\\Z/", $n, $m))
 		    $n = substr($n, 0, strlen($n) - strlen($m[0]) + 5)
 			. "<a href=\"mailto:" . htmlspecialchars($au[2]) . "\">"
@@ -534,9 +533,10 @@ class PaperTable {
 		if ($au[2] != "" && $viewAs !== null && $viewAs->email != $au[2]
 		    && $viewAs->privChair && defval($au, 4))
 		    $n .= " <a href=\"" . selfHref(array("viewContact" => $au[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . contactNameHtml($au)) . "</a>";
-		$names[] = $n;
+		$names[] = "<p class='odname'>" . $prefix . $n . "</p>";
+		$prefix = "";
 	    }
-	    return join("<br />\n", $names);
+	    return join("\n", $names);
 	}
     }
 
@@ -597,14 +597,14 @@ class PaperTable {
 		echo foldsessionpixel("paper8", "foldassigna");
 	    echo "</div></div>\n",
 		"<div class='fx8'>";
-	    $inauthors = "<a class='q fx8' "
+	    $inauthors1 = $inauthors2 = "<a class='q fx8' "
 		. "href='javascript:void fold(\"paper\", 1, 8)' "
 		. "title='Hide authors'>[blind]</a> ";
 	    $afterauthors = "</div>\n";
 	} else {
-	    $inauthors = $afterauthors = "";
+	    $inauthors1 = $inauthors2 = $afterauthors = "";
 	    if ($Conf->subBlindOptional() && $prow->blind)
-		$inauthors = "[blind] ";
+		$inauthors1 = $inauthors2 = "[blind] ";
 	}
 
 	// "author" or "authors"?
@@ -617,12 +617,11 @@ class PaperTable {
 				   "foldsession" => "foldpaperp",
 				   "showtitle" => "Show full authors",
 				   "hidetitle" => "Show abbreviated authors")),
-		"<div class='papv'>", $inauthors,
-		"<span class='fn9'>",
-		$this->authorData($prow->authorTable, "last"),
+		"<div class='papv'><span class='fn9'>",
+		$this->authorData($prow->authorTable, "last", null, $inauthors1),
 		" <a class='fn9' href='javascript:void fold(\"paper\", 0, 9)'>[details]</a>",
 		"</span><span class='fx9'>",
-		$this->authorData($prow->authorTable, "col", $Me),
+		$this->authorData($prow->authorTable, "col", $Me, $inauthors2),
 		"</span>";
 
 	} else {
@@ -1041,8 +1040,8 @@ class PaperTable {
 
 	echo $this->_papstripBegin(),
 	    $this->papt("pcconflict", "PC conflicts", array("type" => "ps")),
-	    "<div class='psv psconf'><p class='psname'>",
-	    join("</p><p class='psname'>", $pcconfs),
+	    "<div class='psv psconf'><p class='odname'>",
+	    join("</p><p class='odname'>", $pcconfs),
 	    "</p></div></div>\n";
     }
 
@@ -1082,7 +1081,7 @@ class PaperTable {
 				  "id" => "fold${type}_d")),
 		" <input class='b fx7' type='submit' value='Save' />",
 		" <span id='${type}formresult'></span>",
-		"</div><div class='fn'><p class='psname'>";
+		"</div><div class='fn'><p class='odname'>";
 	}
 
 	if (!$value)

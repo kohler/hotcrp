@@ -1244,6 +1244,10 @@ span.pstat_decyes {
 	color: #259f00;
 }
 
+span.auaff {
+	color: #666666;
+}
+
 table.pt_buttons td.ptb_explain {
 	padding: 0 1em 0 0;
 	text-align: center;
@@ -1822,7 +1826,7 @@ div.psv {
 div.pscopen div.psv {
 	padding: 2px;
 }
-p.psname {
+p.odname {
 	margin: 0 0 0 1.5em;
 	text-indent: -1.5em;
 }
