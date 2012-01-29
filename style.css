@@ -1816,6 +1816,19 @@ div.pst span.psfn a.q {
 div.pst span.hint {
 	padding-left: 1em;
 }
+span.pstedit {
+	display: inline-block;
+	float: right;
+	padding-left: 1em;
+	font-size: smaller;
+	color: #555555;
+	white-space: nowrap;
+	position: relative;
+	bottom: -2px;
+}
+.foldo span.pstedit.fn {
+	display: none;
+}
 div.pshint {
 	font-size: smaller;
 	color: #555555;

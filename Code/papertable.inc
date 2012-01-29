@@ -195,13 +195,13 @@ class PaperTable {
 	$c .= "</span>";
 	if ($editfolder) {
 	    $x = defval($extra, "oneditunfold", "");
-	    $a = "<a href=\"" . selfHref(array("atab" => $what))
+	    $c .= "<span class='pstedit fn'>"
+		. "<a class='x' href=\"" . selfHref(array("atab" => $what))
 		. "\" onclick='" . $x . ($x ? ";" : "")
-		. "return fold(\"$editfolder\", 0)' title='Edit'>";
-	    $c .= "<span class='hint fn nowrap'>" . $a
+		. "return fold(\"$editfolder\",0)' title='Edit'>"
 		. "<span style='display:inline-block;position:relative;width:15px'>"
 		. $Conf->cacheableImage("edit.png", "[Edit]", null, "bmabs")
-		. "</span></a>&nbsp;" . $a . "Edit</a></span>";
+		. "</span>&nbsp;Edit</a></span>";
 	}
 	$c .= "<div class='clear'></div></div>";
 	return $c;
