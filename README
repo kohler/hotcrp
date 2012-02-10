@@ -104,9 +104,9 @@ Configuration
     'session.gc_maxlifetime' to 86400 anyway, then edit Code/options.inc to
     set '$Opt["sessionLifetime"]' to the correct session timeout.
 
-  - Edit MySQL's 'my.cnf' (typical location: '/etc/my.cnf') to ensure that
-    MySQL can handle paper-sized objects.  It should contain something like
-    this:
+  - Edit MySQL's 'my.cnf' (typical location: '/etc/mysql/my.cnf') to ensure
+    that MySQL can handle paper-sized objects.  It should contain something
+    like this:
 
        [mysqld]
        max_allowed_packet=32M
@@ -115,8 +115,10 @@ Configuration
     are willing to accept.  It defaults to 1M on some systems, which is not
     nearly large enough.  HotCRP will warn you if it is too small.  Some
     MySQL setups, such as on Mac OS X, may not have a 'my.cnf' by default;
-    just create one.  If you edit my.cnf, also restart the mysqld server.
-    On Linux boxes "sudo /etc/init.d/mysqld restart" often suffices.
+    just create one.
+
+    If you edit my.cnf, also restart the mysqld server.  On Linux try
+    something like "sudo /etc/init.d/mysql restart".
 
   - Sign in to the site to create an account.  The first account created
     automatically receives system administrator privilege.
