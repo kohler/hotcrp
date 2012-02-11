@@ -113,6 +113,9 @@ class Contact {
 			unset($_REQUEST["chairMode"]);
 			return $this->valid(true);
 		    }
+		    if (isset($_REQUEST["invalidatecaches"])
+			&& $_REQUEST["invalidatecaches"])
+			$Conf->invalidateCaches();
 		}
 		if ($update)
 		    $this->lookupById($this->contactId);

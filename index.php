@@ -24,11 +24,9 @@ if ((isset($_REQUEST["email"]) && isset($_REQUEST["password"]) && isset($_REQUES
     $Me->fresh = true;
     if (isset($_REQUEST["signout"]))
 	unset($Me->capabilities);
-    unset($_SESSION["l"]);
-    unset($_SESSION["info"]);
-    unset($_SESSION["rev_tokens"]);
-    unset($_SESSION["rev_token_fail"]);
-    unset($_SESSION["comment_msgs"]);
+    foreach (array("l", "info", "rev_tokens", "rev_token_fail", "comment_msgs",
+		   "pplscores", "pplscoresort", "scoresort") as $v)
+	unset($_SESSION[$v]);
     foreach ($allowedSessionVars as $v)
 	unset($_SESSION[$v]);
     if (isset($_REQUEST["signout"]))

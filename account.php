@@ -222,12 +222,8 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
     if ($OK)
 	$Acct->updateDB();
 
-    if ($updatepc) {
-	$t = time();
-	$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
-	unset($_SESSION["pcmembers"]);
-	unset($_SESSION["pcmembersa"]);
-    }
+    if ($updatepc)
+	$Conf->invalidateCaches(array("pc" => 1));
 
     // if PC member, update collaborators and areas of expertise
     if (($Acct->isPC || $newProfile) && $OK) {

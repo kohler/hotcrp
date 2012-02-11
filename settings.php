@@ -673,12 +673,8 @@ function doOptions($set) {
 	$Error[] = "Specify a name for your new option.";
     }
 
-    if (!$anyo)
-	$Conf->qe("delete from Settings where name='paperOption'", $while);
-    else if ($ochange) {
-	$t = time();
-	$Conf->qe("insert into Settings (name, value) values ('paperOption', $t) on duplicate key update value=$t", $while);
-    }
+    if (!$anyo || $ochange)
+	$Conf->invalidateCaches(array("paperOption" => $anyo));
 }
 
 function doDecisions($set) {

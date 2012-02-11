@@ -164,8 +164,7 @@ function rf_update($lock) {
 
     // alert consumers of change to form
     if ($lock && isset($updates)) {
-	$t = time();
-	$Conf->qe("insert into Settings (name, value) values ('revform_update', $t) on duplicate key update value=$t");
+	$Conf->invalidateCaches(array("rf" => 1));
 	$Conf->confirmMsg("Review form updated.");
 	$rf->validate($Conf, true);
     } else if (isset($updates))

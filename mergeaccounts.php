@@ -120,12 +120,8 @@ if (isset($_REQUEST["merge"])) {
 	    $Conf->qe("unlock tables", $while);
 
 	    // Update PC settings if we need to
-	    if ($MiniMe->isPC) {
-		$t = time();
-		$Conf->qe("insert into Settings (name, value) values ('pc', $t) on duplicate key update value=$t");
-		unset($_SESSION["pcmembers"]);
-		unset($_SESSION["pcmembersa"]);
-	    }
+	    if ($MiniMe->isPC)
+		$Conf->invalidateCaches(array("pc" => 1));
 
 	    if ($MergeError == "") {
 		$Conf->confirmMsg("Account " . htmlspecialchars($MiniMe->email) . " successfully merged.");

@@ -130,6 +130,10 @@ class Conference {
 	    $OK = $oldOK;
 	}
 	$this->sversion = $this->settings["allowPaperOption"];
+	if (isset($this->settings["frombackup"]) && $this->invalidateCaches()) {
+	    $this->qe("delete from Settings where name='frombackup' and value=" . $this->settings["frombackup"]);
+	    unset($this->settings["frombackup"]);
+	}
     }
 
     function setting($name, $defval = false) {
@@ -193,6 +197,44 @@ class Conference {
 	    $this->qe("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)", "while updating review tokens settings");
     }
 
+    function invalidateCaches($caches = null) {
+	global $OK;
+	$inserts = array();
+	$removes = array();
+	$time = time();
+	if ($caches ? isset($caches["pc"]) : $this->setting("pc") > 0) {
+	    if (!$caches || $caches["pc"]) {
+		$inserts[] = "('pc',$time)";
+		$this->settings["pc"] = $time;
+	    } else {
+		$removes[] = "'pc'";
+		unset($this->settings["pc"]);
+	    }
+	    unset($_SESSION["pcmembers"]);
+	    unset($_SESSION["pcmembersa"]);
+	}
+	if ($caches ? isset($caches["paperOption"]) : $this->setting("paperOption") > 0) {
+	    if (!$caches || $caches["paperOption"]) {
+		$inserts[] = "('paperOption',$time)";
+		$this->settings["paperOption"] = $time;
+	    } else {
+		$removes[] = "'paperOption'";
+		unset($this->settings["paperOption"]);
+	    }
+	    unset($_SESSION["paperOption"]);
+	}
+	if (!$caches || isset($caches["rf"])) {
+	    $inserts[] = "('revform_update',$time)";
+	    $this->settings["revform_update"] = $time;
+	    unset($_SESSION["rf"]);
+	}
+	$ok = true;
+	if (count($inserts))
+	    $ok = $ok && ($this->qe("insert into Settings (name, value) values " . join($inserts, ",") . " on duplicate key update value=values(value)") !== false);
+	if (count($removes))
+	    $ok = $ok && ($this->qe("delete from Settings where name in (" . join($removes, ",") . ")") !== false);
+	return $ok;
+    }
 
     function qx($query) {
 	return mysql_query($query, $this->dblink);
