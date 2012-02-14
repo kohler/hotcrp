@@ -197,10 +197,10 @@ function setTags($pids, $tagtext, $mode, $chair) {
     }
 
     // check rank tag
-    if (!$chair && ($vtags = rankTags()) && count($vtags)) {
+    if (!$chair && ($ranktags = rankTags()) && count($ranktags)) {
 	$nexttags = array();
 	foreach ($tags as $tag) {
-	    if (isset($vtags[tagBase($tag)]))
+	    if (isset($ranktags[tagBase($tag)]))
 		$badtags[] = $tag;
 	    else
 		$nexttags[] = $tag;
