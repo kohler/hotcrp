@@ -391,7 +391,7 @@ function setTags($pids, $tagtext, $mode, $chair) {
 
 	// count votes
 	$vcount = array();
-	$q = "select paperId, substring(tag from position('~' in tag) + 1) as tagBase, sum(tagIndex) from PaperTag where paperId in (" . join(",", $xpids) . ") and (";
+	$q = "select paperId, substring(tag from position('~' in tag) + 1) as tagBase, sum(tagIndex) from PaperTag where paperId in (" . join(",", $xpids) . ") and (false or ";
 	foreach ($myvtags as $base) {
 	    $q .= "tag like '%~" . sqlq_for_like($base) . "' or ";
 	    foreach ($xpids as $p)
