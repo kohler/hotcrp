@@ -3,6 +3,7 @@
 // HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+$Error = array();
 require_once("Code/header.inc");
 require_once("Code/papertable.inc");
 
@@ -23,7 +24,6 @@ $rf = reviewForm();
 $useRequest = isset($_REQUEST["afterLogin"]);
 $forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
 $linkExtra = ($forceShow ? "&amp;forceShow=1" : "");
-$Error = array();
 if (defval($_REQUEST, "mode") == "edit")
     $_REQUEST["mode"] = "re";
 else if (defval($_REQUEST, "mode") == "view")
@@ -52,7 +52,7 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $linkExtra, $prow, $paperTable, $editRrowLogname;
+    global $Conf, $Me, $linkExtra, $prow, $paperTable, $editRrowLogname, $Error;
     if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
     $paperTable = new PaperTable($prow);
@@ -62,6 +62,8 @@ function loadRows() {
 	$editRrowLogname = "Review " . $paperTable->editrrow->reviewId;
     else if ($paperTable->editrrow)
 	$editRrowLogname = "Review " . $paperTable->editrrow->reviewId . " by " . $paperTable->editrrow->email;
+    if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
+	$Error = array();
 }
 
 loadRows();

@@ -3,6 +3,7 @@
 // HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+$Error = array();
 require_once("Code/header.inc");
 require_once("Code/papertable.inc");
 $Me->goIfInvalid();
@@ -10,7 +11,6 @@ $rf = reviewForm();
 $useRequest = false;
 $forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
 $linkExtra = ($forceShow ? "&amp;forceShow=1" : "");
-$Error = array();
 
 
 // header
@@ -35,7 +35,7 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $prow, $paperTable, $crow, $savedCommentId, $savedCrow;
+    global $Conf, $Me, $prow, $paperTable, $crow, $savedCommentId, $savedCrow, $Error;
     if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
     $paperTable = new PaperTable($prow);
@@ -53,6 +53,8 @@ function loadRows() {
     }
     if ($cid != "xxx" && !$crow && $cid != "response" && $cid != "new")
 	errorMsgExit("That comment does not exist.");
+    if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
+	$Error = array();
 }
 
 loadRows();

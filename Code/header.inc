@@ -322,6 +322,12 @@ function setCapabilities() {
 }
 setCapabilities();
 
+if (isset($_SESSION["redirect_error"])) {
+    global $Error;
+    $Error = $_SESSION["redirect_error"];
+    unset($_SESSION["redirect_error"]);
+}
+
 // Mark as already expired to discourage caching, but allow the browser
 // to cache for history buttons
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");

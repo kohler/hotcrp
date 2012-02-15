@@ -3,13 +3,13 @@
 // HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+$Error = array();
 require_once("Code/header.inc");
 require_once("Code/papertable.inc");
 $Me->goIfInvalid();
 $useRequest = false;
 $forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
 $linkExtra = ($forceShow ? "&amp;forceShow=1" : "");
-$Error = array();
 if (isset($_REQUEST["emailNote"])
     && $_REQUEST["emailNote"] == "Optional explanation")
     unset($_REQUEST["emailNote"]);
@@ -26,7 +26,7 @@ if (!isset($_REQUEST["p"]) && !isset($_REQUEST["paperId"])
 // header
 function confHeader() {
     global $paperId, $newPaper, $prow, $paperTable, $Conf, $linkExtra,
-	$CurrentList;
+	$CurrentList, $Error;
     if ($paperTable)
 	$mode = $paperTable->mode;
     else
@@ -66,9 +66,11 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 
 // grab paper row
 function loadRows() {
-    global $prow;
+    global $prow, $Error;
     if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
+    if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
+	$Error = array();
 }
 $prow = null;
 if (!$newPaper) {

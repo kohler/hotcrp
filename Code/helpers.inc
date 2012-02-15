@@ -500,7 +500,7 @@ function requestAbsoluteURI($trim) {
 }
 
 function redirectSelf($extra = array()) {
-    global $Conf;
+    global $Conf, $Error;
     if (!($absuri = requestAbsoluteURI(true)))
 	return false;
     $want = preg_replace('/\A.*?(?:\?|\z)/', "", selfHref($extra, null, false));
