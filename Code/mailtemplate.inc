@@ -872,7 +872,7 @@ class Mailer {
 	$text = "";
 	$ifstack = array();
 
-	while (preg_match('/\A(.*?)%(IF|ELSE?IF|ELSE|ENDIF)((?:\(\w+\))?)%(.*)\z/s', $rest, $m)) {
+	while (preg_match('/\A(.*?)%(IF|ELSE?IF|ELSE|ENDIF)((?:\(\w+(?:\(\w+\))*\))?)%(.*)\z/s', $rest, $m)) {
 	    $text .= $m[1];
 	    $rest = $m[4];
 
