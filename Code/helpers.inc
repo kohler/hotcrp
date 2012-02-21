@@ -453,14 +453,9 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
 	    $x = substr($x, 0, $pos) . substr($x, $pos + 4);
     }
     $sep = "?";
-    if (isset($_REQUEST["paperId"]) && !isset($_REQUEST["p"]))
-	$_REQUEST["p"] = $_REQUEST["paperId"];
-    if (isset($_REQUEST["pap"]) && !isset($_REQUEST["p"]))
-	$_REQUEST["p"] = $_REQUEST["pap"];
-    if (isset($_REQUEST["reviewId"]) && !isset($_REQUEST["r"]))
-	$_REQUEST["r"] = $_REQUEST["reviewId"];
-    if (isset($_REQUEST["commentId"]) && !isset($_REQUEST["c"]))
-	$_REQUEST["c"] = $_REQUEST["commentId"];
+    foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
+	if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
+	    $_REQUEST[$v] = $_REQUEST[$k];
     foreach (array("p", "r", "c", "m", "mode", "forceShow", "validator", "ls", "list", "t", "q", "qa", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq", "noedit", "contact", "reviewer") as $what)
 	if (isset($_REQUEST[$what]) && !isset($extra[$what])) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);

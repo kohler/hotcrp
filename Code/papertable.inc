@@ -1922,9 +1922,7 @@ class PaperTable {
 	}
     }
 
-    static function paperRow(&$whyNot) {
-	global $Conf, $Me;
-
+    static function cleanRequest() {
 	if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["p"]))
 	    $_REQUEST["paperId"] = $_REQUEST["p"];
 	if (!isset($_REQUEST["reviewId"]) && isset($_REQUEST["r"]))
@@ -1937,12 +1935,17 @@ class PaperTable {
 	else if (!isset($_REQUEST["reviewId"]) && isset($_SERVER["PATH_INFO"])
 		 && preg_match(',\A/\d+[A-Z]+\z,i', $_SERVER["PATH_INFO"]))
 	    $_REQUEST["reviewId"] = substr($_SERVER["PATH_INFO"], 1);
-
-	if (isset($_REQUEST["paperId"]) && $_REQUEST["paperId"] == "new")
-	    return null;
 	if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["reviewId"])
 	    && preg_match('/^(\d+)[A-Z]+$/', $_REQUEST["reviewId"], $m))
 	    $_REQUEST["paperId"] = $m[1];
+    }
+
+    static function paperRow(&$whyNot) {
+	global $Conf, $Me;
+
+	self::cleanRequest();
+	if (isset($_REQUEST["paperId"]) && $_REQUEST["paperId"] == "new")
+	    return null;
 
 	$sel = array();
 	if (isset($_REQUEST["paperId"])

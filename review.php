@@ -12,11 +12,16 @@ require_once("Code/papertable.inc");
 if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
     && (isset($_REQUEST["accept"]) || isset($_REQUEST["refuse"])
 	|| isset($_REQUEST["decline"]))) {
+    PaperTable::cleanRequest();
     $after = "";
-    foreach (array("paperId", "reviewId", "commentId", "p", "r", "c", "accept", "refuse", "decline") as $opt)
+    foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
+	if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
+	    $_REQUEST[$v] = $_REQUEST[$k];
+    foreach (array("p", "r", "c", "accept", "refuse", "decline") as $opt)
 	if (isset($_REQUEST[$opt]))
 	    $after .= ($after === "" ? "" : "&") . $opt . "=" . urlencode($_REQUEST[$opt]);
-    $Me->go(hoturl("index", "email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode(hoturl("review", $after))));
+    $url = substr(hoturl("review", $after), strlen($ConfSiteBase));
+    $Me->go(hoturl("index", "email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode($url)));
 }
 
 $Me->goIfInvalid();
