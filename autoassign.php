@@ -205,22 +205,20 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     global $Error, $Conf;
 
     $atype = $_REQUEST["a"];
-    if ($atype != "rev" && $atype != "revadd" && $atype != "lead"
-	&& $atype != "shepherd" && $atype != "prefconflict"
-	&& $atype != "clear") {
+    $atype_review = ($atype == "rev" || $atype == "revadd" || $atype == "revpc");
+    if (!$atype_review && $atype != "lead" && $atype != "shepherd"
+	&& $atype != "prefconflict" && $atype != "clear") {
 	$Error["ass"] = true;
 	return $Conf->errorMsg("Malformed request!");
     }
 
-    if ($atype == "rev")
-	$reviewtype = defval($_REQUEST, "revtype", "");
-    else if ($atype == "revadd")
-	$reviewtype = defval($_REQUEST, "revaddtype", "");
-    if (($atype == "rev" || $atype == "revadd")
-	&& ($reviewtype != REVIEW_PRIMARY && $reviewtype != REVIEW_SECONDARY
-	    && $reviewtype != REVIEW_PC)) {
-	$Error["ass"] = true;
-	return $Conf->errorMsg("Malformed request!");
+    if ($atype_review) {
+	$reviewtype = defval($_REQUEST, $atype . "type", "");
+	if ($reviewtype != REVIEW_PRIMARY && $reviewtype != REVIEW_SECONDARY
+	    && $reviewtype != REVIEW_PC) {
+	    $Error["ass"] = true;
+	    return $Conf->errorMsg("Malformed request!");
+	}
     }
     if ($atype == "clear")
 	$reviewtype = defval($_REQUEST, "cleartype", "");
@@ -235,8 +233,7 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     $_REQUEST["rev_roundtag"] = defval($_REQUEST, "rev_roundtag", "");
     if ($_REQUEST["rev_roundtag"] == "(None)")
 	$_REQUEST["rev_roundtag"] = "";
-    if (($atype == "rev" || $atype == "revadd")
-	&& $_REQUEST["rev_roundtag"] != ""
+    if ($atype_review && $_REQUEST["rev_roundtag"] != ""
 	&& !preg_match('/^[a-zA-Z0-9]+$/', $_REQUEST["rev_roundtag"])) {
 	$Error["rev_roundtag"] = true;
 	return $Conf->errorMsg("The review round must contain only letters and numbers.");
@@ -249,6 +246,9 @@ function checkRequest(&$atype, &$reviewtype, $save) {
 	return $Conf->errorMsg("Enter the number of reviews you want to assign.");
     } else if ($atype == "revadd" && rcvtint($_REQUEST["revaddct"], -1) <= 0) {
 	$Error["revadd"] = true;
+	return $Conf->errorMsg("You must assign at least one review.");
+    } else if ($atype == "revpc" && rcvtint($_REQUEST["revpcct"], -1) <= 0) {
+	$Error["revpc"] = true;
 	return $Conf->errorMsg("You must assign at least one review.");
     }
 
@@ -337,7 +337,7 @@ function doAssign() {
 
     // prepare to balance load
     $load = array_fill_keys(array_keys($pcm), 0);
-    if (defval($_REQUEST, "balance", "new") != "new") {
+    if (defval($_REQUEST, "balance", "new") != "new" && $atype != "revpc") {
 	if ($atype == "rev" || $atype == "revadd")
 	    $result = $Conf->qe("select PCMember.contactId, count(reviewId)
 		from PCMember left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.reviewType=$reviewtype)
@@ -382,7 +382,7 @@ function doAssign() {
 	left join PaperReviewRefused PRR on (Paper.paperId=PRR.paperId and PCMember.contactId=PRR.contactId)
 	group by Paper.paperId, PCMember.contactId");
 
-    if ($atype == "rev" || $atype == "revadd") {
+    if ($atype == "rev" || $atype == "revadd" || $atype == "revpc") {
 	while (($row = edb_orow($result))) {
 	    $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
 	    if ($row->conflictType > 0 || $row->reviewType > 0
@@ -428,9 +428,13 @@ function doAssign() {
 
     // get papers
     $papers = array();
+    $loadlimit = null;
     if ($atype == "revadd")
 	$papers = array_fill_keys($papersel, rcvtint($_REQUEST["revaddct"]));
-    else if ($atype == "rev") {
+    else if ($atype == "revpc") {
+	$loadlimit = rcvtint($_REQUEST["revaddct"]);
+	$papers = array_fill_keys($papersel, ceil((count($pcm) * $loadlimit) / count($papersel)));
+    } else if ($atype == "rev") {
 	$papers = array_fill_keys($papersel, rcvtint($_REQUEST["revct"]));
 	$result = $Conf->qe("select paperId, count(reviewId) from PaperReview where reviewType=$reviewtype group by paperId", "while counting reviews");
 	while (($row = edb_row($result)))
@@ -481,7 +485,7 @@ function doAssign() {
 	}
 
 	// if have exhausted preferences, remove pc member
-	if ($pid === null)
+	if ($pid === null || $load[$pc] === $loadlimit)
 	    unset($pcm[$pc]);
     }
 
@@ -491,7 +495,7 @@ function doAssign() {
     foreach ($papers as $pid => $n)
 	if ($n > 0)
 	    $badpids[] = $pid;
-    if ($badpids) {
+    if ($badpids && $atype != "revpc") {
 	$b = array();
 	$pidx = join("+", $badpids);
 	foreach ($badpids as $pid)
@@ -519,7 +523,7 @@ function saveAssign() {
     } else
 	unset($Conf->settings["rev_roundtag"]);
 
-    $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, PaperReviewRefused write, Paper write, PaperConflict write, ActionLog write" . $Conf->tagRoundLocker(($atype == "rev" || $atype == "revadd") && ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY || $reviewtype == REVIEW_PC)));
+    $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, PaperReviewRefused write, Paper write, PaperConflict write, ActionLog write" . $Conf->tagRoundLocker(($atype == "rev" || $atype == "revadd" || $atype == "revpc") && ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY || $reviewtype == REVIEW_PC)));
 
     // parse assignment
     $pcm = pcMembers();
@@ -536,7 +540,7 @@ function saveAssign() {
 
     // magnanimous
     $didLead = false;
-    if ($atype == "rev" || $atype == "revadd") {
+    if ($atype == "rev" || $atype == "revadd" || $atype == "revpc") {
 	$result = $Conf->qe("select PCMember.contactId, paperId,
 		reviewId, reviewType, reviewModified
 		from PCMember join PaperReview using (contactId)",
@@ -671,7 +675,7 @@ if (isset($assignments) && count($assignments) > 0) {
     $extraclass = "";
 
     $atype = $_REQUEST["a"];
-    if ($atype == "clear" || $atype == "rev" || $atype == "revadd")
+    if ($atype == "clear" || $atype == "rev" || $atype == "revadd" || $atype == "revpc")
 	$reviewtype = $_REQUEST["${atype}type"];
     else
 	$reviewtype = 0;
@@ -827,17 +831,23 @@ echo "</div>\n";
 
 // action
 echo divClass("ass"), "<h3>Action</h3>", divClass("rev");
-doRadio('a', 'rev', 'Ensure each paper has <i>at least</i>');
+doRadio("a", "rev", "Ensure each paper has <i>at least</i>");
 echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ";
-doSelect('revtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
+doSelect("revtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
 echo "&nbsp; review(s)</div>\n";
 
 echo divClass("revadd");
-doRadio('a', 'revadd', 'Assign');
+doRadio("a", "revadd", "Assign");
 echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ",
     "<i>additional</i>&nbsp; ";
-doSelect('revaddtype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
+doSelect("revaddtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
 echo "&nbsp; review(s) per paper</div>\n";
+
+echo divClass("revpc");
+doRadio("a", "revpc", "Assign each PC member");
+echo "&nbsp; <input type='text' class='textlite' name='revpcct' value=\"", htmlspecialchars(defval($_REQUEST, "revpcct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; additional&nbsp; ";
+doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
+echo "&nbsp; review(s) from this paper selection</div>\n";
 
 // Review round
 echo divClass("rev_roundtag");
