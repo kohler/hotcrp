@@ -432,7 +432,7 @@ function doAssign() {
     if ($atype == "revadd")
 	$papers = array_fill_keys($papersel, rcvtint($_REQUEST["revaddct"]));
     else if ($atype == "revpc") {
-	$loadlimit = rcvtint($_REQUEST["revaddct"]);
+	$loadlimit = rcvtint($_REQUEST["revpcct"]);
 	$papers = array_fill_keys($papersel, ceil((count($pcm) * $loadlimit) / count($papersel)));
     } else if ($atype == "rev") {
 	$papers = array_fill_keys($papersel, rcvtint($_REQUEST["revct"]));
