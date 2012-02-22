@@ -767,7 +767,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	"<form method='post' action='", hoturl("autoassign"), "' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n",
 	"<input type='submit' class='b' name='saveassign' value='Save assignment' />\n",
 	"&nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />\n";
-    foreach (array("t", "q", "a", "revaddtype", "revtype", "cleartype", "revct", "revaddct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
+    foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
 	if (isset($_REQUEST[$t]))
 	    echo "<input type='hidden' name='$t' value=\"", htmlspecialchars($_REQUEST[$t]), "\" />\n";
     echo "<input type='hidden' name='pcs' value='", join(" ", array_keys($pcsel)), "' />\n";
