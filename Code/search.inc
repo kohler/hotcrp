@@ -1467,6 +1467,7 @@ class PaperSearch {
     }
 
     function _queryCleanNot($qe) {
+	global $Conf;
 	$qv = $this->_queryClean($qe->value, true);
 	if ($qv->type == "not")
 	    return $qv->value;
