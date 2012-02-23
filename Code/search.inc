@@ -1474,17 +1474,49 @@ class PaperSearch {
 	else if ($qv->type == "pn")
 	    return new SearchTerm("pn", 0, array($qv->value[1], $qv->value[0]));
 	else if ($qv->type == "revadj") {
-	    $x = array();
-	    if (isset($qv->value["round"]))
-		$x["round"] = array_diff(array_keys($Conf->settings["rounds"]), $qv->value["round"]);
-	    if (isset($qv->value["rate"]))
-		$x["rate"] = "not (" . $qv->value["rate"] . ")";
-	    return new SearchTerm("revadj", 0, $x);
+	    $qv->value["revadjnegate"] = !defval($qv->value, "revadjnegate", false);
+	    return $qv;
 	} else {
 	    $float = $qe->get("float");
 	    $qv = SearchTerm::extract_float($float, $qv);
 	    return SearchTerm::combine_float($float, "not", $qv);
 	}
+    }
+
+    static function _reviewAdjustmentNegate($ra) {
+	if (isset($ra->value["round"]))
+	    $ra->value["round"] = array_diff(array_keys($Conf->settings["rounds"]), $ra->value["round"]);
+	if (isset($ra->value["rate"]))
+	    $ra->value["rate"] = "not (" . $ra->value["rate"] . ")";
+	$ra->value["revadjnegate"] = false;
+    }
+
+    static function _reviewAdjustmentMerge($revadj, $qv, $op) {
+	// XXX this is probably not right in fully general cases
+	if (!$revadj)
+	    return $qv;
+	list($neg1, $neg2) = array(defval($revadj->value, "revadjnegate"), defval($qv->value, "revadjnegate"));
+	if ($neg1 !== $neg2 || ($neg1 && $op == "or")) {
+	    if ($neg1)
+		self::_reviewAdjustmentNegate($revadj);
+	    if ($neg2)
+		self::_reviewAdjustmentNegate($qv);
+	    $neg1 = $neg2 = false;
+	}
+	if ($op == "or" || $neg1) {
+	    if (isset($qv->value["round"]))
+		$revadj->value["round"] = array_unique(array_merge(defval($revadj->value, "round", array()), $qv->value["round"]));
+	    if (isset($qv->value["rate"]))
+		$revadj->value["rate"] = "(" . defval($revadj->value, "rate", "false") . ") or (" . $qv->value["rate"] . ")";
+	} else {
+	    if (isset($revadj->value["round"]) && isset($qv->value["round"]))
+		$revadj->value["round"] = array_intersect($revadj->value["round"], $qv->value["round"]);
+	    else if (isset($qv->value["round"]))
+		$revadj->value["round"] = $qv->value["round"];
+	    if (isset($qv->value["rate"]))
+		$revadj->value["rate"] = "(" . defval($revadj->value, "rate", "true") . ") and (" . $qv->value["rate"] . ")";
+	}
+	return $revadj;
     }
 
     function _queryCleanOr($qe) {
@@ -1494,16 +1526,9 @@ class PaperSearch {
 
 	foreach ($qe->value as $qv) {
 	    $qv = SearchTerm::extract_float($float, $this->_queryClean($qv, true));
-	    if ($qv && $qv->type == "revadj") {
-		if (!$revadj)
-		    $revadj = $qv;
-		else {
-		    if (isset($qv->value["round"]))
-			$revadj->value["round"] = array_unique(array_merge(defval($revadj->value, "round", array()), $qv->value["round"]));
-		    if (isset($qv->value["rate"]))
-			$revadj->value["rate"] = "(" . defval($revadj->value, "rate", "false") . ") or (" . $qv->value["rate"] . ")";
-		}
-	    } else if ($qv)
+	    if ($qv && $qv->type == "revadj")
+		$revadj = self::_reviewAdjustmentMerge($revadj, $qv, "or");
+	    else if ($qv)
 		$newvalues[] = $qv;
 	}
 
@@ -1525,18 +1550,9 @@ class PaperSearch {
 	    if ($qv && $qv->type == "pn") {
 		$pn[0] = array_merge($pn[0], $qv->value[0]);
 		$pn[1] = array_merge($pn[1], $qv->value[1]);
-	    } else if ($qv && $qv->type == "revadj") {
-		if (!$revadj)
-		    $revadj = $qv;
-		else {
-		    if (isset($revadj->value["round"]) && isset($qv->value["round"]))
-			$revadj->value["round"] = array_intersect($revadj->value["round"], $qv->value["round"]);
-		    else if (isset($qv->value["round"]))
-			$revadj->value["round"] = $qv->value["round"];
-		    if (isset($qv->value["rate"]))
-			$revadj->value["rate"] = "(" . defval($revadj->value, "rate", "true") . ") and (" . $qv->value["rate"] . ")";
-		}
-	    } else if ($qv)
+	    } else if ($qv && $qv->type == "revadj")
+		$revadj = self::_reviewAdjustmentMerge($revadj, $qv, "and");
+	    else if ($qv)
 		$newvalues[] = $qv;
 	}
 
@@ -1574,7 +1590,12 @@ class PaperSearch {
 	    $value = new SearchReviewValue(">0", null, "requestedBy=" . $this->contactId . " and reviewType=" . REVIEW_EXTERNAL);
 	else
 	    $value = new SearchReviewValue(">0");
-	return new SearchTerm("re", 0, $value, $roundterm->value);
+	$term = new SearchTerm("re", 0, $value, $roundterm->value);
+	if (defval($roundterm->value, "revadjnegate")) {
+	    $term->set("revadjnegate", false);
+	    return SearchTerm::negate($term);
+	} else
+	    return $term;
     }
 
     function _queryAdjustReviews($qe, $revadj) {
@@ -1818,14 +1839,15 @@ class PaperSearch {
 		$where[] = "reviewSubmitted>0";
 	    else if ($t->flags & self::F_INCOMPLETE)
 		$where[] = "reviewNeedsSubmit>0";
+	    $rrnegate = $t->get("revadjnegate");
 	    if (($x = $t->get("round")) !== null) {
 		if (count($x) == 0)
-		    $where[] = "false";
+		    $where[] = $rrnegate ? "true" : "false";
 		else
-		    $where[] = "reviewRound in (" . join(",", $x) . ")";
+		    $where[] = "reviewRound " . ($rrnegate ? "not " : "") . "in (" . join(",", $x) . ")";
 	    }
 	    if (($x = $t->get("rate")) !== null)
-		$this->_clauseTermSetRating($reviewtable, $where, $x);
+		$this->_clauseTermSetRating($reviewtable, $where, $rrnegate ? "(not $x)" : $x);
 	    if ($extrawhere)
 		$where[] = $extrawhere;
 	    $wheretext = "";
