@@ -1,3 +1,5 @@
+- Ugh, don't renumber @comments when they are deleted.
+
 - Decline review should actually HAPPEN when you click teh link, and
   then be undoable.
 
