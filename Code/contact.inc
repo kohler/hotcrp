@@ -397,8 +397,9 @@ class Contact {
 	$c->email = defval($o, "email", "");
 	$c->preferredEmail = defval($o, "preferredEmail", "");
 	$c->password = defval($o, "password", "");
-	$c->isAuthor = defval($o, "isAuthor", false) != 0;
-	$c->isReviewer = defval($o, "isReviewer", false) != 0;
+	$c->isAuthor = defval($o, "isAuthor", false) != false;
+	$c->isReviewer = defval($o, "isReviewer", false) != false;
+	$c->reviewsOutstanding = defval($o, "reviewsOutstanding", false) != false;
 	$c->roles = defval($o, "roles", 0);
 	if (defval($o, "isPC", false))
 	    $c->roles |= self::ROLE_PC;
