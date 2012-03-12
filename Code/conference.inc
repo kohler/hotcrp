@@ -1425,12 +1425,20 @@ class Conference {
 	    $q .= "		left join ReviewRating as MyRating on (MyRating.reviewId=PaperReview.reviewId and MyRating.contactId=" . $selector["myRating"] . ")\n";
 
 	$where = array();
+	$order = array("paperId");
 	if (isset($reviewId))
 	    $where[] = "PaperReview.reviewId=$reviewId";
 	if (isset($paperId))
 	    $where[] = "PaperReview.paperId=$paperId";
-	if (isset($selector['contactId']))
-	    $where[] = "PaperReview.contactId=" . cvtint($selector['contactId']);
+	$cwhere = array();
+	if (isset($selector["contactId"]))
+	    $cwhere[] = "PaperReview.contactId=" . cvtint($selector["contactId"]);
+	if (isset($selector["rev_tokens"]) && count($selector["rev_tokens"]))
+	    $cwhere[] = "PaperReview.reviewToken in (" . join(",", $selector["rev_tokens"]) . ")";
+	if (count($cwhere))
+	    $where[] = "(" . join(" or ", $cwhere) . ")";
+	if (count($cwhere) > 1)
+	    $order[] = "(PaperReview.contactId=" . cvtint($selector["contactId"]) . ") desc";
 	if (isset($selector['reviewOrdinal']))
 	    $where[] = "PaperReview.reviewSubmitted>0 and reviewOrdinal=" . cvtint($selector['reviewOrdinal']);
 	else if (isset($selector['submitted']))
@@ -1440,7 +1448,8 @@ class Conference {
 	    return null;
 	}
 
-	$q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId order by paperId, reviewOrdinal, reviewType desc, reviewId";
+	$q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId
+		order by " . join(", ", $order) . ", reviewOrdinal, reviewType desc, reviewId";
 
 	$result = $this->q($q);
 	if (!$result) {
@@ -1452,9 +1461,9 @@ class Conference {
 	while (($row = edb_orow($result)))
 	    $x[] = $row;
 
-	if (isset($selector['array']))
+	if (isset($selector["array"]))
 	    return $x;
-	else if (count($x) == 1)
+	else if (count($x) == 1 || defval($selector, "first"))
 	    return $x[0];
 	if (count($x) == 0)
 	    $whyNot['noReview'] = 1;

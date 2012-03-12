@@ -28,7 +28,9 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     while (($req = $rf->parseTextForm($tf))) {
 	if (($prow = $Conf->paperRow($req['paperId'], $Me->contactId, $whyNot))
 	    && $Me->canSubmitReview($prow, null, $whyNot)) {
-	    $rrow = $Conf->reviewRow(array('paperId' => $prow->paperId, 'contactId' => $Me->contactId));
+	    $rrow = $Conf->reviewRow(array("paperId" => $prow->paperId, "contactId" => $Me->contactId,
+					   "rev_tokens" => defval($_SESSION, "rev_tokens", array()),
+					   "first" => true));
 	    if ($rf->checkRequestFields($req, $rrow, $tf))
 		$rf->saveRequest($req, $rrow, $prow, $tf);
 	} else
