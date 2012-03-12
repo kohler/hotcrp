@@ -89,18 +89,18 @@ $Opt["emailSubmissions"] = 0;
 
 // OPTIONAL SETTINGS (the defaults are reasonable)
 //
-//   dsn             Database configuration information in the format
-//                   "mysql://DBUSER:DBPASSWORD@DBHOST/DBNAME".
-//                   The default is derived from $Opt["dbName"], assuming
-//                   that DBUSER, DBPASSWORD, and DBNAME are all the same
-//                   and that DBHOST is "localhost".
-//                   Example: "mysql://HotNetsV:HotNetsV@localhost/HotNetsV".
 //   multiconference Set to true to run multiple conferences out of this
 //                   installation.  See README.
 //   filestore       Set to true to serve papers and other downloads from a
 //                   cache on the local filesystem. By default this cache is
 //                   created in the "filestore" directory. You can also set
 //                   $Opt["filestore"] to a directory name.
+//   dsn             Database configuration information in the format
+//                   "mysql://DBUSER:DBPASSWORD@DBHOST/DBNAME".
+//                   The default is derived from $Opt["dbName"], assuming
+//                   that DBUSER, DBPASSWORD, and DBNAME are all the same
+//                   and that DBHOST is "localhost".
+//                   Example: "mysql://HotNetsV:HotNetsV@localhost/HotNetsV".
 //   sessionName     Internal name used to distinguish conference sessions
 //                   running on the same server.  NO SPACES ALLOWED.  Defaults
 //                   to $Opt["dbName"].
@@ -139,5 +139,9 @@ $Opt["emailSubmissions"] = 0;
 //                   "zip".
 //   disableCSV      Set to true if all downloaded tabular text files should be
 //                   tab-separated rather than CSV.
+//   smartScoreCompare Set to true if a search like "ovemer:>B" should search
+//                   for scores better than B (i.e., A), rather than scores
+//                   alphabetically after B (i.e., C or D).
 
 $Opt["disablePS"] = true;
+$Opt["smartScoreCompare"] = true;

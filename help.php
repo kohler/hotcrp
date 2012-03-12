@@ -194,7 +194,7 @@ function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
 }
 
 function searchQuickref() {
-    global $rowidx, $Conf, $Me;
+    global $rowidx, $Conf, $Opt, $Me;
 
     // how to report author searches?
     if ($Conf->subBlindNever())
@@ -309,10 +309,19 @@ function searchQuickref() {
 	    _searchQuickrefRow("", "$r->abbrevName:$r->typScore0..$r->typScore", "completed reviews’ $r->shortHtml scores are in the $r->typScore0&ndash;$r->typScore range<br /><small>(all scores between $r->typScore0 and $r->typScore)</small>");
 	    _searchQuickrefRow("", "$r->abbrevName:$r->typScoreRange", "completed reviews’ $r->shortHtml scores <em>fill</em> the $r->typScore0&ndash;$r->typScore range<br /><small>(all scores between $r->typScore0 and $r->typScore, with at least one $r->typScore0 and at least one $r->typScore)</small>");
 	}
-	_searchQuickrefRow("", "$r->abbrevName:>$r->typScore", "at least one completed review has $r->shortHtml score greater than $r->typScore");
-	_searchQuickrefRow("", "$r->abbrevName:2<=$r->typScore", "at least two completed reviews have $r->shortHtml score less than or equal to $r->typScore");
-	_searchQuickrefRow("", "$r->abbrevName:pc>$r->typScore", "at least one completed PC review has $r->shortHtml score greater than $r->typScore");
-	_searchQuickrefRow("", "$r->abbrevName:pc:2>$r->typScore", "at least two completed PC reviews have $r->shortHtml score greater than $r->typScore");
+	if (ctype_digit($r->typScore))
+	    list($greater, $less, $hint) = array("greater", "less", "");
+	else {
+	    $hint = "<br /><small>(better scores are closer to A than Z)</small>";
+	    if (defval($Opt, "smartScoreCompare"))
+		list($greater, $less) = array("better", "worse");
+	    else
+		list($greater, $less) = array("worse", "better");
+	}
+	_searchQuickrefRow("", "$r->abbrevName:>$r->typScore", "at least one completed review has $r->shortHtml score $greater than $r->typScore" . $hint);
+	_searchQuickrefRow("", "$r->abbrevName:2<=$r->typScore", "at least two completed reviews have $r->shortHtml score $less than or equal to $r->typScore");
+	_searchQuickrefRow("", "$r->abbrevName:pc>$r->typScore", "at least one completed PC review has $r->shortHtml score $greater than $r->typScore");
+	_searchQuickrefRow("", "$r->abbrevName:pc:2>$r->typScore", "at least two completed PC reviews have $r->shortHtml score $greater than $r->typScore");
 	_searchQuickrefRow("", "$r->abbrevName:sylvia=$r->typScore", "“sylvia” (reviewer name/email) gave $r->shortHtml score $r->typScore");
 	$t = "";
     }

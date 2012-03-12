@@ -699,7 +699,7 @@ class PaperSearch {
     }
 
     function _searchReviews($word, $rf, $field, &$qt, $quoted) {
-	global $Conf;
+	global $Conf, $Opt;
 	$countexpr = ">0";
 	$contacts = null;
 	$contactword = "";
@@ -725,11 +725,13 @@ class PaperSearch {
 		    $value = "$field=-1"; // XXX
 		else {
 		    if ($letters) {
-			// switch meaning of inequality
-			if ($m[2][0] == "<")
-			    $m[2] = ">" . substr($m[2], 1);
-			else if ($m[2][0] == ">")
-			    $m[2] = "<" . substr($m[2], 1);
+			if (!defval($Opt, "smartScoreCompare")) {
+			    // switch meaning of inequality
+			    if ($m[2][0] == "<")
+				$m[2] = ">" . substr($m[2], 1);
+			    else if ($m[2][0] == ">")
+				$m[2] = "<" . substr($m[2], 1);
+			}
 			$m[3] = $rf->reviewFields[$field] - ord(strtoupper($m[3]));
 		    }
 		    if (($m[3] < 1 && ($m[2][0] == "<" || $m[2][0] == "="))
