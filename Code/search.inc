@@ -724,6 +724,7 @@ class PaperSearch {
 		if ($letters != (ctype_digit($m[3]) == false))
 		    $value = "$field=-1"; // XXX
 		else {
+		    $score = $m[3];
 		    if ($letters) {
 			if (!defval($Opt, "smartScoreCompare")) {
 			    // switch meaning of inequality
@@ -732,14 +733,22 @@ class PaperSearch {
 			    else if ($m[2][0] == ">")
 				$m[2] = "<" . substr($m[2], 1);
 			}
-			$m[3] = $rf->reviewFields[$field] - ord(strtoupper($m[3]));
+			$score = strtoupper($score);
+			$m[3] = $rf->reviewFields[$field] - ord($score);
 		    }
-		    if (($m[3] < 1 && ($m[2][0] == "<" || $m[2][0] == "="))
+		    if (($m[3] < 1 && ($m[2][0] == "<" || $m[2] == "="))
 			|| ($m[3] == 1 && $m[2] == "<")
 			|| ($m[3] == count($rf->options[$field]) && $m[2] == ">")
-			|| ($m[3] > count($rf->options[$field]) && ($m[2][0] == ">" || $m[2][0] == "=")))
+			|| ($m[3] > count($rf->options[$field]) && ($m[2][0] == ">" || $m[2] == "="))) {
+			if ($letters)
+			    $warnings = array("<" => "worse than", ">" => "better than");
+			else
+			    $warnings = array("<" => "less than", ">" => "greater than");
+			$t = new SearchTerm("f");
+			$t->set("contradiction_warning", "No " . htmlspecialchars($rf->shortName[$field]) . " scores are " . ($m[2] == "=" ? "" : $warnings[$m[2][0]] . (strlen($m[2]) == 1 ? " " : " or equal to ")) . $score . ".");
+			$qt[] = $t;
 			return false;
-		    else {
+		    } else {
 			$countexpr = ">=" . $m[1];
 			$value = $field . $m[2] . $m[3];
 		    }
@@ -755,10 +764,14 @@ class PaperSearch {
 		    $this->_searchReviews($contactword . ">=" . $m[1], $rf, $field, $qo, $quoted);
 		if ($this->_searchReviews($contactword . "<" . $m[1], $rf, $field, $qo, $quoted))
 		    $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
+		else
+		    array_pop($qo);
 		if ($this->_searchReviews($contactword . ">" . $m[3], $rf, $field, $qo, $quoted))
 		    $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
+		else
+		    array_pop($qo);
 		$qt[] = new SearchTerm("and", 0, $qo);
-		return;
+		return true;
 	    } else		// XXX
 		$value = "$field=-1";
 	} else {
@@ -1641,10 +1654,10 @@ class PaperSearch {
 	return $qe;
     }
 
-    function _queryExtractInfo($qe, $top) {
+    function _queryExtractInfo($qe, $top, &$contradictions) {
 	if ($qe->type == "and" || $qe->type == "or" || $qe->type == "then") {
 	    foreach ($qe->value as $qv)
-		$this->_queryExtractInfo($qv, $top && $qe->type == "and");
+		$this->_queryExtractInfo($qv, $top && $qe->type == "and", $contradictions);
 	}
 	if (($x = $qe->get("regex"))) {
 	    $this->regex[$x[0]] = defval($this->regex, $x[0], array());
@@ -1665,6 +1678,8 @@ class PaperSearch {
 	    } else
 		$this->reviewerContact = null;
 	}
+	if ($top && ($x = $qe->get("contradiction_warning")))
+	    $contradictions[$x] = true;
     }
 
 
@@ -2357,8 +2372,11 @@ class PaperSearch {
 	$this->viewmap = $qe->get_float("view", array());
 
 	// extract regular expressions and set reviewerContact if the query is
-	// about exactly one reviewer
-	$this->_queryExtractInfo($qe, true);
+	// about exactly one reviewer, and warn about contradictions
+	$contradictions = array();
+	$this->_queryExtractInfo($qe, true, $contradictions);
+	foreach ($contradictions as $contradiction => $garbage)
+	    $this->warn($contradiction);
 
 	// set $this->matchPreg from $this->regex
 	if (!$this->overrideMatchPreg) {
