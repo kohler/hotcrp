@@ -1533,7 +1533,7 @@ function doRevGroup() {
     echo "<div class='g'></div>\n";
     echo "Can PC members see <strong>reviewer names</strong> except for conflicts?<br />\n";
     doRadio("pc_seeblindrev", array(0 => "Yes",
-				    1 => "Only after completing a review for the same paper (also hides comments)"));
+				    1 => "Only after completing a review for the same paper<br /><span class='hint'>This setting also hides reviewer-only comments from PC members who have not completed a review for the paper.</span>"));
 
     echo "<div class='g'></div>";
     echo "Can external reviewers see the other reviews for their assigned papers, once they&rsquo;ve submitted their own?<br />\n";
