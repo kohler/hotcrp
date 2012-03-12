@@ -1389,7 +1389,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['responseNotReady']))
 	$text .= "The authors&rsquo; response for $thisPaper is not yet ready for reviewers to view.  ";
     if (isset($whyNot['reviewsOutstanding']))
-	$text .= "You will get access to the reviews for your submitted papers once you complete <a href=\"" . hoturl("search", "q=&amp;t=r") . "\">your assigned reviews for other papers</a>.  If you can&rsquo;t complete your reviews, please let the conference organizers know via the &ldquo;Refuse review&rdquo; links.  ";
+	$text .= "You will get access to the reviews once you complete <a href=\"" . hoturl("search", "q=&amp;t=r") . "\">your assigned reviews for other papers</a>.  If you can&rsquo;t complete your reviews, please let the conference organizers know via the &ldquo;Refuse review&rdquo; links.  ";
     if (isset($whyNot['reviewNotAssigned']))
 	$text .= "You are not assigned to review $thisPaper.  ";
     if (isset($whyNot['deadline'])) {

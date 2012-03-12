@@ -487,7 +487,7 @@ class Conference {
     }
     function timeReviewPaper($isPC = false, $requested = true, $hard = true,
 			     $assumeOpen = false) {
-	if (!($requested || ($isPC && $this->settings['pcrev_any'] > 0)))
+	if (!($requested || ($isPC && $this->settings["pcrev_any"] > 0)))
 	    return false;
 	$od = ($assumeOpen ? "" : "rev_open");
 	$d = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
@@ -496,8 +496,10 @@ class Conference {
     function timePCReviewPreferences() {
 	return defval($this->settings, "papersub") > 0;
     }
-    function timePCViewAllReviews() {
-	return $this->settingsAfter('pc_seeallrev');
+    function timePCViewAllReviews($myReviewNeedsSubmit = false, $reviewsOutstanding = false) {
+	return ($this->settingsAfter("pc_seeallrev")
+		&& (!$myReviewNeedsSubmit || $this->settings["pc_seeallrev"] != 3)
+		&& (!$reviewsOutstanding || $this->settings["pc_seeallrev"] != 4));
     }
     function timePCViewDecision($conflicted) {
 	$s = $this->setting("seedec");

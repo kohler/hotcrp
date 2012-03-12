@@ -694,7 +694,7 @@ class Contact {
 		|| ($this->privChair && $prow->conflictType == 0)
 		|| ($this->isPC
 		    && $prow->conflictType == 0 && $rrowSubmitted
-		    && $pc_seeallrev > 0
+		    && $pc_seeallrev > 0	// see also timePCViewAllReviews()
 		    && ($pc_seeallrev != 4 || !$this->reviewsOutstanding)
 		    && ($pc_seeallrev != 3 || !defval($prow, "myReviewType")))
 		|| (defval($prow, "myReviewType") > 0
@@ -727,6 +727,8 @@ class Contact {
 	    $whyNot['externalReviewer'] = 1;
 	else if (!$rrowSubmitted)
 	    $whyNot['reviewNotSubmitted'] = 1;
+	else if ($this->isPC && $pc_seeallrev == 4 && $this->reviewsOutstanding)
+	    $whyNot["reviewsOutstanding"] = 1;
 	else if (!$Conf->timeReviewOpen())
 	    $whyNot['deadline'] = "rev_open";
 	else {
