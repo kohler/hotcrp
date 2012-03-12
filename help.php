@@ -120,9 +120,9 @@ conference. Options include:</p>
 <ul class='compact'>
 <li><b>Submitted papers</b> &mdash; all submitted papers.</li>
 <li><b>All papers</b> &mdash; all papers, including withdrawn and other non-submitted papers.</li>
-<li><b>Your submissions</b> &mdash; papers for which you're a contact.</li>
-<li><b>Your reviews</b> &mdash; papers you've been assigned to review.</li>
-<li><b>Your incomplete reviews</b> &mdash; papers you've been assigned to review, but haven’t submitted a review yet.</li>
+<li><b>Your submissions</b> &mdash; papers for which you’re a contact.</li>
+<li><b>Your reviews</b> &mdash; papers you’ve been assigned to review.</li>
+<li><b>Your incomplete reviews</b> &mdash; papers you’ve been assigned to review, but haven’t submitted a review yet.</li>
 </ul>
 
 <p>Search won’t show you information you aren’t supposed to see.  For example,

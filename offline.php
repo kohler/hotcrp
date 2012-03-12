@@ -59,7 +59,7 @@ function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
 	} else if ($titles[$row->paperId] !== ""
 		   && strcmp($row->title, $titles[$row->paperId]) != 0
 		   && strcasecmp($row->title, simplifyWhitespace($titles[$row->paperId])) != 0)
-	    $errors[$linenos[$row->paperId]] = "Warning: Title doesn't match";
+	    $errors[$linenos[$row->paperId]] = "Warning: Title doesn’t match";
 
     if (!$tag)
 	defappend($Error["tags"], "No tag defined");
@@ -175,9 +175,9 @@ if ($Me->amReviewer()) {
 	$Conf->infoMsg("The site is not open for review.");
     else if ($pastDeadline)
 	$Conf->infoMsg("The <a href='" . hoturl("deadlines") . "'>deadline</a> for submitting reviews has passed.");
-    $Conf->infoMsg("Use this page to download a blank review form, or to upload review forms you've already filled out.");
+    $Conf->infoMsg("Use this page to download a blank review form, or to upload review forms you’ve already filled out.");
 } else
-    $Conf->infoMsg("You aren't registered as a reviewer or PC member for this conference, but for your information, you may download the review form anyway.");
+    $Conf->infoMsg("You aren’t registered as a reviewer or PC member for this conference, but for your information, you may download the review form anyway.");
 
 
 echo "<table id='offlineform'>";

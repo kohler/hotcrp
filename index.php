@@ -173,7 +173,7 @@ function doLogin() {
 
     if (!isset($_REQUEST["password"]) || $_REQUEST["password"] == "") {
 	$password_class = " error";
-	return $Conf->errorMsg("Enter your password.  If you've forgotten it, enter your email address and use the &ldquo;I forgot my password, email it to me&rdquo; option.");
+	return $Conf->errorMsg("Enter your password.  If you’ve forgotten it, enter your email address and use the &ldquo;I forgot my password, email it to me&rdquo; option.");
     }
 
     if ($Me->password != $_REQUEST["password"] && !isset($Opt["ldapLogin"])) {
