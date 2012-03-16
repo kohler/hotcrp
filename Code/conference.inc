@@ -798,10 +798,12 @@ class Conference {
 
     function _paper_storage_content($row) {
 	if (isset($row->content))
-	    return true;
+	    return strlen($row->content) > 0;
 	$xresult = $this->q("select paper, compression from PaperStorage where paperStorageId=$row->paperStorageId");
-	if (!$xresult || !($xrow = edb_row($xresult)))
+	if (!$xresult || !($xrow = edb_row($xresult))) {
+	    $row->content = "";
 	    return false;
+	}
 	if ($xrow[1] == 1)
 	    $row->content = gzinflate($xrow[0]);
 	else
@@ -860,9 +862,8 @@ class Conference {
 	    return $row;
 	if (isset($row->sha1))
 	    $this->_paper_storage_filestore($row);
-	if (!isset($row->filename) && !isset($row->content)
-	    && !$this->_paper_storage_content($row))
-	    return null;
+	if (!isset($row->filename) && !isset($row->content))
+	    $this->_paper_storage_content($row);
 	return $row;
     }
 
