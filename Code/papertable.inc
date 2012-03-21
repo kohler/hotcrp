@@ -638,7 +638,7 @@ class PaperTable {
 
 	} else {
 	    echo $this->papt("authorInformation", $auname),
-		"<div class='papv'>", $inauthors,
+		"<div class='papv'>", $inauthors1,
 		$this->authorData($prow->authorTable, "col", $Me);
 	}
 
