@@ -1,6 +1,6 @@
 <?php
 // review.php -- HotCRP paper review display/edit page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 $Error = array();
@@ -82,6 +82,11 @@ else if (isset($_REQUEST["post"]) && isset($_REQUEST["default"])) {
 	$_REQUEST["uploadForm"] = 1;
     else
 	$_REQUEST["update"] = 1;
+} else if (isset($_REQUEST["submit"]))
+    $_REQUEST["update"] = $_REQUEST["ready"] = 1;
+else if (isset($_REQUEST["savedraft"])) {
+    $_REQUEST["update"] = 1;
+    unset($_REQUEST["ready"]);
 }
 
 
@@ -114,30 +119,30 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 
 
 // check review submit requirements
-if (isset($_REQUEST['update']) && $paperTable->editrrow && $paperTable->editrrow->reviewSubmitted)
-    if (isset($_REQUEST["ready"]))
-	/* do nothing */;
-    else if (!$Me->privChair)
-	$_REQUEST["ready"] = 1;
-    else {
-	$while = "while unsubmitting review";
-	$Conf->qe("lock tables PaperReview write", $while);
-	$needsSubmit = 1;
-	if ($paperTable->editrrow->reviewType == REVIEW_SECONDARY) {
-	    $result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$prow->paperId and requestedBy=" . $paperTable->editrrow->contactId . " and reviewType=" . REVIEW_EXTERNAL, $while);
-	    if (($row = edb_row($result)) && $row[0])
-		$needsSubmit = 0;
-	    else if ($row && $row[1])
-		$needsSubmit = -1;
-	}
-	$result = $Conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=$needsSubmit where reviewId=" . $paperTable->editrrow->reviewId, $while);
-	$Conf->qe("unlock tables", $while);
-	if ($result) {
-	    $Conf->log("$editRrowLogname unsubmitted", $Me, $prow->paperId);
-	    $Conf->confirmMsg("Unsubmitted review.");
-	}
-	loadRows();
+if (isset($_REQUEST["unsubmit"]) && $paperTable->editrrow
+    && $paperTable->editrrow->reviewSubmitted && $Me->privChair) {
+    $while = "while unsubmitting review";
+    $Conf->qe("lock tables PaperReview write", $while);
+    $needsSubmit = 1;
+    if ($paperTable->editrrow->reviewType == REVIEW_SECONDARY) {
+	$result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$prow->paperId and requestedBy=" . $paperTable->editrrow->contactId . " and reviewType=" . REVIEW_EXTERNAL, $while);
+	if (($row = edb_row($result)) && $row[0])
+	    $needsSubmit = 0;
+	else if ($row && $row[1])
+	    $needsSubmit = -1;
     }
+    $result = $Conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=$needsSubmit where reviewId=" . $paperTable->editrrow->reviewId, $while);
+    $Conf->qe("unlock tables", $while);
+    if ($result) {
+	$Conf->log("$editRrowLogname unsubmitted", $Me, $prow->paperId);
+	$Conf->confirmMsg("Unsubmitted review.");
+    }
+    redirectSelf();
+    // normally redirectSelf() does not return
+    loadRows();
+} else if (isset($_REQUEST["update"]) && $paperTable->editrrow
+	   && $paperTable->editrrow->reviewSubmitted)
+    $_REQUEST["ready"] = 1;
 
 
 // review rating action
@@ -168,7 +173,7 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow) {
 
 
 // update review action
-if (isset($_REQUEST['update'])) {
+if (isset($_REQUEST["update"])) {
     if (!$Me->canSubmitReview($prow, $paperTable->editrrow, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "review"));
 	$useRequest = true;

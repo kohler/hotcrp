@@ -1,6 +1,6 @@
 <?php
 // papertable.inc -- HotCRP helper class for producing paper tables
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $textAreaRows;
@@ -1089,7 +1089,7 @@ class PaperTable {
 	    echo "<div class='fx'>",
 		tagg_select($type, $opt,
 			    ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
-			    array("onchange" => "Miniajax.submit(\"${type}form\")",
+			    array("onchange" => "Miniajax.submit('${type}form')",
 				  "id" => "fold${type}_d")),
 		" <input class='b fx7' type='submit' value='Save' />",
 		" <span id='${type}formresult'></span>",
@@ -1381,7 +1381,6 @@ class PaperTable {
 	global $Conf, $Me, $linkExtra;
 	$prow = $this->prow;
 
-	echo "<div class='aa'><table class='pt_buttons'>\n";
 	$buttons = array();
 	if (!$prow)
 	    $buttons[] = "<input class='bb' type='submit' name='update' value='Save paper' />";
@@ -1438,17 +1437,7 @@ class PaperTable {
     </div>
   </form></div>");
 	}
-	echo "    <tr>\n";
-	foreach ($buttons as $b) {
-	    $x = (is_array($b) ? $b[0] : $b);
-	    echo "      <td class='ptb_button'>", $x, "</td>\n";
-	}
-	echo "    </tr>\n    <tr>\n";
-	foreach ($buttons as $b) {
-	    $x = (is_array($b) ? $b[1] : "");
-	    echo "      <td class='ptb_explain'>", $x, "</td>\n";
-	}
-	echo "    </tr>\n  </table></div>\n";
+	echo tagg_actions($buttons);
 	if ($Me->privChair) {
 	    $v = defval($_REQUEST, "emailNote", "");
 	    echo "  <div class='g'></div>\n  <table>\n",

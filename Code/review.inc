@@ -1,6 +1,6 @@
 <?php
 // review.inc -- HotCRP helper class for producing review forms and tables
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $scoreHelps;
@@ -1354,7 +1354,7 @@ $blind\n";
 	    if ($ndelegated == 0)
 		echo "As a secondary reviewer, you can <a href=\"", hoturl("assign", "p=$rrow->paperId$linkExtra"), "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete the review yourself.";
 	    else if ($rrow->reviewNeedsSubmit == 0)
-		echo "A delegated external reviewer has submitted their review, but you can still complete your own if you'd like.";
+		echo "A delegated external reviewer has submitted their review, but you can still complete your own if you’d like.";
 	    else
 		echo "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete the review yourself.";
 	    echo "</div>\n";
@@ -1378,10 +1378,21 @@ $blind\n";
       <span class='hint'><strong>Tip:</strong> Use <a href='", hoturl("search"), "'>Search</a> or <a href='", hoturl("offline"), "'>Offline reviewing</a> to download or upload many forms at once.</span></td>
     </tr></table></td><td></td></tr>\n";
 
+	// ready?
+	$ready = ($useRequest ? defval($_REQUEST, "ready") : !($rrow && $rrow->reviewModified && !$rrow->reviewSubmitted));
+	$submitted = $rrow && $rrow->reviewSubmitted;
+
 	// top save changes button
 	echo "  <tr><td></td><td class='revcc'>";
-	if ($Me->timeReview($prow, $rrow) || $Me->privChair)
-	    echo "  <div class='aa' style='margin-top:0'><input class='bb' type='submit' value='Save changes' name='update' /></div>\n";
+	if ($Me->timeReview($prow, $rrow) || $Me->privChair) {
+	    $buttons = array();
+	    if (!$submitted) {
+		$buttons[] = tagg_submit("submit", "Submit review", array("class" => "bb"));
+		$buttons[] = tagg_submit("savedraft", "Save draft");
+	    } else
+		$buttons[] = tagg_submit("submit", "Save changes", array("class" => "bb"));
+	    echo tagg_actions($buttons, array("style" => "margin-top:0"));
+	}
 
 	// blind?
 	if ($Conf->blindReview() == BLIND_OPTIONAL) {
@@ -1398,17 +1409,15 @@ $blind\n";
 
 	// review actions
 	if ($Me->timeReview($prow, $rrow) || $Me->privChair) {
-	    echo "  <div class='g'></div>",
-		tagg_checkbox_h("ready", 1, ($useRequest ? defval($_REQUEST, "ready") : !$rrow || !$rrow->reviewModified || $rrow->reviewSubmitted),
-				array("disabled" => ($rrow && $rrow->reviewSubmitted && !$Me->privChair))),
-		"&nbsp;", tagg_label("The review is ready for others to see.");
-	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
-		echo "<div class='hint'>Only administrators can remove the review from the system at this point.</div>";
-
-	    echo "<div class='aa'><table class='pt_buttons'>\n";
 	    $buttons = array();
-	    $buttons[] = "<input class='bb' type='submit' value='Save changes' name='update' />";
+	    if (!$submitted) {
+		$buttons[] = tagg_submit("submit", "Submit review", array("class" => "bb"));
+		$buttons[] = tagg_submit("savedraft", "Save draft");
+	    } else
+		$buttons[] = tagg_submit("submit", "Save changes", array("class" => "bb"));
 	    if ($rrow && $Me->privChair) {
+		if ($submitted)
+		    $buttons[] = array(tagg_submit("unsubmit", "Unsubmit review"), "(admin only)");
 		$buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
 		$Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
@@ -1422,20 +1431,11 @@ $blind\n";
   </form></div>");
 	    }
 
-	    echo "    <tr>\n";
-	    foreach ($buttons as $b) {
-		$x = (is_array($b) ? $b[0] : $b);
-		echo "      <td class='ptb_button'>", $x, "</td>\n";
-	    }
-	    echo "    </tr>\n    <tr>\n";
-	    foreach ($buttons as $b) {
-		$x = (is_array($b) ? $b[1] : "");
-		echo "      <td class='ptb_explain'>", $x, "</td>\n";
-	    }
-	    echo "    </tr>\n  </table></div>";
+	    echo tagg_actions($buttons);
 	    if ($Me->privChair)
 		echo tagg_checkbox("override"), "&nbsp;", tagg_label("Override deadlines");
-	    //echo "</div>\n";
+	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
+		echo "<div class='hint'>Only administrators can remove or unsubmit the review at this point.</div>";
 	}
 
 	echo "</td><td></td></tr>\n", tagg_cbox("rev", true),

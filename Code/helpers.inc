@@ -1,6 +1,6 @@
 <?php
 // helpers.inc -- HotCRP non-class helper functions
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 function defval($var, $idx, $defval = null) {
@@ -2175,13 +2175,21 @@ function decodeToken($x) {
 
 
 // HTML helpers
-function tagg_select($name, $opt, $selected=null, $extra=null) {
-    $x = "<select name='$name'";
-    foreach (array("id", "tabindex", "onchange", "onclick", "onfocus",
-		   "onblur", "class", "style", "size") as $k)
-	if ($extra && isset($extra[$k]))
-	    $x .= " $k='" . $extra[$k] . "'";
-    $x .= ">";
+function tagg_extra($js) {
+    $x = "";
+    if ($js) {
+	foreach (array("id", "tabindex", "onchange", "onclick", "onfocus",
+		       "onblur", "class", "style", "size") as $k)
+	    if (isset($js[$k]))
+		$x .= " $k=\"" . str_replace("\"", "'", $js[$k]) . "\"";
+	if (isset($js["disabled"]) && $js["disabled"])
+	    $x .= " disabled=\"disabled\"";
+    }
+    return $x;
+}
+
+function tagg_select($name, $opt, $selected = null, $extra = null) {
+    $x = "<select name='$name'" . tagg_extra($extra) . ">";
     if ($selected === null || !isset($opt[$selected]))
 	$selected = key($opt);
     $optgroup = "";
@@ -2218,28 +2226,18 @@ $tagg_controlid = 0;
 
 function tagg_checkbox($name, $value = 1, $checked = false, $js = null) {
     global $tagg_controlid, $tagg_lastcontrolid;
-    if ($js && defval($js, "id"))
-	$id = $js["id"];
-    else
-	$id = "taggctl" . ++$tagg_controlid;
-    if ($js && isset($js["class"]))
-	$class = $js["class"];
-    else
-	$class = "cb";
-    $tagg_lastcontrolid = $id;
-    $t = "<input type=\"checkbox\" class=\"$class\" id=\"$id\"";
+    $js = $js ? $js : array();
+    if (!defval($js, "id"))
+	$js["id"] = "taggctl" . ++$tagg_controlid;
+    $tagg_lastcontrolid = $js["id"];
+    if (!isset($js["class"]))
+	$js["class"] = "cb";
+    $t = "<input type=\"checkbox\""; /* NB see tagg_radio */
     if ($name)
 	$t .= " name=\"$name\" value=\"" . htmlspecialchars($value) . "\"";
     if ($checked)
 	$t .= " checked=\"checked\"";
-    if ($js) {
-	if (defval($js, "disabled"))
-	    $t .= " disabled=\"disabled\"";
-	foreach (array("tabindex", "onchange", "onclick", "style") as $e)
-	    if (isset($js[$e]))
-		$t .= " $e=\"" . $js[$e] . "\"";
-    }
-    return $t . " />";
+    return $t . tagg_extra($js) . " />";
 }
 
 function tagg_radio($name, $value = 1, $checked = false, $js = null) {
@@ -2248,8 +2246,7 @@ function tagg_radio($name, $value = 1, $checked = false, $js = null) {
 }
 
 function tagg_checkbox_h($name, $value = 1, $checked = false, $js = null) {
-    if (!$js)
-	$js = array();
+    $js = $js ? $js : array();
     if (!isset($js["onchange"]))
 	$js["onchange"] = "hiliter(this)";
     return tagg_checkbox($name, $value, $checked, $js);
@@ -2265,4 +2262,50 @@ function tagg_label($text, $id = null) {
     if (!$id)
 	$id = $tagg_lastcontrolid;
     return "<label for=\"$id\">" . $text . "</label>";
+}
+
+function tagg_button($name, $text, $js = null) {
+    $js = $js ? $js : array();
+    if (!isset($js["class"]))
+	$js["class"] = "b";
+    $type = isset($js["type"]) ? $js["type"] : "button";
+    return "<input type=\"$type\" name=\"$name\" value=\"$text\""
+	. tagg_extra($js) . " />";
+}
+
+function tagg_submit($name, $text, $js = null) {
+    $js = ($js ? $js : array());
+    $js["type"] = "submit";
+    return tagg_button($name, $text, $js);
+}
+
+function tagg_actions($actions, $js = null) {
+    $t = "<div class=\"aa\"" . tagg_extra($js) . ">";
+    if (count($actions) > 1 || is_array($actions[0])) {
+	$t .= "<table class=\"pt_buttons\"><tr>";
+	$explains = 0;
+	foreach ($actions as $a) {
+	    $t .= "<td class=\"ptb_button\">";
+	    if (is_array($a)) {
+		$t .= $a[0];
+		$explains += count($a) > 1;
+	    } else
+		$t .= $a;
+	    $t .= "</td>";
+	}
+	$t .= "</tr>";
+	if ($explains) {
+	    $t .= "<tr>";
+	    foreach ($actions as $a) {
+		$t .= "<td class=\"ptb_explain\">";
+		if (is_array($a) && count($a) > 1)
+		    $t .= $a[1];
+		$t .= "</td>";
+	    }
+	    $t .= "</tr>";
+	}
+	$t .= "</table>";
+    } else
+	$t .= $actions[0];
+    return $t . "</div>\n";
 }

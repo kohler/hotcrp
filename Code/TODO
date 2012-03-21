@@ -1,6 +1,3 @@
-- Put a "This review is ready for others to see" checkbox above the
-   review. Or "Save" / "Save draft"? (Didier Remy)
-
 - Ugh, don't renumber @comments when they are deleted.
 
 - Decline review should actually HAPPEN when you click teh link, and
