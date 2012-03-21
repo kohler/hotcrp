@@ -206,6 +206,7 @@ CREATE TABLE `PaperComment` (
   `blind` tinyint(1) NOT NULL DEFAULT '1',
   `replyTo` int(11) NOT NULL,
   `paperStorageId` int(11) NOT NULL DEFAULT '0',
+  `ordinal` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY  (`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),

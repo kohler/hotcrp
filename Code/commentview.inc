@@ -1,6 +1,6 @@
 <?php
 // commentview.inc -- HotCRP helper class for producing comment boxes
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class CommentView {
@@ -34,13 +34,17 @@ class CommentView {
 	}
     }
 
-    function commentNumber($prow, $crow) {
+    function commentOrdinal($prow, $crow) {
 	if (($crow->forAuthors == 2 && $crow->forReviewers == 0)
 	    || $crow->forReviewers == 2)
 	    return null;
 	$p = ($crow->forAuthors ? "A" : "");
-	$n = defval($this->numbers, $p, 0) + 1;
-	$this->numbers[$p] = $n;
+	$stored_number = defval($this->numbers, $p, 0);
+	if (isset($crow->ordinal) && $crow->ordinal)
+	    $n = $crow->ordinal;
+	else
+	    $n = $stored_number + 1;
+	$this->numbers[$p] = max($n, $stored_number);
 	return $p . $n;
     }
 
@@ -49,7 +53,7 @@ class CommentView {
 	echo "<span class='cmtfn'>";
 	$sep = "";
 	$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-	if ($crow && ($number = $this->commentNumber($prow, $crow))) {
+	if ($crow && ($number = $this->commentOrdinal($prow, $crow))) {
 	    echo "<span class='cmtnumhead'><a class='qq' href='#comment",
 		$crow->commentId, "'><span class='cmtnumat'>@</span>",
 		"<span class='cmtnumnum'>", $number, "</span></a></span>";

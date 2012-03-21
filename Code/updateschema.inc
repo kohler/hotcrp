@@ -236,6 +236,10 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperStorage modify `mimetype` varchar(80) NOT NULL default ''")
 	&& $Conf->q("update Settings set value=42 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 42;
+    if ($Conf->settings["allowPaperOption"] == 42
+	&& $Conf->q("alter table PaperComment add `ordinal` int(11) NOT NULL default '0'")
+	&& $Conf->q("update Settings set value=43 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 43;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

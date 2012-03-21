@@ -1,6 +1,6 @@
 <?php
 // comment.php -- HotCRP paper comment display/edit page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 $Error = array();
@@ -130,21 +130,33 @@ function saveComment($text, $locked) {
 	$q = "delete from PaperComment where commentId=$crow->commentId";
     } else if (!$crow) {
 	$change = true;
+	$qa = $qb = "";
 	if ($notify) {
-	    $qa = ", timeNotified";
-	    $qb = ", $now";
-	} else
-	    $qa = $qb = "";
-	$q = "insert into PaperComment (contactId, paperId, timeModified$qa, comment, forReviewers, forAuthors, blind) values ($Me->contactId, $prow->paperId, $now$qb, '" . sqlq($text) . "', $forReviewers, $forAuthors, $blind)";
+	    $qa .= ", timeNotified";
+	    $qb .= ", $now";
+	}
+	if (!(($forAuthors == 2 && $forReviewers == 0) || $forReviewers == 2)
+	    && $Conf->sversion >= 43) {
+	    $qa .= ", ordinal";
+	    $qb .= ", maxOrdinal+1";
+	}
+	$q = "insert into PaperComment
+		(contactId, paperId, timeModified, comment, forReviewers,
+		forAuthors, blind$qa)
+	select $Me->contactId, $prow->paperId, $now, '" . sqlq($text) . "',
+		$forReviewers, $forAuthors, $blind$qb
+	from (select P.paperId, coalesce(count(C.commentId),0) commentCount, coalesce(max(C.ordinal),0) maxOrdinal
+		from Paper P
+		left join PaperComment C on (C.paperId=P.paperId and C.forReviewers=$forReviewers and (C.forAuthors>0)=($forAuthors>0))
+		where P.paperId=$prow->paperId group by P.paperId) T";
     } else {
 	$change = ($crow->forAuthors != $forAuthors);
 	if ($crow->timeModified >= $now)
 	    $now = $crow->timeModified + 1;
 	// do not notify on updates within 3 hours
+	$qa = "";
 	if ($notify && $crow->timeNotified + 10800 < $now)
 	    $qa = ", timeNotified=$now";
-	else
-	    $qa = "";
 	$q = "update PaperComment set timeModified=$now$qa, comment='" . sqlq($text) . "', forReviewers=$forReviewers, forAuthors=$forAuthors, blind=$blind where commentId=$crow->commentId";
     }
 
