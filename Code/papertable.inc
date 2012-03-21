@@ -517,7 +517,7 @@ class PaperTable {
 	$names = array();
 	if ($type == "last") {
 	    foreach ($table as $au) {
-		$n = abbreviateNameHtml($au[0], $au[1]);
+		$n = abbreviateNameHtml($au[0], $au[1], $au[2]);
 		if ($highpreg !== false) {
 		    $n = highlightMatch($highpreg, $n, $nm);
 		    $this->entryMatches += $nm;
@@ -528,11 +528,12 @@ class PaperTable {
 
 	} else {
 	    foreach ($table as $au) {
-		$n = htmlspecialchars(trim("$au[0] $au[1]"));
+		$n = htmlspecialchars("$au[0] $au[1]");
 		if ($au[3] != "")
 		    $n .= " <span class='auaff'>(" . htmlspecialchars($au[3]) . ")</span>";
 		if ($au[2] != "")
 		    $n .= htmlspecialchars(" <$au[2]>");
+		$n = trim($n);
 		if ($highpreg !== false) {
 		    $n = highlightMatch($highpreg, $n, $nm);
 		    $this->entryMatches += $nm;
