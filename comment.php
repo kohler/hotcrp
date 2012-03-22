@@ -210,7 +210,8 @@ function saveComment($text, $locked) {
     loadRows();
     if ($text != "") {
 	watch();
-	redirectSelf(array("anchor" => "comment$savedCommentId"));
+	redirectSelf(array("anchor" => "comment$savedCommentId",
+			   "noedit" => null, "c" => null));
     } else
 	redirectSelf();
     // NB normally redirectSelf() does not return

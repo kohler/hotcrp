@@ -357,6 +357,7 @@ if (!function_exists("json_decode")) {
 function hoturl($page, $options = null) {
     global $ConfSiteBase, $ConfSiteSuffix, $Opt;
     $t = $ConfSiteBase . $page . $ConfSiteSuffix;
+    // see also redirectSelf
     if ($options && preg_match('/\A(|.*?(?:\&|\&amp;))p=(\d+|%\w+%)(.*)\z/', $options, $m)
 	&& !defval($Opt, "disableSlashURLs")
 	&& preg_match('/\A(?:paper|review|comment|contactauthors)\z/', $page)) {
@@ -457,7 +458,7 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
 	if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
 	    $_REQUEST[$v] = $_REQUEST[$k];
     foreach (array("p", "r", "c", "m", "mode", "forceShow", "validator", "ls", "list", "t", "q", "qa", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq", "noedit", "contact", "reviewer") as $what)
-	if (isset($_REQUEST[$what]) && !isset($extra[$what])) {
+	if (isset($_REQUEST[$what]) && !array_key_exists($what, $extra)) {
 	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
 	}
@@ -495,12 +496,19 @@ function requestAbsoluteURI($trim) {
 }
 
 function redirectSelf($extra = array()) {
-    global $Conf;
+    global $Conf, $Opt;
     if (!($absuri = requestAbsoluteURI(true)))
 	return false;
     $want = preg_replace('/\A.*?(?:\?|\z)/', "", selfHref($extra, null, false));
     if ($want != "")
 	$absuri .= "?" . $want;
+    // see also hoturl
+    if (!defval($Opt, "disableSlashURLs")
+	&& preg_match(',\A([^?]*/(?:paper|review|comment|contactauthors)(?:\.php)?)(?:/\d+)?\?p=(\d+)((?:&|\z).*)\z,', $absuri, $m)) {
+	$absuri = $m[1] . "/" . $m[2];
+	if ($m[3])
+	    $absuri .= "?" . substr($m[3], 1);
+    }
     $Conf->go($absuri);
 }
 
