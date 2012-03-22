@@ -1,6 +1,6 @@
 <?php
 // index.php -- HotCRP home page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -601,7 +601,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     }
 
     if ($Me->isReviewer) {
-	$plist = new PaperList(new PaperSearch($Me, array("t" => "r")), array("list" => true));
+	$plist = new PaperList(new PaperSearch($Me, array("q" => "re:me")), array("list" => true));
 	$ptext = $plist->text("reviewerHome", $Me);
 	if ($plist->count > 0)
 	    echo "<div class='fx'><div class='g'></div>", $ptext, "</div>";

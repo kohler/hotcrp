@@ -2392,33 +2392,36 @@ class PaperSearch {
     }
 
     function complexSearch(&$queryOptions) {
-	if ($this->q)
+	$limit = $this->limitName;
+	if (($limit == "s" || $limit == "act") && $this->q == "re:me")
+	    $limit = "r";
+	else if ($this->q)
 	    return true;
-	if ($this->limitName == "s" || $this->limitName == "revs")
+	if ($limit == "s" || $limit == "revs")
 	    $queryOptions["finalized"] = 1;
-	else if ($this->limitName == "unsub") {
+	else if ($limit == "unsub") {
 	    $queryOptions["unsub"] = 1;
 	    $queryOptions["active"] = 1;
-	} else if ($this->limitName == "acc") {
+	} else if ($limit == "acc") {
 	    $queryOptions["accepted"] = 1;
 	    $queryOptions["finalized"] = 1;
-	} else if ($this->limitName == "und") {
+	} else if ($limit == "und") {
 	    $queryOptions["undecided"] = 1;
 	    $queryOptions["finalized"] = 1;
-	} else if ($this->limitName == "r")
+	} else if ($limit == "r")
 	    $queryOptions["myReviews"] = 1;
-	else if ($this->limitName == "rout")
+	else if ($limit == "rout")
 	    $queryOptions["myOutstandingReviews"] = 1;
-	else if ($this->limitName == "a") {
+	else if ($limit == "a") {
 	    // If complex author SQL, always do search the long way
 	    if ($this->contact->actAuthorSql("%", true))
 		return true;
 	    $queryOptions["author"] = 1;
-	} else if ($this->limitName == "req" || $this->limitName == "reqrevs")
+	} else if ($limit == "req" || $limit == "reqrevs")
 	    $queryOptions["myReviewRequests"] = 1;
-	else if ($this->limitName == "act")
+	else if ($limit == "act")
 	    $queryOptions["active"] = 1;
-	else if ($this->limitName == "lead")
+	else if ($limit == "lead")
 	    $queryOptions["myLead"] = 1;
 	return false;
     }
@@ -2492,16 +2495,32 @@ class PaperSearch {
 
     function description($listname) {
 	require_once("paperlist.inc");
-	$desc = PaperList::listDescription($listname);
-	if ($this->q == "")
-	    return $desc;
-	if (($td = $this->_tagDescription())) {
-	    if ($desc == "Submitted papers")
-		return $td;
+	if (!$listname) {
+	    $a = array("s" => "Submitted papers", "acc" => "Accepted papers",
+		       "act" => "Active papers", "all" => "All papers",
+		       "r" => "Your reviews", "a" => "Your submissions",
+		       "rout" => "Your incomplete reviews",
+		       "req" => "Your review requests",
+		       "reqrevs" => "Your review requests");
+	    if (isset($a[$this->limitName]))
+		$listname = $a[$this->limitName];
 	    else
-		return "$desc $td";
-	} else
-	    return "$desc search";
+		$listname = "Papers";
+	}
+	if ($this->q == "")
+	    return $listname;
+	if (($td = $this->_tagDescription())) {
+	    if ($listname == "Submitted papers") {
+		if ($this->q == "re:me")
+		    return "Your reviews";
+		else
+		    return $td;
+	    } else
+		return "$td in $listname";
+	} else {
+	    $listname = preg_replace("/s\\z/", "", $listname);
+	    return "$listname search";
+	}
     }
 
     function listId($sort = "") {
@@ -2524,7 +2543,7 @@ class PaperSearch {
     }
 
     function sessionList() {
-	return $this->decorateSessionList($this->paperList(), $this->limitName);
+	return $this->decorateSessionList($this->paperList(), null);
     }
 
     static function parsePapersel() {

@@ -1349,27 +1349,8 @@ class PaperList extends BaseList {
 	return $newFields;
     }
 
-    static function listDescription($listname) {
+    static function _listDescription($listname) {
 	switch ($listname) {
-	  case "a":
-	  case "authorHome":
-	    return "Your submissions";
-	  case "s":
-	    return "Submitted papers";
-	  case "acc":
-	    return "Accepted papers";
-	  case "all":
-	    return "All papers";
-	  case "act":
-	    return "Active papers";
-	  case "reviewerHome":
-	  case "r":
-	    return "Your reviews";
-	  case "rout":
-	    return "Your incomplete reviews";
-	  case "req":
-	  case "reqrevs":
-	    return "Your review requests";
 	  case "reviewAssignment":
 	    return "Review assignments";
 	  case "conflict":
@@ -1953,7 +1934,7 @@ class PaperList extends BaseList {
 
 	// session variable to remember the list
 	if ($this->listNumber) {
-	    $idx = $this->search->decorateSessionList($rstate->ids, $listname, $this->sortdef());
+	    $idx = $this->search->decorateSessionList($rstate->ids, self::_listDescription($listname), $this->sortdef());
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
 	    if ($ConfSiteBase
