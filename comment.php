@@ -138,7 +138,7 @@ function saveComment($text, $locked) {
 	if (!(($forAuthors == 2 && $forReviewers == 0) || $forReviewers == 2)
 	    && $Conf->sversion >= 43) {
 	    $qa .= ", ordinal";
-	    $qb .= ", maxOrdinal+1";
+	    $qb .= ", greatest(commentCount,maxOrdinal)+1";
 	}
 	$q = "insert into PaperComment
 		(contactId, paperId, timeModified, comment, forReviewers,
