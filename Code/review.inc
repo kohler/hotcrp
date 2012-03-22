@@ -1271,15 +1271,13 @@ $blind\n";
 	// Links
 	if ($rrow) {
 	    echo "<div class='floatright'>";
-	    if (!$editmode && $Me->canReview($prow, $rrow)) {
-		$a = "<a href='" . hoturl("review", "r=$reviewOrdinal$linkExtra") . "'>";
-		echo $a,
+	    if (!$editmode && $Me->canReview($prow, $rrow))
+		echo "<a href='" . hoturl("review", "r=$reviewOrdinal$linkExtra") . "' class='xx'>",
 		    $Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
-		    "</a>&nbsp;", $a, "Edit</a><br />";
-	    }
-	    $a = "<a href='" . hoturl("review", "r=$reviewOrdinal&amp;text=1$linkExtra") . "'>";
-	    echo $a, $Conf->cacheableImage("txt.png", "[Text]", null, "b"),
-		"</a>&nbsp;", $a, "Plain text</a>",
+		    "&nbsp;<u>Edit</u></a><br />";
+	    echo "<a href='" . hoturl("review", "r=$reviewOrdinal&amp;text=1$linkExtra") . "' class='xx'>",
+		$Conf->cacheableImage("txt.png", "[Text]", null, "b"),
+		"&nbsp;<u>Plain text</u></a>",
 		"</div>";
 	}
 

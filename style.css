@@ -1,5 +1,5 @@
 /* style.css -- HotCRP CSS styles */
-/* HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC */
+/* HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC */
 /* Distributed under an MIT-like license; see LICENSE */
 
 /* page background */
@@ -134,16 +134,16 @@ td.spanner {
 
 
 /* generic horizontal styles */
-a.q, a.u {
+a.q, a.qx, a.u {
 	color: black;
 }
 a.qq, a.uu {
 	color: inherit;
 }
-a.q, a.qq, a.x {
+a.q, a.qq, a.qx, a.x, a.xx, u.x, .noul {
 	text-decoration: none;
 }
-a.q:hover, a.qq:hover, a.x:hover {
+a.q:hover, a.qq:hover, a.qx:hover u.x, a.x:hover, a.xx:hover u.x, .ul {
 	text-decoration: underline;
 }
 a.small {
@@ -1692,11 +1692,6 @@ div.papmodex {
 }
 div.papmodex a {
 	font-weight: bold;
-	text-decoration: none;
-	color: black;
-}
-div.papmodex a:hover {
-	text-decoration: underline;
 }
 div.papmode img, div.papmodex img {
 	position: relative;

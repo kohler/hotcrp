@@ -128,12 +128,11 @@ class CommentView {
 
 	// Links
 	if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair)
-	    && !$editMode && $Me->canComment($prow, $crow)) {
-	    $a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId") . "'>";
-	    echo "<div class='floatright'>", $a,
+	    && !$editMode && $Me->canComment($prow, $crow))
+	    echo "<div class='floatright'>",
+		"<a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId"), "' class='xx'>",
 		$Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
-		"</a>&nbsp;", $a, "Edit</a></div>";
-	}
+		"&nbsp;<u>Edit</u></a></div>";
 
 	if (!$crow) {
 	    if ($editMode && $foldnew)
@@ -239,12 +238,11 @@ class CommentView {
 
 	// Links
 	if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair)
-	    && !$editMode && $Me->canRespond($prow, $crow)) {
-	    $a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId") . "'>";
-	    echo "<div class='floatright'>", $a,
+	    && !$editMode && $Me->canRespond($prow, $crow))
+	    echo "<div class='floatright'>",
+		"<a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId") . "' class='xx'>",
 		$Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
-		"</a>&nbsp;", $a, "Edit</a></div>";
-	}
+		"&nbsp;<u>Edit</u></a></div>";
 
 	echo "<h3";
 	if ($crow)

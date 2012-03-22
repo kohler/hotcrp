@@ -1,6 +1,6 @@
 <?php
 // reviewtable.inc -- HotCRP helper class for table of all reviews
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 // reviewer information
@@ -219,16 +219,16 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if (($nvisible > 1 || ($nvisible > 0 && !$myrr))
 	&& ($mode != "r" || $rrow)) {
 	$allreviewslink = true;
-	$a = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=r$linkExtra") . "'>";
-	$x = $a . $Conf->cacheableImage("view24.png", "[All reviews]", null, "dlimg") . "</a>&nbsp;" . $a . "All reviews</a>";
+	$x = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=r$linkExtra") . "' class='xx'>"
+	    . $Conf->cacheableImage("view24.png", "[All reviews]", null, "dlimg") . "&nbsp;<u>All reviews</u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
     // edit paper
     if ($mode != "pe" && $prow->conflictType >= CONFLICT_AUTHOR
 	&& !$Me->actChair($prow)) {
-	$a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;m=pe$linkExtra") . "'>";
-	$x = $a . $Conf->cacheableImage("edit24.png", "[Edit paper]", null, "dlimg") . "</a>&nbsp;" . $a . "<strong>Edit paper</strong></a>";
+	$x = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;m=pe$linkExtra") . "' class='xx'>"
+	    . $Conf->cacheableImage("edit24.png", "[Edit paper]", null, "dlimg") . "&nbsp;<u><strong>Edit paper</strong></u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
@@ -237,31 +237,31 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 	/* no link */;
     else if ($myrr && $rrow != $myrr) {
 	$myrlink = unparseReviewOrdinal($myrr);
-	$a = "<a href='" . hoturl("review", "r=$myrlink$linkExtra") . "'>";
+	$a = "<a href='" . hoturl("review", "r=$myrlink$linkExtra") . "' class='xx'>";
 	if ($Me->canReview($prow, $myrr))
-	    $x = $a . $Conf->cacheableImage("review24.png", "[Edit review]", null, "dlimg") . "</a>&nbsp;" . $a . "<b>Edit your review</b></a>";
+	    $x = $a . $Conf->cacheableImage("review24.png", "[Edit review]", null, "dlimg") . "&nbsp;<u><b>Edit your review</b></u></a>";
 	else
-	    $x = $a . $Conf->cacheableImage("review24.png", "[Your review]", null, "dlimg") . "</a>&nbsp;" . $a . "<b>Your review</b></a>";
+	    $x = $a . $Conf->cacheableImage("review24.png", "[Your review]", null, "dlimg") . "&nbsp;<u><b>Your review</b></u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     } else if (!$myrr && !$rrow && $Me->canReview($prow, null)) {
-	$a = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=re$linkExtra") . "'>";
-	$x = $a . $Conf->cacheableImage("review24.png", "[Write review]", null, "dlimg") . "</a>&nbsp;" . $a . "<b>Write review</b></a>";
+	$x = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=re$linkExtra") . "' class='xx'>"
+	    . $Conf->cacheableImage("review24.png", "[Write review]", null, "dlimg") . "&nbsp;<u><b>Write review</b></u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
     // review assignments
     if ($mode != "assign"
 	&& ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
-	$a = "<a href='" . hoturl("assign", "p=$prow->paperId$linkExtra") . "'>";
-	$x = $a . $Conf->cacheableImage("assign24.png", "[Assign]", null, "dlimg") . "</a>&nbsp;" . $a . ($Me->privChair ? "Assign reviews" : "External reviews") . "</a>";
+	$x = "<a href='" . hoturl("assign", "p=$prow->paperId$linkExtra") . "' class='xx'>"
+	    . $Conf->cacheableImage("assign24.png", "[Assign]", null, "dlimg") . "&nbsp;<u>" . ($Me->privChair ? "Assign reviews" : "External reviews") . "</u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
     // new comment
     if (!$allreviewslink && $mode != "assign" && $mode != "contact"
 	&& $Me->canComment($prow, null)) {
-	$a = "<a href=\"" . selfHref(array("c" => "new")) . "#commentnew\" onclick='return open_new_comment(1)'>";
-	$x = $a . $Conf->cacheableImage("comment24.png", "[Add comment]", null, "dlimg") . "</a>&nbsp;" . $a . "Add comment</a>";
+	$x = "<a href=\"" . selfHref(array("c" => "new")) . "#commentnew\" onclick='return open_new_comment(1)' class='xx'>"
+	    . $Conf->cacheableImage("comment24.png", "[Add comment]", null, "dlimg") . "&nbsp;<u>Add comment</u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
@@ -274,21 +274,21 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 		if ($cr->forAuthors > 1)
 		    $cid = array($cr->commentId, "comment$cr->commentId", "Edit");
 	if ($rrow || $prow->conflictType < CONFLICT_AUTHOR)
-	    $a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;c=$cid[0]#$cid[1]") . "'>";
+	    $a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;c=$cid[0]#$cid[1]") . "' class='xx'>";
 	else
-	    $a = "<a href=\"#$cid[1]\">";
-	$x = $a . $Conf->cacheableImage("comment24.png", "[$cid[2] response]", null, "dlimg") . "</a>&nbsp;" . $a;
+	    $a = "<a href=\"#$cid[1]\" class='xx'>";
+	$x = $a . $Conf->cacheableImage("comment24.png", "[$cid[2] response]", null, "dlimg") . "&nbsp;<u>";
 	if ($prow->conflictType >= CONFLICT_AUTHOR)
-	    $x .= "<strong>$cid[2] response</strong></a>";
+	    $x .= "<strong>$cid[2] response</strong></u></a>";
 	else
-	    $x .= "$cid[2] response</a>";
+	    $x .= "$cid[2] response</u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
     // override conflict
     if ($Me->privChair && !$effAssistant) {
-	$a = "<a href=\"" . selfHref(array("forceShow" => 1)) . "\">";
-	$x = $a . $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg") . "</a>&nbsp;" . $a . "Override conflict</a> to show reviewers and allow editing";
+	$x = "<a href=\"" . selfHref(array("forceShow" => 1)) . "\" class='xx'>"
+	    . $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 

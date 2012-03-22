@@ -196,12 +196,12 @@ class PaperTable {
 	if ($editfolder) {
 	    $x = defval($extra, "oneditunfold", "");
 	    $c .= "<span class='pstedit fn'>"
-		. "<a class='x' href=\"" . selfHref(array("atab" => $what))
+		. "<a class='xx' href=\"" . selfHref(array("atab" => $what))
 		. "\" onclick='" . $x . ($x ? ";" : "")
 		. "return fold(\"$editfolder\",0)' title='Edit'>"
 		. "<span style='display:inline-block;position:relative;width:15px'>"
 		. $Conf->cacheableImage("edit.png", "[Edit]", null, "bmabs")
-		. "</span>&nbsp;Edit</a></span>";
+		. "</span>&nbsp;<u class='x'>Edit</u></a></span>";
 	}
 	$c .= "<div class='clear'></div></div>";
 	return $c;
@@ -1487,6 +1487,15 @@ class PaperTable {
 	    $this->papstripReviewPreference($prow);
     }
 
+    function _paptabTabLink($text, $link, $image, $highlight) {
+	global $Conf;
+	echo "<div class='", ($highlight ? "papmodex" : "papmode"),
+	    "'><a href='", $link, "' class='", ($highlight ? "qx" : "xx"),
+	    "'>", $Conf->cacheableImage($image, "[$text]", null, "b"),
+	    "&nbsp;<u", ($highlight ? " class='x'" : ""), ">", $text,
+	    "</u></a></div>\n";
+    }
+
     function _paptabBeginKnown() {
 	global $Conf, $Me, $forceShow, $linkExtra;
 	$prow = $this->prow;
@@ -1504,34 +1513,19 @@ class PaperTable {
 	    echo "<div class='psmodec'><div class='psmode'>";
 
 	    // home link
-	    $a = ($this->mode == "pe" || $this->mode == "re" ? "&amp;m=p" : "");
-	    $a = "<a href='" . hoturl("paper", "p=$prow->paperId$a$linkExtra") . "'>";
 	    $highlight = ($this->mode != "assign" && $this->mode != "pe"
 			  && $this->mode != "contact" && $this->mode != "re");
-	    echo "<div class='", ($highlight ? "papmodex" : "papmode"),
-		"'>", $a, $Conf->cacheableImage("view18.png", "[Main]", null, "b"),
-		"</a>&nbsp;", $a, "Main</a></div>\n";
+	    $a = ($this->mode == "pe" || $this->mode == "re" ? "&amp;m=p" : "");
+	    $this->_paptabTabLink("Main", hoturl("paper", "p=$prow->paperId$a$linkExtra"), "view18.png", $highlight);
 
-	    if ($canEdit) {
-		$a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;m=pe$linkExtra") . "'>";
-		echo "<div class='", ($this->mode == "pe" ? "papmodex" : "papmode"),
-		    "'>", $a, $Conf->cacheableImage("edit18.png", "[Edit]", null, "b"),
-		    "</a>&nbsp;", $a, "Edit</a></div>\n";
-	    }
+	    if ($canEdit)
+		$this->_paptabTabLink("Edit", hoturl("paper", "p=$prow->paperId&amp;m=pe$linkExtra"), "edit18.png", $this->mode == "pe");
 
-	    if ($canReview) {
-		$a = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=re$linkExtra") . "'>";
-		echo "<div class='", ($this->mode == "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId) ? "papmodex" : "papmode"),
-		    "'>", $a, $Conf->cacheableImage("review18.png", "[Review]", null, "b"),
-		    "</a>&nbsp;", $a, "Review</a></div>\n";
-	    }
+	    if ($canReview)
+		$this->_paptabTabLink("Review", hoturl("review", "p=$prow->paperId&amp;m=re$linkExtra"), "review18.png", $this->mode == "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId));
 
-	    if ($canAssign) {
-		$a = "<a href='" . hoturl("assign", "p=$prow->paperId$linkExtra") . "'>";
-		echo "<div class='", ($this->mode == "assign" ? "papmodex" : "papmode"),
-		    "'>", $a, $Conf->cacheableImage("assign18.png", "[Assign]", null, "b"),
-		    "</a>&nbsp;", $a, "Assign</a></div>\n";
-	    }
+	    if ($canAssign)
+		$this->_paptabTabLink("Assign", hoturl("assign", "p=$prow->paperId$linkExtra"), "assign18.png", $this->mode == "assign");
 
 	    echo "<div class='clear'></div></div></div>\n";
 	}
@@ -1728,15 +1722,14 @@ class PaperTable {
 		$viewable[] = "comments";
 		break;
 	    }
-	if (count($viewable)) {
-	    $a = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=r&amp;text=1$linkExtra") . "'>";
+	if (count($viewable))
 	    echo "<div class='pboxc'>",
 		"<table class='pbox'><tr><td class='pboxl'></td>",
-		"<td class='pboxr'>", $a,
+		"<td class='pboxr'>",
+		"<a href='", hoturl("review", "p=$prow->paperId&amp;m=r&amp;text=1$linkExtra"), "' class='xx'>",
 		$Conf->cacheableImage("txt24.png", "[Text]", null, "dlimg"),
-		"</a>&nbsp;", $a, ucfirst(join(" and ", $viewable)),
-		" in plain text</a></td></tr></table></div>\n";
-	}
+		"&nbsp;<u>", ucfirst(join(" and ", $viewable)),
+		" in plain text</u></a></td></tr></table></div>\n";
 
 	$opt = array("edit" => false);
 	foreach ($this->rrows as $rr)
