@@ -816,12 +816,11 @@ div.hint {
 }
 td.hint, div.hint, span.hint,
 .revvis, .revevis {
-	font-size: smaller;
 	font-weight: normal;
 	font-style: normal;
 	color: #555555;
 }
-a.hint {
+td.hint, div.hint, span.hint, a.hint {
 	font-size: smaller;
 }
 td.caption span.hint {
@@ -2023,9 +2022,9 @@ span.revfn {
 	font-weight: bold;
 	float: left;
 }
-.revvis {
+.revvis, .cmtvis {
 	padding-left: 1em;
-	color: #888888;
+	color: #999999;
 }
 .revevis {
 	clear: both;
@@ -2154,11 +2153,6 @@ div.cmtt {
 	font-size: smaller;
 	padding: 2px 0;
 	color: #666666;
-}
-div.cmtt span.cmtvis {
-	font-size: smaller;
-	color: #888888;
-	padding-left: 1em;
 }
 div.cmtt div.floatright {
 	padding-left: 0.5em;
