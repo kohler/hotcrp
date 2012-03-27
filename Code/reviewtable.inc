@@ -12,7 +12,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     $subrev = array();
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = 0;
-    $hideUnviewable = ($prow->conflictType > 0 && !$forceShow);
+    $conflictType = $Me->actConflictType($prow);
+    $hideUnviewable = ($conflictType > 0 && !$forceShow);
     if (!$Me->isPC && !$Conf->setting("extrev_view"))
 	$hideUnviewable = true;
     $effAssistant = $Me->privChair && !$hideUnviewable;
@@ -66,7 +67,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	    $t .= "<td><a href='#review$rlink'>$id</a></td>";
 
 	// primary/secondary glyph
-	if ($prow->conflictType > 0 && !$effAssistant)
+	if ($conflictType > 0 && !$effAssistant)
 	    $x = "";
 	else if ($rr->reviewType > 0) {
 	    $x = $Conf->cacheableImage("_.gif", $reviewTypeName[$rr->reviewType], $reviewTypeName[$rr->reviewType] . " review", "ass$rr->reviewType");
@@ -109,7 +110,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	// review type
 	if ($mode != "assign")
 	    /* nothing */;
-	else if (($prow->conflictType > 0 && !$effAssistant) || $rr->reviewType != REVIEW_EXTERNAL)
+	else if (($conflictType > 0 && !$effAssistant) || $rr->reviewType != REVIEW_EXTERNAL)
 	    $t .= "<td class='empty'></td>";
 	else {
 	    $t .= "<td><small>Requested by " . contactHtml($rr->reqFirstName, $rr->reqLastName);
@@ -143,7 +144,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 
     // unfinished review notification
     $notetxt = "";
-    if ($prow->conflictType >= CONFLICT_AUTHOR && !$effAssistant && $notShown
+    if ($conflictType >= CONFLICT_AUTHOR && !$effAssistant && $notShown
 	&& $Me->canViewReview($prow, null)) {
 	$qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
 	if ($notShown == 1)
@@ -174,7 +175,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     global $Conf, $Me, $forceShow, $linkExtra;
 
-    $actingConflict = ($prow->conflictType > 0 && !$forceShow);
+    $conflictType = $Me->actConflictType($prow);
+    $actingConflict = ($conflictType > 0 && !$forceShow);
     $effAssistant = $Me->actChair($prow) && !$actingConflict;
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 
@@ -273,12 +275,12 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 	    foreach ($crows as $cr)
 		if ($cr->forAuthors > 1)
 		    $cid = array($cr->commentId, "comment$cr->commentId", "Edit");
-	if ($rrow || $prow->conflictType < CONFLICT_AUTHOR)
+	if ($rrow || $conflictType < CONFLICT_AUTHOR)
 	    $a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;c=$cid[0]#$cid[1]") . "' class='xx'>";
 	else
 	    $a = "<a href=\"#$cid[1]\" class='xx'>";
 	$x = $a . $Conf->cacheableImage("comment24.png", "[$cid[2] response]", null, "dlimg") . "&nbsp;<u>";
-	if ($prow->conflictType >= CONFLICT_AUTHOR)
+	if ($conflictType >= CONFLICT_AUTHOR)
 	    $x .= "<strong>$cid[2] response</strong></u></a>";
 	else
 	    $x .= "$cid[2] response</u></a>";
