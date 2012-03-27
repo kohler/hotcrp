@@ -1431,9 +1431,9 @@ function whyNotText($whyNot, $action) {
 	$end = $Conf->setting($dname, -1);
 	$now = time();
 	if ($start <= 0)
-	    $text .= "You can&rsquo;t $action $thisPaper yet.  ";
+	    $text .= "You can’t $action $thisPaper yet.  ";
 	else if ($start > 0 && $now < $start)
-	    $text .= "You can&rsquo;t $action $thisPaper until " . $Conf->printableTime($start, "span") . ".  ";
+	    $text .= "You can’t $action $thisPaper until " . $Conf->printableTime($start, "span") . ".  ";
 	else if ($end > 0 && $now > $end) {
 	    if ($dname == "sub_reg")
 		$text .= "The paper registration deadline has passed.  ";
@@ -1450,7 +1450,7 @@ function whyNotText($whyNot, $action) {
 	    $text .= "It was " . $Conf->printableTime($end, "span") . ".  ";
 	} else if ($dname == "au_seerev") {
 	    if ($Conf->setting("au_seerev") == AU_SEEREV_YES)
-		$text .= "Authors who are also reviewers can&rsquo;t see reviews for their papers while they still have <a href='" . hoturl("search", "t=rout&amp;q=") . "'>incomplete reviews</a> of their own.  ";
+		$text .= "Authors who are also reviewers can’t see reviews for their papers while they still have <a href='" . hoturl("search", "t=rout&amp;q=") . "'>incomplete reviews</a> of their own.  ";
 	    else
 		$text .= "Authors can&rsquo;t view paper reviews at the moment.  ";
 	} else
@@ -1462,13 +1462,13 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind.  ";
     if (isset($whyNot['author']))
-	$text .= "You aren&rsquo;t a contact for $thisPaper.  ";
+	$text .= "You aren’t a contact for $thisPaper.  ";
     if (isset($whyNot['conflict']))
 	$text .= "You have a conflict with $thisPaper.  ";
     if (isset($whyNot['externalReviewer']))
 	$text .= "External reviewers may not view other reviews for the papers they review.  ";
     if (isset($whyNot['differentReviewer']))
-	$text .= "You didn&rsquo;t write this review, so you can't change it.  ";
+	$text .= "You didn’t write this review, so you can’t change it.  ";
     if (isset($whyNot['reviewToken']))
 	$text .= "If you know a valid review token, enter it above to edit that review.  ";
     // finish it off

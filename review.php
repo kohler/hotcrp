@@ -149,9 +149,9 @@ if (isset($_REQUEST["unsubmit"]) && $paperTable->editrrow
 if (isset($_REQUEST["rating"]) && $paperTable->rrow) {
     if (!$Me->canRateReview($prow, $paperTable->rrow)
 	|| !$Me->canViewReview($prow, $paperTable->rrow))
-	$Conf->errorMsg("You can't rate that review.");
+	$Conf->errorMsg("You can’t rate that review.");
     else if ($Me->contactId == $paperTable->rrow->contactId)
-	$Conf->errorMsg("You can't rate your own review.");
+	$Conf->errorMsg("You can’t rate your own review.");
     else if (!isset($ratingTypes[$_REQUEST["rating"]]))
 	$Conf->errorMsg("Invalid rating.");
     else if ($_REQUEST["rating"] == "n")
@@ -408,7 +408,7 @@ if (!$viewAny && !$editAny) {
     if (!$Me->canViewPaper($prow, $whyNotPaper))
 	errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
-	$Conf->errorMsg("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
+	$Conf->errorMsg("You can’t see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
 	$Conf->go(hoturl("paper", "p=$prow->paperId$linkExtra"));
     }
 }

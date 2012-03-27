@@ -280,7 +280,7 @@ if (!$viewAny && !$editAny) {
     if (!$Me->canViewPaper($prow, $whyNotPaper))
 	errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
-	$Conf->errorMsg("You can't see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
+	$Conf->errorMsg("You can’t see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
 	$Conf->go(hoturl("paper", "p=$prow->paperId$linkExtra"));
     }
 }
