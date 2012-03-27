@@ -275,6 +275,7 @@ global $Me;
 if (!isset($_SESSION["Me"])) {
     $_SESSION["Me"] = new Contact();
     $_SESSION["Me"]->fresh = true;
+    $_SESSION["Me"]->dsn = $Opt["dsn"];
 }
 $Me = $_SESSION["Me"];
 $Me->validated = false;
