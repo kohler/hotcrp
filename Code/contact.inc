@@ -56,6 +56,8 @@ class Contact {
 
     function valid($update = false) {
 	global $Conf, $Opt;
+	if (!$this->contactId)		// null contactId causes problems
+	    $this->contactId = 0;
 	if (!$this->validated && $this->contactId > 0) {
 	    $qr = "";
 	    if (isset($_SESSION["rev_tokens"]))
