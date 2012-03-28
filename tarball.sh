@@ -1,4 +1,4 @@
-export VERSION=2.47
+export VERSION=2.48
 perl -pi -e 's/HotCRP: Conference Review Package 2\.\d+/HotCRP: Conference Review Package '$VERSION'/' README
 
 # check that schema.sql and updateschema.inc agree on schema version
@@ -63,7 +63,6 @@ manualassign.php
 mergeaccounts.php
 offline.php
 paper.php
-reload.sh
 review.php
 reviewprefs.php
 scorehelp.php
@@ -94,6 +93,7 @@ Code/mimetypes.inc
 Code/paperactions.inc
 Code/paperexpr.inc
 Code/paperlist.inc
+Code/paperoption.inc
 Code/papertable.inc
 Code/rank.inc
 Code/review.inc
@@ -108,6 +108,8 @@ Code/updateschema.inc
 Code/updateschema.sql
 
 Code/Mail-1.1.14
+
+extra/hotcrp.vim
 
 images/.htaccess
 images/_.gif

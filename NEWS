@@ -1,5 +1,23 @@
 HotCRP NEWS
 
+Version 2.48   28.Mar.2012
+
+* Correct major information exposure with author-view capabilities.
+  Author-view capability URLs, when entered by users not otherwise logged
+  in, gave access to comments meant only for PC members and reviewers.
+  Comment identities were not exposed. Apologies.
+
+* Support video submissions.
+
+* Columnar search display. Try "1-10 THEN 2-20 VIEW:compactcolumns".
+
+* Other bug fixes and improvements.
+
+* Thanks to Muli Ben-Yahuda, Dan Tsafrir, Erez Zadok, Robby Findler, Wilson
+  Hsieh, Gernot Heiser, Jeff Mogul, George Candea, John Regehr, of course
+  Jane-Ellen Long, and others.
+
+
 Version 2.47   14.Dec.2011
 
 * Add author-view capabilities. These parameters, when appended to any
