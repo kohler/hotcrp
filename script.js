@@ -928,9 +928,18 @@ function popup(anchor, which, dofold, populate) {
 }
 
 
+// JSON
+if (!window.JSON || !JSON.parse) {
+    JSON = window.JSON || {};
+    JSON.parse = function (text) {
+	return eval("(" + text + ")"); /* sigh */
+    };
+}
+
+
 // Thank you David Flanagan
 var Miniajax = (function () {
-var Miniajax = {}, outstanding = {},
+var Miniajax = {}, outstanding = {}, jsonp = 0,
     _factories = [
 	function () { return new XMLHttpRequest(); },
 	function () { return new ActiveXObject("Msxml2.XMLHTTP"); },
@@ -993,7 +1002,7 @@ Miniajax.submit = function (formname, callback, timeout) {
 	clearTimeout(timer);
 	if (req.status == 200) {
 	    resultelt.innerHTML = "";
-	    var rv = eval("(" + req.responseText + ")");
+	    var rv = JSON.parse(req.responseText);
 	    callback(rv);
 	    if (rv.ok)
 		hiliter(form, true);
@@ -1025,25 +1034,56 @@ Miniajax.submit = function (formname, callback, timeout) {
     return false;
 };
 Miniajax.get = function (url, callback, timeout) {
-    var req = newRequest(), timer;
-    if (!timeout)
-	timeout = 4000;
-    timer = setTimeout(function () {
+    var req = newRequest(), timer = setTimeout(function () {
 	    req.abort();
 	    callback(null);
-	}, timeout);
+	}, timeout ? timeout : 4000);
     req.onreadystatechange = function () {
 	if (req.readyState != 4)
 	    return;
 	clearTimeout(timer);
 	if (req.status == 200)
-	    callback(eval("(" + req.responseText + ")"));
+	    callback(JSON.parse(req.responseText));
 	else
 	    callback(null);
     };
     req.open("GET", url);
     req.send();
     return false;
+};
+Miniajax.getjsonp = function (url, callback, timeout) {
+    // Written with reference to jquery
+    var head, script, timer, cbname = "Miniajax_jsonp" + jsonp;
+    function readystatechange(_, isAbort) {
+	var err;
+	try {
+	    if (isAbort || !script.readyState || /loaded|complete/.test(script.readyState)) {
+		script.onload = script.onreadystatechange = null;
+		if (head && script.parentNode)
+		    head.removeChild(script);
+		script = undefined;
+		window[cbname] = function () {};
+		if (timer) {
+		    clearTimeout(timer);
+		    timer = null;
+		}
+	    }
+	} catch (err) {
+	}
+    }
+    timer = setTimeout(function () {
+	    timer = null;
+	    callback(null);
+	    readystatechange(null, true);
+	}, timeout ? timeout : 4000);
+    window[cbname] = callback;
+    head = document.head || document.getElementsByTagName("head")[0] || document.documentElement;
+    script = document.createElement("script");
+    script.async = "async";
+    script.src = url.replace(/=\?/, "=" + cbname);
+    script.onload = script.onreadystatechange = readystatechange;
+    head.insertBefore(script, head.firstChild);
+    ++jsonp;
 };
 Miniajax.isoutstanding = function (formname, callback) {
     var myoutstanding = outstanding[formname];
@@ -1052,6 +1092,23 @@ Miniajax.isoutstanding = function (formname, callback) {
 };
 return Miniajax;
 })();
+
+
+// ajax checking for paper updates
+function check_version(url) {
+    function updateverifycb(json) {
+	var e;
+	if (json && json.messages && (e = $$("initialmsgs")))
+	    e.innerHTML = json.messages + e.innerHTML;
+    }
+    function updatecb(json) {
+	if (json && json.updates && JSON.stringify)
+	    Miniajax.get("checkupdates.php?data="
+			 + encodeURIComponent(JSON.stringify(json)),
+			 updateverifycb);
+    }
+    Miniajax.getjsonp(url + "&jsonp=?", updatecb, null);
+}
 
 
 // ajax loading of paper information

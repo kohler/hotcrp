@@ -1468,11 +1468,14 @@ span.match {
 	font-weight: bold;
 }
 
-div.merror div.parseerr p, div.warning div.parseerr p,
+div.bigod, p.bigod, div.merror div.parseerr p, div.warning div.parseerr p,
 div.confirm div.parseerr p {
 	margin: 0;
 	padding: 0 0 0 3em;
 	text-indent: -3em;
+}
+div.bigid {
+	padding: 0 0 0 3em;
 }
 div.parseerr span.lineno {
 	font-style: italic;
@@ -1831,7 +1834,7 @@ div.psv {
 div.pscopen div.psv {
 	padding: 2px;
 }
-p.od, p.odname {
+div.od, p.od, p.odname {
 	margin: 0 0 0 1.5em;
 	text-indent: -1.5em;
 }

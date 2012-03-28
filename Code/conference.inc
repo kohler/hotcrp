@@ -1752,7 +1752,7 @@ class Conference {
     }
 
     function header($title, $id = "", $actionBar = null, $showTitle = true) {
-	global $ConfSiteBase, $ConfSiteSuffix, $Me, $Opt;
+	global $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH, $Me, $Opt;
 	if ($this->headerPrinted >= 2)
 	    return;
 	if ($actionBar === null)
@@ -1842,6 +1842,24 @@ class Conference {
 
 	$this->headerPrinted = 2;
 	echo "</div>\n<div class='body'>\n";
+
+	// Callback for version warnings
+	if ($Me->valid() && $Me->privChair
+	    && (!isset($Me->_updatecheck) || $Me->_updatecheck + 20 <= $now)
+	    && (!isset($Opt["updatesSite"]) || $Opt["updatesSite"])) {
+	    $m = defval($Opt, "updatesSite", "http://hotcrp.lcdf.org/updates");
+	    $m .= (strpos($m, "?") === false ? "?" : "&") . "version=" . HOTCRP_VERSION;
+	    if (is_dir("$ConfSitePATH/.git")) {
+		$args = array();
+		exec("export GIT_DIR=" . escapeshellarg($ConfSitePATH) . "/.git; git rev-parse HEAD 2>/dev/null; git merge-base origin/master HEAD 2>/dev/null", $args);
+		if (count($args) >= 1)
+		    $m .= "&git-head=" . urlencode($args[0]);
+		if (count($args) >= 2)
+		    $m .= "&git-upstream=" . urlencode($args[1]);
+	    }
+	    $this->footerScript("check_version(\"$m\")");
+	    $Me->_updatecheck = $now;
+	}
     }
 
     function closeTableMessages() {
