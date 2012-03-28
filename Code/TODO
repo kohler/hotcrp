@@ -1,3 +1,5 @@
+- Withdraw should have a text field "why". [Dan Tsafrir, Wilson Hsieh]
+
 - Hide new reviews from reviewers? [Dan Tsafrir]
 
 - Decline review should actually HAPPEN when you click teh link, and
