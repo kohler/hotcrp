@@ -1829,18 +1829,16 @@ class Conference {
 
 	echo $actionBar;
 
-	echo "</div>\n";
-
+	echo "</div>\n<div id=\"initialmsgs\">\n";
 	if (isset($_SESSION["msgs"])) {
-	    echo "<div id='initialmsgs'>\n";
 	    foreach ($_SESSION["msgs"] as $m) {
 		echo $m;
 		$this->msgcount++;
 	    }
 	    unset($_SESSION["msgs"]);
-	    echo "</div>\n";
 	}
 	$this->saveMessages = false;
+	echo "</div>\n";
 
 	$this->headerPrinted = 2;
 	echo "</div>\n<div class='body'>\n";

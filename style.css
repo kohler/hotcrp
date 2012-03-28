@@ -190,9 +190,6 @@ div.inform {
 
 
 /* body */
-div#initialmsgs {
-	margin: 0 12px;
-}
 div.body {
 	margin: 0 12px;
 	position: relative;
@@ -217,11 +214,20 @@ body#review div#prebody, body#comment div#prebody, body#contactauthors div#prebo
 body#assign div#prebody {
 	background: white;
 }
-body#paper_view div#initialmsgs, body#paper_edit div#initialmsgs,
-body#review div#initialmsgs, body#comment div#initialmsgs, body#contactauthors div#initialmsgs,
-body#assign div#initialmsgs {
+
+div#initialmsgs > div {
+	margin: 0 12px 0.5em;
+}
+div#initialmsgs > div:last-child {
 	margin-bottom: 0;
-	padding-bottom: 20px;
+}
+body#paper_view div#initialmsgs > div:last-child,
+body#paper_edit div#initialmsgs > div:last-child,
+body#review div#initialmsgs > div:last-child,
+body#comment div#initialmsgs > div:last-child,
+body#contactauthors div#initialmsgs > div:last-child,
+body#assign div#initialmsgs > div:last-child {
+	margin-bottom: 20px;
 }
 
 table.manyassign {
@@ -257,9 +263,6 @@ div#footer_crp {
 
 
 /* infoboxes */
-div#initialmsgs {
-	margin-top: -0.5em;
-}
 div.info, div.warning, div.confirm, div.merror {
 	background: #eeeeff url(images/info45.png) 10px 10px no-repeat;
 	padding: 0.5em 0.5em 0.5em 65px;
