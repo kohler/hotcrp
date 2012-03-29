@@ -78,6 +78,7 @@ Code/backupdb.sh
 Code/banal
 Code/baselist.inc
 Code/checkformat.inc
+Code/cleanxhtml.inc
 Code/commentview.inc
 Code/conference.inc
 Code/contact.inc
