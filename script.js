@@ -1107,7 +1107,8 @@ function check_version(url) {
 			 + encodeURIComponent(JSON.stringify(json)),
 			 updateverifycb);
     }
-    Miniajax.getjsonp(url + "&jsonp=?", updatecb, null);
+    Miniajax.getjsonp(url + "&site=" + encodeURIComponent(window.location.toString())
+		      + "&jsonp=?", updatecb, null);
 }
 
 
