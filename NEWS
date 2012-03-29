@@ -1,5 +1,13 @@
 HotCRP NEWS
 
+Version 2.49   29.Mar.2012
+
+* Add update notification. Chairs' browsers contact an updates server,
+  hotcrp.lcdf.org/updates, to check whether the HotCRP installation should
+  be updated. If you don't want chairs' browsers to contact hotcrp.lcdf.org
+  with version information, set $Opt["updatesSite"] = false.
+
+
 Version 2.48   28.Mar.2012
 
 * Correct major information exposure with author-view capabilities.
