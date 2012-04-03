@@ -1,6 +1,6 @@
 #! /bin/sh
 ## createdb.sh -- HotCRP database setup program
-## HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+## HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 ## Distributed under an MIT-like license; see LICENSE
 
 ## Create the database. The assumption is that database
@@ -26,21 +26,27 @@ echo_n () {
 export PROG=$0
 export FLAGS=""
 export FLAGS_NOP=""
+export ECHOFLAGS=""
 DBNAME=""
+needpassword=false
 while [ $# -gt 0 ]; do
     case "$1" in
     -p|--pas|--pass|--passw|--passwo|--passwor|--password)
-	FLAGS="$FLAGS '$1'"; shift;;
+	needpassword=true; shift;;
     -u|--us|--use|--user)
-	FLAGS="$FLAGS '$1'"; shift
-	[ $# -gt 0 ] && { FLAGS="$FLAGS '$1'"; shift; }
+	FLAGS="$FLAGS '$1'"; ECHOFLAGS="$ECHOFLAGS '$1'"; shift
+	[ $# -gt 0 ] && { FLAGS="$FLAGS '$1'"; ECHOFLAGS="$ECHOFLAGS '$1'"; shift; }
 	;;
-    -u*|--us=*|--use=*|--user=*|-p*|--pas=*|--pass=*|--passw=*|--passwo=*|--passwor=*|--password=*)
-	FLAGS="$FLAGS '$1'"; shift;;
+    -u*|--us=*|--use=*|--user=*)
+	FLAGS="$FLAGS '$1'"; ECHOFLAGS="$ECHOFLAGS '$1'"; shift;;
+    -p*)
+	FLAGS="$FLAGS '$1'"; ECHOFLAGS="$ECHOFLAGS -p'<REDACTED>'"; shift;;
+    --pas=*|--pass=*|--passw=*|--passwo=*|--passwor=*|--password=*)
+	FLAGS="$FLAGS '$1'"; ECHOFLAGS="$ECHOFLAGS `echo '$1' | sed 's/=.*//'`='<REDACTED>'"; shift;;
     --he|--hel|--help)
 	help;;
     -*)
-	FLAGS="$FLAGS '$1'"; FLAGS_NOP="$FLAGS_NOP '$1'"; shift;;
+	FLAGS="$FLAGS '$1'"; FLAGS_NOP="$FLAGS_NOP '$1'"; ECHOFLAGS="$ECHOFLAGS '$1'"; shift;;
     *)
 	if [ -z "$DBNAME" ]; then
 	    DBNAME="$1"; shift
@@ -51,6 +57,41 @@ while [ $# -gt 0 ]; do
 	fi;;
     esac
 done
+
+if $needpassword; then
+    echo_n "Enter MySQL password: "
+    stty -echo
+    read PASSWORD
+    stty echo
+    echo
+    FLAGS="$FLAGS -p'$PASSWORD'"; ECHOFLAGS="$ECHOFLAGS -p'<REDACTED>'"
+fi
+
+### Test mysql binary
+if test -z "$MYSQL"; then
+    MYSQL=mysql
+    ! $MYSQL --version >/dev/null 2>&1 && mysql5 --version >/dev/null 2>&1 && MYSQL=mysql5
+fi
+if test -z "$MYSQLADMIN"; then
+    MYSQLADMIN=mysqladmin
+    ! $MYSQLADMIN --version >/dev/null 2>&1 && mysqladmin5 --version >/dev/null 2>&1 && MYSQLADMIN=mysqladmin5
+fi
+
+if ! $MYSQL --version >/dev/null 2>&1; then
+    echo "The $MYSQL binary doesn't appear to work."
+    echo "Set the MYSQL environment variable and try again."
+    exit 1
+fi
+if ! $MYSQLADMIN --version >/dev/null 2>&1; then
+    echo "The $MYSQLADMIN binary doesn't appear to work."
+    echo "Set the MYSQLADMIN environment variable and try again."
+    exit 1
+fi
+if ! (echo 'show databases;' | eval $MYSQL $FLAGS >/dev/null); then
+    echo "Could not run $MYSQL $ECHOFLAGS. Did you enter the right password?"
+    exit 1
+fi
+
 
 PROGDIR=`echo "$0" | sed 's,[^/]*$,,'`
 
@@ -90,7 +131,9 @@ __EOF__
 
 while true; do
     echo_n "Enter password for mysql user $DBNAME [default $DBNAME]: "
+    stty -echo
     read -r DBPASS
+    stty echo
     if [ -z "`echo_dbpass`" ]; then DBPASS=$DBNAME; fi
     x=`echo_dbpass | tr -d -c '\000'"'"`
     if test -z "$x" >/dev/null; then break; fi
@@ -115,13 +158,13 @@ if [ -z "$FLAGS" ]; then
     echo "administrative password.  If you have changed the password, you will need to"
     echo "run '$PROG -p' or '$PROG -pPASSWD' (no space)."
 fi
-echo "+ echo 'show databases;' | mysql $FLAGS | grep $DBNAME"
-echo 'show databases;' | eval mysql $FLAGS >/dev/null || exit 1
-echo 'show databases;' | eval mysql $FLAGS | grep $DBNAME >/dev/null 2>&1
+echo "+ echo 'show databases;' | $MYSQL $ECHOFLAGS | grep $DBNAME"
+echo 'show databases;' | eval $MYSQL $FLAGS >/dev/null || exit 1
+echo 'show databases;' | eval $MYSQL $FLAGS | grep $DBNAME >/dev/null 2>&1
 dbexists="$?"
-echo "+ echo 'select User from user group by User;' | mysql $FLAGS mysql | grep $DBNAME"
-echo 'select User from user group by User;' | eval mysql $FLAGS mysql >/dev/null || exit 1
-echo 'select User from user group by User;' | eval mysql $FLAGS mysql | grep '^'$DBNAME'$' >/dev/null 2>&1
+echo "+ echo 'select User from user group by User;' | $MYSQL $ECHOFLAGS mysql | grep $DBNAME"
+echo 'select User from user group by User;' | eval $MYSQL $FLAGS mysql >/dev/null || exit 1
+echo 'select User from user group by User;' | eval $MYSQL $FLAGS mysql | grep '^'$DBNAME'$' >/dev/null 2>&1
 userexists="$?"
 createdbuser=y
 if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
@@ -139,18 +182,18 @@ if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
     expr "$createdbuser" : "[nN].*" >/dev/null || createdbuser=y
 
     if [ "$createdbuser" = y -a "$dbexists" = 0 ]; then
-	echo "+ mysqladmin $FLAGS -f drop $DBNAME"
-	eval mysqladmin $FLAGS -f drop $DBNAME || exit 1
+	echo "+ $MYSQLADMIN $ECHOFLAGS -f drop $DBNAME"
+	eval $MYSQLADMIN $FLAGS -f drop $DBNAME || exit 1
     fi
 fi
 if [ "$createdbuser" = y ]; then
     echo
     echo "Creating $DBNAME database."
-    echo "+ mysqladmin $FLAGS --default-character-set=utf8 create $DBNAME"
-    eval mysqladmin $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
+    echo "+ $MYSQLADMIN $ECHOFLAGS --default-character-set=utf8 create $DBNAME"
+    eval $MYSQLADMIN $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
 
     echo "Creating $DBNAME user and password."
-    eval mysql $FLAGS mysql <<__EOF__ || exit 1
+    eval $MYSQL $FLAGS mysql <<__EOF__ || exit 1
 DELETE FROM user WHERE user='$DBNAME';
 INSERT INTO user SET
     Host='127.0.0.1',
@@ -220,7 +263,7 @@ __EOF__
 ##
 
     echo "Reloading grant tables."
-    eval mysqladmin $FLAGS reload || exit 1
+    eval $MYSQLADMIN $FLAGS reload || exit 1
 
     if [ ! -r "${PROGDIR}schema.sql" ]; then
 	echo "Can't read schema.sql!  You'll have to populate the database yourself."
@@ -251,8 +294,8 @@ echo
 if [ "$populatedb" = y ]; then
     echo "Populating database."
     FLAGS_SCHEMA="-u $DBNAME -p'`echo_dbpass`' $FLAGS_NOP"
-    echo mysql "$FLAGS_SCHEMA" $DBNAME "<" ${PROGDIR}schema.sql
-    eval mysql "$FLAGS_SCHEMA" $DBNAME < ${PROGDIR}schema.sql || exit 1
+    echo $MYSQL "$FLAGS_SCHEMA" $DBNAME "<" ${PROGDIR}schema.sql
+    eval $MYSQL "$FLAGS_SCHEMA" $DBNAME < ${PROGDIR}schema.sql || exit 1
 fi
 
 ##
