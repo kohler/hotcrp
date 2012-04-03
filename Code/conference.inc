@@ -1876,14 +1876,24 @@ class Conference {
     }
 
     function footer() {
-	global $Opt;
+	global $Opt, $Me, $ConfSitePATH;
 	$this->closeTableMessages();
 	echo "</div>\n", // class='body'
 	    "<div id='footer'>\n  <div id='footer_crp'>",
 	    defval($Opt, "extraFooter", ""),
-	    "<a href='http://www.cs.ucla.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software";
-	if (!defval($Opt, "noFooterVersion", 0))
-	    echo "<!-- Version ", HOTCRP_VERSION, " -->";
+	    "<a href='http://read.seas.harvard.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software";
+	if (!defval($Opt, "noFooterVersion", 0)) {
+	    if ($Me->valid() && $Me->privChair) {
+		echo " v", HOTCRP_VERSION;
+		if (is_dir("$ConfSitePATH/.git")) {
+		    $args = array();
+		    exec("export GIT_DIR=" . escapeshellarg($ConfSitePATH) . "/.git; git rev-parse HEAD 2>/dev/null; git rev-parse v" . HOTCRP_VERSION . " 2>/dev/null", $args);
+		    if (count($args) == 2 && $args[0] != $args[1])
+			echo " [", substr($args[0], 0, 7), "...]";
+		}
+	    } else
+		echo "<!-- Version ", HOTCRP_VERSION, " -->";
+	}
 	echo "</div>\n  <div class='clear'></div></div>\n";
 	if ($this->footerScripting)
 	    $this->footerHtml("");
