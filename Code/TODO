@@ -1,3 +1,34 @@
+- We attempted to load balance the reviews among the PC members, such that
+each had 14 papers to review. Suppose now that a PC member submitted to the
+conference paper #1. Then, they could recognize from the statistics page
+the reviewers of his paper as those having reviewed only 13 papers. We feel
+this could be corrected by adding an option to disable the statistics page
+view for users without chair rights. [Giuliano Casale, Martin Arlitt]
+
+- It would be great to have a box for chairs to take notes about a given
+paper. Currently, we could do this just by adding ~~ tags, but this is
+not so good if the comment is long. [Giuliano Casale, Martin Arlitt]
+
+- We had the need a few times to distribute additional material to the
+reviewers of a paper, e.g., anonymized technical reports provided
+through the chairs (our conference uses a double-blind review
+process). It would have been nice to have the ability to attach this
+extra material to the corresponding paper page, instead of having to
+send an email to the reviewers. This would have given the ability to
+the other PC members to look at this extra material during the PC
+meeting. [Giuliano Casale, Martin Arlitt]
+
+- During the PC meeting, we were highlighting the current paper for the
+benefit of the members (i.e., so they could more easily follow along as we
+discussed papers). Basically, this amounted to adding a red tag and
+deleting it from the previously considered paper. It seems a quick action
+to do, but while listening to the PC members, marking the decisions (in
+HotCRP as well as on paper), discussing the merits of a paper with the PC
+members, etc., we struggled to keep the appropriate paper tagged as
+“current”. We’re not sure if this would be a feasible extension, but
+perhaps having a button to color/uncolor the current selection would have
+made our life easier. [Giuliano Casale, Martin Arlitt]
+
 - Hide new reviews from reviewers? [Dan Tsafrir]
 
 - Decline review should actually HAPPEN when you click teh link, and
