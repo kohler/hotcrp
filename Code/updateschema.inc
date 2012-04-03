@@ -240,6 +240,10 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperComment add `ordinal` int(11) NOT NULL default '0'")
 	&& $Conf->q("update Settings set value=43 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 43;
+    if ($Conf->settings["allowPaperOption"] == 43
+	&& $Conf->q("alter table Paper add `withdrawReason` text")
+	&& $Conf->q("update Settings set value=44 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 44;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

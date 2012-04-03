@@ -135,7 +135,7 @@ Thank you,
      array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER% declined",
 	   "body" => "Dear %NAME%,
 
-%OTHERCONTACT% cannot complete the review of %CONFNAME% paper #%NUMBER% that you requested.  %IF(REASON)%They gave the following reason: %REASON%  %ENDIF%You may want to find an alternate reviewer.
+%OTHERCONTACT% cannot complete the review of %CONFNAME% paper #%NUMBER% that you requested. %IF(REASON)%They gave the following reason: %REASON% %ENDIF%You may want to find an alternate reviewer.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -147,7 +147,7 @@ Thank you,
      array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
 
-An author of %CONFNAME% paper #%NUMBER% has withdrawn the paper from consideration.  The paper will not be reviewed.
+An author of %CONFNAME% paper #%NUMBER% has withdrawn the paper from consideration. The paper will not be reviewed.%IF(REASON)% They gave the following reason: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -181,7 +181,7 @@ Thank you,
 
 %CONFSHORTNAME% paper #%NUMBER%, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.
 
-Authors can voluntarily withdraw a submission at any time, as can the chair.  %REASON%
+Authors can voluntarily withdraw a submission at any time, as can the chair.%IF(REASON)% The following reason was provided: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -197,7 +197,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Deleted paper #%NUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
 
-Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by an administrator.  This can be done to remove duplicate papers.  %IF(REASON)%The following reason was provided for deleting the paper: %REASON%%ENDIF%
+Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by an administrator. This can be done to remove duplicate papers. %IF(REASON)%The following reason was provided for deleting the paper: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%

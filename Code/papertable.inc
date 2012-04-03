@@ -1412,14 +1412,16 @@ class PaperTable {
 		$Conf->footerHtml("<div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this paper from consideration and/or
   publication?  $admins</p>
-  <form method='post' action=\"" . hoturl("paper", "p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
+  <form method='post' action=\"" . hoturl("paper", "p=" . $prow->paperId . "&amp;post=1&amp;m=pe$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+    <textarea id='withdrawreason' class='temptext' name='reason' rows='3' cols='40' style='width:99%;margin-bottom:10px'>Optional explanation</textarea>
     <div class='popup_actions'>
       <input class='popup_populate' type='hidden' name='doemail' value='1' />
       <input class='popup_populate' type='hidden' name='emailNote' value='' />
       <button type='button' class='b' onclick=\"popup(null, 'w', 1)\">Cancel</button>
       &nbsp;<input class='bb' type='submit' name='withdraw' value='Withdraw paper' />
     </div>
-  </form></div>");
+  </div></form></div>");
+		$Conf->footerScript("mktemptext('withdrawreason','Optional explanation')");
 	    }
 	    if (!$this->editable)
 		$buttons[] = "<button type='button' class='b' onclick='window.location=\"" . hoturl("contactauthors", "p=" . $prow->paperId . $linkExtra) . "\"'>Edit contacts</button>";

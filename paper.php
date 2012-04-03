@@ -10,9 +10,9 @@ $Me->goIfInvalid();
 $useRequest = false;
 $forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
 $linkExtra = ($forceShow ? "&amp;forceShow=1" : "");
-if (isset($_REQUEST["emailNote"])
-    && $_REQUEST["emailNote"] == "Optional explanation")
-    unset($_REQUEST["emailNote"]);
+foreach (array("emailNote", "reason") as $x)
+    if (isset($_REQUEST[$x]) && $_REQUEST[$x] == "Optional explanation")
+	unset($_REQUEST[$x]);
 if (defval($_REQUEST, "mode") == "edit")
     $_REQUEST["mode"] = "pe";
 else if (defval($_REQUEST, "mode") == "view")
@@ -127,7 +127,14 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
 // withdraw and revive actions
 if (isset($_REQUEST["withdraw"]) && !$newPaper) {
     if ($Me->canWithdrawPaper($prow, $whyNot)) {
-	$Conf->qe("update Paper set timeWithdrawn=" . time() . ", timeSubmitted=if(timeSubmitted>0,-100,0) where paperId=$paperId", "while withdrawing paper");
+	$q = "update Paper set timeWithdrawn=" . time()
+	    . ", timeSubmitted=if(timeSubmitted>0,-100,0)";
+	$reason = defval($_REQUEST, "reason", "");
+	if ($reason == "" && $Me->privChair && defval($_REQUEST, "doemail") > 0)
+	    $reason = defval($_REQUEST, "emailNote", "");
+	if ($Conf->sversion >= 44 && $reason != "")
+	    $q .= ", withdrawReason='" . sqlq($reason) . "'";
+	$Conf->qe($q . " where paperId=$paperId", "while withdrawing paper");
 	$result = $Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId", "while withdrawing paper");
 	$numreviews = edb_nrows_affected($result);
 	$Conf->updatePapersubSetting(false);
@@ -135,18 +142,13 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 
 	// email contact authors themselves
 	require_once("Code/mailtemplate.inc");
-	if ($Me->privChair && defval($_REQUEST, "doemail") <= 0)
-	    /* do nothing */;
-	else if ($prow->conflictType >= CONFLICT_AUTHOR)
-	    Mailer::sendContactAuthors("@authorwithdraw", $prow, null, array("infoNames" => 1));
-	else
-	    Mailer::sendContactAuthors("@adminwithdraw", $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
+	if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
+	    Mailer::sendContactAuthors(($prow->conflictType >= CONFLICT_AUTHOR ? "@authorwithdraw" : "@adminwithdraw"),
+				       $prow, null, array("reason" => $reason, "infoNames" => 1));
 
 	// email reviewers
-	if ($numreviews > 0 || $prow->startedReviewCount > 0) {
-	    $emailNote = ($Me->privChair && defval($_REQUEST, "doemail") > 0 ? defval($_REQUEST, "emailNote", "") : "");
-	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => $emailNote));
-	}
+	if ($numreviews > 0 || $prow->startedReviewCount > 0)
+	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => $reason));
 
 	// remove voting tags so people don't have phantom votes
 	require_once("Code/tags.inc");
@@ -159,18 +161,23 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 	}
 
 	$Conf->log("Withdrew", $Me, $paperId);
+	redirectSelf();
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "withdraw"));
 }
 if (isset($_REQUEST["revive"]) && !$newPaper) {
     if ($Me->canRevivePaper($prow, $whyNot)) {
-	$Conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0) where paperId=$paperId", "while reviving paper");
+	$q = "update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0)";
+	if ($Conf->sversion >= 44)
+	    $q .= ", withdrawReason=null";
+	$Conf->qe($q . " where paperId=$paperId", "while reviving paper");
 	$Conf->qe("update PaperReview set reviewNeedsSubmit=1 where paperId=$paperId and reviewSubmitted is null", "while reviving paper");
 	$Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
 	$Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
 	$Conf->updatePapersubSetting(true);
 	loadRows();
 	$Conf->log("Revived", $Me, $paperId);
+	redirectSelf();
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "revive"));
 }

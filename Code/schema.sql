@@ -178,6 +178,7 @@ CREATE TABLE `Paper` (
   # next 2 fields calculated from PaperComment to reduce joins
   `numComments` int(11) NOT NULL DEFAULT '0',
   `numAuthorComments` int(11) NOT NULL DEFAULT '0',
+  `withdrawReason` text,
   PRIMARY KEY  (`paperId`),
   UNIQUE KEY `paperId` (`paperId`),
   KEY `title` (`title`),
@@ -526,7 +527,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 43);
+insert into Settings (name, value) values ('allowPaperOption', 44);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
