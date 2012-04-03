@@ -501,7 +501,7 @@ insertion.</p>
 <p><b>Define order</b> might assign values “tag#1”,
 “tag#3”, “tag#6”, and “tag#7”
 to adjacent papers.  The gaps make it harder to infer
-conflicted papers' positions.  (Any given gap might or might not hold a
+conflicted papers’ positions.  (Any given gap might or might not hold a
 conflicted paper.)  In contrast, the <b>Define gapless order</b> action assigns
 strictly sequential values, like “tag#1”,
 “tag#2”, “tag#3”, “tag#4”.
