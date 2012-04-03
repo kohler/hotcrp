@@ -339,13 +339,14 @@ class PaperTable {
 
 	$documentType = $opt->optionId;
 	$optionType = $opt->type;
+	$noPapers = defval($Opt, "noPapers") && ($documentType == DOCUMENT_SUBMISSION || $documentType == DOCUMENT_FINAL);
 	$banal = $Conf->setting("sub_banal")
 	    && ($optionType == null || $optionType == PaperOption::T_PDF
 		|| $optionType == PaperOption::T_FINALPDF);
 
 	$filetypes = array();
 	$accepts = array();
-	if (defval($Opt, "noPapers")) {
+	if ($noPapers) {
 	    if ($documentType == DOCUMENT_SUBMISSION)
 		echo $this->papt("paper", "Status");
 	} else {
@@ -418,7 +419,7 @@ class PaperTable {
 		$checked = !$prow || $storageId <= 1 || $prow->timeSubmitted > 0;
 	    $s = ($doc ? " style='margin-top: 0.5ex'" : "");
 	    echo "<div id='foldisready' class='",
-		(($prow && $storageId > 1) || defval($Opt, "noPapers") ? "foldo" : "foldc"),
+		(($prow && $storageId > 1) || $noPapers ? "foldo" : "foldc"),
 		"'$s><table class='fx'><tr><td class='nowrap'>",
 		tagg_checkbox_h("submit", 1, $checked, array("id" => "paperisready")), "&nbsp;";
 	    if ($Conf->setting('sub_freeze'))
