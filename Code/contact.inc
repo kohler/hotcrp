@@ -698,7 +698,8 @@ class Contact {
 	if ($this->privChair && $forceShow)
 	    return true;
 	if (($prow->timeSubmitted > 0
-	     || defval($prow, "myReviewType") > 0)
+	     || defval($prow, "myReviewType") > 0
+	     || $this->privChair)
 	    && (($conflictType >= CONFLICT_AUTHOR
 		 && $Conf->timeAuthorViewReviews($this->reviewsOutstanding && $this->isReviewer)
 		 && $rrowSubmitted)
