@@ -136,7 +136,7 @@ class CheckFormat {
 	if (isset($Opt["pdftohtml"]))
 	    putenv("PHP_PDFTOHTML=" . $Opt["pdftohtml"]);
 
-	$banal_run = "Code/banal ";
+	$banal_run = "Code/banal -no_app ";
 	if (($gtpos = strpos($spec, ">")) !== false) {
 	    $banal_run .= substr($spec, $gtpos + 1) . " ";
 	    $spec = substr($spec, 0, $gtpos);
