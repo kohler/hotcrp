@@ -147,7 +147,8 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
 				       $prow, null, array("reason" => $reason, "infoNames" => 1));
 
 	// email reviewers
-	if ($numreviews > 0 || $prow->startedReviewCount > 0)
+	if (($numreviews > 0 && $Conf->timeReviewOpen())
+	    || $prow->startedReviewCount > 0)
 	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => $reason));
 
 	// remove voting tags so people don't have phantom votes
