@@ -1637,7 +1637,9 @@ sub banal_open_input ($) {
     return 1;
 }
 
-sub banal_config_p2h () {
+sub banal_config_p2h ($) {
+    my ($fname) = @_;
+    $fname = basename($fname);
     my ($major, $minor);
 
     if (!defined($zoom)) {
@@ -1699,7 +1701,7 @@ sub main () {
     $spec = banal_get_spec ();
     banal_report_spec ($spec) if (defined $judge);
 
-    if (!banal_config_p2h ()) {
+    if (!banal_config_p2h ($ARGV[0])) {
 	return 1;
     }
 
