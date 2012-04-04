@@ -401,7 +401,7 @@ if (isset($_REQUEST["delete"]) && $OK) {
 	else {
 	    $while = "while deleting user";
 	    foreach (array("ContactInfo", "Chair", "ChairAssistant",
-			   "ContactAddress", "ContactTag",
+			   "ContactAddress",
 			   "PCMember", "PaperComment",
 			   "PaperConflict", "PaperReview",
 			   "PaperReviewPreference", "PaperReviewRefused",
