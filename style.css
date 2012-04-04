@@ -408,6 +408,10 @@ span.hastitle {
 .linelinks5 .lld5 {
 	display: inline;
 }
+.linelinks1 td.lld1, .linelinks2 td.lld2, .linelinks3 td.lld3, .linelinks4 td.lld4,
+.linelinks5 td.lld5 {
+	display: table-cell;
+}
 .lld1, .lld2, .lld3, .lld4, .lld5 {
  	display: none;
 }
