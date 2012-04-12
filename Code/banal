@@ -28,7 +28,7 @@ use Data::Dumper;
 use File::Basename;
 
 sub usage {
-    print <<EOF
+    print <<EOF;
 usage: banal [-report | -stats | -judge [specs]] [-zoom=N] files
 
 banal has three modes of operation:
@@ -89,13 +89,17 @@ banal has three modes of operation:
 -version  report the version of banal
 
 EOF
+      exit(1);
 }
 
 # version
 $banal_version = 1.2;
 
 # zoom value
-usage() if ((defined $zoom) && ($zoom !~ /^[1-9]\d*(\.\d*)?$/));
+if ((defined $zoom) && ($zoom !~ /^[1-9]\d*(\.\d*)?$/)) {
+    print STDERR "banal: bad -zoom\n";
+    usage;
+}
 
 # mapping from pdftohtml units to inches
 #$p2h_per_inch = 72;
