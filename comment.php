@@ -90,11 +90,10 @@ function comment_watch_callback($prow, $minic) {
 }
 
 function watch() {
-    global $Conf, $Me, $prow, $savedCrow;
-    $apo = $Conf->sversion;
+    global $prow, $savedCrow;
     if (!$savedCrow
 	// ignore changes to a comment within 3 hours (see saveComment())
-	|| ($apo >= 21 && $savedCrow->timeNotified != $savedCrow->timeModified))
+	|| $savedCrow->timeNotified != $savedCrow->timeModified)
 	return;
     genericWatch($prow, WATCHTYPE_COMMENT, "comment_watch_callback");
 }
@@ -124,17 +123,12 @@ function saveComment($text, $locked) {
 
     // query
     $now = time();
-    $notify = ($Conf->sversion >= 21);
     if (!$text) {
 	$change = true;
 	$q = "delete from PaperComment where commentId=$crow->commentId";
     } else if (!$crow) {
 	$change = true;
 	$qa = $qb = "";
-	if ($notify) {
-	    $qa .= ", timeNotified";
-	    $qb .= ", $now";
-	}
 	if (!(($forAuthors == 2 && $forReviewers == 0) || $forReviewers == 2)
 	    && $Conf->sversion >= 43) {
 	    $qa .= ", ordinal";
@@ -142,9 +136,9 @@ function saveComment($text, $locked) {
 	}
 	$q = "insert into PaperComment
 		(contactId, paperId, timeModified, comment, forReviewers,
-		forAuthors, blind$qa)
+		forAuthors, blind, timeNotified$qa)
 	select $Me->contactId, $prow->paperId, $now, '" . sqlq($text) . "',
-		$forReviewers, $forAuthors, $blind$qb
+		$forReviewers, $forAuthors, $blind, $now$qb
 	from (select P.paperId, coalesce(count(C.commentId),0) commentCount, coalesce(max(C.ordinal),0) maxOrdinal
 		from Paper P
 		left join PaperComment C on (C.paperId=P.paperId and C.forReviewers=$forReviewers and (C.forAuthors>0)=($forAuthors>0))
@@ -155,7 +149,7 @@ function saveComment($text, $locked) {
 	    $now = $crow->timeModified + 1;
 	// do not notify on updates within 3 hours
 	$qa = "";
-	if ($notify && $crow->timeNotified + 10800 < $now)
+	if ($crow->timeNotified + 10800 < $now)
 	    $qa = ", timeNotified=$now";
 	$q = "update PaperComment set timeModified=$now$qa, comment='" . sqlq($text) . "', forReviewers=$forReviewers, forAuthors=$forAuthors, blind=$blind where commentId=$crow->commentId";
     }

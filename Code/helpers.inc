@@ -1157,9 +1157,7 @@ function genericWatch($prow, $watchtype, $callback) {
 		R.reviewType as myReviewType,
 		R.reviewSubmitted as myReviewSubmitted,
 		R.reviewNeedsSubmit as myReviewNeedsSubmit,
-		conflictType, watch";
-    if ($Conf->sversion >= 25)
-	$q .= ", preferredEmail";
+		conflictType, watch, preferredEmail";
 
     $q .= "\nfrom ContactInfo C
 		left join PaperConflict Conf on (Conf.paperId=$prow->paperId and Conf.contactId=C.contactId)

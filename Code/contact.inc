@@ -249,7 +249,7 @@ class Contact {
 	global $Conf;
 	$this->trim();
 	$qa = ", roles='$this->roles', defaultWatch='$this->defaultWatch'";
-	if ($Conf->sversion >= 25 && $this->preferredEmail != "")
+	if ($this->preferredEmail != "")
 	    $qa .= ", preferredEmail='" . sqlq($this->preferredEmail) . "'";
 	if ($Conf->sversion >= 35) {
 	    if ($this->contactTags)
@@ -315,9 +315,7 @@ class Contact {
 	    if ($useRequest && isset($_REQUEST[$k])
 		&& defval($this, $k, "") == "")
 		$this->$k = trim($_REQUEST[$k]);
-	    if (isset($this->$k) && $this->$k
-		&& ($k != "preferredEmail"
-		    || $Conf->sversion >= 25)) {
+	    if (isset($this->$k) && $this->$k) {
 		$qa .= ", $k";
 		$qb .= ", '" . sqlq($this->$k) . "'";
 	    }

@@ -960,20 +960,19 @@ class PaperTable {
 	if (!count($pcm))
 	    return;
 
-	$maxauthormark = ($Conf->sversion >= 22 ? CONFLICT_MAXAUTHORMARK : CONFLICT_AUTHORMARK);
-	$selectors = ($maxauthormark == CONFLICT_MAXAUTHORMARK && $Conf->setting("sub_pcconfsel"));
+	$selectors = $Conf->setting("sub_pcconfsel");
 
 	$conflict = array();
 	if ($this->useRequest) {
 	    foreach ($pcm as $id => $row)
 		if (isset($_REQUEST["pcc$id"])
 		    && ($ct = cvtint($_REQUEST["pcc$id"])) > 0)
-		    $conflict[$id] = max(min($ct, $maxauthormark), CONFLICT_AUTHORMARK);
+		    $conflict[$id] = max(min($ct, CONFLICT_MAXAUTHORMARK), CONFLICT_AUTHORMARK);
 	}
 	if ($prow) {
 	    $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=$prow->paperId", "while finding conflicted PC members");
 	    while (($row = edb_row($result)))
-		if ($row[1] < CONFLICT_AUTHORMARK || $row[1] > $maxauthormark
+		if ($row[1] < CONFLICT_AUTHORMARK || $row[1] > CONFLICT_MAXAUTHORMARK
 		    || !$this->useRequest)
 		    $conflict[$row[0]] = $row[1];
 	}
@@ -984,7 +983,7 @@ class PaperTable {
 		$c = "<tr><td class='pctbname0 pctbl'>". contactNameHtml($p) . "</td><td class='pctbconfsel'>";
 		if (isset($conflict[$id]) && $conflict[$id] > 0
 		    && ($conflict[$id] < CONFLICT_AUTHORMARK
-			|| $conflict[$id] > $maxauthormark)) {
+			|| $conflict[$id] > CONFLICT_MAXAUTHORMARK)) {
 		    if ($conflict[$id] >= CONFLICT_AUTHOR)
 			$c .= "<strong>Author</strong>";
 		    else
@@ -1004,7 +1003,7 @@ class PaperTable {
 	} else {
 	    foreach ($pcm as $id => $p) {
 		$checked = defval($conflict, $id) > 0;
-		$disabled = $checked && ($conflict[$id] < CONFLICT_AUTHORMARK || $conflict[$id] > $maxauthormark);
+		$disabled = $checked && ($conflict[$id] < CONFLICT_AUTHORMARK || $conflict[$id] > CONFLICT_MAXAUTHORMARK);
 		$cbox = tagg_checkbox_h("pcc$id", CONFLICT_AUTHORMARK, $checked, array($disabled => $disabled));
 		$aff = ($p->affiliation === "" ? "" : "<div class='pcconfaff'>" . htmlspecialchars($p->affiliation) . "</div>");
 		$label = tagg_label(contactNameHtml($p) . $aff);

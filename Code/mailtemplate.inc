@@ -1134,10 +1134,9 @@ class Mailer {
 
     static function sendContactAuthors($template, $row, $otherContact = null, $rest = array()) {
 	global $Conf, $Me, $mailTemplates;
-	$qa = ($Conf->sversion >= 25 ? ", preferredEmail" : "");
 
 	$result = $Conf->qe("select ContactInfo.contactId,
-		firstName, lastName, email$qa, password, conflictType, 0 as myReviewType
+		firstName, lastName, email, preferredEmail, password, conflictType, 0 as myReviewType
 		from ContactInfo join PaperConflict using (contactId)
 		where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
 		group by ContactInfo.contactId", "while looking up contacts to send email");
@@ -1165,10 +1164,9 @@ class Mailer {
 
     static function sendReviewers($template, $row, $otherContact = null, $rest = array()) {
 	global $Conf, $Me, $Opt, $mailTemplates;
-	$qa = ($Conf->sversion >= 25 ? ", preferredEmail" : "");
 
 	$result = $Conf->qe("select ContactInfo.contactId,
-		firstName, lastName, email$qa, password,
+		firstName, lastName, email, preferredEmail, password,
 		conflictType, reviewType as myReviewType
 		from ContactInfo
 		join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$row->paperId)

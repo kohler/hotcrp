@@ -488,8 +488,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
     // update PC conflicts if appropriate
     if ($Conf->setting("sub_pcconf") && (!$isSubmitFinal || $Me->privChair)) {
-	$maxauthormark = ($Conf->sversion >= 22 ? CONFLICT_MAXAUTHORMARK : CONFLICT_AUTHORMARK);
-	if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHORMARK . " and conflictType<=" . $maxauthormark, "while updating conflicts"))
+	if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHORMARK . " and conflictType<=" . CONFLICT_MAXAUTHORMARK, "while updating conflicts"))
 	    return false;
 	$q = "";
 	$pcm = pcMembers();
@@ -498,7 +497,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 		&& $key[0] == 'p' && $key[1] == 'c' && $key[2] == 'c'
 		&& ($id = cvtint(substr($key, 3))) > 0 && isset($pcm[$id])
 		&& $value > 0)
-		$q .= "($paperId, $id, " . max(min($value, $maxauthormark), CONFLICT_AUTHORMARK) . "), ";
+		$q .= "($paperId, $id, " . max(min($value, CONFLICT_MAXAUTHORMARK), CONFLICT_AUTHORMARK) . "), ";
 	if ($q && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
 	values " . substr($q, 0, strlen($q) - 2) . "
 	on duplicate key update conflictType=conflictType",

@@ -84,9 +84,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 
     // check for outstanding review request
     $q = "select reviewType, reviewModified, reviewSubmitted, requestedBy, paperId,
-		firstName, lastName, email, password, roles, reviewToken";
-    if ($Conf->sversion >= 25)
-	$q .= ", preferredEmail";
+		firstName, lastName, email, password, roles, reviewToken, preferredEmail";
     $result = $Conf->qe($q . " from PaperReview
 		join ContactInfo using (contactId)
 		where reviewId=$reviewId", $while);

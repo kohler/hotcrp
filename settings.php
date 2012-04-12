@@ -1150,11 +1150,9 @@ function doSubGroup() {
 	($Conf->setting("sub_pcconf") ? "o" : "c"), "'>\n";
     doCheckbox("sub_pcconf", "Collect authors&rsquo; PC conflicts", true,
 	       "hiliter(this);void fold('pcconf',!this.checked)");
-    if ($Conf->sversion >= 22) {
-	echo "<tr class='fx'><td></td><td>";
-	doCheckbox("sub_pcconfsel", "Collect PC conflict types (&ldquo;Advisor/student,&rdquo; &ldquo;Recent collaborator,&rdquo; etc.)");
-	echo "</td></tr>\n";
-    }
+    echo "<tr class='fx'><td></td><td>";
+    doCheckbox("sub_pcconfsel", "Collect PC conflict types (&ldquo;Advisor/student,&rdquo; &ldquo;Recent collaborator,&rdquo; etc.)");
+    echo "</td></tr>\n";
     doCheckbox("sub_collab", "Collect authors&rsquo; other collaborators as text", true);
     echo "</table>\n";
 
