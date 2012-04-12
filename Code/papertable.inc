@@ -951,7 +951,7 @@ class PaperTable {
     }
 
     function echoPCConflicts($prow) {
-	global $Conf, $authorConflictTypes;
+	global $Conf, $Me, $authorConflictTypes;
 
 	assert(!!$this->editable);
 	if (!$Conf->setting("sub_pcconf"))
@@ -961,36 +961,37 @@ class PaperTable {
 	    return;
 
 	$selectors = $Conf->setting("sub_pcconfsel");
+	require_once("conflict.inc");
 
 	$conflict = array();
 	if ($this->useRequest) {
 	    foreach ($pcm as $id => $row)
 		if (isset($_REQUEST["pcc$id"])
 		    && ($ct = cvtint($_REQUEST["pcc$id"])) > 0)
-		    $conflict[$id] = max(min($ct, CONFLICT_MAXAUTHORMARK), CONFLICT_AUTHORMARK);
+		    $conflict[$id] = Conflict::force_author_mark($ct);
 	}
 	if ($prow) {
 	    $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=$prow->paperId", "while finding conflicted PC members");
-	    while (($row = edb_row($result)))
-		if ($row[1] < CONFLICT_AUTHORMARK || $row[1] > CONFLICT_MAXAUTHORMARK
-		    || !$this->useRequest)
-		    $conflict[$row[0]] = $row[1];
+	    while (($row = edb_row($result))) {
+		$ct = new Conflict($row[1]);
+		if (!$ct->is_author_mark() || !$this->useRequest)
+		    $conflict[$row[0]] = $ct;
+	    }
 	}
 
 	$pcconfs = array();
+	$nonct = Conflict::make_nonconflict();
 	if ($selectors) {
 	    foreach ($pcm as $id => $p) {
 		$c = "<tr><td class='pctbname0 pctbl'>". contactNameHtml($p) . "</td><td class='pctbconfsel'>";
-		if (isset($conflict[$id]) && $conflict[$id] > 0
-		    && ($conflict[$id] < CONFLICT_AUTHORMARK
-			|| $conflict[$id] > CONFLICT_MAXAUTHORMARK)) {
-		    if ($conflict[$id] >= CONFLICT_AUTHOR)
-			$c .= "<strong>Author</strong>";
-		    else
-			$c .= "<strong>Conflict</strong>";
-		} else
+		$ct = defval($conflict, $id, $nonct);
+		if ($ct->is_author())
+		    $c .= "<strong>Author</strong>";
+		else if ($ct->is_conflict() && !$ct->is_author_mark())
+		    $c .= "<strong>Conflict</strong>";
+		else
 		    $c .= tagg_select("pcc$id", $authorConflictTypes,
-				      defval($conflict, $id, 0),
+				      $ct->value,
 				      array("onchange" => "hiliter(this)",
 					    "class" => "pctbconfselector"));
 		$c .= "</td></tr>\n";
@@ -1002,8 +1003,9 @@ class PaperTable {
 	    $tclose = "</table>";
 	} else {
 	    foreach ($pcm as $id => $p) {
-		$checked = defval($conflict, $id) > 0;
-		$disabled = $checked && ($conflict[$id] < CONFLICT_AUTHORMARK || $conflict[$id] > CONFLICT_MAXAUTHORMARK);
+		$ct = defval($conflict, $id, $nonct);
+		$checked = $ct->is_conflict();
+		$disabled = $checked && !$ct->is_author_mark();
 		$cbox = tagg_checkbox_h("pcc$id", CONFLICT_AUTHORMARK, $checked, array($disabled => $disabled));
 		$aff = ($p->affiliation === "" ? "" : "<div class='pcconfaff'>" . htmlspecialchars($p->affiliation) . "</div>");
 		$label = tagg_label(contactNameHtml($p) . $aff);
