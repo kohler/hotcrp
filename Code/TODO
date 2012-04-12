@@ -1,3 +1,24 @@
+- Chair bold Conflict considered harmful [Nick Feamster]
+
+- Word lengths on rebuttals [Jeff Mogul]
+
+- When reviewers update their reviews, all we get is an email that the
+  review was updated. But there's no indication how it changed: did the
+  reviewer update the text? Did they raise/lower any score? Ideally, we'd
+  like to see what has changed, but HotCRP doesn't have versioning.
+  Versioning would be a lot of work, so perhaps a quicker/simpler solution
+  would be this: upon a review change, perhaps you can format the old and
+  new review (plus scores) as plain text, and include a diff(1) output of
+  the old vs. new reviews along with the email that notifies the chairs of
+  the review change? [Erez Zadok/Dan Tsafrir]
+
+- Attachments [Herbert Bos and others]
+
+- On the form for "Start a new paper," I think it would be nice to have a
+checkbox next to each author name that would automagically turn that author
+into a "contact". This would avoid the need to re-enter the same
+information in the "Edit contacts" function. [Jeff Mogul]
+
 - We attempted to load balance the reviews among the PC members, such that
 each had 14 papers to review. Suppose now that a PC member submitted to the
 conference paper #1. Then, they could recognize from the statistics page
