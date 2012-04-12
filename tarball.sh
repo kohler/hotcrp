@@ -82,6 +82,7 @@ Code/checkformat.inc
 Code/cleanxhtml.inc
 Code/commentview.inc
 Code/conference.inc
+Code/conflict.inc
 Code/contact.inc
 Code/contactlist.inc
 Code/countries.inc
