@@ -1,6 +1,6 @@
 <?php
 // bulkassign.php -- HotCRP bulk paper assignment page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once('Code/header.inc');
@@ -237,7 +237,7 @@ Types of PC review:
 
 echo "<h2 style='margin-top:1em'>Upload assignments</h2>
 
-<form action='", hoturl("bulkassign", "upload=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+<form action='", hoturl_post("bulkassign", "upload=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 Assign &nbsp;",
     tagg_select("t", array(REVIEW_PRIMARY => "primary reviews",
 			   REVIEW_SECONDARY => "secondary reviews",

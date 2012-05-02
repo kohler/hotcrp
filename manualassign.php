@@ -1,6 +1,6 @@
 <?php
 // manualassign.php -- HotCRP chair's paper assignment page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once('Code/header.inc');
@@ -282,7 +282,7 @@ if ($reviewer > 0) {
     }
 
     // ajax assignment form
-    echo "<form id='assrevform' method='post' action=\"", hoturl("assign", "update=1"), "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='clear'>",
+    echo "<form id='assrevform' method='post' action=\"", hoturl_post("assign", "update=1"), "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='clear'>",
 	"<input type='hidden' name='kind' value='$kind' />",
 	"<input type='hidden' name='p' value='' />",
 	"<input type='hidden' name='pcs$reviewer' value='' />",
@@ -304,7 +304,7 @@ if ($reviewer > 0) {
 	    $search->matchPreg["collaborators"] = "\\b" . str_replace(" ", "\\b|\\b", preg_quote(substr($showau, 0, strlen($showco) - 1))) . "\\b";
     }
     $a = isset($_REQUEST["sort"]) ? "&amp;sort=" . urlencode($_REQUEST["sort"]) : "";
-    echo "<div class='aahc'><form class='assignpc' method='post' action=\"", hoturl("manualassign", "reviewer=$reviewer&amp;kind=$kind&amp;post=1$a"),
+    echo "<div class='aahc'><form class='assignpc' method='post' action=\"", hoturl_post("manualassign", "reviewer=$reviewer&amp;kind=$kind$a"),
 	"\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
 	"<input type='hidden' name='t' value='", $_REQUEST["t"], "' />",
 	"<input type='hidden' name='q' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />",

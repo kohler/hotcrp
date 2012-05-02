@@ -1,6 +1,6 @@
 <?php
 // mail.php -- HotCRP mail tool
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -148,7 +148,7 @@ function contactQuery($type) {
 
 function checkMailPrologue($send) {
     global $Conf, $Me, $recip;
-    echo "<form method='post' action='", hoturl("mail"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
+    echo "<form method='post' action='", hoturl_post("mail"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
     foreach (array("recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
@@ -444,7 +444,7 @@ if (isset($_REQUEST["monreq"])) {
     }
 }
 
-echo "<form method='post' action='", hoturl("mail", "check=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+echo "<form method='post' action='", hoturl_post("mail", "check=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 <input class='hidden' type='submit' name='default' value='1' />
 
 <div class='aa' style='padding-left:8px'>

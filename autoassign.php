@@ -1,6 +1,6 @@
 <?php
 // autoassign.php -- HotCRP automatic paper assignment page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -764,7 +764,7 @@ if (isset($assignments) && count($assignments) > 0) {
     }
 
     echo "<div class='g'></div>",
-	"<form method='post' action='", hoturl("autoassign"), "' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n",
+	"<form method='post' action='", hoturl_post("autoassign"), "' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n",
 	"<input type='submit' class='b' name='saveassign' value='Save assignment' />\n",
 	"&nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />\n";
     foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
@@ -790,7 +790,7 @@ if (isset($assignments) && count($assignments) > 0) {
     exit;
 }
 
-echo "<form method='post' action='", hoturl("autoassign"), "' accept-charset='UTF-8'><div class='aahc'>", $helplist,
+echo "<form method='post' action='", hoturl_post("autoassign"), "' accept-charset='UTF-8'><div class='aahc'>", $helplist,
     "<input id='defaultact' type='hidden' name='defaultact' value='' />",
     "<input class='hidden' type='submit' name='default' value='1' />";
 

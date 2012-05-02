@@ -1,6 +1,6 @@
 <?php
 // assign.php -- HotCRP per-paper assignment/conflict management page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -460,7 +460,7 @@ $paperTable->initialize(false, false);
 
 
 // begin form and table
-$loginFormBegin = "action='" . hoturl("assign", "p=$prow->paperId&amp;post=1$linkExtra") . "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
+$loginFormBegin = "action='" . hoturl_post("assign", "p=$prow->paperId$linkExtra") . "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
 $loginFormEnd = "</div></form>\n\n";
 
 $paperTable->paptabBegin("<form id='ass' " . $loginFormBegin);
@@ -531,7 +531,7 @@ if ($Me->actChair($prow)) {
 	    echo "<td id='ass$p->contactId' class='pctbname-2 pctbl'>",
 		str_replace(' ', "&nbsp;", contactNameHtml($p)),
 		"</td><td class='pctbass'>",
-		"<img class='ass-2' alt='(Author)' title='Author' src='", hoturlx("images/_.gif"), "' />",
+		"<img class='ass-2' alt='(Author)' title='Author' src='", hoturl_image("images/_.gif"), "' />",
 		"</td>";
 	} else {
 	    if ($p->conflictType > 0)
@@ -547,7 +547,7 @@ if ($Me->actChair($prow)) {
 		&& ($p->preference || $p->topicInterestScore))
 		echo preferenceSpan($p->preference, $p->topicInterestScore);
 	    echo "</td><td class='pctbass'>";
-	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'><img class='ass$cid' id='assimg$p->contactId' src='", hoturlx("images/_.gif"), $title, "' alt='Assignment' /><img class='next' src='", hoturlx("images/_.gif"), "' alt='&gt;' /></a>&nbsp;";
+	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'><img class='ass$cid' id='assimg$p->contactId' src='", hoturl_image("images/_.gif"), $title, "' alt='Assignment' /><img class='next' src='", hoturl_image("images/_.gif"), "' alt='&gt;' /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
 	    echo tagg_select("pcs$p->contactId",
 			     array(0 => "None", REVIEW_PRIMARY => "Primary",
@@ -610,10 +610,10 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 		"<a href=\"mailto:", urlencode($row->email), "\">",
 		htmlspecialchars($row->email), "</a>&gt;</td>",
 		"<td><a class='button_small' href=\"",
-		hoturl("assign", "p=$prow->paperId&amp;name=" . urlencode($row->name) . "&amp;email=" . urlencode($row->email) . $reason . "&amp;add=1"),
+		hoturl_post("assign", "p=$prow->paperId&amp;name=" . urlencode($row->name) . "&amp;email=" . urlencode($row->email) . $reason . "&amp;add=1"),
 		"\">Approve</a>&nbsp; ",
 		"<a class='button_small' href=\"",
-		hoturl("assign", "p=$prow->paperId&amp;name=" . urlencode($row->name) . "&amp;email=" . urlencode($row->email) . "&amp;deny=1"),
+		hoturl_post("assign", "p=$prow->paperId&amp;name=" . urlencode($row->name) . "&amp;email=" . urlencode($row->email) . "&amp;deny=1"),
 		"\">Deny</a></td></tr>\n",
 		"<tr><td colspan='3'><small>Requester: ", contactHtml($row->reqFirstName, $row->reqLastName), "</small></td></tr>\n";
 	}

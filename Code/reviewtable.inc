@@ -117,7 +117,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	    if ($rr->reviewModified <= 0
 		&& $rr->reviewType == REVIEW_EXTERNAL
 		&& ($rr->requestedBy == $Me->contactId || $effAssistant))
-		$t .= " (<a href=\"" . hoturl("assign", "p=$prow->paperId&amp;retract=$rr->reviewId$linkExtra") . "\" title='Retract this review request'><strong>Retract</strong></a>)";
+		$t .= " (<a href=\"" . hoturl_post("assign", "p=$prow->paperId&amp;retract=$rr->reviewId$linkExtra") . "\" title='Retract this review request'><strong>Retract</strong></a>)";
 	    $t .= "</small></td>";
 	}
 

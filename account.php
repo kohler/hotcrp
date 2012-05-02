@@ -1,6 +1,6 @@
 <?php
 // account.php -- HotCRP account management page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -536,7 +536,7 @@ else if ($Me->contactId != $Acct->contactId)
 if (isset($_REQUEST["ls"]))
     $params[] = "ls=" . urlencode($_REQUEST["ls"]);
 echo "<form id='accountform' method='post' action='",
-    hoturl("account", (count($params) ? join("&amp;", $params) : "")),
+    hoturl_post("account", (count($params) ? join("&amp;", $params) : "")),
     "' enctype='multipart/form-data' accept-charset='UTF-8' autocomplete='off'><div class='aahc'>\n";
 if (isset($_REQUEST["redirect"]))
     echo "<input type='hidden' name='redirect' value=\"", htmlspecialchars($_REQUEST["redirect"]), "\" />\n";
@@ -754,7 +754,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   <p>Be careful: This will permanently delete all information about this
   user from the database and <strong>cannot be undone</strong>.</p>
   $dialog
-  <form method='post' action=\"" . hoturl("account", "contact=" . $Acct->contactId . "&amp;post=1") . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
+  <form method='post' action=\"" . hoturl_post("account", "contact=" . $Acct->contactId) . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
     <div class='popup_actions'>
       <button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button>
       &nbsp;<input class='bb' type='submit' name='delete' value='Delete user' />
