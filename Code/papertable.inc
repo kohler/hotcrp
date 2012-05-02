@@ -738,7 +738,7 @@ class PaperTable {
 	if ($topicdata != "" || count($optionhtml)) {
 	    $infotypes = array();
 	    if ($ndocuments > 0)
-		$infotypes[] = "Documents";
+		$infotypes[] = "Attachments";
 	    if (count($optionhtml) != $ndocuments)
 		$infotypes[] = "Options";
 	    $options_name = commajoin($infotypes);
