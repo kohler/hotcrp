@@ -99,6 +99,7 @@ Code/paperlist.inc
 Code/paperoption.inc
 Code/papertable.inc
 Code/rank.inc
+Code/restoredb.sh
 Code/review.inc
 Code/reviewsetform.inc
 Code/reviewtable.inc

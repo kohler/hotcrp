@@ -1,16 +1,16 @@
 #! /bin/sh
 ##
-## Back up the database, writing it to standard output
+## Restore the database from a backup
 ##
 
 export PROG=$0
 export FLAGS=""
-structure=no
+input=
 while [ $# -gt 0 ]; do
     case "$1" in
-    --structure) structure=yes;;
     -*)	FLAGS="$FLAGS $1";;
-    *)	echo "Usage: $PROG [--structure] [MYSQL-OPTIONS]" 1>&2; exit 1;;
+    *)	if [ -z "$input" ]; then input="$1"; else
+	    echo "Usage: $PROG [MYSQL-OPTIONS] [FILE]" 1>&2; exit 1; fi;;
     esac
     shift
 done
@@ -18,7 +18,7 @@ done
 export PROGDIR=`echo "$0" | sed 's/[^\/]*$//'`
 
 if [ ! -r "${PROGDIR}options.inc" ]; then
-    echo "backupdb.sh: Can't read options.inc! Is this a CRP directory?" 1>&2
+    echo "restoredb.sh: Can't read options.inc! Is this a CRP directory?" 1>&2
     exit 1
 fi
 
@@ -67,7 +67,7 @@ sub fixshell ($) {
 }
 
 if ($Opt{"multiconference"}) {
-   print STDERR "backupdb.sh: Not smart enough for multiconference yet\n";
+   print STDERR "restoredb.sh: Not smart enough for multiconference yet\n";
    print "";
 } elsif (exists($Opt{"dsn"}) || !exists($Opt{"dbName"})) {
    print "";
@@ -79,33 +79,24 @@ if ($Opt{"multiconference"}) {
 }
 
 dbopt=`getdbopt`
-test -z "$dbopt" && { echo "backupdb.sh: Cannot extract database run options from options.inc!" 1>&2; exit 1; }
+test -z "$dbopt" && { echo "restoredb.sh: Cannot extract database run options from options.inc!" 1>&2; exit 1; }
 
-### Test mysqldump binary
-if test -z "$MYSQLDUMP"; then
-    MYSQLDUMP=mysqldump
-    ! $MYSQLDUMP --version >/dev/null 2>&1 && mysqldump5 --version >/dev/null 2>&1 && MYSQLDUMP=mysqldump5
+### Test mysql binary
+if test -z "$MYSQL"; then
+    MYSQL=mysql
+    ! $MYSQL --version >/dev/null 2>&1 && mysql5 --version >/dev/null 2>&1 && MYSQL=mysql5
 fi
 
-if ! $MYSQLDUMP --version >/dev/null 2>&1; then
-    echo "The $MYSQLDUMP binary doesn't appear to work."
-    echo "Set the MYSQLDUMP environment variable and try again."
+if ! $MYSQL --version >/dev/null 2>&1; then
+    echo "The $MYSQL binary doesn't appear to work."
+    echo "Set the MYSQL environment variable and try again."
     exit 1
 fi
 
-echo + $MYSQLDUMP $FLAGS $dbopt 1>&2
-if [ "$structure" = yes ]; then
-    eval "$MYSQLDUMP $FLAGS $dbopt | sed '/^LOCK\|^INSERT\|^UNLOCK\|^\/\*/d
-/^)/s/AUTO_INCREMENT=[0-9]* //
-/^--$/N
-/^--.*-- Dumping data/N
-/^--.*-- Dumping data.*--/d
-/^-- Dump/d' "
+if test -z "$input"; then
+    echo + $MYSQL $FLAGS $dbopt 1>&2
+    eval "$MYSQL $FLAGS $dbopt"
 else
-    eval "$MYSQLDUMP $FLAGS $dbopt"
-    echo
-    echo "--"
-    echo "-- Force HotCRP to invalidate server caches"
-    echo "--"
-    echo "INSERT INTO "'`Settings` (`name`,`value`)'" VALUES ('frombackup',UNIX_TIMESTAMP()) ON DUPLICATE KEY UPDATE value=greatest(value,values(value));"
+    echo + $MYSQL $FLAGS $dbopt "<" "$input" 1>&2
+    eval "$MYSQL $FLAGS $dbopt" < "$input"
 fi

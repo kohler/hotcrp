@@ -143,11 +143,14 @@ Configuration
   - HotCRP uses Apache's mod_expires module; consider enabling it.
 
 
-Backing up the database
------------------------
-Run "Code/backupdb.sh" at the shell prompt to back up the database.  This
+Backing up and restoring the database
+-------------------------------------
+Run "Code/backupdb.sh" at the shell prompt to back up the database. This
 will write the database's current structure and comments to the standard
 output.
+
+Run "Code/restoredb.sh BACKUPFILE" at the shell prompt to restore the
+database from a backup stored in BACKUPFILE.
 
 
 Updating the code
