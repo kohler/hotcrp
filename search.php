@@ -1,6 +1,6 @@
 <?php
 // search.php -- HotCRP paper search page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -1295,7 +1295,7 @@ if ($Me->isPC || $Me->privChair) {
 	    }
 	    echo "<div class='g'></div>\n";
 	}
-	echo "<form method='post' action='", hoturl("search", "savesearch=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+	echo "<form method='post' action='", hoturl_post("search", "savesearch=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
 	echo_request_as_hidden_inputs(true);
 	echo "<table id='ssearchnew' class='foldc'>",
 	    "<tr><td>", foldbutton("ssearchnew", "saved search options"), "&nbsp;</td>",
@@ -1373,7 +1373,7 @@ if ($pl && $pl->count > 0) {
     // "Set default display"
     if ($Me->privChair) {
 	echo "<button type='button' class='b' id='savedisplayoptionsbutton' onclick='savedisplayoptions()' disabled='disabled'>Make default</button>&nbsp; ";
-	$Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='" . hoturl("search", "savedisplayoptions=1") . "' enctype='multipart/form-data' accept-charset='UTF-8'>"
+	$Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='" . hoturl_post("search", "savedisplayoptions=1") . "' enctype='multipart/form-data' accept-charset='UTF-8'>"
 . "<div><input id='scoresortsave' type='hidden' name='scoresort' value='"
 . $_SESSION["scoresort"] . "' /></div></form>");
 	$Conf->footerScript("function foldplinfo_extra() { $$('savedisplayoptionsbutton').disabled = false; }");
@@ -1394,7 +1394,7 @@ if ($pl && $pl->count > 0) {
 
     // Formulas
     if ($Me->isPC && $Conf->sversion >= 32) {
-	echo "<form class='fx3' method='post' action='", hoturl("search", "saveformulas=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+	echo "<form class='fx3' method='post' action='", hoturl_post("search", "saveformulas=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
 	echo_request_as_hidden_inputs();
 
 	echo "<p style='width:44em;margin-top:0'><strong>Formulas</strong> are calculated
@@ -1459,7 +1459,7 @@ if ($pl) {
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
     if ($pl->anySelector)
-	echo "<form method='post' action=\"", selfHref(array("selector" => 1), hoturl("search")), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck()'><div class='inform'>\n",
+	echo "<form method='post' action=\"", selfHref(array("selector" => 1), hoturl_post("search")), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck()'><div class='inform'>\n",
 	    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
 	    "<input class='hidden' type='submit' name='default' value='1' />";
 

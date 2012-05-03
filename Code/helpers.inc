@@ -372,14 +372,19 @@ function hoturl($page, $options = null) {
 	return $t;
 }
 
-function hoturlx($page) {
-    global $ConfSiteBase;
-    return $ConfSiteBase . $page;
+function hoturl_post($page, $options = null) {
+    $options = ($options ? $options . "&amp;" : "") . "post=1";
+    return hoturl($page, $options);
 }
 
 function hoturl_absolute($page, $options = null) {
     global $Opt, $ConfSiteBase;
     return $Opt["paperSite"] . "/" . substr(hoturl($page, $options), strlen($ConfSiteBase));
+}
+
+function hoturl_image($page) {
+    global $ConfSiteBase;
+    return $ConfSiteBase . $page;
 }
 
 function go($url) {

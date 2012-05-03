@@ -146,7 +146,7 @@ to navigate through the rest of the search matches.
 
 <p>Underneath the paper list is the action area:</p>
 
-<img src='" . hoturlx("images/exsearchaction.png") . "' alt='[Search action area example]' /><br />
+<img src='" . hoturl_image("images/exsearchaction.png") . "' alt='[Search action area example]' /><br />
 
 <p>Use the checkboxes to select some papers, then choose an action.
 You can:</p>
@@ -170,13 +170,13 @@ tag.</p>
 ");
     _alternateRow("<a name='quicklinks'>Quicksearch<br />and quicklinks</a>", "
 Most screens have a quicksearch box in the upper right corner:<br />
-<img src='" . hoturlx("images/quicksearchex.png") . "' alt='[Quick search example]' /><br />
+<img src='" . hoturl_image("images/quicksearchex.png") . "' alt='[Quick search example]' /><br />
 This box supports the full search syntax.  Enter
 a paper number, or search terms that match exactly
 one paper, to go directly to that paper.
 
 <p>Paper screens have quicklinks that step through search results:<br />
-<img src='" . hoturlx("images/pageresultsex.png") . "' alt='[Result paging example]' /><br />
+<img src='" . hoturl_image("images/pageresultsex.png") . "' alt='[Result paging example]' /><br />
 Click on the search description (here, “Submitted papers search”) to return
 to the search results.  On many pages, you can press “<code>j</code>” or
 “<code>k</code>” to go to the previous or next paper in the list.</p>
@@ -446,7 +446,7 @@ Here are some example ways to use tags.
     _alternateRow("Finding tags", "
 A paper’s tags are shown like this:
 
-<p><img src='" . hoturlx("images/extagsnone.png") . "' alt='[Tag list on review screen]' /></p>
+<p><img src='" . hoturl_image("images/extagsnone.png") . "' alt='[Tag list on review screen]' /></p>
 
 To find all papers with tag “discuss”:&nbsp; " . _searchForm("#discuss") . "
 
@@ -455,17 +455,17 @@ $conflictmsg3$setting
 Additionally, twiddle tags, which have names like “~tag”, are
 visible only to their creators; each PC member has an independent set.</p>");
     _alternateRow("<a name='changing'>Changing tags</a>", "
-To change a paper’s tags, click the Tags box’s <img src='" . hoturlx("images/edit.png") . "'
+To change a paper’s tags, click the Tags box’s <img src='" . hoturl_image("images/edit.png") . "'
 alt='[Edit]' />&nbsp;Edit link, then enter one or more alphanumeric tags
 separated by spaces.
 
-<p><img src='" . hoturlx("images/extagsset.png") . "' alt='[Tags entry on review screen]' /></p>
+<p><img src='" . hoturl_image("images/extagsset.png") . "' alt='[Tags entry on review screen]' /></p>
 
 <p>To tag multiple papers at once, find the papers in a
 <a href='" . hoturl("search") . "'>search</a>, select
 their checkboxes, and add tags using the action area.</p>
 
-<p><img src='" . hoturlx("images/extagssearch.png") . "' alt='[Setting tags on the search page]' /></p>
+<p><img src='" . hoturl_image("images/extagssearch.png") . "' alt='[Setting tags on the search page]' /></p>
 
 <p><b>Add</b> adds tags to the selected papers, <b>Remove</b> removes existing
 tags from the selected papers, and <b>Define</b> adds the tag to all selected
@@ -690,7 +690,7 @@ The system ensures no PC member exceeds the allotment.
 The publicly visible “vote” tag is automatically set to the total number of PC votes for each paper.
 Hover to learn how the PC voted:</p>
 
-<p><img src='" . hoturlx("images/extagvotehover.png") . "' alt='[Hovering over a voting tag]' /></p>");
+<p><img src='" . hoturl_image("images/extagvotehover.png") . "' alt='[Hovering over a voting tag]' /></p>");
 
     echo "</table>\n";
 }

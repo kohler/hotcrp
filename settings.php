@@ -1649,7 +1649,7 @@ function doDecGroup() {
 
 $belowHr = true;
 
-echo "<form method='post' action='", hoturl("settings", "post=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div><input type='hidden' name='group' value='$Group' />\n";
+echo "<form method='post' action='", hoturl_post("settings"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div><input type='hidden' name='group' value='$Group' />\n";
 
 echo "<table class='settings'><tr><td class='caption initial final'>";
 echo "<table class='lhsel'>";

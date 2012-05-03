@@ -1,6 +1,6 @@
 <?php
 // reviewprefs.php -- HotCRP review preference global settings page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -297,7 +297,7 @@ echo "</td></tr></table>\n";
 
 
 // ajax preferences form
-echo "<form id='prefform' method='post' action=\"", hoturl("paper"), "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>",
+echo "<form id='prefform' method='post' action=\"", hoturl_post("paper"), "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>",
     "<input type='hidden' name='setrevpref' value='1' />",
     "<input type='hidden' name='p' value='' />",
     "<input type='hidden' name='revpref' value='' />";
@@ -307,7 +307,7 @@ echo "</div></form>\n\n";
 
 
 // main form
-echo "<form class='assignpc' method='post' action=\"", hoturl("reviewprefs", "reviewer=$reviewer" . (defval($_REQUEST, "q") ? "&amp;q=" . urlencode($_REQUEST["q"]) : "") . "&amp;post=1"),
+echo "<form class='assignpc' method='post' action=\"", hoturl_post("reviewprefs", "reviewer=$reviewer" . (defval($_REQUEST, "q") ? "&amp;q=" . urlencode($_REQUEST["q"]) : "")),
     "\" enctype='multipart/form-data' accept-charset='UTF-8'>",
     "<div class='inform'>",
     "<input id='defaultact' type='hidden' name='defaultact' value='' />",

@@ -339,7 +339,7 @@ if (isset($_REQUEST["refuse"]) || isset($_REQUEST["decline"])) {
 	$Conf->errorMsg("This review has already been submitted; you can’t decline it now.");
     else if (defval($_REQUEST, "refuse") == "1"
 	     || defval($_REQUEST, "decline") == "1") {
-	$Conf->confirmMsg("<p>Select “Decline review” to decline this review (you may enter a brief explanation, if you’d like). Thank you for telling us that you cannot complete your review.</p><div class='g'></div><form method='post' action=\"" . hoturl("review", "p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId . "$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>
+	$Conf->confirmMsg("<p>Select “Decline review” to decline this review (you may enter a brief explanation, if you’d like). Thank you for telling us that you cannot complete your review.</p><div class='g'></div><form method='post' action=\"" . hoturl_post("review", "p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId . "$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>
   <input type='hidden' name='refuse' value='refuse' />
   <textarea name='reason' rows='3' cols='40'></textarea>
   <span class='sep'></span>

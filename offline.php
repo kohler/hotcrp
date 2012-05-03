@@ -1,6 +1,6 @@
 <?php
 // offline.php -- HotCRP offline review management page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -199,7 +199,7 @@ echo "</td>\n";
 if ($Me->amReviewer()) {
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
     echo "<td><h3>Upload filled-out forms</h3>
-<form action='", hoturl("offline", "uploadForm=1&amp;post=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+<form action='", hoturl_post("offline", "uploadForm=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 	<input type='hidden' name='postnonempty' value='1' />
 	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Go' $disabled/>";
     if ($pastDeadline && $Me->privChair)
@@ -222,7 +222,7 @@ if ($Conf->setting("tag_rank") && $Me->amReviewer()) {
 
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
     echo "<td><h3>Upload ranking file</h3>
-<form action='", hoturl("offline", "setrank=1&amp;tag=%7E$ranktag&amp;post=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+<form action='", hoturl_post("offline", "setrank=1&amp;tag=%7E$ranktag"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 	<input type='hidden' name='upload' value='1' />
 	<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Go' $disabled/>";
     if ($pastDeadline && $Me->privChair)

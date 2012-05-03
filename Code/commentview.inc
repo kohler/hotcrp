@@ -108,7 +108,7 @@ class CommentView {
 	$this->ncomment_in_table++;
 
 	if ($editMode) {
-	    echo "<form action='", hoturl("comment", "p=$prow->paperId&amp;c=" . ($crow ? $crow->commentId : "new") . "$linkExtra&amp;post=1"),
+	    echo "<form action='", hoturl_post("comment", "p=$prow->paperId&amp;c=" . ($crow ? $crow->commentId : "new") . $linkExtra),
 		"' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>";
 	    if (!$crow && $foldnew)
 		echo "<div class='aahc foldc' id='foldaddcomment'>";
@@ -224,7 +224,7 @@ class CommentView {
 	$wordlimit = $Conf->setting("resp_words", 0);
 
 	if ($editMode) {
-	    echo "<form action='", hoturl("comment", ($crow ? "c=$crow->commentId" : "p=$prow->paperId") . "$linkExtra&amp;response=1&amp;post=1");
+	    echo "<form action='", hoturl_post("comment", ($crow ? "c=$crow->commentId" : "p=$prow->paperId") . "$linkExtra&amp;response=1");
 	    if ($crow)
 		echo "#comment$crow->commentId";
 	    echo "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";

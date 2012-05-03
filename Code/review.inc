@@ -1249,12 +1249,12 @@ $blind\n";
 	$editmode = defval($options, "edit", false);
 
 	$reviewOrdinal = unparseReviewOrdinal($rrow);
-	$reviewLinkBase = hoturl("review", "p=$prow->paperId"
-				 . ($rrow ? "&amp;r=$reviewOrdinal" : "")
-				 . $linkExtra . "&amp;m=re&amp;");
-	$reviewLink = $reviewLinkBase . "post=1";
+	$reviewLinkArgs = "p=$prow->paperId" . ($rrow ? "&amp;r=$reviewOrdinal" : "")
+	    . $linkExtra . "&amp;m=re";
+	$reviewPostLink = hoturl_post("review", $reviewLinkArgs);
+	$reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1");
 	if ($editmode) {
-	    echo "<form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",
+	    echo "<form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",
 		"<div class='aahc pboxc'>",
 		"<input class='hidden' type='submit' name='default' value='' />";
 	    if ($rrow)
@@ -1326,7 +1326,7 @@ $blind\n";
 	    // Also see $_REQUEST["refuse"] case in review.php.
 	    $Conf->footerHtml("<div id='popup_ref' class='popupc'>
   <p style='margin:0 0 0.3em'>Select “Decline review” to decline this review, and thank you for keeping us informed.</p>
-  <form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+  <form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
     <input type='hidden' name='refuse' value='refuse' />
     <textarea id='refusereviewreason' class='temptext' name='reason' rows='3' cols='40'>Optional explanation</textarea>
     <div class='popup_actions'>
@@ -1371,7 +1371,7 @@ $blind\n";
       &nbsp; <input class='b' type='submit' value='Go' name='uploadForm' /></td>
     </tr><tr>
       <td></td>
-      <td><a href='${reviewLinkBase}downloadForm=1'>Download form</a>
+      <td><a href='$reviewDownloadLink'>Download form</a>
       &nbsp;<span class='barsep'>|</span>&nbsp;
       <span class='hint'><strong>Tip:</strong> Use <a href='", hoturl("search"), "'>Search</a> or <a href='", hoturl("offline"), "'>Offline reviewing</a> to download or upload many forms at once.</span></td>
     </tr></table></td><td></td></tr>\n";
@@ -1421,7 +1421,7 @@ $blind\n";
   <p>Be careful: This will permanently delete all information about this
   review assignment from the database and <strong>cannot be
   undone</strong>.</p>
-  <form method='post' action=\"$reviewLink\" enctype='multipart/form-data' accept-charset='UTF-8'>
+  <form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'>
     <div class='popup_actions'>
       <button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button>
       &nbsp;<input class='bb' type='submit' name='delete' value='Delete review' />

@@ -1,6 +1,6 @@
 <?php
 // mergeaccounts.php -- HotCRP account merging page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 include('Code/header.inc');
@@ -152,7 +152,7 @@ else
 . "that account into this one. "
 );
 
-echo "<form method='post' action=\"", hoturl("mergeaccounts"), "\" accept-charset='UTF-8'>\n";
+echo "<form method='post' action=\"", hoturl_post("mergeaccounts"), "\" accept-charset='UTF-8'>\n";
 
 // Try to prevent glasses interactions from screwing up merges
 if ($Me->privChair)

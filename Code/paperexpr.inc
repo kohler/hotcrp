@@ -1,6 +1,6 @@
 <?php
 // paperexpr.inc -- HotCRP helper class for paper expressions
-// HotCRP is Copyright (c) 2009-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2009-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("tags.inc");
@@ -56,7 +56,7 @@ class PaperExpr {
 	$e = self::_parse_ternary($t);
 	if ($t !== "") {
 	    if (!$noErrors)
-		$Conf->errorMsg("Illegal expression: parse error at &ldquo;" . htmlspecialchars($t) . "&rdquo;.");
+		$Conf->errorMsg("Illegal expression: parse error at “" . htmlspecialchars($t) . "”.");
 	    return null;
 	} else if (!$e) {
 	    if (!$noErrors)
@@ -64,7 +64,7 @@ class PaperExpr {
 	    return null;
 	} else if ($e[1]) {
 	    if (!$noErrors)
-		$Conf->errorMsg("Illegal expression: can't return a raw score, use an aggregate function.");
+		$Conf->errorMsg("Illegal expression: can’t return a raw score, use an aggregate function.");
 	    return null;
 	} else {
 	    //$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($e, true)))));

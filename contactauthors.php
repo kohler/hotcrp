@@ -1,6 +1,6 @@
 <?php
 // contactauthors.php -- HotCRP paper contact author management page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -97,7 +97,7 @@ if ($OK) {
     $paperTable->paptabBegin();
 
     // Contact authors
-    $t = "<form method='post' action=\"" . hoturl("contactauthors", "p=$prow->paperId&amp;post=1") . "\" enctype='multipart/form-data' accept-charset='UTF-8'>"
+    $t = "<form method='post' action=\"" . hoturl_post("contactauthors", "p=$prow->paperId") . "\" enctype='multipart/form-data' accept-charset='UTF-8'>"
 	. "<div class='papt'>Paper contacts</div>"
 	. "<div class='paphint'>A paper's contacts are HotCRP users who can edit paper information and view reviews.  Every paper author with a HotCRP account is a contact by default, but you can add additional contacts who aren't in the author list.  Every paper must have at least one contact.</div>"
 	. "<div class='papv'>"
