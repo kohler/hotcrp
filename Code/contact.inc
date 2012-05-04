@@ -1316,9 +1316,17 @@ class Contact {
 		   "2", "3", "4", "5", "6", "7", "8", "9",
 		   "-", "@", "_", "+", "=");
 	$n = count($l);
+
+	$bytes = hotcrp_random_bytes($length, true);
+	if (!$bytes) {
+	    $bytes = "";
+	    while (strlen($bytes) < $length)
+		$bytes .= sha1($Opt["conferenceKey"] . pack("V", mt_rand()));
+	}
+
 	$password = "";
-	while (strlen($password) < $length)
-	    $password .= $l[mt_rand(0, $n - 1)];
+	for ($i = 0; strlen($password) < $length; ++$i)
+	    $password .= $l[ord($bytes[$i]) % $n];
 	return $password;
     }
 
