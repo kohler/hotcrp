@@ -1420,7 +1420,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['responseNotReady']))
 	$text .= "The authors&rsquo; response for $thisPaper is not yet ready for reviewers to view.  ";
     if (isset($whyNot['reviewsOutstanding']))
-	$text .= "You will get access to the reviews once you complete <a href=\"" . hoturl("search", "q=&amp;t=r") . "\">your assigned reviews for other papers</a>.  If you can&rsquo;t complete your reviews, please let the conference organizers know via the &ldquo;Refuse review&rdquo; links.  ";
+	$text .= "You will get access to the reviews once you complete <a href=\"" . hoturl("search", "q=&amp;t=r") . "\">your assigned reviews for other papers</a>.  If you can’t complete your reviews, please let the conference organizers know via the “Refuse review” links.  ";
     if (isset($whyNot['reviewNotAssigned']))
 	$text .= "You are not assigned to review $thisPaper.  ";
     if (isset($whyNot['deadline'])) {
@@ -1455,12 +1455,12 @@ function whyNotText($whyNot, $action) {
 	    if ($Conf->setting("au_seerev") == AU_SEEREV_YES)
 		$text .= "Authors who are also reviewers can’t see reviews for their papers while they still have <a href='" . hoturl("search", "t=rout&amp;q=") . "'>incomplete reviews</a> of their own.  ";
 	    else
-		$text .= "Authors can&rsquo;t view paper reviews at the moment.  ";
+		$text .= "Authors can’t view paper reviews at the moment.  ";
 	} else
-	    $text .= "You can&rsquo;t $action $thisPaper at the moment.  ";
+	    $text .= "You can’t $action $thisPaper at the moment.  ";
 	$text .= "(<a class='nowrap' href='" . hoturl("deadlines") . "'>View deadlines</a>)  ";
 	if (isset($whyNot['override']) && $whyNot['override'])
-	    $text .= "Select the &ldquo;Override deadlines&rdquo; checkbox to override this deadline as an administrator.  ";
+	    $text .= "Select the “Override deadlines” checkbox to override this deadline as an administrator.  ";
     }
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind.  ";
