@@ -22,7 +22,7 @@ else if (isset($_REQUEST["default"]))
 // paper group
 $tOpt = PaperSearch::searchTypes($Me);
 if (count($tOpt) == 0) {
-    $Conf->header("Search", 'search', actionBar());
+    $Conf->header("Search", "search", actionBar());
     $Conf->errorMsg("You are not allowed to search for papers.");
     exit;
 }
@@ -347,7 +347,8 @@ function tagaction() {
 	redirectSelf($args);
     }
 }
-if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel) && isset($_REQUEST["tag"]))
+if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel)
+    && isset($_REQUEST["tag"]) && check_post())
     tagaction();
 
 
@@ -746,7 +747,8 @@ if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
 
 
 // set outcome for selected papers
-if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != "" && isset($papersel))
+if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != ""
+    && isset($papersel) && check_post())
     if (!$Me->canSetOutcome(null))
 	$Conf->errorMsg("You cannot set paper decisions.");
     else {
@@ -755,13 +757,16 @@ if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != "" &
 	if (isset($rf->options['outcome'][$o])) {
 	    $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel), "while changing decision");
 	    $Conf->updatePaperaccSetting($o > 0);
+	    redirectSelf(array("atab" => "decide", "decision" => $o));
+	    // normally does not return
 	} else
 	    $Conf->errorMsg("Bad decision value!");
     }
 
 
 // mark conflicts/PC-authored papers
-if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != "" && isset($papersel)) {
+if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
+    && isset($papersel) && check_post()) {
     $mt = $_REQUEST["marktype"];
     $mpc = defval($_REQUEST, "markpc", "");
     $pc = new Contact();
@@ -931,7 +936,8 @@ function saveformulas() {
     }
 }
 
-if (isset($_REQUEST["saveformulas"]) && $Me->isPC && $Conf->sversion >= 32)
+if (isset($_REQUEST["saveformulas"]) && $Me->isPC && $Conf->sversion >= 32
+    && check_post())
     saveformulas();
 
 
@@ -998,7 +1004,7 @@ function savesearch() {
 }
 
 if ((isset($_REQUEST["savesearch"]) || isset($_REQUEST["deletesearch"]))
-    && $Me->isPC) {
+    && $Me->isPC && check_post()) {
     savesearch();
     $_REQUEST["tab"] = "ss";
 }
@@ -1020,7 +1026,7 @@ if ($Me->privChair) {
 
 
 // search
-$Conf->header("Search", 'search', actionBar());
+$Conf->header("Search", "search", actionBar());
 unset($_REQUEST["urlbase"]);
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {

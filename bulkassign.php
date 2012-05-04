@@ -195,12 +195,13 @@ function parseBulkFile($text, $filename, $type) {
 
 
 // upload review form action
-if (isset($_REQUEST['upload']) && fileUploaded($_FILES['uploadedFile'], $Conf)
+if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"], $Conf)
     && isset($_REQUEST["t"]) && ($_REQUEST["t"] == REVIEW_PRIMARY
 				 || $_REQUEST["t"] == REVIEW_SECONDARY
 				 || $_REQUEST["t"] == REVIEW_PC
 				 || $_REQUEST["t"] == REVIEW_EXTERNAL
-				 || $_REQUEST["t"] == -CONFLICT_CHAIRMARK)) {
+				 || $_REQUEST["t"] == -CONFLICT_CHAIRMARK)
+    && check_post()) {
     if (($text = file_get_contents($_FILES['uploadedFile']['tmp_name'])) === false)
 	$Conf->errorMsg("Internal error: cannot read file.");
     else

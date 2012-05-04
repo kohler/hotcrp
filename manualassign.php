@@ -3,9 +3,9 @@
 // HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once('Code/header.inc');
-require_once('Code/paperlist.inc');
-require_once('Code/search.inc');
+require_once("Code/header.inc");
+require_once("Code/paperlist.inc");
+require_once("Code/search.inc");
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
 
@@ -111,7 +111,7 @@ function saveAssignments($reviewer) {
 }
 
 
-if (isset($_REQUEST["update"]) && $reviewer > 0)
+if (isset($_REQUEST["update"]) && $reviewer > 0 && check_post())
     saveAssignments($reviewer);
 else if (isset($_REQUEST["update"]))
     $Conf->errorMsg("You need to select a reviewer.");

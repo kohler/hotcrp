@@ -69,7 +69,7 @@ if (!isset($_REQUEST["badpairs"]) && !isset($_REQUEST["assign"]) && !count($_POS
     $_REQUEST["bpcount"] = $bpnum - 1;
     if ($Conf->setting("autoassign_badpairs"))
 	$_REQUEST["badpairs"] = 1;
-} else if (count($_POST) && isset($_REQUEST["assign"])) {
+} else if (count($_POST) && isset($_REQUEST["assign"]) && check_post()) {
     $x = array();
     for ($i = 1; $i <= $_REQUEST["bpcount"]; ++$i)
 	if (defval($_REQUEST, "bpa$i") && defval($_REQUEST, "bpb$i")
@@ -192,7 +192,7 @@ function conflictedPapers() {
     return $confs;
 }
 
-if (!function_exists('array_fill_keys')) {
+if (!function_exists("array_fill_keys")) {
     function array_fill_keys($a, $v) {
 	$x = array();
 	foreach ($a as $k)
@@ -612,9 +612,11 @@ function saveAssign() {
     }
 }
 
-if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"]) && isset($_REQUEST["pctyp"]))
+if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"])
+    && isset($_REQUEST["pctyp"]) && check_post())
     doAssign();
-else if (isset($_REQUEST["saveassign"]) && isset($_REQUEST["a"]) && isset($_REQUEST["ass"]))
+else if (isset($_REQUEST["saveassign"]) && isset($_REQUEST["a"])
+	 && isset($_REQUEST["ass"]) && check_post())
     saveAssign();
 
 

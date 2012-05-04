@@ -837,7 +837,7 @@ function accountValue($name, $type) {
     }
 }
 
-if (isset($_REQUEST["update"])) {
+if (isset($_REQUEST["update"]) && check_post()) {
     // parse settings
     $settings = $SettingGroups[$Group];
     foreach ($settings as $name => $value)

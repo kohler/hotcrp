@@ -324,8 +324,10 @@ function parseBulkFile($text, $filename) {
 	$Conf->warnMsg("Nothing to do.");
 }
 
-if (isset($_REQUEST["register"]) && $newProfile
-    && fileUploaded($_FILES["bulk"], $Conf)) {
+if (!check_post())
+    /* do nothing */;
+else if (isset($_REQUEST["register"]) && $newProfile
+	 && fileUploaded($_FILES["bulk"], $Conf)) {
     if (($text = file_get_contents($_FILES["bulk"]["tmp_name"])) === false)
 	$Conf->errorMsg("Internal error: cannot read file.");
     else
@@ -345,7 +347,8 @@ if (isset($_REQUEST["register"]) && $newProfile
 	else
 	    redirectSelf();
     }
-} else if (isset($_REQUEST["merge"]) && !$newProfile && $Acct->contactId == $Me->contactId)
+} else if (isset($_REQUEST["merge"]) && !$newProfile
+	   && $Acct->contactId == $Me->contactId)
     $Me->go(hoturl("mergeaccounts"));
 
 function databaseTracks($who) {
@@ -389,7 +392,7 @@ function textArrayPapers($pids) {
     return commajoin(preg_replace('/(\d+)/', "<a href='" . hoturl("paper", "p=\$1$ls") . "'>\$1</a>", $pids));
 }
 
-if (isset($_REQUEST["delete"]) && $OK) {
+if (isset($_REQUEST["delete"]) && $OK && check_post()) {
     if (!$Me->privChair)
 	$Conf->errorMsg("Only administrators can delete users.");
     else if ($Acct->contactId == $Me->contactId)

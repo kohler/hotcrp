@@ -78,7 +78,7 @@ function savePreferences($reviewer) {
 	redirectSelf();
     }
 }
-if (isset($_REQUEST["update"]))
+if (isset($_REQUEST["update"]) && check_post())
     savePreferences($reviewer);
 
 
@@ -92,7 +92,7 @@ PaperSearch::clearPaperselRequest();
 
 
 // Set multiple paper preferences
-if (isset($_REQUEST["setpaprevpref"]) && isset($papersel)) {
+if (isset($_REQUEST["setpaprevpref"]) && isset($papersel) && check_post()) {
     if (($v = cvtpref($_REQUEST["paprevpref"])) < -1000000)
 	$Conf->errorMsg("Preferences must be small positive or negative integers.");
     else {
@@ -139,7 +139,8 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     if ($successes > 0)
 	savePreferences($reviewer);
 }
-if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"], $Conf))
+if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"], $Conf)
+    && check_post())
     parseUploadedPreferences($_FILES["uploadedFile"]["tmp_name"], $_FILES["uploadedFile"]["name"], $reviewer);
 else if (isset($_REQUEST["upload"]))
     $Conf->errorMsg("Select a preferences file to upload.");

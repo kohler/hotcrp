@@ -61,7 +61,7 @@ $paperId = -1;
 
 // general error messages
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
-    $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
+    $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept. Any changes were lost.");
 
 
 // grab paper row
@@ -80,17 +80,17 @@ if (!$newPaper) {
 
 
 // paper actions
-if (isset($_REQUEST["setrevpref"]) && $prow) {
+if (isset($_REQUEST["setrevpref"]) && $prow && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setReviewPreference($prow);
     loadRows();
 }
-if (isset($_REQUEST["setrank"]) && $prow) {
+if (isset($_REQUEST["setrank"]) && $prow && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setRank($prow);
     loadRows();
 }
-if (isset($_REQUEST["rankctx"]) && $prow) {
+if (isset($_REQUEST["rankctx"]) && $prow && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::rankContext($prow);
     loadRows();
@@ -125,7 +125,7 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
 
 
 // withdraw and revive actions
-if (isset($_REQUEST["withdraw"]) && !$newPaper) {
+if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
     if ($Me->canWithdrawPaper($prow, $whyNot)) {
 	$q = "update Paper set timeWithdrawn=" . time()
 	    . ", timeSubmitted=if(timeSubmitted>0,-100,0)";
@@ -166,7 +166,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper) {
     } else
 	$Conf->errorMsg(whyNotText($whyNot, "withdraw"));
 }
-if (isset($_REQUEST["revive"]) && !$newPaper) {
+if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
     if ($Me->canRevivePaper($prow, $whyNot)) {
 	$q = "update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0)";
 	if ($Conf->sversion >= 44)
@@ -611,7 +611,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     return true;
 }
 
-if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
+if ((isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"]))
+    && check_post()) {
     // get missing parts of request
     if (!$newPaper)
 	setRequestFromPaper($prow);
@@ -646,7 +647,7 @@ if (isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"])) {
 
 
 // delete action
-if (isset($_REQUEST['delete'])) {
+if (isset($_REQUEST["delete"]) && check_post()) {
     if ($newPaper)
 	$Conf->confirmMsg("Paper deleted.");
     else if (!$Me->privChair)
@@ -680,12 +681,12 @@ if (isset($_REQUEST['delete'])) {
 
 
 // paper actions
-if (isset($_REQUEST["settingtags"])) {
+if (isset($_REQUEST["settingtags"]) && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setTags($prow);
     loadRows();
 }
-if (isset($_REQUEST["tagreport"])) {
+if (isset($_REQUEST["tagreport"]) && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::tagReport($prow);
 }

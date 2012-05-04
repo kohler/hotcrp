@@ -89,6 +89,7 @@ class PaperList extends BaseList {
     var $formulas;
     var $viewmap;
     var $reviewList;
+    var $atab;
 
     function __construct($search, $args = array()) {
 	global $scoreSorts, $defaultScoreSort, $Conf;
@@ -136,6 +137,8 @@ class PaperList extends BaseList {
 	    $this->display = defval($_SESSION, defval($args, "foldtype", "pl") . "display", "");
 	$this->rf = reviewForm();
 	$this->formulas = array();
+	$this->atab = defval($_REQUEST, "atab", "");
+	unset($_REQUEST["atab"]);
     }
 
     function _normalizeField($fieldId) {
@@ -1130,7 +1133,7 @@ class PaperList extends BaseList {
 	$want_plactions_dofold = false;
 
 	// Download
-	if (defval($_REQUEST, "atab") == "download")
+	if ($this->atab == "download")
 	    $whichlll = $nlll;
 	$t = "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "download")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Download</a></td><td class='lld$nlll nowrap'><b>:</b> &nbsp;";
 	$sel_opt = array();
@@ -1179,8 +1182,7 @@ class PaperList extends BaseList {
 
 	// Upload preferences (review preferences only)
 	if ($revpref) {
-	    if (isset($_REQUEST["upload"])
-		|| defval($_REQUEST, "atab") == "uploadpref")
+	    if (isset($_REQUEST["upload"]) || $this->atab == "uploadpref")
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "uploadpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Upload</a></td><td class='lld$nlll nowrap'><b>&nbsp;preference file:</b> &nbsp;";
@@ -1190,8 +1192,7 @@ class PaperList extends BaseList {
 
 	// Set preferences (review preferences only)
 	if ($revpref) {
-	    if (isset($_REQUEST["setpaprevpref"])
-		|| defval($_REQUEST, "atab") == "setpref")
+	    if (isset($_REQUEST["setpaprevpref"]) || $this->atab == "setpref")
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "setpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Set preferences</a></td><td class='lld$nlll nowrap'><b>:</b> &nbsp;";
@@ -1201,8 +1202,7 @@ class PaperList extends BaseList {
 
 	// Tags (search+PC only)
 	if ($this->contact->isPC && !$revpref) {
-	    if (isset($_REQUEST["tagact"])
-		|| defval($_REQUEST, "atab") == "tags")
+	    if (isset($_REQUEST["tagact"]) || $this->atab == "tags")
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Tag</a></td><td class='lld$nlll nowrap'><table id='foldplacttags' class='foldc fold99c'><tr><td><b>:</b><a class='help' href='" . hoturl("help", "t=tags") . "' target='_blank' title='Learn more'>?</a> &nbsp;";
@@ -1239,8 +1239,7 @@ class PaperList extends BaseList {
 
 	// Assignments (search+admin only)
 	if ($this->contact->privChair && !$revpref) {
-	    if (isset($_REQUEST["setassign"])
-		|| defval($_REQUEST, "atab") == "assign")
+	    if (isset($_REQUEST["setassign"]) || $this->atab == "assign")
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "assign")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Assign</a></td><td id='foldass' class='lld$nlll foldo'><b>:</b> &nbsp;";
@@ -1275,15 +1274,14 @@ class PaperList extends BaseList {
 
 	// Decide, Mail (search+admin only)
 	if ($this->contact->privChair && !$revpref) {
-	    if (defval($_REQUEST, "atab") == "decide")
+	    if ($this->atab == "decide")
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "decide")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Decide</a></td><td class='lld$nlll'><b>:</b> Set to &nbsp;";
-	    $t .= decisionSelector(0, "plact${nlll}_d") . " &nbsp;<input type='submit' class='b' name='setdecision' value='Go' /></td>";
+	    $t .= decisionSelector(defval($_REQUEST, "decision", 0), "plact${nlll}_d") . " &nbsp;<input type='submit' class='b' name='setdecision' value='Go' /></td>";
 	    $nlll++;
 
-	    if (isset($_REQUEST["sendmail"])
-		|| defval($_REQUEST, "atab") == "mail")
+	    if (isset($_REQUEST["sendmail"]) || $this->atab == "mail")
 		$whichlll = $nlll;
 	    $t .= $barsep
 		. "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "mail")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Mail</a></td><td class='lld$nlll'><b>:</b> &nbsp;"

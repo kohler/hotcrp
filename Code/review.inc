@@ -1213,7 +1213,7 @@ $blind\n";
 		$ratesep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
 	    }
 	    if ($rrow->contactId != $Me->contactId) {
-		$ratinglink = hoturl("review", "r=$reviewOrdinal");
+		$ratinglink = hoturl_post("review", "r=$reviewOrdinal");
 		if (!isset($_REQUEST["reviewId"]))
 		    $ratinglink .= "&amp;allr=1";
 		echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",

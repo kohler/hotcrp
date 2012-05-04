@@ -20,7 +20,7 @@ function crpmergeoneignore($table, $field, $oldid, $newid) {
 	$MergeError .= $Conf->dbErrorText(true, "", 0);
 }
 
-if (isset($_REQUEST["merge"])) {
+if (isset($_REQUEST["merge"]) && check_post()) {
     if (!$_REQUEST["email"])
 	$MergeError = "Enter an email address to merge.";
     else if (!$_REQUEST["password"])

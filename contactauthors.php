@@ -64,7 +64,7 @@ if (!$Me->canEditContactAuthors($prow))
     errorMsgExit("You can't manage paper #$prow->paperId since you are not a paper contact.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
 
 
-if (isset($_REQUEST["add"])) {
+if (isset($_REQUEST["add"]) && check_post()) {
     if (!isset($_REQUEST["email"]) || trim($_REQUEST["email"]) == "")
 	$Conf->errorMsg("You must enter the new contact's email address.");
     else if (($id = $Conf->getContactId($_REQUEST["email"], true)) > 0) {
@@ -74,7 +74,8 @@ if (isset($_REQUEST["add"])) {
 }
 
 foreach ($_REQUEST as $k => $v)
-    if (substr($k, 0, 3) == "rem" && ($id = cvtint(substr($k, 3))) > 0) {
+    if (substr($k, 0, 3) == "rem" && ($id = cvtint(substr($k, 3))) > 0
+	&& check_post()) {
 	$while = "while removing contact";
 	$Conf->qe("lock tables PaperConflict write, ActionLog write", $while);
 	$result = $Conf->qe("select count(paperId) from PaperConflict where paperId=$prow->paperId and conflictType>=" . CONFLICT_AUTHOR . " group by paperId", $while);

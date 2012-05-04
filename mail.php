@@ -416,11 +416,11 @@ else
 // Check or send
 if (defval($_REQUEST, "loadtmpl"))
     /* do nothing */;
-else if (defval($_REQUEST, "check"))
+else if (defval($_REQUEST, "check") && check_post())
     checkMail(0);
 else if (defval($_REQUEST, "cancel"))
     /* do nothing */;
-else if (defval($_REQUEST, "send"))
+else if (defval($_REQUEST, "send") && check_post())
     checkMail(1);
 
 

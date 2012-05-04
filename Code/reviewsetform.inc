@@ -85,7 +85,7 @@ function rf_update($lock) {
     } else
 	$_REQUEST['sample'] = 'none';
 
-    if (!isset($_REQUEST['update']))
+    if (!isset($_REQUEST["update"]) || !check_post())
 	return;
 
     $while = "while updating review form";

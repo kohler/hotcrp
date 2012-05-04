@@ -66,7 +66,7 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 
 
 // set watch preference action
-if (isset($_REQUEST['setwatch']) && $prow) {
+if (isset($_REQUEST["setwatch"]) && $prow && check_post()) {
     $ajax = defval($_REQUEST, "ajax", 0);
     if (!$Me->privChair
 	|| ($contactId = rcvtint($_REQUEST["contactId"])) <= 0)
@@ -228,7 +228,9 @@ function saveResponse($text) {
 	$Conf->qe("unlock tables");
 }
 
-if (isset($_REQUEST["submit"]) && defval($_REQUEST, "response")) {
+if (!check_post())
+    /* do nothing */;
+else if (isset($_REQUEST["submit"]) && defval($_REQUEST, "response")) {
     if (!$Me->canRespond($prow, $crow, $whyNot, true)) {
 	$Conf->errorMsg(whyNotText($whyNot, "respond to reviews for"));
 	$useRequest = true;
@@ -257,7 +259,7 @@ if (isset($_REQUEST["submit"]) && defval($_REQUEST, "response")) {
 
 
 // paper actions
-if (isset($_REQUEST["settingtags"])) {
+if (isset($_REQUEST["settingtags"]) && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setTags($prow);
     loadRows();

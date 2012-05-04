@@ -196,7 +196,8 @@ function doLogin() {
     exit;
 }
 
-if (isset($_REQUEST["email"]) && isset($_REQUEST["action"]) && isset($_REQUEST["signin"])) {
+if (isset($_REQUEST["email"]) && isset($_REQUEST["action"])
+    && isset($_REQUEST["signin"])) {
     if (doLogin() !== true) {
 	// if we get here, login failed
 	$Me->invalidate();

@@ -14,7 +14,7 @@ if (defval($_REQUEST, "post") && !count($_POST))
 
 
 // download blank review form action
-if (isset($_REQUEST['downloadForm'])) {
+if (isset($_REQUEST["downloadForm"])) {
     $text = $rf->textFormHeader("blank", true)
 	. $rf->textForm(null, null, $Me, null) . "\n";
     downloadText($text, "review", "review form");
@@ -23,7 +23,9 @@ if (isset($_REQUEST['downloadForm'])) {
 
 
 // upload review form action
-if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Conf)) {
+if (isset($_REQUEST["uploadForm"])
+    && fileUploaded($_FILES["uploadedFile"], $Conf)
+    && check_post()) {
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
     while (($req = $rf->parseTextForm($tf))) {
 	if (($prow = $Conf->paperRow($req['paperId'], $Me->contactId, $whyNot))
@@ -41,7 +43,7 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
     // by revalidating their contact.
     $Me->validated = false;
     $Me->valid();
-} else if (isset($_REQUEST['uploadForm']))
+} else if (isset($_REQUEST["uploadForm"]))
     $Conf->errorMsg("Choose a file first.");
 
 
@@ -159,7 +161,7 @@ function setTagIndexes() {
 	$Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=order:" . urlencode($tag)) . "'>search for &ldquo;order:$tag&rdquo;</a>.");
 }
 if ((isset($_REQUEST["setvote"]) || isset($_REQUEST["setrank"]))
-    && $Me->amReviewer())
+    && $Me->amReviewer() && check_post())
     setTagIndexes();
 
 

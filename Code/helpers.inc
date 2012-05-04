@@ -373,7 +373,7 @@ function hoturl($page, $options = null) {
 }
 
 function hoturl_post($page, $options = null) {
-    $options = ($options ? $options . "&amp;" : "") . "post=1";
+    $options = ($options ? $options . "&amp;" : "") . "post=" . post_value();
     return hoturl($page, $options);
 }
 
@@ -428,6 +428,22 @@ function go($url) {
     exit();
 }
 
+function post_value() {
+    global $Conf;
+    $Conf->ensureSession();
+    if (($sid = session_id())) {
+	if (strlen($sid) > 16)
+	    $sid = substr($sid, 8);
+	$sid = substr($sid, 0, 8);
+    } else
+	$sid = "1";
+    return urlencode($sid);
+}
+
+function check_post() {
+    return isset($_REQUEST["post"]) && $_REQUEST["post"] == post_value();
+}
+
 function fileUploaded(&$var, $conf) {
     if (!isset($var) || ($var['error'] != UPLOAD_ERR_OK && !$conf))
 	return false;
@@ -458,7 +474,7 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
 	else if (($pos = strpos($x, ".php/")) !== false)
 	    $x = substr($x, 0, $pos) . substr($x, $pos + 4);
     }
-    $sep = "?";
+    $sep = (strpos($self, "?") === false ? "?" : "&");
     foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
 	if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
 	    $_REQUEST[$v] = $_REQUEST[$k];
@@ -1756,6 +1772,8 @@ function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
     $text = "<select" . ($id === null ? "" : " id='$id'") . " name='decision'$extra>\n";
     $rf = reviewForm();
     $outcomeMap = $rf->options['outcome'];
+    if (!isset($outcomeMap[$curOutcome]))
+	$curOutcome = null;
     $outcomes = array_keys($outcomeMap);
     sort($outcomes);
     $outcomes = array_unique(array_merge(array(0), $outcomes));
