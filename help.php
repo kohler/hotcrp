@@ -348,6 +348,15 @@ function _currentVoteTags() {
 	return "";
 }
 
+function _singleVoteTag() {
+   $vt = array_keys(voteTags());
+   if (count($vt)) {
+       sort($vt);
+       return $vt[0];
+   }
+   return "vote";
+}
+
 function tags() {
     global $Conf, $Me;
 
@@ -683,11 +692,28 @@ The chair can <a href='" . hoturl("settings", "group=rev") . "'>define a set of 
 PC members vote by assigning the corresponding twiddle tags;
 the aggregated PC vote is visible in the public tag.</p>
 
-<p>For example, assume that an administrator defines a voting tag “vote” with an allotment of 10 votes.
-To vote for a paper, PC members add the “~vote” tag.
-Adding “~vote#2” assigns two votes, and so forth.
-The system ensures no PC member exceeds the allotment.
-The publicly visible “vote” tag is automatically set to the total number of PC votes for each paper.
+<p>For example, assume that an administrator defines a voting tag
+ “". _singleVoteTag() . "” with an allotment of 10.
+To use two votes for a paper, a PC member uses the tag
+“~". _singleVoteTag() . "#2” on that paper. The “~” indicates
+that the tag is specific to that PC member, and the number following the “#”
+indicates the allotment.</p>
+
+<p>The system responds by adding the tag “". _singleVoteTag() . "#2” (note the
+lack of the “~”) to indicate that the paper currently has two votes assigned
+to it. As other PC members add their votes with their own “~” tags, the system
+updates the “~”-less tag to reflect the current total.
+(The system ensures no PC member exceeds their allotment.) </p>
+
+<p>
+To see what the current voting status is, search by
+<a href=\"" . hoturl("search", "q=rorder:" . _singleVoteTag() . "") . "\">
+rorder:". _singleVoteTag() . "</a>. Use the display options to show tags
+in the search results (or set up a
+<a href='" . hoturl("help", "t=formulas") . "'>formula</a>).
+</p>
+
+<p>
 Hover to learn how the PC voted:</p>
 
 <p><img src='" . hoturl_image("images/extagvotehover.png") . "' alt='[Hovering over a voting tag]' /></p>");
