@@ -100,7 +100,7 @@ function watch() {
 
 
 // update comment action
-function saveComment($text, $locked) {
+function saveComment($text) {
     global $Me, $Conf, $prow, $crow, $savedCommentId;
 
     // options
@@ -121,6 +121,8 @@ function saveComment($text, $locked) {
 	$blind = $prow->blind;	// use $prow->blind setting on purpose
     }
 
+    $while = $insert_id_while = "while saving comment";
+
     // query
     $now = time();
     if (!$text) {
@@ -138,11 +140,21 @@ function saveComment($text, $locked) {
 		(contactId, paperId, timeModified, comment, forReviewers,
 		forAuthors, blind, timeNotified$qa)
 	select $Me->contactId, $prow->paperId, $now, '" . sqlq($text) . "',
-		$forReviewers, $forAuthors, $blind, $now$qb
-	from (select P.paperId, coalesce(count(C.commentId),0) commentCount, coalesce(max(C.ordinal),0) maxOrdinal
+		$forReviewers, $forAuthors, $blind, $now$qb\n";
+	if ($forAuthors == 2) {
+	    // make sure there is exactly one response
+	    $q .= "	from (select P.paperId, coalesce(C.commentId,0) commentId, 0 commentCount, 0 maxOrdinal
 		from Paper P
-		left join PaperComment C on (C.paperId=P.paperId and C.forReviewers=$forReviewers and (C.forAuthors>0)=($forAuthors>0))
+		left join PaperComment C on (C.paperId=P.paperId and C.forAuthors=2)
+		where P.paperId=$prow->paperId group by P.paperId) T
+	where T.commentId=0";
+	    $insert_id_while = false;
+	} else {
+	    $q .= "	from (select P.paperId, coalesce(count(C.commentId),0) commentCount, coalesce(max(C.ordinal),0) maxOrdinal
+		from Paper P
+		left join PaperComment C on (C.paperId=P.paperId and C.forReviewers=$forReviewers and C.forAuthors=$forAuthors)
 		where P.paperId=$prow->paperId group by P.paperId) T";
+	}
     } else {
 	$change = ($crow->forAuthors != $forAuthors);
 	if ($crow->timeModified >= $now)
@@ -154,7 +166,6 @@ function saveComment($text, $locked) {
 	$q = "update PaperComment set timeModified=$now$qa, comment='" . sqlq($text) . "', forReviewers=$forReviewers, forAuthors=$forAuthors, blind=$blind where commentId=$crow->commentId";
     }
 
-    $while = "while saving comment";
     $result = $Conf->qe($q, $while);
     if (!$result)
 	return false;
@@ -162,12 +173,8 @@ function saveComment($text, $locked) {
     // comment ID
     if ($crow)
 	$savedCommentId = $crow->commentId;
-    else if (!($savedCommentId = $Conf->lastInsertId($while)))
+    else if (!($savedCommentId = $Conf->lastInsertId($insert_id_while)))
 	return false;
-
-    // we are done saving the comment; unlock tables
-    if ($locked)
-	$Conf->q("unlock tables");
 
     // log, end
     $what = ($forAuthors > 1 ? "Response" : "Comment");
@@ -215,17 +222,12 @@ function saveComment($text, $locked) {
 function saveResponse($text) {
     global $Me, $Conf, $prow, $crow, $linkExtra;
 
-    // make sure there is exactly one response
-    if (!$crow) {
+    $success = saveComment($text);
+    if (!$success) {
 	$result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and forAuthors>1");
 	if (($row = edb_row($result)))
 	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"" . hoturl("comment", "c=$row[0]$linkExtra") . "\">Edit that response</a>");
     }
-
-    $Conf->qe("lock tables Paper write, PaperComment write, ActionLog write");
-    $success = saveComment($text, true);
-    if (!$success)
-	$Conf->qe("unlock tables");
 }
 
 if (!check_post())
@@ -247,13 +249,13 @@ else if (isset($_REQUEST["submit"]) && defval($_REQUEST, "response")) {
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
     } else
-	saveComment($text, false);
+	saveComment($text);
 } else if (isset($_REQUEST["delete"]) && $crow) {
     if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "comment on"));
 	$useRequest = true;
     } else
-	saveComment("", false);
+	saveComment("");
 } else if (isset($_REQUEST["cancel"]) && $crow)
     $_REQUEST["noedit"] = 1;
 

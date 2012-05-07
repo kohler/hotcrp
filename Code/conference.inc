@@ -273,7 +273,7 @@ class Conference {
     function lastInsertId($while = "", $suggestRetry = false) {
 	global $OK;
 	$result = mysql_insert_id($this->dblink);
-	if (!$result) {
+	if (!$result && $while !== false) {
 	    $this->errorMsg($this->dbErrorText($result === false, $while, $suggestRetry));
 	    $OK = false;
 	}

@@ -35,8 +35,7 @@ class CommentView {
     }
 
     function commentOrdinal($prow, $crow) {
-	if (($crow->forAuthors == 2 && $crow->forReviewers == 0)
-	    || $crow->forReviewers == 2)
+	if ($crow->forAuthors == 2 || $crow->forReviewers == 2)
 	    return null;
 	$p = ($crow->forAuthors ? "A" : "");
 	$stored_number = defval($this->numbers, $p, 0);
