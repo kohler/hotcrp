@@ -41,7 +41,7 @@ print "insert into Settings (name, value, data) values ('rev_open', $now, null),
 my(@papers);
 while (<DATA>) {
     next if /^$/ || /^\s*\#/;
-    last if /^BALLOTS/;
+    last if /^(?:BALLOTS|RBALLOTS)/;
     chomp $_;
     my($p, $n) = split(/\t/);
     die "PAPER $p DUPLICATE\n" if $papers[$p];
@@ -53,18 +53,24 @@ while (<DATA>) {
 
 my($voternum) = @papers + 1;
 my($voterdelta) = $voternum - 1;
+my($rballots) = (/^RBALLOTS/ ? 1 : 0);
 while (<DATA>) {
     next if /^$/ || /^\s*\#/;
     chomp $_;
-    my(@x) = split(//);
     last if /^RATINGS/;
+    $_ = join(" ", split(//)) if !/[\s,]/;
     print "insert into ContactInfo (contactId, firstName, lastName, email, password, collaborators, creationTime, roles) values ($voternum, 'Jane', 'Voter" . ($voternum - $voterdelta) . "', 'comm" . ($voternum - $voterdelta) . "\@_.com', 'x', 'None', $now, 1) on duplicate key update firstName=firstName;\n";
     print "insert into PCMember (contactId) values ($voternum) on duplicate key update contactId=contactId;\n";
-    for ($i = 0; $i < @x; ++$i) {
-	if ($x[$i] ne 'x') {
-	    die "VOTE FOR BAD PAPER " . ($i+1) if !$papers[$i+1];
-	    print "insert into PaperTag (paperId, tag, tagIndex) values (" . ($i+1) . ", '$voternum~r', " . $x[$i] . ") on duplicate key update tagIndex=" . $x[$i] . ";\n";
-	}
+    my($p, $r, $i);
+    $i = 0;
+    while (/\A(\d+|x)\s*([,=]?)\s*(.*)\z/) {
+	$_ = $3;
+	++$i;
+	next if !$rballots && $1 eq "x";
+	$p = $rballots ? $1 : $i;
+	$r = $rballots ? $i : $1;
+	die "VOTE FOR BAD PAPER $p" if !$papers[$p];
+	print "insert into PaperTag (paperId, tag, tagIndex) values ($p, '$voternum~r', $r) on duplicate key update tagIndex=$r;\n";
     }
     ++$voternum;
 }
@@ -77,8 +83,41 @@ while (<DATA>) {
     print "insert into PaperReview (paperId, contactId, reviewType, reviewModified, reviewSubmitted, reviewOrdinal, reviewNeedsSubmit, overAllMerit) values ($p, $c, 2, $now, $now, $ro, 0, $r) on duplicate key update reviewType=reviewType;\n";
 }
 
+# FILE FORMAT:
+# Paper information: PAPERNUMBER [tab] PAPERTITLE
+# "BALLOTS"
+# Ballots: e.g. 3142 means paper #1 is ranked 3rd, paper #2 is ranked 1st, etc.;
+#  leave "x" marks for unranked papers.
+# OR: "RBALLOTS"
+# e.g. 349867251 means paper #3 is ranked 1st, etc.
 __DATA__
 # Paper information: PAPERNUMBER [tab] PAPERTITLE
-BALLOTS
+1	A
+2	B
+3	C
+4	D
+5	E
+6	F
+7	G
+8	H
+9	I
+RBALLOTS
 # Ballots: e.g. 3142 means paper #1 is ranked 3rd, paper #2 is ranked 1st, etc.
+349867251
+36459
+3975
+438
+4389
+463981572
+48375912
+493518762
+493581627
+495732168
+537
+59436128
+743
+895312
+943
+96437815
+987236145
 RATINGS
