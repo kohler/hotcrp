@@ -554,7 +554,9 @@ class Conference {
 	    return false;
 	$bs = $this->settings["sub_blind"];
 	return $bs == BLIND_ALWAYS
-	    || ($bs == BLIND_OPTIONAL && (!$prow || $prow->blind))
+	    || ($bs == BLIND_OPTIONAL
+		&& (!$prow
+		    || (isset($prow->paperBlind) ? $prow->paperBlind : $prow->blind)))
 	    || ($bs == BLIND_UNTILREVIEW
 		&& (!$prow
 		    || (!defval($prow, "myReviewSubmitted")
@@ -1491,6 +1493,8 @@ class Conference {
 		substring(Paper.title from 1 for 80) as shortTitle,
 		Paper.timeSubmitted,
 		Paper.timeWithdrawn,
+		Paper.blind as paperBlind,
+		Paper.outcome,
 		ContactInfo.firstName as reviewFirstName,
 		ContactInfo.lastName as reviewLastName,
 		ContactInfo.email as reviewEmail,
@@ -1519,6 +1523,8 @@ class Conference {
 		substring(Paper.title from 1 for 80) as shortTitle,
 		Paper.timeSubmitted,
 		Paper.timeWithdrawn,
+		Paper.blind as paperBlind,
+		Paper.outcome,
 		ContactInfo.firstName as reviewFirstName,
 		ContactInfo.lastName as reviewLastName,
 		ContactInfo.email as reviewEmail,
