@@ -199,6 +199,7 @@ class Conference {
 
     function invalidateCaches($caches = null) {
 	global $OK;
+	$this->ensureSession();
 	$inserts = array();
 	$removes = array();
 	$time = time();
