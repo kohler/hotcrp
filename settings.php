@@ -982,7 +982,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
 
 // header and script
-$Conf->header("Conference Settings", "settings", actionBar());
+$Conf->header("Settings", "settings", actionBar());
 
 
 function decorateSettingName($name, $text, $islabel = false) {
