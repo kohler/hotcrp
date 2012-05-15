@@ -913,7 +913,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
 	&& (array_key_exists("seedec", $Values)
 	    ? $Values["seedec"] != SEEDEC_ALL
 	    : $Conf->setting("seedec") != SEEDEC_ALL))
-	$Conf->warnMsg("Authors cannot submit final versions until they know their papers have been accepted.  You should change the &ldquo;Who can see a paper&rsquo;s decision&rdquo; setting to &ldquo;The paper&rsquo;s <strong>authors</strong>....&rdquo;");
+	$Conf->warnMsg("Authors cannot submit final versions until they know their papers have been accepted.  You should change the &ldquo;Who can see papers decisions&rdquo; setting to &ldquo;<strong>Authors</strong>....&rdquo;");
 
     // unset text messages that equal the default
     if (array_key_exists("conflictdefmsg", $Values)
@@ -1579,8 +1579,8 @@ function doDecGroup() {
     $Conf->footerScript("fold('auresp',!\$\$('cbresp_open').checked)");
 
     echo "<div class='g'></div>\n<hr class='hr' />\n",
-	"Who can see a paper&rsquo;s <b>decision</b> (accept/reject)?<br />\n";
-    doRadio("seedec", array(SEEDEC_ADMIN => "Only administrators", SEEDEC_NCREV => "The paper&rsquo;s reviewers and non-conflicted PC members", SEEDEC_REV => "The paper&rsquo;s reviewers and <em>all</em> PC members", SEEDEC_ALL => "The paper&rsquo;s <b>authors</b> and reviewers, and all PC members (and reviewers can see accepted papers&rsquo; author lists)"));
+	"Who can see paper <b>decisions</b> (accept/reject)?<br />\n";
+    doRadio("seedec", array(SEEDEC_ADMIN => "Only administrators", SEEDEC_NCREV => "Reviewers and non-conflicted PC members", SEEDEC_REV => "Reviewers and <em>all</em> PC members", SEEDEC_ALL => "<b>Authors</b>, reviewers, and all PC members (and reviewers can see accepted papers’ author lists)"));
 
     echo "<div class='g'></div>\n";
     echo "<table>\n";
