@@ -1101,6 +1101,7 @@ class Conference {
 		PaperReview.reviewOrdinal,
 		PaperReview.reviewBlind,
 		PaperReview.contactId as reviewContactId,
+		PaperReview.requestedBy,
 		max($myPaperReview.reviewType) as myReviewType,
 		max($myPaperReview.reviewSubmitted) as myReviewSubmitted,
 		min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit,
@@ -1363,7 +1364,10 @@ class Conference {
 	$crows = array();
 	while (($row = edb_orow($result))) {
 	    $crows[$row->commentId] = $row;
-	    $cid = defval($row, "commentContactId", $row->contactId);
+	    if (isset($row->commentContactId))
+		$cid = $row->commentContactId;
+	    else
+		$cid = $row->contactId;
 	    $row->threadContacts = array($cid => 1);
 	    for ($r = $row; defval($r, "replyTo", 0) && isset($crows[$r->replyTo]); $r = $crows[$r->replyTo])
 		/* do nothing */;

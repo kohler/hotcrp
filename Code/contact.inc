@@ -678,7 +678,14 @@ class Contact {
 
     function ownReview($rrow) {
 	global $Conf;
-	return $rrow->contactId == $this->contactId
+	if (!$rrow || !$rrow->reviewId)
+	    return false;
+	$rrow_contactId = 0;
+	if (isset($rrow->reviewContactId))
+	    $rrow_contactId = $rrow->reviewContactId;
+	else if (isset($rrow->contactId))
+	    $rrow_contactId = $rrow->contactId;
+	return $rrow_contactId == $this->contactId
 	    || (isset($_SESSION["rev_tokens"]) && array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) !== false)
 	    || ($rrow->requestedBy == $this->contactId && $rrow->reviewType == REVIEW_EXTERNAL && $Conf->setting("pcrev_editdelegate"));
     }
@@ -779,9 +786,14 @@ class Contact {
 	assert(!$rrow || $rrow->paperId == $prow->paperId);
 	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
 	$manager = $this->actChair($prow);
-	if ($rrow)
+	$rrow_contactId = 0;
+	if ($rrow) {
 	    $myReview = $manager || $this->ownReview($rrow);
-	else
+	    if (isset($rrow->reviewContactId))
+		$rrow_contactId = $rrow->reviewContactId;
+	    else if (isset($rrow->contactId))
+		$rrow_contactId = $rrow->contactId;
+	} else
 	    $myReview = $prow->myReviewType > 0;
 	// policy
 	if (($prow->timeSubmitted > 0 || $myReview
@@ -795,7 +807,7 @@ class Contact {
 	// collect failure reasons
 	// The "reviewNotAssigned" and "deadline" failure reasons are special.
 	// If either is set, the system will still allow review form download.
-	if ($rrow && $rrow->contactId != $this->contactId && !$this->privChair)
+	if ($rrow && $rrow_contactId != $this->contactId && !$this->privChair)
 	    $whyNot['differentReviewer'] = 1;
 	else if (!$this->isPC && $prow->myReviewType <= 0)
 	    $whyNot['permission'] = 1;
@@ -808,7 +820,7 @@ class Contact {
 		$whyNot['conflict'] = 1;
 	    else if ($this->isPC && $prow->myReviewType <= 0
 		     && !$Conf->timeReviewPaper(true, false, true)
-		     && (!$rrow || $rrow->contactId == $this->contactId))
+		     && (!$rrow || $rrow_contactId == $this->contactId))
 		$whyNot['reviewNotAssigned'] = 1;
 	    else
 		$whyNot['deadline'] = ($this->isPC ? "pcrev_hard" : "extrev_hard");
