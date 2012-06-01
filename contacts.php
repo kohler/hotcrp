@@ -245,14 +245,14 @@ else if ($Me->privChair && $_REQUEST["t"] == "all")
     $Conf->infoMsg("<p><a href='" . hoturl("account", "new=1") . "' class='button'>Create account</a></p><p>Select an account name to edit that profile.  Select <img src='images/viewas.png' alt='[Act as]' /> to view the site as that user would see it.</p>");
 
 
-if ($pl->anySelector) {
+if (isset($pl->any->sel)) {
     echo "<form method='get' action='", hoturl("contacts"), "' accept-charset='UTF-8'><div>";
     foreach (array("t", "sort") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
 }
 echo $pl_text;
-if ($pl->anySelector)
+if (isset($pl->any->sel))
     echo "</div></form>";
 
 

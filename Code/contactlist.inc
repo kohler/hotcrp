@@ -31,7 +31,7 @@ class ContactList extends BaseList {
     var $reverseSort;
     var $sortable;
     var $count;
-    var $anySelector;
+    var $any;
     var $contact;
     var $scoreMax;
     var $limit;
@@ -300,7 +300,7 @@ class ContactList extends BaseList {
 	    return $Conf->printableTimeShort($row->lastLogin);
 	case self::FIELD_SELECTOR:
 	case self::FIELD_SELECTOR_ON:
-	    $this->anySelector = 1;
+	    $this->any->sel = true;
 	    $c = "";
 	    if ($fieldId == self::FIELD_SELECTOR_ON)
 		$c = " checked='checked'";
@@ -609,7 +609,7 @@ class ContactList extends BaseList {
 
 	// get field array
 	$fieldDef = array();
-	$this->anySelector = 0;
+	$this->any = (object) array("sel" => false);
 	$ncol = 0;
 	foreach ($baseFieldId as $fid) {
 	    if ($this->selector($fid, $queryOptions) === false)

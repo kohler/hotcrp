@@ -1147,7 +1147,7 @@ if ($pl) {
     }
 
     // Row numbers
-    if ($pl->anySelector)
+    if (isset($pl->any->sel))
 	displayOptionCheckbox("rownum", 1, "Row numbers", array("onchange" => "fold('pl',!this.checked,'rownum')"));
 
     // Reviewers group
@@ -1464,7 +1464,7 @@ if ($pl) {
 
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
-    if ($pl->anySelector)
+    if (isset($pl->any->sel))
 	echo "<form method='post' action=\"", selfHref(array("selector" => 1), hoturl_post("search")), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck()'><div class='inform'>\n",
 	    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
 	    "<input class='hidden' type='submit' name='default' value='1' />";
@@ -1482,7 +1482,7 @@ if ($pl) {
 	    echo " (<a href=\"", hoturl("search", join("&amp;", $a)), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
     }
 
-    if ($pl->anySelector)
+    if (isset($pl->any->sel))
 	echo "</div></form>";
     echo "</div>\n";
 } else

@@ -67,8 +67,7 @@ class PaperList extends BaseList {
     var $needFinalize;
     var $needFinalCopy;
     var $needSubmitReview;
-    var $anySelector;
-    var $anyFinalPaper;
+    var $any;
     var $defaultFoldRows;
     var $foldRow;
     var $listNumber;
@@ -609,7 +608,6 @@ class PaperList extends BaseList {
     function _contentDownload($row) {
 	global $Conf;
 	if ($row->finalPaperStorageId != 0) {
-	    $this->anyFinalPaper = true;
 	    $finalsuffix = "f";
 	    $finaltitle = "Final version";
 	    $documentType = DOCUMENT_FINAL;
@@ -620,7 +618,10 @@ class PaperList extends BaseList {
 	}
 	if ($row->size == 0 || !$this->contact->canDownloadPaper($row))
 	    return "";
-	else if ($row->mimetype == "application/pdf")
+	if ($documentType == DOCUMENT_FINAL)
+	    $this->any->final = true;
+	$this->any->paper = true;
+	if ($row->mimetype == "application/pdf")
 	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $documentType) . "\">" . $Conf->cacheableImage("pdf$finalsuffix.png", "[PDF]", $finaltitle) . "</a>";
 	else if ($row->mimetype == "application/postscript")
 	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $documentType) . "\">" . $Conf->cacheableImage("postscript$finalsuffix.png", "[PS]", $finaltitle) . "</a>";
@@ -958,7 +959,7 @@ class PaperList extends BaseList {
 	case self::FIELD_SELECTOR:
 	case self::FIELD_SELECTOR_ON:
 	case self::FIELD_SELECTOR_CONFLICT:
-	    $this->anySelector = true;
+	    $this->any->sel = true;
 	    $c = "";
 	    if (($fieldId == self::FIELD_SELECTOR_ON
 		 || ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0))
@@ -1142,7 +1143,7 @@ class PaperList extends BaseList {
 	    $sel_opt["revprefx"] = "Preference file with abstracts";
 	    $sel_opt["abstract"] = "Abstracts";
 	} else {
-	    if ($this->anyFinalPaper) {
+	    if (isset($this->any->final)) {
 		$sel_opt["final"] = "Final papers";
 		foreach (paperOptions() as $id => $o)
 		    if ($o->type == PaperOption::T_FINALPDF)
@@ -1150,7 +1151,7 @@ class PaperList extends BaseList {
 		    else if ($o->type == PaperOption::T_FINALSLIDES)
 			$sel_opt["opt-" . $o->optionAbbrev] = htmlspecialchars(pluralx($o->optionName, 2));
 		$sel_opt["paper"] = "Submitted papers";
-	    } else
+	    } else if (isset($this->any->paper))
 		$sel_opt["paper"] = "Papers";
 	    $sel_opt["abstract"] = "Abstracts";
 	    $sel_opt["revform"] = "Review forms";
@@ -1636,7 +1637,7 @@ class PaperList extends BaseList {
 	// total folding, row number folding
 	if (isset($rstate->foldinfo["wholerow"]))
 	    $classes[] = "fold3c";
-	if ($this->anySelector) {
+	if (isset($this->any->sel)) {
 	    $jsmap[] = "\"rownum\":6";
 	    $classes[] = "fold6" . ($this->_field_is_folded("rownum") ? "c" : "o");
 	}
@@ -1725,8 +1726,7 @@ class PaperList extends BaseList {
 	$this->needFinalize = 0;
 	$this->needFinalCopy = 0;
 	$this->needSubmitReview = 0;
-	$this->anySelector = false;
-	$this->anyFinalPaper = false;
+	$this->any = (object) array();
 	$this->defaultFoldRow = false;
 	$url = $this->search->url();
 
@@ -1966,8 +1966,7 @@ class PaperList extends BaseList {
 	$this->needFinalize = 0;
 	$this->needFinalCopy = 0;
 	$this->needSubmitReview = 0;
-	$this->anySelector = false;
-	$this->anyFinalPaper = false;
+	$this->any = (object) array();
 	$url = $this->search->url();
 
 	// check role type
