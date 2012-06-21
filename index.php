@@ -379,7 +379,7 @@ Sign in to submit or review papers.";
     echo "</div>
 <hr class='home' />
 <div class='homegrp' id='homeacct'>
-<form method='post' action='", hoturl("index"), "' accept-charset='UTF-8'><div class='f-contain'>
+<form method='post' action='", hoturl_post("index"), "' accept-charset='UTF-8'><div class='f-contain'>
 <input type='hidden' name='cookie' value='1' />
 <div class='f-ii'>
   <div class='f-c", $email_class, "'>",
@@ -460,7 +460,7 @@ function reviewTokenGroup($close_hr) {
     foreach (defval($_SESSION, "rev_tokens", array()) as $tt)
 	$tokens[] = encodeToken((int) $tt);
     echo "  <h4>Review tokens: &nbsp;</h4> ",
-	"<form action='", hoturl("index"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
+	"<form action='", hoturl_post("index"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
 	"<input class='textlite' type='text' name='token' size='15' value=\"",
 	htmlspecialchars(join(" ", $tokens)), "\" />",
 	" &nbsp;<input class='b' type='submit' value='Go' />",

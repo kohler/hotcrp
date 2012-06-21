@@ -1325,7 +1325,7 @@ if ($Me->isPC || $Me->privChair) {
 if ($pl && $pl->count > 0) {
     echo "<div class='tld3' style='padding-bottom:1ex'>";
 
-    echo "<form id='foldredisplay' class='fn3 fold5c' method='post' action='", hoturl("search", "redisplay=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
+    echo "<form id='foldredisplay' class='fn3 fold5c' method='post' action='", hoturl_post("search", "redisplay=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
     echo_request_as_hidden_inputs();
 
     echo "<table>";

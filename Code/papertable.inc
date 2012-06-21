@@ -1135,7 +1135,7 @@ class PaperTable {
 		echo "<div class='pscopen ${color}'>";
 
 	    if ($editable)
-		echo "<form method='post' action=\"$site\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+		echo "<form method='post' action='", hoturl_post($site, "p=$prow->paperId$linkExtra") , "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
 
 	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0), "oneditunfold" => "Miniajax.submit(\"tagreportform\")")),
 		"<div class='psv'>";
@@ -1466,7 +1466,7 @@ class PaperTable {
 	global $Conf, $Me, $forceShow, $linkExtra;
 	$prow = $this->prow;
 	if ($Me->canViewTags($prow, $forceShow))
-	    $this->papstripTags($prow, hoturl("review", "p=$prow->paperId$linkExtra"));
+	    $this->papstripTags($prow, "review");
 	if ($Me->canSetRank($prow))
 	    $this->papstripRank($prow);
 	$this->papstripWatch($prow);

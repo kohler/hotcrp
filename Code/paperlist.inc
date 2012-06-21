@@ -1434,7 +1434,7 @@ class PaperList extends BaseList {
 
     function _addAjaxLoadForm($pap, $extra = "") {
 	global $Conf;
-	$t = "<div><form id='plloadform' method='post' action='" . hoturl("search", "ajax=1" . $this->paperLinkArgs) . "' accept-charset='UTF-8'>"
+	$t = "<div><form id='plloadform' method='post' action='" . hoturl_post("search", "ajax=1" . $this->paperLinkArgs) . "' accept-charset='UTF-8'>"
 	    . "<div class='inform'>";
 	$s = $this->search;
 	if ($s->q)
