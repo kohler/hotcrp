@@ -115,6 +115,10 @@ function countReviews() {
     global $Conf, $papersel;
     $nrev = (object) array("any" => array(), "pri" => array(), "sec" => array());
     $nrev->pset = (object) array("any" => array(), "pri" => array(), "sec" => array());
+    foreach (pcMembers() as $id => $pc) {
+	$nrev->any[$id] = $nrev->pri[$id] = $nrev->sec[$id] = 0;
+	$nrev->pset->any[$id] = $nrev->pset->pri[$id] = $nrev->pset->sec[$id] = 0;
+    }
 
     $result = $Conf->qe("select PC.contactId, group_concat(R.reviewType separator ''),
 		group_concat(R.reviewType separator '')
