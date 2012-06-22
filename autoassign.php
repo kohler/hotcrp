@@ -22,6 +22,11 @@ if (isset($_REQUEST["pcs"]) && is_array($_REQUEST["pcs"])) {
 	    $pcsel[$p] = 1;
 } else
     $pcsel = pcMembers();
+if (defval($_REQUEST, "a") == "prefconflict" && !isset($_REQUEST["t"])
+    && $Conf->setting("pc_seeall") > 0)
+    $_REQUEST["t"] = "all";
+else
+    $_REQUEST["t"] = defval($_REQUEST, "t", "s");
 if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
     $_REQUEST["p"] = $_REQUEST["pap"];
 if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
@@ -33,7 +38,6 @@ if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"]) && !isset($_REQUEST["reque
 	    $papersel[] = $p;
 } else {
     $papersel = array();
-    $_REQUEST["t"] = defval($_REQUEST, "t", "s");
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $papersel = $search->paperList();
 }
@@ -297,7 +301,7 @@ function doAssign() {
     // prefconflict is a special case
     if ($atype == "prefconflict") {
 	$papers = array_fill_keys($papersel, 1);
-	$result = $Conf->qe("select PRP.paperId, PRP.contactId, PRP.preference from PaperReviewPreference PRP left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId) where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0", "while fetching preferences");
+	$result = $Conf->qe($Conf->preferenceConflictQuery($_REQUEST["t"], ""), "while fetching preferences");
 	while (($row = edb_row($result))) {
 	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
 		continue;
@@ -720,7 +724,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	$atext[$pid] = "<h6>Proposed $reviewtypename:</h6> $t";
     }
 
-    $search = new PaperSearch($Me, array("t" => "s", "q" => join(" ", array_keys($assignments))));
+    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => join(" ", array_keys($assignments))));
     $plist = new PaperList($search, array("extraText" => $atext));
     echo $plist->text("reviewers", $Me);
 
