@@ -297,7 +297,7 @@ function doAssign() {
     // prefconflict is a special case
     if ($atype == "prefconflict") {
 	$papers = array_fill_keys($papersel, 1);
-	$result = $Conf->qe("select paperId, contactId, preference from PaperReviewPreference where preference<=-100", "while fetching preferences");
+	$result = $Conf->qe("select PRP.paperId, PRP.contactId, PRP.preference from PaperReviewPreference PRP left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId) where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0", "while fetching preferences");
 	while (($row = edb_row($result))) {
 	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
 		continue;
