@@ -829,11 +829,17 @@ class Conference {
 	    $filestore = "$ConfSitePATH/filestore";
 	if (isset($Opt["multiconference"]) && $Opt["multiconference"])
 	    $filestore = str_replace("*", $ConfMulticonf, $filestore);
-	if (!is_dir($filestore)
-	    && (!@mkdir($filestore, 0700)
-		|| file_put_contents("$filestore/.htaccess", "Order deny,allow\nDeny from all\nphp_flag magic_quotes_gpc off\n") === false)) {
-	    @unlink("$filestore/.htaccess");
+	if (!is_dir($filestore) && !@mkdir($filestore, 0700)) {
 	    @rmdir($filestore);
+	    return false;
+	}
+
+	// Ensure an .htaccess file exists, even if someone else made the
+	// filestore directory
+	$htaccess = "$filestore/.htaccess";
+	if (!is_file($htaccess)
+	    && file_put_contents($htaccess, "Order deny,allow\nDeny from all\nphp_flag magic_quotes_gpc off\n") === false) {
+	    @unlink("$filestore/.htaccess");
 	    return false;
 	}
 
