@@ -846,7 +846,11 @@ class Conference {
 	$sha1 = bin2hex($row->sha1);
 	if (strlen($sha1) != 40)
 	    return false;
-	$superdir = $filestore . "/" . substr($sha1, 0, 3);
+	$superdir = $filestore;
+	$use_subdir = defval($Opt, "filestoreSubdir", false);
+	if ($use_subdir && ($use_subdir === true || $use_subdir > 0))
+	    $superdir .= "/" . substr($sha1, 0,
+				      $use_subdir === true ? 2 : $use_subdir);
 	$filename = $superdir . "/" . $sha1 . $this->getFileExtension($row->mimetype);
 
 	if (!is_readable($filename)
