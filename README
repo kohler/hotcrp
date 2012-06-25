@@ -174,11 +174,11 @@ user, and password.  For instance:
                                             ^^^^^^^^
                                     last directory component
 
-Alternately, you may set $Opt["dbName"], $Opt["dbUser"], and/or
-$Opt["dbPassword"]. HotCRP will edit each of those settings to replace the
-"*" character with the last directory component. (This replacement is also
-performed on the sessionName, downloadPrefix, conferenceSite, and paperSite
-options.)
+Alternately, you may set $Opt["dbName"], $Opt["dbUser"],
+$Opt["dbPassword"], and/or $Opt["dsn"]. HotCRP will edit each of those
+settings to replace the "*" character with the last directory component.
+(This replacement is also performed on the sessionName, downloadPrefix,
+conferenceSite, and paperSite options.)
 
 You will still need to create a new database for each conference using the
 "Code/createdb.sh" script, and convince your Apache to use the HotCRP
