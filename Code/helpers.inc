@@ -373,7 +373,7 @@ function hoturl($page, $options = null) {
 }
 
 function hoturl_post($page, $options = null) {
-    $options = ($options ? $options . "&amp;" : "") . "post=1";
+    $options = ($options ? $options . "&amp;" : "") . "post=" . post_value();
     return hoturl($page, $options);
 }
 
@@ -428,6 +428,22 @@ function go($url) {
     exit();
 }
 
+function post_value() {
+    global $Conf;
+    $Conf->ensureSession();
+    if (($sid = session_id())) {
+	if (strlen($sid) > 16)
+	    $sid = substr($sid, 8);
+	$sid = substr($sid, 0, 8);
+    } else
+	$sid = "1";
+    return urlencode($sid);
+}
+
+function check_post() {
+    return isset($_REQUEST["post"]) && $_REQUEST["post"] == post_value();
+}
+
 function fileUploaded(&$var, $conf) {
     if (!isset($var) || ($var['error'] != UPLOAD_ERR_OK && !$conf))
 	return false;
@@ -458,7 +474,7 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
 	else if (($pos = strpos($x, ".php/")) !== false)
 	    $x = substr($x, 0, $pos) . substr($x, $pos + 4);
     }
-    $sep = "?";
+    $sep = (strpos($self, "?") === false ? "?" : "&");
     foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
 	if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
 	    $_REQUEST[$v] = $_REQUEST[$k];
@@ -1420,7 +1436,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['responseNotReady']))
 	$text .= "The authors&rsquo; response for $thisPaper is not yet ready for reviewers to view.  ";
     if (isset($whyNot['reviewsOutstanding']))
-	$text .= "You will get access to the reviews once you complete <a href=\"" . hoturl("search", "q=&amp;t=r") . "\">your assigned reviews for other papers</a>.  If you can&rsquo;t complete your reviews, please let the conference organizers know via the &ldquo;Refuse review&rdquo; links.  ";
+	$text .= "You will get access to the reviews once you complete <a href=\"" . hoturl("search", "q=&amp;t=r") . "\">your assigned reviews for other papers</a>.  If you can’t complete your reviews, please let the conference organizers know via the “Refuse review” links.  ";
     if (isset($whyNot['reviewNotAssigned']))
 	$text .= "You are not assigned to review $thisPaper.  ";
     if (isset($whyNot['deadline'])) {
@@ -1455,12 +1471,12 @@ function whyNotText($whyNot, $action) {
 	    if ($Conf->setting("au_seerev") == AU_SEEREV_YES)
 		$text .= "Authors who are also reviewers can’t see reviews for their papers while they still have <a href='" . hoturl("search", "t=rout&amp;q=") . "'>incomplete reviews</a> of their own.  ";
 	    else
-		$text .= "Authors can&rsquo;t view paper reviews at the moment.  ";
+		$text .= "Authors can’t view paper reviews at the moment.  ";
 	} else
-	    $text .= "You can&rsquo;t $action $thisPaper at the moment.  ";
+	    $text .= "You can’t $action $thisPaper at the moment.  ";
 	$text .= "(<a class='nowrap' href='" . hoturl("deadlines") . "'>View deadlines</a>)  ";
 	if (isset($whyNot['override']) && $whyNot['override'])
-	    $text .= "Select the &ldquo;Override deadlines&rdquo; checkbox to override this deadline as an administrator.  ";
+	    $text .= "Select the “Override deadlines” checkbox to override this deadline as an administrator.  ";
     }
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind.  ";
@@ -1756,6 +1772,8 @@ function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
     $text = "<select" . ($id === null ? "" : " id='$id'") . " name='decision'$extra>\n";
     $rf = reviewForm();
     $outcomeMap = $rf->options['outcome'];
+    if (!isset($outcomeMap[$curOutcome]))
+	$curOutcome = null;
     $outcomes = array_keys($outcomeMap);
     sort($outcomes);
     $outcomes = array_unique(array_merge(array(0), $outcomes));

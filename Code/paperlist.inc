@@ -67,8 +67,7 @@ class PaperList extends BaseList {
     var $needFinalize;
     var $needFinalCopy;
     var $needSubmitReview;
-    var $anySelector;
-    var $anyFinalPaper;
+    var $any;
     var $defaultFoldRows;
     var $foldRow;
     var $listNumber;
@@ -89,6 +88,7 @@ class PaperList extends BaseList {
     var $formulas;
     var $viewmap;
     var $reviewList;
+    var $atab;
 
     function __construct($search, $args = array()) {
 	global $scoreSorts, $defaultScoreSort, $Conf;
@@ -136,6 +136,8 @@ class PaperList extends BaseList {
 	    $this->display = defval($_SESSION, defval($args, "foldtype", "pl") . "display", "");
 	$this->rf = reviewForm();
 	$this->formulas = array();
+	$this->atab = defval($_REQUEST, "atab", "");
+	unset($_REQUEST["atab"]);
     }
 
     function _normalizeField($fieldId) {
@@ -606,7 +608,6 @@ class PaperList extends BaseList {
     function _contentDownload($row) {
 	global $Conf;
 	if ($row->finalPaperStorageId != 0) {
-	    $this->anyFinalPaper = true;
 	    $finalsuffix = "f";
 	    $finaltitle = "Final version";
 	    $documentType = DOCUMENT_FINAL;
@@ -617,7 +618,10 @@ class PaperList extends BaseList {
 	}
 	if ($row->size == 0 || !$this->contact->canDownloadPaper($row))
 	    return "";
-	else if ($row->mimetype == "application/pdf")
+	if ($documentType == DOCUMENT_FINAL)
+	    $this->any->final = true;
+	$this->any->paper = true;
+	if ($row->mimetype == "application/pdf")
 	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $documentType) . "\">" . $Conf->cacheableImage("pdf$finalsuffix.png", "[PDF]", $finaltitle) . "</a>";
 	else if ($row->mimetype == "application/postscript")
 	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $documentType) . "\">" . $Conf->cacheableImage("postscript$finalsuffix.png", "[PS]", $finaltitle) . "</a>";
@@ -955,7 +959,7 @@ class PaperList extends BaseList {
 	case self::FIELD_SELECTOR:
 	case self::FIELD_SELECTOR_ON:
 	case self::FIELD_SELECTOR_CONFLICT:
-	    $this->anySelector = true;
+	    $this->any->sel = true;
 	    $c = "";
 	    if (($fieldId == self::FIELD_SELECTOR_ON
 		 || ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0))
@@ -1130,7 +1134,7 @@ class PaperList extends BaseList {
 	$want_plactions_dofold = false;
 
 	// Download
-	if (defval($_REQUEST, "atab") == "download")
+	if ($this->atab == "download")
 	    $whichlll = $nlll;
 	$t = "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "download")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Download</a></td><td class='lld$nlll nowrap'><b>:</b> &nbsp;";
 	$sel_opt = array();
@@ -1139,7 +1143,7 @@ class PaperList extends BaseList {
 	    $sel_opt["revprefx"] = "Preference file with abstracts";
 	    $sel_opt["abstract"] = "Abstracts";
 	} else {
-	    if ($this->anyFinalPaper) {
+	    if (isset($this->any->final)) {
 		$sel_opt["final"] = "Final papers";
 		foreach (paperOptions() as $id => $o)
 		    if ($o->type == PaperOption::T_FINALPDF)
@@ -1147,7 +1151,7 @@ class PaperList extends BaseList {
 		    else if ($o->type == PaperOption::T_FINALSLIDES)
 			$sel_opt["opt-" . $o->optionAbbrev] = htmlspecialchars(pluralx($o->optionName, 2));
 		$sel_opt["paper"] = "Submitted papers";
-	    } else
+	    } else if (isset($this->any->paper))
 		$sel_opt["paper"] = "Papers";
 	    $sel_opt["abstract"] = "Abstracts";
 	    $sel_opt["revform"] = "Review forms";
@@ -1179,8 +1183,7 @@ class PaperList extends BaseList {
 
 	// Upload preferences (review preferences only)
 	if ($revpref) {
-	    if (isset($_REQUEST["upload"])
-		|| defval($_REQUEST, "atab") == "uploadpref")
+	    if (isset($_REQUEST["upload"]) || $this->atab == "uploadpref")
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "uploadpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Upload</a></td><td class='lld$nlll nowrap'><b>&nbsp;preference file:</b> &nbsp;";
@@ -1190,8 +1193,7 @@ class PaperList extends BaseList {
 
 	// Set preferences (review preferences only)
 	if ($revpref) {
-	    if (isset($_REQUEST["setpaprevpref"])
-		|| defval($_REQUEST, "atab") == "setpref")
+	    if (isset($_REQUEST["setpaprevpref"]) || $this->atab == "setpref")
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "setpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Set preferences</a></td><td class='lld$nlll nowrap'><b>:</b> &nbsp;";
@@ -1201,8 +1203,7 @@ class PaperList extends BaseList {
 
 	// Tags (search+PC only)
 	if ($this->contact->isPC && !$revpref) {
-	    if (isset($_REQUEST["tagact"])
-		|| defval($_REQUEST, "atab") == "tags")
+	    if (isset($_REQUEST["tagact"]) || $this->atab == "tags")
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Tag</a></td><td class='lld$nlll nowrap'><table id='foldplacttags' class='foldc fold99c'><tr><td><b>:</b><a class='help' href='" . hoturl("help", "t=tags") . "' target='_blank' title='Learn more'>?</a> &nbsp;";
@@ -1239,8 +1240,7 @@ class PaperList extends BaseList {
 
 	// Assignments (search+admin only)
 	if ($this->contact->privChair && !$revpref) {
-	    if (isset($_REQUEST["setassign"])
-		|| defval($_REQUEST, "atab") == "assign")
+	    if (isset($_REQUEST["setassign"]) || $this->atab == "assign")
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "assign")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Assign</a></td><td id='foldass' class='lld$nlll foldo'><b>:</b> &nbsp;";
@@ -1275,15 +1275,14 @@ class PaperList extends BaseList {
 
 	// Decide, Mail (search+admin only)
 	if ($this->contact->privChair && !$revpref) {
-	    if (defval($_REQUEST, "atab") == "decide")
+	    if ($this->atab == "decide")
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "decide")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Decide</a></td><td class='lld$nlll'><b>:</b> Set to &nbsp;";
-	    $t .= decisionSelector(0, "plact${nlll}_d") . " &nbsp;<input type='submit' class='b' name='setdecision' value='Go' /></td>";
+	    $t .= decisionSelector(defval($_REQUEST, "decision", 0), "plact${nlll}_d") . " &nbsp;<input type='submit' class='b' name='setdecision' value='Go' /></td>";
 	    $nlll++;
 
-	    if (isset($_REQUEST["sendmail"])
-		|| defval($_REQUEST, "atab") == "mail")
+	    if (isset($_REQUEST["sendmail"]) || $this->atab == "mail")
 		$whichlll = $nlll;
 	    $t .= $barsep
 		. "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "mail")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Mail</a></td><td class='lld$nlll'><b>:</b> &nbsp;"
@@ -1435,7 +1434,7 @@ class PaperList extends BaseList {
 
     function _addAjaxLoadForm($pap, $extra = "") {
 	global $Conf;
-	$t = "<div><form id='plloadform' method='post' action='" . hoturl("search", "ajax=1" . $this->paperLinkArgs) . "' accept-charset='UTF-8'>"
+	$t = "<div><form id='plloadform' method='post' action='" . hoturl_post("search", "ajax=1" . $this->paperLinkArgs) . "' accept-charset='UTF-8'>"
 	    . "<div class='inform'>";
 	$s = $this->search;
 	if ($s->q)
@@ -1638,7 +1637,7 @@ class PaperList extends BaseList {
 	// total folding, row number folding
 	if (isset($rstate->foldinfo["wholerow"]))
 	    $classes[] = "fold3c";
-	if ($this->anySelector) {
+	if (isset($this->any->sel)) {
 	    $jsmap[] = "\"rownum\":6";
 	    $classes[] = "fold6" . ($this->_field_is_folded("rownum") ? "c" : "o");
 	}
@@ -1727,8 +1726,7 @@ class PaperList extends BaseList {
 	$this->needFinalize = 0;
 	$this->needFinalCopy = 0;
 	$this->needSubmitReview = 0;
-	$this->anySelector = false;
-	$this->anyFinalPaper = false;
+	$this->any = (object) array();
 	$this->defaultFoldRow = false;
 	$url = $this->search->url();
 
@@ -1968,8 +1966,7 @@ class PaperList extends BaseList {
 	$this->needFinalize = 0;
 	$this->needFinalCopy = 0;
 	$this->needSubmitReview = 0;
-	$this->anySelector = false;
-	$this->anyFinalPaper = false;
+	$this->any = (object) array();
 	$url = $this->search->url();
 
 	// check role type

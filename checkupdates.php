@@ -21,6 +21,23 @@ if ($Me->valid() && $Me->privChair && isset($_REQUEST["data"])
 		$test = defval($Opt, $kk, null) == $v;
 		$ok = $ok && ($k[0] == "-" ? !$test : $test);
 	    }
+	if (isset($update["settings"]) && is_array($update["settings"]))
+	    foreach ($update["settings"] as $k => $v) {
+		if (preg_match('/\A([!<>]?)(-?\d+|now)\z/', $v, $m)) {
+		    $setting = $Conf->setting($k, 0);
+		    if ($m[2] == "now")
+			$m[2] = time();
+		    if ($m[1] == "!")
+			$test = $setting != +$m[2];
+		    else if ($m[1] == ">")
+			$test = $setting > +$m[2];
+		    else if ($m[1] == "<")
+			$test = $setting < +$m[2];
+		    else
+			$test = $setting == +$m[2];
+		    $ok = $ok && $test;
+		}
+	    }
 	if ($ok) {
 	    $m = "<div class='xmerror' style='font-size:smaller'><div class='dod'><strong>WARNING: Upgrade your HotCRP installation.</strong>";
 	    if (isset($update["vulnid"]) && is_numeric($update["vulnid"]))

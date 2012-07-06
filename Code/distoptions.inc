@@ -82,7 +82,7 @@ $Opt["emailFrom"] = "from@your.site.here.com";
 //
 //   emailSubmissions  If this is non-zero, then it should be an email address.
 //                   All submissions are MIME-encoded and sent to this address
-//                   as a backup.  Note that this will increase server load.
+//                   as a backup. This will increase server load.
 
 $Opt["emailSubmissions"] = 0;
 
@@ -90,7 +90,7 @@ $Opt["emailSubmissions"] = 0;
 // OPTIONAL SETTINGS (the defaults are reasonable)
 //
 //   multiconference Set to true to run multiple conferences out of this
-//                   installation.  See README.
+//                   installation. See README.
 //   filestore       Set to true to serve papers and other downloads from a
 //                   cache on the local filesystem. By default this cache is
 //                   created in the "filestore" directory. You can also set
@@ -142,6 +142,9 @@ $Opt["emailSubmissions"] = 0;
 //   smartScoreCompare Set to true if a search like "ovemer:>B" should search
 //                   for scores better than B (i.e., A), rather than scores
 //                   alphabetically after B (i.e., C or D).
+//   filestoreSubdir Set to true (or a small number, like 3) if the filestore
+//                   should use subdirectories. This can be useful if you
+//                   expect thousands of submissions.
 
 $Opt["disablePS"] = true;
 $Opt["smartScoreCompare"] = true;

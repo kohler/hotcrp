@@ -1,5 +1,25 @@
 HotCRP NEWS
 
+Version 2.51   22.Jun.2012
+
+* Fix bug with setting tags on per-paper pages (caused by cross-site
+  request forgery protection).
+
+* Other fixes and improvements.
+
+
+Version 2.50   10.May.2012
+
+* Fix database error on response submissions (a problem since v2.48).
+  Problem reported by Robby Findler.
+
+* Cross-site request forgery protection.
+
+* Other fixes and improvements.
+
+* Thanks to Dan Tsafrir, Wilshon Hsieh, Giuliano Casale, and Geoff Voelker.
+
+
 Version 2.49   29.Mar.2012
 
 * Add update notification. Chairs' browsers contact an updates server,

@@ -12,7 +12,7 @@ help () {
     echo "Usage: Code/createdb.sh [MYSQLOPTIONS] [DBNAME]"
     echo
     echo "MYSQLOPTIONS are sent to mysql and mysqladmin."
-    echo "Common options include '--user ADMIN_USERNAME' and '--password ADMIN_PASSWORD'"
+    echo "Common options include '--user=ADMIN_USERNAME' and '--password=ADMIN_PASSWORD'"
     echo "to select a database admin user able to create new tables."
     exit 0
 }
@@ -29,6 +29,7 @@ export FLAGS_NOP=""
 export ECHOFLAGS=""
 DBNAME=""
 needpassword=false
+force=false
 while [ $# -gt 0 ]; do
     case "$1" in
     -p|--pas|--pass|--passw|--passwo|--passwor|--password)
@@ -45,6 +46,8 @@ while [ $# -gt 0 ]; do
 	FLAGS="$FLAGS '$1'"; ECHOFLAGS="$ECHOFLAGS `echo '$1' | sed 's/=.*//'`='<REDACTED>'"; shift;;
     --he|--hel|--help)
 	help;;
+    --force)
+        force=true; shift;;
     -*)
 	FLAGS="$FLAGS '$1'"; FLAGS_NOP="$FLAGS_NOP '$1'"; ECHOFLAGS="$ECHOFLAGS '$1'"; shift;;
     *)
@@ -83,12 +86,20 @@ if ! $MYSQL --version >/dev/null 2>&1; then
     exit 1
 fi
 if ! $MYSQLADMIN --version >/dev/null 2>&1; then
-    echo "The $MYSQLADMIN binary doesn't appear to work."
-    echo "Set the MYSQLADMIN environment variable and try again."
+    echo "The $MYSQLADMIN binary doesn't appear to work." 1>&2
+    echo "Set the MYSQLADMIN environment variable and try again." 1>&2
     exit 1
 fi
 if ! (echo 'show databases;' | eval $MYSQL $FLAGS >/dev/null); then
-    echo "Could not run $MYSQL $ECHOFLAGS. Did you enter the right password?"
+    echo "Could not run $MYSQL $ECHOFLAGS. Did you enter the right password?" 1>&2
+    exit 1
+fi
+grants=`echo 'show grants;' | eval $MYSQL $FLAGS | grep -i -e create -e all`
+if ! $force && test -z "$grants"; then
+    echo "This MySQL account does not appear to have the privilege to create databases." 1>&2
+    echo "Use '--user=USER' and '--password=PASSWORD' options to specify another user." 1>&2
+    echo "If you think this message is in error, run '$PROG --force'" 1>&2
+    echo "to try again." 1>&2
     exit 1
 fi
 
@@ -116,9 +127,19 @@ while true; do
     fi
 
     x=`echo_dbname | tr -d a-zA-Z0-9_.-`
-    if test -z "$x" -a -n "$DBNAME"; then break; fi
-    echo 1>&2
-    echo "The database name must only contain characters in [-.a-zA-Z0-9_]." 1>&2
+    c=`echo_dbname | wc -c`
+    if test -z "$DBNAME"; then
+	echo 1>&2
+	echo "You must enter a database name." 1>&2
+    elif test -n "$x"; then
+	echo 1>&2
+	echo "The database name must only contain characters in [-.a-zA-Z0-9_]." 1>&2
+    elif test "$c" -gt 16; then
+	echo 1>&2
+	echo "The database name can be at most 16 characters long." 1>&2
+    else
+	break
+    fi
     DBNAME=
 done
 

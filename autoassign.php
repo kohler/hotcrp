@@ -22,6 +22,11 @@ if (isset($_REQUEST["pcs"]) && is_array($_REQUEST["pcs"])) {
 	    $pcsel[$p] = 1;
 } else
     $pcsel = pcMembers();
+if (defval($_REQUEST, "a") == "prefconflict" && !isset($_REQUEST["t"])
+    && $Conf->setting("pc_seeall") > 0)
+    $_REQUEST["t"] = "all";
+else
+    $_REQUEST["t"] = defval($_REQUEST, "t", "s");
 if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
     $_REQUEST["p"] = $_REQUEST["pap"];
 if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
@@ -33,7 +38,6 @@ if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"]) && !isset($_REQUEST["reque
 	    $papersel[] = $p;
 } else {
     $papersel = array();
-    $_REQUEST["t"] = defval($_REQUEST, "t", "s");
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $papersel = $search->paperList();
 }
@@ -69,7 +73,7 @@ if (!isset($_REQUEST["badpairs"]) && !isset($_REQUEST["assign"]) && !count($_POS
     $_REQUEST["bpcount"] = $bpnum - 1;
     if ($Conf->setting("autoassign_badpairs"))
 	$_REQUEST["badpairs"] = 1;
-} else if (count($_POST) && isset($_REQUEST["assign"])) {
+} else if (count($_POST) && isset($_REQUEST["assign"]) && check_post()) {
     $x = array();
     for ($i = 1; $i <= $_REQUEST["bpcount"]; ++$i)
 	if (defval($_REQUEST, "bpa$i") && defval($_REQUEST, "bpb$i")
@@ -115,6 +119,10 @@ function countReviews() {
     global $Conf, $papersel;
     $nrev = (object) array("any" => array(), "pri" => array(), "sec" => array());
     $nrev->pset = (object) array("any" => array(), "pri" => array(), "sec" => array());
+    foreach (pcMembers() as $id => $pc) {
+	$nrev->any[$id] = $nrev->pri[$id] = $nrev->sec[$id] = 0;
+	$nrev->pset->any[$id] = $nrev->pset->pri[$id] = $nrev->pset->sec[$id] = 0;
+    }
 
     $result = $Conf->qe("select PC.contactId, group_concat(R.reviewType separator ''),
 		group_concat(R.reviewType separator '')
@@ -192,7 +200,7 @@ function conflictedPapers() {
     return $confs;
 }
 
-if (!function_exists('array_fill_keys')) {
+if (!function_exists("array_fill_keys")) {
     function array_fill_keys($a, $v) {
 	$x = array();
 	foreach ($a as $k)
@@ -293,7 +301,7 @@ function doAssign() {
     // prefconflict is a special case
     if ($atype == "prefconflict") {
 	$papers = array_fill_keys($papersel, 1);
-	$result = $Conf->qe("select paperId, contactId, preference from PaperReviewPreference where preference<=-100", "while fetching preferences");
+	$result = $Conf->qe($Conf->preferenceConflictQuery($_REQUEST["t"], ""), "while fetching preferences");
 	while (($row = edb_row($result))) {
 	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
 		continue;
@@ -612,9 +620,11 @@ function saveAssign() {
     }
 }
 
-if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"]) && isset($_REQUEST["pctyp"]))
+if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"])
+    && isset($_REQUEST["pctyp"]) && check_post())
     doAssign();
-else if (isset($_REQUEST["saveassign"]) && isset($_REQUEST["a"]) && isset($_REQUEST["ass"]))
+else if (isset($_REQUEST["saveassign"]) && isset($_REQUEST["a"])
+	 && isset($_REQUEST["ass"]) && check_post())
     saveAssign();
 
 
@@ -714,7 +724,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	$atext[$pid] = "<h6>Proposed $reviewtypename:</h6> $t";
     }
 
-    $search = new PaperSearch($Me, array("t" => "s", "q" => join(" ", array_keys($assignments))));
+    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => join(" ", array_keys($assignments))));
     $plist = new PaperList($search, array("extraText" => $atext));
     echo $plist->text("reviewers", $Me);
 

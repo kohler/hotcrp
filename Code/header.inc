@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-define("HOTCRP_VERSION", "2.49");
+define("HOTCRP_VERSION", "2.51");
 
 // All review types must be 1 digit
 define("REVIEW_PRIMARY", 4);
@@ -281,20 +281,29 @@ $Me = $_SESSION["Me"];
 $Me->validated = false;
 
 // Handle capabilities
+function hotcrp_random_bytes($length = 16, $secure_only = false) {
+    $key = false;
+    if (function_exists("openssl_random_pseudo_bytes")) {
+	$key = openssl_random_pseudo_bytes($length, $strong);
+	$key = ($strong ? $key : false);
+    }
+    if (!$key)
+	$key = @file_get_contents("/dev/urandom", false, null, 0, $length);
+    if (!$key && !$secure_only) {
+	$key = "";
+	while (strlen($key) < $length)
+	    $key .= pack("V", mt_rand());
+	$key = substr($key, 0, $length);
+    }
+    return $key;
+}
+
 function setCapabilities() {
     global $Conf, $Opt, $Me, $CapabilitiesOK;
     if (isset($Opt["disableCapabilities"]) && !$Opt["disableCapabilities"])
 	unset($Opt["disableCapabilities"]);
     if (!isset($Opt["disableCapabilities"]) && !$Conf->setting("cap_key")) {
-	$key = false;
-	if (function_exists("openssl_random_pseudo_bytes")) {
-	    $key = openssl_random_pseudo_bytes(16, $strong);
-	    $key = ($strong ? $key : false);
-	}
-	if (!$key)
-	    $key = file_get_contents("/dev/urandom", false, null, 0, 16);
-	if (!$key)
-	    $key = pack("VVVVVV", mt_rand(), mt_rand(), mt_rand(), mt_rand(), mt_rand(), mt_rand());
+	$key = hotcrp_random_bytes(16);
 	if ($key && ($key = base64_encode($key))
 	    && $Conf->qx("insert into Settings (name, value, data) values ('cap_key', 1, '" . sqlq($key) . "')"))
 	    $Conf->updateSettings();
@@ -321,8 +330,26 @@ function setCapabilities() {
 	    }
     }
 }
+
 setCapabilities();
 
+
+// Set conference key
+function setConferenceKey() {
+    global $Conf;
+    if (($key = hotcrp_random_bytes(32))
+	&& $Conf->qx("insert into Settings (name, value, data) values ('conf_key', 1, '" . sqlq($key) . "')"))
+	$Conf->updateSettings();
+}
+
+if (!isset($Opt["conferenceKey"])) {
+    if (!isset($Conf->settingTexts["conf_key"]))
+	setConferenceKey();
+    $Opt["conferenceKey"] = defval($Conf->settingTexts, "conf_key", "");
+}
+
+
+// Extract an error that we redirected through
 if (isset($_SESSION["redirect_error"])) {
     global $Error;
     $Error = $_SESSION["redirect_error"];

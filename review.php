@@ -91,7 +91,9 @@ else if (isset($_REQUEST["savedraft"])) {
 
 
 // upload review form action
-if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Conf)) {
+if (isset($_REQUEST["uploadForm"])
+    && fileUploaded($_FILES['uploadedFile'], $Conf)
+    && check_post()) {
     // parse form, store reviews
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
 
@@ -114,13 +116,14 @@ if (isset($_REQUEST['uploadForm']) && fileUploaded($_FILES['uploadedFile'], $Con
 
     $rf->textFormMessages($tf);
     loadRows();
-} else if (isset($_REQUEST['uploadForm']))
+} else if (isset($_REQUEST["uploadForm"]))
     $Conf->errorMsg("Select a review form to upload.");
 
 
 // check review submit requirements
 if (isset($_REQUEST["unsubmit"]) && $paperTable->editrrow
-    && $paperTable->editrrow->reviewSubmitted && $Me->privChair) {
+    && $paperTable->editrrow->reviewSubmitted && $Me->privChair
+    && check_post()) {
     $while = "while unsubmitting review";
     $Conf->qe("lock tables PaperReview write", $while);
     $needsSubmit = 1;
@@ -137,8 +140,7 @@ if (isset($_REQUEST["unsubmit"]) && $paperTable->editrrow
 	$Conf->log("$editRrowLogname unsubmitted", $Me, $prow->paperId);
 	$Conf->confirmMsg("Unsubmitted review.");
     }
-    redirectSelf();
-    // normally redirectSelf() does not return
+    redirectSelf();		// normally does not return
     loadRows();
 } else if (isset($_REQUEST["update"]) && $paperTable->editrrow
 	   && $paperTable->editrrow->reviewSubmitted)
@@ -146,7 +148,7 @@ if (isset($_REQUEST["unsubmit"]) && $paperTable->editrrow
 
 
 // review rating action
-if (isset($_REQUEST["rating"]) && $paperTable->rrow) {
+if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
     if (!$Me->canRateReview($prow, $paperTable->rrow)
 	|| !$Me->canViewReview($prow, $paperTable->rrow))
 	$Conf->errorMsg("You can’t rate that review.");
@@ -173,15 +175,14 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow) {
 
 
 // update review action
-if (isset($_REQUEST["update"])) {
+if (isset($_REQUEST["update"]) && check_post()) {
     if (!$Me->canSubmitReview($prow, $paperTable->editrrow, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "review"));
 	$useRequest = true;
     } else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow)) {
 	if ($rf->saveRequest($_REQUEST, $paperTable->editrrow, $prow)) {
 	    $Conf->confirmMsg(defval($_REQUEST, "ready", false) && !defval($_REQUEST, "unready", false) ? "Review submitted." : "Review saved.  However, this version is marked as not ready for others to see.  Please finish the review and submit again.");
-	    redirectSelf();
-	    // NB normally redirectSelf() does not return
+	    redirectSelf();		// normally does not return
 	    loadRows();
 	} else
 	    $useRequest = true;
@@ -191,7 +192,7 @@ if (isset($_REQUEST["update"])) {
 
 
 // delete review action
-if (isset($_REQUEST['delete']) && $Me->privChair)
+if (isset($_REQUEST["delete"]) && $Me->privChair && check_post())
     if (!$paperTable->editrrow)
 	$Conf->errorMsg("No review to delete.");
     else {
@@ -215,6 +216,7 @@ if (isset($_REQUEST['delete']) && $Me->privChair)
 	    unset($_REQUEST["r"]);
 	    $_REQUEST["paperId"] = $paperTable->editrrow->paperId;
 	}
+	redirectSelf();		// normally does not return
 	loadRows();
     }
 
@@ -366,32 +368,32 @@ if (isset($_REQUEST["accept"])) {
 
 
 // paper actions
-if (isset($_REQUEST["setdecision"])) {
+if (isset($_REQUEST["setdecision"]) && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setDecision($prow);
     loadRows();
 }
-if (isset($_REQUEST["setrevpref"])) {
+if (isset($_REQUEST["setrevpref"]) && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setReviewPreference($prow);
     loadRows();
 }
-if (isset($_REQUEST["setrank"])) {
+if (isset($_REQUEST["setrank"]) && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setRank($prow);
     loadRows();
 }
-if (isset($_REQUEST["setlead"])) {
+if (isset($_REQUEST["setlead"]) && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setLeadOrShepherd($prow, "lead");
     loadRows();
 }
-if (isset($_REQUEST["setshepherd"])) {
+if (isset($_REQUEST["setshepherd"]) && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setLeadOrShepherd($prow, "shepherd");
     loadRows();
 }
-if (isset($_REQUEST["settingtags"])) {
+if (isset($_REQUEST["settingtags"]) && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setTags($prow);
     loadRows();

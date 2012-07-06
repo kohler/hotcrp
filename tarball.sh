@@ -1,4 +1,4 @@
-export VERSION=2.49
+export VERSION=2.51
 perl -pi -e 's/HotCRP: Conference Review Package 2\.\d+/HotCRP: Conference Review Package '$VERSION'/' README
 
 # check that schema.sql and updateschema.inc agree on schema version
@@ -99,6 +99,7 @@ Code/paperlist.inc
 Code/paperoption.inc
 Code/papertable.inc
 Code/rank.inc
+Code/restoredb.sh
 Code/review.inc
 Code/reviewsetform.inc
 Code/reviewtable.inc

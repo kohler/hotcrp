@@ -196,7 +196,8 @@ function doLogin() {
     exit;
 }
 
-if (isset($_REQUEST["email"]) && isset($_REQUEST["action"]) && isset($_REQUEST["signin"])) {
+if (isset($_REQUEST["email"]) && isset($_REQUEST["action"])
+    && isset($_REQUEST["signin"])) {
     if (doLogin() !== true) {
 	// if we get here, login failed
 	$Me->invalidate();
@@ -245,7 +246,7 @@ if ($Me->privChair) {
     if (!function_exists("imagecreate"))
 	$Conf->warnMsg("This PHP installation lacks support for the GD library, so HotCRP cannot generate score charts. You should update your PHP installation. For example, on Ubuntu Linux, install the <code>php5-gd</code> package.");
     // Any -100 preferences around?
-    $result = $Conf->qx("select PRP.paperId from PaperReviewPreference PRP join PCMember PCM on (PCM.contactId=PRP.contactId) left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId) where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0 limit 1");
+    $result = $Conf->qx($Conf->preferenceConflictQuery(false, "limit 1"));
     if (($row = edb_row($result)))
 	$Conf->warnMsg("PC members have indicated paper conflicts (using review preferences of &minus;100 or less) that aren’t yet confirmed.  <a href='" . hoturl_post("autoassign", "a=prefconflict&amp;assign=1") . "' class='nowrap'>Confirm these conflicts</a>");
     // Weird URLs?
@@ -378,7 +379,7 @@ Sign in to submit or review papers.";
     echo "</div>
 <hr class='home' />
 <div class='homegrp' id='homeacct'>
-<form method='post' action='", hoturl("index"), "' accept-charset='UTF-8'><div class='f-contain'>
+<form method='post' action='", hoturl_post("index"), "' accept-charset='UTF-8'><div class='f-contain'>
 <input type='hidden' name='cookie' value='1' />
 <div class='f-ii'>
   <div class='f-c", $email_class, "'>",
@@ -459,7 +460,7 @@ function reviewTokenGroup($close_hr) {
     foreach (defval($_SESSION, "rev_tokens", array()) as $tt)
 	$tokens[] = encodeToken((int) $tt);
     echo "  <h4>Review tokens: &nbsp;</h4> ",
-	"<form action='", hoturl("index"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
+	"<form action='", hoturl_post("index"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
 	"<input class='textlite' type='text' name='token' size='15' value=\"",
 	htmlspecialchars(join(" ", $tokens)), "\" />",
 	" &nbsp;<input class='b' type='submit' value='Go' />",

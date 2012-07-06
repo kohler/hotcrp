@@ -199,6 +199,7 @@ class Conference {
 
     function invalidateCaches($caches = null) {
 	global $OK;
+	$this->ensureSession();
 	$inserts = array();
 	$removes = array();
 	$time = time();
@@ -273,7 +274,7 @@ class Conference {
     function lastInsertId($while = "", $suggestRetry = false) {
 	global $OK;
 	$result = mysql_insert_id($this->dblink);
-	if (!$result) {
+	if (!$result && $while !== false) {
 	    $this->errorMsg($this->dbErrorText($result === false, $while, $suggestRetry));
 	    $OK = false;
 	}
@@ -554,7 +555,9 @@ class Conference {
 	    return false;
 	$bs = $this->settings["sub_blind"];
 	return $bs == BLIND_ALWAYS
-	    || ($bs == BLIND_OPTIONAL && (!$prow || $prow->blind))
+	    || ($bs == BLIND_OPTIONAL
+		&& (!$prow
+		    || (isset($prow->paperBlind) ? $prow->paperBlind : $prow->blind)))
 	    || ($bs == BLIND_UNTILREVIEW
 		&& (!$prow
 		    || (!defval($prow, "myReviewSubmitted")
@@ -826,18 +829,28 @@ class Conference {
 	    $filestore = "$ConfSitePATH/filestore";
 	if (isset($Opt["multiconference"]) && $Opt["multiconference"])
 	    $filestore = str_replace("*", $ConfMulticonf, $filestore);
-	if (!is_dir($filestore)
-	    && (!@mkdir($filestore, 0700)
-		|| file_put_contents("$filestore/.htaccess", "Order deny,allow\nDeny from all\nphp_flag magic_quotes_gpc off\n") === false)) {
-	    @unlink("$filestore/.htaccess");
+	if (!is_dir($filestore) && !@mkdir($filestore, 0700)) {
 	    @rmdir($filestore);
+	    return false;
+	}
+
+	// Ensure an .htaccess file exists, even if someone else made the
+	// filestore directory
+	$htaccess = "$filestore/.htaccess";
+	if (!is_file($htaccess)
+	    && file_put_contents($htaccess, "Order deny,allow\nDeny from all\nphp_flag magic_quotes_gpc off\n") === false) {
+	    @unlink("$filestore/.htaccess");
 	    return false;
 	}
 
 	$sha1 = bin2hex($row->sha1);
 	if (strlen($sha1) != 40)
 	    return false;
-	$superdir = $filestore . "/" . substr($sha1, 0, 3);
+	$superdir = $filestore;
+	$use_subdir = defval($Opt, "filestoreSubdir", false);
+	if ($use_subdir && ($use_subdir === true || $use_subdir > 0))
+	    $superdir .= "/" . substr($sha1, 0,
+				      $use_subdir === true ? 2 : $use_subdir);
 	$filename = $superdir . "/" . $sha1 . $this->getFileExtension($row->mimetype);
 
 	if (!is_readable($filename)
@@ -1098,6 +1111,7 @@ class Conference {
 		PaperReview.reviewOrdinal,
 		PaperReview.reviewBlind,
 		PaperReview.contactId as reviewContactId,
+		PaperReview.requestedBy,
 		max($myPaperReview.reviewType) as myReviewType,
 		max($myPaperReview.reviewSubmitted) as myReviewSubmitted,
 		min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit,
@@ -1360,7 +1374,10 @@ class Conference {
 	$crows = array();
 	while (($row = edb_orow($result))) {
 	    $crows[$row->commentId] = $row;
-	    $cid = defval($row, "commentContactId", $row->contactId);
+	    if (isset($row->commentContactId))
+		$cid = $row->commentContactId;
+	    else
+		$cid = $row->contactId;
 	    $row->threadContacts = array($cid => 1);
 	    for ($r = $row; defval($r, "replyTo", 0) && isset($crows[$r->replyTo]); $r = $crows[$r->replyTo])
 		/* do nothing */;
@@ -1474,6 +1491,22 @@ class Conference {
     }
 
 
+    function preferenceConflictQuery($type, $extra) {
+	$q = "select PRP.paperId, PRP.contactId, PRP.preference
+		from PaperReviewPreference PRP
+		join PCMember PCM on (PCM.contactId=PRP.contactId)
+		join Paper P on (P.paperId=PRP.paperId)
+		left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId)
+		where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0
+		  and P.timeWithdrawn<=0";
+	if ($type != "all" && ($type || $this->setting("pc_seeall") <= 0))
+	    $q .= " and P.timeSubmitted>0";
+	if ($extra)
+	    $q .= " " . $extra;
+	return $q;
+    }
+
+
     // Activity
 
     function _flowQueryWheres(&$where, $table, $t0) {
@@ -1491,6 +1524,8 @@ class Conference {
 		substring(Paper.title from 1 for 80) as shortTitle,
 		Paper.timeSubmitted,
 		Paper.timeWithdrawn,
+		Paper.blind as paperBlind,
+		Paper.outcome,
 		ContactInfo.firstName as reviewFirstName,
 		ContactInfo.lastName as reviewLastName,
 		ContactInfo.email as reviewEmail,
@@ -1519,6 +1554,8 @@ class Conference {
 		substring(Paper.title from 1 for 80) as shortTitle,
 		Paper.timeSubmitted,
 		Paper.timeWithdrawn,
+		Paper.blind as paperBlind,
+		Paper.outcome,
 		ContactInfo.firstName as reviewFirstName,
 		ContactInfo.lastName as reviewLastName,
 		ContactInfo.email as reviewEmail,

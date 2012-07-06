@@ -1,4 +1,4 @@
-HotCRP: Conference Review Package 2.49
+HotCRP: Conference Review Package 2.51
 ======================================
 
 New version by Eddie Kohler, UCLA
@@ -143,11 +143,14 @@ Configuration
   - HotCRP uses Apache's mod_expires module; consider enabling it.
 
 
-Backing up the database
------------------------
-Run "Code/backupdb.sh" at the shell prompt to back up the database.  This
+Backing up and restoring the database
+-------------------------------------
+Run "Code/backupdb.sh" at the shell prompt to back up the database. This
 will write the database's current structure and comments to the standard
 output.
+
+Run "Code/restoredb.sh BACKUPFILE" at the shell prompt to restore the
+database from a backup stored in BACKUPFILE.
 
 
 Updating the code
@@ -171,11 +174,11 @@ user, and password.  For instance:
                                             ^^^^^^^^
                                     last directory component
 
-Alternately, you may set $Opt["dbName"], $Opt["dbUser"], and/or
-$Opt["dbPassword"]. HotCRP will edit each of those settings to replace the
-"*" character with the last directory component. (This replacement is also
-performed on the sessionName, downloadPrefix, conferenceSite, and paperSite
-options.)
+Alternately, you may set $Opt["dbName"], $Opt["dbUser"],
+$Opt["dbPassword"], and/or $Opt["dsn"]. HotCRP will edit each of those
+settings to replace the "*" character with the last directory component.
+(This replacement is also performed on the sessionName, downloadPrefix,
+conferenceSite, and paperSite options.)
 
 You will still need to create a new database for each conference using the
 "Code/createdb.sh" script, and convince your Apache to use the HotCRP

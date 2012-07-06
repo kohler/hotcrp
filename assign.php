@@ -116,7 +116,8 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 	$Conf->confirmMsg("Removed request that " . contactHtml($row) . " review paper #$prow->paperId.");
 }
 
-if (isset($_REQUEST['retract']) && ($retract = rcvtint($_REQUEST['retract'])) > 0) {
+if (isset($_REQUEST["retract"])
+    && ($retract = rcvtint($_REQUEST["retract"])) > 0 && check_post()) {
     retractRequest($retract, $prow->paperId);
     $Conf->qe("unlock tables");
     $Conf->updateRevTokensSetting(false);
@@ -175,7 +176,7 @@ function pcAssignments() {
     }
 }
 
-if (isset($_REQUEST['update']) && $Me->privChair) {
+if (isset($_REQUEST["update"]) && $Me->privChair && check_post()) {
     pcAssignments();
     $Conf->qe("unlock tables");
     $Conf->updateRevTokensSetting(false);
@@ -371,7 +372,7 @@ function createAnonymousReview() {
     return true;
 }
 
-if (isset($_REQUEST['add'])) {
+if (isset($_REQUEST["add"]) && check_post()) {
     if (!$Me->canRequestReview($prow, true, $whyNot))
 	$Conf->errorMsg(whyNotText($whyNot, "request reviews for"));
     else if (!isset($_REQUEST["email"]) || !isset($_REQUEST["name"]))
@@ -401,8 +402,8 @@ if (isset($_REQUEST['add'])) {
 
 
 // deny review request
-if (isset($_REQUEST['deny']) && $Me->privChair
-    && ($email = trim(defval($_REQUEST, 'email', "")))) {
+if (isset($_REQUEST["deny"]) && $Me->privChair && check_post()
+    && ($email = trim(defval($_REQUEST, "email", "")))) {
     $Conf->qe("lock tables ReviewRequest write, ContactInfo read, PaperConflict read, PaperReview read, PaperReviewRefused write");
     $while = "while denying review request";
     // Need to be careful and not expose inappropriate information:
@@ -430,7 +431,7 @@ if (isset($_REQUEST['deny']) && $Me->privChair
 
 
 // add primary or secondary reviewer
-if (isset($_REQUEST['addpc']) && $Me->privChair) {
+if (isset($_REQUEST["addpc"]) && $Me->privChair && check_post()) {
     if (($pcid = rcvtint($_REQUEST["pcid"])) <= 0)
 	$Conf->errorMsg("Enter a PC member.");
     else if (($pctype = rcvtint($_REQUEST["pctype"])) == REVIEW_PRIMARY
@@ -443,7 +444,7 @@ if (isset($_REQUEST['addpc']) && $Me->privChair) {
 
 
 // paper actions
-if (isset($_REQUEST["settingtags"])) {
+if (isset($_REQUEST["settingtags"]) && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setTags($prow);
     loadRows();
