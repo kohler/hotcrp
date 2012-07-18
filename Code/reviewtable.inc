@@ -88,7 +88,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 		$t .= "<td class='empty'></td>";
 	} else {
 	    if (!$showtoken || !preg_match('/^anonymous\d*$/', $rr->email))
-		$n = contactHtml($rr->firstName, $rr->lastName);
+		$n = contactNameHtml($rr->firstName, $rr->lastName,
+				     $mode == "assign" ? null : $rr->email);
 	    else
 		$n = "[Token " . encodeToken((int) $rr->reviewToken) . "]";
 	    $t .= "<td>" . $n . ($x ? " $x" : "");
@@ -113,7 +114,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	else if (($conflictType > 0 && !$effAssistant) || $rr->reviewType != REVIEW_EXTERNAL)
 	    $t .= "<td class='empty'></td>";
 	else {
-	    $t .= "<td><small>Requested by " . contactHtml($rr->reqFirstName, $rr->reqLastName);
+	    $t .= "<td><small>Requested by " . contactHtml($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
 	    if ($rr->reviewModified <= 0
 		&& $rr->reviewType == REVIEW_EXTERNAL
 		&& ($rr->requestedBy == $Me->contactId || $effAssistant))
