@@ -870,8 +870,11 @@ class PaperSearch {
 	$extra = null;
 	if ($special == "order" || $special == "rorder" || !$special)
 	    $extra = array("tagorder" => (object) array("tag" => $value, "reverse" => $special == "rorder"));
-	if (strpos($value, "*") !== false)
+	if (($starpos = strpos($value, "*")) !== false) {
 	    $value = "\3 like '" . str_replace("*", "%", sqlq_for_like($value)) . "'";
+	    if ($starpos == 0)
+		$value .= " and \3 not like '%~%'";
+	}
 	$qt[] = new SearchTerm("tag", $rt, $compar ? array($value, $compar) : $value, $extra);
     }
 
