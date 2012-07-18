@@ -1295,7 +1295,7 @@ if ($Me->isPC || $Me->privChair) {
 		    "Definition: “<a href=\"", hoturl("search", "q=" . urlencode(defval($sv, "q", "")) . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
 		if ($Me->privChair || !defval($sv, "owner") || $sv->owner == $Me->contactId)
 		    echo " &nbsp;<span class='barsep'>|</span>&nbsp; ",
-			"<a href=\"", selfHref(array("deletesearch" => 1, "ssname" => $sn)), "\">Delete</a>";
+			"<a href=\"", selfHref(array("deletesearch" => 1, "ssname" => $sn, "post" => post_value())), "\">Delete</a>";
 		echo "</div></td></tr></table>";
 		++$n;
 	    }
