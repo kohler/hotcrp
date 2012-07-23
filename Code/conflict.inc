@@ -11,8 +11,9 @@ class Conflict {
     static function make_nonconflict() {
 	return new Conflict(0);
     }
-    static function force_author_mark($value) {
-	return new Conflict(max(min($this->value, CONFLICT_MAXAUTHORMARK), CONFLICT_AUTHORMARK));
+    static function force_author_mark($value, $privChair) {
+	$max = $privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
+	return new Conflict(max(min($value, $max), CONFLICT_AUTHORMARK));
     }
 
     function is_conflict() {

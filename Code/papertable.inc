@@ -968,7 +968,7 @@ class PaperTable {
 	    foreach ($pcm as $id => $row)
 		if (isset($_REQUEST["pcc$id"])
 		    && ($ct = cvtint($_REQUEST["pcc$id"])) > 0)
-		    $conflict[$id] = Conflict::force_author_mark($ct);
+		    $conflict[$id] = Conflict::force_author_mark($ct, $Me->privChair);
 	}
 	if ($prow) {
 	    $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=$prow->paperId", "while finding conflicted PC members");
