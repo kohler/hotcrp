@@ -1,5 +1,12 @@
 HotCRP NEWS
 
+Version 2.52   23.Jul.2012
+
+* Allow chairs to change all PC conflicts on papers' Edit screens.
+
+* Other bug fixes and improvements.
+
+
 Version 2.51   22.Jun.2012
 
 * Fix bug with setting tags on per-paper pages (caused by cross-site
