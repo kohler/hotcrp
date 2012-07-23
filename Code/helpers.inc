@@ -2224,14 +2224,17 @@ function tagg_select($name, $opt, $selected = null, $extra = null) {
     $optgroup = "";
     foreach ($opt as $value => $text)
 	if ($text === null)
-	    $x .= "<option disabled='disabled'></option>";
+	    $x .= "<option disabled=\"disabled\"></option>";
 	else if (!is_array($text)) {
 	    $x .= "<option value='$value'";
 	    if (strcmp($value, $selected) == 0)
-		$x .= " selected='selected'";
+		$x .= " selected=\"selected\"";
 	    if ($extra && isset($extra["disabled"])
 		&& defval($extra["disabled"], $value))
-		$x .= " disabled='disabled'";
+		$x .= " disabled=\"disabled\"";
+	    if ($extra && isset($extra["optionstyles"])
+		&& ($s = defval($extra["optionstyles"], $value)))
+		$x .= " style=\"" . $s . "\"";
 	    $x .= ">" . $text . "</option>";
 	} else if ($text[0] == "optgroup") {
 	    $x .= $optgroup . "<optgroup label='" . $text[1] . "'>";

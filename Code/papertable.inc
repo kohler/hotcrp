@@ -974,7 +974,7 @@ class PaperTable {
 	    $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=$prow->paperId", "while finding conflicted PC members");
 	    while (($row = edb_row($result))) {
 		$ct = new Conflict($row[1]);
-		if (!$ct->is_author_mark() || !$this->useRequest)
+		if (!$this->useRequest || (!$ct->is_author_mark() && !$Me->privChair))
 		    $conflict[$row[0]] = $ct;
 	    }
 	}
@@ -982,18 +982,25 @@ class PaperTable {
 	$pcconfs = array();
 	$nonct = Conflict::make_nonconflict();
 	if ($selectors) {
+	    $ctypes = $authorConflictTypes;
+	    $extra = array("onchange" => "hiliter(this)",
+			   "class" => "pctbconfselector");
+	    if ($Me->privChair) {
+		$ctypes["xsep"] = null;
+		$ctypes[CONFLICT_CHAIRMARK] = "Confirmed conflict";
+		$extra["optionstyles"] = array(CONFLICT_CHAIRMARK => "font-weight:bold");
+	    }
 	    foreach ($pcm as $id => $p) {
 		$c = "<tr><td class='pctbname0 pctbl'>". contactNameHtml($p) . "</td><td class='pctbconfsel'>";
 		$ct = defval($conflict, $id, $nonct);
 		if ($ct->is_author())
 		    $c .= "<strong>Author</strong>";
-		else if ($ct->is_conflict() && !$ct->is_author_mark())
+		else if ($ct->is_conflict() && !$ct->is_author_mark() && !$Me->privChair)
 		    $c .= "<strong>Conflict</strong>";
+		else if ($ct->is_conflict() && !$ct->is_author_mark())
+		    $c .= tagg_select("pcc$id", $ctypes, CONFLICT_CHAIRMARK, $extra);
 		else
-		    $c .= tagg_select("pcc$id", $authorConflictTypes,
-				      $ct->value,
-				      array("onchange" => "hiliter(this)",
-					    "class" => "pctbconfselector"));
+		    $c .= tagg_select("pcc$id", $ctypes, $ct->value, $extra);
 		$c .= "</td></tr>\n";
 		$pcconfs[] = $c;
 	    }
@@ -1005,8 +1012,9 @@ class PaperTable {
 	    foreach ($pcm as $id => $p) {
 		$ct = defval($conflict, $id, $nonct);
 		$checked = $ct->is_conflict();
-		$disabled = $checked && !$ct->is_author_mark();
-		$cbox = tagg_checkbox_h("pcc$id", CONFLICT_AUTHORMARK, $checked, array($disabled => $disabled));
+		$disabled = $checked && !$ct->is_author_mark() && !$Me->privChair;
+		$value = $checked ? $ct->value : CONFLICT_AUTHORMARK;
+		$cbox = tagg_checkbox_h("pcc$id", $value, $checked, array("disabled" => $disabled));
 		$aff = ($p->affiliation === "" ? "" : "<div class='pcconfaff'>" . htmlspecialchars($p->affiliation) . "</div>");
 		$label = tagg_label(contactNameHtml($p) . $aff);
 		if ($aff !== "")
