@@ -1272,7 +1272,7 @@ class Contact {
 	if ($row->timeWithdrawn > 0)
 	    return "<span class='pstat pstat_with'>Withdrawn</span>";
 	else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1)
-	    return "<span class='pstat pstat_noup'>Not uploaded</span>";
+	    return "<span class='pstat pstat_noup'>No submission</span>";
 	else if (isset($row->outcome) && $row->outcome != 0
 		 && $this->canViewDecision($row, abs($long) > 1)) {
 	    if (!isset($paperStatusCache) || !$paperStatusCache)
@@ -1307,7 +1307,7 @@ class Contact {
 		    return "";
 		$x = "<span class='pstat pstat_sub'>Submitted</span>";
 	    } else
-		$x = "<span class='pstat pstat_prog'>In progress</span>";
+		$x = "<span class='pstat pstat_prog'>Not ready</span>";
 	    return $x;
 	}
     }
