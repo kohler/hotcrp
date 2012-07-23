@@ -35,7 +35,8 @@ mkdistdir () {
 	fi
     done
 
-    tar czf $crpd.tar.gz $crpd
+    export COPY_EXTENDED_ATTRIBUTES_DISABLE=true COPYFILE_DISABLE=true
+    tar --exclude='.DS_Store' --exclude='._*' -czf $crpd.tar.gz $crpd
     rm -rf $crpd
 }
 
