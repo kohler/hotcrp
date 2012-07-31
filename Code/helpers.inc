@@ -1658,14 +1658,24 @@ function csv_split_lines($str) {
 }
 
 function csv_shift_line(&$str, $header = false, $ignore_comments = false) {
-    // blank lines, comments
+    $i = 0;
+    $a = array();
+    // blank lines, comments, pre-parsed lines
     $line = csv_take_line($str);
+    if (is_array($line)) {
+	foreach ($line as $field) {
+	    if ($header && $i < count($header))
+		$a[$header[$i]] = $field;
+	    else
+		$a[$i] = $field;
+	    ++$i;
+	}
+	return $a;
+    }
     if ($line == "" || $line[0] == "\n" || $line[0] == "\r"
 	|| ($ignore_comments && $line[0] == "#"))
 	return false;
     // otherwise, nonblank
-    $i = 0;
-    $a = array();
     $linelen = csv_linelen($line);
     $pos = 0;
     while ($pos != $linelen) {
