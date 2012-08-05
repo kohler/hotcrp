@@ -232,6 +232,9 @@ if ($Me->privChair) {
     if (isset($_REQUEST["clearnewpcrev"]) && ctype_digit($_REQUEST["clearnewpcrev"])
 	&& check_post() && $Conf->setting("pcrev_informtime", 0) <= $_REQUEST["clearnewpcrev"])
 	$Conf->save_setting("pcrev_informtime", $_REQUEST["clearnewpcrev"]);
+    if (isset($_REQUEST["clearbug"]) || isset($_REQUEST["clearnewpcrev"]))
+	redirectSelf(array("clearbug" => null, "clearnewpcrev" => null));
+
     if (preg_match("/^[1-4]\\./", phpversion()))
 	$Conf->warnMsg("HotCRP requires PHP version 5.2 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".");
     if (get_magic_quotes_gpc())
