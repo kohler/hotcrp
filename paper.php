@@ -266,7 +266,8 @@ function uploadPaper($isSubmitFinal) {
 
 function uploadOption($o) {
     global $newPaper, $prow, $Conf, $Me, $Error;
-    $doc = $Conf->storePDF("opt$o->optionId", $newPaper ? -1 : $prow->paperId, $o->optionId);
+    $doc = $Conf->storeDocument("opt$o->optionId", $newPaper ? -1 : $prow->paperId,
+				$o->optionId);
     if ($doc)
 	$_REQUEST["opt$o->optionId"] = $doc->paperStorageId;
     else

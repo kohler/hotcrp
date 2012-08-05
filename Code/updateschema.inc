@@ -244,6 +244,10 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table Paper add `withdrawReason` text")
 	&& $Conf->q("update Settings set value=44 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 44;
+    if ($Conf->settings["allowPaperOption"] == 44
+	&& $Conf->q("alter table PaperStorage add `filename` varchar(255)")
+	&& $Conf->q("update Settings set value=45 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 45;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

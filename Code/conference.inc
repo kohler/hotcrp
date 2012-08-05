@@ -123,7 +123,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 44) {
+	if ($this->settings["allowPaperOption"] < 45) {
 	    require_once("updateschema.inc");
 	    $oldOK = $OK;
 	    updateSchema($this);
@@ -617,7 +617,7 @@ class Conference {
     // Paper storage
     //
 
-    function storePDF($uploadId, $paperId, $documentType) {
+    function storeDocument($uploadId, $paperId, $documentType) {
 	global $Opt, $mimetypeMap, $mimetypeSynonyms, $mimetypeNames;
 	require_once("mimetypes.inc");
 	$while = "while storing paper in database";
@@ -666,11 +666,20 @@ class Conference {
 	    return $this->errorMsg($message);
 	}
 
+	// calculate metadata
+	$contents_sha1 = (!defval($Opt, "disableSHA1") ? sha1($contents, true) : "");
+	$user_filename = null;
+	if (isset($_FILES[$uploadId]["name"])
+	    && strlen($_FILES[$uploadId]["name"]) <= 255
+	    && is_valid_utf8($_FILES[$uploadId]["name"]))
+	    $user_filename = $_FILES[$uploadId]["name"];
+
 	// store the paper
 	$extra = "";
-	$contents_sha1 = (!defval($Opt, "disableSHA1") ? sha1($contents, true) : "");
 	if ($this->sversion >= 28)
-	    $extra = ", sha1='" . sqlq($contents_sha1) . "', documentType=$documentType";
+	    $extra .= ", sha1='" . sqlq($contents_sha1) . "', documentType=$documentType";
+	if ($this->sversion >= 45 && $user_filename)
+	    $extra .= ", filename='" . sqlq($user_filename) . "'";
 	$timestamp = time();
 	if (!$this->qe("insert into PaperStorage set paperId=$paperId, timestamp=$timestamp, mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'" . $extra, $while))
 	    return false;
@@ -695,14 +704,15 @@ class Conference {
 			      "size" => strlen($contents),
 			      "mimetype" => $mimetype,
 			      "timestamp" => $timestamp,
-			      "sha1" => $contents_sha1);
+			      "sha1" => $contents_sha1,
+			      "filename" => $user_filename);
     }
 
     function storePaper($uploadId, $prow, $final) {
 	global $ConfSiteSuffix, $Opt;
 	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
 
-	$doc = $this->storePDF($uploadId, $paperId, $final ? DOCUMENT_FINAL : DOCUMENT_SUBMISSION);
+	$doc = $this->storeDocument($uploadId, $paperId, $final ? DOCUMENT_FINAL : DOCUMENT_SUBMISSION);
 	if (!$doc)
 	    return false;
 
@@ -787,6 +797,8 @@ class Conference {
 	    $q .= "s.sha1, ";
 	else if (!$skip_content)
 	    $q .= "s.paper as content, ";
+	if ($this->sversion >= 45)
+	    $q .= "s.filename, ";
 	$q .= "s.paperStorageId from Paper p";
 	if ($documentType == DOCUMENT_SUBMISSION)
 	    $sjoin = "p.paperStorageId";
