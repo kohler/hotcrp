@@ -18,7 +18,7 @@ An account has been created for you at the %CONFNAME% submissions site, includin
        Email: %EMAIL%
     Password: %OPT(PASSWORD)%
 
-To sign in directly, either click the link below or paste it into your web browser's location field.
+Use the link below to sign in directly.
 
 %LOGINURL%
 
@@ -38,7 +38,7 @@ Here is your account information for the %CONFNAME% submissions site.
        Email: %EMAIL%
     Password: %OPT(PASSWORD)%
 
-To sign in directly, either click the link below or paste it into your web browser's location field.
+Use the link below to sign in directly.
 
 %LOGINURL%
 
@@ -79,7 +79,7 @@ For reference, your account information is as follows.
        Email: %EMAIL%
     Password: %OPT(PASSWORD)%
 
-To sign in, either click the link below or paste it into your web browser's location field.
+Or use the link below to sign in directly.
 
 %LOGINURL%
 
@@ -331,7 +331,7 @@ Your message here.
        Title: %TITLE%
   Paper site: %URL(paper, p=%NUMBER%)%
 
-To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
+Use the link below to sign in to the submissions site.
 
 %LOGINURL%
 
@@ -353,7 +353,7 @@ This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REV
      Authors: %OPT(AUTHORS)%
   Paper site: %URL(paper, p=%NUMBER%)%
 
-To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
+Use the link below to sign in to the submissions site.
 
 %LOGINURL%
 
@@ -378,9 +378,27 @@ This is a reminder from %OTHERCONTACT% to finish your review for %CONFNAME% pape
      Authors: %OPT(AUTHORS)%
   Paper site: %URL(paper, p=%NUMBER%)%
 
-To sign in to the submissions site, either click the link below or paste it into your web browser's location field.
+Use the link below to sign in to the submissions site.
 
 %LOGINURL%
+
+Thank you for your help -- we appreciate that reviewing is hard work.
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions\n"),
+
+     "newpcrev" =>
+     array("mailtool_name" => "Review assignment notification",
+	   "mailtool_recipients" => "newpcrev",
+	   "subject" => "[%CONFSHORTNAME%] New review assignments",
+	   "body" => "Dear %NAME%,
+
+You have been assigned new reviews for %CONFNAME%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%.%ENDIF%
+
+             Site: %URL%/
+     Your reviews: %URL(search, q=re:me)%
+  New assignments: %NEWASSIGNMENTS%
 
 Thank you for your help -- we appreciate that reviewing is hard work.
 
@@ -728,6 +746,8 @@ class Mailer {
 	    return $this->adminupdate ? "An administrator performed this update.  " : "";
 	if ($what == "%NOTES%")
 	    return $this->notes;
+	if ($what == "%NEWASSIGNMENTS%")
+	    return $this->getNewAssignments($this->contact);
 
 	// rest is only there if we have a real paper
 	if (!$this->row || defval($this->row, "paperId") <= 0) {
@@ -944,6 +964,20 @@ class Mailer {
 	    if ($contact->canViewComment($this->row, $crow, $whyNot, true))
 		$text .= $rf->prettyTextComment($this->row, $crow, $contact) . "\n";
 	$Conf->settings["au_seerev"] = $old_au_seerev;
+	return $text;
+    }
+
+    function getNewAssignments($contact) {
+	global $Conf, $Me, $rf;
+	$result = $Conf->qe("select R.paperId, P.title
+		from PaperReview R join Paper P using (paperId)
+		where R.contactId=" . $contact->contactId . "
+		and R.timeRequested>R.timeRequestNotified
+		and R.reviewSubmitted is null and R.reviewNeedsSubmit!=0
+		order by R.paperId", "while retrieving assignments");
+	$text = "";
+	while (($row = edb_row($result)))
+	    $text .= ($text ? "\n#" : "#") . $row[0] . " " . $row[1];
 	return $text;
     }
 

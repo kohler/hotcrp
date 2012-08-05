@@ -151,6 +151,7 @@ function pcAssignments() {
 
     $while = "while updating PC assignments";
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write" . $Conf->tagRoundLocker(true), $while);
+    $when = time();
 
     // don't record separate PC conflicts on author conflicts
     $result = $Conf->qe("select PCMember.contactId,
@@ -159,20 +160,20 @@ function pcAssignments() {
 	left join PaperConflict on (PaperConflict.contactId=PCMember.contactId and PaperConflict.paperId=$prow->paperId)
 	left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId) $where", $while);
     while (($row = edb_orow($result))) {
-	$val = defval($_REQUEST, "pcs$row->contactId", 0);
+	$pctype = defval($_REQUEST, "pcs$row->contactId", 0);
 	if ($row->conflictType >= CONFLICT_AUTHOR)
 	    continue;
 
 	// manage conflicts
-	if ($row->conflictType && $val >= 0)
+	if ($row->conflictType && $pctype >= 0)
 	    $Conf->qe("delete from PaperConflict where paperId=$prow->paperId and contactId=$row->contactId", $while);
-	else if (!$row->conflictType && $val < 0)
+	else if (!$row->conflictType && $pctype < 0)
 	    $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($prow->paperId, $row->contactId, " . CONFLICT_CHAIRMARK . ")", $while);
 
 	// manage assignments
-	$val = max($val, 0);
-	if ($val != $row->reviewType && ($val == 0 || $val == REVIEW_PRIMARY || $val == REVIEW_SECONDARY || $val == REVIEW_PC))
-	    $Me->assignPaper($prow->paperId, $row, $row->contactId, $val, $Conf);
+	$pctype = max($pctype, 0);
+	if ($pctype != $row->reviewType && ($pctype == 0 || $pctype == REVIEW_PRIMARY || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC))
+	    $Me->assignPaper($prow->paperId, $row, $row->contactId, $pctype, $when);
     }
 }
 
@@ -261,7 +262,13 @@ function requestReview($email) {
     }
 
     // store the review request
-    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn) values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Requester->contactId, current_timestamp)", $while);
+    $qa = $qb = "";
+    if ($Conf->sversion >= 46) {
+	$now = time();
+	$qa .= ", timeRequested, timeRequestNotified";
+	$qb .= ", $now, $now";
+    }
+    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy$qa) values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Requester->contactId$qb)", $while);
 
     // mark secondary as delegated
     $Conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1", $while);
@@ -340,6 +347,7 @@ function createAnonymousReview() {
     global $Conf, $Me, $Opt, $prow, $rrows;
 
     $while = "while creating anonymous review";
+    $now = time();
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo write, PaperConflict read", $while);
 
     // find an unassigned anonymous review contact
@@ -351,7 +359,7 @@ function createAnonymousReview() {
     } else {
 	$result = $Conf->qe("insert into ContactInfo
 		(firstName, lastName, email, affiliation, password, creationTime)
-		values ('Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '" . sqlq(Contact::generatePassword(20)) . "', " . time() . ")", $while);
+		values ('Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '" . sqlq(Contact::generatePassword(20)) . "', $now)", $while);
 	if (!$result)
 	    return $result;
 	$reqId = $Conf->lastInsertId($while);
@@ -359,9 +367,13 @@ function createAnonymousReview() {
 
     // store the review request
     $token = unassignedReviewToken();
-    $Conf->qe("insert into PaperReview
-		(paperId, contactId, reviewType, requestedBy, requestedOn, reviewToken)
-		values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, current_timestamp, $token)", $while);
+    $qa = $qb = "";
+    if ($Conf->sversion >= 46) {
+	$qa .= ", timeRequested, timeRequestNotified";
+	$qb .= ", $now, $now";	/* no way to notify, so count as notified already */
+    }
+    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, reviewToken$qa)
+		values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, $token$qb)", $while);
     $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId.  The review token is " . encodeToken((int) $token) . ".");
 
     $Conf->qx("unlock tables");
@@ -436,7 +448,7 @@ if (isset($_REQUEST["addpc"]) && $Me->privChair && check_post()) {
 	$Conf->errorMsg("Enter a PC member.");
     else if (($pctype = rcvtint($_REQUEST["pctype"])) == REVIEW_PRIMARY
 	     || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC) {
-	$Me->assignPaper($prow->paperId, findRrow($pcid), $pcid, $pctype, $Conf);
+	$Me->assignPaper($prow->paperId, findRrow($pcid), $pcid, $pctype, time());
 	$Conf->updateRevTokensSetting(false);
     }
     loadRows();

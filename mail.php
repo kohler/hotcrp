@@ -106,14 +106,16 @@ function contactQuery($type) {
     // reviewer limit
     if ($type == "crev")
 	$where[] = "PaperReview.reviewSubmitted>0";
-    else if ($type == "uncrev" || $type == "myuncextrev" || $type == "uncextrev" || $type == "uncpcrev")
+    else if ($type == "uncrev" || $type == "myuncextrev" || $type == "uncextrev" || $type == "uncpcrev" || $type == "newpcrev")
 	$where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0";
     if ($type == "extrev" || $type == "myextrev" || $type == "uncextrev" || $type == "myuncextrev")
 	$where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
-    else if ($type == "pcrev" || $type == "uncpcrev")
+    else if ($type == "pcrev" || $type == "uncpcrev" || $type == "newpcrev")
 	$where[] = "PaperReview.reviewType>" . REVIEW_EXTERNAL;
     if ($type == "myextrev" || $type == "myuncextrev")
 	$where[] = "PaperReview.requestedBy=" . $Me->contactId;
+    if ($type == "newpcrev")
+	$where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
 
     // build query
     if ($type == "all") {
@@ -124,7 +126,7 @@ function contactQuery($type) {
 	$orderby = "email";
 	if ($type != "pc")
 	    $where[] = "ContactInfo.contactTags like '% " . sqlq_for_like(substr($type, 3)) . " %'";
-    } else if ($type == "rev" || $type == "crev" || $type == "uncrev" || $type == "extrev" || $type == "myextrev" || $type == "uncextrev" || $type == "myuncextrev" || $type == "pcrev" || $type == "uncpcrev") {
+    } else if ($type == "rev" || $type == "crev" || $type == "uncrev" || $type == "extrev" || $type == "myextrev" || $type == "uncextrev" || $type == "myuncextrev" || $type == "pcrev" || $type == "uncpcrev" || $type == "newpcrev") {
 	$q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
 	$orderby = "email, Paper.paperId";
     } else if ($type == "lead" || $type == "shepherd") {
@@ -229,6 +231,7 @@ function checkMail($send) {
     $nwarnings = 0;
     $cbcount = 0;
     $preperrors = array();
+    $revinform = ($_REQUEST["recipients"] == "newpcrev" ? array() : null);
     while (($row = edb_orow($result))) {
 	$nrows_left--;
 	if ($nrows_left % 5 == 0)
@@ -303,6 +306,8 @@ function checkMail($send) {
 	    echo "<div id='foldmailwarn$nwarnings' class='hidden'><div class='warning'>", join("<br />", $rest["mstate"]->warnings()), "</div></div>";
 	    $Conf->echoScript("\$\$('mailwarnings').innerHTML = \$\$('foldmailwarn$nwarnings').innerHTML;");
 	}
+	if ($send && $revinform !== null)
+	    $revinform[] = "(paperId=$row->paperId and contactId=$row->contactId)";
     }
 
     if (!$any && !count($preperrors))
@@ -315,6 +320,8 @@ function checkMail($send) {
 <input class='b' type='submit' name='cancel' value='Cancel' />",
 	    "</div>\n";
     }
+    if ($revinform)
+	$Conf->qe("update PaperReview set timeRequestNotified=" . time() . " where " . join(" or ", $revinform), "while recording review notifications");
     echo "</div></form>";
     $Conf->echoScript("fold('mail', null);");
     $Conf->footer();
@@ -378,6 +385,11 @@ if ($Me->privChair) {
     $recip["uncrev"] = "Reviewers with incomplete reviews";
     $recip["pcrev"] = "PC reviewers";
     $recip["uncpcrev"] = "PC reviewers with incomplete reviews";
+    if ($Conf->sversion >= 46) {
+	$result = $Conf->q("select paperId from PaperReview where reviewType>=" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0");
+	if (edb_nrows($result) > 0)
+	    $recip["newpcrev"] = "PC reviewers with new review assignments";
+    }
     $recip["extrev"] = "External reviewers";
     $recip["uncextrev"] = "External reviewers with incomplete reviews";
     if ($anyLead)

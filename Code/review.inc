@@ -242,12 +242,13 @@ class ReviewForm {
     function reviewArchiveFields() {
 	global $Conf;
         $fields = "reviewId, paperId, contactId, reviewType, requestedBy,
-		requestedOn, reviewModified, reviewSubmitted,
-		reviewNeedsSubmit, "
+		reviewModified, reviewSubmitted, reviewNeedsSubmit, "
 	    . join(", ", array_keys($this->reviewFields))
 	    . ", reviewRound";
 	if ($Conf->sversion >= 37)
 	    $fields .= ", reviewNotified";
+	if ($Conf->sversion >= 46)
+	    $fields .= ", timeRequested, timeRequestNotified";
 	return $fields;
     }
 
@@ -477,7 +478,7 @@ class ReviewForm {
 	    $reviewId = $rrow->reviewId;
 	    $contactId = $rrow->contactId;
 	} else {
-	    $result = $Conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$Me->contactId, reviewType=" . REVIEW_PC . ", requestedBy=$Me->contactId, requestedOn=current_timestamp, " . join(", ", $q), $while);
+	    $result = $Conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$Me->contactId, reviewType=" . REVIEW_PC . ", requestedBy=$Me->contactId, " . join(", ", $q), $while);
 	    $reviewId = $Conf->lastInsertId($while);
 	    $contactId = $Me->contactId;
 	}

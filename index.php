@@ -227,16 +227,17 @@ if ($Me->validContact() && isset($Me->fresh) && $Me->fresh === true) {
 
 // check global system settings
 if ($Me->privChair) {
-    if (isset($_REQUEST["clearbug"])) {
-	$Conf->q("delete from Settings where name='bug_" . sqlq($_REQUEST["clearbug"]) . "'");
-	$Conf->updateSettings();
-    }
+    if (isset($_REQUEST["clearbug"]) && check_post())
+	$Conf->save_setting("bug_" . $_REQUEST["clearbug"], null);
+    if (isset($_REQUEST["clearnewpcrev"]) && ctype_digit($_REQUEST["clearnewpcrev"])
+	&& check_post() && $Conf->setting("pcrev_informtime", 0) <= $_REQUEST["clearnewpcrev"])
+	$Conf->save_setting("pcrev_informtime", $_REQUEST["clearnewpcrev"]);
     if (preg_match("/^[1-4]\\./", phpversion()))
 	$Conf->warnMsg("HotCRP requires PHP version 5.2 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".");
     if (get_magic_quotes_gpc())
-	$Conf->errorMsg("The PHP <code>magic_quotes_gpc</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP's <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_gpc</code> in your <code>php.ini</code> configuration file.");
+	$Conf->errorMsg("The PHP <code>magic_quotes_gpc</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP’s <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_gpc</code> in your <code>php.ini</code> configuration file.");
     if (get_magic_quotes_runtime())
-	$Conf->errorMsg("The PHP <code>magic_quotes_runtime</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP's <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_runtime</code> in your <code>php.ini</code> configuration file.");
+	$Conf->errorMsg("The PHP <code>magic_quotes_runtime</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP’s <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_runtime</code> in your <code>php.ini</code> configuration file.");
     if ($Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
 	$Conf->warnMsg("PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect.");
     $result = $Conf->qx("show variables like 'max_allowed_packet'");
@@ -260,7 +261,17 @@ if ($Me->privChair) {
 	$Conf->warnMsg("The <code>\$Opt[\"shortName\"]</code> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more). Edit the <code>Code/options.inc</code> file to fix this problem.");
     // Double-encoding bugs found?
     if ($Conf->setting("bug_doubleencoding"))
-	$Conf->warnMsg("Double-encoded URLs have been detected.  Incorrect uses of Apache’s <code>mod_rewrite</code>, and other middleware, can doubly-encoded URL parameters.  This can cause problems, for instance when users log in via links in email.  (“<code>a@b.com</code>” should be encoded as “<code>a%40b.com</code>”; a double encoding will produce “<code>a%2540b.com</code>”.)  HotCRP has tried to compensate, but you really should fix the problem.  For <code>mod_rewrite</code> add <a href='http://httpd.apache.org/docs/current/mod/mod_rewrite.html'>the <code>[NE]</code> option</a> to the relevant RewriteRule. <a href='index$ConfSiteSuffix?clearbug=doubleencoding'>(Clear&nbsp;this&nbsp;message)</a>");
+	$Conf->warnMsg("Double-encoded URLs have been detected.  Incorrect uses of Apache’s <code>mod_rewrite</code>, and other middleware, can doubly-encoded URL parameters.  This can cause problems, for instance when users log in via links in email.  (“<code>a@b.com</code>” should be encoded as “<code>a%40b.com</code>”; a double encoding will produce “<code>a%2540b.com</code>”.)  HotCRP has tried to compensate, but you really should fix the problem.  For <code>mod_rewrite</code> add <a href='http://httpd.apache.org/docs/current/mod/mod_rewrite.html'>the <code>[NE]</code> option</a> to the relevant RewriteRule. <a href=\"" . hoturl_post("index", "clearbug=doubleencoding") . "\">(Clear&nbsp;this&nbsp;message)</a>");
+    // Unnotified reviews?
+    if ($Conf->setting("pcrev_assigntime", 0) > $Conf->setting("pcrev_informtime", 0)
+	&& $Conf->sversion >= 46) {
+	$assigntime = $Conf->setting("pcrev_assigntime");
+	$result = $Conf->qe("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1", "when searching for unnotified review assignments");
+	if (edb_nrows($result))
+	    $Conf->warnMsg("PC review assignments have changed. You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>. <a href=\"" . hoturl_post("index", "clearnewpcrev=$assigntime") . "\">(Clear&nbsp;this&nbsp;message)</a>");
+	else
+	    $Conf->save_setting("pcrev_informtime", $assigntime);
+    }
 }
 
 

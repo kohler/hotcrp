@@ -1358,29 +1358,33 @@ class Contact {
     }
 
 
-    function assignPaper($paperId, $row, $reviewer, $type, $conf) {
-	global $reviewTypeName;
+    function assignPaper($paperId, $row, $reviewer, $type, $when) {
+	global $Conf, $reviewTypeName;
 	$reviewerContactId = (is_object($reviewer) ? $reviewer->contactId : $reviewer);
 	if ($type == 0 && $row && ($row->reviewType == REVIEW_EXTERNAL || $row->reviewType == REVIEW_PC))
 	    return;
 	$qtag = "";
 	if ($type > 0 && (!$row || !$row->reviewType)) {
-	    $roundqa = $roundqb = "";
+	    $qa = $qb = "";
 	    if (($type == REVIEW_PRIMARY || $type == REVIEW_SECONDARY)
-		&& ($t = $conf->settingText("rev_roundtag"))) {
-		if (!($k = array_search($t, $conf->settings["rounds"]))) {
-		    $rounds = $conf->settingText("tag_rounds", "");
+		&& ($t = $Conf->settingText("rev_roundtag"))) {
+		if (!($k = array_search($t, $Conf->settings["rounds"]))) {
+		    $rounds = $Conf->settingText("tag_rounds", "");
 		    $rounds = ($rounds ? "$rounds$t " : " $t ");
-		    $conf->qe("insert into Settings (name, value, data) values ('tag_rounds', 1, '" . sqlq($rounds) . "') on duplicate key update data='" . sqlq($rounds) . "'");
-		    $conf->settings["tag_rounds"] = 1;
-		    $conf->settingTexts["tag_rounds"] = $rounds;
-		    $conf->settings["rounds"][] = $t;
-		    $k = array_search($t, $conf->settings["rounds"]);
+		    $Conf->qe("insert into Settings (name, value, data) values ('tag_rounds', 1, '" . sqlq($rounds) . "') on duplicate key update data='" . sqlq($rounds) . "'");
+		    $Conf->settings["tag_rounds"] = 1;
+		    $Conf->settingTexts["tag_rounds"] = $rounds;
+		    $Conf->settings["rounds"][] = $t;
+		    $k = array_search($t, $Conf->settings["rounds"]);
 		}
-		$roundqa = ", reviewRound";
-		$roundqb = ", $k";
+		$qa .= ", reviewRound";
+		$qb .= ", $k";
 	    }
-	    $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, requestedOn$roundqa) values ($paperId, $reviewerContactId, $type, $this->contactId, current_timestamp$roundqb)";
+	    if ($Conf->sversion >= 46) {
+		$qa .= ", timeRequested";
+		$qb .= ", " . $when;
+	    }
+	    $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy$qa) values ($paperId, $reviewerContactId, $type, $this->contactId$qb)";
 	} else if ($type > 0 && $row->reviewType != $type)
 	    $q = "update PaperReview set reviewType=$type where reviewId=$row->reviewId";
 	else if ($type <= 0 && $row && $row->reviewType && !$row->reviewModified)
@@ -1390,14 +1394,16 @@ class Contact {
 	else
 	    return;
 
-	if ($conf->qe($q, "while assigning review")) {
+	if ($Conf->qe($q, "while assigning review")) {
 	    if ($qtag)
-		$conf->q($qtag);
+		$Conf->q($qtag);
 	    if ($row && defval($row, "reviewToken", 0) != 0 && $type <= 0)
-		$conf->settings["rev_tokens"] = -1;
-	    $conf->log("Added $reviewTypeName[$type] reviewer " . (is_object($reviewer) ? $reviewer->email : $reviewer), $this, $paperId);
+		$Conf->settings["rev_tokens"] = -1;
+	    $Conf->log("Added $reviewTypeName[$type] reviewer " . (is_object($reviewer) ? $reviewer->email : $reviewer), $this, $paperId);
 	    if ($q[0] == "i")
-		$conf->qx("delete from PaperReviewRefused where paperId=$paperId and contactId=$reviewerContactId");
+		$Conf->qx("delete from PaperReviewRefused where paperId=$paperId and contactId=$reviewerContactId");
+	    if ($q[0] == "i" && $type >= REVIEW_PC && $Conf->setting("pcrev_assigntime", 0) < $when)
+		$Conf->save_setting("pcrev_assigntime", $when);
 	}
     }
 

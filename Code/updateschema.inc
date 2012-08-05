@@ -248,6 +248,15 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperStorage add `filename` varchar(255)")
 	&& $Conf->q("update Settings set value=45 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 45;
+    if ($Conf->settings["allowPaperOption"] == 45
+	&& $Conf->q("alter table PaperReview add `timeRequested` int(11) NOT NULL DEFAULT '0'")
+	&& $Conf->q("alter table PaperReview add `timeRequestNotified` int(11) NOT NULL DEFAULT '0'")
+	&& $Conf->q("alter table PaperReviewArchive add `timeRequested` int(11) NOT NULL DEFAULT '0'")
+	&& $Conf->q("alter table PaperReviewArchive add `timeRequestNotified` int(11) NOT NULL DEFAULT '0'")
+	&& $Conf->q("alter table PaperReview drop column `requestedOn`")
+	&& $Conf->q("alter table PaperReviewArchive drop column `requestedOn`")
+	&& $Conf->q("update Settings set value=46 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 46;
 
     if ($Conf->settings["allowPaperOption"] < 10)
 	$Opt["disableSHA1"] = 1;

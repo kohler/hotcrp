@@ -123,7 +123,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 45) {
+	if ($this->settings["allowPaperOption"] < 46) {
 	    require_once("updateschema.inc");
 	    $oldOK = $OK;
 	    updateSchema($this);
@@ -195,6 +195,20 @@ class Conference {
     function updateRevTokensSetting($always) {
 	if ($always || defval($this->settings, "rev_tokens", 0) < 0)
 	    $this->qe("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)", "while updating review tokens settings");
+    }
+
+    function save_setting($name, $value, $data = null) {
+	if ($value === null && $data === null) {
+	    if ($this->qe("delete from Settings where name='" . sqlq($name) . "'")) {
+		unset($this->settings[$name]);
+		unset($this->settingTexts[$name]);
+	    }
+	} else {
+	    if ($this->qe("insert into Settings (name, value, data) values ('" . sqlq($name) . "', " . $value . ", " . ($data === null ? "null" : "'" . sqlq($data) . "'") . ") on duplicate key update value=values(value), data=values(data)", "while updating settings")) {
+		$this->settings[$name] = $value;
+		$this->settingTexts[$name] = $data;
+	    }
+	}
     }
 
     function invalidateCaches($caches = null) {
@@ -1739,12 +1753,12 @@ class Conference {
     }
 
     function tagRoundLocker($dolocker) {
-	if (!$dolocker || !defval($this->settings, "rev_roundtag", ""))
+	if (!$dolocker)
 	    return "";
-	else if (strpos(defval($this->settingTexts, "tag_rounds", ""), " " . $this->settingTexts["rev_roundtag"] . " ") === false)
-	    return ", Settings write, PaperTag write";
+	else if (!defval($this->settings, "rev_roundtag", ""))
+	    return ", Settings write";
 	else
-	    return ", PaperTag write";
+	    return ", Settings write, PaperTag write";
     }
 
 

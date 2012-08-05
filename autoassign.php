@@ -548,6 +548,7 @@ function saveAssign() {
 
     // magnanimous
     $didLead = false;
+    $when = time();
     if ($atype == "rev" || $atype == "revadd" || $atype == "revpc") {
 	$result = $Conf->qe("select PCMember.contactId, paperId,
 		reviewId, reviewType, reviewModified
@@ -555,13 +556,12 @@ function saveAssign() {
 			"while getting existing reviews");
 	while (($row = edb_orow($result)))
 	    if (isset($ass[$row->paperId][$row->contactId])) {
-		$Me->assignPaper($row->paperId, $row, $pcm[$row->contactId],
-				 $reviewtype, $Conf);
+		$Me->assignPaper($row->paperId, $row, $pcm[$row->contactId], $reviewtype, $when);
 		unset($ass[$row->paperId][$row->contactId]);
 	    }
 	foreach ($ass as $pid => $pcs) {
 	    foreach ($pcs as $pc => $ignore)
-		$Me->assignPaper($pid, null, $pcm[$pc], $reviewtype, $Conf);
+		$Me->assignPaper($pid, null, $pcm[$pc], $reviewtype, $when);
 	}
     } else if ($atype == "prefconflict") {
 	$q = "";
@@ -584,8 +584,7 @@ function saveAssign() {
 			"while getting existing reviews");
 	    while (($row = edb_orow($result)))
 		if (isset($ass[$row->paperId][$row->contactId])) {
-		    $Me->assignPaper($row->paperId, $row, $pcm[$row->contactId],
-				     0, $Conf);
+		    $Me->assignPaper($row->paperId, $row, $pcm[$row->contactId], 0, $when);
 		    unset($ass[$row->paperId][$row->contactId]);
 		}
 	} else if ($reviewtype === "conflict") {
@@ -608,7 +607,11 @@ function saveAssign() {
 	    }
     }
 
-    $Conf->confirmMsg("Assignments saved!");
+    // Confirmation message
+    if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $when)
+	$Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
+    else
+	$Conf->confirmMsg("Assignments saved!");
 
     // clean up
     $Conf->qe("unlock tables");

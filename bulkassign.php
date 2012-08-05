@@ -155,6 +155,7 @@ function parseBulkFile($text, $filename, $type) {
 
     // perform assignment
     $nass = 0;
+    $when = time();
     foreach ($ass as $paperId => $apaper) {
 	$prow = null;
 	foreach ($apaper as $cid => $lineno) {
@@ -162,7 +163,7 @@ function parseBulkFile($text, $filename, $type) {
 	    if ($type == REVIEW_EXTERNAL && isset($pcm[$cid]))
 		$t = REVIEW_PC;
 	    if ($t >= 0) {
-		$Me->assignPaper($paperId, null, $cid, $t, $Conf);
+		$Me->assignPaper($paperId, null, $cid, $t, $when);
 		if ($type == REVIEW_EXTERNAL && $doemail) {
 		    $Them = new Contact();
 		    $Them->lookupById($cid);
@@ -179,14 +180,17 @@ function parseBulkFile($text, $filename, $type) {
 
     // possible complaints
     $Conf->updateRevTokensSetting(false);
+    $notify = "";
+    if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $when)
+	$notify = " You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.";
     if (count($tf["err"]) > 0) {
 	ksort($tf["err"]);
 	$errorMsg = "were errors while parsing the uploaded assignment file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf["err"]) . "</p></div>";
     }
     if ($nass > 0 && count($tf["err"]) > 0)
-	$Conf->confirmMsg("Made " . plural($nass, "assignment") . ".<br />However, there $errorMsg");
+	$Conf->confirmMsg("Made " . plural($nass, "assignment") . ".$notify<br />However, there $errorMsg");
     else if ($nass > 0)
-	$Conf->confirmMsg("Made " . plural($nass, "assignment") . ".");
+	$Conf->confirmMsg("Made " . plural($nass, "assignment") . ".$notify");
     else if (count($tf["err"]) > 0)
 	$Conf->errorMsg("There $errorMsg");
     else
