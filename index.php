@@ -16,9 +16,10 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])) {
     $_REQUEST["signin"] = defval($_REQUEST, "signin", "go");
 }
 
-if ((isset($_REQUEST["email"]) && isset($_REQUEST["password"]) && isset($_REQUEST["signin"]))
+if ((isset($_REQUEST["email"]) && isset($_REQUEST["password"])
+     && isset($_REQUEST["signin"]) && !isset($Opt["httpAuthLogin"]))
     || isset($_REQUEST["signout"])) {
-    if ($Me->valid() && isset($_REQUEST["signout"]))
+    if ($Me->valid() && isset($_REQUEST["signout"]) && !isset($Opt["httpAuthLogin"]))
 	$Conf->confirmMsg("You have been signed out.  Thanks for using the system.");
     $Me->invalidate();
     $Me->fresh = true;
@@ -29,14 +30,29 @@ if ((isset($_REQUEST["email"]) && isset($_REQUEST["password"]) && isset($_REQUES
 	unset($_SESSION[$v]);
     foreach ($allowedSessionVars as $v)
 	unset($_SESSION[$v]);
-    if (isset($_REQUEST["signout"]))
+    if (isset($_REQUEST["signout"])) {
 	unset($_SESSION["afterLogin"]);
+	if (isset($Opt["httpAuthLogin"])) {
+	    $_SESSION["reauth"] = true;
+	    $Conf->go("");
+	}
+    }
+}
+
+if (isset($Opt["httpAuthLogin"]) && isset($_SESSION["reauth"])) {
+    unset($_SESSION["reauth"]);
+    header("HTTP/1.0 401 Unauthorized");
+    if (is_string($Opt["httpAuthLogin"]))
+	header("WWW-Authenticate: " . $Opt["httpAuthLogin"]);
+    else
+	header("WWW-Authenticate: Basic realm=\"HotCRP\"");
+    exit;
 }
 
 function doFirstUser($msg) {
     global $Conf, $Opt, $Me;
     $msg .= "  As the first user, you have been automatically signed in and assigned system administrator privilege.";
-    if (!isset($Opt["ldapLogin"]))
+    if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
 	$msg .= "  Your password is &ldquo;<tt>" . htmlspecialchars($Me->password) . "</tt>&rdquo;.  All later users will have to sign in normally.";
     $while = "while granting system administrator privilege";
     $Conf->qe("insert into ChairAssistant (contactId) values (" . $Me->contactId . ")", $while);
@@ -152,7 +168,7 @@ function doLogin() {
     }
 
     if (!$Me->validContact()) {
-	if (isset($Opt["ldapLogin"])) {
+	if (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"])) {
 	    if (!$Me->initialize($_REQUEST["email"], true))
 		return $Conf->errorMsg($Conf->dbErrorText(true, "while adding your account"));
 	    if (defval($Conf->settings, "setupPhase", false))
@@ -171,12 +187,14 @@ function doLogin() {
 	return null;
     }
 
-    if (!isset($_REQUEST["password"]) || $_REQUEST["password"] == "") {
+    $_REQUEST["password"] = defval($_REQUEST, "password", "");
+    if ($_REQUEST["password"] == "" && !isset($Opt["httpAuthLogin"])) {
 	$password_class = " error";
 	return $Conf->errorMsg("Enter your password.  If you’ve forgotten it, enter your email address and use the &ldquo;I forgot my password, email it to me&rdquo; option.");
     }
 
-    if ($Me->password != $_REQUEST["password"] && !isset($Opt["ldapLogin"])) {
+    if ($Me->password != $_REQUEST["password"]
+	&& !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])) {
 	$password_class = " error";
 	return $Conf->errorMsg("That password doesn’t match.  If you’ve forgotten your password, enter your email address and use the “I forgot my password, email it to me” option.");
     }
@@ -196,8 +214,29 @@ function doLogin() {
     exit;
 }
 
+// HTTP authentication
+if (!$Me->valid() && isset($Opt["httpAuthLogin"])) {
+    if (!isset($_SERVER["REMOTE_USER"]) || !$_SERVER["REMOTE_USER"]) {
+	$Conf->header("Error", "home", actionBar());
+	$Conf->errorMsg("This site is using HTTP authentication to manage its users, but you have not provided authentication data. This usually indicates a server configuration error.");
+	$Conf->footer();
+	exit;
+    }
+    $_REQUEST["email"] = $_SERVER["REMOTE_USER"];
+    if (validateEmail($_REQUEST["email"]))
+	$_REQUEST["preferredEmail"] = $_REQUEST["email"];
+    else if (isset($Opt["defaultEmailDomain"])
+	     && validateEmail($_REQUEST["email"] . "@" . $Opt["defaultEmailDomain"]))
+	$_REQUEST["preferredEmail"] = $_REQUEST["email"] . "@" . $Opt["defaultEmailDomain"];
+    $_REQUEST["action"] = "login";
+    if (!doLogin()) {
+	$Conf->footer();
+	exit;
+    }
+}
+
 if (isset($_REQUEST["email"]) && isset($_REQUEST["action"])
-    && isset($_REQUEST["signin"])) {
+    && isset($_REQUEST["signin"]) && !isset($Opt["httpAuthLogin"])) {
     if (doLogin() !== true) {
 	// if we get here, login failed
 	$Me->invalidate();

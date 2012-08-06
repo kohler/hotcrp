@@ -1317,6 +1317,8 @@ class Contact {
 	global $Opt;
 	if (isset($Opt["ldapLogin"]))
 	    return "<stored in LDAP>";
+	else if (isset($Opt["httpAuthLogin"]))
+	    return "<using HTTP authentication>";
 
 	$l = array("a", "e", "i", "o", "u", "y", "a", "e", "i", "o", "u", "y",
 		   "a", "e", "i", "o", "u", "y", "a", "e", "i", "o", "u", "y",

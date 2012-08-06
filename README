@@ -53,8 +53,9 @@ Additional packages required for paper format checking:
 Load notes: HotCRP requires a system with at least 256MB of memory, more if
 paper format checking is used and submission load is expected to be high.
 If you run HotCRP in a virtual machine, make sure you configure suitable
-swap space!  If MySQL is killed due to memory shortages your database may
-be corrupted.
+swap space!  HotCRP uses the fast, but less reliable, MyISAM database
+engine.  If MySQL is killed due to memory shortages your database may be
+corrupted.
 
 
 Configuration

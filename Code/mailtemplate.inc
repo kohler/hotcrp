@@ -723,22 +723,28 @@ class Mailer {
 	}
 
 	// if no contact, this is a pre-expansion
+	$external_password = isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]);
 	if (!$this->contact) {
-	    if ($what == "%PASSWORD%" && isset($Opt["ldapLogin"]) && $isbool)
+	    if ($what == "%PASSWORD%" && $external_password && $isbool)
 		return false;
 	    else
 		return ($isbool ? null : $what);
 	}
 
-	$password = null;
-	if (!isset($Opt["ldapLogin"]) && isset($this->contact->password))
-	    $password = ($this->hideSensitive ? "HIDDEN" : $this->contact->password);
-	if ($what == "%LOGINURL%")
-	    return $Opt["paperSite"] . "/?email=" . urlencode($this->contact->email) . ($password ? "&password=" . urlencode($password) : "");
-	if ($what == "%LOGINURLPARTS%")
-	    return "email=" . urlencode($this->contact->email) . ($password ? "&password=" . urlencode($password) : "");
-	if ($what == "%PASSWORD%")
-	    return ($isbool || $password !== null ? $password : "");
+	if ($what == "%LOGINURL%" || $what == "%LOGINURLPARTS%" || $what == "%PASSWORD%") {
+	    $password = null;
+	    if (!$external_password && isset($this->contact->password))
+		$password = ($this->hideSensitive ? "HIDDEN" : $this->contact->password);
+	    $loginparts = "";
+	    if (!isset($Opt["httpAuthLogin"]))
+		$loginparts = "email=" . urlencode($this->contact->email) . ($password ? "&password=" . urlencode($password) : "");
+	    if ($what == "%LOGINURL%")
+		return $Opt["paperSite"] . ($loginparts ? "/?" . $loginparts : "/");
+	    else if ($what == "%LOGINURLPARTS%")
+		return $loginparts;
+	    else
+		return ($isbool || $password !== null ? $password : "");
+	}
 
 	if ($what == "%REASON%")
 	    return $this->reason;

@@ -134,6 +134,10 @@ class Conference {
 	    $this->qe("delete from Settings where name='frombackup' and value=" . $this->settings["frombackup"]);
 	    unset($this->settings["frombackup"]);
 	}
+	if (isset($Opt["ldapLogin"]) && !$Opt["ldapLogin"])
+	    unset($Opt["ldapLogin"]);
+	if (isset($Opt["httpAuthLogin"]) && !$Opt["httpAuthLogin"])
+	    unset($Opt["httpAuthLogin"]);
     }
 
     function setting($name, $defval = false) {
@@ -1856,7 +1860,7 @@ class Conference {
 	    }
 	    $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
 	    echo "<a href='", hoturl("help", $x), "'>Help</a>", $xsep;
-	    if ($Me->contactId > 0)
+	    if ($Me->contactId > 0 || isset($Opt["httpAuthLogin"]))
 		echo "<a href='", hoturl("index", "signout=1"), "'>Sign&nbsp;out</a>";
 	    else
 		echo "<a href='", hoturl("index", "signin=1"), "'>Sign&nbsp;in</a>";

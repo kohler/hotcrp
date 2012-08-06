@@ -104,7 +104,7 @@ if ($OK) {
 	. "<div class='papv'>"
 	. "<table class='pltable'>
     <tr class='pl_headrow'><th>Name</th> <th>"
-	. (isset($Opt["ldapLogin"]) ? "Username" : "Email")
+	. (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]) ? "Username" : "Email")
 	. "</th> <th></th></tr>\n";
     $q = "select firstName, lastName, email, contactId
 	from ContactInfo

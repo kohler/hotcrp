@@ -55,14 +55,14 @@ function tfError(&$tf, $errorField, $text) {
 function createUser(&$tf, $newProfile, $useRequestPassword = false) {
     global $Conf, $Acct, $Me, $Opt, $OK;
 
-    if (!isset($Opt["ldapLogin"]))
+    if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
 	$_REQUEST["uemail"] = trim(defval($_REQUEST, "uemail", ""));
     else if ($newProfile)
 	$_REQUEST["uemail"] = trim(defval($_REQUEST, "newUsername", ""));
     else
 	$_REQUEST["uemail"] = $Acct->email;
 
-    if (isset($Opt["ldapLogin"]))
+    if (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]))
 	$_REQUEST["upassword"] = $_REQUEST["upassword2"] = $Acct->password;
     else if ($newProfile)
 	$_REQUEST["upassword"] = "";
@@ -96,9 +96,9 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 	    if (!$newProfile)
 		$msg .= "You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
 	    return tfError($tf, "uemail", $msg);
-	} else if (isset($Opt["ldapLogin"])) {
+	} else if (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"])) {
 	    if ($_REQUEST["uemail"] == "")
-		return tfError($tf, "newUsername", "Not a valid LDAP username.");
+		return tfError($tf, "newUsername", "Not a valid username.");
 	} else if ($_REQUEST["uemail"] == "")
 	    return tfError($tf, "uemail", "You must supply an email address.");
 	else if (!validateEmail($_REQUEST["uemail"]))
@@ -175,7 +175,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
     $Acct->lastName = $_REQUEST["lastName"];
     $Acct->email = $_REQUEST["uemail"];
     $Acct->affiliation = $_REQUEST["affiliation"];
-    if (!$newProfile && !isset($Opt["ldapLogin"]))
+    if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
 	$Acct->password = $_REQUEST["upassword"];
     if (isset($_REQUEST["preferredEmail"]))
 	$Acct->preferredEmail = $_REQUEST["preferredEmail"];
@@ -553,7 +553,7 @@ echo "<table id='foldaccount' class='form foldc ",
   <td class='caption initial'>Contact information</td>
   <td class='entry'><div class='f-contain'>\n\n";
 
-if (!isset($Opt["ldapLogin"]))
+if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
     echofield(0, "uemail", "Email", textinput("uemail", crpformvalue("uemail", "email"), 52, "account_d"));
 else if (!$newProfile) {
     echofield(0, "uemail", "Username", crpformvalue("uemail", "email"));
@@ -566,7 +566,7 @@ else if (!$newProfile) {
 echofield(1, "firstName", "First&nbsp;name", textinput("firstName", crpformvalue("firstName"), 24));
 echofield(3, "lastName", "Last&nbsp;name", textinput("lastName", crpformvalue("lastName"), 24));
 
-if (!$newProfile && !isset($Opt["ldapLogin"])) {
+if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])) {
     echo "<div class='f-i'><div class='f-ix'>
   <div class='", fcclass('password'), "'>Password</div>
   <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this)' />";

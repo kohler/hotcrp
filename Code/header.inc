@@ -203,16 +203,16 @@ function setMulticonference() {
 if (isset($Opt["multiconference"]) && $Opt["multiconference"])
     setMulticonference();
 
-if (!isset($Opt['sessionName']))
-    $Opt['sessionName'] = $Opt['dbName'];
+if (!isset($Opt["sessionName"]))
+    $Opt["sessionName"] = $Opt["dbName"];
 if (!isset($Opt["downloadPrefix"]))
     $Opt["downloadPrefix"] = $Opt["dbName"] . "-";
-if (!isset($Opt['dbUser']))
-    $Opt['dbUser'] = $Opt['dbName'];
-if (!isset($Opt['dbPassword']))
-    $Opt['dbPassword'] = $Opt['dbName'];
-if (!isset($Opt['dsn']))
-    $Opt['dsn'] = "mysql://" . urlencode($Opt['dbUser']) . ":" . urlencode($Opt['dbPassword']) . "@localhost/" . urlencode($Opt['dbName']);
+if (!isset($Opt["dbUser"]))
+    $Opt["dbUser"] = $Opt["dbName"];
+if (!isset($Opt["dbPassword"]))
+    $Opt["dbPassword"] = $Opt["dbName"];
+if (!isset($Opt["dsn"]))
+    $Opt["dsn"] = "mysql://" . urlencode($Opt["dbUser"]) . ":" . urlencode($Opt["dbPassword"]) . "@localhost/" . urlencode($Opt["dbName"]);
 
 function setPaperSite() {
     global $Opt;

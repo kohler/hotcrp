@@ -135,6 +135,12 @@ $Opt["emailSubmissions"] = 0;
 //                   string must have the form "LDAP_URL DN_PATTERN", where
 //                   DN_PATTERN contains a "*" character to be replaced by
 //                   the username.  Example: "ldaps://ldapserver/ uid=*,o=ORG"
+//   httpAuthLogin   If set, use HTTP authentication to authenticate users.
+//                   Requires additional web server configuration. A string
+//                   value is sent as a WWW-Authenticate header. The default
+//                   string is "Basic realm="HotCRP"".
+//   defaultEmailDomain Set to the default domain for account email addresses
+//                   when using httpAuthLogin.
 //   zipCommand      Set to the path to the "zip" executable.  Defaults to
 //                   "zip".
 //   disableCSV      Set to true if all downloaded tabular text files should be
