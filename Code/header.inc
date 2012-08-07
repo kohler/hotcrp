@@ -242,6 +242,9 @@ function __autoload($class_name) {
 	require_once("$ConfSitePATH/Code/review.inc");
 }
 
+// Set locale to C (so that, e.g., strtolower() on UTF-8 data doesn't explode)
+setlocale(LC_ALL, "C");
+
 // Set server timezone
 if (isset($Opt["timezone"]) && function_exists("date_default_timezone_set"))
     date_default_timezone_set($Opt["timezone"]);
