@@ -1483,7 +1483,7 @@ sub parse_p2h_header ($) {
     my ($doc) = @_;
 
     while (<FILE>) {
-	return 1 if (/<pdf2xml>/);
+	return 1 if (/<pdf2xml/);
     }
     return 0;
 }
@@ -1621,7 +1621,7 @@ sub banal_open_input ($) {
     if ($ext =~ /[pP][dD][fF]/) {
 	$zoomarg = "-zoom $zoom";
 	$cmd = "$pdftohtml -stdout -enc UTF-8 -xml $zoomarg $fname 2>/dev/null |";
-	print "$cmd\n" if ($debug_pdftohtml);
+	print STDERR "$cmd\n" if ($debug_pdftohtml);
 
 	unless (open (FILE, $cmd)) {
 	    print STDERR "$fname: Error: Failed to open file.\n";
