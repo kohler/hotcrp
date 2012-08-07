@@ -9,7 +9,8 @@ require_once("Code/paperoption.inc");
 require_once("Code/cleanxhtml.inc");
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
-$Highlight = array();
+$Highlight = defval($_SESSION, "settings_highlight", array());
+unset($_SESSION["settings_highlight"]);
 $Error = array();
 $Values = array();
 $rf = reviewForm();
@@ -976,7 +977,9 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
     // update the review form in case it's changed
     $rf->validate($Conf, true);
+    $_SESSION["settings_highlight"] = $Highlight;
     redirectSelf();
+    unset($_SESSION["settings_highlight"]);
 } else if ($Group == "rfo")
     rf_update(false);
 
