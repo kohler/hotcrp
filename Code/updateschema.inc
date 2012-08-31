@@ -240,6 +240,14 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperComment add `ordinal` int(11) NOT NULL default '0'")
 	&& $Conf->q("update Settings set value=43 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 43;
+    if ($Conf->settings["allowPaperOption"] == 42
+	&& ($result = $Conf->q("describe PaperComment `ordinal`"))
+	&& ($o = edb_orow($result))
+	&& substr($o->Type, 0, 3) == "int"
+	&& (!$o->Null || $o->Null == "NO")
+	&& (!$o->Default || $o->Default == "0")
+	&& $Conf->q("update Settings set value=43 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 43;
     if ($Conf->settings["allowPaperOption"] == 43
 	&& $Conf->q("alter table Paper add `withdrawReason` text")
 	&& $Conf->q("update Settings set value=44 where name='allowPaperOption'"))
