@@ -324,14 +324,14 @@ class CheckFormat {
 	    return $this->msg("error", "No such paper.");
 	if ($row->mimetype != "application/pdf")
 	    return $this->msg("error", "The format checker only works for PDF files.");
-	if (!isset($row->filename)) {
+	if (!isset($row->filestore)) {
 	    if (!$tmpdir && ($tmpdir = tempdir()) == false)
 		return $this->msg("error", "Cannot create temporary directory.");
 	    if (file_put_contents("$tmpdir/paper.pdf", $row->content) != strlen($row->content))
 		return $this->msg("error", "Failed to save PDF to temporary file for analysis.");
-	    $row->filename = "$tmpdir/paper.pdf";
+	    $row->filestore = "$tmpdir/paper.pdf";
 	}
-	return $this->analyzeFile($row->filename, $spec);
+	return $this->analyzeFile($row->filestore, $spec);
     }
 
     function analyzePaper($paperId, $documentType, $spec) {

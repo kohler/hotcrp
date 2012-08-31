@@ -896,7 +896,7 @@ class Conference {
 	    @chmod($filename, 0660 & ~umask());
 	}
 
-	$row->filename = $filename;
+	$row->filestore = $filename;
 	return true;
     }
 
@@ -905,7 +905,7 @@ class Conference {
 	    return $row;
 	if (isset($row->sha1))
 	    $this->_paper_storage_filestore($row);
-	if (!isset($row->filename) && !isset($row->content))
+	if (!isset($row->filestore) && !isset($row->content))
 	    $this->_paper_storage_content($row);
 	return $row;
     }
@@ -935,12 +935,12 @@ class Conference {
 	header("Content-Disposition: " . ($saveit || $row->mimetype != "application/pdf" ? "attachment" : "inline") . "; filename=$name");
 	// reduce likelihood of XSS attacks in IE
 	header("X-Content-Type-Options: nosniff");
-	if (isset($row->filename)) {
+	if (isset($row->filestore)) {
 	    if (!$zlib_output_compression)
-		header("Content-Length: " . filesize($row->filename));
+		header("Content-Length: " . filesize($row->filestore));
 	    ob_clean();
 	    flush();
-	    readfile($row->filename);
+	    readfile($row->filestore);
 	} else {
 	    if (!$zlib_output_compression)
 		header("Content-Length: " . strlen($row->content));
@@ -1029,7 +1029,7 @@ class Conference {
 	    $name = $this->downloadPaperName($row->paperId, $row->mimetype, $documentType);
 	    if ($row->paperStorageId <= 1)
 		$warnings[] = "Paper #$row->paperId has not been uploaded yet.";
-	    else if (isset($row->filename) && @symlink($row->filename, "$tmpdir/$name"))
+	    else if (isset($row->filestore) && @symlink($row->filestore, "$tmpdir/$name"))
 		$files[] = "$tmpdir/$name";
 	    else if ($this->_paper_storage_content($row))
 		$this->zipAdd($tmpdir, $name, $row->content, $warnings, $files);
