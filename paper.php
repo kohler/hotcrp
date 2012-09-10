@@ -685,7 +685,7 @@ if (isset($_REQUEST["delete"]) && check_post()) {
 
 
 // paper actions
-if (isset($_REQUEST["settingtags"]) && check_post()) {
+if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setTags($prow);
     loadRows();

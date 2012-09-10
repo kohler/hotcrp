@@ -154,7 +154,12 @@ class PaperActions {
 	$ajax = defval($_REQUEST, "ajax", false);
         if ($Me->canSetTags($prow, $forceShow)) {
 	    require_once("Code/tags.inc");
-	    setTags($prow->paperId, defval($_REQUEST, "tags", ""), 'p', $Me->privChair);
+	    if (isset($_REQUEST["tags"]))
+		setTags($prow->paperId, $_REQUEST["tags"], "p", $Me->privChair);
+	    if (isset($_REQUEST["addtags"]))
+		setTags($prow->paperId, $_REQUEST["addtags"], "a", $Me->privChair);
+	    if (isset($_REQUEST["deltags"]))
+		setTags($prow->paperId, $_REQUEST["deltags"], "d", $Me->privChair);
 	} else
 	    $Error["tags"] = "You can&rsquo;t set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
 	if ($ajax)

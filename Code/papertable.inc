@@ -1163,7 +1163,7 @@ class PaperTable {
 		    echo "<div class='xmerror'>", $Error["tags"], "</div>";
 		echo "<textarea id='foldtags_d' cols='20' rows='2' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea>",
 		    "<div style='padding:1ex 0;text-align:right'>",
-		    "<input type='hidden' name='settingtags' value='1' />",
+		    "<input type='hidden' name='settags' value='1' />",
 		    "<input class='bsm' type='submit' name='cancelsettags' value='Cancel' onclick='return fold(\"tags\",1)' />",
 		    " &nbsp;<input class='bsm' type='submit' value='Save' />",
 		    "</div>",

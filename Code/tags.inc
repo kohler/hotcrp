@@ -122,6 +122,17 @@ function orderedTagStep($mode) {
 	return 1;
 }
 
+// $mode is one of:
+//   p -- set all tags (= delete all tags from $pids, then add tags in $tagtext)
+//   a -- add
+//   ao -- add to order
+//   aos -- add to gapless [strict] order
+//   s -- define (= remove tags from all papers, then add to papers in $pids)
+//   so -- define order
+//   sos -- define gapless order
+//   sor -- define random order
+//   d -- delete tags
+//   da -- delete ALL tags, including twiddles (chair only)
 function setTags($pids, $tagtext, $mode, $chair) {
     global $Conf, $Me, $Error;
     if (!is_array($pids))

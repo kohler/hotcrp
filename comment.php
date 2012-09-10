@@ -261,7 +261,7 @@ else if (isset($_REQUEST["submit"]) && defval($_REQUEST, "response")) {
 
 
 // paper actions
-if (isset($_REQUEST["settingtags"]) && check_post()) {
+if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_post()) {
     require_once("Code/paperactions.inc");
     PaperActions::setTags($prow);
     loadRows();
