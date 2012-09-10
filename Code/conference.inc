@@ -1984,7 +1984,10 @@ class Conference {
 	if (!isset($values["response"]))
 	    $values["response"] = $t;
 	unset($_SESSION["msgs"]);
-	header("Content-Type: text/json");
+	if (isset($_REQUEST["jsontext"]) && $_REQUEST["jsontext"])
+	    header("Content-Type: text/plain");
+	else
+	    header("Content-Type: text/json");
 	echo json_encode($values);
 	exit;
     }
