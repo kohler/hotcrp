@@ -1363,7 +1363,8 @@ class Contact {
     function assignPaper($paperId, $row, $reviewer, $type, $when) {
 	global $Conf, $reviewTypeName;
 	$reviewerContactId = (is_object($reviewer) ? $reviewer->contactId : $reviewer);
-	if ($type == 0 && $row && ($row->reviewType == REVIEW_EXTERNAL || $row->reviewType == REVIEW_PC))
+	if ($type == 0 && $row && $row->reviewModified
+	    && ($row->reviewType == REVIEW_EXTERNAL || $row->reviewType == REVIEW_PC))
 	    return;
 	$qtag = "";
 	if ($type > 0 && (!$row || !$row->reviewType)) {

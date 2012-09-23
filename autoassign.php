@@ -509,7 +509,8 @@ function doAssign() {
 	foreach ($badpids as $pid)
 	    $b[] = "<a href='" . hoturl("assign", "p=$pid&amp;list=$pidx") . "'>$pid</a>";
 	$x = ($atype == "rev" || $atype == "revadd" ? ", possibly because of conflicts or previously declined reviews in the PC members you selected" : "");
-	$Conf->warnMsg("I wasn’t able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . " (<a class='nowrap' href='" . hoturl("search", "q=$pidx") . "'>list them</a>).");
+	$y = (count($b) > 1 ? " (<a class='nowrap' href='" . hoturl("search", "q=$pidx") . "'>list them</a>)" : "");
+	$Conf->warnMsg("I wasn’t able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . $y . ".");
     }
     if (count($assignments) == 0) {
 	$Conf->warnMsg("Nothing to assign.");
