@@ -339,7 +339,9 @@ function tagaction() {
     }
     if (isset($Error["tags"]))
 	$Conf->errorMsg($Error["tags"]);
-    else if (!$Conf->headerPrinted) {
+    if (!$Conf->headerPrinted && defval($_REQUEST, "ajax"))
+	$Conf->ajaxExit(array("ok" => !isset($Error["tags"])));
+    else if (!$Conf->headerPrinted && !isset($Error["tags"])) {
 	$args = array();
 	foreach (array("tag", "tagtype", "tagact", "tagcr_method", "tagcr_source", "tagcr_gapless") as $arg)
 	    if (isset($_REQUEST[$arg]))
@@ -350,6 +352,8 @@ function tagaction() {
 if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel)
     && isset($_REQUEST["tag"]) && check_post())
     tagaction();
+else if (isset($_REQUEST["tagact"]) && defval($_REQUEST, "ajax"))
+    $Conf->ajaxExit(array("ok" => false, "error" => "Malformed request"));
 
 
 // download votes
