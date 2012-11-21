@@ -1098,8 +1098,11 @@ return Miniajax;
 function check_version(url) {
     function updateverifycb(json) {
 	var e;
-	if (json && json.messages && (e = $$("initialmsgs")))
+	if (json && json.messages && (e = $$("initialmsgs"))) {
 	    e.innerHTML = json.messages + e.innerHTML;
+	    if (!$$("initialmsgspacer"))
+		e.innerHTML = e.innerHTML + "<div id='initialmsgspacer'></div>";
+	}
     }
     function updatecb(json) {
 	if (json && json.updates && JSON.stringify)

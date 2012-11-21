@@ -218,16 +218,14 @@ body#assign div#prebody {
 div#initialmsgs > div {
 	margin: 0 12px 0.5em;
 }
-div#initialmsgs > div:last-child {
-	margin-bottom: 0;
-}
-body#paper_view div#initialmsgs > div:last-child,
-body#paper_edit div#initialmsgs > div:last-child,
-body#review div#initialmsgs > div:last-child,
-body#comment div#initialmsgs > div:last-child,
-body#contactauthors div#initialmsgs > div:last-child,
-body#assign div#initialmsgs > div:last-child {
-	margin-bottom: 20px;
+body#paper_view div#initialmsgspacer,
+body#paper_edit div#initialmsgspacer,
+body#review div#initialmsgspacer,
+body#comment div#initialmsgspacer,
+body#contactauthors div#initialmsgspacer,
+body#assign div#initialmsgspacer {
+	margin: 0;
+	padding: 2.5ex 0 0;
 }
 
 table.manyassign {
