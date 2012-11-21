@@ -499,13 +499,16 @@ class Contact {
 	    return false;
 	// policy
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $this->privChair)
-	    && $prow->timeWithdrawn <= 0)
+	    && $prow->timeWithdrawn <= 0
+            && ($prow->outcome == 0 || $this->privChair))
 	    return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
 	    $whyNot["author"] = 1;
+        else if ($prow->outcome != 0 && !$this->privChair)
+            $whyNot["decided"] = 1;
 	return false;
     }
 

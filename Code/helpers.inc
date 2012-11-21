@@ -1425,6 +1425,8 @@ function whyNotText($whyNot, $action) {
 	$text .= ucfirst($thisPaper) . " was never officially submitted. ";
     if (isset($whyNot['notAccepted']))
 	$text .= ucfirst($thisPaper) . " was not accepted for publication. ";
+    if (isset($whyNot["decided"]))
+        $text .= "The review process for $thisPaper has completed. ";
     if (isset($whyNot['updateSubmitted']))
 	$text .= ucfirst($thisPaper) . " has already been submitted and can no longer be updated. ";
     if (isset($whyNot['notUploaded']))
