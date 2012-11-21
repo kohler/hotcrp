@@ -335,7 +335,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 		$_REQUEST[$oname] = ($v == "" ? "0" : $v);
 	    else {
 		$Error[$oname] = 1;
-		$emsg .= "&ldquo;" . htmlspecialchars($opt->optionName) . "&rdquo; must be an integer.  ";
+		$emsg .= "&ldquo;" . htmlspecialchars($opt->optionName) . "&rdquo; must be an integer. ";
 	    }
 	} else if ($opt->type == PaperOption::T_TEXT)
 	    $_REQUEST[$oname] = simplifyWhitespace($v);
@@ -368,11 +368,11 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if (count($fields) > 0) {
 	    $emsg .= "Before " . ($isSubmit ? "submitting" : "registering") . " your paper, you must enter ";
 	    if (count($fields) == 1)
-		$emsg .= "a value for the " . commajoin($fields) . " field.  ";
+		$emsg .= "a value for the " . commajoin($fields) . " field. ";
 	    else
-		$emsg .= "values for the " . commajoin($fields) . " fields.  ";
+		$emsg .= "values for the " . commajoin($fields) . " fields. ";
 	    if ($collaborators_error)
-		$emsg .= "If none of the authors have potential conflicts, just enter &ldquo;None&rdquo; in the $collaborators_field field.  ";
+		$emsg .= "If none of the authors have potential conflicts, just enter &ldquo;None&rdquo; in the $collaborators_field field. ";
 	}
 	if ($emsg != "")
 	    $emsg .= "Fix the highlighted " . pluralx($fields, "field") . " and try again.";
@@ -392,7 +392,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     } else if ($collaborators_error // a warning, not an error
 	       && !$isSubmitFinal
 	       && (!$isSubmit || $Conf->setting("sub_freeze") <= 0))
-	$Conf->warnMsg("Please enter the authors’ potential conflicts in the $collaborators_field field.  If none of the authors have potential conflicts, just enter “None”.");
+	$Conf->warnMsg("Please enter the authors’ potential conflicts in the $collaborators_field field. If none of the authors have potential conflicts, just enter “None”.");
 
     // defined contact ID
     if ($newPaper && (isset($_REQUEST["contact_email"]) || isset($_REQUEST["contact_name"])) && $Me->privChair)
@@ -588,9 +588,9 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
     // HTML confirmation
     if ($isSubmitFinal || $prow->timeSubmitted > 0)
-	$Conf->confirmMsg($actiontext . " paper #$paperId.  " . $notes);
+	$Conf->confirmMsg($actiontext . " paper #$paperId. " . $notes);
     else
-	$Conf->warnMsg($actiontext . " paper #$paperId.  " . $notes);
+	$Conf->warnMsg($actiontext . " paper #$paperId. " . $notes);
 
     // mail confirmation to all contact authors
     if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {
@@ -655,7 +655,7 @@ if (isset($_REQUEST["delete"]) && check_post()) {
     if ($newPaper)
 	$Conf->confirmMsg("Paper deleted.");
     else if (!$Me->privChair)
-	$Conf->errorMsg("Only the program chairs can permanently delete papers.  Authors can withdraw papers, which is effectively the same.");
+	$Conf->errorMsg("Only the program chairs can permanently delete papers. Authors can withdraw papers, which is effectively the same.");
     else {
 	// mail first, before contact info goes away
 	if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {

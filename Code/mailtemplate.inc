@@ -22,7 +22,7 @@ Use the link below to sign in directly.
 
 %LOGINURL%
 
-If you already have an account under a different email address, you may merge this new account into that one.  Go to your profile page and select \"Merge with another account\".
+If you already have an account under a different email address, you may merge this new account into that one. Go to your profile page and select \"Merge with another account\".
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -50,7 +50,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Merged account",
 	   "body" => "Dear %NAME%,
 
-Your account at the %CONFSHORTNAME% submissions site has been merged with the account of %OTHERCONTACT%.  From now on, you should log in using the %OTHEREMAIL% account.
+Your account at the %CONFSHORTNAME% submissions site has been merged with the account of %OTHERCONTACT%. From now on, you should log in using the %OTHEREMAIL% account.
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -60,15 +60,15 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER%",
 	   "body" => "Dear %NAME%,
 
-On behalf of the %CONFNAME% program committee, %OTHERCONTACT% would like to solicit your help with the review of %CONFNAME% paper #%NUMBER%.%IF(REASON)%  They supplied this note: %REASON%%ENDIF%
+On behalf of the %CONFNAME% program committee, %OTHERCONTACT% would like to solicit your help with the review of %CONFNAME% paper #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
   Paper site: %URL(paper, p=%NUMBER%)%
 
-If you are willing to review this paper, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))%  Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%
+If you are willing to review this paper, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))% Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%
 
-Once you've decided, please take a moment to accept or decline this review request by using one of these links.  You may also contact %OTHERNAME% directly or decline the review using the conference site.
+Once you've decided, please take a moment to accept or decline this review request by using one of these links. You may also contact %OTHERNAME% directly or decline the review using the conference site.
 
       Accept: %URL(review, p=%NUMBER%&accept=1&%LOGINURLPARTS%)%
      Decline: %URL(review, p=%NUMBER%&decline=1&%LOGINURLPARTS%)%
@@ -92,7 +92,7 @@ Thanks for your help -- we appreciate that reviewing is hard work!
      array("subject" => "[%CONFSHORTNAME%] Retracting review request for paper #%NUMBER%",
 	   "body" => "Dear %NAME%,
 
-%OTHERNAME% has retracted a previous request that you review %CONFNAME% paper #%NUMBER%.  There's no need to complete your review.
+%OTHERNAME% has retracted a previous request that you review %CONFNAME% paper #%NUMBER%. There's no need to complete your review.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -106,7 +106,7 @@ Thank you,
      array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER%",
 	   "body" => "Greetings,
 
-%OTHERCONTACT% would like %CONTACT3% to review %CONFNAME% paper #%NUMBER%.%IF(REASON)%  They supplied this note: %REASON%%ENDIF%
+%OTHERCONTACT% would like %CONTACT3% to review %CONFNAME% paper #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
 
 Visit the assignment page to approve or deny the request.
 
@@ -120,7 +120,7 @@ Visit the assignment page to approve or deny the request.
      array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER% denied",
 	   "body" => "Dear %NAME%,
 
-Your proposal that %OTHERCONTACT% review %CONFNAME% paper #%NUMBER% has been denied by an administrator.  You may want to propose someone else.
+Your proposal that %OTHERCONTACT% review %CONFNAME% paper #%NUMBER% has been denied by an administrator. You may want to propose someone else.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -210,7 +210,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Submitted review #%REVIEWNUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
 
-Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted.  The review is available at the paper site.
+Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted. The review is available at the paper site.
 
   Paper site: %URL(paper, p=%NUMBER%)%
        Title: %TITLE%
@@ -225,7 +225,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Updated review #%REVIEWNUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
 
-Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated.  The review is available at the paper site.
+Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated. The review is available at the paper site.
 
   Paper site: %URL(paper, p=%NUMBER%)%
        Title: %TITLE%
@@ -249,9 +249,9 @@ The %CONFNAME% program committee is delighted to inform you that your paper #%NU
      Authors: %OPT(AUTHORS)%
   Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
-Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions.  Congratulations!
+Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions. Congratulations!
 
-Reviews and comments on your paper are appended to this email.  The submissions site also has the paper's reviews and comments, as well as more information about review scores.%LOGINNOTICE%
+Reviews and comments on your paper are appended to this email. The submissions site also has the paper's reviews and comments, as well as more information about review scores.%LOGINNOTICE%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -275,7 +275,7 @@ The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER
 
 %NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.
 
-Reviews and comments on your paper are appended to this email.  The submissions site also has the paper's reviews and comments, as well as more information about review scores.%LOGINNOTICE%
+Reviews and comments on your paper are appended to this email. The submissions site also has the paper's reviews and comments, as well as more information about review scores.%LOGINNOTICE%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -286,7 +286,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "commentnotify" =>
      array("subject" => "[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
-	   "body" => "A comment for %CONFNAME% paper #%NUMBER% is available as shown below.  For the most up-to-date comments, or to turn off notification emails, see the paper site.
+	   "body" => "A comment for %CONFNAME% paper #%NUMBER% is available as shown below. For the most up-to-date comments, or to turn off notification emails, see the paper site.
 
   Paper site: %URL(paper, p=%NUMBER%)%
 
@@ -298,7 +298,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "responsenotify" =>
      array("subject" => "[%CONFSHORTNAME%] Response for #%NUMBER% %TITLEHINT%",
-	   "body" => "The authors' response for %CONFNAME% paper #%NUMBER% is available as shown below.  The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the paper site.
+	   "body" => "The authors' response for %CONFNAME% paper #%NUMBER% is available as shown below. The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the paper site.
 
   Paper site: %URL(paper, p=%NUMBER%)%
 
@@ -310,7 +310,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "finalsubmitnotify" =>
      array("subject" => "[%CONFSHORTNAME%] Updated final paper #%NUMBER% %TITLEHINT%",
-	   "body" => "The final version for %CONFNAME% paper #%NUMBER% has been updated.  The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the paper site.
+	   "body" => "The final version for %CONFNAME% paper #%NUMBER% has been updated. The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the paper site.
 
   Paper site: %URL(paper, p=%NUMBER%)%
 
@@ -749,7 +749,7 @@ class Mailer {
 	if ($what == "%REASON%")
 	    return $this->reason;
 	if ($what == "%ADMINUPDATE%")
-	    return $this->adminupdate ? "An administrator performed this update.  " : "";
+	    return $this->adminupdate ? "An administrator performed this update. " : "";
 	if ($what == "%NOTES%")
 	    return $this->notes;
 	if ($what == "%NEWASSIGNMENTS%")
