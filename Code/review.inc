@@ -1181,7 +1181,7 @@ $blind\n";
 	// Do not show rating counts if rater identity is unambiguous.
 	// See also PaperSearch::_clauseTermSetRating.
 	$visibleRatings = false;
-	if ($rrow->numRatings > 0) {
+	if (isset($rrow->numRatings) && $rrow->numRatings > 0) {
 	    if (!isset($options["nsubraters"])) {
 		$options["nsubraters"] = 0;
 		$rateset = $Conf->setting("rev_ratings");
