@@ -1377,65 +1377,102 @@ class PaperTable {
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0
 		   && $Conf->timeSubmitFinalPaper()) {
 	    $updateDeadline = $this->deadlineSettingIs("final_soft");
-	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final version for the paper here.$updateDeadline  You may also withdraw the paper (in extraordinary circumstances) or edit paper contacts, allowing others to view reviews and make changes." . "</div>";
+	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final version for the paper here.$updateDeadline  You may also edit paper contacts, allowing others to view reviews and make changes." . "</div>";
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR) {
-	    $override2 = ($Me->privChair ? "  However, as an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
-	    if ($this->mode == "pe")
-		$m .= "<div class='xinfo'>" . "This paper is under review and can no longer be changed, although you may still withdraw it from the conference.$override2" . "</div>";
+	    $override2 = ($Me->privChair ? " As an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
+	    if ($this->mode == "pe") {
+		$m .= "<div class='xinfo'>This paper is under review and can’t be changed";
+                if ($Me->canWithdrawPaper($prow))
+                    $m .= ", but you can withdraw it from consideration";
+                $m .= ".$override2</div>";
+            }
 	} else
-	    $m .= "<div class='xinfo'>" . "You aren&rsquo;t a contact for this paper, but as an administrator you can still make changes." . "</div>";
+	    $m .= "<div class='xinfo'>" . "You aren’t a contact for this paper, but as an administrator you can still make changes." . "</div>";
 
 	return $m;
     }
 
-    function echoActions() {
-	global $Conf, $Me, $linkExtra;
-	$prow = $this->prow;
+    function _collectActionButtons() {
+        global $Conf, $Me, $linkExtra;
+        $prow = $this->prow;
 
-	$buttons = array();
-	if (!$prow)
-	    $buttons[] = "<input class='bb' type='submit' name='update' value='Save paper' />";
-	else if ($prow->timeWithdrawn > 0
-		 && ($Conf->timeFinalizePaper($prow) || $Me->privChair))
-	    $buttons[] = "<input class='b' type='submit' name='revive' value='Revive paper' />";
-	else if ($prow->timeWithdrawn > 0)
-	    $buttons[] = "The paper has been withdrawn, and the <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving it has passed.";
-	else {
-	    if ($prow->outcome > 0 && $Conf->collectFinalPapers()
-		&& ($Conf->timeSubmitFinalPaper() || $Me->privChair)
-		&& $this->mode == "pe")
-		$buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Submit final version' />", "");
-	    else if ($Conf->timeUpdatePaper($prow) && $this->mode == "pe")
-		$buttons[] = array("<input class='bb' type='submit' name='update' value='Save changes' />", "");
-	    else if ($Me->privChair && $this->mode == "pe") {
-		$class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "b" : "bb");
-		$buttons[] = array("<input class='$class' type='submit' name='update' value='Save changes' />", "(admin only)");
-	    }
-	    if ($prow->timeSubmitted <= 0)
-		$buttons[] = "<input class='b' type='submit' name='withdraw' value='Withdraw paper' />";
-	    else {
-		$buttons[] = "<button type='button' class='b' onclick=\"popup(this,'w',0,true)\">Withdraw paper</button>";
-		$admins = "";
-		if ((!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
-		    && !$Conf->timeFinalizePaper($prow))
-		    $admins = "Only administrators can undo this step.";
-		$Conf->footerHtml("<div id='popup_w' class='popupc'>
+        // Absent paper can only be saved
+        if (!$prow)
+            return array("<input class='bb' type='submit' name='update' value='Save paper' />");
+
+        // Withdrawn papers can be revived
+        if ($prow->timeWithdrawn > 0) {
+            $revivable = $Conf->timeFinalizePaper($prow);
+            if ($revivable || $Me->privChair) {
+                $b = "<input class='b' type='submit' name='revive' value='Revive paper' />";
+                if (!$revivable)
+                    $b = array($b, "(admin only)");
+            } else
+                $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn papers has passed.";
+            return array($b);
+        }
+
+        $buttons = array();
+
+        if ($prow->outcome > 0 && $Conf->collectFinalPapers()
+            && ($Conf->timeSubmitFinalPaper() || $Me->privChair)
+            && $this->mode == "pe")
+            $buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Submit final version' />", "");
+        else if ($Conf->timeUpdatePaper($prow) && $this->mode == "pe")
+            $buttons[] = array("<input class='bb' type='submit' name='update' value='Save changes' />", "");
+        else if ($Me->privChair && $this->mode == "pe") {
+            $class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "b" : "bb");
+            $buttons[] = array("<input class='$class' type='submit' name='update' value='Save changes' />", "(admin only)");
+        }
+
+        // withdraw button
+        if (!$Me->canWithdrawPaper($prow, $whyNot, true))
+            $b = null;
+        else if ($prow->timeSubmitted <= 0)
+            $b = "<input class='b' type='submit' name='withdraw' value='Withdraw paper' />";
+        else {
+            $b = "<button type='button' class='b' onclick=\"popup(this,'w',0,true)\">Withdraw paper</button>";
+            $admins = "";
+            if ((!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
+                && !$Conf->timeFinalizePaper($prow))
+                $admins = "Only administrators can undo this step.";
+            $override = "";
+            if (!$Me->canWithdrawPaper($prow))
+                $override = "<div>" . tagg_checkbox("override") . "&nbsp;" .
+                    tagg_label("Override deadlines") . "</div>";
+            $Conf->footerHtml("<div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this paper from consideration and/or
   publication?  $admins</p>
   <form method='post' action=\"" . hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=pe$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
-    <textarea id='withdrawreason' class='temptext' name='reason' rows='3' cols='40' style='width:99%;margin-bottom:10px'>Optional explanation</textarea>
-    <div class='popup_actions'>
+    <textarea id='withdrawreason' class='temptext' name='reason' rows='3' cols='40' style='width:99%'>Optional explanation</textarea>$override
+    <div class='popup_actions' style='margin-top:10px'>
       <input class='popup_populate' type='hidden' name='doemail' value='1' />
       <input class='popup_populate' type='hidden' name='emailNote' value='' />
       <button type='button' class='b' onclick=\"popup(null, 'w', 1)\">Cancel</button>
       &nbsp;<input class='bb' type='submit' name='withdraw' value='Withdraw paper' />
     </div>
   </div></form></div>");
-		$Conf->footerScript("mktemptext('withdrawreason','Optional explanation')");
-	    }
-	    if (!$this->editable)
-		$buttons[] = "<button type='button' class='b' onclick='window.location=\"" . hoturl("contactauthors", "p=" . $prow->paperId . $linkExtra) . "\"'>Edit contacts</button>";
-	}
+            $Conf->footerScript("mktemptext('withdrawreason','Optional explanation')");
+        }
+        if ($b) {
+            if (!$Me->canWithdrawPaper($prow))
+                $b = array($b, "(admin only)");
+            $buttons[] = $b;
+        }
+
+        // Edit contacts
+        if (!$this->editable)
+            $buttons[] = "<button type='button' class='b' onclick='window.location=\"" . hoturl("contactauthors", "p=" . $prow->paperId . $linkExtra) . "\"'>Edit contacts</button>";
+
+        return $buttons;
+    }
+
+    function echoActions() {
+	global $Conf, $Me, $linkExtra;
+	$prow = $this->prow;
+
+	$buttons = $this->_collectActionButtons();
+
 	if ($Me->privChair && $prow) {
 	    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this,'d',0,true)\">Delete paper</button>", "(admin only)");
 	    $Conf->footerHtml("<div id='popup_d' class='popupc'>
@@ -1450,6 +1487,7 @@ class PaperTable {
     </div>
   </form></div>");
 	}
+
 	echo tagg_actions($buttons);
 	if ($Me->privChair) {
 	    $v = defval($_REQUEST, "emailNote", "");

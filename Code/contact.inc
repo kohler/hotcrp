@@ -493,22 +493,25 @@ class Contact {
 	return false;
     }
 
-    function canWithdrawPaper($prow, &$whyNot = null) {
+    function canWithdrawPaper($prow, &$whyNot = null, $override = false) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
+        $privChairOverride = ($override ? $this->privChair : $this->privChairOverride());
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $this->privChair)
 	    && $prow->timeWithdrawn <= 0
-            && ($prow->outcome == 0 || $this->privChair))
+            && ($prow->outcome == 0 || $privChairOverride))
 	    return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
 	    $whyNot["author"] = 1;
-        else if ($prow->outcome != 0 && !$this->privChair)
+        else if ($prow->outcome != 0 && !$privChairOverride)
             $whyNot["decided"] = 1;
+	if ($this->privChair)
+	    $whyNot["override"] = 1;
 	return false;
     }
 

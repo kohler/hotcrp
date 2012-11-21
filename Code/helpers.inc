@@ -1477,9 +1477,9 @@ function whyNotText($whyNot, $action) {
 	} else
 	    $text .= "You can’t $action $thisPaper at the moment. ";
 	$text .= "(<a class='nowrap' href='" . hoturl("deadlines") . "'>View deadlines</a>) ";
-	if (isset($whyNot['override']) && $whyNot['override'])
-	    $text .= "Select the “Override deadlines” checkbox to override this deadline as an administrator. ";
     }
+    if (isset($whyNot['override']) && $whyNot['override'])
+        $text .= "“Override deadlines” can override this restriction. ";
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind. ";
     if (isset($whyNot['author']))
