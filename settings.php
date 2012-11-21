@@ -914,7 +914,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
 	&& (array_key_exists("seedec", $Values)
 	    ? $Values["seedec"] != SEEDEC_ALL
 	    : $Conf->setting("seedec") != SEEDEC_ALL))
-	$Conf->warnMsg("Authors cannot submit final versions until they know their papers have been accepted.  You should change the &ldquo;Who can see papers decisions&rdquo; setting to &ldquo;<strong>Authors</strong>....&rdquo;");
+	$Conf->warnMsg("The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”");
 
     // unset text messages that equal the default
     if (array_key_exists("conflictdefmsg", $Values)
