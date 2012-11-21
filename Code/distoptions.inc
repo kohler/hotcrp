@@ -111,16 +111,26 @@ $Opt["emailSubmissions"] = 0;
 //                   the PHP initialization file, 'php.ini'.
 //   memoryLimit     Maximum amount of memory a PHP script can use.  Defaults
 //                   to 128MB.
-//   timezone        Server timezone.  See http://php.net/manual/en/timezones
+//   timezone        Server timezone. See http://php.net/manual/en/timezones
 //                   for a list.
 //   time24hour      Set to true to use 24-hour timestamps, rather than the
 //                   default am/pm.
+//   dateFormat      Format for displaying short dates. Uses PHP date() syntax:
+//                   http://www.php.net/manual/en/function.date.php
+//                   Defaults to "j M Y H:i:s" [e.g., "1 Jan 2012 00:00:00"]
+//                   or "j M Y g:i:sa" [e.g., "1 Jan 2012 12:00:00am"].
+//   dateFormatLong  Format for displaying long dates. Defaults to
+//                   "l " + dateFormat [e.g., "Tuesday 1 Jan 2012 12:00:00am"].
+//   dateFormatSimplifier Regular expression used to simplify dates. The
+//                   default removes ":00" from the ends of dates.
+//   dateFormatTimezone Timezone abbreviation used to print dates. Defaults to
+//                   the system's timezone abbreviation.
 //   stylesheets     Optional array of additional stylesheet filenames/URIs to
-//                   be included after "style.css".  Example: array("x.css").
+//                   be included after "style.css". Example: array("x.css").
 //   extraFooter     Optional extra HTML text shown at the bottom of every
-//                   page, before the HotCRP link.  If set, should generally
+//                   page, before the HotCRP link. If set, should generally
 //                   end with " <span class='barsep'>|</span> ".
-//   favicon         Optional link to favicon.  Default is images/review24.png.
+//   favicon         Optional link to favicon. Default is images/review24.png.
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
 //   disablePDF      Set to true to disable PDF format submissions.
 //   disablePS       Set to true to disable PostScript format submissions.

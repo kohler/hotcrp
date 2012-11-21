@@ -406,20 +406,61 @@ class Conference {
 	return plural($amt, $what);
     }
 
+    static function _dateFormat($long) {
+        global $Opt;
+        if (!isset($Opt["_dateFormatInitialized"])) {
+            if (!isset($Opt["time24hour"]) && isset($Opt["time24Hour"]))
+                $Opt["time24hour"] = $Opt["time24Hour"];
+            if (!isset($Opt["dateFormatLong"]) && isset($Opt["dateFormat"]))
+                $Opt["dateFormatLong"] = $Opt["dateFormat"];
+            if (!isset($Opt["dateFormat"])) {
+                if (isset($Opt["time24hour"]) && $Opt["time24hour"])
+                    $Opt["dateFormat"] = "j M Y H:i:s";
+                else
+                    $Opt["dateFormat"] = "j M Y g:i:sa";
+            }
+            if (!isset($Opt["dateFormatLong"]))
+                $Opt["dateFormatLong"] = "l " . $Opt["dateFormat"];
+            if (!isset($Opt["dateFormatSimplifier"])) {
+                if (isset($Opt["time24hour"]) && $Opt["time24hour"])
+                    $Opt["dateFormatSimplifier"] = "/:00(?!:)/";
+                else
+                    $Opt["dateFormatSimplifier"] = "/:00(?::00|)(?= ?[ap]m)/";
+            }
+            if (!isset($Opt["dateFormatTimezone"]))
+                $Opt["dateFormatTimezone"] = null;
+            $Opt["_dateFormatInitialized"] = true;
+        }
+        return $Opt[$long ? "dateFormatLong" : "dateFormat"];
+    }
+
     function parseableTime($value, $include_zone) {
 	global $Opt;
-	$zone = $include_zone ? " T" : "";
-	if (defval($Opt, "time24hour"))
-	    return date("j M Y H:i:s" . $zone, $value);
-	else
-	    return date("j M Y g:i:sa" . $zone, $value);
+        $f = self::_dateFormat(false);
+        $d = date($f, $value);
+        if ($Opt["dateFormatSimplifier"])
+            $d = preg_replace($Opt["dateFormatSimplifier"], "", $d);
+        if ($include_zone) {
+            if ($Opt["dateFormatTimezone"] === null)
+                $d .= " " . date("T", $value);
+            else if ($Opt["dateFormatTimezone"])
+                $d .= " " . $Opt["dateFormatTimezone"];
+        }
+        return $d;
     }
-    function _printableTime($value, $dayformat, $useradjust) {
+    function _printableTime($value, $long, $useradjust, $preadjust = null) {
 	global $Opt;
 	if ($value <= 0)
 	    return "N/A";
-	$hourformat = (defval($Opt, "time24hour") ? "H:i:s" : "g:i:sa");
-	$t = date("$dayformat $hourformat T", $value);
+        $t = date(self::_dateFormat($long), $value);
+        if ($Opt["dateFormatSimplifier"])
+            $t = preg_replace($Opt["dateFormatSimplifier"], "", $t);
+        if ($Opt["dateFormatTimezone"] === null)
+            $t .= " " . date("T", $value);
+        else if ($Opt["dateFormatTimezone"])
+            $t .= " " . $Opt["dateFormatTimezone"];
+        if ($preadjust)
+            $t .= $preadjust;
 	if ($useradjust) {
 	    $sp = strpos($useradjust, " ");
 	    $t .= "<$useradjust class='usertime' id='usertime$this->usertimeId' style='display:none'></" . ($sp ? substr($useradjust, 0, $sp) : $useradjust) . ">";
@@ -428,21 +469,21 @@ class Conference {
 	}
 	return $t;
     }
-    function printableTime($value, $useradjust = false) {
-	return $this->_printableTime($value, "l j M Y", $useradjust);
+    function printableTime($value, $useradjust = false, $preadjust = null) {
+	return $this->_printableTime($value, true, $useradjust, $preadjust);
     }
-    function printableTimeShort($value, $useradjust = false) {
-	return $this->_printableTime($value, "j M Y", $useradjust);
+    function printableTimeShort($value, $useradjust = false, $preadjust = null) {
+	return $this->_printableTime($value, false, $useradjust, $preadjust);
     }
 
-    function printableTimeSetting($what, $useradjust = false) {
-	return $this->printableTime(defval($this->settings, $what, 0), $useradjust);
+    function printableTimeSetting($what, $useradjust = false, $preadjust = null) {
+	return $this->printableTime(defval($this->settings, $what, 0), $useradjust, $preadjust);
     }
-    function printableDeadlineSetting($what, $useradjust = false) {
+    function printableDeadlineSetting($what, $useradjust = false, $preadjust = null) {
 	if (!isset($this->settings[$what]) || $this->settings[$what] <= 0)
 	    return "No deadline";
 	else
-	    return "Deadline: " . $this->printableTime($this->settings[$what], $useradjust);
+	    return "Deadline: " . $this->printableTime($this->settings[$what], $useradjust, $preadjust);
     }
 
     function settingsAfter($name) {

@@ -572,19 +572,19 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     if ($myrow && $myrow[1] < $myrow[2]) {
 	$rtyp = ($Me->isPC ? "pcrev_" : "extrev_");
 	if ($Conf->timeReviewPaper($Me->isPC, true, false)) {
-	    $d = $Conf->printableTimeSetting("${rtyp}soft");
+	    $d = $Conf->printableTimeSetting("${rtyp}soft", "span");
 	    if ($d == "N/A")
-		$d = $Conf->printableTimeSetting("${rtyp}hard");
+		$d = $Conf->printableTimeSetting("${rtyp}hard", "span");
 	    if ($d != "N/A")
 		echo "  <span class='deadline'>Please submit your ", ($myrow[2] == 1 ? "review" : "reviews"), " by $d.</span><br />\n";
 	} else if ($Conf->timeReviewPaper($Me->isPC, true, true))
-	    echo "  <span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft") . ".</span><br />\n";
+	    echo "  <span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft", "span") . ".</span><br />\n";
 	else if (!$Conf->timeReviewPaper($Me->isPC, true, true, true))
 	    echo "  <span class='deadline'>The <a href='", hoturl("deadlines"), "'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />\n";
 	else
 	    echo "  <span class='deadline'>The site is not open for reviewing.</span><br />\n";
     } else if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)) {
-	$d = $Conf->printableTimeSetting("pcrev_soft");
+	$d = $Conf->printableTimeSetting("pcrev_soft", "span");
 	if ($d != "N/A")
 	    echo "  <span class='deadline'>The review deadline is $d.</span><br />\n";
     }
@@ -703,9 +703,9 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 
     $startable = $Conf->timeStartPaper();
     if ($startable && !$Me->validContact())
-	echo "<span class='deadline'>", $Conf->printableDeadlineSetting('sub_reg'), "</span><br />\n<small>You must sign in to register papers.</small>";
+	echo "<span class='deadline'>", $Conf->printableDeadlineSetting("sub_reg", "span"), "</span><br />\n<small>You must sign in to register papers.</small>";
     else if ($startable || $Me->privChair) {
-	echo "<strong><a href='", hoturl("paper", "p=new"), "'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting('sub_reg'), ")</span>";
+	echo "<strong><a href='", hoturl("paper", "p=new"), "'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting("sub_reg", "span"), ")</span>";
 	if ($Me->privChair)
 	    echo "<br />\n<span class='hint'>As an administrator, you can start a paper regardless of deadlines and on behalf of others.</span>";
     }
@@ -730,11 +730,14 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
 		$deadlines[] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for submitting papers has passed.";
 	} else if (!$Conf->timeUpdatePaper()) {
 	    $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for updating papers has passed, but you can still submit.";
-	    $time = $Conf->printableTimeSetting('sub_sub');
-	    if ($time != 'N/A')
-		$deadlines[] = "You have until $time to submit papers.";
-	} else if (($time = $Conf->printableTimeSetting('sub_update')) != 'N/A')
-	    $deadlines[] = "You have until $time to submit papers.";
+	    $time = $Conf->printableTimeSetting("sub_sub", "span", " to submit papers");
+	    if ($time != "N/A")
+		$deadlines[] = "You have until $time.";
+	} else {
+            $time = $Conf->printableTimeSetting("sub_update", "span", " to submit papers");
+            if ($time != "N/A")
+                $deadlines[] = "You have until $time.";
+        }
     }
     if (!$startable && !count($deadlines)) {
 	if ($Conf->deadlinesAfter("sub_open"))

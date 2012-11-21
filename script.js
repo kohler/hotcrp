@@ -24,7 +24,7 @@ function e_value(id, value) {
 setLocalTime = (function () {
 var servhr24, showdifference = false;
 function setLocalTime(elt, servtime) {
-    var d, s, hr;
+    var d, s, hr, min, sec;
     if (elt && typeof elt == "string")
 	elt = $$(elt);
     if (elt && showdifference) {
@@ -35,8 +35,10 @@ function setLocalTime(elt, servtime) {
 	s += " " + d.getFullYear();
 	hr = d.getHours();
 	s += " " + (servhr24 ? hr : ((hr + 11) % 12) + 1);
-	s += ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
-	s += ":" + (d.getSeconds() < 10 ? "0" : "") + d.getSeconds();
+	if (servhr24 || d.getMinutes() || d.getSeconds())
+	    s += ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+	if (d.getSeconds())
+	    s += ":" + (d.getSeconds() < 10 ? "0" : "") + d.getSeconds();
 	if (!servhr24)
 	    s += (hr < 12 ? "am" : "pm");
 	s += " your time";
