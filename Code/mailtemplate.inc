@@ -164,11 +164,11 @@ Thank you,
 
 %CONFNAME% paper #%NUMBER% has been withdrawn from consideration and will not be reviewed.
 
+%IF(REASON)%The paper was withdrawn by an administrator, who provided the following reason: %REASON%%ELSE%The paper was withdrawn by an administrator.%ENDIF%
+
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
   Paper site: %URL(paper, p=%NUMBER%)%
-
-%IF(REASON)%The paper was withdrawn by an administrator, who provided the following reason: %REASON%%ELSE%The paper was withdrawn by an administrator.%ENDIF%
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -181,7 +181,7 @@ Thank you,
 
 %CONFSHORTNAME% paper #%NUMBER%, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.
 
-Authors can voluntarily withdraw a submission at any time, as can the chair.%IF(REASON)% The following reason was provided: %REASON%%ENDIF%
+Authors and administrators can withdraw submissions during the review process.%IF(REASON)% The following reason was provided: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
