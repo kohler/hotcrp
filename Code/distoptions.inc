@@ -134,8 +134,6 @@ $Opt["emailSubmissions"] = 0;
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
 //   disablePDF      Set to true to disable PDF format submissions.
 //   disablePS       Set to true to disable PostScript format submissions.
-//   disableSHA1     Set to true to not store SHA-1 hashes of submissions.
-//                   $Opt["filestore"] overrides this setting.
 //   noPapers        Set to true to collect abstracts only, not papers.
 //   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
 //                   paper format checker).

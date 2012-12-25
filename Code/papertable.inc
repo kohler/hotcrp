@@ -264,7 +264,7 @@ class PaperTable {
 	if ($tm > 0)
 	    $t[] = "<span class='nowrap' title='Time of most recent update'>" . $Conf->cacheableImage("_.gif", "Updated", "Time of most recent update", "timestamp12") . " " . $Conf->printableTime($tm) . "</span>";
 	$sha1 = defval($data, "sha1");
-	if ($sha1 && !defval($Opt, "disableSHA1"))
+	if ($sha1)
 	    $t[] = "<span class='nowrap' title='SHA-1 checksum'>" . $Conf->cacheableImage("_.gif", "SHA-1", "SHA-1 checksum", "checksum12") . " " . bin2hex($sha1) . "</span>";
 	if (count($t) > 0)
 	    return "<span class='hint'>" . join(" &nbsp;<span class='barsep'>|</span>&nbsp; ", $t) . "</span>";

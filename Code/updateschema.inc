@@ -265,7 +265,4 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperReviewArchive drop column `requestedOn`")
 	&& $Conf->q("update Settings set value=46 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 46;
-
-    if ($Conf->settings["allowPaperOption"] < 10)
-	$Opt["disableSHA1"] = 1;
 }
