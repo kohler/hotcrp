@@ -670,39 +670,6 @@ function paperDocumentData($prow, $documentType = DOCUMENT_SUBMISSION, $paperSto
     return $doc;
 }
 
-function documentMimetypes($documentType, $opt = null, $supplied = null) {
-    global $Opt, $mimetypeMap;
-    require_once("paperoption.inc");
-    if ($documentType <= 0)
-	$optionType = null;
-    else if (!$opt && !($opt = paperOptions($documentType)))
-	return null;
-    else
-	$optionType = $opt->type;
-    $names = $mimetypes = array();
-    if (PaperOption::type_takes_pdf($optionType)) {
-	$names[] = "PDF";
-	$mimetypes[] = $mimetypeMap["pdf"];
-    }
-    if ($optionType === null && !defval($Opt, "disablePS")) {
-	$names[] = "PostScript file";
-	$mimetypes[] = $mimetypeMap["ps"];
-    }
-    if ($optionType == PaperOption::T_SLIDES
-	|| $optionType == PaperOption::T_FINALSLIDES) {
-	$names[] = "PowerPoint file";
-	$mimetypes[] = $mimetypeMap["ppt"];
-	$mimetypes[] = $mimetypeMap["pptx"];
-    }
-    if ($optionType == PaperOption::T_VIDEO
-	|| $optionType == PaperOption::T_FINALVIDEO) {
-	$names[] = "video file (MP4 or AVI)";
-	$mimetypes[] = $mimetypeMap["mp4"];
-	$mimetypes[] = $mimetypeMap["avi"];
-    }
-    return array($mimetypes, $names);
-}
-
 function paperDownload($prow, $final = false) {
     global $Conf, $Me;
     // don't let PC download papers in progress

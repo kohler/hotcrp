@@ -336,7 +336,9 @@ class PaperTable {
 
     function echoDocumentUploadRow($prow, $opt, $storageId, $flags) {
 	global $Conf, $Me, $Opt, $mimetypeMap;
+        require_once("documents.inc");
 
+        $docclass = new HotCRPDocument($opt->optionId, $opt);
 	$documentType = $opt->optionId;
 	$optionType = $opt->type;
 	$noPapers = defval($Opt, "noPapers") && ($documentType == DOCUMENT_SUBMISSION || $documentType == DOCUMENT_FINAL);
@@ -350,7 +352,7 @@ class PaperTable {
 	    if ($documentType == DOCUMENT_SUBMISSION)
 		echo $this->papt("paper", "Status");
 	} else {
-	    list($accepts, $filetypes) = documentMimetypes($documentType, $opt);
+	    list($accepts, $filetypes) = $docclass->mimetypes();
 	    if (count($filetypes))
 		echo $this->papt("paper", htmlspecialchars($opt->optionName) . " <span class='papfnh'>(" . commajoin($filetypes, "or") . ", max size " . ini_get("upload_max_filesize") . "B)</span>");
 	}

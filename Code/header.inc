@@ -108,6 +108,16 @@ $mimetypeMap = array("pdf" => "application/pdf",
 		     "video/x-msvideo" => "avi",
 		     "avi" => "video/x-msvideo");
 
+function mimetype_extension(&$mimetype) {
+    global $mimetypeMap;
+    if (!isset($mimetype) || $mimetype == null || $mimetype == "")
+        return "";
+    else if (isset($mimetypeMap[$mimetype]))
+        return "." . $mimetypeMap[$mimetype];
+    else
+        return "";
+}
+
 global $OK;
 $OK = 1;
 

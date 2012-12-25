@@ -675,94 +675,10 @@ class Conference {
     //
 
     function storeDocument($uploadId, $paperId, $documentType) {
-	global $Opt, $mimetypeMap, $mimetypeSynonyms, $mimetypeNames;
-	require_once("mimetypes.inc");
-	$while = "while storing paper in database";
-
-	if (!$uploadId
-	    || !fileUploaded($_FILES[$uploadId], $this)
-	    || !isset($_FILES[$uploadId]["tmp_name"]))
-	    return $this->errorMsg("There was an upload error with your file.  Please try again.");
-
-	$filename = $_FILES[$uploadId]["tmp_name"];
-	if (($contents = file_get_contents($filename)) === false
-	    || strlen($contents) == 0)
-	    return $this->errorMsg("Your uploaded file appears to be empty.  Please try again.");
-
-	// Check if paper one of the allowed mimetypes.
-	// We prefer to look at data since MacOS browsers get this wrong.
-	if (strncmp("%PDF-", $contents, 5) == 0)
-	    $mimetype = $mimetypeMap["pdf"];
-	else if (strncmp("%!PS-", $contents, 5) == 0)
-	    $mimetype = $mimetypeMap["ps"];
-	else if (substr($contents, 512, 4) == "\x00\x6E\x1E\xF0")
-	    $mimetype = $mimetypeMap["ppt"];
-	else
-	    $mimetype = defval($_FILES[$uploadId], "type", "application/octet-stream");
-	if (isset($mimetypeSynonyms[$mimetype]))
-	    $mimetype = $mimetypeSynonyms[$mimetype];
-
-	list($mimetypes, $accepts) = documentMimetypes($documentType, null, $mimetype);
-	if (array_search($mimetype, $mimetypes) === false) {
-	    $x = array();
-	    foreach ($mimetypes as $mt)
-		if (isset($mimetypeNames[$mt]))
-		    $x[] = $mimetypeNames[$mt];
-		else {
-		    $x = null;
-		    break;
-		}
-	    $message = "Your uploaded file does not appear to ";
-	    if ($x)
-		$message .= "be a " . commajoin($x, "or") . ".  ";
-	    else if (count($mimetypes))
-		$message .= "have a valid type (" . commajoin($mimetypes, "or") . ").  ";
-	    else
-		$message .= "be valid (internal error: there are no valid formats).  ";
-	    $message .= "(Your file has MIME type &ldquo;" . htmlentities($mimetype) . "&rdquo; and starts with &ldquo;" . htmlspecialchars(substr($contents, 0, 5)) . "&rdquo;.)<br />Please convert your file to a supported type and try again.";
-	    return $this->errorMsg($message);
-	}
-
-	// calculate metadata
-	$contents_sha1 = (!defval($Opt, "disableSHA1") ? sha1($contents, true) : "");
-	$user_filename = null;
-	if (isset($_FILES[$uploadId]["name"])
-	    && strlen($_FILES[$uploadId]["name"]) <= 255
-	    && is_valid_utf8($_FILES[$uploadId]["name"]))
-	    $user_filename = $_FILES[$uploadId]["name"];
-
-	// store the paper
-	$extra = "";
-	if ($this->sversion >= 28)
-	    $extra .= ", sha1='" . sqlq($contents_sha1) . "', documentType=$documentType";
-	if ($this->sversion >= 45 && $user_filename)
-	    $extra .= ", filename='" . sqlq($user_filename) . "'";
-	$timestamp = time();
-	if (!$this->qe("insert into PaperStorage set paperId=$paperId, timestamp=$timestamp, mimetype='" . sqlq($mimetype) . "', paper='" . sqlq(substr($contents, 0, 400000)) . "'" . $extra, $while))
-	    return false;
-
-	$paperStorageId = $this->lastInsertId($while);
-	if (!$paperStorageId)
-	    return $this->errorMsg("Database error: last_insert_id unsuccessful!");
-
-	for ($pos = 400000; $pos < strlen($contents); $pos += 400000)
-	    if (!$this->qe("update PaperStorage set paper=concat(paper,'" . sqlq(substr($contents, $pos, 400000)) . "') where paperStorageId=$paperStorageId", $while))
-		break;
-
-	// check that paper storage succeeded
-	if (!($result = $this->qe("select length(paper) from PaperStorage where paperStorageId=$paperStorageId", $while))
-	    || !($row = edb_row($result))
-	    || $row[0] != strlen($contents))
-	    return $this->errorMsg("Failed to store your paper.  Usually, this is because the file you tried to upload was too big for our system.  Please try again.");
-
-	// return data about the paper
-	return (object) array("paperStorageId" => $paperStorageId,
-			      "contents" => $contents,
-			      "size" => strlen($contents),
-			      "mimetype" => $mimetype,
-			      "timestamp" => $timestamp,
-			      "sha1" => $contents_sha1,
-			      "filename" => $user_filename);
+        require_once("documents.inc");
+        return DocumentHelper::store(new HotCRPDocument($documentType),
+                                     $uploadId,
+                                     (object) array("paperId" => $paperId));
     }
 
     function storePaper($uploadId, $prow, $final) {
@@ -812,7 +728,7 @@ class Conference {
 
 	    $mime = new Mail_mime("\n");
 	    $mime->setTXTBody($message);
-	    $mime->addAttachment($doc->contents, $doc->mimetype,
+	    $mime->addAttachment($doc->content, $doc->mimetype,
 				 $this->downloadPaperName($paperId, $doc->mimetype, 0), false);
 
 	    $body = $mime->get();
@@ -836,7 +752,7 @@ class Conference {
 	$title .= ($dtn ? $dtn : "xxx");
 	if (ctype_digit($title[strlen($title) - 1]))
 	    $title .= "-";
-	return $title . $paperId . $this->getFileExtension($mimetype);
+	return $title . $paperId . mimetype_extension($mimetype);
     }
 
     function paperStorageResult($prow, $documentType, $skip_content = false) {
@@ -849,10 +765,8 @@ class Conference {
 	    $paperMatch = " in (" . join(",", $prow) . ")";
 	else
 	    $paperMatch = "=" . $prow->paperId;
-	$q = "select p.paperId, s.mimetype, ";
-	if (isset($Opt["filestore"]) && $Opt["filestore"] && $this->sversion >= 28)
-	    $q .= "s.sha1, ";
-	else if (!$skip_content)
+	$q = "select p.paperId, s.mimetype, s.sha1, ";
+	if (!defval($Opt, "filestore") && !$skip_content)
 	    $q .= "s.paper as content, ";
 	if ($this->sversion >= 45)
 	    $q .= "s.filename, ";
@@ -868,85 +782,21 @@ class Conference {
 	return $this->q($q . " left join PaperStorage s on (s.paperStorageId=$sjoin) where p.paperId$paperMatch");
     }
 
-    function _paper_storage_content($row) {
-	if (isset($row->content))
-	    return strlen($row->content) > 0;
-	$xresult = $this->q("select paper, compression from PaperStorage where paperStorageId=$row->paperStorageId");
-	if (!$xresult || !($xrow = edb_row($xresult))) {
-	    $row->content = "";
-	    return false;
-	}
-	if ($xrow[1] == 1)
-	    $row->content = gzinflate($xrow[0]);
-	else
-	    $row->content = $xrow[0];
-	return true;
-    }
-
-    function _paper_storage_filestore($row) {
-	global $Opt, $ConfSitePATH, $ConfMulticonf;
-
-	if ($row->sha1 == "") {
-	    if (!$this->_paper_storage_content($row))
-		return false;
-	    $row->sha1 = sha1($row->content, true);
-	    $this->q("update PaperStorage set sha1='" . sqlq($row->sha1) . "' where paperStorageId=$row->paperStorageId");
-	}
-
-	$filestore = $Opt["filestore"];
-	if ($filestore === true)
-	    $filestore = "$ConfSitePATH/filestore";
-	if (isset($Opt["multiconference"]) && $Opt["multiconference"])
-	    $filestore = str_replace("*", $ConfMulticonf, $filestore);
-	if (!is_dir($filestore) && !@mkdir($filestore, 0700)) {
-	    @rmdir($filestore);
-	    return false;
-	}
-
-	// Ensure an .htaccess file exists, even if someone else made the
-	// filestore directory
-	$htaccess = "$filestore/.htaccess";
-	if (!is_file($htaccess)
-	    && file_put_contents($htaccess, "Order deny,allow\nDeny from all\nphp_flag magic_quotes_gpc off\n") === false) {
-	    @unlink("$filestore/.htaccess");
-	    return false;
-	}
-
-	$sha1 = bin2hex($row->sha1);
-	if (strlen($sha1) != 40)
-	    return false;
-	$superdir = $filestore;
-	$use_subdir = defval($Opt, "filestoreSubdir", false);
-	if ($use_subdir && ($use_subdir === true || $use_subdir > 0))
-	    $superdir .= "/" . substr($sha1, 0,
-				      $use_subdir === true ? 2 : $use_subdir);
-	$filename = $superdir . "/" . $sha1 . $this->getFileExtension($row->mimetype);
-
-	if (!is_readable($filename)
-	    || (isset($_REQUEST["nocache"]) && cvtint($_REQUEST["nocache"], 0))) {
-	    if (!is_dir($superdir) && !@mkdir($superdir, 0770))
-		return false;
-	    if (!$this->_paper_storage_content($row))
-		return false;
-	    if (file_put_contents($filename, $row->content) != strlen($row->content)) {
-		@unlink($filename);
-		return false;
-	    }
-	    @chmod($filename, 0660 & ~umask());
-	}
-
-	$row->filestore = $filename;
-	return true;
-    }
-
     function paperStorageRow($result) {
-	if (!($row = edb_orow($result)))
-	    return $row;
-	if (isset($row->sha1))
-	    $this->_paper_storage_filestore($row);
-	if (!isset($row->filestore) && !isset($row->content))
-	    $this->_paper_storage_content($row);
-	return $row;
+        require_once("documents.inc");
+	if (!($doc = edb_orow($result)))
+	    return $doc;
+        // type doesn't matter
+        $docclass = new HotCRPDocument(DOCUMENT_SUBMISSION);
+        // in modern versions sha1 is set at storage time; before it wasn't
+	if ($doc->sha1 == "") {
+	    if (!$docclass->load_database_content($doc))
+		return false;
+	    $doc->sha1 = sha1($doc->content, true);
+	    $this->q("update PaperStorage set sha1='" . sqlq($doc->sha1) . "' where paperStorageId=" . $row->paperStorageId);
+	}
+        DocumentHelper::load($docclass, $doc);
+	return $doc;
     }
 
     function __downloadPaper($paperId, $saveit, $documentType) {
@@ -1045,6 +895,7 @@ class Conference {
 
     function __downloadPapers($paperIds, &$tmpdir, $documentType) {
 	global $Opt, $zlib_output_compression;
+        require_once("documents.inc");
 
 	// special cases
 	if (count($paperIds) == 0)
@@ -1068,9 +919,11 @@ class Conference {
 	    $name = $this->downloadPaperName($row->paperId, $row->mimetype, $documentType);
 	    if ($row->paperStorageId <= 1)
 		$warnings[] = "Paper #$row->paperId has not been uploaded yet.";
-	    else if (isset($row->filestore) && @symlink($row->filestore, "$tmpdir/$name"))
+	    else if (isset($row->filestore)
+                     && @symlink($row->filestore, "$tmpdir/$name"))
 		$files[] = "$tmpdir/$name";
-	    else if ($this->_paper_storage_content($row))
+	    else if (($docclass = new HotCRPDocument(0))
+                     && $docclass->load_database_content($row))
 		$this->zipAdd($tmpdir, $name, $row->content, $warnings, $files);
 	    else
 		$warnings[] = "Could not save $name.";
@@ -2052,16 +1905,6 @@ class Conference {
     //
     // Miscellaneous
     //
-
-    function getFileExtension(&$mimetype) {
-	global $mimetypeMap;
-	if (!isset($mimetype) || $mimetype == null || $mimetype == "")
-	    return "";
-	else if (isset($mimetypeMap[$mimetype]))
-	    return "." . $mimetypeMap[$mimetype];
-	else
-	    return "";
-    }
 
     function makeDownloadPath($paperId, $mimetype, $documentType) {
 	global $ConfSiteBase, $ConfSiteSuffix;
