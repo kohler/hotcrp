@@ -304,7 +304,7 @@ class DocumentHelper {
     }
 
     static function load($docclass, $doc) {
-        $fsinfo = $docclass->filestore_pattern($doc);
+        $fsinfo = $docclass->filestore_pattern($doc, null);
         if ($fsinfo) {
             $fsinfo = self::_expand_filestore($fsinfo, $doc);
             if (is_readable($fsinfo[1])
