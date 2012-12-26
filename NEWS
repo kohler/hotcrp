@@ -1,5 +1,17 @@
 HotCRP NEWS
 
+Version 2.53   26.Dec.2012
+
+* Support sending mail to PC members about their new review assignments.
+
+* Add HTTP authentication option: $Opt["httpAuthLogin"].
+
+* Bug fixes to bulk account creation, among others.
+
+* Thanks to Adam Allred, Lujo Bauer, John Douceur, Gernot Heiser,
+  Petros Maniatis, Jeff Mogul, Antoine Picard, and Anthony Riley.
+
+
 Version 2.52   23.Jul.2012
 
 * Allow chairs to change all PC conflicts on papers' Edit screens.
