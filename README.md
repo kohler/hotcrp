@@ -84,16 +84,16 @@ will generally require adding a `<Directory>` for the HotCRP
 directory, and an Alias redirecting a particular URL to that
 directory. For example, this section of httpd.conf makes the
 "/testconf" URL point at a HotCRP installation in /home/kohler/hotcrp.
-```
-<Directory "/home/kohler/hotcrp">
-    Options Indexes Includes FollowSymLinks
-    AllowOverride all
-    Order allow,deny
-    Allow from all
-</Directory>
-Alias /testconf /home/kohler/hotcrp
-```
-Note that the first argument to Alias should NOT end in a slash. The
+
+        <Directory "/home/kohler/hotcrp">
+            Options Indexes Includes FollowSymLinks
+            AllowOverride all
+            Order allow,deny
+            Allow from all
+        </Directory>
+        Alias /testconf /home/kohler/hotcrp
+
+    Note that the first argument to Alias should NOT end in a slash. The
 "AllowOverride all" directive is required.
 
 4. Update the systemwide setting for PHP’s `session.gc_maxlifetime`
@@ -102,23 +102,23 @@ lifetimes (the amount of idle time before a user is logged out
 automatically). On Unix machines, systemwide PHP settings are often
 stored in `/etc/php.ini`. The suggested value for this setting is
 86400, e.g., 24 hours:
-```
-session.gc_maxlifetime = 86400
-```
-If you want sessions to expire sooner, we recommend you set
+
+        session.gc_maxlifetime = 86400
+
+    If you want sessions to expire sooner, we recommend you set
 `session.gc_maxlifetime` to 86400 anyway, then edit Code/options.inc to
 set `$Opt["sessionLifetime"]` to the correct session timeout.
 
 5. Edit MySQL's 'my.cnf' (typical location: `/etc/mysql/my.cnf`) to ensure
 that MySQL can handle paper-sized objects.  It should contain something
 like this:
-```
-[mysqld]
-max_allowed_packet=32M
-```
-max_allowed_packet must be at least as large as the largest paper you
-are willing to accept. It defaults to 1M on some systems, which is not
-nearly large enough. HotCRP will warn you if it is too small. Some
+
+        [mysqld]
+        max_allowed_packet=32M
+
+    max_allowed_packet must be at least as large as the largest paper
+you are willing to accept. It defaults to 1M on some systems, which is
+not nearly large enough. HotCRP will warn you if it is too small. Some
 MySQL setups, such as on Mac OS X, may not have a 'my.cnf' by default;
 just create one. If you edit my.cnf, also restart the mysqld server.
 On Linux try something like `sudo /etc/init.d/mysql restart`.
@@ -127,9 +127,9 @@ On Linux try something like `sudo /etc/init.d/mysql restart`.
 automatically receives system administrator privilege.
 
     If your server configuration doesn't allow .htaccess files to set
-    options, Apache will report an “Error 500” when you try to load HotCRP.
-    Change your Apache configuration to `AllowOverride All` in the HotCRP
-    directory, as our example does above.
+options, Apache will report an “Error 500” when you try to load
+HotCRP. Change your Apache configuration to `AllowOverride All` in the
+HotCRP directory, as our example does above.
 
 You can set up everything else through the web site itself.
 
@@ -194,7 +194,7 @@ install directory for all relevant URLs.
 To set other $Opt options per conference, such as the conference name and
 contact email, modify the conference's Settings database table. A Settings
 row with name "opt.XXX" takes precedence over option $Opt["XXX"]. For
-example, to set a conference's longName:
+example, to set a conference’s longName:
 
     mysql> insert into Settings (name, value, data)
 	   values ('opt.longName', 1, 'My Conference 2012')
