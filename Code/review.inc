@@ -794,7 +794,7 @@ $blind\n";
 	global $Conf;
 
 	$x = "===========================================================================\n";
-	$n = ($crow->forAuthors > 1 ? "Author's Response" : "Comment");
+	$n = ($crow->forAuthors > 1 ? "Authors' Response" : "Comment");
 	if ($contact->canViewCommentIdentity($prow, $crow, true)) {
 	    $n .= " by ";
 	    if (isset($crow->reviewFirstName))
