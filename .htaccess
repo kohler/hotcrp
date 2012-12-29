@@ -16,7 +16,7 @@ AddDefaultCharset UTF-8
 DirectoryIndex index.php
 
 # Prevent access to SCM directories, test, README, etc.
-<FilesMatch "^(CVS|\.svn|\.git|README|LICENSE|filestore|test|.*\.sh)$">
+<FilesMatch "^(CVS|\.svn|\.git.*|README.*|LICENSE|filestore|test|.*\.sh)$">
 Order allow,deny
 Deny from all
 </FilesMatch>
