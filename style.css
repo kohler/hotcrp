@@ -2124,7 +2124,7 @@ td.cmtcll, td.cmtclr {
 }
 td.cmtcc {
 	background: #ffffff;
-	padding: 8px 12px 2px;
+	padding: 6px 12px;
 	border-radius: 2px;
 	-moz-border-radius: 2px;
 }
@@ -2150,7 +2150,7 @@ span.cmtfn > span.barsep {
 }
 div.cmtg.cmtg1 {
 	border-top: 0 none;
-	padding-top: 0;
+	padding: 0;
 }
 div.cmtadminvis {
 	background: #f3f3f3;

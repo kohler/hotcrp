@@ -1387,7 +1387,7 @@ $blind\n";
 	    $buttons = array();
 	    if (!$submitted) {
 		$buttons[] = tagg_submit("submit", "Submit review", array("class" => "bb"));
-		$buttons[] = tagg_submit("savedraft", "Save draft");
+		$buttons[] = tagg_submit("savedraft", "Save as draft");
 	    } else
 		$buttons[] = tagg_submit("submit", "Save changes", array("class" => "bb"));
 	    echo tagg_actions($buttons, array("style" => "margin-top:0"));
@@ -1411,10 +1411,11 @@ $blind\n";
 	    $buttons = array();
 	    if (!$submitted) {
 		$buttons[] = tagg_submit("submit", "Submit review", array("class" => "bb"));
-		$buttons[] = tagg_submit("savedraft", "Save draft");
+		$buttons[] = tagg_submit("savedraft", "Save as draft");
 	    } else
 		$buttons[] = tagg_submit("submit", "Save changes", array("class" => "bb"));
 	    if ($rrow && $Me->privChair) {
+                $buttons[] = "";
 		if ($submitted)
 		    $buttons[] = array(tagg_submit("unsubmit", "Unsubmit review"), "(admin only)");
 		$buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");

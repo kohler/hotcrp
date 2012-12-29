@@ -117,7 +117,11 @@ function saveComment($text) {
 	$blind = 1;
     if (isset($_REQUEST["response"])) {
 	$forAuthors = 2;
-	$forReviewers = (defval($_REQUEST, "forReviewers") ? 1 : 0);
+        if (defval($_REQUEST, "forReviewers")
+            || isset($_REQUEST["submitresponse"]))
+            $forReviewers = 1;
+        else
+            $forReviewers = 0;
 	$blind = $prow->blind;	// use $prow->blind setting on purpose
     }
 
@@ -187,9 +191,9 @@ function saveComment($text) {
 	    $extratext = "  You have until $deadline to send the response to the reviewers.";
 	else
 	    $extratext = "";
-	$_SESSION["comment_msgs"][$savedCommentId] = "<div class='xwarning'>$what saved.  However, at your request, this response will not be shown to reviewers.$extratext</div>";
+	$_SESSION["comment_msgs"][$savedCommentId] = "<div class='xwarning'>$what saved. However, at your request, this response will not be shown to reviewers.$extratext</div>";
     } else if ($text != "")
-	$_SESSION["comment_msgs"][$savedCommentId] = "<div class='xconfirm'>$what saved.</div>";
+	$_SESSION["comment_msgs"][$savedCommentId] = "<div class='xconfirm'>$what submitted.</div>";
     else
 	$Conf->confirmMsg("$what deleted.");
     $Conf->log("Comment $savedCommentId " . ($text != "" ? "saved" : "deleted"),
@@ -221,7 +225,7 @@ function saveComment($text) {
 }
 
 function saveResponse($text) {
-    global $Me, $Conf, $prow, $crow, $linkExtra;
+    global $Me, $Conf, $prow, $linkExtra;
 
     $success = saveComment($text);
     if (!$success) {
@@ -233,7 +237,9 @@ function saveResponse($text) {
 
 if (!check_post())
     /* do nothing */;
-else if (isset($_REQUEST["submit"]) && defval($_REQUEST, "response")) {
+else if ((isset($_REQUEST["submit"]) || isset($_REQUEST["submitresponse"])
+          || isset($_REQUEST["savedraft"]))
+         && defval($_REQUEST, "response")) {
     if (!$Me->canRespond($prow, $crow, $whyNot, true)) {
 	$Conf->errorMsg(whyNotText($whyNot, "respond to reviews for"));
 	$useRequest = true;

@@ -2290,7 +2290,7 @@ function tagg_submit($name, $text, $js = null) {
     return tagg_button($name, $text, $js);
 }
 
-function tagg_actions($actions, $js = null) {
+function tagg_actions($actions, $js = null, $extra = "") {
     $t = "<div class=\"aa\"" . tagg_extra($js) . ">";
     if (count($actions) > 1 || is_array($actions[0])) {
 	$t .= "<table class=\"pt_buttons\"><tr>";
@@ -2318,5 +2318,5 @@ function tagg_actions($actions, $js = null) {
 	$t .= "</table>";
     } else
 	$t .= $actions[0];
-    return $t . "</div>\n";
+    return $t . $extra . "</div>\n";
 }

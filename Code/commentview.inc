@@ -195,19 +195,19 @@ class CommentView {
 	echo "</table></td></tr></table>\n";
 	$Conf->footerScript("docmtvis(false)");
 
-	// review actions
-	echo "<div class='aa'><table class='pt_buttons'>\n",
-	    "    <tr>\n",
-	    "      <td class='ptb_button'><input class='bb' type='submit' value='Save' name='submit' /></td>\n";
-	if ($crow)
-	    echo "      <td class='ptb_button'><input class='b' type='submit' value='Cancel' name='cancel' /></td>\n";
-	else
-	    echo "      <td class='ptb_button'><button class='b' type='button' onclick='javascript:void fold(\"addcomment\", 1)'>Cancel</button></td>\n";
-	if ($crow)
-	    echo "      <td class='ptb_button'><span class='lgsep'></span><input class='b' type='submit' value='Delete comment' name='delete' /></td>\n";
-	echo "    </tr>\n  </table></div>\n";
+	// actions
+        $buttons = array();
+        $buttons[] = tagg_submit("submit", "Save", array("class" => "bb"));
+        if ($crow) {
+            $buttons[] = tagg_submit("cancel", "Cancel");
+            $buttons[] = "";
+            $buttons[] = tagg_submit("delete", "Delete comment");
+        } else
+            $buttons[] = "<button class='b' type='button' onclick='javascript:void fold(\"addcomment\",1)'>Cancel</button>";
+        $post = "";
 	if (!$Me->timeReview($prow, null))
-	    echo tagg_checkbox("override"), "&nbsp;", tagg_label("Override&nbsp;deadlines");
+	    $post = tagg_checkbox("override") . "&nbsp;" . tagg_label("Override&nbsp;deadlines");
+        echo tagg_actions($buttons, null, $post);
 
 	echo "</div></div></form>\n\n";
     }
@@ -270,6 +270,8 @@ has passed.  Please keep the response short and to the point",
 	if (isset($_SESSION["comment_msgs"]) && $crow
 	    && isset($_SESSION["comment_msgs"][$crow->commentId]))
 	    echo $_SESSION["comment_msgs"][$crow->commentId];
+        else if ($editMode && $crow && !$crow->forReviewers)
+            echo "<div class='xwarning'>This is a draft response. Reviewers won’t see it until you submit.</div>";
 
 	if (!$editMode) {
 	    echo "<div class='cmtg cmtg1'>";
@@ -291,20 +293,21 @@ has passed.  Please keep the response short and to the point",
 	    echo htmlspecialchars(defval($_REQUEST, 'comment'));
 	else if ($crow)
 	    echo htmlspecialchars($crow->comment);
-	echo "</textarea>
-  <div class='g'></div>\n  ",
-	    tagg_checkbox_h("forReviewers", 1, ($useRequest ? defval($_REQUEST, "forReviewers") : !$crow || $crow->forReviewers != 0)),
-	    "&nbsp;", tagg_label("This response should be sent to the reviewers."), "\n";
+	echo "</textarea>\n  <div class='g'></div>\n  ";
 
-	// review actions
-	echo "<div class='aa'><table class='pt_buttons'>
-    <tr>\n";
-	echo "      <td class='ptb_button'><input class='bb' type='submit' value='Save' name='submit' /></td>\n";
-	if ($crow)
-	    echo "      <td class='ptb_button'><input class='b' type='submit' value='Delete response' name='delete' /></td>\n";
-	echo "    </tr>\n  </table></div>\n";
-	if (!$Conf->timeAuthorRespond())
-	    echo tagg_checkbox("override"), "&nbsp;", tagg_label("Override&nbsp;deadlines");
+	// actions
+        $buttons = array();
+        $buttons[] = tagg_submit("submitresponse", "Submit", array("class" => "bb"));
+        if ($Me->privChair || !$crow || !$crow->forReviewers)
+            $buttons[] = tagg_submit("savedraft", "Save as draft");
+        if ($crow) {
+            $buttons[] = "";
+            $buttons[] = tagg_submit("delete", "Delete response");
+        }
+        $post = "";
+        if (!$Conf->timeAuthorRespond())
+            $post = tagg_checkbox("override") . "&nbsp;" . tagg_label("Override&nbsp;deadlines");
+        echo tagg_actions($buttons, null, $post);
 
 	echo "</td><td></td></tr>\n", tagg_cbox("cmt", true),
 	    "</td></tr>\n</table>\n</div></div></div></form>\n\n";
