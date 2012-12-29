@@ -951,7 +951,10 @@ class Contact {
 		    || (defval($prow, "myReviewType") > 0
 			&& (defval($prow, "myReviewSubmitted") > 0
 			    || defval($prow, "myReviewNeedsSubmit", 1) == 0)))
-		&& ($forReviewers == 1 || ($forReviewers == 0 && $this->isPC))))
+		&& ($forReviewers == 1
+                    || ($forReviewers == 0
+                        && $this->isPC
+                        && (!$crow || $crow->forAuthors <= 1)))))
 	    return true;
 	// collect failure reasons
 	if (($conflictType < CONFLICT_AUTHOR
