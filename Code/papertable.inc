@@ -1279,7 +1279,14 @@ class PaperTable {
 	      && $Me->contactId > 0))
 	    return;
 	// watch note
-	$result = $Conf->q("select ContactInfo.contactId, reviewType, commentId, conflictType, watch from ContactInfo left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId) left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId) where ContactInfo.contactId=$Me->contactId");
+	$result = $Conf->q("select
+	ContactInfo.contactId, reviewType, commentId, conflictType, watch
+	from ContactInfo
+	left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
+	left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId)
+	left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId)
+	left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId)
+	where ContactInfo.contactId=$Me->contactId");
 	$row = edb_row($result);
 
 	echo $this->_papstripBegin(),
@@ -1287,7 +1294,7 @@ class PaperTable {
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setwatch' value='1' />";
 
-	if ($row[4] && ($row[4] & ($Me->defaultWatch >> 1)))
+	if ($row[4] && ($row[4] & ($this->watchCheckbox >> 1)))
 	    $watchValue = $row[4];
 	else if ($row[1] || $row[2] || $row[3] >= CONFLICT_AUTHOR)
 	    $watchValue = $Me->defaultWatch;
