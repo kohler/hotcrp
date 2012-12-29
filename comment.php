@@ -161,7 +161,8 @@ function saveComment($text) {
 	    $now = $crow->timeModified + 1;
 	// do not notify on updates within 3 hours
 	$qa = "";
-	if ($crow->timeNotified + 10800 < $now)
+	if ($crow->timeNotified + 10800 < $now
+            || ($forAuthors == 2 && $forReviewers && !$crow->forReviewers))
 	    $qa = ", timeNotified=$now";
 	$q = "update PaperComment set timeModified=$now$qa, comment='" . sqlq($text) . "', forReviewers=$forReviewers, forAuthors=$forAuthors, blind=$blind where commentId=$crow->commentId";
     }
