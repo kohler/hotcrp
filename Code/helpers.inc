@@ -1273,7 +1273,7 @@ function wordWrapIndent($text, $info, $indent = 18, $totWidth = 75, $rjinfo = tr
 	$indentlen = strlen($indent);
 
     $out = "";
-    while (ctype_space($text[0])) {
+    while ($text != "" && ctype_space($text[0])) {
 	$out .= $text[0];
 	$text = substr($text, 1);
     }
@@ -1302,6 +1302,8 @@ function htmlWrapText($text) {
 		/* nada */;
 	    $l = str_repeat("\xC2\xA0", $x) . substr($l, $x);
 	}
+	$l = preg_replace('@((?:https?|ftp)://\S+[^\s").,:;])([").,:;]*(?:\s|\z))@',
+			  '<a href="$1">$1</a>$2', $l);
 	$lines[$i] = $l . "<br />\n";
     }
     return join("", $lines);
