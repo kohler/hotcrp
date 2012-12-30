@@ -348,4 +348,5 @@ elif [ -r "${PROGDIR}distoptions.inc" ]; then
 	echo chown $SUDO_USER ${PROGDIR}options.inc
 	chown $SUDO_USER ${PROGDIR}options.inc
     fi
+    chmod o-rwx ${PROGDIR}options.inc
 fi
