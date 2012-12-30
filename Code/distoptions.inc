@@ -28,7 +28,6 @@ global $Opt;
 $Opt["dbName"] = "YourConfI";
 $Opt["shortName"] = "YourConf I";
 $Opt["longName"] = "Your Conference I";
-$Opt["downloadPrefix"] = "yourconf1-";
 
 
 // URLS
@@ -36,28 +35,28 @@ $Opt["downloadPrefix"] = "yourconf1-";
 //   conferenceSite  Conference site URL (e.g., CFP, registration).
 //   paperSite       URL for this HotCRP installation. Used in emails.
 
-$Opt["conferenceSite"] = "http://your.site.here.com/";
-$Opt["paperSite"] = "http://your.site.here.com/";
+$Opt["conferenceSite"] = "http://example.com/";
+$Opt["paperSite"] = "http://example.com/";
 
 
 // EMAIL
 //
 //   contactName     Full name for site administrator (the person to contact
-//                   about site problems).  Usually the PC chair(s).
+//                   about site problems). Usually the PC chair(s).
 //   contactEmail    Email address for site administrator.
-//   sendEmail       Boolean.  If false, HotCRP will send no email.  This
-//                   should almost always be set to true.
-//   emailFrom       "From:" address for email sent by HotCRP.  Should be a
+//   sendEmail       Boolean. If false, HotCRP will send no email. This should
+//                   almost always be set to true.
+//   emailFrom       "From:" address for email sent by HotCRP. Should be a
 //                   plausible email address for mail originating at the
 //                   conference server, so things like SPF don't mistake
 //                   the mail for spam.
-//   emailSender     Envelope sender address for email sent by HotCRP.  Usually
+//   emailSender     Envelope sender address for email sent by HotCRP. Usually
 //                   defaults to something like "www-data@yourservername".
 //                   This email address should be connected to a valid mailbox
 //                   or certain spam filters will reject email from HotCRP.
 //   emailCc         Default "Cc:" address for email sent by HotCRP to
-//                   reviewers and via the mail tool.  (Does not apply to most
-//                   email automatically sent to submitters.)  If not set, the
+//                   reviewers and via the mail tool. (Does not apply to most
+//                   email automatically sent to submitters.) If not set, the
 //                   default Cc is $Opt["contactEmail"].
 //   emailReplyTo    If set, default "Reply-To:" address for email sent by
 //                   HotCRP.
@@ -67,24 +66,15 @@ $Opt["paperSite"] = "http://your.site.here.com/";
 //                   sendPrepared().
 //   postfixEOL      Set to true if your system mailer is UNIX Postfix and
 //                   HotCRP mail has garbled headers, particularly for long or
-//                   non-ASCII subject lines.  (The symptom is that some mail
-//                   headers will appear as part of the message body.)  It's
+//                   non-ASCII subject lines. (The symptom is that some mail
+//                   headers will appear as part of the message body.) It's
 //                   always safe to set postfixEOL to true, although the
 //                   resulting mails may not be standards compliant.
 
 $Opt["contactName"] = "Your Name";
-$Opt["contactEmail"] = "your@name.edu";
+$Opt["contactEmail"] = "you@example.com";
 $Opt["sendEmail"] = true;
-$Opt["emailFrom"] = "from@your.site.here.com";
-
-
-// SUBMISSIONS
-//
-//   emailSubmissions  If this is non-zero, then it should be an email address.
-//                   All submissions are MIME-encoded and sent to this address
-//                   as a backup. This will increase server load.
-
-$Opt["emailSubmissions"] = 0;
+$Opt["emailFrom"] = "you@example.com";
 
 
 // OPTIONAL SETTINGS (the defaults are reasonable)
@@ -102,14 +92,14 @@ $Opt["emailSubmissions"] = 0;
 //                   and that DBHOST is "localhost".
 //                   Example: "mysql://HotNetsV:HotNetsV@localhost/HotNetsV".
 //   sessionName     Internal name used to distinguish conference sessions
-//                   running on the same server.  NO SPACES ALLOWED.  Defaults
+//                   running on the same server. NO SPACES ALLOWED. Defaults
 //                   to $Opt["dbName"].
 //   sessionLifetime Number of seconds a user may be idle before their session
-//                   is garbage collected and they must log in again.  Defaults
-//                   to 86400 (24 hours).  Should be less than or equal to the
+//                   is garbage collected and they must log in again. Defaults
+//                   to 86400 (24 hours). Should be less than or equal to the
 //                   system-wide setting for 'session.gc_maxlifetime' in
 //                   the PHP initialization file, 'php.ini'.
-//   memoryLimit     Maximum amount of memory a PHP script can use.  Defaults
+//   memoryLimit     Maximum amount of memory a PHP script can use. Defaults
 //                   to 128MB.
 //   timezone        Server timezone. See http://php.net/manual/en/timezones
 //                   for a list.
@@ -138,18 +128,18 @@ $Opt["emailSubmissions"] = 0;
 //   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
 //                   paper format checker).
 //   banalLimit      Limit on number of parallel paper format checker
-//                   executions.  Defaults to 8.
-//   ldapLogin       If set, use LDAP to authenticate users.  The ldapLogin
+//                   executions. Defaults to 8.
+//   ldapLogin       If set, use LDAP to authenticate users. The ldapLogin
 //                   string must have the form "LDAP_URL DN_PATTERN", where
 //                   DN_PATTERN contains a "*" character to be replaced by
-//                   the username.  Example: "ldaps://ldapserver/ uid=*,o=ORG"
+//                   the username. Example: "ldaps://ldapserver/ uid=*,o=ORG"
 //   httpAuthLogin   If set, use HTTP authentication to authenticate users.
 //                   Requires additional web server configuration. A string
 //                   value is sent as a WWW-Authenticate header. The default
 //                   string is "Basic realm="HotCRP"".
 //   defaultEmailDomain Set to the default domain for account email addresses
 //                   when using httpAuthLogin.
-//   zipCommand      Set to the path to the "zip" executable.  Defaults to
+//   zipCommand      Set to the path to the "zip" executable. Defaults to
 //                   "zip".
 //   disableCSV      Set to true if all downloaded tabular text files should be
 //                   tab-separated rather than CSV.
@@ -159,6 +149,8 @@ $Opt["emailSubmissions"] = 0;
 //   filestoreSubdir Set to true (or a small number, like 3) if the filestore
 //                   should use subdirectories. This can be useful if you
 //                   expect thousands of submissions.
+//   emailSubmissions  If set, all submissions are MIME-encoded and sent to
+//                   this email address for backup. Will increase server load.
 
 $Opt["disablePS"] = true;
 $Opt["smartScoreCompare"] = true;
