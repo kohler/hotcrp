@@ -1829,7 +1829,7 @@ class PaperTable {
 		    || ($Me->actChair($prow) && $editablecid == "response")))
 		$cv->showResponse($prow, null, false, true);
 
-	    $cv->endTable();
+	    $cv->table_end();
 	    unset($_SESSION["comment_msgs"]);
 	}
     }

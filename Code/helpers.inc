@@ -2223,7 +2223,6 @@ function tagg_select($name, $opt, $selected = null, $extra = null) {
 }
 
 function tagg_cbox($type, $bottom, $classextra="") {
-    $c = ($bottom ? "l" : "u");
     if ($bottom)
 	return "	<tr><td class='${type}cll'></td><td></td><td class='${type}clr'></td></tr>\n</table>";
     else

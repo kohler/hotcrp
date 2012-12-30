@@ -15,18 +15,22 @@ class CommentView {
 	$this->numbers = array();
     }
 
-    function beginTable() {
+    function table_begin($classextra) {
+        // div.pbox > table.pbox > tr > td.pboxr > table.cmtc > tr > td.cmtcc
 	echo "<div class='pboxc'><table class='pbox'><tr>
   <td class='pboxl'></td>
-  <td class='pboxr'>", tagg_cbox("cmt", false),
-	    "\t<tr><td></td><td class='cmthead'><h3>Comments</h3></td><td></td></tr>
-  <tr><td></td><td class='cmtcc'>";
+  <td class='pboxr'>", tagg_cbox("cmt", false, $classextra),
+	    "\t<tr><td></td><td class='cmthead'>";
 	$this->mode = 1;
 	$this->ncomment_in_table = 0;
 	$this->numbers = array();
     }
 
-    function endTable() {
+    function table_tobody() {
+        echo "</td><td></td></tr>\n  <tr><td></td><td class='cmtcc'>";
+    }
+
+    function table_end() {
 	if ($this->mode) {
 	    echo "</td><td></td></tr>\n", tagg_cbox("cmt", true),
 		"</td></tr>\n</table></div>\n\n";
@@ -100,10 +104,14 @@ class CommentView {
 
 	if ($crow && !$Me->canViewComment($prow, $crow))
 	    return;
-	if ($this->mode != 1)
-	    $this->beginTable();
 	if ($editMode && !$Me->canComment($prow, $crow))
 	    $editMode = false;
+
+	if ($this->mode != 1) {
+	    $this->table_begin("");
+            echo "<h3>Comments</h3>";
+            $this->table_tobody();
+        }
 	$this->ncomment_in_table++;
 
 	if ($editMode) {
@@ -215,25 +223,20 @@ class CommentView {
     function showResponse($prow, $crow, $useRequest, $editMode) {
 	global $Conf, $Me, $forceShow, $linkExtra;
 
-	$this->endTable();
 	if ($editMode && !$Me->canRespond($prow, $crow)
 	    && ($crow || !$Me->privChair))
 	    $editMode = false;
 	$this->nresponse++;
-	$wordlimit = $Conf->setting("resp_words", 0);
 
 	if ($editMode) {
-	    echo "<form action='", hoturl_post("comment", ($crow ? "c=$crow->commentId" : "p=$prow->paperId") . "$linkExtra&amp;response=1");
+	    echo "<form action='", hoturl_post("comment", "p=$prow->paperId" . ($crow ? "&amp;c=$crow->commentId" : "") . "$linkExtra&amp;response=1");
 	    if ($crow)
 		echo "#comment$crow->commentId";
 	    echo "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
 	}
 
-	echo "<div class='pboxc'><table class='pbox'>
-<tr>
-  <td class='pboxl'></td>
-  <td class='pboxr'>", tagg_cbox("cmt", false, "response"),
-	    "\t<tr><td></td><td class='cmthead'>";
+	$this->table_end();
+        $this->table_begin("response");
 
 	// Links
 	if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair)
@@ -251,21 +254,7 @@ class CommentView {
 	echo ">Response</h3>";
 	$this->commentIdentityTime($prow, $crow, true);
 
-	if ($editMode) {
-	    $limittext = ($wordlimit ? ": the conference system will enforce a limit of $wordlimit words" : "");
-	    echo "<div class='hint'>The authors&rsquo; response is intended to address
-reviewer concerns and correct misunderstandings.
-The response should be addressed to the program committee, who
-will consider it when making their decision.  Don&rsquo;t try to
-augment the paper&rsquo;s content or form&mdash;the conference deadline
-has passed.  Please keep the response short and to the point",
-		$limittext, ".</div>\n";
-	    if ($prow->conflictType < CONFLICT_AUTHOR)
-		echo "<div class='hint'>Although you aren&rsquo;t a contact for this paper, as an administrator you can edit the authors&rsquo; response.</div>\n";
-	}
-
-	echo "</td><td></td></tr>
-  <tr><td></td><td class='cmtcc'>";
+	$this->table_tobody();
 
 	if (isset($_SESSION["comment_msgs"]) && $crow
 	    && isset($_SESSION["comment_msgs"][$crow->commentId]))
@@ -281,19 +270,28 @@ has passed.  Please keep the response short and to the point",
 		echo "<i>The authors&rsquo; response is not yet ready for reviewers to view.</i>";
 	    else
 		echo htmlWrapText(htmlspecialchars($crow->comment));
-	    echo "</div></td><td></td></tr>\n", tagg_cbox("cmt", true),
-		"</td></tr>\n</table></div>\n";
+	    echo "</div>";
+            $this->table_end();
 	    return;
 	}
 
+        echo "<div class='hint'>The authors’ response should address
+reviewer concerns and correct misunderstandings.
+Make it short and to the point; the conference deadline has passed.";
+        $wordlimit = $Conf->setting("resp_words", 800);
+        if ($wordlimit > 0)
+            echo " Try to stay within ", plural($wordlimit, "word"), ".";
+        echo "</div>\n";
+        if ($prow->conflictType < CONFLICT_AUTHOR)
+            echo "<div class='hint'>Although you aren’t a contact for this paper, as an administrator you can edit the authors’ response.</div>\n";
+
 	// From here on, edit mode.
 	// form body
-	echo "<textarea name='comment' class='reviewtext' rows='10' cols='60' onchange='hiliter(this)'>";
-	if ($useRequest)
-	    echo htmlspecialchars(defval($_REQUEST, 'comment'));
-	else if ($crow)
-	    echo htmlspecialchars($crow->comment);
-	echo "</textarea>\n  <div class='g'></div>\n  ";
+        if ($useRequest)
+            $ctext = defval($_REQUEST, "comment", "");
+        else
+            $ctext = ($crow ? $crow->comment : "");
+	echo "<textarea id='responsetext' name='comment' class='reviewtext' rows='10' cols='60' onchange='hiliter(this)'>", htmlspecialchars($ctext), "</textarea>\n  ";
 
 	// actions
         $buttons = array();
@@ -304,13 +302,23 @@ has passed.  Please keep the response short and to the point",
             $buttons[] = "";
             $buttons[] = tagg_submit("delete", "Delete response");
         }
+        if ($wordlimit > 0) {
+            $buttons[] = "";
+            $wc = preg_match_all("/\\PZ+/u", $ctext, $cm);
+            $wct = ($wordlimit < $wc ? plural($wc - $wordlimit, "word") . " over" : plural($wordlimit - $wc, "word") . " left");
+            $buttons[] = "<div id='responsewc' class='words"
+                . ($wordlimit < $wc ? " wordsover" :
+                   ($wordlimit * 0.9 < $wc ? " wordsclose" : "")) . "'>"
+                . $wct . "</div>";
+            $Conf->footerScript("set_response_wc(\"responsetext\",\"responsewc\",$wordlimit)");
+        }
         $post = "";
         if (!$Conf->timeAuthorRespond())
             $post = tagg_checkbox("override") . "&nbsp;" . tagg_label("Override&nbsp;deadlines");
         echo tagg_actions($buttons, null, $post);
 
-	echo "</td><td></td></tr>\n", tagg_cbox("cmt", true),
-	    "</td></tr>\n</table>\n</div></div></div></form>\n\n";
+        $this->table_end();
+	echo "</form>\n\n";
     }
 
 

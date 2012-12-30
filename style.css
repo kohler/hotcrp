@@ -2194,6 +2194,16 @@ div.cmthint {
 	padding: 0.2em 1em 0.3em 8px;
 }
 
+.words {
+	color: #555555;
+}
+.wordsclose {
+	color: #cc0000;
+}
+.wordsover {
+	font-weight: bold;
+	color: #cc0000;
+}
 
 /* mail */
 .mail {

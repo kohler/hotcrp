@@ -76,6 +76,7 @@ $SettingGroups = array("acc" => array(
 			     "resp_open" => "check",
 			     "resp_done" => "date",
 			     "resp_grace" => "grace",
+                             "resp_words" => "int",
 			     "decisions" => "special",
 			     "final_open" => "check",
 			     "final_soft" => "date",
@@ -212,12 +213,17 @@ function parseValue($name, $type) {
 	else if (($v = strtotime($v)) !== false)
 	    return $v;
 	else
-	    $err = $SettingText[$name] . ": not a valid date.";
+	    $err = $SettingText[$name] . ": invalid date.";
     } else if ($type == "grace") {
 	if (($v = parseGrace($v)) !== null)
 	    return intval($v);
 	else
-	    $err = $SettingText[$name] . ": parse error.";
+	    $err = $SettingText[$name] . ": invalid grace period.";
+    } else if ($type == "int") {
+        if (preg_match("/\\A[-+]?[0-9]+\\z/", $v))
+            return intval($v);
+	else
+	    $err = $SettingText[$name] . ": should be a number.";
     } else if ($type == "string") {
 	// Avoid storing the default message in the database
 	if (substr($name, 0, 9) == "mailbody_") {
@@ -1578,6 +1584,7 @@ function doDecGroup() {
     echo "<tr class='fx'><td></td><td><table>";
     doDateRow('resp_done', 'Hard deadline', null, "lxcaption");
     doGraceRow('resp_grace', 'Grace period', "lxcaption");
+    doTextRow("resp_words", array("Word limit", "This is a soft limit: authors may submit longer responses. 0 means no limit."), setting("resp_words", 800), 5, "lxcaption", "none");
     echo "</table></td></tr></table>";
     $Conf->footerScript("fold('auresp',!\$\$('cbresp_open').checked)");
 

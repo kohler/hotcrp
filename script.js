@@ -1253,6 +1253,21 @@ function docmtvis(hilite) {
 	hiliter(hilite);
 }
 
+function set_response_wc(taid, wcid, wordlimit) {
+    function wc(event) {
+	var wc = (this.value.match(/\S+/g) || []).length, e = $$(wcid), wct;
+	e.className = "words" + (wordlimit < wc ? " wordsover" :
+				 (wordlimit * 0.9 < wc ? " wordsclose" : ""));
+	if (wordlimit < wc)
+	    e.innerHTML = (wc - wordlimit) + " word" + (wc - wordlimit == 1 ? "" : "s") + " over";
+	else
+	    e.innerHTML = (wordlimit - wc) + " word" + (wordlimit - wc == 1 ? "" : "s") + " left";
+    }
+    var e = $$(taid);
+    if (e && e.addEventListener)
+	e.addEventListener("input", wc, false);
+}
+
 
 // mail
 function setmailpsel(sel) {
