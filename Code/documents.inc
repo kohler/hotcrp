@@ -234,7 +234,7 @@ class DocumentHelper {
         $doc = (object) array();
 
 	if (!$uploadId
-	    || !fileUploaded($_FILES[$uploadId], $Conf)
+	    || !fileUploaded($_FILES[$uploadId])
 	    || !isset($_FILES[$uploadId]["tmp_name"])) {
             $doc->error = "Upload error. Please try again.";
             return $doc;

@@ -444,8 +444,9 @@ function check_post() {
     return isset($_REQUEST["post"]) && $_REQUEST["post"] == post_value();
 }
 
-function fileUploaded(&$var, $conf) {
-    if (!isset($var) || ($var['error'] != UPLOAD_ERR_OK && !$conf))
+function fileUploaded(&$var) {
+    global $Conf;
+    if (!isset($var) || ($var['error'] != UPLOAD_ERR_OK && !$Conf))
 	return false;
     switch ($var['error']) {
     case UPLOAD_ERR_OK:
@@ -454,13 +455,13 @@ function fileUploaded(&$var, $conf) {
 	return false;
     case UPLOAD_ERR_INI_SIZE:
     case UPLOAD_ERR_FORM_SIZE:
-	$conf->errorMsg("You tried to upload a file that’s too big for our system to accept.  The maximum size is " . ini_get("upload_max_filesize") . "B.");
+	$Conf->errorMsg("You tried to upload a file that’s too big for our system to accept.  The maximum size is " . ini_get("upload_max_filesize") . "B.");
 	return false;
     case UPLOAD_ERR_PARTIAL:
-	$conf->errorMsg("You appear to have interrupted the upload process; I am not storing that file.");
+	$Conf->errorMsg("You appear to have interrupted the upload process; I am not storing that file.");
 	return false;
     default:
-	$conf->errorMsg("Internal upload error " . $var['error'] . "!");
+	$Conf->errorMsg("Internal upload error " . $var['error'] . "!");
 	return false;
     }
 }

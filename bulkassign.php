@@ -199,7 +199,7 @@ function parseBulkFile($text, $filename, $type) {
 
 
 // upload review form action
-if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"], $Conf)
+if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"])
     && isset($_REQUEST["t"]) && ($_REQUEST["t"] == REVIEW_PRIMARY
 				 || $_REQUEST["t"] == REVIEW_SECONDARY
 				 || $_REQUEST["t"] == REVIEW_PC

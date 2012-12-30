@@ -139,7 +139,7 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     if ($successes > 0)
 	savePreferences($reviewer);
 }
-if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"], $Conf)
+if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"])
     && check_post())
     parseUploadedPreferences($_FILES["uploadedFile"]["tmp_name"], $_FILES["uploadedFile"]["name"], $reviewer);
 else if (isset($_REQUEST["upload"]))

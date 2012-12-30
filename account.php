@@ -327,7 +327,7 @@ function parseBulkFile($text, $filename) {
 if (!check_post())
     /* do nothing */;
 else if (isset($_REQUEST["register"]) && $newProfile
-	 && fileUploaded($_FILES["bulk"], $Conf)) {
+         && fileUploaded($_FILES["bulk"])) {
     if (($text = file_get_contents($_FILES["bulk"]["tmp_name"])) === false)
 	$Conf->errorMsg("Internal error: cannot read file.");
     else

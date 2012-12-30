@@ -24,7 +24,7 @@ if (isset($_REQUEST["downloadForm"])) {
 
 // upload review form action
 if (isset($_REQUEST["uploadForm"])
-    && fileUploaded($_FILES["uploadedFile"], $Conf)
+    && fileUploaded($_FILES["uploadedFile"])
     && check_post()) {
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
     while (($req = $rf->parseTextForm($tf))) {
@@ -80,7 +80,7 @@ function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
 function setTagIndexes() {
     global $Conf, $Me, $Error;
     require_once("Code/tags.inc");
-    if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["file"], $Conf)) {
+    if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["file"])) {
 	if (($text = file_get_contents($_FILES["file"]["tmp_name"])) === false) {
 	    $Conf->errorMsg("Internal error: cannot read file.");
 	    return;

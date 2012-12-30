@@ -226,7 +226,7 @@ function requestSameAsPaper($prow) {
     foreach (array("title", "abstract", "authorTable", "collaborators") as $x)
 	if ($_REQUEST[$x] != $prow->$x)
 	    return false;
-    if (fileUploaded($_FILES["paperUpload"], $Conf))
+    if (fileUploaded($_FILES["paperUpload"]))
 	return false;
     $result = $Conf->q("select TopicArea.topicId, PaperTopic.paperId from TopicArea left join PaperTopic on PaperTopic.paperId=$prow->paperId and PaperTopic.topicId=TopicArea.topicId");
     while (($row = edb_row($result))) {
@@ -250,7 +250,7 @@ function requestSameAsPaper($prow) {
 	    } else if ($t == PaperOption::T_PDF || $t == PaperOption::T_FINALPDF
 		       || $t == PaperOption::T_SLIDES || $t == PaperOption::T_FINALSLIDES
 		       || $t == PaperOption::T_VIDEO || $t == PaperOption::T_FINALVIDEO) {
-		if (fileUploaded($_FILES["opt$row[0]"], $Conf)
+		if (fileUploaded($_FILES["opt$row[0]"])
 		    || defval($_REQUEST, "remove_opt$row[0]"))
 		    return false;
 	    }
@@ -291,7 +291,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // XXX lock tables
 
     // clear 'isSubmit' if no paper has been uploaded
-    if (!fileUploaded($_FILES["paperUpload"], $Conf)
+    if (!fileUploaded($_FILES["paperUpload"])
 	&& ($newPaper || $prow->size == 0)
 	&& !defval($Opt, "noPapers"))
 	$isSubmit = false;
@@ -342,7 +342,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	else if ($opt->isDocument) {
 	    unset($_REQUEST[$oname]);
 	    if (!$opt->isFinal || $isSubmitFinal) {
-		if (fileUploaded($_FILES[$oname], $Conf))
+		if (fileUploaded($_FILES[$oname]))
 		    uploadOption($opt);
 		else if (!defval($_REQUEST, "remove_opt" . $opt->optionId))
 		    $no_delete_options[] = $opt->optionId;
@@ -376,13 +376,13 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	}
 	if ($emsg != "")
 	    $emsg .= "Fix the highlighted " . pluralx($fields, "field") . " and try again.";
-	if (fileUploaded($_FILES["paperUpload"], $Conf) && $newPaper)
+	if (fileUploaded($_FILES["paperUpload"]) && $newPaper)
 	    $emsg .= "  <strong>Please note that the paper you tried to upload was ignored.</strong>";
 	if ($emsg != "")
 	    $Conf->errorMsg($emsg);
 	// It is kinder to the user to attempt to upload files even on error.
 	if (!$newPaper) {
-	    if (fileUploaded($_FILES["paperUpload"], $Conf))
+	    if (fileUploaded($_FILES["paperUpload"]))
 		uploadPaper($isSubmitFinal);
 	    foreach (paperOptions() as $o)
 		if ($o->isDocument && isset($_REQUEST["opt$o->optionId"]))
@@ -510,7 +510,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
 
     // upload paper if appropriate
-    $paperUploaded = fileUploaded($_FILES["paperUpload"], $Conf);
+    $paperUploaded = fileUploaded($_FILES["paperUpload"]);
     if ($paperUploaded) {
 	if ($newPaper)
 	    loadRows();

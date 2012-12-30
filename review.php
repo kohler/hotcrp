@@ -78,7 +78,7 @@ loadRows();
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  The file was ignored.");
 else if (isset($_REQUEST["post"]) && isset($_REQUEST["default"])) {
-    if (fileUploaded($_FILES["uploadedFile"], $Conf))
+    if (fileUploaded($_FILES["uploadedFile"]))
 	$_REQUEST["uploadForm"] = 1;
     else
 	$_REQUEST["update"] = 1;
@@ -92,7 +92,7 @@ else if (isset($_REQUEST["savedraft"])) {
 
 // upload review form action
 if (isset($_REQUEST["uploadForm"])
-    && fileUploaded($_FILES['uploadedFile'], $Conf)
+    && fileUploaded($_FILES['uploadedFile'])
     && check_post()) {
     // parse form, store reviews
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
