@@ -94,30 +94,6 @@ $authorConflictTypes = array(0 => "No conflict", 3 => "Advisor/student",
 			     2 => "Recent collaborator", 4 => "Institutional",
 			     5 => "Personal", 6 => "Other");
 
-global $mimetypeMap;
-$mimetypeMap = array("pdf" => "application/pdf",
-		     "application/pdf" => "pdf",
-		     "ps" => "application/postscript",
-		     "application/postscript" => "ps",
-		     "ppt" => "application/vnd.ms-powerpoint",
-		     "application/vnd.ms-powerpoint" => "ppt",
-		     "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-		     "application/vnd.openxmlformats-officedocument.presentationml.presentation" => "pptx",
-		     "video/mp4" => "mp4",
-		     "mp4" => "video/mp4",
-		     "video/x-msvideo" => "avi",
-		     "avi" => "video/x-msvideo");
-
-function mimetype_extension(&$mimetype) {
-    global $mimetypeMap;
-    if (!isset($mimetype) || $mimetype == null || $mimetype == "")
-        return "";
-    else if (isset($mimetypeMap[$mimetype]))
-        return "." . $mimetypeMap[$mimetype];
-    else
-        return "";
-}
-
 global $OK;
 $OK = 1;
 
@@ -169,6 +145,16 @@ setPathVariables();
 require_once("$ConfSitePATH/Code/helpers.inc");
 require_once("$ConfSitePATH/Code/conference.inc");
 require_once("$ConfSitePATH/Code/contact.inc");
+
+function __autoload($class_name) {
+    global $ConfSitePATH;
+    if ($class_name == "ReviewForm")
+	require_once("$ConfSitePATH/Code/review.inc");
+    else if ($class_name == "Mimetype")
+        require_once("$ConfSitePATH/Code/mimetypes.inc");
+    else if ($class_name == "DocumentHelper" || $class_name == "HotCRPDocument")
+        require_once("$ConfSitePATH/Code/documents.inc");
+}
 
 // If you have the PEAR::Mail libraries installed globally,
 // there's no need to change the include path.
@@ -244,13 +230,6 @@ if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
 // Create the conference
 global $Conf;
 $Conf = new Conference();
-
-// Now load review code (which requires that $Conf exist)
-function __autoload($class_name) {
-    global $ConfSitePATH;
-    if ($class_name == "ReviewForm")
-	require_once("$ConfSitePATH/Code/review.inc");
-}
 
 // Set server timezone
 if (isset($Opt["timezone"]) && function_exists("date_default_timezone_set"))

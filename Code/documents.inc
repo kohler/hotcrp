@@ -19,33 +19,27 @@ class HotCRPDocument {
     }
 
     function mimetypes($doc = null, $docinfo = null) {
-        global $Opt, $mimetypeMap;
+        global $Opt;
         require_once("paperoption.inc");
         if ($this->type > 0 && !$this->option)
             return null;
         $optionType = ($this->option ? $this->option->type : null);
-        $names = $mimetypes = array();
-        if (PaperOption::type_takes_pdf($optionType)) {
-            $names[] = "PDF";
-            $mimetypes[] = $mimetypeMap["pdf"];
-        }
-        if ($optionType === null && !defval($Opt, "disablePS")) {
-            $names[] = "PostScript file";
-            $mimetypes[] = $mimetypeMap["ps"];
-        }
+        $mimetypes = array();
+        if (PaperOption::type_takes_pdf($optionType))
+            $mimetypes[] = Mimetype::lookup("pdf");
+        if ($optionType === null && !defval($Opt, "disablePS"))
+            $mimetypes[] = Mimetype::lookup("ps");
         if ($optionType == PaperOption::T_SLIDES
             || $optionType == PaperOption::T_FINALSLIDES) {
-            $names[] = "PowerPoint file";
-            $mimetypes[] = $mimetypeMap["ppt"];
-            $mimetypes[] = $mimetypeMap["pptx"];
+            $mimetypes[] = Mimetype::lookup("ppt");
+            $mimetypes[] = Mimetype::lookup("pptx");
         }
         if ($optionType == PaperOption::T_VIDEO
             || $optionType == PaperOption::T_FINALVIDEO) {
-            $names[] = "video file (MP4 or AVI)";
-            $mimetypes[] = $mimetypeMap["mp4"];
-            $mimetypes[] = $mimetypeMap["avi"];
+            $mimetypes[] = Mimetype::lookup("mp4");
+            $mimetypes[] = Mimetype::lookup("avi");
         }
-        return array($mimetypes, $names);
+        return $mimetypes;
     }
 
     function database_storage($doc, $docinfo) {
@@ -171,7 +165,7 @@ class DocumentHelper {
             if ($m[3] == "%")
                 $xfpath .= "%";
             else if ($m[3] == "x")
-                $xfpath .= mimetype_extension($doc->mimetype);
+                $xfpath .= Mimetype::extension($doc->mimetype);
             else {
                 if (!$sha1) {
                     $sha1 = bin2hex($doc->sha1);
@@ -228,9 +222,7 @@ class DocumentHelper {
     }
 
     static function store($docclass, $uploadId, $docinfo) {
-        require_once("mimetypes.inc");
-	global $Conf, $Opt, $OK,
-            $mimetypeMap, $mimetypeSynonyms, $mimetypeNames;
+	global $Conf, $Opt, $OK;
         $doc = (object) array();
 
 	if (!$uploadId
@@ -260,34 +252,22 @@ class DocumentHelper {
 	// Check if paper one of the allowed mimetypes.
 	// We prefer to look at data since MacOS browsers get this wrong.
 	if (strncmp("%PDF-", $doc->content, 5) == 0)
-	    $doc->mimetype = $mimetypeMap["pdf"];
+	    $doc->mimetype = Mimetype::type("pdf");
 	else if (strncmp("%!PS-", $doc->content, 5) == 0)
-	    $doc->mimetype = $mimetypeMap["ps"];
+	    $doc->mimetype = Mimetype::type("ps");
 	else if (substr($doc->content, 512, 4) == "\x00\x6E\x1E\xF0")
-	    $doc->mimetype = $mimetypeMap["ppt"];
+	    $doc->mimetype = Mimetype::type("ppt");
 	else
 	    $doc->mimetype = defval($_FILES[$uploadId], "type", "application/octet-stream");
-	if (isset($mimetypeSynonyms[$doc->mimetype]))
-	    $doc->mimetype = $mimetypeSynonyms[$doc->mimetype];
+        $doc->mimetype = Mimetype::type($doc->mimetype);
 
-	list($mimetypes, $accepts) = $docclass->mimetypes($doc, $docinfo);
-	if (array_search($doc->mimetype, $mimetypes) === false) {
-	    $x = array();
-	    foreach ($mimetypes as $mt)
-		if (isset($mimetypeNames[$mt]))
-		    $x[] = $mimetypeNames[$mt];
-		else {
-		    $x = null;
-		    break;
-		}
-	    $doc->error = "Your uploaded file does not appear to ";
-	    if ($x)
-		$doc->error .= "be a " . commajoin($x, "or") . ". ";
-	    else if (count($mimetypes))
-		$doc->error .= "have a valid type (" . commajoin($mimetypes, "or") . "). ";
-	    else
-		$doc->error .= "be valid (internal error: there are no valid formats). ";
-	    $doc->error .= "(Your file has MIME type “" . htmlentities($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
+	$mimetypes = $docclass->mimetypes($doc, $docinfo);
+        for ($i = 0; $i < count($mimetypes); ++$i)
+            if ($mimetypes[$i]->mimetype == $doc->mimetype)
+                break;
+	if ($i >= count($mimetypes)) {
+	    $doc->error = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";
+	    $doc->error .= " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
 	    return $doc;
 	}
 

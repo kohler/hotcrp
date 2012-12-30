@@ -675,7 +675,6 @@ class Conference {
     //
 
     function storeDocument($uploadId, $paperId, $documentType) {
-        require_once("documents.inc");
         return DocumentHelper::store(new HotCRPDocument($documentType),
                                      $uploadId,
                                      (object) array("paperId" => $paperId));
@@ -752,7 +751,7 @@ class Conference {
 	$title .= ($dtn ? $dtn : "xxx");
 	if (ctype_digit($title[strlen($title) - 1]))
 	    $title .= "-";
-	return $title . $paperId . mimetype_extension($mimetype);
+	return $title . $paperId . Mimetype::extension($mimetype);
     }
 
     function paperStorageResult($prow, $documentType, $skip_content = false) {
@@ -783,7 +782,6 @@ class Conference {
     }
 
     function paperStorageRow($result) {
-        require_once("documents.inc");
 	if (!($doc = edb_orow($result)))
 	    return $doc;
         // type doesn't matter
@@ -895,7 +893,6 @@ class Conference {
 
     function __downloadPapers($paperIds, &$tmpdir, $documentType) {
 	global $Opt, $zlib_output_compression;
-        require_once("documents.inc");
 
 	// special cases
 	if (count($paperIds) == 0)

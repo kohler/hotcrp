@@ -335,8 +335,7 @@ class PaperTable {
     }
 
     function echoDocumentUploadRow($prow, $opt, $storageId, $flags) {
-	global $Conf, $Me, $Opt, $mimetypeMap;
-        require_once("documents.inc");
+	global $Conf, $Me, $Opt;
 
         $docclass = new HotCRPDocument($opt->optionId, $opt);
 	$documentType = $opt->optionId;
@@ -352,9 +351,9 @@ class PaperTable {
 	    if ($documentType == DOCUMENT_SUBMISSION)
 		echo $this->papt("paper", "Status");
 	} else {
-	    list($accepts, $filetypes) = $docclass->mimetypes();
-	    if (count($filetypes))
-		echo $this->papt("paper", htmlspecialchars($opt->optionName) . " <span class='papfnh'>(" . commajoin($filetypes, "or") . ", max size " . ini_get("upload_max_filesize") . "B)</span>");
+            $accepts = $docclass->mimetypes();
+	    if (count($accepts))
+		echo $this->papt("paper", htmlspecialchars($opt->optionName) . " <span class='papfnh'>(" . htmlspecialchars(Mimetype::description($accepts)) . ", max size " . ini_get("upload_max_filesize") . "B)</span>");
 	}
 	if (isset($opt->description) && $opt->description)
 	    echo "<div class='paphint'>", $opt->description, "</div>";
@@ -382,7 +381,7 @@ class PaperTable {
 	    $inputid = ($optionType ? "opt" . $documentType : "paperUpload");
 	    $uploader .= "<input id='$inputid' type='file' name='$inputid'";
 	    if (count($accepts) == 1)
-		$uploader .= " accept='" . $accepts[0] . "'";
+		$uploader .= " accept='" . $accepts[0]->mimetype . "'";
 	    $uploader .= " size='30' onchange='hiliter(this)";
 	    if ($documentType == DOCUMENT_SUBMISSION)
 		$uploader .= ";fold(\"isready\",0)";
