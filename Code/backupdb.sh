@@ -23,6 +23,8 @@ if [ ! -r "${PROGDIR}options.inc" ]; then
 fi
 
 getdbopt () {
+    password='fixshell($Opt{"dbPassword"})'
+    if test -n "$1"; then password='"<REDACTED>"'; fi
     perl -e 'undef $/; $t = <STDIN>;
 $t =~ s|/\*.*?\*/||gs;
 $t =~ s|//.*$||gm;
@@ -74,11 +76,12 @@ if ($Opt{"multiconference"}) {
 } else {
    $Opt{"dbUser"} = $Opt{"dbName"} if (!exists($Opt{"dbUser"}));
    $Opt{"dbPassword"} = $Opt{"dbName"} if (!exists($Opt{"dbPassword"}));
-   print "-u'"'"'", fixshell($Opt{"dbUser"}), "'"'"' -p'"'"'", fixshell($Opt{"dbPassword"}), "'"'"' '"'"'", fixshell($Opt{"dbName"}), "'"'"'";
+   print "-u'"'"'", fixshell($Opt{"dbUser"}), "'"'"' -p'"'"'", '"$password"', "'"'"' '"'"'", fixshell($Opt{"dbName"}), "'"'"'";
 }' < ${PROGDIR}options.inc
 }
 
 dbopt=`getdbopt`
+dbopt_print=`getdbopt n`
 test -z "$dbopt" && { echo "backupdb.sh: Cannot extract database run options from options.inc!" 1>&2; exit 1; }
 
 ### Test mysqldump binary
@@ -93,7 +96,7 @@ if ! $MYSQLDUMP --version >/dev/null 2>&1; then
     exit 1
 fi
 
-echo + $MYSQLDUMP $FLAGS $dbopt 1>&2
+echo + $MYSQLDUMP $FLAGS $dbopt_print 1>&2
 if [ "$structure" = yes ]; then
     eval "$MYSQLDUMP $FLAGS $dbopt | sed '/^LOCK\|^INSERT\|^UNLOCK\|^\/\*/d
 /^)/s/AUTO_INCREMENT=[0-9]* //
