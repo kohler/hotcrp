@@ -3,6 +3,9 @@
 // HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+global $ConfFilestore;
+$ConfFilestore = null;
+
 class HotCRPDocument {
 
     var $type;
@@ -59,8 +62,10 @@ class HotCRPDocument {
 
     function filestore_pattern($doc, $docinfo) {
         global $Opt, $ConfSitePATH, $ConfMulticonf, $ConfFilestore;
-        if (!$ConfFilestore) {
-            $fdir = $Opt["filestore"];
+        if ($ConfFilestore === null) {
+            $fdir = defval($Opt, "filestore");
+            if (!$fdir)
+                return ($ConfFilestore = false);
             if ($fdir === true)
                 $fdir = "$ConfSitePATH/filestore";
             if (isset($Opt["multiconference"]) && $Opt["multiconference"])
