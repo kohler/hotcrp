@@ -221,7 +221,7 @@ class DocumentHelper {
         return true;
     }
 
-    static function store($docclass, $uploadId, $docinfo) {
+    static function upload($docclass, $uploadId, $docinfo) {
 	global $Conf, $Opt, $OK;
         $doc = (object) array();
 

@@ -314,8 +314,9 @@ echo
 
 if [ "$populatedb" = y ]; then
     echo "Populating database."
+    ECHOFLAGS_SCHEMA="-u $DBNAME -p'<REDACTED>' $FLAGS_NOP"
     FLAGS_SCHEMA="-u $DBNAME -p'`echo_dbpass`' $FLAGS_NOP"
-    echo $MYSQL "$FLAGS_SCHEMA" $DBNAME "<" ${PROGDIR}schema.sql
+    echo "+ $MYSQL $ECHOFLAGS_SCHEMA $DBNAME < ${PROGDIR}schema.sql"
     eval $MYSQL "$FLAGS_SCHEMA" $DBNAME < ${PROGDIR}schema.sql || exit 1
 fi
 

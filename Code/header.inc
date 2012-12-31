@@ -84,6 +84,9 @@ $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 			  "fixability", "interestToCommunity", "longevity",
 			  "likelyPresentation", "suitableForShort");
 
+global $OK;
+$OK = 1;
+
 global $allowedSessionVars;
 $allowedSessionVars = array("foldassigna", "foldpaperp", "foldpaperb",
 			    "foldpapert", "foldpscollab", "foldhomeactivity",
@@ -93,9 +96,6 @@ global $authorConflictTypes;
 $authorConflictTypes = array(0 => "No conflict", 3 => "Advisor/student",
 			     2 => "Recent collaborator", 4 => "Institutional",
 			     5 => "Personal", 6 => "Other");
-
-global $OK;
-$OK = 1;
 
 
 // set up conference path variables

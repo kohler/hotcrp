@@ -675,9 +675,9 @@ class Conference {
     //
 
     function storeDocument($uploadId, $paperId, $documentType) {
-        return DocumentHelper::store(new HotCRPDocument($documentType),
-                                     $uploadId,
-                                     (object) array("paperId" => $paperId));
+        return DocumentHelper::upload(new HotCRPDocument($documentType),
+                                      $uploadId,
+                                      (object) array("paperId" => $paperId));
     }
 
     function storePaper($uploadId, $prow, $final) {
