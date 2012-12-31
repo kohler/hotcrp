@@ -133,7 +133,7 @@ class DocumentHelper {
             $a = array();
             foreach ($cols as $k => $v)
                 if (strlen($v) > $pos)
-                    $a[] = "`" . $k . "`=concat(`" . $k . "`,'" . sqlq(substr($v, $pos, $N)) . "'";
+                    $a[] = "`" . $k . "`=concat(`" . $k . "`,'" . sqlq(substr($v, $pos, $N)) . "')";
             if (!count($a))
                 break;
             if (!$Conf->q("update $table set " . join(",", $a) . " where $idcol=" . $doc->$idcol)) {
