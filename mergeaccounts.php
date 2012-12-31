@@ -10,14 +10,14 @@ $MergeError = "";
 function crpmergeone($table, $field, $oldid, $newid) {
     global $Conf, $MergeError;
     if (!$Conf->q("update $table set $field=$newid where $field=$oldid"))
-	$MergeError .= $Conf->dbErrorText(true, "", 0);
+	$MergeError .= $Conf->db_error_html(true, "", 0);
 }
 
 function crpmergeoneignore($table, $field, $oldid, $newid) {
     global $Conf, $MergeError;
     if (!$Conf->q("update ignore $table set $field=$newid where $field=$oldid")
 	&& !$Conf->q("delete from $table where $field=$oldid"))
-	$MergeError .= $Conf->dbErrorText(true, "", 0);
+	$MergeError .= $Conf->db_error_html(true, "", 0);
 }
 
 if (isset($_REQUEST["merge"]) && check_post()) {
@@ -96,7 +96,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
 		$rf = reviewForm();
 		$fields = $rf->reviewArchiveFields();
 		if (!$Conf->q("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$row[0]"))
-		    $MergeError .= $Conf->dbErrorText(true, "", 0);
+		    $MergeError .= $Conf->db_error_html(true, "", 0);
 	    }
 	    crpmergeoneignore("PaperReview", "contactId", $oldid, $newid);
 	    crpmergeone("PaperReview", "requestedBy", $oldid, $newid);
@@ -112,9 +112,9 @@ if (isset($_REQUEST["merge"]) && check_post()) {
 	    // Remove the old contact record
 	    if ($MergeError == "") {
 		if (!$Conf->q("delete from ContactInfo where contactId=$oldid"))
-		    $MergeError .= $Conf->dbErrorText($result, "", 0);
+		    $MergeError .= $Conf->db_error_html($result, "", 0);
 		if (!$Conf->q("delete from ContactAddress where contactId=$oldid"))
-		    $MergeError .= $Conf->dbErrorText($result, "", 0);
+		    $MergeError .= $Conf->db_error_html($result, "", 0);
 	    }
 
 	    $Conf->qe("unlock tables", $while);
@@ -129,7 +129,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
 		$Me->go(hoturl("index"));
 	    } else {
 		$Conf->log("Merged account $MiniMe->email with errors", $Me);
-		$MergeError .= $Conf->dbErrorText(null);
+		$MergeError .= $Conf->db_error_html(null);
 	    }
 	}
     }

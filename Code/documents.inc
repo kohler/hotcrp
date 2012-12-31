@@ -119,7 +119,7 @@ class DocumentHelper {
         else
             $q = "insert into $table set " . join(",", $a);
         if (!($result = $Conf->q($q))) {
-            $doc->error = $Conf->dbErrorText(true, $while);
+            $doc->error_html = $Conf->db_error_html(true, $while);
             return;
         }
 
@@ -128,7 +128,7 @@ class DocumentHelper {
         else {
             $doc->$idcol = $Conf->lastInsertId(false);
             if (!$doc->$idcol) {
-                $doc->error = $Conf->dbErrorText(true, $while);
+                $doc->error_html = $Conf->db_error_html(true, $while);
                 $OK = false;
                 return;
             }
@@ -142,7 +142,7 @@ class DocumentHelper {
             if (!count($a))
                 break;
             if (!$Conf->q("update $table set " . join(",", $a) . " where $idcol=" . $doc->$idcol)) {
-                $doc->error = $Conf->dbErrorText(true, $while);
+                $doc->error_html = $Conf->db_error_html(true, $while);
                 return;
             }
         }
@@ -152,7 +152,7 @@ class DocumentHelper {
             && (!($result = $Conf->qe("select length($check_contents) from $table where $idcol=" . $doc->$idcol, $while))
                 || !($row = edb_row($result))
                 || $row[0] != strlen($doc->content))) {
-            $doc->error = "Failed to store your paper. Usually, this is because the file you tried to upload was too big for our system. Please try again.";
+            $doc->error_html = "Failed to store your paper. Usually, this is because the file you tried to upload was too big for our system. Please try again.";
             return;
         }
     }
@@ -233,7 +233,7 @@ class DocumentHelper {
 	if (!$uploadId
 	    || !fileUploaded($_FILES[$uploadId])
 	    || !isset($_FILES[$uploadId]["tmp_name"])) {
-            $doc->error = "Upload error. Please try again.";
+            $doc->error_html = "Upload error. Please try again.";
             return $doc;
         }
 	$filename = $_FILES[$uploadId]["tmp_name"];
@@ -241,7 +241,7 @@ class DocumentHelper {
         // prepare document
         $doc->content = file_get_contents($filename);
 	if ($doc->content === false || strlen($doc->content) == 0) {
-            $doc->error = "The uploaded file was empty. Please try again.";
+            $doc->error_html = "The uploaded file was empty. Please try again.";
             return $doc;
         }
         $doc->size = strlen($doc->content);
@@ -271,8 +271,8 @@ class DocumentHelper {
             if ($mimetypes[$i]->mimetype == $doc->mimetype)
                 break;
 	if ($i >= count($mimetypes)) {
-	    $doc->error = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";
-	    $doc->error .= " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
+	    $doc->error_html = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";
+	    $doc->error_html .= " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
 	    return $doc;
 	}
 
@@ -282,7 +282,7 @@ class DocumentHelper {
         if (($fsinfo = $docclass->filestore_pattern($doc, $docinfo))) {
             $fsinfo = self::_expand_filestore($fsinfo, $doc);
             if (!self::_store_filestore($fsinfo, $doc) && !$dbinfo)
-                $doc->error = "Internal error: could not store document.";
+                $doc->error_html = "Internal error: could not store document.";
         }
 
         return $doc;

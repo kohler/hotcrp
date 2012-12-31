@@ -268,10 +268,11 @@ function uploadOption($o) {
     global $newPaper, $prow, $Conf, $Me, $Error;
     $doc = $Conf->storeDocument("opt$o->optionId", $newPaper ? -1 : $prow->paperId,
 				$o->optionId);
-    if ($doc)
-	$_REQUEST["opt$o->optionId"] = $doc->paperStorageId;
-    else
+    if (isset($doc->error_html)) {
+        $Conf->errorMsg($doc->error_html);
 	$Error["opt$o->optionId"] = 1;
+    } else
+	$_REQUEST["opt$o->optionId"] = $doc->paperStorageId;
 }
 
 // send watch messages

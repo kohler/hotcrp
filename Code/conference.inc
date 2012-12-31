@@ -265,7 +265,7 @@ class Conference {
 	return $result;
     }
 
-    function dbErrorText($getdb = true, $while = "", $suggestRetry = true) {
+    function db_error_html($getdb = true, $while = "", $suggestRetry = true) {
 	global $Opt;
 	$text = "<p>Database error";
 	if ($while)
@@ -281,7 +281,7 @@ class Conference {
 	global $OK;
 	$result = mysql_query($query, $this->dblink);
 	if ($result === false) {
-	    $this->errorMsg($this->dbErrorText(true, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
+	    $this->errorMsg($this->db_error_html(true, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
 	    $OK = false;
 	}
 	return $result;
@@ -291,7 +291,7 @@ class Conference {
 	global $OK;
 	$result = mysql_insert_id($this->dblink);
 	if (!$result && $while !== false) {
-	    $this->errorMsg($this->dbErrorText($result === false, $while, $suggestRetry));
+	    $this->errorMsg($this->db_error_html($result === false, $while, $suggestRetry));
 	    $OK = false;
 	}
 	return $result;
@@ -685,8 +685,10 @@ class Conference {
 	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
 
 	$doc = $this->storeDocument($uploadId, $paperId, $final ? DOCUMENT_FINAL : DOCUMENT_SUBMISSION);
-	if (!$doc)
-	    return false;
+        if (isset($doc->error_html)) {
+            $this->errorMsg($doc->error_html);
+            return false;
+        }
 
 	$while = "while storing paper in database";
 
