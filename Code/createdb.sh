@@ -63,9 +63,9 @@ done
 
 if $needpassword; then
     echo_n "Enter MySQL password: "
-    stty -echo
+    stty -echo; trap "stty echo; exit 1" INT
     read PASSWORD
-    stty echo
+    stty echo; trap - INT
     echo
     FLAGS="$FLAGS -p'$PASSWORD'"; ECHOFLAGS="$ECHOFLAGS -p'<REDACTED>'"
 fi
@@ -150,12 +150,31 @@ $DBPASS
 __EOF__
 }
 
+generate_random_ints () {
+    random="`openssl rand 16 2>/dev/null`"
+    test -z "$random" && random="`head -c 16 /dev/random 2>/dev/null`"
+    test -z "$random" && random="`head -c 16 /dev/urandom 2>/dev/null`"
+    echo "$random" | awk '
+BEGIN { for (i = 0; i < 256; ++i) { ord[sprintf("%c", i)] = i; } }
+{ for (i = 0; i < length($0); ++i) { printf("%d\n", ord[substr($0, i, 1)]); } }'
+    awk 'BEGIN { for (i = 0; i < 256; ++i) { printf("%d\n", rand() * 256); } }' < /dev/null
+}
+
+generate_password () {
+    awk 'BEGIN {
+    npwchars = split("a e i o u y a e i o u y a e i o u y a e i o u y a e i o u y a e i o u y b c d g h j k l m n p r s t u v w tr cr br fr th dr ch ph wr st sp sw pr sl cl 2 3 4 5 6 7 8 9 - @ _ + =", pwchars, " ");
+    pw = "";
+}
+{ pw = pw pwchars[($0 % npwchars) + 1]; if (length(pw) >= 16) { printf("%s\n", pw); exit; } }'
+}
+
+default_dbpass=`generate_random_ints | generate_password`
 while true; do
-    echo_n "Enter password for mysql user $DBNAME [default $DBNAME]: "
-    stty -echo
+    echo_n "Enter password for mysql user $DBNAME [default $default_dbpass]: "
+    stty -echo; trap "stty echo; exit 1" INT
     read -r DBPASS
-    stty echo
-    if [ -z "`echo_dbpass`" ]; then DBPASS=$DBNAME; fi
+    stty echo; trap - INT
+    if [ -z "`echo_dbpass`" ]; then DBPASS=$default_dbpass; fi
     x=`echo_dbpass | tr -d -c '\000'"'"`
     if test -z "$x" >/dev/null; then break; fi
     echo 1>&2

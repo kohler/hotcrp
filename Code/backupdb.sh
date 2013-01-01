@@ -6,12 +6,14 @@
 export PROG=$0
 export FLAGS=""
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C
-structure=no
+structure=false
+pc=false
 while [ $# -gt 0 ]; do
     case "$1" in
-    --structure) structure=yes;;
+    --structure) structure=true;;
+    --pc) pc=true;;
     -*)	FLAGS="$FLAGS $1";;
-    *)	echo "Usage: $PROG [--structure] [MYSQL-OPTIONS]" 1>&2; exit 1;;
+    *)	echo "Usage: $PROG [--structure] [--pc] [MYSQL-OPTIONS]" 1>&2; exit 1;;
     esac
     shift
 done
@@ -86,19 +88,28 @@ dbopt_print=`getdbopt n`
 test -z "$dbopt" && { echo "backupdb.sh: Cannot extract database run options from options.inc!" 1>&2; exit 1; }
 
 ### Test mysqldump binary
+if test -z "$MYSQL"; then
+    MYSQL=mysql
+    ! $MYSQL --version >/dev/null 2>&1 && mysql5 --version >/dev/null 2>&1 && MYSQL=mysql5
+fi
 if test -z "$MYSQLDUMP"; then
     MYSQLDUMP=mysqldump
     ! $MYSQLDUMP --version >/dev/null 2>&1 && mysqldump5 --version >/dev/null 2>&1 && MYSQLDUMP=mysqldump5
 fi
 
+if ! $MYSQL --version >/dev/null 2>&1; then
+    echo "The $MYSQL binary doesn't appear to work." 1>&2
+    echo "Set the MYSQL environment variable and try again." 1>&2
+    exit 1
+fi
 if ! $MYSQLDUMP --version >/dev/null 2>&1; then
-    echo "The $MYSQLDUMP binary doesn't appear to work."
-    echo "Set the MYSQLDUMP environment variable and try again."
+    echo "The $MYSQLDUMP binary doesn't appear to work." 1>&2
+    echo "Set the MYSQLDUMP environment variable and try again." 1>&2
     exit 1
 fi
 
 echo + $MYSQLDUMP $FLAGS $dbopt_print 1>&2
-if [ "$structure" = yes ]; then
+if $structure; then
     eval "$MYSQLDUMP $FLAGS $dbopt" | sed '/^LOCK/d
 /^INSERT/d
 /^UNLOCK/d
@@ -109,7 +120,14 @@ if [ "$structure" = yes ]; then
 /^--.*-- Dumping data.*--/d
 /^-- Dump/d'
 else
-    eval "$MYSQLDUMP $FLAGS $dbopt"
+    if $pc; then
+	eval "$MYSQLDUMP $FLAGS $dbopt --where='(roles & 7) != 0' ContactInfo"
+	pcs=`echo 'select group_concat(contactId) from ContactInfo where (roles & 7) != 0' | eval "$MYSQL $FLAGS -N $dbopt"`
+	eval "$MYSQLDUMP $FLAGS --where='contactId in ($pcs)' $dbopt ContactAddress ContactTag"
+	eval "$MYSQLDUMP $FLAGS $dbopt PCMember Chair ChairAssistant Settings OptionType ChairTag TopicArea ReviewFormField ReviewFormOptions"
+    else
+	eval "$MYSQLDUMP $FLAGS $dbopt"
+    fi
     echo
     echo "--"
     echo "-- Force HotCRP to invalidate server caches"
