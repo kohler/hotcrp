@@ -99,12 +99,15 @@ fi
 
 echo + $MYSQLDUMP $FLAGS $dbopt_print 1>&2
 if [ "$structure" = yes ]; then
-    eval "$MYSQLDUMP $FLAGS $dbopt | sed '/^LOCK\|^INSERT\|^UNLOCK\|^\/\*/d
+    eval "$MYSQLDUMP $FLAGS $dbopt" | sed '/^LOCK/d
+/^INSERT/d
+/^UNLOCK/d
+/^\/\*/d
 /^)/s/AUTO_INCREMENT=[0-9]* //
 /^--$/N
 /^--.*-- Dumping data/N
 /^--.*-- Dumping data.*--/d
-/^-- Dump/d' "
+/^-- Dump/d'
 else
     eval "$MYSQLDUMP $FLAGS $dbopt"
     echo
