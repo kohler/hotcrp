@@ -152,8 +152,8 @@ __EOF__
 
 generate_random_ints () {
     random="`openssl rand 16 2>/dev/null`"
-    test -z "$random" && random="`head -c 16 /dev/random 2>/dev/null`"
     test -z "$random" && random="`head -c 16 /dev/urandom 2>/dev/null`"
+    test -z "$random" && random="`head -c 16 /dev/random 2>/dev/null`"
     echo "$random" | awk '
 BEGIN { for (i = 0; i < 256; ++i) { ord[sprintf("%c", i)] = i; } }
 { for (i = 0; i < length($0); ++i) { printf("%d\n", ord[substr($0, i, 1)]); } }'
