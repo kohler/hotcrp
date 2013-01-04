@@ -2005,6 +2005,8 @@ class PaperSearch {
 		    $q[] = "Paper." . $t->value[$i] . $t->value[$i + 1];
 	    }
 	    $f[] = "(" . join(" and ", $q) . ")";
+	    for ($i = 0; $i < count($t->value); $i += 2)
+		$columns[$t->value[$i]] = "Paper." . $t->value[$i];
 	} else if ($tt == "tag" && is_array($t->value)) {
 	    $this->_clauseTermSetTable($t, $t->value[0], null, "Tag",
 				       "PaperTag", "tag", " and %.tagIndex" . $t->value[1],
@@ -2051,10 +2053,6 @@ class PaperSearch {
 	    $f[] = "false";
 	else if ($tt == "t")
 	    $f[] = "true";
-
-	if ($tt == "pf")
-	    for ($i = 0; $i < count($t->value); $i += 2)
-		$columns[$t->value[$i]] = "Paper." . $t->value[$i];
     }
 
 
