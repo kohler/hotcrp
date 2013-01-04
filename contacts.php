@@ -151,7 +151,7 @@ if (isset($_REQUEST["scoresort"])
 if ($_REQUEST["t"] == "pc")
     $title = "Program Committee";
 else if (substr($_REQUEST["t"], 0, 3) == "pc:")
-    $title = "&ldquo;" . substr($_REQUEST["t"], 3) . "&rdquo; Program Committee";
+    $title = "“" . substr($_REQUEST["t"], 3) . "” Program Committee";
 else
     $title = "Users";
 $Conf->header($title, "accounts", actionBar());
@@ -240,7 +240,7 @@ if (count($tOpt) > 1) {
 
 
 if ($Me->privChair && $_REQUEST["t"] == "pc")
-    $Conf->infoMsg("<p><a href='" . hoturl("account", "new=1&amp;pc=1") . "' class='button'>Add PC member</a></p><p>Select a PC member's name to edit their profile or remove them from the PC.</p>");
+    $Conf->infoMsg("<p><a href='" . hoturl("account", "new=1&amp;pc=1") . "' class='button'>Add PC member</a></p><p>Select a PC member’s name to edit their profile or remove them from the PC.</p>");
 else if ($Me->privChair && $_REQUEST["t"] == "all")
     $Conf->infoMsg("<p><a href='" . hoturl("account", "new=1") . "' class='button'>Create account</a></p><p>Select an account name to edit that profile.  Select <img src='images/viewas.png' alt='[Act as]' /> to view the site as that user would see it.</p>");
 

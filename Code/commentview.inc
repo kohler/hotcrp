@@ -153,7 +153,7 @@ class CommentView {
 	$this->commentIdentityTime($prow, $crow, false);
 
 	if ($crow && $editMode && $crow->contactId != $Me->contactId)
-	    echo "<div class='hint'>You didn&rsquo;t write this comment, but as an administrator you can still make changes.</div>\n";
+	    echo "<div class='hint'>You didn’t write this comment, but as an administrator you can still make changes.</div>\n";
 
 	echo "</div><div class='cmtv", (!$crow && $editMode && $foldnew ? " fx" : ""), "'>";
 
@@ -265,9 +265,9 @@ class CommentView {
 	if (!$editMode) {
 	    echo "<div class='cmtg cmtg1'>";
 	    if ($Me->privChair && $crow->forReviewers == 0)
-		echo "<i>The <a href='", hoturl("comment", "c=$crow->commentId$linkExtra"), "'>authors&rsquo; response</a> is not yet ready for reviewers to view.</i>";
+		echo "<i>The <a href='", hoturl("comment", "c=$crow->commentId$linkExtra"), "'>authors’ response</a> is not yet ready for reviewers to view.</i>";
 	    else if (!$Me->canViewComment($prow, $crow))
-		echo "<i>The authors&rsquo; response is not yet ready for reviewers to view.</i>";
+		echo "<i>The authors’ response is not yet ready for reviewers to view.</i>";
 	    else
 		echo htmlWrapText(htmlspecialchars($crow->comment));
 	    echo "</div>";

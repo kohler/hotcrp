@@ -396,7 +396,7 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
     if (!$Me->privChair)
 	$Conf->errorMsg("Only administrators can delete users.");
     else if ($Acct->contactId == $Me->contactId)
-	$Conf->errorMsg("You aren't allowed to delete yourself.");
+	$Conf->errorMsg("You aren’t allowed to delete yourself.");
     else {
 	$tracks = databaseTracks($Acct->contactId);
 	if (count($tracks->soleAuthor))
