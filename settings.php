@@ -1113,10 +1113,10 @@ function doAccGroup() {
 
     echo "<hr class='hr' /><h3>Program committee &amp; system administrators</h3>";
 
-    echo "<p><a href='", hoturl("account", "new=1"), "' class='button'>Create account</a> &nbsp;|&nbsp; ",
+    echo "<p><a href='", hoturl("profile", "u=new"), "' class='button'>Create account</a> &nbsp;|&nbsp; ",
 	"Select a user&rsquo;s name to edit a profile or change PC/administrator status.</p>\n";
     $pl = new ContactList($Me, false);
-    echo $pl->text("pcadminx", hoturl("contacts", "t=pcadmin"));
+    echo $pl->text("pcadminx", hoturl("users", "t=pcadmin"));
 }
 
 // Messages

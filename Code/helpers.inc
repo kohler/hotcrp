@@ -23,6 +23,32 @@ function arrayappend(&$var, $value) {
 	$var = array($value);
 }
 
+function &array_ensure(&$arr, $key, $val) {
+    if (!isset($arr[$key]))
+        $arr[$key] = $val;
+    return $arr[$key];
+}
+
+function str_starts_with($haystack, $needle) {
+    $nl = strlen($needle);
+    return $nl <= strlen($haystack) && substr($haystack, 0, $nl) === $needle;
+}
+
+function str_ends_with($haystack, $needle) {
+    $p = strlen($haystack) - strlen($needle);
+    return $p >= 0 && substr($haystack, $p) === $needle;
+}
+
+function set_error_html($x, $error_html = null) {
+    if (!$error_html) {
+        $error_html = $x;
+        $x = (object) array();
+    }
+    $x->error = true;
+    $x->error_html = $error_html;
+    return $x;
+}
+
 
 // database helpers
 
@@ -154,10 +180,24 @@ if (function_exists("iconv")) {
     function windows_1252_to_utf8($str) {
 	return iconv("Windows-1252", "UTF-8//IGNORE", $str);
     }
+    function mac_os_roman_to_utf8($str) {
+        return iconv("Mac", "UTF-8//IGNORE", $str);
+    }
 } else {
     function windows_1252_to_utf8($str) {
 	return $str;		// give up
     }
+    function mac_os_roman_to_utf8($str) {
+        return $str;		// give up
+    }
+}
+
+function convert_to_utf8($str) {
+    if (substr_count(substr($str, 0, 10000), "\r")
+        > 1.5 * substr_count(substr($str, 0, 10000), "\n"))
+        return mac_os_roman_to_utf8($str);
+    else
+        return windows_1252_to_utf8($str);
 }
 
 if (function_exists("iconv")) {
@@ -358,11 +398,14 @@ function hoturl($page, $options = null) {
     global $ConfSiteBase, $ConfSiteSuffix, $Opt;
     $t = $ConfSiteBase . $page . $ConfSiteSuffix;
     // see also redirectSelf
-    if ($options && preg_match('/\A(|.*?(?:\&|\&amp;))p=(\d+|%\w+%)(.*)\z/', $options, $m)
-	&& !defval($Opt, "disableSlashURLs")
-	&& preg_match('/\A(?:paper|review|comment|contactauthors)\z/', $page)) {
-	$t .= "/" . $m[2];
-	$options = $m[1] . $m[3];
+    if ($options && !defval($Opt, "disableSlashURLs")) {
+        if ((preg_match('/\A(?:paper|review|comment|contactauthors)\z/', $page)
+             && preg_match('/\A(|.*?(?:\&|\&amp;))p=(\d+|%\w+%)(.*)\z/', $options, $m))
+            || ($page == "profile"
+                && preg_match('/\A(|.*?(?:\&|\&amp;))u=([^&]+)(.*)\z/', $options, $m))) {
+            $t .= "/" . $m[2];
+            $options = $m[1] . $m[3];
+        }
     }
     if ($options && preg_match('/\A\&(?:amp;)?(.*)\z/', $options, $m))
 	$options = $m[1];
@@ -467,33 +510,67 @@ function fileUploaded(&$var) {
 }
 
 function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
-    global $CurrentList, $ConfSiteSuffix;
-    $x = ($self ? $self : $_SERVER["PHP_SELF"]);
-    if ($ConfSiteSuffix == "" && strlen($x) > 4) {
-	if (substr($x, strlen($x) - 4, 4) == ".php")
-	    $x = substr($x, 0, strlen($x) - 4);
-	else if (($pos = strpos($x, ".php/")) !== false)
-	    $x = substr($x, 0, $pos) . substr($x, $pos + 4);
+    global $CurrentList, $ConfSiteSuffix, $Opt;
+
+    // set $self and $query
+    if (!$self)
+        $self = $_SERVER["PHP_SELF"];
+    $path = $query = "";
+    if (($p = strpos($self, "?")) !== false) {
+        $self = substr($self, 0, $p);
+        $query = substr($self, $p);
     }
-    $sep = (strpos($self, "?") === false ? "?" : "&");
+
+    // set path suffix
+    if (isset($_SERVER["PATH_INFO"]) && $_SERVER["PATH_INFO"] !== ""
+        && str_ends_with($self, $_SERVER["PATH_INFO"])) {
+        $p = strlen($self) - strlen($_SERVER["PATH_INFO"]);
+        $path = substr($self, $p);
+        $self = substr($self, 0, $p);
+    }
+
+    // clean parameters from pathinfo URLs
+    if ($path && !defval($Opt, "disableSlashURLs")) {
+        if (preg_match('/(?:paper|review|comment|contactauthors)\.php\z/',
+                       $self)
+            && isset($_REQUEST["p"]) && $_REQUEST["p"] == substr($path, 1)
+            && !array_key_exists("p", $extra))
+            $extra["p"] = null;
+        else if (str_ends_with($self, "profile.php")
+                 && isset($_REQUEST["u"]) && $_REQUEST["u"] == substr($path, 1)
+                 && !array_key_exists("u", $extra))
+            $extra["u"] = null;
+    }
+
+    // remove ".php"
+    if ($ConfSiteSuffix === "" && str_ends_with($self, ".php"))
+        $self = substr($self, 0, strlen($self) - 4);
+
+    // reconstruct
+    $self = $self . $path . $query;
+
+    // add parameters
+    $sep = ($query ? "&" : "?");
     foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
 	if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
 	    $_REQUEST[$v] = $_REQUEST[$k];
-    foreach (array("p", "r", "c", "m", "mode", "forceShow", "validator", "ls", "list", "t", "q", "qa", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq", "noedit", "contact", "reviewer") as $what)
+    foreach (array("p", "r", "c", "m", "u", "mode", "forceShow", "validator", "ls", "list", "t", "q", "qa", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq", "noedit", "contact", "reviewer") as $what)
 	if (isset($_REQUEST[$what]) && !array_key_exists($what, $extra)) {
-	    $x .= "$sep$what=" . urlencode($_REQUEST[$what]);
+	    $self .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
 	}
     foreach ($extra as $key => $value)
 	if ($key != "anchor" && $value !== null) {
-	    $x .= "$sep$key=" . urlencode($value);
+	    $self .= "$sep$key=" . urlencode($value);
 	    $sep = "&";
 	}
-    if (isset($CurrentList) && $CurrentList > 0 && !isset($_REQUEST["ls"]) && !isset($extra["ls"]))
-	$x .= $sep . "ls=" . $CurrentList;
+    if (isset($CurrentList) && $CurrentList > 0
+        && !isset($_REQUEST["ls"]) && !array_key_exists("ls", $extra))
+	$self .= $sep . "ls=" . $CurrentList;
     if (isset($extra["anchor"]))
-	$x .= "#" . $extra["anchor"];
-    return $htmlspecialchars ? htmlspecialchars($x) : $x;
+	$self .= "#" . $extra["anchor"];
+
+    return $htmlspecialchars ? htmlspecialchars($self) : $self;
 }
 
 function requestAbsoluteURI($trim) {
@@ -518,19 +595,12 @@ function requestAbsoluteURI($trim) {
 }
 
 function redirectSelf($extra = array()) {
-    global $Conf, $Opt;
+    global $Conf;
     if (!($absuri = requestAbsoluteURI(true)))
 	return false;
     $want = preg_replace('/\A.*?(?:\?|\z)/', "", selfHref($extra, null, false));
     if ($want != "")
 	$absuri .= "?" . $want;
-    // see also hoturl
-    if (!defval($Opt, "disableSlashURLs")
-	&& preg_match(',\A([^?]*/(?:paper|review|comment|contactauthors)(?:\.php)?)(?:/\d+)?\?p=(\d+)((?:&|\z).*)\z,', $absuri, $m)) {
-	$absuri = $m[1] . "/" . $m[2];
-	if ($m[3])
-	    $absuri .= "?" . substr($m[3], 1);
-    }
     $Conf->go($absuri);
 }
 
@@ -775,7 +845,12 @@ function authorTable($aus, $viewAs = null) {
     return $out;
 }
 
-function abbreviateNameHtml($f, $l, $email = "") {
+function abbreviateNameHtml($f, $l = "", $email = "") {
+    if (is_object($f)) {
+	$l = $l ? $l : $f->lastName;
+	$email = $email ? $email : $f->email;
+	$f = $f->firstName;
+    }
     $front = $rest = "";
     if ($l != "")
 	$rest = $l;
@@ -920,7 +995,7 @@ function allocateListNumber($listid) {
 
 function _tryNewList($opt, $listtype) {
     global $Conf, $ConfSiteSuffix, $Me;
-    if ($listtype == "a" && $Me->privChair) {
+    if ($listtype == "u" && $Me->privChair) {
 	$searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
 	$q = "select email from ContactInfo";
 	if ($searchtype == "pc")
@@ -930,8 +1005,8 @@ function _tryNewList($opt, $listtype) {
 	while (($row = edb_row($result)))
 	    $a[] = $row[0];
 	$a["description"] = ($searchtype == "pc" ? "Program committee" : "Users");
-	$a["listid"] = "a:" . $searchtype . "::";
-	$a["url"] = "contacts$ConfSiteSuffix?t=" . $searchtype;
+	$a["listid"] = "u:" . $searchtype . "::";
+	$a["url"] = "users$ConfSiteSuffix?t=" . $searchtype;
 	return $a;
     } else {
 	require_once("search.inc");
@@ -942,11 +1017,11 @@ function _tryNewList($opt, $listtype) {
 
 function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
     global $Conf;
-    if ($listtype == "a") {
-	$result = $Conf->qx("select email from ContactInfo where contactId=$id");
+    if ($listtype == "u") {
+	$result = $Conf->qx("select email from ContactInfo where email='" . sqlq($id) . "'");
 	$row = edb_row($result);
-	$paperText = ($row ? htmlspecialchars($row[0]) : "#$id");
-	$urlrest = "contact=" . $id . $urlrest;
+	$paperText = htmlspecialchars($row ? $row[0] : $id);
+	$urlrest = "u=" . urlencode($id) . $urlrest;
     } else {
 	$paperText = "#$id";
 	$urlrest = "p=" . $id . $urlrest;
@@ -1517,9 +1592,9 @@ function actionBar($mode = "", $prow = null) {
     else if ($mode == "contactauthors")
 	$goBase = "contactauthors";
     else if ($mode == "account") {
-	$listtype = "a";
+	$listtype = "u";
 	if ($Me->privChair)
-	    $goBase = "account";
+	    $goBase = "profile";
 	else
 	    $prow = null;
     } else if ($mode == "" && $Me->isPC && $Conf->setting("rev_open"))
@@ -1530,7 +1605,7 @@ function actionBar($mode = "", $prow = null) {
     $listarg = $forceShow;
     $quicklinks_txt = "";
     if ($prow) {
-	$id = ($listtype === "a" ? $prow->contactId : $prow->paperId);
+	$id = ($listtype === "u" ? $prow->email : $prow->paperId);
 	$quicklinks_txt = quicklinks($id, $goBase, $xmode, $listtype);
 	if (isset($CurrentList) && $CurrentList > 0)
 	    $listarg .= "&amp;ls=$CurrentList";
@@ -1774,17 +1849,15 @@ function pcMembers() {
     global $Conf;
     if (!isset($_SESSION["pcmembers"]) || !is_array($_SESSION["pcmembers"])
 	|| count($_SESSION["pcmembers"]) != 2
-	|| $Conf->setting('pc') <= 0
-	|| $_SESSION["pcmembers"][0] < $Conf->setting('pc')
+	|| $Conf->setting("pc") <= 0
+	|| $_SESSION["pcmembers"][0] < $Conf->setting("pc")
 	|| !is_array($_SESSION["pcmembers"][1])
 	|| count($_SESSION["pcmembers"][1]) == 0) {
 	$pc = array();
 	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "");
-	$result = $Conf->q("select firstName, lastName, affiliation, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair$qa from ContactInfo join PCMember using (contactId) left join ChairAssistant on (PCMember.contactId=ChairAssistant.contactId) left join Chair on (PCMember.contactId=Chair.contactId)");
-	while (($row = edb_orow($result))) {
-	    $row->sorter = trim($row->firstName . " " . $row->lastName . " " . $row->email);
-	    $pc[$row->contactId] = $row;
-	}
+	$result = $Conf->q("select firstName, lastName, affiliation, email, u.contactId contactId, roles$qa from ContactInfo join PCMember using (contactId)");
+	while (($row = edb_orow($result)))
+	    $pc[$row->contactId] = ContactInfo::make($row);
 	uasort($pc, "_sort_pcMember");
 	$_SESSION["pcmembers"] = array($Conf->setting('pc'), $pc);
     }
@@ -1795,15 +1868,15 @@ function pcMembersAndAdmins() {
     global $Conf;
     if (!isset($_SESSION["pcmembersa"]) || !is_array($_SESSION["pcmembersa"])
 	|| count($_SESSION["pcmembersa"]) != 2
-	|| $Conf->setting('pc') <= 0
-	|| $_SESSION["pcmembersa"][0] < $Conf->setting('pc')
+	|| $Conf->setting("pc") <= 0
+	|| $_SESSION["pcmembersa"][0] < $Conf->setting("pc")
 	|| !is_array($_SESSION["pcmembersa"][1])
 	|| count($_SESSION["pcmembersa"][1]) == 0) {
 	$pc = array();
 	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "");
-	$result = $Conf->q("select firstName, lastName, email, ContactInfo.contactId as contactId, coalesce(ChairAssistant.contactId, 0) as isAssistant, coalesce(Chair.contactId, 0) as isChair$qa from ContactInfo left join PCMember using (contactId) left join ChairAssistant on (ContactInfo.contactId=ChairAssistant.contactId) left join Chair on (ContactInfo.contactId=Chair.contactId) where PCMember.contactId is not null or ChairAssistant.contactId is not null order by lastName, firstName");
+	$result = $Conf->q("select firstName, lastName, email, affiliation, u.contactId contactId, roles$qa from ContactInfo u left join PCMember p using (contactId) left join ChairAssistant ca on (ca.contactId=u.contactId) where p.contactId is not null or ca.contactId is not null order by lastName, firstName");
 	while (($row = edb_orow($result)))
-	    $pc[$row->contactId] = $row;
+	    $pc[$row->contactId] = ContactInfo::make($row);
 	$_SESSION["pcmembersa"] = array($Conf->setting('pc'), $pc);
     }
     return $_SESSION["pcmembersa"][1];
@@ -2282,8 +2355,12 @@ function tagg_button($name, $text, $js = null) {
     if (!isset($js["class"]))
 	$js["class"] = "b";
     $type = isset($js["type"]) ? $js["type"] : "button";
-    return "<input type=\"$type\" name=\"$name\" value=\"$text\""
-	. tagg_extra($js) . " />";
+    if (isset($js["value"]))
+        return "<button type=\"type\" name=\"$name\" value=\"" . $js["value"]
+            . "\"" . tagg_extra($js) . ">" . $text . "</button>";
+    else
+        return "<input type=\"$type\" name=\"$name\" value=\"$text\""
+            . tagg_extra($js) . " />";
 }
 
 function tagg_submit($name, $text, $js = null) {

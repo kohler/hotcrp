@@ -259,7 +259,7 @@ if ($Me->validContact() && isset($Me->fresh) && $Me->fresh === true) {
 	|| (($Me->roles & Contact::ROLE_PC) && !$Me->collaborators)
 	|| $needti) {
 	$Me->fresh = "redirect";
-	$Me->go(hoturl("account", "redirect=1"));
+	$Me->go(hoturl("profile", "redirect=1"));
     } else
 	unset($Me->fresh);
 }
@@ -374,7 +374,7 @@ if ($Me->privChair) {
   <h4>Administration</h4>
   <ul>
     <li><a href='", hoturl("settings"), "'>Settings</a></li>
-    <li><a href='", hoturl("contacts", "t=all"), "'>Users</a></li>
+    <li><a href='", hoturl("users", "t=all"), "'>Users</a></li>
     <li><a href='", hoturl("autoassign"), "'>Assign reviews</a></li>
     <li><a href='", hoturl("mail"), "'>Send mail</a></li>
     <li><a href='", hoturl("log"), "'>Action log</a></li>
@@ -394,7 +394,7 @@ if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting(
     || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard'))) {
     echo "    <li><a href='", hoturl("deadlines"), "'>Deadlines</a></li>\n";
 }
-echo "    <li><a href='", hoturl("contacts", "t=pc"), "'>Program committee</a></li>\n";
+echo "    <li><a href='", hoturl("users", "t=pc"), "'>Program committee</a></li>\n";
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo "    <li><a href='", $Opt['conferenceSite'], "'>Conference site</a></li>\n";
 if ($Conf->timeAuthorViewDecision()) {
@@ -566,7 +566,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", unparseScoreAverage($sumpcScore / $npcScore, $rf->reviewFields["overAllMerit"]);
 	echo ".";
 	if ($Me->isPC || $Me->privChair)
-	    echo "&nbsp; <small>(<a href='", hoturl("contacts", "t=pc&amp;score%5B%5D=0"), "'>Details</a>)</small>";
+	    echo "&nbsp; <small>(<a href='", hoturl("users", "t=pc&amp;score%5B%5D=0"), "'>Details</a>)</small>";
 	echo "<br />\n";
     }
     if ($myrow && $myrow[1] < $myrow[2]) {

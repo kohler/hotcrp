@@ -1,6 +1,6 @@
 <?php
 // contact.inc -- HotCRP helper class representing system users
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class Contact {
@@ -15,10 +15,10 @@ class Contact {
     var $lastName;
     var $email;
     var $preferredEmail;
+    var $sorter;
     var $affiliation;
     var $collaborators;
     var $voicePhoneNumber;
-    var $faxPhoneNumber;
     var $password;
     var $note;
     var $defaultWatch;
@@ -48,6 +48,37 @@ class Contact {
     const CAP_AUTHORVIEW = 1;
     var $capabilities;
     var $validated;
+
+
+    function __construct() {
+    }
+
+    static function make($o) {
+	// If you change this function, search for its callers to ensure
+	// they provide all necessary information.
+	$c = new Contact();
+	$c->invalidate();
+	$c->contactId = (int) $o->contactId;
+	$c->firstName = defval($o, "firstName", "");
+	$c->lastName = defval($o, "lastName", "");
+	$c->email = defval($o, "email", "");
+	$c->preferredEmail = defval($o, "preferredEmail", "");
+        $c->sorter = trim("$c->firstName $c->lastName $c->email");
+	$c->password = defval($o, "password", "");
+	$c->isAuthor = defval($o, "isAuthor", false) != false;
+	$c->isReviewer = defval($o, "isReviewer", false) != false;
+	$c->reviewsOutstanding = defval($o, "reviewsOutstanding", false) != false;
+	$c->roles = defval($o, "roles", 0);
+	if (defval($o, "isPC", false))
+	    $c->roles |= self::ROLE_PC;
+	if (defval($o, "isAssistant", false))
+	    $c->roles |= self::ROLE_ADMIN;
+	if (defval($o, "isChair", false))
+	    $c->roles |= self::ROLE_CHAIR;
+	$c->isPC = ($c->roles & (self::ROLE_PC | self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
+	$c->privChair = ($c->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
+	return $c;
+    }
 
 
     //
@@ -150,7 +181,7 @@ class Contact {
 	$this->contactId = 0;
 	$this->visits = 0;
 	foreach (array("firstName", "lastName", "email", "preferredEmail",
-		       "affiliation", "voicePhoneNumber", "faxPhoneNumber",
+		       "affiliation", "voicePhoneNumber",
 		       "password", "collaborators") as $k)
 	    $this->$k = "";
 	foreach (self::_addressKeys() as $k)
@@ -193,12 +224,13 @@ class Contact {
 	$this->firstName = simplifyWhitespace($this->firstName);
 	$this->lastName = simplifyWhitespace($this->lastName);
 	foreach (array("email", "preferredEmail", "affiliation",
-		       "voicePhoneNumber", "faxPhoneNumber", "password", "note",
+		       "voicePhoneNumber", "password", "note",
 		       "addressLine1", "addressLine2", "city", "state",
 		       "zipCode", "country")
 		 as $k)
 	    if ($this->$k)
 		$this->$k = trim($this->$k);
+        $this->sorter = trim("$this->firstName $this->lastName $this->email");
     }
 
     function go($url) {
@@ -259,12 +291,11 @@ class Contact {
 	}
 	$query = sprintf("update ContactInfo set firstName='%s', lastName='%s',
 		email='%s', affiliation='%s', voicePhoneNumber='%s',
-		faxPhoneNumber='%s', password='%s', collaborators='%s'$qa
+		password='%s', collaborators='%s'$qa
 		where contactId='%s'",
 			 sqlq($this->firstName), sqlq($this->lastName),
 			 sqlq($this->email), sqlq($this->affiliation),
 			 sqlq($this->voicePhoneNumber),
-			 sqlq($this->faxPhoneNumber),
 			 sqlq($this->password),
 			 sqlq($this->collaborators),
 			 $this->contactId);
@@ -310,7 +341,7 @@ class Contact {
 	$qa = "email, password, creationTime";
 	$qb = "'" . sqlq($this->email) . "', '" . sqlq($this->password) . "', " . time();
 	foreach (array("firstName", "lastName", "affiliation", "collaborators",
-		       "voicePhoneNumber", "faxPhoneNumber", "preferredEmail")
+		       "voicePhoneNumber", "preferredEmail")
 		 as $k) {
 	    if ($useRequest && isset($_REQUEST[$k])
 		&& defval($this, $k, "") == "")
@@ -345,9 +376,9 @@ class Contact {
 	    $this->lastName = $fromdb->lastName;
 	    $this->email = $fromdb->email;
 	    $this->preferredEmail = defval($fromdb, "preferredEmail", null);
+            $this->sorter = trim("$this->firstName $this->lastName $this->email");
 	    $this->affiliation = $fromdb->affiliation;
 	    $this->voicePhoneNumber = $fromdb->voicePhoneNumber;
-	    $this->faxPhoneNumber = $fromdb->faxPhoneNumber;
 	    $this->password = $fromdb->password;
 	    $this->note = $fromdb->note;
 	    $this->collaborators = $fromdb->collaborators;
@@ -384,32 +415,6 @@ class Contact {
 	if (($row = edb_orow($result)))
 	    foreach (self::_addressKeys() as $k)
 		$this->$k = $row->$k;
-    }
-
-    static function makeMinicontact($o) {
-	// If you change this function, search for its callers to ensure
-	// they provide all necessary information.
-	$c = new Contact();
-	$c->invalidate();
-	$c->contactId = (int) $o->contactId;
-	$c->firstName = defval($o, "firstName", "");
-	$c->lastName = defval($o, "lastName", "");
-	$c->email = defval($o, "email", "");
-	$c->preferredEmail = defval($o, "preferredEmail", "");
-	$c->password = defval($o, "password", "");
-	$c->isAuthor = defval($o, "isAuthor", false) != false;
-	$c->isReviewer = defval($o, "isReviewer", false) != false;
-	$c->reviewsOutstanding = defval($o, "reviewsOutstanding", false) != false;
-	$c->roles = defval($o, "roles", 0);
-	if (defval($o, "isPC", false))
-	    $c->roles |= self::ROLE_PC;
-	if (defval($o, "isAssistant", false))
-	    $c->roles |= self::ROLE_ADMIN;
-	if (defval($o, "isChair", false))
-	    $c->roles |= self::ROLE_CHAIR;
-	$c->isPC = ($c->roles & (self::ROLE_PC | self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
-	$c->privChair = ($c->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
-	return $c;
     }
 
 

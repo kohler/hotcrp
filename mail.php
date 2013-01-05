@@ -201,7 +201,7 @@ function checkMailPrologue($send) {
 
 function checkMail($send) {
     global $Conf, $Me, $Error, $subjectPrefix, $recip,
-	$checkReviewNeedsSubmit, $mailHeaders;
+	$checkReviewNeedsSubmit;
     $q = contactQuery($_REQUEST["recipients"]);
     if (!$q)
 	return $Conf->errorMsg("Bad recipients value");
@@ -242,7 +242,7 @@ function checkMail($send) {
 	$preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest); // see also $show_preparation below
 	if ($rest["error"] !== false) {
 	    $Error[$rest["error"]] = true;
-	    $emsg = "This " . $mailHeaders[$rest["error"]] . " field isn't a valid email list: <blockquote><tt>" . htmlspecialchars($rest[$rest["error"]]) . "</tt></blockquote>  Make sure email address are separated by commas.  When mixing names and email addresses, try putting names in \"quotes\" and email addresses in &lt;angle brackets&gt;.";
+	    $emsg = "This " . Mailer::$mailHeaders[$rest["error"]] . " field isn't a valid email list: <blockquote><tt>" . htmlspecialchars($rest[$rest["error"]]) . "</tt></blockquote>  Make sure email address are separated by commas.  When mixing names and email addresses, try putting names in \"quotes\" and email addresses in &lt;angle brackets&gt;.";
 	    if (!isset($preperrors[$emsg]))
 		$Conf->errorMsg($emsg);
 	    $preperrors[$emsg] = true;
@@ -511,7 +511,7 @@ echo "Search&nbsp; <input id='q' class='textlite",
 $Conf->footerScript("mktemptext('q','(All)')");
 
 if ($Me->privChair) {
-    foreach ($mailHeaders as $n => $t)
+    foreach (Mailer::$mailHeaders as $n => $t)
 	if ($n != "bcc") {
 	    $ec = (isset($Error[$n]) ? " error" : "");
 	    echo "  <tr><td class='mhnp$ec'>$t:</td><td class='mhdp$ec'>",

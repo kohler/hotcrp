@@ -1,0 +1,354 @@
+<?php
+// documenthelper.php -- generic document helper class
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
+
+class ZipDocuments {
+
+    var $tmpdir;
+    var $files;
+    var $warnings;
+
+    function __construct() {
+        $this->tmpdir = null;
+        $this->clean();
+    }
+
+    function clean() {
+	if ($this->tmpdir) {
+	    exec("/bin/rm -rf $this->tmpdir");
+            $this->tmpdir = null;
+        }
+        $this->files = array();
+        $this->warnings = array();
+    }
+
+    function add($doc, $filename = null) {
+        if ($this->tmpdir === null)
+            if (($this->tmpdir = tempdir()) === false) {
+                $this->warnings[] = "Could not create temporary directory.";
+                return false;
+            }
+        if (!$filename && is_object($doc) && isset($doc->filename))
+            $filename = $doc->filename;
+        if (!$filename || !preg_match(',\A[^.*/\s\000-\017\\\\\'"][^*/\000-\017\\\\\'"]*\z,', $filename)) {
+            $this->warnings[] = "$filename: Bad filename.";
+            return false;
+        }
+        $zip_filename = "$this->tmpdir/$filename";
+        if (is_string($doc))
+            $doc = (object) array("content" => $doc);
+        else if (!isset($doc->filestore) && !isset($doc->content)) {
+            if (!isset($doc->error_text))
+                $this->warnings[] = "$filename: Couldn’t load document.";
+            else if ($doc->error_text)
+                $this->warnings[] = $doc->error_text;
+            return false;
+        }
+        if (isset($doc->filestore)
+            && @symlink($doc->filestore, $zip_filename))
+            $this->files[] = $zip_filename;
+        else if (isset($doc->content)) {
+            $trylen = file_put_contents($zip_filename, $doc->content);
+            if ($trylen != strlen($doc->content)) {
+                clean_tempdirs();
+                $trylen = file_put_contents($zip_filename, $doc->content);
+            }
+            if ($trylen != strlen($doc->content)) {
+                $this->warnings[] = "$filename: Could not save.";
+                return false;
+            } else
+                $this->files[] = $zip_filename;
+        }
+        return true;
+    }
+
+    function download($downloadname) {
+	global $Opt, $zlib_output_compression;
+
+	if (!($zipcmd = defval($Opt, "zipCommand", "zip")))
+            return set_error_html("<code>zip</code> is not supported on this installation.");
+	if (count($this->warnings))
+	    $this->add(join("\n", $this->warnings) . "\n", "README-warnings.txt");
+	$out = system("$zipcmd -jq $this->tmpdir/x.zip '" . join("' '", $this->files) . "' 2>&1", $status);
+	if ($status != 0)
+	    return set_error_html("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
+	if (!file_exists("$this->tmpdir/x.zip"))
+	    return set_error_html("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
+
+	// output
+	header("Content-Description: PHP Generated Data");
+	header("Content-Disposition: attachment; filename=$downloadname");
+	header("Content-Type: application/zip");
+	if (!$zlib_output_compression)
+	    header("Content-Length: " . filesize("$this->tmpdir/x.zip"));
+	// flush all output buffers to avoid holding large files in memory
+	ob_clean();
+	flush();
+	readfile("$this->tmpdir/x.zip");
+	return (object) array("error" => false);
+    }
+
+    function finish($downloadname) {
+        $result = $this->download($downloadname);
+        $this->clean();
+        return $result;
+    }
+
+}
+
+class DocumentHelper {
+
+    static function _store_database($dbinfo, $doc) {
+        global $Conf, $OK;
+        $N = 400000;
+        $dbinfo[] = null;
+        list($table, $idcol, $cols, $check_contents) = $dbinfo;
+        $while = "while storing document in database";
+
+        $a = array();
+        foreach ($cols as $k => $v)
+            if ($k != $idcol)
+                $a[] = "`" . $k . "`='" . sqlq(substr($v, 0, $N)) . "'";
+
+        if (isset($cols[$idcol]))
+            $q = "update $table set " . join(",", $a) . " where $idcol='" . sqlq($cols[$idcol]);
+        else
+            $q = "insert into $table set " . join(",", $a);
+        if (!($result = $Conf->q($q))) {
+            set_error_html($doc, $Conf->db_error_html(true, $while));
+            return;
+        }
+
+        if (isset($cols[$idcol]))
+            $doc->$idcol = $cols[$idcol];
+        else {
+            $doc->$idcol = $Conf->lastInsertId(false);
+            if (!$doc->$idcol) {
+                set_error_html($doc, $Conf->db_error_html(true, $while));
+                $OK = false;
+                return;
+            }
+        }
+
+        for ($pos = $N; true; $pos += $N) {
+            $a = array();
+            foreach ($cols as $k => $v)
+                if (strlen($v) > $pos)
+                    $a[] = "`" . $k . "`=concat(`" . $k . "`,'" . sqlq(substr($v, $pos, $N)) . "')";
+            if (!count($a))
+                break;
+            if (!$Conf->q("update $table set " . join(",", $a) . " where $idcol=" . $doc->$idcol)) {
+                set_error_html($doc, $Conf->db_error_html(true, $while));
+                return;
+            }
+        }
+
+        // check that paper storage succeeded
+        if ($check_contents
+            && (!($result = $Conf->qe("select length($check_contents) from $table where $idcol=" . $doc->$idcol, $while))
+                || !($row = edb_row($result))
+                || $row[0] != strlen($doc->content))) {
+            set_error_html($doc, "Failed to store your paper. Usually, this is because the file you tried to upload was too big for our system. Please try again.");
+            return;
+        }
+    }
+
+    static function _mimetype($doc) {
+        return (isset($doc->mimetype) ? $doc->mimetype : $doc->mimetypeid);
+    }
+
+    static function _expand_filestore($fsinfo, $doc) {
+        list($fdir, $fpath) = $fsinfo;
+        $sha1 = null;
+
+        $xfpath = $fdir;
+        $fpath = substr($fpath, strlen($fdir));
+        while (preg_match("/\\A(.*?)%(\d*)([%hx])(.*)\\z/", $fpath, $m)) {
+            $fpath = $m[4];
+
+            $xfpath .= $m[1];
+            if ($m[3] == "%")
+                $xfpath .= "%";
+            else if ($m[3] == "x")
+	        $xfpath .= Mimetype::extension(self::_mimetype($doc));
+            else {
+                if (!$sha1) {
+                    $sha1 = bin2hex($doc->sha1);
+                    if (strlen($sha1) != 40)
+                        return array(null, null);
+                }
+                if ($m[2] != "")
+                    $xfpath .= substr($sha1, 0, +$m[2]);
+                else
+                    $xfpath .= $sha1;
+            }
+        }
+
+        if ($fdir && $fdir[strlen($fdir) - 1] == "/")
+            $fdir = substr($fdir, 0, strlen($fdir) - 1);
+        return array($fdir, $xfpath . $fpath);
+    }
+
+    static function _store_filestore($fsinfo, $doc) {
+        list($fdir, $fpath) = $fsinfo;
+
+	if (!is_dir($fdir) && !@mkdir($fdir, 0700)) {
+	    @rmdir($fdir);
+	    return false;
+	}
+
+	// Ensure an .htaccess file exists, even if someone else made the
+	// filestore directory
+	$htaccess = "$fdir/.htaccess";
+	if (!is_file($htaccess)
+	    && file_put_contents($htaccess, "Order deny,allow\nDeny from all\nphp_flag magic_quotes_gpc off\n") === false) {
+	    @unlink("$fdir/.htaccess");
+	    return false;
+	}
+
+        // Create subdirectory
+        $pos = strlen($fdir) + 1;
+        while ($pos < strlen($fpath)
+               && ($pos = strpos($fpath, "/", $pos)) !== false) {
+            $superdir = substr($fpath, 0, $pos);
+	    if (!is_dir($superdir) && !@mkdir($superdir, 0770))
+		return false;
+            ++$pos;
+        }
+
+        // Write contents
+        if (file_put_contents($fpath, $doc->content) != strlen($doc->content)) {
+            @unlink($fpath);
+            return false;
+        }
+        @chmod($fpath, 0660 & ~umask());
+	$doc->filestore = $fpath;
+        return true;
+    }
+
+    static function store($docclass, $doc, $docinfo) {
+        if (!isset($doc->size) && isset($doc->content))
+            $doc->size = strlen($doc->content);
+	if (!isset($doc->sha1) && isset($doc->content))
+	    $doc->sha1 = sha1($doc->content, true);
+        if (($dbinfo = $docclass->database_storage($doc, $docinfo)))
+            self::_store_database($dbinfo, $doc);
+        if (($fsinfo = $docclass->filestore_pattern($doc, $docinfo))) {
+            $fsinfo = self::_expand_filestore($fsinfo, $doc);
+            if (!self::_store_filestore($fsinfo, $doc) && !$dbinfo)
+                set_error_html($doc, "Internal error: could not store document.");
+        }
+        return $doc;
+    }
+
+    static function upload($docclass, $uploadId, $docinfo) {
+	global $Conf, $Opt, $OK;
+        $doc = (object) array();
+
+	if (!$uploadId
+	    || !fileUploaded($_FILES[$uploadId])
+	    || !isset($_FILES[$uploadId]["tmp_name"]))
+            return set_error_html($doc, "Upload error. Please try again.");
+	$filename = $_FILES[$uploadId]["tmp_name"];
+
+        // prepare document
+        $doc->content = file_get_contents($filename);
+	if ($doc->content === false || strlen($doc->content) == 0)
+            return set_error_html($doc, "The uploaded file was empty. Please try again.");
+	if (isset($_FILES[$uploadId]["name"])
+	    && strlen($_FILES[$uploadId]["name"]) <= 255
+	    && is_valid_utf8($_FILES[$uploadId]["name"]))
+	    $doc->filename = $_FILES[$uploadId]["name"];
+        else
+            $doc->filename = null;
+
+	// Check if paper one of the allowed mimetypes.
+	// We prefer to look at data since MacOS browsers get this wrong.
+	if (strncmp("%PDF-", $doc->content, 5) == 0)
+	    $doc->mimetype = Mimetype::type("pdf");
+	else if (strncmp("%!PS-", $doc->content, 5) == 0)
+	    $doc->mimetype = Mimetype::type("ps");
+	else if (substr($doc->content, 512, 4) == "\x00\x6E\x1E\xF0")
+	    $doc->mimetype = Mimetype::type("ppt");
+	else
+	    $doc->mimetype = Mimetype::type(defval($_FILES[$uploadId], "type", "application/octet-stream"));
+        if (($m = Mimetype::lookup($doc->mimetype)))
+            $doc->mimetypeid = $m->mimetypeid;
+
+	$mimetypes = $docclass->mimetypes($doc, $docinfo);
+        for ($i = 0; $i < count($mimetypes); ++$i)
+            if ($mimetypes[$i]->mimetype == $doc->mimetype)
+                break;
+	if ($i >= count($mimetypes)) {
+	    $e = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";
+	    $e .= " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
+	    return set_error_html($doc, $e);
+	}
+
+        $doc->timestamp = time();
+        return self::store($docclass, $doc, $docinfo);
+    }
+
+    static function load($docclass, $doc) {
+        $fsinfo = $docclass->filestore_pattern($doc, null);
+        if ($fsinfo) {
+            $fsinfo = self::_expand_filestore($fsinfo, $doc);
+            if (is_readable($fsinfo[1])) {
+                $doc->filestore = $fsinfo[1];
+                return true;
+            }
+        }
+        if (!isset($doc->content) && !$docclass->load_database_content($doc))
+            return false;
+        if ($fsinfo)
+            self::_store_filestore($fsinfo, $doc);
+        return true;
+    }
+
+    static function download($doc, $attachment = false, $downloadname = false) {
+        global $zlib_output_compression;
+        if (is_array($doc) && count($doc) == 1) {
+            $doc = $doc[0];
+            $downloadname = false;
+        }
+        if (!$doc || (is_object($doc) && isset($doc->size) && $doc->size == 0))
+            return set_error_html("Empty file.");
+        else if (is_array($doc)) {
+            $z = new ZipDocuments;
+            foreach ($doc as $d)
+                $z->add($d);
+            return $z->finish($downloadname);
+        }
+
+	// Print paper
+	$doc_mimetype = self::_mimetype($doc);
+	header("Content-Type: " . Mimetype::type($doc_mimetype));
+	header("Content-Description: PHP Generated Data");
+        if (!$attachment)
+	    $attachment = !Mimetype::disposition_inline($doc_mimetype);
+        if (!$downloadname)
+            $downloadname = $doc->filename;
+	header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=$downloadname");
+	// reduce likelihood of XSS attacks in IE
+	header("X-Content-Type-Options: nosniff");
+	if (isset($doc->filestore)) {
+	    if (!$zlib_output_compression)
+		header("Content-Length: " . filesize($doc->filestore));
+	    ob_clean();
+	    flush();
+	    readfile($doc->filestore);
+	} else if (isset($doc->content)) {
+	    if (!$zlib_output_compression)
+		header("Content-Length: " . strlen($doc->content));
+	    echo $doc->content;
+	} else
+            return set_error_html("Don’t know how to download.");
+	return (object) array("error" => false);
+    }
+
+    static function start_zip() {
+        return new ZipDocuments;
+    }
+
+}

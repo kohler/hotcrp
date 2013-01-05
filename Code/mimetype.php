@@ -1,6 +1,6 @@
 <?php
-// mimetypes.inc -- HotCRP helper file for MIME types
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// mimetype.php -- HotCRP helper file for MIME types
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class Mimetype {
@@ -39,6 +39,10 @@ class Mimetype {
             return $type;
     }
 
+    static function type_equals($typea, $typeb) {
+        return self::type($typea) == self::type($typeb);
+    }
+
     static function extension($type) {
         if (($x = self::lookup($type)) && $x->extension)
             return "." . $x->extension;
@@ -64,6 +68,11 @@ class Mimetype {
             else
                 return $type;
         }
+    }
+
+    static function disposition_inline($type) {
+        $x = self::lookup($type);
+        return $x && $x->mimetypeid <= 2;
     }
 
 }

@@ -273,7 +273,7 @@ class ContactList extends BaseList {
 	    if (trim($t) == "")
 		$t = "[No name]";
 	    if ($this->contact->privChair)
-		$t = "<a href=\"" . hoturl("account", "contact=$row->contactId$this->contactLinkArgs") . "\">$t</a>";
+		$t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\">$t</a>";
 	    if ($row->chair)
 		$t .= " <span class='pcrole'>(Chair)</span>";
 	    else if ($row->assistant)
@@ -288,7 +288,11 @@ class ContactList extends BaseList {
 	case self::FIELD_EMAIL:
 	    if (!$this->contact->isPC)
 		return "";
-	    return "<a href=\"mailto:" . htmlspecialchars($row->email) . "\">" . htmlspecialchars($row->email) . "</a>";
+            $e = htmlspecialchars($row->email);
+            if (strpos($row->email, "@") === false)
+                return $e;
+            else
+                return "<a href=\"mailto:$e\">$e</a>";
 	case self::FIELD_AFFILIATION:
 	case self::FIELD_AFFILIATION_ROW:
 	    return htmlspecialchars($row->affiliation);
@@ -464,7 +468,7 @@ class ContactList extends BaseList {
 	$pq = "select u.contactId,
 	u.contactId as paperId,
 	firstName, lastName, email, affiliation, contactTags,
-	voicePhoneNumber, faxPhoneNumber,
+	voicePhoneNumber,
 	u.collaborators, lastLogin, visits, note,
 	PCMember.contactId as pc, Chair.contactId as chair,
 	ChairAssistant.contactId as assistant";
@@ -780,8 +784,8 @@ class ContactList extends BaseList {
 	if ($this->listNumber) {
 	    $ids["description"] = ($listtitle ? $listtitle : "Users");
 	    $ids["timestamp"] = time();
-	    $ids["listid"] = "a:" . $this->limit . "::";
-	    $ids["url"] = "contacts$ConfSiteSuffix?t=" . $this->limit;
+	    $ids["listid"] = "u:" . $this->limit . "::";
+	    $ids["url"] = "users$ConfSiteSuffix?t=" . $this->limit;
 	    $_SESSION["l"][$this->listNumber] = $ids;
 	}
 

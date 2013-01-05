@@ -836,7 +836,7 @@ class PaperTable {
 	else
 	    echo "List people and institutions with which the authors have
 	conflicts of interest.  ", $Conf->conflictDefinitionText(), "
-	Be sure to include conflicted <a href='", hoturl("contacts", "t=pc"), "'>PC members</a>.
+	Be sure to include conflicted <a href='", hoturl("users", "t=pc"), "'>PC members</a>.
 	We use this information when assigning PC and external reviews.";
 	echo "  List one conflict per line.  For example: &ldquo;<tt>Jelena Markovic (EPFL)</tt>&rdquo; or, for a whole institution, &ldquo;<tt>EPFL</tt>&rdquo;.</div>",
 	    "<div class='papv'>",
@@ -1144,13 +1144,13 @@ class PaperTable {
 		echo "<div class='pscopen ${color}'>";
 
 	    if ($editable)
-		echo "<form method='post' action='", hoturl_post($site, "p=$prow->paperId$linkExtra") , "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+		echo "<form method='post' action='", hoturl_post($site, "p=$prow->paperId$linkExtra"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
 
 	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0), "oneditunfold" => "Miniajax.submit(\"tagreportform\")")),
 		"<div class='psv'>";
 	    if ($editable) {
 		// tag report form
-		$Conf->footerHtml("<form id='tagreportform' class='fold7o' method='post' action='" . hoturl_post("paper", "p=$prow->paperId$linkExtra") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'><div class='aahc'><input type='hidden' name='tagreport' value='1' /></div></form>");
+		$Conf->footerHtml("<form id='tagreportform' class='fold7o' method='post' action='" . hoturl_post("paper", "p=$prow->paperId&amp;tagreport=1$linkExtra") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'></form>");
 
 		$t = tagsToText($prow, false, $Me, true);
 		echo "<div class='fn'>", ($tx == "" ? "None" : $tx),

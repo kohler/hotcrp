@@ -59,6 +59,9 @@ define("DOCUMENT_SUBMISSION", 0);
 define("DOCUMENT_FINAL", -1);
 define("DOCUMENT_COMMENT", -2);
 
+define("MIMETYPEID_TXT", 1);
+define("MIMETYPEID_PDF", 2);
+
 define("OPTIONTYPE_CHECKBOX", 0);
 define("OPTIONTYPE_SELECTOR", 1); /* see also script.js:doopttype */
 define("OPTIONTYPE_NUMERIC", 2);
@@ -151,9 +154,13 @@ function __autoload($class_name) {
     if ($class_name == "ReviewForm")
 	require_once("$ConfSitePATH/Code/review.inc");
     else if ($class_name == "Mimetype")
-        require_once("$ConfSitePATH/Code/mimetypes.inc");
-    else if ($class_name == "DocumentHelper" || $class_name == "HotCRPDocument")
-        require_once("$ConfSitePATH/Code/documents.inc");
+        require_once("$ConfSitePATH/Code/mimetype.php");
+    else if ($class_name == "DocumentHelper")
+        require_once("$ConfSitePATH/Code/documenthelper.php");
+    else if ($class_name == "HotCRPDocument")
+        require_once("$ConfSitePATH/Code/hotcrpdocument.php");
+    else if ($class_name == "Mailer")
+        require_once("$ConfSitePATH/Code/mailer.php");
 }
 
 // If you have the PEAR::Mail libraries installed globally,

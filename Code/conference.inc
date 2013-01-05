@@ -345,8 +345,6 @@ class Conference {
 		$newguy->affiliation = $_REQUEST["${p}affiliation"];
 	    if (isset($_REQUEST["${p}voicePhoneNumber"]))
 		$newguy->voicePhoneNumber = $_REQUEST["${p}voicePhoneNumber"];
-	    if (isset($_REQUEST["${p}faxPhoneNumber"]))
-		$newguy->faxPhoneNumber = $_REQUEST["${p}faxPhoneNumber"];
 
 	    // actually update database
 	    $result = $newguy->updateDB("while creating account for " . htmlspecialchars($email));
@@ -783,13 +781,13 @@ class Conference {
 	return $this->q($q . " left join PaperStorage s on (s.paperStorageId=$sjoin) where p.paperId$paperMatch");
     }
 
-    function paperStorageRow($result) {
+    function paperStorageRow($result, $dtype = DOCUMENT_SUBMISSION) {
 	if (!($doc = edb_orow($result)))
 	    return $doc;
         // type doesn't matter
-        $docclass = new HotCRPDocument(DOCUMENT_SUBMISSION);
+        $docclass = new HotCRPDocument($dtype);
         // in modern versions sha1 is set at storage time; before it wasn't
-	if ($doc->sha1 == "") {
+	if ($doc->paperStorageId && $doc->sha1 == "") {
 	    if (!$docclass->load_database_content($doc))
 		return false;
 	    $doc->sha1 = sha1($doc->content, true);
@@ -799,154 +797,37 @@ class Conference {
 	return $doc;
     }
 
-    function __downloadPaper($paperId, $saveit, $documentType) {
-	global $Me, $zlib_output_compression;
+    function __downloadPaper($paperId, $attachment, $documentType) {
+	global $Opt, $Me, $zlib_output_compression;
 
-	// Database query
-	$result = $this->paperStorageResult($paperId, $documentType);
-	if (!$result) {
+        $result = $this->paperStorageResult($paperId, $documentType);
+        if (!$result) {
 	    $this->log("Error downloading for review: " . mysql_error($this->dblink), $Me, $paperId);
-	    return new PEAR_Error("Database error while downloading paper.");
+	    return set_error_html("Database error while downloading paper.");
 	} else if (edb_nrows($result) == 0)
-	    return new PEAR_Error("No such document.");
+	    return set_error_html("No such document.");
 
 	// Check data
-	$row = $this->paperStorageRow($result);
-	if (!$row || $row->paperStorageId <= 1)
-	    return new PEAR_Error("Paper #$paperId hasn’t been uploaded yet.");
-	else if (isset($row->content) && strlen($row->content) == 0)
-	    return new PEAR_Error("Paper #$paperId appears to be empty.");
-
-	// Print paper
-	header("Content-Type: $row->mimetype");
-	header("Content-Description: PHP Generated Data");
-	$name = $this->downloadPaperName($paperId, $row->mimetype, $documentType);
-	header("Content-Disposition: " . ($saveit || $row->mimetype != "application/pdf" ? "attachment" : "inline") . "; filename=$name");
-	// reduce likelihood of XSS attacks in IE
-	header("X-Content-Type-Options: nosniff");
-	if (isset($row->filestore)) {
-	    if (!$zlib_output_compression)
-		header("Content-Length: " . filesize($row->filestore));
-	    ob_clean();
-	    flush();
-	    readfile($row->filestore);
-	} else {
-	    if (!$zlib_output_compression)
-		header("Content-Length: " . strlen($row->content));
-	    print $row->content;
-	}
-	return true;
+        $docs = array();
+	while (($doc = $this->paperStorageRow($result, $documentType))) {
+	    $doc->filename = $this->downloadPaperName($doc->paperId, $doc->mimetype ? $doc->mimetype : MIMETYPEID_PDF, $documentType);
+            $docs[] = $doc;
+        }
+	if (count($docs) == 1 && $docs[0]->paperStorageId <= 1)
+	    return set_error_html("Paper #" . $docs[0]->paperId . " hasn’t been uploaded yet.");
+        $downloadname = false;
+        if (count($docs) > 1)
+            $downloadname = $Opt["downloadPrefix"] . pluralx(2, documentTypeName($documentType)) . ".zip";
+        return DocumentHelper::download($docs, $attachment, $downloadname);
     }
 
-    function downloadPaper($paperId, $saveit, $documentType = 0) {
+    function downloadPaper($paperId, $attachment, $documentType = 0) {
 	global $Me;
-	$result = $this->__downloadPaper($paperId, $saveit, $documentType);
-	if ($result !== true)
-	    $this->errorMsg($result->getMessage());
+	$result = $this->__downloadPaper($paperId, $attachment, $documentType);
+	if ($result->error)
+	    $this->errorMsg($result->error_html);
 	else
 	    $this->log("Downloaded paper", $Me, $paperId);
-	return $result;
-    }
-
-    function zipAdd(&$tmpdir, $name, $data, &$warnings, &$files) {
-	if (!isset($tmpdir) || !$tmpdir)
-	    if (($tmpdir = tempdir()) === false) {
-		$warnings[] = "Could not create temporary directory!";
-		return false;
-	    }
-	$filename = "$tmpdir/$name";
-	$trylen = file_put_contents($filename, $data);
-	if ($trylen != strlen($data)) {
-	    clean_tempdirs();
-	    $trylen = file_put_contents($filename, $data);
-	}
-	if ($trylen != strlen($data)) {
-	    $warnings[] = "Could not save $name.";
-	    return false;
-	} else {
-	    $files[] = $filename;
-	    return true;
-	}
-    }
-
-    function zipFinish(&$tmpdir, $name, &$files) {
-	global $Opt, $zlib_output_compression;
-
-	if (!($zipcmd = defval($Opt, "zipCommand", "zip")))
-	    return new PEAR_Error("<code>zip</code> is not supported on this installation.");
-	$out = system("$zipcmd -jq $tmpdir/x.zip " . join(" ", $files) . " 2>&1", $status);
-	if ($status != 0)
-	    return new PEAR_Error("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-	if (!file_exists("$tmpdir/x.zip"))
-	    return new PEAR_Error("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-
-	// output
-	header("Content-Description: PHP Generated Data");
-	header("Content-Disposition: attachment; filename=$name");
-	header("Content-Type: application/zip");
-	if (!$zlib_output_compression)
-	    header("Content-Length: " . filesize("$tmpdir/x.zip"));
-	// flush all output buffers to avoid holding large files in memory
-	ob_clean();
-	flush();
-	readfile("$tmpdir/x.zip");
-	return true;
-    }
-
-    function __downloadPapers($paperIds, &$tmpdir, $documentType) {
-	global $Opt, $zlib_output_compression;
-
-	// special cases
-	if (count($paperIds) == 0)
-	    return new PEAR_Error("No papers selected for download.");
-	else if (count($paperIds) == 1)
-	    return $this->__downloadPaper($paperIds[0], 1, $documentType);
-
-	// read papers
-	$result = $this->paperStorageResult($paperIds, $documentType, true);
-	if (!$result)
-	    return new PEAR_Error("Database error while downloading papers: " . mysql_error($this->dblink));
-
-	// set up temporary directory
-	if (($tmpdir = tempdir()) === false)
-	    return new PEAR_Error("Could not create temporary directory!");
-
-	// write papers into temporary directory
-	$warnings = array();
-	$files = array();
-	while (($row = $this->paperStorageRow($result))) {
-	    $name = $this->downloadPaperName($row->paperId, $row->mimetype, $documentType);
-	    if ($row->paperStorageId <= 1)
-		$warnings[] = "Paper #$row->paperId has not been uploaded yet.";
-	    else if (isset($row->filestore)
-                     && @symlink($row->filestore, "$tmpdir/$name"))
-		$files[] = "$tmpdir/$name";
-	    else if (($docclass = new HotCRPDocument(0))
-                     && $docclass->load_database_content($row))
-		$this->zipAdd($tmpdir, $name, $row->content, $warnings, $files);
-	    else
-		$warnings[] = "Could not save $name.";
-	}
-
-	// complete
-	if (!count($files))
-	    return new PEAR_Error("No papers were successfully downloaded.");
-	if (count($warnings))
-	    $this->zipAdd($tmpdir, "README-warnings.txt", join("\n", $warnings) . "\n", $warnings, $files);
-
-	// run zip
-	return $this->zipFinish($tmpdir, $Opt["downloadPrefix"] . pluralx(2, documentTypeName($documentType)) . ".zip", $files);
-    }
-
-    function downloadPapers($paperIds, $documentType) {
-	global $Me;
-	$result = $this->__downloadPapers($paperIds, $tmpdir, $documentType);
-	if ($result !== true)
-	    $this->errorMsg($result->getMessage());
-	else
-	    $this->log("Downloaded papers", $Me, $paperIds);
-	if (isset($tmpdir) && $tmpdir)
-	    exec("/bin/rm -rf $tmpdir");
 	return $result;
     }
 
@@ -1734,9 +1615,9 @@ class Conference {
 	if ($Me->valid()) {
 	    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 	    if ($Me->contactId > 0) {
-		echo "<a class='q' href='", hoturl("account"), "'><strong>",
+		echo "<a class='q' href='", hoturl("profile"), "'><strong>",
 		    htmlspecialchars($Me->email),
-		    "</strong></a> &nbsp; <a href='", hoturl("account"), "'>Profile</a>",
+		    "</strong></a> &nbsp; <a href='", hoturl("profile"), "'>Profile</a>",
 		    $xsep;
 	    }
 	    if ($Me->chairContact) {

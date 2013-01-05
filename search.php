@@ -70,13 +70,14 @@ function cleanAjaxResponse(&$response, $type) {
 
 
 // download selected papers
-if (($getaction == "paper" || $getaction == "final" || substr($getaction, 0, 4) == "opt-")
+if (($getaction == "paper" || $getaction == "final"
+     || substr($getaction, 0, 4) == "opt-")
     && isset($papersel)
     && ($dt = requestDocumentType($getaction, null)) !== null) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
     $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
-    while ($row = edb_orow($result)) {
+    while (($row = edb_orow($result))) {
 	if (!$Me->canViewPaper($row, $whyNot, true))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
 	else
@@ -84,7 +85,7 @@ if (($getaction == "paper" || $getaction == "final" || substr($getaction, 0, 4) 
     }
 
     session_write_close();	// to allow concurrent clicks
-    $result = $Conf->downloadPapers($downloads, $dt);
+    $result = $Conf->downloadPaper($downloads, true, $dt);
     if ($result === true)
 	exit;
 }
@@ -215,16 +216,12 @@ function downloadReviews(&$texts, &$errors) {
 	downloadText($text, $rfname, "review forms");
 	exit;
     } else {
-	$files = array();
+        $zip = DocumentHelper::start_zip();
+        $zip->warnings = $warnings;
 	foreach ($texts as $sel => $text)
-	    $Conf->zipAdd($tmpdir, $Opt['downloadPrefix'] . $rfname . $papersel[$sel] . ".txt", $header . $text, $warnings, $files);
-	if (count($warnings))
-	    $Conf->zipAdd($tmpdir, "README-warnings.txt", join("\n", $warnings) . "\n", $warnings, $files);
-
-	$result = $Conf->zipFinish($tmpdir, $Opt['downloadPrefix'] . "reviews.zip", $files);
-	if (isset($tmpdir) && $tmpdir)
-	    exec("/bin/rm -rf $tmpdir");
-	if ($result === true)
+	    $zip->add($header . $text, $Opt["downloadPrefix"] . $rfname . $papersel[$sel] . ".txt");
+	$result = $zip->finish($Opt["downloadPrefix"] . "reviews.zip");
+	if (!$result->error)
 	    exit;
     }
 }

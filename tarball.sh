@@ -64,6 +64,7 @@ manualassign.php
 mergeaccounts.php
 offline.php
 paper.php
+profile.php
 review.php
 reviewprefs.php
 scorehelp.php
@@ -73,6 +74,7 @@ sessionvar.php
 settings.php
 style.css
 supersleight.js
+users.php
 
 Code/.htaccess
 Code/backupdb.sh
@@ -88,12 +90,14 @@ Code/contactlist.inc
 Code/countries.inc
 Code/createdb.sh
 Code/distoptions.inc
-Code/documents.inc
+Code/documenthelper.php
 Code/header.inc
 Code/helpers.inc
+Code/hotcrpdocument.php
 Code/ldaplogin.inc
+Code/mailer.php
 Code/mailtemplate.inc
-Code/mimetypes.inc
+Code/mimetype.php
 Code/paperactions.inc
 Code/paperexpr.inc
 Code/paperlist.inc

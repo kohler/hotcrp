@@ -10,10 +10,10 @@ structure=false
 pc=false
 while [ $# -gt 0 ]; do
     case "$1" in
-    --structure) structure=true;;
+    --structure|--schema) structure=true;;
     --pc) pc=true;;
     -*)	FLAGS="$FLAGS $1";;
-    *)	echo "Usage: $PROG [--structure] [--pc] [MYSQL-OPTIONS]" 1>&2; exit 1;;
+    *)	echo "Usage: $PROG [--schema] [--pc] [MYSQL-OPTIONS]" 1>&2; exit 1;;
     esac
     shift
 done
