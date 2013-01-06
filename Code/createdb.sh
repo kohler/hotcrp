@@ -247,6 +247,7 @@ while true; do
     echo 1>&2
     echo "The database password can't contain single quotes or null characters." 1>&2
 done
+echo
 
 
 sql_dbpass () {
@@ -259,8 +260,8 @@ php_dbpass () {
 
 
 echo
-echo "Creating database."
 if [ -z "$FLAGS" ]; then
+    echo "Creating database."
     echo "This should work if you are root and haven't changed the default mysql"
     echo "administrative password.  If you have changed the password, you will need to"
     echo "run '$PROG -p' or '$PROG -pPASSWD' (no space)."
@@ -278,14 +279,13 @@ if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
     echo
     test "$dbexists" = 0 && echo "A database named '$DBNAME' already exists!"
     test "$userexists" = 0 && echo "A user named '$DBNAME' already exists!"
-    echo "Do you want to delete and recreate the database and/or user?"
     while true; do
-	echo_n "Delete and recreate [Y], continue [n], or quit [q]? "
+	echo_n "Delete and recreate database and user? [Y/n] "
 	read createdbuser
 	expr "$createdbuser" : "[ynqYNQ].*" >/dev/null && break
 	test -z "$createdbuser" && break
     done
-    expr "$createdbuser" : "[qQ].*" >/dev/null && echo "Exiting..." && exit 0
+    expr "$createdbuser" : "[nNqQ].*" >/dev/null && echo "Exiting" && exit 0
     expr "$createdbuser" : "[nN].*" >/dev/null || createdbuser=y
 
     if [ "$createdbuser" = y -a "$dbexists" = 0 ]; then
