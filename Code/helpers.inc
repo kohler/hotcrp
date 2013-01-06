@@ -1857,7 +1857,7 @@ function pcMembers() {
 	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "");
 	$result = $Conf->q("select firstName, lastName, affiliation, email, u.contactId contactId, roles$qa from ContactInfo join PCMember using (contactId)");
 	while (($row = edb_orow($result)))
-	    $pc[$row->contactId] = ContactInfo::make($row);
+	    $pc[$row->contactId] = Contact::make($row);
 	uasort($pc, "_sort_pcMember");
 	$_SESSION["pcmembers"] = array($Conf->setting('pc'), $pc);
     }
@@ -1876,7 +1876,7 @@ function pcMembersAndAdmins() {
 	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "");
 	$result = $Conf->q("select firstName, lastName, email, affiliation, u.contactId contactId, roles$qa from ContactInfo u left join PCMember p using (contactId) left join ChairAssistant ca on (ca.contactId=u.contactId) where p.contactId is not null or ca.contactId is not null order by lastName, firstName");
 	while (($row = edb_orow($result)))
-	    $pc[$row->contactId] = ContactInfo::make($row);
+	    $pc[$row->contactId] = Contact::make($row);
 	$_SESSION["pcmembersa"] = array($Conf->setting('pc'), $pc);
     }
     return $_SESSION["pcmembersa"][1];
