@@ -23,11 +23,63 @@ echo_n () {
 '
 }
 
+getdbopt () {
+    perl -e 'undef $/; $t = <STDIN>;
+$t =~ s|/\*.*?\*/||gs;
+$t =~ s|//.*$||gm;
+
+sub unslash ($) {
+   my($a) = @_;
+   my($b) = "";
+   while ($a ne "") {
+      if ($a =~ m|\A\\|) {
+         if ($a =~ m|\A\\([0-7]{1,3})(.*)\z|s) {
+	    $b .= chr(oct($1));
+	    $a = $2;
+	 } elsif ($a =~ m |\A\\([nrftvb])(.*)\z|s) {
+	    $b .= eval("\"\\$1\"");
+	    $a = $2;
+	 } else {
+	    $b .= substr($a, 1, 1);
+	    $a = substr($a, 2);
+	 }
+      } else {
+	 $b .= substr($a, 0, 1);
+         $a = substr($a, 1);
+      }
+   }
+   $b;
+}
+
+while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*\"(([^\"\\]|\\.)*)\"&g) {
+   $Opt{$1} = unslash($2);
+}
+while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*'"'"'([^'"'"']*)'"'"'&g) {
+   $Opt{$1} = $2;
+}
+while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*([\d.]+)&g) {
+   $Opt{$1} = $2;
+}
+
+sub fixshell ($) {
+    my($a) = @_;
+    $a =~ s|'"'"'|'"'"'"'"'"'"'"'"'|g;
+    $a;
+}
+
+$Opt{"dbUser"} = $Opt{"dbName"} if (!exists($Opt{"dbUser"}));
+$Opt{"dbPassword"} = $Opt{"dbName"} if (!exists($Opt{"dbPassword"}));
+print "'"'"'", fixshell($Opt{"'$1'"}), "'"'"'";
+' < "${PROGDIR}${options_file}"
+}
+
 export PROG=$0
 export FLAGS=""
 export FLAGS_NOP=""
 export ECHOFLAGS=""
 DBNAME=""
+distoptions_file=distoptions.inc
+options_file=options.inc
 needpassword=false
 force=false
 while [ $# -gt 0 ]; do
@@ -118,16 +170,27 @@ $DBNAME
 __EOF__
 }
 
+default_dbname=
+x="`getdbopt dbName 2>/dev/null`"
+x="`eval "echo $x"`"
+if test -n "$x"; then
+    bad="`eval "echo $x" | tr -d a-zA-Z0-9_.-`"
+    if test -z "$bad"; then default_dbname="`echo $x`"; fi
+fi
+
 while true; do
-    echo_n "Enter database name (NO SPACES): "
+    echo_n "Enter database name (NO SPACES)"
     if [ -z "$DBNAME" ]; then
+	test -n "$default_dbname" && echo_n " [default $default_dbname]"
+	echo_n ": "
 	read -r DBNAME
     else
-	echo "$DBNAME"
+	echo ": $DBNAME"
     fi
 
-    x=`echo_dbname | tr -d a-zA-Z0-9_.-`
-    c=`echo_dbname | wc -c`
+    test -z "$DBNAME" -a -n "$default_dbname" && DBNAME="$default_dbname"
+    x="`echo_dbname | tr -d a-zA-Z0-9_.-`"
+    c="`echo_dbname | wc -c`"
     if test -z "$DBNAME"; then
 	echo 1>&2
 	echo "You must enter a database name." 1>&2
@@ -168,7 +231,11 @@ generate_password () {
 { pw = pw pwchars[($0 % npwchars) + 1]; if (length(pw) >= 16) { printf("%s\n", pw); exit; } }'
 }
 
-default_dbpass=`generate_random_ints | generate_password`
+default_dbpass=
+x="`getdbopt dbPassword 2>/dev/null`"
+x="`eval "echo $x"`"
+test -n "$x" && default_dbpass="$x"
+test -z "$default_dbpass" && default_dbpass=`generate_random_ints | generate_password`
 while true; do
     echo_n "Enter password for mysql user $DBNAME [default $default_dbpass]: "
     stty -echo; trap "stty echo; exit 1" INT
@@ -343,30 +410,30 @@ fi
 ## Create options.inc
 ##
 
-create_options_inc () {
+create_options () {
     awk 'BEGIN { p = 1 }
 /^\$Opt\[.dbName.\]/ { p = 0 }
-{ if (p) print }' < ${PROGDIR}distoptions.inc
+{ if (p) print }' < "${PROGDIR}${distoptions_file}"
     cat <<__EOF__
 \$Opt["dbName"] = "$DBNAME";
 \$Opt["dbPassword"] = "`php_dbpass`";
 __EOF__
     awk 'BEGIN { p = 0 }
 /^\$Opt\[.shortName.\]/ { p = 1 }
-{ if (p) print }' < ${PROGDIR}distoptions.inc
+{ if (p) print }' < "${PROGDIR}${distoptions_file}"
 }
 
-if [ -r "${PROGDIR}options.inc" ]; then
+if [ -r "${PROGDIR}${options_file}" ]; then
     echo
-    echo "*** Your Code/options.inc file already exists."
+    echo "*** Your Code/${options_file} file already exists."
     echo "*** Edit it to use the database name, username, and password you chose."
     echo
-elif [ -r "${PROGDIR}distoptions.inc" ]; then
-    echo "Creating Code/options.inc..."
-    create_options_inc > ${PROGDIR}options.inc
+elif [ -r "${PROGDIR}${distoptions_file}" ]; then
+    echo "Creating Code/${options_file}..."
+    create_options > "${PROGDIR}${options_file}"
     if [ -n "$SUDO_USER" ]; then
-	echo chown $SUDO_USER ${PROGDIR}options.inc
-	chown $SUDO_USER ${PROGDIR}options.inc
+	echo chown $SUDO_USER "${PROGDIR}${options_file}"
+	chown $SUDO_USER "${PROGDIR}${options_file}"
     fi
-    chmod o-rwx ${PROGDIR}options.inc
+    chmod o-rwx "${PROGDIR}${options_file}"
 fi
