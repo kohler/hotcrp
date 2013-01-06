@@ -218,7 +218,7 @@ class PaperActions {
             $where[] = "coalesce(pc.conflictType,0)<=0";
         }
         if ($papersel)
-            $where[] = "t.paperId in (" . join(",", $papersel) . ")";
+            $where[] = "t.paperId in (" . join(",", mkarray($papersel)) . ")";
         if (count($where))
             $q .= " where " . join(" and ", $where);
         $tags = array();
