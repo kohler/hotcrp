@@ -269,7 +269,6 @@ else if ((isset($_REQUEST["submit"]) || isset($_REQUEST["submitresponse"])
 
 // paper actions
 if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_post()) {
-    require_once("Code/paperactions.inc");
     PaperActions::setTags($prow);
     loadRows();
 }

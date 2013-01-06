@@ -81,17 +81,14 @@ if (!$newPaper) {
 
 // paper actions
 if (isset($_REQUEST["setrevpref"]) && $prow && check_post()) {
-    require_once("Code/paperactions.inc");
     PaperActions::setReviewPreference($prow);
     loadRows();
 }
 if (isset($_REQUEST["setrank"]) && $prow && check_post()) {
-    require_once("Code/paperactions.inc");
     PaperActions::setRank($prow);
     loadRows();
 }
 if (isset($_REQUEST["rankctx"]) && $prow && check_post()) {
-    require_once("Code/paperactions.inc");
     PaperActions::rankContext($prow);
     loadRows();
 }
@@ -687,14 +684,11 @@ if (isset($_REQUEST["delete"]) && check_post()) {
 
 // paper actions
 if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_post()) {
-    require_once("Code/paperactions.inc");
     PaperActions::setTags($prow);
     loadRows();
 }
-if (isset($_REQUEST["tagreport"]) && check_post()) {
-    require_once("Code/paperactions.inc");
+if (isset($_REQUEST["tagreport"]) && check_post())
     PaperActions::tagReport($prow);
-}
 
 
 // correct modes

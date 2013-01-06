@@ -369,32 +369,26 @@ if (isset($_REQUEST["accept"])) {
 
 // paper actions
 if (isset($_REQUEST["setdecision"]) && check_post()) {
-    require_once("Code/paperactions.inc");
     PaperActions::setDecision($prow);
     loadRows();
 }
 if (isset($_REQUEST["setrevpref"]) && check_post()) {
-    require_once("Code/paperactions.inc");
     PaperActions::setReviewPreference($prow);
     loadRows();
 }
 if (isset($_REQUEST["setrank"]) && check_post()) {
-    require_once("Code/paperactions.inc");
     PaperActions::setRank($prow);
     loadRows();
 }
 if (isset($_REQUEST["setlead"]) && check_post()) {
-    require_once("Code/paperactions.inc");
     PaperActions::setLeadOrShepherd($prow, "lead");
     loadRows();
 }
 if (isset($_REQUEST["setshepherd"]) && check_post()) {
-    require_once("Code/paperactions.inc");
     PaperActions::setLeadOrShepherd($prow, "shepherd");
     loadRows();
 }
 if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_post()) {
-    require_once("Code/paperactions.inc");
     PaperActions::setTags($prow);
     loadRows();
 }

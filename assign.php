@@ -457,7 +457,6 @@ if (isset($_REQUEST["addpc"]) && $Me->privChair && check_post()) {
 
 // paper actions
 if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_post()) {
-    require_once("Code/paperactions.inc");
     PaperActions::setTags($prow);
     loadRows();
 }

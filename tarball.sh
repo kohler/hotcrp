@@ -98,7 +98,7 @@ Code/ldaplogin.inc
 Code/mailer.php
 Code/mailtemplate.inc
 Code/mimetype.php
-Code/paperactions.inc
+Code/paperactions.php
 Code/paperexpr.inc
 Code/paperlist.inc
 Code/paperoption.inc
