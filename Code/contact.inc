@@ -1182,6 +1182,7 @@ class Contact {
     }
 
     function canViewTags($prow, $forceShow = true) {
+        // see also PaperActions::all_tags
 	global $Conf;
 	return ($this->isPC
 		&& (!$prow || $prow->conflictType <= 0

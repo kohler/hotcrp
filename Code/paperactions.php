@@ -206,4 +206,32 @@ class PaperActions {
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "tags")), true);
     }
 
+    static function all_tags($papersel = null) {
+	global $Conf, $Me, $Error, $OK, $forceShow;
+        if (!$Me->isPC)
+            $Conf->ajaxExit(array("ok" => false));
+	$ajax = defval($_REQUEST, "ajax", false);
+        $q = "select distinct tag from PaperTag t";
+        $where = array();
+        if (!$Me->privChair) {
+            $q .= " left join PaperConflict pc on (pc.paperId=t.paperId and pc.contactId=$Me->contactId)";
+            $where[] = "coalesce(pc.conflictType,0)<=0";
+        }
+        if ($papersel)
+            $where[] = "t.paperId in (" . join(",", $papersel) . ")";
+        if (count($where))
+            $q .= " where " . join(" and ", $where);
+        $tags = array();
+        $result = $Conf->qe($q, "while reading tags");
+        while (($row = edb_row($result))) {
+            $twiddle = strpos($row[0], "~");
+            if ($twiddle === false
+                || ($twiddle == 0 && $row[0][1] == "~"))
+                $tags[] = $row[0];
+            else if ($twiddle > 0 && substr($row[0], 0, $twiddle) == $Me->contactId)
+                $tags[] = substr($row[0], $twiddle);
+        }
+        $Conf->ajaxExit(array("ok" => true, "tags" => $tags));
+    }
+
 }
