@@ -74,6 +74,11 @@ tables, so you may need `sudo Code/createdb.sh OPTIONS`. Run
 `Code/createdb.sh --help` for more information. You will need to
 decide on a name for your database (no spaces allowed).
 
+    The username and password information for the conference database
+is stored in `Code/options.inc`, which HotCRP marks as
+world-unreadable. You must ensure that your web server can read this
+file, for instance by changing its group.
+
 2. Edit `Code/options.inc`, which is annotated to guide you.
 (`Code/createdb.sh` creates this file based on
 `Code/distoptions.inc`.)
