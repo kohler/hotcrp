@@ -355,7 +355,7 @@ class ReviewForm {
 	if (isset($req["reviewerEmail"]) && $rrow
 	    && $rrow->email != $req["reviewerEmail"]
 	    && (!isset($req["reviewerName"]) || $req["reviewerName"] != trim("$rrow->firstName $rrow->lastName"))) {
-	    self::tfError($tf, true, "This review form claims to be written by " . htmlspecialchars($req["reviewerEmail"]) . " rather than the review&rsquo;s owner, " . contactHtml($rrow) . ".  If you want to upload it anyway, remove the &ldquo;<code>==+==&nbsp;Reviewer</code>&rdquo; line from the form and try again.", "reviewerEmail");
+	    self::tfError($tf, true, "This review form claims to be written by " . htmlspecialchars($req["reviewerEmail"]) . " rather than the review&rsquo;s owner, " . Text::user_html($rrow) . ".  If you want to upload it anyway, remove the &ldquo;<code>==+==&nbsp;Reviewer</code>&rdquo; line from the form and try again.", "reviewerEmail");
 	    return 0;
 	}
 	if (isset($outofrange)) {
@@ -620,11 +620,11 @@ class ReviewForm {
 	    $x .= wordWrapIndent($prow->title, "==-== Paper: ", "==-==        ") . "\n";
 	if ($contact->canViewReviewerIdentity($prow, $rrow)) {
 	    if ($rrow && isset($rrow->reviewFirstName))
-		$x .= "==+== Reviewer: " . contactText($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
+		$x .= "==+== Reviewer: " . Text::user_text($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
 	    else if ($rrow && isset($rrow->lastName))
-		$x .= "==+== Reviewer: " . contactText($rrow) . "\n";
+		$x .= "==+== Reviewer: " . Text::user_text($rrow) . "\n";
 	    else if ($myReview)
-		$x .= "==+== Reviewer: " . contactText($contact) . "\n";
+		$x .= "==+== Reviewer: " . Text::user_text($contact) . "\n";
 	}
 	if ($rrow && $rrow->reviewModified)
 	    $x .= "==-== Updated " . $Conf->printableTime($rrow->reviewModified) . "\n";
@@ -742,9 +742,9 @@ $blind\n";
 	$x .= $this->_prettyPaperTitle($prow, $l);
 	if ($rrow && $contact->canViewReviewerIdentity($prow, $rrow, true)) {
 	    if (isset($rrow->reviewFirstName))
-		$n = contactText($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
+		$n = Text::user_text($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
 	    else if (isset($rrow->lastName))
-		$n = contactText($rrow);
+		$n = Text::user_text($rrow);
 	    else
 		continue;
 	    $x .= wordWrapIndent($n, "Reviewer: ", $l) . "\n";
@@ -798,9 +798,9 @@ $blind\n";
 	if ($contact->canViewCommentIdentity($prow, $crow, true)) {
 	    $n .= " by ";
 	    if (isset($crow->reviewFirstName))
-		$n .= contactText($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
+		$n .= Text::user_text($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
 	    else
-		$n .= contactText($crow);
+		$n .= Text::user_text($crow);
 	}
 	$x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
 	$x .= $this->_prettyPaperTitle($prow, $l);
@@ -1298,7 +1298,7 @@ $blind\n";
 	$showtoken = $rrow && $rrow->reviewToken && $Me->canReview($prow, $rrow);
 	if ($rrow && $Me->canViewReviewerIdentity($prow, $rrow)
 	    && (!$showtoken || !preg_match('/^anonymous\d*$/', $rrow->email))) {
-	    echo $sep, ($rrow->reviewBlind ? "[" : ""), "by ", contactHtml($rrow), ($rrow->reviewBlind ? "]" : "");
+	    echo $sep, ($rrow->reviewBlind ? "[" : ""), "by ", Text::user_html($rrow), ($rrow->reviewBlind ? "]" : "");
 	    $sep = $xsep;
 	}
 	if ($showtoken) {
@@ -1474,7 +1474,7 @@ $blind\n";
 	    $t .= "...";
 	$t .= "</a>";
 	if ($contact->canViewReviewerIdentity($rrow, $rrow, true))
-	    $t .= $barsep . "<span class='hint'>review by</span> " . contactHtml($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
+	    $t .= $barsep . "<span class='hint'>review by</span> " . Text::user_html($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
 	$t .= $barsep . "<span class='hint'>submitted</span> " . $Conf->parseableTime($rrow->reviewSubmitted, false);
 	$t .= "</small><br /><a class='q'" . substr($a, 3);
 

@@ -65,12 +65,12 @@ class CommentView {
 	if ($crow && $Me->canViewCommentIdentity($prow, $crow)) {
 	    $blind = ($crow->blind && $crow->forAuthors > 0);
 	    echo $sep, "<span class='cmtname'>", ($blind ? "[" : ""),
-		contactHtml($crow), ($blind ? "]" : ""), "</span>";
+		Text::user_html($crow), ($blind ? "]" : ""), "</span>";
 	    $sep = $xsep;
 	} else if ($crow && $Me->privChair) {
 	    echo $sep, "<span id='foldcid$crow->commentId' class='cmtname fold4c'>",
 		"<a class='q fn4' href=\"javascript:void fold('cid$crow->commentId', 0, 4)\" title='Show author'>+&nbsp;<i>Hidden for blind review</i></a>",
-		"<span class='fx4'><a class='fx4' href=\"javascript:void fold('cid$crow->commentId', 1, 4)\" title='Hide author'>[blind]</a> ", contactHtml($crow), "</span>",
+		"<span class='fx4'><a class='fx4' href=\"javascript:void fold('cid$crow->commentId', 1, 4)\" title='Hide author'>[blind]</a> ", Text::user_html($crow), "</span>",
 		"</span>";
 	    $sep = $xsep;
 	}
@@ -335,7 +335,7 @@ Make it short and to the point; the conference deadline has passed.";
 	    $t .= "...";
 	$t .= "</a>";
 	if ($contact->canViewCommentIdentity($crow, $crow, true))
-	    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>comment by</span> " . contactHtml($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
+	    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>comment by</span> " . Text::user_html($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
 	$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>posted</span> " . $Conf->parseableTime($crow->timeModified, false);
 	$t .= "</small><br /><a class='q'" . substr($a, 3)
 	    . htmlspecialchars($crow->shortComment);

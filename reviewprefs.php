@@ -229,7 +229,7 @@ if ($Me->privChair) {
     $result = $Conf->qe($query);
     $revopt = array();
     while (($row = edb_orow($result))) {
-	$revopt[$row->contactId] = contactHtml($row);
+	$revopt[$row->contactId] = Text::user_html($row);
 	if ($row->preferenceCount <= 0)
 	    $revopt[$row->contactId] .= " (no preferences)";
     }

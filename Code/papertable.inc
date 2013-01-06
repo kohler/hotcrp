@@ -519,7 +519,7 @@ class PaperTable {
 	$names = array();
 	if ($type == "last") {
 	    foreach ($table as $au) {
-		$n = abbreviateNameHtml($au[0], $au[1], $au[2]);
+		$n = Text::abbrevname_html($au);
 		if ($highpreg !== false) {
 		    $n = highlightMatch($highpreg, $n, $nm);
 		    $this->entryMatches += $nm;
@@ -547,7 +547,7 @@ class PaperTable {
 			. "</a>&gt;";
 		if ($au[2] != "" && $viewAs !== null && $viewAs->email != $au[2]
 		    && $viewAs->privChair && defval($au, 4))
-		    $n .= " <a href=\"" . selfHref(array("viewContact" => $au[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . contactNameHtml($au)) . "</a>";
+		    $n .= " <a href=\"" . selfHref(array("viewContact" => $au[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($au)) . "</a>";
 		$names[] = "<p class='odname'>" . $prefix . $n . "</p>";
 		$prefix = "";
 	    }
@@ -785,7 +785,7 @@ class PaperTable {
 	if ($pulldown)
 	    contactPulldown("contact", "contact", $Conf, $Me);
 	else
-	    echo contactHtml($Me);
+	    echo Text::user_html($Me);
 	echo "</div>\n\n";
     }
 
@@ -992,7 +992,7 @@ class PaperTable {
 		$extra["optionstyles"] = array(CONFLICT_CHAIRMARK => "font-weight:bold");
 	    }
 	    foreach ($pcm as $id => $p) {
-		$c = "<tr><td class='pctbname0 pctbl'>". contactNameHtml($p) . "</td><td class='pctbconfsel'>";
+		$c = "<tr><td class='pctbname0 pctbl'>". Text::name_html($p) . "</td><td class='pctbconfsel'>";
 		$ct = defval($conflict, $id, $nonct);
 		if ($ct->is_author())
 		    $c .= "<strong>Author</strong>";
@@ -1017,7 +1017,7 @@ class PaperTable {
 		$value = $checked ? $ct->value : CONFLICT_AUTHORMARK;
 		$cbox = tagg_checkbox_h("pcc$id", $value, $checked, array("disabled" => $disabled));
 		$aff = ($p->affiliation === "" ? "" : "<div class='pcconfaff'>" . htmlspecialchars($p->affiliation) . "</div>");
-		$label = tagg_label(contactNameHtml($p) . $aff);
+		$label = tagg_label(Text::name_html($p) . $aff);
 		if ($aff !== "")
 		    $pcconfs[] = "<table><tr><td>$cbox&nbsp;</td><td>$label</td></table>\n";
 		else
@@ -1056,7 +1056,7 @@ class PaperTable {
 	$pcconfs = array();
 	foreach ($pcm as $id => $p)
 	    if (defval($conflict, $id))
-		$pcconfs[] = contactNameHtml($p);
+		$pcconfs[] = Text::name_html($p);
 	if ($prow->pcPaper)
 	    $pcconfs[] = "<b>PC paper</b>";
 	if (!count($pcconfs))
@@ -1096,7 +1096,7 @@ class PaperTable {
 	if ($editable) {
 	    $opt = array("0" => "None");
 	    foreach ($pc as $row)
-		$opt[htmlspecialchars($row->email)] = contactNameHtml($row);
+		$opt[htmlspecialchars($row->email)] = Text::name_html($row);
 
 	    echo "<div class='fx'>",
 		tagg_select($type, $opt,
@@ -1113,7 +1113,7 @@ class PaperTable {
 	else if (!isset($pc[$value]))
 	    echo "Unknown!";
 	else
-	    echo contactNameHtml($pc[$value]);
+	    echo Text::name_html($pc[$value]);
 
 	echo "</p></div>";
 	if ($editable)

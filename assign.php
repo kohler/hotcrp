@@ -107,13 +107,13 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
     // send confirmation email, if the review site is open
     if ($Conf->timeReviewOpen()) {
 	require_once("Code/mailtemplate.inc");
-	$Requester = Contact::makeMinicontact($row);
-	Mailer::send("@retractrequest", loadReviewInfo($prow, $Requester, true), $Requester, $Me, array("cc" => contactEmailTo($Me)));
+	$Requester = Contact::make($row);
+	Mailer::send("@retractrequest", loadReviewInfo($prow, $Requester, true), $Requester, $Me, array("cc" => Text::user_email_to($Me)));
     }
 
     // confirmation message
     if ($confirm)
-	$Conf->confirmMsg("Removed request that " . contactHtml($row) . " review paper #$prow->paperId.");
+	$Conf->confirmMsg("Removed request that " . Text::user_html($row) . " review paper #$prow->paperId.");
 }
 
 if (isset($_REQUEST["retract"])
@@ -207,7 +207,7 @@ function requestReviewChecks($themHtml, $reqId) {
     if (!$result)
 	return false;
     else if (($row = edb_orow($result)))
-	return $Conf->errorMsg(contactHtml($row) . " has already requested a review from $themHtml.");
+	return $Conf->errorMsg(Text::user_html($row) . " has already requested a review from $themHtml.");
 
     // check for outstanding refusal to review
     $result = $Conf->qe("select paperId, '<conflict>' from PaperConflict where paperId=$prow->paperId and contactId=$reqId union select paperId, reason from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
@@ -247,7 +247,7 @@ function requestReview($email) {
     // NB caller unlocks tables on error
 
     // check for outstanding review request
-    if (!($result = requestReviewChecks(contactHtml($Them), $reqId)))
+    if (!($result = requestReviewChecks(Text::user_html($Them), $reqId)))
 	return $result;
 
     // at this point, we think we've succeeded.
@@ -307,7 +307,7 @@ function proposeReview($email) {
 
     // send confirmation email
     require_once("Code/mailtemplate.inc");
-    Mailer::sendAdmin("@proposereview", $prow, $Me, array("permissionContact" => $Me, "cc" => contactEmailTo($Me), "contact3" => (object) array("fullName" => $name, "email" => $email), "reason" => $reason));
+    Mailer::sendAdmin("@proposereview", $prow, $Me, array("permissionContact" => $Me, "cc" => Text::user_email_to($Me), "contact3" => (object) array("fullName" => $name, "email" => $email), "reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");
@@ -541,7 +541,7 @@ if ($Me->actChair($prow)) {
 	echo "      <tr$color>";
 	if ($p->conflictType >= CONFLICT_AUTHOR) {
 	    echo "<td id='ass$p->contactId' class='pctbname-2 pctbl'>",
-		str_replace(' ', "&nbsp;", contactNameHtml($p)),
+		str_replace(' ', "&nbsp;", Text::name_html($p)),
 		"</td><td class='pctbass'>",
 		"<img class='ass-2' alt='(Author)' title='Author' src='", hoturl_image("images/_.gif"), "' />",
 		"</td>";
@@ -554,7 +554,7 @@ if ($Me->actChair($prow)) {
 		$cid = ($p->refused ? -3 : 0);
 	    $title = ($cid == -3 ? "' title='Review previously declined" : "");
 	    echo "<td id='ass$p->contactId' class='pctbname$cid pctbl'>";
-	    echo str_replace(' ', "&nbsp;", contactNameHtml($p));
+	    echo str_replace(' ', "&nbsp;", Text::name_html($p));
 	    if ($p->conflictType == 0
 		&& ($p->preference || $p->topicInterestScore))
 		echo preferenceSpan($p->preference, $p->topicInterestScore);
@@ -627,7 +627,7 @@ if ($Conf->setting("extrev_chairreq") && $Me->privChair) {
 		"<a class='button_small' href=\"",
 		hoturl_post("assign", "p=$prow->paperId&amp;name=" . urlencode($row->name) . "&amp;email=" . urlencode($row->email) . "&amp;deny=1"),
 		"\">Deny</a></td></tr>\n",
-		"<tr><td colspan='3'><small>Requester: ", contactHtml($row->reqFirstName, $row->reqLastName), "</small></td></tr>\n";
+		"<tr><td colspan='3'><small>Requester: ", Text::user_html($row->reqFirstName, $row->reqLastName), "</small></td></tr>\n";
 	}
 	echo "</table></div>\n\n",
 	    "</td><td></td></tr>\n";

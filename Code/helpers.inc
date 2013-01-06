@@ -830,7 +830,7 @@ function authorTable($aus, $viewAs = null) {
     if (!is_array($aus))
 	$aus = explode("\n", $aus);
     foreach ($aus as $aux) {
-	$au = trim(is_array($aux) ? contactHtml($aux) : $aux);
+	$au = trim(is_array($aux) ? Text::user_html($aux) : $aux);
 	if ($au != '') {
 	    if (strlen($au) > 30)
 		$out .= "<span class='autblentry_long'>";
@@ -838,39 +838,11 @@ function authorTable($aus, $viewAs = null) {
 		$out .= "<span class='autblentry'>";
 	    $out .= $au;
 	    if ($viewAs !== null && is_array($aux) && count($aux) >= 2 && $viewAs->email != $aux[2] && $viewAs->privChair)
-		$out .= " <a href=\"" . selfHref(array("viewContact" => $aux[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . (is_array($aux) ? contactNameHtml($aux) : $aux)) . "</a>";
+		$out .= " <a href=\"" . selfHref(array("viewContact" => $aux[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . (is_array($aux) ? Text::name_html($aux) : $aux)) . "</a>";
 	    $out .= "</span> ";
 	}
     }
     return $out;
-}
-
-function abbreviateNameHtml($f, $l = "", $email = "") {
-    if (is_object($f)) {
-	$l = $l ? $l : $f->lastName;
-	$email = $email ? $email : $f->email;
-	$f = $f->firstName;
-    }
-    $front = $rest = "";
-    if ($l != "")
-	$rest = $l;
-    else if ($f != "")
-	$rest = $f;
-    else
-	$rest = $email ? $email : "???";
-    if ($f != "" && $l != "") {
-	if (ctype_alpha($f[0]))
-	    $front = $f[0];
-	else if (preg_match("/^(\\pL)/us", $f, $m))
-	    $front = $m[1];
-	// Don't add a period if first name is a single letter
-	if ($front != "" && $front != $f && substr($f, 0, strlen($front) + 1) != $front . " ")
-	    $front .= ".";
-    }
-    if ($front == "")
-	return htmlspecialchars($rest);
-    else
-	return htmlspecialchars($front) . "&nbsp;" . htmlspecialchars($rest);
 }
 
 function highlightMatch($match, $text, &$n = null) {
@@ -907,75 +879,6 @@ function preferenceSpan($preference, $topicInterestScore = 0) {
     if ($topicInterestScore)
 	$t .= "T" . decorateNumber($topicInterestScore);
     return $t . "</span>";
-}
-
-function _cleanContactText(&$f, &$l, &$e) {
-    if (is_array($f)) {
-	if ($e === null && count($f) > 2)
-	    $e = $f[2];
-	$l = $f[1];
-	$f = $f[0];
-    } else if (is_object($f)) {
-	if ($e === null && isset($f->email))
-	    $e = $f->email;
-	if (isset($f->lastName) || isset($f->firstName)) {
-	    $l = defval($f, "lastName", "");
-	    $f = defval($f, "firstName", "");
-	} else
-	    list($f, $l) = splitName(defval($f, "fullName", ""));
-    }
-}
-
-function contactText($firstName, $lastName = null, $email = null) {
-    _cleanContactText($firstName, $lastName, $email);
-    if ($firstName || $lastName) {
-	$x = trim("$firstName $lastName");
-	if ($email)
-	    $x .= " <$email>";
-    } else
-	$x = $email;
-    return $x;
-}
-
-function contactNameText($firstName, $lastName = null, $email = null) {
-    _cleanContactText($firstName, $lastName, $email);
-    if ($firstName || $lastName)
-	$x = trim("$firstName $lastName");
-    else
-	$x = $email;
-    return $x;
-}
-
-function contactHtml($firstName, $lastName = null, $email = null) {
-    _cleanContactText($firstName, $lastName, $email);
-    if ($email)
-	$email = htmlspecialchars($email);
-    if ($firstName || $lastName) {
-	$x = htmlspecialchars(trim("$firstName $lastName"));
-	if ($email)
-	    $x .= " &lt;<a href=\"mailto:$email\">$email</a>&gt;";
-    } else if ($email)
-	$x = "&lt;<a href=\"mailto:$email\">$email</a>&gt;";
-    else
-	$x = "[No name]";
-    return $x;
-}
-
-function contactNameHtml($firstName, $lastName = null, $email = null) {
-    return htmlspecialchars(contactNameText($firstName, $lastName, $email));
-}
-
-function contactEmailTo($firstName, $lastName = null, $email = null) {
-    _cleanContactText($firstName, $lastName, $email);
-    if (!$email)
-	$email = "none";
-    if ($firstName || $lastName) {
-	$x = trim("$firstName $lastName");
-	if (preg_match('/[\000-\037()[\]<>@,;:\\".]/', $x))
-	    $x = "\"" . addcslashes($x, '"\\') . "\"";
-	return $email ? "$x <$email>" : "$x <none>";
-    } else
-	return $email ? $email : "<none>";
 }
 
 function allocateListNumber($listid) {
@@ -1276,7 +1179,7 @@ function genericWatch($prow, $watchtype, $callback) {
     }
 
     foreach ($watchers as $row) {
-	$minic = Contact::makeMinicontact($row);
+	$minic = Contact::make($row);
 	setReviewInfo($prow, $row);
 	$callback($prow, $minic);
     }
@@ -2106,35 +2009,6 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
 }
 
 
-function splitName($name, $withEmail = false) {
-    if ($withEmail) {
-	if (preg_match('%^\s*\"?(.*?)\"?\s*<([^<>]+)>\s*$%', $name, $m)
-	    || preg_match('%^\s*\"(.*)\"\s+(\S+)\s*$%', $name, $m))
-	    return array_merge(splitName($m[1]), array($m[2]));
-	else if (!preg_match('%^\s*(.*?)\s+(\S+)\s*$%', $name, $m))
-	    return array("", "", trim($name));
-	else if (strpos($m[1], "@") !== false && strpos($m[2], "@") === false)
-	    return array_merge(splitName($m[2]), array($m[1]));
-	else
-	    return array_merge(splitName($m[1]), array($m[2]));
-    }
-    if (($p1 = strrpos($name, ",")) !== false) {
-	$first = trim(substr($name, $p1 + 1));
-	if (!preg_match('@^(Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Esquire|Junior|Senior|Jr.?|Sr.?|I+)$@i', $first))
-	    return array($first, trim(substr($name, 0, $p1)));
-    }
-    if (preg_match('@[^\s,]+(\s+Jr\.?|\s+Sr\.?|\s+i+|\s+Ph\.?D\.?|\s+M\.?[SD]\.?)?(,.*)?\s*$@i', $name, $m)) {
-	$first = trim(substr($name, 0, strlen($name) - strlen($m[0])));
-	$last = trim($m[0]);
-	if (preg_match('@^(\S.*?)\s+(v[oa]n|d[eu])$@i', $first, $m)) {
-	    $first = $m[1];
-	    $last = $m[2] . " " . $last;
-	}
-	return array($first, $last);
-    } else
-	return array("", trim($name));
-}
-
 function cleanAuthor($row) {
     if (isset($row->authorTable))
 	return;
@@ -2162,7 +2036,7 @@ function cleanAuthor($row) {
 			$aff = '';
 		    }
 		}
-		$a = splitName($line);
+		$a = Text::split_name($line);
 		$a[2] = $email;
 		$a[3] = $aff;
 		$row->authorTable[] = $a;

@@ -146,7 +146,7 @@ echo "</dl>\nClick a heading to sort.\n</div></div>";
 
 $pcm = pcMembers();
 if ($reviewer > 0)
-    echo "<h2 style='margin-top:1em'>Assignments for ", contactNameHtml($pcm[$reviewer]), ($pcm[$reviewer]->affiliation ? " (" . htmlspecialchars($pcm[$reviewer]->affiliation) . ")" : ""), "</h2>\n";
+    echo "<h2 style='margin-top:1em'>Assignments for ", Text::name_html($pcm[$reviewer]), ($pcm[$reviewer]->affiliation ? " (" . htmlspecialchars($pcm[$reviewer]->affiliation) . ")" : ""), "</h2>\n";
 else
     echo "<h2 style='margin-top:1em'>Assignments by PC member</h2>\n";
 
@@ -166,7 +166,7 @@ $rev_opt = array();
 if ($reviewer <= 0)
     $rev_opt[0] = "(Select a PC member)";
 while (($row = edb_orow($result)))
-    $rev_opt[$row->contactId] = contactHtml($row) . " ("
+    $rev_opt[$row->contactId] = Text::user_html($row) . " ("
 	. plural($row->reviewCount, "assignment") . ")";
 
 echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",

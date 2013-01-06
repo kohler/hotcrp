@@ -335,7 +335,7 @@ class Conference {
 	    } else if (!isset($_REQUEST["${p}name"]))
 		/* nada */;
 	    else {
-		$matches = splitName($_REQUEST["${p}name"]);
+		$matches = Text::split_name($_REQUEST["${p}name"]);
 		$newguy->firstName = $matches[0];
 		$newguy->lastName = $matches[1];
 	    }
@@ -720,7 +720,7 @@ class Conference {
 	    $aus = $this->paperContactAuthors($paperId);
 	    $autxt = "";
 	    foreach ($aus as $au)
-		$autxt .= contactText($au) . "\n";
+		$autxt .= Text::user_text($au) . "\n";
 	    if ($autxt)
 		$message .= wordWrapIndent($autxt, "Contact authors: ");
 	    $message .= "\n";

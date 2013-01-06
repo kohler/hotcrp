@@ -236,7 +236,7 @@ function checkMail($send) {
 	$nrows_left--;
 	if ($nrows_left % 5 == 0)
 	    $nrows_print = true;
-	$contact = Contact::makeMinicontact($row);
+	$contact = Contact::make($row);
 	$rest["hideReviews"] = $checkReviewNeedsSubmit && $row->reviewNeedsSubmit;
 	$rest["error"] = false;
 	$preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest); // see also $show_preparation below

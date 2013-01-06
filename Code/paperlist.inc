@@ -713,7 +713,7 @@ class PaperList extends BaseList {
 	    return commajoin($affaus);
 	} else if ($highlight === "") {
 	    foreach ($row->authorTable as $au)
-		$aus[] = abbreviateNameHtml($au[0], $au[1], $au[2]);
+		$aus[] = Text::abbrevname_html($au);
 	    return join(", ", $aus);
 	} else {
 	    foreach ($row->authorTable as $au) {
@@ -744,7 +744,7 @@ class PaperList extends BaseList {
     function _contentPC($contactId, $visible) {
 	$pcm = pcMembers();
 	if (isset($pcm[$contactId]))
-	    return self::maybeConflict(contactNameHtml($pcm[$contactId]), $visible);
+	    return self::maybeConflict(Text::name_html($pcm[$contactId]), $visible);
 	else
 	    return "";
     }
@@ -892,9 +892,9 @@ class PaperList extends BaseList {
 		$long = ($long == 2 ? -2 : -1);
 	    return $this->contact->paperStatus($row->paperId, $row, $long);
 	case self::FIELD_REVIEWER:
-	    return contactHtml($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
+	    return Text::user_html($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
 	case self::FIELD_REVIEWER_MONITOR:
-	    $t = contactHtml($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail) . "<br /><small>Last login: ";
+	    $t = Text::user_html($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail) . "<br /><small>Last login: ";
 	    return $t . ($row->reviewLastLogin ? $Conf->printableTimeShort($row->reviewLastLogin) : "Never") . "</small>";
 	case self::FIELD_REVIEWER_TYPE:
 	    if ($row->reviewType == REVIEW_PRIMARY)
@@ -1000,7 +1000,7 @@ class PaperList extends BaseList {
 		    if ($xrow->lastName) {
 			$ranal = $this->_reviewAnalysis($xrow);
 			$n .= ($n ? ", " : "");
-			$n .= contactHtml($xrow->firstName, $xrow->lastName);
+			$n .= Text::name_html($xrow);
 			if ($xrow->reviewType >= REVIEW_SECONDARY)
 			    $n .= "&nbsp;" . self::_reviewIcon($xrow, $ranal, false);
 			if (($pref = defval($prefs, $xrow->contactId, null)))
@@ -1014,7 +1014,7 @@ class PaperList extends BaseList {
 	    $y = array();
 	    foreach (pcMembers() as $pc)
 		if (strpos($x, "," . $pc->contactId . " ") !== false)
-		    $y[] = contactHtml($pc->firstName, $pc->lastName);
+		    $y[] = Text::name_html($pc);
 	    return join(", ", $y);
 	case self::FIELD_REVIEWER_PREFERENCE:
 	    return (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
@@ -1031,8 +1031,7 @@ class PaperList extends BaseList {
 	    foreach (pcMembers() as $pcid => $pc)
 		if (($pref = defval($prefs, $pcid, null))) {
 		    $text .= ($text == "" ? "" : ", ")
-			. contactHtml($pc->firstName, $pc->lastName)
-			. preferenceSpan($pref);
+			. Text::name_html($pc) . preferenceSpan($pref);
 		}
 	    return $text;
 	case self::FIELD_SCORE:
@@ -1092,7 +1091,7 @@ class PaperList extends BaseList {
 	    foreach (pcMembers() as $pcm) {
 		$mytag = " " . $pcm->contactId . "~" . $tag . "#";
 		if (($p = strpos($t, $mytag)) !== false)
-		    $a[] = contactNameHtml($pcm) . " (#" . ((int) substr($t, $p + strlen($mytag))) . ")";
+		    $a[] = Text::name_html($pcm) . " (#" . ((int) substr($t, $p + strlen($mytag))) . ")";
 	    }
 	    return join(", ", $a);
 	case self::FIELD_LEAD:
@@ -1265,7 +1264,7 @@ class PaperList extends BaseList {
 	    $pc = pcMembers();
 	    $sel_opt = array();
 	    foreach ($pc as $id => $row)
-		$sel_opt[htmlspecialchars($row->email)] = htmlspecialchars(contactNameText($row));
+		$sel_opt[htmlspecialchars($row->email)] = Text::name_html($row);
 	    $t .= tagg_select("markpc", $sel_opt, defval($_REQUEST, "markpc"),
 			      array("id" => "markpc"))
 		. "</span> &nbsp;<input type='submit' class='b' name='setassign' value='Go' />";

@@ -269,7 +269,7 @@ class ContactList extends BaseList {
 	global $Conf, $reviewTypeName, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_NAME:
-	    $t = contactHtml($row->firstName, $row->lastName);
+	    $t = Text::name_html($row);
 	    if (trim($t) == "")
 		$t = "[No name]";
 	    if ($this->contact->privChair)
@@ -282,7 +282,7 @@ class ContactList extends BaseList {
 		$t .= " <span class='pcrole'>(PC)</span>";
 	    if ($this->contact->privChair && $row->email != $this->contact->email)
 		$t .= " <a href=\"" . hoturl("index", "viewContact=" . urlencode($row->email)) . "\">"
-		    . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . htmlspecialchars(contactNameText($row)))
+		    . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($row))
 		    . "</a>";
 	    return $t;
 	case self::FIELD_EMAIL:

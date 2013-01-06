@@ -114,18 +114,16 @@ class Mailer {
     }
 
     function _expandContact($contact, $out) {
-	$firstName = $contact;
-	$lastName = $email = null;
-	_cleanContactText($firstName, $lastName, $email);
+	list($name, $email, $first, $last) = Text::analyze_name($contact);
 	if (is_object($contact) && defval($contact, "preferredEmail", "") != "")
 	    $email = $contact->preferredEmail;
 
 	if ($out == "NAME" || $out == "CONTACT")
-	    $t = trim("$firstName $lastName");
+	    $t = $name;
 	else if ($out == "FIRST")
-	    $t = $firstName;
+	    $t = $first;
 	else if ($out == "LAST")
-	    $t = $lastName;
+	    $t = $last;
 	else
 	    $t = "";
 	if ($t == "" && $out == "NAME" && $email
@@ -642,7 +640,7 @@ class Mailer {
 	$m["subject"] = substr(Mailer::mimeHeader("Subject: ", $m["subject"]), 9);
 	$m["to"] = $emailTo->email;
 	$m["allowEmail"] = $Conf->allowEmailTo($m["to"]);
-	$hdr = Mailer::mimeEmailHeader("To: ", contactEmailTo($emailTo));
+	$hdr = Mailer::mimeEmailHeader("To: ", Text::user_email_to($emailTo));
 	$m["fullTo"] = substr($hdr, 4);
 
 	// parse headers
@@ -716,8 +714,8 @@ class Mailer {
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
 	    $row->conflictType = $contact->conflictType;
-	    Mailer::send($template, $row, Contact::makeMinicontact($contact), $otherContact, $rest);
-	    $contacts[] = contactHtml($contact);
+	    Mailer::send($template, $row, Contact::make($contact), $otherContact, $rest);
+	    $contacts[] = Text::user_html($contact);
 	}
 
 	$row->conflictType = $old_conflictType;
@@ -751,8 +749,8 @@ class Mailer {
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
 	    $row->conflictType = $contact->conflictType;
-	    Mailer::send($template, $row, Contact::makeMinicontact($contact), $otherContact, $rest);
-	    $contacts[] = contactHtml($contact);
+	    Mailer::send($template, $row, Contact::make($contact), $otherContact, $rest);
+	    $contacts[] = Text::user_html($contact);
 	}
 
 	$row->conflictType = $old_conflictType;

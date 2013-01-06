@@ -300,7 +300,7 @@ function parseBulkFile($text, $filename) {
 	    if (isset($line[$k]) && !isset($line[$x]))
 		$line[$x] = $line[$k];
 	if (isset($line["name"]) && !isset($line["firstName"]) && !isset($line["lastName"]))
-	    list($line["firstName"], $line["lastName"]) = splitName(simplifyWhitespace($line["name"]));
+	    list($line["firstName"], $line["lastName"]) = Text::split_name($line["name"]);
 	foreach ($line as $k => $v)
 	    if (is_string($k))
 		$_REQUEST[$k] = $v;
@@ -308,7 +308,7 @@ function parseBulkFile($text, $filename) {
 	    array(defval($line, "firstName", ""), defval($line, "lastName", ""), defval($line, "email", ""));
 
 	if (createUser($tf, true, true))
-	    $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">" . htmlspecialchars(contactText($Acct->firstName, $Acct->lastName, $Acct->email)) . "</a>";
+	    $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">" . Text::user_html($Acct) . "</a>";
 
 	foreach (array("firstName", "lastName", "uemail", "affiliation", "preferredEmail",
 		       "voicePhoneNumber", "collaborators",

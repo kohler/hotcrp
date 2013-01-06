@@ -714,7 +714,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	$t = "";
 	foreach ($pcm as $pc)
 	    if (in_array($pc->contactId, $pcs)) {
-		$t .= ($t ? ", " : "") . contactNameHtml($pc);
+		$t .= ($t ? ", " : "") . Text::name_html($pc);
 		$pref = $assignprefs["$pid:$pc->contactId"];
 		if ($pref !== "X" && $pref != 0)
 		    $t .= " <span class='asspref" . ($pref > 0 ? 1 : -1)
@@ -757,7 +757,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	    $color = $colorizer->match_all($p->contactTags);
 	    $color = ($color ? " class='${color}'" : "");
 	    $c = "<tr$color><td class='pctbname pctbl'>"
-		. contactNameHtml($p)
+		. Text::name_html($p)
 		. ": " . plural($nnew, "assignment")
 		. "</td></tr><tr$color><td class='pctbnrev pctbl'>"
 		. review_count_report($nrev, $p, "After assignment:&nbsp;");
@@ -936,7 +936,7 @@ foreach ($pcm as $id => $p) {
 			array("id" => "pcsel$count",
 			      "onclick" => "pselClick(event,this);\$\$('pctyp_sel').checked=true"))
 	. "&nbsp;</td><td class='pctbname'>"
-	. tagg_label(contactNameHtml($p), "pcsel$count")
+	. tagg_label(Text::name_html($p), "pcsel$count")
 	. "</td></tr><tr$color><td class='pctbl'></td><td class='pctbnrev'>"
 	. review_count_report($nrev, $p, "")
 	. "</td></tr>";
@@ -960,7 +960,7 @@ function bpSelector($i, $which) {
     if (!$badPairSelector) {
 	$badPairSelector = array("0" => "(PC member)");
 	foreach ($pcm as $pc)
-	    $badPairSelector[$pc->contactId] = htmlspecialchars(contactNameText($pc));
+	    $badPairSelector[$pc->contactId] = Text::name_html($pc);
     }
     $selected = ($i <= $_REQUEST["bpcount"] ? defval($_REQUEST, "bp$which$i") : "0");
     if ($selected && isset($badPairSelector[$selected]))

@@ -518,7 +518,7 @@ function tagsToText($prow, $makeUrls, $contact, $drop = false,
 	    $v = array();
 	    foreach (pcMembers() as $pcm)
 		if (($count = defval($vote[$base], $pcm->contactId, 0)) > 0)
-		    $v[] = contactNameHtml($pcm) . ($count > 1 ? " ($count)" : "");
+		    $v[] = Text::name_html($pcm) . ($count > 1 ? " ($count)" : "");
 	    if (!$contact->privChair && $prow->conflictType > 0)
 		$title = "PC votes hidden";
 	    else

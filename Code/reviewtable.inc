@@ -88,16 +88,16 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 		$t .= "<td class='empty'></td>";
 	} else {
 	    if (!$showtoken || !preg_match('/^anonymous\d*$/', $rr->email))
-		$n = contactNameHtml($rr->firstName, $rr->lastName,
+		$n = Text::name_html($rr->firstName, $rr->lastName,
 				     $mode == "assign" ? null : $rr->email);
 	    else
 		$n = "[Token " . encodeToken((int) $rr->reviewToken) . "]";
 	    $t .= "<td>" . $n . ($x ? " $x" : "");
 	    if ($Me->privChair && $rr->email != $Me->email)
-		$t .= " <a href=\"" . selfHref(array("viewContact" => $rr->email)) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . contactHtml($rr->firstName, $rr->lastName)) . "</a>";
+		$t .= " <a href=\"" . selfHref(array("viewContact" => $rr->email)) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($rr)) . "</a>";
 	    $t .= "</td>";
 	    if ($mode == "assign")
-		$t .= "<td>" . contactHtml(null, null, $rr->email) . "</td>";
+		$t .= "<td>" . Text::user_html(null, null, $rr->email) . "</td>";
 	    if (isset($rr->contactTags) && $rr->contactTags && $Me->isPC) {
 		if (!$colorizer) {
 		    require_once("tags.inc");
@@ -114,7 +114,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	else if (($conflictType > 0 && !$effAssistant) || $rr->reviewType != REVIEW_EXTERNAL)
 	    $t .= "<td class='empty'></td>";
 	else {
-	    $t .= "<td><small>Requested by " . contactHtml($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
+	    $t .= "<td><small>Requested by " . Text::user_html($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
 	    if ($rr->reviewModified <= 0
 		&& $rr->reviewType == REVIEW_EXTERNAL
 		&& ($rr->requestedBy == $Me->contactId || $effAssistant))
@@ -202,7 +202,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 		$cids[] = $cr->commentId;
 		$n = "<a class='nowrap' href='#comment$cr->commentId'>";
 		if ($Me->canViewCommentIdentity($prow, $cr))
-		    $n .= abbreviateNameHtml($cr->firstName, $cr->lastName);
+		    $n .= Text::abbrevname_html($cr);
 		else
 		    $n .= "anonymous";
 		if ($cr->forAuthors > 1 && $cr->forReviewers != 0)

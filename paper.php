@@ -196,7 +196,7 @@ function setRequestAuthorTable() {
 	$b = simplifyWhitespace(defval($_REQUEST, "auemail$i", ""));
 	$c = simplifyWhitespace(defval($_REQUEST, "auaff$i", ""));
 	if ($a != "" || $b != "" || $c != "") {
-	    $a = splitName($a);
+	    $a = Text::split_name($a);
 	    $a[2] = $b;
 	    $a[3] = $c;
 	    $_REQUEST["authorTable"][] = $a;

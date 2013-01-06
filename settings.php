@@ -310,7 +310,7 @@ function doTags($set, $what) {
 	    while (($row = edb_row($result))) {
 		$who = substr($row[1], 0, strpos($row[1], "~"));
 		if ($row[2] < 0) {
-		    $Error[] = "Removed " . contactHtml($pcm[$who]) . "'s negative &ldquo;$base&rdquo; vote for paper #$row[0].";
+		    $Error[] = "Removed " . Text::user_html($pcm[$who]) . "'s negative &ldquo;$base&rdquo; vote for paper #$row[0].";
 		    $negative = true;
 		} else {
 		    $pvals[$row[0]] = defval($pvals, $row[0], 0) + $row[2];
@@ -320,7 +320,7 @@ function doTags($set, $what) {
 
 	    foreach ($cvals as $who => $what)
 		if ($what > $allotment) {
-		    $Error[] = contactHtml($pcm[$who]) . " already has more than $allotment votes for tag &ldquo;$base&rdquo;.";
+		    $Error[] = Text::user_html($pcm[$who]) . " already has more than $allotment votes for tag &ldquo;$base&rdquo;.";
 		    $Highlight["tag_vote"] = true;
 		}
 

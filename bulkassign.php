@@ -1,12 +1,11 @@
 <?php
 // bulkassign.php -- HotCRP bulk paper assignment page
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once('Code/header.inc');
-require_once('Code/paperlist.inc');
-require_once('Code/search.inc');
-require_once("Code/mailtemplate.inc");
+require_once("Code/header.inc");
+require_once("Code/paperlist.inc");
+require_once("Code/search.inc");
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
 $nullMailer = new Mailer(null, null, $Me);
@@ -61,7 +60,7 @@ function parseBulkFile($text, $filename, $type) {
 	// parse a bunch of formats
 	if (preg_match('/^(\d+)\s+([^\t]+\t?[^\t]*)$/', $line, $m)) {
 	    $paperId = $m[1];
-	    list($firstName, $lastName, $email) = splitName(simplifyWhitespace($m[2]), true);
+	    list($firstName, $lastName, $email) = Text::split_name($m[2], true);
 	} else {
 	    tfError($tf, $lineno, "bad format");
 	    continue;

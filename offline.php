@@ -126,7 +126,7 @@ function setTagIndexes() {
 	} else if ($RealMe->privChair && preg_match('/\A\s*<\s*([^<>]*?(|<[^<>]*>))\s*>\s*\z/', $l, $m)) {
 	    if (count($settings) && $Me)
 		saveTagIndexes($tag, $settings, $titles, $linenos, $errors);
-	    list($firstName, $lastName, $email) = splitName(simplifyWhitespace($m[1]), true);
+	    list($firstName, $lastName, $email) = Text::split_name($m[1], true);
 	    if (($cid = matchContact(pcMembers(), $firstName, $lastName, $email)) < 0) {
 		if ($cid == -2)
 		    $errors[$lineno] = htmlspecialchars(trim("$firstName $lastName <$email>")) . " matches no PC member";

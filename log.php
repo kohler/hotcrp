@@ -214,7 +214,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
     $t = "<td class='pl_id'>" . htmlspecialchars($row->logId) . "</td>"
 	. "<td class='al_time'>" . $Conf->printableTimeShort($row->timestamp) . "</td>"
 	. "<td class='al_ip'>" . htmlspecialchars($row->ipaddr) . "</td>"
-	. "<td class='pl_name'>" . contactHtml($row) . "</td>"
+	. "<td class='pl_name'>" . Text::user_html($row) . "</td>"
 	. "<td class='al_act'>";
 
     $act = $row->action;

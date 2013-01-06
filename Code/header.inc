@@ -155,6 +155,8 @@ function __autoload($class_name) {
 	require_once("$ConfSitePATH/Code/review.inc");
     else if ($class_name == "PaperActions")
         require_once("$ConfSitePATH/Code/paperactions.php");
+    else if ($class_name == "Text")
+        require_once("$ConfSitePATH/Code/text.php");
     else if ($class_name == "Mimetype")
         require_once("$ConfSitePATH/Code/mimetype.php");
     else if ($class_name == "DocumentHelper")

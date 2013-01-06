@@ -113,6 +113,7 @@ Code/sample.pdf
 Code/schema.sql
 Code/search.inc
 Code/tags.inc
+Code/text.php
 Code/updateschema.inc
 Code/updateschema.sql
 
