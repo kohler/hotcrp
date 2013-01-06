@@ -1682,6 +1682,8 @@ class Conference {
 	    && (!isset($Me->_updatecheck) || $Me->_updatecheck + 20 <= $now)
 	    && (!isset($Opt["updatesSite"]) || $Opt["updatesSite"])) {
 	    $m = defval($Opt, "updatesSite", "http://hotcrp.lcdf.org/updates");
+            if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off")
+                $m = preg_replace(',\Ahttp://,', "https://", $m);
 	    $m .= (strpos($m, "?") === false ? "?" : "&") . "version=" . HOTCRP_VERSION;
 	    if (is_dir("$ConfSitePATH/.git")) {
 		$args = array();
