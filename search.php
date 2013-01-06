@@ -400,14 +400,15 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 		    $real .= str_pad("", min($row->tagIndex - $lastIndex, 5), ">") . "\t$row->paperId\t$row->title\n";
 		$lastIndex = $row->tagIndex;
 	    }
-	$text = "# Edit the rank order by rearranging this file's lines.\n"
-	    . "# The first line has the highest rank.\n\n"
-	    . "# Lines starting with \"#\" are ignored.  Unranked papers appear at the end\n"
-	    . "# in lines starting with \"X\", sorted by overall merit.  Create a rank by\n"
-	    . "# removing the \"X\"s and rearranging the lines.  Lines starting with \"=\"\n"
-	    . "# mark papers with the same rank as the preceding papers.  Lines starting\n"
-	    . "# with \">>\", \">>>\", and so forth indicate rank gaps between papers.\n"
-	    . "# When you are done, upload the file at\n"
+	$text = "# Edit the rank order by rearranging this file's lines.
+
+# The first line has the highest rank. Lines starting with \"#\" are
+# ignored. Unranked papers appear at the end in lines starting with
+# \"X\", sorted by overall merit. Create a rank by removing the \"X\"s and
+# rearranging the lines. Lines starting with \"=\" mark papers with the
+# same rank as the preceding papers. Lines starting with \">>\", \">>>\",
+# and so forth indicate rank gaps between papers. When you are done,
+# upload the file at\n"
 	    . "#   " . hoturl_absolute("offline") . "\n\n"
 	    . "Tag: " . trim($_REQUEST["tag"]) . "\n"
 	    . "\n"
