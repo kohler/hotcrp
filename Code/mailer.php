@@ -206,6 +206,10 @@ class Mailer {
 	    return $Opt["longName"];
 	if ($what == "%ADMIN%")
 	    return $this->_expandContact((object) array("fullName" => $Opt["contactName"], "email" => $Opt["contactEmail"]), "CONTACT");
+	if ($what == "%ADMINNAME%")
+	    return $this->_expandContact((object) array("fullName" => $Opt["contactName"], "email" => $Opt["contactEmail"]), "NAME");
+	if ($what == "%ADMINEMAIL%")
+	    return $this->_expandContact((object) array("fullName" => $Opt["contactName"], "email" => $Opt["contactEmail"]), "EMAIL");
 	if ($what == "%URL%")
 	    return $Opt["paperSite"];
 	else if ($len > 7 && substr($what, 0, 5) == "%URL(" && substr($what, $len - 2) == ")%") {
@@ -476,18 +480,18 @@ class Mailer {
 	if ($this->hideReviews)
 	    return "";
 
-	$q = "select PaperComment.*,
-		ContactInfo.firstName as reviewFirstName,
-		ContactInfo.lastName as reviewLastName,
-		ContactInfo.email as reviewEmail
-		from PaperComment
-		join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)";
+	$q = "select cmt.*,
+		u.firstName as reviewFirstName,
+		u.lastName as reviewLastName,
+		u.email as reviewEmail
+		from PaperComment cmt
+		join ContactInfo u on (u.contactId=cmt.contactId)";
 	if (is_array($this->commentId))
-	    $q .= "\n\t\twhere PaperComment.commentId in (" . join(", ", $this->commentId) . ")";
+	    $q .= "\n\t\twhere cmt.commentId in (" . join(", ", $this->commentId) . ")";
 	else if ($this->commentId)
-	    $q .= "\n\t\twhere PaperComment.commentId=$this->commentId";
+	    $q .= "\n\t\twhere cmt.commentId=$this->commentId";
 	else
-	    $q .= "\n\t\twhere PaperComment.paperId=" . $this->row->paperId;
+	    $q .= "\n\t\twhere cmt.paperId=" . $this->row->paperId;
 	$text = "";
 	// save old au_seerev setting, and reset it so authors can see them.
 	$old_au_seerev = $Conf->setting("au_seerev");
@@ -702,11 +706,11 @@ class Mailer {
     static function sendContactAuthors($template, $row, $otherContact = null, $rest = array()) {
 	global $Conf, $Me, $mailTemplates;
 
-	$result = $Conf->qe("select ContactInfo.contactId,
+	$result = $Conf->qe("select u.contactId,
 		firstName, lastName, email, preferredEmail, password, conflictType, 0 as myReviewType
-		from ContactInfo join PaperConflict using (contactId)
+		from ContactInfo u join PaperConflict using (contactId)
 		where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
-		group by ContactInfo.contactId", "while looking up contacts to send email");
+		group by u.contactId", "while looking up contacts to send email");
 
 	// must set the current conflict type in $row for each contact
 	$old_conflictType = $row->conflictType;
@@ -732,13 +736,13 @@ class Mailer {
     static function sendReviewers($template, $row, $otherContact = null, $rest = array()) {
 	global $Conf, $Me, $Opt, $mailTemplates;
 
-	$result = $Conf->qe("select ContactInfo.contactId,
+	$result = $Conf->qe("select u.contactId,
 		firstName, lastName, email, preferredEmail, password,
 		conflictType, reviewType as myReviewType
-		from ContactInfo
-		join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$row->paperId)
-		left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$row->paperId)
-		group by ContactInfo.contactId", "while looking up reviewers to send email");
+		from ContactInfo u
+		join PaperReview on (PaperReview.contactId=u.contactId and PaperReview.paperId=$row->paperId)
+		left join PaperConflict on (PaperConflict.contactId=u.contactId and PaperConflict.paperId=$row->paperId)
+		group by u.contactId", "while looking up reviewers to send email");
 
 	if (!isset($rest["cc"]))
 	    $rest["cc"] = defval($Opt, "emailCc", $Opt["contactName"] . " <" . $Opt["contactEmail"] . ">");
