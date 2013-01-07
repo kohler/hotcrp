@@ -2584,7 +2584,7 @@ class PaperSearch {
 	    $tOpt["act"] = "Active papers";
 	if ($me->isPC)
 	    $tOpt["s"] = "Submitted papers";
-	if ($me->isPC && ($Conf->timeAuthorViewDecision() || $Conf->setting("paperacc") > 0))
+	if ($me->isPC && $Conf->timePCViewDecision(false) && $Conf->setting("paperacc") > 0)
 	    $tOpt["acc"] = "Accepted papers";
 	if ($me->privChair)
 	    $tOpt["all"] = "All papers";
