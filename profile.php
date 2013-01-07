@@ -411,7 +411,7 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
     else {
 	$tracks = databaseTracks($Acct->contactId);
 	if (count($tracks->soleAuthor))
-	    $Conf->errorMsg("This user can't be deleted since they are sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional paper contacts.");
+	    $Conf->errorMsg("This user can’t be deleted since they are sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional paper contacts.");
 	else {
 	    $while = "while deleting user";
 	    foreach (array("ContactInfo", "Chair", "ChairAssistant",
@@ -438,6 +438,9 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
 	    // (XXX lock tables?)
 	    foreach ($tracks->comment as $pid)
 		$Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$pid), numAuthorComments=(select count(commentId) from PaperComment where paperId=$pid and forAuthors>0) where paperId=$pid", $while);
+            // clear caches
+            if ($Acct->isPC || $Acct->privChair)
+                $Conf->invalidateCaches(array("pc" => 1));
 	    // done
 	    $Conf->confirmMsg("Permanently deleted user " . htmlspecialchars($Acct->email) . ".");
 	    $Conf->log("Permanently deleted user " . htmlspecialchars($Acct->email) . " ($Acct->contactId)", $Me);
