@@ -547,7 +547,7 @@ function staged_foreach(a, f, backwards) {
 	for (x = 0; i >= 0 && i < a.length && x < 50; i += step, ++x)
 	    f(a[i]);
 	if (i < a.length)
-	    setTimeout(arguments.callee, 0);
+	    setTimeout(stagef, 0);
     };
     stagef();
 }

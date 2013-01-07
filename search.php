@@ -1,6 +1,6 @@
 <?php
 // search.php -- HotCRP paper search page
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -1207,7 +1207,8 @@ if ($pl) {
 }
 
 
-echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas'>\n<tr><td><div class='tlx'><div class='tld1'>";
+echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas'>
+<tr><td><div class='tlx'><div class='tld1'>";
 
 // Basic search
 echo "<form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'><div class='inform' style='position:relative'>

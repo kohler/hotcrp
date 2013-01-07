@@ -193,8 +193,8 @@ if (function_exists("iconv")) {
 }
 
 function convert_to_utf8($str) {
-    if (substr_count(substr($str, 0, 10000), "\r")
-        > 1.5 * substr_count(substr($str, 0, 10000), "\n"))
+    if (substr_count(substr($str, 0, 5000), "\r")
+        > 1.5 * substr_count(substr($str, 0, 5000), "\n"))
         return mac_os_roman_to_utf8($str);
     else
         return windows_1252_to_utf8($str);
