@@ -1160,7 +1160,7 @@ class PaperTable {
 		echo "</div>";
 		if (isset($Error["tags"]))
 		    echo "<div class='xmerror'>", $Error["tags"], "</div>";
-		echo "<textarea id='foldtags_d' cols='20' rows='2' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea>",
+		echo "<textarea id='foldtags_d' cols='20' rows='4' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea>",
 		    "<div style='padding:1ex 0;text-align:right'>",
 		    "<input type='hidden' name='settags' value='1' />",
 		    "<input class='bsm' type='submit' name='cancelsettags' value='Cancel' onclick='return fold(\"tags\",1)' />",
@@ -1215,7 +1215,7 @@ class PaperTable {
 	    " <input class='b fx7' type='submit' value='Save' />",
 	    " <span id='revprefformresult'></span>",
 	    "</div></form></div></div>\n";
-	$Conf->footerScript("Miniajax.onload(\"revprefform\");add_quicklink_shortcuts(\$\$('revprefform_d'))");
+	$Conf->footerScript("Miniajax.onload(\"revprefform\");shortcut(\"revprefform_d\").add()");
 	if (isset($CurrentList) && $CurrentList
 	    && defval($_SESSION["l"][$CurrentList], "revprefs")
 	    && ($this->mode == "p" || $this->mode == "r"))
@@ -1710,7 +1710,7 @@ class PaperTable {
 	}
 
 	if ($this->mode == "p" || $this->mode == "r" || $this->mode == "re")
-	    $Conf->footerScript("add_quicklink_shortcuts(document)");
+	    $Conf->footerScript("shortcut().add()");
     }
 
     function _paptabSepBegin() {

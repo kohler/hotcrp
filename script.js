@@ -55,7 +55,7 @@ setLocalTime.initialize = function (servtime, servzone, hr24) {
     var now = new Date(), x;
     if (Math.abs(now.getTime() - servtime * 1000) >= 300000
 	&& (x = $$("clock_drift_container")))
-	x.innerHTML = "<div class='warning'>The HotCRP server's clock is more than 5 minutes off from your computer's clock.  If your computer's clock is correct, you should update the server's clock.</div>";
+	x.innerHTML = "<div class='warning'>The HotCRP server’s clock is more than 5 minutes off from your computer’s clock.  If your computer’s clock is correct, you should update the server’s clock.</div>";
     servhr24 = hr24;
     // print local time if server time is in a different time zone
     showdifference = Math.abs(now.getTimezoneOffset() - servzone) >= 60;
@@ -615,21 +615,49 @@ function open_new_comment(sethash) {
     return false;
 }
 
-// quicklink shortcuts
-function add_quicklink_shortcuts(elt) {
-    if (!elt)
-	return;
+function cancel_comment() {
+    var x = $$("foldaddcomment");
+    x = x ? x.getElementsByTagName("textarea") : null;
+    if (x && x.length)
+	x[0].blur();
+    fold("addcomment", 1);
+}
 
-    function quicklink_shortcut_keypress(event) {
+// quicklink shortcuts
+function quicklink_shortcut(evt, code) {
+    // find the quicklink, reject if not found
+    var a = $$("quicklink_" + (code == 106 ? "prev" : "next")), f;
+    if (a && a.focus) {
+	// focus (for visual feedback), call callback
+	a.focus();
+	f = make_link_callback(a);
+	if (!Miniajax.isoutstanding("revprefform", f))
+	    f();
+	return true;
+    } else
+	return false;
+}
+
+function comment_shortcut() {
+    if ($$("foldaddcomment")) {
+	open_new_comment();
+	return true;
+    } else
+	return false;
+}
+
+function shortcut(top_elt) {
+    var self, keys = {};
+
+    function keypress(evt) {
 	var code, a, f, target, x, i, j;
 	// IE compatibility
-	event = event || window.event;
-	code = event.charCode || event.keyCode;
-	target = event.target || event.srcElement;
-	// reject modified keys, non-j/k, interesting targets
-	if (code == 0 || event.altKey || event.ctrlKey || event.metaKey
-	    || (code != 106 && code != 107)
-	    || (target && target.tagName && target != elt
+	evt = evt || window.event;
+	code = evt.charCode || evt.keyCode;
+	target = evt.target || evt.srcElement;
+	// reject modified keys, interesting targets
+	if (code == 0 || evt.altKey || evt.ctrlKey || evt.metaKey
+	    || (target && target.tagName && target != top_elt
 		&& (x = target.tagName.toUpperCase())
 		&& (x == "TEXTAREA"
 		    || x == "SELECT"
@@ -646,27 +674,45 @@ function add_quicklink_shortcuts(elt) {
 		    && a.className.match(/\baahc\b.*\balert\b/))
 		    return true;
 	    }
-	// find the quicklink, reject if not found
-	a = $$(code == 106 ? "quicklink_prev" : "quicklink_next");
-	if (!a || !a.focus)
+	// call function
+	if (!keys[code] || !keys[code](evt, code))
 	    return true;
-	// focus (for visual feedback), call callback
-	a.focus();
-	f = make_link_callback(a);
-	if (!Miniajax.isoutstanding("revprefform", f))
-	    f();
-	if (event.preventDefault)
-	    event.preventDefault();
+	// done
+	if (evt.preventDefault)
+	    evt.preventDefault();
 	else
-	    event.returnValue = false;
+	    evt.returnValue = false;
 	return false;
     }
 
-    if (elt.addEventListener)
-	elt.addEventListener("keypress", quicklink_shortcut_keypress, false);
-    else
-	elt.onkeypress = quicklink_shortcut_keypress;
+
+    function add(code, f) {
+	if (code != null)
+	    keys[code] = f;
+	else {
+	    add(106, quicklink_shortcut);
+	    add(107, quicklink_shortcut);
+	    if (top_elt == document)
+		add(99, comment_shortcut);
+	}
+	return self;
+    }
+
+    self = {add: add};
+    if (!top_elt)
+	top_elt = document;
+    else if (typeof top_elt === "string")
+	top_elt = $$(top_elt);
+    if (top_elt && !top_elt.hotcrp_shortcut) {
+	if (top_elt.addEventListener)
+	    top_elt.addEventListener("keypress", keypress, false);
+	else
+	    top_elt.onkeypress = keypress;
+	top_elt.hotcrp_shortcut = self;
+    }
+    return self;
 }
+
 
 // review preferences
 addRevprefAjax = (function () {

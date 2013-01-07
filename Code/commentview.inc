@@ -211,7 +211,7 @@ class CommentView {
             $buttons[] = "";
             $buttons[] = tagg_submit("delete", "Delete comment");
         } else
-            $buttons[] = "<button class='b' type='button' onclick='javascript:void fold(\"addcomment\",1)'>Cancel</button>";
+            $buttons[] = "<button class='b' type='button' onclick='cancel_comment()'>Cancel</button>";
         $post = "";
 	if (!$Me->timeReview($prow, null))
 	    $post = tagg_checkbox("override") . "&nbsp;" . tagg_label("Override&nbsp;deadlines");
