@@ -166,19 +166,19 @@ return loadDeadlines;
 
 
 var hotcrp_onload = [];
-function hotcrpLoad(arg) {
+function hotcrp_load(arg) {
     if (!arg)
 	for (x = 0; x < hotcrp_onload.length; ++x)
 	    hotcrp_onload[x]();
     else if (typeof arg === "string")
-	hotcrp_onload.push(hotcrpLoad[arg]);
+	hotcrp_onload.push(hotcrp_load[arg]);
     else
 	hotcrp_onload.push(arg);
 }
-hotcrpLoad.time = function (servtime, servzone, hr24) {
+hotcrp_load.time = function (servtime, servzone, hr24) {
     setLocalTime.initialize(servtime, servzone, hr24);
 };
-hotcrpLoad.opencomment = function () {
+hotcrp_load.opencomment = function () {
     if (location.hash.match(/^\#?commentnew$/))
 	open_new_comment();
 };
@@ -1106,7 +1106,7 @@ Miniajax.get = function (url, callback, timeout) {
 };
 Miniajax.getjsonp = function (url, callback, timeout) {
     // Written with reference to jquery
-    var head, script, timer, cbname = "Miniajax_jsonp" + jsonp;
+    var head, script, timer, cbname = "mjp" + jsonp;
     function readystatechange(_, isAbort) {
 	var err;
 	try {

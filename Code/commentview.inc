@@ -148,7 +148,7 @@ class CommentView {
 		    "\" onclick='return open_new_comment(1)'>+&nbsp;Add Comment</a><span class='fx'>Add Comment</span></h3>";
 	    else
 		echo "<h3>Add Comment</h3>";
-	    $Conf->footerScript("hotcrpLoad('opencomment')");
+	    $Conf->footerScript("hotcrp_load('opencomment')");
 	}
 	$this->commentIdentityTime($prow, $crow, false);
 
