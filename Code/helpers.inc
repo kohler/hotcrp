@@ -517,8 +517,8 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
         $self = $_SERVER["PHP_SELF"];
     $path = $query = "";
     if (($p = strpos($self, "?")) !== false) {
-        $self = substr($self, 0, $p);
         $query = substr($self, $p);
+        $self = substr($self, 0, $p);
     }
 
     // set path suffix
