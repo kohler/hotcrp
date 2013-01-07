@@ -1210,10 +1210,14 @@ if ($pl) {
 echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas'>\n<tr><td><div class='tlx'><div class='tld1'>";
 
 // Basic search
-echo "<form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'><div class='inform'>
+echo "<form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'><div class='inform' style='position:relative'>
   <input id='searchform1_d' class='textlite' type='text' size='40' style='width:30em' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;
   <input class='b' type='submit' value='Search' />
+<div id='taghelp_searchform1' class='taghelp_s'></div>
 </div></form>";
+
+if (!defval($Opt, "noSearchAutocomplete"))
+    $Conf->footerScript("taghelp(\"searchform1_d\",\"taghelp_searchform1\",taghelp_q)");
 
 echo "</div><div class='tld2'>";
 

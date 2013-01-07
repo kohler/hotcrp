@@ -1147,7 +1147,7 @@ class PaperTable {
 		echo "<form method='post' action='", hoturl_post($site, "p=$prow->paperId$linkExtra"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
 
 	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0), "oneditunfold" => "Miniajax.submit(\"tagreportform\")")),
-		"<div class='psv'>";
+		"<div class='psv' style='position:relative'>";
 	    if ($editable) {
 		// tag report form
 		$Conf->footerHtml("<form id='tagreportform' class='fold7o' method='post' action='" . hoturl_post("paper", "p=$prow->paperId&amp;tagreport=1$linkExtra") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'></form>");
@@ -1160,14 +1160,17 @@ class PaperTable {
 		echo "</div>";
 		if (isset($Error["tags"]))
 		    echo "<div class='xmerror'>", $Error["tags"], "</div>";
-		echo "<textarea id='foldtags_d' cols='20' rows='4' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea>",
+		echo "<div style='position:relative'>",
+                    "<div id='taghelp_p' class='taghelp_p'></div>",
+                    "<textarea id='foldtags_d' cols='20' rows='4' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea></div>",
 		    "<div style='padding:1ex 0;text-align:right'>",
 		    "<input type='hidden' name='settags' value='1' />",
 		    "<input class='bsm' type='submit' name='cancelsettags' value='Cancel' onclick='return fold(\"tags\",1)' />",
 		    " &nbsp;<input class='bsm' type='submit' value='Save' />",
-		    "</div>",
+                    "</div>",
 		    "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
 		    "</div>";
+                $Conf->footerScript("taghelp(\"foldtags_d\",\"taghelp_p\",taghelp_tset)");
 	    } else
 		echo ($tx == "" ? "None" : $tx);
 	    echo "</div>";

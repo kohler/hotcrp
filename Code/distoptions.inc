@@ -151,6 +151,8 @@ $Opt["emailFrom"] = "you@example.com";
 //                   expect thousands of submissions.
 //   emailSubmissions  If set, all submissions are MIME-encoded and sent to
 //                   this email address for backup. Will increase server load.
+//   noSearchAutocomplete  If set, do not implement Javascript autocompletion
+//                   on searchboxes.
 
 $Opt["disablePS"] = true;
 $Opt["smartScoreCompare"] = true;

@@ -719,6 +719,102 @@ function shortcut(top_elt) {
 }
 
 
+// tags
+var alltagsreport_url;
+
+function taghelp_tset(elt) {
+    var m = elt.value.substring(0, elt.selectionStart).match(/.*?([^#\s]*)(?:#\d*)?$/);
+    return (m && m[1]) || "";
+}
+
+function taghelp_q(elt) {
+    var m = elt.value.substring(0, elt.selectionStart).match(/.*?(tag:\s*|r?order:\s*|#)([^#\s]*)(?:#\d*)?$/);
+    return m ? [m[2], m[1]] : null;
+}
+
+taghelp = (function () {
+var alltags = null;
+
+function load() {
+    if (alltags === null)
+	Miniajax.get(alltagsreport_url, function (v) {
+	    if (v.tags) {
+		alltags = v.tags;
+		alltags.sort();
+	    }
+	});
+    alltags = false;
+    return true;
+}
+
+function display(elt, report_elt, cleanf) {
+    var s, a, i, t, cols, colheight, n, pfx = "";
+    elt.hotcrp_tagpress = true;
+    if (!alltags)
+	return load();
+    if (!alltags.length || (elt.selectionEnd != elt.selectionStart))
+	return;
+    if ((s = cleanf(elt)) === null) {
+	report_elt.style.display = "none";
+	return;
+    }
+    if (typeof s !== "string") {
+	pfx = s[1];
+	s = s[0];
+    }
+    for (i = 0, a = []; i < alltags.length; ++i)
+	if (alltags[i].substring(0, s.length) == s) {
+	    if (s.length)
+		a.push(pfx + "<b>" + s + "</b>" + alltags[i].substring(s.length));
+	    else
+		a.push(pfx + alltags[i]);
+	}
+    if (a.length == 0) {
+	report_elt.style.display = "none";
+	return;
+    }
+    t = "<table class='taghelp'><tbody><tr>";
+    cols = (a.length < 6 ? 1 : 2);
+    colheight = Math.floor((a.length + cols - 1) / cols);
+    for (i = n = 0; i < cols; ++i, n += colheight)
+	t += "<td class='taghelp_td'>" + a.slice(n, Math.min(n + colheight, a.length)).join("<br/>") + "</td>";
+    t += "</tr></tbody></table>";
+    report_elt.style.display = "block";
+    report_elt.innerHTML = t;
+}
+
+return function (elt, report_elt, cleanf) {
+    function d() {
+	elt && report_elt && display(elt, report_elt, cleanf);
+    }
+    function b() {
+	report_elt && (report_elt.style.display = "none");
+    }
+    function kp(evt) {
+	evt = evt || window.event;
+	if (evt.charCode || evt.keyCode)
+	    setTimeout(d, 1);
+	return true;
+    }
+    if (typeof elt === "string")
+	elt = $$(elt);
+    if (typeof report_elt === "string")
+	report_elt = $$(report_elt);
+    if (elt && (elt.addEventListener || elt.attachEvent)) {
+	if (elt.addEventListener) {
+	    elt.addEventListener("keyup", kp, false);
+	    elt.addEventListener("blur", b, false);
+	} else {
+	    elt.attachEvent("keyup", kp);
+	    elt.attachEvent("blur", b);
+	}
+	elt.autocomplete = "off";
+    }
+};
+
+})();
+
+
 // review preferences
 addRevprefAjax = (function () {
 
