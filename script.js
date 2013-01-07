@@ -246,8 +246,13 @@ function fold(which, dofold, foldtype) {
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&sub=' + (foldtype || foldnumid) + '&u=' + foldsession_unique++);
 
 	// check for focus
-	if (!dofold && (selt = $$("fold" + which + foldnumid + "_d")))
+	if (!dofold && (selt = $$("fold" + which + foldnumid + "_d"))) {
+	    if (selt.setSelectionRange && selt.hotcrp_ever_focused == null) {
+		selt.setSelectionRange(selt.value.length, selt.value.length);
+		selt.hotcrp_ever_focused = true;
+	    }
 	    selt.focus();
+	}
 
     } else if (which) {
 	foldnumid = foldtype ? foldtype : "";

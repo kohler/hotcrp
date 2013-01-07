@@ -1798,8 +1798,10 @@ div.psc.psc1 {
 }
 div.pscopen {
 	margin: 0 -2px;
+	padding: 0 2px;
 }
 div.pscopen div.pst {
+	margin: 0 -2px;
 	padding: 0 2px;
 }
 div.pst span.psfn {
@@ -1833,16 +1835,16 @@ div.pshint {
 div.psv {
 	padding-top: 2px;
 }
-div.pscopen div.psv {
-	padding: 2px;
-}
 div.od, p.od, p.odname {
 	margin: 0 0 0 1.5em;
 	text-indent: -1.5em;
 }
-textarea#foldtags_d,
+textarea#foldtags_d {
+	margin: 0;
+	width: 96%;
+}
 select#foldlead_d, select#foldshepherd_d, select#folddecision_d {
-	width: 13em;
+	width: 99%;
 }
 
 /* ranks */
