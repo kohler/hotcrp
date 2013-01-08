@@ -70,7 +70,7 @@ if (isset($_REQUEST["setwatch"]) && $prow && check_post()) {
     $ajax = defval($_REQUEST, "ajax", 0);
     if (!$Me->privChair
 	|| ($contactId = rcvtint($_REQUEST["contactId"])) <= 0)
-	$contactId = $Me->contactId;
+	$contactId = $Me->cid;
     saveWatchPreference($prow->paperId, $contactId, WATCHTYPE_COMMENT, defval($_REQUEST, "watch"));
     if ($OK)
 	$Conf->confirmMsg("Saved");
@@ -143,7 +143,7 @@ function saveComment($text) {
 	$q = "insert into PaperComment
 		(contactId, paperId, timeModified, comment, forReviewers,
 		forAuthors, blind, timeNotified$qa)
-	select $Me->contactId, $prow->paperId, $now, '" . sqlq($text) . "',
+	select $Me->cid, $prow->paperId, $now, '" . sqlq($text) . "',
 		$forReviewers, $forAuthors, $blind, $now$qb\n";
 	if ($forAuthors == 2) {
 	    // make sure there is exactly one response

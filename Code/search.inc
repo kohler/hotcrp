@@ -246,7 +246,7 @@ class PaperSearch {
     const F_FALSE = 0x10000;
 
     var $contact;
-    var $contactId;
+    public $cid;
     var $privChair;
     var $amPC;
 
@@ -287,9 +287,9 @@ class PaperSearch {
 	$this->contact = $me;
 	$this->privChair = $me->privChair;
 	$this->amPC = $me->isPC;
-	$this->contactId = $me->contactId;
+	$this->cid = $me->contactId;
 	if ($this->privChair && $searchContactId > 0)
-	    $this->contactId = $searchContactId;
+	    $this->cid = $searchContactId;
 
 	// paper selection
 	$ptype = defval($opt, "t", "");
@@ -381,6 +381,26 @@ class PaperSearch {
 	if ($this->_matchTable)
 	    $Conf->q("drop temporary table $this->_matchTable");
     }
+
+    // begin changing contactId to cid
+    public function __get($name) {
+        if ($name == "contactId") {
+            $trace = debug_backtrace();
+            error_log($trace[0]["file"] . ":" . $trace[0]["line"] . ": PaperSearch->contactId deprecated, use cid");
+            return $this->cid;
+        } else
+            return null;
+    }
+
+    public function __set($name, $value) {
+        if ($name == "contactId") {
+            $trace = debug_backtrace();
+            error_log($trace[0]["file"] . ":" . $trace[0]["line"] . ": PaperSearch->contactId deprecated, use cid");
+            $this->cid = $value;
+        } else
+            $this->$name = $value;
+    }
+
 
     function warn($text) {
 	if (!$this->warnings)
@@ -496,7 +516,7 @@ class PaperSearch {
 	if (!$quoted && ($word == "" || strcasecmp($word, "pc") == 0))
 	    return array_keys(pcMembers());
 	else if (!$quoted && strcasecmp($word, "me") == 0)
-	    return array($this->contactId);
+	    return array($this->cid);
 	else if (!$quoted && $this->amPC && count(($pctags = pcTags()))) {
 	    $negtag = $word[0] == "-";
 	    $tag = $negtag ? substr($word, 1) : $word;
@@ -568,7 +588,7 @@ class PaperSearch {
 
 		// Add terms for reviews not written by current contact
 		$limit = array();
-		if (!$value->onlyContact($this->contactId)) {
+		if (!$value->onlyContact($this->cid)) {
 		    if ($pc_seeallrev == 1)
 			$limit[] = self::F_NONCONFLICT | $xdeblinder;
 		    else if ($pc_seeallrev == 3)
@@ -582,19 +602,19 @@ class PaperSearch {
 
 		// Add more liberal term for reviews written by current
 		// contact
-		if (($newvalue = $value->restrictContact($this->contactId))
+		if (($newvalue = $value->restrictContact($this->cid))
 		    && (!count($limit) || $limit[0] != self::F_NONCONFLICT))
 		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
 
 	    } else {
-		if (!$value->onlyContact($this->contactId)) {
+		if (!$value->onlyContact($this->cid)) {
 		    $extrev_view = $Conf->setting("extrev_view");
 		    $xdeblinder = ($extrev_view == 2 || !$value->contactsql ? 0 : $deblinder);
 		    if (($extrev_view == 1 || $extrev_view == 2)
 			&& $xdeblinder != self::F_FALSE)
 			$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT | self::F_REVIEWER | $xdeblinder, $value);
 		}
-		if (($newvalue = $value->restrictContact($this->contactId)))
+		if (($newvalue = $value->restrictContact($this->cid)))
 		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
 	    }
 
@@ -640,12 +660,12 @@ class PaperSearch {
 
 	$contacts = $this->_reviewerMatcher($m[0], $quoted);
 	if ($this->privChair
-	    || (is_array($contacts) && count($contacts) == 1 && $contacts[0] == $this->contactId))
+	    || (is_array($contacts) && count($contacts) == 1 && $contacts[0] == $this->cid))
 	    $qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[1], $contacts));
 	else {
 	    $value = new SearchReviewValue($m[1], $contacts);
 	    $qt[] = new SearchTerm("conflict", self::F_PAPERNONBLIND, $value);
-	    if (($newvalue = $value->restrictContact($this->contactId)))
+	    if (($newvalue = $value->restrictContact($this->cid)))
 		$qt[] = new SearchTerm("conflict", 0, $newvalue);
 	}
     }
@@ -843,7 +863,7 @@ class PaperSearch {
 	}
 
 	$twiddle = strpos($tagword, "~");
-	$twiddlecid = $this->contactId;
+	$twiddlecid = $this->cid;
 	if ($this->privChair && $twiddle > 0) {
 	    $c = substr($tagword, 0, $twiddle);
 	    $twiddlecid = matchContact(pcMembers(), null, null, $c);
@@ -1603,9 +1623,9 @@ class PaperSearch {
     // apply rounds to reviewer searches
     function _queryMakeAdjustedReviewSearch($roundterm) {
 	if ($this->limitName == "r" || $this->limitName == "rout")
-	    $value = new SearchReviewValue(">0", array($this->contactId));
+	    $value = new SearchReviewValue(">0", array($this->cid));
 	else if ($this->limitName == "req" || $this->limitName == "reqrevs")
-	    $value = new SearchReviewValue(">0", null, "requestedBy=" . $this->contactId . " and reviewType=" . REVIEW_EXTERNAL);
+	    $value = new SearchReviewValue(">0", null, "requestedBy=" . $this->cid . " and reviewType=" . REVIEW_EXTERNAL);
 	else
 	    $value = new SearchReviewValue(">0");
 	$term = new SearchTerm("re", 0, $value, $roundterm->value);
@@ -1834,7 +1854,7 @@ class PaperSearch {
 
 	$noratings = "";
 	if ($this->noratings === false)
-	    $this->noratings = self::unusableRatings($this->privChair, $this->contactId);
+	    $this->noratings = self::unusableRatings($this->privChair, $this->cid);
 	if (count($this->noratings) > 0)
 	    $noratings .= " and not (reviewId in (" . join(",", $this->noratings) . "))";
 	else
@@ -1910,7 +1930,7 @@ class PaperSearch {
 	    if ($t->flags & self::F_REVIEWERCOMMENT)
 		$where[] = "forReviewers=1";
 	    if (!$this->privChair)
-		$where[] = "(forReviewers!=2 or contactId=$this->contactId)";
+		$where[] = "(forReviewers!=2 or contactId=$this->cid)";
 	    if ($t->flags & self::F_AUTHORRESPONSE)
 		$where[] = "forAuthors=2";
 	    else if ($t->flags & (self::F_AUTHOR | self::F_AUTHORCOMMENT))
@@ -2225,7 +2245,7 @@ class PaperSearch {
 	else if ($this->limitName == "unsub")
 	    $filters[] = "(Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0)";
 	else if ($this->limitName == "lead")
-	    $filters[] = "Paper.leadContactId=" . $this->contactId;
+	    $filters[] = "Paper.leadContactId=" . $this->cid;
 
 	// decision limitation parts
 	if ($this->limitName == "acc")
@@ -2249,11 +2269,11 @@ class PaperSearch {
 	} else if ($this->limitName == "revs")
 	    $tables["Limiter"] = array("join", "PaperReview");
 	else if ($this->limitName == "req")
-	    $tables["Limiter"] = array("join", "PaperReview", "Limiter.requestedBy=$this->contactId and Limiter.reviewType=" . REVIEW_EXTERNAL);
+	    $tables["Limiter"] = array("join", "PaperReview", "Limiter.requestedBy=$this->cid and Limiter.reviewType=" . REVIEW_EXTERNAL);
 
 	// add common tables: conflicts, my own review, paper blindness
 	if ($this->needflags & (self::F_NONCONFLICT | self::F_AUTHOR)) {
-	    $tables["PaperConflict"] = array("left join", "PaperConflict", "PaperConflict.contactId=$this->contactId");
+	    $tables["PaperConflict"] = array("left join", "PaperConflict", "PaperConflict.contactId=$this->cid");
 	    $columns["conflictType"] = "PaperConflict.conflictType";
 	}
 	if (($this->needflags & (self::F_REVIEWER | self::F_NONREVIEWER))
@@ -2262,7 +2282,7 @@ class PaperSearch {
 	    $qb = "";
 	    if (isset($_SESSION["rev_tokens"]))
 		$qb = " or MyReview.reviewToken in (" . join(",", $_SESSION["rev_tokens"]) . ")";
-	    $tables["MyReview"] = array("left join", "PaperReview", "(MyReview.contactId=$this->contactId$qb)");
+	    $tables["MyReview"] = array("left join", "PaperReview", "(MyReview.contactId=$this->cid$qb)");
 	    $columns["myReviewNeedsSubmit"] = "MyReview.reviewNeedsSubmit";
 	    if (($this->needflags & self::F_PAPERNONBLIND)
 		&& $Conf->subBlindUntilReview())

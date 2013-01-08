@@ -1484,10 +1484,10 @@ class PaperList extends BaseList {
 	    $queryOptions["scores"] = array_keys($queryOptions["scores"]);
 
 	// prepare query text
-	if ($me->contactId == $this->search->contactId)
+	if ($me->contactId == $this->search->cid)
 	    $pq = $Conf->paperQuery($me, $queryOptions);
 	else
-	    $pq = $Conf->paperQuery($this->search->contactId, $queryOptions);
+	    $pq = $Conf->paperQuery($this->search->cid, $queryOptions);
 
 	// make query
 	return $Conf->qe($pq, "while selecting papers");

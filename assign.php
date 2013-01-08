@@ -96,7 +96,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 	return $Conf->errorMsg("Weird! Retracted review is for a different paper.");
     else if ($row->reviewModified > 0)
 	return $Conf->errorMsg("You can’t retract that review request since the reviewer has already started their review.");
-    else if (!$Me->privChair && $Me->contactId != $row->requestedBy)
+    else if (!$Me->privChair && $Me->cid != $row->requestedBy)
 	return $Conf->errorMsg("You can’t retract that review request since you didn’t make the request in the first place.");
     if (defval($row, "reviewToken", 0) != 0)
 	$Conf->settings["rev_tokens"] = -1;
@@ -303,7 +303,7 @@ function proposeReview($email) {
 
     // check for outstanding review request
     $result = $Conf->qe("insert into ReviewRequest (paperId, name, email, requestedBy, reason)
-	values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->contactId, '" . sqlq(trim($_REQUEST["reason"])) . "') on duplicate key update paperId=paperId", $while);
+	values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->cid, '" . sqlq(trim($_REQUEST["reason"])) . "') on duplicate key update paperId=paperId", $while);
 
     // send confirmation email
     require_once("Code/mailtemplate.inc");
@@ -373,7 +373,7 @@ function createAnonymousReview() {
 	$qb .= ", $now, $now";	/* no way to notify, so count as notified already */
     }
     $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, reviewToken$qa)
-		values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, $token$qb)", $while);
+		values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->cid, $token$qb)", $while);
     $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId.  The review token is " . encodeToken((int) $token) . ".");
 
     $Conf->qx("unlock tables");

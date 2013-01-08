@@ -53,6 +53,21 @@ class Contact {
     function __construct() {
     }
 
+    // begin changing contactId to cid
+    public function __get($name) {
+        if ($name == "cid")
+            return $this->contactId;
+        else
+            return null;
+    }
+
+    public function __set($name, $value) {
+        if ($name == "cid")
+            $this->contactId = $value;
+        else
+            $this->$name = $value;
+    }
+
     static function make($o) {
 	// If you change this function, search for its callers to ensure
 	// they provide all necessary information.

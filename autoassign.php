@@ -193,7 +193,7 @@ function review_count_report($nrev, $pc, $prefix) {
 
 function conflictedPapers() {
     global $Conf, $Me;
-    $result = $Conf->qe("select paperId from PaperConflict where conflictType!=0 and contactId=$Me->contactId");
+    $result = $Conf->qe("select paperId from PaperConflict where conflictType!=0 and contactId=$Me->cid");
     $confs = array();
     while (($row = edb_row($result)))
 	$confs[$row[0]] = true;

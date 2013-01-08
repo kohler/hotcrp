@@ -55,8 +55,8 @@ function doFirstUser($msg) {
     if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
 	$msg .= "  Your password is &ldquo;<tt>" . htmlspecialchars($Me->password) . "</tt>&rdquo;.  All later users will have to sign in normally.";
     $while = "while granting system administrator privilege";
-    $Conf->qe("insert into ChairAssistant (contactId) values (" . $Me->contactId . ")", $while);
-    $Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_ADMIN) . " where contactId=" . $Me->contactId, $while);
+    $Conf->qe("insert into ChairAssistant (contactId) values (" . $Me->cid . ")", $while);
+    $Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_ADMIN) . " where contactId=" . $Me->cid, $while);
     $Conf->qe("delete from Settings where name='setupPhase'", "while leaving setup phase");
     $Conf->log("Granted system administrator privilege to first user", $Me);
     $Conf->confirmMsg($msg);
@@ -199,7 +199,7 @@ function doLogin() {
 	return $Conf->errorMsg("That password doesn’t match.  If you’ve forgotten your password, enter your email address and use the “I forgot my password, email it to me” option.");
     }
 
-    $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=" . time() . " where contactId=" . $Me->contactId, "while recording login statistics");
+    $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=" . time() . " where contactId=" . $Me->cid, "while recording login statistics");
 
     if (isset($_REQUEST["go"]))
 	$where = $_REQUEST["go"];
@@ -251,7 +251,7 @@ if (!$Me->valid() || isset($_REQUEST["signin"]))
 if ($Me->validContact() && isset($Me->fresh) && $Me->fresh === true) {
     $needti = false;
     if (($Me->roles & Contact::ROLE_PC) && !$Me->isReviewer) {
-	$result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
+	$result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->cid and ti.topicId=ta.topicId)");
 	$needti = ($row = edb_row($result)) && $row[0] && !$row[1];
     }
     if (!($Me->firstName || $Me->lastName)
@@ -540,7 +540,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     $myrow = null;
     while (($row = edb_row($result))) {
 	$row[3] = scoreCounts($row[3], $maxOverAllMerit);
-	if ($row[0] == $Me->contactId)
+	if ($row[0] == $Me->cid)
 	    $myrow = $row;
 	if ($row[4]) {
 	    $npc++;
@@ -621,9 +621,9 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     }
 
     if ($myrow && $Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
-	$badratings = PaperSearch::unusableRatings($Me->privChair, $Me->contactId);
+	$badratings = PaperSearch::unusableRatings($Me->privChair, $Me->cid);
 	$qx = (count($badratings) ? " and not (PaperReview.reviewId in (" . join(",", $badratings) . "))" : "");
-	/*$result = $Conf->qe("select rating, count(distinct PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->contactId and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc", "while checking ratings");
+	/*$result = $Conf->qe("select rating, count(distinct PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->cid and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc", "while checking ratings");
 	if (edb_nrows($result)) {
 	    $a = array();
 	    while (($row = edb_row($result)))
@@ -638,7 +638,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 		echo ".</div>\n";
 	    }
 	}*/
-	$result = $Conf->qe("select rating, count(PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->contactId and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc", "while checking ratings");
+	$result = $Conf->qe("select rating, count(PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->cid and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc", "while checking ratings");
 	if (edb_nrows($result)) {
 	    $a = array();
 	    while (($row = edb_row($result)))
