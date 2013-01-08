@@ -838,7 +838,7 @@ class PaperSearch {
 	$qt[] = new SearchTerm("revpref", 0, $value);
     }
 
-    function _searchTags($word, $special, &$qt) {
+    function _searchTags($word, $keyword, &$qt) {
 	global $Conf;
 	require_once("tags.inc");
 
@@ -875,7 +875,7 @@ class PaperSearch {
 	} else if ($twiddle === 0 && $tagword[1] === "~")
 	    $twiddlecid = "";
 
-	if (($e = checkTagError($tagword, CHECKTAG_ALLOWRESERVED | CHECKTAG_NOINDEX | ($this->privChair ? CHECKTAG_CHAIR : 0) | ($special == "tag" ? CHECKTAG_ALLOWSTAR : 0)))) {
+	if (($e = checkTagError($tagword, CHECKTAG_ALLOWRESERVED | CHECKTAG_NOINDEX | ($this->privChair ? CHECKTAG_CHAIR : 0) | ($keyword == "tag" ? CHECKTAG_ALLOWSTAR : 0)))) {
 	    $this->warn(htmlspecialchars($e));
 	    $qt[] = new SearchTerm("f");
 	    return;
@@ -888,8 +888,8 @@ class PaperSearch {
 	else if (!$this->privChair && $Conf->setting("tag_seeall") <= 0)
 	    $rt |= self::F_NONCONFLICT;
 	$extra = null;
-	if ($special == "order" || $special == "rorder" || !$special)
-	    $extra = array("tagorder" => (object) array("tag" => $value, "reverse" => $special == "rorder"));
+	if ($keyword == "order" || $keyword == "rorder" || !$keyword)
+	    $extra = array("tagorder" => (object) array("tag" => $value, "reverse" => $keyword == "rorder"));
 	if (($starpos = strpos($value, "*")) !== false) {
 	    $value = "\3 like '" . str_replace("*", "%", sqlq_for_like($value)) . "'";
 	    if ($starpos == 0)
@@ -1295,9 +1295,10 @@ class PaperSearch {
 	    $x = substr($word, 0, $colon);
 	    if ((isset($searchKeywords[$x]) || strpos($x, '"') === false)
 		&& strlen($word) <= $colon + 1) {
-		preg_match($wordre, $str, $m);
-		$word .= $m[0];
-		$str = ltrim(substr($str, strlen($m[0])));
+		if (preg_match($wordre, $str, $m)) {
+                    $word .= $m[0];
+                    $str = ltrim(substr($str, strlen($m[0])));
+                }
 	    }
 	}
 
@@ -1505,7 +1506,6 @@ class PaperSearch {
     }
 
     function _queryCleanNot($qe) {
-	global $Conf;
 	$qv = $this->_queryClean($qe->value, true);
 	if ($qv->type == "not")
 	    return $qv->value;
@@ -1745,9 +1745,9 @@ class PaperSearch {
     function _clauseTermSetField(&$t, $field, $negated, &$f) {
 	$this->needflags |= $t->flags;
 	$v = $t->value;
-	if ($v && $v[0] == "*")
+	if ($v != "" && $v[0] == "*")
 	    $v = substr($v, 1);
-	if ($v && $v[strlen($v) - 1] == "*")
+	if ($v != "" && $v[strlen($v) - 1] == "*")
 	    $v = substr($v, 0, strlen($v) - 1);
 	if ($negated)
 	    // The purpose of _clauseTermSetField is to match AT LEAST those

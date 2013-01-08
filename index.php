@@ -53,7 +53,7 @@ function doFirstUser($msg) {
     global $Conf, $Opt, $Me;
     $msg .= "  As the first user, you have been automatically signed in and assigned system administrator privilege.";
     if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
-	$msg .= "  Your password is &ldquo;<tt>" . htmlspecialchars($Me->password) . "</tt>&rdquo;.  All later users will have to sign in normally.";
+	$msg .= "  Your password is “<tt>" . htmlspecialchars($Me->password) . "</tt>”.  All later users will have to sign in normally.";
     $while = "while granting system administrator privilege";
     $Conf->qe("insert into ChairAssistant (contactId) values (" . $Me->cid . ")", $while);
     $Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_ADMIN) . " where contactId=" . $Me->cid, $while);
@@ -79,7 +79,7 @@ function doCreateAccount() {
 	    return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
     }
 
-    $Me->sendAccountInfo($Conf, true, true);
+    $Me->sendAccountInfo(true, true);
     $Conf->log("Account created", $Me);
     $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".";
 
@@ -88,13 +88,13 @@ function doCreateAccount() {
 	return doFirstUser($msg);
 
     if ($Conf->allowEmailTo($Me->email))
-	$msg .= "  A password has been emailed to you.  Return here when you receive it to complete the registration process.  If you don't receive the email, check your spam folders and verify that you entered the correct address.";
+	$msg .= "  A password has been emailed to you.  Return here when you receive it to complete the registration process.  If you don’t receive the email, check your spam folders and verify that you entered the correct address.";
     else {
 	if ($Opt['sendEmail'])
 	    $msg .= "  The email address you provided seems invalid.";
 	else
 	    $msg .= "  The conference system is not set up to mail passwords at this time.";
-	$msg .= "  Although an account was created for you, you need the site administrator's help to retrieve your password.  The site administrator is " . htmlspecialchars($Opt["contactName"] . " <" . $Opt["contactEmail"] . ">") . ".";
+	$msg .= "  Although an account was created for you, you need the site administrator’s help to retrieve your password.  The site administrator is " . htmlspecialchars($Opt["contactName"] . " <" . $Opt["contactEmail"] . ">") . ".";
     }
     if (isset($_REQUEST["password"]) && $_REQUEST["password"] != "")
 	$msg .= "  Note that the password you supplied on the login screen was ignored.";
@@ -180,7 +180,7 @@ function doLogin() {
     }
 
     if ($_REQUEST["action"] == "forgot") {
-	$worked = $Me->sendAccountInfo($Conf, false, true);
+	$worked = $Me->sendAccountInfo(false, true);
 	$Conf->log("Sent password", $Me);
 	if ($worked)
 	    $Conf->confirmMsg("Your password has been emailed to " . $_REQUEST["email"] . ".  When you receive that email, return here to sign in.");

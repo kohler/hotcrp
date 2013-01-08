@@ -1374,9 +1374,9 @@ class Contact {
 	return $password;
     }
 
-    function sendAccountInfo($conf, $create, $sensitive) {
+    function sendAccountInfo($create, $sensitive) {
 	require_once("mailtemplate.inc");
-	global $mailTemplates;
+	global $Conf, $mailTemplates;
 	$mailer = new Mailer(null, $this);
 	$preparation = $mailer->prepareToSend($create ? "@createaccount" : "@accountinfo", null, $this);
 
@@ -1384,7 +1384,7 @@ class Contact {
 	    $mailer->sendPrepared($preparation);
 	    return true;
 	} else {
-	    $conf->errorMsg("Mail cannot be sent to your email address &lt;" . htmlspecialchars($this->email) . "&gt; at this time.");
+	    $Conf->errorMsg("Mail cannot be sent to your email address &lt;" . htmlspecialchars($this->email) . "&gt; at this time.");
 	    return false;
 	}
     }

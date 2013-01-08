@@ -355,7 +355,7 @@ class Conference {
 	    if ($Me->privChair)
 		$this->infoMsg("Created account for " . htmlspecialchars($email) . ".");
 	    if ($sendInfo)
-		$newguy->sendAccountInfo($this, true, false);
+		$newguy->sendAccountInfo(true, false);
 	    $this->log("$Me->email created account", $newguy);
 	} else
 	    $this->log("$Me->email account creation failure", $newguy);
