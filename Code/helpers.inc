@@ -1758,7 +1758,7 @@ function pcMembers() {
 	|| count($_SESSION["pcmembers"][1]) == 0) {
 	$pc = array();
 	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "");
-	$result = $Conf->q("select firstName, lastName, affiliation, email, u.contactId contactId, roles$qa from ContactInfo join PCMember using (contactId)");
+	$result = $Conf->q("select firstName, lastName, affiliation, email, u.contactId contactId, roles$qa from ContactInfo u join PCMember using (contactId)");
 	while (($row = edb_orow($result)))
 	    $pc[$row->contactId] = Contact::make($row);
 	uasort($pc, "_sort_pcMember");
