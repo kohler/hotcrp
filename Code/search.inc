@@ -247,6 +247,7 @@ class PaperSearch {
 
     var $contact;
     public $cid;
+    private $contactId;         // for backward compatibility
     var $privChair;
     var $amPC;
 

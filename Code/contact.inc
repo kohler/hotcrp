@@ -9,7 +9,8 @@ class Contact {
     var $confDsn;
 
     // Information from the SQL definition
-    var $contactId;
+    public $contactId;
+    private $cid;               // for forward compatibility
     var $visits;
     var $firstName;
     var $lastName;
