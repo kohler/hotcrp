@@ -153,13 +153,13 @@ class PaperActions {
 	    return;
 	$ajax = defval($_REQUEST, "ajax", false);
         if ($Me->canSetTags($prow, $forceShow)) {
-	    require_once("Code/tags.inc");
+            $tagger = new Tagger;
 	    if (isset($_REQUEST["tags"]))
-		setTags($prow->paperId, $_REQUEST["tags"], "p", $Me->privChair);
+		$tagger->save($prow->paperId, $_REQUEST["tags"], "p");
 	    if (isset($_REQUEST["addtags"]))
-		setTags($prow->paperId, $_REQUEST["addtags"], "a", $Me->privChair);
+		$tagger->save($prow->paperId, $_REQUEST["addtags"], "a");
 	    if (isset($_REQUEST["deltags"]))
-		setTags($prow->paperId, $_REQUEST["deltags"], "d", $Me->privChair);
+		$tagger->save($prow->paperId, $_REQUEST["deltags"], "d");
 	} else
 	    $Error["tags"] = "You can’t set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
 	if ($ajax)
@@ -177,9 +177,8 @@ class PaperActions {
 	$ajax = defval($_REQUEST, "ajax", false);
 	$r = "";
 	if ($Me->canViewTags($prow, $forceShow)) {
-	    require_once("Code/tags.inc");
-	    $vt = voteTags();
-	    if (count($vt) > 0) {
+            $tagger = new Tagger();
+	    if (($vt = $tagger->vote_tags())) {
 		$q = "";
 		$mytagprefix = $Me->contactId . "~";
 		foreach ($vt as $tag => $v)

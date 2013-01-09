@@ -138,7 +138,6 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
 	loadRows();
 
 	// email contact authors themselves
-	require_once("Code/mailtemplate.inc");
 	if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
 	    Mailer::sendContactAuthors(($prow->conflictType >= CONFLICT_AUTHOR ? "@authorwithdraw" : "@adminwithdraw"),
 				       $prow, null, array("reason" => $reason, "infoNames" => 1));
@@ -149,11 +148,10 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
 	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => $reason));
 
 	// remove voting tags so people don't have phantom votes
-	require_once("Code/tags.inc");
-	$vt = voteTags();
-	if (count($vt) > 0) {
+        $tagger = new Tagger;
+	if ($tagger->has_vote()) {
 	    $q = array();
-	    foreach ($vt as $t => $v)
+	    foreach ($tagger->vote_tags() as $t => $v)
 		$q[] = "tag='" . sqlq($t) . "' or tag like '%~" . sqlq_for_like($t) . "'";
 	    $Conf->qe("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")", "while cleaning up voting tags");
 	}
@@ -274,10 +272,8 @@ function uploadOption($o) {
 
 // send watch messages
 function final_submit_watch_callback($prow, $minic) {
-    if ($minic->canViewPaper($prow)) {
-	require_once("Code/mailtemplate.inc");
+    if ($minic->canViewPaper($prow))
 	Mailer::send("@finalsubmitnotify", $prow, $minic);
-    }
 }
 
 function updatePaper($Me, $isSubmit, $isSubmitFinal) {
@@ -592,7 +588,6 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
     // mail confirmation to all contact authors
     if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {
-	require_once("Code/mailtemplate.inc");
 	$options = array("infoNames" => 1);
 	if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
 	    $options["adminupdate"] = true;
@@ -656,10 +651,8 @@ if (isset($_REQUEST["delete"]) && check_post()) {
 	$Conf->errorMsg("Only the program chairs can permanently delete papers. Authors can withdraw papers, which is effectively the same.");
     else {
 	// mail first, before contact info goes away
-	if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {
-	    require_once("Code/mailtemplate.inc");
+	if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
 	    Mailer::sendContactAuthors("@deletepaper", $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
-	}
 	// XXX email self?
 
 	$error = false;

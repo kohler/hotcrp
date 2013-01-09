@@ -361,9 +361,8 @@ class Mailer {
 
 	if ($len > 12 && substr($what, 0, 10) == "%TAGVALUE("
 	    && substr($what, $len - 2) == ")%") {
-	    require_once("tags.inc");
-	    $t = checkTag(substr($what, 10, $len - 12), CHECKTAG_QUIET | CHECKTAG_NOINDEX | CHECKTAG_NOPRIVATE);
-	    if ($t !== "") {
+	    $tagger = new Tagger;
+	    if (($t = $tagger->check(substr($what, 10, $len - 12), Tagger::NOVALUE | Tagger::NOPRIVATE))) {
 		if (!isset($this->mstate->tags[$t])) {
 		    $this->mstate->tags[$t] = array();
 		    $result = $Conf->qe("select paperId, tagIndex from PaperTag where tag='" . sqlq($t) . "'");

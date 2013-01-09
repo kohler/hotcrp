@@ -3,8 +3,6 @@
 // HotCRP is Copyright (c) 2009-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once("tags.inc");
-
 global $paperExprOperators;
 $paperExprOperators = array(
 	"**" => 12,
@@ -273,7 +271,8 @@ class PaperExpr {
 
 	if ($op == "tag" || $op == "tagval") {
 	    $state->queryOptions["tags"] = true;
-	    $e_tag = checkTag($e[2], CHECKTAG_QUIET | ($state->contact->privChair ? CHECKTAG_CHAIR : 0), $state->contact->contactId);
+            $tagger = new Tagger($state->contact);
+	    $e_tag = $tagger->check($e[2]);
 	    $t_tags = self::_addgtemp($state, "(\$forceShow || \$contact->canViewTags(\$prow) ? ' ' . \$prow->paperTags : '')", "tags");
 	    $t_tagpos = self::_addgtemp($state, "strpos($t_tags, \" $e_tag#\")", "tagpos $e[2]");
 	    $t_tagval = self::_addgtemp($state, "($t_tagpos === false ? null : (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . "))", "tagval $e[2]");
@@ -402,7 +401,8 @@ class PaperExpr {
 	    return 1;
 
 	if ($op == "tag" || $op == "tagval") {
-	    $e_tag = checkTag($e[2], CHECKTAG_QUIET | ($contact->privChair ? CHECKTAG_CHAIR : 0), $contact->contactId);
+            $tagger = new Tagger($contact);
+	    $e_tag = $tagger->check($e[2]);
 	    return tagViewScore($e_tag, $contact);
 	}
 

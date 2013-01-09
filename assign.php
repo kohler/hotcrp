@@ -6,7 +6,6 @@
 require_once("Code/header.inc");
 require_once("Code/papertable.inc");
 require_once("Code/reviewtable.inc");
-require_once("Code/tags.inc");
 $Me->goIfInvalid();
 if (isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'] && $Me->privChair)
     $linkExtra = "&amp;forceShow=1";
@@ -106,7 +105,6 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 
     // send confirmation email, if the review site is open
     if ($Conf->timeReviewOpen()) {
-	require_once("Code/mailtemplate.inc");
 	$Requester = Contact::make($row);
 	Mailer::send("@retractrequest", loadReviewInfo($prow, $Requester, true), $Requester, $Me, array("cc" => Text::user_email_to($Me)));
     }
@@ -274,7 +272,6 @@ function requestReview($email) {
     $Conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1", $while);
 
     // send confirmation email
-    require_once("Code/mailtemplate.inc");
     Mailer::send("@requestreview", loadReviewInfo($prow, $Them, true), $Them, $Requester, array("reason" => $reason));
 
     // confirmation message
@@ -306,7 +303,6 @@ function proposeReview($email) {
 	values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->cid, '" . sqlq(trim($_REQUEST["reason"])) . "') on duplicate key update paperId=paperId", $while);
 
     // send confirmation email
-    require_once("Code/mailtemplate.inc");
     Mailer::sendAdmin("@proposereview", $prow, $Me, array("permissionContact" => $Me, "cc" => Text::user_email_to($Me), "contact3" => (object) array("fullName" => $name, "email" => $email), "reason" => $reason));
 
     // confirmation message
@@ -430,7 +426,6 @@ if (isset($_REQUEST["deny"]) && $Me->privChair && check_post()
 	    $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')", $while);
 
 	// send anticonfirmation email
-	require_once("Code/mailtemplate.inc");
 	Mailer::send("@denyreviewrequest", loadReviewInfo($prow, $Requester, true), $Requester, (object) array("fullName" => trim(defval($_REQUEST, "name", "")), "email" => $email));
 
 	$Conf->confirmMsg("Proposed reviewer denied.");
@@ -527,7 +522,7 @@ if ($Me->actChair($prow)) {
     echo ".</div><div class='papv' style='padding-left:0'>";
 
     echo "<table class='pctb'><tr><td class='pctbcolleft'><table>\n";
-    $colorizer = new TagColorizer($Me);
+    $colorizer = new Tagger;
 
     $n = intval((count($pcx) + 2) / 3);
     for ($i = 0; $i < count($pcx); $i++) {
@@ -536,7 +531,7 @@ if ($Me->actChair($prow)) {
 	$p = $pcx[$i];
 
 	// first, name and assignment
-	$color = $colorizer->match_all($p->contactTags);
+	$color = $colorizer->color_classes($p->contactTags);
 	$color = ($color ? " class='${color}'" : "");
 	echo "      <tr$color>";
 	if ($p->conflictType >= CONFLICT_AUTHOR) {

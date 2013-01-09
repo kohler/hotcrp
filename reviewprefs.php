@@ -195,9 +195,11 @@ paper’s detail page.  You may also upload preferences from a text file; see th
 
 
 // search
-$search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
-				     "urlbase" => hoturl("reviewprefs", "reviewer=$reviewer"),
-				     "q" => defval($_REQUEST, "q", "")), $reviewer);
+$search = new PaperSearch($Me,
+                          array("t" => $_REQUEST["t"],
+                                "urlbase" => hoturl("reviewprefs", "reviewer=$reviewer"),
+                                "q" => defval($_REQUEST, "q", "")),
+                          $reviewer);
 $pl = new PaperList($search, array("sort" => true, "list" => true, "foldtype" => "pf"));
 $pl->showHeader = PaperList::HEADER_TITLES;
 $pl->footer = "<div id='plactr'><input class='hb' type='submit' name='update' value='Save changes' /></div>";

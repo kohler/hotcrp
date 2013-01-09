@@ -2,7 +2,6 @@
 // rank.inc -- HotCRP helper functions for dealing with ranks
 // HotCRP is Copyright (c) 2009-2011 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
-require_once("tags.inc");
 
 class PaperRank {
 
@@ -75,7 +74,7 @@ class PaperRank {
     }
 
     function _nextRank() {
-	$this->currank += orderedTagStep($this->ordertype);
+	$this->currank += Tagger::value_increment($this->ordertype);
 	return $this->currank;
     }
 

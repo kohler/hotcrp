@@ -309,9 +309,11 @@ if ($reviewer > 0) {
 	"</div></form>\n\n";
 
     // main assignment form
-    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
-					 "q" => $_REQUEST["q"],
-					 "urlbase" => hoturl("manualassign", "reviewer=$reviewer")), $reviewer);
+    $search = new PaperSearch($Me,
+                              array("t" => $_REQUEST["t"],
+                                    "q" => $_REQUEST["q"],
+                                    "urlbase" => hoturl("manualassign", "reviewer=$reviewer")),
+                              $reviewer);
     $paperList = new PaperList($search, array("sort" => true, "list" => true));
     if (isset($showau)) {
 	$search->overrideMatchPreg = true;

@@ -99,11 +99,9 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	    if ($mode == "assign")
 		$t .= "<td>" . Text::user_html(null, null, $rr->email) . "</td>";
 	    if (isset($rr->contactTags) && $rr->contactTags && $Me->isPC) {
-		if (!$colorizer) {
-		    require_once("tags.inc");
-		    $colorizer = new TagColorizer($Me);
-		}
-		if (($color = $colorizer->match_all($rr->contactTags)))
+		if (!$colorizer)
+		    $colorizer = new Tagger;
+		if (($color = $colorizer->color_classes($rr->contactTags)))
 		    $tclass = $color;
 	    }
 	}

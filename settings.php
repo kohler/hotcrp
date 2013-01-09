@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-require_once("Code/tags.inc");
 require_once("Code/paperoption.inc");
 require_once("Code/cleanxhtml.inc");
 $Me->goIfInvalid();
@@ -184,7 +183,6 @@ function unparseGrace($v) {
 function expandMailTemplate($name, $default) {
     global $nullMailer;
     if (!isset($nullMailer)) {
-	require_once("Code/mailtemplate.inc");
 	$nullMailer = new Mailer(null, null);
 	$nullMailer->width = 10000000;
     }
@@ -256,12 +254,12 @@ function parseValue($name, $type) {
 
 function doTags($set, $what) {
     global $Conf, $Values, $Error, $Highlight, $TagStyles;
-    require_once("Code/tags.inc");
+    $tagger = new Tagger;
 
     if (!$set && $what == "tag_chair" && isset($_REQUEST["tag_chair"])) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_chair"]) as $t)
-	    if ($t !== "" && checkTag($t, CHECKTAG_QUIET | CHECKTAG_NOPRIVATE | CHECKTAG_NOINDEX))
+	    if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOVALUE))
 		$vs[] = $t;
 	    else if ($t !== "") {
 		$Error[] = "Chair-only tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";
@@ -277,7 +275,7 @@ function doTags($set, $what) {
     if (!$set && $what == "tag_vote" && isset($_REQUEST["tag_vote"])) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_vote"]) as $t)
-	    if ($t !== "" && checkTag($t, CHECKTAG_QUIET | CHECKTAG_NOPRIVATE)) {
+	    if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE)) {
 		if (preg_match('/\A([^#]+)(|#|#0+|#-\d*)\z/', $t, $m))
 		    $t = $m[1] . "#1";
 		$vs[] = $t;
@@ -338,7 +336,7 @@ function doTags($set, $what) {
     if (!$set && $what == "tag_rank" && isset($_REQUEST["tag_rank"])) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_rank"]) as $t)
-	    if ($t !== "" && checkTag($t, CHECKTAG_QUIET | CHECKTAG_NOPRIVATE | CHECKTAG_NOINDEX))
+	    if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOVALUE))
 		$vs[] = $t;
 	    else if ($t !== "") {
 		$Error[] = "Rank tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";
@@ -362,7 +360,7 @@ function doTags($set, $what) {
 	    if (isset($_REQUEST["tag_color_" . $k])) {
 		$any_set = true;
 		foreach (preg_split('/,*\s+/', $_REQUEST["tag_color_" . $k]) as $t)
-		    if ($t !== "" && checkTag($t, CHECKTAG_QUIET | CHECKTAG_NOPRIVATE | CHECKTAG_NOINDEX))
+		    if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOVALUE))
 			$vs[] = $t . "=" . $k;
 		    else if ($t !== "") {
 			$Error[] = ucfirst($k) . " color tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";
@@ -373,6 +371,9 @@ function doTags($set, $what) {
 	if ($any_set && $Conf->settingText("tag_color") !== $v[1])
 	    $Values["tag_color"] = $v;
     }
+
+    if ($set)
+        Tagger::invalidate_defined_tags();
 }
 
 function doTopics($set) {
@@ -813,7 +814,6 @@ function doSpecial($name, $set) {
 	if (!$set && !isset($_REQUEST["rev_roundtag"]))
 	    $Values["rev_roundtag"] = null;
 	else if (!$set) {
-	    require_once("Code/tags.inc");
 	    $t = trim($_REQUEST["rev_roundtag"]);
 	    if ($t == "" || $t == "(None)")
 		$Values["rev_roundtag"] = null;
@@ -1501,26 +1501,22 @@ function doRevGroup() {
     echo "<hr class='hr' />";
 
     // Tags
+    $tagger = new Tagger;
     echo "<h3>Tags</h3>\n";
 
     echo "<table><tr><td class='lcaption'>", decorateSettingName("tag_chair", "Chair-only tags"), "</td>";
     if (count($Error) > 0)
 	$v = defval($_REQUEST, "tag_chair", "");
-    else {
-	$t = array_keys(chairTags());
-	sort($t);
-	$v = join(" ", $t);
-    }
+    else
+        $v = join(" ", array_keys($tagger->chair_tags()));
     echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lcaption'>", decorateSettingName("tag_vote", "Voting tags"), "</td>";
     if (count($Error) > 0)
 	$v = defval($_REQUEST, "tag_vote", "");
     else {
-	$t = voteTags();
-	ksort($t);
 	$x = "";
-	foreach ($t as $n => $v)
+	foreach ($tagger->vote_tags() as $n => $v)
 	    $x .= "$n#$v ";
 	$v = trim($x);
     }

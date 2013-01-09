@@ -52,7 +52,7 @@ class Contact {
     var $validated;
 
 
-    function __construct() {
+    public function __construct() {
     }
 
     // begin changing contactId to cid
@@ -70,7 +70,7 @@ class Contact {
             $this->$name = $value;
     }
 
-    static function make($o) {
+    static public function make($o) {
 	// If you change this function, search for its callers to ensure
 	// they provide all necessary information.
 	$c = new Contact();
@@ -1389,8 +1389,7 @@ class Contact {
     }
 
     function sendAccountInfo($create, $sensitive) {
-	require_once("mailtemplate.inc");
-	global $Conf, $mailTemplates;
+	global $Conf;
 	$mailer = new Mailer(null, $this);
 	$preparation = $mailer->prepareToSend($create ? "@createaccount" : "@accountinfo", null, $this);
 

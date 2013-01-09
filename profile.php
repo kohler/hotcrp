@@ -209,17 +209,15 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
     if (($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
 	&& $Me->privChair
 	&& defval($_REQUEST, "contactTags", "") != "") {
-	require_once("Code/tags.inc");
+	$tagger = new Tagger;
 	$tout = "";
 	$warn = "";
-	foreach (preg_split('/\s+/', $_REQUEST["contactTags"]) as $t)
-	    if ($t != "") {
-		$e = checkTagError($t, CHECKTAG_NOPRIVATE | CHECKTAG_NOINDEX);
-		if ($e == "")
-		    $tout .= " " . $t;
-		else
-		    $warn .= htmlspecialchars($e) . "<br />\n";
-	    }
+	foreach (preg_split('/\s+/', $_REQUEST["contactTags"]) as $t) {
+	    if ($t != "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOVALUE))
+                $tout .= " " . $t;
+            else if ($t != "")
+                $warn .= $tagger->error_html . "<br />\n";
+        }
 	if ($warn != "")
 	    return tfError($tf, "contactTags", $warn);
 	if ($tout != "")
@@ -422,18 +420,17 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
 			   "PaperWatch", "ReviewRating", "TopicInterest")
 		     as $table)
 		$Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
-	    // tags are special because of voting tags, so go through
-	    // Code/tags.inc
-	    require_once("Code/tags.inc");
-	    $prefix = $Acct->contactId . "~";
-	    $result = $Conf->qe("select paperId, tag from PaperTag where tag like '$prefix%'", $while);
+	    // tags are special because of voting tags, so go through Tagger
+	    $result = $Conf->qe("select paperId, tag from PaperTag where tag like '" . $Acct->contactId . "~%'", $while);
 	    $pids = $tags = array();
 	    while (($row = edb_row($result))) {
 		$pids[$row[0]] = 1;
-		$tags[substr($row[1], strlen($prefix) - 1)] = 1;
+		$tags[substr($row[1], strlen($Acct->contactId))] = 1;
 	    }
-	    if (count($pids) > 0)
-		setTags(array_keys($pids), join(" ", array_keys($tags)), "d", $Acct->contactId);
+	    if (count($pids) > 0) {
+                $tagger = new Tagger($Acct);
+		$tagger->save(array_keys($pids), join(" ", array_keys($tags)), "d");
+            }
 	    // recalculate Paper.numComments if necessary
 	    // (XXX lock tables?)
 	    foreach ($tracks->comment as $pid)

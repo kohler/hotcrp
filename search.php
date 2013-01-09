@@ -27,7 +27,7 @@ if (count($tOpt) == 0) {
     exit;
 }
 if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
-    $Conf->errorMsg("You aren't allowed to search that paper collection.");
+    $Conf->errorMsg("You aren’t allowed to search that paper collection.");
     unset($_REQUEST["t"]);
 }
 if (!isset($_REQUEST["t"]))
@@ -295,7 +295,6 @@ if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
 // set tags for selected papers
 function tagaction() {
     global $Conf, $Me, $Error, $papersel;
-    require_once("Code/tags.inc");
 
     $errors = array();
     $papers = $papersel;
@@ -313,13 +312,14 @@ function tagaction() {
 
     $act = $_REQUEST["tagtype"];
     $tag = $_REQUEST["tag"];
+    $tagger = new Tagger;
     if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao" || $act == "sos" || $act == "sor" || $act == "aos" || $act == "da"))
-	setTags($papers, $tag, $act, $Me->privChair);
-    else if (count($papers) && $act == "cr" && $Me->privChair
-	     && checkTag($tag, CHECKTAG_NOINDEX | CHECKTAG_NOPRIVATE | CHECKTAG_ERRORARRAY)) {
+	$tagger->save($papers, $tag, $act);
+    else if (count($papers) && $act == "cr" && $Me->privChair) {
 	$source_tag = trim(defval($_REQUEST, "tagcr_source", ""));
 	$source_tag = ($source_tag == "" ? $tag : $source_tag);
-	if (checkTag($source_tag, CHECKTAG_NOINDEX | CHECKTAG_NOPRIVATE | CHECKTAG_ERRORARRAY)) {
+        if ($tagger->check($tag, Tagger::NOVALUE | Tagger::NOPRIVATE)
+            && $tagger->check($source_tag, Tagger::NOVALUE | Tagger::NOPRIVATE)) {
 	    require_once("Code/rank.inc");
 	    ini_set("max_execution_time", 1200);
 	    $r = new PaperRank($source_tag, $tag, $papers,
@@ -337,7 +337,8 @@ function tagaction() {
 	    $r->save();
 	    if ($_REQUEST["q"] === "")
 		$_REQUEST["q"] = "order:$tag";
-	}
+	} else
+            defappend($Error["tags"], $tagger->error_html . "<br />\n");
     }
     if (isset($Error["tags"]))
 	$Conf->errorMsg($Error["tags"]);
@@ -361,8 +362,8 @@ else if (isset($_REQUEST["tagact"]) && defval($_REQUEST, "ajax"))
 // download votes
 if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
     && $Me->isPC) {
-    require_once("Code/tags.inc");
-    if (($tag = checkTag($_REQUEST["tag"], CHECKTAG_NOINDEX)) !== false) {
+    $tagger = new Tagger;
+    if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
 	$showtag = trim($_REQUEST["tag"]); // no "23~" prefix
 	$q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag));
 	$result = $Conf->qe($q, "while selecting papers");
@@ -373,7 +374,8 @@ if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
 	ksort($texts);
 	downloadCSV($texts, array("tag", "votes", "paper", "title"), "votes", "votes");
 	exit;
-    }
+    } else
+        $Conf->errorMsg($tagger->error_html);
 }
 
 
@@ -381,8 +383,8 @@ if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
 $settingrank = ($Conf->setting("tag_rank") && defval($_REQUEST, "tag") == "~" . $Conf->settingText("tag_rank"));
 if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
     && ($Me->isPC || ($Me->amReviewer() && $settingrank))) {
-    require_once("Code/tags.inc");
-    if (($tag = checkTag($_REQUEST["tag"], CHECKTAG_NOINDEX)) !== false) {
+    $tagger = new Tagger;
+    if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
 	$q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"));
 	$result = $Conf->qe($q, "while selecting papers");
 	$real = "";
@@ -415,7 +417,8 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 	    . $real . $null;
 	downloadText($text, "rank", "rank");
 	exit;
-    }
+    } else
+        $Conf->errorMsg($tagger->error_html);
 }
 
 
@@ -958,11 +961,11 @@ if (isset($_REQUEST["saveformulas"]) && $Me->isPC && $Conf->sversion >= 32
 // save formula
 function savesearch() {
     global $Conf, $Me, $paperListFormulas, $OK;
-    require_once("Code/tags.inc");
     $while = "while saving search";
 
     $name = simplifyWhitespace(defval($_REQUEST, "ssname", ""));
-    if (!checkTag($name, CHECKTAG_NOPRIVATE | CHECKTAG_QUIET | CHECKTAG_NOINDEX)) {
+    $tagger = new Tagger;
+    if (!$tagger->check($name, Tagger::NOPRIVATE | Tagger::NOVALUE)) {
 	if ($name == "")
 	    return $Conf->errorMsg("Saved search name missing.");
 	else
@@ -1150,14 +1153,13 @@ if ($pl) {
 
     // Tags group
     if ($Me->isPC && $pl->headerInfo["tags"]) {
-	require_once("Code/tags.inc");
 	$opt = array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair));
 	displayOptionCheckbox("tags", 1, "Tags", $opt);
 	if ($Me->privChair) {
-	    $vtags = voteTags(rankTags());
-	    ksort($vtags);
-	    foreach ($vtags as $tag => $value)
-		displayOptionCheckbox("tagrep_" . preg_replace('/\W+/', '_', $tag), 1, "“${tag}” tag report", $opt);
+            $tagger = new Tagger;
+            foreach ($tagger->defined_tags() as $t)
+                if ($t->vote || $t->rank)
+                    displayOptionCheckbox("tagrep_" . preg_replace('/\W+/', '_', $t->tag), 1, "“" . $t->tag . "” tag report", $opt);
 	}
     }
 

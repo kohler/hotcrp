@@ -528,8 +528,6 @@ class ReviewForm {
 	    // need an up-to-date review row to send email successfully
 	    $fake_rrow = (object) array("contactId" => $contactId, "reviewBlind" => $reviewBlind);
 
-	    require_once("mailtemplate.inc");
-
 	    $tmpl = ($rrow && $rrow->reviewSubmitted ? "@reviewupdate" : "@reviewsubmit");
 	    $submitter = $Me;
 	    if ($contactId != $submitter->contactId) {

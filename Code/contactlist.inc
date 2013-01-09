@@ -380,7 +380,6 @@ class ContactList extends BaseList {
 	case self::FIELD_TAGS:
 	    if (!$this->contact->isPC || !$row->contactTags)
 		return "";
-	    require_once("tags.inc");
 	    $t = $row->contactTags;
 	    if (strpos($t, "~") !== false) {
 		$t = str_replace(" " . $this->contact->contactId . "~", " ~", " $t ");
@@ -660,10 +659,8 @@ class ContactList extends BaseList {
 	// collect row data
 	$this->count = 0;
 	$colorizer = null;
-	if ($this->contact->isPC) {
-	    require_once("tags.inc");
-	    $colorizer = new TagColorizer($this->contact);
-	}
+	if ($this->contact->isPC)
+            $colorizer = new Tagger($this->contact);
 
 	$anyData = array();
 	$body = '';
@@ -675,7 +672,7 @@ class ContactList extends BaseList {
 		continue;
 
 	    $trclass = "k" . ($this->count % 2);
-	    if ($colorizer && ($c = $colorizer->match_all($row->contactTags)))
+	    if ($colorizer && ($c = $colorizer->color_classes($row->contactTags)))
 		$trclass .= " " . $c;
             if ($row->disabled)
                 $trclass .= " greytext";

@@ -85,6 +85,7 @@ class PaperList extends BaseList {
     var $footer;
     var $papersel;
     var $rf;
+    private $tagger;
     var $formulas;
     var $viewmap;
     var $reviewList;
@@ -251,18 +252,14 @@ class PaperList extends BaseList {
 	case self::FIELD_TAGS:
 	    if (!$this->contact->isPC)
 		return false;
-	    if (!$folded) {
-		require_once("tags.inc");
+	    if (!$folded)
 		$queryOptions["tags"] = 1;
-	    }
 	    break;
 	case self::FIELD_TAGREPORT:
 	    if (!$this->contact->privChair)
 		return false;
-	    if (!$folded) {
-		require_once("tags.inc");
+	    if (!$folded)
 		$queryOptions["tags"] = 1;
-	    }
 	    break;
 	case self::FIELD_LEAD:
 	case self::FIELD_SHEPHERD:
@@ -1065,8 +1062,9 @@ class PaperList extends BaseList {
 	    if (!$this->contact->canViewTags($row))
 		return "";
 	    if (($t = $row->paperTags) !== "")
-		$t = tagsToText($row, true, $this->contact, false,
-				$this->search->orderTags);
+		$t = $this->tagger->unparse_link_viewable($row->paperTags,
+                                                          $this->search->orderTags,
+                                                          $row->conflictType <= 0);
 	    return $t;
 	case self::FIELD_TAGREPORT:
 	    if (!$this->contact->canViewTags($row))
@@ -1074,6 +1072,7 @@ class PaperList extends BaseList {
 	    $tag = self::_fieldInfo($fieldId);
 	    if (($t = $row->paperTags) === "")
 		return $t;
+            $t = " " . $t;
 	    $a = array();
 	    foreach (pcMembers() as $pcm) {
 		$mytag = " " . $pcm->contactId . "~" . $tag . "#";
@@ -1492,7 +1491,7 @@ class PaperList extends BaseList {
 	$rstate->ids[] = $row->paperId;
 	$trclass = "k" . $rstate->colorindex;
 	if (defval($row, "paperTags") && $this->contact->canViewTags($row)
-	    && ($m = $rstate->colorizer->match_all($row->paperTags)))
+	    && ($m = $this->tagger->color_classes($row->paperTags)))
 	    $trclass .= " " . $m;
 	$rstate->colorindex = 1 - $rstate->colorindex;
 	$rstate->last_trclass = $trclass;
@@ -1702,7 +1701,6 @@ class PaperList extends BaseList {
     function text($listname, $me, $extra_class = "") {
 	global $Conf, $ConfSiteBase, $paperListFields, $paperListFolds,
 	    $reviewScoreNames;
-	require_once("tags.inc"); // for TagColorizer
 
 	$this->contact = $me;
 	$this->count = 0;
@@ -1712,6 +1710,7 @@ class PaperList extends BaseList {
 	$this->needSubmitReview = 0;
 	$this->any = (object) array();
 	$this->defaultFoldRow = false;
+        $this->tagger = new Tagger($me);
 	$url = $this->search->url();
 
 	// check role type
@@ -1806,7 +1805,6 @@ class PaperList extends BaseList {
 
 	// create render state
 	$rstate = (object) array();
-	$rstate->colorizer = new TagColorizer($this->contact);
 	$rstate->ids = array();
 	$rstate->nonempty_fields = array();
 	$rstate->foldinfo = array();
@@ -1951,6 +1949,7 @@ class PaperList extends BaseList {
 	$this->needFinalCopy = 0;
 	$this->needSubmitReview = 0;
 	$this->any = (object) array();
+        $this->tagger = new Tagger($me);
 	$url = $this->search->url();
 
 	// check role type
@@ -2113,11 +2112,13 @@ class PaperListField {
 	    uasort($paperListFormulas, array("PaperListField", "_formula_compar"));
 	}
 
-	if ($Conf && ($Conf->setting("tag_vote") || $Conf->setting("tag_rank"))) {
-	    require_once("tags.inc");
-	    $vt = voteTags(rankTags());
-	    ksort($vt);
-	    foreach ($vt as $n => $t) {
+        $tagger = new Tagger;
+	if ($Conf && ($tagger->has_vote() || $tagger->has_rank())) {
+            $vt = array();
+            foreach ($tagger->defined_tags() as $v)
+                if ($v->vote || $v->rank)
+                    $vt[] = $v->tag;
+	    foreach ($vt as $n) {
 		$fdef = PaperListField::make($nextfield, "tagrep_" . preg_replace('/\W+/', '_', $n), 2, $nextfold);
 		$fdef->cssname = "tagrep";
 		$paperListNormalizer[$nextfield] = array(PaperList::FIELD_TAGREPORT, $n);

@@ -336,25 +336,20 @@ function searchQuickref() {
 
 
 function _currentVoteTags() {
-    require_once("Code/tags.inc");
-    $vt = array_keys(voteTags());
-    if (count($vt)) {
-	sort($vt);
+    $tagger = new Tagger;
+    if ($tagger->has_vote()) {
 	$votetags = " (currently ";
-	foreach ($vt as $v)
-	    $votetags .= "“<a href=\"" . hoturl("search", "q=rorder:$v") . "\">$v</a>”, ";
+	foreach ($tagger->vote_tags() as $tag => $v)
+	    $votetags .= "“<a href=\"" . hoturl("search", "q=rorder:$tag") . "\">$tag</a>”, ";
 	return substr($votetags, 0, strlen($votetags) - 2) . ")";
     } else
 	return "";
 }
 
 function _singleVoteTag() {
-   $vt = array_keys(voteTags());
-   if (count($vt)) {
-       sort($vt);
-       return $vt[0];
-   }
-   return "vote";
+    $tagger = new Tagger;
+    $vt = $tagger->vote_tags();
+    return count($vt) ? key($vt) : "vote";
 }
 
 function tags() {
@@ -369,8 +364,8 @@ function tags() {
     $setting = "";
 
     if ($Me->isPC) {
-	require_once("Code/tags.inc");
-	$ct = array_keys(chairTags());
+        $tagger = new Tagger;
+	$ct = array_keys($tagger->chair_tags());
 	if (count($ct)) {
 	    sort($ct);
 	    $chairtags = " (currently ";

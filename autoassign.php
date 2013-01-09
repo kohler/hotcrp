@@ -6,7 +6,6 @@
 require_once("Code/header.inc");
 require_once("Code/paperlist.inc");
 require_once("Code/search.inc");
-require_once("Code/tags.inc");
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
 
@@ -736,7 +735,7 @@ if (isset($assignments) && count($assignments) > 0) {
 	echo "<div class='g'></div>";
 	echo "<strong>Assignment Summary</strong><br />\n";
 	echo "<table class='pctb'><tr><td class='pctbcolleft'><table>";
-	$colorizer = new TagColorizer($Me);
+	$colorizer = new Tagger;
 	$pcdesc = array();
 	foreach ($pcm as $id => $p) {
 	    $nnew = defval($pc_nass, $id, 0);
@@ -754,7 +753,7 @@ if (isset($assignments) && count($assignments) > 0) {
 		$nrev->sec[$id] += $nnew;
 		$nrev->pset->sec[$id] += $nnew;
 	    }
-	    $color = $colorizer->match_all($p->contactTags);
+	    $color = $colorizer->color_classes($p->contactTags);
 	    $color = ($color ? " class='${color}'" : "");
 	    $c = "<tr$color><td class='pctbname pctbl'>"
 		. Text::name_html($p)
@@ -926,10 +925,10 @@ echo ")</td></tr>\n<tr><td></td><td><table class='pctb'><tr><td class='pctbcolle
 $pcm = pcMembers();
 $nrev = countReviews();
 $pcdesc = array();
-$colorizer = new TagColorizer($Me);
+$colorizer = new Tagger;
 foreach ($pcm as $id => $p) {
     $count = count($pcdesc) + 1;
-    $color = $colorizer->match_all($p->contactTags);
+    $color = $colorizer->color_classes($p->contactTags);
     $color = ($color ? " class='${color}'" : "");
     $c = "<tr$color><td class='pctbl'>"
 	. tagg_checkbox("pcs[]", $id, isset($pcsel[$id]),

@@ -851,7 +851,8 @@ class PaperSearch {
 
     function _searchTags($word, $keyword, &$qt) {
 	global $Conf;
-	require_once("tags.inc");
+        if ($word[0] == "#")
+            $word = substr($word, 1);
 
 	// allow external reviewers to search their own rank tag
 	if (!$this->amPC) {
@@ -886,8 +887,9 @@ class PaperSearch {
 	} else if ($twiddle === 0 && $tagword[1] === "~")
 	    $twiddlecid = "";
 
-	if (($e = checkTagError($tagword, CHECKTAG_ALLOWRESERVED | CHECKTAG_NOINDEX | ($this->privChair ? CHECKTAG_CHAIR : 0) | ($keyword == "tag" ? CHECKTAG_ALLOWSTAR : 0)))) {
-	    $this->warn(htmlspecialchars($e));
+        $tagger = new Tagger($this->contact);
+        if (!$tagger->check("#" . $tagword, Tagger::ALLOWRESERVED | Tagger::NOVALUE | ($keyword == "tag" ? Tagger::ALLOWSTAR : 0))) {
+	    $this->warn($tagger->error_html);
 	    $qt[] = new SearchTerm("f");
 	    return;
 	}
@@ -1002,7 +1004,7 @@ class PaperSearch {
 	if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $word, $m)) {
 	    $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
 	    return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
-	} else if (preg_match('/\A(-?)#(' . TAG_REGEX_OPTVALUE . '[#<>!=\d]*)\z/', $word, $m)) {
+	} else if (preg_match('/\A(-?)(#' . TAG_REGEX_OPTVALUE . '[#<>!=\d]*)\z/', $word, $m)) {
 	    $qe = $this->_searchQueryWord($m[1] . "tag:" . $m[2], false);
 	    if (!$qe->isfalse())
 		return $qe;
@@ -2541,8 +2543,8 @@ class PaperSearch {
 	    $t = substr($this->q, 7);
 	else
 	    return false;
-	require_once("tags.inc");
-	if (!checkTag($t, CHECKTAG_QUIET))
+	$tagger = new Tagger($this->contact);
+	if (!$tagger->check($t))
 	    return false;
 	if ($this->q[0] == "-")
 	    return "no" . substr($this->q, 1);

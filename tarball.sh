@@ -112,7 +112,7 @@ Code/reviewtemplate.inc
 Code/sample.pdf
 Code/schema.sql
 Code/search.inc
-Code/tags.inc
+Code/tagger.php
 Code/text.php
 Code/unicodehelper.php
 Code/updateschema.inc

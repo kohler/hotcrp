@@ -314,7 +314,6 @@ function refuseReview() {
     $Conf->qe("unlock tables");
 
     // send confirmation email
-    require_once("Code/mailtemplate.inc");
     $Requester = new Contact();
     $Requester->lookupById((int) $rrow->reqContactId);
     $reqprow = $Conf->paperRow($prow->paperId, $rrow->reqContactId);

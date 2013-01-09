@@ -1,6 +1,6 @@
 <?php
 // papertable.inc -- HotCRP helper class for producing paper tables
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $textAreaRows;
@@ -32,7 +32,7 @@ class PaperTable {
     var $entryMatches;
     var $canUploadFinal;
 
-    function PaperTable($prow) {
+    function __construct($prow) {
 	global $Conf, $Me;
 
 	$this->prow = $prow;
@@ -1133,14 +1133,13 @@ class PaperTable {
 	global $Conf, $Me, $Error, $forceShow, $linkExtra;
 	if ($site || defval($prow, "paperTags", "") !== "") {
 	    // Note that tags MUST NOT contain HTML special characters.
-	    require_once("tags.inc");
-	    $tx = tagsToText($prow, true, $Me);
+	    $tagger = new Tagger;
+	    $tx = $tagger->unparse_link_viewable($prow->paperTags, false, $prow->conflictType <= 0);
 	    $editable = $site && $Me->canSetTags($prow, $forceShow);
 	    $unfolded = $editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") == "tags");
 
 	    echo $this->_papstripBegin("tags", !$unfolded);
-	    $colors = new TagColorizer($Me);
-	    if (($color = $colors->match_all($prow->paperTags)))
+	    if (($color = $tagger->color_classes($prow->paperTags)))
 		echo "<div class='pscopen ${color}'>";
 
 	    if ($editable)
@@ -1152,7 +1151,6 @@ class PaperTable {
 		// tag report form
 		$Conf->footerHtml("<form id='tagreportform' class='fold7o' method='post' action='" . hoturl_post("paper", "p=$prow->paperId&amp;tagreport=1$linkExtra") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'></form>");
 
-		$t = tagsToText($prow, false, $Me, true);
 		echo "<div class='fn'>", ($tx == "" ? "None" : $tx),
 		    "</div><div id='papstriptagsedit' class='fx'><div id='tagreportformresult'>";
 		if ($unfolded)
@@ -1162,7 +1160,9 @@ class PaperTable {
 		    echo "<div class='xmerror'>", $Error["tags"], "</div>";
 		echo "<div style='position:relative'>",
                     "<div id='taghelp_p' class='taghelp_p'></div>",
-                    "<textarea id='foldtags_d' cols='20' rows='4' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>", $t, "</textarea></div>",
+                    "<textarea id='foldtags_d' cols='20' rows='4' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>",
+                    $tagger->unparse($tagger->editable($prow->paperTags)),
+                    "</textarea></div>",
 		    "<div style='padding:1ex 0;text-align:right'>",
 		    "<input type='hidden' name='settags' value='1' />",
 		    "<input class='bsm' type='submit' name='cancelsettags' value='Cancel' onclick='return fold(\"tags\",1)' />",
