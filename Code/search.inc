@@ -415,23 +415,33 @@ class PaperSearch {
     // including "and", "or", and "not" expressions (which point at other
     // expressions).
 
-    static function _fieldPreg($word) {
-	if (ctype_alnum($word))
-	    return '\b' . $word . '\b';
-	else {
-	    $a = (ctype_alnum($word[0]) ? '\b' : '');
-	    $b = (ctype_alnum($word[strlen($word) - 1]) ? '\b' : '');
-	    $word = preg_replace('/\s+/', '\s+', preg_quote($word));
-	    $word = str_replace('\*', '\S*', $word);
-	    $word = str_replace('\\\\\S*', '\*', $word);
-	    return $a . $word . $b;
-	}
+    static function _analyze_field_preg($t) {
+        if (is_object($t))
+            $word = $t->value;
+        else {
+            $word = $t;
+            $t = (object) array();
+        }
+
+        $word = preg_quote(preg_replace('/\s+/', " ", $word));
+        if (strpos($word, "*") !== false) {
+            $word = str_replace('\*', '\S*', $word);
+            $word = str_replace('\\\\\S*', '\*', $word);
+        }
+
+        if (preg_match("/[\x80-\xFF]/", $word))
+            $t->preg_utf8 = Text::utf8_word_regex($word);
+        else {
+            $t->preg_raw = Text::word_regex($word);
+            $t->preg_utf8 = Text::utf8_word_regex($word);
+        }
+        return $t;
     }
 
     function _searchField($word, $rtype, &$qt, $blind) {
 	global $Conf;
 	if (!is_array($word))
-	    $extra = array("regex" => array($rtype, self::_fieldPreg($word)));
+	    $extra = array("regex" => array($rtype, self::_analyze_field_preg($word)));
 	else
 	    $extra = null;
 
@@ -2104,13 +2114,28 @@ class PaperSearch {
     }
 
     function _clauseTermCheckField(&$t, &$row) {
-	if (!$this->_clauseTermCheckFlags($t->flags, $row))
+        $field = $t->link;
+	if (!$this->_clauseTermCheckFlags($t->flags, $row)
+            || $row->$field == "")
 	    return false;
-	$m = self::_fieldPreg($t->value);
-	$fieldname = $t->link;
-	if (!preg_match('{' . $m . '}i', $row->$fieldname))
-	    return false;
-	return true;
+
+        $field_deaccent = $field . "_deaccent";
+        if (!isset($row->$field_deaccent)) {
+            if (preg_match('/[\x80-\xFF]/', $row->$field))
+                $row->$field_deaccent = UnicodeHelper::deaccent($row->$field);
+            else
+                $row->$field_deaccent = false;
+        }
+
+        if (!isset($t->preg_utf8))
+            self::_analyze_field_preg($t);
+
+        if (!isset($t->preg_raw))
+            return !!preg_match('{' . $t->preg_utf8 . '}ui', $row->$field);
+        else if ($row->$field_deaccent)
+            return !!preg_match('{' . $t->preg_utf8 . '}ui', $row->$field_deaccent);
+        else
+            return !!preg_match('{' . $t->preg_raw . '}i', $row->$field);
     }
 
     function _clauseTermCheck(&$t, &$row) {
@@ -2406,8 +2431,18 @@ class PaperSearch {
 	    foreach (array("ti" => "title", "au" => "authorInformation",
 			   "ab" => "abstract", "co" => "collaborators")
 		     as $k => $v)
-		if (isset($this->regex[$k]) && count($this->regex[$k]))
-		    $this->matchPreg[$v] = join("|", $this->regex[$k]);
+		if (isset($this->regex[$k]) && count($this->regex[$k])) {
+                    $a = $b = array();
+                    foreach ($this->regex[$k] as $x) {
+                        $a[] = $x->preg_utf8;
+                        if (isset($x->preg_raw))
+                            $b[] = $x->preg_raw;
+                    }
+                    $x = (object) array("preg_utf8" => join("|", $a));
+                    if (count($a) == count($b))
+                        $x->preg_raw = join("|", $b);
+		    $this->matchPreg[$v] = $x;
+                }
 	}
 
 	return true;

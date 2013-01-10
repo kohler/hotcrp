@@ -97,28 +97,37 @@ class Text {
             return $e;
     }
 
-    static function abbrevname_html($first, $last = null, $email = null) {
-        // was abbreviateNameHtml
+    static function initial($s) {
+        $x = "";
+        if ($s != null && $s != "") {
+            if (ctype_alpha($s[0]))
+                $x = $s[0];
+            else if (preg_match("/^(\\pL)/us", $s, $m))
+                $x = $m[1];
+            // Don't add a period if first name is a single letter
+            if ($x != "" && $x != $s && !str_starts_with($s, "$x "))
+                $x .= ".";
+        }
+        return $x;
+    }
+
+    static function abbrevname_text($first, $last = null, $email = null) {
         list(, $e, $f, $l) = self::analyze_name($first, $last, $email);
         $u = "";
         if ($l != null && $l != "") {
             $t = $l;
-            if ($f != null && $f != "") {
-                if (ctype_alpha($f[0]))
-                    $u = $f[0];
-                else if (preg_match("/^(\\pL)/us", $f, $m))
-                    $u = $m[1];
-                // Don't add a period if first name is a single letter
-                if ($u != "" && $u != $f && !str_starts_with($f, "$u "))
-                    $u .= ".";
-                if ($u != "")
-                    $u .= " "; // non-breaking space
-            }
+            if ($f != null && $f != "" && ($u = self::initial($f)) != "")
+                $u .= " "; // non-breaking space
         } else if ($f != null && $f != "")
             $t = $f;
         else
             $t = $e ? $e : "???";
-        return htmlspecialchars($u . $t);
+        return $u . $t;
+    }
+
+    static function abbrevname_html($first, $last = null, $email = null) {
+        // was abbreviateNameHtml
+        return htmlspecialchars(self::abbrevname_text($first, $last, $email));
     }
 
     static function split_name($name, $with_email = false) {
@@ -151,6 +160,66 @@ class Text {
             return array($first, $last);
         } else
             return array("", trim($name));
+    }
+
+    public static function word_regex($word) {
+        list($aw, $zw) = array(ctype_alnum($word[0]),
+                               ctype_alnum($word[strlen($word) - 1]));
+        return ($aw ? '\b' : '')
+            . str_replace(" ", '\s+', $word)
+            . ($zw ? '\b' : '');
+    }
+
+    public static function utf8_word_regex($word) {
+        list($aw, $zw) = array(preg_match('{\A(?:\pL|\pN)}u', $word),
+                               preg_match('{(?:\pL|\pN)\z}u', $word));
+        return ($aw ? '(?:\A|(?!\pL|\pN)\X)' : '')
+            . str_replace(" ", '\p{Zs}+', $word)
+            . ($zw ? '(?:\z|(?!\pL|\pN)(?=\PM))' : '');
+    }
+
+    public static function highlight($text, $match, &$n = null) {
+        $n = 0;
+        if ($match === null || $match === false || $match === "" || $text == "")
+            return htmlspecialchars($text);
+
+        $mtext = $text;
+        $offsetmap = null;
+        if (!is_object($match))
+            $flags = "i";
+        else if (!isset($match->preg_raw)) {
+            $match = $match->preg_utf8;
+            $flags = "ui";
+        } else if (preg_match('/[\x80-\xFF]/', $text)) {
+            list($mtext, $offsetmap) = UnicodeHelper::deaccent_offsets($mtext);
+            $match = $match->preg_utf8;
+            $flags = "ui";
+        } else {
+            $match = $match->preg_raw;
+            $flags = "i";
+        }
+
+        if ($match[0] != "{")
+            $match = "{(" . $match . ")}" . $flags;
+        $s = preg_split($match, $mtext, -1, PREG_SPLIT_DELIM_CAPTURE);
+        if (sizeof($s) == 1)
+            return htmlspecialchars($text);
+        $n = (int) (count($s) / 2);
+
+        if ($offsetmap)
+            for ($i = $b = $o = 0; $i < count($s); ++$i)
+                if ($s[$i] !== "") {
+                    $o += strlen($s[$i]);
+                    $e = UnicodeHelper::deaccent_translate_offset($offsetmap, $o);
+                    $s[$i] = substr($text, $b, $e - $b);
+                    $b = $e;
+                }
+        for ($i = 0; $i < count($s); ++$i)
+            if (($i % 2) && $s[$i] != "")
+                $s[$i] = "<span class='match'>" . htmlspecialchars($s[$i]) . "</span>";
+            else
+                $s[$i] = htmlspecialchars($s[$i]);
+        return join("", $s);
     }
 
 }

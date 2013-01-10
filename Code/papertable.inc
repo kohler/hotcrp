@@ -75,7 +75,7 @@ class PaperTable {
     }
 
     function initialize($editable, $useRequest) {
-	global $thisMatchPreg, $CurrentList;
+	global $CurrentList;
 
 	$this->editable = $editable;
 	$this->useRequest = $useRequest;
@@ -103,12 +103,9 @@ class PaperTable {
 
 	$this->matchPreg = array();
 	$matcher = null;
-	if (isset($thisMatchPreg) && $thisMatchPreg !== ""
-	    && (!is_array($thisMatchPreg) || count($thisMatchPreg) > 0))
-	    $matcher = $thisMatchPreg;
-	else if (isset($_SESSION["l"]) && isset($CurrentList)
-		 && $CurrentList > 0
-		 && defval($_SESSION["l"][$CurrentList], "matchPreg", "") !== "")
+        if (isset($_SESSION["l"]) && isset($CurrentList)
+            && $CurrentList > 0
+            && defval($_SESSION["l"][$CurrentList], "matchPreg", "") !== "")
 	    $matcher = $_SESSION["l"][$CurrentList]["matchPreg"];
 	if ($matcher !== null) {
 	    if (!is_array($matcher))
@@ -120,7 +117,8 @@ class PaperTable {
 		    if ($v[0] != "{")
 			$v = "{(" . $v . ")}i";
 		    $this->matchPreg[$k] = $v;
-		}
+		} else if (is_object($v))
+                    $this->matchPreg[$k] = $v;
 	}
 	if (count($this->matchPreg) == 0)
 	    $this->matchPreg = null;
@@ -220,7 +218,7 @@ class PaperTable {
 
 	if ($this->highlight && isset($textAreaRows[$fieldName])
 	    && !$this->editable && isset($this->matchPreg[$fieldName]))
-	    $text = highlightMatch($this->matchPreg[$fieldName], htmlspecialchars($text), $this->entryMatches);
+	    $text = Text::highlight($text, $this->matchPreg[$fieldName], $this->entryMatches);
 	else
 	    $text = htmlspecialchars($text);
 
@@ -244,7 +242,7 @@ class PaperTable {
 
     function echoTitle($prow) {
 	if ($this->highlight && isset($this->matchPreg["title"]))
-	    echo highlightMatch($this->matchPreg["title"], htmlspecialchars($prow->title));
+	    echo Text::highlight($prow->title, $this->matchPreg["title"]);
 	else
 	    echo htmlspecialchars($prow->title);
     }
@@ -519,27 +517,25 @@ class PaperTable {
 	$names = array();
 	if ($type == "last") {
 	    foreach ($table as $au) {
-		$n = Text::abbrevname_html($au);
-		if ($highpreg !== false) {
-		    $n = highlightMatch($highpreg, $n, $nm);
-		    $this->entryMatches += $nm;
-		}
-		$names[] = $n;
+		$n = Text::abbrevname_text($au);
+                $names[] = Text::highlight($n, $highpreg, $nm);
+                $this->entryMatches += $nm;
 	    }
 	    return $prefix . join(", ", $names);
 
 	} else {
 	    foreach ($table as $au) {
-		$n = htmlspecialchars("$au[0] $au[1]");
-		if ($au[3] != "")
-		    $n .= " <span class='auaff'>(" . htmlspecialchars($au[3]) . ")</span>";
-		if ($au[2] != "")
-		    $n .= htmlspecialchars(" <$au[2]>");
+		$n = Text::highlight("$au[0] $au[1]", $highpreg, $nm);
+                $this->entryMatches += $nm;
+		if ($au[3] != "") {
+		    $n .= " <span class='auaff'>(" . Text::highlight($au[3], $highpreg, $nm) . ")</span>";
+                    $this->entryMatches += $nm;
+                }
+		if ($au[2] != "") {
+		    $n .= " &lt;" . Text::highlight($au[2], $highpreg, $nm) . "&gt;";
+                    $this->entryMatches += $nm;
+                }
 		$n = trim($n);
-		if ($highpreg !== false) {
-		    $n = highlightMatch($highpreg, $n, $nm);
-		    $this->entryMatches += $nm;
-		}
 		if ($au[2] != "" && preg_match("/ &lt;.*&gt;\\Z/", $n, $m))
 		    $n = substr($n, 0, strlen($n) - strlen($m[0]) + 5)
 			. "<a href=\"mailto:" . htmlspecialchars($au[2]) . "\">"
@@ -1950,9 +1946,6 @@ class PaperTable {
 	$search = new PaperSearch($Me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
 	$pl = $search->paperList();
 	if (count($pl) == 1) {
-	    global $thisMatchPreg;
-	    if ($search->matchPreg)
-		$thisMatchPreg = $search->matchPreg;
 	    $_REQUEST["paperId"] = $pl[0];
 	    $_REQUEST["ls"] = allocateListNumber($search->listId());
 	    $_SESSION["l"][$_REQUEST["ls"]] = $search->sessionList();

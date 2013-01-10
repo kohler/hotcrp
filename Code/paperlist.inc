@@ -631,15 +631,10 @@ class PaperList extends BaseList {
 
     function _conflictMatches($input, $preg) {
 	preg_match_all("{\n(.*(?:$preg).*)\n}i", "\n$input\n", $matches);
-	$amp_preg = str_replace("&", "&amp;", $preg);
 	$text = "";
 	foreach ($matches[0] as $line) {
-	    if ($line != "")
-		$line = htmlspecialchars(trim($line));
-	    if ($line != "") {
-		$text .= ($text ? "; " : "");
-		$text .= highlightMatch($amp_preg, $line);
-	    }
+	    if (($line = trim($line)) != "")
+                $text .= ($text ? "; " : "") . Text::highlight($line, $preg);
 	}
 	if ($text != "")
 	    $this->foldRow = false;
@@ -696,32 +691,27 @@ class PaperList extends BaseList {
 		}
 		$lastaff = $au[3];
 		$n = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $au[2];
-		if ($highlight !== "")
-		    $n = highlightMatch($highlight, $n);
-		$aus[] = $n;
+		$aus[] = Text::highlight($n, $highlight);
 	    }
 	    if (count($aus))
 		$affaus[] = array($aus, $lastaff);
 	    foreach ($affaus as &$ax) {
-		$aff = htmlspecialchars($ax[1]);
-		if ($aff == "" && $anyaff)
-		    $aff = "unaffiliated";
-		if ($highlight !== "")
-		    $aff = highlightMatch($highlight, $aff);
+		$aff = ($ax[1] == "" && $anyaff ? "unaffiliated" : $ax[1]);
+                $aff = Text::highlight($aff, $highlight);
 		$ax = commajoin($ax[0]) . ($aff ? " <span class='auaff'>($aff)</span>" : "");
 	    }
 	    return commajoin($affaus);
-	} else if ($highlight === "") {
+	} else if (!$highlight) {
 	    foreach ($row->authorTable as $au)
 		$aus[] = Text::abbrevname_html($au);
 	    return join(", ", $aus);
 	} else {
 	    foreach ($row->authorTable as $au) {
 		$first = htmlspecialchars($au[0]);
-		$x = highlightMatch($highlight, trim($first . " " . htmlspecialchars($au[1])), $nm);
+		$x = Text::highlight(trim("$au[0] $au[1]"), $highlight, $nm);
 		if ((!$nm || substr($x, 0, strlen($first)) == $first)
-		    && strlen($first) && ctype_upper($first[0]))
-		    $x = $first[0] . ". " . substr($x, strlen($first) + 1);
+		    && ($initial = Text::initial($first)) != "")
+		    $x = $initial . substr($x, strlen($first));
 		$aus[] = $x;
 	    }
 	    return join(", ", $aus);
@@ -872,9 +862,7 @@ class PaperList extends BaseList {
 	    return "<a href='$pl' tabindex='4'>#$row->paperId</a>";
 	case self::FIELD_TITLE:
 	    $pl = $this->_paperLink($row);
-	    $x = htmlspecialchars($row->title);
-	    if (isset($this->search->matchPreg["title"]))
-		$x = highlightMatch($this->search->matchPreg["title"], $x);
+            $x = Text::highlight($row->title, defval($this->search->matchPreg, "title"));
 	    return "<a href='$pl' tabindex='5'>" . $x . "</a>" . $this->_contentDownload($row);
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
@@ -1070,10 +1058,7 @@ class PaperList extends BaseList {
 	case self::FIELD_OPT_ABSTRACT:
 	    if ($row->abstract == "")
 		return "";
-	    $x = htmlspecialchars($row->abstract);
-	    if (isset($this->search->matchPreg["abstract"]))
-		$x = highlightMatch($this->search->matchPreg["abstract"], $x);
-	    return $x;
+            return Text::highlight($row->abstract, defval($this->search->matchPreg, "abstract"));
 	case self::FIELD_TAGS:
 	    if (!$this->contact->canViewTags($row))
 		return "";
@@ -1112,10 +1097,8 @@ class PaperList extends BaseList {
 		return "";
 	    $x = "";
 	    foreach (explode("\n", $row->collaborators) as $c)
-		$x .= ($x === "" ? "" : ", ") . htmlspecialchars(trim($c));
-	    if (isset($this->search->matchPreg["collaborators"]))
-		$x = highlightMatch($this->search->matchPreg["collaborators"], $x);
-	    return $x;
+		$x .= ($x === "" ? "" : ", ") . trim($c);
+            return Text::highlight($x, defval($this->search->matchPreg, "collaborators"));
 	default:
 	    return "";
 	}

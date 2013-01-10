@@ -165,6 +165,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/Code/hotcrpdocument.php");
     else if ($class_name == "Mailer")
         require_once("$ConfSitePATH/Code/mailer.php");
+    else if ($class_name == "UnicodeHelper")
+        require_once("$ConfSitePATH/Code/unicodehelper.php");
 }
 
 // If you have the PEAR::Mail libraries installed globally,
