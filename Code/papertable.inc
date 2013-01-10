@@ -946,7 +946,7 @@ class PaperTable {
 		    echo "<div class='papv'><input type='text' class='textlite' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
 		else
 		    echo "<div class='papv'><input type='text' class='textlite papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";
-	    } else
+	    } else if ($o->type != PaperOption::T_FINALPDF)
 		$this->echoDocumentUploadRow($prow, $o, defval($optsel, $o->optionId), 0);
 	}
     }
