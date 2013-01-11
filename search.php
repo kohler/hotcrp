@@ -689,14 +689,20 @@ if ($getaction == "topics" && isset($papersel)) {
     $rf = reviewForm();
     $texts = array();
 
-    while ($row = edb_orow($result)) {
-	if (!$Me->canViewPaper($row) || $row->topicIds === "")
+    while (($row = edb_orow($result))) {
+	if (!$Me->canViewPaper($row))
 	    continue;
 	$out = array();
-	foreach (explode(",", $row->topicIds) as $tid)
-	    if ($tid != "")
-		$out[$rf->topicOrder[$tid]] =
-		    array($row->paperId, $row->title, $rf->topicName[$tid]);
+        $topicIds = ($row->topicIds == "" ? "x" : $row->topicIds);
+	foreach (explode(",", $topicIds) as $tid) {
+	    if ($tid === "")
+                continue;
+            else if ($tid === "x")
+                list($order, $name) = array(99999, "<none>");
+            else
+                list($order, $name) = array($rf->topicOrder[$tid], $rf->topicName[$tid]);
+            $out[$order] = array($row->paperId, $row->title, $name);
+        }
 	ksort($out);
 	arrayappend($texts[$paperselmap[$row->paperId]], $out);
     }
