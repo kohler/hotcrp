@@ -630,12 +630,13 @@ class PaperList extends BaseList {
     }
 
     function _conflictMatches($input, $preg) {
-	preg_match_all("{\n(.*(?:$preg).*)\n}i", "\n$input\n", $matches);
 	$text = "";
-	foreach ($matches[0] as $line) {
-	    if (($line = trim($line)) != "")
-                $text .= ($text ? "; " : "") . Text::highlight($line, $preg);
-	}
+	foreach (explode("\n", $input) as $line)
+            if (($line = trim($line)) != "") {
+                $line = Text::highlight($line, $preg, $n);
+                if ($n)
+                    $text .= ($text ? "; " : "") . $line;
+            }
 	if ($text != "")
 	    $this->foldRow = false;
 	return $text;

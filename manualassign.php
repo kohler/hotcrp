@@ -213,6 +213,20 @@ echo "<tr><td colspan='2'><div class='aax' style='text-align:right'>",
     "</table>\n</div></form></div></td></tr></table>\n";
 
 
+function make_match_preg($str) {
+    $a = $b = array();
+    foreach (explode(" ", preg_quote($str)) as $word)
+        if ($word != "") {
+            $a[] = Text::utf8_word_regex($word);
+            if (!preg_match("/[\x80-\xFF]/", $word))
+                $b[] = Text::word_regex($word);
+        }
+    $x = (object) array("preg_utf8" => join("|", $a));
+    if (count($a) == count($b))
+        $x->preg_raw = join("|", $b);
+    return $x;
+}
+
 // Current PC member information
 if ($reviewer > 0) {
     $col = array(array(), array(), array());
@@ -303,9 +317,9 @@ if ($reviewer > 0) {
 	$search->overrideMatchPreg = true;
 	$search->matchPreg = array();
 	if ($showau)
-	    $search->matchPreg["authorInformation"] = "\\b" . str_replace(" ", "\\b|\\b", preg_quote(substr($showau, 0, strlen($showau) - 1))) . "\\b";
+	    $search->matchPreg["authorInformation"] = make_match_preg($showau);
 	if ($showco)
-	    $search->matchPreg["collaborators"] = "\\b" . str_replace(" ", "\\b|\\b", preg_quote(substr($showau, 0, strlen($showco) - 1))) . "\\b";
+	    $search->matchPreg["collaborators"] = make_match_preg($showco);
     }
     $a = isset($_REQUEST["sort"]) ? "&amp;sort=" . urlencode($_REQUEST["sort"]) : "";
     echo "<div class='aahc'><form class='assignpc' method='post' action=\"", hoturl_post("manualassign", "reviewer=$reviewer&amp;kind=$kind$a"),
