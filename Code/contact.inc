@@ -332,7 +332,7 @@ class Contact {
 	$this->email = trim($email);
 	if (!$useRequest || !$useRequestPassword || !isset($_REQUEST["password"])
 	    || ($this->password = trim($_REQUEST["password"])) == "")
-	    $this->password = self::generatePassword(10);
+	    $this->password = self::random_password();
 
 	// update paper authorship based on authorInformation fields
 	// (ignore errors)
@@ -1344,35 +1344,35 @@ class Contact {
     }
 
 
-    static function generatePassword($length) {
+    static function random_password($length = 12) {
 	global $Opt;
 	if (isset($Opt["ldapLogin"]))
 	    return "<stored in LDAP>";
 	else if (isset($Opt["httpAuthLogin"]))
 	    return "<using HTTP authentication>";
 
-	$l = array("a", "e", "i", "o", "u", "y", "a", "e", "i", "o", "u", "y",
-		   "a", "e", "i", "o", "u", "y", "a", "e", "i", "o", "u", "y",
-		   "a", "e", "i", "o", "u", "y", "a", "e", "i", "o", "u", "y",
-		   "b", "c", "d", "g", "h", "j", "k", "l", "m", "n", "p",
-		   "r", "s", "t", "u", "v", "w", "tr",
-		   "cr", "br", "fr", "th", "dr", "ch", "ph", "wr", "st",
-		   "sp", "sw", "pr", "sl", "cl",
-		   "2", "3", "4", "5", "6", "7", "8", "9",
-		   "-", "@", "_", "+", "=");
+	$l = explode(" ", "a e i o u y a e i o u y a e i o u y a e i o u y a e i o u y b c d g h j k l m n p r s t u v w tr cr br fr th dr ch ph wr st sp sw pr sl cl 2 3 4 5 6 7 8 9 - @ _ + =");
 	$n = count($l);
 
-	$bytes = hotcrp_random_bytes($length, true);
+	$bytes = hotcrp_random_bytes($length + 10, true);
 	if (!$bytes) {
 	    $bytes = "";
 	    while (strlen($bytes) < $length)
 		$bytes .= sha1($Opt["conferenceKey"] . pack("V", mt_rand()));
 	}
 
-	$password = "";
-	for ($i = 0; strlen($password) < $length; ++$i)
-	    $password .= $l[ord($bytes[$i]) % $n];
-	return $password;
+	$pw = "";
+        $nvow = 0;
+	for ($i = 0;
+             $i < strlen($bytes) &&
+                 strlen($pw) < $length + max(0, ($nvow - 3) / 3);
+             ++$i) {
+            $x = ord($bytes[$i]) % $n;
+            if ($x < 30)
+                ++$nvow;
+	    $pw .= $l[$x];
+        }
+	return $pw;
     }
 
     function sendAccountInfo($create, $sensitive) {

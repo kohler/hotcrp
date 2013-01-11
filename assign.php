@@ -359,7 +359,7 @@ function createAnonymousReview() {
     } else {
 	$result = $Conf->qe("insert into ContactInfo
 		(firstName, lastName, email, affiliation, password, creationTime)
-		values ('Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '" . sqlq(Contact::generatePassword(20)) . "', $now)", $while);
+		values ('Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '" . sqlq(Contact::random_password(20)) . "', $now)", $while);
 	if (!$result)
 	    return $result;
 	$reqId = $Conf->lastInsertId($while);
