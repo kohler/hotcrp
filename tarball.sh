@@ -155,6 +155,10 @@ images/extagsnone.png
 images/extagssearch.png
 images/extagsset.png
 images/extagvotehover.png
+images/generic.png
+images/genericf.png
+images/generic24.png
+images/genericf24.png
 images/headgrad.png
 images/homegrad.png
 images/info45.png

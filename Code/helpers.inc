@@ -689,11 +689,8 @@ function documentDownload($data, $dlimg_class = "dlimg", $text = null) {
 	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("postscript${finalsuffix}${imgsize}.png", "[PS]", null, $dlimg_class);
     else if ($mimetype == "application/pdf")
 	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("pdf${finalsuffix}${imgsize}.png", "[PDF]", null, $dlimg_class);
-    else {
-	$x = "<a href=\"$p\" class='nowrap'>";
-	$sp = "";
-	$text = $text ? $text : "Download";
-    }
+    else
+	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("generic${finalsuffix}${imgsize}.png", "[Download]", null, $dlimg_class);
     if ($text)
 	$x .= $sp . $text;
     if (defval($data, "size", 0) > 0)
