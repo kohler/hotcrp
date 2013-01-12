@@ -55,7 +55,7 @@ class Mimetype {
             $a = array();
             foreach ($type as $x)
                 if (($x = self::description($x)))
-                    $a[] = $x;
+                    $a[$x] = $x;
             return commajoin($a, "or");
         } else {
             $x = self::lookup($type);
