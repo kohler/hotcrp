@@ -1,6 +1,6 @@
 <?php
 // commentview.inc -- HotCRP helper class for producing comment boxes
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class CommentView {
@@ -190,7 +190,7 @@ class CommentView {
 		tagg_checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, "blind") : !$crow || $crow->blind)),
 		"&nbsp;", tagg_label("Anonymous to authors"), ")";
 	if ($Conf->timeAuthorViewReviews())
-	    echo "<br /><span class='fx2 hint'>Authors will be notified of new comments immediately.</span>";
+	    echo "<br /><span class='fx2 hint'>Authors will be notified immediately.</span>";
 	else
 	    echo "<br /><span class='fx2 hint'>Authors cannot view comments at the moment.</span>";
 	echo "</td></tr>\n";
