@@ -1,6 +1,6 @@
 <?php
 // help.php -- HotCRP help page
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -375,7 +375,7 @@ function tags() {
 	    sort($ct);
 	    $chairtags = " (currently ";
 	    foreach ($ct as $c)
-		$chairtags .= "“<a href=\"" . hoturl("search", "q=tag:$c") . "\">$c</a>”, ";
+		$chairtags .= "“<a href=\"" . hoturl("search", "q=%23$c") . "\">$c</a>”, ";
 	    $chairtags = substr($chairtags, 0, strlen($chairtags) - 2) . ")";
 	}
 
@@ -423,16 +423,16 @@ Here are some example ways to use tags.
  A <a href='" . hoturl("search", "q=%23controversy") . "'>search</a> shows where the PC thinks more review is needed.</li>
 
 <li><strong>Mark PC-authored papers for extra scrutiny.</strong>
- First, <a href='" . hoturl("search", "t=s&amp;qt=au") . "'>search for PC members' last names in author fields</a>.
+ First, <a href='" . hoturl("search", "t=s&amp;qt=au") . "'>search for PC members’ last names in author fields</a>.
  Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag “pcpaper”.
- A <a href='" . hoturl("search", "t=s&amp;qx=tag:pcpaper") . "'>search</a> shows papers without PC authors.
+ A <a href='" . hoturl("search", "t=s&amp;qx=%23pcpaper") . "'>search</a> shows papers without PC authors.
  (Since PC members can see whether a paper is tagged “pcpaper”, you may want to delay defining the tag until just before the meeting.)</li>
 
 <li><strong>Vote for papers.</strong>
  The chair can define special voting tags$votetags$setting.
  Each PC member is assigned an allotment of votes to distribute among papers.
  For instance, if “v” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “~v#5”.
- The system automatically sums PC members' votes into the public “v” tag.
+ The system automatically sums PC members’ votes into the public “v” tag.
  To search for papers by vote count, search for “<a href='" . hoturl("search", "t=s&amp;q=rorder:v") . "'>rorder:v</a>”. (<a href='" . hoturl("help", "t=votetags") . "'>Learn more</a>)</li>
 
 <li><strong>Rank papers.</strong>
@@ -479,7 +479,7 @@ their checkboxes, and add tags using the action area.</p>
 <p><b>Add</b> adds tags to the selected papers, <b>Remove</b> removes existing
 tags from the selected papers, and <b>Define</b> adds the tag to all selected
 papers and removes it from all non-selected papers.  The chair-only <b>Clear
-twiddle</b> action removes a tag and all users' matching twiddle tags.</p>
+twiddle</b> action removes a tag and all users’ matching twiddle tags.</p>
 
 <p>Although any PC member can view or search
 most tags, only PC chairs can change certain tags$chairtags.  $setting</p>");
