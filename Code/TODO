@@ -1,4 +1,6 @@
 - ATTACHMENTS
+- Attachments [Herbert Bos and others]
+
 - REVIEW NOTIFICATION
 
 - Paper not reviewed [Todd Mowry]
@@ -6,8 +8,6 @@
 - Is there a way to look at the submission history of a paper?
   Specifically, the authors of one paper ask to revert to an earlier
   version. Is that possible? [Gernot Heiser]
-
-- Word lengths on rebuttals [Jeff Mogul]
 
 - When reviewers update their reviews, all we get is an email that the
   review was updated. But there's no indication how it changed: did the
@@ -18,8 +18,6 @@
   new review (plus scores) as plain text, and include a diff(1) output of
   the old vs. new reviews along with the email that notifies the chairs of
   the review change? [Erez Zadok/Dan Tsafrir]
-
-- Attachments [Herbert Bos and others]
 
 - On the form for "Start a new paper," I think it would be nice to have a
 checkbox next to each author name that would automagically turn that author
