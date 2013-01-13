@@ -10,11 +10,13 @@ CREATE TABLE `ActionLog` (
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `ipaddr` varchar(16) DEFAULT NULL,
   `action` text NOT NULL,
-  PRIMARY KEY  (`logId`),
+  PRIMARY KEY (`logId`),
   UNIQUE KEY `logId` (`logId`),
   KEY `contactId` (`contactId`),
   KEY `paperId` (`paperId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `Chair`
@@ -26,6 +28,8 @@ CREATE TABLE `Chair` (
   UNIQUE KEY `contactId` (`contactId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+
+
 --
 -- Table structure for table `ChairAssistant`
 --
@@ -35,6 +39,8 @@ CREATE TABLE `ChairAssistant` (
   `contactId` int(11) NOT NULL,
   UNIQUE KEY `contactId` (`contactId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `ContactAddress`
@@ -51,6 +57,8 @@ CREATE TABLE `ContactAddress` (
   `country` varchar(2048) NOT NULL,
   UNIQUE KEY `contactId` (`contactId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `ContactInfo`
@@ -75,7 +83,7 @@ CREATE TABLE `ContactInfo` (
   `defaultWatch` int(11) NOT NULL DEFAULT '2',
   `roles` tinyint(1) NOT NULL DEFAULT '0',
   `contactTags` text,
-  PRIMARY KEY  (`contactId`),
+  PRIMARY KEY (`contactId`),
   UNIQUE KEY `contactId` (`contactId`),
   UNIQUE KEY `contactIdRoles` (`contactId`,`roles`),
   UNIQUE KEY `email` (`email`),
@@ -86,6 +94,8 @@ CREATE TABLE `ContactInfo` (
   FULLTEXT KEY `firstName_2` (`firstName`),
   FULLTEXT KEY `lastName` (`lastName`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `Formula`
@@ -101,9 +111,11 @@ CREATE TABLE `Formula` (
   `authorView` tinyint(1) NOT NULL DEFAULT '1',
   `createdBy` int(11) NOT NULL DEFAULT '0',
   `timeModified` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY  (`formulaId`),
+  PRIMARY KEY (`formulaId`),
   UNIQUE KEY `formulaId` (`formulaId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `MailLog`
@@ -118,8 +130,10 @@ CREATE TABLE `MailLog` (
   `replyto` text,
   `subject` text,
   `emailBody` text,
-  PRIMARY KEY  (`mailId`)
+  PRIMARY KEY (`mailId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `OptionType`
@@ -135,8 +149,10 @@ CREATE TABLE `OptionType` (
   `optionValues` text NOT NULL DEFAULT '',
   `sortOrder` tinyint(1) NOT NULL DEFAULT '0',
   `displayType` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY  (`optionId`)
+  PRIMARY KEY (`optionId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `PCMember`
@@ -147,6 +163,8 @@ CREATE TABLE `PCMember` (
   `contactId` int(11) NOT NULL,
   UNIQUE KEY `contactId` (`contactId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `Paper`
@@ -179,7 +197,7 @@ CREATE TABLE `Paper` (
   `numComments` int(11) NOT NULL DEFAULT '0',
   `numAuthorComments` int(11) NOT NULL DEFAULT '0',
   `withdrawReason` text,
-  PRIMARY KEY  (`paperId`),
+  PRIMARY KEY (`paperId`),
   UNIQUE KEY `paperId` (`paperId`),
   KEY `title` (`title`),
   FULLTEXT KEY `titleAbstractText` (`title`,`abstract`),
@@ -189,6 +207,8 @@ CREATE TABLE `Paper` (
   KEY `leadContactId` (`leadContactId`),
   KEY `shepherdContactId` (`shepherdContactId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `PaperComment`
@@ -208,13 +228,15 @@ CREATE TABLE `PaperComment` (
   `replyTo` int(11) NOT NULL,
   `paperStorageId` int(11) NOT NULL DEFAULT '0',
   `ordinal` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY  (`commentId`),
+  PRIMARY KEY (`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
   KEY `paperId` (`paperId`),
   KEY `contactPaper` (`contactId`,`paperId`),
   KEY `timeModified` (`timeModified`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `PaperConflict`
@@ -229,6 +251,8 @@ CREATE TABLE `PaperConflict` (
   UNIQUE KEY `contactPaperConflict` (`contactId`,`paperId`,`conflictType`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+
+
 --
 -- Table structure for table `PaperOption`
 --
@@ -241,6 +265,8 @@ CREATE TABLE `PaperOption` (
   `data` text,
   UNIQUE KEY `paperOption` (`paperId`,`optionId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `PaperReview`
@@ -283,7 +309,7 @@ CREATE TABLE `PaperReview` (
   `fixability` tinyint(4) NOT NULL DEFAULT '0',
   `textField7` mediumtext NOT NULL,
   `textField8` mediumtext NOT NULL,
-  PRIMARY KEY  (`reviewId`),
+  PRIMARY KEY (`reviewId`),
   UNIQUE KEY `reviewId` (`reviewId`),
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   KEY `paperId` (`paperId`,`reviewOrdinal`),
@@ -293,6 +319,8 @@ CREATE TABLE `PaperReview` (
   KEY `reviewRound` (`reviewRound`),
   KEY `requestedBy` (`requestedBy`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `PaperReviewArchive`
@@ -334,7 +362,7 @@ CREATE TABLE `PaperReviewArchive` (
   `fixability` tinyint(4) NOT NULL DEFAULT '0',
   `textField7` mediumtext NOT NULL,
   `textField8` mediumtext NOT NULL,
-  PRIMARY KEY  (`reviewArchiveId`),
+  PRIMARY KEY (`reviewArchiveId`),
   UNIQUE KEY `reviewArchiveId` (`reviewArchiveId`),
   KEY `reviewId` (`reviewId`),
   KEY `contactPaper` (`contactId`,`paperId`),
@@ -344,6 +372,8 @@ CREATE TABLE `PaperReviewArchive` (
   KEY `reviewType` (`reviewType`),
   KEY `requestedBy` (`requestedBy`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `PaperReviewPreference`
@@ -357,6 +387,8 @@ CREATE TABLE `PaperReviewPreference` (
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   KEY `paperId` (`paperId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `PaperReviewRefused`
@@ -373,6 +405,8 @@ CREATE TABLE `PaperReviewRefused` (
   KEY `requestedBy` (`requestedBy`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+
+
 --
 -- Table structure for table `PaperStorage`
 --
@@ -387,12 +421,14 @@ CREATE TABLE `PaperStorage` (
   `compression` tinyint(1) NOT NULL DEFAULT '0',
   `sha1` varbinary(20) NOT NULL DEFAULT '',
   `documentType` int(3) NOT NULL DEFAULT '0',
-  `filename` varchar(255),
-  PRIMARY KEY  (`paperStorageId`),
+  `filename` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`paperStorageId`),
   UNIQUE KEY `paperStorageId` (`paperStorageId`),
   KEY `paperId` (`paperId`),
   KEY `mimetype` (`mimetype`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `PaperTag`
@@ -406,6 +442,8 @@ CREATE TABLE `PaperTag` (
   UNIQUE KEY `paperTag` (`paperId`,`tag`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+
+
 --
 -- Table structure for table `PaperTopic`
 --
@@ -416,6 +454,8 @@ CREATE TABLE `PaperTopic` (
   `paperId` int(11) NOT NULL,
   UNIQUE KEY `paperTopic` (`paperId`,`topicId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `PaperWatch`
@@ -430,6 +470,8 @@ CREATE TABLE `PaperWatch` (
   UNIQUE KEY `contactPaperWatch` (`contactId`,`paperId`,`watch`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+
+
 --
 -- Table structure for table `ReviewFormField`
 --
@@ -443,10 +485,12 @@ CREATE TABLE `ReviewFormField` (
   `rows` tinyint(1) NOT NULL DEFAULT '0',
   `authorView` tinyint(1) NOT NULL DEFAULT '1',
   `levelChar` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY  (`fieldName`),
+  PRIMARY KEY (`fieldName`),
   UNIQUE KEY `fieldName` (`fieldName`),
   KEY `shortName` (`shortName`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `ReviewFormOptions`
@@ -461,6 +505,8 @@ CREATE TABLE `ReviewFormOptions` (
   KEY `level` (`level`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+
+
 --
 -- Table structure for table `ReviewRating`
 --
@@ -474,6 +520,8 @@ CREATE TABLE `ReviewRating` (
   UNIQUE KEY `reviewContactRating` (`reviewId`,`contactId`,`rating`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+
+
 --
 -- Table structure for table `ReviewRequest`
 --
@@ -485,10 +533,12 @@ CREATE TABLE `ReviewRequest` (
   `email` varchar(120) DEFAULT NULL,
   `reason` text,
   `requestedBy` int(11) NOT NULL,
-  KEY `paperId` (`paperId`),
   UNIQUE KEY `paperEmail` (`paperId`,`email`),
+  KEY `paperId` (`paperId`),
   KEY `requestedBy` (`requestedBy`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `Settings`
@@ -502,6 +552,8 @@ CREATE TABLE `Settings` (
   UNIQUE KEY `name` (`name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+
+
 --
 -- Table structure for table `TopicArea`
 --
@@ -510,10 +562,12 @@ DROP TABLE IF EXISTS `TopicArea`;
 CREATE TABLE `TopicArea` (
   `topicId` int(11) NOT NULL AUTO_INCREMENT,
   `topicName` varchar(80) DEFAULT NULL,
-  PRIMARY KEY  (`topicId`),
+  PRIMARY KEY (`topicId`),
   UNIQUE KEY `topicId` (`topicId`),
   KEY `topicName` (`topicName`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 
 --
 -- Table structure for table `TopicInterest`
