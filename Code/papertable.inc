@@ -283,10 +283,10 @@ class PaperTable {
 
 	    $dprefix = "";
 	    if ($final && $prow->finalPaperStorageId > 1) {
-		$data = paperDocumentData($prow, DOCUMENT_FINAL);
+		$data = paperDocumentData($prow, DTYPE_FINAL);
 		$dprefix = "Final version: &nbsp;";
 	    } else
-		$data = paperDocumentData($prow, DOCUMENT_SUBMISSION);
+		$data = paperDocumentData($prow, DTYPE_SUBMISSION);
 	    if ($data) {
 		if (($stamps = $this->pdfStamps($data)))
 		    $stamps = "<span class='sep'></span>" . $stamps;
@@ -338,7 +338,7 @@ class PaperTable {
         $docclass = new HotCRPDocument($opt->optionId, $opt);
 	$documentType = $opt->optionId;
 	$optionType = $opt->type;
-	$noPapers = defval($Opt, "noPapers") && ($documentType == DOCUMENT_SUBMISSION || $documentType == DOCUMENT_FINAL);
+	$noPapers = defval($Opt, "noPapers") && ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
 	$banal = $Conf->setting("sub_banal")
 	    && ($optionType == null || $optionType == PaperOption::T_PDF
 		|| $optionType == PaperOption::T_FINALPDF);
@@ -346,7 +346,7 @@ class PaperTable {
 	$filetypes = array();
 	$accepts = array();
 	if ($noPapers) {
-	    if ($documentType == DOCUMENT_SUBMISSION)
+	    if ($documentType == DTYPE_SUBMISSION)
 		echo $this->papt("paper", "Status");
 	} else {
             $accepts = $docclass->mimetypes();
@@ -381,7 +381,7 @@ class PaperTable {
 	    if (count($accepts) == 1)
 		$uploader .= " accept='" . $accepts[0]->mimetype . "'";
 	    $uploader .= " size='30' onchange='hiliter(this)";
-	    if ($documentType == DOCUMENT_SUBMISSION)
+	    if ($documentType == DTYPE_SUBMISSION)
 		$uploader .= ";fold(\"isready\",0)";
 	    if ($flags & self::ENABLESUBMIT)
 		$uploader .= ";form.submit.disabled=false";
@@ -403,13 +403,13 @@ class PaperTable {
 	    $Conf->footerHtml("<form id='checkformatform$documentType' class='fold7o' method='post' action='" . hoturl_post("paper", "p=$prow->paperId&amp;dt=$documentType") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform$documentType\")'><input type='hidden' name='checkformat' value='1' /></form>");
 	}
 
-	if ($documentType == DOCUMENT_SUBMISSION
+	if ($documentType == DTYPE_SUBMISSION
 	    && (!$doc || $Conf->setting("sub_freeze"))) {
 	    echo $uploader;
 	    $uploader = "";
 	}
 
-	if ($documentType == DOCUMENT_SUBMISSION) {
+	if ($documentType == DTYPE_SUBMISSION) {
 	    if ($this->useRequest)
 		$checked = defval($_REQUEST, "submit");
 	    else if ($Conf->setting('sub_freeze'))
@@ -428,7 +428,7 @@ class PaperTable {
 		echo tagg_label("The paper is ready for review.");
 	    echo "</td></tr></table></div>\n";
 	    $Conf->footerScript("hotcrp_onload.push(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
-	} else if ($documentType == DOCUMENT_FINAL)
+	} else if ($documentType == DTYPE_FINAL)
 	    echo "<input type='hidden' name='submit' value='1' />";
 
 	echo $uploader;
@@ -439,14 +439,14 @@ class PaperTable {
     function echoUploadRow($prow, $flags) {
 	global $Me;
 	if ($this->canUploadFinal) {
-	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DOCUMENT_FINAL, "optionName" => "Final version", "type" => null), $prow->finalPaperStorageId, $flags);
+	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DTYPE_FINAL, "optionName" => "Final version", "type" => null), $prow->finalPaperStorageId, $flags);
 	    foreach (paperOptions() as $id => $o)
 		if ($o->type == PaperOption::T_FINALPDF) {
 		    $match = preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m);
 		    $this->echoDocumentUploadRow($prow, $o, $match ? $m[1] : 0, $flags);
 		}
 	} else
-	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DOCUMENT_SUBMISSION, "optionName" => "Submission", "type" => null), $prow->paperStorageId, $flags);
+	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DTYPE_SUBMISSION, "optionName" => "Submission", "type" => null), $prow->paperStorageId, $flags);
     }
 
     function paptabAbstract($prow) {

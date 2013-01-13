@@ -85,9 +85,9 @@ class HotCRPDocument {
     function load_database_content($doc) {
         global $Conf;
         if (!$doc->paperStorageId) {
-            if ($this->type == DOCUMENT_SUBMISSION)
+            if ($this->type == DTYPE_SUBMISSION)
                 $doc->error_text = "Paper #" . $doc->paperId . " has not been uploaded.";
-            else if ($this->type == DOCUMENT_FINAL)
+            else if ($this->type == DTYPE_FINAL)
                 $doc->error_text = "Paper #" . $doc->paperId . "’s final copy has not been uploaded.";
             else
                 $doc->error_text = "";

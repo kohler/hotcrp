@@ -682,7 +682,7 @@ class Conference {
 	global $ConfSiteSuffix, $Opt;
 	$paperId = (is_numeric($prow) ? $prow : $prow->paperId);
 
-	$doc = $this->storeDocument($uploadId, $paperId, $final ? DOCUMENT_FINAL : DOCUMENT_SUBMISSION);
+	$doc = $this->storeDocument($uploadId, $paperId, $final ? DTYPE_FINAL : DTYPE_SUBMISSION);
         if (isset($doc->error_html)) {
             $this->errorMsg($doc->error_html);
             return false;
@@ -770,9 +770,9 @@ class Conference {
 	if ($this->sversion >= 45)
 	    $q .= "s.filename, ";
 	$q .= "s.paperStorageId from Paper p";
-	if ($documentType == DOCUMENT_SUBMISSION)
+	if ($documentType == DTYPE_SUBMISSION)
 	    $sjoin = "p.paperStorageId";
-	else if ($documentType == DOCUMENT_FINAL)
+	else if ($documentType == DTYPE_FINAL)
 	    $sjoin = "p.finalPaperStorageId";
 	else {
 	    $q .= " left join PaperOption o on (o.paperId=p.paperId and o.optionId=$documentType)";
@@ -781,7 +781,7 @@ class Conference {
 	return $this->q($q . " left join PaperStorage s on (s.paperStorageId=$sjoin) where p.paperId$paperMatch");
     }
 
-    function paperStorageRow($result, $dtype = DOCUMENT_SUBMISSION) {
+    function paperStorageRow($result, $dtype = DTYPE_SUBMISSION) {
 	if (!($doc = edb_orow($result)))
 	    return $doc;
         // type doesn't matter
@@ -821,7 +821,7 @@ class Conference {
         return DocumentHelper::download($docs, $attachment, $downloadname);
     }
 
-    function downloadPaper($paperId, $attachment, $documentType = 0) {
+    function downloadPaper($paperId, $attachment, $documentType = DTYPE_SUBMISSION) {
 	global $Me;
 	$result = $this->__downloadPaper($paperId, $attachment, $documentType);
 	if ($result->error)
@@ -1795,7 +1795,7 @@ class Conference {
 	    return $ConfSiteBase . "doc$ConfSiteSuffix/" . $this->downloadPaperName($paperId, $mimetype, $documentType);
 	else {
 	    $x = $ConfSiteBase . "doc$ConfSiteSuffix?p=" . $paperId;
-	    if ($documentType < 0)
+	    if ($documentType == DTYPE_FINAL)
 		return $x . "&amp;final=1";
 	    else if ($documentType > 0)
 		return $x . "&amp;dt=$documentType";

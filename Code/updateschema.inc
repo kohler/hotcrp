@@ -148,7 +148,7 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperStorage add `sha1` varbinary(20) NOT NULL default ''")
 	&& $Conf->q("alter table PaperStorage add `documentType` int(3) NOT NULL default '0'")
 	&& $Conf->q("update PaperStorage s, Paper p set s.sha1=p.sha1 where s.paperStorageId=p.paperStorageId and p.finalPaperStorageId=0 and s.paperStorageId>0")
-	&& $Conf->q("update PaperStorage s, Paper p set s.sha1=p.sha1, s.documentType=" . DOCUMENT_FINAL . " where s.paperStorageId=p.finalPaperStorageId and s.paperStorageId>0")
+	&& $Conf->q("update PaperStorage s, Paper p set s.sha1=p.sha1, s.documentType=" . DTYPE_FINAL . " where s.paperStorageId=p.finalPaperStorageId and s.paperStorageId>0")
 	&& $Conf->q("update Settings set value=28 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 28;
     if ($Conf->settings["allowPaperOption"] == 28

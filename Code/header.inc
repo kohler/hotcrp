@@ -55,9 +55,9 @@ define("BLIND_ALWAYS", 2);	/* ordering is important for rev/cmt */
 define("BLIND_OPTIONAL", 1);
 define("BLIND_NEVER", 0);
 
-define("DOCUMENT_SUBMISSION", 0);
-define("DOCUMENT_FINAL", -1);
-define("DOCUMENT_COMMENT", -2);
+define("DTYPE_SUBMISSION", 0);
+define("DTYPE_FINAL", -1);
+define("DTYPE_COMMENT", -2);
 
 define("MIMETYPEID_TXT", 1);
 define("MIMETYPEID_PDF", 2);

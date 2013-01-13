@@ -610,15 +610,15 @@ class PaperList extends BaseList {
 	if ($row->finalPaperStorageId != 0) {
 	    $finalsuffix = "f";
 	    $finaltitle = "Final version";
-	    $documentType = DOCUMENT_FINAL;
+	    $documentType = DTYPE_FINAL;
 	} else {
 	    $finalsuffix = "";
 	    $finaltitle = null;
-	    $documentType = DOCUMENT_SUBMISSION;
+	    $documentType = DTYPE_SUBMISSION;
 	}
 	if ($row->size == 0 || !$this->contact->canDownloadPaper($row))
 	    return "";
-	if ($documentType == DOCUMENT_FINAL)
+	if ($documentType == DTYPE_FINAL)
 	    $this->any->final = true;
 	$this->any->paper = true;
 	if ($row->mimetype == "application/pdf")

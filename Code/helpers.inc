@@ -680,9 +680,9 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
 function documentDownload($data, $dlimg_class = "dlimg", $text = null) {
     global $Conf;
     $mimetype = defval($data, "mimetype", "");
-    $documentType = defval($data, "documentType", DOCUMENT_SUBMISSION);
+    $documentType = defval($data, "documentType", DTYPE_SUBMISSION);
     $p = $Conf->makeDownloadPath($data->paperId, $mimetype, $documentType);
-    $finalsuffix = ($documentType < 0 ? "f" : "");
+    $finalsuffix = ($documentType == DTYPE_FINAL ? "f" : "");
     $sp = "&nbsp;";
     $imgsize = ($dlimg_class[0] == "s" ? "" : "24");
     if ($mimetype == "application/postscript")
@@ -700,12 +700,12 @@ function documentDownload($data, $dlimg_class = "dlimg", $text = null) {
     return $x . "</a>";
 }
 
-function paperDocumentData($prow, $documentType = DOCUMENT_SUBMISSION, $paperStorageId = 0) {
+function paperDocumentData($prow, $documentType = DTYPE_SUBMISSION, $paperStorageId = 0) {
     global $Conf, $Opt;
-    assert($paperStorageId || $documentType == DOCUMENT_SUBMISSION || $documentType == DOCUMENT_FINAL);
-    if ($documentType == DOCUMENT_FINAL && $prow->finalPaperStorageId <= 0)
-	$documentType = DOCUMENT_SUBMISSION;
-    if ($paperStorageId == 0 && $documentType == DOCUMENT_FINAL)
+    assert($paperStorageId || $documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
+    if ($documentType == DTYPE_FINAL && $prow->finalPaperStorageId <= 0)
+	$documentType = DTYPE_SUBMISSION;
+    if ($paperStorageId == 0 && $documentType == DTYPE_FINAL)
 	$paperStorageId = $prow->finalPaperStorageId;
     else if ($paperStorageId == 0)
 	$paperStorageId = $prow->paperStorageId;
@@ -720,10 +720,10 @@ function paperDocumentData($prow, $documentType = DOCUMENT_SUBMISSION, $paperSto
 			  "sha1" => defval($prow, "sha1", ""));
     if ($prow->finalPaperStorageId > 0) {
 	$doc->paperStorageId = $prow->finalPaperStorageId;
-	$doc->documentType = DOCUMENT_FINAL;
+	$doc->documentType = DTYPE_FINAL;
     } else {
 	$doc->paperStorageId = $prow->paperStorageId;
-	$doc->documentType = DOCUMENT_SUBMISSION;
+	$doc->documentType = DTYPE_SUBMISSION;
     }
 
     // load document object from database if pre-loaded version doesn't work
@@ -743,11 +743,11 @@ function paperDownload($prow, $final = false) {
     // don't let PC download papers in progress
     if ($prow->timeSubmitted <= 0 && !$Me->canDownloadPaper($prow))
 	return "";
-    $data = paperDocumentData($prow, $final ? -1 : 0);
-    return $data ? documentDownload($data) : "";
+    $doc = paperDocumentData($prow, $final ? DTYPE_FINAL : DTYPE_SUBMISSION);
+    return $doc ? documentDownload($doc) : "";
 }
 
-function requestDocumentType($req, $default = DOCUMENT_SUBMISSION) {
+function requestDocumentType($req, $default = DTYPE_SUBMISSION) {
     if (is_string($req))
 	$req = array("dt" => $req);
     if (($dt = defval($req, "dt"))) {
@@ -755,9 +755,9 @@ function requestDocumentType($req, $default = DOCUMENT_SUBMISSION) {
 	    return (int) $dt;
 	$dt = strtolower($dt);
 	if ($dt == "paper")
-	    return DOCUMENT_SUBMISSION;
+	    return DTYPE_SUBMISSION;
 	if ($dt == "final")
-	    return DOCUMENT_FINAL;
+	    return DTYPE_FINAL;
 	if (substr($dt, 0, 4) == "opt-")
 	    $dt = substr($dt, 4);
 	foreach (paperOptions() as $o)
@@ -765,14 +765,14 @@ function requestDocumentType($req, $default = DOCUMENT_SUBMISSION) {
 		return $o->optionId;
     }
     if (defval($req, "final", 0) != 0)
-	return DOCUMENT_FINAL;
+	return DTYPE_FINAL;
     return $default;
 }
 
 function documentTypeName($documentType) {
-    if ($documentType == DOCUMENT_SUBMISSION)
+    if ($documentType == DTYPE_SUBMISSION)
 	return "paper";
-    if ($documentType == DOCUMENT_FINAL)
+    if ($documentType == DTYPE_FINAL)
 	return "final";
     if (($o = paperOptions($documentType)) && $o->isDocument)
 	return $o->optionAbbrev;
