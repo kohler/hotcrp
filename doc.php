@@ -1,6 +1,6 @@
 <?php // -*- mode: php -*-
 // doc -- HotCRP paper download page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 // A PHP script where execution is specified in .htaccess, so the requested
@@ -18,15 +18,19 @@ if (isset($_REQUEST["p"]))
 else if (isset($_REQUEST["paperId"]))
     $paperId = rcvtint($_REQUEST["paperId"]);
 else {
-    $paper = preg_replace("|.*/doc(\\.php)?/*|", "", $_SERVER["PHP_SELF"]);
-    if (preg_match("|^\\/?(" . $Opt["downloadPrefix"] . ")?([-A-Za-z0-9_]*?)?-?(\\d+)\\..*$|", $paper, $match)
-	&& $match[3] > 0) {
-	$paperId = $match[3];
-	$documentType = requestDocumentType($match[2], null);
-	if ($documentType === null)
-	    $Error = "Invalid paper name “" . htmlspecialchars($paper) . "”.";
+    $s = $orig_s = preg_replace(',\A/*,', "", $_SERVER["PATH_INFO"]);
+    if (str_starts_with($s, $Opt["downloadPrefix"]))
+        $s = substr($s, strlen($Opt["downloadPrefix"]));
+    if (preg_match(',\Apaper([1-9]\d*)-(.*)\.(.+)\z,', $s, $m)) {
+        $paperId = $m[1];
+        $documentType = requestDocumentType($m[2], null);
+    } else if (preg_match(',\A([-A-Za-z0-9_]*?)?-?([1-9]\d*)\..*\z,', $s, $m)) {
+        $paperId = $m[2];
+        $documentType = requestDocumentType($m[1], null);
     } else
-	$Error = "Invalid paper name “" . htmlspecialchars($paper) . "”.";
+        $documentType = null;
+    if ($documentType === null)
+        $Error = "Unknown document “" . htmlspecialchars($orig_s) . "”.";
 }
 
 // Security checks - people who can download all paperss

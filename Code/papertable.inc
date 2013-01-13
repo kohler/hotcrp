@@ -306,10 +306,14 @@ class PaperTable {
 		}
 
 	    if ($final && $prow->finalPaperStorageId > 1
-		&& $prow->paperStorageId > 1)
+		&& $prow->paperStorageId > 1) {
+                $doc = (object) array("paperId" => $prow->paperId,
+                                      "mimetype" => null,
+                                      "documentType" => DTYPE_SUBMISSION);
 		$pdfs[] = "<small><a class='u' href=\""
-		    . $Conf->makeDownloadPath($prow->paperId, null, 0)
+		    . $Conf->makeDownloadPath($doc)
 		    . "\">Submission version</a></small>";
+            }
 
 	    $t .= "<td>";
 	    foreach ($pdfs as $p)

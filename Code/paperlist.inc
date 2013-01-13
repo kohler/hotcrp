@@ -610,23 +610,24 @@ class PaperList extends BaseList {
 	if ($row->finalPaperStorageId != 0) {
 	    $finalsuffix = "f";
 	    $finaltitle = "Final version";
-	    $documentType = DTYPE_FINAL;
+	    $row->documentType = DTYPE_FINAL;
 	} else {
 	    $finalsuffix = "";
 	    $finaltitle = null;
-	    $documentType = DTYPE_SUBMISSION;
+	    $row->documentType = DTYPE_SUBMISSION;
 	}
 	if ($row->size == 0 || !$this->contact->canDownloadPaper($row))
 	    return "";
-	if ($documentType == DTYPE_FINAL)
+	if ($row->documentType == DTYPE_FINAL)
 	    $this->any->final = true;
 	$this->any->paper = true;
+        $t = "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row) . "\">";
 	if ($row->mimetype == "application/pdf")
-	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $documentType) . "\">" . $Conf->cacheableImage("pdf$finalsuffix.png", "[PDF]", $finaltitle) . "</a>";
+	    return $t . $Conf->cacheableImage("pdf$finalsuffix.png", "[PDF]", $finaltitle) . "</a>";
 	else if ($row->mimetype == "application/postscript")
-	    return "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $documentType) . "\">" . $Conf->cacheableImage("postscript$finalsuffix.png", "[PS]", $finaltitle) . "</a>";
+	    return $t . $Conf->cacheableImage("postscript$finalsuffix.png", "[PS]", $finaltitle) . "</a>";
 	else
-	    return "&nbsp;<small><a href=\"" . $Conf->makeDownloadPath($row->paperId, $row->mimetype, $documentType) . "\">[Download]</a></small>";
+	    return $t . $Conf->cacheableImage("generic$finalsuffix.png", "[Download]", $finaltitle) . "</a>";
     }
 
     function _conflictMatches($input, $preg) {

@@ -21,6 +21,31 @@ class HotCRPDocument {
             $this->option = null;
     }
 
+    public static function unparse_dtype($dtype) {
+        if ($dtype == DTYPE_SUBMISSION)
+            return "paper";
+        else if ($dtype == DTYPE_FINAL)
+            return "final";
+        else if (($o = paperOptions($dtype)) && $o->isDocument)
+            return $o->optionAbbrev;
+        else
+            return null;
+    }
+
+    public static function filename($doc) {
+        global $Opt;
+        $fn = $Opt["downloadPrefix"]
+            . ($doc->documentType == DTYPE_FINAL ? "final" : "paper")
+            . $doc->paperId;
+        if ($doc->documentType != DTYPE_SUBMISSION && $doc->documentType != DTYPE_FINAL) {
+            if (($o = paperOptions($doc->documentType)) && $o->isDocument)
+                $fn .= "-" . $o->optionAbbrev;
+            else
+                $fn .= "-unknown";
+        }
+        return $fn . Mimetype::extension($doc->mimetype);
+    }
+
     public function mimetypes($doc = null, $docinfo = null) {
         global $Opt;
         require_once("paperoption.inc");

@@ -677,25 +677,23 @@ function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
     return $x;
 }
 
-function documentDownload($data, $dlimg_class = "dlimg", $text = null) {
+function documentDownload($doc, $dlimg_class = "dlimg", $text = null) {
     global $Conf;
-    $mimetype = defval($data, "mimetype", "");
-    $documentType = defval($data, "documentType", DTYPE_SUBMISSION);
-    $p = $Conf->makeDownloadPath($data->paperId, $mimetype, $documentType);
-    $finalsuffix = ($documentType == DTYPE_FINAL ? "f" : "");
+    $p = $Conf->makeDownloadPath($doc);
+    $finalsuffix = ($doc->documentType == DTYPE_FINAL ? "f" : "");
     $sp = "&nbsp;";
     $imgsize = ($dlimg_class[0] == "s" ? "" : "24");
-    if ($mimetype == "application/postscript")
+    if ($doc->mimetype == "application/postscript")
 	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("postscript${finalsuffix}${imgsize}.png", "[PS]", null, $dlimg_class);
-    else if ($mimetype == "application/pdf")
+    else if ($doc->mimetype == "application/pdf")
 	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("pdf${finalsuffix}${imgsize}.png", "[PDF]", null, $dlimg_class);
     else
 	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("generic${finalsuffix}${imgsize}.png", "[Download]", null, $dlimg_class);
     if ($text)
 	$x .= $sp . $text;
-    if (defval($data, "size", 0) > 0)
+    if (isset($doc->size) && $doc->size > 0)
 	$x .= "&nbsp;<span class='dlsize'>" . ($text ? "(" : "")
-	    . round($data->size/1024) . "kB"
+	    . round($doc->size/1024) . "kB"
 	    . ($text ? ")" : "") . "</span>";
     return $x . "</a>";
 }
@@ -717,7 +715,8 @@ function paperDocumentData($prow, $documentType = DTYPE_SUBMISSION, $paperStorag
 			  "mimetype" => defval($prow, "mimetype", ""),
 			  "size" => defval($prow, "size", 0),
 			  "timestamp" => defval($prow, "timestamp", 0),
-			  "sha1" => defval($prow, "sha1", ""));
+			  "sha1" => defval($prow, "sha1", "")
+                          );
     if ($prow->finalPaperStorageId > 0) {
 	$doc->paperStorageId = $prow->finalPaperStorageId;
 	$doc->documentType = DTYPE_FINAL;
@@ -730,7 +729,7 @@ function paperDocumentData($prow, $documentType = DTYPE_SUBMISSION, $paperStorag
     if ($paperStorageId > 0
 	&& ($doc->documentType != $documentType
 	    || $paperStorageId != $doc->paperStorageId)) {
-	$qa = ($Conf->sversion >= 28 ? "sha1, documentType" : "'' as sha1, $documentType as documentType");
+	$qa = ($Conf->sversion >= 28 ? "sha1, documentType" : "'' sha1, $documentType documentType");
 	$result = $Conf->qe("select paperStorageId, paperId, length(paper) as size, mimetype, timestamp, $qa from PaperStorage where paperStorageId=$paperStorageId", "while reading documents");
 	$doc = edb_orow($result);
     }
@@ -767,16 +766,6 @@ function requestDocumentType($req, $default = DTYPE_SUBMISSION) {
     if (defval($req, "final", 0) != 0)
 	return DTYPE_FINAL;
     return $default;
-}
-
-function documentTypeName($documentType) {
-    if ($documentType == DTYPE_SUBMISSION)
-	return "paper";
-    if ($documentType == DTYPE_FINAL)
-	return "final";
-    if (($o = paperOptions($documentType)) && $o->isDocument)
-	return $o->optionAbbrev;
-    return null;
 }
 
 function topicTable($prow, $active = 0) {

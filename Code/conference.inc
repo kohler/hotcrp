@@ -728,7 +728,7 @@ class Conference {
 	    $mime = new Mail_mime("\n");
 	    $mime->setTXTBody($message);
 	    $mime->addAttachment($doc->content, $doc->mimetype,
-				 $this->downloadPaperName($paperId, $doc->mimetype, 0), false);
+                                 HotCRPDocument::filename($doc), false);
 
 	    $body = $mime->get();
 	    $hdrs = $mime->headers(array("From" => $Opt["emailFrom"],
@@ -747,7 +747,7 @@ class Conference {
     function downloadPaperName($paperId, $mimetype, $documentType) {
 	global $Opt;
 	$title = $Opt["downloadPrefix"];
-	$dtn = documentTypeName($documentType);
+	$dtn = HotCRPDocument::unparse_dtype($documentType);
 	$title .= ($dtn ? $dtn : "xxx");
 	if (ctype_digit($title[strlen($title) - 1]))
 	    $title .= "-";
@@ -769,7 +769,7 @@ class Conference {
 	    $q .= "s.paper as content, ";
 	if ($this->sversion >= 45)
 	    $q .= "s.filename, ";
-	$q .= "s.paperStorageId from Paper p";
+	$q .= "$documentType documentType, s.paperStorageId from Paper p";
 	if ($documentType == DTYPE_SUBMISSION)
 	    $sjoin = "p.paperStorageId";
 	else if ($documentType == DTYPE_FINAL)
@@ -810,14 +810,16 @@ class Conference {
 	// Check data
         $docs = array();
 	while (($doc = $this->paperStorageRow($result, $documentType))) {
-	    $doc->filename = $this->downloadPaperName($doc->paperId, $doc->mimetype ? $doc->mimetype : MIMETYPEID_PDF, $documentType);
+            if (!$doc->mimetype)
+                $doc->mimetype = MIMETYPEID_PDF;
+            $doc->filename = HotCRPDocument::filename($doc);
             $docs[] = $doc;
         }
 	if (count($docs) == 1 && $docs[0]->paperStorageId <= 1)
 	    return set_error_html("Paper #" . $docs[0]->paperId . " hasn’t been uploaded yet.");
         $downloadname = false;
         if (count($docs) > 1)
-            $downloadname = $Opt["downloadPrefix"] . pluralx(2, documentTypeName($documentType)) . ".zip";
+            $downloadname = $Opt["downloadPrefix"] . pluralx(2, HotCRPDocument::unparse_dtype($documentType)) . ".zip";
         return DocumentHelper::download($docs, $attachment, $downloadname);
     }
 
@@ -1789,16 +1791,20 @@ class Conference {
     // Miscellaneous
     //
 
-    function makeDownloadPath($paperId, $mimetype, $documentType) {
+    function makeDownloadPath($doc) {
 	global $ConfSiteBase, $ConfSiteSuffix;
-	if ($mimetype)
-	    return $ConfSiteBase . "doc$ConfSiteSuffix/" . $this->downloadPaperName($paperId, $mimetype, $documentType);
+        if (!property_exists($doc, "mimetype") || !isset($doc->documentType)) {
+            $trace = debug_backtrace();
+            error_log($trace[0]["file"] . ":" . $trace[0]["line"] . ": makeDownloadPath called with incomplete document");
+        }
+	if ($doc->mimetype)
+	    return $ConfSiteBase . "doc$ConfSiteSuffix/" . HotCRPDocument::filename($doc);
 	else {
-	    $x = $ConfSiteBase . "doc$ConfSiteSuffix?p=" . $paperId;
-	    if ($documentType == DTYPE_FINAL)
+	    $x = $ConfSiteBase . "doc$ConfSiteSuffix?p=" . $doc->paperId;
+	    if ($doc->documentType == DTYPE_FINAL)
 		return $x . "&amp;final=1";
-	    else if ($documentType > 0)
-		return $x . "&amp;dt=$documentType";
+	    else if ($doc->documentType > 0)
+		return $x . "&amp;dt=$doc->documentType";
 	    else
 		return $x;
 	}
