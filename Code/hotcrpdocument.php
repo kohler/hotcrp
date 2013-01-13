@@ -8,23 +8,23 @@ $ConfFilestore = null;
 
 class HotCRPDocument {
 
-    var $type;
-    var $option;
+    private $dtype;
+    private $option;
 
-    function __construct($document_type, $option = null) {
-        $this->type = $document_type;
+    public function __construct($dtype, $option = null) {
+        $this->dtype = $dtype;
         if ($option)
             $this->option = $option;
-        else if ($this->type > 0)
-            $this->option = paperOptions($document_type);
+        else if ($this->dtype > 0)
+            $this->option = paperOptions($dtype);
         else
             $this->option = null;
     }
 
-    function mimetypes($doc = null, $docinfo = null) {
+    public function mimetypes($doc = null, $docinfo = null) {
         global $Opt;
         require_once("paperoption.inc");
-        if ($this->type > 0 && !$this->option)
+        if ($this->dtype > 0 && !$this->option)
             return null;
         $optionType = ($this->option ? $this->option->type : null);
         $mimetypes = array();
@@ -45,22 +45,24 @@ class HotCRPDocument {
         return $mimetypes;
     }
 
-    function database_storage($doc, $docinfo) {
+    public function database_storage($doc, $docinfo) {
         global $Conf;
+        $doc->paperId = $docinfo->paperId;
+        $doc->documentType = $this->dtype;
         $columns = array("paperId" => $docinfo->paperId,
                          "timestamp" => $doc->timestamp,
                          "mimetype" => $doc->mimetype,
                          "paper" => $doc->content);
         if ($Conf->sversion >= 28) {
             $columns["sha1"] = $doc->sha1;
-            $columns["documentType"] = $this->type;
+            $columns["documentType"] = $doc->documentType;
         }
         if ($Conf->sversion >= 45 && $doc->filename)
             $columns["filename"] = $doc->filename;
         return array("PaperStorage", "paperStorageId", $columns, "paper");
     }
 
-    function filestore_pattern($doc, $docinfo) {
+    public function filestore_pattern($doc, $docinfo) {
         global $Opt, $ConfSitePATH, $ConfMulticonf, $ConfFilestore;
         if ($ConfFilestore === null) {
             $fdir = defval($Opt, "filestore");
@@ -82,12 +84,12 @@ class HotCRPDocument {
         return $ConfFilestore;
     }
 
-    function load_database_content($doc) {
+    public function load_database_content($doc) {
         global $Conf;
         if (!$doc->paperStorageId) {
-            if ($this->type == DTYPE_SUBMISSION)
+            if ($this->dtype == DTYPE_SUBMISSION)
                 $doc->error_text = "Paper #" . $doc->paperId . " has not been uploaded.";
-            else if ($this->type == DTYPE_FINAL)
+            else if ($this->dtype == DTYPE_FINAL)
                 $doc->error_text = "Paper #" . $doc->paperId . "’s final copy has not been uploaded.";
             else
                 $doc->error_text = "";

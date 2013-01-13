@@ -99,7 +99,7 @@ class ZipDocuments {
 
 class DocumentHelper {
 
-    static function _store_database($dbinfo, $doc) {
+    private static function _store_database($dbinfo, $doc) {
         global $Conf, $OK;
         $N = 400000;
         $dbinfo[] = null;
@@ -154,11 +154,11 @@ class DocumentHelper {
         }
     }
 
-    static function _mimetype($doc) {
+    private static function _mimetype($doc) {
         return (isset($doc->mimetype) ? $doc->mimetype : $doc->mimetypeid);
     }
 
-    static function _expand_filestore($fsinfo, $doc) {
+    private static function _expand_filestore($fsinfo, $doc) {
         list($fdir, $fpath) = $fsinfo;
         $sha1 = null;
 
@@ -190,7 +190,7 @@ class DocumentHelper {
         return array($fdir, $xfpath . $fpath);
     }
 
-    static function _store_filestore($fsinfo, $doc) {
+    private static function _store_filestore($fsinfo, $doc) {
         list($fdir, $fpath) = $fsinfo;
 
 	if (!is_dir($fdir) && !@mkdir($fdir, 0700)) {
