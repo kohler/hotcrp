@@ -174,7 +174,7 @@ class Text {
         list($aw, $zw) = array(preg_match('{\A(?:\pL|\pN)}u', $word),
                                preg_match('{(?:\pL|\pN)\z}u', $word));
         return ($aw ? '(?:\A|(?!\pL|\pN)\X)' : '')
-            . str_replace(" ", '\p{Zs}+', $word)
+            . str_replace(" ", '(?:\s|\p{Zs})+', $word)
             . ($zw ? '(?:\z|(?!\pL|\pN)(?=\PM))' : '');
     }
 
