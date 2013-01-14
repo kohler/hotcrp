@@ -31,11 +31,12 @@ class UnicodeHelper {
     }
 
     public static function deaccent($x) {
-        if (preg_match("/[\x80-\xFF]/", $x)) {
+        if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
             $first = 0;
             $len = strlen($x);
             $out = "";
-            for ($i = 0; $i < $len; $i++) {
+            foreach ($m[0] as $mx) {
+                $i = $mx[1];
                 if (strcmp($x[$i], "\xC0") >= 0
                     && strcmp($x[$i], "\xDF") <= 0
                     && $i + 1 < $len
@@ -60,11 +61,12 @@ class UnicodeHelper {
 
     public static function deaccent_offsets($x) {
         $offsetmap = array(0, 0);
-        if (preg_match("/[\x80-\xFF]/", $x)) {
+        if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
             $first = 0;
             $len = strlen($x);
             $out = "";
-            for ($i = 0; $i < $len; $i++) {
+            foreach ($m[0] as $mx) {
+                $i = $mx[1];
                 if (strcmp($x[$i], "\xC0") >= 0
                     && strcmp($x[$i], "\xDF") <= 0
                     && $i + 1 < $len
