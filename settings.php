@@ -1584,7 +1584,7 @@ function doDecGroup() {
     echo "<tr class='fx'><td></td><td><table>";
     doDateRow('resp_done', 'Hard deadline', null, "lxcaption");
     doGraceRow('resp_grace', 'Grace period', "lxcaption");
-    doTextRow("resp_words", array("Word limit", "This is a soft limit: authors may submit longer responses. 0 means no limit."), setting("resp_words", 800), 5, "lxcaption", "none");
+    doTextRow("resp_words", array("Word limit", "This is a soft limit: authors may submit longer responses. 0 means no limit."), setting("resp_words", 500), 5, "lxcaption", "none");
     echo "</table></td></tr></table>";
     $Conf->footerScript("fold('auresp',!\$\$('cbresp_open').checked)");
 
