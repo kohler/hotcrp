@@ -78,7 +78,7 @@ class ZipDocuments {
 
 	// output
 	header("Content-Description: PHP Generated Data");
-	header("Content-Disposition: attachment; filename=$downloadname");
+	header("Content-Disposition: attachment; filename=" . mime_token_quote($downloadname));
 	header("Content-Type: application/zip");
 	if (!$zlib_output_compression)
 	    header("Content-Length: " . filesize("$this->tmpdir/x.zip"));
@@ -320,6 +320,8 @@ class DocumentHelper {
                 $z->add($d);
             return $z->finish($downloadname);
         }
+	if (!isset($doc->filestore) && !isset($doc->content))
+	    return set_error_html("Don’t know how to download.");
 
 	// Print paper
 	$doc_mimetype = self::_mimetype($doc);
@@ -329,7 +331,7 @@ class DocumentHelper {
 	    $attachment = !Mimetype::disposition_inline($doc_mimetype);
         if (!$downloadname)
             $downloadname = $doc->filename;
-	header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=$downloadname");
+	header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_token_quote($downloadname));
 	// reduce likelihood of XSS attacks in IE
 	header("X-Content-Type-Options: nosniff");
 	if (isset($doc->filestore)) {
@@ -338,12 +340,11 @@ class DocumentHelper {
 	    ob_clean();
 	    flush();
 	    readfile($doc->filestore);
-	} else if (isset($doc->content)) {
+	} else {
 	    if (!$zlib_output_compression)
 		header("Content-Length: " . strlen($doc->content));
 	    echo $doc->content;
-	} else
-            return set_error_html("Don’t know how to download.");
+	}
 	return (object) array("error" => false);
     }
 

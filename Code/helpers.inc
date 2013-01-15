@@ -119,6 +119,13 @@ function csvq($text, $quote_empty = false) {
 	return '"' . str_replace('"', '""', $text) . '"';
 }
 
+function mime_token_quote($word) {
+    if (preg_match('_\A[^][\x00-\x20\x80-\xFF()<>@,;:\\"/?=]+\z_', $word))
+        return $word;
+    else
+        return '"' . preg_replace('_([\x00-\x1F\\"])_', '\$1', $word) . '"';
+}
+
 function cvtint($value, $default = -1) {
     $v = trim($value);
     if (is_numeric($v)) {
@@ -1683,7 +1690,7 @@ function downloadCSV($info, $header, $filename, $description, $opt = array()) {
     else
 	$headertext = "";
     header("Content-Description: " . $Opt["shortName"] . " $description, PHP generated data");
-    header("Content-Disposition: " . (defval($opt, "inline") ? "inline" : "attachment") . "; filename=" . $Opt["downloadPrefix"] . $filename . ($iscsv ? ".csv" : ".txt"));
+    header("Content-Disposition: " . (defval($opt, "inline") ? "inline" : "attachment") . "; filename=" . mime_token_quote($Opt["downloadPrefix"] . $filename . ($iscsv ? ".csv" : ".txt")));
     if ($iscsv)
 	header("Content-Type: text/csv; charset=utf-8; header=" . ($headertext ? "present" : "absent"));
     else
