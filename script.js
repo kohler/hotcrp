@@ -55,7 +55,7 @@ setLocalTime.initialize = function (servtime, servzone, hr24) {
     var now = new Date(), x;
     if (Math.abs(now.getTime() - servtime * 1000) >= 300000
 	&& (x = $$("clock_drift_container")))
-	x.innerHTML = "<div class='warning'>The HotCRP server’s clock is more than 5 minutes off from your computer’s clock.  If your computer’s clock is correct, you should update the server’s clock.</div>";
+	x.innerHTML = "<div class='warning'>The HotCRP server’s clock is more than 5 minutes off from your computer’s clock. If your computer’s clock is correct, you should update the server’s clock.</div>";
     servhr24 = hr24;
     // print local time if server time is in a different time zone
     showdifference = Math.abs(now.getTimezoneOffset() - servzone) >= 60;
@@ -1139,7 +1139,7 @@ Miniajax.submit = function (formname, callback, timeout) {
     // set request
     var timer = setTimeout(function () {
 			       req.abort();
-			       resultelt.innerHTML = "<span class='error'>Network timeout.  Please try again.</span>";
+			       resultelt.innerHTML = "<span class='error'>Network timeout. Please try again.</span>";
 			       form.onsubmit = "";
 			       fold(form, 0, 7);
 			   }, timeout);
@@ -1156,7 +1156,7 @@ Miniajax.submit = function (formname, callback, timeout) {
 	    if (rv.ok)
 		hiliter(form, true);
 	} else {
-	    resultelt.innerHTML = "<span class='error'>Network error.  Please try again.</span>";
+	    resultelt.innerHTML = "<span class='error'>Network error. Please try again.</span>";
 	    form.onsubmit = "";
 	    fold(form, 0, 7);
 	}
@@ -1265,66 +1265,76 @@ function check_version(url) {
 
 
 // ajax loading of paper information
-var plinfo_title = {
+var plinfo = (function () {
+var aufull = {}, title = {
     abstract: "Abstract", tags: "Tags", reviewers: "Reviewers",
     shepherd: "Shepherd", lead: "Discussion lead", topics: "Topics",
     pcconf: "PC conflicts", collab: "Collaborators", authors: "Authors",
     aufull: "Authors"
 };
-var plinfo_needload = {}, plinfo_aufull = {}, plinfo_notitle = {};
-function make_plloadform_callback(which, type, dofold) {
+
+function set(elt, text, which, type) {
+    var x;
+    if (text == null || text == "")
+	elt.innerHTML = "";
+    else {
+	if (elt.className == "")
+	    elt.className = "fx" + foldmap[which][type];
+	if ((x = title[type]) && (!plinfo.notitle[type] || text == "Loading"))
+	    text = "<h6>" + x + ":</h6> " + text;
+	elt.innerHTML = text;
+    }
+}
+
+function make_callback(dofold, type, which) {
     var xtype = ({au: 1, anonau: 1, aufull: 1}[type] ? "authors" : type);
     return function (rv) {
 	var i, x, elt, eltx, h6 = "";
 	if ((x = rv[xtype + ".title"]))
-	    plinfo_title[type] = x;
-	if ((x = plinfo_title[type]) && !plinfo_notitle[type])
+	    title[type] = x;
+	if ((x = title[type]) && !plinfo.notitle[type])
 	    h6 = "<h6>" + x + ":</h6> ";
 	for (i in rv)
-	    if (i.substr(0, xtype.length) == xtype && (elt = $$(i))) {
-		if (rv[i] == "")
-		    elt.innerHTML = "";
-		else
-		    elt.innerHTML = h6 + rv[i];
-	    }
-	plinfo_needload[xtype] = false;
+	    if (i.substr(0, xtype.length) == xtype && (elt = $$(i)))
+		set(elt, rv[i], which, type);
+	plinfo.needload[xtype] = false;
 	fold(which, dofold, xtype);
 	if (type == "aufull")
-	    plinfo_aufull[!!dofold] = rv;
+	    aufull[!!dofold] = rv;
     };
 }
-function foldplinfo(dofold, type, which) {
-    var elt, i, divs, h6, callback;
 
-    // fold
-    if (!which)
-	which = "pl";
+function show_loading(type, which) {
+    return function () {
+	var i, x, elt, divs, h6;
+	if (!plinfo.needload[type] || !(elt = $$("fold" + which)))
+	    return;
+	divs = elt.getElementsByTagName("div");
+	for (i = 0; i < divs.length; i++)
+	    if (divs[i].id.substr(0, type.length) == type)
+		set(divs[i], "Loading", which, type);
+    };
+}
+
+function plinfo(type, dofold, which) {
+    var elt;
+    which = which || "pl";
     if (dofold.checked !== undefined)
 	dofold = !dofold.checked;
+
+    // fold
     fold(which, dofold, type);
     if (type == "aufull" && !dofold && (elt = $$("showau")) && !elt.checked)
 	elt.click();
-    if (window.foldplinfo_extra)
-	foldplinfo_extra(type, dofold);
-    if (plinfo_title[type])
-	h6 = "<h6>" + plinfo_title[type] + ":</h6> ";
-    else
-	h6 = "";
+    if (plinfo.extra)
+	plinfo.extra(type, dofold);
 
     // may need to load information by ajax
-    if (type == "aufull" && plinfo_aufull[!!dofold])
-	make_plloadform_callback(which, type, dofold)(plinfo_aufull[!!dofold]);
-    else if ((!dofold || type == "aufull") && plinfo_needload[type]) {
+    if (type == "aufull" && aufull[!!dofold])
+	make_callback(dofold, type, which)(aufull[!!dofold]);
+    else if ((!dofold || type == "aufull") && plinfo.needload[type]) {
 	// set up "loading" display
-	if ((elt = $$("fold" + which))) {
-	    divs = elt.getElementsByTagName("div");
-	    for (i = 0; i < divs.length; i++)
-		if (divs[i].id.substr(0, type.length) == type) {
-		    if (divs[i].className == "")
-			divs[i].className = "fx" + foldmap[which][type];
-		    divs[i].innerHTML = h6 + " Loading";
-		}
-	}
+	setTimeout(750, show_loading(type, which));
 
 	// initiate load
 	if (type == "aufull") {
@@ -1333,11 +1343,17 @@ function foldplinfo(dofold, type, which) {
 	} else
 	    e_value("plloadform_get", type);
 	Miniajax.submit(["plloadform", type + "loadform"],
-			make_plloadform_callback(which, type, dofold));
+			make_callback(dofold, type, which));
     }
 
     return false;
 }
+
+plinfo.needload = {};
+plinfo.notitle = {};
+return plinfo;
+})();
+
 
 function savedisplayoptions() {
     $$("scoresortsave").value = $$("scoresort").value;

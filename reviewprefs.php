@@ -251,7 +251,7 @@ if (!$Conf->subBlindAlways()) {
     echo $sep,
 	tagg_checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
 		      array("disabled" => ($Conf->subBlindOptional() && !($pl->headerInfo["authors"] & 1)),
-			    "onchange" => "foldplinfo(this,'au')",
+			    "onchange" => "plinfo('au',this)",
 			    "id" => "showau")),
 	"&nbsp;", tagg_label("Authors");
     $sep = "<span class='sep'></span>\n";
@@ -261,7 +261,7 @@ if (!$Conf->subBlindNever() && $Me->privChair) {
     echo "<span class='fx10'>", $sep,
 	tagg_checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
 		      array("disabled" => !($pl->headerInfo["authors"] & 2),
-			    "onchange" => ($Conf->subBlindOptional() ? "" : "foldplinfo(this,'au');") . "foldplinfo(this,'anonau')",
+			    "onchange" => ($Conf->subBlindOptional() ? "" : "plinfo('au',this);") . "plinfo('anonau',this)",
 			    "id" => ($Conf->subBlindOptional() ? "showanonau" : "showau"))),
 	"&nbsp;", tagg_label($Conf->subBlindOptional() ? "Anonymous authors" : "Authors"), "</span>";
     $sep = "<span class='sep'></span>\n";
@@ -270,15 +270,15 @@ if (!$Conf->subBlindNever() && $Me->privChair) {
 if (!$Conf->subBlindAlways() || $Me->privChair) {
     echo "<span class='fx10'>", $sep,
 	tagg_checkbox("showaufull", 1, strpos($pldisplay, " aufull ") !== false,
-		      array("onchange" => "foldplinfo(this,'aufull')")),
+		      array("onchange" => "plinfo('aufull',this)")),
 	"&nbsp;", tagg_label("Full author info"), "</span>";
-    $Conf->footerScript("function foldplinfo_extra(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked);fold('redisplayform',!x,10)}");
+    $Conf->footerScript("plinfo.extra=function(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked);fold('redisplayform',!x,10)};");
     $loadforms .= "<div id='aufullloadformresult'></div>";
 }
 if ($pl->headerInfo["abstract"]) {
     echo $sep,
 	tagg_checkbox("showabstract", 1, strpos($pldisplay, " abstract ") !== false,
-		      array("onchange" => "foldplinfo(this,'abstract')")),
+		      array("onchange" => "plinfo('abstract',this)")),
 	"&nbsp;", tagg_label("Abstracts");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='abstractloadformresult'></div>";
@@ -286,7 +286,7 @@ if ($pl->headerInfo["abstract"]) {
 if ($pl->headerInfo["topics"]) {
     echo $sep,
 	tagg_checkbox("showtopics", 1, strpos($pldisplay, " topics ") !== false,
-		      array("onchange" => "foldplinfo(this,'topics')")),
+		      array("onchange" => "plinfo('topics',this)")),
 	"&nbsp;", tagg_label("Topics");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='topicsloadformresult'></div>";

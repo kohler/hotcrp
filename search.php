@@ -1091,7 +1091,7 @@ function displayOptionCheckbox($type, $column, $title, $opt = array()) {
     $loadresult = "";
 
     if (!isset($opt["onchange"])) {
-	$opt["onchange"] = "foldplinfo(this,'$type')";
+	$opt["onchange"] = "plinfo('$type',this)";
 	$loadresult = "<div id='${type}loadformresult'></div>";
     } else
 	$loadresult = "<div></div>";
@@ -1126,16 +1126,16 @@ if ($pl) {
 	if ($Me->privChair && $viewAllAuthors)
 	    $onchange .= ";fold('pl',!this.checked,'anonau')";
 	if ($Me->privChair)
-	    $onchange .= ";foldplinfo_extra()";
+	    $onchange .= ";plinfo.extra()";
 	displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange));
     } else if ($Conf->subBlindAlways() && $Me->privChair) {
-	$onchange = "fold('pl',!this.checked,'anonau');foldplinfo_extra()";
+	$onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
 	displayOptionCheckbox("anonau", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2))));
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
 	displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
     if ($Me->privChair && !$viewAllAuthors && ($Conf->subBlindOptional() || $viewAcceptedAuthors)) {
-	$onchange = "fold('pl',!this.checked,'anonau');foldplinfo_extra()";
+	$onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
 	displayOptionCheckbox("anonau", 1, "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "indent" => true));
     }
     if ($pl->headerInfo["collab"])
@@ -1196,7 +1196,7 @@ if ($pl) {
 	if (count($displayOptions) > $n) {
 	    $onchange = "highlightUpdate(\"redisplay\")";
 	    if ($Me->privChair)
-		$onchange .= ";foldplinfo_extra()";
+		$onchange .= ";plinfo.extra()";
 	    displayOptionText("<div style='padding-top:1ex'>Sort by: &nbsp;"
 		. tagg_select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
 		. "<a class='help' href='" . hoturl("help", "t=scoresort") . "' target='_blank' title='Learn more'>?</a></div>", 3);
@@ -1401,13 +1401,13 @@ if ($pl && $pl->count > 0) {
 	$Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='" . hoturl_post("search", "savedisplayoptions=1") . "' enctype='multipart/form-data' accept-charset='UTF-8'>"
 . "<div><input id='scoresortsave' type='hidden' name='scoresort' value='"
 . $_SESSION["scoresort"] . "' /></div></form>");
-	$Conf->footerScript("function foldplinfo_extra() { $$('savedisplayoptionsbutton').disabled = false; }");
+	$Conf->footerScript("plinfo.extra=function(){\$\$('savedisplayoptionsbutton').disabled=false};");
 	// strings might be in different orders, so sort before comparing
 	$pld = explode(" ", trim($Conf->settingText("pldisplay_default", " overAllMerit ")));
 	sort($pld);
 	if ($_SESSION["pldisplay"] != " " . ltrim(join(" ", $pld) . " ")
 	    || $_SESSION["scoresort"] != $Conf->settingText("scoresort_default", $defaultScoreSort))
-	    $Conf->footerScript("foldplinfo_extra()");
+	    $Conf->footerScript("plinfo.extra()");
     }
 
     echo "<input id='redisplay' class='b' type='submit' value='Redisplay' /></td>";

@@ -1632,11 +1632,11 @@ class PaperList extends BaseList {
 	if (count($jsmap))
 	    $Conf->footerScript("foldmap.pl={" . join(",", $jsmap) . "};");
 	if (count($jsloadmap)) {
-	    $Conf->footerScript("plinfo_needload={" . join(",", $jsloadmap) . "};");
+	    $Conf->footerScript("plinfo.needload={" . join(",", $jsloadmap) . "};");
 	    $this->_addAjaxLoadForm($rstate->ids);
 	}
 	if (count($jsnotitlemap))
-	    $Conf->footerScript("plinfo_notitle={" . join(",", $jsnotitlemap) . "};");
+	    $Conf->footerScript("plinfo.notitle={" . join(",", $jsnotitlemap) . "};");
 	return $classes;
     }
 
@@ -1660,7 +1660,7 @@ class PaperList extends BaseList {
 	if (isset($rstate->nonempty_fields[self::FIELD_TAGS])
 	    && $this->showHeader == self::HEADER_ALL) {
 	    $titleextra .= "<span class='sep'></span>";
-	    $titleextra .= "<a class='fn4' href='javascript:void foldplinfo(0,\"tags\")'>Show tags</a><a class='fx4' href='javascript:void foldplinfo(1,\"tags\")'>Hide tags</a><span id='tagsloadformresult'></span>";
+	    $titleextra .= "<a class='fn4' href='javascript:void plinfo(\"tags\",0)'>Show tags</a><a class='fx4' href='javascript:void plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
 	}
 	return $titleextra ? "<span class='pl_titleextra'>$titleextra</span>" : "";
     }
