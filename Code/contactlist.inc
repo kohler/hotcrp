@@ -273,7 +273,7 @@ class ContactList extends BaseList {
 	    if (trim($t) == "")
 		$t = "[No name]";
 	    if ($this->contact->privChair)
-		$t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\">$t</a>";
+		$t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->disabled ? " class='uu'" : "") . ">$t</a>";
 	    if ($row->chair)
 		$t .= " <span class='pcrole'>(Chair)</span>";
 	    else if ($row->assistant)
@@ -677,6 +677,8 @@ class ContactList extends BaseList {
 	    $trclass = "k" . ($this->count % 2);
 	    if ($colorizer && ($c = $colorizer->match_all($row->contactTags)))
 		$trclass .= " " . $c;
+            if ($row->disabled)
+                $trclass .= " greytext";
 	    $this->count++;
 	    $ids[] = $row->contactId;
 

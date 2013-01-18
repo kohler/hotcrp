@@ -1636,6 +1636,9 @@ tr.pl.greytag td, tr.pl.graytag td {
 .greytag div.pst, .graytag div.pst {
 	background: #d9d9d9;
 }
+.graytext, .greytext {
+	color: #999999;
+}
 .boldtag, tr.pl.boldtag td.pl_id, tr.pl.boldtag td.pl_title {
 	font-weight: bold;
 }
