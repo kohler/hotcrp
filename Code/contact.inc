@@ -658,15 +658,23 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
-	$pblind = $Conf->paperBlind($prow, $this);
 	$conflictType = $this->actConflictType($prow);
+        $bs = $Conf->setting("sub_blind");
+        $nonblind = (($prow->outcome > 0
+                      && ($this->isPC || $prow->myReviewType > 0)
+                      && $Conf->timeReviewerViewAcceptedAuthors())
+                     || $bs == BLIND_NEVER
+                     || ($bs == BLIND_OPTIONAL
+                         && !(isset($prow->paperBlind) ? $prow->paperBlind : $prow->blind))
+                     || ($bs == BLIND_UNTILREVIEW
+                         && defval($prow, "myReviewSubmitted")));
 	if (($conflictType >= CONFLICT_AUTHOR
-	     && (!$this->isPC || !$blindWins || !$pblind))
-	    || ($prow->myReviewType > 0 && !$pblind
+	     && (!$this->isPC || $nonblind || !$blindWins))
+	    || ($prow->myReviewType > 0 && $nonblind
 		&& $Conf->timeReviewerViewSubmittedPaper())
-	    || ($prow->timeSubmitted > 0 && !$pblind && $this->isPC)
-	    || ($this->isPC && !$pblind && $prow->timeWithdrawn <= 0
-		&& $Conf->setting("pc_seeall") > 0))
+	    || ($this->isPC && $nonblind
+                && ($prow->timeSubmitted > 0
+                    || ($prow->timeWithdrawn <= 0 && $Conf->setting("pc_seeall") > 0))))
 	    return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)

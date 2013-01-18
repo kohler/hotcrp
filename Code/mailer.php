@@ -307,8 +307,7 @@ class Mailer {
 	if ($what == "%REVIEWNUMBER%")
 	    return $this->reviewNumber;
 	if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
-	    if ($Conf->paperBlind($this->row, $this->permissionContact)
-		&& defval($this->row, "conflictType", 0) < CONFLICT_AUTHOR
+	    if (defval($this->row, "conflictType", 0) < CONFLICT_AUTHOR
 		&& defval($this->permissionContact, "conflictType", 0) < CONFLICT_AUTHOR
 		&& !defval($this->permissionContact, "privSuperChair")
 		&& !$this->permissionContact->canViewAuthors($this->row, true))

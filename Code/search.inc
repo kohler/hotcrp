@@ -2106,7 +2106,7 @@ class PaperSearch {
 	    return false;
 	// NB: F_REVIEWER must be set by caller if necessary
 	if (($flags & self::F_PAPERNONBLIND)
-	    && $Conf->paperBlind($row, $this->contact))
+	    && !$this->contact->canViewAuthors($row, true))
 	    return false;
 	if ($flags & self::F_FALSE)
 	    return false;

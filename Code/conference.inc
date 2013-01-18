@@ -603,21 +603,6 @@ class Conference {
     function subBlindUntilReview() {
 	return $this->settings["sub_blind"] == BLIND_UNTILREVIEW;
     }
-    function paperBlind($prow, $contact) {
-	if ($prow && $prow->outcome > 0
-	    && $contact && ($contact->isPC || $prow->myReviewType > 0)
-	    && $this->timeReviewerViewAcceptedAuthors())
-	    return false;
-	$bs = $this->settings["sub_blind"];
-	return $bs == BLIND_ALWAYS
-	    || ($bs == BLIND_OPTIONAL
-		&& (!$prow
-		    || (isset($prow->paperBlind) ? $prow->paperBlind : $prow->blind)))
-	    || ($bs == BLIND_UNTILREVIEW
-		&& (!$prow
-		    || (!defval($prow, "myReviewSubmitted")
-			&& (!$contact || !$contact->privChair))));
-    }
 
     function blindReview() {
 	return $this->settings['rev_blind'];

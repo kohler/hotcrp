@@ -677,7 +677,7 @@ class PaperList extends BaseList {
 
     function authorInfo($row, $contact, $full, $highlight) {
 	global $Conf;
-	if (!$contact->privChair && $Conf->paperBlind($row, $contact))
+	if (!$contact->privChair && !$contact->canViewAuthors($row, true))
 	    return "";
 	cleanAuthor($row);
 	$aus = array();
@@ -806,7 +806,7 @@ class PaperList extends BaseList {
 	    return ($row->collaborators == ""
 		    || strcasecmp($row->collaborators, "None") == 0
 		    || (!$this->contact->privChair
-			&& $Conf->paperBlind($row, $this->contact)));
+			&& !$this->contact->canViewAuthors($row, true)));
 	default:
 	    return false;
 	}
@@ -1095,7 +1095,7 @@ class PaperList extends BaseList {
 	    if ($row->collaborators == ""
 		|| strcasecmp($row->collaborators, "None") == 0
 		|| (!$this->contact->privChair
-		    && $Conf->paperBlind($row, $this->contact)))
+		    && !$this->contact->canViewAuthors($row, true)))
 		return "";
 	    $x = "";
 	    foreach (explode("\n", $row->collaborators) as $c)
@@ -1539,7 +1539,7 @@ class PaperList extends BaseList {
 		$tt .= "<div id=\"$fdef->foldname.$row->paperId\" class=\"fx";
 		if ($fdef->foldname != "authors")
 		    $tt .= $fdef->foldnum;
-		else if (!$Conf->paperBlind($row, $this->contact)) {
+		else if ($this->contact->canViewAuthors($row, true)) {
 		    $tt .= "1";
 		    $rstate->nonempty_fields["au"] = true;
 		} else {
