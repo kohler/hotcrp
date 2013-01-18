@@ -3,13 +3,27 @@
 ## Run MySQL on the database
 ##
 
-export PROG=$0
-export FLAGS=""
+usage () {
+    echo "Usage: $PROG [MYSQL-OPTIONS]
+       $PROG --show-password EMAIL" 1>&2
+    exit 1
+}
+
+PROG=$0
+FLAGS=
+show_password=
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C
 while [ $# -gt 0 ]; do
     case "$1" in
+    --show-password=*)
+        test -z "$show_password" || usage
+	show_password="`echo "+$1" | sed 's/^[^=]*=//'`";;
+    --show-password)
+	test "$#" -gt 1 -a -z "$show_password" || usage
+	show_password="$2"; shift;;
+    --help) usage;;
     -*)	FLAGS="$FLAGS $1";;
-    *)	echo "Usage: $PROG [MYSQL-OPTIONS]" 1>&2; exit 1;;
+    *) usage;;
     esac
     shift
 done
@@ -95,4 +109,13 @@ if ! $MYSQL --version >/dev/null 2>&1; then
     exit 1
 fi
 
-eval "exec $MYSQL $FLAGS $dbopt"
+sql_quote () {
+    sed -e 's,\([\\"'"'"']\),\\\1,g' | sed -e 's,,\\Z,g'
+}
+
+if test -n "$show_password"; then
+    show_password="`echo "+$show_password" | sed -e 's,^.,,' | sql_quote`"
+    echo "select concat(email, ',', password) from ContactInfo where email like '$show_password' and disabled=0" | eval "exec $MYSQL -N $FLAGS $dbopt"
+else
+    eval "exec $MYSQL $FLAGS $dbopt"
+fi
