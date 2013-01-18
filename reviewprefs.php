@@ -250,7 +250,7 @@ $loadforms = "";
 if (!$Conf->subBlindAlways()) {
     echo $sep,
 	tagg_checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
-		      array("disabled" => ($Conf->subBlindOptional() && !($pl->headerInfo["authors"] & 1)),
+		      array("disabled" => (!$Conf->subBlindNever() && !($pl->headerInfo["authors"] & 1)),
 			    "onchange" => "plinfo('au',this)",
 			    "id" => "showau")),
 	"&nbsp;", tagg_label("Authors");
@@ -258,12 +258,14 @@ if (!$Conf->subBlindAlways()) {
     $loadforms .= "<div id='auloadformresult'></div>";
 }
 if (!$Conf->subBlindNever() && $Me->privChair) {
-    echo "<span class='fx10'>", $sep,
+    echo (!$Conf->subBlindAlways() ? "<span class='fx10'>" : ""),
+        $sep,
 	tagg_checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
 		      array("disabled" => !($pl->headerInfo["authors"] & 2),
-			    "onchange" => ($Conf->subBlindOptional() ? "" : "plinfo('au',this);") . "plinfo('anonau',this)",
-			    "id" => ($Conf->subBlindOptional() ? "showanonau" : "showau"))),
-	"&nbsp;", tagg_label($Conf->subBlindOptional() ? "Anonymous authors" : "Authors"), "</span>";
+			    "onchange" => (!$Conf->subBlindAlways() ? "" : "plinfo('au',this);") . "plinfo('anonau',this)",
+			    "id" => (!$Conf->subBlindAlways() ? "showanonau" : "showau"))),
+	"&nbsp;", tagg_label(!$Conf->subBlindAlways() ? "Anonymous authors" : "Authors"),
+        (!$Conf->subBlindAlways() ? "</span>" : "");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='anonauloadformresult'></div>";
 }

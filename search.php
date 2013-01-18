@@ -1116,7 +1116,8 @@ if ($pl) {
     $viewAcceptedAuthors =
 	$Me->amReviewer() && $Conf->timeReviewerViewAcceptedAuthors();
     $viewAllAuthors = ($_REQUEST["t"] == "a"
-		       || ($_REQUEST["t"] == "acc" && $viewAcceptedAuthors));
+		       || ($_REQUEST["t"] == "acc" && $viewAcceptedAuthors)
+                       || $Conf->subBlindNever());
 
     displayOptionText("<strong>Show:</strong>" . foldsessionpixel("pl", "pldisplay", null), 1);
 
@@ -1134,7 +1135,7 @@ if ($pl) {
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
 	displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
-    if ($Me->privChair && !$viewAllAuthors && ($Conf->subBlindOptional() || $viewAcceptedAuthors)) {
+    if (!$viewAllAuthors && $Me->privChair) {
 	$onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
 	displayOptionCheckbox("anonau", 1, "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "indent" => true));
     }
