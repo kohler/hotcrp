@@ -697,6 +697,8 @@ class Mailer {
     }
 
     static function send($template, $row, $contact, $otherContact = null, $rest = array()) {
+        if (defval($contact, "disabled"))
+            return;
 	$preparation = self::prepareToSend($template, $row, $contact, $otherContact, $rest);
 	if ($preparation)
 	    self::sendPrepared($preparation);
@@ -705,8 +707,10 @@ class Mailer {
     static function sendContactAuthors($template, $row, $otherContact = null, $rest = array()) {
 	global $Conf, $Me, $mailTemplates;
 
+        $qa = ($Conf->sversion >= 47 ? ", disabled" : "");
 	$result = $Conf->qe("select u.contactId,
-		firstName, lastName, email, preferredEmail, password, conflictType, 0 as myReviewType
+		firstName, lastName, email, preferredEmail, password$qa,
+		conflictType, 0 myReviewType
 		from ContactInfo u join PaperConflict using (contactId)
 		where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
 		group by u.contactId", "while looking up contacts to send email");
@@ -735,9 +739,10 @@ class Mailer {
     static function sendReviewers($template, $row, $otherContact = null, $rest = array()) {
 	global $Conf, $Me, $Opt, $mailTemplates;
 
+        $qa = ($Conf->sversion >= 47 ? ", disabled" : "");
 	$result = $Conf->qe("select u.contactId,
-		firstName, lastName, email, preferredEmail, password,
-		conflictType, reviewType as myReviewType
+		firstName, lastName, email, preferredEmail, password$qa,
+		conflictType, reviewType myReviewType
 		from ContactInfo u
 		join PaperReview on (PaperReview.contactId=u.contactId and PaperReview.paperId=$row->paperId)
 		left join PaperConflict on (PaperConflict.contactId=u.contactId and PaperConflict.paperId=$row->paperId)

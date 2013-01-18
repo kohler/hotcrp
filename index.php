@@ -179,6 +179,10 @@ function doLogin() {
 	}
     }
 
+    if (($Me->password == "" && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
+        || $Me->disabled)
+        return $Conf->errorMsg("Your account is disabled. Contact the site administrator for more information.");
+
     if ($_REQUEST["action"] == "forgot") {
 	$worked = $Me->sendAccountInfo(false, true);
 	$Conf->log("Sent password", $Me);

@@ -284,6 +284,8 @@ class ContactList extends BaseList {
 		$t .= " <a href=\"" . hoturl("index", "viewContact=" . urlencode($row->email)) . "\">"
 		    . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($row))
 		    . "</a>";
+            if ($row->disabled)
+                $t .= " <span class='hint'>(disabled)</span>";
 	    return $t;
 	case self::FIELD_EMAIL:
 	    if (!$this->contact->isPC)
@@ -465,11 +467,12 @@ class ContactList extends BaseList {
 	global $Conf;
 
 	$aulimit = (strlen($this->limit) >= 2 && $this->limit[0] == 'a' && $this->limit[1] == 'u');
+        $qa = ($Conf->sversion >= 47 ? ", disabled" : ", 0 disabled");
 	$pq = "select u.contactId,
 	u.contactId as paperId,
 	firstName, lastName, email, affiliation, contactTags,
 	voicePhoneNumber,
-	u.collaborators, lastLogin, visits, note,
+	u.collaborators, lastLogin$qa, visits, note,
 	PCMember.contactId as pc, Chair.contactId as chair,
 	ChairAssistant.contactId as assistant";
 	if (isset($queryOptions['topics']))

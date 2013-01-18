@@ -21,6 +21,7 @@ class Contact {
     var $collaborators;
     var $voicePhoneNumber;
     var $password;
+    public $disabled;
     var $note;
     var $defaultWatch;
 
@@ -81,6 +82,7 @@ class Contact {
 	$c->preferredEmail = defval($o, "preferredEmail", "");
         $c->sorter = trim("$c->firstName $c->lastName $c->email");
 	$c->password = defval($o, "password", "");
+        $c->disabled = !!defval($o, "disabled", false);
 	$c->isAuthor = defval($o, "isAuthor", false) != false;
 	$c->isReviewer = defval($o, "isReviewer", false) != false;
 	$c->reviewsOutstanding = defval($o, "reviewsOutstanding", false) != false;
@@ -198,7 +200,7 @@ class Contact {
 	$this->visits = 0;
 	foreach (array("firstName", "lastName", "email", "preferredEmail",
 		       "affiliation", "voicePhoneNumber",
-		       "password", "collaborators") as $k)
+		       "password", "disabled", "collaborators") as $k)
 	    $this->$k = "";
 	foreach (self::_addressKeys() as $k)
 	    $this->$k = null;
@@ -305,6 +307,8 @@ class Contact {
 	    else
 		$qa .= ", contactTags=null";
 	}
+        if ($Conf->sversion >= 47)
+            $qa .= ", disabled=" . ($this->disabled ? 1 : 0);
 	$query = sprintf("update ContactInfo set firstName='%s', lastName='%s',
 		email='%s', affiliation='%s', voicePhoneNumber='%s',
 		password='%s', collaborators='%s'$qa
@@ -396,6 +400,7 @@ class Contact {
 	    $this->affiliation = $fromdb->affiliation;
 	    $this->voicePhoneNumber = $fromdb->voicePhoneNumber;
 	    $this->password = $fromdb->password;
+            $this->disabled = !!defval($fromdb, "disabled", 0);
 	    $this->note = $fromdb->note;
 	    $this->collaborators = $fromdb->collaborators;
 	    $this->defaultWatch = defval($fromdb, "defaultWatch", 0);

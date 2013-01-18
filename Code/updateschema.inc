@@ -265,4 +265,8 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperReviewArchive drop column `requestedOn`")
 	&& $Conf->q("update Settings set value=46 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 46;
+    if ($Conf->settings["allowPaperOption"] == 46
+	&& $Conf->q("alter table ContactInfo add `disabled` tinyint(1) NOT NULL DEFAULT '0'")
+	&& $Conf->q("update Settings set value=47 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 47;
 }

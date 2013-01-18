@@ -1118,6 +1118,8 @@ function genericWatch($prow, $watchtype, $callback) {
 		R.reviewSubmitted as myReviewSubmitted,
 		R.reviewNeedsSubmit as myReviewNeedsSubmit,
 		conflictType, watch, preferredEmail";
+    if ($Conf->sversion >= 47)
+        $q .= ", disabled";
 
     $q .= "\nfrom ContactInfo C
 		left join PaperConflict Conf on (Conf.paperId=$prow->paperId and Conf.contactId=C.contactId)
@@ -1750,7 +1752,7 @@ function pcMembers() {
 	|| !is_array($_SESSION["pcmembers"][1])
 	|| count($_SESSION["pcmembers"][1]) == 0) {
 	$pc = array();
-	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "");
+	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "") . ($Conf->sversion >= 47 ? ", disabled" : "");
 	$result = $Conf->q("select firstName, lastName, affiliation, email, u.contactId contactId, roles$qa from ContactInfo u join PCMember using (contactId)");
 	while (($row = edb_orow($result)))
 	    $pc[$row->contactId] = Contact::make($row);
@@ -1769,7 +1771,7 @@ function pcMembersAndAdmins() {
 	|| !is_array($_SESSION["pcmembersa"][1])
 	|| count($_SESSION["pcmembersa"][1]) == 0) {
 	$pc = array();
-	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "");
+	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "") . ($Conf->sversion >= 47 ? ", disabled" : "");
 	$result = $Conf->q("select firstName, lastName, email, affiliation, u.contactId contactId, roles$qa from ContactInfo u left join PCMember p using (contactId) left join ChairAssistant ca on (ca.contactId=u.contactId) where p.contactId is not null or ca.contactId is not null order by lastName, firstName");
 	while (($row = edb_orow($result)))
 	    $pc[$row->contactId] = Contact::make($row);
