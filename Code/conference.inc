@@ -121,7 +121,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 47) {
+	if ($this->settings["allowPaperOption"] < 48) {
 	    require_once("updateschema.inc");
 	    $oldOK = $OK;
 	    updateSchema($this);
@@ -247,9 +247,9 @@ class Conference {
 	}
 	$ok = true;
 	if (count($inserts))
-	    $ok = $ok && ($this->qe("insert into Settings (name, value) values " . join($inserts, ",") . " on duplicate key update value=values(value)") !== false);
+	    $ok = $ok && ($this->qe("insert into Settings (name, value) values " . join(",", $inserts) . " on duplicate key update value=values(value)") !== false);
 	if (count($removes))
-	    $ok = $ok && ($this->qe("delete from Settings where name in (" . join($removes, ",") . ")") !== false);
+	    $ok = $ok && ($this->qe("delete from Settings where name in (" . join(",", $removes) . ")") !== false);
 	return $ok;
     }
 

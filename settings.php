@@ -394,6 +394,7 @@ function doTopics($set) {
 	    if ($v == "") {
 		$Conf->qe("delete from TopicArea where topicId=$k", $while);
 		$Conf->qe("delete from PaperTopic where topicId=$k", $while);
+                $Conf->qe("delete from TopicInterest where topicId=$k", $while);
 	    } else if (isset($rf->topicName[$k]) && $v != $rf->topicName[$k])
 		$Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k", $while);
 	}
@@ -931,7 +932,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
     // make settings
     if (count($Error) == 0 && count($Values) > 0) {
 	$while = "updating settings";
-	$tables = "Settings write, TopicArea write, PaperTopic write, OptionType write, PaperOption write";
+	$tables = "Settings write, TopicArea write, PaperTopic write, TopicInterest write, OptionType write, PaperOption write";
 	if (isset($Values['decisions']) || isset($Values['reviewform']))
 	    $tables .= ", ReviewFormOptions write";
 	else

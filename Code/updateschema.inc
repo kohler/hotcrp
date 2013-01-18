@@ -269,4 +269,8 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table ContactInfo add `disabled` tinyint(1) NOT NULL DEFAULT '0'")
 	&& $Conf->q("update Settings set value=47 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 47;
+    if ($Conf->settings["allowPaperOption"] == 47
+	&& $Conf->q("delete from ti using TopicInterest ti left join TopicArea ta using (topicId) where ta.topicId is null")
+	&& $Conf->q("update Settings set value=48 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 48;
 }
