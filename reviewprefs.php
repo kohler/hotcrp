@@ -279,7 +279,7 @@ if (!$Conf->subBlindAlways() || $Me->privChair) {
     $Conf->footerScript("plinfo.extra=function(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked);fold('redisplayform',!x,10)};");
     $loadforms .= "<div id='aufullloadformresult'></div>";
 }
-if ($pl->headerInfo["abstract"]) {
+if (defval($pl->headerInfo, "abstract")) {
     echo $sep,
 	tagg_checkbox("showabstract", 1, strpos($pldisplay, " abstract ") !== false,
 		      array("onchange" => "plinfo('abstract',this)")),
@@ -287,7 +287,7 @@ if ($pl->headerInfo["abstract"]) {
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='abstractloadformresult'></div>";
 }
-if ($pl->headerInfo["topics"]) {
+if (defval($pl->headerInfo, "topics")) {
     echo $sep,
 	tagg_checkbox("showtopics", 1, strpos($pldisplay, " topics ") !== false,
 		      array("onchange" => "plinfo('topics',this)")),

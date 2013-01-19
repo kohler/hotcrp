@@ -1,6 +1,6 @@
 <?php
 // paperlist.inc -- HotCRP helper class for producing paper lists
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("baselist.inc");
@@ -73,7 +73,6 @@ class PaperList extends BaseList {
     var $listNumber;
     var $contact;
     var $scoresOk;
-    var $scoreMax;
     var $search;
     var $extraText;
     var $display;
@@ -86,7 +85,6 @@ class PaperList extends BaseList {
     var $papersel;
     var $rf;
     private $tagger;
-    var $formulas;
     var $viewmap;
     var $reviewList;
     var $atab;
@@ -136,30 +134,13 @@ class PaperList extends BaseList {
 	else
 	    $this->display = defval($_SESSION, defval($args, "foldtype", "pl") . "display", "");
 	$this->rf = reviewForm();
-	$this->formulas = array();
 	$this->atab = defval($_REQUEST, "atab", "");
 	unset($_REQUEST["atab"]);
     }
 
-    function _normalizeField($fieldId) {
-	global $paperListNormalizer;
-	if (isset($paperListNormalizer[$fieldId]))
-	    return $paperListNormalizer[$fieldId][0];
-	else
-	    return $fieldId;
-    }
-
-    function _fieldInfo($fieldId) {
-	global $paperListNormalizer;
-	if (isset($paperListNormalizer[$fieldId]))
-	    return $paperListNormalizer[$fieldId][1];
-	else
-	    return false;
-    }
-
-    function selector($fieldId, &$queryOptions, $folded) {
-	global $Conf, $reviewScoreNames;
-	switch (self::_normalizeField($fieldId)) {
+    function selector($f, &$queryOptions, $folded) {
+	global $Conf;
+	switch ($f->group_id) {
 	case self::FIELD_TOPIC_INTEREST:
 	    if (!count($this->rf->topicName))
 		return false;
@@ -180,7 +161,7 @@ class PaperList extends BaseList {
 	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
 	    if (!$this->contact->canViewReviewerIdentity(true, null))
 		return false;
-	    if ($fieldId == self::FIELD_ALL_REVIEWER_NAMES || !$folded) {
+	    if ($f->id == self::FIELD_ALL_REVIEWER_NAMES || !$folded) {
 		$queryOptions["reviewList"] = 1;
 		if ($this->contact->privChair)
 		    $queryOptions["allReviewerPreference"] = $queryOptions["topics"] = 1;
@@ -207,15 +188,14 @@ class PaperList extends BaseList {
 	case self::FIELD_SCORE:
 	    if (!$this->scoresOk)
 		return false;
-	    if (!$folded || $fieldId == $this->sortField) {
-		$score = self::_fieldInfo($fieldId);
+	    if (!$folded || $f->sorting) {
 		$revView = $this->contact->viewReviewFieldsScore(null, true);
-		if ($this->rf->authorView[$score] <= $revView)
+		if ($this->rf->authorView[$f->score] <= $revView)
 		    return false;
 		if (!isset($queryOptions["scores"]))
 		    $queryOptions["scores"] = array();
-		$queryOptions["scores"][$score] = true;
-		$this->scoreMax[$score] = $this->rf->maxNumericScore($score);
+		$queryOptions["scores"][$f->score] = true;
+                $f->max = $this->rf->maxNumericScore($f->score);
 	    }
 	    break;
 	case self::FIELD_FORMULA:
@@ -224,15 +204,13 @@ class PaperList extends BaseList {
 		&& $this->search->limitName != "a")
 		$revView = $this->contact->viewReviewFieldsScore(null, true);
 	    if (!$this->scoresOk
-		|| !($formula = self::_fieldInfo($fieldId))
-		|| $formula->authorView <= $revView)
+		|| $f->formula->authorView <= $revView)
 		return false;
-	    require_once("paperexpr.inc");
-	    $expr = PaperExpr::parse($formula->expression, true);
-	    if (!$expr)
-		return false;
-	    PaperExpr::add_query_options($queryOptions, $expr, $this->contact);
-	    $this->formulas[$fieldId] = PaperExpr::compile_function($expr, $this->contact);
+            require_once("paperexpr.inc");
+            if (!($expr = PaperExpr::parse($f->formula->expression, true)))
+                return false;
+            $f->formula_function = PaperExpr::compile_function($expr, $this->contact);
+            PaperExpr::add_query_options($queryOptions, $expr, $this->contact);
 	    break;
 	case self::FIELD_REVIEWER:
 	case self::FIELD_REVIEWER_MONITOR:
@@ -381,8 +359,9 @@ class PaperList extends BaseList {
     }
 
     function _sort($rows, $pidarray) {
-	global $Conf, $reviewScoreNames;
-	switch (self::_normalizeField($this->sortField)) {
+	global $Conf;
+        $f = defval(PaperListField::$by_id, $this->sortField);
+	switch ($f ? $f->group_id : $this->sortField) {
 	case self::FIELD_ID:
 	    ksort($rows);
 	    break;
@@ -425,14 +404,12 @@ class PaperList extends BaseList {
 	    usort($rows, array("PaperList", "_sortDesirability"));
 	    break;
 	case self::FIELD_SCORE:
-	    $scoreName = self::_fieldInfo($this->sortField);
-	    $scoreMax = $this->scoreMax[$scoreName];
-	    $scoreName .= "Scores";
+	    $scoreName = $f->score . "Scores";
 	    $this->sortInfo = array();
 	    $this->sortAverage = array();
 	    foreach ($rows as $row)
 		if ($this->contact->canViewReview($row, null))
-		    $this->_setSortRow($row, $scoreName, $scoreMax, $this->scoreSort);
+		    $this->_setSortRow($row, $scoreName, $f->max, $this->scoreSort);
 		else {
 		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
 		    $this->sortAverage[$row->paperId] = 0;
@@ -440,7 +417,7 @@ class PaperList extends BaseList {
 	    usort($rows, array($this, ($this->scoreSort == "M" || $this->scoreSort == "C" || $this->scoreSort == "Y" ? "_sortScore" : "_sortScoreNum")));
 	    break;
 	case self::FIELD_FORMULA:
-	    $formulaf = $this->formulas[$this->sortField];
+	    $formulaf = $f->formula_function;
 	    $this->sortInfo = array();
 	    $this->sortAverage = array();
 	    foreach ($rows as $row) {
@@ -466,7 +443,8 @@ class PaperList extends BaseList {
 	    && ($always || defval($_REQUEST, "sort", "") != "")
 	    && ($this->sortField != 1 || $this->reverseSort)) {
 	    $t = $this->sortField . ($this->reverseSort ? "R" : "");
-	    if (self::_normalizeField($this->sortField) == self::FIELD_SCORE)
+            $f = defval(PaperListField::$by_id, $this->sortField);
+	    if ($f && $f->group_id == self::FIELD_SCORE)
 		$t .= $this->scoreSort;
 	    return $t;
 	} else
@@ -497,9 +475,8 @@ class PaperList extends BaseList {
 	}
     }
 
-    function header($fieldId, $ordinal = 0, $row = null) {
-	global $reviewScoreNames;
-	switch (self::_normalizeField($fieldId)) {
+    function header($f, $ordinal = 0, $row = null) {
+	switch ($f->group_id) {
 	case self::FIELD_ID:
 	    return "ID";
 	case self::FIELD_TITLE:
@@ -545,15 +522,15 @@ class PaperList extends BaseList {
 	    return "Desirability";
 	case self::FIELD_ALL_PREFERENCES:
 	    return "Preferences";
-	case self::FIELD_SCORE: {
-	    $scoreName = self::_fieldInfo($fieldId);
-	    return $this->rf->webFieldAbbrev($scoreName);
-	}
+	case self::FIELD_SCORE:
+	    return $this->rf->webFieldAbbrev($f->score);
 	case self::FIELD_FORMULA: {
-	    $formula = self::_fieldInfo($fieldId);
-	    $x = ($formula->heading == "" ? $formula->name : $formula->heading);
-	    if ($formula->headingTitle && $formula->headingTitle != $x)
-		return "<span class=\"hastitle\" title=\"" . htmlspecialchars($formula->headingTitle) . "\">" . htmlspecialchars($x) . "</span>";
+            if ($f->formula->heading == "")
+                $x = $f->formula->name;
+            else
+                $x = $f->formula->heading;
+	    if ($f->formula->headingTitle && $f->formula->headingTitle != $x)
+		return "<span class=\"hastitle\" title=\"" . htmlspecialchars($f->formula->headingTitle) . "\">" . htmlspecialchars($x) . "</span>";
 	    else
 		return htmlspecialchars($x);
 	}
@@ -566,7 +543,7 @@ class PaperList extends BaseList {
 	case self::FIELD_TAGS:
 	    return "Tags";
 	case self::FIELD_TAGREPORT:
-	    return "“" . self::_fieldInfo($fieldId) . "” tag report";
+	    return "“" . $f->tag . "” tag report";
 	case self::FIELD_OPT_ABSTRACT:
 	    return "Abstract";
 	case self::FIELD_LEAD:
@@ -578,13 +555,12 @@ class PaperList extends BaseList {
 	case self::FIELD_CONFLICT_CONFIRM:
 	    return "";
 	default:
-	    return "&lt;$fieldId&gt;?";
+	    return "&lt;$f->id&gt;?";
 	}
     }
 
-    function col($fieldId) {
-	global $reviewScoreNames;
-	switch (self::_normalizeField($fieldId)) {
+    function col($f) {
+	switch ($f->group_id) {
 	case self::FIELD_ID:
 	case self::FIELD_REVIEWS_STATUS:
 	case self::FIELD_SELECTOR:
@@ -773,9 +749,9 @@ class PaperList extends BaseList {
 	return $prefs;
     }
 
-    function contentEmpty($fieldId, $row) {
+    function contentEmpty($f, $row) {
 	global $Conf;
-	switch (self::_normalizeField($fieldId)) {
+	switch ($f->group_id) {
 	case self::FIELD_REVIEWER_TYPE:
 	    return !$row->reviewType && $row->conflictType <= 0;
 	case self::FIELD_REVIEWER_STATUS:
@@ -853,9 +829,9 @@ class PaperList extends BaseList {
 	return $t;
     }
 
-    function content($fieldId, $row) {
-	global $Conf, $reviewScoreNames;
-	switch (self::_normalizeField($fieldId)) {
+    function content($f, $row) {
+	global $Conf;
+	switch ($f->group_id) {
 	case self::FIELD_ID:
 	    $pl = $this->_paperLink($row);
 	    return "<a href='$pl' tabindex='4'>#$row->paperId</a>";
@@ -875,7 +851,7 @@ class PaperList extends BaseList {
 	    $long = 0;
 	    if ($this->search->limitName != "a" && $this->contact->privChair)
 		$long = 2;
-	    if ($fieldId == self::FIELD_STATUS_SHORT)
+	    if ($f->id == self::FIELD_STATUS_SHORT)
 		$long = ($long == 2 ? -2 : -1);
 	    return $this->contact->paperStatus($row->paperId, $row, $long);
 	case self::FIELD_REVIEWER:
@@ -948,15 +924,15 @@ class PaperList extends BaseList {
 	case self::FIELD_SELECTOR_CONFLICT:
 	    $this->any->sel = true;
 	    $c = "";
-	    if (($fieldId == self::FIELD_SELECTOR_ON
-		 || ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0))
+	    if (($f->id == self::FIELD_SELECTOR_ON
+		 || ($f->id == self::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0))
 		&& (!$this->papersel || defval($this->papersel, $row->paperId, 1))) {
 		$c .= " checked='checked'";
 		$this->foldRow = false;
 	    }
-	    if ($fieldId == self::FIELD_SELECTOR_CONFLICT && $row->conflictType >= CONFLICT_AUTHOR)
+	    if ($f->id == self::FIELD_SELECTOR_CONFLICT && $row->conflictType >= CONFLICT_AUTHOR)
 		$c .= " disabled='disabled'";
-	    if ($fieldId != self::FIELD_SELECTOR_CONFLICT)
+	    if ($f->id != self::FIELD_SELECTOR_CONFLICT)
 		$c .= " onclick='pselClick(event,this)'";
 	    return "<span class=\"pl_rownum fx6\">" . $this->count . ". </span>" . "<input type='checkbox' class='cb' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
 	case self::FIELD_CONFLICT_CONFIRM:
@@ -1022,18 +998,17 @@ class PaperList extends BaseList {
 		}
 	    return $text;
 	case self::FIELD_SCORE:
-	    $scoreName = self::_fieldInfo($fieldId);
 	    $allowed = $this->contact->canViewReview($row, null, $fakeWhyNotView, true);
-	    $fname = "${scoreName}Scores";
+	    $fname = $f->score . "Scores";
 	    if (($allowed || $this->contact->privChair) && $row->$fname) {
-		$t = $Conf->textValuesGraph($row->$fname, $this->scoreMax[$scoreName], 1, defval($row, $scoreName), $this->rf->reviewFields[$scoreName]);
+		$t = $Conf->textValuesGraph($row->$fname, $f->max, 1, defval($row, $f->score), $this->rf->reviewFields[$f->score]);
 		if (!$allowed)
 		    $t = "<span class='fx20'>$t</span>";
 		return $t;
 	    } else
 		return "";
 	case self::FIELD_FORMULA:
-	    $formulaf = $this->formulas[$fieldId];
+	    $formulaf = $f->formula_function;
 	    $t = $formulaf($row, $this->contact, "h");
 	    if ($row->conflictType > 0 && $this->contact->privChair)
 		return "<span class='fn20'>$t</span><span class='fx20'>"
@@ -1069,13 +1044,11 @@ class PaperList extends BaseList {
 	case self::FIELD_TAGREPORT:
 	    if (!$this->contact->canViewTags($row))
 		return "";
-	    $tag = self::_fieldInfo($fieldId);
-	    if (($t = $row->paperTags) === "")
-		return $t;
-            $t = " " . $t;
+	    if (($t = " " . $row->paperTags) === " ")
+		return "";
 	    $a = array();
 	    foreach (pcMembers() as $pcm) {
-		$mytag = " " . $pcm->contactId . "~" . $tag . "#";
+		$mytag = " " . $pcm->contactId . "~" . $f->tag . "#";
 		if (($p = strpos($t, $mytag)) !== false)
 		    $a[] = Text::name_html($pcm) . " (#" . ((int) substr($t, $p + strlen($mytag))) . ")";
 	    }
@@ -1298,7 +1271,6 @@ class PaperList extends BaseList {
     }
 
     function _canonicalize_fields($fields) {
-	global $reviewScoreNames, $paperListFormulas, $paperListNormalizer, $paperListFields;
 	$minimal = defval($this->viewmap, "compactcolumns");
 	$newFields = array();
 	foreach ($fields as $fid) {
@@ -1306,27 +1278,31 @@ class PaperList extends BaseList {
 	    if ($fid == self::FIELD_SCORE) {
 		if (!$this->scoresOk)
 		    continue;
-		foreach ($paperListNormalizer as $newfid => $info)
-		    if ($info[0] == self::FIELD_SCORE
-			&& ($p = array_search($info[1], $this->rf->fieldOrder)) !== false)
+                foreach (PaperListField::$by_id as $newfid => $f)
+                    if ($f->group_id == self::FIELD_SCORE
+			&& ($p = array_search($f->score, $this->rf->fieldOrder)) !== false)
 			$nf[$newfid] = $p;
 		asort($nf);
 		$nf = array_keys($nf);
-		$this->scoreMax = array();
+                $this->scoresOk = "present";
 	    } else if ($fid == self::FIELD_FORMULA) {
 		if (!$this->scoresOk)
 		    continue;
-		foreach ($paperListFormulas as $formula)
-		    array_push($nf, $formula->fieldId);
+		foreach (PaperListField::$by_id as $newfid => $f)
+                    if ($f->group_id == self::FIELD_FORMULA)
+                        $nf[] = $newfid;
 	    } else if ($fid == self::FIELD_TAGREPORT) {
-		foreach ($paperListNormalizer as $newfid => $info)
-		    if ($info[0] == self::FIELD_TAGREPORT)
+		foreach (PaperListField::$by_id as $newfid => $f)
+		    if ($f->group_id == self::FIELD_TAGREPORT)
 			$nf[] = $newfid;
 	    } else
 		$nf[] = $fid;
-	    foreach ($nf as $newfid)
-		if (!$minimal || $paperListFields[$newfid]->minimal)
-		    $newFields[] = $newfid;
+	    foreach ($nf as $newfid) {
+                $f = PaperListField::$by_id[$newfid];
+                $f->sorting = $f->any_nonempty = false;
+		if (!$minimal || $f->minimal)
+		    $newFields[] = $f;
+            }
 	}
 	return $newFields;
     }
@@ -1500,13 +1476,13 @@ class PaperList extends BaseList {
 
 	// main columns
 	$t = "";
-	foreach ($fieldDef as $fieldId => $fdef) {
+	foreach ($fieldDef as $fdef) {
 	    if ($fdef->type != 1)
 		continue;
 	    $td = "    <td class=\"pl_$fdef->cssname";
 	    if ($fdef->foldnum)
 		$td .= " fx$fdef->foldnum";
-	    if ($this->contentEmpty($fieldId, $row)) {
+	    if ($this->contentEmpty($fdef, $row)) {
 		$t .= $td . "\"></td>\n";
 		continue;
 	    }
@@ -1514,40 +1490,40 @@ class PaperList extends BaseList {
 		$rstate->foldinfo[$fdef->foldname] = $this->_field_is_folded($fdef);
 	    if ($fdef->foldname && $rstate->foldinfo[$fdef->foldname]) {
 		$t .= $td . "\" id=\"$fdef->foldname.$row->paperId\"></td>\n";
-		$rstate->nonempty_fields[$fieldId] = true;
+                $fdef->any_nonempty = true;
 	    } else {
-		$c = $this->content($fieldId, $row);
+		$c = $this->content($fdef, $row);
 		$t .= $td . "\">" . $c . "</td>\n";
 		if ($c !== "")
-		    $rstate->nonempty_fields[$fieldId] = true;
+                    $fdef->any_nonempty = true;
 	    }
 	}
 
 	// extension columns
 	$tt = "";
-	foreach ($fieldDef as $fieldId => $fdef) {
-	    if ($fdef->type != 2 || $this->contentEmpty($fieldId, $row))
+	foreach ($fieldDef as $fdef) {
+	    if ($fdef->type != 2 || $this->contentEmpty($fdef, $row))
 		continue;
 	    if ($fdef->foldname	&& !isset($rstate->foldinfo[$fdef->foldname]))
 		$rstate->foldinfo[$fdef->foldname] = $this->_field_is_folded($fdef);
 	    if ($fdef->foldname && $fdef->foldname != "authors"
 		&& $rstate->foldinfo[$fdef->foldname]) {
 		$tt .= "<div id=\"$fdef->foldname.$row->paperId\"></div>";
-		$rstate->nonempty_fields[$fieldId] = true;
-	    } else if (($c = $this->content($fieldId, $row)) !== "") {
+                $fdef->any_nonempty = true;
+	    } else if (($c = $this->content($fdef, $row)) !== "") {
 		$tt .= "<div id=\"$fdef->foldname.$row->paperId\" class=\"fx";
 		if ($fdef->foldname != "authors")
 		    $tt .= $fdef->foldnum;
 		else if ($this->contact->canViewAuthors($row, true)) {
 		    $tt .= "1";
-		    $rstate->nonempty_fields["au"] = true;
+                    $rstate->au_nonempty = true;
 		} else {
 		    $tt .= "1 fx2";
-		    $rstate->nonempty_fields["anonau"] = true;
+                    $rstate->anonau_nonempty = true;
 		}
-		$tt .= "\"><h6>" . $this->header($fieldId, -1, $row)
+		$tt .= "\"><h6>" . $this->header($fdef, -1, $row)
 		    . ":</h6> " . $c . "</div>";
-		$rstate->nonempty_fields[$fieldId] = true;
+		$fdef->any_nonempty = true;
 	    }
 	}
 
@@ -1596,24 +1572,24 @@ class PaperList extends BaseList {
     function _analyze_folds($rstate, $fieldDef) {
 	global $Conf;
 	$classes = $jsmap = $jsloadmap = $jsnotitlemap = array();
-	foreach ($fieldDef as $fieldId => $fdef)
+	foreach ($fieldDef as $fdef)
 	    if ($fdef->foldname && $fdef->foldname !== "authors"
 		&& isset($rstate->foldinfo[$fdef->foldname])) {
 		$closed = $rstate->foldinfo[$fdef->foldname];
 		$classes[] = "fold$fdef->foldnum" . ($closed ? "c" : "o");
 		$jsmap[] = "\"$fdef->foldname\":$fdef->foldnum";
-		if ($closed && isset($rstate->nonempty_fields[$fieldId]))
+		if ($closed && $fdef->any_nonempty)
 		    $jsloadmap[] = "\"$fdef->foldname\":true";
 		if ($fdef->type == 1)
 		    $jsnotitlemap[] = "\"$fdef->foldname\":true";
 	    }
 	// authorship requires special handling
-	if (isset($rstate->nonempty_fields["au"]) || isset($rstate->nonempty_fields["anonau"])) {
+	if (isset($rstate->au_nonempty) || isset($rstate->anonau_nonempty)) {
 	    $classes[] = "fold1" . ($this->_field_is_folded("au") ? "c" : "o");
 	    $jsmap[] = "\"au\":1,\"aufull\":16";
 	    $jsloadmap[] = "\"aufull\":true";
 	}
-	if (isset($rstate->nonempty_fields["anonau"])) {
+	if (isset($rstate->anonau_nonempty)) {
 	    $classes[] = "fold2" . ($this->_field_is_folded("anonau") ? "c" : "o");
 	    $jsmap[] = "\"anonau\":2";
 	}
@@ -1644,19 +1620,19 @@ class PaperList extends BaseList {
 	$titleextra = "";
 	if (isset($rstate->foldinfo["wholerow"]))
 	    $titleextra .= "<span class='sep'></span><a class='fn3' href=\"javascript:void fold('pl',0,3)\">Show all papers</a>";
-	if ((isset($rstate->nonempty_fields["au"]) || isset($rstate->nonempty_fields["anonau"]))
+	if ((isset($rstate->au_nonempty) || isset($rstate->anonau_nonempty))
 	    && $this->showHeader == self::HEADER_ALL) {
 	    $titleextra .= "<span class='sep'></span>";
 	    if ($Conf->subBlindNever())
 		$titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
-	    else if ($this->contact->privChair && isset($rstate->nonempty_fields["anonau"]) && !isset($rstate->nonempty_fields["au"]))
+	    else if ($this->contact->privChair && isset($rstate->anonau_nonempty) && !isset($rstate->au_nonempty))
 		$titleextra .= "<a class='fn1 fn2' href=\"javascript:fold('pl',0,'au');void fold('pl',0,'anonau')\">Show authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
-	    else if ($this->contact->privChair && isset($rstate->nonempty_fields["anonau"]))
+	    else if ($this->contact->privChair && isset($rstate->anonau_nonempty))
 		$titleextra .= "<a class='fn1' href=\"javascript:fold('pl',0,'au');void fold('pl',1,'anonau')\">Show non-anonymous authors</a><a class='fx1 fn2' href=\"javascript:void fold('pl',0,'anonau')\">Show all authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
 	    else
 		$titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show non-anonymous authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
 	}
-	if (isset($rstate->nonempty_fields[self::FIELD_TAGS])
+	if (isset(PaperListField::$by_id[self::FIELD_TAGS]->any_nonempty)
 	    && $this->showHeader == self::HEADER_ALL) {
 	    $titleextra .= "<span class='sep'></span>";
 	    $titleextra .= "<a class='fn4' href='javascript:void plinfo(\"tags\",0)'>Show tags</a><a class='fx4' href='javascript:void plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
@@ -1699,8 +1675,7 @@ class PaperList extends BaseList {
     }
 
     function text($listname, $me, $extra_class = "") {
-	global $Conf, $ConfSiteBase, $paperListFields, $paperListFolds,
-	    $reviewScoreNames;
+	global $Conf, $ConfSiteBase, $paperListFolds;
 
 	$this->contact = $me;
 	$this->count = 0;
@@ -1737,13 +1712,14 @@ class PaperList extends BaseList {
 	    $this->viewmap["columns"] = true;
 
 	// get paper list
-	if (!($baseFieldId = $this->_listFields($listname))) {
+        $field_list = $this->_listFields($listname);
+	if (!$field_list) {
 	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
 	    return null;
 	}
 	if (defval($_REQUEST, "selectall") > 0
-	    && $baseFieldId[0] == self::FIELD_SELECTOR)
-	    $baseFieldId[0] = self::FIELD_SELECTOR_ON;
+	    && $field_list[0]->id == self::FIELD_SELECTOR)
+	    $field_list[0] = PaperListField::$by_id[self::FIELD_SELECTOR_ON];
 
 	// check paper link destination
 	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
@@ -1759,22 +1735,24 @@ class PaperList extends BaseList {
 	    $specialSortable = self::FIELD_TAGINDEX;
 	} else if (($pidarray = $this->search->simplePaperList()) !== null)
 	    $specialSortable = self::FIELD_PIDARRAY;
-	if ($this->sortField && !in_array($this->sortField, $baseFieldId))
-	    $this->sortField = null;
-	if (!$this->sortField && $specialSortable)
-	    $this->sortField = $specialSortable;
 
 	// get field array
 	$fieldDef = array();
 	$ncol = 0;
-	foreach ($baseFieldId as $fid)
-	    if (($fdef = defval($paperListFields, $fid))
-		&& $this->selector($fid, $queryOptions, $this->_field_is_folded($fdef))) {
-		$fieldDef[$fid] = $fdef;
-		if ($fdef->type == 1)
+        $found_sort = false;
+	foreach ($field_list as $f) {
+            if ($f->id == $this->sortField)
+                $found_sort = $f->sorting = true;
+	    if ($this->selector($f, $queryOptions,
+                                $this->_field_is_folded($f))) {
+		$fieldDef[$f->id] = $f;
+		if ($f->type == 1)
 		    $ncol++;
 	    }
+        }
 	$this->aufull = !$this->_field_is_folded("aufull");
+        if ((!$this->sortField || !$found_sort) && $specialSortable)
+            $this->sortField = $specialSortable;
 
 	// make query
 	$result = $this->_prepareQuery($me, $queryOptions);
@@ -1806,7 +1784,6 @@ class PaperList extends BaseList {
 	// create render state
 	$rstate = (object) array();
 	$rstate->ids = array();
-	$rstate->nonempty_fields = array();
 	$rstate->foldinfo = array();
 	$rstate->colorindex = 0;
 	$rstate->skipcallout = $skipcallout;
@@ -1825,9 +1802,9 @@ class PaperList extends BaseList {
 
 	// columns
 	$colhead = "";
-	foreach ($fieldDef as $fieldId => $fdef) {
+	foreach ($fieldDef as $fdef) {
 	    if ($fdef->type == 1)
-		$colhead .= $this->col($fieldId);
+		$colhead .= $this->col($fdef);
 	}
 
 	// header cells
@@ -1845,7 +1822,7 @@ class PaperList extends BaseList {
 	    foreach ($fieldDef as $fieldId => $fdef) {
 		if ($fdef->type != 1)
 		    continue;
-		if (!isset($rstate->nonempty_fields[$fieldId])) {
+		if (!$fdef->any_nonempty) {
 		    $colhead .= "    <th class=\"pl_$fdef->cssname\"></th>\n";
 		    continue;
 		}
@@ -1853,7 +1830,7 @@ class PaperList extends BaseList {
 		if ($fdef->foldnum)
 		    $colhead .= " fx" . $fdef->foldnum;
 		$colhead .= "\">";
-		$ftext = $this->header($fieldId, $ord++);
+		$ftext = $this->header($fdef, $ord++);
 
 		$sortableSelector = $fieldId >= self::FIELD_SELECTOR
 		    && $fieldId <= self::FIELD_LAST_SELECTOR
@@ -1924,23 +1901,17 @@ class PaperList extends BaseList {
 	    $_SESSION["l"][$this->listNumber] = $idx;
 	}
 
-	$this->headerInfo = array(
-		"authors" => (isset($rstate->nonempty_fields["anonau"]) ? 2 : 0) | (isset($rstate->nonempty_fields["au"]) ? 1 : 0),
-		"tags" => defval($rstate->nonempty_fields, self::FIELD_TAGS, false),
-		"abstract" => defval($rstate->nonempty_fields, self::FIELD_OPT_ABSTRACT, false),
-		"shepherd" => defval($rstate->nonempty_fields, self::FIELD_SHEPHERD, false),
-		"lead" => defval($rstate->nonempty_fields, self::FIELD_LEAD, false),
-		"topics" => defval($rstate->nonempty_fields, self::FIELD_OPT_TOPIC_NAMES, false),
-		"pcconf" => defval($rstate->nonempty_fields, self::FIELD_OPT_PC_CONFLICTS, false),
-		"collab" => defval($rstate->nonempty_fields, self::FIELD_COLLABORATORS, false),
-		"pap" => $rstate->ids
-	);
+	$this->headerInfo = array("pap" => $rstate->ids);
+        foreach ($fieldDef as $fdef)
+            if ($fdef->any_nonempty)
+                $this->headerInfo[$fdef->foldname] = true;
+        $this->headerInfo["authors"] = (isset($rstate->anonau_nonempty) ? 2 : 0) | (isset($rstate->au_nonempty) ? 1 : 0);
 
 	return $x;
     }
 
     function ajaxColumn($fieldId, $me) {
-	global $Conf, $paperListFields;
+	global $Conf;
 
 	$this->contact = $me;
 	$this->count = 0;
@@ -1974,8 +1945,8 @@ class PaperList extends BaseList {
 	// get field array
 	$ncol = 0;
 	$this->unfolded = true;
-	if (!($fdef = defval($paperListFields, $fieldId))
-	    || !$this->selector($fieldId, $queryOptions, false))
+	if (!($fdef = defval(PaperListField::$by_id, $fieldId))
+	    || !$this->selector($fdef, $queryOptions, false))
 	    return null;
 	$unfolded = $this->unfolded;
 
@@ -1987,13 +1958,13 @@ class PaperList extends BaseList {
 	// collect row data
 	$data = array();
 	$foldname = $fdef->foldname;
-	if (($x = $this->header($fieldId)))
+	if (($x = $this->header($fdef)))
 	    $data["$foldname.title"] = $x;
 	while (($row = edb_orow($result))) {
-	    if ($this->contentEmpty($fieldId, $row))
+	    if ($this->contentEmpty($fdef, $row))
 		$c = "";
 	    else
-		$c = $this->content($fieldId, $row);
+		$c = $this->content($fdef, $row);
 	    $data["$foldname.$row->paperId"] = $c;
 	}
 
@@ -2004,7 +1975,10 @@ class PaperList extends BaseList {
 
 
 class PaperListField {
-    var $id;
+    static public $by_id = array();
+
+    public $id;
+    public $group_id;
     var $cssname;
     var $foldnum;
     var $foldname;
@@ -2013,7 +1987,7 @@ class PaperListField {
     var $minimal;
 
     function __construct($id, $cssname, $type, $extra) {
-	$this->id = $id;
+	$this->id = $this->group_id = $id;
 	$this->cssname = $cssname;
 	$this->foldnum = defval($extra, "foldnum", 0);
 	$this->foldname = ($this->foldnum ? $cssname : null);
@@ -2023,25 +1997,21 @@ class PaperListField {
     }
 
     static function make($id, $cssname, $type, $extra = 0) {
-	global $paperListFields, $paperListFolds;
+	global $paperListFolds;
 	if ($extra === true)
 	    $extra = array("sortable" => true);
 	else if (is_int($extra))
 	    $extra = array("foldnum" => $extra);
 	$f = new PaperListField($id, $cssname, $type, $extra);
-	$paperListFields[$id] = $f;
+        self::$by_id[$id] = $f;
 	if ($f->foldnum > 3  /* "authors" == 1 or 2, requires special handling */)
 	    $paperListFolds[$f->foldname] = $f;
 	return $f;
     }
 
-    static function _formula_compar($a, $b) {
-	return strcasecmp($a->name, $b->name);
-    }
-
     static function initialize() {
-	global $paperListFields, $paperListFolds, $paperListFormulas,
-	    $paperListNormalizer, $reviewScoreNames, $Conf;
+	global $paperListFolds, $paperListFormulas,
+	    $reviewScoreNames, $Conf;
 
 	$paperListFolds = array("au" => (object) array("id" => PaperList::FIELD_OPT_AUTHORS, "foldnum" => 1),
 				"anonau" => (object) array("id" => PaperList::FIELD_OPT_AUTHORS, "foldnum" => 2),
@@ -2049,7 +2019,6 @@ class PaperListField {
 				"aufull" => (object) array("foldnum" => 16),
 				"force" => (object) array("foldnum" => 20));
 
-	$paperListFields = array();
 	PaperListField::make(PaperList::FIELD_SELECTOR, "selector", 1, array("minimal" => true));
 	PaperListField::make(PaperList::FIELD_SELECTOR_ON, "selector", 1, array("minimal" => true));
 	PaperListField::make(PaperList::FIELD_SELECTOR_CONFLICT, "confselector", 1);
@@ -2073,8 +2042,6 @@ class PaperListField {
 	PaperListField::make(PaperList::FIELD_REVIEWS_STATUS, "revstat", 1, true);
 	PaperListField::make(PaperList::FIELD_DESIRABILITY, "desirability", 1, true);
 	PaperListField::make(PaperList::FIELD_ALL_PREFERENCES, "allPreferences", 2);
-	PaperListField::make(PaperList::FIELD_SCORE, "score", 1, array("minimal" => true, "sortable" => true));
-	PaperListField::make(PaperList::FIELD_FORMULA, "formula", 1, array("minimal" => true, "sortable" => true));
 	PaperListField::make(PaperList::FIELD_AUTHOR_MATCH, "authorsMatch", 2);
 	PaperListField::make(PaperList::FIELD_COLLABORATORS_MATCH, "collaboratorsMatch", 2);
 	PaperListField::make(PaperList::FIELD_OPT_AUTHORS, "authors", 2, 3);
@@ -2086,30 +2053,30 @@ class PaperListField {
 	PaperListField::make(PaperList::FIELD_OPT_PC_CONFLICTS, "pcconf", 2, 14);
 	PaperListField::make(PaperList::FIELD_COLLABORATORS, "collab", 2, 15);
 
-	$paperListNormalizer = array();
 	$nextfield = PaperList::FIELD_SCORE;
 	foreach ($reviewScoreNames as $k => $n) {
 	    $fdef = PaperListField::make($nextfield, $n, 1, array("minimal" => true, "sortable" => true, "foldnum" => $nextfield));
 	    $fdef->cssname = "score";
-	    $paperListNormalizer[$nextfield] = array(PaperList::FIELD_SCORE, $n);
+            $fdef->score = $n;
+            $fdef->group_id = PaperList::FIELD_SCORE;
 	    ++$nextfield;
 	}
 
 	$nextfold = 21;
 	$paperListFormulas = array();
 	if ($Conf && $Conf->setting("formulas") && $Conf->sversion >= 32) {
-	    $result = $Conf->q("select * from Formula");
+	    $result = $Conf->q("select * from Formula order by lower(name)");
 	    while (($row = edb_orow($result))) {
 		$fid = $row->formulaId;
 		$fdef = PaperListField::make($nextfield, "formula$fid", 1, array("minimal" => true, "sortable" => true, "foldnum" => $nextfold));
 		$fdef->cssname = "formula";
+                $fdef->formula = $row;
+                $fdef->group_id = PaperList::FIELD_FORMULA;
 		$row->fieldId = $nextfield;
 		$paperListFormulas[$fid] = $row;
-		$paperListNormalizer[$nextfield] = array(PaperList::FIELD_FORMULA, $row);
 		++$nextfold;
 		++$nextfield;
 	    }
-	    uasort($paperListFormulas, array("PaperListField", "_formula_compar"));
 	}
 
         $tagger = new Tagger;
@@ -2121,7 +2088,8 @@ class PaperListField {
 	    foreach ($vt as $n) {
 		$fdef = PaperListField::make($nextfield, "tagrep_" . preg_replace('/\W+/', '_', $n), 2, $nextfold);
 		$fdef->cssname = "tagrep";
-		$paperListNormalizer[$nextfield] = array(PaperList::FIELD_TAGREPORT, $n);
+                $fdef->tag = $n;
+                $fdef->group_id = PaperList::FIELD_TAGREPORT;
 		++$nextfold;
 		++$nextfield;
 	    }

@@ -1142,17 +1142,17 @@ if ($pl) {
 	$onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
 	displayOptionCheckbox("anonau", 1, "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "indent" => true));
     }
-    if ($pl->headerInfo["collab"])
+    if (defval($pl->headerInfo, "collab"))
 	displayOptionCheckbox("collab", 1, "Collaborators", array("indent" => true));
 
     // Abstract group
-    if ($pl->headerInfo["abstract"])
+    if (defval($pl->headerInfo, "abstract"))
 	displayOptionCheckbox("abstract", 1, "Abstracts");
-    if ($pl->headerInfo["topics"])
+    if (defval($pl->headerInfo, "topics"))
 	displayOptionCheckbox("topics", 1, "Topics");
 
     // Tags group
-    if ($Me->isPC && $pl->headerInfo["tags"]) {
+    if ($Me->isPC && defval($pl->headerInfo, "tags")) {
 	$opt = array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair));
 	displayOptionCheckbox("tags", 1, "Tags", $opt);
 	if ($Me->privChair) {
@@ -1172,14 +1172,14 @@ if ($pl) {
 	displayOptionCheckbox("reviewers", 2, "Reviewers");
     if ($Me->privChair)
 	displayOptionCheckbox("pcconf", 2, "PC conflicts");
-    if ($Me->isPC && $pl->headerInfo["lead"])
+    if ($Me->isPC && defval($pl->headerInfo, "lead"))
 	displayOptionCheckbox("lead", 2, "Discussion leads");
-    if ($Me->isPC && $pl->headerInfo["shepherd"])
+    if ($Me->isPC && defval($pl->headerInfo, "shepherd"))
 	displayOptionCheckbox("shepherd", 2, "Shepherds");
 
     // Scores group
     $anyScores = false;
-    if (isset($pl->scoreMax)) {
+    if ($pl->scoresOk == "present") {
 	$rf = reviewForm();
 	if ($Me->amReviewer() && $_REQUEST["t"] != "a")
 	    $revViewScore = $Me->viewReviewFieldsScore(null, true);
