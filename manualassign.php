@@ -315,6 +315,7 @@ if ($reviewer > 0) {
                                     "urlbase" => hoturl("manualassign", "reviewer=$reviewer")),
                               $reviewer);
     $paperList = new PaperList($search, array("sort" => true, "list" => true));
+    $paperList->showHeader = PaperList::HEADER_ALL;
     if (isset($showau)) {
 	$search->overrideMatchPreg = true;
 	$search->matchPreg = array();

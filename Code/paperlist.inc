@@ -91,7 +91,7 @@ class PaperList extends BaseList {
 
     function __construct($search, $args = array()) {
 	global $scoreSorts, $defaultScoreSort, $Conf;
-	$this->showHeader = self::HEADER_ALL;
+	$this->showHeader = self::HEADER_NONE;
 
 	$this->sortable = !!defval($args, "sort");
 	$s = ($this->sortable ? defval($_REQUEST, "sort", "") : "");
@@ -1329,61 +1329,61 @@ class PaperList extends BaseList {
 	switch ($listname) {
 	case "a":
 	case "authorHome":
-	    $fields = array(1, 11, 20);
+	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_STATUS);
 	    break;
 	case "s":
 	case "acc":
-	    $fields = array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78, self::FIELD_SCORE, self::FIELD_FORMULA);
+	    $fields = array(self::FIELD_SELECTOR, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_REVIEWS_STATUS, self::FIELD_STATUS_SHORT, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_OPT_PC_CONFLICTS, self::FIELD_LEAD, self::FIELD_SHEPHERD, self::FIELD_SCORE, self::FIELD_FORMULA);
 	    break;
 	case "all":
 	case "act":
-	    $fields = array(self::FIELD_SELECTOR, 1, 11, 20, 27, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78);
+	    $fields = array(self::FIELD_SELECTOR, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_STATUS, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_OPT_PC_CONFLICTS, self::FIELD_LEAD, self::FIELD_SHEPHERD);
 	    break;
 	case "reviewerHome":
 	    $this->paperLink = "review";
-	    $fields = array(1, 11, 27, 21);
+	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_STATUS_SHORT);
 	    break;
 	case "r":
 	case "lead":
 	    $this->paperLink = "review";
-	    $fields = array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78, self::FIELD_SCORE, self::FIELD_FORMULA);
+	    $fields = array(self::FIELD_SELECTOR, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_REVIEWS_STATUS, self::FIELD_STATUS_SHORT, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_OPT_PC_CONFLICTS, self::FIELD_LEAD, self::FIELD_SHEPHERD, self::FIELD_SCORE, self::FIELD_FORMULA);
 	    break;
 	case "rout":
 	    $this->paperLink = "review";
-	    $fields = array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78, self::FIELD_SCORE, self::FIELD_FORMULA);
+	    $fields = array(self::FIELD_SELECTOR, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_REVIEWS_STATUS, self::FIELD_STATUS_SHORT, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_OPT_PC_CONFLICTS, self::FIELD_LEAD, self::FIELD_SHEPHERD, self::FIELD_SCORE, self::FIELD_FORMULA);
 	    break;
 	case "req":
 	    $this->paperLink = "review";
-	    $fields = array(self::FIELD_SELECTOR, 1, 11, 27, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78, self::FIELD_SCORE, self::FIELD_FORMULA);
+	    $fields = array(self::FIELD_SELECTOR, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_REVIEWS_STATUS, self::FIELD_STATUS_SHORT, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_OPT_PC_CONFLICTS, self::FIELD_LEAD, self::FIELD_SHEPHERD, self::FIELD_SCORE, self::FIELD_FORMULA);
 	    break;
 	case "reqrevs":
 	    $this->paperLink = "review";
-	    $fields = array(1, 11, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, 41, 21, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, 75, 76, 77, 78);
+	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, self::FIELD_REVIEWS_STATUS, self::FIELD_STATUS_SHORT, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_OPT_PC_CONFLICTS, self::FIELD_LEAD, self::FIELD_SHEPHERD);
 	    break;
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
-	    $fields = array(1, 11, 39, 36, 43, 35, self::FIELD_OPT_AUTHORS, self::FIELD_TOPIC_NAMES, self::FIELD_ALL_REVIEWER_NAMES, self::FIELD_ALL_PREFERENCES, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH);
+	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_PREFERENCE, self::FIELD_TOPIC_INTEREST, self::FIELD_DESIRABILITY, self::FIELD_ASSIGN_REVIEW, self::FIELD_OPT_AUTHORS, self::FIELD_TOPIC_NAMES, self::FIELD_ALL_REVIEWER_NAMES, self::FIELD_ALL_PREFERENCES, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH);
 	    break;
 	  case "conflict":
 	    $this->paperLink = "assign";
 	    $this->defaultFoldRow = true;
-	    $fields = array(self::FIELD_SELECTOR_CONFLICT, 1, 11, self::FIELD_CONFLICT_CONFIRM, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH);
+	    $fields = array(self::FIELD_SELECTOR_CONFLICT, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_CONFLICT_CONFIRM, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH);
 	    break;
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
-	    $fields = array(self::FIELD_SELECTOR, 1, 11, 36, 27, 40, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_OPT_TOPIC_NAMES);
+	    $fields = array(self::FIELD_SELECTOR, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_TOPIC_INTEREST, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_EDIT_REVIEWER_PREFERENCE, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_OPT_TOPIC_NAMES);
 	    break;
 	  case "reviewers":
 	    $this->paperLink = "assign";
-	    $fields = array(1, 11, 21, self::FIELD_ALL_REVIEWER_NAMES);
+	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_STATUS_SHORT, self::FIELD_ALL_REVIEWER_NAMES);
 	    break;
 	  case "reviewersSel":
 	    $this->paperLink = "assign";
-	    $fields = array(self::FIELD_SELECTOR_ON, 1, 11, 21, self::FIELD_ALL_REVIEWER_NAMES);
+	    $fields = array(self::FIELD_SELECTOR_ON, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_STATUS_SHORT, self::FIELD_ALL_REVIEWER_NAMES);
 	    break;
 	  case "revs":
 	    $this->paperLink = "review";
-	    $fields = array(1, 11, 25, 27);
+	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER, self::FIELD_REVIEWER_TYPE_ICON);
 	    break;
 	  default:
 	    return null;
@@ -1675,7 +1675,7 @@ class PaperList extends BaseList {
     }
 
     function text($listname, $me, $extra_class = "") {
-	global $Conf, $ConfSiteBase, $paperListFolds;
+	global $Conf, $ConfSiteBase;
 
 	$this->contact = $me;
 	$this->count = 0;
@@ -2010,8 +2010,7 @@ class PaperListField {
     }
 
     static function initialize() {
-	global $paperListFolds, $paperListFormulas,
-	    $reviewScoreNames, $Conf;
+	global $paperListFolds, $paperListFormulas, $reviewScoreNames, $Conf;
 
 	$paperListFolds = array("au" => (object) array("id" => PaperList::FIELD_OPT_AUTHORS, "foldnum" => 1),
 				"anonau" => (object) array("id" => PaperList::FIELD_OPT_AUTHORS, "foldnum" => 2),
