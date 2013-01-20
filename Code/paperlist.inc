@@ -203,8 +203,8 @@ class PaperList extends BaseList {
             PaperExpr::add_query_options($queryOptions, $expr, $this->contact);
 	    break;
 	case self::FIELD_REVIEWER_MONITOR:
-	    $queryOptions['allReviewScores'] = 1;
-	    $queryOptions['reviewerName'] = 1;
+	    $queryOptions["allReviewScores"] = 1;
+	    $queryOptions["reviewerName"] = 1;
 	    break;
 	case self::FIELD_REVIEWER_TYPE:
 	case self::FIELD_REVIEWER_TYPE_ICON:
@@ -881,7 +881,7 @@ class PaperList extends BaseList {
 		    $this->needSubmitReview++;
 		$t = self::_reviewIcon($row, $ranal, true);
 		if ($ranal->round)
-		    return "<div class='pl_revtypeiround'>" . $t . "</div>";
+		    return "<div class='pl_revtype_round'>" . $t . "</div>";
 		else
 		    return $t;
 	    }
@@ -1946,6 +1946,7 @@ class PaperList extends BaseList {
 class PaperListField {
     static public $by_id = array();
 
+    public $name;
     public $id;
     public $group_id;
     var $cssname;
@@ -1955,23 +1956,24 @@ class PaperListField {
     var $sortable;
     var $minimal;
 
-    function __construct($id, $cssname, $type, $extra) {
+    function __construct($name, $id, $type, $extra) {
+        $this->name = $name;
 	$this->id = $this->group_id = $id;
-	$this->cssname = $cssname;
+	$this->cssname = defval($extra, "cssname", $name);
 	$this->foldnum = defval($extra, "foldnum", 0);
-	$this->foldname = ($this->foldnum ? $cssname : null);
+	$this->foldname = ($this->foldnum ? $this->cssname : null);
 	$this->type = $type;
 	$this->sortable = defval($extra, "sortable", false);
 	$this->minimal = defval($extra, "minimal", false);
     }
 
-    static function make($id, $cssname, $type, $extra = 0) {
+    static function make($name, $id, $type, $extra = 0) {
 	global $paperListFolds;
 	if ($extra === true)
 	    $extra = array("sortable" => true);
 	else if (is_int($extra))
 	    $extra = array("foldnum" => $extra);
-	$f = new PaperListField($id, $cssname, $type, $extra);
+	$f = new PaperListField($name, $id, $type, $extra);
         self::$by_id[$id] = $f;
 	if ($f->foldnum > 3  /* "authors" == 1 or 2, requires special handling */)
 	    $paperListFolds[$f->foldname] = $f;
@@ -1987,39 +1989,39 @@ class PaperListField {
 				"aufull" => (object) array("foldnum" => 16),
 				"force" => (object) array("foldnum" => 20));
 
-	PaperListField::make(PaperList::FIELD_SELECTOR, "selector", 1, array("minimal" => true));
-	PaperListField::make(PaperList::FIELD_SELECTOR_ON, "selector", 1, array("minimal" => true));
-	PaperListField::make(PaperList::FIELD_SELECTOR_CONFLICT, "confselector", 1);
-	PaperListField::make(PaperList::FIELD_ID, "id", 1, array("minimal" => true, "sortable" => true));
-	PaperListField::make(PaperList::FIELD_TITLE, "title", 1, array("minimal" => true, "sortable" => true));
-	PaperListField::make(PaperList::FIELD_STATUS, "status", 1, true);
-	PaperListField::make(PaperList::FIELD_REVIEWER_TYPE, "reviewer", 1, true);
-	PaperListField::make(PaperList::FIELD_REVIEWER_TYPE_ICON, "revtypei", 1, true);
-	PaperListField::make(PaperList::FIELD_REVIEWER_STATUS, "reviewer", 1);
-	PaperListField::make(PaperList::FIELD_REVIEWER_MONITOR, "reviewer", 1, true);
-	PaperListField::make(PaperList::FIELD_STATUS_SHORT, "status", 1, true);
-	PaperListField::make(PaperList::FIELD_ASSIGN_REVIEW, "assrev", 1, true);
-	PaperListField::make(PaperList::FIELD_TOPIC_INTEREST, "topicMatch", 1, true);
-	PaperListField::make(PaperList::FIELD_OPT_TOPIC_NAMES, "topics", 2, 13);
-	PaperListField::make(PaperList::FIELD_REVIEWER_PREFERENCE, "revpref", 1, true);
-	PaperListField::make(PaperList::FIELD_EDIT_REVIEWER_PREFERENCE, "editrevpref", 1, true);
-	PaperListField::make(PaperList::FIELD_REVIEWS_STATUS, "revstat", 1, true);
-	PaperListField::make(PaperList::FIELD_DESIRABILITY, "desirability", 1, true);
-	PaperListField::make(PaperList::FIELD_ALL_PREFERENCES, "allPreferences", 2);
-	PaperListField::make(PaperList::FIELD_AUTHOR_MATCH, "authorsMatch", 2);
-	PaperListField::make(PaperList::FIELD_COLLABORATORS_MATCH, "collaboratorsMatch", 2);
-	PaperListField::make(PaperList::FIELD_OPT_AUTHORS, "authors", 2, 3);
-	PaperListField::make(PaperList::FIELD_TAGS, "tags", 2, 4);
-	PaperListField::make(PaperList::FIELD_OPT_ABSTRACT, "abstract", 2, 5);
-	PaperListField::make(PaperList::FIELD_OPT_ALL_REVIEWER_NAMES, "reviewers", 2, 10);
-	PaperListField::make(PaperList::FIELD_LEAD, "lead", 2, 12);
-	PaperListField::make(PaperList::FIELD_SHEPHERD, "shepherd", 2, 11);
-	PaperListField::make(PaperList::FIELD_OPT_PC_CONFLICTS, "pcconf", 2, 14);
-	PaperListField::make(PaperList::FIELD_COLLABORATORS, "collab", 2, 15);
+	PaperListField::make("sel", PaperList::FIELD_SELECTOR, 1, array("minimal" => true));
+	PaperListField::make("selon", PaperList::FIELD_SELECTOR_ON, 1, array("minimal" => true, "cssname" => "sel"));
+	PaperListField::make("selconf", PaperList::FIELD_SELECTOR_CONFLICT, 1, array("cssname" => "confselector"));
+	PaperListField::make("id", PaperList::FIELD_ID, 1, array("minimal" => true, "sortable" => true));
+	PaperListField::make("title", PaperList::FIELD_TITLE, 1, array("minimal" => true, "sortable" => true));
+	PaperListField::make("statusfull", PaperList::FIELD_STATUS, 1, array("cssname" => "status", "sortable" => true));
+	PaperListField::make("revtypetext", PaperList::FIELD_REVIEWER_TYPE, 1, array("cssname" => "text", "sortable" => true));
+	PaperListField::make("revtype", PaperList::FIELD_REVIEWER_TYPE_ICON, 1, array("sortable" => true));
+	PaperListField::make("revstatus", PaperList::FIELD_REVIEWER_STATUS, 1, array("cssname" => "text"));
+	PaperListField::make("revdelegated", PaperList::FIELD_REVIEWER_MONITOR, 1, array("cssname" => "text", "sortable" => true));
+	PaperListField::make("status", PaperList::FIELD_STATUS_SHORT, 1, array("sortable" => true));
+	PaperListField::make("assrev", PaperList::FIELD_ASSIGN_REVIEW, 1, true);
+	PaperListField::make("topicscore", PaperList::FIELD_TOPIC_INTEREST, 1, true);
+	PaperListField::make("topics", PaperList::FIELD_OPT_TOPIC_NAMES, 2, 13);
+	PaperListField::make("revpref", PaperList::FIELD_REVIEWER_PREFERENCE, 1, true);
+	PaperListField::make("revprefedit", PaperList::FIELD_EDIT_REVIEWER_PREFERENCE, 1, true);
+	PaperListField::make("revstat", PaperList::FIELD_REVIEWS_STATUS, 1, true);
+	PaperListField::make("desirability", PaperList::FIELD_DESIRABILITY, 1, true);
+	PaperListField::make("revprefall", PaperList::FIELD_ALL_PREFERENCES, 2);
+	PaperListField::make("authors", PaperList::FIELD_OPT_AUTHORS, 2, 3);
+	PaperListField::make("tags", PaperList::FIELD_TAGS, 2, 4);
+	PaperListField::make("abstract", PaperList::FIELD_OPT_ABSTRACT, 2, 5);
+	PaperListField::make("reviewers", PaperList::FIELD_OPT_ALL_REVIEWER_NAMES, 2, 10);
+	PaperListField::make("lead", PaperList::FIELD_LEAD, 2, 12);
+	PaperListField::make("shepherd", PaperList::FIELD_SHEPHERD, 2, 11);
+	PaperListField::make("pcconf", PaperList::FIELD_OPT_PC_CONFLICTS, 2, 14);
+	PaperListField::make("collab", PaperList::FIELD_COLLABORATORS, 2, 15);
+	PaperListField::make("authorsmatch", PaperList::FIELD_AUTHOR_MATCH, 2);
+	PaperListField::make("collabmatch", PaperList::FIELD_COLLABORATORS_MATCH, 2);
 
 	$nextfield = PaperList::FIELD_SCORE;
 	foreach ($reviewScoreNames as $k => $n) {
-	    $fdef = PaperListField::make($nextfield, $n, 1, array("minimal" => true, "sortable" => true, "foldnum" => $nextfield));
+	    $fdef = PaperListField::make($n, $nextfield, 1, array("minimal" => true, "sortable" => true, "foldnum" => $nextfield));
 	    $fdef->cssname = "score";
             $fdef->score = $n;
             $fdef->group_id = PaperList::FIELD_SCORE;
@@ -2032,7 +2034,7 @@ class PaperListField {
 	    $result = $Conf->q("select * from Formula order by lower(name)");
 	    while (($row = edb_orow($result))) {
 		$fid = $row->formulaId;
-		$fdef = PaperListField::make($nextfield, "formula$fid", 1, array("minimal" => true, "sortable" => true, "foldnum" => $nextfold));
+		$fdef = PaperListField::make("formula$fid", $nextfield, 1, array("minimal" => true, "sortable" => true, "foldnum" => $nextfold));
 		$fdef->cssname = "formula";
                 $fdef->formula = $row;
                 $fdef->group_id = PaperList::FIELD_FORMULA;
@@ -2050,7 +2052,7 @@ class PaperListField {
                 if ($v->vote || $v->rank)
                     $vt[] = $v->tag;
 	    foreach ($vt as $n) {
-		$fdef = PaperListField::make($nextfield, "tagrep_" . preg_replace('/\W+/', '_', $n), 2, $nextfold);
+		$fdef = PaperListField::make("tagrep_" . preg_replace('/\W+/', '_', $n), $nextfield, 2, $nextfold);
 		$fdef->cssname = "tagrep";
                 $fdef->tag = $n;
                 $fdef->group_id = PaperList::FIELD_TAGREPORT;

@@ -1293,7 +1293,7 @@ div.pl_splitcol_ctr {
 div.pl_splitcol_ctr_ctr {
 	overflow-x: hidden;
 }
-.pl_title, .pl_reviewer, .pl_name, .pl_email, .pl_affiliation {
+.pl_title, .pl_name, .pl_email, .pl_affiliation, .pl_text {
 	padding-right: 1em;
 }
 .pl_activityicon {
@@ -1311,35 +1311,40 @@ div.pl_splitcol_ctr_ctr {
 	font-size: 90%;
 	white-space: nowrap;
 }
-table.pltable th.pl_topicMatch {
+table.pltable th.pl_topicscore {
 	text-align: center;
 	padding-left: 0.5em;
 	padding-right: 0.5em;
 }
 table.pltable th.pl_id,
-table.pltable th.pl_confselector,
 .pl_score, table.pltable th.pl_score, table.ppltable th.pl_score,
 table.altable th.pl_id,
-table.pltable th.pl_selector {
+table.pltable th.pl_sel,
+table.pltable th.pl_selector, /* obsolete */
+table.pltable th.pl_confselector {
 	text-align: center;
 	white-space: nowrap;
 }
-table.pltable th.pl_revtypei {
+table.pltable th.pl_revtype {
 	padding-left: 3px;
 	padding-right: 3px;
 }
-td.pl_revtypei {
+td.pl_revtype {
 	padding-left: 1.5em;
 	padding-right: 1.5em;
 	white-space: nowrap;
 }
-div.pl_revtypeiround {
+div.pl_revtype_round {
 	margin-right: -1.2em;
 }
-.pl_revstat, table.pltable th.pl_revstat, table.pltable th.pl_formula {
+.pl_revstat,
+table.pltable th.pl_revstat,
+table.pltable th.pl_formula {
 	text-align: center;
 }
-.pl_selector, .pl_footselector {
+.pl_sel,
+.pl_selector, /* obsolete */
+.pl_footselector {
 	text-align: right;
 	white-space: nowrap;
 }
@@ -1347,21 +1352,23 @@ div.pl_revtypeiround {
 	vertical-align: top;
 	padding-right: 4px;
 }
-table.ppltable td.pl_selector {
+table.ppltable td.pl_sel,
+table.ppltable td.pl_selector /* obsolete */ {
 	padding-right: 3px;
 }
 .pl_confselector {
 	text-align: center;
 	white-space: nowrap;
 }
-table.pltable th.pl_selector {
+table.pltable th.pl_sel,
+table.pltable th.pl_selector /* obsolete */ {
 	padding-right: 0;
 }
 span.pl_rownum {
 	font-size: smaller;
 	color: #333333;
 }
-td.pl_id, td.pl_topicMatch, td.pl_revpref,
+td.pl_id, td.pl_topicscore, td.pl_revpref,
 td.pl_desirability, td.pl_visits, td.pl_formula {
 	text-align: right;
 	padding-left: 0.4em;
@@ -1403,7 +1410,10 @@ td.pl_lastvisit, td.al_time {
 	font-size: smaller;
 	white-space: nowrap;
 }
-td.pl_name, td.al_name, td.pl_assrev, td.pl_editrevpref {
+td.pl_name,
+td.al_name,
+td.pl_assrev,
+td.pl_revprefedit {
 	white-space: nowrap;
 }
 table.ppltable td.pl_score {
