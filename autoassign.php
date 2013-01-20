@@ -730,6 +730,7 @@ if (isset($assignments) && count($assignments) > 0) {
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => join(" ", array_keys($assignments))));
     $plist = new PaperList($search, array("extraText" => $atext));
     $plist->showHeader = PaperList::HEADER_TITLES;
+    $plist->display .= " reviewers ";
     echo $plist->text("reviewers", $Me);
 
     if ($atype != "prefconflict") {
@@ -830,6 +831,7 @@ if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $plist = new PaperList($search);
     $plist->showHeader = PaperList::HEADER_TITLES;
+    $plist->display .= " reviewers ";
     $plist->footer = false;
     $plist->papersel = array_fill_keys($papersel, 1);
     foreach (preg_split('/\s+/', defval($_REQUEST, "prevpap")) as $p)

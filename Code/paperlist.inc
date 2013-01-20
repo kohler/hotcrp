@@ -20,15 +20,12 @@ class PaperList extends BaseList {
 
     const FIELD_STATUS = 20;
     const FIELD_STATUS_SHORT = 21;
-    const FIELD_REVIEWER = 25;
     const FIELD_REVIEWER_TYPE = 26;
     const FIELD_REVIEWER_TYPE_ICON = 27;
     const FIELD_REVIEWER_STATUS = 28;
     const FIELD_REVIEWER_MONITOR = 29;
     const FIELD_ASSIGN_REVIEW = 35;
     const FIELD_TOPIC_INTEREST = 36;
-    const FIELD_TOPIC_NAMES = 37;
-    const FIELD_ALL_REVIEWER_NAMES = 38;
     const FIELD_REVIEWER_PREFERENCE = 39;
     const FIELD_EDIT_REVIEWER_PREFERENCE = 40;
     const FIELD_REVIEWS_STATUS = 41;
@@ -36,7 +33,6 @@ class PaperList extends BaseList {
     const FIELD_ALL_PREFERENCES = 44;
     const FIELD_AUTHOR_MATCH = 47;
     const FIELD_COLLABORATORS_MATCH = 48;
-    const FIELD_CONFLICT_CONFIRM = 49;
 
     const FIELD_OPT_AUTHORS = 70;
     const FIELD_TAGS = 71;
@@ -146,22 +142,16 @@ class PaperList extends BaseList {
 		return false;
 	    $queryOptions["topicInterestScore"] = 1;
 	    break;
-	case self::FIELD_TOPIC_NAMES:
-	    if (!count($this->rf->topicName))
-		return false;
-	    $queryOptions["topics"] = 1;
-	    break;
 	case self::FIELD_OPT_TOPIC_NAMES:
 	    if (!count($this->rf->topicName))
 		return false;
 	    if (!$folded)
 		$queryOptions["topics"] = 1;
 	    break;
-	case self::FIELD_ALL_REVIEWER_NAMES:
 	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
 	    if (!$this->contact->canViewReviewerIdentity(true, null))
 		return false;
-	    if ($f->id == self::FIELD_ALL_REVIEWER_NAMES || !$folded) {
+	    if (!$folded) {
 		$queryOptions["reviewList"] = 1;
 		if ($this->contact->privChair)
 		    $queryOptions["allReviewerPreference"] = $queryOptions["topics"] = 1;
@@ -212,7 +202,6 @@ class PaperList extends BaseList {
             $f->formula_function = PaperExpr::compile_function($expr, $this->contact);
             PaperExpr::add_query_options($queryOptions, $expr, $this->contact);
 	    break;
-	case self::FIELD_REVIEWER:
 	case self::FIELD_REVIEWER_MONITOR:
 	    $queryOptions['allReviewScores'] = 1;
 	    $queryOptions['reviewerName'] = 1;
@@ -381,7 +370,6 @@ class PaperList extends BaseList {
 	case self::FIELD_STATUS_SHORT:
 	    usort($rows, array("PaperList", "_sortStatus"));
 	    break;
-	case self::FIELD_REVIEWER:
 	case self::FIELD_REVIEWER_MONITOR:
 	    usort($rows, array("PaperList", "_sortReviewer"));
 	    break;
@@ -484,7 +472,6 @@ class PaperList extends BaseList {
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    return "Status";
-	case self::FIELD_REVIEWER:
 	case self::FIELD_REVIEWER_MONITOR:
 	    return "Reviewer";
 	case self::FIELD_REVIEWER_TYPE:
@@ -503,14 +490,8 @@ class PaperList extends BaseList {
 	    return "Assignment";
 	case self::FIELD_TOPIC_INTEREST:
 	    return "Topic<br/>score";
-	case self::FIELD_TOPIC_NAMES:
 	case self::FIELD_OPT_TOPIC_NAMES:
 	    return "Topics";
-	case self::FIELD_ALL_REVIEWER_NAMES:
-	    if ($row === null || !isset($this->reviewList[$row->paperId]))
-		return "Reviewers";
-	    else
-		return "Reviewers (" . count($this->reviewList[$row->paperId]) . ")";
 	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
 	    return "Reviewers";
 	case self::FIELD_OPT_PC_CONFLICTS:
@@ -552,8 +533,6 @@ class PaperList extends BaseList {
 	    return "Shepherd";
 	case self::FIELD_COLLABORATORS:
 	    return "Collaborators";
-	case self::FIELD_CONFLICT_CONFIRM:
-	    return "";
 	default:
 	    return "&lt;$f->id&gt;?";
 	}
@@ -756,7 +735,6 @@ class PaperList extends BaseList {
 	    return !$row->reviewType && $row->conflictType <= 0;
 	case self::FIELD_REVIEWER_STATUS:
 	    return !$row->reviewId;
-	case self::FIELD_TOPIC_NAMES:
 	case self::FIELD_OPT_TOPIC_NAMES:
 	    return isset($row->topicIds) && $row->topicIds == "";
 	case self::FIELD_SCORE:
@@ -854,8 +832,6 @@ class PaperList extends BaseList {
 	    if ($f->id == self::FIELD_STATUS_SHORT)
 		$long = ($long == 2 ? -2 : -1);
 	    return $this->contact->paperStatus($row->paperId, $row, $long);
-	case self::FIELD_REVIEWER:
-	    return Text::user_html($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
 	case self::FIELD_REVIEWER_MONITOR:
 	    $t = Text::user_html($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail) . "<br /><small>Last login: ";
 	    return $t . ($row->reviewLastLogin ? $Conf->printableTimeShort($row->reviewLastLogin) : "Never") . "</small>";
@@ -934,9 +910,10 @@ class PaperList extends BaseList {
 		$c .= " disabled='disabled'";
 	    if ($f->id != self::FIELD_SELECTOR_CONFLICT)
 		$c .= " onclick='pselClick(event,this)'";
-	    return "<span class=\"pl_rownum fx6\">" . $this->count . ". </span>" . "<input type='checkbox' class='cb' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
-	case self::FIELD_CONFLICT_CONFIRM:
-	    return "<span id='assrev" . $row->paperId . "ok'></span>";
+	    $t = "<span class=\"pl_rownum fx6\">" . $this->count . ". </span>" . "<input type='checkbox' class='cb' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
+            if ($f->id == self::FIELD_SELECTOR_CONFLICT)
+                $t .= "<span id='assrev" . $row->paperId . "ok' class='ajaxcheck'></span>";
+            return $t;
 	case self::FIELD_ASSIGN_REVIEW:
 	    if ($row->conflictType >= CONFLICT_AUTHOR)
 		return "<span class='author'>Author</span>";
@@ -950,10 +927,8 @@ class PaperList extends BaseList {
 		. "<span id='assrev" . $row->paperId . "ok'></span>";
 	case self::FIELD_TOPIC_INTEREST:
 	    return htmlspecialchars($row->topicInterestScore + 0);
-	case self::FIELD_TOPIC_NAMES:
 	case self::FIELD_OPT_TOPIC_NAMES:
 	    return join(", ", $this->rf->webTopicArray($row->topicIds, defval($row, "topicInterest")));
-	case self::FIELD_ALL_REVIEWER_NAMES:
 	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
 	    $prefs = self::_rowPreferences($row);
 	    $n = "";
@@ -1318,8 +1293,6 @@ class PaperList extends BaseList {
 	  case "reviewers":
 	  case "reviewersSel":
 	    return "Proposed assignments";
-	  case "revs":
-	    return "Reviews";
 	  default:
 	    return null;
 	}
@@ -1362,12 +1335,12 @@ class PaperList extends BaseList {
 	    break;
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
-	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_PREFERENCE, self::FIELD_TOPIC_INTEREST, self::FIELD_DESIRABILITY, self::FIELD_ASSIGN_REVIEW, self::FIELD_OPT_AUTHORS, self::FIELD_TOPIC_NAMES, self::FIELD_ALL_REVIEWER_NAMES, self::FIELD_ALL_PREFERENCES, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH);
+	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_PREFERENCE, self::FIELD_TOPIC_INTEREST, self::FIELD_DESIRABILITY, self::FIELD_ASSIGN_REVIEW, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_ALL_PREFERENCES, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH);
 	    break;
 	  case "conflict":
 	    $this->paperLink = "assign";
 	    $this->defaultFoldRow = true;
-	    $fields = array(self::FIELD_SELECTOR_CONFLICT, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_CONFLICT_CONFIRM, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH);
+	    $fields = array(self::FIELD_SELECTOR_CONFLICT, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH);
 	    break;
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
@@ -1375,15 +1348,11 @@ class PaperList extends BaseList {
 	    break;
 	  case "reviewers":
 	    $this->paperLink = "assign";
-	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_STATUS_SHORT, self::FIELD_ALL_REVIEWER_NAMES);
+	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_STATUS_SHORT, self::FIELD_OPT_ALL_REVIEWER_NAMES);
 	    break;
 	  case "reviewersSel":
 	    $this->paperLink = "assign";
-	    $fields = array(self::FIELD_SELECTOR_ON, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_STATUS_SHORT, self::FIELD_ALL_REVIEWER_NAMES);
-	    break;
-	  case "revs":
-	    $this->paperLink = "review";
-	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER, self::FIELD_REVIEWER_TYPE_ICON);
+	    $fields = array(self::FIELD_SELECTOR_ON, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_STATUS_SHORT, self::FIELD_OPT_ALL_REVIEWER_NAMES);
 	    break;
 	  default:
 	    return null;
@@ -2024,7 +1993,6 @@ class PaperListField {
 	PaperListField::make(PaperList::FIELD_ID, "id", 1, array("minimal" => true, "sortable" => true));
 	PaperListField::make(PaperList::FIELD_TITLE, "title", 1, array("minimal" => true, "sortable" => true));
 	PaperListField::make(PaperList::FIELD_STATUS, "status", 1, true);
-	PaperListField::make(PaperList::FIELD_REVIEWER, "reviewer", 1, true);
 	PaperListField::make(PaperList::FIELD_REVIEWER_TYPE, "reviewer", 1, true);
 	PaperListField::make(PaperList::FIELD_REVIEWER_TYPE_ICON, "revtypei", 1, true);
 	PaperListField::make(PaperList::FIELD_REVIEWER_STATUS, "reviewer", 1);
@@ -2032,12 +2000,9 @@ class PaperListField {
 	PaperListField::make(PaperList::FIELD_STATUS_SHORT, "status", 1, true);
 	PaperListField::make(PaperList::FIELD_ASSIGN_REVIEW, "assrev", 1, true);
 	PaperListField::make(PaperList::FIELD_TOPIC_INTEREST, "topicMatch", 1, true);
-	PaperListField::make(PaperList::FIELD_TOPIC_NAMES, "topics", 2);
 	PaperListField::make(PaperList::FIELD_OPT_TOPIC_NAMES, "topics", 2, 13);
-	PaperListField::make(PaperList::FIELD_ALL_REVIEWER_NAMES, "reviewers", 2);
 	PaperListField::make(PaperList::FIELD_REVIEWER_PREFERENCE, "revpref", 1, true);
 	PaperListField::make(PaperList::FIELD_EDIT_REVIEWER_PREFERENCE, "editrevpref", 1, true);
-	PaperListField::make(PaperList::FIELD_CONFLICT_CONFIRM, "conflictconfirm", 1);
 	PaperListField::make(PaperList::FIELD_REVIEWS_STATUS, "revstat", 1, true);
 	PaperListField::make(PaperList::FIELD_DESIRABILITY, "desirability", 1, true);
 	PaperListField::make(PaperList::FIELD_ALL_PREFERENCES, "allPreferences", 2);

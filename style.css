@@ -670,17 +670,20 @@ div.aahc.alert .aa, div.aahc.alert .aax {
 
 
 /* Ajax checks */
-img.ajaxcheck, img.ajaxcheck_good, img.ajaxcheck_bad {
+span.ajaxcheck, span.ajaxcheck_good, span.ajaxcheck_bad {
+	display: inline-block;
+}
+.ajaxcheck, .ajaxcheck_good, .ajaxcheck_bad {
 	width: 8px;
 	height: 9px;
 }
-img.ajaxcheck_good, img.ajaxcheck_bad {
+.ajaxcheck_good, .ajaxcheck_bad {
 	background-image: url(images/sprite.png?2);
 }
-img.ajaxcheck_good {
+.ajaxcheck_good {
 	background-position: -52px 0;
 }
-img.ajaxcheck_bad {
+.ajaxcheck_bad {
 	background-position: -52px -10px;
 }
 
@@ -1314,6 +1317,7 @@ table.pltable th.pl_topicMatch {
 	padding-right: 0.5em;
 }
 table.pltable th.pl_id,
+table.pltable th.pl_confselector,
 .pl_score, table.pltable th.pl_score, table.ppltable th.pl_score,
 table.altable th.pl_id,
 table.pltable th.pl_selector {
@@ -1362,9 +1366,6 @@ td.pl_desirability, td.pl_visits, td.pl_formula {
 	text-align: right;
 	padding-left: 0.4em;
 	padding-right: 0.4em;
-}
-td.pl_conflictconfirm {
-	padding: 0;
 }
 td.plheading {
 	text-align: center;
