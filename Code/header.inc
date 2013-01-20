@@ -171,6 +171,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/Code/unicodehelper.php");
     else if ($class_name == "Qobject")
         require_once("$ConfSitePATH/Code/qobject.php");
+    else if ($class_name == "PaperColumn")
+        require_once("$ConfSitePATH/Code/papercolumn.php");
 }
 
 // If you have the PEAR::Mail libraries installed globally,

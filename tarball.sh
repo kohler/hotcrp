@@ -99,6 +99,7 @@ Code/mailer.php
 Code/mailtemplate.inc
 Code/mimetype.php
 Code/paperactions.php
+Code/papercolumn.php
 Code/paperexpr.inc
 Code/paperlist.inc
 Code/paperoption.inc

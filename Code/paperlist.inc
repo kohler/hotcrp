@@ -51,32 +51,36 @@ class PaperList extends BaseList {
     const HEADER_TITLES = 1;
     const HEADER_NONE = 0;
 
-    var $showHeader;
+    // creator can set to change behavior
+    public $showHeader;
+    public $papersel;
+    public $display;
+
     var $sortField;
     var $sortInfo;
     var $sortAverage;
     var $reverseSort;
     var $scoreSort;
     var $sortable;
-    var $defaultFoldRows;
-    var $foldRow;
     var $listNumber;
     var $contact;
     var $scoresOk;
     var $search;
     var $extraText;
-    var $display;
     var $aufull;
     var $paperLink;
     var $paperLinkArgs;
     var $showConflict;
     var $footer;
-    var $papersel;
     var $rf;
-    private $tagger;
+    public $tagger;
     var $viewmap;
     var $reviewList;
     var $atab;
+
+    // used during render
+    private $defaultFoldRow;
+    public $foldRow;
 
     // collected during render and exported to caller
     public $count;
@@ -130,119 +134,6 @@ class PaperList extends BaseList {
 	$this->rf = reviewForm();
 	$this->atab = defval($_REQUEST, "atab", "");
 	unset($_REQUEST["atab"]);
-    }
-
-    function selector($f, &$queryOptions, $folded) {
-	global $Conf;
-	switch ($f->group_id) {
-	case self::FIELD_TOPIC_INTEREST:
-	    if (!count($this->rf->topicName))
-		return false;
-	    $queryOptions["topicInterestScore"] = 1;
-	    break;
-	case self::FIELD_OPT_TOPIC_NAMES:
-	    if (!count($this->rf->topicName))
-		return false;
-	    if (!$folded)
-		$queryOptions["topics"] = 1;
-	    break;
-	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
-	    if (!$this->contact->canViewReviewerIdentity(true, null))
-		return false;
-	    if (!$folded) {
-		$queryOptions["reviewList"] = 1;
-		if ($this->contact->privChair)
-		    $queryOptions["allReviewerPreference"] = $queryOptions["topics"] = 1;
-	    }
-	    break;
-	case self::FIELD_REVIEWER_PREFERENCE:
-	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
-	    $queryOptions['reviewerPreference'] = 1;
-	    $Conf->footerScript("addRevprefAjax()");
-	    break;
-	case self::FIELD_ASSIGN_REVIEW:
-	    $Conf->footerScript("addAssrevAjax()");
-	    break;
-	case self::FIELD_SELECTOR_CONFLICT:
-	    $Conf->footerScript("addConflictAjax()");
-	    break;
-	case self::FIELD_DESIRABILITY:
-	    $queryOptions['desirability'] = 1;
-	    break;
-	case self::FIELD_ALL_PREFERENCES:
-	    $queryOptions['allReviewerPreference'] = $queryOptions['topics']
-		= $queryOptions['allConflictType'] = 1;
-	    break;
-	case self::FIELD_SCORE:
-	    if (!$this->scoresOk)
-		return false;
-	    if (!$folded || $f->sorting) {
-		$revView = $this->contact->viewReviewFieldsScore(null, true);
-		if ($this->rf->authorView[$f->score] <= $revView)
-		    return false;
-		if (!isset($queryOptions["scores"]))
-		    $queryOptions["scores"] = array();
-		$queryOptions["scores"][$f->score] = true;
-                $f->max = $this->rf->maxNumericScore($f->score);
-	    }
-	    break;
-	case self::FIELD_FORMULA:
-	    $revView = 0;
-	    if ($this->contact->amReviewer()
-		&& $this->search->limitName != "a")
-		$revView = $this->contact->viewReviewFieldsScore(null, true);
-	    if (!$this->scoresOk
-		|| $f->formula->authorView <= $revView)
-		return false;
-            require_once("paperexpr.inc");
-            if (!($expr = PaperExpr::parse($f->formula->expression, true)))
-                return false;
-            $f->formula_function = PaperExpr::compile_function($expr, $this->contact);
-            PaperExpr::add_query_options($queryOptions, $expr, $this->contact);
-	    break;
-	case self::FIELD_REVIEWER_MONITOR:
-	    $queryOptions["allReviewScores"] = 1;
-	    $queryOptions["reviewerName"] = 1;
-	    break;
-	case self::FIELD_REVIEWER_TYPE:
-	case self::FIELD_REVIEWER_TYPE_ICON:
-	    // if search names a specific reviewer, link there
-	    if ($this->search->reviewerContact
-		&& !isset($queryOptions['allReviewScores'])) {
-		$queryOptions['reviewerContact'] = $this->search->reviewerContact;
-		if ($this->search->reviewerContact != $this->contact->contactId)
-		    $this->showConflict = false;
-	    }
-	    break;
-	case self::FIELD_TAGS:
-	    if (!$this->contact->isPC)
-		return false;
-	    if (!$folded)
-		$queryOptions["tags"] = 1;
-	    break;
-	case self::FIELD_TAGREPORT:
-	    if (!$this->contact->privChair)
-		return false;
-	    if (!$folded)
-		$queryOptions["tags"] = 1;
-	    break;
-	case self::FIELD_LEAD:
-	case self::FIELD_SHEPHERD:
-	    if (!$this->contact->isPC)
-		return false;
-	    break;
-	case self::FIELD_COLLABORATORS:
-	    if (!$Conf->setting("sub_collab"))
-		return false;
-	    break;
-	case self::FIELD_OPT_PC_CONFLICTS:
-	    if (!$this->contact->privChair)
-		return false;
-	    if (!$folded)
-		$queryOptions["allConflictType"] = 1;
-	    break;
-	}
-	return true;
     }
 
     function _sortBase($a, $b) {
@@ -323,7 +214,7 @@ class PaperList extends BaseList {
 	$x = 0;
 	$ot = $this->search->orderTags;
 	for ($i = 0; $x == 0 && $i < count($ot); ++$i) {
-	    $n = "tagIndex" . ($i?$i:"");
+	    $n = "tagIndex" . ($i ? $i : "");
 	    if (($a->conflictType > 0 && $this->sortInfo) || $a->$n === null)
 		$av = 2147483647;
 	    else
@@ -347,7 +238,7 @@ class PaperList extends BaseList {
 
     function _sort($rows, $pidarray) {
 	global $Conf;
-        $f = defval(PaperListField::$by_id, $this->sortField);
+        $f = PaperListField::lookup($this->sortField);
 	switch ($f ? $f->group_id : $this->sortField) {
 	case self::FIELD_ID:
 	    ksort($rows);
@@ -429,7 +320,7 @@ class PaperList extends BaseList {
 	    && ($always || defval($_REQUEST, "sort", "") != "")
 	    && ($this->sortField != 1 || $this->reverseSort)) {
 	    $t = $this->sortField . ($this->reverseSort ? "R" : "");
-            $f = defval(PaperListField::$by_id, $this->sortField);
+            $f = PaperListField::lookup($this->sortField);
 	    if ($f && $f->group_id == self::FIELD_SCORE)
 		$t .= $this->scoreSort;
 	    return $t;
@@ -461,99 +352,6 @@ class PaperList extends BaseList {
 	}
     }
 
-    function header($f, $ordinal = 0, $row = null) {
-	switch ($f->group_id) {
-	case self::FIELD_ID:
-	    return "ID";
-	case self::FIELD_TITLE:
-	    return "Title";
-	case self::FIELD_STATUS:
-	case self::FIELD_STATUS_SHORT:
-	    return "Status";
-	case self::FIELD_REVIEWER_MONITOR:
-	    return "Reviewer";
-	case self::FIELD_REVIEWER_TYPE:
-	case self::FIELD_REVIEWER_TYPE_ICON:
-	    return "<span class='hastitle' title='Reviewer type'>Review</span>";
-	case self::FIELD_REVIEWER_STATUS:
-	    return "Review status";
-	case self::FIELD_REVIEWS_STATUS:
-	    return "<span class='hastitle' title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</span>";
-	case self::FIELD_SELECTOR:
-	case self::FIELD_SELECTOR_ON:
-	    return ($ordinal ? "&nbsp;" : "");
-	case self::FIELD_SELECTOR_CONFLICT:
-	    return "Conflict?";
-	case self::FIELD_ASSIGN_REVIEW:
-	    return "Assignment";
-	case self::FIELD_TOPIC_INTEREST:
-	    return "Topic<br/>score";
-	case self::FIELD_OPT_TOPIC_NAMES:
-	    return "Topics";
-	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
-	    return "Reviewers";
-	case self::FIELD_OPT_PC_CONFLICTS:
-	    return "PC conflicts";
-	case self::FIELD_REVIEWER_PREFERENCE:
-	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
-	    return "Preference";
-	case self::FIELD_DESIRABILITY:
-	    return "Desirability";
-	case self::FIELD_ALL_PREFERENCES:
-	    return "Preferences";
-	case self::FIELD_SCORE:
-	    return $this->rf->webFieldAbbrev($f->score);
-	case self::FIELD_FORMULA: {
-            if ($f->formula->heading == "")
-                $x = $f->formula->name;
-            else
-                $x = $f->formula->heading;
-	    if ($f->formula->headingTitle && $f->formula->headingTitle != $x)
-		return "<span class=\"hastitle\" title=\"" . htmlspecialchars($f->formula->headingTitle) . "\">" . htmlspecialchars($x) . "</span>";
-	    else
-		return htmlspecialchars($x);
-	}
-	case self::FIELD_AUTHOR_MATCH:
-	    return "<strong>Potential conflict in authors</strong>";
-	case self::FIELD_COLLABORATORS_MATCH:
-	    return "<strong>Potential conflict in collaborators</strong>";
-	case self::FIELD_OPT_AUTHORS:
-	    return "Authors";
-	case self::FIELD_TAGS:
-	    return "Tags";
-	case self::FIELD_TAGREPORT:
-	    return "“" . $f->tag . "” tag report";
-	case self::FIELD_OPT_ABSTRACT:
-	    return "Abstract";
-	case self::FIELD_LEAD:
-	    return "Discussion lead";
-	case self::FIELD_SHEPHERD:
-	    return "Shepherd";
-	case self::FIELD_COLLABORATORS:
-	    return "Collaborators";
-	default:
-	    return "&lt;$f->id&gt;?";
-	}
-    }
-
-    function col($f) {
-	switch ($f->group_id) {
-	case self::FIELD_ID:
-	case self::FIELD_REVIEWS_STATUS:
-	case self::FIELD_SELECTOR:
-	case self::FIELD_SELECTOR_ON:
-	case self::FIELD_SELECTOR_CONFLICT:
-	case self::FIELD_TOPIC_INTEREST:
-	case self::FIELD_REVIEWER_TYPE_ICON:
-	case self::FIELD_REVIEWER_PREFERENCE:
-	case self::FIELD_DESIRABILITY:
-	case self::FIELD_SCORE:
-	case self::FIELD_FORMULA:
-	    return "<col width='0*' />";
-	default:
-	    return "<col />";
-	}
-    }
 
     function _contentDownload($row) {
 	global $Conf;
@@ -578,19 +376,6 @@ class PaperList extends BaseList {
 	    return $t . $Conf->cacheableImage("postscript$finalsuffix.png", "[PS]", $finaltitle) . "</a>";
 	else
 	    return $t . $Conf->cacheableImage("generic$finalsuffix.png", "[Download]", $finaltitle) . "</a>";
-    }
-
-    function _conflictMatches($input, $preg) {
-	$text = "";
-	foreach (explode("\n", $input) as $line)
-            if (($line = trim($line)) != "") {
-                $line = Text::highlight($line, $preg, $n);
-                if ($n)
-                    $text .= ($text ? "; " : "") . $line;
-            }
-	if ($text != "")
-	    $this->foldRow = false;
-	return $text;
     }
 
     function _paperLink($row) {
@@ -625,56 +410,11 @@ class PaperList extends BaseList {
 	    return "";
     }
 
-    function authorInfo($row, $contact, $full, $highlight) {
-	global $Conf;
-	if (!$contact->privChair && !$contact->canViewAuthors($row, true))
-	    return "";
-	cleanAuthor($row);
-	$aus = array();
-	if ($full) {
-	    $lastaff = "";
-	    $anyaff = false;
-	    $affaus = array();
-	    foreach ($row->authorTable as $au) {
-		if ($au[3] != $lastaff && count($aus)) {
-		    $affaus[] = array($aus, $lastaff);
-		    $aus = array();
-		    $anyaff = $anyaff || ($au[3] != "");
-		}
-		$lastaff = $au[3];
-		$n = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $au[2];
-		$aus[] = Text::highlight($n, $highlight);
-	    }
-	    if (count($aus))
-		$affaus[] = array($aus, $lastaff);
-	    foreach ($affaus as &$ax) {
-		$aff = ($ax[1] == "" && $anyaff ? "unaffiliated" : $ax[1]);
-                $aff = Text::highlight($aff, $highlight);
-		$ax = commajoin($ax[0]) . ($aff ? " <span class='auaff'>($aff)</span>" : "");
-	    }
-	    return commajoin($affaus);
-	} else if (!$highlight) {
-	    foreach ($row->authorTable as $au)
-		$aus[] = Text::abbrevname_html($au);
-	    return join(", ", $aus);
-	} else {
-	    foreach ($row->authorTable as $au) {
-		$first = htmlspecialchars($au[0]);
-		$x = Text::highlight(trim("$au[0] $au[1]"), $highlight, $nm);
-		if ((!$nm || substr($x, 0, strlen($first)) == $first)
-		    && ($initial = Text::initial($first)) != "")
-		    $x = $initial . substr($x, strlen($first));
-		$aus[] = $x;
-	    }
-	    return join(", ", $aus);
-	}
-    }
-
     static function wrapChairConflict($text) {
 	return "<span class='fn20'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Override conflicts</a></span><span class='fx20'>$text</span>";
     }
 
-    function maybeConflict($text, $visible) {
+    public function maybeConflict($text, $visible) {
 	if ($visible)
 	    return $text;
 	else if ($this->contact->privChair)
@@ -683,15 +423,15 @@ class PaperList extends BaseList {
 	    return "";
     }
 
-    function _contentPC($contactId, $visible) {
+    public function _contentPC($contactId, $visible) {
 	$pcm = pcMembers();
 	if (isset($pcm[$contactId]))
-	    return self::maybeConflict(Text::name_html($pcm[$contactId]), $visible);
+	    return $this->maybeConflict(Text::name_html($pcm[$contactId]), $visible);
 	else
 	    return "";
     }
 
-    function _rowPreferences($row) {
+    static function _rowPreferences($row) {
 	// reviewer preferences
 	$prefs = array();
 	if (isset($row->allReviewerPreference))
@@ -726,41 +466,6 @@ class PaperList extends BaseList {
 	return $prefs;
     }
 
-    function contentEmpty($f, $row) {
-	global $Conf;
-	switch ($f->group_id) {
-	case self::FIELD_REVIEWER_TYPE:
-	    return !$row->reviewType && $row->conflictType <= 0;
-	case self::FIELD_REVIEWER_STATUS:
-	    return !$row->reviewId;
-	case self::FIELD_OPT_TOPIC_NAMES:
-	    return isset($row->topicIds) && $row->topicIds == "";
-	case self::FIELD_SCORE:
-	    return !$this->contact->canViewReview($row, null, $fakeWhyNotView, true) && !$this->contact->privChair;
-	case self::FIELD_AUTHOR_MATCH:
-	    return defval($this->search->matchPreg, "authorInformation", "") == "";
-	case self::FIELD_COLLABORATORS_MATCH:
-	    return defval($this->search->matchPreg, "collaborators", "") == "";
-	case self::FIELD_OPT_ABSTRACT:
-	    return $row->abstract == "";
-	case self::FIELD_TAGS:
-	case self::FIELD_TAGREPORT:
-	    return !$this->contact->canViewTags($row);
-	case self::FIELD_LEAD:
-	    return (!$this->contact->actPC($row, true) || !$row->leadContactId);
-	case self::FIELD_SHEPHERD:
-	    return (!$this->contact->canViewDecision($row, true)
-		    || !$row->shepherdContactId);
-	case self::FIELD_COLLABORATORS:
-	    return ($row->collaborators == ""
-		    || strcasecmp($row->collaborators, "None") == 0
-		    || (!$this->contact->privChair
-			&& !$this->contact->canViewAuthors($row, true)));
-	default:
-	    return false;
-	}
-    }
-
     function _reviewAnalysis($row) {
 	global $Conf;
 	$ranal = (object) array("completion" => "", "delegated" => false,
@@ -792,7 +497,7 @@ class PaperList extends BaseList {
 	return $ranal;
     }
 
-    function _reviewIcon($row, $ranal, $includeLink) {
+    static function _reviewIcon($row, $ranal, $includeLink) {
 	global $reviewTypeName, $Conf;
 	$alt = $reviewTypeName[$row->reviewType] . " review";
 	if ($ranal->needsSubmit)
@@ -803,252 +508,6 @@ class PaperList extends BaseList {
 	if ($ranal->round)
 	    $t .= "&nbsp;<span class='revround' title='Review round'>" . $ranal->round . "</span>";
 	return $t;
-    }
-
-    function content($f, $row) {
-	global $Conf;
-	switch ($f->group_id) {
-	case self::FIELD_ID:
-	    $pl = $this->_paperLink($row);
-	    return "<a href='$pl' tabindex='4'>#$row->paperId</a>";
-	case self::FIELD_TITLE:
-	    $pl = $this->_paperLink($row);
-            $x = Text::highlight($row->title, defval($this->search->matchPreg, "title"));
-	    return "<a href='$pl' tabindex='5'>" . $x . "</a>" . $this->_contentDownload($row);
-	case self::FIELD_STATUS:
-	case self::FIELD_STATUS_SHORT:
-	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
-		$this->any->need_submit = true;
-	    if ($row->outcome > 0 && $this->contact->canViewDecision($row))
-		$this->any->accepted = true;
-	    if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0
-		&& $this->contact->canViewDecision($row))
-		$this->any->need_final = true;
-	    $long = 0;
-	    if ($this->search->limitName != "a" && $this->contact->privChair)
-		$long = 2;
-	    if ($f->id == self::FIELD_STATUS_SHORT)
-		$long = ($long == 2 ? -2 : -1);
-	    return $this->contact->paperStatus($row->paperId, $row, $long);
-	case self::FIELD_REVIEWER_MONITOR:
-	    $t = Text::user_html($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail) . "<br /><small>Last login: ";
-	    return $t . ($row->reviewLastLogin ? $Conf->printableTimeShort($row->reviewLastLogin) : "Never") . "</small>";
-	case self::FIELD_REVIEWER_TYPE:
-	    if ($row->reviewType == REVIEW_PRIMARY)
-		$t = "Primary";
-	    else if ($row->reviewType == REVIEW_SECONDARY)
-		$t = "Secondary";
-	    else if ($row->reviewType == REVIEW_EXTERNAL)
-		$t = "External";
-	    else if ($row->reviewType)
-		$t = "Review";
-	    else if ($row->conflictType >= CONFLICT_AUTHOR)
-		return "<span class='rtype rtype_con'>Author</span>";
-	    else if ($row->conflictType > 0)
-		return "<span class='rtype rtype_con'>Conflict</span>";
-	    else
-		return "";
-	    $ranal = $this->_reviewAnalysis($row);
-	    if ($ranal->needsSubmit)
-		$this->any->need_review = true;
-	    $t = "$ranal->link1<span class='rtype'>$t</span>$ranal->link2";
-	    if ($ranal->completion)
-		$t .= "&nbsp;<span class='rstat'>($ranal->completion)</span>";
-	    return $t;
-	case self::FIELD_REVIEWER_STATUS:
-	    if (!$row->reviewId)
-		return "";
-	    $ranal = $this->_reviewAnalysis($row);
-	    if ($ranal->needsSubmit)
-		$this->any->need_review = true;
-	    $t = $ranal->completion;
-	    if ($ranal->needsSubmit && !$ranal->delegated)
-		$t = "<strong class='overdue'>$t</strong>";
-	    if (!$ranal->needsSubmit)
-		$t = $ranal->link1 . $t . $ranal->link2;
-	    return $t;
-	case self::FIELD_REVIEWER_TYPE_ICON:
-	    $a1 = $a2 = "";
-	    if ($row->conflictType > 0 && $this->showConflict)
-		return $Conf->cacheableImage("_.gif", "Conflict", "Conflict", "ass-1");
-	    else if ($row->reviewType === null)
-		return $Conf->cacheableImage("_.gif", "", "", "ass0");
-	    else {
-		$ranal = $this->_reviewAnalysis($row);
-		if ($ranal->needsSubmit)
-		    $this->any->need_review = true;
-		$t = self::_reviewIcon($row, $ranal, true);
-		if ($ranal->round)
-		    return "<div class='pl_revtype_round'>" . $t . "</div>";
-		else
-		    return $t;
-	    }
-	case self::FIELD_REVIEWS_STATUS:
-	    // see also _sortReviewsStatus
-	    if ($row->conflictType > 0 && !$this->contact->privChair
-		&& ($row->conflictType < CONFLICT_AUTHOR
-		    || !$Conf->timeAuthorViewReviews()))
-		return "";
-	    else if ($row->reviewCount != $row->startedReviewCount)
-		return "<b>$row->reviewCount</b>/$row->startedReviewCount";
-	    else
-		return "<b>$row->reviewCount</b>";
-	case self::FIELD_SELECTOR:
-	case self::FIELD_SELECTOR_ON:
-	case self::FIELD_SELECTOR_CONFLICT:
-	    $this->any->sel = true;
-	    $c = "";
-	    if (($f->id == self::FIELD_SELECTOR_ON
-		 || ($f->id == self::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0))
-		&& (!$this->papersel || defval($this->papersel, $row->paperId, 1))) {
-		$c .= " checked='checked'";
-		$this->foldRow = false;
-	    }
-	    if ($f->id == self::FIELD_SELECTOR_CONFLICT && $row->conflictType >= CONFLICT_AUTHOR)
-		$c .= " disabled='disabled'";
-	    if ($f->id != self::FIELD_SELECTOR_CONFLICT)
-		$c .= " onclick='pselClick(event,this)'";
-	    $t = "<span class=\"pl_rownum fx6\">" . $this->count . ". </span>" . "<input type='checkbox' class='cb' name='pap[]' value='$row->paperId' tabindex='3' id='psel$this->count' $c/>";
-            if ($f->id == self::FIELD_SELECTOR_CONFLICT)
-                $t .= "<span id='assrev" . $row->paperId . "ok' class='ajaxcheck'></span>";
-            return $t;
-	case self::FIELD_ASSIGN_REVIEW:
-	    if ($row->conflictType >= CONFLICT_AUTHOR)
-		return "<span class='author'>Author</span>";
-	    $rt = ($row->conflictType > 0 ? -1 : min(max($row->reviewType, 0), REVIEW_PRIMARY));
-	    return tagg_select("assrev$row->paperId",
-			       array(0 => "None", REVIEW_PRIMARY => "Primary",
-				     REVIEW_SECONDARY => "Secondary",
-				     REVIEW_PC => "Optional",
-				     -1 => "Conflict"), $rt,
-			       array("tabindex" => 3, "onchange" => "hiliter(this)"))
-		. "<span id='assrev" . $row->paperId . "ok'></span>";
-	case self::FIELD_TOPIC_INTEREST:
-	    return htmlspecialchars($row->topicInterestScore + 0);
-	case self::FIELD_OPT_TOPIC_NAMES:
-	    return join(", ", $this->rf->webTopicArray($row->topicIds, defval($row, "topicInterest")));
-	case self::FIELD_OPT_ALL_REVIEWER_NAMES:
-	    $prefs = self::_rowPreferences($row);
-	    $n = "";
-	    // see also search.php > getaction == "reviewers"
-	    if (isset($this->reviewList[$row->paperId])) {
-		foreach ($this->reviewList[$row->paperId] as $xrow)
-		    if ($xrow->lastName) {
-			$ranal = $this->_reviewAnalysis($xrow);
-			$n .= ($n ? ", " : "");
-			$n .= Text::name_html($xrow);
-			if ($xrow->reviewType >= REVIEW_SECONDARY)
-			    $n .= "&nbsp;" . self::_reviewIcon($xrow, $ranal, false);
-			if (($pref = defval($prefs, $xrow->contactId, null)))
-			    $n .= preferenceSpan($pref);
-		    }
-		$n = self::maybeConflict($n, $this->contact->canViewReviewerIdentity($row, null, true));
-	    }
-	    return $n;
-	case self::FIELD_OPT_PC_CONFLICTS:
-	    $x = "," . $row->allConflictType;
-	    $y = array();
-	    foreach (pcMembers() as $pc)
-		if (strpos($x, "," . $pc->contactId . " ") !== false)
-		    $y[] = Text::name_html($pc);
-	    return join(", ", $y);
-	case self::FIELD_REVIEWER_PREFERENCE:
-	    return (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
-	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
-	    if ($row->conflictType > 0)
-		return "N/A";
-	    $x = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
-	    return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' id='revpref$row->paperId' value=\"$x\" tabindex='2' /> <img id='revpref" . $row->paperId . "ok' src='" . hoturl_image("images/_.gif") . "' alt='' class='ajaxcheck' />";
-	case self::FIELD_DESIRABILITY:
-	    return (isset($row->desirability) ? htmlspecialchars($row->desirability) : "0");
-	case self::FIELD_ALL_PREFERENCES:
-	    $prefs = self::_rowPreferences($row);
-	    $text = "";
-	    foreach (pcMembers() as $pcid => $pc)
-		if (($pref = defval($prefs, $pcid, null))) {
-		    $text .= ($text == "" ? "" : ", ")
-			. Text::name_html($pc) . preferenceSpan($pref);
-		}
-	    return $text;
-	case self::FIELD_SCORE:
-	    $allowed = $this->contact->canViewReview($row, null, $fakeWhyNotView, true);
-	    $fname = $f->score . "Scores";
-	    if (($allowed || $this->contact->privChair) && $row->$fname) {
-		$t = $Conf->textValuesGraph($row->$fname, $f->max, 1, defval($row, $f->score), $this->rf->reviewFields[$f->score]);
-		if (!$allowed)
-		    $t = "<span class='fx20'>$t</span>";
-		return $t;
-	    } else
-		return "";
-	case self::FIELD_FORMULA:
-	    $formulaf = $f->formula_function;
-	    $t = $formulaf($row, $this->contact, "h");
-	    if ($row->conflictType > 0 && $this->contact->privChair)
-		return "<span class='fn20'>$t</span><span class='fx20'>"
-		    . $formulaf($row, $this->contact, "h", true) . "</span>";
-	    else
-		return $t;
-	case self::FIELD_AUTHOR_MATCH:
-	    $m = defval($this->search->matchPreg, "authorInformation", "");
-	    if ($m == "")
-		return "";
-	    return $this->_conflictMatches($row->authorInformation, $m);
-	case self::FIELD_COLLABORATORS_MATCH:
-	    $m = defval($this->search->matchPreg, "collaborators", "");
-	    if ($m == "")
-		return "";
-	    return $this->_conflictMatches($row->collaborators, $m);
-	case self::FIELD_OPT_AUTHORS:
-	    $highlight = defval($this->search->matchPreg, "authorInformation", "");
-	    return self::authorInfo($row, $this->contact, $this->aufull,
-				    $highlight);
-	case self::FIELD_OPT_ABSTRACT:
-	    if ($row->abstract == "")
-		return "";
-            return Text::highlight($row->abstract, defval($this->search->matchPreg, "abstract"));
-	case self::FIELD_TAGS:
-	    if (!$this->contact->canViewTags($row))
-		return "";
-	    if (($t = $row->paperTags) !== "")
-		$t = $this->tagger->unparse_link_viewable($row->paperTags,
-                                                          $this->search->orderTags,
-                                                          $row->conflictType <= 0);
-	    return $t;
-	case self::FIELD_TAGREPORT:
-	    if (!$this->contact->canViewTags($row))
-		return "";
-	    if (($t = " " . $row->paperTags) === " ")
-		return "";
-	    $a = array();
-	    foreach (pcMembers() as $pcm) {
-		$mytag = " " . $pcm->contactId . "~" . $f->tag . "#";
-		if (($p = strpos($t, $mytag)) !== false)
-		    $a[] = Text::name_html($pcm) . " (#" . ((int) substr($t, $p + strlen($mytag))) . ")";
-	    }
-	    return join(", ", $a);
-	case self::FIELD_LEAD:
-	    if (!$row->leadContactId)
-		return "";
-	    $visible = $this->contact->actPC($row);
-	    return $this->_contentPC($row->leadContactId, $visible);
-	case self::FIELD_SHEPHERD:
-	    if (!$row->shepherdContactId)
-		return "";
-	    $visible = $this->contact->actPC($row) || $this->contact->canViewDecision($row);
-	    return $this->_contentPC($row->shepherdContactId, $visible);
-	case self::FIELD_COLLABORATORS:
-	    if ($row->collaborators == ""
-		|| strcasecmp($row->collaborators, "None") == 0
-		|| (!$this->contact->privChair
-		    && !$this->contact->canViewAuthors($row, true)))
-		return "";
-	    $x = "";
-	    foreach (explode("\n", $row->collaborators) as $c)
-		$x .= ($x === "" ? "" : ", ") . trim($c);
-            return Text::highlight($x, defval($this->search->matchPreg, "collaborators"));
-	default:
-	    return "";
-	}
     }
 
     function footer($ncol, $listname, $trclass) {
@@ -1271,7 +730,7 @@ class PaperList extends BaseList {
 	    } else
 		$nf[] = $fid;
 	    foreach ($nf as $newfid) {
-                $f = PaperListField::$by_id[$newfid];
+                $f = PaperListField::lookup($newfid);
                 $f->sorting = false;
 		if (!$minimal || $f->minimal)
 		    $newFields[] = $f;
@@ -1444,12 +903,12 @@ class PaperList extends BaseList {
 	// main columns
 	$t = "";
 	foreach ($fieldDef as $fdef) {
-	    if ($fdef->type != 1)
+	    if ($fdef->view != Column::VIEW_COLUMN)
 		continue;
 	    $td = "    <td class=\"pl_$fdef->cssname";
 	    if ($fdef->foldnum)
 		$td .= " fx$fdef->foldnum";
-	    if ($this->contentEmpty($fdef, $row)) {
+	    if ($fdef->content_empty($this, $row)) {
 		$t .= $td . "\"></td>\n";
 		continue;
 	    }
@@ -1459,7 +918,7 @@ class PaperList extends BaseList {
 		$t .= $td . "\" id=\"$fdef->foldname.$row->paperId\"></td>\n";
                 $this->any[$fdef->name] = true;
 	    } else {
-		$c = $this->content($fdef, $row);
+		$c = $fdef->content($this, $row);
 		$t .= $td . "\">" . $c . "</td>\n";
 		if ($c !== "")
                     $this->any[$fdef->name] = true;
@@ -1469,7 +928,8 @@ class PaperList extends BaseList {
 	// extension columns
 	$tt = "";
 	foreach ($fieldDef as $fdef) {
-	    if ($fdef->type != 2 || $this->contentEmpty($fdef, $row))
+	    if ($fdef->view != Column::VIEW_ROW
+                || $fdef->content_empty($this, $row))
 		continue;
 	    if ($fdef->foldname	&& !isset($rstate->foldinfo[$fdef->foldname]))
 		$rstate->foldinfo[$fdef->foldname] = $this->_field_is_folded($fdef);
@@ -1477,7 +937,7 @@ class PaperList extends BaseList {
 		&& $rstate->foldinfo[$fdef->foldname]) {
 		$tt .= "<div id=\"$fdef->foldname.$row->paperId\"></div>";
                 $this->any[$fdef->name] = true;
-	    } else if (($c = $this->content($fdef, $row)) !== "") {
+	    } else if (($c = $fdef->content($this, $row)) !== "") {
 		$tt .= "<div id=\"$fdef->foldname.$row->paperId\" class=\"fx";
 		if ($fdef->foldname != "authors")
 		    $tt .= $fdef->foldnum;
@@ -1488,7 +948,7 @@ class PaperList extends BaseList {
 		    $tt .= "1 fx2";
                     $this->any->anonau = true;
 		}
-		$tt .= "\"><h6>" . $this->header($fdef, -1, $row)
+		$tt .= "\"><h6>" . $fdef->header($this, $row, -1)
 		    . ":</h6> " . $c . "</div>";
 		$this->any[$fdef->name] = true;
 	    }
@@ -1547,7 +1007,7 @@ class PaperList extends BaseList {
 		$jsmap[] = "\"$fdef->foldname\":$fdef->foldnum";
 		if ($closed && $this->any[$fdef->name])
 		    $jsloadmap[] = "\"$fdef->foldname\":true";
-		if ($fdef->type == 1)
+		if ($fdef->view == Column::VIEW_COLUMN)
 		    $jsnotitlemap[] = "\"$fdef->foldname\":true";
 	    }
 	// authorship requires special handling
@@ -1680,8 +1140,8 @@ class PaperList extends BaseList {
 	    return null;
 	}
 	if (defval($_REQUEST, "selectall") > 0
-	    && $field_list[0]->id == self::FIELD_SELECTOR)
-	    $field_list[0] = PaperListField::$by_id[self::FIELD_SELECTOR_ON];
+            && $field_list[0]->name == "sel")
+	    $field_list[0] = PaperListField::lookup("selon");
 
 	// check paper link destination
 	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
@@ -1705,10 +1165,10 @@ class PaperList extends BaseList {
 	foreach ($field_list as $f) {
             if ($f->id == $this->sortField)
                 $found_sort = $f->sorting = true;
-	    if ($this->selector($f, $queryOptions,
-                                $this->_field_is_folded($f))) {
+	    if ($f->prepare($this, $queryOptions,
+                            $this->_field_is_folded($f))) {
 		$fieldDef[$f->id] = $f;
-		if ($f->type == 1)
+		if ($f->view == Column::VIEW_COLUMN)
 		    $ncol++;
 	    }
         }
@@ -1765,8 +1225,8 @@ class PaperList extends BaseList {
 	// columns
 	$colhead = "";
 	foreach ($fieldDef as $fdef) {
-	    if ($fdef->type == 1)
-		$colhead .= $this->col($fdef);
+	    if ($fdef->view == Column::VIEW_COLUMN)
+		$colhead .= $fdef->col();
 	}
 
 	// header cells
@@ -1782,7 +1242,7 @@ class PaperList extends BaseList {
 		$sortUrl = false;
 
 	    foreach ($fieldDef as $fieldId => $fdef) {
-		if ($fdef->type != 1)
+		if ($fdef->view != Column::VIEW_COLUMN)
 		    continue;
 		if (!$this->any[$fdef->name]) {
 		    $colhead .= "    <th class=\"pl_$fdef->cssname\"></th>\n";
@@ -1792,7 +1252,7 @@ class PaperList extends BaseList {
 		if ($fdef->foldnum)
 		    $colhead .= " fx" . $fdef->foldnum;
 		$colhead .= "\">";
-		$ftext = $this->header($fdef, $ord++);
+		$ftext = $fdef->header($this, null, $ord++);
 
 		$sortableSelector = $fieldId >= self::FIELD_SELECTOR
 		    && $fieldId <= self::FIELD_LAST_SELECTOR
@@ -1898,8 +1358,8 @@ class PaperList extends BaseList {
 	// get field array
 	$ncol = 0;
 	$this->unfolded = true;
-	if (!($fdef = defval(PaperListField::$by_id, $fieldId))
-	    || !$this->selector($fdef, $queryOptions, false))
+	if (!($fdef = PaperListField::lookup($fieldId))
+	    || !$fdef->prepare($this, $queryOptions, false))
 	    return null;
 	$unfolded = $this->unfolded;
 
@@ -1911,13 +1371,13 @@ class PaperList extends BaseList {
 	// collect row data
 	$data = array();
 	$foldname = $fdef->foldname;
-	if (($x = $this->header($fdef)))
+	if (($x = $fdef->header($this)))
 	    $data["$foldname.title"] = $x;
 	while (($row = edb_orow($result))) {
-	    if ($this->contentEmpty($fdef, $row))
+	    if ($fdef->content_empty($this, $row))
 		$c = "";
 	    else
-		$c = $this->content($fdef, $row);
+		$c = $fdef->content($this, $row);
 	    $data["$foldname.$row->paperId"] = $c;
 	}
 
@@ -1929,39 +1389,15 @@ class PaperList extends BaseList {
 
 class PaperListField {
     static public $by_id = array();
+    static public $by_name = array();
 
-    public $name;
-    public $id;
-    public $group_id;
-    var $cssname;
-    var $foldnum;
-    var $foldname;
-    var $type;
-    var $sortable;
-    var $minimal;
-
-    function __construct($name, $id, $type, $extra) {
-        $this->name = $name;
-	$this->id = $this->group_id = $id;
-	$this->cssname = defval($extra, "cssname", $name);
-	$this->foldnum = defval($extra, "foldnum", 0);
-	$this->foldname = ($this->foldnum ? $this->cssname : null);
-	$this->type = $type;
-	$this->sortable = defval($extra, "sortable", false);
-	$this->minimal = defval($extra, "minimal", false);
-    }
-
-    static function make($name, $id, $type, $extra = 0) {
-	global $paperListFolds;
-	if ($extra === true)
-	    $extra = array("sortable" => true);
-	else if (is_int($extra))
-	    $extra = array("foldnum" => $extra);
-	$f = new PaperListField($name, $id, $type, $extra);
-        self::$by_id[$id] = $f;
-	if ($f->foldnum > 3  /* "authors" == 1 or 2, requires special handling */)
-	    $paperListFolds[$f->foldname] = $f;
-	return $f;
+    static function lookup($name) {
+        if (isset(self::$by_id[$name]))
+            return self::$by_id[$name];
+        else if (isset(self::$by_name[$name]))
+            return self::$by_name[$name];
+        else
+            return null;
     }
 
     static function initialize() {
@@ -1973,41 +1409,40 @@ class PaperListField {
 				"aufull" => (object) array("foldnum" => 16),
 				"force" => (object) array("foldnum" => 20));
 
-	PaperListField::make("sel", PaperList::FIELD_SELECTOR, 1, array("minimal" => true));
-	PaperListField::make("selon", PaperList::FIELD_SELECTOR_ON, 1, array("minimal" => true, "cssname" => "sel"));
-	PaperListField::make("selconf", PaperList::FIELD_SELECTOR_CONFLICT, 1, array("cssname" => "confselector"));
-	PaperListField::make("id", PaperList::FIELD_ID, 1, array("minimal" => true, "sortable" => true));
-	PaperListField::make("title", PaperList::FIELD_TITLE, 1, array("minimal" => true, "sortable" => true));
-	PaperListField::make("statusfull", PaperList::FIELD_STATUS, 1, array("cssname" => "status", "sortable" => true));
-	PaperListField::make("revtypetext", PaperList::FIELD_REVIEWER_TYPE, 1, array("cssname" => "text", "sortable" => true));
-	PaperListField::make("revtype", PaperList::FIELD_REVIEWER_TYPE_ICON, 1, array("sortable" => true));
-	PaperListField::make("revstatus", PaperList::FIELD_REVIEWER_STATUS, 1, array("cssname" => "text"));
-	PaperListField::make("revdelegated", PaperList::FIELD_REVIEWER_MONITOR, 1, array("cssname" => "text", "sortable" => true));
-	PaperListField::make("status", PaperList::FIELD_STATUS_SHORT, 1, array("sortable" => true));
-	PaperListField::make("assrev", PaperList::FIELD_ASSIGN_REVIEW, 1, true);
-	PaperListField::make("topicscore", PaperList::FIELD_TOPIC_INTEREST, 1, true);
-	PaperListField::make("topics", PaperList::FIELD_OPT_TOPIC_NAMES, 2, 13);
-	PaperListField::make("revpref", PaperList::FIELD_REVIEWER_PREFERENCE, 1, true);
-	PaperListField::make("revprefedit", PaperList::FIELD_EDIT_REVIEWER_PREFERENCE, 1, true);
-	PaperListField::make("revstat", PaperList::FIELD_REVIEWS_STATUS, 1, true);
-	PaperListField::make("desirability", PaperList::FIELD_DESIRABILITY, 1, true);
-	PaperListField::make("revprefall", PaperList::FIELD_ALL_PREFERENCES, 2);
-	PaperListField::make("authors", PaperList::FIELD_OPT_AUTHORS, 2, 3);
-	PaperListField::make("tags", PaperList::FIELD_TAGS, 2, 4);
-	PaperListField::make("abstract", PaperList::FIELD_OPT_ABSTRACT, 2, 5);
-	PaperListField::make("reviewers", PaperList::FIELD_OPT_ALL_REVIEWER_NAMES, 2, 10);
-	PaperListField::make("lead", PaperList::FIELD_LEAD, 2, 12);
-	PaperListField::make("shepherd", PaperList::FIELD_SHEPHERD, 2, 11);
-	PaperListField::make("pcconf", PaperList::FIELD_OPT_PC_CONFLICTS, 2, 14);
-	PaperListField::make("collab", PaperList::FIELD_COLLABORATORS, 2, 15);
-	PaperListField::make("authorsmatch", PaperList::FIELD_AUTHOR_MATCH, 2);
-	PaperListField::make("collabmatch", PaperList::FIELD_COLLABORATORS_MATCH, 2);
+        require_once("papercolumn.php");
+	new GenericPaperColumn("sel", PaperList::FIELD_SELECTOR, 1, array("minimal" => true));
+	new GenericPaperColumn("selon", PaperList::FIELD_SELECTOR_ON, 1, array("minimal" => true, "cssname" => "sel"));
+	new GenericPaperColumn("selconf", PaperList::FIELD_SELECTOR_CONFLICT, 1, array("cssname" => "confselector"));
+	new GenericPaperColumn("id", PaperList::FIELD_ID, 1, array("minimal" => true, "sortable" => true));
+	new GenericPaperColumn("title", PaperList::FIELD_TITLE, 1, array("minimal" => true, "sortable" => true));
+	new GenericPaperColumn("statusfull", PaperList::FIELD_STATUS, 1, array("cssname" => "status", "sortable" => true));
+	new GenericPaperColumn("revtypetext", PaperList::FIELD_REVIEWER_TYPE, 1, array("cssname" => "text", "sortable" => true));
+	new GenericPaperColumn("revtype", PaperList::FIELD_REVIEWER_TYPE_ICON, 1, array("sortable" => true));
+	new GenericPaperColumn("revstatus", PaperList::FIELD_REVIEWER_STATUS, 1, array("cssname" => "text"));
+	new GenericPaperColumn("revdelegated", PaperList::FIELD_REVIEWER_MONITOR, 1, array("cssname" => "text", "sortable" => true));
+	new GenericPaperColumn("status", PaperList::FIELD_STATUS_SHORT, 1, array("sortable" => true));
+	new GenericPaperColumn("assrev", PaperList::FIELD_ASSIGN_REVIEW, 1, true);
+	new GenericPaperColumn("topicscore", PaperList::FIELD_TOPIC_INTEREST, 1, true);
+	new GenericPaperColumn("topics", PaperList::FIELD_OPT_TOPIC_NAMES, 2, 13);
+	new GenericPaperColumn("revpref", PaperList::FIELD_REVIEWER_PREFERENCE, 1, true);
+	new GenericPaperColumn("revprefedit", PaperList::FIELD_EDIT_REVIEWER_PREFERENCE, 1, true);
+	new GenericPaperColumn("revstat", PaperList::FIELD_REVIEWS_STATUS, 1, true);
+	new GenericPaperColumn("desirability", PaperList::FIELD_DESIRABILITY, 1, true);
+	new GenericPaperColumn("revprefall", PaperList::FIELD_ALL_PREFERENCES, 2);
+	new AuthorsPaperColumn("authors", PaperList::FIELD_OPT_AUTHORS, 2, 3);
+	new GenericPaperColumn("tags", PaperList::FIELD_TAGS, 2, 4);
+	new GenericPaperColumn("abstract", PaperList::FIELD_OPT_ABSTRACT, 2, 5);
+	new GenericPaperColumn("reviewers", PaperList::FIELD_OPT_ALL_REVIEWER_NAMES, 2, 10);
+	new GenericPaperColumn("lead", PaperList::FIELD_LEAD, 2, 12);
+	new GenericPaperColumn("shepherd", PaperList::FIELD_SHEPHERD, 2, 11);
+	new GenericPaperColumn("pcconf", PaperList::FIELD_OPT_PC_CONFLICTS, 2, 14);
+	new GenericPaperColumn("collab", PaperList::FIELD_COLLABORATORS, 2, 15);
+	new ConflictMatchPaperColumn("authorsmatch", PaperList::FIELD_AUTHOR_MATCH, 2);
+	new ConflictMatchPaperColumn("collabmatch", PaperList::FIELD_COLLABORATORS_MATCH, 2);
 
 	$nextfield = PaperList::FIELD_SCORE;
 	foreach ($reviewScoreNames as $k => $n) {
-	    $fdef = PaperListField::make($n, $nextfield, 1, array("minimal" => true, "sortable" => true, "foldnum" => $nextfield));
-	    $fdef->cssname = "score";
-            $fdef->score = $n;
+	    $fdef = new ScorePaperColumn($n, $nextfield, $nextfield);
             $fdef->group_id = PaperList::FIELD_SCORE;
 	    ++$nextfield;
 	}
@@ -2018,9 +1453,7 @@ class PaperListField {
 	    $result = $Conf->q("select * from Formula order by lower(name)");
 	    while (($row = edb_orow($result))) {
 		$fid = $row->formulaId;
-		$fdef = PaperListField::make("formula$fid", $nextfield, 1, array("minimal" => true, "sortable" => true, "foldnum" => $nextfold));
-		$fdef->cssname = "formula";
-                $fdef->formula = $row;
+		$fdef = new FormulaPaperColumn("formula$fid", $nextfield, $row, $nextfold);
                 $fdef->group_id = PaperList::FIELD_FORMULA;
 		$row->fieldId = $nextfield;
 		$paperListFormulas[$fid] = $row;
@@ -2036,9 +1469,7 @@ class PaperListField {
                 if ($v->vote || $v->rank)
                     $vt[] = $v->tag;
 	    foreach ($vt as $n) {
-		$fdef = PaperListField::make("tagrep_" . preg_replace('/\W+/', '_', $n), $nextfield, 2, $nextfold);
-		$fdef->cssname = "tagrep";
-                $fdef->tag = $n;
+		$fdef = new TagReportPaperColumn($n, $nextfield, $nextfold);
                 $fdef->group_id = PaperList::FIELD_TAGREPORT;
 		++$nextfold;
 		++$nextfield;
