@@ -840,8 +840,8 @@ if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
     echo $plist->text("reviewersSel", $Me);
     echo "<input type='hidden' name='prevt' value=\"", htmlspecialchars($_REQUEST["t"]), "\" />",
 	"<input type='hidden' name='prevq' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />";
-    if ($plist->headerInfo["pap"])
-	echo "<input type='hidden' name='prevpap' value=\"", htmlspecialchars(join(" ", $plist->headerInfo["pap"])), "\" />";
+    if ($plist->ids)
+	echo "<input type='hidden' name='prevpap' value=\"", htmlspecialchars(join(" ", $plist->ids)), "\" />";
 }
 echo "</div>\n";
 // echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";

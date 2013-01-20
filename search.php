@@ -1134,25 +1134,25 @@ if ($pl) {
 	displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange));
     } else if ($Conf->subBlindAlways() && $Me->privChair) {
 	$onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
-	displayOptionCheckbox("anonau", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2))));
+	displayOptionCheckbox("anonau", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau)));
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
 	displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
     if (!$viewAllAuthors && $Me->privChair) {
 	$onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
-	displayOptionCheckbox("anonau", 1, "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !($pl->headerInfo["authors"] & 2)), "indent" => true));
+	displayOptionCheckbox("anonau", 1, "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau), "indent" => true));
     }
-    if (defval($pl->headerInfo, "collab"))
+    if ($pl->any->collab)
 	displayOptionCheckbox("collab", 1, "Collaborators", array("indent" => true));
 
     // Abstract group
-    if (defval($pl->headerInfo, "abstract"))
+    if ($pl->any->abstract)
 	displayOptionCheckbox("abstract", 1, "Abstracts");
-    if (defval($pl->headerInfo, "topics"))
+    if ($pl->any->topics)
 	displayOptionCheckbox("topics", 1, "Topics");
 
     // Tags group
-    if ($Me->isPC && defval($pl->headerInfo, "tags")) {
+    if ($Me->isPC && $pl->any->tags) {
 	$opt = array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair));
 	displayOptionCheckbox("tags", 1, "Tags", $opt);
 	if ($Me->privChair) {
@@ -1172,9 +1172,9 @@ if ($pl) {
 	displayOptionCheckbox("reviewers", 2, "Reviewers");
     if ($Me->privChair)
 	displayOptionCheckbox("pcconf", 2, "PC conflicts");
-    if ($Me->isPC && defval($pl->headerInfo, "lead"))
+    if ($Me->isPC && $pl->any->lead)
 	displayOptionCheckbox("lead", 2, "Discussion leads");
-    if ($Me->isPC && defval($pl->headerInfo, "shepherd"))
+    if ($Me->isPC && $pl->any->shepherd)
 	displayOptionCheckbox("shepherd", 2, "Shepherds");
 
     // Scores group

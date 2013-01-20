@@ -58,12 +58,6 @@ class PaperList extends BaseList {
     var $reverseSort;
     var $scoreSort;
     var $sortable;
-    var $count;
-    var $accepted;
-    var $needFinalize;
-    var $needFinalCopy;
-    var $needSubmitReview;
-    var $any;
     var $defaultFoldRows;
     var $foldRow;
     var $listNumber;
@@ -76,7 +70,6 @@ class PaperList extends BaseList {
     var $paperLink;
     var $paperLinkArgs;
     var $showConflict;
-    var $headerInfo;
     var $footer;
     var $papersel;
     var $rf;
@@ -84,6 +77,11 @@ class PaperList extends BaseList {
     var $viewmap;
     var $reviewList;
     var $atab;
+
+    // collected during render and exported to caller
+    public $count;
+    public $ids;
+    public $any;
 
     function __construct($search, $args = array()) {
 	global $scoreSorts, $defaultScoreSort, $Conf;
@@ -820,12 +818,12 @@ class PaperList extends BaseList {
 	case self::FIELD_STATUS:
 	case self::FIELD_STATUS_SHORT:
 	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
-		$this->needFinalize++;
+		$this->any->need_submit = true;
 	    if ($row->outcome > 0 && $this->contact->canViewDecision($row))
-		$this->accepted++;
+		$this->any->accepted = true;
 	    if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0
 		&& $this->contact->canViewDecision($row))
-		$this->needFinalCopy++;
+		$this->any->need_final = true;
 	    $long = 0;
 	    if ($this->search->limitName != "a" && $this->contact->privChair)
 		$long = 2;
@@ -852,7 +850,7 @@ class PaperList extends BaseList {
 		return "";
 	    $ranal = $this->_reviewAnalysis($row);
 	    if ($ranal->needsSubmit)
-		$this->needSubmitReview++;
+		$this->any->need_review = true;
 	    $t = "$ranal->link1<span class='rtype'>$t</span>$ranal->link2";
 	    if ($ranal->completion)
 		$t .= "&nbsp;<span class='rstat'>($ranal->completion)</span>";
@@ -862,7 +860,7 @@ class PaperList extends BaseList {
 		return "";
 	    $ranal = $this->_reviewAnalysis($row);
 	    if ($ranal->needsSubmit)
-		$this->needSubmitReview++;
+		$this->any->need_review = true;
 	    $t = $ranal->completion;
 	    if ($ranal->needsSubmit && !$ranal->delegated)
 		$t = "<strong class='overdue'>$t</strong>";
@@ -878,7 +876,7 @@ class PaperList extends BaseList {
 	    else {
 		$ranal = $this->_reviewAnalysis($row);
 		if ($ranal->needsSubmit)
-		    $this->needSubmitReview++;
+		    $this->any->need_review = true;
 		$t = self::_reviewIcon($row, $ranal, true);
 		if ($ranal->round)
 		    return "<div class='pl_revtype_round'>" . $t . "</div>";
@@ -1274,7 +1272,7 @@ class PaperList extends BaseList {
 		$nf[] = $fid;
 	    foreach ($nf as $newfid) {
                 $f = PaperListField::$by_id[$newfid];
-                $f->sorting = $f->any_nonempty = false;
+                $f->sorting = false;
 		if (!$minimal || $f->minimal)
 		    $newFields[] = $f;
             }
@@ -1459,12 +1457,12 @@ class PaperList extends BaseList {
 		$rstate->foldinfo[$fdef->foldname] = $this->_field_is_folded($fdef);
 	    if ($fdef->foldname && $rstate->foldinfo[$fdef->foldname]) {
 		$t .= $td . "\" id=\"$fdef->foldname.$row->paperId\"></td>\n";
-                $fdef->any_nonempty = true;
+                $this->any[$fdef->name] = true;
 	    } else {
 		$c = $this->content($fdef, $row);
 		$t .= $td . "\">" . $c . "</td>\n";
 		if ($c !== "")
-                    $fdef->any_nonempty = true;
+                    $this->any[$fdef->name] = true;
 	    }
 	}
 
@@ -1478,21 +1476,21 @@ class PaperList extends BaseList {
 	    if ($fdef->foldname && $fdef->foldname != "authors"
 		&& $rstate->foldinfo[$fdef->foldname]) {
 		$tt .= "<div id=\"$fdef->foldname.$row->paperId\"></div>";
-                $fdef->any_nonempty = true;
+                $this->any[$fdef->name] = true;
 	    } else if (($c = $this->content($fdef, $row)) !== "") {
 		$tt .= "<div id=\"$fdef->foldname.$row->paperId\" class=\"fx";
 		if ($fdef->foldname != "authors")
 		    $tt .= $fdef->foldnum;
 		else if ($this->contact->canViewAuthors($row, true)) {
 		    $tt .= "1";
-                    $rstate->au_nonempty = true;
+                    $this->any->openau = true;
 		} else {
 		    $tt .= "1 fx2";
-                    $rstate->anonau_nonempty = true;
+                    $this->any->anonau = true;
 		}
 		$tt .= "\"><h6>" . $this->header($fdef, -1, $row)
 		    . ":</h6> " . $c . "</div>";
-		$fdef->any_nonempty = true;
+		$this->any[$fdef->name] = true;
 	    }
 	}
 
@@ -1547,18 +1545,18 @@ class PaperList extends BaseList {
 		$closed = $rstate->foldinfo[$fdef->foldname];
 		$classes[] = "fold$fdef->foldnum" . ($closed ? "c" : "o");
 		$jsmap[] = "\"$fdef->foldname\":$fdef->foldnum";
-		if ($closed && $fdef->any_nonempty)
+		if ($closed && $this->any[$fdef->name])
 		    $jsloadmap[] = "\"$fdef->foldname\":true";
 		if ($fdef->type == 1)
 		    $jsnotitlemap[] = "\"$fdef->foldname\":true";
 	    }
 	// authorship requires special handling
-	if (isset($rstate->au_nonempty) || isset($rstate->anonau_nonempty)) {
+	if ($this->any->openau || $this->any->anonau) {
 	    $classes[] = "fold1" . ($this->_field_is_folded("au") ? "c" : "o");
 	    $jsmap[] = "\"au\":1,\"aufull\":16";
 	    $jsloadmap[] = "\"aufull\":true";
 	}
-	if (isset($rstate->anonau_nonempty)) {
+	if ($this->any->anonau) {
 	    $classes[] = "fold2" . ($this->_field_is_folded("anonau") ? "c" : "o");
 	    $jsmap[] = "\"anonau\":2";
 	}
@@ -1589,20 +1587,19 @@ class PaperList extends BaseList {
 	$titleextra = "";
 	if (isset($rstate->foldinfo["wholerow"]))
 	    $titleextra .= "<span class='sep'></span><a class='fn3' href=\"javascript:void fold('pl',0,3)\">Show all papers</a>";
-	if ((isset($rstate->au_nonempty) || isset($rstate->anonau_nonempty))
+	if (($this->any->openau || $this->any->anonau)
 	    && $this->showHeader == self::HEADER_ALL) {
 	    $titleextra .= "<span class='sep'></span>";
 	    if ($Conf->subBlindNever())
 		$titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
-	    else if ($this->contact->privChair && isset($rstate->anonau_nonempty) && !isset($rstate->au_nonempty))
+	    else if ($this->contact->privChair && $this->any->anonau && !$this->any->openau)
 		$titleextra .= "<a class='fn1 fn2' href=\"javascript:fold('pl',0,'au');void fold('pl',0,'anonau')\">Show authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
-	    else if ($this->contact->privChair && isset($rstate->anonau_nonempty))
+	    else if ($this->contact->privChair && $this->any->anonau)
 		$titleextra .= "<a class='fn1' href=\"javascript:fold('pl',0,'au');void fold('pl',1,'anonau')\">Show non-anonymous authors</a><a class='fx1 fn2' href=\"javascript:void fold('pl',0,'anonau')\">Show all authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
 	    else
 		$titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show non-anonymous authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
 	}
-	if (isset(PaperListField::$by_id[self::FIELD_TAGS]->any_nonempty)
-	    && $this->showHeader == self::HEADER_ALL) {
+	if ($this->any->tags && $this->showHeader == self::HEADER_ALL) {
 	    $titleextra .= "<span class='sep'></span>";
 	    $titleextra .= "<a class='fn4' href='javascript:void plinfo(\"tags\",0)'>Show tags</a><a class='fx4' href='javascript:void plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
 	}
@@ -1648,10 +1645,6 @@ class PaperList extends BaseList {
 
 	$this->contact = $me;
 	$this->count = 0;
-	$this->accepted = 0;
-	$this->needFinalize = 0;
-	$this->needFinalCopy = 0;
-	$this->needSubmitReview = 0;
 	$this->any = new Qobject;
 	$this->defaultFoldRow = false;
         $this->tagger = new Tagger($me);
@@ -1791,7 +1784,7 @@ class PaperList extends BaseList {
 	    foreach ($fieldDef as $fieldId => $fdef) {
 		if ($fdef->type != 1)
 		    continue;
-		if (!$fdef->any_nonempty) {
+		if (!$this->any[$fdef->name]) {
 		    $colhead .= "    <th class=\"pl_$fdef->cssname\"></th>\n";
 		    continue;
 		}
@@ -1870,12 +1863,7 @@ class PaperList extends BaseList {
 	    $_SESSION["l"][$this->listNumber] = $idx;
 	}
 
-	$this->headerInfo = array("pap" => $rstate->ids);
-        foreach ($fieldDef as $fdef)
-            if ($fdef->any_nonempty)
-                $this->headerInfo[$fdef->foldname] = true;
-        $this->headerInfo["authors"] = (isset($rstate->anonau_nonempty) ? 2 : 0) | (isset($rstate->au_nonempty) ? 1 : 0);
-
+	$this->ids = $rstate->ids;
 	return $x;
     }
 
@@ -1884,10 +1872,6 @@ class PaperList extends BaseList {
 
 	$this->contact = $me;
 	$this->count = 0;
-	$this->accepted = 0;
-	$this->needFinalize = 0;
-	$this->needFinalCopy = 0;
-	$this->needSubmitReview = 0;
 	$this->any = new Qobject;
         $this->tagger = new Tagger($me);
 	$url = $this->search->url();
