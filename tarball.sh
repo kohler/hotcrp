@@ -103,6 +103,7 @@ Code/paperexpr.inc
 Code/paperlist.inc
 Code/paperoption.inc
 Code/papertable.inc
+Code/qobject.php
 Code/rank.inc
 Code/restoredb.sh
 Code/review.inc

@@ -1074,7 +1074,7 @@ class PaperList extends BaseList {
 	    $sel_opt["revprefx"] = "Preference file with abstracts";
 	    $sel_opt["abstract"] = "Abstracts";
 	} else {
-	    if (isset($this->any->final)) {
+	    if ($this->any->final) {
 		$sel_opt["final"] = "Final papers";
 		foreach (paperOptions() as $id => $o)
 		    if ($o->type == PaperOption::T_FINALPDF)
@@ -1082,7 +1082,7 @@ class PaperList extends BaseList {
 		    else if ($o->type == PaperOption::T_FINALSLIDES)
 			$sel_opt["opt-" . $o->optionAbbrev] = htmlspecialchars(pluralx($o->optionName, 2));
 		$sel_opt["paper"] = "Submitted papers";
-	    } else if (isset($this->any->paper))
+	    } else if ($this->any->paper)
 		$sel_opt["paper"] = "Papers";
 	    $sel_opt["abstract"] = "Abstracts";
 	    $sel_opt["revform"] = "Review forms";
@@ -1230,7 +1230,7 @@ class PaperList extends BaseList {
 	$foot = " <tfoot>\n"
 	    . "  <tr class='pl_footgap $trclass'><td colspan='$ncol'><div class='pl_footgap'></div></td></tr>\n"
 	    . "  <tr class='pl_footrow'>\n";
-	if (defval($this->viewmap, "columns"))
+	if ($this->viewmap->columns)
 	    $foot .= "    <td class='pl_footer' colspan='$ncol'>";
 	else
 	    $foot .= "    <td class='pl_footselector'>"
@@ -1246,7 +1246,7 @@ class PaperList extends BaseList {
     }
 
     function _canonicalize_fields($fields) {
-	$minimal = defval($this->viewmap, "compactcolumns");
+	$minimal = $this->viewmap->compactcolumns;
 	$newFields = array();
 	foreach ($fields as $fid) {
 	    $nf = array();
@@ -1565,7 +1565,7 @@ class PaperList extends BaseList {
 	// total folding, row number folding
 	if (isset($rstate->foldinfo["wholerow"]))
 	    $classes[] = "fold3c";
-	if (isset($this->any->sel)) {
+	if ($this->any->sel) {
 	    $jsmap[] = "\"rownum\":6";
 	    $classes[] = "fold6" . ($this->_field_is_folded("rownum") ? "c" : "o");
 	}
@@ -1652,7 +1652,7 @@ class PaperList extends BaseList {
 	$this->needFinalize = 0;
 	$this->needFinalCopy = 0;
 	$this->needSubmitReview = 0;
-	$this->any = (object) array();
+	$this->any = new Qobject;
 	$this->defaultFoldRow = false;
         $this->tagger = new Tagger($me);
 	$url = $this->search->url();
@@ -1673,12 +1673,12 @@ class PaperList extends BaseList {
 	}
 
 	// collect view data
-	$this->viewmap = $this->search->viewmap;
-	if (defval($this->viewmap, "cc") || defval($this->viewmap, "compactcolumn")
-	    || defval($this->viewmap, "ccol") || defval($this->viewmap, "compactcolumns"))
-	    $this->viewmap["compactcolumns"] = $this->viewmap["columns"] = true;
-	if (defval($this->viewmap, "column") || defval($this->viewmap, "col"))
-	    $this->viewmap["columns"] = true;
+	$this->viewmap = new Qobject($this->search->viewmap);
+	if ($this->viewmap->cc || $this->viewmap->compactcolumn
+            || $this->viewmap->ccol || $this->viewmap->compactcolumns)
+            $this->viewmap->compactcolumns = $this->viewmap->columns = true;
+	if ($this->viewmap->column || $this->viewmap->col)
+	    $this->viewmap->columns = true;
 
 	// get paper list
         $field_list = $this->_listFields($listname);
@@ -1843,7 +1843,7 @@ class PaperList extends BaseList {
 	$exit = "</table>";
 
 	// maybe make columns, maybe not
-	if (defval($this->viewmap, "columns") && count($rstate->ids)
+	if ($this->viewmap->columns && count($rstate->ids)
 	    && $this->_column_split($rstate, $colhead, $body)) {
 	    $enter = "<div class='pl_splitcol_ctr_ctr'><div class='pl_splitcol_ctr'>" . $enter;
 	    $exit = $exit . "</div></div>";
@@ -1888,7 +1888,7 @@ class PaperList extends BaseList {
 	$this->needFinalize = 0;
 	$this->needFinalCopy = 0;
 	$this->needSubmitReview = 0;
-	$this->any = (object) array();
+	$this->any = new Qobject;
         $this->tagger = new Tagger($me);
 	$url = $this->search->url();
 
