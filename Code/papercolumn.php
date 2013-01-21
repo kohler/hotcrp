@@ -28,6 +28,9 @@ class PaperColumn extends Column {
         return true;
     }
 
+    public function sort($pl, &$rows) {
+    }
+
     public function header($pl, $row = null, $ordinal = 0) {
         return "&lt;" . htmlspecialchars($this->name) . "&gt;";
     }
@@ -128,6 +131,111 @@ class GenericPaperColumn extends PaperColumn {
 	    break;
 	}
 	return true;
+    }
+
+    private static function _sortTitle($a, $b) {
+	$x = strcasecmp($a->title, $b->title);
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
+    private static function _sortStatus($a, $b) {
+	$x = $b->_sort_info - $a->_sort_info;
+	$x = $x ? $x : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
+	$x = $x ? $x : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
+	$x = $x ? $x : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
+    private static function _sortReviewer($a, $b) {
+	$x = strcasecmp($a->reviewLastName, $b->reviewLastName);
+	$x = $x ? $x : strcasecmp($a->reviewFirstName, $b->reviewFirstName);
+	$x = $x ? $x : strcasecmp($a->reviewEmail, $b->reviewEmail);
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
+    private static function _sortReviewType($a, $b) {
+	$x = $b->_sort_info - $a->_sort_info;
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
+    private static function _sortReviewsStatus($a, $b) {
+	$av = ($a->_sort_info ? $a->reviewCount : 2147483647);
+	$bv = ($b->_sort_info ? $b->reviewCount : 2147483647);
+	if ($av == $bv) {
+	    $av = ($a->_sort_info ? $a->startedReviewCount : 2147483647);
+	    $bv = ($b->_sort_info ? $b->startedReviewCount : 2147483647);
+	    if ($av == $bv) {
+		$av = $a->paperId;
+		$bv = $b->paperId;
+	    }
+	}
+	return ($av < $bv ? -1 : ($av == $bv ? 0 : 1));
+    }
+
+    private static function _sortTopicInterest($a, $b) {
+	$x = $b->topicInterestScore - $a->topicInterestScore;
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
+    private static function _sortReviewerPreference($a, $b) {
+	$x = $b->reviewerPreference - $a->reviewerPreference;
+	$x = $x ? $x : defval($b, "topicInterestScore", 0) - defval($a, "topicInterestScore", 0);
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
+    private static function _sortDesirability($a, $b) {
+	$x = $b->desirability - $a->desirability;
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+
+    public function sort($pl, &$rows) {
+        global $Conf;
+	switch ($this->group_id) {
+	case PaperList::FIELD_ID:
+	    ksort($rows);
+	    break;
+	case PaperList::FIELD_TITLE:
+	    usort($rows, array($this, "_sortTitle"));
+	    break;
+	case PaperList::FIELD_STATUS:
+	case PaperList::FIELD_STATUS_SHORT:
+            foreach ($rows as $row)
+                $row->_sort_info = ($pl->contact->canViewDecision($row) ? $row->outcome : -10000);
+	    usort($rows, array($this, "_sortStatus"));
+	    break;
+	case PaperList::FIELD_REVIEWER_MONITOR:
+	    usort($rows, array($this, "_sortReviewer"));
+	    break;
+	case PaperList::FIELD_REVIEWER_TYPE:
+	case PaperList::FIELD_REVIEWER_TYPE_ICON:
+	case PaperList::FIELD_ASSIGN_REVIEW:
+            foreach ($rows as $row) {
+                $row->_sort_info = $row->reviewType;
+                if ($pl->contact->privChair && !$row->reviewType
+                    && $row->conflictType)
+                    $row->_sort_info = -$row->conflictType;
+            }
+	    usort($rows, array($this, "_sortReviewType"));
+	    break;
+	case PaperList::FIELD_REVIEWS_STATUS:
+            $auview = $Conf->timeAuthorViewReviews();
+            foreach ($rows as $row)
+                $row->_sort_info = ($row->conflictType == 0
+                        || ($row->conflictType >= CONFLICT_AUTHOR && $auview)
+                        || $pl->contact->privChair);
+	    usort($rows, array($this, "_sortReviewsStatus"));
+	    break;
+	case PaperList::FIELD_TOPIC_INTEREST:
+	    usort($rows, array($this, "_sortTopicInterest"));
+	    break;
+	case PaperList::FIELD_REVIEWER_PREFERENCE:
+	case PaperList::FIELD_EDIT_REVIEWER_PREFERENCE:
+	    usort($rows, array($this, "_sortReviewerPreference"));
+	    break;
+	case PaperList::FIELD_DESIRABILITY:
+	    usort($rows, array($this, "_sortDesirability"));
+	    break;
+	}
     }
 
     public function header($pl, $row = null, $ordinal = 0) {
@@ -544,6 +652,16 @@ class ScorePaperColumn extends PaperColumn {
         }
 	return true;
     }
+    public function sort($pl, &$rows) {
+        $scoreName = $this->score . "Scores";
+        foreach ($rows as $row)
+            if ($pl->contact->canViewReview($row, null))
+                $pl->score_analyze($row, $scoreName, $this->max,
+                                   $pl->scoreSort);
+            else
+                $pl->score_reset($row);
+        $pl->score_sort($rows, $pl->scoreSort);
+    }
     public function header($pl, $row = null, $ordinal = 0) {
         return $pl->rf->webFieldAbbrev($this->score);
     }
@@ -589,6 +707,15 @@ class FormulaPaperColumn extends PaperColumn {
         $this->formula_function = PaperExpr::compile_function($expr, $pl->contact);
         PaperExpr::add_query_options($queryOptions, $expr, $pl->contact);
 	return true;
+    }
+    public function sort($pl, &$rows) {
+        $formulaf = $this->formula_function;
+        foreach ($rows as $row) {
+            $row->_sort_info = $formulaf($row, $pl->contact, "s");
+            $row->_sort_average = 0;
+        }
+        usort($rows, array($pl, "score_numeric_compar"));
+        break;
     }
     public function header($pl, $row = null, $ordinal = 0) {
         if ($this->formula->heading == "")

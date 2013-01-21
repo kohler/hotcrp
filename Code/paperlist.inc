@@ -136,78 +136,12 @@ class PaperList extends BaseList {
 	unset($_REQUEST["atab"]);
     }
 
-    function _sortBase($a, $b) {
+    public function _sortBase($a, $b) {
 	return $a->paperId - $b->paperId;
     }
 
     function _sortPidarray($a, $b) {
 	return $this->sortInfo[$a->paperId] - $this->sortInfo[$b->paperId];
-    }
-
-    function _sortTitle($a, $b) {
-	$x = strcasecmp($a->title, $b->title);
-	return $x ? $x : $a->paperId - $b->paperId;
-    }
-
-    function _sortStatus($a, $b) {
-	$a_dec = $this->contact->canViewDecision($a) ? $a->outcome : -10000;
-	$b_dec = $this->contact->canViewDecision($b) ? $b->outcome : -10000;
-	$x = $b_dec - $a_dec;
-	$x = $x ? $x : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
-	$x = $x ? $x : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
-	$x = $x ? $x : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
-	return $x ? $x : $a->paperId - $b->paperId;
-    }
-
-    function _sortReviewer($a, $b) {
-	$x = strcasecmp($a->reviewLastName, $b->reviewLastName);
-	$x = $x ? $x : strcasecmp($a->reviewFirstName, $b->reviewFirstName);
-	$x = $x ? $x : strcasecmp($a->reviewEmail, $b->reviewEmail);
-	return $x ? $x : $a->paperId - $b->paperId;
-    }
-
-    function _sortReviewType($a, $b) {
-	$ar = $a->reviewType;
-	$br = $b->reviewType;
-	if ($this->contact->privChair && !$ar && $a->conflictType)
-	    $ar = -$a->conflictType;
-	if ($this->contact->privChair && !$br && $b->conflictType)
-	    $br = -$b->conflictType;
-	$x = $br - $ar;
-	return $x ? $x : $a->paperId - $b->paperId;
-    }
-
-    function _sortReviewsStatus($a, $b) {
-	global $Conf;
-	$aok = ($a->conflictType == 0 || ($a->conflictType >= CONFLICT_AUTHOR && $Conf->timeAuthorViewReviews()) || $this->contact->privChair);
-	$bok = ($b->conflictType == 0 || ($b->conflictType >= CONFLICT_AUTHOR && $Conf->timeAuthorViewReviews()) || $this->contact->privChair);
-	$av = ($aok ? $a->reviewCount : 2147483647);
-	$bv = ($bok ? $b->reviewCount : 2147483647);
-	if ($av == $bv) {
-	    $av = ($aok ? $a->startedReviewCount : 2147483647);
-	    $bv = ($bok ? $b->startedReviewCount : 2147483647);
-	    if ($av == $bv) {
-		$av = $a->paperId;
-		$bv = $b->paperId;
-	    }
-	}
-	return ($av < $bv ? -1 : ($av == $bv ? 0 : 1));
-    }
-
-    function _sortTopicInterest($a, $b) {
-	$x = $b->topicInterestScore - $a->topicInterestScore;
-	return $x ? $x : $a->paperId - $b->paperId;
-    }
-
-    function _sortReviewerPreference($a, $b) {
-	$x = $b->reviewerPreference - $a->reviewerPreference;
-	$x = $x ? $x : defval($b, "topicInterestScore", 0) - defval($a, "topicInterestScore", 0);
-	return $x ? $x : $a->paperId - $b->paperId;
-    }
-
-    function _sortDesirability($a, $b) {
-	$x = $b->desirability - $a->desirability;
-	return $x ? $x : $a->paperId - $b->paperId;
     }
 
     function _sortTagIndex($a, $b) {
@@ -238,72 +172,16 @@ class PaperList extends BaseList {
 
     function _sort($rows, $pidarray) {
 	global $Conf;
-        $f = PaperListField::lookup($this->sortField);
-	switch ($f ? $f->group_id : $this->sortField) {
-	case self::FIELD_ID:
-	    ksort($rows);
-	    break;
-	case self::FIELD_PIDARRAY:
+        if (($f = PaperListField::lookup($this->sortField)))
+            $f->sort($this, $rows);
+        else if ($this->sortField == self::FIELD_PIDARRAY) {
 	    $this->sortInfo = array_flip($pidarray);
 	    usort($rows, array($this, "_sortPidarray"));
-	    break;
-	case self::FIELD_TAGINDEX:
-	    // $this->sortInfo == careful about conflicts?
+        } else if ($this->sortField == self::FIELD_TAGINDEX) {
+	    // $this->sortInfo == whether to be careful about conflicts
 	    $this->sortInfo = !$this->contact->privChair && $Conf->setting("tag_seeall") <= 0;
 	    usort($rows, array($this, "_sortTagIndex"));
-	    break;
-	case self::FIELD_TITLE:
-	    usort($rows, array("PaperList", "_sortTitle"));
-	    break;
-	case self::FIELD_STATUS:
-	case self::FIELD_STATUS_SHORT:
-	    usort($rows, array("PaperList", "_sortStatus"));
-	    break;
-	case self::FIELD_REVIEWER_MONITOR:
-	    usort($rows, array("PaperList", "_sortReviewer"));
-	    break;
-	case self::FIELD_REVIEWER_TYPE:
-	case self::FIELD_REVIEWER_TYPE_ICON:
-	case self::FIELD_ASSIGN_REVIEW:
-	    usort($rows, array("PaperList", "_sortReviewType"));
-	    break;
-	case self::FIELD_REVIEWS_STATUS:
-	    usort($rows, array($this, "_sortReviewsStatus"));
-	    break;
-	case self::FIELD_TOPIC_INTEREST:
-	    usort($rows, array("PaperList", "_sortTopicInterest"));
-	    break;
-	case self::FIELD_REVIEWER_PREFERENCE:
-	case self::FIELD_EDIT_REVIEWER_PREFERENCE:
-	    usort($rows, array("PaperList", "_sortReviewerPreference"));
-	    break;
-	case self::FIELD_DESIRABILITY:
-	    usort($rows, array("PaperList", "_sortDesirability"));
-	    break;
-	case self::FIELD_SCORE:
-	    $scoreName = $f->score . "Scores";
-	    $this->sortInfo = array();
-	    $this->sortAverage = array();
-	    foreach ($rows as $row)
-		if ($this->contact->canViewReview($row, null))
-		    $this->_setSortRow($row, $scoreName, $f->max, $this->scoreSort);
-		else {
-		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
-		    $this->sortAverage[$row->paperId] = 0;
-		}
-	    usort($rows, array($this, ($this->scoreSort == "M" || $this->scoreSort == "C" || $this->scoreSort == "Y" ? "_sortScore" : "_sortScoreNum")));
-	    break;
-	case self::FIELD_FORMULA:
-	    $formulaf = $f->formula_function;
-	    $this->sortInfo = array();
-	    $this->sortAverage = array();
-	    foreach ($rows as $row) {
-		$this->sortInfo[$row->paperId] = $formulaf($row, $this->contact, "s");
-		$this->sortAverage[$row->paperId] = 0;
-	    }
-	    usort($rows, array($this, "_sortScoreNum"));
-	    break;
-	}
+        }
 
 	if ($this->search->thenmap) {
 	    $this->sortInfo = array();

@@ -23,10 +23,6 @@ class BaseList {
 
     const LOTSAZEROS = "00000000000000";
 
-    var $sortInfo;
-    var $sortAverage;
-    var $scoreMax;
-
     function _normalizeField($fieldId) {
 	if ($fieldId >= self::FIELD_SCORE && $fieldId < self::FIELD_SCORE + self::FIELD_NUMSCORES)
 	    return self::FIELD_SCORE;
@@ -40,21 +36,15 @@ class BaseList {
 	return $a->paperId - $b->paperId;
     }
 
-    function _sortScore($a, $b) {
-	$x = strcmp($this->sortInfo[$b->paperId], $this->sortInfo[$a->paperId]);
-	return $x ? $x : $this->_sortBase($a, $b);
+    public static function score_reset($row) {
+        $row->_sort_info = self::LOTSAZEROS;
+        $row->_sort_average = 0;
     }
 
-    function _sortScoreNum($a, $b) {
-	$x = $this->sortInfo[$b->paperId] - $this->sortInfo[$a->paperId];
-	$x = $x ? $x : $this->sortAverage[$b->paperId] - $this->sortAverage[$a->paperId];
-	return $x ? ($x < 0 ? -1 : 1) : $this->_sortBase($a, $b);
-    }
-
-    function _setSortRow($row, $scoreName, $scoreMax, $scoresort) {
+    public static function score_analyze($row, $scoreName, $scoreMax, $scoresort) {
 	if ($scoresort == "Y" && strlen($scoreName) > 6
 	    && ($v = defval($row, substr($scoreName, 0, -6))) > 0)
-	    $this->sortInfo[$row->paperId] = ":" . $v;
+	    $row->_sort_info = ":" . $v;
 	else if ($scoresort == "M" || $scoresort == "C" || $scoresort == "Y") {
 	    $x = array();
 	    foreach (preg_split('/[\s,]+/', $row->$scoreName) as $i)
@@ -63,7 +53,7 @@ class BaseList {
 	    rsort($x);
 	    $x = (count($x) == 0 ? "0" : implode($x));
 	    $x .= str_pad("", 14, chr(ord($x[strlen($x) - 1]) - 1));
-	    $this->sortInfo[$row->paperId] = $x;
+	    $row->_sort_info = $x;
 	} else if ($scoresort == "E") {
 	    $x = array();
 	    $sum = 0;
@@ -78,8 +68,8 @@ class BaseList {
 		$v = $x[($n-1)/2];
 	    else if ($n > 0)
 		$v = ($x[$n/2 - 1] + $x[$n/2]) / 2.0;
-	    $this->sortInfo[$row->paperId] = $n ? $v : 0;
-	    $this->sortAverage[$row->paperId] = $n ? $sum / $n : 0;
+	    $row->_sort_info = $n ? $v : 0;
+	    $row->_sort_average = $n ? $sum / $n : 0;
 	} else {
 	    $sum = $sum2 = $n = $max = 0;
 	    $min = $scoreMax;
@@ -92,18 +82,36 @@ class BaseList {
 		    $n++;
 		}
 	    if ($n == 0)
-		$this->sortInfo[$row->paperId] = 0;
+		$row->_sort_info = 0;
 	    else if ($scoresort == "A")
-		$this->sortInfo[$row->paperId] = $sum / $n;
+		$row->_sort_info = $sum / $n;
 	    else if ($scoresort == "V") {
 		if ($n == 1)
-		    $this->sortInfo[$row->paperId] = 0;
+		    $row->_sort_info = 0;
 		else
-		    $this->sortInfo[$row->paperId] = ($sum2 / ($n - 1)) - ($sum * $sum / (($n - 1) * $n));
+		    $row->_sort_info = ($sum2 / ($n - 1)) - ($sum * $sum / (($n - 1) * $n));
 	    } else
-		$this->sortInfo[$row->paperId] = $max - $min;
-	    $this->sortAverage[$row->paperId] = ($n ? $sum / $n : 0);
+		$row->_sort_info = $max - $min;
+	    $row->_sort_average = ($n ? $sum / $n : 0);
 	}
+    }
+
+    function score_compar($a, $b) {
+	$x = strcmp($b->_sort_info, $a->_sort_info);
+	return $x ? $x : $this->_sortBase($a, $b);
+    }
+
+    function score_numeric_compar($a, $b) {
+	$x = $b->_sort_info - $a->_sort_info;
+	$x = $x ? $x : $b->_sort_average - $a->_sort_average;
+	return $x ? ($x < 0 ? -1 : 1) : $this->_sortBase($a, $b);
+    }
+
+    public function score_sort(&$rows, $scoresort) {
+        if ($scoresort == "M" || $scoresort == "C" || $scoresort == "Y")
+            usort($rows, array($this, "score_compar"));
+        else
+            usort($rows, array($this, "score_numeric_compar"));
     }
 
 }

@@ -207,14 +207,12 @@ class ContactList extends BaseList {
 	case self::FIELD_SCORE:
 	    $scoreName = $reviewScoreNames[$this->sortField - self::FIELD_SCORE];
 	    $scoreMax = $this->scoreMax[$scoreName];
-	    $this->sortInfo = array();
-	    $this->sortAverage = array();
 	    $scoresort = defval($_SESSION, "pplscoresort", "A");
 	    if ($scoresort != "A" && $scoresort != "V" && $scoresort != "D")
-		$scoresort = 1;
+		$scoresort = "A";
 	    foreach ($rows as $row)
-		$this->_setSortRow($row, $scoreName, $scoreMax, $scoresort);
-	    usort($rows, array($this, "_sortScoreNum"));
+		$this->score_analyze($row, $scoreName, $scoreMax, $scoresort);
+            $this->score_sort($rows, $scoresort);
 	    break;
 	}
 	if ($this->reverseSort)
