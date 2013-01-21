@@ -18,10 +18,6 @@ class PaperColumn extends Column {
         $this->id = $this->group_id = $id;
 
         PaperListField::$by_id[$id] = PaperListField::$by_name[$name] = $this;
-	if ($this->foldnum > 3  /* "authors" == 1 or 2, requires special handling */) {
-            global $paperListFolds;
-	    $paperListFolds[$this->foldname] = $this;
-        }
     }
 
     public function prepare($pl, &$queryOptions, $folded) {
@@ -635,7 +631,6 @@ class ScorePaperColumn extends PaperColumn {
         $this->minimal = $this->sortable = true;
         $this->cssname = "score";
         $this->foldnum = $foldnum;
-        $this->foldname = $this->name;
         $this->score = $name;
     }
     public function prepare($pl, &$queryOptions, $folded) {

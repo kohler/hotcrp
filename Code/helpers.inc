@@ -1956,41 +1956,24 @@ function unparseScoreAverage($avg, $levelChar) {
 	return sprintf("%0.2f", $avg);
 }
 
-function updatePaperListDisplayOptions($x) {
-    global $paperListFolds;
-    require_once("paperlist.inc");
-    $foldmap = array();
-    foreach ($paperListFolds as $name => $fdef)
-	$foldmap[$fdef->foldnum] = $name;
-
-    if ($x) {
-	$a = str_split($x);
-	$x = " ";
-	for ($i = 0; $i < count($a); ++$i) {
-	    $score = ord($a[$i]);
-	    if (isset($foldmap[$score]))
-		$x .= $foldmap[$score] . " ";
-	}
-    }
-    return $x;
-}
-
 function displayOptionsSet($sessionvar, $var = null, $val = null) {
     global $Conf;
     if (isset($_SESSION[$sessionvar]))
 	$x = $_SESSION[$sessionvar];
     else if ($sessionvar == "pldisplay")
-	$x = $Conf->settingText("pldisplay_default", " overAllMerit ");
+	$x = $Conf->settingText("pldisplay_default", "");
     else if ($sessionvar == "ppldisplay")
-	$x = $Conf->settingText("ppldisplay_default", " tags ");
+	$x = $Conf->settingText("ppldisplay_default", "");
     else
 	$x = "";
-    if ($x == null || $x == "")
-	$x = " ";
-
-    // translate old form (character list) into new form (space-separated)
-    if (strpos($x, " ") === false)
-	$x = updatePaperListDisplayOptions($x);
+    if ($x == null || strpos($x, " ") === false) {
+        if ($sessionvar == "pldisplay")
+            $x = " overAllMerit ";
+        else if ($sessionvar == "ppldisplay")
+            $x = " tags ";
+        else
+            $x = " ";
+    }
 
     // set $var to $val in list
     if ($var) {

@@ -157,11 +157,13 @@ if ($getaction == "authors" && isset($papersel) && defval($_REQUEST, "ajax")) {
 
 
 // other field-based Ajax downloads: tags, collaborators, ...
-if ($getaction && ($fdef = defval($paperListFolds, $getaction))
-    && isset($fdef->id) && defval($_REQUEST, "ajax")) {
+if ($getaction
+    && ($fdef = PaperListField::lookup($getaction))
+    && $fdef->foldnum
+    && defval($_REQUEST, "ajax")) {
     $Search = new PaperSearch($Me, $_REQUEST);
     $pl = new PaperList($Search);
-    $response = $pl->ajaxColumn($fdef->id, $Me);
+    $response = $pl->ajaxColumn($getaction, $Me);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
 }
@@ -851,9 +853,9 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 // set fields to view
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["pldisplay"] = " ";
-    foreach ($paperListFolds as $n => $foldnum)
-	if (defval($_REQUEST, "show$n", 0))
-	    $_SESSION["pldisplay"] .= $n . " ";
+    foreach ($_REQUEST as $k => $v)
+        if (substr($k, 0, 4) == "show" && $v)
+            $_SESSION["pldisplay"] .= substr($k, 4) . " ";
 }
 displayOptionsSet("pldisplay");
 if (defval($_REQUEST, "scoresort") == "M")

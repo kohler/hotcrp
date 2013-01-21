@@ -759,7 +759,7 @@ class PaperList extends BaseList {
 
     function _field_is_folded($field) {
 	if (is_object($field))
-	    $field = $field->foldname;
+	    $field = $field->foldnum ? $field->name : null;
 	return ($field
 		&& !defval($_REQUEST, "show$field")
 		&& strpos($this->display, " $field ") === false);
@@ -790,10 +790,10 @@ class PaperList extends BaseList {
 		$t .= $td . "\"></td>\n";
 		continue;
 	    }
-	    if ($fdef->foldname && !isset($rstate->foldinfo[$fdef->foldname]))
-		$rstate->foldinfo[$fdef->foldname] = $this->_field_is_folded($fdef);
-	    if ($fdef->foldname && $rstate->foldinfo[$fdef->foldname]) {
-		$t .= $td . "\" id=\"$fdef->foldname.$row->paperId\"></td>\n";
+	    if ($fdef->foldnum && !isset($rstate->foldinfo[$fdef->name]))
+		$rstate->foldinfo[$fdef->name] = $this->_field_is_folded($fdef);
+	    if ($fdef->foldnum && $rstate->foldinfo[$fdef->name]) {
+		$t .= $td . "\" id=\"$fdef->name.$row->paperId\"></td>\n";
                 $this->any[$fdef->name] = true;
 	    } else {
 		$c = $fdef->content($this, $row);
@@ -809,15 +809,15 @@ class PaperList extends BaseList {
 	    if ($fdef->view != Column::VIEW_ROW
                 || $fdef->content_empty($this, $row))
 		continue;
-	    if ($fdef->foldname	&& !isset($rstate->foldinfo[$fdef->foldname]))
-		$rstate->foldinfo[$fdef->foldname] = $this->_field_is_folded($fdef);
-	    if ($fdef->foldname && $fdef->foldname != "authors"
-		&& $rstate->foldinfo[$fdef->foldname]) {
-		$tt .= "<div id=\"$fdef->foldname.$row->paperId\"></div>";
+	    if ($fdef->foldnum && !isset($rstate->foldinfo[$fdef->name]))
+		$rstate->foldinfo[$fdef->name] = $this->_field_is_folded($fdef);
+	    if ($fdef->foldnum && $fdef->name != "authors"
+                && $rstate->foldinfo[$fdef->name]) {
+		$tt .= "<div id=\"$fdef->name.$row->paperId\"></div>";
                 $this->any[$fdef->name] = true;
 	    } else if (($c = $fdef->content($this, $row)) !== "") {
-		$tt .= "<div id=\"$fdef->foldname.$row->paperId\" class=\"fx";
-		if ($fdef->foldname != "authors")
+		$tt .= "<div id=\"$fdef->name.$row->paperId\" class=\"fx";
+		if ($fdef->name != "authors")
 		    $tt .= $fdef->foldnum;
 		else if ($this->contact->canViewAuthors($row, true)) {
 		    $tt .= "1";
@@ -878,15 +878,15 @@ class PaperList extends BaseList {
 	global $Conf;
 	$classes = $jsmap = $jsloadmap = $jsnotitlemap = array();
 	foreach ($fieldDef as $fdef)
-	    if ($fdef->foldname && $fdef->foldname !== "authors"
-		&& isset($rstate->foldinfo[$fdef->foldname])) {
-		$closed = $rstate->foldinfo[$fdef->foldname];
+	    if ($fdef->foldnum && $fdef->name !== "authors"
+		&& isset($rstate->foldinfo[$fdef->name])) {
+		$closed = $rstate->foldinfo[$fdef->name];
 		$classes[] = "fold$fdef->foldnum" . ($closed ? "c" : "o");
-		$jsmap[] = "\"$fdef->foldname\":$fdef->foldnum";
+		$jsmap[] = "\"$fdef->name\":$fdef->foldnum";
 		if ($closed && $this->any[$fdef->name])
-		    $jsloadmap[] = "\"$fdef->foldname\":true";
+		    $jsloadmap[] = "\"$fdef->name\":true";
 		if ($fdef->view == Column::VIEW_COLUMN)
-		    $jsnotitlemap[] = "\"$fdef->foldname\":true";
+		    $jsnotitlemap[] = "\"$fdef->name\":true";
 	    }
 	// authorship requires special handling
 	if ($this->any->openau || $this->any->anonau) {
@@ -1248,15 +1248,15 @@ class PaperList extends BaseList {
 
 	// collect row data
 	$data = array();
-	$foldname = $fdef->foldname;
+	$name = $fdef->name;
 	if (($x = $fdef->header($this)))
-	    $data["$foldname.title"] = $x;
+	    $data["$name.title"] = $x;
 	while (($row = edb_orow($result))) {
 	    if ($fdef->content_empty($this, $row))
 		$c = "";
 	    else
 		$c = $fdef->content($this, $row);
-	    $data["$foldname.$row->paperId"] = $c;
+	    $data["$name.$row->paperId"] = $c;
 	}
 
 	return $data;
@@ -1279,13 +1279,7 @@ class PaperListField {
     }
 
     static function initialize() {
-	global $paperListFolds, $paperListFormulas, $reviewScoreNames, $Conf;
-
-	$paperListFolds = array("au" => (object) array("id" => PaperList::FIELD_OPT_AUTHORS, "foldnum" => 1),
-				"anonau" => (object) array("id" => PaperList::FIELD_OPT_AUTHORS, "foldnum" => 2),
-				"rownum" => (object) array("foldnum" => 6),
-				"aufull" => (object) array("foldnum" => 16),
-				"force" => (object) array("foldnum" => 20));
+	global $paperListFormulas, $reviewScoreNames, $Conf;
 
         require_once("papercolumn.php");
 	new GenericPaperColumn("sel", PaperList::FIELD_SELECTOR, 1, array("minimal" => true));
@@ -1293,20 +1287,20 @@ class PaperListField {
 	new GenericPaperColumn("selconf", PaperList::FIELD_SELECTOR_CONFLICT, 1, array("cssname" => "confselector"));
 	new GenericPaperColumn("id", PaperList::FIELD_ID, 1, array("minimal" => true, "sortable" => true));
 	new GenericPaperColumn("title", PaperList::FIELD_TITLE, 1, array("minimal" => true, "sortable" => true));
+	new GenericPaperColumn("status", PaperList::FIELD_STATUS_SHORT, 1, array("sortable" => true));
 	new GenericPaperColumn("statusfull", PaperList::FIELD_STATUS, 1, array("cssname" => "status", "sortable" => true));
 	new GenericPaperColumn("revtypetext", PaperList::FIELD_REVIEWER_TYPE, 1, array("cssname" => "text", "sortable" => true));
 	new GenericPaperColumn("revtype", PaperList::FIELD_REVIEWER_TYPE_ICON, 1, array("sortable" => true));
-	new GenericPaperColumn("revstatus", PaperList::FIELD_REVIEWER_STATUS, 1, array("cssname" => "text"));
+	new GenericPaperColumn("revstat", PaperList::FIELD_REVIEWS_STATUS, 1, true);
+	new GenericPaperColumn("revsubmitted", PaperList::FIELD_REVIEWER_STATUS, 1, array("cssname" => "text"));
 	new GenericPaperColumn("revdelegated", PaperList::FIELD_REVIEWER_MONITOR, 1, array("cssname" => "text", "sortable" => true));
-	new GenericPaperColumn("status", PaperList::FIELD_STATUS_SHORT, 1, array("sortable" => true));
 	new GenericPaperColumn("assrev", PaperList::FIELD_ASSIGN_REVIEW, 1, true);
 	new GenericPaperColumn("topicscore", PaperList::FIELD_TOPIC_INTEREST, 1, true);
 	new GenericPaperColumn("topics", PaperList::FIELD_OPT_TOPIC_NAMES, 2, 13);
 	new GenericPaperColumn("revpref", PaperList::FIELD_REVIEWER_PREFERENCE, 1, true);
 	new GenericPaperColumn("revprefedit", PaperList::FIELD_EDIT_REVIEWER_PREFERENCE, 1, true);
-	new GenericPaperColumn("revstat", PaperList::FIELD_REVIEWS_STATUS, 1, true);
 	new GenericPaperColumn("desirability", PaperList::FIELD_DESIRABILITY, 1, true);
-	new GenericPaperColumn("revprefall", PaperList::FIELD_ALL_PREFERENCES, 2);
+	new GenericPaperColumn("allrevpref", PaperList::FIELD_ALL_PREFERENCES, 2);
 	new AuthorsPaperColumn("authors", PaperList::FIELD_OPT_AUTHORS, 2, 3);
 	new GenericPaperColumn("tags", PaperList::FIELD_TAGS, 2, 4);
 	new GenericPaperColumn("abstract", PaperList::FIELD_OPT_ABSTRACT, 2, 5);
