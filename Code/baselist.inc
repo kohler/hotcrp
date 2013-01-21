@@ -114,9 +114,35 @@ class BaseList {
             usort($rows, array($this, "score_numeric_compar"));
     }
 
+    public static function parse_sorter($text) {
+        global $scoreSorts, $defaultScoreSort;
+        $sort = (object) array("type" => null,
+                               "reverse" => false,
+                               "score" => defval($_SESSION, "scoresort", $defaultScoreSort));
+        if (!preg_match('/\A(\d+)([a-z]*)\z/i', $text, $m)
+            && !preg_match('/\A([^,+]+)(?:[,+]([a-z]*))?\z/i', $text, $m))
+            $m = array();
+        if (isset($m[1]))
+            $sort->type = $m[1];
+        if (isset($m[2]) && $m[2] != "")
+            for ($i = 0; $i < strlen($m[2]); ++$i) {
+                $x = strtoupper($m[2][$i]);
+                if ($x == "R")
+                    $sort->reverse = true;
+                else if ($x == "N")
+                    $sort->reverse = false;
+                else if ($x == "M")
+                    $sort->score = "C";
+                else if (isset($scoreSorts[$x]))
+                    $sort->score = $x;
+            }
+        return $sort;
+    }
+
 }
 
 class Column {
+    const VIEW_NONE = 0;
     const VIEW_COLUMN = 1;
     const VIEW_ROW = 2;
 

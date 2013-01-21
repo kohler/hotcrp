@@ -56,12 +56,8 @@ class PaperList extends BaseList {
     public $papersel;
     public $display;
 
-    var $sortField;
-    var $sortInfo;
-    var $sortAverage;
-    var $reverseSort;
-    var $scoreSort;
-    var $sortable;
+    private $sortable;
+    public $sorter;
     var $listNumber;
     var $contact;
     var $scoresOk;
@@ -90,28 +86,13 @@ class PaperList extends BaseList {
     function __construct($search, $args = array()) {
 	global $scoreSorts, $defaultScoreSort, $Conf;
 	$this->showHeader = self::HEADER_NONE;
+	$this->search = $search;
 
-	$this->sortable = !!defval($args, "sort");
-	$s = ($this->sortable ? defval($_REQUEST, "sort", "") : "");
-	$this->reverseSort = false;
-	$this->scoreSort = defval($_SESSION, "scoresort", $defaultScoreSort);
-	for ($p = strlen($s) - 1; $p >= 0; --$p) {
-	    $x = strtoupper($s[$p]);
-	    if ($x == "R")
-		$this->reverseSort = true;
-	    else if ($x == "N")
-		$this->reverseSort = false;
-	    else if ($x == "M")
-		$this->scoreSort = "C";
-	    else if (isset($scoreSorts[$x]))
-		$this->scoreSort = $x;
-	    else
-		break;
-	}
-	if (("x" . (int) $s) == ("x" . substr($s, 0, $p + 1)))
-	    $this->sortField = (int) $s;
-	else
-	    $this->sortField = null;
+	if (($this->sortable = !!defval($args, "sort"))
+            && isset($_REQUEST["sort"]))
+            $this->sorter = BaseList::parse_sorter($_REQUEST["sort"]);
+        else
+            $this->sorter = BaseList::parse_sorter("");
 
 	$this->paperLink = "";
 	$this->paperLinkArgs = "";
@@ -121,7 +102,6 @@ class PaperList extends BaseList {
 	} else
 	    $this->listNumber = 0;
 
-	$this->search = $search;
 	$this->extraText = defval($args, "extraText");
 	$this->scoresOk = false;
 	$this->showConflict = true;
@@ -140,68 +120,31 @@ class PaperList extends BaseList {
 	return $a->paperId - $b->paperId;
     }
 
-    function _sortPidarray($a, $b) {
-	return $this->sortInfo[$a->paperId] - $this->sortInfo[$b->paperId];
-    }
-
-    function _sortTagIndex($a, $b) {
-	$x = 0;
-	$ot = $this->search->orderTags;
-	for ($i = 0; $x == 0 && $i < count($ot); ++$i) {
-	    $n = "tagIndex" . ($i ? $i : "");
-	    if (($a->conflictType > 0 && $this->sortInfo) || $a->$n === null)
-		$av = 2147483647;
-	    else
-		$av = $a->$n;
-	    if (($b->conflictType > 0 && $this->sortInfo) || $b->$n === null)
-		$bv = 2147483647;
-	    else
-		$bv = $b->$n;
-	    $x = ($av < $bv ? -1 : ($av == $bv ? 0 : 1));
-	    if ($ot[$i]->reverse)
-		$x = -$x;
-	}
-	return $x ? $x : $a->paperId - $b->paperId;
-    }
-
     function _sortThenmap($a, $b) {
 	$thenmap = $this->search->thenmap;
 	$x = $thenmap[$a->paperId] - $thenmap[$b->paperId];
-	return $x ? $x : $this->sortInfo[$a->paperId] - $this->sortInfo[$b->paperId];
+	return $x ? $x : $a->_sort_info - $b->_sort_info;
     }
 
-    function _sort($rows, $pidarray) {
-	global $Conf;
-        if (($f = PaperListField::lookup($this->sortField)))
-            $f->sort($this, $rows);
-        else if ($this->sortField == self::FIELD_PIDARRAY) {
-	    $this->sortInfo = array_flip($pidarray);
-	    usort($rows, array($this, "_sortPidarray"));
-        } else if ($this->sortField == self::FIELD_TAGINDEX) {
-	    // $this->sortInfo == whether to be careful about conflicts
-	    $this->sortInfo = !$this->contact->privChair && $Conf->setting("tag_seeall") <= 0;
-	    usort($rows, array($this, "_sortTagIndex"));
-        }
-
+    function _sort($rows, $fdef) {
+        $fdef->sort($this, $rows);
 	if ($this->search->thenmap) {
-	    $this->sortInfo = array();
 	    for ($i = 0; $i < count($rows); ++$i)
-		$this->sortInfo[$rows[$i]->paperId] = $i;
+                $rows[$i]->_sort_info = $i;
 	    usort($rows, array($this, "_sortThenmap"));
 	}
-
 	return $rows;
     }
 
     function sortdef($always = false) {
-	if ($this->sortField
+	if ($this->sorter->type
 	    && ($always || defval($_REQUEST, "sort", "") != "")
-	    && ($this->sortField != 1 || $this->reverseSort)) {
-	    $t = $this->sortField . ($this->reverseSort ? "R" : "");
-            $f = PaperListField::lookup($this->sortField);
-	    if ($f && $f->group_id == self::FIELD_SCORE)
-		$t .= $this->scoreSort;
-	    return $t;
+	    && ($this->sorter->type != "id" || $this->sorter->reverse)) {
+            $x = ($this->sorter->reverse ? "r" : "");
+            if (($fdef = PaperColumn::lookup($this->sorter->type))
+                && isset($fdef->score))
+                $x .= $this->sorter->score;
+            return $this->sorter->type . ($x ? ",$x" : "");
 	} else
 	    return "";
     }
@@ -585,34 +528,21 @@ class PaperList extends BaseList {
 	$newFields = array();
 	foreach ($fields as $fid) {
 	    $nf = array();
-	    if ($fid == self::FIELD_SCORE) {
-		if (!$this->scoresOk)
-		    continue;
-                foreach (PaperListField::$by_id as $newfid => $f)
-                    if ($f->group_id == self::FIELD_SCORE
-			&& ($p = array_search($f->score, $this->rf->fieldOrder)) !== false)
-			$nf[$newfid] = $p;
-		asort($nf);
-		$nf = array_keys($nf);
-                $this->scoresOk = "present";
-	    } else if ($fid == self::FIELD_FORMULA) {
-		if (!$this->scoresOk)
-		    continue;
-		foreach (PaperListField::$by_id as $newfid => $f)
-                    if ($f->group_id == self::FIELD_FORMULA)
-                        $nf[] = $newfid;
-	    } else if ($fid == self::FIELD_TAGREPORT) {
-		foreach (PaperListField::$by_id as $newfid => $f)
-		    if ($f->group_id == self::FIELD_TAGREPORT)
-			$nf[] = $newfid;
-	    } else
-		$nf[] = $fid;
-	    foreach ($nf as $newfid) {
-                $f = PaperListField::lookup($newfid);
-                $f->sorting = false;
+	    if ($fid == "scores") {
+		if ($this->scoresOk) {
+                    $nf = ScorePaperColumn::lookup_all();
+                    $this->scoresOk = "present";
+                }
+	    } else if ($fid == "formulas") {
+		if ($this->scoresOk)
+                    $nf = FormulaPaperColumn::lookup_all();
+	    } else if ($fid == "tagreports") {
+                $nf = TagReportPaperColumn::lookup_all();
+	    } else if (($f = PaperColumn::lookup($fid)))
+		$nf[] = $f;
+	    foreach ($nf as $f)
 		if (!$minimal || $f->minimal)
 		    $newFields[] = $f;
-            }
 	}
 	return $newFields;
     }
@@ -641,11 +571,11 @@ class PaperList extends BaseList {
 	    break;
 	case "s":
 	case "acc":
-	    $fields = "sel id title revtype revstat status authors abstract tags " . self::FIELD_TAGREPORT . " topics collab reviewers pcconf lead shepherd " . self::FIELD_SCORE . " " . self::FIELD_FORMULA;
+	    $fields = "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	    break;
 	case "all":
 	case "act":
-            $fields = "sel id title statusfull revtype authors abstract tags " . self::FIELD_TAGREPORT . " topics collab reviewers pcconf lead shepherd";
+            $fields = "sel id title statusfull revtype authors abstract tags tagreports topics collab reviewers pcconf lead shepherd";
 	    break;
 	case "reviewerHome":
 	    $this->paperLink = "review";
@@ -654,19 +584,19 @@ class PaperList extends BaseList {
 	case "r":
 	case "lead":
 	    $this->paperLink = "review";
-            $fields = "sel id title revtype revstat status authors abstract tags " . self::FIELD_TAGREPORT . " topics collab reviewers pcconf lead shepherd " . self::FIELD_SCORE . " " . self::FIELD_FORMULA;
+            $fields = "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	    break;
 	case "rout":
 	    $this->paperLink = "review";
-            $fields = "sel id title revtype revstat status authors abstract tags " . self::FIELD_TAGREPORT . " topics collab reviewers pcconf lead shepherd " . self::FIELD_SCORE . " " . self::FIELD_FORMULA;
+            $fields = "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	    break;
 	case "req":
 	    $this->paperLink = "review";
-            $fields = "sel id title revtype revstat status authors abstract tags " . self::FIELD_TAGREPORT . " topics collab reviewers pcconf lead shepherd " . self::FIELD_SCORE . " " . self::FIELD_FORMULA;
+            $fields = "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	    break;
 	case "reqrevs":
 	    $this->paperLink = "review";
-            $fields = "id title revdelegated revsubmitted revstat status authors abstract tags " . self::FIELD_TAGREPORT . " topics collab reviewers pcconf lead shepherd";
+            $fields = "id title revdelegated revsubmitted revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd";
 	    break;
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
@@ -1019,40 +949,42 @@ class PaperList extends BaseList {
 	}
 	if (defval($_REQUEST, "selectall") > 0
             && $field_list[0]->name == "sel")
-	    $field_list[0] = PaperListField::lookup("selon");
+	    $field_list[0] = PaperColumn::lookup("selon");
 
 	// check paper link destination
 	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
 	    $this->paperLink = $_REQUEST["linkto"];
 
-	// paper list query?
-	$pidarray = null;
-	$specialSortable = false;
-	if (count($this->search->orderTags)) {
-	    $queryOptions["tagIndex"] = array();
-	    foreach ($this->search->orderTags as $x)
-		$queryOptions["tagIndex"][] = $x->tag;
-	    $specialSortable = self::FIELD_TAGINDEX;
-	} else if (($pidarray = $this->search->simplePaperList()) !== null)
-	    $specialSortable = self::FIELD_PIDARRAY;
+        // check sort
+        $special_sort = $sort_field = null;
+        if (!$special_sort && count($this->search->orderTags)
+            && ($special_sort = PaperColumn::lookup("tagordersort"))
+            && !$special_sort->prepare($this, $queryOptions, false))
+            $special_sort = null;
+        if (!$special_sort && $this->search->simplePaperList() !== null)
+            $special_sort = PaperColumn::lookup("searchsort");
+        if ($this->sorter->type
+            && ($sort_field = PaperColumn::lookup($this->sorter->type))
+            && !$sort_field->prepare($this, $queryOptions, false))
+            $sort_field = null;
+        if (!$sort_field)
+            $sort_field = $special_sort;
+        if (!$sort_field)
+            $sort_field = PaperColumn::lookup("id");
+        $this->sorter->type = $sort_field->name;
 
 	// get field array
 	$fieldDef = array();
 	$ncol = 0;
-        $found_sort = false;
-	foreach ($field_list as $f) {
-            if ($f->id == $this->sortField)
-                $found_sort = $f->sorting = true;
-	    if ($f->prepare($this, $queryOptions,
-                            $this->_field_is_folded($f))) {
-		$fieldDef[$f->id] = $f;
+	foreach ($field_list as $f)
+	    if ($f->view > 0
+                && $f->prepare($this, $queryOptions,
+                               $this->_field_is_folded($f))) {
+		$fieldDef[] = $f;
 		if ($f->view == Column::VIEW_COLUMN)
 		    $ncol++;
 	    }
-        }
 	$this->aufull = !$this->_field_is_folded("aufull");
-        if ((!$this->sortField || !$found_sort) && $specialSortable)
-            $this->sortField = $specialSortable;
 
 	// make query
 	$result = $this->_prepareQuery($me, $queryOptions);
@@ -1067,16 +999,16 @@ class PaperList extends BaseList {
 	    $rows[] = $row;
 
 	// sort rows
-	$srows = $this->_sort($rows, $pidarray);
-	if ($this->reverseSort)
+	$srows = $this->_sort($rows, $sort_field);
+	if ($this->sorter->reverse)
 	    $srows = array_reverse($srows);
 	if (isset($queryOptions["allReviewScores"]))
 	    $this->_sortReviewOrdinal($srows);
 
 	// count non-callout columns
 	$skipcallout = 0;
-	foreach ($fieldDef as $fieldId => $fdef)
-	    if ($fieldId > self::FIELD_ID && $fieldId < self::FIELD_SELECTOR)
+	foreach ($fieldDef as $fdef)
+	    if ($fdef->name != "id" && !isset($fdef->is_selector))
 		break;
 	    else
 		++$skipcallout;
@@ -1119,7 +1051,7 @@ class PaperList extends BaseList {
 	    } else
 		$sortUrl = false;
 
-	    foreach ($fieldDef as $fieldId => $fdef) {
+	    foreach ($fieldDef as $fdef) {
 		if ($fdef->view != Column::VIEW_COLUMN)
 		    continue;
 		if (!$this->any[$fdef->name]) {
@@ -1132,23 +1064,18 @@ class PaperList extends BaseList {
 		$colhead .= "\">";
 		$ftext = $fdef->header($this, null, $ord++);
 
-		$sortableSelector = $fieldId >= self::FIELD_SELECTOR
-		    && $fieldId <= self::FIELD_LAST_SELECTOR
-		    && $sortUrl && $specialSortable;
-		if ($sortableSelector && $specialSortable == self::FIELD_TAGINDEX)
-		    $ftext = "<span class='hastitle' title='Sort by tag order'>#</span>";
-		else if ($sortableSelector && $specialSortable == self::FIELD_PIDARRAY)
-		    $ftext = "<span class='hastitle' title='Sort by search term order'>#</span>";
-
-		if ($this->sortField == null && $sortUrl && $fieldId < 10)
-		    $this->sortField = $fieldId;
-		if ($fieldId == $this->sortField
-		    || ($sortableSelector && $this->sortField == $specialSortable))
-		    $colhead .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' title='Reverse sort' href=\"" . $sortUrl . $this->sortField . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";
+                $has_special_sort = isset($fdef->is_selector) && $sortUrl && $special_sort;
+                if ($has_special_sort && $special_sort->name == "tagordersort")
+                    $ftext = "<span class='hastitle' title='Sort by tag order'>#</span>";
+                else if ($has_special_sort && $special_sort->name == "searchsort")
+                    $ftext = "<span class='hastitle' title='Sort by search term order'>#</span>";
+		if (($fdef->name == $sort_field->name && $sortUrl)
+                    || ($has_special_sort && $sort_field->name == $special_sort->name))
+		    $colhead .= "<a class='pl_sort_def" . ($this->sorter->reverse ? "_rev" : "") . "' title='Reverse sort' href=\"" . $sortUrl . urlencode($sort_field->name . "," . ($this->sorter->reverse ? "n" : "r")) . "\">" . $ftext . "</a>";
 		else if ($fdef->sortable && $sortUrl)
-		    $colhead .= $q . $fieldId . "\">" . $ftext . "</a>";
-		else if ($sortableSelector)
-		    $colhead .= $q . $specialSortable . "\">" . $ftext . "</a>";
+		    $colhead .= $q . urlencode($fdef->name) . "\">" . $ftext . "</a>";
+		else if ($has_special_sort)
+		    $colhead .= $q . urlencode($special_sort->name) . "\">" . $ftext . "</a>";
 		else
 		    $colhead .= $ftext;
 		if ($titleextra && $fdef->cssname == "title") {
@@ -1182,9 +1109,7 @@ class PaperList extends BaseList {
 	} else
 	    $enter .= $colhead;
 
-	reset($fieldDef);
-	if (key($fieldDef) == self::FIELD_SELECTOR
-	    || key($fieldDef) == self::FIELD_SELECTOR_ON)
+	if ($fieldDef[0]->name == "sel" || $fieldDef[0]->name == "selon")
 	    $enter .= $this->footer($ncol, $listname, $rstate->last_trclass);
 
 	$x = $enter . " <tbody>\n" . join("", $body) . " </tbody>\n" . $exit;
@@ -1236,7 +1161,7 @@ class PaperList extends BaseList {
 	// get field array
 	$ncol = 0;
 	$this->unfolded = true;
-	if (!($fdef = PaperListField::lookup($fieldId))
+	if (!($fdef = PaperColumn::lookup($fieldId))
 	    || !$fdef->prepare($this, $queryOptions, false))
 	    return null;
 	$unfolded = $this->unfolded;
@@ -1263,92 +1188,3 @@ class PaperList extends BaseList {
     }
 
 }
-
-
-class PaperListField {
-    static public $by_id = array();
-    static public $by_name = array();
-
-    static function lookup($name) {
-        if (isset(self::$by_id[$name]))
-            return self::$by_id[$name];
-        else if (isset(self::$by_name[$name]))
-            return self::$by_name[$name];
-        else
-            return null;
-    }
-
-    static function initialize() {
-	global $paperListFormulas, $reviewScoreNames, $Conf;
-
-        require_once("papercolumn.php");
-	new GenericPaperColumn("sel", PaperList::FIELD_SELECTOR, 1, array("minimal" => true));
-	new GenericPaperColumn("selon", PaperList::FIELD_SELECTOR_ON, 1, array("minimal" => true, "cssname" => "sel"));
-	new GenericPaperColumn("selconf", PaperList::FIELD_SELECTOR_CONFLICT, 1, array("cssname" => "confselector"));
-	new GenericPaperColumn("id", PaperList::FIELD_ID, 1, array("minimal" => true, "sortable" => true));
-	new GenericPaperColumn("title", PaperList::FIELD_TITLE, 1, array("minimal" => true, "sortable" => true));
-	new GenericPaperColumn("status", PaperList::FIELD_STATUS_SHORT, 1, array("sortable" => true));
-	new GenericPaperColumn("statusfull", PaperList::FIELD_STATUS, 1, array("cssname" => "status", "sortable" => true));
-	new GenericPaperColumn("revtypetext", PaperList::FIELD_REVIEWER_TYPE, 1, array("cssname" => "text", "sortable" => true));
-	new GenericPaperColumn("revtype", PaperList::FIELD_REVIEWER_TYPE_ICON, 1, array("sortable" => true));
-	new GenericPaperColumn("revstat", PaperList::FIELD_REVIEWS_STATUS, 1, true);
-	new GenericPaperColumn("revsubmitted", PaperList::FIELD_REVIEWER_STATUS, 1, array("cssname" => "text"));
-	new GenericPaperColumn("revdelegated", PaperList::FIELD_REVIEWER_MONITOR, 1, array("cssname" => "text", "sortable" => true));
-	new GenericPaperColumn("assrev", PaperList::FIELD_ASSIGN_REVIEW, 1, true);
-	new GenericPaperColumn("topicscore", PaperList::FIELD_TOPIC_INTEREST, 1, true);
-	new GenericPaperColumn("topics", PaperList::FIELD_OPT_TOPIC_NAMES, 2, 13);
-	new GenericPaperColumn("revpref", PaperList::FIELD_REVIEWER_PREFERENCE, 1, true);
-	new GenericPaperColumn("revprefedit", PaperList::FIELD_EDIT_REVIEWER_PREFERENCE, 1, true);
-	new GenericPaperColumn("desirability", PaperList::FIELD_DESIRABILITY, 1, true);
-	new GenericPaperColumn("allrevpref", PaperList::FIELD_ALL_PREFERENCES, 2);
-	new AuthorsPaperColumn("authors", PaperList::FIELD_OPT_AUTHORS, 2, 3);
-	new GenericPaperColumn("tags", PaperList::FIELD_TAGS, 2, 4);
-	new GenericPaperColumn("abstract", PaperList::FIELD_OPT_ABSTRACT, 2, 5);
-	new GenericPaperColumn("reviewers", PaperList::FIELD_OPT_ALL_REVIEWER_NAMES, 2, 10);
-	new GenericPaperColumn("lead", PaperList::FIELD_LEAD, 2, 12);
-	new GenericPaperColumn("shepherd", PaperList::FIELD_SHEPHERD, 2, 11);
-	new GenericPaperColumn("pcconf", PaperList::FIELD_OPT_PC_CONFLICTS, 2, 14);
-	new GenericPaperColumn("collab", PaperList::FIELD_COLLABORATORS, 2, 15);
-	new ConflictMatchPaperColumn("authorsmatch", PaperList::FIELD_AUTHOR_MATCH, 2);
-	new ConflictMatchPaperColumn("collabmatch", PaperList::FIELD_COLLABORATORS_MATCH, 2);
-
-	$nextfield = PaperList::FIELD_SCORE;
-	foreach ($reviewScoreNames as $k => $n) {
-	    $fdef = new ScorePaperColumn($n, $nextfield, $nextfield);
-            $fdef->group_id = PaperList::FIELD_SCORE;
-	    ++$nextfield;
-	}
-
-	$nextfold = 21;
-	$paperListFormulas = array();
-	if ($Conf && $Conf->setting("formulas") && $Conf->sversion >= 32) {
-	    $result = $Conf->q("select * from Formula order by lower(name)");
-	    while (($row = edb_orow($result))) {
-		$fid = $row->formulaId;
-		$fdef = new FormulaPaperColumn("formula$fid", $nextfield, $row, $nextfold);
-                $fdef->group_id = PaperList::FIELD_FORMULA;
-		$row->fieldId = $nextfield;
-		$paperListFormulas[$fid] = $row;
-		++$nextfold;
-		++$nextfield;
-	    }
-	}
-
-        $tagger = new Tagger;
-	if ($Conf && ($tagger->has_vote() || $tagger->has_rank())) {
-            $vt = array();
-            foreach ($tagger->defined_tags() as $v)
-                if ($v->vote || $v->rank)
-                    $vt[] = $v->tag;
-	    foreach ($vt as $n) {
-		$fdef = new TagReportPaperColumn($n, $nextfield, $nextfold);
-                $fdef->group_id = PaperList::FIELD_TAGREPORT;
-		++$nextfold;
-		++$nextfield;
-	    }
-	}
-    }
-
-}
-
-PaperListField::initialize();

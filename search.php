@@ -100,7 +100,7 @@ if (($getaction == "paper" || $getaction == "final"
 if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $Search = new PaperSearch($Me, $_REQUEST);
     $pl = new PaperList($Search);
-    $response = $pl->ajaxColumn(PaperList::FIELD_OPT_ABSTRACT, $Me);
+    $response = $pl->ajaxColumn("abstract", $Me);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
 } else if ($getaction == "abstract" && isset($papersel)) {
@@ -144,23 +144,13 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
 }
 
 
-// download selected authors
-if ($getaction == "authors" && isset($papersel) && defval($_REQUEST, "ajax")) {
-    $full = defval($_REQUEST, "aufull", 0);
-    displayOptionsSet("pldisplay", "aufull", $full);
-    $Search = new PaperSearch($Me, $_REQUEST);
-    $pl = new PaperList($Search);
-    $response = $pl->ajaxColumn(PaperList::FIELD_OPT_AUTHORS, $Me);
-    $response["ok"] = (count($response) > 0);
-    $Conf->ajaxExit($response);
-}
-
-
 // other field-based Ajax downloads: tags, collaborators, ...
-if ($getaction
-    && ($fdef = PaperListField::lookup($getaction))
-    && $fdef->foldnum
-    && defval($_REQUEST, "ajax")) {
+if ($getaction && ($fdef = PaperColumn::lookup($getaction))
+    && $fdef->foldnum && defval($_REQUEST, "ajax")) {
+    if ($getaction == "authors") {
+        $full = defval($_REQUEST, "aufull", 0);
+        displayOptionsSet("pldisplay", "aufull", $full);
+    }
     $Search = new PaperSearch($Me, $_REQUEST);
     $pl = new PaperList($Search);
     $response = $pl->ajaxColumn($getaction, $Me);

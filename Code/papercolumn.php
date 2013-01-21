@@ -6,8 +6,10 @@
 require_once("paperlist.inc");
 
 class PaperColumn extends Column {
-    public $id;
-    public $group_id;
+    protected $id;
+
+    static private $by_id = array();
+    static private $by_name = array();
 
     public function __construct($name, $id, $view, $extra) {
         if ($extra === true)
@@ -15,9 +17,23 @@ class PaperColumn extends Column {
         else if (is_int($extra))
             $extra = array("foldnum" => $extra);
         parent::__construct($name, $view, $extra);
-        $this->id = $this->group_id = $id;
+        $this->id = $id;
+    }
 
-        PaperListField::$by_id[$id] = PaperListField::$by_name[$name] = $this;
+    public static function lookup($name) {
+        if (isset(self::$by_id[$name]))
+            return self::$by_id[$name];
+        else if (isset(self::$by_name[$name]))
+            return self::$by_name[$name];
+        else
+            return null;
+    }
+
+    public static function register($fdef) {
+        assert(!isset(self::$by_id[$fdef->id])
+               && !isset(self::$by_name[$fdef->name]));
+        self::$by_id[$fdef->id] = self::$by_name[$fdef->name] = $fdef;
+        return $fdef;
     }
 
     public function prepare($pl, &$queryOptions, $folded) {
@@ -51,7 +67,7 @@ class GenericPaperColumn extends PaperColumn {
 
     public function prepare($pl, &$queryOptions, $folded) {
 	global $Conf;
-	switch ($this->group_id) {
+	switch ($this->id) {
 	case PaperList::FIELD_TOPIC_INTEREST:
 	    if (!count($pl->rf->topicName))
 		return false;
@@ -79,9 +95,6 @@ class GenericPaperColumn extends PaperColumn {
 	    break;
 	case PaperList::FIELD_ASSIGN_REVIEW:
 	    $Conf->footerScript("addAssrevAjax()");
-	    break;
-	case PaperList::FIELD_SELECTOR_CONFLICT:
-	    $Conf->footerScript("addConflictAjax()");
 	    break;
 	case PaperList::FIELD_DESIRABILITY:
 	    $queryOptions['desirability'] = 1;
@@ -186,7 +199,7 @@ class GenericPaperColumn extends PaperColumn {
 
     public function sort($pl, &$rows) {
         global $Conf;
-	switch ($this->group_id) {
+	switch ($this->id) {
 	case PaperList::FIELD_ID:
 	    ksort($rows);
 	    break;
@@ -235,7 +248,7 @@ class GenericPaperColumn extends PaperColumn {
     }
 
     public function header($pl, $row = null, $ordinal = 0) {
-	switch ($this->group_id) {
+	switch ($this->id) {
 	case PaperList::FIELD_ID:
 	    return "ID";
 	case PaperList::FIELD_TITLE:
@@ -252,11 +265,6 @@ class GenericPaperColumn extends PaperColumn {
 	    return "Review status";
 	case PaperList::FIELD_REVIEWS_STATUS:
 	    return "<span class='hastitle' title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</span>";
-	case PaperList::FIELD_SELECTOR:
-	case PaperList::FIELD_SELECTOR_ON:
-	    return ($ordinal ? "&nbsp;" : "");
-	case PaperList::FIELD_SELECTOR_CONFLICT:
-	    return "Conflict?";
 	case PaperList::FIELD_ASSIGN_REVIEW:
 	    return "Assignment";
 	case PaperList::FIELD_TOPIC_INTEREST:
@@ -290,12 +298,9 @@ class GenericPaperColumn extends PaperColumn {
     }
 
     public function col() {
-	switch ($this->group_id) {
+	switch ($this->id) {
 	case PaperList::FIELD_ID:
 	case PaperList::FIELD_REVIEWS_STATUS:
-	case PaperList::FIELD_SELECTOR:
-	case PaperList::FIELD_SELECTOR_ON:
-	case PaperList::FIELD_SELECTOR_CONFLICT:
 	case PaperList::FIELD_TOPIC_INTEREST:
 	case PaperList::FIELD_REVIEWER_TYPE_ICON:
 	case PaperList::FIELD_REVIEWER_PREFERENCE:
@@ -308,7 +313,7 @@ class GenericPaperColumn extends PaperColumn {
 
     public function content_empty($pl, $row) {
 	global $Conf;
-	switch ($this->group_id) {
+	switch ($this->id) {
 	case PaperList::FIELD_REVIEWER_TYPE:
 	    return !$row->reviewType && $row->conflictType <= 0;
 	case PaperList::FIELD_REVIEWER_STATUS:
@@ -336,7 +341,7 @@ class GenericPaperColumn extends PaperColumn {
 
     public function content($pl, $row) {
 	global $Conf;
-	switch ($this->group_id) {
+	switch ($this->id) {
 	case PaperList::FIELD_ID:
 	    $href = $pl->_paperLink($row);
 	    return "<a href='$href' tabindex='4'>#$row->paperId</a>";
@@ -422,25 +427,6 @@ class GenericPaperColumn extends PaperColumn {
 		return "<b>$row->reviewCount</b>/$row->startedReviewCount";
 	    else
 		return "<b>$row->reviewCount</b>";
-	case PaperList::FIELD_SELECTOR:
-	case PaperList::FIELD_SELECTOR_ON:
-	case PaperList::FIELD_SELECTOR_CONFLICT:
-	    $pl->any->sel = true;
-	    $c = "";
-	    if (($this->id == PaperList::FIELD_SELECTOR_ON
-		 || ($this->id == PaperList::FIELD_SELECTOR_CONFLICT && $row->conflictType > 0))
-		&& (!$pl->papersel || defval($pl->papersel, $row->paperId, 1))) {
-		$c .= " checked='checked'";
-		$pl->foldRow = false;
-	    }
-	    if ($this->id == PaperList::FIELD_SELECTOR_CONFLICT && $row->conflictType >= CONFLICT_AUTHOR)
-		$c .= " disabled='disabled'";
-	    if ($this->id != PaperList::FIELD_SELECTOR_CONFLICT)
-		$c .= " onclick='pselClick(event,this)'";
-	    $t = "<span class=\"pl_rownum fx6\">" . $pl->count . ". </span>" . "<input type='checkbox' class='cb' name='pap[]' value='$row->paperId' tabindex='3' id='psel$pl->count' $c/>";
-            if ($this->id == PaperList::FIELD_SELECTOR_CONFLICT)
-                $t .= "<span id='assrev" . $row->paperId . "ok' class='ajaxcheck'></span>";
-            return $t;
 	case PaperList::FIELD_ASSIGN_REVIEW:
 	    if ($row->conflictType >= CONFLICT_AUTHOR)
 		return "<span class='author'>Author</span>";
@@ -537,6 +523,46 @@ class GenericPaperColumn extends PaperColumn {
     }
 }
 
+class SelectorPaperColumn extends PaperColumn {
+    public $is_selector = true;
+    public function __construct($name, $id, $view, $extra = 0) {
+        parent::__construct($name, $id, $view, $extra);
+    }
+    public function prepare($pl, &$queryOptions, $folded) {
+	global $Conf;
+        if ($this->name == "selconf")
+	    $Conf->footerScript("addConflictAjax()");
+        return true;
+    }
+    public function header($pl, $row = null, $ordinal = 0) {
+        if ($this->name == "selconf")
+            return "Conflict?";
+        else
+	    return ($ordinal ? "&nbsp;" : "");
+    }
+    public function col() {
+        return "<col width='0*' />";
+    }
+    public function content($pl, $row) {
+        $pl->any->sel = true;
+        $c = "";
+        if (($this->name == "selon"
+             || ($this->name == "selconf" && $row->conflictType > 0))
+            && (!$pl->papersel || defval($pl->papersel, $row->paperId, 1))) {
+            $c .= " checked='checked'";
+            $pl->foldRow = false;
+        }
+        if ($this->name == "selconf" && $row->conflictType >= CONFLICT_AUTHOR)
+            $c .= " disabled='disabled'";
+        if ($this->name != "selconf")
+            $c .= " onclick='pselClick(event,this)'";
+        $t = "<span class=\"pl_rownum fx6\">" . $pl->count . ". </span>" . "<input type='checkbox' class='cb' name='pap[]' value='$row->paperId' tabindex='3' id='psel$pl->count' $c/>";
+        if ($this->name == "selconf")
+            $t .= "<span id='assrev" . $row->paperId . "ok' class='ajaxcheck'></span>";
+        return $t;
+    }
+}
+
 class AuthorsPaperColumn extends PaperColumn {
     public function __construct($name, $id, $view, $extra) {
         parent::__construct($name, $id, $view, $extra);
@@ -626,17 +652,29 @@ class ConflictMatchPaperColumn extends PaperColumn {
 
 class ScorePaperColumn extends PaperColumn {
     public $score;
-    public function __construct($name, $id, $foldnum) {
-        parent::__construct($name, $id, Column::VIEW_COLUMN, array());
+    private static $registered = array();
+    public function __construct($name, $foldnum) {
+        parent::__construct($name, $foldnum, Column::VIEW_COLUMN, array());
         $this->minimal = $this->sortable = true;
         $this->cssname = "score";
         $this->foldnum = $foldnum;
         $this->score = $name;
     }
+    public static function lookup_all() {
+        return self::$registered;
+    }
+    public static function register($fdef) {
+        PaperColumn::register($fdef);
+        $rf = reviewForm();
+        if (($p = array_search($fdef->score, $rf->fieldOrder)) !== false) {
+            self::$registered[$p] = $fdef;
+            ksort(self::$registered);
+        }
+    }
     public function prepare($pl, &$queryOptions, $folded) {
         if (!$pl->scoresOk)
             return false;
-        if (!$folded || $this->sorting) {
+        if (!$folded) {
             $revView = $pl->contact->viewReviewFieldsScore(null, true);
             if ($pl->rf->authorView[$this->score] <= $revView)
                 return false;
@@ -652,10 +690,10 @@ class ScorePaperColumn extends PaperColumn {
         foreach ($rows as $row)
             if ($pl->contact->canViewReview($row, null))
                 $pl->score_analyze($row, $scoreName, $this->max,
-                                   $pl->scoreSort);
+                                   $pl->sorter->score);
             else
                 $pl->score_reset($row);
-        $pl->score_sort($rows, $pl->scoreSort);
+        $pl->score_sort($rows, $pl->sorter->score);
     }
     public function header($pl, $row = null, $ordinal = 0) {
         return $pl->rf->webFieldAbbrev($this->score);
@@ -682,10 +720,18 @@ class ScorePaperColumn extends PaperColumn {
 }
 
 class FormulaPaperColumn extends PaperColumn {
+    private static $registered = array();
     public function __construct($name, $id, $formula, $foldnum) {
         parent::__construct($name, $id, Column::VIEW_COLUMN, array("minimal" => true, "sortable" => true, "foldnum" => $foldnum));
         $this->cssname = "formula";
         $this->formula = $formula;
+    }
+    public static function lookup_all() {
+        return self::$registered;
+    }
+    public static function register($fdef) {
+        PaperColumn::register($fdef);
+        self::$registered[] = $fdef;
     }
     public function prepare($pl, &$queryOptions, $folded) {
 	global $Conf;
@@ -710,7 +756,6 @@ class FormulaPaperColumn extends PaperColumn {
             $row->_sort_average = 0;
         }
         usort($rows, array($pl, "score_numeric_compar"));
-        break;
     }
     public function header($pl, $row = null, $ordinal = 0) {
         if ($this->formula->heading == "")
@@ -738,10 +783,18 @@ class FormulaPaperColumn extends PaperColumn {
 }
 
 class TagReportPaperColumn extends PaperColumn {
+    private static $registered = array();
     public function __construct($tag, $id, $foldnum) {
         parent::__construct("tagrep_" . preg_replace('/\W+/', '_', $tag), $id, Column::VIEW_ROW, $foldnum);
         $this->cssname = "tagrep";
         $this->tag = $tag;
+    }
+    public static function lookup_all() {
+        return self::$registered;
+    }
+    public static function register($fdef) {
+        PaperColumn::register($fdef);
+        self::$registered[] = $fdef;
     }
     public function prepare($pl, &$queryOptions, $folded) {
         if (!$pl->contact->privChair)
@@ -770,3 +823,135 @@ class TagReportPaperColumn extends PaperColumn {
         return join(", ", $a);
     }
 }
+
+class SearchSortPaperColumn extends PaperColumn {
+    public function __construct() {
+        parent::__construct("searchsort", PaperList::FIELD_PIDARRAY, Column::VIEW_NONE, true);
+    }
+    static function _sortPidarray($a, $b) {
+	return $a->_sort_info - $b->_sort_info;
+    }
+    public function sort($pl, &$rows) {
+        $sortInfo = array();
+        foreach ($pl->search->simplePaperList() as $k => $v)
+            if (!isset($sortInfo[$v]))
+                $sortInfo[$v] = $k;
+        foreach ($rows as $row)
+            $row->_sort_info = $sortInfo[$row->paperId];
+        usort($rows, array($this, "_sortPidarray"));
+    }
+}
+
+class TagOrderSortPaperColumn extends PaperColumn {
+    public function __construct() {
+        parent::__construct("tagordersort", PaperList::FIELD_TAGINDEX, Column::VIEW_NONE, true);
+    }
+    public function prepare($pl, &$queryOptions, $folded) {
+        if ($pl->contact->isPC && count($pl->search->orderTags)) {
+            $queryOptions["tagIndex"] = array();
+            foreach ($pl->search->orderTags as $x)
+                $queryOptions["tagIndex"][] = $x->tag;
+            return true;
+        } else
+            return false;
+    }
+    function _sortTagIndex($a, $b) {
+	$i = $x = 0;
+        for ($i = $x = 0; $x == 0; ++$i) {
+	    $n = "tagIndex" . ($i ? $i : "");
+            if (!isset($a->$n))
+                break;
+            $x = ($a->$n < $b->$n ? -1 : ($a->$n == $b->$n ? 0 : 1));
+	}
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+    public function sort($pl, &$rows) {
+	global $Conf;
+        $careful = !$pl->contact->privChair
+            && $Conf->setting("tag_seeall") <= 0;
+        $ot = $this->search->orderTags;
+        for ($i = 0; $i < count($ot); ++$i) {
+            $n = "tagIndex" . ($i ? $i : "");
+            $rev = $ot[$i]->reverse;
+            foreach ($rows as $row) {
+                if ($row->$n === null
+                    || ($careful && !$pl->contact->canViewTags($row)))
+                    $row->$n = 2147483647;
+                if ($rev)
+                    $row->$n = -$row->$n;
+            }
+        }
+        usort($rows, array($this, "_sortTagIndex"));
+    }
+}
+
+function initialize_paper_columns() {
+    global $paperListFormulas, $reviewScoreNames, $Conf;
+
+    PaperColumn::register(new SelectorPaperColumn("sel", PaperList::FIELD_SELECTOR, 1, array("minimal" => true)));
+    PaperColumn::register(new SelectorPaperColumn("selon", PaperList::FIELD_SELECTOR_ON, 1, array("minimal" => true, "cssname" => "sel")));
+    PaperColumn::register(new SelectorPaperColumn("selconf", PaperList::FIELD_SELECTOR_CONFLICT, 1, array("cssname" => "confselector")));
+    PaperColumn::register(new GenericPaperColumn("id", PaperList::FIELD_ID, 1, array("minimal" => true, "sortable" => true)));
+    PaperColumn::register(new GenericPaperColumn("title", PaperList::FIELD_TITLE, 1, array("minimal" => true, "sortable" => true)));
+    PaperColumn::register(new GenericPaperColumn("status", PaperList::FIELD_STATUS_SHORT, 1, array("sortable" => true)));
+    PaperColumn::register(new GenericPaperColumn("statusfull", PaperList::FIELD_STATUS, 1, array("cssname" => "status", "sortable" => true)));
+    PaperColumn::register(new GenericPaperColumn("revtypetext", PaperList::FIELD_REVIEWER_TYPE, 1, array("cssname" => "text", "sortable" => true)));
+    PaperColumn::register(new GenericPaperColumn("revtype", PaperList::FIELD_REVIEWER_TYPE_ICON, 1, array("sortable" => true)));
+    PaperColumn::register(new GenericPaperColumn("revstat", PaperList::FIELD_REVIEWS_STATUS, 1, true));
+    PaperColumn::register(new GenericPaperColumn("revsubmitted", PaperList::FIELD_REVIEWER_STATUS, 1, array("cssname" => "text")));
+    PaperColumn::register(new GenericPaperColumn("revdelegated", PaperList::FIELD_REVIEWER_MONITOR, 1, array("cssname" => "text", "sortable" => true)));
+    PaperColumn::register(new GenericPaperColumn("assrev", PaperList::FIELD_ASSIGN_REVIEW, 1, true));
+    PaperColumn::register(new GenericPaperColumn("topicscore", PaperList::FIELD_TOPIC_INTEREST, 1, true));
+    PaperColumn::register(new GenericPaperColumn("topics", PaperList::FIELD_OPT_TOPIC_NAMES, 2, 13));
+    PaperColumn::register(new GenericPaperColumn("revpref", PaperList::FIELD_REVIEWER_PREFERENCE, 1, true));
+    PaperColumn::register(new GenericPaperColumn("revprefedit", PaperList::FIELD_EDIT_REVIEWER_PREFERENCE, 1, true));
+    PaperColumn::register(new GenericPaperColumn("desirability", PaperList::FIELD_DESIRABILITY, 1, true));
+    PaperColumn::register(new GenericPaperColumn("allrevpref", PaperList::FIELD_ALL_PREFERENCES, 2));
+    PaperColumn::register(new AuthorsPaperColumn("authors", PaperList::FIELD_OPT_AUTHORS, 2, 3));
+    PaperColumn::register(new GenericPaperColumn("tags", PaperList::FIELD_TAGS, 2, 4));
+    PaperColumn::register(new GenericPaperColumn("abstract", PaperList::FIELD_OPT_ABSTRACT, 2, 5));
+    PaperColumn::register(new GenericPaperColumn("reviewers", PaperList::FIELD_OPT_ALL_REVIEWER_NAMES, 2, 10));
+    PaperColumn::register(new GenericPaperColumn("lead", PaperList::FIELD_LEAD, 2, 12));
+    PaperColumn::register(new GenericPaperColumn("shepherd", PaperList::FIELD_SHEPHERD, 2, 11));
+    PaperColumn::register(new GenericPaperColumn("pcconf", PaperList::FIELD_OPT_PC_CONFLICTS, 2, 14));
+    PaperColumn::register(new GenericPaperColumn("collab", PaperList::FIELD_COLLABORATORS, 2, 15));
+    PaperColumn::register(new ConflictMatchPaperColumn("authorsmatch", PaperList::FIELD_AUTHOR_MATCH, 2));
+    PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", PaperList::FIELD_COLLABORATORS_MATCH, 2));
+    PaperColumn::register(new SearchSortPaperColumn);
+    PaperColumn::register(new TagOrderSortPaperColumn);
+
+    $nextfield = PaperList::FIELD_SCORE;
+    foreach ($reviewScoreNames as $k => $n) {
+        ScorePaperColumn::register(new ScorePaperColumn($n, $nextfield));
+        ++$nextfield;
+    }
+
+    $nextfold = 21;
+    $paperListFormulas = array();
+    if ($Conf && $Conf->setting("formulas") && $Conf->sversion >= 32) {
+        $result = $Conf->q("select * from Formula order by lower(name)");
+        while (($row = edb_orow($result))) {
+            $fid = $row->formulaId;
+            FormulaPaperColumn::register(new FormulaPaperColumn("formula$fid", $nextfield, $row, $nextfold));
+            $row->fieldId = $nextfield;
+            $paperListFormulas[$fid] = $row;
+            ++$nextfold;
+            ++$nextfield;
+        }
+    }
+
+    $tagger = new Tagger;
+    if ($Conf && ($tagger->has_vote() || $tagger->has_rank())) {
+        $vt = array();
+        foreach ($tagger->defined_tags() as $v)
+            if ($v->vote || $v->rank)
+                $vt[] = $v->tag;
+        foreach ($vt as $n) {
+            TagReportPaperColumn::register(new TagReportPaperColumn($n, $nextfield, $nextfold));
+            ++$nextfold;
+            ++$nextfield;
+        }
+    }
+}
+
+initialize_paper_columns();
