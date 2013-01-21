@@ -637,62 +637,62 @@ class PaperList extends BaseList {
 	switch ($listname) {
 	case "a":
 	case "authorHome":
-	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_STATUS);
+	    $fields = "id title statusfull";
 	    break;
 	case "s":
 	case "acc":
-	    $fields = array(self::FIELD_SELECTOR, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_REVIEWS_STATUS, self::FIELD_STATUS_SHORT, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_OPT_PC_CONFLICTS, self::FIELD_LEAD, self::FIELD_SHEPHERD, self::FIELD_SCORE, self::FIELD_FORMULA);
+	    $fields = "sel id title revtype revstat status authors abstract tags " . self::FIELD_TAGREPORT . " topics collab reviewers pcconf lead shepherd " . self::FIELD_SCORE . " " . self::FIELD_FORMULA;
 	    break;
 	case "all":
 	case "act":
-	    $fields = array(self::FIELD_SELECTOR, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_STATUS, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_OPT_PC_CONFLICTS, self::FIELD_LEAD, self::FIELD_SHEPHERD);
+            $fields = "sel id title statusfull revtype authors abstract tags " . self::FIELD_TAGREPORT . " topics collab reviewers pcconf lead shepherd";
 	    break;
 	case "reviewerHome":
 	    $this->paperLink = "review";
-	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_STATUS_SHORT);
+	    $fields = "id title revtype status";
 	    break;
 	case "r":
 	case "lead":
 	    $this->paperLink = "review";
-	    $fields = array(self::FIELD_SELECTOR, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_REVIEWS_STATUS, self::FIELD_STATUS_SHORT, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_OPT_PC_CONFLICTS, self::FIELD_LEAD, self::FIELD_SHEPHERD, self::FIELD_SCORE, self::FIELD_FORMULA);
+            $fields = "sel id title revtype revstat status authors abstract tags " . self::FIELD_TAGREPORT . " topics collab reviewers pcconf lead shepherd " . self::FIELD_SCORE . " " . self::FIELD_FORMULA;
 	    break;
 	case "rout":
 	    $this->paperLink = "review";
-	    $fields = array(self::FIELD_SELECTOR, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_REVIEWS_STATUS, self::FIELD_STATUS_SHORT, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_OPT_PC_CONFLICTS, self::FIELD_LEAD, self::FIELD_SHEPHERD, self::FIELD_SCORE, self::FIELD_FORMULA);
+            $fields = "sel id title revtype revstat status authors abstract tags " . self::FIELD_TAGREPORT . " topics collab reviewers pcconf lead shepherd " . self::FIELD_SCORE . " " . self::FIELD_FORMULA;
 	    break;
 	case "req":
 	    $this->paperLink = "review";
-	    $fields = array(self::FIELD_SELECTOR, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_REVIEWS_STATUS, self::FIELD_STATUS_SHORT, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_OPT_PC_CONFLICTS, self::FIELD_LEAD, self::FIELD_SHEPHERD, self::FIELD_SCORE, self::FIELD_FORMULA);
+            $fields = "sel id title revtype revstat status authors abstract tags " . self::FIELD_TAGREPORT . " topics collab reviewers pcconf lead shepherd " . self::FIELD_SCORE . " " . self::FIELD_FORMULA;
 	    break;
 	case "reqrevs":
 	    $this->paperLink = "review";
-	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_MONITOR, self::FIELD_REVIEWER_STATUS, self::FIELD_REVIEWS_STATUS, self::FIELD_STATUS_SHORT, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_TAGS, self::FIELD_TAGREPORT, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_COLLABORATORS, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_OPT_PC_CONFLICTS, self::FIELD_LEAD, self::FIELD_SHEPHERD);
+            $fields = "id title revdelegated revsubmitted revstat status authors abstract tags " . self::FIELD_TAGREPORT . " topics collab reviewers pcconf lead shepherd";
 	    break;
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
-	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_REVIEWER_PREFERENCE, self::FIELD_TOPIC_INTEREST, self::FIELD_DESIRABILITY, self::FIELD_ASSIGN_REVIEW, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_TOPIC_NAMES, self::FIELD_OPT_ALL_REVIEWER_NAMES, self::FIELD_ALL_PREFERENCES, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH);
+            $fields = "id title revpref topicscore desirability assrev authors topics reviewers allrevpref authorsmatch collabmatch";
 	    break;
 	  case "conflict":
 	    $this->paperLink = "assign";
 	    $this->defaultFoldRow = true;
-	    $fields = array(self::FIELD_SELECTOR_CONFLICT, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_AUTHOR_MATCH, self::FIELD_COLLABORATORS_MATCH);
+            $fields = "selconf id title authors abstract authorsmatch collabmatch";
 	    break;
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
-	    $fields = array(self::FIELD_SELECTOR, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_TOPIC_INTEREST, self::FIELD_REVIEWER_TYPE_ICON, self::FIELD_EDIT_REVIEWER_PREFERENCE, self::FIELD_OPT_AUTHORS, self::FIELD_OPT_ABSTRACT, self::FIELD_OPT_TOPIC_NAMES);
+            $fields = "sel id title topicscore revtype revprefedit authors abstract topics";
 	    break;
 	  case "reviewers":
 	    $this->paperLink = "assign";
-	    $fields = array(self::FIELD_ID, self::FIELD_TITLE, self::FIELD_STATUS_SHORT, self::FIELD_OPT_ALL_REVIEWER_NAMES);
+            $fields = "id title status reviewers";
 	    break;
 	  case "reviewersSel":
 	    $this->paperLink = "assign";
-	    $fields = array(self::FIELD_SELECTOR_ON, self::FIELD_ID, self::FIELD_TITLE, self::FIELD_STATUS_SHORT, self::FIELD_OPT_ALL_REVIEWER_NAMES);
+            $fields = "selon id title status reviewers";
 	    break;
 	  default:
 	    return null;
 	}
-	return $this->_canonicalize_fields($fields);
+	return $this->_canonicalize_fields(explode(" ", $fields));
     }
 
     function _addAjaxLoadForm($pap, $extra = "") {
