@@ -2521,8 +2521,10 @@ class PaperSearch {
     }
 
     function url() {
+        global $ConfSiteBase;
 	$url = $this->urlbase;
-	if (substr($this->urlbase, 0, 6) == "search" || $this->q != "")
+        if ($this->q != ""
+            || substr($this->urlbase, strlen($ConfSiteBase), 6) == "search")
 	    $url .= "&q=" . urlencode($this->q);
 	return $url;
     }
