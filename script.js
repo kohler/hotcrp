@@ -599,6 +599,15 @@ function setajaxcheck(elt, rv) {
     if (typeof elt == "string")
 	elt = $$(elt);
     if (elt) {
+	if (!elt.nextSibling
+	    || !elt.nextSibling.className
+	    || !elt.nextSibling.className.match(/ajaxcheck/)) {
+	    var e = document.createElement("span");
+	    e.className = "ajaxcheck";
+	    e.style.marginLeft = "3px";
+	    elt.parentElement.insertBefore(e, elt.nextSibling);
+	}
+	elt = elt.nextSibling;
 	var s = (rv.ok ? "Saved" : (rv.error ? rv.error : "Error")),
 	    c = elt.className.replace(/\s*ajaxcheck\w*\s*/, "");
 	elt.setAttribute("title", s);
@@ -833,7 +842,7 @@ function revpref_change() {
     form.revpref.value = this.value;
     Miniajax.submit("prefform", function (rv) {
 	    var e;
-	    setajaxcheck("revpref" + whichpaper + "ok", rv);
+	    setajaxcheck("revpref" + whichpaper, rv);
 	    if (rv.ok && rv.value != null && (e = $$("revpref" + whichpaper)))
 		e.value = rv.value;
 	});
@@ -878,7 +887,7 @@ function makeassrevajax(select, pcs, paperId) {
 	    form.rev_roundtag.value = (roundtag ? roundtag.value : "");
 	    form[pcs].value = select.value;
 	    Miniajax.submit("assrevform", function (rv) {
-		setajaxcheck("assrev" + paperId + "ok", rv);
+		setajaxcheck(select, rv);
 	    });
 	} else
 	    hiliter(select);
@@ -907,7 +916,7 @@ function makeconflictajax(input, pcs, paperId) {
 	    form.p.value = paperId;
 	    form[pcs].value = (input.checked ? -1 : 0);
 	    Miniajax.submit("assrevform", function (rv) {
-		setajaxcheck("assrev" + paperId + "ok", rv);
+		setajaxcheck(input, rv);
 	    });
 	} else
 	    hiliter(input);
@@ -1128,12 +1137,9 @@ Miniajax.submit = function (formname, callback, timeout) {
 	return true;
     }
     var resultelt = $$(resultname + "result") || {};
-    var checkelt = $$(resultname + "check");
     if (!callback)
 	callback = function (rv) {
 	    resultelt.innerHTML = rv.response;
-	    if (checkelt)
-		setajaxcheck(checkelt, rv);
 	};
     if (!timeout)
 	timeout = 4000;

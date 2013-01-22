@@ -114,8 +114,6 @@ class SelectorPaperColumn extends PaperColumn {
         if ($this->name != "selconf")
             $c .= " onclick='pselClick(event,this)'";
         $t = "<span class=\"pl_rownum fx6\">" . $pl->count . ". </span>" . "<input type='checkbox' class='cb' name='pap[]' value='$row->paperId' tabindex='3' id='psel$pl->count' $c/>";
-        if ($this->name == "selconf")
-            $t .= "<span id='assrev" . $row->paperId . "ok' class='ajaxcheck'></span>";
         return $t;
     }
 }
@@ -505,8 +503,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
                                  REVIEW_PC => "Optional",
                                  -1 => "Conflict"), $rt,
                            array("tabindex" => 3,
-                                 "onchange" => "hiliter(this)"))
-            . "<span id='assrev" . $row->paperId . "ok'></span>";
+                                 "onchange" => "hiliter(this)"));
     }
 }
 
@@ -604,7 +601,7 @@ class PreferencePaperColumn extends PaperColumn {
         else if ($row->conflictType > 0)
             return "N/A";
         else
-            return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' id='revpref$row->paperId' value=\"$pref\" tabindex='2' /> <img id='revpref" . $row->paperId . "ok' src='" . hoturl_image("images/_.gif") . "' alt='' class='ajaxcheck' />";
+            return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' id='revpref$row->paperId' value=\"$pref\" tabindex='2' />";
     }
 }
 
