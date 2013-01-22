@@ -1056,7 +1056,7 @@ class Conference {
 	    $pq .= "		left join ($subq) as APRP on (APRP.paperId=Paper.paperId)\n";
 	}
 	if (defval($options, 'allConflictType'))
-	    $pq .= "		left join (select paperId, group_concat(concat(contactId,' ',conflictType) separator ',') as allConflictType from PaperConflict group by paperId) as AllConflict on (AllConflict.paperId=Paper.paperId)\n";
+	    $pq .= "		left join (select paperId, group_concat(concat(contactId,' ',conflictType) separator ',') as allConflictType from PaperConflict where conflictType>0 group by paperId) as AllConflict on (AllConflict.paperId=Paper.paperId)\n";
 
 
 	// conditions
