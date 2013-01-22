@@ -1130,6 +1130,19 @@ class Contact {
 	return false;
     }
 
+    function canViewDiscussionLead($prow, $forceShow) {
+        if ($prow === null || $prow === true)
+            return $this->canViewReviewerIdentity(true, null, $forceShow);
+        if ($forceShow === null)
+            $forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
+	$conflictType = $this->actConflictType($prow);
+        return ($this->privChair && ($conflictType == 0 || $forceShow))
+            || $prow->leadContactId == $this->cid
+            || (($this->isPC || $prow->myReviewType > 0)
+                && $conflictType == 0
+                && $this->canViewReviewerIdentity($prow, null, $forceShow));
+    }
+
     function canViewCommentIdentity($prow, $crow, $forceShow) {
 	global $Conf;
 	if ($crow && $crow->forAuthors > 1)

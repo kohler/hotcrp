@@ -1062,6 +1062,8 @@ class PaperSearch {
 	if (($keyword ? $keyword == "revpref" : isset($this->fields["revpref"]))
 	    && $this->privChair)
 	    $this->_searchRevpref($word, $qt, $quoted);
+        // XXX "lead" should probably obey "can PC members see all
+        // reviews/reviewer names" settings. It does not.
 	if (($keyword ? $keyword == "lead" : isset($this->fields["lead"]))
 	    && $this->amPC) {
 	    if ($word == "none")

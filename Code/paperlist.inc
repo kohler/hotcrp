@@ -570,6 +570,8 @@ class PaperList extends BaseList {
     function _listFields($listname) {
 	switch ($listname) {
 	case "a":
+            $fields = "id title statusfull revstat scores";
+            break;
 	case "authorHome":
 	    $fields = "id title statusfull";
 	    break;
@@ -600,7 +602,7 @@ class PaperList extends BaseList {
 	    break;
 	case "reqrevs":
 	    $this->paperLink = "review";
-            $fields = "id title revdelegated revsubmitted revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd";
+            $fields = "id title revdelegation revsubmitted revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd";
 	    break;
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
@@ -651,7 +653,7 @@ class PaperList extends BaseList {
 
 	// prepare review query (see also search > getaction == "reviewers")
 	$this->reviewList = array();
-	if (isset($queryOptions['reviewList'])) {
+	if (isset($queryOptions["reviewList"])) {
 	    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
 		reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
 		reviewOrdinal,
