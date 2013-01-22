@@ -30,7 +30,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	if ($rr->contactId == $Me->contactId
 	    || (isset($prow->myReviewId) && $prow->myReviewId == $rr->reviewId))
 	    $foundMyReview++;
-	$canView = $Me->canViewReview($prow, $rr, $whyNot);
+	$canView = $Me->canViewReview($prow, $rr, null);
 
 	// skip unsubmitted reviews
 	if (!$canView && $hideUnviewable) {
@@ -144,7 +144,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     // unfinished review notification
     $notetxt = "";
     if ($conflictType >= CONFLICT_AUTHOR && !$effAssistant && $notShown
-	&& $Me->canViewReview($prow, null)) {
+	&& $Me->canViewReview($prow, null, null)) {
 	$qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
 	if ($notShown == 1)
 	    $t = "1$qualifier review remains outstanding.";
@@ -183,7 +183,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     $myrr = null;
     if ($rrows)
 	foreach ($rrows as $rr) {
-	    if ($Me->canViewReview($prow, $rr, $whyNot))
+	    if ($Me->canViewReview($prow, $rr, null))
 		$nvisible++;
 	    if ($rr->contactId == $Me->contactId
 		|| (!$myrr && $Me->ownReview($rr)))
@@ -196,10 +196,10 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 	$cids = array();
 	$cnames = array();
 	foreach ($crows as $cr)
-	    if ($Me->canViewComment($prow, $cr)) {
+	    if ($Me->canViewComment($prow, $cr, null)) {
 		$cids[] = $cr->commentId;
 		$n = "<a class='nowrap' href='#comment$cr->commentId'>";
-		if ($Me->canViewCommentIdentity($prow, $cr))
+		if ($Me->canViewCommentIdentity($prow, $cr, null))
 		    $n .= Text::abbrevname_html($cr);
 		else
 		    $n .= "anonymous";

@@ -150,7 +150,7 @@ if (isset($_REQUEST["unsubmit"]) && $paperTable->editrrow
 // review rating action
 if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
     if (!$Me->canRateReview($prow, $paperTable->rrow)
-	|| !$Me->canViewReview($prow, $paperTable->rrow))
+	|| !$Me->canViewReview($prow, $paperTable->rrow, null))
 	$Conf->errorMsg("You can’t rate that review.");
     else if ($Me->contactId == $paperTable->rrow->contactId)
 	$Conf->errorMsg("You can’t rate your own review.");
@@ -247,11 +247,11 @@ function downloadForm($editable) {
     $text = "";
     foreach ($downrrows as $rr)
 	if ($rr->reviewSubmitted
-	    && $Me->canViewReview($prow, $rr, $whyNot))
+	    && $Me->canViewReview($prow, $rr, null, $whyNot))
 	    $text .= downloadView($prow, $rr, $editable);
     foreach ($downrrows as $rr)
 	if (!$rr->reviewSubmitted
-	    && $Me->canViewReview($prow, $rr, $whyNot)
+	    && $Me->canViewReview($prow, $rr, null, $whyNot)
 	    && ($explicit || $rr->reviewModified))
 	    $text .= downloadView($prow, $rr, $editable);
     if (count($downrrows) == 0)
@@ -259,7 +259,7 @@ function downloadForm($editable) {
     if (!$explicit) {
 	$paperTable->resolveComments();
 	foreach ($paperTable->crows as $cr)
-	    if ($Me->canViewComment($prow, $cr, $whyNot, true))
+	    if ($Me->canViewComment($prow, $cr, false))
 		$text .= $rf->prettyTextComment($prow, $cr, $Me) . "\n";
     }
     if (!$text)
@@ -394,7 +394,7 @@ if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_po
 
 
 // can we view/edit reviews?
-$viewAny = $Me->canViewReview($prow, null, $whyNotView);
+$viewAny = $Me->canViewReview($prow, null, null, $whyNotView);
 $editAny = $Me->canReview($prow, null, $whyNotEdit);
 
 
@@ -427,7 +427,7 @@ $paperTable->resolveComments();
 
 if (!$viewAny && !$editAny
     && (!$paperTable->rrow
-	|| !$Me->canViewReview($prow, $paperTable->rrow, $whyNot)))
+	|| !$Me->canViewReview($prow, $paperTable->rrow, null)))
     $paperTable->paptabEndWithReviewMessage();
 else if ($paperTable->mode == "r" && !$paperTable->rrow)
     $paperTable->paptabEndWithReviews();

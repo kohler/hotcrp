@@ -1396,7 +1396,7 @@ class Conference {
 	    if ($curcr)
 		/* do nothing */;
 	    else if (($curcr = array_pop($crows))) {
-		if (!$contact->canViewComment($curcr, $curcr, $whyNot, true)) {
+		if (!$contact->canViewComment($curcr, $curcr, false)) {
 		    $curcr = null;
 		    continue;
 		}
@@ -1413,7 +1413,7 @@ class Conference {
 	    if ($currr)
 		/* do nothing */;
 	    else if (($currr = array_pop($rrows))) {
-		if (!$contact->canViewReview($currr, $currr, $whyNot, true)) {
+		if (!$contact->canViewReview($currr, $currr, false)) {
 		    $currr = null;
 		    continue;
 		}

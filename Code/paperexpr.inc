@@ -222,7 +222,7 @@ class PaperExpr {
     static function _addnumscores($state) {
 	if (!isset($state->gtmp["numScores"])) {
 	    $state->gtmp["numscores"] = "\$numScores";
-	    $state->gstmt[] = "\$numScores = (\$forceShow || \$contact->canViewReview(\$prow, null, \$fakeWhyNotView, true) ? \$prow->numScores : 0);";
+	    $state->gstmt[] = "\$numScores = (\$forceShow || \$contact->canViewReview(\$prow, null, false) ? \$prow->numScores : 0);";
 	}
 	return "\$numScores";
     }

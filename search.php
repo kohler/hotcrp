@@ -269,7 +269,7 @@ if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
     if ($Me->privChair)
 	$_REQUEST["forceShow"] = 1;
     while ($row = edb_orow($result)) {
-	if (!$Me->canViewReview($row, null, $whyNot))
+	if (!$Me->canViewReview($row, null, null, $whyNot))
 	    $errors[whyNotText($whyNot, "view review")] = true;
 	else if ($row->reviewSubmitted)
 	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextForm($row, $row, $Me, false) . "\n");
@@ -277,7 +277,7 @@ if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
 
     $crows = $Conf->commentRows($Conf->paperQuery($Me, array("paperId" => $papersel, "allComments" => 1, "reviewerName" => 1)));
     foreach ($crows as $row)
-	if ($Me->canViewComment($row, $row, $whyNot))
+	if ($Me->canViewComment($row, $row, null))
 	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextComment($row, $row, $Me) . "\n");
 
     downloadReviews($texts, $errors);
@@ -600,7 +600,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	$_REQUEST["forceShow"] = 1;
     $texts = array();
     while (($row = edb_orow($result))) {
-	if (!$Me->canViewReview($row, null, $whyNot))
+	if (!$Me->canViewReview($row, null, null, $whyNot))
 	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
 	else if ($row->reviewSubmitted) {
 	    $a = array($row->paperId, $row->title);

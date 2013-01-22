@@ -496,7 +496,7 @@ class Mailer {
 	$Conf->settings["au_seerev"] = AU_SEEREV_ALWAYS;
 	$crows = $Conf->commentRows($q . "\n\t\torder by commentId");
 	foreach ($crows as $crow)
-	    if ($contact->canViewComment($this->row, $crow, $whyNot, true))
+	    if ($contact->canViewComment($this->row, $crow, false))
 		$text .= $rf->prettyTextComment($this->row, $crow, $contact) . "\n";
 	$Conf->settings["au_seerev"] = $old_au_seerev;
 	return $text;

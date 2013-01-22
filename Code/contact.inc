@@ -628,7 +628,7 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
-	$conflictType = $this->actConflictType($prow, $download);
+	$conflictType = $this->actConflictType($prow);
 	if ($conflictType >= CONFLICT_AUTHOR
 	    || $this->privChair
 	    || ($prow->myReviewType > 0 && $Conf->timeReviewerViewSubmittedPaper())
@@ -730,13 +730,14 @@ class Contact {
 	    || ($rrow->requestedBy == $this->contactId && $rrow->reviewType == REVIEW_EXTERNAL && $Conf->setting("pcrev_editdelegate"));
     }
 
-    function canViewReview($prow, $rrow, &$whyNot = null, $ignoreForceShow = false) {
+    function canViewReview($prow, $rrow, $forceShow, &$whyNot = null) {
 	global $Conf;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
-	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
+        if ($forceShow === null)
+            $forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
 	$rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
 	$pc_seeallrev = ($this->isPC ? $Conf->setting("pc_seeallrev") : 0);
 	$conflictType = $this->actConflictType($prow);
@@ -944,7 +945,7 @@ class Contact {
 	return $this->canComment($prow, $crow, $whyNot, true);
     }
 
-    function canViewComment($prow, $crow, &$whyNot = null, $ignoreForceShow = false) {
+    function canViewComment($prow, $crow, $forceShow, &$whyNot = null) {
 	global $Conf;
 	// Policy outline:
 	// forAuthors 2, forReviewers 1     response, ready for reviewers
@@ -960,7 +961,8 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
-	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
+        if ($forceShow === null)
+            $forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
 	$crow_contactId = 0;
 	if ($crow && isset($crow->commentContactId))
 	    $crow_contactId = $crow->commentContactId;
@@ -980,7 +982,7 @@ class Contact {
 	    || ($this->privChair			// chair privilege
 		&& ($conflictType == 0 || $forceShow))
 	    || ($conflictType == 0			// reviewer postrev
-		&& $this->canViewReview($prow, null, $xWhyNot, $ignoreForceShow)
+		&& $this->canViewReview($prow, null, $forceShow)
 		&& (!$Conf->setting("pc_seeblindrev")
 		    || (defval($prow, "myReviewType") > 0
 			&& (defval($prow, "myReviewSubmitted") > 0
@@ -1118,7 +1120,7 @@ class Contact {
 	    || ($this->isPC && $prow && $conflictType == 0
 		&& (!($pc_seeblindrev = $Conf->setting("pc_seeblindrev"))
 		    || ($pc_seeblindrev == 2
-			&& $this->canViewReview($prow, $rrow, $whyNot, $ignoreForceShow))))
+			&& $this->canViewReview($prow, $rrow, $forceShow))))
 	    || ($prow && $prow->myReviewType > 0
 		&& (defval($prow, "myReviewSubmitted") > 0
 		    || defval($prow, "myReviewNeedsSubmit", 1) == 0)
@@ -1128,11 +1130,12 @@ class Contact {
 	return false;
     }
 
-    function canViewCommentIdentity($prow, $crow, $ignoreForceShow = false) {
+    function canViewCommentIdentity($prow, $crow, $forceShow) {
 	global $Conf;
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->canViewAuthors($prow, false);
-	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
+        if ($forceShow === null)
+            $forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
 	$crow_contactId = 0;
 	if ($crow && isset($crow->commentContactId))
 	    $crow_contactId = $crow->commentContactId;
@@ -1342,7 +1345,7 @@ class Contact {
 	//} else if (isset($row->reviewCount) && $row->reviewCount > 0) {
 	//    if ($long < 0 && $row->conflictType < CONFLICT_AUTHOR)
 	//	return "";
-	//    else if ($this->canViewReview($row, null))
+	//    else if ($this->canViewReview($row, null, null))
 	//	return "<span class='pstat pstat_rev'>Reviews&nbsp;available</span>";
 	//    else
 	//	return "<span class='pstat pstat_rev'>Under&nbsp;review</span>";

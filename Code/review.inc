@@ -793,7 +793,7 @@ $blind\n";
 
 	$x = "===========================================================================\n";
 	$n = ($crow->forAuthors > 1 ? "Authors' Response" : "Comment");
-	if ($contact->canViewCommentIdentity($prow, $crow, true)) {
+	if ($contact->canViewCommentIdentity($prow, $crow, false)) {
 	    $n .= " by ";
 	    if (isset($crow->reviewFirstName))
 		$n .= Text::user_text($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
@@ -1137,7 +1137,7 @@ $blind\n";
     }
 
     function webNumericScoresRow($rrow, $prow, $contact, &$anyScores) {
-	$view = $contact->canViewReview($prow, $rrow);
+	$view = $contact->canViewReview($prow, $rrow, null);
 	$revNullViewScore = $contact->viewReviewFieldsScore($prow, null);
 	$revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
 	$x = "";

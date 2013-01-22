@@ -49,7 +49,7 @@ class PaperTable {
 	$ms = array();
 	if (isset($_REQUEST["reviewId"]))
 	    $ms["re"] = true;
-	if ($Me->canViewReview($prow, null))
+	if ($Me->canViewReview($prow, null, null))
 	    $ms["r"] = true;
 	if ($Me->canReview($prow, null))
 	    $ms["re"] = true;
@@ -1762,7 +1762,7 @@ class PaperTable {
 	    $rf = reviewForm();
 	$prow = $this->prow;
 
-	if ($forceShow && !$Me->canViewReview($prow, null, $fakeWhyNotView, true))
+	if ($forceShow && !$Me->canViewReview($prow, null, false))
 	    $this->_paptabSepContaining("<div class='inpapcc'>" . $this->_privilegeMessage() . "</div>");
 
 	$empty = $this->_paptabReviewLinks(true, null, "<div class='hint'>There are no reviews or comments for you to view.</div>");
@@ -1772,12 +1772,12 @@ class PaperTable {
 	// text format link
 	$viewable = array();
 	foreach ($this->rrows as $rr)
-	    if ($rr->reviewModified > 0 && $Me->canViewReview($prow, $rr)) {
+	    if ($rr->reviewModified > 0 && $Me->canViewReview($prow, $rr, null)) {
 		$viewable[] = "reviews";
 		break;
 	    }
 	foreach ($this->crows as $cr)
-	    if ($Me->canViewComment($prow, $cr)) {
+	    if ($Me->canViewComment($prow, $cr, null)) {
 		$viewable[] = "comments";
 		break;
 	    }
@@ -1796,7 +1796,7 @@ class PaperTable {
 		$rf->show($prow, $this->rrows, $rr, $opt);
 	foreach ($this->rrows as $rr)
 	    if (!$rr->reviewSubmitted && $rr->reviewModified > 0
-		&& $Me->canViewReview($prow, $rr))
+		&& $Me->canViewReview($prow, $rr, null))
 		$rf->show($prow, $this->rrows, $rr, $opt);
     }
 
@@ -1837,9 +1837,9 @@ class PaperTable {
     function paptabEndWithReviewMessage() {
 	global $Conf, $Me, $linkExtra;
 
-	if (!$Me->canViewReview($this->prow, null, $whyNot)
+	if (!$Me->canViewReview($this->prow, null, null, $whyNot)
 	    && $this->rrows)
-	    $this->_paptabSepContaining("You can&rsquo;t see the reviews for this paper.  " . whyNotText($whyNot, "review"));
+	    $this->_paptabSepContaining("You can’t see the reviews for this paper. " . whyNotText($whyNot, "review"));
 
 	if ($this->mode != "pe")
 	    $this->_paptabReviewLinks(false, null, "");
@@ -1856,7 +1856,7 @@ class PaperTable {
 	$actChair = $Me->actChair($prow);
 
 	// review messages
-	$viewall = $Me->canViewReview($prow, null, $whyNot, true);
+	$viewall = $Me->canViewReview($prow, null, false, $whyNot);
 	$msgs = array();
 	if (!$this->rrow && $this->prow->reviewType <= 0)
 	    $msgs[] = "You haven&rsquo;t been assigned to review this paper, but you can review it anyway.";
@@ -2009,7 +2009,7 @@ class PaperTable {
 	    $rrow = $Conf->reviewRow($sel);
 	if (!$Me->canViewPaper($prow, $whyNot)
 	    || (!isset($_REQUEST["paperId"])
-		&& !$Me->canViewReview($prow, $rrow)
+		&& !$Me->canViewReview($prow, $rrow, null)
 		&& !$Me->privChair)) {
 	    // Don't allow querier to probe review/comment<->paper mapping
 	    if (!isset($_REQUEST["paperId"]))
@@ -2062,7 +2062,7 @@ class PaperTable {
 		where paperId=" . $this->prow->paperId . " order by commentId");
 	    $this->mycrows = array();
 	    foreach ($this->crows as $crow)
-		if ($Me->canViewComment($this->prow, $crow))
+		if ($Me->canViewComment($this->prow, $crow, null))
 		    $this->mycrows[] = $crow;
 	} else
 	    $this->crows = $this->mycrows = array();
@@ -2077,10 +2077,10 @@ class PaperTable {
 		|| $this->rrow->reviewSubmitted))
 	    $this->mode = "r";
 	if ($this->mode == "r" && $this->rrow
-	    && !$Me->canViewReview($prow, $this->rrow, $whyNot))
+	    && !$Me->canViewReview($prow, $this->rrow, null))
 	    $this->rrow = $this->editrrow = null;
 	if ($this->mode == "r" && !$this->rrow && !$this->editrrow
-	    && !$Me->canViewReview($prow, $this->rrow, $whyNot)
+	    && !$Me->canViewReview($prow, $this->rrow, null)
 	    && $Me->canReview($prow, $this->rrow, $whyNot, false))  {
 	    $this->mode = "re";
 	    foreach ($this->rrows as $rr)

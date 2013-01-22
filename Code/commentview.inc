@@ -62,7 +62,7 @@ class CommentView {
 		"<span class='cmtnumnum'>", $number, "</span></a></span>";
 	    $sep = $xsep;
 	}
-	if ($crow && $Me->canViewCommentIdentity($prow, $crow)) {
+	if ($crow && $Me->canViewCommentIdentity($prow, $crow, null)) {
 	    $blind = ($crow->blind && $crow->forAuthors > 0);
 	    echo $sep, "<span class='cmtname'>", ($blind ? "[" : ""),
 		Text::user_html($crow), ($blind ? "]" : ""), "</span>";
@@ -102,7 +102,7 @@ class CommentView {
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->showResponse($prow, $crow, $useRequest, $editMode);
 
-	if ($crow && !$Me->canViewComment($prow, $crow))
+	if ($crow && !$Me->canViewComment($prow, $crow, null))
 	    return;
 	if ($editMode && !$Me->canComment($prow, $crow))
 	    $editMode = false;
@@ -266,7 +266,7 @@ class CommentView {
 	    echo "<div class='cmtg cmtg1'>";
 	    if ($Me->privChair && $crow->forReviewers == 0)
 		echo "<i>The <a href='", hoturl("comment", "c=$crow->commentId$linkExtra"), "'>authors’ response</a> is not yet ready for reviewers to view.</i>";
-	    else if (!$Me->canViewComment($prow, $crow))
+	    else if (!$Me->canViewComment($prow, $crow, null))
 		echo "<i>The authors’ response is not yet ready for reviewers to view.</i>";
 	    else
 		echo htmlWrapText(htmlspecialchars($crow->comment));
@@ -334,7 +334,7 @@ Make it short and to the point; the conference deadline has passed.";
 	if (strlen($crow->shortTitle) != strlen($crow->title))
 	    $t .= "...";
 	$t .= "</a>";
-	if ($contact->canViewCommentIdentity($crow, $crow, true))
+	if ($contact->canViewCommentIdentity($crow, $crow, false))
 	    $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>comment by</span> " . Text::user_html($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
 	$t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>posted</span> " . $Conf->parseableTime($crow->timeModified, false);
 	$t .= "</small><br /><a class='q'" . substr($a, 3)

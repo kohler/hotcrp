@@ -83,7 +83,7 @@ if (isset($_REQUEST["setwatch"]) && $prow && check_post()) {
 function comment_watch_callback($prow, $minic) {
     global $savedCrow;
     $tmpl = ($savedCrow->forAuthors > 1 ? "@responsenotify" : "@commentnotify");
-    if ($minic->canViewComment($prow, $savedCrow))
+    if ($minic->canViewComment($prow, $savedCrow, false))
 	Mailer::send($tmpl, $prow, $minic, null, array("commentId" => $savedCrow->commentId));
 }
 
@@ -273,7 +273,7 @@ if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_po
 
 
 // can we view/edit reviews?
-$viewAny = $Me->canViewReview($prow, null, $whyNotView);
+$viewAny = $Me->canViewReview($prow, null, null, $whyNotView);
 $editAny = $Me->canReview($prow, null, $whyNotEdit);
 
 
@@ -305,7 +305,7 @@ $paperTable->paptabBegin();
 
 if (!$viewAny && !$editAny
     && (!$paperTable->rrow
-	|| !$Me->canViewReview($prow, $paperTable->rrow, $whyNot)))
+	|| !$Me->canViewReview($prow, $paperTable->rrow, null)))
     $paperTable->paptabEndWithReviewMessage();
 else if ($paperTable->mode == "r" && !$paperTable->rrow)
     $paperTable->paptabEndWithReviews();
