@@ -877,7 +877,7 @@ class Conference {
 		count(AllReviews.reviewSubmitted) as reviewCount,
 		count(if(AllReviews.reviewNeedsSubmit<=0,AllReviews.reviewSubmitted,AllReviews.reviewId)) as startedReviewCount";
 	$myPaperReview = null;
-	if (!isset($options['author'])) {
+	if (!isset($options["author"])) {
 	    if ($allReviewerQuery)
 		$myPaperReview = "MyPaperReview";
             else
@@ -898,7 +898,7 @@ class Conference {
 		min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit,
 		PaperReview.reviewRound";
 	} else
-	    $pq .= ",\nnull as myReviewType";
+	    $pq .= ",\nnull reviewType, null reviewId, null myReviewType";
 	if (isset($options['reviewerName']))
 	    $pq .= ",
 		ReviewerContactInfo.firstName as reviewFirstName,
@@ -1003,7 +1003,7 @@ class Conference {
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))\n";
 	else if (isset($options['allReviews']) || isset($options['allReviewScores']))
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
-	else if (!isset($options['author']))
+	else if (!isset($options["author"]))
 	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))\n";
 	if ($myPaperReview == "MyPaperReview")
 	    $pq .= "		left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$contactId)\n";
