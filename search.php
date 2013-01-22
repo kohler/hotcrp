@@ -609,7 +609,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	    $a[] = $row->outcome;
 	    foreach ($scores as $score)
 		$a[] = $rf->unparseOption($score, $row->$score);
-	    if ($Me->canViewReviewerIdentity($row, $row)) {
+	    if ($Me->canViewReviewerIdentity($row, $row, null)) {
 		$a[] = $row->reviewEmail;
 		$a[] = trim($row->reviewFirstName . " " . $row->reviewLastName);
 	    }
@@ -1160,7 +1160,7 @@ if ($pl) {
 	displayOptionCheckbox("rownum", 1, "Row numbers", array("onchange" => "fold('pl',!this.checked,'rownum')"));
 
     // Reviewers group
-    if ($Me->canViewReviewerIdentity(true, null))
+    if ($Me->canViewReviewerIdentity(true, null, null))
 	displayOptionCheckbox("reviewers", 2, "Reviewers");
     if ($Me->privChair)
 	displayOptionCheckbox("pcconf", 2, "PC conflicts");

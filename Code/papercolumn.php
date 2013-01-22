@@ -8,7 +8,6 @@ require_once("paperlist.inc");
 class PaperColumn extends Column {
     protected $id;
 
-    static private $by_id = array();
     static private $by_name = array();
 
     public function __construct($name, $id, $view, $extra) {
@@ -21,23 +20,27 @@ class PaperColumn extends Column {
     }
 
     public static function lookup($name) {
-        if (isset(self::$by_id[$name]))
-            return self::$by_id[$name];
-        else if (isset(self::$by_name[$name]))
+        if (isset(self::$by_name[$name]))
             return self::$by_name[$name];
         else
             return null;
     }
 
     public static function register($fdef) {
-        assert(!isset(self::$by_id[$fdef->id])
-               && !isset(self::$by_name[$fdef->name]));
-        self::$by_id[$fdef->id] = self::$by_name[$fdef->name] = $fdef;
+        assert(!isset(self::$by_name[$fdef->name]));
+        self::$by_name[$fdef->name] = $fdef;
+        if (isset($fdef->id) && !isset(self::$by_name[$fdef->id]))
+            self::$by_name[$fdef->id] = $fdef;
+        for ($i = 1; $i < func_num_args(); ++$i)
+            self::$by_name[func_get_arg($i)] = $fdef;
         return $fdef;
     }
 
     public function prepare($pl, &$queryOptions, $folded) {
         return true;
+    }
+
+    public function analyze($pl, &$rows) {
     }
 
     public function sort($pl, &$rows) {
@@ -80,18 +83,13 @@ class GenericPaperColumn extends PaperColumn {
 		$queryOptions["topics"] = 1;
 	    break;
 	case PaperList::FIELD_OPT_ALL_REVIEWER_NAMES:
-	    if (!$pl->contact->canViewReviewerIdentity(true, null))
+	    if (!$pl->contact->canViewReviewerIdentity(true, null, null))
 		return false;
 	    if (!$folded) {
 		$queryOptions["reviewList"] = 1;
 		if ($pl->contact->privChair)
 		    $queryOptions["allReviewerPreference"] = $queryOptions["topics"] = 1;
 	    }
-	    break;
-	case PaperList::FIELD_REVIEWER_PREFERENCE:
-	case PaperList::FIELD_EDIT_REVIEWER_PREFERENCE:
-	    $queryOptions['reviewerPreference'] = 1;
-	    $Conf->footerScript("addRevprefAjax()");
 	    break;
 	case PaperList::FIELD_ASSIGN_REVIEW:
 	    $Conf->footerScript("addAssrevAjax()");
@@ -106,16 +104,6 @@ class GenericPaperColumn extends PaperColumn {
 	case PaperList::FIELD_REVIEWER_MONITOR:
 	    $queryOptions["allReviewScores"] = 1;
 	    $queryOptions["reviewerName"] = 1;
-	    break;
-	case PaperList::FIELD_REVIEWER_TYPE:
-	case PaperList::FIELD_REVIEWER_TYPE_ICON:
-	    // if search names a specific reviewer, link there
-	    if ($pl->search->reviewerContact
-		&& !isset($queryOptions['allReviewScores'])) {
-		$queryOptions['reviewerContact'] = $pl->search->reviewerContact;
-		if ($pl->search->reviewerContact != $pl->contact->contactId)
-		    $pl->showConflict = false;
-	    }
 	    break;
 	case PaperList::FIELD_TAGS:
 	    if (!$pl->contact->isPC)
@@ -144,14 +132,6 @@ class GenericPaperColumn extends PaperColumn {
 
     private static function _sortTitle($a, $b) {
 	$x = strcasecmp($a->title, $b->title);
-	return $x ? $x : $a->paperId - $b->paperId;
-    }
-
-    private static function _sortStatus($a, $b) {
-	$x = $b->_sort_info - $a->_sort_info;
-	$x = $x ? $x : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
-	$x = $x ? $x : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
-	$x = $x ? $x : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
 	return $x ? $x : $a->paperId - $b->paperId;
     }
 
@@ -186,12 +166,6 @@ class GenericPaperColumn extends PaperColumn {
 	return $x ? $x : $a->paperId - $b->paperId;
     }
 
-    private static function _sortReviewerPreference($a, $b) {
-	$x = $b->reviewerPreference - $a->reviewerPreference;
-	$x = $x ? $x : defval($b, "topicInterestScore", 0) - defval($a, "topicInterestScore", 0);
-	return $x ? $x : $a->paperId - $b->paperId;
-    }
-
     private static function _sortDesirability($a, $b) {
 	$x = $b->desirability - $a->desirability;
 	return $x ? $x : $a->paperId - $b->paperId;
@@ -200,23 +174,12 @@ class GenericPaperColumn extends PaperColumn {
     public function sort($pl, &$rows) {
         global $Conf;
 	switch ($this->id) {
-	case PaperList::FIELD_ID:
-	    ksort($rows);
-	    break;
 	case PaperList::FIELD_TITLE:
 	    usort($rows, array($this, "_sortTitle"));
-	    break;
-	case PaperList::FIELD_STATUS:
-	case PaperList::FIELD_STATUS_SHORT:
-            foreach ($rows as $row)
-                $row->_sort_info = ($pl->contact->canViewDecision($row) ? $row->outcome : -10000);
-	    usort($rows, array($this, "_sortStatus"));
 	    break;
 	case PaperList::FIELD_REVIEWER_MONITOR:
 	    usort($rows, array($this, "_sortReviewer"));
 	    break;
-	case PaperList::FIELD_REVIEWER_TYPE:
-	case PaperList::FIELD_REVIEWER_TYPE_ICON:
 	case PaperList::FIELD_ASSIGN_REVIEW:
             foreach ($rows as $row) {
                 $row->_sort_info = $row->reviewType;
@@ -237,10 +200,6 @@ class GenericPaperColumn extends PaperColumn {
 	case PaperList::FIELD_TOPIC_INTEREST:
 	    usort($rows, array($this, "_sortTopicInterest"));
 	    break;
-	case PaperList::FIELD_REVIEWER_PREFERENCE:
-	case PaperList::FIELD_EDIT_REVIEWER_PREFERENCE:
-	    usort($rows, array($this, "_sortReviewerPreference"));
-	    break;
 	case PaperList::FIELD_DESIRABILITY:
 	    usort($rows, array($this, "_sortDesirability"));
 	    break;
@@ -249,18 +208,10 @@ class GenericPaperColumn extends PaperColumn {
 
     public function header($pl, $row = null, $ordinal = 0) {
 	switch ($this->id) {
-	case PaperList::FIELD_ID:
-	    return "ID";
 	case PaperList::FIELD_TITLE:
 	    return "Title";
-	case PaperList::FIELD_STATUS:
-	case PaperList::FIELD_STATUS_SHORT:
-	    return "Status";
 	case PaperList::FIELD_REVIEWER_MONITOR:
 	    return "Reviewer";
-	case PaperList::FIELD_REVIEWER_TYPE:
-	case PaperList::FIELD_REVIEWER_TYPE_ICON:
-	    return "<span class='hastitle' title='Reviewer type'>Review</span>";
 	case PaperList::FIELD_REVIEWER_STATUS:
 	    return "Review status";
 	case PaperList::FIELD_REVIEWS_STATUS:
@@ -275,9 +226,6 @@ class GenericPaperColumn extends PaperColumn {
 	    return "Reviewers";
 	case PaperList::FIELD_OPT_PC_CONFLICTS:
 	    return "PC conflicts";
-	case PaperList::FIELD_REVIEWER_PREFERENCE:
-	case PaperList::FIELD_EDIT_REVIEWER_PREFERENCE:
-	    return "Preference";
 	case PaperList::FIELD_DESIRABILITY:
 	    return "Desirability";
 	case PaperList::FIELD_ALL_PREFERENCES:
@@ -299,11 +247,8 @@ class GenericPaperColumn extends PaperColumn {
 
     public function col() {
 	switch ($this->id) {
-	case PaperList::FIELD_ID:
 	case PaperList::FIELD_REVIEWS_STATUS:
 	case PaperList::FIELD_TOPIC_INTEREST:
-	case PaperList::FIELD_REVIEWER_TYPE_ICON:
-	case PaperList::FIELD_REVIEWER_PREFERENCE:
 	case PaperList::FIELD_DESIRABILITY:
 	    return "<col width='0*' />";
 	default:
@@ -314,8 +259,6 @@ class GenericPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
 	global $Conf;
 	switch ($this->id) {
-	case PaperList::FIELD_REVIEWER_TYPE:
-	    return !$row->reviewType && $row->conflictType <= 0;
 	case PaperList::FIELD_REVIEWER_STATUS:
 	    return !$row->reviewId;
 	case PaperList::FIELD_OPT_TOPIC_NAMES:
@@ -342,53 +285,13 @@ class GenericPaperColumn extends PaperColumn {
     public function content($pl, $row) {
 	global $Conf;
 	switch ($this->id) {
-	case PaperList::FIELD_ID:
-	    $href = $pl->_paperLink($row);
-	    return "<a href='$href' tabindex='4'>#$row->paperId</a>";
 	case PaperList::FIELD_TITLE:
 	    $href = $pl->_paperLink($row);
             $x = Text::highlight($row->title, defval($pl->search->matchPreg, "title"));
 	    return "<a href='$href' tabindex='5'>" . $x . "</a>" . $pl->_contentDownload($row);
-	case PaperList::FIELD_STATUS:
-	case PaperList::FIELD_STATUS_SHORT:
-	    if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
-		$pl->any->need_submit = true;
-	    if ($row->outcome > 0 && $pl->contact->canViewDecision($row))
-		$pl->any->accepted = true;
-	    if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0
-		&& $pl->contact->canViewDecision($row))
-		$pl->any->need_final = true;
-	    $long = 0;
-	    if ($pl->search->limitName != "a" && $pl->contact->privChair)
-		$long = 2;
-	    if ($this->id == PaperList::FIELD_STATUS_SHORT)
-		$long = ($long == 2 ? -2 : -1);
-	    return $pl->contact->paperStatus($row->paperId, $row, $long);
 	case PaperList::FIELD_REVIEWER_MONITOR:
 	    $t = Text::user_html($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail) . "<br /><small>Last login: ";
 	    return $t . ($row->reviewLastLogin ? $Conf->printableTimeShort($row->reviewLastLogin) : "Never") . "</small>";
-	case PaperList::FIELD_REVIEWER_TYPE:
-	    if ($row->reviewType == REVIEW_PRIMARY)
-		$t = "Primary";
-	    else if ($row->reviewType == REVIEW_SECONDARY)
-		$t = "Secondary";
-	    else if ($row->reviewType == REVIEW_EXTERNAL)
-		$t = "External";
-	    else if ($row->reviewType)
-		$t = "Review";
-	    else if ($row->conflictType >= CONFLICT_AUTHOR)
-		return "<span class='rtype rtype_con'>Author</span>";
-	    else if ($row->conflictType > 0)
-		return "<span class='rtype rtype_con'>Conflict</span>";
-	    else
-		return "";
-	    $ranal = $pl->_reviewAnalysis($row);
-	    if ($ranal->needsSubmit)
-		$pl->any->need_review = true;
-	    $t = "$ranal->link1<span class='rtype'>$t</span>$ranal->link2";
-	    if ($ranal->completion)
-		$t .= "&nbsp;<span class='rstat'>($ranal->completion)</span>";
-	    return $t;
 	case PaperList::FIELD_REVIEWER_STATUS:
 	    if (!$row->reviewId)
 		return "";
@@ -401,22 +304,6 @@ class GenericPaperColumn extends PaperColumn {
 	    if (!$ranal->needsSubmit)
 		$t = $ranal->link1 . $t . $ranal->link2;
 	    return $t;
-	case PaperList::FIELD_REVIEWER_TYPE_ICON:
-	    $a1 = $a2 = "";
-	    if ($row->conflictType > 0 && $pl->showConflict)
-		return $Conf->cacheableImage("_.gif", "Conflict", "Conflict", "ass-1");
-	    else if ($row->reviewType === null)
-		return $Conf->cacheableImage("_.gif", "", "", "ass0");
-	    else {
-		$ranal = $pl->_reviewAnalysis($row);
-		if ($ranal->needsSubmit)
-		    $pl->any->need_review = true;
-		$t = PaperList::_reviewIcon($row, $ranal, true);
-		if ($ranal->round)
-		    return "<div class='pl_revtype_round'>" . $t . "</div>";
-		else
-		    return $t;
-	    }
 	case PaperList::FIELD_REVIEWS_STATUS:
 	    // see also _sortReviewsStatus
 	    if ($row->conflictType > 0 && !$pl->contact->privChair
@@ -457,7 +344,7 @@ class GenericPaperColumn extends PaperColumn {
 			if (($pref = defval($prefs, $xrow->contactId, null)))
 			    $n .= preferenceSpan($pref);
 		    }
-		$n = $pl->maybeConflict($n, $pl->contact->canViewReviewerIdentity($row, null, true));
+		$n = $pl->maybeConflict($n, $pl->contact->canViewReviewerIdentity($row, null, false));
 	    }
 	    return $n;
 	case PaperList::FIELD_OPT_PC_CONFLICTS:
@@ -467,13 +354,6 @@ class GenericPaperColumn extends PaperColumn {
 		if (strpos($x, "," . $pc->contactId . " ") !== false)
 		    $y[] = Text::name_html($pc);
 	    return join(", ", $y);
-	case PaperList::FIELD_REVIEWER_PREFERENCE:
-	    return (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
-	case PaperList::FIELD_EDIT_REVIEWER_PREFERENCE:
-	    if ($row->conflictType > 0)
-		return "N/A";
-	    $x = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
-	    return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' id='revpref$row->paperId' value=\"$x\" tabindex='2' /> <img id='revpref" . $row->paperId . "ok' src='" . hoturl_image("images/_.gif") . "' alt='' class='ajaxcheck' />";
 	case PaperList::FIELD_DESIRABILITY:
 	    return (isset($row->desirability) ? htmlspecialchars($row->desirability) : "0");
 	case PaperList::FIELD_ALL_PREFERENCES:
@@ -523,6 +403,26 @@ class GenericPaperColumn extends PaperColumn {
     }
 }
 
+class IdPaperColumn extends PaperColumn {
+    public function __construct() {
+        parent::__construct("id", null, Column::VIEW_COLUMN,
+                            array("minimal" => true, "sortable" => true));
+    }
+    public function sort($pl, &$rows) {
+        ksort($rows);
+    }
+    public function header($pl, $row = null, $ordinal = 0) {
+        return "ID";
+    }
+    public function col() {
+        return "<col width='0*' />";
+    }
+    public function content($pl, $row) {
+        $href = $pl->_paperLink($row);
+        return "<a href='$href' tabindex='4'>#$row->paperId</a>";
+    }
+}
+
 class SelectorPaperColumn extends PaperColumn {
     public $is_selector = true;
     public function __construct($name, $id, $view, $extra = 0) {
@@ -560,6 +460,46 @@ class SelectorPaperColumn extends PaperColumn {
         if ($this->name == "selconf")
             $t .= "<span id='assrev" . $row->paperId . "ok' class='ajaxcheck'></span>";
         return $t;
+    }
+}
+
+class StatusPaperColumn extends PaperColumn {
+    private $is_long;
+    public function __construct($name, $is_long, $extra = 0) {
+        parent::__construct($name, null, Column::VIEW_COLUMN,
+                            array("cssname" => "status", "sortable" => true));
+        $this->is_long = $is_long;
+    }
+    private static function _sortStatus($a, $b) {
+	$x = $b->_sort_info - $a->_sort_info;
+	$x = $x ? $x : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
+	$x = $x ? $x : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
+	$x = $x ? $x : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+    public function sort($pl, &$rows) {
+        foreach ($rows as $row)
+            $row->_sort_info = ($pl->contact->canViewDecision($row) ? $row->outcome : -10000);
+        usort($rows, array($this, "_sortStatus"));
+    }
+    public function header($pl, $row = null, $ordinal = 0) {
+        return "Status";
+    }
+    public function content($pl, $row) {
+	global $Conf;
+        if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
+            $pl->any->need_submit = true;
+        if ($row->outcome > 0 && $pl->contact->canViewDecision($row))
+            $pl->any->accepted = true;
+        if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0
+            && $pl->contact->canViewDecision($row))
+            $pl->any->need_final = true;
+        $long = 0;
+        if ($pl->search->limitName != "a" && $pl->contact->privChair)
+            $long = 2;
+        if (!$this->is_long)
+            $long = ($long == 2 ? -2 : -1);
+        return $pl->contact->paperStatus($row->paperId, $row, $long);
     }
 }
 
@@ -614,6 +554,124 @@ class AuthorsPaperColumn extends PaperColumn {
 	    }
 	    return join(", ", $aus);
 	}
+    }
+}
+
+class ReviewerTypePaperColumn extends PaperColumn {
+    private $xreviewer;
+    public function __construct($name) {
+        parent::__construct($name, null, Column::VIEW_COLUMN, true);
+    }
+    public function analyze($pl, &$rows) {
+        global $Conf;
+        // PaperSearch is responsible for access control checking use of
+        // `reviewerContact`, but we are careful anyway.
+        if ($pl->search->reviewerContact
+            && $pl->search->reviewerContact != $pl->contact->cid
+            && count($rows)) {
+            $by_pid = array();
+            foreach ($rows as $row)
+                $by_pid[$row->paperId] = $row;
+            $result = $Conf->qe("select paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, contactId reviewContactId, requestedBy, reviewToken, reviewRound, 0 conflictType from PaperReview where paperId in (" . join(",", array_keys($by_pid)) . ") and contactId=" . $pl->search->reviewerContact, "while examining reviews");
+            while (($xrow = edb_orow($result)))
+                if ($pl->contact->privChair
+                    || $pl->contact->canViewReviewerIdentity($by_pid[$xrow->paperId], $xrow, true))
+                    $by_pid[$xrow->paperId]->_xreviewer = $xrow;
+            $this->xreviewer = new Contact;
+            $this->xreviewer->lookupById($pl->search->reviewerContact);
+        } else
+            $this->xreviewer = false;
+    }
+    private static function _sortReviewType($a, $b) {
+	$x = $b->_sort_info - $a->_sort_info;
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+    public function sort($pl, &$rows) {
+        if (!$this->xreviewer) {
+            foreach ($rows as $row) {
+                $row->_sort_info = $row->reviewType;
+                if (!$row->reviewType && $row->conflictType)
+                    $row->_sort_info = -$row->conflictType;
+            }
+        } else {
+            foreach ($rows as $row)
+                $row->_sort_info = isset($row->_xreviewer) ? $row->_xreviewer->reviewType : 0;
+        }
+        usort($rows, array($this, "_sortReviewType"));
+    }
+    public function header($pl, $row = null, $ordinal = 0) {
+        if ($this->xreviewer)
+            return "<span class='hastitle' title='Reviewer type'>"
+                . Text::name_html($this->xreviewer) . "<br />Review</span>";
+        else
+            return "<span class='hastitle' title='Reviewer type'>Review</span>";
+    }
+    public function col() {
+        return "<col width='0*' />";
+    }
+    public function content($pl, $row) {
+        global $Conf;
+        if ($this->xreviewer && !isset($row->_xreviewer))
+            $xrow = (object) array("reviewType" => 0);
+        else if ($this->xreviewer)
+            $xrow = $row->_xreviewer;
+        else
+            $xrow = $row;
+
+        if (!$xrow->reviewType) {
+            if ($xrow->conflictType > 0)
+                return $Conf->cacheableImage("_.gif", "Conflict", "Conflict", "ass-1");
+            else
+                return $Conf->cacheableImage("_.gif", "", "", "ass0");
+        }
+
+        $ranal = $pl->_reviewAnalysis($xrow);
+        if ($ranal->needsSubmit)
+            $pl->any->need_review = true;
+        $t = PaperList::_reviewIcon($xrow, $ranal, true);
+        if ($ranal->round)
+            $t = "<div class='pl_revtype_round'>" . $t . "</div>";
+        return $t;
+    }
+}
+
+class ReviewPreferencePaperColumn extends PaperColumn {
+    private $editable;
+    public function __construct($name, $editable) {
+        parent::__construct($name, null, Column::VIEW_COLUMN, true);
+        $this->editable = $editable;
+    }
+    public function prepare($pl, &$queryOptions, $folded) {
+	global $Conf;
+        if (!$pl->contact->isPC)
+            return false;
+        $queryOptions["reviewerPreference"] = 1;
+        $Conf->footerScript("addRevprefAjax()");
+	return true;
+    }
+    private static function _sortReviewerPreference($a, $b) {
+	$x = $b->reviewerPreference - $a->reviewerPreference;
+	$x = $x ? $x : defval($b, "topicInterestScore", 0) - defval($a, "topicInterestScore", 0);
+	return $x ? $x : $a->paperId - $b->paperId;
+    }
+    public function sort($pl, &$rows) {
+        usort($rows, array($this, "_sortReviewerPreference"));
+    }
+    public function header($pl, $row = null, $ordinal = 0) {
+        return "Preference";
+    }
+    public function col() {
+        return "<col width='0*' />";
+    }
+    public function content($pl, $row) {
+	global $Conf;
+        $pref = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
+        if (!$this->editable)
+            return $pref;
+        else if ($row->conflictType > 0)
+            return "N/A";
+        else
+            return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' id='revpref$row->paperId' value=\"$pref\" tabindex='2' /> <img id='revpref" . $row->paperId . "ok' src='" . hoturl_image("images/_.gif") . "' alt='' class='ajaxcheck' />";
     }
 }
 
@@ -891,20 +949,19 @@ function initialize_paper_columns() {
     PaperColumn::register(new SelectorPaperColumn("sel", PaperList::FIELD_SELECTOR, 1, array("minimal" => true)));
     PaperColumn::register(new SelectorPaperColumn("selon", PaperList::FIELD_SELECTOR_ON, 1, array("minimal" => true, "cssname" => "sel")));
     PaperColumn::register(new SelectorPaperColumn("selconf", PaperList::FIELD_SELECTOR_CONFLICT, 1, array("cssname" => "confselector")));
-    PaperColumn::register(new GenericPaperColumn("id", PaperList::FIELD_ID, 1, array("minimal" => true, "sortable" => true)));
+    PaperColumn::register(new IdPaperColumn, PaperList::FIELD_ID);
     PaperColumn::register(new GenericPaperColumn("title", PaperList::FIELD_TITLE, 1, array("minimal" => true, "sortable" => true)));
-    PaperColumn::register(new GenericPaperColumn("status", PaperList::FIELD_STATUS_SHORT, 1, array("sortable" => true)));
-    PaperColumn::register(new GenericPaperColumn("statusfull", PaperList::FIELD_STATUS, 1, array("cssname" => "status", "sortable" => true)));
-    PaperColumn::register(new GenericPaperColumn("revtypetext", PaperList::FIELD_REVIEWER_TYPE, 1, array("cssname" => "text", "sortable" => true)));
-    PaperColumn::register(new GenericPaperColumn("revtype", PaperList::FIELD_REVIEWER_TYPE_ICON, 1, array("sortable" => true)));
+    PaperColumn::register(new StatusPaperColumn("status", false), PaperList::FIELD_STATUS_SHORT);
+    PaperColumn::register(new StatusPaperColumn("statusfull", true), PaperList::FIELD_STATUS);
+    PaperColumn::register(new ReviewerTypePaperColumn("revtype"), PaperList::FIELD_REVIEWER_TYPE_ICON);
     PaperColumn::register(new GenericPaperColumn("revstat", PaperList::FIELD_REVIEWS_STATUS, 1, true));
     PaperColumn::register(new GenericPaperColumn("revsubmitted", PaperList::FIELD_REVIEWER_STATUS, 1, array("cssname" => "text")));
     PaperColumn::register(new GenericPaperColumn("revdelegated", PaperList::FIELD_REVIEWER_MONITOR, 1, array("cssname" => "text", "sortable" => true)));
     PaperColumn::register(new GenericPaperColumn("assrev", PaperList::FIELD_ASSIGN_REVIEW, 1, true));
     PaperColumn::register(new GenericPaperColumn("topicscore", PaperList::FIELD_TOPIC_INTEREST, 1, true));
     PaperColumn::register(new GenericPaperColumn("topics", PaperList::FIELD_OPT_TOPIC_NAMES, 2, 13));
-    PaperColumn::register(new GenericPaperColumn("revpref", PaperList::FIELD_REVIEWER_PREFERENCE, 1, true));
-    PaperColumn::register(new GenericPaperColumn("revprefedit", PaperList::FIELD_EDIT_REVIEWER_PREFERENCE, 1, true));
+    PaperColumn::register(new ReviewPreferencePaperColumn("revpref", false), PaperList::FIELD_REVIEWER_PREFERENCE);
+    PaperColumn::register(new ReviewPreferencePaperColumn("revprefedit", true), PaperList::FIELD_EDIT_REVIEWER_PREFERENCE);
     PaperColumn::register(new GenericPaperColumn("desirability", PaperList::FIELD_DESIRABILITY, 1, true));
     PaperColumn::register(new GenericPaperColumn("allrevpref", PaperList::FIELD_ALL_PREFERENCES, 2));
     PaperColumn::register(new AuthorsPaperColumn("authors", PaperList::FIELD_OPT_AUTHORS, 2, 3));

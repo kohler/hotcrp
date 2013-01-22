@@ -1093,9 +1093,10 @@ class Contact {
 	return $Conf->timeReviewPaper($this->isPC, $myReview, true);
     }
 
-    function canViewReviewerIdentity($prow, $rrow, $ignoreForceShow = false) {
+    function canViewReviewerIdentity($prow, $rrow, $forceShow = null) {
 	global $Conf;
-	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
+        if ($forceShow === null)
+            $forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
 	$rrow_contactId = 0;
 	if ($rrow && isset($rrow->reviewContactId))
 	    $rrow_contactId = $rrow->reviewContactId;

@@ -82,7 +82,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 
 	// reviewer identity
 	$showtoken = $rr->reviewToken && $Me->canReview($prow, $rr);
-	if (!$Me->canViewReviewerIdentity($prow, $rr)) {
+	if (!$Me->canViewReviewerIdentity($prow, $rr, null)) {
 	    $t .= ($x ? "<td>$x</td>" : "<td class='empty'></td>");
 	    if ($mode == "assign")
 		$t .= "<td class='empty'></td>";

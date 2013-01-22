@@ -616,7 +616,7 @@ class ReviewForm {
 	    $x .= "==+== Version " . $rrow->reviewEditVersion . "\n";
 	if (!$myReview && $prow)
 	    $x .= wordWrapIndent($prow->title, "==-== Paper: ", "==-==        ") . "\n";
-	if ($contact->canViewReviewerIdentity($prow, $rrow)) {
+	if ($contact->canViewReviewerIdentity($prow, $rrow, null)) {
 	    if ($rrow && isset($rrow->reviewFirstName))
 		$x .= "==+== Reviewer: " . Text::user_text($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
 	    else if ($rrow && isset($rrow->lastName))
@@ -738,7 +738,7 @@ $blind\n";
 	}
 	$x .= "---------------------------------------------------------------------------\n";
 	$x .= $this->_prettyPaperTitle($prow, $l);
-	if ($rrow && $contact->canViewReviewerIdentity($prow, $rrow, true)) {
+	if ($rrow && $contact->canViewReviewerIdentity($prow, $rrow, false)) {
 	    if (isset($rrow->reviewFirstName))
 		$n = Text::user_text($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
 	    else if (isset($rrow->lastName))
@@ -1294,7 +1294,7 @@ $blind\n";
 	$open = $sep = " <span class='revinfo'>";
 	$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 	$showtoken = $rrow && $rrow->reviewToken && $Me->canReview($prow, $rrow);
-	if ($rrow && $Me->canViewReviewerIdentity($prow, $rrow)
+	if ($rrow && $Me->canViewReviewerIdentity($prow, $rrow, null)
 	    && (!$showtoken || !preg_match('/^anonymous\d*$/', $rrow->email))) {
 	    echo $sep, ($rrow->reviewBlind ? "[" : ""), "by ", Text::user_html($rrow), ($rrow->reviewBlind ? "]" : "");
 	    $sep = $xsep;
@@ -1471,7 +1471,7 @@ $blind\n";
 	if (strlen($rrow->shortTitle) != strlen($rrow->title))
 	    $t .= "...";
 	$t .= "</a>";
-	if ($contact->canViewReviewerIdentity($rrow, $rrow, true))
+	if ($contact->canViewReviewerIdentity($rrow, $rrow, false))
 	    $t .= $barsep . "<span class='hint'>review by</span> " . Text::user_html($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
 	$t .= $barsep . "<span class='hint'>submitted</span> " . $Conf->parseableTime($rrow->reviewSubmitted, false);
 	$t .= "</small><br /><a class='q'" . substr($a, 3);

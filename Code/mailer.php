@@ -343,7 +343,7 @@ class Mailer {
 	    if (reviewBlind($this->rrow)
 		&& defval($this->permissionContact, "privChair") <= 0
 		&& (!isset($this->permissionContact->canViewReviewerIdentity)
-		    || !$this->permissionContact->canViewReviewerIdentity($this->row, $this->rrow, true))) {
+		    || !$this->permissionContact->canViewReviewerIdentity($this->row, $this->rrow, false))) {
 		if ($isbool)
 		    return false;
 		else if ($this->expansionType == self::EXPAND_EMAIL)

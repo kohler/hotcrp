@@ -20,7 +20,6 @@ class PaperList extends BaseList {
 
     const FIELD_STATUS = 20;
     const FIELD_STATUS_SHORT = 21;
-    const FIELD_REVIEWER_TYPE = 26;
     const FIELD_REVIEWER_TYPE_ICON = 27;
     const FIELD_REVIEWER_STATUS = 28;
     const FIELD_REVIEWER_MONITOR = 29;
@@ -204,7 +203,7 @@ class PaperList extends BaseList {
 	if (!($pt = $this->paperLink))
 	    $pt = "paper";
 	$pl = "p=" . $row->paperId;
-	$doreview = isset($row->reviewId) && ($this->search->reviewerContact || isset($row->reviewFirstName));
+	$doreview = isset($row->reviewId) && isset($row->reviewFirstName);
 	if ($doreview) {
 	    $rord = unparseReviewOrdinal($row);
 	    if ($pt != "paper" || $row->reviewSubmitted <= 0) {
@@ -288,11 +287,16 @@ class PaperList extends BaseList {
     }
 
     function _reviewAnalysis($row) {
-	global $Conf;
+	global $Conf, $reviewTypeName;
 	$ranal = (object) array("completion" => "", "delegated" => false,
-				"needsSubmit" => false, "round" => "",
+				"needsSubmit" => false,
+                                "round" => "", "type_name" => "",
 				"link1" => "", "link2" => "");
 	if ($row->reviewId) {
+            if (isset($reviewTypeName[$row->reviewType]))
+                $ranal->type_name = $reviewTypeName[$row->reviewType];
+            else
+                $ranal->type_name = "Review"; /* won't happen; just in case */
 	    $ranal->needsSubmit = !isset($row->reviewSubmitted) || !$row->reviewSubmitted;
 	    if (!$ranal->needsSubmit)
 		$ranal->completion = "Complete";
@@ -319,8 +323,8 @@ class PaperList extends BaseList {
     }
 
     static function _reviewIcon($row, $ranal, $includeLink) {
-	global $reviewTypeName, $Conf;
-	$alt = $reviewTypeName[$row->reviewType] . " review";
+	global $Conf;
+	$alt = $ranal->type_name . " review";
 	if ($ranal->needsSubmit)
 	    $alt .= " (" . strtolower($ranal->completion) . ")";
 	$t = $Conf->cacheableImage("_.gif", $alt, $alt, "ass" . $row->reviewType . ($ranal->needsSubmit ? "n" : ""));
@@ -998,6 +1002,10 @@ class PaperList extends BaseList {
 	while (($row = edb_orow($result)))
 	    $rows[] = $row;
 
+        // analyze rows (usually noop)
+        foreach ($fieldDef as $fdef)
+            $fdef->analyze($this, $rows);
+
 	// sort rows
 	$srows = $this->_sort($rows, $sort_field);
 	if ($this->sorter->reverse)
@@ -1172,11 +1180,19 @@ class PaperList extends BaseList {
 	    return null;
 
 	// collect row data
+        $rows = array();
+        while (($row = edb_orow($result)))
+            $rows[] = $row;
+
+        // analyze rows (usually noop)
+        $fdef->analyze($this, $rows);
+
+        // output field data
 	$data = array();
 	$name = $fdef->name;
 	if (($x = $fdef->header($this)))
 	    $data["$name.title"] = $x;
-	while (($row = edb_orow($result))) {
+	foreach ($rows as $row) {
 	    if ($fdef->content_empty($this, $row))
 		$c = "";
 	    else

@@ -847,7 +847,6 @@ class Conference {
 	//   "myReviews"	All reviews authored by $contactId
 	//   "myOutstandingReviews" All unsubmitted reviews auth by $contactId
 	//   "myReviewsOpt"	myReviews, + include papers not yet reviewed
-	//   "reviewerContact"	Sets reviewer contact ID
 	//   "allReviews"	All reviews (multiple rows per paper)
 	//   "allReviewScores"	All review scores (multiple rows per paper)
 	//   "allComments"	All comments (multiple rows per paper)
@@ -871,26 +870,19 @@ class Conference {
 	    $contactId = $contact;
 	    $contact = null;
 	}
-	$reviewContactId = $contactId;
-	if (isset($options['reviewerContact']))
-	    $reviewContactId = $options['reviewerContact'];
 	$where = array();
 
 	// fields
 	$pq = "select Paper.*, PaperConflict.conflictType,
 		count(AllReviews.reviewSubmitted) as reviewCount,
 		count(if(AllReviews.reviewNeedsSubmit<=0,AllReviews.reviewSubmitted,AllReviews.reviewId)) as startedReviewCount";
-	$myPaperReview = $highlightPaperReview = null;
+	$myPaperReview = null;
 	if (!isset($options['author'])) {
-	    if ($allReviewerQuery) {
-		$myPaperReview = $highlightPaperReview = "MyPaperReview";
-		if ($reviewContactId != $contactId)
-		    $highlightPaperReview = "HighlightPaperReview";
-	    } else if ($reviewContactId != $contactId) {
+	    if ($allReviewerQuery)
 		$myPaperReview = "MyPaperReview";
-		$highlightPaperReview = "PaperReview";
-	    } else
-		$myPaperReview = $highlightPaperReview = "PaperReview";
+            else
+		$myPaperReview = "PaperReview";
+            // see also papercolumn.php
 	    $pq .= ",
 		PaperReview.reviewType,
 		PaperReview.reviewId,
@@ -953,8 +945,8 @@ class Conference {
 	if (isset($options['scores'])) {
 	    foreach ($options['scores'] as $field) {
 		$pq .= ",\n		PaperScores.${field}Scores";
-		if ($highlightPaperReview)
-		    $pq .= ",\n		$highlightPaperReview.$field";
+		if ($myPaperReview)
+		    $pq .= ",\n		$myPaperReview.$field";
 	    }
 	    $pq .= ",\n		PaperScores.numScores";
 	}
@@ -1012,11 +1004,9 @@ class Conference {
 	else if (isset($options['allReviews']) || isset($options['allReviewScores']))
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
 	else if (!isset($options['author']))
-	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$reviewContactId$qr))\n";
+	    $pq .= "		left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))\n";
 	if ($myPaperReview == "MyPaperReview")
 	    $pq .= "		left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$contactId)\n";
-	if ($highlightPaperReview == "HighlightPaperReview")
-	    $pq .= "		left join PaperReview as HighlightPaperReview on (HighlightPaperReview.paperId=Paper.paperId and HighlightPaperReview.contactId=$reviewContactId)\n";
 	if (isset($options['allComments']))
 	    $pq .= "		join PaperComment on (PaperComment.paperId=Paper.paperId)
 		left join PaperConflict as CommentConflict on (CommentConflict.paperId=PaperComment.paperId and CommentConflict.contactId=PaperComment.contactId)\n";
@@ -1032,7 +1022,7 @@ class Conference {
 		$pq .= ", group_concat(PaperTopic.topicId) as topicIds, group_concat(ifnull(TopicInterest.interest,1)) as topicInterest";
 	    if (isset($options['topicInterestScore']))
 		$pq .= ", sum(if(interest=2,2,interest-1)) as topicInterestScore";
-	    $pq .= " from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$reviewContactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";
+	    $pq .= " from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$contactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";
 	}
 
 	if (isset($options['options']) && defval($this->settings, "paperOption")) {
@@ -1054,7 +1044,7 @@ class Conference {
 	}
 
 	if (defval($options, 'reviewerPreference'))
-	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$reviewContactId)\n";
+	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)\n";
 	if (defval($options, 'allReviewerPreference')
 	    || defval($options, 'desirability')) {
 	    $subq = "select paperId";
