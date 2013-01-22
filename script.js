@@ -595,24 +595,42 @@ return function (e, text) {
 
 
 // check marks for ajax saves
+function make_ajaxcheck_swinger(elt) {
+    return function () {
+	var h = elt.hotcrp_ajaxcheck;
+	var now = (new Date).getTime(), delta = now - h.start, opacity = 0;
+	if (delta < 2000)
+	    opacity = 0.5;
+	else if (delta <= 7000)
+	    opacity = 0.5 * Math.cos((delta - 2000) / 5000 * Math.PI);
+	if (opacity <= 0.03) {
+	    elt.style.outline = h.old_outline;
+	    clearInterval(h.interval);
+	    h.interval = null;
+	} else
+	    elt.style.outline = "4px solid rgba(0, 200, 0, " + opacity + ")";
+    };
+}
+
 function setajaxcheck(elt, rv) {
     if (typeof elt == "string")
 	elt = $$(elt);
     if (elt) {
-	if (!elt.nextSibling
-	    || !elt.nextSibling.className
-	    || !elt.nextSibling.className.match(/ajaxcheck/)) {
-	    var e = document.createElement("span");
-	    e.className = "ajaxcheck";
-	    e.style.marginLeft = "3px";
-	    elt.parentElement.insertBefore(e, elt.nextSibling);
+	var h = elt.hotcrp_ajaxcheck;
+	if (!h)
+	    h = elt.hotcrp_ajaxcheck = {old_outline: elt.style.outline};
+	if (h.interval) {
+	    clearInterval(h.interval);
+	    h.interval = null;
 	}
-	elt = elt.nextSibling;
-	var s = (rv.ok ? "Saved" : (rv.error ? rv.error : "Error")),
-	    c = elt.className.replace(/\s*ajaxcheck\w*\s*/, "");
+
+	var s = (rv.ok ? "Saved" : (rv.error ? rv.error : "Error"));
 	elt.setAttribute("title", s);
-	elt.setAttribute("alt", rv.ok ? "Saved" : "Error");
-	elt.className = c + " ajaxcheck_" + (rv.ok ? "good" : "bad");
+	if (rv.ok) {
+	    h.start = (new Date).getTime();
+	    h.interval = setInterval(make_ajaxcheck_swinger(elt), 13);
+	} else
+	    elt.style.outline = "5px solid red";
     }
 }
 
