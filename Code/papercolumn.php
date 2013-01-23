@@ -96,7 +96,7 @@ class SelectorPaperColumn extends PaperColumn {
         if ($this->name == "selconf" && !$pl->contact->privChair)
             return false;
         if ($this->name == "selconf")
-	    $Conf->footerScript("addConflictAjax()");
+	    $Conf->footerScript("add_conflict_ajax()");
         return true;
     }
     public function header($pl, $row = null, $ordinal = 0) {
@@ -491,7 +491,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         global $Conf;
         if (!$pl->contact->privChair)
             return false;
-        $Conf->footerScript("addAssrevAjax()");
+        $Conf->footerScript("add_assrev_ajax()");
 	return true;
     }
     public function analyze($pl, &$rows) {
@@ -585,7 +585,8 @@ class PreferencePaperColumn extends PaperColumn {
         if (!$pl->contact->isPC)
             return false;
         $queryOptions["reviewerPreference"] = $queryOptions["topicInterestScore"] = 1;
-        $Conf->footerScript("addRevprefAjax()");
+        if ($this->editable)
+            $Conf->footerScript("add_revpref_ajax()");
 	return true;
     }
     private static function _sortReviewerPreference($a, $b) {
@@ -830,7 +831,7 @@ class EditTagPaperColumn extends TagPaperColumn {
         global $Conf;
         if (($p = parent::prepare($pl, $queryOptions, $folded))) {
             $Conf->footerHtml("<form id='edittagajaxform' method='post' action='" . hoturl_post("paper", "settags=1&amp;forceShow=1") . "' enctype='multipart/form-data' accept-charset='UTF-8' style='display:none'><div><input name='p' value='' /><input name='addtags' value='' /><input name='deltags' value='' /></div></form>", "edittagajaxform");
-            $Conf->footerScript("addedittagajax()");
+            $Conf->footerScript("add_edittag_ajax()");
         }
         return $p;
     }

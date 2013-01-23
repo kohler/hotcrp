@@ -850,18 +850,18 @@ return function (elt, report_elt, cleanf) {
 
 
 // review preferences
-addRevprefAjax = (function () {
+add_revpref_ajax = (function () {
 
-function revpref_focus() {
+function rp_focus() {
     tempText(this, "0", true);
     autosub("update", this);
 }
 
-function revpref_blur() {
+function rp_blur() {
     tempText(this, "0", false);
 }
 
-function revpref_change() {
+function rp_change() {
     var form = $$("prefform"), whichpaper = this.name.substr(7);
     form.p.value = whichpaper;
     form.revpref.value = this.value;
@@ -873,12 +873,12 @@ function revpref_change() {
 	});
 }
 
-function revpref_keypress(event) {
+function rp_keypress(event) {
     var e = event || window.event, code = e.charCode || e.keyCode;
     if (e.ctrlKey || e.altKey || e.shiftKey || code != 13)
 	return true;
     else {
-	revpref_change.apply(this);
+	rp_change.apply(this);
 	return false;
     }
 }
@@ -890,11 +890,11 @@ return function () {
 	form = null;
     staged_foreach(inputs, function (elt) {
 	if (elt.type == "text" && elt.name.substr(0, 7) == "revpref") {
-	    elt.onfocus = revpref_focus;
-	    elt.onblur = revpref_blur;
+	    elt.onfocus = rp_focus;
+	    elt.onblur = rp_blur;
 	    if (form) {
-		elt.onchange = revpref_change;
-		elt.onkeypress = revpref_keypress;
+		elt.onchange = rp_change;
+		elt.onkeypress = rp_keypress;
 	    }
 	}
     });
@@ -902,65 +902,72 @@ return function () {
 
 })();
 
-function makeassrevajax(select, pcs, paperId) {
-    return function () {
-	var form = $$("assrevform");
-	var immediate = $$("assrevimmediate");
-	var roundtag = $$("assrevroundtag");
-	if (form && form.p && form[pcs] && immediate && immediate.checked) {
-	    form.p.value = paperId;
-	    form.rev_roundtag.value = (roundtag ? roundtag.value : "");
-	    form[pcs].value = select.value;
-	    Miniajax.submit("assrevform", function (rv) {
-		setajaxcheck(select, rv);
-	    });
-	} else
-	    hiliter(select);
-    };
+
+add_assrev_ajax = (function () {
+var pcs;
+
+function ar_onchange() {
+    var form = $$("assrevform"), immediate = $$("assrevimmediate"),
+    roundtag = $$("assrevroundtag"), that = this;
+    if (form && form.p && form[pcs] && immediate && immediate.checked) {
+	form.p.value = this.name.substr(6);
+	form.rev_roundtag.value = (roundtag ? roundtag.value : "");
+	form[pcs].value = this.value;
+	Miniajax.submit("assrevform", function (rv) {
+	    setajaxcheck(that, rv);
+	});
+    } else
+	hiliter(this);
 }
 
-function addAssrevAjax() {
+return function () {
     var form = $$("assrevform");
     if (!form || !form.reviewer)
 	return;
-    var pcs = "pcs" + form.reviewer.value;
+    pcs = "pcs" + form.reviewer.value;
     var inputs = document.getElementsByTagName("select");
     staged_foreach(inputs, function (elt) {
-	if (elt.name.substr(0, 6) == "assrev") {
-	    var whichpaper = elt.name.substr(6);
-	    elt.onchange = makeassrevajax(elt, pcs, whichpaper);
-	}
+	if (elt.name.substr(0, 6) == "assrev")
+	    elt.onchange = ar_onchange;
     });
+};
+
+})();
+
+
+add_conflict_ajax = (function () {
+var pcs;
+
+function conf_onclick() {
+    var form = $$("assrevform"), immediate = $$("assrevimmediate"), that = this;
+    if (form && form.p && form[pcs] && immediate && immediate.checked) {
+	form.p.value = this.value;
+	form[pcs].value = (this.checked ? -1 : 0);
+	Miniajax.submit("assrevform", function (rv) {
+	    setajaxcheck(that, rv);
+	});
+    } else
+	hiliter(this);
 }
 
-function makeconflictajax(input, pcs, paperId) {
-    return function () {
-	var form = $$("assrevform");
-	var immediate = $$("assrevimmediate");
-	if (form && form.p && form[pcs] && immediate && immediate.checked) {
-	    form.p.value = paperId;
-	    form[pcs].value = (input.checked ? -1 : 0);
-	    Miniajax.submit("assrevform", function (rv) {
-		setajaxcheck(input, rv);
-	    });
-	} else
-	    hiliter(input);
-    };
-}
-
-function addConflictAjax() {
+return function () {
     var form = $$("assrevform");
     if (!form || !form.reviewer)
 	return;
-    var pcs = "pcs" + form.reviewer.value;
+    pcs = "pcs" + form.reviewer.value;
     var inputs = document.getElementsByTagName("input");
     staged_foreach(inputs, function (elt) {
 	if (elt.name == "pap[]")
-	    elt.onclick = makeconflictajax(elt, pcs, elt.value);
+	    elt.onclick = conf_onclick;
     });
-}
+};
 
-function edittagajax() {
+})();
+
+
+add_edittag_ajax = (function () {
+
+function tag_onclick() {
     var form = $$("edittagajaxform"), that = this;
     var m = this.name.match(/^tag:(\S+) (\d+)$/);
     form.p.value = m[2];
@@ -986,7 +993,7 @@ function edittagajax() {
     });
 }
 
-function addedittagajax() {
+return function () {
     var sel = $$("sel");
     if (!$$("edittagajaxform") || !sel || window.addedittagajax_called)
 	return;
@@ -995,12 +1002,14 @@ function addedittagajax() {
     staged_foreach(inputs, function (elt) {
 	if (elt.name.substr(0, 4) == "tag:") {
 	    if (elt.type.toLowerCase() == "checkbox")
-		elt.onclick = edittagajax;
+		elt.onclick = tag_onclick;
 	    else
-		elt.onchange = edittagajax;
+		elt.onchange = tag_onclick;
 	}
     });
-}
+};
+
+})();
 
 
 // thank you David Flanagan
