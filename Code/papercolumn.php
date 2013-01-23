@@ -606,8 +606,8 @@ class PreferencePaperColumn extends PaperColumn {
 }
 
 class PreferenceListPaperColumn extends PaperColumn {
-    public function __construct($name, $extra) {
-        parent::__construct($name, Column::VIEW_ROW, $extra);
+    public function __construct($name) {
+        parent::__construct($name, Column::VIEW_ROW, 0);
     }
     public function prepare($pl, &$queryOptions, $folded) {
         if (!$pl->contact->privChair)
@@ -1032,38 +1032,41 @@ class ShepherdPaperColumn extends PaperColumn {
 function initialize_paper_columns() {
     global $paperListFormulas, $reviewScoreNames, $Conf;
 
-    PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)), PaperList::FIELD_SELECTOR);
-    PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "cssname" => "sel")), PaperList::FIELD_SELECTOR_ON);
-    PaperColumn::register(new SelectorPaperColumn("selconf", array("cssname" => "confselector")), PaperList::FIELD_SELECTOR_CONFLICT);
-    PaperColumn::register(new IdPaperColumn, PaperList::FIELD_ID);
-    PaperColumn::register(new TitlePaperColumn("title"), PaperList::FIELD_TITLE);
-    PaperColumn::register(new StatusPaperColumn("status", false), PaperList::FIELD_STATUS_SHORT);
-    PaperColumn::register(new StatusPaperColumn("statusfull", true), PaperList::FIELD_STATUS);
-    PaperColumn::register(new ReviewerTypePaperColumn("revtype"), PaperList::FIELD_REVIEWER_TYPE_ICON);
-    PaperColumn::register(new ReviewStatusPaperColumn("revstat"), PaperList::FIELD_REVIEWS_STATUS);
-    PaperColumn::register(new ReviewSubmittedPaperColumn("revsubmitted"), PaperList::FIELD_REVIEWER_STATUS);
-    PaperColumn::register(new ReviewDelegationPaperColumn("revdelegation", array("cssname" => "text", "sortable" => true)), PaperList::FIELD_REVIEWER_MONITOR);
-    PaperColumn::register(new AssignReviewPaperColumn("assrev"), PaperList::FIELD_ASSIGN_REVIEW);
-    PaperColumn::register(new TopicScorePaperColumn("topicscore", true), PaperList::FIELD_TOPIC_INTEREST);
-    PaperColumn::register(new TopicListPaperColumn("topics", 13), PaperList::FIELD_OPT_TOPIC_NAMES);
-    PaperColumn::register(new PreferencePaperColumn("revpref", false), PaperList::FIELD_REVIEWER_PREFERENCE);
-    PaperColumn::register(new PreferencePaperColumn("revprefedit", true), PaperList::FIELD_EDIT_REVIEWER_PREFERENCE);
-    PaperColumn::register(new PreferenceListPaperColumn("allrevpref", 0), PaperList::FIELD_ALL_PREFERENCES);
-    PaperColumn::register(new DesirabilityPaperColumn("desirability"), PaperList::FIELD_DESIRABILITY);
-    PaperColumn::register(new ReviewerListPaperColumn("reviewers", 10), PaperList::FIELD_OPT_ALL_REVIEWER_NAMES);
-    PaperColumn::register(new AuthorsPaperColumn("authors", 3), PaperList::FIELD_OPT_AUTHORS);
-    PaperColumn::register(new CollabPaperColumn("collab", 15), PaperList::FIELD_COLLABORATORS);
-    PaperColumn::register(new TagListPaperColumn("tags", 4), PaperList::FIELD_TAGS);
-    PaperColumn::register(new AbstractPaperColumn("abstract", 5), PaperList::FIELD_OPT_ABSTRACT);
-    PaperColumn::register(new LeadPaperColumn("lead", 12), PaperList::FIELD_LEAD);
-    PaperColumn::register(new ShepherdPaperColumn("shepherd", 11), PaperList::FIELD_SHEPHERD);
-    PaperColumn::register(new PCConflictListPaperColumn("pcconf", 14), PaperList::FIELD_OPT_PC_CONFLICTS);
-    PaperColumn::register(new ConflictMatchPaperColumn("authorsmatch", "authorInformation"), PaperList::FIELD_AUTHOR_MATCH);
-    PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", "collaborators"), PaperList::FIELD_COLLABORATORS_MATCH);
-    PaperColumn::register(new SearchSortPaperColumn, PaperList::FIELD_PIDARRAY);
-    PaperColumn::register(new TagOrderSortPaperColumn, PaperList::FIELD_TAGINDEX);
+    // The ID numbers passed as argument 2 to PaperColumn::register are
+    // legacy, new code uses names. We keep the numbers because they might
+    // define sort orders for old saved searches.
+    PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)), 1000);
+    PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "cssname" => "sel")), 1001);
+    PaperColumn::register(new SelectorPaperColumn("selconf", array("cssname" => "confselector")), 1002);
+    PaperColumn::register(new IdPaperColumn, 1);
+    PaperColumn::register(new TitlePaperColumn("title"), 11);
+    PaperColumn::register(new StatusPaperColumn("status", false), 21);
+    PaperColumn::register(new StatusPaperColumn("statusfull", true), 20);
+    PaperColumn::register(new ReviewerTypePaperColumn("revtype"), 27);
+    PaperColumn::register(new ReviewStatusPaperColumn("revstat"), 41);
+    PaperColumn::register(new ReviewSubmittedPaperColumn("revsubmitted"), 28);
+    PaperColumn::register(new ReviewDelegationPaperColumn("revdelegation", array("cssname" => "text", "sortable" => true)), 29);
+    PaperColumn::register(new AssignReviewPaperColumn("assrev"), 35);
+    PaperColumn::register(new TopicScorePaperColumn("topicscore", true), 36);
+    PaperColumn::register(new TopicListPaperColumn("topics", 13), 73);
+    PaperColumn::register(new PreferencePaperColumn("revpref", false), 39);
+    PaperColumn::register(new PreferencePaperColumn("revprefedit", true), 40);
+    PaperColumn::register(new PreferenceListPaperColumn("allrevpref"), 44);
+    PaperColumn::register(new DesirabilityPaperColumn("desirability"), 43);
+    PaperColumn::register(new ReviewerListPaperColumn("reviewers", 10), 75);
+    PaperColumn::register(new AuthorsPaperColumn("authors", 3), 70);
+    PaperColumn::register(new CollabPaperColumn("collab", 15), 74);
+    PaperColumn::register(new TagListPaperColumn("tags", 4), 71);
+    PaperColumn::register(new AbstractPaperColumn("abstract", 5), 72);
+    PaperColumn::register(new LeadPaperColumn("lead", 12), 77);
+    PaperColumn::register(new ShepherdPaperColumn("shepherd", 11), 78);
+    PaperColumn::register(new PCConflictListPaperColumn("pcconf", 14), 76);
+    PaperColumn::register(new ConflictMatchPaperColumn("authorsmatch", "authorInformation"), 47);
+    PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", "collaborators"), 48);
+    PaperColumn::register(new SearchSortPaperColumn, 9);
+    PaperColumn::register(new TagOrderSortPaperColumn, 8);
 
-    $nextfield = PaperList::FIELD_SCORE;
+    $nextfield = 50; /* BaseList::FIELD_SCORE */
     foreach ($reviewScoreNames as $k => $n) {
         ScorePaperColumn::register(new ScorePaperColumn($n, $nextfield));
         ++$nextfield;

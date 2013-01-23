@@ -7,45 +7,6 @@ require_once("baselist.inc");
 
 class PaperList extends BaseList {
 
-    const FIELD_SELECTOR = 1000;
-    const FIELD_SELECTOR_ON = 1001;
-    const FIELD_SELECTOR_CONFLICT = 1002;
-    const FIELD_LAST_SELECTOR = 1002;
-
-    const FIELD_ID = 1;
-    const FIELD_TAGINDEX = 8;
-    const FIELD_PIDARRAY = 9;
-
-    const FIELD_TITLE = 11;
-
-    const FIELD_STATUS = 20;
-    const FIELD_STATUS_SHORT = 21;
-    const FIELD_REVIEWER_TYPE_ICON = 27;
-    const FIELD_REVIEWER_STATUS = 28;
-    const FIELD_REVIEWER_MONITOR = 29;
-    const FIELD_ASSIGN_REVIEW = 35;
-    const FIELD_TOPIC_INTEREST = 36;
-    const FIELD_REVIEWER_PREFERENCE = 39;
-    const FIELD_EDIT_REVIEWER_PREFERENCE = 40;
-    const FIELD_REVIEWS_STATUS = 41;
-    const FIELD_DESIRABILITY = 43;
-    const FIELD_ALL_PREFERENCES = 44;
-    const FIELD_AUTHOR_MATCH = 47;
-    const FIELD_COLLABORATORS_MATCH = 48;
-
-    const FIELD_OPT_AUTHORS = 70;
-    const FIELD_TAGS = 71;
-    const FIELD_OPT_ABSTRACT = 72;
-    const FIELD_OPT_TOPIC_NAMES = 73;
-    const FIELD_COLLABORATORS = 74;
-    const FIELD_OPT_ALL_REVIEWER_NAMES = 75;
-    const FIELD_OPT_PC_CONFLICTS = 76;
-    const FIELD_LEAD = 77;
-    const FIELD_SHEPHERD = 78;
-
-    const FIELD_FORMULA = 100;
-    const FIELD_TAGREPORT = 101;
-
     const HEADER_ALL = 2;
     const HEADER_TITLES = 1;
     const HEADER_NONE = 0;

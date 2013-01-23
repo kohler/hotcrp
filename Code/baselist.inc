@@ -1,6 +1,6 @@
 <?php
 // baselist.inc -- HotCRP helper class for producing paper lists
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $scoreSorts, $defaultScoreSort;
@@ -16,21 +16,8 @@ class BaseList {
 
     const FIELD_SCORE = 50;
     const FIELD_NUMSCORES = 11;
-    const FIELD_SCORE_OVERALL_MERIT = 50; // also used in help.php
-
-    const FIELD_FORMULA = 100;
-    const FIELD_NUMFORMULA = 100;
 
     const LOTSAZEROS = "00000000000000";
-
-    function _normalizeField($fieldId) {
-	if ($fieldId >= self::FIELD_SCORE && $fieldId < self::FIELD_SCORE + self::FIELD_NUMSCORES)
-	    return self::FIELD_SCORE;
-	else if ($fieldId >= self::FIELD_FORMULA && $fieldId < self::FIELD_FORMULA + self::FIELD_NUMFORMULA)
-	    return self::FIELD_FORMULA;
-	else
-	    return $fieldId;
-    }
 
     function _sortBase($a, $b) {
 	return $a->paperId - $b->paperId;
