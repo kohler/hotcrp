@@ -969,7 +969,7 @@ class TagOrderSortPaperColumn extends PaperColumn {
 	global $Conf;
         $careful = !$pl->contact->privChair
             && $Conf->setting("tag_seeall") <= 0;
-        $ot = $this->search->orderTags;
+        $ot = $pl->search->orderTags;
         for ($i = 0; $i < count($ot); ++$i) {
             $n = "tagIndex" . ($i ? $i : "");
             $rev = $ot[$i]->reverse;
