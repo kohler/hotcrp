@@ -7,6 +7,7 @@ require_once("paperlist.inc");
 
 class PaperColumn extends Column {
     static private $by_name = array();
+    static private $factories = array();
 
     public function __construct($name, $view, $extra) {
         if ($extra === true)
@@ -19,8 +20,11 @@ class PaperColumn extends Column {
     public static function lookup($name) {
         if (isset(self::$by_name[$name]))
             return self::$by_name[$name];
-        else
-            return null;
+        foreach (self::$factories as $prefix => $f)
+            if (str_starts_with($name, $prefix)
+                && ($x = $f->make_field($name)))
+                return $x;
+        return null;
     }
 
     public static function register($fdef) {
@@ -29,6 +33,10 @@ class PaperColumn extends Column {
         for ($i = 1; $i < func_num_args(); ++$i)
             self::$by_name[func_get_arg($i)] = $fdef;
         return $fdef;
+    }
+    public static function register_factory($prefix, $f) {
+        assert(!isset(self::$factories[$prefix]));
+        self::$factories[$prefix] = $f;
     }
 
     public function prepare($pl, &$queryOptions, $folded) {
@@ -755,6 +763,58 @@ class TagListPaperColumn extends PaperColumn {
     }
 }
 
+class TagPaperColumn extends PaperColumn {
+    private $dtag;
+    private $ctag;
+    public function __construct($tag) {
+        parent::__construct("tag:$tag", Column::VIEW_COLUMN, true);
+        $this->dtag = $tag;
+    }
+    public function make_field($name) {
+        return parent::register(new TagPaperColumn(substr($name, 4)));
+    }
+    public function prepare($pl, &$queryOptions, $folded) {
+        if (!$pl->contact->canViewTags(null))
+            return false;
+        $tagger = new Tagger($pl->contact);
+        if (!($ctag = $tagger->check($this->dtag, Tagger::NOVALUE)))
+            return false;
+        $this->ctag = " $ctag#";
+        $queryOptions["tags"] = 1;
+        return true;
+    }
+    private function _tag_value($row) {
+        if (($p = strpos(" " . $row->paperTags, $this->ctag)) === false)
+            return null;
+        else
+            return (int) substr($row->paperTags, $p + strlen($this->ctag) - 1);
+    }
+    private function _sort_tag($a, $b) {
+        $av = $this->_tag_value($a);
+        $av = $av !== null ? $av : 2147483647;
+        $bv = $this->_tag_value($b);
+        $bv = $bv !== null ? $bv : 2147483647;
+        return $av < $bv ? -1 : ($av == $bv ? $a->paperId - $b->paperId : 1);
+    }
+    public function sort($pl, &$rows) {
+        usort($rows, array($this, "_sort_tag"));
+    }
+    public function header($pl, $row = null, $ordinal = 0) {
+        return "#$this->dtag";
+    }
+    public function content_empty($pl, $row) {
+        return !$pl->contact->canViewTags($row);
+    }
+    public function content($pl, $row) {
+        if (($v = $this->_tag_value($row)) === null)
+            return "";
+        else if ($v === 0)
+            return "&#x2713;";
+        else
+            return $v;
+    }
+}
+
 class ScorePaperColumn extends PaperColumn {
     public $score;
     private static $registered = array();
@@ -1065,6 +1125,7 @@ function initialize_paper_columns() {
     PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", "collaborators"), 48);
     PaperColumn::register(new SearchSortPaperColumn, 9);
     PaperColumn::register(new TagOrderSortPaperColumn, 8);
+    PaperColumn::register_factory("tag:", new TagPaperColumn(""));
 
     $nextfield = 50; /* BaseList::FIELD_SCORE */
     foreach ($reviewScoreNames as $k => $n) {
