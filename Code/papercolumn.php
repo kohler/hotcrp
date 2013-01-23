@@ -764,14 +764,17 @@ class TagListPaperColumn extends PaperColumn {
 }
 
 class TagPaperColumn extends PaperColumn {
-    private $dtag;
-    private $ctag;
-    public function __construct($tag) {
-        parent::__construct("tag:$tag", Column::VIEW_COLUMN, true);
+    protected $is_value;
+    protected $dtag;
+    protected $ctag;
+    public function __construct($name, $tag, $is_value) {
+        parent::__construct($name, Column::VIEW_COLUMN, true);
         $this->dtag = $tag;
+        $this->is_value = $is_value;
     }
     public function make_field($name) {
-        return parent::register(new TagPaperColumn(substr($name, 4)));
+        $p = 4 + ($this->is_value ? 3 : 0);
+        return parent::register(new TagPaperColumn($name, substr($name, $p), $this->is_value));
     }
     public function prepare($pl, &$queryOptions, $folded) {
         if (!$pl->contact->canViewTags(null))
@@ -783,7 +786,7 @@ class TagPaperColumn extends PaperColumn {
         $queryOptions["tags"] = 1;
         return true;
     }
-    private function _tag_value($row) {
+    protected function _tag_value($row) {
         if (($p = strpos(" " . $row->paperTags, $this->ctag)) === false)
             return null;
         else
@@ -808,10 +811,37 @@ class TagPaperColumn extends PaperColumn {
     public function content($pl, $row) {
         if (($v = $this->_tag_value($row)) === null)
             return "";
-        else if ($v === 0)
+        else if ($v === 0 && !$this->is_value)
             return "&#x2713;";
         else
             return $v;
+    }
+}
+
+class EditTagPaperColumn extends TagPaperColumn {
+    public function __construct($name, $tag, $is_value) {
+        parent::__construct($name, $tag, $is_value);
+    }
+    public function make_field($name) {
+        $p = 8 + ($this->is_value ? 3 : 0);
+        return parent::register(new EditTagPaperColumn($name, substr($name, $p), $this->is_value));
+    }
+    public function prepare($pl, &$queryOptions, $folded) {
+        global $Conf;
+        if (($p = parent::prepare($pl, $queryOptions, $folded))) {
+            $Conf->footerHtml("<form id='edittagajaxform' method='post' action='" . hoturl_post("paper", "settags=1&amp;forceShow=1") . "' enctype='multipart/form-data' accept-charset='UTF-8' style='display:none'><div><input name='p' value='' /><input name='addtags' value='' /><input name='deltags' value='' /></div></form>", "edittagajaxform");
+            $Conf->footerScript("addedittagajax()");
+        }
+        return $p;
+    }
+    public function content($pl, $row) {
+        $v = $this->_tag_value($row);
+        if (!$this->is_value)
+            return "<input type='checkbox' class='cb' name='tag:$this->dtag $row->paperId' value='x' tabindex='6'"
+                . ($v !== null ? " checked='checked'" : "") . " />";
+        else
+            return "<input type='text' class='textlite' size='4' name='tag:$this->dtag $row->paperId' value=\""
+                . ($v !== null ? htmlspecialchars($v) : "") . "\" tabindex='6' />";
     }
 }
 
@@ -1125,7 +1155,10 @@ function initialize_paper_columns() {
     PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", "collaborators"), 48);
     PaperColumn::register(new SearchSortPaperColumn, 9);
     PaperColumn::register(new TagOrderSortPaperColumn, 8);
-    PaperColumn::register_factory("tag:", new TagPaperColumn(""));
+    PaperColumn::register_factory("tag:", new TagPaperColumn(null, null, false));
+    PaperColumn::register_factory("tagval:", new TagPaperColumn(null, null, true));
+    PaperColumn::register_factory("edittag:", new EditTagPaperColumn(null, null, false));
+    PaperColumn::register_factory("edittagval:", new EditTagPaperColumn(null, null, true));
 
     $nextfield = 50; /* BaseList::FIELD_SCORE */
     foreach ($reviewScoreNames as $k => $n) {

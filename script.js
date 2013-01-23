@@ -624,8 +624,15 @@ function setajaxcheck(elt, rv) {
 	    h.interval = null;
 	}
 
-	var s = (rv.ok ? "Saved" : (rv.error ? rv.error : "Error"));
+	var s;
+	if (rv.ok)
+	    s = "Saved";
+	else if (rv.error)
+	    s = rv.error.replace(/<\/?.*?>/g, "").replace(/\(Override conflict\)\s*/g, "").replace(/\s+$/, "");
+	else
+	    s = "Error";
 	elt.setAttribute("title", s);
+
 	if (rv.ok) {
 	    h.start = (new Date).getTime();
 	    h.interval = setInterval(make_ajaxcheck_swinger(elt), 13);
@@ -950,6 +957,48 @@ function addConflictAjax() {
     staged_foreach(inputs, function (elt) {
 	if (elt.name == "pap[]")
 	    elt.onclick = makeconflictajax(elt, pcs, elt.value);
+    });
+}
+
+function edittagajax() {
+    var form = $$("edittagajaxform"), that = this;
+    var m = this.name.match(/^tag:(\S+) (\d+)$/);
+    form.p.value = m[2];
+    form.addtags.value = form.deltags.value = "";
+    if (this.type.toLowerCase() == "checkbox") {
+	if (this.checked)
+	    form.addtags.value = m[1];
+	else
+	    form.deltags.value = m[1];
+    } else {
+	var s = this.value.replace(/^\s+/, "").replace(/\s+$/, "").toLowerCase();
+	if (s == "y" || s == "yes" || s == "t" || s == "true" || s == "✓")
+	    form.addtags.value = m[1];
+	else if (s == "n" || s == "no" || s == "" || s == "f" || s == "false" || s == "na" || s == "n/a")
+	    form.deltags.value = m[1];
+	else if (s.match(/^[-+]?\d+$/))
+	    form.addtags.value = m[1] + "#" + s;
+	else
+	    return setajaxcheck(that, {ok: false, error: "Tag value must be an integer (or “n” to remove the tag)."});
+    }
+    Miniajax.submit("edittagajaxform", function (rv) {
+	setajaxcheck(that, rv);
+    });
+}
+
+function addedittagajax() {
+    var sel = $$("sel");
+    if (!$$("edittagajaxform") || !sel || window.addedittagajax_called)
+	return;
+    window.addedittagajax_called = true;
+    var inputs = document.getElementsByTagName("input");
+    staged_foreach(inputs, function (elt) {
+	if (elt.name.substr(0, 4) == "tag:") {
+	    if (elt.type.toLowerCase() == "checkbox")
+		elt.onclick = edittagajax;
+	    else
+		elt.onchange = edittagajax;
+	}
     });
 }
 

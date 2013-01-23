@@ -20,6 +20,7 @@ class Conference {
     var $scriptStuff;
     var $footerStuff;
     var $footerScripting;
+    var $footerMap;
     var $usertimeId;
 
     function __construct() {
@@ -31,6 +32,7 @@ class Conference {
 	$this->scriptStuff = "";
 	$this->footerStuff = "";
 	$this->footerScripting = false;
+        $this->footerMap = null;
 	$this->usertimeId = 1;
 
 	// unpack dsn and connect to database
@@ -644,11 +646,18 @@ class Conference {
 	}
     }
 
-    function footerHtml($html) {
+    function footerHtml($html, $uniqueid = null) {
 	if ($this->footerScripting) {
 	    $this->footerStuff .= "</script>";
 	    $this->footerScripting = false;
 	}
+        if ($uniqueid) {
+            if (!$this->footerMap)
+                $this->footerMap = array();
+            if (isset($this->footerMap[$uniqueid]))
+                return;
+            $this->footerMap[$uniqueid] = true;
+        }
 	$this->footerStuff .= $html;
     }
 

@@ -162,8 +162,10 @@ class PaperActions {
 		$tagger->save($prow->paperId, $_REQUEST["deltags"], "d");
 	} else
 	    $Error["tags"] = "You can’t set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
-	if ($ajax)
-	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "tags")));
+	if ($ajax && $OK && !isset($Error["tags"]))
+            $Conf->ajaxExit(array("ok" => true));
+        else
+            $Conf->ajaxExit(array("ok" => false, "error" => defval($Error, "tags", "")));
 	if (isset($Error) && isset($Error["tags"])) {
 	    $Error["paperId"] = $prow->paperId;
 	    $_SESSION["redirect_error"] = $Error;
