@@ -769,6 +769,7 @@ class TagPaperColumn extends PaperColumn {
     protected $is_value;
     protected $dtag;
     protected $ctag;
+    protected $editable = false;
     public function __construct($name, $tag, $is_value) {
         parent::__construct($name, Column::VIEW_COLUMN, true);
         $this->dtag = $tag;
@@ -796,13 +797,19 @@ class TagPaperColumn extends PaperColumn {
             return (int) substr($row->paperTags, $p + strlen($this->ctag) - 1);
     }
     private function _sort_tag($a, $b) {
-        $av = $this->_tag_value($a);
-        $av = $av !== null ? $av : 2147483647;
-        $bv = $this->_tag_value($b);
-        $bv = $bv !== null ? $bv : 2147483647;
+        $av = $a->_sort_info;
+        $bv = $b->_sort_info;
         return $av < $bv ? -1 : ($av == $bv ? $a->paperId - $b->paperId : 1);
     }
     public function sort($pl, &$rows) {
+        global $Conf;
+        $careful = !$pl->contact->privChair
+            && $Conf->setting("tag_seeall") <= 0;
+        foreach ($rows as $row)
+            if ($careful && !$pl->contact->canViewTags($row))
+                $row->_sort_info = 2147483647;
+            else if (($row->_sort_info = $this->_tag_value($row)) === null)
+                $row->_sort_info = 2147483646 + !$this->editable;
         usort($rows, array($this, "_sort_tag"));
     }
     public function header($pl, $row = null, $ordinal = 0) {
@@ -825,6 +832,7 @@ class EditTagPaperColumn extends TagPaperColumn {
     public function __construct($name, $tag, $is_value) {
         parent::__construct($name, $tag, $is_value);
         $this->cssname = ($this->is_value ? "edittagval" : "edittag");
+        $this->editable = true;
     }
     public function make_field($name) {
         $p = strpos($name, ":");
