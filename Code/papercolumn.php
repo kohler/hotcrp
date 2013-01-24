@@ -777,7 +777,7 @@ class TagPaperColumn extends PaperColumn {
     }
     public function make_field($name) {
         $p = strpos($name, ":");
-        return parent::register(new TagPaperColumn($name, substr($name, $p), $this->is_value));
+        return parent::register(new TagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->contact->canViewTags(null))

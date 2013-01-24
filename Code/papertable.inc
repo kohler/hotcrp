@@ -1257,13 +1257,13 @@ class PaperTable {
 	echo "<input id='foldrank_d' class='textlite' type='text' size='4' name='rank' value=\"$rp\" onchange='Miniajax.submit(\"rankform\")' tabindex='1' />",
 	    " <input class='b fx7' type='submit' value='Save' />",
 	    " <span id='rankformresult'></span>",
-	    " <div class='hint'><strong>Tip:</strong> <a href='", hoturl("search", "q=" . urlencode("showsort:#~$tag")), "'>Search “showsort:#~${tag}”</a> to drag and drop your ranking, or <a href='", hoturl("offline"), "'>use offline reviewing</a> to rank many papers at once.</div>",
+	    " <div class='hint'><strong>Tip:</strong> <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>Search “editsort:#~${tag}”</a> to drag and drop your ranking, or <a href='", hoturl("offline"), "'>use offline reviewing</a> to rank many papers at once.</div>",
 	    "</div></form>",
 	    "<div class='fn'>",
 	    ($rp === "" ? "None" : $rp);
 	if ($rp != "")
 	    echo " <span class='fn2'>&nbsp; <a href='javascript:void 0' onclick='fold(\"rank\", 0, 2);void Miniajax.submit(\"rankctxform\")'>(context)</a></span>";
-        echo " &nbsp; <a href='", hoturl("search", "q=" . urlencode("showsort:#~$tag")), "'>(all)</a>";
+        echo " &nbsp; <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>(all)</a>";
 	echo "</div>",
 	    "<div id='rankctxformresult' class='fx2'>Loading...</div>",
 	    "</div></div>\n";

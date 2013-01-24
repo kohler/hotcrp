@@ -659,7 +659,8 @@ class PaperList extends BaseList {
 	    $field = $field->foldnum ? $field->name : null;
 	return ($field
 		&& !defval($_REQUEST, "show$field")
-		&& strpos($this->display, " $field ") === false);
+                && ($this->viewmap->$field === false
+                    || strpos($this->display, " $field ") === false));
     }
 
     function _row_text($rstate, $row, $fieldDef) {
@@ -921,7 +922,7 @@ class PaperList extends BaseList {
         // add requested fields
         $specials = array_flip(array("cc", "compactcolumn", "cc", "compactcolumns", "column", "col", "columns", "sort"));
         foreach ($this->viewmap as $k => $v)
-            if (!isset($specials[$k])
+            if (!isset($specials[$k]) && $v
                 && ($f = PaperColumn::lookup($k)))
                 $field_list[] = $f;
 
@@ -930,7 +931,7 @@ class PaperList extends BaseList {
 	    $this->paperLink = $_REQUEST["linkto"];
 
         // check sort
-        $special_sort = $sort_field = null;
+        $special_sort = null;
         if (!$special_sort && count($this->search->orderTags)
             && ($special_sort = PaperColumn::lookup("tagordersort"))
             && !$special_sort->prepare($this, $queryOptions, -1))
@@ -938,8 +939,11 @@ class PaperList extends BaseList {
         if (!$special_sort && $this->search->simplePaperList() !== null)
             $special_sort = PaperColumn::lookup("searchsort");
         if ($this->viewmap->sort
-            && ($sort_field = PaperColumn::lookup($this->viewmap->sort))
-            && !$sort_field->prepare($this, $queryOptions, -1))
+            && ($new_sorter = BaseList::parse_sorter($this->viewmap->sort))
+            && ($sort_field = PaperColumn::lookup($new_sorter->type))
+            && $sort_field->prepare($this, $queryOptions, -1))
+            $this->sorter = $new_sorter;
+        else
             $sort_field = null;
         if ($this->sorter->type
             && ($sort_field = PaperColumn::lookup($this->sorter->type))
@@ -956,6 +960,7 @@ class PaperList extends BaseList {
 	$ncol = 0;
 	foreach ($field_list as $f)
 	    if ($f->view > 0
+                && $this->viewmap[$f->name] !== false
                 && $f->prepare($this, $queryOptions,
                                $this->_field_is_folded($f) ? 0 : 1)) {
 		$fieldDef[] = $f;

@@ -43,7 +43,10 @@ $searchKeywords = array("ti" => "ti", "title" => "ti",
 	"ss" => "ss", "search" => "ss",
 	"HEADING" => "HEADING", "heading" => "HEADING",
         "show" => "show", "VIEW" => "show", "view" => "show",
-        "hide" => "hide", "sort" => "sort", "showsort" => "showsort");
+        "hide" => "hide", "edit" => "edit",
+        "sort" => "sort", "showsort" => "showsort",
+        "sortshow" => "showsort", "editsort" => "editsort",
+        "sortedit" => "editsort");
 
 class SearchOperator {
     var $op;
@@ -1263,38 +1266,28 @@ class PaperSearch {
 		$this->headingmap = array();
 	    $qt[] = SearchTerm::make_float(array("heading" => $heading));
 	}
-	if ($keyword == "show") {
+	if ($keyword == "show" || $keyword == "hide" || $keyword == "edit"
+            || $keyword == "sort" || $keyword == "showsort"
+            || $keyword == "editsort") {
 	    $views = array();
 	    foreach (preg_split('/\s+/', $word) as $w) {
-                $a = true;
+                $a = ($keyword == "hide" ? false : true);
 		if ($w[0] == "-")
                     list($a, $w) = array(false, substr($w, 1));
-                if ($w[0] == "#")
-                    $w = "edittagval:" . substr($w, 1);
-                if ($w != "")
-                    $views[$w] = $a;
+                if ($w[0] == "#") {
+                    if (strpos($keyword, "edit") !== false)
+                        $w = "edittagval:" . substr($w, 1);
+                    else
+                        $w = "tag:" . substr($w, 1);
+                }
+                $comma = strpos($w, ",");
+                $subw = $comma === false ? $w : substr($w, 0, $comma);
+                if ($subw != "" && $keyword != "sort")
+                    $views[$subw] = $a;
+                if (strpos($keyword, "sort") !== false)
+                    $views["sort"] = $w;
             }
 	    $qt[] = SearchTerm::make_float(array("view" => $views));
-	}
-	if ($keyword == "hide") {
-	    $views = array();
-	    foreach (preg_split('/\s+/', $word) as $w) {
-		if ($w[0] == "#")
-                    $w = "edittagval:" . substr($w, 1);
-                if ($w != "")
-                    $views[$w] = false;
-            }
-	    $qt[] = SearchTerm::make_float(array("view" => $views));
-	}
-        if ($keyword == "sort") {
-            if ($word[0] == "#")
-                $word = "edittagval:" . substr($word, 1);
-            $qt[] = SearchTerm::make_float(array("view" => array("sort" => $word)));
-        }
-	if ($keyword == "showsort") {
-            if ($word[0] == "#")
-                $word = "edittagval:" . substr($word, 1);
-            $qt[] = SearchTerm::make_float(array("view" => array("sort" => $word, $word => true)));
 	}
 
 	// Finally, look for a review field.

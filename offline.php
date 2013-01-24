@@ -231,7 +231,7 @@ if ($Conf->setting("tag_rank") && $Me->amReviewer()) {
 	<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Go' $disabled/>";
     if ($pastDeadline && $Me->privChair)
 	echo "<br />", tagg_checkbox("override"), "&nbsp;", tagg_label("Override&nbsp;deadlines");
-    echo "<br /><span class='hint'><strong>Tip:</strong> Use “<a href='", hoturl("search", "q=" . urlencode("showsort:#~$ranktag")), "'>showsort:#~$ranktag</a>” to drag and drop your ranking.</span>";
+    echo "<br /><span class='hint'><strong>Tip:</strong> Use “<a href='", hoturl("search", "q=" . urlencode("editsort:#~$ranktag")), "'>editsort:#~$ranktag</a>” to drag and drop your ranking.</span>";
     echo "<br /><span class='hint'><strong>Tip:</strong> “<a href='", hoturl("search", "q=order:%7E$ranktag"), "'>order:~$ranktag</a>” searches by your ranking.</span>";
     echo "</div></form></td>\n";
     echo "</tr>\n";
