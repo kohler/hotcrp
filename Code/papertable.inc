@@ -1231,17 +1231,10 @@ class PaperTable {
 	    return;
 
 	// load rank
-	$tagsearch = " " . $Me->contactId . "~" . $tag;
-	if (($pos = strpos(" " . $prow->paperTags, $tagsearch)) !== false) {
-	    $pos += strlen($tagsearch) - 1;
-	    if ($pos == strlen($prow->paperTags)
-		|| $prow->paperTags[$pos] != "#")
-		$rp = "0";
-	    else if (($xpos = strpos($prow->paperTags, " ", $pos + 1)))
-		$rp = substr($prow->paperTags, $pos + 1, $xpos - $pos - 1);
-	    else
-		$rp = substr($prow->paperTags, $pos + 1);
-	} else
+	$tagsearch = " " . $Me->contactId . "~" . $tag . "#";
+	if (($pos = strpos($prow->paperTags, $tagsearch)) !== false)
+            $rp = (int) substr($prow->paperTags, $pos + strlen($tagsearch));
+        else
 	    $rp = "";
 
 	// rank context form

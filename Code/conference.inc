@@ -1039,7 +1039,7 @@ class Conference {
 	}
 
 	if (isset($options['tags']))
-	    $pq .= "		left join (select paperId, group_concat(tag, '#', tagIndex order by tag separator ' ') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";
+	    $pq .= "		left join (select paperId, group_concat(' ', tag, '#', tagIndex order by tag separator '') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";
 	if (isset($options["tagIndex"]))
 	    for ($i = 0; $i < count($options["tagIndex"]); ++$i)
 		$pq .= "		left join PaperTag as TagIndex$i on (TagIndex$i.paperId=Paper.paperId and TagIndex$i.tag='" . sqlq($options["tagIndex"][$i]) . "')\n";

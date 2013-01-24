@@ -791,10 +791,10 @@ class TagPaperColumn extends PaperColumn {
         return true;
     }
     protected function _tag_value($row) {
-        if (($p = strpos(" " . $row->paperTags, $this->ctag)) === false)
+        if (($p = strpos($row->paperTags, $this->ctag)) === false)
             return null;
         else
-            return (int) substr($row->paperTags, $p + strlen($this->ctag) - 1);
+            return (int) substr($row->paperTags, $p + strlen($this->ctag));
     }
     private function _sort_tag($a, $b) {
         $av = $a->_sort_info;
@@ -1020,7 +1020,7 @@ class TagReportPaperColumn extends PaperColumn {
         return !$pl->contact->canViewTags($row);
     }
     public function content($pl, $row) {
-        if (($t = " " . $row->paperTags) === " ")
+        if (($t = $row->paperTags) === "")
             return "";
         $a = array();
         foreach (pcMembers() as $pcm) {

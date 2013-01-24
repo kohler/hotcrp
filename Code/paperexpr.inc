@@ -273,7 +273,7 @@ class PaperExpr {
 	    $state->queryOptions["tags"] = true;
             $tagger = new Tagger($state->contact);
 	    $e_tag = $tagger->check($e[2]);
-	    $t_tags = self::_addgtemp($state, "(\$forceShow || \$contact->canViewTags(\$prow) ? ' ' . \$prow->paperTags : '')", "tags");
+	    $t_tags = self::_addgtemp($state, "(\$forceShow || \$contact->canViewTags(\$prow) ? \$prow->paperTags : '')", "tags");
 	    $t_tagpos = self::_addgtemp($state, "strpos($t_tags, \" $e_tag#\")", "tagpos $e[2]");
 	    $t_tagval = self::_addgtemp($state, "($t_tagpos === false ? null : (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . "))", "tagval $e[2]");
 	    if ($op == "tag")
