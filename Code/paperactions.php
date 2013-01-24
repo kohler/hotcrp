@@ -164,7 +164,7 @@ class PaperActions {
 	    $Error["tags"] = "You can’t set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
 	if ($ajax && $OK && !isset($Error["tags"]))
             $Conf->ajaxExit(array("ok" => true));
-        else
+        else if ($ajax)
             $Conf->ajaxExit(array("ok" => false, "error" => defval($Error, "tags", "")));
 	if (isset($Error) && isset($Error["tags"])) {
 	    $Error["paperId"] = $prow->paperId;
