@@ -113,6 +113,7 @@ class Tagger {
 
     public function is_chair($tag) {
         $dt = $this->defined_tags();
+        $tag = self::base($tag);
         return (isset($dt[$tag]) && $dt[$tag]->chair)
             || ($tag[0] == "~" && $tag[1] == "~");
     }
@@ -124,6 +125,7 @@ class Tagger {
 
     public function is_vote($tag) {
         $dt = $this->defined_tags();
+        $tag = self::base($tag);
         return isset($dt[$tag]) && $dt[$tag]->vote;
     }
 
@@ -134,12 +136,14 @@ class Tagger {
 
     public function vote_setting($tag) {
         $dt = $this->defined_tags();
+        $tag = self::base($tag);
         return isset($dt[$tag]) && $dt[$tag]->vote > 0 ? $dt[$tag]->vote : 0;
     }
 
 
     public function is_rank($tag) {
         $dt = $this->defined_tags();
+        $tag = self::base($tag);
         return isset($dt[$tag]) && $dt[$tag]->rank;
     }
 
@@ -408,13 +412,13 @@ class Tagger {
         if (!$this->contact->privChair) {
             $nexttags = array();
             foreach ($tags as $tag) {
-                if ($this->is_chair(self::base($tag)))
+                if ($this->is_chair($tag))
                     $badtags[] = $tag;
                 else
                     $nexttags[] = $tag;
             }
             if (count($nexttags) != count($tags))
-                defappend($Error["tags"], "Tag “" . htmlspecialchars($badtags[0]) . "” can only be changed by the chair.<br />\n");
+                defappend($Error["tags"], "Tag “" . htmlspecialchars(self::base($badtags[0])) . "” can only be changed by the chair.<br />\n");
             $tags = $nexttags;
         }
 
