@@ -1149,7 +1149,7 @@ class PaperList extends BaseList {
 	$ncol = 0;
 	$this->unfolded = true;
 	if (!($fdef = PaperColumn::lookup($fieldId))
-	    || !$fdef->prepare($this, $queryOptions, 0))
+	    || !$fdef->prepare($this, $queryOptions, 1))
 	    return null;
 	$unfolded = $this->unfolded;
 
