@@ -926,13 +926,13 @@ class PaperList extends BaseList {
         $special_sort = $sort_field = null;
         if (!$special_sort && count($this->search->orderTags)
             && ($special_sort = PaperColumn::lookup("tagordersort"))
-            && !$special_sort->prepare($this, $queryOptions, false))
+            && !$special_sort->prepare($this, $queryOptions, -1))
             $special_sort = null;
         if (!$special_sort && $this->search->simplePaperList() !== null)
             $special_sort = PaperColumn::lookup("searchsort");
         if ($this->sorter->type
             && ($sort_field = PaperColumn::lookup($this->sorter->type))
-            && !$sort_field->prepare($this, $queryOptions, false))
+            && !$sort_field->prepare($this, $queryOptions, -1))
             $sort_field = null;
         if (!$sort_field)
             $sort_field = $special_sort;
@@ -946,7 +946,7 @@ class PaperList extends BaseList {
 	foreach ($field_list as $f)
 	    if ($f->view > 0
                 && $f->prepare($this, $queryOptions,
-                               $this->_field_is_folded($f))) {
+                               $this->_field_is_folded($f) ? 0 : 1)) {
 		$fieldDef[] = $f;
 		if ($f->view == Column::VIEW_COLUMN)
 		    $ncol++;
@@ -1133,7 +1133,7 @@ class PaperList extends BaseList {
 	$ncol = 0;
 	$this->unfolded = true;
 	if (!($fdef = PaperColumn::lookup($fieldId))
-	    || !$fdef->prepare($this, $queryOptions, false))
+	    || !$fdef->prepare($this, $queryOptions, 0))
 	    return null;
 	$unfolded = $this->unfolded;
 
