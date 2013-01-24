@@ -15,6 +15,7 @@ $Values = array();
 $rf = reviewForm();
 $DateExplanation = "Date examples: &ldquo;now&rdquo;, &ldquo;10 Dec 2006 11:59:59pm PST&rdquo; <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
 $TagStyles = "red|orange|yellow|green|blue|purple|grey|bold|italic|big|small";
+$temp_text_id = 0;
 
 $SettingGroups = array("acc" => array(
 			     "acct_addr" => "check",
@@ -1055,12 +1056,17 @@ function doSelect($name, $nametext, $varr, $tr = false) {
 	($tr ? "</td></tr>\n" : "<br />\n");
 }
 
-function doTextRow($name, $text, $v, $size = 30, $capclass = "lcaption",
-		   $tempText = "") {
+function doTextRow($name, $text, $v, $size = 30,
+                   $capclass = "lcaption", $tempText = "") {
+    global $Conf, $temp_text_id;
     $settingname = (is_array($text) ? $text[0] : $text);
-    if ($tempText)
-	$tempText = " onfocus=\"tempText(this, '$tempText', 1)\" onblur=\"tempText(this, '$tempText', 0)\"";
-    echo "<tr><td class='$capclass nowrap'>", decorateSettingName($name, $settingname), "</td><td class='lentry'><input type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='$size'$tempText onchange='hiliter(this)' />";
+    if ($tempText) {
+        ++$temp_text_id;
+        $Conf->footerScript("mktemptext('tptx$temp_text_id','$tempText')");
+        $ttid = " id='tptx$temp_text_id'";
+    } else
+        $ttid = "";
+    echo "<tr><td class='$capclass nowrap'>", decorateSettingName($name, $settingname), "</td><td class='lentry'><input$ttid type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='$size' onchange='hiliter(this)' />";
     if (is_array($text) && isset($text[2]))
 	echo $text[2];
     if (is_array($text) && $text[1])
@@ -1207,7 +1213,7 @@ function checkOptionNameUnique($oname) {
 }
 
 function doOptGroupOption($o) {
-    global $Conf, $Error;
+    global $Conf, $Error, $temp_text_id;
     $id = $o->optionId;
     if (count($Error) > 0 && isset($_REQUEST["optn$id"]))
 	$o = (object) array("optionId" => $id,
@@ -1218,16 +1224,20 @@ function doOptGroupOption($o) {
 		"pcView" => defval($_REQUEST, "optp$id", $o->pcView),
 		"sortOrder" => defval($_REQUEST, "optfp$id", $o->sortOrder));
 
+    if ($id == "n") {
+        ++$temp_text_id;
+        $Conf->footerScript("mktemptext('tptx$temp_text_id','(Enter new option here)')");
+        $ttid = " id='tptx$temp_text_id'";
+    } else
+        $ttid = "";
     echo "<tr><td><div class='f-contain'>\n",
 	"  <div class='f-i'>",
 	"<div class='f-c'>",
 	decorateSettingName("optn$id", ($id === "n" ? "New option name" : "Option name")),
 	"</div>",
-	"<div class='f-e'><input type='text' class='textlite temptext",
+	"<div class='f-e'><input$ttid type='text' class='textlite temptext",
 	($o->optionName == "(Enter new option here)" ? "" : "off"),
-	"' name='optn$id' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='hiliter(this)' ",
-	($id == "n" ? "onfocus=\"tempText(this, '(Enter new option here)', 1)\" onblur=\"tempText(this, '(Enter new option here)', 0)\" " : ""),
-	"/></div>\n",
+	"' name='optn$id' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='hiliter(this)' /></div>\n",
 	"  <div class='f-i'>",
 	"<div class='f-c'>",
 	decorateSettingName("optd$id", "Description"),

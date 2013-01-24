@@ -553,16 +553,6 @@ function staged_foreach(a, f, backwards) {
 }
 
 // temporary text
-function tempText(elt, text, on) {
-    if (on && elt.value == text) {
-	elt.value = "";
-	elt.className = elt.className.replace(/\btemptext\b/, "temptextoff");
-    } else if (!on && elt.value == "") {
-	elt.value = text;
-	elt.className = elt.className.replace(/\btemptextoff\b/, "temptext");
-    }
-}
-
 mktemptext = (function () {
 function setclass(e, on) {
     e.className = e.className.replace(on ? /\btemptextoff\b/ : /\btemptext\b/,
@@ -853,12 +843,7 @@ return function (elt, report_elt, cleanf) {
 add_revpref_ajax = (function () {
 
 function rp_focus() {
-    tempText(this, "0", true);
     autosub("update", this);
-}
-
-function rp_blur() {
-    tempText(this, "0", false);
 }
 
 function rp_change() {
@@ -891,7 +876,7 @@ return function () {
     staged_foreach(inputs, function (elt) {
 	if (elt.type == "text" && elt.name.substr(0, 7) == "revpref") {
 	    elt.onfocus = rp_focus;
-	    elt.onblur = rp_blur;
+	    mktemptext(elt, "0");
 	    if (form) {
 		elt.onchange = rp_change;
 		elt.onkeypress = rp_keypress;
