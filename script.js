@@ -1058,7 +1058,8 @@ function PaperRow(rows, l, r, index) {
     var inputs = rows[l].getElementsByTagName("input");
     var i, prefix = "tag:" + dragtag + " ";
     for (i in inputs)
-	if (inputs[i].name.substr(0, prefix.length) == prefix) {
+	if (inputs[i].name
+	    && inputs[i].name.substr(0, prefix.length) == prefix) {
 	    this.entry = inputs[i];
 	    this.tagvalue = parse_tagvalue(inputs[i].value);
 	    break;
