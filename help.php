@@ -229,7 +229,7 @@ function searchQuickref() {
     _searchQuickrefRow("", "ve*", "words that <em>start with</em> “ve” in title, abstract, authors");
     _searchQuickrefRow("", "*me*", "words that <em>contain</em> “me” in title, abstract, authors");
     _searchQuickrefRow("", "very THEN new", "like “very OR new”, but papers matching “very” appear earlier in the sorting order");
-    _searchQuickrefRow("", "1-5 THEN 6-10 VIEW:compactcolumns", "columnar display");
+    _searchQuickrefRow("", "1-5 THEN 6-10 show:compactcolumns", "columnar display");
     _searchQuickrefRow("Title", "ti:flexible", "title contains “flexible”");
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains “very novel”");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains “poletto”");

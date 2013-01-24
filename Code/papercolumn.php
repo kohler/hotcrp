@@ -835,7 +835,11 @@ class EditTagPaperColumn extends TagPaperColumn {
         if (($p = parent::prepare($pl, $queryOptions, $visible))
             && $visible > 0) {
             $Conf->footerHtml("<form id='edittagajaxform' method='post' action='" . hoturl_post("paper", "settags=1&amp;forceShow=1") . "' enctype='multipart/form-data' accept-charset='UTF-8' style='display:none'><div><input name='p' value='' /><input name='addtags' value='' /><input name='deltags' value='' /></div></form>", "edittagajaxform");
-            $Conf->footerScript("add_edittag_ajax()");
+            if ($pl->sorter->type == $this->name && !$pl->sorter->reverse
+                && $this->is_value)
+                $Conf->footerScript("add_edittag_ajax('$this->dtag')");
+            else
+                $Conf->footerScript("add_edittag_ajax()");
         }
         return $p;
     }

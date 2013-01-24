@@ -737,10 +737,10 @@ class PaperList extends BaseList {
 	    $rstate->foldinfo["wholerow"] = true;
 	}
 
-	$t = "  <tr class=\"pl $trclass\">\n" . $t . "  </tr>\n";
+	$t = "  <tr class=\"pl $trclass\" hotcrpid=\"$row->paperId\">\n" . $t . "  </tr>\n";
 
 	if ($tt !== "") {
-	    $t .= "  <tr class=\"plx $trclass\">";
+	    $t .= "  <tr class=\"plx $trclass\" hotcrpid=\"$row->paperId\">";
 	    if ($rstate->skipcallout > 0)
 		$t .= "<td colspan=\"$rstate->skipcallout\"></td>";
 	    $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->skipcallout) . "\">$tt</td></tr>\n";
@@ -918,6 +918,13 @@ class PaperList extends BaseList {
             && $field_list[0]->name == "sel")
 	    $field_list[0] = PaperColumn::lookup("selon");
 
+        // add requested fields
+        $specials = array_flip(array("cc", "compactcolumn", "cc", "compactcolumns", "column", "col", "columns", "sort"));
+        foreach ($this->viewmap as $k => $v)
+            if (!isset($specials[$k])
+                && ($f = PaperColumn::lookup($k)))
+                $field_list[] = $f;
+
 	// check paper link destination
 	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
 	    $this->paperLink = $_REQUEST["linkto"];
@@ -930,6 +937,10 @@ class PaperList extends BaseList {
             $special_sort = null;
         if (!$special_sort && $this->search->simplePaperList() !== null)
             $special_sort = PaperColumn::lookup("searchsort");
+        if ($this->viewmap->sort
+            && ($sort_field = PaperColumn::lookup($this->viewmap->sort))
+            && !$sort_field->prepare($this, $queryOptions, -1))
+            $sort_field = null;
         if ($this->sorter->type
             && ($sort_field = PaperColumn::lookup($this->sorter->type))
             && !$sort_field->prepare($this, $queryOptions, -1))
