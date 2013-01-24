@@ -1744,7 +1744,7 @@ class Conference {
 	if (isset($_REQUEST["jsontext"]) && $_REQUEST["jsontext"])
 	    header("Content-Type: text/plain");
 	else
-	    header("Content-Type: text/json");
+	    header("Content-Type: application/json");
 	echo json_encode($values);
 	exit;
     }

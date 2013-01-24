@@ -7,7 +7,7 @@ require_once("Code/header.inc");
 if (isset($_REQUEST["text"]) && $_REQUEST["text"])
     header("Content-Type: text/plain");
 else
-    header("Content-Type: text/json");
+    header("Content-Type: application/json");
 
 $messages = array();
 if ($Me->valid() && $Me->privChair && isset($_REQUEST["data"])
