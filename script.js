@@ -37,6 +37,16 @@ function eltPos(e) {
     return pos;
 }
 
+function make_e_class(tag, className) {
+    var x = document.createElement(tag);
+    x.className = className;
+    return x;
+}
+
+function get_body() {
+    return document.body || document.getElementsByTagName("body")[0];
+}
+
 function event_stop(evt) {
     if (evt.stopPropagation)
 	evt.stopPropagation();
@@ -986,6 +996,47 @@ return function () {
 })();
 
 
+function make_bubble(content) {
+    var bubdiv = make_e_class("div", "bubble"), dir = "r";
+    bubdiv.appendChild(make_e_class("div", "bubtail0 r"));
+    bubdiv.appendChild(make_e_class("div", "bubcontent"));
+    if (typeof content == "string")
+	bubdiv.childNodes[1].innerHTML = content;
+    else if (content)
+	bubdiv.childNodes[1].appendChild(content);
+    bubdiv.appendChild(make_e_class("div", "bubtail1 r"));
+    get_body().appendChild(bubdiv);
+
+    function position_tail() {
+	var ch = bubdiv.childNodes, x, y;
+	var pos = eltPos(bubdiv), tailpos = eltPos(ch[0]);
+	if (dir == "r")
+	    y = Math.floor((pos.height - tailpos.height) / 2);
+	if (x != null)
+	    ch[0].style.left = ch[2].style.left = x + "px";
+	if (y != null)
+	    ch[0].style.top = ch[2].style.top = y + "px";
+    }
+    position_tail();
+
+    var bubble = {
+	show: function (x, y) {
+	    var pos = eltPos(bubdiv);
+	    if (dir == "r")
+		x -= pos.width, y -= Math.floor(pos.height / 2);
+	    bubdiv.style.visibility = "visible";
+	    bubdiv.style.left = x + "px";
+	    bubdiv.style.top = y + "px";
+	},
+	remove: function () {
+	    bubdiv.parentElement.removeChild(bubdiv);
+	    bubdiv = null;
+	}
+    };
+    return bubble;
+}
+
+
 add_edittag_ajax = (function () {
 var ready, dragtag,
     plt_tbody, dragging, rowanal, srcindex, dragindex, dragger;
@@ -1054,7 +1105,6 @@ function PaperRow(rows, l, r, index) {
     this.r = r;
     this.index = index;
     this.tagvalue = false;
-    this.id = rows[l].getAttribute("hotcrpid");
     var inputs = rows[l].getElementsByTagName("input");
     var i, prefix = "tag:" + dragtag + " ";
     for (i in inputs)
@@ -1064,6 +1114,9 @@ function PaperRow(rows, l, r, index) {
 	    this.tagvalue = parse_tagvalue(inputs[i].value);
 	    break;
 	}
+    this.id = rows[l].getAttribute("hotcrpid");
+    if ((i = rows[l].getAttribute("hotcrptitlehint")))
+	this.titlehint = i;
 }
 PaperRow.prototype.top = function () {
     return eltPos(rows[this.l]).top;
@@ -1120,16 +1173,11 @@ function tag_mousemove(evt) {
 
     // create dragger
     if (!dragger) {
-	dragger = document.createElement("div");
-	dragger.style.position = "absolute";
-	dragger.style.left = "100px";
-	dragger.style.top = "100px";
-	dragger.style.zIndex = 10;
-	dragger.innerHTML = "XXXX";
-	var body = document.body || document.getElementsByTagName("body")[0] || document.documentElement;
-	body.appendChild(dragger);
+	m = "#" + rowanal[srcindex].id;
+	if (rowanal[srcindex].titlehint)
+	    m += " " + rowanal[srcindex].titlehint;
+	dragger = make_bubble(document.createTextNode(m));
     }
-    dragger.style.display = "block";
 
     // show dragger between nodes unless position unchanged
     dragindex = l;
@@ -1140,8 +1188,8 @@ function tag_mousemove(evt) {
 	y = rowanal[dragindex].top();
     else
 	y = rowanal[rowanal.length - 1].bottom();
-    y -= eltPos(dragger).height / 2;
-    dragger.style.top = y + "px";
+    dragger.show(Math.min(eltPos(rowanal[srcindex].entry).left - 50,
+			  evt.clientX - 10), y);
 
     event_stop(evt);
 }
@@ -1268,7 +1316,7 @@ function tag_mouseup(evt) {
 	dragging.releaseCapture();
     }
     if (dragger)
-	dragger.style.display = "none";
+	dragger = dragger.remove();
 
     if (srcindex !== null && (dragindex === null || srcindex != dragindex))
 	commit_drag(srcindex, dragindex);
@@ -1313,6 +1361,7 @@ return function (active_dragtag) {
 		var x = document.createElement("span");
 		x.className = "dragtaghandle";
 		x.setAttribute("hotcrpid", elt.name.substr(5 + dragtag.length));
+		x.setAttribute("title", "Drag to change order");
 		elt.parentElement.insertBefore(x, elt.nextSibling);
 		x.onmousedown = tag_mousedown;
 		elt.onchange = sorttag_onchange;

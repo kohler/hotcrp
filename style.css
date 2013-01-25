@@ -1901,6 +1901,50 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d {
 	padding-left: 0;
 }
 
+/* bubbles */
+.bubble {
+	position: absolute;
+	visibility: hidden;
+	left: 0;
+	top: 0;
+	z-index: 1000;
+	display: table-cell;
+	padding: 2px 8px;
+	border-radius: 5px;
+	background-color: rgba(246, 244, 189, 0.88);
+	border: 1px solid #b8af25;
+}
+.bubble > .bubcontent {
+	margin: 2px 0;
+}
+.bubtail0, .bubtail1 {
+	position: absolute;
+	border-style: solid;
+	width: 0;
+}
+.bubtail0.l, .bubtail0.r {
+	border-color: transparent #b8af25;
+}
+.bubtail1.l, .bubtail1.r {
+	border-color: transparent rgba(246, 244, 189, 0.9);
+}
+.bubtail0.l {
+	left: -10px;
+	border-width: 9px 9px 0 0;
+}
+.bubtail1.l {
+	left: -8px;
+	border-width: 8px 8px 0 0;
+}
+.bubtail0.r {
+	right: -10px;
+	border-width: 5px 0 5px 9px;
+}
+.bubtail1.r {
+	right: -8px;
+	border-width: 5px 0 5px 8px;
+}
+
 /* ranks */
 div#rankctxformresult {
 	font-size: smaller;

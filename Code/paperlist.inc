@@ -738,7 +738,7 @@ class PaperList extends BaseList {
 	    $rstate->foldinfo["wholerow"] = true;
 	}
 
-	$t = "  <tr class=\"pl $trclass\" hotcrpid=\"$row->paperId\">\n" . $t . "  </tr>\n";
+	$t = "  <tr class=\"pl $trclass\" hotcrpid=\"$row->paperId\" hotcrptitlehint=\"" . htmlspecialchars(titleWords($row->title, 60)) . "\">\n" . $t . "  </tr>\n";
 
 	if ($tt !== "") {
 	    $t .= "  <tr class=\"plx $trclass\" hotcrpid=\"$row->paperId\">";
