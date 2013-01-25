@@ -104,7 +104,8 @@ class PaperList extends BaseList {
             if (($fdef = PaperColumn::lookup($this->sorter->type))
                 && isset($fdef->score))
                 $x .= $this->sorter->score;
-            return $this->sorter->type . ($x ? ",$x" : "");
+            return ($fdef ? $fdef->name : $this->sorter->type)
+                . ($x ? ",$x" : "");
 	} else
 	    return "";
     }
@@ -1074,8 +1075,11 @@ class PaperList extends BaseList {
                     $ftext = "<span class='hastitle' title='Sort by tag order'>#</span>";
                 else if ($has_special_sort && $special_sort->name == "searchsort")
                     $ftext = "<span class='hastitle' title='Sort by search term order'>#</span>";
-		if (($fdef->name == $sort_field->name && $sortUrl)
-                    || ($has_special_sort && $sort_field->name == $special_sort->name))
+		if ((($fdef->name == $sort_field->name
+                      || $fdef->name == "edit" . $sort_field->name)
+                     && $sortUrl)
+                    || ($has_special_sort
+                        && $special_sort->name == $sort_field->name))
 		    $colhead .= "<a class='pl_sort_def" . ($this->sorter->reverse ? "_rev" : "") . "' title='Reverse sort' href=\"" . $sortUrl . urlencode($sort_field->name . "," . ($this->sorter->reverse ? "n" : "r")) . "\">" . $ftext . "</a>";
 		else if ($fdef->sortable && $sortUrl)
 		    $colhead .= $q . urlencode($fdef->name) . "\">" . $ftext . "</a>";

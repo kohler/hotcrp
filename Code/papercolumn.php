@@ -18,24 +18,22 @@ class PaperColumn extends Column {
     }
 
     public static function lookup_local($name) {
-        return defval(self::$by_name, strtolower($name), null);
+        return defval(self::$by_name, $name, null);
     }
 
     public static function lookup($name) {
-        $regname = strtolower($name);
-        if (isset(self::$by_name[$regname]))
-            return self::$by_name[$regname];
+        if (isset(self::$by_name[$name]))
+            return self::$by_name[$name];
         foreach (self::$factories as $prefix => $f)
-            if (str_starts_with($regname, $prefix)
+            if (str_starts_with(strtolower($name), $prefix)
                 && ($x = $f->make_field($name)))
                 return $x;
         return null;
     }
 
     public static function register($fdef) {
-        $regname = strtolower($fdef->name);
-        assert(!isset(self::$by_name[$regname]));
-        self::$by_name[$regname] = $fdef;
+        assert(!isset(self::$by_name[$fdef->name]));
+        self::$by_name[$fdef->name] = $fdef;
         for ($i = 1; $i < func_num_args(); ++$i)
             self::$by_name[func_get_arg($i)] = $fdef;
         return $fdef;
@@ -863,7 +861,9 @@ class EditTagPaperColumn extends TagPaperColumn {
                  . tagg_hidden("p") . tagg_hidden("addtags")
                  . tagg_hidden("deltags") . "</div></form>",
                  "edittagajaxform");
-            if ($pl->sorter->type == $this->name && !$pl->sorter->reverse
+            if (("edit" . $pl->sorter->type == $this->name
+                 || $pl->sorter->type == $this->name)
+                && !$pl->sorter->reverse
                 && $this->is_value)
                 $Conf->footerScript("add_edittag_ajax('$this->dtag')");
             else
