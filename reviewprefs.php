@@ -301,16 +301,6 @@ echo "</td></tr>\n</table></form>"; // </div></div>
 echo "</td></tr></table>\n";
 
 
-// ajax preferences form
-echo "<form id='prefform' method='post' action=\"", hoturl_post("paper"), "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>",
-    "<input type='hidden' name='setrevpref' value='1' />",
-    "<input type='hidden' name='p' value='' />",
-    "<input type='hidden' name='revpref' value='' />";
-if ($Me->privChair)
-    echo "<input type='hidden' name='contactId' value='$reviewer' />";
-echo "</div></form>\n\n";
-
-
 // main form
 echo "<form class='assignpc' method='post' action=\"", hoturl_post("reviewprefs", "reviewer=$reviewer" . (defval($_REQUEST, "q") ? "&amp;q=" . urlencode($_REQUEST["q"]) : "")),
     "\" enctype='multipart/form-data' accept-charset='UTF-8'>",

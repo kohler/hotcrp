@@ -576,7 +576,7 @@ class PaperList extends BaseList {
 	    break;
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
-            $fields = "sel id title topicscore revtype revprefedit authors abstract topics";
+            $fields = "sel id title topicscore revtype editrevpref authors abstract topics";
 	    break;
 	  case "reviewers":
 	    $this->paperLink = "assign";
@@ -598,13 +598,13 @@ class PaperList extends BaseList {
 	    . "<div class='inform'>";
 	$s = $this->search;
 	if ($s->q)
-	    $t .= "<input type='hidden' name='q' value=\"" . htmlspecialchars($s->q) . "\" />";
+	    $t .= tagg_hidden("q", $s->q);
 	if ($s->qt)
-	    $t .= "<input type='hidden' name='qt' value=\"" . htmlspecialchars($s->qt) . "\" />";
-	$t .= "<input type='hidden' name='t' value=\"" . htmlspecialchars($s->limitName) . "\" />"
-	    . "<input type='hidden' name='pap' value='" . join(" ", $pap) . "' />"
-	    . "<input id='plloadform_get' type='hidden' name='get' value='' />"
-	    . "<input id='plloadform_aufull' type='hidden' name='aufull' value='" . ($this->aufull ? "1" : "") . "' />"
+	    $t .= tagg_hidden("qt", $s->qt);
+	$t .= tagg_hidden("t", $s->limitName)
+	    . tagg_hidden("pap", join(" ", $pap))
+	    . tagg_hidden("get", "", array("id" => "plloadform_get"))
+	    . tagg_hidden("aufull", $this->aufull ? "1" : "", array("id" => "plloadform_aufull"))
 	    . "</div></form></div>";
 	$Conf->footerHtml($t);
     }
@@ -654,13 +654,17 @@ class PaperList extends BaseList {
 	return $Conf->qe($pq, "while selecting papers");
     }
 
-    function _field_is_folded($field) {
-	if (is_object($field))
-	    $field = $field->foldnum ? $field->name : null;
-	return ($field
-		&& !defval($_REQUEST, "show$field")
-                && ($this->viewmap->$field === false
-                    || strpos($this->display, " $field ") === false));
+    public function is_folded($field) {
+        $fname = $field;
+	if (is_object($field) || ($field = PaperColumn::lookup($field)))
+	    $fname = $field->foldnum ? $field->name : null;
+	return $fname
+            && !defval($_REQUEST, "show$fname")
+            && ($this->viewmap->$fname === false
+                || ($this->viewmap->$fname === null
+                    && strpos($this->display, " $fname ") === false
+                    && (!is_object($field) || !isset($field->score)
+                        || strpos($this->display, " $field->score ") === false)));
     }
 
     function _row_text($rstate, $row, $fieldDef) {
@@ -689,7 +693,7 @@ class PaperList extends BaseList {
 		continue;
 	    }
 	    if ($fdef->foldnum && !isset($rstate->foldinfo[$fdef->name]))
-		$rstate->foldinfo[$fdef->name] = $this->_field_is_folded($fdef);
+		$rstate->foldinfo[$fdef->name] = $this->is_folded($fdef);
 	    if ($fdef->foldnum && $rstate->foldinfo[$fdef->name]) {
 		$t .= $td . "\" id=\"$fdef->name.$row->paperId\"></td>\n";
                 $this->any[$fdef->name] = true;
@@ -708,7 +712,7 @@ class PaperList extends BaseList {
                 || $fdef->content_empty($this, $row))
 		continue;
 	    if ($fdef->foldnum && !isset($rstate->foldinfo[$fdef->name]))
-		$rstate->foldinfo[$fdef->name] = $this->_field_is_folded($fdef);
+		$rstate->foldinfo[$fdef->name] = $this->is_folded($fdef);
 	    if ($fdef->foldnum && $fdef->name != "authors"
                 && $rstate->foldinfo[$fdef->name]) {
 		$tt .= "<div id=\"$fdef->name.$row->paperId\"></div>";
@@ -788,12 +792,12 @@ class PaperList extends BaseList {
 	    }
 	// authorship requires special handling
 	if ($this->any->openau || $this->any->anonau) {
-	    $classes[] = "fold1" . ($this->_field_is_folded("au") ? "c" : "o");
+	    $classes[] = "fold1" . ($this->is_folded("au") ? "c" : "o");
 	    $jsmap[] = "\"au\":1,\"aufull\":16";
 	    $jsloadmap[] = "\"aufull\":true";
 	}
 	if ($this->any->anonau) {
-	    $classes[] = "fold2" . ($this->_field_is_folded("anonau") ? "c" : "o");
+	    $classes[] = "fold2" . ($this->is_folded("anonau") ? "c" : "o");
 	    $jsmap[] = "\"anonau\":2";
 	}
 	// total folding, row number folding
@@ -801,7 +805,7 @@ class PaperList extends BaseList {
 	    $classes[] = "fold3c";
 	if ($this->any->sel) {
 	    $jsmap[] = "\"rownum\":6";
-	    $classes[] = "fold6" . ($this->_field_is_folded("rownum") ? "c" : "o");
+	    $classes[] = "fold6" . ($this->is_folded("rownum") ? "c" : "o");
 	}
 	if ($this->contact->privChair) {
 	    $jsmap[] = "\"force\":20";
@@ -921,10 +925,24 @@ class PaperList extends BaseList {
 
         // add requested fields
         $specials = array_flip(array("cc", "compactcolumn", "cc", "compactcolumns", "column", "col", "columns", "sort"));
+        $new_names = array();
         foreach ($this->viewmap as $k => $v)
-            if (!isset($specials[$k]) && $v
-                && ($f = PaperColumn::lookup($k)))
-                $field_list[] = $f;
+            if (!isset($specials[$k])) {
+                $f = null;
+                if ($v === "edit")
+                    $f = PaperColumn::lookup("edit$k");
+                if (!$f)
+                    $f = PaperColumn::lookup($k);
+                if ($f && $f->name != $k)
+                    $new_names[$f->name] = $v;
+                foreach ($field_list as $ff)
+                    if ($f && $ff->name == $f->name)
+                        $f = null;
+                if ($f && $v)
+                    $field_list[] = $f;
+            }
+        foreach ($new_names as $k => $v)
+            $this->viewmap[$k] = $v;
 
 	// check paper link destination
 	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
@@ -962,12 +980,12 @@ class PaperList extends BaseList {
 	    if ($f->view > 0
                 && $this->viewmap[$f->name] !== false
                 && $f->prepare($this, $queryOptions,
-                               $this->_field_is_folded($f) ? 0 : 1)) {
+                               $this->is_folded($f) ? 0 : 1)) {
 		$fieldDef[] = $f;
 		if ($f->view == Column::VIEW_COLUMN)
 		    $ncol++;
 	    }
-	$this->aufull = !$this->_field_is_folded("aufull");
+	$this->aufull = !$this->is_folded("aufull");
 
 	// make query
 	$result = $this->_prepareQuery($me, $queryOptions);

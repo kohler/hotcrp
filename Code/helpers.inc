@@ -2124,6 +2124,14 @@ function tagg_extra($js) {
     return $x;
 }
 
+function tagg_form($action, $extra = null) {
+    return "<form method='post' action=\"$action\" enctype='multipart/form-data' accept-charset='UTF-8'" . tagg_extra($extra) . ">";
+}
+
+function tagg_hidden($name, $value = "", $extra = null) {
+    return "<input type='hidden' name='" . htmlspecialchars($name) . "' value='" . htmlspecialchars($value) . "'" . tagg_extra($extra) . " />";
+}
+
 function tagg_select($name, $opt, $selected = null, $extra = null) {
     $x = "<select name='$name'" . tagg_extra($extra) . ">";
     if ($selected === null || !isset($opt[$selected]))

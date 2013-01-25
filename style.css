@@ -1413,7 +1413,7 @@ td.pl_lastvisit, td.al_time {
 td.pl_name,
 td.al_name,
 td.pl_assrev,
-td.pl_revprefedit,
+td.pl_editrevpref,
 td.pl_edittagval {
 	white-space: nowrap;
 }

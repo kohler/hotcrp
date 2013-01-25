@@ -1269,14 +1269,15 @@ class PaperSearch {
 	if ($keyword == "show" || $keyword == "hide" || $keyword == "edit"
             || $keyword == "sort" || $keyword == "showsort"
             || $keyword == "editsort") {
+            $editing = strpos($keyword, "edit") !== false;
 	    $views = array();
 	    foreach (preg_split('/\s+/', $word) as $w) {
-                $a = ($keyword == "hide" ? false : true);
+                $a = ($keyword == "hide" ? false : ($editing ? "edit" : true));
 		if ($w[0] == "-")
                     list($a, $w) = array(false, substr($w, 1));
                 if ($w[0] == "#") {
-                    if (strpos($keyword, "edit") !== false)
-                        $w = "edittagval:" . substr($w, 1);
+                    if ($editing)
+                        $w = "tagval:" . substr($w, 1);
                     else
                         $w = "tag:" . substr($w, 1);
                 }

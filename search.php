@@ -1080,9 +1080,10 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 $displayOptions = array();
 
 function displayOptionCheckbox($type, $column, $title, $opt = array()) {
-    global $displayOptions, $pldisplay;
-    $checked = (defval($_REQUEST, "show$type")
-		|| strpos($pldisplay, " $type ") !== false);
+    global $displayOptions, $pldisplay, $pl;
+    $checked = ($pl ? !$pl->is_folded($type)
+                : (defval($_REQUEST, "show$type")
+                   || strpos($pldisplay, " $type ") !== false));
     $loadresult = "";
 
     if (!isset($opt["onchange"])) {
@@ -1184,7 +1185,8 @@ if ($pl) {
 		&& isset($rf->options[$field])) {
 		if (count($displayOptions) == $n)
 		    displayOptionText("<strong>Scores:</strong>", 3);
-		displayOptionCheckbox($field, 3, htmlspecialchars($rf->shortName[$field]));
+                $fdef = ScorePaperColumn::lookup_score($field);
+		displayOptionCheckbox($fdef->name, 3, htmlspecialchars($rf->shortName[$field]));
 		if ($displayOptions[count($displayOptions) - 1]->checked)
 		    ++$nchecked;
 	    }
