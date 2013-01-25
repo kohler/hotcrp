@@ -507,7 +507,7 @@ class PaperList extends BaseList {
 	    } else if (($f = PaperColumn::lookup($fid)))
 		$nf[] = $f;
 	    foreach ($nf as $f)
-		if (!$minimal || $f->minimal)
+		if (!$minimal || $f->minimal || $this->viewmap[$f->name])
 		    $newFields[] = $f;
 	}
 	return $newFields;
