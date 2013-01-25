@@ -61,9 +61,10 @@ class SearchOperator {
 
 global $searchOperators;
 $searchOperators = array("(" => new SearchOperator("(", true, null),
-			 "NOT" => new SearchOperator("NOT", true, 5),
-			 "-" => new SearchOperator("NOT", true, 5),
-			 "+" => new SearchOperator("+", true, 5),
+			 "NOT" => new SearchOperator("NOT", true, 6),
+			 "-" => new SearchOperator("NOT", true, 6),
+			 "+" => new SearchOperator("+", true, 6),
+                         "SPACE" => new SearchOperator("and", false, 5),
 			 "AND" => new SearchOperator("and", false, 4),
 			 "OR" => new SearchOperator("or", false, 3),
 			 "XAND" => new SearchOperator("and", false, 2),
@@ -1375,7 +1376,7 @@ class PaperSearch {
 
 	    if ($curqe && (!$op || $op->unary)) {
 		list($opstr, $op, $nextstr) =
-		    array("", $searchOperators["XAND"], $str);
+		    array("", $searchOperators["SPACE"], $str);
 	    }
 
 	    if ($opstr === null) {
