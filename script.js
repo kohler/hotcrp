@@ -1248,9 +1248,11 @@ function commit_drag(si, di) {
     }
     na[si].newvalue = delta;
     for (i = di; i < na.length; ++i) {
-	if (i != si && na[i].newvalue !== false && na[i].newvalue <= delta)
-	    delta = na[i].newvalue = delta + 1;
-	else if (i != si)
+	if (i != si && na[i].newvalue !== false && na[i].newvalue <= delta) {
+	    if (i == di || na[i].tagvalue != na[i-1].tagvalue)
+		++delta;
+	    na[i].newvalue = delta;
+	} else if (i != si)
 	    break;
     }
 
