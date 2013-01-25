@@ -663,9 +663,7 @@ class PaperList extends BaseList {
             && !defval($_REQUEST, "show$fname")
             && ($this->viewmap->$fname === false
                 || ($this->viewmap->$fname === null
-                    && strpos($this->display, " $fname ") === false
-                    && (!is_object($field) || !isset($field->score)
-                        || strpos($this->display, " $field->score ") === false)));
+                    && strpos($this->display, " $fname ") === false));
     }
 
     function _row_text($rstate, $row, $fieldDef) {

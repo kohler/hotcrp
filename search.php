@@ -1185,8 +1185,7 @@ if ($pl) {
 		&& isset($rf->options[$field])) {
 		if (count($displayOptions) == $n)
 		    displayOptionText("<strong>Scores:</strong>", 3);
-                $fdef = ScorePaperColumn::lookup_score($field);
-		displayOptionCheckbox($fdef->name, 3, htmlspecialchars($rf->shortName[$field]));
+		displayOptionCheckbox($field, 3, htmlspecialchars($rf->shortName[$field]));
 		if ($displayOptions[count($displayOptions) - 1]->checked)
 		    ++$nchecked;
 	    }

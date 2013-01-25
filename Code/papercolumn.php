@@ -885,11 +885,8 @@ class EditTagPaperColumn extends TagPaperColumn {
 class ScorePaperColumn extends PaperColumn {
     public $score;
     private static $registered = array();
-    private static $by_score = array();
-    public function __construct($abbrevname, $score, $foldnum) {
-        if (parent::lookup_local($abbrevname))
-            $abbrevname = $score;
-        parent::__construct($abbrevname, Column::VIEW_COLUMN, array());
+    public function __construct($score, $foldnum) {
+        parent::__construct($score, Column::VIEW_COLUMN, array());
         $this->minimal = $this->sortable = true;
         $this->cssname = "score";
         $this->foldnum = $foldnum;
@@ -900,28 +897,18 @@ class ScorePaperColumn extends PaperColumn {
     }
     public static function register_score($fdef, $order) {
         PaperColumn::register($fdef, $fdef->foldnum);
-        self::$by_score[$fdef->score] = $fdef;
         if ($order !== false) {
             self::$registered[$order] = $fdef;
             ksort(self::$registered);
         }
     }
-    public static function lookup_score($name) {
-        return defval(self::$by_score, $name, "");
-    }
     public function make_field($name) {
         global $reviewScoreNames;
         $rf = reviewForm();
-        if (isset($rf->reviewFields[$name]) && $rf->reviewFields[$name] == 1
-            && ($f = parent::lookup_local($rf->abbrevName[$name])))
-            return $f;
-        else if (($n = $rf->unabbreviateField($name))
-                 && $rf->reviewFields[$n] == 1) {
-            if (($f = parent::lookup_local($rf->abbrevName[$n])))
-                return $f;
-            if (($f = parent::lookup_local($n)))
-                return $f;
-        }
+        if ((isset($rf->reviewFields[$name])
+             || ($name = $rf->unabbreviateField($name)))
+            && $rf->reviewFields[$name] == 1)
+            return parent::lookup_local($name);
         return null;
     }
     public function prepare($pl, &$queryOptions, $visible) {
@@ -1221,7 +1208,7 @@ function initialize_paper_columns() {
     $nextfield = 50; /* BaseList::FIELD_SCORE */
     $rf = reviewForm();
     foreach ($reviewScoreNames as $n) {
-        $score = new ScorePaperColumn($rf->abbrevName[$n], $n, $nextfield);
+        $score = new ScorePaperColumn($n, $nextfield);
         ScorePaperColumn::register_score($score, array_search($n, $rf->fieldOrder));
         ++$nextfield;
     }
