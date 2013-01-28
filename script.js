@@ -1054,7 +1054,7 @@ function make_bubble(content) {
 
 
 add_edittag_ajax = (function () {
-var ready, dragtag,
+var ready, dragtag, valuemap,
     plt_tbody, dragging, rowanal, srcindex, dragindex, dragger,
     dragwander, scroller, mousepos, scrolldelta;
 
@@ -1339,8 +1339,9 @@ function sorttag_onchange() {
 	    if (!rv.ok || srcindex === null)
 		return;
 	    var id = rowanal[srcindex].id, i, ltv;
+	    valuemap[id] = tv;
 	    for (i = 0; i < rowanal.length; ++i) {
-		ltv = rowanal[i].tagvalue;
+		ltv = valuemap[rowanal[i].id];
 		if (!rowanal[i].entry
 		    || (tv !== false && ltv === false)
 		    || (tv !== false && ltv !== null && +ltv > +tv)
@@ -1416,6 +1417,7 @@ return function (active_dragtag) {
     }
     if (active_dragtag) {
 	dragtag = active_dragtag;
+	valuemap = {};
 
 	var tables = document.getElementsByTagName("table"), i, j;
 	for (i = 0; i < tables.length && !plt_tbody; ++i)
@@ -1431,13 +1433,14 @@ return function (active_dragtag) {
 
 	staged_foreach(plt_tbody.getElementsByTagName("input"), function (elt) {
 	    if (elt.name.substr(0, 5 + dragtag.length) == "tag:" + dragtag + " ") {
-		var x = document.createElement("span");
+		var x = document.createElement("span"), id = elt.name.substr(5 + dragtag.length);
 		x.className = "dragtaghandle";
-		x.setAttribute("hotcrpid", elt.name.substr(5 + dragtag.length));
+		x.setAttribute("hotcrpid", id);
 		x.setAttribute("title", "Drag to change order");
 		elt.parentElement.insertBefore(x, elt.nextSibling);
 		x.onmousedown = tag_mousedown;
 		elt.onchange = sorttag_onchange;
+		valuemap[id] = parse_tagvalue(elt.value);
 	    }
 	});
     }
