@@ -1945,6 +1945,17 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d {
 	border-width: 5px 0 5px 8px;
 }
 
+.bubble.grey {
+	background-color: rgba(246, 246, 246, 0.88);
+	border: 1px solid #b8b8b8;
+}
+.bubtail0.l.grey, .bubtail0.r.grey {
+	border-color: transparent #b8b8b8;
+}
+.bubtail1.l.grey, .bubtail1.r.grey {
+	border-color: transparent rgba(246, 246, 246, 0.9);
+}
+
 /* ranks */
 div#rankctxformresult {
 	font-size: smaller;

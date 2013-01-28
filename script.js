@@ -1000,46 +1000,63 @@ function make_bubble(content) {
     var bubdiv = make_e_class("div", "bubble"), dir = "r";
     bubdiv.appendChild(make_e_class("div", "bubtail0 r"));
     bubdiv.appendChild(make_e_class("div", "bubcontent"));
-    if (typeof content == "string")
-	bubdiv.childNodes[1].innerHTML = content;
-    else if (content)
-	bubdiv.childNodes[1].appendChild(content);
     bubdiv.appendChild(make_e_class("div", "bubtail1 r"));
     get_body().appendChild(bubdiv);
 
     function position_tail() {
 	var ch = bubdiv.childNodes, x, y;
 	var pos = eltPos(bubdiv), tailpos = eltPos(ch[0]);
-	if (dir == "r")
+	if (dir == "r" || dir == "l")
 	    y = Math.floor((pos.height - tailpos.height) / 2);
 	if (x != null)
 	    ch[0].style.left = ch[2].style.left = x + "px";
 	if (y != null)
 	    ch[0].style.top = ch[2].style.top = y + "px";
     }
-    position_tail();
 
     var bubble = {
 	show: function (x, y) {
 	    var pos = eltPos(bubdiv);
 	    if (dir == "r")
-		x -= pos.width, y -= Math.floor(pos.height / 2);
+		x -= pos.width, y -= pos.height / 2;
 	    bubdiv.style.visibility = "visible";
-	    bubdiv.style.left = x + "px";
-	    bubdiv.style.top = y + "px";
+	    bubdiv.style.left = Math.floor(x) + "px";
+	    bubdiv.style.top = Math.floor(y) + "px";
 	},
 	remove: function () {
 	    bubdiv.parentElement.removeChild(bubdiv);
 	    bubdiv = null;
+	},
+	color: function (color) {
+	    var ch = bubdiv.childNodes;
+	    color = (color ? " " + color : "");
+	    bubdiv.className = "bubble" + color;
+	    ch[0].className = "bubtail0 " + dir + color;
+	    ch[2].className = "bubtail1 " + dir + color;
+	},
+	content: function (content) {
+	    var n = bubdiv.childNodes[1];
+	    if (typeof content == "string")
+		n.innerHTML = content;
+	    else {
+		while (n.childNodes.length)
+		    n.removeChild(n.childNodes[0]);
+		if (content)
+		    n.appendChild(content);
+	    }
+	    position_tail();
 	}
     };
+
+    bubble.content(content);
     return bubble;
 }
 
 
 add_edittag_ajax = (function () {
 var ready, dragtag,
-    plt_tbody, dragging, rowanal, srcindex, dragindex, dragger;
+    plt_tbody, dragging, rowanal, srcindex, dragindex, dragger,
+    dragwander, scroller, mousepos, scrolldelta;
 
 function parse_tagvalue(s) {
     s = s.replace(/^\s+|\s+$/, "").toLowerCase();
@@ -1150,14 +1167,35 @@ function analyze_rows(e) {
     return eindex;
 }
 
+function tag_scroll() {
+    var geometry = Geometry(), delta = 0, y = mousepos.clientY + geometry.top;
+    if (y < geometry.top - 5)
+	delta = Math.max((y - (geometry.top - 5)) / 10, -10);
+    else if (y > geometry.bottom)
+	delta = Math.min((y - (geometry.bottom + 5)) / 10, 10);
+    else if (y >= geometry.top && y <= geometry.bottom)
+	scroller = (clearInterval(scroller), null);
+    if (delta) {
+	scrolldelta += delta;
+	if ((delta = Math.round(scrolldelta))) {
+	    window.scrollTo(geometry.left, geometry.top + delta);
+	    scrolldelta -= delta;
+	}
+    }
+}
+
 function tag_mousemove(evt) {
     evt = evt || window.event;
-    var rows = plt_tbody.childNodes, y = evt.clientY + Geometry().top, a;
+    if (evt.clientX == null)
+	evt = mousepos;
+    mousepos = {clientX: evt.clientX, clientY: evt.clientY};
+    var rows = plt_tbody.childNodes, geometry = Geometry(), a,
+        x = evt.clientX + geometry.left, y = evt.clientY + geometry.top;
 
     // binary search to find containing rows
-    var l = 0, r = rowanal.length;
+    var l = 0, r = rowanal.length, m;
     while (l < r) {
-	var m = Math.floor((l + r) / 2);
+	m = Math.floor((l + r) / 2);
 	if (y < rowanal[m].top())
 	    r = m;
 	else if (y < rowanal[m].bottom()) {
@@ -1170,26 +1208,49 @@ function tag_mousemove(evt) {
     // find nearest insertion position
     if (l < rowanal.length && y > rowanal[l].middle())
 	++l;
-
-    // create dragger
-    if (!dragger) {
-	m = "#" + rowanal[srcindex].id;
-	if (rowanal[srcindex].titlehint)
-	    m += " " + rowanal[srcindex].titlehint;
-	dragger = make_bubble(document.createTextNode(m));
+    // if user drags far away, snap back
+    var plt_geometry = eltPos(plt_tbody);
+    if (x < Math.min(geometry.left, plt_geometry.left) - 30
+	|| x > Math.max(geometry.right, plt_geometry.right) + 30
+	|| y < plt_geometry.top - 40 || y > plt_geometry.bottom + 40)
+	l = srcindex;
+    // scroll
+    if (!scroller && (y < geometry.top || y > geometry.bottom)) {
+	scroller = setInterval(tag_scroll, 13);
+	scrolldelta = 0;
     }
 
-    // show dragger between nodes unless position unchanged
-    dragindex = l;
-    if (dragindex == srcindex || dragindex == srcindex + 1) {
+    // calculate new dragger position
+    a = l;
+    if (a == srcindex || a == srcindex + 1) {
 	y = rowanal[srcindex].middle();
-	dragindex = srcindex;
-    } else if (dragindex < rowanal.length)
-	y = rowanal[dragindex].top();
+	a = srcindex;
+    } else if (a < rowanal.length)
+	y = rowanal[a].top();
     else
 	y = rowanal[rowanal.length - 1].bottom();
-    dragger.show(Math.min(eltPos(rowanal[srcindex].entry).left - 50,
-			  evt.clientX - 10), y);
+    if (dragindex === a)
+	return;
+    dragindex = a;
+    dragwander = dragwander || dragindex != srcindex;
+
+    // create dragger
+    if (!dragger)
+	dragger = make_bubble();
+
+    // set dragger content and show it
+    m = "#" + rowanal[srcindex].id;
+    if (rowanal[srcindex].titlehint)
+	m += " " + rowanal[srcindex].titlehint;
+    if (srcindex != dragindex) {
+	a = calculate_shift(srcindex, dragindex);
+	if (a[srcindex].newvalue !== false)
+	    m += " <span class='dim'> &rarr; " + dragtag + "#" + a[srcindex].newvalue + "</span>";
+    }
+    dragger.content(m);
+    dragger.color(dragindex == srcindex && dragwander ? "grey" : "");
+    dragger.show(Math.min(eltPos(rowanal[srcindex].entry).left - 30,
+			  evt.clientX - 20), y);
 
     event_stop(evt);
 }
@@ -1215,7 +1276,7 @@ function row_move(srcindex, dstindex) {
 	}
 }
 
-function commit_drag(si, di) {
+function calculate_shift(si, di) {
     var na = [].concat(rowanal), i, j, delta;
 
     // initialize newvalues, make sure all elements in drag range have values
@@ -1257,7 +1318,11 @@ function commit_drag(si, di) {
 	} else if (i != si)
 	    break;
     }
+    return na;
+}
 
+function commit_drag(si, di) {
+    var na = calculate_shift(si, di), i;
     for (i = 0; i < na.length; ++i)
 	if (na[i].newvalue !== na[i].tagvalue && na[i].entry) {
 	    na[i].entry.value = unparse_tagvalue(na[i].newvalue);
@@ -1294,11 +1359,12 @@ function tag_mousedown(evt) {
     if (dragging)
 	tag_mouseup();
     dragging = this;
-    dragindex = null;
+    dragindex = dragwander = null;
     srcindex = analyze_rows(this);
     if (document.addEventListener) {
 	document.addEventListener("mousemove", tag_mousemove, true);
 	document.addEventListener("mouseup", tag_mouseup, true);
+	document.addEventListener("scroll", tag_mousemove, true);
     } else {
 	dragging.setCapture();
 	dragging.attachEvent("onmousemove", tag_mousemove);
@@ -1313,6 +1379,7 @@ function tag_mouseup(evt) {
     if (document.removeEventListener) {
 	document.removeEventListener("mousemove", tag_mousemove, true);
 	document.removeEventListener("mouseup", tag_mouseup, true);
+	document.removeEventListener("scroll", tag_mousemove, true);
     } else {
 	dragging.detachEvent("onmousemove", tag_mousemove);
 	dragging.detachEvent("onmouseup", tag_mouseup);
@@ -1321,6 +1388,8 @@ function tag_mouseup(evt) {
     }
     if (dragger)
 	dragger = dragger.remove();
+    if (scroller)
+        scroller = (clearInterval(scroller), null);
 
     if (srcindex !== null && (dragindex === null || srcindex != dragindex))
 	commit_drag(srcindex, dragindex);
