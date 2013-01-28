@@ -1,5 +1,5 @@
 // script.js -- HotCRP JavaScript library
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 function $$(id) {
@@ -1276,8 +1276,8 @@ function sorttag_onchange() {
 		ltv = rowanal[i].tagvalue;
 		if (!rowanal[i].entry
 		    || (tv !== false && ltv === false)
-		    || (tv !== false && ltv !== null && ltv > tv)
-		    || (ltv === tv && rowanal[i].id > id))
+		    || (tv !== false && ltv !== null && +ltv > +tv)
+		    || (ltv === tv && +rowanal[i].id > +id))
 		    break;
 	    }
 	    var had_focus = document.activeElement == that;
