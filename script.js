@@ -1216,13 +1216,15 @@ function row_move(srcindex, dstindex) {
 }
 
 function commit_drag(si, di) {
-    var na = [].concat(rowanal), i, delta;
+    var na = [].concat(rowanal), i, j, delta;
 
     // initialize newvalues, make sure all elements in drag range have values
     for (i = 0; i < na.length; ++i) {
 	na[i].newvalue = na[i].tagvalue;
-	if ((i < si || i < di) && na[i].newvalue === false)
-	    na[i].newvalue = (i ? na[i-1].newvalue + 1 : 1);
+	if (i < di && i != si && na[i].newvalue === false) {
+	    j = i - 1 - (i - 1 == si);
+	    na[i].newvalue = (i > 0 ? na[i-1].newvalue + 1 : 1);
+	}
     }
 
     if (si < di) {
