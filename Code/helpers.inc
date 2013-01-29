@@ -1283,7 +1283,7 @@ function htmlWrapText($text) {
 	    $l = str_repeat("\xC2\xA0", $x) . substr($l, $x);
 	}
 	$l = preg_replace('@((?:https?|ftp)://\S+[^\s").,:;])([").,:;]*(?:\s|\z))@',
-			  '<a href="$1">$1</a>$2', $l);
+			  '<a href="$1" rel="noreferrer">$1</a>$2', $l);
 	$lines[$i] = $l . "<br />\n";
     }
     return join("", $lines);
