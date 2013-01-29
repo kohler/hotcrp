@@ -24,9 +24,9 @@ class PaperColumn extends Column {
     public static function lookup($name) {
         if (isset(self::$by_name[$name]))
             return self::$by_name[$name];
-        foreach (self::$factories as $prefix => $f)
-            if (str_starts_with(strtolower($name), $prefix)
-                && ($x = $f->make_field($name)))
+        foreach (self::$factories as $f)
+            if (str_starts_with(strtolower($name), $f[0])
+                && ($x = $f[1]->make_field($name)))
                 return $x;
         return null;
     }
@@ -39,9 +39,7 @@ class PaperColumn extends Column {
         return $fdef;
     }
     public static function register_factory($prefix, $f) {
-        $prefix = strtolower($prefix);
-        assert(!isset(self::$factories[$prefix]));
-        self::$factories[$prefix] = $f;
+        self::$factories[] = array(strtolower($prefix), $f);
     }
 
     public function prepare($pl, &$queryOptions, $visible) {
@@ -972,6 +970,12 @@ class FormulaPaperColumn extends PaperColumn {
         PaperColumn::register($fdef);
         self::$registered[] = $fdef;
     }
+    public function make_field($name) {
+        foreach (self::$registered as $col)
+            if ($col->formula->name == $name)
+                return $col;
+        return null;
+    }
     public function prepare($pl, &$queryOptions, $visible) {
         $revView = 0;
         if ($pl->contact->amReviewer()
@@ -1218,12 +1222,16 @@ function initialize_paper_columns() {
     $paperListFormulas = array();
     if ($Conf && $Conf->setting("formulas") && $Conf->sversion >= 32) {
         $result = $Conf->q("select * from Formula order by lower(name)");
+        $formula = null;
         while (($row = edb_orow($result))) {
             $fid = $row->formulaId;
-            FormulaPaperColumn::register(new FormulaPaperColumn("formula$fid", $row, $nextfold));
+            $formula = new FormulaPaperColumn("formula$fid", $row, $nextfold);
+            FormulaPaperColumn::register($formula);
             $paperListFormulas[$fid] = $row;
             ++$nextfold;
         }
+        if ($formula)
+            PaperColumn::register_factory("", $formula);
     }
 
     $tagger = new Tagger;
