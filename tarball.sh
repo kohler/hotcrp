@@ -1,4 +1,4 @@
-export VERSION=2.55
+export VERSION=2.56
 
 # check that schema.sql and updateschema.inc agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=' Code/updateschema.inc | tail -n 1 | sed 's/.*= *//;s/;.*//'`
@@ -111,6 +111,7 @@ Code/review.inc
 Code/reviewsetform.inc
 Code/reviewtable.inc
 Code/reviewtemplate.inc
+Code/runsql.sh
 Code/sample.pdf
 Code/schema.sql
 Code/search.inc

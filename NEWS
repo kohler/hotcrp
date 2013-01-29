@@ -1,5 +1,42 @@
 HotCRP NEWS
 
+Version 2.56   29.Jan.2013
+
+* This is a major refactoring release. Internals, particularly for
+  paper list display, are cleaner and more extensible. But bugs are
+  likely.
+
+* New drag-and-drop mode for setting tag orders. Search for
+  'editsort:#TAGNAME'. This mode is suggested for paper ranks.
+
+* New popup help for setting tags and searching for tags.
+
+* Search for 'show:#TAGNAME' to show a particular tag. Search for
+  'edit:#TAGNAME' to edit tag values. Search for 'edit:tag:TAGNAME' to
+  edit a tag with checkboxes.
+
+* Search for 'show:SCORE' or 'show:FORMULANAME' to add a score or
+  formula to the display, or 'hide:' to remove it from the display.
+  You may also 'show:' or 'hide:' title, status, statusfull, revtype,
+  revstat, revsubmitted, revdelegation, assrev, topicscore, topics,
+  revpref, allrevpref, desirability, reviewers, authors, collab, tags,
+  abstract, lead, shepherd, pcconf (depending on your access rights).
+  These should be documented. You may also search for 'edit:revpref'
+  to edit review preferences.
+
+* Improvements to paper search for accented names. E.g., searching for
+  "Crap" will match "Cráp".
+
+* Improvements to database creation.
+
+* Add `Code/runsql.sh` script to run MySQL on the paper database.
+
+* Several bug fixes, including that search respects the "PC can view
+  decisions" setting.
+
+* Thanks to Jeff Mogul and John Douceur.
+
+
 Version 2.55   31.Dec.2012
 
 * Minor bugfix release.
