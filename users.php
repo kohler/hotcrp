@@ -1,6 +1,6 @@
 <?php
-// contacts.php -- HotCRP people listing/editing page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// users.php -- HotCRP people listing/editing page
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -44,7 +44,7 @@ if ($Me->privChair) {
     $tOpt["all"] = "All users";
 }
 if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
-    $Conf->errorMsg("You aren't allowed to list those accounts.");
+    $Conf->errorMsg("You aren’t allowed to list those users.");
     unset($_REQUEST["t"]);
 }
 if (!isset($_REQUEST["t"]))
@@ -84,7 +84,7 @@ if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
     $people = array();
     while ($row = edb_row($result))
 	$people[] = array($row[0] && $row[1] ? "$row[1], $row[0]" : "$row[1]$row[0]", $row[2]);
-    downloadCSV($people, array("name", "email"), "accounts", "accounts");
+    downloadCSV($people, array("name", "email"), "users", "users");
     exit;
 }
 
@@ -93,7 +93,7 @@ if ($getaction == "nameaffemail" && isset($papersel) && $Me->isPC) {
     $people = array();
     while ($row = edb_row($result))
 	$people[] = array($row[0] && $row[1] ? "$row[1], $row[0]" : "$row[1]$row[0]", $row[3], $row[2]);
-    downloadCSV($people, array("name", "affiliation", "email"), "accounts", "accounts");
+    downloadCSV($people, array("name", "affiliation", "email"), "users", "users");
     exit;
 }
 
@@ -236,7 +236,7 @@ if (count($tOpt) > 1) {
 if ($Me->privChair && $_REQUEST["t"] == "pc")
     $Conf->infoMsg("<p><a href='" . hoturl("profile", "u=new&amp;pc=1") . "' class='button'>Add PC member</a></p><p>Select a PC member’s name to edit their profile or remove them from the PC.</p>");
 else if ($Me->privChair && $_REQUEST["t"] == "all")
-    $Conf->infoMsg("<p><a href='" . hoturl("profile", "u=new") . "' class='button'>Create account</a></p><p>Select an account name to edit that profile.  Select <img src='images/viewas.png' alt='[Act as]' /> to view the site as that user would see it.</p>");
+    $Conf->infoMsg("<p><a href='" . hoturl("profile", "u=new") . "' class='button'>Create account</a></p><p>Select a user to edit their profile.  Select <img src='images/viewas.png' alt='[Act as]' /> to view the site as that user would see it.</p>");
 
 
 if (isset($pl->any->sel)) {

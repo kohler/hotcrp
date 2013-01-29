@@ -405,6 +405,13 @@ function hoturl($page, $options = null) {
     global $ConfSiteBase, $ConfSiteSuffix, $Opt;
     $t = $ConfSiteBase . $page . $ConfSiteSuffix;
     // see also redirectSelf
+    if ($options && is_array($options)) {
+        $x = "";
+        foreach ($options as $k => $v)
+            if ($v !== null)
+                $x .= ($x === "" ? "&" : "") . $k . "=" . urlencode($v);
+        $options = $x;
+    }
     if ($options && !defval($Opt, "disableSlashURLs")) {
         if ((preg_match('/\A(?:paper|review|comment|contactauthors)\z/', $page)
              && preg_match('/\A(|.*?(?:\&|\&amp;))p=(\d+|%\w+%)(.*)\z/', $options, $m))
@@ -442,7 +449,7 @@ function go($url) {
     if ($url === false)
 	$url = "${ConfSiteBase}index$ConfSiteSuffix";
 
-    // The URL is often a relative one; make it absolute if possible.
+    // The URL is often relative; make it absolute if possible.
     if (!preg_match('|\A[a-z]+://|', $url)
 	&& ($absuri = requestAbsoluteURI(true))) {
 	if (substr($url, 0, 1) == "/")
