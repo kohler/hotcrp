@@ -1,6 +1,6 @@
 <?php
 // index.php -- HotCRP home page
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -496,12 +496,15 @@ if ($homelist) {
     &nbsp;in&nbsp; ",
 	PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; <input class='b' type='submit' value='Search' />
-  </div></form><br />
+    <div id='taghelp_homeq' class='taghelp_s'></div>
+    </div></form><br />
   <span style='font-size: x-small'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("search", "tab=advanced"), "'>Advanced search</a></span>
   </td></tr></table>
 </div>
 <hr class='home' />\n";
     $Conf->footerScript("mktemptext('homeq','(All)')");
+    if (!defval($Opt, "noSearchAutocomplete"))
+        $Conf->footerScript("taghelp(\"homeq\",\"taghelp_homeq\",taghelp_q)");
 }
 
 

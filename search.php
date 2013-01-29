@@ -72,6 +72,8 @@ function cleanAjaxResponse(&$response, $type) {
 // report tag info
 if (isset($_REQUEST["alltags"]) && $Me->isPC)
     PaperActions::all_tags(isset($papersel) ? $papersel : null);
+else if (isset($_REQUEST["alltags"]))
+    $Conf->ajaxExit(false);
 
 
 // download selected papers

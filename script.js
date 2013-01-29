@@ -789,88 +789,110 @@ function shortcut(top_elt) {
 }
 
 
+// callback combination
+function add_callback(cb1, cb2) {
+    if (cb1 && cb2)
+	return function () {
+	    cb1.apply(null, arguments);
+	    cb2.apply(null, arguments);
+	};
+    else
+	return cb1 || cb2;
+}
+
 // tags
-var alltagsreport_url;
+var alltags = (function () {
+var a = [], status = 0, cb = null;
+function getcb(v) {
+    if (v && v.tags) {
+	a = v.tags;
+	a.sort();
+    }
+    status = 2;
+    cb && cb(a);
+}
+return function (callback) {
+    if (!status && alltags.url) {
+	status = 1;
+	Miniajax.get(alltags.url, getcb);
+    }
+    if (status == 1)
+	cb = add_callback(cb, callback);
+    return a;
+};
+})();
+
 
 function taghelp_tset(elt) {
-    var m = elt.value.substring(0, elt.selectionStart).match(/.*?([^#\s]*)(?:#\d*)?$/);
-    return (m && m[1]) || "";
+    var m = elt.value.substring(0, elt.selectionStart).match(/.*?([^#\s]*)(?:#\d*)?$/),
+        n = elt.value.substring(elt.selectionStart).match(/^([^#\s]*)/);
+    return (m && m[1] + n[1]) || "";
 }
 
 function taghelp_q(elt) {
-    var m = elt.value.substring(0, elt.selectionStart).match(/.*?(tag:\s*|r?order:\s*|#)([^#\s]*)(?:#\d*)?$/);
-    return m ? [m[2], m[1]] : null;
+    var m = elt.value.substring(0, elt.selectionStart).match(/.*?(tag:\s*|r?order:\s*|#)([^#\s]*)$/),
+        n = elt.value.substring(elt.selectionStart).match(/^([^#\s]*)/);
+    return m ? [m[2] + n[1], m[1]] : null;
 }
 
-taghelp = (function () {
-var alltags = null;
+function taghelp(elt, report_elt, cleanf) {
+    var hiding = false;
 
-function load() {
-    if (alltags === null)
-	Miniajax.get(alltagsreport_url, function (v) {
-	    if (v.tags) {
-		alltags = v.tags;
-		alltags.sort();
-	    }
-	});
-    alltags = false;
-    return true;
-}
-
-function display(elt, report_elt, cleanf) {
-    var s, a, i, t, cols, colheight, n, pfx = "";
-    elt.hotcrp_tagpress = true;
-    if (!alltags)
-	return load();
-    if (!alltags.length || (elt.selectionEnd != elt.selectionStart))
-	return;
-    if ((s = cleanf(elt)) === null) {
-	report_elt.style.display = "none";
-	return;
-    }
-    if (typeof s !== "string") {
-	pfx = s[1];
-	s = s[0];
-    }
-    for (i = 0, a = []; i < alltags.length; ++i)
-	if (alltags[i].substring(0, s.length) == s) {
-	    if (s.length)
-		a.push(pfx + "<b>" + s + "</b>" + alltags[i].substring(s.length));
-	    else
-		a.push(pfx + alltags[i]);
+    function display() {
+	var tags, s, a, i, t, cols, colheight, n, pfx = "";
+	elt.hotcrp_tagpress = true;
+	tags = alltags(display);
+	if (!tags.length || (elt.selectionEnd != elt.selectionStart))
+	    return;
+	if ((s = cleanf(elt)) === null) {
+	    report_elt.style.display = "none";
+	    return;
 	}
-    if (a.length == 0) {
-	report_elt.style.display = "none";
-	return;
+	if (typeof s !== "string") {
+	    pfx = s[1];
+	    s = s[0];
+	}
+	for (i = 0, a = []; i < tags.length; ++i)
+	    if (tags[i].substring(0, s.length) == s) {
+		if (s.length)
+		    a.push(pfx + "<b>" + s + "</b>" + tags[i].substring(s.length));
+		else
+		    a.push(pfx + tags[i]);
+	    }
+	if (a.length == 0) {
+	    report_elt.style.display = "none";
+	    return;
+	}
+	t = "<table class='taghelp'><tbody><tr>";
+	cols = (a.length < 6 ? 1 : 2);
+	colheight = Math.floor((a.length + cols - 1) / cols);
+	for (i = n = 0; i < cols; ++i, n += colheight)
+	    t += "<td class='taghelp_td'>" + a.slice(n, Math.min(n + colheight, a.length)).join("<br/>") + "</td>";
+	t += "</tr></tbody></table>";
+	report_elt.style.display = "block";
+	report_elt.innerHTML = t;
     }
-    t = "<table class='taghelp'><tbody><tr>";
-    cols = (a.length < 6 ? 1 : 2);
-    colheight = Math.floor((a.length + cols - 1) / cols);
-    for (i = n = 0; i < cols; ++i, n += colheight)
-	t += "<td class='taghelp_td'>" + a.slice(n, Math.min(n + colheight, a.length)).join("<br/>") + "</td>";
-    t += "</tr></tbody></table>";
-    report_elt.style.display = "block";
-    report_elt.innerHTML = t;
-}
 
-return function (elt, report_elt, cleanf) {
-    function d() {
-	elt && report_elt && display(elt, report_elt, cleanf);
-    }
     function b() {
-	report_elt && (report_elt.style.display = "none");
+	report_elt.style.display = "none";
+	hiding = false;
     }
+
     function kp(evt) {
 	evt = evt || window.event;
-	if (evt.charCode || evt.keyCode)
-	    setTimeout(d, 1);
+	if ((evt.charCode || evt.keyCode) == 27) {
+	    hiding = true;
+	    report_elt.style.display = "none";
+	} else if ((evt.charCode || evt.keyCode) && !hiding)
+	    setTimeout(display, 1);
 	return true;
     }
+
     if (typeof elt === "string")
 	elt = $$(elt);
     if (typeof report_elt === "string")
 	report_elt = $$(report_elt);
-    if (elt && (elt.addEventListener || elt.attachEvent)) {
+    if (elt && report_elt && (elt.addEventListener || elt.attachEvent)) {
 	if (elt.addEventListener) {
 	    elt.addEventListener("keyup", kp, false);
 	    elt.addEventListener("blur", b, false);
@@ -880,9 +902,7 @@ return function (elt, report_elt, cleanf) {
 	}
 	elt.autocomplete = "off";
     }
-};
-
-})();
+}
 
 
 // review preferences

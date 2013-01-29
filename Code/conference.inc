@@ -1582,14 +1582,12 @@ class Conference {
 	$this->header_head($title);
 	$dl = $Me->deadlines();
 	$now = $dl["now"];
-	echo "</head><body";
-	if ($id)
-	    echo " id='$id'";
+	echo "</head><body", ($id ? " id='$id'" : ""), " onload='hotcrp_load()'>\n";
 	// JavaScript's idea of a timezone offset is the negative of PHP's
 	$this->footerScript("hotcrp_load.time($now," . (-date("Z", $now) / 60) . "," . (defval($Opt, "time24hour") ? 1 : 0) . ");"
-                            . "loadDeadlines.init(" . json_encode($dl) . ",\"" . hoturl("deadlines") . "\");"
-                            . "alltagsreport_url=\"" . hoturl("search", "alltags=1") . "\"");
-	echo " onload='hotcrp_load()'>\n";
+                            . "loadDeadlines.init(" . json_encode($dl) . ",\"" . hoturl("deadlines") . "\")");
+        if ($Me->isPC)
+            $this->footerScript("alltags.url=\"" . hoturl("search", "alltags=1") . "\"");
 
 	echo "<div id='prebody'>\n";
 
@@ -1726,7 +1724,9 @@ class Conference {
     }
 
     function ajaxExit($values = null, $div = false) {
-	if (!$values)
+        if ($values === false || $values === true)
+            $values = array("ok" => $values);
+	else if ($values === null)
 	    $values = array();
 	$t = "";
 	foreach (defval($_SESSION, "msgs", array()) as $msg)
@@ -1738,7 +1738,7 @@ class Conference {
 		else
 		    $t .= "<span class=\"$m[1]\">$m[2]</span>\n";
 	    }
-	if (!isset($values["response"]))
+	if (!isset($values["response"]) && $t !== "")
 	    $values["response"] = $t;
 	unset($_SESSION["msgs"]);
 	if (isset($_REQUEST["jsontext"]) && $_REQUEST["jsontext"])
