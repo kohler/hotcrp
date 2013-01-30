@@ -497,8 +497,8 @@ if ($homelist) {
 	PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; <input class='b' type='submit' value='Search' />
     <div id='taghelp_homeq' class='taghelp_s'></div>
-    </div></form><br />
-  <span style='font-size: x-small'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("search", "tab=advanced"), "'>Advanced search</a></span>
+    <div style='font-size:85%'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("search", "tab=advanced"), "'>Advanced search</a></div>
+  </div></form>
   </td></tr></table>
 </div>
 <hr class='home' />\n";
