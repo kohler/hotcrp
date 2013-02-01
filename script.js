@@ -793,8 +793,8 @@ function shortcut(top_elt) {
 function add_callback(cb1, cb2) {
     if (cb1 && cb2)
 	return function () {
-	    cb1.apply(null, arguments);
-	    cb2.apply(null, arguments);
+	    cb1.apply(this, arguments);
+	    cb2.apply(this, arguments);
 	};
     else
 	return cb1 || cb2;
