@@ -148,12 +148,13 @@ if ! (echo 'show databases;' | eval $MYSQL $FLAGS >/dev/null); then
     echo "Could not run $MYSQL $ECHOFLAGS. Did you enter the right password?" 1>&2
     exit 1
 fi
-grants=`echo 'show grants;' | eval $MYSQL $FLAGS | grep -i -e create -e all`
+grants=`echo 'show grants;' | eval $MYSQL $FLAGS | grep -i -e create -e all | grep -i 'on \*\.\*'`
 if ! $force && test -z "$grants"; then
-    echo "This MySQL account does not appear to have the privilege to create databases." 1>&2
-    echo "Use '--user=USER' and '--password=PASSWORD' options to specify another user." 1>&2
-    echo "If you think this message is in error, run '$PROG --force'" 1>&2
-    echo "to try again." 1>&2
+    echo 1>&2
+    echo "* This account doesn't appear to have the privilege to create MySQL databases." 1>&2
+    echo "* Try 'sudo $PROG' and/or supply '--user' and '--password' options." 1>&2
+    echo "* If you think this message is in error, run '$PROG --force'." 1>&2
+    echo 1>&2
     exit 1
 fi
 
@@ -161,8 +162,7 @@ fi
 PROGDIR=`echo "$0" | sed 's,[^/]*$,,'`
 
 
-echo "This will create the database for your conference."
-echo "The database name and database user are set to the same thing."
+echo "Creating the database and database user for your conference."
 echo "Access is allowed only from the local host."
 echo
 
@@ -431,17 +431,51 @@ __EOF__
 { if (p) print }' < "${PROGDIR}${distoptions_file}"
 }
 
+is_group_member () {
+    u="$1"; g="$2"
+    if test -x /usr/bin/dsmemberutil; then
+	if expr "$u" : '[0-9]*$' >/dev/null; then ua="-u"; else ua="-U"; fi
+	if expr "$g" : '[0-9]*$' >/dev/null; then ga="-g"; else ga="-G"; fi
+	/usr/bin/dsmemberutil checkmembership $ua "$u" $ga "$g" 2>/dev/null | grep "is a member" >/dev/null
+    else
+	members="`grep "^$group" /etc/group | sed 's/.*:.*:.*:/,/'`"
+	echo "$members," | grep ",$u," >/dev/null
+    fi
+}
+
 if [ -r "${PROGDIR}${options_file}" ]; then
     echo
-    echo "*** Your Code/${options_file} file already exists."
-    echo "*** Edit it to use the database name, username, and password you chose."
+    echo "* Your Code/${options_file} file already exists."
+    echo "* Edit it to use the database name, username, and password you chose."
     echo
 elif [ -r "${PROGDIR}${distoptions_file}" ]; then
     echo "Creating Code/${options_file}..."
     create_options > "${PROGDIR}${options_file}"
     if [ -n "$SUDO_USER" ]; then
-	echo chown $SUDO_USER "${PROGDIR}${options_file}"
+	echo + chown $SUDO_USER "${PROGDIR}${options_file}"
 	chown $SUDO_USER "${PROGDIR}${options_file}"
     fi
     chmod o-rwx "${PROGDIR}${options_file}"
+
+    # warn about unreadable Code/options.inc
+    group="`ls -l "${PROGDIR}${options_file}" | awk '{print $4}'`"
+
+    httpd_user="`ps axho user,comm | grep -E 'httpd|apache' | uniq | grep -v root | awk 'END {if ($1) print $1}'`"
+
+    if test -z "$httpd_user"; then
+	echo
+	echo "* The Code/options.inc file contains sensitive data."
+	echo "* You may need to change its group so the Web server can read it."
+	echo
+    elif ! is_group_member "$httpd_user" "$group"; then
+	if [ -n "$SUDO_USER" ] && chgrp "$httpd_user" "${PROGDIR}${options_file}" 2>/dev/null; then
+	    echo "Making ${PROGDIR}${options_file} readable by the Web server..."
+	    echo + chgrp "$httpd_user" "${PROGDIR}${options_file}"
+	else
+	    echo
+	    echo "* The Code/options.inc file contains important data, but the Web server"
+	    echo "* cannot read it. Use 'chgrp GROUP Code/options.inc' to change its group."
+	    echo
+	fi
+    fi
 fi
