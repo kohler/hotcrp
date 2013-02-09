@@ -230,6 +230,100 @@ class PaperRank {
     }
 
 
+    // global rank calculation by computing the stationary distribution of a
+    // random walk
+    function randwalk() {
+	$paperCount = count($this->papersel);
+	if (!count($this->papersel))
+	    return;
+
+	// extract pairwise comparisons from user rankings into sparse 2D array
+	$compareCounts = array_combine($this->papersel, array_fill(0, $paperCount, array()));
+	foreach ($this->userrank as $user => &$rankedPapers) {
+	    $numUserRanks = count($rankedPapers);
+	    for ($higherRank = 0; $higherRank < $numUserRanks - 1; $higherRank++) {
+		$higherRankedPaperId = $rankedPapers[$higherRank][1];
+		for ($lowerRank = $higherRank + 1; $lowerRank < $numUserRanks; $lowerRank++) {
+		    $lowerRankedPaperId = $rankedPapers[$lowerRank][1];
+		    // if needed, create elements in sparse array
+		    if (!array_key_exists($lowerRankedPaperId, $compareCounts[$higherRankedPaperId]))
+			$compareCounts[$higherRankedPaperId][$lowerRankedPaperId] = 0;
+		    if (!array_key_exists($higherRankedPaperId, $compareCounts[$lowerRankedPaperId]))
+			$compareCounts[$lowerRankedPaperId][$higherRankedPaperId] = 0;
+		    $compareCounts[$lowerRankedPaperId][$higherRankedPaperId]++;
+		}
+	    }
+	}
+
+	// calculate the maximum number of papers outranking any paper
+	$maxOutrankCount = 0;
+	foreach ($compareCounts as $rowPaperId => $compareCountRow) {
+	    $rowOutrankCount = 0;
+	    foreach ($compareCountRow as $colPaperId => $compareCount)
+		if ($compareCount > 0)
+		    $rowOutrankCount++;
+	    if ($rowOutrankCount > $maxOutrankCount)
+		$maxOutrankCount = $rowOutrankCount;
+	}
+
+	// build sparse transition probability matrix (this is the transpose of the conventional representation)
+	$transitionMatrix = array_combine($this->papersel, array_fill(0, $paperCount, array()));
+	foreach ($compareCounts as $rowPaperId => $compareCountRow) {
+	    $rowSum = 0.0;
+	    foreach ($compareCountRow as $colPaperId => $colBeatRow) {
+		$rowBeatCol = $compareCounts[$colPaperId][$rowPaperId];
+		$transitionProb = ($colBeatRow + 1.0) / (($colBeatRow + $rowBeatCol + 2.0) * $maxOutrankCount);
+		$transitionMatrix[$colPaperId][$rowPaperId] = $transitionProb; // transposed row and col indices
+		$rowSum += $transitionProb;
+	    }
+	    $transitionMatrix[$rowPaperId][$rowPaperId] = 1.0 - $rowSum;
+	}
+
+	// iteration convergence threshold is inverse cubic in count of papers
+	// offset factor of 1000 captures 99.9% of convergences (determined empirically)
+	$invPaperCount = 1.0/$paperCount;
+	$convergeThresh = 0.001 * $invPaperCount * $invPaperCount * $invPaperCount;
+
+	// initialize distribution to equiprobable state
+	$stateDist = array_combine($this->papersel, array_fill(0, $paperCount, $invPaperCount));
+
+	// iterate until distribution stabilizes
+	$converged = false;
+	while (!$converged) {
+	    // compute new state as product of state vector and transition matrix
+	    $newStateDist = array();
+	    foreach ($transitionMatrix as $toPaperId => $transitionVector) {
+		$newStateProb = 0.0;
+		foreach ($transitionVector as $fromPaperId => $transitionProb)
+		    $newStateProb += $stateDist[$fromPaperId] * $transitionProb;
+		$newStateDist[$toPaperId] = $newStateProb;
+	    }
+
+	    // compute L2 norm between new state and old state
+	    $probDiff2Sum = 0.0;
+	    foreach ($stateDist as $paperId => $oldProb) {
+		$newProb = $newStateDist[$paperId];
+		$probDiff = $newProb - $oldProb;
+		$probDiff2 = $probDiff * $probDiff;
+		$probDiff2Sum += $probDiff2;
+	    }
+	    $l2norm = sqrt($probDiff2Sum);
+
+	    // assess convergence
+	    $converged = $l2norm < $convergeThresh;
+
+	    // set new state as old state, using reference to avoid expensive copy
+	    $stateDist =& $newStateDist;
+	    unset($newStateDist);  // gotta love PHP; if we don't do this the initialization of $newStateDist will clobber $stateDist
+	}
+
+	// extract ranks from stationary distribution
+	arsort($stateDist);
+	foreach ($stateDist as $paperId => $prob)
+	    $this->rank[$paperId] = $this->_nextRank();
+    }
+
+
     private function _calculatePrefs() {
 	$this->anypref = array_combine($this->papersel, array_fill(0, count($this->papersel), 0));
 	$this->voters = $this->anypref;
@@ -607,13 +701,14 @@ class PaperRank {
 	return array("schulze" => "Schulze method",
                      "irv" => "Instant-runoff voting",
                      "range" => "Range voting",
-                     "civs" => "CIVS Ranked Pairs");
+                     "civs" => "CIVS Ranked Pairs",
+                     "randwalk" => "Random walk");
     }
 
     function run($m = null) {
         $mmap = array("schulze" => "schulze", "irv" => "irv",
                       "range" => "rangevote", "rawrange" => "rawrangevote",
-                      "civs" => "civsrp");
+                      "civs" => "civsrp", "randwalk" => "randwalk");
         if (!$m || !isset($mmap[$m]))
             $m = key($mmap);
         $m = $mmap[$m];
