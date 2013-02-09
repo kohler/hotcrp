@@ -314,20 +314,11 @@ function tagaction() {
 	$source_tag = ($source_tag == "" ? $tag : $source_tag);
         if ($tagger->check($tag, Tagger::NOVALUE | Tagger::NOPRIVATE)
             && $tagger->check($source_tag, Tagger::NOVALUE | Tagger::NOPRIVATE)) {
-	    require_once("Code/rank.inc");
 	    ini_set("max_execution_time", 1200);
 	    $r = new PaperRank($source_tag, $tag, $papers,
 			       defval($_REQUEST, "tagcr_gapless"),
 			       "Search", "search");
-	    $method = defval($_REQUEST, "tagcr_method");
-	    if ($method == "irv")
-		$r->irv();
-	    else if ($method == "range")
-		$r->rangevote();
-	    else if ($method == "civs")
-		$r->civsrp();
-	    else
-		$r->schulze();
+            $r->run(defval($_REQUEST, "tagcr_method"));
 	    $r->save();
 	    if ($_REQUEST["q"] === "")
 		$_REQUEST["q"] = "order:$tag";

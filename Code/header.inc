@@ -173,6 +173,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/Code/qobject.php");
     else if ($class_name == "PaperColumn")
         require_once("$ConfSitePATH/Code/papercolumn.php");
+    else if ($class_name == "PaperRank")
+        require_once("$ConfSitePATH/Code/rank.inc");
 }
 
 // If you have the PEAR::Mail libraries installed globally,

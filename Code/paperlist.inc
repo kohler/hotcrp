@@ -404,7 +404,7 @@ class PaperList extends BaseList {
 		    . tagg_checkbox("tagcr_gapless", 1, defval($_REQUEST, "tagcr_gapless"), array("style" => "margin-left:0"))
 		    . "&nbsp;" . tagg_label("Gapless order") . "</div>"
 		    . "<div style='margin:2px 0'>Using: &nbsp;"
-		    . tagg_select("tagcr_method", array("schulze" => "Schulze method", "irv" => "Instant-runoff voting", "range" => "Range voting", "civs" => "CIVS Ranked Pairs"), defval($_REQUEST, "tagcr_method"))
+		    . tagg_select("tagcr_method", PaperRank::methods(), defval($_REQUEST, "tagcr_method"))
 		    . "</div>"
 		    . "<div style='margin:2px 0'>Source tag: &nbsp;~<input class='textlite' type='text' name='tagcr_source' value=\"" . htmlspecialchars(defval($_REQUEST, "tagcr_source", "")) . "\" size='15' /></div>"
 		    . "</div>";

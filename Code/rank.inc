@@ -5,24 +5,24 @@
 
 class PaperRank {
 
-    var $tag;
-    var $dest_tag;
-    var $ordertype;
-    var $papersel;
-    var $userrank;
-    var $papershuffle;
-    var $pref;
-    var $anypref;
-    var $voters;
-    var $totalpref;
-    var $deletedpref;
-    var $rank;
-    var $currank;
+    private $tag;
+    private $dest_tag;
+    private $ordertype;
+    private $papersel;
+    private $userrank;
+    private $papershuffle;
+    private $pref;
+    private $anypref;
+    private $voters;
+    private $totalpref;
+    private $deletedpref;
+    private $rank;
+    private $currank;
 
-    var $info_printed;
-    var $header_title;
-    var $header_id;
-    var $starttime;
+    private $info_printed;
+    private $header_title;
+    private $header_id;
+    private $starttime;
 
     function __construct($source_tag, $dest_tag, $papersel, $strict,
 			 $header_title = null, $header_id = null) {
@@ -73,12 +73,12 @@ class PaperRank {
 	    return 0;
     }
 
-    function _nextRank() {
+    private function _nextRank() {
 	$this->currank += Tagger::value_increment($this->ordertype);
 	return $this->currank;
     }
 
-    function _info() {
+    private function _info() {
 	global $Conf;
 	$n = count($this->rank);
 	if (!$this->info_printed
@@ -230,7 +230,7 @@ class PaperRank {
     }
 
 
-    function _calculatePrefs() {
+    private function _calculatePrefs() {
 	$this->anypref = array_combine($this->papersel, array_fill(0, count($this->papersel), 0));
 	$this->voters = $this->anypref;
 	$this->pref = array_combine($this->papersel, array_fill(0, count($this->papersel), $this->anypref));
@@ -257,7 +257,7 @@ class PaperRank {
 	}
     }
 
-    function _reachableClosure(&$reachable, &$papersel) {
+    private function _reachableClosure(&$reachable, &$papersel) {
 	$closure = array();
 	// find transitive closure by repeated DFS: O(n^3)
 	// destroys $reachable
@@ -278,7 +278,7 @@ class PaperRank {
 	return $closure;
     }
 
-    function _calculateDefeats(&$papersel) {
+    private function _calculateDefeats(&$papersel) {
 	// $defeat maps paper1 => paper2 => true
 	// first initialize with preferences
 	//$t0 = microtime(true);
@@ -304,7 +304,7 @@ class PaperRank {
 	return $defeat;
     }
 
-    function _calculateSchwartz(&$schwartz, &$nonschwartz, &$defeat, &$papersel) {
+    private function _calculateSchwartz(&$schwartz, &$nonschwartz, &$defeat, &$papersel) {
 	//$t0 = microtime(true);
 
 	// find Schwartz set, which contains anyone who suffers no
@@ -336,7 +336,7 @@ class PaperRank {
 	    exit;
     }
 
-    function _comparWeakness($a, $b) {
+    private function _comparWeakness($a, $b) {
 	// This function is used to determine the weakest preference.  Schulze
 	// will remove the weakest preference to attempt to break cycles.
 
@@ -391,7 +391,7 @@ class PaperRank {
 	return 0;
     }
 
-    function _schulzeStep(&$stack) {
+    private function _schulzeStep(&$stack) {
 	//error_log("SET " . join(",", $papersel));
 	list($papersel, $defeat) = array_pop($stack);
 
@@ -490,7 +490,7 @@ class PaperRank {
 	return 0;
     }
 
-    function _reachableClosure2(&$reachable, &$papersel, $pairs) {
+    private function _reachableClosure2(&$reachable, &$papersel, $pairs) {
 	while (count($pairs)) {
 	    list($p1, $p2) = array_pop($pairs);
 	    $reachable[$p1][$p2] = true;
@@ -503,14 +503,14 @@ class PaperRank {
 	}
     }
 
-    function _includePairs(&$defeat, &$reachable, &$adddefeat) {
+    private function _includePairs(&$defeat, &$reachable, &$adddefeat) {
 	foreach ($adddefeat as $x)
 	    $defeat[$x[0]][$x[1]] = true;
 	$this->_reachableClosure2($reachable, $this->papersel, $adddefeat);
 	$adddefeat = array();
     }
 
-    function _comparPreferenceAgainst($a, $b) {
+    private function _comparPreferenceAgainst($a, $b) {
 	if ($a[1] != $b[1])
 	    return $a[1] < $b[1] ? -1 : 1;
 	if ($a[0] != $b[0])
@@ -518,7 +518,7 @@ class PaperRank {
 	return 0;
     }
 
-    function _civsrpStep(&$papersel, &$defeat) {
+    private function _civsrpStep(&$papersel, &$defeat) {
 	//error_log("SET " . join(",", $papersel));
 	// base case: only one paper
 	if (count($papersel) == 1) {
@@ -600,6 +600,24 @@ class PaperRank {
 	    if ($this->anypref[$p] == 0)
 		$this->rank[$p] = $norank;
 	$this->_info();
+    }
+
+
+    static function methods() {
+	return array("schulze" => "Schulze method",
+                     "irv" => "Instant-runoff voting",
+                     "range" => "Range voting",
+                     "civs" => "CIVS Ranked Pairs");
+    }
+
+    function run($m = null) {
+        $mmap = array("schulze" => "schulze", "irv" => "irv",
+                      "range" => "rangevote", "rawrange" => "rawrangevote",
+                      "civs" => "civsrp");
+        if (!$m || !isset($mmap[$m]))
+            $m = key($mmap);
+        $m = $mmap[$m];
+        $this->$m();
     }
 
 
