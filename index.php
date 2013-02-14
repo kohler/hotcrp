@@ -103,9 +103,10 @@ function doCreateAccount() {
 }
 
 function doLDAPLogin() {
+    global $Conf;
     // check for bogus configurations
     if (!function_exists("ldap_connect") || !function_exists("ldap_bind"))
-	return $Conf->errorMsg("Internal error: <code>\$Opt[\"ldapLogin\"]</code> is set, but this PHP installation doesn't support LDAP.  Logins will fail until this error is fixed.");
+	return $Conf->errorMsg("Internal error: <code>\$Opt[\"ldapLogin\"]</code> is set, but this PHP installation doesn’t support LDAP.  Logins will fail until this error is fixed.");
 
     // the body is elsewhere because we need LDAP constants, which might[?]
     // cause errors absent LDAP support
