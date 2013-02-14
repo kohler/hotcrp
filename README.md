@@ -21,9 +21,8 @@ software:
 
 * Apache, http://apache.org/
   (You may be able to use another web server that works with PHP.)
-* PHP version 5 or higher, http://php.net/
+* PHP version 5.2 or higher, http://php.net/
   - Including MySQL and GD support
-  - PHP 5.2 or higher recommended
 * MySQL version 5 or higher, http://mysql.org/
 * PHP PEAR extensions, http://pear.php.net/
 * The zip compressor, http://www.info-zip.org/
@@ -114,7 +113,7 @@ stored in `/etc/php.ini`. The suggested value for this setting is
 `session.gc_maxlifetime` to 86400 anyway, then edit Code/options.inc to
 set `$Opt["sessionLifetime"]` to the correct session timeout.
 
-5. Edit MySQL's 'my.cnf' (typical location: `/etc/mysql/my.cnf`) to ensure
+5. Edit MySQL’s my.cnf (typical location: `/etc/mysql/my.cnf`) to ensure
 that MySQL can handle paper-sized objects.  It should contain something
 like this:
 
@@ -124,14 +123,14 @@ like this:
     max_allowed_packet must be at least as large as the largest paper
 you are willing to accept. It defaults to 1M on some systems, which is
 not nearly large enough. HotCRP will warn you if it is too small. Some
-MySQL setups, such as on Mac OS X, may not have a 'my.cnf' by default;
+MySQL setups, such as on Mac OS X, may not have a my.cnf by default;
 just create one. If you edit my.cnf, also restart the mysqld server.
 On Linux try something like `sudo /etc/init.d/mysql restart`.
 
 6. Sign in to the site to create an account. The first account created
 automatically receives system administrator privilege.
 
-    If your server configuration doesn't allow .htaccess files to set
+    If your server configuration doesn’t let .htaccess files set
 options, Apache will report an “Error 500” when you try to load
 HotCRP. Change your Apache configuration to `AllowOverride All` in the
 HotCRP directory, as our example does above.
@@ -142,7 +141,7 @@ You can set up everything else through the web site itself.
 
   - Uploaded papers and reviews are limited in size by several PHP
     configuration variables, set by default to 15 megabytes in the HotCRP
-    directory's ".htaccess".  You may want to lower them.
+    directory’s `.htaccess`.
 
   - HotCRP PHP scripts can take a lot of memory, particularly if they're
     doing things like generating MIME-encoded mail messages.  By default
@@ -162,12 +161,11 @@ so the backup file may be quite large.
 Run `Code/restoredb.sh BACKUPFILE` at the shell prompt to restore the
 database from a backup stored in `BACKUPFILE`.
 
-
 Updates
 -------
 
 HotCRP code can be updated at any time without bringing down the site.
-If you obtained the code from git, simply `git pull`. if you obtained
+If you obtained the code from git, use `git pull`. if you obtained
 the code from a tarball, copy the new version over your old code,
 preserving `Code/options.inc`. For instance, using GNU tar:
 
@@ -182,9 +180,9 @@ installation. Edit options.inc to set $Opt["multiconference"] to 1.
 The last directory component of the URL is used for the database name,
 user, and password. For instance:
 
-   http://read.seas.harvard.edu/conferences/testconf/doc/testconf-paper1.pdf
-                                            ^^^^^^^^
-                                    last directory component
+    http://read.seas.harvard.edu/conferences/testconf/doc/testconf-paper1.pdf
+                                             ^^^^^^^^
+                                     last directory component
 
 Alternately, you may set $Opt["dbName"], $Opt["dbUser"],
 $Opt["dbPassword"], and/or $Opt["dsn"]. HotCRP will edit each of those
@@ -193,19 +191,19 @@ settings to replace the "*" character with the last directory component.
 conferenceSite, and paperSite options.)
 
 You will still need to create a new database for each conference using the
-"Code/createdb.sh" script, and convince your Apache to use the HotCRP
+`Code/createdb.sh` script, and convince your Apache to use the HotCRP
 install directory for all relevant URLs.
 
 To set other $Opt options per conference, such as the conference name and
-contact email, modify the conference's Settings database table. A Settings
+contact email, modify the conference’s Settings database table. A Settings
 row with name "opt.XXX" takes precedence over option $Opt["XXX"]. For
 example, to set a conference’s longName:
 
     mysql> insert into Settings (name, value, data)
-	   values ('opt.longName', 1, 'My Conference 2012')
+	   values ('opt.longName', 1, 'My Conference')
 	   on duplicate key update data=values(data);
 
-Note that the "Code/backupdb.sh" script doesn't work for multiconference
+Note that the `Code/backupdb.sh` script doesn't work for multiconference
 installations, and that several important options, such as contactName and
 contactEmail, cannot yet be set using the web interface.
 
