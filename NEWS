@@ -1,5 +1,16 @@
 HotCRP NEWS
 
+Version 2.57   16.Mar.2013
+
+* Bug fix: Search exposed score values to PC authors during the
+  rebuttal phase, even for papers they authored. Reported by Jitu
+  Padhye and Srini Seshan.
+
+* Bug fix: "au:" searches work for non-chairs. Broken since 2011!
+
+* Add a random-walk-based paper ranking method (John Douceur).
+
+
 Version 2.56   29.Jan.2013
 
 * This is a major refactoring release. Internals, particularly for
