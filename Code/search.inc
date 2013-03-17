@@ -2064,7 +2064,7 @@ class PaperSearch {
 
     function _clauseTermCheckFlags($flags, &$row) {
 	global $Conf;
-	if (($flags & self::F_AUTHOR) && $this->actAuthorView($row))
+	if (($flags & self::F_AUTHOR) && $this->contact->actAuthorView($row))
 	    return false;
 	if (($flags & self::F_REVIEWER)
 	    && $row->myReviewNeedsSubmit !== 0
