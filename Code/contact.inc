@@ -697,6 +697,11 @@ class Contact {
 	    return false;
 	// policy
 	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && !$ignoreForceShow;
+        if (is_int($rrow)) {
+            $viewscore = $rrow;
+            $rrow = null;
+        } else
+            $viewscore = 1;
 	$rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
 	$pc_seeallrev = ($this->isPC ? $Conf->setting("pc_seeallrev") : 0);
 	$conflictType = $this->actConflictType($prow);
@@ -707,22 +712,31 @@ class Contact {
 	     || $this->privChair)
 	    && (($conflictType >= CONFLICT_AUTHOR
 		 && $Conf->timeAuthorViewReviews($this->reviewsOutstanding && $this->isReviewer)
-		 && $rrowSubmitted)
-		|| ($this->privChair && $conflictType == 0)
+		 && $rrowSubmitted
+                 && $viewscore >= 1)
+		|| ($this->privChair
+                    && $conflictType == 0)
 		|| ($this->isPC
 		    && $conflictType == 0 && $rrowSubmitted
 		    && $pc_seeallrev > 0	// see also timePCViewAllReviews()
 		    && ($pc_seeallrev != 4 || !$this->reviewsOutstanding)
-		    && ($pc_seeallrev != 3 || !defval($prow, "myReviewType")))
+		    && ($pc_seeallrev != 3 || !defval($prow, "myReviewType"))
+                    && $viewscore >= 0)
 		|| (defval($prow, "myReviewType") > 0
-		    && $conflictType == 0 && $rrowSubmitted
+		    && $conflictType == 0
+                    && $rrowSubmitted
 		    && (defval($prow, "myReviewSubmitted") > 0
 			|| defval($prow, "myReviewNeedsSubmit", 1) == 0)
-		    && ($this->isPC || $Conf->settings["extrev_view"] >= 1))
-		|| ($rrow && $rrow->paperId == $prow->paperId
-		    && $this->ownReview($rrow))
-		|| ($rrow && isset($prow->myReviewId)
-		    && $prow->myReviewId == $rrow->reviewId)))
+		    && ($this->isPC || $Conf->settings["extrev_view"] >= 1)
+                    && $viewscore >= 0)
+		|| ($rrow
+                    && $rrow->paperId == $prow->paperId
+		    && $this->ownReview($rrow)
+                    && $viewscore >= -1)
+		|| ($rrow
+                    && isset($prow->myReviewId)
+		    && $prow->myReviewId == $rrow->reviewId
+                    && $viewscore >= -1)))
 	    return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
@@ -1131,6 +1145,7 @@ class Contact {
 	// Deadlines are not considered.
 	// (!$prow && !$rrow) ==> return best case scores that can be seen.
 	// (!$prow &&  $rrow) ==> return worst case scores that can be seen.
+        // ** See also canViewReview.
 
 	// chair can see everything
 	if ($this->privChair

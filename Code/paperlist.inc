@@ -433,8 +433,9 @@ class PaperList extends BaseList {
 	    $scoreName .= "Scores";
 	    $this->sortInfo = array();
 	    $this->sortAverage = array();
+            $viewscore = (int) $this->rf->authorView[$scoreName];
 	    foreach ($rows as $row)
-		if ($this->contact->canViewReview($row, null))
+		if ($this->contact->canViewReview($row, $viewscore))
 		    $this->_setSortRow($row, $scoreName, $scoreMax, $this->scoreSort);
 		else {
 		    $this->sortInfo[$row->paperId] = self::LOTSAZEROS;
@@ -795,7 +796,7 @@ class PaperList extends BaseList {
 	case self::FIELD_OPT_TOPIC_NAMES:
 	    return isset($row->topicIds) && $row->topicIds == "";
 	case self::FIELD_SCORE:
-	    return !$this->contact->canViewReview($row, null, $fakeWhyNotView, true) && !$this->contact->privChair;
+	    return !$this->contact->canViewReview($row, (int) $this->rf->authorView[self::_fieldInfo($fieldId)], $fakeWhyNotView, true) && !$this->contact->privChair;
 	case self::FIELD_AUTHOR_MATCH:
 	    return defval($this->search->matchPreg, "authorInformation", "") == "";
 	case self::FIELD_COLLABORATORS_MATCH:
@@ -1037,7 +1038,7 @@ class PaperList extends BaseList {
 	    return $text;
 	case self::FIELD_SCORE:
 	    $scoreName = self::_fieldInfo($fieldId);
-	    $allowed = $this->contact->canViewReview($row, null, $fakeWhyNotView, true);
+	    $allowed = $this->contact->canViewReview($row, (int) $this->rf->authorView[$scoreName], $fakeWhyNotView, true);
 	    $fname = "${scoreName}Scores";
 	    if (($allowed || $this->contact->privChair) && $row->$fname) {
 		$t = $Conf->textValuesGraph($row->$fname, $this->scoreMax[$scoreName], 1, defval($row, $scoreName), $this->rf->reviewFields[$scoreName]);
