@@ -882,6 +882,8 @@ class EditTagPaperColumn extends TagPaperColumn {
 
 class ScorePaperColumn extends PaperColumn {
     public $score;
+    private $max;
+    private $viewscore;
     private static $registered = array();
     public function __construct($score, $foldnum) {
         parent::__construct($score, Column::VIEW_COLUMN, array());
@@ -913,8 +915,9 @@ class ScorePaperColumn extends PaperColumn {
         if (!$pl->scoresOk)
             return false;
         if ($visible) {
-            $revView = $pl->contact->viewReviewFieldsScore(null, true);
-            if ($pl->rf->authorView[$this->score] <= $revView)
+            $this->viewscore = (int) $pl->rf->authorView[$this->score];
+            $auview = $pl->contact->viewReviewFieldsScore(null, true);
+            if ($this->viewscore <= $auview)
                 return false;
             if (!isset($queryOptions["scores"]))
                 $queryOptions["scores"] = array();
@@ -926,7 +929,7 @@ class ScorePaperColumn extends PaperColumn {
     public function sort($pl, &$rows) {
         $scoreName = $this->score . "Scores";
         foreach ($rows as $row)
-            if ($pl->contact->canViewReview($row, null, null))
+            if ($pl->contact->canViewReview($row, $this->viewscore, null))
                 $pl->score_analyze($row, $scoreName, $this->max,
                                    $pl->sorter->score);
             else
@@ -940,11 +943,11 @@ class ScorePaperColumn extends PaperColumn {
         return "<col width='0*' />";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->canViewReview($row, null, true);
+        return !$pl->contact->canViewReview($row, $this->viewscore, true);
     }
     public function content($pl, $row) {
 	global $Conf;
-        $allowed = $pl->contact->canViewReview($row, null, false);
+        $allowed = $pl->contact->canViewReview($row, $this->viewscore, false);
         $fname = $this->score . "Scores";
         if (($allowed || $pl->contact->privChair) && $row->$fname) {
             $t = $Conf->textValuesGraph($row->$fname, $this->max, 1, defval($row, $this->score), $pl->rf->reviewFields[$this->score]);
