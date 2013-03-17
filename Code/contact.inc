@@ -675,9 +675,9 @@ class Contact {
                          && defval($prow, "myReviewSubmitted")));
 	if (($conflictType >= CONFLICT_AUTHOR
 	     && (!$this->isPC || $nonblind || !$blindWins))
-	    || ($prow->myReviewType > 0 && $nonblind
+	    || ($nonblind && $prow->myReviewType > 0
 		&& $Conf->timeReviewerViewSubmittedPaper())
-	    || ($this->isPC && $nonblind
+	    || ($nonblind && $this->isPC
                 && ($prow->timeSubmitted > 0
                     || ($prow->timeWithdrawn <= 0 && $Conf->setting("pc_seeall") > 0))))
 	    return true;
