@@ -198,7 +198,7 @@ class ReviewForm {
 	    $this->fieldRows[$n] = $row->rows;
 	    if (!$this->reviewFields[$n] && $row->rows < 3)
 		$this->fieldRows[$n] = 3;
-	    $this->authorView[$n] = $row->authorView;
+	    $this->authorView[$n] = (int) $row->authorView;
 	    if ($this->reviewFields[$n] && isset($row->levelChar))
 		$this->reviewFields[$n] = max($row->levelChar, 1);
 	}
