@@ -635,9 +635,9 @@ class Contact {
 	$conflictType = $this->actConflictType($prow);
 	if (($conflictType >= CONFLICT_AUTHOR
 	     && (!$this->isPC || !$blindWins || !$pblind))
-	    || ($prow->myReviewType > 0 && !$pblind
+	    || (!$pblind && $prow->myReviewType > 0
 		&& $Conf->timeReviewerViewSubmittedPaper())
-	    || ($prow->timeSubmitted > 0 && !$pblind && $this->isPC)
+	    || (!$pblind && $prow->timeSubmitted > 0 && $this->isPC)
 	    || ($this->isPC && !$pblind && $prow->timeWithdrawn <= 0
 		&& $Conf->setting("pc_seeall") > 0))
 	    return true;

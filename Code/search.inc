@@ -2211,7 +2211,9 @@ class PaperSearch {
 
 	// collect clauses into tables, columns, and filters
 	$tables = array("Paper" => true);
-	$columns = array("paperId" => "Paper.paperId");
+	$columns = array("paperId" => "Paper.paperId",
+                         "timeSubmitted" => "Paper.timeSubmitted",
+                         "timeWithdrawn" => "Paper.timeWithdrawn");
 	$filters = array();
 	$this->preciseQuery = false;
 	$this->needflags = 0;
@@ -2265,6 +2267,7 @@ class PaperSearch {
 	    if (isset($_SESSION["rev_tokens"]))
 		$qb = " or MyReview.reviewToken in (" . join(",", $_SESSION["rev_tokens"]) . ")";
 	    $tables["MyReview"] = array("left join", "PaperReview", "(MyReview.contactId=$this->contactId$qb)");
+            $columns["myReviewType"] = "MyReview.reviewType";
 	    $columns["myReviewNeedsSubmit"] = "MyReview.reviewNeedsSubmit";
 	    if (($this->needflags & self::F_PAPERNONBLIND)
 		&& $Conf->subBlindUntilReview())
