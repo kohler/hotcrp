@@ -1,10 +1,18 @@
 HotCRP NEWS
 
+Version 2.58   23.Mar.2013
+
+* More information leak plugging: explicit search for review fields
+  that should be hidden from authors, and review rounds. Reported by
+  John Heidemann.
+
+
 Version 2.57   16.Mar.2013
 
-* Bug fix: Search exposed score values to PC authors during the
-  rebuttal phase, even for papers they authored. Reported by Jitu
-  Padhye and Srini Seshan.
+* Bug fix: The search page's score graphs exposed score values for
+  authored papers during the rebuttal phase. This is normally OK, but
+  it's not OK if authors aren't supposed to see the scores. Reported
+  by Jitu Padhye and Srini Seshan.
 
 * Bug fix: "au:" searches work for non-chairs. Broken since 2011!
 
