@@ -403,7 +403,7 @@ class PaperExpr {
 	if ($op == "tag" || $op == "tagval") {
             $tagger = new Tagger($contact);
 	    $e_tag = $tagger->check($e[2]);
-	    return tagViewScore($e_tag, $contact);
+	    return $tagger->view_score($e_tag, $contact);
 	}
 
 	if ($op == "rf") {
