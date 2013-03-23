@@ -73,6 +73,12 @@ define("OPTIONTYPE_FINALPDF", 100);
 define("OPTIONTYPE_FINALSLIDES", 101);
 define("OPTIONTYPE_FINALVIDEO", 102);
 
+define("VIEWSCORE_FALSE", -3);
+define("VIEWSCORE_ADMINONLY", -2);
+define("VIEWSCORE_REVIEWERONLY", -1);
+define("VIEWSCORE_PC", 0);
+define("VIEWSCORE_AUTHOR", 1);
+
 define("TAG_REGEX", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*');
 define("TAG_REGEX_OPTVALUE", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?');
 

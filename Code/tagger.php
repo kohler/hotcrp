@@ -220,14 +220,15 @@ class Tagger {
 
     public function view_score($tag) {
         if ($tag === false)
-            return -3;
+            return VIEWSCORE_FALSE;
         else if (($pos = strpos($tag, "~")) !== false) {
-            if ($pos == 0 && $tag[1] === "~")
-                return -2;
+            if (($pos == 0 && $tag[1] === "~")
+                || substr($tag, 0, $pos) != $this->contact->cid)
+                return VIEWSCORE_ADMINONLY;
             else
-                return (substr($tag, 0, $pos) == $this->contact->cid ? 0 : -2);
+                return VIEWSCORE_REVIEWERONLY;
         } else
-            return 0;
+            return VIEWSCORE_PC;
     }
 
 

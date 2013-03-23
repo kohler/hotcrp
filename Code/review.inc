@@ -272,11 +272,11 @@ class ReviewForm {
 
 	    $n = htmlspecialchars($this->shortName[$field]);
 	    $c = "<span class='revfn'>" . $n . "</span>";
-	    if ($this->authorView[$field] < -1)
+	    if ($this->authorView[$field] < VIEWSCORE_REVIEWERONLY)
 		$c .= "<div class='revevis'>(secret)</div>";
-	    else if ($this->authorView[$field] < 0)
+	    else if ($this->authorView[$field] < VIEWSCORE_PC)
 		$c .= "<div class='revevis'>(shown only to chairs)</div>";
-	    else if ($this->authorView[$field] == 0)
+	    else if ($this->authorView[$field] < VIEWSCORE_AUTHOR)
 		$c .= "<div class='revevis'>(hidden from authors)</div>";
 
 	    $x .= "<div class='revt";
@@ -328,12 +328,12 @@ class ReviewForm {
 	    if (!isset($req[$field]) && !$submit)
 		continue;
 	    $fval = defval($req, $field, ($rrow ? $rrow->$field : ""));
-	    if (!isset($req[$field]) && $this->authorView[$field] >= 0)
+	    if (!isset($req[$field]) && $this->authorView[$field] >= VIEWSCORE_PC)
 		$missing[] = $this->shortName[$field];
 	    if (isset($this->options[$field])) {
 		$fval = trim($fval);
 		if ($fval === "" || $fval === "0" || $fval[0] === "(") {
-		    if ($submit && $this->authorView[$field] >= 0) {
+		    if ($submit && $this->authorView[$field] >= VIEWSCORE_PC) {
 			$provide[] = $this->shortName[$field];
 			$ReviewFormError[$field] = 1;
 		    }
@@ -676,11 +676,11 @@ $blind\n";
 		continue;
 
 	    $x .= "\n==+== " . chr(64 + $i) . ". " . $this->shortName[$field];
-	    if ($this->authorView[$field] < -1)
+	    if ($this->authorView[$field] < VIEWSCORE_REVIEWERONLY)
 		$x .= " (secret)";
-	    else if ($this->authorView[$field] < 0)
+	    else if ($this->authorView[$field] < VIEWSCORE_PC)
 		$x .= " (shown only to chairs)";
-	    else if ($this->authorView[$field] == 0)
+	    else if ($this->authorView[$field] < VIEWSCORE_AUTHOR)
 		$x .= " (hidden from authors)";
 	    $x .= "\n";
 	    if (defval($this->description, $field)) {
@@ -723,7 +723,7 @@ $blind\n";
 	else if (isset($rrow) && isset($rrow->contactId))
 	    $rrow_contactId = $rrow->contactId;
 	if ($alwaysAuthorView)
-	    $revViewScore = 0;
+	    $revViewScore = VIEWSCORE_AUTHOR - 1;
 	else
 	    $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
 
@@ -1045,11 +1045,11 @@ $blind\n";
 		}
 	    }
 	    $c .= "</span>";
-	    if ($this->authorView[$field] < -1)
+	    if ($this->authorView[$field] < VIEWSCORE_REVIEWERONLY)
 		$c .= "<span class='revvis'>(secret)</span>";
-	    else if ($this->authorView[$field] < 0)
+	    else if ($this->authorView[$field] < VIEWSCORE_PC)
 		$c .= "<span class='revvis'>(shown only to chairs)</span>";
-	    else if ($this->authorView[$field] == 0)
+	    else if ($this->authorView[$field] < VIEWSCORE_AUTHOR)
 		$c .= "<span class='revvis'>(hidden from authors)</span>";
 
 	    if (!($disp & self::WEB_RIGHT)) {

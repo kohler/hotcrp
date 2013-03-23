@@ -742,7 +742,7 @@ class Contact {
             $viewscore = $rrow;
             $rrow = null;
         } else
-            $viewscore = 1;
+            $viewscore = VIEWSCORE_AUTHOR;
 	$rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
 	$pc_seeallrev = ($this->isPC ? $Conf->setting("pc_seeallrev") : 0);
 	$conflictType = $this->actConflictType($prow);
@@ -754,7 +754,7 @@ class Contact {
 	    && (($conflictType >= CONFLICT_AUTHOR
 		 && $Conf->timeAuthorViewReviews($this->reviewsOutstanding && $this->isReviewer)
 		 && $rrowSubmitted
-                 && $viewscore >= 1)
+                 && $viewscore >= VIEWSCORE_AUTHOR)
 		|| ($this->privChair
                     && $conflictType == 0)
 		|| ($this->isPC
@@ -762,22 +762,22 @@ class Contact {
 		    && $pc_seeallrev > 0	// see also timePCViewAllReviews()
 		    && ($pc_seeallrev != 4 || !$this->reviewsOutstanding)
 		    && ($pc_seeallrev != 3 || !defval($prow, "myReviewType"))
-                    && $viewscore >= 0)
+                    && $viewscore >= VIEWSCORE_PC)
 		|| (defval($prow, "myReviewType") > 0
 		    && $conflictType == 0
                     && $rrowSubmitted
 		    && (defval($prow, "myReviewSubmitted") > 0
 			|| defval($prow, "myReviewNeedsSubmit", 1) == 0)
 		    && ($this->isPC || $Conf->settings["extrev_view"] >= 1)
-                    && $viewscore >= 0)
+                    && $viewscore >= VIEWSCORE_PC)
 		|| ($rrow
                     && $rrow->paperId == $prow->paperId
 		    && $this->ownReview($rrow)
-                    && $viewscore >= -1)
+                    && $viewscore >= VIEWSCORE_REVIEWERONLY)
 		|| ($rrow
                     && isset($prow->myReviewId)
 		    && $prow->myReviewId == $rrow->reviewId
-                    && $viewscore >= -1)))
+                    && $viewscore >= VIEWSCORE_REVIEWERONLY)))
 	    return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
@@ -1197,10 +1197,10 @@ class Contact {
     function viewReviewFieldsScore($prow, $rrow) {
 	// Returns the maximum authorView score for an invisible review
 	// field.  Values for authorView are:
-	//   -2   admin can view
-	//   -1   admin and review author can view
-	//    0   admin and PC/any reviewer can view
-	//    1   admin and PC/any reviewer and author can view
+	//   VIEWSCORE_ADMINONLY     -2   admin can view
+	//   VIEWSCORE_REVIEWERONLY  -1   admin and review author can view
+	//   VIEWSCORE_PC             0   admin and PC/any reviewer can view
+	//   VIEWSCORE_AUTHOR         1   admin and PC/any reviewer and author can view
 	// So returning -3 means all scores are visible.
 	// Deadlines are not considered.
 	// (!$prow && !$rrow) ==> return best case scores that can be seen.
@@ -1212,12 +1212,12 @@ class Contact {
 	    && (!$prow
 		|| $prow->conflictType == 0
 		|| (isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])))
-	    return -3;
+	    return VIEWSCORE_ADMINONLY - 1;
 
 	// author can see author information
 	if (($prow && $this->actConflictType($prow) >= CONFLICT_AUTHOR)
 	    || (!$prow && !$this->amReviewer()))
-	    return 0;
+	    return VIEWSCORE_AUTHOR - 1;
 
 	// authors and external reviewers of not this paper can't see anything
 	if (!$this->amReviewer()
@@ -1236,10 +1236,10 @@ class Contact {
 
 	// reviewer can see any information they entered
 	if ($rrowContactId == $this->contactId)
-	    return -2;
+	    return VIEWSCORE_REVIEWERONLY - 1;
 
 	// otherwise, can see information visible for all reviewers
-	return -1;
+	return VIEWSCORE_PC - 1;
     }
 
     function canViewTags($prow, $forceShow = true) {

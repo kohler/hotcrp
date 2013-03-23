@@ -398,7 +398,7 @@ class PaperExpr {
 	$op = $e[0];
 
 	if ($op == "")
-	    return 1;
+	    return VIEWSCORE_AUTHOR;
 
 	if ($op == "tag" || $op == "tagval") {
             $tagger = new Tagger($contact);

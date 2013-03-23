@@ -604,7 +604,7 @@ class PaperSearch {
 
 		// Add terms for reviews not written by current contact
 		$limit = array();
-		if (!$value->onlyContact($this->cid) && $viewscore >= 0) {
+		if (!$value->onlyContact($this->cid) && $viewscore >= VIEWSCORE_PC) {
 		    if ($pc_seeallrev == 1)
 			$limit[] = self::F_NONCONFLICT | $xdeblinder;
 		    else if ($pc_seeallrev == 3)
@@ -620,7 +620,7 @@ class PaperSearch {
 		// contact
 		if (($newvalue = $value->restrictContact($this->cid))
 		    && (!count($limit) || $limit[0] != self::F_NONCONFLICT)
-                    && $viewscore >= -1)
+                    && $viewscore >= VIEWSCORE_REVIEWERONLY)
 		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
 
 	    } else {
@@ -628,15 +628,15 @@ class PaperSearch {
 		    $extrev_view = $Conf->setting("extrev_view");
 		    $xdeblinder = ($extrev_view == 2 || !$value->contactsql ? 0 : $deblinder);
 		    if (($extrev_view == 1 || $extrev_view == 2)
-			&& $xdeblinder != self::F_FALSE && $viewscore >= 0)
+			&& $xdeblinder != self::F_FALSE && $viewscore >= VIEWSCORE_PC)
 			$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT | self::F_REVIEWER | $xdeblinder, $value);
 		}
 		if (($newvalue = $value->restrictContact($this->cid))
-                    && $viewscore >= -1)
+                    && $viewscore >= VIEWSCORE_REVIEWERONLY)
 		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
 	    }
 
-	    if ($Conf->timeAuthorViewReviews() && $viewscore >= 1)
+	    if ($Conf->timeAuthorViewReviews() && $viewscore >= VIEWSCORE_AUTHOR)
 		$qt[] = new SearchTerm($type, ($rt & ~self::F_TYPEMASK) | self::F_AUTHOR | self::F_COMPLETE | $deblinder, $value);
 	}
     }
@@ -664,7 +664,7 @@ class PaperSearch {
 	$value = new SearchReviewValue($m[1], $contacts);
 
 	$nqt = count($qt);
-	$this->_searchCompleteReviewer($qt, "re", $rt, $value, 1);
+	$this->_searchCompleteReviewer($qt, "re", $rt, $value, VIEWSCORE_AUTHOR);
 	if (count($qt) == $nqt)
 	    $qt[] = new SearchTerm("f");
     }
@@ -729,7 +729,7 @@ class PaperSearch {
 
 	$rt = ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0);
 	$nqt = count($qt);
-	$this->_searchCompleteReviewer($qt, $type, $rt, $value, 1);
+	$this->_searchCompleteReviewer($qt, $type, $rt, $value, VIEWSCORE_AUTHOR);
 	if (!$this->privChair && !$Conf->timeAuthorViewReviews())
 	    $qt[] = new SearchTerm($type, self::F_AUTHOR | self::F_AUTHORRESPONSE, $value);
 	if (count($qt) == $nqt)

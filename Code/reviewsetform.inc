@@ -104,7 +104,7 @@ function rf_update($lock) {
 	    }
 	    $req .= "shortName='" . sqlq($sn) . "', ";
 	}
-	$req .= "authorView=" . max(min(rcvtint($_REQUEST["authorView_$field"], 0), 1), -2) . ", ";
+	$req .= "authorView=" . max(min(rcvtint($_REQUEST["authorView_$field"], 0), VIEWSCORE_AUTHOR), VIEWSCORE_ADMINONLY) . ", ";
 	if (isset($_REQUEST["description_$field"])) {
 	    if (($d = cleanXHTML($_REQUEST["description_$field"], $err)) === false) {
 		$Error["description_$field"] = true;
@@ -217,11 +217,11 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 	$_REQUEST["authorView_$row->fieldName"] = 0;
     $x .= "Visibility &nbsp;"
 	. tagg_select("authorView_$row->fieldName",
-		      array(1 => "Authors &amp; reviewers",
-			    0 => "Reviewers only",
-			    -1 => "Private",
-			    -2 => "Secret"),
-		      max(min(cvtint(rf_getField($row, "authorView"), -10000), 1), -2),
+		      array(VIEWSCORE_AUTHOR => "Authors &amp; reviewers",
+			    VIEWSCORE_PC => "Reviewers only",
+			    VIEWSCORE_REVIEWERONLY => "Private",
+			    VIEWSCORE_ADMINONLY => "Secret"),
+		      max(min(cvtint(rf_getField($row, "authorView"), -10000), VIEWSCORE_AUTHOR), VIEWSCORE_ADMINONLY),
 		      array("onchange" => "hiliter(this)"))
 	. " &nbsp;<a class='scorehelp small' href='" . hoturl("scorehelp", "f=vis") . "'>(What is this?)</a>"
 	. "</td><td class='hint'></td></tr>\n";

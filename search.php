@@ -1170,7 +1170,7 @@ if ($pl) {
 	if ($Me->amReviewer() && $_REQUEST["t"] != "a")
 	    $revViewScore = $Me->viewReviewFieldsScore(null, true);
 	else
-	    $revViewScore = 0;
+	    $revViewScore = VIEWSCORE_AUTHOR - 1;
 	$n = count($displayOptions);
 	$nchecked = 0;
 	foreach ($rf->fieldOrder as $field)
