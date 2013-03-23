@@ -1843,9 +1843,8 @@ class PaperSearch {
 	else
 	    $noratings = "";
 
-	$reviewtable = "PaperReview";
 	foreach ($this->interestingRatings as $k => $v)
-	    $reviewtable .= " left join (select reviewId, count(rating) as nrate_$k from ReviewRating where rating$v$noratings group by reviewId) as Ratings_$k on (Ratings_$k.reviewId=PaperReview.reviewId)";
+	    $reviewtable .= " left join (select reviewId, count(rating) as nrate_$k from ReviewRating where rating$v$noratings group by reviewId) as Ratings_$k on (Ratings_$k.reviewId=r.reviewId)";
 	$where[] = $rate;
     }
 
@@ -1853,7 +1852,7 @@ class PaperSearch {
 				   &$t, &$tables, &$columns) {
 	if (!isset($tables[$thistab])) {
 	    $where = array();
-	    $reviewtable = "PaperReview";
+	    $reviewtable = "PaperReview r";
 	    if ($t->flags & self::F_TYPEMASK)
 		$where[] = "reviewType=" . ($t->flags & self::F_TYPEMASK);
 	    if ($t->flags & self::F_NONBLIND)
@@ -1866,8 +1865,13 @@ class PaperSearch {
 	    if (($x = $t->get("round")) !== null) {
 		if (count($x) == 0)
 		    $where[] = $rrnegate ? "true" : "false";
-		else
+		else {
 		    $where[] = "reviewRound " . ($rrnegate ? "not " : "") . "in (" . join(",", $x) . ")";
+                    if (!$this->privChair) {
+                        $reviewtable .= " left join PaperConflict c on (c.paperId=r.paperId and c.contactId=" . $this->contactId . ")";
+                        $where[] = "c.conflictType is null";
+                    }
+                }
 	    }
 	    if (($x = $t->get("rate")) !== null)
 		$this->_clauseTermSetRating($reviewtable, $where, $rrnegate ? "(not $x)" : $x);
@@ -1876,7 +1880,7 @@ class PaperSearch {
 	    $wheretext = "";
 	    if (count($where))
 		$wheretext = " where " . join(" and ", $where);
-	    $tables[$thistab] = array("left join", "(select paperId, count(PaperReview.reviewId) as count from $reviewtable$wheretext group by paperId)");
+	    $tables[$thistab] = array("left join", "(select r.paperId, count(r.reviewId) as count from $reviewtable$wheretext group by paperId)");
 	}
 	$q = array();
 	$this->_clauseTermSetFlags($t->flags, $q);
