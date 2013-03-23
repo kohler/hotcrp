@@ -522,7 +522,7 @@ class PaperSearch {
 	return "\1" . (count($this->contactmatch) - 1) . "\1";
     }
 
-    function _searchCompleteReviewer(&$qt, $type, $rt, $value) {
+    function _searchCompleteReviewer(&$qt, $type, $rt, $value, $viewscore) {
 	global $Conf;
 	if ($this->privChair)
 	    $qt[] = new SearchTerm($type, $rt, $value);
@@ -568,7 +568,7 @@ class PaperSearch {
 
 		// Add terms for reviews not written by current contact
 		$limit = array();
-		if (!$value->onlyContact($this->contactId)) {
+		if (!$value->onlyContact($this->contactId) && $viewscore >= 0) {
 		    if ($pc_seeallrev == 1)
 			$limit[] = self::F_NONCONFLICT | $xdeblinder;
 		    else if ($pc_seeallrev == 3)
@@ -583,7 +583,8 @@ class PaperSearch {
 		// Add more liberal term for reviews written by current
 		// contact
 		if (($newvalue = $value->restrictContact($this->contactId))
-		    && (!count($limit) || $limit[0] != self::F_NONCONFLICT))
+		    && (!count($limit) || $limit[0] != self::F_NONCONFLICT)
+                    && $viewscore >= -1)
 		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
 
 	    } else {
@@ -591,14 +592,15 @@ class PaperSearch {
 		    $extrev_view = $Conf->setting("extrev_view");
 		    $xdeblinder = ($extrev_view == 2 || !$value->contactsql ? 0 : $deblinder);
 		    if (($extrev_view == 1 || $extrev_view == 2)
-			&& $xdeblinder != self::F_FALSE)
+			&& $xdeblinder != self::F_FALSE && $viewscore >= 0)
 			$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT | self::F_REVIEWER | $xdeblinder, $value);
 		}
-		if (($newvalue = $value->restrictContact($this->contactId)))
+		if (($newvalue = $value->restrictContact($this->contactId))
+                    && $viewscore >= -1)
 		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
 	    }
 
-	    if ($Conf->timeAuthorViewReviews())
+	    if ($Conf->timeAuthorViewReviews() && $viewscore >= 1)
 		$qt[] = new SearchTerm($type, ($rt & ~self::F_TYPEMASK) | self::F_AUTHOR | self::F_COMPLETE | $deblinder, $value);
 	}
     }
@@ -626,7 +628,7 @@ class PaperSearch {
 	$value = new SearchReviewValue($m[1], $contacts);
 
 	$nqt = count($qt);
-	$this->_searchCompleteReviewer($qt, "re", $rt, $value);
+	$this->_searchCompleteReviewer($qt, "re", $rt, $value, 1);
 	if (count($qt) == $nqt)
 	    $qt[] = new SearchTerm("f");
     }
@@ -691,7 +693,7 @@ class PaperSearch {
 
 	$rt = ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0);
 	$nqt = count($qt);
-	$this->_searchCompleteReviewer($qt, $type, $rt, $value);
+	$this->_searchCompleteReviewer($qt, $type, $rt, $value, 1);
 	if (!$this->privChair && !$Conf->timeAuthorViewReviews())
 	    $qt[] = new SearchTerm($type, self::F_AUTHOR | self::F_AUTHORRESPONSE, $value);
 	if (count($qt) == $nqt)
@@ -703,6 +705,7 @@ class PaperSearch {
 	$countexpr = ">0";
 	$contacts = null;
 	$contactword = "";
+        $viewscore = $rf->authorView[$field];
 
 	if (preg_match('/\A(.+?[^:=<>!])([:=<>!])(.*)\z/s', $word, $m)
 	    && !ctype_digit($m[1])) {
@@ -785,7 +788,7 @@ class PaperSearch {
 
 	$nqt = count($qt);
 	$value = new SearchReviewValue($countexpr, $contacts, $value);
-	$this->_searchCompleteReviewer($qt, "re", self::F_COMPLETE, $value);
+	$this->_searchCompleteReviewer($qt, "re", self::F_COMPLETE, $value, $viewscore);
 	return count($qt) != $nqt;
     }
 
