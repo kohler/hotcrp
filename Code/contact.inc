@@ -871,7 +871,7 @@ class Contact {
 	else if ($prow->timeSubmitted <= 0)
 	    $whyNot['notSubmitted'] = 1;
 	else {
-	    if ($prow->conflictType > 0)
+	    if ($prow->conflictType > 0 && !($manager && $forceShow))
 		$whyNot['conflict'] = 1;
 	    else if ($this->isPC && $prow->myReviewType <= 0
 		     && !$Conf->timeReviewPaper(true, false, true)
