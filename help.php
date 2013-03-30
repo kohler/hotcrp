@@ -291,25 +291,25 @@ function searchQuickref() {
 
     // find names of review fields to demonstrate syntax
     $rf = reviewForm();
-    $f = array(array(), array());
-    foreach ($rf->fieldOrder as $fn) {
-	$fx = (isset($rf->options[$fn]) ? 0 : 1);
-	$f[$fx][] = $fn;
+    $farr = array(array(), array());
+    foreach ($rf->forder as $f) {
+	$fx = ($f->has_options ? 0 : 1);
+	$farr[$fx][] = $f->analyze();
     }
     $t = "Review&nbsp;fields";
-    if (count($f[0])) {
-	$r = $rf->analyzeField($f[0][0]);
-	_searchQuickrefRow($t, "$r->abbrevName1:$r->typScore", "at least one completed review has $r->shortHtml score $r->typScore");
-	_searchQuickrefRow("", "$r->abbrevName:$r->typScore", "other abbreviations accepted");
-	if (count($f[0]) > 1) {
-	    $r2 = $rf->analyzeField($f[0][1]);
-	    _searchQuickrefRow("", "$r2->abbrevName:$r2->typScore", "other fields accepted (here, $r2->shortHtml)");
+    if (count($farr[0])) {
+        $r = $farr[0][0];
+	_searchQuickrefRow($t, "$r->abbreviation1:$r->typical_score", "at least one completed review has $r->name_html score $r->typical_score");
+	_searchQuickrefRow("", "$r->abbreviation:$r->typical_score", "other abbreviations accepted");
+	if (count($farr[0]) > 1) {
+	    $r2 = $farr[0][1];
+	    _searchQuickrefRow("", "$r2->abbreviation:$r2->typical_score", "other fields accepted (here, $r2->name_html)");
 	}
-	if (isset($r->typScoreRange)) {
-	    _searchQuickrefRow("", "$r->abbrevName:$r->typScore0..$r->typScore", "completed reviews’ $r->shortHtml scores are in the $r->typScore0&ndash;$r->typScore range<br /><small>(all scores between $r->typScore0 and $r->typScore)</small>");
-	    _searchQuickrefRow("", "$r->abbrevName:$r->typScoreRange", "completed reviews’ $r->shortHtml scores <em>fill</em> the $r->typScore0&ndash;$r->typScore range<br /><small>(all scores between $r->typScore0 and $r->typScore, with at least one $r->typScore0 and at least one $r->typScore)</small>");
+	if (isset($r->typical_score_range)) {
+	    _searchQuickrefRow("", "$r->abbreviation:$r->typical_score0..$r->typical_score", "completed reviews’ $r->name_html scores are in the $r->typical_score0&ndash;$r->typical_score range<br /><small>(all scores between $r->typical_score0 and $r->typical_score)</small>");
+	    _searchQuickrefRow("", "$r->abbreviation:$r->typical_score_range", "completed reviews’ $r->name_html scores <em>fill</em> the $r->typical_score0&ndash;$r->typical_score range<br /><small>(all scores between $r->typical_score0 and $r->typical_score, with at least one $r->typical_score0 and at least one $r->typical_score)</small>");
 	}
-	if (ctype_digit($r->typScore))
+	if (!$r->option_letter)
 	    list($greater, $less, $hint) = array("greater", "less", "");
 	else {
 	    $hint = "<br /><small>(better scores are closer to A than Z)</small>";
@@ -318,18 +318,18 @@ function searchQuickref() {
 	    else
 		list($greater, $less) = array("worse", "better");
 	}
-	_searchQuickrefRow("", "$r->abbrevName:>$r->typScore", "at least one completed review has $r->shortHtml score $greater than $r->typScore" . $hint);
-	_searchQuickrefRow("", "$r->abbrevName:2<=$r->typScore", "at least two completed reviews have $r->shortHtml score $less than or equal to $r->typScore");
-	_searchQuickrefRow("", "$r->abbrevName:pc>$r->typScore", "at least one completed PC review has $r->shortHtml score $greater than $r->typScore");
-	_searchQuickrefRow("", "$r->abbrevName:pc:2>$r->typScore", "at least two completed PC reviews have $r->shortHtml score $greater than $r->typScore");
-	_searchQuickrefRow("", "$r->abbrevName:sylvia=$r->typScore", "“sylvia” (reviewer name/email) gave $r->shortHtml score $r->typScore");
+	_searchQuickrefRow("", "$r->abbreviation:>$r->typical_score", "at least one completed review has $r->name_html score $greater than $r->typical_score" . $hint);
+	_searchQuickrefRow("", "$r->abbreviation:2<=$r->typical_score", "at least two completed reviews have $r->name_html score $less than or equal to $r->typical_score");
+	_searchQuickrefRow("", "$r->abbreviation:pc>$r->typical_score", "at least one completed PC review has $r->name_html score $greater than $r->typical_score");
+	_searchQuickrefRow("", "$r->abbreviation:pc:2>$r->typical_score", "at least two completed PC reviews have $r->name_html score $greater than $r->typical_score");
+	_searchQuickrefRow("", "$r->abbreviation:sylvia=$r->typical_score", "“sylvia” (reviewer name/email) gave $r->name_html score $r->typical_score");
 	$t = "";
     }
-    if (count($f[1])) {
-	$r = $rf->analyzeField($f[1][0]);
-	_searchQuickrefRow($t, "$r->abbrevName1:finger", "at least one completed review has “finger” in the $r->shortHtml field");
-	_searchQuickrefRow($t, "$r->abbrevName:finger", "other abbreviations accepted");
-	_searchQuickrefRow($t, "$r->abbrevName:any", "at least one completed review has text in the $r->shortHtml field");
+    if (count($farr[1])) {
+	$r = $farr[1][0];
+	_searchQuickrefRow($t, "$r->abbreviation1:finger", "at least one completed review has “finger” in the $r->name_html field");
+	_searchQuickrefRow($t, "$r->abbreviation:finger", "other abbreviations accepted");
+	_searchQuickrefRow($t, "$r->abbreviation:any", "at least one completed review has text in the $r->name_html field");
     }
     echo "</table>\n";
 }

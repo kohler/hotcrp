@@ -572,19 +572,18 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allReviewScores" => 1, "reviewerName" => 1)), "while selecting papers");
 
     // compose scores
-    $scores = array();
+    $score_fields = array();
     $revViewScore = $Me->viewReviewFieldsScore(null, true);
-    foreach ($rf->fieldOrder as $field)
-	if ($rf->authorView[$field] > $revViewScore
-	    && isset($rf->options[$field]))
-	    $scores[] = $field;
+    foreach ($rf->forder as $f)
+	if ($f->view_score > $revViewScore && $f->has_options)
+            $score_fields[$f->id] = $f;
 
     $header = array("paper", "title");
     if ($Conf->subBlindOptional())
 	$header[] = "blind";
     $header[] = "decision";
-    foreach ($scores as $score)
-	$header[] = $rf->abbrevName[$score];
+    foreach ($score_fields as $f)
+	$header[] = $f->abbreviation;
     $header[] = "revieweremail";
     $header[] = "reviewername";
 
@@ -600,8 +599,8 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	    if ($Conf->subBlindOptional())
 		$a[] = $row->blind;
 	    $a[] = $row->outcome;
-	    foreach ($scores as $score)
-		$a[] = $rf->unparseOption($score, $row->$score);
+	    foreach ($score_fields as $field => $f)
+		$a[] = $f->unparse_value($row->$field);
 	    if ($Me->canViewReviewerIdentity($row, $row, null)) {
 		$a[] = $row->reviewEmail;
 		$a[] = trim($row->reviewFirstName . " " . $row->reviewLastName);
@@ -1173,12 +1172,11 @@ if ($pl) {
 	    $revViewScore = VIEWSCORE_AUTHOR - 1;
 	$n = count($displayOptions);
 	$nchecked = 0;
-	foreach ($rf->fieldOrder as $field)
-	    if ($rf->authorView[$field] > $revViewScore
-		&& isset($rf->options[$field])) {
+	foreach ($rf->forder as $f)
+	    if ($f->view_score > $revViewScore && $f->has_options) {
 		if (count($displayOptions) == $n)
 		    displayOptionText("<strong>Scores:</strong>", 3);
-		displayOptionCheckbox($field, 3, htmlspecialchars($rf->shortName[$field]));
+		displayOptionCheckbox($f->id, 3, $f->name_html);
 		if ($displayOptions[count($displayOptions) - 1]->checked)
 		    ++$nchecked;
 	    }

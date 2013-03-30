@@ -57,8 +57,33 @@ class ReviewField {
     }
 
     public function define_option($level, $description) {
-        assert($this->has_options && is_int($level) && !isset($this->options[$level]));
-        $this->options[$level] = $description;
+        assert($this->has_options && is_int($level));
+        $x = $this->unparse_value($level);
+        $this->options[$x] = $description;
+        ksort($this->options);
+    }
+
+    public function analyze() {
+        if (!$this->analyzed) {
+            $this->abbreviation1 = ReviewForm::abbreviateField($this->name, 1);
+            if ($this->has_options) {
+                $scores = array_keys($this->options);
+                if (count($scores) == 1) {
+                    $this->typical_score = $scores[0];
+                    unset($this->typical_score_range);
+                } else {
+                    $off = count($scores) == 2 ? 0 : 1;
+                    $this->typical_score0 = $scores[$off];
+                    $this->typical_score = $scores[$off + 1];
+                    if ($this->option_letter)
+                        $this->typical_score_range = $this->typical_score0 . $this->typical_score;
+                    else
+                        $this->typical_score_range = $this->typical_score0 . "-" . $this->typical_score;
+                }
+	    }
+            $this->analyzed = true;
+	}
+	return $this;
     }
 
     public function web_abbreviation() {
@@ -154,7 +179,7 @@ class ReviewForm {
     const WEB_RIGHT = 8;
     const WEB_FINAL = 32;
 
-    const VERSION = 3;
+    const VERSION = 4;
     private $updatedWhen;
     private $version;
 
@@ -272,41 +297,6 @@ class ReviewForm {
 	    return "<span class='$class'>$x</span>";
 	} else
 	    return $x;
-    }
-
-    function analyzeField($field) {
-	if (!isset($this->reviewFields[$field]))
-	    return null;
-	$sn = $this->shortName[$field];
-	$an = $this->abbrevName[$field];
-	$an1 = self::abbreviateField($sn, 1);
-	$a = (object) array("name" => $field,
-			    "shortName" => $sn,
-			    "shortHtml" => htmlspecialchars($sn),
-			    "abbrevName" => $an,
-			    "abbrevHtml" => htmlspecialchars($an),
-			    "abbrevName1" => $an1,
-			    "abbrevHtml1" => htmlspecialchars($an1),
-			    "options" => defval($this->options, $field, null));
-	if ($a->options) {
-	    $scores = array_keys($a->options);
-	    if (count($scores) == 1)
-		$a->typScore = $scores[0];
-	    else {
-		if (count($scores) == 2) {
-		    $a->typScore0 = $scores[0];
-		    $a->typScore = $scores[1];
-		} else {
-		    $a->typScore0 = $scores[1];
-		    $a->typScore = $scores[2];
-		}
-		if (is_int($a->typScore) || ctype_digit($a->typScore))
-		    $a->typScoreRange = $a->typScore0 . "-" . $a->typScore;
-		else
-		    $a->typScoreRange = $a->typScore0 . $a->typScore;
-	    }
-	}
-	return $a;
     }
 
     function updateFromDB() {

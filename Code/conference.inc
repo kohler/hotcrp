@@ -917,9 +917,9 @@ class Conference {
 	if ($reviewerQuery || $scoresQuery) {
 	    $rf = reviewForm();
 	    $pq .= ",\n\t\tPaperReview.reviewEditVersion as reviewEditVersion";
-	    foreach ($rf->fieldOrder as $k)
-		if (!$scoresQuery || $rf->reviewFields[$k])
-		    $pq .= ",\n\t\tPaperReview.$k as $k";
+	    foreach ($rf->forder as $f)
+		if (!$scoresQuery || $f->has_options)
+		    $pq .= ",\n\t\tPaperReview.$f->id as $f->id";
 	}
 	if (isset($options['allComments'])) {
 	    $pq .= ",
