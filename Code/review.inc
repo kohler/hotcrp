@@ -198,23 +198,14 @@ class ReviewForm {
     const WEB_RIGHT = 8;
     const WEB_FINAL = 32;
 
-    const VERSION = 5;
+    const VERSION = 6;
     private $updatedWhen;
     private $version;
 
-    // new versions
     public $fmap;
     public $forder;
 
-    // old versions
-    var $reviewFields;
-    var $fieldOrder;
-    var $shortName;
     var $fieldName;
-    var $fieldRows;
-    var $abbrevName;
-    var $description;
-    var $authorView;
     var $options;
     var $topicName;
     var $topicOrder;
@@ -223,7 +214,6 @@ class ReviewForm {
 	$this->updatedWhen = 0;
         $this->version = self::VERSION;
 
-        // new
         $this->fmap = array();
         foreach (array("paperSummary", "commentsToAuthor", "commentsToPC",
                        "commentsToAddress", "weaknessOfPaper",
@@ -235,12 +225,45 @@ class ReviewForm {
                        "likelyPresentation", "suitableForShort") as $fid)
             $this->fmap[$fid] = new ReviewField($this, $fid, true);
 
-        // old
-        $this->reviewFields = array();
-        foreach ($this->fmap as $f)
-            $this->reviewFields[$f->id] = $f->has_options;
-
 	$this->updateFromDB();
+    }
+
+    private function get_deprecated($table, $element) {
+        $trace = debug_backtrace();
+        trigger_error($trace[1]["file"] . ":" . $trace[1]["line"] . ": ReviewForm->$table deprecated", E_USER_NOTICE);
+        $x = array();
+        foreach ($this->fmap as $f)
+            $x[$f->id] = $f->$element;
+        return $x;
+    }
+
+    public function __get($name) {
+        if ($name == "description")
+            $x = $this->get_deprecated($name, "description");
+        else if ($name == "fieldRows")
+            $x = $this->get_deprecated($name, "display_space");
+        else if ($name == "authorView")
+            $x = $this->get_deprecated($name, "view_score");
+        else if ($name == "abbrevName")
+            $x = $this->get_deprecated($name, "abbreviation");
+        else if ($name == "shortName")
+            $x = $this->get_deprecated($name, "name");
+        else if ($name == "fieldOrder") {
+            $trace = debug_backtrace();
+            trigger_error($trace[0]["file"] . ":" . $trace[0]["line"] . ": ReviewForm->$name deprecated", E_USER_NOTICE);
+            $x = array();
+            foreach ($this->forder as $f)
+                $x[] = $f->id;
+        } else if ($name == "reviewFields") {
+            $trace = debug_backtrace();
+            trigger_error($trace[0]["file"] . ":" . $trace[0]["line"] . ": ReviewForm->$name deprecated", E_USER_NOTICE);
+            $x = array();
+            foreach ($this->fmap as $f)
+                $x[$f->id] = $f->has_options ? ($f->option_letter ? $f->option_letter : 1) : 0;
+        } else
+            return null;
+        $this->$name = $x;
+        return $x;
     }
 
     static function abbreviateField($name, $type = 0) {
@@ -295,13 +318,7 @@ class ReviewForm {
 
         $this->forder = array();
 
-	$this->fieldOrder = array();
-	$this->shortName = array();
 	$this->fieldName = array();
-	$this->fieldRows = array();
-	$this->abbrevName = array();
-	$this->description = array();
-	$this->authorView = array();
 	$this->options = array();
 	$this->topicName = array();
 	$this->topicOrder = array();
@@ -312,26 +329,11 @@ class ReviewForm {
 	if (!$result)
 	    return;
 	while (($row = edb_orow($result))) {
-            // new
             $f = $this->fmap[$row->fieldName];
 	    if ($row->sortOrder >= 0)
                 $this->forder[$f->id] = $f;
             $f->update($row);
-
-            // old
-	    $n = $row->fieldName;
-	    if ($row->sortOrder >= 0)
-		$this->fieldOrder[] = $row->fieldName;
-	    $this->shortName[$n] = $row->shortName;
-	    $this->fieldName[strtolower($row->shortName)] = $n;
-	    $this->abbrevName[$n] = self::abbreviateField($row->shortName);
-	    $this->description[$n] = $row->description;
-	    $this->fieldRows[$n] = $row->rows;
-	    if (!$this->reviewFields[$n] && $row->rows < 3)
-		$this->fieldRows[$n] = 3;
-	    $this->authorView[$n] = (int) $row->authorView;
-	    if ($this->reviewFields[$n] && isset($row->levelChar))
-		$this->reviewFields[$n] = max($row->levelChar, 1);
+	    $this->fieldName[strtolower($row->shortName)] = $row->fieldName;
 	}
 
 	$result = $Conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", $while);

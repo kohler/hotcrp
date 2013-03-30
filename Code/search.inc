@@ -392,7 +392,7 @@ class PaperSearch {
     public function __get($name) {
         if ($name == "contactId") {
             $trace = debug_backtrace();
-            error_log($trace[0]["file"] . ":" . $trace[0]["line"] . ": PaperSearch->contactId deprecated, use cid");
+            trigger_error($trace[0]["file"] . ":" . $trace[0]["line"] . ": PaperSearch->contactId deprecated, use cid", E_USER_NOTICE);
             return $this->cid;
         } else
             return null;
