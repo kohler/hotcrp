@@ -12,18 +12,98 @@ $ratingTypes = array("n" => "average", 1 => "very helpful",
 		     -4 => "too narrow",
 		     -2 => "not constructive", -3 => "not correct");
 
-class ReviewForm {
+class ReviewField {
+    public $id;
+    public $name;
+    public $description;
+    public $abbreviation;
+    public $has_options;
+    public $options;
+    public $option_letter;
+    public $display_space;
+    public $view_score;
+    public $displayed;
+    private $rf;
+    private $analyzed;
 
+    public function __construct($rf, $id, $has_options) {
+        $this->id = $id;
+        $this->has_options = $has_options;
+        $this->options = array();
+        $this->option_letter = false;
+        $this->rf = $rf;
+        $this->analyzed = false;
+        $this->displayed = false;
+    }
+
+    public function update($row) {
+        $this->name = $row->shortName;
+        $this->abbreviation = ReviewForm::abbreviateField($this->name);
+        $this->description = $row->description;
+        $this->display_space = (int) $row->rows;
+        if (!$this->has_options && $row->rows < 3)
+            $this->display_space = 3;
+        $this->view_score = (int) $row->authorView;
+        if ($this->has_options && isset($row->levelChar)
+            && (int) $row->levelChar > 1)
+            $this->option_letter = (int) $row->levelChar;
+        else
+            $this->option_letter = false;
+        $this->displayed = $row->sortOrder >= 0;
+        $this->options = array();
+        $this->analyzed = false;
+    }
+
+    public function define_option($level, $description) {
+        assert($this->has_options && is_int($level) && !isset($this->options[$level]));
+        $this->options[$level] = $description;
+    }
+
+    public function web_abbreviation() {
+	return "<span class='hastitle' title=\""
+            . htmlspecialchars($this->name) . "\">"
+            . htmlspecialchars($this->abbreviation) . "</span>";
+    }
+
+    function unparse_value($value, $scclass = false) {
+        if (is_object($value))
+            $value = defval($value, $this->id);
+	if (!$value || !$this->has_options)
+            return $value;
+        else if (!$this->option_letter)
+	    $x = $value;
+	else if (is_int($value) || ctype_digit($value))
+	    $x = chr($this->option_letter - (int) $value);
+	else {
+	    $value = $this->option_letter - ord($value);
+	    $x = chr($this->option_letter - $value);
+	}
+	if ($scclass) {
+	    $nvalues = count($this->options);
+	    $sckey = (int) (($value - 1) * 8.0 / ($nvalues - 1) + 1.5);
+	    $class = ($scclass === true ? "sc$sckey" : "$scclass sc$sckey");
+	    return "<span class='$class'>$x</span>";
+	} else
+	    return $x;
+    }
+};
+
+class ReviewForm {
     const WEB_OPTIONS = 1;
     const WEB_FULL = 2;
     const WEB_LEFT = 4;
     const WEB_RIGHT = 8;
     const WEB_FINAL = 32;
 
-    const VERSION = 1;
+    const VERSION = 2;
     private $updatedWhen;
     private $version;
 
+    // new versions
+    public $fmap;
+    public $forder;
+
+    // old versions
     var $reviewFields;
     var $fieldOrder;
     var $shortName;
@@ -40,25 +120,22 @@ class ReviewForm {
 	$this->updatedWhen = 0;
         $this->version = self::VERSION;
 
-	$this->reviewFields = array('paperSummary' => 0,
-				    'commentsToAuthor' => 0,
-				    'commentsToPC' => 0,
-				    'commentsToAddress' => 0,
-				    'weaknessOfPaper' => 0,
-				    'strengthOfPaper' => 0,
-				    'textField7' => 0,
-				    'textField8' => 0,
-				    'potential' => 1,
-				    'fixability' => 1,
-				    'overAllMerit' => 1,
-				    'reviewerQualification' => 1,
-				    'novelty' => 1,
-				    'technicalMerit' => 1,
-				    'interestToCommunity' => 1,
-				    'longevity' => 1,
-				    'grammar' => 1,
-				    'likelyPresentation' => 1,
-				    'suitableForShort' => 1);
+        // new
+        $this->fmap = array();
+        foreach (array("paperSummary", "commentsToAuthor", "commentsToPC",
+                       "commentsToAddress", "weaknessOfPaper",
+                       "strengthOfPaper", "textField7", "textField8") as $fid)
+            $this->fmap[$fid] = new ReviewField($this, $fid, false);
+        foreach (array("potential", "fixability", "overAllMerit",
+                       "reviewerQualification", "novelty", "technicalMerit",
+                       "interestToCommunity", "longevity", "grammar",
+                       "likelyPresentation", "suitableForShort") as $fid)
+            $this->fmap[$fid] = new ReviewField($this, $fid, true);
+
+        // old
+        $this->reviewFields = array();
+        foreach ($this->fmap as $f)
+            $this->reviewFields[$f->id] = $f->has_options;
 
 	$this->updateFromDB();
     }
@@ -176,6 +253,8 @@ class ReviewForm {
     function updateFromDB() {
         global $Conf;
 
+        $this->forder = array();
+
 	$this->fieldOrder = array();
 	$this->shortName = array();
 	$this->fieldName = array();
@@ -193,6 +272,13 @@ class ReviewForm {
 	if (!$result)
 	    return;
 	while (($row = edb_orow($result))) {
+            // new
+            $f = $this->fmap[$row->fieldName];
+	    if ($row->sortOrder >= 0)
+                $this->forder[$f->id] = $f;
+            $f->update($row);
+
+            // old
 	    $n = $row->fieldName;
 	    if ($row->sortOrder >= 0)
 		$this->fieldOrder[] = $row->fieldName;
@@ -214,6 +300,8 @@ class ReviewForm {
 	while (($row = edb_row($result))) {
 	    $otext = $this->unparseOption($row[0], $row[1], true);
 	    $this->options[$row[0]][$otext] = $row[2];
+            if ($row[0] != "outcome")
+                $this->fmap[$row[0]]->define_option((int) $row[1], $row[2]);
 	}
 	foreach ($this->reviewFields as $n => $levelChar)
 	    if ($levelChar > 1)
