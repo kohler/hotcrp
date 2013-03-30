@@ -2052,13 +2052,13 @@ function cleanAuthorText($row) {
 }
 
 function reviewForm() {
-    global $Conf, $ReviewFormCache;
+    global $ReviewFormCache;
     if (!$ReviewFormCache && isset($_SESSION["rf"]))
 	$ReviewFormCache = @unserialize($_SESSION["rf"]);
     if (!$ReviewFormCache || !$ReviewFormCache->reviewFields)
-	$ReviewFormCache = new ReviewForm($Conf);
+	$ReviewFormCache = new ReviewForm;
     else
-	$ReviewFormCache->validate($Conf);
+        $ReviewFormCache = $ReviewFormCache->validate();
     return $ReviewFormCache;
 }
 

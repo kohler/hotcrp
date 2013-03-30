@@ -1,6 +1,6 @@
 <?php
 // review.inc -- HotCRP helper class for producing review forms and tables
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $scoreHelps;
@@ -20,7 +20,9 @@ class ReviewForm {
     const WEB_RIGHT = 8;
     const WEB_FINAL = 32;
 
-    var $updatedWhen;
+    const VERSION = 1;
+    private $updatedWhen;
+    private $version;
 
     var $reviewFields;
     var $fieldOrder;
@@ -34,8 +36,9 @@ class ReviewForm {
     var $topicName;
     var $topicOrder;
 
-    function __construct($conf) {
+    function __construct() {
 	$this->updatedWhen = 0;
+        $this->version = self::VERSION;
 
 	$this->reviewFields = array('paperSummary' => 0,
 				    'commentsToAuthor' => 0,
@@ -57,7 +60,7 @@ class ReviewForm {
 				    'likelyPresentation' => 1,
 				    'suitableForShort' => 1);
 
-	$this->updateFromDB($conf);
+	$this->updateFromDB();
     }
 
     static function abbreviateField($name, $type = 0) {
@@ -170,7 +173,9 @@ class ReviewForm {
 	return $a;
     }
 
-    function updateFromDB($conf) {
+    function updateFromDB() {
+        global $Conf;
+
 	$this->fieldOrder = array();
 	$this->shortName = array();
 	$this->fieldName = array();
@@ -184,7 +189,7 @@ class ReviewForm {
 
 	$while = "while updating review form information";
 
-	$result = $conf->qe("select * from ReviewFormField order by sortOrder, shortName", $while);
+	$result = $Conf->qe("select * from ReviewFormField order by sortOrder, shortName", $while);
 	if (!$result)
 	    return;
 	while (($row = edb_orow($result))) {
@@ -203,7 +208,7 @@ class ReviewForm {
 		$this->reviewFields[$n] = max($row->levelChar, 1);
 	}
 
-	$result = $conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", $while);
+	$result = $Conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", $while);
 	if (!$result)
 	    return;
 	while (($row = edb_row($result))) {
@@ -214,7 +219,7 @@ class ReviewForm {
 	    if ($levelChar > 1)
 		$this->options[$n] = array_reverse($this->options[$n], true);
 
-	$result = $conf->qe("select topicId, topicName from TopicArea order by topicName", $while);
+	$result = $Conf->qe("select topicId, topicName from TopicArea order by topicName", $while);
 	if (!$result)
 	    return;
 	$i = 0;
@@ -234,9 +239,14 @@ class ReviewForm {
 	$_SESSION["rf"] = serialize($this);
     }
 
-    function validate($conf, $always = false) {
-	if ($always || !$this->updatedWhen || $this->updatedWhen <= $conf->settings['revform_update'])
-	    $this->updateFromDB($conf);
+    public function validate($always = false) {
+        global $Conf;
+        if ($this->version != self::VERSION)
+            return new ReviewForm;
+        if ($always || !$this->updatedWhen
+            || $this->updatedWhen <= $Conf->settings["revform_update"])
+	    $this->updateFromDB();
+        return $this;
     }
 
     function reviewArchiveFields() {

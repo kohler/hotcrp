@@ -984,7 +984,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
     }
 
     // update the review form in case it's changed
-    $rf->validate($Conf, true);
+    $rf = $rf->validate(true);
     $_SESSION["settings_highlight"] = $Highlight;
     redirectSelf();
     unset($_SESSION["settings_highlight"]);
