@@ -564,14 +564,16 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='", hoturl("search", "q=&amp;t=r"), "'>review</a>";
 	else
 	    echo "You have submitted ", $myrow[1], " of <a href='", hoturl("search", "q=&amp;t=r"), "'>", plural($myrow[2], "review"), "</a>";
-	if (in_array("overAllMerit", $rf->fieldOrder) && $myrow[1])
-	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", unparseScoreAverage($myrow[3]->avg, $rf->reviewFields["overAllMerit"]);
+        $f = $rf->field("overAllMerit");
+	if ($f->displayed && $myrow[1])
+	    echo " with an average $f->name_html score of ", $f->unparse_average($myrow[3]->avg);
 	echo ".<br />\n";
     }
     if (($Me->isPC || $Me->privChair) && $npc) {
 	echo sprintf("  The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
-	if (in_array("overAllMerit", $rf->fieldOrder) && $npcScore)
-	    echo " with an average ", htmlspecialchars($rf->shortName["overAllMerit"]), " score of ", unparseScoreAverage($sumpcScore / $npcScore, $rf->reviewFields["overAllMerit"]);
+        $f = $rf->field("overAllMerit");
+	if ($f->displayed && $npcScore)
+	    echo " with an average $f->name_html score of ", $f->unparse_average($sumpcScore / $npcScore);
 	echo ".";
 	if ($Me->isPC || $Me->privChair)
 	    echo "&nbsp; <small>(<a href='", hoturl("users", "t=pc&amp;score%5B%5D=0"), "'>Details</a>)</small>";

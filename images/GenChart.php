@@ -6,7 +6,7 @@
 // Generates a PNG image of a bar chat.
 // Arguments are passed in as v; s is graph style.
 // Don't forget to change the width and height calculations in
-// Conference::textValuesGraph if you change the width and height here.
+// ReviewField::unparse_graph if you change the width and height here.
 
 if (!isset($_REQUEST["v"])) {
     header("HTTP/1.0 400 Bad Request");

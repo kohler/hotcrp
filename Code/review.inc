@@ -15,6 +15,7 @@ $ratingTypes = array("n" => "average", 1 => "very helpful",
 class ReviewField {
     public $id;
     public $name;
+    public $name_html;
     public $description;
     public $abbreviation;
     public $has_options;
@@ -38,6 +39,7 @@ class ReviewField {
 
     public function update($row) {
         $this->name = $row->shortName;
+        $this->name_html = htmlspecialchars($this->name);
         $this->abbreviation = ReviewForm::abbreviateField($this->name);
         $this->description = $row->description;
         $this->display_space = (int) $row->rows;
@@ -65,7 +67,11 @@ class ReviewField {
             . htmlspecialchars($this->abbreviation) . "</span>";
     }
 
-    function unparse_value($value, $scclass = false) {
+    public function value_class($value) {
+        return "sc" . (int) (($value - 1) * 8.0 / (count($this->options) - 1) + 1.5);
+    }
+
+    public function unparse_value($value, $scclass = false) {
         if (is_object($value))
             $value = defval($value, $this->id);
 	if (!$value || !$this->has_options)
@@ -79,12 +85,65 @@ class ReviewField {
 	    $x = chr($this->option_letter - $value);
 	}
 	if ($scclass) {
-	    $nvalues = count($this->options);
-	    $sckey = (int) (($value - 1) * 8.0 / ($nvalues - 1) + 1.5);
-	    $class = ($scclass === true ? "sc$sckey" : "$scclass sc$sckey");
+	    $class = ($scclass === true ? "" : "$scclass ") . $this->value_class($value);
 	    return "<span class='$class'>$x</span>";
 	} else
 	    return $x;
+    }
+
+    public function unparse_average($value) {
+        assert($this->has_options);
+        if (!$this->option_letter)
+            return sprintf("%0.2f", $value);
+        else {
+            $ivalue = (int) $value;
+            $ch = $this->option_letter - $ivalue;
+            if ($value < $ivalue + 0.25)
+                return chr($ch);
+            else if ($value < $ivalue + 0.75)
+                return chr($ch - 1) . chr($ch);
+            else
+                return chr($ch - 1);
+        }
+    }
+
+    public function unparse_graph($v, $style, $myscore) {
+	global $ConfSiteBase, $ConfSiteSuffix;
+        assert($this->has_options);
+        $max = count($this->options);
+
+	if (is_string($v))
+	    $v = scoreCounts($v, $max);
+
+        $avgtext = $this->unparse_average($v->avg);
+	if ($v->n > 1 && $v->stddev)
+	    $avgtext .= sprintf(" &plusmn; %0.2f", $v->stddev);
+
+	$url = "";
+	for ($key = 1; $key <= $max; $key++)
+	    $url .= ($url == "" ? "" : ",") . $v->v[$key];
+	$url = "${ConfSiteBase}images/GenChart$ConfSiteSuffix?v=$url";
+	if ($myscore && $v->v[$myscore] > 0)
+	    $url .= "&h=$myscore";
+	if ($this->option_letter)
+	    $url .= "&c=" . chr($this->option_letter - 1);
+
+	if ($style == 1) {
+	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=1\" alt=\"$avgtext\" title=\"$avgtext\" width='" . (5 * $max + 3)
+		. "' height='" . (5 * max(3, max($v->v)) + 3) . "' />";
+	} else if ($style == 2) {
+	    $retstr = "<div class='sc'><img src=\"" . htmlspecialchars($url) . "&amp;s=2\" alt=\"$avgtext\" title=\"$avgtext\" /><br />";
+	    if ($this->option_letter) {
+		for ($key = $max; $key >= 1; $key--)
+                    $retstr .= ($key < $max ? " " : "") . "<span class='" . $this->value_class($key) . "'>" . $v->v[$key] . "</span>";
+            } else {
+		for ($key = 1; $key <= $max; $key++)
+                    $retstr .= ($key > 1 ? " " : "") . "<span class='" . $this->value_class($key) . "'>" . $v->v[$key] . "</span>";
+            }
+	    $retstr .= "<br /><span class='sc_sum'>" . $avgtext . "</span></div>";
+	}
+
+	return $retstr;
     }
 };
 
@@ -95,7 +154,7 @@ class ReviewForm {
     const WEB_RIGHT = 8;
     const WEB_FINAL = 32;
 
-    const VERSION = 2;
+    const VERSION = 3;
     private $updatedWhen;
     private $version;
 
@@ -335,6 +394,13 @@ class ReviewForm {
             || $this->updatedWhen <= $Conf->settings["revform_update"])
 	    $this->updateFromDB();
         return $this;
+    }
+
+    public function field($id) {
+        if (isset($this->fmap[$id]))
+            return $this->fmap[$id];
+        else
+            return null;
     }
 
     function reviewArchiveFields() {

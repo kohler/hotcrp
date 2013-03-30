@@ -395,7 +395,7 @@ class ContactList extends BaseList {
 	    $v = scoreCounts($row->$scoreName, $this->scoreMax[$scoreName]);
 	    $m = "";
 	    if ($v->n > 0)
-		$m = $Conf->textValuesGraph($v, 0, 2, 0, $this->rf->reviewFields[$scoreName]);
+		$m = $this->rf->field($scoreName)->unparse_graph($v, 2, 0);
 	    return $m;
 	default:
 	    return "";

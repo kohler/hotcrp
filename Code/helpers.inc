@@ -1950,19 +1950,6 @@ function scoreCounts($text, $max = null) {
 			  "n" => $n, "avg" => $avg, "stddev" => $dev);
 }
 
-function unparseScoreAverage($avg, $levelChar) {
-    if ($levelChar > 1) {
-	$iavg = (int) $avg;
-	if ($avg < $iavg + 0.25)
-	    return chr($levelChar - $iavg);
-	else if ($avg < $iavg + 0.75)
-	    return chr($levelChar - $iavg - 1) . chr($levelChar - $iavg);
-	else
-	    return chr($levelChar - $iavg - 1);
-    } else
-	return sprintf("%0.2f", $avg);
-}
-
 function displayOptionsSet($sessionvar, $var = null, $val = null) {
     global $Conf;
     if (isset($_SESSION[$sessionvar]))

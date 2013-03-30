@@ -950,7 +950,7 @@ class ScorePaperColumn extends PaperColumn {
         $allowed = $pl->contact->canViewReview($row, $this->viewscore, false);
         $fname = $this->score . "Scores";
         if (($allowed || $pl->contact->privChair) && $row->$fname) {
-            $t = $Conf->textValuesGraph($row->$fname, $this->max, 1, defval($row, $this->score), $pl->rf->reviewFields[$this->score]);
+            $t = $pl->rf->field($this->score)->unparse_graph($row->$fname, 1, defval($row, $this->score));
             if (!$allowed)
                 $t = "<span class='fx20'>$t</span>";
             return $t;

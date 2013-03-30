@@ -1799,45 +1799,4 @@ class Conference {
 	return $Opt['sendEmail'] && strstr($email, "@")
 	    && !preg_match('/@_\.com$/', $email);
     }
-
-    function textValuesGraph($v, $max, $style, $myscore = 0, $levelChar = 0) {
-	global $ConfSiteBase, $ConfSiteSuffix;
-
-	if (is_string($v))
-	    $v = scoreCounts($v, $max);
-
-	$avgtext = unparseScoreAverage($v->avg, $levelChar);
-	if ($v->n > 1)
-	    $avgtext .= sprintf(" &plusmn; %0.2f", $v->stddev);
-
-	$url = "";
-	for ($key = 1; $key <= $v->max; $key++)
-	    $url .= ($url == "" ? "" : ",") . $v->v[$key];
-	$url = "${ConfSiteBase}images/GenChart$ConfSiteSuffix?v=$url";
-	if ($myscore && $v->v[$myscore] > 0)
-	    $url .= "&h=$myscore";
-	if ($levelChar > 1)
-	    $url .= "&c=" . chr($levelChar - 1);
-
-	if ($style == 1) {
-	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=1\" alt=\"$avgtext\" title=\"$avgtext\" width='" . (5 * $v->max + 3)
-		. "' height='" . (5 * max(3, max($v->v)) + 3) . "' />";
-	} else if ($style == 2) {
-	    $retstr = "<div class='sc'><img src=\"" . htmlspecialchars($url) . "&amp;s=2\" alt=\"$avgtext\" title=\"$avgtext\" /><br />";
-	    if ($levelChar > 1)
-		for ($key = $v->max; $key >= 1; $key--) {
-		    $xkey = (int) (($key - 1) * 8.0 / ($v->max - 1) + 1.5);
-		    $retstr .= ($key < $v->max ? " " : "") . "<span class='sc$xkey'>" . $v->v[$key] . "</span>";
-		}
-	    else
-		for ($key = 1; $key <= $v->max; $key++) {
-		    $xkey = (int) (($key - 1) * 8.0 / ($v->max - 1) + 1.5);
-		    $retstr .= ($key > 1 ? " " : "") . "<span class='sc$xkey'>" . $v->v[$key] . "</span>";
-		}
-	    $retstr .= "<br /><span class='sc_sum'>" . $avgtext . "</span></div>";
-	}
-
-	return $retstr;
-    }
-
 }

@@ -100,14 +100,14 @@ if (isset($_REQUEST["badpairs"]))
 // score selector
 $scoreselector = array();
 $rf = reviewForm();
-if (in_array("overAllMerit", $rf->fieldOrder)) {
-    $scoreselector["+overAllMerit"] = "high " . htmlspecialchars($rf->shortName["overAllMerit"]) . " scores";
-    $scoreselector["-overAllMerit"] = "low " . htmlspecialchars($rf->shortName["overAllMerit"]) . " scores";
+if ($rf->field("overAllMerit")->displayed) { // overAllMerit comes first
+    $scoreselector["+overAllMerit"] = "";
+    $scoreselector["-overAllMerit"] = "";
 }
-foreach ($rf->fieldOrder as $field)
-    if (!isset($scoreselector[$field]) && isset($rf->options[$field])) {
-	$scoreselector["+$field"] = "high " . htmlspecialchars($rf->shortName[$field]) . " scores";
-	$scoreselector["-$field"] = "low " . htmlspecialchars($rf->shortName[$field]) . " scores";
+foreach ($rf->forder as $f)
+    if ($f->has_options) {
+	$scoreselector["+" . $f->id] = "high $f->name_html scores";
+	$scoreselector["-" . $f->id] = "low $f->name_html scores";
     }
 $scoreselector["x"] = "(no score preference)";
 

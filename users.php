@@ -201,12 +201,11 @@ if (count($tOpt) > 1) {
 	$rf = reviewForm();
 	$theScores = defval($_SESSION, "pplscores", 1);
 	$revViewScore = $Me->viewReviewFieldsScore(null, true);
-	foreach ($rf->fieldOrder as $field)
-	    if ($rf->authorView[$field] > $revViewScore
-		&& isset($rf->options[$field])) {
-		$i = array_search($field, $reviewScoreNames);
+	foreach ($rf->forder as $f)
+	    if ($f->view_score > $revViewScore && $f->has_options) {
+		$i = array_search($f->id, $reviewScoreNames);
 		echo tagg_checkbox("score[]", $i, $theScores & (1 << $i)),
-		    "&nbsp;", tagg_label(htmlspecialchars($rf->shortName[$field])), "<br />";
+		    "&nbsp;", tagg_label($f->name_html), "<br />";
 	    }
 	echo "</td>";
     }
