@@ -105,7 +105,8 @@ class ContactList extends BaseList {
 	    // XXX scoresOk
 	    $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
 	    $revViewScore = $this->contact->viewReviewFieldsScore(null, true);
-	    if ($this->rf->authorView[$score] <= $revViewScore)
+            $f = $this->rf->field($score);
+	    if ($f->view_score <= $revViewScore)
 		return false;
 	    if (!isset($queryOptions['scores']))
 		$queryOptions['scores'] = array();
@@ -256,7 +257,7 @@ class ContactList extends BaseList {
 	    return "Tags";
 	case self::FIELD_SCORE: {
 	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-	    return $this->rf->webFieldAbbrev($scoreName);
+	    return $this->rf->field($scoreName)->web_abbreviation();
 	}
 	default:
 	    return "&lt;$fieldId&gt;?";

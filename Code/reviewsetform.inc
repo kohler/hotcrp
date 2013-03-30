@@ -93,8 +93,8 @@ function rf_update($lock) {
     if ($lock)
 	$Conf->qe("lock tables ReviewFormField write, PaperReview write, ReviewFormOptions write");
 
-    foreach (array_keys($rf->reviewFields) as $field) {
-	$req = '';
+    foreach ($rf->fmap as $field => $f) {
+	$req = "";
 	if (isset($_REQUEST["shortName_$field"])) {
 	    $sn = trim($_REQUEST["shortName_$field"]);
 	    if ($sn == "" || $sn == "<None>") {
@@ -115,7 +115,7 @@ function rf_update($lock) {
 	}
 	if (isset($_REQUEST["order_$field"]))
 	    $req .= "sortOrder='" . rcvtint($_REQUEST["order_$field"]) . "', ";
-	if ($rf->reviewFields[$field]) {
+	if ($f->has_options) {
 	    if (rf_checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"], $levelChar)) {
 		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", $while);
 		$optext = "";
@@ -130,7 +130,7 @@ function rf_update($lock) {
 		$result = $Conf->qe("update PaperReview set $field=0 where $field>" . count($options), $while);
 		if (edb_nrows_affected($result) > 0)
 		    $scoreModified[] = htmlspecialchars($_REQUEST["shortName_$field"]);
-		$req .= "levelChar=" . ($rf->reviewFields[$field] ? $levelChar : 0) . ", ";
+		$req .= "levelChar=" . ($f->has_options ? $levelChar : 0) . ", ";
 
 		unset($_REQUEST["options_$field"]);
 		$updates = 1;
@@ -240,12 +240,13 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $x .= "</tr>\n";
 
     // options
-    if (isset($rf->options[$row->fieldName]) || $rf->reviewFields[$row->fieldName]) {
+    $rowf = $rf->fmap[$row->fieldName];
+    if ($rowf->has_options) {
 	$error = (isset($Error["options_$row->fieldName"]) ? " error" : "");
 	$x .= "<$trclass><td class='rxcaption textarea$error'>Options</td><td class='entry$error'><textarea name='options_$row->fieldName' class='reviewtext' rows='6' onchange='hiliter(this)'>";
 	$y = '';
-	if (isset($rf->options[$row->fieldName])) {
-	    foreach ($rf->options[$row->fieldName] as $num => $val)
+	if (count($rowf->options)) {
+	    foreach ($rowf->options as $num => $val)
 		$y .= "$num. $val\n";
 	}
 	$x .= htmlentities(rf_getField($row, 'options', $y))

@@ -905,9 +905,10 @@ class ScorePaperColumn extends PaperColumn {
     public function make_field($name) {
         global $reviewScoreNames;
         $rf = reviewForm();
-        if ((isset($rf->reviewFields[$name])
-             || ($name = $rf->unabbreviateField($name)))
-            && $rf->reviewFields[$name] == 1)
+        if ((($f = $rf->field($name))
+             || (($name = $rf->unabbreviateField($name))
+                 && ($f = $rf->field($name))))
+            && $f->has_options)
             return parent::lookup_local($name);
         return null;
     }
@@ -915,14 +916,15 @@ class ScorePaperColumn extends PaperColumn {
         if (!$pl->scoresOk)
             return false;
         if ($visible) {
-            $this->viewscore = (int) $pl->rf->authorView[$this->score];
+            $f = $pl->rf->field($this->score);
+            $this->viewscore = $f->view_score;
             $auview = $pl->contact->viewReviewFieldsScore(null, true);
             if ($this->viewscore <= $auview)
                 return false;
             if (!isset($queryOptions["scores"]))
                 $queryOptions["scores"] = array();
             $queryOptions["scores"][$this->score] = true;
-            $this->max = $pl->rf->maxNumericScore($this->score);
+            $this->max = count($f->options);
         }
 	return true;
     }
@@ -937,7 +939,7 @@ class ScorePaperColumn extends PaperColumn {
         $pl->score_sort($rows, $pl->sorter->score);
     }
     public function header($pl, $row = null, $ordinal = 0) {
-        return $pl->rf->webFieldAbbrev($this->score);
+        return $pl->rf->field($this->score)->web_abbreviation();
     }
     public function col() {
         return "<col width='0*' />";
@@ -1216,7 +1218,8 @@ function initialize_paper_columns() {
     $rf = reviewForm();
     foreach ($reviewScoreNames as $n) {
         $score = new ScorePaperColumn($n, $nextfield);
-        ScorePaperColumn::register_score($score, array_search($n, $rf->fieldOrder));
+        $f = $rf->field($n);
+        ScorePaperColumn::register_score($score, $f->display_order);
         ++$nextfield;
     }
     PaperColumn::register_factory("", $score);

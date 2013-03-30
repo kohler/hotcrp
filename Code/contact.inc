@@ -269,9 +269,9 @@ class Contact {
 	    $x = array("afterLogin" => 1, "blind" => 1);
 	    $rf = reviewForm();
 	    // Preserve review form values.
-	    foreach ($rf->reviewFields as $k => $v)
-		if (isset($_REQUEST[$k]))
-		    $x[$k] = $_REQUEST[$k];
+	    foreach ($rf->fmap as $field => $f)
+		if (isset($_REQUEST[$field]))
+		    $x[$field] = $_REQUEST[$field];
 	    // Preserve comments and other long-to-type things.
 	    foreach (array("comment", "visibility", "override", "plimit",
 			   "subject", "emailBody", "cc", "recipients",

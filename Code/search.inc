@@ -741,7 +741,7 @@ class PaperSearch {
 	$countexpr = ">0";
 	$contacts = null;
 	$contactword = "";
-        $viewscore = $rf->authorView[$field];
+        $f = $rf->field($field);
 
 	if (preg_match('/\A(.+?[^:=<>!])([:=<>!])(.*)\z/s', $word, $m)
 	    && !ctype_digit($m[1])) {
@@ -750,8 +750,7 @@ class PaperSearch {
 	    $contactword = $m[1] . ":";
 	}
 
-	if (isset($rf->options[$field])) {
-	    $letters = $rf->reviewFields[$field] > 1;
+	if ($f->has_options) {
 	    if ($word == "any")
 		$value = "$field>0";
 	    else if ($word == "none")
@@ -760,11 +759,11 @@ class PaperSearch {
 		if ($m[1] == "")
 		    $m[1] = 1;
 		$m[2] = self::_cleanCompar($m[2]);
-		if ($letters != (ctype_digit($m[3]) == false))
+		if ($f->option_letter != (ctype_digit($m[3]) == false))
 		    $value = "$field=-1"; // XXX
 		else {
 		    $score = $m[3];
-		    if ($letters) {
+		    if ($f->option_letter) {
 			if (!defval($Opt, "smartScoreCompare")) {
 			    // switch meaning of inequality
 			    if ($m[2][0] == "<")
@@ -773,18 +772,18 @@ class PaperSearch {
 				$m[2] = "<" . substr($m[2], 1);
 			}
 			$score = strtoupper($score);
-			$m[3] = $rf->reviewFields[$field] - ord($score);
+			$m[3] = $f->option_letter - ord($score);
 		    }
 		    if (($m[3] < 1 && ($m[2][0] == "<" || $m[2] == "="))
 			|| ($m[3] == 1 && $m[2] == "<")
-			|| ($m[3] == count($rf->options[$field]) && $m[2] == ">")
-			|| ($m[3] > count($rf->options[$field]) && ($m[2][0] == ">" || $m[2] == "="))) {
-			if ($letters)
+			|| ($m[3] == count($f->options) && $m[2] == ">")
+			|| ($m[3] > count($f->options) && ($m[2][0] == ">" || $m[2] == "="))) {
+			if ($f->option_letter)
 			    $warnings = array("<" => "worse than", ">" => "better than");
 			else
 			    $warnings = array("<" => "less than", ">" => "greater than");
 			$t = new SearchTerm("f");
-			$t->set("contradiction_warning", "No " . htmlspecialchars($rf->shortName[$field]) . " scores are " . ($m[2] == "=" ? "" : $warnings[$m[2][0]] . (strlen($m[2]) == 1 ? " " : " or equal to ")) . $score . ".");
+			$t->set("contradiction_warning", "No $f->name_html scores are " . ($m[2] == "=" ? "" : $warnings[$m[2][0]] . (strlen($m[2]) == 1 ? " " : " or equal to ")) . $score . ".");
 			$qt[] = $t;
 			return false;
 		    } else {
@@ -792,7 +791,7 @@ class PaperSearch {
 			$value = $field . $m[2] . $m[3];
 		    }
 		}
-	    } else if ($letters
+	    } else if ($f->option_letter
 		       ? preg_match('/\A\s*([A-Za-z])\s*(-?|\.\.\.?)\s*([A-Za-z])\s*\z/s', $word, $m)
 		       : preg_match('/\A\s*(\d+)\s*(-|\.\.\.?)\s*(\d+)\s*\z/s', $word, $m)) {
 		$qo = array();
@@ -824,7 +823,7 @@ class PaperSearch {
 
 	$nqt = count($qt);
 	$value = new SearchReviewValue($countexpr, $contacts, $value);
-	$this->_searchCompleteReviewer($qt, "re", self::F_COMPLETE, $value, $viewscore);
+	$this->_searchCompleteReviewer($qt, "re", self::F_COMPLETE, $value, $f->view_score);
 	return count($qt) != $nqt;
     }
 

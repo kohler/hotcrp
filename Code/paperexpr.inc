@@ -284,8 +284,9 @@ class PaperExpr {
 
 	if ($op == "rf") {
 	    $score = $e[2];
+            $f = $state->rf->field($score);
 	    $revView = $state->contact->viewReviewFieldsScore(null, true);
-	    if ($state->rf->authorView[$score] <= $revView)
+	    if ($f->view_score <= $revView)
 		$t_f = "0";
 	    else {
 		if (!isset($state->queryOptions["scores"]))
@@ -408,7 +409,7 @@ class PaperExpr {
 
 	if ($op == "rf") {
 	    $rf = reviewForm();
-	    return $rf->authorView[$e[2]];
+	    return $rf->field($e[2])->view_score;
 	}
 
 	if ($op == "?:") {

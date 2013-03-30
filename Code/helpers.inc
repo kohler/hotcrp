@@ -2042,7 +2042,7 @@ function reviewForm() {
     global $ReviewFormCache;
     if (!$ReviewFormCache && isset($_SESSION["rf"]))
 	$ReviewFormCache = @unserialize($_SESSION["rf"]);
-    if (!$ReviewFormCache || !$ReviewFormCache->reviewFields)
+    if (!$ReviewFormCache || !$ReviewFormCache->fmap)
 	$ReviewFormCache = new ReviewForm;
     else
         $ReviewFormCache = $ReviewFormCache->validate();
