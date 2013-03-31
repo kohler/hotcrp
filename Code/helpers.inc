@@ -412,11 +412,19 @@ function hoturl($page, $options = null) {
                 $x .= ($x === "" ? "&" : "") . $k . "=" . urlencode($v);
         $options = $x;
     }
+    $are = '/\A(|.*?(?:&|&amp;))';
+    $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
     if ($options && !defval($Opt, "disableSlashURLs")) {
-        if ((preg_match('/\A(?:paper|review|comment|contactauthors)\z/', $page)
-             && preg_match('/\A(|.*?(?:\&|\&amp;))p=(\d+|%\w+%)(.*)\z/', $options, $m))
-            || ($page == "profile"
-                && preg_match('/\A(|.*?(?:\&|\&amp;))u=([^&]+)(.*)\z/', $options, $m))) {
+        if ($page == "review"
+            && preg_match($are . 'r=(\d+[A-Z]+)' . $zre, $options, $m)) {
+            $t .= "/" . $m[2];
+            $options = $m[1] . $m[3];
+            if (preg_match($are . 'p=\d+' . $zre, $options, $m))
+                $options = $m[1] . $m[2];
+        } else if ((preg_match('/\A(?:paper|review|comment|contactauthors)\z/', $page)
+                    && preg_match($are . 'p=(\d+|%\w+%)' . $zre, $options, $m))
+                   || ($page == "profile"
+                       && preg_match($are . 'u=([^&]+)' . $zre, $options, $m))) {
             $t .= "/" . $m[2];
             $options = $m[1] . $m[3];
         }
@@ -544,9 +552,16 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
     }
 
     // clean parameters from pathinfo URLs
+    foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
+	if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
+	    $_REQUEST[$v] = $_REQUEST[$k];
+
     if ($path && !defval($Opt, "disableSlashURLs")) {
-        if (preg_match('/(?:paper|review|comment|contactauthors)\.php\z/',
-                       $self)
+        if (str_ends_with($self, "review.php")
+            && isset($_REQUEST["r"]) && $_REQUEST["r"] == substr($path, 1)
+            && !array_key_exists("r", $extra))
+            $extra["p"] = $extra["r"] = null;
+        else if (preg_match('/(?:paper|review|comment|contactauthors)\.php\z/', $self)
             && isset($_REQUEST["p"]) && $_REQUEST["p"] == substr($path, 1)
             && !array_key_exists("p", $extra))
             $extra["p"] = null;
@@ -565,9 +580,6 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
 
     // add parameters
     $sep = ($query ? "&" : "?");
-    foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
-	if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
-	    $_REQUEST[$v] = $_REQUEST[$k];
     foreach (array("p", "r", "c", "m", "u", "mode", "forceShow", "validator", "ls", "list", "t", "q", "qa", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq", "noedit", "contact", "reviewer") as $what)
 	if (isset($_REQUEST[$what]) && !array_key_exists($what, $extra)) {
 	    $self .= "$sep$what=" . urlencode($_REQUEST[$what]);
