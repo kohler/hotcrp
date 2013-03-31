@@ -214,6 +214,8 @@ Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted. The re
      Authors: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
 
+For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the paper site.
+
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
@@ -228,6 +230,8 @@ Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated. The revi
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
+
+For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the paper site.
 
 Contact the site administrator, %ADMIN%, with any questions or concerns.
 
@@ -283,7 +287,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "commentnotify" =>
      array("subject" => "[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
-	   "body" => "A comment for %CONFNAME% paper #%NUMBER% is available as shown below. For the most up-to-date comments, or to turn off notification emails, see the paper site.
+	   "body" => "A comment for %CONFNAME% paper #%NUMBER% has been posted. For the most up-to-date comments, or to unsubscribe from email notification, see the paper site.
 
   Paper site: %URL(paper, p=%NUMBER%)%
 
