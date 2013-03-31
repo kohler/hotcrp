@@ -635,9 +635,9 @@ echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td><
 if ((!$newProfile && $Acct->isPC) || $Me->privChair) {
     echo "<table><tr><td>Send mail on: &nbsp;</td>",
 	"<td>", tagg_checkbox_h("watchcomment", 1, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
-	tagg_label("New comments for authored or reviewed papers"), "</td></tr>",
+	tagg_label("Reviews and comments for authored or reviewed papers"), "</td></tr>",
 	"<tr><td></td><td>", tagg_checkbox_h("watchcommentall", 1, $Acct->defaultWatch & WATCH_ALLCOMMENTS), "&nbsp;",
-	tagg_label("New comments for <i>any</i> paper"), "</td></tr>";
+	tagg_label("Reviews and comments for <i>any</i> paper"), "</td></tr>";
     if ($Me->privChair)
 	echo "<tr><td></td><td>", tagg_checkbox_h("watchfinalall", 1, $Acct->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL)), "&nbsp;",
 	    tagg_label("Updates to final versions"), "</td></tr>";

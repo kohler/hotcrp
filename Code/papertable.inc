@@ -1300,9 +1300,9 @@ class PaperTable {
 				       $watchValue & $this->watchCheckbox,
 				       array("onchange" => "Miniajax.submit('watchform')",
 					     "style" => "padding-left:0;margin-left:0"))
-			 . "&nbsp;" . tagg_label("Comment notification"),
+			 . "&nbsp;" . tagg_label("Email notification"),
 			 array("type" => "ps")),
-	    "<div class='pshint'>If selected, you will receive email when updated comments are available for this paper. <span id='watchformresult'></span>",
+	    "<div class='pshint'>Select to receive email on updates to reviews and comments. <span id='watchformresult'></span>",
 	    "<input class='b fx7' type='submit' value='Save' />",
 	    "</div></div></form></div>\n\n";
 

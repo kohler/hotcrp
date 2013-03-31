@@ -527,6 +527,13 @@ class ReviewForm {
 	return ($nokfields > 0);
     }
 
+    function review_watch_callback($prow, $minic) {
+        if ($prow->conflictType == 0
+            && $minic->canViewReview($prow, $this->mailer_info["rrow"], false))
+            Mailer::send($this->mailer_info["template"], $prow, $minic,
+                         null, $this->mailer_info);
+    }
+
     function saveRequest($req, $rrow, $prow, &$tf = null) {
 	global $Conf, $Opt;
 	$Me = $_SESSION['Me'];
@@ -615,7 +622,7 @@ class ReviewForm {
                     $q[] = $notify = "reviewNotified=" . $now;
                 if ((!$rrow || !$rrow->reviewAuthorNotified
                      || $rrow->reviewAuthorNotified + 10800 < $now)
-                    && $Conf->sversion >= 49 && $diff_view_score > VIEWSCORE_PC)
+                    && $Conf->sversion >= 49 && $diff_view_score >= VIEWSCORE_AUTHOR)
                     $q[] = $notify_author = "reviewAuthorNotified=" . $now;
 	    }
 	}
@@ -652,11 +659,8 @@ class ReviewForm {
 		$Conf->log("$reviewLogname submitted", $Me, $prow->paperId);
 	}
 
-	// potentially email chair and authors
-	if ($submit
-            && (($notify && $Conf->timeEmailChairAboutReview())
-                || ($notify_author && $Conf->timeEmailAuthorsAboutReview()))) {
-
+	// potentially email chair, reviewers, and authors
+	if ($submit && ($notify || $notify_author)) {
 	    // fetch review ordinal
 	    if (!$rrow || !$rrow->reviewSubmitted) {
 		$result = $Conf->q("select reviewOrdinal from PaperReview where reviewId=$reviewId");
@@ -675,7 +679,12 @@ class ReviewForm {
 		$reviewnum = "x";
 
 	    // need an up-to-date review row to send email successfully
-	    $fake_rrow = (object) array("contactId" => $contactId, "reviewBlind" => $reviewBlind);
+	    $fake_rrow = (object) array("paperId" => $prow->paperId,
+                 "reviewId" => $reviewId, "contactId" => $contactId,
+                 "reviewType" => $rrow->reviewType,
+                 "requestedBy" => $rrow->requestedBy,
+                 "reviewBlind" => $reviewBlind,
+                 "reviewSubmitted" => $rrow->reviewSubmitted ? $rrow->reviewSubmitted : $now);
 
 	    $tmpl = ($rrow && $rrow->reviewSubmitted ? "@reviewupdate" : "@reviewsubmit");
 	    $submitter = $Me;
@@ -683,10 +692,17 @@ class ReviewForm {
 		$submitter = new Contact();
 		$submitter->lookupById($contactId);
 	    }
-	    $rest = array("rrow" => $fake_rrow, "reviewNumber" => $prow->paperId . $reviewnum);
+	    $rest = array("template" => $tmpl, "rrow" => $fake_rrow,
+                          "reviewNumber" => $prow->paperId . $reviewnum);
 
 	    if ($Conf->timeEmailChairAboutReview())
 		Mailer::sendAdmin($tmpl, $prow, $submitter, $rest);
+
+            if ($diff_view_score >= VIEWSCORE_PC) {
+                $this->mailer_info = $rest;
+                genericWatch($prow, WATCHTYPE_REVIEW, array($this, "review_watch_callback"));
+                unset($this->mailer_info);
+            }
 
 	    if ($Conf->timeEmailAuthorsAboutReview() && $notify_author) {
 		$rest["infoMsg"] = "since a review was updated during the response period.";

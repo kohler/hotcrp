@@ -1180,10 +1180,14 @@ function genericWatch($prow, $watchtype, $callback) {
 	}
     }
 
+    $method = is_array($callback) ? $callback[1] : null;
     foreach ($watchers as $row) {
 	$minic = Contact::make($row);
 	setReviewInfo($prow, $row);
-	$callback($prow, $minic);
+        if ($method)
+            $callback[0]->$method($prow, $minic);
+        else
+            $callback($prow, $minic);
     }
 
     setReviewInfo($prow, $saveProw);
