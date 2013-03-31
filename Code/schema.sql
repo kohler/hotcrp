@@ -288,6 +288,7 @@ CREATE TABLE `PaperReview` (
   `reviewModified` int(1) DEFAULT NULL,
   `reviewSubmitted` int(1) DEFAULT NULL,
   `reviewNotified` int(1) DEFAULT NULL,
+  `reviewAuthorNotified` int(11) NOT NULL DEFAULT '0',
   `reviewOrdinal` int(1) DEFAULT NULL,
   `reviewEditVersion` int(1) NOT NULL DEFAULT '0',
   `reviewNeedsSubmit` tinyint(1) NOT NULL DEFAULT '1',
@@ -333,6 +334,7 @@ CREATE TABLE `PaperReviewArchive` (
   `reviewId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
+  `reviewToken` int(11) NOT NULL DEFAULT '0',
   `reviewType` tinyint(1) NOT NULL DEFAULT '0',
   `reviewRound` tinyint(1) NOT NULL DEFAULT '0',
   `requestedBy` int(11) NOT NULL DEFAULT '0',
@@ -342,6 +344,7 @@ CREATE TABLE `PaperReviewArchive` (
   `reviewModified` int(1) DEFAULT NULL,
   `reviewSubmitted` int(1) DEFAULT NULL,
   `reviewNotified` int(1) DEFAULT NULL,
+  `reviewAuthorNotified` int(11) NOT NULL DEFAULT '0',
   `reviewOrdinal` int(1) DEFAULT NULL,
   `reviewNeedsSubmit` tinyint(1) NOT NULL DEFAULT '1',
   `overAllMerit` tinyint(1) NOT NULL DEFAULT '0',
@@ -585,7 +588,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 48);
+insert into Settings (name, value) values ('allowPaperOption', 49);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

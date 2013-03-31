@@ -273,4 +273,10 @@ function updateSchema($Conf) {
 	&& $Conf->q("delete from ti using TopicInterest ti left join TopicArea ta using (topicId) where ta.topicId is null")
 	&& $Conf->q("update Settings set value=48 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 48;
+    if ($Conf->settings["allowPaperOption"] == 48
+	&& $Conf->q("alter table PaperReview add `reviewAuthorNotified` int(11) NOT NULL DEFAULT '0'")
+	&& $Conf->q("alter table PaperReviewArchive add `reviewAuthorNotified` int(11) NOT NULL DEFAULT '0'")
+	&& $Conf->q("alter table PaperReviewArchive add `reviewToken` int(11) NOT NULL DEFAULT '0'")
+	&& $Conf->q("update Settings set value=49 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 49;
 }

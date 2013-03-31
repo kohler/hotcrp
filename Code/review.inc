@@ -92,8 +92,7 @@ class ReviewField {
     }
 
     public function web_abbreviation() {
-	return "<span class='hastitle' title=\""
-            . htmlspecialchars($this->name) . "\">"
+	return "<span class='hastitle' title=\"$this->name_html\">"
             . htmlspecialchars($this->abbreviation) . "</span>";
     }
 
@@ -396,6 +395,8 @@ class ReviewForm {
 	    $fields .= ", reviewNotified";
 	if ($Conf->sversion >= 46)
 	    $fields .= ", timeRequested, timeRequestNotified";
+        if ($Conf->sversion >= 49)
+            $fields .= ", reviewToken, reviewAuthorNotified";
 	return $fields;
     }
 
@@ -537,7 +538,7 @@ class ReviewForm {
 	    return $Conf->errorMsg("The <a href='" . hoturl("deadlines") . "'>deadline</a> for entering this review has passed." . ($Me->privChair ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
 
 	$q = array();
-	$different = false;
+        $diff_view_score = VIEWSCORE_FALSE;
 	foreach ($this->forder as $field => $f)
 	    if (isset($req[$field])) {
 		$fval = $req[$field];
@@ -552,7 +553,7 @@ class ReviewForm {
 		}
 		if ($rrow && strcmp($rrow->$field, $fval) != 0
 		    && strcmp(cleannl($rrow->$field), cleannl($fval)) != 0) {
-		    $different = true;
+                    $diff_view_score = max($diff_view_score, $f->view_score);
 		    // Check for valid UTF-8.  Re-encode invalid UTF-8 as if
 		    // it were Windows-1252, which is a superset of
 		    // ISO-8859-1.
@@ -566,13 +567,12 @@ class ReviewForm {
 	$now = time();
 	if ($rrow && $rrow->reviewModified && $rrow->reviewModified > $now)
 	    $now = $rrow->reviewModified + 1;
-	$donotify = false;
 
 	// potentially assign review ordinal (requires table locking since
 	// mySQL is stupid)
 	$locked = false;
 	if ($submit && (!$rrow || !$rrow->reviewSubmitted)) {
-	    $different = true;
+	    $diff_view_score = max($diff_view_score, VIEWSCORE_AUTHOR);
 	    $q[] = "reviewSubmitted=$now, reviewNeedsSubmit=0";
 	    if (!$rrow || !$rrow->reviewOrdinal) {
 		$result = $Conf->qe("lock tables PaperReview write", $while);
@@ -595,22 +595,28 @@ class ReviewForm {
 	// blind? reviewer type? edit version?
 	$reviewBlind = ($Conf->blindReview() > BLIND_OPTIONAL || ($Conf->blindReview() == BLIND_OPTIONAL && defval($req, 'blind')) ? 1 : 0);
 	if ($rrow && $reviewBlind != $rrow->reviewBlind)
-	    $different = true;
+	    $diff_view_score = max($diff_view_score, VIEWSCORE_ADMINONLY);
 	$q[] = "reviewBlind=$reviewBlind";
 	if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL
 	    && $Me->contactId == $rrow->contactId
 	    && $Me->isPC && !$usedReviewToken)
 	    $q[] = "reviewType=" . REVIEW_PC;
-	if ($rrow && $different && isset($req["version"])
+	if ($rrow && $diff_view_score > VIEWSCORE_FALSE
+            && isset($req["version"])
 	    && $req["version"] > defval($rrow, "reviewEditVersion"))
 	    $q[] = "reviewEditVersion=" . $req["version"];
-	if (!$rrow || $different) {
+	$notify = $notify_author = false;
+	if (!$rrow || $diff_view_score > VIEWSCORE_FALSE) {
 	    $q[] = "reviewModified=" . $now;
 	    // do not notify on updates within 3 hours
-	    if ($submit && (!$rrow || !$rrow->reviewNotified
-			    || $rrow->reviewNotified + 10800 < $now)) {
-		$q[] = "reviewNotified=" . $now;
-		$donotify = true;
+	    if ($submit && $diff_view_score > VIEWSCORE_ADMINONLY) {
+                if (!$rrow || !$rrow->reviewNotified
+                    || $rrow->reviewNotified + 10800 < $now)
+                    $q[] = $notify = "reviewNotified=" . $now;
+                if ((!$rrow || !$rrow->reviewAuthorNotified
+                     || $rrow->reviewAuthorNotified + 10800 < $now)
+                    && $Conf->sversion >= 49 && $diff_view_score > VIEWSCORE_PC)
+                    $q[] = $notify_author = "reviewAuthorNotified=" . $now;
 	    }
 	}
 
@@ -637,7 +643,7 @@ class ReviewForm {
 	$req['reviewId'] = $reviewId;
 
 	// log updates -- but not if review token is used
-	if (!$usedReviewToken && $different) {
+	if (!$usedReviewToken && $diff_view_score > VIEWSCORE_FALSE) {
 	    $reviewLogname = "Review $reviewId";
 	    if ($rrow && $Me->contactId != $rrow->contactId)
 		$reviewLogname .= " by $rrow->email";
@@ -647,8 +653,9 @@ class ReviewForm {
 	}
 
 	// potentially email chair and authors
-	if ($submit && $donotify && ($Conf->timeEmailChairAboutReview()
-				     || $Conf->timeEmailAuthorsAboutReview())) {
+	if ($submit
+            && (($notify && $Conf->timeEmailChairAboutReview())
+                || ($notify_author && $Conf->timeEmailAuthorsAboutReview()))) {
 
 	    // fetch review ordinal
 	    if (!$rrow || !$rrow->reviewSubmitted) {
@@ -681,7 +688,7 @@ class ReviewForm {
 	    if ($Conf->timeEmailChairAboutReview())
 		Mailer::sendAdmin($tmpl, $prow, $submitter, $rest);
 
-	    if ($Conf->timeEmailAuthorsAboutReview()) {
+	    if ($Conf->timeEmailAuthorsAboutReview() && $notify_author) {
 		$rest["infoMsg"] = "since a review was updated during the response period.";
 		if (reviewBlind($fake_rrow))
 		    $rest["infoMsg"] .= "  Reviewer anonymity was preserved.";
@@ -696,7 +703,7 @@ class ReviewForm {
 	if ($tf) {
 	    if ($submit && (!$rrow || !$rrow->reviewSubmitted))
 		$tf["newlySubmitted"][] = "#$prow->paperId";
-	    else if ($different)
+	    else if ($diff_view_score > VIEWSCORE_FALSE)
 		$tf["updated"][] = "#$prow->paperId";
 	    else
 		$tf["unchanged"][] = "#$prow->paperId";
