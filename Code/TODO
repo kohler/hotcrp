@@ -69,21 +69,6 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
 
 - http://harvesthq.github.com/chosen/ [Tom Limoncelli]
 
-- Anyway, based on my recent experience as a PC member, being asked
-  to "look at the other reviews once they are all submitted" turns
-  out to be a bit of a pain, since I have to keep checking the
-  site to see which ones have 6/6 or 5/5 reviews done, or whatever.
-
-  Since HotCRP already lets me select "Comment Notification",
-  how about another option that sends me an email when the last
-  of the assigned reviews is done, for a paper that I've already
-  reviewed.
-
-  For a multi-round conference, it probably makes sense to
-  get notifications at the end of each round -- but I think
-  maybe this should be default-off in the profile, since not
-  everyone will want it. [Jeff Mogul]
-
 - (1) It would be nice to be able to tag papers with their session
   number and session chair.  However,
        tag:session#1 tag:sessionchairbalachanderkrishnamurthy
