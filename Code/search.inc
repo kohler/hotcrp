@@ -2019,7 +2019,7 @@ class PaperSearch {
 	} else if ($tt == "re") {
 	    $extrawhere = array();
 	    if ($t->value->contactsql)
-		$extrawhere[] = $t->value->contactWhere("contactId");
+		$extrawhere[] = $t->value->contactWhere("r.contactId");
 	    if ($t->value->fieldsql)
 		$extrawhere[] = $t->value->fieldsql;
 	    $extrawhere = join(" and ", $extrawhere);
