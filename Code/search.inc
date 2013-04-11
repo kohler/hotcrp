@@ -1004,6 +1004,64 @@ class PaperSearch {
 	return true;
     }
 
+    private function _searchReviewRatings($word, &$qt) {
+        global $Conf;
+        $this->reviewAdjust = true;
+        if (preg_match('/\A(.+?)\s*(|[<>!=]?=?)\s*(\d*)\z/', $word, $m)
+            && ($m[3] !== "" || $m[2] === "")
+            && $Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
+            // adjust counts
+            if ($m[3] === "") {
+                $m[2] = ">";
+                $m[3] = "0";
+            }
+            if ($m[2] === "")
+                $m[2] = ($m[3] == 0 ? "=" : ">=");
+            else
+                $m[2] = self::_cleanCompar($m[2]);
+            $nqt = count($qt);
+
+            // resolve rating type
+            if ($m[1] === "+" || $m[1] === "good") {
+                $this->interestingRatings["good"] = ">0";
+                $term = "nrate_good";
+            } else if ($m[1] === "-" || $m[1] === "bad"
+                       || $m[1] == "\xE2\x88\x92" /* unicode MINUS */) {
+                $this->interestingRatings["bad"] = "<1";
+                $term = "nrate_bad";
+            } else if ($m[1] === "any") {
+                $this->interestingRatings["any"] = "!=100";
+                $term = "nrate_any";
+            } else {
+                $rf = reviewForm();	/* load for $ratingTypes */
+                $x = array_diff(matchValue($ratingTypes, $m[1]),
+                                array("n")); /* don't allow "average" */
+                if (count($x) == 0) {
+                    $this->warn("Unknown rating type &ldquo;" . htmlspecialchars($m[1]) . "&rdquo;.");
+                    $qt[] = new SearchTerm("f");
+                } else {
+                    $type = count($this->interestingRatings);
+                    $this->interestingRatings[$type] = " in (" . join(",", $x) . ")";
+                    $term = "nrate_$type";
+                }
+            }
+
+            if (count($qt) == $nqt) {
+                if ($m[2][0] === "<" || $m[2] === "!="
+                    || ($m[2] === "=" && $m[3] == 0)
+                    || ($m[2] === ">=" && $m[3] == 0))
+                    $term = "coalesce($term,0)";
+                $qt[] = new SearchTerm("revadj", 0, array("rate" => $term . $m[2] . $m[3]));
+            }
+        } else {
+            if ($Conf->setting("rev_ratings") == REV_RATINGS_NONE)
+                $this->warn("Review ratings are disabled.");
+            else
+                $this->warn("Bad review rating query &ldquo;" . htmlspecialchars($word) . "&rdquo;.");
+            $qt[] = new SearchTerm("f");
+        }
+    }
+
     function _searchQueryWord($word, $report_error) {
 	global $searchKeywords, $ratingTypes, $Conf;
 
@@ -1193,58 +1251,8 @@ class PaperSearch {
 		    $qt[] = new SearchTerm("revadj", 0, array("round" => $rounds));
 	    }
 	}
-	if ($keyword ? $keyword == "rate" : isset($this->fields["rate"])) {
-	    $this->reviewAdjust = true;
-	    if (preg_match('/\A(.+?)\s*(|[<>!=]?=?)\s*(\d*)\z/', $word, $m)
-		&& ($m[3] !== "" || $m[2] === "")) {
-		// adjust counts
-		if ($m[3] === "") {
-		    $m[2] = ">";
-		    $m[3] = "0";
-		}
-		if ($m[2] === "")
-		    $m[2] = ($m[3] == 0 ? "=" : ">=");
-		else
-		    $m[2] = self::_cleanCompar($m[2]);
-		$nqt = count($qt);
-
-		// resolve rating type
-		if ($m[1] === "+" || $m[1] === "good") {
-		    $this->interestingRatings["good"] = ">0";
-		    $term = "nrate_good";
-		} else if ($m[1] === "-" || $m[1] === "bad"
-			   || $m[1] == "\xE2\x88\x92" /* unicode MINUS */) {
-		    $this->interestingRatings["bad"] = "<1";
-		    $term = "nrate_bad";
-		} else if ($m[1] === "any") {
-		    $this->interestingRatings["any"] = "!=100";
-		    $term = "nrate_any";
-		} else {
-		    $rf = reviewForm();	/* load for $ratingTypes */
-		    $x = array_diff(matchValue($ratingTypes, $m[1]),
-				    array("n")); /* don't allow "average" */
-		    if (count($x) == 0) {
-			$this->warn("Unknown rating type &ldquo;" . htmlspecialchars($m[1]) . "&rdquo;.");
-			$qt[] = new SearchTerm("f");
-		    } else {
-			$type = count($this->interestingRatings);
-			$this->interestingRatings[$type] = " in (" . join(",", $x) . ")";
-			$term = "nrate_$type";
-		    }
-		}
-
-		if (count($qt) == $nqt) {
-		    if ($m[2][0] === "<" || $m[2] === "!="
-			|| ($m[2] === "=" && $m[3] == 0)
-			|| ($m[2] === ">=" && $m[3] == 0))
-			$term = "coalesce($term,0)";
-		    $qt[] = new SearchTerm("revadj", 0, array("rate" => $term . $m[2] . $m[3]));
-		}
-	    } else {
-		$this->warn("Bad review rating query &ldquo;" . htmlspecialchars($word) . "&rdquo;.");
-		$qt[] = new SearchTerm("f");
-	    }
-	}
+	if ($keyword ? $keyword == "rate" : isset($this->fields["rate"]))
+            $this->_searchReviewRatings($word, $qt);
 	if ($keyword ? $keyword == "ss" : isset($this->fields["ss"])) {
 	    $t = $Conf->settingText("ss:" . $word, "");
 	    $search = json_decode($t);
