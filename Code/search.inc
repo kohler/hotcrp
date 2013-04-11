@@ -1673,7 +1673,10 @@ class PaperSearch {
 	    $value = new SearchReviewValue(">0", null, "requestedBy=" . $this->cid . " and reviewType=" . REVIEW_EXTERNAL);
 	else
 	    $value = new SearchReviewValue(">0");
-	$term = new SearchTerm("re", 0, $value, $roundterm->value);
+        $rt = $this->privChair ? 0 : self::F_NONCONFLICT;
+        if (!$this->amPC)
+            $rt |= self::F_REVIEWER;
+	$term = new SearchTerm("re", $rt, $value, $roundterm->value);
 	if (defval($roundterm->value, "revadjnegate")) {
 	    $term->set("revadjnegate", false);
 	    return SearchTerm::negate($term);
@@ -1927,13 +1930,8 @@ class PaperSearch {
 	    if (($x = $t->get("round")) !== null) {
 		if (count($x) == 0)
 		    $where[] = $rrnegate ? "true" : "false";
-		else {
+		else
 		    $where[] = "reviewRound " . ($rrnegate ? "not " : "") . "in (" . join(",", $x) . ")";
-                    if (!$this->privChair) {
-                        $reviewtable .= " left join PaperConflict c on (c.paperId=r.paperId and c.contactId=" . $this->cid . ")";
-                        $where[] = "c.conflictType is null";
-                    }
-                }
 	    }
 	    if (($x = $t->get("rate")) !== null)
 		$this->_clauseTermSetRating($reviewtable, $where, $rrnegate ? "(not $x)" : $x);
