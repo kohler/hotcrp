@@ -1862,19 +1862,23 @@ class PaperSearch {
 	    else if ($t->flags & self::F_INCOMPLETE)
 		$where[] = "reviewNeedsSubmit>0";
 	    $rrnegate = $t->get("revadjnegate");
+	    $noconflict = false;
 	    if (($x = $t->get("round")) !== null) {
 		if (count($x) == 0)
 		    $where[] = $rrnegate ? "true" : "false";
 		else {
 		    $where[] = "reviewRound " . ($rrnegate ? "not " : "") . "in (" . join(",", $x) . ")";
-                    if (!$this->privChair) {
-                        $reviewtable .= " left join PaperConflict c on (c.paperId=r.paperId and c.contactId=" . $this->contactId . ")";
-                        $where[] = "c.conflictType is null";
-                    }
+                    $noconflict = $noconflict || !$this->privChair;
                 }
 	    }
-	    if (($x = $t->get("rate")) !== null)
+	    if (($x = $t->get("rate")) !== null) {
 		$this->_clauseTermSetRating($reviewtable, $where, $rrnegate ? "(not $x)" : $x);
+                $noconflict = $noconflict || !$this->privChair;
+            }
+            if ($noconflict) {
+                $reviewtable .= " left join PaperConflict c on (c.paperId=r.paperId and c.contactId=" . $this->contactId . ")";
+                $where[] = "c.conflictType is null";
+            }
 	    if ($extrawhere)
 		$where[] = $extrawhere;
 	    $wheretext = "";
