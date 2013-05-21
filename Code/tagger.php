@@ -197,7 +197,7 @@ class Tagger {
             return "Tag values aren’t allowed here.";
         else if ($tag[0] === "~" && $tag[1] === "~" && ($flags & self::NOCHAIR))
             return "Tag “${tag}” is exclusively for chairs.";
-        else if ($tag[0] === "~" && ($flags & self::NOPRIVATE))
+        else if ($tag[0] === "~" && $tag[1] !== "~" && ($flags & self::NOPRIVATE))
             return "Twiddle tags aren’t allowed here.";
         else if (($tag === "none" || $tag === "any") && !($flags & self::ALLOWRESERVED))
             return "Tag “${tag}” is reserved.";

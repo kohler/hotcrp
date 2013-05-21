@@ -311,9 +311,10 @@ function tagaction() {
 	$tagger->save($papers, $tag, $act);
     else if (count($papers) && $act == "cr" && $Me->privChair) {
 	$source_tag = trim(defval($_REQUEST, "tagcr_source", ""));
-	$source_tag = ($source_tag == "" ? $tag : $source_tag);
-        if ($tagger->check($tag, Tagger::NOVALUE | Tagger::NOPRIVATE)
-            && $tagger->check($source_tag, Tagger::NOVALUE | Tagger::NOPRIVATE)) {
+        if ($source_tag == "")
+            $source_tag = (substr($tag, 0, 2) == "~~" ? substr($tag, 2) : $tag);
+        if ($tagger->check($tag, Tagger::NOPRIVATE | Tagger::NOVALUE)
+            && $tagger->check($source_tag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
 	    ini_set("max_execution_time", 1200);
 	    $r = new PaperRank($source_tag, $tag, $papers,
 			       defval($_REQUEST, "tagcr_gapless"),
@@ -949,7 +950,7 @@ function savesearch() {
 
     $name = simplifyWhitespace(defval($_REQUEST, "ssname", ""));
     $tagger = new Tagger;
-    if (!$tagger->check($name, Tagger::NOPRIVATE | Tagger::NOVALUE)) {
+    if (!$tagger->check($name, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
 	if ($name == "")
 	    return $Conf->errorMsg("Saved search name missing.");
 	else
