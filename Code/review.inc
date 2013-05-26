@@ -874,7 +874,7 @@ $blind\n";
 
     function _prettyPaperTitle($prow, &$l) {
 	$n = "Paper #" . $prow->paperId . ": ";
-	$l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
+	$l = max(14, (int) ((75.5 - strlen(UnicodeHelper::deaccent($prow->title)) - strlen($n)) / 2) + strlen($n));
 	return wordWrapIndent($prow->title, $n, $l) . "\n";
     }
 
@@ -963,7 +963,7 @@ $blind\n";
 	    else
 		$n .= Text::user_text($crow);
 	}
-	$x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+	$x .= str_pad($n, (int) (37.5 + strlen(UnicodeHelper::deaccent($n)) / 2), " ", STR_PAD_LEFT) . "\n";
 	$x .= $this->_prettyPaperTitle($prow, $l);
 	// $n = "Updated " . $Conf->printableTime($crow->timeModified);
 	// $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
