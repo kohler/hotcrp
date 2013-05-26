@@ -103,25 +103,26 @@ function saveComment($text) {
 
     // options
     $visibility = defval($_REQUEST, "visibility", "r");
-    if ($visibility != "a" && $visibility != "r" && $visibility != "p" && $visibility != "admin")
-	$visibility = "r";
-    $forReviewers = ($visibility == "p" ? 0 : 1);
-    if ($visibility == "admin")
-	$forReviewers = 2;
-    $forAuthors = ($visibility == "a" ? 1 : 0);
+    if (isset($_REQUEST["response"]) && (defval($_REQUEST, "forReviewers")
+                                         || isset($_REQUEST["submitresponse"])))
+        list($fora, $forr) = array(2, 1);
+    else if (isset($_REQUEST["response"]))
+        list($fora, $forr) = array(2, 0);
+    else if ($visibility == "a")
+        list($fora, $forr) = array(1, 1);
+    else if ($visibility == "p")
+        list($fora, $forr) = array(0, 0);
+    else if ($visibility == "admin")
+        list($fora, $forr) = array(0, 2);
+    else // $visibility == "r"
+        list($fora, $forr) = array(0, 1);
+
     $blind = 0;
     if ($Conf->blindReview() > BLIND_OPTIONAL
 	|| ($Conf->blindReview() == BLIND_OPTIONAL && defval($_REQUEST, "blind")))
 	$blind = 1;
-    if (isset($_REQUEST["response"])) {
-	$forAuthors = 2;
-        if (defval($_REQUEST, "forReviewers")
-            || isset($_REQUEST["submitresponse"]))
-            $forReviewers = 1;
-        else
-            $forReviewers = 0;
+    if (isset($_REQUEST["response"]))
 	$blind = $prow->blind;	// use $prow->blind setting on purpose
-    }
 
     $while = $insert_id_while = "while saving comment";
 
@@ -133,17 +134,17 @@ function saveComment($text) {
     } else if (!$crow) {
 	$change = true;
 	$qa = $qb = "";
-	if (!(($forAuthors == 2 && $forReviewers == 0) || $forReviewers == 2)
+	if (!(($fora == 2 && $forr == 0) || $forr == 2)
 	    && $Conf->sversion >= 43) {
 	    $qa .= ", ordinal";
 	    $qb .= ", greatest(commentCount,maxOrdinal)+1";
 	}
 	$q = "insert into PaperComment
-		(contactId, paperId, timeModified, comment, forReviewers,
-		forAuthors, blind, timeNotified$qa)
+		(contactId, paperId, timeModified, comment,
+                forReviewers, forAuthors, blind, timeNotified$qa)
 	select $Me->cid, $prow->paperId, $now, '" . sqlq($text) . "',
-		$forReviewers, $forAuthors, $blind, $now$qb\n";
-	if ($forAuthors == 2) {
+		$forr, $fora, $blind, $now$qb\n";
+	if ($fora == 2) {
 	    // make sure there is exactly one response
 	    $q .= "	from (select P.paperId, coalesce(C.commentId,0) commentId, 0 commentCount, 0 maxOrdinal
 		from Paper P
@@ -154,19 +155,19 @@ function saveComment($text) {
 	} else {
 	    $q .= "	from (select P.paperId, coalesce(count(C.commentId),0) commentCount, coalesce(max(C.ordinal),0) maxOrdinal
 		from Paper P
-		left join PaperComment C on (C.paperId=P.paperId and C.forReviewers=$forReviewers and C.forAuthors=$forAuthors)
+		left join PaperComment C on (C.paperId=P.paperId and C.forReviewers!=2 and C.forAuthors=$fora)
 		where P.paperId=$prow->paperId group by P.paperId) T";
 	}
     } else {
-	$change = ($crow->forAuthors != $forAuthors);
+	$change = ($crow->forAuthors != $fora);
 	if ($crow->timeModified >= $now)
 	    $now = $crow->timeModified + 1;
 	// do not notify on updates within 3 hours
 	$qa = "";
 	if ($crow->timeNotified + 10800 < $now
-            || ($forAuthors == 2 && $forReviewers && !$crow->forReviewers))
+            || ($fora == 2 && $forr && !$crow->forReviewers))
 	    $qa = ", timeNotified=$now";
-	$q = "update PaperComment set timeModified=$now$qa, comment='" . sqlq($text) . "', forReviewers=$forReviewers, forAuthors=$forAuthors, blind=$blind where commentId=$crow->commentId";
+	$q = "update PaperComment set timeModified=$now$qa, comment='" . sqlq($text) . "', forReviewers=$forr, forAuthors=$fora, blind=$blind where commentId=$crow->commentId";
     }
 
     $result = $Conf->qe($q, $while);
@@ -180,10 +181,10 @@ function saveComment($text) {
 	return false;
 
     // log, end
-    $what = ($forAuthors > 1 ? "Response" : "Comment");
+    $what = (isset($_REQUEST["response"]) ? "Response" : "Comment");
     if ($text != "" && !isset($_SESSION["comment_msgs"]))
 	$_SESSION["comment_msgs"] = array();
-    if ($text != "" && $forAuthors > 1 && $forReviewers == 0) {
+    if ($text != "" && isset($_REQUEST["response"]) && $forr == 0) {
 	$deadline = $Conf->printableTimeSetting("resp_done");
 	if ($deadline != "N/A")
 	    $extratext = "  You have until $deadline to send the response to the reviewers.";
