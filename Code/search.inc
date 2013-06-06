@@ -1,6 +1,6 @@
 <?php
 // search.inc -- HotCRP helper class for searching for papers
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $searchKeywords;
@@ -669,6 +669,43 @@ class PaperSearch {
 	    $qt[] = new SearchTerm("f");
     }
 
+    function _searchDecision($word, &$qt, $quoted) {
+        global $Conf;
+        if (!$quoted && strcasecmp($word, "yes") == 0)
+            $value = ">0";
+        else if (!$quoted && strcasecmp($word, "no") == 0)
+            $value = "<0";
+        else if ($word == "?" || (!$quoted && strcasecmp($word, "none") == 0))
+            $value = "=0";
+        else if (!$quoted && strcasecmp($word, "any") == 0)
+            $value = "!=0";
+        else {
+            $rf = reviewForm();
+            $value = matchValue($rf->options["outcome"], $word, true);
+            if (count($value) == 0) {
+                $this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn&rsquo;t match a decision.");
+                $value[] = -10000000;
+            }
+            $value = self::sqlNumericSet($value);
+        }
+
+        $value = array("outcome", $value);
+        $nqt = count($qt);
+        if ($this->privChair
+            || ($this->amPC && $Conf->timePCViewDecision(true)))
+            $qt[] = new SearchTerm("pf", 0, $value);
+        else {
+            if ($this->amPC && $Conf->timePCViewDecision(false))
+                $qt[] = new SearchTerm("pf", self::F_NONCONFLICT, $value);
+            else if ($Conf->timeReviewerViewDecision())
+                $qt[] = new SearchTerm("pf", self::F_REVIEWER, $value);
+            if ($Conf->timeAuthorViewDecision())
+                $qt[] = new SearchTerm("pf", self::F_AUTHOR, $value);
+        }
+        if (count($qt) == $nqt)
+            $qt[] = new SearchTerm("f");
+    }
+
     function _searchConflict($word, &$qt, $quoted) {
 	$m = self::_matchCompar($word, $quoted);
 	if (($type = self::_comparTautology($m))) {
@@ -1194,40 +1231,8 @@ class PaperSearch {
 		$qt[] = new SearchTerm("f");
 	    }
 	}
-	if ($keyword ? $keyword == "decision" : isset($this->fields["decision"])) {
-	    if (!$quoted && strcasecmp($word, "yes") == 0)
-		$value = ">0";
-	    else if (!$quoted && strcasecmp($word, "no") == 0)
-		$value = "<0";
-	    else if ($word == "?" || (!$quoted && strcasecmp($word, "none") == 0))
-		$value = "=0";
-	    else if (!$quoted && strcasecmp($word, "any") == 0)
-		$value = "!=0";
-	    else {
-		$rf = reviewForm();
-		$value = matchValue($rf->options["outcome"], $word, true);
-		if (count($value) == 0) {
-		    $this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn&rsquo;t match a decision.");
-		    $value[] = -10000000;
-		}
-		$value = self::sqlNumericSet($value);
-	    }
-	    $value = array("outcome", $value);
-	    $nqt = count($qt);
-	    if ($this->privChair
-		|| ($this->amPC && $Conf->timePCViewDecision(true)))
-		$qt[] = new SearchTerm("pf", 0, $value);
-	    else {
-		if ($this->amPC && $Conf->timePCViewDecision(false))
-		    $qt[] = new SearchTerm("pf", self::F_NONCONFLICT, $value);
-		else if ($Conf->timeReviewerViewDecision())
-		    $qt[] = new SearchTerm("pf", self::F_REVIEWER, $value);
-		if ($Conf->timeAuthorViewDecision())
-		    $qt[] = new SearchTerm("pf", self::F_AUTHOR, $value);
-	    }
-	    if (count($qt) == $nqt)
-		$qt[] = new SearchTerm("f");
-	}
+	if ($keyword ? $keyword == "decision" : isset($this->fields["decision"]))
+            $this->_searchDecision($word, $qt, $quoted);
 	if (($keyword ? $keyword == "conflict" : isset($this->fields["conflict"]))
 	    && $this->amPC)
 	    $this->_searchConflict($word, $qt, $quoted);
