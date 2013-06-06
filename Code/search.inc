@@ -2281,10 +2281,15 @@ class PaperSearch {
 	// parse and clean the query
 	$qe = $this->_searchQueryType($this->q);
 	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($qe, true)))));
-	$qe = $this->_queryClean($qe);
 	if (!$qe)
 	    $qe = new SearchTerm("t");
 
+        // apply complex limiters (only current example: "acc" for non-chairs)
+        if ($this->limitName == "acc" && !$this->privChair)
+            $qe = SearchTerm::combine("and", array($qe, $this->_searchQueryWord("dec:yes", false)));
+
+        // clean query
+        $qe = $this->_queryClean($qe);
 	// apply review rounds (top down, needs separate step)
 	if ($this->reviewAdjust) {
 	    $qe = $this->_queryAdjustReviews($qe, null);
@@ -2493,6 +2498,7 @@ class PaperSearch {
     }
 
     function complexSearch(&$queryOptions) {
+        global $Conf;
 	$limit = $this->limitName;
 	if (($limit == "s" || $limit == "act") && $this->q == "re:me")
 	    $limit = "r";
@@ -2504,8 +2510,11 @@ class PaperSearch {
 	    $queryOptions["unsub"] = 1;
 	    $queryOptions["active"] = 1;
 	} else if ($limit == "acc") {
-	    $queryOptions["accepted"] = 1;
-	    $queryOptions["finalized"] = 1;
+            if ($this->privChair || $Conf->setting("seedec") == SEEDEC_ALL) {
+                $queryOptions["accepted"] = 1;
+                $queryOptions["finalized"] = 1;
+            } else
+                return true;
 	} else if ($limit == "und") {
 	    $queryOptions["undecided"] = 1;
 	    $queryOptions["finalized"] = 1;
