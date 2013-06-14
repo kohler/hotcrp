@@ -46,7 +46,7 @@ packages (`sudo apachectl graceful` or `sudo apache2ctl graceful`).
 Versions of the Mail and Mail_Mime PHP PEAR packages are currently
 distributed as part of the HotCRP tarball (Mail 1.1.14, Mail_Mime 1.4.0).
 
-**pdftohtml notes**: HotCRP and the banal script uses pdftohtml for
+**pdftohtml notes**: HotCRP and the banal script use pdftohtml for
 paper format checking. As of 2013, many current Unix distributions
 ship with a suitable version of pdftohtml, such as “pdftohtml version
 0.18.4, Copyright 2005-2011 The Poppler Developers.” Older versions of
