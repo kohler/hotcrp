@@ -481,6 +481,7 @@ class ReviewDelegationPaperColumn extends PaperColumn {
         return "Reviewer";
     }
     public function content($pl, $row) {
+        global $Conf;
         $t = Text::user_html($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail) . "<br /><small>Last login: ";
         return $t . ($row->reviewLastLogin ? $Conf->printableTimeShort($row->reviewLastLogin) : "Never") . "</small>";
     }
