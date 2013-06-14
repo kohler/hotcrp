@@ -1,5 +1,15 @@
 HotCRP NEWS
 
+Version 2.59   14.Jun.2013
+
+* Bug fix: "Monitor external reviews" works. Reported by Peter Sewell.
+
+* Information leak fixes: During response periods, don't notify
+  authors of changes in PC-only fields. Don't allow searches on review
+  rounds for conflicted papers. Don't show accept status via "Accepted
+  papers" searches. Reported by Nickolai Zeldovich and Jeff Mogul.
+
+
 Version 2.58   23.Mar.2013
 
 * More information leak plugging: explicit search for review fields
