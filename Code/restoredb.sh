@@ -5,6 +5,7 @@
 
 export PROG=$0
 export FLAGS=""
+export LC_ALL=C LC_CTYPE=C LC_COLLATE=C
 input=
 while [ $# -gt 0 ]; do
     case "$1" in
