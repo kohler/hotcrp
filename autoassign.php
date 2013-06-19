@@ -1003,7 +1003,7 @@ doRadio('balance', 'all', "Spread assignments so that PC members have roughly eq
 
 // Create assignment
 echo "<div class='g'></div>\n";
-echo "<div class='aa'><input type='submit' class='b' name='assign' value='Prepare assignment' /> &nbsp; <span class='hint'>You'll be able to check the assignment before it is saved.</span></div>\n";
+echo "<div class='aa'><input type='submit' class='b' name='assign' value='Prepare assignment' /> &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
 
 
 echo "</div></form>";
