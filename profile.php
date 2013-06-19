@@ -663,7 +663,7 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     echo "</td><td><span class='sep'></span></td><td class='nowrap'>";
     echo tagg_checkbox_h("ass", 1, defval($_REQUEST, "ass")),
 	"&nbsp;</td><td>", tagg_label("System administrator"), "<br />",
-	"<div class='hint'>System administrators have full control over all site operations.  Administrators need not be members of the PC.  There's always at least one system administrator.</div></td></tr></table>\n";
+	"<div class='hint'>System administrators have full control over all site operations.  Administrators need not be members of the PC.  There’s always at least one system administrator.</div></td></tr></table>\n";
     echo "  </td>\n</tr>\n\n";
 }
 
