@@ -95,6 +95,7 @@ class Contact {
 	    $c->roles |= self::ROLE_CHAIR;
 	$c->isPC = ($c->roles & (self::ROLE_PC | self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
 	$c->privChair = ($c->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
+        $c->contactTags = defval($o, "contactTags", null);
 	return $c;
     }
 

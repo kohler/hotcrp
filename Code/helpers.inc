@@ -1768,21 +1768,22 @@ function _sort_pcMember($a, $b) {
 
 function pcMembers() {
     global $Conf;
+    $version = 1;
     if (!isset($_SESSION["pcmembers"]) || !is_array($_SESSION["pcmembers"])
-	|| count($_SESSION["pcmembers"]) != 2
+	|| count($_SESSION["pcmembers"]) < 3
 	|| $Conf->setting("pc") <= 0
 	|| $_SESSION["pcmembers"][0] < $Conf->setting("pc")
-	|| !is_array($_SESSION["pcmembers"][1])
-	|| count($_SESSION["pcmembers"][1]) == 0) {
+        || $_SESSION["pcmembers"][1] != $version
+	|| count($_SESSION["pcmembers"][2]) == 0) {
 	$pc = array();
 	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "") . ($Conf->sversion >= 47 ? ", disabled" : "");
 	$result = $Conf->q("select firstName, lastName, affiliation, email, u.contactId contactId, roles$qa from ContactInfo u join PCMember using (contactId)");
 	while (($row = edb_orow($result)))
 	    $pc[$row->contactId] = Contact::make($row);
 	uasort($pc, "_sort_pcMember");
-	$_SESSION["pcmembers"] = array($Conf->setting('pc'), $pc);
+	$_SESSION["pcmembers"] = array($Conf->setting("pc"), $version, $pc);
     }
-    return $_SESSION["pcmembers"][1];
+    return $_SESSION["pcmembers"][2];
 }
 
 function pcTags() {
