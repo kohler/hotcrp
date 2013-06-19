@@ -456,6 +456,13 @@ class Contact {
         return isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
     }
 
+    static public function override_conflict($forceShow = null) {
+        if ($forceShow === null)
+            return isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] > 0;
+        else
+            return $forceShow;
+    }
+
     function canStartPaper(&$whyNot = null) {
 	global $Conf;
 	$whyNot = array();
@@ -744,8 +751,7 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
-        if ($forceShow === null)
-            $forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
+        $forceShow = self::override_conflict($forceShow);
         if (is_int($rrow)) {
             $viewscore = $rrow;
             $rrow = null;
@@ -848,7 +854,7 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	assert(!$rrow || $rrow->paperId == $prow->paperId);
-	$forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
+        $forceShow = self::override_conflict();
 	$manager = $this->actChair($prow);
 	$rrow_contactId = 0;
 	if ($rrow) {
@@ -927,7 +933,7 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
-	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
+	$forceShow = self::override_conflict();
 	// policy
 	if (($prow->timeSubmitted > 0 || $prow->myReviewType > 0)
 	    && (($this->privChair && ($forceShow || $prow->conflictType == 0))
@@ -982,8 +988,7 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
-        if ($forceShow === null)
-            $forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
+        $forceShow = self::override_conflict($forceShow);
 	$crow_contactId = 0;
 	if ($crow && isset($crow->commentContactId))
 	    $crow_contactId = $crow->commentContactId;
@@ -1038,7 +1043,7 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
-	$forceShow = isset($_REQUEST['forceShow']) && $_REQUEST['forceShow'];
+	$forceShow = self::override_conflict();
 	// policy
 	if ($prow->timeSubmitted > 0
 	    && (($this->privChair && ($forceShow || $prow->conflictType == 0))
@@ -1117,8 +1122,7 @@ class Contact {
 
     function canViewReviewerIdentity($prow, $rrow, $forceShow = null) {
 	global $Conf;
-        if ($forceShow === null)
-            $forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
+        $forceShow = self::override_conflict($forceShow);
 	$rrow_contactId = 0;
 	if ($rrow && isset($rrow->reviewContactId))
 	    $rrow_contactId = $rrow->reviewContactId;
@@ -1153,8 +1157,7 @@ class Contact {
     function canViewDiscussionLead($prow, $forceShow) {
         if ($prow === null || $prow === true)
             return $this->canViewReviewerIdentity(true, null, $forceShow);
-        if ($forceShow === null)
-            $forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
+        $forceShow = self::override_conflict($forceShow);
 	$conflictType = $this->actConflictType($prow);
         return ($this->privChair && ($conflictType == 0 || $forceShow))
             || $prow->leadContactId == $this->cid
@@ -1167,8 +1170,7 @@ class Contact {
 	global $Conf;
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->canViewAuthors($prow, false);
-        if ($forceShow === null)
-            $forceShow = isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"];
+        $forceShow = self::override_conflict($forceShow);
 	$crow_contactId = 0;
 	if ($crow && isset($crow->commentContactId))
 	    $crow_contactId = $crow->commentContactId;
@@ -1185,7 +1187,7 @@ class Contact {
 	return false;
     }
 
-    function canViewDecision($prow, $forceShow = false) {
+    function canViewDecision($prow, $forceShow = null) {
 	global $Conf;
 	$conflictType = $prow ? $this->actConflictType($prow) : 0;
 	if (($prow && $conflictType >= CONFLICT_AUTHOR && $Conf->timeAuthorViewDecision())
@@ -1193,9 +1195,8 @@ class Contact {
 	    || ($prow && defval($prow, "myReviewType", 0) > 0
 		&& defval($prow, "myReviewSubmitted", 0) > 0
 		&& $Conf->timeReviewerViewDecision())
-	    || ($this->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])
-	    || ($this->privChair && (!$prow || $conflictType == 0))
-	    || ($this->privChair && $forceShow))
+	    || ($this->privChair && (!$prow || $conflictType == 0
+                                     || self::override_conflict($forceShow))))
 	    return true;
 	return false;
     }
@@ -1215,9 +1216,8 @@ class Contact {
 
 	// chair can see everything
 	if ($this->privChair
-	    && (!$prow
-		|| $prow->conflictType == 0
-		|| (isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"])))
+	    && (!$prow || $prow->conflictType == 0
+                || self::override_conflict()))
 	    return VIEWSCORE_ADMINONLY - 1;
 
 	// author can see author information
@@ -1263,24 +1263,23 @@ class Contact {
 		    || ($this->privChair && $forceShow)));
     }
 
-    function actChair($prow, $forceShow = false) {
+    function actChair($prow, $forceShow = null) {
 	return ($this->privChair
 		&& (!$prow || $prow->conflictType <= 0
-		    || $forceShow || defval($_REQUEST, "forceShow")));
+                    || self::override_conflict($forceShow)));
     }
 
     function actPC($prow, $forceShow = null) {
 	return ($this->isPC
 		&& (!$prow
 		    || $prow->conflictType <= 0
-		    || ($this->privChair && ($forceShow === null ? defval($_REQUEST, "forceShow") : $forceShow))));
+		    || ($this->privChair && self::override_conflict($forceShow))));
     }
 
     function canSetOutcome($prow) {
 	if (!$this->privChair)
 	    return false;
-	if ($prow && $prow->conflictType > 0
-	    && !(isset($_REQUEST['forceShow']) && $_REQUEST['forceShow']))
+	if ($prow && $prow->conflictType > 0 && !self::override_conflict())
 	    return false;
 	return true;
     }

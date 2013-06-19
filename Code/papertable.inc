@@ -659,7 +659,7 @@ class PaperTable {
     }
 
     function paptabTopicsOptions($prow, $showAllOptions) {
-	global $Conf, $Me, $forceShow;
+	global $Conf, $Me;
 	$topicdata = topicTable($prow, -1);
 	$optionhtml = array();
 	$ndocuments = 0;
@@ -1269,7 +1269,7 @@ class PaperTable {
 	      && $prow->timeSubmitted > 0
 	      && ($prow->conflictType >= CONFLICT_AUTHOR
 		  || $prow->conflictType <= 0
-		  || ($Me->privChair && defval($_REQUEST, "forceShow")))
+		  || ($Me->privChair && Contact::override_conflict()))
 	      && $Me->contactId > 0))
 	    return;
 	// watch note
@@ -1550,7 +1550,7 @@ class PaperTable {
     }
 
     function _paptabBeginKnown() {
-	global $Conf, $Me, $forceShow, $linkExtra;
+	global $Conf, $Me, $linkExtra;
 	$prow = $this->prow;
 
 	// what actions are supported?
@@ -1600,7 +1600,7 @@ class PaperTable {
     }
 
     function paptabBegin($contentopener = "") {
-	global $Conf, $Me, $forceShow, $linkExtra;
+	global $Conf, $Me, $linkExtra;
 	$prow = $this->prow;
 	$pboxclass = $prow ? "pbox" : "pboxn";
 
@@ -1795,7 +1795,7 @@ class PaperTable {
     }
 
     function paptabComments() {
-	global $Conf, $Me, $forceShow, $linkExtra, $useRequest;
+	global $Conf, $Me, $linkExtra, $useRequest;
 	$prow = $this->prow;
 
 	// show comments as well

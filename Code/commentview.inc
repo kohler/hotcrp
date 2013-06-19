@@ -97,7 +97,7 @@ class CommentView {
     }
 
     function show($prow, $crow, $useRequest, $editMode, $foldnew = true) {
-	global $Conf, $Me, $forceShow, $linkExtra;
+	global $Conf, $Me, $linkExtra;
 
 	if ($crow && $crow->forAuthors > 1)
 	    return $this->showResponse($prow, $crow, $useRequest, $editMode);
@@ -221,7 +221,7 @@ class CommentView {
     }
 
     function showResponse($prow, $crow, $useRequest, $editMode) {
-	global $Conf, $Me, $forceShow, $linkExtra;
+	global $Conf, $Me, $linkExtra;
 
 	if ($editMode && !$Me->canRespond($prow, $crow)
 	    && ($crow || !$Me->privChair))

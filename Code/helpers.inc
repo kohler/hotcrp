@@ -1497,7 +1497,7 @@ function actionTab($text, $url, $default) {
 
 function actionBar($mode = "", $prow = null) {
     global $Me, $Conf, $CurrentList;
-    $forceShow = ($Me->privChair && isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] ? "&amp;forceShow=1" : "");
+    $forceShow = ($Me->privChair && Contact::override_conflict() ? "&amp;forceShow=1" : "");
 
     $goBase = "paper";
     $paperArg = "p=*";
