@@ -213,7 +213,7 @@ function requestReviewChecks($themHtml, $reqId) {
 	$row = edb_row($result);
 	if ($row[1] == "<conflict>")
 	    return $Conf->errorMsg("$themHtml has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
-	else if ($Me->privChairOverride()) {
+	else if ($Me->privChair && Contact::override_deadlines()) {
 	    $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was &ldquo;" . htmlspecialchars($row[1]) . "&rdquo;.)" : ""));
 	    $Conf->qe("delete from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
 	} else

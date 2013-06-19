@@ -452,14 +452,15 @@ class Contact {
 	}
     }
 
-    function privChairOverride() {
-	return $this->privChair && isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
+    static public function override_deadlines() {
+        return isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
     }
 
     function canStartPaper(&$whyNot = null) {
 	global $Conf;
 	$whyNot = array();
-	if ($this->privChairOverride() || $Conf->timeStartPaper())
+	if ($Conf->timeStartPaper()
+            || ($this->privChair && self::override_deadlines()))
 	    return true;
 	$whyNot["deadline"] = "sub_reg";
 	if ($this->privChair)
@@ -480,7 +481,8 @@ class Contact {
 	// policy
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $this->privChair)
 	    && $prow->timeWithdrawn <= 0
-	    && ($Conf->timeUpdatePaper($prow) || $this->privChairOverride()))
+	    && ($Conf->timeUpdatePaper($prow)
+                || ($this->privChair && self::override_deadlines())))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
@@ -489,7 +491,8 @@ class Contact {
 	    $whyNot["withdrawn"] = 1;
 	if ($prow->timeSubmitted > 0 && $Conf->setting('sub_freeze') > 0)
 	    $whyNot["updateSubmitted"] = 1;
-	if (!$Conf->timeUpdatePaper($prow) && !$this->privChairOverride())
+	if (!$Conf->timeUpdatePaper($prow)
+            && !($this->privChair && self::override_deadlines()))
 	    $whyNot["deadline"] = "sub_update";
 	if ($this->privChair)
 	    $whyNot["override"] = 1;
@@ -504,7 +507,8 @@ class Contact {
 	// policy
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $this->privChair)
 	    && $prow->timeWithdrawn <= 0
-	    && ($Conf->timeFinalizePaper($prow) || $this->privChairOverride()))
+	    && ($Conf->timeFinalizePaper($prow)
+                || ($this->privChair && self::override_deadlines())))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
@@ -513,7 +517,8 @@ class Contact {
 	    $whyNot["withdrawn"] = 1;
 	if ($prow->timeSubmitted > 0)
 	    $whyNot["updateSubmitted"] = 1;
-	if (!$Conf->timeFinalizePaper($prow) && !$this->privChairOverride())
+	if (!$Conf->timeFinalizePaper($prow)
+            && !($this->privChair && self::override_deadlines()))
 	    $whyNot["deadline"] = "finalizePaperSubmission";
 	if ($this->privChair)
 	    $whyNot["override"] = 1;
@@ -525,17 +530,17 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
-        $privChairOverride = ($override ? $this->privChair : $this->privChairOverride());
+        $override = $this->privChair && ($override || self::override_deadlines());
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $this->privChair)
 	    && $prow->timeWithdrawn <= 0
-            && ($prow->outcome == 0 || $privChairOverride))
+            && ($prow->outcome == 0 || $override))
 	    return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
 	    $whyNot["author"] = 1;
-        else if ($prow->outcome != 0 && !$privChairOverride)
+        else if ($prow->outcome != 0 && !$override)
             $whyNot["decided"] = 1;
 	if ($this->privChair)
 	    $whyNot["override"] = 1;
@@ -550,14 +555,16 @@ class Contact {
 	// policy
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $this->privChair)
 	    && $prow->timeWithdrawn > 0
-	    && ($Conf->timeUpdatePaper($prow) || $this->privChairOverride()))
+	    && ($Conf->timeUpdatePaper($prow)
+                || ($this->privChair && self::override_deadlines())))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn <= 0)
 	    $whyNot["notWithdrawn"] = 1;
-	if (!$Conf->timeUpdatePaper($prow) && !$this->privChairOverride())
+	if (!$Conf->timeUpdatePaper($prow)
+            && !($this->privChair && self::override_deadlines()))
 	    $whyNot["deadline"] = "sub_update";
 	if ($this->privChair)
 	    $whyNot["override"] = 1;
@@ -570,11 +577,11 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	// policy
-	$privChairOverride = ($override ? $this->privChair : $this->privChairOverride());
+	$override = $this->privChair && ($override || self::override_deadlines());
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $this->privChair)
 	    && $Conf->collectFinalPapers()
 	    && $prow->timeWithdrawn <= 0 && $prow->outcome > 0
-	    && ($Conf->timeSubmitFinalPaper() || $privChairOverride))
+	    && ($Conf->timeSubmitFinalPaper() || $override))
 	    return true;
 	// collect failure reasons
 	if ($prow->conflictType < CONFLICT_AUTHOR && !$this->privChair)
@@ -583,11 +590,11 @@ class Contact {
 	    $whyNot["withdrawn"] = 1;
 	// NB logic order here is important elsewhere
 	if (!$Conf->collectFinalPapers()
-	    || (!$Conf->timeAuthorViewDecision() && !$privChairOverride))
+	    || (!$Conf->timeAuthorViewDecision() && !$override))
 	    $whyNot["deadline"] = "final_open";
 	else if ($prow->outcome <= 0)
 	    $whyNot["notAccepted"] = 1;
-	else if (!$Conf->timeSubmitFinalPaper() && !$privChairOverride)
+	else if (!$Conf->timeSubmitFinalPaper() && !$override)
 	    $whyNot["deadline"] = "final_done";
 	if ($this->privChair)
 	    $whyNot["override"] = 1;
@@ -821,7 +828,8 @@ class Contact {
 	    return false;
 	// policy
 	if (($prow->myReviewType >= REVIEW_SECONDARY || $this->privChair)
-	    && ($Conf->timeReviewPaper(false, true, true) || $this->privChairOverride() || !$time))
+	    && ($Conf->timeReviewPaper(false, true, true) || !$time
+                || ($this->privChair && self::override_deadlines())))
 	    return true;
 	// collect failure reasons
 	if ($prow->myReviewType < REVIEW_SECONDARY)
@@ -857,8 +865,7 @@ class Contact {
 	    && (($this->isPC && $prow->conflictType == 0 && !$rrow)
 		|| $myReview || ($manager && $forceShow))
 	    && ($Conf->timeReviewPaper($this->isPC, $myReview, true)
-		|| $this->privChairOverride()
-		|| ($manager && !$submit)))
+		|| ($manager && (!$submit || self::override_deadlines()))))
 	    return true;
 	// collect failure reasons
 	// The "reviewNotAssigned" and "deadline" failure reasons are special.
@@ -928,8 +935,7 @@ class Contact {
 		|| $prow->myReviewType > 0)
 	    && ($Conf->timeReviewPaper($this->isPC, true, true)
 		|| $Conf->setting('cmt_always') > 0
-		|| $this->privChairOverride()
-		|| ($this->privChair && !$submit))
+		|| ($this->privChair && (!$submit || self::override_deadlines())))
 	    && (!$crow
 		|| $crow->contactId == $this->contactId
 		|| $this->privChair))
@@ -1038,8 +1044,7 @@ class Contact {
 	    && (($this->privChair && ($forceShow || $prow->conflictType == 0))
 		|| $prow->conflictType >= CONFLICT_AUTHOR)
 	    && ($Conf->timeAuthorRespond()
-		|| $this->privChairOverride()
-		|| ($this->privChair && !$submit))
+		|| ($this->privChair && (!$submit || self::override_deadlines())))
 	    && (!$crow || $crow->forAuthors > 1))
 	    return true;
 	// collect failure reasons
