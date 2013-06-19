@@ -725,9 +725,10 @@ class Mailer {
 	}
 
 	$row->conflictType = $old_conflictType;
-	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts) && $Me->privChair) {
+	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts)
+            && $Me->canAdminister($row)) {
 	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
-	    if (isset($rest["infoNames"]) && $Me->privChair)
+	    if (isset($rest["infoNames"]) && $Me->canAdminister($row))
 		$contactsmsg = pluralx($contacts, "contact") . ", " . commajoin($contacts);
 	    else
 		$contactsmsg = "contact(s)";
@@ -761,7 +762,8 @@ class Mailer {
 	}
 
 	$row->conflictType = $old_conflictType;
-	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts) && $Me->privChair) {
+	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts)
+            && $Me->canAdminister($row)) {
 	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
 	    $Conf->infoMsg("Sent email to paper #$row->paperId&rsquo;s " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . $endmsg);
 	}

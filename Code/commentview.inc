@@ -67,7 +67,7 @@ class CommentView {
 	    echo $sep, "<span class='cmtname'>", ($blind ? "[" : ""),
 		Text::user_html($crow), ($blind ? "]" : ""), "</span>";
 	    $sep = $xsep;
-	} else if ($crow && $Me->privChair) {
+	} else if ($crow && $Me->canAdminister($prow)) {
 	    echo $sep, "<span id='foldcid$crow->commentId' class='cmtname fold4c'>",
 		"<a class='q fn4' href=\"javascript:void fold('cid$crow->commentId', 0, 4)\" title='Show author'>+&nbsp;<i>Hidden for blind review</i></a>",
 		"<span class='fx4'><a class='fx4' href=\"javascript:void fold('cid$crow->commentId', 1, 4)\" title='Hide author'>[blind]</a> ", Text::user_html($crow), "</span>",
@@ -80,7 +80,8 @@ class CommentView {
 	}
 	echo "</span>";
 	if ($crow && !$response
-	    && ($prow->conflictType == 0 || ($Me->privChair && $forceShow))) {
+	    && ($prow->conflictType == 0
+                || ($Me->canAdminister($prow) && $forceShow))) {
 	    $forReviewers = ($crow->forReviewers == -1 ? 1 : $crow->forReviewers);
 	    if ($crow->forAuthors == 0 && $forReviewers == 2)
 		$x = "shown only to PC chairs";
@@ -134,7 +135,8 @@ class CommentView {
 	echo "<div class='cmtt'>";
 
 	// Links
-	if ($crow && ($crow->contactId == $Me->contactId || $Me->privChair)
+	if ($crow && ($crow->contactId == $Me->contactId
+                      || $Me->canAdminister($prow))
 	    && !$editMode && $Me->canComment($prow, $crow))
 	    echo "<div class='floatright'>",
 		"<a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId"), "' class='xx'>",
@@ -224,7 +226,7 @@ class CommentView {
 	global $Conf, $Me, $linkExtra;
 
 	if ($editMode && !$Me->canRespond($prow, $crow)
-	    && ($crow || !$Me->privChair))
+	    && ($crow || !$Me->canAdminister($prow)))
 	    $editMode = false;
 	$this->nresponse++;
 
@@ -239,7 +241,8 @@ class CommentView {
         $this->table_begin("response");
 
 	// Links
-	if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->privChair)
+	if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR
+                      || $Me->canAdminister($prow))
 	    && !$editMode && $Me->canRespond($prow, $crow))
 	    echo "<div class='floatright'>",
 		"<a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId") . "' class='xx'>",
@@ -264,7 +267,7 @@ class CommentView {
 
 	if (!$editMode) {
 	    echo "<div class='cmtg cmtg1'>";
-	    if ($Me->privChair && $crow->forReviewers == 0)
+	    if ($Me->canAdminister($prow) && $crow->forReviewers == 0)
 		echo "<i>The <a href='", hoturl("comment", "c=$crow->commentId$linkExtra"), "'>authors’ response</a> is not yet ready for reviewers to view.</i>";
 	    else if (!$Me->canViewComment($prow, $crow, null))
 		echo "<i>The authors’ response is not yet ready for reviewers to view.</i>";
@@ -296,7 +299,7 @@ Make it short and to the point; the conference deadline has passed.";
 	// actions
         $buttons = array();
         $buttons[] = tagg_submit("submitresponse", "Submit", array("class" => "bb"));
-        if ($Me->privChair || !$crow || !$crow->forReviewers)
+        if ($Me->canAdminister($prow) || !$crow || !$crow->forReviewers)
             $buttons[] = tagg_submit("savedraft", "Save as draft");
         if ($crow) {
             $buttons[] = "";

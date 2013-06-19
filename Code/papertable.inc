@@ -31,6 +31,7 @@ class PaperTable {
     var $initial;
     var $entryMatches;
     var $canUploadFinal;
+    private $admin;
 
     function __construct($prow) {
 	global $Conf, $Me;
@@ -40,6 +41,7 @@ class PaperTable {
 	$this->crows = null;
 	$this->rrow = null;
 	$this->editrrow = null;
+        $this->admin = $Me->canAdminister($prow);
 
 	if ($this->prow == null) {
 	    $this->mode = "pe";
@@ -270,14 +272,15 @@ class PaperTable {
 	    return "";
     }
 
-    function paptabDownload($prow) {
+    private function paptabDownload() {
 	global $Conf, $Me;
 	assert(!$this->editable);
+        $prow = $this->prow;
 	$final = ($prow->outcome > 0 && $Conf->collectFinalPapers());
 	$out = array();
 
 	// status and download
-	if ($prow && $Me->canDownloadPaper($prow)) {
+	if ($Me->canDownloadPaper($prow)) {
 	    $t = "<td class='nowrap pad'>" . $Me->paperStatus($prow->paperId, $prow, 0) . "</td>";
 	    $pdfs = array();
 
@@ -777,24 +780,25 @@ class PaperTable {
 	}
     }
 
-    function echoNewContactAuthor($pulldown) {
+    private function echoNewContactAuthor() {
 	global $Me, $Conf;
 	echo $this->papt("contactAuthor", "Contact"),
 	    "<div class='paphint'>You will be able to add more contacts after you register the paper.</div>",
 	    "<div class='papv'>";
-	if ($pulldown)
+	if ($Me->privChair)
 	    contactPulldown("contact", "contact", $Conf, $Me);
 	else
 	    echo Text::user_html($Me);
 	echo "</div>\n\n";
     }
 
-    function echoContactAuthor($prow, $editMode = null) {
+    private function echoContactAuthor($editMode = null) {
 	global $Conf, $Me;
+        $paperId = $this->prow->paperId;
 	$result = $Conf->qe("select firstName, lastName, email, contactId
 		from ContactInfo
 		join PaperConflict using (contactId)
-		where paperId=$prow->paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . "
+		where paperId=$paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . "
 		order by lastName, firstName, email", "while finding contacts");
 	echo $this->papt("contactAuthor", pluralx(edb_nrows($result), "Contact")),
 	    "<div class='papv'>";
@@ -804,8 +808,8 @@ class PaperTable {
 		$aus[] = $row;
 	    echo authorTable($aus, $Me);
 	}
-	if ($editMode || ($editMode === false && ($this->editable || $Me->privChair)))
-	    echo "<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("contactauthors", "p=$prow->paperId") . "'>Edit&nbsp;contacts</a>";
+	if ($editMode || ($editMode === false && ($this->editable || $this->admin)))
+	    echo "<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("contactauthors", "p=$paperId") . "'>Edit&nbsp;contacts</a>";
 	echo "</div>\n\n";
     }
 
@@ -819,7 +823,7 @@ class PaperTable {
 	    "<div class='papv'></div>\n\n";
     }
 
-    function echoCollaborators($prow) {
+    private function echoCollaborators() {
 	global $Conf;
 	if (!$Conf->setting("sub_collab"))
 	    return;
@@ -832,7 +836,7 @@ class PaperTable {
 	    echo "List <em>other</em> people and institutions with which
 	the authors have conflicts of interest.  This will help us avoid
 	conflicts when assigning external reviews.  No need to list people
-	at the authors' own institutions.";
+	at the authors’ own institutions.";
 	else
 	    echo "List people and institutions with which the authors have
 	conflicts of interest.  ", $Conf->conflictDefinitionText(), "
@@ -840,7 +844,7 @@ class PaperTable {
 	We use this information when assigning PC and external reviews.";
 	echo "  List one conflict per line.  For example: &ldquo;<tt>Jelena Markovic (EPFL)</tt>&rdquo; or, for a whole institution, &ldquo;<tt>EPFL</tt>&rdquo;.</div>",
 	    "<div class='papv'>",
-	    $this->entryData("collaborators", $prow),
+	    $this->entryData("collaborators", $this->prow),
 	    "</div>\n\n";
     }
 
@@ -880,19 +884,20 @@ class PaperTable {
 	    "</div></div></div>\n\n";
     }
 
-    function echoTopics($prow) {
+    private function echoTopics() {
 	global $Conf;
 	assert(!!$this->editable);
 	$topicMode = (int) $this->useRequest;
-	if (($topicTable = topicTable($prow, $topicMode))) {
+	if (($topicTable = topicTable($this->prow, $topicMode))) {
 	    echo $this->papt("topics", "Topics"),
 		"<div class='paphint'>Select any topics that apply to your paper.</div>",
 		"<div class='papv'>", $topicTable, "</div>\n\n";
 	}
     }
 
-    function echoOptions($prow, $showAll, $displayTypeFlags) {
-	global $Conf;
+    private function echoOptions($displayTypeFlags) {
+	global $Conf, $Me;
+        $prow = $this->prow;
 	$prow_optionIds = isset($prow->optionIds) ? $prow->optionIds : "";
 	if (!($opt = paperOptions()))
 	    return;
@@ -904,7 +909,8 @@ class PaperTable {
 	$optdata = null;
 	foreach ($opt as $o) {
 	    if (!($displayTypeFlags & (1 << $o->displayType))
-		|| ($o->isFinal && !$this->canUploadFinal))
+		|| ($o->isFinal && !$this->canUploadFinal)
+                || !$Me->canViewPaperOption($prow, $o))
 		continue;
 	    $optid = "opt$o->optionId";
 	    if ($this->useRequest)
@@ -951,7 +957,7 @@ class PaperTable {
 	}
     }
 
-    function echoPCConflicts($prow) {
+    private function echoPCConflicts() {
 	global $Conf, $Me, $authorConflictTypes;
 
 	assert(!!$this->editable);
@@ -969,13 +975,13 @@ class PaperTable {
 	    foreach ($pcm as $id => $row)
 		if (isset($_REQUEST["pcc$id"])
 		    && ($ct = cvtint($_REQUEST["pcc$id"])) > 0)
-		    $conflict[$id] = Conflict::force_author_mark($ct, $Me->privChair);
+		    $conflict[$id] = Conflict::force_author_mark($ct, $this->admin);
 	}
-	if ($prow) {
-	    $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=$prow->paperId", "while finding conflicted PC members");
+	if ($this->prow) {
+	    $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=" . $this->prow->paperId, "while finding conflicted PC members");
 	    while (($row = edb_row($result))) {
 		$ct = new Conflict($row[1]);
-		if (!$this->useRequest || (!$ct->is_author_mark() && !$Me->privChair))
+		if (!$this->useRequest || (!$ct->is_author_mark() && !$this->admin))
 		    $conflict[$row[0]] = $ct;
 	    }
 	}
@@ -986,7 +992,7 @@ class PaperTable {
 	    $ctypes = $authorConflictTypes;
 	    $extra = array("onchange" => "hiliter(this)",
 			   "class" => "pctbconfselector");
-	    if ($Me->privChair) {
+	    if ($this->admin) {
 		$ctypes["xsep"] = null;
 		$ctypes[CONFLICT_CHAIRMARK] = "Confirmed conflict";
 		$extra["optionstyles"] = array(CONFLICT_CHAIRMARK => "font-weight:bold");
@@ -996,11 +1002,12 @@ class PaperTable {
 		$ct = defval($conflict, $id, $nonct);
 		if ($ct->is_author())
 		    $c .= "<strong>Author</strong>";
-		else if ($ct->is_conflict() && !$ct->is_author_mark() && !$Me->privChair)
-		    $c .= "<strong>Conflict</strong>";
-		else if ($ct->is_conflict() && !$ct->is_author_mark())
-		    $c .= tagg_select("pcc$id", $ctypes, CONFLICT_CHAIRMARK, $extra);
-		else
+		else if ($ct->is_conflict() && !$ct->is_author_mark()) {
+                    if (!$this->admin)
+                        $c .= "<strong>Conflict</strong>";
+                    else
+                        $c .= tagg_select("pcc$id", $ctypes, CONFLICT_CHAIRMARK, $extra);
+		} else
 		    $c .= tagg_select("pcc$id", $ctypes, $ct->value, $extra);
 		$c .= "</td></tr>\n";
 		$pcconfs[] = $c;
@@ -1013,7 +1020,7 @@ class PaperTable {
 	    foreach ($pcm as $id => $p) {
 		$ct = defval($conflict, $id, $nonct);
 		$checked = $ct->is_conflict();
-		$disabled = $checked && !$ct->is_author_mark() && !$Me->privChair;
+		$disabled = $checked && !$ct->is_author_mark() && !$this->admin;
 		$value = $checked ? $ct->value : CONFLICT_AUTHORMARK;
 		$cbox = tagg_checkbox_h("pcc$id", $value, $checked, array("disabled" => $disabled));
 		$aff = ($p->affiliation === "" ? "" : "<div class='pcconfaff'>" . htmlspecialchars($p->affiliation) . "</div>");
@@ -1263,13 +1270,14 @@ class PaperTable {
 	$Conf->footerScript("Miniajax.onload(\"rankform\")");
     }
 
-    function papstripWatch($prow) {
+    private function papstripWatch() {
 	global $Conf, $Me, $linkExtra;
+        $prow = $this->prow;
 	if (!($this->watchCheckbox
 	      && $prow->timeSubmitted > 0
 	      && ($prow->conflictType >= CONFLICT_AUTHOR
 		  || $prow->conflictType <= 0
-		  || ($Me->privChair && Contact::override_conflict()))
+		  || ($this->admin && Contact::override_conflict()))
 	      && $Me->contactId > 0))
 	    return;
 	// watch note
@@ -1328,7 +1336,7 @@ class PaperTable {
 	$prow = $this->prow;
 	$m = "";
 
-	$override = ($Me->privChair ? "  As an administrator, you can override this deadline using the &ldquo;Override deadlines&rdquo; checkbox." : "");
+	$override = ($this->admin ? "  As an administrator, you can override this deadline using the &ldquo;Override deadlines&rdquo; checkbox." : "");
 	if (!$prow) {
 	    $timeStart = $Conf->timeStartPaper();
 	    $startDeadline = $this->deadlineSettingIs("sub_reg");
@@ -1337,7 +1345,7 @@ class PaperTable {
 		    $msg = "You can&rsquo;t register new papers because the conference site has not been opened for submissions.$override";
 		else
 		    $msg = "You can&rsquo;t register new papers since the <a href='" . hoturl("deadlines") . "'>deadline</a> has passed.$startDeadline$override";
-		if (!$Me->privChair)
+		if (!$this->admin)
 		    errorMsgExit($msg);
 		$m .= "<div class='xinfo'>" . $msg . "</div>";
 	    } else {
@@ -1382,7 +1390,7 @@ class PaperTable {
 	    $updateDeadline = $this->deadlineSettingIs("final_soft");
 	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final version for the paper here.$updateDeadline  You may also edit paper contacts, allowing others to view reviews and make changes." . "</div>";
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR) {
-	    $override2 = ($Me->privChair ? " As an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
+	    $override2 = ($this->admin ? " As an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
 	    if ($this->mode == "pe") {
 		$m .= "<div class='xinfo'>This paper is under review and can’t be changed";
                 if ($Me->canWithdrawPaper($prow))
@@ -1406,7 +1414,7 @@ class PaperTable {
         // Withdrawn papers can be revived
         if ($prow->timeWithdrawn > 0) {
             $revivable = $Conf->timeFinalizePaper($prow);
-            if ($revivable || $Me->privChair) {
+            if ($revivable || $this->admin) {
                 $b = "<input class='b' type='submit' name='revive' value='Revive paper' />";
                 if (!$revivable)
                     $b = array($b, "(admin only)");
@@ -1418,12 +1426,12 @@ class PaperTable {
         $buttons = array();
 
         if ($prow->outcome > 0 && $Conf->collectFinalPapers()
-            && ($Conf->timeSubmitFinalPaper() || $Me->privChair)
+            && ($Conf->timeSubmitFinalPaper() || $this->admin)
             && $this->mode == "pe")
             $buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Submit final version' />", "");
         else if ($Conf->timeUpdatePaper($prow) && $this->mode == "pe")
             $buttons[] = array("<input class='bb' type='submit' name='update' value='Save changes' />", "");
-        else if ($Me->privChair && $this->mode == "pe") {
+        else if ($this->admin && $this->mode == "pe") {
             $class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "b" : "bb");
             $buttons[] = array("<input class='$class' type='submit' name='update' value='Save changes' />", "(admin only)");
         }
@@ -1436,7 +1444,7 @@ class PaperTable {
         else {
             $b = "<button type='button' class='b' onclick=\"popup(this,'w',0,true)\">Withdraw paper</button>";
             $admins = "";
-            if ((!$Me->privChair || $prow->conflictType >= CONFLICT_AUTHOR)
+            if ((!$this->admin || $prow->conflictType >= CONFLICT_AUTHOR)
                 && !$Conf->timeFinalizePaper($prow))
                 $admins = "Only administrators can undo this step.";
             $override = "";
@@ -1476,7 +1484,7 @@ class PaperTable {
 
 	$buttons = $this->_collectActionButtons();
 
-	if ($Me->privChair && $prow) {
+	if ($this->admin && $prow) {
 	    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this,'d',0,true)\">Delete paper</button>", "(admin only)");
 	    $Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
@@ -1492,7 +1500,7 @@ class PaperTable {
 	}
 
 	echo tagg_actions($buttons);
-	if ($Me->privChair) {
+	if ($this->admin) {
 	    $v = defval($_REQUEST, "emailNote", "");
 	    echo "  <div class='g'></div>\n  <table>\n",
 		"    <tr><td>",
@@ -1518,8 +1526,8 @@ class PaperTable {
 	    $this->papstripTags($prow, "review");
 	if ($Me->canSetRank($prow))
 	    $this->papstripRank($prow);
-	$this->papstripWatch($prow);
-	if (($Me->privChair || ($Me->isPC && $Me->canViewAuthors($prow, false)))
+	$this->papstripWatch();
+	if (($this->admin || ($Me->isPC && $Me->canViewAuthors($prow, false)))
 	    && !$this->editable)
 	    $this->papstripPCConflicts($prow);
 	if (($Me->actChair($prow) || $Me->canViewAuthors($prow, false))
@@ -1649,15 +1657,15 @@ class PaperTable {
 	    $this->paptabTitle($prow);
 	    $this->echoUploadRow($prow,
 		(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
-	    $this->echoOptions($prow, $Me->privChair, 4);
+	    $this->echoOptions(4);
 
 	    // Authorship
 	    echo $spacer;
 	    $this->echoAuthorInformation($prow);
 	    if (!$prow)
-		$this->echoNewContactAuthor($Me->privChair);
+		$this->echoNewContactAuthor();
 	    else
-		$this->echoContactAuthor($prow, $this->mode == "pe" || $prow->conflictType >= CONFLICT_AUTHOR);
+		$this->echoContactAuthor($this->mode == "pe" || $prow->conflictType >= CONFLICT_AUTHOR);
 	    if ($Conf->subBlindOptional() && $this->editable !== "f")
 		$this->echoAnonymity($prow);
 
@@ -1666,13 +1674,13 @@ class PaperTable {
 
 	    // Topics and options
 	    echo $spacer;
-	    $this->echoTopics($prow);
-	    $this->echoOptions($prow, $Me->privChair, 3);
+	    $this->echoTopics();
+	    $this->echoOptions(3);
 
 	    // Potential conflicts
-	    if ($this->editable !== "f" || $Me->privChair) {
-		$this->echoPCConflicts($prow);
-		$this->echoCollaborators($prow);
+	    if ($this->editable !== "f" || $this->admin) {
+		$this->echoPCConflicts();
+		$this->echoCollaborators();
 	    }
 
 	    // Submit button
@@ -1684,7 +1692,7 @@ class PaperTable {
 	} else {
 	    if ($this->mode == "pe" && ($m = $this->editMessage()))
 		echo $m, "<div class='g'></div>\n";
-	    $this->paptabDownload($prow);
+	    $this->paptabDownload();
 	    echo "<table class='paptab'><tr><td class='paple'><div class='paple'>";
 	    $this->paptabAbstract($prow);
 	    echo "</div></td><td class='papre'><div class='papre'>";

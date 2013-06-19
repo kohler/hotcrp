@@ -24,7 +24,7 @@ class PaperActions {
 		$Error["decision"] = true;
 	    }
 	} else
-	    $Conf->errorMsg("You can’t set the decision for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : ""));
+	    $Conf->errorMsg("You can’t set the decision for paper #$prow->paperId." . ($Me->canAdminister($prow) ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : ""));
 	if ($ajax)
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "decision")));
     }
@@ -32,7 +32,7 @@ class PaperActions {
     static function setReviewPreference($prow) {
 	global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
-	if (!$Me->privChair
+	if (!$Me->canAdminister($prow)
 	    || ($contactId = rcvtint($_REQUEST["contactId"])) <= 0)
 	    $contactId = $Me->contactId;
 	$v = cvtpref($_REQUEST["revpref"]);
@@ -161,7 +161,7 @@ class PaperActions {
 	    if (isset($_REQUEST["deltags"]))
 		$tagger->save($prow->paperId, $_REQUEST["deltags"], "d");
 	} else
-	    $Error["tags"] = "You can’t set tags for paper #$prow->paperId." . ($Me->privChair ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
+	    $Error["tags"] = "You can’t set tags for paper #$prow->paperId." . ($Me->canAdminister($prow) ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
 	if ($ajax && $OK && !isset($Error["tags"]))
             $Conf->ajaxExit(array("ok" => true));
         else if ($ajax)
@@ -214,7 +214,7 @@ class PaperActions {
 	$ajax = defval($_REQUEST, "ajax", false);
         $q = "select distinct tag from PaperTag t";
         $where = array();
-        if (!$Me->privChair) {
+        if (!$Me->canAdminister($prow)) {
             $q .= " left join PaperConflict pc on (pc.paperId=t.paperId and pc.contactId=$Me->contactId)";
             $where[] = "coalesce(pc.conflictType,0)<=0";
         }
