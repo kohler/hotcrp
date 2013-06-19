@@ -443,14 +443,14 @@ class PaperTable {
     function echoUploadRow($prow, $flags) {
 	global $Me;
 	if ($this->canUploadFinal) {
-	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DTYPE_FINAL, "optionName" => "Final version", "type" => null), $prow->finalPaperStorageId, $flags);
+	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DTYPE_FINAL, "optionName" => "Final version", "type" => null), $prow ? $prow->finalPaperStorageId : 0, $flags);
 	    foreach (paperOptions() as $id => $o)
 		if ($o->type == PaperOption::T_FINALPDF) {
 		    $match = preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m);
 		    $this->echoDocumentUploadRow($prow, $o, $match ? $m[1] : 0, $flags);
 		}
 	} else
-	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DTYPE_SUBMISSION, "optionName" => "Submission", "type" => null), $prow->paperStorageId, $flags);
+	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DTYPE_SUBMISSION, "optionName" => "Submission", "type" => null), $prow ? $prow->paperStorageId : 0, $flags);
     }
 
     function paptabAbstract($prow) {
@@ -947,7 +947,7 @@ class PaperTable {
 		else
 		    echo "<div class='papv'><input type='text' class='textlite papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";
 	    } else if ($o->type != PaperOption::T_FINALPDF)
-		$this->echoDocumentUploadRow($prow, $o, defval($optsel, $o->optionId), 0);
+		$this->echoDocumentUploadRow($prow, $o, defval($optsel, $o->optionId, 0), 0);
 	}
     }
 
