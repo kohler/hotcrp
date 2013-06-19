@@ -1785,24 +1785,6 @@ function pcMembers() {
     return $_SESSION["pcmembers"][1];
 }
 
-function pcMembersAndAdmins() {
-    global $Conf;
-    if (!isset($_SESSION["pcmembersa"]) || !is_array($_SESSION["pcmembersa"])
-	|| count($_SESSION["pcmembersa"]) != 2
-	|| $Conf->setting("pc") <= 0
-	|| $_SESSION["pcmembersa"][0] < $Conf->setting("pc")
-	|| !is_array($_SESSION["pcmembersa"][1])
-	|| count($_SESSION["pcmembersa"][1]) == 0) {
-	$pc = array();
-	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "") . ($Conf->sversion >= 47 ? ", disabled" : "");
-	$result = $Conf->q("select firstName, lastName, email, affiliation, u.contactId contactId, roles$qa from ContactInfo u left join PCMember p using (contactId) left join ChairAssistant ca on (ca.contactId=u.contactId) where p.contactId is not null or ca.contactId is not null order by lastName, firstName");
-	while (($row = edb_orow($result)))
-	    $pc[$row->contactId] = Contact::make($row);
-	$_SESSION["pcmembersa"] = array($Conf->setting('pc'), $pc);
-    }
-    return $_SESSION["pcmembersa"][1];
-}
-
 function pcTags() {
     $pcm = pcMembers();
     $tags = array();

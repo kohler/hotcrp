@@ -230,7 +230,6 @@ class Conference {
 		unset($this->settings["pc"]);
 	    }
 	    unset($_SESSION["pcmembers"]);
-	    unset($_SESSION["pcmembersa"]);
 	}
 	if ($caches ? isset($caches["paperOption"]) : $this->setting("paperOption") > 0) {
 	    if (!$caches || $caches["paperOption"]) {

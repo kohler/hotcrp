@@ -1046,7 +1046,7 @@ class PaperTable {
     function papstripPCConflicts($prow) {
 	global $Conf;
 	assert(!$this->editable);
-	$pcm = pcMembersAndAdmins();
+	$pcm = pcMembers();
 	if (!count($pcm) || !$prow)
 	    return;
 	$conflict = array();
