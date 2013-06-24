@@ -214,7 +214,7 @@ class PaperActions {
 	$ajax = defval($_REQUEST, "ajax", false);
         $q = "select distinct tag from PaperTag t";
         $where = array();
-        if (!$Me->canAdminister($prow)) {
+        if (!$Me->canAdminister(null)) {
             $q .= " left join PaperConflict pc on (pc.paperId=t.paperId and pc.contactId=$Me->contactId)";
             $where[] = "coalesce(pc.conflictType,0)<=0";
         }
