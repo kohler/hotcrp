@@ -148,8 +148,7 @@ class Column {
 	$this->foldnum = defval($extra, "foldnum", 0);
 	$this->view = $view;
 	$this->sortable = defval($extra, "sortable", false);
-        if (($sorter = defval($extra, "sorter", false)))
-            $this->sorter = $sorter;
+        $this->sorter = defval($extra, "sorter", false);
 	$this->minimal = defval($extra, "minimal", false);
     }
 }

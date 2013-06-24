@@ -1085,7 +1085,7 @@ class PaperList extends BaseList {
                     || ($has_special_sort
                         && $special_sort->name == $sort_field->name))
 		    $colhead .= "<a class='pl_sort_def" . ($this->sorter->reverse ? "_rev" : "") . "' title='Reverse sort' href=\"" . $sortUrl . urlencode($sort_field->name . "," . ($this->sorter->reverse ? "n" : "r")) . "\">" . $ftext . "</a>";
-		else if ($fdef->sortable && $sortUrl)
+		else if ($fdef->sorter && $sortUrl)
 		    $colhead .= $q . urlencode($fdef->name) . "\">" . $ftext . "</a>";
 		else if ($has_special_sort)
 		    $colhead .= $q . urlencode($special_sort->name) . "\">" . $ftext . "</a>";

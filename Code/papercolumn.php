@@ -11,7 +11,7 @@ class PaperColumn extends Column {
 
     public function __construct($name, $view, $extra) {
         if ($extra === true)
-            $extra = array("sortable" => true, "sorter" => "id_sorter");
+            $extra = array("sorter" => "id_sorter");
         else if (is_int($extra))
             $extra = array("foldnum" => $extra);
         parent::__construct($name, $view, $extra);
@@ -75,8 +75,7 @@ class PaperColumn extends Column {
 class IdPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("id", Column::VIEW_COLUMN,
-                            array("minimal" => true, "sortable" => true,
-                                  "sorter" => "id_sorter"));
+                            array("minimal" => true, "sorter" => "id_sorter"));
     }
     public function header($pl, $row = null, $ordinal = 0) {
         return "ID";
@@ -133,8 +132,7 @@ class SelectorPaperColumn extends PaperColumn {
 class TitlePaperColumn extends PaperColumn {
     public function __construct($name) {
         parent::__construct($name, Column::VIEW_COLUMN,
-                            array("minimal" => true, "sortable" => true,
-                                  "sorter" => "title_sorter"));
+                            array("minimal" => true, "sorter" => "title_sorter"));
     }
     public function title_sorter($a, $b) {
         return strcasecmp($a->title, $b->title);
@@ -153,8 +151,7 @@ class StatusPaperColumn extends PaperColumn {
     private $is_long;
     public function __construct($name, $is_long, $extra = 0) {
         parent::__construct($name, Column::VIEW_COLUMN,
-                            array("cssname" => "status", "sortable" => true,
-                                  "sorter" => "status_sorter"));
+                            array("cssname" => "status", "sorter" => "status_sorter"));
         $this->is_long = $is_long;
     }
     public function sort_prepare($pl, &$rows) {
@@ -193,8 +190,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
     public function __construct($name) {
         global $Conf;
         parent::__construct($name, Column::VIEW_COLUMN,
-                            array("sortable" => true,
-                                  "sorter" => "review_status_sorter"));
+                            array("sorter" => "review_status_sorter"));
         $this->auview = $Conf->timeAuthorViewReviews();
     }
     public function prepare($pl, &$queryOptions, $visible) {
@@ -354,8 +350,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
     protected $xreviewer;
     public function __construct($name) {
         parent::__construct($name, Column::VIEW_COLUMN,
-                            array("sortable" => true,
-                                  "sorter" => "reviewer_type_sorter"));
+                            array("sorter" => "reviewer_type_sorter"));
     }
     public function analyze($pl, &$rows) {
         global $Conf;
@@ -456,7 +451,7 @@ class ReviewSubmittedPaperColumn extends PaperColumn {
 class ReviewDelegationPaperColumn extends PaperColumn {
     public function __construct($name) {
         parent::__construct($name, Column::VIEW_COLUMN,
-                            array("cssname" => "text", "sortable" => true,
+                            array("cssname" => "text",
                                   "sorter" => "review_delegation_sorter"));
     }
     public function prepare($pl, &$queryOptions, $visible) {
@@ -516,8 +511,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
 class DesirabilityPaperColumn extends PaperColumn {
     public function __construct($name) {
         parent::__construct($name, Column::VIEW_COLUMN,
-                            array("sortable" => true,
-                                  "sorter" => "desirability_sorter"));
+                            array("sorter" => "desirability_sorter"));
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->contact->privChair)
@@ -545,8 +539,7 @@ class DesirabilityPaperColumn extends PaperColumn {
 class TopicScorePaperColumn extends PaperColumn {
     public function __construct($name) {
         parent::__construct($name, Column::VIEW_COLUMN,
-                            array("sortable" => true,
-                                  "sorter" => "topic_score_sorter"));
+                            array("sorter" => "topic_score_sorter"));
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!count($pl->rf->topicName) || !$pl->contact->isPC)
@@ -572,8 +565,7 @@ class PreferencePaperColumn extends PaperColumn {
     private $editable;
     public function __construct($name, $editable) {
         parent::__construct($name, Column::VIEW_COLUMN,
-                            array("sortable" => true,
-                                  "sorter" => "preference_sorter"));
+                            array("sorter" => "preference_sorter"));
         $this->editable = $editable;
     }
     public function prepare($pl, &$queryOptions, $visible) {
@@ -770,8 +762,7 @@ class TagPaperColumn extends PaperColumn {
     protected $editable = false;
     public function __construct($name, $tag, $is_value) {
         parent::__construct($name, Column::VIEW_COLUMN,
-                            array("sortable" => true,
-                                  "sorter" => "tag_sorter"));
+                            array("sorter" => "tag_sorter"));
         $this->dtag = $tag;
         $this->is_value = $is_value;
         $this->cssname = ($this->is_value ? "tagval" : "tag");
@@ -877,7 +868,7 @@ class ScorePaperColumn extends PaperColumn {
     private static $registered = array();
     public function __construct($score, $foldnum) {
         parent::__construct($score, Column::VIEW_COLUMN,
-                            array("sortable" => true, "sorter" => "score_sorter"));
+                            array("sorter" => "score_sorter"));
         $this->minimal = $this->sortable = true;
         $this->cssname = "score";
         $this->foldnum = $foldnum;
@@ -966,7 +957,7 @@ class ScorePaperColumn extends PaperColumn {
 class FormulaPaperColumn extends PaperColumn {
     private static $registered = array();
     public function __construct($name, $formula, $foldnum) {
-        parent::__construct($name, Column::VIEW_COLUMN, array("minimal" => true, "sortable" => true, "sorter" => "formula_sorter", "foldnum" => $foldnum));
+        parent::__construct($name, Column::VIEW_COLUMN, array("minimal" => true, "sorter" => "formula_sorter", "foldnum" => $foldnum));
         $this->cssname = "formula";
         $this->formula = $formula;
     }
@@ -1077,7 +1068,7 @@ class TagReportPaperColumn extends PaperColumn {
 class SearchSortPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("searchsort", Column::VIEW_NONE,
-                            array("sortable" => true, "sorter" => "search_sort_sorter"));
+                            array("sorter" => "search_sort_sorter"));
     }
     public function sort_prepare($pl, &$rows) {
         $sortInfo = array();
@@ -1095,7 +1086,7 @@ class SearchSortPaperColumn extends PaperColumn {
 class TagOrderSortPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("tagordersort", Column::VIEW_NONE,
-                            array("sortable" => true, "sorter" => "tag_order_sorter"));
+                            array("sorter" => "tag_order_sorter"));
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!($pl->contact->isPC && count($pl->search->orderTags)))
