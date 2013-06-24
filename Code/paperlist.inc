@@ -80,19 +80,25 @@ class PaperList extends BaseList {
 	return $a->paperId - $b->paperId;
     }
 
-    function _sortThenmap($a, $b) {
-	$thenmap = $this->search->thenmap;
-	$x = $thenmap[$a->paperId] - $thenmap[$b->paperId];
-	return $x ? $x : $a->_sort_info - $b->_sort_info;
-    }
-
     function _sort($rows, $fdef) {
-        $fdef->sort($this, $rows);
-	if ($this->search->thenmap) {
-	    for ($i = 0; $i < count($rows); ++$i)
-                $rows[$i]->_sort_info = $i;
-	    usort($rows, array($this, "_sortThenmap"));
-	}
+        global $sort_info;      /* ugh, PHP constraints */
+        $sort_info = (object) array("f" => $fdef);
+
+        $code = "global \$sort_info; \$x = 0;\n";
+        if (($thenmap = $this->search->thenmap)) {
+            foreach ($rows as $row)
+                $row->_then_sort_info = $thenmap[$row->paperId];
+            $code .= "\$x = \$x ? \$x : \$a->_then_sort_info - \$b->_then_sort_info;\n";
+        }
+
+        $fdef->sort_prepare($this, $rows);
+        $code .= "\$x = \$x ? \$x : \$sort_info->f->" . $fdef->sorter . "(\$a, \$b);\n";
+
+        $code .= "\$x = \$x ? \$x : \$a->paperId - \$b->paperId;\n";
+        $code .= "return \$x < 0 ? -1 : (\$x == 0 ? 0 : 1);\n";
+
+        usort($rows, create_function("\$a, \$b", $code));
+        unset($sort_info);
 	return $rows;
     }
 
@@ -948,7 +954,7 @@ class PaperList extends BaseList {
 	    $this->paperLink = $_REQUEST["linkto"];
 
         // check sort
-        $special_sort = null;
+        $special_sort = $sort_field = null;
         if (!$special_sort && count($this->search->orderTags)
             && ($special_sort = PaperColumn::lookup("tagordersort"))
             && !$special_sort->prepare($this, $queryOptions, -1))

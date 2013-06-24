@@ -105,7 +105,8 @@ class BaseList {
         global $scoreSorts, $defaultScoreSort;
         $sort = (object) array("type" => null,
                                "reverse" => false,
-                               "score" => defval($_SESSION, "scoresort", $defaultScoreSort));
+                               "score" => defval($_SESSION, "scoresort", $defaultScoreSort),
+                               "empty" => $text == "");
         if (!preg_match('/\A(\d+)([a-z]*)\z/i', $text, $m)
             && !preg_match('/\A([^,+]+)(?:[,+]([a-z]*))?\z/i', $text, $m))
             $m = array();
@@ -138,6 +139,7 @@ class Column {
     public $foldnum;
     public $view;
     public $sortable;
+    public $sorter;
     public $minimal;
 
     public function __construct($name, $view, $extra) {
@@ -146,6 +148,8 @@ class Column {
 	$this->foldnum = defval($extra, "foldnum", 0);
 	$this->view = $view;
 	$this->sortable = defval($extra, "sortable", false);
+        if (($sorter = defval($extra, "sorter", false)))
+            $this->sorter = $sorter;
 	$this->minimal = defval($extra, "minimal", false);
     }
 }
