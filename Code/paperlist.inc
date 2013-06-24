@@ -18,6 +18,7 @@ class PaperList extends BaseList {
 
     private $sortable;
     public $sorter;
+    private $subsorter;
     var $listNumber;
     var $contact;
     var $scoresOk;
@@ -53,6 +54,7 @@ class PaperList extends BaseList {
             $this->sorter = BaseList::parse_sorter($_REQUEST["sort"]);
         else
             $this->sorter = BaseList::parse_sorter("");
+        $this->subsorter = null;
 
 	$this->paperLink = "";
 	$this->paperLinkArgs = "";
@@ -93,6 +95,12 @@ class PaperList extends BaseList {
 
         $fdef->sort_prepare($this, $rows);
         $code .= "\$x = \$x ? \$x : \$sort_info->f->" . $fdef->sorter . "(\$a, \$b);\n";
+
+        if (($sub = $this->subsorter)) {
+            $sub->field->sort_prepare($this, $rows);
+            $sort_info->g = $sub->field;
+            $code .= "\$x = \$x ? \$x : \$sort_info->g->" . $sub->field->sorter . "(\$a, \$b);\n";
+        }
 
         $code .= "\$x = \$x ? \$x : \$a->paperId - \$b->paperId;\n";
         $code .= "return \$x < 0 ? -1 : (\$x == 0 ? 0 : 1);\n";
@@ -963,11 +971,16 @@ class PaperList extends BaseList {
             $special_sort = PaperColumn::lookup("searchsort");
         if ($this->viewmap->sort
             && ($new_sorter = BaseList::parse_sorter($this->viewmap->sort))
-            && ($sort_field = PaperColumn::lookup($new_sorter->type))
-            && $sort_field->prepare($this, $queryOptions, -1))
-            $this->sorter = $new_sorter;
-        else
-            $sort_field = null;
+            && ($new_sort_field = PaperColumn::lookup($new_sorter->type))
+            && $new_sort_field->prepare($this, $queryOptions, -1)) {
+            if ($this->sorter->empty) {
+                $this->sorter = $new_sorter;
+                $sort_field = $new_sort_field;
+            } else {
+                $this->subsorter = $new_sorter;
+                $this->subsorter->field = $new_sort_field;
+            }
+        }
         if ($this->sorter->type
             && ($sort_field = PaperColumn::lookup($this->sorter->type))
             && !$sort_field->prepare($this, $queryOptions, -1))
