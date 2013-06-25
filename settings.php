@@ -986,7 +986,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
     // update the review form in case it's changed
     $rf = $rf->validate(true);
     $_SESSION["settings_highlight"] = $Highlight;
-    redirectSelf();
+    if (count($Error) == 0)
+        redirectSelf();
     unset($_SESSION["settings_highlight"]);
 } else if ($Group == "rfo")
     rf_update(false);

@@ -1,6 +1,6 @@
 <?php
 // Code/reviewsetform.php -- HotCRP review form definition page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 function rf_checkOptions(&$var, &$options, &$order, &$levelChar) {
@@ -97,11 +97,13 @@ function rf_update($lock) {
 	$req = "";
 	if (isset($_REQUEST["shortName_$field"])) {
 	    $sn = trim($_REQUEST["shortName_$field"]);
-	    if ($sn == "" || $sn == "<None>") {
-		$Error[$field] = true;
+	    if (($sn == "" || $sn == "<None>")
+                && rcvtint($_REQUEST["order_$field"]) >= 0) {
+		$Error["shortName_$field"] = true;
 		$shortNameError = true;
+            }
+            if ($sn == "")
 		$sn = "<None>";
-	    }
 	    $req .= "shortName='" . sqlq($sn) . "', ";
 	}
 	$req .= "authorView=" . max(min(rcvtint($_REQUEST["authorView_$field"], 0), VIEWSCORE_AUTHOR), VIEWSCORE_ADMINONLY) . ", ";
@@ -188,7 +190,11 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $x = "<$trclass><td colspan='4'><div class='g'></div></td></tr>\n";
 
     // field name
-    $e = (isset($Error[$row->fieldName]) ? " error" : "");
+    $field = $row->fieldName;
+    if (isset($Error[$field]) || isset($Error["shortName_$field"]))
+        $e = " error";
+    else
+        $e = "";
     $x .= "<$trclass><td class='rxcaption nowrap$e'>Field name</td><td colspan='3' class='entry$e'><b><input type='text' size='50' class='textlite' name='shortName_$row->fieldName' value=\""
 	. htmlspecialchars(rf_getField($row, 'shortName'))
 	. "\" onchange='hiliter(this)' /></b></td></tr>\n";
