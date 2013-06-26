@@ -610,13 +610,12 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
 	}
     }
 
-    if (count($texts) == 0)
-	$Conf->errorMsg(join("", $errors) . "No papers selected.");
-    else {
+    if (count($texts)) {
 	ksort($texts);
 	downloadCSV($texts, $header, "scores", "scores");
 	exit;
-    }
+    } else
+	$Conf->errorMsg(join("", $errors) . "No papers selected.");
 }
 
 
@@ -669,6 +668,43 @@ if (($getaction == "revpref" || $getaction == "revprefx") && $Me->isPC && isset(
     downloadRevpref($getaction == "revprefx");
 
 
+// download all preferences for selected papers
+function downloadAllRevpref() {
+    global $Conf, $Me, $Opt, $papersel, $paperselmap;
+    // maybe download preferences for someone else
+    $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "allReviewerPreference" => 1, "allConflictType" => 1));
+    $result = $Conf->qe($q, "while selecting papers");
+    $texts = array();
+    $rf = reviewForm();
+    $pc = pcMembers();
+    while (($prow = edb_orow($result))) {
+        $out = array();
+        if ($prow->allReviewerPreference != "")
+            foreach (explode(",", $prow->allReviewerPreference) as $t) {
+                list($pcid, $pref) = explode(" ", $t);
+                if (isset($pc[$pcid]))
+                    $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, $pref);
+            }
+        if ($prow->allConflictType != "")
+            foreach (explode(",", $prow->allConflictType) as $t) {
+                list($pcid, $ctype) = explode(" ", $t);
+                if (isset($pc[$pcid]) && $ctype > 0)
+                    $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, "conflict");
+            }
+        ksort($out);
+        arrayappend($texts[$paperselmap[$prow->paperId]], $out);
+    }
+
+    if (count($texts)) {
+	ksort($texts);
+	downloadCSV($texts, array("paper", "title", "name", "email", "preference"), "allprefs", "PC review preferences");
+	exit;
+    }
+}
+if ($getaction == "allrevpref" && $Me->privChair && isset($papersel))
+    downloadAllRevpref();
+
+
 // download topics for selected papers
 if ($getaction == "topics" && isset($papersel)) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1));
@@ -695,13 +731,12 @@ if ($getaction == "topics" && isset($papersel)) {
 	arrayappend($texts[$paperselmap[$row->paperId]], $out);
     }
 
-    if (count($texts) == "")
-	$Conf->errorMsg(join("", $errors) . "No papers selected.");
-    else {
+    if (count($texts)) {
 	ksort($texts);
 	downloadCSV($texts, array("paper", "title", "topic"), "topics", "topics");
 	exit;
-    }
+    } else
+	$Conf->errorMsg(join("", $errors) . "No papers selected.");
 }
 
 

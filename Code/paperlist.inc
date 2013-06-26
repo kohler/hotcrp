@@ -354,11 +354,12 @@ class PaperList extends BaseList {
 	    $sel_opt["authors"] = "Authors &amp; contacts";
 	else if ($this->contact->isReviewer && !$Conf->subBlindAlways())
 	    $sel_opt["authors"] = "Authors";
-	if ($this->contact->privChair) {
-	    $sel_opt["pcconf"] = "PC conflicts";
-	    $sel_opt["checkformat"] = "Format check";
-	}
 	$sel_opt["topics"] = "Topics";
+	if ($this->contact->privChair) {
+	    $sel_opt["checkformat"] = "Format check";
+	    $sel_opt["pcconf"] = "PC conflicts";
+            $sel_opt["allrevpref"] = "PC review preferences";
+	}
 	if (!$revpref && ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews())))
 	    $sel_opt["scores"] = "Scores";
 	if ($Conf->setting("paperlead") > 0) {
