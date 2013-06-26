@@ -13,6 +13,7 @@ class PaperOption {
     const T_SLIDES = 5;
     const T_VIDEO = 6;
     const T_RADIO = 7;
+    const T_TEXT_5LINE = 8;
     const T_FINALPDF = 100;
     const T_FINALSLIDES = 101;
     const T_FINALVIDEO = 102;
@@ -27,6 +28,7 @@ class PaperOption {
 		     self::T_NUMERIC => 0,
 		     self::T_TEXT => 0,
 		     self::T_RADIO => 0,
+                     self::T_TEXT_5LINE => 0,
 		     self::T_PDF => self::F_DOCUMENT + self::F_PDF,
 		     self::T_SLIDES => self::F_DOCUMENT + self::F_PDF,
 		     self::T_VIDEO => self::F_DOCUMENT,

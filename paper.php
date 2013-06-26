@@ -242,6 +242,9 @@ function requestSameAsPaper($prow) {
 	    } else if ($t == PaperOption::T_TEXT) {
 		if (simplifyWhitespace($got) != $row[3])
 		    return false;
+            } else if ($t == PaperOption::T_TEXT_5LINE) {
+                if (rtrim($got) != $row[3])
+                    return false;
 	    } else if ($t == PaperOption::T_PDF || $t == PaperOption::T_FINALPDF
 		       || $t == PaperOption::T_SLIDES || $t == PaperOption::T_FINALSLIDES
 		       || $t == PaperOption::T_VIDEO || $t == PaperOption::T_FINALVIDEO) {
@@ -333,6 +336,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    }
 	} else if ($opt->type == PaperOption::T_TEXT)
 	    $_REQUEST[$oname] = simplifyWhitespace($v);
+        else if ($opt->type == PaperOption::T_TEXT_5LINE)
+            $_REQUEST[$oname] = rtrim($v);
 	else if ($opt->isDocument) {
 	    unset($_REQUEST[$oname]);
 	    if (!$opt->isFinal || $isSubmitFinal) {
@@ -467,7 +472,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$q_optdata = ($Conf->sversion >= 27 ? ", null" : "");
 	foreach (paperOptions() as $o)
 	    if (defval($_REQUEST, "opt$o->optionId", "") != "") {
-		if ($o->type == PaperOption::T_TEXT)
+                if ($o->type == PaperOption::T_TEXT || $o->type == PaperOption::T_TEXT_5LINE)
 		    $q .= "($paperId, $o->optionId, 1, '" . sqlq($_REQUEST["opt$o->optionId"]) . "'), ";
 		else
 		    $q .= "($paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . $q_optdata . "), ";

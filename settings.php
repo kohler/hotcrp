@@ -1286,6 +1286,7 @@ function doOptGroupOption($o) {
 	$otypes[PaperOption::T_RADIO] = "Radio buttons";
 	$otypes[PaperOption::T_NUMERIC] = "Numeric";
 	$otypes[PaperOption::T_TEXT] = "Text";
+        $otypes[PaperOption::T_TEXT_5LINE] = "Multiline text";
     }
     if ($Conf->sversion >= 28) {
 	$otypes[PaperOption::T_PDF] = "PDF";

@@ -695,7 +695,7 @@ class PaperTable {
 			$ox = htmlspecialchars($om[$ov]);
 		} else if ($o->type == PaperOption::T_NUMERIC && $ov != "" && $ov != "0")
 		    $ox = htmlspecialchars($ov);
-		else if ($o->type == PaperOption::T_TEXT && $ov != "") {
+		else if (($o->type == PaperOption::T_TEXT || $o->type == PaperOption::T_TEXT_5LINE) && $ov != "") {
 		    if ($optdata == null) {
 			$optdata = array();
 			$result = $Conf->qe("select optionId, data from PaperOption where paperId=$prow->paperId", "while selecting paper options");
@@ -704,6 +704,8 @@ class PaperTable {
 		    }
 		    if ($optdata[$o->optionId] != "")
 			$ox = htmlspecialchars($optdata[$o->optionId]);
+                    if ($o->type == PaperOption::T_TEXT_5LINE)
+                        $ox = nl2br($ox);
 		} else if ($o->isDocument && $ov) {
 		    $show_on = false;
 		    if ($o->type == PaperOption::T_PDF)
@@ -915,7 +917,7 @@ class PaperTable {
 	    $optid = "opt$o->optionId";
 	    if ($this->useRequest)
 		$myval = defval($_REQUEST, $optid);
-	    else if ($o->type != PaperOption::T_TEXT)
+	    else if ($o->type != PaperOption::T_TEXT && $o->type != PaperOption::T_TEXT_5LINE)
 		$myval = defval($optsel, $o->optionId);
 	    else {
 		if (!$optdata && $prow) {
@@ -950,8 +952,10 @@ class PaperTable {
 		    echo "</div>\n\n";
 		} else if ($o->type == PaperOption::T_NUMERIC)
 		    echo "<div class='papv'><input type='text' class='textlite' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
-		else
+		else if ($o->type == PaperOption::T_TEXT)
 		    echo "<div class='papv'><input type='text' class='textlite papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";
+                else /* $o->type == PaperOption::T_TEXT_5LINE */
+                    echo "<div class='papv'><textarea class='textlite papertext' name='$optid' rows='5' cols='60' onchange='hiliter(this)'>", htmlspecialchars($myval), "</textarea></div>\n\n";
 	    } else if ($o->type != PaperOption::T_FINALPDF)
 		$this->echoDocumentUploadRow($prow, $o, defval($optsel, $o->optionId, 0), 0);
 	}
