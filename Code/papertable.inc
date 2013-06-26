@@ -664,6 +664,7 @@ class PaperTable {
     function paptabTopicsOptions($prow, $showAllOptions) {
 	global $Conf, $Me;
 	$topicdata = topicTable($prow, -1);
+        $xoptionhtml = array();
 	$optionhtml = array();
 	$ndocuments = 0;
 
@@ -674,8 +675,6 @@ class PaperTable {
 	    $optdata = null;
 	    for ($i = 0; $i < count($m[1]); ++$i)
 		$optsel[$m[1][$i]] = $m[2][$i];
-
-	    $oseparator = "";
 
 	    foreach ($options as $o) {
 		$ov = defval($optsel, $o->optionId, 0);
@@ -720,12 +719,14 @@ class PaperTable {
 		if ($ox == "")
 		    /* do nothing */;
 		else if ($o->displayType) {
-		    echo $oseparator, "<div class='papt'><span class='papfn'>",
-			($show_on ? $on : $ox), "</span>";
+                    $xoptionhtml[] = "<div class='papt'><span class='papfn'>"
+			. ($show_on ? $on : $ox) . "</span>"
+                        . "<div class='clear'></div></div>";
 		    if ($show_on && $ox !== true)
-			echo ": ", $ox;
-		    echo "<div class='clear'></div></div>";
-		    $oseparator = "<div class='papvx'></div>\n";
+                        $xoptionhtml[] = $ox;
+                    else
+                        //echo ": ", $ox;
+                        $xoptionhtml[] = "";
 		} else {
 		    if ($ox === true)
 			$optionhtml[] = $on . "<br />\n";
@@ -737,8 +738,10 @@ class PaperTable {
 		}
 	    }
 
-	    if ($oseparator)
-		echo "<div class='papv'></div>\n";
+            for ($i = 0; $i < count($xoptionhtml); $i += 2)
+                echo $xoptionhtml[$i], "<div class='",
+                    ($i == count($xoptionhtml) - 2 ? "papv" : "papvx"),
+                    "'>", $xoptionhtml[$i + 1], "</div>\n";
 	}
 
 	if ($topicdata != "" || count($optionhtml)) {
