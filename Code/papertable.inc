@@ -398,7 +398,7 @@ class PaperTable {
 		    . "<a id='remover_$documentType' href='javascript:doremovedocument(\"$documentType\")'>Delete</a>";
 	    $uploader .= "</span>";
 	    if ($doc && $optionType)
-		$uploader .= "<span class='fn'><em>Option marked for deletion</em></span>"
+		$uploader .= "<span class='fn'><em>Marked for deletion</em></span>"
 		    . "<input id='remove_$documentType' type='hidden' name='remove_$documentType' value='' />";
 	    if ($doc)
 		$uploader .= "</div>";

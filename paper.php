@@ -384,8 +384,10 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    if (fileUploaded($_FILES["paperUpload"]))
 		uploadPaper($isSubmitFinal);
 	    foreach (paperOptions() as $o)
-		if ($o->isDocument && isset($_REQUEST["opt$o->optionId"]))
-		    $Conf->qe("insert into PaperOption (paperId, optionId, value, data) values ($prow->paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null) on duplicate key update value=VALUES(value)", "while uploading option PDF");
+		if ($o->isDocument && isset($_REQUEST["opt$o->optionId"])) {
+                    $Conf->qe("delete from PaperOption where paperId=" . $prow->paperId . " and optionId=" . $o->optionId, "while uploading option PDF");
+		    $Conf->qe("insert into PaperOption (paperId, optionId, value, data) values ($prow->paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null)", "while uploading option PDF");
+                }
 	}
 	return false;
     } else if ($collaborators_error // a warning, not an error

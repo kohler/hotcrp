@@ -279,4 +279,9 @@ function updateSchema($Conf) {
 	&& $Conf->q("alter table PaperReviewArchive add `reviewToken` int(11) NOT NULL DEFAULT '0'")
 	&& $Conf->q("update Settings set value=49 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 49;
+    if ($Conf->settings["allowPaperOption"] == 49
+	&& $Conf->q("alter table PaperOption drop index `paperOption`")
+	&& $Conf->q("alter table PaperOption add index `paperOption` (`paperId`,`optionId`,`value`)")
+	&& $Conf->q("update Settings set value=50 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 50;
 }
