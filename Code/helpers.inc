@@ -54,35 +54,30 @@ function set_error_html($x, $error_html = null) {
 
 // number of rows returned by a select query, or 'false' if result is an error
 function edb_nrows($result) {
-    return ($result ? mysql_num_rows($result) : false);
+    return ($result ? $result->num_rows : false);
 }
 
 // number of rows affected by an update/insert query, or 'false' if result is
 // an error
 function edb_nrows_affected($result) {
     global $Conf;
-    return ($result ? mysql_affected_rows($Conf->dblink) : false);
+    return ($result ? $Conf->dblink->affected_rows : false);
 }
 
 // next row as an array, or 'false' if no more rows or result is an error
 function edb_row($result) {
-    return ($result ? mysql_fetch_row($result) : false);
-}
-
-// next row as an associative array, or 'false' if no more rows or result is
-// an error
-function edb_arow($result) {
-    return ($result ? mysql_fetch_array($result) : false);
+    return ($result ? $result->fetch_row() : false);
 }
 
 // next row as an object, or 'false' if no more rows or result is an error
 function edb_orow($result) {
-    return ($result ? mysql_fetch_object($result) : false);
+    return ($result ? $result->fetch_object() : false);
 }
 
 // quoting for SQL
 function sqlq($value) {
-    return mysql_real_escape_string($value);
+    global $Conf;
+    return $Conf->dblink->escape_string($value);
 }
 
 function sqlq_for_like($value) {
@@ -90,7 +85,8 @@ function sqlq_for_like($value) {
 }
 
 function sqlqtrim($value) {
-    return mysql_real_escape_string(trim($value));
+    global $Conf;
+    return $Conf->dblink->escape_string(trim($value));
 }
 
 function cleannl($text) {

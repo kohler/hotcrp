@@ -39,28 +39,29 @@ class Conference {
 	if (!isset($Opt["dsn"]))
 	    die("Package misconfigured: \$Opt[\"dsn\"] is not set.  Perhaps the web server cannot read <tt>Code/options.inc</tt>?");
 	else if (preg_match('|^mysql://([^:@/]*)/(.*)|', $Opt['dsn'], $m)) {
-	    $this->dblink = mysql_connect(urldecode($m[1]));
+	    $this->dblink = new mysqli(urldecode($m[1]));
 	    $dbname = urldecode($m[2]);
 	} else if (preg_match('|^mysql://([^:@/]*)@([^/]*)/(.*)|', $Opt['dsn'], $m)) {
-	    $this->dblink = mysql_connect(urldecode($m[2]), urldecode($m[1]));
+	    $this->dblink = new mysqli(urldecode($m[2]), urldecode($m[1]));
 	    $dbname = urldecode($m[3]);
 	} else if (preg_match('|^mysql://([^:@/]*):([^@/]*)@([^/]*)/(.*)|', $Opt['dsn'], $m)) {
-	    $this->dblink = mysql_connect(urldecode($m[3]), urldecode($m[1]), urldecode($m[2]));
+	    $this->dblink = new mysqli(urldecode($m[3]), urldecode($m[1]), urldecode($m[2]));
 	    $dbname = urldecode($m[4]);
 	} else
 	    die("Package misconfigured: dsn syntax error");
 
-	if (!$this->dblink || !mysql_select_db($dbname, $this->dblink)) {
+	if (!$this->dblink || mysqli_connect_errno()
+            || !$this->dblink->select_db($dbname)) {
 	    // Obscure password
 	    $dsn = preg_replace('{\A(\w+://[^/:]*:)[^\@/]+([\@/])}', '$1PASSWORD$2', $Opt["dsn"]);
 	    die("Unable to connect to database at " . $dsn);
 	}
-	mysql_query("set names 'utf8'", $this->dblink);
+	$this->dblink->query("set names 'utf8'");
 	// XXX NB: Many MySQL versions, if not all of them, will ignore the
 	// @@max_allowed_packet setting.  Keeping the code in case it's
 	// useful for some installations.
 	$max_file_size = ini_get_bytes("upload_max_filesize");
-	mysql_query("set @@max_allowed_packet = $max_file_size", $this->dblink);
+	$this->dblink->query("set @@max_allowed_packet = $max_file_size");
 
 	$this->updateSettings();
 
@@ -255,12 +256,12 @@ class Conference {
     }
 
     function qx($query) {
-	return mysql_query($query, $this->dblink);
+	return $this->dblink->query($query);
     }
 
     function q($query) {
 	global $OK;
-	$result = mysql_query($query, $this->dblink);
+	$result = $this->dblink->query($query);
 	if ($result === false)
 	    $OK = false;
 	return $result;
@@ -272,7 +273,7 @@ class Conference {
 	if ($while)
 	    $text .= " $while";
 	if ($getdb)
-	    $text .= ": " . htmlspecialchars(mysql_error($this->dblink)) . "</p>";
+	    $text .= ": " . htmlspecialchars($this->dblink->error) . "</p>";
 	if ($suggestRetry)
 	    $text .= "\n<p>Please try again or contact the site administrator at " . $Opt["emailFrom"] . ".</p>";
 	return $text;
@@ -280,7 +281,7 @@ class Conference {
 
     function qe($query, $while = "", $suggestRetry = false) {
 	global $OK;
-	$result = mysql_query($query, $this->dblink);
+	$result = $this->dblink->query($query);
 	if ($result === false) {
 	    $this->errorMsg($this->db_error_html(true, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
 	    $OK = false;
@@ -290,7 +291,7 @@ class Conference {
 
     function lastInsertId($while = "", $suggestRetry = false) {
 	global $OK;
-	$result = mysql_insert_id($this->dblink);
+	$result = $this->dblink->insert_id;
 	if (!$result && $while !== false) {
 	    $this->errorMsg($this->db_error_html($result === false, $while, $suggestRetry));
 	    $OK = false;
@@ -795,7 +796,7 @@ class Conference {
 
         $result = $this->paperStorageResult($paperId, $documentType);
         if (!$result) {
-	    $this->log("Error downloading for review: " . mysql_error($this->dblink), $Me, $paperId);
+	    $this->log("Error downloading for review: " . $this->dblink->error, $Me, $paperId);
 	    return set_error_html("Database error while downloading paper.");
 	} else if (edb_nrows($result) == 0)
 	    return set_error_html("No such document.");
@@ -1138,7 +1139,7 @@ class Conference {
 	    $result = $this->q($q);
 
 	    if (!$result)
-		$whyNot['dbError'] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . mysql_error($this->dblink);
+		$whyNot['dbError'] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . $this->dblink->error;
 	    else if (edb_nrows($result) == 0)
 		$whyNot['noPaper'] = 1;
 	    else
@@ -1258,7 +1259,7 @@ class Conference {
 
 	$result = $this->q($q);
 	if (!$result) {
-	    $whyNot['dbError'] = "Database error while fetching review (" . htmlspecialchars($q) . "): " . htmlspecialchars(mysql_error($this->dblink));
+	    $whyNot['dbError'] = "Database error while fetching review (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);
 	    return null;
 	}
 
