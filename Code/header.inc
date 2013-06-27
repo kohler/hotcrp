@@ -193,7 +193,11 @@ require_once("PEAR.php");
 // Set up conference options
 global $Opt;
 $Opt = array();
-include("$ConfSitePATH/Code/options.inc");
+if ((@include "$ConfSitePATH/Code/options.inc") == false) {
+    echo "<html><head><title>HotCRP error</title><head><body><h1>Unconfigured HotCRP installation</h1>";
+    echo "<p>HotCRP has been installed, but you haven’t yet configured a conference. You must run <code>Code/createdb.sh</code> to create a database for your conference. See <code>README.md</code> for further guidance.</p></body></html>\n";
+    exit;
+}
 
 // Multi-conference support
 function setMulticonference() {
