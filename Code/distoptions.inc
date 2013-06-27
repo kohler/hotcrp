@@ -97,12 +97,13 @@ $Opt["emailFrom"] = "you@example.com";
 //   sessionLifetime Number of seconds a user may be idle before their session
 //                   is garbage collected and they must log in again. Defaults
 //                   to 86400 (24 hours). Should be less than or equal to the
-//                   system-wide setting for 'session.gc_maxlifetime' in
-//                   the PHP initialization file, 'php.ini'.
+//                   system-wide setting for `session.gc_maxlifetime` in
+//                   the PHP initialization file, `php.ini`.
 //   memoryLimit     Maximum amount of memory a PHP script can use. Defaults
 //                   to 128MB.
 //   timezone        Server timezone. See http://php.net/manual/en/timezones
-//                   for a list.
+//                   for a list. Defaults to America/New_York if you haven't
+//                   set a server-wide PHP timestamp in `php.ini`.
 //   time24hour      Set to true to use 24-hour timestamps, rather than the
 //                   default am/pm.
 //   dateFormat      Format for displaying short dates. Uses PHP date() syntax:
@@ -139,8 +140,8 @@ $Opt["emailFrom"] = "you@example.com";
 //                   string is "Basic realm="HotCRP"".
 //   defaultEmailDomain Set to the default domain for account email addresses
 //                   when using httpAuthLogin.
-//   zipCommand      Set to the path to the "zip" executable. Defaults to
-//                   "zip".
+//   zipCommand      Set to the path to the `zip` executable. Defaults to
+//                   `zip`.
 //   disableCSV      Set to true if all downloaded tabular text files should be
 //                   tab-separated rather than CSV.
 //   smartScoreCompare Set to true if a search like "ovemer:>B" should search
