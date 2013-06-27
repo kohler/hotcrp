@@ -4,10 +4,11 @@
 ##
 
 export PROG=$0
-export FLAGS=""
+export FLAGS=
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C
 structure=false
 pc=false
+options_file=options.inc
 while [ $# -gt 0 ]; do
     case "$1" in
     --structure|--schema) structure=true;;
@@ -20,14 +21,12 @@ done
 
 export PROGDIR=`echo "$0" | sed 's/[^\/]*$//'`
 
-if [ ! -r "${PROGDIR}options.inc" ]; then
-    echo "backupdb.sh: Can't read options.inc! Is this a CRP directory?" 1>&2
+if [ ! -r "${PROGDIR}${options_file}" ]; then
+    echo "backupdb.sh: Can't read ${PROGDIR}${options_file}! Is this a CRP directory?" 1>&2
     exit 1
 fi
 
 getdbopt () {
-    password='fixshell($Opt{"dbPassword"})'
-    if test -n "$1"; then password='"<REDACTED>"'; fi
     perl -e 'undef $/; $t = <STDIN>;
 $t =~ s|/\*.*?\*/||gs;
 $t =~ s|//.*$||gm;
@@ -79,13 +78,30 @@ if ($Opt{"multiconference"}) {
 } else {
    $Opt{"dbUser"} = $Opt{"dbName"} if (!exists($Opt{"dbUser"}));
    $Opt{"dbPassword"} = $Opt{"dbName"} if (!exists($Opt{"dbPassword"}));
-   print "-u'"'"'", fixshell($Opt{"dbUser"}), "'"'"' -p'"'"'", '"$password"', "'"'"' '"'"'", fixshell($Opt{"dbName"}), "'"'"'";
-}' < ${PROGDIR}options.inc
+   print "'"'"'", fixshell($Opt{"'$1'"}), "'"'"'";
+}' < ${PROGDIR}${options_file}
 }
 
-dbopt=`getdbopt`
-dbopt_print=`getdbopt n`
-test -z "$dbopt" && { echo "backupdb.sh: Cannot extract database run options from options.inc!" 1>&2; exit 1; }
+dbname="`getdbopt dbName 2>/dev/null`"
+dbuser="`getdbopt dbUser 2>/dev/null`"
+dbpass="`getdbopt dbPassword 2>/dev/null`"
+test -z "$dbname" -o -z "$dbuser" -o -z "$dbpass" && { echo "backupdb.sh: Cannot extract database run options from ${options_file}!" 1>&2; exit 1; }
+
+dbopt="-u$dbuser"
+dbopt_print="-u$dbuser -p<REDACTED>"
+if test -n "$dbpass"; then
+    PASSWORDFILE="`echo ".mysqlpwd.$$.$RANDOM" | sed 's/\.$//'`"
+    if touch "$PASSWORDFILE"; then
+        chmod 600 "$PASSWORDFILE"
+        echo '[client]' >> "$PASSWORDFILE"
+        echo 'password = '"$dbpass" >> "$PASSWORDFILE"
+        dbopt="--defaults-extra-file=$PASSWORDFILE $dbopt"
+        trap "rm -f $PASSWORDFILE" EXIT 2>/dev/null
+    else
+        PASSWORDFILE=""
+        dbopt="$dbopt -p'$PASSWORD'"
+    fi
+fi
 
 ### Test mysqldump binary
 if test -z "$MYSQL"; then
@@ -98,19 +114,19 @@ if test -z "$MYSQLDUMP"; then
 fi
 
 if ! $MYSQL --version >/dev/null 2>&1; then
-    echo "The $MYSQL binary doesn't appear to work." 1>&2
+    echo "I can't find a working $MYSQL program." 1>&2
     echo "Set the MYSQL environment variable and try again." 1>&2
     exit 1
 fi
 if ! $MYSQLDUMP --version >/dev/null 2>&1; then
-    echo "The $MYSQLDUMP binary doesn't appear to work." 1>&2
+    echo "I can't find a working $MYSQLDUMP program." 1>&2
     echo "Set the MYSQLDUMP environment variable and try again." 1>&2
     exit 1
 fi
 
-echo + $MYSQLDUMP $FLAGS $dbopt_print 1>&2
+echo + $MYSQLDUMP $FLAGS $dbopt_print $dbname 1>&2
 if $structure; then
-    eval "$MYSQLDUMP $FLAGS $dbopt" | sed '/^LOCK/d
+    eval "$MYSQLDUMP $FLAGS $dbopt $dbname" | sed '/^LOCK/d
 /^INSERT/d
 /^UNLOCK/d
 /^\/\*/d
@@ -121,12 +137,12 @@ if $structure; then
 /^-- Dump/d'
 else
     if $pc; then
-	eval "$MYSQLDUMP $FLAGS $dbopt --where='(roles & 7) != 0' ContactInfo"
-	pcs=`echo 'select group_concat(contactId) from ContactInfo where (roles & 7) != 0' | eval "$MYSQL $FLAGS -N $dbopt"`
-	eval "$MYSQLDUMP $FLAGS --where='contactId in ($pcs)' $dbopt ContactAddress ContactTag"
-	eval "$MYSQLDUMP $FLAGS $dbopt PCMember Chair ChairAssistant Settings OptionType ChairTag TopicArea ReviewFormField ReviewFormOptions"
+	eval "$MYSQLDUMP $FLAGS $dbopt $dbname --where='(roles & 7) != 0' ContactInfo"
+	pcs=`echo 'select group_concat(contactId) from ContactInfo where (roles & 7) != 0' | eval "$MYSQL $FLAGS -N $dbopt $dbname"`
+	eval "$MYSQLDUMP $FLAGS --where='contactId in ($pcs)' $dbopt $dbname ContactAddress ContactTag"
+	eval "$MYSQLDUMP $FLAGS $dbopt $dbname PCMember Chair ChairAssistant Settings OptionType ChairTag TopicArea ReviewFormField ReviewFormOptions"
     else
-	eval "$MYSQLDUMP $FLAGS $dbopt"
+	eval "$MYSQLDUMP $FLAGS $dbopt $dbname"
     fi
     echo
     echo "--"
@@ -134,3 +150,5 @@ else
     echo "--"
     echo "INSERT INTO "'`Settings` (`name`,`value`)'" VALUES ('frombackup',UNIX_TIMESTAMP()) ON DUPLICATE KEY UPDATE value=greatest(value,values(value));"
 fi
+
+test -n "$PASSWORDFILE" && rm -f $PASSWORDFILE

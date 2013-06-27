@@ -9,10 +9,11 @@ usage () {
     exit 1
 }
 
-PROG=$0
-FLAGS=
-show_password=
+export PROG=$0
+export FLAGS=
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C
+show_password=
+options_file=options.inc
 while [ $# -gt 0 ]; do
     case "$1" in
     --show-password=*)
@@ -30,14 +31,12 @@ done
 
 export PROGDIR=`echo "$0" | sed 's/[^\/]*$//'`
 
-if [ ! -r "${PROGDIR}options.inc" ]; then
-    echo "runsql.sh: Can't read options.inc! Is this a CRP directory?" 1>&2
+if [ ! -r "${PROGDIR}${options_file}" ]; then
+    echo "runsql.sh: Can't read ${PROGDIR}${options_file}! Is this a CRP directory?" 1>&2
     exit 1
 fi
 
 getdbopt () {
-    password='fixshell($Opt{"dbPassword"})'
-    if test -n "$1"; then password='"<REDACTED>"'; fi
     perl -e 'undef $/; $t = <STDIN>;
 $t =~ s|/\*.*?\*/||gs;
 $t =~ s|//.*$||gm;
@@ -89,13 +88,30 @@ if ($Opt{"multiconference"}) {
 } else {
    $Opt{"dbUser"} = $Opt{"dbName"} if (!exists($Opt{"dbUser"}));
    $Opt{"dbPassword"} = $Opt{"dbName"} if (!exists($Opt{"dbPassword"}));
-   print "-u'"'"'", fixshell($Opt{"dbUser"}), "'"'"' -p'"'"'", '"$password"', "'"'"' '"'"'", fixshell($Opt{"dbName"}), "'"'"'";
-}' < ${PROGDIR}options.inc
+   print "'"'"'", fixshell($Opt{"'$1'"}), "'"'"'";
+}' < ${PROGDIR}${options_file}
 }
 
-dbopt=`getdbopt`
-dbopt_print=`getdbopt n`
-test -z "$dbopt" && { echo "runsql.sh: Cannot extract database run options from options.inc!" 1>&2; exit 1; }
+dbname="`getdbopt dbName 2>/dev/null`"
+dbuser="`getdbopt dbUser 2>/dev/null`"
+dbpass="`getdbopt dbPassword 2>/dev/null`"
+test -z "$dbname" -o -z "$dbuser" -o -z "$dbpass" && { echo "runsql.sh: Cannot extract database run options from ${options_file}!" 1>&2; exit 1; }
+
+dbopt="-u$dbuser"
+dbopt_print="-u$dbuser -p<REDACTED>"
+if test -n "$dbpass"; then
+    PASSWORDFILE="`echo ".mysqlpwd.$$.$RANDOM" | sed 's/\.$//'`"
+    if touch "$PASSWORDFILE"; then
+        chmod 600 "$PASSWORDFILE"
+        echo '[client]' >> "$PASSWORDFILE"
+        echo 'password = '"$dbpass" >> "$PASSWORDFILE"
+        dbopt="--defaults-extra-file=$PASSWORDFILE $dbopt"
+        trap "rm -f $PASSWORDFILE" EXIT 2>/dev/null
+    else
+        PASSWORDFILE=""
+        dbopt="$dbopt -p'$PASSWORD'"
+    fi
+fi
 
 ### Test mysql binary
 if test -z "$MYSQL"; then
@@ -104,7 +120,7 @@ if test -z "$MYSQL"; then
 fi
 
 if ! $MYSQL --version >/dev/null 2>&1; then
-    echo "The $MYSQL binary doesn't appear to work." 1>&2
+    echo "I can't find a working $MYSQL program." 1>&2
     echo "Set the MYSQL environment variable and try again." 1>&2
     exit 1
 fi
@@ -115,7 +131,9 @@ sql_quote () {
 
 if test -n "$show_password"; then
     show_password="`echo "+$show_password" | sed -e 's,^.,,' | sql_quote`"
-    echo "select concat(email, ',', password) from ContactInfo where email like '$show_password' and disabled=0" | eval "exec $MYSQL -N $FLAGS $dbopt"
+    echo "select concat(email, ',', password) from ContactInfo where email like '$show_password' and disabled=0" | eval "$MYSQL $dbopt -N $FLAGS $dbname"
 else
-    eval "exec $MYSQL $FLAGS $dbopt"
+    eval "$MYSQL $dbopt $FLAGS $dbname"
 fi
+
+test -n "$PASSWORDFILE" && rm -f $PASSWORDFILE

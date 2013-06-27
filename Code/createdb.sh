@@ -1,10 +1,7 @@
 #! /bin/sh
 ## createdb.sh -- HotCRP database setup program
-## HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+## HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 ## Distributed under an MIT-like license; see LICENSE
-
-## Create the database. The assumption is that database
-## name and user name and password are all the same
 
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C
 
@@ -80,6 +77,7 @@ FLAGS=""
 FLAGS_NOP=""
 ECHOFLAGS=""
 DBNAME=""
+PASSWORD=""
 distoptions_file=distoptions.inc
 options_file=options.inc
 needpassword=false
@@ -95,9 +93,9 @@ while [ $# -gt 0 ]; do
     -u*|--us=*|--use=*|--user=*)
 	FLAGS="$FLAGS '$1'"; ECHOFLAGS="$ECHOFLAGS '$1'"; shift;;
     -p*)
-	FLAGS="$FLAGS '$1'"; ECHOFLAGS="$ECHOFLAGS -p'<REDACTED>'"; shift;;
+        PASSWORD="`echo "$1" | sed s/^-p//`"; shift;;
     --pas=*|--pass=*|--passw=*|--passwo=*|--passwor=*|--password=*)
-	FLAGS="$FLAGS '$1'"; ECHOFLAGS="$ECHOFLAGS `echo '$1' | sed 's/=.*//'`='<REDACTED>'"; shift;;
+        PASSWORD="`echo "$1" | sed 's/^[^=]*=//'`"; shift;;
     --he|--hel|--help)
 	help;;
     --force)
@@ -115,15 +113,6 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-if $needpassword; then
-    echo_n "Enter MySQL password: "
-    stty -echo; trap "stty echo; exit 1" INT
-    read PASSWORD
-    stty echo; trap - INT
-    echo
-    FLAGS="$FLAGS -p'$PASSWORD'"; ECHOFLAGS="$ECHOFLAGS -p'<REDACTED>'"
-fi
-
 ### Test mysql binary
 if test -z "$MYSQL"; then
     MYSQL=mysql
@@ -135,15 +124,42 @@ if test -z "$MYSQLADMIN"; then
 fi
 
 if ! $MYSQL --version >/dev/null 2>&1; then
-    echo "The $MYSQL binary doesn't appear to work."
-    echo "Set the MYSQL environment variable and try again."
+    echo "I can't find a working $MYSQL program."
+    echo "Install MySQL, or set the MYSQL environment variable and try again."
     exit 1
 fi
 if ! $MYSQLADMIN --version >/dev/null 2>&1; then
-    echo "The $MYSQLADMIN binary doesn't appear to work." 1>&2
+    echo "I can find a working $MYSQL program, but not a working $MYSQLADMIN program." 1>&2
     echo "Set the MYSQLADMIN environment variable and try again." 1>&2
     exit 1
 fi
+
+# attempt to secure password handling
+# (It is considered insecure to supply a MySQL password on the command
+# line; in some MySQL versions it actually generates a warning.)
+if $needpassword; then
+    echo_n "Enter MySQL password: "
+    stty -echo; trap "stty echo; exit 1" INT
+    read PASSWORD
+    stty echo; trap - INT
+    echo
+fi
+if test -n "$PASSWORD"; then
+    PASSWORDFILE="`echo ".mysqlpwd.$$.$RANDOM" | sed 's/\.$//'`"
+    if touch "$PASSWORDFILE"; then
+        chmod 600 "$PASSWORDFILE"
+        echo '[client]' >> "$PASSWORDFILE"
+        echo 'password = "'"$PASSWORD"'"' >> "$PASSWORDFILE"
+        FLAGS="--defaults-extra-file=$PASSWORDFILE $FLAGS"
+        trap "rm -f $PASSWORDFILE" EXIT 2>/dev/null
+    else
+        PASSWORDFILE=""
+        FLAGS="$FLAGS -p'$PASSWORD'"
+    fi
+    ECHOFLAGS="$FLAGS -p<REDACTED>"
+fi
+
+
 if ! (echo 'show databases;' | eval $MYSQL $FLAGS >/dev/null); then
     echo "Could not run $MYSQL $ECHOFLAGS. Did you enter the right password?" 1>&2
     exit 1
@@ -464,7 +480,7 @@ elif [ -r "${PROGDIR}${distoptions_file}" ]; then
 
     if test -z "$httpd_user"; then
 	echo
-	echo "* The Code/options.inc file contains sensitive data."
+	echo "* The ${PROGDIR}${options_file} file contains sensitive data."
 	echo "* You may need to change its group so the Web server can read it."
 	echo
     elif ! is_group_member "$httpd_user" "$group"; then
@@ -473,9 +489,11 @@ elif [ -r "${PROGDIR}${distoptions_file}" ]; then
 	    echo + chgrp "$httpd_user" "${PROGDIR}${options_file}"
 	else
 	    echo
-	    echo "* The Code/options.inc file contains important data, but the Web server"
-	    echo "* cannot read it. Use 'chgrp GROUP Code/options.inc' to change its group."
+	    echo "* The ${PROGDIR}${options_file} file contains important data, but the Web server"
+	    echo "* cannot read it. Use 'chgrp GROUP ${PROGDIR}${options_file}' to change its group."
 	    echo
 	fi
     fi
 fi
+
+test -n "$PASSWORDFILE" && rm -f "$PASSWORDFILE"
