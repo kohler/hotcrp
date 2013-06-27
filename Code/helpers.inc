@@ -751,8 +751,7 @@ function paperDocumentData($prow, $documentType = DTYPE_SUBMISSION, $paperStorag
     if ($paperStorageId > 0
 	&& ($doc->documentType != $documentType
 	    || $paperStorageId != $doc->paperStorageId)) {
-	$qa = ($Conf->sversion >= 28 ? "sha1, documentType" : "'' sha1, $documentType documentType");
-	$result = $Conf->qe("select paperStorageId, paperId, length(paper) as size, mimetype, timestamp, $qa from PaperStorage where paperStorageId=$paperStorageId", "while reading documents");
+	$result = $Conf->qe("select paperStorageId, paperId, length(paper) as size, mimetype, timestamp, sha1, documentType from PaperStorage where paperStorageId=$paperStorageId", "while reading documents");
 	$doc = edb_orow($result);
     }
 
@@ -1898,8 +1897,7 @@ function paperOptions($id = null) {
     if (!$svar || !is_array($svar) || count($svar) < 3 || $svar[2] < 2
 	|| $svar[0] < $Conf->setting("paperOption")) {
 	$opt = array();
-	$orderby = ($Conf->sversion >= 29 ? "sortOrder, " : "") . "optionName";
-	$result = $Conf->q("select * from OptionType order by $orderby");
+	$result = $Conf->q("select * from OptionType order by sortOrder, optionName");
 	$order = 0;
 	while (($row = edb_orow($result))) {
 	    // begin backwards compatibility to old schema versions

@@ -230,8 +230,7 @@ function requestSameAsPaper($prow) {
 	    return false;
     }
     if ($Conf->setting("paperOption")) {
-	$qa = ($Conf->sversion >= 27 ? "ot.type, coalesce(po.data, '')" : "0, ''");
-	$result = $Conf->q("select ot.optionId, coalesce(po.value, 0), $qa from OptionType ot left join PaperOption po on po.paperId=$prow->paperId and po.optionId=ot.optionId");
+	$result = $Conf->q("select ot.optionId, coalesce(po.value, 0), ot.type, coalesce(po.data, '') from OptionType ot left join PaperOption po on po.paperId=$prow->paperId and po.optionId=ot.optionId");
 	while (($row = edb_row($result))) {
 	    $got = defval($_REQUEST, "opt$row[0]", "");
 	    $t = $row[2];
@@ -471,16 +470,14 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if (!$Conf->qe("delete from PaperOption where paperId=$paperId$q", $while))
 	    return false;
 	$q = "";
-	$q_optdata = ($Conf->sversion >= 27 ? ", null" : "");
 	foreach (paperOptions() as $o)
 	    if (defval($_REQUEST, "opt$o->optionId", "") != "") {
                 if ($o->type == PaperOption::T_TEXT || $o->type == PaperOption::T_TEXT_5LINE)
 		    $q .= "($paperId, $o->optionId, 1, '" . sqlq($_REQUEST["opt$o->optionId"]) . "'), ";
 		else
-		    $q .= "($paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . $q_optdata . "), ";
+		    $q .= "($paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null), ";
 	    }
-	$q_optdata = ($Conf->sversion >= 27 ? ", data" : "");
-	if ($q && !$Conf->qe("insert into PaperOption (paperId, optionId, value$q_optdata) values " . substr($q, 0, strlen($q) - 2), $while))
+	if ($q && !$Conf->qe("insert into PaperOption (paperId, optionId, value, data) values " . substr($q, 0, strlen($q) - 2), $while))
 	    return false;
 	// update PaperStorage.paperId for newly registered papers' PDF uploads
 	if ($newPaper)

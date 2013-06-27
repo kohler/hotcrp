@@ -428,7 +428,7 @@ function doCleanOptionValues($id) {
     }
 
     $optvt = cvtint(defval($_REQUEST, "optvt$id", 0));
-    if (!PaperOption::type_is_valid($optvt) || ($Conf->sversion < 27 && $optvt > 1))
+    if (!PaperOption::type_is_valid($optvt))
 	$optvt = $_REQUEST["optvt$id"] = 0;
     if (PaperOption::type_is_selectorlike($optvt)) {
 	$v = "";
@@ -522,8 +522,7 @@ function doOptions($set) {
 	return;
     }
     $while = "while updating options";
-    if ($Conf->sversion >= 29)
-	doCleanOptionFormPositions();
+    doCleanOptionFormPositions();
 
     $ochange = false;
     $anyo = false;
@@ -553,11 +552,9 @@ function doOptions($set) {
 	    $q = "update OptionType set optionName='" . sqlq($_REQUEST["optn$id"])
 		. "', description='" . sqlq(defval($_REQUEST, "optd$id", ""))
 		. "', pcView=" . $_REQUEST["optp$id"]
-		. ", optionValues='" . sqlq(defval($_REQUEST, "optv$id", "")) . "'";
-	    if ($Conf->sversion >= 27)
-		$q .= ", type='" . defval($_REQUEST, "optvt$id", 0) . "'";
-	    if ($Conf->sversion >= 29)
-		$q .= ", sortOrder=" . defval($_REQUEST, "optfp$id", $o->sortOrder);
+		. ", optionValues='" . sqlq(defval($_REQUEST, "optv$id", ""))
+		. "', type='" . defval($_REQUEST, "optvt$id", 0)
+                . "', sortOrder=" . defval($_REQUEST, "optfp$id", $o->sortOrder);
 	    if ($Conf->sversion >= 38)
 		$q .= ", displayType=" . $_REQUEST["optdt$id"];
 	    $Conf->qe($q . " where optionId=$id", $while);
@@ -567,19 +564,13 @@ function doOptions($set) {
 
     if (isset($_REQUEST["optnn"])) {
 	doCleanOptionValues("n");
-	$qa = "optionName, description, pcView, optionValues";
+	$qa = "optionName, description, pcView, optionValues, type, sortOrder";
 	$qb = "'" . sqlq($_REQUEST["optnn"])
 	    . "', '" . sqlq(defval($_REQUEST, "optdn", ""))
 	    . "', " . $_REQUEST["optpn"]
-	    . ", '" . sqlq(defval($_REQUEST, "optvn", "")) . "'";
-	if ($Conf->sversion >= 27) {
-	    $qa .= ", type";
-	    $qb .= ", '" . sqlq(defval($_REQUEST, "optvtn", 0)) . "'";
-	}
-	if ($Conf->sversion >= 29) {
-	    $qa .= ", sortOrder";
-	    $qb .= ", '" . sqlq(defval($_REQUEST, "optfpn", 0)) . "'";
-	}
+	    . ", '" . sqlq(defval($_REQUEST, "optvn", ""))
+            . "', '" . sqlq(defval($_REQUEST, "optvtn", 0))
+            . "', '" . sqlq(defval($_REQUEST, "optfpn", 0)) . "'";
 	if ($Conf->sversion >= 38) {
 	    $qa .= ", displayType";
 	    $qb .= ", '" . $_REQUEST["optdtn"] . "'";
@@ -1274,25 +1265,20 @@ function doOptGroupOption($o) {
 	decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
     $oval = $o->optionValues;
     $optvt = (count($Error) > 0 ? defval($_REQUEST, "optvt$id", 0) : $o->type);
-    $finalOptions = $Conf->sversion >= 28
-	&& ($Conf->collectFinalPapers() || $optvt >= PaperOption::T_FINALPDF);
+    $finalOptions = ($Conf->collectFinalPapers() || $optvt >= PaperOption::T_FINALPDF);
 
     $otypes = array();
     if ($finalOptions)
 	$otypes["xxx1"] = array("optgroup", "Options for submissions");
     $otypes[PaperOption::T_CHECKBOX] = "Checkbox";
     $otypes[PaperOption::T_SELECTOR] = "Selector";
-    if ($Conf->sversion >= 27) {
-	$otypes[PaperOption::T_RADIO] = "Radio buttons";
-	$otypes[PaperOption::T_NUMERIC] = "Numeric";
-	$otypes[PaperOption::T_TEXT] = "Text";
-        $otypes[PaperOption::T_TEXT_5LINE] = "Multiline text";
-    }
-    if ($Conf->sversion >= 28) {
-	$otypes[PaperOption::T_PDF] = "PDF";
-	$otypes[PaperOption::T_SLIDES] = "Slides";
-	$otypes[PaperOption::T_VIDEO] = "Video";
-    }
+    $otypes[PaperOption::T_RADIO] = "Radio buttons";
+    $otypes[PaperOption::T_NUMERIC] = "Numeric";
+    $otypes[PaperOption::T_TEXT] = "Text";
+    $otypes[PaperOption::T_TEXT_5LINE] = "Multiline text";
+    $otypes[PaperOption::T_PDF] = "PDF";
+    $otypes[PaperOption::T_SLIDES] = "Slides";
+    $otypes[PaperOption::T_VIDEO] = "Video";
     if ($finalOptions) {
 	$otypes["xxx2"] = array("optgroup", "Options for accepted papers");
 	$otypes[PaperOption::T_FINALPDF] = "Alternate final version";
@@ -1308,20 +1294,18 @@ function doOptGroupOption($o) {
 	tagg_select("optp$id", array("Administrators only", "Visible to reviewers", "Visible if authors are visible"), $o->pcView, array("onchange" => "hiliter(this)")),
 	"</div></div></td>";
 
-    if ($Conf->sversion >= 29) {
-	echo "<td class='pad'><div class='f-i'><div class='f-c'>",
-	    decorateSettingName("optfp$id", "Form order"), "</div><div class='f-e'>";
-	$x = array();
-	// can't use "foreach (paperOptions())" because caller uses cursor
-	for ($n = 0; $n < count(paperOptions()); ++$n)
-	    $x[$n] = ordinal($n + 1);
-	if ($id === "n")
-	    $x[$n] = ordinal($n + 1);
-	else
-	    $x["delete"] = "Delete option";
-	echo tagg_select("optfp$id", $x, $o->sortOrder, array("onchange" => "hiliter(this)")),
-	    "</div></div></td>";
-    }
+    echo "<td class='pad'><div class='f-i'><div class='f-c'>",
+        decorateSettingName("optfp$id", "Form order"), "</div><div class='f-e'>";
+    $x = array();
+    // can't use "foreach (paperOptions())" because caller uses cursor
+    for ($n = 0; $n < count(paperOptions()); ++$n)
+        $x[$n] = ordinal($n + 1);
+    if ($id === "n")
+        $x[$n] = ordinal($n + 1);
+    else
+        $x["delete"] = "Delete option";
+    echo tagg_select("optfp$id", $x, $o->sortOrder, array("onchange" => "hiliter(this)")),
+        "</div></div></td>";
 
     if ($Conf->sversion >= 38) {
 	echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
@@ -1334,7 +1318,7 @@ function doOptGroupOption($o) {
 	    "</div></div></td>";
     }
 
-    if ($Conf->sversion >= 28 && isset($otypes[PaperOption::T_FINALPDF]))
+    if (isset($otypes[PaperOption::T_FINALPDF]))
 	echo "<td class='pad fx2'><div class='f-i'><div class='f-c'>&nbsp;</div><div class='f-e hint' style='margin-top:0.7ex'>(Set by accepted authors during final version submission period)</div></div></td>";
 
     echo "</tr></table>";
@@ -1359,8 +1343,6 @@ function doOptGroup() {
 
     echo "<h3>Submission options</h3>\n";
     echo "Options are selected by authors at submission time.  Examples have included &ldquo;PC-authored paper,&rdquo; &ldquo;Consider this paper for a Best Student Paper award,&rdquo; and &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief (&ldquo;PC paper,&rdquo; &ldquo;Best Student Paper,&rdquo; &ldquo;Shadow PC&rdquo;).  The optional description can explain further and may use XHTML.  ";
-    if ($Conf->sversion < 29)
-	echo "To delete an option, delete its name.  ";
     echo "Add options one at a time.\n";
     echo "<div class='g'></div>\n";
     echo "<table>";
