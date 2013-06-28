@@ -539,10 +539,11 @@ class ReviewForm {
 	$Me = $_SESSION['Me'];
 	$submit = defval($req, "ready", false) && !defval($req, "unready", false);
 	$while = "while storing review";
+	$admin = $Me->canAdminister($prow);
 
 	if (!$Me->timeReview($prow, $rrow)
-	    && (!isset($req['override']) || !$Me->privChair))
-	    return $Conf->errorMsg("The <a href='" . hoturl("deadlines") . "'>deadline</a> for entering this review has passed." . ($Me->privChair ? "  Select the \"Override deadlines\" checkbox and try again if you really want to override the deadline." : ""));
+	    && (!isset($req['override']) || !$admin))
+	    return $Conf->errorMsg("The <a href='" . hoturl("deadlines") . "'>deadline</a> for entering this review has passed." . ($admin ? "  Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""));
 
 	$q = array();
         $diff_view_score = VIEWSCORE_FALSE;
@@ -1406,6 +1407,8 @@ $blind\n";
 	    . $linkExtra . "&amp;m=re";
 	$reviewPostLink = hoturl_post("review", $reviewLinkArgs);
 	$reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1");
+	$admin = $Me->canAdminister($prow);
+
 	if ($editmode) {
 	    echo "<form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",
 		"<div class='aahc pboxc'>",
@@ -1513,7 +1516,7 @@ $blind\n";
 
 	// message?
 	if ($rrow && $rrow->contactId != $Me->contactId
-	    && !isset($prow->myReviewId) && $Me->privChair)
+	    && !isset($prow->myReviewId) && $admin)
 	    echo "<div class='hint'>You didn&rsquo;t write this review, but as an administrator you can still make changes.</div>\n";
 
 	// download?
@@ -1535,7 +1538,7 @@ $blind\n";
 
 	// top save changes button
 	echo "  <tr><td></td><td class='revcc'>";
-	if ($Me->timeReview($prow, $rrow) || $Me->privChair) {
+	if ($Me->timeReview($prow, $rrow) || $admin) {
 	    $buttons = array();
 	    if (!$submitted) {
 		$buttons[] = tagg_submit("submit", "Submit review", array("class" => "bb"));
@@ -1559,14 +1562,14 @@ $blind\n";
 	echo $this->webFormRows($Me, $prow, $rrow, $useRequest);
 
 	// review actions
-	if ($Me->timeReview($prow, $rrow) || $Me->privChair) {
+	if ($Me->timeReview($prow, $rrow) || $admin) {
 	    $buttons = array();
 	    if (!$submitted) {
 		$buttons[] = tagg_submit("submit", "Submit review", array("class" => "bb"));
 		$buttons[] = tagg_submit("savedraft", "Save as draft");
 	    } else
 		$buttons[] = tagg_submit("submit", "Save changes", array("class" => "bb"));
-	    if ($rrow && $Me->privChair) {
+	    if ($rrow && $admin) {
                 $buttons[] = "";
 		if ($submitted)
 		    $buttons[] = array(tagg_submit("unsubmit", "Unsubmit review"), "(admin only)");
@@ -1584,9 +1587,9 @@ $blind\n";
 	    }
 
 	    echo tagg_actions($buttons);
-	    if ($Me->privChair)
+	    if ($admin)
 		echo tagg_checkbox("override"), "&nbsp;", tagg_label("Override deadlines");
-	    if ($rrow && $rrow->reviewSubmitted && !$Me->privChair)
+	    if ($rrow && $rrow->reviewSubmitted && !$admin)
 		echo "<div class='hint'>Only administrators can remove or unsubmit the review at this point.</div>";
 	}
 

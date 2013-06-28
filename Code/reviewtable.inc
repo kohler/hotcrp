@@ -16,7 +16,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     $hideUnviewable = ($conflictType > 0 && !$forceShow);
     if (!$Me->isPC && !$Conf->setting("extrev_view"))
 	$hideUnviewable = true;
-    $effAssistant = $Me->privChair && !$hideUnviewable;
+    $admin = $Me->canAdminister($prow);
+    $effAssistant = $admin && !$hideUnviewable;
     $anyScores = false;
     $anyColors = false;
     $colorizer = null;
@@ -93,7 +94,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	    else
 		$n = "[Token " . encodeToken((int) $rr->reviewToken) . "]";
 	    $t .= "<td>" . $n . ($x ? " $x" : "");
-	    if ($Me->privChair && $rr->email != $Me->email)
+	    if ($admin && $rr->email != $Me->email)
 		$t .= " <a href=\"" . selfHref(array("viewContact" => $rr->email)) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($rr)) . "</a>";
 	    $t .= "</td>";
 	    if ($mode == "assign")
@@ -176,6 +177,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 
     $conflictType = $Me->actConflictType($prow);
     $actingConflict = ($conflictType > 0 && !$forceShow);
+    $admin = $Me->canAdminister($prow);
     $effAssistant = $Me->actChair($prow) && !$actingConflict;
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 
@@ -254,7 +256,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if ($mode != "assign"
 	&& ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
 	$x = "<a href='" . hoturl("assign", "p=$prow->paperId$linkExtra") . "' class='xx'>"
-	    . $Conf->cacheableImage("assign24.png", "[Assign]", null, "dlimg") . "&nbsp;<u>" . ($Me->privChair ? "Assign reviews" : "External reviews") . "</u></a>";
+	    . $Conf->cacheableImage("assign24.png", "[Assign]", null, "dlimg") . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
@@ -287,7 +289,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     // override conflict
-    if ($Me->privChair && !$effAssistant) {
+    if ($admin && !$effAssistant) {
 	$x = "<a href=\"" . selfHref(array("forceShow" => 1)) . "\" class='xx'>"
 	    . $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing";
 	$t .= ($t == "" ? "" : $xsep) . $x;
