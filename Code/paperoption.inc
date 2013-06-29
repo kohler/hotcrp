@@ -70,4 +70,53 @@ class PaperOption {
 	    return (self::type_flags($t) & self::F_PDF) != 0;
     }
 
+    static function type_takes_multiple($t) {
+        return false;
+    }
+
+    static function type_needs_data($t) {
+        return $t == self::T_TEXT || $t == self::T_TEXT_5LINE;
+    }
+
+    static function parse_paper_options($prow) {
+        global $Conf;
+        $options = paperOptions();
+        $prow->option_array = array();
+        if (!count($options) || !isset($prow->optionIds) || !$prow->optionIds)
+            return 0;
+
+        preg_match_all('/(\d+)#(\d+)/', defval($prow, "optionIds", ""), $m);
+        $optsel = array();
+        for ($i = 0; $i < count($m[1]); ++$i)
+            arrayappend($optsel[$m[1][$i]], $m[2][$i]);
+        $optdata = null;
+
+        foreach ($options as $o)
+            if (isset($optsel[$o->optionId])) {
+                $ox = (object) array("optionId" => $o->optionId,
+                                     "option" => $o);
+                if (self::type_needs_data($o->type) && !$optdata) {
+                    $optdata = array();
+                    $result = $Conf->qe("select optionId, value, data from PaperOption where paperId=$prow->paperId", "while selecting paper options");
+                    while (($row = edb_row($result)))
+                        $optdata[$row[0] . "." . $row[1]] = $row[2];
+                }
+                if (self::type_takes_multiple($o->type)) {
+                    $ox->values = $optsel[$o->optionId];
+                    if (self::type_needs_data($o->type)) {
+                        $ox->data = array();
+                        foreach ($ox->values as $v)
+                            $ox->data[] = $optdata[$o->optionId . "." . $v];
+                    }
+                } else {
+                    $ox->value = $optsel[$o->optionId][0];
+                    if (self::type_needs_data($o->type))
+                        $ox->data = $optdata[$o->optionId . "." . $ox->value];
+                }
+                $prow->option_array[$o->optionId] = $ox;
+            }
+
+        return count($prow->option_array);
+    }
+
 }

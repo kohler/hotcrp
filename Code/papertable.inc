@@ -669,17 +669,10 @@ class PaperTable {
 	$optionhtml = array();
 	$ndocuments = 0;
 
-	$options = paperOptions();
-	if (count($options)) {
-	    preg_match_all('/(\d+)#(\d+)/', defval($prow, "optionIds", ""), $m);
-	    $optsel = array();
-	    $optdata = null;
-	    for ($i = 0; $i < count($m[1]); ++$i)
-		$optsel[$m[1][$i]] = $m[2][$i];
-
-	    foreach ($options as $o) {
-		$ov = defval($optsel, $o->optionId, 0);
-		if ((!$ov && !$o->type)
+	if (PaperOption::parse_paper_options($prow)) {
+	    foreach ($prow->option_array as $oa) {
+                $o = $oa->option;
+		if (($o->type == PaperOption::T_CHECKBOX && !$oa->value)
 		    || ($o->displayType == PaperOption::DT_SUBMISSION && $o->isDocument)
 		    || (!$showAllOptions && !$Me->canViewPaperOption($prow, $o)))
 		    continue;
@@ -691,28 +684,21 @@ class PaperTable {
 		    $ox = true;
 		else if (PaperOption::type_is_selectorlike($o->type)) {
 		    $om = explode("\n", $o->optionValues);
-		    if (defval($om, $ov, "") != "")
+		    if (defval($om, $oa->value, "") != "")
 			$ox = htmlspecialchars($om[$ov]);
-		} else if ($o->type == PaperOption::T_NUMERIC && $ov != "" && $ov != "0")
-		    $ox = htmlspecialchars($ov);
-		else if (($o->type == PaperOption::T_TEXT || $o->type == PaperOption::T_TEXT_5LINE) && $ov != "") {
-		    if ($optdata == null) {
-			$optdata = array();
-			$result = $Conf->qe("select optionId, data from PaperOption where paperId=$prow->paperId", "while selecting paper options");
-			while (($row = edb_row($result)))
-			    $optdata[$row[0]] = $row[1];
-		    }
-		    if ($optdata[$o->optionId] != "")
-			$ox = htmlspecialchars($optdata[$o->optionId]);
-                    if ($o->type == PaperOption::T_TEXT_5LINE)
+		} else if ($o->type == PaperOption::T_NUMERIC && $oa->value != "" && $oa->value != "0")
+		    $ox = htmlspecialchars($oa->value);
+		else if (($o->type == PaperOption::T_TEXT || $o->type == PaperOption::T_TEXT_5LINE) && $oa->data != "") {
+                    $ox = htmlspecialchars($oa->data);
+                    if ($o->type != PaperOption::T_TEXT)
                         $ox = nl2br($ox);
-		} else if ($o->isDocument && $ov) {
+		} else if ($o->isDocument && $oa->value) {
 		    $show_on = false;
 		    if ($o->type == PaperOption::T_PDF)
 			/* make fake document */
 			$doc = (object) array("paperId" => $prow->paperId, "mimetype" => "application/pdf", "documentType" => $o->optionId);
 		    else
-			$doc = paperDocumentData($prow, $o->optionId, $ov);
+			$doc = paperDocumentData($prow, $o->optionId, $oa->value);
 		    if ($doc)
 			$ox = documentDownload($doc, "sdlimg", $on);
 		}
@@ -904,34 +890,26 @@ class PaperTable {
     private function echoOptions($displayTypeFlags) {
 	global $Conf, $Me;
         $prow = $this->prow;
-	$prow_optionIds = isset($prow->optionIds) ? $prow->optionIds : "";
 	if (!($opt = paperOptions()))
 	    return;
 	assert(!!$this->editable);
-	preg_match_all('/(\d+)#(\d+)/', $prow_optionIds, $m);
-	$optsel = array();
-	for ($i = 0; $i < count($m[1]); ++$i)
-	    $optsel[$m[1][$i]] = $m[2][$i];
-	$optdata = null;
+        if ($prow)
+            PaperOption::parse_paper_options($prow);
 	foreach ($opt as $o) {
 	    if (!($displayTypeFlags & (1 << $o->displayType))
 		|| ($o->isFinal && !$this->canUploadFinal)
                 || !$Me->canViewPaperOption($prow, $o))
 		continue;
 	    $optid = "opt$o->optionId";
+            $optx = ($prow ? defval($prow->option_array, $o->optionId) : null);
 	    if ($this->useRequest)
 		$myval = defval($_REQUEST, $optid);
-	    else if ($o->type != PaperOption::T_TEXT && $o->type != PaperOption::T_TEXT_5LINE)
-		$myval = defval($optsel, $o->optionId);
-	    else {
-		if (!$optdata && $prow) {
-		    $optdata = array();
-		    $result = $Conf->qe("select optionId, data from PaperOption where paperId=$prow->paperId", "while reading options");
-		    while (($row = edb_row($result)))
-			$optdata[$row[0]] = $row[1];
-		}
-		$myval = defval($optdata, $o->optionId);
-	    }
+            else if (!$optx)
+                $myval = null;
+	    else if ($o->type == PaperOption::T_TEXT || $o->type == PaperOption::T_TEXT_5LINE)
+                $myval = $optx->data;
+	    else
+                $myval = $optx->value;
 
 	    if ($o->type == PaperOption::T_CHECKBOX) {
 		echo $this->papt($optid, tagg_checkbox_h($optid, 1, $myval)
@@ -961,7 +939,7 @@ class PaperTable {
                 else /* $o->type == PaperOption::T_TEXT_5LINE */
                     echo "<div class='papv'><textarea class='textlite papertext' name='$optid' rows='5' cols='60' onchange='hiliter(this)'>", htmlspecialchars($myval), "</textarea></div>\n\n";
 	    } else if ($o->type != PaperOption::T_FINALPDF)
-		$this->echoDocumentUploadRow($prow, $o, defval($optsel, $o->optionId, 0), 0);
+		$this->echoDocumentUploadRow($prow, $o, $optx ? $optx->value : 0, 0);
 	}
     }
 
