@@ -18,32 +18,36 @@ class PaperOption {
     const T_FINALSLIDES = 101;
     const T_FINALVIDEO = 102;
 
-    const F_DOCUMENT = 1;
-    const F_PDF = 2;
-    const F_FINAL = 4;
+    const F_OK = 1;
+    const F_DOCUMENT = 2;
+    const F_PDF = 4;
+    const F_FINAL = 8;
 
     const DT_NORMAL = 0;
     const DT_HIGHLIGHT = 1;
     const DT_SUBMISSION = 2;
 
-    static function make_info() {
-	return array(self::T_CHECKBOX => 0,
-		     self::T_SELECTOR => 0,
-		     self::T_NUMERIC => 0,
-		     self::T_TEXT => 0,
-		     self::T_RADIO => 0,
-                     self::T_TEXT_5LINE => 0,
-		     self::T_PDF => self::F_DOCUMENT + self::F_PDF,
-		     self::T_SLIDES => self::F_DOCUMENT + self::F_PDF,
-		     self::T_VIDEO => self::F_DOCUMENT,
-		     self::T_FINALPDF => self::F_DOCUMENT + self::F_PDF + self::F_FINAL,
-		     self::T_FINALSLIDES => self::F_DOCUMENT + self::F_PDF + self::F_FINAL,
-		     self::T_FINALVIDEO => self::F_DOCUMENT + self::F_FINAL);
+    static $info = null;
+
+    static function type_flags($t) {
+        if (!self::$info)
+            self::$info = array(self::T_CHECKBOX => self::F_OK,
+                                self::T_SELECTOR => self::F_OK,
+                                self::T_NUMERIC => self::F_OK,
+                                self::T_TEXT => self::F_OK,
+                                self::T_RADIO => self::F_OK,
+                                self::T_TEXT_5LINE => self::F_OK,
+                                self::T_PDF => self::F_OK + self::F_DOCUMENT + self::F_PDF,
+                                self::T_SLIDES => self::F_OK + self::F_DOCUMENT + self::F_PDF,
+                                self::T_VIDEO => self::F_OK + self::F_DOCUMENT,
+                                self::T_FINALPDF => self::F_OK + self::F_DOCUMENT + self::F_PDF + self::F_FINAL,
+                                self::T_FINALSLIDES => self::F_OK + self::F_DOCUMENT + self::F_PDF + self::F_FINAL,
+                                self::T_FINALVIDEO => self::F_OK + self::F_DOCUMENT + self::F_FINAL);
+        return isset(self::$info[$t]) ? self::$info[$t] : 0;
     }
 
     static function type_is_valid($t) {
-	global $paperOptionInfo;
-	return isset($paperOptionInfo[$t]);
+	return self::type_flags($t) != 0;
     }
 
     static function type_is_selectorlike($t) {
@@ -51,24 +55,19 @@ class PaperOption {
     }
 
     static function type_is_document($t) {
-	global $paperOptionInfo;
-	return isset($paperOptionInfo[$t]) && ($paperOptionInfo[$t] & self::F_DOCUMENT) != 0;
+	return (self::type_flags($t) & self::F_DOCUMENT) != 0;
     }
 
     static function type_is_final($t) {
-	global $paperOptionInfo;
-	return isset($paperOptionInfo[$t]) && ($paperOptionInfo[$t] & self::F_FINAL) != 0;
+	return (self::type_flags($t) & self::F_FINAL) != 0;
     }
 
     static function type_takes_pdf($t) {
-	global $paperOptionInfo, $Opt;
+	global $Opt;
 	if ($t === null)
 	    return !isset($Opt["disablePDF"]) || !$Opt["disablePDF"];
 	else
-	    return isset($paperOptionInfo[$t]) && ($paperOptionInfo[$t] & self::F_PDF) != 0;
+	    return (self::type_flags($t) & self::F_PDF) != 0;
     }
 
 }
-
-global $paperOptionInfo;
-$paperOptionInfo = PaperOption::make_info();
