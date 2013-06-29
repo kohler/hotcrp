@@ -297,7 +297,8 @@ class PaperTable {
 	    }
 
 	    foreach (paperOptions() as $id => $o)
-		if ($o->displayType == 2 && $o->isDocument
+		if ($o->displayType == PaperOption::DT_SUBMISSION
+                    && $o->isDocument
 		    && (!$o->isFinal || $final)) {
 		    if (preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m)
 			&& $m[1] > 1
@@ -679,7 +680,7 @@ class PaperTable {
 	    foreach ($options as $o) {
 		$ov = defval($optsel, $o->optionId, 0);
 		if ((!$ov && !$o->type)
-		    || ($o->displayType == 2 && $o->isDocument)
+		    || ($o->displayType == PaperOption::DT_SUBMISSION && $o->isDocument)
 		    || (!$showAllOptions && !$Me->canViewPaperOption($prow, $o)))
 		    continue;
 
@@ -718,7 +719,7 @@ class PaperTable {
 
 		if ($ox == "")
 		    /* do nothing */;
-		else if ($o->displayType) {
+		else if ($o->displayType != PaperOption::DT_NORMAL) {
                     $xoptionhtml[] = "<div class='papt'><span class='papfn'>"
 			. ($show_on ? $on : $ox) . "</span>"
                         . "<div class='clear'></div></div>";
@@ -1664,7 +1665,7 @@ class PaperTable {
 	    $this->paptabTitle($prow);
 	    $this->echoUploadRow($prow,
 		(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
-	    $this->echoOptions(4);
+	    $this->echoOptions(1 << PaperOption::DT_SUBMISSION);
 
 	    // Authorship
 	    echo $spacer;
@@ -1682,7 +1683,8 @@ class PaperTable {
 	    // Topics and options
 	    echo $spacer;
 	    $this->echoTopics();
-	    $this->echoOptions(3);
+	    $this->echoOptions((1 << PaperOption::DT_NORMAL)
+                               | (1 << PaperOption::DT_HIGHLIGHT));
 
 	    // Potential conflicts
 	    if ($this->editable !== "f" || $this->admin) {

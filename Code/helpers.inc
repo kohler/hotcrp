@@ -1913,9 +1913,9 @@ function paperOptions($id = null) {
 		$row->optionAbbrev = "opt" . $row->optionId;
 	    $row->sortOrder = $order++;
 	    if (!isset($row->displayType))
-		$row->displayType = 0;
+		$row->displayType = PaperOption::DT_NORMAL;
 	    if ($row->type == PaperOption::T_FINALPDF)
-		$row->displayType = 2;
+		$row->displayType = PaperOption::DT_SUBMISSION;
 	    $row->isDocument = PaperOption::type_is_document($row->type);
 	    $row->isFinal = PaperOption::type_is_final($row->type);
 	    $opt[$row->optionId] = $row;

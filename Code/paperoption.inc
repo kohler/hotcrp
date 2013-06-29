@@ -22,6 +22,10 @@ class PaperOption {
     const F_PDF = 2;
     const F_FINAL = 4;
 
+    const DT_NORMAL = 0;
+    const DT_HIGHLIGHT = 1;
+    const DT_SUBMISSION = 2;
+
     static function make_info() {
 	return array(self::T_CHECKBOX => 0,
 		     self::T_SELECTOR => 0,
