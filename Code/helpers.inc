@@ -1892,7 +1892,6 @@ function paperOptions($id = null) {
     global $Conf;
     if ($Conf->setting("paperOption") <= 0 || $Conf->sversion <= 0)
 	return array();
-    require_once("paperoption.inc");
     $svar = defval($_SESSION, "paperOption", null);
     if (!$svar || !is_array($svar) || count($svar) < 3 || $svar[2] < 2
 	|| $svar[0] < $Conf->setting("paperOption")) {

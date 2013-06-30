@@ -48,7 +48,6 @@ class HotCRPDocument {
 
     public function mimetypes($doc = null, $docinfo = null) {
         global $Opt;
-        require_once("paperoption.inc");
         if ($this->dtype > 0 && !$this->option)
             return null;
         $optionType = ($this->option ? $this->option->type : null);

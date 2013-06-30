@@ -217,7 +217,6 @@ function setRequestFromPaper($prow) {
 
 function requestSameAsPaper($prow) {
     global $Conf;
-    require_once("Code/paperoption.inc");
     foreach (array("title", "abstract", "authorTable", "collaborators") as $x)
 	if ($_REQUEST[$x] != $prow->$x)
 	    return false;

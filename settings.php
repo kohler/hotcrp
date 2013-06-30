@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-require_once("Code/paperoption.inc");
 require_once("Code/cleanxhtml.inc");
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
