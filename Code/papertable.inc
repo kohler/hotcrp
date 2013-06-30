@@ -465,21 +465,23 @@ class PaperTable {
 	    $shortdata = trim(preg_replace(",</?p.*?>,", "\n", $data));
 	    $shortdata = preg_replace("/\\S+(<[^>]+)?\\Z/", "", utf8_substr($shortdata, 0, 180));
 	    if ($shortdata != "") { /* "" might happen if really long word */
-		echo $this->papt("abstract", "Abstract",
-				 array("fold" => "paper", "foldnum" => 6,
-				       "foldsession" => "foldpaperb",
-				       "showtitle" => "Show full abstract",
-				       "hidetitle" => "Abbreviate abstract")),
-		    "<div class='papv abstract'>",
+                echo "<div class='pg pgtop'>",
+                    $this->papt("abstract", "Abstract",
+                                array("fold" => "paper", "foldnum" => 6,
+                                      "foldsession" => "foldpaperb",
+                                      "showtitle" => "Show full abstract",
+                                      "hidetitle" => "Abbreviate abstract")),
+                    "<div class='papb abstract'>",
 		    "<div class='fn6'>", $shortdata,
 		    " <a class='fn6' href='javascript:void fold(\"paper\", 0, 6)'>[more]</a>",
 		    "</div><div class='fx6'>", $data,
-		    "</div></div>\n\n";
+                    "</div></div></div>\n\n";
 		return;
 	    }
 	}
-	echo $this->papt("abstract", "Abstract"),
-	    "<div class='papv abstract'>", $data, "</div>\n\n";
+        echo "<div class='pg pgtop'>",
+            $this->papt("abstract", "Abstract"),
+            "<div class='papb abstract'>", $data, "</div></div>\n\n";
     }
 
     function echoAuthorInformation($prow) {
@@ -564,10 +566,12 @@ class PaperTable {
     function paptabAuthors($prow) {
 	global $Conf, $Me, $forceShow;
 
+        echo "<div class='pg pgtop fn8'>";
 	$viewable = $Me->canViewAuthors($prow, $forceShow);
 	if (!$viewable && !$Me->actChair($prow, true)) {
 	    echo $this->papt("authorInformation", "Authors"),
-		"<div class='papv'><i>Hidden for blind review</i></div>\n\n";
+                "<div class='papb'><i>Hidden for blind review</i></div>",
+                "</div>\n\n";
 	    return;
 	}
 
@@ -609,19 +613,17 @@ class PaperTable {
 
 	// anonymity folding
 	if (!$viewable) {
-	    echo "<div class='fn8'>",
-		$this->papt("authorInformation", "Authors"),
-		"<div class='papv'><a class='q fn8' ",
+            echo $this->papt("authorInformation", "Authors"),
+                "<div class='papb'><a class='q fn8' ",
 		"href='javascript:void fold(\"paper\", 0, 8)' title='Show authors'>",
 		"+&nbsp;<i>Hidden for blind review</i></a>";
 	    if ($this->mode == "assign")
 		echo foldsessionpixel("paper8", "foldassigna");
 	    echo "</div></div>\n",
-		"<div class='fx8'>";
+                "<div class='pg pgtop fx8'>";
 	    $inauthors1 = $inauthors2 = "<a class='q fx8' "
 		. "href='javascript:void fold(\"paper\", 1, 8)' "
 		. "title='Hide authors'>[blind]</a> ";
-	    $afterauthors = "</div>\n";
 	} else {
 	    $inauthors1 = $inauthors2 = $afterauthors = "";
 	    if ($Conf->subBlindOptional() && $prow->blind)
@@ -638,7 +640,7 @@ class PaperTable {
 				   "foldsession" => "foldpaperp",
 				   "showtitle" => "Show full authors",
 				   "hidetitle" => "Show abbreviated authors")),
-		"<div class='papv'><span class='fn9'>",
+                "<div class='papb'><span class='fn9'>",
 		$this->authorData($prow->authorTable, "last", null, $inauthors1),
 		" <a class='fn9' href='javascript:void fold(\"paper\", 0, 9)'>[details]</a>",
 		"</span><span class='fx9'>",
@@ -647,25 +649,23 @@ class PaperTable {
 
 	} else {
 	    echo $this->papt("authorInformation", $auname),
-		"<div class='papv'>", $inauthors1,
+                "<div class='papb'>", $inauthors1,
 		$this->authorData($prow->authorTable, "col", $Me);
 	}
 
-	echo "</div>\n";
+        echo "</div></div>\n\n";
 
 	if (count($contacts) > 0) {
-	    echo "<div class='fx9'>",
+            echo "<div class='pg fx9", ($viewable ? "" : " fx8"), "'>",
 		$this->papt("authorInformation", pluralx(count($contacts), "Contact author")),
-		"<div class='papv'>",
+                "<div class='papb'>",
 		$this->authorData($contacts, "col", $Me),
 		"</div></div>\n\n";
 	}
-
-	echo $afterauthors, "\n";
     }
 
     private function paptabTopicsOptions($prow, $showAllOptions) {
-	global $Conf, $Me;
+        global $Conf, $Me, $forceShow;
 	$topicdata = topicTable($prow, -1);
         $xoptionhtml = array();
 	$optionhtml = array();
@@ -726,10 +726,14 @@ class PaperTable {
             }
         }
 
-        for ($i = 0; $i < count($xoptionhtml); $i += 2)
-            echo $xoptionhtml[$i], "<div class='",
-                ($i == count($xoptionhtml) - 2 ? "papv" : "papvx"),
-                "'>", $xoptionhtml[$i + 1], "</div>\n";
+        if (count($xoptionhtml)) {
+            echo "<div class='pg'>";
+            for ($i = 0; $i < count($xoptionhtml); $i += 2)
+                echo "<div class='pgsm'>",
+                    $xoptionhtml[$i], "<div class='papb'>",
+                    $xoptionhtml[$i + 1], "</div></div>\n";
+            echo "</div>\n";
+        }
 
 	if ($topicdata != "" || count($optionhtml)) {
 	    $infotypes = array();
@@ -747,27 +751,24 @@ class PaperTable {
 			       "foldsession" => "foldpapert",
 			       "showtitle" => "Show " . strtolower($tanda),
 			       "hidetitle" => "Hide " . strtolower($tanda));
-		$before = "<div class='papv fn5'></div>";
 		$eclass = " fx5";
 	    } else {
 		$extra = null;
-		$before = $eclass = "";
+                $eclass = "";
 	    }
 
 	    if ($topicdata != "") {
-		echo $this->papt("topics", array("Topics", $tanda), $extra),
-		    $before,
-		    "<div class='papv$eclass'>", $topicdata, "</div>\n\n";
-		if ($extra)
-		    $extra = array("extraclass" => "fx5");
-		$before = "";
+                echo "<div class='pg'>",
+                    $this->papt("topics", array("Topics", $tanda), $extra),
+                    "<div class='papb$eclass'>", $topicdata, "</div></div>\n\n";
+                $extra = null;
 		$tanda = $options_name;
 	    }
 
 	    if (count($optionhtml)) {
-		echo $this->papt("options", array($options_name, $tanda), $extra),
-		    $before,
-		    "<div class='papv$eclass'>", join("", $optionhtml), "</div>\n\n";
+                echo "<div class='pg$eclass'>",
+                    $this->papt("options", array($options_name, $tanda), $extra),
+                    "<div class='papb'>", join("", $optionhtml), "</div></div>\n\n";
 	    }
 	}
     }

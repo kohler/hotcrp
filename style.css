@@ -2026,7 +2026,7 @@ td.papcbot {
 	-moz-border-radius-bottomright: 5px;
 }
 div.inpapct {
-	margin: 8px 12px;
+	margin: 8px 12px 12px;
 }
 td.papsep {
 	background: #cec1ff;
@@ -2081,9 +2081,20 @@ div.paphint {
 div.papv {
 	padding: 2px 0 1em 7px;
 }
-div.papvx {
-	padding: 2px 0 0.5em 7px;
+
+div.pg {
+	margin-top: 1em;
 }
+div.pg.pgtop {
+	margin-top: 0;
+}
+div.pgsm {
+	margin-top: 0.5em;
+}
+div.papb {
+	padding: 2px 0 0 7px;
+}
+
 
 /* reviews */
 table.revc {
