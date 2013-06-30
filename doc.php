@@ -36,15 +36,20 @@ else {
 // Security checks - people who can download all paperss
 // are assistants, chairs & PC members. Otherwise, you need
 // to be a contact person for that paper.
-if (!isset($Error) && !$Me->canDownloadPaper($paperId, $whyNot))
+if (!isset($Error)
+    && !($prow = $Conf->paperRow($paperId, $Me->contactId, $whyNot)))
     $Error = whyNotText($whyNot, "view");
-if ($documentType > 0 && !$Me->canViewPaperOption($paperId, $documentType))
+if (!isset($Error) && !$Me->canDownloadPaper($prow, $whyNot))
+    $Error = whyNotText($whyNot, "view");
+if (!isset($Error) && $documentType > 0
+    && !$Me->canViewPaperOption($prow, $documentType)
+    && !$Me->canAdminister($prow))
     $Error = "You don’t have permission to view this document.";
 
 // Actually download paper.
 if (!isset($Error)) {
     session_write_close();	// to allow concurrent clicks
-    $result = $Conf->downloadPaper($paperId, rcvtint($_REQUEST["save"]) > 0, $documentType);
+    $result = $Conf->downloadPaper($prow, rcvtint($_REQUEST["save"]) > 0, $documentType);
     if ($result === true)
 	exit;
 }

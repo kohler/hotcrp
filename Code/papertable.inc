@@ -707,14 +707,16 @@ class PaperTable {
             if ($ox == "")
                 /* do nothing */;
             else if ($o->displayType != PaperOption::DT_NORMAL) {
-                $xoptionhtml[] = "<div class='papt'><span class='papfn'>"
+                if ($showAllOptions && !$Me->canViewPaperOption($prow, $o))
+                    $x = "<div class='pgsm fx8'>";
+                else
+                    $x = "<div class='pgsm'>";
+                $x .= "<div class='papt'><span class='papfn'>"
                     . ($show_on ? $on : $ox) . "</span>"
                     . "<div class='clear'></div></div>";
                 if ($show_on && $ox !== true)
-                    $xoptionhtml[] = $ox;
-                else
-                    //echo ": ", $ox;
-                    $xoptionhtml[] = "";
+                    $x .= "<div class='papb'>" . $ox . "</div>";
+                $xoptionhtml[] = $x . "</div>\n";
             } else {
                 if ($ox === true)
                     $optionhtml[] = $on . "<br />\n";
@@ -726,14 +728,8 @@ class PaperTable {
             }
         }
 
-        if (count($xoptionhtml)) {
-            echo "<div class='pg'>";
-            for ($i = 0; $i < count($xoptionhtml); $i += 2)
-                echo "<div class='pgsm'>",
-                    $xoptionhtml[$i], "<div class='papb'>",
-                    $xoptionhtml[$i + 1], "</div></div>\n";
-            echo "</div>\n";
-        }
+        if (count($xoptionhtml))
+            echo "<div class='pg'>", join("", $xoptionhtml), "</div>\n";
 
 	if ($topicdata != "" || count($optionhtml)) {
 	    $infotypes = array();
@@ -899,7 +895,7 @@ class PaperTable {
 	foreach ($opt as $o) {
 	    if (!($displayTypeFlags & (1 << $o->displayType))
 		|| ($o->isFinal && !$this->canUploadFinal)
-                || !$Me->canViewPaperOption($prow, $o))
+                || (!$Me->canViewPaperOption($prow, $o) && !$Me->canAdminister($prow)))
 		continue;
 	    $optid = "opt$o->optionId";
             $optx = ($prow ? defval($prow->option_array, $o->optionId) : null);

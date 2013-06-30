@@ -742,14 +742,14 @@ class Contact {
         $admin = $this->canAdminister($prow);
 	$conflictType = $this->actConflictType($prow);
 	// policy
-	if ($conflictType >= CONFLICT_AUTHOR || $admin)
-	    return true;
 	if (!$this->canViewPaper($prow, $whyNot))
 	    return false;	// $whyNot already set
-	if (($prow->myReviewType > 0 || $this->isPC)
-	    && ($opt->pcView == 1
-		|| ($opt->pcView == 2 && $this->canViewAuthors($prow, true))))
-	    return true;
+        if ($conflictType >= CONFLICT_AUTHOR
+            || (($prow->myReviewType > 0 || $admin || $this->isPC)
+                && (($opt->pcView == 0 && $admin)
+                    || $opt->pcView == 1
+                    || ($opt->pcView == 2 && $this->canViewAuthors($prow, true)))))
+            return true;
 	$whyNot["permission"] = 1;
 	return false;
     }
