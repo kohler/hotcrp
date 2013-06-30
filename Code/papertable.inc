@@ -299,14 +299,15 @@ class PaperTable {
 	    foreach (paperOptions() as $id => $o)
 		if ($o->displayType == PaperOption::DT_SUBMISSION
                     && $o->isDocument
-		    && (!$o->isFinal || $final)) {
-		    if (preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m)
-			&& $m[1] > 1
-			&& ($d = paperDocumentData($prow, $id, $m[1])))
-			$pdfs[] = "<span class='papfn'>"
-			    . htmlspecialchars($o->optionName)
-			    . "</span>: &nbsp;"
-			    . documentDownload($d, count($pdfs) ? "dlimgsp" : "dlimg");
+		    && (!$o->isFinal || $final)
+                    && $prow
+                    && isset($prow->option_array[$id])
+                    && $prow->option_array[$id]->value > 1
+                    && ($d = paperDocumentData($prow, $id, $prow->option_array[$id]->value))) {
+                    $pdfs[] = "<span class='papfn'>"
+                        . htmlspecialchars($o->optionName)
+                        . "</span>: &nbsp;"
+                        . documentDownload($d, count($pdfs) ? "dlimgsp" : "dlimg");
 		}
 
 	    if ($final && $prow->finalPaperStorageId > 1
@@ -445,14 +446,14 @@ class PaperTable {
 	echo "</div>\n\n";
     }
 
-    function echoUploadRow($prow, $flags) {
+    private function echoUploadRow($prow, $flags) {
 	global $Me;
 	if ($this->canUploadFinal) {
 	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DTYPE_FINAL, "optionName" => "Final version", "type" => null), $prow ? $prow->finalPaperStorageId : 0, $flags);
 	    foreach (paperOptions() as $id => $o)
 		if ($o->type == PaperOption::T_FINALPDF) {
-		    $match = preg_match("/\\b$id#(\\d+)/", defval($prow, "optionIds", ""), $m);
-		    $this->echoDocumentUploadRow($prow, $o, $match ? $m[1] : 0, $flags);
+                    $oa = $prow ? defval($prow->option_array, $o->optionId) : null;
+		    $this->echoDocumentUploadRow($prow, $o, $oa ? $oa->value : 0, $flags);
 		}
 	} else
 	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DTYPE_SUBMISSION, "optionName" => "Submission", "type" => null), $prow ? $prow->paperStorageId : 0, $flags);
@@ -663,74 +664,72 @@ class PaperTable {
 	echo $afterauthors, "\n";
     }
 
-    function paptabTopicsOptions($prow, $showAllOptions) {
+    private function paptabTopicsOptions($prow, $showAllOptions) {
 	global $Conf, $Me;
 	$topicdata = topicTable($prow, -1);
         $xoptionhtml = array();
 	$optionhtml = array();
 	$ndocuments = 0;
 
-	if (PaperOption::parse_paper_options($prow)) {
-	    foreach ($prow->option_array as $oa) {
-                $o = $oa->option;
-		if (($o->type == PaperOption::T_CHECKBOX && !$oa->value)
-		    || ($o->displayType == PaperOption::DT_SUBMISSION && $o->isDocument)
-		    || (!$showAllOptions && !$Me->canViewPaperOption($prow, $o)))
-		    continue;
+        foreach ($prow->option_array as $oa) {
+            $o = $oa->option;
+            if (($o->type == PaperOption::T_CHECKBOX && !$oa->value)
+                || ($o->displayType == PaperOption::DT_SUBMISSION && $o->isDocument)
+                || (!$showAllOptions && !$Me->canViewPaperOption($prow, $o)))
+                continue;
 
-		$show_on = true;
-		$on = htmlspecialchars($o->optionName);
-		$ox = "";
-		if ($o->type == PaperOption::T_CHECKBOX)
-		    $ox = true;
-		else if (PaperOption::type_is_selectorlike($o->type)) {
-		    $om = explode("\n", $o->optionValues);
-		    if (defval($om, $oa->value, "") != "")
-			$ox = htmlspecialchars($om[$ov]);
-		} else if ($o->type == PaperOption::T_NUMERIC && $oa->value != "" && $oa->value != "0")
-		    $ox = htmlspecialchars($oa->value);
-		else if (($o->type == PaperOption::T_TEXT || $o->type == PaperOption::T_TEXT_5LINE) && $oa->data != "") {
-                    $ox = htmlspecialchars($oa->data);
-                    if ($o->type != PaperOption::T_TEXT)
-                        $ox = nl2br($ox);
-		} else if ($o->isDocument && $oa->value) {
-		    $show_on = false;
-		    if ($o->type == PaperOption::T_PDF)
-			/* make fake document */
-			$doc = (object) array("paperId" => $prow->paperId, "mimetype" => "application/pdf", "documentType" => $o->optionId);
-		    else
-			$doc = paperDocumentData($prow, $o->optionId, $oa->value);
-		    if ($doc)
-			$ox = documentDownload($doc, "sdlimg", $on);
-		}
+            $show_on = true;
+            $on = htmlspecialchars($o->optionName);
+            $ox = "";
+            if ($o->type == PaperOption::T_CHECKBOX)
+                $ox = true;
+            else if (PaperOption::type_is_selectorlike($o->type)) {
+                $om = explode("\n", $o->optionValues);
+                if (defval($om, $oa->value, "") != "")
+                    $ox = htmlspecialchars($om[$ov]);
+            } else if ($o->type == PaperOption::T_NUMERIC && $oa->value != "" && $oa->value != "0")
+                $ox = htmlspecialchars($oa->value);
+            else if (($o->type == PaperOption::T_TEXT || $o->type == PaperOption::T_TEXT_5LINE) && $oa->data != "") {
+                $ox = htmlspecialchars($oa->data);
+                if ($o->type != PaperOption::T_TEXT)
+                    $ox = nl2br($ox);
+            } else if ($o->isDocument && $oa->value) {
+                $show_on = false;
+                if ($o->type == PaperOption::T_PDF)
+                    /* make fake document */
+                    $doc = (object) array("paperId" => $prow->paperId, "mimetype" => "application/pdf", "documentType" => $o->optionId);
+                else
+                    $doc = paperDocumentData($prow, $o->optionId, $oa->value);
+                if ($doc)
+                    $ox = documentDownload($doc, "sdlimg", $on);
+            }
 
-		if ($ox == "")
-		    /* do nothing */;
-		else if ($o->displayType != PaperOption::DT_NORMAL) {
-                    $xoptionhtml[] = "<div class='papt'><span class='papfn'>"
-			. ($show_on ? $on : $ox) . "</span>"
-                        . "<div class='clear'></div></div>";
-		    if ($show_on && $ox !== true)
-                        $xoptionhtml[] = $ox;
-                    else
-                        //echo ": ", $ox;
-                        $xoptionhtml[] = "";
-		} else {
-		    if ($ox === true)
-			$optionhtml[] = $on . "<br />\n";
-		    else if ($show_on)
-			$optionhtml[] = $on . ": <span class='optvalue'>" . $ox . "</span><br />\n";
-		    else
-			$optionhtml[] = $ox . "<br />\n";
-		    $ndocuments += $o->isDocument ? 1 : 0;
-		}
-	    }
+            if ($ox == "")
+                /* do nothing */;
+            else if ($o->displayType != PaperOption::DT_NORMAL) {
+                $xoptionhtml[] = "<div class='papt'><span class='papfn'>"
+                    . ($show_on ? $on : $ox) . "</span>"
+                    . "<div class='clear'></div></div>";
+                if ($show_on && $ox !== true)
+                    $xoptionhtml[] = $ox;
+                else
+                    //echo ": ", $ox;
+                    $xoptionhtml[] = "";
+            } else {
+                if ($ox === true)
+                    $optionhtml[] = $on . "<br />\n";
+                else if ($show_on)
+                    $optionhtml[] = $on . ": <span class='optvalue'>" . $ox . "</span><br />\n";
+                else
+                    $optionhtml[] = $ox . "<br />\n";
+                $ndocuments += $o->isDocument ? 1 : 0;
+            }
+        }
 
-            for ($i = 0; $i < count($xoptionhtml); $i += 2)
-                echo $xoptionhtml[$i], "<div class='",
-                    ($i == count($xoptionhtml) - 2 ? "papv" : "papvx"),
-                    "'>", $xoptionhtml[$i + 1], "</div>\n";
-	}
+        for ($i = 0; $i < count($xoptionhtml); $i += 2)
+            echo $xoptionhtml[$i], "<div class='",
+                ($i == count($xoptionhtml) - 2 ? "papv" : "papvx"),
+                "'>", $xoptionhtml[$i + 1], "</div>\n";
 
 	if ($topicdata != "" || count($optionhtml)) {
 	    $infotypes = array();
@@ -1597,6 +1596,7 @@ class PaperTable {
     function paptabBegin($contentopener = "") {
 	global $Conf, $Me, $linkExtra;
 	$prow = $this->prow;
+        PaperOption::parse_paper_options($prow);
 	$pboxclass = $prow ? "pbox" : "pboxn";
 
 	if ($prow) {
