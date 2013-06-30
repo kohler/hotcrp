@@ -349,7 +349,8 @@ class PaperTable {
 	$noPapers = defval($Opt, "noPapers") && ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
 	$banal = $Conf->setting("sub_banal")
 	    && ($optionType == null || $optionType == PaperOption::T_PDF
-		|| $optionType == PaperOption::T_FINALPDF);
+		|| $optionType == PaperOption::T_FINALPDF)
+            && ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
 
 	$filetypes = array();
 	$accepts = array();
