@@ -421,6 +421,8 @@ class Conference {
             }
             if (!isset($Opt["dateFormatLong"]))
                 $Opt["dateFormatLong"] = "l " . $Opt["dateFormat"];
+            if (!isset($Opt["timestampFormat"]))
+                $Opt["timestampFormat"] = $Opt["dateFormat"];
             if (!isset($Opt["dateFormatSimplifier"])) {
                 if (isset($Opt["time24hour"]) && $Opt["time24hour"])
                     $Opt["dateFormatSimplifier"] = "/:00(?!:)/";
@@ -431,7 +433,12 @@ class Conference {
                 $Opt["dateFormatTimezone"] = null;
             $Opt["_dateFormatInitialized"] = true;
         }
-        return $Opt[$long ? "dateFormatLong" : "dateFormat"];
+        if ($long == "timestamp")
+            return $Opt["timestampFormat"];
+        else if ($long)
+            return $Opt["dateFormatLong"];
+        else
+            return $Opt["dateFormat"];
     }
 
     function parseableTime($value, $include_zone) {
@@ -471,6 +478,9 @@ class Conference {
     }
     function printableTime($value, $useradjust = false, $preadjust = null) {
 	return $this->_printableTime($value, true, $useradjust, $preadjust);
+    }
+    function printableTimestamp($value, $useradjust = false, $preadjust = null) {
+	return $this->_printableTime($value, "timestamp", $useradjust, $preadjust);
     }
     function printableTimeShort($value, $useradjust = false, $preadjust = null) {
 	return $this->_printableTime($value, false, $useradjust, $preadjust);

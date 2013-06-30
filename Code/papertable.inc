@@ -262,7 +262,7 @@ class PaperTable {
 	$t = array();
 	$tm = defval($data, "timestamp", defval($data, "timeSubmitted", 0));
 	if ($tm > 0)
-	    $t[] = "<span class='nowrap' title='Time of most recent update'>" . $Conf->cacheableImage("_.gif", "Updated", "Time of most recent update", "timestamp12") . " " . $Conf->printableTime($tm) . "</span>";
+	    $t[] = "<span class='nowrap' title='Time of most recent update'>" . $Conf->cacheableImage("_.gif", "Updated", "Time of most recent update", "timestamp12") . " " . $Conf->printableTimestamp($tm) . "</span>";
 	$sha1 = defval($data, "sha1");
 	if ($sha1)
 	    $t[] = "<span class='nowrap' title='SHA-1 checksum'>" . $Conf->cacheableImage("_.gif", "SHA-1", "SHA-1 checksum", "checksum12") . " " . bin2hex($sha1) . "</span>";

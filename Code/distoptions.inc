@@ -112,6 +112,8 @@ $Opt["emailFrom"] = "you@example.com";
 //                   or "j M Y g:i:sa" [e.g., "1 Jan 2012 12:00:00am"].
 //   dateFormatLong  Format for displaying long dates. Defaults to
 //                   "l " + dateFormat [e.g., "Tuesday 1 Jan 2012 12:00:00am"].
+//   timestampFormat Format for displaying paper timestamps. Defaults to
+//                   dateFormat.
 //   dateFormatSimplifier Regular expression used to simplify dates. The
 //                   default removes ":00" from the ends of dates.
 //   dateFormatTimezone Timezone abbreviation used to print dates. Defaults to
