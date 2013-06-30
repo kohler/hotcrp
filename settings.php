@@ -1311,8 +1311,8 @@ function doOptGroupOption($o) {
 	    decorateSettingName("optdt$id", "Display"), "</div><div class='f-e'>";
 	$optdt = (count($Error) > 0 ? defval($_REQUEST, "optdt$id", 0) : $o->displayType);
 	echo tagg_select("optdt$id", array(PaperOption::DT_NORMAL => "Normal",
-					   PaperOption::DT_HIGHLIGHT => "Highlighted",
-					   PaperOption::DT_SUBMISSION => "Near submission"), $optdt,
+                                           PaperOption::DT_HIGHLIGHT => "Prominent",
+                                           PaperOption::DT_SUBMISSION => "Near submission"), $optdt,
 			 array("onchange" => "hiliter(this)")),
 	    "</div></div></td>";
     }
