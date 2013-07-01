@@ -895,7 +895,8 @@ class PaperTable {
 	foreach ($opt as $o) {
 	    if (!($displayTypeFlags & (1 << $o->displayType))
 		|| ($o->isFinal && !$this->canUploadFinal)
-                || (!$Me->canViewPaperOption($prow, $o) && !$Me->canAdminister($prow)))
+                || ($prow && !$Me->canViewPaperOption($prow, $o)
+                    && !$Me->canAdminister($prow)))
 		continue;
 	    $optid = "opt$o->optionId";
             $optx = ($prow ? defval($prow->option_array, $o->optionId) : null);

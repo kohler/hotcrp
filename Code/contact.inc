@@ -745,7 +745,7 @@ class Contact {
 	if (!$this->canViewPaper($prow, $whyNot))
 	    return false;	// $whyNot already set
         if ($conflictType >= CONFLICT_AUTHOR
-            || (($prow->myReviewType > 0 || $admin || $this->isPC)
+            || (($admin || $this->isPC || ($prow && $prow->myReviewType > 0))
                 && (($opt->pcView == 0 && $admin)
                     || $opt->pcView == 1
                     || ($opt->pcView == 2 && $this->canViewAuthors($prow, true)))))

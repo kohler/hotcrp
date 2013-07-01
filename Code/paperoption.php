@@ -80,6 +80,8 @@ class PaperOption {
 
     static function parse_paper_options($prow) {
         global $Conf;
+        if (!$prow)
+            return 0;
         $options = paperOptions();
         $prow->option_array = array();
         if (!count($options) || !isset($prow->optionIds) || !$prow->optionIds)
