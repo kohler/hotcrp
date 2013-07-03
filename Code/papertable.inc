@@ -37,6 +37,8 @@ class PaperTable {
 	global $Conf, $Me;
 
 	$this->prow = $prow;
+        if (!isset($prow->option_array))
+            PaperOption::parse_paper_options($prow);
 	$this->rrows = null;
 	$this->crows = null;
 	$this->rrow = null;
@@ -341,17 +343,18 @@ class PaperTable {
 	echo join("<div class='g'></div>\n", $out);
     }
 
-    function echoDocumentUploadRow($prow, $opt, $storageId, $flags) {
+    private function echoDocumentUploadRow($prow, $opt, $storageId, $flags) {
 	global $Conf, $Me, $Opt;
 
         $docclass = new HotCRPDocument($opt->optionId, $opt);
 	$documentType = $opt->optionId;
 	$optionType = $opt->type;
-	$noPapers = defval($Opt, "noPapers") && ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
+        $main_submission = ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
+	$noPapers = defval($Opt, "noPapers") && $main_submission;
 	$banal = $Conf->setting("sub_banal")
 	    && ($optionType == null || $optionType == PaperOption::T_PDF
 		|| $optionType == PaperOption::T_FINALPDF)
-            && ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
+            && $main_submission;
 
 	$filetypes = array();
 	$accepts = array();
@@ -369,9 +372,10 @@ class PaperTable {
 
 	// current version, if any
 	$doc = null;
+        $inputid = ($optionType ? "opt" . $documentType : "paperUpload");
 	if ($prow && $Me->canDownloadPaper($prow) && $storageId > 1
 	    && (($doc = paperDocumentData($prow, $documentType, $storageId)))) {
-	    echo "<table id='current_$documentType'><tr>",
+	    echo "<table id='current_$inputid'><tr>",
 		"<td class='nowrap'>", documentDownload($doc), "</td>";
 	    if ($doc->mimetype == "application/pdf" && $banal)
 		echo "<td><span class='sep'></span></td><td><a href='javascript:docheckformat($documentType)'>Check format</a></td>";
@@ -383,10 +387,8 @@ class PaperTable {
 	// uploader
 	$uploader = "";
 	if (count($accepts)) {
-	    $uploader = "";
 	    if ($doc)
-		$uploader .= "<div class='g'></div><div id='replacement_$documentType' class='foldo'><span class='fx'>Replace:&nbsp; ";
-	    $inputid = ($optionType ? "opt" . $documentType : "paperUpload");
+		$uploader .= "<div class='g'></div><div id='removable_$inputid' class='foldo'><span class='fx'>Replace:&nbsp; ";
 	    $uploader .= "<input id='$inputid' type='file' name='$inputid'";
 	    if (count($accepts) == 1)
 		$uploader .= " accept='" . $accepts[0]->mimetype . "'";
@@ -398,11 +400,10 @@ class PaperTable {
 	    $uploader .= "' />";
 	    if ($doc && $optionType)
 		$uploader .= " &nbsp;<span class='barsep'>|</span>&nbsp; "
-		    . "<a id='remover_$documentType' href='javascript:doremovedocument(\"$documentType\")'>Delete</a>";
+		    . "<a id='remover_$inputid' href='#remover_$inputid' onclick='return doremovedocument(this)'>Delete</a>";
 	    $uploader .= "</span>";
 	    if ($doc && $optionType)
-		$uploader .= "<span class='fn'><em>Marked for deletion</em></span>"
-		    . "<input id='remove_$documentType' type='hidden' name='remove_$documentType' value='' />";
+		$uploader .= "<span class='fn'><em>Marked for deletion</em></span>";
 	    if ($doc)
 		$uploader .= "</div>";
 	}
@@ -893,8 +894,6 @@ class PaperTable {
 	if (!($opt = paperOptions()))
 	    return;
 	assert(!!$this->editable);
-        if ($prow)
-            PaperOption::parse_paper_options($prow);
 	foreach ($opt as $o) {
 	    if (!($displayTypeFlags & (1 << $o->displayType))
 		|| ($o->isFinal && !$this->canUploadFinal)
@@ -1597,7 +1596,6 @@ class PaperTable {
     function paptabBegin($contentopener = "") {
 	global $Conf, $Me, $linkExtra;
 	$prow = $this->prow;
-        PaperOption::parse_paper_options($prow);
 	$pboxclass = $prow ? "pbox" : "pboxn";
 
 	if ($prow) {
@@ -1995,6 +1993,8 @@ class PaperTable {
 
 	if (!($prow = $Conf->paperRow($sel, $Me, $whyNot)))
 	    return null;
+        if (isset($prow->optionIds))
+            PaperOption::parse_paper_options($prow);
 	$rrow = null;
 	if (isset($sel["reviewId"]))
 	    $rrow = $Conf->reviewRow($sel);

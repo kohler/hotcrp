@@ -1916,25 +1916,30 @@ function docheckpaperstillready() {
 	return true;
 }
 
-function doremovedocument(name) {
-    var e = $$("remove_" + name), estk = [], tn, i;
-    if (e) {
-	e.value = 1;
-	if ((e = $$("current_" + name))) {
-	    estk = [e];
-	    while (estk.length) {
-		e = estk.pop();
-		tn = e.nodeType == 1 ? e.tagName.toUpperCase() : "";
-		if (tn == "TD")
-		    e.style.textDecoration = "line-through";
-		else if (tn == "TABLE" || tn == "TBODY" || tn == "TR")
-		    for (i = e.childNodes.length - 1; i >= 0; --i)
-			estk.push(e.childNodes[i]);
-	    }
-	}
-	fold("replacement_" + name);
-	hiliter($$("remover_" + name));
+function doremovedocument(elt) {
+    var name = elt.id.replace(/^remover_/, ""), e, estk, tn, i;
+    if (!(e = $$("remove_" + name))) {
+        e = document.createElement("span");
+        e.innerHTML = "<input type='hidden' id='remove_" + name + "' name='remove_" + name + "' value='' />";
+        elt.parentNode.insertBefore(e.firstChild, elt);
+        e = $$("remove_" + name);
     }
+    e.value = 1;
+    if ((e = $$("current_" + name))) {
+	estk = [e];
+	while (estk.length) {
+	    e = estk.pop();
+	    tn = e.nodeType == 1 ? e.tagName.toUpperCase() : "";
+	    if (tn == "TD")
+		e.style.textDecoration = "line-through";
+	    else if (tn == "TABLE" || tn == "TBODY" || tn == "TR")
+		for (i = e.childNodes.length - 1; i >= 0; --i)
+		    estk.push(e.childNodes[i]);
+	}
+    }
+    fold("removable_" + name);
+    hiliter(elt);
+    return false;
 }
 
 function docmtvis(hilite) {
