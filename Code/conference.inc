@@ -1770,18 +1770,19 @@ class Conference {
     //
 
     function log($text, $who, $paperId = null) {
-	if (is_array($paperId)) {
-	    if (count($paperId) == 0)
-		$paperId = null;
-	    else if (count($paperId) == 1)
-		$paperId = $paperId[0];
-	    else {
-		$text .= " (papers " . join(", ", $paperId) . ")";
-		$paperId = null;
-	    }
-	}
-	if ($paperId === null || $paperId === 0)
-	    $paperId = "null";
+        if (!is_array($paperId))
+            $paperId = $paperId ? array($paperId) : array();
+        foreach ($paperId as &$p)
+            if (is_object($p))
+                $p = $p->paperId;
+        if (count($paperId) == 0)
+            $paperId = "null";
+        else if (count($paperId) == 1)
+            $paperId = $paperId[0];
+        else {
+            $text .= " (papers " . join(", ", $paperId) . ")";
+            $paperId = "null";
+        }
 	$this->q("insert into ActionLog (ipaddr, contactId, paperId, action) values ('" . sqlq($_SERVER['REMOTE_ADDR']) . "', " . (is_numeric($who) ? $who : $who->contactId) . ", $paperId, '" . sqlq($text) . "')");
     }
 
