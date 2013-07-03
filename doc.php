@@ -12,6 +12,8 @@ $Me->goIfInvalid();
 
 // Determine the intended paper
 $documentType = requestDocumentType($_REQUEST);
+$need_docid = false;
+$docid = null;
 
 if (isset($_REQUEST["p"]))
     $paperId = rcvtint($_REQUEST["p"]);
@@ -45,11 +47,13 @@ if (!isset($Error) && $documentType > 0
     && !$Me->canViewPaperOption($prow, $documentType)
     && !$Me->canAdminister($prow))
     $Error = "You don’t have permission to view this document.";
+if (!isset($Error) && $need_docid && !$docid)
+    $Error = "No such attachment.";
 
 // Actually download paper.
 if (!isset($Error)) {
     session_write_close();	// to allow concurrent clicks
-    if ($Conf->downloadPaper($prow, rcvtint($_REQUEST["save"]) > 0, $documentType))
+    if ($Conf->downloadPaper($prow, rcvtint($_REQUEST["save"]) > 0, $documentType, $docid))
 	exit;
 }
 

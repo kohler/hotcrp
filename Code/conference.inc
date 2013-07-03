@@ -759,7 +759,7 @@ class Conference {
 	return $title . $paperId . Mimetype::extension($mimetype);
     }
 
-    function paperStorageResult($prow, $documentType, $skip_content = false) {
+    function document_result($prow, $documentType, $docid = null) {
 	global $Opt;
 	if (is_array($prow) && count($prow) <= 1)
 	    $prow = (count($prow) ? $prow[0] : -1);
@@ -770,12 +770,14 @@ class Conference {
 	else
 	    $paperMatch = "=" . $prow->paperId;
 	$q = "select p.paperId, s.mimetype, s.sha1, ";
-	if (!defval($Opt, "filestore") && !$skip_content)
+	if (!defval($Opt, "filestore"))
 	    $q .= "s.paper as content, ";
 	if ($this->sversion >= 45)
 	    $q .= "s.filename, ";
 	$q .= "$documentType documentType, s.paperStorageId from Paper p";
-	if ($documentType == DTYPE_SUBMISSION)
+        if ($docid)
+            $sjoin = $docid;
+	else if ($documentType == DTYPE_SUBMISSION)
 	    $sjoin = "p.paperStorageId";
 	else if ($documentType == DTYPE_FINAL)
 	    $sjoin = "p.finalPaperStorageId";
@@ -786,7 +788,7 @@ class Conference {
 	return $this->q($q . " left join PaperStorage s on (s.paperStorageId=$sjoin) where p.paperId$paperMatch");
     }
 
-    function paperStorageRow($result, $dtype = DTYPE_SUBMISSION) {
+    function document_row($result, $dtype = DTYPE_SUBMISSION) {
 	if (!($doc = edb_orow($result)))
 	    return $doc;
         // type doesn't matter
@@ -802,19 +804,19 @@ class Conference {
 	return $doc;
     }
 
-    function __downloadPaper($paperId, $attachment, $documentType) {
+    private function __downloadPaper($paperId, $attachment, $documentType, $docid) {
 	global $Opt, $Me, $zlib_output_compression;
 
-        $result = $this->paperStorageResult($paperId, $documentType);
+        $result = $this->document_result($paperId, $documentType, $docid);
         if (!$result) {
-	    $this->log("Error downloading for review: " . $this->dblink->error, $Me, $paperId);
+	    $this->log("Download error: " . $this->dblink->error, $Me, $paperId);
 	    return set_error_html("Database error while downloading paper.");
 	} else if (edb_nrows($result) == 0)
 	    return set_error_html("No such document.");
 
 	// Check data
         $docs = array();
-	while (($doc = $this->paperStorageRow($result, $documentType))) {
+	while (($doc = $this->document_row($result, $documentType))) {
             if (!$doc->mimetype)
                 $doc->mimetype = MIMETYPEID_PDF;
             $doc->filename = HotCRPDocument::filename($doc);
@@ -828,9 +830,9 @@ class Conference {
         return DocumentHelper::download($docs, $attachment, $downloadname);
     }
 
-    function downloadPaper($paperId, $attachment, $documentType = DTYPE_SUBMISSION) {
+    function downloadPaper($paperId, $attachment, $documentType = DTYPE_SUBMISSION, $docid = null) {
 	global $Me;
-	$result = $this->__downloadPaper($paperId, $attachment, $documentType);
+	$result = $this->__downloadPaper($paperId, $attachment, $documentType, $docid);
 	if ($result->error) {
 	    $this->errorMsg($result->error_html);
             return false;

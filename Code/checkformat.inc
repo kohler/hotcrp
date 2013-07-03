@@ -318,8 +318,8 @@ class CheckFormat {
 
     function _analyzePaper($paperId, $documentType, $spec, &$tmpdir) {
 	global $Conf, $prow, $Opt;
-	$result = $Conf->paperStorageResult($paperId, $documentType);
-	if (!($row = $Conf->paperStorageRow($result))
+	$result = $Conf->document_result($paperId, $documentType);
+	if (!($row = $Conf->document_row($result))
 	    || $row->paperStorageId <= 1)
 	    return $this->msg("error", "No such paper.");
 	if ($row->mimetype != "application/pdf")
