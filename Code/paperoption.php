@@ -14,6 +14,7 @@ class PaperOption {
     const T_VIDEO = 6;
     const T_RADIO = 7;
     const T_TEXT_5LINE = 8;
+    const T_ATTACHMENTS = 9;
     const T_FINALPDF = 100;
     const T_FINALSLIDES = 101;
     const T_FINALVIDEO = 102;
@@ -37,6 +38,7 @@ class PaperOption {
                                 self::T_TEXT => self::F_OK,
                                 self::T_RADIO => self::F_OK,
                                 self::T_TEXT_5LINE => self::F_OK,
+                                self::T_ATTACHMENTS => self::F_OK,
                                 self::T_PDF => self::F_OK + self::F_DOCUMENT + self::F_PDF,
                                 self::T_SLIDES => self::F_OK + self::F_DOCUMENT + self::F_PDF,
                                 self::T_VIDEO => self::F_OK + self::F_DOCUMENT,
@@ -71,11 +73,16 @@ class PaperOption {
     }
 
     static function type_takes_multiple($t) {
-        return false;
+        return $t == self::T_ATTACHMENTS;
     }
 
     static function type_needs_data($t) {
-        return $t == self::T_TEXT || $t == self::T_TEXT_5LINE;
+        return $t == self::T_TEXT || $t == self::T_TEXT_5LINE || $t == self::T_ATTACHMENTS;
+    }
+
+    private static function sort_multiples($o, $ox) {
+        if ($o->type == self::T_ATTACHMENTS)
+            array_multisort($ox->data, SORT_NUMERIC, $ox->values);
     }
 
     static function parse_paper_options($prow) {
@@ -110,6 +117,7 @@ class PaperOption {
                         foreach ($ox->values as $v)
                             $ox->data[] = $optdata[$o->optionId . "." . $v];
                     }
+                    self::sort_multiples($o, $ox);
                 } else {
                     $ox->value = $optsel[$o->optionId][0];
                     if (self::type_needs_data($o->type))

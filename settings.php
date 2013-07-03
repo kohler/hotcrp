@@ -501,7 +501,7 @@ function doOptions($set) {
     if (!$set) {
 	$optkeys = array_keys(paperOptions());
 	$optkeys[] = "n";
-	$optabbrs = array("paper" => -1, "final" => -1);
+	$optabbrs = array("paper" => -1, "submission" => -1, "final" => -1);
 	foreach ($optkeys as $id) {
 	    doCleanOptionValues($id);
 	    if (($oabbr = defval($_REQUEST, "optn$id", ""))) {
@@ -1264,7 +1264,7 @@ function doOptGroupOption($o) {
 	decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
     $oval = $o->optionValues;
     $optvt = (count($Error) > 0 ? defval($_REQUEST, "optvt$id", 0) : $o->type);
-    $finalOptions = ($Conf->collectFinalPapers() || $optvt >= PaperOption::T_FINALPDF);
+    $finalOptions = ($Conf->collectFinalPapers() || PaperOption::type_is_final($optvt));
 
     $otypes = array();
     if ($finalOptions)
@@ -1278,6 +1278,7 @@ function doOptGroupOption($o) {
     $otypes[PaperOption::T_PDF] = "PDF";
     $otypes[PaperOption::T_SLIDES] = "Slides";
     $otypes[PaperOption::T_VIDEO] = "Video";
+    $otypes[PaperOption::T_ATTACHMENTS] = "Attachments";
     if ($finalOptions) {
 	$otypes["xxx2"] = array("optgroup", "Options for accepted papers");
 	$otypes[PaperOption::T_FINALPDF] = "Alternate final version";

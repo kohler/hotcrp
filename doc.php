@@ -23,10 +23,24 @@ else {
     $s = $orig_s = preg_replace(',\A/*,', "", $_SERVER["PATH_INFO"]);
     if (str_starts_with($s, $Opt["downloadPrefix"]))
         $s = substr($s, strlen($Opt["downloadPrefix"]));
-    if (preg_match(',\Apaper([1-9]\d*)-(.*)\.(.+)\z,', $s, $m)) {
+    if (preg_match(',\Ap(?:aper)?([1-9]\d*)/+(.*)\z,', $s, $m)) {
+        $paperId = $m[1];
+        $s = $m[2];
+        if (preg_match(',\A([^/]*)\.[^/]+\z,', $s, $m))
+            $documentType = requestDocumentType($m[1], null);
+        else if (preg_match(',\A([^/]+)/+(.*)\z,', $s, $m)) {
+            $documentType = requestDocumentType($m[1], null);
+            if ($documentType && ($o = paperOptions($documentType)) && $o->type == PaperOption::T_ATTACHMENTS) {
+                $need_docid = false;
+                $result = $Conf->q("select o.value from PaperOption o join PaperStorage s on (s.paperStorageId=o.value) where o.paperId=$paperId and o.optionId=$documentType and s.filename='" . sqlq($m[2]) . "'", "while searching for attachment");
+                if (($row = edb_row($result)))
+                    $docid = $row[0];
+            }
+        }
+    } else if (preg_match(',\Apaper([1-9]\d*)-([^/]*)\.[^/]+\z,', $s, $m)) {
         $paperId = $m[1];
         $documentType = requestDocumentType($m[2], null);
-    } else if (preg_match(',\A([-A-Za-z0-9_]*?)?-?([1-9]\d*)\..*\z,', $s, $m)) {
+    } else if (preg_match(',\A([-A-Za-z0-9_]*?)?-?([1-9]\d*)\.[^/]*\z,', $s, $m)) {
         $paperId = $m[2];
         $documentType = requestDocumentType($m[1], null);
     } else

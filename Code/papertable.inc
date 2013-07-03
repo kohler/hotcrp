@@ -694,6 +694,15 @@ class PaperTable {
                 $ox = htmlspecialchars($oa->data);
                 if ($o->type != PaperOption::T_TEXT)
                     $ox = nl2br($ox);
+            } else if ($o->type == PaperOption::T_ATTACHMENTS) {
+                $show_on = false;
+                $ox = array();
+                foreach ($oa->values as $docid)
+                    if (($doc = paperDocumentData($prow, $o->optionId, $docid))) {
+                        unset($doc->size);
+                        $ox[] = documentDownload($doc, "sdlimg", htmlspecialchars($doc->filename));
+                    }
+                $ox = join("<br />\n", $ox);
             } else if ($o->isDocument && $oa->value) {
                 $show_on = false;
                 if ($o->type == PaperOption::T_PDF)
@@ -888,7 +897,31 @@ class PaperTable {
 	}
     }
 
-    private function echoOptions($displayTypeFlags) {
+    private function echo_editable_attachments($o) {
+        echo $this->papt($o->optionId, htmlspecialchars($o->optionName));
+        if ($o->description)
+            echo "<div class='paphint'>", $o->description, "</div>";
+        echo "<div class='papv'>";
+        if (($prow = $this->prow) && ($optx = defval($prow->option_array, $o->optionId))) {
+            $docclass = new HotCRPDocument($o->optionId, $o);
+            foreach ($optx->values as $docid)
+                if (($doc = paperDocumentData($prow, $o->optionId, $docid))) {
+                    $oname = "opt" . $o->optionId . "_" . $docid;
+                    echo "<div id='removable_$oname' class='foldo'><table id='current_$oname'><tr>",
+                        "<td class='nowrap'>", documentDownload($doc, "dlimg", htmlspecialchars($doc->filename)), "</td>",
+                        "<td class='fx'><span class='sep'></span></td>",
+                        "<td class='fx'><a id='remover_$oname' href='#remover_$oname' onclick='return doremovedocument(this)'>Delete</a></td>";
+                    if (($stamps = $this->pdfStamps($doc)))
+                        echo "<td class='fx'><span class='sep'></span></td><td class='fx'>$stamps</td>";
+                    echo "</tr></table></div>\n";
+                }
+        }
+        echo "<div id='opt", $o->optionId, "_new'></div>",
+            "<button type='button' class='b' onclick=\"addattachment($o->optionId)\">Attach file</button>",
+            "</div>";
+    }
+
+    private function echo_editable_options($displayTypeFlags) {
 	global $Conf, $Me;
         $prow = $this->prow;
 	if (!($opt = paperOptions()))
@@ -900,8 +933,14 @@ class PaperTable {
                 || ($prow && !$Me->canViewPaperOption($prow, $o)
                     && !$Me->canAdminister($prow)))
 		continue;
+
 	    $optid = "opt$o->optionId";
             $optx = ($prow ? defval($prow->option_array, $o->optionId) : null);
+            if ($o->type == PaperOption::T_ATTACHMENTS) {
+                $this->echo_editable_attachments($o);
+                continue;
+            }
+
 	    if ($this->useRequest)
 		$myval = defval($_REQUEST, $optid);
             else if (!$optx)
@@ -1646,7 +1685,7 @@ class PaperTable {
 	    $this->paptabTitle($prow);
 	    $this->echoUploadRow($prow,
 		(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
-	    $this->echoOptions(1 << PaperOption::DT_SUBMISSION);
+	    $this->echo_editable_options(1 << PaperOption::DT_SUBMISSION);
 
 	    // Authorship
 	    echo $spacer;
@@ -1664,8 +1703,8 @@ class PaperTable {
 	    // Topics and options
 	    echo $spacer;
 	    $this->echoTopics();
-	    $this->echoOptions((1 << PaperOption::DT_NORMAL)
-                               | (1 << PaperOption::DT_HIGHLIGHT));
+	    $this->echo_editable_options((1 << PaperOption::DT_NORMAL)
+                                         | (1 << PaperOption::DT_HIGHLIGHT));
 
 	    // Potential conflicts
 	    if ($this->editable !== "f" || $this->admin) {

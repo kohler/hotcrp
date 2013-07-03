@@ -215,6 +215,20 @@ function setRequestFromPaper($prow) {
 	    $_REQUEST[$x] = $prow->$x;
 }
 
+function attachment_request_keys($o) {
+    $x = array();
+    $okey = "opt" . (is_object($o) ? $o->optionId : $o) . "_";
+    foreach ($_FILES as $k => $v)
+        if (str_starts_with($k, $okey))
+            $x[substr($k, strlen($okey))] = $k;
+    $okey = "remove_$okey";
+    foreach ($_REQUEST as $k => $v)
+        if (str_starts_with($k, $okey))
+            $x[substr($k, strlen($okey))] = $k;
+    ksort($x);
+    return $x;
+}
+
 function requestSameAsPaper($prow) {
     global $Conf;
     foreach (array("title", "abstract", "authorTable", "collaborators") as $x)
@@ -229,25 +243,27 @@ function requestSameAsPaper($prow) {
 	    return false;
     }
     if ($Conf->setting("paperOption")) {
-	$result = $Conf->q("select ot.optionId, coalesce(po.value, 0), ot.type, coalesce(po.data, '') from OptionType ot left join PaperOption po on po.paperId=$prow->paperId and po.optionId=ot.optionId");
-	while (($row = edb_row($result))) {
-	    $got = defval($_REQUEST, "opt$row[0]", "");
-	    $t = $row[2];
+        foreach (paperOptions() as $o) {
+            if ($o->type == PaperOption::T_ATTACHMENTS) {
+                if (count(attachment_request_keys($o)))
+                    return false;
+                continue;
+            }
+            $got = defval($_REQUEST, "opt$o->optionId", "");
+            $ox = defval($prow->option_array, $o->optionId, null);
 	    if ($t == PaperOption::T_CHECKBOX || $t == PaperOption::T_SELECTOR
 		|| $t == PaperOption::T_NUMERIC) {
-		if (cvtint($got, 0) != $row[1])
+		if (cvtint($got, 0) != ($ox ? $ox->value : 0))
 		    return false;
 	    } else if ($t == PaperOption::T_TEXT) {
-		if (simplifyWhitespace($got) != $row[3])
+		if (simplifyWhitespace($got) != ($ox ? $ox->data : ""))
 		    return false;
             } else if ($t == PaperOption::T_TEXT_5LINE) {
-                if (rtrim($got) != $row[3])
+                if (rtrim($got) != ($ox ? $ox->data : ""))
                     return false;
-	    } else if ($t == PaperOption::T_PDF || $t == PaperOption::T_FINALPDF
-		       || $t == PaperOption::T_SLIDES || $t == PaperOption::T_FINALSLIDES
-		       || $t == PaperOption::T_VIDEO || $t == PaperOption::T_FINALVIDEO) {
-		if (fileUploaded($_FILES["opt$row[0]"])
-		    || defval($_REQUEST, "remove_opt$row[0]"))
+	    } else if (PaperOption::type_is_document($t)) {
+		if (fileUploaded($_FILES["opt$o->optionId"])
+		    || defval($_REQUEST, "remove_opt$o->optionId"))
 		    return false;
 	    }
 	}
@@ -260,15 +276,17 @@ function uploadPaper($isSubmitFinal) {
     return $Conf->storePaper("paperUpload", $prow, $isSubmitFinal) !== false;
 }
 
-function uploadOption($o) {
+function uploadOption($o, $oname) {
     global $newPaper, $prow, $Conf, $Me, $Error;
-    $doc = $Conf->storeDocument("opt$o->optionId", $newPaper ? -1 : $prow->paperId,
-				$o->optionId);
+    $doc = $Conf->storeDocument($oname, $newPaper ? -1 : $prow->paperId, $o->optionId);
     if (isset($doc->error_html)) {
         $Conf->errorMsg($doc->error_html);
 	$Error["opt$o->optionId"] = 1;
-    } else
+        return 0;
+    } else {
 	$_REQUEST["opt$o->optionId"] = $doc->paperStorageId;
+        return $doc->paperStorageId;
+    }
 }
 
 // send watch messages
@@ -317,34 +335,54 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 
     // check option values
     $emsg = "";
-    $no_delete_options = array();
-    foreach (paperOptions() as $opt) {
-	$oname = "opt$opt->optionId";
+    $no_delete_options = array("true");
+    $uploaded_documents = array();
+    $attachment_info = array();
+    foreach (paperOptions() as $o) {
+	$oname = "opt$o->optionId";
 	$v = trim(defval($_REQUEST, $oname, ""));
-	if ($opt->type == PaperOption::T_CHECKBOX)
+	if ($o->type == PaperOption::T_CHECKBOX)
 	    $_REQUEST[$oname] = ($v == 0 || $v == "" ? "" : 1);
-	else if ($opt->type == PaperOption::T_SELECTOR)
+	else if ($o->type == PaperOption::T_SELECTOR)
 	    $_REQUEST[$oname] = cvtint($v, 0);
-	else if ($opt->type == PaperOption::T_NUMERIC) {
+	else if ($o->type == PaperOption::T_NUMERIC) {
 	    if ($v == "" || ($v = cvtint($v, null)) !== null)
 		$_REQUEST[$oname] = ($v == "" ? "0" : $v);
 	    else {
 		$Error[$oname] = 1;
-		$emsg .= "&ldquo;" . htmlspecialchars($opt->optionName) . "&rdquo; must be an integer. ";
+		$emsg .= "&ldquo;" . htmlspecialchars($o->optionName) . "&rdquo; must be an integer. ";
 	    }
-	} else if ($opt->type == PaperOption::T_TEXT)
+	} else if ($o->type == PaperOption::T_TEXT)
 	    $_REQUEST[$oname] = simplifyWhitespace($v);
-        else if ($opt->type == PaperOption::T_TEXT_5LINE)
+        else if ($o->type == PaperOption::T_TEXT_5LINE)
             $_REQUEST[$oname] = rtrim($v);
-	else if ($opt->isDocument) {
+        else if ($o->type == PaperOption::T_ATTACHMENTS) {
+            if ($newPaper || !isset($prow->option_array[$o->optionId]))
+                $ox = (object) array("values" => array(), "data" => array());
+            else
+                $ox = $prow->option_array[$o->optionId];
+            if (($next_ordinal = count($ox->data)))
+                $next_ordinal = max($next_ordinal, cvtint($ox->data[count($ox->values) - 1]));
+            foreach (attachment_request_keys($o) as $k)
+                if ($k[0] != "r" /* not "remove_opt_" */
+                    && fileUploaded($_FILES[$k])
+                    && ($docid = uploadOption($o, $k))) {
+                    $uploaded_documents[] = $docid;
+                    $attachment_info[] = "$o->optionId, $docid, '$next_ordinal'";
+                    ++$next_ordinal;
+                }
+            foreach ($ox->values as $docid)
+                if (!defval($_REQUEST, "remove_opt" . $o->optionId . "_" . $docid))
+                    $no_delete_options[] = "(optionId!=" . $o->optionId . " or value!=" . $docid . ")";
+        } else if ($o->isDocument) {
 	    unset($_REQUEST[$oname]);
-	    if (!$opt->isFinal || $isSubmitFinal) {
-		if (fileUploaded($_FILES[$oname]))
-		    uploadOption($opt);
-		else if (!defval($_REQUEST, "remove_opt" . $opt->optionId))
-		    $no_delete_options[] = $opt->optionId;
+	    if (!$o->isFinal || $isSubmitFinal) {
+                if (fileUploaded($_FILES[$oname]) && ($docid = uploadOption($o, $oname)))
+                    $uploaded_documents[] = $docid;
+                else if (!defval($_REQUEST, "remove_opt" . $o->optionId))
+		    $no_delete_options[] = "optionId!=" . $o->optionId;
 	    } else
-		unset($_REQUEST["remove_opt" . $opt->optionId]);
+		unset($_REQUEST["remove_opt" . $o->optionId]);
 	}
     }
 
@@ -379,12 +417,14 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    $Conf->errorMsg($emsg);
 	// It is kinder to the user to attempt to upload files even on error.
 	if (!$newPaper) {
+            // XXX should do this for attachments too
+            $while = "while uploading attachment";
 	    if (fileUploaded($_FILES["paperUpload"]))
 		uploadPaper($isSubmitFinal);
 	    foreach (paperOptions() as $o)
 		if ($o->isDocument && isset($_REQUEST["opt$o->optionId"])) {
-                    $Conf->qe("delete from PaperOption where paperId=" . $prow->paperId . " and optionId=" . $o->optionId, "while uploading option PDF");
-		    $Conf->qe("insert into PaperOption (paperId, optionId, value, data) values ($prow->paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null)", "while uploading option PDF");
+                    $Conf->qe("delete from PaperOption where paperId=" . $prow->paperId . " and optionId=" . $o->optionId, $while);
+		    $Conf->qe("insert into PaperOption (paperId, optionId, value, data) values ($prow->paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null)", $while);
                 }
 	}
 	return false;
@@ -465,24 +505,24 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // update options table
     if ($Conf->setting("paperOption")) {
 	$while = "while updating paper options";
-	$q = count($no_delete_options) > 0 ? " and optionId not in (" . join(",", $no_delete_options) . ")" : "";
-	if (!$Conf->qe("delete from PaperOption where paperId=$paperId$q", $while))
+	if (!$Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options), $while))
 	    return false;
-	$q = "";
+	$q = array();
 	foreach (paperOptions() as $o)
-	    if (defval($_REQUEST, "opt$o->optionId", "") != "") {
+            if ($o->type == PaperOption::T_ATTACHMENTS) {
+                foreach ($attachment_info as $a)
+                    $q[] = "($paperId, $a)";
+            } else if (defval($_REQUEST, "opt$o->optionId", "") != "") {
                 if ($o->type == PaperOption::T_TEXT || $o->type == PaperOption::T_TEXT_5LINE)
-		    $q .= "($paperId, $o->optionId, 1, '" . sqlq($_REQUEST["opt$o->optionId"]) . "'), ";
+		    $q[] = "($paperId, $o->optionId, 1, '" . sqlq($_REQUEST["opt$o->optionId"]) . "')";
 		else
-		    $q .= "($paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null), ";
+		    $q[] = "($paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null)";
 	    }
-	if ($q && !$Conf->qe("insert into PaperOption (paperId, optionId, value, data) values " . substr($q, 0, strlen($q) - 2), $while))
+	if (count($q) && !$Conf->qe("insert into PaperOption (paperId, optionId, value, data) values " . join(", ", $q), $while))
 	    return false;
 	// update PaperStorage.paperId for newly registered papers' PDF uploads
-	if ($newPaper)
-	    foreach (paperOptions() as $o)
-		if ($o->isDocument && isset($_REQUEST["opt$o->optionId"]))
-		    $Conf->qe("update PaperStorage set paperId=$paperId where paperStorageId=" . $_REQUEST["opt$o->optionId"], $while);
+	if ($newPaper && count($uploaded_documents))
+            $Conf->qe("update PaperStorage set paperId=$paperId where paperStorageId in (" . join(",", $uploaded_documents) . ")", $while);
     }
 
     // update PC conflicts if appropriate
@@ -490,17 +530,17 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$max_conflict = $Me->privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
 	if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHORMARK . " and conflictType<=" . $max_conflict, "while updating conflicts"))
 	    return false;
-	$q = "";
+	$q = array();
 	$pcm = pcMembers();
 	foreach ($_REQUEST as $key => $value)
 	    if (strlen($key) > 3
 		&& $key[0] == 'p' && $key[1] == 'c' && $key[2] == 'c'
 		&& ($id = cvtint(substr($key, 3))) > 0 && isset($pcm[$id])
 		&& $value > 0) {
-		$q .= "($paperId, $id, " . max(min($value, $max_conflict), CONFLICT_AUTHORMARK) . "), ";
+		$q[] = "($paperId, $id, " . max(min($value, $max_conflict), CONFLICT_AUTHORMARK) . ")";
 	    }
-	if ($q && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
-	values " . substr($q, 0, strlen($q) - 2) . "
+	if (count($q) && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
+	values " . join(", ", $q) . "
 	on duplicate key update conflictType=conflictType",
 			     "while updating conflicts"))
 	    return false;

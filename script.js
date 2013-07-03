@@ -1901,6 +1901,14 @@ function docheckformat(dt) {	// NB must return void
     }
 }
 
+function addattachment(oid) {
+    var ctr = $$("opt" + oid + "_new"), n = ctr.childNodes.length,
+        e = document.createElement("div");
+    e.innerHTML = "<input type='file' name='opt" + oid + "_new_" + n + "' size='30' onchange='hiliter(this)' />";
+    ctr.appendChild(e);
+    e.childNodes[0].click();
+}
+
 function dosubmitdecision() {
     var sel = $$("folddecision_d");
     if (sel && sel.value > 0)

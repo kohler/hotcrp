@@ -741,8 +741,7 @@ function paperDocumentData($prow, $documentType = DTYPE_SUBMISSION, $paperStorag
 			  "mimetype" => defval($prow, "mimetype", ""),
 			  "size" => defval($prow, "size", 0),
 			  "timestamp" => defval($prow, "timestamp", 0),
-			  "sha1" => defval($prow, "sha1", "")
-                          );
+			  "sha1" => defval($prow, "sha1", ""));
     if ($prow->finalPaperStorageId > 0) {
 	$doc->paperStorageId = $prow->finalPaperStorageId;
 	$doc->documentType = DTYPE_FINAL;
@@ -755,7 +754,7 @@ function paperDocumentData($prow, $documentType = DTYPE_SUBMISSION, $paperStorag
     if ($paperStorageId > 0
 	&& ($doc->documentType != $documentType
 	    || $paperStorageId != $doc->paperStorageId)) {
-	$result = $Conf->qe("select paperStorageId, paperId, length(paper) as size, mimetype, timestamp, sha1, documentType from PaperStorage where paperStorageId=$paperStorageId", "while reading documents");
+	$result = $Conf->qe("select paperStorageId, paperId, length(paper) as size, mimetype, timestamp, sha1, filename, documentType from PaperStorage where paperStorageId=$paperStorageId", "while reading documents");
 	$doc = edb_orow($result);
     }
 
@@ -778,7 +777,7 @@ function requestDocumentType($req, $default = DTYPE_SUBMISSION) {
 	if (preg_match('/\A-?\d+\z/', $dt))
 	    return (int) $dt;
 	$dt = strtolower($dt);
-	if ($dt == "paper")
+	if ($dt == "paper" || $dt == "submission")
 	    return DTYPE_SUBMISSION;
 	if ($dt == "final")
 	    return DTYPE_FINAL;
@@ -1912,7 +1911,8 @@ function paperOptions($id = null) {
 		$row->type = ($row->optionValues ? PaperOption::T_SELECTOR : PaperOption::T_CHECKBOX);
 	    // end backwards compatibility to old schema versions
 	    $row->optionAbbrev = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", strtolower($row->optionName)));
-	    if ($row->optionAbbrev == "paper" || $row->optionAbbrev == "final")
+	    if ($row->optionAbbrev == "paper" || $row->optionAbbrev == "submission"
+                || $row->optionAbbrev == "final" || ctype_digit($row->optionAbbrev))
 		$row->optionAbbrev = "opt" . $row->optionId;
 	    $row->sortOrder = $order++;
 	    if (!isset($row->displayType))

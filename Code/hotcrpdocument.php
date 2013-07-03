@@ -34,14 +34,20 @@ class HotCRPDocument {
 
     public static function filename($doc) {
         global $Opt;
-        $fn = $Opt["downloadPrefix"]
-            . ($doc->documentType == DTYPE_FINAL ? "final" : "paper")
-            . $doc->paperId;
-        if ($doc->documentType != DTYPE_SUBMISSION && $doc->documentType != DTYPE_FINAL) {
-            if (($o = paperOptions($doc->documentType)) && $o->isDocument)
-                $fn .= "-" . $o->optionAbbrev;
+        $fn = $Opt["downloadPrefix"];
+        if ($doc->documentType == DTYPE_SUBMISSION)
+            $fn .= "paper" . $doc->paperId;
+        else if ($doc->documentType == DTYPE_FINAL)
+            $fn .= "final" . $doc->paperId;
+        else {
+            $o = paperOptions($doc->documentType);
+            if ($o && $o->type == PaperOption::T_ATTACHMENTS && $doc->filename)
+                // do not decorate with MIME type suffix
+                return $fn . "p" . $doc->paperId . "/" . $o->optionAbbrev . "/" . $doc->filename;
+            else if ($o && $o->isDocument)
+                $fn .= "paper" . $doc->paperId . "-" . $o->optionAbbrev;
             else
-                $fn .= "-unknown";
+                $fn .= "paper" . $doc->paperId . "-unknown";
         }
         return $fn . Mimetype::extension($doc->mimetype);
     }
