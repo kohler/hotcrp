@@ -78,7 +78,7 @@ class ZipDocuments {
 
 	// output
 	header("Content-Description: PHP Generated Data");
-	header("Content-Disposition: attachment; filename=" . mime_token_quote($downloadname));
+	header("Content-Disposition: attachment; filename=" . mime_quote_string($downloadname));
 	header("Content-Type: application/zip");
 	if (!$zlib_output_compression)
 	    header("Content-Length: " . filesize("$this->tmpdir/x.zip"));
@@ -329,9 +329,12 @@ class DocumentHelper {
 	header("Content-Description: PHP Generated Data");
         if (!$attachment)
 	    $attachment = !Mimetype::disposition_inline($doc_mimetype);
-        if (!$downloadname)
+        if (!$downloadname) {
             $downloadname = $doc->filename;
-	header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_token_quote($downloadname));
+            if (($slash = strrpos($downloadname, "/")) !== false)
+                $downloadname = substr($downloadname, $slash + 1);
+        }
+	header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
 	// reduce likelihood of XSS attacks in IE
 	header("X-Content-Type-Options: nosniff");
 	if (isset($doc->filestore)) {
