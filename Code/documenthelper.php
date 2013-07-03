@@ -280,7 +280,7 @@ class DocumentHelper {
         for ($i = 0; $i < count($mimetypes); ++$i)
             if ($mimetypes[$i]->mimetype == $doc->mimetype)
                 break;
-	if ($i >= count($mimetypes)) {
+	if ($i >= count($mimetypes) && count($mimetypes)) {
 	    $e = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";
 	    $e .= " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
 	    return set_error_html($doc, $e);
