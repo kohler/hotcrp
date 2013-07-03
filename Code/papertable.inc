@@ -719,11 +719,14 @@ class PaperTable {
                 $xoptionhtml[] = $x . "</div>\n";
             } else {
                 if ($ox === true)
-                    $optionhtml[] = $on . "<br />\n";
+                    $x = $on . "<br />";
                 else if ($show_on)
-                    $optionhtml[] = $on . ": <span class='optvalue'>" . $ox . "</span><br />\n";
+                    $x = $on . ": <span class='optvalue'>" . $ox . "</span><br />";
                 else
-                    $optionhtml[] = $ox . "<br />\n";
+                    $x = $ox . "<br />";
+                if ($showAllOptions && !$Me->canViewPaperOption($prow, $o))
+                    $x = "<span class='fx8'>" . $x . "</span>";
+                $optionhtml[] = $x . "\n";
                 $ndocuments += $o->isDocument ? 1 : 0;
             }
         }
