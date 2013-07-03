@@ -392,6 +392,6 @@ if (isset($_SESSION["redirect_error"])) {
 
 // Mark as already expired to discourage caching, but allow the browser
 // to cache for history buttons
+session_cache_limiter("");
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 header("Cache-Control: private");
-header("Pragma: ");

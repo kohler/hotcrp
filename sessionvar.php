@@ -25,9 +25,9 @@ if (isset($_REQUEST["var"])) {
 }
 
 if (isset($_REQUEST["cache"])) { // allow caching
+    session_cache_limiter("");
     header("Cache-Control: public, max-age=31557600");
     header("Expires: " . gmdate("D, d M Y H:i:s", time() + 31557600) . " GMT");
-    header("Pragma: "); // don't know where the pragma is coming from; oh well
 }
 
 header("Content-Type: image/gif");

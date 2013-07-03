@@ -80,6 +80,7 @@ class Conference {
 	if (!session_id()) {
 	    global $Opt;
 	    session_name($Opt["sessionName"]);
+            session_cache_limiter("");
 	    session_start();
 	}
     }

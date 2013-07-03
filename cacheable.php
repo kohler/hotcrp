@@ -3,9 +3,9 @@
 // HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+session_cache_limiter("");
 header("Cache-Control: public, max-age=315576000");
 header("Expires: " . gmdate("D, d M Y H:i:s", time() + 315576000) . " GMT");
-header("Pragma: "); // don't know where the pragma is coming from; oh well
 
 $zlib_output_compression = false;
 if (function_exists("zlib_get_coding_type"))
