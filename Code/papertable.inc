@@ -766,9 +766,9 @@ class PaperTable {
 	    }
 
 	    if (count($optionhtml)) {
-                echo "<div class='pg$eclass'>",
+                echo "<div class='pg", ($extra ? "" : $eclass), "'>",
                     $this->papt("options", array($options_name, $tanda), $extra),
-                    "<div class='papb'>", join("", $optionhtml), "</div></div>\n\n";
+                    "<div class='papb$eclass'>", join("", $optionhtml), "</div></div>\n\n";
 	    }
 	}
     }
