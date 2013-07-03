@@ -831,11 +831,13 @@ class Conference {
     function downloadPaper($paperId, $attachment, $documentType = DTYPE_SUBMISSION) {
 	global $Me;
 	$result = $this->__downloadPaper($paperId, $attachment, $documentType);
-	if ($result->error)
+	if ($result->error) {
 	    $this->errorMsg($result->error_html);
-	else
+            return false;
+        } else {
 	    $this->log("Downloaded paper", $Me, $paperId);
-	return $result;
+            return true;
+        }
     }
 
 

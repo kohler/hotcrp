@@ -92,8 +92,7 @@ if (($getaction == "paper" || $getaction == "final"
     }
 
     session_write_close();	// to allow concurrent clicks
-    $result = $Conf->downloadPaper($downloads, true, $dt);
-    if ($result === true)
+    if ($Conf->downloadPaper($downloads, true, $dt))
 	exit;
 }
 

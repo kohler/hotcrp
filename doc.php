@@ -49,13 +49,12 @@ if (!isset($Error) && $documentType > 0
 // Actually download paper.
 if (!isset($Error)) {
     session_write_close();	// to allow concurrent clicks
-    $result = $Conf->downloadPaper($prow, rcvtint($_REQUEST["save"]) > 0, $documentType);
-    if ($result === true)
+    if ($Conf->downloadPaper($prow, rcvtint($_REQUEST["save"]) > 0, $documentType))
 	exit;
 }
 
 // If we get here, there is an error.
-$Conf->header("Download Paper" . (isset($paperId) ? " #$paperId" : ""));
+$Conf->header("Download");
 if (isset($Error))
     $Conf->errorMsg($Error);
 $Conf->footer();
