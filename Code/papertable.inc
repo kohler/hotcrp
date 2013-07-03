@@ -1322,15 +1322,15 @@ class PaperTable {
 	$prow = $this->prow;
 	$m = "";
 
-	$override = ($this->admin ? "  As an administrator, you can override this deadline using the &ldquo;Override deadlines&rdquo; checkbox." : "");
+	$override = ($this->admin ? "  As an administrator, you can override this deadline using the “Override deadlines” checkbox." : "");
 	if (!$prow) {
 	    $timeStart = $Conf->timeStartPaper();
 	    $startDeadline = $this->deadlineSettingIs("sub_reg");
 	    if (!$timeStart) {
 		if ($Conf->setting("sub_open") <= 0)
-		    $msg = "You can&rsquo;t register new papers because the conference site has not been opened for submissions.$override";
+		    $msg = "You can’t register new papers because the conference site has not been opened for submissions.$override";
 		else
-		    $msg = "You can&rsquo;t register new papers since the <a href='" . hoturl("deadlines") . "'>deadline</a> has passed.$startDeadline$override";
+		    $msg = "You can’t register new papers since the <a href='" . hoturl("deadlines") . "'>deadline</a> has passed.$startDeadline$override";
 		if (!$this->admin)
 		    errorMsgExit($msg);
 		$m .= "<div class='xinfo'>" . $msg . "</div>";
@@ -1339,7 +1339,7 @@ class PaperTable {
 		if ($startDeadline && !$Conf->setting("sub_freeze"))
 		    $m .= "You can make changes until the deadline, but thereafter ";
 		else
-		    $m .= "You don&rsquo;t have to upload the paper itself right away, but ";
+		    $m .= "You don’t have to upload the paper itself right away, but ";
 		$m .= "incomplete submissions will not be considered.$startDeadline" . "</div>";
 	    }
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR
@@ -1376,7 +1376,7 @@ class PaperTable {
 	    $updateDeadline = $this->deadlineSettingIs("final_soft");
 	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final version for the paper here.$updateDeadline  You may also edit paper contacts, allowing others to view reviews and make changes." . "</div>";
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR) {
-	    $override2 = ($this->admin ? " As an administrator, you can update the paper anyway by selecting \"Override deadlines\"." : "");
+	    $override2 = ($this->admin ? " As an administrator, you can update the paper anyway by selecting “Override deadlines.”" : "");
 	    if ($this->mode == "pe") {
 		$m .= "<div class='xinfo'>This paper is under review and can’t be changed";
                 if ($Me->canWithdrawPaper($prow))
@@ -1435,8 +1435,8 @@ class PaperTable {
                 $admins = "Only administrators can undo this step.";
             $override = "";
             if (!$Me->canWithdrawPaper($prow))
-                $override = "<div>" . tagg_checkbox("override") . "&nbsp;" .
-                    tagg_label("Override deadlines") . "</div>";
+                $override = "<div>" . tagg_checkbox("override") . "&nbsp;"
+                    . tagg_label("Override deadlines") . "</div>";
             $Conf->footerHtml("<div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this paper from consideration and/or
   publication?  $admins</p>
@@ -1495,9 +1495,12 @@ class PaperTable {
 		"<input id='emailNote' type='text' class='textlite temptext' name='emailNote' size='30' value='",
 		htmlspecialchars($v == "" ? "Optional explanation" : $v),
 		"' /></td></tr>\n    <tr><td>",
-		tagg_checkbox("override"), "&nbsp;",
-		tagg_label("Override deadlines"), "</td></tr>\n",
-		"  </table>\n";
+		tagg_checkbox("override"), "&nbsp;";
+            if ($Conf->timeUpdatePaper($prow))
+                echo "<span class='dim'>", tagg_label("Override deadlines"), "</span>";
+            else
+                echo "<strong>", tagg_label("Override deadlines"), "</strong>";
+            echo "</td></tr>\n  </table>\n";
 	    $Conf->footerScript("mktemptext('emailNote','Optional explanation')");
 	}
     }
@@ -1872,7 +1875,7 @@ class PaperTable {
 	if ($this->editrrow && ($Me->ownReview($this->editrrow) || $actChair)
 	    && !$Conf->timeReviewPaper($actPC, true, true)) {
 	    if ($Me->actChair($prow))
-		$override = "  As an administrator, you can override this deadline using the &ldquo;Override deadlines&rdquo; checkbox.";
+		$override = "  As an administrator, you can override this deadline using the “Override deadlines” checkbox.";
 	    else {
 		$override = "";
 		if ($this->editrrow->reviewSubmitted)
