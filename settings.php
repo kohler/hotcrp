@@ -1291,7 +1291,7 @@ function doOptGroupOption($o) {
 
     echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
 	decorateSettingName("optp$id", "Visibility"), "</div><div class='f-e'>",
-	tagg_select("optp$id", array("Administrators only", "Visible to reviewers", "Visible if authors are visible"), $o->pcView, array("onchange" => "hiliter(this)")),
+	tagg_select("optp$id", array("Administrators only", "Visible to PC and reviewers", "Visible if authors are visible"), $o->pcView, array("onchange" => "hiliter(this)")),
 	"</div></div></td>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
