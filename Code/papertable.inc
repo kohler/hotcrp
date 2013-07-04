@@ -737,7 +737,8 @@ class PaperTable {
                 if ($showAllOptions && !$Me->canViewPaperOption($prow, $o))
                     $x = "<span class='fx8'>" . $x . "</span>";
                 $optionhtml[] = $x . "\n";
-                $ndocuments += $o->isDocument ? 1 : 0;
+                if ($o->isDocument || $o->type == PaperOption::T_ATTACHMENTS)
+                    ++$ndocuments;
             }
         }
 
