@@ -671,6 +671,7 @@ class PaperTable {
         $xoptionhtml = array();
 	$optionhtml = array();
 	$ndocuments = 0;
+        $nfolded = 0;
 
         foreach ($prow->option_array as $oa) {
             $o = $oa->option;
@@ -679,6 +680,7 @@ class PaperTable {
                 || (!$showAllOptions && !$Me->canViewPaperOption($prow, $o)))
                 continue;
 
+            // create option display value
             $show_on = true;
             $on = htmlspecialchars($o->optionName);
             $ox = "";
@@ -713,15 +715,14 @@ class PaperTable {
                 if ($doc)
                     $ox = documentDownload($doc, "sdlimg", $on);
             }
-
             if ($ox == "")
-                /* do nothing */;
-            else if ($o->displayType != PaperOption::DT_NORMAL) {
-                if ($showAllOptions && !$Me->canViewPaperOption($prow, $o))
-                    $x = "<div class='pgsm fx8'>";
-                else
-                    $x = "<div class='pgsm'>";
-                $x .= "<div class='papt'><span class='papfn'>"
+                continue;
+
+            // display it
+            $folded = $showAllOptions && !$Me->canViewPaperOption($prow, $o);
+            if ($o->displayType != PaperOption::DT_NORMAL) {
+                $x = "<div class='pgsm" . ($folded ? " fx8" : "") . "'>"
+                    . "<div class='papt'><span class='papfn'>"
                     . ($show_on ? $on : $ox) . "</span>"
                     . "<div class='clear'></div></div>";
                 if ($show_on && $ox !== true)
@@ -734,8 +735,10 @@ class PaperTable {
                     $x = $on . ": <span class='optvalue'>" . $ox . "</span><br />";
                 else
                     $x = $ox . "<br />";
-                if ($showAllOptions && !$Me->canViewPaperOption($prow, $o))
+                if ($folded) {
                     $x = "<span class='fx8'>" . $x . "</span>";
+                    ++$nfolded;
+                }
                 $optionhtml[] = $x . "\n";
                 if ($o->isDocument || $o->type == PaperOption::T_ATTACHMENTS)
                     ++$ndocuments;
@@ -776,7 +779,8 @@ class PaperTable {
 	    }
 
 	    if (count($optionhtml)) {
-                echo "<div class='pg", ($extra ? "" : $eclass), "'>",
+                echo "<div class='pg", ($extra ? "" : $eclass),
+                    ($nfolded == count($optionhtml) ? " fx8" : ""), "'>",
                     $this->papt("options", array($options_name, $tanda), $extra),
                     "<div class='papb$eclass'>", join("", $optionhtml), "</div></div>\n\n";
 	    }
