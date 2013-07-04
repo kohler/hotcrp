@@ -17,14 +17,13 @@ class BaseList {
     const FIELD_SCORE = 50;
     const FIELD_NUMSCORES = 11;
 
-    const LOTSAZEROS = "00000000000000";
-
     function _sortBase($a, $b) {
 	return $a->paperId - $b->paperId;
     }
 
     public static function score_reset($row) {
-        $row->_sort_info = self::LOTSAZEROS;
+        // $row will compare less than all papers with analyzed scores
+        $row->_sort_info = "//////////////";
         $row->_sort_average = 0;
     }
 
@@ -39,7 +38,7 @@ class BaseList {
 		    $x[] = chr($i + 48);
 	    rsort($x);
 	    $x = (count($x) == 0 ? "0" : implode($x));
-	    $x .= str_pad("", 14, chr(ord($x[strlen($x) - 1]) - 1));
+	    $x = str_pad($x, 14, chr(ord($x[strlen($x) - 1]) - 1));
 	    $row->_sort_info = $x;
 	} else if ($scoresort == "E") {
 	    $x = array();
