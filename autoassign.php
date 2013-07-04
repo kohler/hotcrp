@@ -908,20 +908,22 @@ echo "</td><td>", tagg_label("Use entire PC", "pctyp_all"), "</td></tr>\n";
 echo "<tr><td>";
 doRadio('pctyp', 'sel', '');
 echo "</td><td>", tagg_label("Use selected PC members:", "pctyp_sel"), " &nbsp; (Select ";
-$pctyp_sel = array(array(1, "All"), array(0, "None"));
+$pctyp_sel = array(array("all", 1, "All"), array("none", 0, "None"));
 $pctags = pcTags();
 if (count($pctags)) {
     $tagsjson = array();
     foreach (pcMembers() as $pc)
 	if ($pc->contactTags)
-	    $tagsjson[] = "\"$pc->contactId\":\"$pc->contactTags\"";
+	    $tagsjson[] = "\"$pc->contactId\":\"" . strtolower($pc->contactTags) . "\"";
     $Conf->footerScript("pc_tags_json={" . join(",", $tagsjson) . "};");
     foreach ($pctags as $tagname => $pctag)
-	$pctyp_sel[] = array("pc_tags_members(\"$tagname\")", "&ldquo;$tagname&rdquo;&nbsp;tag");
+	$pctyp_sel[] = array($pctag, "pc_tags_members(\"$tagname\")", "“${pctag}”&nbsp;tag");
 }
 $sep = "";
 foreach ($pctyp_sel as $pctyp) {
-    echo $sep, "<a href='javascript:papersel(", $pctyp[0], ",\"pcs[]\");void(\$\$(\"pctyp_sel\").checked=true)'>", $pctyp[1], "</a>";
+    echo $sep, "<a href='#pc_", $pctyp[0], "' onclick='",
+        "papersel(", $pctyp[1], ",\"pcs[]\");\$\$(\"pctyp_sel\").checked=true;return false'>",
+        $pctyp[2], "</a>";
     $sep = ", ";
 }
 echo ")</td></tr>\n<tr><td></td><td><table class='pctb'><tr><td class='pctbcolleft'><table>";

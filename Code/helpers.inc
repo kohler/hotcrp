@@ -1795,7 +1795,7 @@ function pcTags() {
 	if (isset($pc->contactTags) && $pc->contactTags) {
 	    foreach (explode(" ", $pc->contactTags) as $t)
 		if ($t !== "")
-		    $tags[$t] = $t;
+		    $tags[strtolower($t)] = $t;
 	}
     ksort($tags);
     return $tags;

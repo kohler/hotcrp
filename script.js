@@ -803,10 +803,23 @@ function add_callback(cb1, cb2) {
 // tags
 var alltags = (function () {
 var a = [], status = 0, cb = null;
+function tagsorter(a, b) {
+    var al = a.toLowerCase(), bl = b.toLowerCase();
+    if (al < bl)
+        return -1;
+    else if (bl < al)
+        return 1;
+    else if (a == b)
+        return 0;
+    else if (a < b)
+        return -1;
+    else
+        return 1;
+}
 function getcb(v) {
     if (v && v.tags) {
 	a = v.tags;
-	a.sort();
+	a.sort(tagsorter);
     }
     status = 2;
     cb && cb(a);
@@ -839,7 +852,7 @@ function taghelp(elt, report_elt, cleanf) {
     var hiding = false;
 
     function display() {
-	var tags, s, a, i, t, cols, colheight, n, pfx = "";
+	var tags, s, ls, a, i, t, cols, colheight, n, pfx = "";
 	elt.hotcrp_tagpress = true;
 	tags = alltags(display);
 	if (!tags.length || (elt.selectionEnd != elt.selectionStart))
@@ -852,13 +865,12 @@ function taghelp(elt, report_elt, cleanf) {
 	    pfx = s[1];
 	    s = s[0];
 	}
+        ls = s.toLowerCase();
 	for (i = 0, a = []; i < tags.length; ++i)
-	    if (tags[i].substring(0, s.length) == s) {
-		if (s.length)
-		    a.push(pfx + "<b>" + s + "</b>" + tags[i].substring(s.length));
-		else
-		    a.push(pfx + tags[i]);
-	    }
+	    if (s.length == 0)
+                a.push(pfx + tags[i]);
+            else if (tags[i].substring(0, s.length).toLowerCase() == ls)
+		a.push(pfx + "<b>" + tags[i].substring(0, s.length) + "</b>" + tags[i].substring(s.length));
 	if (a.length == 0) {
 	    report_elt.style.display = "none";
 	    return;

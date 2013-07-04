@@ -523,7 +523,7 @@ class PaperSearch {
     function _pcContactIdsWithTag($tag) {
 	$a = array();
 	foreach (pcMembers() as $pc)
-	    if ($pc->contactTags && strpos($pc->contactTags, " $tag ") !== false)
+	    if ($pc->contactTags && stripos($pc->contactTags, " $tag ") !== false)
 		$a[] = $pc->contactId;
 	return $a;
     }
@@ -535,7 +535,7 @@ class PaperSearch {
 	    return array($this->cid);
 	else if (!$quoted && $this->amPC && count(($pctags = pcTags()))) {
 	    $negtag = $word[0] == "-";
-	    $tag = $negtag ? substr($word, 1) : $word;
+	    $tag = strtolower($negtag ? substr($word, 1) : $word);
 	    if (isset($pctags[$tag])) {
 		$ids = self::_pcContactIdsWithTag($tag);
 		if ($negtag) {

@@ -14,17 +14,18 @@ class TagMap implements ArrayAccess, IteratorAggregate {
     private $storage = array();
     private $sorted = false;
     public function offsetExists($offset) {
-        return isset($this->storage[$offset]);
+        return isset($this->storage[strtolower($offset)]);
     }
     public function offsetGet($offset) {
-        if (!isset($this->storage[$offset])) {
+        $loffset = strtolower($offset);
+        if (!isset($this->storage[$loffset])) {
             $n = (object) array("tag" => $offset, "chair" => false, "vote" => false, "rank" => false, "colors" => null);
-            if (!Tagger::basic_check($offset))
+            if (!Tagger::basic_check($loffset))
                 return $n;
-            $this->storage[$offset] = $n;
+            $this->storage[$loffset] = $n;
             $this->sorted = false;
         }
-        return $this->storage[$offset];
+        return $this->storage[$loffset];
     }
     public function offsetSet($offset, $value) {
     }
@@ -45,6 +46,9 @@ class TagMap implements ArrayAccess, IteratorAggregate {
             if ($v->$property)
                 $a[$v->tag] = $v->$property;
         return $a;
+    }
+    public function check($offset) {
+        return @$this->storage[strtolower($offset)];
     }
 }
 
@@ -112,10 +116,11 @@ class Tagger {
 
 
     public function is_chair($tag) {
+        if ($tag[0] == "~")
+            return $tag[1] == "~";
         $dt = $this->defined_tags();
-        $tag = self::base($tag);
-        return (isset($dt[$tag]) && $dt[$tag]->chair)
-            || ($tag[0] == "~" && $tag[1] == "~");
+        $t = $dt->check(self::base($tag));
+        return $t && $t->chair;
     }
 
     public function chair_tags() {
@@ -125,8 +130,8 @@ class Tagger {
 
     public function is_vote($tag) {
         $dt = $this->defined_tags();
-        $tag = self::base($tag);
-        return isset($dt[$tag]) && $dt[$tag]->vote;
+        $t = $dt->check(self::base($tag));
+        return $t && $t->vote;
     }
 
     public function vote_tags() {
@@ -136,15 +141,15 @@ class Tagger {
 
     public function vote_setting($tag) {
         $dt = $this->defined_tags();
-        $tag = self::base($tag);
-        return isset($dt[$tag]) && $dt[$tag]->vote > 0 ? $dt[$tag]->vote : 0;
+        $t = $dt->check(self::base($tag));
+        return $t && $t->vote > 0 ? $t->vote : 0;
     }
 
 
     public function is_rank($tag) {
         $dt = $this->defined_tags();
-        $tag = self::base($tag);
-        return isset($dt[$tag]) && $dt[$tag]->rank;
+        $t = $dt->check(self::base($tag));
+        return $t && $t->rank;
     }
 
     public function rank_tags() {
@@ -172,12 +177,12 @@ class Tagger {
             $this->analyze_colors();
         if (is_array($tags))
             $tags = join(" ", $tags);
-        if (!preg_match_all($this->color_re, $tags, $m))
+        if (!preg_match_all($this->color_re, strtolower($tags), $m))
             return false;
         $classes = array();
         foreach ($m[1] as $tag)
-            if (isset($dt[$tag]) && $dt[$tag]->colors) {
-                foreach ($dt[$tag]->colors as $k)
+            if (($t = $dt->check($tag)) && $t->colors) {
+                foreach ($t->colors as $k)
                     $classes[] = $k . "tag";
             } else
                 $classes[] = $tag . "tag";
@@ -199,7 +204,8 @@ class Tagger {
             return "Tag “${tag}” is exclusively for chairs.";
         else if ($tag[0] === "~" && $tag[1] !== "~" && ($flags & self::NOPRIVATE))
             return "Twiddle tags aren’t allowed here.";
-        else if (($tag === "none" || $tag === "any") && !($flags & self::ALLOWRESERVED))
+        else if (!($flags & self::ALLOWRESERVED) && strlen($tag) <= 4
+                 && preg_match('/\A(?:none|any)\z/i', $tag))
             return "Tag “${tag}” is reserved.";
         else
             return false;
@@ -249,7 +255,7 @@ class Tagger {
             foreach ($this->defined_tags() as $v)
                 if ($v->vote || (($v->chair || $v->rank) && !$this->contact->privChair))
                     $bad[] = $v->tag;
-            $tags = trim(preg_replace("{ (?:" . join("|", $bad) . ")(?:#-?\\d*)? }", " ", " $tags "));
+            $tags = trim(preg_replace("{ (?:" . join("|", $bad) . ")(?:#-?\\d*)? }i", " ", " $tags "));
         }
         return $tags;
     }
@@ -270,7 +276,7 @@ class Tagger {
         // track votes for vote report
         $dt = $this->defined_tags();
         if ($votereport && $dt->nvote) {
-            preg_match_all('{ (\d+)~(\S+)#([1-9]\d*)}', " $tags", $m, PREG_SET_ORDER);
+            preg_match_all('{ (\d+)~(\S+)#([1-9]\d*)}', strtolower(" $tags"), $m, PREG_SET_ORDER);
             $vote = array();
             foreach ($m as $x)
                 $vote[$x[2]][$x[1]] = (int) $x[3];
@@ -288,21 +294,22 @@ class Tagger {
                 $tag = $h->tag;
                 if (($pos = strpos($tag, "~")) !== false)
                     $tag = substr($tag, $pos);
-                $byhighlight[$tag] = "";
+                $byhighlight[strtolower($tag)] = "";
             }
 
         foreach (preg_split('/\s+/', $vtags) as $tag) {
             if (!($base = Tagger::base($tag)))
                 continue;
-            if ($this->is_vote($base)) {
+            $lbase = strtolower($base);
+            if ($this->is_vote($lbase)) {
                 $v = array();
                 if ($votereport)
                     foreach (pcMembers() as $pcm)
-                        if (($count = defval($vote[$base], $pcm->cid, 0)) > 0)
+                        if (($count = defval($vote[$lbase], $pcm->cid, 0)) > 0)
                             $v[] = Text::name_html($pcm) . ($count > 1 ? " ($count)" : "");
                 $title = ($v ? "PC votes: " . join(", ", $v) : "Vote search");
                 $link = "rorder:";
-            } else if ($base[0] === "~" && $this->is_vote(substr($base, 1))) {
+            } else if ($base[0] === "~" && $this->is_vote(substr($lbase, 1))) {
                 $title = "Vote search";
                 $link = "rorder:";
             } else {
@@ -310,8 +317,8 @@ class Tagger {
                 $link = ($base === $tag ? "%23" : "order:");
             }
             $tx = "<a class=\"q\" href=\"" . hoturl("search", "q=$link$base") . "\" title=\"$title\">" . $base . "</a>" . substr($tag, strlen($base));
-            if (isset($byhighlight[$base])) {
-                $byhighlight[$base] .= "<strong>" . $tx . "</strong> ";
+            if (isset($byhighlight[$lbase])) {
+                $byhighlight[$lbase] .= "<strong>" . $tx . "</strong> ";
                 $anyhighlight = true;
             } else
                 $tt .= $tx . " ";
@@ -430,18 +437,19 @@ class Tagger {
             $multivote = 0;
             foreach ($tags as $tag) {
                 $base = self::base($tag);
+                $lbase = strtolower($base);
                 $twiddle = strpos($base, "~");
                 if ($this->is_vote($base))
                     $badtags[] = $tag;
                 else if ($twiddle > 0 && $this->is_vote(substr($base, $twiddle + 1))) {
-                    if (isset($vchanges[$base])) // only one vote per tag
+                    if (isset($vchanges[$lbase])) // only one vote per tag
                         $multivote++;
                     else {
                         if (strlen($base) == strlen($tag)
                             && $mode != "d" && $mode != "da")
                             $tag .= "#1";
                         $nexttags[] = $tag;
-                        $vchanges[$base] = 0;
+                        $vchanges[$lbase] = 0;
                     }
                 } else
                     $nexttags[] = $tag;
@@ -527,8 +535,10 @@ class Tagger {
             if ($mode != "p")	// must delete old versions for correct totals
                 $Conf->qe("delete from $table where $pidcol in (" . join(",", $pids) . ") and tag in ($q)", "while deleting old votes");
             $result = $Conf->qe("select tag, sum(tagIndex) from $table where tag in ($q) group by tag", "while checking vote totals");
-            while (($row = edb_row($result)))
-                $vchanges[$row[0]] = max($vchanges[$row[0]] - $row[1], 0);
+            while (($row = edb_row($result))) {
+                $lbase = strtolower($row[0]);
+                $vchanges[$lbase] = max($vchanges[$lbase] - $row[1], 0);
+            }
         }
 
         // extract tag indexes into a separate array
@@ -538,15 +548,16 @@ class Tagger {
                         || $mode == "sor" || $mode == "aos");
         foreach ($tags as $tag) {
             $base = self::base($tag);
+            $lbase = strtolower($base);
             if (strlen($base) + 1 < strlen($tag)) {
-                $tagIndex[$base] = $explicitIndex[$base] =
+                $tagIndex[$lbase] = $explicitIndex[$lbase] =
                     (int) substr($tag, strlen($base) + 1);
             } else if (strlen($base) + 1 == strlen($tag) || $modeOrdered) {
                 $result = $Conf->qe("select max(tagIndex) from $table where tag='" . sqlq($base) . "'", $while);
                 if (($row = edb_row($result)))
-                    $tagIndex[$base] = $row[0] + self::value_increment($mode);
+                    $tagIndex[$lbase] = $row[0] + self::value_increment($mode);
                 else
-                    $tagIndex[$base] = self::value_increment($mode);
+                    $tagIndex[$lbase] = self::value_increment($mode);
             }
         }
 
@@ -572,18 +583,19 @@ class Tagger {
                     shuffle($pids);
                 foreach ($pids as $pid) {
                     $base = self::base($tag);
+                    $lbase = strtolower($base);
                     // choose index, bump running index in ordered mode
-                    $index = defval($tagIndex, $base, 0);
+                    $index = defval($tagIndex, $lbase, 0);
                     if ($modeOrdered)
-                        $tagIndex[$base] += self::value_increment($mode);
+                        $tagIndex[$lbase] += self::value_increment($mode);
                     // check vote totals
-                    if (isset($vchanges[$base])) {
-                        if ($index > $vchanges[$base]) {
-                            $vreduced[substr($base, strpos($base, "~"))] = true;
-                            $index = $vchanges[$base];
+                    if (isset($vchanges[$lbase])) {
+                        if ($index > $vchanges[$lbase]) {
+                            $vreduced[substr($lbase, strpos($base, "~"))] = true;
+                            $index = $vchanges[$lbase];
                         } else if ($index < 0) // no negative votes, smarty
                             $index = 0;
-                        $vchanges[$base] -= $index;
+                        $vchanges[$lbase] -= $index;
                         if ($index == 0) {
                             $delvotes[] = "($pidcol=$pid and tag='" . sqlq($base) . "')";
                             continue;
@@ -593,7 +605,7 @@ class Tagger {
                     // a tag that's already set.  $q_keepnew keeps the new value,
                     // $q_keepold keeps the old value.
                     $thisq = "($pid, '" . sqlq($base) . "', " . $index . "), ";
-                    if (isset($explicitIndex[$base]))
+                    if (isset($explicitIndex[$lbase]))
                         $q_keepnew .= $thisq;
                     else
                         $q_keepold .= $thisq;
@@ -601,13 +613,14 @@ class Tagger {
             }
             // if adding ordered tags in the middle of an order, reorder old tags
             foreach ($reorders as $base => $pairs) {
+                $lbase = strtolower($base);
                 $last = null;
                 foreach ($pairs as $p)
-                    if ($p[1] < $tagIndex[$base]) {
-                        $thisq = "($p[0], '" . sqlq($base) . "', " . $tagIndex[$base] . "), ";
+                    if ($p[1] < $tagIndex[$lbase]) {
+                        $thisq = "($p[0], '" . sqlq($base) . "', " . $tagIndex[$lbase] . "), ";
                         $q_keepnew .= $thisq;
                         if ($last === null || $last != $p[1])
-                            $tagIndex[$base] += self::value_increment($mode);
+                            $tagIndex[$lbase] += self::value_increment($mode);
                         $last = $p[1];
                     } else
                         break;
@@ -636,6 +649,9 @@ class Tagger {
                     $myvtags[] = $base;
                 }
             }
+            $vtag_casemap = array();
+            foreach ($myvtags as $tag)
+                $vtag_casemap[strtolower($tag)] = $tag;
 
             // Defining a tag can update vote totals for more than the selected
             // papers.
@@ -660,7 +676,8 @@ class Tagger {
             }
             $result = $Conf->qe(substr($q, 0, strlen($q) - 4) . ") group by $pidcol, tagBase", "while counting votes");
             while (($row = edb_row($result))) {
-                $x = $row[0] . ", '" . sqlq($row[1]) . "'";
+                $lbase = strtolower($row[1]);
+                $x = $row[0] . ", '" . sqlq($vtag_casemap[$lbase]) . "'";
                 $vcount[$x] = $row[2];
             }
 

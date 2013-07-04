@@ -457,7 +457,8 @@ To find all papers with tag “discuss”:&nbsp; " . _searchForm("#discuss") . "
 <p>Tags are only shown to PC members and administrators.
 $conflictmsg3$setting
 Additionally, twiddle tags, which have names like “~tag”, are
-visible only to their creators; each PC member has an independent set.</p>");
+visible only to their creators; each PC member has an independent set.
+Tags are not case sensitive.</p>");
     _alternateRow("<a name='changing'>Changing tags</a>", "
 To change a paper’s tags, click the Tags box’s <img src='" . hoturl_image("images/edit.png") . "'
 alt='[Edit]' />&nbsp;Edit link, then enter one or more alphanumeric tags

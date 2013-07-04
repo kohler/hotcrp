@@ -183,15 +183,22 @@ class PaperActions {
 	    if (($vt = $tagger->vote_tags())) {
 		$q = "";
 		$mytagprefix = $Me->contactId . "~";
-		foreach ($vt as $tag => $v)
+                $cur_votes = array();
+		foreach ($vt as $tag => $v) {
 		    $q .= ($q === "" ? "" : ", ") . "'$mytagprefix" . sqlq($tag) . "'";
+                    $cur_votes[strtolower($tag)] = 0;
+                }
 		$result = $Conf->qe("select tag, sum(tagIndex) from PaperTag where tag in ($q) group by tag", "while finding vote tag totals");
-		while (($row = edb_row($result)))
-		    $vt[substr($row[0], strlen($mytagprefix))] -= $row[1];
+		while (($row = edb_row($result))) {
+                    $lbase = strtolower($row[0]);
+		    $cur_votes[substr($lbase, strlen($mytagprefix))] += $row[1];
+                }
 		ksort($vt);
-		foreach ($vt as $tag => $v)
-		    if (max($v, 0) > 0)
-			$r .= ($r === "" ? "" : ", ") . "<a class='q' href=\"" . hoturl("search", "q=rorder:~$tag&amp;showtags=1") . "\">~$tag</a>#" . max($v, 0);
+		foreach ($vt as $tag => $v) {
+                    $lbase = strtolower($tag);
+		    if ($cur_votes[$lbase] < $v)
+			$r .= ($r === "" ? "" : ", ") . "<a class='q' href=\"" . hoturl("search", "q=rorder:~$tag&amp;showtags=1") . "\">~$tag</a>#" . ($v - $cur_votes[$lbase]);
+                }
 		if ($r !== "")
 		    $r = "Unallocated <a href='" . hoturl("help", "t=votetags") . "'>votes</a>: $r";
 	    }
