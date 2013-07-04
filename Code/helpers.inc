@@ -1,6 +1,6 @@
 <?php
 // helpers.inc -- HotCRP non-class helper functions
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 function defval($var, $idx, $defval = null) {
@@ -717,10 +717,14 @@ function documentDownload($doc, $dlimg_class = "dlimg", $text = null) {
 	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("generic${finalsuffix}${imgsize}.png", "[Download]", null, $dlimg_class);
     if ($text)
 	$x .= $sp . $text;
-    if (isset($doc->size) && $doc->size > 0)
-	$x .= "&nbsp;<span class='dlsize'>" . ($text ? "(" : "")
-	    . round($doc->size/1024) . "kB"
-	    . ($text ? ")" : "") . "</span>";
+    if (isset($doc->size) && $doc->size > 0) {
+	$x .= "&nbsp;<span class='dlsize'>" . ($text ? "(" : "");
+        if ($doc->size > 921)
+            $x .= round($doc->size / 1024);
+        else
+            $x .= max(round($doc->size / 102.4), 1) / 10;
+        $x .= "kB" . ($text ? ")" : "") . "</span>";
+    }
     return $x . "</a>";
 }
 
