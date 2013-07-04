@@ -1356,8 +1356,8 @@ class PaperSearch {
     }
 
     static function _searchPopKeyword($str) {
-	if (preg_match('/\A([-+()]|(?:AND|OR|NOT|THEN)(?=[\s\(]))/s', $str, $m))
-	    return array($m[1], ltrim(substr($str, strlen($m[0]))));
+	if (preg_match('/\A([-+()]|(?:AND|OR|NOT|THEN)(?=[\s\(]))/is', $str, $m))
+	    return array(strtoupper($m[1]), ltrim(substr($str, strlen($m[0]))));
 	else
 	    return array(null, $str);
     }
