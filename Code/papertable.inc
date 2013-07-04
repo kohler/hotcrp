@@ -697,7 +697,6 @@ class PaperTable {
                 if ($o->type != PaperOption::T_TEXT)
                     $ox = nl2br($ox);
             } else if ($o->type == PaperOption::T_ATTACHMENTS) {
-                $show_on = false;
                 $ox = array();
                 foreach ($oa->values as $docid)
                     if (($doc = paperDocumentData($prow, $o->optionId, $docid))) {
