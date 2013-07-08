@@ -1470,26 +1470,6 @@ function whyNotText($whyNot, $action) {
     return rtrim($text);
 }
 
-function contactPulldown($id, $name, $conf, $contact) {
-    echo "<input class='textlite' id='${id}_name' name='${name}_name' type='text' value=\"", htmlspecialchars(trim("$contact->firstName $contact->lastName")), "\" />&nbsp;&nbsp;";
-    echo "<input class='textlite' id='${id}_email' name='${name}_email' type='text' value=\"", htmlspecialchars($contact->email), "\" />&nbsp;&nbsp;";
-
-    $result = $conf->q("select firstName, lastName, email from ContactInfo order by lastName, firstName, email");
-    if ($result) {
-	echo "<span class='foldc' id='fold$id'><a class='button_small fn' href=\"javascript:void fold('${id}', 0)\">Show&nbsp;list</a>";
-	echo "<span class='contactpulldown fx'>";
-	echo "<select id='${id}_pulldown' name='${name}_pulldown' onchange='contactPulldown(\"$id\")' size='6'>";
-	while (($row = edb_row($result))) {
-	    $selected = ($row[2] == $contact->email ? " selected='selected'" : "");
-	    if ($row[0] || $row[1]) {
-		echo "<option$selected value=\"", htmlspecialchars($row[2]), "`````", htmlspecialchars(trim("$row[0] $row[1]")), "\">", htmlspecialchars(trim("$row[0] $row[1]")), " (", htmlspecialchars($row[2]), ")</option>\n";
-	    } else
-		echo "<option$selected>", htmlspecialchars($row[2]), "</option>\n";
-	}
-	echo "</select>&nbsp;<a class='button_small' href=\"javascript:void fold('${id}', 1)\">Hide</a></span></span>\n";
-    }
-}
-
 function actionTab($text, $url, $default) {
     if ($default)
 	return "    <td><div class='vbtab1'><div class='vbtab1x'><div class='vbtab1y'><a href='$url'>$text</a></div></div></div></td>\n";

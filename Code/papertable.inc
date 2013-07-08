@@ -791,9 +791,37 @@ class PaperTable {
 	echo $this->papt("contactAuthor", "Contact"),
 	    "<div class='paphint'>You will be able to add more contacts after you register the paper.</div>",
 	    "<div class='papv'>";
-	if ($Me->privChair)
-	    contactPulldown("contact", "contact", $Conf, $Me);
-	else
+	if ($Me->privChair) {
+            $name = $email = "";
+            if ($this->useRequest) {
+                $name = trim(defval($_REQUEST, "contact_name", ""));
+                $email = trim(defval($_REQUEST, "contact_email", ""));
+            }
+            if ($name == "")
+                $name = trim("$Me->firstName $Me->lastName");
+            if ($email == "")
+                $email = $Me->email;
+
+            echo "<input class='textlite' id='contact_name' name='contact_name' type='text' size='30' value=\"",
+                htmlspecialchars($name), "\" />&nbsp;&nbsp;",
+                "<input class='textlite' id='contact_email' name='contact_email' type='text' size='20' value=\"",
+                htmlspecialchars($email), "\" />&nbsp;&nbsp;";
+
+            $result = $Conf->q("select firstName, lastName, email from ContactInfo order by lastName, firstName, email");
+            if ($result) {
+                echo "<span class='foldc' id='foldcontact'><a class='button_small fn' href=\"javascript:void fold('contact',0)\">Show&nbsp;list</a>",
+                    "<span class='contactpulldown fx'>",
+                    "<select id='contact_pulldown' name='contact_pulldown' onchange='contactPulldown(\"contact\")' size='6'>";
+                while (($row = edb_row($result))) {
+                    $selected = ($row[2] == $email ? " selected='selected'" : "");
+                    echo "<option$selected";
+                    if ($row[0] || $row[1])
+                        echo " value=\"", htmlspecialchars($row[2]), "`````", htmlspecialchars(trim("$row[0] $row[1]")), "\"";
+                    echo ">", Text::user_html_nolink($row), "</option>\n";
+                }
+                echo "</select>&nbsp;<a class='button_small' href=\"javascript:void fold('contact', 1)\">Hide</a></span></span>\n";
+            }
+	} else
 	    echo Text::user_html($Me);
 	echo "</div>\n\n";
     }
