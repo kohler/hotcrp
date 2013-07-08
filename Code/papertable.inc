@@ -364,7 +364,7 @@ class PaperTable {
 	} else {
             $accepts = $docclass->mimetypes();
 	    if (count($accepts))
-		echo $this->papt("paper", htmlspecialchars($opt->optionName) . " <span class='papfnh'>(" . htmlspecialchars(Mimetype::description($accepts)) . ", max size " . ini_get("upload_max_filesize") . "B)</span>");
+		echo $this->papt("paper", htmlspecialchars($opt->optionName) . " <span class='papfnh'>(" . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
 	}
 	if (isset($opt->description) && $opt->description)
 	    echo "<div class='paphint'>", $opt->description, "</div>";
@@ -930,7 +930,8 @@ class PaperTable {
     }
 
     private function echo_editable_attachments($o) {
-        echo $this->papt($o->optionId, htmlspecialchars($o->optionName));
+        echo $this->papt($o->optionId, htmlspecialchars($o->optionName)
+                         . " <span class='papfnh'>(max " . ini_get("upload_max_filesize") . "B per file)</span>");
         if ($o->description)
             echo "<div class='paphint'>", $o->description, "</div>";
         echo "<div class='papv'>";
