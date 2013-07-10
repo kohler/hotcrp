@@ -210,19 +210,19 @@ class PaperList extends BaseList {
 	return "<span class='fn20'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Override conflicts</a></span><span class='fx20'>$text</span>";
     }
 
-    public function maybeConflict($text, $visible) {
+    public function maybeConflict($row, $text, $visible) {
 	if ($visible)
 	    return $text;
-	else if ($this->contact->privChair)
+	else if ($this->contact->allowAdminister($row))
 	    return self::wrapChairConflict($text);
 	else
 	    return "";
     }
 
-    public function _contentPC($contactId, $visible) {
+    public function _contentPC($row, $contactId, $visible) {
 	$pcm = pcMembers();
 	if (isset($pcm[$contactId]))
-	    return $this->maybeConflict(Text::name_html($pcm[$contactId]), $visible);
+	    return $this->maybeConflict($row, Text::name_html($pcm[$contactId]), $visible);
 	else
 	    return "";
     }

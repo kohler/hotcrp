@@ -619,6 +619,9 @@ class PreferenceListPaperColumn extends PaperColumn {
     public function header($pl, $row = null, $ordinal = 0) {
         return "Preferences";
     }
+    public function content_empty($pl, $row) {
+        return !$pl->contact->allowAdminister($row);
+    }
     public function content($pl, $row) {
         $prefs = PaperList::_rowPreferences($row);
         $text = "";
@@ -663,7 +666,7 @@ class ReviewerListPaperColumn extends PaperColumn {
                     if (($pref = defval($prefs, $xrow->contactId, null)))
                         $n .= preferenceSpan($pref);
                 }
-            $n = $pl->maybeConflict($n, $pl->contact->canViewReviewerIdentity($row, null, false));
+            $n = $pl->maybeConflict($row, $n, $pl->contact->canViewReviewerIdentity($row, null, false));
         }
         return $n;
     }
@@ -1142,7 +1145,7 @@ class LeadPaperColumn extends PaperColumn {
     }
     public function content($pl, $row) {
         $visible = $pl->contact->canViewDiscussionLead($row, null);
-        return $pl->_contentPC($row->leadContactId, $visible);
+        return $pl->_contentPC($row, $row->leadContactId, $visible);
     }
 }
 
@@ -1166,7 +1169,7 @@ class ShepherdPaperColumn extends PaperColumn {
     }
     public function content($pl, $row) {
         $visible = $pl->contact->actPC($row) || $pl->contact->canViewDecision($row);
-        return $pl->_contentPC($row->shepherdContactId, $visible);
+        return $pl->_contentPC($row, $row->shepherdContactId, $visible);
     }
 }
 
