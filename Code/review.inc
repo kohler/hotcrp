@@ -539,7 +539,7 @@ class ReviewForm {
 	$Me = $_SESSION['Me'];
 	$submit = defval($req, "ready", false) && !defval($req, "unready", false);
 	$while = "while storing review";
-	$admin = $Me->canAdminister($prow);
+	$admin = $Me->allowAdminister($prow);
 
 	if (!$Me->timeReview($prow, $rrow)
 	    && (!isset($req['override']) || !$admin))
@@ -1346,7 +1346,7 @@ $blind\n";
 			$options["nsubraters"]++;
 	    }
 	    $visibleRatings = ($rrow->contactId != $Me->contactId
-		    || $Me->actChair($prow) || $options["nsubraters"] > 2
+		    || $Me->canAdminister($prow) || $options["nsubraters"] > 2
 		    || $Conf->timePCViewAllReviews()
 		    || strpos($rrow->allRatings, ",") !== false);
 	}
@@ -1407,7 +1407,7 @@ $blind\n";
 	    . $linkExtra . "&amp;m=re";
 	$reviewPostLink = hoturl_post("review", $reviewLinkArgs);
 	$reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1");
-	$admin = $Me->canAdminister($prow);
+	$admin = $Me->allowAdminister($prow);
 
 	if ($editmode) {
 	    echo "<form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",

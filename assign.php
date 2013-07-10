@@ -95,7 +95,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
 	return $Conf->errorMsg("Weird! Retracted review is for a different paper.");
     else if ($row->reviewModified > 0)
 	return $Conf->errorMsg("You can’t retract that review request since the reviewer has already started their review.");
-    else if (!$Me->canAdminister($prow) && $Me->cid != $row->requestedBy)
+    else if (!$Me->allowAdminister($prow) && $Me->cid != $row->requestedBy)
 	return $Conf->errorMsg("You can’t retract that review request since you didn’t make the request in the first place.");
     if (defval($row, "reviewToken", 0) != 0)
 	$Conf->settings["rev_tokens"] = -1;
@@ -175,7 +175,7 @@ function pcAssignments() {
     }
 }
 
-if (isset($_REQUEST["update"]) && $Me->canAdminister($prow) && check_post()) {
+if (isset($_REQUEST["update"]) && $Me->allowAdminister($prow) && check_post()) {
     pcAssignments();
     $Conf->qe("unlock tables");
     $Conf->updateRevTokensSetting(false);
@@ -213,11 +213,11 @@ function requestReviewChecks($themHtml, $reqId) {
 	$row = edb_row($result);
 	if ($row[1] == "<conflict>")
 	    return $Conf->errorMsg("$themHtml has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
-	else if ($Me->canAdminister($prow) && Contact::override_deadlines()) {
+	else if ($Me->allowAdminister($prow) && Contact::override_deadlines()) {
 	    $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was &ldquo;" . htmlspecialchars($row[1]) . "&rdquo;.)" : ""));
 	    $Conf->qe("delete from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
 	} else
-	    return $Conf->errorMsg("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was &ldquo;" . htmlspecialchars($row[1]) . "&rdquo;.)" : "") . ($Me->canAdminister($prow) ? "  As an administrator, you can override this refusal with the \"Override...\" checkbox." : ""));
+	    return $Conf->errorMsg("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was &ldquo;" . htmlspecialchars($row[1]) . "&rdquo;.)" : "") . ($Me->allowAdminister($prow) ? "  As an administrator, you can override this refusal with the \"Override...\" checkbox." : ""));
     }
 
     return true;
@@ -386,7 +386,7 @@ if (isset($_REQUEST["add"]) && check_post()) {
     else if (!isset($_REQUEST["email"]) || !isset($_REQUEST["name"]))
 	$Conf->errorMsg("An email address is required to request a review.");
     else if (trim($_REQUEST["email"]) == "" && trim($_REQUEST["name"]) == ""
-	     && $Me->canAdminister($prow)) {
+	     && $Me->allowAdminister($prow)) {
 	if (!createAnonymousReview())
 	    $Conf->qx("unlock tables");
 	unset($_REQUEST["reason"]);
@@ -394,7 +394,7 @@ if (isset($_REQUEST["add"]) && check_post()) {
     } else if (trim($_REQUEST["email"]) == "")
 	$Conf->errorMsg("An email address is required to request a review.");
     else {
-	if ($Conf->setting("extrev_chairreq") && !$Me->canAdminister($prow))
+	if ($Conf->setting("extrev_chairreq") && !$Me->allowAdminister($prow))
 	    $ok = proposeReview($_REQUEST["email"]);
 	else
 	    $ok = requestReview($_REQUEST["email"]);
@@ -410,7 +410,7 @@ if (isset($_REQUEST["add"]) && check_post()) {
 
 
 // deny review request
-if (isset($_REQUEST["deny"]) && $Me->canAdminister($prow) && check_post()
+if (isset($_REQUEST["deny"]) && $Me->allowAdminister($prow) && check_post()
     && ($email = trim(defval($_REQUEST, "email", "")))) {
     $Conf->qe("lock tables ReviewRequest write, ContactInfo read, PaperConflict read, PaperReview read, PaperReviewRefused write");
     $while = "while denying review request";
@@ -438,7 +438,7 @@ if (isset($_REQUEST["deny"]) && $Me->canAdminister($prow) && check_post()
 
 
 // add primary or secondary reviewer
-if (isset($_REQUEST["addpc"]) && $Me->canAdminister($prow) && check_post()) {
+if (isset($_REQUEST["addpc"]) && $Me->allowAdminister($prow) && check_post()) {
     if (($pcid = rcvtint($_REQUEST["pcid"])) <= 0)
 	$Conf->errorMsg("Enter a PC member.");
     else if (($pctype = rcvtint($_REQUEST["pctype"])) == REVIEW_PRIMARY
@@ -484,7 +484,7 @@ if ($t != "")
 
 
 // PC assignments
-if ($Me->actChair($prow)) {
+if ($Me->canAdminister($prow)) {
     $contactTags = "NULL as contactTags";
     if ($Conf->sversion >= 35)
 	$contactTags = "contactTags";
@@ -601,7 +601,7 @@ if ($Me->actChair($prow)) {
 
 
 // outstanding requests
-if ($Conf->setting("extrev_chairreq") && $Me->canAdminister($prow)) {
+if ($Conf->setting("extrev_chairreq") && $Me->allowAdminister($prow)) {
     $result = $Conf->qe("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy, reason from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId", "while finding outstanding requests");
     if (edb_nrows($result) > 0) {
 	echo "	<tr><td colspan='3' class='papsep'></td></tr>
@@ -644,7 +644,7 @@ if ($Conf->setting("extrev_view") >= 2)
     echo "the other reviewers' identities and ";
 echo "any eventual decision.  Before requesting an external review,
  you should generally check personally whether they are interested.";
-if ($Me->canAdminister($prow))
+if ($Me->allowAdminister($prow))
     echo "\nTo create a review with no associated reviewer, leave Name and Email blank.";
 echo "</div></td><td></td></tr>
 	<tr><td></td><td class='revcc'>";
@@ -665,7 +665,7 @@ echo "<div class='f-i'>
   <input class='b' type='submit' name='add' value='Request review' tabindex='2' /></div>\n\n";
 
 
-if ($Me->actChair($prow))
+if ($Me->canAdminister($prow))
     echo "<div class='f-i'>\n  ", tagg_checkbox("override"), "&nbsp;", tagg_label("Override deadlines and any previous refusal"), "\n</div>\n";
 
 echo "</td><td></td></tr>\n", tagg_cbox("rev", true),

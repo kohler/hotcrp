@@ -744,10 +744,10 @@ confHeader();
 if ($paperTable->mode == "pe") {
     $editable = $newPaper
 	|| ($prow->timeWithdrawn <= 0
-	    && ($Conf->timeUpdatePaper($prow) || $Me->actChair($prow, true)));
+	    && ($Conf->timeUpdatePaper($prow) || $Me->allowAdminister($prow)));
     if ($prow && $prow->outcome > 0 && $Conf->collectFinalPapers()
 	&& (($Conf->timeAuthorViewDecision() && $Conf->timeSubmitFinalPaper())
-	    || $Me->actChair($prow, true)))
+	    || $Me->allowAdminister($prow)))
 	$editable = "f";
 } else
     $editable = false;

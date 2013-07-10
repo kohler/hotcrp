@@ -43,7 +43,7 @@ class PaperTable {
 	$this->crows = null;
 	$this->rrow = null;
 	$this->editrrow = null;
-        $this->admin = $Me->canAdminister($prow);
+        $this->admin = $Me->allowAdminister($prow);
 
 	if ($this->prow == null) {
 	    $this->mode = "pe";
@@ -63,10 +63,10 @@ class PaperTable {
 	if ($Me->canViewPaper($prow))
 	    $ms["p"] = true;
 	if ($prow->conflictType >= CONFLICT_AUTHOR
-	    || $Me->actChair($prow, true))
+	    || $Me->allowAdminister($prow))
 	    $ms["pe"] = true;
 	if ($prow->myReviewType >= REVIEW_SECONDARY
-	    || $Me->actChair($prow, true))
+	    || $Me->allowAdminister($prow))
 	    $ms["assign"] = true;
 	if (isset($_REQUEST["mode"]) && isset($ms[$_REQUEST["mode"]]))
 	    $this->mode = $_REQUEST["mode"];
@@ -569,7 +569,7 @@ class PaperTable {
 
         echo "<div class='pg pgtop fn8'>";
 	$viewable = $Me->canViewAuthors($prow, $forceShow);
-	if (!$viewable && !$Me->actChair($prow, true)) {
+	if (!$viewable && !$Me->allowAdminister($prow)) {
 	    echo $this->papt("authorInformation", "Authors"),
                 "<div class='papb'><i>Hidden for blind review</i></div>",
                 "</div>\n\n";
@@ -964,7 +964,7 @@ class PaperTable {
 	    if (!($displayTypeFlags & (1 << $o->displayType))
 		|| ($o->isFinal && !$this->canUploadFinal)
                 || ($prow && !$Me->canViewPaperOption($prow, $o)
-                    && !$Me->canAdminister($prow)))
+                    && !$Me->allowAdminister($prow)))
 		continue;
 
 	    $optid = "opt$o->optionId";
@@ -1136,7 +1136,7 @@ class PaperTable {
 
     function _papstripLeadShepherd($prow, $type, $name, $showedit, $wholefold) {
 	global $Conf, $Me, $Error, $linkExtra;
-	$editable = $Me->actChair($prow);
+	$editable = $Me->canAdminister($prow);
 
 	$field = $type . "ContactId";
 	if ($prow->$field == 0 && !$editable)
@@ -1591,7 +1591,7 @@ class PaperTable {
 	if (($this->admin || ($Me->isPC && $Me->canViewAuthors($prow, false)))
 	    && !$this->editable)
 	    $this->papstripPCConflicts($prow);
-	if (($Me->actChair($prow) || $Me->canViewAuthors($prow, false))
+	if (($Me->canAdminister($prow) || $Me->canViewAuthors($prow, false))
 	    && !$this->editable)
 	    $this->papstripCollaborators($prow);
 
@@ -1625,7 +1625,7 @@ class PaperTable {
 	// what actions are supported?
 	$canEdit = $Me->canEditPaper($prow);
 	$canReview = $Me->canReview($prow, null);
-	$canAssign = $Me->actChair($prow);
+	$canAssign = $Me->canAdminister($prow);
 	$canHome = ($canEdit || $canAssign || $this->mode == "contact");
 
 	echo "<div class='pban'>";
@@ -1759,7 +1759,7 @@ class PaperTable {
 	    $this->paptabAbstract($prow);
 	    echo "</div></td><td class='papre'><div class='papre'>";
 	    $this->paptabAuthors($prow);
-	    $this->paptabTopicsOptions($prow, $Me->actChair($prow));
+	    $this->paptabTopicsOptions($prow, $Me->canAdminister($prow));
 	    echo "</div></td></tr></table>";
 	}
 	$this->echoDivExit();
@@ -1890,7 +1890,7 @@ class PaperTable {
 			  true, $editablecid != "new");
 	    if (!$cv->nresponse && $Conf->timeAuthorRespond()
 		&& ($prow->conflictType >= CONFLICT_AUTHOR
-		    || ($Me->actChair($prow) && $editablecid == "response")))
+		    || ($Me->canAdminister($prow) && $editablecid == "response")))
 		$cv->showResponse($prow, null, false, true);
 
 	    $cv->table_end();
@@ -1917,7 +1917,7 @@ class PaperTable {
 	    $rf = reviewForm();
 	$prow = $this->prow;
 	$actPC = $Me->actPC($prow);
-	$actChair = $Me->actChair($prow);
+	$actChair = $Me->canAdminister($prow);
 
 	// review messages
 	$viewall = $Me->canViewReview($prow, null, false, $whyNot);
@@ -1946,7 +1946,7 @@ class PaperTable {
 
 	if ($this->editrrow && ($Me->ownReview($this->editrrow) || $actChair)
 	    && !$Conf->timeReviewPaper($actPC, true, true)) {
-	    if ($Me->actChair($prow))
+	    if ($actChair)
 		$override = "  As an administrator, you can override this deadline using the “Override deadlines” checkbox.";
 	    else {
 		$override = "";
@@ -2157,7 +2157,7 @@ class PaperTable {
 	if ($this->mode == "r" && $prow && !count($this->rrows)
 	    && !count($this->mycrows)
 	    && $prow->conflictType >= CONFLICT_AUTHOR
-	    && !$Me->actChair($prow, true)
+	    && !$Me->allowAdminister($prow)
 	    && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
 	    $this->mode = "pe";
     }

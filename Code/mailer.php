@@ -726,9 +726,9 @@ class Mailer {
 
 	$row->conflictType = $old_conflictType;
 	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts)
-            && $Me->canAdminister($row)) {
+            && $Me->allowAdminister($row)) {
 	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
-	    if (isset($rest["infoNames"]) && $Me->canAdminister($row))
+	    if (isset($rest["infoNames"]) && $Me->allowAdminister($row))
 		$contactsmsg = pluralx($contacts, "contact") . ", " . commajoin($contacts);
 	    else
 		$contactsmsg = "contact(s)";
@@ -763,7 +763,7 @@ class Mailer {
 
 	$row->conflictType = $old_conflictType;
 	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts)
-            && $Me->canAdminister($row)) {
+            && $Me->allowAdminister($row)) {
 	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
 	    $Conf->infoMsg("Sent email to paper #$row->paperId&rsquo;s " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . $endmsg);
 	}

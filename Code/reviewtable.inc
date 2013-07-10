@@ -16,7 +16,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     $hideUnviewable = ($conflictType > 0 && !$forceShow);
     if (!$Me->isPC && !$Conf->setting("extrev_view"))
 	$hideUnviewable = true;
-    $admin = $Me->canAdminister($prow);
+    $admin = $Me->allowAdminister($prow);
     $effAssistant = $admin && !$hideUnviewable;
     $anyScores = false;
     $anyColors = false;
@@ -177,8 +177,8 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 
     $conflictType = $Me->actConflictType($prow);
     $actingConflict = ($conflictType > 0 && !$forceShow);
-    $admin = $Me->canAdminister($prow);
-    $effAssistant = $Me->actChair($prow) && !$actingConflict;
+    $admin = $Me->allowAdminister($prow);
+    $effAssistant = $Me->canAdminister($prow) && !$actingConflict;
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 
     $nvisible = 0;
@@ -229,7 +229,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 
     // edit paper
     if ($mode != "pe" && $prow->conflictType >= CONFLICT_AUTHOR
-	&& !$Me->actChair($prow)) {
+	&& !$Me->canAdminister($prow)) {
 	$x = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;m=pe$linkExtra") . "' class='xx'>"
 	    . $Conf->cacheableImage("edit24.png", "[Edit paper]", null, "dlimg") . "&nbsp;<u><strong>Edit paper</strong></u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
@@ -270,7 +270,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 
     // new response
     if ($mode != "assign" && $Conf->timeAuthorRespond()
-	&& ($prow->conflictType >= CONFLICT_AUTHOR || $Me->actChair($prow, true))) {
+	&& ($prow->conflictType >= CONFLICT_AUTHOR || $Me->allowAdminister($prow))) {
 	$cid = array("response", "response", "Add");
 	if ($crows)
 	    foreach ($crows as $cr)

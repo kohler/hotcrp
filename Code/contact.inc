@@ -463,11 +463,11 @@ class Contact {
             return $forceShow;
     }
 
-    public function canAdminister($prow) {
+    public function allowAdminister($prow) {
         return $this->privChair;
     }
 
-    public function actChair($prow, $forceShow = null) {
+    public function canAdminister($prow, $forceShow = null) {
 	return $this->privChair
             && (!$prow || $prow->conflictType <= 0
                 || self::override_conflict($forceShow));
@@ -522,7 +522,7 @@ class Contact {
 
     function canEditPaper($prow, &$whyNot = null) {
 	return $prow->conflictType >= CONFLICT_AUTHOR
-            || $this->canAdminister($prow);
+            || $this->allowAdminister($prow);
     }
 
     function canUpdatePaper($prow, &$whyNot = null) {
@@ -530,7 +530,7 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	// policy
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $admin)
 	    && $prow->timeWithdrawn <= 0
@@ -557,7 +557,7 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	// policy
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $admin)
 	    && $prow->timeWithdrawn <= 0
@@ -583,7 +583,7 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
         $override = $admin && ($override || self::override_deadlines());
 	// policy
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $admin)
@@ -607,7 +607,7 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	// policy
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $admin)
 	    && $prow->timeWithdrawn > 0
@@ -632,7 +632,7 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	$override = $admin && ($override || self::override_deadlines());
 	// policy
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $admin)
@@ -663,7 +663,7 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	$conflictType = $this->actConflictType($prow);
 	// policy
 	if ($conflictType >= CONFLICT_AUTHOR
@@ -739,7 +739,7 @@ class Contact {
 	    $whyNot["invalidId"] = "paper";
 	    return false;
 	}
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	$conflictType = $this->actConflictType($prow);
 	// policy
 	if (!$this->canViewPaper($prow, $whyNot))
@@ -781,7 +781,7 @@ class Contact {
             $viewscore = VIEWSCORE_AUTHOR;
 	$rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
 	$pc_seeallrev = ($this->isPC ? $Conf->setting("pc_seeallrev") : 0);
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	$conflictType = $this->actConflictType($prow);
 	// policy
 	if ($admin && $forceShow)
@@ -856,7 +856,7 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	// policy
 	if (($prow->myReviewType >= REVIEW_SECONDARY || $admin)
 	    && ($Conf->timeReviewPaper(false, true, true) || !$time
@@ -880,8 +880,8 @@ class Contact {
 	    return false;
 	assert(!$rrow || $rrow->paperId == $prow->paperId);
         $forceShow = self::override_conflict();
-        $admin = $this->canAdminister($prow);
-	$manager = $this->actChair($prow);
+        $admin = $this->allowAdminister($prow);
+	$manager = $this->canAdminister($prow);
 	$rrow_contactId = 0;
 	if ($rrow) {
 	    $myReview = $manager || $this->ownReview($rrow);
@@ -960,7 +960,7 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	$forceShow = self::override_conflict();
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	// policy
 	if (($prow->timeSubmitted > 0 || $prow->myReviewType > 0)
 	    && (($admin && ($forceShow || $prow->conflictType == 0))
@@ -1024,7 +1024,7 @@ class Contact {
 	    && isset($crow->threadContacts[$this->contactId]))
 	    $thread_contactId = $this->contactId;
 	$forReviewers = (!$crow || $crow->forReviewers == -1 ? 1 : $crow->forReviewers);
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	$conflictType = $this->actConflictType($prow);
 	// policy
 	if ($crow_contactId == $this->contactId		// wrote this comment
@@ -1072,7 +1072,7 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
 	$forceShow = self::override_conflict();
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	// policy
 	if ($prow->timeSubmitted > 0
 	    && (($admin && ($forceShow || $prow->conflictType == 0))
@@ -1138,7 +1138,7 @@ class Contact {
 
     function canEditContactAuthors($prow) {
 	return $prow->conflictType >= CONFLICT_AUTHOR
-            || $this->canAdminister($prow);
+            || $this->allowAdminister($prow);
     }
 
     function timeReview($prow, $rrow) {
@@ -1147,7 +1147,7 @@ class Contact {
 	    || ($rrow && isset($prow->myReviewId)
 		&& $prow->myReviewId == $rrow->reviewId)
 	    || ($rrow && $rrow->contactId != $this->contactId
-                && $this->canAdminister($prow));
+                && $this->allowAdminister($prow));
 	return $Conf->timeReviewPaper($this->isPC, $myReview, true);
     }
 
@@ -1168,7 +1168,7 @@ class Contact {
 			"myReviewSubmitted" => 1,
 			"paperId" => 1, "timeSubmitted" => 1);
 	$conflictType = $this->actConflictType($prow);
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	if (($admin && $forceShow)
 	    || ($rrow && $rrow_contactId == $this->contactId)
 	    || ($rrow && $this->ownReview($rrow))
@@ -1191,7 +1191,7 @@ class Contact {
             return $this->canViewReviewerIdentity(true, null, $forceShow);
         $forceShow = self::override_conflict($forceShow);
 	$conflictType = $this->actConflictType($prow);
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
         return ($admin && ($conflictType == 0 || $forceShow))
             || $prow->leadContactId == $this->cid
             || (($this->isPC || $prow->myReviewType > 0)
@@ -1210,7 +1210,7 @@ class Contact {
 	else if ($crow)
 	    $crow_contactId = $crow->contactId;
 	$conflictType = $this->actConflictType($prow);
-        $admin = $this->canAdminister($prow);
+        $admin = $this->allowAdminister($prow);
 	if (($admin && $forceShow)
 	    || $crow_contactId == $this->contactId
 	    || ($this->isPC && $conflictType == 0)
@@ -1229,7 +1229,7 @@ class Contact {
 	    || ($prow && defval($prow, "myReviewType", 0) > 0
 		&& defval($prow, "myReviewSubmitted", 0) > 0
 		&& $Conf->timeReviewerViewDecision())
-	    || ($this->canAdminister($prow)
+	    || ($this->allowAdminister($prow)
                 && (!$prow || $conflictType == 0
                     || self::override_conflict($forceShow))))
 	    return true;
@@ -1250,7 +1250,7 @@ class Contact {
         // ** See also canViewReview.
 
 	// chair can see everything
-	if ($this->canAdminister($prow)
+	if ($this->allowAdminister($prow)
 	    && (!$prow || $prow->conflictType == 0
                 || self::override_conflict()))
 	    return VIEWSCORE_ADMINONLY - 1;
@@ -1288,18 +1288,18 @@ class Contact {
 	global $Conf;
 	return ($this->isPC
 		&& (!$prow || $prow->conflictType <= 0
-		    || ($this->canAdminister($prow) && $forceShow)
+		    || ($this->allowAdminister($prow) && $forceShow)
 		    || $Conf->setting("tag_seeall") > 0));
     }
 
     function canSetTags($prow, $forceShow = true) {
 	return $this->isPC
             && (!$prow || $prow->conflictType <= 0
-                || ($this->canAdminister($prow) && $forceShow));
+                || ($this->allowAdminister($prow) && $forceShow));
     }
 
     function canSetOutcome($prow) {
-	if (!$this->canAdminister($prow))
+	if (!$this->allowAdminister($prow))
 	    return false;
 	if ($prow && $prow->conflictType > 0 && !self::override_conflict())
 	    return false;

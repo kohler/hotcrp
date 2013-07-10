@@ -177,7 +177,7 @@ class StatusPaperColumn extends PaperColumn {
             && $pl->contact->canViewDecision($row))
             $pl->any->need_final = true;
         $long = 0;
-        if ($pl->search->limitName != "a" && $pl->contact->canAdminister($row))
+        if ($pl->search->limitName != "a" && $pl->contact->allowAdminister($row))
             $long = 2;
         if (!$this->is_long)
             $long = ($long == 2 ? -2 : -1);
@@ -217,7 +217,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
         return "<col width='0*' />";
     }
     public function content_empty($pl, $row) {
-        return !($pl->contact->canAdminister($row)
+        return !($pl->contact->allowAdminister($row)
                  || ($pl->contact->isPC && ($row->conflictType == 0 || $this->auview))
                  || $row->reviewType > 0
                  || ($row->conflictType >= CONFLICT_AUTHOR && $this->auview));
@@ -238,7 +238,7 @@ class AuthorsPaperColumn extends PaperColumn {
         return "Authors";
     }
     public function content($pl, $row) {
-	if (!$pl->contact->canAdminister($row)
+	if (!$pl->contact->allowAdminister($row)
             && !$pl->contact->canViewAuthors($row, true))
 	    return "";
 	cleanAuthor($row);
@@ -298,7 +298,7 @@ class CollabPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return ($row->collaborators == ""
                 || strcasecmp($row->collaborators, "None") == 0
-                || (!$pl->contact->canAdminister($row)
+                || (!$pl->contact->allowAdminister($row)
                     && !$pl->contact->canViewAuthors($row, true)));
     }
     public function content($pl, $row) {
@@ -364,7 +364,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
                 $by_pid[$row->paperId] = $row;
             $result = $Conf->qe("select paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, contactId reviewContactId, requestedBy, reviewToken, reviewRound, 0 conflictType from PaperReview where paperId in (" . join(",", array_keys($by_pid)) . ") and contactId=" . $pl->search->reviewerContact, "while examining reviews");
             while (($xrow = edb_orow($result)))
-                if ($pl->contact->canAdminister($xrow)
+                if ($pl->contact->allowAdminister($xrow)
                     || $pl->contact->canViewReviewerIdentity($by_pid[$xrow->paperId], $xrow, true))
                     $by_pid[$xrow->paperId]->_xreviewer = $xrow;
             $this->xreviewer = new Contact;
@@ -944,7 +944,7 @@ class ScorePaperColumn extends PaperColumn {
 	global $Conf;
         $allowed = $pl->contact->canViewReview($row, $this->viewscore, false);
         $fname = $this->score . "Scores";
-        if (($allowed || $pl->contact->canAdminister($row))
+        if (($allowed || $pl->contact->allowAdminister($row))
 	    && $row->$fname) {
             $t = $pl->rf->field($this->score)->unparse_graph($row->$fname, 1, defval($row, $this->score));
             if (!$allowed)
@@ -1018,7 +1018,7 @@ class FormulaPaperColumn extends PaperColumn {
     public function content($pl, $row) {
         $formulaf = $this->formula_function;
         $t = $formulaf($row, $pl->contact, "h");
-        if ($row->conflictType > 0 && $pl->contact->canAdminister($row))
+        if ($row->conflictType > 0 && $pl->contact->allowAdminister($row))
             return "<span class='fn20'>$t</span><span class='fx20'>"
                 . $formulaf($row, $pl->contact, "h", true) . "</span>";
         else
