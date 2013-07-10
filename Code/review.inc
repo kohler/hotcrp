@@ -295,7 +295,7 @@ class ReviewForm {
 	$field = null;
 	foreach ($this->forder as $f) {
 	    if (count($a) == 1 && strcasecmp($a[0], $f->abbreviation) == 0)
-		return $fn;
+		return $f->id;
 	    for ($i = 0; $i < count($a); ++$i)
 		if ($a[$i] != "-" && $a[$i] != "_"
 		    && !preg_match("{\\b$a[$i]}i", $f->name))
