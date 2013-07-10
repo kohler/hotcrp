@@ -125,7 +125,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-	if ($this->settings["allowPaperOption"] < 50) {
+	if ($this->settings["allowPaperOption"] < 51) {
 	    require_once("updateschema.inc");
 	    $oldOK = $OK;
 	    updateSchema($this);
@@ -900,6 +900,8 @@ class Conference {
 	$pq = "select Paper.*, PaperConflict.conflictType,
 		count(AllReviews.reviewSubmitted) as reviewCount,
 		count(if(AllReviews.reviewNeedsSubmit<=0,AllReviews.reviewSubmitted,AllReviews.reviewId)) as startedReviewCount";
+        if ($this->sversion < 51)
+            $pq .= ",\n\t\t0 as managerContactId";
 	$myPaperReview = null;
 	if (!isset($options["author"])) {
 	    if ($allReviewerQuery)
@@ -1312,7 +1314,7 @@ class Conference {
 
     // Activity
 
-    function _flowQueryWheres(&$where, $table, $t0) {
+    private static function _flowQueryWheres(&$where, $table, $t0) {
 	$time = $table . ($table == "PaperReview" ? ".reviewSubmitted" : ".timeModified");
 	if (is_array($t0))
 	    $where[] = "($time<$t0[0] or ($time=$t0[0] and $table.contactId>$t0[1]) or ($time=$t0[0] and $table.contactId=$t0[1] and $table.paperId>$t0[2]))";
@@ -1320,23 +1322,31 @@ class Conference {
 	    $where[] = "$time<$t0";
     }
 
-    function _commentFlowQuery($contact, $t0, $limit) {
-	$q = "select PaperComment.*,
-		substring(PaperComment.comment from 1 for 300) as shortComment,
-		Paper.title,
+    private function _flowQueryRest() {
+        $q = "		Paper.title,
 		substring(Paper.title from 1 for 80) as shortTitle,
 		Paper.timeSubmitted,
 		Paper.timeWithdrawn,
 		Paper.blind as paperBlind,
-		Paper.outcome,
-		ContactInfo.firstName as reviewFirstName,
+		Paper.outcome,\n";
+        if ($this->sversion >= 51)
+            $q .= "		Paper.managerContactId,\n";
+        else
+            $q .= "		0 as managerContactId,\n";
+        return $q . "		ContactInfo.firstName as reviewFirstName,
 		ContactInfo.lastName as reviewLastName,
 		ContactInfo.email as reviewEmail,
 		PaperConflict.conflictType,
 		MyPaperReview.reviewType as myReviewType,
 		MyPaperReview.reviewSubmitted as myReviewSubmitted,
-		MyPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit
-		from PaperComment
+		MyPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit\n";
+    }
+
+    private function _commentFlowQuery($contact, $t0, $limit) {
+	$q = "select PaperComment.*,
+		substring(PaperComment.comment from 1 for 300) as shortComment,\n"
+            . $this->_flowQueryRest()
+            . "\t\tfrom PaperComment
 		join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
 		join Paper on (Paper.paperId=PaperComment.paperId)
 		left join PaperConflict on (PaperConflict.paperId=PaperComment.paperId and PaperConflict.contactId=$contact->contactId)
@@ -1351,22 +1361,10 @@ class Conference {
 	return $q;
     }
 
-    function _reviewFlowQuery($contact, $t0, $limit) {
-	$q = "select PaperReview.*,
-		Paper.title,
-		substring(Paper.title from 1 for 80) as shortTitle,
-		Paper.timeSubmitted,
-		Paper.timeWithdrawn,
-		Paper.blind as paperBlind,
-		Paper.outcome,
-		ContactInfo.firstName as reviewFirstName,
-		ContactInfo.lastName as reviewLastName,
-		ContactInfo.email as reviewEmail,
-		PaperConflict.conflictType,
-		MyPaperReview.reviewType as myReviewType,
-		MyPaperReview.reviewSubmitted as myReviewSubmitted,
-		MyPaperReview.reviewNeedsSubmit as myReviewNeedsSubmit
-		from PaperReview
+    private function _reviewFlowQuery($contact, $t0, $limit) {
+	$q = "select PaperReview.*,\n"
+            . $this->_flowQueryRest()
+            . "\t\tfrom PaperReview
 		join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
 		join Paper on (Paper.paperId=PaperReview.paperId)
 		left join PaperConflict on (PaperConflict.paperId=PaperReview.paperId and PaperConflict.contactId=$contact->contactId)

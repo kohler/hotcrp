@@ -464,19 +464,30 @@ class Contact {
     }
 
     public function allowAdminister($prow) {
-        return $this->privChair;
+        if ($prow && $prow->conflictType > 0 && $prow->managerContactId
+            && $prow->managerContactId != $this->contactId)
+            return false;
+        return $this->privChair
+            || ($prow && $prow->managerContactId && $prow->managerContactId == $this->contactId);
     }
 
     public function canAdminister($prow, $forceShow = null) {
-	return $this->privChair
-            && (!$prow || $prow->conflictType <= 0
-                || self::override_conflict($forceShow));
+        if ($prow && $prow->conflictType > 0 && $prow->managerContactId
+            && $prow->managerContactId != $this->contactId)
+            return false;
+        return ($this->privChair
+                || ($prow && $prow->managerContactId && $prow->managerContactId == $this->contactId))
+            && (!$prow || $prow->conflictType <= 0 || self::override_conflict($forceShow));
     }
 
     public function actPC($prow, $forceShow = null) {
-	return $this->isPC
+        if ($prow && $prow->conflictType > 0 && $prow->managerContactId
+            && $prow->managerContactId != $this->contactId)
+            return false;
+        return $this->isPC
             && (!$prow || $prow->conflictType <= 0
-                || ($this->privChair && self::override_conflict($forceShow)));
+                || (($this->privChair || $prow->managerContactId == $this->contactId)
+                    && self::override_conflict($forceShow)));
     }
 
     public function actConflictType($prow) {

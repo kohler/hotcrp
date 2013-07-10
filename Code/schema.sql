@@ -189,6 +189,7 @@ CREATE TABLE `Paper` (
   `outcome` tinyint(1) NOT NULL DEFAULT '0',
   `leadContactId` int(11) NOT NULL DEFAULT '0',
   `shepherdContactId` int(11) NOT NULL DEFAULT '0',
+  `managerContactId` int(11) NOT NULL DEFAULT '0',
   `capVersion` int(1) NOT NULL DEFAULT '0',
   # next 3 fields copied from PaperStorage to reduce joins
   `size` int(11) NOT NULL DEFAULT '0',
@@ -588,7 +589,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 50);
+insert into Settings (name, value) values ('allowPaperOption', 51);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
@@ -684,7 +685,7 @@ insert into ReviewFormOptions set fieldName='grammar', level=4, description='Goo
 insert into ReviewFormOptions set fieldName='grammar', level=5, description='Excellent';
 
 insert into ReviewFormOptions set fieldName='suitableForShort', level=1, description='Not suitable';
-insert into ReviewFormOptions set fieldName='suitableForShort', level=2, description='Can\'t tell';
+insert into ReviewFormOptions set fieldName='suitableForShort', level=2, description='Can''t tell';
 insert into ReviewFormOptions set fieldName='suitableForShort', level=3, description='Suitable';
 
 insert into ReviewFormOptions set fieldName='outcome', level=0, description='Unspecified';
