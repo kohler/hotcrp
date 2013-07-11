@@ -354,7 +354,7 @@ if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
 	$result = $Conf->qe($q, "while selecting papers");
 	$texts = array();
 	while (($row = edb_orow($result)))
-	    if ($Me->canViewTags($row))
+	    if ($Me->canViewTags($row, true))
 		arrayappend($texts[$paperselmap[$row->paperId]], array($showtag, (int) $row->tagIndex, $row->paperId, $row->title));
 	ksort($texts);
 	downloadCSV($texts, array("tag", "votes", "paper", "title"), "votes", "votes");
@@ -376,7 +376,7 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 	$null = "\n";
 	while (($row = edb_orow($result)))
 	    if ($settingrank ? $Me->canSetRank($row)
-		: $Me->canSetTags($row)) {
+		: $Me->canSetTags($row, true)) {
 		if ($row->tagIndex === null)
 		    $null .= "X\t$row->paperId\t$row->title\n";
 		else if ($real === "" || $lastIndex == $row->tagIndex - 1)

@@ -57,7 +57,7 @@ function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
 	if ($settings[$row->paperId] !== null
 	    && !($settingrank
 		 ? $Me->canSetRank($row, true)
-		 : $Me->canSetTags($row))) {
+		 : $Me->canSetTags($row, true))) {
 	    $errors[$linenos[$row->paperId]] = "You cannot rank paper #$row->paperId. (" . ($Me->isPC?"PC":"npc") . $Me->contactId . $row->conflictType . ")";
 	    unset($settings[$row->paperId]);
 	} else if ($titles[$row->paperId] !== ""

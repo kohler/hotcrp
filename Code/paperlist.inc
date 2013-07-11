@@ -686,7 +686,7 @@ class PaperList extends BaseList {
 
 	$rstate->ids[] = $row->paperId;
 	$trclass = "k" . $rstate->colorindex;
-	if (defval($row, "paperTags") && $this->contact->canViewTags($row)
+	if (defval($row, "paperTags") && $this->contact->canViewTags($row, true)
 	    && ($m = $this->tagger->color_classes($row->paperTags)))
 	    $trclass .= " " . $m;
 	$rstate->colorindex = 1 - $rstate->colorindex;

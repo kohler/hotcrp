@@ -747,7 +747,7 @@ class TagListPaperColumn extends PaperColumn {
         return "Tags";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->canViewTags($row);
+        return !$pl->contact->canViewTags($row, true);
     }
     public function content($pl, $row) {
         if (($t = $row->paperTags) !== "")
@@ -796,7 +796,7 @@ class TagPaperColumn extends PaperColumn {
         $careful = !$pl->contact->privChair
             && $Conf->setting("tag_seeall") <= 0;
         foreach ($rows as $row)
-            if ($careful && !$pl->contact->canViewTags($row))
+            if ($careful && !$pl->contact->canViewTags($row, true))
                 $row->$sorter = 2147483647;
             else if (($row->$sorter = $this->_tag_value($row)) === null)
                 $row->$sorter = 2147483646 + !$this->editable;
@@ -810,7 +810,7 @@ class TagPaperColumn extends PaperColumn {
         return "#$this->dtag";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->canViewTags($row);
+        return !$pl->contact->canViewTags($row, true);
     }
     public function content($pl, $row) {
         if (($v = $this->_tag_value($row)) === null)
@@ -1054,7 +1054,7 @@ class TagReportPaperColumn extends PaperColumn {
         return "“" . $this->tag . "” tag report";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->canViewTags($row);
+        return !$pl->contact->canViewTags($row, true);
     }
     public function content($pl, $row) {
         if (($t = $row->paperTags) === "")
@@ -1110,7 +1110,7 @@ class TagOrderSortPaperColumn extends PaperColumn {
             $rev = $ot[$i]->reverse;
             foreach ($rows as $row) {
                 if ($row->$n === null
-                    || ($careful && !$pl->contact->canViewTags($row)))
+                    || ($careful && !$pl->contact->canViewTags($row, true)))
                     $row->$n = 2147483647;
                 if ($rev)
                     $row->$n = -$row->$n;

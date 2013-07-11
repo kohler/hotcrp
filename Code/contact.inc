@@ -1294,27 +1294,23 @@ class Contact {
 	return VIEWSCORE_PC - 1;
     }
 
-    function canViewTags($prow, $forceShow = true) {
+    function canViewTags($prow, $forceShow = null) {
         // see also PaperActions::all_tags
 	global $Conf;
-	return ($this->isPC
-		&& (!$prow || $prow->conflictType <= 0
-		    || ($this->allowAdminister($prow) && $forceShow)
-		    || $Conf->setting("tag_seeall") > 0));
-    }
-
-    function canSetTags($prow, $forceShow = true) {
 	return $this->isPC
             && (!$prow || $prow->conflictType <= 0
-                || ($this->allowAdminister($prow) && $forceShow));
+                || $this->canAdminister($prow, $forceShow)
+                || $Conf->setting("tag_seeall") > 0);
+    }
+
+    function canSetTags($prow, $forceShow = null) {
+	return $this->isPC
+            && (!$prow || $prow->conflictType <= 0
+                || $this->canAdminister($prow, $forceShow));
     }
 
     function canSetOutcome($prow) {
-	if (!$this->allowAdminister($prow))
-	    return false;
-	if ($prow && $prow->conflictType > 0 && !self::override_conflict())
-	    return false;
-	return true;
+        return $this->canAdminister($prow);
     }
 
 
