@@ -1194,6 +1194,10 @@ class PaperTable {
 	$this->_papstripLeadShepherd($prow, "shepherd", "Shepherd", $showedit || defval($_REQUEST, "atab") == "shepherd", $fold);
     }
 
+    function papstripManager($prow, $showedit) {
+	$this->_papstripLeadShepherd($prow, "manager", "Paper manager", $showedit || defval($_REQUEST, "atab") == "manager", false);
+    }
+
     function papstripTags($prow, $site = null) {
 	global $Conf, $Me, $Error, $forceShow, $linkExtra;
 	if ($site || defval($prow, "paperTags", "") !== "") {
@@ -1583,6 +1587,9 @@ class PaperTable {
     function _papstrip() {
 	global $Conf, $Me, $forceShow, $linkExtra;
 	$prow = $this->prow;
+        if ($Me->isPC && $prow && ($prow->conflictType <= 0 || $Me->privChair)
+            && $prow->managerContactId)
+            $this->papstripManager($prow, $this->mode == "assign");
 	if ($Me->canViewTags($prow, $forceShow))
 	    $this->papstripTags($prow, "review");
 	if ($Me->canSetRank($prow))
@@ -1595,15 +1602,14 @@ class PaperTable {
 	    && !$this->editable)
 	    $this->papstripCollaborators($prow);
 
-	$foldDecisions = false;
 	$foldShepherd = $Me->canSetOutcome($prow) && $prow->outcome <= 0
 	    && $prow->shepherdContactId == 0 && $this->mode != "assign";
 	if ($Me->canSetOutcome($prow))
-	    $this->papstripOutcomeSelector($prow, $foldDecisions);
+	    $this->papstripOutcomeSelector($prow, false);
 	if ($Me->actPC($prow))
-	    $this->papstripLead($prow, $foldDecisions || $this->mode == "assign");
+	    $this->papstripLead($prow, $this->mode == "assign");
 	if ($Me->actPC($prow) || $Me->canViewDecision($prow))
-	    $this->papstripShepherd($prow, $foldDecisions || $this->mode == "assign", $foldShepherd);
+	    $this->papstripShepherd($prow, $this->mode == "assign", $foldShepherd);
 
 	if ($Me->actPC($prow) && $Conf->timePCReviewPreferences())
 	    $this->papstripReviewPreference($prow);
