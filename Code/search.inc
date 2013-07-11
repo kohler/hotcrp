@@ -61,8 +61,8 @@ class SearchOperator {
 
 global $searchOperators;
 $searchOperators = array("(" => new SearchOperator("(", true, null),
-			 "NOT" => new SearchOperator("NOT", true, 6),
-			 "-" => new SearchOperator("NOT", true, 6),
+			 "NOT" => new SearchOperator("not", true, 6),
+			 "-" => new SearchOperator("not", true, 6),
 			 "+" => new SearchOperator("+", true, 6),
                          "SPACE" => new SearchOperator("and", false, 5),
 			 "AND" => new SearchOperator("and", false, 4),
@@ -1366,7 +1366,7 @@ class PaperSearch {
 	$x = array_pop($stack);
 	if (!$curqe)
 	    return $x->leftqe;
-	else if ($x->op->op == "NOT")
+	else if ($x->op->op == "not")
 	    return SearchTerm::negate($curqe);
 	else if ($x->op->op == "+")
 	    return $curqe;
@@ -1450,8 +1450,8 @@ class PaperSearch {
 	    return null;
 	if ($x->op->unary) {
 	    $qe = $x->qe[0];
-	    if ($x->op->op == "NOT") {
-		if (preg_match('/\A(?:[(-]|NOT )/', $qe))
+	    if ($x->op->op == "not") {
+		if (preg_match('/\A(?:[(-]|NOT )/i', $qe))
 		    $qe = "NOT $qe";
 		else
 		    $qe = "-$qe";
