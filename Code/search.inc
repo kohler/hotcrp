@@ -1203,12 +1203,7 @@ class PaperSearch {
 		} else
 		    $value = $tids;
 	    }
-	    if ($type == "f" || $this->amPC)
-		$qt[] = new SearchTerm($type, 0, $value);
-	    else {
-		$qt[] = new SearchTerm($type, self::F_REVIEWER, $value);
-		$qt[] = new SearchTerm($type, self::F_AUTHOR, $value);
-	    }
+            $qt[] = new SearchTerm($type, self::F_XVIEW, $value);
 	}
 	if (($keyword ? $keyword == "option" : isset($this->fields["option"])))
 	    $this->_searchOptions($word, $qt, true);
