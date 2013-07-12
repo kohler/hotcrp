@@ -1174,7 +1174,7 @@ class Contact {
 	// iff there could exist a paper for which canViewReviewerIdentity
 	// is true.
 	if ($prow === true)
-	    $prow = (object) array("conflictType" => 0,
+	    $prow = (object) array("conflictType" => 0, "managerContactId" => 0,
 			"myReviewType" => ($this->amReviewer() ? 1 : 0),
 			"myReviewSubmitted" => 1,
 			"paperId" => 1, "timeSubmitted" => 1);

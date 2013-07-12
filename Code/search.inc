@@ -249,6 +249,11 @@ class SearchQueryInfo {
         assert(!isset($this->columns[$name]) || $this->columns[$name] == $expr);
         $this->columns[$name] = $expr;
     }
+    public function add_manager_column() {
+        global $Conf;
+        if (!isset($this->columns["managerContactId"]))
+            $this->columns["managerContactId"] = ($Conf->sversion >= 51 ? "Paper.managerContactId" : "0");
+    }
 }
 
 class PaperSearch {
@@ -268,6 +273,7 @@ class PaperSearch {
     const F_REVIEWERCOMMENT = 0x04000;
     const F_AUTHORRESPONSE = 0x08000;
     const F_FALSE = 0x10000;
+    const F_XVIEW = 0x20000;
 
     var $contact;
     public $cid;
@@ -539,7 +545,7 @@ class PaperSearch {
 	    return ($neg ? " not" : "") . " in (" . join(",", $a) . ")";
     }
 
-    function _pcContactIdsWithTag($tag) {
+    private static function _pcContactIdsWithTag($tag) {
 	$a = array();
 	foreach (pcMembers() as $pc)
 	    if ($pc->contactTags && stripos($pc->contactTags, " $tag ") !== false)
@@ -702,7 +708,7 @@ class PaperSearch {
             $rf = reviewForm();
             $value = matchValue($rf->options["outcome"], $word, true);
             if (count($value) == 0) {
-                $this->warn("&ldquo;" . htmlspecialchars($word) . "&rdquo; doesn&rsquo;t match a decision.");
+                $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a decision.");
                 $value[] = -10000000;
             }
             $value = self::sqlNumericSet($value);
@@ -958,11 +964,8 @@ class PaperSearch {
 	}
 
 	$value = $tagword;
-	$rt = 0;
 	if ($value && $twiddle !== false)
 	    $value = $twiddlecid . $value;
-	else if (!$this->privChair && $Conf->setting("tag_seeall") <= 0)
-	    $rt |= self::F_NONCONFLICT;
 	$extra = null;
 	if ($keyword == "order" || $keyword == "rorder" || !$keyword)
 	    $extra = array("tagorder" => (object) array("tag" => $value, "reverse" => $keyword == "rorder"));
@@ -971,7 +974,7 @@ class PaperSearch {
 	    if ($starpos == 0)
 		$value .= " and \3 not like '%~%'";
 	}
-	$qt[] = new SearchTerm("tag", $rt, $compar ? array($value, $compar) : $value, $extra);
+	$qt[] = new SearchTerm("tag", self::F_XVIEW, $compar ? array($value, $compar) : $value, $extra);
     }
 
     function _searchOptions($word, &$qt, $error) {
@@ -1783,8 +1786,9 @@ class PaperSearch {
     // The query may be liberal (returning more papers than actually match);
     // QUERY EVALUATION makes it precise.
 
-    function _clauseTermSetFlags($flags, &$q) {
+    function _clauseTermSetFlags($t, $sqi, &$q) {
 	global $Conf;
+        $flags = $t->flags;
 
 	// Maybe we don't actually need to check blindness.
 	if ($flags & self::F_PAPERNONBLIND) {
@@ -1811,11 +1815,17 @@ class PaperSearch {
 	    else
 		$q[] = "Paper.blind=0";
 	}
+        if ($flags & self::F_XVIEW) {
+            if ($t->type == "tag") {
+                $this->needflags |= self::F_NONCONFLICT;
+                $sqi->add_manager_column();
+            }
+        }
 	if ($flags & self::F_FALSE)
 	    $q[] = "false";
     }
 
-    function _clauseTermSetField(&$t, $field, $negated, &$f) {
+    function _clauseTermSetField(&$t, $field, $negated, $sqi, &$f) {
 	$this->needflags |= $t->flags;
 	$v = $t->value;
 	if ($v != "" && $v[0] == "*")
@@ -1834,7 +1844,7 @@ class PaperSearch {
 	    $f[] = "true";
 	else {
 	    $q = array();
-	    $this->_clauseTermSetFlags($t->flags, $q);
+	    $this->_clauseTermSetFlags($t, $sqi, $q);
 	    $q[] = "Paper.$field like '%$v%'";
 	    $f[] = "(" . join(" and ", $q) . ")";
 	}
@@ -1846,7 +1856,7 @@ class PaperSearch {
 				 $table, $field, $where, $sqi, &$f) {
 	// see also first "tag" case below
 	$q = array();
-	$this->_clauseTermSetFlags($t->flags, $q);
+	$this->_clauseTermSetFlags($t, $sqi, $q);
 
 	if ($value == "none" && !$compar)
 	    list($compar, $value) = array("=0", "");
@@ -1964,7 +1974,7 @@ class PaperSearch {
 	    $sqi->add_table($thistab, array("left join", "(select r.paperId, count(r.reviewId) as count from $reviewtable$wheretext group by paperId)"));
 	}
 	$q = array();
-	$this->_clauseTermSetFlags($t->flags, $q);
+	$this->_clauseTermSetFlags($t, $sqi, $q);
 	$q[] = "coalesce($thistab.count,0)" . $t->value->countexpr;
 	$sqi->add_column($thistab . "_matches", "$thistab.count");
 	$t->link = $thistab . "_matches";
@@ -1983,7 +1993,7 @@ class PaperSearch {
 	    $sqi->add_table($thistab, array("left join", "(select paperId, count(PaperReviewPreference.preference) as count from $reviewtable$wheretext group by paperId)"));
 	}
 	$q = array();
-	$this->_clauseTermSetFlags($t->flags, $q);
+	$this->_clauseTermSetFlags($t, $sqi, $q);
 	$q[] = "coalesce($thistab.count,0)" . $t->value->countexpr;
 	$sqi->add_column($thistab . "_matches", "$thistab.count");
 	$t->link = $thistab . "_matches";
@@ -2011,7 +2021,7 @@ class PaperSearch {
 	    $sqi->add_table($thistab, array("left join", "(select paperId, count(PaperComment.commentId) as count from PaperComment$wheretext group by paperId)"));
 	}
 	$q = array();
-	$this->_clauseTermSetFlags($t->flags, $q);
+	$this->_clauseTermSetFlags($t, $sqi, $q);
 	$q[] = "coalesce($thistab.count,0)" . $t->value->countexpr;
 	$sqi->add_column($thistab . "_matches", "$thistab.count");
 	$t->link = $thistab . "_matches";
@@ -2025,16 +2035,16 @@ class PaperSearch {
 	// collect columns
 	if ($tt == "ti") {
             $sqi->add_column("title", "Paper.title");
-	    $this->_clauseTermSetField($t, "title", $negated, $f);
+	    $this->_clauseTermSetField($t, "title", $negated, $sqi, $f);
 	} else if ($tt == "ab") {
 	    $sqi->add_column("abstract", "Paper.abstract");
-	    $this->_clauseTermSetField($t, "abstract", $negated, $f);
+	    $this->_clauseTermSetField($t, "abstract", $negated, $sqi, $f);
 	} else if ($tt == "au") {
 	    $sqi->add_column("authorInformation", "Paper.authorInformation");
-	    $this->_clauseTermSetField($t, "authorInformation", $negated, $f);
+	    $this->_clauseTermSetField($t, "authorInformation", $negated, $sqi, $f);
 	} else if ($tt == "co") {
 	    $sqi->add_column("collaborators", "Paper.collaborators");
-	    $this->_clauseTermSetField($t, "collaborators", $negated, $f);
+	    $this->_clauseTermSetField($t, "collaborators", $negated, $sqi, $f);
 	} else if ($tt == "au_cid") {
 	    $this->_clauseTermSetTable($t, $t->value, null, "AuthorConflict",
 				       "PaperConflict", "contactId",
@@ -2082,7 +2092,7 @@ class PaperSearch {
 	    $f[] = "(" . join(" and ", $q) . ")";
 	} else if ($tt == "pf") {
 	    $q = array();
-	    $this->_clauseTermSetFlags($t->flags, $q);
+	    $this->_clauseTermSetFlags($t, $sqi, $q);
 	    for ($i = 0; $i < count($t->value); $i += 2) {
 		if (is_array($t->value[$i + 1]))
 		    $q[] = "Paper." . $t->value[$i] . " in (" . join(",", $t->value[$i + 1]) . ")";
@@ -2107,7 +2117,7 @@ class PaperSearch {
 	} else if ($tt == "option") {
 	    // expanded from _clauseTermSetTable
 	    $q = array();
-	    $this->_clauseTermSetFlags($t->flags, $q);
+	    $this->_clauseTermSetFlags($t, $sqi, $q);
 	    $thistab = "Option_" . count($sqi->tables);
 	    $sqi->add_table($thistab, array("left join", "PaperOption", "$thistab.optionId=" . $t->value[0]));
 	    $sqi->add_column($thistab . "_x", "coalesce($thistab.value,0)" . $t->value[1]);
@@ -2145,7 +2155,8 @@ class PaperSearch {
     // Check the results of the query, reducing the possibly conservative
     // overestimate produced by the database to a precise result.
 
-    function _clauseTermCheckFlags($flags, &$row) {
+    private function _clauseTermCheckFlags($t, &$row) {
+        $flags = $t->flags;
 	if (($flags & self::F_AUTHOR) && $this->contact->actAuthorView($row))
 	    return false;
 	if (($flags & self::F_REVIEWER)
@@ -2161,6 +2172,10 @@ class PaperSearch {
 	if (($flags & self::F_PAPERNONBLIND)
 	    && !$this->contact->canViewAuthors($row, true))
 	    return false;
+        if ($flags & self::F_XVIEW) {
+            if ($t->type == "tag" && !$this->contact->canViewTags($row, true))
+                return false;
+        }
 	if ($flags & self::F_FALSE)
 	    return false;
 	return true;
@@ -2168,7 +2183,7 @@ class PaperSearch {
 
     function _clauseTermCheckField(&$t, &$row) {
         $field = $t->link;
-	if (!$this->_clauseTermCheckFlags($t->flags, $row)
+	if (!$this->_clauseTermCheckFlags($t, $row)
             || $row->$field == "")
 	    return false;
 
@@ -2199,7 +2214,7 @@ class PaperSearch {
 	    return $this->_clauseTermCheckField($t, $row);
 	else if ($tt == "re" || $tt == "conflict" || $tt == "revpref"
 		 || $tt == "ncmt" || $tt == "cmt") {
-	    if (!$this->_clauseTermCheckFlags($t->flags, $row))
+	    if (!$this->_clauseTermCheckFlags($t, $row))
 		return false;
 	    else {
 		$fieldname = $t->link;
@@ -2213,7 +2228,7 @@ class PaperSearch {
 	    else
 		return true;
 	} else if ($tt == "pf") {
-	    if (!$this->_clauseTermCheckFlags($t->flags, $row))
+	    if (!$this->_clauseTermCheckFlags($t, $row))
 		return false;
 	    else {
 		$ans = true;
@@ -2242,7 +2257,7 @@ class PaperSearch {
 		return $ans;
 	    }
 	} else if ($tt == "tag" || $tt == "topic" || $tt == "option") {
-	    if (!$this->_clauseTermCheckFlags($t->flags, $row))
+	    if (!$this->_clauseTermCheckFlags($t, $row))
 		return false;
 	    else {
 		$fieldname = $t->link;
@@ -2435,7 +2450,7 @@ class PaperSearch {
 	if (count($this->contactmatch))
 	    for ($i = 0; $i < count($this->contactmatch); $i++)
 		$q = str_replace("\1$i\1", self::sqlNumericSet($this->contactmatch[$i]), $q);
-	//$Conf->infoMsg(htmlspecialchars($q));
+        //$Conf->infoMsg(htmlspecialchars($q));
 
 	// actually perform query
 	if (!$Conf->qe("create temporary table $this->_matchTable $q", "while performing search"))
@@ -2444,7 +2459,8 @@ class PaperSearch {
 	// correct query, create thenmap and headingmap
 	$this->thenmap = ($qe->type == "then" ? array() : null);
 	$this->headingmap = array();
-	if ($this->preciseQuery || $this->thenmap !== null || $qe->get_float("heading")) {
+	if ($this->preciseQuery || ($this->needflags & self::F_XVIEW)
+            || $this->thenmap !== null || $qe->get_float("heading")) {
 	    $delete = array();
 	    $result = $Conf->qe("select * from $this->_matchTable", "while performing search");
 	    $qe_heading = $qe->get_float("heading");
