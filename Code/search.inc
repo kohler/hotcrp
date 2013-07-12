@@ -719,12 +719,12 @@ class PaperSearch {
 	}
 
 	$contacts = $this->_reviewerMatcher($m[0], $quoted);
+        $value = new SearchReviewValue($m[1], $contacts);
 	if ($this->privChair
-	    || (is_array($contacts) && count($contacts) == 1 && $contacts[0] == $this->cid))
-	    $qt[] = new SearchTerm("conflict", 0, new SearchReviewValue($m[1], $contacts));
+            || (is_array($contacts) && count($contacts) == 1 && $contacts[0] == $this->cid))
+	    $qt[] = new SearchTerm("conflict", 0, $value);
 	else {
-	    $value = new SearchReviewValue($m[1], $contacts);
-	    $qt[] = new SearchTerm("conflict", self::F_PAPERNONBLIND, $value);
+	    $qt[] = new SearchTerm("conflict", self::F_XVIEW, $value);
 	    if (($newvalue = $value->restrictContact($this->cid)))
 		$qt[] = new SearchTerm("conflict", 0, $newvalue);
 	}
@@ -1798,7 +1798,7 @@ class PaperSearch {
         if ($flags & self::F_XVIEW) {
             $this->needflags |= self::F_NONCONFLICT | self::F_REVIEWER;
             $sqi->add_manager_column();
-            if ($t->type == "au" || $t->type == "co")
+            if ($t->type == "au" || $t->type == "co" || $t->type == "conflict")
                 $this->needflags |= self::F_PAPERNONBLIND;
         }
 	if ($flags & self::F_FALSE)
@@ -2158,7 +2158,7 @@ class PaperSearch {
                 return false;
             if ($t->type == "tag" && !$this->contact->canViewTags($row, true))
                 return false;
-            if (($t->type == "au" || $t->type == "co")
+            if (($t->type == "au" || $t->type == "co" || $t->type == "conflict")
                 && !$this->contact->allowViewAuthors($row))
                 return false;
             if ($t->type == "pf" && $t->value[0] == "outcome"
