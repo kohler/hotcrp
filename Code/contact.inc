@@ -749,7 +749,8 @@ class Contact {
 	return false;
     }
 
-    function canViewPaperOption($prow, $opt, &$whyNot = null) {
+    function canViewPaperOption($prow, $opt, $forceShow = null,
+                                &$whyNot = null) {
 	global $Conf;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
@@ -767,7 +768,8 @@ class Contact {
             || (($admin || $this->isPC || ($prow && $prow->myReviewType > 0))
                 && (($opt->pcView == 0 && $admin)
                     || $opt->pcView == 1
-                    || ($opt->pcView == 2 && $this->canViewAuthors($prow)))))
+                    || ($opt->pcView == 2
+                        && $this->canViewAuthors($prow, $forceShow)))))
             return true;
 	$whyNot["permission"] = 1;
 	return false;

@@ -720,7 +720,7 @@ class PaperTable {
                 continue;
 
             // display it
-            $folded = $showAllOptions && !$Me->canViewPaperOption($prow, $o);
+            $folded = $showAllOptions && !$Me->canViewPaperOption($prow, $o, false);
             if ($o->displayType != PaperOption::DT_NORMAL) {
                 $x = "<div class='pgsm" . ($folded ? " fx8" : "") . "'>"
                     . "<div class='papt'><span class='papfn'>"
@@ -965,8 +965,7 @@ class PaperTable {
 	foreach ($opt as $o) {
 	    if (!($displayTypeFlags & (1 << $o->displayType))
 		|| ($o->isFinal && !$this->canUploadFinal)
-                || ($prow && !$Me->canViewPaperOption($prow, $o)
-                    && !$Me->allowAdminister($prow)))
+                || ($prow && !$Me->canViewPaperOption($prow, $o, true)))
 		continue;
 
 	    $optid = "opt$o->optionId";

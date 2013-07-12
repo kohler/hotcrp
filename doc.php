@@ -58,8 +58,7 @@ if (!isset($Error)
 if (!isset($Error) && !$Me->canDownloadPaper($prow, $whyNot))
     $Error = whyNotText($whyNot, "view");
 if (!isset($Error) && $documentType > 0
-    && !$Me->canViewPaperOption($prow, $documentType)
-    && !$Me->allowAdminister($prow))
+    && !$Me->canViewPaperOption($prow, $documentType, true))
     $Error = "You don’t have permission to view this document.";
 if (!isset($Error) && $need_docid && !$docid)
     $Error = "No such attachment.";

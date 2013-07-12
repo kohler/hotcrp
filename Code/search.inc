@@ -958,7 +958,6 @@ class PaperSearch {
     }
 
     function _searchOptions($word, &$qt, $error) {
-	$type = "option";
 	if (preg_match('/\A(.*?)([:#][<>!=]?=?|[<>!=]=?)(.*)\z/', $word, $m)) {
 	    $oname = $m[1];
 	    if ($m[2][0] == ":" || $m[2][0] == "#")
@@ -1028,15 +1027,7 @@ class PaperSearch {
 	// add expressions
 	$qz = array();
 	foreach ((count($qo) ? $qo : $qxo) as $o)
-	    if ($this->privChair || ($this->amPC && $o[0]->pcView == 1))
-		$qz[] = new SearchTerm($type, 0, array($o[0]->optionId, $o[1]));
-	    else {
-		if ($o[0]->pcView) {
-		    $rt = self::F_REVIEWER | ($o[0]->pcView == 2 ? self::F_PAPERNONBLIND : 0);
-		    $qz[] = new SearchTerm($type, $rt, array($o[0]->optionId, $o[1]));
-		}
-		$qz[] = new SearchTerm($type, self::F_AUTHOR, array($o[0]->optionId, $o[1]));
-	    }
+            $qz[] = new SearchTerm("option", self::F_XVIEW, $o);
 	if ($oname === "none")
 	    $qz = array(SearchTerm::negate(SearchTerm::combine("or", $qz)));
 	$qt = array_merge($qt, $qz);
@@ -1798,7 +1789,8 @@ class PaperSearch {
         if ($flags & self::F_XVIEW) {
             $this->needflags |= self::F_NONCONFLICT | self::F_REVIEWER;
             $sqi->add_manager_column();
-            if ($t->type == "au" || $t->type == "co" || $t->type == "conflict")
+            if ($t->type == "au" || $t->type == "co" || $t->type == "conflict"
+                || $t->type == "option")
                 $this->needflags |= self::F_PAPERNONBLIND;
         }
 	if ($flags & self::F_FALSE)
@@ -2099,7 +2091,7 @@ class PaperSearch {
 	    $q = array();
 	    $this->_clauseTermSetFlags($t, $sqi, $q);
 	    $thistab = "Option_" . count($sqi->tables);
-	    $sqi->add_table($thistab, array("left join", "PaperOption", "$thistab.optionId=" . $t->value[0]));
+	    $sqi->add_table($thistab, array("left join", "PaperOption", "$thistab.optionId=" . $t->value[0]->optionId));
 	    $sqi->add_column($thistab . "_x", "coalesce($thistab.value,0)" . $t->value[1]);
 	    $t->link = $thistab . "_x";
 	    $q[] = $sqi->columns[$t->link];
@@ -2163,6 +2155,9 @@ class PaperSearch {
                 return false;
             if ($t->type == "pf" && $t->value[0] == "outcome"
                 && !$this->contact->canViewDecision($row, true))
+                return false;
+            if ($t->type == "option"
+                && !$this->contact->canViewPaperOption($row, $t->value[0], true))
                 return false;
         }
 	if ($flags & self::F_FALSE)
