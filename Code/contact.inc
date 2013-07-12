@@ -476,8 +476,10 @@ class Contact {
             && $prow->managerContactId != $this->contactId)
             return false;
         return ($this->privChair
-                || ($prow && $prow->managerContactId && $prow->managerContactId == $this->contactId))
-            && (!$prow || $prow->conflictType <= 0 || self::override_conflict($forceShow));
+                || ($prow && $prow->managerContactId
+                    && $prow->managerContactId == $this->contactId))
+            && (!$prow || $prow->conflictType <= 0
+                || self::override_conflict($forceShow));
     }
 
     public function actPC($prow, $forceShow = null) {
@@ -1241,14 +1243,14 @@ class Contact {
     function canViewDecision($prow, $forceShow = null) {
 	global $Conf;
 	$conflictType = $prow ? $this->actConflictType($prow) : 0;
-	if (($prow && $conflictType >= CONFLICT_AUTHOR && $Conf->timeAuthorViewDecision())
-	    || ($this->isPC && $Conf->timePCViewDecision($prow && $conflictType > 0))
+        if ($this->canAdminister($prow, $forceShow)
+            || ($prow && $conflictType >= CONFLICT_AUTHOR
+                && $Conf->timeAuthorViewDecision())
+            || ($this->isPC
+                && $Conf->timePCViewDecision($prow && $conflictType > 0))
 	    || ($prow && defval($prow, "myReviewType", 0) > 0
 		&& defval($prow, "myReviewSubmitted", 0) > 0
-		&& $Conf->timeReviewerViewDecision())
-	    || ($this->allowAdminister($prow)
-                && (!$prow || $conflictType == 0
-                    || self::override_conflict($forceShow))))
+		&& $Conf->timeReviewerViewDecision()))
 	    return true;
 	return false;
     }

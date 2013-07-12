@@ -705,20 +705,10 @@ class PaperSearch {
         }
 
         $value = array("outcome", $value);
-        $nqt = count($qt);
-        if ($this->privChair
-            || ($this->amPC && $Conf->timePCViewDecision(true)))
+        if ($this->amPC && $Conf->timePCViewDecision(true))
             $qt[] = new SearchTerm("pf", 0, $value);
-        else {
-            if ($this->amPC && $Conf->timePCViewDecision(false))
-                $qt[] = new SearchTerm("pf", self::F_NONCONFLICT, $value);
-            else if ($Conf->timeReviewerViewDecision())
-                $qt[] = new SearchTerm("pf", self::F_REVIEWER, $value);
-            if ($Conf->timeAuthorViewDecision())
-                $qt[] = new SearchTerm("pf", self::F_AUTHOR, $value);
-        }
-        if (count($qt) == $nqt)
-            $qt[] = new SearchTerm("f");
+        else
+            $qt[] = new SearchTerm("pf", self::F_XVIEW, $value);
     }
 
     function _searchConflict($word, &$qt, $quoted) {
@@ -2170,6 +2160,9 @@ class PaperSearch {
                 return false;
             if (($t->type == "au" || $t->type == "co")
                 && !$this->contact->allowViewAuthors($row))
+                return false;
+            if ($t->type == "pf" && $t->value[0] == "outcome"
+                && !$this->contact->canViewDecision($row, true))
                 return false;
         }
 	if ($flags & self::F_FALSE)
