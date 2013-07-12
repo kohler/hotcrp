@@ -1215,7 +1215,7 @@ class PaperSearch {
 	    else if (strcasecmp($word, "unsubmitted") == 0 || strcasecmp($word, "unsubmit") == 0 || strcasecmp($word, "unsub") == 0)
 		$qt[] = new SearchTerm("pf", 0, array("timeSubmitted", "<=0", "timeWithdrawn", "<=0"));
 	    else {
-		$this->warn("Valid search statuses are 'withdrawn', 'submitted', and 'unsubmitted'.");
+		$this->warn("Valid search statuses are “withdrawn”, “submitted”, and “unsubmitted”.");
 		$qt[] = new SearchTerm("f");
 	    }
 	}
@@ -1238,7 +1238,7 @@ class PaperSearch {
 		$x = simplifyWhitespace($word);
 		$rounds = matchValue($Conf->settings["rounds"], $x);
 		if (count($rounds) == 0) {
-		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; doesn&rsquo;t match a review round.");
+		    $this->warn("“" . htmlspecialchars($x) . "” doesn’t match a review round.");
 		    $qt[] = new SearchTerm("f");
 		} else
 		    $qt[] = new SearchTerm("revadj", 0, array("round" => $rounds));
