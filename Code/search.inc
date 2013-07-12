@@ -2118,7 +2118,7 @@ class PaperSearch {
 	    $ff = array();
 	    $this->_clauseTermSet($t->value, !$negated, $sqi, $ff);
 	    if (!count($ff))
-		$ff[] = "false";
+		$ff[] = "true";
 	    $f[] = "not (" . join(" or ", $ff) . ")";
 	} else if ($tt == "and") {
 	    $ff = array();
