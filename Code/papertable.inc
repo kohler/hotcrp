@@ -567,10 +567,10 @@ class PaperTable {
     function paptabAuthors($prow) {
 	global $Conf, $Me, $forceShow;
 
-        echo "<div class='pg pgtop fn8'>";
 	$viewable = $Me->canViewAuthors($prow, $forceShow);
 	if (!$viewable && !$Me->allowAdminister($prow)) {
-	    echo $this->papt("authorInformation", "Authors"),
+	    echo "<div class='pg pgtop'>",
+                $this->papt("authorInformation", "Authors"),
                 "<div class='papb'><i>Hidden for blind review</i></div>",
                 "</div>\n\n";
 	    return;
@@ -614,7 +614,8 @@ class PaperTable {
 
 	// anonymity folding
 	if (!$viewable) {
-            echo $this->papt("authorInformation", "Authors"),
+            echo "<div class='pg pgtop fn8'>",
+                $this->papt("authorInformation", "Authors"),
                 "<div class='papb'><a class='q fn8' ",
 		"href='javascript:void fold(\"paper\", 0, 8)' title='Show authors'>",
 		"+&nbsp;<i>Hidden for blind review</i></a>";
@@ -626,6 +627,7 @@ class PaperTable {
 		. "href='javascript:void fold(\"paper\", 1, 8)' "
 		. "title='Hide authors'>[blind]</a> ";
 	} else {
+            echo "<div class='pg pgtop'>";
 	    $inauthors1 = $inauthors2 = $afterauthors = "";
 	    if ($Conf->subBlindOptional() && $prow->blind)
 		$inauthors1 = $inauthors2 = "[blind] ";
