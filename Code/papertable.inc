@@ -567,8 +567,8 @@ class PaperTable {
     function paptabAuthors($prow) {
 	global $Conf, $Me, $forceShow;
 
-	$viewable = $Me->canViewAuthors($prow, $forceShow);
-	if (!$viewable && !$Me->allowAdminister($prow)) {
+	$viewable = $Me->canViewAuthors($prow, false);
+	if (!$viewable && !$Me->canViewAuthors($prow, true)) {
 	    echo "<div class='pg pgtop'>",
                 $this->papt("authorInformation", "Authors"),
                 "<div class='papb'><i>Hidden for blind review</i></div>",
@@ -1597,12 +1597,11 @@ class PaperTable {
 	if ($Me->canSetRank($prow))
 	    $this->papstripRank($prow);
 	$this->papstripWatch();
-	if (($this->admin || ($Me->isPC && $Me->canViewAuthors($prow, false)))
-	    && !$this->editable)
-	    $this->papstripPCConflicts($prow);
-	if (($Me->canAdminister($prow) || $Me->canViewAuthors($prow, false))
-	    && !$this->editable)
-	    $this->papstripCollaborators($prow);
+        if (($this->admin || ($Me->isPC && $Me->canViewAuthors($prow)))
+            && !$this->editable)
+            $this->papstripPCConflicts($prow);
+        if ($Me->canViewAuthors($prow, true) && !$this->editable)
+            $this->papstripCollaborators($prow);
 
 	$foldShepherd = $Me->canSetOutcome($prow) && $prow->outcome <= 0
 	    && $prow->shepherdContactId == 0 && $this->mode != "assign";

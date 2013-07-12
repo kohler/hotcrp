@@ -475,22 +475,12 @@ class PaperSearch {
 	else
 	    $extra = null;
 
-	if ($this->privChair
-	    || ($this->amPC && !$blind)
-	    || ($this->amPC && $Conf->subBlindNever()))
-	    $qt[] = new SearchTerm($rtype, 0, $word, $extra);
-	else {
-	    if ($blind && $Conf->subBlindAlways()
-		&& !$Conf->timeReviewerViewAcceptedAuthors())
-		/* only look at papers you submitted */;
-	    else if ($this->amPC)
-		$qt[] = new SearchTerm($rtype, self::F_PAPERNONBLIND, $word, $extra);
-	    else {
-		$rt = self::F_REVIEWER | ($blind ? self::F_PAPERNONBLIND : 0);
-		$qt[] = new SearchTerm($rtype, $rt, $word, $extra);
-	    }
-	    $qt[] = new SearchTerm($rtype, self::F_AUTHOR, $word, $extra);
-	}
+        if ($this->privChair || $this->amPC)
+            $qt[] = new SearchTerm($rtype, self::F_XVIEW, $word, $extra);
+        else {
+            $qt[] = new SearchTerm($rtype, self::F_XVIEW | self::F_REVIEWER, $word, $extra);
+            $qt[] = new SearchTerm($rtype, self::F_XVIEW | self::F_AUTHOR, $word, $extra);
+        }
     }
 
     static function _cleanCompar($compar) {
@@ -1816,10 +1806,10 @@ class PaperSearch {
 		$q[] = "Paper.blind=0";
 	}
         if ($flags & self::F_XVIEW) {
-            if ($t->type == "tag") {
-                $this->needflags |= self::F_NONCONFLICT;
-                $sqi->add_manager_column();
-            }
+            $this->needflags |= self::F_NONCONFLICT | self::F_REVIEWER;
+            $sqi->add_manager_column();
+            if ($t->type == "au" || $t->type == "co")
+                $this->needflags |= self::F_PAPERNONBLIND;
         }
 	if ($flags & self::F_FALSE)
 	    $q[] = "false";
@@ -2171,10 +2161,15 @@ class PaperSearch {
 	    return false;
 	// NB: F_REVIEWER must be set by caller if necessary
 	if (($flags & self::F_PAPERNONBLIND)
-	    && !$this->contact->canViewAuthors($row, true))
+	    && !$this->contact->canViewAuthors($row))
 	    return false;
         if ($flags & self::F_XVIEW) {
+            if (!$this->contact->canViewPaper($row))
+                return false;
             if ($t->type == "tag" && !$this->contact->canViewTags($row, true))
+                return false;
+            if (($t->type == "au" || $t->type == "co")
+                && !$this->contact->allowViewAuthors($row))
                 return false;
         }
 	if ($flags & self::F_FALSE)

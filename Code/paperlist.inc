@@ -735,7 +735,7 @@ class PaperList extends BaseList {
 		$tt .= "<div id=\"$fdef->name.$row->paperId\" class=\"fx";
 		if ($fdef->name != "authors")
 		    $tt .= $fdef->foldnum;
-		else if ($this->contact->canViewAuthors($row, true)) {
+		else if ($this->contact->canViewAuthors($row, false)) {
 		    $tt .= "1";
                     $this->any->openau = true;
 		} else {

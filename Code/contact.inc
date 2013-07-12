@@ -705,7 +705,11 @@ class Contact {
 	return $this->canViewPaper($prow, $whyNot, true);
     }
 
-    function canViewAuthors($prow, $blindWins, &$whyNot = null) {
+    function allowViewAuthors($prow, &$whyNot = null) {
+        return $this->canViewAuthors($prow, true, $whyNot);
+    }
+
+    function canViewAuthors($prow, $forceShow = null, &$whyNot = null) {
 	global $Conf;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
@@ -721,14 +725,16 @@ class Contact {
                          && !(isset($prow->paperBlind) ? $prow->paperBlind : $prow->blind))
                      || ($bs == BLIND_UNTILREVIEW
                          && defval($prow, "myReviewSubmitted")));
-	if (($conflictType >= CONFLICT_AUTHOR
-	     && (!$this->isPC || $nonblind || !$blindWins))
-	    || ($nonblind && $prow->myReviewType > 0
-		&& $Conf->timeReviewerViewSubmittedPaper())
-	    || ($nonblind && $this->isPC
-                && ($prow->timeSubmitted > 0
-                    || ($prow->timeWithdrawn <= 0 && $Conf->setting("pc_seeall") > 0))))
-	    return true;
+        if (($nonblind && $prow->timeSubmitted > 0
+             && ($this->isPC
+                 || ($prow->myReviewType > 0
+                     && $Conf->timeReviewerViewSubmittedPaper())))
+            || ($nonblind && $prow->timeWithdrawn <= 0 && $this->isPC
+                && $Conf->setting("pc_seeall") > 0)
+            || ($this->privChair || $this->allowAdminister($prow)
+                ? self::override_conflict($forceShow)
+                : $conflictType >= CONFLICT_AUTHOR))
+            return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
@@ -750,7 +756,7 @@ class Contact {
 	    $whyNot["invalidId"] = "paper";
 	    return false;
 	}
-        $admin = $this->allowAdminister($prow);
+        $admin = $this->privChair || $this->allowAdminister($prow);
 	$conflictType = $this->actConflictType($prow);
 	// policy
 	if (!$this->canViewPaper($prow, $whyNot))
@@ -759,7 +765,7 @@ class Contact {
             || (($admin || $this->isPC || ($prow && $prow->myReviewType > 0))
                 && (($opt->pcView == 0 && $admin)
                     || $opt->pcView == 1
-                    || ($opt->pcView == 2 && $this->canViewAuthors($prow, true)))))
+                    || ($opt->pcView == 2 && $this->canViewAuthors($prow)))))
             return true;
 	$whyNot["permission"] = 1;
 	return false;
@@ -1213,7 +1219,7 @@ class Contact {
     function canViewCommentIdentity($prow, $crow, $forceShow) {
 	global $Conf;
 	if ($crow && $crow->forAuthors > 1)
-	    return $this->canViewAuthors($prow, false);
+	    return $this->canViewAuthors($prow, $forceShow);
         $forceShow = self::override_conflict($forceShow);
 	$crow_contactId = 0;
 	if ($crow && isset($crow->commentContactId))

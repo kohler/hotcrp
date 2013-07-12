@@ -238,8 +238,7 @@ class AuthorsPaperColumn extends PaperColumn {
         return "Authors";
     }
     public function content($pl, $row) {
-	if (!$pl->contact->allowAdminister($row)
-            && !$pl->contact->canViewAuthors($row, true))
+	if (!$pl->contact->canViewAuthors($row, true))
 	    return "";
 	cleanAuthor($row);
 	$aus = array();
@@ -298,8 +297,7 @@ class CollabPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return ($row->collaborators == ""
                 || strcasecmp($row->collaborators, "None") == 0
-                || (!$pl->contact->allowAdminister($row)
-                    && !$pl->contact->canViewAuthors($row, true)));
+                || !$pl->contact->canViewAuthors($row, true));
     }
     public function content($pl, $row) {
         $x = "";
