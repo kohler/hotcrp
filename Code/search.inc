@@ -546,11 +546,15 @@ class PaperSearch {
 	return $a;
     }
 
-    function _reviewerMatcher($word, $quoted, $pc_only = false) {
+    function _reviewerMatcher($word, $quoted, $type) {
 	if (!$quoted && ($word == "" || strcasecmp($word, "pc") == 0))
 	    return array_keys(pcMembers());
 	else if (!$quoted && strcasecmp($word, "me") == 0)
 	    return array($this->cid);
+        else if (!$quoted && $type == 1 && ($word == "no" || $word == "none"))
+            return "=0";
+        else if (!$quoted && $type == 1 && ($word == "yes" || $word == "any"))
+            return "!=0";
 	else if (!$quoted && $this->amPC && count(($pctags = pcTags()))) {
 	    $negtag = $word[0] == "-";
 	    $tag = strtolower($negtag ? substr($word, 1) : $word);
@@ -558,8 +562,7 @@ class PaperSearch {
 		$ids = self::_pcContactIdsWithTag($tag);
 		if ($negtag) {
 		    $this->contactmatch[] = "\2contactId" . self::sqlNumericSet($ids, true);
-		    if (!$pc_only)
-			$this->contactmatchPC = false;
+                    $this->contactmatchPC = $this->contactmatchPC && $type == 0;
 		    return "\1" . (count($this->contactmatch) - 1) . "\1";
 		} else
 		    return $ids;
@@ -570,8 +573,7 @@ class PaperSearch {
 	if (!count($this->contactmatch)
 	    || $this->contactmatch[count($this->contactmatch) - 1] != $qword) {
 	    $this->contactmatch[] = sqlq_for_like($word);
-	    if (!$pc_only)
-		$this->contactmatchPC = false;
+            $this->contactmatchPC = $this->contactmatchPC && $type == 0;
 	}
 	return "\1" . (count($this->contactmatch) - 1) . "\1";
     }
@@ -595,7 +597,7 @@ class PaperSearch {
 	    return;
 	}
 
-	$contacts = ($m[0] == "" ? null : $this->_reviewerMatcher($m[0], $quoted));
+	$contacts = ($m[0] == "" ? null : $this->_reviewerMatcher($m[0], $quoted, 0));
 	$value = new SearchReviewValue($m[1], $contacts);
         $qt[] = new SearchTerm("re", $rt | self::F_XVIEW, $value);
     }
@@ -634,7 +636,7 @@ class PaperSearch {
 	    return;
 	}
 
-	$contacts = $this->_reviewerMatcher($m[0], $quoted);
+	$contacts = $this->_reviewerMatcher($m[0], $quoted, 0);
         $value = new SearchReviewValue($m[1], $contacts);
 	if ($this->privChair
             || (is_array($contacts) && count($contacts) == 1 && $contacts[0] == $this->cid))
@@ -674,7 +676,7 @@ class PaperSearch {
 	    return;
 	}
 
-	$contacts = ($m[0] == "" ? null : $contacts = $this->_reviewerMatcher($m[0], $quoted));
+	$contacts = ($m[0] == "" ? null : $contacts = $this->_reviewerMatcher($m[0], $quoted, 0));
 	$value = new SearchReviewValue($m[1], $contacts);
         $rt = ($ctype == "response" ? self::F_AUTHORRESPONSE
                : ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0));
@@ -691,7 +693,7 @@ class PaperSearch {
 
 	if (preg_match('/\A(.+?[^:=<>!])([:=<>!])(.*)\z/s', $word, $m)
 	    && !ctype_digit($m[1])) {
-	    $contacts = $this->_reviewerMatcher($m[1], $quoted);
+	    $contacts = $this->_reviewerMatcher($m[1], $quoted, 0);
 	    $word = ($m[2] == ":" ? $m[3] : $m[2] . $m[3]);
 	    $contactword = $m[1] . ":";
 	}
@@ -776,7 +778,7 @@ class PaperSearch {
 	$contacts = null;
 	if (preg_match('/\A(.*?[^:=<>!])([:=<>!])(.*)\z/s', $word, $m)
 	    && !ctype_digit($m[1])) {
-	    $contacts = $this->_reviewerMatcher($m[1], $quoted);
+	    $contacts = $this->_reviewerMatcher($m[1], $quoted, 0);
 	    $word = ($m[2] == ":" ? $m[3] : $m[2] . $m[3]);
 	}
 
@@ -1060,30 +1062,13 @@ class PaperSearch {
 	if (($keyword ? $keyword == "revpref" : isset($this->fields["revpref"]))
 	    && $this->privChair)
 	    $this->_searchRevpref($word, $qt, $quoted);
-        // XXX "lead" should probably obey "can PC members see all
-        // reviews/reviewer names" settings. It does not.
-	if (($keyword ? $keyword == "lead" : isset($this->fields["lead"]))
-	    && $this->amPC) {
-	    if ($word == "none")
-		$x = "=0";
-	    else if ($word == "any")
-		$x = "!=0";
-	    else
-		$x = $this->_reviewerMatcher($word, $quoted, true);
-	    $rt = ($this->privChair ? 0 : self::F_NONCONFLICT);
-	    $qt[] = new SearchTerm("pf", $rt, array("leadContactId", $x));
+	if ($keyword ? $keyword == "lead" : isset($this->fields["lead"])) {
+            $x = $this->_reviewerMatcher($word, $quoted, 1);
+	    $qt[] = new SearchTerm("pf", self::F_XVIEW, array("leadContactId", $x));
 	}
-	if (($keyword ? $keyword == "shepherd" : isset($this->fields["shepherd"]))
-	    && $this->amPC) {
-	    // XXX searching author's own shepherds?
-	    if ($word == "none")
-		$x = "=0";
-	    else if ($word == "any")
-		$x = "!=0";
-	    else
-		$x = $this->_reviewerMatcher($word, $quoted, true);
-	    $rt = ($this->privChair ? 0 : self::F_NONCONFLICT);
-	    $qt[] = new SearchTerm("pf", $rt, array("shepherdContactId", $x));
+	if ($keyword ? $keyword == "shepherd" : isset($this->fields["shepherd"])) {
+            $x = $this->_reviewerMatcher($word, $quoted, 1);
+	    $qt[] = new SearchTerm("pf", self::F_XVIEW, array("shepherdContactId", $x));
 	}
 	if (($keyword ? $keyword == "tag" : isset($this->fields["tag"]))
 	    || $keyword == "order" || $keyword == "rorder")
@@ -2060,6 +2045,12 @@ class PaperSearch {
                             ++$row->$fieldname;
                     }
             }
+            if ($t->type == "pf" && $t->value[0] == "leadContactId"
+                && !$this->contact->actPC($row))
+                return false;
+            if ($t->type == "pf" && $t->value[0] == "shepherdContactId"
+                && !($this->contact->actPC($row) || $this->contact->canViewDecision($row)))
+                return false;
         }
 	if ($flags & self::F_FALSE)
 	    return false;
