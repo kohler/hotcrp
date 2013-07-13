@@ -24,6 +24,7 @@ $searchKeywords = array("ti" => "ti", "title" => "ti",
 	"iext" => "iext", "iexternal" => "iext",
 	"cmt" => "cmt", "comment" => "cmt",
 	"aucmt" => "aucmt", "aucomment" => "aucmt",
+        "resp" => "response", "response" => "response",
 	"tag" => "tag",
 	"notag" => "notag",
 	"ord" => "order", "order" => "order",
@@ -279,8 +280,7 @@ class PaperSearch {
     const F_TIMEWITHDRAWN = 0x00800;
     const F_TIMESUBMITTED = 0x01000;
     const F_AUTHORCOMMENT = 0x02000;
-    const F_REVIEWERCOMMENT = 0x04000;
-    const F_AUTHORRESPONSE = 0x08000;
+    const F_AUTHORRESPONSE = 0x04000;
     const F_FALSE = 0x10000;
     const F_XVIEW = 0x20000;
 
@@ -502,11 +502,11 @@ class PaperSearch {
 	    return $compar;
     }
 
-    static function _matchCompar($text, $quoted = true) {
+    static function _matchCompar($text, $quoted) {
 	$text = trim($text);
-	if (($text == "any" || $text == "") && !$quoted)
+	if (($text == "any" || $text == "" || $text == "yes") && !$quoted)
 	    return array("", ">0");
-	else if ($text == "none" && !$quoted)
+	else if (($text == "none" || $text == "no") && !$quoted)
 	    return array("", "=0");
 	else if (ctype_digit($text))
 	    return array("", "=" . $text);
@@ -674,8 +674,6 @@ class PaperSearch {
     }
 
     function _searchComment($word, $ctype, &$qt, $quoted) {
-	global $Conf;
-
 	$m = self::_matchCompar($word, $quoted);
 	if (($type = self::_comparTautology($m))) {
 	    $qt[] = new SearchTerm($type);
@@ -684,13 +682,14 @@ class PaperSearch {
 
 	$contacts = ($m[0] == "" ? null : $contacts = $this->_reviewerMatcher($m[0], $quoted));
 	$value = new SearchReviewValue($m[1], $contacts);
-        $rt = ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0) | self::F_XVIEW;
-        $qt[] = new SearchTerm("cmt", $rt, $value);
+        $rt = ($ctype == "response" ? self::F_AUTHORRESPONSE
+               : ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0));
+        $qt[] = new SearchTerm("cmt", $rt | self::F_XVIEW, $value);
     }
 
     function _searchReviews($word, $rf, $field, &$qt, $quoted,
                             $noswitch = false) {
-	global $Conf, $Opt;
+	global $Opt;
 	$countexpr = ">0";
 	$contacts = null;
 	$contactword = "";
@@ -1061,7 +1060,7 @@ class PaperSearch {
 	foreach (array("re", "cre", "ire", "pri", "cpri", "ipri", "sec", "csec", "isec", "ext", "cext", "iext") as $rtype)
 	    if ($keyword ? $keyword == $rtype : isset($this->fields[$rtype]))
 		$this->_searchReviewer($word, $rtype, $qt, $quoted);
-	foreach (array("cmt", "aucmt") as $ctype)
+	foreach (array("cmt", "aucmt", "response") as $ctype)
 	    if ($keyword ? $keyword == $ctype : isset($this->fields[$ctype]))
 		$this->_searchComment($word, $ctype, $qt, $quoted);
 	if (($keyword ? $keyword == "revpref" : isset($this->fields["revpref"]))
@@ -1887,7 +1886,7 @@ class PaperSearch {
             if ($Conf->sversion >= 53) {
                 if ($t->flags & self::F_AUTHORRESPONSE)
                     $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
-                else if ($t->flags & (self::F_AUTHOR | self::F_AUTHORCOMMENT))
+                else if ($t->flags & self::F_AUTHORCOMMENT)
                     $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
             } else
                 // lame out: don't support old schema
@@ -1958,7 +1957,7 @@ class PaperSearch {
             if ($t->value->contactsql)
                 $thistab = "Comments_" . count($sqi->tables);
             else {
-                $rtype = $t->flags & (self::F_REVIEWERCOMMENT | self::F_AUTHORCOMMENT | self::F_AUTHORRESPONSE);
+                $rtype = $t->flags & (self::F_AUTHORCOMMENT | self::F_AUTHORRESPONSE);
                 $thistab = "Numcomments_" . $rtype;
             }
 	    $f[] = $this->_clauseTermSetComments($thistab, $t->value->contactWhere("contactId"), $t, $sqi);
