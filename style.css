@@ -1816,7 +1816,7 @@ div.papstrip textarea, div.papstrip select {
 div.psc {
 	margin-bottom: 0.65em;
 	padding-top: 0.55em;
-	border-top: 1px solid #e8e8e8;
+	border-top: 1px solid #eeeeee;
 }
 div.psc.psc1 {
 	border-top: 0 none;
@@ -1869,7 +1869,7 @@ textarea#foldtags_d {
 	margin: 0;
 	width: 96%;
 }
-select#foldlead_d, select#foldshepherd_d, select#folddecision_d {
+select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmanager_d {
 	width: 99%;
 }
 

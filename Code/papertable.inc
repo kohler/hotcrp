@@ -1135,56 +1135,46 @@ class PaperTable {
 	    "</p></div></div>\n";
     }
 
-    function _papstripLeadShepherd($prow, $type, $name, $showedit, $wholefold) {
+    private function _papstripLeadShepherd($prow, $type, $name, $showedit, $wholefold) {
 	global $Conf, $Me, $Error, $linkExtra;
-	$editable = $Me->canAdminister($prow);
+	$editable = ($type == "manager" ? $Me->privChair : $Me->canAdminister($prow));
 
 	$field = $type . "ContactId";
 	if ($prow->$field == 0 && !$editable)
 	    return;
 	$value = $prow->$field;
 	$pc = pcMembers();
-	if ($editable)
-	    echo "<div id='fold$type' class='fold", ($showedit ? "o" : "c"),
-		" fold2", ($wholefold ? "c" : "o"), "'>";
-	echo $this->_papstripBegin(null, null, "fx2");
 
-	if ($editable) {
-	    echo "<form id='${type}form' class='fold7o' method='post' action='", hoturl_post("review", "p=" . $prow->paperId . $linkExtra), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"${type}form\")'>",
+        echo "<div id='fold${type}' class='foldc fold2", ($wholefold ? "c" : "o"), "'>",
+            $this->_papstripBegin(null, true, "fx2"),
+            $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
+            "<div class='psv'><p class='fn odname'>";
+        if ($value)
+            echo isset($pc[$value]) ? Text::name_html($pc[$value]) : "Unknown!";
+        else
+            echo "None";
+        echo "</p>";
+
+        if ($editable) {
+	    echo "<form id='${type}form' class='fx fold7o' method='post' action='", hoturl_post("review", "p=" . $prow->paperId . $linkExtra), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitstripselector(\"${type}\")'>",
 		"<div class='inform'>",
 		"<input type='hidden' name='set$type' value='1' />";
 	    $Conf->footerScript("Miniajax.onload(\"${type}form\")");
-	}
 
-	echo $this->papt($type, $name, array("type" => "ps", "editfolder" => ($editable && !$showedit ? $type : 0))),
-	    "<div class='psv'>";
-
-	if ($editable) {
 	    $opt = array("0" => "None");
 	    foreach ($pc as $row)
 		$opt[htmlspecialchars($row->email)] = Text::name_html($row);
 
-	    echo "<div class='fx'>",
-		tagg_select($type, $opt,
-			    ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
-			    array("onchange" => "Miniajax.submit('${type}form')",
-				  "id" => "fold${type}_d")),
+	    echo tagg_select($type, $opt,
+                             ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
+                             array("onchange" => "dosubmitstripselector('${type}')",
+                                   "id" => "fold${type}_d")),
 		" <input class='b fx7' type='submit' value='Save' />",
 		" <span id='${type}formresult'></span>",
-		"</div><div class='fn'><p class='odname'>";
-	}
+		"</div></form>";
+        }
 
-	if (!$value)
-	    echo "None";
-	else if (!isset($pc[$value]))
-	    echo "Unknown!";
-	else
-	    echo Text::name_html($pc[$value]);
-
-	echo "</p></div>";
-	if ($editable)
-	    echo "</div></div></form></div>";
-	echo "</div>\n";
+        echo "</div></div></div>\n";
     }
 
     function papstripLead($prow, $showedit) {
@@ -1253,23 +1243,23 @@ class PaperTable {
 	}
     }
 
-    function papstripOutcomeSelector($prow, $showedit) {
+    function papstripOutcomeSelector($prow) {
 	global $Conf, $rf, $Error, $linkExtra;
 	if (!$rf)
 	    $rf = reviewForm();
-	echo $this->_papstripBegin("decision", !$showedit && defval($_REQUEST, "atab") != "decision"),
-	    $this->papt("decision", "Decision", array("type" => "ps", "editfolder" => ($showedit ? 0 : "decision"))),
-	    "<div class='psv'><form id='decisionform' class='fx fold7o' method='post' action='", hoturl_post("review", "p=" . $prow->paperId . $linkExtra), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitdecision()'>",
+	echo $this->_papstripBegin("decision", defval($_REQUEST, "atab") != "decision"),
+	    $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
+	    "<div class='psv'><form id='decisionform' class='fx fold7o' method='post' action='", hoturl_post("review", "p=" . $prow->paperId . $linkExtra), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitstripselector(\"decision\")'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setdecision' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
 	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
-	echo decisionSelector($prow->outcome, null, " onchange='dosubmitdecision()' id='folddecision_d'"),
+	echo decisionSelector($prow->outcome, null, " onchange='dosubmitstripselector(\"decision\")' id='folddecision_d'"),
 	    " <input class='b fx7' type='submit' value='Save' />",
 	    " <span id='decisionformresult'></span>",
-	    "</div></form><div class='fn'>",
+	    "</div></form><p class='fn odname'>",
 	    $rf->options["outcome"][$prow->outcome],
-	    "</div></div></div>\n";
+	    "</p></div></div>\n";
 	$Conf->footerScript("Miniajax.onload(\"decisionform\")");
     }
 
@@ -1588,8 +1578,9 @@ class PaperTable {
     function _papstrip() {
 	global $Conf, $Me, $forceShow, $linkExtra;
 	$prow = $this->prow;
-        if ($prow->managerContactId && $Me->canViewPaperManager($prow))
-            $this->papstripManager($prow, $this->mode == "assign");
+        if ($prow->managerContactId && $Me->canViewPaperManager($prow)
+            && $this->mode != "assign")
+            $this->papstripManager($prow, false);
 	if ($Me->canViewTags($prow, $forceShow))
 	    $this->papstripTags($prow, "review");
 	if ($Me->canSetRank($prow))
@@ -1603,8 +1594,10 @@ class PaperTable {
 
 	$foldShepherd = $Me->canSetOutcome($prow) && $prow->outcome <= 0
 	    && $prow->shepherdContactId == 0 && $this->mode != "assign";
+        if ($Me->privChair && $this->mode == "assign")
+            $this->papstripManager($prow, true);
 	if ($Me->canSetOutcome($prow))
-	    $this->papstripOutcomeSelector($prow, false);
+	    $this->papstripOutcomeSelector($prow);
 	if ($Me->actPC($prow))
 	    $this->papstripLead($prow, $this->mode == "assign");
 	if ($Me->actPC($prow) || $Me->canViewDecision($prow))

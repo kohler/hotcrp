@@ -1921,11 +1921,18 @@ function addattachment(oid) {
     e.childNodes[0].click();
 }
 
-function dosubmitdecision() {
-    var sel = $$("folddecision_d");
-    if (sel && sel.value > 0)
-	fold("shepherd", 0, 2);
-    return Miniajax.submit("decisionform");
+function dosubmitstripselector(type) {
+    return Miniajax.submit(type + "form", function (rv) {
+        var sel, p;
+        $$(type + "formresult").innerHTML = rv.response;
+        if (rv.ok) {
+            sel = $$("fold" + type + "_d");
+            p = $$("fold" + type).getElementsByTagName("p")[0];
+            p.innerHTML = sel.options[sel.selectedIndex].innerHTML;
+            if (type == "decision")
+                fold("shepherd", sel.value <= 0 && $$("foldshepherd_d").value, 2);
+        }
+    });
 }
 
 function docheckpaperstillready() {

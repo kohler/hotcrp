@@ -120,7 +120,7 @@ class PaperActions {
     static function setLeadOrShepherd($prow, $type, $ajaxexit = true) {
         global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
-	if (!$Me->canAdminister($prow)) {
+	if ($type == "manager" ? !$Me->privChair : !$Me->canAdminister($prow)) {
 	    $Conf->errorMsg("You don’t have permission to set the $type.");
 	    $Error[$type] = true;
 	} else if (isset($_REQUEST[$type])

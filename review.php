@@ -387,6 +387,10 @@ if (isset($_REQUEST["setshepherd"]) && check_post()) {
     PaperActions::setLeadOrShepherd($prow, "shepherd");
     loadRows();
 }
+if (isset($_REQUEST["setmanager"]) && check_post()) {
+    PaperActions::setLeadOrShepherd($prow, "manager");
+    loadRows();
+}
 if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_post()) {
     PaperActions::setTags($prow);
     loadRows();
