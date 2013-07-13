@@ -46,7 +46,7 @@ function loadRows() {
     $cid = defval($_REQUEST, "commentId", "xxx");
     foreach ($paperTable->crows as $row) {
 	if ($row->commentId == $cid
-	    || ($cid == "response" && $row->forAuthors > 1))
+	    || ($cid == "response" && ($row->commentType & COMMENTTYPE_RESPONSE)))
 	    $crow = $row;
 	if (isset($savedCommentId) && $row->commentId == $savedCommentId)
 	    $savedCrow = $row;
@@ -82,7 +82,7 @@ if (isset($_REQUEST["setwatch"]) && $prow && check_post()) {
 // send watch messages
 function comment_watch_callback($prow, $minic) {
     global $savedCrow;
-    $tmpl = ($savedCrow->forAuthors > 1 ? "@responsenotify" : "@commentnotify");
+    $tmpl = ($savedCrow->commentType & COMMENTTYPE_RESPONSE ? "@responsenotify" : "@commentnotify");
     if ($minic->canViewComment($prow, $savedCrow, false))
 	Mailer::send($tmpl, $prow, $minic, null, array("commentId" => $savedCrow->commentId));
 }
@@ -105,24 +105,31 @@ function saveComment($text) {
     $visibility = defval($_REQUEST, "visibility", "r");
     if (isset($_REQUEST["response"]) && (defval($_REQUEST, "forReviewers")
                                          || isset($_REQUEST["submitresponse"])))
-        list($fora, $forr) = array(2, 1);
+        $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR;
     else if (isset($_REQUEST["response"]))
-        list($fora, $forr) = array(2, 0);
+        $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR | COMMENTTYPE_DRAFT;
     else if ($visibility == "a")
-        list($fora, $forr) = array(1, 1);
+        $ctype = COMMENTTYPE_AUTHOR;
     else if ($visibility == "p")
-        list($fora, $forr) = array(0, 0);
+        $ctype = COMMENTTYPE_PCONLY;
     else if ($visibility == "admin")
-        list($fora, $forr) = array(0, 2);
+        $ctype = COMMENTTYPE_ADMINONLY;
     else // $visibility == "r"
-        list($fora, $forr) = array(0, 1);
+        $ctype = COMMENTTYPE_REVIEWER;
+    if (isset($_REQUEST["response"])
+        ? $prow->blind
+        : ($Conf->blindReview() > BLIND_OPTIONAL
+           || ($Conf->blindReview() == BLIND_OPTIONAL
+               && defval($_REQUEST, "blind"))))
+        $ctype |= COMMENTTYPE_BLIND;
 
-    $blind = 0;
-    if ($Conf->blindReview() > BLIND_OPTIONAL
-	|| ($Conf->blindReview() == BLIND_OPTIONAL && defval($_REQUEST, "blind")))
-	$blind = 1;
-    if (isset($_REQUEST["response"]))
-	$blind = $prow->blind;	// use $prow->blind setting on purpose
+    // backwards compatibility
+    $fora = ($ctype & COMMENTTYPE_RESPONSE ? 2
+             : ($ctype >= COMMENTTYPE_AUTHOR ? 1 : 0));
+    $forr = ($ctype & COMMENTTYPE_DRAFT ? 0
+             : ($ctype < COMMENTTYPE_PCONLY ? 2
+                : ($ctype >= COMMENTTYPE_REVIEWER ? 1 : 0)));
+    $blind = ($ctype & COMMENTTYPE_BLIND ? 1 : 0);
 
     $while = $insert_id_while = "while saving comment";
 
@@ -134,7 +141,8 @@ function saveComment($text) {
     } else if (!$crow) {
 	$change = true;
 	$qa = $qb = "";
-	if (!(($fora == 2 && $forr == 0) || $forr == 2)
+	if (!($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
+            && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY
 	    && $Conf->sversion >= 43) {
 	    $qa .= ", ordinal";
 	    $qb .= ", greatest(commentCount,maxOrdinal)+1";
@@ -144,7 +152,7 @@ function saveComment($text) {
                 forReviewers, forAuthors, blind, timeNotified$qa)
 	select $Me->cid, $prow->paperId, $now, '" . sqlq($text) . "',
 		$forr, $fora, $blind, $now$qb\n";
-	if ($fora == 2) {
+	if ($ctype & COMMENTTYPE_RESPONSE) {
 	    // make sure there is exactly one response
 	    $q .= "	from (select P.paperId, coalesce(C.commentId,0) commentId, 0 commentCount, 0 maxOrdinal
 		from Paper P
@@ -159,13 +167,16 @@ function saveComment($text) {
 		where P.paperId=$prow->paperId group by P.paperId) T";
 	}
     } else {
-	$change = ($crow->forAuthors != $fora);
+	$change = ($crow->commentType >= COMMENTTYPE_AUTHOR)
+            != ($ctype >= COMMENTTYPE_AUTHOR);
 	if ($crow->timeModified >= $now)
 	    $now = $crow->timeModified + 1;
 	// do not notify on updates within 3 hours
 	$qa = "";
 	if ($crow->timeNotified + 10800 < $now
-            || ($fora == 2 && $forr && !$crow->forReviewers))
+            || (($ctype & COMMENTTYPE_RESPONSE)
+                && !($ctype & COMMENTTYPE_DRAFT)
+                && ($crow->commentType & COMMENTTYPE_DRAFT)))
 	    $qa = ", timeNotified=$now";
 	$q = "update PaperComment set timeModified=$now$qa, comment='" . sqlq($text) . "', forReviewers=$forr, forAuthors=$fora, blind=$blind where commentId=$crow->commentId";
     }
@@ -184,7 +195,7 @@ function saveComment($text) {
     $what = (isset($_REQUEST["response"]) ? "Response" : "Comment");
     if ($text != "" && !isset($_SESSION["comment_msgs"]))
 	$_SESSION["comment_msgs"] = array();
-    if ($text != "" && isset($_REQUEST["response"]) && $forr == 0) {
+    if ($text != "" && isset($_REQUEST["response"]) && ($ctype & COMMENTTYPE_DRAFT)) {
 	$deadline = $Conf->printableTimeSetting("resp_done");
 	if ($deadline != "N/A")
 	    $extratext = "  You have until $deadline to send the response to the reviewers.";

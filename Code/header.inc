@@ -81,6 +81,15 @@ define("VIEWSCORE_REVIEWERONLY", -1);
 define("VIEWSCORE_PC", 0);
 define("VIEWSCORE_AUTHOR", 1);
 
+define("COMMENTTYPE_DRAFT", 1);
+define("COMMENTTYPE_BLIND", 2);
+define("COMMENTTYPE_RESPONSE", 4);
+define("COMMENTTYPE_ADMINONLY", 0x00000);
+define("COMMENTTYPE_PCONLY", 0x10000);
+define("COMMENTTYPE_REVIEWER", 0x20000);
+define("COMMENTTYPE_AUTHOR", 0x30000);
+define("COMMENTTYPE_VISIBILITY", 0xFFF0000);
+
 define("TAG_REGEX", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*');
 define("TAG_REGEX_OPTVALUE", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?');
 

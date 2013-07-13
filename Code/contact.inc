@@ -974,8 +974,11 @@ class Contact {
 
     function canComment($prow, $crow, &$whyNot = null, $submit = false) {
 	global $Conf;
+        // load comment type
+        if ($crow && !isset($crow->commentType))
+            setCommentType($crow);
 	// check whether this is a response
-	if ($crow && $crow->forAuthors > 1)
+	if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
 	    return $this->canRespond($prow, $crow, $whyNot, $submit);
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
@@ -1022,20 +1025,13 @@ class Contact {
 
     function canViewComment($prow, $crow, $forceShow, &$whyNot = null) {
 	global $Conf;
-	// Policy outline:
-	// forAuthors 2, forReviewers 1     response, ready for reviewers
-	// forAuthors 2, forReviewers 0     response, not ready for reviewers
-	// forAuthors 1/0                   comment for authors/not for authors
-	// forAuthors 1/0, forReviewers 2   comment for PC chairs and admins
-	// forAuthors 1/0, forReviewers 1   comment for PC, reviewers
-	// forAuthors 1/0, forReviewers 0   comment for PC
-	// forAuthors 1/0, forReviewers -1  comment for PC, reviewers
-	// (now all comments are postrev, before forReviewers>=0 meant anytime)
-
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
         $forceShow = self::override_conflict($forceShow);
+        if ($crow && !isset($crow->commentType))
+            setCommentType($crow);
+        $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
 	$crow_contactId = 0;
 	if ($crow && isset($crow->commentContactId))
 	    $crow_contactId = $crow->commentContactId;
@@ -1044,46 +1040,43 @@ class Contact {
 	if ($crow && isset($crow->threadContacts)
 	    && isset($crow->threadContacts[$this->contactId]))
 	    $thread_contactId = $this->contactId;
-	$forReviewers = (!$crow || $crow->forReviewers == -1 ? 1 : $crow->forReviewers);
         $admin = $this->allowAdminister($prow);
 	$conflictType = $this->actConflictType($prow);
 	// policy
 	if ($crow_contactId == $this->contactId		// wrote this comment
-	    || ($conflictType >= CONFLICT_AUTHOR
-		&& $crow && $crow->forAuthors == 2)	// author's response
-	    || ($conflictType >= CONFLICT_AUTHOR	// author viewable
-		&& $Conf->timeAuthorViewReviews()
-		&& (!$crow || $crow->forAuthors != 0))
-	    || ($admin					// chair privilege
-		&& ($conflictType == 0 || $forceShow))
-	    || ($conflictType == 0			// reviewer postrev
-		&& $this->canViewReview($prow, null, $forceShow)
-		&& (!$Conf->setting("pc_seeblindrev")
-		    || (defval($prow, "myReviewType") > 0
+	    || ($conflictType >= CONFLICT_AUTHOR	// author
+                && $ctype >= COMMENTTYPE_AUTHOR
+                && (($ctype & COMMENTTYPE_RESPONSE)	// author's response
+                    || ($Conf->timeAuthorViewReviews()  // author-visible cmt
+                        && !($ctype & COMMENTTYPE_DRAFT))))
+            || ($admin					// chair privilege
+                && ($conflictType == 0 || $forceShow))
+            || ($conflictType == 0
+                && !($ctype & COMMENTTYPE_DRAFT)
+                && $this->canViewReview($prow, null, $forceShow)
+                && (($this->isPC && !$Conf->setting("pc_seeblindrev"))
+                    || (defval($prow, "myReviewType") > 0
 			&& (defval($prow, "myReviewSubmitted") > 0
 			    || defval($prow, "myReviewNeedsSubmit", 1) == 0)))
-		&& ($forReviewers == 1
-                    || ($forReviewers == 0
-                        && $this->isPC
-                        && (!$crow || $crow->forAuthors <= 1)))))
+                && $ctype >= ($this->isPC ? COMMENTTYPE_PCONLY : COMMENTTYPE_REVIEWER)))
 	    return true;
 	// collect failure reasons
 	if (($conflictType < CONFLICT_AUTHOR
 	     && !$this->isPC && $prow->myReviewType <= 0)
-	    || (!$admin && $forReviewers == 2))
-	    $whyNot['permission'] = 1;
+	    || (!$admin && ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY))
+	    $whyNot["permission"] = 1;
 	else if ($conflictType >= CONFLICT_AUTHOR)
-	    $whyNot['deadline'] = 'au_seerev';
+	    $whyNot["deadline"] = 'au_seerev';
 	else if ($conflictType > 0)
-	    $whyNot['conflict'] = 1;
+	    $whyNot["conflict"] = 1;
 	else if ($prow->myReviewType > 0 && !$this->isPC && defval($prow, "myReviewSubmitted") > 0)
-	    $whyNot['externalReviewer'] = 1;
-	else if ($crow && $crow->forAuthors > 1 && $crow->forReviewers == 0)
-	    $whyNot['responseNotReady'] = 1;
+	    $whyNot["externalReviewer"] = 1;
+	else if ($ctype & COMMENTTYPE_DRAFT)
+	    $whyNot["responseNotReady"] = 1;
 	else
-	    $whyNot['reviewNotComplete'] = 1;
+	    $whyNot["reviewNotComplete"] = 1;
 	if ($admin)
-	    $whyNot['forceShow'] = 1;
+	    $whyNot["forceShow"] = 1;
 	return false;
     }
 
@@ -1100,7 +1093,7 @@ class Contact {
 		|| $prow->conflictType >= CONFLICT_AUTHOR)
 	    && ($Conf->timeAuthorRespond()
 		|| ($admin && (!$submit || self::override_deadlines())))
-	    && (!$crow || $crow->forAuthors > 1))
+	    && (!$crow || ($crow->commentType & COMMENTTYPE_RESPONSE)))
 	    return true;
 	// collect failure reasons
 	if (!$admin && $prow->conflictType < CONFLICT_AUTHOR)
@@ -1222,7 +1215,9 @@ class Contact {
 
     function canViewCommentIdentity($prow, $crow, $forceShow) {
 	global $Conf;
-	if ($crow && $crow->forAuthors > 1)
+        if ($crow && !isset($crow->commentType))
+            setCommentType($crow);
+	if ($crow->commentType & COMMENTTYPE_RESPONSE)
 	    return $this->canViewAuthors($prow, $forceShow);
         $forceShow = self::override_conflict($forceShow);
 	$crow_contactId = 0;
@@ -1237,7 +1232,9 @@ class Contact {
 	    || ($this->isPC && $conflictType == 0)
 	    || ($prow->myReviewType > 0 && $conflictType == 0
 		&& $Conf->settings["extrev_view"] >= 2)
-	    || !commentBlind($crow))
+            || ($br = $Conf->blindReview()) == BLIND_NEVER
+            || ($br == BLIND_OPTIONAL && $crow
+                && !($crow->commentType & COMMENTTYPE_BLIND)))
 	    return true;
 	return false;
     }

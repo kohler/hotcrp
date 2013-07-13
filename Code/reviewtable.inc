@@ -205,10 +205,9 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 		    $n .= Text::abbrevname_html($cr);
 		else
 		    $n .= "anonymous";
-		if ($cr->forAuthors > 1 && $cr->forReviewers != 0)
-		    $n .= " (Response)";
-		else if ($cr->forAuthors > 1)
-		    $n .= " (Response in progress)";
+		if ($cr->commentType & COMMENTTYPE_RESPONSE)
+                    $n .= ($cr->commentType & COMMENTTYPE_DRAFT
+                           ? " (Response in progress)" : " (Response)");
 		$cnames[] = $n . "</a>";
 	    }
 	if (count($cids) > 0)
@@ -274,7 +273,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 	$cid = array("response", "response", "Add");
 	if ($crows)
 	    foreach ($crows as $cr)
-		if ($cr->forAuthors > 1)
+		if ($cr->commentType & COMMENTTYPE_RESPONSE)
 		    $cid = array($cr->commentId, "comment$cr->commentId", "Edit");
 	if ($rrow || $conflictType < CONFLICT_AUTHOR)
 	    $a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;c=$cid[0]#$cid[1]") . "' class='xx'>";

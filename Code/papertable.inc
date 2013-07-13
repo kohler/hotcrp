@@ -1885,8 +1885,9 @@ class PaperTable {
 	    $editableresponse = $Conf->timeAuthorRespond() && $prow->conflictType >= CONFLICT_AUTHOR;
 
 	    foreach ($this->mycrows as $cr) {
-		$editMode = ($editablecid == $cr->commentId
-			     || ($editableresponse && $cr->forAuthors > 1));
+		$editMode = $editablecid == $cr->commentId
+                    || ($editableresponse
+                        && ($cr->commentType & COMMENTTYPE_RESPONSE));
 		$cv->show($prow, $cr, $editMode && $useRequest, $editMode);
 	    }
 

@@ -1084,13 +1084,22 @@ function reviewBlind($rrow) {
 	|| ($br == BLIND_OPTIONAL && (!$rrow || $rrow->reviewBlind));
 }
 
-function commentBlind($crow) {
-    global $Conf;
-    $br = $Conf->blindReview();
-    // logic: "$br == BLIND_ALWAYS || ($br == BLIND_OPTIONAL && (!$crow || $crow->blind))"
-    if ($br != BLIND_OPTIONAL || !$crow)
-	return $br >= BLIND_OPTIONAL;
-    return (isset($crow->commentBlind) ? $crow->commentBlind : $crow->blind);
+function setCommentType($crow) {
+    if ($crow && !isset($crow->commentType)) {
+        if ($crow->forAuthors == 2)
+            $crow->commentType = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR
+                | ($crow->forReviewers ? 0 : COMMENTTYPE_DRAFT);
+        else if ($crow->forAuthors == 1)
+            $crow->commentType = COMMENTTYPE_AUTHOR;
+        else if ($crow->forReviewers == 2)
+            $crow->commentType = COMMENTTYPE_ADMINONLY;
+        else if ($crow->forReviewers)
+            $crow->commentType = COMMENTTYPE_REVIEWER;
+        else
+            $crow->commentType = COMMENTTYPE_PCONLY;
+        if (isset($crow->commentBlind) ? $crow->commentBlind : $crow->blind)
+            $crow->commentType |= COMMENTTYPE_BLIND;
+    }
 }
 
 // watch functions

@@ -38,10 +38,11 @@ class CommentView {
 	}
     }
 
-    function commentOrdinal($prow, $crow) {
-	if ($crow->forAuthors == 2 || $crow->forReviewers == 2)
+    private function _commentOrdinal($prow, $crow) {
+        if (($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
+            || $crow->commentType < COMMENTTYPE_PCONLY)
 	    return null;
-	$p = ($crow->forAuthors ? "A" : "");
+	$p = ($crow->commentType >= COMMENTTYPE_AUTHOR ? "A" : "");
 	$stored_number = defval($this->numbers, $p, 0);
 	if (isset($crow->ordinal) && $crow->ordinal)
 	    $n = $crow->ordinal;
@@ -51,19 +52,20 @@ class CommentView {
 	return $p . $n;
     }
 
-    function commentIdentityTime($prow, $crow, $response) {
+    private function _commentIdentityTime($prow, $crow, $response) {
 	global $Conf, $Me, $forceShow;
 	echo "<span class='cmtfn'>";
 	$sep = "";
 	$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-	if ($crow && ($number = $this->commentOrdinal($prow, $crow))) {
+	if ($crow && ($number = $this->_commentOrdinal($prow, $crow))) {
 	    echo "<span class='cmtnumhead'><a class='qq' href='#comment",
 		$crow->commentId, "'><span class='cmtnumat'>@</span>",
 		"<span class='cmtnumnum'>", $number, "</span></a></span>";
 	    $sep = $xsep;
 	}
 	if ($crow && $Me->canViewCommentIdentity($prow, $crow, null)) {
-	    $blind = ($crow->blind && $crow->forAuthors > 0);
+	    $blind = ($crow->commentType & COMMENTTYPE_BLIND)
+                && $crow->commentType >= COMMENTTYPE_AUTHOR;
 	    echo $sep, "<span class='cmtname'>", ($blind ? "[" : ""),
 		Text::user_html($crow), ($blind ? "]" : ""), "</span>";
 	    $sep = $xsep;
@@ -82,15 +84,14 @@ class CommentView {
 	if ($crow && !$response
 	    && ($prow->conflictType == 0
                 || ($Me->allowAdminister($prow) && $forceShow))) {
-	    $forReviewers = ($crow->forReviewers == -1 ? 1 : $crow->forReviewers);
-	    if ($crow->forAuthors == 0 && $forReviewers == 2)
-		$x = "shown only to PC chairs";
-	    else if ($crow->forAuthors == 0 && $forReviewers == 0)
-		$x = "shown only to PC reviewers";
-	    else if ($crow->forAuthors == 0)
-		$x = "hidden from authors";
-	    else
-		$x = "";
+            if ($crow->commentType >= COMMENTTYPE_AUTHOR)
+                $x = "";
+            else if ($crow->commentType >= COMMENTTYPE_REVIEWER)
+                $x = "hidden from authors";
+            else if ($crow->commentType >= COMMENTTYPE_PCONLY)
+                $x = "shown only to PC reviewers";
+            else
+                $x = "shown only to PC chairs";
 	    if ($x)
 		echo "<span class='cmtvis'>(", $x, ")</span>";
 	}
@@ -100,7 +101,9 @@ class CommentView {
     function show($prow, $crow, $useRequest, $editMode, $foldnew = true) {
 	global $Conf, $Me, $linkExtra;
 
-	if ($crow && $crow->forAuthors > 1)
+        if ($crow)
+            setCommentType($crow);
+	if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
 	    return $this->showResponse($prow, $crow, $useRequest, $editMode);
 
 	if ($crow && !$Me->canViewComment($prow, $crow, null))
@@ -130,7 +133,8 @@ class CommentView {
 	else
 	    echo " id='commentnew'";
 	echo " class='cmtg", ($this->ncomment_in_table == 1 ? " cmtg1" : ""), "'>";
-	if ($crow && !$editMode && $crow->forReviewers == 2)
+	if ($crow && !$editMode
+            && ($crow->commentType & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY)
 	    echo "<div class='cmtadminvis'>";
 	echo "<div class='cmtt'>";
 
@@ -152,7 +156,7 @@ class CommentView {
 		echo "<h3>Add Comment</h3>";
 	    $Conf->footerScript("hotcrp_load('opencomment')");
 	}
-	$this->commentIdentityTime($prow, $crow, false);
+	$this->_commentIdentityTime($prow, $crow, false);
 
 	if ($crow && $editMode && $crow->contactId != $Me->contactId)
 	    echo "<div class='hint'>You didn’t write this comment, but as an administrator you can still make changes.</div>\n";
@@ -165,7 +169,7 @@ class CommentView {
 
 	if (!$editMode) {
 	    echo htmlWrapText(htmlspecialchars($crow->comment)), "</div>";
-	    if ($crow && $crow->forReviewers == 2)
+	    if ($crow && ($crow->commentType & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY)
 		echo "</div>";
 	    echo "</div>\n\n";
 	    return;
@@ -182,25 +186,24 @@ class CommentView {
   <div class='g'></div>
   <table><tr><td>Show to: &nbsp; </td>
     <td><table id='foldcmtvis' class='fold2o'>";
-	$forAuthors = $crow && $crow->forAuthors != 0;
-	$forReviewers = ($crow && $crow->forReviewers != -1 ? $crow->forReviewers : 1);
-	echo "<tr><td>", tagg_radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : ($forAuthors != 0)), array("id" => "cmtvis_a", "onchange" => "docmtvis(this)")),
+        $ctype = $crow ? $crow->commentType : COMMENTTYPE_REVIEWER | COMMENTTYPE_BLIND;
+	echo "<tr><td>", tagg_radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : $ctype >= COMMENTTYPE_AUTHOR), array("id" => "cmtvis_a", "onchange" => "docmtvis(this)")),
 	    "&nbsp;</td><td>", tagg_label("Authors and reviewers" . ($Conf->blindReview() == BLIND_ALWAYS ? " (anonymous to authors)" : ""));
 	// blind?
 	if ($Conf->blindReview() == BLIND_OPTIONAL)
 	    echo " &nbsp; (",
-		tagg_checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, "blind") : !$crow || $crow->blind)),
+		tagg_checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, "blind") : $ctype & COMMENTTYPE_BLIND)),
 		"&nbsp;", tagg_label("Anonymous to authors"), ")";
 	if ($Conf->timeAuthorViewReviews())
 	    echo "<br /><span class='fx2 hint'>Authors will be notified immediately.</span>";
 	else
 	    echo "<br /><span class='fx2 hint'>Authors cannot view comments at the moment.</span>";
 	echo "</td></tr>\n";
-	echo "<tr><td>", tagg_radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : ($forAuthors == 0 && $forReviewers == 1)), array("onchange" => "docmtvis(this)")),
+	echo "<tr><td>", tagg_radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_REVIEWER), array("onchange" => "docmtvis(this)")),
 	    "&nbsp;</td><td>", tagg_label("PC and external reviewers"), "</td></tr>\n";
-	echo "<tr><td>", tagg_radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($forAuthors == 0 && $forReviewers == 0)), array("onchange" => "docmtvis(this)")),
+	echo "<tr><td>", tagg_radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_PCONLY), array("onchange" => "docmtvis(this)")),
 	    "&nbsp;</td><td>", tagg_label("PC reviewers only"), "</td></tr>\n";
-	echo "<tr><td>", tagg_radio_h("visibility", "admin", ($useRequest ? defval($_REQUEST, "visibility") == "admin" : ($forAuthors == 0 && $forReviewers == 2)), array("onchange" => "docmtvis(this)")),
+	echo "<tr><td>", tagg_radio_h("visibility", "admin", ($useRequest ? defval($_REQUEST, "visibility") == "admin" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY), array("onchange" => "docmtvis(this)")),
 	    "&nbsp;</td><td>", tagg_label("PC chairs only"), "</td></tr>\n";
 	echo "</table></td></tr></table>\n";
 	$Conf->footerScript("docmtvis(false)");
@@ -255,19 +258,20 @@ class CommentView {
 	else
 	    echo " id='response'";
 	echo ">Response</h3>";
-	$this->commentIdentityTime($prow, $crow, true);
+	$this->_commentIdentityTime($prow, $crow, true);
 
 	$this->table_tobody();
 
 	if (isset($_SESSION["comment_msgs"]) && $crow
 	    && isset($_SESSION["comment_msgs"][$crow->commentId]))
 	    echo $_SESSION["comment_msgs"][$crow->commentId];
-        else if ($editMode && $crow && !$crow->forReviewers)
+        else if ($editMode && $crow && ($crow->commentType & COMMENTTYPE_DRAFT))
             echo "<div class='xwarning'>This is a draft response. Reviewers won’t see it until you submit.</div>";
 
 	if (!$editMode) {
 	    echo "<div class='cmtg cmtg1'>";
-	    if ($Me->allowAdminister($prow) && $crow->forReviewers == 0)
+	    if ($Me->allowAdminister($prow)
+                && ($crow->commentType & COMMENTTYPE_DRAFT))
 		echo "<i>The <a href='", hoturl("comment", "c=$crow->commentId$linkExtra"), "'>authors’ response</a> is not yet ready for reviewers to view.</i>";
 	    else if (!$Me->canViewComment($prow, $crow, null))
 		echo "<i>The authors’ response is not yet ready for reviewers to view.</i>";
@@ -299,7 +303,8 @@ Make it short and to the point; the conference deadline has passed.";
 	// actions
         $buttons = array();
         $buttons[] = tagg_submit("submitresponse", "Submit", array("class" => "bb"));
-        if ($Me->allowAdminister($prow) || !$crow || !$crow->forReviewers)
+        if ($Me->allowAdminister($prow) || !$crow
+            || ($crow->commentType & COMMENTTYPE_DRAFT))
             $buttons[] = tagg_submit("savedraft", "Save as draft");
         if ($crow) {
             $buttons[] = "";

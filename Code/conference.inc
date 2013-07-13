@@ -1178,6 +1178,8 @@ class Conference {
 	$result = $this->qe($q, "while loading comments");
 	$crows = array();
 	while (($row = edb_orow($result))) {
+            if (!isset($row->commentType))
+                setCommentType($row);
 	    $crows[$row->commentId] = $row;
 	    if (isset($row->commentContactId))
 		$cid = $row->commentContactId;
