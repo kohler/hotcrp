@@ -207,6 +207,12 @@ class SearchReviewValue {
 	else
 	    return ($this->allowed & 1) != 0;
     }
+    public function conservative_countexpr() {
+        if ($this->allowed & 1)
+            return ">=0";
+        else
+            return ($this->allowed & 2 ? ">=" : ">") . $this->compar;
+    }
     static function negateCountexpr($countexpr) {
 	$t = new SearchReviewValue($countexpr);
 	if ($t->allowed) {
@@ -576,89 +582,6 @@ class PaperSearch {
 	return "\1" . (count($this->contactmatch) - 1) . "\1";
     }
 
-    function _searchCompleteReviewer(&$qt, $type, $rt, $value, $viewscore) {
-	global $Conf;
-	if ($this->privChair)
-	    $qt[] = new SearchTerm($type, $rt, $value);
-	else {
-	    $deblinder = 0;
-	    if (!$value->contactsql)
-		/* $deblinder == 0 */;
-	    else if ($Conf->blindReview() == BLIND_ALWAYS)
-		$deblinder = self::F_FALSE;
-	    else if ($Conf->blindReview() == BLIND_OPTIONAL)
-		$deblinder = self::F_REVIEWNONBLIND;
-
-	    if ($this->amPC && $type == "re"
-		&& !$value->contactsql && !$value->fieldsql) {
-		// 28.Nov.2008 -- PC users can always count reviews for
-		// non-conflicted papers.  The "can see all reviews" settings
-		// only apply to reviewer names.  This is a change from prior
-		// behavior, but prior behavior wasn't particularly consistent
-		// (the "can review any submitted paper" setting was affecting
-		// visibility; it shouldn't).
-		$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $value);
-
-	    } else if ($this->amPC) {
-		$pc_seeblindrev = $Conf->setting("pc_seeblindrev");
-		// Can PC member see all reviews?  PC member can generally see
-		// all assignments (under control of pc_seeblindrev), so if
-		// query doesn't involve text or score, ignore the setting.
-		if (!$value->fieldsql && $pc_seeblindrev != 2)
-		    $pc_seeallrev = 1;
-		else {
-		    $pc_seeallrev = $Conf->setting("pc_seeallrev");
-		    if ($pc_seeallrev == 4 && !$this->contact->reviewsOutstanding)
-			$pc_seeallrev = 1;
-		}
-		// Can blind reviews be searched?  Yes, if the search doesn't
-		// check reviewer name, or pc_seeblindrev allows it.  In *all*
-		// cases PC members can see who wrote blind reviews once they
-		// submit their own review.
-		if (!$value->contactsql || $pc_seeblindrev != 1)
-		    $xdeblinder = 0;
-		else
-		    $xdeblinder = $deblinder;
-
-		// Add terms for reviews not written by current contact
-		$limit = array();
-		if (!$value->onlyContact($this->cid) && $viewscore >= VIEWSCORE_PC) {
-		    if ($pc_seeallrev == 1)
-			$limit[] = self::F_NONCONFLICT | $xdeblinder;
-		    else if ($pc_seeallrev == 3)
-			$limit[] = self::F_NONCONFLICT | self::F_NONREVIEWER | $xdeblinder;
-		    if (!count($limit) || $limit[0] != self::F_NONCONFLICT)
-			$limit[] = self::F_NONCONFLICT | self::F_REVIEWER;
-		    foreach ($limit as $l)
-			if (!($l & self::F_FALSE))
-			    $qt[] = new SearchTerm($type, $rt | $l, $value);
-		}
-
-		// Add more liberal term for reviews written by current
-		// contact
-		if (($newvalue = $value->restrictContact($this->cid))
-		    && (!count($limit) || $limit[0] != self::F_NONCONFLICT)
-                    && $viewscore >= VIEWSCORE_REVIEWERONLY)
-		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
-
-	    } else {
-		if (!$value->onlyContact($this->cid)) {
-		    $extrev_view = $Conf->setting("extrev_view");
-		    $xdeblinder = ($extrev_view == 2 || !$value->contactsql ? 0 : $deblinder);
-		    if (($extrev_view == 1 || $extrev_view == 2)
-			&& $xdeblinder != self::F_FALSE && $viewscore >= VIEWSCORE_PC)
-			$qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT | self::F_REVIEWER | $xdeblinder, $value);
-		}
-		if (($newvalue = $value->restrictContact($this->cid))
-                    && $viewscore >= VIEWSCORE_REVIEWERONLY)
-		    $qt[] = new SearchTerm($type, $rt | self::F_NONCONFLICT, $newvalue);
-	    }
-
-	    if ($Conf->timeAuthorViewReviews() && $viewscore >= VIEWSCORE_AUTHOR)
-                $qt[] = new SearchTerm($type, ($rt & ~self::F_REVIEWTYPEMASK) | self::F_AUTHOR | self::F_COMPLETE | $deblinder, $value);
-	}
-    }
-
     function _searchReviewer($word, $rtype, &$qt, $quoted) {
 	$rt = 0;
 	if ($rtype == "pri" || $rtype == "cpri" || $rtype == "ipri")
@@ -759,22 +682,10 @@ class PaperSearch {
 	    return;
 	}
 
-	if ($m[0] == "") {
-	    $type = "ncmt";
-	    $contacts = null;
-	} else {
-	    $type = "cmt";
-	    $contacts = $this->_reviewerMatcher($m[0], $quoted);
-	}
+	$contacts = ($m[0] == "" ? null : $contacts = $this->_reviewerMatcher($m[0], $quoted));
 	$value = new SearchReviewValue($m[1], $contacts);
-
-	$rt = ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0);
-	$nqt = count($qt);
-	$this->_searchCompleteReviewer($qt, $type, $rt, $value, VIEWSCORE_AUTHOR);
-	if (!$this->privChair && !$Conf->timeAuthorViewReviews())
-	    $qt[] = new SearchTerm($type, self::F_AUTHOR | self::F_AUTHORRESPONSE, $value);
-	if (count($qt) == $nqt)
-	    $qt[] = new SearchTerm("f");
+        $rt = ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0) | self::F_XVIEW;
+        $qt[] = new SearchTerm("cmt", $rt, $value);
     }
 
     function _searchReviews($word, $rf, $field, &$qt, $quoted,
@@ -1945,10 +1856,7 @@ class PaperSearch {
         // Make the database query conservative (so change equality
         // constraints to >= constraints, and ignore <=/</!= constraints).
         // We'll do the precise query later.
-        if (!($t->value->allowed & 1))
-            $q[] = "coalesce($thistab.count,0)" . ($t->value->allowed & 2 ? ">=" : ">") . $t->value->compar;
-        else
-            $q[] = "true";
+        $q[] = "coalesce($thistab.count,0)" . $t->value->conservative_countexpr();
         $t->link = $thistab;
 	return "(" . join(" and ", $q) . ")";
     }
@@ -1981,37 +1889,21 @@ class PaperSearch {
                     $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
                 else if ($t->flags & (self::F_AUTHOR | self::F_AUTHORCOMMENT))
                     $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
-                else if ($t->flags & self::F_REVIEWERCOMMENT)
-                    $where[] = "commentType>=" . COMMENTTYPE_REVIEWER;
-                else
-                    $where[] = "(commentType>=" . COMMENTTYPE_PCONLY . " or contactId=$this->cid)";
-                $where[] = "((commentType&" . COMMENTTYPE_DRAFT . ")=0 or contactId=$this->cid)";
-                if ($t->flags & self::F_REVIEWNONBLIND)
-                    $where[] = "((commentType&" . COMMENTTYPE_BLIND . ")=0)";
-            } else {
-                if ($t->flags & self::F_REVIEWERCOMMENT)
-                    $where[] = "forReviewers=1";
-                if (!$this->privChair)
-                    $where[] = "(forReviewers!=2 or contactId=$this->cid)";
-                if ($t->flags & self::F_AUTHORRESPONSE)
-                    $where[] = "forAuthors=2";
-                else if ($t->flags & (self::F_AUTHOR | self::F_AUTHORCOMMENT))
-                    $where[] = "forAuthors>0";
-                if ($t->flags & self::F_REVIEWNONBLIND)
-                    $where[] = "blind=0";
-            }
+            } else
+                // lame out: don't support old schema
+                $where[] = "false";
             if ($extrawhere)
                 $where[] = $extrawhere;
 	    $wheretext = "";
 	    if (count($where))
 		$wheretext = " where " . join(" and ", $where);
-	    $sqi->add_table($thistab, array("left join", "(select paperId, count(PaperComment.commentId) as count from PaperComment$wheretext group by paperId)"));
+            $sqi->add_table($thistab, array("left join", "(select paperId, count(commentId) count, group_concat(contactId, ' ', commentType) info from PaperComment$wheretext group by paperId)"));
+            $sqi->add_column($thistab . "_info", $thistab . ".info");
 	}
 	$q = array();
 	$this->_clauseTermSetFlags($t, $sqi, $q);
-	$q[] = "coalesce($thistab.count,0)" . $t->value->countexpr;
-	$sqi->add_column($thistab . "_matches", "$thistab.count");
-	$t->link = $thistab . "_matches";
+	$q[] = "coalesce($thistab.count,0)" . $t->value->conservative_countexpr();
+	$t->link = $thistab;
 	return "(" . join(" and ", $q) . ")";
     }
 
@@ -2062,11 +1954,13 @@ class PaperSearch {
 	    $this->_clauseTermSetTable($t, "\3" . $t->value->contactsql, $t->value->countexpr, "Conflict",
 				       "PaperConflict", "contactId", "",
 				       $sqi, $f);
-	} else if ($tt == "ncmt") {
-	    $rtype = $t->flags & (self::F_REVIEWERCOMMENT | self::F_AUTHORCOMMENT | self::F_AUTHORRESPONSE);
-	    $f[] = $this->_clauseTermSetComments("Numcomments_$rtype", "", $t, $sqi);
 	} else if ($tt == "cmt") {
-	    $thistab = "Comments_" . count($sqi->tables);
+            if ($t->value->contactsql)
+                $thistab = "Comments_" . count($sqi->tables);
+            else {
+                $rtype = $t->flags & (self::F_REVIEWERCOMMENT | self::F_AUTHORCOMMENT | self::F_AUTHORRESPONSE);
+                $thistab = "Numcomments_" . $rtype;
+            }
 	    $f[] = $this->_clauseTermSetComments($thistab, $t->value->contactWhere("contactId"), $t, $sqi);
 	} else if ($tt == "pn") {
 	    $q = array();
@@ -2192,6 +2086,17 @@ class PaperSearch {
                             ++$row->$fieldname;
                     }
             }
+            if ($t->type == "cmt" && ($fieldname = $t->link)
+                && !isset($row->$fieldname)) {
+                $row->$fieldname = 0;
+                $crow = (object) array("paperId" => $row->paperId);
+                foreach (explode(",", defval($row, $fieldname . "_info", "")) as $info)
+                    if ($info != "") {
+                        list($crow->contactId, $crow->commentType) = explode(" ", $info);
+                        if ($this->contact->canViewComment($row, $crow, true))
+                            ++$row->$fieldname;
+                    }
+            }
         }
 	if ($flags & self::F_FALSE)
 	    return false;
@@ -2230,7 +2135,7 @@ class PaperSearch {
 	if ($tt == "ti" || $tt == "ab" || $tt == "au" || $tt == "co")
 	    return $this->_clauseTermCheckField($t, $row);
 	else if ($tt == "re" || $tt == "conflict" || $tt == "revpref"
-		 || $tt == "ncmt" || $tt == "cmt") {
+		 || $tt == "cmt") {
 	    if (!$this->_clauseTermCheckFlags($t, $row))
 		return false;
 	    else {
