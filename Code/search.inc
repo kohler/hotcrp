@@ -274,15 +274,10 @@ class PaperSearch {
     const F_NONCONFLICT = 0x00020;
     const F_AUTHOR = 0x00040;
     const F_REVIEWER = 0x00080;
-    const F_NONREVIEWER = 0x00100;
-    const F_REVIEWNONBLIND = 0x00200;
-    const F_PAPERNONBLIND = 0x00400;
-    const F_TIMEWITHDRAWN = 0x00800;
-    const F_TIMESUBMITTED = 0x01000;
-    const F_AUTHORCOMMENT = 0x02000;
-    const F_AUTHORRESPONSE = 0x04000;
-    const F_FALSE = 0x10000;
-    const F_XVIEW = 0x20000;
+    const F_AUTHORCOMMENT = 0x00100;
+    const F_AUTHORRESPONSE = 0x00200;
+    const F_FALSE = 0x1000;
+    const F_XVIEW = 0x2000;
 
     var $contact;
     public $cid;
@@ -308,7 +303,6 @@ class PaperSearch {
     var $contactmatchPC;
     var $noratings;
     var $interestingRatings;
-    var $preciseQuery;
     private $needflags;
     var $reviewAdjust;
     var $_reviewAdjustError;
@@ -1664,15 +1658,6 @@ class PaperSearch {
     function _clauseTermSetFlags($t, $sqi, &$q) {
 	global $Conf;
         $flags = $t->flags;
-
-	// Maybe we don't actually need to check blindness.
-	if ($flags & self::F_PAPERNONBLIND) {
-	    if ($Conf->subBlindNever())
-		$flags &= ~self::F_PAPERNONBLIND;
-	    else if ($Conf->subBlindAlways() && !$Conf->timeReviewerViewAcceptedAuthors())
-		$flags = ($flags & ~self::F_PAPERNONBLIND) | self::F_FALSE;
-	}
-
 	$this->needflags |= $flags;
 
 	if ($flags & self::F_NONCONFLICT)
@@ -1681,21 +1666,9 @@ class PaperSearch {
 	    $q[] = $this->contact->actAuthorSql("PaperConflict");
 	if ($flags & self::F_REVIEWER)
 	    $q[] = "MyReview.reviewNeedsSubmit=0";
-	if ($flags & self::F_NONREVIEWER)
-	    $q[] = "MyReview.reviewNeedsSubmit is null";
-	if ($flags & self::F_PAPERNONBLIND) {
-	    if ($Conf->timeReviewerViewAcceptedAuthors()
-		|| $Conf->subBlindUntilReview())
-		$this->preciseQuery = true;
-	    else
-		$q[] = "Paper.blind=0";
-	}
         if ($flags & self::F_XVIEW) {
             $this->needflags |= self::F_NONCONFLICT | self::F_REVIEWER;
             $sqi->add_manager_column();
-            if ($t->type == "au" || $t->type == "co" || $t->type == "conflict"
-                || $t->type == "option")
-                $this->needflags |= self::F_PAPERNONBLIND;
         }
 	if ($flags & self::F_FALSE)
 	    $q[] = "false";
@@ -1725,7 +1698,7 @@ class PaperSearch {
 	    $f[] = "(" . join(" and ", $q) . ")";
 	}
 	$t->link = $field;
-	$this->preciseQuery = true;
+	$this->needflags |= self::F_XVIEW;
     }
 
     function _clauseTermSetTable(&$t, $value, $compar, $shorttab,
@@ -1827,8 +1800,6 @@ class PaperSearch {
 	    $reviewtable = "PaperReview r";
             if ($t->flags & self::F_REVIEWTYPEMASK)
                 $where[] = "reviewType=" . ($t->flags & self::F_REVIEWTYPEMASK);
-	    if ($t->flags & self::F_REVIEWNONBLIND)
-		$where[] = "reviewBlind=0";
 	    if ($t->flags & self::F_COMPLETE)
 		$where[] = "reviewSubmitted>0";
 	    else if ($t->flags & self::F_INCOMPLETE)
@@ -2044,14 +2015,7 @@ class PaperSearch {
 	    && $row->myReviewNeedsSubmit !== 0
 	    && $row->myReviewNeedsSubmit !== "0")
 	    return false;
-	if (($flags & self::F_NONREVIEWER)
-	    && $row->myReviewNeedsSubmit !== null)
-	    return false;
 	if (($flags & self::F_NONCONFLICT) && $row->conflictType)
-	    return false;
-	// NB: F_REVIEWER must be set by caller if necessary
-	if (($flags & self::F_PAPERNONBLIND)
-	    && !$this->contact->canViewAuthors($row))
 	    return false;
         if ($flags & self::F_XVIEW) {
             if (!$this->contact->canViewPaper($row))
@@ -2253,7 +2217,6 @@ class PaperSearch {
         $sqi->add_column("timeSubmitted", "Paper.timeSubmitted");
         $sqi->add_column("timeWithdrawn", "Paper.timeWithdrawn");
         $filters = array();
-	$this->preciseQuery = false;
 	$this->needflags = 0;
 	$this->_clauseTermSet($qe, false, $sqi, $filters);
 	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($filters, true)))));
@@ -2298,22 +2261,18 @@ class PaperSearch {
 	    $sqi->add_table("PaperConflict", array("left join", "PaperConflict", "PaperConflict.contactId=$this->cid"));
 	    $sqi->add_column("conflictType", "PaperConflict.conflictType");
 	}
-	if (($this->needflags & (self::F_REVIEWER | self::F_NONREVIEWER))
-	    || (($this->needflags & self::F_PAPERNONBLIND)
-		&& $Conf->subBlindUntilReview())) {
+	if ($this->needflags & self::F_REVIEWER) {
+            if ($Conf->subBlindOptional())
+                $sqi->add_column("paperBlind", "Paper.blind");
+            if ($Conf->timeReviewerViewAcceptedAuthors())
+                $sqi->add_column("outcome", "Paper.outcome");
 	    $qb = "";
 	    if (isset($_SESSION["rev_tokens"]))
 		$qb = " or MyReview.reviewToken in (" . join(",", $_SESSION["rev_tokens"]) . ")";
 	    $sqi->add_table("MyReview", array("left join", "PaperReview", "(MyReview.contactId=$this->cid$qb)"));
             $sqi->add_column("myReviewType", "MyReview.reviewType");
 	    $sqi->add_column("myReviewNeedsSubmit", "MyReview.reviewNeedsSubmit");
-	    if (($this->needflags & self::F_PAPERNONBLIND)
-		&& $Conf->subBlindUntilReview())
-		$sqi->add_column("myReviewSubmitted", "MyReview.reviewSubmitted");
-	}
-	if ($this->needflags & self::F_PAPERNONBLIND) {
-	    $sqi->add_column("paperBlind", "Paper.blind");
-	    $sqi->add_column("outcome", "Paper.outcome");
+            $sqi->add_column("myReviewSubmitted", "MyReview.reviewSubmitted");
 	}
 
 	// search contacts
@@ -2380,7 +2339,7 @@ class PaperSearch {
 	// correct query, create thenmap and headingmap
 	$this->thenmap = ($qe->type == "then" ? array() : null);
 	$this->headingmap = array();
-	if ($this->preciseQuery || ($this->needflags & self::F_XVIEW)
+	if (($this->needflags & self::F_XVIEW)
             || $this->thenmap !== null || $qe->get_float("heading")) {
 	    $delete = array();
 	    $result = $Conf->qe("select * from $this->_matchTable", "while performing search");

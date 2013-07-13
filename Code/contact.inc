@@ -601,7 +601,7 @@ class Contact {
 	// policy
 	if (($prow->conflictType >= CONFLICT_AUTHOR || $admin)
 	    && $prow->timeWithdrawn <= 0
-            && ($prow->outcome == 0 || $override))
+            && ($override || $prow->outcome == 0))
 	    return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
@@ -719,9 +719,9 @@ class Contact {
 	// policy
 	$conflictType = $this->actConflictType($prow);
         $bs = $Conf->setting("sub_blind");
-        $nonblind = (($prow->outcome > 0
-                      && ($this->isPC || $prow->myReviewType > 0)
-                      && $Conf->timeReviewerViewAcceptedAuthors())
+        $nonblind = ((($this->isPC || $prow->myReviewType > 0)
+                      && $Conf->timeReviewerViewAcceptedAuthors()
+                      && $prow->outcome > 0)
                      || $bs == BLIND_NEVER
                      || ($bs == BLIND_OPTIONAL
                          && !(isset($prow->paperBlind) ? $prow->paperBlind : $prow->blind))
