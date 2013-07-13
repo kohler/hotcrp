@@ -333,7 +333,9 @@ class PaperSearch {
 	else if (($me->privChair && $ptype == "act")
 		 || ($me->isPC && (!$ptype || $ptype == "act" || $ptype == "all") && $Conf->setting("pc_seeall") > 0))
 	    $this->limitName = "act";
-	else if ($me->isPC && (!$ptype || $ptype == "s"))
+        else if ($me->privChair && $ptype == "unm")
+            $this->limitName = "unm";
+	else if ($me->isPC && (!$ptype || $ptype == "s" || $ptype == "unm"))
 	    $this->limitName = "s";
 	else if ($me->isPC && ($ptype == "und" || $ptype == "undec"))
 	    $this->limitName = "und";
@@ -2213,7 +2215,8 @@ class PaperSearch {
 
 	// status limitation parts
 	if ($this->limitName == "s" || $this->limitName == "req"
-	    || $this->limitName == "acc" || $this->limitName == "und")
+	    || $this->limitName == "acc" || $this->limitName == "und"
+            || $this->limitName == "unm")
 	    $filters[] = "Paper.timeSubmitted>0";
 	else if ($this->limitName == "act" || $this->limitName == "r")
 	    $filters[] = "Paper.timeWithdrawn<=0";
@@ -2229,7 +2232,7 @@ class PaperSearch {
 	    $filters[] = "Paper.outcome=0";
 
 	// other search limiters
-	if ($this->limitName == "a") {
+        if ($this->limitName == "a") {
 	    $filters[] = $this->contact->actAuthorSql("PaperConflict");
 	    $this->needflags |= self::F_AUTHOR;
 	} else if ($this->limitName == "r") {
@@ -2245,6 +2248,8 @@ class PaperSearch {
 	    $sqi->add_table("Limiter", array("join", "PaperReview"));
 	else if ($this->limitName == "req")
 	    $sqi->add_table("Limiter", array("join", "PaperReview", "Limiter.requestedBy=$this->cid and Limiter.reviewType=" . REVIEW_EXTERNAL));
+        else if ($this->limitName == "unm")
+            $filters[] = "Paper.managerContactId=0";
 
 	// add common tables: conflicts, my own review, paper blindness
 	if ($this->needflags & (self::F_NONCONFLICT | self::F_AUTHOR)) {
@@ -2431,6 +2436,8 @@ class PaperSearch {
 	    $queryOptions["active"] = 1;
 	else if ($limit == "lead")
 	    $queryOptions["myLead"] = 1;
+        else if ($limit == "unm")
+            $queryOptions["finalized"] = $queryOptions["unmanaged"] = 1;
 	return false;
     }
 

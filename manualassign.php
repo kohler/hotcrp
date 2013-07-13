@@ -13,7 +13,7 @@ $Me->goIfNotPrivChair();
 if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) == "(All)")
     $_REQUEST["q"] = "";
 if (!isset($_REQUEST["t"]))
-    $_REQUEST["t"] = "s";
+    $_REQUEST["t"] = ($Conf->has_managed_submissions() ? "unm" : "s");
 
 $kind = defval($_REQUEST, "kind", "a");
 if ($kind != "a" && $kind != "c")
@@ -174,10 +174,14 @@ echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
     "<tr><td colspan='2'><div class='g'></div></td></tr>\n";
 
 // Paper selection
-$tOpt = array("s" => "Submitted papers",
-	      "acc" => "Accepted papers",
-	      "und" => "Undecided papers",
-	      "all" => "All papers");
+if ($Conf->has_managed_submissions())
+    $tOpt = array("unm" => "Unmanaged submissions",
+                  "s" => "All submissions");
+else
+    $tOpt = array("s" => "Submitted papers");
+$tOpt["acc"] = "Accepted papers";
+$tOpt["und"] = "Undecided papers";
+$tOpt["all"] = "All papers";
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = "s";
 $q = (defval($_REQUEST, "q", "") == "" ? "(All)" : $_REQUEST["q"]);

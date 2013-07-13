@@ -24,6 +24,8 @@ if (isset($_REQUEST["pcs"]) && is_array($_REQUEST["pcs"])) {
 if (defval($_REQUEST, "a") == "prefconflict" && !isset($_REQUEST["t"])
     && $Conf->setting("pc_seeall") > 0)
     $_REQUEST["t"] = "all";
+else if ($Conf->has_managed_submissions())
+    $_REQUEST["t"] = defval($_REQUEST, "t", "unm");
 else
     $_REQUEST["t"] = defval($_REQUEST, "t", "s");
 if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
@@ -192,10 +194,13 @@ function review_count_report($nrev, $pc, $prefix) {
 
 function conflictedPapers() {
     global $Conf, $Me;
-    $result = $Conf->qe("select paperId from PaperConflict where conflictType!=0 and contactId=$Me->cid");
+    if ($Conf->sversion >= 51)
+        $result = $Conf->qe("select p.paperId, p.managerContactId from Paper p join PaperConflict c on (c.paperId=p.paperId) where c.conflictType!=0 and c.contactId=$Me->cid");
+    else
+        $result = $Conf->qe("select paperId, 0 from PaperConflict where conflictType!=0 and contactId=$Me->cid");
     $confs = array();
     while (($row = edb_row($result)))
-	$confs[$row[0]] = true;
+	$confs[$row[0]] = $row[1];
     return $confs;
 }
 
@@ -722,8 +727,12 @@ if (isset($assignments) && count($assignments) > 0) {
 	    }
 	if ($atype == "clear")
 	    $t = "remove $t";
-	if (isset($conflictedPapers[$pid]))
-	    $t = PaperList::wrapChairConflict($t);
+	if (isset($conflictedPapers[$pid])) {
+            if ($conflictedPapers[$pid])
+                $t = "<em>Hidden for conflict</em>";
+            else
+                $t = PaperList::wrapChairConflict($t);
+        }
 	$atext[$pid] = "<h6>Proposed $reviewtypename:</h6> $t";
     }
 
@@ -813,12 +822,16 @@ echo "<form method='post' action='", hoturl_post("autoassign"), "' accept-charse
 echo divClass("pap"), "<h3>Paper selection</h3>";
 if (!isset($_REQUEST["q"]))
     $_REQUEST["q"] = join(" ", $papersel);
-$tOpt = array("s" => "Submitted papers",
-	      "acc" => "Accepted papers",
-	      "und" => "Undecided papers",
-	      "all" => "All papers");
+if ($Conf->has_managed_submissions())
+    $tOpt = array("unm" => "Unmanaged submissions",
+                  "s" => "All submissions");
+else
+    $tOpt = array("s" => "Submitted papers");
+$tOpt["acc"] = "Accepted papers";
+$tOpt["und"] = "Undecided papers";
+$tOpt["all"] = "All papers";
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
-    $_REQUEST["t"] = "all";
+    $_REQUEST["t"] = "s";
 $q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
 echo "<input id='autoassignq' class='textlite temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"autosub('requery',this)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),

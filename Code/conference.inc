@@ -621,6 +621,11 @@ class Conference {
         return $this->settings["rev_blind"];
     }
 
+    function has_managed_submissions() {
+        $result = $this->q("select paperId from Paper where timeSubmitted>0 and managerContactId!=0 limit 1");
+        return !!edb_row($result);
+    }
+
 
     function go($url) {
 	go($url);
@@ -1115,7 +1120,7 @@ class Conference {
 	}
 	if (isset($options['commentId']))
 	    $where[] = $this->_paperQuery_where($options['commentId'], "CommentSelector.commentId");
-	if (isset($options['finalized']))
+	if (isset($options["finalized"]))
 	    $where[] = "timeSubmitted>0";
 	else if (isset($options['unsub']))
 	    $where[] = "timeSubmitted<=0";
@@ -1128,6 +1133,8 @@ class Conference {
 	    $where[] = "timeWithdrawn<=0";
 	if (isset($options["myLead"]))
 	    $where[] = "leadContactId=$contactId";
+        if (isset($options["unmanaged"]))
+            $where[] = "managerContactId=0";
 
 	if (count($where))
 	    $pq .= "		where " . join(" and ", $where) . "\n";
