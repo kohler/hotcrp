@@ -308,4 +308,10 @@ function updateSchema($Conf) {
     if ($Conf->settings["allowPaperOption"] != 53)
         $Conf->q("alter table PaperComment drop column `commentType`");
     $Conf->q("unlock tables");
+    if ($Conf->settings["allowPaperOption"] == 53
+        && $Conf->q("alter table PaperComment drop column `forReviewers`")
+        && $Conf->q("alter table PaperComment drop column `forAuthors`")
+        && $Conf->q("alter table PaperComment drop column `blind`")
+        && $Conf->q("update Settings set value=54 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 54;
 }
