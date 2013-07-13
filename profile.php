@@ -431,10 +431,6 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
                 $tagger = new Tagger($Acct);
 		$tagger->save(array_keys($pids), join(" ", array_keys($tags)), "d");
             }
-	    // recalculate Paper.numComments if necessary
-	    // (XXX lock tables?)
-	    foreach ($tracks->comment as $pid)
-		$Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$pid), numAuthorComments=(select count(commentId) from PaperComment where paperId=$pid and forAuthors>0) where paperId=$pid", $while);
             // clear caches
             if ($Acct->isPC || $Acct->privChair)
                 $Conf->invalidateCaches(array("pc" => 1));

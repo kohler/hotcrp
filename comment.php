@@ -198,12 +198,6 @@ function saveComment($text) {
     $Conf->log("Comment $savedCommentId " . ($text != "" ? "saved" : "deleted"),
 	       $Me, $prow->paperId);
 
-    // adjust comment counts
-    if ($change) {
-	// see also account.php:delete user
-	$Conf->qe("update Paper set numComments=(select count(commentId) from PaperComment where paperId=$prow->paperId), numAuthorComments=(select count(commentId) from PaperComment where paperId=$prow->paperId and forAuthors>0) where paperId=$prow->paperId", $while);
-    }
-
     unset($_REQUEST["c"]);
     $_REQUEST["paperId"] = $prow->paperId;
     if ($text != "")

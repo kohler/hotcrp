@@ -288,4 +288,9 @@ function updateSchema($Conf) {
         && $Conf->q("alter table Paper add `managerContactId` int(11) NOT NULL DEFAULT '0'")
         && $Conf->q("update Settings set value=51 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 51;
+    if ($Conf->settings["allowPaperOption"] == 51
+        && $Conf->q("alter table Paper drop column `numComments`")
+        && $Conf->q("alter table Paper drop column `numAuthorComments`")
+        && $Conf->q("update Settings set value=52 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 52;
 }
