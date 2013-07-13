@@ -265,7 +265,7 @@ class PaperSearch {
     const F_AUTHOR = 0x00040;
     const F_REVIEWER = 0x00080;
     const F_NONREVIEWER = 0x00100;
-    const F_NONBLIND = 0x00200;
+    const F_REVIEWNONBLIND = 0x00200;
     const F_PAPERNONBLIND = 0x00400;
     const F_TIMEWITHDRAWN = 0x00800;
     const F_TIMESUBMITTED = 0x01000;
@@ -584,7 +584,7 @@ class PaperSearch {
 	    else if ($Conf->blindReview() == BLIND_ALWAYS)
 		$deblinder = self::F_FALSE;
 	    else if ($Conf->blindReview() == BLIND_OPTIONAL)
-		$deblinder = self::F_NONBLIND;
+		$deblinder = self::F_REVIEWNONBLIND;
 
 	    if ($this->amPC && $type == "re"
 		&& !$value->contactsql && !$value->fieldsql) {
@@ -1918,7 +1918,7 @@ class PaperSearch {
 	    $reviewtable = "PaperReview r";
 	    if ($t->flags & self::F_TYPEMASK)
 		$where[] = "reviewType=" . ($t->flags & self::F_TYPEMASK);
-	    if ($t->flags & self::F_NONBLIND)
+	    if ($t->flags & self::F_REVIEWNONBLIND)
 		$where[] = "reviewBlind=0";
 	    if ($t->flags & self::F_COMPLETE)
 		$where[] = "reviewSubmitted>0";
@@ -1978,7 +1978,7 @@ class PaperSearch {
 		$where[] = "forAuthors=2";
 	    else if ($t->flags & (self::F_AUTHOR | self::F_AUTHORCOMMENT))
 		$where[] = "forAuthors>0";
-	    if ($t->flags & self::F_NONBLIND)
+	    if ($t->flags & self::F_REVIEWNONBLIND)
 		$where[] = "blind=0";
 	    if ($extrawhere)
 		$where[] = $extrawhere;
@@ -2025,7 +2025,7 @@ class PaperSearch {
 		$extrawhere[] = $t->value->fieldsql;
 	    $extrawhere = join(" and ", $extrawhere);
 	    if ($extrawhere == "" && $t->get("round") === null && $t->get("rate") === null)
-		$thistab = "Numreviews_" . ($t->flags & (self::F_TYPEMASK | self::F_NONBLIND | self::F_COMPLETE | self::F_INCOMPLETE));
+		$thistab = "Numreviews_" . ($t->flags & (self::F_TYPEMASK | self::F_REVIEWNONBLIND | self::F_COMPLETE | self::F_INCOMPLETE));
 	    else
 		$thistab = "Reviews_" . count($sqi->tables);
 	    $f[] = $this->_clauseTermSetReviews($thistab, $extrawhere, $t, $sqi);
