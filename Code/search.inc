@@ -33,6 +33,7 @@ $searchKeywords = array("ti" => "ti", "title" => "ti",
 	"decision" => "decision", "dec" => "decision",
 	"topic" => "topic",
 	"option" => "option", "opt" => "option",
+        "manager" => "manager",
 	"lead" => "lead",
 	"shepherd" => "shepherd", "shep" => "shepherd",
 	"conflict" => "conflict", "conf" => "conflict",
@@ -1062,14 +1063,11 @@ class PaperSearch {
 	if (($keyword ? $keyword == "revpref" : isset($this->fields["revpref"]))
 	    && $this->privChair)
 	    $this->_searchRevpref($word, $qt, $quoted);
-	if ($keyword ? $keyword == "lead" : isset($this->fields["lead"])) {
-            $x = $this->_reviewerMatcher($word, $quoted, 1);
-	    $qt[] = new SearchTerm("pf", self::F_XVIEW, array("leadContactId", $x));
-	}
-	if ($keyword ? $keyword == "shepherd" : isset($this->fields["shepherd"])) {
-            $x = $this->_reviewerMatcher($word, $quoted, 1);
-	    $qt[] = new SearchTerm("pf", self::F_XVIEW, array("shepherdContactId", $x));
-	}
+        foreach (array("lead", "shepherd", "manager") as $ctype)
+            if ($keyword ? $keyword == $ctype : isset($this->fields[$ctype])) {
+                $x = $this->_reviewerMatcher($word, $quoted, 1);
+                $qt[] = new SearchTerm("pf", self::F_XVIEW, array("${ctype}ContactId", $x));
+            }
 	if (($keyword ? $keyword == "tag" : isset($this->fields["tag"]))
 	    || $keyword == "order" || $keyword == "rorder")
 	    $this->_searchTags($word, $keyword, $qt);
@@ -2050,6 +2048,9 @@ class PaperSearch {
                 return false;
             if ($t->type == "pf" && $t->value[0] == "shepherdContactId"
                 && !($this->contact->actPC($row) || $this->contact->canViewDecision($row)))
+                return false;
+            if ($t->type == "pf" && $t->value[0] == "managerContactId"
+                && !$this->contact->canViewPaperManager($row))
                 return false;
         }
 	if ($flags & self::F_FALSE)

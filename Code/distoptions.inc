@@ -156,6 +156,7 @@ $Opt["emailFrom"] = "you@example.com";
 //                   this email address for backup. Will increase server load.
 //   noSearchAutocomplete  If set, do not implement Javascript autocompletion
 //                   on searchboxes.
+//   hideManager     If set, PC members are not shown paper managers.
 
 $Opt["disablePS"] = true;
 $Opt["smartScoreCompare"] = true;

@@ -1588,8 +1588,7 @@ class PaperTable {
     function _papstrip() {
 	global $Conf, $Me, $forceShow, $linkExtra;
 	$prow = $this->prow;
-        if ($Me->isPC && $prow && ($prow->conflictType <= 0 || $Me->privChair)
-            && $prow->managerContactId)
+        if ($prow->managerContactId && $Me->canViewPaperManager($prow))
             $this->papstripManager($prow, $this->mode == "assign");
 	if ($Me->canViewTags($prow, $forceShow))
 	    $this->papstripTags($prow, "review");

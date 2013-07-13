@@ -707,6 +707,14 @@ class Contact {
 	return $this->canViewPaper($prow, $whyNot, true);
     }
 
+    function canViewPaperManager($prow) {
+        global $Opt;
+        return $this->privChair
+            || ($prow && $prow->managerContactId == $this->contactId)
+            || (($this->isPC || ($prow && $prow->myReviewType > 0))
+                && defval($Opt, "hideManager", false));
+    }
+
     function allowViewAuthors($prow, &$whyNot = null) {
         return $this->canViewAuthors($prow, true, $whyNot);
     }
