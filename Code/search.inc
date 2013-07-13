@@ -298,16 +298,16 @@ class PaperSearch {
     var $q;
 
     var $regex;
-    var $overrideMatchPreg;
-    var $contactmatch;
-    var $contactmatchPC;
-    var $noratings;
-    var $interestingRatings;
+    public $overrideMatchPreg;
+    private $contactmatch;
+    private $contactmatchPC;
+    private $noratings;
+    private $interestingRatings;
     private $needflags;
-    var $reviewAdjust;
-    var $_reviewAdjustError;
-    var $_thenError;
-    var $_ssRecursion;
+    private $reviewAdjust;
+    private $_reviewAdjustError;
+    private $_thenError;
+    private $_ssRecursion;
     var $thenmap;
     var $headingmap;
     var $viewmap;
