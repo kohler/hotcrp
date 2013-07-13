@@ -125,7 +125,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-        if ($this->settings["allowPaperOption"] < 52) {
+        if ($this->settings["allowPaperOption"] < 53) {
 	    require_once("updateschema.inc");
 	    $oldOK = $OK;
 	    updateSchema($this);
@@ -945,10 +945,13 @@ class Conference {
 		CommentConflict.conflictType as commentConflictType,
 		PaperComment.timeModified,
 		PaperComment.comment,
-		PaperComment.forReviewers,
-		PaperComment.forAuthors,
-		PaperComment.blind as commentBlind,
 		PaperComment.replyTo";
+            if ($this->sversion >= 53)
+                $pq .= ",\n\t\tPaperComment.commentType";
+            else
+                $pq .= ",\n\t\tPaperComment.forReviewers,
+		PaperComment.forAuthors,
+		PaperComment.blind as commentBlind";
 	}
 	if (isset($options['topics']))
 	    $pq .= ",

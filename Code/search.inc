@@ -1968,20 +1968,35 @@ class PaperSearch {
     }
 
     function _clauseTermSetComments($thistab, $extrawhere, &$t, $sqi) {
+        global $Conf;
 	if (!isset($sqi->tables[$thistab])) {
 	    $where = array();
-	    if ($t->flags & self::F_REVIEWERCOMMENT)
-		$where[] = "forReviewers=1";
-	    if (!$this->privChair)
-		$where[] = "(forReviewers!=2 or contactId=$this->cid)";
-	    if ($t->flags & self::F_AUTHORRESPONSE)
-		$where[] = "forAuthors=2";
-	    else if ($t->flags & (self::F_AUTHOR | self::F_AUTHORCOMMENT))
-		$where[] = "forAuthors>0";
-	    if ($t->flags & self::F_REVIEWNONBLIND)
-		$where[] = "blind=0";
-	    if ($extrawhere)
-		$where[] = $extrawhere;
+            if ($Conf->sversion >= 53) {
+                if ($t->flags & self::F_AUTHORRESPONSE)
+                    $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
+                else if ($t->flags & (self::F_AUTHOR | self::F_AUTHORCOMMENT))
+                    $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
+                else if ($t->flags & self::F_REVIEWERCOMMENT)
+                    $where[] = "commentType>=" . COMMENTTYPE_REVIEWER;
+                else
+                    $where[] = "(commentType>=" . COMMENTTYPE_PCONLY . " or contactId=$this->cid)";
+                $where[] = "((commentType&" . COMMENTTYPE_DRAFT . ")=0 or contactId=$this->cid)";
+                if ($t->flags & self::F_REVIEWNONBLIND)
+                    $where[] = "((commentType&" . COMMENTTYPE_BLIND . ")=0)";
+            } else {
+                if ($t->flags & self::F_REVIEWERCOMMENT)
+                    $where[] = "forReviewers=1";
+                if (!$this->privChair)
+                    $where[] = "(forReviewers!=2 or contactId=$this->cid)";
+                if ($t->flags & self::F_AUTHORRESPONSE)
+                    $where[] = "forAuthors=2";
+                else if ($t->flags & (self::F_AUTHOR | self::F_AUTHORCOMMENT))
+                    $where[] = "forAuthors>0";
+                if ($t->flags & self::F_REVIEWNONBLIND)
+                    $where[] = "blind=0";
+            }
+            if ($extrawhere)
+                $where[] = $extrawhere;
 	    $wheretext = "";
 	    if (count($where))
 		$wheretext = " where " . join(" and ", $where);
@@ -2429,7 +2444,7 @@ class PaperSearch {
 	if (count($this->contactmatch))
 	    for ($i = 0; $i < count($this->contactmatch); $i++)
 		$q = str_replace("\1$i\1", self::sqlNumericSet($this->contactmatch[$i]), $q);
-        //$Conf->infoMsg(htmlspecialchars($q));
+        $Conf->infoMsg(htmlspecialchars($q));
 
 	// actually perform query
 	if (!$Conf->qe("create temporary table $this->_matchTable $q", "while performing search"))

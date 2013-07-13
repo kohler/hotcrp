@@ -293,4 +293,19 @@ function updateSchema($Conf) {
         && $Conf->q("alter table Paper drop column `numAuthorComments`")
         && $Conf->q("update Settings set value=52 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 52;
+    if ($Conf->settings["allowPaperOption"] == 52
+        && $Conf->q("lock tables PaperComment write, Settings write")
+        && $Conf->q("alter table PaperComment add `commentType` int(11) NOT NULL DEFAULT '0'")
+        && $Conf->q("update PaperComment set commentType=" . (COMMENTTYPE_AUTHOR | COMMENTTYPE_RESPONSE) . " where forAuthors=2")
+        && $Conf->q("update PaperComment set commentType=commentType|" . COMMENTTYPE_DRAFT . " where forAuthors=2 and forReviewers=0")
+        && $Conf->q("update PaperComment set commentType=" . COMMENTTYPE_ADMINONLY . " where forAuthors=0 and forReviewers=2")
+        && $Conf->q("update PaperComment set commentType=" . COMMENTTYPE_PCONLY . " where forAuthors=0 and forReviewers=0")
+        && $Conf->q("update PaperComment set commentType=" . COMMENTTYPE_REVIEWER . " where forAuthors=0 and forReviewers=1")
+        && $Conf->q("update PaperComment set commentType=" . COMMENTTYPE_AUTHOR . " where forAuthors!=0 and forAuthors!=2")
+        && $Conf->q("update PaperComment set commentType=commentType|" . COMMENTTYPE_BLIND . " where blind=1")
+        && $Conf->q("update Settings set value=53 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 53;
+    if ($Conf->settings["allowPaperOption"] != 53)
+        $Conf->q("alter table PaperComment drop column `commentType`");
+    $Conf->q("unlock tables");
 }

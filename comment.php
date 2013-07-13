@@ -124,12 +124,14 @@ function saveComment($text) {
         $ctype |= COMMENTTYPE_BLIND;
 
     // backwards compatibility
-    $fora = ($ctype & COMMENTTYPE_RESPONSE ? 2
-             : ($ctype >= COMMENTTYPE_AUTHOR ? 1 : 0));
-    $forr = ($ctype & COMMENTTYPE_DRAFT ? 0
-             : ($ctype < COMMENTTYPE_PCONLY ? 2
-                : ($ctype >= COMMENTTYPE_REVIEWER ? 1 : 0)));
-    $blind = ($ctype & COMMENTTYPE_BLIND ? 1 : 0);
+    if ($Conf->sversion < 53) {
+        $fora = ($ctype & COMMENTTYPE_RESPONSE ? 2
+                 : ($ctype >= COMMENTTYPE_AUTHOR ? 1 : 0));
+        $forr = ($ctype & COMMENTTYPE_DRAFT ? 0
+                 : ($ctype < COMMENTTYPE_PCONLY ? 2
+                    : ($ctype >= COMMENTTYPE_REVIEWER ? 1 : 0)));
+        $blind = ($ctype & COMMENTTYPE_BLIND ? 1 : 0);
+    }
 
     $while = $insert_id_while = "while saving comment";
 
@@ -140,31 +142,47 @@ function saveComment($text) {
 	$q = "delete from PaperComment where commentId=$crow->commentId";
     } else if (!$crow) {
 	$change = true;
-	$qa = $qb = "";
+        $qa = "contactId, paperId, timeModified, comment, timeNotified";
+        $qb = "$Me->cid, $prow->paperId, $now, '" . sqlq($text) . "', $now";
 	if (!($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
             && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY
 	    && $Conf->sversion >= 43) {
 	    $qa .= ", ordinal";
 	    $qb .= ", greatest(commentCount,maxOrdinal)+1";
 	}
-	$q = "insert into PaperComment
-		(contactId, paperId, timeModified, comment,
-                forReviewers, forAuthors, blind, timeNotified$qa)
-	select $Me->cid, $prow->paperId, $now, '" . sqlq($text) . "',
-		$forr, $fora, $blind, $now$qb\n";
+        if ($Conf->sversion >= 53) {
+            $qa .= ", commentType";
+            $qb .= ", $ctype";
+        } else {
+            $qa .= ", forAuthors, forReviewers, blind";
+            $qb .= ", $fora, $forr, $blind";
+        }
+	$q = "insert into PaperComment ($qa) select $qb\n";
 	if ($ctype & COMMENTTYPE_RESPONSE) {
 	    // make sure there is exactly one response
 	    $q .= "	from (select P.paperId, coalesce(C.commentId,0) commentId, 0 commentCount, 0 maxOrdinal
 		from Paper P
-		left join PaperComment C on (C.paperId=P.paperId and C.forAuthors=2)
-		where P.paperId=$prow->paperId group by P.paperId) T
+		left join PaperComment C on (C.paperId=P.paperId and ";
+            if ($Conf->sversion >= 53)
+                $q .= "(C.commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
+            else
+                $q .= "C.forAuthors=2";
+            $q .= ") where P.paperId=$prow->paperId group by P.paperId) T
 	where T.commentId=0";
 	    $insert_id_while = false;
 	} else {
 	    $q .= "	from (select P.paperId, coalesce(count(C.commentId),0) commentCount, coalesce(max(C.ordinal),0) maxOrdinal
 		from Paper P
-		left join PaperComment C on (C.paperId=P.paperId and C.forReviewers!=2 and C.forAuthors=$fora)
-		where P.paperId=$prow->paperId group by P.paperId) T";
+		left join PaperComment C on (C.paperId=P.paperId and ";
+            if ($Conf->sversion >= 53) {
+                $q .= "(C.commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and ";
+                if ($ctype >= COMMENTTYPE_AUTHOR)
+                    $q .= "C.commentType>=" . COMMENTTYPE_AUTHOR;
+                else
+                    $q .= "C.commentType>=" . COMMENTTYPE_PCONLY . " and C.commentType<" . COMMENTTYPE_AUTHOR;
+            } else
+                $q .= "C.forReviewers!=2 and C.forAuthors=$fora";
+            $q .= ") where P.paperId=$prow->paperId group by P.paperId) T";
 	}
     } else {
 	$change = ($crow->commentType >= COMMENTTYPE_AUTHOR)
@@ -178,7 +196,12 @@ function saveComment($text) {
                 && !($ctype & COMMENTTYPE_DRAFT)
                 && ($crow->commentType & COMMENTTYPE_DRAFT)))
 	    $qa = ", timeNotified=$now";
-	$q = "update PaperComment set timeModified=$now$qa, comment='" . sqlq($text) . "', forReviewers=$forr, forAuthors=$fora, blind=$blind where commentId=$crow->commentId";
+	$q = "update PaperComment set timeModified=$now$qa, comment='" . sqlq($text) . "', ";
+        if ($Conf->sversion >= 53)
+            $q .= "commentType=$ctype";
+        else
+            $q .= "forReviewers=$forr, forAuthors=$fora, blind=$blind";
+        $q .= " where commentId=$crow->commentId";
     }
 
     $result = $Conf->qe($q, $while);
@@ -233,7 +256,8 @@ function saveResponse($text) {
 
     $success = saveComment($text);
     if (!$success) {
-	$result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and forAuthors>1");
+        $q = ($Conf->sversion >= 53 ? "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0" : "forAuthors>1");
+	$result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and $q");
 	if (($row = edb_row($result)))
 	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"" . hoturl("comment", "c=$row[0]$linkExtra") . "\">Edit that response</a>");
     }
