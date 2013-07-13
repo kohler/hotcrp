@@ -2444,7 +2444,7 @@ class PaperSearch {
 	if (count($this->contactmatch))
 	    for ($i = 0; $i < count($this->contactmatch); $i++)
 		$q = str_replace("\1$i\1", self::sqlNumericSet($this->contactmatch[$i]), $q);
-        $Conf->infoMsg(htmlspecialchars($q));
+        //$Conf->infoMsg(htmlspecialchars($q));
 
 	// actually perform query
 	if (!$Conf->qe("create temporary table $this->_matchTable $q", "while performing search"))
