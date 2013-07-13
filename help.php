@@ -1017,40 +1017,43 @@ After the submission deadline has passed:
 ");
     _alternateRow("Chair conflicts", "
 Chairs and system administrators can access any information stored in the
-conference system, including reviewer identities for conflicted papers.  For
-this reason, some chairs prefer not to use the normal review assignment
-process for their own submissions, and HotCRP supports alternate review
-mechanisms for chair conflicts.
+conference system, including reviewer identities for conflicted papers.
+It is easiest to simply accept such conflicts as a fact of life. Chairs
+who can’t handle conflicts fairly shouldn’t be chairs. However, HotCRP
+does offer other mechanisms for conflicted reviews.
 
-<ol>
+<p>The first step is to pick a PC member to manage the reviewing and
+discussion process for the relevant papers. This PC member is called the
+<em>paper manager</em>. Use the left-hand side of the
+<a href='" . hoturl("assign") . "'>paper assignment pages</a> to enter paper managers. (You may need to
+“Override conflicts” to access the assignment page.)</p>
 
-<li>A chair or system administrator goes to the paper’s <a
-  href='" . hoturl("assign") . "'>assignment page</a> and clicks
-  on “Request review” without entering a name or email address.
-  This creates a new, completely anonymous review slot and reports a
-  corresponding <em>review token</em>, a short string of letters and numbers
-  such as “9HDZYUB”.  The chair creates as many slots as
-  desired.</li>
+<p>The presence of the paper manager changes conflicted administrators’
+access rights. Normally, a conflicted administrator can easily override
+their conflict. If a paper has a manager, however, conflict overrides are
+not directly available: the administrator must remove the manager first.</p>
 
-<li>The chair sends the resulting review tokens to a PC member designated as
-  the paper’s manager.  This trusted party decides which users should
-  review the paper, and sends each reviewer one of the review tokens.</li>
-
-<li>When a reviewer signs in and enters their review token on the home page,
-  the system lets them view the paper and anonymously modify the corresponding
-  review.</li>
-
-</ol>
+<p>Paper managers have full administrator privilege for the papers they
+manage, so they can assign reviewers as normal. (They cannot change
+conference settings or use the auto-assignment or mail tools.) Normal
+assignments make life easy for reviewers. However, reviewer identities are
+still accessible via HotCRP logs, review counts, and mails, and they are
+visible directly if the chair removes the manager. For additional privacy,
+we recommend using <em>review tokens</em>, which are completely anonymous
+review slots. To create a token, the manager (or a chair or administrator)
+goes to an <a href='" . hoturl("assign") . "'>assignment page</a> and clicks on “Request review” without entering a name
+or email address. This reports the token, a short string of letters and
+numbers such as “9HDZYUB”. The manager can send this token to any system
+user. Anyone who knows the token can sign in and enter it on the home page.
+The system then lets them view the paper and anonymously modify the
+corresponding review.</p>
 
 <p>Reviews entered using this procedure appear to be authored by “Jane
-  Q. Public.” Chairs can still see (and edit) the reviews if they
-  override their conflicts, but reviewer identities are not stored in the
-  database at all.</p>
-
-<p>Alternately, the trusted manager can send the reviewers the paper and an
-  offline review form via email (not using HotCRP).  The reviewers complete
+  Q. Public.” True reviewer identities will not appear in HotCRP’s database or its logs.
+  Alternately, the trusted manager can send
+  offline review forms via email. Reviewers complete
   the offline forms and send them to the manager, who uploads them into the
-  “Jane Q. Public” review slots using the review tokens.  This
+  “Jane Q. Public” slots using review tokens.  This
   way, even web server access logs store only the manager’s identity.</p>
 
 ");
