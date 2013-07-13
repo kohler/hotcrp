@@ -778,7 +778,8 @@ class PaperSearch {
 	    $qt[] = new SearchTerm("f");
     }
 
-    function _searchReviews($word, $rf, $field, &$qt, $quoted) {
+    function _searchReviews($word, $rf, $field, &$qt, $quoted,
+                            $noswitch = false) {
 	global $Conf, $Opt;
 	$countexpr = ">0";
 	$contacts = null;
@@ -806,7 +807,7 @@ class PaperSearch {
 		else {
 		    $score = $m[3];
 		    if ($f->option_letter) {
-			if (!defval($Opt, "smartScoreCompare")) {
+                        if (!defval($Opt, "smartScoreCompare") || $noswitch) {
 			    // switch meaning of inequality
 			    if ($m[2][0] == "<")
 				$m[2] = ">" . substr($m[2], 1);
@@ -841,12 +842,12 @@ class PaperSearch {
 		    $this->_searchReviews($contactword . $m[1], $rf, $field, $qo, $quoted);
 		    $this->_searchReviews($contactword . $m[3], $rf, $field, $qo, $quoted);
 		} else
-		    $this->_searchReviews($contactword . ">=" . $m[1], $rf, $field, $qo, $quoted);
-		if ($this->_searchReviews($contactword . "<" . $m[1], $rf, $field, $qo, $quoted))
+                    $this->_searchReviews($contactword . ">=" . $m[1], $rf, $field, $qo, $quoted, true);
+                if ($this->_searchReviews($contactword . "<" . $m[1], $rf, $field, $qo, $quoted, true))
 		    $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
 		else
 		    array_pop($qo);
-		if ($this->_searchReviews($contactword . ">" . $m[3], $rf, $field, $qo, $quoted))
+                if ($this->_searchReviews($contactword . ">" . $m[3], $rf, $field, $qo, $quoted, true))
 		    $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
 		else
 		    array_pop($qo);

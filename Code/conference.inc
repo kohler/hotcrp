@@ -618,7 +618,7 @@ class Conference {
     }
 
     function blindReview() {
-	return $this->settings['rev_blind'];
+        return $this->settings["rev_blind"];
     }
 
 

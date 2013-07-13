@@ -1268,9 +1268,7 @@ class Contact {
         // ** See also canViewReview.
 
 	// chair can see everything
-	if ($this->allowAdminister($prow)
-	    && (!$prow || $prow->conflictType == 0
-                || self::override_conflict()))
+	if ($this->canAdminister($prow))
 	    return VIEWSCORE_ADMINONLY - 1;
 
 	// author can see author information
