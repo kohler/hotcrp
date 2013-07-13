@@ -315,7 +315,7 @@ class PaperSearch {
 
     var $_matchTable;
 
-    function __construct($me, $opt, $searchContactId = 0) {
+    function __construct($me, $opt) {
 	global $Conf;
 
 	// contact facts
@@ -323,8 +323,6 @@ class PaperSearch {
 	$this->privChair = $me->privChair;
 	$this->amPC = $me->isPC;
 	$this->cid = $me->contactId;
-	if ($this->privChair && $searchContactId > 0)
-	    $this->cid = $searchContactId;
 
 	// paper selection
 	$ptype = defval($opt, "t", "");

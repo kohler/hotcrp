@@ -309,12 +309,10 @@ if ($reviewer > 0) {
 	"</div></form>\n\n";
 
     // main assignment form
-    $search = new PaperSearch($Me,
-                              array("t" => $_REQUEST["t"],
-                                    "q" => $_REQUEST["q"],
-                                    "urlbase" => hoturl("manualassign", "reviewer=$reviewer")),
-                              $reviewer);
-    $paperList = new PaperList($search, array("sort" => true, "list" => true));
+    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
+                                         "q" => $_REQUEST["q"],
+                                         "urlbase" => hoturl("manualassign", "reviewer=$reviewer")));
+    $paperList = new PaperList($search, array("sort" => true, "list" => true, "reviewer" => $reviewer));
     $paperList->display .= " topics ";
     if ($kind != "c")
         $paperList->display .= "reviewers ";

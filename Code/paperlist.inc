@@ -34,6 +34,7 @@ class PaperList extends BaseList {
     var $viewmap;
     var $reviewList;
     var $atab;
+    public $reviewer;
 
     // used during render
     private $defaultFoldRow;
@@ -73,6 +74,8 @@ class PaperList extends BaseList {
 	    $this->display = " " . $args["display"] . " ";
 	else
 	    $this->display = defval($_SESSION, defval($args, "foldtype", "pl") . "display", "");
+        if (isset($args["reviewer"]))
+            $this->reviewer = $args["reviewer"];
 	$this->rf = reviewForm();
 	$this->atab = defval($_REQUEST, "atab", "");
 	unset($_REQUEST["atab"]);
@@ -661,10 +664,7 @@ class PaperList extends BaseList {
 	    $queryOptions["scores"] = array_keys($queryOptions["scores"]);
 
 	// prepare query text
-	if ($me->contactId == $this->search->cid)
-	    $pq = $Conf->paperQuery($me, $queryOptions);
-	else
-	    $pq = $Conf->paperQuery($this->search->cid, $queryOptions);
+        $pq = $Conf->paperQuery($me, $queryOptions);
 
 	// make query
 	return $Conf->qe($pq, "while selecting papers");

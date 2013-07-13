@@ -1578,9 +1578,9 @@ class PaperTable {
     function _papstrip() {
 	global $Conf, $Me, $forceShow, $linkExtra;
 	$prow = $this->prow;
-        if ($prow->managerContactId && $Me->canViewPaperManager($prow)
-            && $this->mode != "assign")
-            $this->papstripManager($prow, false);
+        if (($prow->managerContactId || ($Me->privChair && $this->mode == "assign"))
+            && $Me->canViewPaperManager($prow))
+            $this->papstripManager($prow, $Me->privChair);
 	if ($Me->canViewTags($prow, $forceShow))
 	    $this->papstripTags($prow, "review");
 	if ($Me->canSetRank($prow))
@@ -1594,8 +1594,6 @@ class PaperTable {
 
 	$foldShepherd = $Me->canSetOutcome($prow) && $prow->outcome <= 0
 	    && $prow->shepherdContactId == 0 && $this->mode != "assign";
-        if ($Me->privChair && $this->mode == "assign")
-            $this->papstripManager($prow, true);
 	if ($Me->canSetOutcome($prow))
 	    $this->papstripOutcomeSelector($prow);
 	if ($Me->actPC($prow))

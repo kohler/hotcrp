@@ -1019,8 +1019,8 @@ After the submission deadline has passed:
 Chairs and system administrators can access any information stored in the
 conference system, including reviewer identities for conflicted papers.  For
 this reason, some chairs prefer not to use the normal review assignment
-process for their own submissions, and HotCRP supports an alternate review
-mechanism.  For each chair conflict:
+process for their own submissions, and HotCRP supports alternate review
+mechanisms for chair conflicts.
 
 <ol>
 

@@ -483,6 +483,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
             return false;
         if ($visible > 0)
             $Conf->footerScript("add_assrev_ajax()");
+        $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
 	return true;
     }
     public function analyze($pl, &$rows) {
@@ -491,10 +492,13 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
     public function header($pl, $row = null, $ordinal = 0) {
         return "Assignment";
     }
+    public function content_empty($pl, $row) {
+        return !$pl->contact->allowAdminister($row);
+    }
     public function content($pl, $row) {
-        if ($row->conflictType >= CONFLICT_AUTHOR)
+        if ($row->reviewerConflictType >= CONFLICT_AUTHOR)
             return "<span class='author'>Author</span>";
-        $rt = ($row->conflictType > 0 ? -1 : min(max($row->reviewType, 0), REVIEW_PRIMARY));
+        $rt = ($row->reviewerConflictType > 0 ? -1 : min(max($row->reviewerReviewType, 0), REVIEW_PRIMARY));
         return tagg_select("assrev$row->paperId",
                            array(0 => "None",
                                  REVIEW_PRIMARY => "Primary",
@@ -542,6 +546,7 @@ class TopicScorePaperColumn extends PaperColumn {
     public function prepare($pl, &$queryOptions, $visible) {
         if (!count($pl->rf->topicName) || !$pl->contact->isPC)
             return false;
+        $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
         $queryOptions["topicInterestScore"] = 1;
 	return true;
     }
@@ -571,8 +576,10 @@ class PreferencePaperColumn extends PaperColumn {
         if (!$pl->contact->isPC)
             return false;
         $queryOptions["reviewerPreference"] = $queryOptions["topicInterestScore"] = 1;
+        $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
         if ($this->editable && $visible > 0) {
-            $arg = ($pl->contact->privChair ? "&amp;reviewer=" . $pl->search->cid : "");
+            if ($pl->contact->privChair && $pl->reviewer)
+                $arg = "&amp;reviewer=" . $pl->reviewer;
             $Conf->footerHtml(
                  tagg_form(hoturl_post("paper", "setrevpref=1$arg"),
                            array("id" => "prefform")) . "<div>"
@@ -596,7 +603,7 @@ class PreferencePaperColumn extends PaperColumn {
         $pref = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
         if (!$this->editable)
             return $pref;
-        else if ($row->conflictType > 0)
+        else if ($row->reviewerConflictType > 0)
             return "N/A";
         else
             return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' id='revpref$row->paperId' value=\"$pref\" tabindex='2' />";

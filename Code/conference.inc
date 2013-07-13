@@ -876,6 +876,7 @@ class Conference {
 	//   "allComments"	All comments (multiple rows per paper)
 	//   "reviewerName"	Include reviewer names
 	//   "commenterName"	Include commenter names
+        //   "reviewer" => $cid Include reviewerConflictType/reviewerReviewType
 	//   "joins"		Table(s) to join
 	//   "tags"		Include paperTags
 	//   "tagIndex" => $tag	Include tagIndex of named tag
@@ -894,6 +895,12 @@ class Conference {
 	    $contactId = $contact;
 	    $contact = null;
 	}
+        if (isset($options["reviewer"]) && is_object($options["reviewer"]))
+            $reviewerContactId = $options["reviewer"]->contactId;
+        else if (isset($options["reviewer"]))
+            $reviewerContactId = $options["reviewer"];
+        else
+            $reviewerContactId = $contactId;
 	$where = array();
 
 	// fields
@@ -994,6 +1001,9 @@ class Conference {
 	if (defval($options, 'allConflictType'))
 	    $pq .= ",
 		AllConflict.allConflictType";
+        if (defval($options, "reviewer"))
+            $pq .= ",
+		RPC.conflictType reviewerConflictType, RPR.reviewType reviewerReviewType";
 
 	// tables
 	$pq .= "
@@ -1051,7 +1061,7 @@ class Conference {
 		$pq .= ", group_concat(PaperTopic.topicId) as topicIds, group_concat(ifnull(TopicInterest.interest,1)) as topicInterest";
 	    if (isset($options['topicInterestScore']))
 		$pq .= ", sum(if(interest=2,2,interest-1)) as topicInterestScore";
-	    $pq .= " from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$contactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";
+	    $pq .= " from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$reviewerContactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";
 	}
 
 	if (isset($options['options']) && defval($this->settings, "paperOption")) {
@@ -1073,7 +1083,7 @@ class Conference {
 	}
 
 	if (defval($options, 'reviewerPreference'))
-	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)\n";
+	    $pq .= "		left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$reviewerContactId)\n";
 	if (defval($options, 'allReviewerPreference')
 	    || defval($options, 'desirability')) {
 	    $subq = "select paperId";
@@ -1086,6 +1096,9 @@ class Conference {
 	}
 	if (defval($options, 'allConflictType'))
 	    $pq .= "		left join (select paperId, group_concat(concat(contactId,' ',conflictType) separator ',') as allConflictType from PaperConflict where conflictType>0 group by paperId) as AllConflict on (AllConflict.paperId=Paper.paperId)\n";
+        if (defval($options, "reviewer"))
+            $pq .= "		left join PaperConflict RPC on (RPC.paperId=Paper.paperId and RPC.contactId=$reviewerContactId)
+		left join PaperReview RPR on (RPR.paperId=Paper.paperId and RPR.contactId=$reviewerContactId)\n";
 
 
 	// conditions
