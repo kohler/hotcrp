@@ -28,8 +28,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
     foreach ($rrows as $rr) {
 	$highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
 	$foundRrow += $highlight;
-	if ($rr->contactId == $Me->contactId
-	    || (isset($prow->myReviewId) && $prow->myReviewId == $rr->reviewId))
+        if ($Me->ownReview($rr))
 	    $foundMyReview++;
 	$canView = $Me->canViewReview($prow, $rr, null);
 

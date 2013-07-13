@@ -1515,9 +1515,8 @@ $blind\n";
 	}
 
 	// message?
-	if ($rrow && $rrow->contactId != $Me->contactId
-	    && !isset($prow->myReviewId) && $admin)
-	    echo "<div class='hint'>You didn&rsquo;t write this review, but as an administrator you can still make changes.</div>\n";
+        if ($rrow && !$Me->ownReview($rrow) && $admin)
+            echo "<div class='hint'>You didn’t write this review, but as an administrator you can still make changes.</div>\n";
 
 	// download?
 	echo "<div class='clear'></div></td><td></td></tr>

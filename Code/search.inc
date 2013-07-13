@@ -170,14 +170,16 @@ class SearchTerm {
 }
 
 class SearchReviewValue {
-    var $countexpr;
-    var $contactsql;
-    var $_contactset;
-    var $fieldsql;
-    var $compar;
-    var $allowed;
+    public $countexpr;
+    public $contactsql;
+    private $_contactset;
+    public $fieldsql;
+    public $compar;
+    public $allowed;
+    public $view_score;
 
-    function __construct($countexpr, $contacts = null, $fieldsql = null) {
+    function __construct($countexpr, $contacts = null, $fieldsql = null,
+                         $view_score = null) {
 	$this->countexpr = $countexpr;
 	if (!$contacts || is_string($contacts))
 	    $this->contactsql = $contacts;
@@ -195,6 +197,7 @@ class SearchReviewValue {
 		$this->allowed |= 1;
 	    $this->compar = (int) $m[2];
 	}
+        $this->view_score = $view_score;
     }
     function test($n) {
 	if ($n > $this->compar)
@@ -258,7 +261,7 @@ class SearchQueryInfo {
 
 class PaperSearch {
 
-    const F_TYPEMASK = 0x00007;
+    const F_REVIEWTYPEMASK = 0x00007;
     const F_COMPLETE = 0x00008;
     const F_INCOMPLETE = 0x00010;
     const F_NONCONFLICT = 0x00020;
@@ -300,7 +303,7 @@ class PaperSearch {
     var $noratings;
     var $interestingRatings;
     var $preciseQuery;
-    var $needflags;
+    private $needflags;
     var $reviewAdjust;
     var $_reviewAdjustError;
     var $_thenError;
@@ -652,7 +655,7 @@ class PaperSearch {
 	    }
 
 	    if ($Conf->timeAuthorViewReviews() && $viewscore >= VIEWSCORE_AUTHOR)
-		$qt[] = new SearchTerm($type, ($rt & ~self::F_TYPEMASK) | self::F_AUTHOR | self::F_COMPLETE | $deblinder, $value);
+                $qt[] = new SearchTerm($type, ($rt & ~self::F_REVIEWTYPEMASK) | self::F_AUTHOR | self::F_COMPLETE | $deblinder, $value);
 	}
     }
 
@@ -677,11 +680,7 @@ class PaperSearch {
 
 	$contacts = ($m[0] == "" ? null : $this->_reviewerMatcher($m[0], $quoted));
 	$value = new SearchReviewValue($m[1], $contacts);
-
-	$nqt = count($qt);
-	$this->_searchCompleteReviewer($qt, "re", $rt, $value, VIEWSCORE_AUTHOR);
-	if (count($qt) == $nqt)
-	    $qt[] = new SearchTerm("f");
+        $qt[] = new SearchTerm("re", $rt | self::F_XVIEW, $value);
     }
 
     function _searchDecision($word, &$qt, $quoted) {
@@ -864,10 +863,9 @@ class PaperSearch {
 		$value = "$field like '%" . sqlq_for_like($word) . "%'";
 	}
 
-	$nqt = count($qt);
-	$value = new SearchReviewValue($countexpr, $contacts, $value);
-	$this->_searchCompleteReviewer($qt, "re", self::F_COMPLETE, $value, $f->view_score);
-	return count($qt) != $nqt;
+        $value = new SearchReviewValue($countexpr, $contacts, $value, $f->view_score);
+        $qt[] = new SearchTerm("re", self::F_COMPLETE | self::F_XVIEW, $value);
+        return true;
     }
 
     function _searchRevpref($word, &$qt, $quoted) {
@@ -1917,8 +1915,8 @@ class PaperSearch {
 	if (!isset($sqi->tables[$thistab])) {
 	    $where = array();
 	    $reviewtable = "PaperReview r";
-	    if ($t->flags & self::F_TYPEMASK)
-		$where[] = "reviewType=" . ($t->flags & self::F_TYPEMASK);
+            if ($t->flags & self::F_REVIEWTYPEMASK)
+                $where[] = "reviewType=" . ($t->flags & self::F_REVIEWTYPEMASK);
 	    if ($t->flags & self::F_REVIEWNONBLIND)
 		$where[] = "reviewBlind=0";
 	    if ($t->flags & self::F_COMPLETE)
@@ -1939,13 +1937,19 @@ class PaperSearch {
 	    $wheretext = "";
 	    if (count($where))
 		$wheretext = " where " . join(" and ", $where);
-	    $sqi->add_table($thistab, array("left join", "(select r.paperId, count(r.reviewId) as count from $reviewtable$wheretext group by paperId)"));
+            $sqi->add_table($thistab, array("left join", "(select r.paperId, count(r.reviewId) count, group_concat(r.reviewId, ' ', r.contactId, ' ', r.reviewType, ' ', coalesce(r.reviewSubmitted,0), ' ', r.reviewNeedsSubmit, ' ', r.requestedBy, ' ', r.reviewToken, ' ', r.reviewBlind) info from $reviewtable$wheretext group by paperId)"));
+            $sqi->add_column($thistab . "_info", $thistab . ".info");
 	}
 	$q = array();
 	$this->_clauseTermSetFlags($t, $sqi, $q);
-	$q[] = "coalesce($thistab.count,0)" . $t->value->countexpr;
-	$sqi->add_column($thistab . "_matches", "$thistab.count");
-	$t->link = $thistab . "_matches";
+        // Make the database query conservative (so change equality
+        // constraints to >= constraints, and ignore <=/</!= constraints).
+        // We'll do the precise query later.
+        if (!($t->value->allowed & 1))
+            $q[] = "coalesce($thistab.count,0)" . ($t->value->allowed & 2 ? ">=" : ">") . $t->value->compar;
+        else
+            $q[] = "true";
+        $t->link = $thistab;
 	return "(" . join(" and ", $q) . ")";
     }
 
@@ -2041,7 +2045,7 @@ class PaperSearch {
 		$extrawhere[] = $t->value->fieldsql;
 	    $extrawhere = join(" and ", $extrawhere);
 	    if ($extrawhere == "" && $t->get("round") === null && $t->get("rate") === null)
-		$thistab = "Numreviews_" . ($t->flags & (self::F_TYPEMASK | self::F_REVIEWNONBLIND | self::F_COMPLETE | self::F_INCOMPLETE));
+		$thistab = "Numreviews_" . ($t->flags & (self::F_REVIEWTYPEMASK | self::F_COMPLETE | self::F_INCOMPLETE));
 	    else
 		$thistab = "Reviews_" . count($sqi->tables);
 	    $f[] = $this->_clauseTermSetReviews($thistab, $extrawhere, $t, $sqi);
@@ -2170,6 +2174,24 @@ class PaperSearch {
             if ($t->type == "option"
                 && !$this->contact->canViewPaperOption($row, $t->value[0], true))
                 return false;
+            if ($t->type == "re" && ($fieldname = $t->link)
+                && !isset($row->$fieldname)) {
+                $row->$fieldname = 0;
+                $rrow = (object) array("paperId" => $row->paperId);
+                $account = !$t->value->contactsql && !$t->value->fieldsql;
+                foreach (explode(",", defval($row, $fieldname . "_info", "")) as $info)
+                    if ($info != "") {
+                        list($rrow->reviewId, $rrow->contactId, $rrow->reviewType, $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->requestedBy, $rrow->reviewToken, $rrow->reviewBlind) = explode(" ", $info);
+                        if (($account
+                             ? $this->contact->canCountReview($row, $rrow, true)
+                             : $this->contact->canViewReview($row, $rrow, true))
+                            && (!$t->value->contactsql
+                                || $this->contact->canViewReviewerIdentity($row, $rrow, true))
+                            && (!isset($t->value->view_score)
+                                || $t->value->view_score > $this->contact->viewReviewFieldsScore($row, $rrow)))
+                            ++$row->$fieldname;
+                    }
+            }
         }
 	if ($flags & self::F_FALSE)
 	    return false;

@@ -789,6 +789,16 @@ class Contact {
 	    || ($rrow->requestedBy == $this->contactId && $rrow->reviewType == REVIEW_EXTERNAL && $Conf->setting("pcrev_editdelegate"));
     }
 
+    public function canCountReview($prow, $rrow, $forceShow) {
+        if ($rrow && $rrow->reviewNeedsSubmit <= 0
+            && $rrow->reviewSubmitted <= 0)
+            return false;
+        else if ($this->isPC && (!$prow || $this->actConflictType($prow) == 0))
+            return true;
+        else
+            return $this->canViewReview($prow, $rrow, $forceShow);
+    }
+
     function canViewReview($prow, $rrow, $forceShow, &$whyNot = null) {
 	global $Conf;
 	// fetch paper
@@ -832,10 +842,6 @@ class Contact {
 		|| ($rrow
                     && $rrow->paperId == $prow->paperId
 		    && $this->ownReview($rrow)
-                    && $viewscore >= VIEWSCORE_REVIEWERONLY)
-		|| ($rrow
-                    && isset($prow->myReviewId)
-		    && $prow->myReviewId == $rrow->reviewId
                     && $viewscore >= VIEWSCORE_REVIEWERONLY)))
 	    return true;
 	// collect failure reasons
@@ -1158,8 +1164,7 @@ class Contact {
     function timeReview($prow, $rrow) {
 	global $Conf;
 	$myReview = $prow->myReviewType || $prow->reviewId
-	    || ($rrow && isset($prow->myReviewId)
-		&& $prow->myReviewId == $rrow->reviewId)
+            || ($rrow && $this->ownReview($rrow))
 	    || ($rrow && $rrow->contactId != $this->contactId
                 && $this->allowAdminister($prow));
 	return $Conf->timeReviewPaper($this->isPC, $myReview, true);
