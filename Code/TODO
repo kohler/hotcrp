@@ -47,15 +47,6 @@ view for users without chair rights. [Giuliano Casale, Martin Arlitt]
 paper. Currently, we could do this just by adding ~~ tags, but this is
 not so good if the comment is long. [Giuliano Casale, Martin Arlitt]
 
-- We had the need a few times to distribute additional material to the
-reviewers of a paper, e.g., anonymized technical reports provided
-through the chairs (our conference uses a double-blind review
-process). It would have been nice to have the ability to attach this
-extra material to the corresponding paper page, instead of having to
-send an email to the reviewers. This would have given the ability to
-the other PC members to look at this extra material during the PC
-meeting. [Giuliano Casale, Martin Arlitt]
-
 - During the PC meeting, we were highlighting the current paper for the
 benefit of the members (i.e., so they could more easily follow along as we
 discussed papers). Basically, this amounted to adding a red tag and
