@@ -5,9 +5,10 @@
 
 class ZipDocuments {
 
-    var $tmpdir;
-    var $files;
-    var $warnings;
+    private $tmpdir;
+    private $files;
+    private $warnings;
+    private $recurse;
 
     function __construct() {
         $this->tmpdir = null;
@@ -21,9 +22,10 @@ class ZipDocuments {
         }
         $this->files = array();
         $this->warnings = array();
+        $this->recurse = false;
     }
 
-    function add($doc, $filename = null) {
+    private function _add($doc, $filename, $check_filename) {
         if ($this->tmpdir === null)
             if (($this->tmpdir = tempdir()) === false) {
                 $this->warnings[] = "Could not create temporary directory.";
@@ -31,11 +33,12 @@ class ZipDocuments {
             }
         if (!$filename && is_object($doc) && isset($doc->filename))
             $filename = $doc->filename;
-        if (!$filename || !preg_match(',\A[^.*/\s\000-\017\\\\\'"][^*/\000-\017\\\\\'"]*\z,', $filename)) {
+        if (!$filename
+            || ($check_filename
+                && !preg_match(',\A[^.*/\s\000-\017\\\\\'"][^*/\000-\017\\\\\'"]*\z,', $filename))) {
             $this->warnings[] = "$filename: Bad filename.";
             return false;
         }
-        $zip_filename = "$this->tmpdir/$filename";
         if (is_string($doc))
             $doc = (object) array("content" => $doc);
         else if (!isset($doc->filestore) && !isset($doc->content)) {
@@ -45,9 +48,27 @@ class ZipDocuments {
                 $this->warnings[] = $doc->error_text;
             return false;
         }
+        $fn = $filename;
+        $zip_filename = "$this->tmpdir/";
+        while (($p = strpos($fn, "/")) !== false) {
+            $zip_filename .= substr($fn, 0, $p);
+            if (!is_dir($zip_filename)
+                && (file_exists($zip_filename) || !@mkdir($zip_filename, 0777))) {
+                $this->warnings[] = "$filename: Couldn’t save document to this name.";
+                error_log($zip_filename);
+                return false;
+            }
+            $zip_filename .= "/";
+            $fn = substr($fn, $p + 1);
+        }
+        if ($fn == "") {
+            $this->warnings[] = "$filename: Bad filename.";
+            return false;
+        }
+        $zip_filename .= $fn;
         if (isset($doc->filestore)
             && @symlink($doc->filestore, $zip_filename))
-            $this->files[] = $zip_filename;
+            /* OK */;
         else if (isset($doc->content)) {
             $trylen = file_put_contents($zip_filename, $doc->content);
             if ($trylen != strlen($doc->content)) {
@@ -57,35 +78,49 @@ class ZipDocuments {
             if ($trylen != strlen($doc->content)) {
                 $this->warnings[] = "$filename: Could not save.";
                 return false;
-            } else
-                $this->files[] = $zip_filename;
+            }
         }
+        $zip_filename = substr($zip_filename, strlen($this->tmpdir) + 1);
+        if (($p = strpos($zip_filename, "/")) !== false) {
+            $zip_filename = substr($zip_filename, 0, $p);
+            $this->recurse = true;
+        }
+        $this->files[$zip_filename] = true;
         return true;
     }
 
-    function download($downloadname) {
+    public function add($doc, $filename = null) {
+        return $this->_add($doc, $filename, true);
+    }
+
+    public function add_as($doc, $filename) {
+        return $this->_add($doc, $filename, false);
+    }
+
+    public function download($downloadname, $content_type = "application/zip") {
 	global $Opt, $zlib_output_compression;
 
 	if (!($zipcmd = defval($Opt, "zipCommand", "zip")))
             return set_error_html("<code>zip</code> is not supported on this installation.");
 	if (count($this->warnings))
 	    $this->add(join("\n", $this->warnings) . "\n", "README-warnings.txt");
-	$out = system("$zipcmd -jq $this->tmpdir/x.zip '" . join("' '", $this->files) . "' 2>&1", $status);
+        $opts = ($this->recurse ? "-rq" : "-q");
+	$out = system("cd $this->tmpdir; $zipcmd $opts _hotcrp.zip '" . join("' '", array_keys($this->files)) . "' 2>&1", $status);
 	if ($status != 0)
 	    return set_error_html("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-	if (!file_exists("$this->tmpdir/x.zip"))
+	if (!file_exists("$this->tmpdir/_hotcrp.zip"))
 	    return set_error_html("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
 
 	// output
 	header("Content-Description: PHP Generated Data");
 	header("Content-Disposition: attachment; filename=" . mime_quote_string($downloadname));
-	header("Content-Type: application/zip");
+	header("Content-Type: $content_type");
 	if (!$zlib_output_compression)
-	    header("Content-Length: " . filesize("$this->tmpdir/x.zip"));
+	    header("Content-Length: " . filesize("$this->tmpdir/_hotcrp.zip"));
 	// flush all output buffers to avoid holding large files in memory
 	ob_clean();
 	flush();
-	readfile("$this->tmpdir/x.zip");
+	readfile("$this->tmpdir/_hotcrp.zip");
 	return (object) array("error" => false);
     }
 

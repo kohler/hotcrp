@@ -196,6 +196,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/Code/rank.inc");
     else if ($class_name == "CsvParser")
         require_once("$ConfSitePATH/Code/csv.php");
+    else if ($class_name == "XlsxGenerator")
+        require_once("$ConfSitePATH/Code/xlsx.php");
 }
 
 // If you have the PEAR::Mail libraries installed globally,
