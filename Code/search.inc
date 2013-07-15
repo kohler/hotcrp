@@ -472,7 +472,7 @@ class PaperSearch {
         return $t;
     }
 
-    function _searchField($word, $rtype, &$qt, $blind) {
+    private function _searchField($word, $rtype, &$qt) {
 	global $Conf;
 	if (!is_array($word))
 	    $extra = array("regex" => array($rtype, self::_analyze_field_preg($word)));
@@ -484,6 +484,17 @@ class PaperSearch {
         else {
             $qt[] = new SearchTerm($rtype, self::F_XVIEW | self::F_REVIEWER, $word, $extra);
             $qt[] = new SearchTerm($rtype, self::F_XVIEW | self::F_AUTHOR, $word, $extra);
+        }
+    }
+
+    private function _searchAuthors($word, &$qt, $keyword, $quoted) {
+        if ($keyword && !$quoted && $this->amPC && strcasecmp($word, "pc") == 0)
+            $this->_searchField(array_keys(pcMembers()), "au_cid", $qt);
+        else {
+            if ($keyword && !$quoted && $this->amPC && count(($pctags = pcTags()))
+                && isset($pctags[strtolower($word)]))
+                $this->_searchField(self::_pcContactIdsWithTag(strtolower($word)), "au_cid", $qt);
+            $this->_searchField($word, "au", $qt);
         }
     }
 
@@ -556,7 +567,8 @@ class PaperSearch {
             return "=0";
         else if (!$quoted && $type == 1 && ($word == "yes" || $word == "any"))
             return "!=0";
-	else if (!$quoted && $this->amPC && count(($pctags = pcTags()))) {
+
+        if (!$quoted && $this->amPC && count(($pctags = pcTags()))) {
 	    $negtag = $word[0] == "-";
 	    $tag = strtolower($negtag ? substr($word, 1) : $word);
 	    if (isset($pctags[$tag])) {
@@ -1045,15 +1057,13 @@ class PaperSearch {
 
 	$qt = array();
 	if ($keyword ? $keyword == "ti" : isset($this->fields["ti"]))
-	    $this->_searchField($word, "ti", $qt, false);
+	    $this->_searchField($word, "ti", $qt);
 	if ($keyword ? $keyword == "ab" : isset($this->fields["ab"]))
-	    $this->_searchField($word, "ab", $qt, false);
-	if ($keyword == "au" && !$quoted && strcasecmp($word, "pc") == 0)
-	    $this->_searchField(array_keys(pcMembers()), "au_cid", $qt, true);
-	else if ($keyword ? $keyword == "au" : isset($this->fields["au"]))
-	    $this->_searchField($word, "au", $qt, true);
+	    $this->_searchField($word, "ab", $qt);
+        if ($keyword ? $keyword == "au" : isset($this->fields["au"]))
+            $this->_searchAuthors($word, $qt, $keyword, $quoted);
 	if ($keyword ? $keyword == "co" : isset($this->fields["co"]))
-	    $this->_searchField($word, "co", $qt, true);
+	    $this->_searchField($word, "co", $qt);
 	foreach (array("re", "cre", "ire", "pri", "cpri", "ipri", "sec", "csec", "isec", "ext", "cext", "iext") as $rtype)
 	    if ($keyword ? $keyword == $rtype : isset($this->fields[$rtype]))
 		$this->_searchReviewer($word, $rtype, $qt, $quoted);
@@ -2005,7 +2015,8 @@ class PaperSearch {
                 return false;
             if ($t->type == "tag" && !$this->contact->canViewTags($row, true))
                 return false;
-            if (($t->type == "au" || $t->type == "co" || $t->type == "conflict")
+            if (($t->type == "au" || $t->type == "au_cid" || $t->type == "co"
+                 || $t->type == "conflict")
                 && !$this->contact->allowViewAuthors($row))
                 return false;
             if ($t->type == "pf" && $t->value[0] == "outcome"
