@@ -369,6 +369,8 @@ class PaperList extends BaseList {
 	    $sel_opt["lead"] = "Discussion leads";
 	    $sel_opt["shepherd"] = "Shepherds";
 	}
+        if ($this->contact->privChair)
+            $sel_opt["acmcms"] = "ACM CMS report";
 	$t .= tagg_select("getaction", $sel_opt, defval($_REQUEST, "getaction"),
 			  array("id" => "plact${nlll}_d", "tabindex" => 6))
 	    . "&nbsp; <input type='submit' class='b' name='getgo' value='Go' tabindex='6' onclick='return (papersel_check_safe=true)' /></td>";

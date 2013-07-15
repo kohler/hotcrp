@@ -781,6 +781,30 @@ if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
 }
 
 
+// download ACM CMS information for selected papers
+if ($getaction == "acmcms" && isset($papersel) && $Me->privChair) {
+    $idq = paperselPredicate($papersel, "Paper.");
+    $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper where $idq", "while fetching papers");
+    $texts = array();
+    while (($row = edb_orow($result))) {
+        cleanAuthor($row);
+        $x = array($Opt["downloadPrefix"] . $row->paperId, $row->title, array(), array());
+        foreach ($row->authorTable as $au) {
+            $email = $au[2] ? $au[2] : "<unknown>";
+            $x[2][] = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $email;
+            $x[3][] = $email;
+        }
+        $x[2] = join("; ", $x[2]);
+        $x[3] = join("; ", $x[3]);
+        $texts[$paperselmap[$row->paperId]] = $x;
+    }
+    $xlsx = new XlsxGenerator;
+    $xlsx->add_sheet(array("Paper ID", "Title of Submission", "Author Names", "Author Email Addresses"), $texts);
+    $xlsx->download($Opt["downloadPrefix"] . "report.xlsx");
+    exit;
+}
+
+
 // set outcome for selected papers
 if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != ""
     && isset($papersel) && check_post())
