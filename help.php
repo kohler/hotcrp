@@ -19,6 +19,9 @@ $topicTitles = array("topics" => "Help topics",
 		     "formulas" => "Formulas",
 		     "chair" => "Chair’s guide");
 
+if (!isset($_REQUEST["t"]) && isset($_SERVER["PATH_INFO"])
+    && preg_match(',\A/(\w+)\z,i', $_SERVER["PATH_INFO"]))
+    $_REQUEST["t"] = substr($_SERVER["PATH_INFO"], 1);
 $topic = defval($_REQUEST, "t", "topics");
 if ($topic == "syntax")
     $topic = "keywords";
@@ -44,8 +47,10 @@ else
 function _alternateRow($caption, $entry, $next = null) {
     global $rowidx;
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
+    $anchor = strtolower(preg_replace('/\W/', "_", $caption));
     echo "<tr class='k", ($rowidx % 2), "'>",
-	"<td class='srcaption nowrap'>", $caption, "</td>",
+	"<td class='srcaption nowrap'><a class='q' name='$anchor' href='#$anchor'>",
+        $caption, "</a></td>",
 	"<td class='sentry'", ($next === null ? " colspan='2'>" : ">"),
 	$entry, "</td>";
     if ($next !== null)

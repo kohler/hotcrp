@@ -427,6 +427,10 @@ function hoturl($page, $options = null) {
                        && preg_match($are . 'u=([^&]+)' . $zre, $options, $m))) {
             $t .= "/" . $m[2];
             $options = $m[1] . $m[3];
+        } else if ($page == "help"
+                   && preg_match($are . 't=(\w+)' . $zre, $options, $m)) {
+            $t .= "/" . $m[2];
+            $options = $m[1] . $m[3];
         }
     }
     if ($options && preg_match('/\A\&(?:amp;)?(.*)\z/', $options, $m))
