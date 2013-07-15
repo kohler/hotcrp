@@ -194,6 +194,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/Code/paperoption.php");
     else if ($class_name == "PaperRank")
         require_once("$ConfSitePATH/Code/rank.inc");
+    else if ($class_name == "CsvParser")
+        require_once("$ConfSitePATH/Code/csv.php");
 }
 
 // If you have the PEAR::Mail libraries installed globally,
