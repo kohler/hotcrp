@@ -29,6 +29,8 @@ if (isset($_REQUEST["fromlog"]) && ctype_digit($_REQUEST["fromlog"])
 // create options
 $tOpt = array();
 $tOpt["s"] = "Submitted papers";
+if ($Me->privChair && $Conf->timePCViewDecision(false) && $Conf->setting("paperacc") > 0)
+    $tOpt["acc"] = "Accepted papers";
 if ($Me->privChair) {
     $tOpt["unsub"] = "Unsubmitted papers";
     $tOpt["all"] = "All papers";
