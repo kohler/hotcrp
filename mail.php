@@ -89,7 +89,8 @@ function contactQuery($type) {
     $where = array();
     if ($type != "pc" && substr($type, 0, 3) != "pc:" && isset($papersel))
 	$where[] = "Paper.paperId in (" . join(", ", $papersel) . ")";
-    else if ($type == "s")
+
+    if ($type == "s")
 	$where[] = "Paper.timeSubmitted>0";
     else if ($type == "unsub")
 	$where[] = "Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0";
