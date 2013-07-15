@@ -89,7 +89,7 @@ function contactQuery($type) {
 
     // paper limit
     $where = array();
-    if ($type != "pc" && substr($type, 0, 3) != "pc:" && isset($papersel))
+    if ($type != "pc" && substr($type, 0, 3) != "pc:" && $type != "all" && isset($papersel))
 	$where[] = "Paper.paperId in (" . join(", ", $papersel) . ")";
 
     if ($type == "s")
@@ -186,7 +186,7 @@ function checkMailPrologue($send) {
 	    "<div class='fn fx2 merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div>",
 	    "<div id='mailwarnings'></div>",
 	    "<div class='fx info'>Verify that the mails look correct, then select “Send” to send the checked mails.<br />",
-	    "Mailing to:&nbsp;", $recip[$_REQUEST["recipients"]];
+	    "Mailing to:&nbsp;", $recip[$_REQUEST["recipients"]], "<span id='mailinfo'></span>";
 	if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $_REQUEST["recipients"])
 	    && defval($_REQUEST, "plimit") && $_REQUEST["q"] !== "")
 	    echo "<br />Paper selection:&nbsp;", htmlspecialchars($_REQUEST["q"]);
@@ -200,6 +200,14 @@ function checkMailPrologue($send) {
 	    "</div>\n";
     }
     $Conf->echoScript("fold('mail',0,2)");
+}
+
+function echo_mailinfo($mcount, $mrecipients, $mpapers) {
+    global $Conf;
+    $m = plural($mcount, "mail") . ", " . plural($mrecipients, "recipient");
+    if (count($mpapers) != 0)
+        $m .= ", " . plural($mpapers, "paper");
+    $Conf->echoScript("\$\$('mailinfo').innerHTML=\" <span class='barsep'>|</span> " . $m . "\";");
 }
 
 function checkMail($send) {
@@ -229,6 +237,9 @@ function checkMail($send) {
 		  "error" => false, "mstate" => new MailerState());
     $last = array("subject" => "", "body" => "", "to" => "");
     $any = false;
+    $mcount = 0;
+    $mrecipients = array();
+    $mpapers = array();
     $nrows_left = edb_nrows($result);
     $nrows_print = false;
     $nwarnings = 0;
@@ -245,7 +256,7 @@ function checkMail($send) {
 	$preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest); // see also $show_preparation below
 	if ($rest["error"] !== false) {
 	    $Error[$rest["error"]] = true;
-	    $emsg = "This " . Mailer::$mailHeaders[$rest["error"]] . " field isn't a valid email list: <blockquote><tt>" . htmlspecialchars($rest[$rest["error"]]) . "</tt></blockquote>  Make sure email address are separated by commas.  When mixing names and email addresses, try putting names in \"quotes\" and email addresses in &lt;angle brackets&gt;.";
+	    $emsg = "This " . Mailer::$mailHeaders[$rest["error"]] . " field isn’t a valid email list: <blockquote><tt>" . htmlspecialchars($rest[$rest["error"]]) . "</tt></blockquote>  Make sure email address are separated by commas.  When mixing names and email addresses, try putting names in \"quotes\" and email addresses in &lt;angle brackets&gt;.";
 	    if (!isset($preperrors[$emsg]))
 		$Conf->errorMsg($emsg);
 	    $preperrors[$emsg] = true;
@@ -266,8 +277,13 @@ function checkMail($send) {
 		Mailer::sendPrepared($preparation);
 		$Conf->log("Account was sent mail$mailId", $row->contactId, $row->paperId);
 	    }
+            ++$mcount;
+            $mrecipients[$preparation["to"]] = true;
+            if ($row->paperId >= 0)
+                $mpapers[$row->paperId] = true;
 	    if ($nrows_print) {
-		$Conf->echoScript("\$\$('mailcount').innerHTML = \"$nrows_left mails remaining.\";");
+		$Conf->echoScript("\$\$('mailcount').innerHTML=\"$nrows_left mails remaining.\";");
+                echo_mailinfo($mcount, $mrecipients, $mpapers);
 		$nrows_print = false;
 	    }
 
@@ -312,6 +328,8 @@ function checkMail($send) {
 	if ($send && $revinform !== null)
 	    $revinform[] = "(paperId=$row->paperId and contactId=$row->contactId)";
     }
+
+    echo_mailinfo($mcount, $mrecipients, $mpapers);
 
     if (!$any && !count($preperrors))
 	return $Conf->errorMsg("No users match &ldquo;" . $recip[$_REQUEST["recipients"]] . "&rdquo; for that search.");
