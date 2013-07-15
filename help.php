@@ -1034,10 +1034,12 @@ their conflict. If a paper has a manager, however, conflict overrides are
 not directly available: the administrator must remove the manager first.</p>
 
 <p>Paper managers have full administrator privilege for the papers they
-manage, so they can assign reviewers as normal. (They cannot change
-conference settings or use the auto-assignment or mail tools.) Normal
-assignments make life easy for reviewers. However, reviewer identities are
-still accessible via HotCRP logs, review counts, and mails, and they are
+manage, so they can assign reviewers as normal. They cannot change
+conference settings or use the auto-assignment or mail tools.</p>
+
+<p>Paper managers who use normal assignments
+will make life easy for reviewers. However, reviewer identities will
+still be accessible via HotCRP logs, review counts, and mails, and
 visible directly if the chair removes the manager. For additional privacy,
 we recommend using <em>review tokens</em>, which are completely anonymous
 review slots. To create a token, the manager (or a chair or administrator)
@@ -1046,15 +1048,12 @@ or email address. This reports the token, a short string of letters and
 numbers such as “9HDZYUB”. The manager can send this token to any system
 user. Anyone who knows the token can sign in and enter it on the home page.
 The system then lets them view the paper and anonymously modify the
-corresponding review.</p>
-
-<p>Reviews entered using this procedure appear to be authored by “Jane
+corresponding review, which appears to be authored by “Jane
   Q. Public.” True reviewer identities will not appear in HotCRP’s database or its logs.
-  Alternately, the trusted manager can send
-  offline review forms via email. Reviewers complete
-  the offline forms and send them to the manager, who uploads them into the
-  “Jane Q. Public” slots using review tokens.  This
-  way, even web server access logs store only the manager’s identity.</p>
+  For even more privacy, the trusted manager can send
+  offline review forms via email, and upload the filled-out forms using
+  review tokens; then even
+  web server access logs store only the manager’s identity.</p>
 
 ");
     _alternateRow("Before the meeting", "
