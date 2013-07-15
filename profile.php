@@ -306,7 +306,8 @@ function parseBulkFile($text, $filename) {
 	    array(defval($line, "firstName", ""), defval($line, "lastName", ""), defval($line, "email", ""));
 
 	if (createUser($tf, true, true))
-	    $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">" . Text::user_html($Acct) . "</a>";
+	    $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">"
+                . Text::user_html_nolink($Acct) . "</a>";
 
 	foreach (array("firstName", "lastName", "uemail", "affiliation", "preferredEmail",
 		       "voicePhoneNumber", "collaborators",
