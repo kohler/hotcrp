@@ -120,7 +120,7 @@ class CheckFormat {
 
     var $msgs;
     var $errors;
-    var $pages;
+    public $pages;
 
     function __construct() {
 	$this->msgs = array();
@@ -133,8 +133,8 @@ class CheckFormat {
 	return 0;
     }
 
-    function analyzeFile($filename, $spec) {
-	global $Opt;
+    function analyzeFile($filename, $spec, $documentId = 0) {
+        global $Conf, $Opt;
 	if (isset($Opt["pdftohtml"]))
 	    putenv("PHP_PDFTOHTML=" . $Opt["pdftohtml"]);
 
@@ -309,6 +309,8 @@ class CheckFormat {
 	}
 
 	// results
+        if ($documentId > 1 && $Conf->sversion >= 55)
+            $Conf->q("update PaperStorage set infoJson='{\"npages\":" . $this->pages . "}' where paperStorageId=$documentId");
 	if (count($pie) > 0) {
 	    $this->msg("warn", "This paper may violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
 	    return 1;
@@ -333,10 +335,10 @@ class CheckFormat {
 		return $this->msg("error", "Failed to save PDF to temporary file for analysis.");
 	    $row->filestore = "$tmpdir/paper.pdf";
 	}
-	return $this->analyzeFile($row->filestore, $spec);
+	return $this->analyzeFile($row->filestore, $spec, $row->paperStorageId);
     }
 
-    function analyzePaper($paperId, $documentType, $spec) {
+    function analyzePaper($paperId, $documentType, $spec = "") {
 	global $Conf, $Opt;
 	// constrain the number of concurrent banal executions to banalLimit
 	// (counter resets every 2 seconds)

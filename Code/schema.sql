@@ -422,6 +422,7 @@ CREATE TABLE `PaperStorage` (
   `sha1` varbinary(20) NOT NULL DEFAULT '',
   `documentType` int(3) NOT NULL DEFAULT '0',
   `filename` varchar(255) DEFAULT NULL,
+  `infoJson` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`paperStorageId`),
   UNIQUE KEY `paperStorageId` (`paperStorageId`),
   KEY `paperId` (`paperId`),
@@ -584,7 +585,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 54);
+insert into Settings (name, value) values ('allowPaperOption', 55);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

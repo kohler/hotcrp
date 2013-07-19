@@ -755,7 +755,7 @@ if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
 	$texts[$paperselmap[$row[0]]] = $row;
     foreach ($texts as $row) {
 	if ($row[2] == "application/pdf") {
-	    $cf = new CheckFormat();
+	    $cf = new CheckFormat;
 	    if ($cf->analyzePaper($row[0], false, $format)) {
 		$fchk = array();
 		foreach (CheckFormat::$error_types as $en => $etxt)
@@ -782,12 +782,33 @@ if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
 
 // download ACM CMS information for selected papers
 if ($getaction == "acmcms" && isset($papersel) && $Me->privChair) {
+    $xlsx = new XlsxGenerator($Opt["downloadPrefix"] . "acmcms.xlsx");
+    $xlsx->download_headers();
     $idq = paperselPredicate($papersel, "Paper.");
+    $while = "while fetching papers";
+
+    // maybe analyze paper page counts
+    $pagecount = array();
+    if ($Conf->sversion >= 55) {
+        require_once("Code/checkformat.inc");
+        $result = $Conf->qe("select Paper.paperId, ps.infoJson from Paper join PaperStorage ps on (ps.paperStorageId=Paper.finalPaperStorageId) where Paper.finalPaperStorageId>1 and $idq", $while);
+        while (($row = edb_row($result)))
+            if ($row[1] && ($j = json_decode($row[1])) && isset($j->npages))
+                $pagecount[$row[0]] = $j->npages;
+            else {
+                $cf = new CheckFormat;
+                if ($cf->analyzePaper($row[0], true))
+                    $pagecount[$row[0]] = $cf->pages;
+            }
+    }
+
+    // generate report
     $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper where $idq", "while fetching papers");
     $texts = array();
     while (($row = edb_orow($result))) {
         $x = array($Opt["downloadPrefix"] . $row->paperId,
-                   "" /* Paper type */, "" /* Pages */,
+                   "" /* Paper type */,
+                   defval($pagecount, $row->paperId, ""),
                    $row->title, array(), array(),
                    "" /* Notes */);
         cleanAuthor($row);
@@ -800,7 +821,6 @@ if ($getaction == "acmcms" && isset($papersel) && $Me->privChair) {
         $x[5] = join("; ", $x[5]);
         $texts[$paperselmap[$row->paperId]] = $x;
     }
-    $xlsx = new XlsxGenerator($Opt["downloadPrefix"] . "acmcms.xlsx");
     $xlsx->add_sheet(array("Paper ID", "Paper type", "Pages", "Title", "Author names", "Author email addresses", "Notes"), $texts);
     $xlsx->download();
     exit;

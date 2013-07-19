@@ -325,4 +325,8 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table PaperComment drop column `blind`")
         && $Conf->ql("update Settings set value=54 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 54;
+    if ($Conf->settings["allowPaperOption"] == 54
+        && $Conf->ql("alter table PaperStorage add `infoJson` varchar(255) DEFAULT NULL")
+        && $Conf->ql("update Settings set value=55 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 55;
 }
