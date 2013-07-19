@@ -260,6 +260,13 @@ class Conference {
 	return $this->dblink->query($query);
     }
 
+    function ql($query) {
+        $result = $this->dblink->query($query);
+        if (!$result)
+            error_log($this->dblink->error);
+        return $result;
+    }
+
     function q($query) {
 	global $OK;
 	$result = $this->dblink->query($query);
