@@ -332,6 +332,37 @@ class Contact {
 	return $result;
     }
 
+    function email_authored_papers($email, $update) {
+        global $Conf;
+        $aupapers = array();
+        $result = $Conf->q("select paperId, authorInformation from Paper where authorInformation like '%	" . sqlq_for_like($email) . "	%'");
+	while (($row = edb_orow($result))) {
+	    cleanAuthor($row);
+	    foreach ($row->authorTable as $au)
+		if (strcasecmp($au[2], $email) == 0) {
+                    $aupapers[] = $row->paperId;
+                    if ($update && $this->firstName == "" && $au[0])
+                        $this->firstName = $au[0];
+                    if ($update && $this->lastName == "" && $au[1])
+                        $this->lastName = $au[1];
+                    if ($update && $this->affiliation == "" && $au[3])
+                        $this->affiliation = $au[3];
+                    break;
+                }
+        }
+        return $aupapers;
+    }
+
+    function save_authored_papers($aupapers) {
+        global $Conf;
+        if (count($aupapers)) {
+            $q = array();
+            foreach ($aupapers as $pid)
+                $q[] = "($pid, $this->contactId, " . CONFLICT_AUTHOR . ")";
+            $Conf->ql("insert into PaperConflict (paperId, contactId, conflictType) values " . join(", ", $q) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
+        }
+    }
+
     function initialize($email, $useRequest = false, $useRequestPassword = false) {
 	global $Conf;
 	$this->email = trim($email);
@@ -344,20 +375,7 @@ class Contact {
 	$bestEmail = $this->email;
 	if ($useRequest && isset($_REQUEST["preferredEmail"]))
 	    $bestEmail = $_REQUEST["preferredEmail"];
-	$addAuthor = array();
-	$result = $Conf->q("select paperId, authorInformation from Paper where authorInformation like '%	" . sqlq_for_like($bestEmail) . "	%'");
-	while (($row = edb_orow($result))) {
-	    cleanAuthor($row);
-	    foreach ($row->authorTable as $au)
-		if (strcasecmp($au[2], $bestEmail) == 0) {
-		    $addAuthor[] = "($row->paperId, *, " . CONFLICT_AUTHOR . ")";
-		    if ($this->firstName == "")
-			$this->firstName = $au[0];
-		    if ($this->lastName == "")
-			$this->lastName = $au[1];
-		    break;
-		}
-	}
+	$addAuthor = $this->email_authored_papers($bestEmail, true);
 
 	$qa = "email, password, creationTime";
 	$qb = "'" . sqlq($this->email) . "', '" . sqlq($this->password) . "', " . time();
@@ -379,9 +397,9 @@ class Contact {
 	if (!$contactId)
 	    return false;
 
+        $this->contactId = $contactId;
 	if (count($addAuthor))
-	    $Conf->q("insert into PaperConflict (paperId, contactId, conflictType) values " . str_replace("*", $contactId, join(", ", $addAuthor)) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
-
+            $this->save_authored_papers($addAuthor);
 	return $this->lookupByEmail($this->email);
     }
 
