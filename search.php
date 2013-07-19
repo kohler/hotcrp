@@ -787,19 +787,22 @@ if ($getaction == "acmcms" && isset($papersel) && $Me->privChair) {
     $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper where $idq", "while fetching papers");
     $texts = array();
     while (($row = edb_orow($result))) {
+        $x = array($Opt["downloadPrefix"] . $row->paperId,
+                   "" /* Paper type */, "" /* Pages */,
+                   $row->title, array(), array(),
+                   "" /* Notes */);
         cleanAuthor($row);
-        $x = array($Opt["downloadPrefix"] . $row->paperId, $row->title, array(), array());
         foreach ($row->authorTable as $au) {
             $email = $au[2] ? $au[2] : "<unknown>";
-            $x[2][] = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $email;
-            $x[3][] = $email;
+            $x[4][] = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $email;
+            $x[5][] = $email;
         }
-        $x[2] = join("; ", $x[2]);
-        $x[3] = join("; ", $x[3]);
+        $x[4] = join("; ", $x[4]);
+        $x[5] = join("; ", $x[5]);
         $texts[$paperselmap[$row->paperId]] = $x;
     }
     $xlsx = new XlsxGenerator;
-    $xlsx->add_sheet(array("Paper ID", "Title of Submission", "Author Names", "Author Email Addresses"), $texts);
+    $xlsx->add_sheet(array("Paper ID", "Paper type", "Pages", "Title", "Author names", "Author email addresses", "Notes"), $texts);
     $xlsx->download($Opt["downloadPrefix"] . "report.xlsx");
     exit;
 }
