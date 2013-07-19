@@ -1,5 +1,30 @@
 HotCRP NEWS
 
+Version 2.60   19.Jul.2013
+
+* Major new feature: Paper managers. Administrators can assign PC
+  members to "manage" individual papers. These PC members gain admin
+  rights over those papers, and can, for example, assign reviewers as
+  usual. This required extensive rearchitecting of system internals to
+  (hopefully) avoid information leaks.
+
+* Frequently requested new feature: Attachment-style paper options,
+  into which users can upload arbitrarily many files of arbitrary
+  type.
+
+* Add Search > Download > PC review preferences and Search > Download
+  > ACM CMS report.
+
+* Add multiline text entry options.
+
+* Tags and search keywords are not case sensitive.
+
+* Many bug fixes, including to score searches like "ovemer:AC".
+
+* Thanks to Peter Sewell, Sarita Adve, Josh Simons, John Heidemann,
+  and Jeff Mogul.
+
+
 Version 2.59   14.Jun.2013
 
 * Bug fix: "Monitor external reviews" works. Reported by Peter Sewell.
