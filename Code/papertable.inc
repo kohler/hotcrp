@@ -660,7 +660,7 @@ class PaperTable {
 
 	if (count($contacts) > 0) {
             echo "<div class='pg fx9", ($viewable ? "" : " fx8"), "'>",
-		$this->papt("authorInformation", pluralx(count($contacts), "Contact author")),
+		$this->papt("authorInformation", pluralx(count($contacts), "Contact")),
                 "<div class='papb'>",
 		$this->authorData($contacts, "col", $Me),
 		"</div></div>\n\n";
