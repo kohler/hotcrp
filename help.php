@@ -696,19 +696,19 @@ the aggregated PC vote is visible in the public tag.</p>
 
 <p>For example, assume that an administrator defines a voting tag
  “". _singleVoteTag() . "” with an allotment of 10.
-To use two votes for a paper, a PC member uses the tag
-“~". _singleVoteTag() . "#2” on that paper. The “~” indicates
+To use two votes for a paper, a PC member adds the tag
+“~". _singleVoteTag() . "#2” to that paper. The “~” indicates
 that the tag is specific to that PC member, and the number following the “#”
-indicates the allotment.</p>
-
-<p>The system responds by adding the tag “". _singleVoteTag() . "#2” (note the
-lack of the “~”) to indicate that the paper currently has two votes assigned
-to it. As other PC members add their votes with their own “~” tags, the system
+is the number of votes.
+The system will respond by adding the tag “". _singleVoteTag() . "#2” to that
+paper (note the
+lack of the “~”). This indicates that the paper has two total votes.
+As other PC members add their votes with their own “~” tags, the system
 updates the “~”-less tag to reflect the current total.
 (The system ensures no PC member exceeds their allotment.) </p>
 
 <p>
-To see what the current voting status is, search by
+To see the current voting status, search by
 <a href=\"" . hoturl("search", "q=rorder:" . _singleVoteTag() . "") . "\">
 rorder:". _singleVoteTag() . "</a>. Use the display options to show tags
 in the search results (or set up a
