@@ -143,7 +143,8 @@ a.qq, a.uu {
 a.q, a.qq, a.qx, a.x, a.xx, u.x, .noul {
 	text-decoration: none;
 }
-a.q:hover, a.qq:hover, a.qx:hover u.x, a.x:hover, a.xx:hover u.x, .ul {
+a.q:hover, a.qq:hover, a.qx:hover u.x, a.x:hover, a.xx:hover u.x, .ul,
+.childfold:hover a.q {
 	text-decoration: underline;
 }
 a.small {
@@ -163,6 +164,9 @@ span.lgsep {
 }
 .nowrap {
 	white-space: nowrap;
+}
+.childfold {
+	cursor: pointer;
 }
 
 

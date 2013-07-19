@@ -161,34 +161,41 @@ class PaperTable {
     function papt($what, $name, $extra = array()) {
 	global $Error, $Conf;
 	$type = defval($extra, "type", "pap");
+        $fold = defval($extra, "fold", false);
+        $editfolder = defval($extra, "editfolder", false);
+        if ($fold || $editfolder) {
+            $foldnum = defval($extra, "foldnum", 0);
+            $foldnumarg = $foldnum ? ",$foldnum" : "";
+        }
+
 	$c = "<div class='${type}t";
 	if (isset($Error[$what]))
 	    $c .= " error";
 	if (isset($extra["extraclass"]))
 	    $c .= " " . $extra["extraclass"];
+        if ($fold || $editfolder)
+            $c .= " childfold' onclick='return foldup(this,event$foldnumarg)";
 	$c .= "'><span class='${type}fn'>";
-	$editfolder = defval($extra, "editfolder", false);
-	if (!($fold = defval($extra, "fold", false))) {
+	if (!$fold) {
 	    $n = (is_array($name) ? $name[0] : $name);
 	    if ($editfolder)
 		$c .= "<a class='q fn' title='Edit' "
 		    . "href=\"" . selfHref(array("atab" => $what))
-		    . "\" onclick='return fold(\"$editfolder\", 0)'>"
+		    . "\" onclick='return foldup(this,event)'>"
 		    . $n . "</a><span class='fx'>" . $n . "</span>";
 	    else
 		$c .= $n;
 	} else {
-	    $foldnum = defval($extra, "foldnum", 0);
 	    if (!is_array($name))
 		$name = array($name, $name);
 	    $c .= "<a class='q fn$foldnum' "
 		. "href=\"" . selfHref(array("pfold" => $foldnum . "o"))
-		. "\" onclick='return fold(\"$fold\", 0, $foldnum)' "
+		. "\" onclick='return foldup(this,event$foldnumarg)' "
 		. "title=\"" . defval($extra, "showtitle", "Show")
 		. "\">+&nbsp;" . $name[1] . "</a>"
 		. "<a class='q fx$foldnum' "
 		. "href=\"" . selfHref(array("pfold" => $foldnum . "c"))
-		. "\" onclick='return fold(\"$fold\", 1, $foldnum)' "
+		. "\" onclick='return foldup(this,event$foldnumarg)' "
 		. "title=\"" . defval($extra, "hidetitle", "Hide")
 		. "\">&minus;&nbsp;" . $name[0] . "</a>";
 	    if (($foldsession = defval($extra, "foldsession", false)))
@@ -196,11 +203,9 @@ class PaperTable {
 	}
 	$c .= "</span>";
 	if ($editfolder) {
-	    $x = defval($extra, "oneditunfold", "");
 	    $c .= "<span class='pstedit fn'>"
 		. "<a class='xx' href=\"" . selfHref(array("atab" => $what))
-		. "\" onclick='" . $x . ($x ? ";" : "")
-		. "return fold(\"$editfolder\",0)' title='Edit'>"
+		. "\" onclick='return foldup(this,event)' title='Edit'>"
 		. "<span style='display:inline-block;position:relative;width:15px'>"
 		. $Conf->cacheableImage("edit.png", "[Edit]", null, "bmabs")
 		. "</span>&nbsp;<u class='x'>Edit</u></a></span>";
@@ -884,7 +889,7 @@ class PaperTable {
 	    "</div>\n\n";
     }
 
-    function _papstripBegin($foldid = null, $folded = null, $otherclasses = null) {
+    function _papstripBegin($foldid = null, $folded = null, $extra = null) {
 	$x = "<div ";
 	if ($foldid)
 	    $x .= " id='fold$foldid'";
@@ -893,8 +898,11 @@ class PaperTable {
 	    $x .= " psc1";
 	if ($foldid)
 	    $x .= " fold" . ($folded ? "c" : "o");
-	if ($otherclasses)
-	    $x .= " " . $otherclasses;
+	if (is_string($extra))
+	    $x .= " " . $extra;
+        else if (is_array($extra))
+            foreach ($extra as $k => $v)
+                $x .= "' $k='$v";
 	++$this->npapstrip;
 	return $x . "'>";
     }
@@ -911,7 +919,7 @@ class PaperTable {
 	if ($this->entryMatches || !$this->allFolded)
 	    $fold = 0;
 
-	echo $this->_papstripBegin("pscollab", true, $fold),
+	echo $this->_papstripBegin("pscollab", $fold),
 	    $this->papt("collaborators", $name,
 			array("type" => "ps", "fold" => "pscollab",
 			      "foldsession" => "foldpscollab",
@@ -1198,14 +1206,15 @@ class PaperTable {
 	    $editable = $site && $Me->canSetTags($prow, $forceShow);
 	    $unfolded = $editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") == "tags");
 
-	    echo $this->_papstripBegin("tags", !$unfolded);
+	    echo $this->_papstripBegin("tags", !$unfolded,
+                                       array("onunfold" => "Miniajax.submit(\"tagreportform\")"));
 	    if (($color = $tagger->color_classes($prow->paperTags)))
 		echo "<div class='pscopen ${color}'>";
 
 	    if ($editable)
 		echo "<form method='post' action='", hoturl_post($site, "p=$prow->paperId$linkExtra"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
 
-	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0), "oneditunfold" => "Miniajax.submit(\"tagreportform\")")),
+	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0))),
 		"<div class='psv' style='position:relative'>";
 	    if ($editable) {
 		// tag report form

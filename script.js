@@ -316,6 +316,25 @@ function fold(which, dofold, foldtype) {
     return false;
 }
 
+function foldup(e, event, foldnum) {
+    var dofold = false, attr;
+    while (e && e.id.substr(0, 4) != "fold")
+        e = e.parentNode;
+    if (!e)
+        return true;
+    foldnum = foldnum || 0;
+    if (!foldnum && (m = e.className.match(/\bfold(\d*)[oc]\b/)))
+        foldnum = m[1];
+    dofold = !(new RegExp("\\bfold" + (foldnum ? foldnum : "") + "c\\b")).test(e.className);
+    if ((attr = e.getAttribute(dofold ? "onfold" : "onunfold"))) {
+        attr = new Function(attr);
+        attr.call(e);
+    }
+    if (event)
+        event_stop(event);
+    return fold(e, dofold, foldnum);
+}
+
 function crpfocus(id, subfocus, seltype) {
     var selt = $$(id);
     if (selt && subfocus)
