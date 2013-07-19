@@ -743,7 +743,6 @@ if ($getaction == "topics" && isset($papersel)) {
 if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
     $result = $Conf->qe("select paperId, title, mimetype from Paper where " . paperselPredicate($papersel) . " order by paperId", "while fetching topics");
     require_once("Code/checkformat.inc");
-    global $checkFormatErrors;
     $format = $Conf->settingText("sub_banal", "");
 
     // generate output gradually since this takes so long
@@ -759,10 +758,10 @@ if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
 	    $cf = new CheckFormat();
 	    if ($cf->analyzePaper($row[0], false, $format)) {
 		$fchk = array();
-		foreach ($checkFormatErrors as $en => $etxt)
+		foreach (CheckFormat::$error_types as $en => $etxt)
 		    if ($cf->errors & $en)
 			$fchk[] = $etxt;
-		$fchk = (count($fchk) ? join(",", $fchk) : "good");
+		$fchk = (count($fchk) ? join(",", $fchk) : "ok");
 		$pp = $cf->pages;
 	    } else {
 		$fchk = "error";

@@ -116,6 +116,8 @@ class CheckFormat {
     const ERR_BODYFONTSIZE = 16;
     const ERR_BODYLEADING = 32;
 
+    public static $error_types;
+
     var $msgs;
     var $errors;
     var $pages;
@@ -371,8 +373,7 @@ class CheckFormat {
 
 }
 
-global $checkFormatErrors;
-$checkFormatErrors = array(CheckFormat::ERR_PAPERSIZE => "papersize",
+CheckFormat::$error_types = array(CheckFormat::ERR_PAPERSIZE => "papersize",
 			   CheckFormat::ERR_PAGELIMIT => "pagelimit",
 			   CheckFormat::ERR_COLUMNS => "columns",
 			   CheckFormat::ERR_TEXTBLOCK => "textblock",
