@@ -1677,11 +1677,17 @@ tr.pl.italictag, tr.plx.italictag {
 .bigtag, tr.pl.bigtag td.pl_id, tr.pl.bigtag td.pl_title {
 	font-size: 140%;
 }
+.bigtag .pst {
+	font-size: 71.4%;
+}
 tr.pl.bigtag, tr.plx.bigtag {
 	font-size: inherit;
 }
 .smalltag, tr.pl.smalltag td.pl_id, tr.pl.smalltag td.pl_title {
 	font-size: 80%;
+}
+.smalltag .pst {
+	font-size: 125%;
 }
 tr.pl.smalltag, tr.plx.smalltag {
 	font-size: inherit;
