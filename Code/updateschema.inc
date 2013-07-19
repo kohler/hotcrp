@@ -305,7 +305,7 @@ function updateSchema($Conf) {
         && $Conf->q("update PaperComment set commentType=commentType|" . COMMENTTYPE_BLIND . " where blind=1")
         && $Conf->q("update Settings set value=53 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 53;
-    if ($Conf->settings["allowPaperOption"] != 53)
+    if ($Conf->settings["allowPaperOption"] < 53)
         $Conf->q("alter table PaperComment drop column `commentType`");
     $Conf->q("unlock tables");
     if ($Conf->settings["allowPaperOption"] == 53
