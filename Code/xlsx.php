@@ -15,8 +15,8 @@ class XlsxGenerator {
     private $any_headers = false;
     private $done = false;
 
-    function __construct() {
-        $this->zip = DocumentHelper::start_zip();
+    function __construct($downloadname) {
+        $this->zip = new ZipDocument($downloadname, self::MIMETYPE);
     }
 
     static function colname($col) {
@@ -145,10 +145,14 @@ class XlsxGenerator {
         $this->done = true;
     }
 
-    function download($filename) {
+    function download_headers() {
+        $this->zip->download_headers();
+    }
+
+    function download() {
         if (!$this->done)
             $this->finish();
-        $this->zip->download($filename, self::MIMETYPE);
+        return $this->zip->download();
     }
 
 }

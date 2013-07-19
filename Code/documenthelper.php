@@ -3,15 +3,20 @@
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class ZipDocuments {
+class ZipDocument {
 
     private $tmpdir;
     private $files;
     private $warnings;
     private $recurse;
+    private $downloadname;
+    private $mimetype;
+    private $headers;
 
-    function __construct() {
+    function __construct($downloadname, $mimetype = "application/zip") {
         $this->tmpdir = null;
+        $this->downloadname = $downloadname;
+        $this->mimetype = $mimetype;
         $this->clean();
     }
 
@@ -23,6 +28,7 @@ class ZipDocuments {
         $this->files = array();
         $this->warnings = array();
         $this->recurse = false;
+        $this->headers = false;
     }
 
     private function _add($doc, $filename, $check_filename) {
@@ -97,10 +103,18 @@ class ZipDocuments {
         return $this->_add($doc, $filename, false);
     }
 
-    public function download($downloadname, $content_type = "application/zip") {
-	global $Opt, $zlib_output_compression;
+    public function download_headers() {
+        if (!$this->headers) {
+            header("Content-Description: PHP Generated Data");
+            header("Content-Disposition: attachment; filename=" . mime_quote_string($this->downloadname));
+            header("Content-Type: " . $this->mimetype);
+            $this->headers = true;
+        }
+    }
 
-	if (!($zipcmd = defval($Opt, "zipCommand", "zip")))
+    private function create() {
+        global $Opt;
+        if (!($zipcmd = defval($Opt, "zipCommand", "zip")))
             return set_error_html("<code>zip</code> is not supported on this installation.");
 	if (count($this->warnings))
 	    $this->add(join("\n", $this->warnings) . "\n", "README-warnings.txt");
@@ -110,22 +124,22 @@ class ZipDocuments {
 	    return set_error_html("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
 	if (!file_exists("$this->tmpdir/_hotcrp.zip"))
 	    return set_error_html("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-
-	// output
-	header("Content-Description: PHP Generated Data");
-	header("Content-Disposition: attachment; filename=" . mime_quote_string($downloadname));
-	header("Content-Type: $content_type");
-	if (!$zlib_output_compression)
-	    header("Content-Length: " . filesize("$this->tmpdir/_hotcrp.zip"));
-	// flush all output buffers to avoid holding large files in memory
-	ob_clean();
-	flush();
-	readfile("$this->tmpdir/_hotcrp.zip");
-	return (object) array("error" => false);
+        return "$this->tmpdir/_hotcrp.zip";
     }
 
-    function finish($downloadname) {
-        $result = $this->download($downloadname);
+    public function download() {
+        global $Opt, $zlib_output_compression;
+        $result = $this->create();
+        if (is_string($result)) {
+            $this->download_headers();
+            if (!$zlib_output_compression)
+                header("Content-Length: " . filesize($result));
+            // flush all output buffers to avoid holding large files in memory
+            ob_flush();
+            flush();
+            readfile($result);
+            $result = (object) array("error" => false);
+        }
         $this->clean();
         return $result;
     }
@@ -350,10 +364,10 @@ class DocumentHelper {
         if (!$doc || (is_object($doc) && isset($doc->size) && $doc->size == 0))
             return set_error_html("Empty file.");
         else if (is_array($doc)) {
-            $z = new ZipDocuments;
+            $z = new ZipDocument($downloadname);
             foreach ($doc as $d)
                 $z->add($d);
-            return $z->finish($downloadname);
+            return $z->download();
         }
 	if (!isset($doc->filestore) && !isset($doc->content))
 	    return set_error_html("Don’t know how to download.");
@@ -384,10 +398,6 @@ class DocumentHelper {
 	    echo $doc->content;
 	}
 	return (object) array("error" => false);
-    }
-
-    static function start_zip() {
-        return new ZipDocuments;
     }
 
 }

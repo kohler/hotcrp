@@ -178,7 +178,7 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/Code/tagger.php");
     else if ($class_name == "Mimetype")
         require_once("$ConfSitePATH/Code/mimetype.php");
-    else if ($class_name == "DocumentHelper")
+    else if ($class_name == "DocumentHelper" || $class_name == "ZipDocument")
         require_once("$ConfSitePATH/Code/documenthelper.php");
     else if ($class_name == "HotCRPDocument")
         require_once("$ConfSitePATH/Code/hotcrpdocument.php");

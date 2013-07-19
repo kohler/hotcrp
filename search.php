@@ -214,11 +214,11 @@ function downloadReviews(&$texts, &$errors) {
 	downloadText($text, $rfname, "review forms");
 	exit;
     } else {
-        $zip = DocumentHelper::start_zip();
+        $zip = new ZipDocument($Opt["downloadPrefix"] . "reviews.zip");
         $zip->warnings = $warnings;
 	foreach ($texts as $sel => $text)
 	    $zip->add($header . $text, $Opt["downloadPrefix"] . $rfname . $papersel[$sel] . ".txt");
-	$result = $zip->finish($Opt["downloadPrefix"] . "reviews.zip");
+	$result = $zip->download();
 	if (!$result->error)
 	    exit;
     }
@@ -800,9 +800,9 @@ if ($getaction == "acmcms" && isset($papersel) && $Me->privChair) {
         $x[5] = join("; ", $x[5]);
         $texts[$paperselmap[$row->paperId]] = $x;
     }
-    $xlsx = new XlsxGenerator;
+    $xlsx = new XlsxGenerator($Opt["downloadPrefix"] . "acmcms.xlsx");
     $xlsx->add_sheet(array("Paper ID", "Paper type", "Pages", "Title", "Author names", "Author email addresses", "Notes"), $texts);
-    $xlsx->download($Opt["downloadPrefix"] . "report.xlsx");
+    $xlsx->download();
     exit;
 }
 
