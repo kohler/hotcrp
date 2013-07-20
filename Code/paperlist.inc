@@ -940,7 +940,7 @@ class PaperList extends BaseList {
 	    $field_list[0] = PaperColumn::lookup("selon");
 
         // add requested fields
-        $specials = array_flip(array("cc", "compactcolumn", "cc", "compactcolumns", "column", "col", "columns", "sort"));
+        $specials = array_flip(array("cc", "compactcolumn", "compactcolumns", "column", "col", "columns", "sort"));
         $new_names = array();
         foreach ($this->viewmap as $k => $v)
             if (!isset($specials[$k])) {
