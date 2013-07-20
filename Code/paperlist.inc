@@ -549,7 +549,7 @@ class PaperList extends BaseList {
 	}
     }
 
-    function _listFields($listname) {
+    private function _listFields($listname) {
 	switch ($listname) {
 	case "a":
             $fields = "id title statusfull revstat scores";
@@ -563,7 +563,7 @@ class PaperList extends BaseList {
 	    break;
 	case "all":
 	case "act":
-            $fields = "sel id title statusfull revtype authors abstract tags tagreports topics collab reviewers pcconf lead shepherd";
+            $fields = "sel id title statusfull revtype authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	    break;
 	case "reviewerHome":
 	    $this->paperLink = "review";
@@ -584,11 +584,11 @@ class PaperList extends BaseList {
 	    break;
 	case "reqrevs":
 	    $this->paperLink = "review";
-            $fields = "id title revdelegation revsubmitted revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd";
+            $fields = "id title revdelegation revsubmitted revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	    break;
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
-            $fields = "id title revpref topicscore desirability assrev authors topics reviewers allrevpref authorsmatch collabmatch";
+            $fields = "id title revpref topicscore desirability assrev authors topics reviewers allrevpref authorsmatch collabmatch scores formulas";
 	    break;
 	  case "conflict":
 	    $this->paperLink = "assign";
@@ -613,7 +613,7 @@ class PaperList extends BaseList {
 	return $this->_canonicalize_fields(explode(" ", $fields));
     }
 
-    function _addAjaxLoadForm($pap, $extra = "") {
+    private function _addAjaxLoadForm($pap, $extra = "") {
 	global $Conf;
 	$t = "<div><form id='plloadform' method='post' action='" . hoturl_post("search", "ajax=1" . $this->paperLinkArgs) . "' accept-charset='UTF-8'>"
 	    . "<div class='inform'>";
@@ -630,7 +630,7 @@ class PaperList extends BaseList {
 	$Conf->footerHtml($t);
     }
 
-    function _prepareQuery($me, $queryOptions) {
+    private function _prepareQuery($me, $queryOptions) {
 	global $Conf;
 
 	// prepare review query (see also search > getaction == "reviewers")
@@ -683,7 +683,7 @@ class PaperList extends BaseList {
                     && strpos($this->display, " $fname ") === false));
     }
 
-    function _row_text($rstate, $row, $fieldDef) {
+    private function _row_text($rstate, $row, $fieldDef) {
 	global $Conf;
 
 	$rstate->ids[] = $row->paperId;
@@ -770,7 +770,7 @@ class PaperList extends BaseList {
 	return $t;
     }
 
-    function _row_check_heading($rstate, $srows, $row, $lastheading, &$body) {
+    private function _row_check_heading($rstate, $srows, $row, $lastheading, &$body) {
 	$headingmap = $this->search->headingmap;
 	$heading = defval($headingmap, $row->paperId, "");
 	if ($this->count == 1)
@@ -792,7 +792,7 @@ class PaperList extends BaseList {
 	return $heading;
     }
 
-    function _analyze_folds($rstate, $fieldDef) {
+    private function _analyze_folds($rstate, $fieldDef) {
 	global $Conf;
 	$classes = $jsmap = $jsloadmap = $jsnotitlemap = array();
 	foreach ($fieldDef as $fdef)
@@ -838,7 +838,7 @@ class PaperList extends BaseList {
 	return $classes;
     }
 
-    function _make_title_header_extra($rstate) {
+    private function _make_title_header_extra($rstate) {
 	global $Conf;
 	$titleextra = "";
 	if (isset($rstate->foldinfo["wholerow"]))
@@ -862,7 +862,7 @@ class PaperList extends BaseList {
 	return $titleextra ? "<span class='pl_titleextra'>$titleextra</span>" : "";
     }
 
-    function _column_split($rstate, $colhead, &$body) {
+    private function _column_split($rstate, $colhead, &$body) {
 	if (!isset($rstate->headingstart) || count($rstate->headingstart) <= 1)
 	    return false;
 	$rstate->headingstart[] = count($body);
@@ -896,7 +896,7 @@ class PaperList extends BaseList {
 	return true;
     }
 
-    function text($listname, $me, $extra_class = "") {
+    public function text($listname, $me, $extra_class = "") {
 	global $Conf, $ConfSiteBase;
 
 	$this->contact = $me;
