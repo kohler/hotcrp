@@ -851,6 +851,7 @@ class EditTagPaperColumn extends TagPaperColumn {
             if (("edit" . $pl->sorter->type == $this->name
                  || $pl->sorter->type == $this->name)
                 && !$pl->sorter->reverse
+                && !$pl->search->thenmap
                 && $this->is_value)
                 $Conf->footerScript("add_edittag_ajax('$this->dtag')");
             else
