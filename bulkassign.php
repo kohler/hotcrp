@@ -84,7 +84,7 @@ function parseBulkFile($text, $filename, $type) {
 	    }
 	} else {
 	    // external reviewers
-	    $_REQUEST["name"] = $name;
+	    $_REQUEST["name"] = trim("$firstName $lastName");
 	    if (($cid = $Conf->getContactId($email, true, false)) <= 0) {
 		tfError($tf, $lineno, htmlspecialchars($email) . " not a valid email address");
 		continue;
