@@ -27,7 +27,7 @@ function parseBulkFile($text, $filename, $type) {
     $while = "while uploading assignments";
     $text = cleannl($text);
     $lineno = 0;
-    $tf = array('err' => array(), 'filename' => $filename);
+    $tf = array("err" => array(), "filename" => $filename);
     $pcm = pcMembers();
     $ass = array();
     $lnameemail = array();
@@ -209,7 +209,7 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"])
 	$Conf->errorMsg("Internal error: cannot read file.");
     else
 	parseBulkFile($text, $_FILES['uploadedFile']['name'], $_REQUEST['t']);
-} else if (isset($_REQUEST['upload']))
+} else if (isset($_REQUEST["upload"]))
     $Conf->errorMsg("Select an assignments file to upload.");
 
 
@@ -251,7 +251,7 @@ Assign &nbsp;",
 		defval($_REQUEST, "t", REVIEW_PRIMARY),
 		array("id" => "tsel", "onchange" => "fold(\"email\",this.value!=" . REVIEW_EXTERNAL . ")")),
     "&nbsp; from file:&nbsp;
-<input type='file' name='uploadedFile' accept='text/plain' size='30' />
+<input type='file' name='uploadedFile' accept='text/plain,text/csv' size='30' />
 
 <div class='g'></div>\n\n";
 
@@ -261,12 +261,14 @@ else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
     $rev_roundtag = "";
 if (isset($_REQUEST["email_requestreview"]))
     $t = $_REQUEST["email_requestreview"];
-else
+else {
     $t = $nullMailer->expandTemplate("requestreview");
+    $t = $t["body"];
+}
 echo "<div id='foldemail' class='foldo'><table class='fx'>
 <tr><td>", tagg_checkbox("email", 1, true), "&nbsp;</td>
 <td>", tagg_label("Send email to external reviewers:"), "</td></tr>
-<tr><td></td><td><textarea class='tt' name='email_requestreview' cols='80' rows='20'>", htmlspecialchars($t["body"]), "</textarea></td></tr></table>
+<tr><td></td><td><textarea class='tt' name='email_requestreview' cols='80' rows='20'>", htmlspecialchars($t), "</textarea></td></tr></table>
 <div class='fn";
 if (isset($Error["rev_roundtag"]))
     echo " error";
