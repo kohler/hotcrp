@@ -67,7 +67,8 @@ loadRows();
 
 
 
-if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
+if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST)
+    && !isset($_REQUEST["retract"]))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
 
 
@@ -82,7 +83,7 @@ function retractRequest($reviewId, $lock = true, $confirm = true) {
     // NB caller unlocks tables
 
     // check for outstanding review request
-    $q = "select reviewType, reviewModified, reviewSubmitted, requestedBy, paperId,
+    $q = "select reviewType, reviewModified, reviewSubmitted, requestedBy, paperId, ContactInfo.contactId,
 		firstName, lastName, email, password, roles, reviewToken, preferredEmail";
     $result = $Conf->qe($q . " from PaperReview
 		join ContactInfo using (contactId)
