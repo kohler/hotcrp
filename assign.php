@@ -489,28 +489,23 @@ if ($Me->canAdminister($prow)) {
     $contactTags = "NULL as contactTags";
     if ($Conf->sversion >= 35)
 	$contactTags = "contactTags";
-    $result = $Conf->qe("select ContactInfo.contactId,
-	firstName, lastName, email, $contactTags,
+    $result = $Conf->qe("select PCMember.contactId,
 	PaperConflict.conflictType,
 	PaperReview.reviewType,	coalesce(preference, 0) as preference,
 	coalesce(allReviews,'') as allReviews,
 	coalesce(PaperTopics.topicInterestScore,0) as topicInterestScore,
 	coalesce(PRR.paperId,0) as refused
-	from ContactInfo
-	join PCMember using (contactId)
-	left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId)
-	left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$prow->paperId)
-	left join PaperReviewPreference on (PaperReviewPreference.contactId=ContactInfo.contactId and PaperReviewPreference.paperId=$prow->paperId)
-	left join (select PaperReview.contactId, group_concat(reviewType separator '') as allReviews from PaperReview join Paper on (Paper.paperId=PaperReview.paperId and timeWithdrawn<=0) group by PaperReview.contactId) as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
-	left join (select contactId, sum(if(interest=2,2,interest-1)) as topicInterestScore from PaperTopic join TopicInterest using (topicId) where paperId=$prow->paperId group by contactId) as PaperTopics on (PaperTopics.contactId=ContactInfo.contactId)
-	left join PaperReviewRefused PRR on (PRR.paperId=$prow->paperId and PRR.contactId=ContactInfo.contactId)
-	group by email", "while looking up PC");
+	from PCMember
+	left join PaperConflict on (PaperConflict.contactId=PCMember.contactId and PaperConflict.paperId=$prow->paperId)
+	left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId)
+	left join PaperReviewPreference on (PaperReviewPreference.contactId=PCMember.contactId and PaperReviewPreference.paperId=$prow->paperId)
+	left join (select PaperReview.contactId, group_concat(reviewType separator '') as allReviews from PaperReview join Paper on (Paper.paperId=PaperReview.paperId and timeWithdrawn<=0) group by PaperReview.contactId) as AllReviews on (AllReviews.contactId=PCMember.contactId)
+	left join (select contactId, sum(if(interest=2,2,interest-1)) as topicInterestScore from PaperTopic join TopicInterest using (topicId) where paperId=$prow->paperId group by contactId) as PaperTopics on (PaperTopics.contactId=PCMember.contactId)
+	left join PaperReviewRefused PRR on (PRR.paperId=$prow->paperId and PRR.contactId=PCMember.contactId)
+	group by PCMember.contactId", "while looking up PC");
     $pcx = array();
-    while (($row = edb_orow($result))) {
-	$row->sorter = trim($row->firstName . " " . $row->lastName . " " . $row->email);
-	$pcx[] = $row;
-    }
-    uasort($pcx, "_sort_pcMember");
+    while (($row = edb_orow($result)))
+	$pcx[$row->contactId] = $row;
 
     // PC conflicts row
     echo "	<tr><td colspan='3' class='papsep'></td></tr>
@@ -525,19 +520,21 @@ if ($Me->canAdminister($prow)) {
     echo "<table class='pctb'><tr><td class='pctbcolleft'><table>\n";
     $colorizer = new Tagger;
 
+    $i = 0;
     $n = intval((count($pcx) + 2) / 3);
-    for ($i = 0; $i < count($pcx); $i++) {
+    foreach (pcMembers() as $pc) {
 	if (($i % $n) == 0 && $i)
 	    echo "    </table></td><td class='pctbcolmid'><table>\n";
-	$p = $pcx[$i];
+	++$i;
+	$p = $pcx[$pc->cid];
 
 	// first, name and assignment
-	$color = $colorizer->color_classes($p->contactTags);
+	$color = $colorizer->color_classes($pc->contactTags);
 	$color = ($color ? " class='${color}'" : "");
 	echo "      <tr$color>";
 	if ($p->conflictType >= CONFLICT_AUTHOR) {
 	    echo "<td id='ass$p->contactId' class='pctbname-2 pctbl'>",
-		str_replace(' ', "&nbsp;", Text::name_html($p)),
+		str_replace(' ', "&nbsp;", Text::name_html($pc)),
 		"</td><td class='pctbass'>",
 		"<img class='ass-2' alt='(Author)' title='Author' src='", hoturl_image("images/_.gif"), "' />",
 		"</td>";
@@ -550,7 +547,7 @@ if ($Me->canAdminister($prow)) {
 		$cid = ($p->refused ? -3 : 0);
 	    $title = ($cid == -3 ? "' title='Review previously declined" : "");
 	    echo "<td id='ass$p->contactId' class='pctbname$cid pctbl'>";
-	    echo str_replace(' ', "&nbsp;", Text::name_html($p));
+	    echo str_replace(' ', "&nbsp;", Text::name_html($pc));
 	    if ($p->conflictType == 0
 		&& ($p->preference || $p->topicInterestScore))
 		echo preferenceSpan($p->preference, $p->topicInterestScore);
