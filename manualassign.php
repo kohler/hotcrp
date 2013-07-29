@@ -154,20 +154,20 @@ else
 // Change PC member
 echo "<table><tr><td><div class='aahc assignpc_pcsel'><form method='get' action='", hoturl("manualassign"), "' accept-charset='UTF-8' id='selectreviewerform'><div class='inform'>\n";
 
-$query = "select ContactInfo.contactId, firstName, lastName,
-		count(reviewId) as reviewCount
-		from ContactInfo
-		join PCMember using (contactId)
-		left join PaperReview on (ContactInfo.contactId=PaperReview.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
-		group by contactId
-		order by lastName, firstName, email";
-$result = $Conf->qe($query);
+$result = $Conf->qe("select PCMember.contactId, count(reviewId) as reviewCount
+		from PCMember
+		left join PaperReview on (PCMember.contactId=PaperReview.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
+		group by contactId");
+$rev_count = array();
+while (($row = edb_row($result)))
+    $rev_count[$row[0]] = $row[1];
+
 $rev_opt = array();
 if ($reviewer <= 0)
     $rev_opt[0] = "(Select a PC member)";
-while (($row = edb_orow($result)))
-    $rev_opt[$row->contactId] = Text::user_html($row) . " ("
-	. plural($row->reviewCount, "assignment") . ")";
+foreach ($pcm as $pc)
+    $rev_opt[$pc->cid] = Text::name_html($pc) . " ("
+        . plural(defval($rev_count, $pc->cid, 0), "assignment") . ")";
 
 echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
     "<td>", tagg_select("reviewer", $rev_opt, $reviewer, array("onchange" => "hiliter(this)")), "</td></tr>",
