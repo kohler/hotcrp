@@ -74,6 +74,9 @@ class Text {
                               $with_middle = false) {
         // was contactNameText
         list($n, $e) = self::analyze_name($first, $last, $email, $with_middle);
+	if (is_object($first) && isset($first->nameAmbiguous) && $first->nameAmbiguous
+	    && $n && $e)
+	    $n .= " <$e>";
         return $n ? $n : $e;
     }
 
