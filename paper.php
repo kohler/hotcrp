@@ -383,7 +383,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 		    $no_delete_options[] = "optionId!=" . $o->optionId;
 	    } else
 		unset($_REQUEST["remove_opt" . $o->optionId]);
-	}
+	} else
+            unset($_REQUEST[$oname]);
     }
 
     // any missing fields?
