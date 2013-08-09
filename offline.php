@@ -93,17 +93,16 @@ function setTagIndexes() {
 	$filename = "line ";
 
     $RealMe = $Me;
-    $tag = defval($_REQUEST, "tag");
+    $tagger = new Tagger;
+    if (($tag = defval($_REQUEST, "tag")))
+        $tag = $tagger->check($tag, Tagger::NOVALUE);
     $curIndex = 0;
     $lineno = 1;
     $settings = $titles = $linenos = $errors = array();
     foreach (explode("\n", rtrim(cleannl($text))) as $l) {
 	if (substr($l, 0, 4) == "Tag:" || substr($l, 0, 6) == "# Tag:") {
-	    if (!$tag) {
-                $tagger = new Tagger;
-		$tag = $tagger->check(trim(substr($l, ($l[0] == "#" ? 6 : 4))),
-                                      Tagger::NOVALUE);
-            }
+	    if (!$tag)
+		$tag = $tagger->check(trim(substr($l, ($l[0] == "#" ? 6 : 4))), Tagger::NOVALUE);
 	    ++$lineno;
 	    continue;
 	} else if ($l == "" || $l[0] == "#") {

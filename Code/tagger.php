@@ -193,11 +193,11 @@ class Tagger {
     private static function analyze($tag, $flags) {
         if ($tag == "")
             return "Empty tag.";
-        else if (strlen($tag) > TAG_MAXLEN)
-            return "Tag “${tag}” is too long; maximum " . TAG_MAXLEN . " characters.";
         else if (!preg_match('/\A' . TAG_REGEX_OPTVALUE . '\z/', $tag, $m)
                  || (!($flags & self::ALLOWSTAR) && strpos($tag, "*") !== false))
-            return "Tag “${tag}” contains characters not allowed in tags.";
+            return "Tag “" . htmlspecialchars($tag) . "” contains characters not allowed in tags.";
+        else if (strlen($tag) > TAG_MAXLEN)
+            return "Tag “${tag}” is too long; maximum " . TAG_MAXLEN . " characters.";
         else if (count($m) > 1 && $m[1] && ($flags & self::NOVALUE))
             return "Tag values aren’t allowed here.";
         else if ($tag[0] === "~" && $tag[1] === "~" && ($flags & self::NOCHAIR))

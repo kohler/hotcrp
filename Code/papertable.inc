@@ -1262,7 +1262,7 @@ class PaperTable {
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setdecision' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
-	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
+	    echo "<input type='hidden' name='forceShow' value='", ($_REQUEST['forceShow'] ? 1 : 0), "' />";
 	echo decisionSelector($prow->outcome, null, " onchange='dosubmitstripselector(\"decision\")' id='folddecision_d'"),
 	    " <input class='b fx7' type='submit' value='Save' />",
 	    " <span id='decisionformresult'></span>",
@@ -1280,7 +1280,7 @@ class PaperTable {
 	    "<div class='aahc inform'>",
 	    "<input type='hidden' name='setrevpref' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
-	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
+	    echo "<input type='hidden' name='forceShow' value='", ($_REQUEST['forceShow'] ? 1 : 0), "' />";
 	$rp = (isset($prow->reviewerPreference) ? htmlspecialchars($prow->reviewerPreference) : "0");
 	$rp = ($rp == "0" ? "" : $rp);
 	echo "<input id='revprefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$rp\" onchange='Miniajax.submit(\"revprefform\")' tabindex='1' />",
@@ -1315,7 +1315,7 @@ class PaperTable {
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setrank' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
-	    echo "<input type='hidden' name='forceShow' value='", $_REQUEST['forceShow'], "' />";
+	    echo "<input type='hidden' name='forceShow' value='", ($_REQUEST['forceShow'] ? 1 : 0), "' />";
 	echo "<input id='foldrank_d' class='textlite' type='text' size='4' name='rank' value=\"$rp\" onchange='Miniajax.submit(\"rankform\")' tabindex='1' />",
 	    " <input class='b fx7' type='submit' value='Save' />",
 	    " <span id='rankformresult'></span>",
@@ -1568,9 +1568,9 @@ class PaperTable {
 		"    <tr><td>",
 		tagg_checkbox("doemail", 1, true), "&nbsp;",
 		tagg_label("Email authors, including:"), "&nbsp; ",
-		"<input id='emailNote' type='text' class='textlite temptext' name='emailNote' size='30' value='",
+		"<input id='emailNote' type='text' class='textlite temptext' name='emailNote' size='30' value=\"",
 		htmlspecialchars($v == "" ? "Optional explanation" : $v),
-		"' /></td></tr>\n    <tr><td>",
+		"\" /></td></tr>\n    <tr><td>",
 		tagg_checkbox("override"), "&nbsp;";
             if ($Conf->timeUpdatePaper($prow))
                 echo "<span class='dim'>", tagg_label("Override deadlines"), "</span>";
