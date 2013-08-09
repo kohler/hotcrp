@@ -252,7 +252,7 @@ function requestSameAsPaper($prow) {
             $got = defval($_REQUEST, "opt$o->optionId", "");
             $ox = defval($prow->option_array, $o->optionId, null);
 	    if ($t == PaperOption::T_CHECKBOX || $t == PaperOption::T_SELECTOR
-		|| $t == PaperOption::T_NUMERIC) {
+		|| $t == PaperOption::T_RADIO || $t == PaperOption::T_NUMERIC) {
 		if (cvtint($got, 0) != ($ox ? $ox->value : 0))
 		    return false;
 	    } else if ($t == PaperOption::T_TEXT) {
@@ -343,7 +343,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$v = trim(defval($_REQUEST, $oname, ""));
 	if ($o->type == PaperOption::T_CHECKBOX)
 	    $_REQUEST[$oname] = ($v == 0 || $v == "" ? "" : 1);
-	else if ($o->type == PaperOption::T_SELECTOR)
+	else if ($o->type == PaperOption::T_SELECTOR || $o->type == PaperOption::T_RADIO)
 	    $_REQUEST[$oname] = cvtint($v, 0);
 	else if ($o->type == PaperOption::T_NUMERIC) {
 	    if ($v == "" || ($v = cvtint($v, null)) !== null)
