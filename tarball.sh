@@ -89,6 +89,7 @@ Code/contact.inc
 Code/contactlist.inc
 Code/countries.inc
 Code/createdb.sh
+Code/csv.php
 Code/distoptions.inc
 Code/documenthelper.php
 Code/header.inc
@@ -120,6 +121,7 @@ Code/text.php
 Code/unicodehelper.php
 Code/updateschema.inc
 Code/updateschema.sql
+Code/xlsx.php
 
 Code/pear-Mail-1.1.14
 
