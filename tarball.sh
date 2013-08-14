@@ -121,7 +121,7 @@ Code/unicodehelper.php
 Code/updateschema.inc
 Code/updateschema.sql
 
-Code/Mail-1.1.14
+Code/pear-Mail-1.1.14
 
 extra/hotcrp.vim
 

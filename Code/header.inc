@@ -202,7 +202,7 @@ function __autoload($class_name) {
 
 // If you have the PEAR::Mail libraries installed globally,
 // there's no need to change the include path.
-ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/Mail-1.1.14");
+ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/pear-Mail-1.1.14");
 require_once("PEAR.php");
 
 // Set up conference options
