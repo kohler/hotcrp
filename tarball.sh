@@ -1,4 +1,4 @@
-export VERSION=2.60
+export VERSION=2.61
 
 # check that schema.sql and updateschema.inc agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=' Code/updateschema.inc | tail -n 1 | sed 's/.*= *//;s/;.*//'`

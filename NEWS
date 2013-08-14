@@ -1,5 +1,18 @@
 HotCRP NEWS
 
+Version 2.61   14.Aug.2013
+
+* Correct some XSS errors and one SQL injection error reported by
+  Johannes Dahse using a static checking tool of his design. The XSS
+  errors are not serious. The SQL injection is potentially serious,
+  but it is only exploitable on conferences that include a "radio
+  buttons" paper option. You can avoid the problem without upgrading
+  by switching the paper option to "selector".
+
+* Other small bug fixes, including fixes to the packaging of 2.60.
+  Thanks to Anil Madhavapeddy and Peter Sewell.
+
+
 Version 2.60   19.Jul.2013
 
 * Major new feature: Paper managers. Administrators can assign PC

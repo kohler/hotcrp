@@ -61,8 +61,8 @@ http://www.sysnet.ucsd.edu/sigops/banal/download.html.
 memory, more if paper format checking is used and submission load is
 expected to be high. If you run HotCRP in a virtual machine, make sure
 you configure suitable swap space! HotCRP uses the fast, but less
-reliable, MyISAM database engine. If MySQL is killed due to memory
-shortages your database may be corrupted.
+reliable, MyISAM database engine. If MySQL is killed your database may
+be corrupted.
 
 Installation
 ------------
