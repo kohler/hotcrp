@@ -165,6 +165,7 @@ setPathVariables();
 require_once("$ConfSitePATH/Code/helpers.inc");
 require_once("$ConfSitePATH/Code/conference.inc");
 require_once("$ConfSitePATH/Code/contact.inc");
+require_once("PEAR.php");
 
 function __autoload($class_name) {
     global $ConfSitePATH;
@@ -199,11 +200,6 @@ function __autoload($class_name) {
     else if ($class_name == "XlsxGenerator")
         require_once("$ConfSitePATH/Code/xlsx.php");
 }
-
-// If you have the PEAR::Mail libraries installed globally,
-// there's no need to change the include path.
-ini_set("include_path", ini_get("include_path") . ":$ConfSitePATH/Code/pear-Mail-1.1.14");
-require_once("PEAR.php");
 
 // Set up conference options
 global $Opt;

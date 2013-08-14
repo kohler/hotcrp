@@ -716,48 +716,6 @@ class Conference {
 		. "' where paperId=$paperId and timeWithdrawn<=0", $while))
 	    return false;
 
-	// potentially email the paper to Greg Minshall
-	if (defval($Opt, "emailSubmissions", false)) {
-	    if (is_numeric($prow))
-		$prow = $this->paperRow($paperId);
-
-	    require_once("Mail.php");
-	    require_once("Mail/mime.php");
-
-	    // prepare data
-	    $subject = "[" . $Opt["shortName"] . "] Paper #$paperId upload";
-	    $message = "           Paper: " . hoturl_absolute("paper", "p=$paperId") . "\n"
-		. "       Submitted: " . $this->printableTime($doc->timestamp) . "\n\n"
-		. wordWrapIndent(trim($prow->title), "Title: ") . "\n"
-		. wordWrapIndent(trim($prow->abstract), "Abstract: ") . "\n\n"
-		. wordWrapIndent(cleanAuthorText($prow), "Authors: ") . "\n"
-		. wordWrapIndent(trim($prow->collaborators), "Collaborators: ") . "\n";
-
-	    // collect contact authors
-	    $aus = $this->paperContactAuthors($paperId);
-	    $autxt = "";
-	    foreach ($aus as $au)
-		$autxt .= Text::user_text($au) . "\n";
-	    if ($autxt)
-		$message .= wordWrapIndent($autxt, "Contact authors: ");
-	    $message .= "\n";
-
-	    $mime = new Mail_mime("\n");
-	    $mime->setTXTBody($message);
-	    $mime->addAttachment($doc->content, $doc->mimetype,
-                                 HotCRPDocument::filename($doc), false);
-
-	    $body = $mime->get();
-	    $hdrs = $mime->headers(array("From" => $Opt["emailFrom"],
-					 "Subject" => $subject));
-
-	    $mfac =& Mail::factory("mail");
-	    if ($this->allowEmailTo($Opt["emailSubmissions"]))
-		$mfac->send($Opt["emailSubmissions"], $hdrs, $body);
-	    else
-		$this->infoMsg("<pre>" . htmlspecialchars($body) . "</pre>");
-	}
-
 	return $doc->size;
     }
 

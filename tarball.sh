@@ -123,8 +123,6 @@ Code/updateschema.inc
 Code/updateschema.sql
 Code/xlsx.php
 
-Code/pear-Mail-1.1.14
-
 extra/hotcrp.vim
 
 images/.htaccess
