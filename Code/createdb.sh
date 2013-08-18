@@ -416,8 +416,15 @@ echo
 
 if [ "$populatedb" = y ]; then
     echo "Populating database."
-    ECHOFLAGS_SCHEMA="-u $DBNAME -p'<REDACTED>' $FLAGS_NOP"
-    FLAGS_SCHEMA="-u $DBNAME -p'`echo_dbpass`' $FLAGS_NOP"
+    if test -n "$PASSWORDFILE"; then
+        echo '[client]' >> "$PASSWORDFILE"
+        echo 'password = "'`echo_dbpass`'"' >> "$PASSWORDFILE"
+        FLAGS_SCHEMA="--defaults-extra-file=$PASSWORDFILE -u $DBNAME $FLAGS_NOP"
+	ECHOFLAGS_SCHEMA="$FLAGS_SCHEMA"
+    else
+	ECHOFLAGS_SCHEMA="-u $DBNAME -p'<REDACTED>' $FLAGS_NOP"
+	FLAGS_SCHEMA="-u $DBNAME -p'`echo_dbpass`' $FLAGS_NOP"
+    fi
     echo "+ $MYSQL $ECHOFLAGS_SCHEMA $DBNAME < ${PROGDIR}schema.sql"
     eval $MYSQL "$FLAGS_SCHEMA" $DBNAME < ${PROGDIR}schema.sql || exit 1
 fi
