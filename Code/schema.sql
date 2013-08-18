@@ -107,7 +107,7 @@ CREATE TABLE `Formula` (
   `formulaId` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(200) NOT NULL,
   `heading` varchar(200) NOT NULL DEFAULT '',
-  `headingTitle` text NOT NULL DEFAULT '',
+  `headingTitle` text NOT NULL,
   `expression` text NOT NULL,
   `authorView` tinyint(1) NOT NULL DEFAULT '1',
   `createdBy` int(11) NOT NULL DEFAULT '0',
@@ -147,7 +147,7 @@ CREATE TABLE `OptionType` (
   `description` text,
   `type` tinyint(1) NOT NULL DEFAULT '0',
   `pcView` tinyint(1) NOT NULL DEFAULT '1',
-  `optionValues` text NOT NULL DEFAULT '',
+  `optionValues` text NOT NULL,
   `sortOrder` tinyint(1) NOT NULL DEFAULT '0',
   `displayType` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`optionId`)
