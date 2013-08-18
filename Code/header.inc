@@ -165,7 +165,6 @@ setPathVariables();
 require_once("$ConfSitePATH/Code/helpers.inc");
 require_once("$ConfSitePATH/Code/conference.inc");
 require_once("$ConfSitePATH/Code/contact.inc");
-require_once("PEAR.php");
 
 function __autoload($class_name) {
     global $ConfSitePATH;

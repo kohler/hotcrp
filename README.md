@@ -24,19 +24,18 @@ software:
 * PHP version 5.2 or higher, http://php.net/
   - Including MySQL and GD support
 * MySQL version 5 or higher, http://mysql.org/
-* PHP PEAR extensions, http://pear.php.net/
 * The zip compressor, http://www.info-zip.org/
 * pdftohtml, http://poppler.freedesktop.org/ (Only required for format
   checking.)
 
 Apache is preloaded on most Linux distributions.  You may need to install
-additional packages for PHP, MySQL, GD, and PEAR, such as:
+additional packages for PHP, MySQL, and GD, such as:
 
-* Fedora Linux: php-mysql, php-pear, php-gd, zip, (poppler-utils)
-* Debian Linux: php5-common, php5-gd, php5-mysql, php-pear,
+* Fedora Linux: php-mysql, php-gd, zip, (poppler-utils)
+* Debian Linux: php5-common, php5-gd, php5-mysql,
   libapache2-mod-php5 (or libapache-mod-php5 for Apache 1.x),
   zip, (poppler-utils)
-* Ubuntu Linux: php5-common, php5-gd, php5-mysql, php-pear,
+* Ubuntu Linux: php5-common, php5-gd, php5-mysql,
   libapache2-mod-php5 (or libapache-mod-php5 for Apache 1.x),
   zip, (poppler-utils), and a package for SMTP support, such
   as sendmail
