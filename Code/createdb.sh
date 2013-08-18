@@ -326,20 +326,12 @@ if [ "$createdbuser" = y ]; then
     echo "Creating $DBNAME user and password."
     eval $MYSQL $FLAGS mysql <<__EOF__ || exit 1
 DELETE FROM user WHERE user='$DBNAME';
-INSERT INTO user SET
-    Host='127.0.0.1',
-    User='$DBNAME',
-    Password=PASSWORD('`sql_dbpass`');
+DELETE FROM db WHERE User='$DBNAME';
+FLUSH PRIVILEGES;
 
-INSERT INTO user SET
-    Host='localhost.localdomain',
-    User='$DBNAME',
-    Password=PASSWORD('`sql_dbpass`');
-
-INSERT INTO user SET
-    Host='localhost',
-    User='$DBNAME',
-    Password=PASSWORD('`sql_dbpass`');
+CREATE USER '$DBNAME'@'localhost' IDENTIFIED BY '`sql_dbpass`',
+    '$DBNAME'@'127.0.0.1' IDENTIFIED BY '`sql_dbpass`',
+    '$DBNAME'@'localhost.localdomain' IDENTIFIED BY '`sql_dbpass`';
 
 DELETE FROM db WHERE db='$DBNAME';
 INSERT INTO db SET
