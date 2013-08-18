@@ -1,9 +1,12 @@
 #! /bin/sh
-## createdb.sh -- HotCRP database setup program
+## createdb.sh -- HotCRP database setup
 ## HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 ## Distributed under an MIT-like license; see LICENSE
 
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C
+export PROGDIR=`echo "$0" | sed 's,[^/]*$,,'`
+test -z "$PROGDIR" && PROGDIR=.
+. $PROGDIR/dbhelper.sh
 
 help () {
     echo "Code/createdb.sh performs MySQL database setup for HotCRP."
@@ -16,66 +19,9 @@ help () {
     exit 0
 }
 
-echo_n () {
-	# suns can't echo -n, and Mac OS X can't echo "x\c"
-	echo "$@" | tr -d '
-'
-}
-
-getdbopt () {
-    perl -e 'undef $/; $t = <STDIN>;
-$t =~ s|/\*.*?\*/||gs;
-$t =~ s|//.*$||gm;
-
-sub unslash ($) {
-   my($a) = @_;
-   my($b) = "";
-   while ($a ne "") {
-      if ($a =~ m|\A\\|) {
-         if ($a =~ m|\A\\([0-7]{1,3})(.*)\z|s) {
-	    $b .= chr(oct($1));
-	    $a = $2;
-	 } elsif ($a =~ m |\A\\([nrftvb])(.*)\z|s) {
-	    $b .= eval("\"\\$1\"");
-	    $a = $2;
-	 } else {
-	    $b .= substr($a, 1, 1);
-	    $a = substr($a, 2);
-	 }
-      } else {
-	 $b .= substr($a, 0, 1);
-         $a = substr($a, 1);
-      }
-   }
-   $b;
-}
-
-while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*\"(([^\"\\]|\\.)*)\"&g) {
-   $Opt{$1} = unslash($2);
-}
-while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*'"'"'([^'"'"']*)'"'"'&g) {
-   $Opt{$1} = $2;
-}
-while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*([\d.]+)&g) {
-   $Opt{$1} = $2;
-}
-
-sub fixshell ($) {
-    my($a) = @_;
-    $a =~ s|'"'"'|'"'"'"'"'"'"'"'"'|g;
-    $a;
-}
-
-$Opt{"dbUser"} = $Opt{"dbName"} if (!exists($Opt{"dbUser"}));
-$Opt{"dbPassword"} = $Opt{"dbName"} if (!exists($Opt{"dbPassword"}));
-print "'"'"'", fixshell($Opt{"'$1'"}), "'"'"'";
-' < "${PROGDIR}${options_file}"
-}
-
 PROG=$0
 FLAGS=""
-FLAGS_NOP=""
-ECHOFLAGS=""
+DBUSER=""
 DBNAME=""
 PASSWORD=""
 distoptions_file=distoptions.inc
@@ -87,11 +33,11 @@ while [ $# -gt 0 ]; do
     -p|--pas|--pass|--passw|--passwo|--passwor|--password)
 	needpassword=true; shift;;
     -u|--us|--use|--user)
-	FLAGS="$FLAGS '$1'"; ECHOFLAGS="$ECHOFLAGS '$1'"; shift
-	[ $# -gt 0 ] && { FLAGS="$FLAGS '$1'"; ECHOFLAGS="$ECHOFLAGS '$1'"; shift; }
-	;;
-    -u*|--us=*|--use=*|--user=*)
-	FLAGS="$FLAGS '$1'"; ECHOFLAGS="$ECHOFLAGS '$1'"; shift;;
+        DBUSER="$2"; shift 2;;
+    -u*)
+        DBUSER="`echo "$1" | sed s/^-u//`"; shift;;
+    --u=*|--us=*|--use=*|--user=*)
+	DBUSER="`echo "$1" | sed 's/^[^=]*=//'`"; shift;;
     -p*)
         PASSWORD="`echo "$1" | sed s/^-p//`"; shift;;
     --pas=*|--pass=*|--passw=*|--passwo=*|--passwor=*|--password=*)
@@ -101,7 +47,7 @@ while [ $# -gt 0 ]; do
     --force)
         force=true; shift;;
     -*)
-	FLAGS="$FLAGS '$1'"; FLAGS_NOP="$FLAGS_NOP '$1'"; ECHOFLAGS="$ECHOFLAGS '$1'"; shift;;
+	FLAGS="$FLAGS '$1'"; shift;;
     *)
 	if [ -z "$DBNAME" ]; then
 	    DBNAME="$1"; shift
@@ -114,25 +60,8 @@ while [ $# -gt 0 ]; do
 done
 
 ### Test mysql binary
-if test -z "$MYSQL"; then
-    MYSQL=mysql
-    ! $MYSQL --version >/dev/null 2>&1 && mysql5 --version >/dev/null 2>&1 && MYSQL=mysql5
-fi
-if test -z "$MYSQLADMIN"; then
-    MYSQLADMIN=mysqladmin
-    ! $MYSQLADMIN --version >/dev/null 2>&1 && mysqladmin5 --version >/dev/null 2>&1 && MYSQLADMIN=mysqladmin5
-fi
-
-if ! $MYSQL --version >/dev/null 2>&1; then
-    echo "I can't find a working $MYSQL program."
-    echo "Install MySQL, or set the MYSQL environment variable and try again."
-    exit 1
-fi
-if ! $MYSQLADMIN --version >/dev/null 2>&1; then
-    echo "I can find a working $MYSQL program, but not a working $MYSQLADMIN program." 1>&2
-    echo "Set the MYSQLADMIN environment variable and try again." 1>&2
-    exit 1
-fi
+check_mysqlish MYSQL mysql
+check_mysqlish MYSQLADMIN mysqladmin
 
 # attempt to secure password handling
 # (It is considered insecure to supply a MySQL password on the command
@@ -144,27 +73,14 @@ if $needpassword; then
     stty echo; trap - INT
     echo
 fi
-if test -n "$PASSWORD"; then
-    PASSWORDFILE="`echo ".mysqlpwd.$$.$RANDOM" | sed 's/\.$//'`"
-    if touch "$PASSWORDFILE"; then
-        chmod 600 "$PASSWORDFILE"
-        echo '[client]' >> "$PASSWORDFILE"
-        echo 'password = "'"$PASSWORD"'"' >> "$PASSWORDFILE"
-        FLAGS="--defaults-extra-file=$PASSWORDFILE $FLAGS"
-        trap "rm -f $PASSWORDFILE" EXIT 2>/dev/null
-    else
-        PASSWORDFILE=""
-        FLAGS="$FLAGS -p'$PASSWORD'"
-    fi
-    ECHOFLAGS="$FLAGS -p<REDACTED>"
-fi
+set_myargs "$DBUSER" "$PASSWORD"
 
 
-if ! (echo 'show databases;' | eval $MYSQL $FLAGS >/dev/null); then
-    echo "Could not run $MYSQL $ECHOFLAGS. Did you enter the right password?" 1>&2
+if ! (echo 'show databases;' | eval $MYSQL $myargs $FLAGS >/dev/null); then
+    echo "Could not run $MYSQL $myargs_redacted $FLAGS. Did you enter the right password?" 1>&2
     exit 1
 fi
-grants=`echo 'show grants;' | eval $MYSQL $FLAGS | grep -i -e create -e all | grep -i 'on \*\.\*'`
+grants=`echo 'show grants;' | eval $MYSQL $myargs $FLAGS | grep -i -e create -e all | grep -i 'on \*\.\*'`
 if ! $force && test -z "$grants"; then
     echo 1>&2
     echo "* This account doesn't appear to have the privilege to create MySQL databases." 1>&2
@@ -173,9 +89,6 @@ if ! $force && test -z "$grants"; then
     echo 1>&2
     exit 1
 fi
-
-
-PROGDIR=`echo "$0" | sed 's,[^/]*$,,'`
 
 
 echo "Creating the database and database user for your conference."
@@ -275,7 +188,7 @@ echo
 
 
 sql_dbpass () {
-    echo_dbpass | sed -e 's,\([\\"'"'"']\),\\\1,g' | sed -e 's,,\\Z,g'
+    echo_dbpass | sql_quote
 }
 
 php_dbpass () {
@@ -284,19 +197,19 @@ php_dbpass () {
 
 
 echo
-if [ -z "$FLAGS" ]; then
+if [ -z "$myargs$FLAGS" ]; then
     echo "Creating database."
     echo "This should work if you are root and haven't changed the default mysql"
-    echo "administrative password.  If you have changed the password, you will need to"
+    echo "administrative password. If you have changed the password, you will need to"
     echo "run '$PROG -p' or '$PROG -pPASSWD' (no space)."
 fi
-echo "+ echo 'show databases;' | $MYSQL $ECHOFLAGS | grep $DBNAME"
-echo 'show databases;' | eval $MYSQL $FLAGS >/dev/null || exit 1
-echo 'show databases;' | eval $MYSQL $FLAGS | grep $DBNAME >/dev/null 2>&1
+echo "+ echo 'show databases;' | $MYSQL $myargs_redacted $FLAGS | grep $DBNAME"
+echo 'show databases;' | eval $MYSQL $myargs $FLAGS >/dev/null || exit 1
+echo 'show databases;' | eval $MYSQL $myargs $FLAGS | grep $DBNAME >/dev/null 2>&1
 dbexists="$?"
-echo "+ echo 'select User from user group by User;' | $MYSQL $ECHOFLAGS mysql | grep $DBNAME"
-echo 'select User from user group by User;' | eval $MYSQL $FLAGS mysql >/dev/null || exit 1
-echo 'select User from user group by User;' | eval $MYSQL $FLAGS mysql | grep '^'$DBNAME'$' >/dev/null 2>&1
+echo "+ echo 'select User from user group by User;' | $MYSQL $myargs_redacted $FLAGS mysql | grep $DBNAME"
+echo 'select User from user group by User;' | eval $MYSQL $myargs $FLAGS mysql >/dev/null || exit 1
+echo 'select User from user group by User;' | eval $MYSQL $myargs $FLAGS mysql | grep '^'$DBNAME'$' >/dev/null 2>&1
 userexists="$?"
 createdbuser=y
 if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
@@ -313,18 +226,18 @@ if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
     expr "$createdbuser" : "[nN].*" >/dev/null || createdbuser=y
 
     if [ "$createdbuser" = y -a "$dbexists" = 0 ]; then
-	echo "+ $MYSQLADMIN $ECHOFLAGS -f drop $DBNAME"
-	eval $MYSQLADMIN $FLAGS -f drop $DBNAME || exit 1
+	echo "+ $MYSQLADMIN $myargs_redacted $FLAGS -f drop $DBNAME"
+	eval $MYSQLADMIN $myargs $FLAGS -f drop $DBNAME || exit 1
     fi
 fi
 if [ "$createdbuser" = y ]; then
     echo
     echo "Creating $DBNAME database."
-    echo "+ $MYSQLADMIN $ECHOFLAGS --default-character-set=utf8 create $DBNAME"
-    eval $MYSQLADMIN $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
+    echo "+ $MYSQLADMIN $myargs_redacted $FLAGS --default-character-set=utf8 create $DBNAME"
+    eval $MYSQLADMIN $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
 
     echo "Creating $DBNAME user and password."
-    eval $MYSQL $FLAGS mysql <<__EOF__ || exit 1
+    eval $MYSQL $myargs $FLAGS mysql <<__EOF__ || exit 1
 DELETE FROM user WHERE user='$DBNAME';
 DELETE FROM db WHERE User='$DBNAME';
 FLUSH PRIVILEGES;
@@ -386,7 +299,7 @@ __EOF__
 ##
 
     echo "Reloading grant tables."
-    eval $MYSQLADMIN $FLAGS reload || exit 1
+    eval $MYSQLADMIN $myargs $FLAGS reload || exit 1
 
     if [ ! -r "${PROGDIR}schema.sql" ]; then
 	echo "Can't read schema.sql!  You'll have to populate the database yourself."
@@ -405,7 +318,7 @@ echo "Now, we will populate the database with the schema."
 echo "However, if you need to restore from a backup you don't want to populate."
 echo "If the preceeding steps worked, you won't need to enter a password."
 while true; do
-    echo_n "Populate database [Y/n]? "
+    echo_n "Populate database? [Y/n] "
     read populatedb
     expr "$populatedb" : "[ynqYNQ].*" >/dev/null && break
     test -z "$populatedb" && break
@@ -416,17 +329,9 @@ echo
 
 if [ "$populatedb" = y ]; then
     echo "Populating database."
-    if test -n "$PASSWORDFILE"; then
-        echo '[client]' >> "$PASSWORDFILE"
-        echo 'password = "'`echo_dbpass`'"' >> "$PASSWORDFILE"
-        FLAGS_SCHEMA="--defaults-extra-file=$PASSWORDFILE -u $DBNAME $FLAGS_NOP"
-	ECHOFLAGS_SCHEMA="$FLAGS_SCHEMA"
-    else
-	ECHOFLAGS_SCHEMA="-u $DBNAME -p'<REDACTED>' $FLAGS_NOP"
-	FLAGS_SCHEMA="-u $DBNAME -p'`echo_dbpass`' $FLAGS_NOP"
-    fi
-    echo "+ $MYSQL $ECHOFLAGS_SCHEMA $DBNAME < ${PROGDIR}schema.sql"
-    eval $MYSQL "$FLAGS_SCHEMA" $DBNAME < ${PROGDIR}schema.sql || exit 1
+    set_myargs $DBNAME "`echo_dbpass`"
+    echo "+ $MYSQL $myargs_redacted $FLAGS $DBNAME < ${PROGDIR}schema.sql"
+    eval $MYSQL $myargs $FLAGS $DBNAME < ${PROGDIR}schema.sql || exit 1
 fi
 
 ##

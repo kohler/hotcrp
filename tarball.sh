@@ -90,6 +90,7 @@ Code/contactlist.inc
 Code/countries.inc
 Code/createdb.sh
 Code/csv.php
+Code/dbhelper.sh
 Code/distoptions.inc
 Code/documenthelper.php
 Code/header.inc
