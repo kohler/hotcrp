@@ -299,7 +299,7 @@ if ($Me->privChair) {
 	$Conf->warnMsg("PC members have indicated paper conflicts (using review preferences of &minus;100 or less) that aren’t yet confirmed.  <a href='" . hoturl_post("autoassign", "a=prefconflict&amp;assign=1") . "' class='nowrap'>Confirm these conflicts</a>");
     // Weird URLs?
     foreach (array("conferenceSite", "paperSite") as $k)
-	if ($Opt[$k] && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', $Opt[$k]))
+	if (isset($Opt[$k]) && $Opt[$k] && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', $Opt[$k]))
 	    $Conf->warnMsg("The <code>\$Opt[\"$k\"]</code> setting, <code>&laquo;" . htmlspecialchars($Opt[$k]) . "&raquo;</code>, is not a valid URL.  Edit the <code>Code/options.inc</code> file to fix this problem.");
     // Weird options?
     if (!isset($Opt["shortName"]) || $Opt["shortName"] == "")
@@ -432,7 +432,7 @@ if (!$Me->valid() || isset($_REQUEST["signin"])) {
 Welcome to the ", htmlspecialchars($confname), " submissions site.
 Sign in to submit or review papers.";
     if (isset($Opt["conferenceSite"]))
-	echo " For general information about ", htmlspecialchars($Opt["shortName"]), ", see the <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">conference site</a>.";
+	echo " For general information about ", htmlspecialchars($Opt["shortName"]), ", see <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">the conference site</a>.";
     $passwordFocus = ($email_class == "" && $password_class != "");
     echo "</div>
 <hr class='home' />

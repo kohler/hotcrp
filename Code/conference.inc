@@ -1646,7 +1646,6 @@ class Conference {
 	}
 
 	echo "</div></div>\n";
-	//echo "    <div id='header_public'><a href=\"", htmlspecialchars($Opt['conferenceSite']), "\">", htmlspecialchars($Opt["shortName"]), " Public Site</a></div>\n";
 
 	echo "  <div class='clear'></div>\n";
 

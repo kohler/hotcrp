@@ -20,26 +20,20 @@ global $Opt;
 $Opt["dbName"] = "YourConfI";
 
 
-// CONFERENCE NAMES
+// CONFERENCE SETTINGS
 //
 //   shortName       Short name of the conference, including the year or
 //                   number. Examples: "SIGCOMM 2007", "HotNets V".
 //   longName        Longer name of the conference. Example: "ACM SIGCOMM
 //                   2007 Conference".
-//   downloadPrefix  Prefix for downloaded files, such as papers. Should
+//   paperSite       URL for this HotCRP installation. Used in emails.
+//   conferenceSite  [OPTIONAL] Conference site URL (CFP, registration).
+//   downloadPrefix  Prefix for downloaded files, such as papers; should
 //                   end in a dash. Example: "hotnets5-". Defaults to
 //                   $Opt["dbName"] plus a dash.
 
 $Opt["shortName"] = "YourConf I";
 $Opt["longName"] = "Your Conference I";
-
-
-// URLS
-//
-//   conferenceSite  Conference site URL (e.g., CFP, registration).
-//   paperSite       URL for this HotCRP installation. Used in emails.
-
-$Opt["conferenceSite"] = "http://example.com/";
 $Opt["paperSite"] = "http://example.com/";
 
 
