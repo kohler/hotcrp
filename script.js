@@ -206,6 +206,7 @@ return loadDeadlines;
 })();
 
 
+var hotcrp_base = "";
 var hotcrp_onload = [];
 function hotcrp_load(arg) {
     if (!arg)

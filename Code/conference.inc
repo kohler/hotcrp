@@ -1587,7 +1587,8 @@ class Conference {
 	$now = $dl["now"];
 	echo "</head><body", ($id ? " id='$id'" : ""), " onload='hotcrp_load()'>\n";
 	// JavaScript's idea of a timezone offset is the negative of PHP's
-	$this->footerScript("hotcrp_load.time($now," . (-date("Z", $now) / 60) . "," . (defval($Opt, "time24hour") ? 1 : 0) . ");"
+	$this->footerScript("hotcrp_base=\"$ConfSiteBase\";"
+                            . "hotcrp_load.time($now," . (-date("Z", $now) / 60) . "," . (defval($Opt, "time24hour") ? 1 : 0) . ");"
                             . "loadDeadlines.init(" . json_encode($dl) . ",\"" . hoturl("deadlines") . "\")");
         if ($Me->isPC)
             $this->footerScript("alltags.url=\"" . hoturl("search", "alltags=1") . "\"");
