@@ -252,7 +252,7 @@ if (isset($Opt["dbName"])) {
     if (!isset($Opt["dbPassword"]))
 	$Opt["dbPassword"] = $Opt["dbName"];
     if (!isset($Opt["dsn"]))
-	$Opt["dsn"] = "mysql://" . urlencode($Opt["dbUser"]) . ":" . urlencode($Opt["dbPassword"]) . "@localhost/" . urlencode($Opt["dbName"]);
+	$Opt["dsn"] = "mysql://" . urlencode($Opt["dbUser"]) . ":" . urlencode($Opt["dbPassword"]) . "@" . urlencode(defval($Opt, "dbHost", "localhost")) . "/" . urlencode($Opt["dbName"]);
 }
 
 function setPaperSite() {

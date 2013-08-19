@@ -15,7 +15,8 @@ global $Opt;
 //   dbName          Database name. Use the name you supplied to
 //                   "Code/createdb.sh". NO SPACES ALLOWED.
 //   dbUser          Database user name. Defaults to $Opt["dbName"].
-//   dbPassword      Password for database user. Defaults to $Opt["dbName"].
+//   dbPassword      Password for database user.
+//   dbHost          Database host. Defaults to localhost.
 //   shortName       Short name of the conference, including the year or
 //                   number. Examples: "SIGCOMM 2007", "HotNets V".
 //   longName        Longer name of the conference. Example: "ACM SIGCOMM
@@ -85,12 +86,9 @@ $Opt["emailFrom"] = "you@example.com";
 //                   cache on the local filesystem. By default this cache is
 //                   created in the "filestore" directory. You can also set
 //                   $Opt["filestore"] to a directory name.
-//   dsn             Database configuration information in the format
+//   dsn             Database configuration string in the format
 //                   "mysql://DBUSER:DBPASSWORD@DBHOST/DBNAME".
-//                   The default is derived from $Opt["dbName"], assuming
-//                   that DBUSER, DBPASSWORD, and DBNAME are all the same
-//                   and that DBHOST is "localhost".
-//                   Example: "mysql://HotNetsV:HotNetsV@localhost/HotNetsV".
+//                   The default is derived from $Opt["dbName"], etc.
 //   sessionName     Internal name used to distinguish conference sessions
 //                   running on the same server. NO SPACES ALLOWED. Defaults
 //                   to $Opt["dbName"].
