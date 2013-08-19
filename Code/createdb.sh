@@ -340,14 +340,14 @@ fi
 
 create_options () {
     awk 'BEGIN { p = 1 }
-/^\$Opt\[.dbName.\]/ { p = 0 }
+/^\$Opt\[.db/ { p = 0 }
 { if (p) print }' < "${PROGDIR}${distoptions_file}"
     cat <<__EOF__
 \$Opt["dbName"] = "$DBNAME";
 \$Opt["dbPassword"] = "`php_dbpass`";
 __EOF__
     awk 'BEGIN { p = 0 }
-/^\$Opt\[.shortName.\]/ { p = 1 }
+/^\$Opt\[.db/ { p = 1; next }
 { if (p) print }' < "${PROGDIR}${distoptions_file}"
 }
 

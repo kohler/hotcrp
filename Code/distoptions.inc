@@ -3,20 +3,25 @@
 // Placed in the public domain
 
 /*****************************************************************************
- * HotCRP User Settings
+ * HotCRP Settings
  * Required for all installations.
  * Set up this file before running HotCRP for the first time.
  *****************************************************************************/
 
 global $Opt;
 
-// CONFERENCE NAMES
+// DATABASE CONFIGURATION
 //
-//   dbName          Database name. Use the name you supplied to
-//                   "Code/createdb.sh". NO SPACES ALLOWED.
+//   dbName          Database name. NO SPACES ALLOWED.
 //   dbUser          Database user name. Defaults to $Opt["dbName"].
 //   dbPassword      Password for database user.
 //   dbHost          Database host. Defaults to localhost.
+
+$Opt["dbName"] = "YourConfI";
+
+
+// CONFERENCE NAMES
+//
 //   shortName       Short name of the conference, including the year or
 //                   number. Examples: "SIGCOMM 2007", "HotNets V".
 //   longName        Longer name of the conference. Example: "ACM SIGCOMM
@@ -24,9 +29,7 @@ global $Opt;
 //   downloadPrefix  Prefix for downloaded files, such as papers. Should
 //                   end in a dash. Example: "hotnets5-". Defaults to
 //                   $Opt["dbName"] plus a dash.
-//   If your mysql database isn't running on localhost, see $Opt["dsn"] below.
 
-$Opt["dbName"] = "YourConfI";
 $Opt["shortName"] = "YourConf I";
 $Opt["longName"] = "Your Conference I";
 
