@@ -1822,6 +1822,13 @@ function check_version(url) {
     Miniajax.getjsonp(url + "&site=" + encodeURIComponent(window.location.toString())
 		      + "&jsonp=?", updatecb, null);
 }
+check_version.ignore = function (id) {
+    Miniajax.get(hotcrp_base + "checkupdates.php?ignore=" + id, function () {}, null);
+    var e = $$("softwareupdate_" + id);
+    if (e)
+        e.style.display = "none";
+    return false;
+};
 
 
 // ajax loading of paper information
