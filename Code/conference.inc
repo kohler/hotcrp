@@ -1672,7 +1672,8 @@ class Conference {
             if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off")
                 $m = preg_replace(',\Ahttp://,', "https://", $m);
 	    $m .= (strpos($m, "?") === false ? "?" : "&") . "version=" . HOTCRP_VERSION
-                . "&addr=" . urlencode($_SERVER["SERVER_ADDR"]);
+                . "&addr=" . urlencode($_SERVER["SERVER_ADDR"])
+                . "&base=" . urlencode($ConfSiteBase);
 	    if (is_dir("$ConfSitePATH/.git")) {
 		$args = array();
 		exec("export GIT_DIR=" . escapeshellarg($ConfSitePATH) . "/.git; git rev-parse HEAD 2>/dev/null; git merge-base origin/master HEAD 2>/dev/null", $args);
