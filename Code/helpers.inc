@@ -1879,7 +1879,7 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
 
 
 function cleanAuthor($row) {
-    if (isset($row->authorTable))
+    if (!$row || isset($row->authorTable))
 	return;
     $row->authorTable = array();
     if (strpos($row->authorInformation, "\t") === false) {

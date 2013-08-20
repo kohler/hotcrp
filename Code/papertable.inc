@@ -256,10 +256,10 @@ class PaperTable {
 	    echo htmlspecialchars($prow->title);
     }
 
-    function paptabTitle($prow) {
+    private function editable_title() {
 	echo $this->papt("title", "Title"),
 	    "<div class='papv'>",
-	    $this->entryData("title", $prow),
+	    $this->entryData("title", $this->prow),
 	    "</div>\n\n";
     }
 
@@ -348,9 +348,10 @@ class PaperTable {
 	echo join("<div class='g'></div>\n", $out);
     }
 
-    private function echoDocumentUploadRow($prow, $opt, $storageId, $flags) {
+    private function editable_document($opt, $storageId, $flags) {
 	global $Conf, $Me, $Opt;
 
+        $prow = $this->prow;
         $docclass = new HotCRPDocument($opt->optionId, $opt);
 	$documentType = $opt->optionId;
 	$optionType = $opt->type;
@@ -452,17 +453,25 @@ class PaperTable {
 	echo "</div>\n\n";
     }
 
-    private function echoUploadRow($prow, $flags) {
+    private function editable_submission($flags) {
 	global $Me;
 	if ($this->canUploadFinal) {
-	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DTYPE_FINAL, "optionName" => "Final version", "type" => null), $prow ? $prow->finalPaperStorageId : 0, $flags);
+	    $this->editable_document((object) array("optionId" => DTYPE_FINAL, "optionName" => "Final version", "type" => null), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
 	    foreach (paperOptions() as $id => $o)
 		if ($o->type == PaperOption::T_FINALPDF) {
-                    $oa = $prow ? defval($prow->option_array, $o->optionId) : null;
-		    $this->echoDocumentUploadRow($prow, $o, $oa ? $oa->value : 0, $flags);
+                    $oa = $this->prow ? defval($this->prow->option_array, $o->optionId) : null;
+		    $this->editable_document($o, $oa ? $oa->value : 0, $flags);
 		}
 	} else
-	    $this->echoDocumentUploadRow($prow, (object) array("optionId" => DTYPE_SUBMISSION, "optionName" => "Submission", "type" => null), $prow ? $prow->paperStorageId : 0, $flags);
+	    $this->editable_document((object) array("optionId" => DTYPE_SUBMISSION, "optionName" => "Submission", "type" => null), $this->prow ? $this->prow->paperStorageId : 0, $flags);
+    }
+
+    function editable_abstract() {
+        echo "<div class='pg pgtop'>",
+            $this->papt("abstract", "Abstract"),
+            "<div class='papb abstract'>",
+            $this->entryData("abstract", $this->prow, "p"),
+            "</div></div>\n\n";
     }
 
     function paptabAbstract($prow) {
@@ -490,10 +499,9 @@ class PaperTable {
             "<div class='papb abstract'>", $data, "</div></div>\n\n";
     }
 
-    function echoAuthorInformation($prow) {
+    function editable_authors() {
 	global $Conf;
-	if ($prow)
-	    cleanAuthor($prow);
+        cleanAuthor($this->prow);
 
 	echo $this->papt("authorInformation", "Authors <span class='papfnh'>(<a href='javascript:void authorfold(\"auedit\",1,1)'>More</a> | <a href='javascript:void authorfold(\"auedit\",1,-1)'>Fewer</a>)</span>"),
 	    "<div class='paphint'>List the paper&rsquo;s authors one per line, including their email addresses and affiliations.";
@@ -506,7 +514,7 @@ class PaperTable {
 	if ($this->useRequest && isset($_REQUEST["authorTable"]))
 	    $authorTable = $_REQUEST["authorTable"];
 	else
-	    $authorTable = ($prow ? $prow->authorTable : array());
+	    $authorTable = ($this->prow ? $this->prow->authorTable : array());
 	for ($n = 1; $n <= 25; $n++) {
 	    $au = ($n <= count($authorTable) ? $authorTable[$n - 1] : $blankAu);
 	    if ($au[0] && $au[1] && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au[1]))
@@ -793,7 +801,7 @@ class PaperTable {
 	}
     }
 
-    private function echoNewContactAuthor() {
+    private function editable_new_contact_author() {
 	global $Me, $Conf;
 	echo $this->papt("contactAuthor", "Contact"),
 	    "<div class='paphint'>You will be able to add more contacts after you register the paper.</div>",
@@ -833,7 +841,7 @@ class PaperTable {
 	echo "</div>\n\n";
     }
 
-    private function echoContactAuthor($editMode = null) {
+    private function editable_contact_author() {
 	global $Conf, $Me;
         $paperId = $this->prow->paperId;
 	$result = $Conf->qe("select firstName, lastName, email, contactId
@@ -849,12 +857,10 @@ class PaperTable {
 		$aus[] = $row;
 	    echo authorTable($aus, $Me);
 	}
-	if ($editMode || ($editMode === false && ($this->editable || $this->admin)))
-	    echo "<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("contactauthors", "p=$paperId") . "'>Edit&nbsp;contacts</a>";
-	echo "</div>\n\n";
+        echo "<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("contactauthors", "p=$paperId") . "'>Edit&nbsp;contacts</a></div>\n\n";
     }
 
-    function echoAnonymity($prow) {
+    private function editable_anonymity($prow) {
 	global $Conf, $Opt;
 	$blind = ($this->useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind));
 	assert(!!$this->editable);
@@ -864,7 +870,7 @@ class PaperTable {
 	    "<div class='papv'></div>\n\n";
     }
 
-    private function echoCollaborators() {
+    private function editable_collaborators() {
 	global $Conf;
 	if (!$Conf->setting("sub_collab"))
 	    return;
@@ -928,7 +934,7 @@ class PaperTable {
 	    "</div></div></div>\n\n";
     }
 
-    private function echoTopics() {
+    private function editable_topics() {
 	global $Conf;
 	assert(!!$this->editable);
 	$topicMode = (int) $this->useRequest;
@@ -939,7 +945,7 @@ class PaperTable {
 	}
     }
 
-    private function echo_editable_attachments($o) {
+    private function editable_attachments($o) {
         echo $this->papt($o->optionId, htmlspecialchars($o->optionName)
                          . " <span class='papfnh'>(max " . ini_get("upload_max_filesize") . "B per file)</span>");
         if ($o->description)
@@ -964,7 +970,7 @@ class PaperTable {
             "</div>";
     }
 
-    private function echo_editable_options($displayTypeFlags) {
+    private function editable_options($displayTypeFlags) {
 	global $Conf, $Me;
         $prow = $this->prow;
 	if (!($opt = paperOptions()))
@@ -979,7 +985,7 @@ class PaperTable {
 	    $optid = "opt$o->optionId";
             $optx = ($prow ? defval($prow->option_array, $o->optionId) : null);
             if ($o->type == PaperOption::T_ATTACHMENTS) {
-                $this->echo_editable_attachments($o);
+                $this->editable_attachments($o);
                 continue;
             }
 
@@ -1020,11 +1026,11 @@ class PaperTable {
                 else /* $o->type == PaperOption::T_TEXT_5LINE */
                     echo "<div class='papv'><textarea class='textlite papertext' name='$optid' rows='5' cols='60' onchange='hiliter(this)'>", htmlspecialchars($myval), "</textarea></div>\n\n";
 	    } else if ($o->type != PaperOption::T_FINALPDF)
-		$this->echoDocumentUploadRow($prow, $o, $optx ? $optx->value : 0, 0);
+		$this->editable_document($o, $optx ? $optx->value : 0, 0);
 	}
     }
 
-    private function echoPCConflicts() {
+    private function editable_pc_conflicts() {
 	global $Conf, $Me, $authorConflictTypes;
 
 	assert(!!$this->editable);
@@ -1720,34 +1726,33 @@ class PaperTable {
 	    if (($m = $this->editMessage()))
 		echo $m, $spacer;
 
-	    $this->paptabTitle($prow);
-	    $this->echoUploadRow($prow,
-		(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0));
-	    $this->echo_editable_options(1 << PaperOption::DT_SUBMISSION);
+	    $this->editable_title();
+	    $this->editable_submission(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0);
+	    $this->editable_options(1 << PaperOption::DT_SUBMISSION);
 
 	    // Authorship
 	    echo $spacer;
-	    $this->echoAuthorInformation($prow);
+	    $this->editable_authors();
 	    if (!$prow)
-		$this->echoNewContactAuthor();
+		$this->editable_new_contact_author();
 	    else
-		$this->echoContactAuthor($this->mode == "pe" || $prow->conflictType >= CONFLICT_AUTHOR);
+		$this->editable_contact_author();
 	    if ($Conf->subBlindOptional() && $this->editable !== "f")
-		$this->echoAnonymity($prow);
+		$this->editable_anonymity($prow);
 
 	    echo $spacer;
-	    $this->paptabAbstract($prow);
+	    $this->editable_abstract();
 
 	    // Topics and options
 	    echo $spacer;
-	    $this->echoTopics();
-	    $this->echo_editable_options((1 << PaperOption::DT_NORMAL)
-                                         | (1 << PaperOption::DT_HIGHLIGHT));
+	    $this->editable_topics();
+	    $this->editable_options((1 << PaperOption::DT_NORMAL)
+                                    | (1 << PaperOption::DT_HIGHLIGHT));
 
 	    // Potential conflicts
 	    if ($this->editable !== "f" || $this->admin) {
-		$this->echoPCConflicts();
-		$this->echoCollaborators();
+		$this->editable_pc_conflicts();
+		$this->editable_collaborators();
 	    }
 
 	    // Submit button
