@@ -174,52 +174,53 @@ class PaperTable {
         $editfolder = defval($extra, "editfolder", false);
         if ($fold || $editfolder) {
             $foldnum = defval($extra, "foldnum", 0);
-            $foldnumarg = $foldnum ? ",$foldnum" : "";
+            if (isset($extra["foldsession"]))
+                $foldnumarg = "," . (+$foldnum) . ",'" . $extra["foldsession"] . "'";
+            else
+                $foldnumarg = $foldnum ? ",$foldnum" : "";
         }
 
-	$c = "<div class='${type}t";
+	$c = "<div class=\"${type}t";
 	if (isset($Error[$what]))
 	    $c .= " error";
 	if (isset($extra["extraclass"]))
 	    $c .= " " . $extra["extraclass"];
         if ($fold || $editfolder)
-            $c .= " childfold' onclick='return foldup(this,event$foldnumarg)";
-	$c .= "'><span class='${type}fn'>";
+            $c .= " childfold\" onclick=\"return foldup(this,event$foldnumarg)";
+	$c .= "\"><span class=\"${type}fn\">";
 	if (!$fold) {
 	    $n = (is_array($name) ? $name[0] : $name);
 	    if ($editfolder)
-		$c .= "<a class='q fn' title='Edit' "
+		$c .= "<a class=\"q fn\" title=\"Edit\" "
 		    . "href=\"" . selfHref(array("atab" => $what))
-		    . "\" onclick='return foldup(this,event)'>"
-		    . $n . "</a><span class='fx'>" . $n . "</span>";
+		    . "\" onclick=\"return foldup(this,event$foldnumarg)\">"
+		    . $n . "</a><span class=\"fx\">" . $n . "</span>";
 	    else
 		$c .= $n;
 	} else {
 	    if (!is_array($name))
 		$name = array($name, $name);
-	    $c .= "<a class='q fn$foldnum' "
+	    $c .= "<a class=\"q fn$foldnum\" "
 		. "href=\"" . selfHref(array("pfold" => $foldnum . "o"))
-		. "\" onclick='return foldup(this,event$foldnumarg)' "
+		. "\" onclick=\"return foldup(this,event$foldnumarg)\" "
 		. "title=\"" . defval($extra, "showtitle", "Show")
 		. "\">+&nbsp;" . $name[1] . "</a>"
-		. "<a class='q fx$foldnum' "
+		. "<a class=\"q fx$foldnum\" "
 		. "href=\"" . selfHref(array("pfold" => $foldnum . "c"))
-		. "\" onclick='return foldup(this,event$foldnumarg)' "
+		. "\" onclick=\"return foldup(this,event$foldnumarg)\" "
 		. "title=\"" . defval($extra, "hidetitle", "Hide")
 		. "\">&minus;&nbsp;" . $name[0] . "</a>";
-	    if (($foldsession = defval($extra, "foldsession", false)))
-		$c .= foldsessionpixel($fold . $foldnum, $foldsession);
 	}
 	$c .= "</span>";
 	if ($editfolder) {
-	    $c .= "<span class='pstedit fn'>"
-		. "<a class='xx' href=\"" . selfHref(array("atab" => $what))
-		. "\" onclick='return foldup(this,event)' title='Edit'>"
+	    $c .= "<span class=\"pstedit fn\">"
+		. "<a class=\"xx\" href=\"" . selfHref(array("atab" => $what))
+		. "\" onclick=\"return foldup(this,event$foldnumarg)\" title=\"Edit\">"
 		. "<span style='display:inline-block;position:relative;width:15px'>"
 		. $Conf->cacheableImage("edit.png", "[Edit]", null, "bmabs")
-		. "</span>&nbsp;<u class='x'>Edit</u></a></span>";
+		. "</span>&nbsp;<u class=\"x\">Edit</u></a></span>";
 	}
-	$c .= "<div class='clear'></div></div>";
+	$c .= "<div class=\"clear\"></div></div>";
 	return $c;
     }
 

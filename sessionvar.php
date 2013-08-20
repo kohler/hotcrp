@@ -24,6 +24,13 @@ if (isset($_REQUEST["var"])) {
     }
 }
 
+if (isset($_REQUEST["j"])) {
+    header("Content-Type: application/json");
+    header("Content-Description: PHP generated data");
+    print "{\"ok\":true}\n";
+    exit;
+}
+
 if (isset($_REQUEST["cache"])) { // allow caching
     session_cache_limiter("");
     header("Cache-Control: public, max-age=31557600");

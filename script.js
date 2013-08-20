@@ -317,7 +317,7 @@ function fold(which, dofold, foldtype) {
     return false;
 }
 
-function foldup(e, event, foldnum) {
+function foldup(e, event, foldnum, session) {
     var dofold = false, attr;
     while (e && e.id.substr(0, 4) != "fold")
         e = e.parentNode;
@@ -331,6 +331,8 @@ function foldup(e, event, foldnum) {
         attr = new Function(attr);
         attr.call(e);
     }
+    if (session)
+        Miniajax.get(hotcrp_base + "sessionvar.php?j=1&var=" + session + "&val=" + (dofold ? 1 : 0));
     if (event)
         event_stop(event);
     return fold(e, dofold, foldnum);
@@ -1743,6 +1745,7 @@ Miniajax.submit = function (formname, callback, timeout) {
     return false;
 };
 Miniajax.get = function (url, callback, timeout) {
+    callback = callback || function () {};
     var req = newRequest(), timer = setTimeout(function () {
 	    req.abort();
 	    callback(null);
