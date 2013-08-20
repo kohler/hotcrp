@@ -158,6 +158,15 @@ class PaperTable {
 	echo "</div>";
     }
 
+    function editable_papt($what, $name) {
+	global $Error;
+	$c = "<div class='papt";
+	if (isset($Error[$what]))
+	    $c .= " error";
+	return $c . "'><span class='papfn'>" . $name
+            . "</span><div class='clear'></div></div>";
+    }
+
     function papt($what, $name, $extra = array()) {
 	global $Error, $Conf;
 	$type = defval($extra, "type", "pap");
@@ -257,7 +266,7 @@ class PaperTable {
     }
 
     private function editable_title() {
-	echo $this->papt("title", "Title"),
+	echo $this->editable_papt("title", "Title"),
 	    "<div class='papv'>",
 	    $this->entryData("title", $this->prow),
 	    "</div>\n\n";
@@ -366,11 +375,11 @@ class PaperTable {
 	$accepts = array();
 	if ($noPapers) {
 	    if ($documentType == DTYPE_SUBMISSION)
-		echo $this->papt("paper", "Status");
+		echo $this->editable_papt("paper", "Status");
 	} else {
             $accepts = $docclass->mimetypes();
 	    if (count($accepts))
-		echo $this->papt("paper", htmlspecialchars($opt->optionName) . " <span class='papfnh'>(" . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
+		echo $this->editable_papt("paper", htmlspecialchars($opt->optionName) . " <span class='papfnh'>(" . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
 	}
 	if (isset($opt->description) && $opt->description)
 	    echo "<div class='paphint'>", $opt->description, "</div>";
@@ -468,7 +477,7 @@ class PaperTable {
 
     function editable_abstract() {
         echo "<div class='pg pgtop'>",
-            $this->papt("abstract", "Abstract"),
+            $this->editable_papt("abstract", "Abstract"),
             "<div class='papb abstract'>",
             $this->entryData("abstract", $this->prow, "p"),
             "</div></div>\n\n";
@@ -503,7 +512,7 @@ class PaperTable {
 	global $Conf;
         cleanAuthor($this->prow);
 
-	echo $this->papt("authorInformation", "Authors <span class='papfnh'>(<a href='javascript:void authorfold(\"auedit\",1,1)'>More</a> | <a href='javascript:void authorfold(\"auedit\",1,-1)'>Fewer</a>)</span>"),
+	echo $this->editable_papt("authorInformation", "Authors <span class='papfnh'>(<a href='javascript:void authorfold(\"auedit\",1,1)'>More</a> | <a href='javascript:void authorfold(\"auedit\",1,-1)'>Fewer</a>)</span>"),
 	    "<div class='paphint'>List the paper&rsquo;s authors one per line, including their email addresses and affiliations.";
 	if ($Conf->subBlindAlways())
 	    echo " Submission is blind, so reviewers will not be able to see author information.";
@@ -803,7 +812,7 @@ class PaperTable {
 
     private function editable_new_contact_author() {
 	global $Me, $Conf;
-	echo $this->papt("contactAuthor", "Contact"),
+	echo $this->editable_papt("contactAuthor", "Contact"),
 	    "<div class='paphint'>You will be able to add more contacts after you register the paper.</div>",
 	    "<div class='papv'>";
 	if ($Me->privChair) {
@@ -849,7 +858,7 @@ class PaperTable {
 		join PaperConflict using (contactId)
 		where paperId=$paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . "
 		order by lastName, firstName, email", "while finding contacts");
-	echo $this->papt("contactAuthor", pluralx(edb_nrows($result), "Contact")),
+	echo $this->editable_papt("contactAuthor", pluralx(edb_nrows($result), "Contact")),
 	    "<div class='papv'>";
 	if ($result) {
 	    $aus = array();
@@ -864,8 +873,8 @@ class PaperTable {
 	global $Conf, $Opt;
 	$blind = ($this->useRequest ? isset($_REQUEST['blind']) : (!$prow || $prow->blind));
 	assert(!!$this->editable);
-	echo $this->papt("blind", tagg_checkbox_h("blind", 1, $blind)
-			 . "&nbsp;" . tagg_label("Anonymous submission")),
+	echo $this->editable_papt("blind", tagg_checkbox_h("blind", 1, $blind)
+                                  . "&nbsp;" . tagg_label("Anonymous submission")),
 	    "<div class='paphint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won&rsquo;t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
 	    "<div class='papv'></div>\n\n";
     }
@@ -877,7 +886,7 @@ class PaperTable {
 	$sub_pcconf = $Conf->setting("sub_pcconf");
 	assert(!!$this->editable);
 
-	echo $this->papt("collaborators", ($sub_pcconf ? "Other conflicts" : "Potential conflicts")),
+	echo $this->editable_papt("collaborators", ($sub_pcconf ? "Other conflicts" : "Potential conflicts")),
 	    "<div class='paphint'>";
 	if ($Conf->setting("sub_pcconf"))
 	    echo "List <em>other</em> people and institutions with which
@@ -939,15 +948,15 @@ class PaperTable {
 	assert(!!$this->editable);
 	$topicMode = (int) $this->useRequest;
 	if (($topicTable = topicTable($this->prow, $topicMode))) {
-	    echo $this->papt("topics", "Topics"),
+	    echo $this->editable_papt("topics", "Topics"),
 		"<div class='paphint'>Select any topics that apply to your paper.</div>",
 		"<div class='papv'>", $topicTable, "</div>\n\n";
 	}
     }
 
     private function editable_attachments($o) {
-        echo $this->papt($o->optionId, htmlspecialchars($o->optionName)
-                         . " <span class='papfnh'>(max " . ini_get("upload_max_filesize") . "B per file)</span>");
+        echo $this->editable_papt($o->optionId, htmlspecialchars($o->optionName)
+                                  . " <span class='papfnh'>(max " . ini_get("upload_max_filesize") . "B per file)</span>");
         if ($o->description)
             echo "<div class='paphint'>", $o->description, "</div>";
         echo "<div class='papv'>";
@@ -999,13 +1008,12 @@ class PaperTable {
                 $myval = $optx->value;
 
 	    if ($o->type == PaperOption::T_CHECKBOX) {
-		echo $this->papt($optid, tagg_checkbox_h($optid, 1, $myval)
-				 . "&nbsp;" . tagg_label(htmlspecialchars($o->optionName)));
+		echo $this->editable_papt($optid, tagg_checkbox_h($optid, 1, $myval) . "&nbsp;" . tagg_label(htmlspecialchars($o->optionName)));
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
 		echo "<div class='papv'></div>\n\n";
 	    } else if (!$o->isDocument) {
-		echo $this->papt($optid, htmlspecialchars($o->optionName));
+		echo $this->editable_papt($optid, htmlspecialchars($o->optionName));
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
 		if ($o->type == PaperOption::T_SELECTOR)
@@ -1109,7 +1117,7 @@ class PaperTable {
 	    $tswitch = "</td><td class='rpad'>";
 	}
 
-	echo $this->papt("pcconf", "PC conflicts"),
+	echo $this->editable_papt("pcconf", "PC conflicts"),
 	    "<div class='paphint'>Select the PC members who have conflicts of interest with this paper.  ", $Conf->conflictDefinitionText(), "</div>\n",
 	    "<div class='papv'", $tclass, "><tr>", $topen;
 	$n = ($selectors
