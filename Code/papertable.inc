@@ -169,7 +169,7 @@ class PaperTable {
 
     private function papt($what, $name, $extra = array()) {
 	global $Error, $Conf;
-	$type = defval($extra, "type", "pap");
+	$type = defval($extra, "type", "pav");
         $fold = defval($extra, "fold", false);
         $editfolder = defval($extra, "editfolder", false);
         if ($fold || $editfolder) {
@@ -476,7 +476,7 @@ class PaperTable {
     private function editable_abstract() {
         echo "<div class='pg pgtop'>",
             $this->editable_papt("abstract", "Abstract"),
-            "<div class='papb abstract'>",
+            "<div class='papv abstract'>",
             $this->entryData("abstract", "p"),
             "</div></div>\n\n";
     }
@@ -493,7 +493,7 @@ class PaperTable {
                                       "foldsession" => "foldpaperb",
                                       "showtitle" => "Show full abstract",
                                       "hidetitle" => "Abbreviate abstract")),
-                    "<div class='papb abstract'>",
+                    "<div class='pavb abstract'>",
 		    "<div class='fn6'>", $shortdata,
 		    " <a class='fn6' href='javascript:void fold(\"paper\", 0, 6)'>[more]</a>",
 		    "</div><div class='fx6'>", $data,
@@ -503,7 +503,7 @@ class PaperTable {
 	}
         echo "<div class='pg pgtop'>",
             $this->papt("abstract", "Abstract"),
-            "<div class='papb abstract'>", $data, "</div></div>\n\n";
+            "<div class='pavb abstract'>", $data, "</div></div>\n\n";
     }
 
     private function editable_authors() {
@@ -591,7 +591,7 @@ class PaperTable {
 	if (!$viewable && !$Me->canViewAuthors($this->prow, true)) {
 	    echo "<div class='pg pgtop'>",
                 $this->papt("authorInformation", "Authors"),
-                "<div class='papb'><i>Hidden for blind review</i></div>",
+                "<div class='pavb'><i>Hidden for blind review</i></div>",
                 "</div>\n\n";
 	    return;
 	}
@@ -637,7 +637,7 @@ class PaperTable {
 	if (!$viewable) {
             echo "<div class='pg pgtop fn8'>",
                 $this->papt("authorInformation", "Authors"),
-                "<div class='papb'><a class='q fn8' ",
+                "<div class='pavb'><a class='q fn8' ",
 		"href='javascript:void fold(\"paper\", 0, 8)' title='Show authors'>",
 		"+&nbsp;<i>Hidden for blind review</i></a>";
 	    if ($this->mode == "assign")
@@ -664,7 +664,7 @@ class PaperTable {
 				   "foldsession" => "foldpaperp",
 				   "showtitle" => "Show full authors",
 				   "hidetitle" => "Show abbreviated authors")),
-                "<div class='papb'><span class='fn9'>",
+                "<div class='pavb'><span class='fn9'>",
 		$this->authorData($autable, "last", null, $inauthors1),
 		" <a class='fn9' href='javascript:void fold(\"paper\", 0, 9)'>[details]</a>",
 		"</span><span class='fx9'>",
@@ -673,7 +673,7 @@ class PaperTable {
 
 	} else {
 	    echo $this->papt("authorInformation", $auname),
-                "<div class='papb'>", $inauthors1,
+                "<div class='pavb'>", $inauthors1,
 		$this->authorData($autable, "col", $Me);
 	}
 
@@ -682,7 +682,7 @@ class PaperTable {
 	if (count($contacts) > 0) {
             echo "<div class='pg fx9", ($viewable ? "" : " fx8"), "'>",
 		$this->papt("authorInformation", pluralx(count($contacts), "Contact")),
-                "<div class='papb'>",
+                "<div class='pavb'>",
 		$this->authorData($contacts, "col", $Me),
 		"</div></div>\n\n";
 	}
@@ -748,7 +748,7 @@ class PaperTable {
                     . ($show_on ? $on : $ox) . "</span>"
                     . "<div class='clear'></div></div>";
                 if ($show_on && $ox !== true)
-                    $x .= "<div class='papb'>" . $ox . "</div>";
+                    $x .= "<div class='pavb'>" . $ox . "</div>";
                 $xoptionhtml[] = $x . "</div>\n";
             } else {
                 if ($ox === true)
@@ -795,7 +795,7 @@ class PaperTable {
 	    if ($topicdata != "") {
                 echo "<div class='pg'>",
                     $this->papt("topics", array("Topics", $tanda), $extra),
-                    "<div class='papb$eclass'>", $topicdata, "</div></div>\n\n";
+                    "<div class='pavb$eclass'>", $topicdata, "</div></div>\n\n";
                 $extra = null;
 		$tanda = $options_name;
 	    }
@@ -804,7 +804,7 @@ class PaperTable {
                 echo "<div class='pg", ($extra ? "" : $eclass),
                     ($nfolded == count($optionhtml) ? " fx8" : ""), "'>",
                     $this->papt("options", array($options_name, $tanda), $extra),
-                    "<div class='papb$eclass'>", join("", $optionhtml), "</div></div>\n\n";
+                    "<div class='pavb$eclass'>", join("", $optionhtml), "</div></div>\n\n";
 	    }
 	}
     }

@@ -2059,15 +2059,15 @@ div.paple {
 div.papre {
 	padding-left: 0.75em;
 }
-div.papt {
+div.papt, div.pavt {
 	padding: 0.25em 1em 0.25em 8px;
 	background: #eaeaff; /*#ffeaee;*/
 }
-span.papfn {
+span.papfn, span.pavfn {
 	font-variant: small-caps;
 	font-weight: bold;
 }
-div.papt span.papfn {
+div.papt span.papfn, div.pavt span.pavfn {
 	float: left;
 }
 body#paper_edit span.papfn {
@@ -2101,7 +2101,7 @@ div.pg.pgtop {
 div.pgsm {
 	margin-top: 0.5em;
 }
-div.papb {
+div.pavb {
 	padding: 2px 0 0 7px;
 }
 
