@@ -1929,12 +1929,6 @@ function cleanAuthor($row) {
     }
 }
 
-function cleanAuthorText($row) {
-    if (!isset($row->authorTable) && strpos($row->authorInformation, "\t") !== false)
-	cleanAuthor($row);
-    return $row->authorInformation;
-}
-
 function reviewForm() {
     global $ReviewFormCache;
     if (!$ReviewFormCache && isset($_SESSION["rf"]))

@@ -119,8 +119,10 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
 	    $text .= wordWrapIndent($prow->title, $n, $l) . "\n";
 	    $text .= "---------------------------------------------------------------------------\n";
 	    $l = strlen($text);
-	    if ($Me->canViewAuthors($prow, $_REQUEST["t"] == "a"))
-		$text .= wordWrapIndent(cleanAuthorText($prow), "Authors: ", 14) . "\n";
+	    if ($Me->canViewAuthors($prow, $_REQUEST["t"] == "a")) {
+                cleanAuthor($prow);
+		$text .= wordWrapIndent($prow->authorInformation, "Authors: ", 14) . "\n";
+            }
 	    if ($prow->topicIds != "") {
 		$tt = "";
 		$topics = ",$prow->topicIds,";
@@ -640,8 +642,10 @@ function downloadRevpref($extended) {
 	    $t .= $prow->reviewerPreference;
 	$t .= "\t" . $prow->title . "\n";
 	if ($extended) {
-	    if ($Rev->canViewAuthors($prow, false))
-		$t .= wordWrapIndent(cleanAuthorText($prow), "#  Authors: ", "#           ") . "\n";
+	    if ($Rev->canViewAuthors($prow, false)) {
+                cleanAuthor($prow);
+		$t .= wordWrapIndent($prow->authorInformation, "#  Authors: ", "#           ") . "\n";
+            }
 	    $t .= wordWrapIndent(rtrim($prow->abstract), "# Abstract: ", "#           ") . "\n";
 	    if ($prow->topicIds != "") {
 		$tt = "";
