@@ -21,6 +21,8 @@ class Contact {
     var $collaborators;
     var $voicePhoneNumber;
     var $password;
+    public $password_type;
+    public $password_plaintext;
     public $disabled;
     var $note;
     var $defaultWatch;
@@ -82,6 +84,9 @@ class Contact {
 	$c->preferredEmail = defval($o, "preferredEmail", "");
         $c->sorter = trim("$c->firstName $c->lastName $c->email");
 	$c->password = defval($o, "password", "");
+        $c->password_type = (substr($c->password, 0, 1) == " " ? 1 : 0);
+        if ($c->password_type == 0)
+            $c->password_plaintext = $c->password;
         $c->disabled = !!defval($o, "disabled", false);
 	$c->isAuthor = defval($o, "isAuthor", false) != false;
 	$c->isReviewer = defval($o, "isReviewer", false) != false;
@@ -243,7 +248,7 @@ class Contact {
 	$this->firstName = simplifyWhitespace($this->firstName);
 	$this->lastName = simplifyWhitespace($this->lastName);
 	foreach (array("email", "preferredEmail", "affiliation",
-		       "voicePhoneNumber", "password", "note",
+		       "voicePhoneNumber", "note",
 		       "addressLine1", "addressLine2", "city", "state",
 		       "zipCode", "country")
 		 as $k)
@@ -364,11 +369,13 @@ class Contact {
     }
 
     function initialize($email, $useRequest = false, $useRequestPassword = false) {
-	global $Conf;
+	global $Conf, $Opt;
 	$this->email = trim($email);
 	if (!$useRequest || !$useRequestPassword || !isset($_REQUEST["password"])
-	    || ($this->password = trim($_REQUEST["password"])) == "")
-	    $this->password = self::random_password();
+	    || ($password = trim($_REQUEST["password"])) == "")
+	    $password = self::random_password();
+        $this->password_type = defval($Opt, "safePasswords") ? 1 : 0;
+        $this->change_password($password);
 
 	// update paper authorship based on authorInformation fields
 	// (ignore errors)
@@ -419,6 +426,9 @@ class Contact {
 	    $this->affiliation = $fromdb->affiliation;
 	    $this->voicePhoneNumber = $fromdb->voicePhoneNumber;
 	    $this->password = $fromdb->password;
+            $this->password_type = (substr($this->password, 0, 1) == " " ? 1 : 0);
+            if ($this->password_type == 0)
+                $this->password_plaintext = $this->password;
             $this->disabled = !!defval($fromdb, "disabled", 0);
 	    $this->note = $fromdb->note;
 	    $this->collaborators = $fromdb->collaborators;
@@ -1458,6 +1468,72 @@ class Contact {
 	}
     }
 
+
+    public static function password_hmac_key($keyid) {
+        global $Conf, $Opt;
+        if ($keyid == 0 && isset($Opt["passwordHmacKey"]))
+            return $Opt["passwordHmacKey"];
+        else if (isset($Opt["passwordHmacKey.$keyid"]))
+            return $Opt["passwordHmacKey.$keyid"];
+        else
+            return $Conf->settingText("passwordHmacKey.$keyid", "");
+    }
+
+    public function check_password($password) {
+        global $Conf, $Opt;
+        assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
+        if ($password == "")
+            return false;
+        if ($this->password_type == 0)
+            return $password == $this->password;
+        if ($this->password_type == 1
+            && ($hash_method_pos = strpos($this->password, " ", 1)) !== false
+            && ($keyid_pos = strpos($this->password, " ", $hash_method_pos + 1)) !== false
+            && strlen($this->password) > $keyid_pos + 17
+            && function_exists("hash_hmac")) {
+            $hash_method = substr($this->password, 1, $hash_method_pos - 1);
+            $keyid = substr($this->password, $hash_method_pos + 1, $keyid_pos - $hash_method_pos - 1);
+            $salt = substr($this->password, $keyid_pos + 1, 16);
+            return hash_hmac($hash_method, $salt . $password,
+                             self::password_hmac_key($keyid), true)
+                == substr($this->password, $keyid_pos + 17);
+        } else if ($this->password_type == 1)
+            error_log("cannot check hashed password for user " . $this->email);
+        return false;
+    }
+
+    public function password_needs_upgrade() {
+        global $Opt;
+        if (isset($Opt["safePasswords"]) && is_int($Opt["safePasswords"])
+            && $Opt["safePasswords"] > 1) {
+            $expected_prefix = " " . defval($Opt, "passwordHashMethod", "sha256")
+                . " " . defval($Opt, "passwordHmacKeyid", 0) . " ";
+            return $this->password_type == 0
+                || ($this->password_type == 1 && !str_starts_with($this->password, $expected_prefix));
+        } else
+            return false;
+    }
+
+    public function change_password($new_password) {
+        global $Conf, $Opt;
+        $this->password_plaintext = $new_password;
+        if ($this->password_needs_upgrade())
+            $this->password_type = 1;
+        if ($this->password_type == 1 && function_exists("hash_hmac")) {
+            $keyid = defval($Opt, "passwordHmacKeyid", 0);
+            if (($key = self::password_hmac_key($keyid)) == "") {
+                $key = hotcrp_random_bytes(24);
+                $Conf->save_setting("passwordHmacKey.$keyid", time(), $key);
+            }
+            $hash_method = defval($Opt, "passwordHashMethod", "sha256");
+            $salt = hotcrp_random_bytes(16);
+            $this->password = " " . $hash_method . " " . $keyid . " " . $salt
+                . hash_hmac($hash_method, $salt . $new_password, $key, true);
+        } else {
+            $this->password = $new_password;
+            $this->password_type = 0;
+        }
+    }
 
     static function random_password($length = 16) {
 	global $Opt;

@@ -333,4 +333,8 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table ContactInfo modify `password` varbinary(2048) NOT NULL")
         && $Conf->ql("update Settings set value=56 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 56;
+    if ($Conf->settings["allowPaperOption"] == 56
+        && $Conf->ql("alter table Settings modify `data` blob")
+        && $Conf->ql("update Settings set value=57 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 57;
 }

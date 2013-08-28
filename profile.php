@@ -62,15 +62,16 @@ function tfError(&$tf, $errorField, $text) {
 
 function createUser(&$tf, $newProfile, $useRequestPassword = false) {
     global $Conf, $Acct, $Me, $Opt, $OK;
+    $external_login = isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]);
 
-    if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
+    if (!$external_login)
 	$_REQUEST["uemail"] = trim(defval($_REQUEST, "uemail", ""));
     else if ($newProfile)
 	$_REQUEST["uemail"] = trim(defval($_REQUEST, "newUsername", ""));
     else
 	$_REQUEST["uemail"] = $Acct->email;
 
-    if (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]))
+    if ($external_login)
 	$_REQUEST["upassword"] = $_REQUEST["upassword2"] = $Acct->password;
     else if ($newProfile)
 	$_REQUEST["upassword"] = "";
@@ -80,18 +81,17 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 
     // check for missing fields
     $any_missing = false;
-    foreach (array("firstName", "lastName", "affiliation",
-		   "uemail", "upassword") as $field)
+    foreach (array("firstName", "lastName", "affiliation", "uemail", "upassword") as $field)
 	if (!isset($_REQUEST[$field]))
 	    $Error[$field] = $any_missing = true;
     if ($any_missing)
 	return tfError($tf, false, "Required form fields missing.");
 
     // check passwords
-    if (!$newProfile) {
-	if (defval($_REQUEST, "upassword", "") == "")
-	    return tfError($tf, "password", "Blank passwords are not allowed.");
-	else if ($_REQUEST["upassword"] != defval($_REQUEST, "upassword2", ""))
+    if (!$newProfile && trim(defval($_REQUEST, "upassword", "")) == "")
+        $_REQUEST["upassword"] = "";
+    if (!$newProfile && $_REQUEST["upassword"] != "") {
+	if ($_REQUEST["upassword"] != defval($_REQUEST, "upassword2", ""))
 	    return tfError($tf, "password", "The two passwords you entered did not match.");
 	else if (trim($_REQUEST["upassword"]) != $_REQUEST["upassword"])
 	    return tfError($tf, "password", "Passwords cannot begin or end with spaces.");
@@ -104,7 +104,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 	    if (!$newProfile)
 		$msg .= "You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
 	    return tfError($tf, "uemail", $msg);
-	} else if (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"])) {
+	} else if ($external_login) {
 	    if ($_REQUEST["uemail"] == "")
 		return tfError($tf, "newUsername", "Not a valid username.");
 	} else if ($_REQUEST["uemail"] == "")
@@ -186,8 +186,8 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
     $Acct->lastName = $_REQUEST["lastName"];
     $Acct->email = $_REQUEST["uemail"];
     $Acct->affiliation = $_REQUEST["affiliation"];
-    if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
-	$Acct->password = $_REQUEST["upassword"];
+    if (!$newProfile && !$external_login && $_REQUEST["upassword"] != "")
+	$Acct->change_password($_REQUEST["upassword"]);
     if (isset($_REQUEST["preferredEmail"]))
 	$Acct->preferredEmail = $_REQUEST["preferredEmail"];
     foreach (array("voicePhoneNumber", "collaborators",
@@ -255,7 +255,8 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 	    $Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
 	foreach (array("firstName", "lastName", "affiliation") as $k)
 	    $_REQUEST[$k] = $Acct->$k;
-	$_REQUEST["upassword"] = $_REQUEST["upassword2"] = $_REQUEST["upasswordt"] = $Acct->password;
+        foreach (array("upassword", "upassword2", "upasswordt") as $k)
+            unset($_REQUEST[$k]);
     }
 
     return $Acct;
@@ -447,6 +448,8 @@ function crpformvalue($val, $field = null) {
     global $Acct;
     if (isset($_REQUEST[$val]))
 	return htmlspecialchars($_REQUEST[$val]);
+    else if ($field == "password" && $Acct->password_type != 0)
+        return "";
     else if ($field !== false) {
 	$v = $field ? $Acct->$field : $Acct->$val;
 	return htmlspecialchars($v === null ? "" : $v);
@@ -578,17 +581,20 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])) 
     echo "<div class='f-i'><div class='f-ix'>
   <div class='", fcclass('password'), "'>Password</div>
   <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this)' />";
-    if ($Me->privChair)
+    if ($Me->privChair && $Acct->password_type == 0)
 	echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upasswordt', 'password'), "\" onchange='hiliter(this)' />";
     echo "</div>
 </div><div class='fn f-ix'>
   <div class='", fcclass('password'), "'>Repeat password</div>
   <div class='", feclass('password'), "'>", textinput("upassword2", crpformvalue("upassword2", "password"), 24, false, true), "</div>
-</div>
-  <div class='f-h'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don't use a login password or any other high-security password.";
-    if ($Me->privChair)
-	echo "  <span class='sep'></span><span class='f-cx'><a class='fn' href='javascript:void shiftPassword(0)'>Show password</a><a class='fx' href='javascript:void shiftPassword(1)'>Hide password</a></span>";
-    echo "</div>\n  <div class='clear'></div></div>\n\n";
+</div>\n";
+    if ($Acct->password_type == 0) {
+        echo "  <div class='f-h'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
+        if ($Me->privChair)
+            echo "  <span class='sep'></span><span class='f-cx'><a class='fn' href='javascript:void shiftPassword(0)'>Show password</a><a class='fx' href='javascript:void shiftPassword(1)'>Hide password</a></span>";
+        echo "</div>\n";
+    }
+    echo "  <div class='clear'></div></div>\n\n";
 }
 
 

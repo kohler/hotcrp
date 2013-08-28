@@ -48,7 +48,7 @@ set_myargs "$dbuser" "$dbpass"
 
 if test -n "$show_password"; then
     show_password="`echo "+$show_password" | sed -e 's,^.,,' | sql_quote`"
-    echo "select concat(email, ',', password) from ContactInfo where email like '$show_password' and disabled=0" | eval "$MYSQL $myargs -N $FLAGS $dbname"
+    echo "select concat(email, ',', if(substr(password,1,1)=' ','<HASH>',password)) from ContactInfo where email like '$show_password' and disabled=0" | eval "$MYSQL $myargs -N $FLAGS $dbname"
 else
     if test -n "$PASSWORDFILE"; then ( sleep 0.3; rm -f $PASSWORDFILE ) & fi
     eval "$MYSQL $myargs $FLAGS $dbname"

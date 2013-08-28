@@ -264,7 +264,8 @@ class Mailer {
 
 	if ($what == "%LOGINURL%" || $what == "%LOGINURLPARTS%" || $what == "%PASSWORD%") {
 	    $password = null;
-	    if (!$external_password && isset($this->contact->password))
+	    if (!$external_password && isset($this->contact->password)
+                && $this->contact->password_type == 0)
 		$password = ($this->hideSensitive ? "HIDDEN" : $this->contact->password);
 	    $loginparts = "";
 	    if (!isset($Opt["httpAuthLogin"]))

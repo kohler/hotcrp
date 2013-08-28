@@ -31,7 +31,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
 
 	if (!$MiniMe->valid())
 	    $MergeError = "No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?";
-	else if ($MiniMe->password != $_REQUEST["password"])
+	else if (!$MiniMe->check_password($_REQUEST["password"]))
 	    $MergeError = "That password is incorrect.";
 	else if ($MiniMe->contactId == $Me->contactId) {
 	    $Conf->confirmMsg("Accounts successfully merged.");

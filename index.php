@@ -53,7 +53,7 @@ function doFirstUser($msg) {
     global $Conf, $Opt, $Me;
     $msg .= "  As the first user, you have been automatically signed in and assigned system administrator privilege.";
     if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
-	$msg .= "  Your password is “<tt>" . htmlspecialchars($Me->password) . "</tt>”.  All later users will have to sign in normally.";
+	$msg .= "  Your password is “<tt>" . htmlspecialchars($Me->password_plaintext) . "</tt>”.  All later users will have to sign in normally.";
     $while = "while granting system administrator privilege";
     $Conf->qe("insert into ChairAssistant (contactId) values (" . $Me->cid . ")", $while);
     $Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_ADMIN) . " where contactId=" . $Me->cid, $while);
@@ -96,7 +96,7 @@ function doCreateAccount() {
 	    $msg .= "  The conference system is not set up to mail passwords at this time.";
 	$msg .= "  Although an account was created for you, you need the site administrator’s help to retrieve your password.  The site administrator is " . htmlspecialchars($Opt["contactName"] . " <" . $Opt["contactEmail"] . ">") . ".";
     }
-    if (isset($_REQUEST["password"]) && $_REQUEST["password"] != "")
+    if (isset($_REQUEST["password"]) && trim($_REQUEST["password"]) != "")
 	$msg .= "  Note that the password you supplied on the login screen was ignored.";
     $Conf->confirmMsg($msg);
     return null;
@@ -128,6 +128,7 @@ function unquoteDoubleQuotedRequest() {
 
 function doLogin() {
     global $Conf, $Opt, $Me, $email_class, $password_class;
+    $external_login = isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]);
 
     // In all cases, we need to look up the account information
     // to determine if the user is registered
@@ -165,11 +166,11 @@ function doLogin() {
     if ($_REQUEST["action"] == "new") {
 	if (!($reg = doCreateAccount()))
 	    return $reg;
-	$_REQUEST["password"] = $Me->password;
+	$_REQUEST["password"] = $Me->password_plaintext;
     }
 
     if (!$Me->validContact()) {
-	if (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"])) {
+	if ($external_login) {
 	    if (!$Me->initialize($_REQUEST["email"], true))
 		return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
 	    if (defval($Conf->settings, "setupPhase", false))
@@ -180,8 +181,7 @@ function doLogin() {
 	}
     }
 
-    if (($Me->password == "" && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
-        || $Me->disabled)
+    if (($Me->password == "" && !$external_login) || $Me->disabled)
         return $Conf->errorMsg("Your account is disabled. Contact the site administrator for more information.");
 
     if ($_REQUEST["action"] == "forgot") {
@@ -192,19 +192,22 @@ function doLogin() {
 	return null;
     }
 
-    $_REQUEST["password"] = defval($_REQUEST, "password", "");
+    $_REQUEST["password"] = trim(defval($_REQUEST, "password", ""));
     if ($_REQUEST["password"] == "" && !isset($Opt["httpAuthLogin"])) {
 	$password_class = " error";
 	return $Conf->errorMsg("Enter your password.  If you’ve forgotten it, enter your email address and use the &ldquo;I forgot my password, email it to me&rdquo; option.");
     }
 
-    if ($Me->password != $_REQUEST["password"]
-	&& !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])) {
+    if (!$external_login && !$Me->check_password($_REQUEST["password"])) {
 	$password_class = " error";
 	return $Conf->errorMsg("That password doesn’t match.  If you’ve forgotten your password, enter your email address and use the “I forgot my password, email it to me” option.");
     }
 
     $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=" . time() . " where contactId=" . $Me->cid, "while recording login statistics");
+    if (!$external_login && $Me->password_needs_upgrade()) {
+        $Me->change_password($_REQUEST["password"]);
+        $Conf->qe("update ContactInfo set password='" . sqlq($Me->password) . "' where contactId=" . $Me->cid, "while updating password");
+    }
 
     if (isset($_REQUEST["go"]))
 	$where = $_REQUEST["go"];

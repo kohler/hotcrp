@@ -549,7 +549,7 @@ DROP TABLE IF EXISTS `Settings`;
 CREATE TABLE `Settings` (
   `name` char(40) NOT NULL,
   `value` int(11) NOT NULL,
-  `data` text,
+  `data` blob,
   UNIQUE KEY `name` (`name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -585,7 +585,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 56);
+insert into Settings (name, value) values ('allowPaperOption', 57);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
