@@ -1459,7 +1459,7 @@ class Contact {
     }
 
 
-    static function random_password($length = 12) {
+    static function random_password($length = 16) {
 	global $Opt;
 	if (isset($Opt["ldapLogin"]))
 	    return "<stored in LDAP>";
