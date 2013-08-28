@@ -75,7 +75,7 @@ CREATE TABLE `ContactInfo` (
   `affiliation` varchar(2048) NOT NULL DEFAULT '',
   `voicePhoneNumber` varchar(2048) NOT NULL DEFAULT '',
   `faxPhoneNumber` varchar(2048) NOT NULL DEFAULT '',
-  `password` varchar(2048) NOT NULL,
+  `password` varbinary(2048) NOT NULL,
   `note` mediumtext,
   `collaborators` mediumtext,
   `creationTime` int(11) NOT NULL DEFAULT '0',
@@ -585,7 +585,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 55);
+insert into Settings (name, value) values ('allowPaperOption', 56);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

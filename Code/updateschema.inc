@@ -329,4 +329,8 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table PaperStorage add `infoJson` varchar(255) DEFAULT NULL")
         && $Conf->ql("update Settings set value=55 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 55;
+    if ($Conf->settings["allowPaperOption"] == 55
+        && $Conf->ql("alter table ContactInfo modify `password` varbinary(2048) NOT NULL")
+        && $Conf->ql("update Settings set value=56 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 56;
 }
