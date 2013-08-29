@@ -65,6 +65,7 @@ mergeaccounts.php
 offline.php
 paper.php
 profile.php
+resetpassword.php
 review.php
 reviewprefs.php
 scorehelp.php

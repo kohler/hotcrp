@@ -2047,6 +2047,8 @@ function tagg_checkbox($name, $value = 1, $checked = false, $js = null) {
     $t = "<input type=\"checkbox\""; /* NB see tagg_radio */
     if ($name)
 	$t .= " name=\"$name\" value=\"" . htmlspecialchars($value) . "\"";
+    if ($checked === null)
+        $checked = isset($_REQUEST[$name]) && $_REQUEST[$name] == $value;
     if ($checked)
 	$t .= " checked=\"checked\"";
     return $t . tagg_extra($js) . " />";

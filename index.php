@@ -70,7 +70,7 @@ function doCreateAccount() {
 
     if ($Me->validContact() && $Me->visits > 0) {
 	$email_class = " error";
-	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ".  To retrieve your password, select &ldquo;I forgot my password, email it to me.&rdquo;");
+	return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
     } else if (!validateEmail($_REQUEST["email"])) {
 	$email_class = " error";
 	return $Conf->errorMsg("&ldquo;" . htmlspecialchars($_REQUEST["email"]) . "&rdquo; is not a valid email address.");
@@ -187,20 +187,22 @@ function doLogin() {
     if ($_REQUEST["action"] == "forgot") {
 	$worked = $Me->sendAccountInfo(false, true);
 	$Conf->log("Sent password", $Me);
-	if ($worked)
-	    $Conf->confirmMsg("Your password has been emailed to " . $_REQUEST["email"] . ".  When you receive that email, return here to sign in.");
+	if ($worked == "@resetpassword")
+            $Conf->confirmMsg("A password reset link has been emailed to " . htmlspecialchars($_REQUEST["email"]) . ". When you receive that email, follow its instructions to create a new password.");
+        else if ($worked)
+	    $Conf->confirmMsg("Your password has been emailed to " . htmlspecialchars($_REQUEST["email"]) . ".  When you receive that email, return here to sign in.");
 	return null;
     }
 
     $_REQUEST["password"] = trim(defval($_REQUEST, "password", ""));
     if ($_REQUEST["password"] == "" && !isset($Opt["httpAuthLogin"])) {
 	$password_class = " error";
-	return $Conf->errorMsg("Enter your password.  If you’ve forgotten it, enter your email address and use the &ldquo;I forgot my password, email it to me&rdquo; option.");
+	return $Conf->errorMsg("Enter your password. If you’ve forgotten it, enter your email address and use the “I forgot my password” option.");
     }
 
     if (!$external_login && !$Me->check_password($_REQUEST["password"])) {
 	$password_class = " error";
-	return $Conf->errorMsg("That password doesn’t match.  If you’ve forgotten your password, enter your email address and use the “I forgot my password, email it to me” option.");
+	return $Conf->errorMsg("That password doesn’t match. If you’ve forgotten your password, enter your email address and use the “I forgot my password” option.");
     }
 
     $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=" . time() . " where contactId=" . $Me->cid, "while recording login statistics");
@@ -466,7 +468,7 @@ Sign in to submit or review papers.";
 	    tagg_radio("action", "login", true, array("tabindex" => 2)),
 	    "&nbsp;", tagg_label("<b>Sign me in</b>"), "<br />\n";
 	echo tagg_radio("action", "forgot", false, array("tabindex" => 2)),
-	    "&nbsp;", tagg_label("I forgot my password, email it to me"), "<br />\n";
+	    "&nbsp;", tagg_label("I forgot my password"), "<br />\n";
 	echo tagg_radio("action", "new", false, array("tabindex" => 2)),
 	    "&nbsp;", tagg_label("I’m a new user and want to create an account using this email address");
 	echo "\n</div>\n";

@@ -337,4 +337,27 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table Settings modify `data` blob")
         && $Conf->ql("update Settings set value=57 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 57;
+    if ($Conf->settings["allowPaperOption"] == 57
+	&& $Conf->ql("DROP TABLE IF EXISTS `Capability`")
+	&& $Conf->ql("CREATE TABLE `Capability` (
+  `capabilityId` int(11) NOT NULL AUTO_INCREMENT,
+  `capabilityType` int(11) NOT NULL,
+  `contactId` int(11) NOT NULL,
+  `paperId` int(11) NOT NULL,
+  `timeExpires` int(11) NOT NULL,
+  `salt` varbinary(255) NOT NULL,
+  `data` blob,
+  PRIMARY KEY (`capabilityId`),
+  UNIQUE KEY `capabilityId` (`capabilityId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8")
+	&& $Conf->ql("DROP TABLE IF EXISTS `CapabilityMap`")
+	&& $Conf->ql("CREATE TABLE `CapabilityMap` (
+  `capabilityValue` varbinary(255) NOT NULL,
+  `capabilityId` int(11) NOT NULL,
+  `timeExpires` int(11) NOT NULL,
+  PRIMARY KEY (`capabilityValue`),
+  UNIQUE KEY `capabilityValue` (`capabilityValue`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8")
+	&& $Conf->ql("update Settings set value=58 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 58;
 }

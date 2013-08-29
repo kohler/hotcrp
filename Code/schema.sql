@@ -19,6 +19,40 @@ CREATE TABLE `ActionLog` (
 
 
 --
+-- Table structure for table `Capability`
+--
+
+DROP TABLE IF EXISTS `Capability`;
+CREATE TABLE `Capability` (
+  `capabilityId` int(11) NOT NULL AUTO_INCREMENT,
+  `capabilityType` int(11) NOT NULL,
+  `contactId` int(11) NOT NULL,
+  `paperId` int(11) NOT NULL,
+  `timeExpires` int(11) NOT NULL,
+  `salt` varbinary(255) NOT NULL,
+  `data` blob,
+  PRIMARY KEY (`capabilityId`),
+  UNIQUE KEY `capabilityId` (`capabilityId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
+
+--
+-- Table structure for table `CapabilityMap`
+--
+
+DROP TABLE IF EXISTS `CapabilityMap`;
+CREATE TABLE `CapabilityMap` (
+  `capabilityValue` varbinary(255) NOT NULL,
+  `capabilityId` int(11) NOT NULL,
+  `timeExpires` int(11) NOT NULL,
+  PRIMARY KEY (`capabilityValue`),
+  UNIQUE KEY `capabilityValue` (`capabilityValue`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
+
+--
 -- Table structure for table `Chair`
 --
 
@@ -585,7 +619,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 57);
+insert into Settings (name, value) values ('allowPaperOption', 58);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

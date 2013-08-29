@@ -43,6 +43,20 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
+     "resetpassword" =>
+     array("subject" => "[%CONFSHORTNAME%] Password reset request",
+	   "body" => "Dear %NAME%,
+
+We have received a request to reset the password for your account on the %CONFNAME% submissions site. If you made this request, please use the following link to create a new password. The link is only valid for 3 days from the time this email was sent.
+
+%URL%/resetpassword%PHP%/%CAPABILITY%
+
+If you did not make this request, please ignore this email.
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions\n"),
+
      "mergeaccount" =>
      array("subject" => "[%CONFSHORTNAME%] Merged account",
 	   "body" => "Dear %NAME%,

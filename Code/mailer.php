@@ -86,6 +86,7 @@ class Mailer {
     var $rrow;
     var $reviewNumber;
     var $commentId;
+    public $capability;
     var $statistics;
     var $width;
     var $expansionType;
@@ -104,6 +105,7 @@ class Mailer {
 	$this->reviewNumber = defval($rest, "reviewNumber", "");
 	$this->commentId = defval($rest, "commentId", null);
 	$this->hideReviews = defval($rest, "hideReviews", false);
+        $this->capability = defval($rest, "capability", null);
 	$this->statistics = null;
 	$this->width = 75;
 	$this->expansionType = null;
@@ -284,6 +286,8 @@ class Mailer {
 	    return $this->adminupdate ? "An administrator performed this update. " : "";
 	if ($what == "%NOTES%")
 	    return $this->notes;
+        if ($what == "%CAPABILITY%")
+            return ($isbool || $this->capability ? $this->capability : "");
 	if ($what == "%NEWASSIGNMENTS%")
 	    return $this->getNewAssignments($this->contact);
 

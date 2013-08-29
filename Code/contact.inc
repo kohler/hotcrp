@@ -1469,14 +1469,25 @@ class Contact {
     }
 
 
-    public static function password_hmac_key($keyid) {
+    public static function password_hmac_key($keyid, $create) {
         global $Conf, $Opt;
+        if ($keyid === null)
+            $keyid = defval($Opt, "passwordHmacKeyid", 0);
         if ($keyid == 0 && isset($Opt["passwordHmacKey"]))
-            return $Opt["passwordHmacKey"];
+            $key = $Opt["passwordHmacKey"];
         else if (isset($Opt["passwordHmacKey.$keyid"]))
-            return $Opt["passwordHmacKey.$keyid"];
+            $key = $Opt["passwordHmacKey.$keyid"];
+        else {
+            $key = $Conf->settingText("passwordHmacKey.$keyid", "");
+            if ($key == "" && $create) {
+                $key = hotcrp_random_bytes(24);
+                $Conf->save_setting("passwordHmacKey.$keyid", time(), $key);
+            }
+        }
+        if ($create)
+            return array($keyid, $key);
         else
-            return $Conf->settingText("passwordHmacKey.$keyid", "");
+            return $key;
     }
 
     public function check_password($password) {
@@ -1495,7 +1506,7 @@ class Contact {
             $keyid = substr($this->password, $hash_method_pos + 1, $keyid_pos - $hash_method_pos - 1);
             $salt = substr($this->password, $keyid_pos + 1, 16);
             return hash_hmac($hash_method, $salt . $password,
-                             self::password_hmac_key($keyid), true)
+                             self::password_hmac_key($keyid, false), true)
                 == substr($this->password, $keyid_pos + 17);
         } else if ($this->password_type == 1)
             error_log("cannot check hashed password for user " . $this->email);
@@ -1528,11 +1539,7 @@ class Contact {
         if ($this->password_needs_upgrade())
             $this->password_type = 1;
         if ($this->password_type == 1 && function_exists("hash_hmac")) {
-            $keyid = defval($Opt, "passwordHmacKeyid", 0);
-            if (($key = self::password_hmac_key($keyid)) == "") {
-                $key = hotcrp_random_bytes(24);
-                $Conf->save_setting("passwordHmacKey.$keyid", time(), $key);
-            }
+            list($keyid, $key) = self::password_hmac_key(null, true);
             $hash_method = self::password_hash_method();
             $salt = hotcrp_random_bytes(16);
             $this->password = " " . $hash_method . " " . $keyid . " " . $salt
@@ -1550,6 +1557,7 @@ class Contact {
 	else if (isset($Opt["httpAuthLogin"]))
 	    return "<using HTTP authentication>";
 
+        // see also regexp in randompassword.php
 	$l = explode(" ", "a e i o u y a e i o u y a e i o u y a e i o u y a e i o u y b c d g h j k l m n p r s t u v w tr cr br fr th dr ch ph wr st sp sw pr sl cl 2 3 4 5 6 7 8 9 - @ _ + =");
 	$n = count($l);
 
@@ -1576,12 +1584,23 @@ class Contact {
 
     function sendAccountInfo($create, $sensitive) {
 	global $Conf;
-	$prep = Mailer::prepareToSend($create ? "@createaccount" : "@accountinfo", null, $this);
+        $rest = array();
+        if ($create)
+            $template = "@createaccount";
+        else if ($this->password_type == 0)
+            $template = "@accountinfo";
+        else {
+            $rest["capability"] = $Conf->create_capability(CAPTYPE_RESETPASSWORD, array("contactId" => $this->contactId, "timeExpires" => time() + 259200));
+            $Conf->log("Created password reset request", $this);
+            $template = "@resetpassword";
+        }
+
+	$prep = Mailer::prepareToSend($template, null, $this, null, $rest);
 	if ($prep["allowEmail"] || !$sensitive) {
             Mailer::sendPrepared($prep);
-	    return true;
+	    return $template;
 	} else {
-	    $Conf->errorMsg("Mail cannot be sent to your email address &lt;" . htmlspecialchars($this->email) . "&gt; at this time.");
+	    $Conf->errorMsg("Mail cannot be sent to " . htmlspecialchars($this->email) . " at this time.");
 	    return false;
 	}
     }

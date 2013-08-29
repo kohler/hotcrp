@@ -125,7 +125,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-        if ($this->settings["allowPaperOption"] < 57) {
+        if ($this->settings["allowPaperOption"] < 58) {
 	    require_once("updateschema.inc");
 	    $oldOK = $OK;
 	    updateSchema($this);
@@ -140,6 +140,13 @@ class Conference {
 	    unset($Opt["ldapLogin"]);
 	if (isset($Opt["httpAuthLogin"]) && !$Opt["httpAuthLogin"])
 	    unset($Opt["httpAuthLogin"]);
+        if ($this->sversion >= 58
+            && defval($this->settings, "capability_gc", 0) < time() - 86400) {
+            $now = time();
+            $this->q("delete from Capability where timeExpires>0 and timeExpires<$now");
+            $this->q("delete from CapabilityMap where timeExpires>0 and timeExpires<$now");
+            $this->q("insert into Settings (name, value) values ('capability_gc', $now) on duplicate key update value=values(value)");
+        }
     }
 
     function setting($name, $defval = false) {
@@ -1805,4 +1812,55 @@ class Conference {
             && ($at = strpos($email, "@")) !== false
             && substr($email, $at) != "@_.com";
     }
+
+
+    public function encode_capability($capid, $salt, $timeExpires, $save) {
+        global $Opt;
+        list($keyid, $key) = Contact::password_hmac_key(null, true);
+        if (($hash_method = defval($Opt, "capabilityHashMethod")))
+            /* OK */;
+        else if (($hash_method = $this->settingText("capabilityHashMethod")))
+            /* OK */;
+        else {
+            $hash_method = (PHP_INT_SIZE == 8 ? "sha512" : "sha256");
+            $this->save_setting("capabilityHashMethod", 1, $hash_method);
+        }
+        $text = substr(hash_hmac($hash_method, $capid . " " . $timeExpires . " " . $salt, $key, true), 0, 16);
+        if ($save)
+            $this->q("insert ignore into CapabilityMap (capabilityValue, capabilityId, timeExpires) values ('" . sqlq($text) . "', $capid, $timeExpires)");
+        return "1" . str_replace(array("+", "/", "="), array("-", "_", ""),
+                                 base64_encode($text));
+    }
+
+    public function create_capability($capabilityType, $options = array()) {
+        $contactId = defval($options, "contactId", 0);
+        $paperId = defval($options, "paperId", 0);
+        $timeExpires = defval($options, "timeExpires", time() + 259200);
+        $salt = hotcrp_random_bytes(24);
+        $data = defval($options, "data");
+        $this->q("insert into Capability (capabilityType, contactId, paperId, timeExpires, salt, data) values ($capabilityType, $contactId, $paperId, $timeExpires, '" . sqlq($salt) . "', " . ($data === null ? "null" : "'" . sqlq($data) . "'") . ")");
+        $capid = $this->lastInsertId();
+        if (!$capid || !function_exists("hash_hmac"))
+            return false;
+        return $this->encode_capability($capid, $salt, $timeExpires, true);
+    }
+
+    public function check_capability($capabilityText) {
+        if ($capabilityText[0] != "1")
+            return false;
+        $value = base64_decode(str_replace(array("-", "_"), array("+", "/"),
+                                           substr($capabilityText, 1)));
+        if (strlen($value) >= 16
+            && ($result = $this->q("select * from CapabilityMap where capabilityValue='" . sqlq($value) . "'"))
+            && ($row = edb_orow($result))
+            && ($row->timeExpires == 0 || $row->timeExpires >= time())) {
+            $result = $this->q("select * from Capability where capabilityId=" . $row->capabilityId);
+            if (($row = edb_orow($result))) {
+                $row->capabilityValue = $value;
+                return $row;
+            }
+        }
+        return false;
+    }
+
 }
