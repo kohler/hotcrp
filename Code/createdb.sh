@@ -145,9 +145,9 @@ __EOF__
 }
 
 generate_random_ints () {
-    random="`head -c 32 /dev/urandom 2>/dev/null | tr -d '\000'`"
-    test -z "$random" && random="`head -c 32 /dev/random 2>/dev/null | tr -d '\000'`"
-    test -z "$random" && random="`openssl rand 32 2>/dev/null | tr -d '\000'`"
+    random="`head -c 48 /dev/urandom 2>/dev/null | tr -d '\000'`"
+    test -z "$random" && random="`head -c 48 /dev/random 2>/dev/null | tr -d '\000'`"
+    test -z "$random" && random="`openssl rand 48 2>/dev/null | tr -d '\000'`"
     echo "$random" | awk '
 BEGIN { for (i = 0; i < 256; ++i) { ord[sprintf("%c", i)] = i; } }
 { for (i = 1; i <= length($0); ++i) { printf("%d\n", ord[substr($0, i, 1)]); } }'
@@ -163,7 +163,7 @@ generate_password () {
 }
 {   x = ($0 % npwchars); if (x < 30) ++nvow;
     pw = pw pwchars[x + 1];
-    if (length(pw) >= 12 + nvow / 3) exit;
+    if (length(pw) >= '"$1"' + nvow / 3) exit;
 }
 END { printf("%s\n", pw); }'
 }
@@ -172,7 +172,7 @@ default_dbpass=
 x="`getdbopt dbPassword 2>/dev/null`"
 x="`eval "echo $x"`"
 test -n "$x" -a "$DBNAME" = "$default_dbname" && default_dbpass="$x"
-test -z "$default_dbpass" && default_dbpass=`generate_random_ints | generate_password`
+test -z "$default_dbpass" && default_dbpass=`generate_random_ints | generate_password 12`
 while true; do
     echo_n "Enter password for mysql user $DBNAME [default $default_dbpass]: "
     stty -echo; trap "stty echo; exit 1" INT
@@ -348,6 +348,13 @@ create_options () {
 __EOF__
     awk 'BEGIN { p = 0 }
 /^\$Opt\[.db/ { p = 1; next }
+/^\$Opt\[.passwordHmacKey/ { p = 0; next }
+{ if (p) print }' < "${PROGDIR}${distoptions_file}"
+    cat <<__EOF__
+\$Opt["passwordHmacKey"] = "`generate_random_ints | generate_password 40`";
+__EOF__
+    awk 'BEGIN { p = 0 }
+/^\$Opt\[.passwordHmacKey/ { p = 1; next }
 { if (p) print }' < "${PROGDIR}${distoptions_file}"
 }
 

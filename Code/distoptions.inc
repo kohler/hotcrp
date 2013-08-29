@@ -37,6 +37,24 @@ $Opt["longName"] = "Your Conference I";
 $Opt["paperSite"] = "http://example.com/";
 
 
+// USER PASSWORDS
+//
+//   safePasswords   If true, the database will store cryptographic hashes
+//                   of user passwords. If false, the database will store
+//                   user passwords in plaintext. If set to the integer 2,
+//                   existing plaintext passwords are opportunistically
+//                   upgraded to hashes. Cryptographic hashes follow security
+//                   best practices and are safer, but plaintext passwords
+//                   offer some usability advantages.
+//   passwordHmacKey  Secret key used for password HMAC.
+//   passwordHmacKeyid  If a secret key is compromised, change
+//                   passwordHmacKeyid to switch keys. Defaults to 0.
+//   passwordHmacKey.ID  Secret key for passwordHmacKeyid==ID.
+
+$Opt["safePasswords"] = true;
+$Opt["passwordHmacKey"] = null;
+
+
 // EMAIL
 //
 //   contactName     Full name for site administrator (the person to contact
