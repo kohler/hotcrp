@@ -688,25 +688,6 @@ function reviewType($paperId, $row, $long = 0) {
 	return "";
 }
 
-function reviewStatus($row, $when = 0, $long = 0, $conf = null) {
-    global $Conf;
-    $conf = ($conf ? $conf : $Conf);
-
-    if (!isset($row->reviewType) && !$row->reviewId && !$long)
-	return "";
-    else if ($row->reviewModified == 0 && $row->reviewType == REVIEW_SECONDARY && $row->reviewNeedsSubmit <= 0)
-	return "<span class='rstat rstat_no'>Delegated</span>";
-    else if ($row->reviewModified == 0)
-	return "<span class='rstat rstat_no'>Not started</span>";
-    else if ($row->reviewSubmitted == 0)
-	$x = "<span class='rstat rstat_prog'>In progress</span>";
-    else
-	$x = "<span class='rstat rstat_done'>Complete</span>";
-    if ($when && $row->reviewModified > 0 && $_SESSION["Me"]->isPC)
-	$x .= " <span class='rstat_date'>(" . htmlspecialchars($conf->printableTime($row->reviewModified)) . ")</span>";
-    return $x;
-}
-
 function documentDownload($doc, $dlimg_class = "dlimg", $text = null) {
     global $Conf;
     $p = $Conf->makeDownloadPath($doc);
