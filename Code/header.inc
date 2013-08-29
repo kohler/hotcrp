@@ -206,8 +206,16 @@ function __autoload($class_name) {
 global $Opt;
 $Opt = array();
 if ((@include "$ConfSitePATH/Code/options.inc") == false) {
-    echo "<html><head><title>HotCRP error</title><head><body><h1>Unconfigured HotCRP installation</h1>";
-    echo "<p>HotCRP has been installed, but you haven’t yet configured a conference. You must run <code>Code/createdb.sh</code> to create a database for your conference. See <code>README.md</code> for further guidance.</p></body></html>\n";
+    if (isset($_REQUEST["ajax"]) && $_REQUEST["ajax"]) {
+        if (isset($_REQUEST["jsontext"]) && $_REQUEST["jsontext"])
+            header("Content-Type: text/plain");
+        else
+            header("Content-Type: application/json");
+        echo "{\"error\":\"unconfigured installation\"}\n";
+    } else {
+        echo "<html><head><title>HotCRP error</title><head><body><h1>Unconfigured HotCRP installation</h1>";
+        echo "<p>HotCRP has been installed, but you haven’t yet configured a conference. You must run <code>Code/createdb.sh</code> to create a database for your conference. See <code>README.md</code> for further guidance.</p></body></html>\n";
+    }
     exit;
 }
 
