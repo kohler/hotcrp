@@ -186,11 +186,12 @@ function doLogin() {
 
     if ($_REQUEST["action"] == "forgot") {
 	$worked = $Me->sendAccountInfo(false, true);
-	$Conf->log("Sent password", $Me);
 	if ($worked == "@resetpassword")
             $Conf->confirmMsg("A password reset link has been emailed to " . htmlspecialchars($_REQUEST["email"]) . ". When you receive that email, follow its instructions to create a new password.");
-        else if ($worked)
+        else if ($worked) {
 	    $Conf->confirmMsg("Your password has been emailed to " . htmlspecialchars($_REQUEST["email"]) . ".  When you receive that email, return here to sign in.");
+            $Conf->log("Sent password", $Me);
+        }
 	return null;
     }
 
