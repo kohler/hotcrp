@@ -1248,7 +1248,7 @@ class Contact {
 	$conflictType = $this->actConflictType($prow);
         $admin = $this->allowAdminister($prow);
         return ($admin && ($conflictType == 0 || $forceShow))
-            || $prow->leadContactId == $this->cid
+            || $prow->leadContactId == $this->contactId
             || (($this->isPC || $prow->myReviewType > 0)
                 && $conflictType == 0
                 && $this->canViewReviewerIdentity($prow, null, $forceShow));
