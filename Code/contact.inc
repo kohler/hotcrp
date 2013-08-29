@@ -1502,11 +1502,19 @@ class Contact {
         return false;
     }
 
+    static public function password_hash_method() {
+        global $Opt;
+        if (isset($Opt["passwordHashMethod"]) && $Opt["passwordHashMethod"])
+            return $Opt["passwordHashMethod"];
+        else
+            return PHP_INT_SIZE == 8 ? "sha512" : "sha256";
+    }
+
     public function password_needs_upgrade() {
         global $Opt;
         if (isset($Opt["safePasswords"]) && is_int($Opt["safePasswords"])
             && $Opt["safePasswords"] > 1) {
-            $expected_prefix = " " . defval($Opt, "passwordHashMethod", "sha256")
+            $expected_prefix = " " . self::password_hash_method()
                 . " " . defval($Opt, "passwordHmacKeyid", 0) . " ";
             return $this->password_type == 0
                 || ($this->password_type == 1 && !str_starts_with($this->password, $expected_prefix));
@@ -1525,7 +1533,7 @@ class Contact {
                 $key = hotcrp_random_bytes(24);
                 $Conf->save_setting("passwordHmacKey.$keyid", time(), $key);
             }
-            $hash_method = defval($Opt, "passwordHashMethod", "sha256");
+            $hash_method = self::password_hash_method();
             $salt = hotcrp_random_bytes(16);
             $this->password = " " . $hash_method . " " . $keyid . " " . $salt
                 . hash_hmac($hash_method, $salt . $new_password, $key, true);
