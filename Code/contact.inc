@@ -1576,11 +1576,9 @@ class Contact {
 
     function sendAccountInfo($create, $sensitive) {
 	global $Conf;
-	$mailer = new Mailer(null, $this);
-	$preparation = $mailer->prepareToSend($create ? "@createaccount" : "@accountinfo", null, $this);
-
-	if ($preparation["allowEmail"] || !$sensitive) {
-	    $mailer->sendPrepared($preparation);
+	$prep = Mailer::prepareToSend($create ? "@createaccount" : "@accountinfo", null, $this);
+	if ($prep["allowEmail"] || !$sensitive) {
+            Mailer::sendPrepared($prep);
 	    return true;
 	} else {
 	    $Conf->errorMsg("Mail cannot be sent to your email address &lt;" . htmlspecialchars($this->email) . "&gt; at this time.");
