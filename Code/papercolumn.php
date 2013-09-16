@@ -887,7 +887,7 @@ class ScorePaperColumn extends PaperColumn {
         return self::$registered;
     }
     public static function register_score($fdef, $order) {
-        PaperColumn::register($fdef, $fdef->foldnum);
+        PaperColumn::register($fdef);
         if ($order !== false) {
             self::$registered[$order] = $fdef;
             ksort(self::$registered);
@@ -1182,39 +1182,36 @@ class ShepherdPaperColumn extends PaperColumn {
 function initialize_paper_columns() {
     global $paperListFormulas, $reviewScoreNames, $Conf;
 
-    // The ID numbers passed as argument 2 to PaperColumn::register are
-    // legacy, new code uses names. We keep the numbers because they might
-    // define sort orders for old saved searches.
-    PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)), 1000);
-    PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "cssname" => "sel")), 1001);
-    PaperColumn::register(new SelectorPaperColumn("selconf", array("cssname" => "confselector")), 1002);
-    PaperColumn::register(new IdPaperColumn, 1);
-    PaperColumn::register(new TitlePaperColumn("title"), 11);
-    PaperColumn::register(new StatusPaperColumn("status", false), 21);
-    PaperColumn::register(new StatusPaperColumn("statusfull", true), 20);
-    PaperColumn::register(new ReviewerTypePaperColumn("revtype"), 27);
-    PaperColumn::register(new ReviewStatusPaperColumn("revstat"), 41);
-    PaperColumn::register(new ReviewSubmittedPaperColumn("revsubmitted"), 28);
-    PaperColumn::register(new ReviewDelegationPaperColumn("revdelegation"), 29);
-    PaperColumn::register(new AssignReviewPaperColumn("assrev"), 35);
-    PaperColumn::register(new TopicScorePaperColumn("topicscore"), 36);
-    PaperColumn::register(new TopicListPaperColumn("topics", 13), 73);
-    PaperColumn::register(new PreferencePaperColumn("revpref", false), 39);
-    PaperColumn::register(new PreferencePaperColumn("editrevpref", true), 40);
-    PaperColumn::register(new PreferenceListPaperColumn("allrevpref"), 44);
-    PaperColumn::register(new DesirabilityPaperColumn("desirability"), 43);
-    PaperColumn::register(new ReviewerListPaperColumn("reviewers", 10), 75);
-    PaperColumn::register(new AuthorsPaperColumn("authors", 3), 70);
-    PaperColumn::register(new CollabPaperColumn("collab", 15), 74);
-    PaperColumn::register(new TagListPaperColumn("tags", 4), 71);
-    PaperColumn::register(new AbstractPaperColumn("abstract", 5), 72);
-    PaperColumn::register(new LeadPaperColumn("lead", 12), 77);
-    PaperColumn::register(new ShepherdPaperColumn("shepherd", 11), 78);
-    PaperColumn::register(new PCConflictListPaperColumn("pcconf", 14), 76);
-    PaperColumn::register(new ConflictMatchPaperColumn("authorsmatch", "authorInformation"), 47);
-    PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", "collaborators"), 48);
-    PaperColumn::register(new SearchSortPaperColumn, 9);
-    PaperColumn::register(new TagOrderSortPaperColumn, 8);
+    PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)));
+    PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "cssname" => "sel")));
+    PaperColumn::register(new SelectorPaperColumn("selconf", array("cssname" => "confselector")));
+    PaperColumn::register(new IdPaperColumn);
+    PaperColumn::register(new TitlePaperColumn("title"));
+    PaperColumn::register(new StatusPaperColumn("status", false));
+    PaperColumn::register(new StatusPaperColumn("statusfull", true));
+    PaperColumn::register(new ReviewerTypePaperColumn("revtype"));
+    PaperColumn::register(new ReviewStatusPaperColumn("revstat"));
+    PaperColumn::register(new ReviewSubmittedPaperColumn("revsubmitted"));
+    PaperColumn::register(new ReviewDelegationPaperColumn("revdelegation"));
+    PaperColumn::register(new AssignReviewPaperColumn("assrev"));
+    PaperColumn::register(new TopicScorePaperColumn("topicscore"));
+    PaperColumn::register(new TopicListPaperColumn("topics", 13));
+    PaperColumn::register(new PreferencePaperColumn("revpref", false));
+    PaperColumn::register(new PreferencePaperColumn("editrevpref", true));
+    PaperColumn::register(new PreferenceListPaperColumn("allrevpref"));
+    PaperColumn::register(new DesirabilityPaperColumn("desirability"));
+    PaperColumn::register(new ReviewerListPaperColumn("reviewers", 10));
+    PaperColumn::register(new AuthorsPaperColumn("authors", 3));
+    PaperColumn::register(new CollabPaperColumn("collab", 15));
+    PaperColumn::register(new TagListPaperColumn("tags", 4));
+    PaperColumn::register(new AbstractPaperColumn("abstract", 5));
+    PaperColumn::register(new LeadPaperColumn("lead", 12));
+    PaperColumn::register(new ShepherdPaperColumn("shepherd", 11));
+    PaperColumn::register(new PCConflictListPaperColumn("pcconf", 14));
+    PaperColumn::register(new ConflictMatchPaperColumn("authorsmatch", "authorInformation"));
+    PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", "collaborators"));
+    PaperColumn::register(new SearchSortPaperColumn);
+    PaperColumn::register(new TagOrderSortPaperColumn);
     PaperColumn::register_factory("tag:", new TagPaperColumn(null, null, false));
     PaperColumn::register_factory("tagval:", new TagPaperColumn(null, null, true));
     PaperColumn::register_factory("edittag:", new EditTagPaperColumn(null, null, false));
