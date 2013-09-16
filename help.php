@@ -284,6 +284,7 @@ function searchQuickref() {
     _searchQuickrefRow("Status", "status:sub", "paper is submitted for review", "t=all");
     _searchQuickrefRow("", "status:unsub", "paper is neither submitted nor withdrawn", "t=all");
     _searchQuickrefRow("", "status:withdrawn", "paper has been withdrawn", "t=all");
+    _searchQuickrefRow("", "has:final", "final copy uploaded");
 
     $rf = reviewForm();
     foreach ($rf->options["outcome"] as $dec)

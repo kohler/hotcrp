@@ -38,7 +38,7 @@ $searchKeywords = array("ti" => "ti", "title" => "ti",
 	"shepherd" => "shepherd", "shep" => "shepherd",
 	"conflict" => "conflict", "conf" => "conflict",
 	"reconflict" => "reconflict", "reconf" => "reconflict",
-	"status" => "status",
+        "status" => "status", "has" => "has",
 	"rating" => "rate", "rate" => "rate",
 	"revpref" => "revpref", "pref" => "revpref",
 	"repref" => "revpref",
@@ -952,6 +952,21 @@ class PaperSearch {
 	return true;
     }
 
+    private function _searchHas($word, &$qt, $quoted) {
+        if (strcasecmp($word, "paper") == 0 || strcasecmp($word, "submission") == 0)
+            $qt[] = new SearchTerm("pf", 0, array("paperStorageId", "!=0"));
+        else if (strcasecmp($word, "final") == 0 || strcasecmp($word, "finalcopy") == 0)
+            $qt[] = new SearchTerm("pf", 0, array("finalPaperStorageId", "!=0"));
+        else if (strcasecmp($word, "abstract") == 0)
+            $qt[] = new SearchTerm("pf", 0, array("abstract", "!=''"));
+        else if (preg_match('/\A\w+\z/', $word) && $this->_searchOptions("$word:yes", $qt, false))
+            /* OK */;
+        else {
+            $this->warn("Valid “has:” searches are “paper”, and “final”, and “abstract”.");
+            $qt[] = new SearchTerm("f");
+        }
+    }
+
     private function _searchReviewRatings($word, &$qt) {
         global $Conf;
         $this->reviewAdjust = true;
@@ -1111,7 +1126,7 @@ class PaperSearch {
 	    else if (strcasecmp($word, "unsubmitted") == 0 || strcasecmp($word, "unsubmit") == 0 || strcasecmp($word, "unsub") == 0)
 		$qt[] = new SearchTerm("pf", 0, array("timeSubmitted", "<=0", "timeWithdrawn", "<=0"));
 	    else {
-		$this->warn("Valid search statuses are “withdrawn”, “submitted”, and “unsubmitted”.");
+		$this->warn("Valid status searches are “withdrawn”, “submitted”, and “unsubmitted”.");
 		$qt[] = new SearchTerm("f");
 	    }
 	}
@@ -1142,6 +1157,8 @@ class PaperSearch {
 	}
 	if ($keyword ? $keyword == "rate" : isset($this->fields["rate"]))
             $this->_searchReviewRatings($word, $qt);
+        if ($keyword ? $keyword == "has" : isset($this->fields["has"]))
+            $this->_searchHas($word, $qt, $quoted);
 	if ($keyword ? $keyword == "ss" : isset($this->fields["ss"])) {
 	    $t = $Conf->settingText("ss:" . $word, "");
 	    $search = json_decode($t);
