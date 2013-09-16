@@ -875,7 +875,7 @@ class PaperSearch {
 	$qt[] = new SearchTerm("tag", self::F_XVIEW, $compar ? array($value, $compar) : $value, $extra);
     }
 
-    function _searchOptions($word, &$qt, $error) {
+    function _searchOptions($word, &$qt, $report_error) {
 	if (preg_match('/\A(.*?)([:#][<>!=]?=?|[<>!=]=?)(.*)\z/', $word, $m)) {
 	    $oname = $m[1];
 	    if ($m[2][0] == ":" || $m[2][0] == "#")
@@ -898,7 +898,11 @@ class PaperSearch {
 	    if ($oname == "none" || $oname == "any"
 		|| strstr(strtolower($o->optionName), $oname) !== false) {
 		// find the relevant values
-		if ($oval !== "" && $o->type == PaperOption::T_NUMERIC) {
+                if ($oval === "" || $oval === "yes")
+                    $xval = "!=0";
+                else if ($oval === "no")
+                    $xval = "=0";
+		else if ($o->type == PaperOption::T_NUMERIC) {
 		    if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
 			$xval = $ocompar . $m[1];
 		    else {
@@ -906,7 +910,7 @@ class PaperSearch {
 			$option_failure = true;
 			continue;
 		    }
-		} else if ($oval !== "" && PaperOption::type_is_selectorlike($o->type)) {
+		} else if (PaperOption::type_is_selectorlike($o->type)) {
 		    $xval = matchValue(explode("\n", $o->optionValues), $oval);
 		    if (count($xval) == 0)
 			continue;
@@ -919,11 +923,7 @@ class PaperSearch {
 		    } else
 			$xval = ($ocompar == "!=" ? " not in " : " in ")
 			    . "(" . join(",", $xval) . ")";
-		} else if ($oval === "" || $oval === "yes")
-		    $xval = "!=0";
-		else if ($oval === "no")
-		    $xval = "=0";
-		else
+		} else
 		    continue;
 		$qo[] = array($o, $xval);
 	    } else if (PaperOption::type_is_selectorlike($o->type)
@@ -934,7 +934,7 @@ class PaperSearch {
 
 	// report failure
 	if (count($qo) == 0 && count($qxo) == 0) {
-	    if ($option_failure || $error) {
+	    if ($option_failure || $report_error) {
 		$qt[] = new SearchTerm("f");
 		if (!$option_failure)
 		    $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a submission option.");
