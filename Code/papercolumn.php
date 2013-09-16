@@ -1075,6 +1075,32 @@ class TagReportPaperColumn extends PaperColumn {
     }
 }
 
+class TimestampPaperColumn extends PaperColumn {
+    public function __construct() {
+        parent::__construct("timestamp", Column::VIEW_COLUMN,
+                            array("sorter" => "update_time_sorter"));
+    }
+    public function update_time_sorter($a, $b) {
+        $at = max($a->timeFinalSubmitted, $a->timeSubmitted, 0);
+        $bt = max($b->timeFinalSubmitted, $b->timeSubmitted, 0);
+        return $at > $bt ? -1 : ($at == $bt ? 0 : 1);
+    }
+    public function header($pl, $row = null, $ordinal = 0) {
+        return "Timestamp";
+    }
+    public function content_empty($pl, $row) {
+        return max($row->timeFinalSubmitted, $row->timeSubmitted) <= 0;
+    }
+    public function content($pl, $row) {
+        global $Conf;
+        $t = max($row->timeFinalSubmitted, $row->timeSubmitted, 0);
+        if ($t > 0)
+            return $Conf->printableTimestamp($t);
+        else
+            return "";
+    }
+}
+
 class SearchSortPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("searchsort", Column::VIEW_NONE,
@@ -1212,6 +1238,7 @@ function initialize_paper_columns() {
     PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", "collaborators"));
     PaperColumn::register(new SearchSortPaperColumn);
     PaperColumn::register(new TagOrderSortPaperColumn);
+    PaperColumn::register(new TimestampPaperColumn);
     PaperColumn::register_factory("tag:", new TagPaperColumn(null, null, false));
     PaperColumn::register_factory("tagval:", new TagPaperColumn(null, null, true));
     PaperColumn::register_factory("edittag:", new EditTagPaperColumn(null, null, false));
