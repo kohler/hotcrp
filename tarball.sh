@@ -97,7 +97,8 @@ Code/documenthelper.php
 Code/header.inc
 Code/helpers.inc
 Code/hotcrpdocument.php
-Code/ldaplogin.inc
+Code/ldaplogin.php
+Code/login.php
 Code/mailer.php
 Code/mailtemplate.inc
 Code/mimetype.php

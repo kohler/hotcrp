@@ -200,6 +200,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/Code/csv.php");
     else if ($class_name == "XlsxGenerator")
         require_once("$ConfSitePATH/Code/xlsx.php");
+    else if ($class_name == "LoginHelper")
+        require_once("$ConfSitePATH/Code/login.php");
 }
 
 // Set up conference options
