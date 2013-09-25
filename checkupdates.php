@@ -54,10 +54,8 @@ if ($Me->valid() && $Me->privChair && isset($_REQUEST["data"])
 	    if (isset($update["vulnid"]) && is_numeric($update["vulnid"]))
 		$m .= " (HotCRP-Vulnerability-" . $update["vulnid"] . ")";
 	    $m .= "</div>";
-	    if (isset($update["message"]) && is_string($update["message"])) {
-		require_once("Code/cleanxhtml.inc");
-		$m .= "<div class='bigid'>" . cleanXHTML($update["message"], $error) . "</div>";
-	    }
+	    if (isset($update["message"]) && is_string($update["message"]))
+		$m .= "<div class='bigid'>" . CleanHTML::clean($update["message"], $error) . "</div>";
 	    if (isset($update["to"]) && is_string($update["to"])) {
 		$m .= "<div class='bigid'>First unaffected commit: " . htmlspecialchars($update["to"]);
                 if ($errid)

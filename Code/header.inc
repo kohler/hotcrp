@@ -175,33 +175,39 @@ function __autoload($class_name) {
     else if ($class_name == "PaperActions")
         require_once("$ConfSitePATH/Code/paperactions.php");
     else if ($class_name == "Text")
-        require_once("$ConfSitePATH/Code/text.php");
+        require_once("$ConfSitePATH/lib/text.php");
     else if ($class_name == "Tagger")
-        require_once("$ConfSitePATH/Code/tagger.php");
+        require_once("$ConfSitePATH/lib/tagger.php");
     else if ($class_name == "Mimetype")
-        require_once("$ConfSitePATH/Code/mimetype.php");
+        require_once("$ConfSitePATH/lib/mimetype.php");
     else if ($class_name == "DocumentHelper" || $class_name == "ZipDocument")
-        require_once("$ConfSitePATH/Code/documenthelper.php");
+        require_once("$ConfSitePATH/lib/documenthelper.php");
     else if ($class_name == "HotCRPDocument")
-        require_once("$ConfSitePATH/Code/hotcrpdocument.php");
+        require_once("$ConfSitePATH/lib/hotcrpdocument.php");
     else if ($class_name == "Mailer")
         require_once("$ConfSitePATH/Code/mailer.php");
     else if ($class_name == "UnicodeHelper")
-        require_once("$ConfSitePATH/Code/unicodehelper.php");
+        require_once("$ConfSitePATH/lib/unicodehelper.php");
     else if ($class_name == "Qobject")
-        require_once("$ConfSitePATH/Code/qobject.php");
+        require_once("$ConfSitePATH/lib/qobject.php");
     else if ($class_name == "PaperColumn")
-        require_once("$ConfSitePATH/Code/papercolumn.php");
+        require_once("$ConfSitePATH/lib/papercolumn.php");
     else if ($class_name == "PaperOption")
-        require_once("$ConfSitePATH/Code/paperoption.php");
+        require_once("$ConfSitePATH/lib/paperoption.php");
     else if ($class_name == "PaperRank")
-        require_once("$ConfSitePATH/Code/rank.inc");
+        require_once("$ConfSitePATH/lib/rank.php");
     else if ($class_name == "CsvParser")
-        require_once("$ConfSitePATH/Code/csv.php");
+        require_once("$ConfSitePATH/lib/csv.php");
     else if ($class_name == "XlsxGenerator")
-        require_once("$ConfSitePATH/Code/xlsx.php");
+        require_once("$ConfSitePATH/lib/xlsx.php");
     else if ($class_name == "LoginHelper")
-        require_once("$ConfSitePATH/Code/login.php");
+        require_once("$ConfSitePATH/lib/login.php");
+    else if ($class_name == "CleanHTML")
+        require_once("$ConfSitePATH/lib/cleanhtml.php");
+    else if ($class_name == "CheckFormat")
+        require_once("$ConfSitePATH/lib/checkformat.php");
+    else if ($class_name == "Countries")
+        require_once("$ConfSitePATH/lib/countries.php");
 }
 
 // Set up conference options

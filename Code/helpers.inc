@@ -1216,6 +1216,23 @@ function commajoin($what, $joinword = "and") {
 	return join(", ", array_slice($what, 0, -1)) . ", " . $joinword . " " . $what[count($what) - 1];
 }
 
+function numrangejoin($range) {
+    $i = 0;
+    $a = array();
+    while ($i < count($range)) {
+	for ($j = $i + 1;
+             $j < count($range) && $range[$j-1] == $range[$j] - 1;
+             $j++)
+	    /* nada */;
+	if ($j == $i + 1)
+	    $a[] = $range[$i];
+	else
+	    $a[] = $range[$i] . "&ndash;" . $range[$j - 1];
+	$i = $j;
+    }
+    return commajoin($a);
+}
+
 function pluralx($n, $what) {
     if (is_array($n))
 	$n = count($n);

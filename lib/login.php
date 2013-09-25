@@ -174,14 +174,14 @@ class LoginHelper {
     }
 
     static private function ldap_login() {
-        global $Conf;
+        global $Conf, $ConfSitePATH;
         // check for bogus configurations
         if (!function_exists("ldap_connect") || !function_exists("ldap_bind"))
             return $Conf->errorMsg("Internal error: <code>\$Opt[\"ldapLogin\"]</code> is set, but this PHP installation doesn’t support LDAP.  Logins will fail until this error is fixed.");
 
         // the body is elsewhere because we need LDAP constants, which might[?]
         // cause errors absent LDAP support
-        require_once("Code/ldaplogin.php");
+        require_once("$ConfSitePATH/lib/ldaplogin.php");
         return ldapLoginAction();
     }
 

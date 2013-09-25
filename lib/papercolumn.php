@@ -3,7 +3,8 @@
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once("paperlist.inc");
+global $ConfSitePATH;
+require_once("$ConfSitePATH/Code/paperlist.inc");
 
 class PaperColumn extends Column {
     static private $by_name = array();
@@ -985,6 +986,7 @@ class FormulaPaperColumn extends PaperColumn {
         return null;
     }
     public function prepare($pl, &$queryOptions, $visible) {
+        global $ConfSitePATH;
         $revView = 0;
         if ($pl->contact->amReviewer()
             && $pl->search->limitName != "a")
@@ -992,7 +994,7 @@ class FormulaPaperColumn extends PaperColumn {
         if (!$pl->scoresOk
             || $this->formula->authorView <= $revView)
             return false;
-        require_once("paperexpr.inc");
+        require_once("$ConfSitePATH/Code/paperexpr.inc");
         if (!($expr = PaperExpr::parse($this->formula->expression, true)))
             return false;
         $this->formula_function = PaperExpr::compile_function($expr, $pl->contact);

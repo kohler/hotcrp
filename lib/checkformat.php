@@ -1,111 +1,7 @@
 <?php
-// checkformat.inc -- HotCRP/banal integration
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// checkformat.php -- HotCRP/banal integration
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
-
-function cvtdimen($text, $ndimen = -1) {
-    // replace \xC2\xA0 (utf-8 for U+00A0 NONBREAKING SPACE) with ' '
-    $text = trim(str_replace("\xC2\xA0", " ", strtolower($text)));
-    $n = $text;
-    $a = array();
-    $unit = array();
-    while (preg_match('/^\s*(\d+\.?\d*|\.\d+)\s*(in?|cm?|mm|pt|)\s*(.*)$/', $n, $m)) {
-	$a[] = $m[1];
-	if ($m[2] == "i" || $m[2] == "in")
-	    $unit[] = 72;
-	else if ($m[2] == "c" || $m[2] == "cm")
-	    $unit[] = 72 * 0.393700787;
-	else if ($m[2] == "mm")
-	    $unit[] = 72 * 0.0393700787;
-	else if ($m[2] == "pt")
-	    $unit[] = 1;
-	else
-	    $unit[] = 0;
-	if ($m[3] == "") {	// end of string
-	    // fail on bad number of dimensions
-	    if ($ndimen > 0 && count($a) != $ndimen)
-		return false;
-
-	    // spread known units to unknown positions, using two passes
-	    $unitrep = 0;
-	    for ($i = count($unit) - 1; $i >= 0; --$i)
-		$unit[$i] = $unitrep = ($unit[$i] ? $unit[$i] : $unitrep);
-	    $unitrep = 0;
-	    for ($i = 0; $i < count($unit); ++$i)
-		$unit[$i] = $unitrep = ($unit[$i] ? $unit[$i] : $unitrep);
-
-	    // multiply dimensions by units, fail on unknown units
-	    for ($i = 0; $i < count($unit); ++$i)
-		if ($unit[$i])
-		    $a[$i] *= $unit[$i];
-		else
-		    return false;
-
-	    return (count($a) == 1 ? $a[0] : $a);
-	} else if ($m[3][0] == "x")
-	    $n = substr($m[3], 1);
-	else if ($m[3][0] == 0xC3 && $m[3][1] == 0x97)
-	    // \xC3\x97 is utf-8 for MULTIPLICATION SIGN
-	    $n = substr($m[3], 2);
-	else
-	    return false;
-    }
-    if ($text == "letter")
-	return cvtdimen("8.5in x 11in", $ndimen);
-    else if ($text == "a4")
-	return cvtdimen("210mm x 297mm", $ndimen);
-    else
-	return false;
-}
-
-function unparsedimen($n, $to = null) {
-    if ($to == "paper") {
-	if (is_array($n) && count($n) == 2 && abs($n[0] - 612) <= 5 && abs($n[1] - 792) <= 5)
-	    return "letter paper (8.5in x 11in)";
-	else if (is_array($n) && count($n) == 2 && abs($n[0] - 595.27) <= 5 && abs($n[1] - 841.89) <= 5)
-	    return "A4 paper (210mm x 297mm)";
-	else
-	    $to = null;
-    }
-    if (is_array($n)) {
-	$t = "";
-	foreach ($n as $v)
-	    // \xC2\xA0 is utf-8 for U+00A0 NONBREAKING SPACE
-	    $t .= ($t == "" ? "" : "\xC2\xA0x\xC2\xA0") . unparsedimen($v, $to);
-	return $t;
-    }
-    if (!$to && $n < 18)
-	$to = "pt";
-    else if (!$to && abs($n - 18 * (int) (($n + 9) / 18)) <= 0.5)
-	$to = "in";
-    else if (!$to)
-	$to = "mm";
-    if ($to == "pt")
-	return $n . $to;
-    else if ($to == "in" || $to == "i")
-	return ((int) (100 * $n / 72 + 0.5) / 100) . $to;
-    else if ($to == "cm")
-	return ((int) (100 * $n / 72 / 0.393700787 + 0.5) / 100) . $to;
-    else if ($to == "mm")
-	return (int) ($n / 72 / 0.0393700787 + 0.5) . $to;
-    else
-	return "??" . $to;
-}
-
-function commarangejoin($range) {
-    $i = 0;
-    $a = array();
-    while ($i < count($range)) {
-	for ($j = $i + 1; $j < count($range) && $range[$j-1] == $range[$j]-1; $j++)
-	    /* nada */;
-	if ($j == $i + 1)
-	    $a[] = $range[$i];
-	else
-	    $a[] = $range[$i] . "&ndash;" . $range[$j - 1];
-	$i = $j;
-    }
-    return commajoin($a);
-}
 
 class CheckFormat {
 
@@ -116,7 +12,12 @@ class CheckFormat {
     const ERR_BODYFONTSIZE = 16;
     const ERR_BODYLEADING = 32;
 
-    public static $error_types;
+    public static $error_types = array(self::ERR_PAPERSIZE => "papersize",
+			   self::ERR_PAGELIMIT => "pagelimit",
+			   self::ERR_COLUMNS => "columns",
+			   self::ERR_TEXTBLOCK => "textblock",
+			   self::ERR_BODYFONTSIZE => "bodyfontsize",
+			   self::ERR_BODYLEADING => "bodyleading");
 
     var $msgs;
     var $errors;
@@ -126,6 +27,97 @@ class CheckFormat {
 	$this->msgs = array();
 	$this->errors = 0;
 	$this->pages = 0;
+    }
+
+    public static function parse_dimen($text, $ndimen = -1) {
+        // replace \xC2\xA0 (utf-8 for U+00A0 NONBREAKING SPACE) with ' '
+        $text = trim(str_replace("\xC2\xA0", " ", strtolower($text)));
+        $n = $text;
+        $a = array();
+        $unit = array();
+        while (preg_match('/^\s*(\d+\.?\d*|\.\d+)\s*(in?|cm?|mm|pt|)\s*(.*)$/', $n, $m)) {
+            $a[] = $m[1];
+            if ($m[2] == "i" || $m[2] == "in")
+                $unit[] = 72;
+            else if ($m[2] == "c" || $m[2] == "cm")
+                $unit[] = 72 * 0.393700787;
+            else if ($m[2] == "mm")
+                $unit[] = 72 * 0.0393700787;
+            else if ($m[2] == "pt")
+                $unit[] = 1;
+            else
+                $unit[] = 0;
+            if ($m[3] == "") {	// end of string
+                // fail on bad number of dimensions
+                if ($ndimen > 0 && count($a) != $ndimen)
+                    return false;
+
+                // spread known units to unknown positions, using two passes
+                $unitrep = 0;
+                for ($i = count($unit) - 1; $i >= 0; --$i)
+                    $unit[$i] = $unitrep = ($unit[$i] ? $unit[$i] : $unitrep);
+                $unitrep = 0;
+                for ($i = 0; $i < count($unit); ++$i)
+                    $unit[$i] = $unitrep = ($unit[$i] ? $unit[$i] : $unitrep);
+
+                // multiply dimensions by units, fail on unknown units
+                for ($i = 0; $i < count($unit); ++$i)
+                    if ($unit[$i])
+                        $a[$i] *= $unit[$i];
+                    else
+                        return false;
+
+                return (count($a) == 1 ? $a[0] : $a);
+            } else if ($m[3][0] == "x")
+                $n = substr($m[3], 1);
+            else if ($m[3][0] == 0xC3 && $m[3][1] == 0x97)
+                // \xC3\x97 is utf-8 for MULTIPLICATION SIGN
+                $n = substr($m[3], 2);
+            else
+                return false;
+        }
+        if ($text == "letter")
+            return self::parse_dimen("8.5in x 11in", $ndimen);
+        else if ($text == "a4")
+            return self::parse_dimen("210mm x 297mm", $ndimen);
+        else
+            return false;
+    }
+
+    public static function unparse_dimen($n, $to = null) {
+        if ($to == "paper") {
+            if (is_array($n) && count($n) == 2
+                && abs($n[0] - 612) <= 5 && abs($n[1] - 792) <= 5)
+                return "letter paper (8.5in x 11in)";
+            else if (is_array($n) && count($n) == 2
+                     && abs($n[0] - 595.27) <= 5 && abs($n[1] - 841.89) <= 5)
+                return "A4 paper (210mm x 297mm)";
+            else
+                $to = null;
+        }
+        if (is_array($n)) {
+            $t = "";
+            foreach ($n as $v)
+                // \xC2\xA0 is utf-8 for U+00A0 NONBREAKING SPACE
+                $t .= ($t == "" ? "" : "\xC2\xA0x\xC2\xA0") . self::unparse_dimen($v, $to);
+            return $t;
+        }
+        if (!$to && $n < 18)
+            $to = "pt";
+        else if (!$to && abs($n - 18 * (int) (($n + 9) / 18)) <= 0.5)
+            $to = "in";
+        else if (!$to)
+            $to = "mm";
+        if ($to == "pt")
+            return $n . $to;
+        else if ($to == "in" || $to == "i")
+            return ((int) (100 * $n / 72 + 0.5) / 100) . $to;
+        else if ($to == "cm")
+            return ((int) (100 * $n / 72 / 0.393700787 + 0.5) / 100) . $to;
+        else if ($to == "mm")
+            return (int) ($n / 72 / 0.0393700787 + 0.5) . $to;
+        else
+            return "??" . $to;
     }
 
     function msg($type, $what) {
@@ -152,19 +144,19 @@ class CheckFormat {
 	for ($bi = 1; $bi < count($bo); $bi++) {
 	    $b = $bo[$bi];
 	    if (preg_match('/^Paper size:\s+(.*?)\s*$/i', $b, $m)
-		&& ($p = cvtdimen($m[1], 2)))
+		&& ($p = self::parse_dimen($m[1], 2)))
 		$papersize = $p;
 	    else if (preg_match('/^Page\s+(\d+)/i', $b, $m)) {
 		$page = $m[1];
 		$pi[$page] = array("pageno" => $m[1]);
 	    } else if ($page && preg_match('/^\s*text region:\s+(.*?)\s*$/i', $b, $m)
-		       && ($p = cvtdimen($m[1], 2)))
+		       && ($p = self::parse_dimen($m[1], 2)))
 		$pi[$page]["block"] = $p;
 	    else if ($page && preg_match('/^\s*body font:\s+(\S+)/i', $b, $m)
-		     && ($p = cvtdimen($m[1], 1)))
+		     && ($p = self::parse_dimen($m[1], 1)))
 		$pi[$page]["bodyfont"] = $p;
 	    else if ($page && preg_match('/^\s*leading:\s+(\S+)/i', $b, $m)
-		     && ($p = cvtdimen($m[1], 1)))
+		     && ($p = self::parse_dimen($m[1], 1)))
 		$pi[$page]["leading"] = $p;
 	    else if ($page && preg_match('/^\s*columns:\s+(\d+)/i', $b, $m))
 		$pi[$page]["columns"] = $m[1];
@@ -183,17 +175,17 @@ class CheckFormat {
 	    $psdefs = array();
 	    $ok = false;
 	    foreach (explode(" OR ", $banal_desired[0]) as $p) {
-		if (!($p = cvtdimen($p, 2)))
+		if (!($p = self::parse_dimen($p, 2)))
 		    continue;
 		if (abs($p[0] - $papersize[0]) < 9
 		    && abs($p[1] - $papersize[1]) < 9) {
 		    $ok = true;
 		    break;
 		}
-		$psdefs[] = unparsedimen($p, "paper");
+		$psdefs[] = self::unparse_dimen($p, "paper");
 	    }
 	    if (!$ok && count($psdefs)) {
-		$pie[] = "Paper size mismatch: expected " . commajoin($psdefs, "or") . ", got " . unparsedimen($papersize, "paper");
+		$pie[] = "Paper size mismatch: expected " . commajoin($psdefs, "or") . ", got " . self::unparse_dimen($papersize, "paper");
 		$this->errors |= self::ERR_PAPERSIZE;
 	    }
 	}
@@ -224,14 +216,14 @@ class CheckFormat {
 		    && defval($pg, "type") == "body")
 		    $px[] = $pg["pageno"];
 	    if (count($px) > ($maxpages ? max(0, $maxpages * 0.75) : 0)) {
-		$pie[] = "Wrong number of columns: expected " . plural($p, "column") . ", different on " . pluralx($px, "page") . " " . commarangejoin($px);
+		$pie[] = "Wrong number of columns: expected " . plural($p, "column") . ", different on " . pluralx($px, "page") . " " . numrangejoin($px);
 		$this->errors |= self::ERR_COLUMNS;
 	    }
 	}
 
 	// text block
 	if (count($banal_desired) > 3 && $banal_desired[3]
-	    && ($p = cvtdimen($banal_desired[3], 2))) {
+	    && ($p = self::parse_dimen($banal_desired[3], 2))) {
 	    $px = array();
 	    $py = array();
 	    $maxx = $maxy = 0;
@@ -248,20 +240,20 @@ class CheckFormat {
 		}
 	    if (count($px) > 0) {
 		$pie[] = "Margins too small: text width exceeds "
-		    . unparsedimen($p[0]) . " by "
+		    . self::unparse_dimen($p[0]) . " by "
 		    . (count($px) > 1 ? "up to " : "")
 		    . ((int) (100 * $maxx / $p[0] + .5) - 100)
 		    . "% on " . pluralx($px, "page") . " "
-		    . commarangejoin($px);
+		    . numrangejoin($px);
 		$this->errors |= self::ERR_TEXTBLOCK;
 	    }
 	    if (count($py) > 0) {
 		$pie[] = "Margins too small: text height exceeds "
-		    . unparsedimen($p[1]) . " by "
+		    . self::unparse_dimen($p[1]) . " by "
 		    . (count($py) > 1 ? "up to " : "")
 		    . ((int) (100 * $maxy / $p[1] + .5) - 100)
 		    . "% on " . pluralx($py, "page") . " "
-		    . commarangejoin($py);
+		    . numrangejoin($py);
 		$this->errors |= self::ERR_TEXTBLOCK;
 	    }
 	}
@@ -286,7 +278,7 @@ class CheckFormat {
 	    else if ($bodypages <= 0.5 * count($pi))
 		$pie[] = "Warning: Only " . plural($bodypages, "page") . " seemed to contain body text; results may be off";
 	    if (count($px) > 0) {
-		$pie[] = "Body font too small: minimum ${p}pt, saw values as small as ${minval}pt on " . pluralx($px, "page") . " " . commarangejoin($px);
+		$pie[] = "Body font too small: minimum ${p}pt, saw values as small as ${minval}pt on " . pluralx($px, "page") . " " . numrangejoin($px);
 		$this->errors |= self::ERR_BODYFONTSIZE;
 	    }
 	}
@@ -303,7 +295,7 @@ class CheckFormat {
 		    $minval = min($minval, $pp);
 		}
 	    if (count($px) > 0) {
-		$pie[] = "<a href='http://en.wikipedia.org/wiki/Leading'>Leading</a> (line spacing) too small: minimum ${p}pt, saw values as small as ${minval}pt on " . pluralx($px, "page") . " " . commarangejoin($px);
+		$pie[] = "<a href='http://en.wikipedia.org/wiki/Leading'>Leading</a> (line spacing) too small: minimum ${p}pt, saw values as small as ${minval}pt on " . pluralx($px, "page") . " " . numrangejoin($px);
 		$this->errors |= self::ERR_BODYLEADING;
 	    }
 	}
@@ -374,10 +366,3 @@ class CheckFormat {
     }
 
 }
-
-CheckFormat::$error_types = array(CheckFormat::ERR_PAPERSIZE => "papersize",
-			   CheckFormat::ERR_PAGELIMIT => "pagelimit",
-			   CheckFormat::ERR_COLUMNS => "columns",
-			   CheckFormat::ERR_TEXTBLOCK => "textblock",
-			   CheckFormat::ERR_BODYFONTSIZE => "bodyfontsize",
-			   CheckFormat::ERR_BODYLEADING => "bodyleading");

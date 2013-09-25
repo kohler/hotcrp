@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-require_once("Code/countries.inc");
 $Me->goIfInvalid();
 if (!$Me->validContact())
     $Me->go(false);
@@ -612,7 +611,7 @@ if ($Conf->setting("acct_addr") || $Acct->amReviewer()
 	echofield(0, false, "City", textinput("city", crpformvalue("city"), 52));
 	echofield(1, false, "State/Province/Region", textinput("state", crpformvalue("state"), 24));
 	echofield(3, false, "ZIP/Postal code", textinput("zipCode", crpformvalue("zipCode"), 12));
-	echofield(0, false, "Country", countrySelector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : $Acct->country)));
+	echofield(0, false, "Country", Countries::selector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : $Acct->country)));
     }
     echofield(1, false, "Phone <span class='f-cx'>(optional)</span>", textinput("voicePhoneNumber", crpformvalue("voicePhoneNumber"), 24));
     echo "<div class='clear'></div></div>\n";

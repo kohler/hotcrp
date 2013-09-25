@@ -1,8 +1,9 @@
 <?php
 
 // This list of countries taken from Amazon.com's address entries, 2007.
-global $countries;
-$countries = array("United States",
+class Countries {
+
+    public static $list = array("United States",
 
 "Afghanistan",
 "Albania",
@@ -289,22 +290,23 @@ $countries = array("United States",
 
 		       "Other");
 
-function countrySelector($name, $country) {
-    global $countries;
-    $t = "<select name=\"$name\">\n";
-    $t .= "<option";
-    if (!$country)
-	$t .= " selected='selected'";
-    $t .= " value=''>(Select one)</option>\n";
-    foreach ($countries as $c) {
-	$t .= "<option";
-	if ($country == $c) {
-	    $t .= " selected='selected'";
-	    $country = null;
-	}
-	$t .= ">" . $c . "</option>\n";
+    public static function selector($name, $country) {
+        $t = "<select name=\"$name\">\n";
+        $t .= "<option";
+        if (!$country)
+            $t .= " selected='selected'";
+        $t .= " value=''>(Select one)</option>\n";
+        foreach (self::$countries as $c) {
+            $t .= "<option";
+            if ($country == $c) {
+                $t .= " selected='selected'";
+                $country = null;
+            }
+            $t .= ">" . $c . "</option>\n";
+        }
+        if ($country)
+            $t .= "<option selected='selected'>" . htmlspecialchars($country) . "</option>\n";
+        return $t . "</select>";
     }
-    if ($country)
-	$t .= "<option selected='selected'>" . htmlspecialchars($country) . "</option>\n";
-    return $t . "</select>";
+
 }

@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-require_once("Code/cleanxhtml.inc");
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
 $Highlight = defval($_SESSION, "settings_highlight", array());
@@ -235,7 +234,7 @@ function parseValue($name, $type) {
 	$v = simplifyWhitespace($v);
 	return ($v == "" ? 0 : array(0, $v));
     } else if ($type == "htmlstring") {
-	if (($v = cleanXHTML($v, $err)) === false)
+	if (($v = CleanHTML::clean($v, $err)) === false)
 	    $err = $SettingText[$name] . ": $err";
 	else
 	    return ($v == "" ? 0 : array(0, $v));
@@ -418,7 +417,7 @@ function doCleanOptionValues($id) {
 	$_REQUEST["optn$id"] = $name;
 
     if (isset($_REQUEST["optd$id"])) {
-	$t = cleanXHTML($_REQUEST["optd$id"], $err);
+	$t = CleanHTML::clean($_REQUEST["optd$id"], $err);
 	if ($t === false) {
 	    $Error[] = $err;
 	    $Highlight["optd$id"] = true;
@@ -645,7 +644,6 @@ function doBanal($set) {
     }
 
     // check banal subsettings
-    require_once("Code/checkformat.inc");
     $old_error_count = count($Error);
     $bs = array_fill(0, 6, "");
     if (($s = trim(defval($_REQUEST, "sub_banal_papersize", ""))) != ""
@@ -653,7 +651,7 @@ function doBanal($set) {
 	$ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
 	$sout = array();
 	foreach ($ses as $ss)
-	    if ($ss != "" && cvtdimen($ss, 2))
+	    if ($ss != "" && CheckFormat::parse_dimen($ss, 2))
 		$sout[] = $ss;
 	    else if ($ss != "") {
 		$Highlight["sub_banal_papersize"] = true;
@@ -693,12 +691,12 @@ function doBanal($set) {
 	// change margin specifications into text block measurements
 	if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
 	    $s = $m[1];
-	    if (!($ps = cvtdimen($bs[0]))) {
+	    if (!($ps = CheckFormat::parse_dimen($bs[0]))) {
 		$Highlight["sub_banal_pagesize"] = true;
 		$Highlight["sub_banal_textblock"] = true;
 		$Error[] = "You must specify a page size as well as margins.";
 	    } else if (strpos($s, "x") !== false) {
-		if (!($m = cvtdimen($s)) || !is_array($m) || count($m) > 4) {
+		if (!($m = CheckFormat::parse_dimen($s)) || !is_array($m) || count($m) > 4) {
 		    $Highlight["sub_banal_textblock"] = true;
 		    $Error[] = "Invalid margin definition.";
 		    $s = "";
@@ -710,7 +708,7 @@ function doBanal($set) {
 		    $s = array($ps[0] - $m[0] - $m[2], $ps[1] - $m[1] - $m[3]);
 	    } else {
 		$s = preg_replace('/\s+/', 'x', $s);
-		if (!($m = cvtdimen($s)) || (is_array($m) && count($m) > 4)) {
+		if (!($m = CheckFormat::parse_dimen($s)) || (is_array($m) && count($m) > 4)) {
 		    $Highlight["sub_banal_textblock"] = true;
 		    $Error[] = "Invalid margin definition.";
 		} else if (!is_array($m))
@@ -722,10 +720,10 @@ function doBanal($set) {
 		else
 		    $s = array($ps[0] - $m[1] - $m[3], $ps[1] - $m[0] - $m[2]);
 	    }
-	    $s = (is_array($s) ? unparsedimen($s) : "");
+	    $s = (is_array($s) ? CheckFormat::unparse_dimen($s) : "");
 	}
 	// check text block measurements
-	if ($s && !cvtdimen($s, 2)) {
+	if ($s && !CheckFormat::parse_dimen($s, 2)) {
 	    $Highlight["sub_banal_textblock"] = true;
 	    $Error[] = "Invalid text block definition.";
 	} else if ($s)

@@ -108,7 +108,7 @@ function rf_update($lock) {
 	}
 	$req .= "authorView=" . max(min(rcvtint($_REQUEST["authorView_$field"], 0), VIEWSCORE_AUTHOR), VIEWSCORE_ADMINONLY) . ", ";
 	if (isset($_REQUEST["description_$field"])) {
-	    if (($d = cleanXHTML($_REQUEST["description_$field"], $err)) === false) {
+	    if (($d = CleanHTML::clean($_REQUEST["description_$field"], $err)) === false) {
 		$Error["description_$field"] = true;
 		$Conf->errorMsg(htmlspecialchars($sn) . " description: " . $err);
 		continue;

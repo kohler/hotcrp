@@ -746,7 +746,6 @@ if ($getaction == "topics" && isset($papersel)) {
 // download format checker reports for selected papers
 if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
     $result = $Conf->qe("select paperId, title, mimetype from Paper where " . paperselPredicate($papersel) . " order by paperId", "while fetching topics");
-    require_once("Code/checkformat.inc");
     $format = $Conf->settingText("sub_banal", "");
 
     // generate output gradually since this takes so long
@@ -794,7 +793,6 @@ if ($getaction == "acmcms" && isset($papersel) && $Me->privChair) {
     // maybe analyze paper page counts
     $pagecount = array();
     if ($Conf->sversion >= 55) {
-        require_once("Code/checkformat.inc");
         $result = $Conf->qe("select Paper.paperId, ps.infoJson from Paper join PaperStorage ps on (ps.paperStorageId=Paper.finalPaperStorageId) where Paper.finalPaperStorageId>1 and $idq", $while);
         while (($row = edb_row($result)))
             if ($row[1] && ($j = json_decode($row[1])) && isset($j->npages))

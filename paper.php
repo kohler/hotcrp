@@ -97,7 +97,6 @@ if (isset($_REQUEST["rankctx"]) && $prow && check_post()) {
 // check paper action
 if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
     $ajax = defval($_REQUEST, "ajax", 0);
-    require_once("Code/checkformat.inc");
     $cf = new CheckFormat();
     $dt = requestDocumentType($_REQUEST);
     if ($Conf->setting("sub_banal$dt"))
