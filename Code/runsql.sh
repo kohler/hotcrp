@@ -9,24 +9,31 @@ test -z "$PROGDIR" && PROGDIR=.
 . $PROGDIR/dbhelper.sh
 
 usage () {
+    if [ -z "$1" ]; then status=1; else status=$1; fi
     echo "Usage: $PROG [MYSQL-OPTIONS]
-       $PROG --show-password EMAIL" 1>&2
-    exit 1
+       $PROG --show-password EMAIL
+       $PROG --set-password EMAIL PASSWORD" |
+       if [ $status = 0 ]; then cat; else cat 1>&2; fi
+    exit $status
 }
 
 export PROG=$0
 export FLAGS=
-show_password=
+pwuser=
+pwvalue=
 options_file=options.inc
 while [ $# -gt 0 ]; do
     case "$1" in
     --show-password=*)
-        test -z "$show_password" || usage
-	show_password="`echo "+$1" | sed 's/^[^=]*=//'`";;
+        test -z "$pwuser" || usage
+	pwuser="`echo "+$1" | sed 's/^[^=]*=//'`";;
     --show-password)
-	test "$#" -gt 1 -a -z "$show_password" || usage
-	show_password="$2"; shift;;
-    --help) usage;;
+	test "$#" -gt 1 -a -z "$pwuser" || usage
+	pwuser="$2"; shift;;
+    --set-password)
+        test "$#" -eq 3 -a -z "$pwuser" -a -n "$3" || usage
+        pwuser="$2"; pwvalue="$3"; shift; shift;;
+    --help) usage 0;;
     -*)	FLAGS="$FLAGS $1";;
     *) usage;;
     esac
@@ -46,9 +53,14 @@ test -z "$dbname" -o -z "$dbuser" -o -z "$dbpass" && { echo "runsql.sh: Cannot e
 check_mysqlish MYSQL mysql
 set_myargs "$dbuser" "$dbpass"
 
-if test -n "$show_password"; then
-    show_password="`echo "+$show_password" | sed -e 's,^.,,' | sql_quote`"
-    echo "select concat(email, ',', if(substr(password,1,1)=' ','<HASH>',password)) from ContactInfo where email like '$show_password' and disabled=0" | eval "$MYSQL $myargs -N $FLAGS $dbname"
+if test -n "$pwuser"; then
+    pwuser="`echo "+$pwuser" | sed -e 's,^.,,' | sql_quote`"
+    if test -z "$pwvalue"; then
+        echo "select concat(email, ',', if(substr(password,1,1)=' ','<HASH>',password)) from ContactInfo where email like '$pwuser' and disabled=0" | eval "$MYSQL $myargs -N $FLAGS $dbname"
+    else
+        pwvalue="`echo "+$pwvalue" | sed -e 's,^.,,' | sql_quote`"
+        echo "update ContactInfo set password='$pwvalue' where email='$pwuser'" | eval "$MYSQL $myargs -N $FLAGS $dbname"
+    fi
 else
     if test -n "$PASSWORDFILE"; then ( sleep 0.3; rm -f $PASSWORDFILE ) & fi
     eval "$MYSQL $myargs $FLAGS $dbname"
