@@ -66,7 +66,8 @@ sql_quote () {
 }
 
 check_mysqlish () {
-    if test -n "`eval '$'$1`"; then m="`eval '$'$1`";
+    m="`eval echo '$'$1`"
+    if test -n "$m"; then :;
     elif $2 --version >/dev/null 2>&1; then m=$2;
     elif ${2}5 --version >/dev/null 2>&1; then m=${2}5;
     else m=$2;
