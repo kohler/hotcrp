@@ -1,3 +1,5 @@
+- valid() rechecks capabilities too often
+
 - Re-assign the review round in bulk
 
 - Angry, impossible-to-ignore messages about not-ready-to-review submissions
