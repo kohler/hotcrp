@@ -579,10 +579,11 @@ class PreferencePaperColumn extends PaperColumn {
         $queryOptions["reviewerPreference"] = $queryOptions["topicInterestScore"] = 1;
         $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
         if ($this->editable && $visible > 0) {
+            $arg = "setrevpref=1";
             if ($pl->contact->privChair && $pl->reviewer)
-                $arg = "&amp;reviewer=" . $pl->reviewer;
+                $arg .= "&amp;reviewer=" . $pl->reviewer;
             $Conf->footerHtml(
-                 tagg_form(hoturl_post("paper", "setrevpref=1$arg"),
+                 tagg_form(hoturl_post("paper", $arg),
                            array("id" => "prefform")) . "<div>"
                  . tagg_hidden("p") . tagg_hidden("revpref", "")
                  . "</div></form>", "prefform");
