@@ -775,7 +775,7 @@ class Conference {
 	    if (!$docclass->load_database_content($doc))
 		return false;
 	    $doc->sha1 = sha1($doc->content, true);
-	    $this->q("update PaperStorage set sha1='" . sqlq($doc->sha1) . "' where paperStorageId=" . $row->paperStorageId);
+	    $this->q("update PaperStorage set sha1='" . sqlq($doc->sha1) . "' where paperStorageId=" . $doc->paperStorageId);
 	}
         DocumentHelper::load($docclass, $doc);
 	return $doc;
