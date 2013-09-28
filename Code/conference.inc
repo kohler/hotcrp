@@ -747,7 +747,7 @@ class Conference {
 	else
 	    $paperMatch = "=" . $prow->paperId;
 	$q = "select p.paperId, s.mimetype, s.sha1, ";
-	if (!defval($Opt, "filestore"))
+	if (!defval($Opt, "filestore") && !is_array($prow))
 	    $q .= "s.paper as content, ";
 	if ($this->sversion >= 45)
 	    $q .= "s.filename, ";
