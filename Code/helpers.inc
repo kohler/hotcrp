@@ -409,7 +409,7 @@ function hoturl($page, $options = null) {
         $x = "";
         foreach ($options as $k => $v)
             if ($v !== null)
-                $x .= ($x === "" ? "" : "amp;") . $k . "=" . urlencode($v);
+                $x .= ($x === "" ? "" : "&amp;") . $k . "=" . urlencode($v);
         $options = $x;
     }
     $are = '/\A(|.*?(?:&|&amp;))';
