@@ -409,7 +409,7 @@ function hoturl($page, $options = null) {
         $x = "";
         foreach ($options as $k => $v)
             if ($v !== null)
-                $x .= ($x === "" ? "&" : "") . $k . "=" . urlencode($v);
+                $x .= ($x === "" ? "" : "amp;") . $k . "=" . urlencode($v);
         $options = $x;
     }
     $are = '/\A(|.*?(?:&|&amp;))';
@@ -442,7 +442,12 @@ function hoturl($page, $options = null) {
 }
 
 function hoturl_post($page, $options = null) {
-    $options = ($options ? $options . "&amp;" : "") . "post=" . post_value();
+    if (is_array($options))
+        $options["post"] = post_value();
+    else if ($options)
+        $options .= "&amp;post=" . post_value();
+    else
+        $options = "post=" . post_value();
     return hoturl($page, $options);
 }
 
