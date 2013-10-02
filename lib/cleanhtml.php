@@ -5,16 +5,23 @@
 
 class CleanHTML {
 
-    private static $goodtags = array_flip(array("a", "abbr", "acronym", "address", "area", "b", "bdo", "big", "blockquote", "br", "button", "caption", "center", "cite", "code", "col", "colgroup", "dd", "del", "dir", "div", "dfn", "dl", "dt", "em", "font", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "ins", "kbd", "label", "legend", "li", "link", "map", "menu", "noscript", "ol", "optgroup", "option", "p", "pre", "q", "s", "samp", "select", "small", "span", "strike", "strong", "sub", "sup", "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "title", "tr", "tt", "u", "ul", "var"));
-
-    private static $emptytags = array_flip(array("base", "meta", "link", "hr", "br", "param", "img", "area", "input", "col"));
+    private static $goodtags = null;
+    private static $emptytags = null;
 
     private static function _cleanHTMLError(&$err, $etype) {
         $err = "Your HTML code contains $etype. Only HTML content tags are accepted, such as <tt>&lt;p&gt;</tt>, <tt>&lt;strong&gt;</tt>, and <tt>&lt;h1&gt;</tt>, and attributes are restricted.";
         return false;
     }
 
+    private static function _set_statics() {
+        self::$goodtags = array_flip(array("a", "abbr", "acronym", "address", "area", "b", "bdo", "big", "blockquote", "br", "button", "caption", "center", "cite", "code", "col", "colgroup", "dd", "del", "dir", "div", "dfn", "dl", "dt", "em", "font", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "ins", "kbd", "label", "legend", "li", "link", "map", "menu", "noscript", "ol", "optgroup", "option", "p", "pre", "q", "s", "samp", "select", "small", "span", "strike", "strong", "sub", "sup", "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "title", "tr", "tt", "u", "ul", "var"));
+        self::$emptytags = array_flip(array("base", "meta", "link", "hr", "br", "param", "img", "area", "input", "col"));
+    }
+
     static function clean($t, &$err) {
+        if (!self::$goodtags)
+            self::_set_statics();
+
         $tagstack = array();
 
         $x = "";
