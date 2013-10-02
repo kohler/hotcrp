@@ -5,9 +5,9 @@
 
 class CleanHTML {
 
-    private static $goodtags = array_flip(array("a", "abbr", "acronym", "address", "area", "b", "bdo", "big", "blockquote", "br", "button", "caption", "center", "cite", "code", "col", "colgroup", "dd", "del", "dir", "div", "dfn", "dl", "dt", "em", "font", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "ins", "kbd", "label", "legend", "li", "link", "map", "menu", "noscript", "ol", "optgroup", "option", "p", "pre", "q", "s", "samp", "select", "small", "span", "strike", "strong", "sub", "sup", "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "title", "tr", "tt", "u", "ul", "var"));
+    private static $goodtags = array("a", "abbr", "acronym", "address", "area", "b", "bdo", "big", "blockquote", "br", "button", "caption", "center", "cite", "code", "col", "colgroup", "dd", "del", "dir", "div", "dfn", "dl", "dt", "em", "font", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "ins", "kbd", "label", "legend", "li", "link", "map", "menu", "noscript", "ol", "optgroup", "option", "p", "pre", "q", "s", "samp", "select", "small", "span", "strike", "strong", "sub", "sup", "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "title", "tr", "tt", "u", "ul", "var");
 
-    private static $emptytags = array_flip(array("base", "meta", "link", "hr", "br", "param", "img", "area", "input", "col"));
+    private static $emptytags = array("base", "meta", "link", "hr", "br", "param", "img", "area", "input", "col");
 
     private static function _cleanHTMLError(&$err, $etype) {
         $err = "Your HTML code contains $etype. Only HTML content tags are accepted, such as <tt>&lt;p&gt;</tt>, <tt>&lt;strong&gt;</tt>, and <tt>&lt;h1&gt;</tt>, and attributes are restricted.";
@@ -39,7 +39,7 @@ class CleanHTML {
                 $tag = strtolower($m[1]);
                 $t = $m[2];
                 $x .= "<" . $tag;
-                if (!isset(self::$goodtags[$tag]))
+                if (!in_array($tag, self::$goodtags))
                     return self::_cleanHTMLError($err, "some <code>&lt;$tag&gt;</code> tag");
                 while ($t != "" && $t[0] != "/" && $t[0] != ">") {
                     if (!preg_match(',\A([^\s/<>=\'"]+)\s*(.*)\z,s', $t, $m))
@@ -63,7 +63,7 @@ class CleanHTML {
                     return self::_cleanHTMLError($err, "an unclosed <code>&lt;$tag&gt;</code> tag");
                 else if ($t[0] == ">") {
                     $t = substr($t, 1);
-                    if (isset(self::$emptytags[$tag])
+                    if (in_array($tag, self::$emptytags)
                         && !preg_match(',\A\s*<\s*/' . $tag . '\s*>,si', $t))
                         // automagically close empty tags
                         $x .= " />";
@@ -78,7 +78,7 @@ class CleanHTML {
                     return self::_cleanHTMLError($err, "garbage in some <code>&lt;$tag&gt;</code> tag");
             } else if (preg_match(',\A<\s*/\s*([A-Za-z]+)\s*>(.*)\z,s', $t, $m)) {
                 $tag = strtolower($m[1]);
-                if (!isset(self::$goodtags[$tag]))
+                if (!in_array($tag, self::$goodtags))
                     return self::_cleanHTMLError($err, "some <code>&lt;/$tag&gt;</code> tag");
                 else if (count($tagstack) == 0)
                     return self::_cleanHTMLError($err, "a extra close tag <code>&lt;/$tag&gt;</code>");
