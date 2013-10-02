@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-require_once("Code/paperlist.inc");
 require_once("Code/search.inc");
 $Me->goIfInvalid();
 $Me->goIfNotPC();

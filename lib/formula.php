@@ -1,26 +1,9 @@
 <?php
-// paperexpr.inc -- HotCRP helper class for paper expressions
-// HotCRP is Copyright (c) 2009-2012 Eddie Kohler and Regents of the UC
+// formula.php -- HotCRP helper class for paper expressions
+// HotCRP is Copyright (c) 2009-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-global $paperExprOperators;
-$paperExprOperators = array(
-	"**" => 12,
-	"u+" => 11, "u-" => 11, "u!" => 11,
-	"*" => 10, "/" => 10, "%" => 10,
-	"+" => 9, "-" => 9,
-	"<<" => 8, ">>" => 8,
-	"<" => 7, ">" => 7, "<=" => 7, ">=" => 7,
-	"==" => 6, "!=" => 6,
-	"&" => 5,
-	"^" => 4,
-	"|" => 3,
-	"&&" => 2,
-	"||" => 1,
-	"?:" => 0
-    );
-
-class PaperExprCompileState {
+class FormulaCompileState {
     var $contact;
     var $rf;
     var $gtmp;
@@ -45,9 +28,25 @@ class PaperExprCompileState {
     }
 }
 
-class PaperExpr {
+class Formula {
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|[=!]=|<[<=]?|>[>=]?)/';
+
+    private static $_operators = array(
+	"**" => 12,
+	"u+" => 11, "u-" => 11, "u!" => 11,
+	"*" => 10, "/" => 10, "%" => 10,
+	"+" => 9, "-" => 9,
+	"<<" => 8, ">>" => 8,
+	"<" => 7, ">" => 7, "<=" => 7, ">=" => 7,
+	"==" => 6, "!=" => 6,
+	"&" => 5,
+	"^" => 4,
+	"|" => 3,
+	"&&" => 2,
+	"||" => 1,
+	"?:" => 0
+    );
 
     static function parse($t, $noErrors = false) {
 	global $Conf;
@@ -87,7 +86,6 @@ class PaperExpr {
     }
 
     static function _parse_function($op, &$t, $allow_aggregate) {
-	global $paperExprOperators;
 	$t = ltrim($t);
 	$e = array($op, false);
 
@@ -105,7 +103,7 @@ class PaperExpr {
 		    return null;
 	    }
 	    $t = substr($t, 1);
-	} else if (($e2 = self::_parse_expr($t, $paperExprOperators["u+"])))
+	} else if (($e2 = self::_parse_expr($t, self::$_operators["u+"])))
 	    $e[] = $e2;
 	else
 	    return null;
@@ -124,8 +122,6 @@ class PaperExpr {
     }
 
     static function _parse_expr(&$t, $level) {
-	global $paperExprOperators;
-
 	if (($t = ltrim($t)) === "")
 	    return null;
 
@@ -139,7 +135,7 @@ class PaperExpr {
 	} else if ($t[0] === "-" || $t[0] === "+" || $t[0] === "!") {
 	    $op = $t[0];
 	    $t = substr($t, 1);
-	    if (!($e = self::_parse_expr($t, $paperExprOperators["u$op"])))
+	    if (!($e = self::_parse_expr($t, self::$_operators["u$op"])))
 		return null;
 	    $e = array($op, $e[1], $e);
 	} else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
@@ -187,7 +183,7 @@ class PaperExpr {
 		return $e;
 
 	    $op = $m[0];
-	    $opprec = $paperExprOperators[$op];
+	    $opprec = self::$_operators[$op];
 	    if ($opprec < $level)
 		return $e;
 
@@ -262,8 +258,6 @@ class PaperExpr {
     }
 
     static function _compile($state, $e) {
-	global $paperExprOperators;
-
 	$op = $e[0];
 
 	if ($op == "")
@@ -304,7 +298,7 @@ class PaperExpr {
 	    return "($t ? $tt : $tf)";
 	}
 
-	if (count($e) == 3 && isset($paperExprOperators["u$op"])) {
+	if (count($e) == 3 && isset(self::$_operators["u$op"])) {
 	    $t = self::_addltemp($state, self::_compile($state, $e[2]));
 	    if ($op == "!")
 		return "$op$t";
@@ -312,7 +306,7 @@ class PaperExpr {
 		return "($t === null ? $t : $op$t)";
 	}
 
-	if (count($e) == 4 && isset($paperExprOperators[$op])) {
+	if (count($e) == 4 && isset(self::$_operators[$op])) {
 	    $t1 = self::_addltemp($state, self::_compile($state, $e[2]));
 	    $t2 = self::_addltemp($state, self::_compile($state, $e[3]));
 	    if ($op == "&&")
@@ -362,7 +356,7 @@ class PaperExpr {
 
     static function compile_function_body($e, $contact) {
 	global $Conf;
-	$state = new PaperExprCompileState($contact);
+	$state = new FormulaCompileState($contact);
 	$e = self::_compile($state, $e);
 	$t =  join("\n  ", $state->gstmt)
 	    . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
@@ -388,14 +382,12 @@ class PaperExpr {
     }
 
     static function add_query_options(&$queryOptions, $e, $contact) {
-	$state = new PaperExprCompileState($contact);
+	$state = new FormulaCompileState($contact);
 	$state->queryOptions =& $queryOptions;
 	self::_compile($state, $e);
     }
 
     static function expression_view_score($e, $contact) {
-	global $paperExprOperators;
-
 	$op = $e[0];
 
 	if ($op == "")

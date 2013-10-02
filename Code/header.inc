@@ -190,6 +190,10 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/lib/unicodehelper.php");
     else if ($class_name == "Qobject")
         require_once("$ConfSitePATH/lib/qobject.php");
+    else if ($class_name == "PaperList")
+        require_once("$ConfSitePATH/lib/paperlist.php");
+    else if ($class_name == "Column")
+        require_once("$ConfSitePATH/lib/column.php");
     else if ($class_name == "PaperColumn")
         require_once("$ConfSitePATH/lib/papercolumn.php");
     else if ($class_name == "PaperOption")
@@ -208,6 +212,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/lib/checkformat.php");
     else if ($class_name == "Countries")
         require_once("$ConfSitePATH/lib/countries.php");
+    else if ($class_name == "Formula")
+        require_once("$ConfSitePATH/lib/formula.php");
 }
 
 // Set up conference options

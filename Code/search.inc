@@ -2539,7 +2539,6 @@ class PaperSearch {
     }
 
     function description($listname) {
-	require_once("paperlist.inc");
 	if (!$listname) {
 	    $a = array("s" => "Submitted papers", "acc" => "Accepted papers",
 		       "act" => "Active papers", "all" => "All papers",

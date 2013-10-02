@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-require_once("Code/paperlist.inc");
 require_once("Code/search.inc");
 $Me->goIfInvalid();
 $getaction = "";
@@ -965,7 +964,6 @@ function formulas_with_new() {
 
 function saveformulas() {
     global $Conf, $Me, $paperListFormulas, $OK;
-    require_once("Code/paperexpr.inc");
     $while = "while saving new formula";
 
     // parse names and expressions
@@ -994,10 +992,10 @@ function saveformulas() {
 	    $ok = $Conf->errorMsg("Please enter a name for your new formula.");
 	else if ($expr == "")
 	    $ok = $Conf->errorMsg("Please enter a definition for your new formula.");
-	else if (!($paperexpr = PaperExpr::parse($expr)))
+	else if (!($paperexpr = Formula::parse($expr)))
 	    $ok = false;	/* errors already generated */
 	else {
-	    $exprViewScore = PaperExpr::expression_view_score($paperexpr, $Me);
+	    $exprViewScore = Formula::expression_view_score($paperexpr, $Me);
 	    if ($exprViewScore <= $Me->viewReviewFieldsScore(null, true))
 		$ok = $Conf->errorMsg("The expression &ldquo;" . htmlspecialchars($expr) . "&rdquo; refers to paper properties that you aren't allowed to view.  Please define a different expression.");
 	    else if ($fdef->formulaId == "n") {

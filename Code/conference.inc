@@ -981,6 +981,9 @@ class Conference {
         if (defval($options, "reviewer"))
             $pq .= ",
 		RPC.conflictType reviewerConflictType, RPR.reviewType reviewerReviewType";
+        if (defval($options, "foldall"))
+            $pq .= ",
+		1 as folded";
 
 	// tables
 	$pq .= "

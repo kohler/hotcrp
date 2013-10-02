@@ -1,20 +1,13 @@
 <?php
-// papercolumn.inc -- HotCRP helper classes for paper list content
+// papercolumn.php -- HotCRP helper classes for paper list content
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
-
-global $ConfSitePATH;
-require_once("$ConfSitePATH/Code/paperlist.inc");
 
 class PaperColumn extends Column {
     static private $by_name = array();
     static private $factories = array();
 
-    public function __construct($name, $view, $extra) {
-        if ($extra === true)
-            $extra = array("sorter" => "id_sorter");
-        else if (is_int($extra))
-            $extra = array("foldnum" => $extra);
+    public function __construct($name, $view, $extra = array()) {
         parent::__construct($name, $view, $extra);
     }
 
@@ -92,7 +85,7 @@ class IdPaperColumn extends PaperColumn {
 
 class SelectorPaperColumn extends PaperColumn {
     public $is_selector = true;
-    public function __construct($name, $extra = 0) {
+    public function __construct($name, $extra) {
         parent::__construct($name, Column::VIEW_COLUMN, $extra);
     }
     public function prepare($pl, &$queryOptions, $visible) {
@@ -119,7 +112,7 @@ class SelectorPaperColumn extends PaperColumn {
              || ($this->name == "selconf" && $row->conflictType > 0))
             && (!$pl->papersel || defval($pl->papersel, $row->paperId, 1))) {
             $c .= " checked='checked'";
-            $pl->foldRow = false;
+            unset($row->folded);
         }
         if ($this->name == "selconf" && $row->conflictType >= CONFLICT_AUTHOR)
             $c .= " disabled='disabled'";
@@ -131,8 +124,8 @@ class SelectorPaperColumn extends PaperColumn {
 }
 
 class TitlePaperColumn extends PaperColumn {
-    public function __construct($name) {
-        parent::__construct($name, Column::VIEW_COLUMN,
+    public function __construct() {
+        parent::__construct("title", Column::VIEW_COLUMN,
                             array("minimal" => true, "sorter" => "title_sorter"));
     }
     public function title_sorter($a, $b) {
@@ -188,9 +181,9 @@ class StatusPaperColumn extends PaperColumn {
 
 class ReviewStatusPaperColumn extends PaperColumn {
     private $auview;
-    public function __construct($name) {
+    public function __construct() {
         global $Conf;
-        parent::__construct($name, Column::VIEW_COLUMN,
+        parent::__construct("revstat", Column::VIEW_COLUMN,
                             array("sorter" => "review_status_sorter"));
         $this->auview = $Conf->timeAuthorViewReviews();
     }
@@ -232,11 +225,17 @@ class ReviewStatusPaperColumn extends PaperColumn {
 }
 
 class AuthorsPaperColumn extends PaperColumn {
-    public function __construct($name, $extra) {
-        parent::__construct($name, Column::VIEW_ROW, $extra);
+    private $aufull;
+    public function __construct() {
+        parent::__construct("authors", Column::VIEW_ROW,
+                            array("foldnum" => 3));
     }
     public function header($pl, $row = null, $ordinal = 0) {
         return "Authors";
+    }
+    public function prepare($pl, &$queryOptions, $visible) {
+        $this->aufull = !$pl->is_folded("aufull");
+        return true;
     }
     public function content($pl, $row) {
 	if (!$pl->contact->canViewAuthors($row, true))
@@ -244,7 +243,7 @@ class AuthorsPaperColumn extends PaperColumn {
 	cleanAuthor($row);
 	$aus = array();
         $highlight = defval($pl->search->matchPreg, "authorInformation", "");
-	if ($pl->aufull) {
+	if ($this->aufull) {
 	    $lastaff = "";
 	    $anyaff = false;
 	    $affaus = array();
@@ -285,8 +284,9 @@ class AuthorsPaperColumn extends PaperColumn {
 }
 
 class CollabPaperColumn extends PaperColumn {
-    public function __construct($name, $extra) {
-        parent::__construct($name, Column::VIEW_ROW, $extra);
+    public function __construct() {
+        parent::__construct("collab", Column::VIEW_ROW,
+                            array("foldnum" => 15));
     }
     public function prepare($pl, &$queryOptions, $visible) {
         global $Conf;
@@ -309,8 +309,9 @@ class CollabPaperColumn extends PaperColumn {
 }
 
 class AbstractPaperColumn extends PaperColumn {
-    public function __construct($name, $extra) {
-        parent::__construct($name, Column::VIEW_ROW, $extra);
+    public function __construct() {
+        parent::__construct("abstract", Column::VIEW_ROW,
+                            array("foldnum" => 5));
     }
     public function header($pl, $row = null, $ordinal = 0) {
         return "Abstract";
@@ -324,8 +325,9 @@ class AbstractPaperColumn extends PaperColumn {
 }
 
 class TopicListPaperColumn extends PaperColumn {
-    public function __construct($name, $extra) {
-        parent::__construct($name, Column::VIEW_ROW, $extra);
+    public function __construct() {
+        parent::__construct("topics", Column::VIEW_ROW,
+                            array("foldnum" => 13));
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!count($pl->rf->topicName))
@@ -420,8 +422,8 @@ class ReviewerTypePaperColumn extends PaperColumn {
 }
 
 class ReviewSubmittedPaperColumn extends PaperColumn {
-    public function __construct($name) {
-        parent::__construct($name, Column::VIEW_COLUMN, array("cssname" => "text"));
+    public function __construct() {
+        parent::__construct("revsubmitted", Column::VIEW_COLUMN, array("cssname" => "text"));
     }
     public function prepare($pl, &$queryOptions, $visible) {
         return !!$pl->contact->isPC;
@@ -448,8 +450,8 @@ class ReviewSubmittedPaperColumn extends PaperColumn {
 }
 
 class ReviewDelegationPaperColumn extends PaperColumn {
-    public function __construct($name) {
-        parent::__construct($name, Column::VIEW_COLUMN,
+    public function __construct() {
+        parent::__construct("revdelegation", Column::VIEW_COLUMN,
                             array("cssname" => "text",
                                   "sorter" => "review_delegation_sorter"));
     }
@@ -475,8 +477,8 @@ class ReviewDelegationPaperColumn extends PaperColumn {
 }
 
 class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
-    public function __construct($name) {
-        parent::__construct($name);
+    public function __construct() {
+        parent::__construct("assrev");
     }
     public function prepare($pl, &$queryOptions, $visible) {
         global $Conf;
@@ -512,8 +514,8 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
 }
 
 class DesirabilityPaperColumn extends PaperColumn {
-    public function __construct($name) {
-        parent::__construct($name, Column::VIEW_COLUMN,
+    public function __construct() {
+        parent::__construct("desirability", Column::VIEW_COLUMN,
                             array("sorter" => "desirability_sorter"));
     }
     public function prepare($pl, &$queryOptions, $visible) {
@@ -540,8 +542,8 @@ class DesirabilityPaperColumn extends PaperColumn {
 }
 
 class TopicScorePaperColumn extends PaperColumn {
-    public function __construct($name) {
-        parent::__construct($name, Column::VIEW_COLUMN,
+    public function __construct() {
+        parent::__construct("topicscore", Column::VIEW_COLUMN,
                             array("sorter" => "topic_score_sorter"));
     }
     public function prepare($pl, &$queryOptions, $visible) {
@@ -613,8 +615,8 @@ class PreferencePaperColumn extends PaperColumn {
 }
 
 class PreferenceListPaperColumn extends PaperColumn {
-    public function __construct($name) {
-        parent::__construct($name, Column::VIEW_ROW, 0);
+    public function __construct() {
+        parent::__construct("allrevpref", Column::VIEW_ROW);
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->contact->privChair)
@@ -642,8 +644,9 @@ class PreferenceListPaperColumn extends PaperColumn {
 }
 
 class ReviewerListPaperColumn extends PaperColumn {
-    public function __construct($name, $extra = 0) {
-        parent::__construct($name, Column::VIEW_ROW, $extra);
+    public function __construct() {
+        parent::__construct("reviewers", Column::VIEW_ROW,
+                            array("foldnum" => 10));
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->contact->canViewReviewerIdentity(true, null, null))
@@ -680,8 +683,8 @@ class ReviewerListPaperColumn extends PaperColumn {
 }
 
 class PCConflictListPaperColumn extends PaperColumn {
-    public function __construct($name, $extra) {
-        parent::__construct($name, Column::VIEW_ROW, $extra);
+    public function __construct() {
+        parent::__construct("pcconf", Column::VIEW_ROW, array("foldnum" => 14));
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->contact->privChair)
@@ -706,7 +709,7 @@ class PCConflictListPaperColumn extends PaperColumn {
 class ConflictMatchPaperColumn extends PaperColumn {
     private $field;
     public function __construct($name, $field) {
-        parent::__construct($name, Column::VIEW_ROW, 0);
+        parent::__construct($name, Column::VIEW_ROW);
         $this->field = $field;
     }
     public function prepare($pl, &$queryOptions, $visible) {
@@ -734,14 +737,14 @@ class ConflictMatchPaperColumn extends PaperColumn {
                     $text .= ($text ? "; " : "") . $line;
             }
 	if ($text != "")
-	    $pl->foldRow = false;
+	    unset($row->folded);
 	return $text;
     }
 }
 
 class TagListPaperColumn extends PaperColumn {
-    public function __construct($name, $extra) {
-        parent::__construct($name, Column::VIEW_ROW, $extra);
+    public function __construct() {
+        parent::__construct("tags", Column::VIEW_ROW, array("foldnum" => 4));
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->contact->canViewTags(null))
@@ -771,8 +774,7 @@ class TagPaperColumn extends PaperColumn {
     protected $ctag;
     protected $editable = false;
     public function __construct($name, $tag, $is_value) {
-        parent::__construct($name, Column::VIEW_COLUMN,
-                            array("sorter" => "tag_sorter"));
+        parent::__construct($name, Column::VIEW_COLUMN, array("sorter" => "tag_sorter"));
         $this->dtag = $tag;
         $this->is_value = $is_value;
         $this->cssname = ($this->is_value ? "tagval" : "tag");
@@ -995,11 +997,10 @@ class FormulaPaperColumn extends PaperColumn {
         if (!$pl->scoresOk
             || $this->formula->authorView <= $revView)
             return false;
-        require_once("$ConfSitePATH/Code/paperexpr.inc");
-        if (!($expr = PaperExpr::parse($this->formula->expression, true)))
+        if (!($expr = Formula::parse($this->formula->expression, true)))
             return false;
-        $this->formula_function = PaperExpr::compile_function($expr, $pl->contact);
-        PaperExpr::add_query_options($queryOptions, $expr, $pl->contact);
+        $this->formula_function = Formula::compile_function($expr, $pl->contact);
+        Formula::add_query_options($queryOptions, $expr, $pl->contact);
 	return true;
     }
     public function sort_prepare($pl, &$rows) {
@@ -1041,7 +1042,8 @@ class FormulaPaperColumn extends PaperColumn {
 class TagReportPaperColumn extends PaperColumn {
     private static $registered = array();
     public function __construct($tag, $foldnum) {
-        parent::__construct("tagrep_" . preg_replace('/\W+/', '_', $tag), Column::VIEW_ROW, $foldnum);
+        parent::__construct("tagrep_" . preg_replace('/\W+/', '_', $tag), Column::VIEW_ROW,
+                            array("foldnum" => $foldnum));
         $this->cssname = "tagrep";
         $this->tag = $tag;
     }
@@ -1165,8 +1167,8 @@ class TagOrderSortPaperColumn extends PaperColumn {
 }
 
 class LeadPaperColumn extends PaperColumn {
-    public function __construct($name, $extra) {
-        parent::__construct($name, Column::VIEW_ROW, $extra);
+    public function __construct() {
+        parent::__construct("lead", Column::VIEW_ROW, array("foldnum" => 12));
     }
     public function prepare($pl, &$queryOptions, $visible) {
         return $pl->contact->canViewReviewerIdentity(true, null, true);
@@ -1185,8 +1187,8 @@ class LeadPaperColumn extends PaperColumn {
 }
 
 class ShepherdPaperColumn extends PaperColumn {
-    public function __construct($name, $extra) {
-        parent::__construct($name, Column::VIEW_ROW, $extra);
+    public function __construct() {
+        parent::__construct("shepherd", Column::VIEW_ROW, array("foldnum" => 11));
     }
     public function prepare($pl, &$queryOptions, $visible) {
         global $Conf;
@@ -1208,6 +1210,16 @@ class ShepherdPaperColumn extends PaperColumn {
     }
 }
 
+class FoldAllPaperColumn extends PaperColumn {
+    public function __construct() {
+        parent::__construct("foldall", Column::VIEW_NONE);
+    }
+    public function prepare($pl, &$queryOptions, $visible) {
+        $queryOptions["foldall"] = true;
+        return true;
+    }
+}
+
 function initialize_paper_columns() {
     global $paperListFormulas, $reviewScoreNames, $Conf;
 
@@ -1215,33 +1227,34 @@ function initialize_paper_columns() {
     PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "cssname" => "sel")));
     PaperColumn::register(new SelectorPaperColumn("selconf", array("cssname" => "confselector")));
     PaperColumn::register(new IdPaperColumn);
-    PaperColumn::register(new TitlePaperColumn("title"));
+    PaperColumn::register(new TitlePaperColumn);
     PaperColumn::register(new StatusPaperColumn("status", false));
     PaperColumn::register(new StatusPaperColumn("statusfull", true));
     PaperColumn::register(new ReviewerTypePaperColumn("revtype"));
-    PaperColumn::register(new ReviewStatusPaperColumn("revstat"));
-    PaperColumn::register(new ReviewSubmittedPaperColumn("revsubmitted"));
-    PaperColumn::register(new ReviewDelegationPaperColumn("revdelegation"));
-    PaperColumn::register(new AssignReviewPaperColumn("assrev"));
-    PaperColumn::register(new TopicScorePaperColumn("topicscore"));
-    PaperColumn::register(new TopicListPaperColumn("topics", 13));
+    PaperColumn::register(new ReviewStatusPaperColumn);
+    PaperColumn::register(new ReviewSubmittedPaperColumn);
+    PaperColumn::register(new ReviewDelegationPaperColumn);
+    PaperColumn::register(new AssignReviewPaperColumn);
+    PaperColumn::register(new TopicScorePaperColumn);
+    PaperColumn::register(new TopicListPaperColumn);
     PaperColumn::register(new PreferencePaperColumn("revpref", false));
     PaperColumn::register(new PreferencePaperColumn("editrevpref", true));
-    PaperColumn::register(new PreferenceListPaperColumn("allrevpref"));
-    PaperColumn::register(new DesirabilityPaperColumn("desirability"));
-    PaperColumn::register(new ReviewerListPaperColumn("reviewers", 10));
-    PaperColumn::register(new AuthorsPaperColumn("authors", 3));
-    PaperColumn::register(new CollabPaperColumn("collab", 15));
-    PaperColumn::register(new TagListPaperColumn("tags", 4));
-    PaperColumn::register(new AbstractPaperColumn("abstract", 5));
-    PaperColumn::register(new LeadPaperColumn("lead", 12));
-    PaperColumn::register(new ShepherdPaperColumn("shepherd", 11));
-    PaperColumn::register(new PCConflictListPaperColumn("pcconf", 14));
+    PaperColumn::register(new PreferenceListPaperColumn);
+    PaperColumn::register(new DesirabilityPaperColumn);
+    PaperColumn::register(new ReviewerListPaperColumn);
+    PaperColumn::register(new AuthorsPaperColumn);
+    PaperColumn::register(new CollabPaperColumn);
+    PaperColumn::register(new TagListPaperColumn);
+    PaperColumn::register(new AbstractPaperColumn);
+    PaperColumn::register(new LeadPaperColumn);
+    PaperColumn::register(new ShepherdPaperColumn);
+    PaperColumn::register(new PCConflictListPaperColumn);
     PaperColumn::register(new ConflictMatchPaperColumn("authorsmatch", "authorInformation"));
     PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", "collaborators"));
     PaperColumn::register(new SearchSortPaperColumn);
     PaperColumn::register(new TagOrderSortPaperColumn);
     PaperColumn::register(new TimestampPaperColumn);
+    PaperColumn::register(new FoldAllPaperColumn);
     PaperColumn::register_factory("tag:", new TagPaperColumn(null, null, false));
     PaperColumn::register_factory("tagval:", new TagPaperColumn(null, null, true));
     PaperColumn::register_factory("edittag:", new EditTagPaperColumn(null, null, false));

@@ -84,10 +84,12 @@ lib/countries.php
 lib/csv.php
 lib/documenthelper.php
 lib/hotcrpdocument.php
+lib/formula.php
 lib/ldaplogin.php
 lib/login.php
 lib/mimetype.php
 lib/papercolumn.php
+lib/paperlist.php
 lib/paperoption.php
 lib/qobject.php
 lib/rank.php
@@ -113,8 +115,6 @@ Code/helpers.inc
 Code/mailer.php
 Code/mailtemplate.inc
 Code/paperactions.php
-Code/paperexpr.inc
-Code/paperlist.inc
 Code/papertable.inc
 Code/restoredb.sh
 Code/review.inc

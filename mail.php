@@ -463,7 +463,6 @@ else if (defval($_REQUEST, "send") && check_post())
 
 
 if (isset($_REQUEST["monreq"])) {
-    require_once("Code/paperlist.inc");
     $plist = new PaperList(new PaperSearch($Me, array("t" => "reqrevs", "q" => "")), array("list" => true));
     $plist->showHeader = PaperList::HEADER_ALL;
     $ptext = $plist->text("reqrevs", $Me);

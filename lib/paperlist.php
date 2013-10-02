@@ -1,9 +1,10 @@
 <?php
-// paperlist.inc -- HotCRP helper class for producing paper lists
+// paperlist.php -- HotCRP helper class for producing paper lists
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once("baselist.inc");
+global $ConfSitePATH;
+require_once("$ConfSitePATH/Code/baselist.inc");
 
 class PaperList extends BaseList {
 
@@ -24,21 +25,16 @@ class PaperList extends BaseList {
     var $scoresOk;
     var $search;
     var $extraText;
-    var $aufull;
     var $paperLink;
     var $paperLinkArgs;
     var $showConflict;
     var $footer;
     var $rf;
     public $tagger;
-    var $viewmap;
+    private $viewmap;
     var $reviewList;
     var $atab;
     public $reviewer;
-
-    // used during render
-    private $defaultFoldRow;
-    public $foldRow;
 
     // collected during render and exported to caller
     public $count;
@@ -79,10 +75,6 @@ class PaperList extends BaseList {
 	$this->rf = reviewForm();
 	$this->atab = defval($_REQUEST, "atab", "");
 	unset($_REQUEST["atab"]);
-    }
-
-    public function _sortBase($a, $b) {
-	return $a->paperId - $b->paperId;
     }
 
     function _sort($rows, $fdef) {
@@ -592,8 +584,7 @@ class PaperList extends BaseList {
 	    break;
 	  case "conflict":
 	    $this->paperLink = "assign";
-	    $this->defaultFoldRow = true;
-            $fields = "selconf id title authors abstract authorsmatch collabmatch";
+            $fields = "selconf id title authors abstract authorsmatch collabmatch foldall";
 	    break;
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
@@ -622,10 +613,11 @@ class PaperList extends BaseList {
 	    $t .= tagg_hidden("q", $s->q);
 	if ($s->qt)
 	    $t .= tagg_hidden("qt", $s->qt);
+        $aufull = !$this->is_folded("aufull");
 	$t .= tagg_hidden("t", $s->limitName)
 	    . tagg_hidden("pap", join(" ", $pap))
 	    . tagg_hidden("get", "", array("id" => "plloadform_get"))
-	    . tagg_hidden("aufull", $this->aufull ? "1" : "", array("id" => "plloadform_aufull"))
+	    . tagg_hidden("aufull", $aufull ? "1" : "", array("id" => "plloadform_aufull"))
 	    . "</div></form></div>";
 	$Conf->footerHtml($t);
     }
@@ -694,8 +686,6 @@ class PaperList extends BaseList {
 	$rstate->colorindex = 1 - $rstate->colorindex;
 	$rstate->last_trclass = $trclass;
 
-	$this->foldRow = $this->defaultFoldRow;
-
 	// main columns
 	$t = "";
 	foreach ($fieldDef as $fdef) {
@@ -753,7 +743,7 @@ class PaperList extends BaseList {
 	if ($this->extraText && isset($this->extraText[$row->paperId]))
 	    $tt .= "<div id=\"plextra$row->paperId\" class=\"plextra\">" . $this->extraText[$row->paperId] . "</div>";
 
-	if ($this->foldRow) {
+	if (isset($row->folded) && $row->folded) {
 	    $trclass .= " fx3";
 	    $rstate->foldinfo["wholerow"] = true;
 	}
@@ -896,13 +886,21 @@ class PaperList extends BaseList {
 	return true;
     }
 
+    private function _set_viewmap() {
+	$this->viewmap = new Qobject($this->search->viewmap);
+	if ($this->viewmap->cc || $this->viewmap->compactcolumn
+            || $this->viewmap->ccol || $this->viewmap->compactcolumns)
+            $this->viewmap->compactcolumns = $this->viewmap->columns = true;
+	if ($this->viewmap->column || $this->viewmap->col)
+	    $this->viewmap->columns = true;
+    }
+
     public function text($listname, $me, $extra_class = "") {
 	global $Conf, $ConfSiteBase;
 
 	$this->contact = $me;
 	$this->count = 0;
 	$this->any = new Qobject;
-	$this->defaultFoldRow = false;
         $this->tagger = new Tagger($me);
 	$url = $this->search->url();
 
@@ -922,12 +920,7 @@ class PaperList extends BaseList {
 	}
 
 	// collect view data
-	$this->viewmap = new Qobject($this->search->viewmap);
-	if ($this->viewmap->cc || $this->viewmap->compactcolumn
-            || $this->viewmap->ccol || $this->viewmap->compactcolumns)
-            $this->viewmap->compactcolumns = $this->viewmap->columns = true;
-	if ($this->viewmap->column || $this->viewmap->col)
-	    $this->viewmap->columns = true;
+        $this->_set_viewmap();
 
 	// get paper list
         $field_list = $this->_listFields($listname);
@@ -998,15 +991,14 @@ class PaperList extends BaseList {
 	$fieldDef = array();
 	$ncol = 0;
 	foreach ($field_list as $f)
-	    if ($f->view > 0
-                && $this->viewmap[$f->name] !== false
+	    if ($this->viewmap[$f->name] !== false
                 && $f->prepare($this, $queryOptions,
                                $this->is_folded($f) ? 0 : 1)) {
-		$fieldDef[] = $f;
+                if ($f->view != Column::VIEW_NONE)
+                    $fieldDef[] = $f;
 		if ($f->view == Column::VIEW_COLUMN)
 		    $ncol++;
 	    }
-	$this->aufull = !$this->is_folded("aufull");
 
 	// make query
 	$result = $this->_prepareQuery($me, $queryOptions);
@@ -1172,9 +1164,6 @@ class PaperList extends BaseList {
 	$this->scoresOk = $me->privChair || $me->amReviewer()
 	    || $Conf->timeAuthorViewReviews();
 
-	// check what is folded
-	$this->aufull = defval($_REQUEST, "showaufull") || strpos($this->display, " aufull ") !== false;
-
 	// check paper link destination
 	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
 	    $this->paperLink = $_REQUEST["linkto"];
@@ -1186,6 +1175,9 @@ class PaperList extends BaseList {
 		return null;
 	    $queryOptions["joins"][] = "join $table on (Paper.paperId=$table.paperId)";
 	}
+
+        // collect view data
+        $this->_set_viewmap();
 
 	// get field array
 	$ncol = 0;
