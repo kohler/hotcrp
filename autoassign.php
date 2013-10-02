@@ -685,6 +685,24 @@ Types of PC review:
 
 $extraclass = " initial";
 
+class AutoassignmentPaperColumn extends PaperColumn {
+    static $header;
+    static $info;
+    public function __construct() {
+        parent::__construct("autoassignment", Column::VIEW_ROW,
+                            array("cssname" => "autoassignment"));
+    }
+    public function header($pl, $row, $ordinal) {
+        return self::$header;
+    }
+    public function content_empty($pl, $row) {
+        return !isset(self::$info[$row->paperId]);
+    }
+    public function content($pl, $row) {
+        return self::$info[$row->paperId];
+    }
+}
+
 if (isset($assignments) && count($assignments) > 0) {
     echo divClass("propass"), "<h3>Proposed assignment</h3>";
     $helplist = "";
@@ -708,7 +726,9 @@ if (isset($assignments) && count($assignments) > 0) {
 	$reviewtypename = "";
 
     ksort($assignments);
-    $atext = array();
+    AutoassignmentPaperColumn::$header = "Proposed $reviewtypename";
+    AutoassignmentPaperColumn::$info = array();
+    PaperColumn::register(new AutoassignmentPaperColumn);
     $pcm = pcMembers();
     $nrev = countReviews();
     $conflictedPapers = conflictedPapers();
@@ -732,11 +752,11 @@ if (isset($assignments) && count($assignments) > 0) {
             else
                 $t = PaperList::wrapChairConflict($t);
         }
-	$atext[$pid] = "<h6>Proposed $reviewtypename:</h6> $t";
+        AutoassignmentPaperColumn::$info[$pid] = $t;
     }
 
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => join(" ", array_keys($assignments))));
-    $plist = new PaperList($search, array("extraText" => $atext));
+    $plist = new PaperList($search);
     $plist->showHeader = PaperList::HEADER_TITLES;
     $plist->display .= " reviewers ";
     echo $plist->text("reviewers", $Me);

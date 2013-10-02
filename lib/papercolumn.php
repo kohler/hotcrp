@@ -49,7 +49,7 @@ class PaperColumn extends Column {
         return $a->paperId - $b->paperId;
     }
 
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "&lt;" . htmlspecialchars($this->name) . "&gt;";
     }
 
@@ -71,7 +71,7 @@ class IdPaperColumn extends PaperColumn {
         parent::__construct("id", Column::VIEW_COLUMN,
                             array("minimal" => true, "sorter" => "id_sorter"));
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "ID";
     }
     public function col() {
@@ -96,7 +96,7 @@ class SelectorPaperColumn extends PaperColumn {
 	    $Conf->footerScript("add_conflict_ajax()");
         return true;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         if ($this->name == "selconf")
             return "Conflict?";
         else
@@ -131,7 +131,7 @@ class TitlePaperColumn extends PaperColumn {
     public function title_sorter($a, $b) {
         return strcasecmp($a->title, $b->title);
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Title";
     }
     public function content($pl, $row) {
@@ -159,7 +159,7 @@ class StatusPaperColumn extends PaperColumn {
 	$x = $x ? $x : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
 	return $x ? $x : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Status";
     }
     public function content($pl, $row) {
@@ -204,7 +204,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
 	}
 	return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "<span class='hastitle' title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</span>";
     }
     public function col() {
@@ -229,7 +229,7 @@ class AuthorsPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("authors", Column::VIEW_ROW | Column::FOLDABLE);
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Authors";
     }
     public function prepare($pl, &$queryOptions, $visible) {
@@ -290,7 +290,7 @@ class CollabPaperColumn extends PaperColumn {
         global $Conf;
         return !!$Conf->setting("sub_collab");
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Collaborators";
     }
     public function content_empty($pl, $row) {
@@ -310,7 +310,7 @@ class AbstractPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("abstract", Column::VIEW_ROW | Column::FOLDABLE);
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Abstract";
     }
     public function content_empty($pl, $row) {
@@ -332,7 +332,7 @@ class TopicListPaperColumn extends PaperColumn {
             $queryOptions["topics"] = 1;
 	return true;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Topics";
     }
     public function content_empty($pl, $row) {
@@ -384,7 +384,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
     public function reviewer_type_sorter($a, $b) {
         return $b->_reviewer_type_sort_info - $a->_reviewer_type_sort_info;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         if ($this->xreviewer)
             return "<span class='hastitle' title='Reviewer type'>"
                 . Text::name_html($this->xreviewer) . "<br />Review</span>";
@@ -424,7 +424,7 @@ class ReviewSubmittedPaperColumn extends PaperColumn {
     public function prepare($pl, &$queryOptions, $visible) {
         return !!$pl->contact->isPC;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Review status";
     }
     public function content_empty($pl, $row) {
@@ -462,7 +462,7 @@ class ReviewDelegationPaperColumn extends PaperColumn {
 	$x = $x ? $x : strcasecmp($a->reviewFirstName, $b->reviewFirstName);
 	return $x ? $x : strcasecmp($a->reviewEmail, $b->reviewEmail);
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Reviewer";
     }
     public function content($pl, $row) {
@@ -488,7 +488,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
     public function analyze($pl, &$rows) {
         $this->xreviewer = false;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Assignment";
     }
     public function content_empty($pl, $row) {
@@ -523,7 +523,7 @@ class DesirabilityPaperColumn extends PaperColumn {
     public function desirability_sorter($a, $b) {
 	return $b->desirability - $a->desirability;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Desirability";
     }
     public function col() {
@@ -552,7 +552,7 @@ class TopicScorePaperColumn extends PaperColumn {
     public function topic_score_sorter($a, $b) {
 	return $b->topicInterestScore - $a->topicInterestScore;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Topic<br/>score";
     }
     public function col() {
@@ -593,7 +593,7 @@ class PreferencePaperColumn extends PaperColumn {
 	$x = $b->reviewerPreference - $a->reviewerPreference;
 	return $x ? $x : $b->topicInterestScore - $a->topicInterestScore;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Preference";
     }
     public function col() {
@@ -621,7 +621,7 @@ class PreferenceListPaperColumn extends PaperColumn {
             = $queryOptions["allConflictType"] = 1;
 	return true;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Preferences";
     }
     public function content_empty($pl, $row) {
@@ -653,7 +653,7 @@ class ReviewerListPaperColumn extends PaperColumn {
         }
 	return true;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Reviewers";
     }
     public function content($pl, $row) {
@@ -688,7 +688,7 @@ class PCConflictListPaperColumn extends PaperColumn {
             $queryOptions["allConflictType"] = 1;
 	return true;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "PC conflicts";
     }
     public function content($pl, $row) {
@@ -710,7 +710,7 @@ class ConflictMatchPaperColumn extends PaperColumn {
     public function prepare($pl, &$queryOptions, $visible) {
 	return $pl->contact->privChair;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
 	if ($this->field == "authorInformation")
 	    return "<strong>Potential conflict in authors</strong>";
         else
@@ -748,7 +748,7 @@ class TagListPaperColumn extends PaperColumn {
             $queryOptions["tags"] = 1;
         return true;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Tags";
     }
     public function content_empty($pl, $row) {
@@ -810,7 +810,7 @@ class TagPaperColumn extends PaperColumn {
         return $a->$sorter < $b->$sorter ? -1 :
             ($a->$sorter == $b->$sorter ? 0 : 1);
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "#$this->dtag";
     }
     public function content_empty($pl, $row) {
@@ -938,7 +938,7 @@ class ScorePaperColumn extends PaperColumn {
             return $x < 0 ? -1 : ($x == 0 ? 0 : 1);
         }
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return $pl->rf->field($this->score)->web_abbreviation();
     }
     public function col() {
@@ -1009,7 +1009,7 @@ class FormulaPaperColumn extends PaperColumn {
         return $a->$sorter < $b->$sorter ? -1
             : ($a->$sorter == $b->$sorter ? 0 : 1);
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         if ($this->formula->heading == "")
             $x = $this->formula->name;
         else
@@ -1056,7 +1056,7 @@ class TagReportPaperColumn extends PaperColumn {
             $queryOptions["tags"] = 1;
         return true;
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "“" . $this->tag . "” tag report";
     }
     public function content_empty($pl, $row) {
@@ -1085,7 +1085,7 @@ class TimestampPaperColumn extends PaperColumn {
         $bt = max($b->timeFinalSubmitted, $b->timeSubmitted, 0);
         return $at > $bt ? -1 : ($at == $bt ? 0 : 1);
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Timestamp";
     }
     public function content_empty($pl, $row) {
@@ -1168,7 +1168,7 @@ class LeadPaperColumn extends PaperColumn {
     public function prepare($pl, &$queryOptions, $visible) {
         return $pl->contact->canViewReviewerIdentity(true, null, true);
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Discussion lead";
     }
     public function content_empty($pl, $row) {
@@ -1190,7 +1190,7 @@ class ShepherdPaperColumn extends PaperColumn {
         return $pl->contact->isPC
             || ($Conf->setting("paperacc") && $Conf->timeAuthorViewDecision());
     }
-    public function header($pl, $row = null, $ordinal = 0) {
+    public function header($pl, $row, $ordinal) {
         return "Shepherd";
     }
     public function content_empty($pl, $row) {

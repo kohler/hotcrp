@@ -1438,7 +1438,7 @@ tr.plx h6 {
 	padding-right: 0.25em;
 	color: #555;
 }
-#autoassign tr.plx td div.plextra, #autoassign tr.plx td div.plextra h6 {
+div.pl_autoassignment, div.pl_autoassignment h6 {
 	font-weight: bold;
 }
 span.pcrole {

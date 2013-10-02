@@ -24,10 +24,8 @@ class PaperList extends BaseList {
     var $contact;
     var $scoresOk;
     var $search;
-    var $extraText;
     var $paperLink;
     var $paperLinkArgs;
-    var $showConflict;
     var $footer;
     var $rf;
     public $tagger;
@@ -61,9 +59,7 @@ class PaperList extends BaseList {
 	} else
 	    $this->listNumber = 0;
 
-	$this->extraText = defval($args, "extraText");
 	$this->scoresOk = false;
-	$this->showConflict = true;
 	$this->papersel = null;
 	$this->footer = true;
 	if (is_string(defval($args, "display", null)))
@@ -592,7 +588,7 @@ class PaperList extends BaseList {
 	    break;
 	  case "reviewers":
 	    $this->paperLink = "assign";
-            $fields = "id title status reviewers";
+            $fields = "id title status reviewers autoassignment";
 	    break;
 	  case "reviewersSel":
 	    $this->paperLink = "assign";
@@ -724,24 +720,24 @@ class PaperList extends BaseList {
 		$tt .= "<div id=\"$fdef->name.$row->paperId\"></div>";
                 $this->any[$fdef->name] = true;
 	    } else if (($c = $fdef->content($this, $row)) !== "") {
-		$tt .= "<div id=\"$fdef->name.$row->paperId\" class=\"fx";
-		if ($fdef->name != "authors")
-		    $tt .= $fdef->foldable;
+                if (!$fdef->foldable)
+                    $tc = "";
+                else if ($fdef->name != "authors")
+		    $tc = " fx" . $fdef->foldable;
 		else if ($this->contact->canViewAuthors($row, false)) {
-		    $tt .= "1";
+		    $tc = " fx1";
                     $this->any->openau = true;
 		} else {
-		    $tt .= "1 fx2";
+		    $tc = " fx1 fx2";
                     $this->any->anonau = true;
 		}
-		$tt .= "\"><h6>" . $fdef->header($this, $row, -1)
+		$tt .= "<div id=\"$fdef->name.$row->paperId\" class=\"pl_"
+                    . $fdef->cssname . $tc . "\"><h6>"
+                    . $fdef->header($this, $row, -1)
 		    . ":</h6> " . $c . "</div>";
 		$this->any[$fdef->name] = true;
 	    }
 	}
-
-	if ($this->extraText && isset($this->extraText[$row->paperId]))
-	    $tt .= "<div id=\"plextra$row->paperId\" class=\"plextra\">" . $this->extraText[$row->paperId] . "</div>";
 
 	if (isset($row->folded) && $row->folded) {
 	    $trclass .= " fx3";
@@ -1211,7 +1207,7 @@ class PaperList extends BaseList {
         // output field data
 	$data = array();
 	$name = $fdef->name;
-	if (($x = $fdef->header($this)))
+	if (($x = $fdef->header($this, null, 0)))
 	    $data["$name.title"] = $x;
 	foreach ($rows as $row) {
 	    if ($fdef->content_empty($this, $row))
