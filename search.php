@@ -1114,8 +1114,7 @@ $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, array("sort" => true, "list" => true,
 				       "display" => defval($_REQUEST, "display")));
-    $pl->showHeader = PaperList::HEADER_TITLES;
-    $pl_text = $pl->text($Search->limitName, $Me, "pltable_full");
+    $pl_text = $pl->text($Search->limitName, $Me, array("class" => "pltable_full"));
     $pldisplay = $pl->display;
 } else
     $pl = null;

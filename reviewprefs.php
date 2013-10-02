@@ -198,9 +198,9 @@ $search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
                                      "urlbase" => hoturl("reviewprefs", "reviewer=$reviewer"),
                                      "q" => defval($_REQUEST, "q", "")));
 $pl = new PaperList($search, array("sort" => true, "list" => true, "foldtype" => "pf", "reviewer" => $reviewer));
-$pl->showHeader = PaperList::HEADER_TITLES;
-$pl->footer = "<div id='plactr'><input class='hb' type='submit' name='update' value='Save changes' /></div>";
-$pl_text = $pl->text("editReviewPreference", $Me, "pltable_full");
+$pl_text = $pl->text("editReviewPreference", $Me,
+                     array("class" => "pltable_full",
+                           "footer_extra" => "<div id='plactr'><input class='hb' type='submit' name='update' value='Save changes' /></div>"));
 $_SESSION["l"][$pl->listNumber]["revprefs"] = true;
 
 

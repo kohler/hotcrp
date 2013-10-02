@@ -1270,8 +1270,7 @@ table.pt_buttons td.ptb_button {
 	width: 100%;
 	position: relative;
 }
-table.pltable th a.fn1, table.pltable th a.fn2, table.pltable th a.fn4,
-table.pltable th a.fx1, table.pltable th a.fx2, table.pltable th a.fx4 {
+.pl_titleextra a {
 	font-weight: normal;
 }
 #plact {

@@ -319,7 +319,6 @@ if ($reviewer > 0) {
     $paperList->display .= " topics ";
     if ($kind != "c")
         $paperList->display .= "reviewers ";
-    $paperList->showHeader = PaperList::HEADER_ALL;
     if (isset($showau)) {
 	$search->overrideMatchPreg = true;
 	$search->matchPreg = array();
@@ -339,7 +338,8 @@ if ($reviewer > 0) {
 	tagg_checkbox(false, false, true, array("id" => "assrevimmediate")),
 	"&nbsp;", tagg_label("Automatically save assignments", "assrevimmediate"),
 	"</span></div>\n",
-	$paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me, "pltable_full"),
+	$paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me,
+                         array("class" => "pltable_full", "header_links" => true)),
 	"<div class='aa'><input type='submit' class='bb' name='update' value='Save assignments' /></div>\n",
 	"</div></form></div>\n";
 }

@@ -464,8 +464,7 @@ else if (defval($_REQUEST, "send") && check_post())
 
 if (isset($_REQUEST["monreq"])) {
     $plist = new PaperList(new PaperSearch($Me, array("t" => "reqrevs", "q" => "")), array("list" => true));
-    $plist->showHeader = PaperList::HEADER_ALL;
-    $ptext = $plist->text("reqrevs", $Me);
+    $ptext = $plist->text("reqrevs", $Me, array("header_links" => true));
     if ($plist->count == 0)
 	$Conf->infoMsg("You have not requested any external reviews.  <a href='", hoturl("index"), "'>Return home</a>");
     else {

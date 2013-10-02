@@ -8,31 +8,27 @@ require_once("$ConfSitePATH/Code/baselist.inc");
 
 class PaperList extends BaseList {
 
-    const HEADER_ALL = 2;
-    const HEADER_TITLES = 1;
-    const HEADER_NONE = 0;
-
     // creator can set to change behavior
-    public $showHeader;
     public $papersel;
     public $display;
 
-    private $sortable;
+    // columns access
     public $sorter;
+    public $contact;
+    public $scoresOk;
+    public $search;
+    public $rf;
+    public $tagger;
+    public $reviewer;
+
+    private $sortable;
     private $subsorter;
     var $listNumber;
-    var $contact;
-    var $scoresOk;
-    var $search;
-    var $paperLink;
-    var $paperLinkArgs;
-    var $footer;
-    var $rf;
-    public $tagger;
+    private $_paper_link_page;
+    private $_paper_link_args;
     private $viewmap;
     var $reviewList;
-    var $atab;
-    public $reviewer;
+    private $atab;
 
     // collected during render and exported to caller
     public $count;
@@ -41,7 +37,6 @@ class PaperList extends BaseList {
 
     function __construct($search, $args = array()) {
 	global $scoreSorts, $defaultScoreSort, $Conf;
-	$this->showHeader = self::HEADER_NONE;
 	$this->search = $search;
 
 	if (($this->sortable = !!defval($args, "sort"))
@@ -51,17 +46,19 @@ class PaperList extends BaseList {
             $this->sorter = BaseList::parse_sorter("");
         $this->subsorter = null;
 
-	$this->paperLink = "";
-	$this->paperLinkArgs = "";
+	$this->_paper_link_page = "";
+        if (isset($_REQUEST["linkto"])
+            && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
+            $this->_paper_link_page = $_REQUEST["linkto"];
+	$this->_paper_link_args = "";
 	if (defval($args, "list")) {
 	    $this->listNumber = allocateListNumber($search->listId($this->sortdef()));
-	    $this->paperLinkArgs .= "&amp;ls=" . $this->listNumber;
+	    $this->_paper_link_args .= "&amp;ls=" . $this->listNumber;
 	} else
 	    $this->listNumber = 0;
 
 	$this->scoresOk = false;
 	$this->papersel = null;
-	$this->footer = true;
 	if (is_string(defval($args, "display", null)))
 	    $this->display = " " . $args["display"] . " ";
 	else
@@ -167,8 +164,7 @@ class PaperList extends BaseList {
 
     function _paperLink($row) {
 	global $Conf;
-	if (!($pt = $this->paperLink))
-	    $pt = "paper";
+        $pt = $this->_paper_link_page ? $this->_paper_link_page : "paper";
 	$pl = "p=" . $row->paperId;
 	$doreview = isset($row->reviewId) && isset($row->reviewFirstName);
 	if ($doreview) {
@@ -179,7 +175,7 @@ class PaperList extends BaseList {
 		    $pl .= "&amp;m=r";
 	    }
 	}
-	$pl .= $this->paperLinkArgs;
+	$pl .= $this->_paper_link_args;
 	if ($doreview && $row->reviewSubmitted > 0)
 	    $pl .= "#review" . $rord;
 	return hoturl($pt, $pl);
@@ -276,9 +272,9 @@ class PaperList extends BaseList {
 	    else
 		$ranal->completion = "In&nbsp;progress";
 	    if ($ranal->needsSubmit)
-		$link = hoturl("review", "r=" . unparseReviewOrdinal($row) . $this->paperLinkArgs);
+		$link = hoturl("review", "r=" . unparseReviewOrdinal($row) . $this->_paper_link_args);
 	    else
-		$link = hoturl("paper", "p=" . $row->paperId . $this->paperLinkArgs . "#review" . unparseReviewOrdinal($row));
+		$link = hoturl("paper", "p=" . $row->paperId . $this->_paper_link_args . "#review" . unparseReviewOrdinal($row));
 	    $ranal->link1 = "<a href=\"$link\">";
 	    $ranal->link2 = "</a>";
 	    if ($row->reviewRound) {
@@ -302,9 +298,9 @@ class PaperList extends BaseList {
 	return $t;
     }
 
-    function footer($ncol, $listname, $trclass) {
+    private function _footer($ncol, $listname, $trclass, $extra) {
 	global $Conf;
-	if ($this->count == 0 || !$this->footer)
+	if ($this->count == 0)
 	    return "";
 
 	$barsep = "<td>&nbsp;<span class='barsep'>&nbsp;|&nbsp;</span>&nbsp;</td>";
@@ -478,7 +474,6 @@ class PaperList extends BaseList {
 	    $Conf->footerScript("plactions_dofold()");
 
 	// Linelinks container
-	$extraFooter = ($this->footer && $this->footer !== true ? $this->footer : "");
 	$foot = " <tfoot>\n"
 	    . "  <tr class='pl_footgap $trclass'><td colspan='$ncol'><div class='pl_footgap'></div></td></tr>\n"
 	    . "  <tr class='pl_footrow'>\n";
@@ -493,7 +488,7 @@ class PaperList extends BaseList {
 	    . "#plact\" onclick='return papersel(true)'>select all " . $this->count . "</a>), then&nbsp;"
 	    . "<img id='foldplactsession' alt='' src='" . hoturl("sessionvar", "var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1") . "' width='1' height='1' />"
 	    . "</td>"
-	    . $t . "</tr></td></table>" . $extraFooter . "</td></tr>\n"
+	    . $t . "</tr></td></table>" . $extra . "</td></tr>\n"
 	    . " </tfoot>\n";
     }
 
@@ -537,6 +532,11 @@ class PaperList extends BaseList {
 	}
     }
 
+    private function _default_linkto($page) {
+        if (!$this->_paper_link_page)
+            $this->_paper_link_page = $page;
+    }
+
     private function _listFields($listname) {
 	switch ($listname) {
 	case "a":
@@ -554,44 +554,44 @@ class PaperList extends BaseList {
             $fields = "sel id title statusfull revtype authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	    break;
 	case "reviewerHome":
-	    $this->paperLink = "review";
+	    $this->_default_linkto("review");
 	    $fields = "id title revtype status";
 	    break;
 	case "r":
 	case "lead":
-	    $this->paperLink = "review";
+	    $this->_default_linkto("review");
             $fields = "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	    break;
 	case "rout":
-	    $this->paperLink = "review";
+	    $this->_default_linkto("review");
             $fields = "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	    break;
 	case "req":
-	    $this->paperLink = "review";
+	    $this->_default_linkto("review");
             $fields = "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	    break;
 	case "reqrevs":
-	    $this->paperLink = "review";
+	    $this->_default_linkto("review");
             $fields = "id title revdelegation revsubmitted revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	    break;
-	  case "reviewAssignment":
-	    $this->paperLink = "assign";
+        case "reviewAssignment":
+            $this->_default_linkto("assign");
             $fields = "id title revpref topicscore desirability assrev authors tags topics reviewers allrevpref authorsmatch collabmatch scores formulas";
 	    break;
-	  case "conflict":
-	    $this->paperLink = "assign";
+        case "conflict":
+	    $this->_default_linkto("assign");
             $fields = "selconf id title authors abstract tags authorsmatch collabmatch foldall";
 	    break;
-	  case "editReviewPreference":
-	    $this->paperLink = "paper";
+        case "editReviewPreference":
+            $this->_default_linkto("paper");
             $fields = "sel id title topicscore revtype editrevpref authors abstract topics";
 	    break;
-	  case "reviewers":
-	    $this->paperLink = "assign";
+        case "reviewers":
+            $this->_default_linkto("assign");
             $fields = "id title status reviewers autoassignment";
 	    break;
-	  case "reviewersSel":
-	    $this->paperLink = "assign";
+        case "reviewersSel":
+            $this->_default_linkto("assign");
             $fields = "selon id title status reviewers";
 	    break;
 	  default:
@@ -602,7 +602,7 @@ class PaperList extends BaseList {
 
     private function _addAjaxLoadForm($pap, $extra = "") {
 	global $Conf;
-	$t = "<div><form id='plloadform' method='post' action='" . hoturl_post("search", "ajax=1" . $this->paperLinkArgs) . "' accept-charset='UTF-8'>"
+	$t = "<div><form id='plloadform' method='post' action='" . hoturl_post("search", "ajax=1" . $this->_paper_link_args) . "' accept-charset='UTF-8'>"
 	    . "<div class='inform'>";
 	$s = $this->search;
 	if ($s->q)
@@ -824,13 +824,12 @@ class PaperList extends BaseList {
 	return $classes;
     }
 
-    private function _make_title_header_extra($rstate, $fieldDef) {
+    private function _make_title_header_extra($rstate, $fieldDef, $show_links) {
 	global $Conf;
 	$titleextra = "";
 	if (isset($rstate->foldinfo["wholerow"]))
 	    $titleextra .= "<span class='sep'></span><a class='fn3' href=\"javascript:void fold('pl',0,3)\">Show all papers</a>";
-	if (($this->any->openau || $this->any->anonau)
-	    && $this->showHeader == self::HEADER_ALL) {
+	if (($this->any->openau || $this->any->anonau) && $show_links) {
 	    $titleextra .= "<span class='sep'></span>";
 	    if ($Conf->subBlindNever())
 		$titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
@@ -841,7 +840,7 @@ class PaperList extends BaseList {
 	    else
 		$titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show non-anonymous authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
 	}
-	if ($this->any->tags && $this->showHeader == self::HEADER_ALL)
+	if ($this->any->tags && $show_links)
             foreach ($fieldDef as $fdef)
                 if ($fdef->name == "tags" && $fdef->foldable) {
                     $titleextra .= "<span class='sep'></span>";
@@ -893,7 +892,7 @@ class PaperList extends BaseList {
 	    $this->viewmap->columns = true;
     }
 
-    public function text($listname, $me, $extra_class = "") {
+    public function text($listname, $me, $options = array()) {
 	global $Conf, $ConfSiteBase;
 
 	$this->contact = $me;
@@ -950,10 +949,6 @@ class PaperList extends BaseList {
             }
         foreach ($new_names as $k => $v)
             $this->viewmap[$k] = $v;
-
-	// check paper link destination
-	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
-	    $this->paperLink = $_REQUEST["linkto"];
 
         // check sort
         $special_sort = $sort_field = null;
@@ -1062,10 +1057,11 @@ class PaperList extends BaseList {
 	}
 
 	// header cells
-	if ($this->showHeader) {
+	if (!defval($options, "noheader")) {
 	    $colhead .= " <thead>\n  <tr class=\"pl_headrow\">\n";
 	    $ord = 0;
-	    $titleextra = $this->_make_title_header_extra($rstate, $fieldDef);
+	    $titleextra = $this->_make_title_header_extra($rstate, $fieldDef,
+                                                          defval($options, "header_links"));
 
 	    if ($this->sortable && $url) {
 		$sortUrl = htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
@@ -1118,8 +1114,8 @@ class PaperList extends BaseList {
 	// table skeleton including fold classes
 	$foldclasses = $this->_analyze_folds($rstate, $fieldDef);
 	$enter = "<table class=\"pltable plt_" . htmlspecialchars($listname);
-	if ($extra_class != "")
-	    $enter .= " " . $extra_class;
+	if (defval($options, "class"))
+	    $enter .= " " . $options["class"];
 	if (count($foldclasses))
 	    $enter .= " " . join(" ", $foldclasses) . "\" id=\"foldpl";
 	$enter .= "\">\n";
@@ -1134,8 +1130,10 @@ class PaperList extends BaseList {
 	} else
 	    $enter .= $colhead;
 
-	if ($fieldDef[0]->name == "sel" || $fieldDef[0]->name == "selon")
-	    $enter .= $this->footer($ncol, $listname, $rstate->last_trclass);
+	if (($fieldDef[0]->name == "sel" || $fieldDef[0]->name == "selon")
+            && !defval($options, "nofooter"))
+	    $enter .= $this->_footer($ncol, $listname, $rstate->last_trclass,
+                                     defval($options, "footer_extra", ""));
 
 	$x = $enter . " <tbody>\n" . join("", $body) . " </tbody>\n" . $exit;
 
@@ -1167,10 +1165,6 @@ class PaperList extends BaseList {
 	// check role type
 	$this->scoresOk = $me->privChair || $me->amReviewer()
 	    || $Conf->timeAuthorViewReviews();
-
-	// check paper link destination
-	if (isset($_REQUEST["linkto"]) && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
-	    $this->paperLink = $_REQUEST["linkto"];
 
 	// initialize query
 	$queryOptions = array("joins" => array());

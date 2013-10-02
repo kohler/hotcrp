@@ -757,7 +757,6 @@ if (isset($assignments) && count($assignments) > 0) {
 
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => join(" ", array_keys($assignments))));
     $plist = new PaperList($search);
-    $plist->showHeader = PaperList::HEADER_TITLES;
     $plist->display .= " reviewers ";
     echo $plist->text("reviewers", $Me);
 
@@ -862,14 +861,12 @@ if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
 
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $plist = new PaperList($search);
-    $plist->showHeader = PaperList::HEADER_TITLES;
     $plist->display .= " reviewers ";
-    $plist->footer = false;
     $plist->papersel = array_fill_keys($papersel, 1);
     foreach (preg_split('/\s+/', defval($_REQUEST, "prevpap")) as $p)
 	if (!isset($plist->papersel[$p]))
 	    $plist->papersel[$p] = 0;
-    echo $plist->text("reviewersSel", $Me);
+    echo $plist->text("reviewersSel", $Me, array("nofooter" => true));
     echo "<input type='hidden' name='prevt' value=\"", htmlspecialchars($_REQUEST["t"]), "\" />",
 	"<input type='hidden' name='prevq' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />";
     if ($plist->ids)
