@@ -7,8 +7,8 @@ class PaperColumn extends Column {
     static private $by_name = array();
     static private $factories = array();
 
-    public function __construct($name, $view, $extra = array()) {
-        parent::__construct($name, $view, $extra);
+    public function __construct($name, $flags, $extra = array()) {
+        parent::__construct($name, $flags, $extra);
     }
 
     public static function lookup_local($name) {
@@ -227,8 +227,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
 class AuthorsPaperColumn extends PaperColumn {
     private $aufull;
     public function __construct() {
-        parent::__construct("authors", Column::VIEW_ROW,
-                            array("foldnum" => 3));
+        parent::__construct("authors", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function header($pl, $row = null, $ordinal = 0) {
         return "Authors";
@@ -285,8 +284,7 @@ class AuthorsPaperColumn extends PaperColumn {
 
 class CollabPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("collab", Column::VIEW_ROW,
-                            array("foldnum" => 15));
+        parent::__construct("collab", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
         global $Conf;
@@ -310,8 +308,7 @@ class CollabPaperColumn extends PaperColumn {
 
 class AbstractPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("abstract", Column::VIEW_ROW,
-                            array("foldnum" => 5));
+        parent::__construct("abstract", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function header($pl, $row = null, $ordinal = 0) {
         return "Abstract";
@@ -326,8 +323,7 @@ class AbstractPaperColumn extends PaperColumn {
 
 class TopicListPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("topics", Column::VIEW_ROW,
-                            array("foldnum" => 13));
+        parent::__construct("topics", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!count($pl->rf->topicName))
@@ -645,8 +641,7 @@ class PreferenceListPaperColumn extends PaperColumn {
 
 class ReviewerListPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("reviewers", Column::VIEW_ROW,
-                            array("foldnum" => 10));
+        parent::__construct("reviewers", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->contact->canViewReviewerIdentity(true, null, null))
@@ -684,7 +679,7 @@ class ReviewerListPaperColumn extends PaperColumn {
 
 class PCConflictListPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("pcconf", Column::VIEW_ROW, array("foldnum" => 14));
+        parent::__construct("pcconf", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->contact->privChair)
@@ -744,7 +739,7 @@ class ConflictMatchPaperColumn extends PaperColumn {
 
 class TagListPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("tags", Column::VIEW_ROW, array("foldnum" => 4));
+        parent::__construct("tags", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->contact->canViewTags(null))
@@ -879,12 +874,11 @@ class ScorePaperColumn extends PaperColumn {
     public $max_score;
     private $viewscore;
     private static $registered = array();
-    public function __construct($score, $foldnum) {
-        parent::__construct($score, Column::VIEW_COLUMN,
+    public function __construct($score) {
+        parent::__construct($score, Column::VIEW_COLUMN | Column::FOLDABLE,
                             array("sorter" => "score_sorter"));
-        $this->minimal = $this->sortable = true;
+        $this->minimal = true;
         $this->cssname = "score";
-        $this->foldnum = $foldnum;
         $this->score = $score;
     }
     public static function lookup_all() {
@@ -970,8 +964,9 @@ class ScorePaperColumn extends PaperColumn {
 
 class FormulaPaperColumn extends PaperColumn {
     private static $registered = array();
-    public function __construct($name, $formula, $foldnum) {
-        parent::__construct($name, Column::VIEW_COLUMN, array("minimal" => true, "sorter" => "formula_sorter", "foldnum" => $foldnum));
+    public function __construct($name, $formula) {
+        parent::__construct($name, Column::VIEW_COLUMN | Column::FOLDABLE,
+                            array("minimal" => true, "sorter" => "formula_sorter"));
         $this->cssname = "formula";
         $this->formula = $formula;
     }
@@ -1041,9 +1036,9 @@ class FormulaPaperColumn extends PaperColumn {
 
 class TagReportPaperColumn extends PaperColumn {
     private static $registered = array();
-    public function __construct($tag, $foldnum) {
-        parent::__construct("tagrep_" . preg_replace('/\W+/', '_', $tag), Column::VIEW_ROW,
-                            array("foldnum" => $foldnum));
+    public function __construct($tag) {
+        parent::__construct("tagrep_" . preg_replace('/\W+/', '_', $tag),
+                            Column::VIEW_ROW | Column::FOLDABLE);
         $this->cssname = "tagrep";
         $this->tag = $tag;
     }
@@ -1168,7 +1163,7 @@ class TagOrderSortPaperColumn extends PaperColumn {
 
 class LeadPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("lead", Column::VIEW_ROW, array("foldnum" => 12));
+        parent::__construct("lead", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
         return $pl->contact->canViewReviewerIdentity(true, null, true);
@@ -1188,7 +1183,7 @@ class LeadPaperColumn extends PaperColumn {
 
 class ShepherdPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("shepherd", Column::VIEW_ROW, array("foldnum" => 11));
+        parent::__construct("shepherd", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
         global $Conf;
@@ -1260,27 +1255,23 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("edittag:", new EditTagPaperColumn(null, null, false));
     PaperColumn::register_factory("edittagval:", new EditTagPaperColumn(null, null, true));
 
-    $nextfield = 50; /* BaseList::FIELD_SCORE */
     $rf = reviewForm();
     foreach ($reviewScoreNames as $n) {
-        $score = new ScorePaperColumn($n, $nextfield);
+        $score = new ScorePaperColumn($n);
         $f = $rf->field($n);
         ScorePaperColumn::register_score($score, $f->display_order);
-        ++$nextfield;
     }
     PaperColumn::register_factory("", $score);
 
-    $nextfold = 21;
     $paperListFormulas = array();
     if ($Conf && $Conf->setting("formulas") && $Conf->sversion >= 32) {
         $result = $Conf->q("select * from Formula order by lower(name)");
         $formula = null;
         while (($row = edb_orow($result))) {
             $fid = $row->formulaId;
-            $formula = new FormulaPaperColumn("formula$fid", $row, $nextfold);
+            $formula = new FormulaPaperColumn("formula$fid", $row);
             FormulaPaperColumn::register($formula);
             $paperListFormulas[$fid] = $row;
-            ++$nextfold;
         }
         if ($formula)
             PaperColumn::register_factory("", $formula);
@@ -1292,10 +1283,8 @@ function initialize_paper_columns() {
         foreach ($tagger->defined_tags() as $v)
             if ($v->vote || $v->rank)
                 $vt[] = $v->tag;
-        foreach ($vt as $n) {
-            TagReportPaperColumn::register(new TagReportPaperColumn($n, $nextfold));
-            ++$nextfold;
-        }
+        foreach ($vt as $n)
+            TagReportPaperColumn::register(new TagReportPaperColumn($n));
     }
 }
 

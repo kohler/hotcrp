@@ -148,7 +148,7 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
 
 // other field-based Ajax downloads: tags, collaborators, ...
 if ($getaction && ($fdef = PaperColumn::lookup($getaction))
-    && $fdef->foldnum && defval($_REQUEST, "ajax")) {
+    && $fdef->foldable && defval($_REQUEST, "ajax")) {
     if ($getaction == "authors") {
         $full = defval($_REQUEST, "aufull", 0);
         displayOptionsSet("pldisplay", "aufull", $full);

@@ -202,7 +202,7 @@ class PaperList extends BaseList {
     }
 
     static function wrapChairConflict($text) {
-	return "<span class='fn20'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Override conflicts</a></span><span class='fx20'>$text</span>";
+	return "<span class='fn5'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Override conflicts</a></span><span class='fx5'>$text</span>";
     }
 
     public function maybeConflict($row, $text, $visible) {
@@ -580,7 +580,7 @@ class PaperList extends BaseList {
 	    break;
 	  case "reviewAssignment":
 	    $this->paperLink = "assign";
-            $fields = "id title revpref topicscore desirability assrev authors topics reviewers allrevpref authorsmatch collabmatch scores formulas";
+            $fields = "id title revpref topicscore desirability assrev authors tags topics reviewers allrevpref authorsmatch collabmatch scores formulas";
 	    break;
 	  case "conflict":
 	    $this->paperLink = "assign";
@@ -667,7 +667,7 @@ class PaperList extends BaseList {
     public function is_folded($field) {
         $fname = $field;
 	if (is_object($field) || ($field = PaperColumn::lookup($field)))
-	    $fname = $field->foldnum ? $field->name : null;
+	    $fname = $field->foldable ? $field->name : null;
 	return $fname
             && !defval($_REQUEST, "show$fname")
             && ($this->viewmap->$fname === false
@@ -692,15 +692,15 @@ class PaperList extends BaseList {
 	    if ($fdef->view != Column::VIEW_COLUMN)
 		continue;
 	    $td = "    <td class=\"pl_$fdef->cssname";
-	    if ($fdef->foldnum)
-		$td .= " fx$fdef->foldnum";
+	    if ($fdef->foldable)
+		$td .= " fx$fdef->foldable";
 	    if ($fdef->content_empty($this, $row)) {
 		$t .= $td . "\"></td>\n";
 		continue;
 	    }
-	    if ($fdef->foldnum && !isset($rstate->foldinfo[$fdef->name]))
+	    if ($fdef->foldable && !isset($rstate->foldinfo[$fdef->name]))
 		$rstate->foldinfo[$fdef->name] = $this->is_folded($fdef);
-	    if ($fdef->foldnum && $rstate->foldinfo[$fdef->name]) {
+	    if ($fdef->foldable && $rstate->foldinfo[$fdef->name]) {
 		$t .= $td . "\" id=\"$fdef->name.$row->paperId\"></td>\n";
                 $this->any[$fdef->name] = true;
 	    } else {
@@ -717,16 +717,16 @@ class PaperList extends BaseList {
 	    if ($fdef->view != Column::VIEW_ROW
                 || $fdef->content_empty($this, $row))
 		continue;
-	    if ($fdef->foldnum && !isset($rstate->foldinfo[$fdef->name]))
+	    if ($fdef->foldable && !isset($rstate->foldinfo[$fdef->name]))
 		$rstate->foldinfo[$fdef->name] = $this->is_folded($fdef);
-	    if ($fdef->foldnum && $fdef->name != "authors"
+	    if ($fdef->foldable && $fdef->name != "authors"
                 && $rstate->foldinfo[$fdef->name]) {
 		$tt .= "<div id=\"$fdef->name.$row->paperId\"></div>";
                 $this->any[$fdef->name] = true;
 	    } else if (($c = $fdef->content($this, $row)) !== "") {
 		$tt .= "<div id=\"$fdef->name.$row->paperId\" class=\"fx";
 		if ($fdef->name != "authors")
-		    $tt .= $fdef->foldnum;
+		    $tt .= $fdef->foldable;
 		else if ($this->contact->canViewAuthors($row, false)) {
 		    $tt .= "1";
                     $this->any->openau = true;
@@ -786,11 +786,11 @@ class PaperList extends BaseList {
 	global $Conf;
 	$classes = $jsmap = $jsloadmap = $jsnotitlemap = array();
 	foreach ($fieldDef as $fdef)
-	    if ($fdef->foldnum && $fdef->name !== "authors"
+	    if ($fdef->foldable && $fdef->name !== "authors"
 		&& isset($rstate->foldinfo[$fdef->name])) {
 		$closed = $rstate->foldinfo[$fdef->name];
-		$classes[] = "fold$fdef->foldnum" . ($closed ? "c" : "o");
-		$jsmap[] = "\"$fdef->name\":$fdef->foldnum";
+		$classes[] = "fold$fdef->foldable" . ($closed ? "c" : "o");
+		$jsmap[] = "\"$fdef->name\":$fdef->foldable";
 		if ($closed && $this->any[$fdef->name])
 		    $jsloadmap[] = "\"$fdef->name\":true";
 		if ($fdef->view == Column::VIEW_COLUMN)
@@ -799,7 +799,7 @@ class PaperList extends BaseList {
 	// authorship requires special handling
 	if ($this->any->openau || $this->any->anonau) {
 	    $classes[] = "fold1" . ($this->is_folded("au") ? "c" : "o");
-	    $jsmap[] = "\"au\":1,\"aufull\":16";
+	    $jsmap[] = "\"au\":1,\"aufull\":4";
 	    $jsloadmap[] = "\"aufull\":true";
 	}
 	if ($this->any->anonau) {
@@ -814,8 +814,8 @@ class PaperList extends BaseList {
 	    $classes[] = "fold6" . ($this->is_folded("rownum") ? "c" : "o");
 	}
 	if ($this->contact->privChair) {
-	    $jsmap[] = "\"force\":20";
-	    $classes[] = "fold20" . (defval($_REQUEST, "forceShow") ? "o" : "c");
+	    $jsmap[] = "\"force\":5";
+	    $classes[] = "fold5" . (defval($_REQUEST, "forceShow") ? "o" : "c");
 	}
 	if (count($jsmap))
 	    $Conf->footerScript("foldmap.pl={" . join(",", $jsmap) . "};");
@@ -828,7 +828,7 @@ class PaperList extends BaseList {
 	return $classes;
     }
 
-    private function _make_title_header_extra($rstate) {
+    private function _make_title_header_extra($rstate, $fieldDef) {
 	global $Conf;
 	$titleextra = "";
 	if (isset($rstate->foldinfo["wholerow"]))
@@ -845,10 +845,12 @@ class PaperList extends BaseList {
 	    else
 		$titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show non-anonymous authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
 	}
-	if ($this->any->tags && $this->showHeader == self::HEADER_ALL) {
-	    $titleextra .= "<span class='sep'></span>";
-	    $titleextra .= "<a class='fn4' href='javascript:void plinfo(\"tags\",0)'>Show tags</a><a class='fx4' href='javascript:void plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
-	}
+	if ($this->any->tags && $this->showHeader == self::HEADER_ALL)
+            foreach ($fieldDef as $fdef)
+                if ($fdef->name == "tags" && $fdef->foldable) {
+                    $titleextra .= "<span class='sep'></span>";
+                    $titleextra .= "<a class='fn$fdef->foldable' href='javascript:void plinfo(\"tags\",0)'>Show tags</a><a class='fx$fdef->foldable' href='javascript:void plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
+                }
 	return $titleextra ? "<span class='pl_titleextra'>$titleextra</span>" : "";
     }
 
@@ -990,12 +992,18 @@ class PaperList extends BaseList {
 	// get field array
 	$fieldDef = array();
 	$ncol = 0;
+        // folds: au:1, anonau:2, fullrow:3, aufull:4, force:5, rownum:6, [fields]
+        $next_fold = 7;
 	foreach ($field_list as $f)
 	    if ($this->viewmap[$f->name] !== false
                 && $f->prepare($this, $queryOptions,
                                $this->is_folded($f) ? 0 : 1)) {
                 if ($f->view != Column::VIEW_NONE)
                     $fieldDef[] = $f;
+                if ($f->view != Column::VIEW_NONE && $f->foldable) {
+                    $f->foldable = $next_fold;
+                    ++$next_fold;
+                }
 		if ($f->view == Column::VIEW_COLUMN)
 		    $ncol++;
 	    }
@@ -1061,7 +1069,7 @@ class PaperList extends BaseList {
 	if ($this->showHeader) {
 	    $colhead .= " <thead>\n  <tr class=\"pl_headrow\">\n";
 	    $ord = 0;
-	    $titleextra = $this->_make_title_header_extra($rstate);
+	    $titleextra = $this->_make_title_header_extra($rstate, $fieldDef);
 
 	    if ($this->sortable && $url) {
 		$sortUrl = htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
@@ -1077,8 +1085,8 @@ class PaperList extends BaseList {
 		    continue;
 		}
 		$colhead .= "    <th class=\"pl_$fdef->cssname";
-		if ($fdef->foldnum)
-		    $colhead .= " fx" . $fdef->foldnum;
+		if ($fdef->foldable)
+		    $colhead .= " fx" . $fdef->foldable;
 		$colhead .= "\">";
 		$ftext = $fdef->header($this, null, $ord++);
 
