@@ -584,7 +584,7 @@ class PaperList extends BaseList {
 	    break;
 	  case "conflict":
 	    $this->paperLink = "assign";
-            $fields = "selconf id title authors abstract authorsmatch collabmatch foldall";
+            $fields = "selconf id title authors abstract tags authorsmatch collabmatch foldall";
 	    break;
 	  case "editReviewPreference":
 	    $this->paperLink = "paper";
