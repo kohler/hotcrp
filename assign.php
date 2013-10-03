@@ -554,7 +554,7 @@ if ($Me->canAdminister($prow)) {
 	    echo "</td><td class='pctbass'>";
 	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'><img class='ass$cid' id='assimg$p->contactId' src='", hoturl_image("images/_.gif"), $title, "' alt='Assignment' /><img class='next' src='", hoturl_image("images/_.gif"), "' alt='&gt;' /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
-	    echo tagg_select("pcs$p->contactId",
+	    echo Ht::select("pcs$p->contactId",
 			     array(0 => "None", REVIEW_PRIMARY => "Primary",
 				   REVIEW_SECONDARY => "Secondary",
 				   REVIEW_PC => "Optional",
@@ -628,14 +628,14 @@ if ($Conf->setting("extrev_chairreq") && $Me->allowAdminister($prow)) {
 }
 
 
-echo tagg_cbox("pap", true), $loginFormEnd, "</td></tr></table>\n";
+echo Ht::cbox("pap", true), $loginFormEnd, "</td></tr></table>\n";
 
 // add external reviewers
 echo "<div class='pboxc'><form ", $loginFormBegin, "<table class='pbox'><tr>
   <td class='pboxl'></td>
   <td class='pboxr'>";
 
-echo tagg_cbox("rev", false), "\t<tr><td></td><td class='revhead'>",
+echo Ht::cbox("rev", false), "\t<tr><td></td><td class='revhead'>",
     "<h3>Request an external review</h3>\n",
     "<div class='hint'>External reviewers get access to their assigned papers, including ";
 if ($Conf->setting("extrev_view") >= 2)
@@ -664,9 +664,9 @@ echo "<div class='f-i'>
 
 
 if ($Me->canAdminister($prow))
-    echo "<div class='f-i'>\n  ", tagg_checkbox("override"), "&nbsp;", tagg_label("Override deadlines and any previous refusal"), "\n</div>\n";
+    echo "<div class='f-i'>\n  ", Ht::checkbox("override"), "&nbsp;", Ht::label("Override deadlines and any previous refusal"), "\n</div>\n";
 
-echo "</td><td></td></tr>\n", tagg_cbox("rev", true),
+echo "</td><td></td></tr>\n", Ht::cbox("rev", true),
     "</td></tr></table>\n", $loginFormEnd, "</div>\n";
 
 $Conf->footer();

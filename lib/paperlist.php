@@ -355,7 +355,7 @@ class PaperList extends BaseList {
 	}
         if ($this->contact->privChair)
             $sel_opt["acmcms"] = "ACM CMS report";
-	$t .= tagg_select("getaction", $sel_opt, defval($_REQUEST, "getaction"),
+	$t .= Ht::select("getaction", $sel_opt, defval($_REQUEST, "getaction"),
 			  array("id" => "plact${nlll}_d", "tabindex" => 6))
 	    . "&nbsp; <input type='submit' class='b' name='getgo' value='Go' tabindex='6' onclick='return (papersel_check_safe=true)' /></td>";
 	$nlll++;
@@ -395,7 +395,7 @@ class PaperList extends BaseList {
 		$tagextra["onchange"] = "plactions_dofold()";
 		$want_plactions_dofold = true;
 	    }
-	    $t .= tagg_select("tagtype", $tagopt, defval($_REQUEST, "tagtype"),
+	    $t .= Ht::select("tagtype", $tagopt, defval($_REQUEST, "tagtype"),
 			      $tagextra) . " &nbsp;";
 	    if ($this->contact->privChair) {
 		$t .= "<span class='fx99'><a href='#' onclick=\"return fold('placttags')\">"
@@ -405,10 +405,10 @@ class PaperList extends BaseList {
 	    $t .= "tag<span class='fn99'>(s)</span> &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value=\"" . htmlspecialchars(defval($_REQUEST, "tag", "")) . "\"' size='15' onfocus='autosub(\"tagact\",this)' /> &nbsp;<input type='submit' class='b' name='tagact' value='Go' />";
 	    if ($this->contact->privChair) {
 		$t .= "<div class='fx'><div style='margin:2px 0'>"
-		    . tagg_checkbox("tagcr_gapless", 1, defval($_REQUEST, "tagcr_gapless"), array("style" => "margin-left:0"))
-		    . "&nbsp;" . tagg_label("Gapless order") . "</div>"
+		    . Ht::checkbox("tagcr_gapless", 1, defval($_REQUEST, "tagcr_gapless"), array("style" => "margin-left:0"))
+		    . "&nbsp;" . Ht::label("Gapless order") . "</div>"
 		    . "<div style='margin:2px 0'>Using: &nbsp;"
-		    . tagg_select("tagcr_method", PaperRank::methods(), defval($_REQUEST, "tagcr_method"))
+		    . Ht::select("tagcr_method", PaperRank::methods(), defval($_REQUEST, "tagcr_method"))
 		    . "</div>"
 		    . "<div style='margin:2px 0'>Source tag: &nbsp;~<input class='textlite' type='text' name='tagcr_source' value=\"" . htmlspecialchars(defval($_REQUEST, "tagcr_source", "")) . "\" size='15' /></div>"
 		    . "</div>";
@@ -424,7 +424,7 @@ class PaperList extends BaseList {
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "assign")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Assign</a></td><td id='foldass' class='lld$nlll foldo'><b>:</b> &nbsp;";
 	    $want_plactions_dofold = true;
-	    $t .= tagg_select("marktype",
+	    $t .= Ht::select("marktype",
 			      array("xauto" => "Automatic assignments",
 				    "zzz1" => null,
 				    "conflict" => "Mark conflict",
@@ -445,7 +445,7 @@ class PaperList extends BaseList {
 	    $sel_opt = array();
 	    foreach ($pc as $id => $row)
 		$sel_opt[htmlspecialchars($row->email)] = Text::name_html($row);
-	    $t .= tagg_select("markpc", $sel_opt, defval($_REQUEST, "markpc"),
+	    $t .= Ht::select("markpc", $sel_opt, defval($_REQUEST, "markpc"),
 			      array("id" => "markpc"))
 		. "</span> &nbsp;<input type='submit' class='b' name='setassign' value='Go' />";
 	    $t .= "</td>";
@@ -465,7 +465,7 @@ class PaperList extends BaseList {
 		$whichlll = $nlll;
 	    $t .= $barsep
 		. "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "mail")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Mail</a></td><td class='lld$nlll'><b>:</b> &nbsp;"
-		. tagg_select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), defval($_REQUEST, "recipients"), array("id" => "plact${nlll}_d"))
+		. Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), defval($_REQUEST, "recipients"), array("id" => "plact${nlll}_d"))
 		. " &nbsp;<input type='submit' class='b' name='sendmail' value='Go' /></td>";
 	    $nlll++;
 	}
@@ -606,14 +606,14 @@ class PaperList extends BaseList {
 	    . "<div class='inform'>";
 	$s = $this->search;
 	if ($s->q)
-	    $t .= tagg_hidden("q", $s->q);
+	    $t .= Ht::hidden("q", $s->q);
 	if ($s->qt)
-	    $t .= tagg_hidden("qt", $s->qt);
+	    $t .= Ht::hidden("qt", $s->qt);
         $aufull = !$this->is_folded("aufull");
-	$t .= tagg_hidden("t", $s->limitName)
-	    . tagg_hidden("pap", join(" ", $pap))
-	    . tagg_hidden("get", "", array("id" => "plloadform_get"))
-	    . tagg_hidden("aufull", $aufull ? "1" : "", array("id" => "plloadform_aufull"))
+	$t .= Ht::hidden("t", $s->limitName)
+	    . Ht::hidden("pap", join(" ", $pap))
+	    . Ht::hidden("get", "", array("id" => "plloadform_get"))
+	    . Ht::hidden("aufull", $aufull ? "1" : "", array("id" => "plloadform_aufull"))
 	    . "</div></form></div>";
 	$Conf->footerHtml($t);
     }

@@ -498,7 +498,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         if ($row->reviewerConflictType >= CONFLICT_AUTHOR)
             return "<span class='author'>Author</span>";
         $rt = ($row->reviewerConflictType > 0 ? -1 : min(max($row->reviewerReviewType, 0), REVIEW_PRIMARY));
-        return tagg_select("assrev$row->paperId",
+        return Ht::select("assrev$row->paperId",
                            array(0 => "None",
                                  REVIEW_PRIMARY => "Primary",
                                  REVIEW_SECONDARY => "Secondary",
@@ -581,9 +581,9 @@ class PreferencePaperColumn extends PaperColumn {
             if ($pl->contact->privChair && $pl->reviewer)
                 $arg .= "&amp;reviewer=" . $pl->reviewer;
             $Conf->footerHtml(
-                 tagg_form(hoturl_post("paper", $arg),
+                 Ht::form(hoturl_post("paper", $arg),
                            array("id" => "prefform")) . "<div>"
-                 . tagg_hidden("p") . tagg_hidden("revpref", "")
+                 . Ht::hidden("p") . Ht::hidden("revpref", "")
                  . "</div></form>", "prefform");
             $Conf->footerScript("add_revpref_ajax()");
         }
@@ -841,11 +841,11 @@ class EditTagPaperColumn extends TagPaperColumn {
         if (($p = parent::prepare($pl, $queryOptions, $visible))
             && $visible > 0) {
             $Conf->footerHtml(
-                 tagg_form(hoturl_post("paper", "settags=1&amp;forceShow=1"),
+                 Ht::form(hoturl_post("paper", "settags=1&amp;forceShow=1"),
                            array("id" => "edittagajaxform",
                                  "style" => "display:none")) . "<div>"
-                 . tagg_hidden("p") . tagg_hidden("addtags")
-                 . tagg_hidden("deltags") . "</div></form>",
+                 . Ht::hidden("p") . Ht::hidden("addtags")
+                 . Ht::hidden("deltags") . "</div></form>",
                  "edittagajaxform");
             if (("edit" . $pl->sorter->type == $this->name
                  || $pl->sorter->type == $this->name)

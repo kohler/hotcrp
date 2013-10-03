@@ -242,7 +242,7 @@ echo "<h2 style='margin-top:1em'>Upload assignments</h2>
 
 <form action='", hoturl_post("bulkassign", "upload=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 Assign &nbsp;",
-    tagg_select("t", array(REVIEW_PRIMARY => "primary reviews",
+    Ht::select("t", array(REVIEW_PRIMARY => "primary reviews",
 			   REVIEW_SECONDARY => "secondary reviews",
 			   REVIEW_PC => "optional PC reviews",
 			   REVIEW_EXTERNAL => "external reviews",
@@ -265,8 +265,8 @@ else {
     $t = $t["body"];
 }
 echo "<div id='foldemail' class='foldo'><table class='fx'>
-<tr><td>", tagg_checkbox("email", 1, true), "&nbsp;</td>
-<td>", tagg_label("Send email to external reviewers:"), "</td></tr>
+<tr><td>", Ht::checkbox("email", 1, true), "&nbsp;</td>
+<td>", Ht::label("Send email to external reviewers:"), "</td></tr>
 <tr><td></td><td><textarea class='tt' name='email_requestreview' cols='80' rows='20'>", htmlspecialchars($t), "</textarea></td></tr></table>
 <div class='fn";
 if (isset($Error["rev_roundtag"]))

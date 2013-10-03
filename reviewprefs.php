@@ -233,7 +233,7 @@ if ($Me->privChair) {
 	    $revopt[$row->contactId] .= " (no preferences)";
     }
 
-    echo tagg_select("reviewer", $revopt, $reviewer, array("onchange" => "\$\$(\"redisplayform\").submit()")),
+    echo Ht::select("reviewer", $revopt, $reviewer, array("onchange" => "\$\$(\"redisplayform\").submit()")),
 	"<div class='g'></div></td></tr>\n";
 }
 
@@ -248,47 +248,47 @@ $sep = "";
 $loadforms = "";
 if (!$Conf->subBlindAlways()) {
     echo $sep,
-	tagg_checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
+	Ht::checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
 		      array("disabled" => (!$Conf->subBlindNever() && !$pl->any->openau),
 			    "onchange" => "plinfo('au',this)",
 			    "id" => "showau")),
-	"&nbsp;", tagg_label("Authors");
+	"&nbsp;", Ht::label("Authors");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='auloadformresult'></div>";
 }
 if (!$Conf->subBlindNever() && $Me->privChair) {
     echo (!$Conf->subBlindAlways() ? "<span class='fx10'>" : ""),
         $sep,
-	tagg_checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
+	Ht::checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
 		      array("disabled" => !$pl->any->anonau,
 			    "onchange" => (!$Conf->subBlindAlways() ? "" : "plinfo('au',this);") . "plinfo('anonau',this)",
 			    "id" => (!$Conf->subBlindAlways() ? "showanonau" : "showau"))),
-	"&nbsp;", tagg_label(!$Conf->subBlindAlways() ? "Anonymous authors" : "Authors"),
+	"&nbsp;", Ht::label(!$Conf->subBlindAlways() ? "Anonymous authors" : "Authors"),
         (!$Conf->subBlindAlways() ? "</span>" : "");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='anonauloadformresult'></div>";
 }
 if (!$Conf->subBlindAlways() || $Me->privChair) {
     echo "<span class='fx10'>", $sep,
-	tagg_checkbox("showaufull", 1, strpos($pldisplay, " aufull ") !== false,
+	Ht::checkbox("showaufull", 1, strpos($pldisplay, " aufull ") !== false,
 		      array("onchange" => "plinfo('aufull',this)")),
-	"&nbsp;", tagg_label("Full author info"), "</span>";
+	"&nbsp;", Ht::label("Full author info"), "</span>";
     $Conf->footerScript("plinfo.extra=function(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked);fold('redisplayform',!x,10)};");
     $loadforms .= "<div id='aufullloadformresult'></div>";
 }
 if ($pl->any->abstract) {
     echo $sep,
-	tagg_checkbox("showabstract", 1, strpos($pldisplay, " abstract ") !== false,
+	Ht::checkbox("showabstract", 1, strpos($pldisplay, " abstract ") !== false,
 		      array("onchange" => "plinfo('abstract',this)")),
-	"&nbsp;", tagg_label("Abstracts");
+	"&nbsp;", Ht::label("Abstracts");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='abstractloadformresult'></div>";
 }
 if ($pl->any->topics) {
     echo $sep,
-	tagg_checkbox("showtopics", 1, strpos($pldisplay, " topics ") !== false,
+	Ht::checkbox("showtopics", 1, strpos($pldisplay, " topics ") !== false,
 		      array("onchange" => "plinfo('topics',this)")),
-	"&nbsp;", tagg_label("Topics");
+	"&nbsp;", Ht::label("Topics");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='topicsloadformresult'></div>";
 }

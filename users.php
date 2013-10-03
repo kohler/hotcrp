@@ -164,7 +164,7 @@ if (count($tOpt) > 1) {
     echo "<form method='get' action='", hoturl("users"), "' accept-charset='UTF-8'><div class='inform'>";
     if (isset($_REQUEST["sort"]))
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
-    echo tagg_select("t", $tOpt, $_REQUEST["t"], array("id" => "contactsform1_d")),
+    echo Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "contactsform1_d")),
 	" &nbsp;<input class='b' type='submit' value='Go' /></div></form>";
 
     echo "</div><div class='tld2'>";
@@ -178,21 +178,21 @@ if (count($tOpt) > 1) {
     echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
     if ($pl->haveAffrow !== null) {
-	echo tagg_checkbox("showaff", 1, $pl->haveAffrow,
+	echo Ht::checkbox("showaff", 1, $pl->haveAffrow,
 			   array("onchange" => "fold('ppl',!this.checked,2)")),
-	    "&nbsp;", tagg_label("Affiliations"),
+	    "&nbsp;", Ht::label("Affiliations"),
 	    foldsessionpixel("ppl2", "ppldisplay", "aff"), "<br />\n";
     }
     if ($pl->haveTags !== null) {
-	echo tagg_checkbox("showtags", 1, $pl->haveTags,
+	echo Ht::checkbox("showtags", 1, $pl->haveTags,
 			   array("onchange" => "fold('ppl',!this.checked,3)")),
-	    "&nbsp;", tagg_label("Tags"),
+	    "&nbsp;", Ht::label("Tags"),
 	    foldsessionpixel("ppl3", "ppldisplay", "tags"), "<br />\n";
     }
     if ($pl->haveTopics !== null) {
-	echo tagg_checkbox("showtop", 1, $pl->haveTopics,
+	echo Ht::checkbox("showtop", 1, $pl->haveTopics,
 			   array("onchange" => "fold('ppl',!this.checked,1)")),
-	    "&nbsp;", tagg_label("Topic interests"),
+	    "&nbsp;", Ht::label("Topic interests"),
 	    foldsessionpixel("ppl1", "ppldisplay", "topics"), "<br />\n";
     }
     echo "</td>";
@@ -204,8 +204,8 @@ if (count($tOpt) > 1) {
 	foreach ($rf->forder as $f)
 	    if ($f->view_score > $revViewScore && $f->has_options) {
 		$i = array_search($f->id, $reviewScoreNames);
-		echo tagg_checkbox("score[]", $i, $theScores & (1 << $i)),
-		    "&nbsp;", tagg_label($f->name_html), "<br />";
+		echo Ht::checkbox("score[]", $i, $theScores & (1 << $i)),
+		    "&nbsp;", Ht::label($f->name_html), "<br />";
 	    }
 	echo "</td>";
     }
@@ -216,7 +216,7 @@ if (count($tOpt) > 1) {
 	    if (isset($scoreSorts[$k]))
 		$ss[$k] = $scoreSorts[$k];
 	echo "<tr><td colspan='3'><div class='g'></div><b>Sort scores by:</b> &nbsp;",
-	    tagg_select("scoresort", $ss, defval($_SESSION, "pplscoresort", "A")),
+	    Ht::select("scoresort", $ss, defval($_SESSION, "pplscoresort", "A")),
 	    "</td></tr>";
     }
     echo "</table></div></form>";

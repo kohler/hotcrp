@@ -19,7 +19,7 @@ class CommentView {
         // div.pbox > table.pbox > tr > td.pboxr > table.cmtc > tr > td.cmtcc
 	echo "<div class='pboxc'><table class='pbox'><tr>
   <td class='pboxl'></td>
-  <td class='pboxr'>", tagg_cbox("cmt", false, $classextra),
+  <td class='pboxr'>", Ht::cbox("cmt", false, $classextra),
 	    "\t<tr><td></td><td class='cmthead'>";
 	$this->mode = 1;
 	$this->ncomment_in_table = 0;
@@ -32,7 +32,7 @@ class CommentView {
 
     function table_end() {
 	if ($this->mode) {
-	    echo "</td><td></td></tr>\n", tagg_cbox("cmt", true),
+	    echo "</td><td></td></tr>\n", Ht::cbox("cmt", true),
 		"</td></tr>\n</table></div>\n\n";
 	    $this->mode = 0;
 	}
@@ -187,40 +187,40 @@ class CommentView {
   <table><tr><td>Show to: &nbsp; </td>
     <td><table id='foldcmtvis' class='fold2o'>";
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_REVIEWER | COMMENTTYPE_BLIND;
-	echo "<tr><td>", tagg_radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : $ctype >= COMMENTTYPE_AUTHOR), array("id" => "cmtvis_a", "onchange" => "docmtvis(this)")),
-	    "&nbsp;</td><td>", tagg_label("Authors and reviewers" . ($Conf->blindReview() == BLIND_ALWAYS ? " (anonymous to authors)" : ""));
+	echo "<tr><td>", Ht::radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : $ctype >= COMMENTTYPE_AUTHOR), array("id" => "cmtvis_a", "onchange" => "docmtvis(this)")),
+	    "&nbsp;</td><td>", Ht::label("Authors and reviewers" . ($Conf->blindReview() == BLIND_ALWAYS ? " (anonymous to authors)" : ""));
 	// blind?
 	if ($Conf->blindReview() == BLIND_OPTIONAL)
 	    echo " &nbsp; (",
-		tagg_checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, "blind") : $ctype & COMMENTTYPE_BLIND)),
-		"&nbsp;", tagg_label("Anonymous to authors"), ")";
+		Ht::checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, "blind") : $ctype & COMMENTTYPE_BLIND)),
+		"&nbsp;", Ht::label("Anonymous to authors"), ")";
 	if ($Conf->timeAuthorViewReviews())
 	    echo "<br /><span class='fx2 hint'>Authors will be notified immediately.</span>";
 	else
 	    echo "<br /><span class='fx2 hint'>Authors cannot view comments at the moment.</span>";
 	echo "</td></tr>\n";
-	echo "<tr><td>", tagg_radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_REVIEWER), array("onchange" => "docmtvis(this)")),
-	    "&nbsp;</td><td>", tagg_label("PC and external reviewers"), "</td></tr>\n";
-	echo "<tr><td>", tagg_radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_PCONLY), array("onchange" => "docmtvis(this)")),
-	    "&nbsp;</td><td>", tagg_label("PC reviewers only"), "</td></tr>\n";
-	echo "<tr><td>", tagg_radio_h("visibility", "admin", ($useRequest ? defval($_REQUEST, "visibility") == "admin" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY), array("onchange" => "docmtvis(this)")),
-	    "&nbsp;</td><td>", tagg_label("PC chairs only"), "</td></tr>\n";
+	echo "<tr><td>", Ht::radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_REVIEWER), array("onchange" => "docmtvis(this)")),
+	    "&nbsp;</td><td>", Ht::label("PC and external reviewers"), "</td></tr>\n";
+	echo "<tr><td>", Ht::radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_PCONLY), array("onchange" => "docmtvis(this)")),
+	    "&nbsp;</td><td>", Ht::label("PC reviewers only"), "</td></tr>\n";
+	echo "<tr><td>", Ht::radio_h("visibility", "admin", ($useRequest ? defval($_REQUEST, "visibility") == "admin" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY), array("onchange" => "docmtvis(this)")),
+	    "&nbsp;</td><td>", Ht::label("PC chairs only"), "</td></tr>\n";
 	echo "</table></td></tr></table>\n";
 	$Conf->footerScript("docmtvis(false)");
 
 	// actions
         $buttons = array();
-        $buttons[] = tagg_submit("submit", "Save", array("class" => "bb"));
+        $buttons[] = Ht::submit("submit", "Save", array("class" => "bb"));
         if ($crow) {
-            $buttons[] = tagg_submit("cancel", "Cancel");
+            $buttons[] = Ht::submit("cancel", "Cancel");
             $buttons[] = "";
-            $buttons[] = tagg_submit("delete", "Delete comment");
+            $buttons[] = Ht::submit("delete", "Delete comment");
         } else
             $buttons[] = "<button class='b' type='button' onclick='cancel_comment()'>Cancel</button>";
         $post = "";
 	if (!$Me->timeReview($prow, null))
-	    $post = tagg_checkbox("override") . "&nbsp;" . tagg_label("Override&nbsp;deadlines");
-        echo tagg_actions($buttons, null, $post);
+	    $post = Ht::checkbox("override") . "&nbsp;" . Ht::label("Override&nbsp;deadlines");
+        echo Ht::actions($buttons, null, $post);
 
 	echo "</div></div></form>\n\n";
     }
@@ -302,13 +302,13 @@ Make it short and to the point; the conference deadline has passed.";
 
 	// actions
         $buttons = array();
-        $buttons[] = tagg_submit("submitresponse", "Submit", array("class" => "bb"));
+        $buttons[] = Ht::submit("submitresponse", "Submit", array("class" => "bb"));
         if ($Me->allowAdminister($prow) || !$crow
             || ($crow->commentType & COMMENTTYPE_DRAFT))
-            $buttons[] = tagg_submit("savedraft", "Save as draft");
+            $buttons[] = Ht::submit("savedraft", "Save as draft");
         if ($crow) {
             $buttons[] = "";
-            $buttons[] = tagg_submit("delete", "Delete response");
+            $buttons[] = Ht::submit("delete", "Delete response");
         }
         if ($wordlimit > 0) {
             $buttons[] = "";
@@ -322,8 +322,8 @@ Make it short and to the point; the conference deadline has passed.";
         }
         $post = "";
         if (!$Conf->timeAuthorRespond())
-            $post = tagg_checkbox("override") . "&nbsp;" . tagg_label("Override&nbsp;deadlines");
-        echo tagg_actions($buttons, null, $post);
+            $post = Ht::checkbox("override") . "&nbsp;" . Ht::label("Override&nbsp;deadlines");
+        echo Ht::actions($buttons, null, $post);
 
         $this->table_end();
 	echo "</form>\n\n";

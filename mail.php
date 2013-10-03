@@ -498,22 +498,22 @@ foreach ($tmpl as $k => &$v) {
 }
 if (!isset($_REQUEST["template"]) || !isset($tmpl[$_REQUEST["template"]]))
     $_REQUEST["template"] = "genericmailtool";
-echo tagg_select("template", $tmpl, $_REQUEST["template"], array("onchange" => "highlightUpdate(\"loadtmpl\")")),
+echo Ht::select("template", $tmpl, $_REQUEST["template"], array("onchange" => "highlightUpdate(\"loadtmpl\")")),
     " &nbsp;<input id='loadtmpl' class='b' type='submit' name='loadtmpl' value='Load' /> &nbsp;
  <span class='hint'>Templates are mail texts tailored for common conference tasks.</span>
 </div>
 
 <div class='mail' style='float:left;margin:4px 1em 12px 0'><table>
  <tr><td class='mhnp'>To:</td><td class='mhdd'>",
-    tagg_select("recipients", $recip, $_REQUEST["recipients"], array("id" => "recipients", "onchange" => "setmailpsel(this)")),
+    Ht::select("recipients", $recip, $_REQUEST["recipients"], array("id" => "recipients", "onchange" => "setmailpsel(this)")),
     "<div class='g'></div>\n";
 
 // paper selection
 echo "<div id='foldpsel' class='fold8c fold9o'><table class='fx9'><tr><td>",
-    tagg_checkbox("plimit", 1, isset($_REQUEST["plimit"]),
+    Ht::checkbox("plimit", 1, isset($_REQUEST["plimit"]),
 		  array("id" => "plimit",
 			"onchange" => "fold('psel', !this.checked, 8)")),
-    "&nbsp;</td><td>", tagg_label("Choose individual papers", "plimit");
+    "&nbsp;</td><td>", Ht::label("Choose individual papers", "plimit");
 $Conf->footerScript("fold(\"psel\",!\$\$(\"plimit\").checked,8);"
 		    . "setmailpsel(\$\$(\"recipients\"))");
 echo "<span class='fx8'>:</span><br />
@@ -523,7 +523,7 @@ $q = ($q == "" ? "(All)" : $q);
 echo "Search&nbsp; <input id='q' class='textlite",
     ($q == "(All)" ? " temptext" : " temptextoff"),
     "' type='text' size='36' name='q' value=\"", htmlspecialchars($q), "\" title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
-    tagg_select("t", $tOpt, $_REQUEST["t"], array("id" => "t")),
+    Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "t")),
     "</div>
    </td></tr></table>
 <div class='g fx9'></div></div></td>

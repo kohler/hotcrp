@@ -1165,8 +1165,8 @@ function displayOptionCheckbox($type, $column, $title, $opt = array()) {
 	$loadresult = "<div></div>";
     $opt["class"] = "cbx";
 
-    $text = tagg_checkbox("show$type", 1, $checked, $opt)
-	. "&nbsp;" . tagg_label($title) . $loadresult;
+    $text = Ht::checkbox("show$type", 1, $checked, $opt)
+	. "&nbsp;" . Ht::label($title) . $loadresult;
     $displayOptions[] = (object) array("type" => $type, "text" => $text,
 		"checked" => $checked, "column" => $column,
 		"indent" => defval($opt, "indent"));
@@ -1265,7 +1265,7 @@ if ($pl) {
 	    if ($Me->privChair)
 		$onchange .= ";plinfo.extra()";
 	    displayOptionText("<div style='padding-top:1ex'>Sort by: &nbsp;"
-		. tagg_select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
+		. Ht::select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
 		. "<a class='help' href='" . hoturl("help", "t=scoresort") . "' target='_blank' title='Learn more'>?</a></div>", 3);
 	}
 	$anyScores = count($displayOptions) != $n;
@@ -1325,7 +1325,7 @@ if ($Me->isPC) {
 }
 if (!isset($qtOpt[defval($_REQUEST, "qt", "")]))
     $_REQUEST["qt"] = "n";
-echo tagg_select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
+echo Ht::select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
     "</td>
 </tr>
 <tr><td><div class='g'></div></td></tr>
@@ -1452,10 +1452,10 @@ if ($pl && $pl->count > 0) {
     // Conflict display
     if ($Me->privChair)
 	echo "<td class='padlb'>",
-	    tagg_checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
+	    Ht::checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
 			  array("id" => "showforce", "class" => "cbx",
 				"onchange" => "fold('pl',!this.checked,'force')")),
-	    "&nbsp;", tagg_label("Override conflicts", "showforce"), "</td>";
+	    "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
     // Formulas link
     if (count($paperListFormulas) || ($Me->isPC && $Conf->sversion >= 32))

@@ -636,17 +636,17 @@ echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td><
     "<tr><td class='caption'>Email notification</td><td class='entry'>";
 if ((!$newProfile && $Acct->isPC) || $Me->privChair) {
     echo "<table><tr><td>Send mail on: &nbsp;</td>",
-	"<td>", tagg_checkbox_h("watchcomment", 1, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
-	tagg_label("Reviews and comments for authored or reviewed papers"), "</td></tr>",
-	"<tr><td></td><td>", tagg_checkbox_h("watchcommentall", 1, $Acct->defaultWatch & WATCH_ALLCOMMENTS), "&nbsp;",
-	tagg_label("Reviews and comments for <i>any</i> paper"), "</td></tr>";
+	"<td>", Ht::checkbox_h("watchcomment", 1, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
+	Ht::label("Reviews and comments for authored or reviewed papers"), "</td></tr>",
+	"<tr><td></td><td>", Ht::checkbox_h("watchcommentall", 1, $Acct->defaultWatch & WATCH_ALLCOMMENTS), "&nbsp;",
+	Ht::label("Reviews and comments for <i>any</i> paper"), "</td></tr>";
     if ($Me->privChair)
-	echo "<tr><td></td><td>", tagg_checkbox_h("watchfinalall", 1, $Acct->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL)), "&nbsp;",
-	    tagg_label("Updates to final versions"), "</td></tr>";
+	echo "<tr><td></td><td>", Ht::checkbox_h("watchfinalall", 1, $Acct->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL)), "&nbsp;",
+	    Ht::label("Updates to final versions"), "</td></tr>";
     echo "</table>";
 } else
-    echo tagg_checkbox_h("watchcomment", WATCH_COMMENT, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
-	tagg_label("Send mail on new comments for authored or reviewed papers");
+    echo Ht::checkbox_h("watchcomment", WATCH_COMMENT, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
+	Ht::label("Send mail on new comments for authored or reviewed papers");
 echo "</td></tr>\n\n";
 
 
@@ -657,14 +657,14 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
 
     foreach (array("chair" => "PC chair", "pc" => "PC member",
 		   "no" => "Not on the PC") as $k => $v) {
-	echo tagg_radio_h("pctype", $k, $k == $_REQUEST["pctype"],
+	echo Ht::radio_h("pctype", $k, $k == $_REQUEST["pctype"],
 			  array("id" => "pctype_$k", "onchange" => "hiliter(this);fold('account',\$\$('pctype_no').checked,1)")),
-	    "&nbsp;", tagg_label($v), "<br />\n";
+	    "&nbsp;", Ht::label($v), "<br />\n";
     }
 
     echo "</td><td><span class='sep'></span></td><td class='nowrap'>";
-    echo tagg_checkbox_h("ass", 1, defval($_REQUEST, "ass")),
-	"&nbsp;</td><td>", tagg_label("System administrator"), "<br />",
+    echo Ht::checkbox_h("ass", 1, defval($_REQUEST, "ass")),
+	"&nbsp;</td><td>", Ht::label("System administrator"), "<br />",
 	"<div class='hint'>System administrators have full control over all site operations.  Administrators need not be members of the PC.  There’s always at least one system administrator.</div></td></tr></table>\n";
     echo "  </td>\n</tr>\n\n";
 }
@@ -701,7 +701,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 		$interest = isset($row[2]) ? $row[2] : 1;
 	    for ($j = 0; $j < 3; $j++) {
 		echo "<td class='ti_interest'>",
-		    tagg_radio_h("ti$row[0]", $j, $interest == $j), "</td>";
+		    Ht::radio_h("ti$row[0]", $j, $interest == $j), "</td>";
 	    }
 	    echo "</td></tr>\n";
 	}

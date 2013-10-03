@@ -576,7 +576,7 @@ their reviews.  The interface appears above each visible review:
 
 <div class='rev_rating'>
   How helpful is this review? &nbsp;<form><div class='inform'>"
-		  . tagg_select("rating", $ratingTypes, "n")
+		  . Ht::select("rating", $ratingTypes, "n")
 		  . "</div></form>
 </div>
 

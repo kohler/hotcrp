@@ -205,7 +205,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $fp_opt["-1"] = "Off form";
     for ($i = 0; $i < $numRows; ++$i)
 	$fp_opt["$i"] = ordinal($i + 1);
-    $x .= tagg_select("order_$row->fieldName", $fp_opt, $ordinalOrder, array("onchange" => "hiliter(this)")) . " <span class='sep'></span>";
+    $x .= Ht::select("order_$row->fieldName", $fp_opt, $ordinalOrder, array("onchange" => "hiliter(this)")) . " <span class='sep'></span>";
 
     // author view
     if (count($scoreHelps) == 0)
@@ -222,7 +222,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     if (isset($_REQUEST["shortName_$row->fieldName"]) && !isset($_REQUEST["authorView_$row->fieldName"]))
 	$_REQUEST["authorView_$row->fieldName"] = 0;
     $x .= "Visibility &nbsp;"
-	. tagg_select("authorView_$row->fieldName",
+	. Ht::select("authorView_$row->fieldName",
 		      array(VIEWSCORE_AUTHOR => "Authors &amp; reviewers",
 			    VIEWSCORE_PC => "Reviewers only",
 			    VIEWSCORE_REVIEWERONLY => "Private",
@@ -285,7 +285,7 @@ function rf_show() {
 4. Accept</pre> Or use consecutive capital letters (lower letters are better).");
 
     echo "<table><tr><td><div class='hgrp'><b>Templates:</b>&nbsp; ",
-	tagg_select("sample",
+	Ht::select("sample",
 		    array("none" => "(none)",
 			  "hotnetsv" => "HotNets V workshop",
 			  "pldi2008" => "PLDI 2008",

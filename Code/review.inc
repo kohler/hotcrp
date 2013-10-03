@@ -1372,7 +1372,7 @@ $blind\n";
 		    $ratinglink .= "&amp;allr=1";
 		echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
 		    "How helpful is this review? &nbsp;",
-		    tagg_select("rating", $ratingTypes, ($rrow->myRating === null ? "n" : $rrow->myRating)),
+		    Ht::select("rating", $ratingTypes, ($rrow->myRating === null ? "n" : $rrow->myRating)),
 		    " <input class='b fx7' type='submit' value='Save' />",
 		    "</div></form>",
 		    "<span id='ratingform_${reviewOrdinal}result'></span>";
@@ -1391,7 +1391,7 @@ $blind\n";
   <tr><td></td><td class='revct'><div class='inrevct'>",
 	    $this->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow)),
 	    "</div></td>",
-	    "<td></td></tr>\n", tagg_cbox("rev", true),
+	    "<td></td></tr>\n", Ht::cbox("rev", true),
 	    "</td></tr>\n</table></div>\n\n";
     }
 
@@ -1422,7 +1422,7 @@ $blind\n";
   <td class='pboxl'></td>
   <td class='pboxr'>";
 
-	echo tagg_cbox("rev", false), "\t<tr><td></td><td class='revhead'>";
+	echo Ht::cbox("rev", false), "\t<tr><td></td><td class='revhead'>";
 
 	// Links
 	if ($rrow) {
@@ -1540,18 +1540,18 @@ $blind\n";
 	if ($Me->timeReview($prow, $rrow) || $admin) {
 	    $buttons = array();
 	    if (!$submitted) {
-		$buttons[] = tagg_submit("submit", "Submit review", array("class" => "bb"));
-		$buttons[] = tagg_submit("savedraft", "Save as draft");
+		$buttons[] = Ht::submit("submit", "Submit review", array("class" => "bb"));
+		$buttons[] = Ht::submit("savedraft", "Save as draft");
 	    } else
-		$buttons[] = tagg_submit("submit", "Save changes", array("class" => "bb"));
-	    echo tagg_actions($buttons, array("style" => "margin-top:0"));
+		$buttons[] = Ht::submit("submit", "Save changes", array("class" => "bb"));
+	    echo Ht::actions($buttons, array("style" => "margin-top:0"));
 	}
 
 	// blind?
 	if ($Conf->blindReview() == BLIND_OPTIONAL) {
 	    echo "<div class='revt'><span class='revfn'>",
-		tagg_checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))),
-		"&nbsp;", tagg_label("Anonymous review"),
+		Ht::checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))),
+		"&nbsp;", Ht::label("Anonymous review"),
 		"</span><div class='clear'></div></div>\n",
 		"<div class='revhint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won&rsquo;t know who wrote the review).</div>\n",
 		"<div class='g'></div>\n";
@@ -1564,14 +1564,14 @@ $blind\n";
 	if ($Me->timeReview($prow, $rrow) || $admin) {
 	    $buttons = array();
 	    if (!$submitted) {
-		$buttons[] = tagg_submit("submit", "Submit review", array("class" => "bb"));
-		$buttons[] = tagg_submit("savedraft", "Save as draft");
+		$buttons[] = Ht::submit("submit", "Submit review", array("class" => "bb"));
+		$buttons[] = Ht::submit("savedraft", "Save as draft");
 	    } else
-		$buttons[] = tagg_submit("submit", "Save changes", array("class" => "bb"));
+		$buttons[] = Ht::submit("submit", "Save changes", array("class" => "bb"));
 	    if ($rrow && $admin) {
                 $buttons[] = "";
 		if ($submitted)
-		    $buttons[] = array(tagg_submit("unsubmit", "Unsubmit review"), "(admin only)");
+		    $buttons[] = array(Ht::submit("unsubmit", "Unsubmit review"), "(admin only)");
 		$buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
 		$Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
@@ -1585,14 +1585,14 @@ $blind\n";
   </form></div>");
 	    }
 
-	    echo tagg_actions($buttons);
+	    echo Ht::actions($buttons);
 	    if ($admin)
-		echo tagg_checkbox("override"), "&nbsp;", tagg_label("Override deadlines");
+		echo Ht::checkbox("override"), "&nbsp;", Ht::label("Override deadlines");
 	    if ($rrow && $rrow->reviewSubmitted && !$admin)
 		echo "<div class='hint'>Only administrators can remove or unsubmit the review at this point.</div>";
 	}
 
-	echo "</td><td></td></tr>\n", tagg_cbox("rev", true),
+	echo "</td><td></td></tr>\n", Ht::cbox("rev", true),
 	    "</td></tr>\n</table></div></form>\n\n";
     }
 

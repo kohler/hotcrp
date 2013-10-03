@@ -445,12 +445,12 @@ class PaperTable {
 	    echo "<div id='foldisready' class='",
 		(($prow && $storageId > 1) || $noPapers ? "foldo" : "foldc"),
 		"'$s><table class='fx'><tr><td class='nowrap'>",
-		tagg_checkbox_h("submit", 1, $checked, array("id" => "paperisready")), "&nbsp;";
+		Ht::checkbox_h("submit", 1, $checked, array("id" => "paperisready")), "&nbsp;";
 	    if ($Conf->setting('sub_freeze'))
-		echo "</td><td>", tagg_label("<strong>This is the final submission.</strong>"),
+		echo "</td><td>", Ht::label("<strong>This is the final submission.</strong>"),
 		    "</td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
 	    else
-		echo tagg_label("The paper is ready for review.");
+		echo Ht::label("The paper is ready for review.");
 	    echo "</td></tr></table></div>\n";
 	    $Conf->footerScript("hotcrp_onload.push(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
 	} else if ($documentType == DTYPE_FINAL)
@@ -873,8 +873,8 @@ class PaperTable {
 	global $Conf, $Opt;
 	$blind = ($this->useRequest ? isset($_REQUEST['blind']) : (!$this->prow || $this->prow->blind));
 	assert(!!$this->editable);
-	echo $this->editable_papt("blind", tagg_checkbox_h("blind", 1, $blind)
-                                  . "&nbsp;" . tagg_label("Anonymous submission")),
+	echo $this->editable_papt("blind", Ht::checkbox_h("blind", 1, $blind)
+                                  . "&nbsp;" . Ht::label("Anonymous submission")),
 	    "<div class='paphint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won&rsquo;t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
 	    "<div class='papv'></div>\n\n";
     }
@@ -1008,7 +1008,7 @@ class PaperTable {
                 $myval = $optx->value;
 
 	    if ($o->type == PaperOption::T_CHECKBOX) {
-		echo $this->editable_papt($optid, tagg_checkbox_h($optid, 1, $myval) . "&nbsp;" . tagg_label(htmlspecialchars($o->optionName)));
+		echo $this->editable_papt($optid, Ht::checkbox_h($optid, 1, $myval) . "&nbsp;" . Ht::label(htmlspecialchars($o->optionName)));
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
 		echo "<div class='papv'></div>\n\n";
@@ -1017,14 +1017,14 @@ class PaperTable {
 		if ($o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
 		if ($o->type == PaperOption::T_SELECTOR)
-		    echo "<div class='papv'>", tagg_select("opt$o->optionId", explode("\n", $o->optionValues), $myval, array("onchange" => "hiliter(this)")), "</div>\n\n";
+		    echo "<div class='papv'>", Ht::select("opt$o->optionId", explode("\n", $o->optionValues), $myval, array("onchange" => "hiliter(this)")), "</div>\n\n";
 		else if ($o->type == PaperOption::T_RADIO) {
 		    echo "<div class='papv'>";
 		    $values = explode("\n", $o->optionValues);
 		    $myval = isset($values[$myval]) ? $myval : 0;
 		    foreach ($values as $val => $text) {
-			echo tagg_radio("opt$o->optionId", $val, $val == $myval, array("onchange" => "hiliter(this)"));
-			echo "&nbsp;", tagg_label(htmlspecialchars($text)), "<br />\n";
+			echo Ht::radio("opt$o->optionId", $val, $val == $myval, array("onchange" => "hiliter(this)"));
+			echo "&nbsp;", Ht::label(htmlspecialchars($text)), "<br />\n";
 		    }
 		    echo "</div>\n\n";
 		} else if ($o->type == PaperOption::T_NUMERIC)
@@ -1087,9 +1087,9 @@ class PaperTable {
                     if (!$this->admin)
                         $c .= "<strong>Conflict</strong>";
                     else
-                        $c .= tagg_select("pcc$id", $ctypes, CONFLICT_CHAIRMARK, $extra);
+                        $c .= Ht::select("pcc$id", $ctypes, CONFLICT_CHAIRMARK, $extra);
 		} else
-		    $c .= tagg_select("pcc$id", $ctypes, $ct->value, $extra);
+		    $c .= Ht::select("pcc$id", $ctypes, $ct->value, $extra);
 		$c .= "</td></tr>\n";
 		$pcconfs[] = $c;
 	    }
@@ -1103,9 +1103,9 @@ class PaperTable {
 		$checked = $ct->is_conflict();
 		$disabled = $checked && !$ct->is_author_mark() && !$this->admin;
 		$value = $checked ? $ct->value : CONFLICT_AUTHORMARK;
-		$cbox = tagg_checkbox_h("pcc$id", $value, $checked, array("disabled" => $disabled));
+		$cbox = Ht::checkbox_h("pcc$id", $value, $checked, array("disabled" => $disabled));
 		$aff = ($p->affiliation === "" ? "" : "<div class='pcconfaff'>" . htmlspecialchars($p->affiliation) . "</div>");
-		$label = tagg_label(Text::name_html($p) . $aff);
+		$label = Ht::label(Text::name_html($p) . $aff);
 		if ($aff !== "")
 		    $pcconfs[] = "<table><tr><td>$cbox&nbsp;</td><td>$label</td></table>\n";
 		else
@@ -1187,7 +1187,7 @@ class PaperTable {
 	    foreach ($pc as $row)
 		$opt[htmlspecialchars($row->email)] = Text::name_html($row);
 
-	    echo tagg_select($type, $opt,
+	    echo Ht::select($type, $opt,
                              ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
                              array("onchange" => "dosubmitstripselector('${type}')",
                                    "id" => "fold${type}_d")),
@@ -1380,11 +1380,11 @@ class PaperTable {
 	    $watchValue = 0;
 
 	echo $this->papt("watch",
-			 tagg_checkbox("watch", $this->watchCheckbox,
+			 Ht::checkbox("watch", $this->watchCheckbox,
 				       $watchValue & $this->watchCheckbox,
 				       array("onchange" => "Miniajax.submit('watchform')",
 					     "style" => "padding-left:0;margin-left:0"))
-			 . "&nbsp;" . tagg_label("Email notification"),
+			 . "&nbsp;" . Ht::label("Email notification"),
 			 array("type" => "ps")),
 	    "<div class='pshint'>Select to receive email on updates to reviews and comments. <span id='watchformresult'></span>",
 	    "<input class='b fx7' type='submit' value='Save' />",
@@ -1525,8 +1525,8 @@ class PaperTable {
                 $admins = "Only administrators can undo this step.";
             $override = "";
             if (!$Me->canWithdrawPaper($prow))
-                $override = "<div>" . tagg_checkbox("override") . "&nbsp;"
-                    . tagg_label("Override deadlines") . "</div>";
+                $override = "<div>" . Ht::checkbox("override") . "&nbsp;"
+                    . Ht::label("Override deadlines") . "</div>";
             $Conf->footerHtml("<div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this paper from consideration and/or
   publication?  $admins</p>
@@ -1575,21 +1575,21 @@ class PaperTable {
   </form></div>");
 	}
 
-	echo tagg_actions($buttons);
+	echo Ht::actions($buttons);
 	if ($this->admin) {
 	    $v = defval($_REQUEST, "emailNote", "");
 	    echo "  <div class='g'></div>\n  <table>\n",
 		"    <tr><td>",
-		tagg_checkbox("doemail", 1, true), "&nbsp;",
-		tagg_label("Email authors, including:"), "&nbsp; ",
+		Ht::checkbox("doemail", 1, true), "&nbsp;",
+		Ht::label("Email authors, including:"), "&nbsp; ",
 		"<input id='emailNote' type='text' class='textlite temptext' name='emailNote' size='30' value=\"",
 		htmlspecialchars($v == "" ? "Optional explanation" : $v),
 		"\" /></td></tr>\n    <tr><td>",
-		tagg_checkbox("override"), "&nbsp;";
+		Ht::checkbox("override"), "&nbsp;";
             if ($Conf->timeUpdatePaper($prow))
-                echo "<span class='dim'>", tagg_label("Override deadlines"), "</span>";
+                echo "<span class='dim'>", Ht::label("Override deadlines"), "</span>";
             else
-                echo "<strong>", tagg_label("Override deadlines"), "</strong>";
+                echo "<strong>", Ht::label("Override deadlines"), "</strong>";
             echo "</td></tr>\n  </table>\n";
 	    $Conf->footerScript("mktemptext('emailNote','Optional explanation')");
 	}
@@ -1826,7 +1826,7 @@ class PaperTable {
 	if (($empty = ($t == "")))
 	    $t = $ifempty;
 	$this->_paptabSepContaining($t);
-	echo tagg_cbox("pap", true), "</td></tr></table></div>\n";
+	echo Ht::cbox("pap", true), "</td></tr></table></div>\n";
 	return $empty;
     }
 
@@ -1927,7 +1927,7 @@ class PaperTable {
 	if ($this->mode != "pe")
 	    $this->_paptabReviewLinks(false, null, "");
 	else
-	    echo tagg_cbox("pap", true), "</td></tr></table></div>\n";
+	    echo Ht::cbox("pap", true), "</td></tr></table></div>\n";
     }
 
     function paptabEndWithEditableReview() {

@@ -75,12 +75,12 @@ echo "</div>
 <p>This form will reset the password for <b>", htmlspecialchars($Acct->email), "</b>. We have randomly generated a potential password, or you can choose your own.</p>
 <table>
   <tr><td>",
-    tagg_radio("useauto", "y", null),
-    "&nbsp;</td><td>", tagg_label("Use password <tt>" . htmlspecialchars($_REQUEST["autopassword"]) . "</tt>"),
+    Ht::radio("useauto", "y", null),
+    "&nbsp;</td><td>", Ht::label("Use password <tt>" . htmlspecialchars($_REQUEST["autopassword"]) . "</tt>"),
     "</td></tr>
   <tr><td>",
-    tagg_radio("useauto", "n", null, array("id" => "usemy", "onclick" => "x=\$\$(\"login_d\");if(document.activeElement!=x)x.focus()")),
-    "&nbsp;</td><td style='padding-top:1em'>", tagg_label("Use this password:"), "</td></tr>
+    Ht::radio("useauto", "n", null, array("id" => "usemy", "onclick" => "x=\$\$(\"login_d\");if(document.activeElement!=x)x.focus()")),
+    "&nbsp;</td><td style='padding-top:1em'>", Ht::label("Use this password:"), "</td></tr>
   <tr><td></td><td><div class='f-i'>
   <div class='f-c", $password_class, "'>Password</div>
   <div class='f-e'><input id='login_d' type='password' class='textlite' name='upassword' size='36' tabindex='1' value='' onkeypress='if(!((x=\$\$(\"usemy\")).checked)) x.click()' /></div>

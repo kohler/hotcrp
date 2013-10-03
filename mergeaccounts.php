@@ -178,8 +178,8 @@ else if ($Me->chairContact)
 <tr>
   <td class='caption'></td>
   <td class='entry'><?php
-    echo tagg_radio("prefer", 0, true), "&nbsp;", tagg_label("Keep my current account (" . htmlspecialchars($Me->email) . ")"), "<br />\n",
-	tagg_radio("prefer", 1), "&nbsp;", tagg_label("Keep the account named above and delete my current account");
+    echo Ht::radio("prefer", 0, true), "&nbsp;", Ht::label("Keep my current account (" . htmlspecialchars($Me->email) . ")"), "<br />\n",
+	Ht::radio("prefer", 1), "&nbsp;", Ht::label("Keep the account named above and delete my current account");
   ?></td>
 </tr>
 

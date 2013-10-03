@@ -655,9 +655,9 @@ function topicTable($prow, $active = 0) {
 	    $out .= "</td><td>";
 	$tname = htmlspecialchars($rf->topicName[$tid]);
 	if ($paperId <= 0 || $active >= 0) {
-	    $out .= tagg_checkbox_h("top$tid", 1, ($active > 0 ? isset($_REQUEST["top$tid"]) : isset($paperTopic[$tid])),
+	    $out .= Ht::checkbox_h("top$tid", 1, ($active > 0 ? isset($_REQUEST["top$tid"]) : isset($paperTopic[$tid])),
 				    array("disabled" => $active < 0))
-		. "&nbsp;" . tagg_label($tname) . "<br />\n";
+		. "&nbsp;" . Ht::label($tname) . "<br />\n";
 	} else
 	    $out .= $tname . "<br />\n";
 	$i++;
@@ -1835,154 +1835,55 @@ function decodeToken($x) {
 }
 
 
-// HTML helpers
+// deprecated HTML helpers
 function tagg_extra($js) {
-    $x = "";
-    if ($js) {
-	foreach (array("id", "tabindex", "onchange", "onclick", "onfocus",
-		       "onblur", "class", "style", "size") as $k)
-	    if (isset($js[$k]))
-		$x .= " $k=\"" . str_replace("\"", "'", $js[$k]) . "\"";
-	if (isset($js["disabled"]) && $js["disabled"])
-	    $x .= " disabled=\"disabled\"";
-    }
-    return $x;
+    return Ht::extra($js);
 }
 
 function tagg_form($action, $extra = null) {
-    return "<form method='post' action=\"$action\" enctype='multipart/form-data' accept-charset='UTF-8'" . tagg_extra($extra) . ">";
+    return Ht::form($action, $extra);
 }
 
 function tagg_hidden($name, $value = "", $extra = null) {
-    return "<input type='hidden' name='" . htmlspecialchars($name) . "' value='" . htmlspecialchars($value) . "'" . tagg_extra($extra) . " />";
+    return Ht::hidden($name, $value, $extra);
 }
 
 function tagg_select($name, $opt, $selected = null, $extra = null) {
-    $x = "<select name='$name'" . tagg_extra($extra) . ">";
-    if ($selected === null || !isset($opt[$selected]))
-	$selected = key($opt);
-    $optgroup = "";
-    foreach ($opt as $value => $text)
-	if ($text === null)
-	    $x .= "<option disabled=\"disabled\"></option>";
-	else if (!is_array($text)) {
-	    $x .= "<option value='$value'";
-	    if (strcmp($value, $selected) == 0)
-		$x .= " selected=\"selected\"";
-	    if ($extra && isset($extra["disabled"])
-		&& defval($extra["disabled"], $value))
-		$x .= " disabled=\"disabled\"";
-	    if ($extra && isset($extra["optionstyles"])
-		&& ($s = defval($extra["optionstyles"], $value)))
-		$x .= " style=\"" . $s . "\"";
-	    $x .= ">" . $text . "</option>";
-	} else if ($text[0] == "optgroup") {
-	    $x .= $optgroup . "<optgroup label='" . $text[1] . "'>";
-	    $optgroup = "</optgroup>";
-	}
-    return $x . $optgroup . "</select>";
+    return Ht::select($name, $opt, $selected, $extra);
 }
 
-function tagg_cbox($type, $bottom, $classextra="") {
-    if ($bottom)
-	return "	<tr><td class='${type}cll'></td><td></td><td class='${type}clr'></td></tr>\n</table>";
-    else
-	return "<table class='${type}c" . ($classextra ? " $classextra" : "")
-	    . "'>\n";
+function tagg_cbox($type, $bottom, $classextra = "") {
+    return Ht::cbox($type, $bottom, $classextra);
 }
-
-
-global $tagg_controlid, $tagg_lastcontrolid;
-$tagg_controlid = 0;
 
 function tagg_checkbox($name, $value = 1, $checked = false, $js = null) {
-    global $tagg_controlid, $tagg_lastcontrolid;
-    $js = $js ? $js : array();
-    if (!defval($js, "id"))
-	$js["id"] = "taggctl" . ++$tagg_controlid;
-    $tagg_lastcontrolid = $js["id"];
-    if (!isset($js["class"]))
-	$js["class"] = "cb";
-    $t = "<input type=\"checkbox\""; /* NB see tagg_radio */
-    if ($name)
-	$t .= " name=\"$name\" value=\"" . htmlspecialchars($value) . "\"";
-    if ($checked === null)
-        $checked = isset($_REQUEST[$name]) && $_REQUEST[$name] == $value;
-    if ($checked)
-	$t .= " checked=\"checked\"";
-    return $t . tagg_extra($js) . " />";
+    return Ht::checkbox($name, $value, $checked, $js);
 }
 
 function tagg_radio($name, $value = 1, $checked = false, $js = null) {
-    $t = tagg_checkbox($name, $value, $checked, $js);
-    return "<input type=\"radio\"" . substr($t, 22);
+    return Ht::radio($name, $value, $checked, $js);
 }
 
 function tagg_checkbox_h($name, $value = 1, $checked = false, $js = null) {
-    $js = $js ? $js : array();
-    if (!isset($js["onchange"]))
-	$js["onchange"] = "hiliter(this)";
-    return tagg_checkbox($name, $value, $checked, $js);
+    return Ht::checkbox_h($name, $value, $checked, $js);
 }
 
 function tagg_radio_h($name, $value = 1, $checked = false, $js = null) {
-    $t = tagg_checkbox_h($name, $value, $checked, $js);
-    return "<input type=\"radio\"" . substr($t, 22);
+    return Ht::radio_h($name, $value, $checked, $js);
 }
 
 function tagg_label($text, $id = null) {
-    global $tagg_lastcontrolid;
-    if (!$id)
-	$id = $tagg_lastcontrolid;
-    return "<label for=\"$id\">" . $text . "</label>";
+    return Ht::label($text, $id);
 }
 
 function tagg_button($name, $text, $js = null) {
-    $js = $js ? $js : array();
-    if (!isset($js["class"]))
-	$js["class"] = "b";
-    $type = isset($js["type"]) ? $js["type"] : "button";
-    if (isset($js["value"]))
-        return "<button type=\"type\" name=\"$name\" value=\"" . $js["value"]
-            . "\"" . tagg_extra($js) . ">" . $text . "</button>";
-    else
-        return "<input type=\"$type\" name=\"$name\" value=\"$text\""
-            . tagg_extra($js) . " />";
+    return Ht::button($name, $text, $js);
 }
 
 function tagg_submit($name, $text, $js = null) {
-    $js = ($js ? $js : array());
-    $js["type"] = "submit";
-    return tagg_button($name, $text, $js);
+    return Ht::submit($name, $text, $js);
 }
 
 function tagg_actions($actions, $js = null, $extra = "") {
-    $t = "<div class=\"aa\"" . tagg_extra($js) . ">";
-    if (count($actions) > 1 || is_array($actions[0])) {
-	$t .= "<table class=\"pt_buttons\"><tr>";
-	$explains = 0;
-	foreach ($actions as $a) {
-	    $t .= "<td class=\"ptb_button\">";
-	    if (is_array($a)) {
-		$t .= $a[0];
-		$explains += count($a) > 1;
-	    } else
-		$t .= $a;
-	    $t .= "</td>";
-	}
-	$t .= "</tr>";
-	if ($explains) {
-	    $t .= "<tr>";
-	    foreach ($actions as $a) {
-		$t .= "<td class=\"ptb_explain\">";
-		if (is_array($a) && count($a) > 1)
-		    $t .= $a[1];
-		$t .= "</td>";
-	    }
-	    $t .= "</tr>";
-	}
-	$t .= "</table>";
-    } else
-	$t .= $actions[0];
-    return $t . $extra . "</div>\n";
+    return Ht::actions($actions, $js, $extra);
 }

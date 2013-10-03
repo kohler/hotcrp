@@ -990,7 +990,7 @@ function decorateSettingName($name, $text, $islabel = false) {
     if (isset($Highlight[$name]))
 	$text = "<span class='error'>$text</span>";
     if ($islabel)
-	$text = tagg_label($text);
+	$text = Ht::label($text);
     return $text;
 }
 
@@ -1013,7 +1013,7 @@ function settingText($name, $defval = null) {
 function doCheckbox($name, $text, $tr = false, $js = "hiliter(this)") {
     $x = setting($name);
     echo ($tr ? "<tr><td class='nowrap'>" : ""),
-	tagg_checkbox($name, 1, $x !== null && $x > 0, array("onchange" => $js, "id" => "cb$name")),
+	Ht::checkbox($name, 1, $x !== null && $x > 0, array("onchange" => $js, "id" => "cb$name")),
 	"&nbsp;", ($tr ? "</td><td>" : ""),
 	decorateSettingName($name, $text, true),
 	($tr ? "</td></tr>\n" : "<br />\n");
@@ -1025,7 +1025,7 @@ function doRadio($name, $varr) {
 	$x = 0;
     echo "<table>\n";
     foreach ($varr as $k => $text) {
-	echo "<tr><td class='nowrap'>", tagg_radio_h($name, $k, $k == $x),
+	echo "<tr><td class='nowrap'>", Ht::radio_h($name, $k, $k == $x),
 	    "&nbsp;</td><td>";
 	if (is_array($text))
 	    echo decorateSettingName($name, $text[0], true), "<br /><small>", $text[1], "</small>";
@@ -1040,7 +1040,7 @@ function doSelect($name, $nametext, $varr, $tr = false) {
     echo ($tr ? "<tr><td class='nowrap lcaption'>" : ""),
 	decorateSettingName($name, $nametext),
 	($tr ? "</td><td class='lentry'>" : ": &nbsp;"),
-	tagg_select($name, $varr, setting($name),
+	Ht::select($name, $varr, setting($name),
 		    array("onchange" => "hiliter(this)")),
 	($tr ? "</td></tr>\n" : "<br />\n");
 }
@@ -1283,13 +1283,13 @@ function doOptGroupOption($o) {
 	$otypes[PaperOption::T_FINALSLIDES] = "Final slides";
 	$otypes[PaperOption::T_FINALVIDEO] = "Final video";
     }
-    echo tagg_select("optvt$id", $otypes, $optvt, array("onchange" => "doopttype(this)", "id" => "optvt$id")),
+    echo Ht::select("optvt$id", $otypes, $optvt, array("onchange" => "doopttype(this)", "id" => "optvt$id")),
 	"</div></div></td>";
     $Conf->footerScript("doopttype(\$\$('optvt$id'),true)");
 
     echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
 	decorateSettingName("optp$id", "Visibility"), "</div><div class='f-e'>",
-	tagg_select("optp$id", array("Administrators only", "Visible to PC and reviewers", "Visible if authors are visible"), $o->pcView, array("onchange" => "hiliter(this)")),
+	Ht::select("optp$id", array("Administrators only", "Visible to PC and reviewers", "Visible if authors are visible"), $o->pcView, array("onchange" => "hiliter(this)")),
 	"</div></div></td>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
@@ -1302,14 +1302,14 @@ function doOptGroupOption($o) {
         $x[$n] = ordinal($n + 1);
     else
         $x["delete"] = "Delete option";
-    echo tagg_select("optfp$id", $x, $o->sortOrder, array("onchange" => "hiliter(this)")),
+    echo Ht::select("optfp$id", $x, $o->sortOrder, array("onchange" => "hiliter(this)")),
         "</div></div></td>";
 
     if ($Conf->sversion >= 38) {
 	echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
 	    decorateSettingName("optdt$id", "Display"), "</div><div class='f-e'>";
 	$optdt = (count($Error) > 0 ? defval($_REQUEST, "optdt$id", 0) : $o->displayType);
-	echo tagg_select("optdt$id", array(PaperOption::DT_NORMAL => "Normal",
+	echo Ht::select("optdt$id", array(PaperOption::DT_NORMAL => "Normal",
                                            PaperOption::DT_HIGHLIGHT => "Prominent",
                                            PaperOption::DT_SUBMISSION => "Near submission"), $optdt,
 			 array("onchange" => "hiliter(this)")),
@@ -1621,14 +1621,14 @@ function doDecGroup() {
 	decorateSettingName("decn", "New decision type"),
 	"<br /></td>",
 	"<td class='lentry nowrap'><input type='text' class='textlite' name='decn' value=\"", htmlspecialchars($v), "\" size='35' onchange='hiliter(this)' /> &nbsp; ",
-	tagg_select("dtypn", array(1 => "Accept class", -1 => "Reject class"),
+	Ht::select("dtypn", array(1 => "Accept class", -1 => "Reject class"),
 		    $vclass, array("onchange" => "hiliter(this)")),
 	"<br /><small>Examples: &ldquo;Accepted as short paper&rdquo;, &ldquo;Early reject&rdquo;</small>",
 	"</td>";
     if (defval($Highlight, "decn"))
 	echo "<td class='lentry nowrap'>",
-	    tagg_checkbox_h("decn_confirm", 1, false),
-	    "&nbsp;<span class='error'>", tagg_label("Confirm"), "</span></td>";
+	    Ht::checkbox_h("decn_confirm", 1, false),
+	    "&nbsp;<span class='error'>", Ht::label("Confirm"), "</span></td>";
     echo "</tr>\n</table>\n";
 
     // Final versions

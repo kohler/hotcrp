@@ -169,7 +169,7 @@ foreach ($pcm as $pc)
         . plural(defval($rev_count, $pc->cid, 0), "assignment") . ")";
 
 echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
-    "<td>", tagg_select("reviewer", $rev_opt, $reviewer, array("onchange" => "hiliter(this)")), "</td></tr>",
+    "<td>", Ht::select("reviewer", $rev_opt, $reviewer, array("onchange" => "hiliter(this)")), "</td></tr>",
     "<tr><td colspan='2'><div class='g'></div></td></tr>\n";
 
 // Paper selection
@@ -186,17 +186,17 @@ if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
 $q = (defval($_REQUEST, "q", "") == "" ? "(All)" : $_REQUEST["q"]);
 echo "<tr><td>Paper selection: &nbsp;</td>",
     "<td><input id='manualassignq' class='textlite temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onchange='hiliter(this)' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
-    tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "hiliter(this)")),
+    Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "hiliter(this)")),
     "</td></tr>\n",
     "<tr><td colspan='2'><div class='g'></div>\n";
 $Conf->footerScript("mktemptext('manualassignq','(All)')");
 
-echo tagg_radio("kind", "a", $kind == "a",
+echo Ht::radio("kind", "a", $kind == "a",
 	       array("onchange" => "hiliter(this)")),
-    "&nbsp;", tagg_label("Assign reviews and/or conflicts"), "<br />\n",
-    tagg_radio("kind", "c", $kind == "c",
+    "&nbsp;", Ht::label("Assign reviews and/or conflicts"), "<br />\n",
+    Ht::radio("kind", "c", $kind == "c",
 	       array("onchange" => "hiliter(this)")),
-    "&nbsp;", tagg_label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
+    "&nbsp;", Ht::label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
 
 if ($kind == "a") {
     echo "<tr><td colspan='2'><div class='g'></div></td></tr>\n",
@@ -335,8 +335,8 @@ if ($reviewer > 0) {
 	"<input type='hidden' name='papx' value='", join(" ", $search->paperList()), "' />",
 	"<div class='aa'><input type='submit' class='bb' name='update' value='Save assignments' />",
 	"<span style='padding:0 0 0 2em'>",
-	tagg_checkbox(false, false, true, array("id" => "assrevimmediate")),
-	"&nbsp;", tagg_label("Automatically save assignments", "assrevimmediate"),
+	Ht::checkbox(false, false, true, array("id" => "assrevimmediate")),
+	"&nbsp;", Ht::label("Automatically save assignments", "assrevimmediate"),
 	"</span></div>\n",
 	$paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me,
                          array("class" => "pltable_full", "header_links" => true)),

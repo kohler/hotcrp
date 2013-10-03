@@ -2661,7 +2661,7 @@ class PaperSearch {
 	    $sel_extra = array();
 	    if ($tabindex)
 		$sel_extra["tabindex"] = 1;
-	    return tagg_select("t", $sel_opt, $type, $sel_extra);
+	    return Ht::select("t", $sel_opt, $type, $sel_extra);
 	} else
 	    return current($tOpt);
     }

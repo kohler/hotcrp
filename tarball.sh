@@ -84,6 +84,7 @@ lib/countries.php
 lib/csv.php
 lib/documenthelper.php
 lib/hotcrpdocument.php
+lib/ht.php
 lib/formula.php
 lib/ldaplogin.php
 lib/login.php

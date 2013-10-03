@@ -650,15 +650,15 @@ function doRadio($name, $value, $text, $extra = null) {
 	$_REQUEST[$name] = $value;
     $extra = ($extra ? $extra : array());
     $extra["id"] = "${name}_$value";
-    echo tagg_radio($name, $value, $checked, $extra), "&nbsp;";
+    echo Ht::radio($name, $value, $checked, $extra), "&nbsp;";
     if ($text != "")
-	echo tagg_label($text, "${name}_$value");
+	echo Ht::label($text, "${name}_$value");
 }
 
 function doSelect($name, $opts, $extra = null) {
     if (!isset($_REQUEST[$name]))
 	$_REQUEST[$name] = key($opts);
-    echo tagg_select($name, $opts, $_REQUEST[$name], $extra);
+    echo Ht::select($name, $opts, $_REQUEST[$name], $extra);
 }
 
 function divClass($name) {
@@ -852,7 +852,7 @@ if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = "s";
 $q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
 echo "<input id='autoassignq' class='textlite temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"autosub('requery',this)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
-    tagg_select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
+    Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
     " &nbsp; <input id='requery' class='b' name='requery' type='submit' value='List' />\n";
 $Conf->footerScript("mktemptext('autoassignq','(All)')");
 if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
@@ -932,11 +932,11 @@ echo "</div></div>\n";
 
 echo "<h3>PC members</h3><table><tr><td>";
 doRadio("pctyp", "all", "");
-echo "</td><td>", tagg_label("Use entire PC", "pctyp_all"), "</td></tr>\n";
+echo "</td><td>", Ht::label("Use entire PC", "pctyp_all"), "</td></tr>\n";
 
 echo "<tr><td>";
 doRadio('pctyp', 'sel', '');
-echo "</td><td>", tagg_label("Use selected PC members:", "pctyp_sel"), " &nbsp; (Select ";
+echo "</td><td>", Ht::label("Use selected PC members:", "pctyp_sel"), " &nbsp; (Select ";
 $pctyp_sel = array(array("all", 1, "All"), array("none", 0, "None"));
 $pctags = pcTags();
 if (count($pctags)) {
@@ -966,11 +966,11 @@ foreach ($pcm as $id => $p) {
     $color = $colorizer->color_classes($p->contactTags);
     $color = ($color ? " class='${color}'" : "");
     $c = "<tr$color><td class='pctbl'>"
-	. tagg_checkbox("pcs[]", $id, isset($pcsel[$id]),
+	. Ht::checkbox("pcs[]", $id, isset($pcsel[$id]),
 			array("id" => "pcsel$count",
 			      "onclick" => "pselClick(event,this);\$\$('pctyp_sel').checked=true"))
 	. "&nbsp;</td><td class='pctbname'>"
-	. tagg_label(Text::name_html($p), "pcsel$count")
+	. Ht::label(Text::name_html($p), "pcsel$count")
 	. "</td></tr><tr$color><td class='pctbl'></td><td class='pctbnrev'>"
 	. review_count_report($nrev, $p, "")
 	. "</td></tr>";
@@ -999,7 +999,7 @@ function bpSelector($i, $which) {
     $selected = ($i <= $_REQUEST["bpcount"] ? defval($_REQUEST, "bp$which$i") : "0");
     if ($selected && isset($badPairSelector[$selected]))
 	$numBadPairs = max($i, $numBadPairs);
-    return tagg_select("bp$which$i", $badPairSelector, $selected,
+    return Ht::select("bp$which$i", $badPairSelector, $selected,
 		       array("onchange" => "if(!((x=\$\$(\"badpairs\")).checked)) x.click()"));
 }
 
@@ -1009,9 +1009,9 @@ for ($i = 1; $i <= 50; $i++) {
     echo "    <tr id='bp$i' class='", ($numBadPairs >= $i ? "auedito" : "aueditc"),
 	"'><td class='rentry nowrap'>";
     if ($i == 1)
-	echo tagg_checkbox("badpairs", 1, isset($_REQUEST["badpairs"]),
+	echo Ht::checkbox("badpairs", 1, isset($_REQUEST["badpairs"]),
 			   array("id" => "badpairs")),
-	    "&nbsp;", tagg_label("Don’t assign", "badpairs"), " &nbsp;";
+	    "&nbsp;", Ht::label("Don’t assign", "badpairs"), " &nbsp;";
     else
 	echo "or &nbsp;";
     echo "</td><td class='lentry'>", $selector_text;

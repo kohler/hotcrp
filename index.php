@@ -239,12 +239,12 @@ Sign in to submit or review papers.";
 	echo "<input type='hidden' name='action' value='login' />\n";
     else {
 	echo "<div class='f-i'>\n  ",
-	    tagg_radio("action", "login", true, array("tabindex" => 2)),
-	    "&nbsp;", tagg_label("<b>Sign me in</b>"), "<br />\n";
-	echo tagg_radio("action", "forgot", false, array("tabindex" => 2)),
-	    "&nbsp;", tagg_label("I forgot my password"), "<br />\n";
-	echo tagg_radio("action", "new", false, array("tabindex" => 2)),
-	    "&nbsp;", tagg_label("I’m a new user and want to create an account using this email address");
+	    Ht::radio("action", "login", true, array("tabindex" => 2)),
+	    "&nbsp;", Ht::label("<b>Sign me in</b>"), "<br />\n";
+	echo Ht::radio("action", "forgot", false, array("tabindex" => 2)),
+	    "&nbsp;", Ht::label("I forgot my password"), "<br />\n";
+	echo Ht::radio("action", "new", false, array("tabindex" => 2)),
+	    "&nbsp;", Ht::label("I’m a new user and want to create an account using this email address");
 	echo "\n</div>\n";
     }
     echo "<div class='f-i'>
