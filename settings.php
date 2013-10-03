@@ -455,7 +455,7 @@ function doCleanOptionFormPositions() {
     // valid keys for options, and whether the position is new
     $optname = array();
     $optreorder = array();
-    foreach (paperOptions() as $id => $o)
+    foreach (PaperOption::get() as $id => $o)
 	if (defval($_REQUEST, "optn$id", "") != "") {
 	    $optname[$id] = defval($_REQUEST, "optn$id", $o->optionName);
 	    $_REQUEST["optfp$id"] = defval($_REQUEST, "optfp$id", $o->sortOrder);
@@ -498,7 +498,7 @@ function doCleanOptionFormPositions() {
 function doOptions($set) {
     global $Conf, $Values, $Error, $Highlight;
     if (!$set) {
-	$optkeys = array_keys(paperOptions());
+	$optkeys = array_keys(PaperOption::get());
 	$optkeys[] = "n";
 	$optabbrs = array("paper" => -1, "submission" => -1, "final" => -1);
 	foreach ($optkeys as $id) {
@@ -524,7 +524,7 @@ function doOptions($set) {
 
     $ochange = false;
     $anyo = false;
-    foreach (paperOptions() as $id => $o) {
+    foreach (PaperOption::get() as $id => $o) {
 	doCleanOptionValues($id);
 
 	if (isset($_REQUEST["optn$id"]) && $_REQUEST["optn$id"] === "") {
@@ -1195,7 +1195,7 @@ function checkOptionNameUnique($oname) {
     if ($oname == "" || $oname == "none" || $oname == "any")
 	return false;
     $m = 0;
-    foreach (paperOptions() as $oid => $o)
+    foreach (PaperOption::get() as $oid => $o)
 	if (strstr(strtolower($o->optionName), $oname) !== false)
 	    $m++;
     return $m == 1;
@@ -1295,8 +1295,8 @@ function doOptGroupOption($o) {
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
         decorateSettingName("optfp$id", "Form order"), "</div><div class='f-e'>";
     $x = array();
-    // can't use "foreach (paperOptions())" because caller uses cursor
-    for ($n = 0; $n < count(paperOptions()); ++$n)
+    // can't use "foreach (PaperOption::get())" because caller uses cursor
+    for ($n = 0; $n < count(PaperOption::get()); ++$n)
         $x[$n] = ordinal($n + 1);
     if ($id === "n")
         $x[$n] = ordinal($n + 1);
@@ -1346,7 +1346,7 @@ function doOptGroup() {
     echo "<table>";
     $sep = "";
     $nopt = 0;
-    foreach (paperOptions() as $o) {
+    foreach (PaperOption::get() as $o) {
 	echo $sep;
 	doOptGroupOption($o);
 	$sep = "<tr><td colspan='2'><hr class='hr' /></td></tr>\n";

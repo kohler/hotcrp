@@ -893,7 +893,7 @@ class PaperSearch {
 	$qo = array();
 	$qxo = array();
 	$option_failure = false;
-	foreach (paperOptions() as $oid => $o)
+	foreach (PaperOption::get() as $oid => $o)
 	    // See also checkOptionNameUnique() in settings.php
 	    if ($oname == "none" || $oname == "any"
 		|| strstr(strtolower($o->optionName), $oname) !== false) {

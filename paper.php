@@ -242,7 +242,7 @@ function requestSameAsPaper($prow) {
 	    return false;
     }
     if ($Conf->setting("paperOption")) {
-        foreach (paperOptions() as $o) {
+        foreach (PaperOption::get() as $o) {
             if ($o->type == PaperOption::T_ATTACHMENTS) {
                 if (count(attachment_request_keys($o)))
                     return false;
@@ -337,7 +337,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     $no_delete_options = array("true");
     $uploaded_documents = array();
     $attachment_info = array();
-    foreach (paperOptions() as $o) {
+    foreach (PaperOption::get() as $o) {
 	$oname = "opt$o->optionId";
 	$v = trim(defval($_REQUEST, $oname, ""));
 	if ($o->type == PaperOption::T_CHECKBOX)
@@ -421,7 +421,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
             $while = "while uploading attachment";
 	    if (fileUploaded($_FILES["paperUpload"]))
 		uploadPaper($isSubmitFinal);
-	    foreach (paperOptions() as $o)
+	    foreach (PaperOption::get() as $o)
 		if ($o->isDocument && isset($_REQUEST["opt$o->optionId"])) {
                     $Conf->qe("delete from PaperOption where paperId=" . $prow->paperId . " and optionId=" . $o->optionId, $while);
 		    $Conf->qe("insert into PaperOption (paperId, optionId, value, data) values ($prow->paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null)", $while);
@@ -508,7 +508,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if (!$Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options), $while))
 	    return false;
 	$q = array();
-	foreach (paperOptions() as $o)
+	foreach (PaperOption::get() as $o)
             if ($o->type == PaperOption::T_ATTACHMENTS) {
                 foreach ($attachment_info as $a)
                     $q[] = "($paperId, $a)";

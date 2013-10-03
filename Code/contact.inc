@@ -781,7 +781,7 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
-	if (!is_object($opt) && !($opt = paperOptions($opt))) {
+	if (!is_object($opt) && !($opt = PaperOption::get($opt))) {
 	    $whyNot["invalidId"] = "paper";
 	    return false;
 	}

@@ -311,7 +311,7 @@ class PaperTable {
 		$pdfs[] = $dprefix . documentDownload($data) . $stamps;
 	    }
 
-	    foreach (paperOptions() as $id => $o)
+	    foreach (PaperOption::get() as $id => $o)
 		if ($o->displayType == PaperOption::DT_SUBMISSION
                     && $o->isDocument
 		    && (!$o->isFinal || $final)
@@ -465,7 +465,7 @@ class PaperTable {
 	global $Me;
 	if ($this->canUploadFinal) {
 	    $this->editable_document((object) array("optionId" => DTYPE_FINAL, "optionName" => "Final version", "type" => null), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
-	    foreach (paperOptions() as $id => $o)
+	    foreach (PaperOption::get() as $id => $o)
 		if ($o->type == PaperOption::T_FINALPDF) {
                     $oa = $this->prow ? defval($this->prow->option_array, $o->optionId) : null;
 		    $this->editable_document($o, $oa ? $oa->value : 0, $flags);
@@ -982,7 +982,7 @@ class PaperTable {
     private function editable_options($displayTypeFlags) {
 	global $Conf, $Me;
         $prow = $this->prow;
-	if (!($opt = paperOptions()))
+	if (!($opt = PaperOption::get()))
 	    return;
 	assert(!!$this->editable);
 	foreach ($opt as $o) {

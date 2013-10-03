@@ -89,7 +89,7 @@ class PaperOption {
         global $Conf;
         if (!$prow)
             return 0;
-        $options = paperOptions();
+        $options = self::get();
         $prow->option_array = array();
         if (!count($options) || !isset($prow->optionIds) || !$prow->optionIds)
             return 0;
@@ -127,6 +127,52 @@ class PaperOption {
             }
 
         return count($prow->option_array);
+    }
+
+    static function get($id = null) {
+        global $Conf;
+        if ($Conf->setting("paperOption") <= 0 || $Conf->sversion <= 0)
+            return $id ? null : array();
+
+        // (re)load options from database
+        $svar = defval($_SESSION, "paperOption", null);
+        if (!$svar || !is_array($svar) || count($svar) < 3 || $svar[2] < 2
+            || $svar[0] < $Conf->setting("paperOption")) {
+            $opt = array();
+            $result = $Conf->q("select * from OptionType order by sortOrder, optionName");
+            $order = 0;
+            while (($row = edb_orow($result))) {
+                // begin backwards compatibility to old schema versions
+                if (!isset($row->optionValues))
+                    $row->optionValues = "";
+                if (!isset($row->type) && $row->optionValues == "\x7Fi")
+                    $row->type = self::T_NUMERIC;
+                else if (!isset($row->type))
+                    $row->type = ($row->optionValues ? self::T_SELECTOR : self::T_CHECKBOX);
+                // end backwards compatibility to old schema versions
+                $row->optionAbbrev = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", strtolower($row->optionName)));
+                if ($row->optionAbbrev == "paper"
+                    || $row->optionAbbrev == "submission"
+                    || $row->optionAbbrev == "final"
+                    || ctype_digit($row->optionAbbrev))
+                    $row->optionAbbrev = "opt" . $row->optionId;
+                $row->sortOrder = $order++;
+                if (!isset($row->displayType))
+                    $row->displayType = self::DT_NORMAL;
+                if ($row->type == self::T_FINALPDF)
+                    $row->displayType = self::DT_SUBMISSION;
+                $row->isDocument = self::type_is_document($row->type);
+                $row->isFinal = self::type_is_final($row->type);
+                $opt[$row->optionId] = $row;
+            }
+            $_SESSION["paperOption"] = $svar =
+                array($Conf->setting("paperOption"), $opt, 2);
+        }
+
+        if ($id)
+            return defval($svar[1], $id, null);
+        else
+            return $svar[1];
     }
 
 }

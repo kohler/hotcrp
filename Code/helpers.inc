@@ -614,7 +614,7 @@ function requestDocumentType($req, $default = DTYPE_SUBMISSION) {
 	    return DTYPE_FINAL;
 	if (substr($dt, 0, 4) == "opt-")
 	    $dt = substr($dt, 4);
-	foreach (paperOptions() as $o)
+	foreach (PaperOption::get() as $o)
 	    if ($dt == $o->optionAbbrev)
 		return $o->optionId;
     }
@@ -1630,43 +1630,6 @@ function matchValue($a, $word, $allowKey = false) {
 	return $outb;
     else
 	return $outc;
-}
-
-function paperOptions($id = null) {
-    global $Conf;
-    if ($Conf->setting("paperOption") <= 0 || $Conf->sversion <= 0)
-	return array();
-    $svar = defval($_SESSION, "paperOption", null);
-    if (!$svar || !is_array($svar) || count($svar) < 3 || $svar[2] < 2
-	|| $svar[0] < $Conf->setting("paperOption")) {
-	$opt = array();
-	$result = $Conf->q("select * from OptionType order by sortOrder, optionName");
-	$order = 0;
-	while (($row = edb_orow($result))) {
-	    // begin backwards compatibility to old schema versions
-	    if (!isset($row->optionValues))
-		$row->optionValues = "";
-	    if (!isset($row->type) && $row->optionValues == "\x7Fi")
-		$row->type = PaperOption::T_NUMERIC;
-	    else if (!isset($row->type))
-		$row->type = ($row->optionValues ? PaperOption::T_SELECTOR : PaperOption::T_CHECKBOX);
-	    // end backwards compatibility to old schema versions
-	    $row->optionAbbrev = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", strtolower($row->optionName)));
-	    if ($row->optionAbbrev == "paper" || $row->optionAbbrev == "submission"
-                || $row->optionAbbrev == "final" || ctype_digit($row->optionAbbrev))
-		$row->optionAbbrev = "opt" . $row->optionId;
-	    $row->sortOrder = $order++;
-	    if (!isset($row->displayType))
-		$row->displayType = PaperOption::DT_NORMAL;
-	    if ($row->type == PaperOption::T_FINALPDF)
-		$row->displayType = PaperOption::DT_SUBMISSION;
-	    $row->isDocument = PaperOption::type_is_document($row->type);
-	    $row->isFinal = PaperOption::type_is_final($row->type);
-	    $opt[$row->optionId] = $row;
-	}
-	$_SESSION["paperOption"] = $svar = array($Conf->setting("paperOption"), $opt, 2);
-    }
-    return $id ? defval($svar[1], $id, null) : $svar[1];
 }
 
 function scoreCounts($text, $max = null) {

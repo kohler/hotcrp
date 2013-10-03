@@ -26,7 +26,7 @@ class HotCRPDocument {
             return "paper";
         else if ($dtype == DTYPE_FINAL)
             return "final";
-        else if (($o = paperOptions($dtype)) && $o->isDocument)
+        else if (($o = PaperOption::get($dtype)) && $o->isDocument)
             return $o->optionAbbrev;
         else
             return null;

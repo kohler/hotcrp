@@ -30,7 +30,8 @@ else {
             $documentType = requestDocumentType($m[1], null);
         else if (preg_match(',\A([^/]+)/+(.*)\z,', $s, $m)) {
             $documentType = requestDocumentType($m[1], null);
-            if ($documentType && ($o = paperOptions($documentType)) && $o->type == PaperOption::T_ATTACHMENTS) {
+            if ($documentType && ($o = PaperOption::get($documentType))
+                && $o->type == PaperOption::T_ATTACHMENTS) {
                 $need_docid = false;
                 $result = $Conf->q("select o.value from PaperOption o join PaperStorage s on (s.paperStorageId=o.value) where o.paperId=$paperId and o.optionId=$documentType and s.filename='" . sqlq($m[2]) . "'", "while searching for attachment");
                 if (($row = edb_row($result)))
