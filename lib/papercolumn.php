@@ -660,8 +660,8 @@ class ReviewerListPaperColumn extends PaperColumn {
         $prefs = PaperList::_rowPreferences($row);
         $n = "";
         // see also search.php > getaction == "reviewers"
-        if (isset($pl->reviewList[$row->paperId])) {
-            foreach ($pl->reviewList[$row->paperId] as $xrow)
+        if (isset($pl->review_list[$row->paperId])) {
+            foreach ($pl->review_list[$row->paperId] as $xrow)
                 if ($xrow->lastName) {
                     $ranal = $pl->_reviewAnalysis($xrow);
                     $n .= ($n ? ", " : "");

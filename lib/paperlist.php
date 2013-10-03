@@ -20,6 +20,7 @@ class PaperList extends BaseList {
     public $rf;
     public $tagger;
     public $reviewer;
+    public $review_list;
 
     private $sortable;
     private $subsorter;
@@ -27,7 +28,6 @@ class PaperList extends BaseList {
     private $_paper_link_page;
     private $_paper_link_args;
     private $viewmap;
-    var $reviewList;
     private $atab;
 
     // collected during render and exported to caller
@@ -622,7 +622,7 @@ class PaperList extends BaseList {
 	global $Conf;
 
 	// prepare review query (see also search > getaction == "reviewers")
-	$this->reviewList = array();
+	$this->review_list = array();
 	if (isset($queryOptions["reviewList"])) {
 	    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
 		reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
@@ -634,7 +634,7 @@ class PaperList extends BaseList {
 		where " . ($this->search->limitName != 'a' ? "timeSubmitted>0" : "paperId=-1") . "
 		order by lastName, firstName, email", "while fetching reviews");
 	    while (($row = edb_orow($result)))
-		$this->reviewList[$row->paperId][] = $row;
+		$this->review_list[$row->paperId][] = $row;
 	}
 
 	// prepare PC topic interests
