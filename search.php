@@ -748,8 +748,8 @@ if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
     $format = $Conf->settingText("sub_banal", "");
 
     // generate output gradually since this takes so long
-    $text = "#paper\tformat\tpages\ttitle\n";
-    downloadText($text, "formatcheck", "format checker", false, false);
+    downloadText(false, "formatcheck", "format checker", false);
+    echo "#paper\tformat\tpages\ttitle\n";
 
     // compose report
     $texts = array();

@@ -211,3 +211,88 @@ class CsvParser {
     }
 
 }
+
+class CsvGenerator {
+
+    const TYPE_COMMA = 0;
+    const TYPE_PIPE = 1;
+    const TYPE_TAB = 2;
+
+    private $type;
+    private $lines;
+    private $header;
+
+    function __construct($type = self::TYPE_COMMA) {
+        $this->type = $type;
+        $this->lines = array();
+        $this->header = false;
+    }
+
+    static function quote($text, $quote_empty = false) {
+        if ($text == "")
+            return $quote_empty ? '""' : $text;
+        else if (preg_match('/\A[-_@\$#+A-Za-z0-9.](?:[-_@\$#+A-Za-z0-9. \t]*[-_\$#+A-Za-z0-9.]|)\z/', $text))
+            return $text;
+        else
+            return '"' . str_replace('"', '""', $text) . '"';
+    }
+
+    function is_csv() {
+        return $this->type == self::TYPE_COMMA;
+    }
+
+    function extension() {
+        return $this->type == self::TYPE_COMMA ? ".csv" : ".txt";
+    }
+
+    function add($row) {
+        if (is_string($row)) {
+            $this->lines[] = $row;
+            return;
+        }
+        reset($row);
+        if (count($row) && is_array(current($row))) {
+            foreach ($row as $x)
+                self::add($x);
+        } else if ($this->type == self::TYPE_COMMA) {
+            $t = array();
+            foreach ($row as $x)
+                $t[] = self::quote($x);
+            $this->lines[] = join(",", $t) . "\n";
+        } else if ($this->type == self::TYPE_TAB)
+            $this->lines[] = join("\t", $row) . "\n";
+        else
+            $this->lines[] = join("|", $t) . "\n";
+    }
+
+    function header($header) {
+        assert(!count($this->lines) && !$this->header);
+        $this->add($header);
+        if ($this->type == self::TYPE_TAB)
+            $this->lines[0] = "#" . $this->lines[0];
+        $this->header = true;
+    }
+
+    function download_headers($downloadname = null, $attachment = null,
+                              $description = null) {
+        if ($this->is_csv())
+            header("Content-Type: text/csv; charset=utf-8; header=" . ($this->header ? "present" : "absent"));
+        else
+            header("Content-Type: text/plain; charset=utf-8");
+        if ($attachment === null)
+            $attachment = !Mimetype::disposition_inline($this->is_csv() ? "text/csv" : "text/plain");
+        header("Content-Description: " . ($description ? $description : "PHP generated data"));
+        if (!$downloadname)
+            $downloadname = "data" . $this->extension();
+        header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
+    }
+
+    function download() {
+        global $zlib_output_compression;
+        $text = join("", $this->lines);
+        if (!$zlib_output_compression)
+            header("Content-Length: " . strlen($text));
+        echo $text;
+    }
+
+}

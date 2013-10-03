@@ -355,11 +355,11 @@ class DocumentHelper {
         return true;
     }
 
-    static function download($doc, $attachment = false, $downloadname = false) {
+    static function download($doc, $downloadname = null, $attachment = null) {
         global $zlib_output_compression;
         if (is_array($doc) && count($doc) == 1) {
             $doc = $doc[0];
-            $downloadname = false;
+            $downloadname = null;
         }
         if (!$doc || (is_object($doc) && isset($doc->size) && $doc->size == 0))
             return set_error_html("Empty file.");
@@ -376,7 +376,7 @@ class DocumentHelper {
 	$doc_mimetype = self::_mimetype($doc);
 	header("Content-Type: " . Mimetype::type($doc_mimetype));
 	header("Content-Description: PHP Generated Data");
-        if (!$attachment)
+        if ($attachment === null)
 	    $attachment = !Mimetype::disposition_inline($doc_mimetype);
         if (!$downloadname) {
             $downloadname = $doc->filename;

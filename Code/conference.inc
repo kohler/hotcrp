@@ -799,7 +799,7 @@ class Conference {
         $downloadname = false;
         if (count($docs) > 1)
             $downloadname = $Opt["downloadPrefix"] . pluralx(2, HotCRPDocument::unparse_dtype($documentType)) . ".zip";
-        return DocumentHelper::download($docs, $attachment, $downloadname);
+        return DocumentHelper::download($docs, $downloadname, $attachment);
     }
 
     function downloadPaper($paperId, $attachment, $documentType = DTYPE_SUBMISSION, $docid = null) {

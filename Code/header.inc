@@ -200,7 +200,7 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/lib/paperoption.php");
     else if ($class_name == "PaperRank")
         require_once("$ConfSitePATH/lib/rank.php");
-    else if ($class_name == "CsvParser")
+    else if ($class_name == "CsvParser" || $class_name == "CsvGenerator")
         require_once("$ConfSitePATH/lib/csv.php");
     else if ($class_name == "XlsxGenerator")
         require_once("$ConfSitePATH/lib/xlsx.php");

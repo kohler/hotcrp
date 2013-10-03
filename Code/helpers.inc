@@ -106,15 +106,6 @@ function simplifyWhitespace($x) {
     return trim(preg_replace('/\s+/', " ", $x));
 }
 
-function csvq($text, $quote_empty = false) {
-    if ($text == "")
-	return $quote_empty ? '""' : $text;
-    else if (preg_match('/\A[-_@\$#+A-Za-z0-9.](?:[-_@\$#+A-Za-z0-9. \t]*[-_\$#+A-Za-z0-9.]|)\z/', $text))
-	return $text;
-    else
-	return '"' . str_replace('"', '""', $text) . '"';
-}
-
 function mime_quote_string($word) {
     return '"' . preg_replace('_([\x00-\x1F\\"])_', '\$1', $word) . '"';
 }
@@ -1413,51 +1404,28 @@ function titleWords($title, $chars = 40) {
     return $xtitle . "...";
 }
 
-function __downloadCSV(&$row, $csv) {
-    $t = array();
-    reset($row);
-    if (count($row) == 0)
-	return "";
-    else if (is_array(current($row))) {
-	foreach ($row as &$x)
-	    $t[] = __downloadCSV($x, $csv);
-	unset($x);
-	return join("", $t);
-    } else if ($csv) {
-	foreach ($row as &$x)
-	    $t[] = csvq($x);
-	unset($x);
-	return join(",", $t) . "\n";
-    } else
-	return join("\t", $row) . "\n";
-}
-
 function downloadCSV($info, $header, $filename, $description, $opt = array()) {
-    global $Conf, $Opt, $zlib_output_compression;
+    global $Opt;
     $iscsv = defval($opt, "type", "csv") == "csv" && !isset($Opt["disableCSV"]);
-    if (is_array($info))
-	$text = __downloadCSV($info, $iscsv);
-    else
-	$text = $info;
-    if ($header && $iscsv)
-	$headertext = __downloadCSV($header, $iscsv);
-    else if ($header)
-	$headertext = "#" . __downloadCSV($header, $iscsv);
-    else
-	$headertext = "";
-    header("Content-Description: " . $Opt["shortName"] . " $description, PHP generated data");
-    header("Content-Disposition: " . (defval($opt, "inline") ? "inline" : "attachment") . "; filename=" . mime_quote_string($Opt["downloadPrefix"] . $filename . ($iscsv ? ".csv" : ".txt")));
-    if ($iscsv)
-	header("Content-Type: text/csv; charset=utf-8; header=" . ($headertext ? "present" : "absent"));
-    else
-	header("Content-Type: text/plain; charset=utf-8");
-    if (!defval($opt, "nolength") && !$zlib_output_compression)
-	header("Content-Length: " . (strlen($headertext) + strlen($text)));
-    echo $headertext, $text;
+    $csvg = new CsvGenerator($iscsv ? CsvGenerator::TYPE_COMMA : CsvGenerator::TYPE_TAB);
+    if ($header)
+        $csvg->header($header);
+    $csvg->add($info);
+    $csvg->download_headers($Opt["downloadPrefix"] . $filename . $csvg->extension(),
+                            !defval($opt, "inline"),
+                            $Opt["shortName"] . " " . $description);
+    $csvg->download();
 }
 
-function downloadText($text, $filename, $description, $inline = false, $length = true) {
-    downloadCSV($text, false, preg_replace('/\.txt\z/', "", $filename), $description, array("inline" => $inline, "nolength" => !$length, "type" => "txt"));
+function downloadText($text, $filename, $description, $inline = false) {
+    global $Opt;
+    $csvg = new CsvGenerator(CsvGenerator::TYPE_TAB);
+    $csvg->download_headers($Opt["downloadPrefix"] . $filename,
+                            !$inline, $Opt["shortName"] . " " . $description);
+    if ($text !== false) {
+        $csvg->add($text);
+        $csvg->download();
+    }
 }
 
 function cvtpref($n) {
