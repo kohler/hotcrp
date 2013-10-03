@@ -9,18 +9,18 @@ if (!isset($_REQUEST["cap"]) && isset($_SERVER["PATH_INFO"])
     $_REQUEST["cap"] = $m[1];
 
 if (!isset($_REQUEST["cap"]))
-    $Me->goAlert(false, "You didn’t enter the full password reset link into your browser. Make sure you include the reset code (the string of letters, numbers, and other characters at the end).");
+    error_go(false, "You didn’t enter the full password reset link into your browser. Make sure you include the reset code (the string of letters, numbers, and other characters at the end).");
 
 $capdata = $Conf->check_capability($_REQUEST["cap"]);
 if (!$capdata || $capdata->capabilityType != CAPTYPE_RESETPASSWORD)
-    $Me->goAlert(false, "That password reset code has expired (or you didn’t enter it correctly). Try generating another.");
+    error_go(false, "That password reset code has expired (or you didn’t enter it correctly). Try generating another.");
 
 $Acct = new Contact;
 if (!$Acct->lookupById($capdata->contactId))
-    $Acct->goAlert(false, "That password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
+    error_go(false, "That password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
 
 if (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]))
-    $Acct->goAlert(false, "Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
+    error_go(false, "Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
 
 // don't show information about the current user, if there is one
 $Me = new Contact;

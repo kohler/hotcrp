@@ -333,6 +333,12 @@ function go($url) {
     exit();
 }
 
+function error_go($url, $message) {
+    global $Conf;
+    $Conf->errorMsg($message);
+    go($url);
+}
+
 function post_value() {
     global $Conf;
     $Conf->ensureSession();

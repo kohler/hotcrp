@@ -257,12 +257,6 @@ class Contact {
         $this->sorter = trim("$this->firstName $this->lastName $this->email");
     }
 
-    function goAlert($url, $message = "") {
-	global $Conf;
-	$Conf->errorMsg($message);
-	go($url);
-    }
-
     function goIfInvalid() {
 	global $Conf;
 	if (!$this->valid()) {
@@ -283,18 +277,18 @@ class Contact {
 	    // NB: selfHref automagically preserves common parameters like
 	    // "p", "q", etc.
 	    $_SESSION["afterLogin"] = selfHref($x, null, false);
-	    $this->goAlert(false, "You have invalid credentials and need to sign in.");
+	    error_go(false, "You have invalid credentials and need to sign in.");
 	}
     }
 
     function goIfNotPC() {
 	if (!$this->valid() || !($this->privChair || $this->isPC))
-	    $this->goAlert(false, "That page is only accessible to program committee members.");
+	    error_go(false, "That page is only accessible to program committee members.");
     }
 
     function goIfNotPrivChair() {
 	if (!$this->valid() || !$this->privChair)
-	    $this->goAlert(false, "That page is only accessible to conference administrators.");
+	    error_go(false, "That page is only accessible to conference administrators.");
     }
 
     function updateDB($where = "") {
