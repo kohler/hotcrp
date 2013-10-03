@@ -857,7 +857,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
     else if ($mt == "xauto") {
 	$t = (in_array($_REQUEST["t"], array("acc", "s")) ? $_REQUEST["t"] : "all");
 	$q = join($papersel, "+");
-	$Me->go(hoturl("autoassign", "pap=" . join($papersel, "+") . "&t=$t&q=$q"));
+	go(hoturl("autoassign", "pap=" . join($papersel, "+") . "&t=$t&q=$q"));
     } else if ($mt == "xpcpaper" || $mt == "xunpcpaper") {
 	$Conf->qe("update Paper set pcPaper=" . ($mt == "xpcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
 	$Conf->log("Change PC paper status", $Me, $papersel);
@@ -909,7 +909,7 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 	$Conf->errorMsg("Only the PC chairs can send mail.");
     else {
 	$r = (in_array($_REQUEST["recipients"], array("au", "rev")) ? $_REQUEST["recipients"] : "all");
-	$Me->go(hoturl("mail", "p=" . join($papersel, "+") . "&recipients=$r"));
+	go(hoturl("mail", "p=" . join($papersel, "+") . "&recipients=$r"));
     }
 }
 

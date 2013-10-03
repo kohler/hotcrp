@@ -2039,7 +2039,7 @@ class PaperTable {
 	    return true;
 	} else {
 	    $t = (defval($_REQUEST, "t", 0) ? "&t=" . urlencode($_REQUEST["t"]) : "");
-	    $Conf->go(hoturl("search", "q=" . urlencode($_REQUEST["paperId"]) . $t));
+	    go(hoturl("search", "q=" . urlencode($_REQUEST["paperId"]) . $t));
 	    exit;
 	}
     }

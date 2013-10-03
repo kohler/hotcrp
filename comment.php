@@ -313,7 +313,7 @@ if (!$viewAny && !$editAny) {
 	errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
 	$Conf->errorMsg("You can’t see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
-	$Conf->go(hoturl("paper", "p=$prow->paperId$linkExtra"));
+	go(hoturl("paper", "p=$prow->paperId$linkExtra"));
     }
 }
 
@@ -322,7 +322,7 @@ if (!$viewAny && !$editAny) {
 if ($paperTable->mode == "r" || $paperTable->mode == "re")
     $paperTable->fixReviewMode();
 if ($paperTable->mode == "pe")
-    $Conf->go(hoturl("paper", "p=$prow->paperId$linkExtra"));
+    go(hoturl("paper", "p=$prow->paperId$linkExtra"));
 
 
 // page header

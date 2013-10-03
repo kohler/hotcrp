@@ -43,7 +43,7 @@ if ($Me->validContact() && isset($Me->fresh) && $Me->fresh === true) {
 	|| (($Me->roles & Contact::ROLE_PC) && !$Me->collaborators)
 	|| $needti) {
 	$Me->fresh = "redirect";
-	$Me->go(hoturl("profile", "redirect=1"));
+	go(hoturl("profile", "redirect=1"));
     } else
 	unset($Me->fresh);
 }

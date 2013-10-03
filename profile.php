@@ -6,7 +6,7 @@
 require_once("Code/header.inc");
 $Me->goIfInvalid();
 if (!$Me->validContact())
-    $Me->go(false);
+    go(false);
 $newProfile = false;
 $Error = array();
 
@@ -353,13 +353,13 @@ else if (isset($_REQUEST["register"]) && $newProfile
 	} else
 	    $Conf->confirmMsg("Account profile updated.");
 	if (isset($_REQUEST["redirect"]))
-	    $Me->go(hoturl("index"));
+	    go(hoturl("index"));
 	else
 	    redirectSelf();
     }
 } else if (isset($_REQUEST["merge"]) && !$newProfile
 	   && $Acct->contactId == $Me->contactId)
-    $Me->go(hoturl("mergeaccounts"));
+    go(hoturl("mergeaccounts"));
 
 function databaseTracks($who) {
     global $Conf;
@@ -438,7 +438,7 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
 	    // done
 	    $Conf->confirmMsg("Permanently deleted user " . htmlspecialchars($Acct->email) . ".");
 	    $Conf->log("Permanently deleted user " . htmlspecialchars($Acct->email) . " ($Acct->contactId)", $Me);
-	    $Me->go(hoturl("users", "t=all"));
+	    go(hoturl("users", "t=all"));
 	}
     }
 }

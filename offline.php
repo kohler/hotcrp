@@ -170,7 +170,7 @@ $pastDeadline = !$Conf->timeReviewPaper($Me->isPC, true, true);
 
 if ($pastDeadline && !$Conf->deadlinesAfter("rev_open") && !$Me->privChair) {
     $Conf->errorMsg("The site is not open for review.");
-    $Me->go(hoturl("index"));
+    go(hoturl("index"));
 }
 
 $Conf->header("Offline Reviewing", 'offrev', actionBar());

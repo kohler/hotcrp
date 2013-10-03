@@ -24,7 +24,7 @@ class LoginHelper {
             unset($_SESSION["afterLogin"]);
             if (isset($Opt["httpAuthLogin"])) {
                 $_SESSION["reauth"] = true;
-                $Conf->go("");
+                go("");
             }
         }
     }
@@ -97,7 +97,7 @@ class LoginHelper {
             foreach (array("email", "password", "action", "go", "afterLogin", "signin") as $a)
                 if (isset($_REQUEST[$a]))
                     $url .= "&$a=" . urlencode($_REQUEST[$a]);
-            $Conf->go("?" . $url);
+            go("?" . $url);
         } else if (!isset($_COOKIE["CRPTestCookie"]))
             return $Conf->errorMsg("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
 
@@ -169,7 +169,7 @@ class LoginHelper {
 
         setcookie("CRPTestCookie", false);
         unset($_SESSION["afterLogin"]);
-        $Me->go($where);
+        go($where);
         exit;
     }
 

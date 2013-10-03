@@ -21,7 +21,7 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
 	if (isset($_REQUEST[$opt]))
 	    $after .= ($after === "" ? "" : "&") . $opt . "=" . urlencode($_REQUEST[$opt]);
     $url = substr(hoturl("review", $after), strlen($ConfSiteBase));
-    $Me->go(hoturl("index", "email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode($url)));
+    go(hoturl("index", "email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode($url)));
 }
 
 $Me->goIfInvalid();
@@ -408,7 +408,7 @@ if (!$viewAny && !$editAny) {
 	errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
 	$Conf->errorMsg("You can’t see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
-	$Conf->go(hoturl("paper", "p=$prow->paperId$linkExtra"));
+	go(hoturl("paper", "p=$prow->paperId$linkExtra"));
     }
 }
 
@@ -417,7 +417,7 @@ if (!$viewAny && !$editAny) {
 if ($paperTable->mode == "r" || $paperTable->mode == "re")
     $paperTable->fixReviewMode();
 if ($paperTable->mode == "pe")
-    $Conf->go(hoturl("paper", "p=$prow->paperId$linkExtra"));
+    go(hoturl("paper", "p=$prow->paperId$linkExtra"));
 
 
 // page header

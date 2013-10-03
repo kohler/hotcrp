@@ -43,7 +43,7 @@ if (isset($_REQUEST["go"]) && check_post()) {
         $Conf->infoMsg("Your password has been changed and you are now signed in to the conference site.");
         $Conf->q("delete from CapabilityMap where capabilityValue='" . sqlq($capdata->capabilityValue) . "'");
         $Conf->q("delete from Capability where capabilityId=" . $capdata->capabilityId);
-        $Acct->go(hoturl("index", "email=" . urlencode($Acct->email) . "&password=" . urlencode($_REQUEST["upassword"])));
+        go(hoturl("index", "email=" . urlencode($Acct->email) . "&password=" . urlencode($_REQUEST["upassword"])));
     }
     $password_class = " error";
 }

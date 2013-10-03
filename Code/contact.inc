@@ -257,10 +257,6 @@ class Contact {
         $this->sorter = trim("$this->firstName $this->lastName $this->email");
     }
 
-    function go($url) {
-	go($url);
-    }
-
     function goAlert($url, $message = "") {
 	global $Conf;
 	$Conf->errorMsg($message);

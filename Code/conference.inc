@@ -641,11 +641,6 @@ class Conference {
     }
 
 
-    function go($url) {
-	go($url);
-    }
-
-
     function cacheableImage($name, $alt, $title = null, $class = null, $style = null) {
 	global $ConfSiteBase, $ConfSitePATH;
 	$t = "<img src='${ConfSiteBase}images/$name' alt=\"$alt\"";

@@ -467,7 +467,7 @@ function redirectSelf($extra = array()) {
     $want = preg_replace('/\A.*?(?:\?|\z)/', "", selfHref($extra, null, false));
     if ($want != "")
 	$absuri .= "?" . $want;
-    $Conf->go($absuri);
+    go($absuri);
 }
 
 function validateEmail($email) {

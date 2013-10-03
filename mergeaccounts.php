@@ -35,7 +35,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
 	    $MergeError = "That password is incorrect.";
 	else if ($MiniMe->contactId == $Me->contactId) {
 	    $Conf->confirmMsg("Accounts successfully merged.");
-	    $Me->go(hoturl("index"));
+	    go(hoturl("index"));
 	} else {
 	    // Do they prefer the account they named?
 	    if (defval($_REQUEST, 'prefer')) {
@@ -126,7 +126,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
 	    if ($MergeError == "") {
 		$Conf->confirmMsg("Account " . htmlspecialchars($MiniMe->email) . " successfully merged.");
 		$Conf->log("Merged account $MiniMe->email", $Me);
-		$Me->go(hoturl("index"));
+		go(hoturl("index"));
 	    } else {
 		$Conf->log("Merged account $MiniMe->email with errors", $Me);
 		$MergeError .= $Conf->db_error_html(null);
