@@ -927,7 +927,7 @@ if (defval($_REQUEST, "scoresort") == "M")
 if (isset($_REQUEST["scoresort"]) && isset($scoreSorts[$_REQUEST["scoresort"]]))
     $_SESSION["scoresort"] = $_REQUEST["scoresort"];
 if (!isset($_SESSION["scoresort"]))
-    $_SESSION["scoresort"] = $Conf->settingText("scoresort_default", $defaultScoreSort);
+    $_SESSION["scoresort"] = PaperList::default_score_sort();
 if (isset($_REQUEST["redisplay"]))
     redirectSelf(array("tab" => "display"));
 
@@ -1473,7 +1473,7 @@ if ($pl && $pl->count > 0) {
 	$pld = explode(" ", trim($Conf->settingText("pldisplay_default", " overAllMerit ")));
 	sort($pld);
 	if ($_SESSION["pldisplay"] != " " . ltrim(join(" ", $pld) . " ")
-	    || $_SESSION["scoresort"] != $Conf->settingText("scoresort_default", $defaultScoreSort))
+	    || $_SESSION["scoresort"] != PaperList::default_score_sort(true))
 	    $Conf->footerScript("plinfo.extra()");
     }
 

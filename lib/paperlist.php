@@ -36,7 +36,7 @@ class PaperList extends BaseList {
     public $any;
 
     function __construct($search, $args = array()) {
-	global $scoreSorts, $defaultScoreSort, $Conf;
+	global $Conf;
 	$this->search = $search;
 
 	if (($this->sortable = !!defval($args, "sort"))

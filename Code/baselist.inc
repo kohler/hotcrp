@@ -3,14 +3,13 @@
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-global $scoreSorts, $defaultScoreSort;
+global $scoreSorts;
 $scoreSorts = array("C" => "Counts",
 		    "A" => "Average",
 		    "E" => "Median",
 		    "V" => "Variance",
 		    "D" => "Max &minus; min",
 		    "Y" => "Your score");
-$defaultScoreSort = "C";
 
 class BaseList {
 
@@ -100,11 +99,21 @@ class BaseList {
             usort($rows, array($this, "score_numeric_compar"));
     }
 
+    public static function default_score_sort($nosession = false) {
+        global $Conf, $Opt;
+        if (isset($_SESSION["scoresort"]) && !$nosession)
+            return $_SESSION["scoresort"];
+        else if ($Conf && ($s = $Conf->settingText("scoresort_default")))
+            return $s;
+        else
+            return defval($Opt, "defaultScoreSort", "C");
+    }
+
     public static function parse_sorter($text) {
-        global $scoreSorts, $defaultScoreSort;
+        global $scoreSorts;
         $sort = (object) array("type" => null,
                                "reverse" => false,
-                               "score" => defval($_SESSION, "scoresort", $defaultScoreSort),
+                               "score" => self::default_score_sort(),
                                "empty" => $text == "");
         if (!preg_match('/\A(\d+)([a-z]*)\z/i', $text, $m)
             && !preg_match('/\A([^,+]+)(?:[,+]([a-z]*))?\z/i', $text, $m))
