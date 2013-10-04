@@ -16,7 +16,7 @@ class HotCRPDocument {
         if ($option)
             $this->option = $option;
         else if ($this->dtype > 0)
-            $this->option = paperOptions($dtype);
+            $this->option = PaperOption::get($dtype);
         else
             $this->option = null;
     }
@@ -40,7 +40,7 @@ class HotCRPDocument {
         else if ($doc->documentType == DTYPE_FINAL)
             $fn .= "final" . $doc->paperId;
         else {
-            $o = paperOptions($doc->documentType);
+            $o = PaperOption::get($doc->documentType);
             if ($o && $o->type == PaperOption::T_ATTACHMENTS && $doc->filename)
                 // do not decorate with MIME type suffix
                 return $fn . "p" . $doc->paperId . "/" . $o->optionAbbrev . "/" . $doc->filename;
