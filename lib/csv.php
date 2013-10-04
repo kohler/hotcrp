@@ -285,6 +285,8 @@ class CsvGenerator {
         if (!$downloadname)
             $downloadname = "data" . $this->extension();
         header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
+        // reduce likelihood of XSS attacks in IE
+        header("X-Content-Type-Options: nosniff");
     }
 
     function download() {
