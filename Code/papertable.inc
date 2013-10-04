@@ -331,7 +331,7 @@ class PaperTable {
                                       "mimetype" => null,
                                       "documentType" => DTYPE_SUBMISSION);
 		$pdfs[] = "<small><a class='u' href=\""
-		    . $Conf->makeDownloadPath($doc)
+		    . HotCRPDocument::url($doc)
 		    . "\">Submission version</a></small>";
             }
 

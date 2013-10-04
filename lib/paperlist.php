@@ -153,7 +153,7 @@ class PaperList extends BaseList {
 	if ($row->documentType == DTYPE_FINAL)
 	    $this->any->final = true;
 	$this->any->paper = true;
-        $t = "&nbsp;<a href=\"" . $Conf->makeDownloadPath($row) . "\">";
+        $t = "&nbsp;<a href=\"" . HotCRPDocument::url($row) . "\">";
 	if ($row->mimetype == "application/pdf")
 	    return $t . $Conf->cacheableImage("pdf$finalsuffix.png", "[PDF]", $finaltitle) . "</a>";
 	else if ($row->mimetype == "application/postscript")

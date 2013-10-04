@@ -523,7 +523,7 @@ function reviewType($paperId, $row, $long = 0) {
 
 function documentDownload($doc, $dlimg_class = "dlimg", $text = null) {
     global $Conf;
-    $p = $Conf->makeDownloadPath($doc);
+    $p = HotCRPDocument::url($doc);
     $finalsuffix = ($doc->documentType == DTYPE_FINAL ? "f" : "");
     $sp = "&nbsp;";
     $imgsize = ($dlimg_class[0] == "s" ? "" : "24");

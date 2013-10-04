@@ -1775,25 +1775,6 @@ class Conference {
     // Miscellaneous
     //
 
-    function makeDownloadPath($doc) {
-	global $ConfSiteBase, $ConfSiteSuffix;
-        if (!property_exists($doc, "mimetype") || !isset($doc->documentType)) {
-            $trace = debug_backtrace();
-            error_log($trace[0]["file"] . ":" . $trace[0]["line"] . ": makeDownloadPath called with incomplete document");
-        }
-	if ($doc->mimetype)
-	    return $ConfSiteBase . "doc$ConfSiteSuffix/" . HotCRPDocument::filename($doc);
-	else {
-	    $x = $ConfSiteBase . "doc$ConfSiteSuffix?p=" . $doc->paperId;
-	    if ($doc->documentType == DTYPE_FINAL)
-		return $x . "&amp;final=1";
-	    else if ($doc->documentType > 0)
-		return $x . "&amp;dt=$doc->documentType";
-	    else
-		return $x;
-	}
-    }
-
     function allowEmailTo($email) {
 	global $Opt;
 	return $Opt["sendEmail"]

@@ -137,4 +137,20 @@ class HotCRPDocument {
         return $ok;
     }
 
+    static function url($doc) {
+	global $ConfSiteBase, $ConfSiteSuffix;
+        assert(property_exists($doc, "mimetype") && isset($doc->documentType));
+	if ($doc->mimetype)
+	    return $ConfSiteBase . "doc$ConfSiteSuffix/" . self::filename($doc);
+	else {
+	    $x = $ConfSiteBase . "doc$ConfSiteSuffix?p=" . $doc->paperId;
+	    if ($doc->documentType == DTYPE_FINAL)
+		return $x . "&amp;final=1";
+	    else if ($doc->documentType > 0)
+		return $x . "&amp;dt=$doc->documentType";
+	    else
+		return $x;
+	}
+    }
+
 }
