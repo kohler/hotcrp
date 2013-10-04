@@ -721,16 +721,6 @@ class Conference {
 	return $doc->size;
     }
 
-    function downloadPaperName($paperId, $mimetype, $documentType) {
-	global $Opt;
-	$title = $Opt["downloadPrefix"];
-	$dtn = HotCRPDocument::unparse_dtype($documentType);
-	$title .= ($dtn ? $dtn : "xxx");
-	if (ctype_digit($title[strlen($title) - 1]))
-	    $title .= "-";
-	return $title . $paperId . Mimetype::extension($mimetype);
-    }
-
     function document_result($prow, $documentType, $docid = null) {
 	global $Opt;
 	if (is_array($prow) && count($prow) <= 1)
