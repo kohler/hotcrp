@@ -4,15 +4,14 @@
 ## Distributed under an MIT-like license; see LICENSE
 
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C
-export PROGDIR=`echo "$0" | sed 's,[^/]*$,,'`
-test -z "$PROGDIR" && PROGDIR=.
-. $PROGDIR/dbhelper.sh
+if ! expr "$0" : '.*[/]' >/dev/null; then LIBDIR=./
+else LIBDIR=`echo "$0" | sed 's,^\(.*/\)[^/]*$,\1,'`; fi
+. ${LIBDIR}dbhelper.sh
 
 export PROG=$0
 export FLAGS=
 structure=false
 pc=false
-options_file=options.inc
 while [ $# -gt 0 ]; do
     case "$1" in
     --structure|--schema) structure=true;;
@@ -23,15 +22,15 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ ! -r "${PROGDIR}${options_file}" ]; then
-    echo "backupdb.sh: Can't read ${PROGDIR}${options_file}! Is this a CRP directory?" 1>&2
+if [ -z "`findoptions`" ]; then
+    echo "backupdb.sh: Can't read options file! Is this a CRP directory?" 1>&2
     exit 1
 fi
 
 dbname="`getdbopt dbName 2>/dev/null`"
 dbuser="`getdbopt dbUser 2>/dev/null`"
 dbpass="`getdbopt dbPassword 2>/dev/null`"
-test -z "$dbname" -o -z "$dbuser" -o -z "$dbpass" && { echo "backupdb.sh: Cannot extract database run options from ${options_file}!" 1>&2; exit 1; }
+test -z "$dbname" -o -z "$dbuser" -o -z "$dbpass" && { echo "backupdb.sh: Cannot extract database run options from `findoptions`!" 1>&2; exit 1; }
 
 ### Test mysqldump binary
 check_mysqlish MYSQL mysql

@@ -8,6 +8,12 @@ echo_n () {
 '
 }
 
+findoptions () {
+    if test -r "${CONFDIR}options.php"; then echo "${CONFDIR}options.php"
+    elif test -r "${CONFDIR}options.inc"; then echo "${CONFDIR}options.inc"
+    elif test -r "${SRCDIR}options.inc"; then echo "${SRCDIR}options.inc"; fi
+}
+
 getdbopt () {
     perl -e 'undef $/; $t = <STDIN>;
 $t =~ s|/\*.*?\*/||gs;
@@ -58,7 +64,7 @@ if ($Opt{"multiconference"} || exists($Opt{"dsn"}) || !exists($Opt{"dbName"})) {
     $Opt{"dbUser"} = $Opt{"dbName"} if (!exists($Opt{"dbUser"}));
     $Opt{"dbPassword"} = $Opt{"dbName"} if (!exists($Opt{"dbPassword"}));
     print "'"'"'", fixshell($Opt{"'$1'"}), "'"'"'";
-}' < "${PROGDIR}${options_file}"
+}' < "`findoptions`"
 }
 
 sql_quote () {
@@ -98,3 +104,24 @@ set_myargs () {
         fi
     fi
 }
+
+# slash-terminate LIBDIR
+expr "$LIBDIR" : '.*[^/]$' >/dev/null && LIBDIR="$LIBDIR/"
+# remove '/./' components
+LIBDIR="`echo "$LIBDIR" | sed ':a
+s,/\./,/,g
+ta'`"
+# set MAINDIR from LIBDIR
+if test "$LIBDIR" = ./; then
+    MAINDIR=../
+elif expr "$LIBDIR" : '[^/]*[/]$' >/dev/null; then
+    MAINDIR=./
+elif ! expr "$LIBDIR" : '.*\.\.' >/dev/null; then
+    MAINDIR="`echo "$LIBDIR" | sed 's,\(.*/\)[^/]*/$,\1,'`"
+else
+    MAINDIR="${LIBDIR}../"
+fi
+# set CONFDIR and SRCDIR from MAINDIR
+CONFDIR="`echo "${MAINDIR}Code/" | sed 's,^\./\(.\),\1,'`"
+SRCDIR="`echo "${MAINDIR}Code/" | sed 's,^\./\(.\),\1,'`"
+export MAINDIR LIBDIR CONFDIR SRCDIR
