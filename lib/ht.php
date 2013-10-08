@@ -113,7 +113,7 @@ class Ht {
             $js["class"] = "b";
         $type = isset($js["type"]) ? $js["type"] : "button";
         if (isset($js["value"]))
-            return "<button type=\"type\" name=\"$name\" value=\"" . $js["value"]
+            return "<button type=\"$type\" name=\"$name\" value=\"" . $js["value"]
                 . "\"" . self::extra($js) . ">" . $text . "</button>";
         else
             return "<input type=\"$type\" name=\"$name\" value=\"$text\""
