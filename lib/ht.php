@@ -112,18 +112,30 @@ class Ht {
         if (!isset($js["class"]))
             $js["class"] = "b";
         $type = isset($js["type"]) ? $js["type"] : "button";
+        $name = $name ? " name=\"$name\"" : "";
         if (isset($js["value"]))
-            return "<button type=\"$type\" name=\"$name\" value=\"" . $js["value"]
+            return "<button type=\"$type\"$name value=\"" . $js["value"]
                 . "\"" . self::extra($js) . ">" . $text . "</button>";
         else
-            return "<input type=\"$type\" name=\"$name\" value=\"$text\""
+            return "<input type=\"$type\"$name value=\"$text\""
                 . self::extra($js) . " />";
     }
 
-    static function submit($name, $text, $js = null) {
+    static function submit($name, $text = null, $js = null) {
+        if (!$js && is_array($text)) {
+            $js = $text;
+            $text = null;
+        }
         $js = ($js ? $js : array());
         $js["type"] = "submit";
-        return self::button($name, $text, $js);
+        return self::button($text ? $name : "", $text ? $text : $name, $js);
+    }
+
+    static function entry($name, $value, $js = null) {
+        $js = $js ? $js : array();
+        return '<input type="text" name="' . $name . '" value="'
+            . htmlspecialchars($value === null ? "" : $value) . '"'
+            . tagg_extra($js) . ' />';
     }
 
     static function actions($actions, $js = null, $extra = "") {
