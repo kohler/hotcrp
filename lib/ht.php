@@ -135,7 +135,7 @@ class Ht {
         $js = $js ? $js : array();
         return '<input type="text" name="' . $name . '" value="'
             . htmlspecialchars($value === null ? "" : $value) . '"'
-            . tagg_extra($js) . ' />';
+            . self::extra($js) . ' />';
     }
 
     static function actions($actions, $js = null, $extra = "") {
