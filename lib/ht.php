@@ -37,25 +37,36 @@ class Ht {
         $x = '<select name="' . $name . '"' . self::extra($extra) . ">";
         if ($selected === null || !isset($opt[$selected]))
             $selected = key($opt);
+        $disabled = defval($extra, "disabled", null);
+        $optionstyles = defval($extra, "optionstyles", null);
         $optgroup = "";
-        foreach ($opt as $value => $text)
-            if ($text === null)
+        foreach ($opt as $value => $info) {
+            if (is_array($info) && $info[0] == "optgroup")
+                $info = (object) array("type" => "optgroup", "label" => $info[1]);
+            else if (is_string($info)) {
+                $info = (object) array("label" => $info);
+                if ($disabled && isset($disabled[$value]))
+                    $info->disabled = $disabled[$value];
+                if ($optionstyles && isset($optionstyles[$value]))
+                    $info->style = $optionstyles[$value];
+            }
+
+            if ($info === null)
                 $x .= '<option disabled="disabled"></option>';
-            else if (!is_array($text)) {
+            else if (isset($info->type) && $info->type == "optgroup") {
+                $x .= $optgroup . '<optgroup label="' . htmlspecialchars($info->label) . '">';
+                $optgroup = "</optgroup>";
+            } else {
                 $x .= '<option value="' . $value . '"';
                 if (strcmp($value, $selected) == 0)
                     $x .= ' selected="selected"';
-                if ($extra && isset($extra["disabled"])
-                    && defval($extra["disabled"], $value))
+                if (isset($info->disabled) && $info->disabled)
                     $x .= ' disabled="disabled"';
-                if ($extra && isset($extra["optionstyles"])
-                    && ($s = defval($extra["optionstyles"], $value)))
-                    $x .= ' style="' . $s . '"';
-                $x .= ">" . $text . "</option>";
-            } else if ($text[0] == "optgroup") {
-                $x .= $optgroup . "<optgroup label='" . $text[1] . "'>";
-                $optgroup = "</optgroup>";
+                if (isset($info->style) && $info->style)
+                    $x .= ' style="' . $info->style . '"';
+                $x .= '>' . $info->label . '</option>';
             }
+        }
         return $x . $optgroup . "</select>";
     }
 
