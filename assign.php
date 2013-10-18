@@ -468,10 +468,11 @@ $paperTable->initialize(false, false);
 
 
 // begin form and table
-$loginFormBegin = "action='" . hoturl_post("assign", "p=$prow->paperId$linkExtra") . "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>";
+$loginUrl = hoturl_post("assign",  "p=$prow->paperId$linkExtra");
 $loginFormEnd = "</div></form>\n\n";
 
-$paperTable->paptabBegin("<form id='ass' " . $loginFormBegin);
+$paperTable->paptabBegin(Ht::form($loginUrl, array("id" => "ass"))
+                         . '<div class="aahc">');
 
 
 
@@ -631,7 +632,8 @@ if ($Conf->setting("extrev_chairreq") && $Me->allowAdminister($prow)) {
 echo Ht::cbox("pap", true), $loginFormEnd, "</td></tr></table>\n";
 
 // add external reviewers
-echo "<div class='pboxc'><form ", $loginFormBegin, "<table class='pbox'><tr>
+echo "<div class='pboxc'>", Ht::form($loginUrl), '<div class="aahc">',
+    "<table class='pbox'><tr>
   <td class='pboxl'></td>
   <td class='pboxr'>";
 

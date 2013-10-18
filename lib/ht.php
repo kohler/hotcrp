@@ -22,7 +22,8 @@ class Ht {
     }
 
     static function form($action, $extra = null) {
-        return '<form method="post" action="'
+        $method = $extra && isset($extra["method"]) ? $extra["method"] : "post";
+        return '<form method="' . $method . '" action="'
             . $action . '" enctype="multipart/form-data" accept-charset="UTF-8"'
             . self::extra($extra) . '>';
     }
