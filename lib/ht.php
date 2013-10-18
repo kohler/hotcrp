@@ -180,4 +180,16 @@ class Ht {
         return $t . $extra . "</div>\n";
     }
 
+    static function pre($text) {
+        if (is_array($text))
+            $text = join("\n", $text);
+        return "<pre>" . $text . "</pre>";
+    }
+
+    static function pre_h($text) {
+        if (is_array($text))
+            $text = join("\n", $text);
+        return "<pre>" . htmlspecialchars($text) . "</pre>";
+    }
+
 }
