@@ -477,11 +477,11 @@ class ContactList extends BaseList {
 	    $pq .= ",\n	topicIds, topicInterest";
 	if (isset($queryOptions['reviews'])) {
 	    $pq .= ",
-	count(if(PaperReview.reviewNeedsSubmit<=0,PaperReview.reviewSubmitted,PaperReview.reviewId)) as numReviews,
-	count(PaperReview.reviewSubmitted) as numReviewsSubmitted";
+	count(if(r.reviewNeedsSubmit<=0,r.reviewSubmitted,r.reviewId)) as numReviews,
+	count(r.reviewSubmitted) as numReviewsSubmitted";
 	    if (isset($queryOptions["revratings"]))
-		$pq .= ",\n	sum(PaperReview.numRatings) as numRatings,
-	sum(PaperReview.sumRatings) as sumRatings";
+		$pq .= ",\n	sum(r.numRatings) as numRatings,
+	sum(r.sumRatings) as sumRatings";
 	}
 	if (isset($queryOptions["leads"]))
 	    $pq .= ",\n	leadPaperIds, numLeads";
@@ -489,10 +489,10 @@ class ContactList extends BaseList {
 	    $pq .= ",\n	shepherdPaperIds, numShepherds";
 	if (isset($queryOptions['scores']))
 	    foreach ($queryOptions['scores'] as $score)
-		$pq .= ",\n\tgroup_concat(if(PaperReview.reviewSubmitted>0,PaperReview.$score,null)) as $score";
+		$pq .= ",\n\tgroup_concat(if(r.reviewSubmitted>0,r.$score,null)) as $score";
 	if (isset($queryOptions['repapers']))
-	    $pq .= ",\n\tgroup_concat(PaperReview.paperId) as paperIds,
-	group_concat(PaperReview.reviewId) as reviewIds";
+	    $pq .= ",\n\tgroup_concat(r.paperId) as paperIds,
+	group_concat(r.reviewId) as reviewIds";
 	else if (isset($queryOptions['papers']))
 	    $pq .= ",\n\tgroup_concat(PaperConflict.paperId) as paperIds";
 
@@ -501,59 +501,64 @@ class ContactList extends BaseList {
 	$pq .= "\tleft join Chair on (Chair.contactId=u.contactId)
 	left join ChairAssistant on (ChairAssistant.contactId=u.contactId)\n";
 	if (isset($queryOptions['topics']))
-	    $pq .= "	left join (select contactId, group_concat(topicId) as topicIds, group_concat(interest) as topicInterest from TopicInterest group by contactId) as TopicInterests on (TopicInterests.contactId=u.contactId)\n";
+	    $pq .= "	left join (select contactId, group_concat(topicId) as topicIds, group_concat(interest) as topicInterest
+		from TopicInterest
+		group by contactId) as ti on (ti.contactId=u.contactId)\n";
 	if (isset($queryOptions['reviews'])) {
 	    $j = "left join";
 	    if ($this->limit == "re" || $this->limit == "req" || $this->limit == "ext" || $this->limit == "resub" || $this->limit == "extsub")
 		$j = "join";
-	    $pq .= "	$j (select PaperReview.*";
+	    $pq .= "	$j (select r.*";
 	    if (isset($queryOptions["revratings"]))
 		$pq .= ", count(rating) as numRatings, sum(if(rating>0,1,0)) as sumRatings";
-	    $pq .= " from PaperReview join Paper on (Paper.paperId=PaperReview.paperId)";
+	    $pq .= "\n\t\tfrom PaperReview r
+		join Paper p on (p.paperId=r.paperId)";
 	    if (!$this->contact->privChair)
-		$pq .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contact->contactId . ")";
+		$pq .= "\n\t\tleft join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=" . $this->contact->contactId . ")";
 	    if (isset($queryOptions["revratings"])) {
 		require_once("search.inc");
 		$badratings = PaperSearch::unusableRatings($this->contact->privChair, $this->contact->contactId);
-		$pq .= " left join ReviewRating on (ReviewRating.reviewId=PaperReview.reviewId";
+		$pq .= "\n\t\tleft join ReviewRating rr on (rr.reviewId=r.reviewId";
 		if (count($badratings) > 0)
-		    $pq .= " and not (ReviewRating.reviewId in (" . join(",", $badratings) . "))";
+		    $pq .= " and not (rr.reviewId in (" . join(",", $badratings) . "))";
 		$pq .= ")";
 	    }
 	    $jwhere = array();
 	    if ($this->limit == "req" || $this->limit == "ext" || $this->limit == "extsub")
-		$jwhere[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
+		$jwhere[] = "r.reviewType=" . REVIEW_EXTERNAL;
 	    if ($this->limit == "req")
-		$jwhere[] = "PaperReview.requestedBy=" . $this->contact->contactId;
+		$jwhere[] = "r.requestedBy=" . $this->contact->contactId;
 	    if (!$this->contact->privChair)
-		$jwhere[] = "(conflictType is null or conflictType=0 or PaperReview.contactId=" . $this->contact->contactId . ")";
+		$jwhere[] = "(pc.conflictType is null or pc.conflictType=0 or r.contactId=" . $this->contact->contactId . ")";
 	    if (count($jwhere))
-		$pq .= " where " . join(" and ", $jwhere);
+		$pq .= "\n\t\twhere " . join(" and ", $jwhere);
 	    if (isset($queryOptions["revratings"]))
-		$pq .= " group by PaperReview.reviewId";
-	    $pq .= ") as PaperReview on (PaperReview.contactId=u.contactId)\n";
+		$pq .= "\n\t\tgroup by r.reviewId";
+	    $pq .= ") as r on (r.contactId=u.contactId)\n";
 	}
 	if (isset($queryOptions["leads"])) {
-	    $pq .= "	left join (select leadContactId, group_concat(Paper.paperId) as leadPaperIds, count(Paper.paperId) as numLeads from Paper";
+	    $pq .= "	left join (select p.leadContactId, group_concat(p.paperId) as leadPaperIds, count(p.paperId) as numLeads\n\t\tfrom Paper p";
 	    $jwhere = array("leadContactId is not null");
 	    if (!$this->contact->privChair) {
-		$pq .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contact->contactId . ")";
+		$pq .= "\n\t\tleft join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=" . $this->contact->contactId . ")";
 		$jwhere[] = "(conflictType is null or conflictType=0)";
 	    }
-	    $pq .= " where " . join(" and ", $jwhere) . " group by Paper.leadContactId) as LeadPapers on (LeadPapers.leadContactId=u.contactId)\n";
+	    $pq .= "\n\t\twhere " . join(" and ", $jwhere)
+                . "\n\t\tgroup by p.leadContactId) as lead on (lead.leadContactId=u.contactId)\n";
 	}
 	if (isset($queryOptions["shepherds"])) {
-	    $pq .= "	left join (select shepherdContactId, group_concat(Paper.paperId) as shepherdPaperIds, count(Paper.paperId) as numShepherds from Paper";
+	    $pq .= "	left join (select p.shepherdContactId, group_concat(p.paperId) as shepherdPaperIds, count(p.paperId) as numShepherds\n\t\tfrom Paper p";
 	    $jwhere = array("shepherdContactId is not null");
 	    if (!$this->contact->privChair
 		&& !$Conf->timePCViewDecision(true)) {
-		$pq .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->contact->contactId . ")";
+		$pq .= "\n\t\tleft join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=" . $this->contact->contactId . ")";
 		$mywhere = "conflictType is null or conflictType=0";
 		if ($Conf->timeAuthorViewDecision())
 		    $mywhere .= " or conflictType>=" . CONFLICT_AUTHOR;
 		$jwhere[] = "($mywhere)";
 	    }
-	    $pq .= " where " . join(" and ", $jwhere) . " group by Paper.shepherdContactId) as ShepherdPapers on (ShepherdPapers.shepherdContactId=u.contactId)\n";
+	    $pq .= "\n\t\twhere " . join(" and ", $jwhere)
+                . "\n\t\tgroup by p.shepherdContactId) as shep on (shep.shepherdContactId=u.contactId)\n";
 	}
 	if ($aulimit)
 	    $pq .= "\tjoin PaperConflict on (PaperConflict.contactId=u.contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")\n";
