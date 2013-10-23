@@ -221,6 +221,12 @@ if (function_exists("iconv")) {
 }
 
 
+// json helpers
+
+if (!function_exists("json_encode") || !function_exists("json_decode"))
+    require_once("$ConfSitePATH/lib/json.php");
+
+
 // web helpers
 
 function hoturl($page, $options = null) {

@@ -64,6 +64,8 @@ if ($Me->privChair) {
 	$Conf->errorMsg("The PHP <code>magic_quotes_gpc</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP’s <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_gpc</code> in your <code>php.ini</code> configuration file.");
     if (get_magic_quotes_runtime())
 	$Conf->errorMsg("The PHP <code>magic_quotes_runtime</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP’s <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_runtime</code> in your <code>php.ini</code> configuration file.");
+    if (defined("JSON_HOTCRP"))
+        $Conf->warnMsg("Your PHP was built without JSON functionality. HotCRP is using its built-in replacements, but you really want the native functions.");
     if ($Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
 	$Conf->warnMsg("PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect.");
     $result = $Conf->qx("show variables like 'max_allowed_packet'");
