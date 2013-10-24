@@ -1687,7 +1687,7 @@ class PaperTable {
 	echo "</div>\n";
     }
 
-    function paptabBegin($contentopener = "") {
+    function paptabBegin() {
 	global $Conf, $Me, $linkExtra;
 	$prow = $this->prow;
 	$pboxclass = $prow ? "pbox" : "pboxn";
@@ -1709,7 +1709,7 @@ class PaperTable {
 		"</tr><tr>",
 		"    <td class='pboxnl'></td>\n";
 	}
-	echo "    <td class='${pboxclass}r'>", $contentopener, "<table class='papcpap'>
+	echo "    <td class='${pboxclass}r'><table class='papcpap'>
 	<tr><td class='papcl'>",
 	    $Conf->cacheableImage("_.gif", "", null, "_"),
 	    "</td><td class='papct'><div class='inpapct'>";

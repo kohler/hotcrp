@@ -74,6 +74,14 @@ function edb_orow($result) {
     return ($result ? $result->fetch_object() : false);
 }
 
+// array of all rows as objects
+function edb_orows($result) {
+    $x = array();
+    while ($result && ($row = $result->fetch_object()))
+        $x[] = $row;
+    return $x;
+}
+
 // quoting for SQL
 function sqlq($value) {
     global $Conf;

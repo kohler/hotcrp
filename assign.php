@@ -68,7 +68,8 @@ loadRows();
 
 
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST)
-    && !isset($_REQUEST["retract"]))
+    && !isset($_REQUEST["retract"]) && !isset($_REQUEST["add"])
+    && !isset($_REQUEST["deny"]))
     $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
 
 
@@ -120,6 +121,7 @@ if (isset($_REQUEST["retract"])
     retractRequest($retract, $prow->paperId);
     $Conf->qe("unlock tables");
     $Conf->updateRevTokensSetting(false);
+    redirectSelf();
     loadRows();
 }
 
@@ -404,6 +406,7 @@ if (isset($_REQUEST["add"]) && check_post()) {
 	    unset($_REQUEST["email"]);
 	    unset($_REQUEST["name"]);
 	    unset($_REQUEST["reason"]);
+            redirectSelf();
 	} else
 	    $Conf->qx("unlock tables");
 	loadRows();
@@ -469,16 +472,22 @@ $paperTable->initialize(false, false);
 
 
 // begin form and table
-$loginUrl = hoturl_post("assign",  "p=$prow->paperId$linkExtra");
-$loginFormEnd = "</div></form>\n\n";
+$loginUrl = hoturl_post("assign", "p=$prow->paperId$linkExtra");
 
-$paperTable->paptabBegin(Ht::form($loginUrl, array("id" => "ass"))
-                         . '<div class="aahc">');
-
+$paperTable->paptabBegin();
 
 
 // reviewer information
-$t = reviewTable($prow, $rrows, null, null, "assign");
+$proposals = null;
+if ($Conf->setting("extrev_chairreq")) {
+    if ($Me->allowAdminister($prow))
+        $q = "";
+    else
+        $q = " and requestedBy=$Me->contactId";
+    $result = $Conf->qe("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy, reason from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId" . $q, "while finding outstanding requests");
+    $proposals = edb_orows($result);
+}
+$t = reviewTable($prow, $rrows, null, null, "assign", $proposals);
 $t .= reviewLinks($prow, $rrows, null, null, "assign", $allreviewslink);
 
 if ($t != "")
@@ -512,6 +521,7 @@ if ($Me->canAdminister($prow)) {
     // PC conflicts row
     echo "	<tr><td colspan='3' class='papsep'></td></tr>
 	<tr><td></td><td class='papcc'>",
+        Ht::form($loginUrl, array("id" => "ass")), '<div class="aahc">',
 	"<div class='papt'><span class='papfn'>PC review assignments</span>",
 	"<div class='clear'></div></div>",
 	"<div class='paphint'>Review preferences display as &ldquo;P#&rdquo;";
@@ -596,41 +606,12 @@ if ($Me->canAdminister($prow)) {
 	"<input type='submit' class='bb' name='update' value='Save assignments' />",
 	" &nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />",
 	" <span id='assresult' style='padding-left:1em'></span></div>\n\n",
+        '</div></form>',
 	"</td><td></td></tr>\n";
 }
 
 
-// outstanding requests
-if ($Conf->setting("extrev_chairreq") && $Me->allowAdminister($prow)) {
-    $result = $Conf->qe("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy, reason from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId", "while finding outstanding requests");
-    if (edb_nrows($result) > 0) {
-	echo "	<tr><td colspan='3' class='papsep'></td></tr>
-	<tr><td></td><td class='papcc'>",
-	    "<div class='papt'><span class='papfn'>Proposed reviewers</span>",
-	    "<div class='clear'></div></div>",
-	    "<div class='papv'>",
-	    "<table class='reviewers'>\n";
-	while (($row = edb_orow($result))) {
-	    $reason = defval($row, "reason", "");
-	    $reason = ($reason == "" ? "" : "&amp;reason=" . urlencode($reason));
-	    echo "<tr><td>", htmlspecialchars($row->name), "</td><td>&lt;",
-		"<a href=\"mailto:", urlencode($row->email), "\">",
-		htmlspecialchars($row->email), "</a>&gt;</td>",
-		"<td><a class='button_small' href=\"",
-		hoturl_post("assign", "p=$prow->paperId&amp;name=" . urlencode($row->name) . "&amp;email=" . urlencode($row->email) . $reason . "&amp;add=1"),
-		"\">Approve</a>&nbsp; ",
-		"<a class='button_small' href=\"",
-		hoturl_post("assign", "p=$prow->paperId&amp;name=" . urlencode($row->name) . "&amp;email=" . urlencode($row->email) . "&amp;deny=1"),
-		"\">Deny</a></td></tr>\n",
-		"<tr><td colspan='3'><small>Requester: ", Text::user_html($row->reqFirstName, $row->reqLastName), "</small></td></tr>\n";
-	}
-	echo "</table></div>\n\n",
-	    "</td><td></td></tr>\n";
-    }
-}
-
-
-echo Ht::cbox("pap", true), $loginFormEnd, "</td></tr></table>\n";
+echo Ht::cbox("pap", true), "</td></tr></table>\n";
 
 // add external reviewers
 echo "<div class='pboxc'>", Ht::form($loginUrl), '<div class="aahc">',
@@ -670,6 +651,6 @@ if ($Me->canAdminister($prow))
     echo "<div class='f-i'>\n  ", Ht::checkbox("override"), "&nbsp;", Ht::label("Override deadlines and any previous refusal"), "\n</div>\n";
 
 echo "</td><td></td></tr>\n", Ht::cbox("rev", true),
-    "</td></tr></table>\n", $loginFormEnd, "</div>\n";
+    "</td></tr></table>\n</div></form></div>\n";
 
 $Conf->footer();

@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 // reviewer information
-function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
+function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     global $Conf, $Me, $rf, $forceShow, $linkExtra, $reviewTypeName;
     if (!$rf)
 	$rf = reviewForm();
@@ -84,20 +84,29 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	$showtoken = $rr->reviewToken && $Me->canReview($prow, $rr);
 	if (!$Me->canViewReviewerIdentity($prow, $rr, null)) {
 	    $t .= ($x ? "<td>$x</td>" : "<td class='empty'></td>");
-	    if ($mode == "assign")
-		$t .= "<td class='empty'></td>";
 	} else {
-	    if (!$showtoken || !preg_match('/^anonymous\d*$/', $rr->email))
-		$n = Text::name_html($rr->firstName, $rr->lastName,
-				     $mode == "assign" ? null : $rr->email);
-	    else
+	    if (!$showtoken || !preg_match('/^anonymous\d*$/', $rr->email)) {
+                if ($mode == "assign")
+                    $n = Text::user_html($rr);
+                else
+                    $n = Text::name_html($rr);
+            } else
 		$n = "[Token " . encodeToken((int) $rr->reviewToken) . "]";
 	    $t .= "<td>" . $n . ($x ? " $x" : "");
 	    if ($admin && $rr->email != $Me->email)
 		$t .= " <a href=\"" . selfHref(array("viewContact" => $rr->email)) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($rr)) . "</a>";
+            if ($mode == "assign"
+                && ($conflictType <= 0 || $effAssistant)
+                && $rr->reviewType == REVIEW_EXTERNAL
+                && $rr->reviewModified <= 0
+                && ($rr->requestedBy == $Me->contactId || $effAssistant))
+                $t .= ' <small>'
+                    . Ht::form(hoturl_post("assign", "p=$prow->paperId$linkExtra"))
+                    . '<div class="inform">'
+                    . Ht::hidden("retract", $rr->reviewId)
+                    . Ht::submit("Retract", array("title" => "Retract this review request", "style" => "font-size:smaller"))
+                    . '</div></form></small>';
 	    $t .= "</td>";
-	    if ($mode == "assign")
-		$t .= "<td>" . Text::user_html(null, null, $rr->email) . "</td>";
 	    if (isset($rr->contactTags) && $rr->contactTags && $Me->isPC) {
 		if (!$colorizer)
 		    $colorizer = new Tagger;
@@ -106,35 +115,79 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode) {
 	    }
 	}
 
-	// review type
-	if ($mode != "assign")
-	    /* nothing */;
-	else if (($conflictType > 0 && !$effAssistant) || $rr->reviewType != REVIEW_EXTERNAL)
-	    $t .= "<td class='empty'></td>";
-	else {
-	    $t .= "<td><small>Requested by " . Text::user_html($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
-	    if ($rr->reviewModified <= 0
-		&& $rr->reviewType == REVIEW_EXTERNAL
-		&& ($rr->requestedBy == $Me->contactId || $effAssistant))
-		$t .= " (<a href=\"" . hoturl_post("assign", "p=$prow->paperId&amp;retract=$rr->reviewId$linkExtra") . "\" title='Retract this review request'><strong>Retract</strong></a>)";
-	    $t .= "</small></td>";
+	// requester
+        $reqt = "";
+	if ($mode == "assign"
+            && ($conflictType <= 0 || $effAssistant)
+            && $rr->reviewType == REVIEW_EXTERNAL) {
+            $reqt = '<td class="empty"></td>'
+                . '<td style="font-size:smaller" colspan="2">—'
+                . 'requested by ';
+            if ($rr->reqEmail == $Me->email)
+                $reqt .= 'you';
+            else
+                $reqt .= Text::user_html($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
+            $reqt .= '</td>';
 	}
 
 	// scores or retract request
-	if ($mode == "assign")
-	    $t .= "<td class='empty'></td>";
-	else if ($mode != "edit" && $mode != "re")
+	if ($mode != "assign" && $mode != "edit" && $mode != "re")
 	    $t .= $rf->webNumericScoresRow($rr, $prow, $Me, $anyScores);
 
-	$t .= "<td></td>";
-
 	// affix
-	if (!$rr->reviewSubmitted)
+	if (!$rr->reviewSubmitted) {
 	    $nonsubrev[] = array($tclass, $t);
-	else
+            if ($reqt)
+                $nonsubrev[] = array($tclass, $reqt);
+        } else {
 	    $subrev[] = array($tclass, $t);
+            if ($reqt)
+                $subrev[] = array($tclass, $reqt);
+        }
 	$anyColors = $anyColors || ($tclass != "");
     }
+
+    // actual rows
+    if ($proposals)
+        foreach ($proposals as $rr) {
+            $t = "";
+
+            // review ID
+            $t = "<td>Proposed review</td>";
+
+            // reviewer identity
+            $t .= "<td>" . Text::user_html($rr);
+            if ($effAssistant)
+                $t .= ' <small>'
+                    . Ht::form(hoturl_post("assign", "p=$prow->paperId$linkExtra"))
+                    . '<div class="inform">'
+                    . Ht::hidden("name", $rr->name)
+                    . Ht::hidden("email", $rr->email)
+                    . Ht::hidden("reason", $rr->reason)
+                    . Ht::submit("add", "Approve")
+                    . ' '
+                    . Ht::submit("deny", "Deny")
+                    . '</div></form>';
+            $t .= '</td>';
+
+            // requester
+            $reqt = "";
+            if ($conflictType <= 0 || $effAssistant) {
+                $reqt = '<td class="empty"></td>'
+                    . '<td style="font-size:smaller" colspan="2">—'
+                    . 'requested by ';
+                if ($rr->reqEmail == $Me->email)
+                    $reqt .= 'you';
+                else
+                    $reqt .= Text::user_html($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
+                $reqt .= '</td>';
+            }
+
+            // affix
+	    $nonsubrev[] = array("", $t);
+            if ($reqt)
+                $nonsubrev[] = array("", $reqt);
+        }
 
     // headers
     $numericHeaders = "";
