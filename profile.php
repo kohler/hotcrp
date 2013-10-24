@@ -348,8 +348,11 @@ else if (isset($_REQUEST["register"]) && $newProfile
 	if ($newProfile) {
 	    $Conf->confirmMsg("Created <a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now create another account.");
 	    $_REQUEST["uemail"] = $_REQUEST["newUsername"] = $_REQUEST["firstName"] = $_REQUEST["lastName"] = $_REQUEST["affiliation"] = "";
-	} else
+	} else {
 	    $Conf->confirmMsg("Account profile updated.");
+            if ($Acct->contactId != $Me->contactId)
+                $_REQUEST["u"] = $Acct->email;
+        }
 	if (isset($_REQUEST["redirect"]))
 	    go(hoturl("index"));
 	else
