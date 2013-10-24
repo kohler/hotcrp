@@ -249,7 +249,7 @@ function hoturl($page, $options = null) {
             $options = $m[1] . $m[3];
             if (preg_match($are . 'p=\d+' . $zre, $options, $m))
                 $options = $m[1] . $m[2];
-        } else if ((preg_match('/\A(?:paper|review|comment|contactauthors)\z/', $page)
+        } else if ((preg_match('/\A(?:paper|review|comment|assign|contactauthors)\z/', $page)
                     && preg_match($are . 'p=(\d+|%\w+%)' . $zre, $options, $m))
                    || ($page == "profile"
                        && preg_match($are . 'u=([^&]+)' . $zre, $options, $m))) {
@@ -404,7 +404,7 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
             && isset($_REQUEST["r"]) && $_REQUEST["r"] == substr($path, 1)
             && !array_key_exists("r", $extra))
             $extra["p"] = $extra["r"] = null;
-        else if (preg_match('/(?:paper|review|comment|contactauthors)\.php\z/', $self)
+        else if (preg_match('/(?:paper|review|comment|assign|contactauthors)\.php\z/', $self)
             && isset($_REQUEST["p"]) && $_REQUEST["p"] == substr($path, 1)
             && !array_key_exists("p", $extra))
             $extra["p"] = null;
