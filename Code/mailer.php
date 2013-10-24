@@ -937,13 +937,18 @@ class Mailer {
 	return $text;
     }
 
+    static function chr_hexdec_callback($m) {
+        return chr(hexdec($m[1]));
+    }
+
     static function mimeHeaderUnquote($text) {
 	if (strlen($text) > 2 && $text[0] == '=' && $text[1] == '?') {
 	    $out = '';
 	    while (preg_match('/\A=\?utf-8\?q\?(.*?)\?=(\r?\n )?/i', $text, $m)) {
 		$f = str_replace('_', ' ', $m[1]);
-		$out .= preg_replace('/=([0-9A-F][0-9A-F])/e',
-				     'chr(hexdec("\1"))', $f);
+		$out .= preg_replace_callback('/=([0-9A-F][0-9A-F])/',
+                                              "Mailer::chr_hexdec_callback",
+                                              $f);
 		$text = substr($text, strlen($m[0]));
 	    }
 	    return $out . $text;
