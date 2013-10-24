@@ -24,7 +24,6 @@ if (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]))
 
 // don't show information about the current user, if there is one
 $Me = new Contact;
-$Me->invalidate();
 
 $password_class = "";
 if (isset($_REQUEST["go"]) && check_post()) {

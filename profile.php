@@ -23,7 +23,6 @@ if (!$Me->privChair)
     $Acct = $Me;		// always this contact
 else if (isset($_REQUEST["new"]) || defval($_REQUEST, "u") == "new") {
     $Acct = new Contact();
-    $Acct->invalidate();
     $newProfile = true;
 } else if (isset($_REQUEST["u"])) {
     $Acct = new Contact();
@@ -343,7 +342,6 @@ else if (isset($_REQUEST["register"]) && $newProfile
     else
 	parseBulkFile($text, $_FILES["bulk"]["name"]);
     $Acct = new Contact();
-    $Acct->invalidate();
 } else if (isset($_REQUEST["register"])) {
     $tf = array();
     if (createUser($tf, $newProfile)) {

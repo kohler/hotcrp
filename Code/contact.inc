@@ -55,6 +55,7 @@ class Contact {
 
 
     public function __construct() {
+        $this->invalidate();
     }
 
     // begin changing contactId to cid
@@ -76,7 +77,6 @@ class Contact {
 	// If you change this function, search for its callers to ensure
 	// they provide all necessary information.
 	$c = new Contact();
-	$c->invalidate();
 	$c->contactId = (int) $o->contactId;
 	$c->firstName = defval($o, "firstName", "");
 	$c->lastName = defval($o, "lastName", "");
