@@ -90,7 +90,7 @@ For reference, your account information is as follows.
        Email: %EMAIL%
     Password: %OPT(PASSWORD)%
 
-Or use the link below to sign in directly.
+Or use the link below to sign in.
 
 %LOGINURL%
 

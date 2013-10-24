@@ -397,7 +397,10 @@ class Contact {
         $this->contactId = $contactId;
 	if (count($addAuthor))
             $this->save_authored_papers($addAuthor);
-	return $this->lookupByEmail($this->email);
+
+        if (($result = $this->lookupByEmail($this->email)))
+            $this->password_plaintext = $password;
+        return $result;
     }
 
     function updateFromQuery($query) {
@@ -438,8 +441,62 @@ class Contact {
     }
 
     function lookupByEmail($email) {
-	return $this->updateFromQuery("select ContactInfo.* from ContactInfo
-		where email='" . sqlqtrim($email) . "'");
+        return $this->load_by_email($email);
+    }
+
+    function load_by_email($email, $registration = false, $send = false) {
+        global $Conf, $Me;
+
+        $email = $email ? trim($email) : "";
+        if ($this->updateFromQuery("select ContactInfo.* from ContactInfo
+		where email='" . sqlq($email) . "'"))
+            return true;
+        if ($registration === false || $registration === null
+            || !validateEmail($email))
+            return false;
+
+        $p = "";
+        $req = $_REQUEST;
+        if (is_array($registration))
+            $req = $registration;
+        else if (is_string($registration))
+            $p = $registration;
+
+	// try to add them
+	if ($this->initialize($email)) {
+	    // rigamarole to handle separate or joined first and last names
+	    if (isset($req["${p}firstName"]) || isset($req["${p}lastName"])) {
+		if (isset($req["${p}firstName"]))
+		    $this->firstName = $req["${p}firstName"];
+		if (isset($_REQUEST["${p}lastName"]))
+		    $this->lastName = $req["${p}lastName"];
+	    } else if (isset($req["${p}name"])) {
+		$matches = Text::split_name($req["${p}name"]);
+		$this->firstName = $matches[0];
+		$this->lastName = $matches[1];
+	    }
+
+	    // other information is easier
+	    if (isset($req["${p}affiliation"]))
+		$this->affiliation = $req["${p}affiliation"];
+	    if (isset($req["${p}voicePhoneNumber"]))
+		$this->voicePhoneNumber = $req["${p}voicePhoneNumber"];
+
+	    // actually update database
+	    $result = $this->updateDB("while creating account for " . htmlspecialchars($email));
+	} else
+	    $result = false;
+
+	if ($result) {
+	    if ($Me->privChair)
+		$Conf->infoMsg("Created account for " . htmlspecialchars($email) . ".");
+	    if ($send)
+		$this->sendAccountInfo(true, false);
+	    $Conf->log("$Me->email created account", $this);
+	} else
+	    $Conf->log("$Me->email account creation failure", $this);
+
+	return !!$result;
     }
 
     function lookupById($contactId) {

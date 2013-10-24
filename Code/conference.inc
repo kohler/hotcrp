@@ -318,66 +318,16 @@ class Conference {
     // fetch a contact ID from the database
     function getContactId($email, $registerFromRequest = false,
 			  $sendInfo = true) {
-	global $Me;
-	// XXX should lock table
-
-	$email = ($email ? trim($email) : "");
-	if (!$email)
-	    return false;
-
-	$result = $this->q("select contactId from ContactInfo where email='" . sqlq($email) . "'");
-	if (edb_nrows($result) > 0) {
-	    $row = edb_row($result);
-	    return (int) $row[0];
-	}
-
-	if ($registerFromRequest === false)
-	    return false;
-
-	// validate email address
-	if (!validateEmail($email))
-	    return false;
-
-	$p = (is_string($registerFromRequest) ? $registerFromRequest : "");
-
-	// try to add them
-	$newguy = new Contact();
-	if ($newguy->initialize($email)) {
-	    // rigamarole to handle separate or joined first and last names
-	    if (isset($_REQUEST["${p}firstName"]) || isset($_REQUEST["${p}lastName"])) {
-		if (isset($_REQUEST["${p}firstName"]))
-		    $newguy->firstName = $_REQUEST["${p}firstName"];
-		if (isset($_REQUEST["${p}lastName"]))
-		    $newguy->lastName = $_REQUEST["${p}lastName"];
-	    } else if (!isset($_REQUEST["${p}name"]))
-		/* nada */;
-	    else {
-		$matches = Text::split_name($_REQUEST["${p}name"]);
-		$newguy->firstName = $matches[0];
-		$newguy->lastName = $matches[1];
-	    }
-
-	    // other information is easier
-	    if (isset($_REQUEST["${p}affiliation"]))
-		$newguy->affiliation = $_REQUEST["${p}affiliation"];
-	    if (isset($_REQUEST["${p}voicePhoneNumber"]))
-		$newguy->voicePhoneNumber = $_REQUEST["${p}voicePhoneNumber"];
-
-	    // actually update database
-	    $result = $newguy->updateDB("while creating account for " . htmlspecialchars($email));
-	} else
-	    $result = false;
-
-	if ($result) {
-	    if ($Me->privChair)
-		$this->infoMsg("Created account for " . htmlspecialchars($email) . ".");
-	    if ($sendInfo)
-		$newguy->sendAccountInfo(true, false);
-	    $this->log("$Me->email created account", $newguy);
-	} else
-	    $this->log("$Me->email account creation failure", $newguy);
-
-	return $newguy->contactId;
+        $email = $email ? trim($email) : "";
+        $result = $this->q("select contactId from ContactInfo where email='" . sqlq($email) . "'");
+        if (($row = edb_row($result)))
+            return $row[0];
+        if ($registerFromRequest) {
+            $c = new Contact;
+            if ($c->load_by_email($email, $registerFromRequest, $sendInfo))
+                return $c->contactId;
+        }
+        return false;
     }
 
 
