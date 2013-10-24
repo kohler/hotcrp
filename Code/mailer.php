@@ -178,7 +178,7 @@ class Mailer {
 	}
 
 	if ($what == "%REVIEWDEADLINE%") {
-	    $row_reviewType = isset($this->row->reviewType) ? $this->row->reviewType : null;
+	    $row_reviewType = @$this->row->reviewType;
 	    if ($row_reviewType <= 0 && $Conf->setting("pcrev_soft") != $Conf->setting("extrev_soft")) {
 		if ($isbool && ($Conf->setting("pcrev_soft") > 0) == ($Conf->setting("extrev_soft") > 0))
 		    return $Conf->setting("pcrev_soft") > 0;
@@ -266,9 +266,12 @@ class Mailer {
 
 	if ($what == "%LOGINURL%" || $what == "%LOGINURLPARTS%" || $what == "%PASSWORD%") {
 	    $password = null;
-	    if (!$external_password && isset($this->contact->password)
-                && $this->contact->password_type == 0)
-		$password = ($this->hideSensitive ? "HIDDEN" : $this->contact->password);
+	    if (!$external_password) {
+                if (isset($this->contact->password_plaintext))
+                    $password = ($this->hideSensitive ? "HIDDEN" : $this->contact->password_plaintext);
+                else if ($this->contact->password_type != 0)
+                    $password = false;
+            }
 	    $loginparts = "";
 	    if (!isset($Opt["httpAuthLogin"]))
 		$loginparts = "email=" . urlencode($this->contact->email) . ($password ? "&password=" . urlencode($password) : "");
