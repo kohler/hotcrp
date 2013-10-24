@@ -2040,3 +2040,9 @@ function doopttype(e, nohilite) {
 	fold("optvis" + m[1], e.value != 100, 3);
     }
 }
+
+function copy_override_status(e) {
+    var x = $$("dialog_override");
+    if (x)
+        x.checked = e.checked;
+}

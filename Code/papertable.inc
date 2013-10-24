@@ -1525,7 +1525,7 @@ class PaperTable {
                 $admins = "Only administrators can undo this step.";
             $override = "";
             if (!$Me->canWithdrawPaper($prow))
-                $override = "<div>" . Ht::checkbox("override") . "&nbsp;"
+                $override = "<div>" . Ht::checkbox("override", array("id" => "dialog_override")) . "&nbsp;"
                     . Ht::label("Override deadlines") . "</div>";
             $Conf->footerHtml("<div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this paper from consideration and/or
@@ -1585,7 +1585,7 @@ class PaperTable {
 		"<input id='emailNote' type='text' class='textlite temptext' name='emailNote' size='30' value=\"",
 		htmlspecialchars($v == "" ? "Optional explanation" : $v),
 		"\" /></td></tr>\n    <tr><td>",
-		Ht::checkbox("override"), "&nbsp;";
+		Ht::checkbox("override", array("onclick" => "copy_override_status(this)")), "&nbsp;";
             if ($Conf->timeUpdatePaper($prow))
                 echo "<span class='dim'>", Ht::label("Override deadlines"), "</span>";
             else

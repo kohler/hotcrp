@@ -80,6 +80,13 @@ class Ht {
     }
 
     static function checkbox($name, $value = 1, $checked = false, $js = null) {
+        if (is_array($value)) {
+            $js = $value;
+            $value = 1;
+        } else if (is_array($checked)) {
+            $js = $checked;
+            $checked = false;
+        }
         $js = $js ? $js : array();
         if (!defval($js, "id"))
             $js["id"] = "taggctl" . ++self::$_controlid;
