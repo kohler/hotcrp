@@ -107,18 +107,31 @@ function contactQuery($type) {
     }
 
     // reviewer limit
-    if ($type == "crev")
-	$where[] = "PaperReview.reviewSubmitted>0";
-    else if ($type == "uncrev" || $type == "myuncextrev" || $type == "uncextrev" || $type == "uncpcrev" || $type == "newpcrev")
-	$where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0";
-    if ($type == "extrev" || $type == "myextrev" || $type == "uncextrev" || $type == "myuncextrev")
-	$where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
-    else if ($type == "pcrev" || $type == "uncpcrev" || $type == "newpcrev")
-	$where[] = "PaperReview.reviewType>" . REVIEW_EXTERNAL;
-    if ($type == "myextrev" || $type == "myuncextrev")
-	$where[] = "PaperReview.requestedBy=" . $Me->contactId;
-    if ($type == "newpcrev")
-	$where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
+    if ($type == "myuncextrev")
+        $type = "uncmyextrev";
+    $isreview = false;
+    if (preg_match('_\A(new|unc|c|)(pc|ext|myext|)rev\z_', $type, $m)) {
+        $isreview = true;
+        // Submission status
+        if ($m[1] == "c")
+            $where[] = "PaperReview.reviewSubmitted>0";
+        else if ($m[1] == "unc" || $m[1] == "new")
+            $where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0";
+        if ($m[1] == "new")
+            $where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
+        // Withdrawn papers may not count
+        if ($m[1] == "unc" || $m[1] == "new")
+            $where[] = "Paper.timeSubmitted>0";
+        else if ($m[1] == "")
+            $where[] = "(Paper.timeSubmitted>0 or PaperReview.reviewSubmitted>0)";
+        // Review type
+        if ($m[2] == "ext" || $m[2] == "myext")
+            $where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
+        else if ($m[2] == "pc")
+            $where[] = "PaperReview.reviewType>" . REVIEW_EXTERNAL;
+        if ($m[2] == "myext")
+            $where[] = "PaperReview.requestedBy=" . $Me->contactId;
+    }
 
     // build query
     if ($type == "all") {
@@ -129,7 +142,7 @@ function contactQuery($type) {
 	$orderby = "email";
 	if ($type != "pc")
 	    $where[] = "ContactInfo.contactTags like '% " . sqlq_for_like(substr($type, 3)) . " %'";
-    } else if ($type == "rev" || $type == "crev" || $type == "uncrev" || $type == "extrev" || $type == "myextrev" || $type == "uncextrev" || $type == "myuncextrev" || $type == "pcrev" || $type == "uncpcrev" || $type == "newpcrev") {
+    } else if ($isreview) {
 	$q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
 	$orderby = "email, Paper.paperId";
     } else if ($type == "lead" || $type == "shepherd") {
@@ -419,7 +432,7 @@ if ($Me->privChair) {
 	$recip["shepherd"] = "Shepherds";
 }
 $recip["myextrev"] = "Your requested reviewers";
-$recip["myuncextrev"] = "Your requested reviewers with incomplete reviews";
+$recip["uncmyextrev"] = "Your requested reviewers with incomplete reviews";
 $recip["pc"] = "Program committee";
 if (count($pctags)) {
     foreach ($pctags as $t)
@@ -428,6 +441,8 @@ if (count($pctags)) {
 if ($Me->privChair)
     $recip["all"] = "All users";
 
+if (@$_REQUEST["recipients"] == "myuncextrev")
+    $_REQUEST["recipients"] = "uncmyextrev";
 if (!isset($_REQUEST["recipients"]) || !isset($recip[$_REQUEST["recipients"]]))
     $_REQUEST["recipients"] = key($recip);
 
@@ -578,19 +593,19 @@ echo "<div class='aa' style='clear:both'>
 <tr><td class='lxcaption'><code>%URL%</code></td>
     <td class='llentry'>Site URL.</td></tr>
 <tr><td class='lxcaption'><code>%LOGINURL%</code></td>
-    <td class='llentry'>URL for the mail's recipient to log in to the site.</td></tr>
+    <td class='llentry'>URL for recipient to log in to the site.</td></tr>
 <tr><td class='lxcaption'><code>%NUMSUBMITTED%</code></td>
     <td class='llentry'>Number of papers submitted.</td></tr>
 <tr><td class='lxcaption'><code>%NUMACCEPTED%</code></td>
     <td class='llentry'>Number of papers accepted.</td></tr>
 <tr><td class='lxcaption'><code>%NAME%</code></td>
-    <td class='llentry'>Full name of mail's recipient.</td></tr>
+    <td class='llentry'>Full name of recipient.</td></tr>
 <tr><td class='lxcaption'><code>%FIRST%</code>, <code>%LAST%</code></td>
-    <td class='llentry'>First and last names, if any, of mail's recipient.</td></tr>
+    <td class='llentry'>First and last names, if any, of recipient.</td></tr>
 <tr><td class='lxcaption'><code>%EMAIL%</code></td>
-    <td class='llentry'>Email address of mail's recipient.</td></tr>
+    <td class='llentry'>Email address of recipient.</td></tr>
 <tr><td class='lxcaption'><code>%REVIEWDEADLINE%</code></td>
-    <td class='llentry'>Reviewing deadline appropriate for mail's recipient.</td></tr>
+    <td class='llentry'>Reviewing deadline appropriate for recipient.</td></tr>
 </table></td><td class='plholder'><table>
 <tr><td class='lxcaption'><code>%NUMBER%</code></td>
     <td class='llentry'>Paper number relevant for mail.</td></tr>
@@ -615,7 +630,7 @@ echo "<div class='aa' style='clear:both'>
 <tr><td class='lxcaption'><code>%SHEPHERDEMAIL%</code></td>
     <td class='llentry'>Shepherd email, if any.</td></tr>
 <tr><td class='lxcaption'><code>%TAGVALUE(t)%</code></td>
-    <td class='llentry'>Value of paper's tag <code>t</code>.</td></tr>
+    <td class='llentry'>Value of paper’s tag <code>t</code>.</td></tr>
 </table></td></tr>
 </table></div>
 

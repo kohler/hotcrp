@@ -382,7 +382,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
      array("mailtool_name" => "Personalized review reminder",
 	   "mailtool_pc" => true,
 	   "mailtool_priority" => 21,
-	   "mailtool_recipients" => "myuncextrev",
+	   "mailtool_recipients" => "uncmyextrev",
 	   "mailtool_search_type" => "t",
 	   "subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
 	   "body" => "Dear %NAME%,
