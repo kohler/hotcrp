@@ -296,7 +296,7 @@ class Countries {
         if (!$country)
             $t .= " selected='selected'";
         $t .= " value=''>(Select one)</option>\n";
-        foreach (self::$countries as $c) {
+        foreach (self::$list as $c) {
             $t .= "<option";
             if ($country == $c) {
                 $t .= " selected='selected'";
