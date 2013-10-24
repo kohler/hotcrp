@@ -227,17 +227,18 @@ function requestReviewChecks($themHtml, $reqId) {
 function requestReview($email) {
     global $Conf, $Me, $Error, $Opt, $prow;
 
-    if (($reqId = $Conf->getContactId($email, true, false)) <= 0) {
+    $sanitized_request = array("name" => @$_REQUEST["name"],
+                               "email" => $_REQUEST["email"]);
+    $Them = new Contact;
+    if (!$Them->load_by_email($email, $sanitized_request, false)) {
 	if (trim($email) === "" || !validateEmail($email)) {
-	    $Conf->errorMsg("&ldquo;" . htmlspecialchars(trim($email)) . "&rdquo; is not a valid email address.");
+	    $Conf->errorMsg("“" . htmlspecialchars(trim($email)) . "” is not a valid email address.");
 	    $Error["email"] = true;
 	} else
-	    $Conf->errorMsg("Error while finding account for &ldquo;" . htmlspecialchars(trim($email)) . ".&rdquo;");
+	    $Conf->errorMsg("Error while finding account for “" . htmlspecialchars(trim($email)) . ".”");
 	return false;
     }
 
-    $Them = new Contact();
-    $Them->lookupById($reqId);
     $reason = trim(defval($_REQUEST, "reason", ""));
 
     $while = "while requesting review";
@@ -246,7 +247,7 @@ function requestReview($email) {
     // NB caller unlocks tables on error
 
     // check for outstanding review request
-    if (!($result = requestReviewChecks(Text::user_html($Them), $reqId)))
+    if (!($result = requestReviewChecks(Text::user_html($Them), $Them->contactId)))
 	return $result;
 
     // at this point, we think we've succeeded.
@@ -267,7 +268,7 @@ function requestReview($email) {
 	$qa .= ", timeRequested, timeRequestNotified";
 	$qb .= ", $now, $now";
     }
-    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy$qa) values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Requester->contactId$qb)", $while);
+    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy$qa) values ($prow->paperId, $Them->contactId, " . REVIEW_EXTERNAL . ", $Requester->contactId$qb)", $while);
 
     // mark secondary as delegated
     $Conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1", $while);
