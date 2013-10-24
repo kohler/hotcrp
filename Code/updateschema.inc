@@ -360,4 +360,23 @@ function updateSchema($Conf) {
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8")
 	&& $Conf->ql("update Settings set value=58 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 58;
+    if ($Conf->settings["allowPaperOption"] == 58
+        && $Conf->ql("alter table PaperReview modify `paperSummary` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReview modify `commentsToAuthor` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReview modify `commentsToPC` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReview modify `commentsToAddress` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReview modify `weaknessOfPaper` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReview modify `strengthOfPaper` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReview modify `textField7` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReview modify `textField8` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReviewArchive modify `paperSummary` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReviewArchive modify `commentsToAuthor` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReviewArchive modify `commentsToPC` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReviewArchive modify `commentsToAddress` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReviewArchive modify `weaknessOfPaper` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReviewArchive modify `strengthOfPaper` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReviewArchive modify `textField7` mediumtext DEFAULT NULL")
+        && $Conf->ql("alter table PaperReviewArchive modify `textField8` mediumtext DEFAULT NULL")
+	&& $Conf->ql("update Settings set value=59 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 59;
 }
