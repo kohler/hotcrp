@@ -388,7 +388,7 @@ class Conference {
 	if (!$this->deadlineCache) {
 	    $dl = array("now" => time());
 	    foreach (array("sub_open", "sub_reg", "sub_update", "sub_sub",
-			   "sub_grace",
+			   "sub_close", "sub_grace",
 			   "resp_open", "resp_done", "resp_grace",
 			   "rev_open", "pcrev_soft", "pcrev_hard",
 			   "extrev_soft", "extrev_hard", "rev_grace",

@@ -894,7 +894,11 @@ if (isset($_REQUEST["update"]) && check_post()) {
     if (value("sub_freeze", -1) == 0
         && value("sub_open") > 0
         && value("sub_sub") <= 0)
-	$Conf->warnMsg("You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This seems odd.  You probably should (1) specify a paper submission deadline; (2) select &ldquo;Authors must freeze the final version of each submission&rdquo;; or (3) manually turn off &ldquo;Open site for submissions&rdquo; when submissions complete.");
+	$Conf->warnMsg("You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This seems odd.  You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.");
+    if (value("sub_open", 1) <= 0
+        && $Conf->setting("sub_open") > 0
+        && value_or_setting("sub_sub") <= 0)
+        $Values["sub_close"] = $Now;
     foreach (array("pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard")
 	     as $deadline)
 	if (value($deadline) > $Now
