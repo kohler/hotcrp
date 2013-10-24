@@ -913,6 +913,9 @@ if (isset($_REQUEST["update"]) && check_post()) {
         && (!value("final_done") || value("final_done") > $Now)
 	&& value_or_setting("seedec") != SEEDEC_ALL)
 	$Conf->warnMsg("The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”");
+    if (value("seedec") == SEEDEC_ALL
+        && value_or_setting("au_seerev", -1) == AU_SEEREV_NO)
+        $Conf->warnMsg("Authors can see decisions, but not reviews. This is sometimes unintentional.");
 
     // unset text messages that equal the default
     if (value("conflictdefmsg")
