@@ -108,6 +108,8 @@ $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 
 global $OK;
 $OK = 1;
+global $Now;
+$Now = time();
 
 global $allowedSessionVars;
 $allowedSessionVars = array("foldassigna", "foldpaperp", "foldpaperb",

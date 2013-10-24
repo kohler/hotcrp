@@ -834,6 +834,22 @@ function accountValue($name, $type) {
     }
 }
 
+function value($name, $default = null) {
+    global $Conf, $Values;
+    if (array_key_exists($name, $Values))
+        return $Values[$name];
+    else
+        return $default;
+}
+
+function value_or_setting($name) {
+    global $Conf, $Values;
+    if (array_key_exists($name, $Values))
+        return $Values[$name];
+    else
+        return $Conf->setting($name);
+}
+
 if (isset($_REQUEST["update"]) && check_post()) {
     // parse settings
     $settings = $SettingGroups[$Group];
@@ -859,10 +875,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
 	$Values["sub_update"] = $Values["sub_sub"];
     // need to set 'resp_open' to a timestamp,
     // so we can join on later review changes
-    if (array_key_exists("resp_open", $Values)
-	&& $Values["resp_open"] > 0
-	&& defval($Conf->settings, "resp_open") <= 0)
-	$Values["resp_open"] = time();
+    if (value("resp_open") > 0 && $Conf->setting("resp_open") <= 0)
+	$Values["resp_open"] = $Now;
 
     // update 'papersub'
     if (isset($settings["pc_seeall"])) {
@@ -873,48 +887,35 @@ if (isset($_REQUEST["update"]) && check_post()) {
     }
 
     // warn on other relationships
-    if (array_key_exists("resp_open", $Values)
-	&& $Values["resp_open"] > 0
-	&& (!array_key_exists("au_seerev", $Values)
-	    || $Values["au_seerev"] <= 0)
-	&& (!array_key_exists("resp_done", $Values)
-	    || time() < $Values["resp_done"]))
-	$Conf->warnMsg("You have allowed authors to respond to the reviews, but authors can&rsquo;t see the reviews.  This seems odd.");
-    if (array_key_exists("sub_freeze", $Values)
-	&& $Values["sub_freeze"] == 0
-	&& defval($Values, "sub_open", 0) > 0
-	&& defval($Values, "sub_sub", 0) <= 0)
+    if (value("resp_open") > 0
+        && value("au_seerev") <= 0
+        && value("resp_done", $Now + 1) > $Now)
+	$Conf->warnMsg("Authors are allowed to respond to the reviews, but authors can’t see the reviews.  This seems odd.");
+    if (value("sub_freeze", -1) == 0
+        && value("sub_open") > 0
+        && value("sub_sub") <= 0)
 	$Conf->warnMsg("You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This seems odd.  You probably should (1) specify a paper submission deadline; (2) select &ldquo;Authors must freeze the final version of each submission&rdquo;; or (3) manually turn off &ldquo;Open site for submissions&rdquo; when submissions complete.");
     foreach (array("pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard")
 	     as $deadline)
-	if (array_key_exists($deadline, $Values)
-	    && $Values[$deadline] > time()
-	    && $Values[$deadline] != $Conf->setting($deadline)
-	    && (array_key_exists("rev_open", $Values)
-		? $Values["rev_open"] <= 0
-		: $Conf->setting("rev_open") <= 0)) {
+	if (value($deadline) > $Now
+	    && value($deadline) != $Conf->setting($deadline)
+	    && value_or_setting("rev_open") <= 0) {
 	    $Conf->warnMsg("Review deadline set.  You may also want to open the site for reviewing.");
 	    $Highlight["rev_open"] = true;
 	    break;
 	}
-    if (array_key_exists("au_seerev", $Values)
-	&& $Values["au_seerev"] != AU_SEEREV_NO
+    if (value("au_seerev", -1) != AU_SEEREV_NO
 	&& $Conf->setting("pcrev_soft") > 0
-	&& time() < $Conf->setting("pcrev_soft")
+	&& $Now < $Conf->setting("pcrev_soft")
 	&& count($Error) == 0)
 	$Conf->warnMsg("Authors can now see reviews and comments although it is before the review deadline.  This is sometimes unintentional.");
-    if (array_key_exists("final_open", $Values)
-	&& $Values["final_open"]
-	&& (!array_key_exists("final_done", $Values) || !$Values["final_done"]
-	    || $Values["final_done"] > time())
-	&& (array_key_exists("seedec", $Values)
-	    ? $Values["seedec"] != SEEDEC_ALL
-	    : $Conf->setting("seedec") != SEEDEC_ALL))
+    if (value("final_open")
+        && (!value("final_done") || value("final_done") > $Now)
+	&& value_or_setting("seedec") != SEEDEC_ALL)
 	$Conf->warnMsg("The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”");
 
     // unset text messages that equal the default
-    if (array_key_exists("conflictdefmsg", $Values)
-	&& $Values["conflictdefmsg"]
+    if (value("conflictdefmsg")
 	&& trim($Values["conflictdefmsg"][1]) == $Conf->conflictDefinitionText(true))
 	$Values["conflictdefmsg"] = null;
 
