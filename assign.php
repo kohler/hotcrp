@@ -580,11 +580,11 @@ if ($Me->canAdminister($prow)) {
 	    echo "0 reviews";
 	else {
 	    echo "<a class='q' href=\"",
-		hoturl("search", "q=re:" . urlencode($p->email)), "\">",
+		hoturl("search", "q=re:" . urlencode($pc->email)), "\">",
 		plural($numReviews, "review"), "</a>";
 	    if ($numPrimary && $numPrimary < $numReviews)
 		echo "&nbsp; (<a class='q' href=\"",
-		    hoturl("search", "q=pri:" . urlencode($p->email)), "\">",
+		    hoturl("search", "q=pri:" . urlencode($pc->email)), "\">",
 		    $numPrimary, " primary</a>)";
 	}
 	echo "</td></tr>\n";
