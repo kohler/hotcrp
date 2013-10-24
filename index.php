@@ -184,7 +184,9 @@ echo "    <li><a href='", hoturl("users", "t=pc"), "'>Program committee</a></li>
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo "    <li><a href='", $Opt['conferenceSite'], "'>Conference site</a></li>\n";
 if ($Conf->timeAuthorViewDecision()) {
-    $result = $Conf->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 group by outcome", "while loading acceptance statistics");
+    $dl = $Conf->deadlines();
+    $dlt = max($dl["sub_sub"], $dl["sub_close"]);
+    $result = $Conf->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome", "while loading acceptance statistics");
     $n = $nyes = 0;
     while (($row = edb_row($result))) {
 	$n += $row[1];
