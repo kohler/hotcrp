@@ -515,7 +515,18 @@ function foldbutton($foldtype, $title, $foldnum = 0) {
     $hidetitle = ($title ? " title='" . htmlspecialchars("Hide $title") . "'" : "");
     $foldclass = ($foldnum ? $foldnum : "");
     $foldnum = ($foldnum ? ",$foldnum" : "");
-    return "<a href=\"javascript:void fold('$foldtype',0$foldnum)\" class='foldbutton fn$foldclass'$showtitle>+</a><a href=\"javascript:void fold('$foldtype',1$foldnum)\" class='foldbutton fx$foldclass'$hidetitle>&minus;</a>";
+    return '<a href="#" class="q fn' . $foldclass
+        . '" onclick="return fold(\'' . $foldtype . '\',0' . $foldnum . ')"'
+        . $showtitle . '>' . expander(true) . '</a>'
+        . '<a href="#" class="q fx' . $foldclass
+        . '" onclick="return fold(\'' . $foldtype . '\',1' . $foldnum . ')"'
+        . $hidetitle . '>' . expander(false) . '</a>';
+}
+
+function expander($open) {
+    return '<span class="expander' . ($open ? 1 : 0) . '">'
+        . '<span class="in">' . ($open ? '&#x25B6;' : '&#x25BC;')
+        . '</span></span>';
 }
 
 function reviewType($paperId, $row, $long = 0) {

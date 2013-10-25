@@ -619,25 +619,20 @@ a.button_small.on, a.button.on {
 a.button_small {
 	vertical-align: 1px;
 }
-a.foldbutton {
-	font-size: smaller;
-	font-weight: normal;
-	padding: 0 0.25em;
-	text-decoration: none;
-	color: black;
-	margin: 3px 0;
-	background: #ffffdd;
-	border-top: 1px solid #eeee66;
-	border-left: 1px solid #eeee66;
-	border-bottom: 1px solid #999966;
-	border-right: 1px solid #999966;
+span.expander0, span.expander1 {
+	display: inline-block;
+	width: 0.8em;
+        padding-right: 0.2em;
+	opacity: 0.65;
+        text-decoration: none;
 }
-td.caption a.foldbutton {
-	background: #fff0e0;
-	border-top: 1px solid #eecc66;
-	border-left: 1px solid #eecc66;
-	border-bottom: 1px solid #999966;
-	border-right: 1px solid #999966;
+span.expander0 > span.in, span.expander1 > span.in {
+	position: relative;
+	font-size: 80%;
+}
+span.expander0 > span.in {
+	left: -0.05em;
+	top: 0.1em;
 }
 .temptext {
 	color: #777777;

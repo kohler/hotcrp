@@ -392,7 +392,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     // Actions
     $sep = "";
     if ($myrow) {
-	echo $sep, foldbutton("re", "review list"), "&nbsp;<a href=\"", hoturl("search", "q=re%3Ame"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
+	echo $sep, foldbutton("re", "review list"), "<a href=\"", hoturl("search", "q=re%3Ame"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->setting("paperlead") > 0
@@ -464,7 +464,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	    $fold20 = defval($_SESSION, "foldhomeactivity", 1) ? "fold20c" : "fold20o";
 	    echo "<div class='homegrp $fold20 fold21c' id='homeactivity'>",
 		foldbutton("homeactivity", "recent activity", 20),
-		"&nbsp;<h4><a href=\"javascript:void fold('homeactivity',null,20)\" class='x homeactivity'>Recent activity<span class='fx20'>:</span></a></h4>";
+		"<h4><a href=\"javascript:void fold('homeactivity',null,20)\" class='x homeactivity'>Recent activity<span class='fx20'>:</span></a></h4>";
 	    if (count($entries) > 10)
 		echo "&nbsp; <a href=\"javascript:void fold('homeactivity',null,21)\" class='fx20'><span class='fn21'>More &#187;</span><span class='fx21'>&#171; Fewer</span></a>";
 	    echo foldsessionpixel("homeactivity20", "foldhomeactivity"),

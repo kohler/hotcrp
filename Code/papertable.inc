@@ -204,12 +204,12 @@ class PaperTable {
 		. "href=\"" . selfHref(array("pfold" => $foldnum . "o"))
 		. "\" onclick=\"return foldup(this,event$foldnumarg)\" "
 		. "title=\"" . defval($extra, "showtitle", "Show")
-		. "\">+&nbsp;" . $name[1] . "</a>"
+		. "\">" . expander(true) . $name[1] . "</a>"
 		. "<a class=\"q fx$foldnum\" "
 		. "href=\"" . selfHref(array("pfold" => $foldnum . "c"))
 		. "\" onclick=\"return foldup(this,event$foldnumarg)\" "
 		. "title=\"" . defval($extra, "hidetitle", "Hide")
-		. "\">&minus;&nbsp;" . $name[0] . "</a>";
+		. "\">" . expander(false) . $name[0] . "</a>";
 	}
 	$c .= "</span>";
 	if ($editfolder) {

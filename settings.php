@@ -1492,7 +1492,7 @@ function doRevGroup() {
     echo "<div class='g'></div>\n";
     $t = expandMailTemplate("requestreview", false);
     echo "<table id='foldmailbody_requestreview' class='foldc'>",
-	"<tr><td>", foldbutton("mailbody_requestreview", ""), "&nbsp;</td>",
+	"<tr><td>", foldbutton("mailbody_requestreview", ""), "</td>",
 	"<td><a href='javascript:void fold(\"mailbody_requestreview\")' class='q'><strong>Mail template for external review requests</strong></a>",
 	" <span class='fx'>(<a href='", hoturl("mail"), "'>keywords</a> allowed)<br /></span>
 <textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20' onchange='hiliter(this)'>", htmlspecialchars($t["body"]), "</textarea>",
@@ -1536,7 +1536,7 @@ function doRevGroup() {
     echo "<div class='g'></div>\n";
     echo "<table id='foldtag_color' class='",
 	(defval($_REQUEST, "tagcolor") ? "foldo" : "foldc"), "'><tr>",
-	"<td>", foldbutton("tag_color", ""), "&nbsp;</td>",
+	"<td>", foldbutton("tag_color", ""), "</td>",
 	"<td><a href='javascript:void fold(\"tag_color\")' name='tagcolor' class='q'><strong>Styles and colors</strong></a><br />\n",
 	"<div class='hint fx'>Papers tagged with a style name, or with one of the associated tags (if any), will appear in that style in paper lists.</div>",
 	"<div class='smg fx'></div>",

@@ -620,7 +620,7 @@ if ($Conf->setting("acct_addr") || $Acct->amReviewer()
 
 if ($newProfile) {
     echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", "", 2),
-	"&nbsp;</td><td><a href=\"javascript:void fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
+	"</td><td><a href=\"javascript:void fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
 	"<tr class='fx2'><td></td><td>",
 	"<p>Upload a CSV file with one line per account. Either specify a header like “<code>name,email,affiliation,address1</code>” or give name, email address, and affiliation, in that order.  Each new account's role and PC information is set from the form below.  Example:</p>\n",
 	"<pre class='entryexample'>

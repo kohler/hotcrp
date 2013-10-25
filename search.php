@@ -1372,7 +1372,7 @@ if ($Me->isPC || $Me->privChair) {
 	    foreach ($ss as $sn => $sv) {
 		echo "<table id='ssearch$n' class='foldc'><tr><td>",
 		    foldbutton("ssearch$n", "saved search information"),
-		    "&nbsp;</td><td>";
+		    "</td><td>";
 		$arest = "";
 		foreach (array("qt", "t", "sort", "display") as $k)
 		    if (isset($sv->$k))
@@ -1390,7 +1390,7 @@ if ($Me->isPC || $Me->privChair) {
 	echo "<form method='post' action='", hoturl_post("search", "savesearch=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
 	echo_request_as_hidden_inputs(true);
 	echo "<table id='ssearchnew' class='foldc'>",
-	    "<tr><td>", foldbutton("ssearchnew", "saved search options"), "&nbsp;</td>",
+	    "<tr><td>", foldbutton("ssearchnew", "saved search options"), "</td>",
 	    "<td><a class='q fn' href='javascript:void fold(\"ssearchnew\")'>New saved search</a><div class='fx'>",
 	    "Save ";
 	if (defval($_REQUEST, "q"))
