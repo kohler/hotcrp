@@ -434,12 +434,17 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	$Conf->warnMsg("Please enter the authors’ potential conflicts in the $collaborators_field field. If none of the authors have potential conflicts, just enter “None”.");
 
     // defined contact ID
-    if ($newPaper && (isset($_REQUEST["contact_email"]) || isset($_REQUEST["contact_name"])) && $Me->privChair)
-	if (!($contactId = $Conf->getContactId($_REQUEST["contact_email"], "contact_"))) {
+    if ($newPaper && $Me->privChair
+        && (@$_REQUEST["contact_email"] || @$_REQUEST["contact_name"])) {
+        $registration = array("email" => @$_REQUEST["contact_email"],
+                              "name" => @$_REQUEST["contact_name"]);
+        if (!($contactId = $Conf->getContactId($_REQUEST["contact_email"],
+                                               $registration, true))) {
 	    $Conf->errorMsg("You must supply a valid email address for the paper contact.");
 	    $Error["contactAuthor"] = 1;
 	    return false;
 	}
+    }
 
     // blind?
     if ($isSubmitFinal)

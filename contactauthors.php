@@ -61,13 +61,15 @@ confHeader();
 
 
 if (!$Me->canEditContactAuthors($prow))
-    errorMsgExit("You can't manage paper #$prow->paperId since you are not a paper contact.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
+    errorMsgExit("You can’t manage paper #$prow->paperId since you are not a paper contact.  If you believe this is incorrect, get a registered author to list you as a coauthor, or contact the site administrator.");
 
 
 if (isset($_REQUEST["add"]) && check_post()) {
-    if (!isset($_REQUEST["email"]) || trim($_REQUEST["email"]) == "")
-	$Conf->errorMsg("You must enter the new contact's email address.");
-    else if (($id = $Conf->getContactId($_REQUEST["email"], true)) > 0) {
+    $registration = array("email" => trim(defval($_REQUEST, "email", "")),
+                          "name" => @$_REQUEST["name"]);
+    if ($registration["email"] == "")
+	$Conf->errorMsg("Enter the new contact’s email address.");
+    else if (($id = $Conf->getContactId($registration["email"], $registration)) > 0) {
 	if (addContactAuthor($prow->paperId, $id))
 	    $Conf->confirmMsg("Contact added.");
     }
