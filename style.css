@@ -639,10 +639,6 @@ span.expander0 > span.in {
 }
 
 /* checkboxes */
-input.cblx {
-	margin-left: 0;
-	padding-left: 0;
-}
 input.cbx {
 	margin-left: 0;
 	margin-bottom: 0;
