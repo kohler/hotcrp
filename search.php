@@ -861,8 +861,8 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
     } else if ($mt == "xpcpaper" || $mt == "xunpcpaper") {
 	$Conf->qe("update Paper set pcPaper=" . ($mt == "xpcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
 	$Conf->log("Change PC paper status", $Me, $papersel);
-    } else if (!$mpc || !$pc->lookupByEmail($mpc))
-	$Conf->errorMsg("'" . htmlspecialchars($mpc) . " is not a PC member.");
+    } else if (!$mpc || !$pc->load_by_email($mpc))
+	$Conf->errorMsg("“" . htmlspecialchars($mpc) . "” is not a PC member.");
     else if ($mt == "conflict" || $mt == "unconflict") {
 	$while = "while marking conflicts";
 	if ($mt == "conflict") {

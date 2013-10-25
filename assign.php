@@ -292,7 +292,7 @@ function proposeReview($email) {
     $email = trim($email);
     $name = trim(defval($_REQUEST, "name", ""));
     $reason = trim(defval($_REQUEST, "reason", ""));
-    $reqId = $Conf->getContactId($email, false);
+    $reqId = Contact::id_by_email($email);
 
     $while = "while recording review request";
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read", $while);
@@ -427,7 +427,7 @@ if (isset($_REQUEST["deny"]) && $Me->allowAdminister($prow) && check_post()
 	$Requester = new Contact();
 	$Requester->lookupById((int) $row[0]);
 	$Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'", $while);
-	if (($reqId = $Conf->getContactId($email, false)) > 0)
+	if (($reqId = Contact::id_by_email($email)) > 0)
 	    $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')", $while);
 
 	// send anticonfirmation email

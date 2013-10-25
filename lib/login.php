@@ -108,9 +108,9 @@ class LoginHelper {
                 return false;
         }
 
-        $Me->lookupByEmail($_REQUEST["email"]);
+        $Me->load_by_email($_REQUEST["email"]);
         if (!$Me->email && self::unquote_double_quoted_request())
-            $Me->lookupByEmail($_REQUEST["email"]);
+            $Me->load_by_email($_REQUEST["email"]);
         if ($_REQUEST["action"] == "new") {
             if (!($reg = self::create_account()))
                 return $reg;

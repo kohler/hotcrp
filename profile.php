@@ -29,7 +29,7 @@ else if (isset($_REQUEST["new"]) || defval($_REQUEST, "u") == "new") {
     if (($id = cvtint($_REQUEST["u"])) > 0)
 	$Acct->lookupById($id);
     else
-	$Acct->lookupByEmail($_REQUEST["u"]);
+	$Acct->load_by_email($_REQUEST["u"]);
     if (!$Acct->valid()) {
 	$Conf->errorMsg("Invalid contact.");
 	$Acct = $Me;
@@ -97,7 +97,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 
     // check email
     if ($newProfile || $_REQUEST["uemail"] != $Acct->email) {
-	if ($Conf->getContactId($_REQUEST["uemail"])) {
+	if (Contact::id_by_email($_REQUEST["uemail"])) {
 	    $msg = "An account is already registered with email address &ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo;.";
 	    if (!$newProfile)
 		$msg .= "You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
@@ -247,7 +247,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 
     if ($OK) {
 	// Refresh the results
-	$Acct->lookupByEmail($_REQUEST["uemail"]);
+	$Acct->load_by_email($_REQUEST["uemail"]);
 	$Acct->valid();
 	if (!$newProfile)
 	    $Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);

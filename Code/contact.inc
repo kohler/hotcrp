@@ -154,7 +154,7 @@ class Contact {
 		if ($this->privChair || $this->chairContact) {
 		    $viewContact = rcvtint($_REQUEST["viewContact"]);
 		    if ($viewContact <= 0 && isset($_REQUEST["viewContact"]))
-			$viewContact = $Conf->getContactId($_REQUEST["viewContact"]);
+			$viewContact = Contact::id_by_email($_REQUEST["viewContact"]);
 		    if ($viewContact > 0) {
 			if ($this->privChair)
 			    $this->chairContact = $this->contactId;
@@ -180,7 +180,7 @@ class Contact {
 	    }
 	} else if (isset($Opt["validatorContact"]) && $Opt["validatorContact"]
 		   && !$this->contactId && isset($_REQUEST["validator"])) {
-	    $this->lookupByEmail($Opt["validatorContact"]);
+	    $this->load_by_email($Opt["validatorContact"]);
 	    return $this->valid($update);
 	}
 	if (isset($this->capabilities))
@@ -398,7 +398,7 @@ class Contact {
 	if (count($addAuthor))
             $this->save_authored_papers($addAuthor);
 
-        if (($result = $this->lookupByEmail($this->email)))
+        if (($result = $this->load_by_email($this->email)))
             $this->password_plaintext = $password;
         return $result;
     }
@@ -512,6 +512,13 @@ class Contact {
 	if (($row = edb_orow($result)))
 	    foreach (self::_addressKeys() as $k)
 		$this->$k = $row->$k;
+    }
+
+    static function id_by_email($email) {
+        global $Conf;
+        $result = $Conf->qe("select contactId from ContactInfo where email='" . sqlq(trim($email)) . "'");
+        $row = edb_row($result);
+        return $row ? $row[0] : false;
     }
 
 
