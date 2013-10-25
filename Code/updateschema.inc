@@ -159,7 +159,7 @@ function updateSchema($Conf) {
 	$pld = $Conf->settingText("pldisplay_default");
 	$pld2 = updatePaperListDisplayOptions($pld);
 	if ((!$pld || $pld == $pld2
-	     || $Conf->ql("update Settings set data='" . sqlq($pld2) . "' where name='pldisplay_default'"))
+	     || $Conf->ql("update Settings set data='" . $Conf->dblink->escape_string($pld2) . "' where name='pldisplay_default'"))
 	    && $Conf->ql("update Settings set value=30 where name='allowPaperOption'"))
 	    $Conf->settings["allowPaperOption"] = 30;
     }
