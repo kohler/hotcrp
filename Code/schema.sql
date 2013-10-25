@@ -9,7 +9,7 @@ CREATE TABLE `ActionLog` (
   `paperId` int(11) DEFAULT NULL,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `ipaddr` varchar(16) DEFAULT NULL,
-  `action` text NOT NULL,
+  `action` varbinary(4096) NOT NULL,
   PRIMARY KEY (`logId`),
   UNIQUE KEY `logId` (`logId`),
   KEY `contactId` (`contactId`),
@@ -110,14 +110,14 @@ CREATE TABLE `ContactInfo` (
   `voicePhoneNumber` varchar(2048) NOT NULL DEFAULT '',
   `faxPhoneNumber` varchar(2048) NOT NULL DEFAULT '',
   `password` varbinary(2048) NOT NULL,
-  `note` mediumtext,
-  `collaborators` mediumtext,
+  `note` varbinary(4096) DEFAULT NULL,
+  `collaborators` varbinary(32767) DEFAULT NULL,
   `creationTime` int(11) NOT NULL DEFAULT '0',
   `lastLogin` int(11) NOT NULL DEFAULT '0',
   `defaultWatch` int(11) NOT NULL DEFAULT '2',
   `roles` tinyint(1) NOT NULL DEFAULT '0',
   `disabled` tinyint(1) NOT NULL DEFAULT '0',
-  `contactTags` text,
+  `contactTags` varbinary(4096) DEFAULT NULL,
   PRIMARY KEY (`contactId`),
   UNIQUE KEY `contactId` (`contactId`),
   UNIQUE KEY `contactIdRoles` (`contactId`,`roles`),
@@ -141,8 +141,8 @@ CREATE TABLE `Formula` (
   `formulaId` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(200) NOT NULL,
   `heading` varchar(200) NOT NULL DEFAULT '',
-  `headingTitle` text NOT NULL,
-  `expression` text NOT NULL,
+  `headingTitle` varbinary(4096) NOT NULL,
+  `expression` varbinary(4096) NOT NULL,
   `authorView` tinyint(1) NOT NULL DEFAULT '1',
   `createdBy` int(11) NOT NULL DEFAULT '0',
   `timeModified` int(11) NOT NULL DEFAULT '0',
@@ -178,10 +178,10 @@ DROP TABLE IF EXISTS `OptionType`;
 CREATE TABLE `OptionType` (
   `optionId` int(11) NOT NULL AUTO_INCREMENT,
   `optionName` varchar(200) NOT NULL,
-  `description` text,
+  `description` varbinary(8192) DEFAULT NULL,
   `type` tinyint(1) NOT NULL DEFAULT '0',
   `pcView` tinyint(1) NOT NULL DEFAULT '1',
-  `optionValues` text NOT NULL,
+  `optionValues` varbinary(8192) NOT NULL,
   `sortOrder` tinyint(1) NOT NULL DEFAULT '0',
   `displayType` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`optionId`)
@@ -209,9 +209,9 @@ DROP TABLE IF EXISTS `Paper`;
 CREATE TABLE `Paper` (
   `paperId` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(200) DEFAULT NULL,
-  `authorInformation` text,
-  `abstract` text,
-  `collaborators` text,
+  `authorInformation` mediumtext,
+  `abstract` mediumtext,
+  `collaborators` mediumtext,
   `timeSubmitted` int(11) NOT NULL DEFAULT '0',
   `timeWithdrawn` int(11) NOT NULL DEFAULT '0',
   `timeFinalSubmitted` int(11) NOT NULL DEFAULT '0',
@@ -433,7 +433,7 @@ CREATE TABLE `PaperReviewRefused` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `requestedBy` int(11) NOT NULL,
-  `reason` text NOT NULL,
+  `reason` varbinary(32767) DEFAULT NULL,
   KEY `paperId` (`paperId`),
   KEY `contactId` (`contactId`),
   KEY `requestedBy` (`requestedBy`)
@@ -515,7 +515,7 @@ DROP TABLE IF EXISTS `ReviewFormField`;
 CREATE TABLE `ReviewFormField` (
   `fieldName` varchar(25) NOT NULL,
   `shortName` varchar(40) NOT NULL,
-  `description` text,
+  `description` varbinary(32767) DEFAULT NULL,
   `sortOrder` tinyint(1) NOT NULL DEFAULT '-1',
   `rows` tinyint(1) NOT NULL DEFAULT '0',
   `authorView` tinyint(1) NOT NULL DEFAULT '1',
@@ -535,7 +535,7 @@ DROP TABLE IF EXISTS `ReviewFormOptions`;
 CREATE TABLE `ReviewFormOptions` (
   `fieldName` varchar(25) NOT NULL,
   `level` tinyint(1) NOT NULL,
-  `description` text,
+  `description` varbinary(32767) DEFAULT NULL,
   KEY `fieldName` (`fieldName`),
   KEY `level` (`level`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -566,7 +566,7 @@ CREATE TABLE `ReviewRequest` (
   `paperId` int(11) NOT NULL,
   `name` varchar(120) DEFAULT NULL,
   `email` varchar(120) DEFAULT NULL,
-  `reason` text,
+  `reason` varbinary(32767) DEFAULT NULL,
   `requestedBy` int(11) NOT NULL,
   UNIQUE KEY `paperEmail` (`paperId`,`email`),
   KEY `paperId` (`paperId`),
@@ -583,7 +583,7 @@ DROP TABLE IF EXISTS `Settings`;
 CREATE TABLE `Settings` (
   `name` char(40) NOT NULL,
   `value` int(11) NOT NULL,
-  `data` blob,
+  `data` varbinary(32767) DEFAULT NULL,
   UNIQUE KEY `name` (`name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
