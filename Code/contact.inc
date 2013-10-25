@@ -440,47 +440,41 @@ class Contact {
 	}
     }
 
+    // XXX deprecated, use load_by_email XXX
     function lookupByEmail($email) {
         return $this->load_by_email($email);
     }
 
-    function load_by_email($email, $registration = false, $send = false) {
+    function load_by_email($email, $reg = false, $send = false) {
         global $Conf, $Me;
 
         $email = $email ? trim($email) : "";
-        if ($this->updateFromQuery("select ContactInfo.* from ContactInfo
+        if ($email != ""
+            && $this->updateFromQuery("select ContactInfo.* from ContactInfo
 		where email='" . sqlq($email) . "'"))
             return true;
-        if ($registration === false || $registration === null
-            || !validateEmail($email))
+        if (!$reg || !is_array($reg) || !validateEmail($email))
             return false;
-
-        $p = "";
-        $req = $_REQUEST;
-        if (is_array($registration))
-            $req = $registration;
-        else if (is_string($registration))
-            $p = $registration;
 
 	// try to add them
 	if ($this->initialize($email)) {
 	    // rigamarole to handle separate or joined first and last names
-	    if (isset($req["${p}firstName"]) || isset($req["${p}lastName"])) {
-		if (isset($req["${p}firstName"]))
-		    $this->firstName = $req["${p}firstName"];
-		if (isset($_REQUEST["${p}lastName"]))
-		    $this->lastName = $req["${p}lastName"];
-	    } else if (isset($req["${p}name"])) {
-		$matches = Text::split_name($req["${p}name"]);
+	    if (isset($reg["firstName"]) || isset($reg["lastName"])) {
+		if (isset($reg["firstName"]))
+		    $this->firstName = $reg["firstName"];
+		if (isset($_REQUEST["lastName"]))
+		    $this->lastName = $reg["lastName"];
+	    } else if (isset($reg["name"])) {
+		$matches = Text::split_name($reg["name"]);
 		$this->firstName = $matches[0];
 		$this->lastName = $matches[1];
 	    }
 
 	    // other information is easier
-	    if (isset($req["${p}affiliation"]))
-		$this->affiliation = $req["${p}affiliation"];
-	    if (isset($req["${p}voicePhoneNumber"]))
-		$this->voicePhoneNumber = $req["${p}voicePhoneNumber"];
+	    if (isset($reg["affiliation"]))
+		$this->affiliation = $reg["affiliation"];
+	    if (isset($reg["voicePhoneNumber"]))
+		$this->voicePhoneNumber = $reg["voicePhoneNumber"];
 
 	    // actually update database
 	    $result = $this->updateDB("while creating account for " . htmlspecialchars($email));

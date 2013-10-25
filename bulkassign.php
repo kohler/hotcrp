@@ -29,6 +29,8 @@ function parseBulkFile($text, $filename, $type) {
     $tf = array("err" => array(), "filename" => $filename);
     $pcm = pcMembers();
     $ass = array();
+    $contacts_by_email = array();
+    $contacts_by_id = array();
     $lnameemail = array();
     $doemail = defval($_REQUEST, "email");
     $mailtemplate = $nullMailer->expandTemplate("requestreview");
@@ -76,17 +78,22 @@ function parseBulkFile($text, $filename, $type) {
 	    // assign
 	    if ($cid <= 0) {
 		if ($cid == -2)
-		    tfError($tf, $lineno, htmlspecialchars($nameemail) . " matches no PC member");
+		    tfError($tf, $lineno, "“" . htmlspecialchars($nameemail) . "” matches no PC member");
 		else
-		    tfError($tf, $lineno, htmlspecialchars($nameemail) . " matches more than one PC member, give a full email address to disambiguate");
+		    tfError($tf, $lineno, "“" . htmlspecialchars($nameemail) . "” matches more than one PC member, give a full email address to disambiguate");
 		continue;
 	    }
-	} else {
+	} else if (@$contacts_by_email[$email])
+            $cid = $contacts_by_email[$email]->contactId;
+        else {
 	    // external reviewers
-            $registration = array("email" => $email,
-                                  "name" => trim("$firstName $lastName"));
-	    if (($cid = $Conf->getContactId($email, $registration, false)) <= 0) {
-		tfError($tf, $lineno, htmlspecialchars($email) . " not a valid email address");
+            $c = new Contact;
+            if ($c->load_by_email($email, array("name" => trim("$firstName $lastName")), false)) {
+                $contacts_by_email[$email] = $c;
+                $contacts_by_id[$c->contactId] = $c;
+                $cid = $c->contactId;
+            } else {
+		tfError($tf, $lineno, "“" . htmlspecialchars($email) . "” is not a valid email address");
 		continue;
 	    }
 	}
@@ -164,8 +171,7 @@ function parseBulkFile($text, $filename, $type) {
 	    if ($t >= 0) {
 		$Me->assignPaper($paperId, null, $cid, $t, $when);
 		if ($type == REVIEW_EXTERNAL && $doemail) {
-		    $Them = new Contact();
-		    $Them->lookupById($cid);
+		    $Them = $contacts_by_id[$cid];
 		    if (!$prow)
 			$prow = $Conf->paperRow($paperId);
 		    Mailer::send($mailtemplate, $prow, $Them, $Me);

@@ -65,14 +65,13 @@ if (!$Me->canEditContactAuthors($prow))
 
 
 if (isset($_REQUEST["add"]) && check_post()) {
-    $registration = array("email" => trim(defval($_REQUEST, "email", "")),
-                          "name" => @$_REQUEST["name"]);
-    if ($registration["email"] == "")
-	$Conf->errorMsg("Enter the new contact’s email address.");
-    else if (($id = $Conf->getContactId($registration["email"], $registration)) > 0) {
-	if (addContactAuthor($prow->paperId, $id))
-	    $Conf->confirmMsg("Contact added.");
-    }
+    $c = new Contact;
+    if ($c->load_by_email(@$_REQUEST["email"],
+                          array("name" => @$_REQUEST["name"]), true)) {
+        if (addContactAuthor($prow->paperId, $c->contactId))
+            $Conf->confirmMsg("Contact added.");
+    } else
+        $Conf->errorMsg("Enter a valid email address for the paper contact.");
 }
 
 foreach ($_REQUEST as $k => $v)

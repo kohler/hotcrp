@@ -436,11 +436,11 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     // defined contact ID
     if ($newPaper && $Me->privChair
         && (@$_REQUEST["contact_email"] || @$_REQUEST["contact_name"])) {
-        $registration = array("email" => @$_REQUEST["contact_email"],
-                              "name" => @$_REQUEST["contact_name"]);
-        if (!($contactId = $Conf->getContactId($_REQUEST["contact_email"],
-                                               $registration, true))) {
-	    $Conf->errorMsg("You must supply a valid email address for the paper contact.");
+        $c = new Contact;
+        if (!$c->load_by_email(@$_REQUEST["contact_email"],
+                               array("name" => @$_REQUEST["contact_name"]),
+                               true)) {
+	    $Conf->errorMsg("Enter a valid email address for the paper contact.");
 	    $Error["contactAuthor"] = 1;
 	    return false;
 	}

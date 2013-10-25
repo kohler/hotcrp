@@ -315,22 +315,6 @@ class Conference {
     }
 
 
-    // fetch a contact ID from the database
-    function getContactId($email, $registerFromRequest = false,
-			  $sendInfo = true) {
-        $email = $email ? trim($email) : "";
-        $result = $this->q("select contactId from ContactInfo where email='" . sqlq($email) . "'");
-        if (($row = edb_row($result)))
-            return $row[0];
-        if ($registerFromRequest) {
-            $c = new Contact;
-            if ($c->load_by_email($email, $registerFromRequest, $sendInfo))
-                return $c->contactId;
-        }
-        return false;
-    }
-
-
     // times
 
     function deadlines() {

@@ -229,10 +229,8 @@ function requestReviewChecks($themHtml, $reqId) {
 function requestReview($email) {
     global $Conf, $Me, $Error, $Opt, $prow;
 
-    $sanitized_request = array("name" => @$_REQUEST["name"],
-                               "email" => $_REQUEST["email"]);
     $Them = new Contact;
-    if (!$Them->load_by_email($email, $sanitized_request, false)) {
+    if (!$Them->load_by_email($email, array("name" => @$_REQUEST["name"]), false)) {
 	if (trim($email) === "" || !validateEmail($email)) {
 	    $Conf->errorMsg("“" . htmlspecialchars(trim($email)) . "” is not a valid email address.");
 	    $Error["email"] = true;
