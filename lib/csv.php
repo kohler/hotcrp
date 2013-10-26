@@ -5,17 +5,18 @@
 
 class CsvParser {
 
-    var $lines;
-    var $pos;
-    var $type;
-    var $header;
+    private $lines;
+    private $pos;
+    private $type;
+    private $header;
+    private $comment_chars;
 
     const TYPE_GUESS = -1;
     const TYPE_COMMA = 0;
     const TYPE_PIPE = 1;
     const TYPE_TAB = 2;
 
-    function __construct($str) {
+    function __construct($str, $type = TYPE_COMMA) {
         $a = preg_split('/([\r\n])/', $str, 0, PREG_SPLIT_DELIM_CAPTURE);
         $n = count($a);
         $b = array();
@@ -37,7 +38,21 @@ class CsvParser {
         }
         $this->lines = $b;
         $this->pos = 0;
-        $this->type = self::TYPE_COMMA;
+        $this->type = $type;
+        $this->header = false;
+        $this->comment_chars = false;
+    }
+
+    function set_comment_chars($s) {
+        $this->comment_chars = $s;
+    }
+
+    function header() {
+        return $this->header;
+    }
+
+    function set_header($header) {
+        $this->header = $header;
     }
 
     static function take_line(&$str) {
@@ -64,33 +79,38 @@ class CsvParser {
         return $len;
     }
 
-    function set_header($header) {
-        $this->header = $header;
+    function lineno() {
+        return $this->pos;
     }
 
-    function count() {
-        return count($this->lines) - $this->pos;
+    function next() {
+        while (($line = $this->shift()) === null)
+            /* loop */;
+        return $line;
     }
 
     function unshift($line) {
-        if ($this->pos > 0) {
+        if ($line === null || $line === false)
+            /* do nothing */;
+        else if ($this->pos > 0) {
             $this->lines[$this->pos - 1] = $line;
             --$this->pos;
         } else
             array_unshift($this->lines, $line);
     }
 
-    function shift($ignore_comments = false) {
-        // blank lines, comments
+    function shift() {
         if ($this->pos >= count($this->lines))
             return false;
         $line = $this->lines[$this->pos];
         ++$this->pos;
         if (is_array($line))
             return self::reparse($line, $this->header);
+        // blank lines, comments
         if ($line == "" || $line[0] == "\n" || $line[0] == "\r"
-            || ($ignore_comments && $line[0] == "#"))
-            return false;
+            || ($this->comment_chars
+                && strpos($this->comment_chars, $line[0]) !== false))
+            return null;
         // split on type
         if ($this->type == self::TYPE_GUESS) {
             $pipe = substr_count($line, "|");

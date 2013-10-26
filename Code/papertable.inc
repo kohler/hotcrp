@@ -1794,7 +1794,8 @@ class PaperTable {
 	    $this->_paptabSepEnd();
 	}
 
-	if ($this->mode == "p" || $this->mode == "r" || $this->mode == "re")
+	if ($this->mode == "p" || $this->mode == "r" || $this->mode == "re"
+            || $this->mode == "assign")
 	    $Conf->footerScript("shortcut().add()");
     }
 

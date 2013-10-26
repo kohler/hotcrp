@@ -269,25 +269,19 @@ function parseBulkFile($text, $filename) {
     $success = array();
 
     $csv = new CsvParser($text);
-    do {
-	$line = $csv->shift(true);
-	++$tf["lineno"];
-    } while ($csv->count() && $line === false);
+    $csv->set_comment_chars("#%");
+    $line = $csv->next();
     if ($line && array_search("email", $line) !== false)
 	$csv->set_header($line);
     else {
 	$csv->set_header(array("name", "email", "affiliation"));
         $csv->unshift($line);
-	--$tf["lineno"];
     }
 
     $original_request = $_REQUEST;
 
-    while ($csv->count()) {
-	$line = $csv->shift(true);
-	++$tf["lineno"];
-	if ($line === false)
-	    continue;
+    while (($line = $csv->next()) !== false) {
+        $tf["lineno"] = $csv->lineno();
 	foreach (array("firstname" => "firstName", "first" => "firstName",
 		       "lastname" => "lastName", "last" => "lastName",
 		       "voice" => "voicePhoneNumber", "phone" => "voicePhoneNumber",

@@ -24,8 +24,6 @@ function tfError(&$tf, $lineno, $text) {
 function parseBulkFile($text, $filename, $type) {
     global $Conf, $Me, $nullMailer, $Error;
     $while = "while uploading assignments";
-    $text = cleannl($text);
-    $lineno = 0;
     $tf = array("err" => array(), "filename" => $filename);
     $pcm = pcMembers();
     $ass = array();
@@ -47,62 +45,72 @@ function parseBulkFile($text, $filename, $type) {
 
     // XXX lock tables
 
-    while ($text != "") {
-	$pos = strpos($text, "\n");
-	$line = ($pos === FALSE ? $text : substr($text, 0, $pos + 1));
-	++$lineno;
-	$text = substr($text, strlen($line));
-	$line = trim($line);
+    $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
+    $csv->set_comment_chars("#%");
+    if (($line = $csv->next()) && array_search("paper", $line) !== false)
+        $csv->set_header($line);
+    else
+        $csv->unshift($line);
 
-	// skip blank lines
-	if ($line == "" || $line[0] == "#" || $line[0] == "!")
-	    continue;
-
+    while (($line = $csv->next()) !== false) {
 	// parse a bunch of formats
-	if (preg_match('/^(\d+)\s+([^\t]+\t?[^\t]*)$/', $line, $m)) {
-	    $paperId = $m[1];
-	    list($firstName, $lastName, $email) = Text::split_name($m[2], true);
-	} else {
-	    tfError($tf, $lineno, "bad format");
+        if (!$csv->header()) {
+            list($line["first"], $line["last"], $line["email"]) =
+                Text::split_name(join(" ", array_slice($line, 1)), true);
+            $line["paper"] = $line[0];
+        }
+        foreach (array("firstName" => "first", "lastName" => "last")
+                 as $k => $pref) {
+            if (isset($line[$k]) && !isset($line[$pref]))
+                $line[$pref] = $line[$k];
+        }
+
+        if (!$line["paper"] || !ctype_digit($line["paper"])) {
+	    tfError($tf, $csv->lineno(), "bad format");
 	    continue;
 	}
 
-	if (($firstName || $lastName) && $email)
-	    $nameemail = trim("$firstName $lastName") . " <$email>";
-	else
-	    $nameemail = trim("$firstName $lastName") . $email;
+        $email = trim(@$line["email"]);
+        $nameemail = trim(@$line["first"] . " " . @$line["last"]);
+        if ($nameemail !== "" && $email)
+            $nameemail .= " <$email>";
+        else
+            $nameemail = $email;
 
 	// PC members
 	if ($type != REVIEW_EXTERNAL) {
-	    $cid = matchContact($pcm, $firstName, $lastName, $email);
+	    $cid = matchContact($pcm, @$line["first"], @$line["last"], $email);
 	    // assign
 	    if ($cid <= 0) {
 		if ($cid == -2)
-		    tfError($tf, $lineno, "“" . htmlspecialchars($nameemail) . "” matches no PC member");
+		    tfError($tf, $csv->lineno(), "“" . htmlspecialchars($nameemail) . "” matches no PC member");
 		else
-		    tfError($tf, $lineno, "“" . htmlspecialchars($nameemail) . "” matches more than one PC member, give a full email address to disambiguate");
+		    tfError($tf, $csv->lineno(), "“" . htmlspecialchars($nameemail) . "” matches more than one PC member, give a full email address to disambiguate");
 		continue;
 	    }
-	} else if (@$contacts_by_email[$email])
+	} else if (!$email) {
+            tfError($tf, $csv->lineno(), "email address required");
+            continue;
+        } else if (@$contacts_by_email[$email])
             $cid = $contacts_by_email[$email]->contactId;
         else {
 	    // external reviewers
             $c = new Contact;
-            if ($c->load_by_email($email, array("name" => trim("$firstName $lastName")), false)) {
+            if ($c->load_by_email($email, array("name" => trim($line["first"] . " " . $line["last"])), false)) {
                 $contacts_by_email[$email] = $c;
                 $contacts_by_id[$c->contactId] = $c;
                 $cid = $c->contactId;
             } else {
-		tfError($tf, $lineno, "“" . htmlspecialchars($email) . "” is not a valid email address");
+		tfError($tf, $csv->lineno(), "“" . htmlspecialchars($email) . "” is not a valid email address");
 		continue;
 	    }
 	}
 
 	// mark assignment
-	if (!isset($ass[$paperId]))
-	    $ass[$paperId] = array();
-	$ass[$paperId][$cid] = $lineno;
-	$lnameemail[$lineno] = $nameemail;
+	if (!isset($ass[$line["paper"]]))
+	    $ass[$line["paper"]] = array();
+	$ass[$line["paper"]][$cid] = $csv->lineno();
+	$lnameemail[$csv->lineno()] = $nameemail;
     }
 
 
@@ -150,6 +158,14 @@ function parseBulkFile($text, $filename, $type) {
     }
 
 
+    // check for errors
+    if (count($tf["err"]) > 0) {
+	ksort($tf["err"]);
+        $Conf->errorMsg('Errors while parsing assignments: <div class="parseerr"><p>' . join("</p>\n<p>", $tf["err"]) . '</p></div> Due to these errors, the assignment file was ignored.');
+        return;
+    }
+
+
     // set review round
     if ($type >= 0) {
 	if ($rev_roundtag) {
@@ -188,16 +204,8 @@ function parseBulkFile($text, $filename, $type) {
     $notify = "";
     if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $when)
 	$notify = " You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.";
-    if (count($tf["err"]) > 0) {
-	ksort($tf["err"]);
-	$errorMsg = "were errors while parsing the uploaded assignment file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf["err"]) . "</p></div>";
-    }
-    if ($nass > 0 && count($tf["err"]) > 0)
-	$Conf->confirmMsg("Made " . plural($nass, "assignment") . ".$notify<br />However, there $errorMsg");
-    else if ($nass > 0)
+    if ($nass > 0)
 	$Conf->confirmMsg("Made " . plural($nass, "assignment") . ".$notify");
-    else if (count($tf["err"]) > 0)
-	$Conf->errorMsg("There $errorMsg");
     else
 	$Conf->warnMsg("Nothing to do.");
 }
