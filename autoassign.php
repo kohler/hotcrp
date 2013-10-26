@@ -936,8 +936,8 @@ echo "</td><td>", Ht::label("Use entire PC", "pctyp_all"), "</td></tr>\n";
 
 echo "<tr><td>";
 doRadio('pctyp', 'sel', '');
-echo "</td><td>", Ht::label("Use selected PC members:", "pctyp_sel"), " &nbsp; (Select ";
-$pctyp_sel = array(array("all", 1, "All"), array("none", 0, "None"));
+echo "</td><td>", Ht::label("Use selected PC members:", "pctyp_sel"), " &nbsp; (select ";
+$pctyp_sel = array(array("all", 1, "all"), array("none", 0, "none"));
 $pctags = pcTags();
 if (count($pctags)) {
     $tagsjson = array();
