@@ -183,7 +183,7 @@ else if ($Me->chairContact)
   ?></td>
 </tr>
 
-<tr><td class='caption'></td><td class='entry'><input class='b' type='submit' value='Merge accounts' name='merge' /></td></tr>
+<tr><td class='caption'></td><td class='entry'><input type='submit' value='Merge accounts' name='merge' /></td></tr>
 <tr class='last'><td class='caption'></td></tr>
 </table>
 </form>

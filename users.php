@@ -165,7 +165,7 @@ if (count($tOpt) > 1) {
     if (isset($_REQUEST["sort"]))
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
     echo Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "contactsform1_d")),
-	" &nbsp;<input class='b' type='submit' value='Go' /></div></form>";
+	" &nbsp;<input type='submit' value='Go' /></div></form>";
 
     echo "</div><div class='tld2'>";
 
@@ -209,7 +209,7 @@ if (count($tOpt) > 1) {
 	    }
 	echo "</td>";
     }
-    echo "<td><input class='b' type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
+    echo "<td><input type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
     if (isset($pl->scoreMax)) {
 	$ss = array();
 	foreach (array("A", "V", "D") as $k) /* ghetto array_intersect_key */

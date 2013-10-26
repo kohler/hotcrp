@@ -549,7 +549,7 @@ span.impending a {
 
 /* buttons */
 /* All input styles starting with "hb" are treated specially by script. */
-input.button, button.button, a.button, input.hb {
+a.button, input.hb {
 	background: #ffffbb;
 	border-top: 1px solid #eeee66;
 	border-left: 2px solid #eeee66;
@@ -561,9 +561,6 @@ a.button {
 	text-decoration: none;
 	color: black;
 }
-input.b, button.b, select.b, input.bsm, button.bsm, select.bsm {
-	white-space: nowrap;
-}
 input.bsm, button.bsm, select.bsm {
 	font-size: smaller;
 }
@@ -571,13 +568,13 @@ input.bsm, button.bsm, select.bsm {
 #pplact input, #pplact button, #pplact select {
 	font-size: 100%;
 }
-input.b.alert, input.bsm.alert {
+input.alert, button.alert {
 	font-weight: bold;
 }
 input.bb, button.bb {
 	font-weight: bold;
 }
-input.button.alert, input.hb.alert {
+input.hb.alert {
 	font-weight: bold;
 	background: #ffaaaa;
 	border-top: 1px solid #ee6666;

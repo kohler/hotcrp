@@ -294,7 +294,7 @@ function rf_show() {
 			  "cgo2004" => "CGO 2004 conference"),
 		    defval($_REQUEST, "sample", "none")),
 	" &nbsp;
-<input type='submit' class='b' name='loadsample' value='Load template' /></div></td></tr></table>
+<input type='submit' name='loadsample' value='Load template' /></div></td></tr></table>
 
 <hr class='hr' />
 

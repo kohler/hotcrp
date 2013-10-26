@@ -602,7 +602,7 @@ if ($Me->canAdminister($prow)) {
     echo "    </table></td></tr></table></div>\n\n",
 	"<div class='aa' style='margin-bottom:0'>",
 	"<input type='submit' class='bb' name='update' value='Save assignments' />",
-	" &nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />",
+	" &nbsp;<input type='submit' name='cancel' value='Cancel' />",
 	" <span id='assresult' style='padding-left:1em'></span></div>\n\n",
         '</div></form>',
 	"</td><td></td></tr>\n";
@@ -642,7 +642,7 @@ echo "<div class='f-i'>
 <div class='clear'></div></div>\n\n";
 
 echo "<div class='f-i'>
-  <input class='b' type='submit' name='add' value='Request review' tabindex='2' /></div>\n\n";
+  <input type='submit' name='add' value='Request review' tabindex='2' /></div>\n\n";
 
 
 if ($Me->canAdminister($prow))

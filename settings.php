@@ -1103,7 +1103,7 @@ function doGraceRow($name, $text, $capclass = "lcaption") {
 function doActionArea($top) {
     echo "<div class='aa'", ($top ? " style='margin-top:0'" : ""), ">
   <input type='submit' class='bb' name='update' value='Save changes' />
-  &nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />
+  &nbsp;<input type='submit' name='cancel' value='Cancel' />
 </div>";
 }
 

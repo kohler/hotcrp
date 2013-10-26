@@ -252,7 +252,7 @@ Sign in to submit or review papers.";
 	echo "\n</div>\n";
     }
     echo "<div class='f-i'>
-  <input class='b' type='submit' value='Sign in' name='signin' tabindex='1' />
+  <input type='submit' value='Sign in' name='signin' tabindex='1' />
 </div>
 </div></form>
 <hr class='home' /></div>\n";
@@ -279,7 +279,7 @@ if ($homelist) {
 	"\" title='Enter paper numbers or search terms' />
     &nbsp;in&nbsp; ",
 	PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
-    &nbsp; <input class='b' type='submit' value='Search' />
+    &nbsp; <input type='submit' value='Search' />
     <div id='taghelp_homeq' class='taghelp_s'></div>
     <div style='font-size:85%'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("search", "tab=advanced"), "'>Advanced search</a></div>
   </div></form>
@@ -307,7 +307,7 @@ function reviewTokenGroup($close_hr) {
 	"<form action='", hoturl_post("index"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
 	"<input class='textlite' type='text' name='token' size='15' value=\"",
 	htmlspecialchars(join(" ", $tokens)), "\" />",
-	" &nbsp;<input class='b' type='submit' value='Go' />",
+	" &nbsp;<input type='submit' value='Go' />",
 	"<div class='hint'>Enter review tokens here to gain access to the corresponding reviews.</div>",
 	"</div></form>\n";
 

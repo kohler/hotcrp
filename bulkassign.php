@@ -294,7 +294,7 @@ echo "'>Review round: &nbsp;",
 
 <div class='g'></div>
 
-<input class='b' type='submit' value='Go' />
+<input type='submit' value='Go' />
 
 </div></form>
 

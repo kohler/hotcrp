@@ -807,8 +807,8 @@ if (isset($assignments) && count($assignments) > 0) {
 
     echo "<div class='g'></div>",
 	"<form method='post' action='", hoturl_post("autoassign"), "' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n",
-	"<input type='submit' class='b' name='saveassign' value='Save assignment' />\n",
-	"&nbsp;<input type='submit' class='b' name='cancel' value='Cancel' />\n";
+	"<input type='submit' name='saveassign' value='Save assignment' />\n",
+	"&nbsp;<input type='submit' name='cancel' value='Cancel' />\n";
     foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
 	if (isset($_REQUEST[$t]))
 	    echo "<input type='hidden' name='$t' value=\"", htmlspecialchars($_REQUEST[$t]), "\" />\n";
@@ -853,7 +853,7 @@ if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
 $q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
 echo "<input id='autoassignq' class='textlite temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"autosub('requery',this)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
-    " &nbsp; <input id='requery' class='b' name='requery' type='submit' value='List' />\n";
+    " &nbsp; <input id='requery' name='requery' type='submit' value='List' />\n";
 $Conf->footerScript("mktemptext('autoassignq','(All)')");
 if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
     echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>
@@ -1034,7 +1034,7 @@ doRadio('balance', 'all', "Spread assignments so that PC members have roughly eq
 
 // Create assignment
 echo "<div class='g'></div>\n";
-echo "<div class='aa'><input type='submit' class='b' name='assign' value='Prepare assignment' /> &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
+echo "<div class='aa'><input type='submit' name='assign' value='Prepare assignment' /> &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
 
 
 echo "</div></form>";

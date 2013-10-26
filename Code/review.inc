@@ -1373,7 +1373,7 @@ $blind\n";
 		echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
 		    "How helpful is this review? &nbsp;",
 		    Ht::select("rating", $ratingTypes, ($rrow->myRating === null ? "n" : $rrow->myRating)),
-		    " <input class='b fx7' type='submit' value='Save' />",
+		    " <input class='fx7' type='submit' value='Save' />",
 		    "</div></form>",
 		    "<span id='ratingform_${reviewOrdinal}result'></span>";
 		if (!defval($options, "ratingsajax")) {
@@ -1486,7 +1486,7 @@ $blind\n";
     <input type='hidden' name='refuse' value='refuse' />
     <textarea id='refusereviewreason' class='temptext' name='reason' rows='3' cols='40'>Optional explanation</textarea>
     <div class='popup_actions'>
-      <button type='button' class='b' onclick=\"popup(null, 'ref', 1)\">Cancel</button>
+      <button type='button' onclick=\"popup(null, 'ref', 1)\">Cancel</button>
       &nbsp;<input class='bb' type='submit' value='Decline review' />
     </div>
   </div></form></div>");
@@ -1523,7 +1523,7 @@ $blind\n";
   <tr><td></td><td><table class='revoff'><tr>
       <td><span class='revfn'>Offline reviewing</span></td>
       <td>Upload form: &nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />
-      &nbsp; <input class='b' type='submit' value='Go' name='uploadForm' /></td>
+      &nbsp; <input type='submit' value='Go' name='uploadForm' /></td>
     </tr><tr>
       <td></td>
       <td><a href='$reviewDownloadLink'>Download form</a>
@@ -1572,14 +1572,14 @@ $blind\n";
                 $buttons[] = "";
 		if ($submitted)
 		    $buttons[] = array(Ht::submit("unsubmit", "Unsubmit review"), "(admin only)");
-		$buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
+		$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
 		$Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   review assignment from the database and <strong>cannot be
   undone</strong>.</p>
   <form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'>
     <div class='popup_actions'>
-      <button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button>
+      <button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button>
       &nbsp;<input class='bb' type='submit' name='delete' value='Delete review' />
     </div>
   </form></div>");

@@ -357,7 +357,7 @@ class PaperList extends BaseList {
             $sel_opt["acmcms"] = "ACM CMS report";
 	$t .= Ht::select("getaction", $sel_opt, defval($_REQUEST, "getaction"),
 			  array("id" => "plact${nlll}_d", "tabindex" => 6))
-	    . "&nbsp; <input type='submit' class='b' name='getgo' value='Go' tabindex='6' onclick='return (papersel_check_safe=true)' /></td>";
+	    . "&nbsp; <input type='submit' name='getgo' value='Go' tabindex='6' onclick='return (papersel_check_safe=true)' /></td>";
 	$nlll++;
 
 	// Upload preferences (review preferences only)
@@ -366,7 +366,7 @@ class PaperList extends BaseList {
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "uploadpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Upload</a></td><td class='lld$nlll nowrap'><b>&nbsp;preference file:</b> &nbsp;";
-	    $t .= "<input id='plact${nlll}_d' type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='autosub(\"upload\",this)' />&nbsp; <input type='submit' class='b' name='upload' value='Go' tabindex='6' /></td>";
+	    $t .= "<input id='plact${nlll}_d' type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='autosub(\"upload\",this)' />&nbsp; <input type='submit' name='upload' value='Go' tabindex='6' /></td>";
 	    $nlll++;
 	}
 
@@ -376,7 +376,7 @@ class PaperList extends BaseList {
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "setpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Set preferences</a></td><td class='lld$nlll nowrap'><b>:</b> &nbsp;";
-	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='autosub(\"setpaprevpref\",this)' /> &nbsp;<input type='submit' class='b' name='setpaprevpref' value='Go' tabindex='6' /></td>";
+	    $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='autosub(\"setpaprevpref\",this)' /> &nbsp;<input type='submit' name='setpaprevpref' value='Go' tabindex='6' /></td>";
 	    $nlll++;
 	}
 
@@ -387,7 +387,7 @@ class PaperList extends BaseList {
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Tag</a></td><td class='lld$nlll nowrap'><table id='foldplacttags' class='foldc fold99c'><tr><td><b>:</b><a class='help' href='" . hoturl("help", "t=tags") . "' target='_blank' title='Learn more'>?</a> &nbsp;";
 	    $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order");
-	    $tagextra = array("class" => "b", "id" => "placttagtype");
+	    $tagextra = array("id" => "placttagtype");
 	    if ($this->contact->privChair) {
 		$tagopt["xxxb"] = null;
 		$tagopt["da"] = "Clear twiddle";
@@ -402,7 +402,7 @@ class PaperList extends BaseList {
 		    . $Conf->cacheableImage("_.gif", "More...", null, "expander")
 		    . "</a>&nbsp;</span></td><td>";
 	    }
-	    $t .= "tag<span class='fn99'>(s)</span> &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value=\"" . htmlspecialchars(defval($_REQUEST, "tag", "")) . "\"' size='15' onfocus='autosub(\"tagact\",this)' /> &nbsp;<input type='submit' class='b' name='tagact' value='Go' />";
+	    $t .= "tag<span class='fn99'>(s)</span> &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value=\"" . htmlspecialchars(defval($_REQUEST, "tag", "")) . "\"' size='15' onfocus='autosub(\"tagact\",this)' /> &nbsp;<input type='submit' name='tagact' value='Go' />";
 	    if ($this->contact->privChair) {
 		$t .= "<div class='fx'><div style='margin:2px 0'>"
 		    . Ht::checkbox("tagcr_gapless", 1, defval($_REQUEST, "tagcr_gapless"), array("style" => "margin-left:0"))
@@ -447,7 +447,7 @@ class PaperList extends BaseList {
 		$sel_opt[htmlspecialchars($row->email)] = Text::name_html($row);
 	    $t .= Ht::select("markpc", $sel_opt, defval($_REQUEST, "markpc"),
 			      array("id" => "markpc"))
-		. "</span> &nbsp;<input type='submit' class='b' name='setassign' value='Go' />";
+		. "</span> &nbsp;<input type='submit' name='setassign' value='Go' />";
 	    $t .= "</td>";
 	    $nlll++;
 	}
@@ -458,7 +458,7 @@ class PaperList extends BaseList {
 		$whichlll = $nlll;
 	    $t .= $barsep;
 	    $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "decide")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Decide</a></td><td class='lld$nlll'><b>:</b> Set to &nbsp;";
-	    $t .= decisionSelector(defval($_REQUEST, "decision", 0), "plact${nlll}_d") . " &nbsp;<input type='submit' class='b' name='setdecision' value='Go' /></td>";
+	    $t .= decisionSelector(defval($_REQUEST, "decision", 0), "plact${nlll}_d") . " &nbsp;<input type='submit' name='setdecision' value='Go' /></td>";
 	    $nlll++;
 
 	    if (isset($_REQUEST["sendmail"]) || $this->atab == "mail")
@@ -466,7 +466,7 @@ class PaperList extends BaseList {
 	    $t .= $barsep
 		. "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "mail")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Mail</a></td><td class='lld$nlll'><b>:</b> &nbsp;"
 		. Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), defval($_REQUEST, "recipients"), array("id" => "plact${nlll}_d"))
-		. " &nbsp;<input type='submit' class='b' name='sendmail' value='Go' /></td>";
+		. " &nbsp;<input type='submit' name='sendmail' value='Go' /></td>";
 	    $nlll++;
 	}
 

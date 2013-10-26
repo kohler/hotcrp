@@ -1286,7 +1286,7 @@ echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas
 // Basic search
 echo "<form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'><div class='inform' style='position:relative'>
   <input id='searchform1_d' class='textlite' type='text' size='40' style='width:30em' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;
-  <input class='b' type='submit' value='Search' />
+  <input type='submit' value='Search' />
 <div id='taghelp_searchform1' class='taghelp_s'></div>
 </div></form>";
 
@@ -1332,7 +1332,7 @@ echo Ht::select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 <tr>
   <td class='lxcaption'>With <b>all</b> the words</td>
   <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' style='width:30em' name='qa' value=\"", htmlspecialchars(defval($_REQUEST, "qa", defval($_REQUEST, "q", ""))), "\" tabindex='1' /><span class='sep'></span></td>
-  <td rowspan='3'><input class='b' type='submit' value='Search' tabindex='2' /></td>
+  <td rowspan='3'><input type='submit' value='Search' tabindex='2' /></td>
 </tr><tr>
   <td class='lxcaption'>With <b>any</b> of the words</td>
   <td class='lentry'><input class='textlite' type='text' size='40' name='qo' style='width:30em' value=\"", htmlspecialchars(defval($_REQUEST, "qo", "")), "\" tabindex='1' /></td>
@@ -1459,12 +1459,12 @@ if ($pl && $pl->count > 0) {
 
     // Formulas link
     if (count($paperListFormulas) || ($Me->isPC && $Conf->sversion >= 32))
-	echo "<td class='padlb'><button type='button' class='b' onclick='fold(\"searchform\",0,3)'>Edit formulas</button></td>";
+	echo "<td class='padlb'><button type='button' onclick='fold(\"searchform\",0,3)'>Edit formulas</button></td>";
 
     echo "<td class='padlb'>";
     // "Set default display"
     if ($Me->privChair) {
-	echo "<button type='button' class='b' id='savedisplayoptionsbutton' onclick='savedisplayoptions()' disabled='disabled'>Make default</button>&nbsp; ";
+	echo "<button type='button' id='savedisplayoptionsbutton' onclick='savedisplayoptions()' disabled='disabled'>Make default</button>&nbsp; ";
 	$Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='" . hoturl_post("search", "savedisplayoptions=1") . "' enctype='multipart/form-data' accept-charset='UTF-8'>"
 . "<div><input id='scoresortsave' type='hidden' name='scoresort' value='"
 . $_SESSION["scoresort"] . "' /></div></form>");
@@ -1477,7 +1477,7 @@ if ($pl && $pl->count > 0) {
 	    $Conf->footerScript("plinfo.extra()");
     }
 
-    echo "<input id='redisplay' class='b' type='submit' value='Redisplay' /></td>";
+    echo "<input id='redisplay' type='submit' value='Redisplay' /></td>";
 
     echo "</tr></table></td>";
 

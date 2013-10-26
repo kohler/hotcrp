@@ -204,7 +204,7 @@ if ($Me->amReviewer()) {
     echo "<td><h3>Upload filled-out forms</h3>
 <form action='", hoturl_post("offline", "uploadForm=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 	<input type='hidden' name='postnonempty' value='1' />
-	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Go' $disabled/>";
+	<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; <input type='submit' value='Go' $disabled/>";
     if ($pastDeadline && $Me->privChair)
 	echo "<br />", Ht::checkbox("override"), "&nbsp;", Ht::label("Override&nbsp;deadlines");
     echo "<br /><span class='hint'><strong>Tip:</strong> You may upload a file containing several forms.</span>";
@@ -227,7 +227,7 @@ if ($Conf->setting("tag_rank") && $Me->amReviewer()) {
     echo "<td><h3>Upload ranking file</h3>
 <form action='", hoturl_post("offline", "setrank=1&amp;tag=%7E$ranktag"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
 	<input type='hidden' name='upload' value='1' />
-	<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; <input class='b' type='submit' value='Go' $disabled/>";
+	<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; <input type='submit' value='Go' $disabled/>";
     if ($pastDeadline && $Me->privChair)
 	echo "<br />", Ht::checkbox("override"), "&nbsp;", Ht::label("Override&nbsp;deadlines");
     echo "<br /><span class='hint'><strong>Tip:</strong> Use “<a href='", hoturl("search", "q=" . urlencode("editsort:#~$ranktag")), "'>editsort:#~$ranktag</a>” to drag and drop your ranking.</span>";

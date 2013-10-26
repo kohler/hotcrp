@@ -975,7 +975,7 @@ class PaperTable {
                 }
         }
         echo "<div id='opt", $o->optionId, "_new'></div>",
-            "<button type='button' class='b' onclick=\"addattachment($o->optionId)\">Attach file</button>",
+            "<button type='button' onclick=\"addattachment($o->optionId)\">Attach file</button>",
             "</div>";
     }
 
@@ -1191,7 +1191,7 @@ class PaperTable {
                              ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
                              array("onchange" => "dosubmitstripselector('${type}')",
                                    "id" => "fold${type}_d")),
-		" <input class='b fx7' type='submit' value='Save' />",
+		" <input class='fx7' type='submit' value='Save' />",
 		" <span id='${type}formresult'></span>",
 		"</div></form>";
         }
@@ -1278,7 +1278,7 @@ class PaperTable {
 	if (isset($_REQUEST["forceShow"]))
 	    echo "<input type='hidden' name='forceShow' value='", ($_REQUEST['forceShow'] ? 1 : 0), "' />";
 	echo decisionSelector($this->prow->outcome, null, " onchange='dosubmitstripselector(\"decision\")' id='folddecision_d'"),
-	    " <input class='b fx7' type='submit' value='Save' />",
+	    " <input class='fx7' type='submit' value='Save' />",
 	    " <span id='decisionformresult'></span>",
 	    "</div></form><p class='fn odname'>",
 	    $rf->options["outcome"][$this->prow->outcome],
@@ -1298,7 +1298,7 @@ class PaperTable {
 	$rp = (isset($this->prow->reviewerPreference) ? htmlspecialchars($this->prow->reviewerPreference) : "0");
 	$rp = ($rp == "0" ? "" : $rp);
 	echo "<input id='revprefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$rp\" onchange='Miniajax.submit(\"revprefform\")' tabindex='1' />",
-	    " <input class='b fx7' type='submit' value='Save' />",
+	    " <input class='fx7' type='submit' value='Save' />",
 	    " <span id='revprefformresult'></span>",
 	    "</div></form></div></div>\n";
 	$Conf->footerScript("Miniajax.onload(\"revprefform\");shortcut(\"revprefform_d\").add()");
@@ -1331,7 +1331,7 @@ class PaperTable {
 	if (isset($_REQUEST["forceShow"]))
 	    echo "<input type='hidden' name='forceShow' value='", ($_REQUEST['forceShow'] ? 1 : 0), "' />";
 	echo "<input id='foldrank_d' class='textlite' type='text' size='4' name='rank' value=\"$rp\" onchange='Miniajax.submit(\"rankform\")' tabindex='1' />",
-	    " <input class='b fx7' type='submit' value='Save' />",
+	    " <input class='fx7' type='submit' value='Save' />",
 	    " <span id='rankformresult'></span>",
 	    " <div class='hint'><strong>Tip:</strong> <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>Search “editsort:#~${tag}”</a> to drag and drop your ranking, or <a href='", hoturl("offline"), "'>use offline reviewing</a> to rank many papers at once.</div>",
 	    "</div></form>",
@@ -1387,7 +1387,7 @@ class PaperTable {
 			 . "&nbsp;" . Ht::label("Email notification"),
 			 array("type" => "ps")),
 	    "<div class='pshint'>Select to receive email on updates to reviews and comments. <span id='watchformresult'></span>",
-	    "<input class='b fx7' type='submit' value='Save' />",
+	    "<input class='fx7' type='submit' value='Save' />",
 	    "</div></div></form></div>\n\n";
 
 	$Conf->footerScript("Miniajax.onload(\"watchform\")");
@@ -1491,7 +1491,7 @@ class PaperTable {
         if ($prow->timeWithdrawn > 0) {
             $revivable = $Conf->timeFinalizePaper($prow);
             if ($revivable || $this->admin) {
-                $b = "<input class='b' type='submit' name='revive' value='Revive paper' />";
+                $b = "<input type='submit' name='revive' value='Revive paper' />";
                 if (!$revivable)
                     $b = array($b, "(admin only)");
             } else
@@ -1516,9 +1516,9 @@ class PaperTable {
         if (!$Me->canWithdrawPaper($prow, $whyNot, true))
             $b = null;
         else if ($prow->timeSubmitted <= 0)
-            $b = "<input class='b' type='submit' name='withdraw' value='Withdraw paper' />";
+            $b = "<input type='submit' name='withdraw' value='Withdraw paper' />";
         else {
-            $b = "<button type='button' class='b' onclick=\"popup(this,'w',0,true)\">Withdraw paper</button>";
+            $b = "<button type='button' onclick=\"popup(this,'w',0,true)\">Withdraw paper</button>";
             $admins = "";
             if ((!$this->admin || $prow->conflictType >= CONFLICT_AUTHOR)
                 && !$Conf->timeFinalizePaper($prow))
@@ -1535,7 +1535,7 @@ class PaperTable {
     <div class='popup_actions' style='margin-top:10px'>
       <input class='popup_populate' type='hidden' name='doemail' value='1' />
       <input class='popup_populate' type='hidden' name='emailNote' value='' />
-      <button type='button' class='b' onclick=\"popup(null, 'w', 1)\">Cancel</button>
+      <button type='button' onclick=\"popup(null, 'w', 1)\">Cancel</button>
       &nbsp;<input class='bb' type='submit' name='withdraw' value='Withdraw paper' />
     </div>
   </div></form></div>");
@@ -1549,7 +1549,7 @@ class PaperTable {
 
         // Edit contacts
         if (!$this->editable)
-            $buttons[] = "<button type='button' class='b' onclick='window.location=\"" . hoturl("contactauthors", "p=" . $prow->paperId . $linkExtra) . "\"'>Edit contacts</button>";
+            $buttons[] = "<button type='button' onclick='window.location=\"" . hoturl("contactauthors", "p=" . $prow->paperId . $linkExtra) . "\"'>Edit contacts</button>";
 
         return $buttons;
     }
@@ -1561,7 +1561,7 @@ class PaperTable {
 	$buttons = $this->_collectActionButtons();
 
 	if ($this->admin && $prow) {
-	    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this,'d',0,true)\">Delete paper</button>", "(admin only)");
+	    $buttons[] = array("<button type='button' onclick=\"popup(this,'d',0,true)\">Delete paper</button>", "(admin only)");
 	    $Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   paper from the database and <strong>cannot be undone</strong>.</p>
@@ -1569,7 +1569,7 @@ class PaperTable {
     <div class='popup_actions'>
       <input class='popup_populate' type='hidden' name='doemail' value='1' />
       <input class='popup_populate' type='hidden' name='emailNote' value='' />
-      <button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button>
+      <button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button>
       &nbsp;<input class='bb' type='submit' name='delete' value='Delete paper' />
     </div>
   </form></div>");

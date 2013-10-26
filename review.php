@@ -344,7 +344,7 @@ if (isset($_REQUEST["refuse"]) || isset($_REQUEST["decline"])) {
   <input type='hidden' name='refuse' value='refuse' />
   <textarea name='reason' rows='3' cols='40'></textarea>
   <span class='sep'></span>
-  <input class='b' type='submit' value='Decline review' />
+  <input type='submit' value='Decline review' />
   </div></form>");
     } else {
 	refuseReview();

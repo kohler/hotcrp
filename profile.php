@@ -730,7 +730,7 @@ $buttons = array("<input class='bb' type='submit' value='"
 		 . "' name='register' />");
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
-    $buttons[] = array("<button type='button' class='b' onclick=\"popup(this, 'd', 0)\">Delete user</button>", "(admin only)");
+    $buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete user</button>", "(admin only)");
     if (count($tracks->soleAuthor)) {
 	$Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p><strong>This user cannot be deleted</strong> because they are the sole
@@ -738,7 +738,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   Delete these papers from the database or add alternate paper contacts and
   you will be able to delete this user.</p>
   <div class='popup_actions'>
-    <button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Close</button>
+    <button type='button' onclick=\"popup(null, 'd', 1)\">Close</button>
   </div></div>");
     } else {
 	if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
@@ -765,14 +765,14 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   $dialog
   <form method='post' action=\"" . hoturl_post("profile", "u=" . urlencode($Acct->email)) . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
     <div class='popup_actions'>
-      <button type='button' class='b' onclick=\"popup(null, 'd', 1)\">Cancel</button>
+      <button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button>
       &nbsp;<input class='bb' type='submit' name='delete' value='Delete user' />
     </div>
   </form></div>");
     }
 }
 if (!$newProfile && $Acct->contactId == $Me->contactId)
-    $buttons[] = "<input class='b' type='submit' value='Merge with another account' name='merge' style='margin-left:2ex' />";
+    $buttons[] = "<input type='submit' value='Merge with another account' name='merge' style='margin-left:2ex' />";
 echo "    <tr>\n";
 foreach ($buttons as $b) {
     $x = (is_array($b) ? $b[0] : $b);

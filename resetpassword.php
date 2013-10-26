@@ -90,7 +90,7 @@ echo "</div>
 </div></td></tr>
 <tr><td></td><td style='padding-top:1em'>
 <div class='f-i'>
-  <input class='b' type='submit' value='Reset password' name='go' tabindex='1' />
+  <input type='submit' value='Reset password' name='go' tabindex='1' />
 </div></td>
 </tr></table>
 </div></form>

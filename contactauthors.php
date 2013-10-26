@@ -118,7 +118,7 @@ if ($OK) {
 	$t .= "<tr><td class='pad'>" . Text::user_html($row[0], $row[1])
 	    . "</td> <td class='pad'>" . htmlspecialchars($row[2]) . "</td>";
 	if ($Me->privChair || ($numContacts > 1 && $row[3] != $Me->cid))
-	    $t .= " <td class='pad'><button class='b' type='submit' name='rem$row[3]' value='1'>Remove contact</button></td>";
+	    $t .= " <td class='pad'><button type='submit' name='rem$row[3]' value='1'>Remove contact</button></td>";
 	$t .= "</tr>\n    ";
     }
 

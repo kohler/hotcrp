@@ -83,7 +83,7 @@ function _searchForm($forwhat, $other = null, $size = 20) {
     return "<form method='get' action='" . hoturl("search") . "' accept-charset='UTF-8'>"
 	. "<input type='text' class='textlite' name='q' value=\""
 	. htmlspecialchars($forwhat) . "\" size='$size' /> &nbsp;"
-	. "<input type='submit' class='b' name='go' value='Search' />"
+	. "<input type='submit' name='go' value='Search' />"
 	. $text . "</form>";
 }
 

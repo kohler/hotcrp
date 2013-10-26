@@ -176,7 +176,7 @@ function checkMailPrologue($send) {
 	    "<div id='mailwarnings'></div>",
 	    "<div class='fx'><div class='confirm'>Sent mail as follows.</div>
 	<div class='aa'>
-	<input class='b' type='submit' name='go' value='Prepare more mail' />
+	<input type='submit' name='go' value='Prepare more mail' />
 	</div></div>",
 	    // This next is only displayed when Javascript is off
 	    "<div class='fn2 warning'>Sending mail.  <strong>Do not leave this page until it finishes rendering!</strong></div>",
@@ -205,8 +205,8 @@ function checkMailPrologue($send) {
 	    echo "<br />Paper selection:&nbsp;", htmlspecialchars($_REQUEST["q"]);
 	echo "</div>
         <div class='aa fx'>
-	<input class='b' type='submit' name='send' value='Send' /> &nbsp;
-	<input class='b' type='submit' name='cancel' value='Cancel' />
+	<input type='submit' name='send' value='Send' /> &nbsp;
+	<input type='submit' name='cancel' value='Cancel' />
         </div>",
 	    // This next is only displayed when Javascript is off
 	    "<div class='fn2 warning'>Scroll down to send the prepared mail once the page finishes loading.</div>",
@@ -350,8 +350,8 @@ function checkMail($send) {
 	return false;
     else if (!$send) {
 	echo "<div class='aa'>",
-	    "<input class='b' type='submit' name='send' value='Send' /> &nbsp;
-<input class='b' type='submit' name='cancel' value='Cancel' />",
+	    "<input type='submit' name='send' value='Send' /> &nbsp;
+<input type='submit' name='cancel' value='Cancel' />",
 	    "</div>\n";
     }
     if ($revinform)
@@ -514,7 +514,7 @@ foreach ($tmpl as $k => &$v) {
 if (!isset($_REQUEST["template"]) || !isset($tmpl[$_REQUEST["template"]]))
     $_REQUEST["template"] = "genericmailtool";
 echo Ht::select("template", $tmpl, $_REQUEST["template"], array("onchange" => "highlightUpdate(\"loadtmpl\")")),
-    " &nbsp;<input id='loadtmpl' class='b' type='submit' name='loadtmpl' value='Load' /> &nbsp;
+    " &nbsp;<input id='loadtmpl' type='submit' name='loadtmpl' value='Load' /> &nbsp;
  <span class='hint'>Templates are mail texts tailored for common conference tasks.</span>
 </div>
 
@@ -582,7 +582,7 @@ if ($Me->privChair && $Conf->sversion >= 40) {
 
 
 echo "<div class='aa' style='clear:both'>
-  <input type='submit' value='Prepare mail' class='b' /> &nbsp; <span class='hint'>You'll be able to review the mails before they are sent.</span>
+  <input type='submit' value='Prepare mail' /> &nbsp; <span class='hint'>You'll be able to review the mails before they are sent.</span>
 </div>
 
 

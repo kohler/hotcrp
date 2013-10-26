@@ -246,7 +246,7 @@ function highlightUpdate(which, off) {
 		highlightUpdate(ins[i], off);
     }
 
-    if (which.className) {
+    if (which.className != null) {
 	result = which.className.replace(" alert", "");
 	which.className = (off ? result : result + " alert");
     }

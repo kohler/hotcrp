@@ -875,7 +875,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
 	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
     if (isset($CurrentList) && $CurrentList > 0)
 	$x .= "<input type='hidden' name='ls' value='$CurrentList' />";
-    $x .= "&nbsp; <input class='b' type='submit' value='Search' /></div></form>";
+    $x .= "&nbsp; <input type='submit' value='Search' /></div></form>";
     return $x;
 }
 
