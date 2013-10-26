@@ -432,7 +432,8 @@ function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
     // add parameters
     $sep = ($query ? "&" : "?");
     foreach (array("p", "r", "c", "m", "u", "mode", "forceShow", "validator", "ls", "list", "t", "q", "qa", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq", "noedit", "contact", "reviewer") as $what)
-	if (isset($_REQUEST[$what]) && !array_key_exists($what, $extra)) {
+	if (isset($_REQUEST[$what]) && !array_key_exists($what, $extra)
+            && !is_array($_REQUEST[$what])) {
 	    $self .= "$sep$what=" . urlencode($_REQUEST[$what]);
 	    $sep = "&";
 	}
