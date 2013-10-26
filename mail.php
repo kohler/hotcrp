@@ -277,7 +277,7 @@ function checkMail($send) {
 		   || $preparation["body"] != $last["body"]
 		   || $preparation["to"] != $last["to"]
 		   || $preparation["cc"] != $last["cc"]
-		   || $preparation["replyto"] != $last["replyto"]) {
+		   || @$preparation["replyto"] != @$last["replyto"]) {
 	    $last = $preparation;
 	    $checker = "c" . $row->contactId . "p" . $row->paperId;
 	    if ($send && !defval($_REQUEST, $checker))
