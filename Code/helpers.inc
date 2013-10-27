@@ -97,6 +97,15 @@ function sqlqtrim($value) {
     return $Conf->dblink->escape_string(trim($value));
 }
 
+function sql_in_numeric_set($set, $negated = false) {
+    if (count($set) == 0)
+        return $negated ? "!=-1" : "=-1";
+    else if (count($set) == 1)
+        return ($negated ? "!=" : "=") . $set[0];
+    else
+        return ($negated ? " not" : "") . " in (" . join(",", $set) . ")";
+}
+
 function cleannl($text) {
     if (strpos($text, "\r") !== false) {
 	$text = str_replace("\r\n", "\n", $text);
@@ -1487,7 +1496,7 @@ function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
     return $text . "  </select>";
 }
 
-function _sort_pcMember($a, $b) {
+function _sort_pcMember($a, $b) { // also used elsewhere
     return strcasecmp($a->sorter, $b->sorter);
 }
 

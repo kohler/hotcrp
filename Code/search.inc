@@ -186,7 +186,7 @@ class SearchReviewValue {
 	if (!$contacts || is_string($contacts))
 	    $this->contactsql = $contacts;
 	else
-	    $this->contactsql = PaperSearch::sqlNumericSet($contacts);
+	    $this->contactsql = sql_in_numeric_set($contacts);
 	$this->_contactset = $contacts;
 	$this->fieldsql = $fieldsql;
 	$this->allowed = $this->compar = 0;
@@ -541,15 +541,6 @@ class PaperSearch {
 	    return array($type, $compar . $value);
     }
 
-    static function sqlNumericSet($a, $neg = false) {
-	if (count($a) == 0)
-	    return ($neg ? "!" : "") . "=-1";
-	else if (count($a) == 1)
-	    return ($neg ? "!" : "") . "=" . $a[0];
-	else
-	    return ($neg ? " not" : "") . " in (" . join(",", $a) . ")";
-    }
-
     private static function _pcContactIdsWithTag($tag) {
 	$a = array();
 	foreach (pcMembers() as $pc)
@@ -574,7 +565,7 @@ class PaperSearch {
 	    if (isset($pctags[$tag])) {
 		$ids = self::_pcContactIdsWithTag($tag);
 		if ($negtag) {
-		    $this->contactmatch[] = "\2contactId" . self::sqlNumericSet($ids, true);
+		    $this->contactmatch[] = "\2contactId" . sql_in_numeric_set($ids, true);
                     $this->contactmatchPC = $this->contactmatchPC && $type == 0;
 		    return "\1" . (count($this->contactmatch) - 1) . "\1";
 		} else
@@ -632,7 +623,7 @@ class PaperSearch {
                 $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a decision.");
                 $value[] = -10000000;
             }
-            $value = self::sqlNumericSet($value);
+            $value = sql_in_numeric_set($value);
         }
 
         $value = array("outcome", $value);
@@ -2352,7 +2343,7 @@ class PaperSearch {
 	// clean up contact matches
 	if (count($this->contactmatch))
 	    for ($i = 0; $i < count($this->contactmatch); $i++)
-		$q = str_replace("\1$i\1", self::sqlNumericSet($this->contactmatch[$i]), $q);
+		$q = str_replace("\1$i\1", sql_in_numeric_set($this->contactmatch[$i]), $q);
         //$Conf->infoMsg(htmlspecialchars($q));
 
 	// actually perform query

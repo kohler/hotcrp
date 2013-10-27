@@ -183,8 +183,6 @@ class PaperTable {
 	$c = "<div class=\"${type}t";
 	if (isset($Error[$what]))
 	    $c .= " error";
-	if (isset($extra["extraclass"]))
-	    $c .= " " . $extra["extraclass"];
         if ($fold || $editfolder)
             $c .= " childfold\" onclick=\"return foldup(this,event$foldnumarg)";
 	$c .= "\"><span class=\"${type}fn\">";

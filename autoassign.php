@@ -115,41 +115,244 @@ $scoreselector["x"] = "(no score preference)";
 $Error = array();
 
 
-function countReviews() {
-    global $Conf, $papersel;
-    $nrev = (object) array("any" => array(), "pri" => array(), "sec" => array());
-    $nrev->pset = (object) array("any" => array(), "pri" => array(), "sec" => array());
-    foreach (pcMembers() as $id => $pc) {
-	$nrev->any[$id] = $nrev->pri[$id] = $nrev->sec[$id] = 0;
-	$nrev->pset->any[$id] = $nrev->pset->pri[$id] = $nrev->pset->sec[$id] = 0;
+class Assigner {
+    public $pid;
+    public $cid;
+    static public $assigners = array();
+    static function register($n, $a) {
+        assert(!@self::$assigners[$n]);
+        self::$assigners[$n] = $a;
+    }
+    static function parse($x) {
+        if (is_string($x))
+            $x = explode(",", $x);
+        if (@$x[1] && ($a = @self::$assigners[$x[1]]))
+            return $a->clone_parse($x);
+        else
+            return null;
+    }
+    function account(&$countbycid, $nrev) {
+        $countbycid[$this->cid] = @+$countbycid[$this->cid] + 1;
+    }
+}
+class ReviewAssigner extends Assigner {
+    private $type;
+    private $round;
+    private static $typetoname =
+        array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary",
+              REVIEW_PC => "review");
+    function __construct($type, $x = null) {
+        $this->type = $type;
+        if ($x) {
+            $this->pid = +$x[0];
+            $this->cid = $x[2];
+            $this->round = @$x[3];
+        }
+    }
+    function clone_parse($x) {
+        return new ReviewAssigner($this->type, $x);
+    }
+    function unparse_display($pcm) {
+        global $reviewTypeName, $assignprefs, $Conf;
+        if (!($pc = @$pcm[$this->cid]))
+            return null;
+        $t = Text::name_html($pc) . ' ';
+        if ($this->type) {
+            $t .= $Conf->cacheableImage("_.gif", $reviewTypeName[$this->type], $reviewTypeName[$this->type] . " review", "ass" . $this->type . "n");
+            if ($this->round)
+                $t .= ' <span class="revround" title="Review round">'
+                    . htmlspecialchars($this->round) . '</span>';
+            $pref = @$assignprefs["$this->pid:$this->cid"];
+            if ($pref !== "*" && $pref != 0)
+                $t .= " <span class='asspref" . ($pref > 0 ? 1 : -1)
+                    . "'>P" . decorateNumber($pref) . "</span>";
+        } else
+            $t .= '(clear review)';
+        return $t;
+    }
+    function account(&$countbycid, $nrev) {
+        $countbycid[$this->cid] = @+$countbycid[$this->cid] + 1;
+        $delta = $this->type ? 1 : -1;
+        $nrev->any[$this->cid] += $delta;
+        if ($this->type == REVIEW_PRIMARY)
+            $nrev->pri[$this->cid] += $delta;
+        else if ($this->type == REVIEW_SECONDARY)
+            $nrev->sec[$this->cid] += $delta;
+    }
+    function execute($pcm, $when) {
+        global $Conf, $Me;
+        $result = $Conf->qe("select contactId, paperId, reviewId, reviewType, reviewModified from PaperReview where paperId=$this->pid and contactId=$this->cid");
+        $Me->assignPaper($this->pid, edb_orow($result), $pcm[$this->cid], $this->type, $when);
+    }
+}
+class LeadAssigner extends Assigner {
+    private $type;
+    private $isadd;
+    function __construct($type, $isadd, $x = null) {
+        $this->type = $type;
+        $this->isadd = $isadd;
+        if ($x) {
+            $this->pid = +$x[0];
+            $this->cid = $x[2];
+        }
+    }
+    function clone_parse($x) {
+        return new LeadAssigner($this->type, $this->isadd, $x);
+    }
+    function unparse_display($pcm) {
+        if (!($pc = @$pcm[$this->cid]))
+            return null;
+        $t = Text::name_html($pc);
+        if ($this->isadd)
+            $t .= " ($this->type)";
+        else
+            $t .= " (clear $this->type)";
+        return $t;
+    }
+    function execute($pcm, $when) {
+        global $Conf;
+        if ($this->isadd)
+            $Conf->qe("update Paper set " . $this->type . "ContactId=$this->cid where paperId=$this->pid");
+        else
+            $Conf->qe("update Paper set " . $this->type . "ContactId=0 where paperId=$this->pid and " . $this->type . "ContactId=$this->cid");
+    }
+}
+class ConflictAssigner extends Assigner {
+    private $isadd;
+    function __construct($isadd, $x = null) {
+        $this->isadd = $isadd;
+        if ($x) {
+            $this->pid = +$x[0];
+            $this->cid = $x[2];
+        }
+    }
+    function clone_parse($x) {
+        return new ConflictAssigner($this->isadd, $x);
+    }
+    function unparse_display($pcm) {
+        global $Conf;
+        if (!($pc = @$pcm[$this->cid]))
+            return null;
+        $t = Text::name_html($pc) . ' ';
+        if ($this->isadd)
+            $t .= $Conf->cacheableImage("_.gif", "Conflict", "Conflict", "ass-1");
+        else
+            $t .= '(clear conflict)';
+        return $t;
+    }
+    function execute($pcm, $when) {
+        global $Conf;
+        if ($this->isadd)
+            $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($this->pid,$this->cid," . CONFLICT_CHAIRMARK . ") on duplicate key update conflictType=greatest(conflictType,values(conflictType))");
+        else
+            $Conf->qe("delete from PaperConflict where paperId=$this->pid and contactId=$this->cid and conflictType<" . CONFLICT_AUTHOR);
+    }
+}
+
+Assigner::register("primary", new ReviewAssigner(REVIEW_PRIMARY));
+Assigner::register("secondary", new ReviewAssigner(REVIEW_SECONDARY));
+Assigner::register("review", new ReviewAssigner(REVIEW_PC));
+Assigner::register("noreview", new ReviewAssigner(0));
+Assigner::register("lead", new LeadAssigner("lead", true));
+Assigner::register("nolead", new LeadAssigner("lead", false));
+Assigner::register("shepherd", new LeadAssigner("shepherd", true));
+Assigner::register("noshepherd", new LeadAssigner("shepherd", false));
+Assigner::register("conflict", new ConflictAssigner(true));
+Assigner::register("noconflict", new ConflictAssigner(false));
+
+class Autoassign {
+    static function count_reviews($papers = null) {
+        global $Conf;
+        $nrev = (object) array("any" => array(), "pri" => array(), "sec" => array());
+        foreach (pcMembers() as $id => $pc)
+            $nrev->any[$id] = $nrev->pri[$id] = $nrev->sec[$id] = 0;
+
+        $q = "select pc.contactId, group_concat(r.reviewType separator '')
+		from PCMember pc
+		left join PaperReview r on (r.contactId=pc.contactId)\n\t\t";
+        if (!$papers)
+            $q .= "left join Paper p on (p.paperId=r.paperId)
+		where p.paperId is null or p.timeWithdrawn<=0";
+        else
+            $q .= "where r.paperId" . sql_in_numeric_set($papers);
+        $result = $Conf->qe($q . " group by pc.contactId",
+                            "while counting reviews");
+        while (($row = edb_row($result))) {
+            $nrev->any[$row[0]] = strlen($row[1]);
+            $nrev->pri[$row[0]] = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
+            $nrev->sec[$row[0]] = preg_match_all("|" . REVIEW_SECONDARY . "|", $row[1], $matches);
+        }
+        return $nrev;
     }
 
-    $result = $Conf->qe("select PC.contactId, group_concat(R.reviewType separator ''),
-		group_concat(R.reviewType separator '')
-	from PCMember PC
-	left join PaperReview R on (R.contactId=PC.contactId)
-	left join Paper P on (P.paperId=R.paperId)
-	where P.paperId is null or P.timeWithdrawn<=0
-	group by PC.contactId", "while counting reviews");
-    while (($row = edb_row($result))) {
-	$nrev->any[$row[0]] = strlen($row[1]);
-	$nrev->pri[$row[0]] = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
-	$nrev->sec[$row[0]] = preg_match_all("|" . REVIEW_SECONDARY . "|", $row[1], $matches);
-    }
+    static function echo_unparse_display($assignment) {
+        global $Conf, $Me, $papersel;
+        if (!is_array($assignment))
+            $assignment = explode("\n", $assignment);
+        $pcm = pcMembers();
+        $nrev = self::count_reviews();
+        $nrev->pset = self::count_reviews($papersel);
+        $countbycid = array();
 
-    $result = $Conf->qe("select PC.contactId, group_concat(R.reviewType separator ''),
-		group_concat(R.reviewType separator '')
-	from PCMember PC
-	left join PaperReview R on (R.contactId=PC.contactId)
-	where R.paperId" . PaperSearch::sqlNumericSet($papersel) . "
-	group by PC.contactId", "while counting reviews");
-    while (($row = edb_row($result))) {
-	$nrev->pset->any[$row[0]] = strlen($row[1]);
-	$nrev->pset->pri[$row[0]] = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
-	$nrev->pset->sec[$row[0]] = preg_match_all("|" . REVIEW_SECONDARY . "|", $row[1], $matches);
-    }
+        $bypaper = array();
+        foreach ($assignment as $req)
+            if (($assigner = Assigner::parse($req))
+                && ($text = $assigner->unparse_display($pcm))) {
+                arrayappend($bypaper[$assigner->pid], (object)
+                            array("text" => $text,
+                                  "sorter" => $pcm[$assigner->cid]->sorter));
+                $assigner->account($countbycid, $nrev);
+            }
 
-    return $nrev;
+        AutoassignmentPaperColumn::$header = "Proposed assignment";
+        AutoassignmentPaperColumn::$info = array();
+        PaperColumn::register(new AutoassignmentPaperColumn);
+        foreach ($bypaper as $pid => $list) {
+            uasort($list, "_sort_pcMember");
+            $t = "";
+            foreach ($list as $x)
+                $t .= ($t ? ", " : "") . '<span class="nowrap">'
+                    . $x->text . '</span>';
+            if (isset($conflictedPapers[$pid])) {
+                if ($conflictedPapers[$pid])
+                    $t = '<em>Hidden for conflict</em>';
+                else
+                    $t = PaperList::wrapChairConflict($t);
+            }
+            AutoassignmentPaperColumn::$info[$pid] = $t;
+        }
+
+        ksort(AutoassignmentPaperColumn::$info);
+        $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => join(" ", array_keys(AutoassignmentPaperColumn::$info))));
+        $plist = new PaperList($search);
+        $plist->display .= " reviewers ";
+        echo $plist->text("reviewers", $Me);
+
+	echo "<div class='g'></div>";
+	echo "<h3>Assignment summary</h3>\n";
+	echo '<table class="pctb"><tr><td class="pctbcolleft"><table>';
+	$colorizer = new Tagger;
+	$pcdesc = array();
+	foreach ($pcm as $cid => $pc) {
+	    $nnew = @+$countbycid[$cid];
+	    $color = $colorizer->color_classes($pc->contactTags);
+	    $color = ($color ? ' class="' . $color . '"' : "");
+	    $c = "<tr$color><td class='pctbname pctbl'>"
+		. Text::name_html($pc)
+		. ": " . plural($nnew, "assignment")
+		. "</td></tr><tr$color><td class='pctbnrev pctbl'>"
+		. review_count_report($nrev, $pc,
+                                      $nnew ? "After assignment:&nbsp;" : "");
+	    $pcdesc[] = $c . "</td></tr>\n";
+	}
+	$n = intval((count($pcdesc) + 2) / 3);
+	for ($i = 0; $i < count($pcdesc); $i++) {
+	    if (($i % $n) == 0 && $i)
+		echo "</table></td><td class='pctbcolmid'><table>";
+	    echo $pcdesc[$i];
+	}
+	echo "</table></td></tr></table>\n";
+    }
 }
 
 function _review_count_link($count, $word, $pl, $prefix, $pc, $suffix) {
@@ -308,9 +511,7 @@ function doAssign() {
 	while (($row = edb_row($result))) {
 	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
 		continue;
-	    if (!isset($assignments[$row[0]]))
-		$assignments[$row[0]] = array();
-	    $assignments[$row[0]][] = $row[1];
+            $assignments[] = "$row[0],conflict,$row[1]";
 	    $assignprefs["$row[0]:$row[1]"] = $row[2];
 	}
 	if (count($assignments) == 0) {
@@ -323,21 +524,24 @@ function doAssign() {
     // clear is another special case
     if ($atype == "clear") {
 	$papers = array_fill_keys($papersel, 1);
+        $action = null;
 	if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY
-	    || $reviewtype == REVIEW_PC)
+	    || $reviewtype == REVIEW_PC) {
 	    $q = "select paperId, contactId from PaperReview where reviewType=" . $reviewtype;
-	else if ($reviewtype === "conflict")
+            $action = "noreview";
+	} else if ($reviewtype === "conflict") {
 	    $q = "select paperId, contactId from PaperConflict where conflictType>0 and conflictType<" . CONFLICT_AUTHOR;
-	else if ($reviewtype === "lead" || $reviewtype === "shepherd")
+            $action = "noconflict";
+	} else if ($reviewtype === "lead" || $reviewtype === "shepherd") {
 	    $q = "select paperId, ${reviewtype}ContactId from Paper where ${reviewtype}ContactId!=0";
+            $action = "no" . $reviewtype;
+        }
 	$result = $Conf->qe($q, "while checking clearable assignments");
 	while (($row = edb_row($result))) {
 	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
 		continue;
-	    if (!isset($assignments[$row[0]]))
-		$assignments[$row[0]] = array();
-	    $assignments[$row[0]][] = $row[1];
-	    $assignprefs["$row[0]:$row[1]"] = "X";
+            $assignments[] = "$row[0],$action,$row[1]";
+	    $assignprefs["$row[0]:$row[1]"] = "*";
 	}
 	if (count($assignments) == 0) {
 	    $Conf->warnMsg("Nothing to assign.");
@@ -391,6 +595,7 @@ function doAssign() {
 		join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId)
 		group by paperId, PCMember.contactId) as PaperTopics on (Paper.paperId=PaperTopics.paperId and PCMember.contactId=PaperTopics.contactId)
 	left join PaperReviewRefused PRR on (Paper.paperId=PRR.paperId and PCMember.contactId=PRR.contactId)
+	where Paper.paperId" . sql_in_numeric_set($papersel) . "
 	group by Paper.paperId, PCMember.contactId");
 
     if ($atype == "rev" || $atype == "revadd" || $atype == "revpc") {
@@ -459,7 +664,21 @@ function doAssign() {
 	    if (isset($xpapers[$row[0]]))
 		$papers[$row[0]] = 1;
     } else
-	$papers = array_fill_keys($papersel, 1);
+	assert(false);
+
+    // check action
+    if ($atype == "lead" || $atype == "shepherd")
+        $action = $atype;
+    else if ($reviewtype == REVIEW_PRIMARY)
+        $action = "primary";
+    else if ($reviewtype == REVIEW_SECONDARY)
+        $action = "secondary";
+    else
+        $action = "review";
+    if ($atype != "lead" && $atype != "shepherd" && $_REQUEST["rev_roundtag"])
+        $round = "," . $_REQUEST["rev_roundtag"];
+    else
+        $round = "";
 
     // now, loop forever
     $pcids = array_keys($pcm);
@@ -485,9 +704,7 @@ function doAssign() {
 	    if ($pref >= -1000000 && isset($papers[$pid]) && $papers[$pid] > 0
 		&& (!isset($badpairs[$pc]) || noBadPair($pc, $pid, $prefs))) {
 		// make assignment
-		if (!isset($assignments[$pid]))
-		    $assignments[$pid] = array();
-		$assignments[$pid][] = $pc;
+		$assignments[] = "$pid,$action,$pc$round";
 		$prefs[$pc][$pid] = -1000001;
 		$papers[$pid]--;
 		$load[$pc]++;
@@ -511,7 +728,12 @@ function doAssign() {
 	$pidx = join("+", $badpids);
 	foreach ($badpids as $pid)
 	    $b[] = "<a href='" . hoturl("assign", "p=$pid&amp;list=$pidx") . "'>$pid</a>";
-	$x = ($atype == "rev" || $atype == "revadd" ? ", possibly because of conflicts or previously declined reviews in the PC members you selected" : "");
+        if ($atype == "rev" || $atype == "revadd")
+            $x = ", possibly because of conflicts or previously declined reviews in the PC members you selected";
+        else if ($_REQUEST["pctyp"] == "sel")
+            $x = ", possibly because you haven’t selected all PC members";
+        else
+            $x = "";
 	$y = (count($b) > 1 ? " (<a class='nowrap' href='" . hoturl("search", "q=$pidx") . "'>list them</a>)" : "");
 	$Conf->warnMsg("I wasn’t able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . $y . ".");
     }
@@ -522,6 +744,37 @@ function doAssign() {
 }
 
 function saveAssign() {
+    global $Conf, $Me, $Now;
+
+    $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, PaperReviewRefused write, Paper write, PaperConflict write, ActionLog write, Settings write, PaperTag write");
+
+    // parse and execute assignment
+    $pcm = pcMembers();
+    $nsaved = 0;
+    foreach (explode("\n", $_REQUEST["assignment"]) as $req) {
+	$req = explode(",", trim($req));
+        if (@$req[1] && ($assigner = Assigner::parse($req))
+            && isset($pcm[$assigner->cid])) {
+            $assigner->execute($pcm, $Now);
+            ++$nsaved;
+        }
+    }
+
+    // Confirmation message
+    if (!$nsaved)
+        $Conf->warnMsg("Nothing to assign.");
+    else if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $Now)
+	$Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
+    else
+	$Conf->confirmMsg("Assignments saved!");
+
+    // clean up
+    $Conf->qe("unlock tables");
+    $Conf->updateRevTokensSetting(false);
+    $Conf->update_paperlead_setting();
+}
+
+function old_saveAssign() {
     global $Conf, $Me;
 
     // check request
@@ -630,8 +883,8 @@ function saveAssign() {
 if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"])
     && isset($_REQUEST["pctyp"]) && check_post())
     doAssign();
-else if (isset($_REQUEST["saveassign"]) && isset($_REQUEST["a"])
-	 && isset($_REQUEST["ass"]) && check_post())
+else if (isset($_REQUEST["saveassign"])
+	 && isset($_REQUEST["assignment"]) && check_post())
     saveAssign();
 
 
@@ -683,8 +936,6 @@ Types of PC review:
 </div></div>\n";
 
 
-$extraclass = " initial";
-
 class AutoassignmentPaperColumn extends PaperColumn {
     static $header;
     static $info;
@@ -707,103 +958,8 @@ if (isset($assignments) && count($assignments) > 0) {
     echo divClass("propass"), "<h3>Proposed assignment</h3>";
     $helplist = "";
     $Conf->infoMsg("If this assignment looks OK to you, select &ldquo;Save assignment&rdquo; to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as &ldquo;P#&rdquo;.");
-    $extraclass = "";
 
-    $atype = $_REQUEST["a"];
-    if ($atype == "clear" || $atype == "rev" || $atype == "revadd" || $atype == "revpc")
-	$reviewtype = $_REQUEST["${atype}type"];
-    else
-	$reviewtype = 0;
-    if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY || $reviewtype == REVIEW_PC)
-	$reviewtypename = strtolower($reviewTypeName[$reviewtype]) . " assignment";
-    else if ($reviewtype === "conflict" || $atype == "prefconflict")
-	$reviewtypename = "conflict assignment";
-    else if ($reviewtype === "lead" || $atype == "lead")
-	$reviewtypename = "discussion lead";
-    else if ($reviewtype === "shepherd" || $atype == "shepherd")
-	$reviewtypename = "shepherd";
-    else
-	$reviewtypename = "";
-
-    ksort($assignments);
-    AutoassignmentPaperColumn::$header = "Proposed $reviewtypename";
-    AutoassignmentPaperColumn::$info = array();
-    PaperColumn::register(new AutoassignmentPaperColumn);
-    $pcm = pcMembers();
-    $nrev = countReviews();
-    $conflictedPapers = conflictedPapers();
-    $pc_nass = array();
-    foreach ($assignments as $pid => $pcs) {
-	$t = "";
-	foreach ($pcm as $pc)
-	    if (in_array($pc->contactId, $pcs)) {
-		$t .= ($t ? ", " : "") . Text::name_html($pc);
-		$pref = $assignprefs["$pid:$pc->contactId"];
-		if ($pref !== "X" && $pref != 0)
-		    $t .= " <span class='asspref" . ($pref > 0 ? 1 : -1)
-			. "'>P" . decorateNumber($pref) . "</span>";
-		$pc_nass[$pc->contactId] = defval($pc_nass, $pc->contactId, 0) + 1;
-	    }
-	if ($atype == "clear")
-	    $t = "remove $t";
-	if (isset($conflictedPapers[$pid])) {
-            if ($conflictedPapers[$pid])
-                $t = "<em>Hidden for conflict</em>";
-            else
-                $t = PaperList::wrapChairConflict($t);
-        }
-        AutoassignmentPaperColumn::$info[$pid] = $t;
-    }
-
-    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => join(" ", array_keys($assignments))));
-    $plist = new PaperList($search);
-    $plist->display .= " reviewers ";
-    echo $plist->text("reviewers", $Me);
-
-    if ($atype != "prefconflict") {
-	echo "<div class='g'></div>";
-	echo "<strong>Assignment Summary</strong><br />\n";
-	echo "<table class='pctb'><tr><td class='pctbcolleft'><table>";
-	$colorizer = new Tagger;
-	$pcdesc = array();
-	foreach ($pcm as $id => $p) {
-	    $nnew = defval($pc_nass, $id, 0);
-	    if ($atype == "clear")
-		$nnew = -$nnew;
-	    if ($reviewtype >= REVIEW_PC && $reviewtype <= REVIEW_PRIMARY) {
-		$nrev->any[$id] += $nnew;
-		$nrev->pset->any[$id] += $nnew;
-	    }
-	    if ($reviewtype == REVIEW_PRIMARY) {
-		$nrev->pri[$id] += $nnew;
-		$nrev->pset->pri[$id] += $nnew;
-	    }
-	    if ($reviewtype == REVIEW_SECONDARY) {
-		$nrev->sec[$id] += $nnew;
-		$nrev->pset->sec[$id] += $nnew;
-	    }
-	    $color = $colorizer->color_classes($p->contactTags);
-	    $color = ($color ? " class='${color}'" : "");
-	    $c = "<tr$color><td class='pctbname pctbl'>"
-		. Text::name_html($p)
-		. ": " . plural($nnew, "assignment")
-		. "</td></tr><tr$color><td class='pctbnrev pctbl'>"
-		. review_count_report($nrev, $p, "After assignment:&nbsp;");
-	    $pcdesc[] = $c . "</td></tr>\n";
-	}
-	$n = intval((count($pcdesc) + 2) / 3);
-	for ($i = 0; $i < count($pcdesc); $i++) {
-	    if (($i % $n) == 0 && $i)
-		echo "</table></td><td class='pctbcolmid'><table>";
-	    echo $pcdesc[$i];
-	}
-	echo "</table></td></tr></table>\n";
-	$rev_roundtag = defval($_REQUEST, "rev_roundtag");
-	if ($rev_roundtag == "(None)")
-	    $rev_roundtag = "";
-	if ($rev_roundtag)
-	    echo "<strong>Review round:</strong> ", htmlspecialchars($rev_roundtag);
-    }
+    Autoassign::echo_unparse_display($assignments);
 
     echo "<div class='g'></div>",
 	"<form method='post' action='", hoturl_post("autoassign"), "' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n",
@@ -822,9 +978,9 @@ if (isset($assignments) && count($assignments) > 0) {
     echo "<input type='hidden' name='p' value=\"", join(" ", $papersel), "\" />\n";
 
     // save the assignment
-    echo "<input type='hidden' name='ass' value=\"";
-    foreach ($assignments as $pid => $pcs)
-	echo $pid, ",", join(",", $pcs), " ";
+    echo '<input type="hidden" name="assignment" value="';
+    foreach ($assignments as $ass)
+        echo $ass, "\n";
     echo "\" />\n";
 
     echo "</div></div></form></div>\n";
@@ -958,7 +1114,8 @@ foreach ($pctyp_sel as $pctyp) {
 echo ")</td></tr>\n<tr><td></td><td><table class='pctb'><tr><td class='pctbcolleft'><table>";
 
 $pcm = pcMembers();
-$nrev = countReviews();
+$nrev = Autoassign::count_reviews();
+$nrev->pset = Autoassign::count_reviews($papersel);
 $pcdesc = array();
 $colorizer = new Tagger;
 foreach ($pcm as $id => $p) {

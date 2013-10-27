@@ -210,6 +210,10 @@ class Conference {
 	    $this->qe("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)", "while updating review tokens settings");
     }
 
+    function update_paperlead_setting() {
+        $this->qe("insert into Settings (name, value) select 'paperlead', count(paperId) from Paper where leadContactId>0 or shepherdContactId>0 limit 1 on duplicate key update value=values(value)", "while updating paper lead settings");
+    }
+
     function save_setting($name, $value, $data = null) {
 	if ($value === null && $data === null) {
 	    if ($this->qe("delete from Settings where name='" . sqlq($name) . "'")) {

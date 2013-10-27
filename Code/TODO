@@ -1,3 +1,6 @@
+- If paper managers, chair can infer who reviewed what using review
+  counts on autoassign screen
+
 - Accept/decline links need to be capabilities
 
 - valid() rechecks capabilities too often
