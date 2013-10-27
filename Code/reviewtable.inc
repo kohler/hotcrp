@@ -119,7 +119,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         $reqt = "";
 	if ($mode == "assign"
             && ($conflictType <= 0 || $effAssistant)
-            && $rr->reviewType == REVIEW_EXTERNAL) {
+            && $rr->reviewType == REVIEW_EXTERNAL
+            && !$showtoken) {
             $reqt = '<td class="empty"></td>'
                 . '<td style="font-size:smaller" colspan="2">—'
                 . 'requested by ';
