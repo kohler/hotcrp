@@ -16,7 +16,7 @@ class CsvParser {
     const TYPE_PIPE = 1;
     const TYPE_TAB = 2;
 
-    function __construct($str, $type = TYPE_COMMA) {
+    function __construct($str, $type = self::TYPE_COMMA) {
         $a = preg_split('/([\r\n])/', $str, 0, PREG_SPLIT_DELIM_CAPTURE);
         $n = count($a);
         $b = array();
