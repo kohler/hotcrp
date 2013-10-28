@@ -753,6 +753,15 @@ function comment_shortcut() {
 	return false;
 }
 
+function gopaper_shortcut() {
+    var a = $$("quicksearchq");
+    if (a) {
+        a.focus();
+        return true;
+    } else
+        return false;
+}
+
 function shortcut(top_elt) {
     var self, keys = {};
 
@@ -799,8 +808,10 @@ function shortcut(top_elt) {
 	else {
 	    add(106, quicklink_shortcut);
 	    add(107, quicklink_shortcut);
-	    if (top_elt == document)
+	    if (top_elt == document) {
 		add(99, comment_shortcut);
+                add(103, gopaper_shortcut);
+            }
 	}
 	return self;
     }

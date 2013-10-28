@@ -51,6 +51,7 @@ function confHeader() {
 function errorMsgExit($msg) {
     global $Conf;
     confHeader();
+    $Conf->footerScript("shortcut().add()");
     $Conf->errorMsgExit($msg);
 }
 
