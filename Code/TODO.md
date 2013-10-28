@@ -1,36 +1,90 @@
+# HotCRP TODO #
+
+## Capabilities ##
+
+- [ ] Use capabilities when a user changes their email address
+- [ ] Use capabilities or accept/decline review links
+- [ ] Right now “Decline review” requires confirmation; it would be better to make it HAPPEN when you click the link and then be undoable
+- [ ] Contact::valid() rechecks capabilities too often
+
+## Comments ##
+
+- [ ] Allow attachments on comments and reviews
+- [ ] Show response word count overages to viewers, not just editors
+- [ ] Comment notification emails should include opt-out links
+
+## Paper options ##
+
+- [ ] Add multiple-checkboxes option type
+- [ ] Auto-convert numeric <=> text when setting changes
+- [ ] Box for chair notes (maybe a comment?)
+- [ ] Add options set by administrators?
+- [ ] Use a separate Delete button rather than form position
+
+## Paper editing ##
+
+- [ ] Get rid of contactauthors.php
+- [ ] Add buttons on Edit screen to make a particular author a contact
+- [ ] Add a “cancel” button on paper submission
+- [ ] Submission history
+
+## Conflicts ##
+
+- [ ] A meeting mode where PC members can see conflicts
+
+## Schema ##
+
+- [ ] Review round should be Review tags
+
+## Visual appearance ##
+
+- [ ] Top considered ugly.
+- [ ] New logo: Paper with flaming review bubble?
+- [ ] Top strip in dark red
+- [ ] Links to home and (for chairs) settings
+
+### Paper strip ###
+
+- [ ] "Follow" rather than "Email notification"
+- [ ] "Follow" is a button?
+- [ ] Is there a good "Edit" image rather than button?
+- [ ] "Edit" button for paper strip rather than folds
+- [ ] "Your rank": kill "(context)" link, maybe kill "(all)" link
+- [ ] "(shown only to PC reviewers)" etc. visibility should be bar-separated, not parenthesized.
+- [ ] Comment edit links shouldn't reload the page
+- [ ] "All reviews" links should say "Main"
+- [ ] "(?)" score info links should maybe say "1-3 scale" or at least not be blue
+- [ ] Why do the paper areas ("Abstract", etc.) have a background color?
+- [ ] Maybe a separate little area with links for "main", "edit", "review", "assign", on left-hand side
+- [ ] Review ratings appear in review region, above review itself (don't overload the review region)
+- [ ] "None" for Discussion lead/Shepherd/Paper manager fold to nothing
+
+### Paper list ###
+
+- [ ] Rows gain "#p45" anchors
+- [ ] If anchor is selected, highlight that row
+- [ ] Edit pads have arrows on them, not dots
+
+### Tags ###
+
+- [ ] Tag completion is clickable, gains keyboard shortcuts
+- [ ] Remove "?" superscript help link in paper list
+
+## Behavior ##
+
+- [ ] Review preference shortcut: [j] on first/[k] on last bells, not entry
+- [ ] Inform users about [j]/[k]
+
+## Old TODO ##
+
 - If paper managers, chair can infer who reviewed what using review
   counts on autoassign screen
 
-- Accept/decline links need to be capabilities
-
-- valid() rechecks capabilities too often
-
 - Re-assign the review round in bulk
-
-- Angry, impossible-to-ignore messages about not-ready-to-review submissions
-
-- Re: bulk assignment of external reviews: (also, as a UI fine-tuning
-  point, it would be nice to see the assignment and emails before they
-  are sent) [Peter F. Sewell]
-
-- Attachments on comments
-
-- Paper options: multiple checkboxes
-- Paper options: auto-convert numeric <-> text when setting changes
-
-- Cancel button on paper submit
-
-- Comment emails contain links to opt out from future notifications
 
 - Some sort of display that is linked with whatever paper the chair's
   currently on, to maybe display in the hallway for conflicts or
   something [Garth Gibson]
-
-- Paper not reviewed [Todd Mowry]
-
-- Is there a way to look at the submission history of a paper?
-  Specifically, the authors of one paper ask to revert to an earlier
-  version. Is that possible? [Gernot Heiser]
 
 - When reviewers update their reviews, all we get is an email that the
   review was updated. But there's no indication how it changed: did the
@@ -42,21 +96,12 @@
   the old vs. new reviews along with the email that notifies the chairs of
   the review change? [Erez Zadok/Dan Tsafrir]
 
-- On the form for "Start a new paper," I think it would be nice to have a
-checkbox next to each author name that would automagically turn that author
-into a "contact". This would avoid the need to re-enter the same
-information in the "Edit contacts" function. [Jeff Mogul]
-
 - We attempted to load balance the reviews among the PC members, such that
 each had 14 papers to review. Suppose now that a PC member submitted to the
 conference paper #1. Then, they could recognize from the statistics page
 the reviewers of his paper as those having reviewed only 13 papers. We feel
 this could be corrected by adding an option to disable the statistics page
 view for users without chair rights. [Giuliano Casale, Martin Arlitt]
-
-- It would be great to have a box for chairs to take notes about a given
-paper. Currently, we could do this just by adding ~~ tags, but this is
-not so good if the comment is long. [Giuliano Casale, Martin Arlitt]
 
 - During the PC meeting, we were highlighting the current paper for the
 benefit of the members (i.e., so they could more easily follow along as we
@@ -68,11 +113,6 @@ members, etc., we struggled to keep the appropriate paper tagged as
 “current”. We’re not sure if this would be a feasible extension, but
 perhaps having a button to color/uncolor the current selection would have
 made our life easier. [Giuliano Casale, Martin Arlitt]
-
-- Hide new reviews from reviewers? [Dan Tsafrir]
-
-- Decline review should actually HAPPEN when you click teh link, and
-  then be undoable.
 
 - http://harvesthq.github.com/chosen/ [Tom Limoncelli]
 
@@ -131,10 +171,6 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
   chairs, papers in the right order, author names and affiliations, and the
   speaker's name in bold. [Jeff Mogul]
 
-- Submission options: Use a separate Delete button instead of Form position.
-
-- Submission options: Add submission options that are set by administrators.
-
 - We didn't use HotCRP for sending the acceptance letter.  The chairs have
   been passing down a bunch of shell scripts through the years that
   generate the accept/reject emails and it would be much nicer if hotcrp
@@ -156,14 +192,6 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
   all that information AND be able to collect whether the author has
   approved/acknowledge it to be correct.  (If we could do this for ITs
   and Gurus, this could produce the entire program) [Tony Limoncelli]
-
-- The little 'glasses' icons to become another user were a little
-  nonobvious to me. I discovered them by accident. Very cool, but I ended
-  up submitting a comment as another user accidentally. [Doug Hughes]
-
-- It really needs some tabs or links at the top to quickly get from users
-  to settings to papers and back instead of having to click on the upper
-  left corner logo and go through some more clicks. [Doug Hughes]
 
 - A way to easily see the list of papers assigned to a user and which reviews
   are complete would be really useful! [Doug Hughes]
@@ -281,33 +309,14 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
     particular message) to be just a little more paranoid.
   [Stephanie Weirich]
 
-- [Related note, did I tell you already that it would help if we could
-  submit additional material in non PDF format?  In particular, some
-  of these supplemental proofs are actually zipfiles of proof
-  assistant scripts.] [Stephanie Weirich]
-
-- a way for the PC members to see the semantics of the colors on the
-  search result page. I told them what tags I was using, but of
-  course, not everyone heard me. [Stephanie Weirich]
-
 - a way to see the distribution of topics for
   submitted/selected/accepted papers. I computed this information
   manually, but it would be nice if the system could automatically
   display the info. [Stephanie Weirich]
 
-- a place to put notes for each paper. I tried using the tags, but my
-  notes got too mixed up with stuff for managing the
-  meeting. [Stephanie Weirich]
-
 - a way to list the accepted papers w/ authors suitable for posting on
   the conference website. Did I miss how to do this? [Stephanie
   Weirich]
-
-- I could see defining "saved searches", accessible by simple
-  strings, where "search:foo" might be defined as "blah THEN blah
-  THEN blah". / Yes, "saved searches" could be really helpful. [Jeff Mogul]
-
-- In meeting mode PC members can see conflicts. [rtm]
 
 - HotCRP already has the very lovely "conflict" keyword, but I think
   it might be nice to have two more keywords:
@@ -410,21 +419,10 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
   others) are input in the system -- there is the option of being notified
   of the comments, but not the reviews. [Carmela Troncoso]
 
-- comments that can only be seen by chairs [Ernst Biersack/S. Keshav]
-
-- make sure that refused reviewers do not get emails on comments
-
 - generic (no names, passwords) emails to contact authors should be grouped
   by paper and sent To: all authors of a paper at once [Chris Frost]
 
 - Chair searches do not display chair scores by default [Jane-Ellen Long]
-
-- I had a quick question. I was looking if there is an option in hotcrp
-  that I could enable so that TPC members are notified when a new paper has
-  been assigned to them, and did not manage to find it. Is this feature
-  supported? If not, would it be an easy fix? [Dina Papagiannaki]
-
-- Author response word counting function [Mike Marty]
 
 - It would be great to be able to assign reviews manually, but then ask the
   system to look for swaps that would make both reviewers happier according
@@ -640,32 +638,9 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
   be achieved with settings already available -- right?  So maybe this is a
   documentation issue...) [Benjamin Pierce]
 
-* It would be nice if there were some mechanism for preventing misspelling
-  of tag names when new tags are added.  E.g., when a new tag is added,
-  there could be a little extra confirmation dialog asking whether you want
-  to add that tag. [Benjamin Pierce]
-
-* For the sake of paranoia, it would be very nice to be able to make a
-  *complete* textual dump of all information about all papers -- reviews,
-  comments, scores, tags, decisions, etc.  I was sweating the whole weekend
-  wondering what we'd do if the network went down. [Benjamin Pierce]
-
 * it would be cute to have 1 config of hotcrp so that PC members get given
   as many scores drawn from a normal distribution as they have papers, and
   then can only use each score once. [Jon Crowcroft]
-
-* Someone on the NSDI noted that they encountered a race between their
-  (somewhat tedious) filling out of their review preferences (i.e.,
-  assigning integer values to each submitted paper) and the PC chair's
-  use of the auto-assigner.
-
-  So PC member X starts a lengthy process of filling in his prefs, then
-  discovers that sometime in the middle of this, HotCRP has captured his
-  preferences to that point and has ignored the rest of his work.
-
-  Suggestion: have the reviewprefs page somehow indicate to the user
-  (perhaps by changing the background color to something lurid?) that
-  the reviews have already been assigned. [Jeff Mogul]
 
 * Do not log updates to reviews made using chair power, if those reviews
   are explicitly anonymous. [John Wilkes]
@@ -675,18 +650,6 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
   be made available? [John Wilkes]
 
 Multi-round assignment process.  Doing this showed up a couple of issues:
-
-8. Review types.  HotCRP has the notion of primary and secondary reviews.
-  Great!  But their meanings seem to be hard-wired.  We wanted to use them
-  for "full" and "light" - which is what we did, but we then had to
-  admonish the PC to not get confused by the labels.  Better would be to
-  offer a set of labels, with the current ones as defaults. [John Wilkes]
-
-9. Reviewing load. We also wanted to assign our own weights to different
-  review types when doing the load balancing.  (For us, a light review was
-  worth half as much as a full one.)  In the end, Joe wrote an SQL query to
-  calculate the weights, and we used the multi-round assignment process to
-  roughly balance the loads. [John Wilkes]
 
 10. Conflict checking
 
@@ -715,34 +678,18 @@ Format checker: This worked really nicely.  But ...
   in?  This is low priority in comparison to my previous request :-). [John
   Wilkes]
 
-2. The choice(s) for autoassign discussion lead I was given were rather
-  limited:
-
-    * Assign discussion lead from reviewers, preferring high scores
-
-  It would be nice to have some other alternatives .. ."preferring low
-  scores" is popular; "preferring primary reviewers" is another,
-  "preferring knowledgeable" is also good. [John Wilkes]
-
 4. The "manual by PC member" page gives no indication of discussion
   leads. [John Wilkes]
-
 
 - static HTML snapshot
 
 - entry to identify presenting author
-- Matthew Frank: track conflicts by person rather than paper
 - Matthew Frank: five values for reviewer topic interest
 - Matthew Frank: local hill climbing for auto assignment
 
 Minor features
-- uploading request forms for others?
-- allow authors to download paper info, such as all submitted reviews
-- reviewers/authors can search submitted papers, seeing only those papers they
-  are allowed to see (e.g. both reviewers + authors)?
 - Search: Assignments & conflicts: [External reviewer]
 - START-style enter-paper-all-at-once (no email verification)?
 - when email off: do not show authors to PC members, do not show reviewers
   to authors
-- send mail from contacts.php
 - scrub author information from PDFs
