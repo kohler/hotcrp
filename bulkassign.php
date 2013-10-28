@@ -132,7 +132,7 @@ echo "<div id='foldemail' class='foldo'><table class='fx'>
 <div class='fn";
 if (isset($Error["rev_roundtag"]))
     echo " error";
-echo "'>Review round: &nbsp;",
+echo "'>Default review round: &nbsp;",
     "<input id='rev_roundtag' class='textlite temptextoff' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"),
     "\" />",
@@ -155,7 +155,7 @@ paper,name,email
 <p>Possible columns include “<code>paper</code>”, “<code>action</code>”,
 “<code>email</code>”, “<code>first</code>”, “<code>last</code>”,
 “<code>name</code>”, and “<code>round</code>”. The “<code>action</code>”
-column, if given, defines the kind of assignment used for that row;
+column, if given, is the assignment type for that row;
 it should be one of ";
 $anames = array();
 foreach (Assigner::assigner_names() as $a)
