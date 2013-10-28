@@ -5,6 +5,7 @@
 
 require_once("Code/header.inc");
 require_once("Code/search.inc");
+require_once("Code/assigners.php");
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
 $nullMailer = new Mailer(null, null, $Me);
@@ -12,219 +13,24 @@ $nullMailer->width = 10000000;
 $Error = array();
 
 
-// parse my ass
-function tfError(&$tf, $lineno, $text) {
-    if ($tf['filename'])
-	$e = htmlspecialchars($tf['filename']) . ":" . $lineno;
-    else
-	$e = "line " . $lineno;
-    $tf['err'][$lineno] = "<span class='lineno'>" . $e . ":</span> " . $text;
-}
-
-function parseBulkFile($text, $filename, $type) {
-    global $Conf, $Me, $nullMailer, $Error;
-    $while = "while uploading assignments";
-    $tf = array("err" => array(), "filename" => $filename);
-    $pcm = pcMembers();
-    $ass = array();
-    $contacts_by_email = array();
-    $contacts_by_id = array();
-    $lnameemail = array();
-    $doemail = defval($_REQUEST, "email");
-    $mailtemplate = $nullMailer->expandTemplate("requestreview");
-    if (isset($_REQUEST["email_requestreview"]))
-	$mailtemplate["body"] = $_REQUEST["email_requestreview"];
-
-    // check review round
-    if (($rev_roundtag = defval($_REQUEST, "rev_roundtag")) == "(None)")
-	$rev_roundtag = "";
-    if ($rev_roundtag && !preg_match('/^[a-zA-Z0-9]+$/', $rev_roundtag)) {
-	$Error["rev_roundtag"] = true;
-	return $Conf->errorMsg("The review round must contain only letters and numbers.");
-    }
-
-    // XXX lock tables
-
-    $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
-    $csv->set_comment_chars("#%");
-    if (($line = $csv->next()) && array_search("paper", $line) !== false)
-        $csv->set_header($line);
-    else
-        $csv->unshift($line);
-
-    while (($line = $csv->next()) !== false) {
-	// parse a bunch of formats
-        if (!$csv->header()) {
-            list($line["first"], $line["last"], $line["email"]) =
-                Text::split_name(join(" ", array_slice($line, 1)), true);
-            $line["paper"] = $line[0];
-        }
-        foreach (array("firstName" => "first", "lastName" => "last")
-                 as $k => $pref) {
-            if (isset($line[$k]) && !isset($line[$pref]))
-                $line[$pref] = $line[$k];
-        }
-
-        if (!$line["paper"] || !ctype_digit($line["paper"])) {
-	    tfError($tf, $csv->lineno(), "bad format");
-	    continue;
-	}
-
-        $email = trim(@$line["email"]);
-        $nameemail = trim(@$line["first"] . " " . @$line["last"]);
-        if ($nameemail !== "" && $email)
-            $nameemail .= " <$email>";
-        else
-            $nameemail = $email;
-
-	// PC members
-	if ($type != REVIEW_EXTERNAL) {
-	    $cid = matchContact($pcm, @$line["first"], @$line["last"], $email);
-	    // assign
-	    if ($cid <= 0) {
-		if ($cid == -2)
-		    tfError($tf, $csv->lineno(), "“" . htmlspecialchars($nameemail) . "” matches no PC member");
-		else
-		    tfError($tf, $csv->lineno(), "“" . htmlspecialchars($nameemail) . "” matches more than one PC member, give a full email address to disambiguate");
-		continue;
-	    }
-	} else if (!$email) {
-            tfError($tf, $csv->lineno(), "email address required");
-            continue;
-        } else if (@$contacts_by_email[$email])
-            $cid = $contacts_by_email[$email]->contactId;
-        else {
-	    // external reviewers
-            $c = new Contact;
-            if ($c->load_by_email($email, array("name" => trim($line["first"] . " " . $line["last"])), false)) {
-                $contacts_by_email[$email] = $c;
-                $contacts_by_id[$c->contactId] = $c;
-                $cid = $c->contactId;
-            } else {
-		tfError($tf, $csv->lineno(), "“" . htmlspecialchars($email) . "” is not a valid email address");
-		continue;
-	    }
-	}
-
-	// mark assignment
-	if (!isset($ass[$line["paper"]]))
-	    $ass[$line["paper"]] = array();
-	$ass[$line["paper"]][$cid] = $csv->lineno();
-	$lnameemail[$csv->lineno()] = $nameemail;
-    }
-
-
-    // examine assignments for duplicates and bugs
-    if (count($ass) > 0) {
-	$paperIds = join(", ", array_keys($ass));
-	$validPaperIds = array();
-	$unsubmittedPaperIds = array();
-	$result = $Conf->qe("select paperId, timeSubmitted, timeWithdrawn from Paper where paperId in ($paperIds)", $while);
-	while (($row = edb_row($result)))
-	    if ($row[1] > 0 && $row[2] <= 0)
-		$validPaperIds[$row[0]] = true;
-	    else
-		$unsubmittedPaperIds[$row[0]] = true;
-
-	$invalidPaperIds = array();
-	foreach ($ass as $paperId => $apaper)
-	    if (!isset($validPaperIds[$paperId]))
-		$invalidPaperIds[] = $paperId;
-	foreach ($invalidPaperIds as $paperId) {
-	    $error = (isset($unsubmittedPaperIds[$paperId]) ? "paper #$paperId has been withdrawn, or was never submitted" : "no such paper #$paperId");
-	    foreach ($ass[$paperId] as $cid => $lineno)
-		tfError($tf, $lineno, $error);
-	    unset($ass[$paperId]);
-	}
-
-	$result = $Conf->qe("select paperId, contactId from PaperReview where paperId in ($paperIds)", $while);
-	while (($row = edb_row($result)))
-	    if (isset($ass[$row[0]][$row[1]])) {
-		$lineno = $ass[$row[0]][$row[1]];
-		tfError($tf, $lineno, htmlspecialchars($lnameemail[$lineno]) . " already assigned to paper #$row[0]");
-		unset($ass[$row[0]][$row[1]]);
-	    }
-
-	if ($type >= 0)
-	    $result = $Conf->qe("select paperId, contactId from PaperConflict where paperId in ($paperIds)", $while);
-	else
-	    $result = null;
-	while (($row = edb_row($result)))
-	    if (isset($ass[$row[0]][$row[1]])) {
-		$lineno = $ass[$row[0]][$row[1]];
-		tfError($tf, $lineno, htmlspecialchars($lnameemail[$lineno]) . " has a conflict with paper #$row[0]");
-		unset($ass[$row[0]][$row[1]]);
-	    }
-    }
-
-
-    // check for errors
-    if (count($tf["err"]) > 0) {
-	ksort($tf["err"]);
-        $Conf->errorMsg('Errors while parsing assignments: <div class="parseerr"><p>' . join("</p>\n<p>", $tf["err"]) . '</p></div> Due to these errors, the assignment file was ignored.');
-        return;
-    }
-
-
-    // set review round
-    if ($type >= 0) {
-	if ($rev_roundtag) {
-	    $Conf->settings["rev_roundtag"] = 1;
-	    $Conf->settingTexts["rev_roundtag"] = $rev_roundtag;
-	} else
-	    unset($Conf->settings["rev_roundtag"]);
-    }
-
-    // perform assignment
-    $nass = 0;
-    $when = time();
-    foreach ($ass as $paperId => $apaper) {
-	$prow = null;
-	foreach ($apaper as $cid => $lineno) {
-	    $t = $type;
-	    if ($type == REVIEW_EXTERNAL && isset($pcm[$cid]))
-		$t = REVIEW_PC;
-	    if ($t >= 0) {
-		$Me->assignPaper($paperId, null, $cid, $t, $when);
-		if ($type == REVIEW_EXTERNAL && $doemail) {
-		    $Them = $contacts_by_id[$cid];
-		    if (!$prow)
-			$prow = $Conf->paperRow($paperId);
-		    Mailer::send($mailtemplate, $prow, $Them, $Me);
-		}
-	    } else
-		$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $cid, " . (-$t) . ") on duplicate key update conflictType=" . (-$t), $while);
-	    $nass++;
-	}
-    }
-
-
-    // possible complaints
-    $Conf->updateRevTokensSetting(false);
-    $notify = "";
-    if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $when)
-	$notify = " You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.";
-    if ($nass > 0)
-	$Conf->confirmMsg("Made " . plural($nass, "assignment") . ".$notify");
-    else
-	$Conf->warnMsg("Nothing to do.");
+function assignment_defaults() {
+    $defaults = array("action" => @$_REQUEST["default_action"],
+                      "round" => @$_REQUEST["rev_roundtag"]);
+    if (trim($defaults["round"]) == "(None)")
+        $defaults["round"] = null;
+    return $defaults;
 }
 
 
-// upload review form action
-if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"])
-    && isset($_REQUEST["t"]) && ($_REQUEST["t"] == REVIEW_PRIMARY
-				 || $_REQUEST["t"] == REVIEW_SECONDARY
-				 || $_REQUEST["t"] == REVIEW_PC
-				 || $_REQUEST["t"] == REVIEW_EXTERNAL
-				 || $_REQUEST["t"] == -CONFLICT_CHAIRMARK)
-    && check_post()) {
-    if (($text = file_get_contents($_FILES['uploadedFile']['tmp_name'])) === false)
-	$Conf->errorMsg("Internal error: cannot read file.");
-    else
-	parseBulkFile($text, $_FILES['uploadedFile']['name'], $_REQUEST['t']);
-} else if (isset($_REQUEST["upload"]))
-    $Conf->errorMsg("Select an assignments file to upload.");
+if (isset($_REQUEST["saveassignment"]) && check_post()) {
+    if (isset($_REQUEST["file"]) && !isset($_REQUEST["cancel"])) {
+        $assignset = new AssignmentSet(false);
+        $assignset->parse($_REQUEST["file"], @$_REQUEST["filename"],
+                          assignment_defaults());
+        if ($assignset->execute())
+            redirectSelf();
+    }
+}
 
 
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
@@ -253,21 +59,61 @@ Types of PC review:
 </div></div>";
 
 
-echo "<h2 style='margin-top:1em'>Upload assignments</h2>
+// upload review form action
+if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
+    && check_post()) {
+    if (($text = file_get_contents($_FILES["uploadfile"]["tmp_name"])) === false)
+        $Conf->errorMsg("Internal error: cannot read file.");
+    else {
+        $assignset = new AssignmentSet(false);
+        $defaults = assignment_defaults();
+        $assignset->parse($text, $_FILES["uploadfile"]["name"], $defaults);
+        if ($assignset->report_errors())
+            /* do nothing */;
+        else {
+            echo '<h3>Proposed assignment</h3>';
+            $Conf->infoMsg("If this assignment looks OK to you, select “Save assignment” to apply it. (You can always alter the assignment afterwards.)");
+            $assignset->echo_unparse_display();
 
-<form action='", hoturl_post("bulkassign", "upload=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
-Assign &nbsp;",
-    Ht::select("t", array(REVIEW_PRIMARY => "primary reviews",
-			   REVIEW_SECONDARY => "secondary reviews",
-			   REVIEW_PC => "optional PC reviews",
-			   REVIEW_EXTERNAL => "external reviews",
-			   -CONFLICT_CHAIRMARK => "PC conflicts"),
-		defval($_REQUEST, "t", REVIEW_PRIMARY),
-		array("id" => "tsel", "onchange" => "fold(\"email\",this.value!=" . REVIEW_EXTERNAL . ")")),
-    "&nbsp; from file:&nbsp;
-<input type='file' name='uploadedFile' accept='text/plain,text/csv' size='30' />
+            echo '<div class="g"></div>',
+                Ht::form(hoturl_post("bulkassign", "saveassignment=1")),
+                '<div class="aahc"><div class="aa">',
+                Ht::submit("Save assignment"),
+                ' &nbsp;', Ht::submit("cancel", "Cancel"),
+                Ht::hidden("default_action", $defaults["action"]),
+                Ht::hidden("rev_roundtag", $defaults["round"]),
+                Ht::hidden("file", $text),
+                Ht::hidden("filename", $_FILES["uploadfile"]["name"]),
+                '</div></div></form>', "\n";
+            $Conf->footer();
+            exit;
+        }
+    }
+}
 
-<div class='g'></div>\n\n";
+
+echo "<h2 style='margin-top:1em'>Upload assignments</h2>\n\n";
+
+echo Ht::form(hoturl_post("bulkassign", "upload=1")), '<div class="inform">';
+
+echo '<table><tr>',
+    '<td colspan="2">Upload:&nbsp; ',
+    '<input type="file" name="uploadfile" accept="text/plain,text/csv" size="30" /> ',
+    Ht::submit("Go"),
+    '</td></tr>',
+    '<tr><td style="padding-left:2em"></td><td style="padding-top:0.5em;font-size:smaller">';
+
+echo 'Default action:&nbsp; assign&nbsp; ',
+    Ht::select("default_action", array("primary" => "primary reviews",
+                                       "secondary" => "secondary reviews",
+                                       "pcreview" => "optional PC reviews",
+                                       "review" => "external reviews",
+                                       "conflict" => "PC conflicts",
+                                       "lead" => "discussion leads",
+                                       "shepherd" => "shepherds"),
+               defval($_REQUEST, "default_action", "primary"),
+               array("id" => "tsel", "onchange" => "fold(\"email\",this.value!=\"review\")")),
+    '<div class="g"></div>', "\n";
 
 if (!isset($_REQUEST["rev_roundtag"]))
     $rev_roundtag = $Conf->settingText("rev_roundtag");
@@ -291,34 +137,40 @@ echo "'>Review round: &nbsp;",
     htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"),
     "\" />",
     " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a></div></div>
-
-<div class='g'></div>
-
-<input type='submit' value='Go' />
-
+</td></tr></table>
 </div></form>
 
 <div class='g'></div>
 
-<p>Use this page to upload many reviewer assignments at once.  Create a
-tab-separated text file with one line per assignment.  The first column must
-be a paper number, and the second and third columns should contain the
-proposed reviewer's name and email address.  For example:</p>
+<p>Use this page to upload many assignments at once. The upload format is a
+comma-separated file with one line per assignment. For example:</p>
 
 <table style='width:60%'><tr><td><pre class='entryexample'>
-1	Alice Man	man@alice.org
-10	noname@anonymous.org
-11	Manny Ramirez &lt;slugger@manny.com&gt;
+paper,name,email
+1,Alice Man,man@alice.org
+10,,noname@anonymous.org
+11,Manny Ramirez,slugger@manny.com
 </pre></td></tr></table>
+
+<p>Possible columns include “<code>paper</code>”, “<code>action</code>”,
+“<code>email</code>”, “<code>first</code>”, “<code>last</code>”,
+“<code>name</code>”, and “<code>round</code>”. The “<code>action</code>”
+column, if given, defines the kind of assignment used for that row;
+it should be one of ";
+$anames = array();
+foreach (Assigner::assigner_names() as $a)
+    $anames[] = "“<code>$a</code>”";
+echo commajoin($anames), ".</p>
 
 <p>Primary, secondary, and optional PC reviews must be PC members, so for
 those reviewer types you don't need a full name or email address, just some
-substring that identifies the PC member uniquely.  For example:</p>
+substring that identifies the PC member uniquely. For example:</p>
 
 <table style='width:60%'><tr><td><pre class='entryexample'>
-24	sylvia
-1	Frank
-100	feldmann
+paper,user
+24,sylvia
+1,Frank
+100,feldmann
 </pre></td></tr></table>\n";
 
 $Conf->footerScript("mktemptext('rev_roundtag','(None)')");

@@ -100,6 +100,7 @@ lib/unicodehelper.php
 lib/xlsx.php
 
 Code/.htaccess
+Code/assigners.php
 Code/backupdb.sh
 Code/banal
 Code/baselist.inc
