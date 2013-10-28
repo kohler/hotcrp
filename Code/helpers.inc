@@ -861,9 +861,9 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
     if (isset($list["description"])) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
 	if (defval($list, "url"))
-	    $x .= "<a href=\"" . $ConfSiteBase . htmlspecialchars($list["url"]) . "\">" . $list["description"] . "</a>";
+	    $x .= '<a id="quicklink_list" href="' . $ConfSiteBase . htmlspecialchars($list["url"]) . "\">" . $list["description"] . "</a>";
 	else
-	    $x .= $list["description"];
+	    $x .= '<span id="quicklink_list">' . $list["description"] . '</span>';
     }
     if (isset($list[$k + 1])) {
 	$x .= ($k > 0 || isset($list["description"]) ? "&nbsp;&nbsp;" : "");

@@ -72,8 +72,8 @@
 
 ## Behavior ##
 
-- [ ] Review preference shortcut: [j] on first/[k] on last bells, not entry
 - [ ] Inform users about [j]/[k]
+- [ ] [t] to edit tags
 
 ## Old TODO ##
 

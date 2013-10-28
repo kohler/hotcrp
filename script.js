@@ -653,34 +653,39 @@ return function (e, text) {
 
 
 // check marks for ajax saves
-function make_ajaxcheck_swinger(elt) {
-    return function () {
-	var h = elt.hotcrp_ajaxcheck;
-	var now = (new Date).getTime(), delta = now - h.start, opacity = 0;
-	if (delta < 2000)
-	    opacity = 0.5;
-	else if (delta <= 7000)
-	    opacity = 0.5 * Math.cos((delta - 2000) / 5000 * Math.PI);
-	if (opacity <= 0.03) {
-	    elt.style.outline = h.old_outline;
-	    clearInterval(h.interval);
-	    h.interval = null;
-	} else
-	    elt.style.outline = "4px solid rgba(0, 200, 0, " + opacity + ")";
-    };
+function make_outline_flasher(elt, rgba, duration) {
+    var h = elt.hotcrp_outline_flasher, hold_duration;
+    if (!h)
+        h = elt.hotcrp_outline_flasher = {old_outline: elt.style.outline};
+    if (h.interval) {
+        clearInterval(h.interval);
+        h.interval = null;
+    }
+    if (rgba) {
+        duration = duration || 7000;
+        hold_duration = duration * 0.28;
+        h.start = (new Date).getTime();
+        h.interval = setInterval(function () {
+	    var now = (new Date).getTime(), delta = now - h.start, opacity = 0;
+	    if (delta < hold_duration)
+	        opacity = 0.5;
+	    else if (delta <= duration)
+	        opacity = 0.5 * Math.cos((delta - hold_duration) / (duration - hold_duration) * Math.PI);
+	    if (opacity <= 0.03) {
+	        elt.style.outline = h.old_outline;
+	        clearInterval(h.interval);
+	        h.interval = null;
+	    } else
+	        elt.style.outline = "4px solid rgba(" + rgba + ", " + opacity + ")";
+        }, 13);
+    }
 }
 
 function setajaxcheck(elt, rv) {
     if (typeof elt == "string")
 	elt = $$(elt);
     if (elt) {
-	var h = elt.hotcrp_ajaxcheck;
-	if (!h)
-	    h = elt.hotcrp_ajaxcheck = {old_outline: elt.style.outline};
-	if (h.interval) {
-	    clearInterval(h.interval);
-	    h.interval = null;
-	}
+        make_outline_flasher(elt);
 
 	var s;
 	if (rv.ok)
@@ -691,10 +696,9 @@ function setajaxcheck(elt, rv) {
 	    s = "Error";
 	elt.setAttribute("title", s);
 
-	if (rv.ok) {
-	    h.start = (new Date).getTime();
-	    h.interval = setInterval(make_ajaxcheck_swinger(elt), 13);
-	} else
+	if (rv.ok)
+            make_outline_flasher(elt, "0, 200, 0");
+        else
 	    elt.style.outline = "5px solid red";
     }
 }
@@ -731,6 +735,12 @@ function quicklink_shortcut(evt, code) {
 	if (!Miniajax.isoutstanding("revprefform", f))
 	    f();
 	return true;
+    } else if ($$("quicklink_list")) {
+        // at end of list
+        a = evt.target || evt.srcElement;
+        a = (a && a.tagName == "INPUT" ? a : $$("quicklink_list"));
+        make_outline_flasher(a, "200, 0, 0", 1000);
+        return true;
     } else
 	return false;
 }
