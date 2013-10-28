@@ -118,39 +118,36 @@ $Error = array();
 class Assigner {
     public $pid;
     public $cid;
-    static public $assigners = array();
+    static private $assigners = array();
     static function register($n, $a) {
         assert(!@self::$assigners[$n]);
         self::$assigners[$n] = $a;
     }
-    static function parse($x) {
-        if (is_string($x))
-            $x = explode(",", $x);
-        if (@$x[1] && ($a = @self::$assigners[$x[1]]))
-            return $a->clone_parse($x);
-        else
-            return null;
+    static function find($n) {
+        return @self::$assigners[$n];
     }
     function account(&$countbycid, $nrev) {
         $countbycid[$this->cid] = @+$countbycid[$this->cid] + 1;
+    }
+    function require_pc() {
+        return true;
+    }
+    function parse($req) {
+        return true;
     }
 }
 class ReviewAssigner extends Assigner {
     private $type;
     private $round;
-    private static $typetoname =
-        array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary",
-              REVIEW_PC => "review");
-    function __construct($type, $x = null) {
+    function __construct($type) {
         $this->type = $type;
-        if ($x) {
-            $this->pid = +$x[0];
-            $this->cid = $x[2];
-            $this->round = @$x[3];
-        }
     }
-    function clone_parse($x) {
-        return new ReviewAssigner($this->type, $x);
+    function parse($req) {
+        $this->round = @$req["round"];
+        return true;
+    }
+    function require_pc() {
+        return $this->type != REVIEW_PC;
     }
     function unparse_display($pcm) {
         global $reviewTypeName, $assignprefs, $Conf;
@@ -173,31 +170,26 @@ class ReviewAssigner extends Assigner {
     function account(&$countbycid, $nrev) {
         $countbycid[$this->cid] = @+$countbycid[$this->cid] + 1;
         $delta = $this->type ? 1 : -1;
-        $nrev->any[$this->cid] += $delta;
-        if ($this->type == REVIEW_PRIMARY)
-            $nrev->pri[$this->cid] += $delta;
-        else if ($this->type == REVIEW_SECONDARY)
-            $nrev->sec[$this->cid] += $delta;
+        foreach (array($nrev, $nrev->pset) as $nnrev) {
+            $nnrev->any[$this->cid] += $delta;
+            if ($this->type == REVIEW_PRIMARY)
+                $nnrev->pri[$this->cid] += $delta;
+            else if ($this->type == REVIEW_SECONDARY)
+                $nnrev->sec[$this->cid] += $delta;
+        }
     }
-    function execute($pcm, $when) {
+    function execute($contact, $when) {
         global $Conf, $Me;
         $result = $Conf->qe("select contactId, paperId, reviewId, reviewType, reviewModified from PaperReview where paperId=$this->pid and contactId=$this->cid");
-        $Me->assignPaper($this->pid, edb_orow($result), $pcm[$this->cid], $this->type, $when);
+        $Me->assignPaper($this->pid, edb_orow($result), $contact, $this->type, $when);
     }
 }
 class LeadAssigner extends Assigner {
     private $type;
     private $isadd;
-    function __construct($type, $isadd, $x = null) {
+    function __construct($type, $isadd) {
         $this->type = $type;
         $this->isadd = $isadd;
-        if ($x) {
-            $this->pid = +$x[0];
-            $this->cid = $x[2];
-        }
-    }
-    function clone_parse($x) {
-        return new LeadAssigner($this->type, $this->isadd, $x);
     }
     function unparse_display($pcm) {
         if (!($pc = @$pcm[$this->cid]))
@@ -209,7 +201,7 @@ class LeadAssigner extends Assigner {
             $t .= " (clear $this->type)";
         return $t;
     }
-    function execute($pcm, $when) {
+    function execute($contact, $when) {
         global $Conf;
         if ($this->isadd)
             $Conf->qe("update Paper set " . $this->type . "ContactId=$this->cid where paperId=$this->pid");
@@ -219,15 +211,8 @@ class LeadAssigner extends Assigner {
 }
 class ConflictAssigner extends Assigner {
     private $isadd;
-    function __construct($isadd, $x = null) {
+    function __construct($isadd) {
         $this->isadd = $isadd;
-        if ($x) {
-            $this->pid = +$x[0];
-            $this->cid = $x[2];
-        }
-    }
-    function clone_parse($x) {
-        return new ConflictAssigner($this->isadd, $x);
     }
     function unparse_display($pcm) {
         global $Conf;
@@ -240,7 +225,7 @@ class ConflictAssigner extends Assigner {
             $t .= '(clear conflict)';
         return $t;
     }
-    function execute($pcm, $when) {
+    function execute($contact, $when) {
         global $Conf;
         if ($this->isadd)
             $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($this->pid,$this->cid," . CONFLICT_CHAIRMARK . ") on duplicate key update conflictType=greatest(conflictType,values(conflictType))");
@@ -260,44 +245,149 @@ Assigner::register("noshepherd", new LeadAssigner("shepherd", false));
 Assigner::register("conflict", new ConflictAssigner(true));
 Assigner::register("noconflict", new ConflictAssigner(false));
 
-class Autoassign {
-    static function count_reviews($papers = null) {
-        global $Conf;
-        $nrev = (object) array("any" => array(), "pri" => array(), "sec" => array());
-        foreach (pcMembers() as $id => $pc)
-            $nrev->any[$id] = $nrev->pri[$id] = $nrev->sec[$id] = 0;
+class AssignmentSet {
+    private $assigners = array();
+    private $filename;
+    private $errors = array();
 
-        $q = "select pc.contactId, group_concat(r.reviewType separator '')
-		from PCMember pc
-		left join PaperReview r on (r.contactId=pc.contactId)\n\t\t";
-        if (!$papers)
-            $q .= "left join Paper p on (p.paperId=r.paperId)
-		where p.paperId is null or p.timeWithdrawn<=0";
+    private function error($lineno, $message) {
+        if ($this->filename)
+            $this->errors[] = '<span class="lineno">'
+                . htmlspecialchars($this->filename)
+                . ':' . $lineno . ':</span> ' . $message;
         else
-            $q .= "where r.paperId" . sql_in_numeric_set($papers);
-        $result = $Conf->qe($q . " group by pc.contactId",
-                            "while counting reviews");
-        while (($row = edb_row($result))) {
-            $nrev->any[$row[0]] = strlen($row[1]);
-            $nrev->pri[$row[0]] = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
-            $nrev->sec[$row[0]] = preg_match_all("|" . REVIEW_SECONDARY . "|", $row[1], $matches);
-        }
-        return $nrev;
+            $this->errors[] = $message;
+        return false;
     }
 
-    static function echo_unparse_display($assignment) {
+    private static function req_user_html($req) {
+        return Text::user_html_nolink(@$req["firstName"], @$req["lastName"], @$req["email"]);
+    }
+
+    private static function contacts_by($what) {
+        $cb = array();
+        foreach (edb_orows($Conf->qe("select contactId, email, firstName, lastName, roles from ContactInfo")) as $c)
+            $cb[$c->$what] = $c;
+        return $cb;
+    }
+
+    function parse($text, $filename = null, $default_action = null) {
+        $this->filename = $filename;
+
+        $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
+        $csv->set_comment_chars("%#");
+        if (!($req = $csv->next()))
+            return $this->error($csv->lineno(), "empty file");
+
+        // check for header
+        if (array_search("action", $req) !== false
+            || array_search("paper", $req) !== false)
+            $csv->set_header($req);
+        else {
+            if (count($req) == 2)
+                $csv->set_header(array("paper", "user"));
+            else
+                $csv->set_header(array("paper", "action", "user", "round"));
+            $csv->unshift($req);
+        }
+        if (array_search("action", $csv->header()) === false
+            && !$default_action)
+            return $this->error($csv->lineno(), "“action” column missing");
+        if (array_search("paper", $csv->header()) === false)
+            return $this->error($csv->lineno(), "“paper” column missing");
+
+        // set up PC mappings
+        $pcm = pcMembers();
+        $pc_by_email = array();
+        foreach ($pcm as $id => $pc)
+            $pc_by_email[$pc->email] = $pc;
+        $contact_by_email = null;
+
+        // parse file
+        while (($req = $csv->next()) !== false) {
+            // check paper
+            $pid = @trim($req["paper"]);
+            if ($pid == "" || !ctype_digit($pid)) {
+                $this->error($csv->lineno(), "bad paper column");
+                continue;
+            }
+
+            // check action
+            if (($action = @$req["action"]) === null)
+                $action = $default_action;
+            $action = strtolower(trim($action));
+            if (!($assigner = Assigner::find($action))) {
+                $this->error($csv->lineno(), "unknown action “" . htmlspecialchars($req["action"]) . "”");
+                continue;
+            }
+            $assigner = clone $assigner;
+            $assigner->pid = intval($pid);
+
+            // clean user parts
+            foreach (array("first" => "firstName", "last" => "lastName")
+                     as $k1 => $k2)
+                if (isset($req[$k1]) && !isset($req[$k2]))
+                    $req[$k2] = $req[$k1];
+            if (!isset($req["email"]) && isset($req["user"])) {
+                $a = Text::split_name($req["user"], true);
+                foreach (array("firstName", "lastName", "email") as $i => $k)
+                    if ($a[$i])
+                        $req[$k] = $a[$i];
+            } else if (isset($req["name"]) || isset($req["user"])) {
+                $a = Text::split_name($req[@$req["name"] ? "name" : "user"]);
+                foreach (array("firstName", "lastName") as $i => $n)
+                    if ($a[$i] && !isset($req[$k]))
+                        $req[$k] = $a[$i];
+            }
+
+            // check user
+            $email = @trim($req["email"]);
+            if ($email && isset($pc_by_email[$email]))
+                $assigner->cid = $pc_by_email[$email]->contactId;
+            else if ($assigner->require_pc()) {
+                $assigner->cid = matchContact($pcm, @$req["firstName"], @$req["lastName"], $email);
+                if ($assigner->cid == -2)
+                    $this->error($csv->lineno(), "no PC member matches “" . self::req_user_html($req) . "”");
+                else if ($assigner->cid <= 0)
+                    $this->error($csv->lineno(), "“" . self::req_user_html($req) . "” matches more than one PC member, give a full email address to disambiguate");
+                if ($assigner->cid <= 0)
+                    continue;
+            } else {
+                if (!$contact_by_email)
+                    $contact_by_email = self::contacts_by("email");
+                if (!$email) {
+                    $this->error($csv->lineno(), "missing email address");
+                    continue;
+                } else if (isset($contact_by_email[$email]))
+                    $assigner->cid = $contact_by_email[$email]->contactId;
+                else if (!validateEmail($email)) {
+                    $this->error($csv->lineno(), "email address “" . htmlspecialchars($email) . "” is invalid");
+                    continue;
+                } else {
+                    $assigner->cid = "new";
+                    foreach (array("email", "firstName", "lastName") as $x)
+                        $assigner->$x = @$req[$x];
+                }
+            }
+
+            // assign other
+            if ($assigner->parse($req))
+                $this->assigners[] = $assigner;
+            else
+                $this->error($csv->lineno(), "parse error for action “" . htmlspecialchars($action) . "”");
+        }
+    }
+
+    function echo_unparse_display() {
         global $Conf, $Me, $papersel;
-        if (!is_array($assignment))
-            $assignment = explode("\n", $assignment);
         $pcm = pcMembers();
         $nrev = self::count_reviews();
         $nrev->pset = self::count_reviews($papersel);
         $countbycid = array();
 
         $bypaper = array();
-        foreach ($assignment as $req)
-            if (($assigner = Assigner::parse($req))
-                && ($text = $assigner->unparse_display($pcm))) {
+        foreach ($this->assigners as $assigner)
+            if (($text = $assigner->unparse_display($pcm))) {
                 arrayappend($bypaper[$assigner->pid], (object)
                             array("text" => $text,
                                   "sorter" => $pcm[$assigner->cid]->sorter));
@@ -352,6 +442,77 @@ class Autoassign {
 	    echo $pcdesc[$i];
 	}
 	echo "</table></td></tr></table>\n";
+    }
+
+    function execute() {
+        global $Conf, $Now;
+        if (count($this->errors)) {
+            $Conf->errorMsg('Errors in assignments: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors) . '</p></div> Due to these errors, the assignments were ignored.');
+            return false;
+        } else if (!count($this->assigners)) {
+            $Conf->warnMsg('Nothing to assign.');
+            return false;
+        }
+
+        $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, PaperReviewRefused write, Paper write, PaperConflict write, ActionLog write, Settings write, PaperTag write");
+
+        $pcm = pcMembers();
+        $contact_by_id = null;
+        $contact_by_email = array();
+        foreach ($this->assigners as $assigner) {
+            if ($assigner->cid <= 0) {
+                if (!($c = @$contact_by_email[$assigner->email])) {
+                    $c = new Contact;
+                    $c->load_by_email($assigner->email, array("firstName" => @$assigner->firstName, "lastName" => @$assigner->lastName), false);
+                    // XXX assume that never fails
+                    $contact_by_email[$assigner->email] = $c;
+                }
+                $assigner->cid = $c->contactId;
+            } else if (isset($pcm[$assigner->cid]))
+                $c = $pcm[$assigner->cid];
+            else {
+                if (!$contact_by_id)
+                    $contact_by_id = self::contacts_by("contactId");
+                $c = $contact_by_id[$assigner->cid];
+            }
+            $assigner->execute($c, $Now);
+        }
+
+        // confirmation message
+        if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $Now)
+            $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
+        else
+            $Conf->confirmMsg("Assignments saved!");
+
+        // clean up
+        $Conf->qe("unlock tables");
+        $Conf->updateRevTokensSetting(false);
+        $Conf->update_paperlead_setting();
+        return true;
+    }
+
+    static function count_reviews($papers = null) {
+        global $Conf;
+        $nrev = (object) array("any" => array(), "pri" => array(), "sec" => array());
+        foreach (pcMembers() as $id => $pc)
+            $nrev->any[$id] = $nrev->pri[$id] = $nrev->sec[$id] = 0;
+
+        $q = "select pc.contactId, group_concat(r.reviewType separator '')
+		from PCMember pc
+		left join PaperReview r on (r.contactId=pc.contactId)\n\t\t";
+        if (!$papers)
+            $q .= "left join Paper p on (p.paperId=r.paperId)
+		where p.paperId is null or p.timeWithdrawn<=0";
+        else
+            $q .= "where r.paperId" . sql_in_numeric_set($papers);
+        $result = $Conf->qe($q . " group by pc.contactId",
+                            "while counting reviews");
+        while (($row = edb_row($result))) {
+            $nrev->any[$row[0]] = strlen($row[1]);
+            $nrev->pri[$row[0]] = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
+            $nrev->sec[$row[0]] = preg_match_all("|" . REVIEW_SECONDARY . "|", $row[1], $matches);
+        }
+        return $nrev;
     }
 }
 
@@ -489,7 +650,7 @@ function doAssign() {
     $prefs = array();
     foreach ($pcm as $pc)
 	$prefs[$pc->contactId] = array();
-    $assignments = array();
+    $assignments = array("paper,action,email,round");
     $assignprefs = array();
 
     // choose PC members to use for assignment
@@ -511,12 +672,12 @@ function doAssign() {
 	while (($row = edb_row($result))) {
 	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
 		continue;
-            $assignments[] = "$row[0],conflict,$row[1]";
+            $assignments[] = "$row[0],conflict," . $pcm[$row[1]]->email;
 	    $assignprefs["$row[0]:$row[1]"] = $row[2];
 	}
-	if (count($assignments) == 0) {
+	if (count($assignments) == 1) {
 	    $Conf->warnMsg("Nothing to assign.");
-	    unset($assignments);
+            $assignments = null;
 	}
 	return;
     }
@@ -540,12 +701,12 @@ function doAssign() {
 	while (($row = edb_row($result))) {
 	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
 		continue;
-            $assignments[] = "$row[0],$action,$row[1]";
+            $assignments[] = "$row[0],$action," . $pcm[$row[1]]->email;
 	    $assignprefs["$row[0]:$row[1]"] = "*";
 	}
-	if (count($assignments) == 0) {
+	if (count($assignments) == 1) {
 	    $Conf->warnMsg("Nothing to assign.");
-	    unset($assignments);
+	    $assignments = null;
 	}
 	return;
     }
@@ -704,7 +865,7 @@ function doAssign() {
 	    if ($pref >= -1000000 && isset($papers[$pid]) && $papers[$pid] > 0
 		&& (!isset($badpairs[$pc]) || noBadPair($pc, $pid, $prefs))) {
 		// make assignment
-		$assignments[] = "$pid,$action,$pc$round";
+		$assignments[] = "$pid,$action," . $pcx->email . $round;
 		$prefs[$pc][$pid] = -1000001;
 		$papers[$pid]--;
 		$load[$pc]++;
@@ -737,49 +898,21 @@ function doAssign() {
 	$y = (count($b) > 1 ? " (<a class='nowrap' href='" . hoturl("search", "q=$pidx") . "'>list them</a>)" : "");
 	$Conf->warnMsg("I wasn’t able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . $y . ".");
     }
-    if (count($assignments) == 0) {
+    if (count($assignments) == 1) {
 	$Conf->warnMsg("Nothing to assign.");
-	unset($assignments);
+	$assignments = null;
     }
-}
-
-function saveAssign() {
-    global $Conf, $Me, $Now;
-
-    $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, PaperReviewRefused write, Paper write, PaperConflict write, ActionLog write, Settings write, PaperTag write");
-
-    // parse and execute assignment
-    $pcm = pcMembers();
-    $nsaved = 0;
-    foreach (explode("\n", $_REQUEST["assignment"]) as $req) {
-	$req = explode(",", trim($req));
-        if (@$req[1] && ($assigner = Assigner::parse($req))
-            && isset($pcm[$assigner->cid])) {
-            $assigner->execute($pcm, $Now);
-            ++$nsaved;
-        }
-    }
-
-    // Confirmation message
-    if (!$nsaved)
-        $Conf->warnMsg("Nothing to assign.");
-    else if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $Now)
-	$Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
-    else
-	$Conf->confirmMsg("Assignments saved!");
-
-    // clean up
-    $Conf->qe("unlock tables");
-    $Conf->updateRevTokensSetting(false);
-    $Conf->update_paperlead_setting();
 }
 
 if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"])
     && isset($_REQUEST["pctyp"]) && check_post())
     doAssign();
 else if (isset($_REQUEST["saveassign"])
-	 && isset($_REQUEST["assignment"]) && check_post())
-    saveAssign();
+	 && isset($_REQUEST["assignment"]) && check_post()) {
+    $assignset = new AssignmentSet;
+    $assignset->parse($_REQUEST["assignment"]);
+    $assignset->execute();
+}
 
 
 $abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
@@ -851,9 +984,11 @@ class AutoassignmentPaperColumn extends PaperColumn {
 if (isset($assignments) && count($assignments) > 0) {
     echo divClass("propass"), "<h3>Proposed assignment</h3>";
     $helplist = "";
-    $Conf->infoMsg("If this assignment looks OK to you, select &ldquo;Save assignment&rdquo; to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as &ldquo;P#&rdquo;.");
+    $Conf->infoMsg("If this assignment looks OK to you, select “Save assignment” to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as “P#”.");
 
-    Autoassign::echo_unparse_display($assignments);
+    $assignset = new AssignmentSet;
+    $assignset->parse(join("\n", $assignments));
+    $assignset->echo_unparse_display();
 
     echo "<div class='g'></div>",
 	"<form method='post' action='", hoturl_post("autoassign"), "' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n",
@@ -872,10 +1007,8 @@ if (isset($assignments) && count($assignments) > 0) {
     echo "<input type='hidden' name='p' value=\"", join(" ", $papersel), "\" />\n";
 
     // save the assignment
-    echo '<input type="hidden" name="assignment" value="';
-    foreach ($assignments as $ass)
-        echo $ass, "\n";
-    echo "\" />\n";
+    echo '<input type="hidden" name="assignment" value="',
+        join("\n", $assignments), '" />', "\n";
 
     echo "</div></div></form></div>\n";
     $Conf->footer();
@@ -1008,8 +1141,8 @@ foreach ($pctyp_sel as $pctyp) {
 echo ")</td></tr>\n<tr><td></td><td><table class='pctb'><tr><td class='pctbcolleft'><table>";
 
 $pcm = pcMembers();
-$nrev = Autoassign::count_reviews();
-$nrev->pset = Autoassign::count_reviews($papersel);
+$nrev = AssignmentSet::count_reviews();
+$nrev->pset = AssignmentSet::count_reviews($papersel);
 $pcdesc = array();
 $colorizer = new Tagger;
 foreach ($pcm as $id => $p) {
