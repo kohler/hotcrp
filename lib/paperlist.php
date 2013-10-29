@@ -287,10 +287,10 @@ class PaperList extends BaseList {
 
     static function _reviewIcon($row, $ranal, $includeLink) {
 	global $Conf;
-	$alt = $ranal->type_name . " review";
+	$title = $ranal->type_name . " review";
 	if ($ranal->needsSubmit)
-	    $alt .= " (" . strtolower($ranal->completion) . ")";
-	$t = $Conf->cacheableImage("_.gif", $alt, $alt, "ass" . $row->reviewType . ($ranal->needsSubmit ? "n" : ""));
+	    $title .= " (" . strtolower($ranal->completion) . ")";
+        $t = review_type_icon($row->reviewType, $ranal->needsSubmit, $title);
 	if ($includeLink)
 	    $t = $ranal->link1 . $t . $ranal->link2;
 	if ($ranal->round)

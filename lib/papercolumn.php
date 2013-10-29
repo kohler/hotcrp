@@ -410,9 +410,9 @@ class ReviewerTypePaperColumn extends PaperColumn {
             if ($ranal->round)
                 $t = "<div class='pl_revtype_round'>" . $t . "</div>";
         } else if ($xrow->conflictType > 0)
-            $t = $Conf->cacheableImage("_.gif", "Conflict", "Conflict", "ass-1");
+            $t = review_type_icon(-1);
         else
-            $t = $Conf->cacheableImage("_.gif", "", "", "ass0");
+            $t = review_type_icon(0);
         return $t;
     }
 }

@@ -56,12 +56,12 @@ class ReviewAssigner extends Assigner {
         return $this->type == 0;
     }
     function unparse_display($pcm) {
-        global $reviewTypeName, $assignprefs, $Conf;
+        global $assignprefs, $Conf;
         if (!($pc = @$pcm[$this->cid]))
             return null;
         $t = Text::name_html($pc) . ' ';
         if ($this->type) {
-            $t .= $Conf->cacheableImage("_.gif", $reviewTypeName[$this->type], $reviewTypeName[$this->type] . " review", "ass" . $this->type . "n");
+            $t .= review_type_icon($this->type, true);
             if ($this->round)
                 $t .= ' <span class="revround" title="Review round">'
                     . htmlspecialchars($this->round) . '</span>';
@@ -136,7 +136,7 @@ class ConflictAssigner extends Assigner {
             return null;
         $t = Text::name_html($pc) . ' ';
         if ($this->isadd)
-            $t .= $Conf->cacheableImage("_.gif", "Conflict", "Conflict", "ass-1");
+            $t .= review_type_icon(-1);
         else
             $t .= '(remove conflict)';
         return $t;

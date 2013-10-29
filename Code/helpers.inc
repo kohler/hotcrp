@@ -1549,6 +1549,23 @@ function pcByEmail($email) {
     return null;
 }
 
+function review_type_icon($revtype, $unfinished = null, $title = null) {
+    static $revtypemap = array(-3 => array("&minus;", "Refused"),
+                               -2 => array("A", "Author"),
+                               -1 => array("X", "Conflict"),
+                               1 => array("R", "External review"),
+                               2 => array("R", "PC review"),
+                               3 => array("2", "Secondary review"),
+                               4 => array("1", "Primary review"));
+    if (!$revtype)
+        return '<span class="rt0"></span>';
+    $x = $revtypemap[$revtype];
+    return '<span class="rt' . $revtype
+        . ($revtype > 0 && $unfinished ? "n" : "")
+        . '" title="' . ($title ? $title : $revtypemap[$revtype][1])
+        . '"><span class="rti">' . $revtypemap[$revtype][0] . '</span></span>';
+}
+
 function matchContact($pcm, $firstName, $lastName, $email) {
     $lastmax = $firstmax = false;
     if (!$lastName) {

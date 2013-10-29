@@ -12,6 +12,7 @@ define("REVIEW_PC", 2);
 define("REVIEW_EXTERNAL", 1);
 global $reviewTypeName;
 $reviewTypeName = array("None", "External", "PC", "Secondary", "Primary");
+// see also review_type_icon, script:selassign
 
 define("CONFLICT_NONE", 0);
 define("CONFLICT_PCMARK", 1);

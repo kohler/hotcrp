@@ -1063,11 +1063,11 @@ span.asspref-1 {
 }
 .pctbass {
 	padding-right: 0.45em;
-	font-size: smaller;
 	white-space: nowrap;
 }
 .pctbconfsel {
 	padding-right: 1em;
+	font-size: smaller;
 	white-space: nowrap;
 }
 .pctbconfselector {
@@ -1081,6 +1081,44 @@ span.asspref-1 {
 }
 .pctbcolmid {
 	border-left: 1px dotted #cec1ff;
+}
+
+/* review type/assignment blocks */
+.rt4, .rt4n, .rt3, .rt3n, .rt2, .rt2n, .rt1, .rt1n, .rt0, .rt-1, .rt-2, .rt-3 {
+	display: inline-block;
+	width: 0.75em;
+        height: 0.75em;
+        border-width: 1px;
+        position: relative;
+	bottom: -0.1em;
+}
+.rt4, .rt4n, .rt3, .rt3n, .rt2, .rt2n {
+	background-color: #ffffbb;
+}
+.rt4n, .rt3n, .rt2n, .rt1n {
+	color: red;
+	border: 1px solid red;
+}
+.rt4, .rt3, .rt2, .rt1 {
+	color: black;
+	border: 1px solid black;
+}
+.rt4, .rt4n, .rt3, .rt3n, .rt-1, .rt-2 {
+	font-weight: bold;
+}
+.rt-1, .rt-2, .rt-3 {
+	color: grey;
+	border: 1px solid grey;
+}
+.rti {
+	display: table-cell;
+        position: absolute;
+	width: 100%;
+	height: 100%;
+	bottom: 10%;
+        font-family: verdana, tahoma, sans-serif;
+	font-size: 70%;
+	text-align: center;
 }
 
 img.ass-1, img.ass-2, img.ass-3 {

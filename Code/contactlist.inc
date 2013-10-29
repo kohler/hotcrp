@@ -265,7 +265,7 @@ class ContactList extends BaseList {
     }
 
     function content($fieldId, $row) {
-	global $Conf, $reviewTypeName, $reviewScoreNames;
+	global $Conf, $reviewScoreNames;
 	switch (self::_normalizeField($fieldId)) {
 	case self::FIELD_NAME:
 	    $t = Text::name_html($row);

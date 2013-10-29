@@ -1,6 +1,6 @@
 <?php
 // assign.php -- HotCRP per-paper assignment/conflict management page
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
@@ -546,23 +546,23 @@ if ($Me->canAdminister($prow)) {
 	    echo "<td id='ass$p->contactId' class='pctbname-2 pctbl'>",
 		str_replace(' ', "&nbsp;", Text::name_html($pc)),
 		"</td><td class='pctbass'>",
-		"<img class='ass-2' alt='(Author)' title='Author' src='", hoturl_image("images/_.gif"), "' />",
+                review_type_icon(-2),
 		"</td>";
 	} else {
 	    if ($p->conflictType > 0)
-		$cid = -1;
+		$revtype = -1;
 	    else if ($p->reviewType)
-		$cid = $p->reviewType;
+		$revtype = $p->reviewType;
 	    else
-		$cid = ($p->refused ? -3 : 0);
+		$revtype = ($p->refused ? -3 : 0);
 	    $title = ($cid == -3 ? "' title='Review previously declined" : "");
-	    echo "<td id='ass$p->contactId' class='pctbname$cid pctbl'>";
+	    echo "<td id='ass$p->contactId' class='pctbname$revtype pctbl'>";
 	    echo str_replace(' ', "&nbsp;", Text::name_html($pc));
 	    if ($p->conflictType == 0
 		&& ($p->preference || $p->topicInterestScore))
 		echo preferenceSpan($p->preference, $p->topicInterestScore);
 	    echo "</td><td class='pctbass'>";
-	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'><img class='ass$cid' id='assimg$p->contactId' src='", hoturl_image("images/_.gif"), $title, "' alt='Assignment' /><img class='next' src='", hoturl_image("images/_.gif"), "' alt='&gt;' /></a>&nbsp;";
+	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'>", review_type_icon($revtype, false, "Assignment"), "<img class='next' src='", hoturl_image("images/_.gif"), "' alt='&gt;' /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
 	    echo Ht::select("pcs$p->contactId",
 			     array(0 => "None", REVIEW_PRIMARY => "Primary",

@@ -27,7 +27,7 @@ if ((defval($_REQUEST, "get") == "revpref" || defval($_REQUEST, "get") == "revpr
 
 // Update preferences
 function savePreferences($reviewer) {
-    global $Conf, $Me, $reviewTypeName, $OK;
+    global $Conf, $Me, $OK;
 
     $setting = array();
     $error = false;

@@ -556,13 +556,13 @@ function foldassign(which) {
 }
 
 function selassign(elt, which) {
+    var folder = $$("folderass" + which);
     if (elt) {
 	$$("ass" + which).className = "pctbname" + elt.value + " pctbl";
-	var i = $$("assimg" + which);
-	i.className = "ass" + elt.value;
-	hiliter(elt);
+        folder.firstChild.className = "rt" + elt.value;
+        folder.firstChild.firstChild.innerHTML = (["&minus;", "A", "X", "", "R", "R", "2", "1"])[+elt.value + 3];
+	hiliter(folder.firstChild);
     }
-    var folder = $$("folderass" + which);
     if (folder && elt !== 0)
 	folder.focus();
     setTimeout("fold(\"ass" + which + "\", true)", 50);
