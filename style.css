@@ -1121,6 +1121,7 @@ span.asspref-1 {
 	text-align: center;
 }
 
+/* XXX 10/29/13 These CSS rules are obsolete */
 img.ass-1, img.ass-2, img.ass-3 {
 	background-image: url(images/sprite.png?2);
 	width: 12px;
