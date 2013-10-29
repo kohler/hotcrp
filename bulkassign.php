@@ -23,7 +23,9 @@ function assignment_defaults() {
 
 
 if (isset($_REQUEST["saveassignment"]) && check_post()) {
-    if (isset($_REQUEST["file"]) && !isset($_REQUEST["cancel"])) {
+    if (isset($_REQUEST["cancel"]))
+        redirectSelf();
+    else if (isset($_REQUEST["file"])) {
         $assignset = new AssignmentSet(false);
         $assignset->parse($_REQUEST["file"], @$_REQUEST["filename"],
                           assignment_defaults());
