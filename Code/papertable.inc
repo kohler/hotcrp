@@ -78,6 +78,16 @@ class PaperTable {
 	    $this->mode = "r";
     }
 
+    private static function _combine_match_preg($m1, $m) {
+        if (!is_array($m))
+            $m = array("abstract" => $m, "title" => $m,
+                       "authorInformation" => $m, "collaborators" => $m);
+        foreach ($m as $k => $v)
+            if (!@$m1[$k])
+                $m1[$k] = $v;
+        return $m1;
+    }
+
     function initialize($editable, $useRequest) {
 	global $CurrentList;
 
@@ -106,24 +116,21 @@ class PaperTable {
 			    || ($this->mode != "pe" && (count($this->rrows) || count($this->crows))));
 
 	$this->matchPreg = array();
-	$matcher = null;
-        if (isset($_SESSION["l"]) && isset($CurrentList)
-            && $CurrentList > 0
-            && defval($_SESSION["l"][$CurrentList], "matchPreg", "") !== "")
-	    $matcher = $_SESSION["l"][$CurrentList]["matchPreg"];
-	if ($matcher !== null) {
-	    if (!is_array($matcher))
-		$matcher = array("abstract" => $matcher, "title" => $matcher,
-				 "authorInformation" => $matcher,
-				 "collaborators" => $matcher);
-	    foreach ($matcher as $k => $v)
-		if (is_string($v) && $v != "") {
-		    if ($v[0] != "{")
-			$v = "{(" . $v . ")}i";
-		    $this->matchPreg[$k] = $v;
-		} else if (is_object($v))
-                    $this->matchPreg[$k] = $v;
-	}
+	$matcher = array();
+        if (@($_SESSION["l"] && $CurrentList > 0
+              && $_SESSION["l"][$CurrentList]["matchPreg"]))
+	    $matcher = self::_combine_match_preg($matcher, $_SESSION["l"][$CurrentList]["matchPreg"]);
+        if (@$_SESSION["temp_matchPreg"]) {
+            $matcher = self::_combine_match_preg($matcher, $_SESSION["temp_matchPreg"]);
+            unset($_SESSION["temp_matchPreg"]);
+        }
+        foreach ($matcher as $k => $v)
+            if (is_string($v) && $v != "") {
+                if ($v[0] != "{")
+                    $v = "{(" . $v . ")}i";
+                $this->matchPreg[$k] = $v;
+            } else if (is_object($v))
+                $this->matchPreg[$k] = $v;
 	if (count($this->matchPreg) == 0)
 	    $this->matchPreg = null;
 
@@ -2032,9 +2039,16 @@ class PaperTable {
 	$search = new PaperSearch($Me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
 	$pl = $search->paperList();
 	if (count($pl) == 1) {
-	    $_REQUEST["paperId"] = $pl[0];
-	    $_REQUEST["ls"] = allocateListNumber($search->listId());
-	    $_SESSION["l"][$_REQUEST["ls"]] = $search->sessionList();
+            $pl = $search->sessionList();
+	    $_REQUEST["paperId"] = $_REQUEST["p"] = $pl[0];
+            if (!@$_REQUEST["ls"]
+                || !($list = @$_SESSION["l"][$_REQUEST["ls"]])
+                || array_search($pl[0], $list) === false) {
+                $_REQUEST["ls"] = allocateListNumber($search->listId());
+                $_SESSION["l"][$_REQUEST["ls"]] = $pl;
+            } else if (@$pl["matchPreg"])
+                $_SESSION["temp_matchPreg"] = $pl["matchPreg"];
+            redirectSelf();
 	    return true;
 	} else {
 	    $t = (defval($_REQUEST, "t", 0) ? "&t=" . urlencode($_REQUEST["t"]) : "");
