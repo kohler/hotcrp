@@ -94,6 +94,15 @@ directory. For example, this section of httpd.conf makes the
         </Directory>
         Alias /testconf /home/kohler/hotcrp
 
+    Apache 2.4 or later requires this instead.
+
+        <Directory "/home/kohler/hotcrp">
+            Options Indexes Includes FollowSymLinks
+            AllowOverride all
+            Require all granted
+        </Directory>
+        Alias /testconf /home/kohler/hotcrp
+
     Note that the first argument to Alias should NOT end in a slash. The
 "AllowOverride all" directive is required.
 

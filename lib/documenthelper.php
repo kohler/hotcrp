@@ -251,7 +251,7 @@ class DocumentHelper {
 	// filestore directory
 	$htaccess = "$fdir/.htaccess";
 	if (!is_file($htaccess)
-	    && file_put_contents($htaccess, "Order deny,allow\nDeny from all\nphp_flag magic_quotes_gpc off\n") === false) {
+	    && file_put_contents($htaccess, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n") === false) {
 	    @unlink("$fdir/.htaccess");
 	    return false;
 	}
