@@ -241,6 +241,9 @@ class SearchReviewValue {
     function contactWhere($fieldname) {
 	return str_replace("\3", $fieldname, "\3" . $this->contactsql);
     }
+    static function any() {
+        return new SearchReviewValue(">0", null);
+    }
 }
 
 class SearchQueryInfo {
@@ -950,10 +953,14 @@ class PaperSearch {
             $qt[] = new SearchTerm("pf", 0, array("finalPaperStorageId", "!=0"));
         else if (strcasecmp($word, "abstract") == 0)
             $qt[] = new SearchTerm("pf", 0, array("abstract", "!=''"));
+        else if (strcasecmp($word, "response") == 0)
+            $qt[] = new SearchTerm("cmt", self::F_AUTHORRESPONSE | self::F_XVIEW, SearchReviewValue::any());
+        else if (strcasecmp($word, "cmt") == 0 || strcasecmp($word, "comment") == 0)
+            $qt[] = new SearchTerm("cmt", self::F_XVIEW, SearchReviewValue::any());
         else if (preg_match('/\A\w+\z/', $word) && $this->_searchOptions("$word:yes", $qt, false))
             /* OK */;
         else {
-            $this->warn("Valid “has:” searches are “paper”, and “final”, and “abstract”.");
+            $this->warn("Valid “has:” searches are “paper”, “final”, “abstract”, “comment”, and “response”.");
             $qt[] = new SearchTerm("f");
         }
     }
