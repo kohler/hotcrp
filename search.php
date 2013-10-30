@@ -1551,7 +1551,7 @@ if ($pl) {
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
     if (isset($pl->any->sel))
-	echo "<form method='post' action=\"", selfHref(array("selector" => 1), hoturl_post("search")), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck()'><div class='inform'>\n",
+	echo "<form method='post' action=\"", selfHref(array("selector" => 1, "post" => post_value())), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck()'><div class='inform'>\n",
 	    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
 	    "<input class='hidden' type='submit' name='default' value='1' />";
 

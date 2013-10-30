@@ -313,7 +313,7 @@ function go($url) {
 
     // The URL is often relative; make it absolute if possible.
     if (!preg_match('|\A[a-z]+://|', $url)
-	&& ($absuri = requestAbsoluteURI(true))) {
+	&& ($absuri = request_absolute_uri_base())) {
 	if (substr($url, 0, 1) == "/")
 	    $url = preg_replace('|\A(.*?//[^/]+).*|', '\1', $absuri) . $url;
 	else {
@@ -391,81 +391,37 @@ function fileUploaded(&$var) {
     }
 }
 
-function selfHref($extra = array(), $self = null, $htmlspecialchars = true) {
+function selfHref($extra = array(), $htmlspecialchars = true) {
     global $CurrentList, $ConfSiteSuffix, $Opt;
-
-    // set $self and $query
-    if (!$self)
-        $self = $_SERVER["PHP_SELF"];
-    $path = $query = "";
-    if (($p = strpos($self, "?")) !== false) {
-        $query = substr($self, $p);
-        $self = substr($self, 0, $p);
-    }
-
-    // set path suffix
-    if (isset($_SERVER["PATH_INFO"]) && $_SERVER["PATH_INFO"] !== ""
-        && str_ends_with($self, $_SERVER["PATH_INFO"])) {
-        $p = strlen($self) - strlen($_SERVER["PATH_INFO"]);
-        $path = substr($self, $p);
-        $self = substr($self, 0, $p);
-    }
-
     // clean parameters from pathinfo URLs
     foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
 	if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
 	    $_REQUEST[$v] = $_REQUEST[$k];
 
-    if ($path && !defval($Opt, "disableSlashURLs")) {
-        if (str_ends_with($self, "review.php")
-            && isset($_REQUEST["r"]) && $_REQUEST["r"] == substr($path, 1)
-            && !array_key_exists("r", $extra))
-            $extra["p"] = $extra["r"] = null;
-        else if (preg_match('/(?:paper|review|comment|assign|contactauthors)\.php\z/', $self)
-            && isset($_REQUEST["p"]) && $_REQUEST["p"] == substr($path, 1)
-            && !array_key_exists("p", $extra))
-            $extra["p"] = null;
-        else if (str_ends_with($self, "profile.php")
-                 && isset($_REQUEST["u"]) && $_REQUEST["u"] == substr($path, 1)
-                 && !array_key_exists("u", $extra))
-            $extra["u"] = null;
-    }
-
-    // remove ".php"
-    if ($ConfSiteSuffix === "" && str_ends_with($self, ".php"))
-        $self = substr($self, 0, strlen($self) - 4);
-
-    // reconstruct
-    $self = $self . $path . $query;
-
-    // add parameters
-    $sep = ($query ? "&" : "?");
+    $param = "";
     foreach (array("p", "r", "c", "m", "u", "mode", "forceShow", "validator", "ls", "list", "t", "q", "qa", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq", "noedit", "contact", "reviewer") as $what)
 	if (isset($_REQUEST[$what]) && !array_key_exists($what, $extra)
-            && !is_array($_REQUEST[$what])) {
-	    $self .= "$sep$what=" . urlencode($_REQUEST[$what]);
-	    $sep = "&";
-	}
+            && !is_array($_REQUEST[$what]))
+	    $param .= "&$what=" . urlencode($_REQUEST[$what]);
     foreach ($extra as $key => $value)
-	if ($key != "anchor" && $value !== null) {
-	    $self .= "$sep$key=" . urlencode($value);
-	    $sep = "&";
-	}
+	if ($key != "anchor" && $value !== null)
+	    $param .= "&$key=" . urlencode($value);
     if (isset($CurrentList) && $CurrentList > 0
         && !isset($_REQUEST["ls"]) && !array_key_exists("ls", $extra))
-	$self .= $sep . "ls=" . $CurrentList;
-    if (isset($extra["anchor"]))
-	$self .= "#" . $extra["anchor"];
+	$param .= "&ls=" . $CurrentList;
 
-    return $htmlspecialchars ? htmlspecialchars($self) : $self;
+    $base = request_script_base();
+    $uri = hoturl($base ? $base : "index", $param ? substr($param, 1) : "");
+    if (isset($extra["anchor"]))
+	$uri .= "#" . $extra["anchor"];
+    return $htmlspecialchars ? htmlspecialchars($uri) : $uri;
 }
 
-function requestAbsoluteURI($trim) {
-    foreach (array("HTTP_HOST", "SERVER_PORT", "REQUEST_URI") as $x)
-	if (!isset($_SERVER[$x]) || !$_SERVER[$x])
-	    return false;
+function request_absolute_uri_base() {
+    if (!@$_SERVER["HTTP_HOST"] || !@$_SERVER["SERVER_PORT"] || !@$_SERVER["REQUEST_URI"])
+        return false;
 
-    if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] != "" && $_SERVER["HTTPS"] != "off") {
+    if (@$_SERVER["HTTPS"] && $_SERVER["HTTPS"] != "off") {
 	$host = "https://" . $_SERVER["HTTP_HOST"];
 	if (($port = defval($_SERVER, "SERVER_PORT", 443)) != 443)
 	    $host .= ":" . $port;
@@ -475,20 +431,30 @@ function requestAbsoluteURI($trim) {
 	    $host .= ":" . $port;
     }
 
-    $tail = $_SERVER["REQUEST_URI"];
-    if ($trim)
-	$tail = preg_replace('/\A([^\?\#]*).*\z/', '\1', $tail);
-    return $host . $tail;
+    return $host . preg_replace('_\A([^\?\#]*).*\z_', '\1', $_SERVER["REQUEST_URI"]);
+}
+
+function request_absolute_uri_dir() {
+    $uri = request_absolute_uri_base();
+    if (isset($_SERVER["PATH_INFO"]) && str_ends_with($uri, $_SERVER["PATH_INFO"]))
+        $uri = substr($uri, 0, strlen($uri) - strlen($_SERVER["PATH_INFO"]));
+    return preg_replace('_\A(.*?)[^/]*\z_', '\1', $uri);
+}
+
+function request_script_base() {
+    if (!@$_SERVER["REQUEST_URI"])
+        return false;
+    $uri = preg_replace('_\A([^\?\#]*).*\z_', '\1', $_SERVER["REQUEST_URI"]);
+    if (isset($_SERVER["PATH_INFO"]) && str_ends_with($uri, $_SERVER["PATH_INFO"]))
+        $uri = substr($uri, 0, strlen($uri) - strlen($_SERVER["PATH_INFO"]));
+    if (preg_match('_(?:\A|/)([^/]*?)(?:\.php|)\z_', $uri, $m))
+        return $m[1] == "" ? "index" : $m[1];
+    else
+        return false;
 }
 
 function redirectSelf($extra = array()) {
-    global $Conf;
-    if (!($absuri = requestAbsoluteURI(true)))
-	return false;
-    $want = preg_replace('/\A.*?(?:\?|\z)/', "", selfHref($extra, null, false));
-    if ($want != "")
-	$absuri .= "?" . $want;
-    go($absuri);
+    go(selfHref($extra, false));
 }
 
 function validateEmail($email) {

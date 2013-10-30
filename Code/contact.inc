@@ -276,7 +276,7 @@ class Contact {
 		    $x[$k] = $_REQUEST[$k];
 	    // NB: selfHref automagically preserves common parameters like
 	    // "p", "q", etc.
-	    $_SESSION["afterLogin"] = selfHref($x, null, false);
+	    $_SESSION["afterLogin"] = selfHref($x, false);
 	    error_go(false, "You have invalid credentials and need to sign in.");
 	}
     }
