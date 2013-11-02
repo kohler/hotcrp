@@ -5,94 +5,117 @@
 
 class Text {
 
-    static function analyze_name($f, $l = null, $e = null,
-                                 $with_middle = false) {
-        if ($l === true && $e === null)
-            list($l, $e, $with_middle) = array(null, null, true);
-        if (is_array($f)) {
-            if ($e === null && count($f) > 2)
-                $e = $f[2];
-            if (count($f) > 1)
-                $l = $f[1];
-            $f = $f[0];
-        } else if (is_object($f)) {
-            if ($e === null && isset($f->email))
-                $e = $f->email;
-            if (isset($f->lastName) || isset($f->firstName)) {
-                $l = defval($f, "lastName", "");
-                if ($with_middle && isset($f->middleName)) {
-                    $m = trim($f->middleName);
-                    $m = $m ? " $m" : "";
-                } else
-                    $m = "";
-                $f = defval($f, "firstName", "") . $m;
-            } else if (isset($f->fullName))
-                list($f, $l) = self::split_name($f->fullName);
-            else
-                list($f, $l) = self::split_name(defval($f, "name", ""));
+    static private $argkeys = array("firstName", "lastName", "email",
+                                    "withMiddle", "middleName", "lastFirst",
+                                    "nameAmbiguous");
+    static private $defaults = array("firstName" => "", "lastName" => "",
+                                     "email" => "", "withMiddle" => false,
+                                     "lastFirst" => false,
+                                     "nameAmbiguous" => false);
+
+    static function analyze_name_args($args) {
+        $ret = (object) array();
+        $delta = 0;
+        foreach ($args as $i => $v) {
+            if (is_string($v) || is_bool($v)) {
+                if ($i + $delta < 4) {
+                    $k = self::$argkeys[$i + $delta];
+                    if (!property_exists($ret, $k))
+                        $ret->$k = $v;
+                }
+            } else if (is_array($v) && isset($v[0])) {
+                for ($j = 0; $j < 3 && $j < count($v); ++$j) {
+                    $k = self::$argkeys[$j];
+                    if (!property_exists($ret, $k))
+                        $ret->$k = $v[$j];
+                }
+            } else if (is_array($v)) {
+                foreach (self::$argkeys as $k)
+                    if (array_key_exists($k, $v) && !property_exists($ret, $k))
+                        $ret->$k = $v[$k];
+                $delta = 3;
+            } else if (is_object($v)) {
+                foreach (self::$argkeys as $k)
+                    if (property_exists($v, $k) && !property_exists($ret, $k))
+                        $ret->$k = $v->$k;
+            }
         }
-        return array(trim("$f $l"), $e, $f, $l);
-    }
-
-    static function user_text($first, $last = null, $email = null,
-                              $with_middle = false) {
-        // was contactText
-        list($n, $e) = self::analyze_name($first, $last, $email, $with_middle);
-        if ($n && $e)
-            return "$n <$e>";
+        if (@$ret->withMiddle && @$ret->middleName) {
+            $m = trim($ret->middleName);
+            if ($m)
+                $ret->firstName =
+                    (isset($ret->firstName) ? $ret->firstName : "") . " " . $m;
+        }
+        foreach (self::$defaults as $k => $v)
+            if (@$ret->$k === null)
+                $ret->$k = $v;
+        if (!$ret->lastName || !$ret->firstName)
+            $ret->name = $ret->firstName . $ret->lastName;
+        else if (@$ret->lastFirst)
+            $ret->name = $ret->lastName . ", " . $ret->firstName;
         else
-            return $n ? $n : $e;
+            $ret->name = $ret->firstName . " " . $ret->lastName;
+        return $ret;
     }
 
-    static function user_html($first, $last = null, $email = null,
-                              $with_middle = false) {
+    static function analyze_name(/* ... */) {
+        return self::analyze_name_args(func_get_args());
+    }
+
+    static function user_text(/* ... */) {
+        // was contactText
+        $r = self::analyze_name_args(func_get_args());
+        if ($r->name && $r->email)
+            return "$r->name <$r->email>";
+        else
+            return $r->name ? $r->name : $r->email;
+    }
+
+    static function user_html(/* ... */) {
         // was contactHtml
-        list($n, $e) = self::analyze_name($first, $last, $email, $with_middle);
-        $e = htmlspecialchars($e);
+        $r = self::analyze_name_args(func_get_args());
+        $e = htmlspecialchars($r->email);
         if ($e && strpos($e, "@") !== false)
             $e = "&lt;<a href=\"mailto:$e\">$e</a>&gt;";
         else if ($e)
             $e = "&lt;$e&gt;";
-        if ($n)
-            return htmlspecialchars($n) . ($e ? " " . $e : "");
+        if ($r->name)
+            return htmlspecialchars($r->name) . ($e ? " " . $e : "");
         else
             return $e ? $e : "[No name]";
     }
 
-    static function user_html_nolink($first, $last = null, $email = null,
-                                     $with_middle = false) {
-        list($n, $e) = self::analyze_name($first, $last, $email, $with_middle);
-        if ($e)
+    static function user_html_nolink(/* ... */) {
+        $r = self::analyze_name_args(func_get_args());
+        if (($e = $r->email))
             $e = "&lt;" . htmlspecialchars($e) . "&gt;";
-        if ($n)
-            return htmlspecialchars($n) . ($e ? " " . $e : "");
+        if ($r->name)
+            return htmlspecialchars($r->name) . ($e ? " " . $e : "");
         else
             return $e ? $e : "[No name]";
     }
 
-    static function name_text($first, $last = null, $email = null,
-                              $with_middle = false) {
+    static function name_text(/* ... */) {
         // was contactNameText
-        list($n, $e) = self::analyze_name($first, $last, $email, $with_middle);
-	if (is_object($first) && isset($first->nameAmbiguous) && $first->nameAmbiguous
-	    && $n && $e)
-	    $n .= " <$e>";
-        return $n ? $n : $e;
+        $r = self::analyze_name_args(func_get_args());
+	if ($r->nameAmbiguous && $r->name && $r->email)
+            return "$r->name <$r->email>";
+        else
+            return $r->name ? $r->name : $r->email;
     }
 
-    static function name_html($first, $last = null, $email = null,
-                              $with_middle = false) {
+    static function name_html(/* ... */) {
         // was contactNameHtml
-        return htmlspecialchars(self::name_text($first, $last, $email, $with_middle));
+        $x = call_user_func_array("Text::name_text", func_get_args());
+        return htmlspecialchars($x);
     }
 
-    static function user_email_to($first, $last = null, $email = null,
-                                  $with_middle = false) {
+    static function user_email_to(/* ... */) {
         // was contactEmailTo
-        list($n, $e) = self::analyze_name($first, $last, $email, $with_middle);
-        if (!$e)
+        $r = self::analyze_name_args(func_get_args());
+        if (!($e = $r->email))
             $e = "none";
-        if ($n) {
+        if (($n = $r->name)) {
             if (preg_match('/[\000-\037()[\]<>@,;:\\".]/', $n))
                 $n = "\"" . addcslashes($n, '"\\') . "\"";
             return "$n <$e>";
@@ -114,23 +137,24 @@ class Text {
         return $x;
     }
 
-    static function abbrevname_text($first, $last = null, $email = null) {
-        list(, $e, $f, $l) = self::analyze_name($first, $last, $email);
+    static function abbrevname_text(/* ... */) {
+        $r = self::analyze_name_args(func_get_args());
         $u = "";
-        if ($l != null && $l != "") {
-            $t = $l;
-            if ($f != null && $f != "" && ($u = self::initial($f)) != "")
+        if ($r->lastName) {
+            $t = $r->lastName;
+            if ($r->firstName && ($u = self::initial($r->firstName)) != "")
                 $u .= " "; // non-breaking space
-        } else if ($f != null && $f != "")
-            $t = $f;
+        } else if ($r->firstName)
+            $t = $r->firstName;
         else
-            $t = $e ? $e : "???";
+            $t = $r->email ? $r->email : "???";
         return $u . $t;
     }
 
-    static function abbrevname_html($first, $last = null, $email = null) {
+    static function abbrevname_html(/* ... */) {
         // was abbreviateNameHtml
-        return htmlspecialchars(self::abbrevname_text($first, $last, $email));
+        $x = call_user_func_array("Text::abbrevname_text", func_get_args());
+        return htmlspecialchars($x);
     }
 
     static function split_name($name, $with_email = false) {

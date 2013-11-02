@@ -116,25 +116,26 @@ class Mailer {
     }
 
     function _expandContact($contact, $out) {
-	list($name, $email, $first, $last) = Text::analyze_name($contact);
+        $r = Text::analyze_name($contact);
 	if (is_object($contact) && defval($contact, "preferredEmail", "") != "")
 	    $email = $contact->preferredEmail;
 
 	if ($out == "NAME" || $out == "CONTACT")
-	    $t = $name;
+	    $t = $r->name;
 	else if ($out == "FIRST")
-	    $t = $first;
+	    $t = $r->firstName;
 	else if ($out == "LAST")
-	    $t = $last;
+	    $t = $r->lastName;
 	else
 	    $t = "";
-	if ($t == "" && $out == "NAME" && $email
+	if ($t == "" && $out == "NAME" && $r->email
 	    && $this->expansionType != self::EXPAND_EMAIL)
-	    $t = $email;
+	    $t = $r->email;
 	if ($t != "" && $this->expansionType == self::EXPAND_EMAIL
 	    && preg_match('#[\000-\037()[\]<>@,;:\\".]#', $t))
 	    $t = "\"" . addcslashes($t, '"\\') . "\"";
 
+        $email = $r->email;
 	if ($email == "" && $this->expansionType == self::EXPAND_EMAIL)
 	    $email = "<none>";
 	if ($out == "EMAIL")
