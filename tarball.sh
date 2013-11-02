@@ -52,7 +52,6 @@ bulkassign.php
 cacheable.php
 checkupdates.php
 comment.php
-contactauthors.php
 contacts.php
 deadlines.php
 doc.php

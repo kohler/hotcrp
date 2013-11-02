@@ -266,7 +266,7 @@ function hoturl($page, $options = null) {
             $options = $m[1] . $m[3];
             if (preg_match($are . 'p=\d+' . $zre, $options, $m))
                 $options = $m[1] . $m[2];
-        } else if ((preg_match('/\A(?:paper|review|comment|assign|contactauthors)\z/', $page)
+        } else if ((preg_match('/\A(?:paper|review|comment|assign)\z/', $page)
                     && preg_match($are . 'p=(\d+|%\w+%)' . $zre, $options, $m))
                    || ($page == "profile"
                        && preg_match($are . 'u=([^&]+)' . $zre, $options, $m))) {
@@ -1345,8 +1345,6 @@ function actionBar($mode = "", $prow = null) {
 	$goBase = "review";
     else if ($mode == "c" || $mode == "comment")
 	$goBase = "comment";
-    else if ($mode == "contactauthors")
-	$goBase = "contactauthors";
     else if ($mode == "account") {
 	$listtype = "u";
 	if ($Me->privChair)
@@ -1787,6 +1785,22 @@ function decodeToken($x) {
 	}
     }
     return $t;
+}
+
+
+// HTML helpers
+function html_id_encode($text) {
+    $x = preg_split('_([^-a-zA-Z0-9])_', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+    for ($i = 1; $i < count($x); $i += 2)
+        $x[$i] = "_" . dechex(ord($x[$i]));
+    return join("", $x);
+}
+
+function html_id_decode($text) {
+    $x = preg_split(',(_[0-9A-Fa-f][0-9A-Fa-f]),', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+    for ($i = 1; $i < count($x); $i += 2)
+        $x[$i] = chr(hexdec(substr($x[$i], 1)));
+    return join("", $x);
 }
 
 

@@ -23,8 +23,6 @@
 
 ## Paper editing ##
 
-- [ ] Get rid of contactauthors.php
-- [ ] Add buttons on Edit screen to make a particular author a contact
 - [ ] Add a “cancel” button on paper submission
 - [ ] Submission history
 
@@ -275,8 +273,6 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
   [Manolis Stamatogiannakis]
 
 - Add "Full author info" checkbox to manual assignment page [Jeff Mogul]
-
-- Button/mechanism to turn authors (email) to contact authors [Jeff Mogul]
 
 - Do people who've submitted only abstracts get email in the rebuttal period?
 
@@ -693,3 +689,8 @@ Minor features
 - when email off: do not show authors to PC members, do not show reviewers
   to authors
 - scrub author information from PDFs
+
+## Done ##
+
+- [X] Get rid of contactauthors.php
+- [X] Add buttons on Edit screen to make a particular author a contact

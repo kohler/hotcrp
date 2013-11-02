@@ -7,11 +7,13 @@ class Text {
 
     static private $argkeys = array("firstName", "lastName", "email",
                                     "withMiddle", "middleName", "lastFirst",
-                                    "nameAmbiguous");
+                                    "nameAmbiguous", "name");
     static private $defaults = array("firstName" => "", "lastName" => "",
                                      "email" => "", "withMiddle" => false,
+                                     "middleName" => null,
                                      "lastFirst" => false,
-                                     "nameAmbiguous" => false);
+                                     "nameAmbiguous" => false,
+                                     "name" => null);
 
     static function analyze_von($lastName) {
         if (preg_match('@\A(v[oa]n|d[eu])\s+(.*)\z@s', $lastName, $m))
@@ -37,9 +39,10 @@ class Text {
                         $ret->$k = $v[$j];
                 }
             } else if (is_array($v)) {
-                foreach (self::$argkeys as $k)
-                    if (array_key_exists($k, $v) && !property_exists($ret, $k))
-                        $ret->$k = $v[$k];
+                foreach ($v as $k => $x)
+                    if (array_key_exists($k, self::$defaults)
+                        && !property_exists($ret, $k))
+                        $ret->$k = $x;
                 $delta = 3;
             } else if (is_object($v)) {
                 foreach (self::$argkeys as $k)
@@ -47,16 +50,19 @@ class Text {
                         $ret->$k = $v->$k;
             }
         }
-        if (@$ret->withMiddle && @$ret->middleName) {
+        foreach (self::$defaults as $k => $v)
+            if (@$ret->$k === null)
+                $ret->$k = $v;
+        if ($ret->name && !$ret->firstName && !$ret->lastName)
+            list($ret->firstName, $ret->lastName) =
+                self::split_name($ret->name);
+        if ($ret->withMiddle && $ret->middleName) {
             $m = trim($ret->middleName);
             if ($m)
                 $ret->firstName =
                     (isset($ret->firstName) ? $ret->firstName : "") . " " . $m;
         }
-        foreach (self::$defaults as $k => $v)
-            if (@$ret->$k === null)
-                $ret->$k = $v;
-        if (@$ret->lastFirst && ($m = self::analyze_von($ret->lastName))) {
+        if ($ret->lastFirst && ($m = self::analyze_von($ret->lastName))) {
             $ret->firstName = trim($ret->firstName . " " . $m[0]);
             $ret->lastName = $m[1];
         }

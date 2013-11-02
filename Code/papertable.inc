@@ -592,26 +592,17 @@ class PaperTable {
 	}
     }
 
-    private function paptabAuthors() {
-	global $Conf, $Me, $forceShow;
-
-	$viewable = $Me->canViewAuthors($this->prow, false);
-	if (!$viewable && !$Me->canViewAuthors($this->prow, true)) {
-	    echo "<div class='pg pgtop'>",
-                $this->papt("authorInformation", "Authors"),
-                "<div class='pavb'><i>Hidden for blind review</i></div>",
-                "</div>\n\n";
-	    return;
-	}
-
+    private function _analyze_authors() {
+        global $Conf;
 	// clean author information
 	cleanAuthor($this->prow);
+        $autable = $this->prow->authorTable;
+
 	// find contact author information, combine with author table
 	$result = $Conf->qe("select firstName, lastName, email, '' as affiliation, contactId
 		from ContactInfo join PaperConflict using (contactId)
 		where paperId=" . $this->prow->paperId . " and conflictType>=" . CONFLICT_AUTHOR, "while finding contacts");
 	$contacts = array();
-        $autable = $this->prow->authorTable;
 	while (($row = edb_orow($result))) {
 	    $match = -1;
 	    for ($i = 0; $match < 0 && $i < count($autable); ++$i)
@@ -634,13 +625,32 @@ class PaperTable {
 	    }
 	    if ($match >= 0) {
 		if ($autable[$match][2] == "")
-		    $autable[$match][2] = $row->email;
-		$autable[$match][4] = 1;
+		    $this->prow->authorTable[$match][2] = $row->email;
+		$this->prow->authorTable[$match][4] = $row->contactId;
 	    } else {
                 Contact::set_sorter($row);
 		$contacts[] = $row;
             }
 	}
+
+        uasort($contacts, "Contact::compare");
+        return array($this->prow->authorTable, $contacts);
+    }
+
+    private function paptabAuthors($skip_contacts) {
+	global $Conf, $Me, $forceShow;
+
+	$viewable = $Me->canViewAuthors($this->prow, false);
+	if (!$viewable && !$Me->canViewAuthors($this->prow, true)) {
+	    echo "<div class='pg pgtop'>",
+                $this->papt("authorInformation", "Authors"),
+                "<div class='pavb'><i>Hidden for blind review</i></div>",
+                "</div>\n\n";
+	    return;
+	}
+
+	// clean author information
+        list($autable, $contacts) = $this->_analyze_authors();
 
 	// anonymity folding
 	if (!$viewable) {
@@ -688,8 +698,7 @@ class PaperTable {
 
         echo "</div></div>\n\n";
 
-	if (count($contacts) > 0) {
-            uasort($contacts, "Contact::compare");
+	if (count($contacts) > 0 && !$skip_contacts) {
             echo "<div class='pg fx9", ($viewable ? "" : " fx8"), "'>",
 		$this->papt("authorInformation", pluralx(count($contacts), "Contact")),
                 "<div class='pavb'>",
@@ -821,71 +830,122 @@ class PaperTable {
 
     private function editable_new_contact_author() {
 	global $Me, $Conf, $Opt;
+        if (!$Me->privChair)
+            return;
 	echo $this->editable_papt("contactAuthor", "Contact"),
-	    "<div class='paphint'>You will be able to add more contacts after you register the paper.</div>",
+	    "<div class='paphint'>You can add more contacts after you register the paper.</div>",
 	    "<div class='papv'>";
-	if ($Me->privChair) {
-            $name = $email = "";
-            if ($this->useRequest) {
-                $name = trim(defval($_REQUEST, "contact_name", ""));
-                $email = trim(defval($_REQUEST, "contact_email", ""));
-            }
-            if ($name == "")
-                $name = trim("$Me->firstName $Me->lastName");
-            if ($email == "")
-                $email = $Me->email;
-
-            echo "<input class='textlite' id='contact_name' name='contact_name' type='text' size='30' value=\"",
-                htmlspecialchars($name), "\" />&nbsp;&nbsp;",
-                "<input class='textlite' id='contact_email' name='contact_email' type='text' size='20' value=\"",
-                htmlspecialchars($email), "\" />&nbsp;&nbsp;";
-
-            $result = $Conf->q("select firstName, lastName, email from ContactInfo");
-            $contacts = array();
-            while (($row = edb_orow($result))) {
-                Contact::set_sorter($row);
-                $contacts[] = $row;
-            }
-            uasort($contacts, "Contact::compare");
-            echo "<span class='foldc' id='foldcontact'><a class='button_small fn' href=\"javascript:void fold('contact',0)\">Show&nbsp;list</a>",
-                "<span class='contactpulldown fx'>",
-                "<select id='contact_pulldown' name='contact_pulldown' onchange='contactPulldown(\"contact\")' size='6'>";
-            $textarg = array("lastFirst" => @$Opt["sortByLastName"]);
-            foreach ($contacts as $row) {
-                $selected = ($row->email == $email ? " selected='selected'" : "");
-                echo "<option$selected";
-                if ($row->firstName || $row->lastName)
-                    echo " value=\"", htmlspecialchars($row->email), "`````", htmlspecialchars(trim("$row->firstName $row->lastName")), "\"";
-                echo ">", Text::user_html_nolink($row, $textarg), "</option>\n";
-            }
-            echo "</select>&nbsp;<a class='button_small' href=\"javascript:void fold('contact', 1)\">Hide</a></span></span>\n";
-	} else
-	    echo Text::user_html($Me);
+        $name = $this->useRequest ? @trim($_REQUEST["newcontact_name"]) : "";
+        $name = $name == "Name" ? "" : $name;
+        $email = $this->useRequest ? @trim($_REQUEST["newcontact_email"]) : "";
+        $email = $email == "Email" ? "" : $email;
+        list($name, $email, $class) = $email
+            ? array($name, $email, "textlite temptextoff")
+            : array("Name", "Email", "textlite temptext");
+        echo '<table><tr><td class="lcaption">Add</td>',
+            '<td></td><td>',
+            Ht::entry('newcontact_name', $name,
+                      array("id" => "newcontact_name", "size" => 30,
+                            "class" => $class, "onchange" => "hiliter(this)")),
+            '&nbsp;&nbsp;',
+            Ht::entry('newcontact_email', $email,
+                      array("id" => "newcontact_email", "size" => 20,
+                            "class" => $class, "onchange" => "hiliter(this)")),
+            '</td></tr></table>';
+        $Conf->footerScript("mktemptext('newcontact_name','Name');mktemptext('newcontact_email','Email')");
 	echo "</div>\n\n";
     }
 
-    private function editable_contact_author() {
+    private function editable_contact_author($always_unfold) {
 	global $Conf, $Me;
         $paperId = $this->prow->paperId;
-	$result = $Conf->qe("select firstName, lastName, email, contactId
-		from ContactInfo
-		join PaperConflict using (contactId)
-		where paperId=$paperId and conflictType=" . CONFLICT_CONTACTAUTHOR, "while finding contacts");
-	echo $this->editable_papt("contactAuthor", pluralx(edb_nrows($result), "Contact")),
-	    "<div class='papv'>";
-        $aus = array();
-        while (($row = edb_orow($result))) {
-            Contact::set_sorter($row);
-            $aus[] = $row;
-        }
-        uasort($aus, "Contact::compare");
-        foreach ($aus as $au) {
+        list($autable, $contacts) = $this->_analyze_authors();
+
+        $open = @$Error["contactAuthor"]
+            || ($this->useRequest && @$_REQUEST["setcontacts"] == 2)
+            || $always_unfold;
+        echo '<div id="foldcontactauthors" class="',
+            ($open ? "foldo" : "foldc"),
+            '"><div class="papt childfold fn0" ',
+            "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
+            '><span class="papfn"><a class="q" href="#" ',
+            "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
+            ' title="Edit contacts">', expander(true), 'Contacts</a></span><div class="clear"></div></div>',
+            '<div class="papt fx0',
+            (@$Error["contactAuthor"] ? " error" : ""),
+            '"><span class="papfn">',
+            ($always_unfold ? "" : expander(false)),
+            'Contacts</span><div class="clear"></div></div>';
+
+        // Non-editable version
+        echo '<div class="papv fn0">';
+        foreach ($autable as $au)
+            if ($au[4]) {
+                echo '<span class="autblentry_long">', Text::user_html($au);
+                if ($Me->privChair && $au[4] != $Me->contactId)
+                    echo '&nbsp;', viewas_link($au[2], $au);
+                echo '</span><br />';
+            }
+        foreach ($contacts as $au) {
             echo '<span class="autblentry_long">', Text::user_html($au);
             if ($Me->privChair && $au->contactId != $Me->contactId)
                 echo '&nbsp;', viewas_link($au);
             echo '</span><br />';
         }
-        echo "<a href='" . hoturl("contactauthors", "p=$paperId") . "'>Edit&nbsp;contacts</a></div>\n\n";
+        echo '</div>';
+
+        // Editable version
+        echo '<div class="paphint fx0">',
+            'Contacts are HotCRP users who can edit paper information and view reviews. Paper authors with HotCRP accounts are always contacts, but you can add additional contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in.',
+            '</div>';
+        echo '<div class="papv fx0">';
+        echo '<table>';
+        $title = "Authors";
+        foreach ($autable as $au) {
+            if (!$au[4] && (!$au[2] || !validateEmail($au[2])))
+                continue;
+            $control = "contact_" . html_id_encode($au[2]);
+            $checked = $this->useRequest ? !!@$_REQUEST[$control] : $au[4];
+            echo '<tr><td class="lcaption">', $title, '</td><td>';
+            if ($au[4])
+                echo Ht::checkbox(null, null, true, array("disabled" => true)),
+                    Ht::hidden($control, Text::name_text($au));
+            else
+                echo Ht::checkbox($control, Text::name_text($au), $checked, array("onclick" => "hiliter(this)"));
+            echo '&nbsp;</td><td>', Ht::label(Text::user_html_nolink($au)),
+                '</td></tr>';
+            $title = "";
+        }
+        $title = "Non-authors";
+        foreach ($contacts as $au) {
+            $control = "contact_" . html_id_encode($au->email);
+            $checked = $this->useRequest ? @$_REQUEST[$control] : true;
+            echo '<tr><td class="lcaption">', $title, '</td>',
+                '<td>', Ht::checkbox($control, Text::name_text($au), $checked, array("onclick" => "hiliter(this)")),
+                '&nbsp;</td><td>', Ht::label(Text::user_html($au)), '</td>',
+                '</tr>';
+            $title = "";
+        }
+        $checked = $this->useRequest ? @$_REQUEST["newcontact"] : true;
+        $name = $this->useRequest ? @trim($_REQUEST["newcontact_name"]) : "";
+        $name = $name == "Name" ? "" : $name;
+        $email = $this->useRequest ? @trim($_REQUEST["newcontact_email"]) : "";
+        $email = $email == "Email" ? "" : $email;
+        list($name, $email, $class) = $email
+            ? array($name, $email, "textlite temptextoff")
+            : array("Name", "Email", "textlite temptext");
+        echo '<tr><td class="lcaption">Add</td>',
+            '<td></td><td>',
+            Ht::entry('newcontact_name', $name,
+                      array("id" => "newcontact_name", "size" => 30,
+                            "class" => $class, "onchange" => "hiliter(this)")),
+            '&nbsp;&nbsp;',
+            Ht::entry('newcontact_email', $email,
+                      array("id" => "newcontact_email", "size" => 20,
+                            "class" => $class, "onchange" => "hiliter(this)")),
+            '</td></tr>';
+        $Conf->footerScript("mktemptext('newcontact_name','Name');mktemptext('newcontact_email','Email')");
+        echo '</table>', Ht::hidden("setcontacts", $open ? 2 : 1, array("id" => "setcontacts")), "</div></div>\n\n";
     }
 
     private function editable_anonymity() {
@@ -1120,7 +1180,9 @@ class PaperTable {
 	    foreach ($pcm as $id => $p) {
 		$ct = defval($conflict, $id, $nonct);
 		$checked = $ct->is_conflict();
-		$disabled = $checked && !$ct->is_author_mark() && !$this->admin;
+		$disabled = $checked
+                    && ($ct->is_author()
+                        || (!$ct->is_author_mark() && !$this->admin));
 		$value = $checked ? $ct->value : CONFLICT_AUTHORMARK;
 		$cbox = Ht::checkbox_h("pcc$id", $value, $checked, array("disabled" => $disabled));
 		$aff = ($p->affiliation === "" ? "" : "<div class='pcconfaff'>" . htmlspecialchars($p->affiliation) . "</div>");
@@ -1489,9 +1551,9 @@ class PaperTable {
 	} else if ($prow->conflictType >= CONFLICT_AUTHOR) {
 	    $override2 = ($this->admin ? " As an administrator, you can update the paper anyway by selecting “Override deadlines.”" : "");
 	    if ($this->mode == "pe") {
-		$m .= "<div class='xinfo'>This paper is under review and can’t be changed";
+		$m .= "<div class='xinfo'>This paper is under review and can’t be changed, but you can change its contacts";
                 if ($Me->canWithdrawPaper($prow))
-                    $m .= ", but you can withdraw it from consideration";
+                    $m .= " or withdraw it from consideration";
                 $m .= ".$override2</div>";
             }
 	} else
@@ -1531,7 +1593,8 @@ class PaperTable {
         else if ($this->admin && $this->mode == "pe") {
             $class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "b" : "bb");
             $buttons[] = array("<input class='$class' type='submit' name='update' value='Save changes' />", "(admin only)");
-        }
+        } else if ($this->mode == "pe" && $prow->timeSubmited > 0)
+            $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", array("class" => "b")), "");
 
         // withdraw button
         if (!$Me->canWithdrawPaper($prow, $whyNot, true))
@@ -1567,10 +1630,6 @@ class PaperTable {
                 $b = array($b, "(admin only)");
             $buttons[] = $b;
         }
-
-        // Edit contacts
-        if (!$this->editable)
-            $buttons[] = "<button type='button' onclick='window.location=\"" . hoturl("contactauthors", "p=" . $prow->paperId . $linkExtra) . "\"'>Edit contacts</button>";
 
         return $buttons;
     }
@@ -1630,7 +1689,9 @@ class PaperTable {
 	if ($Me->canSetRank($prow))
 	    $this->papstripRank();
 	$this->papstripWatch();
-        if (($this->admin || ($Me->isPC && $Me->canViewAuthors($prow)))
+        if (($this->admin
+             || ($Me->isPC && $Me->canViewAuthors($prow))
+             || $Me->actAuthorView($prow))
             && !$this->editable)
             $this->papstripPCConflicts();
         if ($Me->canViewAuthors($prow, true) && !$this->editable)
@@ -1765,7 +1826,7 @@ class PaperTable {
 	    if (!$prow)
 		$this->editable_new_contact_author();
 	    else
-		$this->editable_contact_author();
+		$this->editable_contact_author(false);
 	    if ($Conf->subBlindOptional() && $this->editable !== "f")
 		$this->editable_anonymity();
 
@@ -1797,7 +1858,8 @@ class PaperTable {
 	    echo "<table class='paptab'><tr><td class='paple'><div class='paple'>";
 	    $this->paptabAbstract();
 	    echo "</div></td><td class='papre'><div class='papre'>";
-	    $this->paptabAuthors();
+	    $this->paptabAuthors(!$this->editable && $this->mode == "pe"
+                                 && $prow->timeSubmitted > 0);
 	    $this->paptabTopicsOptions($Me->canAdminister($prow));
 	    echo "</div></td></tr></table>";
 	}
@@ -1808,21 +1870,22 @@ class PaperTable {
 	    "</td></tr>\n";
 
 	if (!$this->editable && $this->mode == "pe") {
-	    $this->_paptabSepBegin();
+	    $this->_paptabSepBegin(true);
 	    echo $form;
+            if ($prow->timeSubmitted > 0)
+                $this->editable_contact_author(true);
 	    $this->echoActions();
 	    echo "</form>";
 	    $this->_paptabSepEnd();
 	}
 
-	if ($this->mode == "p" || $this->mode == "r" || $this->mode == "re"
-            || $this->mode == "assign")
-	    $Conf->footerScript("shortcut().add()");
+        $Conf->footerScript("shortcut().add()");
     }
 
-    function _paptabSepBegin() {
-	echo "	<tr><td colspan='3' class='papsep'></td></tr>
-	<tr><td></td><td class='papcc'>";
+    function _paptabSepBegin($nosep = false) {
+        if (!$nosep)
+            echo "	<tr><td colspan='3' class='papsep'></td></tr>\n";
+        echo "	<tr><td></td><td class='papcc'>";
     }
 
     function _paptabSepEnd() {

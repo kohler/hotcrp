@@ -200,7 +200,7 @@ div.body {
 	z-index: 3;
 }
 body#paper_view div.body, body#paper_edit div.body,
-body#review div.body, body#comment div.body, body#contactauthors div.body,
+body#review div.body, body#comment div.body,
 body#assign div.body, body#offrev div.body {
 	margin: 0 22px 0 12px;
 }
@@ -209,12 +209,12 @@ body#account div.body, body#scorehelp div.body, body#settings div.body {
 }
 
 body#paper_view, body#paper_edit,
-body#review, body#comment, body#contactauthors,
+body#review, body#comment,
 body#assign {
 	background: #f0f0f0;
 }
 body#paper_view div#prebody, body#paper_edit div#prebody,
-body#review div#prebody, body#comment div#prebody, body#contactauthors div#prebody,
+body#review div#prebody, body#comment div#prebody,
 body#assign div#prebody {
 	background: white;
 }
@@ -226,7 +226,6 @@ body#paper_view div#initialmsgspacer,
 body#paper_edit div#initialmsgspacer,
 body#review div#initialmsgspacer,
 body#comment div#initialmsgspacer,
-body#contactauthors div#initialmsgspacer,
 body#assign div#initialmsgspacer {
 	margin: 0;
 	padding: 2.5ex 0 0;

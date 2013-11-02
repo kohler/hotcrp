@@ -289,6 +289,113 @@ function uploadOption($o, $oname) {
     }
 }
 
+function check_contacts() {
+    global $prow, $Me, $newPaper, $Conf;
+    if (!@$_REQUEST["setcontacts"])
+        return array(array(), array());
+
+    $cau = $ncau = array();
+    if (!$newPaper) {
+        $result = $Conf->qe("select c.email, c.contactId from ContactInfo c join PaperConflict pc on (pc.contactId=c.contactId) where paperId=$prow->paperId and conflictType>=" . CONFLICT_AUTHOR);
+        while (($row = edb_row($result)))
+            $cau[$row[0]] = $row[1];
+    }
+
+    // Check marked contacts
+    foreach ($_REQUEST as $k => $v)
+        if (substr($k, 0, 8) == "contact_") {
+            $email = html_id_decode(substr($k, 8));
+            if (@$cau[$email])
+                $ncau[$email] = $cau[$email];
+            else if (validateEmail($email)) {
+                $c = new Contact;
+                if (!$c->load_by_email($email, array("name" => $v), true)) {
+                    $Conf->errorMsg("Couldn’t create a contact account for author “" . Text::user_html_nolink(array("email" => $e, "name" => $v)) . "”.");
+                    $Error["contactAuthor"] = 1;
+                    return false;
+                }
+                $ncau[$email] = $c->contactId;
+            }
+        }
+
+    // Check new contact
+    $new_name = @simplifyWhitespace($_REQUEST["newcontact_name"]);
+    $new_email = @simplifyWhitespace($_REQUEST["newcontact_email"]);
+    if ($new_name == "Name")
+        $new_name = "";
+    if ($new_email == "Email")
+        $new_email = "";
+    if ($new_name || $new_email) {
+        if (!validateEmail($new_email)) {
+            $Conf->errorMsg("Enter a valid email address for the new contact.");
+            $Error["contactAuthor"] = 1;
+            return false;
+        }
+        $new_contact = new Contact;
+        if (!$new_contact->load_by_email($new_email, array("name" => $new_name), true)) {
+            $Conf->errorMsg("Couldn’t create an account for the new contact.");
+            $Error["contactAuthor"] = 1;
+            return false;
+        }
+        $ncau[$new_contact->email] = $new_contact->contactId;
+    }
+    if ($newPaper && !count($ncau))
+        $ncau[$Me->email] = $Me->contactId;
+
+    // Check for zero contacts
+    if (!$Me->privChair && !count($ncau)) {
+        $Conf->errorMsg("Every paper must have at least one contact.");
+        $Error["contactAuthor"] = 1;
+        return false;
+    }
+
+    // Check delta
+    foreach ($cau as $email => $id)
+        if (!@$ncau[$email])
+            $contact_deletions[] = $id;
+    foreach ($ncau as $email => $id)
+        if (!@$cau[$email])
+            $contact_additions[] = $id;
+    return array($contact_additions, $contact_deletions);
+}
+
+function save_contacts($paperId, $contact_changes, $request_authors) {
+    global $prow, $Conf;
+    if (count($contact_changes[0])) {
+        $q = array();
+        foreach ($contact_changes[0] as $cid)
+            $q[] = "($paperId,$cid," . CONFLICT_CONTACTAUTHOR . ")";
+        if (!$Conf->qe("insert into PaperConflict (paperId,contactId,conflictType) values " . join(",", $q) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))", "while updating contacts"))
+            return false;
+    }
+    if (count($contact_changes[1])) {
+        if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHOR . " and contactId in (" . join(",", $contact_changes[1]) . ")", "while updating contacts"))
+            return false;
+    }
+
+    $aunew = $auold = "";
+    if ($prow)
+	foreach ($prow->authorTable as $au)
+	    if ($au[2] != "")
+		$auold .= "'" . sqlq($au[2]) . "', ";
+    if ($request_authors) {
+        foreach ($_REQUEST["authorTable"] as $au)
+            if ($au[2] != "")
+                $aunew .= "'" . sqlq($au[2]) . "', ";
+    } else
+        $aunew = $auold;
+
+    if ($auold != $aunew || count($contact_changes[1])) {
+	if ($auold && !$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType=" . CONFLICT_AUTHOR, "while updating paper authors"))
+	    return false;
+	if ($aunew && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) select $paperId, contactId, " . CONFLICT_AUTHOR . " from ContactInfo where email in (" . substr($aunew, 0, strlen($aunew) - 2) . ") on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")", "while updating paper authors"))
+	    return false;
+    }
+
+    if (count($contact_changes[0]) || count($contact_changes[1]))
+        $Conf->infoMsg("Contacts saved.");
+}
+
 // send watch messages
 function final_submit_watch_callback($prow, $minic) {
     if ($minic->canViewPaper($prow))
@@ -434,6 +541,10 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	       && (!$isSubmit || $Conf->setting("sub_freeze") <= 0))
 	$Conf->warnMsg("Please enter the authors’ potential conflicts in the $collaborators_field field. If none of the authors have potential conflicts, just enter “None”.");
 
+    // check contacts
+    if (!($contact_changes = check_contacts()))
+        return false;
+
     // defined contact ID
     if ($newPaper && $Me->privChair
         && (@$_REQUEST["contact_email"] || @$_REQUEST["contact_name"])) {
@@ -478,21 +589,8 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    return false;
     }
 
-    // set author information
-    $aunew = $auold = '';
-    foreach ($_REQUEST["authorTable"] as $au)
-	if ($au[2] != "")
-	    $aunew .= "'" . sqlq($au[2]) . "', ";
-    if ($prow)
-	foreach ($prow->authorTable as $au)
-	    if ($au[2] != "")
-		$auold .= "'" . sqlq($au[2]) . "', ";
-    if ($auold != $aunew) {
-	if ($auold && !$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType=" . CONFLICT_AUTHOR, "while updating paper authors"))
-	    return false;
-	if ($aunew && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) select $paperId, contactId, " . CONFLICT_AUTHOR . " from ContactInfo where email in (" . substr($aunew, 0, strlen($aunew) - 2) . ") on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")", "while updating paper authors"))
-	    return false;
-    }
+    // change paper contacts
+    save_contacts($paperId, $contact_changes, true);
 
     // update topics table
     if (!$isSubmitFinal) {
@@ -689,6 +787,19 @@ if ((isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"]))
 
     // use request?
     $useRequest = ($ok || $Me->privChair);
+}
+
+if (isset($_REQUEST["updatecontacts"]) && check_post() && !$newPaper) {
+    if (!$Me->canAdminister($prow) && !$Me->actAuthorView($prow)) {
+        $Conf->errorMsg(whyNotText(array("permission" => 1), "update contacts for"));
+    } else if (($contact_changes = check_contacts())
+               && save_contacts($prow->paperId, $contact_changes, false)) {
+	redirectSelf(array("p" => $paperId, "m" => "pe"));
+	// NB normally redirectSelf() does not return
+    }
+
+    // use request?
+    $useRequest = true;
 }
 
 
