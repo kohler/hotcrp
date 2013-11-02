@@ -1462,19 +1462,16 @@ function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
     return $text . "  </select>";
 }
 
-function _sort_pcMember($a, $b) { // also used elsewhere
-    return strcasecmp($a->sorter, $b->sorter);
-}
-
 function pcMembers() {
-    global $Conf;
+    global $Conf, $Opt;
     $version = 2;
     if (!isset($_SESSION["pcmembers"]) || !is_array($_SESSION["pcmembers"])
-	|| count($_SESSION["pcmembers"]) < 3
+	|| count($_SESSION["pcmembers"]) < 4
 	|| $Conf->setting("pc") <= 0
 	|| $_SESSION["pcmembers"][0] < $Conf->setting("pc")
         || $_SESSION["pcmembers"][1] != $version
-	|| count($_SESSION["pcmembers"][2]) == 0) {
+	|| count($_SESSION["pcmembers"][2]) == 0
+        || $_SESSION["pcmembers"][3] != @$Opt["sortByLastName"]) {
 	$pc = array();
 	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "") . ($Conf->sversion >= 47 ? ", disabled" : "");
 	$result = $Conf->q("select firstName, lastName, affiliation, email, u.contactId contactId, roles$qa from ContactInfo u join PCMember using (contactId)");
@@ -1488,8 +1485,9 @@ function pcMembers() {
 		$by_name_text[$name_text] = $row;
 	    }
 	}
-	uasort($pc, "_sort_pcMember");
-	$_SESSION["pcmembers"] = array($Conf->setting("pc"), $version, $pc);
+	uasort($pc, "Contact::compare");
+	$_SESSION["pcmembers"] = array($Conf->setting("pc"), $version, $pc,
+                                       @$Opt["sortByLastName"]);
     }
     return $_SESSION["pcmembers"][2];
 }

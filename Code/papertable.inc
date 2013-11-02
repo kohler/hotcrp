@@ -1163,7 +1163,7 @@ class PaperTable {
     }
 
     private function _papstripLeadShepherd($type, $name, $showedit, $wholefold) {
-	global $Conf, $Me, $Error, $linkExtra;
+	global $Conf, $Me, $Opt, $Error, $linkExtra;
 	$editable = ($type == "manager" ? $Me->privChair : $Me->canAdminister($this->prow));
 
 	$field = $type . "ContactId";
@@ -1189,8 +1189,10 @@ class PaperTable {
 	    $Conf->footerScript("Miniajax.onload(\"${type}form\")");
 
 	    $opt = array("0" => "None");
+            $textarg = array("lastFirst" => @$Opt["sortByLastName"]);
 	    foreach ($pc as $row)
-		$opt[htmlspecialchars($row->email)] = Text::name_html($row);
+		$opt[htmlspecialchars($row->email)] =
+                Text::name_html($row, $textarg);
 
 	    echo Ht::select($type, $opt,
                              ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),

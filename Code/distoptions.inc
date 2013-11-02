@@ -101,6 +101,7 @@ $Opt["emailFrom"] = "you@example.com";
 //                   cache on the local filesystem. By default this cache is
 //                   created in the "filestore" directory. You can also set
 //                   $Opt["filestore"] to a directory name.
+//   sortByLastName  Set to true to sort users by last name.
 //   dsn             Database configuration string in the format
 //                   "mysql://DBUSER:DBPASSWORD@DBHOST/DBNAME".
 //                   The default is derived from $Opt["dbName"], etc.

@@ -73,6 +73,21 @@ class Contact {
             $this->$name = $value;
     }
 
+    static public function set_sorter($c) {
+        global $Opt;
+        if (@$Opt["sortByLastName"]) {
+            if (($m = Text::analyze_von($c->lastName)))
+                $c->sorter = trim("$m[1] $c->firstName $m[0] $c->email");
+            else
+                $c->sorter = trim("$c->lastName $c->firstName $c->email");
+        } else
+            $c->sorter = trim("$c->firstName $c->lastName $c->email");
+    }
+
+    static public function compare($a, $b) {
+        return strcasecmp($a->sorter, $b->sorter);
+    }
+
     static public function make($o) {
 	// If you change this function, search for its callers to ensure
 	// they provide all necessary information.
@@ -82,7 +97,7 @@ class Contact {
 	$c->lastName = defval($o, "lastName", "");
 	$c->email = defval($o, "email", "");
 	$c->preferredEmail = defval($o, "preferredEmail", "");
-        $c->sorter = trim("$c->firstName $c->lastName $c->email");
+        self::set_sorter($c);
 	$c->password = defval($o, "password", "");
         $c->password_type = (substr($c->password, 0, 1) == " " ? 1 : 0);
         if ($c->password_type == 0)
@@ -254,7 +269,7 @@ class Contact {
 		 as $k)
 	    if ($this->$k)
 		$this->$k = trim($this->$k);
-        $this->sorter = trim("$this->firstName $this->lastName $this->email");
+        self::set_sorter($this);
     }
 
     function goIfInvalid() {
@@ -415,7 +430,7 @@ class Contact {
 	    $this->lastName = $fromdb->lastName;
 	    $this->email = $fromdb->email;
 	    $this->preferredEmail = defval($fromdb, "preferredEmail", null);
-            $this->sorter = trim("$this->firstName $this->lastName $this->email");
+            self::set_sorter($this);
 	    $this->affiliation = $fromdb->affiliation;
 	    $this->voicePhoneNumber = $fromdb->voicePhoneNumber;
 	    $this->password = $fromdb->password;

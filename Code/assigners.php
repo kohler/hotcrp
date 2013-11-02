@@ -376,7 +376,7 @@ class AssignmentSet {
             if (($text = $assigner->unparse_display($pcm))) {
                 $c = $assigner->contact;
                 if (!isset($c->sorter))
-                    $c->sorter = trim("$c->firstName $c->lastName $c->email");
+                    Contact::set_sorter($c);
                 arrayappend($bypaper[$assigner->pid], (object)
                             array("text" => $text, "sorter" => $c->sorter));
                 $assigner->account($countbycid, $nrev);
@@ -386,7 +386,7 @@ class AssignmentSet {
         AutoassignmentPaperColumn::$info = array();
         PaperColumn::register(new AutoassignmentPaperColumn);
         foreach ($bypaper as $pid => $list) {
-            uasort($list, "_sort_pcMember");
+            uasort($list, "Contact::compare");
             $t = "";
             foreach ($list as $x)
                 $t .= ($t ? ", " : "") . '<span class="nowrap">'

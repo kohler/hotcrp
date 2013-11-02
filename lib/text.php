@@ -13,6 +13,13 @@ class Text {
                                      "lastFirst" => false,
                                      "nameAmbiguous" => false);
 
+    static function analyze_von($lastName) {
+        if (preg_match('@\A(v[oa]n|d[eu])\s+(.*)\z@s', $lastName, $m))
+            return array($m[1], $m[2]);
+        else
+            return null;
+    }
+
     static function analyze_name_args($args) {
         $ret = (object) array();
         $delta = 0;
@@ -49,6 +56,10 @@ class Text {
         foreach (self::$defaults as $k => $v)
             if (@$ret->$k === null)
                 $ret->$k = $v;
+        if (@$ret->lastFirst && ($m = self::analyze_von($ret->lastName))) {
+            $ret->firstName = trim($ret->firstName . " " . $m[0]);
+            $ret->lastName = $m[1];
+        }
         if (!$ret->lastName || !$ret->firstName)
             $ret->name = $ret->firstName . $ret->lastName;
         else if (@$ret->lastFirst)
