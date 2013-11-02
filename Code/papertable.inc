@@ -564,6 +564,8 @@ class PaperTable {
 
 	} else {
 	    foreach ($table as $au) {
+                if (is_object($au))
+                    $au = array($au->firstName, $au->lastName, $au->email, $au->affiliation, 0);
 		$n = Text::highlight("$au[0] $au[1]", $highpreg, $nm);
                 $this->entryMatches += $nm;
 		if ($au[3] != "") {
@@ -607,18 +609,17 @@ class PaperTable {
 	// find contact author information, combine with author table
 	$result = $Conf->qe("select firstName, lastName, email, '' as affiliation, contactId
 		from ContactInfo join PaperConflict using (contactId)
-		where paperId=" . $this->prow->paperId . " and conflictType>=" . CONFLICT_AUTHOR . "
-		order by lastName, firstName, email", "while finding contacts");
+		where paperId=" . $this->prow->paperId . " and conflictType>=" . CONFLICT_AUTHOR, "while finding contacts");
 	$contacts = array();
         $autable = $this->prow->authorTable;
-	while (($row = edb_row($result))) {
+	while (($row = edb_orow($result))) {
 	    $match = -1;
 	    for ($i = 0; $match < 0 && $i < count($autable); ++$i)
-		if ($autable[$i][2] == $row[2])
+		if ($autable[$i][2] == $row->email)
 		    $match = $i;
-	    if (($row[0] != "" || $row[1] != "") && $match < 0) {
-		$contact_n = $row[0] . " " . $row[1];
-		$contact_preg = str_replace("\\.", "\\S*", "{\\b" . preg_quote($row[0]) . "\\b.*\\b" . preg_quote($row[1]) . "\\b}i");
+	    if (($row->firstName != "" || $row->lastName != "") && $match < 0) {
+		$contact_n = $row->firstName . " " . $row->lastName;
+		$contact_preg = str_replace("\\.", "\\S*", "{\\b" . preg_quote($row->firstName) . "\\b.*\\b" . preg_quote($row->lastName) . "\\b}i");
 		for ($i = 0; $match < 0 && $i < count($autable); ++$i) {
 		    $f = $autable[$i][0];
 		    $l = $autable[$i][1];
@@ -633,10 +634,12 @@ class PaperTable {
 	    }
 	    if ($match >= 0) {
 		if ($autable[$match][2] == "")
-		    $autable[$match][2] = $row[2];
+		    $autable[$match][2] = $row->email;
 		$autable[$match][4] = 1;
-	    } else
+	    } else {
+                Contact::set_sorter($row);
 		$contacts[] = $row;
+            }
 	}
 
 	// anonymity folding
@@ -686,6 +689,7 @@ class PaperTable {
         echo "</div></div>\n\n";
 
 	if (count($contacts) > 0) {
+            uasort($contacts, "Contact::compare");
             echo "<div class='pg fx9", ($viewable ? "" : " fx8"), "'>",
 		$this->papt("authorInformation", pluralx(count($contacts), "Contact")),
                 "<div class='pavb'>",
@@ -816,7 +820,7 @@ class PaperTable {
     }
 
     private function editable_new_contact_author() {
-	global $Me, $Conf;
+	global $Me, $Conf, $Opt;
 	echo $this->editable_papt("contactAuthor", "Contact"),
 	    "<div class='paphint'>You will be able to add more contacts after you register the paper.</div>",
 	    "<div class='papv'>";
@@ -836,20 +840,25 @@ class PaperTable {
                 "<input class='textlite' id='contact_email' name='contact_email' type='text' size='20' value=\"",
                 htmlspecialchars($email), "\" />&nbsp;&nbsp;";
 
-            $result = $Conf->q("select firstName, lastName, email from ContactInfo order by lastName, firstName, email");
-            if ($result) {
-                echo "<span class='foldc' id='foldcontact'><a class='button_small fn' href=\"javascript:void fold('contact',0)\">Show&nbsp;list</a>",
-                    "<span class='contactpulldown fx'>",
-                    "<select id='contact_pulldown' name='contact_pulldown' onchange='contactPulldown(\"contact\")' size='6'>";
-                while (($row = edb_row($result))) {
-                    $selected = ($row[2] == $email ? " selected='selected'" : "");
-                    echo "<option$selected";
-                    if ($row[0] || $row[1])
-                        echo " value=\"", htmlspecialchars($row[2]), "`````", htmlspecialchars(trim("$row[0] $row[1]")), "\"";
-                    echo ">", Text::user_html_nolink($row), "</option>\n";
-                }
-                echo "</select>&nbsp;<a class='button_small' href=\"javascript:void fold('contact', 1)\">Hide</a></span></span>\n";
+            $result = $Conf->q("select firstName, lastName, email from ContactInfo");
+            $contacts = array();
+            while (($row = edb_orow($result))) {
+                Contact::set_sorter($row);
+                $contacts[] = $row;
             }
+            uasort($contacts, "Contact::compare");
+            echo "<span class='foldc' id='foldcontact'><a class='button_small fn' href=\"javascript:void fold('contact',0)\">Show&nbsp;list</a>",
+                "<span class='contactpulldown fx'>",
+                "<select id='contact_pulldown' name='contact_pulldown' onchange='contactPulldown(\"contact\")' size='6'>";
+            $textarg = array("lastFirst" => @$Opt["sortByLastName"]);
+            foreach ($contacts as $row) {
+                $selected = ($row->email == $email ? " selected='selected'" : "");
+                echo "<option$selected";
+                if ($row->firstName || $row->lastName)
+                    echo " value=\"", htmlspecialchars($row->email), "`````", htmlspecialchars(trim("$row->firstName $row->lastName")), "\"";
+                echo ">", Text::user_html_nolink($row, $textarg), "</option>\n";
+            }
+            echo "</select>&nbsp;<a class='button_small' href=\"javascript:void fold('contact', 1)\">Hide</a></span></span>\n";
 	} else
 	    echo Text::user_html($Me);
 	echo "</div>\n\n";
@@ -861,17 +870,22 @@ class PaperTable {
 	$result = $Conf->qe("select firstName, lastName, email, contactId
 		from ContactInfo
 		join PaperConflict using (contactId)
-		where paperId=$paperId and conflictType=" . CONFLICT_CONTACTAUTHOR . "
-		order by lastName, firstName, email", "while finding contacts");
+		where paperId=$paperId and conflictType=" . CONFLICT_CONTACTAUTHOR, "while finding contacts");
 	echo $this->editable_papt("contactAuthor", pluralx(edb_nrows($result), "Contact")),
 	    "<div class='papv'>";
-	if ($result) {
-	    $aus = array();
-	    while (($row = edb_row($result)))
-		$aus[] = $row;
-	    echo authorTable($aus, $Me);
-	}
-        echo "<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("contactauthors", "p=$paperId") . "'>Edit&nbsp;contacts</a></div>\n\n";
+        $aus = array();
+        while (($row = edb_orow($result))) {
+            Contact::set_sorter($row);
+            $aus[] = $row;
+        }
+        uasort($aus, "Contact::compare");
+        foreach ($aus as $au) {
+            echo '<span class="autblentry_long">', Text::user_html($au);
+            if ($Me->privChair && $au->contactId != $Me->contactId)
+                echo '&nbsp;', viewas_link($au);
+            echo '</span><br />';
+        }
+        echo "<a href='" . hoturl("contactauthors", "p=$paperId") . "'>Edit&nbsp;contacts</a></div>\n\n";
     }
 
     private function editable_anonymity() {

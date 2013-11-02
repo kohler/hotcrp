@@ -657,6 +657,14 @@ function topicTable($prow, $active = 0) {
     return $out . "</td></tr></table>";
 }
 
+function viewas_link($cid, $contact = null) {
+    global $Conf;
+    $contact = !$contact && is_object($cid) ? $cid : $contact;
+    $cid = is_object($contact) ? $cid->email : $cid;
+    return '<a href="' . selfHref(array("viewContact" => $cid))
+        . '">' . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($contact)) . '</a>';
+}
+
 function authorTable($aus, $viewAs = null) {
     global $Conf;
     $out = "";
@@ -671,7 +679,7 @@ function authorTable($aus, $viewAs = null) {
 		$out .= "<span class='autblentry'>";
 	    $out .= $au;
 	    if ($viewAs !== null && is_array($aux) && count($aux) >= 2 && $viewAs->email != $aux[2] && $viewAs->privChair)
-		$out .= " <a href=\"" . selfHref(array("viewContact" => $aux[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . (is_array($aux) ? Text::name_html($aux) : $aux)) . "</a>";
+                $out .= " " . viewas_link($aux[2], $aux);
 	    $out .= "</span> ";
 	}
     }
