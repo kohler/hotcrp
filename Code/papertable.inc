@@ -2043,6 +2043,7 @@ class PaperTable {
 	if (count($pl) == 1) {
             $pl = $search->sessionList();
 	    $_REQUEST["paperId"] = $_REQUEST["p"] = $pl[0];
+            // check if the paper is in the current list. If not, make a new one
             if (!@$_REQUEST["ls"]
                 || !($list = @$_SESSION["l"][$_REQUEST["ls"]])
                 || array_search($pl[0], $list) === false) {
@@ -2050,6 +2051,7 @@ class PaperTable {
                 $_SESSION["l"][$_REQUEST["ls"]] = $pl;
             } else if (@$pl["matchPreg"])
                 $_SESSION["temp_matchPreg"] = $pl["matchPreg"];
+            // ensure URI makes sense ("paper/2" not "paper/searchterm")
             redirectSelf();
 	    return true;
 	} else {
