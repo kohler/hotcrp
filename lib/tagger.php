@@ -163,7 +163,7 @@ class Tagger {
         if ($this->contact)
             $re .= "(?:" . $this->contact->cid . "~"
                 . ($this->contact->privChair ? "|~~" : "") .")?";
-        $re .= "(red|orange|yellow|green|blue|violet|purple|grey|gray|bold|italic|big|small";
+        $re .= "(red|orange|yellow|green|blue|violet|purple|grey|gray|white|bold|italic|big|small";
         $this->color_tagmap = $this->defined_tags();
         foreach ($this->color_tagmap as $v)
             if ($v->colors)
