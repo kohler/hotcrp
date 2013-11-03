@@ -124,7 +124,7 @@ $authorConflictTypes = array(0 => "No conflict", 3 => "Advisor/student",
 
 
 // set up conference path variables
-function setPathVariables() {
+function set_path_variables() {
     global $ConfSitePATH, $ConfSiteBase, $ConfSiteSuffix;
 
     // Determine path to conference site on file system
@@ -132,7 +132,7 @@ function setPathVariables() {
     if (file_exists($here . "/Code/header.inc"))
 	$ConfSitePATH = $here;
     else if (file_exists($here . "/../Code/header.inc"))
-	$ConfSitePATH = substr($here, 0, strrpos($here,'/'));
+	$ConfSitePATH = substr($here, 0, strrpos($here, '/'));
     else
 	$ConfSitePATH = "/var/www/html";
 
@@ -157,18 +157,26 @@ function setPathVariables() {
 
     // Determine whether to include the .php suffix
     $ConfSiteSuffix = ".php";
-    if (function_exists("apache_get_modules")) {
-	if (array_search("mod_rewrite", apache_get_modules()) !== false)
-	    $ConfSiteSuffix = "";
-    }
+    if (function_exists("apache_get_modules")
+        && array_search("mod_rewrite", apache_get_modules()) !== false)
+        $ConfSiteSuffix = "";
 }
 
-setPathVariables();
+set_path_variables();
+
+
+// Check for obsolete pages.
+// These are pages that we've removed from the source. But some user might
+// have an old version of the page lying around their directory. Don't run
+// that code; redirect to index.
+require_once("$ConfSitePATH/lib/base.php");
+require_once("$ConfSitePATH/lib/redirect.php");
+if (array_search(request_script_base(),
+                 array("login", "logout", "contactauthors")) !== false)
+    go();
 
 
 // Bring in code
-require_once("$ConfSitePATH/lib/base.php");
-require_once("$ConfSitePATH/lib/redirect.php");
 require_once("$ConfSitePATH/Code/helpers.inc");
 require_once("$ConfSitePATH/Code/conference.inc");
 require_once("$ConfSitePATH/Code/contact.inc");
