@@ -175,7 +175,7 @@ class Text {
     }
 
     static function split_name($name, $with_email = false) {
-        $name = simplifyWhitespace($name);
+        $name = simplify_whitespace($name);
         if ($with_email) {
             if (preg_match('%^\s*\"?(.*?)\"?\s*<([^<>]+)>\s*$%', $name, $m)
                 || preg_match('%^\s*\"(.*)\"\s+(\S+)\s*$%', $name, $m))

@@ -190,9 +190,9 @@ function setRequestAuthorTable() {
     for ($i = 1; $i <= $_REQUEST["aueditcount"]; $i++) {
 	if (isset($_REQUEST["auname$i"]) || isset($_REQUEST["auemail$i"]) || isset($_REQUEST["auaff$i"]))
 	    $anyAuthors = true;
-	$a = simplifyWhitespace(defval($_REQUEST, "auname$i", ""));
-	$b = simplifyWhitespace(defval($_REQUEST, "auemail$i", ""));
-	$c = simplifyWhitespace(defval($_REQUEST, "auaff$i", ""));
+	$a = simplify_whitespace(defval($_REQUEST, "auname$i", ""));
+	$b = simplify_whitespace(defval($_REQUEST, "auemail$i", ""));
+	$c = simplify_whitespace(defval($_REQUEST, "auaff$i", ""));
 	if ($a != "" || $b != "" || $c != "") {
 	    $a = Text::split_name($a);
 	    $a[2] = $b;
@@ -256,7 +256,7 @@ function requestSameAsPaper($prow) {
 		if (cvtint($got, 0) != ($ox ? $ox->value : 0))
 		    return false;
 	    } else if ($t == PaperOption::T_TEXT) {
-		if (simplifyWhitespace($got) != ($ox ? $ox->data : ""))
+		if (simplify_whitespace($got) != ($ox ? $ox->data : ""))
 		    return false;
             } else if ($t == PaperOption::T_TEXT_5LINE) {
                 if (rtrim($got) != ($ox ? $ox->data : ""))
@@ -319,8 +319,8 @@ function check_contacts() {
         }
 
     // Check new contact
-    $new_name = @simplifyWhitespace($_REQUEST["newcontact_name"]);
-    $new_email = @simplifyWhitespace($_REQUEST["newcontact_email"]);
+    $new_name = @simplify_whitespace($_REQUEST["newcontact_name"]);
+    $new_email = @simplify_whitespace($_REQUEST["newcontact_email"]);
     if ($new_name == "Name")
         $new_name = "";
     if ($new_email == "Email")
@@ -427,7 +427,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	if (trim($_REQUEST[$x]) == "" && $x != "collaborators")
 	    $Error[$x] = 1;
 	if ($x == "title")
-	    $_REQUEST[$x] = simplifyWhitespace($_REQUEST[$x]);
+	    $_REQUEST[$x] = simplify_whitespace($_REQUEST[$x]);
 	$q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
     }
 
@@ -460,7 +460,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 		$emsg .= "&ldquo;" . htmlspecialchars($o->optionName) . "&rdquo; must be an integer. ";
 	    }
 	} else if ($o->type == PaperOption::T_TEXT)
-	    $_REQUEST[$oname] = simplifyWhitespace($v);
+	    $_REQUEST[$oname] = simplify_whitespace($v);
         else if ($o->type == PaperOption::T_TEXT_5LINE)
             $_REQUEST[$oname] = rtrim($v);
         else if ($o->type == PaperOption::T_ATTACHMENTS) {

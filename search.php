@@ -938,7 +938,7 @@ if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
     if ($_SESSION["pldisplay"] != " overAllMerit ") {
 	$pldisplay = explode(" ", trim($_SESSION["pldisplay"]));
 	sort($pldisplay);
-	$_SESSION["pldisplay"] = " " . simplifyWhitespace(join(" ", $pldisplay)) . " ";
+	$_SESSION["pldisplay"] = " " . simplify_whitespace(join(" ", $pldisplay)) . " ";
 	$Conf->qe("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($_SESSION["pldisplay"]) . "') on duplicate key update data=values(data)", $while);
     } else
 	$Conf->qe("delete from Settings where name='pldisplay_default'", $while);
@@ -973,8 +973,8 @@ function saveformulas() {
     $names = array();
 
     foreach (formulas_with_new() as $fdef) {
-	$name = simplifyWhitespace(defval($_REQUEST, "name_$fdef->formulaId", $fdef->name));
-	$expr = simplifyWhitespace(defval($_REQUEST, "expression_$fdef->formulaId", $fdef->expression));
+	$name = simplify_whitespace(defval($_REQUEST, "name_$fdef->formulaId", $fdef->name));
+	$expr = simplify_whitespace(defval($_REQUEST, "expression_$fdef->formulaId", $fdef->expression));
 
 	if ($name != "" && $expr != "") {
 	    if (isset($names[$name]))
@@ -1028,7 +1028,7 @@ function savesearch() {
     global $Conf, $Me, $paperListFormulas, $OK;
     $while = "while saving search";
 
-    $name = simplifyWhitespace(defval($_REQUEST, "ssname", ""));
+    $name = simplify_whitespace(defval($_REQUEST, "ssname", ""));
     $tagger = new Tagger;
     if (!$tagger->check($name, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
 	if ($name == "")

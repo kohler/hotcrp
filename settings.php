@@ -231,7 +231,7 @@ function parseValue($name, $type) {
 	}
 	return ($v == "" ? 0 : array(0, $v));
     } else if ($type == "simplestring") {
-	$v = simplifyWhitespace($v);
+	$v = simplify_whitespace($v);
 	return ($v == "" ? 0 : array(0, $v));
     } else if ($type == "htmlstring") {
 	if (($v = CleanHTML::clean($v, $err)) === false)
@@ -387,7 +387,7 @@ function doTopics($set) {
     foreach ($_REQUEST as $k => $v) {
 	if (!(strlen($k) > 3 && $k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
 	    continue;
-	$v = simplifyWhitespace($v);
+	$v = simplify_whitespace($v);
 	if ($k[3] == "n" && $v != "" && cvtint(substr($k, 4), 100) <= $numnew)
 	    $Conf->qe("insert into TopicArea (topicName) values ('" . sqlq($v) . "')", $while);
 	else if (($k = cvtint(substr($k, 3), -1)) >= 0) {
@@ -404,7 +404,7 @@ function doTopics($set) {
 function doCleanOptionValues($id) {
     global $Conf, $Error, $Highlight;
 
-    $name = simplifyWhitespace(defval($_REQUEST, "optn$id", ""));
+    $name = simplify_whitespace(defval($_REQUEST, "optn$id", ""));
     if (!isset($_REQUEST["optn$id"])
 	|| ($id == "n" && ($name === "" || $name === "New option" || $name === "(Enter new option here)"))) {
 	unset($_REQUEST["optn$id"]);
@@ -1246,7 +1246,7 @@ function doOptGroupOption($o) {
 	echo "<td style='padding-left: 1em'><div class='f-i'>",
 	    "<div class='f-c'>Example search</div>",
 	    "<div class='f-e'>";
-	$oabbrev = simplifyWhitespace($o->optionName);
+	$oabbrev = simplify_whitespace($o->optionName);
 	foreach (preg_split('/\s+/', preg_replace('/[^a-z\s]/', '', strtolower($o->optionName))) as $oword)
 	    if (checkOptionNameUnique($oword)) {
 		$oabbrev = $oword;
@@ -1255,7 +1255,7 @@ function doOptGroupOption($o) {
 	if ($o->optionValues !== "") {
 	    $a = explode("\n", $o->optionValues);
 	    if (count($a) > 1 && $a[1] !== "")
-		$oabbrev .= "#" . strtolower(simplifyWhitespace($a[1]));
+		$oabbrev .= "#" . strtolower(simplify_whitespace($a[1]));
 	}
 	if (strstr($oabbrev, " ") !== false)
 	    $oabbrev = "\"$oabbrev\"";

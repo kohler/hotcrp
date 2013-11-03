@@ -167,6 +167,8 @@ setPathVariables();
 
 
 // Bring in code
+require_once("$ConfSitePATH/lib/base.php");
+require_once("$ConfSitePATH/lib/redirect.php");
 require_once("$ConfSitePATH/Code/helpers.inc");
 require_once("$ConfSitePATH/Code/conference.inc");
 require_once("$ConfSitePATH/Code/contact.inc");
@@ -340,7 +342,7 @@ if ($zlib_output_compression) {
     header("Vary: Accept-Encoding", false);
 }
 
-$Conf->ensureSession();
+ensure_session();
 
 global $Me;
 if (!isset($_SESSION["Me"])) {

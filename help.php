@@ -288,7 +288,7 @@ function searchQuickref() {
 
     $rf = reviewForm();
     foreach ($rf->options["outcome"] as $dec)
-	$dec = simplifyWhitespace(strtolower($dec));
+	$dec = simplify_whitespace(strtolower($dec));
     $qdec = (strpos($dec, " ") !== false ? "\"$dec\"" : $dec);
     _searchQuickrefRow("Decision", "dec:$qdec", "decision is “" . $dec . "” (partial matches OK)");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");

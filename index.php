@@ -85,7 +85,7 @@ if ($Me->privChair) {
     // Weird options?
     if (!isset($Opt["shortName"]) || $Opt["shortName"] == "")
 	$Conf->warnMsg("The <code>\$Opt[\"shortName\"]</code> setting is missing. Edit the <code>Code/options.inc</code> file to fix this problem.");
-    else if (simplifyWhitespace($Opt["shortName"]) != $Opt["shortName"])
+    else if (simplify_whitespace($Opt["shortName"]) != $Opt["shortName"])
 	$Conf->warnMsg("The <code>\$Opt[\"shortName\"]</code> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more). Edit the <code>Code/options.inc</code> file to fix this problem.");
     // Double-encoding bugs found?
     if ($Conf->setting("bug_doubleencoding"))

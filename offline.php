@@ -62,7 +62,7 @@ function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
 	    unset($settings[$row->paperId]);
 	} else if ($titles[$row->paperId] !== ""
 		   && strcmp($row->title, $titles[$row->paperId]) != 0
-		   && strcasecmp($row->title, simplifyWhitespace($titles[$row->paperId])) != 0)
+		   && strcasecmp($row->title, simplify_whitespace($titles[$row->paperId])) != 0)
 	    $errors[$linenos[$row->paperId]] = "Warning: Title doesn’t match";
 
     if (!$tag)

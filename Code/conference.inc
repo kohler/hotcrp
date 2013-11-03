@@ -76,15 +76,6 @@ class Conference {
     // Initialization functions
     //
 
-    function ensureSession() {
-	if (!session_id()) {
-	    global $Opt;
-	    session_name($Opt["sessionName"]);
-            session_cache_limiter("");
-	    session_start();
-	}
-    }
-
     function updateSettings() {
 	global $Opt, $OK;
 	$this->settings = array();
@@ -230,7 +221,7 @@ class Conference {
 
     function invalidateCaches($caches = null) {
 	global $OK;
-	$this->ensureSession();
+	ensure_session();
 	$inserts = array();
 	$removes = array();
 	$time = time();
@@ -1398,7 +1389,7 @@ class Conference {
     function msg($text, $type) {
 	$x = "<div class=\"$type\">$text</div>\n";
 	if ($this->saveMessages) {
-	    $this->ensureSession();
+	    ensure_session();
 	    $_SESSION["msgs"][] = $x;
 	} else if ($this->tableMessages)
 	    echo "<tr>

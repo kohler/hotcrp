@@ -875,13 +875,13 @@ class PaperSearch {
 	    if ($m[2][0] == ":" || $m[2][0] == "#")
 		$m[2] = substr($m[2], 1);
 	    $ocompar = self::_cleanCompar($m[2]);
-	    $oval = strtolower(simplifyWhitespace($m[3]));
+	    $oval = strtolower(simplify_whitespace($m[3]));
 	} else {
 	    $oname = $word;
 	    $ocompar = "=";
 	    $oval = "";
 	}
-	$oname = strtolower(simplifyWhitespace($oname));
+	$oname = strtolower(simplify_whitespace($oname));
 
 	// match all options
 	$qo = array();
@@ -1101,7 +1101,7 @@ class PaperSearch {
 		$value = $word;
 	    else {
 		$rf = reviewForm();
-		$x = strtolower(simplifyWhitespace($word));
+		$x = strtolower(simplify_whitespace($word));
 		$tids = array();
 		foreach ($rf->topicName as $tid => $n)
 		    if (strstr(strtolower($n), $x) !== false)
@@ -1144,7 +1144,7 @@ class PaperSearch {
 	    else if ($word == "any")
 		$qt[] = new SearchTerm("revadj", 0, array("round" => range(1, count($Conf->settings["rounds"]) - 1)));
 	    else {
-		$x = simplifyWhitespace($word);
+		$x = simplify_whitespace($word);
 		$rounds = matchValue($Conf->settings["rounds"], $x);
 		if (count($rounds) == 0) {
 		    $this->warn("“" . htmlspecialchars($x) . "” doesn’t match a review round.");
@@ -1177,7 +1177,7 @@ class PaperSearch {
 	    $qt[] = ($qe ? $qe : new SearchTerm("f"));
 	}
 	if ($keyword == "HEADING") {
-	    if (($heading = simplifyWhitespace($word)) != "")
+	    if (($heading = simplify_whitespace($word)) != "")
 		$this->headingmap = array();
 	    $qt[] = SearchTerm::make_float(array("heading" => $heading));
 	}
@@ -2303,7 +2303,7 @@ class PaperSearch {
 		. ($this->contactmatchPC ? " join PCMember using (contactId)" : "")
 		. " where ";
 	    for ($i = 0; $i < count($this->contactmatch); ++$i) {
-		$s = simplifyWhitespace($this->contactmatch[$i]);
+		$s = simplify_whitespace($this->contactmatch[$i]);
 		if ($s[0] == "\2")
 		    $qm = "(" . substr($s, 1) . ")";
 		else if (($pos = strpos($s, "@")) !== false)

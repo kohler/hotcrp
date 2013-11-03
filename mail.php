@@ -455,13 +455,13 @@ if (!isset($_REQUEST["emailBody"]))
 if (substr($_REQUEST["subject"], 0, strlen($subjectPrefix)) == $subjectPrefix)
     $_REQUEST["subject"] = substr($_REQUEST["subject"], strlen($subjectPrefix));
 if (isset($_REQUEST["cc"]) && $Me->privChair)
-    $_REQUEST["cc"] = simplifyWhitespace($_REQUEST["cc"]);
+    $_REQUEST["cc"] = simplify_whitespace($_REQUEST["cc"]);
 else if (isset($Opt["emailCc"]))
     $_REQUEST["cc"] = $Opt["emailCc"] ? $Opt["emailCc"] : "";
 else
     $_REQUEST["cc"] = $Opt["contactName"] . " <" . $Opt["contactEmail"] . ">";
 if (isset($_REQUEST["replyto"]) && $Me->privChair)
-    $_REQUEST["replyto"] = simplifyWhitespace($_REQUEST["replyto"]);
+    $_REQUEST["replyto"] = simplify_whitespace($_REQUEST["replyto"]);
 else
     $_REQUEST["replyto"] = defval($Opt, "emailReplyTo", "");
 

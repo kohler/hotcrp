@@ -859,7 +859,7 @@ class Mailer {
 
     static function mimeEmailHeader($header, $str) {
 	if (preg_match('/[\r\n]/', $str))
-	    $str = simplifyWhitespace($str);
+	    $str = simplify_whitespace($str);
 
 	$text = $header;
 	$linelen = strlen($text);
@@ -930,7 +930,7 @@ class Mailer {
 
     static function mimeHeader($header, $str) {
 	if (preg_match('/[\r\n]/', $str))
-	    $str = simplifyWhitespace($str);
+	    $str = simplify_whitespace($str);
 
 	$text = $header;
 	$linelen = strlen($text);
