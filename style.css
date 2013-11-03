@@ -1613,10 +1613,10 @@ a.pl_sort_def_rev {
 	color: #660000;
 }
 
-tr.k1 td {
+.k1 {
 	background: #f1f8fc;
 }
-.redtag, tr.redtag td, tr.redtag.k1 td, .redtag.psc {
+.redtag, .redtag.k1, .redtag.psc {
 	background: #ffd8d8;
 }
 tr.pl.redtag td {
@@ -1626,7 +1626,7 @@ tr.pl.redtag td {
 .redtag div.pst {
 	background: #f8d0d0;
 }
-.orangetag, tr.orangetag td, tr.orangetag.k1 td, .orangetag.psc {
+.orangetag, .orangetag.k1, .orangetag.psc {
 	background: #fdebcc;
 }
 tr.pl.orangetag td {
@@ -1636,7 +1636,7 @@ tr.pl.orangetag td {
 .orangetag div.pst {
 	background: #f2debb;
 }
-.yellowtag, tr.yellowtag td, tr.yellowtag.k1 td, .yellowtag.psc {
+.yellowtag, .yellowtag.k1, .yellowtag.psc {
 	background: #fdffcb;
 }
 tr.pl.yellowtag td {
@@ -1646,7 +1646,7 @@ tr.pl.yellowtag td {
 .yellowtag div.pst {
 	background: #f0eeb4;
 }
-.greentag, tr.greentag td, tr.greentag.k1 td, .greentag.psc {
+.greentag, .greentag.k1, .greentag.psc {
 	background: #d8ffd8;
 }
 tr.pl.greentag td {
@@ -1656,7 +1656,7 @@ tr.pl.greentag td {
 .greentag div.pst {
 	background: #c4f2c4;
 }
-.bluetag, tr.bluetag td, tr.bluetag.k1 td, .bluetag.psc {
+.bluetag, .bluetag.k1, .bluetag.psc {
 	background: #d8d8ff;
 }
 tr.pl.bluetag td {
@@ -1666,8 +1666,8 @@ tr.pl.bluetag td {
 .bluetag div.pst {
 	background: #ccccf2;
 }
-.purpletag, tr.purpletag td, tr.purpletag.k1 td, .purpletag.psc,
-.violettag, tr.violettag td, tr.violettag.k1 td, .violettag.psc {
+.purpletag, .purpletag.k1, .purpletag.psc,
+.violettag, .violettag.k1, .violettag.psc {
 	background: #f2d8f8;
 }
 tr.pl.purpletag td, tr.pl.violettag td {
@@ -1677,8 +1677,8 @@ tr.pl.purpletag td, tr.pl.violettag td {
 .purpletag div.pst, .violettag div.pst {
 	background: #eac7f2;
 }
-.greytag, tr.greytag td, tr.greytag.k1 td, .greytag.psc,
-.graytag, tr.graytag td, tr.graytag.k1 td, .graytag.psc {
+.greytag, .greytag.k1, .greytag.psc,
+.graytag, .graytag.k1, .graytag.psc {
 	background: #e2e2e2;
 }
 tr.pl.greytag td, tr.pl.graytag td {
@@ -1691,19 +1691,19 @@ tr.pl.greytag td, tr.pl.graytag td {
 .graytext, .greytext {
 	color: #999999;
 }
-.boldtag, tr.pl.boldtag td.pl_id, tr.pl.boldtag td.pl_title {
+.boldtag, tr.pl.boldtag > td.pl_id, tr.pl.boldtag > td.pl_title {
 	font-weight: bold;
 }
 tr.pl.boldtag, tr.plx.boldtag {
 	font-weight: inherit;
 }
-.italictag, tr.pl.italictag td.pl_id, tr.pl.italictag td.pl_title {
+.italictag, tr.pl.italictag > td.pl_id, tr.pl.italictag > td.pl_title {
 	font-style: italic;
 }
 tr.pl.italictag, tr.plx.italictag {
 	font-style: inherit;
 }
-.bigtag, tr.pl.bigtag td.pl_id, tr.pl.bigtag td.pl_title {
+.bigtag, tr.pl.bigtag > td.pl_id, tr.pl.bigtag > td.pl_title {
 	font-size: 140%;
 }
 .bigtag .pst {
@@ -1712,7 +1712,7 @@ tr.pl.italictag, tr.plx.italictag {
 tr.pl.bigtag, tr.plx.bigtag {
 	font-size: inherit;
 }
-.smalltag, tr.pl.smalltag td.pl_id, tr.pl.smalltag td.pl_title {
+.smalltag, tr.pl.smalltag > td.pl_id, tr.pl.smalltag > td.pl_title {
 	font-size: 80%;
 }
 .smalltag .pst {
