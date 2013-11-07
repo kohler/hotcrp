@@ -256,13 +256,21 @@ int main() {
     const char* names[] = {"red", "orange", "yellow", "green", "blue", "purple", "grey", "white", nullptr};
 
     colormap["red"] = Rgba{0xff, 0xd8, 0xd8, 1};
+    colormap["reddark"] = Rgba{0xf8, 0xd0, 0xd0, 1};
     colormap["orange"] = Rgba{0xfd, 0xeb, 0xcc, 1};
+    colormap["orangedark"] = Rgba{0xf2, 0xde, 0xbb, 1};
     colormap["yellow"] = Rgba{0xfd, 0xff, 0xcb, 1};
+    colormap["yellowdark"] = Rgba{0xf0, 0xee, 0xb4, 1};
     colormap["green"] = Rgba{0xd8, 0xff, 0xd8, 1};
+    colormap["greendark"] = Rgba{0xc4, 0xf2, 0xc4, 1};
     colormap["blue"] = Rgba{0xd8, 0xd8, 0xff, 1};
+    colormap["bluedark"] = Rgba{0xcc, 0xcc, 0xf2, 1};
     colormap["purple"] = Rgba{0xf2, 0xd8, 0xf8, 1};
+    colormap["purpledark"] = Rgba{0xea, 0xc7, 0xf2, 1};
     colormap["grey"] = Rgba{0xe2, 0xe2, 0xe2, 1};
+    colormap["greydark"] = Rgba{0d9, 0xd9, 0xd9, 1};
     colormap["white"] = Rgba{0xff, 0xff, 0xff, 1};
+    colormap["whitedark"] = Rgba{0xf8, 0xf8, 0xf8, 1};
 
     for (const char** name1 = names; *name1; ++name1)
         for (const char** name2 = name1 + 1; *name2; ++name2)

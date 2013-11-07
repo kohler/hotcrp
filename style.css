@@ -1613,96 +1613,67 @@ a.pl_sort_def_rev {
 	color: #660000;
 }
 
+tbody.pltable_colored > tr.pl {
+	border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
 .k1 {
 	background-color: #f1f8fc;
 }
+tbody.pltable_colored > tr.k1 {
+	background-color: inherit;
+}
 tr.redtag, tr.orangetag, tr.yellowtag, tr.greentag, tr.bluetag,
-tr.purpletag, tr.violettag, tr.greytag, tr.graytag {
+tr.purpletag, tr.graytag, tr.whitetag {
 	background-attachment: fixed;
 }
 tr.redtag > td, tr.orangetag > td, tr.yellowtag > td, tr.greentag > td,
-tr.bluetag > td, tr.purpletag > td, tr.violettag > td, tr.greytag > td,
-tr.graytag > td {
+tr.bluetag > td, tr.purpletag > td, tr.graytag > td, tr.whitetag > td {
 	background-color: none;
 }
-.redtag, .redtag.k1, .redtag.psc {
+.redtag, .redtag.psc {
 	background-color: #ffd8d8;
-}
-tr.pl.redtag > td {
-	border-top: 1px solid #f8d0d0;
-	padding-top: 1px;
 }
 .redtag div.pst {
 	background-color: #f8d0d0;
 }
-.orangetag, .orangetag.k1, .orangetag.psc {
+.orangetag, .orangetag.psc {
 	background-color: #fdebcc;
-}
-tr.pl.orangetag > td {
-	border-top: 1px solid #f2debb;
-	padding-top: 1px;
 }
 .orangetag div.pst {
 	background-color: #f2debb;
 }
-.yellowtag, .yellowtag.k1, .yellowtag.psc {
+.yellowtag, .yellowtag.psc {
 	background-color: #fdffcb;
-}
-tr.pl.yellowtag > td {
-	border-top: 1px solid #f0eeb4;
-	padding-top: 1px;
 }
 .yellowtag div.pst {
 	background-color: #f0eeb4;
 }
-.greentag, .greentag.k1, .greentag.psc {
+.greentag, .greentag.psc {
 	background-color: #d8ffd8;
-}
-tr.pl.greentag > td {
-	border-top: 1px solid #c4f2c4;
-	padding-top: 1px;
 }
 .greentag div.pst {
 	background-color: #c4f2c4;
 }
-.bluetag, .bluetag.k1, .bluetag.psc {
+.bluetag, .bluetag.psc {
 	background-color: #d8d8ff;
-}
-tr.pl.bluetag > td {
-	border-top: 1px solid #ccccf2;
-	padding-top: 1px;
 }
 .bluetag div.pst {
 	background-color: #ccccf2;
 }
-.purpletag, .purpletag.k1, .purpletag.psc,
-.violettag, .violettag.k1, .violettag.psc {
+.purpletag, .purpletag.psc {
 	background-color: #f2d8f8;
 }
-tr.pl.purpletag > td, tr.pl.violettag > td {
-	border-top: 1px solid #eac7f2;
-	padding-top: 1px;
-}
-.purpletag div.pst, .violettag div.pst {
+.purpletag div.pst {
 	background-color: #eac7f2;
 }
-.greytag, .greytag.k1, .greytag.psc,
-.graytag, .graytag.k1, .graytag.psc {
+.graytag, .graytag.psc {
 	background-color: #e2e2e2;
 }
-tr.pl.greytag > td, tr.pl.graytag > td {
-	border-top: 1px solid #d9d9d9;
-	padding-top: 1px;
-}
-.greytag div.pst, .graytag div.pst {
+.graytag div.pst {
 	background-color: #d9d9d9;
 }
-.whitetag, .whitetag.k1, .whitetag.psc {
+.whitetag, .whitetag.psc {
 	background-color: #ffffff;
-}
-tr.pl.whitetag > td, tr.pl.whitetag > td {
-	border-top: 1px solid #f8f8f8;
-	padding-top: 1px;
 }
 .whitetag div.pst, .whitetag div.pst {
 	background-color: #f8f8f8;
@@ -1738,103 +1709,88 @@ tr.pl.smalltag, tr.plx.smalltag {
 	font-size: inherit;
 }
 
-.redtag.orangetag, .redtag.orangetag.k1, .redtag.orangetag.psc {
+.redtag.orangetag, .redtag.orangetag.psc {
 	background-image: url(images/tag_red_orange.png);
 }
-.redtag.yellowtag, .redtag.yellowtag.k1, .redtag.yellowtag.psc {
+.redtag.yellowtag, .redtag.yellowtag.psc {
 	background-image: url(images/tag_red_yellow.png);
 }
-.redtag.greentag, .redtag.greentag.k1, .redtag.greentag.psc {
+.redtag.greentag, .redtag.greentag.psc {
 	background-image: url(images/tag_red_green.png);
 }
-.redtag.bluetag, .redtag.bluetag.k1, .redtag.bluetag.psc {
+.redtag.bluetag, .redtag.bluetag.psc {
 	background-image: url(images/tag_red_blue.png);
 }
-.redtag.purpletag, .redtag.purpletag.k1, .redtag.purpletag.psc,
-.redtag.violettag, .redtag.violettag.k1, .redtag.violettag.psc {
+.redtag.purpletag, .redtag.purpletag.psc {
 	background-image: url(images/tag_red_purple.png);
 }
-.redtag.greytag, .redtag.greytag.k1, .redtag.greytag.psc,
-.redtag.graytag, .redtag.graytag.k1, .redtag.graytag.psc {
+.redtag.graytag, .redtag.graytag.psc {
 	background-image: url(images/tag_red_grey.png);
 }
-.redtag.whitetag, .redtag.whitetag.k1, .redtag.whitetag.psc {
+.redtag.whitetag, .redtag.whitetag.psc {
 	background-image: url(images/tag_red_white.png);
 }
-.orangetag.yellowtag, .orangetag.yellowtag.k1, .orangetag.yellowtag.psc {
+.orangetag.yellowtag, .orangetag.yellowtag.psc {
 	background-image: url(images/tag_orange_yellow.png);
 }
-.orangetag.greentag, .orangetag.greentag.k1, .orangetag.greentag.psc {
+.orangetag.greentag, .orangetag.greentag.psc {
 	background-image: url(images/tag_orange_green.png);
 }
-.orangetag.bluetag, .orangetag.bluetag.k1, .orangetag.bluetag.psc {
+.orangetag.bluetag, .orangetag.bluetag.psc {
 	background-image: url(images/tag_orange_blue.png);
 }
-.orangetag.purpletag, .orangetag.purpletag.k1, .orangetag.purpletag.psc,
-.orangetag.violettag, .orangetag.violettag.k1, .orangetag.violettag.psc {
+.orangetag.purpletag, .orangetag.purpletag.psc {
 	background-image: url(images/tag_orange_purple.png);
 }
-.orangetag.greytag, .orangetag.greytag.k1, .orangetag.greytag.psc,
-.orangetag.graytag, .orangetag.graytag.k1, .orangetag.graytag.psc {
+.orangetag.graytag, .orangetag.graytag.psc {
 	background-image: url(images/tag_orange_grey.png);
 }
-.orangetag.whitetag, .orangetag.whitetag.k1, .orangetag.whitetag.psc {
+.orangetag.whitetag, .orangetag.whitetag.psc {
 	background-image: url(images/tag_orange_white.png);
 }
-.yellowtag.greentag, .yellowtag.greentag.k1, .yellowtag.greentag.psc {
+.yellowtag.greentag, .yellowtag.greentag.psc {
 	background-image: url(images/tag_yellow_green.png);
 }
-.yellowtag.bluetag, .yellowtag.bluetag.k1, .yellowtag.bluetag.psc {
+.yellowtag.bluetag, .yellowtag.bluetag.psc {
 	background-image: url(images/tag_yellow_blue.png);
 }
-.yellowtag.purpletag, .yellowtag.purpletag.k1, .yellowtag.purpletag.psc,
-.yellowtag.violettag, .yellowtag.violettag.k1, .yellowtag.violettag.psc {
+.yellowtag.purpletag, .yellowtag.purpletag.psc {
 	background-image: url(images/tag_yellow_purple.png);
 }
-.yellowtag.greytag, .yellowtag.greytag.k1, .yellowtag.greytag.psc,
-.yellowtag.graytag, .yellowtag.graytag.k1, .yellowtag.graytag.psc {
+.yellowtag.graytag, .yellowtag.graytag.psc {
 	background-image: url(images/tag_yellow_grey.png);
 }
-.yellowtag.whitetag, .yellowtag.whitetag.k1, .yellowtag.whitetag.psc {
+.yellowtag.whitetag, .yellowtag.whitetag.psc {
 	background-image: url(images/tag_yellow_white.png);
 }
-.greentag.bluetag, .greentag.bluetag.k1, .greentag.bluetag.psc {
+.greentag.bluetag, .greentag.bluetag.psc {
 	background-image: url(images/tag_green_blue.png);
 }
-.greentag.purpletag, .greentag.purpletag.k1, .greentag.purpletag.psc,
-.greentag.violettag, .greentag.violettag.k1, .greentag.violettag.psc {
+.greentag.purpletag, .greentag.purpletag.psc {
 	background-image: url(images/tag_green_purple.png);
 }
-.greentag.greytag, .greentag.greytag.k1, .greentag.greytag.psc,
-.greentag.graytag, .greentag.graytag.k1, .greentag.graytag.psc {
+.greentag.graytag, .greentag.graytag.psc {
 	background-image: url(images/tag_green_grey.png);
 }
-.greentag.whitetag, .greentag.whitetag.k1, .greentag.whitetag.psc {
+.greentag.whitetag, .greentag.whitetag.psc {
 	background-image: url(images/tag_green_white.png);
 }
-.bluetag.purpletag, .bluetag.purpletag.k1, .bluetag.purpletag.psc,
-.bluetag.violettag, .bluetag.violettag.k1, .bluetag.violettag.psc {
+.bluetag.purpletag, .bluetag.purpletag.psc {
 	background-image: url(images/tag_blue_purple.png);
 }
-.bluetag.greytag, .bluetag.greytag.k1, .bluetag.greytag.psc,
-.bluetag.graytag, .bluetag.graytag.k1, .bluetag.graytag.psc {
+.bluetag.graytag, .bluetag.graytag.psc {
 	background-image: url(images/tag_blue_grey.png);
 }
-.bluetag.whitetag, .bluetag.whitetag.k1, .bluetag.whitetag.psc {
+.bluetag.whitetag, .bluetag.whitetag.psc {
 	background-image: url(images/tag_blue_white.png);
 }
-.purpletag.greytag, .purpletag.greytag.k1, .purpletag.greytag.psc,
-.purpletag.graytag, .purpletag.graytag.k1, .purpletag.graytag.psc,
-.violettag.greytag, .violettag.greytag.k1, .violettag.greytag.psc,
-.violettag.graytag, .violettag.graytag.k1, .violettag.graytag.psc {
+.purpletag.graytag, .purpletag.graytag.psc {
 	background-image: url(images/tag_purple_grey.png);
 }
-.purpletag.whitetag, .purpletag.whitetag.k1, .purpletag.whitetag.psc,
-.violettag.whitetag, .violettag.whitetag.k1, .violettag.whitetag.psc {
+.purpletag.whitetag, .purpletag.whitetag.psc {
 	background-image: url(images/tag_purple_white.png);
 }
-.greytag.whitetag, .greytag.whitetag.k1, .greytag.whitetag.psc,
-.graytag.whitetag, .graytag.whitetag.k1, .graytag.whitetag.psc {
+.graytag.whitetag, .graytag.whitetag.psc {
 	background-image: url(images/tag_grey_white.png);
 }
 

@@ -676,9 +676,14 @@ class PaperList extends BaseList {
 
 	$rstate->ids[] = $row->paperId;
 	$trclass = "k" . $rstate->colorindex;
-	if (defval($row, "paperTags") && $this->contact->canViewTags($row, true)
-	    && ($m = $this->tagger->color_classes($row->paperTags)))
-	    $trclass .= " " . $m;
+	if (@$row->paperTags && $this->contact->canViewTags($row, true)
+	    && ($m = $this->tagger->color_classes($row->paperTags))) {
+            if ($this->tagger->class_has_colors($m)) {
+                $rstate->hascolors = true;
+                $trclass = $m;
+            } else
+                $trclass .= " " . $m;
+        }
 	$rstate->colorindex = 1 - $rstate->colorindex;
 	$rstate->last_trclass = $trclass;
 
@@ -858,9 +863,10 @@ class PaperList extends BaseList {
 	$rownum_marker = "<span class=\"pl_rownum fx6\">";
 	$rownum_len = strlen($rownum_marker);
 	$nbody = array("<tr>");
+        $tbody = $rstate->hascolors ? ' class="pltable_colored"' : '';
 	for ($i = 1; $i < count($rstate->headingstart); ++$i) {
-	    $nbody[] = "<td class='pl_splitcol top' width='" . (100 / $rstate->split_ncol) . "%'><div class='pl_splitcol'><table width='100%'>";
-	    $nbody[] = $colhead . "  <tbody>\n";
+	    $nbody[] = '<td class="pl_splitcol top" width="' . (100 / $rstate->split_ncol) . '%"><div class="pl_splitcol"><table width="100%">';
+	    $nbody[] = $colhead . "  <tbody$tbody>\n";
 	    $number = 1;
 	    for ($j = $rstate->headingstart[$i - 1]; $j < $rstate->headingstart[$i]; ++$j) {
 		$x = $body[$j];
@@ -879,7 +885,7 @@ class PaperList extends BaseList {
 	$nbody[] = "</tr>";
 
 	$body = $nbody;
-	$rstate->last_trclass = "k0 pl_splitcol";
+	$rstate->last_trclass = "pl_splitcol";
 	return true;
     }
 
@@ -1035,6 +1041,7 @@ class PaperList extends BaseList {
 	$rstate->ids = array();
 	$rstate->foldinfo = array();
 	$rstate->colorindex = 0;
+        $rstate->hascolors = false;
 	$rstate->skipcallout = $skipcallout;
 	$rstate->ncol = $ncol;
 	$rstate->last_trclass = "";
@@ -1124,18 +1131,21 @@ class PaperList extends BaseList {
 	// maybe make columns, maybe not
 	if ($this->viewmap->columns && count($rstate->ids)
 	    && $this->_column_split($rstate, $colhead, $body)) {
-	    $enter = "<div class='pl_splitcol_ctr_ctr'><div class='pl_splitcol_ctr'>" . $enter;
+	    $enter = '<div class="pl_splitcol_ctr_ctr"><div class="pl_splitcol_ctr">' . $enter;
 	    $exit = $exit . "</div></div>";
 	    $ncol = $rstate->split_ncol;
-	} else
+            $tbody = "";
+	} else {
 	    $enter .= $colhead;
+            $tbody = $rstate->hascolors ? ' class="pltable_colored"' : '';
+        }
 
 	if (($fieldDef[0]->name == "sel" || $fieldDef[0]->name == "selon")
             && !defval($options, "nofooter"))
 	    $enter .= $this->_footer($ncol, $listname, $rstate->last_trclass,
                                      defval($options, "footer_extra", ""));
 
-	$x = $enter . " <tbody>\n" . join("", $body) . " </tbody>\n" . $exit;
+	$x = $enter . " <tbody$tbody>\n" . join("", $body) . " </tbody>\n" . $exit;
 
 	// session variable to remember the list
 	if ($this->listNumber) {

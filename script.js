@@ -1345,9 +1345,11 @@ function row_move(srcindex, dstindex) {
     e = 1;
     for (var i = 0; i < rows.length; ++i)
 	if (rows[i].nodeName == "TR") {
-	    if (!/^plx/.test(rows[i].className))
+            var c = rows[i].className;
+	    if (!/^plx/.test(c))
 		e = 1 - e;
-	    rows[i].className = rows[i].className.replace(/\bk[01]\b/, "k" + e);
+            if (/\bk[01]\b/.test(c))
+	        rows[i].className = c.replace(/\bk[01]\b/, "k" + e);
 	}
 }
 

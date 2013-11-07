@@ -67,6 +67,8 @@ class Tagger {
 
     private static $main_tagmap = null;
     private static $value_increment_map = array(1, 1, 1, 1, 1, 2, 2, 2, 3, 4);
+    private static $canonical_colors =
+        array("violet" => "purple", "grey" => "gray");
 
 
     public function __construct($contact = null) {
@@ -163,12 +165,19 @@ class Tagger {
         if ($this->contact)
             $re .= "(?:" . $this->contact->cid . "~"
                 . ($this->contact->privChair ? "|~~" : "") .")?";
-        $re .= "(red|orange|yellow|green|blue|violet|purple|grey|gray|white|bold|italic|big|small";
+        $re .= "(red|orange|yellow|green|blue|purple|violet|grey|gray|white|bold|italic|big|small";
         $this->color_tagmap = $this->defined_tags();
         foreach ($this->color_tagmap as $v)
             if ($v->colors)
                 $re .= "|" . $v->tag;
 	$this->color_re = $re . ")[# ]}";
+    }
+
+    public static function canonical_color($tag) {
+        if (isset(self::$canonical_colors[$tag]))
+            return self::$canonical_colors[$tag];
+        else
+            return $tag;
     }
 
     public function color_classes($tags) {
@@ -185,8 +194,12 @@ class Tagger {
                 foreach ($t->colors as $k)
                     $classes[] = $k . "tag";
             } else
-                $classes[] = $tag . "tag";
+                $classes[] = self::canonical_color($tag) . "tag";
         return join(" ", $classes);
+    }
+
+    public static function class_has_colors($classes) {
+        return preg_match('_\b(?:\A|\s)(?:red|orange|yellow|green|blue|purple|gray|white)tag(?:\z|\s)_', $classes);
     }
 
 
@@ -360,7 +373,8 @@ class Tagger {
         if ($ct != "")
             foreach (explode(" ", $ct) as $k)
                 if ($k != "" && ($p = strpos($k, "=")) !== false)
-                    arrayappend($map[substr($k, 0, $p)]->colors, substr($k, $p + 1));
+                    arrayappend($map[substr($k, 0, $p)]->colors,
+                                self::canonical_color(substr($k, $p + 1)));
     }
 
     public static function invalidate_defined_tags() {

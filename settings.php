@@ -12,7 +12,7 @@ $Error = array();
 $Values = array();
 $rf = reviewForm();
 $DateExplanation = "Date examples: &ldquo;now&rdquo;, &ldquo;10 Dec 2006 11:59:59pm PST&rdquo; <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
-$TagStyles = "red|orange|yellow|green|blue|purple|grey|bold|italic|big|small";
+$TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small";
 $temp_text_id = 0;
 
 $SettingGroups = array("acc" => array(
@@ -1541,14 +1541,18 @@ function doRevGroup() {
 	"<div class='hint fx'>Papers tagged with a style name, or with one of the associated tags (if any), will appear in that style in paper lists.</div>",
 	"<div class='smg fx'></div>",
 	"<table class='fx'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>";
-    $t = $Conf->settingText("tag_color", "");
+    $tag_colors = array();
+    preg_match_all('_(\S+)=(\S+)_', $Conf->settingText("tag_color", ""), $m,
+                   PREG_SET_ORDER);
+    foreach ($m as $x)
+        $tag_colors[Tagger::canonical_color($x[2])][] = $x[1];
     foreach (explode("|", $TagStyles) as $k) {
 	if (count($Error) > 0)
 	    $v = defval($_REQUEST, "tag_color_$k", "");
-	else {
-	    preg_match_all("/(\\S+)=$k/", $t, $m);
-	    $v = join(" ", $m[1]);
-	}
+	else if (isset($tag_colors[$k]))
+            $v = join(" ", $tag_colors[$k]);
+        else
+            $v = "";
 	echo "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' class='textlite' name='tag_color_$k' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /></td></tr>"; /* MAINSIZE */
     }
     echo "</table></td></tr></table>\n";
