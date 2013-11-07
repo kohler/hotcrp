@@ -880,7 +880,7 @@ class PaperTable {
         // Non-editable version
         echo '<div class="papv fn0">';
         foreach ($autable as $au)
-            if ($au[4]) {
+            if (@$au[4]) {
                 echo '<span class="autblentry_long">', Text::user_html($au);
                 if ($Me->privChair && $au[4] != $Me->contactId)
                     echo '&nbsp;', viewas_link($au[2], $au);
@@ -902,7 +902,7 @@ class PaperTable {
         echo '<table>';
         $title = "Authors";
         foreach ($autable as $au) {
-            if (!$au[4] && (!$au[2] || !validateEmail($au[2])))
+            if (!@$au[4] && (!$au[2] || !validateEmail($au[2])))
                 continue;
             $control = "contact_" . html_id_encode($au[2]);
             $checked = $this->useRequest ? !!@$_REQUEST[$control] : $au[4];

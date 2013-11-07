@@ -33,6 +33,7 @@
 ## Schema ##
 
 - [ ] Review round should be Review tags
+- [ ] InnoDB rather than MyISAM
 
 ## Visual appearance ##
 
