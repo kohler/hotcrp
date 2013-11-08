@@ -319,7 +319,7 @@ function fold(which, dofold, foldtype) {
 
 function foldup(e, event, foldnum, session) {
     var dofold = false, attr;
-    while (e && e.id.substr(0, 4) != "fold")
+    while (e && e.id.substr(0, 4) != "fold" && !e.getAttribute("hotcrpfold"))
         e = e.parentNode;
     if (!e)
         return true;

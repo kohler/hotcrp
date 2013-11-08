@@ -225,6 +225,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/lib/checkformat.php");
     else if ($class_name == "Countries")
         require_once("$ConfSitePATH/lib/countries.php");
+    else if ($class_name == "Message")
+        require_once("$ConfSitePATH/lib/message.php");
     else if ($class_name == "Formula")
         require_once("$ConfSitePATH/lib/formula.php");
     else if ($class_name == "Ht")

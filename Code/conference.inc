@@ -1430,14 +1430,6 @@ class Conference {
 	$this->tableMessagesObj = $obj;
     }
 
-    function conflictDefinitionText($usedefault = false) {
-	if (!$usedefault && isset($this->settingTexts["msg.conflictdef"])
-	    && ($x = $this->settingTexts["msg.conflictdef"]) != "")
-	    return $x;
-	else
-	    return "This includes past advisors and students, people with the same affiliation, and any recent (~2 years) coauthors and collaborators.";
-    }
-
     function tagRoundLocker($dolocker) {
 	if (!$dolocker)
 	    return "";

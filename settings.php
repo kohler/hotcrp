@@ -923,7 +923,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
     // unset text messages that equal the default
     if (value("msg.conflictdef")
-	&& trim($Values["msg.conflictdef"][1]) == $Conf->conflictDefinitionText(true))
+	&& trim($Values["msg.conflictdef"][1]) == Message::default_html("conflictdef"))
 	$Values["msg.conflictdef"] = null;
 
     // make settings
@@ -1126,8 +1126,29 @@ function doAccGroup() {
 }
 
 // Messages
+function do_message($name, $description, $rows = 10) {
+    $base = $name;
+    if (($p = strrpos($name, ".")))
+        $base = substr($name, 0, $p);
+    $default = Message::default_html($name);
+    $current = settingText("msg.$base", $default);
+    echo '<div class="fold', ($current == $default ? "c" : "o"),
+        '" hotcrpfold="yes">',
+        '<div class="f-c childfold" onclick="return foldup(this,event)">',
+        '<a class="q fn" href="#" onclick="return foldup(this,event)">',
+        expander(true), decorateSettingName("msg.$base", $description),
+        '</a><a class="q fx" href="#" onclick="return foldup(this,event)">',
+        expander(false), decorateSettingName("msg.$base", $description),
+        '</a> <span class="f-cx fx">(HTML allowed)</span></div>',
+        '<textarea class="textlite fx" name="msg.', $base, '" cols="80"',
+        ' rows="', $rows, '" onchange="hiliter(this)">',
+        htmlspecialchars(settingText("msg.$base",
+                                     Message::default_html($name))),
+        '</textarea></div><div class="g"></div>', "\n";
+}
+
 function doMsgGroup() {
-    global $Conf, $Opt;
+    global $Conf, $Opt, $rf;
 
     echo "<div class='f-c'>", decorateSettingName("opt.shortName", "Conference abbreviation"), "</div>
 <input class='textlite' name='opt.shortName' size='20' onchange='hiliter(this)' value=\"", htmlspecialchars($Opt["shortName"]), "\" />
@@ -1137,12 +1158,12 @@ function doMsgGroup() {
 <input class='textlite' name='opt.longName' size='70' onchange='hiliter(this)' value=\"", htmlspecialchars($Opt["longName"]), "\" />
 <div class='g'></div>\n";
 
-    echo "<div class='f-c'>", decorateSettingName("msg.home", "Home page message"), " <span class='f-cx'>(XHTML allowed)</span></div>
-<textarea class='textlite' name='msg.home' cols='60' rows='10' onchange='hiliter(this)'>", htmlspecialchars(settingText("msg.home", "")), "</textarea>
-<div class='g'></div>\n";
-
-    echo "<div class='f-c'>", decorateSettingName("msg.conflictdef", "Definition of conflict of interest"), " <span class='f-cx'>(XHTML allowed)</span></div>
-<textarea class='textlite' name='msg.conflictdef' cols='60' rows='2' onchange='hiliter(this)'>", htmlspecialchars(settingText("msg.conflictdef", $Conf->conflictDefinitionText(true))), "</textarea>";
+    do_message("home", "Home page message");
+    do_message("conflictdef", "Definition of conflict of interest", 5);
+    do_message(count($rf->topicName) ? "revprefdescription.withtopics" : "revprefdescription",
+               "Review preference instructions", 20);
+    do_message($Conf->setting("resp_words", 500) > 0 ? "responseinstructions.wordlimit" : "responseinstructions",
+               "Authors’ response instructions");
 }
 
 // Submissions

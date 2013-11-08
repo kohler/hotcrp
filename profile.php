@@ -671,7 +671,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 
     echo "<tr class='fx1'>
   <td class='caption'>Collaborators and other affiliations</td>
-  <td class='entry'><div class='hint'>Please list potential conflicts of interest.  ", $Conf->conflictDefinitionText(), "  List one conflict per line.
+  <td class='entry'><div class='hint'>Please list potential conflicts of interest.  ", Message::html("conflictdef"), "  List one conflict per line.
     We use this information when assigning reviews.
     For example: &ldquo;<tt>Ping Yen Zhang (INRIA)</tt>&rdquo;
     or, for a whole institution, &ldquo;<tt>INRIA</tt>&rdquo;.</div>

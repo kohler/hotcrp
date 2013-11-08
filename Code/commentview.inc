@@ -282,12 +282,13 @@ class CommentView {
 	    return;
 	}
 
-        echo "<div class='hint'>The authors’ response should address
-reviewer concerns and correct misunderstandings.
-Make it short and to the point; the conference deadline has passed.";
+        echo '<div class="hint">';
         $wordlimit = $Conf->setting("resp_words", 500);
         if ($wordlimit > 0)
-            echo " Try to stay within ", plural($wordlimit, "word"), ".";
+            echo Message::html("responseinstructions.wordlimit",
+                               array("wordlimit" => $wordlimit));
+        else
+            echo Message::html("responseinstructions");
         echo "</div>\n";
         if ($prow->conflictType < CONFLICT_AUTHOR)
             echo "<div class='hint'>Although you aren’t a contact for this paper, as an administrator you can edit the authors’ response.</div>\n";

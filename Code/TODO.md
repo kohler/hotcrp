@@ -34,6 +34,7 @@
 
 - [ ] Review round should be Review tags
 - [ ] InnoDB rather than MyISAM
+- [ ] Make sure .htaccess files work with Require as well as Deny
 
 ## Visual appearance ##
 
