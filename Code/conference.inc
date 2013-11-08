@@ -106,7 +106,7 @@ class Conference {
 	}
 	if ($this->settings["pc_seeall"] && !$this->timeFinalizePaper())
 	    $this->settings["pc_seeall"] = -1;
-	if (defval($this->settings, "pc_seeallrev") == 2) {
+	if (@$this->settings["pc_seeallrev"] == 2) {
 	    $this->settings["pc_seeblindrev"] = 1;
 	    $this->settings["pc_seeallrev"] = 1;
 	}
@@ -116,7 +116,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-        if ($this->settings["allowPaperOption"] < 60) {
+        if ($this->settings["allowPaperOption"] < 61) {
 	    require_once("updateschema.inc");
 	    $oldOK = $OK;
 	    updateSchema($this);
@@ -1431,8 +1431,8 @@ class Conference {
     }
 
     function conflictDefinitionText($usedefault = false) {
-	if (!$usedefault && isset($this->settingTexts["conflictdefmsg"])
-	    && ($x = $this->settingTexts["conflictdefmsg"]) != "")
+	if (!$usedefault && isset($this->settingTexts["msg.conflictdef"])
+	    && ($x = $this->settingTexts["msg.conflictdef"]) != "")
 	    return $x;
 	else
 	    return "This includes past advisors and students, people with the same affiliation, and any recent (~2 years) coauthors and collaborators.";

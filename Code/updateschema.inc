@@ -404,4 +404,12 @@ function updateSchema($Conf) {
         && $Conf->ql("drop table if exists ChairTag")
 	&& $Conf->ql("update Settings set value=60 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 60;
+    if ($Conf->settings["allowPaperOption"] == 60
+        && $Conf->ql("insert into Settings (name,value,data) select concat('msg.',substr(name,1,length(name)-3)), value, data from Settings where name='homemsg' or name='conflictdefmsg'")
+        && $Conf->ql("update Settings set value=61 where name='allowPaperOption'")) {
+        foreach (array("conflictdef", "home") as $k)
+            if (isset($Conf->settingTexts["${k}msg"]))
+                $Conf->settingTexts["msg.$k"] = $Conf->settingTexts["${k}msg"];
+        $Conf->settings["allowPaperOption"] = 61;
+    }
 }

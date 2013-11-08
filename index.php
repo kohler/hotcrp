@@ -202,7 +202,7 @@ echo "</div></div>\n\n";
 
 
 // Home message
-if (($v = $Conf->settingText("homemsg")))
+if (($v = $Conf->settingText("msg.home")))
     $Conf->infoMsg($v);
 
 

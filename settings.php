@@ -21,8 +21,8 @@ $SettingGroups = array("acc" => array(
 		       "msg" => array(
 			     "opt.shortName" => "simplestring",
 			     "opt.longName" => "simplestring",
-			     "homemsg" => "htmlstring",
-			     "conflictdefmsg" => "htmlstring",
+			     "msg.home" => "htmlstring",
+			     "msg.conflictdef" => "htmlstring",
 			     "next" => "sub"),
 		       "sub" => array(
 			     "sub_open" => "cdate",
@@ -133,8 +133,8 @@ $SettingText = array(
 	"final_open" => "Collect final versions setting",
 	"final_soft" => "Final version upload deadline",
 	"final_done" => "Final version upload hard deadline",
-	"homemsg" => "Home page message",
-	"conflictdefmsg" => "Definition of conflict of interest",
+	"msg.home" => "Home page message",
+	"msg.conflictdef" => "Definition of conflict of interest",
 	"mailbody_requestreview" => "Mail template for external review requests"
 	);
 
@@ -192,9 +192,9 @@ function parseValue($name, $type) {
     global $SettingText, $Error, $Highlight;
 
     // PHP changes incoming variable names, substituting "." with "_".
-    if (!isset($_REQUEST[$name]) && substr($name, 0, 4) === "opt."
-	&& isset($_REQUEST["opt_" . substr($name, 4)]))
-	$_REQUEST[$name] = $_REQUEST["opt_" . substr($name, 4)];
+    if (!isset($_REQUEST[$name]) && substr($name, 3, 1) === "."
+	&& isset($_REQUEST[substr($name, 0, 3) . "_" . substr($name, 4)]))
+	$_REQUEST[$name] = $_REQUEST[substr($name, 0, 3) . "_" . substr($name, 4)];
 
     if (!isset($_REQUEST[$name]))
 	return null;
@@ -922,23 +922,25 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Conf->warnMsg("Authors can see decisions, but not reviews. This is sometimes unintentional.");
 
     // unset text messages that equal the default
-    if (value("conflictdefmsg")
-	&& trim($Values["conflictdefmsg"][1]) == $Conf->conflictDefinitionText(true))
-	$Values["conflictdefmsg"] = null;
+    if (value("msg.conflictdef")
+	&& trim($Values["msg.conflictdef"][1]) == $Conf->conflictDefinitionText(true))
+	$Values["msg.conflictdef"] = null;
 
     // make settings
     if (count($Error) == 0 && count($Values) > 0) {
 	$while = "updating settings";
 	$tables = "Settings write, TopicArea write, PaperTopic write, TopicInterest write, OptionType write, PaperOption write";
-	if (isset($Values['decisions']) || isset($Values['reviewform']))
+	if (array_key_exists("decisions", $Values)
+            || array_key_exists("reviewform", $Values))
 	    $tables .= ", ReviewFormOptions write";
 	else
 	    $tables .= ", ReviewFormOptions read";
-	if (isset($Values['decisions']) || isset($Values["tag_vote"]))
+	if (array_key_exists("decisions", $Values)
+            || array_key_exists("tag_vote", $Values))
 	    $tables .= ", Paper write";
-	if (isset($Values["tag_vote"]))
+	if (array_key_exists("tag_vote", $Values))
 	    $tables .= ", PaperTag write";
-	if (isset($Values['reviewform']))
+	if (array_key_exists("reviewform", $Values))
 	    $tables .= ", ReviewFormField write, PaperReview write";
 	else
 	    $tables .= ", ReviewFormField read";
@@ -1135,12 +1137,12 @@ function doMsgGroup() {
 <input class='textlite' name='opt.longName' size='70' onchange='hiliter(this)' value=\"", htmlspecialchars($Opt["longName"]), "\" />
 <div class='g'></div>\n";
 
-    echo "<div class='f-c'>", decorateSettingName("homemsg", "Home page message"), " <span class='f-cx'>(XHTML allowed)</span></div>
-<textarea class='textlite' name='homemsg' cols='60' rows='10' onchange='hiliter(this)'>", htmlspecialchars(settingText("homemsg", "")), "</textarea>
+    echo "<div class='f-c'>", decorateSettingName("msg.home", "Home page message"), " <span class='f-cx'>(XHTML allowed)</span></div>
+<textarea class='textlite' name='msg.home' cols='60' rows='10' onchange='hiliter(this)'>", htmlspecialchars(settingText("msg.home", "")), "</textarea>
 <div class='g'></div>\n";
 
-    echo "<div class='f-c'>", decorateSettingName("conflictdefmsg", "Definition of conflict of interest"), " <span class='f-cx'>(XHTML allowed)</span></div>
-<textarea class='textlite' name='conflictdefmsg' cols='60' rows='2' onchange='hiliter(this)'>", htmlspecialchars(settingText("conflictdefmsg", $Conf->conflictDefinitionText(true))), "</textarea>";
+    echo "<div class='f-c'>", decorateSettingName("msg.conflictdef", "Definition of conflict of interest"), " <span class='f-cx'>(XHTML allowed)</span></div>
+<textarea class='textlite' name='msg.conflictdef' cols='60' rows='2' onchange='hiliter(this)'>", htmlspecialchars(settingText("msg.conflictdef", $Conf->conflictDefinitionText(true))), "</textarea>";
 }
 
 // Submissions
