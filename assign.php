@@ -555,7 +555,7 @@ if ($Me->canAdminister($prow)) {
 		$revtype = $p->reviewType;
 	    else
 		$revtype = ($p->refused ? -3 : 0);
-	    $title = ($cid == -3 ? "' title='Review previously declined" : "");
+	    $title = ($revtype == -3 ? "' title='Review previously declined" : "");
 	    echo "<td id='ass$p->contactId' class='pctbname$revtype pctbl'>";
 	    echo str_replace(' ', "&nbsp;", Text::name_html($pc));
 	    if ($p->conflictType == 0
