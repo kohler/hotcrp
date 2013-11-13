@@ -3,11 +3,143 @@
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class AssignmentState {
+    private $olds = array();
+    private $news = array();
+    private $loaded = array();
+    public function load_type($type, $loader) {
+        if (!isset($this->loaded[$type])) {
+            $this->loaded[$type] = $loader;
+            $loader->load_state($this);
+        }
+    }
+    public function load($x) {
+        assert(isset($x["pid"]));
+        @($this->olds[$x["pid"]][] = $x);
+        @($this->news[$x["pid"]][] = $x);
+    }
+    private function pid_keys($q) {
+        if (isset($q["pid"]))
+            return array($q["pid"]);
+        else
+            return array_keys($this->news);
+    }
+    public function match($x, $q) {
+        foreach ($q as $k => $v) {
+            if ($v !== null && @$x[$k] != $v)
+                return false;
+        }
+        return true;
+    }
+    public function match_keys($x, $y) {
+        foreach ($x as $k => $v) {
+            if ($k[0] != "_" && @$y[$k] != $v)
+                return false;
+        }
+        return true;
+    }
+    private function query_remove($q, $remove) {
+        $res = array();
+        foreach ($this->pid_keys($q) as $pid) {
+            $bypid =& $this->news[$pid];
+            for ($i = 0; $i != count($bypid); ++$i)
+                if ($this->match($bypid[$i], $q)) {
+                    $res[] = $bypid[$i];
+                    if ($remove) {
+                        array_splice($bypid, $i, 1);
+                        --$i;
+                    }
+                }
+        }
+        return $res;
+    }
+    public function query($q) {
+        return $this->query_remove($q, false);
+    }
+    public function remove($q) {
+        return $this->query_remove($q, true);
+    }
+    public function add($x) {
+        assert(isset($x["pid"]));
+        if (!isset($this->news[$x["pid"]]))
+            $this->olds[$x["pid"]] = array();
+        $this->news[$x["pid"]][] = $x;
+    }
+    public function diff() {
+        $diff = array();
+        foreach ($this->news as $pid => $newa) {
+            foreach ($this->olds[$pid] as $ox) {
+                for ($i = 0; $i != count($newa); ++$i)
+                    if ($this->match_keys($ox, $newa[$i])) {
+                        if (!$this->match($ox, $newa[$i]))
+                            @($diff[$pid][] = array($ox, $newa[$i]));
+                        array_splice($newa, $i, 1);
+                        $i = false;
+                        break;
+                    }
+                if ($i !== false)
+                    @($diff[$pid][] = array($ox, null));
+            }
+            foreach ($newa as $nx)
+                @($diff[$pid][] = array(null, $nx));
+        }
+        return $diff;
+    }
+}
+
+class AssignerContacts {
+    private $byid = array();
+    private $byemail = array();
+    static private $next_fake_id = -10;
+    static public function make_none($email = null) {
+        return (object) array("contactId" => 0, "roles" => 0, "email" => $email, "sorter" => "");
+    }
+    public function store($c) {
+        if ($c->contactId)
+            $this->byid[$c->contactId] = $c;
+        if ($c->email)
+            $this->byemail[$c->email] = $c;
+        return $c;
+    }
+    public function get_id($cid) {
+        global $Conf;
+        if (!$cid)
+            return self::make_none();
+        if (isset($this->byid[$cid]))
+            return $this->byid[$cid];
+        $result = $Conf->qe("select contactId, roles, email, firstName, lastName from ContactInfo where contactId='" . sqlq($cid) . "'");
+        if (!($c = edb_orow($result)))
+            $c = (object) array("contactId" => $cid, "roles" => 0, "email" => "unknown contact $cid", "sorter" => "");
+        return $this->store($c);
+    }
+    public function get_email($email) {
+        global $Conf;
+        if (!$email)
+            return self::make_none();
+        if (isset($this->byemail[$email]))
+            return $this->byemail[$email];
+        $result = $Conf->qe("select contactId, roles, email, firstName, lastName from ContactInfo where email='" . sqlq($email) . "'");
+        if (!($c = edb_orow($result))) {
+            $c = (object) array("contactId" => self::$next_fake_id, "roles" => 0, "email" => $email, "sorter" => $email);
+            self::$next_fake_id -= 1;
+        }
+        return $this->store($c);
+    }
+    public function email_registered($email) {
+        return isset($this->byemail[$email]) && $this->byemail[$email]->contactId > 0;
+    }
+}
+
 class Assigner {
     public $pid;
-    public $cid;
     public $contact;
+    public $cid;
     static private $assigners = array();
+    function __construct($pid, $contact) {
+        $this->pid = $pid;
+        $this->contact = $contact;
+        $this->cid = $contact ? $contact->contactId : null;
+    }
     static function register($n, $a) {
         assert(!@self::$assigners[$n]);
         self::$assigners[$n] = $a;
@@ -21,45 +153,62 @@ class Assigner {
     function require_pc() {
         return true;
     }
-    function allow_conflict() {
-        return false;
-    }
-    function allow_none() {
+    function allow_contact_type($type) {
         return false;
     }
     function account(&$countbycid, $nrev) {
         $countbycid[$this->cid] = @+$countbycid[$this->cid] + 1;
     }
-    function parse($req) {
-        return false;
-    }
 }
 class ReviewAssigner extends Assigner {
     private $type;
     private $round;
-    function __construct($type) {
+    function __construct($pid, $contact, $type, $round) {
+        parent::__construct($pid, $contact);
         $this->type = $type;
-    }
-    function parse($req) {
-        $this->round = @$req["round"];
-        if ($this->round && !preg_match('/\A[a-zA-Z0-9]+\z/', $this->round))
-            return "review round “" . htmlspecialchars($this->round) . "” should contain only letters and numbers";
-        if ($this->type == REVIEW_EXTERNAL
-            && ($this->contact->roles & Contact::ROLE_PC))
-            $this->type = REVIEW_PC;
-        return false;
+        $this->round = $round;
     }
     function require_pc() {
         return $this->type > REVIEW_EXTERNAL;
     }
-    function allow_conflict() {
-        return $this->type == 0;
+    function allow_contact_type($type) {
+        return $this->type == 0 && $type != "none";
     }
-    function unparse_display($pcm) {
+    function load_state($state) {
+        global $Conf;
+        $result = $Conf->qe("select paperId, contactId, reviewType, reviewRound from PaperReview");
+        while (($row = edb_row($result))) {
+            $round = "";
+            if ($row[3] && isset($Conf->settings["rounds"][$row[3]]))
+                $round = $Conf->settings["rounds"][$row[3]];
+            $state->load(array("type" => "review", "pid" => $row[0], "cid" => $row[1],
+                               "_rtype" => $row[2], "_round" => $round));
+        }
+    }
+    function apply($pid, $contact, $req, $state) {
+        $round = @$req["round"];
+        if ($round && !preg_match('/\A[a-zA-Z0-9]+\z/', $round))
+            return "review round “" . htmlspecialchars($round) . "” should contain only letters and numbers";
+        $rtype = $this->type;
+        if ($rtype == REVIEW_EXTERNAL && ($contact->roles & Contact::ROLE_PC))
+            $rtype = REVIEW_PC;
+        $state->load_type("review", $this);
+        $r = $state->remove(array("type" => "review", "pid" => $pid, "cid" => $contact->contactId));
+        if (!$round && count($r) && $r[0]["_round"])
+            $round = $r[0]["_round"];
+        $round = $round == "none" ? "" : $round;
+        if ($rtype)
+            $state->add(array("type" => "review", "pid" => $pid, "cid" => $contact->contactId,
+                              "_rtype" => $rtype, "_round" => $round));
+    }
+    function realize($old, $new, $cmap) {
+        $x = $new ? $new : $old;
+        return new ReviewAssigner($x["pid"], $cmap->get_id($x["cid"]),
+                                  $new ? $new["_rtype"] : 0, $x["_round"]);
+    }
+    function unparse_display() {
         global $assignprefs, $Conf;
-        if (!($pc = @$pcm[$this->cid]))
-            return null;
-        $t = Text::name_html($pc) . ' ';
+        $t = Text::name_html($this->contact) . ' ';
         if ($this->type) {
             $t .= review_type_icon($this->type, true);
             if ($this->round)
@@ -75,13 +224,15 @@ class ReviewAssigner extends Assigner {
     }
     function account(&$countbycid, $nrev) {
         $countbycid[$this->cid] = @+$countbycid[$this->cid] + 1;
-        $delta = $this->type ? 1 : -1;
-        foreach (array($nrev, $nrev->pset) as $nnrev) {
-            $nnrev->any[$this->cid] += $delta;
-            if ($this->type == REVIEW_PRIMARY)
-                $nnrev->pri[$this->cid] += $delta;
-            else if ($this->type == REVIEW_SECONDARY)
-                $nnrev->sec[$this->cid] += $delta;
+        if ($this->cid > 0 && isset($nrev->any[$this->cid])) {
+            $delta = $this->type ? 1 : -1;
+            foreach (array($nrev, $nrev->pset) as $nnrev) {
+                $nnrev->any[$this->cid] += $delta;
+                if ($this->type == REVIEW_PRIMARY)
+                    $nnrev->pri[$this->cid] += $delta;
+                else if ($this->type == REVIEW_SECONDARY)
+                    $nnrev->sec[$this->cid] += $delta;
+            }
         }
     }
     function execute($when) {
@@ -93,19 +244,35 @@ class ReviewAssigner extends Assigner {
 class LeadAssigner extends Assigner {
     private $type;
     private $isadd;
-    function __construct($type, $isadd) {
+    function __construct($pid, $contact, $type, $isadd) {
+        parent::__construct($pid, $contact);
         $this->type = $type;
         $this->isadd = $isadd;
     }
-    function allow_none() {
-        return true;
+    function allow_contact_type($type) {
+        return $type == "none" || !$this->isadd;
     }
-    function unparse_display($pcm) {
+    function load_state($state) {
+        global $Conf;
+        $result = $Conf->qe("select paperId, " . $this->type . "ContactId from Paper where " . $this->type . "ContactId!=0");
+        while (($row = edb_row($result)))
+            $state->load(array("type" => $this->type, "pid" => $row[0], "_cid" => $row[1]));
+    }
+    function apply($pid, $contact, $req, $state) {
+        $state->load_type($this->type, $this);
+        $remcid = $this->isadd || !$contact->contactId ? null : $contact->contactId;
+        $state->remove(array("type" => $this->type, "pid" => $pid, "_cid" => $remcid));
+        if ($this->isadd && $contact->contactId)
+            $state->add(array("type" => $this->type, "pid" => $pid, "_cid" => $contact->contactId));
+    }
+    function realize($old, $new, $cmap) {
+        $x = $new ? $new : $old;
+        return new LeadAssigner($x["pid"], $cmap->get_id($x["_cid"]), $x["type"], !!$new);
+    }
+    function unparse_display() {
         if (!$this->cid)
             return "remove $this->type";
-        if (!($pc = @$pcm[$this->cid]))
-            return null;
-        $t = Text::name_html($pc);
+        $t = Text::name_html($this->contact);
         if ($this->isadd)
             $t .= " ($this->type)";
         else
@@ -124,17 +291,32 @@ class LeadAssigner extends Assigner {
 }
 class ConflictAssigner extends Assigner {
     private $isadd;
-    function __construct($isadd) {
+    function __construct($pid, $contact, $isadd) {
+        parent::__construct($pid, $contact);
         $this->isadd = $isadd;
     }
-    function allow_conflict() {
-        return true;
+    function allow_contact_type($type) {
+        return $type == "conflict" || ($type == "any" && !$this->isadd);
     }
-    function unparse_display($pcm) {
+    function load_state($state) {
         global $Conf;
-        if (!($pc = @$pcm[$this->cid]))
-            return null;
-        $t = Text::name_html($pc) . ' ';
+        $result = $Conf->qe("select paperId, contactId from PaperConflict");
+        while (($row = edb_row($result)))
+            $state->load(array("type" => "conflict", "pid" => $row[0], "cid" => $row[1]));
+    }
+    function apply($pid, $contact, $req, $state) {
+        $state->load_type("conflict", $this);
+        $state->remove(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId));
+        if ($this->isadd)
+            $state->add(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId));
+    }
+    function realize($old, $new, $cmap) {
+        $x = $new ? $new : $old;
+        return new ConflictAssigner($x["pid"], $cmap->get_id($x["cid"]), !!$x);
+    }
+    function unparse_display() {
+        global $Conf;
+        $t = Text::name_html($this->contact) . ' ';
         if ($this->isadd)
             $t .= review_type_icon(-1);
         else
@@ -150,17 +332,17 @@ class ConflictAssigner extends Assigner {
     }
 }
 
-Assigner::register("primary", new ReviewAssigner(REVIEW_PRIMARY));
-Assigner::register("secondary", new ReviewAssigner(REVIEW_SECONDARY));
-Assigner::register("pcreview", new ReviewAssigner(REVIEW_PC));
-Assigner::register("review", new ReviewAssigner(REVIEW_EXTERNAL));
-Assigner::register("noreview", new ReviewAssigner(0));
-Assigner::register("lead", new LeadAssigner("lead", true));
-Assigner::register("nolead", new LeadAssigner("lead", false));
-Assigner::register("shepherd", new LeadAssigner("shepherd", true));
-Assigner::register("noshepherd", new LeadAssigner("shepherd", false));
-Assigner::register("conflict", new ConflictAssigner(true));
-Assigner::register("noconflict", new ConflictAssigner(false));
+Assigner::register("primary", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
+Assigner::register("secondary", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
+Assigner::register("pcreview", new ReviewAssigner(0, null, REVIEW_PC, ""));
+Assigner::register("review", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
+Assigner::register("noreview", new ReviewAssigner(0, null, 0, ""));
+Assigner::register("lead", new LeadAssigner(0, null, "lead", true));
+Assigner::register("nolead", new LeadAssigner(0, null, "lead", false));
+Assigner::register("shepherd", new LeadAssigner(0, null, "shepherd", true));
+Assigner::register("noshepherd", new LeadAssigner(0, null, "shepherd", false));
+Assigner::register("conflict", new ConflictAssigner(0, null, true));
+Assigner::register("noconflict", new ConflictAssigner(0, null, false));
 
 class AssignmentSet {
     private $assigners = array();
@@ -170,10 +352,14 @@ class AssignmentSet {
     private $override;
     private $papers;
     private $conflicts;
+    private $astate;
+    private $cmap;
 
     function __construct($override) {
         global $Conf;
         $this->override = $override;
+        $this->astate = new AssignmentState;
+        $this->cmap = new AssignerContacts;
 
         $this->papers = array();
         $result = $Conf->qe('select paperId, timeSubmitted, timeWithdrawn from Paper');
@@ -181,9 +367,9 @@ class AssignmentSet {
             $this->papers[$row[0]] = ($row[1]>0 ? 1 : ($row[2]>0 ? -1 : 0));
 
         $this->conflicts = array();
-        $result = $Conf->qe('select paperId, contactId from PaperConflict');
-        while (($row = edb_row($result)))
-            @($this->conflicts[$row[0]][$row[1]] = true);
+        $this->astate->load_type("conflict", Assigner::find("conflict"));
+        foreach ($this->astate->query(array("type" => "conflict")) as $x)
+            @($this->conflicts[$x["pid"]][$x["cid"]] = true);
     }
 
     private function error($lineno, $message) {
@@ -250,9 +436,10 @@ class AssignmentSet {
         // set up PC mappings
         $pcm = pcMembers();
         $pc_by_email = array();
-        foreach ($pcm as $id => $pc)
+        foreach ($pcm as $pc) {
             $pc_by_email[$pc->email] = $pc;
-        $contact_by_email = null;
+            $this->cmap->store($pc);
+        }
 
         // parse file
         while (($req = $csv->next()) !== false) {
@@ -286,8 +473,6 @@ class AssignmentSet {
                 $this->error($csv->lineno(), "unknown action “" . htmlspecialchars($req["action"]) . "”");
                 continue;
             }
-            $assigner = clone $assigner;
-            $assigner->pid = $pid;
 
             // clean user parts
             foreach (array("first" => "firstName", "last" => "lastName")
@@ -310,12 +495,12 @@ class AssignmentSet {
             $email = @trim($req["email"]);
             if ($email && ($contact = @$pc_by_email[$email]))
                 /* ok */;
-            else if ($email == "none") {
-                if (!$assigner->allow_none()) {
-                    $this->error($csv->lineno(), "“none” not allowed here");
+            else if ($email == "none" || $email == "any") {
+                if (!$assigner->allow_contact_type($email)) {
+                    $this->error($csv->lineno(), "“$email” not allowed here");
                     continue;
                 }
-                $contact = (object) array("roles" => 0, "contactId" => 0, "sorter" => "");
+                $contact = (object) array("roles" => 0, "contactId" => null, "email" => $email, "sorter" => "");
             } else if ($assigner->require_pc()) {
                 $cid = matchContact($pcm, @$req["firstName"], @$req["lastName"], $email);
                 if ($cid == -2)
@@ -326,34 +511,41 @@ class AssignmentSet {
                     continue;
                 $contact = $pcm[$cid];
             } else {
-                if (!$contact_by_email)
-                    $contact_by_email = self::contacts_by("email");
                 if (!$email) {
                     $this->error($csv->lineno(), "missing email address");
                     continue;
-                } else if (($contact = $contact_by_email[$email]))
-                    /* ok */;
-                else if (!validateEmail($email)) {
-                    $this->error($csv->lineno(), "email address “" . htmlspecialchars($email) . "” is invalid");
-                    continue;
-                } else
-                    $contact = (object) array("roles" => 0, "contactId" => -1, "email" => $email, "firstName" => @$req["firstName"], "lastName" => @$req["lastName"]);
+                }
+                $contact = $this->cmap->get_email($email);
+                if ($contact->contactId < 0) {
+                    if (!validateEmail($email)) {
+                        $this->error($csv->lineno(), "email address “" . htmlspecialchars($email) . "” is invalid");
+                        continue;
+                    }
+                    if (!isset($contact->firstName) && @$req["firstName"])
+                        $contact->firstName = $req["firstName"];
+                    if (!isset($contact->lastName) && @$req["lastName"])
+                        $contact->lastName = $req["lastName"];
+                }
             }
-            if (@$contact->contactId && !$this->override
+            if (@$contact->contactId > 0 && !$this->override
                 && @$this->conflict[$pid][$contact->contactId]
-                && !$assigner->allow_conflict()) {
+                && !$assigner->allow_contact_type("conflict")) {
                 $this->error($csv->lineno(), Text::user_html_nolink($contact) . " has a conflict with paper #$pid");
                 continue;
             }
-            $assigner->contact = $contact;
-            $assigner->cid = $contact->contactId;
 
-            // assign other
-            if (($err = $assigner->parse($req, $contact)))
+            // perform assignment
+            if (($err = $assigner->apply($pid, $contact, $req, $this->astate)))
                 $this->error($csv->lineno(), $err);
-            else
-                $this->assigners[] = $assigner;
         }
+
+        // create assigners for difference
+        foreach ($this->astate->diff() as $pid => $difflist)
+            foreach ($difflist as $diff) {
+                $x = $diff[1] ? $diff[1] : $diff[0];
+                $assigner = Assigner::find($x["type"]);
+                $this->assigners[] = $assigner->realize($diff[0], $diff[1], $this->cmap);
+            }
     }
 
     function echo_unparse_display($papersel = null) {
@@ -365,7 +557,6 @@ class AssignmentSet {
             $papersel = array_keys($papersel);
         }
 
-        $pcm = pcMembers();
         $nrev = self::count_reviews();
         $nrev->pset = self::count_reviews($papersel);
         $this->set_my_conflicts();
@@ -373,7 +564,7 @@ class AssignmentSet {
 
         $bypaper = array();
         foreach ($this->assigners as $assigner)
-            if (($text = $assigner->unparse_display($pcm))) {
+            if (($text = $assigner->unparse_display())) {
                 $c = $assigner->contact;
                 if (!isset($c->sorter))
                     Contact::set_sorter($c);
@@ -413,7 +604,7 @@ class AssignmentSet {
 	echo '<table class="pctb"><tr><td class="pctbcolleft"><table>';
 	$colorizer = new Tagger;
 	$pcdesc = array();
-	foreach ($pcm as $cid => $pc) {
+	foreach (pcMembers() as $cid => $pc) {
 	    $nnew = @+$countbycid[$cid];
 	    $color = $colorizer->color_classes($pc->contactTags);
 	    $color = ($color ? ' class="' . $color . '"' : "");
@@ -451,23 +642,27 @@ class AssignmentSet {
             return false;
         }
 
+        // create new contacts outside the lock
+        foreach ($this->assigners as $assigner)
+            if ($assigner->contact->contactId < 0) {
+                $c = $this->cmap->get_email($assigner->contact->email);
+                if ($c->contactId < 0) {
+                    $cc = new Contact;
+                    // XXX assume that never fails:
+                    $cc->load_by_email($c->email, array("firstName" => @$c->firstName, "lastName" => @$c->lastName), false);
+                    $c = $this->cmap->store($cc);
+                }
+                $assigner->contact = $c;
+                $assigner->cid = $c->contactId;
+            }
+
+        // execute assignments
         $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, PaperReviewRefused write, Paper write, PaperConflict write, ActionLog write, Settings write, PaperTag write");
 
-        $pcm = pcMembers();
-        $contact_by_email = array();
-        foreach ($this->assigners as $assigner) {
-            $c = $assigner->contact;
-            if ($c->contactId < 0 && @$contact_by_email[$c->email])
-                $c = $assigner->contact = $contact_by_email[$c->email];
-            else if ($c->contactId < 0) {
-                $cc = new Contact;
-                $cc->load_by_email($c->email, array("firstName" => @$c->firstName, "lastName" => @$c->lastName), false);
-                // XXX assume that never fails
-                $c = $assigner->contact = $contact_by_email[$c->email] = $cc;
-            }
-            $assigner->contactId = $c->contactId;
+        foreach ($this->assigners as $assigner)
             $assigner->execute($Now);
-        }
+
+        $Conf->qe("unlock tables");
 
         // confirmation message
         if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $Now)
@@ -476,7 +671,6 @@ class AssignmentSet {
             $Conf->confirmMsg("Assignments saved!");
 
         // clean up
-        $Conf->qe("unlock tables");
         $Conf->updateRevTokensSetting(false);
         $Conf->update_paperlead_setting();
         return true;
