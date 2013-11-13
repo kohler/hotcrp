@@ -163,10 +163,12 @@ class Assigner {
 class ReviewAssigner extends Assigner {
     private $type;
     private $round;
-    function __construct($pid, $contact, $type, $round) {
+    private $oldtype;
+    function __construct($pid, $contact, $type, $round, $oldtype = 0) {
         parent::__construct($pid, $contact);
         $this->type = $type;
         $this->round = $round;
+        $this->oldtype = $oldtype;
     }
     function require_pc() {
         return $this->type > REVIEW_EXTERNAL;
@@ -204,7 +206,8 @@ class ReviewAssigner extends Assigner {
     function realize($old, $new, $cmap) {
         $x = $new ? $new : $old;
         return new ReviewAssigner($x["pid"], $cmap->get_id($x["cid"]),
-                                  $new ? $new["_rtype"] : 0, $x["_round"]);
+                                  $new ? $new["_rtype"] : 0, $x["_round"],
+                                  $old ? $old["_rtype"] : 0);
     }
     function unparse_display() {
         global $assignprefs, $Conf;
@@ -227,11 +230,9 @@ class ReviewAssigner extends Assigner {
         if ($this->cid > 0 && isset($nrev->any[$this->cid])) {
             $delta = $this->type ? 1 : -1;
             foreach (array($nrev, $nrev->pset) as $nnrev) {
-                $nnrev->any[$this->cid] += $delta;
-                if ($this->type == REVIEW_PRIMARY)
-                    $nnrev->pri[$this->cid] += $delta;
-                else if ($this->type == REVIEW_SECONDARY)
-                    $nnrev->sec[$this->cid] += $delta;
+                $nnrev->any[$this->cid] += ($this->type != 0) - ($this->oldtype != 0);
+                $nnrev->pri[$this->cid] += ($this->type == REVIEW_PRIMARY) - ($this->oldtype == REVIEW_PRIMARY);
+                $nnrev->sec[$this->cid] += ($this->type == REVIEW_SECONDARY) - ($this->oldtype == REVIEW_SECONDARY);
             }
         }
     }
