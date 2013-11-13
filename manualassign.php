@@ -98,7 +98,7 @@ function saveAssignments($reviewer) {
 	if ($type < 0 && $row->conflictType < CONFLICT_CHAIRMARK)
 	    $ins .= ", ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")";
 	if ($kind == "a")
-	    $Me->assignPaper($row->paperId, $row, $reviewer, $type, $when);
+	    $Me->assign_paper($row->paperId, $row, $reviewer, null, $type, $when);
     }
 
     if ($ins)
