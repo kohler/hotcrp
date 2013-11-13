@@ -174,7 +174,7 @@ function pcAssignments() {
 	// manage assignments
 	$pctype = max($pctype, 0);
 	if ($pctype != $row->reviewType && ($pctype == 0 || $pctype == REVIEW_PRIMARY || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC))
-	    $Me->assign_paper($prow->paperId, $row, $row->contactId, null, $pctype, $when);
+	    $Me->assign_paper($prow->paperId, $row, $row->contactId, $pctype, $when);
     }
 }
 
@@ -446,7 +446,7 @@ if (isset($_REQUEST["addpc"]) && $Me->allowAdminister($prow) && check_post()) {
 	$Conf->errorMsg("Enter a PC member.");
     else if (($pctype = rcvtint($_REQUEST["pctype"])) == REVIEW_PRIMARY
 	     || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC) {
-	$Me->assign_paper($prow->paperId, findRrow($pcid), $pcid, null, $pctype, time());
+	$Me->assign_paper($prow->paperId, findRrow($pcid), $pcid, $pctype, time());
 	$Conf->updateRevTokensSetting(false);
     }
     loadRows();

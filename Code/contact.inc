@@ -1669,11 +1669,14 @@ class Contact {
     }
 
 
-    function assign_paper($pid, $rrow, $reviewer_cid, $reviewer_email, $type, $when) {
+    function assign_paper($pid, $rrow, $reviewer_cid, $type, $when) {
 	global $Conf, $reviewTypeName;
-	if ($type == 0 && $rrow && $rrow->reviewModified
-	    && ($rrow->reviewType == REVIEW_EXTERNAL || $rrow->reviewType == REVIEW_PC))
-	    return;
+	if ($type <= 0 && $rrow && $rrow->reviewType && $rrow->reviewModified) {
+            if ($rrow->reviewType >= REVIEW_SECONDARY)
+                $type = REVIEW_PC;
+            else
+                return;
+        }
 	$qtag = "";
 	if ($type > 0 && (!$rrow || !$rrow->reviewType)) {
 	    $qa = $qb = "";
@@ -1698,11 +1701,9 @@ class Contact {
 	    $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy$qa) values ($pid, $reviewer_cid, $type, $this->contactId$qb)";
 	} else if ($type > 0 && $rrow->reviewType != $type)
 	    $q = "update PaperReview set reviewType=$type where reviewId=$rrow->reviewId";
-	else if ($type <= 0 && $rrow && $rrow->reviewType && !$rrow->reviewModified)
-	    $q = "delete from PaperReview where reviewId=$rrow->reviewId";
 	else if ($type <= 0 && $rrow && $rrow->reviewType)
-	    $q = "update PaperReview set reviewType=" . REVIEW_PC . " where reviewId=$rrow->reviewId";
-	else
+	    $q = "delete from PaperReview where reviewId=$rrow->reviewId";
+        else
 	    return;
 
 	if ($Conf->qe($q, "while assigning review")) {
@@ -1710,17 +1711,13 @@ class Contact {
 		$Conf->q($qtag);
 	    if ($rrow && defval($rrow, "reviewToken", 0) != 0 && $type <= 0)
 		$Conf->settings["rev_tokens"] = -1;
-            if ($type <= 0 && $q[0] == "d")
-                $msg = "Removed " . $reviewTypeName[$rrow->reviewType] . " reviewer ";
-            else if ($type <= 0)
-                $msg = "Removed " . $reviewTypeName[$rrow->reviewType] . " reviewer (preserving review) ";
+            if ($q[0] == "d")
+                $msg = "removed " . $reviewTypeName[$rrow->reviewType] . " review";
+            else if ($q[0] == "u")
+                $msg = "changed " . $reviewTypeName[$rrow->reviewType] . " review to " . $reviewTypeName[$type];
             else
-                $msg = "Added " . $reviewTypeName[$type] . " reviewer ";
-            if (!$reviewer_email && ($pcm = pcMembers()) && isset($pcm[$reviewer_cid]))
-                $reviewer_email = $pcm[$reviewer_cid]->email;
-            else if (!$reviewer_email)
-                $reviewer_email = $reviewer_cid;
-	    $Conf->log($msg . $reviewer_email, $this, $pid);
+                $msg = "added " . $reviewTypeName[$type] . " review";
+	    $Conf->log($this->email . " " . $msg, $reviewer_cid, $pid);
 	    if ($q[0] == "i")
 		$Conf->qx("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
 	    if ($q[0] == "i" && $type >= REVIEW_PC && $Conf->setting("pcrev_assigntime", 0) < $when)

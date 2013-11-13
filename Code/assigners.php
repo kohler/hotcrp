@@ -238,7 +238,7 @@ class ReviewAssigner extends Assigner {
     function execute($when) {
         global $Conf, $Me;
         $result = $Conf->qe("select contactId, paperId, reviewId, reviewType, reviewModified from PaperReview where paperId=$this->pid and contactId=$this->cid");
-        $Me->assign_paper($this->pid, edb_orow($result), $this->cid, $this->contact->email, $this->type, $when);
+        $Me->assign_paper($this->pid, edb_orow($result), $this->cid, $this->type, $when);
     }
 }
 class LeadAssigner extends Assigner {
