@@ -560,7 +560,8 @@ function selassign(elt, which) {
     if (elt) {
 	$$("ass" + which).className = "pctbname" + elt.value + " pctbl";
         folder.firstChild.className = "rt" + elt.value;
-        folder.firstChild.firstChild.innerHTML = (["&minus;", "A", "X", "", "R", "R", "2", "1"])[+elt.value + 3];
+        folder.firstChild.innerHTML = '<span class="rti">' +
+            (["&minus;", "A", "X", "", "R", "R", "2", "1"])[+elt.value + 3] + "</span>";
 	hiliter(folder.firstChild);
     }
     if (folder && elt !== 0)
