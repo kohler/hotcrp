@@ -22,21 +22,35 @@ function request_absolute_uri_base() {
                                 $_SERVER["REQUEST_URI"]);
 }
 
+function request_trim_path_info($uri) {
+    if (!isset($_SERVER["PATH_INFO"]) || $_SERVER["PATH_INFO"] == "")
+        return $uri;
+    $path = $_SERVER["PATH_INFO"];
+    if (str_ends_with($uri, $path))
+        return substr($uri, 0, strlen($uri) - strlen($path));
+    $uritail = "";
+    while (($pathpos = strrpos($path, "/")) !== false
+           && ($uripos = strrpos($uri, "/")) !== false) {
+        $uritail = substr($uri, $uripos) . $uritail;
+        $path = substr($path, 0, $pathpos);
+        $uri = substr($uri, 0, $uripos);
+    }
+    if ($path == "" && urldecode($uritail) == $_SERVER["PATH_INFO"])
+        return $uri;
+    else
+        return $uri . $uritail;
+}
+
 function request_absolute_uri_dir() {
-    $uri = request_absolute_uri_base();
-    if (isset($_SERVER["PATH_INFO"])
-        && str_ends_with($uri, $_SERVER["PATH_INFO"]))
-        $uri = substr($uri, 0, strlen($uri) - strlen($_SERVER["PATH_INFO"]));
+    $uri = request_trim_path_info(request_absolute_uri_base());
     return preg_replace('_\A(.*?)[^/]*\z_', '\1', $uri);
 }
 
 function request_script_base() {
     if (!@$_SERVER["REQUEST_URI"])
         return false;
-    $uri = preg_replace('_\A([^\?\#]*).*\z_', '\1', $_SERVER["REQUEST_URI"]);
-    if (isset($_SERVER["PATH_INFO"])
-        && str_ends_with($uri, $_SERVER["PATH_INFO"]))
-        $uri = substr($uri, 0, strlen($uri) - strlen($_SERVER["PATH_INFO"]));
+    $uri = request_trim_path_info(preg_replace('_\A([^\?\#]*).*\z_', '\1',
+                                               $_SERVER["REQUEST_URI"]));
     if (preg_match('_(?:\A|/)([^/]*?)(?:\.php|)\z_', $uri, $m))
         return $m[1] == "" ? "index" : $m[1];
     else
