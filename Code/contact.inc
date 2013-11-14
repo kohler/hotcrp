@@ -1721,12 +1721,12 @@ class Contact {
 	    if ($rrow && defval($rrow, "reviewToken", 0) != 0 && $type <= 0)
 		$Conf->settings["rev_tokens"] = -1;
             if ($q[0] == "d")
-                $msg = "removed " . $reviewTypeName[$rrow->reviewType] . " review";
+                $msg = "Removed " . $reviewTypeName[$rrow->reviewType] . " review";
             else if ($q[0] == "u")
-                $msg = "changed " . $reviewTypeName[$rrow->reviewType] . " review to " . $reviewTypeName[$type];
+                $msg = "Changed " . $reviewTypeName[$rrow->reviewType] . " review to " . $reviewTypeName[$type];
             else
-                $msg = "added " . $reviewTypeName[$type] . " review";
-	    $Conf->log($this->email . " " . $msg, $reviewer_cid, $pid);
+                $msg = "Added " . $reviewTypeName[$type] . " review";
+	    $Conf->log($msg . " by " . $this->email, $reviewer_cid, $pid);
 	    if ($q[0] == "i")
 		$Conf->qx("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
 	    if ($q[0] == "i" && $type >= REVIEW_PC && $Conf->setting("pcrev_assigntime", 0) < $when)
