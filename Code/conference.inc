@@ -234,6 +234,16 @@ class Conference {
 		unset($this->settings["pc"]);
 	    }
 	    unset($_SESSION["pcmembers"]);
+            // check for ERC
+            $result = $this->qe("select pc.contactId from PCMember pc join ContactInfo c using (contactId) where (c.roles&" . Contact::ROLE_ERC . ")!=0 limit 1");
+            $has_erc = !!edb_row($result);
+            if ($has_erc && !$this->settings["erc"]) {
+                $inserts[] = "('erc',$time)";
+                $this->settings["erc"] = $time;
+            } else if (!$has_erc && $this->settings["erc"]) {
+                $removes[] = "'erc'";
+                unset($this->settings["erc"]);
+            }
 	}
 	if ($caches ? isset($caches["paperOption"]) : $this->setting("paperOption") > 0) {
 	    if (!$caches || $caches["paperOption"]) {
@@ -1140,7 +1150,7 @@ class Conference {
 	    $contactTags = "ContactInfo.contactTags";
 
 	$q = "select PaperReview.*,
-		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
+		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.roles as contactRoles,
 		$contactTags,
 		ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail, ReqCI.contactId as reqContactId";
 	if (isset($selector["ratings"]))

@@ -491,14 +491,16 @@ class PaperSearch {
     }
 
     private function _searchAuthors($word, &$qt, $keyword, $quoted) {
-        if ($keyword && !$quoted && $this->amPC && strcasecmp($word, "pc") == 0)
-            $this->_searchField(array_keys(pcMembers()), "au_cid", $qt);
-        else {
-            if ($keyword && !$quoted && $this->amPC && count(($pctags = pcTags()))
-                && isset($pctags[strtolower($word)]))
-                $this->_searchField(self::_pcContactIdsWithTag(strtolower($word)), "au_cid", $qt);
-            $this->_searchField($word, "au", $qt);
+        if ($keyword && !$quoted && $this->amPC) {
+            $lword = strtolower($word);
+            if ($lword == "pc" || (count(($pctags = pcTags()))
+                                   && isset($pctags[$lword]))) {
+                $cids = self::_pcContactIdsWithTag($lword);
+                $this->_searchField($cids, "au_cid", $qt);
+                return;
+            }
         }
+        $this->_searchField($word, "au", $qt);
     }
 
     static function _cleanCompar($compar) {
@@ -546,9 +548,23 @@ class PaperSearch {
 
     private static function _pcContactIdsWithTag($tag) {
 	$a = array();
-	foreach (pcMembers() as $pc)
-	    if ($pc->contactTags && stripos($pc->contactTags, " $tag ") !== false)
-		$a[] = $pc->contactId;
+        $pcm = pcMembers();
+        if ($tag == "pc")
+            $a = array_keys($pcm);
+        else if ($tag == "corepc") {
+            foreach ($pcm as $pc)
+                if ($pc->is_core_pc())
+                    $a[] = $pc->contactId;
+        } else if ($tag == "erc") {
+            foreach ($pcm as $pc)
+                if ($pc->is_erc())
+                    $a[] = $pc->contactId;
+        } else {
+            foreach ($pcm as $pc)
+                if ($pc->contactTags
+                    && stripos($pc->contactTags, " $tag ") !== false)
+                    $a[] = $pc->contactId;
+        }
 	return $a;
     }
 
@@ -562,7 +578,8 @@ class PaperSearch {
         else if (!$quoted && $type == 1 && ($word == "yes" || $word == "any"))
             return "!=0";
 
-        if (!$quoted && $this->amPC && count(($pctags = pcTags()))) {
+        if (!$quoted && $this->amPC) {
+            $pctags = pcTags();
 	    $negtag = $word[0] == "-";
 	    $tag = strtolower($negtag ? substr($word, 1) : $word);
 	    if (isset($pctags[$tag])) {

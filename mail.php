@@ -137,10 +137,15 @@ function contactQuery($type) {
     if ($type == "all") {
 	$q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo left join PCMember using (contactId)";
 	$orderby = "email";
-    } else if ($type == "pc" || substr($type, 0, 3) == "pc:") {
+    } else if ($type == "pc" || $type == "corepc" || $type == "erc"
+               || substr($type, 0, 3) == "pc:") {
 	$q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo join PCMember using (contactId)";
 	$orderby = "email";
-	if ($type != "pc")
+        if ($type == "corepc")
+            $where[] = "(ContactInfo.roles&" . Contact::ROLE_ERC . ")=0";
+        else if ($type == "erc")
+            $where[] = "(ContactInfo.roles&" . Contact::ROLE_ERC . ")!=0";
+	else if ($type != "pc")
 	    $where[] = "ContactInfo.contactTags like '% " . sqlq_for_like(substr($type, 3)) . " %'";
     } else if ($isreview) {
 	$q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
@@ -434,9 +439,14 @@ if ($Me->privChair) {
 $recip["myextrev"] = "Your requested reviewers";
 $recip["uncmyextrev"] = "Your requested reviewers with incomplete reviews";
 $recip["pc"] = "Program committee";
+if ($Conf->setting("erc")) {
+    $recip["corepc"] = "Core program committee";
+    $recip["erc"] = "External review committee";
+}
 if (count($pctags)) {
     foreach ($pctags as $t)
-	$recip["pc:$t"] = "PC members tagged &ldquo;$t&rdquo;";
+        if ($t != "pc" && $t != "corepc" && $t != "erc")
+            $recip["pc:$t"] = "PC members tagged &ldquo;$t&rdquo;";
 }
 if ($Me->privChair)
     $recip["all"] = "All users";

@@ -607,7 +607,7 @@ class AssignmentSet {
 	$pcdesc = array();
 	foreach (pcMembers() as $cid => $pc) {
 	    $nnew = @+$countbycid[$cid];
-	    $color = $colorizer->color_classes($pc->contactTags);
+	    $color = $colorizer->color_classes($pc->all_contact_tags());
 	    $color = ($color ? ' class="' . $color . '"' : "");
 	    $c = "<tr$color><td class='pctbname pctbl'>"
 		. Text::name_html($pc)

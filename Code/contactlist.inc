@@ -273,11 +273,15 @@ class ContactList extends BaseList {
 		$t = "[No name]";
 	    if ($this->contact->privChair)
 		$t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->disabled ? " class='uu'" : "") . ">$t</a>";
-	    if ($row->chair)
+	    if ($row->roles & Contact::ROLE_CHAIR)
 		$t .= " <span class='pcrole'>(Chair)</span>";
-	    else if ($row->assistant)
+	    else if ($row->roles & Contact::ROLE_ADMIN)
 		$t .= " <span class='pcrole'>(Administrator)</span>";
-	    else if ($row->pc && $this->limit != "pc")
+            else if (($row->roles & Contact::ROLE_ERC)
+                     && $this->limit != "erc")
+                $t .= " <span class='pcrole'>(ERC)</span>";
+	    else if (($row->roles & Contact::ROLE_PCERC) == Contact::ROLE_PC
+                     && $this->limit != "pc" && $this->limit != "corepc")
 		$t .= " <span class='pcrole'>(PC)</span>";
 	    if ($this->contact->privChair && $row->email != $this->contact->email)
 		$t .= " <a href=\"" . hoturl("index", "viewContact=" . urlencode($row->email)) . "\">"
@@ -389,7 +393,8 @@ class ContactList extends BaseList {
 	    }
 	    return trim($t);
 	case self::FIELD_SCORE:
-	    if (!$row->pc && !$this->contact->privChair
+	    if (!($row->roles & Contact::ROLE_PC)
+                && !$this->contact->privChair
 		&& $this->limit != "req")
 		return "";
 	    $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
@@ -417,6 +422,8 @@ class ContactList extends BaseList {
     function listFields($listname) {
 	switch ($listname) {
 	case "pc":
+        case "corepc":
+        case "erc":
 	case "admin":
 	case "pcadmin":
 	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_LEADS, self::FIELD_SHEPHERDS));
@@ -468,11 +475,9 @@ class ContactList extends BaseList {
         $qa = ($Conf->sversion >= 47 ? ", disabled" : ", 0 disabled");
 	$pq = "select u.contactId,
 	u.contactId as paperId,
-	firstName, lastName, email, affiliation, contactTags,
+	firstName, lastName, email, affiliation, roles, contactTags,
 	voicePhoneNumber,
-	u.collaborators, lastLogin$qa, visits, note,
-	PCMember.contactId as pc, Chair.contactId as chair,
-	ChairAssistant.contactId as assistant";
+	u.collaborators, lastLogin$qa, visits, note";
 	if (isset($queryOptions['topics']))
 	    $pq .= ",\n	topicIds, topicInterest";
 	if (isset($queryOptions['reviews'])) {
@@ -497,9 +502,9 @@ class ContactList extends BaseList {
 	    $pq .= ",\n\tgroup_concat(PaperConflict.paperId) as paperIds";
 
 	$pq .= "\n	from ContactInfo u\n";
-	$pq .= ($this->limit == "pc" ? "\tjoin" : "\tleft join") . " PCMember on (PCMember.contactId=u.contactId)\n";
-	$pq .= "\tleft join Chair on (Chair.contactId=u.contactId)
-	left join ChairAssistant on (ChairAssistant.contactId=u.contactId)\n";
+        if ($this->limit == "pc" || $this->limit == "corepc"
+            || $this->limit == "erc")
+            $pq .= "\tjoin PCMember on (PCMember.contactId=u.contactId)\n";
 	if (isset($queryOptions['topics']))
 	    $pq .= "	left join (select contactId, group_concat(topicId) as topicIds, group_concat(interest) as topicInterest
 		from TopicInterest
@@ -577,9 +582,13 @@ class ContactList extends BaseList {
 	if (isset($queryOptions["where"]))
 	    $mainwhere[] = $queryOptions["where"];
 	if ($this->limit == "admin")
-	    $mainwhere[] = "(Chair.contactId is not null or ChairAssistant.contactId is not null)";
+	    $mainwhere[] = "(u.roles&" . (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR) . ")!=0";
+	if ($this->limit == "corepc")
+	    $mainwhere[] = "(u.roles&" . Contact::ROLE_PCERC . ")=" . Contact::ROLE_PC;
+	if ($this->limit == "erc")
+	    $mainwhere[] = "(u.roles&" . Contact::ROLE_PCERC . ")=" . Contact::ROLE_PCERC;
 	if ($this->limit == "pcadmin" || $this->limit == "pcadminx")
-	    $mainwhere[] = "(Chair.contactId is not null or ChairAssistant.contactId is not null or PCMember.contactId is not null)";
+	    $mainwhere[] = "(u.roles&" . Contact::ROLE_PCLIKE . ")!=0";
 	if (count($mainwhere))
 	    $pq .= "\twhere " . join(" and ", $mainwhere) . "\n";
 
@@ -676,8 +685,11 @@ class ContactList extends BaseList {
 		continue;
 
 	    $trclass = "k" . ($this->count % 2);
-	    if ($colorizer && ($c = $colorizer->color_classes($row->contactTags)))
-		$trclass .= " " . $c;
+	    if ($colorizer) {
+                $tags = Contact::roles_all_contact_tags($row->roles, $row->contactTags);
+                if (($c = $colorizer->color_classes($tags)))
+                    $trclass .= " " . $c;
+            }
             if ($row->disabled)
                 $trclass .= " greytext";
 	    $this->count++;

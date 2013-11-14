@@ -655,11 +655,15 @@ $pctags = pcTags();
 if (count($pctags)) {
     $tagsjson = array();
     foreach (pcMembers() as $pc)
-	if ($pc->contactTags)
-	    $tagsjson[] = "\"$pc->contactId\":\"" . strtolower($pc->contactTags) . "\"";
+        $tagsjson[] = "\"$pc->contactId\":\"" . strtolower($pc->all_contact_tags()) . "\"";
     $Conf->footerScript("pc_tags_json={" . join(",", $tagsjson) . "};");
+    if ($Conf->setting("erc")) {
+        $pctyp_sel[] = array("corepc", "pc_tags_members(\"corepc\")", "core PC");
+        $pctyp_sel[] = array("erc", "pc_tags_members(\"erc\")", "ERC");
+    }
     foreach ($pctags as $tagname => $pctag)
-	$pctyp_sel[] = array($pctag, "pc_tags_members(\"$tagname\")", "“${pctag}”&nbsp;tag");
+        if ($tagname != "pc" && $tagname != "corepc" && $tagname != "erc")
+            $pctyp_sel[] = array($pctag, "pc_tags_members(\"$tagname\")", "“${pctag}”&nbsp;tag");
 }
 $sep = "";
 foreach ($pctyp_sel as $pctyp) {
@@ -677,7 +681,7 @@ $pcdesc = array();
 $colorizer = new Tagger;
 foreach ($pcm as $id => $p) {
     $count = count($pcdesc) + 1;
-    $color = $colorizer->color_classes($p->contactTags);
+    $color = $colorizer->color_classes($p->all_contact_tags());
     $color = ($color ? " class='${color}'" : "");
     $c = "<tr$color><td class='pctbl'>"
 	. Ht::checkbox("pcs[]", $id, isset($pcsel[$id]),

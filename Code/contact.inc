@@ -39,6 +39,9 @@ class Contact {
     const ROLE_PC = 1;
     const ROLE_ADMIN = 2;
     const ROLE_CHAIR = 4;
+    const ROLE_ERC = 8;
+    const ROLE_PCERC = 9;
+    const ROLE_PCLIKE = 15;
     var $isAuthor;
     var $isReviewer;
     var $isRequester;
@@ -113,7 +116,7 @@ class Contact {
 	    $c->roles |= self::ROLE_ADMIN;
 	if (defval($o, "isChair", false))
 	    $c->roles |= self::ROLE_CHAIR;
-	$c->isPC = ($c->roles & (self::ROLE_PC | self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
+	$c->isPC = ($c->roles & self::ROLE_PCLIKE) != 0;
 	$c->privChair = ($c->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
         $c->contactTags = defval($o, "contactTags", null);
 	return $c;
@@ -158,9 +161,9 @@ class Contact {
 			$this->reviewsOutstanding = true;
 		    if ($row[3] > 0)
 			$this->isRequester = true;
-		    $this->roles |= $row[4] & (self::ROLE_PC | self::ROLE_ADMIN | self::ROLE_CHAIR);
+		    $this->roles |= $row[4] & self::ROLE_PCLIKE;
 		}
-		$this->isPC = ($this->roles & (self::ROLE_PC | self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
+		$this->isPC = ($this->roles & self::ROLE_PCLIKE) != 0;
 		$this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
 		if (!$this->privChair
 		    && $this->chairContact == $this->contactId)
@@ -207,6 +210,29 @@ class Contact {
 
     function validContact() {
 	return $this->valid() && $this->contactId > 0;
+    }
+
+    function is_core_pc() {
+        return ($this->roles & self::ROLE_PCLIKE) != 0
+            && ($this->roles & self::ROLE_ERC) == 0;
+    }
+
+    function is_erc() {
+        return ($this->roles & self::ROLE_PCERC) == self::ROLE_PCERC;
+    }
+
+    static function roles_all_contact_tags($roles, $tags) {
+        $t = "";
+        if ($roles & self::ROLE_PC)
+            $t = " pc" . ($roles & self::ROLE_ERC ? " erc" : " corepc");
+        if ($tags)
+            return $t . $tags;
+        else
+            return $t ? $t . " " : "";
+    }
+
+    function all_contact_tags() {
+        return self::roles_all_contact_tags($this->roles, $this->contactTags);
     }
 
     static function _addressKeys() {
@@ -892,7 +918,8 @@ class Contact {
         if ($rrow && $rrow->reviewNeedsSubmit <= 0
             && $rrow->reviewSubmitted <= 0)
             return false;
-        else if ($this->isPC && (!$prow || $this->actConflictType($prow) == 0))
+        else if ($this->isPC
+                 && (!$prow || $this->actConflictType($prow) == 0))
             return true;
         else
             return $this->canViewReview($prow, $rrow, $forceShow);
@@ -910,7 +937,9 @@ class Contact {
         } else
             $viewscore = VIEWSCORE_AUTHOR;
 	$rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
-	$pc_seeallrev = ($this->isPC ? $Conf->setting("pc_seeallrev") : 0);
+        $pc_seeallrev = 0;
+        if ($this->is_core_pc())
+            $pc_seeallrev = $Conf->setting("pc_seeallrev");
         $admin = $this->allowAdminister($prow);
 	$conflictType = $this->actConflictType($prow);
 	// policy
@@ -959,11 +988,14 @@ class Contact {
 	    $whyNot['deadline'] = 'au_seerev';
 	else if ($conflictType > 0)
 	    $whyNot['conflict'] = 1;
-	else if ($prow->myReviewType > 0 && !$this->isPC && $prow->myReviewSubmitted > 0)
+	else if ($prow->myReviewType > 0
+                 && !$this->is_core_pc()
+                 && $prow->myReviewSubmitted > 0)
 	    $whyNot['externalReviewer'] = 1;
 	else if (!$rrowSubmitted)
 	    $whyNot['reviewNotSubmitted'] = 1;
-	else if ($this->isPC && $pc_seeallrev == 4 && $this->reviewsOutstanding)
+	else if ($this->isPC && $pc_seeallrev == 4
+                 && $this->reviewsOutstanding)
 	    $whyNot["reviewsOutstanding"] = 1;
 	else if (!$Conf->timeReviewOpen())
 	    $whyNot['deadline'] = "rev_open";
@@ -1001,7 +1033,7 @@ class Contact {
 
     function can_review_any() {
         global $Conf;
-        return $this->isPC && $Conf->setting("pcrev_any") > 0
+        return $this->is_core_pc() && $Conf->setting("pcrev_any") > 0
             && $Conf->time_review(true, true);
     }
 
@@ -1181,7 +1213,9 @@ class Contact {
                     || (defval($prow, "myReviewType") > 0
 			&& (defval($prow, "myReviewSubmitted") > 0
 			    || defval($prow, "myReviewNeedsSubmit", 1) == 0)))
-                && $ctype >= ($this->isPC ? COMMENTTYPE_PCONLY : COMMENTTYPE_REVIEWER)))
+                && ($this->is_core_pc()
+                    ? $ctype >= COMMENTTYPE_PCONLY
+                    : $ctype >= COMMENTTYPE_REVIEWER)))
 	    return true;
 	// collect failure reasons
 	if (($conflictType < CONFLICT_AUTHOR
@@ -1192,7 +1226,9 @@ class Contact {
 	    $whyNot["deadline"] = 'au_seerev';
 	else if ($conflictType > 0)
 	    $whyNot["conflict"] = 1;
-	else if ($prow->myReviewType > 0 && !$this->isPC && defval($prow, "myReviewSubmitted") > 0)
+	else if ($prow->myReviewType > 0
+                 && !$this->is_core_pc()
+                 && defval($prow, "myReviewSubmitted") > 0)
 	    $whyNot["externalReviewer"] = 1;
 	else if ($ctype & COMMENTTYPE_DRAFT)
 	    $whyNot["responseNotReady"] = 1;
@@ -1238,7 +1274,7 @@ class Contact {
     function canViewCommentReviewWheres() {
 	global $Conf;
 	if ($this->privChair
-	    || ($this->isPC && $Conf->setting("pc_seeallrev") > 0))
+	    || ($this->is_core_pc() && $Conf->setting("pc_seeallrev") > 0))
 	    return array();
 	else
 	    return array("(" . $this->actAuthorSql("PaperConflict")
@@ -1300,7 +1336,8 @@ class Contact {
 	    || ($rrow && $rrow_contactId == $this->contactId)
 	    || ($rrow && $this->ownReview($rrow))
 	    || ($admin && $prow && $conflictType == 0)
-	    || ($this->isPC && $prow && $conflictType == 0
+	    || ($this->is_core_pc()
+                && $prow && $conflictType == 0
 		&& (!($pc_seeblindrev = $Conf->setting("pc_seeblindrev"))
 		    || ($pc_seeblindrev == 2
 			&& $this->canViewReview($prow, $rrow, $forceShow))))

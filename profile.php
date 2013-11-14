@@ -25,7 +25,7 @@ function change_email_by_capability() {
     $Acct->updateDB();
     if (count($aupapers))
         $Acct->save_authored_papers($aupapers);
-    if ($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
+    if ($Acct->roles & Contact::ROLE_PCLIKE)
         $Conf->invalidateCaches(array("pc" => 1));
     $Conf->delete_capability($capdata);
 
@@ -88,6 +88,34 @@ function tfError(&$tf, $errorField, $text) {
 	$tf["err"][$lineno] = "<span class='lineno'>$l:</span> $text";
     }
     return false;
+}
+
+function set_request_pctype() {
+    if (!in_array(@$_REQUEST["pctype"],
+                  array("no", "pc", "erc", "chair"))) {
+        $_REQUEST["pctype"] = "no";
+        foreach (array("erc", "pc", "chair") as $k)
+            if (@$_REQUEST[$k])
+                $_REQUEST["pctype"] = $k;
+    }
+}
+
+function set_role($acct, $role, $table, $rolename, $hasrole) {
+    global $Conf;
+    if (($acct->roles & $role) != 0 && !$hasrole) {
+        $acct->roles &= ~$role;
+        if ($table)
+            $Conf->qe("delete from $table where contactId=$acct->contactId");
+        $Conf->log("Removed as $rolename by $Me->email", $acct);
+        return true;
+    } else if (($acct->roles & $role) == 0 && $hasrole) {
+        $acct->roles |= $role;
+        if ($table)
+            $Conf->qe("insert into $table (contactId) values ($acct->contactId)");
+        $Conf->log("Added as $rolename by $Me->email", $acct);
+        return true;
+    } else
+        return false;
 }
 
 function createUser(&$tf, $newProfile, $useRequestPassword = false) {
@@ -169,38 +197,25 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 
     if ($Me->privChair) {
 	// initialize roles too
-	if (isset($_REQUEST["pctype"])) {
-	    if ($_REQUEST["pctype"] == "chair")
-		$_REQUEST["pc"] = $_REQUEST["chair"] = 1;
-	    else if ($_REQUEST["pctype"] == "pc") {
-		unset($_REQUEST["chair"]);
-		$_REQUEST["pc"] = 1;
-	    } else {
-		unset($_REQUEST["chair"]);
-		unset($_REQUEST["pc"]);
-	    }
-	} else if (isset($_REQUEST["chair"]))
-	    $_REQUEST["pc"] = 1;
-	$checkass = !isset($_REQUEST["ass"]) && $Me->contactId == $Acct->contactId && ($Acct->roles & Contact::ROLE_ADMIN) != 0;
+        set_request_pctype();
+	$checkass = !isset($_REQUEST["ass"])
+            && $Me->contactId == $Acct->contactId
+            && ($Acct->roles & Contact::ROLE_ADMIN) != 0;
 
 	$while = "while initializing roles";
-	foreach (array("pc" => array("PCMember", Contact::ROLE_PC),
-                       "ass" => array("ChairAssistant", Contact::ROLE_ADMIN),
-                       "chair" => array("Chair", Contact::ROLE_CHAIR))
-                 as $k => $tableinfo) {
-            list($table, $role) = $tableinfo;
-	    if (($Acct->roles & $role) != 0 && !isset($_REQUEST[$k])) {
-		$Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
-		$Conf->log("Removed as $table by $Me->email", $Acct);
-		$Acct->roles &= ~$role;
-		$updatepc = true;
-	    } else if (($Acct->roles & $role) == 0 && isset($_REQUEST[$k])) {
-		$Conf->qe("insert into $table (contactId) values ($Acct->contactId)", $while);
-		$Conf->log("Added as $table by $Me->email", $Acct);
-		$Acct->roles |= $role;
-		$updatepc = true;
-	    }
-	}
+        $updatepc |=
+            set_role($Acct, Contact::ROLE_PC, "PCMember", "PCMember",
+                     $_REQUEST["pctype"] != "no");
+        $updatepc |=
+            set_role($Acct, Contact::ROLE_ADMIN,
+                     "ChairAssistant", "ChairAssistant",
+                     isset($_REQUEST["ass"]));
+        $updatepc |=
+            set_role($Acct, Contact::ROLE_CHAIR, "Chair", "Chair",
+                     $_REQUEST["pctype"] == "chair");
+        $updatepc |=
+            set_role($Acct, Contact::ROLE_ERC, null, "ERCMember",
+                     $_REQUEST["pctype"] == "erc");
 
 	// ensure there's at least one system administrator
 	if ($checkass) {
@@ -215,7 +230,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
     }
 
     // ensure changes in PC member data are reflected immediately
-    if (($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
+    if (($Acct->roles & Contact::ROLE_PCLIKE)
 	&& !$updatepc
 	&& ($Acct->firstName != $_REQUEST["firstName"]
 	    || $Acct->lastName != $_REQUEST["lastName"]
@@ -239,7 +254,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
     $Acct->defaultWatch = 0;
     if (isset($_REQUEST["watchcomment"]) || isset($_REQUEST["watchcommentall"])) {
 	$Acct->defaultWatch |= WATCH_COMMENT;
-	if (($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
+	if (($Acct->roles & Contact::ROLE_PCLIKE)
 	    && isset($_REQUEST["watchcommentall"]))
 	    $Acct->defaultWatch |= WATCH_ALLCOMMENTS;
     }
@@ -247,17 +262,19 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 	&& ($Acct->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)))
 	$Acct->defaultWatch |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL);
     $newTags = ($Me->privChair ? null : $Acct->contactTags);
-    if (($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
+    if (($Acct->roles & Contact::ROLE_PCLIKE)
 	&& $Me->privChair
 	&& defval($_REQUEST, "contactTags", "") != "") {
 	$tagger = new Tagger;
 	$tout = "";
 	$warn = "";
 	foreach (preg_split('/\s+/', $_REQUEST["contactTags"]) as $t) {
-	    if ($t != "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOVALUE))
-                $tout .= " " . $t;
-            else if ($t != "")
+            if ($t == "")
+                /* do nothing */;
+            else if (!$tagger->check($t, Tagger::NOPRIVATE | Tagger::NOVALUE))
                 $warn .= $tagger->error_html . "<br />\n";
+            else if ($t != "pc" && $t != "corepc" && $t != "erc")
+                $tout .= " " . $t;
         }
 	if ($warn != "")
 	    return tfError($tf, "contactTags", $warn);
@@ -487,6 +504,8 @@ function crpformvalue($val, $field = null) {
 	return htmlspecialchars($_REQUEST[$val]);
     else if ($field == "password" && $Acct->password_type != 0)
         return "";
+    else if ($val == "contactTags")
+        return htmlspecialchars($Acct->all_contact_tags());
     else if ($field !== false) {
 	$v = $field ? $Acct->$field : $Acct->$val;
 	return htmlspecialchars($v === null ? "" : $v);
@@ -523,18 +542,12 @@ function textinput($name, $value, $size, $id = false, $password = false) {
 
 
 if (!$newProfile) {
-    $_REQUEST["pc"] = ($Acct->roles & Contact::ROLE_PC) != 0;
+    $_REQUEST["erc"] = ($Acct->roles & Contact::ROLE_ERC) != 0;
+    $_REQUEST["pc"] = ($Acct->roles & Contact::ROLE_PCERC) == Contact::ROLE_PC;
     $_REQUEST["ass"] = ($Acct->roles & Contact::ROLE_ADMIN) != 0;
     $_REQUEST["chair"] = ($Acct->roles & Contact::ROLE_CHAIR) != 0;
 }
-
-$_REQUEST["pctype"] = defval($_REQUEST, "pctype");
-if (!in_array($_REQUEST["pctype"], array("chair", "pc", "no"))) {
-    if (defval($_REQUEST, "chair"))
-	$_REQUEST["pctype"] = "chair";
-    else
-	$_REQUEST["pctype"] = defval($_REQUEST, "pc") ? "pc" : "no";
-}
+set_request_pctype();
 
 
 if ($newProfile)
@@ -659,7 +672,7 @@ if ($newProfile) {
     echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", "", 2),
 	"</td><td><a href=\"javascript:void fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
 	"<tr class='fx2'><td></td><td>",
-	"<p>Upload a CSV file with one line per account. Either specify a header like “<code>name,email,affiliation,address1</code>” or give name, email address, and affiliation, in that order.  Each new account's role and PC information is set from the form below.  Example:</p>\n",
+	"<p>Upload a CSV file with one line per account. Either specify a header like “<code>name,email,affiliation,address1</code>” or give name, email address, and affiliation, in that order.  Each new account’s role and PC information is set from the form below.  Example:</p>\n",
 	"<pre class='entryexample'>
 John Adams,john@earbox.org,UC Berkeley
 \"Adams, John Quincy\",quincy@whitehouse.gov
@@ -693,7 +706,9 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
   <td class='caption'>Roles</td>
   <td class='entry'><table><tr><td class='nowrap'>\n";
 
-    foreach (array("chair" => "PC chair", "pc" => "PC member",
+    foreach (array("chair" => "PC chair",
+                   "pc" => "Core PC member",
+                   "erc" => "ERC member",
 		   "no" => "Not on the PC") as $k => $v) {
 	echo Ht::radio_h("pctype", $k, $k == $_REQUEST["pctype"],
 			  array("id" => "pctype_$k", "onchange" => "hiliter(this);fold('account',\$\$('pctype_no').checked,1)")),
@@ -702,8 +717,8 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
 
     echo "</td><td><span class='sep'></span></td><td class='nowrap'>";
     echo Ht::checkbox_h("ass", 1, defval($_REQUEST, "ass")),
-	"&nbsp;</td><td>", Ht::label("System administrator"), "<br />",
-	"<div class='hint'>System administrators have full control over all site operations.  Administrators need not be members of the PC.  There’s always at least one system administrator.</div></td></tr></table>\n";
+	"&nbsp;", Ht::label("System administrator"), "</td>",
+        '<td style="padding-left:2em"><div class="hint"><p>The program committee can be divided into a <strong>core PC</strong> and an <strong>external review committee (ERC)</strong>. ERC members have fewer privileges than core PC members; for example, they can’t see reviews for papers they were not assigned. All PC members can enter review preferences and are available for paper auto-assignment. You may also use <strong>PC tags</strong> to divide the PC into groups such as “heavy” and “light” without affecting privileges.</p><p><strong>System administrators</strong> have full control over all site operations.  Administrators need not be members of the PC.  There’s always at least one system administrator.</div></td></tr></table>', "\n";
     echo "  </td>\n</tr>\n\n";
 }
 
@@ -755,7 +770,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 	    echo "<div class='", feclass("contactTags"), "'>",
 		textinput("contactTags", trim(crpformvalue("contactTags")), 60),
 		"</div>
-  <div class='hint'>Tags represent PC subgroups and are set by administrators.  Separate tags by spaces.  Example: &ldquo;heavy&rdquo;.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=rev&amp;tagcolor=1#tagcolor"), "'>tag colors</a> to highlight subgroups in review lists.</div></td>
+  <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc”, “corepc”, and “erc” tags are set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=rev&amp;tagcolor=1#tagcolor"), "'>tag colors</a> to highlight subgroups in review lists.</div></td>
 </tr>\n\n";
 	} else {
 	    echo trim($Acct->contactTags), "

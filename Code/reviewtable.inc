@@ -1,6 +1,6 @@
 <?php
 // reviewtable.inc -- HotCRP helper class for table of all reviews
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 // reviewer information
@@ -20,7 +20,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $effAssistant = $admin && !$hideUnviewable;
     $anyScores = false;
     $anyColors = false;
-    $colorizer = null;
+    $colorizer = ($Me->isPC ? new Tagger : null);
     $nNumeric = $rf->numNumericScores($prow, $Me);
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 
@@ -107,10 +107,9 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                     . Ht::submit("Retract", array("title" => "Retract this review request", "style" => "font-size:smaller"))
                     . '</div></form></small>';
 	    $t .= "</td>";
-	    if (isset($rr->contactTags) && $rr->contactTags && $Me->isPC) {
-		if (!$colorizer)
-		    $colorizer = new Tagger;
-		if (($color = $colorizer->color_classes($rr->contactTags)))
+	    if ($colorizer && (@$rr->contactRoles || @$rr->contactTags)) {
+                $tags = Contact::roles_all_contact_tags(@$rr->contactRoles, @$rr->contactTags);
+		if (($color = $colorizer->color_classes($tags)))
 		    $tclass = $color;
 	    }
 	}

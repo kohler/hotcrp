@@ -201,8 +201,9 @@ class CommentView {
 	echo "</td></tr>\n";
 	echo "<tr><td>", Ht::radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_REVIEWER), array("onchange" => "docmtvis(this)")),
 	    "&nbsp;</td><td>", Ht::label("PC and external reviewers"), "</td></tr>\n";
+        $has_erc = $Conf->setting("erc");
 	echo "<tr><td>", Ht::radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_PCONLY), array("onchange" => "docmtvis(this)")),
-	    "&nbsp;</td><td>", Ht::label("PC reviewers only"), "</td></tr>\n";
+	    "&nbsp;</td><td>", Ht::label($has_erc ? "Core PC reviewers only" : "PC reviewers only"), "</td></tr>\n";
 	echo "<tr><td>", Ht::radio_h("visibility", "admin", ($useRequest ? defval($_REQUEST, "visibility") == "admin" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY), array("onchange" => "docmtvis(this)")),
 	    "&nbsp;</td><td>", Ht::label("Administrators only"), "</td></tr>\n";
 	echo "</table></td></tr></table>\n";

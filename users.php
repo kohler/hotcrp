@@ -16,9 +16,14 @@ else if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
 // list type
 $tOpt = array();
 $tOpt["pc"] = "Program committee";
+if ($Me->isPC && $Conf->setting("erc")) {
+    $tOpt["corepc"] = "Core program committee";
+    $tOpt["erc"] = "External review committee";
+}
 if ($Me->isPC && count($pctags = pcTags())) {
     foreach ($pctags as $t)
-	$tOpt["pc:$t"] = "PC members tagged &ldquo;$t&rdquo;";
+        if ($t != "pc" && $t != "corepc" && $t != "erc")
+            $tOpt["pc:$t"] = "PC members tagged &ldquo;$t&rdquo;";
     if (!isset($_SESSION["foldppltags"]))
 	$_SESSION["foldppltags"] = 0;
 }
@@ -144,6 +149,10 @@ if (isset($_REQUEST["scoresort"])
 
 if ($_REQUEST["t"] == "pc")
     $title = "Program Committee";
+else if ($_REQUEST["t"] == "corepc")
+    $title = "Core Program Committee";
+else if ($_REQUEST["t"] == "erc")
+    $title = "External Review Committee";
 else if (substr($_REQUEST["t"], 0, 3) == "pc:")
     $title = "“" . substr($_REQUEST["t"], 3) . "” Program Committee";
 else

@@ -495,9 +495,6 @@ if ($t != "")
 
 // PC assignments
 if ($Me->canAdminister($prow)) {
-    $contactTags = "NULL as contactTags";
-    if ($Conf->sversion >= 35)
-	$contactTags = "contactTags";
     $result = $Conf->qe("select PCMember.contactId,
 	PaperConflict.conflictType,
 	PaperReview.reviewType,	coalesce(preference, 0) as preference,
@@ -539,7 +536,7 @@ if ($Me->canAdminister($prow)) {
 	$p = $pcx[$pc->cid];
 
 	// first, name and assignment
-	$color = $colorizer->color_classes($pc->contactTags);
+	$color = $colorizer->color_classes($pc->all_contact_tags());
 	$color = ($color ? " class='${color}'" : "");
 	echo "      <tr$color>";
 	if ($p->conflictType >= CONFLICT_AUTHOR) {
