@@ -1028,38 +1028,40 @@ It is easiest to simply accept such conflicts as a fact of life. Chairs
 who can’t handle conflicts fairly shouldn’t be chairs. However, HotCRP
 does offer other mechanisms for conflicted reviews.
 
-<p>The first step is to pick a PC member to manage the reviewing and
+<p>The key step is to pick a PC member to manage the reviewing and
 discussion process for the relevant papers. This PC member is called the
-<em>paper manager</em>. Use the left-hand side of the
-<a href='" . hoturl("assign") . "'>paper assignment pages</a> to enter paper managers. (You may need to
-“Override conflicts” to access the assignment page.)</p>
+<em>paper administrator</em>. Use the left-hand side of the
+<a href='" . hoturl("assign") . "'>paper assignment pages</a> to enter paper administrators. (You may need to
+“Override conflicts” to access the assignment page.)
+A paper’s administrators have full privilege to assign and view reviews
+for that paper, although they cannot change conference settings or
+use the auto-assignment or mail tools.</p>
 
-<p>The presence of the paper manager changes conflicted administrators’
-access rights. Normally, a conflicted administrator can easily override
-their conflict. If a paper has a manager, however, conflict overrides are
-not directly available: the administrator must remove the manager first.</p>
+<p>The presence of a paper administrator changes conflicted chairs’
+access rights. Normally, a conflicted chair can easily override
+their conflict. If a paper has an administrator, however, conflicts cannot
+be overridden until the administrator is removed.</p>
 
-<p>Paper managers have full administrator privilege for the papers they
-manage, so they can assign reviewers as normal. They cannot change
-conference settings or use the auto-assignment or mail tools.</p>
-
-<p>Paper managers who use normal assignments
-will make life easy for reviewers. However, reviewer identities will
-still be accessible via HotCRP logs, review counts, and mails, and
-visible directly if the chair removes the manager. For additional privacy,
-we recommend using <em>review tokens</em>, which are completely anonymous
-review slots. To create a token, the manager (or a chair or administrator)
-goes to an <a href='" . hoturl("assign") . "'>assignment page</a> and clicks on “Request review” without entering a name
+<p>Paper administrators make life easy for PC reviewers while hiding
+conflicts from chairs in most circumstances.
+However, determined chairs can still discover reviewer identities
+via HotCRP logs, review counts, and mails (and, of course,
+by removing the administrator).
+For additional privacy, a conference can use
+<em>review tokens</em>, which are completely anonymous
+review slots. To create a token, an administrator
+goes to an <a href='" . hoturl("assign") . "'>assignment page</a>
+and clicks on “Request review” without entering a name
 or email address. This reports the token, a short string of letters and
-numbers such as “9HDZYUB”. The manager can send this token to any system
-user. Anyone who knows the token can sign in and enter it on the home page.
-The system then lets them view the paper and anonymously modify the
-corresponding review, which appears to be authored by “Jane
-  Q. Public.” True reviewer identities will not appear in HotCRP’s database or its logs.
-  For even more privacy, the trusted manager can send
-  offline review forms via email, and upload the filled-out forms using
-  review tokens; then even
-  web server access logs store only the manager’s identity.</p>
+numbers such as “9HDZYUB”. Any user who knows the token can
+enter it on HotCRP’s home page, after which the system lets them
+view the paper and anonymously modify the corresponding “Jane Q. Public”
+review. True reviewer identities will not appear in HotCRP’s
+database or its logs.
+For even more privacy, a trusted manager can collect
+offline review forms via email and upload them using
+review tokens; then even web server access logs store only the
+manager’s identity.</p>
 
 ");
     _alternateRow("Before the meeting", "

@@ -91,7 +91,7 @@ class CommentView {
             else if ($crow->commentType >= COMMENTTYPE_PCONLY)
                 $x = "shown only to PC reviewers";
             else
-                $x = "shown only to PC chairs";
+                $x = "shown only to administrators";
 	    if ($x)
 		echo "<span class='cmtvis'>(", $x, ")</span>";
 	}
@@ -204,7 +204,7 @@ class CommentView {
 	echo "<tr><td>", Ht::radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_PCONLY), array("onchange" => "docmtvis(this)")),
 	    "&nbsp;</td><td>", Ht::label("PC reviewers only"), "</td></tr>\n";
 	echo "<tr><td>", Ht::radio_h("visibility", "admin", ($useRequest ? defval($_REQUEST, "visibility") == "admin" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY), array("onchange" => "docmtvis(this)")),
-	    "&nbsp;</td><td>", Ht::label("PC chairs only"), "</td></tr>\n";
+	    "&nbsp;</td><td>", Ht::label("Administrators only"), "</td></tr>\n";
 	echo "</table></td></tr></table>\n";
 	$Conf->footerScript("docmtvis(false)");
 

@@ -1290,7 +1290,7 @@ class PaperTable {
     }
 
     private function papstripManager($showedit) {
-	$this->_papstripLeadShepherd("manager", "Paper manager", $showedit || defval($_REQUEST, "atab") == "manager", false);
+	$this->_papstripLeadShepherd("manager", "Paper administrator", $showedit || defval($_REQUEST, "atab") == "manager", false);
     }
 
     private function papstripTags($site = null) {
