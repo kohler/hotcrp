@@ -566,26 +566,25 @@ class PaperTable {
 	    foreach ($table as $au) {
                 if (is_object($au))
                     $au = array($au->firstName, $au->lastName, $au->email, $au->affiliation, 0);
-		$n = Text::highlight("$au[0] $au[1]", $highpreg, $nm);
-                $this->entryMatches += $nm;
-		if ($au[3] != "") {
-		    $n .= " <span class='auaff'>(" . Text::highlight($au[3], $highpreg, $nm) . ")</span>";
-                    $this->entryMatches += $nm;
+                $nm1 = $nm2 = $nm3 = 0;
+                $n = $e = $t = "";
+		$n = trim(Text::highlight("$au[0] $au[1]", $highpreg, $nm1));
+                if ($au[2] != "") {
+                    $e = Text::highlight($au[2], $highpreg, $nm2);
+                    $e = '&lt;<a href="mailto:' . htmlspecialchars($au[2])
+                        . '">' . $e . '</a>&gt;';
                 }
-		if ($au[2] != "") {
-		    $n .= " &lt;" . Text::highlight($au[2], $highpreg, $nm) . "&gt;";
-                    $this->entryMatches += $nm;
-                }
-		$n = trim($n);
-		if ($au[2] != "" && preg_match("/ &lt;.*&gt;\\Z/", $n, $m))
-		    $n = substr($n, 0, strlen($n) - strlen($m[0]) + 5)
-			. "<a href=\"mailto:" . htmlspecialchars($au[2]) . "\">"
-			. substr($m[0], 5, strlen($m[0]) - 9)
-			. "</a>&gt;";
+                $t = ($n == "" ? $e : $n);
+                if ($au[3] != "")
+                    $t .= ' <span class="auaff">(' . Text::highlight($au[3], $highpreg, $nm3) . ')</span>';
+                if ($n != "" && $e != "")
+                    $t .= " " . $e;
+                $this->entryMatches += $nm1 + $nm2 + $nm3;
+		$t = trim($t);
 		if ($au[2] != "" && $viewAs !== null && $viewAs->email != $au[2]
 		    && $viewAs->privChair && defval($au, 4))
-		    $n .= " <a href=\"" . selfHref(array("viewContact" => $au[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($au)) . "</a>";
-		$names[] = "<p class='odname'>" . $prefix . $n . "</p>";
+		    $t .= " <a href=\"" . selfHref(array("viewContact" => $au[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($au)) . "</a>";
+		$names[] = '<p class="odname">' . $prefix . $t . '</p>';
 		$prefix = "";
 	    }
 	    return join("\n", $names);

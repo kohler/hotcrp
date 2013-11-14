@@ -1564,11 +1564,13 @@ function cleanAuthor($row) {
 		$row->authorTable[] = $a = explode("\t", $line);
 		if ($a[0] && $a[1])
 		    $info .= "$a[0] $a[1]";
-		else
+		else if ($a[0] || $a[1])
 		    $info .= $a[0] . $a[1];
+                else
+                    $info .= $a[2];
 		if ($a[3])
 		    $info .= " (" . $a[3] . ")";
-		else if ($a[2])
+		else if ($a[2] && ($a[0] || $a[1]))
 		    $info .= " <" . $a[2] . ">";
 		$info .= "\n";
 	    }
