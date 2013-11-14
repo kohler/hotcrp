@@ -412,4 +412,8 @@ function updateSchema($Conf) {
                 $Conf->settingTexts["msg.$k"] = $Conf->settingTexts["${k}msg"];
         $Conf->settings["allowPaperOption"] = 61;
     }
+    if ($Conf->settings["allowPaperOption"] == 61
+        && $Conf->ql("alter table Capability modify `data` varbinary(4096) DEFAULT NULL")
+	&& $Conf->ql("update Settings set value=62 where name='allowPaperOption'"))
+	$Conf->settings["allowPaperOption"] = 62;
 }
