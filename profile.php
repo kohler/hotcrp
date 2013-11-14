@@ -4,6 +4,38 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
+
+// check for change-email capabilities
+function change_email_by_capability() {
+    global $Conf, $Me;
+    $capdata = $Conf->check_capability($_REQUEST["changeemail"]);
+    if (!$capdata || $capdata->capabilityType != CAPTYPE_CHANGEEMAIL
+        || !($capdata->data = json_decode($capdata->data))
+        || !@$capdata->data->uemail)
+        error_go(false, "That email change code has expired, or you didn’t enter it correctly.");
+    $Acct = new Contact;
+    $Acct->lookupById($capdata->contactId);
+    if (!$Acct->valid())
+        error_go(false, "No such account.");
+    if (Contact::id_by_email($capdata->data->uemail))
+        error_go(false, "Email address " . htmlspecialchars($capdata->data->uemail) . " is already in use for another account. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+
+    $Acct->email = $capdata->data->uemail;
+    $aupapers = $Acct->email_authored_papers($Acct->email, true);
+    $Acct->updateDB();
+    if (count($aupapers))
+        $Acct->save_authored_papers($aupapers);
+    if ($Acct->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))
+        $Conf->invalidateCaches(array("pc" => 1));
+    $Conf->delete_capability($capdata);
+
+    $Conf->confirmMsg("Your email address has been changed.");
+    if (!$Me->valid() || $Me->contactId == $Acct->contactId)
+        $Me->load_by_email($Acct->email);
+}
+if (isset($_REQUEST["changeemail"]))
+    change_email_by_capability();
+
 $Me->goIfInvalid();
 if (!$Me->validContact())
     go(false);
@@ -109,6 +141,17 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 	    return tfError($tf, "uemail", "You must supply an email address.");
 	else if (!validateEmail($_REQUEST["uemail"]))
 	    return tfError($tf, "uemail", "&ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo; is not a valid email address.");
+        if (!$newProfile && !$Me->privChair) {
+            $rest = array("emailTo" => $_REQUEST["uemail"],
+                          "capability" => $Conf->create_capability(CAPTYPE_CHANGEEMAIL, array("contactId" => $Acct->contactId, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $_REQUEST["uemail"])))));
+            $prep = Mailer::prepareToSend("@changeemail", null, $Acct, null, $rest);
+            if ($prep["allowEmail"]) {
+                Mailer::sendPrepared($prep);
+                $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($_REQUEST["uemail"]) . " to check that the address works. Use the link it contains to confirm your email change request.");
+            } else
+                $Conf->errorMsg("Mail cannot be sent to " . htmlspecialchars($_REQUEST["uemail"]) . " at this time. Your email address was unchanged.");
+            $_REQUEST["uemail"] = $Acct->email;
+        }
     }
     if (isset($_REQUEST["preferredEmail"]) && !validateEmail($_REQUEST["preferredEmail"]))
 	return tfError($tf, "preferredEmail", "&ldquo;" . htmlspecialchars($_REQUEST["preferredEmail"]) . "&rdquo; is not a valid email address.");

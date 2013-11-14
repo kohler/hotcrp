@@ -13,7 +13,7 @@ if (!isset($_REQUEST["cap"]))
 
 $capdata = $Conf->check_capability($_REQUEST["cap"]);
 if (!$capdata || $capdata->capabilityType != CAPTYPE_RESETPASSWORD)
-    error_go(false, "That password reset code has expired (or you didn’t enter it correctly). Try generating another.");
+    error_go(false, "That password reset code has expired, or you didn’t enter it correctly.");
 
 $Acct = new Contact;
 if (!$Acct->lookupById($capdata->contactId))
@@ -40,8 +40,7 @@ if (isset($_REQUEST["go"]) && check_post()) {
         $Conf->q("update ContactInfo set password='" . sqlq($Acct->password) . "' where contactId=" . $Acct->contactId);
         $Conf->log("Reset password", $Acct);
         $Conf->infoMsg("Your password has been changed and you are now signed in to the conference site.");
-        $Conf->q("delete from CapabilityMap where capabilityValue='" . sqlq($capdata->capabilityValue) . "'");
-        $Conf->q("delete from Capability where capabilityId=" . $capdata->capabilityId);
+        $Conf->delete_capability($capdata);
         go(hoturl("index", "email=" . urlencode($Acct->email) . "&password=" . urlencode($_REQUEST["upassword"])));
     }
     $password_class = " error";

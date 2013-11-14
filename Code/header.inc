@@ -95,6 +95,7 @@ define("TAG_REGEX", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*');
 define("TAG_REGEX_OPTVALUE", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?');
 
 define("CAPTYPE_RESETPASSWORD", 1);
+define("CAPTYPE_CHANGEEMAIL", 2);
 
 global $rf;
 $rf = null;

@@ -1753,4 +1753,11 @@ class Conference {
         return false;
     }
 
+    public function delete_capability($capdata) {
+        if ($capdata) {
+            $this->q("delete from CapabilityMap where capabilityValue='" . sqlq($capdata->capabilityValue) . "'");
+            $this->q("delete from Capability where capabilityId=" . $capdata->capabilityId);
+        }
+    }
+
 }

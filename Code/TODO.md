@@ -2,7 +2,6 @@
 
 ## Capabilities ##
 
-- [ ] Use capabilities when a user changes their email address
 - [ ] Use capabilities or accept/decline review links
 - [ ] Right now “Decline review” requires confirmation; it would be better to make it HAPPEN when you click the link and then be undoable
 - [ ] Contact::valid() rechecks capabilities too often
@@ -696,3 +695,4 @@ Minor features
 
 - [X] Get rid of contactauthors.php
 - [X] Add buttons on Edit screen to make a particular author a contact
+- [X] Use capabilities when a user changes their email address
