@@ -166,7 +166,7 @@ if ((isset($_REQUEST["setvote"]) || isset($_REQUEST["setrank"]))
     setTagIndexes();
 
 
-$pastDeadline = !$Conf->timeReviewPaper($Me->isPC, true, true);
+$pastDeadline = !$Conf->time_review($Me->isPC, true);
 
 if ($pastDeadline && !$Conf->deadlinesAfter("rev_open") && !$Me->privChair) {
     $Conf->errorMsg("The site is not open for review.");

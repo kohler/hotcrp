@@ -2047,8 +2047,9 @@ class PaperTable {
 	// review form, possibly with deadline warning
 	$opt = array("edit" => $this->mode == "re");
 
-	if ($this->editrrow && ($Me->ownReview($this->editrrow) || $actChair)
-	    && !$Conf->timeReviewPaper($actPC, true, true)) {
+	if ($this->editrrow
+            && ($Me->ownReview($this->editrrow) || $actChair)
+	    && !$Conf->time_review($actPC, true)) {
 	    if ($actChair)
 		$override = "  As an administrator, you can override this deadline using the “Override deadlines” checkbox.";
 	    else {
@@ -2056,7 +2057,7 @@ class PaperTable {
 		if ($this->editrrow->reviewSubmitted)
 		    $opt["edit"] = false;
 	    }
-	    if (!$Conf->timeReviewPaper($actPC, true, true, true))
+	    if (!$Conf->time_review($actPC, true, true))
 		$opt["editmessage"] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override";
 	    else
 		$opt["editmessage"] = "The site is not open for reviewing, so the review cannot be changed.$override";

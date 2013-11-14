@@ -969,7 +969,7 @@ class Contact {
 	    $whyNot['deadline'] = "rev_open";
 	else {
 	    $whyNot['reviewNotComplete'] = 1;
-	    if (!$Conf->timeReviewPaper($this->isPC, true, true))
+	    if (!$Conf->time_review($this->isPC, true))
 		$whyNot['deadline'] = ($this->isPC ? "pcrev_hard" : "extrev_hard");
 	}
 	if ($admin)
@@ -985,7 +985,7 @@ class Contact {
         $admin = $this->allowAdminister($prow);
 	// policy
 	if (($prow->myReviewType >= REVIEW_SECONDARY || $admin)
-	    && ($Conf->timeReviewPaper(false, true, true) || !$time
+	    && ($Conf->time_review(false, true) || !$time
                 || ($admin && self::override_deadlines())))
 	    return true;
 	// collect failure reasons
@@ -997,6 +997,23 @@ class Contact {
 		$whyNot['override'] = 1;
 	}
 	return false;
+    }
+
+    function can_review_any() {
+        global $Conf;
+        return $this->isPC && $Conf->setting("pcrev_any") > 0
+            && $Conf->time_review(true, true);
+    }
+
+    function timeReview($prow, $rrow) {
+	global $Conf;
+	if ($prow->myReviewType || $prow->reviewId
+            || ($rrow && $this->ownReview($rrow))
+	    || ($rrow && $rrow->contactId != $this->contactId
+                && $this->allowAdminister($prow)))
+            return $Conf->time_review($this->isPC, true);
+        else
+            return $this->can_review_any();
     }
 
     function canReview($prow, $rrow, &$whyNot = null, $submit = false) {
@@ -1022,7 +1039,8 @@ class Contact {
 	     || ($manager && $forceShow))
 	    && (($this->isPC && $prow->conflictType == 0 && !$rrow)
 		|| $myReview || ($manager && $forceShow))
-	    && ($Conf->timeReviewPaper($this->isPC, $myReview, true)
+	    && (($myReview && $Conf->time_review($this->isPC, true))
+                || (!$myReview && $this->can_review_any())
 		|| ($manager && (!$submit || self::override_deadlines()))))
 	    return true;
 	// collect failure reasons
@@ -1040,7 +1058,7 @@ class Contact {
 	    if ($prow->conflictType > 0 && !($manager && $forceShow))
 		$whyNot['conflict'] = 1;
 	    else if ($this->isPC && $prow->myReviewType <= 0
-		     && !$Conf->timeReviewPaper(true, false, true)
+		     && !$this->can_review_any()
 		     && (!$rrow || $rrow_contactId == $this->contactId))
 		$whyNot['reviewNotAssigned'] = 1;
 	    else
@@ -1095,7 +1113,7 @@ class Contact {
 	    && (($admin && ($forceShow || $prow->conflictType == 0))
 		|| ($this->isPC && $prow->conflictType == 0)
 		|| $prow->myReviewType > 0)
-	    && ($Conf->timeReviewPaper($this->isPC, true, true)
+	    && ($Conf->time_review($this->isPC, true)
 		|| $Conf->setting('cmt_always') > 0
 		|| ($admin && (!$submit || self::override_deadlines())))
 	    && (!$crow
@@ -1258,15 +1276,6 @@ class Contact {
     function canEditContactAuthors($prow) {
 	return $prow->conflictType >= CONFLICT_AUTHOR
             || $this->allowAdminister($prow);
-    }
-
-    function timeReview($prow, $rrow) {
-	global $Conf;
-	$myReview = $prow->myReviewType || $prow->reviewId
-            || ($rrow && $this->ownReview($rrow))
-	    || ($rrow && $rrow->contactId != $this->contactId
-                && $this->allowAdminister($prow));
-	return $Conf->timeReviewPaper($this->isPC, $myReview, true);
     }
 
     function canViewReviewerIdentity($prow, $rrow, $forceShow = null) {

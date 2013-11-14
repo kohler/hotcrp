@@ -497,13 +497,10 @@ class Conference {
 	$dl = $this->deadlines();
 	return $dl["rev_open"] > 0 && $dl["now"] >= $dl["rev_open"];
     }
-    function timeReviewPaper($isPC = false, $requested = true, $hard = true,
-			     $assumeOpen = false) {
-	if (!($requested || ($isPC && $this->settings["pcrev_any"] > 0)))
-	    return false;
-	$od = ($assumeOpen ? "" : "rev_open");
-	$d = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
-	return $this->deadlinesBetween($od, $d, "rev_grace") > 0;
+    function time_review($isPC, $hard, $assume_open = false) {
+        $od = ($assume_open ? "" : "rev_open");
+        $d = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
+        return $this->deadlinesBetween($od, $d, "rev_grace") > 0;
     }
     function timePCReviewPreferences() {
 	return defval($this->settings, "papersub") > 0;

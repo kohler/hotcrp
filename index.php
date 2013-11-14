@@ -364,24 +364,24 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     }
     if ($myrow && $myrow[1] < $myrow[2]) {
 	$rtyp = ($Me->isPC ? "pcrev_" : "extrev_");
-	if ($Conf->timeReviewPaper($Me->isPC, true, false)) {
+	if ($Conf->time_review($Me->isPC, false)) {
 	    $d = $Conf->printableTimeSetting("${rtyp}soft", "span");
 	    if ($d == "N/A")
 		$d = $Conf->printableTimeSetting("${rtyp}hard", "span");
 	    if ($d != "N/A")
 		echo "  <span class='deadline'>Please submit your ", ($myrow[2] == 1 ? "review" : "reviews"), " by $d.</span><br />\n";
-	} else if ($Conf->timeReviewPaper($Me->isPC, true, true))
+	} else if ($Conf->time_review($Me->isPC, true))
 	    echo "  <span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft", "span") . ".</span><br />\n";
-	else if (!$Conf->timeReviewPaper($Me->isPC, true, true, true))
+	else if (!$Conf->time_review($Me->isPC, true, true))
 	    echo "  <span class='deadline'>The <a href='", hoturl("deadlines"), "'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />\n";
 	else
 	    echo "  <span class='deadline'>The site is not open for reviewing.</span><br />\n";
-    } else if ($Me->isPC && $Conf->timeReviewPaper(true, false, true)) {
+    } else if ($Me->isPC && $Me->can_review_any()) {
 	$d = $Conf->printableTimeSetting("pcrev_soft", "span");
 	if ($d != "N/A")
 	    echo "  <span class='deadline'>The review deadline is $d.</span><br />\n";
     }
-    if ($Me->isPC && $Conf->timeReviewPaper(true, false, true))
+    if ($Me->isPC && $Me->can_review_any())
 	echo "  <span class='hint'>As a PC member, you may review <a href='", hoturl("search", "q=&amp;t=s"), "'>any submitted paper</a>.</span><br />\n";
     else if ($Me->privChair)
 	echo "  <span class='hint'>As an administrator, you may review <a href='", hoturl("search", "q=&amp;t=s"), "'>any submitted paper</a>.</span><br />\n";
