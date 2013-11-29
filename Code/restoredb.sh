@@ -16,6 +16,7 @@ usage () {
 export PROG=$0
 export FLAGS=""
 input=
+inputfilter=
 while [ $# -gt 0 ]; do
     case "$1" in
     -*)	FLAGS="$FLAGS $1";;
@@ -27,6 +28,16 @@ done
 if [ -z "`findoptions`" ]; then
     echo "restoredb.sh: Can't read options file! Is this a CRP directory?" 1>&2
     exit 1
+elif [ -n "$input" ]; then
+    if [ "`head -c 3 "$input"`" = "`printf '\x1f\x8b\x08'`" ]; then
+        if [ -x /usr/bin/gzcat -o -x /bin/gzcat ]; then
+            inputfilter=gzcat
+        else
+            inputfilter=zcat
+        fi
+    elif [ "`head -c 3 "$input"`" = "BZh" ]; then
+        inputfilter=bzcat
+    fi
 elif [ -t 0 ]; then
     echo "restoredb.sh: Standard input is a terminal" 1>&2; usage
 fi
@@ -43,6 +54,9 @@ set_myargs "$dbuser" "$dbpass"
 if test -z "$input"; then
     echo + $MYSQL $myargs_redacted $FLAGS $dbname 1>&2
     eval "$MYSQL $myargs $FLAGS $dbname"
+elif test -n "$inputfilter"; then
+    echo + $inputfilter "$input" "|" $MYSQL $myargs_redacted $FLAGS $dbname 1>&2
+    $inputfilter "$input" | eval "$MYSQL $myargs $FLAGS $dbname"
 else
     echo + $MYSQL $myargs_redacted $FLAGS $dbname "<" "$input" 1>&2
     eval "$MYSQL $myargs $FLAGS $dbname" < "$input"
