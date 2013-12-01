@@ -29,13 +29,14 @@ if [ -z "`findoptions`" ]; then
     echo "restoredb.sh: Can't read options file! Is this a CRP directory?" 1>&2
     exit 1
 elif [ -n "$input" ]; then
-    if [ "`head -c 3 "$input"`" = "`printf '\x1f\x8b\x08'`" ]; then
+    inputhead=`head -c 3 "$input" | perl -pe 's/(.)/sprintf("%02x", ord($1))/ge'`
+    if [ "$inputhead" = 8b1f08 -o "$inputhead" = 1f8b08 ]; then
         if [ -x /usr/bin/gzcat -o -x /bin/gzcat ]; then
             inputfilter=gzcat
         else
             inputfilter=zcat
         fi
-    elif [ "`head -c 3 "$input"`" = "BZh" ]; then
+    elif [ "$inputhead" = "425a68" ]; then
         inputfilter=bzcat
     fi
 elif [ -t 0 ]; then

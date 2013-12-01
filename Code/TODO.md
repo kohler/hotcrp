@@ -2,7 +2,7 @@
 
 ## Capabilities ##
 
-- [ ] Use capabilities or accept/decline review links
+- [ ] Use capabilities for accept/decline review links
 - [ ] Right now “Decline review” requires confirmation; it would be better to make it HAPPEN when you click the link and then be undoable
 - [ ] Contact::valid() rechecks capabilities too often
 
