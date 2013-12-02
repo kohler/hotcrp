@@ -76,12 +76,14 @@ class Text {
     }
 
     static function analyze_name(/* ... */) {
-        return self::analyze_name_args(func_get_args());
+        $a = func_get_args();
+        return self::analyze_name_args($a);
     }
 
     static function user_text(/* ... */) {
         // was contactText
-        $r = self::analyze_name_args(func_get_args());
+        $a = func_get_args();
+        $r = self::analyze_name_args($a);
         if ($r->name && $r->email)
             return "$r->name <$r->email>";
         else
@@ -90,7 +92,8 @@ class Text {
 
     static function user_html(/* ... */) {
         // was contactHtml
-        $r = self::analyze_name_args(func_get_args());
+        $a = func_get_args();
+        $r = self::analyze_name_args($a);
         $e = htmlspecialchars($r->email);
         if ($e && strpos($e, "@") !== false)
             $e = "&lt;<a href=\"mailto:$e\">$e</a>&gt;";
@@ -103,7 +106,8 @@ class Text {
     }
 
     static function user_html_nolink(/* ... */) {
-        $r = self::analyze_name_args(func_get_args());
+        $a = func_get_args();
+        $r = self::analyze_name_args($a);
         if (($e = $r->email))
             $e = "&lt;" . htmlspecialchars($e) . "&gt;";
         if ($r->name)
@@ -114,7 +118,8 @@ class Text {
 
     static function name_text(/* ... */) {
         // was contactNameText
-        $r = self::analyze_name_args(func_get_args());
+        $a = func_get_args();
+        $r = self::analyze_name_args($a);
 	if ($r->nameAmbiguous && $r->name && $r->email)
             return "$r->name <$r->email>";
         else
@@ -123,13 +128,15 @@ class Text {
 
     static function name_html(/* ... */) {
         // was contactNameHtml
-        $x = call_user_func_array("Text::name_text", func_get_args());
+        $a = func_get_args();
+        $x = call_user_func_array("Text::name_text", $a);
         return htmlspecialchars($x);
     }
 
     static function user_email_to(/* ... */) {
         // was contactEmailTo
-        $r = self::analyze_name_args(func_get_args());
+        $a = func_get_args();
+        $r = self::analyze_name_args($a);
         if (!($e = $r->email))
             $e = "none";
         if (($n = $r->name)) {
@@ -155,7 +162,8 @@ class Text {
     }
 
     static function abbrevname_text(/* ... */) {
-        $r = self::analyze_name_args(func_get_args());
+        $a = func_get_args();
+        $r = self::analyze_name_args($a);
         $u = "";
         if ($r->lastName) {
             $t = $r->lastName;
@@ -170,7 +178,8 @@ class Text {
 
     static function abbrevname_html(/* ... */) {
         // was abbreviateNameHtml
-        $x = call_user_func_array("Text::abbrevname_text", func_get_args());
+        $a = func_get_args();
+        $x = call_user_func_array("Text::abbrevname_text", $a);
         return htmlspecialchars($x);
     }
 
