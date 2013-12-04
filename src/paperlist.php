@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 global $ConfSitePATH;
-require_once("$ConfSitePATH/Code/baselist.inc");
+require_once("$ConfSitePATH/src/baselist.php");
 
 class PaperList extends BaseList {
 

@@ -63,11 +63,11 @@ be corrupted.
 Installation
 ------------
 
-1. Run `Code/createdb.sh` to create the database. Use
-`Code/createdb.sh OPTIONS` to pass options to MySQL, such as `--user`
+1. Run `lib/createdb.sh` to create the database. Use
+`lib/createdb.sh OPTIONS` to pass options to MySQL, such as `--user`
 and `--password`. Many MySQL installations require privilege to create
-tables, so you may need `sudo Code/createdb.sh OPTIONS`. Run
-`Code/createdb.sh --help` for more information. You will need to
+tables, so you may need `sudo lib/createdb.sh OPTIONS`. Run
+`lib/createdb.sh --help` for more information. You will need to
 decide on a name for your database (no spaces allowed).
 
     The username and password information for the conference database
@@ -76,7 +76,7 @@ world-unreadable. You must ensure that your web server can read this
 file, for instance by changing its group.
 
 2. Edit `Code/options.inc`, which is annotated to guide you.
-(`Code/createdb.sh` creates this file based on
+(`lib/createdb.sh` creates this file based on
 `Code/distoptions.inc`.)
 
 3. Redirect Apache so your server URL will point at the HotCRP
@@ -159,12 +159,12 @@ You can set up everything else through the web site itself.
 Backups
 -------
 
-Run `Code/backupdb.sh` at the shell prompt to back up the database.
+Run `lib/backupdb.sh` at the shell prompt to back up the database.
 This will write the database’s current structure and comments to the
 standard output. HotCRP stores all paper submissions in the database,
 so the backup file may be quite large.
 
-Run `Code/restoredb.sh BACKUPFILE` at the shell prompt to restore the
+Run `lib/restoredb.sh BACKUPFILE` at the shell prompt to restore the
 database from a backup stored in `BACKUPFILE`.
 
 Updates
@@ -197,7 +197,7 @@ settings to replace the "*" character with the last directory component.
 conferenceSite, and paperSite options.)
 
 You will still need to create a new database for each conference using the
-`Code/createdb.sh` script, and convince your Apache to use the HotCRP
+`lib/createdb.sh` script, and convince your Apache to use the HotCRP
 install directory for all relevant URLs.
 
 To set other $Opt options per conference, such as the conference name and
@@ -209,7 +209,7 @@ example, to set a conference’s longName:
 	   values ('opt.longName', 1, 'My Conference')
 	   on duplicate key update data=values(data);
 
-Note that the `Code/backupdb.sh` script doesn't work for multiconference
+Note that the `lib/backupdb.sh` script doesn't work for multiconference
 installations, and that several important options, such as contactName and
 contactEmail, cannot yet be set using the web interface.
 

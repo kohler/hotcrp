@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-require_once("Code/search.inc");
+require_once("src/papersearch.php");
 
 $email_class = "";
 $password_class = "";
@@ -458,7 +458,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	reviewTokenGroup(false);
 
     if ($Me->amReviewer()) {
-	require_once("Code/commentview.inc");
+	require_once("src/commentview.php");
 	$entries = $Conf->reviewerActivity($Me, time(), 30);
 	if (count($entries)) {
 	    $fold20 = defval($_SESSION, "foldhomeactivity", 1) ? "fold20c" : "fold20o";

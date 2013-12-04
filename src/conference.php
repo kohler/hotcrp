@@ -1,5 +1,5 @@
 <?php
-// conference.inc -- HotCRP central helper class (singleton)
+// conference.php -- HotCRP central helper class (singleton)
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
@@ -117,7 +117,7 @@ class Conference {
 		    $this->settings["rounds"][] = $r;
 	}
         if ($this->settings["allowPaperOption"] < 62) {
-	    require_once("updateschema.inc");
+	    require_once("updateschema.php");
 	    $oldOK = $OK;
 	    updateSchema($this);
 	    $OK = $oldOK;

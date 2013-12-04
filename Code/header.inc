@@ -178,16 +178,18 @@ if (array_search(request_script_base(),
 
 
 // Bring in code
-require_once("$ConfSitePATH/Code/helpers.inc");
-require_once("$ConfSitePATH/Code/conference.inc");
-require_once("$ConfSitePATH/Code/contact.inc");
+require_once("$ConfSitePATH/src/helpers.php");
+require_once("$ConfSitePATH/src/conference.php");
+require_once("$ConfSitePATH/src/contact.php");
 
 function __autoload($class_name) {
     global $ConfSitePATH;
     if ($class_name == "ReviewForm")
-	require_once("$ConfSitePATH/Code/review.inc");
+	require_once("$ConfSitePATH/src/review.php");
+    else if ($class_name == "PaperSearch")
+        require_once("$ConfSitePATH/src/papersearch.php");
     else if ($class_name == "PaperActions")
-        require_once("$ConfSitePATH/Code/paperactions.php");
+        require_once("$ConfSitePATH/src/paperactions.php");
     else if ($class_name == "Text")
         require_once("$ConfSitePATH/lib/text.php");
     else if ($class_name == "Tagger")
@@ -197,23 +199,23 @@ function __autoload($class_name) {
     else if ($class_name == "DocumentHelper" || $class_name == "ZipDocument")
         require_once("$ConfSitePATH/lib/documenthelper.php");
     else if ($class_name == "HotCRPDocument")
-        require_once("$ConfSitePATH/lib/hotcrpdocument.php");
+        require_once("$ConfSitePATH/src/hotcrpdocument.php");
     else if ($class_name == "Mailer")
-        require_once("$ConfSitePATH/Code/mailer.php");
+        require_once("$ConfSitePATH/src/mailer.php");
     else if ($class_name == "UnicodeHelper")
         require_once("$ConfSitePATH/lib/unicodehelper.php");
     else if ($class_name == "Qobject")
         require_once("$ConfSitePATH/lib/qobject.php");
     else if ($class_name == "PaperList")
-        require_once("$ConfSitePATH/lib/paperlist.php");
+        require_once("$ConfSitePATH/src/paperlist.php");
     else if ($class_name == "Column")
         require_once("$ConfSitePATH/lib/column.php");
     else if ($class_name == "PaperColumn")
-        require_once("$ConfSitePATH/lib/papercolumn.php");
+        require_once("$ConfSitePATH/src/papercolumn.php");
     else if ($class_name == "PaperOption")
-        require_once("$ConfSitePATH/lib/paperoption.php");
+        require_once("$ConfSitePATH/src/paperoption.php");
     else if ($class_name == "PaperRank")
-        require_once("$ConfSitePATH/lib/rank.php");
+        require_once("$ConfSitePATH/src/rank.php");
     else if ($class_name == "CsvParser" || $class_name == "CsvGenerator")
         require_once("$ConfSitePATH/lib/csv.php");
     else if ($class_name == "XlsxGenerator")
@@ -223,13 +225,13 @@ function __autoload($class_name) {
     else if ($class_name == "CleanHTML")
         require_once("$ConfSitePATH/lib/cleanhtml.php");
     else if ($class_name == "CheckFormat")
-        require_once("$ConfSitePATH/lib/checkformat.php");
+        require_once("$ConfSitePATH/src/checkformat.php");
     else if ($class_name == "Countries")
         require_once("$ConfSitePATH/lib/countries.php");
     else if ($class_name == "Message")
         require_once("$ConfSitePATH/lib/message.php");
     else if ($class_name == "Formula")
-        require_once("$ConfSitePATH/lib/formula.php");
+        require_once("$ConfSitePATH/src/formula.php");
     else if ($class_name == "Ht")
         require_once("$ConfSitePATH/lib/ht.php");
 }

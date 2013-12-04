@@ -1,5 +1,5 @@
 <?php
-// commentview.inc -- HotCRP helper class for producing comment boxes
+// commentview.php -- HotCRP helper class for producing comment boxes
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 

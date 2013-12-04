@@ -1,6 +1,6 @@
 <?php
-// updateschema.inc -- HotCRP function for updating old schemata
-// HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
+// updateschema.php -- HotCRP function for updating old schemata
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 function updateSchema($Conf) {

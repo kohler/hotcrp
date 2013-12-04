@@ -5,7 +5,7 @@
 
 $Error = array();
 require_once("Code/header.inc");
-require_once("Code/papertable.inc");
+require_once("src/papertable.php");
 $Me->goIfInvalid();
 $rf = reviewForm();
 $useRequest = false;

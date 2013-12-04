@@ -1,5 +1,5 @@
 <?php
-// Code/reviewtemplate.inc -- HotCRP template review forms
+// src/reviewtemplate.php -- HotCRP template review forms
 // Placed in the public domain
 
 function setField($field, $shortname, $authorview, $description, $order, $options = null) {

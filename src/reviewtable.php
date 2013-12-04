@@ -1,5 +1,5 @@
 <?php
-// reviewtable.inc -- HotCRP helper class for table of all reviews
+// reviewtable.php -- HotCRP helper class for table of all reviews
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 

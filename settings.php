@@ -91,9 +91,9 @@ if (!isset($SettingGroups[$Group])) {
 	$Group = "sub";
 }
 if ($Group == "rfo")
-    require_once("Code/reviewsetform.inc");
+    require_once("src/reviewsetform.php");
 if ($Group == "acc")
-    require_once("Code/contactlist.inc");
+    require_once("src/contactlist.php");
 
 
 $SettingText = array(
@@ -880,7 +880,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
     // update 'papersub'
     if (isset($settings["pc_seeall"])) {
-	// see also conference.inc
+	// see also conference.php
 	$result = $Conf->q("select ifnull(min(paperId),0) from Paper where " . (defval($Values, "pc_seeall", 0) <= 0 ? "timeSubmitted>0" : "timeWithdrawn<=0"));
 	if (($row = edb_row($result)) && $row[0] != $Conf->setting("papersub"))
 	    $Values["papersub"] = $row[0];
@@ -1595,7 +1595,7 @@ function doRevGroup() {
 
 // Review form
 function doRfoGroup() {
-    require_once("Code/reviewsetform.inc");
+    require_once("src/reviewsetform.php");
     rf_show();
 }
 

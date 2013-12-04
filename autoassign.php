@@ -4,8 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-require_once("Code/search.inc");
-require_once("Code/assigners.php");
+require_once("src/papersearch.php");
+require_once("src/assigners.php");
 $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
 

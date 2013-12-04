@@ -1,5 +1,5 @@
 <?php
-// papertable.inc -- HotCRP helper class for producing paper tables
+// papertable.php -- HotCRP helper class for producing paper tables
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
@@ -1127,7 +1127,7 @@ class PaperTable {
 	    return;
 
 	$selectors = $Conf->setting("sub_pcconfsel");
-	require_once("conflict.inc");
+	require_once("conflict.php");
 
 	$conflict = array();
 	if ($this->useRequest) {
@@ -1900,7 +1900,7 @@ class PaperTable {
     }
 
     function _paptabReviewLinks($rtable, $editrrow, $ifempty) {
-	require_once("reviewtable.inc");
+	require_once("reviewtable.php");
 	$t = "";
 	if ($rtable)
 	    $t .= reviewTable($this->prow, $this->rrows, $this->mycrows,
@@ -1973,7 +1973,7 @@ class PaperTable {
 	// show comments as well
 	if ((count($this->mycrows) || $Me->canComment($prow, null)
 	     || $Conf->timeAuthorRespond()) && !$this->allreviewslink) {
-	    require_once("Code/commentview.inc");
+	    require_once("src/commentview.php");
 	    $cv = new CommentView;
 	    $editablecid = defval($_REQUEST, "commentId", "xxx");
 	    if (isset($_REQUEST["noedit"]))
@@ -2112,7 +2112,6 @@ class PaperTable {
 	    return false;
 
 	// actually try to search
-	require_once("search.inc");
 	if ($_REQUEST["paperId"] == "(All)")
 	    $_REQUEST["paperId"] = "";
 	$search = new PaperSearch($Me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));

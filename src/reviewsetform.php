@@ -61,7 +61,7 @@ function rf_update($lock) {
     global $Conf, $rf, $Error;
 
     if (isset($_REQUEST['loadsample']) && isset($_REQUEST['sample'])) {
-	require_once('reviewtemplate.inc');
+	require_once('reviewtemplate.php');
 	if ($_REQUEST['sample'] == 'sigcomm2005')
 	    sigcomm2005Form();
 	else if ($_REQUEST['sample'] == 'worlds2005')
@@ -79,7 +79,7 @@ function rf_update($lock) {
 	    $_REQUEST['sample'] = 'none';
 	}
     } else if (isset($_REQUEST['cancel'])) {
-	require_once('reviewtemplate.inc');
+	require_once('reviewtemplate.php');
 	noForm();
 	$_REQUEST['sample'] = 'none';
     } else

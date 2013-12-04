@@ -1,9 +1,10 @@
 <?php
-// contactlist.inc -- HotCRP helper class for producing lists of contacts
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// contactlist.php -- HotCRP helper class for producing lists of contacts
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once("baselist.inc");
+global $ConfSitePATH;
+require_once("$ConfSitePATH/src/baselist.php");
 
 class ContactList extends BaseList {
 
@@ -521,7 +522,6 @@ class ContactList extends BaseList {
 	    if (!$this->contact->privChair)
 		$pq .= "\n\t\tleft join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=" . $this->contact->contactId . ")";
 	    if (isset($queryOptions["revratings"])) {
-		require_once("search.inc");
 		$badratings = PaperSearch::unusableRatings($this->contact->privChair, $this->contact->contactId);
 		$pq .= "\n\t\tleft join ReviewRating rr on (rr.reviewId=r.reviewId";
 		if (count($badratings) > 0)

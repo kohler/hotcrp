@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-require_once("Code/search.inc");
+require_once("src/papersearch.php");
 require_once("Code/mailtemplate.inc");
 $Me->goIfInvalid();
 $Me->goIfNotPC();

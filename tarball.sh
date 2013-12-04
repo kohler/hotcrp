@@ -1,11 +1,11 @@
 export VERSION=2.61
 
-# check that schema.sql and updateschema.inc agree on schema version
-updatenum=`grep 'settings.*allowPaperOption.*=' Code/updateschema.inc | tail -n 1 | sed 's/.*= *//;s/;.*//'`
+# check that schema.sql and updateschema.php agree on schema version
+updatenum=`grep 'settings.*allowPaperOption.*=' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/;.*//'`
 schemanum=`grep 'allowPaperOption' Code/schema.sql | sed 's/.*, *//;s/).*//'`
 if [ "$updatenum" != "$schemanum" ]; then
     echo "error: allowPaperOption schema number in Code/schema.sql ($schemanum)" 1>&2
-    echo "error: differs from number in Code/updateschema.inc ($updatenum)" 1>&2
+    echo "error: differs from number in src/updateschema.php ($updatenum)" 1>&2
     exit 1
 fi
 
@@ -77,56 +77,60 @@ supersleight.js
 users.php
 
 lib/.htaccess
-lib/checkformat.php
+lib/backupdb.sh
 lib/cleanxhtml.php
 lib/countries.php
+lib/createdb.sh
 lib/csv.php
+lib/dbhelper.sh
 lib/documenthelper.php
-lib/hotcrpdocument.php
 lib/ht.php
-lib/formula.php
 lib/ldaplogin.php
 lib/login.php
+lib/message.php
 lib/mimetype.php
-lib/papercolumn.php
-lib/paperlist.php
-lib/paperoption.php
 lib/qobject.php
-lib/rank.php
+lib/restoredb.sh
+lib/runsql.sh
 lib/tagger.php
 lib/text.php
 lib/unicodehelper.php
 lib/xlsx.php
 
+src/.htaccess
+src/assigners.php
+src/baselist.php
+src/conference.php
+src/contact.php
+src/checkformat.php
+src/commentview.php
+src/conflict.php
+src/contactlist.php
+src/formula.php
+src/helpers.php
+src/hotcrpdocument.php
+src/mailer.php
+src/messages.csv
+src/paperactions.php
+src/papercolumn.php
+src/paperlist.php
+src/paperoption.php
+src/papersearch.php
+src/papertable.php
+src/rank.php
+src/review.php
+src/reviewsetform.php
+src/reviewtable.php
+src/reviewtemplate.php
+src/updateschema.php
+
 Code/.htaccess
-Code/assigners.php
-Code/backupdb.sh
 Code/banal
-Code/baselist.inc
-Code/commentview.inc
-Code/conference.inc
-Code/conflict.inc
-Code/contact.inc
-Code/contactlist.inc
-Code/createdb.sh
-Code/dbhelper.sh
 Code/distoptions.inc
 Code/header.inc
-Code/helpers.inc
-Code/mailer.php
 Code/mailtemplate.inc
-Code/paperactions.php
-Code/papertable.inc
-Code/restoredb.sh
-Code/review.inc
-Code/reviewsetform.inc
-Code/reviewtable.inc
-Code/reviewtemplate.inc
-Code/runsql.sh
 Code/sample.pdf
 Code/schema.sql
-Code/search.inc
-Code/updateschema.inc
 Code/updateschema.sql
 
 extra/hotcrp.vim
