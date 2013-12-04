@@ -1075,7 +1075,7 @@ class Conference {
 	    $result = $this->q($q);
 
 	    if (!$result)
-		$whyNot['dbError'] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . $this->dblink->error;
+		$whyNot['dbError'] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);
 	    else if (edb_nrows($result) == 0)
 		$whyNot['noPaper'] = 1;
 	    else
