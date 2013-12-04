@@ -118,7 +118,7 @@ class Mailer {
     function _expandContact($contact, $out) {
         $r = Text::analyze_name($contact);
 	if (is_object($contact) && defval($contact, "preferredEmail", "") != "")
-	    $email = $contact->preferredEmail;
+	    $r->email = $contact->preferredEmail;
 
 	if ($out == "NAME" || $out == "CONTACT")
 	    $t = $r->name;
