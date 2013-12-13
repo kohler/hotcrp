@@ -379,11 +379,11 @@ class PaperTable {
 	$accepts = array();
 	if ($noPapers) {
 	    if ($documentType == DTYPE_SUBMISSION)
-		echo $this->editable_papt("paper", "Status");
+		echo $this->editable_papt($opt->optionAbbrev, "Status");
 	} else {
             $accepts = $docclass->mimetypes();
 	    if (count($accepts))
-		echo $this->editable_papt("paper", htmlspecialchars($opt->optionName) . " <span class='papfnh'>(" . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
+		echo $this->editable_papt($opt->optionAbbrev, htmlspecialchars($opt->optionName) . " <span class='papfnh'>(" . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
 	}
 	if (isset($opt->description) && $opt->description)
 	    echo "<div class='paphint'>", $opt->description, "</div>";
@@ -469,14 +469,14 @@ class PaperTable {
     private function editable_submission($flags) {
 	global $Me;
 	if ($this->canUploadFinal) {
-	    $this->editable_document((object) array("optionId" => DTYPE_FINAL, "optionName" => "Final version", "type" => null), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
+	    $this->editable_document((object) array("optionId" => DTYPE_FINAL, "optionName" => "Final version", "optionAbbrev" => "final", "type" => null), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
 	    foreach (PaperOption::get() as $id => $o)
 		if ($o->type == PaperOption::T_FINALPDF) {
                     $oa = $this->prow ? defval($this->prow->option_array, $o->optionId) : null;
 		    $this->editable_document($o, $oa ? $oa->value : 0, $flags);
 		}
 	} else
-	    $this->editable_document((object) array("optionId" => DTYPE_SUBMISSION, "optionName" => "Submission", "type" => null), $this->prow ? $this->prow->paperStorageId : 0, $flags);
+	    $this->editable_document((object) array("optionId" => DTYPE_SUBMISSION, "optionName" => "Submission", "optionAbbrev" => "paper", "type" => null), $this->prow ? $this->prow->paperStorageId : 0, $flags);
     }
 
     private function editable_abstract() {

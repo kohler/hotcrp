@@ -665,7 +665,7 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	loadRows();
 	if (($isSubmitFinal ? $prow->finalPaperStorageId : $prow->paperStorageId) <= 1
 	    && !defval($Opt, "noPapers")) {
-	    $Error["paper"] = 1;
+	    $Error[$isSubmitFinal ? "final" : "paper"] = 1;
 	    return $Conf->errorMsg(whyNotText("notUploaded", ($isSubmitFinal ? "submit a final version for" : "submit"), $paperId));
 	}
 	$result = $Conf->qe("update Paper set " . ($isSubmitFinal ? "timeFinalSubmitted" : "timeSubmitted") . "=" . time() . " where paperId=$paperId",
