@@ -225,7 +225,7 @@ function __autoload($class_name) {
     else if ($class_name == "CleanHTML")
         require_once("$ConfSitePATH/lib/cleanhtml.php");
     else if ($class_name == "CheckFormat")
-        require_once("$ConfSitePATH/src/checkformat.php");
+        require_once("$ConfSitePATH/lib/checkformat.php");
     else if ($class_name == "Countries")
         require_once("$ConfSitePATH/lib/countries.php");
     else if ($class_name == "Message")
