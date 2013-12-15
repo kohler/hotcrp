@@ -1586,7 +1586,7 @@ class PaperTable {
         if ($prow->outcome > 0 && $Conf->collectFinalPapers()
             && ($Conf->timeSubmitFinalPaper() || $this->admin)
             && $this->mode == "pe")
-            $buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Submit final version' />", "");
+            $buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Save changes' />", "");
         else if ($Conf->timeUpdatePaper($prow) && $this->mode == "pe")
             $buttons[] = array("<input class='bb' type='submit' name='update' value='Save changes' />", "");
         else if ($this->admin && $this->mode == "pe") {
