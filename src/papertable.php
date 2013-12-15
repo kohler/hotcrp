@@ -537,11 +537,12 @@ class PaperTable {
 	    else
 		$auname = $au[0] . $au[1];
 	    echo "<tr id='auedit$n' class='auedito'><td class='rxcaption'>", $n, ".</td>",
-		"<td class='lentry'><input class='textlite' type='text' name='auname$n' size='30' onchange='hiliter(this)' value=\"", htmlspecialchars($auname), "\" /></td>",
-		"<td class='lentry'><input class='textlite' type='text' name='auemail$n' size='20' onchange='hiliter(this)' value=\"", htmlspecialchars($au[2]), "\" /></td>",
-		"<td class='lentry'><input class='textlite' type='text' name='auaff$n' size='25' onchange='hiliter(this)' value=\"", htmlspecialchars($au[3]), "\" /></td></tr>\n";
+		"<td class='lentry'>", Ht::entry("auname$n", $auname, array("class" => "textlite", "size" => "35", "onchange" => "hiliter(this)")), "</td>",
+		"<td class='lentry'>", Ht::entry("auemail$n", $au[2], array("class" => "textlite", "size" => "30", "onchange" => "hiliter(this)")), "</td>",
+		"<td class='lentry'>", Ht::entry("auaff$n", $au[3], array("class" => "textlite", "size" => "32", "onchange" => "hiliter(this)")), "</td>",
+                "</tr>\n";
 	}
-	echo "</table><input id='aueditcount' type='hidden' name='aueditcount' value='25' /></div>\n\n";
+	echo "</table>", Ht::hidden("aueditcount", "25", array("id" => "aueditcount")), "</div>\n\n";
 	$Conf->echoScript("authorfold(\"auedit\",0," . max(count($authorTable) + 1, 5) . ")");
     }
 
@@ -1586,12 +1587,12 @@ class PaperTable {
         if ($prow->outcome > 0 && $Conf->collectFinalPapers()
             && ($Conf->timeSubmitFinalPaper() || $this->admin)
             && $this->mode == "pe")
-            $buttons[] = array("<input class='bb' type='submit' name='submitfinal' value='Save changes' />", "");
+            $buttons[] = array(Ht::submit("submitfinal", "Save changes", array("class" => "bb")), "");
         else if ($Conf->timeUpdatePaper($prow) && $this->mode == "pe")
-            $buttons[] = array("<input class='bb' type='submit' name='update' value='Save changes' />", "");
+            $buttons[] = array(Ht::submit("update", "Save changes", array("class" => "bb")), "");
         else if ($this->admin && $this->mode == "pe") {
             $class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "b" : "bb");
-            $buttons[] = array("<input class='$class' type='submit' name='update' value='Save changes' />", "(admin only)");
+            $buttons[] = array(Ht::submit("update", "Save changes", array("class" => $class)), "(admin only)");
         } else if ($this->mode == "pe" && $prow->timeSubmitted > 0)
             $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", array("class" => "b")), "");
 
@@ -1599,9 +1600,9 @@ class PaperTable {
         if (!$Me->canWithdrawPaper($prow, $whyNot, true))
             $b = null;
         else if ($prow->timeSubmitted <= 0)
-            $b = "<input type='submit' name='withdraw' value='Withdraw paper' />";
+            $b = Ht::submit("withdraw", "Withdraw paper");
         else {
-            $b = "<button type='button' onclick=\"popup(this,'w',0,true)\">Withdraw paper</button>";
+            $b = Ht::button("Withdraw paper", array("onclick" => "popup(this,'w',0,true)"));
             $admins = "";
             if ((!$this->admin || $prow->conflictType >= CONFLICT_AUTHOR)
                 && !$Conf->timeFinalizePaper($prow))

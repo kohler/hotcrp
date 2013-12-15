@@ -127,14 +127,23 @@ class Ht {
     }
 
     static function button($name, $text, $js = null) {
-        $js = $js ? $js : array();
+        if (!$js && is_array($text)) {
+            $js = $text;
+            $text = null;
+        } else if (!$js)
+            $js = array();
         if (!isset($js["class"]))
             $js["class"] = "b";
         $type = isset($js["type"]) ? $js["type"] : "button";
-        $name = $name ? " name=\"$name\"" : "";
-        if (isset($js["value"]))
-            return "<button type=\"$type\"$name value=\"" . $js["value"]
-                . "\"" . self::extra($js) . ">" . $text . "</button>";
+        if ($name && !$text) {
+            $text = $name;
+            $name = "";
+        } else
+            $name = $name ? " name=\"$name\"" : "";
+        if (preg_match("_[<>]_", $text) || isset($js["value"]))
+            return "<button type=\"$type\"$name value=\""
+                . defval($js, "value", 1) . "\"" . self::extra($js)
+                . ">" . $text . "</button>";
         else
             return "<input type=\"$type\"$name value=\"$text\""
                 . self::extra($js) . " />";
@@ -144,8 +153,8 @@ class Ht {
         if (!$js && is_array($text)) {
             $js = $text;
             $text = null;
-        }
-        $js = ($js ? $js : array());
+        } else if (!$js)
+            $js = array();
         $js["type"] = "submit";
         return self::button($text ? $name : "", $text ? $text : $name, $js);
     }
