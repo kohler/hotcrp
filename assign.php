@@ -15,7 +15,7 @@ $forceShow = "&amp;forceShow=1";
 $_REQUEST["forceShow"] = 1;
 $rf = reviewForm();
 $PC = pcMembers();
-$Error = array();
+$Error = $Warning = array();
 
 
 // header

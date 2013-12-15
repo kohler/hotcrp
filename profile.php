@@ -40,7 +40,7 @@ $Me->goIfInvalid();
 if (!$Me->validContact())
     go(false);
 $newProfile = false;
-$Error = array();
+$Error = $Warning = array();
 
 if (!isset($_REQUEST["u"]) && isset($_REQUEST["user"]))
     $_REQUEST["u"] = $_REQUEST["user"];

@@ -113,7 +113,7 @@ foreach ($rf->forder as $f)
     }
 $scoreselector["x"] = "(no score preference)";
 
-$Error = array();
+$Error = $Warning = array();
 
 if (!function_exists("array_fill_keys")) {
     function array_fill_keys($a, $v) {

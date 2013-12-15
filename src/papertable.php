@@ -166,9 +166,9 @@ class PaperTable {
     }
 
     private function editable_papt($what, $name) {
-	global $Error;
+	global $Error, $Warning;
 	$c = "<div class='papt";
-	if (isset($Error[$what]))
+	if (isset($Error[$what]) || isset($Warning[$what]))
 	    $c .= " error";
 	return $c . "'><span class='papfn'>" . $name
             . "</span><div class='clear'></div></div>";

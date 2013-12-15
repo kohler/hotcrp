@@ -10,7 +10,7 @@ $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
 $nullMailer = new Mailer(null, null, $Me);
 $nullMailer->width = 10000000;
-$Error = array();
+$Error = $Warning = array();
 
 
 function assignment_defaults() {

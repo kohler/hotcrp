@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-$Error = array();
+$Error = $Warning = array();
 require_once("Code/header.inc");
 require_once("src/papertable.php");
 $Me->goIfInvalid();
@@ -180,7 +180,7 @@ if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
 
 
 // set request authorTable from individual components
-function setRequestAuthorTable() {
+function set_request_author_table() {
     if (!isset($_REQUEST["aueditcount"]))
 	$_REQUEST["aueditcount"] = 50;
     if ($_REQUEST["aueditcount"] < 1)
@@ -201,20 +201,16 @@ function setRequestAuthorTable() {
 	}
     }
     if (!count($_REQUEST["authorTable"]) && !$anyAuthors)
-	unset($_REQUEST["authorTable"]);
+        $_REQUEST["authorTable"] = array();
 }
 if (isset($_REQUEST["auname1"]) || isset($_REQUEST["auemail1"])
     || isset($_REQUEST["aueditcount"]))
-    setRequestAuthorTable();
+    set_request_author_table();
+else
+    unset($_REQUEST["authorTable"]);
 
 
 // update paper action
-function setRequestFromPaper($prow) {
-    foreach (array("title", "abstract", "authorTable", "collaborators") as $x)
-	if (!isset($_REQUEST[$x]))
-	    $_REQUEST[$x] = $prow->$x;
-}
-
 function attachment_request_keys($o) {
     $x = array();
     $okey = "opt" . (is_object($o) ? $o->optionId : $o) . "_";
@@ -229,94 +225,167 @@ function attachment_request_keys($o) {
     return $x;
 }
 
-function requestSameAsPaper($prow) {
-    global $Conf;
-    foreach (array("title", "abstract", "authorTable", "collaborators") as $x)
+function clean_request($prow, $isfinal) {
+    // basics
+    foreach (array("title", "abstract", "collaborators") as $x)
+        if (!isset($_REQUEST[$x]))
+            $_REQUEST[$x] = $prow ? $prow->$x : "";
+    $_REQUEST["title"] = simplify_whitespace($_REQUEST["title"]);
+    $_REQUEST["abstract"] = trim($_REQUEST["abstract"]);
+    $_REQUEST["collaborators"] = trim($_REQUEST["collaborators"]);
+    if (!isset($_REQUEST["authorTable"]))
+        $_REQUEST["authorTable"] = $prow ? $prow->authorTable : array();
+    $_REQUEST["authorInformation"] = "";
+    foreach ($_REQUEST["authorTable"] as $x)
+        $_REQUEST["authorInformation"] .= "$x[0]\t$x[1]\t$x[2]\t$x[3]\n";
+
+    // options
+    foreach (PaperOption::get() as $o) {
+        $oname = "opt$o->optionId";
+        $v = trim(defval($_REQUEST, $oname, ""));
+        if ($o->isFinal && !$isfinal)
+            continue;
+        else if ($o->type == PaperOption::T_CHECKBOX)
+            $_REQUEST[$oname] = ($v == 0 || $v == "" ? 0 : 1);
+        else if ($o->type == PaperOption::T_SELECTOR
+                 || $o->type == PaperOption::T_RADIO)
+            $_REQUEST[$oname] = cvtint($v, 0);
+        else if ($o->type == PaperOption::T_NUMERIC) {
+            if ($v == "" || ($v = cvtint($v, null)) !== null)
+                $_REQUEST[$oname] = ($v == "" ? 0 : $v);
+            else
+                $_REQUEST[$oname] = false;
+        } else if ($o->type == PaperOption::T_TEXT)
+            $_REQUEST[$oname] = simplify_whitespace($v);
+        else if ($o->type == PaperOption::T_TEXT_5LINE)
+            $_REQUEST[$oname] = rtrim($v);
+        else
+            unset($_REQUEST[$oname]);
+    }
+}
+
+function request_differences($prow, $isfinal) {
+    global $Conf, $Me;
+    if (!$prow)
+        return array("new" => true);
+    $diffs = array();
+
+    // direct entries
+    foreach (array("title", "abstract", "collaborators") as $x)
 	if ($_REQUEST[$x] != $prow->$x)
-	    return false;
+            $diffs[$x] = true;
+    $ai = "";
+    foreach ($prow->authorTable as $x)
+        $ai .= "$x[0]\t$x[1]\t$x[2]\t$x[3]\n";
+    if ($_REQUEST["authorInformation"] !== $ai)
+        $diffs["authors"] = true;
+
+    // paper upload
     if (fileUploaded($_FILES["paperUpload"]))
-	return false;
+        $diffs["paper"] = true;
+    if ($Conf->subBlindOptional()
+        && !defval($_REQUEST, "blind") != !$prow->blind)
+        $diffs["anonymity"] = true;
+
+    // topics
     $result = $Conf->q("select TopicArea.topicId, PaperTopic.paperId from TopicArea left join PaperTopic on PaperTopic.paperId=$prow->paperId and PaperTopic.topicId=TopicArea.topicId");
-    while (($row = edb_row($result))) {
-	$got = rcvtint($_REQUEST["top$row[0]"]) > 0;
-	if (($row[1] > 0) != $got)
-	    return false;
+    while (($row = edb_row($result)))
+	if (($row[1] > 0) != (rcvtint($_REQUEST["top$row[0]"]) > 0))
+            $diffs["topics"] = true;
+
+    // options
+    foreach (PaperOption::get() as $o) {
+        $oname = "opt$o->optionId";
+        $v = @$_REQUEST[$oname];
+        $ox = @$prow->option_array[$o->optionId];
+        if ($o->isFinal && !$isfinal)
+            continue;
+        else if ($o->type == PaperOption::T_CHECKBOX
+                 || $o->type == PaperOption::T_SELECTOR
+                 || $o->type == PaperOption::T_RADIO
+                 || $o->type == PaperOption::T_NUMERIC) {
+            if ($v !== ($ox ? $ox->value : 0))
+                $diffs[$o->optionName] = true;
+        } else if ($o->type == PaperOption::T_TEXT
+                   || $o->type == PaperOption::T_TEXT_5LINE) {
+            if ($v !== ($ox ? $ox->data : ""))
+                $diffs[$o->optionName] = true;
+        } else if ($o->type == PaperOption::T_ATTACHMENTS) {
+            if (count(attachment_request_keys($o)))
+                $diffs[$o->optionName] = true;
+        } else if ($o->isDocument) {
+            if (fileUploaded($_FILES["opt$o->optionId"])
+                || defval($_REQUEST, "remove_opt$o->optionId"))
+                $diffs[$o->optionName] = true;
+        }
     }
-    if ($Conf->setting("paperOption")) {
-        foreach (PaperOption::get() as $o) {
-            if ($o->type == PaperOption::T_ATTACHMENTS) {
-                if (count(attachment_request_keys($o)))
-                    return false;
-                continue;
-            }
-            $got = defval($_REQUEST, "opt$o->optionId", "");
-            $ox = defval($prow->option_array, $o->optionId, null);
-	    if ($t == PaperOption::T_CHECKBOX || $t == PaperOption::T_SELECTOR
-		|| $t == PaperOption::T_RADIO || $t == PaperOption::T_NUMERIC) {
-		if (cvtint($got, 0) != ($ox ? $ox->value : 0))
-		    return false;
-	    } else if ($t == PaperOption::T_TEXT) {
-		if (simplify_whitespace($got) != ($ox ? $ox->data : ""))
-		    return false;
-            } else if ($t == PaperOption::T_TEXT_5LINE) {
-                if (rtrim($got) != ($ox ? $ox->data : ""))
-                    return false;
-	    } else if (PaperOption::type_is_document($t)) {
-		if (fileUploaded($_FILES["opt$o->optionId"])
-		    || defval($_REQUEST, "remove_opt$o->optionId"))
-		    return false;
-	    }
-	}
+
+    // PC conflicts
+    if ($Conf->setting("sub_pcconf") && (!$isfinal || $Me->privChair)) {
+        $curconf = array();
+        $result = $Conf->q("select contactId, conflictType from PaperConflict where paperId=$prow->paperId");
+        while (($row = edb_row($result)))
+            $curconf[$row[0]] = $row[1];
+
+	$cmax = $Me->privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
+        foreach (pcMembers() as $pcid => $pc) {
+            $ctype = cvtint(defval($_REQUEST, "pcc$pcid", 0), 0);
+            $otype = defval($curconf, $pcid, 0);
+            if ($otype >= CONFLICT_AUTHOR
+                || ($otype == CONFLICT_CHAIRMARK && !$Me->privChair))
+                $ntype = $otype;
+            else if ($ctype)
+                $ntype = max(min($ctype, $cmax), CONFLICT_AUTHORMARK);
+            else
+                $ntype = 0;
+            if ($ntype != $otype)
+                $diffs["PC conflicts"] = true;
+        }
     }
-    return true;
+
+    return $diffs;
 }
 
-function uploadPaper($isSubmitFinal) {
-    global $prow, $Conf, $Me;
-    return $Conf->storePaper("paperUpload", $prow, $isSubmitFinal) !== false;
-}
-
-function uploadOption($o, $oname) {
-    global $newPaper, $prow, $Conf, $Me, $Error;
-    $doc = $Conf->storeDocument($oname, $newPaper ? -1 : $prow->paperId, $o->optionId);
+function upload_option($o, $oname, $prow) {
+    global $Conf, $Me, $Error;
+    $doc = $Conf->storeDocument($oname, $prow ? $prow->paperId : -1, $o->optionId);
     if (isset($doc->error_html)) {
-        $Conf->errorMsg($doc->error_html);
-	$Error["opt$o->optionId"] = 1;
+	$Error["opt$o->optionId"] = $doc->error_html;
         return 0;
-    } else {
-	$_REQUEST["opt$o->optionId"] = $doc->paperStorageId;
+    } else
         return $doc->paperStorageId;
-    }
 }
 
-function check_contacts() {
-    global $prow, $Me, $newPaper, $Conf;
-    if (!@$_REQUEST["setcontacts"])
-        return array(array(), array());
+function check_contacts($prow) {
+    global $Me, $Conf, $Error;
+    $ch = array(array(), array());
+    $errs = array();
 
-    $cau = $ncau = array();
-    if (!$newPaper) {
+    $cau = array();
+    if ($prow) {
         $result = $Conf->qe("select c.email, c.contactId from ContactInfo c join PaperConflict pc on (pc.contactId=c.contactId) where paperId=$prow->paperId and conflictType>=" . CONFLICT_AUTHOR);
         while (($row = edb_row($result)))
             $cau[$row[0]] = $row[1];
     }
 
     // Check marked contacts
-    foreach ($_REQUEST as $k => $v)
-        if (substr($k, 0, 8) == "contact_") {
-            $email = html_id_decode(substr($k, 8));
-            if (@$cau[$email])
-                $ncau[$email] = $cau[$email];
-            else if (validateEmail($email)) {
-                $c = new Contact;
-                if (!$c->load_by_email($email, array("name" => $v), true)) {
-                    $Conf->errorMsg("Couldn’t create a contact account for author “" . Text::user_html_nolink(array("email" => $e, "name" => $v)) . "”.");
-                    $Error["contactAuthor"] = 1;
-                    return false;
+    if (@$_REQUEST["setcontacts"]) {
+        $ncau = array();
+        foreach ($_REQUEST as $k => $v)
+            if (str_starts_with($k, "contact_")) {
+                $email = html_id_decode(substr($k, 8));
+                if (@$cau[$email])
+                    $ncau[$email] = $cau[$email];
+                else if (validateEmail($email)) {
+                    $c = new Contact;
+                    if ($c->load_by_email($email, array("name" => $v), true))
+                        $ncau[$email] = $c->contactId;
+                    else
+                        $errs[] = "Couldn’t create a contact account for author “" . Text::user_html_nolink(array("email" => $e, "name" => $v)) . "”.";
                 }
-                $ncau[$email] = $c->contactId;
             }
-        }
+    } else
+        $ncau = $cau;
 
     // Check new contact
     $new_name = @simplify_whitespace($_REQUEST["newcontact_name"]);
@@ -325,38 +394,37 @@ function check_contacts() {
         $new_name = "";
     if ($new_email == "Email")
         $new_email = "";
-    if ($new_name || $new_email) {
-        if (!validateEmail($new_email)) {
-            $Conf->errorMsg("Enter a valid email address for the new contact.");
-            $Error["contactAuthor"] = 1;
-            return false;
-        }
+    if ($new_email == "" && $new_name == "")
+        /* no new contact */;
+    else if (!validateEmail($new_email))
+        $errs[] = "Enter a valid email address for the new contact.";
+    else {
         $new_contact = new Contact;
-        if (!$new_contact->load_by_email($new_email, array("name" => $new_name), true)) {
-            $Conf->errorMsg("Couldn’t create an account for the new contact.");
-            $Error["contactAuthor"] = 1;
-            return false;
-        }
-        $ncau[$new_contact->email] = $new_contact->contactId;
+        if ($new_contact->load_by_email($new_email, array("name" => $new_name), true))
+            $ncau[$new_contact->email] = $new_contact->contactId;
+        else
+            $errs[] = "Couldn’t create an account for the new contact.";
     }
-    if ($newPaper && !count($ncau))
-        $ncau[$Me->email] = $Me->contactId;
 
     // Check for zero contacts
-    if (!$Me->privChair && !count($ncau)) {
-        $Conf->errorMsg("Every paper must have at least one contact.");
-        $Error["contactAuthor"] = 1;
+    if (!$prow && (!count($ncau) || !$Me->privChair))
+        $ncau[$Me->email] = $Me->contactId;
+    if (!$Me->privChair && !count($ncau))
+        $errs[] = "Every paper must have at least one contact.";
+
+    // Report delta
+    if (!count($errs)) {
+        foreach ($ncau as $email => $id)
+            if (!@$cau[$email])
+                $ch[0][] = $id;
+        foreach ($cau as $email => $id)
+            if (!@$ncau[$email])
+                $ch[1][] = $id;
+        return $ch;
+    } else {
+        $Error["contactAuthor"] = $errs;
         return false;
     }
-
-    // Check delta
-    foreach ($cau as $email => $id)
-        if (!@$ncau[$email])
-            $contact_deletions[] = $id;
-    foreach ($ncau as $email => $id)
-        if (!@$cau[$email])
-            $contact_additions[] = $id;
-    return array($contact_additions, $contact_deletions);
 }
 
 function save_contacts($paperId, $contact_changes, $request_authors) {
@@ -392,8 +460,21 @@ function save_contacts($paperId, $contact_changes, $request_authors) {
 	    return false;
     }
 
-    if (count($contact_changes[0]) || count($contact_changes[1]))
-        $Conf->infoMsg("Contacts saved.");
+    return count($contact_changes[0]) || count($contact_changes[1]);
+}
+
+function report_update_paper_errors() {
+    global $Conf, $Error, $Warning;
+    $m = array();
+    $Error = array_merge($Error, $Warning);
+    foreach ($Error as $k => $v)
+        if (is_string($v))
+            $m[] = "<li>$v</li>";
+        else if (is_array($v) && count($v)) {
+            foreach ($v as $x)
+                $m[] = "<li>$x</li>";
+        }
+    $Conf->errorMsg("There were errors in saving your paper. Please fix them and try again." . (count($m) ? "<ul>" . join("", $m) . "</ul>" : ""));
 }
 
 // send watch messages
@@ -402,232 +483,175 @@ function final_submit_watch_callback($prow, $minic) {
 	Mailer::send("@finalsubmitnotify", $prow, $minic);
 }
 
-function updatePaper($Me, $isSubmit, $isSubmitFinal) {
-    global $paperId, $newPaper, $Error, $Conf, $Opt, $prow;
+function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
+    global $paperId, $newPaper, $Error, $Warning, $Conf, $Opt, $prow, $OK;
     $contactId = $Me->contactId;
-    if ($isSubmitFinal)
-	$isSubmit = false;
+    $uploaded_documents = array();
+    assert(!$newPaper == !!$prow);
 
     // XXX lock tables
 
     // clear 'isSubmit' if no paper has been uploaded
-    if (!fileUploaded($_FILES["paperUpload"])
-	&& ($newPaper || $prow->size == 0)
-	&& !defval($Opt, "noPapers"))
+    if ((!fileUploaded($_FILES["paperUpload"])
+         && ($newPaper || $prow->size == 0)
+         && !defval($Opt, "noPapers"))
+        || $isSubmitFinal)
 	$isSubmit = false;
 
-    // check that all required information has been entered
-    foreach (array("title", "abstract", "authorTable", "collaborators") as $x)
-	if (!isset($_REQUEST[$x]))
-	    $_REQUEST[$x] = "";
-
-    $q = "";
-
-    foreach (array("title", "abstract", "collaborators") as $x) {
-	if (trim($_REQUEST[$x]) == "" && $x != "collaborators")
-	    $Error[$x] = 1;
-	if ($x == "title")
-	    $_REQUEST[$x] = simplify_whitespace($_REQUEST[$x]);
-	$q .= "$x='" . sqlqtrim($_REQUEST[$x]) . "', ";
+    // Paper table, uploaded documents: collect updates, check for errors
+    $q = array();
+    foreach (array("title", "abstract", "authorInformation", "collaborators")
+             as $x) {
+        if ($_REQUEST[$x] != "" || $x == "collaborators")
+            $q[] = "$x='" . sqlq($_REQUEST[$x]) . "'";
+        else if ($x == "authorInformation")
+            $Error[$x] = "Each paper must have at least one author.";
+        else if ($x == "title")
+            $Error[$x] = "Each paper must have a title.";
+        else
+            $Error[$x] = "Each paper must have an abstract.";
     }
 
-    if (!is_array($_REQUEST["authorTable"]) || count($_REQUEST["authorTable"]) == 0)
-	$Error["authorInformation"] = 1;
-    else {
-	$q .= "authorInformation='";
-	foreach ($_REQUEST["authorTable"] as $x)
-	    $q .= sqlq("$x[0]\t$x[1]\t$x[2]\t$x[3]\n");
-	$q .= "', ";
+    // exit early on error for initial registration
+    if (!$prow && count($Error)) {
+        if (fileUploaded($_FILES["paperUpload"]))
+            $Error["paper"] = "<strong>The submission you tried to upload was ignored.</strong>";
+        return false;
     }
 
-    // check option values
-    $emsg = "";
+    // blindness
+    if (!$isSubmitFinal) {
+        if ($Conf->subBlindNever()
+            || ($Conf->subBlindOptional() && !defval($_REQUEST, "blind")))
+            $q[] = "blind=0";
+        else
+            $q[] = "blind=1";
+    }
+
+    // paper document
+    $paperdoc = null;
+    if (fileUploaded($_FILES["paperUpload"])) {
+        $paperdoc = $Conf->storePaper("paperUpload", $prow ? $prow->paperId : -1, $isSubmitFinal ? DTYPE_FINAL : DTYPE_SUBMISSION);
+        if (!isset($paperdoc->error_html)) {
+            if ($isSubmitFinal)
+                $q[] = "finalPaperStorageId=$paperdoc->paperStorageId";
+            else
+                $q[] = "paperStorageId=$paperdoc->paperStorageId";
+            $q[] = "size=$paperdoc->size";
+            $q[] = "mimetype='" . sqlq($paperdoc->mimetype) . "'";
+            $q[] = "timestamp=$paperdoc->timestamp";
+            $q[] = "sha1='" . sqlq($paperdoc->sha1) . "'";
+            $uploaded_documents[] = $paperdoc->paperStorageId;
+        } else
+            $Error["paper"] = $paperdoc->error_html;
+    } else if ($newPaper)
+        $q[] = "paperStorageId=1";
+
+    // options
+    $opt_data = array();
     $no_delete_options = array("true");
-    $uploaded_documents = array();
-    $attachment_info = array();
     foreach (PaperOption::get() as $o) {
 	$oname = "opt$o->optionId";
 	$v = trim(defval($_REQUEST, $oname, ""));
-	if ($o->type == PaperOption::T_CHECKBOX)
-	    $_REQUEST[$oname] = ($v == 0 || $v == "" ? "" : 1);
-	else if ($o->type == PaperOption::T_SELECTOR || $o->type == PaperOption::T_RADIO)
-	    $_REQUEST[$oname] = cvtint($v, 0);
-	else if ($o->type == PaperOption::T_NUMERIC) {
-	    if ($v == "" || ($v = cvtint($v, null)) !== null)
-		$_REQUEST[$oname] = ($v == "" ? "0" : $v);
-	    else {
-		$Error[$oname] = 1;
-		$emsg .= "&ldquo;" . htmlspecialchars($o->optionName) . "&rdquo; must be an integer. ";
-	    }
-	} else if ($o->type == PaperOption::T_TEXT)
-	    $_REQUEST[$oname] = simplify_whitespace($v);
-        else if ($o->type == PaperOption::T_TEXT_5LINE)
-            $_REQUEST[$oname] = rtrim($v);
-        else if ($o->type == PaperOption::T_ATTACHMENTS) {
-            if ($newPaper || !isset($prow->option_array[$o->optionId]))
+        if ($o->isFinal && !$isSubmitFinal)
+            $no_delete_options[] = "optionId!=" . $o->optionId;
+	else if (($o->type == PaperOption::T_CHECKBOX && $_REQUEST[$oname])
+                 || $o->type == PaperOption::T_SELECTOR
+                 || $o->type == PaperOption::T_RADIO
+                 || $o->type == PaperOption::T_NUMERIC) {
+            if ($_REQUEST[$oname] !== false)
+                $opt_data[] = "$o->optionId, " . $_REQUEST[$oname] . ", null";
+            else
+                $Error[$oname] = htmlspecialchars($o->optionName) . " must be an integer.";
+        } else if ($o->type == PaperOption::T_TEXT
+                   || $o->type == PaperOption::T_TEXT_5LINE) {
+            if ($_REQUEST[$oname] !== "")
+                $opt_data[] = "$o->optionId, 1, '" . sqlq($_REQUEST[$oname]) . "'";
+        } else if ($o->type == PaperOption::T_ATTACHMENTS) {
+            if (!$prow || !isset($prow->option_array[$o->optionId]))
                 $ox = (object) array("values" => array(), "data" => array());
             else
                 $ox = $prow->option_array[$o->optionId];
             if (($next_ordinal = count($ox->data)))
                 $next_ordinal = max($next_ordinal, cvtint($ox->data[count($ox->values) - 1]));
             foreach (attachment_request_keys($o) as $k)
-                if ($k[0] != "r" /* not "remove_opt_" */
+                if ($k[0] != "r" /* not "remove_$oname_" */
                     && fileUploaded($_FILES[$k])
-                    && ($docid = uploadOption($o, $k))) {
+                    && ($docid = upload_option($o, $k, $prow))) {
+                    $opt_data[] = "$o->optionId, $docid, '$next_ordinal'";
                     $uploaded_documents[] = $docid;
-                    $attachment_info[] = "$o->optionId, $docid, '$next_ordinal'";
                     ++$next_ordinal;
                 }
             foreach ($ox->values as $docid)
-                if (!defval($_REQUEST, "remove_opt" . $o->optionId . "_" . $docid))
+                if (!defval($_REQUEST, "remove_${oname}_$docid"))
                     $no_delete_options[] = "(optionId!=" . $o->optionId . " or value!=" . $docid . ")";
         } else if ($o->isDocument) {
-	    unset($_REQUEST[$oname]);
-	    if (!$o->isFinal || $isSubmitFinal) {
-                if (fileUploaded($_FILES[$oname]) && ($docid = uploadOption($o, $oname)))
-                    $uploaded_documents[] = $docid;
-                else if (!defval($_REQUEST, "remove_opt" . $o->optionId))
-		    $no_delete_options[] = "optionId!=" . $o->optionId;
-	    } else
-		unset($_REQUEST["remove_opt" . $o->optionId]);
+            if (fileUploaded($_FILES[$oname])
+                && ($docid = upload_option($o, $oname, $prow))) {
+                $opt_data[] = "$o->optionId, $docid, null";
+                $uploaded_documents[] = $docid;
+            } else if (!defval($_REQUEST, "remove_$oname"))
+                $no_delete_options[] = "optionId!=" . $o->optionId;
 	} else
-            unset($_REQUEST[$oname]);
+            $no_delete_options[] = "optionId!=" . $o->optionId;
     }
 
-    // any missing fields?
-    $collaborators_error = (trim($_REQUEST["collaborators"]) == "" && $Conf->setting("sub_collab"));
-    $collaborators_field = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
-    if (count($Error) > 0) {
-	$fields = array();
-	$collab = false;
-	if (isset($Error["title"]))
-	    $fields[] = "Title";
-	if (isset($Error["authorInformation"]))
-	    $fields[] = "Authors";
-	if (isset($Error["abstract"]))
-	    $fields[] = "Abstract";
-	if ($collaborators_error)
-	    $fields[] = $collaborators_field;
-	if (count($fields) > 0) {
-	    $emsg .= "Before " . ($isSubmit ? "submitting" : "registering") . " your paper, you must enter ";
-	    if (count($fields) == 1)
-		$emsg .= "a value for the " . commajoin($fields) . " field. ";
-	    else
-		$emsg .= "values for the " . commajoin($fields) . " fields. ";
-	    if ($collaborators_error)
-		$emsg .= "If none of the authors have potential conflicts, just enter &ldquo;None&rdquo; in the $collaborators_field field. ";
-	}
-	if ($emsg != "")
-	    $emsg .= "Fix the highlighted " . pluralx($fields, "field") . " and try again.";
-	if (fileUploaded($_FILES["paperUpload"]) && $newPaper)
-	    $emsg .= "  <strong>Please note that the paper you tried to upload was ignored.</strong>";
-	if ($emsg != "")
-	    $Conf->errorMsg($emsg);
-	// It is kinder to the user to attempt to upload files even on error.
-	if (!$newPaper) {
-            // XXX should do this for attachments too
-            $while = "while uploading attachment";
-	    if (fileUploaded($_FILES["paperUpload"]))
-		uploadPaper($isSubmitFinal);
-	    foreach (PaperOption::get() as $o)
-		if ($o->isDocument && isset($_REQUEST["opt$o->optionId"])) {
-                    $Conf->qe("delete from PaperOption where paperId=" . $prow->paperId . " and optionId=" . $o->optionId, $while);
-		    $Conf->qe("insert into PaperOption (paperId, optionId, value, data) values ($prow->paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null)", $while);
-                }
-	}
-	return false;
-    } else if ($collaborators_error // a warning, not an error
-	       && !$isSubmitFinal
-	       && (!$isSubmit || $Conf->setting("sub_freeze") <= 0))
-	$Conf->warnMsg("Please enter the authors’ potential conflicts in the $collaborators_field field. If none of the authors have potential conflicts, just enter “None”.");
+    // contacts
+    $contact_changes = check_contacts($prow);
 
-    // check contacts
-    if (!($contact_changes = check_contacts()))
-        return false;
-
-    // defined contact ID
-    if ($newPaper && $Me->privChair
-        && (@$_REQUEST["contact_email"] || @$_REQUEST["contact_name"])) {
-        $c = new Contact;
-        if (!$c->load_by_email(@$_REQUEST["contact_email"],
-                               array("name" => @$_REQUEST["contact_name"]),
-                               true)) {
-	    $Conf->errorMsg("Enter a valid email address for the paper contact.");
-	    $Error["contactAuthor"] = 1;
-	    return false;
-	}
+    // special handling for collaborators (missing == warning)
+    if ($_REQUEST["collaborators"] == "" && $Conf->setting("sub_collab")) {
+        $field = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
+        $Warning["collaborators"] = "Please enter the authors’ potential conflicts in the $field field. If none of the authors have potential conflicts, just enter “None”.";
     }
 
-    // blind?
-    if ($isSubmitFinal)
-	/* do nothing */;
-    else if ($Conf->subBlindNever()
-	     || ($Conf->subBlindOptional() && !defval($_REQUEST, "blind")))
-	$q .= "blind=0, ";
-    else
-	$q .= "blind=1, ";
-
+    // Commit accumulated changes
     // update Paper table
-    if ($newPaper)
-	$q .= "paperStorageId=1";
-    else
-	$q = substr($q, 0, -2) . " where paperId=$paperId and timeWithdrawn<=0";
-
-    $result = $Conf->qe(($newPaper ? "insert into" : "update") . " Paper set $q", "while updating paper information");
-    if (!$result)
-	return false;
-
-    // fetch paper ID
-    if ($newPaper) {
-	$result = $Conf->lastInsertId("while updating paper information");
-	if (!$result)
-	    return false;
-	$paperId = $_REQUEST["p"] = $_REQUEST["paperId"] = $result;
-
-	$result = $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($paperId, $contactId, " . CONFLICT_CONTACTAUTHOR . ")", "while updating paper information");
-	if (!$result)
-	    return false;
+    if (!$newPaper)
+        $Conf->qe("update Paper set " . join(", ", $q) . " where paperId=$paperId and timeWithdrawn<=0", "while updating paper");
+    else {
+        if (!($result = $Conf->qe("insert into Paper set " . join(", ", $q), "while creating paper"))) {
+            $Conf->errorMsg("Could not create paper.");
+            return false;
+        }
+        if (!($result = $Conf->lastInsertId("while creating paper")))
+            return false;
+        $paperId = $_REQUEST["p"] = $_REQUEST["paperId"] = $result;
     }
 
-    // change paper contacts
-    save_contacts($paperId, $contact_changes, true);
+    // update PaperConflict table
+    if ($contact_changes && save_contacts($paperId, $contact_changes, true))
+        $diffs["contacts"] = true;
 
-    // update topics table
+    // update PaperTopic table
     if (!$isSubmitFinal) {
 	if (!$Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics"))
 	    return false;
-	$q = "";
+	$tq = array();
 	foreach ($_REQUEST as $key => $value)
-	    if (strlen($key) > 3
-		&& $key[0] == 't' && $key[1] == 'o' && $key[2] == 'p'
-		&& ($id = cvtint(substr($key, 3))) > 0 && $value > 0)
-		$q .= "($paperId, $id), ";
-	if ($q && !$Conf->qe("insert into PaperTopic (paperId, topicId) values " . substr($q, 0, strlen($q) - 2), "while updating paper topics"))
-	    return false;
+	    if ($value > 0 && str_starts_with($key, "top")
+		&& ($id = cvtint(substr($key, 3))) > 0)
+		$tq[] = "($paperId, $id)";
+	if (count($tq))
+            $Conf->qe("insert into PaperTopic (paperId, topicId) values " . join(",", $tq), "while updating paper topics");
     }
 
-    // update options table
+    // update PaperOption table
     if ($Conf->setting("paperOption")) {
 	$while = "while updating paper options";
 	if (!$Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options), $while))
 	    return false;
-	$q = array();
-	foreach (PaperOption::get() as $o)
-            if ($o->type == PaperOption::T_ATTACHMENTS) {
-                foreach ($attachment_info as $a)
-                    $q[] = "($paperId, $a)";
-            } else if (defval($_REQUEST, "opt$o->optionId", "") != "") {
-                if ($o->type == PaperOption::T_TEXT || $o->type == PaperOption::T_TEXT_5LINE)
-		    $q[] = "($paperId, $o->optionId, 1, '" . sqlq($_REQUEST["opt$o->optionId"]) . "')";
-		else
-		    $q[] = "($paperId, $o->optionId, " . $_REQUEST["opt$o->optionId"] . ", null)";
-	    }
-	if (count($q) && !$Conf->qe("insert into PaperOption (paperId, optionId, value, data) values " . join(", ", $q), $while))
-	    return false;
-	// update PaperStorage.paperId for newly registered papers' PDF uploads
-	if ($newPaper && count($uploaded_documents))
-            $Conf->qe("update PaperStorage set paperId=$paperId where paperStorageId in (" . join(",", $uploaded_documents) . ")", $while);
+        foreach ($opt_data as &$x)
+            $x = "($paperId, $x)";
+        unset($x);
+        $Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options), "while updating paper options");
+        if (count($opt_data))
+            $Conf->qe("insert into PaperOption (paperId,optionId,value,data) values " . join(", ", $opt_data), "while updating paper options");
     }
+
+    // update PaperStorage.paperId for newly registered papers
+    if ($newPaper && count($uploaded_documents))
+        $Conf->qe("update PaperStorage set paperId=$paperId where paperStorageId in (" . join(",", $uploaded_documents) . ")", $while);
 
     // update PC conflicts if appropriate
     if ($Conf->setting("sub_pcconf") && (!$isSubmitFinal || $Me->privChair)) {
@@ -643,49 +667,40 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 		&& $value > 0) {
 		$q[] = "($paperId, $id, " . max(min($value, $max_conflict), CONFLICT_AUTHORMARK) . ")";
 	    }
-	if (count($q) && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
-	values " . join(", ", $q) . "
-	on duplicate key update conflictType=conflictType",
-			     "while updating conflicts"))
-	    return false;
+	if (count($q))
+            $Conf->qe("insert into PaperConflict (paperId,contactId,conflictType) values " . join(", ", $q) . " on duplicate key update conflictType=conflictType",
+                      "while updating conflicts");
     }
 
-    // upload paper if appropriate
-    $paperUploaded = fileUploaded($_FILES["paperUpload"]);
-    if ($paperUploaded) {
-	if ($newPaper)
-	    loadRows();
-	if (!uploadPaper($isSubmitFinal))
-	    return false;
-    }
-
-    // submit paper if appropriate
-    $wasSubmitted = !$newPaper && $prow->timeSubmitted > 0;
-    if ($isSubmitFinal || $isSubmit) {
-	loadRows();
-	if (!$isSubmitFinal && $prow->paperStorageId <= 1
-            && !defval($Opt, "noPapers")) {
-	    $Error[$isSubmitFinal ? "final" : "paper"] = 1;
-	    return $Conf->errorMsg(whyNotText("notUploaded", ($isSubmitFinal ? "submit a final version for" : "submit"), $paperId));
-	}
-	$result = $Conf->qe("update Paper set " . ($isSubmitFinal ? "timeFinalSubmitted" : "timeSubmitted") . "=" . time() . " where paperId=$paperId",
-			    ($isSubmitFinal ? "while submitting final version for paper" : "while submitting paper"));
-	if (!$result)
-	    return false;
-    } else if (!$isSubmitFinal) {
-	$result = $Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while unsubmitting paper");
-	if (!$result)
-	    return false;
+    // submit paper if no error so far
+    loadRows();
+    $submitkey = $isSubmitFinal ? "timeFinalSubmitted" : "timeSubmitted";
+    $storekey = $isSubmitFinal ? "finalPaperStorageId" : "paperStorageId";
+    $wasSubmitted = !$newPaper && $prow->$submitkey > 0;
+    $didSubmit = false;
+    if ($OK && !count($Error) && ($isSubmitFinal || $isSubmit)) {
+        if ($prow->$storekey > 1 || defval($Opt, "noPapers")) {
+            $result = $Conf->qe("update Paper set " . ($isSubmitFinal ? "timeFinalSubmitted=" : "timeSubmitted=") . time() . " where paperId=$paperId", "while submitting paper");
+            $didSubmit = !!$result;
+            loadRows();
+        } else if (!$isSubmitFinal) {
+            $Error["paper"] = 1;
+            $Conf->errorMsg(whyNotText("notUploaded", "submit", $paperId));
+        }
+    } else if ($OK && !count($Error) && !$isSubmitFinal && !$isSubmit) {
+	$Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while unsubmitting paper");
+        loadRows();
     }
     if ($isSubmit || $Conf->setting("pc_seeall"))
 	$Conf->updatePapersubSetting(true);
+    if ($wasSubmitted != ($prow->$submitkey > 0))
+        $diffs["submission"] = 1;
 
     // confirmation message
-    loadRows();
     if ($isSubmitFinal) {
 	$actiontext = "Updated final version of";
 	$template = "@submitfinalpaper";
-    } else if ($isSubmit && !$wasSubmitted) {
+    } else if ($didSubmit && $isSubmit && !$wasSubmitted) {
 	$actiontext = "Submitted";
 	$template = "@submitpaper";
     } else if ($newPaper) {
@@ -715,10 +730,10 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	    $notes = "The paper is marked as not ready for review.";
 	$deadline = $Conf->printableTimeSetting("sub_update", "span");
 	if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
-	    $notes .= "  Further updates are allowed until $deadline.";
+	    $notes .= " Further updates are allowed until $deadline.";
 	$deadline = $Conf->printableTimeSetting("sub_sub", "span");
 	if ($deadline != "N/A" && $prow->timeSubmitted <= 0) {
-	    $notes .= "  <strong>If the paper ";
+	    $notes .= " <strong>If the paper ";
 	    if ($Conf->setting("sub_freeze") > 0)
 		$notes .= "has not been submitted";
 	    else
@@ -727,11 +742,20 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
 	}
     }
 
+    $webnotes = "";
+    if (count($Warning) && $OK && !count($Error))
+        $webnotes = " <ul><li>" . join("</li><li>", array_values($Warning)) . "</li></ul>";
+
+    if (!count($diffs)) {
+        $Conf->warnMsg("There were no changes to paper #$paperId. " . $notes . $webnotes);
+        return $OK && !count($Error);
+    }
+
     // HTML confirmation
     if ($isSubmitFinal || $prow->timeSubmitted > 0)
-	$Conf->confirmMsg($actiontext . " paper #$paperId. " . $notes);
+	$Conf->confirmMsg($actiontext . " paper #$paperId. " . $notes . $webnotes);
     else
-	$Conf->warnMsg($actiontext . " paper #$paperId. " . $notes);
+	$Conf->warnMsg($actiontext . " paper #$paperId. " . $notes . $webnotes);
 
     // mail confirmation to all contact authors
     if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {
@@ -746,20 +770,19 @@ function updatePaper($Me, $isSubmit, $isSubmitFinal) {
     }
 
     // other mail confirmations
-    if ($isSubmitFinal && $Conf->sversion >= 36)
+    if ($isSubmitFinal && $OK && !count($Error) && $Conf->sversion >= 36)
 	genericWatch($prow, WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback");
 
     $Conf->log($actiontext, $Me, $paperId);
-    redirectSelf();
-    // NB normally redirectSelf() does not return
-    return true;
+
+    return $OK && !count($Error);
 }
 
 if ((isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"]))
     && check_post()) {
     // get missing parts of request
-    if (!$newPaper)
-	setRequestFromPaper($prow);
+    clean_request($prow, isset($_REQUEST["submitfinal"]));
+    $diffs = request_differences($prow, isset($_REQUEST["submitfinal"]));
 
     // check deadlines
     if ($newPaper)
@@ -769,20 +792,23 @@ if ((isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"]))
 	$ok = $Me->canSubmitFinalPaper($prow, $whyNot);
     else {
 	$ok = $Me->canUpdatePaper($prow, $whyNot);
-	if (!$ok && isset($_REQUEST["submit"]) && requestSameAsPaper($prow))
+	if (!$ok && isset($_REQUEST["submit"]) && !count($diffs))
 	    $ok = $Me->canFinalizePaper($prow, $whyNot);
     }
 
     // actually update
-    if (!$ok) {
+    if ($ok) {
+        if (update_paper($Me, isset($_REQUEST["submit"]),
+                         isset($_REQUEST["submitfinal"]), $diffs))
+            redirectSelf(array("p" => $paperId, "m" => "pe"));
+        else
+            report_update_paper_errors();
+    } else {
 	if (isset($_REQUEST["submitfinal"]))
 	    $action = "submit final version for";
 	else
 	    $action = ($newPaper ? "register" : "update");
 	$Conf->errorMsg(whyNotText($whyNot, $action));
-    } else if (updatePaper($Me, isset($_REQUEST["submit"]), isset($_REQUEST["submitfinal"]))) {
-	redirectSelf(array("p" => $paperId, "m" => "pe"));
-	// NB normally redirectSelf() does not return
     }
 
     // use request?
@@ -792,7 +818,7 @@ if ((isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"]))
 if (isset($_REQUEST["updatecontacts"]) && check_post() && !$newPaper) {
     if (!$Me->canAdminister($prow) && !$Me->actAuthorView($prow)) {
         $Conf->errorMsg(whyNotText(array("permission" => 1), "update contacts for"));
-    } else if (($contact_changes = check_contacts())
+    } else if (($contact_changes = check_contacts($prow))
                && save_contacts($prow->paperId, $contact_changes, false)) {
 	redirectSelf(array("p" => $paperId, "m" => "pe"));
 	// NB normally redirectSelf() does not return

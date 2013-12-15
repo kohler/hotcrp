@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-$Error = array();
+$Error = $Warning = array();
 require_once("Code/header.inc");
 require_once("src/papertable.php");
 $Me->goIfInvalid();

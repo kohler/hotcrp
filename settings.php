@@ -8,7 +8,7 @@ $Me->goIfInvalid();
 $Me->goIfNotPrivChair();
 $Highlight = defval($_SESSION, "settings_highlight", array());
 unset($_SESSION["settings_highlight"]);
-$Error = array();
+$Error = $Warning = array();
 $Values = array();
 $rf = reviewForm();
 $DateExplanation = "Date examples: &ldquo;now&rdquo;, &ldquo;10 Dec 2006 11:59:59pm PST&rdquo; <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";

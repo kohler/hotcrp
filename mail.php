@@ -12,7 +12,7 @@ $rf = reviewForm();
 $nullMailer = new Mailer(null, null, $Me);
 $nullMailer->width = 10000000;
 $checkReviewNeedsSubmit = false;
-$Error = array();
+$Error = $Warning = array();
 $pctags = pcTags();
 
 // load mail from log
