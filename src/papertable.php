@@ -1592,7 +1592,7 @@ class PaperTable {
         else if ($this->admin && $this->mode == "pe") {
             $class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "b" : "bb");
             $buttons[] = array("<input class='$class' type='submit' name='update' value='Save changes' />", "(admin only)");
-        } else if ($this->mode == "pe" && $prow->timeSubmited > 0)
+        } else if ($this->mode == "pe" && $prow->timeSubmitted > 0)
             $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", array("class" => "b")), "");
 
         // withdraw button
