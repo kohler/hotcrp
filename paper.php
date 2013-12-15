@@ -531,7 +531,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     // paper document
     $paperdoc = null;
     if (fileUploaded($_FILES["paperUpload"])) {
-        $paperdoc = $Conf->storePaper("paperUpload", $prow ? $prow->paperId : -1, $isSubmitFinal ? DTYPE_FINAL : DTYPE_SUBMISSION);
+        $paperdoc = $Conf->storeDocument("paperUpload", $prow ? $prow->paperId : -1, $isSubmitFinal ? DTYPE_FINAL : DTYPE_SUBMISSION);
         if (!isset($paperdoc->error_html)) {
             if ($isSubmitFinal)
                 $q[] = "finalPaperStorageId=$paperdoc->paperStorageId";
@@ -624,17 +624,14 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
         $diffs["contacts"] = true;
 
     // update PaperTopic table
-    if (!$isSubmitFinal) {
-	if (!$Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics"))
-	    return false;
-	$tq = array();
-	foreach ($_REQUEST as $key => $value)
-	    if ($value > 0 && str_starts_with($key, "top")
-		&& ($id = cvtint(substr($key, 3))) > 0)
-		$tq[] = "($paperId, $id)";
-	if (count($tq))
-            $Conf->qe("insert into PaperTopic (paperId, topicId) values " . join(",", $tq), "while updating paper topics");
-    }
+    $Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics");
+    $tq = array();
+    foreach ($_REQUEST as $key => $value)
+        if ($value > 0 && str_starts_with($key, "top")
+            && ($id = cvtint(substr($key, 3))) > 0)
+            $tq[] = "($paperId, $id)";
+    if (count($tq))
+        $Conf->qe("insert into PaperTopic (paperId, topicId) values " . join(",", $tq), "while updating paper topics");
 
     // update PaperOption table
     if ($Conf->setting("paperOption")) {
@@ -712,35 +709,35 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     }
 
     // additional information
-    $notes = "";
+    $notes = array();
     if ($isSubmitFinal) {
+        if ($prow->$submitkey === null || $prow->$submitkey <= 0)
+            $notes[] = "The final version has not yet been submitted.";
 	$deadline = $Conf->printableTimeSetting("final_soft", "span");
 	if ($deadline != "N/A" && $Conf->deadlinesAfter("final_soft"))
-	    $notes = "<strong>The deadline for submitting final versions was $deadline.</strong>";
+	    $notes[] = "<strong>The deadline for submitting final versions was $deadline.</strong>";
 	else if ($deadline != "N/A")
-	    $notes = "You have until $deadline to make further changes.";
+	    $notes[] = "You have until $deadline to make further changes.";
     } else {
 	if ($isSubmit || $prow->timeSubmitted > 0)
-	    $notes = "You will receive email when reviews are available.";
+	    $notes[] = "You will receive email when reviews are available.";
 	else if ($prow->size == 0 && !defval($Opt, "noPapers"))
-	    $notes = "The paper has not yet been uploaded.";
+	    $notes[] = "The paper has not yet been uploaded.";
 	else if ($Conf->setting("sub_freeze") > 0)
-	    $notes = "The paper has not yet been submitted.";
+	    $notes[] = "The paper has not yet been submitted.";
 	else
-	    $notes = "The paper is marked as not ready for review.";
+	    $notes[] = "The paper is marked as not ready for review.";
 	$deadline = $Conf->printableTimeSetting("sub_update", "span");
 	if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
-	    $notes .= " Further updates are allowed until $deadline.";
+	    $notes[] = "Further updates are allowed until $deadline.";
 	$deadline = $Conf->printableTimeSetting("sub_sub", "span");
-	if ($deadline != "N/A" && $prow->timeSubmitted <= 0) {
-	    $notes .= " <strong>If the paper ";
-	    if ($Conf->setting("sub_freeze") > 0)
-		$notes .= "has not been submitted";
-	    else
-		$notes .= "is not ready for review";
-	    $notes .= " by $deadline, it will not be considered for the conference.</strong>";
-	}
+	if ($deadline != "N/A" && $prow->timeSubmitted <= 0)
+	    $notes[] = "<strong>If the paper "
+                . ($Conf->setting("sub_freeze") > 0 ? "has not been submitted"
+                   : "is not ready for review")
+                . " by $deadline, it will not be considered.</strong>";
     }
+    $notes = join(" ", $notes);
 
     $webnotes = "";
     if (count($Warning) && $OK && !count($Error))
@@ -752,7 +749,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     }
 
     // HTML confirmation
-    if ($isSubmitFinal || $prow->timeSubmitted > 0)
+    if ($prow->$submitkey > 0)
 	$Conf->confirmMsg($actiontext . " paper #$paperId. " . $notes . $webnotes);
     else
 	$Conf->warnMsg($actiontext . " paper #$paperId. " . $notes . $webnotes);
