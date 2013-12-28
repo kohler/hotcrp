@@ -1264,24 +1264,21 @@ function titleWords($title, $chars = 40) {
     return $xtitle . "...";
 }
 
-function downloadCSV($info, $header, $filename, $description, $opt = array()) {
+function downloadCSV($info, $header, $filename, $opt = array()) {
     global $Opt;
     $iscsv = defval($opt, "type", "csv") == "csv" && !isset($Opt["disableCSV"]);
     $csvg = new CsvGenerator($iscsv ? CsvGenerator::TYPE_COMMA : CsvGenerator::TYPE_TAB);
     if ($header)
         $csvg->set_header($header, true);
     $csvg->add($info);
-    $csvg->download_headers($Opt["downloadPrefix"] . $filename . $csvg->extension(),
-                            !defval($opt, "inline"),
-                            $Opt["shortName"] . " " . $description);
+    $csvg->download_headers($Opt["downloadPrefix"] . $filename . $csvg->extension(), !defval($opt, "inline"));
     $csvg->download();
 }
 
-function downloadText($text, $filename, $description, $inline = false) {
+function downloadText($text, $filename, $inline = false) {
     global $Opt;
     $csvg = new CsvGenerator(CsvGenerator::TYPE_TAB);
-    $csvg->download_headers($Opt["downloadPrefix"] . $filename,
-                            !$inline, $Opt["shortName"] . " " . $description);
+    $csvg->download_headers($Opt["downloadPrefix"] . $filename, !$inline);
     if ($text !== false) {
         $csvg->add($text);
         $csvg->download();

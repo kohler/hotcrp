@@ -267,7 +267,7 @@ function downloadForm($editable) {
 	return $Conf->errorMsg(whyNotText($whyNot, "review"));
     if ($editable)
 	$text = $rf->textFormHeader(count($downrrows) > 1, $Me->viewReviewFieldsScore($prow, null)) . $text;
-    downloadText($text, "review-" . $prow->paperId, "review form", !$editable);
+    downloadText($text, "review-" . $prow->paperId, !$editable);
     exit;
 }
 if (isset($_REQUEST["downloadForm"]))

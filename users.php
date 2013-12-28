@@ -89,7 +89,7 @@ if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
     $people = array();
     while ($row = edb_row($result))
 	$people[] = array($row[0] && $row[1] ? "$row[1], $row[0]" : "$row[1]$row[0]", $row[2]);
-    downloadCSV($people, array("name", "email"), "users", "users");
+    downloadCSV($people, array("name", "email"), "users");
     exit;
 }
 
@@ -98,7 +98,7 @@ if ($getaction == "nameaffemail" && isset($papersel) && $Me->isPC) {
     $people = array();
     while ($row = edb_row($result))
 	$people[] = array($row[0] && $row[1] ? "$row[1], $row[0]" : "$row[1]$row[0]", $row[3], $row[2]);
-    downloadCSV($people, array("name", "affiliation", "email"), "users", "users");
+    downloadCSV($people, array("name", "affiliation", "email"), "users");
     exit;
 }
 
@@ -123,7 +123,7 @@ if ($getaction == "address" && isset($papersel) && $Me->isPC) {
 		    "city", "state", "postalcode", "country");
     if ($phone)
 	$header[] = "phone";
-    downloadCSV($people, $header, "addresses", "addresses");
+    downloadCSV($people, $header, "addresses");
     exit;
 }
 

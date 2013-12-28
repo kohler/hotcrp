@@ -26,7 +26,6 @@ if (isset($_REQUEST["var"])) {
 
 if (isset($_REQUEST["j"])) {
     header("Content-Type: application/json");
-    header("Content-Description: PHP generated data");
     print "{\"ok\":true}\n";
     exit;
 }
@@ -38,7 +37,6 @@ if (isset($_REQUEST["cache"])) { // allow caching
 }
 
 header("Content-Type: image/gif");
-header("Content-Description: PHP generated data");
 if (!$zlib_output_compression)
     header("Content-Length: 43");
 print "GIF89a\001\0\001\0\x80\0\0\0\0\0\0\0\0\x21\xf9\x04\x01\0\0\0\0\x2c\0\0\0\0\x01\0\x01\0\0\x02\x02\x44\x01\0\x3b";

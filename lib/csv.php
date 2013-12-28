@@ -323,15 +323,13 @@ class CsvGenerator {
         $this->selection = $selection;
     }
 
-    function download_headers($downloadname = null, $attachment = null,
-                              $description = null) {
+    function download_headers($downloadname = null, $attachment = null) {
         if ($this->is_csv())
             header("Content-Type: text/csv; charset=utf-8; header=" . ($this->header ? "present" : "absent"));
         else
             header("Content-Type: text/plain; charset=utf-8");
         if ($attachment === null)
             $attachment = !Mimetype::disposition_inline($this->is_csv() ? "text/csv" : "text/plain");
-        header("Content-Description: " . ($description ? $description : "PHP generated data"));
         if (!$downloadname)
             $downloadname = "data" . $this->extension();
         header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));

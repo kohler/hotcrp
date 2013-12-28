@@ -105,7 +105,6 @@ class ZipDocument {
 
     public function download_headers() {
         if (!$this->headers) {
-            header("Content-Description: PHP Generated Data");
             header("Content-Disposition: attachment; filename=" . mime_quote_string($this->downloadname));
             header("Content-Type: " . $this->mimetype);
             $this->headers = true;
@@ -375,7 +374,6 @@ class DocumentHelper {
 	// Print paper
 	$doc_mimetype = self::_mimetype($doc);
 	header("Content-Type: " . Mimetype::type($doc_mimetype));
-	header("Content-Description: PHP Generated Data");
         if ($attachment === null)
 	    $attachment = !Mimetype::disposition_inline($doc_mimetype);
         if (!$downloadname) {
