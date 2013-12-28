@@ -101,9 +101,9 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
     $cf = new CheckFormat();
     $dt = requestDocumentType($_REQUEST);
     if ($Conf->setting("sub_banal$dt"))
-	$format = $Conf->settingText("sub_banal$dt", "");
+	$format = $Conf->setting_data("sub_banal$dt", "");
     else
-	$format = $Conf->settingText("sub_banal", "");
+	$format = $Conf->setting_data("sub_banal", "");
     $status = $cf->analyzePaper($prow->paperId, $dt, $format);
 
     // chairs get a hint message about multiple checking

@@ -372,7 +372,7 @@ if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
 
 
 // download rank
-$settingrank = ($Conf->setting("tag_rank") && defval($_REQUEST, "tag") == "~" . $Conf->settingText("tag_rank"));
+$settingrank = ($Conf->setting("tag_rank") && defval($_REQUEST, "tag") == "~" . $Conf->setting_data("tag_rank"));
 if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
     && ($Me->isPC || ($Me->amReviewer() && $settingrank))) {
     $tagger = new Tagger;
@@ -747,7 +747,7 @@ if ($getaction == "topics" && isset($papersel)) {
 // download format checker reports for selected papers
 if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
     $result = $Conf->qe("select paperId, title, mimetype from Paper where " . paperselPredicate($papersel) . " order by paperId", "while fetching topics");
-    $format = $Conf->settingText("sub_banal", "");
+    $format = $Conf->setting_data("sub_banal", "");
 
     // generate output gradually since this takes so long
     downloadText(false, "formatcheck", false);
@@ -1040,7 +1040,7 @@ function savesearch() {
     }
 
     // support directly recursive definition (to e.g. change display options)
-    if (($t = $Conf->settingText("ss:$name")) && ($t = json_decode($t))) {
+    if (($t = $Conf->setting_data("ss:$name")) && ($t = json_decode($t))) {
 	if (isset($_REQUEST["q"]) && $_REQUEST["q"] == "ss:$name")
 	    $_REQUEST["q"] = (isset($t->q) ? $t->q : "");
 	if (isset($t->owner) && !$Me->privChair && $t->owner != $Me->contactId)
@@ -1472,7 +1472,7 @@ if ($pl && $pl->count > 0) {
 . $_SESSION["scoresort"] . "' /></div></form>");
 	$Conf->footerScript("plinfo.extra=function(){\$\$('savedisplayoptionsbutton').disabled=false};");
 	// strings might be in different orders, so sort before comparing
-	$pld = explode(" ", trim($Conf->settingText("pldisplay_default", " overAllMerit ")));
+	$pld = explode(" ", trim($Conf->setting_data("pldisplay_default", " overAllMerit ")));
 	sort($pld);
 	if ($_SESSION["pldisplay"] != " " . ltrim(join(" ", $pld) . " ")
 	    || $_SESSION["scoresort"] != PaperList::default_score_sort(true))

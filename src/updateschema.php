@@ -84,7 +84,7 @@ function updateSchema($Conf) {
 		$q = "update PaperReview set reviewRound=$round where " . join(" or ", $pairs);
 		$Conf->ql($q);
 	    }
-	    $x = trim(preg_replace('/(\S+)\s*/', "tag like '%~\$1' or ", $Conf->settingText("tag_rounds")));
+	    $x = trim(preg_replace('/(\S+)\s*/', "tag like '%~\$1' or ", $Conf->setting_data("tag_rounds")));
 	    $Conf->ql("delete from PaperTag where " . substr($x, 0, strlen($x) - 3));
 	}
     }
@@ -189,7 +189,7 @@ function updateSchema($Conf) {
 	&& $Conf->ql("update Settings set value=29 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 29;
     if ($Conf->settings["allowPaperOption"] == 29) {
-	$pld = $Conf->settingText("pldisplay_default");
+	$pld = $Conf->setting_data("pldisplay_default");
 	$pld2 = updatePaperListDisplayOptions($pld);
 	if ((!$pld || $pld == $pld2
 	     || $Conf->ql("update Settings set data='" . $Conf->dblink->escape_string($pld2) . "' where name='pldisplay_default'"))

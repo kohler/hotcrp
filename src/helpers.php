@@ -1496,9 +1496,9 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
     if (isset($_SESSION[$sessionvar]))
 	$x = $_SESSION[$sessionvar];
     else if ($sessionvar == "pldisplay")
-	$x = $Conf->settingText("pldisplay_default", "");
+	$x = $Conf->setting_data("pldisplay_default", "");
     else if ($sessionvar == "ppldisplay")
-	$x = $Conf->settingText("ppldisplay_default", "");
+	$x = $Conf->setting_data("ppldisplay_default", "");
     else
 	$x = "";
     if ($x == null || strpos($x, " ") === false) {

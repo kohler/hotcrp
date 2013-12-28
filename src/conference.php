@@ -144,7 +144,7 @@ class Conference {
 	return defval($this->settings, $name, $defval);
     }
 
-    function settingText($name, $defval = false) {
+    function setting_data($name, $defval = false) {
 	return defval($this->settingTexts, $name, $defval);
     }
 
@@ -1775,7 +1775,7 @@ class Conference {
         list($keyid, $key) = Contact::password_hmac_key(null, true);
         if (($hash_method = defval($Opt, "capabilityHashMethod")))
             /* OK */;
-        else if (($hash_method = $this->settingText("capabilityHashMethod")))
+        else if (($hash_method = $this->setting_data("capabilityHashMethod")))
             /* OK */;
         else {
             $hash_method = (PHP_INT_SIZE == 8 ? "sha512" : "sha256");

@@ -118,7 +118,7 @@ echo 'Default action:&nbsp; assign&nbsp; ',
     '<div class="g"></div>', "\n";
 
 if (!isset($_REQUEST["rev_roundtag"]))
-    $rev_roundtag = $Conf->settingText("rev_roundtag");
+    $rev_roundtag = $Conf->setting_data("rev_roundtag");
 else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
     $rev_roundtag = "";
 if (isset($_REQUEST["email_requestreview"]))

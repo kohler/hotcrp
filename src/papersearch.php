@@ -833,7 +833,7 @@ class PaperSearch {
 
 	// allow external reviewers to search their own rank tag
 	if (!$this->amPC) {
-	    $ranktag = "~" . $Conf->settingText("tag_rank");
+	    $ranktag = "~" . $Conf->setting_data("tag_rank");
 	    if (!$Conf->setting("tag_rank")
 		|| substr($word, 0, strlen($ranktag)) !== $ranktag
 		|| (strlen($word) > strlen($ranktag)
@@ -1173,7 +1173,7 @@ class PaperSearch {
         if ($keyword ? $keyword == "has" : isset($this->fields["has"]))
             $this->_searchHas($word, $qt, $quoted);
 	if ($keyword ? $keyword == "ss" : isset($this->fields["ss"])) {
-	    $t = $Conf->settingText("ss:" . $word, "");
+	    $t = $Conf->setting_data("ss:" . $word, "");
 	    $search = json_decode($t);
 	    $qe = null;
 	    if (isset($this->_ssRecursion[$word]))

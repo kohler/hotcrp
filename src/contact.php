@@ -1587,7 +1587,7 @@ class Contact {
         else if (isset($Opt["passwordHmacKey.$keyid"]))
             $key = $Opt["passwordHmacKey.$keyid"];
         else {
-            $key = $Conf->settingText("passwordHmacKey.$keyid", "");
+            $key = $Conf->setting_data("passwordHmacKey.$keyid", "");
             if ($key == "" && $create) {
                 $key = hotcrp_random_bytes(24);
                 $Conf->save_setting("passwordHmacKey.$keyid", time(), $key);
@@ -1727,9 +1727,9 @@ class Contact {
 	if ($type > 0 && (!$rrow || !$rrow->reviewType)) {
 	    $qa = $qb = "";
 	    if (($type == REVIEW_PRIMARY || $type == REVIEW_SECONDARY)
-		&& ($t = $Conf->settingText("rev_roundtag"))) {
+		&& ($t = $Conf->setting_data("rev_roundtag"))) {
 		if (!($k = array_search($t, $Conf->settings["rounds"]))) {
-		    $rounds = $Conf->settingText("tag_rounds", "");
+		    $rounds = $Conf->setting_data("tag_rounds", "");
 		    $rounds = ($rounds ? "$rounds$t " : " $t ");
 		    $Conf->qe("insert into Settings (name, value, data) values ('tag_rounds', 1, '" . sqlq($rounds) . "') on duplicate key update data='" . sqlq($rounds) . "'");
 		    $Conf->settings["tag_rounds"] = 1;

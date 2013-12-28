@@ -56,7 +56,7 @@ class PaperActions {
     static function setRank($prow) {
 	global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
-	$tag = $Conf->settingText("tag_rank", "");
+	$tag = $Conf->setting_data("tag_rank", "");
 	if (!$Me->canSetRank($prow)) {
 	    $Conf->errorMsg("You don’t have permission to rank this paper.");
 	    $Error["rank"] = true;
@@ -92,7 +92,7 @@ class PaperActions {
     static function rankContext($prow) {
 	global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
-	$tag = $Conf->settingText("tag_rank", "");
+	$tag = $Conf->setting_data("tag_rank", "");
 	if (!$Me->canSetRank($prow)) {
 	    $Conf->errorMsg("You don’t have permission to rank this paper.");
 	    $Error["rank"] = true;

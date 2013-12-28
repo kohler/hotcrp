@@ -103,7 +103,7 @@ class BaseList {
         global $Conf, $Opt;
         if (isset($_SESSION["scoresort"]) && !$nosession)
             return $_SESSION["scoresort"];
-        else if ($Conf && ($s = $Conf->settingText("scoresort_default")))
+        else if ($Conf && ($s = $Conf->setting_data("scoresort_default")))
             return $s;
         else
             return defval($Opt, "defaultScoreSort", "C");

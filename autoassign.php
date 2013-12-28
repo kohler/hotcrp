@@ -63,7 +63,7 @@ $pcm = pcMembers();
 if (!isset($_REQUEST["bpcount"]) || !ctype_digit($_REQUEST["bpcount"]))
     $_REQUEST["bpcount"] = "50";
 if (!isset($_REQUEST["badpairs"]) && !isset($_REQUEST["assign"]) && !count($_POST)) {
-    $x = preg_split('/\s+/', $Conf->settingText("autoassign_badpairs", ""), null, PREG_SPLIT_NO_EMPTY);
+    $x = preg_split('/\s+/', $Conf->setting_data("autoassign_badpairs", ""), null, PREG_SPLIT_NO_EMPTY);
     $bpnum = 1;
     for ($i = 0; $i < count($x) - 1; $i += 2)
 	if (isset($pcm[$x[$i]]) && isset($pcm[$x[$i+1]])) {
@@ -82,7 +82,7 @@ if (!isset($_REQUEST["badpairs"]) && !isset($_REQUEST["assign"]) && !count($_POS
 	    $x[] = $_REQUEST["bpa$i"];
 	    $x[] = $_REQUEST["bpb$i"];
 	}
-    if (count($x) || $Conf->settingText("autoassign_badpairs")
+    if (count($x) || $Conf->setting_data("autoassign_badpairs")
 	|| (!isset($_REQUEST["badpairs"]) != !$Conf->setting("autoassign_badpairs")))
 	$Conf->q("insert into Settings (name, value, data) values ('autoassign_badpairs', " . (isset($_REQUEST["badpairs"]) ? 1 : 0) . ", '" . sqlq(join(" ", $x)) . "') on duplicate key update data=values(data), value=values(value)");
 }
@@ -613,7 +613,7 @@ echo "&nbsp; review(s) from this paper selection</div>\n";
 echo divClass("rev_roundtag");
 echo "<input style='visibility: hidden' type='radio' class='cb' name='a' value='rev_roundtag' disabled='disabled' />&nbsp;";
 echo "Review round: &nbsp;";
-$rev_roundtag = defval($_REQUEST, "rev_roundtag", $Conf->settingText("rev_roundtag"));
+$rev_roundtag = defval($_REQUEST, "rev_roundtag", $Conf->setting_data("rev_roundtag"));
 if (!$rev_roundtag)
     $rev_roundtag = "(None)";
 echo "<input id='rev_roundtag' class='textlite temptextoff' type='text' size='15' name='rev_roundtag' value=\"",

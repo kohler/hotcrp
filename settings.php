@@ -267,7 +267,7 @@ function doTags($set, $what) {
 	$v = array(count($vs), join(" ", $vs));
 	if (!isset($Highlight["tag_chair"])
 	    && ($Conf->setting("tag_chair") !== $v[0]
-		|| $Conf->settingText("tag_chair") !== $v[1]))
+		|| $Conf->setting_data("tag_chair") !== $v[1]))
 	    $Values["tag_chair"] = $v;
     }
 
@@ -285,7 +285,7 @@ function doTags($set, $what) {
 	$v = array(count($vs), join(" ", $vs));
 	if (!isset($Highlight["tag_vote"])
 	    && ($Conf->setting("tag_vote") != $v[0]
-		|| $Conf->settingText("tag_vote") !== $v[1])) {
+		|| $Conf->setting_data("tag_vote") !== $v[1])) {
 	    $Values["tag_vote"] = $v;
 	    $Values["x_tag_vote"] = 1; /* want to get called at set time */
 	}
@@ -348,7 +348,7 @@ function doTags($set, $what) {
 	$v = array(count($vs), join(" ", $vs));
 	if (!isset($Highlight["tag_rank"])
 	    && ($Conf->setting("tag_rank") !== $v[0]
-		|| $Conf->settingText("tag_rank") !== $v[1]))
+		|| $Conf->setting_data("tag_rank") !== $v[1]))
 	    $Values["tag_rank"] = $v;
     }
 
@@ -367,7 +367,7 @@ function doTags($set, $what) {
 		    }
 	    }
 	$v = array(1, join(" ", $vs));
-	if ($any_set && $Conf->settingText("tag_color") !== $v[1])
+	if ($any_set && $Conf->setting_data("tag_color") !== $v[1])
 	    $Values["tag_color"] = $v;
     }
 
@@ -642,7 +642,7 @@ function doBanal($set) {
     if ($set)
 	return true;
     if (!isset($_REQUEST["sub_banal"])) {
-	if (($t = $Conf->settingText("sub_banal", "")) != "")
+	if (($t = $Conf->setting_data("sub_banal", "")) != "")
 	    $Values["sub_banal"] = array(0, $t);
 	else
 	    $Values["sub_banal"] = null;
@@ -1018,7 +1018,7 @@ function setting($name, $defval = null) {
 	return defval($Conf->settings, $name, $defval);
 }
 
-function settingText($name, $defval = null) {
+function setting_data($name, $defval = null) {
     global $Error, $Conf;
     if (count($Error) > 0)
 	return defval($_REQUEST, $name, $defval);
@@ -1137,7 +1137,7 @@ function do_message($name, $description, $rows = 10) {
     if (($p = strrpos($name, ".")))
         $base = substr($name, 0, $p);
     $default = Message::default_html($name);
-    $current = settingText("msg.$base", $default);
+    $current = setting_data("msg.$base", $default);
     echo '<div class="fold', ($current == $default ? "c" : "o"),
         '" hotcrpfold="yes">',
         '<div class="f-c childfold" onclick="return foldup(this,event)">',
@@ -1148,8 +1148,8 @@ function do_message($name, $description, $rows = 10) {
         '</a> <span class="f-cx fx">(HTML allowed)</span></div>',
         '<textarea class="textlite fx" name="msg.', $base, '" cols="80"',
         ' rows="', $rows, '" onchange="hiliter(this)">',
-        htmlspecialchars(settingText("msg.$base",
-                                     Message::default_html($name))),
+        htmlspecialchars(setting_data("msg.$base",
+                                      Message::default_html($name))),
         '</textarea></div><div class="g"></div>', "\n";
 }
 
@@ -1202,7 +1202,7 @@ function doSubGroup() {
 	echo "<div class='g'></div><table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
 	doCheckbox("sub_banal", "<strong>Automated format checker<span class='fx'>:</span></strong>", true, "hiliter(this);void fold('banal',!this.checked)");
 	echo "<tr class='fx'><td></td><td class='top'><table>";
-	$bsetting = explode(";", preg_replace("/>.*/", "", $Conf->settingText("sub_banal", "")));
+	$bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
 	for ($i = 0; $i < 6; $i++)
 	    if (defval($bsetting, $i, "") == "")
 		$bsetting[$i] = "N/A";
@@ -1498,7 +1498,7 @@ function doRevGroup() {
     $DateExplanation = null;
     doDateRow("pcrev_soft", array("Deadline", "Reviews are due by the deadline."), "pcrev_hard");
     doDateRow("pcrev_hard", array("Hard deadline", "Reviews <em>cannot be entered or changed</em> after the hard deadline.  If set, this should generally be after the PC meeting.<br />$date_text"));
-    if (!($rev_roundtag = settingText("rev_roundtag")))
+    if (!($rev_roundtag = setting_data("rev_roundtag")))
 	$rev_roundtag = "(None)";
     doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo; &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
     echo "</table>\n";
@@ -1559,7 +1559,7 @@ function doRevGroup() {
     if (count($Error) > 0)
 	$v = defval($_REQUEST, "tag_rank", "");
     else
-	$v = $Conf->settingText("tag_rank", "");
+	$v = $Conf->setting_data("tag_rank", "");
     echo "<td><input type='text' class='textlite' name='tag_rank' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>If set, the <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
     echo "</table>";
 
@@ -1575,7 +1575,7 @@ function doRevGroup() {
 	"<div class='smg fx'></div>",
 	"<table class='fx'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>";
     $tag_colors = array();
-    preg_match_all('_(\S+)=(\S+)_', $Conf->settingText("tag_color", ""), $m,
+    preg_match_all('_(\S+)=(\S+)_', $Conf->setting_data("tag_color", ""), $m,
                    PREG_SET_ORDER);
     foreach ($m as $x)
         $tag_colors[Tagger::canonical_color($x[2])][] = $x[1];

@@ -604,9 +604,9 @@ class Mailer {
     static function getTemplate($templateName, $default = false) {
 	global $Conf, $mailTemplates;
 	$m = $mailTemplates[$templateName];
-	if (!$default && ($t = $Conf->settingText("mailsubj_" . $templateName)) !== false)
+	if (!$default && ($t = $Conf->setting_data("mailsubj_" . $templateName)) !== false)
 	    $m["subject"] = $t;
-	if (!$default && ($t = $Conf->settingText("mailbody_" . $templateName)) !== false)
+	if (!$default && ($t = $Conf->setting_data("mailbody_" . $templateName)) !== false)
 	    $m["body"] = $t;
 	return $m;
     }

@@ -40,9 +40,9 @@ class Message {
 
     public static function html($name, $expansions = null) {
         global $Conf;
-        if (($html = $Conf->settingText("msg.$name")) !== false
+        if (($html = $Conf->setting_data("msg.$name")) !== false
             && ($p = strrpos($name, ".")))
-            $html = $Conf->settingText("msg." . substr($name, 0, $p));
+            $html = $Conf->setting_data("msg." . substr($name, 0, $p));
         if ($html === false)
             $html = self::default_html($name);
         if ($html && $expansions)

@@ -52,7 +52,7 @@ function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
     global $Conf, $Me, $Error;
 
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => array_keys($settings))), "while selecting papers");
-    $settingrank = ($Conf->setting("tag_rank") && $tag == "~" . $Conf->settingText("tag_rank"));
+    $settingrank = ($Conf->setting("tag_rank") && $tag == "~" . $Conf->setting_data("tag_rank"));
     while (($row = edb_orow($result)))
 	if ($settings[$row->paperId] !== null
 	    && !($settingrank
@@ -215,7 +215,7 @@ echo "</tr>\n";
 
 // Ranks
 if ($Conf->setting("tag_rank") && $Me->amReviewer()) {
-    $ranktag = $Conf->settingText("tag_rank");
+    $ranktag = $Conf->setting_data("tag_rank");
     echo "<tr><td><div class='g'></div></td></tr>\n",
 	"<tr><td><h3>Download ranking file</h3>\n<div>";
     echo "<a href=\"", hoturl("search", "get=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=r&amp;p=all"), "\">Your reviews</a>";

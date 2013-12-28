@@ -335,7 +335,7 @@ class CheckFormat {
 	// constrain the number of concurrent banal executions to banalLimit
 	// (counter resets every 2 seconds)
 	$t = (int) (time() / 2);
-	$n = ($Conf->settingText("banal_count") == $t ? $Conf->setting("banal_count") + 1 : 1);
+	$n = ($Conf->setting_data("banal_count") == $t ? $Conf->setting("banal_count") + 1 : 1);
 	$limit = defval($Opt, "banalLimit", 8);
 	if ($limit > 0 && $n > $limit)
 	    return $this->msg("error", "Server too busy to check paper formats at the moment.  This is a transient error; feel free to try again.");

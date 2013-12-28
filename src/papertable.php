@@ -1392,7 +1392,7 @@ class PaperTable {
 
     function papstripRank() {
 	global $Conf, $Me, $linkExtra;
-	if (!($tag = $Conf->settingText("tag_rank")))
+	if (!($tag = $Conf->setting_data("tag_rank")))
 	    return;
 
 	// load rank

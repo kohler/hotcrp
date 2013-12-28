@@ -36,7 +36,7 @@ if (isset($_REQUEST["papx"]) && is_array($_REQUEST["papx"])) {
 
 // set review round
 if (!isset($_REQUEST["rev_roundtag"]))
-    $rev_roundtag = $Conf->settingText("rev_roundtag");
+    $rev_roundtag = $Conf->setting_data("rev_roundtag");
 else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
     $rev_roundtag = "";
 $Error = $Warning = array();

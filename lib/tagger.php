@@ -349,13 +349,13 @@ class Tagger {
         self::$main_tagmap = $map = new TagMap;
         if (!$Conf)
             return;
-        $ct = $Conf->setting("tag_chair") ? $Conf->settingText("tag_chair", "") : "";
+        $ct = $Conf->setting("tag_chair") ? $Conf->setting_data("tag_chair", "") : "";
         foreach (preg_split('/\s+/', $ct) as $t)
             if ($t != "") {
                 $map[self::base($t)]->chair = true;
                 ++$map->nchair;
             }
-        $vt = $Conf->setting("tag_vote") ? $Conf->settingText("tag_vote", "") : "";
+        $vt = $Conf->setting("tag_vote") ? $Conf->setting_data("tag_vote", "") : "";
         if ($vt != "")
             foreach (preg_split('/\s+/', $vt) as $t)
                 if ($t != "") {
@@ -363,13 +363,13 @@ class Tagger {
                     $map[$b]->vote = ($v ? $v : 1);
                     ++$map->nvote;
                 }
-        $rt = $Conf->setting("tag_rank") ? $Conf->settingText("tag_rank", "") : "";
+        $rt = $Conf->setting("tag_rank") ? $Conf->setting_data("tag_rank", "") : "";
         if ($rt != "")
             foreach (preg_split('/\s+/', $rt) as $t) {
                 $map[self::base($t)]->rank = true;
                 ++$map->nrank;
             }
-        $ct = $Conf->settingText("tag_color", "");
+        $ct = $Conf->setting_data("tag_color", "");
         if ($ct != "")
             foreach (explode(" ", $ct) as $k)
                 if ($k != "" && ($p = strpos($k, "=")) !== false)
