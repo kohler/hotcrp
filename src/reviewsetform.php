@@ -93,55 +93,73 @@ function rf_update($lock) {
     if ($lock)
 	$Conf->qe("lock tables ReviewFormField write, PaperReview write, ReviewFormOptions write");
 
+    $nrfj = (object) array();
+    $shortNameError = $optionError = false;
+
     foreach ($rf->fmap as $field => $f) {
+        $nrfj->$field = $fj = (object) array();
 	$req = "";
-	if (isset($_REQUEST["shortName_$field"])) {
-	    $sn = trim($_REQUEST["shortName_$field"]);
-	    if (($sn == "" || $sn == "<None>")
-                && rcvtint($_REQUEST["order_$field"]) >= 0) {
-		$Error["shortName_$field"] = true;
-		$shortNameError = true;
-            }
-            if ($sn == "")
-		$sn = "<None>";
-	    $req .= "shortName='" . sqlq($sn) . "', ";
+
+        $sn = simplify_whitespace(defval($_REQUEST, "shortName_$field", ""));
+        if (($sn == "" || $sn == "<None>")
+            && rcvtint($_REQUEST["order_$field"]) >= 0)
+            $shortNameError = $Error["shortName_$field"] = true;
+        if ($sn != "" && $sn != "<None>")
+            $fj->name = $sn;
+        $req .= "shortName='" . sqlq($sn == "" ? "<None>" : $sn) . "', ";
+
+        $fj->view_score = max(min(rcvtint($_REQUEST["authorView_$field"], 0),
+                                  VIEWSCORE_AUTHOR), VIEWSCORE_ADMINONLY);
+        $req .= "authorView=" . $fj->view_score . ", ";
+
+        $x = CleanHTML::clean(defval($_REQUEST, "description_$field", ""), $err);
+        if ($x === false) {
+            $Error["description_$field"] = true;
+            $Conf->errorMsg(htmlspecialchars($sn) . " description: " . $err);
+            continue;
+        } else {
+            $x = trim($x);
+            if ($x != "")
+                $fj->description = $x;
+            $req .= "description='" . sqlq($x) . "', ";
 	}
-	$req .= "authorView=" . max(min(rcvtint($_REQUEST["authorView_$field"], 0), VIEWSCORE_AUTHOR), VIEWSCORE_ADMINONLY) . ", ";
-	if (isset($_REQUEST["description_$field"])) {
-	    if (($d = CleanHTML::clean($_REQUEST["description_$field"], $err)) === false) {
-		$Error["description_$field"] = true;
-		$Conf->errorMsg(htmlspecialchars($sn) . " description: " . $err);
-		continue;
-	    } else
-		$req .= "description='" . sqlq(trim($d)) . "', ";
-	}
-	if (isset($_REQUEST["order_$field"]))
-	    $req .= "sortOrder='" . rcvtint($_REQUEST["order_$field"]) . "', ";
+
+        $x = rcvtint($_REQUEST["order_$field"]);
+        if ($x >= 0)
+            $fj->position = $x + 1;
+        $req .= "sortOrder='" . $x . "', ";
+
 	if ($f->has_options) {
 	    if (rf_checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"], $levelChar)) {
-		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", $while);
+                if ($levelChar != 1)
+                    $fj->option_letter = $levelChar;
+                $fj->options = array();
+		$req .= "levelChar=" . $levelChar . ", ";
+
 		$optext = "";
 		$i = 1;
 		foreach ($options as $val) {
+                    $fj->options[] = $val;
 		    $optext .= "('" . sqlq($field) . "', $i, '" . sqlq($val) . "'), ";
 		    $i++;
 		}
+
+		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", $while);
 		if ($optext)
 		    $Conf->qe("insert into ReviewFormOptions (fieldName, level, description) values " . substr($optext, 0, strlen($optext) - 2), $while);
 
 		$result = $Conf->qe("update PaperReview set $field=0 where $field>" . count($options), $while);
 		if (edb_nrows_affected($result) > 0)
 		    $scoreModified[] = htmlspecialchars($_REQUEST["shortName_$field"]);
-		$req .= "levelChar=" . ($f->has_options ? $levelChar : 0) . ", ";
 
 		unset($_REQUEST["options_$field"]);
 		$updates = 1;
 	    } else {
-		$Error["options_$field"] = true;
-		$optionError = 1;
+		$optionError = $Error["options_$field"] = true;
 		continue;
 	    }
 	}
+
 	if ($req != '') {
 	    $result = $Conf->qe("update ReviewFormField set " . substr($req, 0, -2) . " where fieldName='" . sqlq($field) . "'", $while);
 	    if ($result) {
@@ -151,12 +169,14 @@ function rf_update($lock) {
 	}
     }
 
-    if (isset($shortNameError))
+    if ($shortNameError)
 	$Conf->errorMsg("Each review field should have a name.  Please edit the highlighted fields and save again.");
-    if (isset($optionError))
+    if ($optionError)
 	$Conf->errorMsg("Review fields with options must have at least two choices, numbered sequentially from 1 or with consecutive uppercase letters.  Enter them like this:  <pre>1. Low quality
 2. Medium quality
 3. High quality</pre>  Please edit the highlighted fields and save again.");
+    if (!$shortNameError && !$optionError)
+        $Conf->save_setting("review_form", 1, $nrfj);
 
     if (count($scoreModified))
 	$Conf->warnMsg("Your changes invalidated some existing review scores.  The invalid scores have been reset to \"Unknown\".  The relevant fields were: " . join(", ", $scoreModified) . ".");

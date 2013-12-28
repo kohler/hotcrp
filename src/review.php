@@ -3,6 +3,11 @@
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+// JSON schema for settings["review_form"]:
+// {FIELD:{"name":NAME,"description":DESCRIPTION,"position":POSITION,
+//         "display_space":ROWS,"view_score":AUTHORVIEW,
+//         "options":[DESCRIPTION,...],"option_letter":LEVELCHAR}}
+
 global $scoreHelps;
 $scoreHelps = array();
 
@@ -38,7 +43,7 @@ class ReviewField {
         $this->displayed = false;
     }
 
-    public function update($row) {
+    public function assign($row) {
         $this->name = $row->shortName;
         $this->name_html = htmlspecialchars($this->name);
         $this->abbreviation = ReviewForm::abbreviateField($this->name);
@@ -221,8 +226,7 @@ class ReviewForm {
                        "interestToCommunity", "longevity", "grammar",
                        "likelyPresentation", "suitableForShort") as $fid)
             $this->fmap[$fid] = new ReviewField($this, $fid, true);
-
-	$this->updateFromDB();
+	$this->reload();
     }
 
     private function get_deprecated($table, $element) {
@@ -310,7 +314,7 @@ class ReviewForm {
         return $f ? $f->unparse_value($value, $scclass) : $value;
     }
 
-    function updateFromDB() {
+    public function reload() {
         global $Conf;
 
         $this->forder = array();
@@ -327,7 +331,7 @@ class ReviewForm {
             $f = $this->fmap[$row->fieldName];
 	    if ($row->sortOrder >= 0)
                 $this->forder[$f->id] = $f;
-            $f->update($row);
+            $f->assign($row);
 	    $this->fieldName[strtolower($row->shortName)] = $row->fieldName;
 	}
 
@@ -355,7 +359,7 @@ class ReviewForm {
             return new ReviewForm;
         if ($always || !$this->updatedWhen
             || $this->updatedWhen <= $Conf->settings["revform_update"])
-	    $this->updateFromDB();
+	    $this->reload();
         return $this;
     }
 

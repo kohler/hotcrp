@@ -3,6 +3,39 @@
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+function update_schema_create_review_form($Conf) {
+    global $reviewScoreNames;
+    if (!($result = $Conf->ql("select * from ReviewFormField where fieldName!='outcome'")))
+        return false;
+    $rfj = (object) array();
+    while (($row = edb_orow($result))) {
+        $field = (object) array();
+        $field->name = $row->shortName;
+        if (trim($row->description) != "")
+            $field->description = trim($row->description);
+        if ($row->sortOrder >= 0)
+            $field->position = $row->sortOrder + 1;
+        $field->view_score = (int) $row->authorView;
+        if (in_array($row->fieldName, $reviewScoreNames)) {
+            $field->options = array();
+            if ((int) $row->levelChar > 1)
+                $field->option_letter = (int) $row->levelChar;
+        }
+        $fname = $row->fieldName;
+        $rfj->$fname = $field;
+    }
+
+    if (!($result = $Conf->ql("select * from ReviewFormOptions where fieldName!='outcome' order by level asc")))
+        return false;
+    while (($row = edb_orow($result))) {
+        $fname = $row->fieldName;
+        if (isset($rfj->$fname) && isset($rfj->$fname->options))
+            $rfj->$fname->options[$row->level - 1] = $row->description;
+    }
+
+    return $Conf->save_setting("review_form", 1, $rfj);
+}
+
 function updateSchema($Conf) {
     global $Opt, $OK;
     error_log("Note: updating schema from version " . $Conf->settings["allowPaperOption"]);
@@ -427,4 +460,10 @@ function updateSchema($Conf) {
         && isset($Conf->settings["outcome_map"])
         && $Conf->ql("update Settings set value=63 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 63;
+    if (!isset($Conf->settings["review_form"]))
+        update_schema_create_review_form($Conf);
+    if ($Conf->settings["allowPaperOption"] == 63
+        && isset($Conf->settings["review_form"])
+        && $Conf->ql("update Settings set value=64 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 64;
 }
