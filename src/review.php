@@ -210,7 +210,6 @@ class ReviewForm {
     public $forder;
 
     var $fieldName;
-    var $options;
 
     function __construct() {
 	$this->updatedWhen = 0;
@@ -316,11 +315,8 @@ class ReviewForm {
 
     public function reload() {
         global $Conf;
-
         $this->forder = array();
-
 	$this->fieldName = array();
-	$this->options = array();
 
 	$while = "while updating review form information";
 
@@ -335,18 +331,13 @@ class ReviewForm {
 	    $this->fieldName[strtolower($row->shortName)] = $row->fieldName;
 	}
 
-	$result = $Conf->qe("select fieldName, level, description from ReviewFormOptions order by fieldName, level", $while);
+	$result = $Conf->qe("select fieldName, level, description from ReviewFormOptions where fieldName!='outcome' order by fieldName, level", $while);
 	if (!$result)
 	    return;
 	while (($row = edb_row($result))) {
 	    $otext = $this->unparseOption($row[0], $row[1], true);
-	    $this->options[$row[0]][$otext] = $row[2];
-            if ($row[0] != "outcome")
-                $this->fmap[$row[0]]->define_option((int) $row[1], $row[2]);
+            $this->fmap[$row[0]]->define_option((int) $row[1], $row[2]);
 	}
-	foreach ($this->fmap as $f)
-            if ($f->option_letter)
-                $this->options[$f->id] = array_reverse($this->options[$f->id], true);
 
 	$this->updatedWhen = time();
 
