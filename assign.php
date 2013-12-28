@@ -520,7 +520,7 @@ if ($Me->canAdminister($prow)) {
 	"<div class='papt'><span class='papfn'>PC review assignments</span>",
 	"<div class='clear'></div></div>",
 	"<div class='paphint'>Review preferences display as &ldquo;P#&rdquo;";
-    if (count($rf->topicName))
+    if ($Conf->has_topics())
 	echo ", topic scores as &ldquo;T#&rdquo;";
     echo ".</div><div class='papv' style='padding-left:0'>";
 

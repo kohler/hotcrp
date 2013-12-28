@@ -96,6 +96,16 @@ if (($getaction == "paper" || $getaction == "final"
 }
 
 
+function topic_ids_to_text($tids, $tmap, $tomap) {
+    $tx = array();
+    foreach (explode(",", $tids) as $tid)
+        if (($tname = @$tmap[$tid]))
+            $tx[$tomap[$tid]] = $tname;
+    ksort($tx);
+    return join(", ", $tx);
+}
+
+
 // download selected abstracts
 if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $Search = new PaperSearch($Me, $_REQUEST);
@@ -107,7 +117,7 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1));
     $result = $Conf->qe($q, "while selecting papers");
     $texts = array();
-    $rf = reviewForm();
+    list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = edb_orow($result)) {
 	if (!$Me->canViewPaper($prow, $whyNot))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
@@ -123,11 +133,7 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
 		$text .= wordWrapIndent($prow->authorInformation, "Authors: ", 14) . "\n";
             }
 	    if ($prow->topicIds != "") {
-		$tt = "";
-		$topics = ",$prow->topicIds,";
-		foreach ($rf->topicName as $tid => $tname)
-		    if (strpos($topics, ",$tid,") !== false)
-			$tt .= ", " . $tname;
+		$tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
 		$text .= wordWrapIndent(substr($tt, 2), "Topics: ", 14) . "\n";
 	    }
 	    if ($l != strlen($text))
@@ -632,7 +638,7 @@ function downloadRevpref($extended) {
     $q = $Conf->paperQuery($Rev, array("paperId" => $papersel, "topics" => 1, "reviewerPreference" => 1));
     $result = $Conf->qe($q, "while selecting papers");
     $texts = array();
-    $rf = reviewForm();
+    list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = edb_orow($result)) {
 	$t = $prow->paperId . "\t";
 	if ($prow->conflictType > 0)
@@ -647,11 +653,7 @@ function downloadRevpref($extended) {
             }
 	    $t .= wordWrapIndent(rtrim($prow->abstract), "# Abstract: ", "#           ") . "\n";
 	    if ($prow->topicIds != "") {
-		$tt = "";
-		$topics = ",$prow->topicIds,";
-		foreach ($rf->topicName as $tid => $tname)
-		    if (strpos($topics, ",$tid,") !== false)
-			$tt .= ", " . $tname;
+		$tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
 		$t .= wordWrapIndent(substr($tt, 2), "#   Topics: ", "#           ") . "\n";
 	    }
 	    $t .= "\n";
@@ -677,7 +679,6 @@ function downloadAllRevpref() {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "allReviewerPreference" => 1, "allConflictType" => 1));
     $result = $Conf->qe($q, "while selecting papers");
     $texts = array();
-    $rf = reviewForm();
     $pc = pcMembers();
     while (($prow = edb_orow($result))) {
         $out = array();
@@ -712,8 +713,9 @@ if ($getaction == "topics" && isset($papersel)) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1));
     $result = $Conf->qe($q, "while selecting papers");
 
-    $rf = reviewForm();
     $texts = array();
+    $tmap = $Conf->topic_map();
+    $tomap = $Conf->topic_order_map();
 
     while (($row = edb_orow($result))) {
 	if (!$Me->canViewPaper($row))
@@ -726,7 +728,7 @@ if ($getaction == "topics" && isset($papersel)) {
             else if ($tid === "x")
                 list($order, $name) = array(99999, "<none>");
             else
-                list($order, $name) = array($rf->topicOrder[$tid], $rf->topicName[$tid]);
+                list($order, $name) = array($tomap[$tid], $tmap[$tid]);
             $out[$order] = array($row->paperId, $row->title, $name);
         }
 	ksort($out);

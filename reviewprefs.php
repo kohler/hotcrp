@@ -168,7 +168,7 @@ $Conf->header("Review Preferences", "revpref", actionBar());
 
 
 $rf = reviewForm();
-$Conf->infoMsg(Message::html(count($rf->topicName)
+$Conf->infoMsg(Message::html($Conf->has_topics()
                              ? "revprefdescription.withtopics"
                              : "revprefdescription"));
 

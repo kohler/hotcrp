@@ -149,10 +149,51 @@ class Conference {
     }
 
     function outcome_map() {
-        $otext = @$this->settingTexts["outcome_map"];
-        if (is_string($otext))
-            $otext = $this->settingTexts["outcome_map"] = json_decode($otext, true);
-        return (is_array($otext) ? $otext : array());
+        $x = @$this->settingTexts["outcome_map"];
+        if (is_string($x))
+            $x = $this->settingTexts["outcome_map"] = json_decode($x, true);
+        return (is_array($x) ? $x : array());
+    }
+
+    function topic_map() {
+        $x = @$this->settingTexts["topic_map"];
+        if (!$x) {
+            $result = $this->qe("select topicId, topicName from TopicArea order by topicName");
+            $to = $tx = array();
+            while (($row = edb_row($result))) {
+                if (strcasecmp(substr($row[1], 0, 7), "none of") == 0)
+                    $tx[$row[0]] = $row[1];
+                else
+                    $to[$row[0]] = $row[1];
+            }
+            foreach ($tx as $tid => $tname)
+                $to[$tid] = $tname;
+            $x = $this->settingTexts["topic_map"] = $to;
+        }
+        if (is_string($x))
+            $x = $this->settingTexts["topic_map"] = json_decode($x, true);
+        return is_array($x) ? $x : array();
+    }
+
+    function topic_order_map() {
+        $x = @$this->settingTexts["topic_order_map"];
+        if (!$x) {
+            $to = array();
+            foreach ($this->topic_map() as $tid => $tname)
+                $to[$tid] = count($to);
+            $x = $this->settingTexts["topic_order_map"] = $to;
+        }
+        if (is_string($x))
+            $x = $this->settingTexts["topic_order_map"] = json_decode($x, true);
+        return is_array($x) ? $x : array();
+    }
+
+    function has_topics() {
+        return count($this->topic_map()) != 0;
+    }
+
+    function topic_count() {
+        return count($this->topic_map());
     }
 
     function capabilityText($prow, $capType) {

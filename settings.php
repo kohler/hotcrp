@@ -384,6 +384,7 @@ function doTopics($set) {
     $while = "while updating topics";
 
     $numnew = defval($_REQUEST, "newtopcount", 50);
+    $tmap = $Conf->topic_map();
     foreach ($_REQUEST as $k => $v) {
 	if (!(strlen($k) > 3 && $k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
 	    continue;
@@ -395,7 +396,7 @@ function doTopics($set) {
 		$Conf->qe("delete from TopicArea where topicId=$k", $while);
 		$Conf->qe("delete from PaperTopic where topicId=$k", $while);
                 $Conf->qe("delete from TopicInterest where topicId=$k", $while);
-	    } else if (isset($rf->topicName[$k]) && $v != $rf->topicName[$k])
+	    } else if (isset($tmap[$k]) && $v != $tmap[$k])
 		$Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k", $while);
 	}
     }
@@ -1165,7 +1166,7 @@ function doMsgGroup() {
 
     do_message("home", "Home page message");
     do_message("conflictdef", "Definition of conflict of interest", 5);
-    do_message(count($rf->topicName) ? "revprefdescription.withtopics" : "revprefdescription",
+    do_message($Conf->has_topics() ? "revprefdescription.withtopics" : "revprefdescription",
                "Review preference instructions", 20);
     do_message($Conf->setting("resp_words", 500) > 0 ? "responseinstructions.wordlimit" : "responseinstructions",
                "Authors’ response instructions");
@@ -1413,8 +1414,8 @@ function doOptGroup() {
     echo "<div class='g'></div><table id='newtoptable' class='", ($ninterests ? "foldo" : "foldc"), "'>";
     echo "<tr><th colspan='2'></th><th class='fx'><small>Low</small></th><th class='fx'><small>High</small></th></tr>";
     $td1 = "<td class='lcaption'>Current</td>";
-    foreach ($rf->topicOrder as $tid => $crap) {
-	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($rf->topicName[$tid]), "\" size='40' onchange='hiliter(this)' /></td>";
+    foreach ($Conf->topic_map() as $tid => $tname) {
+	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($tname), "\" size='40' onchange='hiliter(this)' /></td>";
 
 	$tinterests = defval($interests, $tid, array());
 	echo "<td class='fx rpentry'>", (defval($tinterests, 0) ? "<span class='topic0'>" . $tinterests[0] . "</span>" : ""), "</td>",
@@ -1424,7 +1425,7 @@ function doOptGroup() {
 	    // example search
 	    echo "<td class='llentry' style='vertical-align: top' rowspan='40'><div class='f-i'>",
 		"<div class='f-c'>Example search</div>";
-	    $oabbrev = strtolower($rf->topicName[$tid]);
+	    $oabbrev = strtolower($tname);
 	    if (strstr($oabbrev, " ") !== false)
 		$oabbrev = "\"$oabbrev\"";
 	    echo "&ldquo;<a href=\"", hoturl("search", "q=topic:" . urlencode($oabbrev)), "\">",

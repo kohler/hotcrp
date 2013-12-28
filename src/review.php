@@ -206,8 +206,6 @@ class ReviewForm {
 
     var $fieldName;
     var $options;
-    var $topicName;
-    var $topicOrder;
 
     function __construct() {
 	$this->updatedWhen = 0;
@@ -319,8 +317,6 @@ class ReviewForm {
 
 	$this->fieldName = array();
 	$this->options = array();
-	$this->topicName = array();
-	$this->topicOrder = array();
 
 	$while = "while updating review form information";
 
@@ -347,21 +343,6 @@ class ReviewForm {
 	foreach ($this->fmap as $f)
             if ($f->option_letter)
                 $this->options[$f->id] = array_reverse($this->options[$f->id], true);
-
-	$result = $Conf->qe("select topicId, topicName from TopicArea order by topicName", $while);
-	if (!$result)
-	    return;
-	$i = 0;
-	$leftovers = array();
-	while (($row = edb_row($result))) {
-	    $this->topicName[$row[0]] = $row[1];
-	    if (substr(strtolower($row[1]), 0, 7) != "none of")
-		$this->topicOrder[$row[0]] = $i++;
-	    else
-		$leftovers[] = $row[0];
-	}
-	foreach ($leftovers as $topicid)
-	    $this->topicOrder[$topicid] = $i++;
 
 	$this->updatedWhen = time();
 
@@ -1312,6 +1293,7 @@ $blind\n";
     }
 
     function webTopicArray($topicIds, $interests = null) {
+        global $Conf;
 	if (!$topicIds)
 	    return array();
 	if (!is_array($topicIds))
@@ -1319,10 +1301,11 @@ $blind\n";
 	if ($interests !== null && !is_array($interests))
 	    $interests = explode(",", $interests);
 	$out = array();
+        list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
 	for ($i = 0; $i < count($topicIds); $i++)
-	    $out[$this->topicOrder[$topicIds[$i]]] =
+	    $out[$tomap[$topicIds[$i]]] =
 		"<span class='topic" . ($interests ? $interests[$i] : 1)
-		. "'>" . htmlspecialchars($this->topicName[$topicIds[$i]])
+		. "'>" . htmlspecialchars($tmap[$topicIds[$i]])
 		. "</span>";
 	ksort($out);
 	return array_values($out);

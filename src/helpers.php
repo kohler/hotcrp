@@ -482,24 +482,25 @@ function topicTable($prow, $active = 0) {
 
     // get current topics
     $paperTopic = array();
+    $tmap = $Conf->topic_map();
     if ($paperId > 0) {
 	$result = $Conf->q("select topicId from PaperTopic where paperId=$paperId");
 	while ($row = edb_row($result))
-	    $paperTopic[$row[0]] = $rf->topicName[$row[0]];
+	    $paperTopic[$row[0]] = $tmap[$row[0]];
     }
-    $allTopics = ($active < 0 ? $paperTopic : $rf->topicName);
+    $allTopics = ($active < 0 ? $paperTopic : $tmap);
     if (count($allTopics) == 0)
 	return "";
 
     $out = "<table><tr><td class='pad'>";
     $colheight = (int) ((count($allTopics) + 1) / 2);
     $i = 0;
-    foreach ($rf->topicOrder as $tid => $bogus) {
+    foreach ($tmap as $tid => $tname) {
 	if (!isset($allTopics[$tid]))
 	    continue;
 	if ($i > 0 && ($i % $colheight) == 0)
 	    $out .= "</td><td>";
-	$tname = htmlspecialchars($rf->topicName[$tid]);
+	$tname = htmlspecialchars($tname);
 	if ($paperId <= 0 || $active >= 0) {
 	    $out .= Ht::checkbox_h("top$tid", 1, ($active > 0 ? isset($_REQUEST["top$tid"]) : isset($paperTopic[$tid])),
 				    array("disabled" => $active < 0))

@@ -1116,11 +1116,10 @@ class PaperSearch {
 	    if ($word == "none" || $word == "any")
 		$value = $word;
 	    else {
-		$rf = reviewForm();
 		$x = strtolower(simplify_whitespace($word));
 		$tids = array();
-		foreach ($rf->topicName as $tid => $n)
-		    if (strstr(strtolower($n), $x) !== false)
+		foreach ($Conf->topic_map() as $tid => $tname)
+		    if (strstr(strtolower($tname), $x) !== false)
 			$tids[] = $tid;
 		if (count($tids) == 0 && $word != "none" && $word != "any") {
 		    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; does not match any defined paper topic.");

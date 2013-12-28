@@ -326,7 +326,8 @@ class TopicListPaperColumn extends PaperColumn {
         parent::__construct("topics", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
-        if (!count($pl->rf->topicName))
+        global $Conf;
+        if (!$Conf->has_topics())
             return false;
         if ($visible)
             $queryOptions["topics"] = 1;
@@ -543,7 +544,8 @@ class TopicScorePaperColumn extends PaperColumn {
                             array("sorter" => "topic_score_sorter"));
     }
     public function prepare($pl, &$queryOptions, $visible) {
-        if (!count($pl->rf->topicName) || !$pl->contact->isPC)
+        global $Conf;
+        if (!$Conf->has_topics() || !$pl->contact->isPC)
             return false;
         $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
         $queryOptions["topicInterestScore"] = 1;
