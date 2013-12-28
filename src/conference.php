@@ -196,6 +196,13 @@ class Conference {
         return count($this->topic_map());
     }
 
+    function review_form_json() {
+        $x = @$this->settingTexts["review_form"];
+        if (is_string($x))
+            $x = $this->settingTexts["review_form"] = json_decode($x);
+        return is_object($x) ? $x : null;
+    }
+
     function capabilityText($prow, $capType) {
 	// A capability has the following representation (. is concatenation):
 	//    capFormat . paperId . capType . hashPrefix

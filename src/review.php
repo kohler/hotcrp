@@ -43,34 +43,29 @@ class ReviewField {
         $this->displayed = false;
     }
 
-    public function assign($row) {
-        $this->name = $row->shortName;
+    public function assign($j) {
+        $this->name = (@$j->name ? $j->name : "<None>");
         $this->name_html = htmlspecialchars($this->name);
         $this->abbreviation = ReviewForm::abbreviateField($this->name);
-        $this->description = $row->description;
-        $this->display_space = (int) $row->rows;
-        if (!$this->has_options && $row->rows < 3)
+        $this->description = (@$j->description ? $j->description : "");
+        $this->display_space = (int) @$j->display_space;
+        if (!$this->has_options && $this->display_space < 3)
             $this->display_space = 3;
-        $this->view_score = (int) $row->authorView;
-        if ($this->has_options && isset($row->levelChar)
-            && (int) $row->levelChar > 1)
-            $this->option_letter = (int) $row->levelChar;
-        else
-            $this->option_letter = false;
-        if ($row->sortOrder >= 0) {
+        $this->view_score = $j->view_score;
+        if ($this->has_options)
+            $this->option_letter = @($j->option_letter > 1 ? $j->option_letter : false);
+        if (@$j->position) {
             $this->displayed = true;
-            $this->display_order = $row->sortOrder;
+            $this->display_order = $j->position;
         } else
             $this->displayed = $this->display_order = false;
-        $this->options = array();
+        if ($this->has_options) {
+            $this->options = array();
+            if (@$j->options)
+                foreach ($j->options as $i => $n)
+                    $this->options[$i + 1] = $n;
+        }
         $this->analyzed = false;
-    }
-
-    public function define_option($level, $description) {
-        assert($this->has_options && is_int($level));
-        $x = $this->unparse_value($level);
-        $this->options[$x] = $description;
-        ksort($this->options);
     }
 
     public function analyze() {
@@ -212,7 +207,7 @@ class ReviewForm {
     var $fieldName;
 
     function __construct() {
-	$this->updatedWhen = 0;
+        global $Conf;
         $this->version = self::VERSION;
 
         $this->fmap = array();
@@ -225,7 +220,35 @@ class ReviewForm {
                        "interestToCommunity", "longevity", "grammar",
                        "likelyPresentation", "suitableForShort") as $fid)
             $this->fmap[$fid] = new ReviewField($this, $fid, true);
-	$this->reload();
+
+        $rfj = $Conf->review_form_json();
+        if (!$rfj)
+            $rfj = json_decode('{\
+"overAllMerit":{"name":"Overall merit","position":1,"view_score":1,\
+  "options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},\
+"reviewerQualification":{"name":"Reviewer expertise","position":2,"view_score":1,\
+  "options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},\
+"paperSummary":{"name":"Paper summary","position":3,"display_space":5,"view_score":1},\
+"commentsToAuthor":{"name":"Comments to authors","position":4,"view_score":1},\
+"commentsToPC":{"name":"Comments to PC","position":5,"view_score":0}}');
+
+        foreach ($rfj as $fname => $j)
+            if (@($f = $this->fmap[$fname]))
+                $f->assign($j);
+
+        $forder = array();
+        $this->forder = array();
+	$this->fieldName = array();
+        foreach ($this->fmap as $fid => $f) {
+	    $this->fieldName[strtolower($f->name)] = $fid;
+            if ($f->displayed)
+                $forder[sprintf("%03d.%s", $f->display_order, $fid)] = $f;
+        }
+        ksort($forder);
+        foreach ($forder as $f)
+            $this->forder[$f->id] = $f;
+
+	$this->updatedWhen = time();
     }
 
     private function get_deprecated($table, $element) {
@@ -311,47 +334,6 @@ class ReviewForm {
 			   $scclass = false) {
 	$f = defval($this->fmap, $field);
         return $f ? $f->unparse_value($value, $scclass) : $value;
-    }
-
-    public function reload() {
-        global $Conf;
-        $this->forder = array();
-	$this->fieldName = array();
-
-	$while = "while updating review form information";
-
-	$result = $Conf->qe("select * from ReviewFormField order by sortOrder, shortName", $while);
-	if (!$result)
-	    return;
-	while (($row = edb_orow($result))) {
-            $f = $this->fmap[$row->fieldName];
-	    if ($row->sortOrder >= 0)
-                $this->forder[$f->id] = $f;
-            $f->assign($row);
-	    $this->fieldName[strtolower($row->shortName)] = $row->fieldName;
-	}
-
-	$result = $Conf->qe("select fieldName, level, description from ReviewFormOptions where fieldName!='outcome' order by fieldName, level", $while);
-	if (!$result)
-	    return;
-	while (($row = edb_row($result))) {
-	    $otext = $this->unparseOption($row[0], $row[1], true);
-            $this->fmap[$row[0]]->define_option((int) $row[1], $row[2]);
-	}
-
-	$this->updatedWhen = time();
-
-	$_SESSION["rf"] = serialize($this);
-    }
-
-    public function validate($always = false) {
-        global $Conf;
-        if ($this->version != self::VERSION)
-            return new ReviewForm;
-        if ($always || !$this->updatedWhen
-            || $this->updatedWhen <= $Conf->settings["revform_update"])
-	    $this->reload();
-        return $this;
     }
 
     public function field($id) {

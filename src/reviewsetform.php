@@ -188,7 +188,7 @@ function rf_update($lock) {
     if ($lock && isset($updates)) {
 	$Conf->invalidateCaches(array("rf" => 1));
 	$Conf->confirmMsg("Review form updated.");
-	$rf = $rf->validate(true);
+	$rf = reviewForm(true);
     } else if (isset($updates))
 	$Conf->settings["revform_update"] = time();
 }

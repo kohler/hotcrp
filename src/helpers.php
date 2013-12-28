@@ -1575,14 +1575,12 @@ function cleanAuthor($row) {
     }
 }
 
-function reviewForm() {
-    global $ReviewFormCache;
-    if (!$ReviewFormCache && isset($_SESSION["rf"]))
-	$ReviewFormCache = @unserialize($_SESSION["rf"]);
-    if (!$ReviewFormCache || !$ReviewFormCache->fmap)
+function reviewForm($always = false) {
+    global $Conf, $ReviewFormCache;
+    if (!$ReviewFormCache
+        || $ReviewFormCache->updatedWhen <= $Conf->settings["revform_update"]
+        || $always)
 	$ReviewFormCache = new ReviewForm;
-    else
-        $ReviewFormCache = $ReviewFormCache->validate();
     return $ReviewFormCache;
 }
 
