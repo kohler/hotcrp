@@ -1303,9 +1303,9 @@ function cvtpref($n) {
 }
 
 function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
+    global $Conf;
     $text = "<select" . ($id === null ? "" : " id='$id'") . " name='decision'$extra>\n";
-    $rf = reviewForm();
-    $outcomeMap = $rf->options['outcome'];
+    $outcomeMap = $Conf->outcome_map();
     if (!isset($outcomeMap[$curOutcome]))
 	$curOutcome = null;
     $outcomes = array_keys($outcomeMap);

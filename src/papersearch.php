@@ -637,8 +637,7 @@ class PaperSearch {
         else if (!$quoted && strcasecmp($word, "any") == 0)
             $value = "!=0";
         else {
-            $rf = reviewForm();
-            $value = matchValue($rf->options["outcome"], $word, true);
+            $value = matchValue($Conf->outcome_map(), $word, true);
             if (count($value) == 0) {
                 $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a decision.");
                 $value[] = -10000000;

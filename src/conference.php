@@ -148,6 +148,11 @@ class Conference {
 	return defval($this->settingTexts, $name, $defval);
     }
 
+    function outcome_map() {
+        $rf = reviewForm();
+        return $rf->options["outcome"];
+    }
+
     function capabilityText($prow, $capType) {
 	// A capability has the following representation (. is concatenation):
 	//    capFormat . paperId . capType . hashPrefix

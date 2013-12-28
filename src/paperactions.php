@@ -10,13 +10,13 @@ class PaperActions {
 	$ajax = defval($_REQUEST, "ajax", false);
 	if ($Me->canSetOutcome($prow)) {
 	    $o = rcvtint($_REQUEST["decision"]);
-	    $rf = reviewForm();
-	    if (isset($rf->options["outcome"][$o])) {
+            $outcomes = $Conf->outcome_map();
+	    if (isset($outcomes[$o])) {
 		$result = $Conf->qe("update Paper set outcome=$o where paperId=$prow->paperId", "while changing decision");
 		if ($result && $ajax)
 		    $Conf->confirmMsg("Saved");
 		else if ($result)
-		    $Conf->confirmMsg("Decision for paper #$prow->paperId set to " . htmlspecialchars($rf->options["outcome"][$o]) . ".");
+		    $Conf->confirmMsg("Decision for paper #$prow->paperId set to " . htmlspecialchars($outcomes[$o]) . ".");
 		if ($o > 0 || $prow->outcome > 0)
 		    $Conf->updatePaperaccSetting($o > 0);
 	    } else {

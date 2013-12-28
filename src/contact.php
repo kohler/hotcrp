@@ -1546,9 +1546,9 @@ class Contact {
 		$data = "<span class=\"pstat "
 		    . ($row->outcome > 0 ? "pstat_decyes" : "pstat_decno");
 
-		$rf = reviewForm();
-		$decname =& $rf->options["outcome"][$row->outcome];
-		if (isset($decname)) {
+		$outcomes = $Conf->outcome_map();
+		$decname = @$outcomes[$row->outcome];
+		if ($decname) {
 		    $trdecname = preg_replace('/[^-.\w]/', '', $decname);
 		    if ($trdecname != "")
 			$data .= " pstat_" . strtolower($trdecname);

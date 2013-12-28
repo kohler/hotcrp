@@ -81,7 +81,7 @@ else
 $subjectPrefix = "[" . $Opt["shortName"] . "] ";
 
 function contactQuery($type) {
-    global $Conf, $Me, $rf, $papersel, $checkReviewNeedsSubmit;
+    global $Conf, $Me, $papersel, $checkReviewNeedsSubmit;
     $contactInfo = "firstName, lastName, email, password, ContactInfo.contactId, (PCMember.contactId is not null) as isPC, preferredEmail";
     $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.shepherdContactId";
     if ($Conf->sversion >= 41)
@@ -97,7 +97,7 @@ function contactQuery($type) {
     else if ($type == "unsub")
 	$where[] = "Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0";
     else if (substr($type, 0, 4) == "dec:") {
-	foreach ($rf->options["outcome"] as $num => $what)
+	foreach ($Conf->outcome_map() as $num => $what)
 	    if (strcasecmp($what, substr($type, 4)) == 0) {
 		$where[] = "Paper.timeSubmitted>0 and Paper.outcome=$num";
 		break;
@@ -390,17 +390,19 @@ if (defval($_REQUEST, "loadtmpl")) {
     if (isset($template["mailtool_search_type"]))
 	$_REQUEST["t"] = $template["mailtool_search_type"];
     if ($_REQUEST["recipients"] == "dec:no") {
-	$x = min(array_keys($rf->options["outcome"]));
+        $outcomes = $Conf->outcome_map();
+	$x = min(array_keys($outcomes));
 	foreach ($noutcome as $o => $n)
 	    if ($o < 0 && $n > defval($noutcome, $x))
 		$x = $o;
-	$_REQUEST["recipients"] = "dec:" . $rf->options["outcome"][$x];
+	$_REQUEST["recipients"] = "dec:" . $outcomes[$x];
     } else if ($_REQUEST["recipients"] == "dec:yes") {
-	$x = max(array_keys($rf->options["outcome"]));
+        $outcomes = $Conf->outcome_map();
+	$x = max(array_keys($outcomes));
 	foreach ($noutcome as $o => $n)
 	    if ($o > 0 && $n > defval($noutcome, $x))
 		$x = $o;
-	$_REQUEST["recipients"] = "dec:" . $rf->options["outcome"][$x];
+	$_REQUEST["recipients"] = "dec:" . $outcomes[$x];
     }
     $_REQUEST["subject"] = $nullMailer->expand($template["subject"]);
     $_REQUEST["emailBody"] = $nullMailer->expand($template["body"]);
@@ -413,7 +415,7 @@ if ($Me->privChair) {
     $recip["au"] = "Contact authors";
     $recip["s"] = "Contact authors of submitted papers";
     $recip["unsub"] = "Contact authors of unsubmitted papers";
-    foreach ($rf->options["outcome"] as $num => $what) {
+    foreach ($Conf->outcome_map() as $num => $what) {
 	$name = "dec:$what";
 	if ($num && (defval($noutcome, $num) > 0
 		     || defval($_REQUEST, "recipients", "") == $name))

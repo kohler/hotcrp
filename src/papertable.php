@@ -1350,9 +1350,7 @@ class PaperTable {
     }
 
     function papstripOutcomeSelector() {
-	global $Conf, $rf, $Error, $linkExtra;
-	if (!$rf)
-	    $rf = reviewForm();
+	global $Conf, $Error, $linkExtra;
 	echo $this->_papstripBegin("decision", defval($_REQUEST, "atab") != "decision"),
 	    $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
 	    "<div class='psv'><form id='decisionform' class='fx fold7o' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId . $linkExtra), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitstripselector(\"decision\")'>",
@@ -1360,11 +1358,12 @@ class PaperTable {
 	    "<input type='hidden' name='setdecision' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
 	    echo "<input type='hidden' name='forceShow' value='", ($_REQUEST['forceShow'] ? 1 : 0), "' />";
+        $outcomes = $Conf->outcome_map();
 	echo decisionSelector($this->prow->outcome, null, " onchange='dosubmitstripselector(\"decision\")' id='folddecision_d'"),
 	    " <input class='fx7' type='submit' value='Save' />",
 	    " <span id='decisionformresult'></span>",
 	    "</div></form><p class='fn odname'>",
-	    $rf->options["outcome"][$this->prow->outcome],
+	    $outcomes[$this->prow->outcome],
 	    "</p></div></div>\n";
 	$Conf->footerScript("Miniajax.onload(\"decisionform\")");
     }

@@ -835,8 +835,8 @@ if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != ""
 	$Conf->errorMsg("You cannot set paper decisions.");
     else {
 	$o = rcvtint($_REQUEST["decision"]);
-	$rf = reviewForm();
-	if (isset($rf->options['outcome'][$o])) {
+	$outcome_map = $Conf->outcome_map();
+	if (isset($outcome_map[$o])) {
 	    $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel), "while changing decision");
 	    $Conf->updatePaperaccSetting($o > 0);
 	    redirectSelf(array("atab" => "decide", "decision" => $o));

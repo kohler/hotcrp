@@ -609,7 +609,7 @@ function doDecisions($set) {
 
     // mark all used decisions
     $while = "while updating decisions";
-    $dec = $rf->options["outcome"];
+    $dec = $Conf->outcome_map();
     $update = false;
     foreach ($_REQUEST as $k => $v)
 	if (strlen($k) > 3 && $k[0] == "d" && $k[1] == "e" && $k[2] == "c"
@@ -1622,7 +1622,7 @@ function doDecGroup() {
 
     echo "<div class='g'></div>\n";
     echo "<table>\n";
-    $decs = $rf->options['outcome'];
+    $decs = $Conf->outcome_map();
     krsort($decs);
 
     // count papers per decision
