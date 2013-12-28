@@ -416,4 +416,15 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table Capability modify `data` varbinary(4096) DEFAULT NULL")
 	&& $Conf->ql("update Settings set value=62 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 62;
+    if (!isset($Conf->settings["outcome_map"])) {
+        $ojson = array();
+        $result = $Conf->ql("select * from ReviewFormOptions where fieldName='outcome'");
+        while (($row = edb_orow($result)))
+            $ojson[$row->level] = $row->description;
+        $Conf->save_setting("outcome_map", 1, $ojson);
+    }
+    if ($Conf->settings["allowPaperOption"] == 62
+        && isset($Conf->settings["outcome_map"])
+        && $Conf->ql("update Settings set value=63 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 63;
 }

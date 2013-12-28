@@ -612,13 +612,18 @@ function doDecisions($set) {
     $dec = $Conf->outcome_map();
     $update = false;
     foreach ($_REQUEST as $k => $v)
-	if (strlen($k) > 3 && $k[0] == "d" && $k[1] == "e" && $k[2] == "c"
-	    && ($k = cvtint(substr($k, 3), 0)) != 0) {
+	if (str_starts_with($k, "dec")
+            && ($k = cvtint(substr($k, 3), 0)) != 0) {
 	    if ($v == "") {
 		$Conf->qe("delete from ReviewFormOptions where fieldName='outcome' and level=$k", $while);
 		$Conf->qe("update Paper set outcome=0 where outcome=$k", $while);
-	    } else if ($v != $dec[$k])
+                unset($dec[$k]);
+                $update = true;
+	    } else if ($v != $dec[$k]) {
 		$Conf->qe("update ReviewFormOptions set description='" . sqlq($v) . "' where fieldName='outcome' and level=$k", $while);
+                $dec[$k] = $v;
+                $update = true;
+            }
 	}
 
     if (defval($_REQUEST, "decn", "") != "") {
@@ -628,7 +633,12 @@ function doDecisions($set) {
 		break;
 
 	$Conf->qe("insert into ReviewFormOptions set fieldName='outcome', level=$k, description='" . sqlq($_REQUEST["decn"]) . "'");
+        $dec[$k] = $_REQUEST["decn"];
+        $update = true;
     }
+
+    if ($update)
+        $Conf->save_setting("outcome_map", 1, $dec);
 }
 
 function doBanal($set) {

@@ -116,7 +116,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-        if ($this->settings["allowPaperOption"] < 62) {
+        if ($this->settings["allowPaperOption"] < 63) {
 	    require_once("updateschema.php");
 	    $oldOK = $OK;
 	    updateSchema($this);
@@ -149,8 +149,10 @@ class Conference {
     }
 
     function outcome_map() {
-        $rf = reviewForm();
-        return $rf->options["outcome"];
+        $otext = @$this->settingTexts["outcome_map"];
+        if (is_string($otext))
+            $otext = $this->settingTexts["outcome_map"] = json_decode($otext, true);
+        return (is_array($otext) ? $otext : array());
     }
 
     function capabilityText($prow, $capType) {
@@ -211,16 +213,27 @@ class Conference {
     }
 
     function save_setting($name, $value, $data = null) {
+        $qname = $this->dblink->escape_string($name);
 	if ($value === null && $data === null) {
-	    if ($this->qe("delete from Settings where name='" . sqlq($name) . "'")) {
+	    if ($this->qe("delete from Settings where name='$qname'")) {
 		unset($this->settings[$name]);
 		unset($this->settingTexts[$name]);
-	    }
+                return true;
+	    } else
+                return false;
 	} else {
-	    if ($this->qe("insert into Settings (name, value, data) values ('" . sqlq($name) . "', " . $value . ", " . ($data === null ? "null" : "'" . sqlq($data) . "'") . ") on duplicate key update value=values(value), data=values(data)", "while updating settings")) {
+            if ($data === null)
+                $dval = "null";
+            else if (is_string($data))
+                $dval = "'" . $this->dblink->escape_string($data) . "'";
+            else
+                $dval = "'" . $this->dblink->escape_string(json_encode($data)) . "'";
+	    if ($this->qe("insert into Settings (name, value, data) values ('$qname', $value, $dval) on duplicate key update value=values(value), data=values(data)", "while updating settings")) {
 		$this->settings[$name] = $value;
 		$this->settingTexts[$name] = $data;
-	    }
+                return true;
+	    } else
+                return false;
 	}
     }
 
