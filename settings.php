@@ -615,12 +615,10 @@ function doDecisions($set) {
 	if (str_starts_with($k, "dec")
             && ($k = cvtint(substr($k, 3), 0)) != 0) {
 	    if ($v == "") {
-		$Conf->qe("delete from ReviewFormOptions where fieldName='outcome' and level=$k", $while);
 		$Conf->qe("update Paper set outcome=0 where outcome=$k", $while);
                 unset($dec[$k]);
                 $update = true;
 	    } else if ($v != $dec[$k]) {
-		$Conf->qe("update ReviewFormOptions set description='" . sqlq($v) . "' where fieldName='outcome' and level=$k", $while);
                 $dec[$k] = $v;
                 $update = true;
             }
@@ -628,11 +626,8 @@ function doDecisions($set) {
 
     if (defval($_REQUEST, "decn", "") != "") {
 	$delta = (defval($_REQUEST, "dtypn", 1) > 0 ? 1 : -1);
-	for ($k = $delta; true; $k += $delta)
-	    if (!isset($dec[$k]))
-		break;
-
-	$Conf->qe("insert into ReviewFormOptions set fieldName='outcome', level=$k, description='" . sqlq($_REQUEST["decn"]) . "'");
+	for ($k = $delta; isset($dec[$k]); $k += $delta)
+            /* skip */;
         $dec[$k] = $_REQUEST["decn"];
         $update = true;
     }

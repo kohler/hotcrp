@@ -630,6 +630,8 @@ insert into Settings (name, value) values ('sub_sha1', 1);
 insert into Settings (name, value) values ('pcrev_any', 1);
 -- allow external reviewers to see the other reviews by default
 insert into Settings (name, value) values ('extrev_view', 2);
+-- default outcome map
+insert into Settings (name, value, data) values ('outcome_map', 1, '{"0":"Unspecified","-1":"Rejected","1":"Accepted"}');
 
 insert into PaperStorage set paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain', paper='' on duplicate key update paper='';
 
@@ -717,11 +719,6 @@ insert into ReviewFormOptions set fieldName='grammar', level=5, description='Exc
 insert into ReviewFormOptions set fieldName='suitableForShort', level=1, description='Not suitable';
 insert into ReviewFormOptions set fieldName='suitableForShort', level=2, description='Can''t tell';
 insert into ReviewFormOptions set fieldName='suitableForShort', level=3, description='Suitable';
-
-insert into ReviewFormOptions set fieldName='outcome', level=0, description='Unspecified';
-insert into ReviewFormOptions set fieldName='outcome', level=-1, description='Rejected';
-insert into ReviewFormOptions set fieldName='outcome', level=1, description='Accepted as short paper';
-insert into ReviewFormOptions set fieldName='outcome', level=2, description='Accepted';
 
 delete from Settings where name='revform_update';
 insert into Settings set name='revform_update', value=unix_timestamp(current_timestamp);
