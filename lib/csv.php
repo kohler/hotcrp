@@ -241,11 +241,12 @@ class CsvGenerator {
     private $type;
     private $lines;
     private $header;
+    private $selection;
 
     function __construct($type = self::TYPE_COMMA) {
         $this->type = $type;
         $this->lines = array();
-        $this->header = false;
+        $this->header = $this->selection = false;
     }
 
     static function quote($text, $quote_empty = false) {
@@ -265,6 +266,28 @@ class CsvGenerator {
         return $this->type == self::TYPE_COMMA ? ".csv" : ".txt";
     }
 
+    function select($row) {
+        if (!is_array($this->selection))
+            return $row;
+        $selected = array();
+        $i = 0;
+        foreach ($this->selection as $key) {
+            $val = @(is_array($row) ? $row[$key] : $row->$key);
+            if ($val !== null) {
+                while (count($selected) < $i)
+                    $selected[] = "";
+                $selected[] = $val;
+            }
+            ++$i;
+        }
+        if (!count($selected) && is_array($row) && count($row))
+            for ($i = 0;
+                 array_key_exists($i, $row) && $i != count($this->selection);
+                 ++$i)
+                $selected[] = $row[$i];
+        return $selected;
+    }
+
     function add($row) {
         if (is_string($row)) {
             $this->lines[] = $row;
@@ -273,24 +296,31 @@ class CsvGenerator {
         reset($row);
         if (count($row) && is_array(current($row))) {
             foreach ($row as $x)
-                self::add($x);
-        } else if ($this->type == self::TYPE_COMMA) {
-            $t = array();
-            foreach ($row as $x)
-                $t[] = self::quote($x);
-            $this->lines[] = join(",", $t) . "\n";
-        } else if ($this->type == self::TYPE_TAB)
-            $this->lines[] = join("\t", $row) . "\n";
-        else
-            $this->lines[] = join("|", $t) . "\n";
+                $this->add($x);
+        } else {
+            if (is_array($this->selection))
+                $row = $this->select($row);
+            if ($this->type == self::TYPE_COMMA) {
+                foreach ($row as &$x)
+                    $x = self::quote($x);
+                $this->lines[] = join(",", $row) . "\n";
+            } else if ($this->type == self::TYPE_TAB)
+                $this->lines[] = join("\t", $row) . "\n";
+            else
+                $this->lines[] = join("|", $row) . "\n";
+        }
     }
 
-    function header($header) {
+    function set_header($header, $comment = false) {
         assert(!count($this->lines) && !$this->header);
         $this->add($header);
-        if ($this->type == self::TYPE_TAB)
+        if ($this->type == self::TYPE_TAB && $comment)
             $this->lines[0] = "#" . $this->lines[0];
         $this->header = true;
+    }
+
+    function set_selection($selection) {
+        $this->selection = $selection;
     }
 
     function download_headers($downloadname = null, $attachment = null,

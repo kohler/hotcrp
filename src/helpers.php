@@ -1269,7 +1269,7 @@ function downloadCSV($info, $header, $filename, $description, $opt = array()) {
     $iscsv = defval($opt, "type", "csv") == "csv" && !isset($Opt["disableCSV"]);
     $csvg = new CsvGenerator($iscsv ? CsvGenerator::TYPE_COMMA : CsvGenerator::TYPE_TAB);
     if ($header)
-        $csvg->header($header);
+        $csvg->set_header($header, true);
     $csvg->add($info);
     $csvg->download_headers($Opt["downloadPrefix"] . $filename . $csvg->extension(),
                             !defval($opt, "inline"),
