@@ -52,7 +52,7 @@ class PaperList extends BaseList {
             $this->_paper_link_page = $_REQUEST["linkto"];
 	$this->_paper_link_args = "";
 	if (defval($args, "list")) {
-	    $this->listNumber = allocateListNumber($search->listId($this->sortdef()));
+	    $this->listNumber = SessionList::allocate($search->listId($this->sortdef()));
 	    $this->_paper_link_args .= "&amp;ls=" . $this->listNumber;
 	} else
 	    $this->listNumber = 0;
@@ -184,11 +184,9 @@ class PaperList extends BaseList {
     // content downloaders
     function sessionMatchPreg($name) {
 	if (isset($_REQUEST["ls"])
-	    && ctype_digit($_REQUEST["ls"])
-	    && isset($_SESSION["l"][$_REQUEST["ls"]])
-	    && isset($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"]))
-	    return defval($_SESSION["l"][$_REQUEST["ls"]]["matchPreg"],
-			  $name, "");
+            && ($l = SessionList::lookup($_REQUEST["ls"]))
+            && @($l->matchPreg->$name))
+            return $l->matchPreg->$name;
 	else
 	    return "";
     }
@@ -1149,14 +1147,14 @@ class PaperList extends BaseList {
 
 	// session variable to remember the list
 	if ($this->listNumber) {
-	    $idx = $this->search->decorateSessionList($rstate->ids, self::_listDescription($listname), $this->sortdef());
+	    $sl = $this->search->create_session_list_object($rstate->ids, self::_listDescription($listname), $this->sortdef());
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
 	    if ($ConfSiteBase
 		&& substr($url, 0, strlen($ConfSiteBase)) == $ConfSiteBase)
 		$url = substr($url, strlen($ConfSiteBase));
-	    $idx["url"] = $url;
-	    $_SESSION["l"][$this->listNumber] = $idx;
+	    $sl->url = $url;
+            SessionList::change($this->listNumber, $sl);
 	}
 
 	$this->ids = $rstate->ids;

@@ -181,7 +181,7 @@ $pl = new PaperList($search, array("sort" => true, "list" => true, "foldtype" =>
 $pl_text = $pl->text("editReviewPreference", $Me,
                      array("class" => "pltable_full",
                            "footer_extra" => "<div id='plactr'><input class='hb' type='submit' name='update' value='Save changes' /></div>"));
-$_SESSION["l"][$pl->listNumber]["revprefs"] = true;
+SessionList::change($pl->listNumber, array("revprefs" => true));
 
 
 // DISPLAY OPTIONS

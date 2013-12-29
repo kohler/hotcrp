@@ -646,7 +646,7 @@ class ContactList extends BaseList {
 
 	// list number
 	if ($this->listNumber === true) {
-	    $this->listNumber = allocateListNumber("u:" . $this->limit . "::");
+	    $this->listNumber = SessionList::allocate("u:" . $this->limit . "::");
 	    $this->contactLinkArgs .= "&amp;ls=" . $this->listNumber;
 	}
 
@@ -693,7 +693,7 @@ class ContactList extends BaseList {
             if ($row->disabled)
                 $trclass .= " greytext";
 	    $this->count++;
-	    $ids[] = $row->contactId;
+	    $ids[] = $row->email;
 
 	    // First create the expanded callout row
 	    $tt = "";
@@ -800,11 +800,10 @@ class ContactList extends BaseList {
 	$x .= "</table>";
 
 	if ($this->listNumber) {
-	    $ids["description"] = ($listtitle ? $listtitle : "Users");
-	    $ids["timestamp"] = time();
-	    $ids["listid"] = "u:" . $this->limit . "::";
-	    $ids["url"] = "users$ConfSiteSuffix?t=" . $this->limit;
-	    $_SESSION["l"][$this->listNumber] = $ids;
+            $l = SessionList::create("u:" . $this->limit . "::", $ids,
+                                     ($listtitle ? $listtitle : "Users"),
+                                     "users$ConfSiteSuffix?t=$this->limit");
+            SessionList::change($this->listNumber, $l);
 	}
 
 	return $x;

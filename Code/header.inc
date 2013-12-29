@@ -101,6 +101,8 @@ global $rf;
 $rf = null;
 global $ReviewFormCache;
 $ReviewFormCache = null;
+global $CurrentList;
+$CurrentList = 0;
 
 global $reviewScoreNames;
 $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",

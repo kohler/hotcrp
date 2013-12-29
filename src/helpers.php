@@ -577,19 +577,43 @@ function preferenceSpan($preference, $topicInterestScore = 0) {
     return $t . "</span>";
 }
 
-function allocateListNumber($listid) {
-    if (!isset($_SESSION["l"]))
-	$_SESSION["l"] = array();
-    $oldest = $empty = 0;
-    for ($i = 1; $i <= 8; ++$i)
-	if (($l = defval($_SESSION["l"], $i))) {
-	    if (defval($l, "listid") == $listid)
-		return $i;
-	    else if (!$oldest || defval($l, "timestamp", 0) < defval($_SESSION["l"][$oldest], "timestamp", 0))
-		$oldest = $i;
-	} else if (!$empty)
-	    $empty = $i;
-    return $empty ? $empty : $oldest;
+
+class SessionList {
+    static function lookup($idx) {
+        if (!isset($_SESSION["l"]))
+            $_SESSION["l"] = array();
+        $x = @($_SESSION["l"][$idx]);
+        return $x ? (object) $x : null;
+    }
+    static function change($idx, $delta) {
+        if (($l = self::lookup($idx))) {
+            foreach ($delta as $k => $v)
+                $l->$k = $v;
+            $_SESSION["l"][$idx] = $l;
+        }
+    }
+    static function allocate($listid) {
+        $oldest = $empty = 0;
+        for ($i = 1; $i <= 8; ++$i)
+            if (($l = self::lookup($i))) {
+                if ($listid && @($l->listid == $listid))
+                    return $i;
+                else if (!$oldest || @($_SESSION["l"][$oldest]->timestamp < $l->timestamp))
+                    $oldest = $i;
+            } else if (@$_REQUEST["ls"] == $i)
+                return $i;
+            else if (!$empty)
+                $empty = $i;
+        return $empty ? $empty : $oldest;
+    }
+    static function create($listid, $ids, $description, $url) {
+        global $ConfSiteBase, $Now;
+        if ($url && $ConfSiteBase && str_starts_with($url, $ConfSiteBase))
+            $url = substr($url, strlen($ConfSiteBase));
+        return (object) array("listid" => $listid, "ids" => $ids,
+                              "description" => $description,
+                              "url" => $url, "timestamp" => $Now);
+    }
 }
 
 function _tryNewList($opt, $listtype) {
@@ -603,13 +627,12 @@ function _tryNewList($opt, $listtype) {
 	$a = array();
 	while (($row = edb_row($result)))
 	    $a[] = $row[0];
-	$a["description"] = ($searchtype == "pc" ? "Program committee" : "Users");
-	$a["listid"] = "u:" . $searchtype . "::";
-	$a["url"] = "users$ConfSiteSuffix?t=" . $searchtype;
-	return $a;
+        return SessionList::create("u:" . $searchtype . "::", $a,
+                                   ($searchtype == "pc" ? "Program committee" : "Users"),
+                                   "users$ConfSiteSuffix?t=$searchtype");
     } else {
 	$search = new PaperSearch($Me, $opt);
-	return $search->sessionList();
+	return $search->session_list_object();
     }
 }
 
@@ -634,15 +657,15 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
 }
 
 function quicklinks($id, $baseUrl, $args, $listtype) {
-    global $Me, $Conf, $ConfSiteBase, $CurrentList;
+    global $Me, $Conf, $ConfSiteBase, $CurrentList, $Now;
 
     $list = false;
     $CurrentList = 0;
     if (isset($_REQUEST["ls"])
 	&& ($listno = rcvtint($_REQUEST["ls"])) > 0
-	&& isset($_SESSION["l"][$listno])
-	&& substr(defval($_SESSION["l"][$listno], "listid", "p"), 0, 1) == $listtype) {
-	$list = $_SESSION["l"][$listno];
+        && ($xlist = SessionList::lookup($listno))
+        && str_starts_with($xlist->listid, $listtype)) {
+	$list = $xlist;
 	$CurrentList = $listno;
     } else if (isset($_REQUEST["list"]) && $listtype == "p") {
 	$l = $_REQUEST["list"];
@@ -656,15 +679,15 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
 
     $k = false;
     if ($list)
-	$k = array_search($id, $list);
+	$k = array_search($id, $list->ids);
 
     if ($k === false && !isset($_REQUEST["list"])) {
 	$CurrentList = 0;
 	$list = _tryNewList(array(), $listtype);
-	$k = array_search($id, $list);
+	$k = array_search($id, $list->ids);
 	if ($k === false && $Me->privChair) {
 	    $list = _tryNewList(array("t" => "all"), $listtype);
-	    $k = array_search($id, $list);
+	    $k = array_search($id, $list->ids);
 	}
 	if ($k === false)
 	    $list = false;
@@ -674,10 +697,10 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
 	return "";
 
     if ($CurrentList == 0) {
-	$CurrentList = allocateListNumber($list["listid"]);
-	$_SESSION["l"][$CurrentList] = $list;
+	$CurrentList = SessionList::allocate($list->listid);
+        SessionList::change($CurrentList, $list);
     }
-    $_SESSION["l"][$CurrentList]["timestamp"] = time();
+    SessionList::change($CurrentList, array("timestamp" => $Now));
 
     $urlrest = "&amp;ls=" . $CurrentList;
     foreach ($args as $what => $val)
@@ -685,17 +708,17 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
 
     $x = "";
     if ($k > 0)
-	$x .= _one_quicklink($list[$k - 1], $baseUrl, $urlrest, $listtype, true);
-    if (isset($list["description"])) {
+	$x .= _one_quicklink($list->ids[$k - 1], $baseUrl, $urlrest, $listtype, true);
+    if (@$list->description) {
 	$x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
-	if (defval($list, "url"))
-	    $x .= '<a id="quicklink_list" href="' . $ConfSiteBase . htmlspecialchars($list["url"]) . "\">" . $list["description"] . "</a>";
+	if (@$list->url)
+	    $x .= '<a id="quicklink_list" href="' . $ConfSiteBase . htmlspecialchars($list->url) . "\">" . $list->description . "</a>";
 	else
-	    $x .= '<span id="quicklink_list">' . $list["description"] . '</span>';
+	    $x .= '<span id="quicklink_list">' . $list->description . '</span>';
     }
-    if (isset($list[$k + 1])) {
-	$x .= ($k > 0 || isset($list["description"]) ? "&nbsp;&nbsp;" : "");
-	$x .= _one_quicklink($list[$k + 1], $baseUrl, $urlrest, $listtype, false);
+    if (isset($list->ids[$k + 1])) {
+	$x .= ($k > 0 || @$list->description ? "&nbsp;&nbsp;" : "");
+	$x .= _one_quicklink($list->ids[$k + 1], $baseUrl, $urlrest, $listtype, false);
     }
     return $x;
 }

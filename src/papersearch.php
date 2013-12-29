@@ -2513,7 +2513,7 @@ class PaperSearch {
 	$x = array();
 	$result = $Conf->q("select paperId from $this->_matchTable");
 	while (($row = edb_row($result)))
-	    $x[] = $row[0];
+	    $x[] = (int) $row[0];
 	return $x;
     }
 
@@ -2585,22 +2585,16 @@ class PaperSearch {
 	    . ":::" . $sort;
     }
 
-    function decorateSessionList($l, $listname, $sort = "") {
-	global $ConfSiteBase;
-	$l["url"] = $this->url();
-	if ($ConfSiteBase
-	    && substr($l["url"], 0, strlen($ConfSiteBase)) == $ConfSiteBase)
-	    $l["url"] = substr($l["url"], strlen($ConfSiteBase));
-	$l["description"] = $this->description($listname);
-	$l["timestamp"] = time();
-	$l["listid"] = $this->listId($sort);
+    function create_session_list_object($ids, $listname, $sort = "") {
+        $l = SessionList::create($this->listId($sort), $ids,
+                                 $this->description($listname), $this->url());
 	if ($this->matchPreg)
-	    $l["matchPreg"] = $this->matchPreg;
+	    $l->matchPreg = $this->matchPreg;
 	return $l;
     }
 
-    function sessionList() {
-	return $this->decorateSessionList($this->paperList(), null);
+    function session_list_object() {
+	return $this->create_session_list_object($this->paperList(), null);
     }
 
     static function parsePapersel() {

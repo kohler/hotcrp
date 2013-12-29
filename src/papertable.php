@@ -117,9 +117,9 @@ class PaperTable {
 
 	$this->matchPreg = array();
 	$matcher = array();
-        if (@($_SESSION["l"] && $CurrentList > 0
-              && $_SESSION["l"][$CurrentList]["matchPreg"]))
-	    $matcher = self::_combine_match_preg($matcher, $_SESSION["l"][$CurrentList]["matchPreg"]);
+        if ($CurrentList > 0 && @($l = SessionList::lookup($CurrentList))
+            && @$l->matchPreg)
+	    $matcher = self::_combine_match_preg($matcher, $l->matchPreg);
         if (@$_SESSION["temp_matchPreg"]) {
             $matcher = self::_combine_match_preg($matcher, $_SESSION["temp_matchPreg"]);
             unset($_SESSION["temp_matchPreg"]);
@@ -1384,9 +1384,8 @@ class PaperTable {
 	    " <span id='revprefformresult'></span>",
 	    "</div></form></div></div>\n";
 	$Conf->footerScript("Miniajax.onload(\"revprefform\");shortcut(\"revprefform_d\").add()");
-	if (isset($CurrentList) && $CurrentList
-	    && defval($_SESSION["l"][$CurrentList], "revprefs")
-	    && ($this->mode == "p" || $this->mode == "r"))
+	if ($CurrentList && ($l = SessionList::lookup($CurrentList))
+            && @$l->revprefs && ($this->mode == "p" || $this->mode == "r"))
 	    $Conf->footerScript("crpfocus('revprefform',null,3)");
     }
 
@@ -2117,16 +2116,16 @@ class PaperTable {
 	$search = new PaperSearch($Me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
 	$pl = $search->paperList();
 	if (count($pl) == 1) {
-            $pl = $search->sessionList();
-	    $_REQUEST["paperId"] = $_REQUEST["p"] = $pl[0];
+            $pl = $search->session_list_object();
+	    $_REQUEST["paperId"] = $_REQUEST["p"] = $pl->ids[0];
             // check if the paper is in the current list. If not, make a new one
             if (!@$_REQUEST["ls"]
-                || !($list = @$_SESSION["l"][$_REQUEST["ls"]])
-                || array_search($pl[0], $list) === false) {
-                $_REQUEST["ls"] = allocateListNumber($search->listId());
-                $_SESSION["l"][$_REQUEST["ls"]] = $pl;
-            } else if (@$pl["matchPreg"])
-                $_SESSION["temp_matchPreg"] = $pl["matchPreg"];
+                || !($curpl = SessionList::lookup($_REQUEST["ls"]))
+                || array_search($pl->ids[0], $curpl->ids) === false) {
+                $_REQUEST["ls"] = SessionList::allocate($pl->listid);
+                SessionList::change($_REQUEST["ls"], $pl);
+            } else if (@$pl->matchPreg)
+                $_SESSION["temp_matchPreg"] = $pl->matchPreg;
             // ensure URI makes sense ("paper/2" not "paper/searchterm")
             redirectSelf();
 	    return true;
