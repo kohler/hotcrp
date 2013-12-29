@@ -22,8 +22,7 @@ if (defval($_REQUEST, "ajax")) {
 $Conf->header("Deadlines", "deadlines", actionBar());
 
 echo "<p>These deadlines determine when various conference
-submission and review functions can be accessed.
-Each time is specified in the time zone of the conference server.";
+submission and review functions can be accessed.";
 
 if ($Me->privChair)
     echo " As PC chair, you can also <a href='", hoturl("settings"), "'>change the deadlines</a>.";
