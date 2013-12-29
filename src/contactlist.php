@@ -646,7 +646,7 @@ class ContactList extends BaseList {
 
 	// list number
 	if ($this->listNumber === true) {
-	    $this->listNumber = allocateListNumber("a:" . $this->limit . "::");
+	    $this->listNumber = allocateListNumber("u:" . $this->limit . "::");
 	    $this->contactLinkArgs .= "&amp;ls=" . $this->listNumber;
 	}
 
