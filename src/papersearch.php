@@ -2581,8 +2581,8 @@ class PaperSearch {
     }
 
     function listId($sort = "") {
-	return "p:" . $this->limitName . ":" . addcslashes($this->q, "\\:")
-	    . ":::" . $sort;
+	return "p/" . $this->limitName . "/" . urlencode($this->q)
+            . "/" . $sort;
     }
 
     function create_session_list_object($ids, $listname, $sort = "") {

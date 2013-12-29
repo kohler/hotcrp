@@ -800,7 +800,7 @@ class ContactList extends BaseList {
 	$x .= "</table>";
 
 	if ($this->listNumber) {
-            $l = SessionList::create("u:" . $this->limit . "::", $ids,
+            $l = SessionList::create("u/" . $this->limit, $ids,
                                      ($listtitle ? $listtitle : "Users"),
                                      "users$ConfSiteSuffix?t=$this->limit");
             SessionList::change($this->listNumber, $l);

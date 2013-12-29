@@ -627,7 +627,7 @@ function _tryNewList($opt, $listtype) {
 	$a = array();
 	while (($row = edb_row($result)))
 	    $a[] = $row[0];
-        return SessionList::create("u:" . $searchtype . "::", $a,
+        return SessionList::create("u/" . $searchtype, $a,
                                    ($searchtype == "pc" ? "Program committee" : "Users"),
                                    "users$ConfSiteSuffix?t=$searchtype");
     } else {

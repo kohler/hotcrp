@@ -30,7 +30,6 @@ class ReviewField {
     public $view_score;
     public $displayed;
     public $display_order;
-    private $rf;
     private $analyzed;
 
     public function __construct($rf, $id, $has_options) {
@@ -38,7 +37,6 @@ class ReviewField {
         $this->has_options = $has_options;
         $this->options = array();
         $this->option_letter = false;
-        $this->rf = $rf;
         $this->analyzed = false;
         $this->displayed = false;
     }

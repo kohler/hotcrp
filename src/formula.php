@@ -5,7 +5,6 @@
 
 class FormulaCompileState {
     var $contact;
-    var $rf;
     var $gtmp;
     var $ltmp;
     var $gstmt;
@@ -17,7 +16,6 @@ class FormulaCompileState {
 
     function __construct($contact) {
 	$this->contact = $contact;
-	$this->rf = reviewForm();
 	$this->gtmp = array();
 	$this->gstmt = array();
 	$this->lstmt = array();
@@ -258,6 +256,7 @@ class Formula {
     }
 
     static function _compile($state, $e) {
+        global $ReviewFormCache;
 	$op = $e[0];
 
 	if ($op == "")
@@ -278,7 +277,7 @@ class Formula {
 
 	if ($op == "rf") {
 	    $score = $e[2];
-            $f = $state->rf->field($score);
+            $f = $ReviewFormCache->field($score);
 	    $revView = $state->contact->viewReviewFieldsScore(null, true);
 	    if ($f->view_score <= $revView)
 		$t_f = "0";
@@ -357,6 +356,7 @@ class Formula {
     static function compile_function_body($e, $contact) {
 	global $Conf;
 	$state = new FormulaCompileState($contact);
+        $rf = reviewForm();     /* sets $ReviewFormCache */
 	$e = self::_compile($state, $e);
 	$t =  join("\n  ", $state->gstmt)
 	    . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")

@@ -329,8 +329,10 @@ class TopicListPaperColumn extends PaperColumn {
         global $Conf;
         if (!$Conf->has_topics())
             return false;
-        if ($visible)
+        if ($visible) {
             $queryOptions["topics"] = 1;
+            reviewForm();       /* create $ReviewFormCache */
+        }
 	return true;
     }
     public function header($pl, $row, $ordinal) {
@@ -340,7 +342,8 @@ class TopicListPaperColumn extends PaperColumn {
         return !isset($row->topicIds) || $row->topicIds == "";
     }
     public function content($pl, $row) {
-        return join(", ", $pl->rf->webTopicArray($row->topicIds, defval($row, "topicInterest")));
+        global $ReviewFormCache;
+        return join(", ", $ReviewFormCache->webTopicArray($row->topicIds, defval($row, "topicInterest")));
     }
 }
 
@@ -907,7 +910,8 @@ class ScorePaperColumn extends PaperColumn {
         if (!$pl->scoresOk)
             return false;
         if ($visible) {
-            $f = $pl->rf->field($this->score);
+            $rf = reviewForm();
+            $f = $rf->field($this->score);
             $this->viewscore = $f->view_score;
             $auview = $pl->contact->viewReviewFieldsScore(null, true);
             if ($this->viewscore <= $auview)
@@ -941,7 +945,8 @@ class ScorePaperColumn extends PaperColumn {
         }
     }
     public function header($pl, $row, $ordinal) {
-        return $pl->rf->field($this->score)->web_abbreviation();
+        global $ReviewFormCache;
+        return $ReviewFormCache->field($this->score)->web_abbreviation();
     }
     public function col() {
         return "<col width='0*' />";
@@ -950,12 +955,12 @@ class ScorePaperColumn extends PaperColumn {
         return !$pl->contact->canViewReview($row, $this->viewscore, true);
     }
     public function content($pl, $row) {
-	global $Conf;
+	global $Conf, $ReviewFormCache;
         $allowed = $pl->contact->canViewReview($row, $this->viewscore, false);
         $fname = $this->score . "Scores";
         if (($allowed || $pl->contact->allowAdminister($row))
 	    && $row->$fname) {
-            $t = $pl->rf->field($this->score)->unparse_graph($row->$fname, 1, defval($row, $this->score));
+            $t = $ReviewFormCache->field($this->score)->unparse_graph($row->$fname, 1, defval($row, $this->score));
             if (!$allowed)
                 $t = "<span class='fx20'>$t</span>";
             return $t;

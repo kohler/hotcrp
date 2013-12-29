@@ -17,7 +17,6 @@ class PaperList extends BaseList {
     public $contact;
     public $scoresOk;
     public $search;
-    public $rf;
     public $tagger;
     public $reviewer;
     public $review_list;
@@ -65,7 +64,6 @@ class PaperList extends BaseList {
 	    $this->display = defval($_SESSION, defval($args, "foldtype", "pl") . "display", "");
         if (isset($args["reviewer"]))
             $this->reviewer = $args["reviewer"];
-	$this->rf = reviewForm();
 	$this->atab = defval($_REQUEST, "atab", "");
 	unset($_REQUEST["atab"]);
     }
@@ -672,7 +670,7 @@ class PaperList extends BaseList {
     private function _row_text($rstate, $row, $fieldDef) {
 	global $Conf;
 
-	$rstate->ids[] = $row->paperId;
+	$rstate->ids[] = (int) $row->paperId;
 	$trclass = "k" . $rstate->colorindex;
 	if (@$row->paperTags && $this->contact->canViewTags($row, true)
 	    && ($m = $this->tagger->color_classes($row->paperTags))) {
