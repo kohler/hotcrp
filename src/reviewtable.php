@@ -91,7 +91,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 else
                     $n = Text::name_html($rr);
             } else
-		$n = "[Token " . encodeToken((int) $rr->reviewToken) . "]";
+		$n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
 	    $t .= "<td>" . $n . ($x ? " $x" : "");
 	    if ($admin && $rr->email != $Me->email)
 		$t .= " <a href=\"" . selfHref(array("actas" => $rr->email)) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($rr)) . "</a>";

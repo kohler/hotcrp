@@ -1626,11 +1626,13 @@ function hotcrp_random_bytes($length = 16, $secure_only = false) {
 }
 
 
-function encodeToken($x) {
+function encode_token($x, $format = "") {
     $s = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     $t = "";
     if (is_int($x))
-	$x = pack("V", $x);
+        $format = "V";
+    if ($format)
+	$x = pack($format, $x);
     $i = 0;
     $have = 0;
     $n = 0;
@@ -1644,39 +1646,40 @@ function encodeToken($x) {
 	$n >>= 5;
 	$have -= 5;
     }
-    return preg_replace('/A*\z/', "", $t);
+    if ($format == "V")
+        return preg_replace('/(\AA|[^A])A*\z/', '$1', $t);
+    else
+        return $t;
 }
 
-function decodeToken($x) {
+function decode_token($x, $format = "") {
+    $map = "//HIJKLMNO///////01234567/89:;</=>?@ABCDEFG";
     $t = "";
-    $n = 0;
-    $have = 0;
-    $i = 0;
+    $n = $have = 0;
     $x = trim(strtoupper($x));
-    while ($i < strlen($x)) {
+    for ($i = 0; $i < strlen($x); ++$i) {
 	$o = ord($x[$i]);
-	if ($o >= 65 && $o <= 72)
-	    $o -= 65;
-	else if ($o >= 74 && $o <= 78)
-	    $o -= (74 - 8);
-	else if ($o >= 80 && $o <= 90)
-	    $o -= (80 - 13);
-	else if ($o >= 50 && $o <= 57)
-	    $o -= (50 - 24);
+        if ($o >= 48 && $o <= 90 && ($out = ord($map[$o - 48])) >= 48)
+            $o = $out - 48;
 	else if ($o == 46 /*.*/ || $o == 34 /*"*/)
 	    continue;
 	else
-	    return 0;
+	    return false;
 	$n += $o << $have;
 	$have += 5;
-	++$i;
-	if ($have >= 8 || $i == strlen($x)) {
+	while ($have >= 8 || ($n && $i == strlen($x) - 1)) {
 	    $t .= chr($n & 255);
 	    $n >>= 8;
 	    $have -= 8;
 	}
     }
-    return $t;
+    if ($format == "V") {
+        $x = unpack("Vx", $t . "\x00\x00\x00\x00\x00\x00\x00");
+        return $x["x"];
+    } else if ($format)
+        return unpack($format, $t);
+    else
+        return $t;
 }
 
 

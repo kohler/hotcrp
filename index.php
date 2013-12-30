@@ -111,13 +111,11 @@ if (isset($_REQUEST["token"]) && check_post() && !$Me->is_empty()) {
     foreach (preg_split('/\s+/', $_REQUEST["token"]) as $x)
 	if ($x == "")
 	    /* no complaints */;
-	else if (!($tokendata = decodeToken($x)))
+	else if (($token = decode_token($x, "V")) === false)
 	    $Conf->errorMsg("Invalid review token &ldquo;" . htmlspecialchars($token) . ".&rdquo;  Check your typing and try again.");
 	else if (defval($_SESSION, "rev_token_fail", 0) >= 5)
 	    $Conf->errorMsg("Too many failed attempts to use a review token.  <a href='" . hoturl("index", "signout=1") . "'>Sign out</a> and in to try again.");
 	else {
-	    $tokendata = unpack("Vx", $tokendata);
-	    $token = $tokendata["x"];
 	    $result = $Conf->qe("select paperId from PaperReview where reviewToken=" . $token, "while searching for review token");
 	    if (($row = edb_row($result))) {
 		$tokeninfo[] = "Review token “" . htmlspecialchars($x) . "” lets you review <a href='" . hoturl("paper", "p=$row[0]") . "'>paper #" . $row[0] . "</a>.";
@@ -302,7 +300,7 @@ function reviewTokenGroup($close_hr) {
 
     $tokens = array();
     foreach (defval($_SESSION, "rev_tokens", array()) as $tt)
-	$tokens[] = encodeToken((int) $tt);
+	$tokens[] = encode_token((int) $tt);
     echo "  <h4>Review tokens: &nbsp;</h4> ",
 	"<form action='", hoturl_post("index"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
 	"<input class='textlite' type='text' name='token' size='15' value=\"",

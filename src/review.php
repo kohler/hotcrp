@@ -1412,7 +1412,7 @@ $blind\n";
 	    $sep = $xsep;
 	}
 	if ($showtoken) {
-	    echo $sep, "Review token ", encodeToken((int) $rrow->reviewToken);
+	    echo $sep, "Review token ", encode_token((int) $rrow->reviewToken);
 	    $sep = $xsep;
 	}
 	if ($rrow && $rrow->reviewModified > 0) {
