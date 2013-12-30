@@ -369,7 +369,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
                     || $pl->contact->canViewReviewerIdentity($by_pid[$xrow->paperId], $xrow, true))
                     $by_pid[$xrow->paperId]->_xreviewer = $xrow;
             $this->xreviewer = new Contact;
-            $this->xreviewer->lookupById($pl->search->reviewerContact);
+            $this->xreviewer->load_by_id($pl->search->reviewerContact);
         } else
             $this->xreviewer = false;
     }

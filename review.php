@@ -316,7 +316,7 @@ function refuseReview() {
 
     // send confirmation email
     $Requester = new Contact();
-    $Requester->lookupById((int) $rrow->reqContactId);
+    $Requester->load_by_id((int) $rrow->reqContactId);
     $reqprow = $Conf->paperRow($prow->paperId, $rrow->reqContactId);
     Mailer::send("@refusereviewrequest", $reqprow, $Requester, $rrow, array("reason" => $reason));
 

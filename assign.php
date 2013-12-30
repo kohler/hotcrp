@@ -423,7 +423,7 @@ if (isset($_REQUEST["deny"]) && $Me->allowAdminister($prow) && check_post()
     $result = $Conf->qe("select requestedBy from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'", $while);
     if (($row = edb_row($result))) {
 	$Requester = new Contact();
-	$Requester->lookupById((int) $row[0]);
+	$Requester->load_by_id((int) $row[0]);
 	$Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'", $while);
 	if (($reqId = Contact::id_by_email($email)) > 0)
 	    $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')", $while);

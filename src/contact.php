@@ -193,7 +193,7 @@ class Contact {
 			$Conf->invalidateCaches();
 		}
 		if ($update)
-		    $this->lookupById($this->contactId);
+		    $this->load_by_id($this->contactId);
 		$this->validated = true;
 	    }
 	} else if (isset($Opt["validatorContact"]) && $Opt["validatorContact"]
@@ -444,7 +444,7 @@ class Contact {
         return $result;
     }
 
-    function updateFromQuery($query) {
+    private function load_by_query($query) {
 	global $Conf, $Opt;
 	$result = $Conf->q($query);
 	if (edb_nrows($result) >= 1) {
@@ -491,8 +491,8 @@ class Contact {
 
         $email = $email ? trim($email) : "";
         if ($email != ""
-            && $this->updateFromQuery("select ContactInfo.* from ContactInfo
-		where email='" . sqlq($email) . "'"))
+            && $this->load_by_query("select c.* from ContactInfo c
+		where c.email='" . sqlq($email) . "'"))
             return true;
         if (!$reg || !is_array($reg) || !validateEmail($email))
             return false;
@@ -534,9 +534,9 @@ class Contact {
 	return !!$result;
     }
 
-    function lookupById($contactId) {
-	return $this->updateFromQuery("select ContactInfo.* from ContactInfo
-		where ContactInfo.contactId=$contactId");
+    function load_by_id($contactId) {
+	return $this->load_by_query("select c.* from ContactInfo c
+		where c.contactId=$contactId");
     }
 
     function lookupAddress() {

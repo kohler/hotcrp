@@ -632,7 +632,7 @@ function downloadRevpref($extended) {
     $Rev = $Me;
     if (($rev = rcvtint($_REQUEST["reviewer"])) > 0 && $Me->privChair) {
 	$Rev = new Contact();
-	if (!$Rev->lookupById($rev) || !$Rev->valid())
+	if (!$Rev->load_by_id($rev) || !$Rev->valid())
 	    return $Conf->errorMsg("No such reviewer");
     }
     $q = $Conf->paperQuery($Rev, array("paperId" => $papersel, "topics" => 1, "reviewerPreference" => 1));

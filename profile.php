@@ -14,7 +14,7 @@ function change_email_by_capability() {
         || !@$capdata->data->uemail)
         error_go(false, "That email change code has expired, or you didn’t enter it correctly.");
     $Acct = new Contact;
-    $Acct->lookupById($capdata->contactId);
+    $Acct->load_by_id($capdata->contactId);
     if (!$Acct->valid())
         error_go(false, "No such account.");
     if (Contact::id_by_email($capdata->data->uemail))
@@ -59,7 +59,7 @@ else if (isset($_REQUEST["new"]) || defval($_REQUEST, "u") == "new") {
 } else if (isset($_REQUEST["u"])) {
     $Acct = new Contact();
     if (($id = cvtint($_REQUEST["u"])) > 0)
-	$Acct->lookupById($id);
+	$Acct->load_by_id($id);
     else
 	$Acct->load_by_email($_REQUEST["u"]);
     if (!$Acct->valid()) {
