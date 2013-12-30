@@ -40,8 +40,9 @@ if (isset($_REQUEST["merge"]) && check_post()) {
 	    // Do they prefer the account they named?
 	    if (defval($_REQUEST, 'prefer')) {
 		$mm = $Me;
-		$_SESSION["Me"] = $Me = $MiniMe;
+                $Me = $MiniMe;
 		$MiniMe = $mm;
+                $_SESSION["user"] = "$Me->contactId " . $Opt["dsn"] . " $Me->email";
 	    }
 
 	    require_once("Code/mailtemplate.inc");

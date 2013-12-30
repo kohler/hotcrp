@@ -491,8 +491,7 @@ class ReviewForm {
     }
 
     function saveRequest($req, $rrow, $prow, &$tf = null) {
-	global $Conf, $Opt;
-	$Me = $_SESSION['Me'];
+	global $Conf, $Opt, $Me;
 	$submit = defval($req, "ready", false) && !defval($req, "unready", false);
 	$while = "while storing review";
 	$admin = $Me->allowAdminister($prow);

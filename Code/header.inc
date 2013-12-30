@@ -359,14 +359,37 @@ if ($zlib_output_compression) {
 
 ensure_session();
 
-global $Me;
-if (!isset($_SESSION["Me"])) {
-    $_SESSION["Me"] = new Contact();
-    $_SESSION["Me"]->fresh = true;
-    $_SESSION["Me"]->dsn = $Opt["dsn"];
+
+// Initialize user
+function initialize_user() {
+    global $Opt, $Me;
+
+    // backwards compat: set $_SESSION["user"] from $_SESSION["Me"]
+    if (!isset($_SESSION["user"]) && isset($_SESSION["Me"])) {
+        $x = $_SESSION["Me"];
+        $_SESSION["user"] = "$x->contactId $x->confDsn $x->email";
+        unset($_SESSION["Me"]);
+    }
+
+    // load current user
+    $userwords = array();
+    if (isset($_SESSION["user"]))
+        $userwords = explode(" ", $_SESSION["user"]);
+    $Me = new Contact;
+    if (count($userwords) >= 2 && $userwords[1] == $Opt["dsn"])
+        $Me->load_by_id($userwords[0]);
+    else if (count($userwords) >= 3)
+        $Me->load_by_email($userwords[2]);
+    else
+        $Me->fresh = true;
+    if ($Me->contactId)
+        $_SESSION["user"] = "$Me->contactId " . $Opt["dsn"] . " $Me->email";
+    $Me->validated = false;
 }
-$Me = $_SESSION["Me"];
-$Me->validated = false;
+
+global $Me;
+initialize_user();
+
 
 // Handle capabilities
 function hotcrp_random_bytes($length = 16, $secure_only = false) {
