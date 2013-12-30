@@ -328,14 +328,14 @@ class PaperList extends BaseList {
 	    $sel_opt["abstract"] = "Abstracts";
 	    $sel_opt["revform"] = "Review forms";
 	    $sel_opt["revformz"] = "Review forms (zip)";
-	    if ($this->contact->isPC || $this->contact->isReviewer) {
+	    if ($this->contact->is_reviewer()) {
 		$sel_opt["rev"] = "All reviews";
 		$sel_opt["revz"] = "All reviews (zip)";
 	    }
 	}
 	if ($this->contact->privChair)
 	    $sel_opt["authors"] = "Authors &amp; contacts";
-	else if ($this->contact->isReviewer && !$Conf->subBlindAlways())
+	else if ($this->contact->has_review() && !$Conf->subBlindAlways())
 	    $sel_opt["authors"] = "Authors";
 	$sel_opt["topics"] = "Topics";
 	if ($this->contact->privChair) {
@@ -904,7 +904,7 @@ class PaperList extends BaseList {
 	$url = $this->search->url();
 
 	// check role type
-	$this->scoresOk = $me->privChair || $me->amReviewer()
+	$this->scoresOk = $me->privChair || $me->is_reviewer()
 	    || $Conf->timeAuthorViewReviews();
 
 	// initialize query
@@ -1169,7 +1169,7 @@ class PaperList extends BaseList {
 	$url = $this->search->url();
 
 	// check role type
-	$this->scoresOk = $me->privChair || $me->amReviewer()
+	$this->scoresOk = $me->privChair || $me->is_reviewer()
 	    || $Conf->timeAuthorViewReviews();
 
 	// initialize query

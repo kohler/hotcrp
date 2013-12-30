@@ -350,16 +350,16 @@ class PaperSearch {
 	    $this->limitName = $ptype;
 	else if ($ptype == "r" || $ptype == "rout" || $ptype == "a")
 	    $this->limitName = $ptype;
-	else if (!$me->amReviewer())
+	else if (!$me->is_reviewer())
 	    $this->limitName = "a";
-	else if (!$me->isAuthor)
+	else if (!$me->is_author())
 	    $this->limitName = "r";
 	else
 	    $this->limitName = "ar";
 
 	// track other information
 	$this->allowAuthor = false;
-	if ($me->privChair || $me->isAuthor
+	if ($me->privChair || $me->is_author()
 	    || ($this->amPC && !$Conf->subBlindAlways()))
 	    $this->allowAuthor = true;
 	$this->warnings = null;
@@ -2640,17 +2640,17 @@ class PaperSearch {
 	    $tOpt["all"] = "All papers";
 	if ($me->privChair && $Conf->setting("pc_seeall") <= 0 && defval($_REQUEST, "t") == "act")
 	    $tOpt["act"] = "Active papers";
-	if ($me->amReviewer())
+	if ($me->is_reviewer())
 	    $tOpt["r"] = "Your reviews";
-	if ($me->reviewsOutstanding
-	    || ($me->amReviewer() && defval($_REQUEST, "t") == "rout"))
+	if ($me->has_outstanding_review()
+	    || ($me->is_reviewer() && defval($_REQUEST, "t") == "rout"))
 	    $tOpt["rout"] = "Your incomplete reviews";
 	if ($me->isPC)
 	    $tOpt["req"] = "Your review requests";
 	if ($me->isPC && $Conf->setting("paperlead") > 0
 	    && $me->amDiscussionLead(0))
 	    $tOpt["lead"] = "Your discussion leads";
-	if ($me->isAuthor)
+	if ($me->is_author())
 	    $tOpt["a"] = "Your submissions";
 	return $tOpt;
     }

@@ -42,15 +42,15 @@ class Contact {
     const ROLE_ERC = 8;
     const ROLE_PCERC = 9;
     const ROLE_PCLIKE = 15;
-    var $isAuthor;
-    var $isReviewer;
-    var $isRequester;
-    var $isDiscussionLead;
+    private $is_author_;
+    private $has_review_;
+    private $has_outstanding_review_;
+    private $is_requester_;
+    private $is_lead_;
     var $roles;
     var $isPC;
     var $privChair;
     var $contactTags;
-    var $reviewsOutstanding;
     var $chairContact;
     const CAP_AUTHORVIEW = 1;
     var $capabilities;
@@ -106,9 +106,10 @@ class Contact {
         if ($c->password_type == 0)
             $c->password_plaintext = $c->password;
         $c->disabled = !!defval($o, "disabled", false);
-	$c->isAuthor = defval($o, "isAuthor", false) != false;
-	$c->isReviewer = defval($o, "isReviewer", false) != false;
-	$c->reviewsOutstanding = defval($o, "reviewsOutstanding", false) != false;
+        if (isset($o->has_review))
+            $c->has_review_ = $o->has_review;
+        if (isset($o->has_outstanding_review))
+            $c->has_outstanding_review_ = $o->has_outstanding_review;
 	$c->roles = defval($o, "roles", 0);
 	if (defval($o, "isPC", false))
 	    $c->roles |= self::ROLE_PC;
@@ -150,17 +151,18 @@ class Contact {
 		$this->invalidate();
 	    else {
 		$this->roles = 0;
-		$this->isAuthor = $this->isReviewer = $this->isRequester = $this->isPC = $this->privChair = $this->reviewsOutstanding = false;
-		$this->isDiscussionLead = null;
+		$this->isPC = $this->privChair = false;
+                $this->is_author_ = $this->has_review_ = $this->has_outstanding_review_ = $this->is_requester_ = false;
+		$this->is_lead_ = null;
 		while (($row = edb_row($result))) {
 		    if ($row[0] >= CONFLICT_AUTHOR)
-			$this->isAuthor = true;
+			$this->is_author_ = true;
 		    if ($row[1] > 0)
-			$this->isReviewer = true;
+			$this->has_review_ = true;
 		    if ($row[2] > 0)
-			$this->reviewsOutstanding = true;
+			$this->has_outstanding_review_ = true;
 		    if ($row[3] > 0)
-			$this->isRequester = true;
+			$this->is_requester_ = true;
 		    $this->roles |= $row[4] & self::ROLE_PCLIKE;
 		}
 		$this->isPC = ($this->roles & self::ROLE_PCLIKE) != 0;
@@ -204,7 +206,7 @@ class Contact {
 	if (isset($this->capabilities))
 	    foreach ($this->capabilities as $pid => $cap)
 		if ($cap & self::CAP_AUTHORVIEW)
-		    $this->isAuthor = $this->validated = true;
+		    $this->is_author_ = $this->validated = true;
 	return $this->validated && $this->confDsn == $Opt["dsn"];
     }
 
@@ -219,6 +221,26 @@ class Contact {
 
     function is_erc() {
         return ($this->roles & self::ROLE_PCERC) == self::ROLE_PCERC;
+    }
+
+    function is_author() {
+        return $this->is_author_;
+    }
+
+    function is_reviewer() {
+	return $this->isPC || $this->has_review_;
+    }
+
+    function has_review() {
+        return $this->has_review_;
+    }
+
+    function has_outstanding_review() {
+        return $this->has_outstanding_review_;
+    }
+
+    function is_requester() {
+        return $this->is_requester_;
     }
 
     static function roles_all_contact_tags($roles, $tags) {
@@ -256,8 +278,12 @@ class Contact {
 	$this->defaultWatch = WATCH_COMMENT;
 
 	$this->roles = 0;
-	$this->isAuthor = $this->isReviewer = $this->isPC = $this->privChair = false;
-	$this->reviewsOutstanding = false;
+	$this->isPC = $this->privChair = false;
+        unset($this->is_author_);
+        unset($this->has_review_);
+	unset($this->has_outstanding_review_);
+        unset($this->is_requester_);
+        unset($this->is_lead_);
 	$this->chairContact = null;
 
 	$this->validated = false;
@@ -277,10 +303,6 @@ class Contact {
 	    unset($this->capabilities);
 	if ($on)
 	    $CapabilitiesOK = true;
-    }
-
-    function amReviewer() {
-	return $this->isPC || $this->isReviewer;
     }
 
     function trim() {
@@ -949,7 +971,7 @@ class Contact {
 	     || defval($prow, "myReviewType") > 0
 	     || $admin)
 	    && (($conflictType >= CONFLICT_AUTHOR
-		 && $Conf->timeAuthorViewReviews($this->reviewsOutstanding && $this->isReviewer)
+		 && $Conf->timeAuthorViewReviews($this->has_outstanding_review() && $this->has_review())
 		 && $rrowSubmitted
                  && $viewscore >= VIEWSCORE_AUTHOR)
 		|| ($admin
@@ -957,7 +979,7 @@ class Contact {
 		|| ($this->isPC
 		    && $conflictType == 0 && $rrowSubmitted
 		    && $pc_seeallrev > 0	// see also timePCViewAllReviews()
-		    && ($pc_seeallrev != 4 || !$this->reviewsOutstanding)
+		    && ($pc_seeallrev != 4 || !$this->has_outstanding_review())
 		    && ($pc_seeallrev != 3 || !defval($prow, "myReviewType"))
                     && $viewscore >= VIEWSCORE_PC)
 		|| (defval($prow, "myReviewType") > 0
@@ -980,7 +1002,7 @@ class Contact {
 	else if ($conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)
 	    $whyNot['permission'] = 1;
 	else if ($conflictType >= CONFLICT_AUTHOR && $Conf->timeAuthorViewReviews()
-		 && $this->reviewsOutstanding && $this->isReviewer)
+		 && $this->has_outstanding_review() && $this->has_review())
 	    $whyNot['reviewsOutstanding'] = 1;
 	else if ($conflictType >= CONFLICT_AUTHOR && !$rrowSubmitted)
 	    $whyNot['permission'] = 1;
@@ -995,7 +1017,7 @@ class Contact {
 	else if (!$rrowSubmitted)
 	    $whyNot['reviewNotSubmitted'] = 1;
 	else if ($this->isPC && $pc_seeallrev == 4
-                 && $this->reviewsOutstanding)
+                 && $this->has_outstanding_review())
 	    $whyNot["reviewsOutstanding"] = 1;
 	else if (!$Conf->timeReviewOpen())
 	    $whyNot['deadline'] = "rev_open";
@@ -1296,12 +1318,11 @@ class Contact {
     function amDiscussionLead($paperId, $prow = null) {
 	global $Conf;
 	if ($prow === null && $paperId <= 0) {
-	    if ($this->isDiscussionLead === null) {
-		$result = $Conf->qe("select count(paperId) from Paper where leadContactId=$this->contactId");
-		$row = edb_row($result);
-		$this->isDiscussionLead = $row && $row[0] > 0;
+	    if ($this->is_lead_ === null) {
+		$result = $Conf->qe("select paperId from Paper where leadContactId=$this->contactId limit 1");
+                $this->is_lead_ = edb_nrows($result) > 0;
 	    }
-	    return $this->isDiscussionLead;
+	    return $this->is_lead_;
 	} else if ($prow === null) {
 	    $result = $Conf->qe("select paperId from Paper where paperId=$paperId and leadContactId=$this->contactId");
 	    return edb_nrows($result) > 0;
@@ -1327,7 +1348,7 @@ class Contact {
 	// is true.
 	if ($prow === true)
 	    $prow = (object) array("conflictType" => 0, "managerContactId" => 0,
-			"myReviewType" => ($this->amReviewer() ? 1 : 0),
+			"myReviewType" => ($this->is_reviewer() ? 1 : 0),
 			"myReviewSubmitted" => 1,
 			"paperId" => 1, "timeSubmitted" => 1);
 	$conflictType = $this->actConflictType($prow);
@@ -1423,11 +1444,11 @@ class Contact {
 
 	// author can see author information
 	if (($prow && $this->actConflictType($prow) >= CONFLICT_AUTHOR)
-	    || (!$prow && !$this->amReviewer()))
+	    || (!$prow && !$this->is_reviewer()))
 	    return VIEWSCORE_AUTHOR - 1;
 
 	// authors and external reviewers of not this paper can't see anything
-	if (!$this->amReviewer()
+	if (!$this->is_reviewer()
 	    || (!$this->isPC && $prow && $prow->myReviewType <= 0))
 	    return 10000;
 
@@ -1486,7 +1507,7 @@ class Contact {
 
 	$dl["resp_done"] = $dlx["resp_done"];
 
-	$dl["rev_open"] = $dl["rev_open"] && $this->amReviewer();
+	$dl["rev_open"] = $dl["rev_open"] && $this->is_reviewer();
 	if ($this->isPC) {
 	    if ($dlx["pcrev_soft"] > $now)
 		$dl["pcrev_done"] = $dlx["pcrev_soft"];
@@ -1495,7 +1516,7 @@ class Contact {
 		$dl["pcrev_ishard"] = true;
 	    }
 	}
-	if ($this->amReviewer()) {
+	if ($this->is_reviewer()) {
 	    if ($dlx["extrev_soft"] > $now)
 		$dl["extrev_done"] = $dlx["extrev_soft"];
 	    else if ($dlx["extrev_hard"]) {

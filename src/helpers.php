@@ -902,8 +902,8 @@ function genericWatch($prow, $watchtype, $callback) {
 		where C.contactId in (" . join(",", array_keys($watchers)) . ")
 		group by C.contactId", "while processing email notifications");
 	while (($row = edb_row($result))) {
-	    $watchers[$row[0]]->isReviewer = $row[1] > 0;
-	    $watchers[$row[0]]->reviewsOutstanding = $row[2] > 0;
+	    $watchers[$row[0]]->has_review = $row[1] > 0;
+	    $watchers[$row[0]]->has_outstanding_review = $row[2] > 0;
 	}
     }
 

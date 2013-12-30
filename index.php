@@ -34,7 +34,7 @@ if (!$Me->valid() || isset($_REQUEST["signin"]))
 // perhaps redirect through account
 if ($Me->validContact() && isset($Me->fresh) && $Me->fresh === true) {
     $needti = false;
-    if (($Me->roles & Contact::ROLE_PC) && !$Me->isReviewer) {
+    if (($Me->roles & Contact::ROLE_PC) && !$Me->has_review()) {
 	$result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->cid and ti.topicId=ta.topicId)");
 	$needti = ($row = edb_row($result)) && $row[0] && !$row[1];
     }
@@ -123,7 +123,8 @@ if (isset($_REQUEST["token"]) && $Me->valid()) {
 		$tokeninfo[] = "Review token “" . htmlspecialchars($x) . "” lets you review <a href='" . hoturl("paper", "p=$row[0]") . "'>paper #" . $row[0] . "</a>.";
 		if (!isset($_SESSION["rev_tokens"]) || array_search($token, $_SESSION["rev_tokens"]) === false)
 		    $_SESSION["rev_tokens"][] = $token;
-		$Me->isReviewer = true;
+                $Me->validated = false;
+		$Me->valid();
 	    } else {
 		$Conf->errorMsg("Review token “" . htmlspecialchars($x) . "” hasn’t been assigned.");
 		$_SESSION["rev_token_fail"] = defval($_SESSION, "rev_token_fail", 0) + 1;
@@ -175,9 +176,9 @@ echo "<div class='homeinside'><div id='homeinfo'>
 // Any deadlines set?
 $sep = "";
 if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting('sub_sub')
-    || ($Me->isAuthor && $Conf->setting('resp_open') > 0 && $Conf->setting('resp_done'))
+    || ($Me->is_author() && $Conf->setting('resp_open') > 0 && $Conf->setting('resp_done'))
     || ($Me->isPC && $Conf->setting('rev_open') && $Conf->setting('pcrev_hard'))
-    || ($Me->amReviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard'))) {
+    || ($Me->is_reviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard'))) {
     echo "    <li><a href='", hoturl("deadlines"), "'>Deadlines</a></li>\n";
 }
 echo "    <li><a href='", hoturl("users", "t=pc"), "'>Program committee</a></li>\n";
@@ -262,7 +263,7 @@ Sign in to submit or review papers.";
 
 // Submissions
 $papersub = $Conf->setting("papersub");
-$homelist = ($Me->privChair || ($Me->isPC && $papersub) || ($Me->amReviewer() && $papersub));
+$homelist = ($Me->privChair || ($Me->isPC && $papersub) || ($Me->is_reviewer() && $papersub));
 if ($homelist) {
     echo "<div class='homegrp' id='homelist'>\n";
 
@@ -319,7 +320,7 @@ function reviewTokenGroup($close_hr) {
 
 
 // Review assignment
-if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
+if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     echo "<div class='homegrp' id='homerev'>\n";
 
     // Overview
@@ -408,7 +409,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	echo $sep, "<a href='", hoturl("offline"), "'>Offline reviewing</a>";
 	$sep = $xsep;
     }
-    if ($Me->isRequester) {
+    if ($Me->is_requester()) {
 	echo $sep, "<a href='", hoturl("mail", "monreq=1"), "'>Monitor external reviews</a>";
 	$sep = $xsep;
     }
@@ -447,7 +448,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 	}
     }
 
-    if ($Me->isReviewer) {
+    if ($Me->has_review()) {
 	$plist = new PaperList(new PaperSearch($Me, array("q" => "re:me")), array("list" => true));
 	$ptext = $plist->text("reviewerHome", $Me);
 	if ($plist->count > 0)
@@ -457,7 +458,7 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
     if ($Conf->setting("rev_tokens"))
 	reviewTokenGroup(false);
 
-    if ($Me->amReviewer()) {
+    if ($Me->is_reviewer()) {
 	require_once("src/commentview.php");
 	$entries = $Conf->reviewerActivity($Me, time(), 30);
 	if (count($entries)) {
@@ -484,12 +485,12 @@ if ($Me->amReviewer() && ($Me->privChair || $papersub)) {
 }
 
 // Authored papers
-if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
-    || !$Me->amReviewer()) {
+if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
+    || !$Me->is_reviewer()) {
     echo "<div class='homegrp' id='homeau'>";
 
     // Overview
-    if ($Me->isAuthor)
+    if ($Me->is_author())
 	echo "<h4>Your Submissions: &nbsp;</h4> ";
     else
 	echo "<h4>Submissions: &nbsp;</h4> ";
@@ -504,7 +505,7 @@ if ($Me->isAuthor || $Conf->timeStartPaper() > 0 || $Me->privChair
     }
 
     $plist = null;
-    if ($Me->isAuthor) {
+    if ($Me->is_author()) {
 	$plist = new PaperList(new PaperSearch($Me, array("t" => "a")), array("list" => true));
 	$ptext = $plist->text("authorHome", $Me, array("noheader" => true));
 	if ($plist->count > 0)

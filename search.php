@@ -374,7 +374,7 @@ if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
 // download rank
 $settingrank = ($Conf->setting("tag_rank") && defval($_REQUEST, "tag") == "~" . $Conf->setting_data("tag_rank"));
 if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
-    && ($Me->isPC || ($Me->amReviewer() && $settingrank))) {
+    && ($Me->isPC || ($Me->is_reviewer() && $settingrank))) {
     $tagger = new Tagger;
     if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
 	$q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"));
@@ -1184,7 +1184,7 @@ function displayOptionText($text, $column, $opt = array()) {
 
 if ($pl) {
     $viewAcceptedAuthors =
-	$Me->amReviewer() && $Conf->timeReviewerViewAcceptedAuthors();
+	$Me->is_reviewer() && $Conf->timeReviewerViewAcceptedAuthors();
     $viewAllAuthors = ($_REQUEST["t"] == "a"
 		       || ($_REQUEST["t"] == "acc" && $viewAcceptedAuthors)
                        || $Conf->subBlindNever());
@@ -1248,7 +1248,7 @@ if ($pl) {
     $anyScores = false;
     if ($pl->scoresOk == "present") {
 	$rf = reviewForm();
-	if ($Me->amReviewer() && $_REQUEST["t"] != "a")
+	if ($Me->is_reviewer() && $_REQUEST["t"] != "a")
 	    $revViewScore = $Me->viewReviewFieldsScore(null, true);
 	else
 	    $revViewScore = VIEWSCORE_AUTHOR - 1;
@@ -1311,7 +1311,7 @@ $qtOpt = array("ti" => "Title",
 if ($Me->privChair || $Conf->subBlindNever()) {
     $qtOpt["au"] = "Authors";
     $qtOpt["n"] = "Title, abstract, and authors";
-} else if ($Conf->subBlindAlways() && $Me->amReviewer() && $Conf->timeReviewerViewAcceptedAuthors()) {
+} else if ($Conf->subBlindAlways() && $Me->is_reviewer() && $Conf->timeReviewerViewAcceptedAuthors()) {
     $qtOpt["au"] = "Accepted authors";
     $qtOpt["n"] = "Title and abstract, and accepted authors";
 } else if (!$Conf->subBlindAlways()) {

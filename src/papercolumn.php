@@ -188,7 +188,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
         $this->auview = $Conf->timeAuthorViewReviews();
     }
     public function prepare($pl, &$queryOptions, $visible) {
-        return $pl->contact->amReviewer() || $this->auview
+        return $pl->contact->is_reviewer() || $this->auview
             || $pl->contact->privChair;
     }
     public function sort_prepare($pl, &$rows) {
@@ -993,7 +993,7 @@ class FormulaPaperColumn extends PaperColumn {
     public function prepare($pl, &$queryOptions, $visible) {
         global $ConfSitePATH;
         $revView = 0;
-        if ($pl->contact->amReviewer()
+        if ($pl->contact->is_reviewer()
             && $pl->search->limitName != "a")
             $revView = $pl->contact->viewReviewFieldsScore(null, true);
         if (!$pl->scoresOk

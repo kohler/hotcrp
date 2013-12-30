@@ -625,7 +625,7 @@ You may also search for reviews with specific ratings; for instance,
     _alternateRow("Settings", "
 Chairs set how ratings work on the <a
 href='" . hoturl("settings", "group=rev") . "'>review settings
-page</a>." . ($Me->amReviewer() ? "  Currently, $what can rate reviews." : ""));
+page</a>." . ($Me->is_reviewer() ? "  Currently, $what can rate reviews." : ""));
     _alternateRow("Visibility", "
 A review’s ratings are visible to any unconflicted PC members who can see
 the review, but HotCRP tries to hide ratings from review authors if they

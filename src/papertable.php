@@ -2096,7 +2096,7 @@ class PaperTable {
 	    $q = "select min(Paper.paperId) from Paper ";
 	    if ($Me->isPC)
 		$q .= "where timeSubmitted>0";
-	    else if ($Me->isReviewer)
+	    else if ($Me->has_review())
 		$q .= "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$Me->contactId)";
 	    else
 		$q .= "join ContactInfo on (ContactInfo.paperId=Paper.paperId and ContactInfo.contactId=$Me->contactId and ContactInfo.conflictType>=" . CONFLICT_AUTHOR . ")";

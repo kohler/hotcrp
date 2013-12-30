@@ -653,7 +653,7 @@ echofield(0, "affiliation", "Affiliation", textinput("affiliation", crpformvalue
 
 $any_address = ($Acct->addressLine1 || $Acct->addressLine2 || $Acct->city
 		|| $Acct->state || $Acct->zipCode || $Acct->country);
-if ($Conf->setting("acct_addr") || $Acct->amReviewer()
+if ($Conf->setting("acct_addr") || $Acct->is_reviewer()
     || $any_address || $Acct->voicePhoneNumber) {
     echo "<div class='g'></div>\n";
     if ($Conf->setting("acct_addr") || $any_address) {
