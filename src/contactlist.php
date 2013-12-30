@@ -285,7 +285,7 @@ class ContactList extends BaseList {
                      && $this->limit != "pc" && $this->limit != "corepc")
 		$t .= " <span class='pcrole'>(PC)</span>";
 	    if ($this->contact->privChair && $row->email != $this->contact->email)
-		$t .= " <a href=\"" . hoturl("index", "viewContact=" . urlencode($row->email)) . "\">"
+		$t .= " <a href=\"" . hoturl("index", "actas=" . urlencode($row->email)) . "\">"
 		    . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($row))
 		    . "</a>";
             if ($row->disabled)

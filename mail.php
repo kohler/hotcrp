@@ -6,7 +6,7 @@
 require_once("Code/header.inc");
 require_once("src/papersearch.php");
 require_once("Code/mailtemplate.inc");
-$Me->goIfInvalid();
+$Me->exit_if_empty();
 $Me->goIfNotPC();
 $rf = reviewForm();
 $nullMailer = new Mailer(null, null, $Me);

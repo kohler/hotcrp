@@ -516,7 +516,7 @@ function viewas_link($cid, $contact = null) {
     global $Conf;
     $contact = !$contact && is_object($cid) ? $cid : $contact;
     $cid = is_object($contact) ? $cid->email : $cid;
-    return '<a href="' . selfHref(array("viewContact" => $cid))
+    return '<a href="' . selfHref(array("actas" => $cid))
         . '">' . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($contact)) . '</a>';
 }
 
@@ -725,7 +725,7 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
 
 function goPaperForm($baseUrl = null, $args = array()) {
     global $Conf, $Me, $CurrentList;
-    if (!$Me->valid())
+    if ($Me->is_empty())
 	return "";
     if ($baseUrl === null)
 	$baseUrl = ($Me->isPC && $Conf->setting("rev_open") ? "review" : "paper");
@@ -1605,6 +1605,24 @@ function reviewForm($always = false) {
         || $always)
 	$ReviewFormCache = new ReviewForm;
     return $ReviewFormCache;
+}
+
+
+function hotcrp_random_bytes($length = 16, $secure_only = false) {
+    $key = false;
+    if (function_exists("openssl_random_pseudo_bytes")) {
+	$key = openssl_random_pseudo_bytes($length, $strong);
+	$key = ($strong ? $key : false);
+    }
+    if (!$key)
+	$key = @file_get_contents("/dev/urandom", false, null, 0, $length);
+    if (!$key && !$secure_only) {
+	$key = "";
+	while (strlen($key) < $length)
+	    $key .= pack("V", mt_rand());
+	$key = substr($key, 0, $length);
+    }
+    return $key;
 }
 
 

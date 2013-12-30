@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 include('Code/header.inc');
-$Me->goIfInvalid();
+$Me->exit_if_empty();
 $MergeError = "";
 
 function crpmergeone($table, $field, $oldid, $newid) {
@@ -26,10 +26,8 @@ if (isset($_REQUEST["merge"]) && check_post()) {
     else if (!$_REQUEST["password"])
 	$MergeError = "Enter the password of the account to merge.";
     else {
-	$MiniMe = new Contact();
-	$MiniMe->load_by_email($_REQUEST["email"]);
-
-	if (!$MiniMe->valid())
+	$MiniMe = Contact::find_by_email($_REQUEST["email"]);
+	if (!$MiniMe)
 	    $MergeError = "No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?";
 	else if (!$MiniMe->check_password($_REQUEST["password"]))
 	    $MergeError = "That password is incorrect.";
@@ -156,10 +154,7 @@ else
 echo "<form method='post' action=\"", hoturl_post("mergeaccounts"), "\" accept-charset='UTF-8'>\n";
 
 // Try to prevent glasses interactions from screwing up merges
-if ($Me->privChair)
-    echo "<input type='hidden' name='chairMode' value='1' />";
-else if ($Me->chairContact)
-    echo "<input type='hidden' name='viewContact' value='", $Me->contactId, "' />";
+echo "<input type='hidden' name='actas' value='", $Me->contactId, "' />";
 ?>
 
 <table class='form'>

@@ -13,15 +13,14 @@ function change_email_by_capability() {
         || !($capdata->data = json_decode($capdata->data))
         || !@$capdata->data->uemail)
         error_go(false, "That email change code has expired, or you didn’t enter it correctly.");
-    $Acct = new Contact;
-    $Acct->load_by_id($capdata->contactId);
-    if (!$Acct->valid())
+    $Acct = Contact::find_by_id($capdata->contactId);
+    if (!$Acct)
         error_go(false, "No such account.");
     if (Contact::id_by_email($capdata->data->uemail))
         error_go(false, "Email address " . htmlspecialchars($capdata->data->uemail) . " is already in use for another account. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
 
     $Acct->email = $capdata->data->uemail;
-    $aupapers = $Acct->email_authored_papers($Acct->email, true);
+    $aupapers = Contact::email_authored_papers($Acct->email, $Acct);
     $Acct->updateDB();
     if (count($aupapers))
         $Acct->save_authored_papers($aupapers);
@@ -30,14 +29,14 @@ function change_email_by_capability() {
     $Conf->delete_capability($capdata);
 
     $Conf->confirmMsg("Your email address has been changed.");
-    if (!$Me->valid() || $Me->contactId == $Acct->contactId)
-        $Me->load_by_email($Acct->email);
+    if (!$Me->is_known_user() || $Me->contactId == $Acct->contactId)
+        $Me = $Acct->activate();
 }
 if (isset($_REQUEST["changeemail"]))
     change_email_by_capability();
 
-$Me->goIfInvalid();
-if (!$Me->validContact())
+$Me->exit_if_empty();
+if (!$Me->is_known_user())
     go(false);
 $newProfile = false;
 $Error = $Warning = array();
@@ -54,15 +53,14 @@ if (!isset($_REQUEST["u"]) && isset($_SERVER["PATH_INFO"])
 if (!$Me->privChair)
     $Acct = $Me;		// always this contact
 else if (isset($_REQUEST["new"]) || defval($_REQUEST, "u") == "new") {
-    $Acct = new Contact();
+    $Acct = new Contact;
     $newProfile = true;
 } else if (isset($_REQUEST["u"])) {
-    $Acct = new Contact();
     if (($id = cvtint($_REQUEST["u"])) > 0)
-	$Acct->load_by_id($id);
+	$Acct = Contact::find_by_id($id);
     else
-	$Acct->load_by_email($_REQUEST["u"]);
-    if (!$Acct->valid()) {
+	$Acct = Contact::find_by_email($_REQUEST["u"]);
+    if (!$Acct) {
 	$Conf->errorMsg("Invalid contact.");
 	$Acct = $Me;
     }
@@ -186,11 +184,12 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 
     // at this point we will create the account
     if ($newProfile) {
-	$Acct = new Contact();
-	if (!$Acct->initialize($_REQUEST["uemail"], true, $useRequestPassword))
+        $reg = Contact::safe_registration($_REQUEST);
+        if ($useRequestPassword && @$_REQUEST["password"])
+            $reg["password"] = $_REQUEST["password"];
+        $Acct = Contact::find_by_email($_REQUEST["uemail"], $reg, true);
+	if (!$Acct)
 	    return tfError($tf, "uemail", "Database error, please try again");
-	$Acct->sendAccountInfo(true, false);
-	$Conf->log("Account created by $Me->email", $Acct);
     }
 
     $updatepc = false;
@@ -307,8 +306,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 
     if ($OK) {
 	// Refresh the results
-	$Acct->load_by_email($_REQUEST["uemail"]);
-	$Acct->valid();
+	$Acct = Contact::find_by_email($_REQUEST["uemail"]);
 	if (!$newProfile)
 	    $Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
 	foreach (array("firstName", "lastName", "affiliation") as $k)
@@ -395,7 +393,7 @@ else if (isset($_REQUEST["register"]) && $newProfile
 	$Conf->errorMsg("Internal error: cannot read file.");
     else
 	parseBulkFile($text, $_FILES["bulk"]["name"]);
-    $Acct = new Contact();
+    $Acct = new Contact;
 } else if (isset($_REQUEST["register"])) {
     $tf = array();
     if (createUser($tf, $newProfile)) {

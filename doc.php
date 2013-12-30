@@ -8,7 +8,7 @@
 // naming work for some browsers.
 
 require_once("Code/header.inc");
-$Me->goIfInvalid();
+$Me->exit_if_empty();
 
 // Determine the intended paper
 $documentType = requestDocumentType($_REQUEST);

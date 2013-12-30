@@ -6,7 +6,7 @@
 $Error = $Warning = array();
 require_once("Code/header.inc");
 require_once("src/papertable.php");
-$Me->goIfInvalid();
+$Me->exit_if_empty();
 $useRequest = false;
 $forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
 $linkExtra = ($forceShow ? "&amp;forceShow=1" : "");
@@ -377,8 +377,7 @@ function check_contacts($prow) {
                 if (@$cau[$email])
                     $ncau[$email] = $cau[$email];
                 else if (validateEmail($email)) {
-                    $c = new Contact;
-                    if ($c->load_by_email($email, array("name" => $v), true))
+                    if (($c = Contact::find_by_email($email, array("name" => $v), true)))
                         $ncau[$email] = $c->contactId;
                     else
                         $errs[] = "Couldn’t create a contact account for author “" . Text::user_html_nolink(array("email" => $e, "name" => $v)) . "”.";
@@ -399,8 +398,7 @@ function check_contacts($prow) {
     else if (!validateEmail($new_email))
         $errs[] = "Enter a valid email address for the new contact.";
     else {
-        $new_contact = new Contact;
-        if ($new_contact->load_by_email($new_email, array("name" => $new_name), true))
+        if (($new_contact = Contact::find_by_email($new_email, array("name" => $new_name), true)))
             $ncau[$new_contact->email] = $new_contact->contactId;
         else
             $errs[] = "Couldn’t create an account for the new contact.";

@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-$Me->goIfInvalid();
+$Me->exit_if_empty();
 $Me->goIfNotPrivChair();
 
 if (defval($_REQUEST, "page", "") == "earliest")

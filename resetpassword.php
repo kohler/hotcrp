@@ -15,8 +15,7 @@ $capdata = $Conf->check_capability($_REQUEST["cap"]);
 if (!$capdata || $capdata->capabilityType != CAPTYPE_RESETPASSWORD)
     error_go(false, "That password reset code has expired, or you didn’t enter it correctly.");
 
-$Acct = new Contact;
-if (!$Acct->load_by_id($capdata->contactId))
+if (!($Acct = Contact::find_by_id($capdata->contactId)))
     error_go(false, "That password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
 
 if (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]))

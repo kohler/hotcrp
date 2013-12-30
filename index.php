@@ -28,11 +28,11 @@ else if (isset($_REQUEST["email"])
     LoginHelper::check_login();
 
 // set a cookie to test that their browser supports cookies
-if (!$Me->valid() || isset($_REQUEST["signin"]))
+if ($Me->is_empty() || isset($_REQUEST["signin"]))
     setcookie("CRPTestCookie", true);
 
 // perhaps redirect through account
-if ($Me->validContact() && isset($Me->fresh) && $Me->fresh === true) {
+if ($Me->is_known_user() && isset($Me->fresh) && $Me->fresh === true) {
     $needti = false;
     if (($Me->roles & Contact::ROLE_PC) && !$Me->has_review()) {
 	$result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->cid and ti.topicId=ta.topicId)");
@@ -104,7 +104,7 @@ if ($Me->privChair) {
 
 
 // review tokens
-if (isset($_REQUEST["token"]) && $Me->valid()) {
+if (isset($_REQUEST["token"]) && check_post() && !$Me->is_empty()) {
     $oldtokens = isset($_SESSION["rev_tokens"]);
     unset($_SESSION["rev_tokens"]);
     $tokeninfo = array();
@@ -123,8 +123,7 @@ if (isset($_REQUEST["token"]) && $Me->valid()) {
 		$tokeninfo[] = "Review token “" . htmlspecialchars($x) . "” lets you review <a href='" . hoturl("paper", "p=$row[0]") . "'>paper #" . $row[0] . "</a>.";
 		if (!isset($_SESSION["rev_tokens"]) || array_search($token, $_SESSION["rev_tokens"]) === false)
 		    $_SESSION["rev_tokens"][] = $token;
-                $Me->validated = false;
-		$Me->valid();
+                $Me->update_cached_roles();
 	    } else {
 		$Conf->errorMsg("Review token “" . htmlspecialchars($x) . "” hasn’t been assigned.");
 		$_SESSION["rev_token_fail"] = defval($_SESSION, "rev_token_fail", 0) + 1;
@@ -135,11 +134,11 @@ if (isset($_REQUEST["token"]) && $Me->valid()) {
     else if ($oldtokens)
 	$Conf->infoMsg("Review tokens cleared.");
 }
-if (isset($_REQUEST["cleartokens"]) && $Me->valid())
+if (isset($_REQUEST["cleartokens"]))
     unset($_SESSION["rev_tokens"]);
 
 
-$title = ($Me->valid() && !isset($_REQUEST["signin"]) ? "Home" : "Sign in");
+$title = ($Me->is_empty() || isset($_REQUEST["signin"]) ? "Sign in" : "Home");
 $Conf->header($title, "home", actionBar());
 $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 
@@ -208,7 +207,7 @@ if (($v = $Conf->setting_data("msg.home")))
 
 
 // Sign in
-if (!$Me->valid() || isset($_REQUEST["signin"])) {
+if (!$Me->is_known_user() || isset($_REQUEST["signin"])) {
     $confname = $Opt["longName"];
     if ($Opt["shortName"] && $Opt["shortName"] != $Opt["longName"])
 	$confname .= " (" . $Opt["shortName"] . ")";
@@ -496,7 +495,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
 	echo "<h4>Submissions: &nbsp;</h4> ";
 
     $startable = $Conf->timeStartPaper();
-    if ($startable && !$Me->validContact())
+    if ($startable && !$Me->is_known_user())
 	echo "<span class='deadline'>", $Conf->printableDeadlineSetting("sub_reg", "span"), "</span><br />\n<small>You must sign in to register papers.</small>";
     else if ($startable || $Me->privChair) {
 	echo "<strong><a href='", hoturl("paper", "p=new"), "'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting("sub_reg", "span"), ")</span>";
@@ -560,7 +559,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
 
 
 // Review tokens
-if ($Me->valid() && $Conf->setting("rev_tokens"))
+if ($Me->is_known_user() && $Conf->setting("rev_tokens"))
     reviewTokenGroup(true);
 
 

@@ -5,7 +5,7 @@
 
 require_once("Code/header.inc");
 require_once("src/papersearch.php");
-$Me->goIfInvalid();
+$Me->exit_if_empty();
 $getaction = "";
 if (isset($_REQUEST["get"]))
     $getaction = $_REQUEST["get"];
@@ -631,8 +631,7 @@ function downloadRevpref($extended) {
     // maybe download preferences for someone else
     $Rev = $Me;
     if (($rev = rcvtint($_REQUEST["reviewer"])) > 0 && $Me->privChair) {
-	$Rev = new Contact();
-	if (!$Rev->load_by_id($rev) || !$Rev->valid())
+	if (!($Rev = Contact::find_by_id($rev)))
 	    return $Conf->errorMsg("No such reviewer");
     }
     $q = $Conf->paperQuery($Rev, array("paperId" => $papersel, "topics" => 1, "reviewerPreference" => 1));
@@ -853,7 +852,6 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
     && isset($papersel) && check_post()) {
     $mt = $_REQUEST["marktype"];
     $mpc = defval($_REQUEST, "markpc", "");
-    $pc = new Contact();
     if (!$Me->privChair)
 	$Conf->errorMsg("Only PC chairs can set assignments and conflicts.");
     else if ($mt == "xauto") {
@@ -863,7 +861,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
     } else if ($mt == "xpcpaper" || $mt == "xunpcpaper") {
 	$Conf->qe("update Paper set pcPaper=" . ($mt == "xpcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
 	$Conf->log("Change PC paper status", $Me, $papersel);
-    } else if (!$mpc || !$pc->load_by_email($mpc))
+    } else if (!$mpc || !($pc = Contact::find_by_email($mpc)))
 	$Conf->errorMsg("“" . htmlspecialchars($mpc) . "” is not a PC member.");
     else if ($mt == "conflict" || $mt == "unconflict") {
 	$while = "while marking conflicts";

@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-$Me->goIfInvalid();
+$Me->exit_if_empty();
 $rf = reviewForm();
 
 
@@ -39,10 +39,8 @@ if (isset($_REQUEST["uploadForm"])
 	    $rf->tfError($tf, true, whyNotText($whyNot, "review"));
     }
     $rf->textFormMessages($tf);
-    // Uploading forms may have completed the reviewer's task; check that
-    // by revalidating their contact.
-    $Me->validated = false;
-    $Me->valid();
+    // Uploading forms may have completed the reviewer's task; recheck roles.
+    $Me->update_cached_roles();
 } else if (isset($_REQUEST["uploadForm"]))
     $Conf->errorMsg("Choose a file first.");
 
@@ -128,16 +126,13 @@ function setTagIndexes() {
 	    if (count($settings) && $Me)
 		saveTagIndexes($tag, $settings, $titles, $linenos, $errors);
 	    list($firstName, $lastName, $email) = Text::split_name($m[1], true);
-	    if (($cid = matchContact(pcMembers(), $firstName, $lastName, $email)) < 0) {
-		if ($cid == -2)
+	    if (($cid = matchContact(pcMembers(), $firstName, $lastName, $email)) <= 0
+                || !($Me = Contact::find_by_id($cid))) {
+		if ($cid == -2 || $cid > 0)
 		    $errors[$lineno] = htmlspecialchars(trim("$firstName $lastName <$email>")) . " matches no PC member";
 		else
 		    $errors[$lineno] = htmlspecialchars(trim("$firstName $lastName <$email>")) . " matches more than one PC member, give a full email address to disambiguate";
 		$Me = null;
-	    } else {
-		$Me = new Contact();
-		$Me->load_by_id($cid);
-		$Me->valid();
 	    }
 	} else if (trim($l) !== "")
 	    $errors[$lineno] = "Syntax error";

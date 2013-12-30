@@ -94,7 +94,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 		$n = "[Token " . encodeToken((int) $rr->reviewToken) . "]";
 	    $t .= "<td>" . $n . ($x ? " $x" : "");
 	    if ($admin && $rr->email != $Me->email)
-		$t .= " <a href=\"" . selfHref(array("viewContact" => $rr->email)) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($rr)) . "</a>";
+		$t .= " <a href=\"" . selfHref(array("actas" => $rr->email)) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($rr)) . "</a>";
             if ($mode == "assign"
                 && ($conflictType <= 0 || $effAssistant)
                 && $rr->reviewType == REVIEW_EXTERNAL

@@ -584,7 +584,7 @@ class PaperTable {
 		$t = trim($t);
 		if ($au[2] != "" && $viewAs !== null && $viewAs->email != $au[2]
 		    && $viewAs->privChair && defval($au, 4))
-		    $t .= " <a href=\"" . selfHref(array("viewContact" => $au[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($au)) . "</a>";
+		    $t .= " <a href=\"" . selfHref(array("actas" => $au[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($au)) . "</a>";
 		$names[] = '<p class="odname">' . $prefix . $t . '</p>';
 		$prefix = "";
 	    }
@@ -2086,8 +2086,8 @@ class PaperTable {
 	// if a complex request, or a form upload, don't search
 	foreach ($_REQUEST as $k => $v)
 	    if ($k != "p" && $k != "paperId" && $k != "m" && $k != "mode"
-		&& $k != "forceShow" && $k != "go" && $k != "viewContact"
-		&& $k != "chairMode" && $k != "ls" && $k != "t"
+		&& $k != "forceShow" && $k != "go" && $k != "actas"
+		&& $k != "ls" && $k != "t"
 		&& !isset($_COOKIE[$k]))
 		return false;
 
@@ -2106,8 +2106,8 @@ class PaperTable {
 	    return false;
 	}
 
-	// if invalid contact, or it looks like a number, don't search
-	if (!$Me->validated)
+	// if invalid contact, don't search
+	if ($Me->is_empty())
 	    return false;
 
 	// actually try to search

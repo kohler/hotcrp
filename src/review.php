@@ -644,10 +644,8 @@ class ReviewForm {
 
 	    $tmpl = ($rrow && $rrow->reviewSubmitted ? "@reviewupdate" : "@reviewsubmit");
 	    $submitter = $Me;
-	    if ($contactId != $submitter->contactId) {
-		$submitter = new Contact();
-		$submitter->load_by_id($contactId);
-	    }
+	    if ($contactId != $submitter->contactId)
+		$submitter = Contact::find_by_id($contactId);
 	    $rest = array("template" => $tmpl, "rrow" => $fake_rrow,
                           "reviewNumber" => $prow->paperId . $reviewnum);
 

@@ -6,7 +6,7 @@
 $Error = $Warning = array();
 require_once("Code/header.inc");
 require_once("src/papertable.php");
-$Me->goIfInvalid();
+$Me->exit_if_empty();
 $rf = reviewForm();
 $useRequest = false;
 $forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);

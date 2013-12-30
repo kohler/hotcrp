@@ -225,11 +225,10 @@ class Mailer {
 	}
 	if ($what == "%PHP%")
 	    return $ConfSiteSuffix;
-	if ($what == "%AUTHORVIEWCAPABILITY%"
-	    && isset($Opt["disableCapabilities"]))
+	if ($what == "%AUTHORVIEWCAPABILITY%" && @$Opt["disableCapabilities"])
 	    return "";
 	if ($what == "%LOGINNOTICE%") {
-	    if (isset($Opt["disableCapabilities"]))
+	    if (@$Opt["disableCapabilities"])
 		return $this->expand(defval($Opt, "mailtool_loginNotice", "  To sign in, either click the link below or paste it into your web browser's location field.\n\n%LOGINURL%"), $isbool);
 	    else
 		return "";

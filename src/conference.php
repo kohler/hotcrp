@@ -1590,7 +1590,7 @@ class Conference {
 	else
 	    echo "<a class='x' href='", hoturl("index"), "' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a></h1></div><div id='header_left_page'><h1>", $title;
 	echo "</h1></div><div id='header_right'>";
-	if ($Me->valid()) {
+	if ($Me->is_known_user()) {
 	    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 	    if ($Me->contactId > 0) {
 		echo "<a class='q' href='", hoturl("profile"), "'><strong>",
@@ -1598,11 +1598,11 @@ class Conference {
 		    "</strong></a> &nbsp; <a href='", hoturl("profile"), "'>Profile</a>",
 		    $xsep;
 	    }
-	    if ($Me->chairContact) {
+	    if (@$_SESSION["adminuser"]) {
 		if (!$Me->privChair)
-		    echo "<a href=\"", selfHref(array("chairMode" => 0)), "\">Admin&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Return to administrator view]' /></a>", $xsep;
-		else if (!is_int($Me->chairContact))
-		    echo "<a href=\"", selfHref(array("viewContact" => $Me->chairContact)), "\">", htmlspecialchars($Me->chairContact), "&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Unprivileged view]' /></a>", $xsep;
+		    echo "<a href=\"", selfHref(array("actas" => "admin")), "\">Admin&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Return to administrator view]' /></a>", $xsep;
+		else if (@$_SESSION["actasuser"])
+		    echo "<a href=\"", selfHref(array("actas" => $_SESSION["actasuser"])), "\">", htmlspecialchars($_SESSION["actasuser"]), "&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Unprivileged view]' /></a>", $xsep;
 	    }
 	    $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
 	    echo "<a href='", hoturl("help", $x), "'>Help</a>", $xsep;
@@ -1655,7 +1655,7 @@ class Conference {
 	echo "</div>\n<div class='body'>\n";
 
 	// Callback for version warnings
-	if ($Me->valid() && $Me->privChair
+	if ($Me->privChair
 	    && (!isset($Me->_updatecheck) || $Me->_updatecheck + 20 <= $now)
 	    && (!isset($Opt["updatesSite"]) || $Opt["updatesSite"])) {
 	    $m = defval($Opt, "updatesSite", "http://hotcrp.lcdf.org/updates");
@@ -1698,7 +1698,7 @@ class Conference {
 	    defval($Opt, "extraFooter", ""),
 	    "<a href='http://read.seas.harvard.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software";
 	if (!defval($Opt, "noFooterVersion", 0)) {
-	    if ($Me->valid() && $Me->privChair) {
+	    if ($Me->privChair) {
 		echo " v", HOTCRP_VERSION;
 		if (is_dir("$ConfSitePATH/.git")) {
 		    $args = array();

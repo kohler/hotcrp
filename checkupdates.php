@@ -9,13 +9,13 @@ if (isset($_REQUEST["text"]) && $_REQUEST["text"])
 else
     header("Content-Type: application/json");
 
-if ($Me->valid() && $Me->privChair && isset($_REQUEST["ignore"])) {
+if ($Me->privChair && isset($_REQUEST["ignore"])) {
     $when = time() + 86400 * 2;
     $Conf->qe("insert into Settings (name, value) values ('ignoreupdate_" . sqlq($_REQUEST["ignore"]) . "', $when) on duplicate key update value=$when");
 }
 
 $messages = array();
-if ($Me->valid() && $Me->privChair && isset($_REQUEST["data"])
+if ($Me->privChair && isset($_REQUEST["data"])
     && ($data = json_decode($_REQUEST["data"], true))
     && isset($data["updates"]) && is_array($data["updates"])) {
     foreach ($data["updates"] as $update) {

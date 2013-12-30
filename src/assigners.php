@@ -648,9 +648,8 @@ class AssignmentSet {
             if ($assigner->contact->contactId < 0) {
                 $c = $this->cmap->get_email($assigner->contact->email);
                 if ($c->contactId < 0) {
-                    $cc = new Contact;
                     // XXX assume that never fails:
-                    $cc->load_by_email($c->email, array("firstName" => @$c->firstName, "lastName" => @$c->lastName), false);
+                    $cc = Contact::find_by_email($c->email, array("firstName" => @$c->firstName, "lastName" => @$c->lastName), false);
                     $c = $this->cmap->store($cc);
                 }
                 $assigner->contact = $c;

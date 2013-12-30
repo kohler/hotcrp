@@ -375,74 +375,19 @@ function initialize_user() {
     $userwords = array();
     if (isset($_SESSION["user"]))
         $userwords = explode(" ", $_SESSION["user"]);
-    $Me = new Contact;
     if (count($userwords) >= 2 && $userwords[1] == $Opt["dsn"])
-        $Me->load_by_id($userwords[0]);
+        $Me = Contact::find_by_id($userwords[0]);
     else if (count($userwords) >= 3)
-        $Me->load_by_email($userwords[2]);
-    else
+        $Me = Contact::find_by_email($userwords[2]);
+    else {
+        $Me = new Contact;
         $Me->fresh = true;
-    if ($Me->contactId)
-        $_SESSION["user"] = "$Me->contactId " . $Opt["dsn"] . " $Me->email";
-    $Me->validated = false;
+    }
+    $Me = $Me->activate();
 }
 
 global $Me;
 initialize_user();
-
-
-// Handle capabilities
-function hotcrp_random_bytes($length = 16, $secure_only = false) {
-    $key = false;
-    if (function_exists("openssl_random_pseudo_bytes")) {
-	$key = openssl_random_pseudo_bytes($length, $strong);
-	$key = ($strong ? $key : false);
-    }
-    if (!$key)
-	$key = @file_get_contents("/dev/urandom", false, null, 0, $length);
-    if (!$key && !$secure_only) {
-	$key = "";
-	while (strlen($key) < $length)
-	    $key .= pack("V", mt_rand());
-	$key = substr($key, 0, $length);
-    }
-    return $key;
-}
-
-function setCapabilities() {
-    global $Conf, $Opt, $Me, $CapabilitiesOK;
-    if (isset($Opt["disableCapabilities"]) && !$Opt["disableCapabilities"])
-	unset($Opt["disableCapabilities"]);
-    if (!isset($Opt["disableCapabilities"]) && !$Conf->setting("cap_key")) {
-	$key = hotcrp_random_bytes(16);
-	if ($key && ($key = base64_encode($key))
-	    && $Conf->qx("insert into Settings (name, value, data) values ('cap_key', 1, '" . sqlq($key) . "')"))
-	    $Conf->updateSettings();
-	else
-	    $Opt["disableCapabilities"] = true;
-    }
-    if (!isset($Opt["disableCapabilities"]) && isset($_REQUEST["cap"])
-	&& $_REQUEST["cap"][0] == "0") {
-	if (preg_match('/\A0([1-9]\d*)a\S+\z/', $_REQUEST["cap"], $m)
-	    && ($result = $Conf->qx("select paperId, capVersion from Paper where paperId=$m[1]"))
-	    && ($row = edb_orow($result))) {
-	    $rowcap = $Conf->capabilityText($row, "a");
-	    if ($_REQUEST["cap"] == $rowcap || str_replace("/", "_", $_REQUEST["cap"]) == $rowcap)
-		$Me->changeCapability($m[1], Contact::CAP_AUTHORVIEW, true);
-	}
-    }
-    if (isset($Opt["testCapabilities"]) && $Opt["testCapabilities"]
-	&& isset($_REQUEST["testcap"])) {
-	if (preg_match_all('/([-+]?)([1-9]\d*)([A-Za-z]+)/',
-			   $_REQUEST["testcap"], $m, PREG_SET_ORDER))
-	    foreach ($m as $mm) {
-		$c = ($mm[3] == "a" ? Contact::CAP_AUTHORVIEW : 0);
-		$Me->changeCapability($mm[2], $c, $mm[1] != "-");
-	    }
-    }
-}
-
-setCapabilities();
 
 
 // Set conference key

@@ -7,13 +7,16 @@ class LoginHelper {
 
     static function logout() {
         global $Me, $Conf, $Opt, $allowedSessionVars;
-        if ($Me->valid() && isset($_REQUEST["signout"])
+        if (!$Me->is_empty() && isset($_REQUEST["signout"])
             && !isset($Opt["httpAuthLogin"]))
             $Conf->confirmMsg("You have been signed out. Thanks for using the system.");
-        $Me->invalidate();
+        $Me = new Contact;
         $Me->fresh = true;
+        unset($_SESSION["user"]);
+        unset($_SESSION["adminuser"]);
+        unset($_SESSION["actasuser"]);
         if (isset($_REQUEST["signout"]))
-            unset($Me->capabilities);
+            unset($_SESSION["capabilities"]);
         foreach (array("l", "info", "rev_tokens", "rev_token_fail",
                        "comment_msgs", "pplscores", "pplscoresort",
                        "scoresort") as $v)
@@ -45,7 +48,7 @@ class LoginHelper {
         }
 
         // if user is still valid, OK
-        if ($Me->valid())
+        if ($Me->is_known_user())
             return;
 
         // check HTTP auth
@@ -62,7 +65,7 @@ class LoginHelper {
                  && validateEmail($_REQUEST["email"] . "@" . $Opt["defaultEmailDomain"]))
             $_REQUEST["preferredEmail"] = $_REQUEST["email"] . "@" . $Opt["defaultEmailDomain"];
         $_REQUEST["action"] = "login";
-        if (!self::login()) {
+        if (!self::check_login()) {
             $Conf->footer();
             exit;
         }
@@ -70,12 +73,12 @@ class LoginHelper {
 
     static function check_login() {
         global $Me;
-        if (!self::login())
-            $Me->invalidate();
+        if (($user = self::login()))
+            $Me = $user->activate();
     }
 
-    static function login() {
-        global $Conf, $Opt, $Me, $email_class, $password_class;
+    static private function login() {
+        global $Conf, $Now, $Opt, $email_class, $password_class;
         $external_login = isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]);
 
         // In all cases, we need to look up the account information
@@ -105,40 +108,42 @@ class LoginHelper {
         if (isset($Opt["ldapLogin"])) {
             $_REQUEST["action"] = "login";
             if (!self::ldap_login())
-                return false;
+                return null;
         }
 
-        $Me->load_by_email($_REQUEST["email"]);
-        if (!$Me->email && self::unquote_double_quoted_request())
-            $Me->load_by_email($_REQUEST["email"]);
+        $user = Contact::find_by_email($_REQUEST["email"]);
+        if (!$user && self::unquote_double_quoted_request())
+            $user = Contact::find_by_email($_REQUEST["email"]);
         if ($_REQUEST["action"] == "new") {
-            if (!($reg = self::create_account()))
-                return $reg;
-            $_REQUEST["password"] = $Me->password_plaintext;
+            if (!($user = self::create_account($user)))
+                return null;
+            $_REQUEST["password"] = $user->password_plaintext;
         }
 
-        if (!$Me->validContact()) {
+        if (!$user) {
             if ($external_login) {
-                if (!$Me->initialize($_REQUEST["email"], true))
+                $reg = Contact::safe_registration($_REQUEST);
+                $user = Contact::find_by_email($_REQUEST["email"], $reg);
+                if (!$user)
                     return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
                 if (defval($Conf->settings, "setupPhase", false))
-                    return self::first_user($msg);
+                    return self::first_user($user, $msg);
             } else {
                 $email_class = " error";
                 return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?");
             }
         }
 
-        if (($Me->password == "" && !$external_login) || $Me->disabled)
+        if (($user->password == "" && !$external_login) || $user->disabled)
             return $Conf->errorMsg("Your account is disabled. Contact the site administrator for more information.");
 
         if ($_REQUEST["action"] == "forgot") {
-            $worked = $Me->sendAccountInfo(false, true);
+            $worked = $user->sendAccountInfo(false, true);
             if ($worked == "@resetpassword")
                 $Conf->confirmMsg("A password reset link has been emailed to " . htmlspecialchars($_REQUEST["email"]) . ". When you receive that email, follow its instructions to create a new password.");
             else if ($worked) {
                 $Conf->confirmMsg("Your password has been emailed to " . htmlspecialchars($_REQUEST["email"]) . ".  When you receive that email, return here to sign in.");
-                $Conf->log("Sent password", $Me);
+                $Conf->log("Sent password", $user);
             }
             return null;
         }
@@ -149,15 +154,15 @@ class LoginHelper {
             return $Conf->errorMsg("Enter your password. If you’ve forgotten it, enter your email address and use the “I forgot my password” option.");
         }
 
-        if (!$external_login && !$Me->check_password($_REQUEST["password"])) {
+        if (!$external_login && !$user->check_password($_REQUEST["password"])) {
             $password_class = " error";
             return $Conf->errorMsg("That password doesn’t match. If you’ve forgotten your password, enter your email address and use the “I forgot my password” option.");
         }
 
-        $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=" . time() . " where contactId=" . $Me->cid, "while recording login statistics");
-        if (!$external_login && $Me->password_needs_upgrade()) {
-            $Me->change_password($_REQUEST["password"]);
-            $Conf->qe("update ContactInfo set password='" . sqlq($Me->password) . "' where contactId=" . $Me->cid, "while updating password");
+        $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=$Now where contactId=" . $user->cid, "while recording login statistics");
+        if (!$external_login && $user->password_needs_upgrade()) {
+            $user->change_password($_REQUEST["password"]);
+            $Conf->qe("update ContactInfo set password='" . sqlq($user->password) . "' where contactId=" . $user->cid, "while updating password");
         }
 
         if (isset($_REQUEST["go"]))
@@ -167,6 +172,7 @@ class LoginHelper {
         else
             $where = hoturl("index");
 
+        $user = $user->activate();
         setcookie("CRPTestCookie", false);
         unset($_SESSION["afterLogin"]);
         go($where);
@@ -197,32 +203,32 @@ class LoginHelper {
         return true;
     }
 
-    static private function create_account() {
-        global $Conf, $Opt, $Me, $email_class;
+    static private function create_account($user) {
+        global $Conf, $Opt, $email_class;
 
-        if ($Me->validContact() && $Me->visits > 0) {
+        if ($user && $user->is_known_user() && $user->visits > 0) {
             $email_class = " error";
             return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
         } else if (!validateEmail($_REQUEST["email"])) {
             $email_class = " error";
             return $Conf->errorMsg("&ldquo;" . htmlspecialchars($_REQUEST["email"]) . "&rdquo; is not a valid email address.");
-        } else if (!$Me->validContact()) {
-            if (!$Me->initialize($_REQUEST["email"]))
+        } else if (!$user || !$user->is_known_user()) {
+            if (!($user = Contact::find_by_email($_REQUEST["email"], true)))
                 return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
         }
 
-        $Me->sendAccountInfo(true, true);
-        $Conf->log("Account created", $Me);
+        $user->sendAccountInfo(true, true);
+        $Conf->log("Account created", $user);
         $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".";
 
         // handle setup phase
         if (defval($Conf->settings, "setupPhase", false))
-            return self::first_user($msg);
+            return self::first_user($user, $msg);
 
-        if ($Conf->allowEmailTo($Me->email))
+        if ($Conf->allowEmailTo($user->email))
             $msg .= "  A password has been emailed to you.  Return here when you receive it to complete the registration process.  If you don’t receive the email, check your spam folders and verify that you entered the correct address.";
         else {
-            if ($Opt['sendEmail'])
+            if ($Opt["sendEmail"])
                 $msg .= "  The email address you provided seems invalid.";
             else
                 $msg .= "  The conference system is not set up to mail passwords at this time.";
@@ -234,20 +240,20 @@ class LoginHelper {
         return null;
     }
 
-    static private function first_user($msg) {
-        global $Conf, $Opt, $Me;
+    static private function first_user($user, $msg) {
+        global $Conf, $Opt;
         $msg .= " As the first user, you have been automatically signed in and assigned system administrator privilege.";
         if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
-            $msg .= "  Your password is “<tt>" . htmlspecialchars($Me->password_plaintext) . "</tt>”.  All later users will have to sign in normally.";
+            $msg .= "  Your password is “<tt>" . htmlspecialchars($user->password_plaintext) . "</tt>”.  All later users will have to sign in normally.";
         $while = "while granting system administrator privilege";
-        $Conf->qe("insert into ChairAssistant (contactId) values (" . $Me->cid . ")", $while);
-        $Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_ADMIN) . " where contactId=" . $Me->cid, $while);
+        $Conf->qe("insert into ChairAssistant (contactId) values (" . $user->cid . ")", $while);
+        $Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_ADMIN) . " where contactId=" . $user->cid, $while);
         $Conf->qe("delete from Settings where name='setupPhase'", "while leaving setup phase");
-        $Conf->log("Granted system administrator privilege to first user", $Me);
+        $Conf->log("Granted system administrator privilege to first user", $user);
         $Conf->confirmMsg($msg);
         if (!function_exists("imagecreate"))
             $Conf->warnMsg("Your PHP installation appears to lack GD support, which is required for drawing score graphs.  You may want to fix this problem and restart Apache.");
-        return true;
+        return $user;
     }
 
 }

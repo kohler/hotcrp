@@ -5,7 +5,7 @@
 
 require_once("Code/header.inc");
 require_once("src/papersearch.php");
-$Me->goIfInvalid();
+$Me->exit_if_empty();
 $Me->goIfNotPC();
 $reviewer = rcvtint($_REQUEST["reviewer"]);
 if ($reviewer <= 0 || !$Me->privChair)

@@ -6,7 +6,7 @@
 require_once("Code/header.inc");
 require_once("src/papertable.php");
 require_once("src/reviewtable.php");
-$Me->goIfInvalid();
+$Me->exit_if_empty();
 if (isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && $Me->privChair)
     $linkExtra = "&amp;forceShow=1";
 else
@@ -229,8 +229,8 @@ function requestReviewChecks($themHtml, $reqId) {
 function requestReview($email) {
     global $Conf, $Me, $Error, $Opt, $prow;
 
-    $Them = new Contact;
-    if (!$Them->load_by_email($email, array("name" => @$_REQUEST["name"]), false)) {
+    $Them = Contact::find_by_email($email, array("name" => @$_REQUEST["name"]), false);
+    if (!$Them) {
 	if (trim($email) === "" || !validateEmail($email)) {
 	    $Conf->errorMsg("“" . htmlspecialchars(trim($email)) . "” is not a valid email address.");
 	    $Error["email"] = true;
@@ -422,8 +422,7 @@ if (isset($_REQUEST["deny"]) && $Me->allowAdminister($prow) && check_post()
     // member, who can see less.
     $result = $Conf->qe("select requestedBy from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'", $while);
     if (($row = edb_row($result))) {
-	$Requester = new Contact();
-	$Requester->load_by_id((int) $row[0]);
+	$Requester = Contact::find_by_id($row[0]);
 	$Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'", $while);
 	if (($reqId = Contact::id_by_email($email)) > 0)
 	    $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')", $while);

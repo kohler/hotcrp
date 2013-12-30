@@ -24,7 +24,7 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
     go(hoturl("index", "email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode($url)));
 }
 
-$Me->goIfInvalid();
+$Me->exit_if_empty();
 $rf = reviewForm();
 $useRequest = isset($_REQUEST["afterLogin"]);
 $forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
@@ -315,8 +315,7 @@ function refuseReview() {
     $Conf->qe("unlock tables");
 
     // send confirmation email
-    $Requester = new Contact();
-    $Requester->load_by_id((int) $rrow->reqContactId);
+    $Requester = Contact::find_by_id($rrow->reqContactId);
     $reqprow = $Conf->paperRow($prow->paperId, $rrow->reqContactId);
     Mailer::send("@refusereviewrequest", $reqprow, $Requester, $rrow, array("reason" => $reason));
 

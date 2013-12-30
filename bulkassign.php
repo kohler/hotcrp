@@ -6,7 +6,7 @@
 require_once("Code/header.inc");
 require_once("src/papersearch.php");
 require_once("src/assigners.php");
-$Me->goIfInvalid();
+$Me->exit_if_empty();
 $Me->goIfNotPrivChair();
 $nullMailer = new Mailer(null, null, $Me);
 $nullMailer->width = 10000000;
