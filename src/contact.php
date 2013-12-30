@@ -133,38 +133,12 @@ class Contact {
 	if (!$this->contactId)		// null contactId causes problems
 	    $this->contactId = 0;
 	if (!$this->validated && $this->contactId > 0) {
-	    $qr = "";
-	    if (isset($_SESSION["rev_tokens"]))
-		$qr = " or PaperReview.reviewToken in (" . join(", ", $_SESSION["rev_tokens"]) . ")";
-	    $result = $Conf->qe("select max(conflictType),
-		PaperReview.contactId as reviewer,
-		max(PaperReview.reviewNeedsSubmit) as reviewNeedsSubmit,
-		count(ExtPaperReview.requestedBy) as requester,
-		ContactInfo.roles
-		from ContactInfo
-		left join PaperReview on (PaperReview.contactId=ContactInfo.contactId$qr)
-		left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId)
-		left join PaperReview as ExtPaperReview on (ExtPaperReview.requestedBy=ContactInfo.contactId)
-		where ContactInfo.contactId=$this->contactId
-		group by ContactInfo.contactId");
-	    if (edb_nrows($result) == 0)
-		$this->invalidate();
-	    else {
-		$this->roles = 0;
-		$this->isPC = $this->privChair = false;
-                $this->is_author_ = $this->has_review_ = $this->has_outstanding_review_ = $this->is_requester_ = false;
-		$this->is_lead_ = null;
-		while (($row = edb_row($result))) {
-		    if ($row[0] >= CONFLICT_AUTHOR)
-			$this->is_author_ = true;
-		    if ($row[1] > 0)
-			$this->has_review_ = true;
-		    if ($row[2] > 0)
-			$this->has_outstanding_review_ = true;
-		    if ($row[3] > 0)
-			$this->is_requester_ = true;
-		    $this->roles |= $row[4] & self::ROLE_PCLIKE;
-		}
+            foreach (array("is_author_", "has_review_", "has_outstanding_review_",
+                           "is_requester_", "is_lead_") as $k)
+                unset($this->$k);
+	    $result = $Conf->qe("select c.roles from ContactInfo c where c.contactId=$this->contactId");
+	    if (($row = edb_row($result))) {
+		$this->roles = $row[0] & self::ROLE_PCLIKE;
 		$this->isPC = ($this->roles & self::ROLE_PCLIKE) != 0;
 		$this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
 		if (!$this->privChair
@@ -197,7 +171,8 @@ class Contact {
 		if ($update)
 		    $this->load_by_id($this->contactId);
 		$this->validated = true;
-	    }
+            } else
+		$this->invalidate();
 	} else if (isset($Opt["validatorContact"]) && $Opt["validatorContact"]
 		   && !$this->contactId && isset($_REQUEST["validator"])) {
 	    $this->load_by_email($Opt["validatorContact"]);
@@ -223,23 +198,57 @@ class Contact {
         return ($this->roles & self::ROLE_PCERC) == self::ROLE_PCERC;
     }
 
+    private function load_author_reviewer_status() {
+        global $Me, $Conf;
+        $qr = "";
+        if ($Me->contactId && $Me->contactId == $this->contactId
+            && isset($_SESSION["rev_tokens"]))
+            $qr = " or r.reviewToken in (" . join(", ", $_SESSION["rev_tokens"]) . ")";
+        $result = $Conf->qe("select max(conf.conflictType),
+		r.contactId as reviewer,
+		max(r.reviewNeedsSubmit) as reviewNeedsSubmit
+		from ContactInfo c
+		left join PaperConflict conf on (conf.contactId=c.contactId)
+		left join PaperReview r on (r.contactId=c.contactId$qr)
+		where c.contactId=$this->contactId group by c.contactId");
+        $row = edb_row($result);
+        $this->is_author_ = $row && $row[0] >= CONFLICT_AUTHOR;
+        $this->has_review_ = $row && $row[1] > 0;
+        $this->has_outstanding_review_ = $row && $row[2] > 0;
+    }
+
     function is_author() {
+        if (!isset($this->is_author_))
+            $this->load_author_reviewer_status();
         return $this->is_author_;
     }
 
     function is_reviewer() {
+        if (!$this->isPC && !isset($this->has_review_))
+            $this->load_author_reviewer_status();
 	return $this->isPC || $this->has_review_;
     }
 
     function has_review() {
+        if (!isset($this->has_review_))
+            $this->load_author_reviewer_status();
         return $this->has_review_;
     }
 
     function has_outstanding_review() {
+        if (!isset($this->has_outstanding_review_))
+            $this->load_author_reviewer_status();
         return $this->has_outstanding_review_;
     }
 
     function is_requester() {
+        global $Conf;
+        if (!isset($this->is_requester_)) {
+	    $result = $Conf->qe("select epr.requestedBy from PaperReview epr
+		where epr.requestedBy=$this->contactId limit 1");
+            $row = edb_row($result);
+            $this->is_requester_ = $row && $row[0] > 1;
+        }
         return $this->is_requester_;
     }
 
@@ -279,11 +288,9 @@ class Contact {
 
 	$this->roles = 0;
 	$this->isPC = $this->privChair = false;
-        unset($this->is_author_);
-        unset($this->has_review_);
-	unset($this->has_outstanding_review_);
-        unset($this->is_requester_);
-        unset($this->is_lead_);
+        foreach (array("is_author_", "has_review_", "has_outstanding_review_",
+                       "is_requester_", "is_lead_") as $k)
+            unset($this->$k);
 	$this->chairContact = null;
 
 	$this->validated = false;
@@ -1318,7 +1325,7 @@ class Contact {
     function amDiscussionLead($paperId, $prow = null) {
 	global $Conf;
 	if ($prow === null && $paperId <= 0) {
-	    if ($this->is_lead_ === null) {
+	    if (!isset($this->is_lead_)) {
 		$result = $Conf->qe("select paperId from Paper where leadContactId=$this->contactId limit 1");
                 $this->is_lead_ = edb_nrows($result) > 0;
 	    }
