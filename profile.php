@@ -451,8 +451,7 @@ function databaseTracks($who) {
 }
 
 function textArrayPapers($pids) {
-    $ls = "&amp;list=" . join("+", $pids);
-    return commajoin(preg_replace('/(\d+)/', "<a href='" . hoturl("paper", "p=\$1$ls") . "'>\$1</a>", $pids));
+    return commajoin(preg_replace('/(\d+)/', "<a href='" . hoturl("paper", "p=\$1&amp;ls=" . join("+", $pids)) . "'>\$1</a>", $pids));
 }
 
 if (isset($_REQUEST["delete"]) && $OK && check_post()) {

@@ -365,8 +365,10 @@ class ContactList extends BaseList {
 		return "";
 	    $x = explode(",", $row->paperIds);
 	    sort($x, SORT_NUMERIC);
-	    $all = ($this->limit == "auuns" || $this->limit == "all");
-	    $extra = "&amp;list=" . ($all ? "all:" : "s:") . join("+", $x);
+	    if ($this->limit == "auuns" || $this->limit == "all")
+                $extra = "&amp;ls=" . urlencode("p/all/" . join(" ", $x));
+            else
+                $extra = "&amp;ls=" . urlencode("p/s/" . join(" ", $x));
 	    $m = array();
 	    foreach ($x as $v)
 		$m[] = "<a href=\"" . hoturl("paper", "p=$v$extra") . "\">$v</a>";
@@ -376,7 +378,7 @@ class ContactList extends BaseList {
 		return "";
 	    $x = array_combine(explode(",", $row->paperIds), explode(",", $row->reviewIds));
 	    ksort($x, SORT_NUMERIC);
-	    $extra = "&amp;list=s:" . join("+", array_keys($x));
+	    $extra = "&amp;ls=" . urlencode("p/s/" . join(" ", array_keys($x)));
 	    $m = array();
 	    foreach ($x as $k => $v)
 		$m[] = "<a href=\"" . hoturl("review", "r=$v$extra") . "\">$k</a>";

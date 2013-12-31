@@ -10,7 +10,7 @@ class Conference {
     var $settings;
     var $settingTexts;
     var $sversion;
-    var $deadlineCache;
+    private $deadline_cache = null;
 
     var $saveMessages;
     var $headerPrinted;
@@ -80,7 +80,7 @@ class Conference {
 	global $Opt, $OK;
 	$this->settings = array();
 	$this->settingTexts = array();
-	$this->deadlineCache = null;
+	$this->deadline_cache = null;
 	$result = $this->q("select name, value, data from Settings");
 	while (($row = edb_row($result))) {
 	    $this->settings[$row[0]] = $row[1];
@@ -146,6 +146,11 @@ class Conference {
 
     function setting_data($name, $defval = false) {
 	return defval($this->settingTexts, $name, $defval);
+    }
+
+    function setting_json($name, $defval = false) {
+        $x = defval($this->settingTexts, $name, $defval);
+        return (is_string($x) ? json_decode($x) : $x);
     }
 
     function outcome_map() {
@@ -389,9 +394,10 @@ class Conference {
     // times
 
     function deadlines() {
+        global $Now;
 	// Return all deadline-relevant settings as integers.
-	if (!$this->deadlineCache) {
-	    $dl = array("now" => time());
+	if (!$this->deadline_cache) {
+	    $dl = array("now" => $Now);
 	    foreach (array("sub_open", "sub_reg", "sub_update", "sub_sub",
 			   "sub_close", "sub_grace",
 			   "resp_open", "resp_done", "resp_grace",
@@ -400,9 +406,9 @@ class Conference {
 			   "final_open", "final_soft", "final_done",
 			   "final_grace") as $x)
 		$dl[$x] = isset($this->settings[$x]) ? +$this->settings[$x] : 0;
-	    $this->deadlineCache = $dl;
+	    $this->deadline_cache = $dl;
 	}
-	return $this->deadlineCache;
+	return $this->deadline_cache;
     }
 
     function printableInterval($amt) {
@@ -1565,22 +1571,49 @@ class Conference {
     }
 
     function header($title, $id = "", $actionBar = null, $showTitle = true) {
-	global $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH, $Me, $Opt;
+	global $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH, $Me, $Now, $Opt,
+            $CurrentList;
 	if ($this->headerPrinted >= 2)
 	    return;
 	if ($actionBar === null)
 	    $actionBar = actionBar();
 
 	$this->header_head($title);
-	$dl = $Me->deadlines();
-	$now = $dl["now"];
 	echo "</head><body", ($id ? " id='$id'" : ""), " onload='hotcrp_load()'>\n";
-	// JavaScript's idea of a timezone offset is the negative of PHP's
-	$this->footerScript("hotcrp_base=\"$ConfSiteBase\";"
-                            . "hotcrp_load.time($now," . (-date("Z", $now) / 60) . "," . (defval($Opt, "time24hour") ? 1 : 0) . ");"
-                            . "loadDeadlines.init(" . json_encode($dl) . ",\"" . hoturl("deadlines") . "\")");
+
+        $this->scriptStuff .= "<script type=\"text/javascript\">"
+            . "hotcrp_base=\"$ConfSiteBase\""
+            . ";hotcrp_postvalue=\"" . post_value() . "\""
+            . ";hotcrp_suffix=\"" . $ConfSiteSuffix . "\"";
+        if (@$CurrentList
+            && ($list = SessionList::lookup($CurrentList)))
+            $this->scriptStuff .= ";hotcrp_list={num:$CurrentList,id:\"" . addcslashes($list->listid, "\n\r\\\"/") . "\"}";
+
+        $pid = @$_REQUEST["paperId"];
+        $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
+        if ($pid)
+            $this->scriptStuff .= ";hotcrp_paperid=$pid";
+
+        // JavaScript's timezone offsets are the negative of PHP's
+        $this->scriptStuff .= ";hotcrp_load.time($Now," . (-date("Z", $Now) / 60) . "," . (@$Opt["time24hour"] ? 1 : 0) . ")";
+
+	$dl = $Me->deadlines();
+        $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($dl) . ",\"" . hoturl("deadlines") . "\")";
+
+        // register navigation
+        $start_nav = $Me->privChair && @$_REQUEST["nav"] && @$CurrentList;
+        $navstate = $this->setting_json("meeting_nav");
+        if ($start_nav
+            || ($navstate && $navstate->sessionid == session_id()))
+            $this->scriptStuff .= ";hotcrp_deadlines.nav(" . (@$CurrentList ? $CurrentList : 0) . ",$pid," . ($start_nav ? 1 : 0) . ");";
+
         if ($Me->isPC)
-            $this->footerScript("alltags.url=\"" . hoturl("search", "alltags=1") . "\"");
+            $this->scriptStuff .= ";alltags.url=\"" . hoturl("search", "alltags=1") . "\"";
+        $this->scriptStuff .= "</script>";
+
+        // browser might own navigation; send it the script immediately
+        if ($start_nav || ($navstate && $navstate->sessionid == session_id()))
+            $this->echoScript("");
 
 	echo "<div id='prebody'>\n";
 
@@ -1613,12 +1646,12 @@ class Conference {
 	}
 	echo "<div id='maindeadline' style='display:none'>";
 
-	// This is repeated in script.js:loadDeadlines
+	// This is repeated in script.js:hotcrp_deadlines
 	$dlname = "";
 	$dltime = 0;
 	if ($dl["sub_open"]) {
 	    foreach (array("sub_reg" => "registration", "sub_update" => "update", "sub_sub" => "submission") as $subtype => $subname)
-		if (isset($dl["${subtype}_ingrace"]) || $now <= defval($dl, $subtype, 0)) {
+		if (isset($dl["${subtype}_ingrace"]) || $Now <= defval($dl, $subtype, 0)) {
 		    $dlname = "Paper $subname deadline";
 		    $dltime = defval($dl, $subtype, 0);
 		    break;
@@ -1626,11 +1659,11 @@ class Conference {
 	}
 	if ($dlname) {
 	    $s = "<a href=\"" . hoturl("deadlines") . "\">$dlname</a> ";
-	    if (!$dltime || $dltime <= $now)
+	    if (!$dltime || $dltime <= $Now)
 		$s .= "is NOW";
 	    else
-		$s .= "in " . $this->printableInterval($dltime - $now);
-	    if (!$dltime || $dltime - $now <= 180)
+		$s .= "in " . $this->printableInterval($dltime - $Now);
+	    if (!$dltime || $dltime - $Now <= 180)
 		$s = "<span class='impending'>$s</span>";
 	    echo $s;
 	}
@@ -1656,7 +1689,7 @@ class Conference {
 
 	// Callback for version warnings
 	if ($Me->privChair
-	    && (!isset($Me->_updatecheck) || $Me->_updatecheck + 20 <= $now)
+	    && (!isset($Me->_updatecheck) || $Me->_updatecheck + 20 <= $Now)
 	    && (!isset($Opt["updatesSite"]) || $Opt["updatesSite"])) {
 	    $m = defval($Opt, "updatesSite", "http://hotcrp.lcdf.org/updates");
             if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off")
@@ -1673,7 +1706,7 @@ class Conference {
 		    $m .= "&git-upstream=" . urlencode($args[1]);
 	    }
 	    $this->footerScript("check_version(\"$m\")");
-	    $Me->_updatecheck = $now;
+	    $Me->_updatecheck = $Now;
 	}
     }
 

@@ -2582,7 +2582,7 @@ class PaperSearch {
 
     function listId($sort = "") {
 	return "p/" . $this->limitName . "/" . urlencode($this->q)
-            . "/" . $sort;
+            . "/" . ($sort ? $sort : "");
     }
 
     function create_session_list_object($ids, $listname, $sort = "") {
@@ -2593,8 +2593,9 @@ class PaperSearch {
 	return $l;
     }
 
-    function session_list_object() {
-	return $this->create_session_list_object($this->paperList(), null);
+    function session_list_object($sort = null) {
+	return $this->create_session_list_object($this->paperList(),
+                                                 null, $sort);
     }
 
     static function parsePapersel() {

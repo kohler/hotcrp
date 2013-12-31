@@ -586,11 +586,11 @@ class SessionList {
         return $x ? (object) $x : null;
     }
     static function change($idx, $delta) {
-        if (($l = self::lookup($idx))) {
-            foreach ($delta as $k => $v)
-                $l->$k = $v;
-            $_SESSION["l"][$idx] = $l;
-        }
+        $l = self::lookup($idx);
+        $l = $l ? $l : (object) array();
+        foreach ($delta as $k => $v)
+            $l->$k = $v;
+        $_SESSION["l"][$idx] = $l;
     }
     static function allocate($listid) {
         $oldest = $empty = 0;
@@ -616,7 +616,7 @@ class SessionList {
     }
 }
 
-function _tryNewList($opt, $listtype) {
+function _tryNewList($opt, $listtype, $sort = null) {
     global $Conf, $ConfSiteSuffix, $ConfSitePATH, $Me;
     if ($listtype == "u" && $Me->privChair) {
 	$searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
@@ -632,7 +632,12 @@ function _tryNewList($opt, $listtype) {
                                    "users$ConfSiteSuffix?t=$searchtype");
     } else {
 	$search = new PaperSearch($Me, $opt);
-	return $search->session_list_object();
+	$x = $search->session_list_object($sort);
+        if ($sort) {
+            $pl = new PaperList($search, array("sort" => $sort));
+            $x->ids = $pl->text("s", $Me, array("idarray" => true));
+        }
+        return $x;
     }
 }
 
@@ -667,13 +672,17 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
         && str_starts_with($xlist->listid, $listtype)) {
 	$list = $xlist;
 	$CurrentList = $listno;
-    } else if (isset($_REQUEST["list"]) && $listtype == "p") {
-	$l = $_REQUEST["list"];
-	if (preg_match('/\A[a-z]+\z/', $l))
+    } else if (isset($_REQUEST["ls"]) && $listtype == "p") {
+	$l = $_REQUEST["ls"];
+        if (preg_match('_\Ap/([^/]*)/([^/]*)/?(.*)\z_', $l, $m))
+            $list = _tryNewList(array("t" => $m[1],
+                                      "q" => urldecode($m[2])),
+                                $listtype, $m[3]);
+	if (!$list && preg_match('/\A[a-z]+\z/', $l))
 	    $list = _tryNewList(array("t" => $l), $listtype);
-	else if (preg_match('/\A(all|s):(.*)\z/s', $l, $m))
+        if (!$list && preg_match('/\A(all|s):(.*)\z/s', $l, $m))
 	    $list = _tryNewList(array("t" => $m[1], "q" => $m[2]), $listtype);
-	else
+	if (!$list)
 	    $list = _tryNewList(array("q" => $l), $listtype);
     }
 

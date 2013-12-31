@@ -38,8 +38,10 @@ class PaperList extends BaseList {
 	global $Conf;
 	$this->search = $search;
 
-	if (($this->sortable = !!defval($args, "sort"))
-            && isset($_REQUEST["sort"]))
+        $this->sortable = !!@$args["sort"];
+	if ($this->sortable && is_string($args["sort"]))
+            $this->sorter = BaseList::parse_sorter($args["sort"]);
+        else if ($this->sortable && isset($_REQUEST["sort"]))
             $this->sorter = BaseList::parse_sorter($_REQUEST["sort"]);
         else
             $this->sorter = BaseList::parse_sorter("");
@@ -1023,6 +1025,14 @@ class PaperList extends BaseList {
 	    $srows = array_reverse($srows);
 	if (isset($queryOptions["allReviewScores"]))
 	    $this->_sortReviewOrdinal($srows);
+
+        // return IDs if requested
+        if (@$options["idarray"]) {
+            $idarray = array();
+            foreach ($srows as $row)
+                $idarray[] = $row->paperId;
+            return $idarray;
+        }
 
 	// count non-callout columns
 	$skipcallout = 0;

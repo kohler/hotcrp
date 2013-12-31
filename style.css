@@ -1,5 +1,5 @@
 /* style.css -- HotCRP CSS styles */
-/* HotCRP is Copyright (c) 2006-2012 Eddie Kohler and Regents of the UC */
+/* HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC */
 /* Distributed under an MIT-like license; see LICENSE */
 
 /* page background */
@@ -2436,6 +2436,46 @@ div.cmthint {
 .wordsover {
 	font-weight: bold;
 	color: #cc0000;
+}
+
+#meeting_nav {
+        left: 0;
+        top: 0;
+        width: 100%;
+        font-size: smaller;
+        position: fixed;
+        z-index: 8;
+}
+#meeting_nav.active {
+        background: rgba(100, 255, 100, 0.9);
+}
+#meeting_nav.match {
+        background: rgba(255, 255, 200, 0.9);
+}
+#meeting_nav.nomatch {
+	background: rgba(255, 100, 100, 0.9);
+}
+#meeting_nav .navholder {
+	padding: 0.5em 1em;
+        border-bottom: 2px solid rgba(0, 0, 0, 0.5);
+}
+#meeting_nav .nav1, #meeting_nav .nav2, #meeting_nav .nav3 {
+	padding-top: 2px;
+}
+#meeting_nav .nav2, #meeting_nav .nav3 {
+	font-size: smaller;
+}
+#meeting_nav .navdesc {
+	font-weight: bold;
+        padding-right: 0.5em;
+}
+#meeting_nav .navpid {
+	text-align: right;
+	padding-right: 0.5em;
+}
+#meeting_nav .navis_reviewer, #meeting_nav .navis_manager,
+#meeting_nav .navis_conflict, #meeting_nav .navis_lead {
+	font-weight: bold;
 }
 
 /* mail */

@@ -2193,6 +2193,8 @@ class PaperTable {
 		$whyNot = array("invalidId" => "paper");
 	    return null;
 	}
+        if (!isset($_REQUEST["paperId"]))
+            $_REQUEST["paperId"] = $prow->paperId;
 	cleanAuthor($prow);
 	return $prow;
     }

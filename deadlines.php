@@ -1,18 +1,32 @@
 <?php
 // deadlines.php -- HotCRP deadline reporting page
-// HotCRP is Copyright (c) 2006-2011 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
 
-
 // *** NB If you change this script, also change the logic in index.php ***
 // *** that hides the link when there are no deadlines to show.         ***
 
+if (@$_REQUEST["nav"] && $Me->privChair && check_post()) {
+    // arguments: IDENTIFIER LISTNUM [POSITION] -OR- stop
+    if ($_REQUEST["nav"] == "stop")
+        $Conf->save_setting("meeting_nav", null);
+    else {
+        $args = preg_split('/\s+/', $_REQUEST["nav"]);
+        if (count($args) >= 2
+            && ($xlist = SessionList::lookup($args[1]))) {
+            $position = null;
+            if (count($args) >= 3 && ctype_digit($args[2]))
+                $position = array_search((int) $args[2], $xlist->ids);
+            MeetingNavigator::update($xlist, $args[0], $position);
+        }
+    }
+}
 
 $dl = $Me->deadlines();
 
-if (defval($_REQUEST, "ajax")) {
+if (@$_REQUEST["ajax"]) {
     $dl["ok"] = true;
     $Conf->ajaxExit($dl);
 }

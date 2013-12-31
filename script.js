@@ -2,6 +2,8 @@
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix, hotcrp_list;
+
 function $$(id) {
     return document.getElementById(id);
 }
@@ -105,16 +107,31 @@ return setLocalTime;
 })();
 
 
-loadDeadlines = (function () {
-var dl, dlname, dltime, dlurl, redisplay_timeout, reload_timeout;
+function hotcrp_paperurl(pid, listid) {
+    var t = hotcrp_base + "paper" + hotcrp_suffix + "/" + pid;
+    if (listid && hotcrp_list && hotcrp_list.id == listid)
+        t += "?ls=" + hotcrp_list.num;
+    else if (listid)
+        t += "?ls=" + encodeURIComponent(listid);
+    return t;
+}
 
-function redisplayDeadlines() {
+function text_to_html(text) {
+    var n = document.createElement("div");
+    n.appendChild(document.createTextNode(text));
+    return n.innerHTML;
+}
+
+hotcrp_deadlines = (function () {
+var dl, dlname, dltime, dlurl, had_nav, redisplay_timeout, reload_timeout;
+
+function redisplay_main() {
     redisplay_timeout = null;
-    displayDeadlines();
+    display_main();
 }
 
 // this logic is repeated in the back end
-function displayDeadlines() {
+function display_main() {
     var s = "", amt, what = null, x, subtype,
 	time_since_load = new Date().getTime() / 1000 - +dl.load,
 	now = +dl.now + time_since_load,
@@ -173,40 +190,137 @@ function displayDeadlines() {
 
     if (!redisplay_timeout) {
 	if (what == "second")
-	    redisplay_timeout = setTimeout(displayDeadlines, 250);
+	    redisplay_timeout = setTimeout(redisplay_main, 250);
 	else if (what == "minute")
-	    redisplay_timeout = setTimeout(displayDeadlines, 15000);
+	    redisplay_timeout = setTimeout(redisplay_main, 15000);
     }
 }
 
-function reloadDeadlines() {
+function window_navstate() {
+    var navstate = null;
+    if (window.sessionStorage && window.JSON) {
+        navstate = sessionStorage.getItem("hotcrp_nav");
+        navstate = navstate && JSON.parse(navstate);
+    }
+    return navstate;
+}
+
+var nav_map = [["is_manager", "Manager"], ["is_lead", "Discussion lead"],
+               ["is_reviewer", "Reviewer"], ["is_conflict", "Conflict"]];
+
+function nav_paper_columns(idx, paper) {
+    var url = hotcrp_paperurl(paper.pid, dl.nav.listid), i, x = [], title;
+    var t = "<td class=\"nav" + idx + " navdesc\">";
+    t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
+    t += "</td>" +
+        "<td class=\"nav" + idx + " navpid\"><a href=\"" + url + "\">#" + paper.pid + "</a></td>" +
+        "<td class=\"nav" + idx + " navbody\"><a href=\"" + url + "\">" + text_to_html(paper.title) + "</a>";
+    for (i = 0; i != nav_map.length; ++i)
+        if (paper[nav_map[i][0]])
+            x.push("<span class=\"nav" + nav_map[i][0] + "\">" + nav_map[i][1] + "</span>");
+    if (x.length)
+        t += " &nbsp;&#183;&nbsp; " + x.join(" &nbsp;&#183;&nbsp; ");
+    return t + "</td>";
+}
+
+function display_nav() {
+    var mne = $$("meeting_nav"), mnspace = $$("meeting_navspace"),
+        body, pid, navstate, t, i;
+
+    if (had_nav && !dl.nav) {
+        if (mne)
+            mne.parentNode.removeChild(mne);
+        if (mnspace)
+            mnspace.parentNode.removeChild(mnspace);
+        had_nav = false;
+        return;
+    }
+
+    body = get_body();
+    if (!mnspace) {
+        mnspace = document.createElement("div");
+        mnspace.id = "meeting_navspace";
+        body.insertBefore(mnspace, body.firstChild);
+    }
+    if (!mne) {
+        mne = document.createElement("div");
+        mne.id = "meeting_nav";
+        body.insertBefore(mne, body.firstChild);
+    }
+
+    pid = dl.nav.papers[0] ? dl.nav.papers[0].pid : 0;
+    navstate = window_navstate();
+    if (navstate && navstate[1] == dl.nav.navid)
+        mne.className = "active";
+    else
+        mne.className = (pid && pid != hotcrp_paperid ? "nomatch" : "match");
+
+    if (!pid) {
+        t = "<a href=\"" + hotcrp_base + dl.nav.url + "\">Discussion list</a>";
+    } else {
+        t = "<table class=\"navinfo\"><tbody><tr><td rowspan=\"" + dl.nav.papers.length + "\">";
+        t += "</td>" + nav_paper_columns(0, dl.nav.papers[0]);
+        for (i = 1; i < dl.nav.papers.length; ++i)
+            t += "</tr><tr>" + nav_paper_columns(i, dl.nav.papers[i]);
+        t += "</tr></tbody></table>";
+    }
+    mne.innerHTML = "<div class=\"navholder\">" + t + "</div>";
+    mnspace.style.height = mne.offsetHeight + "px";
+}
+
+function reload() {
     reload_timeout = null;
-    Miniajax.get(dlurl + "?ajax=1", loadDeadlines, 10000);
+    Miniajax.get(dlurl + "?ajax=1", hotcrp_deadlines, 10000);
 }
 
-function loadDeadlines(dlx) {
+function hotcrp_deadlines(dlx) {
     var t;
-    if (dlx) {
+    if (dlx)
 	dl = dlx;
+    if (!dl.load)
 	dl.load = new Date().getTime() / 1000;
-    }
-    displayDeadlines();
+    display_main();
+    if (dl.nav || had_nav)
+        display_nav();
     if (dlurl && !reload_timeout) {
-	t = (dlname && (!dltime || dltime - dl.load <= 120) ? 45000 : 300000);
-	reload_timeout = setTimeout(reloadDeadlines, t);
+        if (dl.nav)
+            t = 10000;
+        else if (dlname && (!dltime || dltime - dl.load <= 120))
+            t = 45000;
+        else
+            t = 300000;
+	reload_timeout = setTimeout(reload, t);
     }
 }
 
-loadDeadlines.init = function (dlx, dlurlx) {
+hotcrp_deadlines.init = function (dlx, dlurlx) {
     dlurl = dlurlx;
-    loadDeadlines(dlx);
+    hotcrp_deadlines(dlx);
 };
 
-return loadDeadlines;
+hotcrp_deadlines.nav = function (list, paperid, start) {
+    var navstate;
+    if (!window.sessionStorage || !window.JSON)
+        return;
+    navstate = window_navstate();
+    if (start && (!navstate || navstate[0] != hotcrp_base)) {
+        navstate = [hotcrp_base, Math.floor(Math.random() * 100000)];
+        sessionStorage.setItem("hotcrp_nav", JSON.stringify(navstate));
+    } else if (navstate[0] != hotcrp_base)
+        navstate = null;
+    if (navstate) {
+        navstate = navstate[1] + "%20" + encodeURIComponent(list);
+        if (paperid)
+            navstate += "%20" + encodeURIComponent(paperid);
+        Miniajax.post(dlurl + "?nav=" + navstate + "&ajax=1&post="
+                      + hotcrp_postvalue, hotcrp_deadlines, 10000);
+    }
+};
+
+return hotcrp_deadlines;
 })();
 
 
-var hotcrp_base = "";
 var hotcrp_onload = [];
 function hotcrp_load(arg) {
     if (!arg)
@@ -1768,7 +1882,7 @@ Miniajax.submit = function (formname, callback, timeout) {
     req.send(pairs.join("&"));
     return false;
 };
-Miniajax.get = function (url, callback, timeout) {
+function getorpost(method, url, callback, timeout) {
     callback = callback || function () {};
     var req = newRequest(), timer = setTimeout(function () {
 	    req.abort();
@@ -1783,9 +1897,15 @@ Miniajax.get = function (url, callback, timeout) {
 	else
 	    callback(null);
     };
-    req.open("GET", url);
+    req.open(method, url);
     req.send();
     return false;
+};
+Miniajax.get = function (url, callback, timeout) {
+    return getorpost("GET", url, callback, timeout);
+};
+Miniajax.post = function (url, callback, timeout) {
+    return getorpost("POST", url, callback, timeout);
 };
 Miniajax.getjsonp = function (url, callback, timeout) {
     // Written with reference to jquery

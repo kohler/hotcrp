@@ -436,7 +436,7 @@ function doAssign() {
 	$b = array();
 	$pidx = join("+", $badpids);
 	foreach ($badpids as $pid)
-	    $b[] = "<a href='" . hoturl("assign", "p=$pid&amp;list=$pidx") . "'>$pid</a>";
+	    $b[] = "<a href='" . hoturl("assign", "p=$pid&amp;ls=$pidx") . "'>$pid</a>";
         if ($atype == "rev" || $atype == "revadd")
             $x = ", possibly because of conflicts or previously declined reviews in the PC members you selected";
         else if ($_REQUEST["pctyp"] == "sel")

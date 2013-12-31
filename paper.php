@@ -41,8 +41,7 @@ function confHeader() {
 	$title = "Paper #$paperId";
 
     $Conf->header($title, "paper_" . ($mode == "pe" ? "edit" : "view"), actionBar($mode, $prow), false);
-    if (isset($CurrentList) && $CurrentList > 0
-	&& strpos($linkExtra, "ls=") === false)
+    if (@($CurrentList > 0) && strpos($linkExtra, "ls=") === false)
 	$linkExtra .= "&amp;ls=" . $CurrentList;
 }
 

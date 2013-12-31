@@ -1595,7 +1595,12 @@ class Contact {
 	    }
 	}
 
-	return $dl;
+        // add meeting navigation
+        if ($this->is_core_pc() && $Conf->setting("meeting_nav")
+            && ($navstatus = MeetingNavigator::status($this)))
+            $dl["nav"] = $navstatus;
+
+        return $dl;
     }
 
 
