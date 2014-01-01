@@ -8,7 +8,7 @@ function $$(id) {
     return document.getElementById(id);
 }
 
-isArray = (function (toString) {
+window.isArray = (function (toString) {
     return function (x) {
 	return toString.call(x) === "[object Array]";
     };
@@ -64,7 +64,7 @@ function event_prevent(evt) {
 }
 
 
-setLocalTime = (function () {
+window.setLocalTime = (function () {
 var servhr24, showdifference = false;
 function setLocalTime(elt, servtime) {
     var d, s, hr, min, sec;
@@ -122,7 +122,7 @@ function text_to_html(text) {
     return n.innerHTML;
 }
 
-hotcrp_deadlines = (function () {
+window.hotcrp_deadlines = (function () {
 var dl, dlname, dltime, dlurl, had_nav, redisplay_timeout, reload_timeout;
 
 function redisplay_main() {
@@ -323,6 +323,7 @@ return hotcrp_deadlines;
 
 var hotcrp_onload = [];
 function hotcrp_load(arg) {
+    var x;
     if (!arg)
 	for (x = 0; x < hotcrp_onload.length; ++x)
 	    hotcrp_onload[x]();
@@ -592,7 +593,7 @@ function pc_tags_members(tag) {
     return answer;
 }
 
-autosub = (function () {
+window.autosub = (function () {
 var current;
 
 function autosub_kp(event) {
@@ -736,7 +737,7 @@ function staged_foreach(a, f, backwards) {
 }
 
 // temporary text
-mktemptext = (function () {
+window.mktemptext = (function () {
 function setclass(e, on) {
     e.className = e.className.replace(on ? /\btemptextoff\b/ : /\btemptext\b/,
 				      on ? "temptext" : "temptextoff");
@@ -1076,7 +1077,7 @@ function taghelp(elt, report_elt, cleanf) {
 
 
 // review preferences
-add_revpref_ajax = (function () {
+window.add_revpref_ajax = (function () {
 
 function rp_focus() {
     autosub("update", this);
@@ -1124,7 +1125,7 @@ return function () {
 })();
 
 
-add_assrev_ajax = (function () {
+window.add_assrev_ajax = (function () {
 var pcs;
 
 function ar_onchange() {
@@ -1156,7 +1157,7 @@ return function () {
 })();
 
 
-add_conflict_ajax = (function () {
+window.add_conflict_ajax = (function () {
 var pcs;
 
 function conf_onclick() {
@@ -1243,7 +1244,7 @@ function make_bubble(content) {
 }
 
 
-add_edittag_ajax = (function () {
+window.add_edittag_ajax = (function () {
 var ready, dragtag, valuemap,
     plt_tbody, dragging, rowanal, srcindex, dragindex, dragger,
     dragwander, scroller, mousepos, scrolldelta;
@@ -1307,7 +1308,8 @@ function tag_keypress(evt) {
     }
 }
 
-function PaperRow(rows, l, r, index) {
+function PaperRow(l, r, index) {
+    var rows = plt_tbody.childNodes;
     this.l = l;
     this.r = r;
     this.index = index;
@@ -1326,10 +1328,10 @@ function PaperRow(rows, l, r, index) {
 	this.titlehint = i;
 }
 PaperRow.prototype.top = function () {
-    return eltPos(rows[this.l]).top;
+    return eltPos(plt_tbody.childNodes[this.l]).top;
 };
 PaperRow.prototype.bottom = function () {
-    return eltPos(rows[this.r]).bottom;
+    return eltPos(plt_tbody.childNodes[this.r]).bottom;
 };
 PaperRow.prototype.middle = function () {
     return (this.top() + this.bottom()) / 2;
@@ -1346,14 +1348,14 @@ function analyze_rows(e) {
 		r = i;
 	    else {
 		if (l !== null)
-		    rowanal.push(new PaperRow(rows, l, r, rowanal.length));
+		    rowanal.push(new PaperRow(l, r, rowanal.length));
 		l = r = i;
 	    }
 	    if (e == rows[i])
 		eindex = rowanal.length;
 	}
     if (l !== null)
-	rowanal.push(new PaperRow(rows, l, r, rowanal.length));
+	rowanal.push(new PaperRow(l, r, rowanal.length));
     return eindex;
 }
 
@@ -1447,9 +1449,10 @@ function tag_mousemove(evt) {
 
 function row_move(srcindex, dstindex) {
     // shift row groups
-    var rows = plt_tbody.childNodes;
-    var range = [rowanal[srcindex].l, rowanal[srcindex].r];
-    var sibling = dstindex < rowanal.length ? rows[rowanal[dstindex].l] : null;
+    var rows = plt_tbody.childNodes,
+        range = [rowanal[srcindex].l, rowanal[srcindex].r],
+        sibling, e;
+    sibling = dstindex < rowanal.length ? rows[rowanal[dstindex].l] : null;
     while (range[0] <= range[1]) {
 	e = plt_tbody.removeChild(rows[range[0]]);
 	plt_tbody.insertBefore(e, sibling);
@@ -1618,7 +1621,6 @@ return function (active_dragtag) {
 		for (j = 0; j < children.length; ++j)
 		    if (children[j].nodeName.toUpperCase() == "TBODY") {
 			plt_tbody = children[j];
-			rows = plt_tbody.childNodes;
 			break;
 		    }
 	    }
