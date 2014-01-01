@@ -637,8 +637,10 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])) 
 </div>\n";
     if ($Acct->password_type == 0) {
         echo "  <div class='f-h'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
-        if ($Me->privChair)
-            echo "  <span class='sep'></span><span class='f-cx'><a class='fn' href='javascript:void shiftPassword(0)'>Show password</a><a class='fx' href='javascript:void shiftPassword(1)'>Hide password</a></span>";
+        if ($Me->privChair) {
+            $Conf->footerScript("function shift_password(dir){var form=$$(\"accountform\");fold(\"account\",dir);if(form&&form.whichpassword)form.whichpassword.value=dir?\"\":\"t\";return false}");
+            echo "  <span class='sep'></span><span class='f-cx'><a class='fn' href='#' onclick='return shift_password(0)'>Show password</a><a class='fx' href='#' onclick='return shift_password(1)'>Hide password</a></span>";
+        }
         echo "</div>\n";
     }
     echo "  <div class='clear'></div></div>\n\n";

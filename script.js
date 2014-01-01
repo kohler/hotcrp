@@ -507,14 +507,6 @@ function contactPulldown(which) {
     folder.className = folder.className.replace("foldo", "foldc");
 }
 
-function shiftPassword(direction) {
-    var form = $$("accountform");
-    fold("account", direction);
-    if (form && form.whichpassword)
-	form.whichpassword.value = direction ? "" : "t";
-}
-
-
 // paper selection
 function papersel(value, name) {
     var ins = document.getElementsByTagName("input"),
