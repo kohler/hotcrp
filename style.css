@@ -645,6 +645,10 @@ span.expander0 > span.in {
         background: #4444cc;
         color: white;
 }
+.btn.btn-danger {
+        background: #cc4444;
+        color: white;
+}
 .btn.btn-transparent {
 	border: 1px solid black;
 	color: black;

@@ -1125,9 +1125,14 @@ manager’s identity.</p>
     _alternateRow("At the meeting", "
 <ol>
 
-<li><p>It’s often useful to have a PC member or scribe capture the discussion
-  about a paper and enter it as a <a
-  href='" . hoturl("comment") . "'>comment</a> for the authors’
+<li><p>The meeting tracker can keep PC members coordinated. Turn it on
+  using the “&#9759;” button on paper pages. When the
+  meeting tracker is on, the paper being viewed by the tracking browser
+  tab is broadcast to all logged-in PC members, along with the next paper
+  in the current discussion order.</p></li>
+
+<li><p>Scribes can, if you like, capture discussions as <a
+  href='" . hoturl("comment") . "'>comments</a> for the authors’
   reference.</p></li>
 
 <li><p><strong>Paper decisions</strong> can be recorded on the <a

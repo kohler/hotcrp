@@ -227,8 +227,13 @@ function tracker_paper_columns(idx, paper) {
 }
 
 function display_tracker() {
-    var mne = $$("tracker"), mnspace = $$("trackerspace"),
-        body, pid, trackerstate, t = "", i;
+    var mne = $$("tracker"), mnspace = $$("trackerspace"), mytracker,
+        body, pid, trackerstate, t = "", i, e;
+
+    mytracker = dl.tracker && (i = window_trackerstate())
+        && dl.tracker.trackerid == i[1];
+    if ((e = $$("trackerconnectbtn")))
+        e.className = (mytracker ? "btn btn-danger" : "btn btn-default");
 
     if (mne && !dl.tracker) {
         if (mne)
@@ -254,8 +259,7 @@ function display_tracker() {
     }
 
     pid = dl.tracker.papers[0] ? dl.tracker.papers[0].pid : 0;
-    trackerstate = window_trackerstate();
-    if (trackerstate && trackerstate[1] == dl.tracker.trackerid)
+    if (mytracker)
         mne.className = "active";
     else
         mne.className = (pid && pid != hotcrp_paperid ? "nomatch" : "match");
@@ -273,6 +277,7 @@ function display_tracker() {
     }
     mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
     mnspace.style.height = mne.offsetHeight + "px";
+
     has_tracker = ever_had_tracker = true;
 }
 
