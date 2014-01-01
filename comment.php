@@ -161,29 +161,29 @@ function saveComment($text) {
 	$q = "insert into PaperComment ($qa) select $qb\n";
 	if ($ctype & COMMENTTYPE_RESPONSE) {
 	    // make sure there is exactly one response
-	    $q .= "	from (select P.paperId, coalesce(C.commentId,0) commentId, 0 commentCount, 0 maxOrdinal
-		from Paper P
-		left join PaperComment C on (C.paperId=P.paperId and ";
+	    $q .= "	from (select p.paperId, coalesce(cmt.commentId,0) commentId, 0 commentCount, 0 maxOrdinal
+		from Paper p
+		left join PaperComment cmt on (cmt.paperId=p.paperId and ";
             if ($Conf->sversion >= 53)
-                $q .= "(C.commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
+                $q .= "(cmt.commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
             else
-                $q .= "C.forAuthors=2";
-            $q .= ") where P.paperId=$prow->paperId group by P.paperId) T
-	where T.commentId=0";
+                $q .= "cmt.forAuthors=2";
+            $q .= ") where p.paperId=$prow->paperId group by p.paperId) t
+	where t.commentId=0";
 	    $insert_id_while = false;
 	} else {
-	    $q .= "	from (select P.paperId, coalesce(count(C.commentId),0) commentCount, coalesce(max(C.ordinal),0) maxOrdinal
-		from Paper P
-		left join PaperComment C on (C.paperId=P.paperId and ";
+	    $q .= "	from (select p.paperId, coalesce(count(cmt.commentId),0) commentCount, coalesce(max(cmt.ordinal),0) maxOrdinal
+		from Paper p
+		left join PaperComment cmt on (cmt.paperId=p.paperId and ";
             if ($Conf->sversion >= 53) {
-                $q .= "(C.commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and ";
+                $q .= "(cmt.commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and ";
                 if ($ctype >= COMMENTTYPE_AUTHOR)
-                    $q .= "C.commentType>=" . COMMENTTYPE_AUTHOR;
+                    $q .= "cmt.commentType>=" . COMMENTTYPE_AUTHOR;
                 else
-                    $q .= "C.commentType>=" . COMMENTTYPE_PCONLY . " and C.commentType<" . COMMENTTYPE_AUTHOR;
+                    $q .= "cmt.commentType>=" . COMMENTTYPE_PCONLY . " and cmt.commentType<" . COMMENTTYPE_AUTHOR;
             } else
-                $q .= "C.forReviewers!=2 and C.forAuthors=$fora";
-            $q .= ") where P.paperId=$prow->paperId group by P.paperId) T";
+                $q .= "cmt.forReviewers!=2 and cmt.forAuthors=$fora";
+            $q .= ") where p.paperId=$prow->paperId group by p.paperId) t";
 	}
     } else {
 	$change = ($crow->commentType >= COMMENTTYPE_AUTHOR)
