@@ -143,8 +143,8 @@ function saveComment($text) {
 	$q = "delete from PaperComment where commentId=$crow->commentId";
     } else if (!$crow) {
 	$change = true;
-        $qa = "contactId, paperId, timeModified, comment, timeNotified";
-        $qb = "$Me->cid, $prow->paperId, $now, '" . sqlq($text) . "', $now";
+        $qa = "contactId, paperId, timeModified, comment, timeNotified, replyTo";
+        $qb = "$Me->cid, $prow->paperId, $now, '" . sqlq($text) . "', $now, 0";
 	if (!($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
             && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY
 	    && $Conf->sversion >= 43) {
