@@ -123,7 +123,8 @@ function text_to_html(text) {
 }
 
 window.hotcrp_deadlines = (function () {
-var dl, dlname, dltime, dlurl, had_nav, redisplay_timeout, reload_timeout;
+var dl, dlname, dltime, dlurl, has_tracker, ever_had_tracker,
+    redisplay_timeout, reload_timeout;
 
 function redisplay_main() {
     redisplay_timeout = null;
@@ -196,76 +197,83 @@ function display_main() {
     }
 }
 
-function window_navstate() {
-    var navstate = null;
+function window_trackerstate() {
+    var trackerstate = null;
     if (window.sessionStorage && window.JSON) {
-        navstate = sessionStorage.getItem("hotcrp_nav");
-        navstate = navstate && JSON.parse(navstate);
+        trackerstate = sessionStorage.getItem("hotcrp_tracker");
+        trackerstate = trackerstate && JSON.parse(trackerstate);
     }
-    return navstate;
+    return trackerstate;
 }
 
-var nav_map = [["is_manager", "Administrator"], ["is_lead", "Discussion lead"],
-               ["is_reviewer", "Reviewer"], ["is_conflict", "Conflict"]];
+var tracker_map = [["is_manager", "Administrator"],
+                   ["is_lead", "Discussion lead"],
+                   ["is_reviewer", "Reviewer"],
+                   ["is_conflict", "Conflict"]];
 
-function nav_paper_columns(idx, paper) {
-    var url = hotcrp_paperurl(paper.pid, dl.nav.listid), i, x = [], title;
-    var t = "<td class=\"nav" + idx + " navdesc\">";
+function tracker_paper_columns(idx, paper) {
+    var url = hotcrp_paperurl(paper.pid, dl.tracker.listid), i, x = [], title;
+    var t = "<td class=\"tracker" + idx + " trackerdesc\">";
     t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     t += "</td>" +
-        "<td class=\"nav" + idx + " navpid\"><a href=\"" + url + "\">#" + paper.pid + "</a></td>" +
-        "<td class=\"nav" + idx + " navbody\"><a href=\"" + url + "\">" + text_to_html(paper.title) + "</a>";
-    for (i = 0; i != nav_map.length; ++i)
-        if (paper[nav_map[i][0]])
-            x.push("<span class=\"nav" + nav_map[i][0] + "\">" + nav_map[i][1] + "</span>");
+        "<td class=\"tracker" + idx + " trackerpid\"><a href=\"" + url + "\">#" + paper.pid + "</a></td>" +
+        "<td class=\"tracker" + idx + " trackerbody\"><a href=\"" + url + "\">" + text_to_html(paper.title) + "</a>";
+    for (i = 0; i != tracker_map.length; ++i)
+        if (paper[tracker_map[i][0]])
+            x.push("<span class=\"tracker" + tracker_map[i][0] + "\">" + tracker_map[i][1] + "</span>");
     if (x.length)
         t += " &nbsp;&#183;&nbsp; " + x.join(" &nbsp;&#183;&nbsp; ");
     return t + "</td>";
 }
 
-function display_nav() {
-    var mne = $$("meeting_nav"), mnspace = $$("meeting_navspace"),
-        body, pid, navstate, t, i;
+function display_tracker() {
+    var mne = $$("tracker"), mnspace = $$("trackerspace"),
+        body, pid, trackerstate, t = "", i;
 
-    if (had_nav && !dl.nav) {
+    if (mne && !dl.tracker) {
         if (mne)
             mne.parentNode.removeChild(mne);
         if (mnspace)
             mnspace.parentNode.removeChild(mnspace);
-        had_nav = false;
+        if (window_trackerstate())
+            sessionStorage.removeItem("hotcrp_tracker");
+        has_tracker = false;
         return;
     }
 
     body = get_body();
     if (!mnspace) {
         mnspace = document.createElement("div");
-        mnspace.id = "meeting_navspace";
+        mnspace.id = "trackerspace";
         body.insertBefore(mnspace, body.firstChild);
     }
     if (!mne) {
         mne = document.createElement("div");
-        mne.id = "meeting_nav";
+        mne.id = "tracker";
         body.insertBefore(mne, body.firstChild);
     }
 
-    pid = dl.nav.papers[0] ? dl.nav.papers[0].pid : 0;
-    navstate = window_navstate();
-    if (navstate && navstate[1] == dl.nav.navid)
+    pid = dl.tracker.papers[0] ? dl.tracker.papers[0].pid : 0;
+    trackerstate = window_trackerstate();
+    if (trackerstate && trackerstate[1] == dl.tracker.trackerid)
         mne.className = "active";
     else
         mne.className = (pid && pid != hotcrp_paperid ? "nomatch" : "match");
 
+    if (dl.is_admin)
+        t += "<div style=\"float:right\"><a class=\"btn btn-transparent\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\" title=\"Stop meeting tracker\">x</a></div>";
     if (!pid) {
-        t = "<a href=\"" + hotcrp_base + dl.nav.url + "\">Discussion list</a>";
+        t += "<a href=\"" + hotcrp_base + dl.tracker.url + "\">Discussion list</a>";
     } else {
-        t = "<table class=\"navinfo\"><tbody><tr><td rowspan=\"" + dl.nav.papers.length + "\">";
-        t += "</td>" + nav_paper_columns(0, dl.nav.papers[0]);
-        for (i = 1; i < dl.nav.papers.length; ++i)
-            t += "</tr><tr>" + nav_paper_columns(i, dl.nav.papers[i]);
+        t += "<table class=\"trackerinfo\"><tbody><tr><td rowspan=\"" + dl.tracker.papers.length + "\">";
+        t += "</td>" + tracker_paper_columns(0, dl.tracker.papers[0]);
+        for (i = 1; i < dl.tracker.papers.length; ++i)
+            t += "</tr><tr>" + tracker_paper_columns(i, dl.tracker.papers[i]);
         t += "</tr></tbody></table>";
     }
-    mne.innerHTML = "<div class=\"navholder\">" + t + "</div>";
+    mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
     mnspace.style.height = mne.offsetHeight + "px";
+    has_tracker = ever_had_tracker = true;
 }
 
 function reload() {
@@ -280,10 +288,10 @@ function hotcrp_deadlines(dlx) {
     if (!dl.load)
 	dl.load = new Date().getTime() / 1000;
     display_main();
-    if (dl.nav || had_nav)
-        display_nav();
+    if (dl.tracker || has_tracker)
+        display_tracker();
     if (dlurl && !reload_timeout) {
-        if (dl.nav)
+        if (ever_had_tracker)
             t = 10000;
         else if (dlname && (!dltime || dltime - dl.load <= 120))
             t = 45000;
@@ -298,23 +306,29 @@ hotcrp_deadlines.init = function (dlx, dlurlx) {
     hotcrp_deadlines(dlx);
 };
 
-hotcrp_deadlines.nav = function (list, paperid, start) {
-    var navstate;
-    if (!window.sessionStorage || !window.JSON)
-        return;
-    navstate = window_navstate();
-    if (start && (!navstate || navstate[0] != hotcrp_base)) {
-        navstate = [hotcrp_base, Math.floor(Math.random() * 100000)];
-        sessionStorage.setItem("hotcrp_nav", JSON.stringify(navstate));
-    } else if (navstate && navstate[0] != hotcrp_base)
-        navstate = null;
-    if (navstate) {
-        navstate = navstate[1] + "%20" + encodeURIComponent(list);
-        if (paperid)
-            navstate += "%20" + encodeURIComponent(paperid);
-        Miniajax.post(dlurl + "?nav=" + navstate + "&ajax=1&post="
+hotcrp_deadlines.tracker = function (start) {
+    var trackerstate, list = "";
+    if (start < 0)
+        Miniajax.post(dlurl + "?track=stop&ajax=1&post=" + hotcrp_postvalue,
+                      hotcrp_deadlines, 10000);
+    if (!window.sessionStorage || !window.JSON || start < 0)
+        return false;
+    trackerstate = window_trackerstate();
+    if (start && (!trackerstate || trackerstate[0] != hotcrp_base)) {
+        trackerstate = [hotcrp_base, Math.floor(Math.random() * 100000)];
+        sessionStorage.setItem("hotcrp_tracker", JSON.stringify(trackerstate));
+    } else if (trackerstate && trackerstate[0] != hotcrp_base)
+        trackerstate = null;
+    if (trackerstate) {
+        if (hotcrp_list)
+            list = hotcrp_list.num || hotcrp_list.id;
+        trackerstate = trackerstate[1] + "%20" + encodeURIComponent(list);
+        if (hotcrp_paperid)
+            trackerstate += "%20" + encodeURIComponent(hotcrp_paperid);
+        Miniajax.post(dlurl + "?track=" + trackerstate + "&ajax=1&post="
                       + hotcrp_postvalue, hotcrp_deadlines, 10000);
     }
+    return false;
 };
 
 return hotcrp_deadlines;

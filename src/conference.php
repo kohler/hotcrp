@@ -1600,19 +1600,19 @@ class Conference {
 	$dl = $Me->deadlines();
         $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($dl) . ",\"" . hoturl("deadlines") . "\")";
 
-        // register navigation
-        $start_nav = $Me->privChair && @$_REQUEST["nav"] && @$CurrentList;
-        $navstate = $this->setting_json("meeting_nav");
-        if ($start_nav
-            || ($navstate && $navstate->sessionid == session_id()))
-            $this->scriptStuff .= ";hotcrp_deadlines.nav(" . (@$CurrentList ? $CurrentList : 0) . ",$pid," . ($start_nav ? 1 : 0) . ");";
+        // Register meeting tracker
+        $trackerowner = $Me->privChair
+            && ($trackerstate = $this->setting_json("tracker"))
+            && $trackerstate->sessionid == session_id();
+        if ($trackerowner)
+            $this->scriptStuff .= ";hotcrp_deadlines.tracker(0)";
 
         if ($Me->isPC)
             $this->scriptStuff .= ";alltags.url=\"" . hoturl("search", "alltags=1") . "\"";
         $this->scriptStuff .= "</script>";
 
-        // browser might own navigation; send it the script immediately
-        if ($start_nav || ($navstate && $navstate->sessionid == session_id()))
+        // If browser owns tracker, send it the script immediately
+        if ($trackerowner)
             $this->echoScript("");
 
 	echo "<div id='prebody'>\n";

@@ -8,18 +8,18 @@ require_once("Code/header.inc");
 // *** NB If you change this script, also change the logic in index.php ***
 // *** that hides the link when there are no deadlines to show.         ***
 
-if (@$_REQUEST["nav"] && $Me->privChair && check_post()) {
+if (@$_REQUEST["track"] && $Me->privChair && check_post()) {
     // arguments: IDENTIFIER LISTNUM [POSITION] -OR- stop
-    if ($_REQUEST["nav"] == "stop")
-        $Conf->save_setting("meeting_nav", null);
+    if ($_REQUEST["track"] == "stop")
+        $Conf->save_setting("tracker", null);
     else {
-        $args = preg_split('/\s+/', $_REQUEST["nav"]);
+        $args = preg_split('/\s+/', $_REQUEST["track"]);
         if (count($args) >= 2
             && ($xlist = SessionList::lookup($args[1]))) {
             $position = null;
             if (count($args) >= 3 && ctype_digit($args[2]))
                 $position = array_search((int) $args[2], $xlist->ids);
-            MeetingNavigator::update($xlist, $args[0], $position);
+            MeetingTracker::update($xlist, $args[0], $position);
         }
     }
 }

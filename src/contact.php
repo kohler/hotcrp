@@ -1542,6 +1542,8 @@ class Contact {
 	$dlx = $Conf->deadlines();
 	$now = $dlx["now"];
 	$dl = array("now" => $now);
+        if ($this->privChair)
+            $dl["is_admin"] = true;
 	foreach (array("sub_open", "resp_open", "rev_open", "final_open") as $x)
 	    $dl[$x] = $dlx[$x] > 0;
 
@@ -1595,10 +1597,10 @@ class Contact {
 	    }
 	}
 
-        // add meeting navigation
-        if ($this->is_core_pc() && $Conf->setting("meeting_nav")
-            && ($navstatus = MeetingNavigator::status($this)))
-            $dl["nav"] = $navstatus;
+        // add meeting tracker
+        if ($this->is_core_pc() && $Conf->setting("tracker")
+            && ($tracker = MeetingTracker::status($this)))
+            $dl["tracker"] = $tracker;
 
         return $dl;
     }

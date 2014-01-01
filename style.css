@@ -124,7 +124,7 @@ td.gopaper {
 	vertical-align: middle;
 	padding: 4px 0 6px 0.5em;
 }
-table.vbar td.quicklinks {
+table.vbar td.quicklinks, #trackerconnect {
 	vertical-align: middle;
 	padding: 4px 0.75em 4px 0.5em;
 }
@@ -632,6 +632,22 @@ span.expander0 > span.in {
 }
 .temptext {
 	color: #777777;
+}
+
+.btn {
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+        display: inline-block;
+        padding: 2px 4px;
+        text-decoration: none;
+}
+.btn.btn-default {
+        background: #4444cc;
+        color: white;
+}
+.btn.btn-transparent {
+	border: 1px solid black;
+	color: black;
 }
 
 /* checkboxes */
@@ -2438,7 +2454,7 @@ div.cmthint {
 	color: #cc0000;
 }
 
-#meeting_nav {
+#tracker {
         left: 0;
         top: 0;
         width: 100%;
@@ -2446,35 +2462,37 @@ div.cmthint {
         position: fixed;
         z-index: 8;
 }
-#meeting_nav.active {
+#tracker.active {
         background: rgba(100, 255, 100, 0.9);
 }
-#meeting_nav.match {
+#tracker.match {
         background: rgba(255, 255, 200, 0.9);
 }
-#meeting_nav.nomatch {
+#tracker.nomatch {
 	background: rgba(255, 100, 100, 0.9);
 }
-#meeting_nav .navholder {
+#tracker .trackerholder {
 	padding: 0.5em 1em;
         border-bottom: 2px solid rgba(0, 0, 0, 0.5);
 }
-#meeting_nav .nav1, #meeting_nav .nav2, #meeting_nav .nav3 {
+#tracker .tracker1, #tracker .tracker2, #tracker .tracker3,
+#tracker .tracker4, #tracker .tracker5 {
 	padding-top: 2px;
 }
-#meeting_nav .nav2, #meeting_nav .nav3 {
+#tracker .tracker2, #tracker .tracker3,
+#tracker .tracker4, #tracker .tracker5 {
 	font-size: smaller;
 }
-#meeting_nav .navdesc {
+#tracker .trackerdesc {
 	font-weight: bold;
         padding-right: 0.5em;
 }
-#meeting_nav .navpid {
+#tracker .trackerpid {
 	text-align: right;
 	padding-right: 0.5em;
 }
-#meeting_nav .navis_reviewer, #meeting_nav .navis_manager,
-#meeting_nav .navis_conflict, #meeting_nav .navis_lead {
+#tracker .trackeris_reviewer, #tracker .trackeris_manager,
+#tracker .trackeris_conflict, #tracker .trackeris_lead {
 	font-weight: bold;
 }
 
