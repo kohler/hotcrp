@@ -205,7 +205,7 @@ function window_navstate() {
     return navstate;
 }
 
-var nav_map = [["is_manager", "Manager"], ["is_lead", "Discussion lead"],
+var nav_map = [["is_manager", "Administrator"], ["is_lead", "Discussion lead"],
                ["is_reviewer", "Reviewer"], ["is_conflict", "Conflict"]];
 
 function nav_paper_columns(idx, paper) {
