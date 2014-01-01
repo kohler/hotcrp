@@ -306,7 +306,7 @@ hotcrp_deadlines.nav = function (list, paperid, start) {
     if (start && (!navstate || navstate[0] != hotcrp_base)) {
         navstate = [hotcrp_base, Math.floor(Math.random() * 100000)];
         sessionStorage.setItem("hotcrp_nav", JSON.stringify(navstate));
-    } else if (navstate[0] != hotcrp_base)
+    } else if (navstate && navstate[0] != hotcrp_base)
         navstate = null;
     if (navstate) {
         navstate = navstate[1] + "%20" + encodeURIComponent(list);
