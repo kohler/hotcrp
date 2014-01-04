@@ -619,7 +619,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 62);
+insert into Settings (name, value) values ('allowPaperOption', 64);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
@@ -632,6 +632,8 @@ insert into Settings (name, value) values ('pcrev_any', 1);
 insert into Settings (name, value) values ('extrev_view', 2);
 -- default outcome map
 insert into Settings (name, value, data) values ('outcome_map', 1, '{"0":"Unspecified","-1":"Rejected","1":"Accepted"}');
+-- default review form
+insert into Settings (name, value, data) values ('review_form',1,'{"overAllMerit":{"name":"Overall merit","position":1,"view_score":1,"options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},"reviewerQualification":{"name":"Reviewer expertise","position":2,"view_score":1,"options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},"suitableForShort":{"name":"Suitable for short paper","view_score":1,"options":["Not suitable","Can''t tell","Suitable"]},"paperSummary":{"name":"Paper summary","position":3,"display_space":5,"view_score":1},"commentsToAuthor":{"name":"Comments for author","position":4,"display_space":15,"view_score":1},"commentsToPC":{"name":"Comments for PC","position":5,"display_space":10,"view_score":0},"commentsToAddress":{"name":"Comments to address in the response","display_space":10,"view_score":1},"weaknessOfPaper":{"name":"Paper weaknesses","display_space":5,"view_score":1},"strengthOfPaper":{"name":"Paper strengths","display_space":5,"view_score":1},"novelty":{"name":"Novelty","view_score":1,"options":["Published before","Done before (not necessarily published)","Incremental improvement","New contribution","Surprisingly new contribution"]},"technicalMerit":{"name":"Additional score field","view_score":1,"options":["Poor","Fair","Average","Good","Excellent"]},"interestToCommunity":{"name":"Additional score field","view_score":1,"options":["None","Low","Average","High","Exciting"]},"longevity":{"name":"Additional score field","view_score":1,"options":["Not important now or later","Low importance","Average importance","Important","Exciting"]},"grammar":{"name":"Additional score field","view_score":1,"options":["Poor","Fair","Average","Good","Excellent"]},"likelyPresentation":{"name":"Additional score field","view_score":1,"options":[]},"potential":{"name":"Additional score field","view_score":1,"options":[]},"fixability":{"name":"Additional score field","view_score":1,"options":[]},"textField7":{"name":"Additional text field","view_score":1},"textField8":{"name":"Additional text field","view_score":1}}');
 
 insert into PaperStorage set paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain', paper='' on duplicate key update paper='';
 
