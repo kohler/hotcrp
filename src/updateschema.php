@@ -15,6 +15,8 @@ function update_schema_create_review_form($Conf) {
             $field->description = trim($row->description);
         if ($row->sortOrder >= 0)
             $field->position = $row->sortOrder + 1;
+        if ($row->rows > 3)
+            $field->display_space = (int) $row->rows;
         $field->view_score = (int) $row->authorView;
         if (in_array($row->fieldName, $reviewScoreNames)) {
             $field->options = array();
