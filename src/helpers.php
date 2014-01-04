@@ -1612,9 +1612,7 @@ function cleanAuthor($row) {
 
 function reviewForm($always = false) {
     global $Conf, $ReviewFormCache;
-    if (!$ReviewFormCache
-        || $ReviewFormCache->updatedWhen <= $Conf->settings["revform_update"]
-        || $always)
+    if (!$ReviewFormCache || $always)
 	$ReviewFormCache = new ReviewForm;
     return $ReviewFormCache;
 }

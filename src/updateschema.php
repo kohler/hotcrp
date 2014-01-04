@@ -468,4 +468,9 @@ function updateSchema($Conf) {
         && isset($Conf->settings["review_form"])
         && $Conf->ql("update Settings set value=64 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 64;
+    if ($Conf->settings["allowPaperOption"] == 64
+        && $Conf->ql("drop table if exists `ReviewFormField`")
+        && $Conf->ql("drop table if exists `ReviewFormOptions`")
+        && $Conf->ql("update Settings set value=65 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 65;
 }

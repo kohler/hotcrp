@@ -116,17 +116,19 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-        if ($this->settings["allowPaperOption"] < 64) {
+        if ($this->settings["allowPaperOption"] < 65) {
 	    require_once("updateschema.php");
 	    $oldOK = $OK;
 	    updateSchema($this);
 	    $OK = $oldOK;
 	}
 	$this->sversion = $this->settings["allowPaperOption"];
-	if (isset($this->settings["frombackup"]) && $this->invalidateCaches()) {
+	if (isset($this->settings["frombackup"])
+            && $this->invalidateCaches()) {
 	    $this->qe("delete from Settings where name='frombackup' and value=" . $this->settings["frombackup"]);
 	    unset($this->settings["frombackup"]);
-	}
+	} else
+            $this->invalidateCaches(array("rf" => true));
 	if (isset($Opt["ldapLogin"]) && !$Opt["ldapLogin"])
 	    unset($Opt["ldapLogin"]);
 	if (isset($Opt["httpAuthLogin"]) && !$Opt["httpAuthLogin"])
@@ -291,7 +293,7 @@ class Conference {
     }
 
     function invalidateCaches($caches = null) {
-	global $OK;
+	global $OK, $ReviewFormCache;
 	ensure_session();
 	$inserts = array();
 	$removes = array();
@@ -326,11 +328,8 @@ class Conference {
 	    }
 	    unset($_SESSION["paperOption"]);
 	}
-	if (!$caches || isset($caches["rf"])) {
-	    $inserts[] = "('revform_update',$time)";
-	    $this->settings["revform_update"] = $time;
-	    unset($_SESSION["rf"]);
-	}
+	if (!$caches || isset($caches["rf"]))
+            $ReviewFormCache = null;
 	$ok = true;
 	if (count($inserts))
 	    $ok = $ok && ($this->qe("insert into Settings (name, value) values " . join(",", $inserts) . " on duplicate key update value=values(value)") !== false);

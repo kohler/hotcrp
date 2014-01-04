@@ -57,7 +57,7 @@ function rf_checkOptions(&$var, &$options, &$order, &$levelChar) {
     return true;
 }
 
-function rf_update($lock) {
+function rf_update() {
     global $Conf, $rf, $Error;
 
     if (isset($_REQUEST['loadsample']) && isset($_REQUEST['sample'])) {
@@ -90,15 +90,12 @@ function rf_update($lock) {
 
     $while = "while updating review form";
     $scoreModified = array();
-    if ($lock)
-	$Conf->qe("lock tables ReviewFormField write, PaperReview write, ReviewFormOptions write");
 
     $nrfj = (object) array();
     $shortNameError = $optionError = false;
 
     foreach ($rf->fmap as $field => $f) {
         $nrfj->$field = $fj = (object) array();
-	$req = "";
 
         $sn = simplify_whitespace(defval($_REQUEST, "shortName_$field", ""));
         if (($sn == "" || $sn == "<None>")
@@ -106,35 +103,27 @@ function rf_update($lock) {
             $shortNameError = $Error["shortName_$field"] = true;
         if ($sn != "" && $sn != "<None>")
             $fj->name = $sn;
-        $req .= "shortName='" . sqlq($sn == "" ? "<None>" : $sn) . "', ";
 
         $fj->view_score = max(min(rcvtint($_REQUEST["authorView_$field"], 0),
                                   VIEWSCORE_AUTHOR), VIEWSCORE_ADMINONLY);
-        $req .= "authorView=" . $fj->view_score . ", ";
 
         $x = CleanHTML::clean(defval($_REQUEST, "description_$field", ""), $err);
         if ($x === false) {
             $Error["description_$field"] = true;
             $Conf->errorMsg(htmlspecialchars($sn) . " description: " . $err);
             continue;
-        } else {
-            $x = trim($x);
-            if ($x != "")
-                $fj->description = $x;
-            $req .= "description='" . sqlq($x) . "', ";
-	}
+        } else if (($x = trim($x)) != "")
+            $fj->description = $x;
 
         $x = rcvtint($_REQUEST["order_$field"]);
         if ($x >= 0)
             $fj->position = $x + 1;
-        $req .= "sortOrder='" . $x . "', ";
 
 	if ($f->has_options) {
 	    if (rf_checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"], $levelChar)) {
                 if ($levelChar != 1)
                     $fj->option_letter = $levelChar;
                 $fj->options = array();
-		$req .= "levelChar=" . $levelChar . ", ";
 
 		$optext = "";
 		$i = 1;
@@ -144,27 +133,14 @@ function rf_update($lock) {
 		    $i++;
 		}
 
-		$Conf->qe("delete from ReviewFormOptions where fieldName='" . sqlq($field) . "'", $while);
-		if ($optext)
-		    $Conf->qe("insert into ReviewFormOptions (fieldName, level, description) values " . substr($optext, 0, strlen($optext) - 2), $while);
-
 		$result = $Conf->qe("update PaperReview set $field=0 where $field>" . count($options), $while);
 		if (edb_nrows_affected($result) > 0)
 		    $scoreModified[] = htmlspecialchars($_REQUEST["shortName_$field"]);
 
 		unset($_REQUEST["options_$field"]);
-		$updates = 1;
 	    } else {
 		$optionError = $Error["options_$field"] = true;
 		continue;
-	    }
-	}
-
-	if ($req != '') {
-	    $result = $Conf->qe("update ReviewFormField set " . substr($req, 0, -2) . " where fieldName='" . sqlq($field) . "'", $while);
-	    if ($result) {
-		unset($_REQUEST["order_$field"], $_REQUEST["shortName_$field"], $_REQUEST["description_$field"]);
-		$updates = 1;
 	    }
 	}
     }
@@ -175,22 +151,15 @@ function rf_update($lock) {
 	$Conf->errorMsg("Review fields with options must have at least two choices, numbered sequentially from 1 or with consecutive uppercase letters.  Enter them like this:  <pre>1. Low quality
 2. Medium quality
 3. High quality</pre>  Please edit the highlighted fields and save again.");
-    if (!$shortNameError && !$optionError)
+    if (!$shortNameError && !$optionError) {
         $Conf->save_setting("review_form", 1, $nrfj);
+        $Conf->confirmMsg("Review form updated.");
+    }
 
     if (count($scoreModified))
-	$Conf->warnMsg("Your changes invalidated some existing review scores.  The invalid scores have been reset to \"Unknown\".  The relevant fields were: " . join(", ", $scoreModified) . ".");
+	$Conf->warnMsg("Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
 
-    if ($lock)
-	$Conf->qe("unlock tables");
-
-    // alert consumers of change to form
-    if ($lock && isset($updates)) {
-	$Conf->invalidateCaches(array("rf" => 1));
-	$Conf->confirmMsg("Review form updated.");
-	$rf = reviewForm(true);
-    } else if (isset($updates))
-	$Conf->settings["revform_update"] = time();
+    $Conf->invalidateCaches(array("rf" => true));
 }
 
 function rf_getField($f, $formname, $fname, $backup = null) {

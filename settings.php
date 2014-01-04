@@ -799,10 +799,8 @@ function doSpecial($name, $set) {
     else if ($name == "reviewform") {
 	if (!$set)
 	    $Values[$name] = true;
-	else {
-	    rf_update(false);
-	    $Values["revform_update"] = time();
-	}
+	else
+	    rf_update();
     } else if ($name == "banal")
 	doBanal($set);
     else if ($name == "x_rev_roundtag") {
@@ -937,22 +935,13 @@ if (isset($_REQUEST["update"]) && check_post()) {
 	$while = "updating settings";
 	$tables = "Settings write, TopicArea write, PaperTopic write, TopicInterest write, OptionType write, PaperOption write";
 	if (array_key_exists("decisions", $Values)
-            || array_key_exists("reviewform", $Values))
-	    $tables .= ", ReviewFormOptions write";
-	else
-	    $tables .= ", ReviewFormOptions read";
-	if (array_key_exists("decisions", $Values)
             || array_key_exists("tag_vote", $Values))
 	    $tables .= ", Paper write";
 	if (array_key_exists("tag_vote", $Values))
 	    $tables .= ", PaperTag write";
 	if (array_key_exists("reviewform", $Values))
-	    $tables .= ", ReviewFormField write, PaperReview write";
-	else
-	    $tables .= ", ReviewFormField read";
+	    $tables .= ", PaperReview write";
 	$Conf->qe("lock tables $tables", $while);
-	// alert others since we're changing settings
-	$Values['revform_update'] = time();
 
 	// apply settings
 	$dq = $aq = "";
@@ -968,7 +957,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
 		if (substr($n, 0, 4) === "opt.")
 		    $Opt[substr($n, 4)] = (is_array($v) ? $v[1] : $v);
 	    }
-	$Conf->qe("delete from Settings where " . substr($dq, 4), $while);
+        if (strlen($dq))
+            $Conf->qe("delete from Settings where " . substr($dq, 4), $while);
 	if (strlen($aq))
 	    $Conf->qe("insert into Settings (name, value, data) values " . substr($aq, 2), $while);
 
@@ -994,7 +984,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
         redirectSelf();
     unset($_SESSION["settings_highlight"]);
 } else if ($Group == "rfo")
-    rf_update(false);
+    rf_update();
 
 
 // header and script

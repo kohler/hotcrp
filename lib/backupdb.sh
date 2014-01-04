@@ -53,7 +53,7 @@ else
 	eval "$MYSQLDUMP $FLAGS $myargs $dbname --where='(roles & 7) != 0' ContactInfo"
 	pcs=`echo 'select group_concat(contactId) from ContactInfo where (roles & 7) != 0' | eval "$MYSQL $myargs $FLAGS -N $dbname"`
 	eval "$MYSQLDUMP $myargs $FLAGS --where='contactId in ($pcs)' $dbname ContactAddress"
-	eval "$MYSQLDUMP $myargs $FLAGS $dbname PCMember Chair ChairAssistant Settings OptionType ChairTag TopicArea ReviewFormField ReviewFormOptions"
+	eval "$MYSQLDUMP $myargs $FLAGS $dbname PCMember Chair ChairAssistant Settings OptionType ChairTag TopicArea"
     else
 	eval "$MYSQLDUMP $myargs $FLAGS $dbname"
     fi

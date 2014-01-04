@@ -195,10 +195,6 @@ class ReviewForm {
     const WEB_RIGHT = 8;
     const WEB_FINAL = 32;
 
-    const VERSION = 6;
-    private $updatedWhen;
-    private $version;
-
     public $fmap;
     public $forder;
 
@@ -206,7 +202,6 @@ class ReviewForm {
 
     function __construct() {
         global $Conf;
-        $this->version = self::VERSION;
 
         $this->fmap = array();
         foreach (array("paperSummary", "commentsToAuthor", "commentsToPC",
@@ -245,8 +240,6 @@ class ReviewForm {
         ksort($forder);
         foreach ($forder as $f)
             $this->forder[$f->id] = $f;
-
-	$this->updatedWhen = time();
     }
 
     private function get_deprecated($table, $element) {
