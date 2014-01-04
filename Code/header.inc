@@ -377,11 +377,12 @@ function initialize_user() {
     $userwords = array();
     if (isset($_SESSION["user"]))
         $userwords = explode(" ", $_SESSION["user"]);
+    $Me = null;
     if (count($userwords) >= 2 && $userwords[1] == $Opt["dsn"])
         $Me = Contact::find_by_id($userwords[0]);
     else if (count($userwords) >= 3)
         $Me = Contact::find_by_email($userwords[2]);
-    else {
+    if (!$Me) {
         $Me = new Contact;
         $Me->fresh = true;
     }
