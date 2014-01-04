@@ -193,16 +193,16 @@ function rf_update($lock) {
 	$Conf->settings["revform_update"] = time();
 }
 
-function rf_getField($row, $name, $ordinalOrder = null) {
-    if (isset($_REQUEST["${name}_$row->fieldName"]))
-	return $_REQUEST["${name}_$row->fieldName"];
-    else if ($ordinalOrder === null)
-	return $row->$name;
+function rf_getField($f, $formname, $fname, $backup = null) {
+    if (isset($_REQUEST["${formname}_$f->id"]))
+	return $_REQUEST["${formname}_$f->id"];
+    else if ($backup !== null)
+        return $backup;
     else
-	return $ordinalOrder;
+	return $f->$fname;
 }
 
-function rf_formFieldText($row, $ordinalOrder, $numRows) {
+function rf_formFieldText($f, $ordinalOrder, $numRows) {
     global $rf, $Error, $rowidx, $captions, $Conf, $scoreHelps;
 
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
@@ -210,13 +210,13 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $x = "<$trclass><td colspan='4'><div class='g'></div></td></tr>\n";
 
     // field name
-    $field = $row->fieldName;
-    if (isset($Error[$field]) || isset($Error["shortName_$field"]))
+    $fid = $f->id;
+    if (isset($Error[$fid]) || isset($Error["shortName_$fid"]))
         $e = " error";
     else
         $e = "";
-    $x .= "<$trclass><td class='rxcaption nowrap$e'>Field name</td><td colspan='3' class='entry$e'><b><input type='text' size='50' class='textlite' name='shortName_$field' value=\""
-	. htmlspecialchars(rf_getField($row, 'shortName'))
+    $x .= "<$trclass><td class='rxcaption nowrap$e'>Field name</td><td colspan='3' class='entry$e'><b><input type='text' size='50' class='textlite' name='shortName_$fid' value=\""
+	. htmlspecialchars(rf_getField($f, "shortName", "name"))
 	. "\" onchange='hiliter(this)' /></b></td></tr>\n";
 
     // form position
@@ -225,7 +225,7 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $fp_opt["-1"] = "Off form";
     for ($i = 0; $i < $numRows; ++$i)
 	$fp_opt["$i"] = ordinal($i + 1);
-    $x .= Ht::select("order_$field", $fp_opt, $ordinalOrder, array("onchange" => "hiliter(this)")) . " <span class='sep'></span>";
+    $x .= Ht::select("order_$fid", $fp_opt, $ordinalOrder === false ? -1 : $ordinalOrder, array("onchange" => "hiliter(this)")) . " <span class='sep'></span>";
 
     // author view
     if (count($scoreHelps) == 0)
@@ -239,24 +239,24 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
   <dt><strong>Secret</strong></dt><dd>Only set by and visible to administrators</dd></dl>
 </div>");
     }
-    if (isset($_REQUEST["shortName_$field"]) && !isset($_REQUEST["authorView_$field"]))
-	$_REQUEST["authorView_$field"] = 0;
+    if (isset($_REQUEST["shortName_$fid"]) && !isset($_REQUEST["authorView_$fid"]))
+	$_REQUEST["authorView_$fid"] = 0;
     $x .= "Visibility &nbsp;"
-	. Ht::select("authorView_$field",
+	. Ht::select("authorView_$fid",
 		      array(VIEWSCORE_AUTHOR => "Authors &amp; reviewers",
 			    VIEWSCORE_PC => "Reviewers only",
 			    VIEWSCORE_REVIEWERONLY => "Private",
 			    VIEWSCORE_ADMINONLY => "Secret"),
-		      max(min(cvtint(rf_getField($row, "authorView"), -10000), VIEWSCORE_AUTHOR), VIEWSCORE_ADMINONLY),
+                     max(min(cvtint(rf_getField($f, "authorView", "view_score"), -10000), VIEWSCORE_AUTHOR), VIEWSCORE_ADMINONLY),
 		      array("onchange" => "hiliter(this)"))
 	. " &nbsp;<a class='scorehelp small' href='" . hoturl("scorehelp", "f=vis") . "'>(What is this?)</a>"
 	. "</td><td class='hint'></td></tr>\n";
 
     // description
-    $error = (isset($Error["description_$field"]) ? " error" : "");
+    $error = (isset($Error["description_$fid"]) ? " error" : "");
     $x .= "<$trclass><td class='rxcaption textarea$error'>Description</td>"
-	. "<td class='entry'><textarea name='description_$field' class='reviewtext' rows='6' onchange='hiliter(this)'>"
-	. htmlentities(rf_getField($row, 'description'))
+	. "<td class='entry'><textarea name='description_$fid' class='reviewtext' rows='6' onchange='hiliter(this)'>"
+	. htmlentities(rf_getField($f, "description", "description"))
 	. "</textarea></td>";
     if (isset($captions['description'])) {
 	$x .= "<td class='hint textarea'>" . $captions['description'] . "</td>";
@@ -266,16 +266,15 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
     $x .= "</tr>\n";
 
     // options
-    $rowf = $rf->fmap[$field];
-    if ($rowf->has_options) {
-	$error = (isset($Error["options_$field"]) ? " error" : "");
-	$x .= "<$trclass><td class='rxcaption textarea$error'>Options</td><td class='entry$error'><textarea name='options_$field' class='reviewtext' rows='6' onchange='hiliter(this)'>";
+    if ($f->has_options) {
+	$error = (isset($Error["options_$fid"]) ? " error" : "");
+	$x .= "<$trclass><td class='rxcaption textarea$error'>Options</td><td class='entry$error'><textarea name='options_$fid' class='reviewtext' rows='6' onchange='hiliter(this)'>";
 	$y = '';
-	if (count($rowf->options)) {
-	    foreach ($rowf->options as $num => $val)
+	if (count($f->options)) {
+	    foreach ($f->options as $num => $val)
 		$y .= "$num. $val\n";
 	}
-	$x .= htmlentities(rf_getField($row, 'options', $y))
+	$x .= htmlentities(rf_getField($f, "options", null, $y))
 	    . "</textarea></td>";
 	if (isset($captions['options'])) {
 	    $x .= "<td class='hint textarea'>" . $captions['options'] . "</td>";
@@ -290,9 +289,6 @@ function rf_formFieldText($row, $ordinalOrder, $numRows) {
 
 function rf_show() {
     global $Conf, $captions;
-    $result = $Conf->qe("select * from ReviewFormField", "while loading review form");
-    if (!$result)
-	return;
 
     $captions = array
 	("description" => "Enter an HTML description for the review field here,
@@ -321,24 +317,26 @@ function rf_show() {
 <table class='setreviewform'>\n";
 
     $out = array();
-    while (($row = edb_orow($result))) {
-        $field = $row->fieldName;
-	$order = defval($_REQUEST, "order_$field", $row->sortOrder);
-	if ($order < 0)
-	    $order = 100;
-	$sn = defval($_REQUEST, "shortName_$field", $row->shortName);
-	if ($order == 100 && preg_match('/^additional.*(field|score)$/i', $sn))
-	    $order = 200;
-	$out[sprintf("%03d.%s.%s", $order, strtolower($sn), $field)] = $row;
+    $rf = reviewForm();
+    foreach ($rf->fmap as $fid => $f) {
+        $order = defval($_REQUEST, "order_$fid", $f->display_order);
+        if ($order === false || $order <= 0)
+            $order = 100;
+        $name = defval($_REQUEST, "shortName_$fid", $f->name);
+        if ($order == 100
+            && ($name == "" || $name == "<None>"
+                || preg_match('/^additional.*(?:field|score)$/i', $name)))
+            $order = 200;
+        $out[sprintf("%03d.%s.%s", $order, strtolower($name), $fid)] = $f;
     }
-
     ksort($out);
+
     $ordinalOrder = 0;
-    foreach ($out as $row) {
-	$order = defval($_REQUEST, "order_$field", $row->sortOrder);
-	if ($order >= 0)
+    foreach ($out as $f) {
+	$order = defval($_REQUEST, "order_$f->id", $f->display_order);
+	if ($order !== false && $order > 0)
 	    $order = $ordinalOrder++;
-	echo rf_formFieldText($row, $order, count($out));
+	echo rf_formFieldText($f, $order, count($out));
     }
 
     echo "</table>\n";
