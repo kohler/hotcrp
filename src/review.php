@@ -50,20 +50,49 @@ class ReviewField {
         if (!$this->has_options && $this->display_space < 3)
             $this->display_space = 3;
         $this->view_score = $j->view_score;
-        if ($this->has_options)
-            $this->option_letter = @($j->option_letter > 1 ? $j->option_letter : false);
         if (@$j->position) {
             $this->displayed = true;
             $this->display_order = $j->position;
         } else
             $this->displayed = $this->display_order = false;
         if ($this->has_options) {
+            $options = @$j->options ? $j->options : array();
+            $ol = @$j->option_letter;
+            if ($ol && ctype_alpha($ol) && strlen($ol) == 1)
+                $this->option_letter = ord($ol) + count($options);
+            else if ($ol && (is_int($ol) || ctype_digit($ol)))
+                $this->option_letter = (int) $ol;
+            else
+                $this->option_letter = false;
             $this->options = array();
-            if (@$j->options)
-                foreach ($j->options as $i => $n)
+            if ($this->option_letter) {
+                foreach (array_reverse($options, true) as $i => $n)
+                    $this->options[chr($this->option_letter - $i - 1)] = $n;
+            } else {
+                foreach ($options as $i => $n)
                     $this->options[$i + 1] = $n;
+            }
         }
         $this->analyzed = false;
+    }
+
+    public function unparse_json() {
+        $j = (object) array("name" => $this->name);
+        if ($this->description)
+            $j->description = $this->description;
+        if (!$this->has_options && $this->display_space > 3)
+            $j->display_space = $this->display_space;
+        $j->view_score = $this->view_score;
+        if ($this->has_options) {
+            $j->options = array();
+            foreach ($this->options as $otext)
+                $j->options[] = $otext;
+            if ($this->option_letter) {
+                $j->options = array_reverse($j->options);
+                $j->option_letter = chr($this->option_letter - count($j->options));
+            }
+        }
+        return $j;
     }
 
     public function analyze() {

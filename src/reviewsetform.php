@@ -123,15 +123,7 @@ function rf_update() {
 	    if (rf_checkOptions($_REQUEST["options_$field"], $options, $_REQUEST["order_$field"], $levelChar)) {
                 if ($levelChar != 1)
                     $fj->option_letter = $levelChar;
-                $fj->options = array();
-
-		$optext = "";
-		$i = 1;
-		foreach ($options as $val) {
-                    $fj->options[] = $val;
-		    $optext .= "('" . sqlq($field) . "', $i, '" . sqlq($val) . "'), ";
-		    $i++;
-		}
+                $fj->options = array_values($options);
 
 		$result = $Conf->qe("update PaperReview set $field=0 where $field>" . count($options), $while);
 		if (edb_nrows_affected($result) > 0)
