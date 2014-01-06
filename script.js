@@ -2198,6 +2198,14 @@ function doopttype(e, nohilite) {
     }
 }
 
+window.review_form_settings = (function () {
+function rfs() {
+}
+
+return rfs;
+})();
+
+
 function copy_override_status(e) {
     var x = $$("dialog_override");
     if (x)

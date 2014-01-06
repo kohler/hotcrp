@@ -32,6 +32,12 @@ class ReviewField {
     public $display_order;
     private $analyzed;
 
+    static private $view_score_map = array("secret" => VIEWSCORE_ADMINONLY,
+                                           "admin" => VIEWSCORE_REVIEWERONLY,
+                                           "pc" => VIEWSCORE_PC,
+                                           "author" => VIEWSCORE_AUTHOR);
+    static private $view_score_rmap;
+
     public function __construct($rf, $id, $has_options) {
         $this->id = $id;
         $this->has_options = $has_options;
@@ -49,7 +55,14 @@ class ReviewField {
         $this->display_space = (int) @$j->display_space;
         if (!$this->has_options && $this->display_space < 3)
             $this->display_space = 3;
-        $this->view_score = $j->view_score;
+        $this->view_score = @$j->view_score;
+        if (is_string($this->view_score)
+            && isset(self::$view_score_map[$this->view_score]))
+            $this->view_score = self::$view_score_map[$this->view_score];
+        else if (!is_numeric($this->view_score)
+                 || ($vs = intval($this->view_score)) < VIEWSCORE_FALSE
+                 || $vs > VIEWSCORE_AUTHOR)
+            $this->view_score = VIEWSCORE_PC;
         if (@$j->position) {
             $this->displayed = true;
             $this->display_order = $j->position;
@@ -82,7 +95,7 @@ class ReviewField {
             $j->description = $this->description;
         if (!$this->has_options && $this->display_space > 3)
             $j->display_space = $this->display_space;
-        $j->view_score = $this->view_score;
+        $j->view_score = $this->unparse_view_score();
         if ($this->has_options) {
             $j->options = array();
             foreach ($this->options as $otext)
@@ -93,6 +106,19 @@ class ReviewField {
             }
         }
         return $j;
+    }
+
+    static public function unparse_view_score_value($vs) {
+        if (!self::$view_score_rmap)
+            self::$view_score_rmap = array_flip(self::$view_score_map);
+        if (isset(self::$view_score_rmap[$vs]))
+            return self::$view_score_rmap[$vs];
+        else
+            return $vs;
+    }
+
+    public function unparse_view_score() {
+        return self::unparse_view_score_value($this->view_score);
     }
 
     public function analyze() {

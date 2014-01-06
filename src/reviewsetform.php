@@ -104,8 +104,7 @@ function rf_update() {
         if ($sn != "" && $sn != "<None>")
             $fj->name = $sn;
 
-        $fj->view_score = max(min(rcvtint($_REQUEST["authorView_$field"], 0),
-                                  VIEWSCORE_AUTHOR), VIEWSCORE_ADMINONLY);
+        $fj->view_score = @$_REQUEST["authorView_$field"];
 
         $x = CleanHTML::clean(defval($_REQUEST, "description_$field", ""), $err);
         if ($x === false) {
@@ -163,12 +162,14 @@ function rf_getField($f, $formname, $fname, $backup = null) {
 	return $f->$fname;
 }
 
-function rf_formFieldText($f, $ordinalOrder, $numRows) {
-    global $rf, $Error, $rowidx, $captions, $Conf, $scoreHelps;
+function rf_form_field_text($f, $ordinalOrder, $numRows) {
+    global $rf, $Error, $rowidx, $captions, $Conf;
 
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     $trclass = "tr class='k" . ($rowidx % 2) . "'";
-    $x = "<$trclass><td colspan='4'><div class='g'></div></td></tr>\n";
+    $x = "<table id=\"revfield_$f->id\" class=\"setreviewform\" style=\"width:100%\">";
+    if ($rowidx != 0)
+        $x .= "<$trclass><td colspan='4'><div class='g'></div></td></tr>\n";
 
     // field name
     $fid = $f->id;
@@ -176,7 +177,7 @@ function rf_formFieldText($f, $ordinalOrder, $numRows) {
         $e = " error";
     else
         $e = "";
-    $x .= "<$trclass><td class='rxcaption nowrap$e'>Field name</td><td colspan='3' class='entry$e'><b><input type='text' size='50' class='textlite' name='shortName_$fid' value=\""
+    $x .= "<$trclass><td class='rxcaption nowrap$e'>Field name</td><td colspan='3' class='entry$e'><input type='text' size='50' class='textlite' name='shortName_$fid' style=\"font-weight:bold\" value=\""
 	. htmlspecialchars(rf_getField($f, "shortName", "name"))
 	. "\" onchange='hiliter(this)' /></b></td></tr>\n";
 
@@ -189,28 +190,18 @@ function rf_formFieldText($f, $ordinalOrder, $numRows) {
     $x .= Ht::select("order_$fid", $fp_opt, $ordinalOrder === false ? -1 : $ordinalOrder, array("onchange" => "hiliter(this)")) . " <span class='sep'></span>";
 
     // author view
-    if (count($scoreHelps) == 0)
-	$Conf->footerScript("addScoreHelp()");
-    if (!isset($scoreHelps["vis"])) {
-	$scoreHelps["vis"] = 1;
-	$Conf->footerHtml("<div class='scorehelpc' id='scorehelp_vis'><strong>Visibility</strong> choices are:
-<dl><dt><strong>Authors &amp; reviewers</strong></dt><dd>Visible to authors, reviewers, and the PC</dd>
-  <dt><strong>Reviewers only</strong></dt><dd>Visible to reviewers and the PC, but not authors</dd>
-  <dt><strong>Private</strong></dt><dd>Set by review authors, but visible only to administrators</dd>
-  <dt><strong>Secret</strong></dt><dd>Only set by and visible to administrators</dd></dl>
-</div>");
-    }
-    if (isset($_REQUEST["shortName_$fid"]) && !isset($_REQUEST["authorView_$fid"]))
-	$_REQUEST["authorView_$fid"] = 0;
+    $vsmap = array("author" => "Authors &amp; reviewers",
+                   "pc" => "Reviewers only",
+                   "admin" => "Administrators only");
+    $vs = ReviewField::unparse_view_score_value(rf_getField($f, "authorView", "view_score"));
+    if (!isset($vsmap[$vs]) && $vs == VIEWSCORE_ADMINONLY) {
+        $vs = "secret";
+        $vsmap["secret"] = "Administrators only (reviewer cannot set)";
+    } else if (!isset($vsmap[$vs]))
+        $vs = "pc";
     $x .= "Visibility &nbsp;"
-	. Ht::select("authorView_$fid",
-		      array(VIEWSCORE_AUTHOR => "Authors &amp; reviewers",
-			    VIEWSCORE_PC => "Reviewers only",
-			    VIEWSCORE_REVIEWERONLY => "Private",
-			    VIEWSCORE_ADMINONLY => "Secret"),
-                     max(min(cvtint(rf_getField($f, "authorView", "view_score"), -10000), VIEWSCORE_AUTHOR), VIEWSCORE_ADMINONLY),
+	. Ht::select("authorView_$fid", $vsmap, $vs,
 		      array("onchange" => "hiliter(this)"))
-	. " &nbsp;<a class='scorehelp small' href='" . hoturl("scorehelp", "f=vis") . "'>(What is this?)</a>"
 	. "</td><td class='hint'></td></tr>\n";
 
     // description
@@ -245,11 +236,33 @@ function rf_formFieldText($f, $ordinalOrder, $numRows) {
 	$x .= "</tr>\n";
     }
 
-    return $x . "<$trclass><td colspan='4'><div class='g'></div></td></tr>\n";
+    $x .= "<$trclass><td></td><td class=\"fart\"></td></tr>\n";
+    $x .= "<$trclass><td colspan='4'><div class='g'></div></td></tr>\n";
+    return $x . "</table>\n";
 }
 
 function rf_show() {
-    global $Conf, $captions;
+    global $Conf, $ConfSitePATH, $captions;
+
+    $rf = reviewForm();
+    $fmap = array();
+    foreach ($rf->fmap as $fid => $f)
+        $fmap[$fid] = $f->has_options;
+    $Conf->footerScript("review_form_settings.fieldmap=" . json_encode($fmap) . ";");
+
+    $samples1 = array();
+    foreach ($rf->fmap as $f)
+        if (!$f->displayed && $f->name && $f->name != "<None>"
+            && !preg_match('/^additional.*?(?:field|score)$/i', $f->name)) {
+            $samples[] = $fj = $f->unparse_json();
+            $fj->preferred_id = $f->id;
+        }
+    if (count($samples1))
+        $samples1[] = null;
+    $samples2 = json_decode(file_get_contents("$ConfSitePATH/src/reviewsamples.json"));
+    if ($samples2)
+        $samples1 = array_merge($samples1, $samples2);
+    $Conf->footerScript("review_form_settings.fieldsamples=" . json_encode($samples1) . ";");
 
     $captions = array
 	("description" => "Enter an HTML description for the review field here,
@@ -273,9 +286,7 @@ function rf_show() {
 	" &nbsp;
 <input type='submit' name='loadsample' value='Load template' /></div></td></tr></table>
 
-<hr class='hr' />
-
-<table class='setreviewform'>\n";
+<hr class='hr' />\n";
 
     $out = array();
     $rf = reviewForm();
@@ -297,8 +308,6 @@ function rf_show() {
 	$order = defval($_REQUEST, "order_$f->id", $f->display_order);
 	if ($order !== false && $order > 0)
 	    $order = $ordinalOrder++;
-	echo rf_formFieldText($f, $order, count($out));
+	echo rf_form_field_text($f, $order, count($out));
     }
-
-    echo "</table>\n";
 }
