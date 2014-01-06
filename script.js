@@ -1,5 +1,5 @@
 // script.js -- HotCRP JavaScript library
-// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix, hotcrp_list;
@@ -24,6 +24,13 @@ jQuery.fn.extend({
         return x;
     }
 });
+
+function ordinal(n) {
+    if (n >= 1 && n <= 3)
+        return n + ["st", "nd", "rd"][Math.floor(n - 1)];
+    else
+        return n + "th";
+}
 
 function eltPos(e) {
     if (typeof e == "string")
@@ -379,8 +386,9 @@ function highlightUpdate(which, off) {
     }
 }
 
-function hiliter(which, off) {
-    var elt = which;
+function hiliter(elt, off) {
+    if (typeof elt === "string")
+        elt = document.getElementById(elt);
     while (elt && elt.tagName && (elt.tagName.toUpperCase() != "DIV"
 				  || elt.className.substr(0, 4) != "aahc"))
 	elt = elt.parentNode;
@@ -2141,8 +2149,151 @@ function doopttype(e, nohilite) {
 }
 
 window.review_form_settings = (function () {
-function rfs() {
+var fieldmap, fieldorder, original, samples;
+
+function get_fid(elt) {
+    return elt.id.replace(/^.*_/, "");
 }
+
+function options_to_text(fieldj) {
+    var cc = 49, ccdelta = 1, i, t = [];
+    if (!fieldj.options)
+        return "";
+    if (fieldj.option_letter) {
+        cc = fieldj.option_letter.charCodeAt(0) + fieldj.options.length - 1;
+        ccdelta = -1;
+    }
+    for (i = 0; i != fieldj.options.length; ++i, cc += ccdelta)
+        t.push(String.fromCharCode(cc) + ". " + fieldj.options[i]);
+    if (fieldj.option_letter)
+        t.reverse();
+    if (t.length)
+        t.push("");             // get a trailing newline
+    return t.join("\n");
+}
+
+function set_position(fid, pos) {
+    var i, t = "", p;
+    for (i = 0; i != fieldorder.length; ++i)
+        t += "<option value='" + (i + 1) + "'>" + ordinal(i + 1) + "</option>";
+    t += "<option value='0'>Remove from form</option>";
+    $("#order_" + fid).html(t).val(pos);
+}
+
+function check_change(fid) {
+    var fieldj = original[fid] || {};
+    if ($.trim($("#shortName_" + fid).val()) != fieldj.name
+        || $("#order_" + fid).val() != (fieldj.position || 0)
+        || $("#description_" + fid).val() != (fieldj.description || "")
+        || $("#authorView_" + fid).val() != (fieldj.view_score || "pc")
+        || $.trim($("#options_" + fid).val()) != $.trim(options_to_text(fieldj))) {
+        $("#revfield_" + fid + " .revfield_revert").show();
+        hiliter("reviewform_container");
+    } else
+        $("#revfield_" + fid + " .revfield_revert").hide();
+    fold("revfield_" + fid, $("#order_" + fid).val() == 0);
+}
+
+function check_this_change() {
+    check_change(get_fid(this));
+}
+
+function fill_field(fid, fieldj) {
+    if (fid instanceof Node)
+        fid = get_fid(fid);
+    fieldj = fieldj || original[fid] || {};
+    $("#shortName_" + fid).val(fieldj.name || "");
+    if (!fieldj.selector || fieldj.position) // don't remove if sample
+        set_position(fid, fieldj.position || 0);
+    $("#description_" + fid).val(fieldj.description || "");
+    $("#authorView_" + fid).val(fieldj.view_score || "pc");
+    $("#options_" + fid).val(options_to_text(fieldj));
+    check_change(fid);
+    return false;
+}
+
+function revert() {
+    fill_field(this);
+    $("#samples_" + get_fid(this)).val("x");
+}
+
+function samples_change() {
+    var val = $(this).val();
+    if (val == "original")
+        fill_field(this);
+    else if (val != "x")
+        fill_field(this, samples[val]);
+}
+
+function append_field(fid) {
+    var jq = $($("#revfield_template").html().replace(/\$/g, fid)),
+        sampleopt = "<option value=\"x\">Field library...</option>", i;
+    for (i = 0; i != samples.length; ++i)
+        if (!samples[i].options == !fieldmap[fid])
+            sampleopt += "<option value=\"" + i + "\">" + samples[i].selector + "</option>";
+
+    if (!fieldmap[fid])
+        jq.find(".reviewrow_options").remove();
+    jq.find(".revfield_samples").html(sampleopt).on("change", samples_change);
+    jq.find(".revfield_revert").on("click", revert);
+    jq.find("input, textarea, select").on("change", check_this_change);
+    jq.appendTo("#reviewform_container");
+    $("<hr class='hr'>").appendTo("#reviewform_container");
+    fill_field(fid, original[fid]);
+}
+
+function rfs(fieldmapj, originalj, samplesj, errors, request) {
+    var i, fid;
+    fieldmap = fieldmapj;
+    original = originalj;
+    samples = samplesj;
+
+    fieldorder = [];
+    for (fid in original)
+        if (original[fid].position)
+            fieldorder.push(fid);
+    fieldorder.sort(function (a, b) {
+        return original[a].position - original[b].position;
+    });
+
+    // construct form
+    for (i = 0; i != fieldorder.length; ++i)
+        append_field(fieldorder[i]);
+
+    // highlight errors, apply request
+    for (i in request || {}) {
+        if (!$("#" + i).length)
+            rfs.add(false, i.replace(/^.*_/, ""));
+        $("#" + i).val(request[i]);
+        hiliter("reviewform_container");
+    }
+    for (i in errors || {})
+        $(".errloc_" + i).addClass("error");
+};
+
+function do_add(fid) {
+    fieldorder.push(fid);
+    original[fid] = original[fid] || {};
+    original[fid].position = fieldorder.length;
+    append_field(fid);
+    $(".reviewfield_order").each(function () {
+        var xfid = get_fid(this);
+        if (xfid != "$")
+            set_position(xfid, $(this).val());
+    });
+    hiliter("reviewform_container");
+    return true;
+}
+
+rfs.add = function (has_options, fid) {
+    if (fid)
+        return do_add(fid);
+    for (fid in fieldmap)
+        if (!fieldmap[fid] == !has_options
+            && $.inArray(fid, fieldorder) < 0)
+            return do_add(fid);
+    alert("You’ve reached the maximum number of " + (has_options ? "score fields." : "text fields."));
+};
 
 return rfs;
 })();

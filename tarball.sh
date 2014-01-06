@@ -120,9 +120,9 @@ src/papersearch.php
 src/papertable.php
 src/rank.php
 src/review.php
+src/reviewformlibrary.json
 src/reviewsetform.php
 src/reviewtable.php
-src/reviewtemplate.php
 src/updateschema.php
 
 Code/.htaccess

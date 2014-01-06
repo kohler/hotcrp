@@ -12,7 +12,8 @@ class Ht {
         $x = "";
         if ($js) {
             foreach (array("id", "tabindex", "onchange", "onclick", "onfocus",
-                           "onblur", "onsubmit", "class", "style", "size") as $k)
+                           "onblur", "onsubmit", "class", "style", "size",
+                           "rows", "cols") as $k)
                 if (isset($js[$k]))
                     $x .= " $k=\"" . str_replace("\"", "'", $js[$k]) . "\"";
             if (isset($js["disabled"]) && $js["disabled"])
@@ -35,6 +36,8 @@ class Ht {
     }
 
     static function select($name, $opt, $selected = null, $extra = null) {
+        if (is_array($selected) && $extra === null)
+            list($extra, $selected) = array($selected, null);
         $x = '<select name="' . $name . '"' . self::extra($extra) . ">";
         if ($selected === null || !isset($opt[$selected]))
             $selected = key($opt);
@@ -164,6 +167,13 @@ class Ht {
         return '<input type="text" name="' . $name . '" value="'
             . htmlspecialchars($value === null ? "" : $value) . '"'
             . self::extra($js) . ' />';
+    }
+
+    static function textarea($name, $value, $js = null) {
+        $js = $js ? $js : array();
+        return '<textarea name="' . $name . '"' . self::extra($js)
+            . '>' . htmlspecialchars($value === null ? "" : $value)
+            . '</textarea>';
     }
 
     static function actions($actions, $js = null, $extra = "") {

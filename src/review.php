@@ -36,7 +36,7 @@ class ReviewField {
                                            "admin" => VIEWSCORE_REVIEWERONLY,
                                            "pc" => VIEWSCORE_PC,
                                            "author" => VIEWSCORE_AUTHOR);
-    static private $view_score_rmap;
+    static private $view_score_rmap = null;
 
     public function __construct($rf, $id, $has_options) {
         $this->id = $id;
@@ -95,6 +95,8 @@ class ReviewField {
             $j->description = $this->description;
         if (!$this->has_options && $this->display_space > 3)
             $j->display_space = $this->display_space;
+        if ($this->displayed)
+            $j->position = $this->display_order;
         $j->view_score = $this->unparse_view_score();
         if ($this->has_options) {
             $j->options = array();
@@ -387,6 +389,13 @@ class ReviewForm {
             return $this->fmap[$id];
         else
             return null;
+    }
+
+    public function unparse_json() {
+        $fmap = array();
+        foreach ($this->fmap as $fid => $f)
+            $fmap[$fid] = $f->unparse_json();
+        return $fmap;
     }
 
     function reviewArchiveFields() {

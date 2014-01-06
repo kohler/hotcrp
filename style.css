@@ -1,5 +1,5 @@
 /* style.css -- HotCRP CSS styles */
-/* HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC */
+/* HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC */
 /* Distributed under an MIT-like license; see LICENSE */
 
 /* page background */
@@ -848,6 +848,9 @@ td.caption span.hint {
 div#aumg td.hint, table.paper td.hint, table.setreviewform td.hint {
 	width: 25%;
 }
+table.setreviewform td.rxcaption {
+	width: 10em;
+}
 td h2, td h3 {
 	margin-top: 0;
 	margin-bottom: 0;
@@ -930,14 +933,16 @@ td.padl, th.padl, div.padl {
 td.padlb, th.padlb, div.padlb {
 	padding-left: 2em;
 }
-td.error, td.error input, div.error, div.error input {
+div.error, div.error input, td.error, td.error input,
+tr.error > td, tr.error > td input {
 	font-weight: bold;
 	color: #ff0000;
 }
 td.lentry.error input, div.error input {
 	font-weight: normal;
 }
-span.error, td.error textarea, div.error textarea {
+div.error textarea, td.error textarea, tr.error > td textarea,
+span.error {
 	color: #ff0000;
 }
 

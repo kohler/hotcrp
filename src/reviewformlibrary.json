@@ -1,0 +1,156 @@
+[
+    {
+        "selector": "Overall merit (percentage rankings)",
+        "name": "Overall merit",
+        "preferred_id": "overAllMerit",
+        "options": [
+            "Bottom 50% of submitted papers",
+            "Top 50% but not top 25% of submitted papers",
+            "Top 25% but not top 10% of submitted papers",
+            "Top 10% but not top 5% of submitted papers",
+            "Top 5% of submitted papers!"
+        ],
+        "view_score": "author"
+    },
+    {
+        "selector": "Overall merit (Reject through Strong Accept)",
+        "name": "Overall merit",
+        "preferred_id": "overAllMerit",
+        "options": [
+            "Reject",
+            "Weak reject",
+            "Weak accept",
+            "Accept",
+            "Strong accept"
+        ],
+        "view_score": "author"
+    },
+    {
+        "selector": "Overall merit (Identify the Champion)",
+        "name": "Overall merit",
+        "preferred_id": "overAllMerit",
+        "options": [
+            "Reject",
+            "Weak paper, though I will not fight strongly against it",
+            "OK paper, but I will not champion it",
+            "Good paper, I will champion it"
+        ],
+        "option_letter": "A",
+        "view_score": "author"
+    },
+    {
+        "selector": "Reviewer confidence (Low through High)",
+        "name": "Reviewer confidence",
+        "preferred_id": "reviewerQualification",
+        "options": [
+            "Low",
+            "Medium",
+            "High"
+        ],
+        "view_score": "author"
+    },
+    {
+        "selector": "Reviewer expertise (5 options)",
+        "name": "Reviewer expertise",
+        "preferred_id": "reviewerQualification",
+        "options": [
+             "I know nothing about this area",
+             "I have passing familiarity with this area",
+             "I know the material, but am not an expert",
+             "I know a lot about this area",
+             "This is my area"
+        ],
+        "view_score": "author"
+    },
+    {
+        "selector": "Confidence (Identify the Champion)",
+        "name": "Confidence",
+        "preferred_id": "reviewerQualification",
+        "options": [
+            "I am not an expert; my evaluation is that of an informed outsider",
+            "I am knowledgeable in this area, but not an expert",
+            "I am an expert in this area"
+        ],
+        "option_letter": "X",
+        "view_score": "author"
+    },
+    {
+        "selector": "Novelty (4 options)",
+        "name": "Novelty",
+        "preferred_id": "novelty",
+        "options": [
+             "Published before or openly commercialized",
+             "Incremental improvement",
+             "New contribution",
+             "Surprisingly new contribution"
+        ],
+        "view_score": "author"
+    },
+    {
+        "selector": "Writing quality (5 options)",
+        "name": "Writing quality",
+        "preferred_id": "grammar",
+        "options": [
+             "Unacceptable",
+             "Needs improvement",
+             "Adequate",
+             "Well-written",
+             "Outstanding"
+        ],
+        "view_score": "author"
+    },
+    {
+        "selector": "Experimental methodology (5 options)",
+        "name": "Experimental methodology",
+        "preferred_id": "technicalMerit",
+        "options": [
+             "Unacceptable",
+             "Poor",
+             "Average",
+             "Good",
+             "Excellent"
+        ],
+        "view_score": "author"
+    },
+
+    {
+        "selector": "Paper summary",
+        "name": "Paper summary",
+        "preferred_id": "paperSummary",
+        "description": "Please summarize the paper briefly in your own words.",
+        "view_score": "author"
+    },
+    {
+        "selector": "Strengths",
+        "name": "Strengths",
+        "preferred_id": "strengthOfPaper",
+        "description": "What are the paper’s strengths? Just a couple sentences, please.",
+        "view_score": "author"
+    },
+    {
+        "selector": "Weaknesses",
+        "name": "Weaknesses",
+        "preferred_id": "weaknessOfPaper",
+        "description": "What are the paper’s weaknesses? Just a couple sentences, please.",
+        "view_score": "author"
+    },
+    {
+        "selector": "Comments to authors",
+        "name": "Comments to authors",
+        "preferred_id": "commentsToAuthor",
+        "view_score": "author"
+    },
+    {
+        "selector": "Comments to PC",
+        "name": "Comments to PC",
+        "preferred_id": "commentsToPC",
+        "view_score": "pc"
+    },
+    {
+        "selector": "Response questions",
+        "name": "Questions for authors’ response",
+        "preferred_id": "commentsToAddress",
+        "description": "Specific questions that could affect your accept/reject decision. Remember that the authors have limited space and must respond to all reviewers.",
+        "view_score": "author"
+    }
+]
