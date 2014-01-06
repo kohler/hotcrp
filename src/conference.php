@@ -1562,8 +1562,15 @@ class Conference {
 		    echo "<link rel=\"icon\" href=\"$url\" />\n";
 	    }
 
-	    $this->scriptStuff = "<script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "'></script>\n";
-	    $this->scriptStuff .= "<!--[if lte IE 6]> <script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=supersleight.js'></script> <![endif]-->\n";
+            if (isset($Opt["jqueryURL"]))
+                $jquery = htmlspecialchars($Opt["jqueryURL"]);
+            else if (@$Opt["jqueryCDN"])
+                $jquery = "http://code.jquery.com/jquery-1.10.2.min.js";
+            else
+                $jquery = "${ConfSiteBase}cacheable$ConfSiteSuffix?file=jquery-1.10.2.min.js";
+	    $this->scriptStuff = "<script type=\"text/javascript\" src=\"$jquery\"></script>\n"
+                . "<script type=\"text/javascript\" src=\"${ConfSiteBase}cacheable$ConfSiteSuffix?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "\"></script>\n"
+                . "<!--[if lte IE 6]> <script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=supersleight.js'></script> <![endif]-->\n";
 	    echo "<title>", $title, " - ", htmlspecialchars($Opt["shortName"]), "</title>\n";
 	    $this->headerPrinted = 1;
 	}

@@ -37,7 +37,11 @@ if ($file == "script.js") {
     header("Content-Type: text/javascript; charset=utf-8");
     if (@$Opt["strictJavascript"])
         $prefix = "\"use strict\";\n";
-} else if (substr($file, -4) === ".css" && css_ok($file))
+} else if ($file == "jquery-1.10.2.min.js" || $file == "jquery-1.10.2.js")
+    header("Content-Type: text/javascript; charset=utf-8");
+else if ($file == "jquery-1.10.2.min.map")
+    header("Content-Type: application/json; charset=utf-8");
+else if (substr($file, -4) === ".css" && css_ok($file))
     header("Content-Type: text/css; charset=utf-8");
 else if ($file == "supersleight-min.js" || $file == "supersleight.js")
     header("Content-Type: text/javascript; charset=utf-8");

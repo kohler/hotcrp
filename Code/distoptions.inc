@@ -169,6 +169,10 @@ $Opt["emailFrom"] = "you@example.com";
 //   noSearchAutocomplete  If set, do not implement Javascript autocompletion
 //                   on searchboxes.
 //   hideManager     If set, PC members are not shown paper managers.
+//   strictJavascript  If true, send Javascript over with "use strict" to
+//                   catch errors.
+//   jqueryURL       URL for jQuery. Defaults to the local minified jquery.
+//   jqueryCDN       If true, use the jQuery CDN.
 
 $Opt["disablePS"] = true;
 $Opt["smartScoreCompare"] = true;
