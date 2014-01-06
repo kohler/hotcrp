@@ -8,19 +8,22 @@ function $$(id) {
     return document.getElementById(id);
 }
 
-window.isArray = (function (toString) {
-    return function (x) {
-	return toString.call(x) === "[object Array]";
-    };
-})(Object.prototype.toString);
-
-function e_value(id, value) {
-    var elt = $$(id);
-    if (value == null)
-	return elt ? elt.value : undefined;
-    else if (elt)
-	elt.value = value;
-}
+jQuery.fn.extend({
+    geometry: function () {
+        var x;
+        if (this[0] == window)
+            x = {left: this.scrollLeft(), top: this.scrollTop()};
+        else
+            x = this.offset();
+        if (x) {
+            x.width = this.width();
+            x.height = this.height();
+            x.right = x.left + x.width;
+            x.bottom = x.top + x.height;
+        }
+        return x;
+    }
+});
 
 function eltPos(e) {
     if (typeof e == "string")
@@ -37,16 +40,6 @@ function eltPos(e) {
 	e = e.offsetParent;
     }
     return pos;
-}
-
-function make_e_class(tag, className) {
-    var x = document.createElement(tag);
-    x.className = className;
-    return x;
-}
-
-function get_body() {
-    return document.body || document.getElementsByTagName("body")[0];
 }
 
 function event_stop(evt) {
@@ -199,7 +192,7 @@ function display_main() {
 
 function window_trackerstate() {
     var trackerstate = null;
-    if (window.sessionStorage && window.JSON) {
+    if (window.sessionStorage) {
         trackerstate = sessionStorage.getItem("hotcrp_tracker");
         trackerstate = trackerstate && JSON.parse(trackerstate);
     }
@@ -246,7 +239,7 @@ function display_tracker() {
         return;
     }
 
-    body = get_body();
+    body = $("body")[0];
     if (!mnspace) {
         mnspace = document.createElement("div");
         mnspace.id = "trackerspace";
@@ -532,7 +525,7 @@ function papersel(value, name) {
 	xvalue = value, value_hash = true, i;
     name = name || "pap[]";
 
-    if (isArray(value)) {
+    if (jQuery.isArray(value)) {
 	xvalue = {};
 	for (i = value.length; i >= 0; --i)
 	    xvalue[value[i]] = 1;
@@ -720,7 +713,7 @@ function authorfold(prefix, relative, n) {
 	    break;
     // set number displayed
     if (relative >= 0) {
-	e_value(prefix + "count", n);
+	$("#" + prefix + "count").val(n);
 	numauthorfold[prefix] = n;
     }
     // IE won't actually do the fold unless we yell at it
@@ -1199,15 +1192,12 @@ return function () {
 
 
 function make_bubble(content) {
-    var bubdiv = make_e_class("div", "bubble"), dir = "r";
-    bubdiv.appendChild(make_e_class("div", "bubtail0 r"));
-    bubdiv.appendChild(make_e_class("div", "bubcontent"));
-    bubdiv.appendChild(make_e_class("div", "bubtail1 r"));
-    get_body().appendChild(bubdiv);
+    var bubdiv = $("<div class='bubble'><div class='bubtail0 r'></div><div class='bubcontent'></div><div class='bubtail1 r'></div></div>")[0], dir = "r";
+    $("body")[0].appendChild(bubdiv);
 
     function position_tail() {
 	var ch = bubdiv.childNodes, x, y;
-	var pos = eltPos(bubdiv), tailpos = eltPos(ch[0]);
+	var pos = $(bubdiv).geometry(), tailpos = $(ch[0]).geometry();
 	if (dir == "r" || dir == "l")
 	    y = Math.floor((pos.height - tailpos.height) / 2);
 	if (x != null)
@@ -1218,7 +1208,7 @@ function make_bubble(content) {
 
     var bubble = {
 	show: function (x, y) {
-	    var pos = eltPos(bubdiv);
+	    var pos = $(bubdiv).geometry();
 	    if (dir == "r")
 		x -= pos.width, y -= pos.height / 2;
 	    bubdiv.style.visibility = "visible";
@@ -1339,10 +1329,10 @@ function PaperRow(l, r, index) {
 	this.titlehint = i;
 }
 PaperRow.prototype.top = function () {
-    return eltPos(plt_tbody.childNodes[this.l]).top;
+    return $(plt_tbody.childNodes[this.l]).offset().top;
 };
 PaperRow.prototype.bottom = function () {
-    return eltPos(plt_tbody.childNodes[this.r]).bottom;
+    return $(plt_tbody.childNodes[this.r]).geometry().bottom;
 };
 PaperRow.prototype.middle = function () {
     return (this.top() + this.bottom()) / 2;
@@ -1371,7 +1361,8 @@ function analyze_rows(e) {
 }
 
 function tag_scroll() {
-    var geometry = Geometry(), delta = 0, y = mousepos.clientY + geometry.top;
+    var geometry = $(window).geometry(), delta = 0,
+        y = mousepos.clientY + geometry.top;
     if (y < geometry.top - 5)
 	delta = Math.max((y - (geometry.top - 5)) / 10, -10);
     else if (y > geometry.bottom)
@@ -1392,7 +1383,7 @@ function tag_mousemove(evt) {
     if (evt.clientX == null)
 	evt = mousepos;
     mousepos = {clientX: evt.clientX, clientY: evt.clientY};
-    var rows = plt_tbody.childNodes, geometry = Geometry(), a,
+    var rows = plt_tbody.childNodes, geometry = $(window).geometry(), a,
         x = evt.clientX + geometry.left, y = evt.clientY + geometry.top;
 
     // binary search to find containing rows
@@ -1412,7 +1403,7 @@ function tag_mousemove(evt) {
     if (l < rowanal.length && y > rowanal[l].middle())
 	++l;
     // if user drags far away, snap back
-    var plt_geometry = eltPos(plt_tbody);
+    var plt_geometry = $(plt_tbody).geometry();
     if (x < Math.min(geometry.left, plt_geometry.left) - 30
 	|| x > Math.max(geometry.right, plt_geometry.right) + 30
 	|| y < plt_geometry.top - 40 || y > plt_geometry.bottom + 40)
@@ -1452,7 +1443,7 @@ function tag_mousemove(evt) {
     }
     dragger.content(m);
     dragger.color(dragindex == srcindex && dragwander ? "grey" : "");
-    dragger.show(Math.min(eltPos(rowanal[srcindex].entry).left - 30,
+    dragger.show(Math.min($(rowanal[srcindex].entry).offset().left - 30,
 			  evt.clientX - 20), y);
 
     event_stop(evt);
@@ -1654,55 +1645,15 @@ return function (active_dragtag) {
 })();
 
 
-// thank you David Flanagan
-var Geometry = null;
-if (window.innerWidth) {
-    Geometry = function () {
-	return {
-	    left: window.pageXOffset,
-	    top: window.pageYOffset,
-	    width: window.innerWidth,
-	    height: window.innerHeight,
-	    right: window.pageXOffset + window.innerWidth,
-	    bottom: window.pageYOffset + window.innerHeight
-	};
-    };
-} else if (document.documentElement && document.documentElement.clientWidth) {
-    Geometry = function () {
-	var e = document.documentElement;
-	return {
-	    left: e.scrollLeft,
-	    top: e.scrollTop,
-	    width: e.clientWidth,
-	    height: e.clientHeight,
-	    right: e.scrollLeft + e.clientWidth,
-	    bottom: e.scrollTop + e.clientHeight
-	};
-    };
-} else if (document.body.clientWidth) {
-    Geometry = function () {
-	var e = document.body;
-	return {
-	    left: e.scrollLeft,
-	    top: e.scrollTop,
-	    width: e.clientWidth,
-	    height: e.clientHeight,
-	    right: e.scrollLeft + e.clientWidth,
-	    bottom: e.scrollTop + e.clientHeight
-	};
-    };
-}
-
-
 // score help
 function makescorehelp(anchor, which, dofold) {
     return function () {
 	var elt = $$("scorehelp_" + which);
 	if (elt && dofold)
 	    elt.className = "scorehelpc";
-	else if (elt && Geometry) {
-	    var anchorPos = eltPos(anchor);
-	    var wg = Geometry();
+	else if (elt) {
+	    var anchorPos = $(anchor).geometry();
+	    var wg = $(window).geometry();
 	    elt.className = "scorehelpo";
 	    elt.style.left = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, anchorPos.left)) + "px";
 	    if (anchorPos.bottom + 8 + elt.offsetHeight >= wg.bottom)
@@ -1757,11 +1708,11 @@ function popup(anchor, which, dofold, populate) {
     var elt = $$("popup_" + which), form, elts, populates, i, xelt, type;
     if (elt && dofold)
 	elt.className = "popupc";
-    else if (elt && Geometry) {
+    else if (elt) {
 	if (!anchor)
 	    anchor = $$("popupanchor_" + which);
-	var anchorPos = eltPos(anchor);
-	var wg = Geometry();
+	var anchorPos = $(anchor).geometry();
+	var wg = $(window).geometry();
 	elt.className = "popupo";
 	var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
 	var y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
@@ -1790,15 +1741,6 @@ function popup(anchor, which, dofold, populate) {
     }
 
     return false;
-}
-
-
-// JSON
-if (!window.JSON || !JSON.parse) {
-    JSON = window.JSON || {};
-    JSON.parse = function (text) {
-	return eval("(" + text + ")"); /* sigh */
-    };
 }
 
 
@@ -2065,10 +2007,10 @@ function plinfo(type, dofold, which) {
 
 	// initiate load
 	if (type == "aufull") {
-	    e_value("plloadform_get", "authors");
-	    e_value("plloadform_aufull", (dofold ? "" : "1"));
+	    $("#plloadform_get").val("authors");
+	    $("#plloadform_aufull").val(dofold ? "" : "1");
 	} else
-	    e_value("plloadform_get", type);
+	    $("#plloadform_get").val(type);
 	Miniajax.submit(["plloadform", type + "loadform"],
 			make_callback(dofold, type, which));
     }
@@ -2207,7 +2149,5 @@ return rfs;
 
 
 function copy_override_status(e) {
-    var x = $$("dialog_override");
-    if (x)
-        x.checked = e.checked;
+    $("#dialog_override").prop("checked", e.checked);
 }
