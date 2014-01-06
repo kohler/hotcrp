@@ -985,6 +985,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
     unset($_SESSION["settings_highlight"]);
 } else if ($Group == "rfo")
     rf_update();
+if (isset($_REQUEST["cancel"]) && check_post())
+    redirectSelf();
 
 
 // header and script
