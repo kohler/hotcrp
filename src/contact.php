@@ -654,36 +654,34 @@ class Contact {
     }
 
     public function allowAdminister($prow) {
-        if ($prow && $prow->has_conflict($this)
-            && $prow->managerContactId
-            && $prow->managerContactId != $this->contactId)
+        $manager = $prow ? $prow->managerContactId : 0;
+        if ($manager && $manager != $this->contactId && $prow->has_conflict($this))
             return false;
-        return $this->privChair
-            || ($prow && $prow->managerContactId
-                && $prow->managerContactId == $this->contactId);
+        return $this->privChair || $manager == $this->contactId;
     }
 
     public function canAdminister($prow, $forceShow = null) {
+        $manager = $prow ? $prow->managerContactId : 0;
         $conflict = $prow && $prow->has_conflict($this);
-        if ($conflict && $prow->managerContactId
-            && $prow->managerContactId != $this->contactId)
+        if ($manager && $manager != $this->contactId && $conflict)
             return false;
-        return ($this->privChair
-                || ($prow && $prow->managerContactId
-                    && $prow->managerContactId == $this->contactId))
-            && (!$conflict || self::override_conflict($forceShow));
+        else if (($this->privChair || $manager == $this->contactId)
+                 && (!$conflict || self::override_conflict($forceShow)))
+            return true;
+        else
+            return false;
     }
 
     public function actPC($prow, $forceShow = null) {
+        $manager = $prow ? $prow->managerContactId : 0;
         $conflict = $prow && $prow->has_conflict($this);
-        if ($conflict && $prow->managerContactId
-            && $prow->managerContactId != $this->contactId)
+        if ($manager && $manager != $this->contactId && $conflict)
             return false;
-        return $this->isPC
-            && (!$conflict
-                || (($this->privChair
-                     || $prow->managerContactId == $this->contactId)
-                    && self::override_conflict($forceShow)));
+        else if (($this->privChair || $manager == $this->contactId)
+                 && (!$conflict || self::override_conflict($forceShow)))
+            return true;
+        else
+            return $this->isPC && !$conflict;
     }
 
     public function actConflictType($prow) {
