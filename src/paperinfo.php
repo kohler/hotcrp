@@ -74,10 +74,11 @@ class PaperInfo {
             $contact = $Me->contactId;
         else if (is_object($contact))
             $contact = $contact->contactId;
-        if (!isset($this->contact_info_[$contact]))
-            $this->contact_info_[$contact] =
+        $ci = @$this->contact_info_[$contact];
+        if (!$ci)
+            $ci = $this->contact_info_[$contact] =
                 PaperContactInfo::load($this->paperId, $contact);
-        return $this->contact_info_[$contact];
+        return $ci;
     }
 
     public function replace_contact_info_map($cimap) {

@@ -1156,18 +1156,18 @@ class Conference {
 	return null;
     }
 
-    function reviewRows($q) {
+    function review_rows($q, $contact) {
 	$result = $this->qe($q, "while loading reviews");
 	$rrows = array();
-	while (($row = edb_orow($result)))
+	while (($row = PaperInfo::fetch($result, $contact)))
 	    $rrows[$row->reviewId] = $row;
 	return $rrows;
     }
 
-    function commentRows($q) {
+    function comment_rows($q, $contact) {
 	$result = $this->qe($q, "while loading comments");
 	$crows = array();
-	while (($row = edb_orow($result))) {
+	while (($row = PaperInfo::fetch($result, $contact))) {
             if (!isset($row->commentType))
                 setCommentType($row);
 	    $crows[$row->commentId] = $row;
@@ -1415,7 +1415,7 @@ class Conference {
 		    continue;
 		}
 	    } else if ($ct0) {
-		$crows = array_reverse($this->commentRows(self::_commentFlowQuery($contact, $ct0, $limit)));
+		$crows = array_reverse($this->comment_rows(self::_commentFlowQuery($contact, $ct0, $limit), $contact));
 		if (count($crows) == $limit)
 		    $ct0 = array($crows[0]->timeModified, $crows[0]->contactId, $crows[0]->paperId);
 		else
@@ -1432,7 +1432,7 @@ class Conference {
 		    continue;
 		}
 	    } else if ($rt0) {
-		$rrows = array_reverse($this->reviewRows(self::_reviewFlowQuery($contact, $rt0, $limit)));
+		$rrows = array_reverse($this->review_rows(self::_reviewFlowQuery($contact, $rt0, $limit), $contact));
 		if (count($rrows) == $limit)
 		    $rt0 = array($rrows[0]->reviewSubmitted, $rrows[0]->contactId, $rrows[0]->paperId);
 		else

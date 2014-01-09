@@ -283,7 +283,7 @@ if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
 	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextForm($row, $row, $Me, false) . "\n");
     }
 
-    $crows = $Conf->commentRows($Conf->paperQuery($Me, array("paperId" => $papersel, "allComments" => 1, "reviewerName" => 1)));
+    $crows = $Conf->comment_rows($Conf->paperQuery($Me, array("paperId" => $papersel, "allComments" => 1, "reviewerName" => 1)), $Me);
     foreach ($crows as $row)
 	if ($Me->canViewComment($row, $row, null))
 	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextComment($row, $row, $Me) . "\n");

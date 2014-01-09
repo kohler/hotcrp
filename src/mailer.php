@@ -499,7 +499,7 @@ class Mailer {
 	// save old au_seerev setting, and reset it so authors can see them.
 	$old_au_seerev = $Conf->setting("au_seerev");
 	$Conf->settings["au_seerev"] = AU_SEEREV_ALWAYS;
-	$crows = $Conf->commentRows($q . "\n\t\torder by commentId");
+	$crows = $Conf->comment_rows($q . "\n\t\torder by commentId", $contact);
         $rf = reviewForm();
 	$text = "";
 	foreach ($crows as $crow)

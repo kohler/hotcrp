@@ -2236,10 +2236,10 @@ class PaperTable {
     function resolveComments() {
 	global $Conf, $Me;
 	if ($this->prow) {
-	    $this->crows = $Conf->commentRows
+	    $this->crows = $Conf->comment_rows
 		("select PaperComment.*, firstName, lastName, email
 		from PaperComment join ContactInfo using (contactId)
-		where paperId=" . $this->prow->paperId . " order by commentId");
+		where paperId=" . $this->prow->paperId . " order by commentId", $Me);
 	    $this->mycrows = array();
 	    foreach ($this->crows as $crow)
 		if ($Me->canViewComment($this->prow, $crow, null))
