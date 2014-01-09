@@ -105,11 +105,11 @@ class Contact {
         if (isset($o->has_outstanding_review))
             $c->has_outstanding_review_ = $o->has_outstanding_review;
 	$c->roles = defval($o, "roles", 0);
-	if (defval($o, "isPC", false))
+	if (@$o->isPC)
 	    $c->roles |= self::ROLE_PC;
-	if (defval($o, "isAssistant", false))
+	if (@$o->isAssistant)
 	    $c->roles |= self::ROLE_ADMIN;
-	if (defval($o, "isChair", false))
+	if (@$o->isChair)
 	    $c->roles |= self::ROLE_CHAIR;
 	$c->isPC = ($c->roles & self::ROLE_PCLIKE) != 0;
 	$c->privChair = ($c->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
@@ -467,10 +467,10 @@ class Contact {
         }
     }
 
-    private function load_by_query($query) {
+    private function load_by_query($where) {
 	global $Conf, $Opt;
 
-	$result = $Conf->q($query);
+	$result = $Conf->q("select ContactInfo.* from ContactInfo where $where");
         if (!($row = edb_orow($result)))
             return false;
 
@@ -503,7 +503,7 @@ class Contact {
 
     static function find_by_id($cid) {
         $acct = new Contact;
-        if (!$acct->load_by_query("select * from ContactInfo where contactId=" . (int) $cid))
+        if (!$acct->load_by_query("ContactInfo.contactId=" . (int) $cid))
             return null;
         return $acct;
     }
@@ -569,7 +569,7 @@ class Contact {
             return false;
 
         // Having added, load it
-        if (!$this->load_by_query("select c.* from ContactInfo c where c.contactId=$cid"))
+        if (!$this->load_by_query("ContactInfo.contactId=$cid"))
             return false;
 
         // Success! Save newly authored papers
@@ -586,7 +586,7 @@ class Contact {
         // Lookup by email
         $email = trim($email ? $email : "");
         if ($email != ""
-            && $acct->load_by_query("select * from ContactInfo where email='" . sqlq($email) . "'"))
+            && $acct->load_by_query("ContactInfo.email='" . sqlq($email) . "'"))
             return $acct;
 
         // Not found: register
