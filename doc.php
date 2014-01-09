@@ -54,7 +54,7 @@ else {
 // are assistants, chairs & PC members. Otherwise, you need
 // to be a contact person for that paper.
 if (!isset($Error)
-    && !($prow = $Conf->paperRow($paperId, $Me->contactId, $whyNot)))
+    && !($prow = $Conf->paperRow($paperId, $Me, $whyNot)))
     $Error = whyNotText($whyNot, "view");
 if (!isset($Error) && !$Me->canDownloadPaper($prow, $whyNot))
     $Error = whyNotText($whyNot, "view");

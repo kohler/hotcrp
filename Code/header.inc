@@ -188,6 +188,8 @@ function __autoload($class_name) {
     global $ConfSitePATH;
     if ($class_name == "ReviewForm")
 	require_once("$ConfSitePATH/src/review.php");
+    else if ($class_name == "PaperInfo")
+        require_once("$ConfSitePATH/src/paperinfo.php");
     else if ($class_name == "PaperSearch")
         require_once("$ConfSitePATH/src/papersearch.php");
     else if ($class_name == "PaperActions")

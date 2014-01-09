@@ -816,30 +816,6 @@ function setCommentType($crow) {
 }
 
 // watch functions
-function setReviewInfo($dst, $src) {
-    $dst->myReviewType = $src->myReviewType;
-    $dst->myReviewSubmitted = $src->myReviewSubmitted;
-    $dst->myReviewNeedsSubmit = $src->myReviewNeedsSubmit;
-    $dst->conflictType = $src->conflictType;
-}
-
-function loadReviewInfo($dst, $contact, $copy = false) {
-    global $Conf;
-    if ($copy)
-	$dst = clone $dst;
-    $result = $Conf->q("select reviewType as myReviewType,
-		reviewSubmitted as myReviewSubmitted,
-		reviewNeedsSubmit as myReviewNeedsSubmit,
-		conflictType
-		from ContactInfo
-		left join PaperConflict on (PaperConflict.paperId=$dst->paperId and PaperConflict.contactId=ContactInfo.contactID)
-		left join PaperReview on (PaperReview.paperId=$dst->paperId and PaperReview.contactId=ContactInfo.contactId)
-		where ContactInfo.contactId=$contact->contactId");
-    if (($row = edb_orow($result)))
-	setReviewInfo($dst, $row);
-    return $dst;
-}
-
 function saveWatchPreference($paperId, $contactId, $watchtype, $on) {
     global $Conf, $OK;
     $explicit = ($watchtype << WATCHSHIFT_EXPLICIT);
@@ -855,29 +831,23 @@ function saveWatchPreference($paperId, $contactId, $watchtype, $on) {
 function genericWatch($prow, $watchtype, $callback) {
     global $Conf, $Me;
 
-    $q = "select C.contactId, firstName, lastName, email,
+    $q = "select ContactInfo.contactId, firstName, lastName, email,
 		password, roles, defaultWatch,
-		R.reviewType as myReviewType,
-		R.reviewSubmitted as myReviewSubmitted,
-		R.reviewNeedsSubmit as myReviewNeedsSubmit,
+		PaperReview.reviewType myReviewType,
+		PaperReview.reviewSubmitted myReviewSubmitted,
+		PaperReview.reviewNeedsSubmit myReviewNeedsSubmit,
 		conflictType, watch, preferredEmail";
     if ($Conf->sversion >= 47)
         $q .= ", disabled";
-
-    $q .= "\nfrom ContactInfo C
-		left join PaperConflict Conf on (Conf.paperId=$prow->paperId and Conf.contactId=C.contactId)
-		left join PaperWatch W on (W.paperId=$prow->paperId and W.contactId=C.contactId)
-		left join PaperReview R on (R.paperId=$prow->paperId and R.contactId=C.contactId)
-		left join PaperComment Cmt on (Cmt.paperId=$prow->paperId and Cmt.contactId=C.contactId)\n";
-
-    $q .= "where watch is not null"
-	. " or conflictType>=" . CONFLICT_AUTHOR
-	. " or reviewType is not null or commentId is not null"
-	. " or (defaultWatch & " . ($watchtype << WATCHSHIFT_ALL) . ")!=0";
-
-    // save review information since we modify $prow
-    $saveProw = (object) null;
-    setReviewInfo($saveProw, $prow);
+    $q .= "\nfrom ContactInfo
+	left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId)
+	left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId)
+	left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
+	left join PaperComment on (PaperComment.paperId=$prow->paperId and PaperComment.contactId=ContactInfo.contactId)
+	where watch is not null
+	or conflictType>=" . CONFLICT_AUTHOR . "
+	or reviewType is not null or commentId is not null
+	or (defaultWatch & " . ($watchtype << WATCHSHIFT_ALL) . ")!=0";
 
     $result = $Conf->qe($q, "while processing email notifications");
     $watchers = array();
@@ -906,10 +876,10 @@ function genericWatch($prow, $watchtype, $callback) {
     if (count($watchers)
 	&& (($Conf->timePCViewAllReviews(false, false) && !$Conf->timePCViewAllReviews(false, true))
 	    || ($Conf->timeAuthorViewReviews(false) && !$Conf->timeAuthorViewReviews(true)))) {
-	$result = $Conf->qe("select C.contactId, R.contactId, max(R.reviewNeedsSubmit) from ContactInfo C
- 		left join PaperReview R on (R.contactId=C.contactId)
-		where C.contactId in (" . join(",", array_keys($watchers)) . ")
-		group by C.contactId", "while processing email notifications");
+	$result = $Conf->qe("select ContactInfo.contactId, PaperReview.contactId, max(reviewNeedsSubmit) from ContactInfo
+ 		left join PaperReview on (PaperReview.contactId=ContactInfo.contactId)
+		where ContactInfo.contactId in (" . join(",", array_keys($watchers)) . ")
+		group by ContactInfo.contactId", "while processing email notifications");
 	while (($row = edb_row($result))) {
 	    $watchers[$row[0]]->has_review = $row[1] > 0;
 	    $watchers[$row[0]]->has_outstanding_review = $row[2] > 0;
@@ -919,14 +889,12 @@ function genericWatch($prow, $watchtype, $callback) {
     $method = is_array($callback) ? $callback[1] : null;
     foreach ($watchers as $row) {
 	$minic = Contact::make($row);
-	setReviewInfo($prow, $row);
+        $prow->assign_contact_info($row);
         if ($method)
             $callback[0]->$method($prow, $minic);
         else
             $callback($prow, $minic);
     }
-
-    setReviewInfo($prow, $saveProw);
 }
 
 

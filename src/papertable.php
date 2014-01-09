@@ -57,12 +57,12 @@ class PaperTable {
 	    $ms["r"] = true;
 	if ($Me->canReview($prow, null))
 	    $ms["re"] = true;
-	if ($prow->conflictType >= CONFLICT_AUTHOR
+	if ($prow->has_author($Me)
 	    && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
 	    $ms["pe"] = true;
 	if ($Me->canViewPaper($prow))
 	    $ms["p"] = true;
-	if ($prow->conflictType >= CONFLICT_AUTHOR
+	if ($prow->has_author($Me)
 	    || $Me->allowAdminister($prow))
 	    $ms["pe"] = true;
 	if ($prow->myReviewType >= REVIEW_SECONDARY
@@ -347,11 +347,11 @@ class PaperTable {
 	}
 
 	// conflicts
-	if ($prow->conflictType >= CONFLICT_AUTHOR)
+	if ($prow->has_author($Me))
 	    $out[] = "You are an <span class='author'>author</span> of this paper.";
-	else if ($prow->conflictType > 0)
+	else if ($prow->has_conflict($Me))
 	    $out[] = "You have a <span class='conflict'>conflict</span> with this paper.";
-	if ($Me->isPC && $prow->conflictType <= 0
+	if ($Me->isPC && !$prow->has_conflict($Me)
 	    && $Conf->timeUpdatePaper($prow) && $this->mode != "assign"
 	    && $this->mode != "contact")
 	    $out[] = "<div class='xwarning'>The authors still have <a href='" . hoturl("deadlines") . "'>time</a> to make changes.</div>";
@@ -1299,7 +1299,7 @@ class PaperTable {
 	if ($site || defval($this->prow, "paperTags", "") !== "") {
 	    // Note that tags MUST NOT contain HTML special characters.
 	    $tagger = new Tagger;
-	    $tx = $tagger->unparse_link_viewable($this->prow->paperTags, false, $this->prow->conflictType <= 0);
+	    $tx = $tagger->unparse_link_viewable($this->prow->paperTags, false, !$this->prow->has_conflict($Me));
 	    $editable = $site && $Me->canSetTags($this->prow, $forceShow);
 	    $unfolded = $editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") == "tags");
 
@@ -1430,10 +1430,11 @@ class PaperTable {
     private function papstripWatch() {
 	global $Conf, $Me, $linkExtra;
         $prow = $this->prow;
+        $conflictType = $prow->conflict_type($Me);
 	if (!($this->watchCheckbox
 	      && $prow->timeSubmitted > 0
-	      && ($prow->conflictType >= CONFLICT_AUTHOR
-		  || $prow->conflictType <= 0
+	      && ($conflictType >= CONFLICT_AUTHOR
+		  || $conflictType <= 0
 		  || ($this->admin && Contact::override_conflict()))
 	      && $Me->contactId > 0))
 	    return;
@@ -1513,7 +1514,7 @@ class PaperTable {
 		    $m .= "You don’t have to upload the paper itself right away, but ";
 		$m .= "incomplete submissions will not be considered.$startDeadline" . "</div>";
 	    }
-	} else if ($prow->conflictType >= CONFLICT_AUTHOR
+	} else if ($prow->has_author($Me)
 		   && ($Conf->timeUpdatePaper($prow)
 		       || $prow->timeSubmitted <= 0)) {
 	    $timeUpdate = $Conf->timeUpdatePaper($prow);
@@ -1542,11 +1543,11 @@ class PaperTable {
 		$m .= "<div class='xwarning'>The site is not open for submission updates at the moment.$override</div>";
 	    else
 		$m .= "<div class='xwarning'>The <a href='" . hoturl("deadlines") . "'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override</div>";
-	} else if ($prow->conflictType >= CONFLICT_AUTHOR && $prow->outcome > 0
+	} else if ($prow->has_author($Me) && $prow->outcome > 0
 		   && $Conf->timeSubmitFinalPaper()) {
 	    $updateDeadline = $this->deadlineSettingIs("final_soft");
 	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final version for the paper here.$updateDeadline  You may also edit paper contacts, allowing others to view reviews and make changes." . "</div>";
-	} else if ($prow->conflictType >= CONFLICT_AUTHOR) {
+	} else if ($prow->has_author($Me)) {
 	    $override2 = ($this->admin ? " As an administrator, you can update the paper anyway by selecting “Override deadlines.”" : "");
 	    if ($this->mode == "pe") {
 		$m .= "<div class='xinfo'>This paper is under review and can’t be changed, but you can change its contacts";
@@ -1602,7 +1603,7 @@ class PaperTable {
         else {
             $b = Ht::button("Withdraw paper", array("onclick" => "popup(this,'w',0,true)"));
             $admins = "";
-            if ((!$this->admin || $prow->conflictType >= CONFLICT_AUTHOR)
+            if ((!$this->admin || $prow->has_author($Me))
                 && !$Conf->timeFinalizePaper($prow))
                 $admins = "Only administrators can undo this step.";
             $override = "";
@@ -1977,7 +1978,7 @@ class PaperTable {
 	    $editablecid = defval($_REQUEST, "commentId", "xxx");
 	    if (isset($_REQUEST["noedit"]))
 		$editablecid = "xxx";
-	    $editableresponse = $Conf->timeAuthorRespond() && $prow->conflictType >= CONFLICT_AUTHOR;
+	    $editableresponse = $Conf->timeAuthorRespond() && $prow->has_author($Me);
 
 	    foreach ($this->mycrows as $cr) {
 		$editMode = $editablecid == $cr->commentId
@@ -1991,7 +1992,7 @@ class PaperTable {
 		$cv->show($prow, null, $editablecid == "new" && $useRequest,
 			  true, $editablecid != "new");
 	    if (!$cv->nresponse && $Conf->timeAuthorRespond()
-		&& ($prow->conflictType >= CONFLICT_AUTHOR
+		&& ($prow->has_author($Me)
 		    || ($Me->canAdminister($prow) && $editablecid == "response")))
 		$cv->showResponse($prow, null, false, true);
 
@@ -2269,7 +2270,7 @@ class PaperTable {
 	}
 	if ($this->mode == "r" && $prow && !count($this->rrows)
 	    && !count($this->mycrows)
-	    && $prow->conflictType >= CONFLICT_AUTHOR
+	    && $prow->has_author($Me)
 	    && !$Me->allowAdminister($prow)
 	    && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
 	    $this->mode = "pe";

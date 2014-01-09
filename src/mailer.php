@@ -292,7 +292,7 @@ class Mailer {
         if ($what == "%CAPABILITY%")
             return ($isbool || $this->capability ? $this->capability : "");
 	if ($what == "%NEWASSIGNMENTS%")
-	    return $this->getNewAssignments($this->contact);
+	    return $this->get_new_assignments($this->contact);
 
 	// rest is only there if we have a real paper
 	if (!$this->row || defval($this->row, "paperId") <= 0) {
@@ -458,31 +458,29 @@ class Mailer {
     }
 
     function getReviews($contact, $finalized) {
-	global $Conf, $Me, $rf;
+	global $Conf;
 	if ($this->hideReviews)
 	    return "[Reviews are hidden since you have incomplete reviews of your own.]";
 
 	$result = $Conf->qe("select Paper.title, PaperReview.*,
 		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
-		conflictType, ContactReview.reviewType as myReviewType
+		conflictType, ContactReview.reviewType myReviewType
 		from PaperReview
 		join Paper using (paperId)
 		join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
 		left join PaperConflict on (PaperConflict.contactId=$contact->contactId and PaperConflict.paperId=PaperReview.paperId)
 		left join PaperReview as ContactReview on (ContactReview.contactId=$contact->contactId and ContactReview.paperId=PaperReview.paperId)
 		where PaperReview.paperId=" . $this->row->paperId . " order by reviewOrdinal", "while retrieving reviews");
-	if (edb_nrows($result)) {
-	    $text = "";
-	    while (($row = edb_orow($result)))
-		if ($row->reviewSubmitted)
-		    $text .= $rf->prettyTextForm($row, $row, $contact, true) . "\n";
-	    return $text;
-	} else
-	    return "";
+        $rf = reviewForm();
+        $text = "";
+        while (($row = edb_orow($result)))
+            if ($row->reviewSubmitted)
+                $text .= $rf->prettyTextForm($row, $row, $contact, true) . "\n";
+        return $text;
     }
 
     function getComments($contact) {
-	global $Conf, $rf;
+	global $Conf;
 	if ($this->hideReviews)
 	    return "";
 
@@ -498,11 +496,12 @@ class Mailer {
 	    $q .= "\n\t\twhere cmt.commentId=$this->commentId";
 	else
 	    $q .= "\n\t\twhere cmt.paperId=" . $this->row->paperId;
-	$text = "";
 	// save old au_seerev setting, and reset it so authors can see them.
 	$old_au_seerev = $Conf->setting("au_seerev");
 	$Conf->settings["au_seerev"] = AU_SEEREV_ALWAYS;
 	$crows = $Conf->commentRows($q . "\n\t\torder by commentId");
+        $rf = reviewForm();
+	$text = "";
 	foreach ($crows as $crow)
 	    if ($contact->canViewComment($this->row, $crow, false))
 		$text .= $rf->prettyTextComment($this->row, $crow, $contact) . "\n";
@@ -510,14 +509,14 @@ class Mailer {
 	return $text;
     }
 
-    function getNewAssignments($contact) {
-	global $Conf, $Me, $rf;
-	$result = $Conf->qe("select R.paperId, P.title
-		from PaperReview R join Paper P using (paperId)
-		where R.contactId=" . $contact->contactId . "
-		and R.timeRequested>R.timeRequestNotified
-		and R.reviewSubmitted is null and R.reviewNeedsSubmit!=0
-		order by R.paperId", "while retrieving assignments");
+    private function get_new_assignments($contact) {
+	global $Conf;
+	$result = $Conf->qe("select r.paperId, p.title
+		from PaperReview r join Paper p using (paperId)
+		where r.contactId=" . $contact->contactId . "
+		and r.timeRequested>r.timeRequestNotified
+		and r.reviewSubmitted is null and r.reviewNeedsSubmit!=0
+		order by r.paperId", "while retrieving assignments");
 	$text = "";
 	while (($row = edb_row($result)))
 	    $text .= ($text ? "\n#" : "#") . $row[0] . " " . $row[1];
@@ -723,18 +722,18 @@ class Mailer {
 		group by u.contactId", "while looking up contacts to send email");
 
 	// must set the current conflict type in $row for each contact
-	$old_conflictType = $row->conflictType;
+        $contact_info_map = $row->replace_contact_info_map(null);
 
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
-	    $row->conflictType = $contact->conflictType;
+            $row->assign_contact_info($contact);
 	    Mailer::send($template, $row, Contact::make($contact), $otherContact, $rest);
 	    $contacts[] = Text::user_html($contact);
 	}
 
-	$row->conflictType = $old_conflictType;
-	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts)
-            && $Me->allowAdminister($row)) {
+	$row->replace_contact_info_map($contact_info_map);
+	if ($Me->allowAdminister($row) && !$row->has_author($Me)
+            && count($contacts)) {
 	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
 	    if (isset($rest["infoNames"]) && $Me->allowAdminister($row))
 		$contactsmsg = pluralx($contacts, "contact") . ", " . commajoin($contacts);
@@ -760,18 +759,18 @@ class Mailer {
 	    $rest["cc"] = defval($Opt, "emailCc", $Opt["contactName"] . " <" . $Opt["contactEmail"] . ">");
 
 	// must set the current conflict type in $row for each contact
-	$old_conflictType = $row->conflictType;
+        $contact_info_map = $row->replace_contact_info_map(null);
 
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
-	    $row->conflictType = $contact->conflictType;
+	    $row->assign_contact_info($contact);
 	    Mailer::send($template, $row, Contact::make($contact), $otherContact, $rest);
 	    $contacts[] = Text::user_html($contact);
 	}
 
-	$row->conflictType = $old_conflictType;
-	if ($row->conflictType < CONFLICT_AUTHOR && count($contacts)
-            && $Me->allowAdminister($row)) {
+        $row->replace_contact_info_map($contact_info_map);
+	if ($Me->allowAdminister($row) && !$row->has_author($Me)
+            && count($contacts)) {
 	    $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
 	    $Conf->infoMsg("Sent email to paper #$row->paperId&rsquo;s " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . $endmsg);
 	}

@@ -616,7 +616,7 @@ class PaperList extends BaseList {
 	$Conf->footerHtml($t);
     }
 
-    private function _prepareQuery($me, $queryOptions) {
+    private function _prepareQuery($contact, $queryOptions) {
 	global $Conf;
 
 	// prepare review query (see also search > getaction == "reviewers")
@@ -652,7 +652,7 @@ class PaperList extends BaseList {
 	    $queryOptions["scores"] = array_keys($queryOptions["scores"]);
 
 	// prepare query text
-        $pq = $Conf->paperQuery($me, $queryOptions);
+        $pq = $Conf->paperQuery($contact, $queryOptions);
 
 	// make query
 	return $Conf->qe($pq, "while selecting papers");
@@ -896,17 +896,17 @@ class PaperList extends BaseList {
 	    $this->viewmap->columns = true;
     }
 
-    public function text($listname, $me, $options = array()) {
+    public function text($listname, $contact, $options = array()) {
 	global $Conf, $ConfSiteBase;
 
-	$this->contact = $me;
+	$this->contact = $contact;
 	$this->count = 0;
 	$this->any = new Qobject;
-        $this->tagger = new Tagger($me);
+        $this->tagger = new Tagger($contact);
 	$url = $this->search->url();
 
 	// check role type
-	$this->scoresOk = $me->privChair || $me->is_reviewer()
+	$this->scoresOk = $contact->privChair || $contact->is_reviewer()
 	    || $Conf->timeAuthorViewReviews();
 
 	// initialize query
@@ -1004,7 +1004,7 @@ class PaperList extends BaseList {
 	    }
 
 	// make query
-	$result = $this->_prepareQuery($me, $queryOptions);
+	$result = $this->_prepareQuery($contact, $queryOptions);
 	if (!$result)
 	    return NULL;
 
@@ -1012,7 +1012,7 @@ class PaperList extends BaseList {
 	if (edb_nrows($result) == 0)
 	    return "No matching papers";
 	$rows = array();
-	while (($row = edb_orow($result)))
+	while (($row = PaperInfo::fetch($result, $contact)))
 	    $rows[] = $row;
 
         // analyze rows (usually noop)
@@ -1169,17 +1169,17 @@ class PaperList extends BaseList {
 	return $x;
     }
 
-    function ajaxColumn($fieldId, $me) {
+    function ajaxColumn($fieldId, $contact) {
 	global $Conf;
 
-	$this->contact = $me;
+	$this->contact = $contact;
 	$this->count = 0;
 	$this->any = new Qobject;
-        $this->tagger = new Tagger($me);
+        $this->tagger = new Tagger($contact);
 	$url = $this->search->url();
 
 	// check role type
-	$this->scoresOk = $me->privChair || $me->is_reviewer()
+	$this->scoresOk = $contact->privChair || $contact->is_reviewer()
 	    || $Conf->timeAuthorViewReviews();
 
 	// initialize query
@@ -1202,13 +1202,13 @@ class PaperList extends BaseList {
 	$unfolded = $this->unfolded;
 
 	// make query
-	$result = $this->_prepareQuery($me, $queryOptions);
+	$result = $this->_prepareQuery($contact, $queryOptions);
 	if (!$result)
 	    return null;
 
 	// collect row data
         $rows = array();
-        while (($row = edb_orow($result)))
+        while (($row = PaperInfo::fetch($result, $contact)))
             $rows[] = $row;
 
         // analyze rows (usually noop)

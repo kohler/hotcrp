@@ -118,7 +118,7 @@ function retractRequest($email, $prow, $confirm = true) {
     // send confirmation email, if the review site is open
     if ($Conf->timeReviewOpen() && $row) {
 	$Requester = Contact::make($row);
-	Mailer::send("@retractrequest", loadReviewInfo($prow, $Requester, true), $Requester, $Me, array("cc" => Text::user_email_to($Me)));
+	Mailer::send("@retractrequest", $prow, $Requester, $Me, array("cc" => Text::user_email_to($Me)));
     }
 
     // confirmation message
@@ -283,7 +283,7 @@ function requestReview($email) {
     $Conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1", $while);
 
     // send confirmation email
-    Mailer::send("@requestreview", loadReviewInfo($prow, $Them, true), $Them, $Requester, array("reason" => $reason));
+    Mailer::send("@requestreview", $prow, $Them, $Requester, array("reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
@@ -437,7 +437,7 @@ if (isset($_REQUEST["deny"]) && $Me->allowAdminister($prow) && check_post()
 	    $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')", $while);
 
 	// send anticonfirmation email
-	Mailer::send("@denyreviewrequest", loadReviewInfo($prow, $Requester, true), $Requester, (object) array("fullName" => trim(defval($_REQUEST, "name", "")), "email" => $email));
+	Mailer::send("@denyreviewrequest", $prow, $Requester, (object) array("fullName" => trim(defval($_REQUEST, "name", "")), "email" => $email));
 
 	$Conf->confirmMsg("Proposed reviewer denied.");
     } else

@@ -106,7 +106,7 @@ if ($getaction == "address" && isset($papersel) && $Me->isPC) {
     $result = $Conf->qe("select firstName, lastName, email, voicePhoneNumber, ContactAddress.* from ContactInfo left join ContactAddress using (contactId) where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
     $people = array();
     $phone = false;
-    while ($row = edb_orow($result)) {
+    while (($row = edb_orow($result))) {
 	$p = array(null, $row->email, $row->addressLine1, $row->addressLine2,
 		   $row->city, $row->state, $row->zipCode, $row->country);
 	if ($row->voicePhoneNumber) {

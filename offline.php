@@ -28,7 +28,7 @@ if (isset($_REQUEST["uploadForm"])
     && check_post()) {
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
     while (($req = $rf->parseTextForm($tf))) {
-	if (($prow = $Conf->paperRow($req['paperId'], $Me->contactId, $whyNot))
+	if (($prow = $Conf->paperRow($req['paperId'], $Me, $whyNot))
 	    && $Me->canSubmitReview($prow, null, $whyNot)) {
 	    $rrow = $Conf->reviewRow(array("paperId" => $prow->paperId, "contactId" => $Me->contactId,
 					   "rev_tokens" => defval($_SESSION, "rev_tokens", array()),
@@ -51,7 +51,7 @@ function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
 
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => array_keys($settings))), "while selecting papers");
     $settingrank = ($Conf->setting("tag_rank") && $tag == "~" . $Conf->setting_data("tag_rank"));
-    while (($row = edb_orow($result)))
+    while (($row = PaperInfo::fetch($result, $Me)))
 	if ($settings[$row->paperId] !== null
 	    && !($settingrank
 		 ? $Me->canSetRank($row, true)

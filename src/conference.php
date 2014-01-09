@@ -1127,7 +1127,7 @@ class Conference {
 	return $pq . "\n";
     }
 
-    function paperRow($sel, $contactId = -1, &$whyNot = null) {
+    function paperRow($sel, $contact, &$whyNot = null) {
 	$whyNot = array();
 	if (!is_array($sel))
 	    $sel = array('paperId' => $sel);
@@ -1142,7 +1142,7 @@ class Conference {
 		 && !preg_match('/^\d+[A-Z][A-Z]?$/i', $sel['reviewId']))
 	    $whyNot['invalidId'] = 'review';
 	else {
-	    $q = $this->paperQuery($contactId, $sel);
+	    $q = $this->paperQuery($contact, $sel);
 	    $result = $this->q($q);
 
 	    if (!$result)
@@ -1150,7 +1150,7 @@ class Conference {
 	    else if (edb_nrows($result) == 0)
 		$whyNot['noPaper'] = 1;
 	    else
-		return edb_orow($result);
+		return PaperInfo::fetch($result, $contact);
 	}
 
 	return null;

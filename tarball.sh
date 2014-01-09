@@ -114,6 +114,7 @@ src/meetingtracker.php
 src/messages.csv
 src/paperactions.php
 src/papercolumn.php
+src/paperinfo.php
 src/paperlist.php
 src/paperoption.php
 src/papersearch.php

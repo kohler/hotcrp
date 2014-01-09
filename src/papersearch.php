@@ -2380,7 +2380,7 @@ class PaperSearch {
 	    $delete = array();
 	    $result = $Conf->qe("select * from $this->_matchTable", "while performing search");
 	    $qe_heading = $qe->get_float("heading");
-	    while (($row = edb_orow($result))) {
+	    while (($row = PaperInfo::fetch($result, $this->cid))) {
 		if ($this->thenmap !== null) {
 		    $x = false;
 		    for ($i = 0; $i < count($qe->value) && $x === false; ++$i)

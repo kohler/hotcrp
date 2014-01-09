@@ -82,7 +82,7 @@ class CommentView {
 	}
 	echo "</span>";
 	if ($crow && !$response
-	    && ($prow->conflictType == 0
+	    && (!$prow->has_conflict($Me)
                 || ($Me->allowAdminister($prow) && $forceShow))) {
             if ($crow->commentType >= COMMENTTYPE_AUTHOR)
                 $x = "";
@@ -245,7 +245,7 @@ class CommentView {
         $this->table_begin("response");
 
 	// Links
-	if ($crow && ($prow->conflictType >= CONFLICT_AUTHOR
+	if ($crow && ($prow->has_author($Me)
                       || $Me->allowAdminister($prow))
 	    && !$editMode && $Me->canRespond($prow, $crow))
 	    echo "<div class='floatright'>",
@@ -291,7 +291,7 @@ class CommentView {
         else
             echo Message::html("responseinstructions");
         echo "</div>\n";
-        if ($prow->conflictType < CONFLICT_AUTHOR)
+        if (!$prow->has_author($Me))
             echo "<div class='hint'>Although you aren’t a contact for this paper, as an administrator you can edit the authors’ response.</div>\n";
 
 	// From here on, edit mode.

@@ -1,6 +1,6 @@
 <?php
 // contact.php -- HotCRP helper class representing system users
-// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class Contact {
@@ -630,10 +630,15 @@ class Contact {
     function _fetchPaperRow($prow, &$whyNot) {
 	global $Conf;
 	if (!is_object($prow))
-	    return $Conf->paperRow($prow, $this->contactId, $whyNot);
+	    return $Conf->paperRow($prow, $this, $whyNot);
 	else {
 	    $whyNot = array("paperId" => $prow->paperId);
-	    return $prow;
+            if ($prow instanceof PaperInfo)
+                return $prow;
+            else {
+                trigger_error("Contact::_fetchPaperRow called on a non-PaperInfo object");
+                return new PaperInfo($prow, $this);
+            }
 	}
     }
 
@@ -649,31 +654,35 @@ class Contact {
     }
 
     public function allowAdminister($prow) {
-        if ($prow && $prow->conflictType > 0 && $prow->managerContactId
+        if ($prow && $prow->has_conflict($this)
+            && $prow->managerContactId
             && $prow->managerContactId != $this->contactId)
             return false;
         return $this->privChair
-            || ($prow && $prow->managerContactId && $prow->managerContactId == $this->contactId);
+            || ($prow && $prow->managerContactId
+                && $prow->managerContactId == $this->contactId);
     }
 
     public function canAdminister($prow, $forceShow = null) {
-        if ($prow && $prow->conflictType > 0 && $prow->managerContactId
+        $conflict = $prow && $prow->has_conflict($this);
+        if ($conflict && $prow->managerContactId
             && $prow->managerContactId != $this->contactId)
             return false;
         return ($this->privChair
                 || ($prow && $prow->managerContactId
                     && $prow->managerContactId == $this->contactId))
-            && (!$prow || $prow->conflictType <= 0
-                || self::override_conflict($forceShow));
+            && (!$conflict || self::override_conflict($forceShow));
     }
 
     public function actPC($prow, $forceShow = null) {
-        if ($prow && $prow->conflictType > 0 && $prow->managerContactId
+        $conflict = $prow && $prow->has_conflict($this);
+        if ($conflict && $prow->managerContactId
             && $prow->managerContactId != $this->contactId)
             return false;
         return $this->isPC
-            && (!$prow || $prow->conflictType <= 0
-                || (($this->privChair || $prow->managerContactId == $this->contactId)
+            && (!$conflict
+                || (($this->privChair
+                     || $prow->managerContactId == $this->contactId)
                     && self::override_conflict($forceShow)));
     }
 
@@ -681,13 +690,14 @@ class Contact {
 	global $Conf;
 	// If an author-view capability is set, then use it -- unless this
 	// user is a PC member or reviewer, which takes priority.
+        $ci = $prow->contact_info($this);
 	if (isset($this->capabilities)
 	    && isset($this->capabilities[$prow->paperId])
 	    && ($this->capabilities[$prow->paperId] & self::CAP_AUTHORVIEW)
 	    && !$this->isPC
-	    && $prow->myReviewType <= 0)
+	    && $ci->review_type <= 0)
 	    return CONFLICT_AUTHOR;
-	return $prow->conflictType;
+	return $ci->conflict_type;
     }
 
     public function actAuthorView($prow, $download = false) {
@@ -719,7 +729,7 @@ class Contact {
     }
 
     function canEditPaper($prow, &$whyNot = null) {
-	return $prow->conflictType >= CONFLICT_AUTHOR
+	return $prow->conflict_type($this) >= CONFLICT_AUTHOR
             || $this->allowAdminister($prow);
     }
 
@@ -730,13 +740,13 @@ class Contact {
 	    return false;
         $admin = $this->allowAdminister($prow);
 	// policy
-	if (($prow->conflictType >= CONFLICT_AUTHOR || $admin)
+	if (($prow->conflict_type($this) >= CONFLICT_AUTHOR || $admin)
 	    && $prow->timeWithdrawn <= 0
 	    && ($Conf->timeUpdatePaper($prow)
                 || ($admin && self::override_deadlines())))
 	    return true;
 	// collect failure reasons
-	if ($prow->conflictType < CONFLICT_AUTHOR && !$admin)
+	if ($prow->conflict_type($this) < CONFLICT_AUTHOR && !$admin)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
@@ -757,13 +767,13 @@ class Contact {
 	    return false;
         $admin = $this->allowAdminister($prow);
 	// policy
-	if (($prow->conflictType >= CONFLICT_AUTHOR || $admin)
+	if (($prow->conflict_type($this) >= CONFLICT_AUTHOR || $admin)
 	    && $prow->timeWithdrawn <= 0
 	    && ($Conf->timeFinalizePaper($prow)
                 || ($admin && self::override_deadlines())))
 	    return true;
 	// collect failure reasons
-	if ($prow->conflictType < CONFLICT_AUTHOR && !$admin)
+	if ($prow->conflict_type($this) < CONFLICT_AUTHOR && !$admin)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
@@ -784,14 +794,14 @@ class Contact {
         $admin = $this->allowAdminister($prow);
         $override = $admin && ($override || self::override_deadlines());
 	// policy
-	if (($prow->conflictType >= CONFLICT_AUTHOR || $admin)
+	if (($prow->conflict_type($this) >= CONFLICT_AUTHOR || $admin)
 	    && $prow->timeWithdrawn <= 0
             && ($override || $prow->outcome == 0))
 	    return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
-	if ($prow->conflictType < CONFLICT_AUTHOR && !$admin)
+	if ($prow->conflict_type($this) < CONFLICT_AUTHOR && !$admin)
 	    $whyNot["author"] = 1;
         else if ($prow->outcome != 0 && !$override)
             $whyNot["decided"] = 1;
@@ -807,13 +817,13 @@ class Contact {
 	    return false;
         $admin = $this->allowAdminister($prow);
 	// policy
-	if (($prow->conflictType >= CONFLICT_AUTHOR || $admin)
+	if (($prow->conflict_type($this) >= CONFLICT_AUTHOR || $admin)
 	    && $prow->timeWithdrawn > 0
 	    && ($Conf->timeUpdatePaper($prow)
                 || ($admin && self::override_deadlines())))
 	    return true;
 	// collect failure reasons
-	if ($prow->conflictType < CONFLICT_AUTHOR && !$admin)
+	if ($prow->conflict_type($this) < CONFLICT_AUTHOR && !$admin)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn <= 0)
 	    $whyNot["notWithdrawn"] = 1;
@@ -833,13 +843,13 @@ class Contact {
         $admin = $this->allowAdminister($prow);
 	$override = $admin && ($override || self::override_deadlines());
 	// policy
-	if (($prow->conflictType >= CONFLICT_AUTHOR || $admin)
+	if (($prow->conflict_type($this) >= CONFLICT_AUTHOR || $admin)
 	    && $Conf->collectFinalPapers()
 	    && $prow->timeWithdrawn <= 0 && $prow->outcome > 0
 	    && ($Conf->timeSubmitFinalPaper() || $override))
 	    return true;
 	// collect failure reasons
-	if ($prow->conflictType < CONFLICT_AUTHOR && !$admin)
+	if ($prow->conflict_type($this) < CONFLICT_AUTHOR && !$admin)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
@@ -866,12 +876,13 @@ class Contact {
 	// policy
 	if ($conflictType >= CONFLICT_AUTHOR
 	    || $admin
-	    || ($prow->myReviewType > 0 && $Conf->timeReviewerViewSubmittedPaper())
+	    || ($prow->has_review($this)
+                && $Conf->timeReviewerViewSubmittedPaper())
 	    || ($this->isPC && $Conf->timePCViewPaper($prow, $download)))
 	    return true;
 	// collect failure reasons
 	if (!$this->isPC && $conflictType < CONFLICT_AUTHOR
-	    && $prow->myReviewType <= 0) {
+	    && !$prow->has_review($this)) {
 	    $whyNot["permission"] = 1;
 	    return false;
 	}
@@ -881,9 +892,11 @@ class Contact {
 	    $whyNot["notSubmitted"] = 1;
 	if ($this->isPC && !$Conf->timePCViewPaper($prow, $download))
 	    $whyNot["deadline"] = "sub_sub";
-	else if ($prow->myReviewType > 0 && !$Conf->timeReviewerViewSubmittedPaper())
+	else if ($prow->has_review($this)
+                 && !$Conf->timeReviewerViewSubmittedPaper())
 	    $whyNot["deadline"] = "sub_sub";
-	if ((!$this->isPC && $prow->myReviewType <= 0) || count($whyNot) == 1)
+	if ((!$this->isPC && !$prow->has_review($this))
+            || count($whyNot) == 1)
 	    $whyNot["permission"] = 1;
 	return false;
     }
@@ -896,7 +909,7 @@ class Contact {
         global $Opt;
         return $this->privChair
             || ($prow && $prow->managerContactId == $this->contactId)
-            || (($this->isPC || ($prow && $prow->myReviewType > 0))
+            || (($this->isPC || ($prow && $prow->has_review($this)))
                 && defval($Opt, "hideManager", false));
     }
 
@@ -911,18 +924,19 @@ class Contact {
 	    return false;
 	// policy
 	$conflictType = $this->actConflictType($prow);
+        $has_review = $prow->has_review($this);
         $bs = $Conf->setting("sub_blind");
-        $nonblind = ((($this->isPC || $prow->myReviewType > 0)
+        $nonblind = ((($this->isPC || $has_review)
                       && $Conf->timeReviewerViewAcceptedAuthors()
                       && $prow->outcome > 0)
                      || $bs == BLIND_NEVER
                      || ($bs == BLIND_OPTIONAL
                          && !(isset($prow->paperBlind) ? $prow->paperBlind : $prow->blind))
                      || ($bs == BLIND_UNTILREVIEW
-                         && defval($prow, "myReviewSubmitted")));
+                         && $prow->review_submitted($this)));
         if (($nonblind && $prow->timeSubmitted > 0
              && ($this->isPC
-                 || ($prow->myReviewType > 0
+                 || ($has_review
                      && $Conf->timeReviewerViewSubmittedPaper())))
             || ($nonblind && $prow->timeWithdrawn <= 0 && $this->isPC
                 && $Conf->setting("pc_seeall") > 0)
@@ -935,7 +949,7 @@ class Contact {
 	    $whyNot["withdrawn"] = 1;
 	else if ($prow->timeSubmitted <= 0)
 	    $whyNot["notSubmitted"] = 1;
-	else if ($this->isPC || $prow->myReviewType > 0)
+	else if ($this->isPC || $has_review)
 	    $whyNot["blindSubmission"] = 1;
 	else
 	    $whyNot["permission"] = 1;
@@ -958,7 +972,8 @@ class Contact {
 	if (!$this->canViewPaper($prow, $whyNot))
 	    return false;	// $whyNot already set
         if ($conflictType >= CONFLICT_AUTHOR
-            || (($admin || $this->isPC || ($prow && $prow->myReviewType > 0))
+            || (($admin || $this->isPC
+                 || ($prow && $prow->has_review($this)))
                 && (($opt->pcView == 0 && $admin)
                     || $opt->pcView == 1
                     || ($opt->pcView == 2
@@ -1010,12 +1025,11 @@ class Contact {
             $pc_seeallrev = $Conf->setting("pc_seeallrev");
         $admin = $this->allowAdminister($prow);
 	$conflictType = $this->actConflictType($prow);
+        $myReviewType = $prow->review_type($this);
 	// policy
 	if ($admin && $forceShow)
 	    return true;
-	if (($prow->timeSubmitted > 0
-	     || defval($prow, "myReviewType") > 0
-	     || $admin)
+	if (($prow->timeSubmitted > 0 || $myReviewType || $admin)
 	    && (($conflictType >= CONFLICT_AUTHOR
 		 && $Conf->timeAuthorViewReviews($this->has_outstanding_review() && $this->has_review())
 		 && $rrowSubmitted
@@ -1026,13 +1040,12 @@ class Contact {
 		    && $conflictType == 0 && $rrowSubmitted
 		    && $pc_seeallrev > 0	// see also timePCViewAllReviews()
 		    && ($pc_seeallrev != 4 || !$this->has_outstanding_review())
-		    && ($pc_seeallrev != 3 || !defval($prow, "myReviewType"))
+		    && ($pc_seeallrev != 3 || !$myReviewType)
                     && $viewscore >= VIEWSCORE_PC)
-		|| (defval($prow, "myReviewType") > 0
+		|| ($myReviewType
 		    && $conflictType == 0
                     && $rrowSubmitted
-		    && (defval($prow, "myReviewSubmitted") > 0
-			|| defval($prow, "myReviewNeedsSubmit", 1) == 0)
+                    && $prow->review_not_incomplete($this)
 		    && ($this->isPC || $Conf->settings["extrev_view"] >= 1)
                     && $viewscore >= VIEWSCORE_PC)
 		|| ($rrow
@@ -1045,7 +1058,8 @@ class Contact {
 	    $whyNot["withdrawn"] = 1;
 	else if ($prow->timeSubmitted <= 0)
 	    $whyNot["notSubmitted"] = 1;
-	else if ($conflictType < CONFLICT_AUTHOR && !$this->isPC && $prow->myReviewType <= 0)
+	else if ($conflictType < CONFLICT_AUTHOR && !$this->isPC
+                 && !$myReviewType)
 	    $whyNot['permission'] = 1;
 	else if ($conflictType >= CONFLICT_AUTHOR && $Conf->timeAuthorViewReviews()
 		 && $this->has_outstanding_review() && $this->has_review())
@@ -1056,9 +1070,8 @@ class Contact {
 	    $whyNot['deadline'] = 'au_seerev';
 	else if ($conflictType > 0)
 	    $whyNot['conflict'] = 1;
-	else if ($prow->myReviewType > 0
-                 && !$this->is_core_pc()
-                 && $prow->myReviewSubmitted > 0)
+	else if (!$this->is_core_pc()
+                 && $prow->review_submitted($this))
 	    $whyNot['externalReviewer'] = 1;
 	else if (!$rrowSubmitted)
 	    $whyNot['reviewNotSubmitted'] = 1;
@@ -1083,13 +1096,14 @@ class Contact {
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
         $admin = $this->allowAdminister($prow);
+        $myReviewType = $prow->review_type($this);
 	// policy
-	if (($prow->myReviewType >= REVIEW_SECONDARY || $admin)
+	if (($myReviewType >= REVIEW_SECONDARY || $admin)
 	    && ($Conf->time_review(false, true) || !$time
                 || ($admin && self::override_deadlines())))
 	    return true;
 	// collect failure reasons
-	if ($prow->myReviewType < REVIEW_SECONDARY)
+	if ($myReviewType < REVIEW_SECONDARY)
 	    $whyNot['permission'] = 1;
 	else {
 	    $whyNot['deadline'] = ($this->isPC ? "pcrev_hard" : "extrev_hard");
@@ -1107,7 +1121,7 @@ class Contact {
 
     function timeReview($prow, $rrow) {
 	global $Conf;
-	if ($prow->myReviewType || $prow->reviewId
+	if ($prow->has_review($this) || $prow->reviewId
             || ($rrow && $this->ownReview($rrow))
 	    || ($rrow && $rrow->contactId != $this->contactId
                 && $this->allowAdminister($prow)))
@@ -1133,11 +1147,11 @@ class Contact {
 	    else if (isset($rrow->contactId))
 		$rrow_contactId = $rrow->contactId;
 	} else
-	    $myReview = $prow->myReviewType > 0;
+	    $myReview = $prow->has_review($this);
 	// policy
 	if (($prow->timeSubmitted > 0 || $myReview
 	     || ($manager && $forceShow))
-	    && (($this->isPC && $prow->conflictType == 0 && !$rrow)
+	    && (($this->isPC && !$prow->has_conflict($this) && !$rrow)
 		|| $myReview || ($manager && $forceShow))
 	    && (($myReview && $Conf->time_review($this->isPC, true))
                 || (!$myReview && $this->can_review_any())
@@ -1148,22 +1162,22 @@ class Contact {
 	// If either is set, the system will still allow review form download.
 	if ($rrow && $rrow_contactId != $this->contactId && !$admin)
 	    $whyNot['differentReviewer'] = 1;
-	else if (!$this->isPC && $prow->myReviewType <= 0)
+	else if (!$this->isPC && !$myReview)
 	    $whyNot['permission'] = 1;
 	else if ($prow->timeWithdrawn > 0)
 	    $whyNot['withdrawn'] = 1;
 	else if ($prow->timeSubmitted <= 0)
 	    $whyNot['notSubmitted'] = 1;
 	else {
-	    if ($prow->conflictType > 0 && !($manager && $forceShow))
+	    if ($prow->has_conflict($this) && !($manager && $forceShow))
 		$whyNot['conflict'] = 1;
-	    else if ($this->isPC && $prow->myReviewType <= 0
+	    else if ($this->isPC && !$myReview
 		     && !$this->can_review_any()
 		     && (!$rrow || $rrow_contactId == $this->contactId))
 		$whyNot['reviewNotAssigned'] = 1;
 	    else
 		$whyNot['deadline'] = ($this->isPC ? "pcrev_hard" : "extrev_hard");
-	    if ($admin && $prow->conflictType > 0)
+	    if ($admin && $prow->has_conflict($this))
 		$whyNot['chairMode'] = 1;
 	    if ($admin && isset($whyNot['deadline']))
 		$whyNot['override'] = 1;
@@ -1182,7 +1196,7 @@ class Contact {
 	    return $this->actPC($prow);
 	else if ($rs == REV_RATINGS_PC_EXTERNAL)
 	    return $this->actPC($prow)
-		|| ($prow->conflictType <= 0 && $prow->myReviewType > 0);
+		|| (!$prow->has_conflict($this) && $prow->has_review($this));
 	else
 	    return false;
     }
@@ -1191,7 +1205,7 @@ class Contact {
 	global $Conf;
 	return $Conf->setting("tag_rank")
 	    && ($this->actPC($prow, $forceShow)
-		|| ($prow->conflictType <= 0 && $prow->myReviewType > 0));
+		|| (!$prow->has_conflict($this) && $prow->has_review($this)));
     }
 
 
@@ -1206,13 +1220,14 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
+        $ci = $prow->contact_info($this);
 	$forceShow = self::override_conflict();
         $admin = $this->allowAdminister($prow);
 	// policy
-	if (($prow->timeSubmitted > 0 || $prow->myReviewType > 0)
-	    && (($admin && ($forceShow || $prow->conflictType == 0))
-		|| ($this->isPC && $prow->conflictType == 0)
-		|| $prow->myReviewType > 0)
+	if (($prow->timeSubmitted > 0 || $ci->review_type > 0)
+	    && (($admin && ($forceShow || $ci->conflict_type == 0))
+		|| ($this->isPC && $ci->conflict_type > 0)
+		|| $ci->review_type > 0)
 	    && ($Conf->time_review($this->isPC, true)
 		|| $Conf->setting('cmt_always') > 0
 		|| ($admin && (!$submit || self::override_deadlines())))
@@ -1223,18 +1238,18 @@ class Contact {
 	// collect failure reasons
 	if ($crow && $crow->contactId != $this->contactId && !$admin)
 	    $whyNot['differentReviewer'] = 1;
-	else if (!$this->isPC && $prow->myReviewType <= 0)
+	else if (!$this->isPC && $ci->review_type <= 0)
 	    $whyNot['permission'] = 1;
 	else if ($prow->timeWithdrawn > 0)
 	    $whyNot['withdrawn'] = 1;
 	else if ($prow->timeSubmitted <= 0)
 	    $whyNot['notSubmitted'] = 1;
 	else {
-	    if ($prow->conflictType > 0)
+	    if ($ci->conflict_type > 0)
 		$whyNot['conflict'] = 1;
 	    else
 		$whyNot['deadline'] = ($this->isPC ? "pcrev_hard" : "extrev_hard");
-	    if ($admin && $prow->conflictType > 0)
+	    if ($admin && $ci->conflict_type > 0)
 		$whyNot['chairMode'] = 1;
 	    if ($admin && isset($whyNot['deadline']))
 		$whyNot['override'] = 1;
@@ -1278,25 +1293,22 @@ class Contact {
                 && !($ctype & COMMENTTYPE_DRAFT)
                 && $this->canViewReview($prow, null, $forceShow)
                 && (($this->isPC && !$Conf->setting("pc_seeblindrev"))
-                    || (defval($prow, "myReviewType") > 0
-			&& (defval($prow, "myReviewSubmitted") > 0
-			    || defval($prow, "myReviewNeedsSubmit", 1) == 0)))
+                    || $prow->review_not_incomplete($this))
                 && ($this->is_core_pc()
                     ? $ctype >= COMMENTTYPE_PCONLY
                     : $ctype >= COMMENTTYPE_REVIEWER)))
 	    return true;
 	// collect failure reasons
 	if (($conflictType < CONFLICT_AUTHOR
-	     && !$this->isPC && $prow->myReviewType <= 0)
+	     && !$this->isPC && !$prow->has_review($this))
 	    || (!$admin && ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY))
 	    $whyNot["permission"] = 1;
 	else if ($conflictType >= CONFLICT_AUTHOR)
 	    $whyNot["deadline"] = 'au_seerev';
 	else if ($conflictType > 0)
 	    $whyNot["conflict"] = 1;
-	else if ($prow->myReviewType > 0
-                 && !$this->is_core_pc()
-                 && defval($prow, "myReviewSubmitted") > 0)
+	else if (!$this->is_core_pc()
+                 && $prow->review_submitted($this))
 	    $whyNot["externalReviewer"] = 1;
 	else if ($ctype & COMMENTTYPE_DRAFT)
 	    $whyNot["responseNotReady"] = 1;
@@ -1314,16 +1326,17 @@ class Contact {
 	    return false;
 	$forceShow = self::override_conflict();
         $admin = $this->allowAdminister($prow);
+        $conflictType = $this->actConflictType($prow);
 	// policy
 	if ($prow->timeSubmitted > 0
-	    && (($admin && ($forceShow || $prow->conflictType == 0))
-		|| $prow->conflictType >= CONFLICT_AUTHOR)
+	    && (($admin && ($forceShow || $conflictType == 0))
+		|| $conflictType >= CONFLICT_AUTHOR)
 	    && ($Conf->timeAuthorRespond()
 		|| ($admin && (!$submit || self::override_deadlines())))
 	    && (!$crow || ($crow->commentType & COMMENTTYPE_RESPONSE)))
 	    return true;
 	// collect failure reasons
-	if (!$admin && $prow->conflictType < CONFLICT_AUTHOR)
+	if (!$admin && $conflictType < CONFLICT_AUTHOR)
 	    $whyNot['permission'] = 1;
 	else if ($prow->timeWithdrawn > 0)
 	    $whyNot['withdrawn'] = 1;
@@ -1331,7 +1344,7 @@ class Contact {
 	    $whyNot['notSubmitted'] = 1;
 	else {
 	    $whyNot['deadline'] = "resp_done";
-	    if ($admin && $prow->conflictType > 0)
+	    if ($admin && $conflictType > 0)
 		$whyNot['chairMode'] = 1;
 	    if ($admin && isset($whyNot['deadline']))
 		$whyNot['override'] = 1;
@@ -1358,7 +1371,7 @@ class Contact {
 	    $result = $Conf->qe($query);
 	    return edb_nrows($result) > 0;
 	} else
-	    return $prow->conflictType >= CONFLICT_AUTHOR;
+	    return $prow->conflict_type($this) >= CONFLICT_AUTHOR;
     }
 
     function amDiscussionLead($paperId, $prow = null) {
@@ -1377,7 +1390,7 @@ class Contact {
     }
 
     function canEditContactAuthors($prow) {
-	return $prow->conflictType >= CONFLICT_AUTHOR
+	return $prow->conflict_type($this) >= CONFLICT_AUTHOR
             || $this->allowAdminister($prow);
     }
 
@@ -1393,11 +1406,14 @@ class Contact {
 	// iff there could exist a paper for which canViewReviewerIdentity
 	// is true.
 	if ($prow === true)
-	    $prow = (object) array("conflictType" => 0, "managerContactId" => 0,
-			"myReviewType" => ($this->is_reviewer() ? 1 : 0),
-			"myReviewSubmitted" => 1,
-			"paperId" => 1, "timeSubmitted" => 1);
+	    $prow = new PaperInfo
+                (array("conflictType" => 0, "managerContactId" => 0,
+                       "myReviewType" => ($this->is_reviewer() ? 1 : 0),
+                       "myReviewSubmitted" => 1,
+                       "myReviewNeedsSubmit" => 0,
+                       "paperId" => 1, "timeSubmitted" => 1), $this);
 	$conflictType = $this->actConflictType($prow);
+        $myReviewType = $prow->review_type($this);
         $admin = $this->allowAdminister($prow);
 	if (($admin && $forceShow)
 	    || ($rrow && $rrow_contactId == $this->contactId)
@@ -1408,9 +1424,8 @@ class Contact {
 		&& (!($pc_seeblindrev = $Conf->setting("pc_seeblindrev"))
 		    || ($pc_seeblindrev == 2
 			&& $this->canViewReview($prow, $rrow, $forceShow))))
-	    || ($prow && $prow->myReviewType > 0
-		&& (defval($prow, "myReviewSubmitted") > 0
-		    || defval($prow, "myReviewNeedsSubmit", 1) == 0)
+	    || ($prow && $myReviewType
+                && $prow->review_not_incomplete($this)
 		&& ($this->isPC || $Conf->settings["extrev_view"] >= 2))
 	    || !reviewBlind($rrow))
 	    return true;
@@ -1425,7 +1440,7 @@ class Contact {
         $admin = $this->allowAdminister($prow);
         return ($admin && ($conflictType == 0 || $forceShow))
             || $prow->leadContactId == $this->contactId
-            || (($this->isPC || $prow->myReviewType > 0)
+            || (($this->isPC || $prow->has_review($this))
                 && $conflictType == 0
                 && $this->canViewReviewerIdentity($prow, null, $forceShow));
     }
@@ -1447,7 +1462,7 @@ class Contact {
 	if (($admin && $forceShow)
 	    || $crow_contactId == $this->contactId
 	    || ($this->isPC && $conflictType == 0)
-	    || ($prow->myReviewType > 0 && $conflictType == 0
+	    || ($prow->has_review($this) && $conflictType == 0
 		&& $Conf->settings["extrev_view"] >= 2)
             || ($br = $Conf->blindReview()) == BLIND_NEVER
             || ($br == BLIND_OPTIONAL && $crow
@@ -1464,8 +1479,7 @@ class Contact {
                 && $Conf->timeAuthorViewDecision())
             || ($this->isPC
                 && $Conf->timePCViewDecision($prow && $conflictType > 0))
-	    || ($prow && defval($prow, "myReviewType", 0) > 0
-		&& defval($prow, "myReviewSubmitted", 0) > 0
+	    || ($prow && $prow->review_submitted($this)
 		&& $Conf->timeReviewerViewDecision()))
 	    return true;
 	return false;
@@ -1495,7 +1509,7 @@ class Contact {
 
 	// authors and external reviewers of not this paper can't see anything
 	if (!$this->is_reviewer()
-	    || (!$this->isPC && $prow && $prow->myReviewType <= 0))
+	    || (!$this->isPC && $prow && !$prow->has_review($this)))
 	    return 10000;
 
 	// see who this reviewer is
@@ -1520,14 +1534,14 @@ class Contact {
         // see also PaperActions::all_tags
 	global $Conf;
 	return $this->isPC
-            && (!$prow || $prow->conflictType <= 0
+            && (!$prow || !$prow->has_conflict($this)
                 || $this->canAdminister($prow, $forceShow)
                 || $Conf->setting("tag_seeall") > 0);
     }
 
     function canSetTags($prow, $forceShow = null) {
 	return $this->isPC
-            && (!$prow || $prow->conflictType <= 0
+            && (!$prow || !$prow->has_conflict($this)
                 || $this->canAdminister($prow, $forceShow));
     }
 
@@ -1633,13 +1647,6 @@ class Contact {
 		$paperStatusCache[$row->outcome] = $data;
 	    }
 	    return $paperStatusCache[$row->outcome];
-	//} else if (isset($row->reviewCount) && $row->reviewCount > 0) {
-	//    if ($long < 0 && $row->conflictType < CONFLICT_AUTHOR)
-	//	return "";
-	//    else if ($this->canViewReview($row, null, null))
-	//	return "<span class='pstat pstat_rev'>Reviews&nbsp;available</span>";
-	//    else
-	//	return "<span class='pstat pstat_rev'>Under&nbsp;review</span>";
 	} else {
 	    if ($row->timeSubmitted > 0) {
 		if ($long < 0)

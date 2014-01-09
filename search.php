@@ -83,7 +83,7 @@ if (($getaction == "paper" || $getaction == "final"
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
     $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
-    while (($row = edb_orow($result))) {
+    while (($row = PaperInfo::fetch($result, $Me))) {
 	if (!$Me->canViewPaper($row, $whyNot, true))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
 	else
@@ -118,7 +118,7 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $result = $Conf->qe($q, "while selecting papers");
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
-    while ($prow = edb_orow($result)) {
+    while ($prow = PaperInfo::fetch($result, $Me)) {
 	if (!$Me->canViewPaper($prow, $whyNot))
 	    $Conf->errorMsg(whyNotText($whyNot, "view"));
 	else {
@@ -247,7 +247,7 @@ if (($getaction == "revform" || $getaction == "revformz")
 
     $texts = array();
     $errors = array();
-    while ($row = edb_orow($result)) {
+    while (($row = PaperInfo::fetch($result, $Me))) {
 	$canreview = $Me->canReview($row, null, $whyNot);
 	if (!$canreview && !isset($whyNot["deadline"])
 	    && !isset($whyNot["reviewNotAssigned"]))
@@ -276,7 +276,7 @@ if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
     $errors = array();
     if ($Me->privChair)
 	$_REQUEST["forceShow"] = 1;
-    while ($row = edb_orow($result)) {
+    while (($row = PaperInfo::fetch($result, $Me))) {
 	if (!$Me->canViewReview($row, null, null, $whyNot))
 	    $errors[whyNotText($whyNot, "view review")] = true;
 	else if ($row->reviewSubmitted)
@@ -300,7 +300,7 @@ function tagaction() {
     $papers = $papersel;
     if (!$Me->privChair) {
 	$result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)), "while selecting papers");
-	while (($row = edb_orow($result)))
+	while (($row = PaperInfo::fetch($result, $Me)))
 	    if ($row->conflictType > 0) {
 		$errors[] = "You have a conflict with paper #" . $row->paperId . " and cannot change its tags.";
 		$papers = array_diff($papers, array($row->paperId));
@@ -360,7 +360,7 @@ if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
 	$q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag));
 	$result = $Conf->qe($q, "while selecting papers");
 	$texts = array();
-	while (($row = edb_orow($result)))
+	while (($row = PaperInfo::fetch($result, $Me)))
 	    if ($Me->canViewTags($row, true))
 		arrayappend($texts[$paperselmap[$row->paperId]], array($showtag, (int) $row->tagIndex, $row->paperId, $row->title));
 	ksort($texts);
@@ -381,7 +381,7 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 	$result = $Conf->qe($q, "while selecting papers");
 	$real = "";
 	$null = "\n";
-	while (($row = edb_orow($result)))
+	while (($row = PaperInfo::fetch($result, $Me)))
 	    if ($settingrank ? $Me->canSetRank($row)
 		: $Me->canSetTags($row, true)) {
 		if ($row->tagIndex === null)
@@ -435,7 +435,7 @@ if ($getaction == "authors" && isset($papersel)
     $contactline = array();
     if ($Me->privChair) {
 	$result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq", "while fetching contacts");
-	while (($row = edb_orow($result))) {
+	while (($row = PaperInfo::fetch($result, $Me))) {
 	    $key = $row->paperId . " " . $row->email;
 	    if ($row->firstName && $row->lastName)
 		$a = $row->firstName . " " . $row->lastName;
@@ -449,7 +449,7 @@ if ($getaction == "authors" && isset($papersel)
     $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper$join where $idq", "while fetching authors");
     if ($result) {
 	$texts = array();
-	while (($row = edb_orow($result))) {
+	while (($row = PaperInfo::fetch($result, $Me))) {
 	    cleanAuthor($row);
 	    foreach ($row->authorTable as $au) {
 		if ($au[0] && $au[1])
@@ -544,7 +544,7 @@ if (($getaction == "lead" || $getaction == "shepherd")
     $shep = $getaction == "shepherd";
     if ($result) {
 	$texts = array();
-	while (($row = edb_orow($result)))
+	while (($row = PaperInfo::fetch($result, $Me)))
 	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row)))
 		arrayappend($texts[$paperselmap[$row->paperId]],
 			    array($row->paperId, $row->title, $row->email, trim("$row->firstName $row->lastName")));
@@ -598,7 +598,7 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
     if ($Me->privChair)
 	$_REQUEST["forceShow"] = 1;
     $texts = array();
-    while (($row = edb_orow($result))) {
+    while (($row = PaperInfo::fetch($result, $Me))) {
 	if (!$Me->canViewReview($row, null, null, $whyNot))
 	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
 	else if ($row->reviewSubmitted) {
@@ -638,7 +638,7 @@ function downloadRevpref($extended) {
     $result = $Conf->qe($q, "while selecting papers");
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
-    while ($prow = edb_orow($result)) {
+    while ($prow = PaperInfo::fetch($result, $Rev)) {
 	$t = $prow->paperId . "\t";
 	if ($prow->conflictType > 0)
 	    $t .= "conflict";
@@ -679,7 +679,7 @@ function downloadAllRevpref() {
     $result = $Conf->qe($q, "while selecting papers");
     $texts = array();
     $pc = pcMembers();
-    while (($prow = edb_orow($result))) {
+    while (($prow = PaperInfo::fetch($result, $Me))) {
         $out = array();
         if ($prow->allReviewerPreference != "")
             foreach (explode(",", $prow->allReviewerPreference) as $t) {
@@ -716,7 +716,7 @@ if ($getaction == "topics" && isset($papersel)) {
     $tmap = $Conf->topic_map();
     $tomap = $Conf->topic_order_map();
 
-    while (($row = edb_orow($result))) {
+    while (($row = PaperInfo::fetch($result, $Me))) {
 	if (!$Me->canViewPaper($row))
 	    continue;
 	$out = array();
@@ -807,7 +807,7 @@ if ($getaction == "acmcms" && isset($papersel) && $Me->privChair) {
     // generate report
     $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper where $idq", "while fetching papers");
     $texts = array();
-    while (($row = edb_orow($result))) {
+    while (($row = PaperInfo::fetch($result, $Me))) {
         $x = array($Opt["downloadPrefix"] . $row->paperId,
                    "" /* Paper type */,
                    defval($pagecount, $row->paperId, ""),
@@ -881,7 +881,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
 	$assigned = array();
 	$nworked = 0;
 	$when = time();
-	while (($row = edb_orow($result))) {
+	while (($row = PaperInfo::fetch($result, $Me))) {
 	    if ($asstype && $row->conflictType > 0)
 		$conflicts[] = $row->paperId;
 	    else if ($asstype && $row->reviewType >= REVIEW_PC && $asstype != $row->reviewType)
