@@ -503,7 +503,7 @@ class Contact {
 
     static function find_by_id($cid) {
         $acct = new Contact;
-        if (!$acct->load_by_query("select c.* from ContactInfo c where c.contactId=" . (int) $cid))
+        if (!$acct->load_by_query("select * from ContactInfo where contactId=" . (int) $cid))
             return null;
         return $acct;
     }
@@ -586,7 +586,7 @@ class Contact {
         // Lookup by email
         $email = trim($email ? $email : "");
         if ($email != ""
-            && $acct->load_by_query("select c.* from ContactInfo c where c.email='" . sqlq($email) . "'"))
+            && $acct->load_by_query("select * from ContactInfo where email='" . sqlq($email) . "'"))
             return $acct;
 
         // Not found: register
