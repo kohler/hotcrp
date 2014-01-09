@@ -999,8 +999,7 @@ class Contact {
         if ($rrow && $rrow->reviewNeedsSubmit <= 0
             && $rrow->reviewSubmitted <= 0)
             return false;
-        else if ($this->isPC
-                 && (!$prow || $this->actConflictType($prow) == 0))
+        else if ($this->isPC && $this->actConflictType($prow) == 0)
             return true;
         else
             return $this->canViewReview($prow, $rrow, $forceShow);
