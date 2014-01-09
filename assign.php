@@ -75,50 +75,59 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST)
 
 
 // retract review request
-function retractRequest($reviewId, $lock = true, $confirm = true) {
-    global $Conf, $Me, $prow;
+function retractRequest($email, $prow, $confirm = true) {
+    global $Conf, $Me;
 
     $while = "while retracting review request";
-    if ($lock)
-	$Conf->qe("lock tables PaperReview write, ContactInfo read", $while);
+    $Conf->qe("lock tables PaperReview write, ReviewRequest write, ContactInfo read, PaperConflict read", $while);
+    $email = trim($email);
     // NB caller unlocks tables
 
-    // check for outstanding review request
-    $q = "select reviewType, reviewModified, reviewSubmitted, requestedBy, paperId, ContactInfo.contactId,
-		firstName, lastName, email, password, roles, reviewToken, preferredEmail";
-    $result = $Conf->qe($q . " from PaperReview
-		join ContactInfo using (contactId)
-		where reviewId=$reviewId", $while);
-    if (edb_nrows($result) == 0)
-	return $Conf->errorMsg("No such review request.");
-
+    // check for outstanding review
+    $contact_fields = "firstName, lastName, ContactInfo.email, password, roles, preferredEmail";
+    $result = $Conf->qe("select reviewId, reviewType, reviewModified, reviewSubmitted, reviewToken, requestedBy, $contact_fields
+		from ContactInfo
+		join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
+		where ContactInfo.email='" . sqlq($email) . "'", $while);
     $row = edb_orow($result);
-    if ($row->paperId != $prow->paperId)
-	return $Conf->errorMsg("Weird! Retracted review is for a different paper.");
-    else if ($row->reviewModified > 0)
-	return $Conf->errorMsg("You can’t retract that review request since the reviewer has already started their review.");
-    else if (!$Me->allowAdminister($prow) && $Me->cid != $row->requestedBy)
-	return $Conf->errorMsg("You can’t retract that review request since you didn’t make the request in the first place.");
-    if (defval($row, "reviewToken", 0) != 0)
-	$Conf->settings["rev_tokens"] = -1;
+
+    // check for outstanding review request
+    $result2 = $Conf->qe("select name, email, requestedBy
+		from ReviewRequest
+		where paperId=$prow->paperId and email='" . sqlq($email) . "'", $while);
+    $row2 = edb_orow($result2);
+
+    // act
+    if (!$row && !$row2)
+        return $Conf->errorMsg("No such review request.");
+    if ($row && $row->reviewModified > 0)
+        return $Conf->errorMsg("You can’t retract that review request since the reviewer has already started their review.");
+    if (!$Me->allowAdminister($prow)
+        && (($row && $row->requestedBy && $Me->cid != $row->requestedBy)
+            || ($row2 && $row2->requestedBy && $Me->cid != $row2->requestedBy)))
+        return $Conf->errorMsg("You can’t retract that review request since you didn’t make the request in the first place.");
 
     // at this point, success; remove the review request
-    $Conf->qe("delete from PaperReview where reviewId=$reviewId", $while);
+    if ($row)
+        $Conf->qe("delete from PaperReview where reviewId=$row->reviewId", $while);
+    if ($row2)
+        $Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'", $while);
 
+    if (defval($row, "reviewToken", 0) != 0)
+        $Conf->settings["rev_tokens"] = -1;
     // send confirmation email, if the review site is open
-    if ($Conf->timeReviewOpen()) {
+    if ($Conf->timeReviewOpen() && $row) {
 	$Requester = Contact::make($row);
 	Mailer::send("@retractrequest", loadReviewInfo($prow, $Requester, true), $Requester, $Me, array("cc" => Text::user_email_to($Me)));
     }
 
     // confirmation message
     if ($confirm)
-	$Conf->confirmMsg("Removed request that " . Text::user_html($row) . " review paper #$prow->paperId.");
+	$Conf->confirmMsg("Removed request that " . Text::user_html($row ? $row : $row2) . " review paper #$prow->paperId.");
 }
 
-if (isset($_REQUEST["retract"])
-    && ($retract = rcvtint($_REQUEST["retract"])) > 0 && check_post()) {
-    retractRequest($retract, $prow->paperId);
+if (isset($_REQUEST["retract"]) && check_post()) {
+    retractRequest($_REQUEST["retract"], $prow);
     $Conf->qe("unlock tables");
     $Conf->updateRevTokensSetting(false);
     redirectSelf();

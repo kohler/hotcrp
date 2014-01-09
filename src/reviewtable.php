@@ -3,6 +3,15 @@
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+function _retract_review_request_form($prow, $rr, $linkExtra) {
+    return '<small>'
+        . Ht::form(hoturl_post("assign", "p=$prow->paperId$linkExtra"))
+        . '<div class="inform">'
+        . Ht::hidden("retract", $rr->email)
+        . Ht::submit("Retract", array("title" => "Retract this review request", "style" => "font-size:smaller"))
+        . '</div></form></small>';
+}
+
 // reviewer information
 function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     global $Conf, $Me, $rf, $forceShow, $linkExtra;
@@ -100,12 +109,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 && $rr->reviewType == REVIEW_EXTERNAL
                 && $rr->reviewModified <= 0
                 && ($rr->requestedBy == $Me->contactId || $effAssistant))
-                $t .= ' <small>'
-                    . Ht::form(hoturl_post("assign", "p=$prow->paperId$linkExtra"))
-                    . '<div class="inform">'
-                    . Ht::hidden("retract", $rr->reviewId)
-                    . Ht::submit("Retract", array("title" => "Retract this review request", "style" => "font-size:smaller"))
-                    . '</div></form></small>';
+                $t .= ' ' . _retract_review_request_form($prow, $rr, $linkExtra);
 	    $t .= "</td>";
 	    if ($colorizer && (@$rr->contactRoles || @$rr->contactTags)) {
                 $tags = Contact::roles_all_contact_tags(@$rr->contactRoles, @$rr->contactTags);
@@ -147,7 +151,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 	$anyColors = $anyColors || ($tclass != "");
     }
 
-    // actual rows
+    // proposed review rows
     if ($proposals)
         foreach ($proposals as $rr) {
             $t = "";
@@ -164,10 +168,12 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                     . Ht::hidden("name", $rr->name)
                     . Ht::hidden("email", $rr->email)
                     . Ht::hidden("reason", $rr->reason)
-                    . Ht::submit("add", "Approve")
+                    . Ht::submit("add", "Approve", array("style" => "font-size:smaller"))
                     . ' '
-                    . Ht::submit("deny", "Deny")
+                    . Ht::submit("deny", "Deny", array("style" => "font-size:smaller"))
                     . '</div></form>';
+            else if ($rr->reqEmail == $Me->email)
+                $t .= " " . _retract_review_request_form($prow, $rr, $linkExtra);
             $t .= '</td>';
 
             // requester
