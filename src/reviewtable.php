@@ -14,9 +14,7 @@ function _retract_review_request_form($prow, $rr, $linkExtra) {
 
 // reviewer information
 function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
-    global $Conf, $Me, $rf, $linkExtra;
-    if (!$rf)
-	$rf = reviewForm();
+    global $Conf, $Me, $linkExtra;
 
     $subrev = array();
     $nonsubrev = array();
@@ -30,6 +28,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $anyScores = false;
     $anyColors = false;
     $colorizer = ($Me->isPC ? new Tagger : null);
+    $rf = reviewForm();
     $nNumeric = $rf->numNumericScores($prow, $Me);
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 

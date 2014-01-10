@@ -10,7 +10,6 @@ $Highlight = defval($_SESSION, "settings_highlight", array());
 unset($_SESSION["settings_highlight"]);
 $Error = $Warning = array();
 $Values = array();
-$rf = reviewForm();
 $DateExplanation = "Date examples: &ldquo;now&rdquo;, &ldquo;10 Dec 2006 11:59:59pm PST&rdquo; <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
 $TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small";
 $temp_text_id = 0;
@@ -376,7 +375,7 @@ function doTags($set, $what) {
 }
 
 function doTopics($set) {
-    global $Conf, $Values, $rf;
+    global $Conf, $Values;
     if (!$set) {
 	$Values["topics"] = true;
 	return;
@@ -586,7 +585,7 @@ function doOptions($set) {
 }
 
 function doDecisions($set) {
-    global $Conf, $Values, $rf, $Error, $Highlight;
+    global $Conf, $Values, $Error, $Highlight;
     if (!$set) {
 	if (defval($_REQUEST, "decn", "") != ""
 	    && !defval($_REQUEST, "decn_confirm")) {
@@ -978,7 +977,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
     }
 
     // update the review form in case it's changed
-    $rf = reviewForm(true);
+    reviewForm(true);
     $_SESSION["settings_highlight"] = $Highlight;
     if (count($Error) == 0)
         redirectSelf();
@@ -1146,7 +1145,7 @@ function do_message($name, $description, $rows = 10) {
 }
 
 function doMsgGroup() {
-    global $Conf, $Opt, $rf;
+    global $Conf, $Opt;
 
     echo "<div class='f-c'>", decorateSettingName("opt.shortName", "Conference abbreviation"), "</div>
 <input class='textlite' name='opt.shortName' size='20' onchange='hiliter(this)' value=\"", htmlspecialchars($Opt["shortName"]), "\" />
@@ -1366,7 +1365,7 @@ function doOptGroupOption($o) {
 }
 
 function doOptGroup() {
-    global $Conf, $rf;
+    global $Conf;
 
     echo "<h3>Submission options</h3>\n";
     echo "Options are selected by authors at submission time.  Examples have included &ldquo;PC-authored paper,&rdquo; &ldquo;Consider this paper for a Best Student Paper award,&rdquo; and &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief (&ldquo;PC paper,&rdquo; &ldquo;Best Student Paper,&rdquo; &ldquo;Shadow PC&rdquo;).  The optional description can explain further and may use XHTML.  ";
@@ -1599,7 +1598,7 @@ function doRfoGroup() {
 
 // Responses and decisions
 function doDecGroup() {
-    global $Conf, $rf, $Highlight, $Error;
+    global $Conf, $Highlight, $Error;
 
     // doCheckbox('au_seerev', '<b>Authors can see reviews</b>');
     echo "Can <b>authors see reviews and comments</b> for their papers?<br />";

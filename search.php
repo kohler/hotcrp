@@ -173,7 +173,7 @@ function whyNotToText($e) {
 }
 
 function downloadReviews(&$texts, &$errors) {
-    global $getaction, $Opt, $Conf, $papersel, $rf;
+    global $getaction, $Opt, $Conf, $papersel;
 
     ksort($texts);
     if (count($texts) == 0) {
@@ -204,6 +204,7 @@ function downloadReviews(&$texts, &$errors) {
     if (count($texts) == 1 && $gettext)
 	$rfname .= $papersel[key($texts)];
 
+    $rf = reviewForm();
     if ($getforms)
 	$header = $rf->textFormHeader(count($texts) > 1 && $gettext, true);
     else

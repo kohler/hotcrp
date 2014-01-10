@@ -1923,9 +1923,7 @@ class PaperTable {
     }
 
     function paptabEndWithReviews() {
-	global $Conf, $Me, $rf, $linkExtra;
-	if (!$rf)
-	    $rf = reviewForm();
+	global $Conf, $Me, $linkExtra;
 	$prow = $this->prow;
 
 	if ($Me->is_admin_force()
@@ -1958,6 +1956,7 @@ class PaperTable {
 		" in plain text</u></a></td></tr></table></div>\n";
 
 	$opt = array("edit" => false);
+        $rf = reviewForm();
 	foreach ($this->rrows as $rr)
 	    if ($rr->reviewSubmitted)
 		$rf->show($prow, $this->rrows, $rr, $opt);
@@ -2016,9 +2015,7 @@ class PaperTable {
     }
 
     function paptabEndWithEditableReview() {
-	global $Conf, $Me, $rf, $linkExtra;
-	if (!$rf)
-	    $rf = reviewForm();
+	global $Conf, $Me, $linkExtra;
 	$prow = $this->prow;
 	$actPC = $Me->actPC($prow);
 	$actChair = $Me->canAdminister($prow);
@@ -2065,6 +2062,7 @@ class PaperTable {
 	} else if (!$Me->canReview($prow, $this->editrrow))
 	    $opt["edit"] = false;
 
+        $rf = reviewForm();
 	$rf->show($prow, $this->rrows, $this->editrrow, $opt);
     }
 

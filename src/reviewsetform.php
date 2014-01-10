@@ -59,7 +59,7 @@ function rf_check_options($fid, $fj) {
 }
 
 function rf_update() {
-    global $Conf, $rf, $Error, $review_form_setting_prefixes;
+    global $Conf, $Error, $review_form_setting_prefixes;
 
     if (!isset($_REQUEST["update"]) || !check_post())
 	return;
@@ -70,6 +70,7 @@ function rf_update() {
     $nrfj = (object) array();
     $shortNameError = $optionError = false;
 
+    $rf = reviewForm();
     foreach ($rf->fmap as $fid => $f) {
         $nrfj->$fid = $fj = (object) array();
 
