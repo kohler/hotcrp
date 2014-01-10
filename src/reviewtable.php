@@ -3,9 +3,9 @@
 // HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-function _retract_review_request_form($prow, $rr, $linkExtra) {
+function _retract_review_request_form($prow, $rr) {
     return '<small>'
-        . Ht::form(hoturl_post("assign", "p=$prow->paperId$linkExtra"))
+        . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
         . '<div class="inform">'
         . Ht::hidden("retract", $rr->email)
         . Ht::submit("Retract", array("title" => "Retract this review request", "style" => "font-size:smaller"))
@@ -14,7 +14,7 @@ function _retract_review_request_form($prow, $rr, $linkExtra) {
 
 // reviewer information
 function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
-    global $Conf, $Me, $linkExtra;
+    global $Conf, $Me;
 
     $subrev = array();
     $nonsubrev = array();
@@ -64,13 +64,13 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 	if ($rrow && $rrow->reviewId == $rr->reviewId) {
 	    if ($Me->contactId == $rr->contactId && !$rr->reviewSubmitted)
 		$id = "Your $id";
-	    $t .= "<td><a href='" . hoturl("review", "r=$rlink$linkExtra") . "' class='q'><b>$id</b></a></td>";
+	    $t .= "<td><a href='" . hoturl("review", "r=$rlink") . "' class='q'><b>$id</b></a></td>";
 	} else if (!$canView)
 	    $t .= "<td>$id</td>";
 	else if ($rrow || $rr->reviewModified <= 0)
-	    $t .= "<td><a href='" . hoturl("review", "r=$rlink$linkExtra") . "'>$id</a></td>";
+	    $t .= "<td><a href='" . hoturl("review", "r=$rlink") . "'>$id</a></td>";
 	else if ($mode == "assign")
-	    $t .= "<td><a href='" . hoturl("review", "r=$rlink$linkExtra") . "'>$id</a></td>";
+	    $t .= "<td><a href='" . hoturl("review", "r=$rlink") . "'>$id</a></td>";
 	else
 	    $t .= "<td><a href='#review$rlink'>$id</a></td>";
 
@@ -108,7 +108,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 && $rr->reviewType == REVIEW_EXTERNAL
                 && $rr->reviewModified <= 0
                 && ($rr->requestedBy == $Me->contactId || $effAssistant))
-                $t .= ' ' . _retract_review_request_form($prow, $rr, $linkExtra);
+                $t .= ' ' . _retract_review_request_form($prow, $rr);
 	    $t .= "</td>";
 	    if ($colorizer && (@$rr->contactRoles || @$rr->contactTags)) {
                 $tags = Contact::roles_all_contact_tags(@$rr->contactRoles, @$rr->contactTags);
@@ -162,7 +162,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             $t .= "<td>" . Text::user_html($rr);
             if ($effAssistant)
                 $t .= ' <small>'
-                    . Ht::form(hoturl_post("assign", "p=$prow->paperId$linkExtra"))
+                    . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
                     . '<div class="inform">'
                     . Ht::hidden("name", $rr->name)
                     . Ht::hidden("email", $rr->email)
@@ -172,7 +172,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                     . Ht::submit("deny", "Deny", array("style" => "font-size:smaller"))
                     . '</div></form>';
             else if ($rr->reqEmail == $Me->email)
-                $t .= " " . _retract_review_request_form($prow, $rr, $linkExtra);
+                $t .= " " . _retract_review_request_form($prow, $rr);
             $t .= '</td>';
 
             // requester
@@ -230,7 +230,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
 // links below review table
 function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
-    global $Conf, $Me, $linkExtra;
+    global $Conf, $Me;
 
     $conflictType = $Me->actConflictType($prow);
     $actingConflict = ($conflictType > 0 && !$Me->is_admin_force());
@@ -278,7 +278,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if (($nvisible > 1 || ($nvisible > 0 && !$myrr))
 	&& ($mode != "r" || $rrow)) {
 	$allreviewslink = true;
-	$x = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=r$linkExtra") . "' class='xx'>"
+	$x = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=r") . "' class='xx'>"
 	    . $Conf->cacheableImage("view24.png", "[All reviews]", null, "dlimg") . "&nbsp;<u>All reviews</u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
@@ -286,7 +286,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     // edit paper
     if ($mode != "pe" && $prow->conflictType >= CONFLICT_AUTHOR
 	&& !$Me->canAdminister($prow)) {
-	$x = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;m=pe$linkExtra") . "' class='xx'>"
+	$x = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;m=pe") . "' class='xx'>"
 	    . $Conf->cacheableImage("edit24.png", "[Edit paper]", null, "dlimg") . "&nbsp;<u><strong>Edit paper</strong></u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
@@ -296,14 +296,14 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 	/* no link */;
     else if ($myrr && $rrow != $myrr) {
 	$myrlink = unparseReviewOrdinal($myrr);
-	$a = "<a href='" . hoturl("review", "r=$myrlink$linkExtra") . "' class='xx'>";
+	$a = "<a href='" . hoturl("review", "r=$myrlink") . "' class='xx'>";
 	if ($Me->canReview($prow, $myrr))
 	    $x = $a . $Conf->cacheableImage("review24.png", "[Edit review]", null, "dlimg") . "&nbsp;<u><b>Edit your review</b></u></a>";
 	else
 	    $x = $a . $Conf->cacheableImage("review24.png", "[Your review]", null, "dlimg") . "&nbsp;<u><b>Your review</b></u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     } else if (!$myrr && !$rrow && $Me->canReview($prow, null)) {
-	$x = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=re$linkExtra") . "' class='xx'>"
+	$x = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=re") . "' class='xx'>"
 	    . $Conf->cacheableImage("review24.png", "[Write review]", null, "dlimg") . "&nbsp;<u><b>Write review</b></u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
@@ -311,7 +311,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     // review assignments
     if ($mode != "assign"
 	&& ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
-	$x = "<a href='" . hoturl("assign", "p=$prow->paperId$linkExtra") . "' class='xx'>"
+	$x = "<a href='" . hoturl("assign", "p=$prow->paperId") . "' class='xx'>"
 	    . $Conf->cacheableImage("assign24.png", "[Assign]", null, "dlimg") . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }

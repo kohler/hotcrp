@@ -7,7 +7,6 @@ require_once("Code/header.inc");
 require_once("src/papertable.php");
 require_once("src/reviewtable.php");
 $Me->exit_if_empty();
-$linkExtra = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 $_REQUEST["forceShow"] = 1;
 $rf = reviewForm();
 $PC = pcMembers();
@@ -16,15 +15,12 @@ $Error = $Warning = array();
 
 // header
 function confHeader() {
-    global $prow, $Conf, $linkExtra, $CurrentList;
+    global $prow, $Conf;
     if ($prow)
 	$title = "<a href='" . hoturl("paper", "p=$prow->paperId") . "' class='q'>Paper #$prow->paperId</a>";
     else
 	$title = "Paper Review Assignments";
     $Conf->header($title, "assign", actionBar("assign", $prow), false);
-    if (isset($CurrentList) && $CurrentList > 0
-	&& strpos($linkExtra, "ls=") === false)
-	$linkExtra .= "&amp;ls=" . $CurrentList;
 }
 
 function errorMsgExit($msg) {
@@ -474,7 +470,7 @@ $paperTable->initialize(false, false);
 
 
 // begin form and table
-$loginUrl = hoturl_post("assign", "p=$prow->paperId$linkExtra");
+$loginUrl = hoturl_post("assign", "p=$prow->paperId");
 
 $paperTable->paptabBegin();
 

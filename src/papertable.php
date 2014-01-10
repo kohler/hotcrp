@@ -1239,7 +1239,7 @@ class PaperTable {
     }
 
     private function _papstripLeadShepherd($type, $name, $showedit, $wholefold) {
-	global $Conf, $Me, $Opt, $Error, $linkExtra;
+	global $Conf, $Me, $Opt, $Error;
 	$editable = ($type == "manager" ? $Me->privChair : $Me->canAdminister($this->prow));
 
 	$field = $type . "ContactId";
@@ -1259,7 +1259,7 @@ class PaperTable {
         echo "</p>";
 
         if ($editable) {
-	    echo "<form id='${type}form' class='fx fold7o' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId . $linkExtra), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitstripselector(\"${type}\")'>",
+	    echo "<form id='${type}form' class='fx fold7o' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitstripselector(\"${type}\")'>",
 		"<div class='inform'>",
 		"<input type='hidden' name='set$type' value='1' />";
 	    $Conf->footerScript("Miniajax.onload(\"${type}form\")");
@@ -1295,7 +1295,7 @@ class PaperTable {
     }
 
     private function papstripTags($site = null) {
-	global $Conf, $Me, $Error, $linkExtra;
+	global $Conf, $Me, $Error;
 	if ($site || defval($this->prow, "paperTags", "") !== "") {
 	    // Note that tags MUST NOT contain HTML special characters.
 	    $tagger = new Tagger;
@@ -1309,13 +1309,13 @@ class PaperTable {
 		echo "<div class='pscopen ${color}'>";
 
 	    if ($editable)
-		echo "<form method='post' action='", hoturl_post($site, "p=" . $this->prow->paperId . $linkExtra), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+		echo "<form method='post' action='", hoturl_post($site, "p=" . $this->prow->paperId), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
 
 	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0))),
 		"<div class='psv' style='position:relative'>";
 	    if ($editable) {
 		// tag report form
-		$Conf->footerHtml("<form id='tagreportform' class='fold7o' method='post' action='" . hoturl_post("paper", "p=" . $this->prow->paperId . "&amp;tagreport=1$linkExtra") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'></form>");
+		$Conf->footerHtml("<form id='tagreportform' class='fold7o' method='post' action='" . hoturl_post("paper", "p=" . $this->prow->paperId . "&amp;tagreport=1") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'></form>");
 
 		echo "<div class='fn'>", ($tx == "" ? "None" : $tx),
 		    "</div><div id='papstriptagsedit' class='fx'><div id='tagreportformresult'>";
@@ -1350,10 +1350,10 @@ class PaperTable {
     }
 
     function papstripOutcomeSelector() {
-	global $Conf, $Error, $linkExtra;
+	global $Conf, $Error;
 	echo $this->_papstripBegin("decision", defval($_REQUEST, "atab") != "decision"),
 	    $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
-	    "<div class='psv'><form id='decisionform' class='fx fold7o' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId . $linkExtra), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitstripselector(\"decision\")'>",
+	    "<div class='psv'><form id='decisionform' class='fx fold7o' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitstripselector(\"decision\")'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setdecision' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
@@ -1369,10 +1369,10 @@ class PaperTable {
     }
 
     function papstripReviewPreference() {
-	global $Conf, $linkExtra, $CurrentList;
+	global $Conf, $CurrentList;
 	echo $this->_papstripBegin(),
 	    $this->papt("revpref", "Review preference", array("type" => "ps")),
-	    "<div class='psv'><form id='revprefform' class='fold7o' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId . $linkExtra), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"revprefform\")'>",
+	    "<div class='psv'><form id='revprefform' class='fold7o' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"revprefform\")'>",
 	    "<div class='aahc inform'>",
 	    "<input type='hidden' name='setrevpref' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
@@ -1390,7 +1390,7 @@ class PaperTable {
     }
 
     function papstripRank() {
-	global $Conf, $Me, $linkExtra;
+	global $Conf, $Me;
 	if (!($tag = $Conf->setting_data("tag_rank")))
 	    return;
 
@@ -1406,7 +1406,7 @@ class PaperTable {
 
 	echo $this->_papstripBegin("rank", true, "fold2c"),
 	    $this->papt("rank", "Your rank", array("type" => "ps", "editfolder" => "rank")),
-	    "<div class='psv'><form id='rankform' class='fx fold7o' method='post' action='" . hoturl_post("review", "p=" . $this->prow->paperId . $linkExtra) . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankform\")'>",
+	    "<div class='psv'><form id='rankform' class='fx fold7o' method='post' action='" . hoturl_post("review", "p=" . $this->prow->paperId) . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankform\")'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setrank' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
@@ -1428,7 +1428,7 @@ class PaperTable {
     }
 
     private function papstripWatch() {
-	global $Conf, $Me, $linkExtra;
+	global $Conf, $Me;
         $prow = $this->prow;
         $conflictType = $prow->conflict_type($Me);
 	if (!($this->watchCheckbox
@@ -1450,7 +1450,7 @@ class PaperTable {
 	$row = edb_row($result);
 
 	echo $this->_papstripBegin(),
-	    "<form id='watchform' class='fold7o' action=\"", hoturl_post("comment", "p=$prow->paperId$linkExtra"), "\" method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"watchform\")'>",
+	    "<form id='watchform' class='fold7o' action=\"", hoturl_post("comment", "p=$prow->paperId"), "\" method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"watchform\")'>",
 	    "<div class='inform'>",
 	    "<input type='hidden' name='setwatch' value='1' />";
 
@@ -1562,7 +1562,7 @@ class PaperTable {
     }
 
     function _collectActionButtons() {
-        global $Conf, $Me, $linkExtra;
+        global $Conf, $Me;
         $prow = $this->prow;
 
         // Absent paper can only be saved
@@ -1613,7 +1613,7 @@ class PaperTable {
             $Conf->footerHtml("<div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this paper from consideration and/or
   publication?  $admins</p>
-  <form method='post' action=\"" . hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=pe$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+  <form method='post' action=\"" . hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=pe") . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
     <textarea id='withdrawreason' class='temptext' name='reason' rows='3' cols='40' style='width:99%'>Optional explanation</textarea>$override
     <div class='popup_actions' style='margin-top:10px'>
       <input class='popup_populate' type='hidden' name='doemail' value='1' />
@@ -1634,7 +1634,7 @@ class PaperTable {
     }
 
     function echoActions() {
-	global $Conf, $Me, $linkExtra;
+	global $Conf, $Me;
 	$prow = $this->prow;
 
 	$buttons = $this->_collectActionButtons();
@@ -1644,7 +1644,7 @@ class PaperTable {
 	    $Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   paper from the database and <strong>cannot be undone</strong>.</p>
-  <form method='post' action=\"" . hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=pe$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
+  <form method='post' action=\"" . hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=pe") . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
     <div class='popup_actions'>
       <input class='popup_populate' type='hidden' name='doemail' value='1' />
       <input class='popup_populate' type='hidden' name='emailNote' value='' />
@@ -1678,7 +1678,7 @@ class PaperTable {
     // Functions for overall paper table viewing
 
     function _papstrip() {
-	global $Conf, $Me, $linkExtra;
+	global $Conf, $Me;
 	$prow = $this->prow;
         if (($prow->managerContactId || ($Me->privChair && $this->mode == "assign"))
             && $Me->canViewPaperManager($prow))
@@ -1719,7 +1719,7 @@ class PaperTable {
     }
 
     function _paptabBeginKnown() {
-	global $Conf, $Me, $linkExtra;
+	global $Conf, $Me;
 	$prow = $this->prow;
 
 	// what actions are supported?
@@ -1738,22 +1738,22 @@ class PaperTable {
 	    $highlight = ($this->mode != "assign" && $this->mode != "pe"
 			  && $this->mode != "contact" && $this->mode != "re");
 	    $a = ($this->mode == "pe" || $this->mode == "re" ? "&amp;m=p" : "");
-	    $this->_paptabTabLink("Main", hoturl("paper", "p=$prow->paperId$a$linkExtra"), "view18.png", $highlight);
+	    $this->_paptabTabLink("Main", hoturl("paper", "p=$prow->paperId$a"), "view18.png", $highlight);
 
 	    if ($canEdit)
-		$this->_paptabTabLink("Edit", hoturl("paper", "p=$prow->paperId&amp;m=pe$linkExtra"), "edit18.png", $this->mode == "pe");
+		$this->_paptabTabLink("Edit", hoturl("paper", "p=$prow->paperId&amp;m=pe"), "edit18.png", $this->mode == "pe");
 
 	    if ($canReview)
-		$this->_paptabTabLink("Review", hoturl("review", "p=$prow->paperId&amp;m=re$linkExtra"), "review18.png", $this->mode == "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId));
+		$this->_paptabTabLink("Review", hoturl("review", "p=$prow->paperId&amp;m=re"), "review18.png", $this->mode == "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId));
 
 	    if ($canAssign)
-		$this->_paptabTabLink("Assign", hoturl("assign", "p=$prow->paperId$linkExtra"), "assign18.png", $this->mode == "assign");
+		$this->_paptabTabLink("Assign", hoturl("assign", "p=$prow->paperId"), "assign18.png", $this->mode == "assign");
 
 	    echo "<div class='clear'></div></div></div>\n";
 	}
 
 	// paper number
-	$pa = "<a href='" . hoturl("paper", "p=$prow->paperId$linkExtra") . "' class='q'>";
+	$pa = "<a href='" . hoturl("paper", "p=$prow->paperId") . "' class='q'>";
 	echo "<table class='pban'><tr>
     <td class='pboxi'><div class='papnum'>",
 	    "<h2>", $pa, "#", $prow->paperId, "</a></h2></div></td>\n";
@@ -1769,7 +1769,7 @@ class PaperTable {
     }
 
     function paptabBegin() {
-	global $Conf, $Me, $linkExtra;
+	global $Conf, $Me;
 	$prow = $this->prow;
 	$pboxclass = $prow ? "pbox" : "pboxn";
 
@@ -1798,7 +1798,7 @@ class PaperTable {
 	$form = "<form method='post' action=\""
 	    . hoturl_post("paper", "p="
 			  . ($prow ? $prow->paperId : "new")
-			  . "&amp;m=pe$linkExtra") . "\"";
+			  . "&amp;m=pe") . "\"";
 	if ($prow && $prow->paperStorageId > 1 && $prow->timeSubmitted > 0
 	    && !$Conf->setting('sub_freeze'))
 	    $form .= " onsubmit='return docheckpaperstillready()'";
@@ -1923,7 +1923,7 @@ class PaperTable {
     }
 
     function paptabEndWithReviews() {
-	global $Conf, $Me, $linkExtra;
+	global $Conf, $Me;
 	$prow = $this->prow;
 
 	if ($Me->is_admin_force()
@@ -1950,7 +1950,7 @@ class PaperTable {
 	    echo "<div class='pboxc'>",
 		"<table class='pbox'><tr><td class='pboxl'></td>",
 		"<td class='pboxr'>",
-		"<a href='", hoturl("review", "p=$prow->paperId&amp;m=r&amp;text=1$linkExtra"), "' class='xx'>",
+		"<a href='", hoturl("review", "p=$prow->paperId&amp;m=r&amp;text=1"), "' class='xx'>",
 		$Conf->cacheableImage("txt24.png", "[Text]", null, "dlimg"),
 		"&nbsp;<u>", ucfirst(join(" and ", $viewable)),
 		" in plain text</u></a></td></tr></table></div>\n";
@@ -1967,7 +1967,7 @@ class PaperTable {
     }
 
     function paptabComments() {
-	global $Conf, $Me, $linkExtra, $useRequest;
+	global $Conf, $Me, $useRequest;
 	$prow = $this->prow;
 
 	// show comments as well
@@ -2002,7 +2002,7 @@ class PaperTable {
     }
 
     function paptabEndWithReviewMessage() {
-	global $Conf, $Me, $linkExtra;
+	global $Conf, $Me;
 
 	if (!$Me->canViewReview($this->prow, null, null, $whyNot)
 	    && $this->rrows)
@@ -2015,7 +2015,7 @@ class PaperTable {
     }
 
     function paptabEndWithEditableReview() {
-	global $Conf, $Me, $linkExtra;
+	global $Conf, $Me;
 	$prow = $this->prow;
 	$actPC = $Me->actPC($prow);
 	$actChair = $Me->canAdminister($prow);

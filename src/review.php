@@ -1341,7 +1341,7 @@ $blind\n";
     }
 
     function _showWebDisplayBody($prow, $rrows, $rrow, $reviewOrdinal, &$options) {
-	global $Conf, $Me, $ratingTypes, $linkExtra;
+	global $Conf, $Me, $ratingTypes;
 
 	// Do not show rating counts if rater identity is unambiguous.
 	// See also PaperSearch::_clauseTermSetRating.
@@ -1379,10 +1379,8 @@ $blind\n";
 		$ratesep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
 	    }
 	    if ($rrow->contactId != $Me->contactId) {
-		$ratinglink = hoturl_post("review", "r=$reviewOrdinal");
-		if (!isset($_REQUEST["reviewId"]))
-		    $ratinglink .= "&amp;allr=1";
-		echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink$linkExtra' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
+		$ratinglink = hoturl_post("review", "r=$reviewOrdinal" . (isset($_REQUEST["reviewId"]) ? "" : "&amp;allr=1"));
+		echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
 		    "How helpful is this review? &nbsp;",
 		    Ht::select("rating", $ratingTypes, ($rrow->myRating === null ? "n" : $rrow->myRating)),
 		    " <input class='fx7' type='submit' value='Save' />",
@@ -1408,15 +1406,14 @@ $blind\n";
     }
 
     function show($prow, $rrows, $rrow, &$options) {
-	global $Conf, $Opt, $Me, $linkExtra, $useRequest;
+	global $Conf, $Opt, $Me, $useRequest;
 
 	if (!$options)
 	    $options = array();
 	$editmode = defval($options, "edit", false);
 
 	$reviewOrdinal = unparseReviewOrdinal($rrow);
-	$reviewLinkArgs = "p=$prow->paperId" . ($rrow ? "&amp;r=$reviewOrdinal" : "")
-	    . $linkExtra . "&amp;m=re";
+	$reviewLinkArgs = "p=$prow->paperId" . ($rrow ? "&amp;r=$reviewOrdinal" : "") . "&amp;m=re";
 	$reviewPostLink = hoturl_post("review", $reviewLinkArgs);
 	$reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1");
 	$admin = $Me->allowAdminister($prow);
@@ -1440,10 +1437,10 @@ $blind\n";
 	if ($rrow) {
 	    echo "<div class='floatright'>";
 	    if (!$editmode && $Me->canReview($prow, $rrow))
-		echo "<a href='" . hoturl("review", "r=$reviewOrdinal$linkExtra") . "' class='xx'>",
+		echo "<a href='" . hoturl("review", "r=$reviewOrdinal") . "' class='xx'>",
 		    $Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
 		    "&nbsp;<u>Edit</u></a><br />";
-	    echo "<a href='" . hoturl("review", "r=$reviewOrdinal&amp;text=1$linkExtra") . "' class='xx'>",
+	    echo "<a href='" . hoturl("review", "r=$reviewOrdinal&amp;text=1") . "' class='xx'>",
 		$Conf->cacheableImage("txt.png", "[Text]", null, "b"),
 		"&nbsp;<u>Plain text</u></a>",
 		"</div>";
@@ -1451,7 +1448,7 @@ $blind\n";
 
 	echo "<h3>";
 	if ($rrow) {
-	    echo "<a href='", hoturl("review", "r=$reviewOrdinal$linkExtra"), "' name='review$reviewOrdinal' class='",
+	    echo "<a href='", hoturl("review", "r=$reviewOrdinal"), "' name='review$reviewOrdinal' class='",
 		($editmode ? "q'>Edit " : "u'>"), "Review";
 	    if ($rrow->reviewSubmitted)
 		echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
@@ -1518,7 +1515,7 @@ $blind\n";
 		    $ndelegated++;
 
 	    if ($ndelegated == 0)
-		echo "As a secondary reviewer, you can <a href=\"", hoturl("assign", "p=$rrow->paperId$linkExtra"), "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete the review yourself.";
+		echo "As a secondary reviewer, you can <a href=\"", hoturl("assign", "p=$rrow->paperId"), "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete the review yourself.";
 	    else if ($rrow->reviewNeedsSubmit == 0)
 		echo "A delegated external reviewer has submitted their review, but you can still complete your own if you’d like.";
 	    else

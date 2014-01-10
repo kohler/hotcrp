@@ -98,7 +98,7 @@ class CommentView {
     }
 
     function show($prow, $crow, $useRequest, $editMode, $foldnew = true) {
-	global $Conf, $Me, $linkExtra;
+	global $Conf, $Me;
 
         if ($crow)
             setCommentType($crow);
@@ -118,7 +118,7 @@ class CommentView {
 	$this->ncomment_in_table++;
 
 	if ($editMode) {
-	    echo "<form action='", hoturl_post("comment", "p=$prow->paperId&amp;c=" . ($crow ? $crow->commentId : "new") . $linkExtra),
+	    echo "<form action='", hoturl_post("comment", "p=$prow->paperId&amp;c=" . ($crow ? $crow->commentId : "new")),
 		"' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>";
 	    if (!$crow && $foldnew)
 		echo "<div class='aahc foldc' id='foldaddcomment'>";
@@ -142,7 +142,7 @@ class CommentView {
                       || $Me->allowAdminister($prow))
 	    && !$editMode && $Me->canComment($prow, $crow))
 	    echo "<div class='floatright'>",
-		"<a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId"), "' class='xx'>",
+		"<a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId#comment$crow->commentId"), "' class='xx'>",
 		$Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
 		"&nbsp;<u>Edit</u></a></div>";
 
@@ -226,7 +226,7 @@ class CommentView {
     }
 
     function showResponse($prow, $crow, $useRequest, $editMode) {
-	global $Conf, $Me, $linkExtra;
+	global $Conf, $Me;
 
 	if ($editMode && !$Me->canRespond($prow, $crow)
 	    && ($crow || !$Me->allowAdminister($prow)))
@@ -234,7 +234,7 @@ class CommentView {
 	$this->nresponse++;
 
 	if ($editMode) {
-	    echo "<form action='", hoturl_post("comment", "p=$prow->paperId" . ($crow ? "&amp;c=$crow->commentId" : "") . "$linkExtra&amp;response=1");
+	    echo "<form action='", hoturl_post("comment", "p=$prow->paperId" . ($crow ? "&amp;c=$crow->commentId" : "") . "&amp;response=1");
 	    if ($crow)
 		echo "#comment$crow->commentId";
 	    echo "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
@@ -248,7 +248,7 @@ class CommentView {
                       || $Me->allowAdminister($prow))
 	    && !$editMode && $Me->canRespond($prow, $crow))
 	    echo "<div class='floatright'>",
-		"<a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId$linkExtra#comment$crow->commentId") . "' class='xx'>",
+		"<a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId#comment$crow->commentId") . "' class='xx'>",
 		$Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
 		"&nbsp;<u>Edit</u></a></div>";
 
@@ -272,7 +272,7 @@ class CommentView {
 	    echo "<div class='cmtg cmtg1'>";
 	    if ($Me->allowAdminister($prow)
                 && ($crow->commentType & COMMENTTYPE_DRAFT))
-		echo "<i>The <a href='", hoturl("comment", "c=$crow->commentId$linkExtra"), "'>authors’ response</a> is not yet ready for reviewers to view.</i>";
+		echo "<i>The <a href='", hoturl("comment", "c=$crow->commentId"), "'>authors’ response</a> is not yet ready for reviewers to view.</i>";
 	    else if (!$Me->canViewComment($prow, $crow, null))
 		echo "<i>The authors’ response is not yet ready for reviewers to view.</i>";
 	    else

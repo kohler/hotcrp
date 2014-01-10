@@ -27,7 +27,6 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
 $Me->exit_if_empty();
 $rf = reviewForm();
 $useRequest = isset($_REQUEST["afterLogin"]);
-$linkExtra = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 if (defval($_REQUEST, "mode") == "edit")
     $_REQUEST["mode"] = "re";
 else if (defval($_REQUEST, "mode") == "view")
@@ -36,15 +35,12 @@ else if (defval($_REQUEST, "mode") == "view")
 
 // header
 function confHeader() {
-    global $prow, $Conf, $linkExtra, $CurrentList;
+    global $prow, $Conf;
     if ($prow)
 	$title = "Paper #$prow->paperId";
     else
 	$title = "Paper Reviews";
     $Conf->header($title, "review", actionBar("r", $prow), false);
-    if (isset($CurrentList) && $CurrentList > 0
-	&& strpos($linkExtra, "ls=") === false)
-	$linkExtra .= "&amp;ls=" . $CurrentList;
 }
 
 function errorMsgExit($msg) {
@@ -57,7 +53,7 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $linkExtra, $prow, $paperTable, $editRrowLogname, $Error;
+    global $Conf, $Me, $prow, $paperTable, $editRrowLogname, $Error;
     if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
     $paperTable = new PaperTable($prow);
@@ -339,7 +335,7 @@ if (isset($_REQUEST["refuse"]) || isset($_REQUEST["decline"])) {
 	$Conf->errorMsg("This review has already been submitted; you can’t decline it now.");
     else if (defval($_REQUEST, "refuse") == "1"
 	     || defval($_REQUEST, "decline") == "1") {
-	$Conf->confirmMsg("<p>Select “Decline review” to decline this review (you may enter a brief explanation, if you’d like). Thank you for telling us that you cannot complete your review.</p><div class='g'></div><form method='post' action=\"" . hoturl_post("review", "p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId . "$linkExtra") . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>
+	$Conf->confirmMsg("<p>Select “Decline review” to decline this review (you may enter a brief explanation, if you’d like). Thank you for telling us that you cannot complete your review.</p><div class='g'></div><form method='post' action=\"" . hoturl_post("review", "p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId) . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>
   <input type='hidden' name='refuse' value='refuse' />
   <textarea name='reason' rows='3' cols='40'></textarea>
   <span class='sep'></span>
@@ -407,7 +403,7 @@ if (!$viewAny && !$editAny) {
 	errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
 	$Conf->errorMsg("You can’t see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
-	go(hoturl("paper", "p=$prow->paperId$linkExtra"));
+	go(hoturl("paper", "p=$prow->paperId"));
     }
 }
 
@@ -416,7 +412,7 @@ if (!$viewAny && !$editAny) {
 if ($paperTable->mode == "r" || $paperTable->mode == "re")
     $paperTable->fixReviewMode();
 if ($paperTable->mode == "pe")
-    go(hoturl("paper", "p=$prow->paperId$linkExtra"));
+    go(hoturl("paper", "p=$prow->paperId"));
 
 
 // page header

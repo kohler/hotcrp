@@ -199,18 +199,33 @@ if (function_exists("iconv")) {
 // web helpers
 
 function hoturl($page, $options = null) {
-    global $ConfSiteBase, $ConfSiteSuffix, $Opt;
+    global $ConfSiteBase, $ConfSiteSuffix, $Opt, $Me, $paperTable, $CurrentList;
     $t = $ConfSiteBase . $page . $ConfSiteSuffix;
     // see also redirectSelf
     if ($options && is_array($options)) {
         $x = "";
         foreach ($options as $k => $v)
-            if ($v !== null)
+            if ($v !== null && $k !== "anchor")
                 $x .= ($x === "" ? "" : "&amp;") . $k . "=" . urlencode($v);
+        if (isset($options["anchor"]))
+            $x .= "#" . urlencode($options[$anchor]);
         $options = $x;
     }
+    // append forceShow to links to same paper if appropriate
     $are = '/\A(|.*?(?:&|&amp;))';
-    $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
+    $zre = '(?:&(?:amp;)?|#|\z)(.*)\z/';
+    $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
+    if (@$paperTable && $paperTable->prow && $is_paper_page
+        && preg_match($are . 'p=' . $paperTable->prow->paperId . $zre, $options)
+        && $Me->canAdminister($paperTable->prow)
+        && $paperTable->prow->has_conflict($Me)
+        && !preg_match($are . 'forceShow=/', $options))
+        $options = preg_replace('/\A([^#]*)/', '$1&amp;forceShow=1', $options);
+    if (@$paperTable && $paperTable->prow && $is_paper_page
+        && @$CurrentList && $CurrentList > 0
+        && !preg_match($are . 'ls=/', $options))
+        $options = preg_replace('/\A([^#]*)/', '$1&amp;ls=' . $CurrentList, $options);
+    // create slash-based URLs if appropriate
     if ($options && !defval($Opt, "disableSlashURLs")) {
         if ($page == "review"
             && preg_match($are . 'r=(\d+[A-Z]+)' . $zre, $options, $m)) {
@@ -218,7 +233,7 @@ function hoturl($page, $options = null) {
             $options = $m[1] . $m[3];
             if (preg_match($are . 'p=\d+' . $zre, $options, $m))
                 $options = $m[1] . $m[2];
-        } else if ((preg_match('/\A(?:paper|review|comment|assign)\z/', $page)
+        } else if (($is_paper_page
                     && preg_match($are . 'p=(\d+|%\w+%)' . $zre, $options, $m))
                    || ($page == "profile"
                        && preg_match($are . 'u=([^&]+)' . $zre, $options, $m))) {

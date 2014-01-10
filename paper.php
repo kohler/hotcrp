@@ -8,7 +8,6 @@ require_once("Code/header.inc");
 require_once("src/papertable.php");
 $Me->exit_if_empty();
 $useRequest = false;
-$linkExtra = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 foreach (array("emailNote", "reason") as $x)
     if (isset($_REQUEST[$x]) && $_REQUEST[$x] == "Optional explanation")
 	unset($_REQUEST[$x]);
@@ -24,8 +23,7 @@ if (!isset($_REQUEST["p"]) && !isset($_REQUEST["paperId"])
 
 // header
 function confHeader() {
-    global $paperId, $newPaper, $prow, $paperTable, $Conf, $linkExtra,
-	$CurrentList, $Error;
+    global $paperId, $newPaper, $prow, $paperTable, $Conf, $Error;
     if ($paperTable)
 	$mode = $paperTable->mode;
     else
@@ -40,8 +38,6 @@ function confHeader() {
 	$title = "Paper #$paperId";
 
     $Conf->header($title, "paper_" . ($mode == "pe" ? "edit" : "view"), actionBar($mode, $prow), false);
-    if (@($CurrentList > 0) && strpos($linkExtra, "ls=") === false)
-	$linkExtra .= "&amp;ls=" . $CurrentList;
 }
 
 function errorMsgExit($msg) {

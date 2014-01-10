@@ -9,20 +9,16 @@ require_once("src/papertable.php");
 $Me->exit_if_empty();
 $rf = reviewForm();
 $useRequest = false;
-$linkExtra = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 
 
 // header
 function confHeader() {
-    global $prow, $mode, $Conf, $linkExtra, $CurrentList;
+    global $prow, $mode, $Conf;
     if ($prow)
 	$title = "Paper #$prow->paperId";
     else
 	$title = "Paper Comments";
     $Conf->header($title, "comment", actionBar("c", $prow), false);
-    if (isset($CurrentList) && $CurrentList > 0
-	&& strpos($linkExtra, "ls=") === false)
-	$linkExtra .= "&amp;ls=" . $CurrentList;
 }
 
 function errorMsgExit($msg) {
@@ -252,14 +248,14 @@ function saveComment($text) {
 }
 
 function saveResponse($text) {
-    global $Me, $Conf, $prow, $linkExtra;
+    global $Me, $Conf, $prow;
 
     $success = saveComment($text);
     if (!$success) {
         $q = ($Conf->sversion >= 53 ? "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0" : "forAuthors>1");
 	$result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and $q");
 	if (($row = edb_row($result)))
-	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"" . hoturl("comment", "c=$row[0]$linkExtra") . "\">Edit that response</a>");
+	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"" . hoturl("comment", "c=$row[0]") . "\">Edit that response</a>");
     }
 }
 
@@ -313,7 +309,7 @@ if (!$viewAny && !$editAny) {
 	errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
 	$Conf->errorMsg("You can’t see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
-	go(hoturl("paper", "p=$prow->paperId$linkExtra"));
+	go(hoturl("paper", "p=$prow->paperId"));
     }
 }
 
@@ -322,7 +318,7 @@ if (!$viewAny && !$editAny) {
 if ($paperTable->mode == "r" || $paperTable->mode == "re")
     $paperTable->fixReviewMode();
 if ($paperTable->mode == "pe")
-    go(hoturl("paper", "p=$prow->paperId$linkExtra"));
+    go(hoturl("paper", "p=$prow->paperId"));
 
 
 // page header
