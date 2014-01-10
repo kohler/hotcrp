@@ -1001,7 +1001,8 @@ class Contact {
 	    return false;
 	// policy
         $rights = $this->rights($prow, $forceShow);
-        if (($rights->nonblind && $prow->timeSubmitted > 0
+        if (($rights->nonblind
+             && $prow->timeSubmitted > 0
              && ($rights->allow_pc
                  || ($rights->review_type
                      && $Conf->timeReviewerViewSubmittedPaper())))
@@ -1010,7 +1011,7 @@ class Contact {
                 && $rights->allow_pc
                 && $Conf->setting("pc_seeall") > 0)
             || ($rights->allow_administer
-                ? $rights->can_administer
+                ? $rights->rights_force /* chair can't see blind authors unless forceShow */
                 : $rights->act_conflict_type >= CONFLICT_AUTHOR))
             return true;
 	// collect failure reasons
@@ -1039,7 +1040,7 @@ class Contact {
 	// policy
 	if (!$this->canViewPaper($prow, $whyNot))
 	    return false;	// $whyNot already set
-        if ($rights->conflict_type >= CONFLICT_AUTHOR
+        if ($rights->act_conflict_type >= CONFLICT_AUTHOR
             || (($rights->allow_administer
                  || $rights->allow_pc_broad
                  || $rights->review_type)
