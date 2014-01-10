@@ -83,7 +83,7 @@ class Conference {
 	$this->deadline_cache = null;
 	$result = $this->q("select name, value, data from Settings");
 	while (($row = edb_row($result))) {
-	    $this->settings[$row[0]] = $row[1];
+	    $this->settings[$row[0]] = (int) $row[1];
 	    if ($row[2] !== null)
 		$this->settingTexts[$row[0]] = $row[2];
 	    if (substr($row[0], 0, 4) == "opt.")
