@@ -24,7 +24,8 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
     go(hoturl("index", "email=" . urlencode($_REQUEST["email"]) . "&password=" . urlencode($_REQUEST["password"]) . "&go=" . urlencode($url)));
 }
 
-$Me->exit_if_empty();
+if ($Me->is_empty())
+    $Me->escape();
 $rf = reviewForm();
 $useRequest = isset($_REQUEST["afterLogin"]);
 if (defval($_REQUEST, "mode") == "edit")

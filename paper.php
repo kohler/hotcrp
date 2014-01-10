@@ -6,7 +6,8 @@
 $Error = $Warning = array();
 require_once("Code/header.inc");
 require_once("src/papertable.php");
-$Me->exit_if_empty();
+if ($Me->is_empty())
+    $Me->escape();
 $useRequest = false;
 foreach (array("emailNote", "reason") as $x)
     if (isset($_REQUEST[$x]) && $_REQUEST[$x] == "Optional explanation")

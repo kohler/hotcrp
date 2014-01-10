@@ -4,8 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-$Me->exit_if_empty();
-$Me->goIfNotPrivChair();
+if ($Me->is_empty() || !$Me->privChair)
+    $Me->escape();
 
 if (defval($_REQUEST, "page", "") == "earliest")
     $page = false;

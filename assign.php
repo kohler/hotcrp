@@ -6,7 +6,8 @@
 require_once("Code/header.inc");
 require_once("src/papertable.php");
 require_once("src/reviewtable.php");
-$Me->exit_if_empty();
+if ($Me->is_empty())
+    $Me->escape();
 $_REQUEST["forceShow"] = 1;
 $rf = reviewForm();
 $PC = pcMembers();

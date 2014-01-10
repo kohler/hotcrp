@@ -5,7 +5,8 @@
 
 require_once("Code/header.inc");
 require_once("src/papersearch.php");
-$Me->exit_if_empty();
+if ($Me->is_empty())
+    $Me->escape();
 $getaction = "";
 if (isset($_REQUEST["get"]))
     $getaction = $_REQUEST["get"];

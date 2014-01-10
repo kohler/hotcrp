@@ -35,9 +35,8 @@ function change_email_by_capability() {
 if (isset($_REQUEST["changeemail"]))
     change_email_by_capability();
 
-$Me->exit_if_empty();
-if (!$Me->is_known_user())
-    go(false);
+if ($Me->is_empty() || !$Me->is_known_user())
+    $Me->escape();
 $newProfile = false;
 $Error = $Warning = array();
 

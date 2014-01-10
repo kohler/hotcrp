@@ -5,8 +5,8 @@
 
 require_once("Code/header.inc");
 require_once("src/papersearch.php");
-$Me->exit_if_empty();
-$Me->goIfNotPrivChair();
+if ($Me->is_empty() || !$Me->privChair)
+    $Me->escape();
 
 // paper selection
 if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) == "(All)")

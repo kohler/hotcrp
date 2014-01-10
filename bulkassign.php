@@ -6,8 +6,8 @@
 require_once("Code/header.inc");
 require_once("src/papersearch.php");
 require_once("src/assigners.php");
-$Me->exit_if_empty();
-$Me->goIfNotPrivChair();
+if ($Me->is_empty() || !$Me->privChair)
+    $Me->escape();
 $nullMailer = new Mailer(null, null, $Me);
 $nullMailer->width = 10000000;
 $Error = $Warning = array();

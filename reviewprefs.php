@@ -5,8 +5,8 @@
 
 require_once("Code/header.inc");
 require_once("src/papersearch.php");
-$Me->exit_if_empty();
-$Me->goIfNotPC();
+if ($Me->is_empty() || (!$Me->privChair && !$Me->isPC))
+    $Me->escape();
 $reviewer = rcvtint($_REQUEST["reviewer"]);
 if ($reviewer <= 0 || !$Me->privChair)
     $reviewer = $Me->contactId;

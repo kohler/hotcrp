@@ -389,38 +389,33 @@ class Contact {
         self::set_sorter($this);
     }
 
-    function exit_if_empty() {
+    function escape() {
 	global $Conf;
-	if ($this->is_empty()) {
-	    if (defval($_REQUEST, "ajax"))
-		$Conf->ajaxExit(array("ok" => 0, "loggedout" => 1));
-	    $x = array("afterLogin" => 1, "blind" => 1);
-	    $rf = reviewForm();
-	    // Preserve review form values.
-	    foreach ($rf->fmap as $field => $f)
-		if (isset($_REQUEST[$field]))
-		    $x[$field] = $_REQUEST[$field];
-	    // Preserve comments and other long-to-type things.
-	    foreach (array("comment", "visibility", "override", "plimit",
-			   "subject", "emailBody", "cc", "recipients",
-			   "replyto") as $k)
-		if (isset($_REQUEST[$k]))
-		    $x[$k] = $_REQUEST[$k];
-	    // NB: selfHref automagically preserves common parameters like
-	    // "p", "q", etc.
-	    $_SESSION["afterLogin"] = selfHref($x, false);
-	    error_go(false, "You have invalid credentials and need to sign in.");
-	}
-    }
+        if (@$_REQUEST["ajax"]) {
+            if ($this->is_empty())
+                $Conf->ajaxExit(array("ok" => 0, "loggedout" => 1));
+            else
+                $Conf->ajaxExit(array("ok" => 0, "error" => "You don’t have permission to access that page."));
+        }
 
-    function goIfNotPC() {
-	if (!$this->privChair && !$this->isPC)
-	    error_go(false, "That page is only accessible to program committee members.");
-    }
-
-    function goIfNotPrivChair() {
-	if (!$this->privChair)
-	    error_go(false, "That page is only accessible to conference administrators.");
+        if ($this->is_empty()) {
+            // Preserve review form values and comments across session expiration.
+            $x = array("afterLogin" => 1, "blind" => 1);
+            $rf = reviewForm();
+            foreach ($rf->fmap as $field => $f)
+                if (isset($_REQUEST[$field]))
+                    $x[$field] = $_REQUEST[$field];
+            foreach (array("comment", "visibility", "override", "plimit",
+                           "subject", "emailBody", "cc", "recipients",
+                           "replyto") as $k)
+                if (isset($_REQUEST[$k]))
+                    $x[$k] = $_REQUEST[$k];
+            // NB: selfHref automagically preserves common parameters like
+            // "p", "q", etc.
+            $_SESSION["afterLogin"] = selfHref($x, false);
+            error_go(false, "You have invalid credentials and need to sign in.");
+        } else
+            error_go(false, "You don’t have permission to access that page.");
     }
 
     function updateDB($where = "") {

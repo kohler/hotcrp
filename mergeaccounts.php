@@ -4,7 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 include('Code/header.inc');
-$Me->exit_if_empty();
+if ($Me->is_empty())
+    $Me->escape();
 $MergeError = "";
 
 function crpmergeone($table, $field, $oldid, $newid) {

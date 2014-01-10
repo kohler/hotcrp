@@ -4,7 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("Code/header.inc");
-$Me->exit_if_empty();
+if ($Me->is_empty())
+    $Me->escape();
 $rf = reviewForm();
 
 
