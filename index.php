@@ -394,7 +394,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
 	$sep = $xsep;
     }
     if ($Me->isPC && $Conf->setting("paperlead") > 0
-	&& $Me->amDiscussionLead(0)) {
+	&& $Me->is_discussion_lead()) {
 	echo $sep, "<a href=\"", hoturl("search", "q=lead%3Ame"), "\" class='nowrap'>Your discussion leads</a>";
 	$sep = $xsep;
     }

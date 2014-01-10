@@ -329,6 +329,15 @@ class Contact {
         return $this->is_requester_;
     }
 
+    function is_discussion_lead() {
+	global $Conf;
+        if (!isset($this->is_lead_)) {
+            $result = $Conf->qe("select paperId from Paper where leadContactId=$this->contactId limit 1");
+            $this->is_lead_ = edb_nrows($result) > 0;
+        }
+        return $this->is_lead_;
+    }
+
     static function roles_all_contact_tags($roles, $tags) {
         $t = "";
         if ($roles & self::ROLE_PC)
@@ -1379,21 +1388,6 @@ class Contact {
 	    return edb_nrows($result) > 0;
 	} else
 	    return $prow->conflict_type($this) >= CONFLICT_AUTHOR;
-    }
-
-    function amDiscussionLead($paperId, $prow = null) {
-	global $Conf;
-	if ($prow === null && $paperId <= 0) {
-	    if (!isset($this->is_lead_)) {
-		$result = $Conf->qe("select paperId from Paper where leadContactId=$this->contactId limit 1");
-                $this->is_lead_ = edb_nrows($result) > 0;
-	    }
-	    return $this->is_lead_;
-	} else if ($prow === null) {
-	    $result = $Conf->qe("select paperId from Paper where paperId=$paperId and leadContactId=$this->contactId");
-	    return edb_nrows($result) > 0;
-	} else
-	    return $prow->leadContactId == $this->contactId;
     }
 
     function canEditContactAuthors($prow) {
