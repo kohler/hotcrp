@@ -20,14 +20,13 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = 0;
     $conflictType = $Me->actConflictType($prow);
-    $hideUnviewable = ($conflictType > 0 && !$Me->is_admin_force());
-    if (!$Me->isPC && !$Conf->setting("extrev_view"))
-	$hideUnviewable = true;
-    $admin = $Me->allowAdminister($prow);
-    $effAssistant = $admin && !$hideUnviewable;
+    $allow_admin = $Me->allowAdminister($prow);
+    $admin = $Me->canAdminister($prow);
+    $hideUnviewable = ($conflictType > 0 && !$admin)
+        || (!$Me->actPC($prow) && !$Conf->setting("extrev_view"));
     $anyScores = false;
     $anyColors = false;
-    $colorizer = ($Me->isPC ? new Tagger : null);
+    $colorizer = ($Me->actPC($prow) ? new Tagger : null);
     $rf = reviewForm();
     $nNumeric = $rf->numNumericScores($prow, $Me);
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
@@ -75,7 +74,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 	    $t .= "<td><a href='#review$rlink'>$id</a></td>";
 
 	// primary/secondary glyph
-	if ($conflictType > 0 && !$effAssistant)
+	if ($conflictType > 0 && !$admin)
 	    $x = "";
 	else if ($rr->reviewType > 0) {
 	    $x = review_type_icon($rr->reviewType);
@@ -101,13 +100,13 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             } else
 		$n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
 	    $t .= "<td>" . $n . ($x ? " $x" : "");
-	    if ($admin && $rr->email != $Me->email)
+	    if ($allow_admin && $rr->email != $Me->email)
 		$t .= " <a href=\"" . selfHref(array("actas" => $rr->email)) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($rr)) . "</a>";
             if ($mode == "assign"
-                && ($conflictType <= 0 || $effAssistant)
+                && ($conflictType <= 0 || $admin)
                 && $rr->reviewType == REVIEW_EXTERNAL
                 && $rr->reviewModified <= 0
-                && ($rr->requestedBy == $Me->contactId || $effAssistant))
+                && ($rr->requestedBy == $Me->contactId || $admin))
                 $t .= ' ' . _retract_review_request_form($prow, $rr);
 	    $t .= "</td>";
 	    if ($colorizer && (@$rr->contactRoles || @$rr->contactTags)) {
@@ -120,7 +119,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 	// requester
         $reqt = "";
 	if ($mode == "assign"
-            && ($conflictType <= 0 || $effAssistant)
+            && ($conflictType <= 0 || $admin)
             && $rr->reviewType == REVIEW_EXTERNAL
             && !$showtoken) {
             $reqt = '<td class="empty"></td>'
@@ -160,7 +159,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
             // reviewer identity
             $t .= "<td>" . Text::user_html($rr);
-            if ($effAssistant)
+            if ($admin)
                 $t .= ' <small>'
                     . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
                     . '<div class="inform">'
@@ -177,7 +176,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
             // requester
             $reqt = "";
-            if ($conflictType <= 0 || $effAssistant) {
+            if ($conflictType <= 0 || $admin) {
                 $reqt = '<td class="empty"></td>'
                     . '<td style="font-size:smaller" colspan="2">—'
                     . 'requested by ';
@@ -201,7 +200,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
     // unfinished review notification
     $notetxt = "";
-    if ($conflictType >= CONFLICT_AUTHOR && !$effAssistant && $notShown
+    if ($conflictType >= CONFLICT_AUTHOR && !$admin && $notShown
 	&& $Me->canViewReview($prow, null, null)) {
 	$qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
 	if ($notShown == 1)
@@ -233,9 +232,8 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     global $Conf, $Me;
 
     $conflictType = $Me->actConflictType($prow);
-    $actingConflict = ($conflictType > 0 && !$Me->is_admin_force());
-    $admin = $Me->allowAdminister($prow);
-    $effAssistant = $Me->canAdminister($prow) && !$actingConflict;
+    $allow_admin = $Me->allowAdminister($prow);
+    $admin = $Me->canAdminister($prow);
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 
     $nvisible = 0;
@@ -310,7 +308,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 
     // review assignments
     if ($mode != "assign"
-	&& ($prow->reviewType >= REVIEW_SECONDARY || $effAssistant)) {
+	&& ($prow->reviewType >= REVIEW_SECONDARY || $admin)) {
 	$x = "<a href='" . hoturl("assign", "p=$prow->paperId") . "' class='xx'>"
 	    . $Conf->cacheableImage("assign24.png", "[Assign]", null, "dlimg") . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
@@ -345,10 +343,13 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     // override conflict
-    if ($admin && !$effAssistant) {
+    if ($allow_admin && !$admin) {
 	$x = "<a href=\"" . selfHref(array("forceShow" => 1)) . "\" class='xx'>"
 	    . $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing";
 	$t .= ($t == "" ? "" : $xsep) . $x;
+    } else if ($Me->privChair && !$allow_admin) {
+        $x = "You can’t override your conflict because this paper has an administrator.";
+        $t .= ($t == "" ? "" : $xsep) . $x;
     }
 
     return $pret . $t;
