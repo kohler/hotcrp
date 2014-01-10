@@ -1435,7 +1435,7 @@ class PaperTable {
 	      && $prow->timeSubmitted > 0
 	      && ($conflictType >= CONFLICT_AUTHOR
 		  || $conflictType <= 0
-		  || ($this->admin && Contact::override_conflict()))
+		  || $Me->is_admin_force())
 	      && $Me->contactId > 0))
 	    return;
 	// watch note

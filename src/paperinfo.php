@@ -25,6 +25,11 @@ class PaperContactInfo {
             $ci = new PaperContactInfo;
             $ci->conflict_type = $ci->review_type = 0;
             $ci->review_needs_submit = 1;
+        } else {
+            $ci->conflict_type = (int) $ci->conflict_type;
+            $ci->review_type = (int) $ci->review_type;
+            $ci->review_submitted = (int) $ci->review_submitted;
+            $ci->review_needs_submit = (int) $ci->review_needs_submit;
         }
         return $ci;
     }
@@ -32,13 +37,13 @@ class PaperContactInfo {
     static function load_my($object) {
         $ci = new PaperContactInfo;
         if (property_exists($object, "conflictType"))
-            $ci->conflict_type = $object->conflictType;
+            $ci->conflict_type = (int) $object->conflictType;
         if (property_exists($object, "myReviewType"))
-            $ci->review_type = $object->myReviewType;
+            $ci->review_type = (int) $object->myReviewType;
         if (property_exists($object, "myReviewSubmitted"))
-            $ci->review_submitted = $object->myReviewSubmitted;
+            $ci->review_submitted = (int) $object->myReviewSubmitted;
         if (property_exists($object, "myReviewNeedsSubmit"))
-            $ci->review_needs_submit = $object->myReviewNeedsSubmit;
+            $ci->review_needs_submit = (int) $object->myReviewNeedsSubmit;
         return $ci;
     }
 }

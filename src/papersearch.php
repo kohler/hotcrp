@@ -2088,7 +2088,8 @@ class PaperSearch {
                 && !$this->contact->actPC($row))
                 return false;
             if ($t->type == "pf" && $t->value[0] == "shepherdContactId"
-                && !($this->contact->actPC($row) || $this->contact->canViewDecision($row)))
+                && !($this->contact->actPC($row)
+                     || $this->contact->canViewDecision($row)))
                 return false;
             if ($t->type == "pf" && $t->value[0] == "managerContactId"
                 && !$this->contact->canViewPaperManager($row))
