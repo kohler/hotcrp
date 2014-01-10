@@ -239,6 +239,16 @@ class Contact {
 	return $this->contactId > 0;
     }
 
+    function is_admin() {
+        return $this->privChair;
+    }
+
+    function is_admin_force() {
+        return $this->privChair
+            && ($fs = @$_REQUEST["forceShow"])
+            && $fs != "0";
+    }
+
     function is_core_pc() {
         return ($this->roles & self::ROLE_PCLIKE) != 0
             && ($this->roles & self::ROLE_ERC) == 0;
@@ -648,7 +658,7 @@ class Contact {
 
     static public function override_conflict($forceShow = null) {
         if ($forceShow === null)
-            return isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] > 0;
+            return ($fs = @$_REQUEST["forceShow"]) && $fs != "0";
         else
             return $forceShow;
     }

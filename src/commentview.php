@@ -53,7 +53,7 @@ class CommentView {
     }
 
     private function _commentIdentityTime($prow, $crow, $response) {
-	global $Conf, $Me, $forceShow;
+	global $Conf, $Me;
 	echo "<span class='cmtfn'>";
 	$sep = "";
 	$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
@@ -82,8 +82,7 @@ class CommentView {
 	}
 	echo "</span>";
 	if ($crow && !$response
-	    && (!$prow->has_conflict($Me)
-                || ($Me->allowAdminister($prow) && $forceShow))) {
+	    && (!$prow->has_conflict($Me) || $Me->canAdminister($prow))) {
             if ($crow->commentType >= COMMENTTYPE_AUTHOR)
                 $x = "";
             else if ($crow->commentType >= COMMENTTYPE_REVIEWER)

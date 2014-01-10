@@ -27,8 +27,7 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
 $Me->exit_if_empty();
 $rf = reviewForm();
 $useRequest = isset($_REQUEST["afterLogin"]);
-$forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
-$linkExtra = ($forceShow ? "&amp;forceShow=1" : "");
+$linkExtra = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 if (defval($_REQUEST, "mode") == "edit")
     $_REQUEST["mode"] = "re";
 else if (defval($_REQUEST, "mode") == "view")

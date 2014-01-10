@@ -7,11 +7,7 @@ require_once("Code/header.inc");
 require_once("src/papertable.php");
 require_once("src/reviewtable.php");
 $Me->exit_if_empty();
-if (isset($_REQUEST["forceShow"]) && $_REQUEST["forceShow"] && $Me->privChair)
-    $linkExtra = "&amp;forceShow=1";
-else
-    $linkExtra = "";
-$forceShow = "&amp;forceShow=1";
+$linkExtra = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 $_REQUEST["forceShow"] = 1;
 $rf = reviewForm();
 $PC = pcMembers();

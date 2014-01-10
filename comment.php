@@ -9,8 +9,7 @@ require_once("src/papertable.php");
 $Me->exit_if_empty();
 $rf = reviewForm();
 $useRequest = false;
-$forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
-$linkExtra = ($forceShow ? "&amp;forceShow=1" : "");
+$linkExtra = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 
 
 // header

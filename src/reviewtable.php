@@ -14,7 +14,7 @@ function _retract_review_request_form($prow, $rr, $linkExtra) {
 
 // reviewer information
 function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
-    global $Conf, $Me, $rf, $forceShow, $linkExtra;
+    global $Conf, $Me, $rf, $linkExtra;
     if (!$rf)
 	$rf = reviewForm();
 
@@ -22,7 +22,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = 0;
     $conflictType = $Me->actConflictType($prow);
-    $hideUnviewable = ($conflictType > 0 && !$forceShow);
+    $hideUnviewable = ($conflictType > 0 && !$Me->is_admin_force());
     if (!$Me->isPC && !$Conf->setting("extrev_view"))
 	$hideUnviewable = true;
     $admin = $Me->allowAdminister($prow);
@@ -231,10 +231,10 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
 // links below review table
 function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
-    global $Conf, $Me, $forceShow, $linkExtra;
+    global $Conf, $Me, $linkExtra;
 
     $conflictType = $Me->actConflictType($prow);
-    $actingConflict = ($conflictType > 0 && !$forceShow);
+    $actingConflict = ($conflictType > 0 && !$Me->is_admin_force());
     $admin = $Me->allowAdminister($prow);
     $effAssistant = $Me->canAdminister($prow) && !$actingConflict;
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";

@@ -8,8 +8,7 @@ require_once("Code/header.inc");
 require_once("src/papertable.php");
 $Me->exit_if_empty();
 $useRequest = false;
-$forceShow = (defval($_REQUEST, "forceShow") && $Me->privChair);
-$linkExtra = ($forceShow ? "&amp;forceShow=1" : "");
+$linkExtra = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 foreach (array("emailNote", "reason") as $x)
     if (isset($_REQUEST[$x]) && $_REQUEST[$x] == "Optional explanation")
 	unset($_REQUEST[$x]);

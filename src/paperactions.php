@@ -148,11 +148,11 @@ class PaperActions {
     }
 
     static function setTags($prow) {
-	global $Conf, $Me, $Error, $OK, $forceShow;
+	global $Conf, $Me, $Error, $OK;
 	if (isset($_REQUEST["cancelsettags"]))
 	    return;
 	$ajax = defval($_REQUEST, "ajax", false);
-        if ($Me->canSetTags($prow, $forceShow)) {
+        if ($Me->canSetTags($prow)) {
             $tagger = new Tagger;
 	    if (isset($_REQUEST["tags"]))
 		$tagger->save($prow->paperId, $_REQUEST["tags"], "p");
@@ -175,10 +175,10 @@ class PaperActions {
     }
 
     static function tagReport($prow, $return = false) {
-	global $Conf, $Me, $Error, $OK, $forceShow;
+	global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
 	$r = "";
-	if ($Me->canViewTags($prow, $forceShow)) {
+	if ($Me->canViewTags($prow)) {
             $tagger = new Tagger();
 	    if (($vt = $tagger->vote_tags())) {
 		$q = "";
@@ -215,7 +215,7 @@ class PaperActions {
     }
 
     static function all_tags($papersel = null) {
-	global $Conf, $Me, $Error, $OK, $forceShow;
+	global $Conf, $Me, $Error, $OK;
         if (!$Me->isPC)
             $Conf->ajaxExit(array("ok" => false));
 	$ajax = defval($_REQUEST, "ajax", false);

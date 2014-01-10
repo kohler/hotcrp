@@ -638,7 +638,7 @@ class PaperTable {
     }
 
     private function paptabAuthors($skip_contacts) {
-	global $Conf, $Me, $forceShow;
+	global $Conf, $Me;
 
 	$viewable = $Me->canViewAuthors($this->prow, false);
 	if (!$viewable && !$Me->canViewAuthors($this->prow, true)) {
@@ -708,7 +708,7 @@ class PaperTable {
     }
 
     private function paptabTopicsOptions($showAllOptions) {
-        global $Conf, $Me, $forceShow;
+        global $Conf, $Me;
 	$topicdata = topicTable($this->prow, -1);
         $xoptionhtml = array();
 	$optionhtml = array();
@@ -1295,12 +1295,12 @@ class PaperTable {
     }
 
     private function papstripTags($site = null) {
-	global $Conf, $Me, $Error, $forceShow, $linkExtra;
+	global $Conf, $Me, $Error, $linkExtra;
 	if ($site || defval($this->prow, "paperTags", "") !== "") {
 	    // Note that tags MUST NOT contain HTML special characters.
 	    $tagger = new Tagger;
 	    $tx = $tagger->unparse_link_viewable($this->prow->paperTags, false, !$this->prow->has_conflict($Me));
-	    $editable = $site && $Me->canSetTags($this->prow, $forceShow);
+	    $editable = $site && $Me->canSetTags($this->prow);
 	    $unfolded = $editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") == "tags");
 
 	    echo $this->_papstripBegin("tags", !$unfolded,
@@ -1678,12 +1678,12 @@ class PaperTable {
     // Functions for overall paper table viewing
 
     function _papstrip() {
-	global $Conf, $Me, $forceShow, $linkExtra;
+	global $Conf, $Me, $linkExtra;
 	$prow = $this->prow;
         if (($prow->managerContactId || ($Me->privChair && $this->mode == "assign"))
             && $Me->canViewPaperManager($prow))
             $this->papstripManager($Me->privChair);
-	if ($Me->canViewTags($prow, $forceShow))
+	if ($Me->canViewTags($prow))
 	    $this->papstripTags("review");
 	if ($Me->canSetRank($prow))
 	    $this->papstripRank();
@@ -1923,12 +1923,13 @@ class PaperTable {
     }
 
     function paptabEndWithReviews() {
-	global $Conf, $Me, $rf, $forceShow, $linkExtra;
+	global $Conf, $Me, $rf, $linkExtra;
 	if (!$rf)
 	    $rf = reviewForm();
 	$prow = $this->prow;
 
-	if ($forceShow && !$Me->canViewReview($prow, null, false))
+	if ($Me->is_admin_force()
+            && !$Me->canViewReview($prow, null, false))
 	    $this->_paptabSepContaining("<div class='inpapcc'>" . $this->_privilegeMessage() . "</div>");
 
 	$empty = $this->_paptabReviewLinks(true, null, "<div class='hint'>There are no reviews or comments for you to view.</div>");
@@ -2015,7 +2016,7 @@ class PaperTable {
     }
 
     function paptabEndWithEditableReview() {
-	global $Conf, $Me, $rf, $forceShow, $linkExtra;
+	global $Conf, $Me, $rf, $linkExtra;
 	if (!$rf)
 	    $rf = reviewForm();
 	$prow = $this->prow;
@@ -2027,7 +2028,7 @@ class PaperTable {
 	$msgs = array();
 	if (!$this->rrow && $this->prow->reviewType <= 0)
 	    $msgs[] = "You haven&rsquo;t been assigned to review this paper, but you can review it anyway.";
-	if ($forceShow && !$viewall) {
+	if ($Me->is_admin_force() && !$viewall) {
 	    $msgs[] = $this->_privilegeMessage();
 	} else if (!$viewall && isset($whyNot["reviewNotComplete"])
 		   && ($Me->isPC || $Conf->setting("extrev_view"))) {
