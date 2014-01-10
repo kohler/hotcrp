@@ -134,8 +134,9 @@ class ZipDocument {
             if (!$zlib_output_compression)
                 header("Content-Length: " . filesize($result));
             // flush all output buffers to avoid holding large files in memory
-            ob_flush();
             flush();
+            while (@ob_end_flush())
+                /* do nothing */;
             readfile($result);
             $result = (object) array("error" => false);
         }
@@ -387,8 +388,9 @@ class DocumentHelper {
 	if (isset($doc->filestore)) {
 	    if (!$zlib_output_compression)
 		header("Content-Length: " . filesize($doc->filestore));
-	    ob_clean();
 	    flush();
+            while (@ob_end_flush())
+                /* do nothing */;
 	    readfile($doc->filestore);
 	} else {
 	    if (!$zlib_output_compression)
