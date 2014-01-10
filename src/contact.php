@@ -1379,17 +1379,6 @@ class Contact {
     }
 
 
-    function amPaperAuthor($paperId, $prow = null) {
-	global $Conf;
-	if ($prow === null) {
-	    // Query for a specific match of the author and paper
-	    $query = "select paperId from PaperConflict where paperId=$paperId and contactId=$this->contactId and conflictType>=" . CONFLICT_AUTHOR;
-	    $result = $Conf->qe($query);
-	    return edb_nrows($result) > 0;
-	} else
-	    return $prow->conflict_type($this) >= CONFLICT_AUTHOR;
-    }
-
     function canEditContactAuthors($prow) {
 	return $prow->conflict_type($this) >= CONFLICT_AUTHOR
             || $this->allowAdminister($prow);
