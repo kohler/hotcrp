@@ -118,7 +118,7 @@ if (isset($_REQUEST["uploadForm"])
 
 // check review submit requirements
 if (isset($_REQUEST["unsubmit"]) && $paperTable->editrrow
-    && $paperTable->editrrow->reviewSubmitted && $Me->privChair
+    && $paperTable->editrrow->reviewSubmitted && $Me->canAdminister($prow)
     && check_post()) {
     $while = "while unsubmitting review";
     $Conf->qe("lock tables PaperReview write", $while);
@@ -188,7 +188,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
 
 // delete review action
-if (isset($_REQUEST["delete"]) && $Me->privChair && check_post())
+if (isset($_REQUEST["delete"]) && $Me->canAdminister($prow) && check_post())
     if (!$paperTable->editrrow)
 	$Conf->errorMsg("No review to delete.");
     else {
@@ -327,7 +327,7 @@ function refuseReview() {
 
 if (isset($_REQUEST["refuse"]) || isset($_REQUEST["decline"])) {
     if (!$paperTable->editrrow
-	|| (!$Me->ownReview($paperTable->editrrow) && !$Me->privChair))
+	|| (!$Me->ownReview($paperTable->editrrow) && !$Me->canAdminister($prow)))
 	$Conf->errorMsg("This review was not assigned to you, so you can’t decline it.");
     else if ($paperTable->editrrow->reviewType >= REVIEW_SECONDARY)
 	$Conf->errorMsg("PC members can’t decline their primary or secondary reviews.  Contact the PC chairs directly if you really cannot finish this review.");
@@ -350,7 +350,7 @@ if (isset($_REQUEST["refuse"]) || isset($_REQUEST["decline"])) {
 
 if (isset($_REQUEST["accept"])) {
     if (!$paperTable->editrrow
-	|| (!$Me->ownReview($paperTable->editrrow) && !$Me->privChair))
+	|| (!$Me->ownReview($paperTable->editrrow) && !$Me->canAdminister($prow)))
 	$Conf->errorMsg("This review was not assigned to you, so you cannot confirm your intention to write it.");
     else {
 	if ($paperTable->editrrow->reviewModified <= 0)
