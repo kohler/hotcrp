@@ -734,7 +734,7 @@ class PaperTable {
                     $ox = htmlspecialchars($om[$ov]);
             } else if ($o->type == PaperOption::T_NUMERIC && $oa->value != "" && $oa->value != "0")
                 $ox = htmlspecialchars($oa->value);
-            else if (($o->type == PaperOption::T_TEXT || $o->type == PaperOption::T_TEXT_5LINE) && $oa->data != "") {
+            else if (PaperOption::type_is_text($o->type) && $oa->data != "") {
                 $ox = htmlspecialchars($oa->data);
                 if ($o->type != PaperOption::T_TEXT)
                     $ox = nl2br($ox);
@@ -1081,7 +1081,7 @@ class PaperTable {
 		$myval = defval($_REQUEST, $optid);
             else if (!$optx)
                 $myval = null;
-	    else if ($o->type == PaperOption::T_TEXT || $o->type == PaperOption::T_TEXT_5LINE)
+	    else if (PaperOption::type_is_text($o->type))
                 $myval = $optx->data;
 	    else
                 $myval = $optx->value;

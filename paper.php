@@ -301,8 +301,7 @@ function request_differences($prow, $isfinal) {
                  || $o->type == PaperOption::T_NUMERIC) {
             if ($v !== ($ox ? $ox->value : 0))
                 $diffs[$o->optionName] = true;
-        } else if ($o->type == PaperOption::T_TEXT
-                   || $o->type == PaperOption::T_TEXT_5LINE) {
+        } else if (PaperOption::type_is_text($o->type)) {
             if ($v !== ($ox ? $ox->data : ""))
                 $diffs[$o->optionName] = true;
         } else if ($o->type == PaperOption::T_ATTACHMENTS) {
@@ -556,8 +555,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
                 $opt_data[] = "$o->optionId, " . $_REQUEST[$oname] . ", null";
             else
                 $Error[$oname] = htmlspecialchars($o->optionName) . " must be an integer.";
-        } else if ($o->type == PaperOption::T_TEXT
-                   || $o->type == PaperOption::T_TEXT_5LINE) {
+        } else if (PaperOption::type_is_text($o->type)) {
             if ($_REQUEST[$oname] !== "")
                 $opt_data[] = "$o->optionId, 1, '" . sqlq($_REQUEST[$oname]) . "'";
         } else if ($o->type == PaperOption::T_ATTACHMENTS) {

@@ -56,6 +56,10 @@ class PaperOption {
 	return $t == self::T_RADIO || $t == self::T_SELECTOR;
     }
 
+    static function type_is_text($t) {
+        return $t == self::T_TEXT || $t == self::T_TEXT_5LINE;
+    }
+
     static function type_is_document($t) {
 	return (self::type_flags($t) & self::F_DOCUMENT) != 0;
     }
