@@ -218,6 +218,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/src/paperoption.php");
     else if ($class_name == "PaperRank")
         require_once("$ConfSitePATH/src/rank.php");
+    else if ($class_name == "Conflict")
+        require_once("$ConfSitePATH/src/conflict.php");
     else if ($class_name == "MeetingTracker")
         require_once("$ConfSitePATH/src/meetingtracker.php");
     else if ($class_name == "CsvParser" || $class_name == "CsvGenerator")

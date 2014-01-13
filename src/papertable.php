@@ -1128,7 +1128,6 @@ class PaperTable {
 	    return;
 
 	$selectors = $Conf->setting("sub_pcconfsel");
-	require_once("conflict.php");
 
 	$conflict = array();
 	if ($this->useRequest) {

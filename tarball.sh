@@ -100,11 +100,11 @@ lib/xlsx.php
 src/.htaccess
 src/assigners.php
 src/baselist.php
-src/conference.php
-src/contact.php
 src/checkformat.php
 src/commentview.php
+src/conference.php
 src/conflict.php
+src/contact.php
 src/contactlist.php
 src/formula.php
 src/helpers.php
