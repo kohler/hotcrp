@@ -4,8 +4,24 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Conflict {
+    static $type_descriptions = array(0 => "No conflict",
+                                      3 => "Advisor/student",
+                                      2 => "Recent collaborator",
+                                      4 => "Institutional",
+                                      5 => "Personal",
+                                      6 => "Other");
+    static $type_names = array(0 => false,
+                               1 => true,
+                               2 => "collaborator",
+                               3 => "advisor",
+                               4 => "institutional",
+                               5 => "personal",
+                               6 => "other",
+                               CONFLICT_CHAIRMARK => "confirmed",
+                               CONFLICT_AUTHOR => "author",
+                               CONFLICT_CONTACTAUTHOR => "author");
 
-    var $value;
+    public $value;
 
     function __construct($value) {
 	$this->value = $value;

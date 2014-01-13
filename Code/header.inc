@@ -118,11 +118,6 @@ $allowedSessionVars = array("foldassigna", "foldpaperp", "foldpaperb",
 			    "foldpapert", "foldpscollab", "foldhomeactivity",
 			    "pfdisplay", "pldisplay", "ppldisplay");
 
-global $authorConflictTypes;
-$authorConflictTypes = array(0 => "No conflict", 3 => "Advisor/student",
-			     2 => "Recent collaborator", 4 => "Institutional",
-			     5 => "Personal", 6 => "Other");
-
 
 // set up conference path variables
 function set_path_variables() {

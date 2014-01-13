@@ -1118,7 +1118,7 @@ class PaperTable {
     }
 
     private function editable_pc_conflicts() {
-	global $Conf, $Me, $authorConflictTypes;
+	global $Conf, $Me;
 
 	assert(!!$this->editable);
 	if (!$Conf->setting("sub_pcconf"))
@@ -1148,7 +1148,7 @@ class PaperTable {
 	$pcconfs = array();
 	$nonct = Conflict::make_nonconflict();
 	if ($selectors) {
-	    $ctypes = $authorConflictTypes;
+	    $ctypes = Conflict::$type_descriptions;
 	    $extra = array("onchange" => "hiliter(this)",
 			   "class" => "pctbconfselector");
 	    if ($this->admin) {
