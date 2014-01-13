@@ -730,8 +730,8 @@ class PaperTable {
                 $ox = true;
             else if (PaperOption::type_is_selectorlike($o->type)) {
                 $om = explode("\n", $o->optionValues);
-                if (defval($om, $oa->value, "") != "")
-                    $ox = htmlspecialchars($om[$ov]);
+                if (@($otext = $om[$oa->value]))
+                    $ox = htmlspecialchars($otext);
             } else if ($o->type == PaperOption::T_NUMERIC && $oa->value != "" && $oa->value != "0")
                 $ox = htmlspecialchars($oa->value);
             else if (PaperOption::type_is_text($o->type) && $oa->data != "") {
