@@ -101,7 +101,7 @@ class PaperOption {
         preg_match_all('/(\d+)#(\d+)/', defval($prow, "optionIds", ""), $m);
         $optsel = array();
         for ($i = 0; $i < count($m[1]); ++$i)
-            arrayappend($optsel[$m[1][$i]], $m[2][$i]);
+            arrayappend($optsel[$m[1][$i]], (int) $m[2][$i]);
         $optdata = null;
 
         foreach ($options as $o)
