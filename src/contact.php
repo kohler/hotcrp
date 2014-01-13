@@ -390,7 +390,7 @@ class Contact {
     }
 
     function escape() {
-	global $Conf;
+	global $Conf, $ConfSiteBase;
         if (@$_REQUEST["ajax"]) {
             if ($this->is_empty())
                 $Conf->ajaxExit(array("ok" => 0, "loggedout" => 1));
@@ -410,9 +410,12 @@ class Contact {
                            "replyto") as $k)
                 if (isset($_REQUEST[$k]))
                     $x[$k] = $_REQUEST[$k];
+            if (@$_SERVER["PATH_INFO"])
+                $x["__PATH__"] = preg_replace(",^/+,", "", $_SERVER["PATH_INFO"]);
             // NB: selfHref automagically preserves common parameters like
             // "p", "q", etc.
-            $_SESSION["afterLogin"] = selfHref($x, false);
+            $_SESSION["afterLogin"] = substr(selfHref($x, false),
+                                             strlen($ConfSiteBase));
             error_go(false, "You have invalid credentials and need to sign in.");
         } else
             error_go(false, "You don’t have permission to access that page.");

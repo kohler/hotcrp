@@ -236,11 +236,10 @@ function hoturl($page, $options = null) {
         } else if (($is_paper_page
                     && preg_match($are . 'p=(\d+|%\w+%)' . $zre, $options, $m))
                    || ($page == "profile"
-                       && preg_match($are . 'u=([^&]+)' . $zre, $options, $m))) {
-            $t .= "/" . $m[2];
-            $options = $m[1] . $m[3];
-        } else if ($page == "help"
-                   && preg_match($are . 't=(\w+)' . $zre, $options, $m)) {
+                       && preg_match($are . 'u=([^&]+)' . $zre, $options, $m))
+                   || ($page == "help"
+                       && preg_match($are . 't=(\w+)' . $zre, $options, $m))
+                   || preg_match($are . '__PATH__=([^&]+)' . $zre, $options, $m)) {
             $t .= "/" . $m[2];
             $options = $m[1] . $m[3];
         }
