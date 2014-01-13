@@ -388,14 +388,14 @@ function doTopics($set) {
 	if (!(strlen($k) > 3 && $k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
 	    continue;
 	$v = simplify_whitespace($v);
-	if ($k[3] == "n" && $v != "" && cvtint(substr($k, 4), 100) <= $numnew)
+	if ($k[3] == "n" && $v != "" && !ctype_digit($v) && cvtint(substr($k, 4), 100) <= $numnew)
 	    $Conf->qe("insert into TopicArea (topicName) values ('" . sqlq($v) . "')", $while);
 	else if (($k = cvtint(substr($k, 3), -1)) >= 0) {
 	    if ($v == "") {
 		$Conf->qe("delete from TopicArea where topicId=$k", $while);
 		$Conf->qe("delete from PaperTopic where topicId=$k", $while);
                 $Conf->qe("delete from TopicInterest where topicId=$k", $while);
-	    } else if (isset($tmap[$k]) && $v != $tmap[$k])
+	    } else if (isset($tmap[$k]) && $v != $tmap[$k] && !ctype_digit($v))
 		$Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k", $while);
 	}
     }
@@ -503,14 +503,18 @@ function doOptions($set) {
 	$optabbrs = array("paper" => -1, "submission" => -1, "final" => -1);
 	foreach ($optkeys as $id) {
 	    doCleanOptionValues($id);
-	    if (($oabbr = defval($_REQUEST, "optn$id", ""))) {
-		$oabbr = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", strtolower($oabbr)));
+	    if (($oname = defval($_REQUEST, "optn$id", ""))) {
+                $oabbr = strtolower(UnicodeHelper::deaccent($oname));
+		$oabbr = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", $oabbr));
 		if (defval($optabbrs, $oabbr, 0) == -1) {
 		    $Error[] = "Option name &ldquo;" . htmlspecialchars($_REQUEST["optn$id"]) . "&rdquo; is reserved, since it abbreviates to &ldquo;$oabbr&rdquo;.  Please pick another option name.";
 		    $Highlight["optn$id"] = true;
 		} else if (defval($optabbrs, $oabbr)) {
 		    $Error[] = "Two or more options have the same abbreviation, &ldquo;$oabbr&rdquo;.  Please pick another option name to ensure unique abbreviations.";
 		    $Highlight["optn$id"] = $Highlight[$optabbrs[$oabbr]] = true;
+                } else if (ctype_digit($oabbr)) {
+                    $Error[] = "Option names should contain at least one letter. Please pick a different option name.";
+                    $Highlight["optn$id"] = true;
 		} else
 		    $optabbrs[$oabbr] = "optn$id";
 	    }
