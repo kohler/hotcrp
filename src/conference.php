@@ -1751,6 +1751,8 @@ class Conference {
             $values = array("ok" => $values);
 	else if ($values === null)
 	    $values = array();
+        else if (is_object($values))
+            $values = get_object_vars($values);
 	$t = "";
 	foreach (defval($_SESSION, "msgs", array()) as $msg)
 	    if (preg_match('|\A<div class="(.*?)">([\s\S]*)</div>\s*\z|', $msg, $m)) {
