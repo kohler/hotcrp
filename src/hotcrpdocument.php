@@ -13,10 +13,10 @@ class HotCRPDocument {
 
     public function __construct($dtype, $option = null) {
         $this->dtype = $dtype;
-        if ($option)
+        if ($this->dtype > 0 && $option)
             $this->option = $option;
         else if ($this->dtype > 0)
-            $this->option = PaperOption::get($dtype);
+            $this->option = PaperOption::find($dtype);
         else
             $this->option = null;
     }
@@ -26,8 +26,8 @@ class HotCRPDocument {
             return "paper";
         else if ($dtype == DTYPE_FINAL)
             return "final";
-        else if (($o = PaperOption::get($dtype)) && $o->isDocument)
-            return $o->optionAbbrev;
+        else if (($o = PaperOption::find($dtype)) && $o->is_document())
+            return $o->abbr;
         else
             return null;
     }
@@ -40,12 +40,12 @@ class HotCRPDocument {
         else if ($doc->documentType == DTYPE_FINAL)
             $fn .= "final" . $doc->paperId;
         else {
-            $o = PaperOption::get($doc->documentType);
-            if ($o && $o->type == PaperOption::T_ATTACHMENTS && $doc->filename)
+            $o = PaperOption::find($doc->documentType);
+            if ($o && $o->type == "attachments" && $doc->filename)
                 // do not decorate with MIME type suffix
-                return $fn . "p" . $doc->paperId . "/" . $o->optionAbbrev . "/" . $doc->filename;
-            else if ($o && $o->isDocument)
-                $fn .= "paper" . $doc->paperId . "-" . $o->optionAbbrev;
+                return $fn . "p" . $doc->paperId . "/" . $o->abbr . "/" . $doc->filename;
+            else if ($o && $o->is_document())
+                $fn .= "paper" . $doc->paperId . "-" . $o->abbr;
             else
                 $fn .= "paper" . $doc->paperId . "-unknown";
         }
@@ -56,19 +56,17 @@ class HotCRPDocument {
         global $Opt;
         if ($this->dtype > 0 && !$this->option)
             return null;
-        $optionType = ($this->option ? $this->option->type : null);
+        $otype = ($this->option ? $this->option->type : "pdf");
         $mimetypes = array();
-        if (PaperOption::type_takes_pdf($optionType))
+        if (PaperOption::type_takes_pdf($otype))
             $mimetypes[] = Mimetype::lookup("pdf");
-        if ($optionType === null && !defval($Opt, "disablePS"))
+        if (!$this->option && !defval($Opt, "disablePS"))
             $mimetypes[] = Mimetype::lookup("ps");
-        if ($optionType == PaperOption::T_SLIDES
-            || $optionType == PaperOption::T_FINALSLIDES) {
+        if ($otype == "slides") {
             $mimetypes[] = Mimetype::lookup("ppt");
             $mimetypes[] = Mimetype::lookup("pptx");
         }
-        if ($optionType == PaperOption::T_VIDEO
-            || $optionType == PaperOption::T_FINALVIDEO) {
+        if ($otype == "video") {
             $mimetypes[] = Mimetype::lookup("mp4");
             $mimetypes[] = Mimetype::lookup("avi");
         }

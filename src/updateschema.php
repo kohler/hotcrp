@@ -38,6 +38,104 @@ function update_schema_create_review_form($Conf) {
     return $Conf->save_setting("review_form", 1, $rfj);
 }
 
+function update_schema_create_options($Conf) {
+    global $reviewScoreNames;
+    if (!($result = $Conf->ql("select * from OptionType")))
+        return false;
+    $opsj = (object) array();
+    $byabbr = array();
+    while (($row = edb_orow($result))) {
+        // backward compatibility with old schema versions
+        if (!isset($row->optionValues))
+            $row->optionValues = "";
+        if (!isset($row->type) && $row->optionValues == "\x7Fi")
+            $row->type = 2;
+        else if (!isset($row->type))
+            $row->type = ($row->optionValues ? 1 : 0);
+
+        $opj = (object) array();
+        $opj->id = $row->optionId;
+        $opj->name = $row->optionName;
+
+        $abbr = PaperOption::abbreviate($opj->name, $opj->id);
+        if (!@$byabbr[$abbr]) {
+            $opj->abbr = $abbr;
+            $byabbr[$abbr] = $opj;
+        } else {
+            $opj->abbr = "opt$opj->id";
+            $byabbr[$abbr]->abbr = "opt" . $byabbr[$abbr]->id;
+        }
+
+        if (trim($row->description) != "")
+            $opj->description = trim($row->description);
+
+        if ($row->pcView == 2)
+            $opj->view_type = "nonblind";
+        else if ($row->pcView == 0)
+            $opj->view_type = "admin";
+
+        $opj->position = (int) $row->sortOrder;
+        if ($row->displayType == 1)
+            $opj->highlight = true;
+        else if ($row->displayType == 2)
+            $opj->near_submission = true;
+
+        switch ($row->type) {
+        case 0:
+            $opj->type = "checkbox";
+            break;
+        case 1:
+            $opj->type = "selector";
+            $opj->selector = explode("\n", rtrim($row->optionValues));
+            break;
+        case 2:
+            $opj->type = "numeric";
+            break;
+        case 3:
+            $opj->type = "text";
+            $opj->display_space = 1;
+            break;
+        case 4:
+            $opj->type = "pdf";
+            break;
+        case 5:
+            $opj->type = "slides";
+            break;
+        case 6:
+            $opj->type = "video";
+            break;
+        case 7:
+            $opj->type = "radio";
+            $opj->selector = explode("\n", rtrim($row->optionValues));
+            break;
+        case 8:
+            $opj->type = "text";
+            $opj->display_space = 5;
+            break;
+        case 9:
+            $opj->type = "attachments";
+            break;
+        case 100:
+            $opj->type = "pdf";
+            $opj->final = true;
+            break;
+        case 101:
+            $opj->type = "slides";
+            $opj->final = true;
+            break;
+        case 102:
+            $opj->type = "video";
+            $opj->final = true;
+            break;
+        }
+
+        $oid = $opj->id;
+        $opsj->$oid = $opj;
+    }
+
+    return $Conf->save_setting("options", 1, $opsj);
+}
+
 function updateSchema($Conf) {
     global $Opt, $OK;
     error_log("Note: updating schema from version " . $Conf->settings["allowPaperOption"]);
@@ -473,4 +571,10 @@ function updateSchema($Conf) {
         && $Conf->ql("drop table if exists `ReviewFormOptions`")
         && $Conf->ql("update Settings set value=65 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 65;
+    if (!isset($Conf->settings["options"]))
+        update_schema_create_options($Conf);
+    if ($Conf->settings["allowPaperOption"] == 65
+        && isset($Conf->settings["options"])
+        && $Conf->ql("update Settings set value=66 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 66;
 }

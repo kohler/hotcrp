@@ -1035,7 +1035,7 @@ class Contact {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
-	if (!is_object($opt) && !($opt = PaperOption::get($opt))) {
+	if (!is_object($opt) && !($opt = PaperOption::find($opt))) {
 	    $whyNot["invalidId"] = "paper";
 	    return false;
 	}
@@ -1043,13 +1043,15 @@ class Contact {
 	// policy
 	if (!$this->canViewPaper($prow, $whyNot))
 	    return false;	// $whyNot already set
+        $oview = @$o->view_type;
         if ($rights->act_conflict_type >= CONFLICT_AUTHOR
             || (($rights->allow_administer
                  || $rights->allow_pc_broad
                  || $rights->review_type)
-                && (($opt->pcView == 0 && $rights->allow_administer)
-                    || $opt->pcView == 1
-                    || ($opt->pcView == 2
+                && (($oview == "admin" && $rights->allow_administer)
+                    || !$oview
+                    || $oview == "pc"
+                    || ($oview == "nonblind"
                         && $this->canViewAuthors($prow, $forceShow)))))
             return true;
 	$whyNot["permission"] = 1;

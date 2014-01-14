@@ -116,7 +116,7 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
-        if ($this->settings["allowPaperOption"] < 65) {
+        if ($this->settings["allowPaperOption"] < 66) {
 	    require_once("updateschema.php");
 	    $oldOK = $OK;
 	    updateSchema($this);
@@ -318,16 +318,8 @@ class Conference {
                 unset($this->settings["erc"]);
             }
 	}
-	if ($caches ? isset($caches["paperOption"]) : $this->setting("paperOption") > 0) {
-	    if (!$caches || $caches["paperOption"]) {
-		$inserts[] = "('paperOption',$time)";
-		$this->settings["paperOption"] = $time;
-	    } else {
-		$removes[] = "'paperOption'";
-		unset($this->settings["paperOption"]);
-	    }
-	    unset($_SESSION["paperOption"]);
-	}
+	if (!$caches || isset($caches["paperOption"]))
+            PaperOption::option_list(true);
 	if (!$caches || isset($caches["rf"]))
             $ReviewFormCache = null;
 	$ok = true;
@@ -933,7 +925,7 @@ class Conference {
 	    $pq .= ",
 		PaperTopics.topicIds,
 		PaperTopics.topicInterest";
-	if (isset($options['options']) && defval($this->settings, "paperOption"))
+	if (isset($options['options']) && @$this->settingTexts["options"])
 	    $pq .= ",
 		PaperOptions.optionIds";
 	else if (isset($options['options']))
@@ -1036,9 +1028,8 @@ class Conference {
 	    $pq .= " from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$reviewerContactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";
 	}
 
-	if (isset($options['options']) && defval($this->settings, "paperOption")) {
+	if (isset($options['options']) && @$this->settingTexts["options"])
 	    $pq .= "		left join (select paperId, group_concat(PaperOption.optionId, '#', value) as optionIds from PaperOption group by paperId) as PaperOptions on (PaperOptions.paperId=Paper.paperId)\n";
-	}
 
 	if (isset($options['tags']))
 	    $pq .= "		left join (select paperId, group_concat(' ', tag, '#', tagIndex order by tag separator '') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)\n";

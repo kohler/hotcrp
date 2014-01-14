@@ -208,7 +208,7 @@ else
 // update paper action
 function attachment_request_keys($o) {
     $x = array();
-    $okey = "opt" . (is_object($o) ? $o->optionId : $o) . "_";
+    $okey = "opt" . (is_object($o) ? $o->id : $o) . "_";
     foreach ($_FILES as $k => $v)
         if (str_starts_with($k, $okey))
             $x[substr($k, strlen($okey))] = $k;
@@ -235,26 +235,26 @@ function clean_request($prow, $isfinal) {
         $_REQUEST["authorInformation"] .= "$x[0]\t$x[1]\t$x[2]\t$x[3]\n";
 
     // options
-    foreach (PaperOption::get() as $o) {
-        $oname = "opt$o->optionId";
+    foreach (PaperOption::option_list() as $o) {
+        $oname = "opt$o->id";
         $v = trim(defval($_REQUEST, $oname, ""));
-        if ($o->isFinal && !$isfinal)
+        if ($o->final && !$isfinal)
             continue;
-        else if ($o->type == PaperOption::T_CHECKBOX)
+        else if ($o->type == "checkbox")
             $_REQUEST[$oname] = ($v == 0 || $v == "" ? 0 : 1);
-        else if ($o->type == PaperOption::T_SELECTOR
-                 || $o->type == PaperOption::T_RADIO)
+        else if ($o->type == "selector" || $o->type == "radio")
             $_REQUEST[$oname] = cvtint($v, 0);
-        else if ($o->type == PaperOption::T_NUMERIC) {
+        else if ($o->type == "numeric") {
             if ($v == "" || ($v = cvtint($v, null)) !== null)
                 $_REQUEST[$oname] = ($v == "" ? 0 : $v);
             else
                 $_REQUEST[$oname] = false;
-        } else if ($o->type == PaperOption::T_TEXT)
-            $_REQUEST[$oname] = simplify_whitespace($v);
-        else if ($o->type == PaperOption::T_TEXT_5LINE)
-            $_REQUEST[$oname] = rtrim($v);
-        else
+        } else if ($o->type == "text") {
+            if (@$o->display_space <= 1)
+                $_REQUEST[$oname] = simplify_whitespace($v);
+            else
+                $_REQUEST[$oname] = rtrim($v);
+        } else
             unset($_REQUEST[$oname]);
     }
 }
@@ -289,28 +289,28 @@ function request_differences($prow, $isfinal) {
             $diffs["topics"] = true;
 
     // options
-    foreach (PaperOption::get() as $o) {
-        $oname = "opt$o->optionId";
+    foreach (PaperOption::option_list() as $o) {
+        $oname = "opt$o->id";
         $v = @$_REQUEST[$oname];
-        $ox = @$prow->option_array[$o->optionId];
-        if ($o->isFinal && !$isfinal)
+        $ox = @$prow->option_array[$o->id];
+        if ($o->final && !$isfinal)
             continue;
-        else if ($o->type == PaperOption::T_CHECKBOX
-                 || $o->type == PaperOption::T_SELECTOR
-                 || $o->type == PaperOption::T_RADIO
-                 || $o->type == PaperOption::T_NUMERIC) {
+        else if ($o->type == "checkbox"
+                 || $o->type == "selector"
+                 || $o->type == "radio"
+                 || $o->type == "numeric") {
             if ($v !== ($ox ? $ox->value : 0))
-                $diffs[$o->optionName] = true;
-        } else if (PaperOption::type_is_text($o->type)) {
+                $diffs[$o->name] = true;
+        } else if ($o->type == "text") {
             if ($v !== ($ox ? $ox->data : ""))
-                $diffs[$o->optionName] = true;
-        } else if ($o->type == PaperOption::T_ATTACHMENTS) {
+                $diffs[$o->name] = true;
+        } else if ($o->type == "attachments") {
             if (count(attachment_request_keys($o)))
-                $diffs[$o->optionName] = true;
-        } else if ($o->isDocument) {
-            if (fileUploaded($_FILES["opt$o->optionId"])
-                || defval($_REQUEST, "remove_opt$o->optionId"))
-                $diffs[$o->optionName] = true;
+                $diffs[$o->name] = true;
+        } else if ($o->is_document()) {
+            if (fileUploaded($_FILES["opt$o->id"])
+                || defval($_REQUEST, "remove_opt$o->id"))
+                $diffs[$o->name] = true;
         }
     }
 
@@ -342,9 +342,9 @@ function request_differences($prow, $isfinal) {
 
 function upload_option($o, $oname, $prow) {
     global $Conf, $Me, $Error;
-    $doc = $Conf->storeDocument($oname, $prow ? $prow->paperId : -1, $o->optionId);
+    $doc = $Conf->storeDocument($oname, $prow ? $prow->paperId : -1, $o->id);
     if (isset($doc->error_html)) {
-	$Error["opt$o->optionId"] = $doc->error_html;
+	$Error["opt$o->id"] = $doc->error_html;
         return 0;
     } else
         return $doc->paperStorageId;
@@ -542,49 +542,49 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     // options
     $opt_data = array();
     $no_delete_options = array("true");
-    foreach (PaperOption::get() as $o) {
-	$oname = "opt$o->optionId";
+    foreach (PaperOption::option_list() as $o) {
+	$oname = "opt$o->id";
 	$v = trim(defval($_REQUEST, $oname, ""));
-        if ($o->isFinal && !$isSubmitFinal)
-            $no_delete_options[] = "optionId!=" . $o->optionId;
-	else if (($o->type == PaperOption::T_CHECKBOX && $_REQUEST[$oname])
-                 || $o->type == PaperOption::T_SELECTOR
-                 || $o->type == PaperOption::T_RADIO
-                 || $o->type == PaperOption::T_NUMERIC) {
+        if ($o->final && !$isSubmitFinal)
+            $no_delete_options[] = "optionId!=" . $o->id;
+	else if (($o->type == "checkbox" && $_REQUEST[$oname])
+                 || $o->type == "selector"
+                 || $o->type == "radio"
+                 || $o->type == "numeric") {
             if ($_REQUEST[$oname] !== false)
-                $opt_data[] = "$o->optionId, " . $_REQUEST[$oname] . ", null";
+                $opt_data[] = "$o->id, " . $_REQUEST[$oname] . ", null";
             else
-                $Error[$oname] = htmlspecialchars($o->optionName) . " must be an integer.";
-        } else if (PaperOption::type_is_text($o->type)) {
+                $Error[$oname] = htmlspecialchars($o->name) . " must be an integer.";
+        } else if ($o->type == "text") {
             if ($_REQUEST[$oname] !== "")
-                $opt_data[] = "$o->optionId, 1, '" . sqlq($_REQUEST[$oname]) . "'";
-        } else if ($o->type == PaperOption::T_ATTACHMENTS) {
-            if (!$prow || !isset($prow->option_array[$o->optionId]))
+                $opt_data[] = "$o->id, 1, '" . sqlq($_REQUEST[$oname]) . "'";
+        } else if ($o->type == "attachments") {
+            if (!$prow || !isset($prow->option_array[$o->id]))
                 $ox = (object) array("values" => array(), "data" => array());
             else
-                $ox = $prow->option_array[$o->optionId];
+                $ox = $prow->option_array[$o->id];
             if (($next_ordinal = count($ox->data)))
                 $next_ordinal = max($next_ordinal, cvtint($ox->data[count($ox->values) - 1]));
             foreach (attachment_request_keys($o) as $k)
                 if ($k[0] != "r" /* not "remove_$oname_" */
                     && fileUploaded($_FILES[$k])
                     && ($docid = upload_option($o, $k, $prow))) {
-                    $opt_data[] = "$o->optionId, $docid, '$next_ordinal'";
+                    $opt_data[] = "$o->id, $docid, '$next_ordinal'";
                     $uploaded_documents[] = $docid;
                     ++$next_ordinal;
                 }
             foreach ($ox->values as $docid)
                 if (!defval($_REQUEST, "remove_${oname}_$docid"))
-                    $no_delete_options[] = "(optionId!=" . $o->optionId . " or value!=" . $docid . ")";
-        } else if ($o->isDocument) {
+                    $no_delete_options[] = "(optionId!=" . $o->id . " or value!=" . $docid . ")";
+        } else if ($o->is_document()) {
             if (fileUploaded($_FILES[$oname])
                 && ($docid = upload_option($o, $oname, $prow))) {
-                $opt_data[] = "$o->optionId, $docid, null";
+                $opt_data[] = "$o->id, $docid, null";
                 $uploaded_documents[] = $docid;
             } else if (!defval($_REQUEST, "remove_$oname"))
-                $no_delete_options[] = "optionId!=" . $o->optionId;
+                $no_delete_options[] = "optionId!=" . $o->id;
 	} else
-            $no_delete_options[] = "optionId!=" . $o->optionId;
+            $no_delete_options[] = "optionId!=" . $o->id;
     }
 
     // contacts
@@ -625,7 +625,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
         $Conf->qe("insert into PaperTopic (paperId, topicId) values " . join(",", $tq), "while updating paper topics");
 
     // update PaperOption table
-    if ($Conf->setting("paperOption")) {
+    if (count(PaperOption::option_list())) {
 	$while = "while updating paper options";
 	if (!$Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options), $while))
 	    return false;

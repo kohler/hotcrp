@@ -903,25 +903,25 @@ class PaperSearch {
 	$qo = array();
 	$qxo = array();
 	$option_failure = false;
-	foreach (PaperOption::get() as $oid => $o)
+	foreach (PaperOption::option_list() as $oid => $o)
 	    // See also checkOptionNameUnique() in settings.php
 	    if ($oname == "none" || $oname == "any"
-		|| strstr(strtolower($o->optionName), $oname) !== false) {
+		|| strstr(strtolower($o->name), $oname) !== false) {
 		// find the relevant values
                 if ($oval === "" || $oval === "yes")
                     $xval = "!=0";
                 else if ($oval === "no")
                     $xval = "=0";
-		else if ($o->type == PaperOption::T_NUMERIC) {
+		else if ($o->type == "numeric") {
 		    if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
 			$xval = $ocompar . $m[1];
 		    else {
-			$this->warn("Submission option “" . htmlspecialchars($o->optionName) . "” takes integer values.");
+			$this->warn("Submission option “" . htmlspecialchars($o->name) . "” takes integer values.");
 			$option_failure = true;
 			continue;
 		    }
-		} else if (PaperOption::type_is_selectorlike($o->type)) {
-		    $xval = matchValue(explode("\n", $o->optionValues), $oval);
+		} else if ($o->has_selector()) {
+		    $xval = matchValue($o->selector, $oval);
 		    if (count($xval) == 0)
 			continue;
 		    else if (count($xval) == 1)
@@ -936,9 +936,10 @@ class PaperSearch {
 		} else
 		    continue;
 		$qo[] = array($o, $xval);
-	    } else if (PaperOption::type_is_selectorlike($o->type)
-		       && ($ocompar == "=" || $ocompar == "!=") && $oval == "") {
-		foreach (matchValue(explode("\n", $o->optionValues), $oname) as $xval)
+	    } else if ($o->has_selector()
+		       && ($ocompar == "=" || $ocompar == "!=")
+                       && $oval == "") {
+		foreach (matchValue($o->selector, $oname) as $xval)
 		    $qxo[] = array($o, $ocompar . $xval);
 	    }
 
@@ -1993,7 +1994,7 @@ class PaperSearch {
 	    $q = array();
 	    $this->_clauseTermSetFlags($t, $sqi, $q);
 	    $thistab = "Option_" . count($sqi->tables);
-	    $sqi->add_table($thistab, array("left join", "PaperOption", "$thistab.optionId=" . $t->value[0]->optionId));
+	    $sqi->add_table($thistab, array("left join", "PaperOption", "$thistab.optionId=" . $t->value[0]->id));
 	    $sqi->add_column($thistab . "_x", "coalesce($thistab.value,0)" . $t->value[1]);
 	    $t->link = $thistab . "_x";
 	    $q[] = $sqi->columns[$t->link];

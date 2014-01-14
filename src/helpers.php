@@ -474,9 +474,9 @@ function requestDocumentType($req, $default = DTYPE_SUBMISSION) {
 	    return DTYPE_FINAL;
 	if (substr($dt, 0, 4) == "opt-")
 	    $dt = substr($dt, 4);
-	foreach (PaperOption::get() as $o)
-	    if ($dt == $o->optionAbbrev)
-		return $o->optionId;
+	foreach (PaperOption::option_list() as $o)
+	    if ($dt == $o->abbr)
+		return $o->id;
     }
     if (defval($req, "final", 0) != 0)
 	return DTYPE_FINAL;
@@ -1592,9 +1592,9 @@ function cleanAuthor($row) {
     }
 }
 
-function reviewForm($always = false) {
+function reviewForm($force = false) {
     global $Conf, $ReviewFormCache;
-    if (!$ReviewFormCache || $always)
+    if (!$ReviewFormCache || $force)
 	$ReviewFormCache = new ReviewForm;
     return $ReviewFormCache;
 }

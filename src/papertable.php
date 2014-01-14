@@ -316,16 +316,16 @@ class PaperTable {
 		$pdfs[] = $dprefix . documentDownload($data) . $stamps;
 	    }
 
-	    foreach (PaperOption::get() as $id => $o)
-		if ($o->displayType == PaperOption::DT_SUBMISSION
-                    && $o->isDocument
-		    && (!$o->isFinal || $final)
+	    foreach (PaperOption::option_list() as $id => $o)
+		if (@$o->near_submission
+                    && $o->is_document()
+		    && (!@$o->final || $final)
                     && $prow
                     && isset($prow->option_array[$id])
                     && $prow->option_array[$id]->value > 1
                     && ($d = paperDocumentData($prow, $id, $prow->option_array[$id]->value))) {
                     $pdfs[] = "<span class='papfn'>"
-                        . htmlspecialchars($o->optionName)
+                        . htmlspecialchars($o->name)
                         . "</span>: &nbsp;"
                         . documentDownload($d, count($pdfs) ? "dlimgsp" : "dlimg");
 		}
@@ -365,27 +365,26 @@ class PaperTable {
 	global $Conf, $Me, $Opt;
 
         $prow = $this->prow;
-        $docclass = new HotCRPDocument($opt->optionId, $opt);
-	$documentType = $opt->optionId;
+        $docclass = new HotCRPDocument($opt->id, $opt);
+	$documentType = $opt->id;
 	$optionType = $opt->type;
         $main_submission = ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
 	$noPapers = defval($Opt, "noPapers") && $main_submission;
 	$banal = $Conf->setting("sub_banal")
-	    && ($optionType == null || $optionType == PaperOption::T_PDF
-		|| $optionType == PaperOption::T_FINALPDF)
+	    && ($optionType == null || $optionType == "pdf")
             && $main_submission;
 
 	$filetypes = array();
 	$accepts = array();
 	if ($noPapers) {
 	    if ($documentType == DTYPE_SUBMISSION)
-		echo $this->editable_papt($opt->optionAbbrev, "Status");
+		echo $this->editable_papt($opt->abbr, "Status");
 	} else {
             $accepts = $docclass->mimetypes();
 	    if (count($accepts))
-		echo $this->editable_papt($opt->optionAbbrev, htmlspecialchars($opt->optionName) . " <span class='papfnh'>(" . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
+		echo $this->editable_papt($opt->abbr, htmlspecialchars($opt->name) . " <span class='papfnh'>(" . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
 	}
-	if (isset($opt->description) && $opt->description)
+	if (@$opt->description)
 	    echo "<div class='paphint'>", $opt->description, "</div>";
 	echo "<div class='papv'>";
 
@@ -467,16 +466,10 @@ class PaperTable {
     }
 
     private function editable_submission($flags) {
-	global $Me;
-	if ($this->canUploadFinal) {
-	    $this->editable_document((object) array("optionId" => DTYPE_FINAL, "optionName" => "Final version", "optionAbbrev" => "final", "type" => null), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
-	    foreach (PaperOption::get() as $id => $o)
-		if ($o->type == PaperOption::T_FINALPDF) {
-                    $oa = $this->prow ? defval($this->prow->option_array, $o->optionId) : null;
-		    $this->editable_document($o, $oa ? $oa->value : 0, $flags);
-		}
-	} else
-	    $this->editable_document((object) array("optionId" => DTYPE_SUBMISSION, "optionName" => "Submission", "optionAbbrev" => "paper", "type" => null), $this->prow ? $this->prow->paperStorageId : 0, $flags);
+	if ($this->canUploadFinal)
+	    $this->editable_document(new PaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null)), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
+        else
+	    $this->editable_document(new PaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null)), $this->prow ? $this->prow->paperStorageId : 0, $flags);
     }
 
     private function editable_abstract() {
@@ -717,42 +710,42 @@ class PaperTable {
 
         foreach ($this->prow->option_array as $oa) {
             $o = $oa->option;
-            if (($o->type == PaperOption::T_CHECKBOX && !$oa->value)
-                || ($o->displayType == PaperOption::DT_SUBMISSION && $o->isDocument)
+            if ((@$o->near_submission && $o->is_document())
                 || (!$showAllOptions && !$Me->canViewPaperOption($this->prow, $o)))
                 continue;
 
             // create option display value
             $show_on = true;
-            $on = htmlspecialchars($o->optionName);
+            $on = htmlspecialchars($o->name);
             $ox = "";
-            if ($o->type == PaperOption::T_CHECKBOX)
+            if ($o->type == "checkbox" && $oa->value)
                 $ox = true;
-            else if (PaperOption::type_is_selectorlike($o->type)) {
-                $om = explode("\n", $o->optionValues);
-                if (@($otext = $om[$oa->value]))
-                    $ox = htmlspecialchars($otext);
-            } else if ($o->type == PaperOption::T_NUMERIC && $oa->value != "" && $oa->value != "0")
+            else if ($o->has_selector()
+                     && @($otext = $o->selector[$oa->value]))
+                $ox = htmlspecialchars($otext);
+            else if ($o->type == "numeric"
+                     && $oa->value != "" && $oa->value != "0")
                 $ox = htmlspecialchars($oa->value);
-            else if (PaperOption::type_is_text($o->type) && $oa->data != "") {
+            else if ($o->type == "text"
+                     && $oa->data != "") {
                 $ox = htmlspecialchars($oa->data);
-                if ($o->type != PaperOption::T_TEXT)
+                if (@($o->display_space > 1))
                     $ox = nl2br($ox);
-            } else if ($o->type == PaperOption::T_ATTACHMENTS) {
+            } else if ($o->type == "attachments") {
                 $ox = array();
                 foreach ($oa->values as $docid)
-                    if (($doc = paperDocumentData($this->prow, $o->optionId, $docid))) {
+                    if (($doc = paperDocumentData($this->prow, $o->id, $docid))) {
                         unset($doc->size);
                         $ox[] = documentDownload($doc, "sdlimg", htmlspecialchars($doc->filename));
                     }
                 $ox = join("<br />\n", $ox);
-            } else if ($o->isDocument && $oa->value) {
+            } else if ($o->is_document() && $oa->value) {
                 $show_on = false;
-                if ($o->type == PaperOption::T_PDF)
+                if ($o->type == "pdf")
                     /* make fake document */
-                    $doc = (object) array("paperId" => $this->prow->paperId, "mimetype" => "application/pdf", "documentType" => $o->optionId);
+                    $doc = (object) array("paperId" => $this->prow->paperId, "mimetype" => "application/pdf", "documentType" => $o->id);
                 else
-                    $doc = paperDocumentData($this->prow, $o->optionId, $oa->value);
+                    $doc = paperDocumentData($this->prow, $o->id, $oa->value);
                 if ($doc)
                     $ox = documentDownload($doc, "sdlimg", $on);
             }
@@ -761,7 +754,7 @@ class PaperTable {
 
             // display it
             $folded = $showAllOptions && !$Me->canViewPaperOption($this->prow, $o, false);
-            if ($o->displayType != PaperOption::DT_NORMAL) {
+            if (@$o->highlight || @$o->near_submission) {
                 $x = "<div class='pgsm" . ($folded ? " fx8" : "") . "'>"
                     . "<div class='papt'><span class='papfn'>"
                     . ($show_on ? $on : $ox) . "</span>"
@@ -781,7 +774,7 @@ class PaperTable {
                     ++$nfolded;
                 }
                 $optionhtml[] = $x . "\n";
-                if ($o->isDocument || $o->type == PaperOption::T_ATTACHMENTS)
+                if ($o->is_document() || $o->type == "attachments")
                     ++$ndocuments;
             }
         }
@@ -1034,16 +1027,16 @@ class PaperTable {
     }
 
     private function editable_attachments($o) {
-        echo $this->editable_papt($o->optionId, htmlspecialchars($o->optionName)
+        echo $this->editable_papt($o->id, htmlspecialchars($o->name)
                                   . " <span class='papfnh'>(max " . ini_get("upload_max_filesize") . "B per file)</span>");
         if ($o->description)
             echo "<div class='paphint'>", $o->description, "</div>";
         echo "<div class='papv'>";
-        if (($prow = $this->prow) && ($optx = defval($prow->option_array, $o->optionId))) {
-            $docclass = new HotCRPDocument($o->optionId, $o);
+        if (($prow = $this->prow) && ($optx = defval($prow->option_array, $o->id))) {
+            $docclass = new HotCRPDocument($o->id, $o);
             foreach ($optx->values as $docid)
-                if (($doc = paperDocumentData($prow, $o->optionId, $docid))) {
-                    $oname = "opt" . $o->optionId . "_" . $docid;
+                if (($doc = paperDocumentData($prow, $o->id, $docid))) {
+                    $oname = "opt" . $o->id . "_" . $docid;
                     echo "<div id='removable_$oname' class='foldo'><table id='current_$oname'><tr>",
                         "<td class='nowrap'>", documentDownload($doc, "dlimg", htmlspecialchars($doc->filename)), "</td>",
                         "<td class='fx'><span class='sep'></span></td>",
@@ -1053,26 +1046,26 @@ class PaperTable {
                     echo "</tr></table></div>\n";
                 }
         }
-        echo "<div id='opt", $o->optionId, "_new'></div>",
-            "<button type='button' onclick=\"addattachment($o->optionId)\">Attach file</button>",
+        echo "<div id='opt", $o->id, "_new'></div>",
+            "<button type='button' onclick=\"addattachment($o->id)\">Attach file</button>",
             "</div>";
     }
 
-    private function editable_options($displayTypeFlags) {
+    private function editable_options($display_types) {
 	global $Conf, $Me;
         $prow = $this->prow;
-	if (!($opt = PaperOption::get()))
+	if (!($opt = PaperOption::option_list()))
 	    return;
 	assert(!!$this->editable);
 	foreach ($opt as $o) {
-	    if (!($displayTypeFlags & (1 << $o->displayType))
-		|| ($o->isFinal && !$this->canUploadFinal)
+	    if (!@($display_types[$o->display_type()])
+		|| (@$o->final && !$this->canUploadFinal)
                 || ($prow && !$Me->canViewPaperOption($prow, $o, true)))
 		continue;
 
-	    $optid = "opt$o->optionId";
-            $optx = ($prow ? defval($prow->option_array, $o->optionId) : null);
-            if ($o->type == PaperOption::T_ATTACHMENTS) {
+	    $optid = "opt$o->id";
+            $optx = ($prow ? defval($prow->option_array, $o->id) : null);
+            if ($o->type == "attachments") {
                 $this->editable_attachments($o);
                 continue;
             }
@@ -1081,38 +1074,37 @@ class PaperTable {
 		$myval = defval($_REQUEST, $optid);
             else if (!$optx)
                 $myval = null;
-	    else if (PaperOption::type_is_text($o->type))
+	    else if ($o->type == "text")
                 $myval = $optx->data;
 	    else
                 $myval = $optx->value;
 
-	    if ($o->type == PaperOption::T_CHECKBOX) {
-		echo $this->editable_papt($optid, Ht::checkbox_h($optid, 1, $myval) . "&nbsp;" . Ht::label(htmlspecialchars($o->optionName)));
-		if ($o->description)
+	    if ($o->type == "checkbox") {
+		echo $this->editable_papt($optid, Ht::checkbox_h($optid, 1, $myval) . "&nbsp;" . Ht::label(htmlspecialchars($o->name)));
+		if (@$o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
 		echo "<div class='papv'></div>\n\n";
-	    } else if (!$o->isDocument) {
-		echo $this->editable_papt($optid, htmlspecialchars($o->optionName));
-		if ($o->description)
+	    } else if (!$o->is_document()) {
+		echo $this->editable_papt($optid, htmlspecialchars($o->name));
+		if (@$o->description)
 		    echo "<div class='paphint'>", $o->description, "</div>";
-		if ($o->type == PaperOption::T_SELECTOR)
-		    echo "<div class='papv'>", Ht::select("opt$o->optionId", explode("\n", $o->optionValues), $myval, array("onchange" => "hiliter(this)")), "</div>\n\n";
-		else if ($o->type == PaperOption::T_RADIO) {
+		if ($o->type == "selector")
+		    echo "<div class='papv'>", Ht::select("opt$o->id", $o->selector, $myval, array("onchange" => "hiliter(this)")), "</div>\n\n";
+		else if ($o->type == "radio") {
 		    echo "<div class='papv'>";
-		    $values = explode("\n", $o->optionValues);
-		    $myval = isset($values[$myval]) ? $myval : 0;
-		    foreach ($values as $val => $text) {
-			echo Ht::radio("opt$o->optionId", $val, $val == $myval, array("onchange" => "hiliter(this)"));
+		    $myval = isset($o->selector[$myval]) ? $myval : 0;
+		    foreach ($o->selector as $val => $text) {
+			echo Ht::radio("opt$o->id", $val, $val == $myval, array("onchange" => "hiliter(this)"));
 			echo "&nbsp;", Ht::label(htmlspecialchars($text)), "<br />\n";
 		    }
 		    echo "</div>\n\n";
-		} else if ($o->type == PaperOption::T_NUMERIC)
+		} else if ($o->type == "numeric")
 		    echo "<div class='papv'><input type='text' class='textlite' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
-		else if ($o->type == PaperOption::T_TEXT)
+		else if ($o->type == "text" && @$o->display_space <= 1)
 		    echo "<div class='papv'><input type='text' class='textlite papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";
-                else /* $o->type == PaperOption::T_TEXT_5LINE */
+                else if ($o->type == "text")
                     echo "<div class='papv'><textarea class='textlite papertext' name='$optid' rows='5' cols='60' onchange='hiliter(this)'>", htmlspecialchars($myval), "</textarea></div>\n\n";
-	    } else if ($o->type != PaperOption::T_FINALPDF)
+	    } else
 		$this->editable_document($o, $optx ? $optx->value : 0, 0);
 	}
     }
@@ -1816,7 +1808,7 @@ class PaperTable {
 
 	    $this->editable_title();
 	    $this->editable_submission(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0);
-	    $this->editable_options(1 << PaperOption::DT_SUBMISSION);
+	    $this->editable_options(array("near_submission" => true));
 
 	    // Authorship
 	    echo $spacer;
@@ -1834,8 +1826,7 @@ class PaperTable {
 	    // Topics and options
 	    echo $spacer;
 	    $this->editable_topics();
-	    $this->editable_options((1 << PaperOption::DT_NORMAL)
-                                    | (1 << PaperOption::DT_HIGHLIGHT));
+	    $this->editable_options(array("normal" => true, "highlight" => true));
 
 	    // Potential conflicts
 	    if ($this->editable !== "f" || $this->admin) {

@@ -10,7 +10,7 @@ $Highlight = defval($_SESSION, "settings_highlight", array());
 unset($_SESSION["settings_highlight"]);
 $Error = $Warning = array();
 $Values = array();
-$DateExplanation = "Date examples: &ldquo;now&rdquo;, &ldquo;10 Dec 2006 11:59:59pm PST&rdquo; <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
+$DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST” <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
 $TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small";
 $temp_text_id = 0;
 
@@ -241,7 +241,7 @@ function parseValue($name, $type) {
 	if (ctype_digit($v) && $v >= 0 && $v <= $type)
 	    return intval($v);
 	else
-	    $err = $SettingText[$name] . ": parse error on &ldquo;" . htmlspecialchars($v) . "&rdquo;.";
+	    $err = $SettingText[$name] . ": parse error on “" . htmlspecialchars($v) . "”.";
     } else
 	return $v;
 
@@ -260,7 +260,7 @@ function doTags($set, $what) {
 	    if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
 		$vs[] = $t;
 	    else if ($t !== "") {
-		$Error[] = "Chair-only tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";
+		$Error[] = "Chair-only tag “" . htmlspecialchars($t) . "” contains odd characters.";
 		$Highlight["tag_chair"] = true;
 	    }
 	$v = array(count($vs), join(" ", $vs));
@@ -278,7 +278,7 @@ function doTags($set, $what) {
 		    $t = $m[1] . "#1";
 		$vs[] = $t;
 	    } else if ($t !== "") {
-		$Error[] = "Voting tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";
+		$Error[] = "Voting tag “" . htmlspecialchars($t) . "” contains odd characters.";
 		$Highlight["tag_vote"] = true;
 	    }
 	$v = array(count($vs), join(" ", $vs));
@@ -337,7 +337,7 @@ function doTags($set, $what) {
 	    if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
 		$vs[] = $t;
 	    else if ($t !== "") {
-		$Error[] = "Rank tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";
+		$Error[] = "Rank tag “" . htmlspecialchars($t) . "” contains odd characters.";
 		$Highlight["tag_rank"] = true;
 	    }
 	if (count($vs) > 1) {
@@ -361,7 +361,7 @@ function doTags($set, $what) {
 		    if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
 			$vs[] = $t . "=" . $k;
 		    else if ($t !== "") {
-			$Error[] = ucfirst($k) . " color tag &ldquo;" . htmlspecialchars($t) . "&rdquo; contains odd characters.";
+			$Error[] = ucfirst($k) . " color tag “" . htmlspecialchars($t) . "” contains odd characters.";
 			$Highlight["tag_color_" . $k] = true;
 		    }
 	    }
@@ -401,191 +401,159 @@ function doTopics($set) {
     }
 }
 
-function doCleanOptionValues($id) {
-    global $Conf, $Error, $Highlight;
+
+function option_request_to_json(&$new_opts, $id, $current_opts) {
+    global $Conf;
 
     $name = simplify_whitespace(defval($_REQUEST, "optn$id", ""));
-    if (!isset($_REQUEST["optn$id"])
-	|| ($id == "n" && ($name === "" || $name === "New option" || $name === "(Enter new option here)"))) {
-	unset($_REQUEST["optn$id"]);
-	return;
-    } else if ($name === ""
-	       || defval($_REQUEST, "optfp$id", "") === "delete") {
-	$_REQUEST["optn$id"] = "";
-	return;
-    } else
-	$_REQUEST["optn$id"] = $name;
+    if (!isset($_REQUEST["optn$id"]) && $id[0] != "n") {
+        if (@$current_opts[$id])
+            $new_opts[$id] = $current_opts[$id];
+        return;
+    } else if ($name == ""
+               || @$_REQUEST["optfp$id"] == "delete"
+               || ($id[0] == "n" && ($name == "New option" || $name == "(Enter new option)")))
+        return;
 
-    if (isset($_REQUEST["optd$id"])) {
+    $oarg = array("name" => $name, "id" => (int) $id, "req_id" => $id);
+    if ($id[0] == "n") {
+        $newid = $Conf->setting("options", 1);
+        while (@$current_opts[$newid] || @$new_opts[$newid])
+            ++$newid;
+        $oarg["id"] = $newid;
+        $oarg["is_new"] = true;
+    }
+
+    if (@$_REQUEST["optd$id"] && trim($_REQUEST["optd$id"]) != "") {
 	$t = CleanHTML::clean($_REQUEST["optd$id"], $err);
 	if ($t === false) {
 	    $Error[] = $err;
 	    $Highlight["optd$id"] = true;
 	} else
-	    $_REQUEST["optd$id"] = $t;
+	    $oarg["description"] = $t;
     }
 
-    $optvt = cvtint(defval($_REQUEST, "optvt$id", 0));
-    if (!PaperOption::type_is_valid($optvt))
-	$optvt = $_REQUEST["optvt$id"] = 0;
-    if (PaperOption::type_is_selectorlike($optvt)) {
-	$v = "";
-	foreach (explode("\n", rtrim(cleannl($_REQUEST["optv$id"]))) as $t)
-	    $v .= trim($t) . "\n";
-	if ($v == "\n") {
-	    $Error[] = "Enter options for the selector, one per line.";
-	    $Highlight["optv$id"] = true;
-	} else
-	    $_REQUEST["optv$id"] = substr($v, 0, strlen($v) - 1);
+    if (($optvt = @$_REQUEST["optvt$id"])) {
+        if (($pos = strpos($optvt, ":")) !== false) {
+            $oarg["type"] = substr($optvt, 0, $pos);
+            if (preg_match('/:final/', $optvt))
+                $oarg["final"] = true;
+            if (preg_match('/:ds_(\d+)/', $optvt, $m))
+                $oarg["display_space"] = (int) $m[1];
+        } else
+            $oarg["type"] = $optvt;
     } else
-	unset($_REQUEST["optv$id"]);
-    if (PaperOption::type_is_final($optvt))
-	$_REQUEST["optp$id"] = 1;
-    if ($optvt == PaperOption::T_FINALPDF)
-	$_REQUEST["optdt$id"] = 0;
+        $oarg["type"] = "checkbox";
 
-    $pcview = cvtint(defval($_REQUEST, "optp$id", 0));
-    $_REQUEST["optp$id"] = min(max($pcview, 0), 2);
+    if (PaperOption::type_has_selector($oarg["type"])) {
+	$oarg["selector"] = array();
+        $seltext = trim(cleannl(defval($_REQUEST, "optv$id", "")));
+        if ($seltext == "") {
+	    $Error[] = "Enter selectors one per line.";
+	    $Highlight["optv$id"] = true;
+        } else
+            foreach (explode("\n", $seltext) as $t)
+                $oarg["selector"][] = $t;
+    }
 
-    $displaytype = cvtint(defval($_REQUEST, "optdt$id", 0));
-    $_REQUEST["optdt$id"] = min(max($displaytype, 0), 2);
+    $oarg["view_type"] = defval($_REQUEST, "optp$id", "pc");
+    if (@$oarg["final"])
+        $oarg["view_type"] = "pc";
+
+    $oarg["position"] = (int) defval($_REQUEST, "optfp$id", 1);
+
+    if (@$_REQUEST["optdt$id"] == "near_submission"
+        || ($oarg["type"] == "pdf" && @$oarg["final"]))
+        $oarg["near_submission"] = true;
+    else if (@$_REQUEST["optdt$id"] == "highlight")
+        $oarg["highlight"] = true;
+
+    $new_opts[$oarg["id"]] = new PaperOption($oarg);
 }
 
-function doCleanOptionFormPositions() {
-    // valid keys for options, and whether the position is new
-    $optname = array();
-    $optreorder = array();
-    foreach (PaperOption::get() as $id => $o)
-	if (defval($_REQUEST, "optn$id", "") != "") {
-	    $optname[$id] = defval($_REQUEST, "optn$id", $o->optionName);
-	    $_REQUEST["optfp$id"] = defval($_REQUEST, "optfp$id", $o->sortOrder);
-	    $optreorder[$id] = $_REQUEST["optfp$id"] != $o->sortOrder;
-	}
-    if (isset($_REQUEST["optnn"])) {
-	$optname["n"] = $_REQUEST["optnn"];
-	$_REQUEST["optfpn"] = defval($_REQUEST, "optfpn", count($optname) - 1);
-	$optreorder["n"] = true;
+function option_clean_form_positions($new_opts, $current_opts) {
+    foreach ($new_opts as $id => $o) {
+        $current_o = @$current_opts[$id];
+        $o->old_position = ($current_o ? $current_o->position : -1);
     }
-
-    // assign "optfp" request variables sequentially starting from 0;
-    // a changed position takes priority over an unchanged position
-    $pos = array();
-    $set = array();
-    for ($i = 0; $i < count($optname); ++$i) {
-	$best = -1;
-	$bestpos = 1000;
-
-	foreach ($optname as $id => $name)
-	    if (!isset($set[$id])
-		&& ($best < 0
-		    || $_REQUEST["optfp$id"] < $bestpos
-		    || ($_REQUEST["optfp$id"] == $bestpos
-			&& $optreorder[$id] && !$optreorder[$best])
-		    || ($_REQUEST["optfp$id"] == $bestpos
-			&& strcasecmp($name, $optname[$best]) < 0)
-		    || ($_REQUEST["optfp$id"] == $bestpos
-			&& strcasecmp($name, $optname[$best]) == 0
-			&& strcmp($name, $optname[$best]) < 0))) {
-		$best = $id;
-		$bestpos = $_REQUEST["optfp$id"];
-	    }
-
-	$set[$best] = true;
-	$_REQUEST["optfp$best"] = $i;
+    for ($i = 0; $i < count($new_opts); ++$i) {
+	$best = null;
+	foreach ($new_opts as $id => $o)
+            if (!@$o->position_set
+                && (!$best
+                    || (@$o->near_submission
+                        && !@$best->near_submission)
+		    || $o->position < $best->position
+		    || ($o->position == $best->position
+                        && $o->position != $o->old_position
+                        && $best->position == $best->old_position)
+		    || ($o->position == $best->position
+			&& strcasecmp($o->name, $best->name) < 0)
+		    || ($o->position == $best->position
+			&& strcasecmp($o->name, $best->name) == 0
+			&& strcmp($o->name, $best->name) < 0)))
+                $best = $o;
+        $best->position = $i + 1;
+        $best->position_set = true;
     }
 }
 
 function doOptions($set) {
     global $Conf, $Values, $Error, $Highlight;
+
     if (!$set) {
-	$optkeys = array_keys(PaperOption::get());
-	$optkeys[] = "n";
-	$optabbrs = array("paper" => -1, "submission" => -1, "final" => -1);
-	foreach ($optkeys as $id) {
-	    doCleanOptionValues($id);
-	    if (($oname = defval($_REQUEST, "optn$id", ""))) {
-                $oabbr = strtolower(UnicodeHelper::deaccent($oname));
-		$oabbr = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", $oabbr));
-		if (defval($optabbrs, $oabbr, 0) == -1) {
-		    $Error[] = "Option name &ldquo;" . htmlspecialchars($_REQUEST["optn$id"]) . "&rdquo; is reserved, since it abbreviates to &ldquo;$oabbr&rdquo;.  Please pick another option name.";
-		    $Highlight["optn$id"] = true;
-		} else if (defval($optabbrs, $oabbr)) {
-		    $Error[] = "Two or more options have the same abbreviation, &ldquo;$oabbr&rdquo;.  Please pick another option name to ensure unique abbreviations.";
-		    $Highlight["optn$id"] = $Highlight[$optabbrs[$oabbr]] = true;
-                } else if (ctype_digit($oabbr)) {
-                    $Error[] = "Option names should contain at least one letter. Please pick a different option name.";
-                    $Highlight["optn$id"] = true;
-		} else
-		    $optabbrs[$oabbr] = "optn$id";
-	    }
-	}
+        $current_opts = PaperOption::option_list();
+
+        // convert request to JSON
+        $new_opts = array();
+        foreach ($current_opts as $id => $o)
+            option_request_to_json($new_opts, $id, $o);
+        foreach ($_REQUEST as $k => $v)
+            if (substr($k, 0, 4) == "optn"
+                && !@$current_opts[substr($k, 4)])
+                option_request_to_json($new_opts, substr($k, 4), $o);
+
+        // check abbreviations
+        $optabbrs = array();
+        foreach ($new_opts as $id => $o)
+            if (preg_match('/\Aopt\d+\z/', $o->abbr)) {
+                $Error[] = "Option name “" . htmlspecialchars($o->name) . "” is reserved. Please pick another option name.";
+                $Highlight["optn$o->req_id"] = true;
+            } else if (@$optabbrs[$o->abbr]) {
+                $Error[] = "Multiple options abbreviate to “{$o->abbr}”. Please pick option names that abbreviate uniquely.";
+                $Highlight["optn$o->req_id"] = $Highlight[$optabbrs[$o->abbr]->req_id] = true;
+            } else
+                $optabbrs[$o->abbr] = $o;
+
 	if (count($Error) == 0)
-	    $Values["options"] = true;
+	    $Values["options"] = $new_opts;
 	return;
     }
+
     $while = "while updating options";
-    doCleanOptionFormPositions();
 
-    $ochange = false;
-    $anyo = false;
-    foreach (PaperOption::get() as $id => $o) {
-	doCleanOptionValues($id);
+    $new_opts = $Values["options"];
+    $current_opts = PaperOption::option_list();
+    option_clean_form_positions($new_opts, $current_opts);
 
-	if (isset($_REQUEST["optn$id"]) && $_REQUEST["optn$id"] === "") {
-	    // delete option
-	    $Conf->qe("delete from OptionType where optionId=$id", $while);
-	    $Conf->qe("delete from PaperOption where optionId=$id", $while);
-	    $ochange = true;
-	    continue;
-	}
+    $newj = (object) array();
+    uasort($new_opts, array("PaperOption", "compare"));
+    foreach ($new_opts as $id => $o)
+        $newj->$id = $o->unparse();
+    $nextid = $Conf->setting("options", 1);
+    while (isset($new_opts[$nextid]))
+        ++$nextid;
+    $Conf->save_setting("options", $nextid, count($newj) ? $newj : null);
 
-	// otherwise, option exists
-	$anyo = true;
+    $deleted_ids = array();
+    foreach ($current_opts as $id => $o)
+        if (!@$new_opts[$id])
+            $deleted_ids[] = $id;
+    if (count($deleted_ids))
+        $Conf->qe("delete from PaperOption where optionId in (" . join(",", $deleted_ids) . ")");
 
-	// did it change?
-	if (isset($_REQUEST["optn$id"])
-	    && ($_REQUEST["optn$id"] != $o->optionName
-		|| defval($_REQUEST, "optd$id") != $o->description
-		|| $_REQUEST["optp$id"] != $o->pcView
-		|| defval($_REQUEST, "optv$id", "") != defval($o, "optionValues", "")
-		|| defval($_REQUEST, "optvt$id", 0) != defval($o, "type", 0)
-		|| defval($_REQUEST, "optfp$id", $o->sortOrder) != $o->sortOrder
-		|| $_REQUEST["optdt$id"] != $o->displayType)) {
-	    $q = "update OptionType set optionName='" . sqlq($_REQUEST["optn$id"])
-		. "', description='" . sqlq(defval($_REQUEST, "optd$id", ""))
-		. "', pcView=" . $_REQUEST["optp$id"]
-		. ", optionValues='" . sqlq(defval($_REQUEST, "optv$id", ""))
-		. "', type='" . defval($_REQUEST, "optvt$id", 0)
-                . "', sortOrder=" . defval($_REQUEST, "optfp$id", $o->sortOrder);
-	    if ($Conf->sversion >= 38)
-		$q .= ", displayType=" . $_REQUEST["optdt$id"];
-	    $Conf->qe($q . " where optionId=$id", $while);
-	    $ochange = true;
-	}
-    }
-
-    if (isset($_REQUEST["optnn"])) {
-	doCleanOptionValues("n");
-	$qa = "optionName, description, pcView, optionValues, type, sortOrder";
-	$qb = "'" . sqlq($_REQUEST["optnn"])
-	    . "', '" . sqlq(defval($_REQUEST, "optdn", ""))
-	    . "', " . $_REQUEST["optpn"]
-	    . ", '" . sqlq(defval($_REQUEST, "optvn", ""))
-            . "', '" . sqlq(defval($_REQUEST, "optvtn", 0))
-            . "', '" . sqlq(defval($_REQUEST, "optfpn", 0)) . "'";
-	if ($Conf->sversion >= 38) {
-	    $qa .= ", displayType";
-	    $qb .= ", '" . $_REQUEST["optdtn"] . "'";
-	}
-	$Conf->qe("insert into OptionType ($qa) values ($qb)", $while);
-	$ochange = $anyo = true;
-    } else if (trim(defval($_REQUEST, "optdn", "")) != "") {
-	$Highlight["optnn"] = true;
-	$Error[] = "Specify a name for your new option.";
-    }
-
-    if (!$anyo || $ochange)
-	$Conf->invalidateCaches(array("paperOption" => $anyo));
+    // invalidate cached option list
+    PaperOption::option_list(true);
 }
 
 function doDecisions($set) {
@@ -597,11 +565,11 @@ function doDecisions($set) {
 	    $match_accept = (stripos($_REQUEST["decn"], "accept") !== false);
 	    $match_reject = (stripos($_REQUEST["decn"], "reject") !== false);
 	    if ($delta > 0 && $match_reject) {
-		$Error[] = "You are trying to add an Accept-class decision that has &ldquo;reject&rdquo; in its name, which is usually a mistake.  To add the decision anyway, check the &ldquo;Confirm&rdquo; box and try again.";
+		$Error[] = "You are trying to add an Accept-class decision that has “reject” in its name, which is usually a mistake.  To add the decision anyway, check the “Confirm” box and try again.";
 		$Highlight["decn"] = true;
 		return;
 	    } else if ($delta < 0 && $match_accept) {
-		$Error[] = "You are trying to add a Reject-class decision that has &ldquo;accept&rdquo; in its name, which is usually a mistake.  To add the decision anyway, check the &ldquo;Confirm&rdquo; box and try again.";
+		$Error[] = "You are trying to add a Reject-class decision that has “accept” in its name, which is usually a mistake.  To add the decision anyway, check the “Confirm” box and try again.";
 		$Highlight["decn"] = true;
 		return;
 	    }
@@ -936,7 +904,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
     // make settings
     if (count($Error) == 0 && count($Values) > 0) {
 	$while = "updating settings";
-	$tables = "Settings write, TopicArea write, PaperTopic write, TopicInterest write, OptionType write, PaperOption write";
+	$tables = "Settings write, TopicArea write, PaperTopic write, TopicInterest write, PaperOption write";
 	if (array_key_exists("decisions", $Values)
             || array_key_exists("tag_vote", $Values))
 	    $tables .= ", Paper write";
@@ -1097,7 +1065,7 @@ function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
 function doGraceRow($name, $text, $capclass = "lcaption") {
     global $GraceExplanation;
     if (!isset($GraceExplanation)) {
-	$text = array($text, "Example: &ldquo;15 min&rdquo;");
+	$text = array($text, "Example: “15 min”");
 	$GraceExplanation = true;
     }
     doTextRow($name, $text, unparseGrace(setting($name)), 15, $capclass, "none");
@@ -1188,7 +1156,7 @@ function doSubGroup() {
     doCheckbox("sub_pcconf", "Collect authors&rsquo; PC conflicts", true,
 	       "hiliter(this);void fold('pcconf',!this.checked)");
     echo "<tr class='fx'><td></td><td>";
-    doCheckbox("sub_pcconfsel", "Collect PC conflict types (&ldquo;Advisor/student,&rdquo; &ldquo;Recent collaborator,&rdquo; etc.)");
+    doCheckbox("sub_pcconfsel", "Collect PC conflict types (“Advisor/student,” “Recent collaborator,” etc.)");
     echo "</td></tr>\n";
     doCheckbox("sub_collab", "Collect authors&rsquo; other collaborators as text", true);
     echo "</table>\n";
@@ -1201,9 +1169,9 @@ function doSubGroup() {
 	for ($i = 0; $i < 6; $i++)
 	    if (defval($bsetting, $i, "") == "")
 		$bsetting[$i] = "N/A";
-	doTextRow("sub_banal_papersize", array("Paper size", "Examples: &ldquo;letter&rdquo;, &ldquo;A4&rdquo;, &ldquo;8.5in&nbsp;x&nbsp;14in&rdquo;,<br />&ldquo;letter OR A4&rdquo;"), setting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
+	doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"), setting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
 	doTextRow("sub_banal_pagelimit", "Page limit", setting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
-	doTextRow("sub_banal_textblock", array("Text block", "Examples: &ldquo;6.5in&nbsp;x&nbsp;9in&rdquo;, &ldquo;1in&nbsp;margins&rdquo;"), setting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
+	doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"), setting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
 	echo "</table></td><td><span class='sep'></span></td><td class='top'><table>";
 	doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), setting("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
 	doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), setting("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
@@ -1212,7 +1180,7 @@ function doSubGroup() {
     }
 
     echo "<hr class='hr' />\n";
-    doRadio("sub_freeze", array(0 => "<strong>Authors can update submissions until the deadline</strong>", 1 => array("Authors must freeze the final version of each submission", "&ldquo;Authors can update submissions until the deadline&rdquo; is usually the best choice.  Freezing submissions can be useful when there is no submission deadline.")));
+    doRadio("sub_freeze", array(0 => "<strong>Authors can update submissions until the deadline</strong>", 1 => array("Authors must freeze the final version of each submission", "“Authors can update submissions until the deadline” is usually the best choice.  Freezing submissions can be useful when there is no submission deadline.")));
 
     echo "<div class='g'></div><table>\n";
     // compensate for pc_seeall magic
@@ -1227,27 +1195,39 @@ function checkOptionNameUnique($oname) {
     if ($oname == "" || $oname == "none" || $oname == "any")
 	return false;
     $m = 0;
-    foreach (PaperOption::get() as $oid => $o)
-	if (strstr(strtolower($o->optionName), $oname) !== false)
+    foreach (PaperOption::option_list() as $id => $o)
+	if (strstr(strtolower($o->name), $oname) !== false)
 	    $m++;
     return $m == 1;
 }
 
 function doOptGroupOption($o) {
     global $Conf, $Error, $temp_text_id;
-    $id = $o->optionId;
-    if (count($Error) > 0 && isset($_REQUEST["optn$id"]))
-	$o = (object) array("optionId" => $id,
-		"optionName" => defval($_REQUEST, "optn$id", $o->optionName),
-		"description" => defval($_REQUEST, "optd$id", $o->description),
-		"type" => defval($_REQUEST, "optvt$id", $o->type),
-		"optionValues" => defval($_REQUEST, "optv$id", $o->optionValues),
-		"pcView" => defval($_REQUEST, "optp$id", $o->pcView),
-		"sortOrder" => defval($_REQUEST, "optfp$id", $o->sortOrder));
+
+    if (is_string($o))
+        $o = new PaperOption(array("id" => $o,
+                "name" => "(Enter new option)",
+                "description" => "",
+                "type" => "checkbox",
+                "position" => count(PaperOption::option_list()) + 1));
+    $id = $o->id;
+
+    if (count($Error) > 0 && isset($_REQUEST["optn$id"])) {
+	$o = new PaperOption(array("id" => $id,
+		"name" => $_REQUEST["optn$id"],
+		"description" => defval($_REQUEST, "optd$id", ""),
+		"type" => defval($_REQUEST, "optvt$id", "checkbox"),
+		"view_type" => defval($_REQUEST, "optp$id", ""),
+                "position" => defval($_REQUEST, "optfp$id", 1),
+                "highlight" => @($_REQUEST["optdt$id"] == "highlight"),
+                "near_submission" => @($_REQUEST["optdt$id"] == "near_submission")));
+        if ($o->has_selector())
+            $o->selector = explode("\n", rtrim(defval($_REQUEST, "optv$id", "")));
+    }
 
     if ($id == "n") {
         ++$temp_text_id;
-        $Conf->footerScript("mktemptext('tptx$temp_text_id','(Enter new option here)')");
+        $Conf->footerScript("mktemptext('tptx$temp_text_id','(Enter new option)')");
         $ttid = " id='tptx$temp_text_id'";
     } else
         $ttid = "";
@@ -1257,8 +1237,8 @@ function doOptGroupOption($o) {
 	decorateSettingName("optn$id", ($id === "n" ? "New option name" : "Option name")),
 	"</div>",
 	"<div class='f-e'><input$ttid type='text' class='textlite temptext",
-	($o->optionName == "(Enter new option here)" ? "" : "off"),
-	"' name='optn$id' value=\"", htmlspecialchars($o->optionName), "\" size='50' onchange='hiliter(this)' /></div>\n",
+	($o->name == "(Enter new option)" ? "" : "off"),
+	"' name='optn$id' value=\"", htmlspecialchars($o->name), "\" size='50' onchange='hiliter(this)' /></div>\n",
 	"  <div class='f-i'>",
 	"<div class='f-c'>",
 	decorateSettingName("optd$id", "Description"),
@@ -1270,21 +1250,19 @@ function doOptGroupOption($o) {
 	echo "<td style='padding-left: 1em'><div class='f-i'>",
 	    "<div class='f-c'>Example search</div>",
 	    "<div class='f-e'>";
-	$oabbrev = simplify_whitespace($o->optionName);
-	foreach (preg_split('/\s+/', preg_replace('/[^a-z\s]/', '', strtolower($o->optionName))) as $oword)
+	$oabbrev = simplify_whitespace($o->name);
+	foreach (preg_split('/\s+/', preg_replace('/[^a-z\s]/', '', strtolower($o->name))) as $oword)
 	    if (checkOptionNameUnique($oword)) {
 		$oabbrev = $oword;
 		break;
 	    }
-	if ($o->optionValues !== "") {
-	    $a = explode("\n", $o->optionValues);
-	    if (count($a) > 1 && $a[1] !== "")
-		$oabbrev .= "#" . strtolower(simplify_whitespace($a[1]));
-	}
+	if ($o->has_selector() && count($o->selector) > 1
+            && $o->selector[1] !== "")
+            $oabbrev .= "#" . strtolower(simplify_whitespace($o->selector[1]));
 	if (strstr($oabbrev, " ") !== false)
 	    $oabbrev = "\"$oabbrev\"";
-	echo "&ldquo;<a href=\"", hoturl("search", "q=opt:" . urlencode($oabbrev)), "\">",
-	    "opt:", htmlspecialchars($oabbrev), "</a>&rdquo;",
+	echo "“<a href=\"", hoturl("search", "q=opt:" . urlencode($oabbrev)), "\">",
+	    "opt:", htmlspecialchars($oabbrev), "</a>”",
 	    "</div></div></td>";
     }
 
@@ -1292,74 +1270,71 @@ function doOptGroupOption($o) {
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
 	decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
-    $oval = $o->optionValues;
-    $optvt = (count($Error) > 0 ? defval($_REQUEST, "optvt$id", 0) : $o->type);
-    $finalOptions = ($Conf->collectFinalPapers() || PaperOption::type_is_final($optvt));
+    $optvt = $o->type;
+    $finalOptions = ($Conf->collectFinalPapers() || preg_match('/:final(?::|\z)/', $optvt));
 
     $otypes = array();
     if ($finalOptions)
 	$otypes["xxx1"] = array("optgroup", "Options for submissions");
-    $otypes[PaperOption::T_CHECKBOX] = "Checkbox";
-    $otypes[PaperOption::T_SELECTOR] = "Selector";
-    $otypes[PaperOption::T_RADIO] = "Radio buttons";
-    $otypes[PaperOption::T_NUMERIC] = "Numeric";
-    $otypes[PaperOption::T_TEXT] = "Text";
-    $otypes[PaperOption::T_TEXT_5LINE] = "Multiline text";
-    $otypes[PaperOption::T_PDF] = "PDF";
-    $otypes[PaperOption::T_SLIDES] = "Slides";
-    $otypes[PaperOption::T_VIDEO] = "Video";
-    $otypes[PaperOption::T_ATTACHMENTS] = "Attachments";
+    $otypes["checkbox"] = "Checkbox";
+    $otypes["selector"] = "Selector";
+    $otypes["radio"] = "Radio buttons";
+    $otypes["numeric"] = "Numeric";
+    $otypes["text"] = "Text";
+    $otypes["text:ds_5"] = "Multiline text";
+    $otypes["pdf"] = "PDF";
+    $otypes["slides"] = "Slides";
+    $otypes["video"] = "Video";
+    $otypes["attachments"] = "Attachments";
     if ($finalOptions) {
 	$otypes["xxx2"] = array("optgroup", "Options for accepted papers");
-	$otypes[PaperOption::T_FINALPDF] = "Alternate final version";
-	$otypes[PaperOption::T_FINALSLIDES] = "Final slides";
-	$otypes[PaperOption::T_FINALVIDEO] = "Final video";
+	$otypes["pdf:final"] = "Alternate final version";
+	$otypes["slides:final"] = "Final slides";
+	$otypes["video:final"] = "Final video";
     }
-    echo Ht::select("optvt$id", $otypes, $optvt, array("onchange" => "doopttype(this)", "id" => "optvt$id")),
+    echo Ht::select("optvt$id", $otypes, $optvt, array("onchange" => "do_option_type(this)", "id" => "optvt$id")),
 	"</div></div></td>";
-    $Conf->footerScript("doopttype(\$\$('optvt$id'),true)");
+    $Conf->footerScript("do_option_type(\$\$('optvt$id'),true)");
 
     echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
 	decorateSettingName("optp$id", "Visibility"), "</div><div class='f-e'>",
-	Ht::select("optp$id", array("Administrators only", "Visible to PC and reviewers", "Visible if authors are visible"), $o->pcView, array("onchange" => "hiliter(this)")),
+	Ht::select("optp$id", array("admin" => "Administrators only", "pc" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->view_type, array("onchange" => "hiliter(this)")),
 	"</div></div></td>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
         decorateSettingName("optfp$id", "Form order"), "</div><div class='f-e'>";
     $x = array();
-    // can't use "foreach (PaperOption::get())" because caller uses cursor
-    for ($n = 0; $n < count(PaperOption::get()); ++$n)
-        $x[$n] = ordinal($n + 1);
+    // can't use "foreach (PaperOption::option_list())" because caller
+    // uses cursor
+    for ($n = 0; $n < count(PaperOption::option_list()); ++$n)
+        $x[$n + 1] = ordinal($n + 1);
     if ($id === "n")
-        $x[$n] = ordinal($n + 1);
+        $x[$n + 1] = ordinal($n + 1);
     else
         $x["delete"] = "Delete option";
-    echo Ht::select("optfp$id", $x, $o->sortOrder, array("onchange" => "hiliter(this)")),
+    echo Ht::select("optfp$id", $x, $o->position, array("onchange" => "hiliter(this)")),
         "</div></div></td>";
 
-    if ($Conf->sversion >= 38) {
-	echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
-	    decorateSettingName("optdt$id", "Display"), "</div><div class='f-e'>";
-	$optdt = (count($Error) > 0 ? defval($_REQUEST, "optdt$id", 0) : $o->displayType);
-	echo Ht::select("optdt$id", array(PaperOption::DT_NORMAL => "Normal",
-                                           PaperOption::DT_HIGHLIGHT => "Prominent",
-                                           PaperOption::DT_SUBMISSION => "Near submission"), $optdt,
-			 array("onchange" => "hiliter(this)")),
-	    "</div></div></td>";
-    }
+    echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
+        decorateSettingName("optdt$id", "Display"), "</div><div class='f-e'>";
+    echo Ht::select("optdt$id", array("normal" => "Normal",
+                                      "highlight" => "Prominent",
+                                      "near_submission" => "Near submission"),
+                    $o->display_type(), array("onchange" => "hiliter(this)")),
+        "</div></div></td>";
 
-    if (isset($otypes[PaperOption::T_FINALPDF]))
+    if (isset($otypes["pdf:final"]))
 	echo "<td class='pad fx2'><div class='f-i'><div class='f-c'>&nbsp;</div><div class='f-e hint' style='margin-top:0.7ex'>(Set by accepted authors during final version submission period)</div></div></td>";
 
     echo "</tr></table>";
 
-    $value = $o->optionValues;
     $rows = 3;
-    if (PaperOption::type_is_selectorlike($optvt))
-	$rows = max(count(explode("\n", $value)), 3);
-    else
+    if (PaperOption::type_has_selector($optvt) && count($o->selector)) {
+        $value = join("\n", $o->selector) . "\n";
+	$rows = max(count($o->selector), 3);
+    } else
 	$value = "";
-    echo "<div id='foldoptv$id' class='", (PaperOption::type_is_selectorlike($optvt) ? "foldo" : "foldc"),
+    echo "<div id='foldoptv$id' class='", (PaperOption::type_has_selector($optvt) ? "foldo" : "foldc"),
 	"'><div class='fx'>",
 	"<div class='hint' style='margin-top:1ex'>Enter choices one per line.  The first choice will be the default.</div>",
 	"<textarea class='textlite' name='optv$id' rows='", $rows, "' cols='50' onchange='hiliter(this)'>", htmlspecialchars($value), "</textarea>",
@@ -1372,22 +1347,20 @@ function doOptGroup() {
     global $Conf;
 
     echo "<h3>Submission options</h3>\n";
-    echo "Options are selected by authors at submission time.  Examples have included &ldquo;PC-authored paper,&rdquo; &ldquo;Consider this paper for a Best Student Paper award,&rdquo; and &ldquo;Allow the shadow PC to see this paper.&rdquo;  The &ldquo;option name&rdquo; should be brief (&ldquo;PC paper,&rdquo; &ldquo;Best Student Paper,&rdquo; &ldquo;Shadow PC&rdquo;).  The optional description can explain further and may use XHTML.  ";
+    echo "Options are selected by authors at submission time.  Examples have included “PC-authored paper,” “Consider this paper for a Best Student Paper award,” and “Allow the shadow PC to see this paper.”  The “option name” should be brief (“PC paper,” “Best Student Paper,” “Shadow PC”).  The optional description can explain further and may use XHTML.  ";
     echo "Add options one at a time.\n";
     echo "<div class='g'></div>\n";
     echo "<table>";
     $sep = "";
-    $nopt = 0;
-    foreach (PaperOption::get() as $o) {
+    foreach (PaperOption::option_list() as $o) {
 	echo $sep;
 	doOptGroupOption($o);
 	$sep = "<tr><td colspan='2'><hr class='hr' /></td></tr>\n";
-	++$nopt;
     }
 
     echo $sep;
 
-    doOptGroupOption((object) array("optionId" => "n", "optionName" => "(Enter new option here)", "description" => "", "pcView" => 1, "type" => 0, "optionValues" => "", "sortOrder" => $nopt, "displayType" => 0));
+    doOptGroupOption("n");
 
     echo "</table>\n";
 
@@ -1423,8 +1396,8 @@ function doOptGroup() {
 	    $oabbrev = strtolower($tname);
 	    if (strstr($oabbrev, " ") !== false)
 		$oabbrev = "\"$oabbrev\"";
-	    echo "&ldquo;<a href=\"", hoturl("search", "q=topic:" . urlencode($oabbrev)), "\">",
-		"topic:", htmlspecialchars($oabbrev), "</a>&rdquo;",
+	    echo "“<a href=\"", hoturl("search", "q=topic:" . urlencode($oabbrev)), "\">",
+		"topic:", htmlspecialchars($oabbrev), "</a>”",
 		"<div class='hint'>Topic abbreviations are also allowed.</div>";
 	    if ($ninterests)
 		echo "<a class='hint fn' href=\"javascript:void fold('newtoptable')\">Show PC interest counts</a>",
@@ -1495,7 +1468,7 @@ function doRevGroup() {
     doDateRow("pcrev_hard", array("Hard deadline", "Reviews <em>cannot be entered or changed</em> after the hard deadline.  If set, this should generally be after the PC meeting.<br />$date_text"));
     if (!($rev_roundtag = setting_data("rev_roundtag")))
 	$rev_roundtag = "(None)";
-    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: &ldquo;R1&rdquo;, &ldquo;R2&rdquo; &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
+    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: “R1”, “R2” &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
     echo "</table>\n";
 
     echo "<div class='g'></div>\n";
@@ -1548,7 +1521,7 @@ function doRevGroup() {
 	    $x .= "$n#$v ";
 	$v = trim($x);
     }
-    echo "<td><input type='text' class='textlite' name='tag_vote' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>&ldquo;vote#10&rdquo; declares a voting tag named &ldquo;vote&rdquo; with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
+    echo "<td><input type='text' class='textlite' name='tag_vote' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lcaption'>", decorateSettingName("tag_rank", "Ranking tag"), "</td>";
     if (count($Error) > 0)
@@ -1663,7 +1636,7 @@ function doDecGroup() {
 	"<td class='lentry nowrap'><input type='text' class='textlite' name='decn' value=\"", htmlspecialchars($v), "\" size='35' onchange='hiliter(this)' /> &nbsp; ",
 	Ht::select("dtypn", array(1 => "Accept class", -1 => "Reject class"),
 		    $vclass, array("onchange" => "hiliter(this)")),
-	"<br /><small>Examples: &ldquo;Accepted as short paper&rdquo;, &ldquo;Early reject&rdquo;</small>",
+	"<br /><small>Examples: “Accepted as short paper”, “Early reject”</small>",
 	"</td>";
     if (defval($Highlight, "decn"))
 	echo "<td class='lentry nowrap'>",

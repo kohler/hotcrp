@@ -2137,14 +2137,14 @@ function setmailpsel(sel) {
 
 
 // settings
-function doopttype(e, nohilite) {
+function do_option_type(e, nohilite) {
     var m;
     if (!nohilite)
 	hiliter(e);
     if ((m = e.name.match(/^optvt(.*)$/))) {
-	fold("optv" + m[1], e.value != 1 && e.value != 7);
-	fold("optvis" + m[1], e.value < 100, 2);
-	fold("optvis" + m[1], e.value != 100, 3);
+	fold("optv" + m[1], e.value != "selector" && e.value != "radio");
+	fold("optvis" + m[1], !/:final/.test(e.value), 2);
+	fold("optvis" + m[1], e.value != "pdf:final", 3);
     }
 }
 

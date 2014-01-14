@@ -139,7 +139,6 @@ $Opt["emailFrom"] = "you@example.com";
 //                   end with " <span class='barsep'>|</span> ".
 //   favicon         Optional link to favicon. Default is images/review24.png.
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
-//   disablePDF      Set to true to disable PDF format submissions.
 //   disablePS       Set to true to disable PostScript format submissions.
 //   noPapers        Set to true to collect abstracts only, not papers.
 //   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"

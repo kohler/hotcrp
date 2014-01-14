@@ -5,83 +5,109 @@
 
 class PaperOption {
 
-    const T_CHECKBOX = 0;
-    const T_SELECTOR = 1; // see also script.js:doopttype
-    const T_NUMERIC = 2;
-    const T_TEXT = 3;
-    const T_PDF = 4;
-    const T_SLIDES = 5;
-    const T_VIDEO = 6;
-    const T_RADIO = 7;
-    const T_TEXT_5LINE = 8;
-    const T_ATTACHMENTS = 9;
-    const T_FINALPDF = 100;
-    const T_FINALSLIDES = 101;
-    const T_FINALVIDEO = 102;
+    private static $list = null;
 
-    const F_OK = 1;
-    const F_DOCUMENT = 2;
-    const F_PDF = 4;
-    const F_FINAL = 8;
-
-    const DT_NORMAL = 0;
-    const DT_HIGHLIGHT = 1;
-    const DT_SUBMISSION = 2;
-
-    static $info = null;
-
-    static function type_flags($t) {
-        if (!self::$info)
-            self::$info = array(self::T_CHECKBOX => self::F_OK,
-                                self::T_SELECTOR => self::F_OK,
-                                self::T_NUMERIC => self::F_OK,
-                                self::T_TEXT => self::F_OK,
-                                self::T_RADIO => self::F_OK,
-                                self::T_TEXT_5LINE => self::F_OK,
-                                self::T_ATTACHMENTS => self::F_OK,
-                                self::T_PDF => self::F_OK + self::F_DOCUMENT + self::F_PDF,
-                                self::T_SLIDES => self::F_OK + self::F_DOCUMENT + self::F_PDF,
-                                self::T_VIDEO => self::F_OK + self::F_DOCUMENT,
-                                self::T_FINALPDF => self::F_OK + self::F_DOCUMENT + self::F_PDF + self::F_FINAL,
-                                self::T_FINALSLIDES => self::F_OK + self::F_DOCUMENT + self::F_PDF + self::F_FINAL,
-                                self::T_FINALVIDEO => self::F_OK + self::F_DOCUMENT + self::F_FINAL);
-        return isset(self::$info[$t]) ? self::$info[$t] : 0;
+    function __construct($args) {
+        foreach ($args as $k => $v)
+            $this->$k = $v;
+        if (!@$this->view_type)
+            $this->view_type = "pc";
+        if (!@$this->abbr)
+            $this->abbr = self::abbreviate($this->name, $this->id);
+        if (!@$this->description)
+            $this->description = "";
     }
 
-    static function type_is_valid($t) {
-	return self::type_flags($t) != 0;
+    static function compare($a, $b) {
+        if ($a->position != $b->position)
+            return $a->position - $b->position;
+        else
+            return $a->id - $b->id;
     }
 
-    static function type_is_selectorlike($t) {
-	return $t == self::T_RADIO || $t == self::T_SELECTOR;
+    static function option_list($force = false) {
+        global $Conf;
+        if (self::$list === null || $force) {
+            self::$list = array();
+            if (($optj = $Conf->setting_json("options"))) {
+                foreach ($optj as $j)
+                    self::$list[$j->id] = new PaperOption($j);
+                uasort(self::$list, array("PaperOption", "compare"));
+            }
+        }
+        return self::$list;
     }
 
-    static function type_is_text($t) {
-        return $t == self::T_TEXT || $t == self::T_TEXT_5LINE;
+    static function find($id) {
+        if (self::$list === null)
+            self::option_list();
+        return @self::$list[$id];
     }
 
-    static function type_is_document($t) {
-	return (self::type_flags($t) & self::F_DOCUMENT) != 0;
+    static function abbreviate($name, $id) {
+        $abbr = strtolower(UnicodeHelper::deaccent($name));
+        $abbr = preg_replace('/[^a-z_0-9]/', "-", $abbr);
+        $abbr = preg_replace('/^-+|-+$/', "", $abbr);
+        if (preg_match('/\A(?:|submission|paper|final|opt\d+|\d+)\z/', $abbr))
+            $abbr = "opt$id";
+        return $abbr;
     }
 
-    static function type_is_final($t) {
-	return (self::type_flags($t) & self::F_FINAL) != 0;
+    static function type_has_selector($type) {
+        return $type == "radio" || $type == "selector";
     }
 
-    static function type_takes_pdf($t) {
-	global $Opt;
-	if ($t === null)
-	    return !isset($Opt["disablePDF"]) || !$Opt["disablePDF"];
-	else
-	    return (self::type_flags($t) & self::F_PDF) != 0;
+    function has_selector() {
+	return self::type_has_selector($this->type);
     }
 
-    static function type_takes_multiple($t) {
-        return $t == self::T_ATTACHMENTS;
+    static function type_takes_pdf($type) {
+        return $type == "pdf" || $type == "slides";
     }
 
-    static function type_needs_data($t) {
-        return $t == self::T_TEXT || $t == self::T_TEXT_5LINE || $t == self::T_ATTACHMENTS;
+    function is_document() {
+        return $this->type == "pdf" || $this->type == "slides"
+            || $this->type == "video";
+    }
+
+    function needs_data() {
+        return $this->type == "text" || $this->type == "attachments";
+    }
+
+    function takes_multiple() {
+        return $this->type == "attachments";
+    }
+
+    function display_type() {
+        if (@$this->near_submission)
+            return "near_submission";
+        else if (@$this->highlight)
+            return "highlight";
+        else
+            return "normal";
+    }
+
+    function unparse() {
+        $j = (object) array("id" => $this->id,
+                            "name" => $this->name,
+                            "abbr" => $this->abbr,
+                            "type" => $this->type,
+                            "position" => $this->position);
+        if (@$this->description)
+            $j->description = $this->description;
+        if (@$this->final)
+            $j->final = true;
+        if (@$this->near_submission)
+            $j->near_submission = true;
+        if (@$this->highlight)
+            $j->highlight = true;
+        if (@$this->view_type && $this->view_type != "pc")
+            $j->view_type = $this->view_type;
+        if (@$this->display_space)
+            $j->display_space = $this->display_space;
+        if (@$this->selector)
+            $j->selector = $this->selector;
+        return $j;
     }
 
     private static function sort_multiples($o, $ox) {
@@ -93,90 +119,43 @@ class PaperOption {
         global $Conf;
         if (!$prow)
             return 0;
-        $options = self::get();
+        $options = self::option_list();
         $prow->option_array = array();
-        if (!count($options) || !isset($prow->optionIds) || !$prow->optionIds)
+        if (!count($options) || !@$prow->optionIds)
             return 0;
 
-        preg_match_all('/(\d+)#(\d+)/', defval($prow, "optionIds", ""), $m);
+        preg_match_all('/(\d+)#(\d+)/', $prow->optionIds, $m);
         $optsel = array();
         for ($i = 0; $i < count($m[1]); ++$i)
             arrayappend($optsel[$m[1][$i]], (int) $m[2][$i]);
         $optdata = null;
 
         foreach ($options as $o)
-            if (isset($optsel[$o->optionId])) {
-                $ox = (object) array("optionId" => $o->optionId,
-                                     "option" => $o);
-                if (self::type_needs_data($o->type) && !$optdata) {
+            if (isset($optsel[$o->id])) {
+                $ox = (object) array("id" => $o->id, "option" => $o);
+                if ($o->needs_data() && !$optdata) {
                     $optdata = array();
                     $result = $Conf->qe("select optionId, value, data from PaperOption where paperId=$prow->paperId", "while selecting paper options");
                     while (($row = edb_row($result)))
                         $optdata[$row[0] . "." . $row[1]] = $row[2];
                 }
-                if (self::type_takes_multiple($o->type)) {
-                    $ox->values = $optsel[$o->optionId];
-                    if (self::type_needs_data($o->type)) {
+                if ($o->takes_multiple()) {
+                    $ox->values = $optsel[$o->id];
+                    if ($o->needs_data()) {
                         $ox->data = array();
                         foreach ($ox->values as $v)
-                            $ox->data[] = $optdata[$o->optionId . "." . $v];
+                            $ox->data[] = $optdata[$o->id . "." . $v];
                     }
                     self::sort_multiples($o, $ox);
                 } else {
-                    $ox->value = $optsel[$o->optionId][0];
-                    if (self::type_needs_data($o->type))
-                        $ox->data = $optdata[$o->optionId . "." . $ox->value];
+                    $ox->value = $optsel[$o->id][0];
+                    if ($o->needs_data())
+                        $ox->data = $optdata[$o->id . "." . $ox->value];
                 }
-                $prow->option_array[$o->optionId] = $ox;
+                $prow->option_array[$o->id] = $ox;
             }
 
         return count($prow->option_array);
-    }
-
-    static function get($id = null) {
-        global $Conf;
-        if ($Conf->setting("paperOption") <= 0 || $Conf->sversion <= 0)
-            return $id ? null : array();
-
-        // (re)load options from database
-        $svar = defval($_SESSION, "paperOption", null);
-        if (!$svar || !is_array($svar) || count($svar) < 3 || $svar[2] < 2
-            || $svar[0] < $Conf->setting("paperOption")) {
-            $opt = array();
-            $result = $Conf->q("select * from OptionType order by sortOrder, optionName");
-            $order = 0;
-            while (($row = edb_orow($result))) {
-                // begin backwards compatibility to old schema versions
-                if (!isset($row->optionValues))
-                    $row->optionValues = "";
-                if (!isset($row->type) && $row->optionValues == "\x7Fi")
-                    $row->type = self::T_NUMERIC;
-                else if (!isset($row->type))
-                    $row->type = ($row->optionValues ? self::T_SELECTOR : self::T_CHECKBOX);
-                // end backwards compatibility to old schema versions
-                $row->optionAbbrev = preg_replace("/-+\$/", "", preg_replace("/[^a-z0-9_]+/", "-", strtolower($row->optionName)));
-                if ($row->optionAbbrev == "paper"
-                    || $row->optionAbbrev == "submission"
-                    || $row->optionAbbrev == "final"
-                    || ctype_digit($row->optionAbbrev))
-                    $row->optionAbbrev = "opt" . $row->optionId;
-                $row->sortOrder = $order++;
-                if (!isset($row->displayType))
-                    $row->displayType = self::DT_NORMAL;
-                if ($row->type == self::T_FINALPDF)
-                    $row->displayType = self::DT_SUBMISSION;
-                $row->isDocument = self::type_is_document($row->type);
-                $row->isFinal = self::type_is_final($row->type);
-                $opt[$row->optionId] = $row;
-            }
-            $_SESSION["paperOption"] = $svar =
-                array($Conf->setting("paperOption"), $opt, 2);
-        }
-
-        if ($id)
-            return defval($svar[1], $id, null);
-        else
-            return $svar[1];
     }
 
 }
