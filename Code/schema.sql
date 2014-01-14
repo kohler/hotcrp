@@ -171,25 +171,6 @@ CREATE TABLE `MailLog` (
 
 
 --
--- Table structure for table `OptionType`
---
-
-DROP TABLE IF EXISTS `OptionType`;
-CREATE TABLE `OptionType` (
-  `optionId` int(11) NOT NULL AUTO_INCREMENT,
-  `optionName` varchar(200) NOT NULL,
-  `description` varbinary(8192) DEFAULT NULL,
-  `type` tinyint(1) NOT NULL DEFAULT '0',
-  `pcView` tinyint(1) NOT NULL DEFAULT '1',
-  `optionValues` varbinary(8192) NOT NULL,
-  `sortOrder` tinyint(1) NOT NULL DEFAULT '0',
-  `displayType` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`optionId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
-
-
---
 -- Table structure for table `PCMember`
 --
 
@@ -584,7 +565,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 65);
+insert into Settings (name, value) values ('allowPaperOption', 67);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

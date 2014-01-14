@@ -577,4 +577,8 @@ function updateSchema($Conf) {
         && isset($Conf->settings["options"])
         && $Conf->ql("update Settings set value=66 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 66;
+    if ($Conf->settings["allowPaperOption"] == 66
+        && $Conf->ql("drop table if exists `OptionType`")
+        && $Conf->ql("update Settings set value=67 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 67;
 }
