@@ -509,7 +509,7 @@ if ($getaction == "pcconf" && isset($papersel) && $Me->privChair) {
     $allConflictTypes = Conflict::$type_descriptions;
     $allConflictTypes[CONFLICT_CHAIRMARK] = "Chair-confirmed";
     $allConflictTypes[CONFLICT_AUTHOR] = "Author";
-    $allConflictTypes[CONFLICT_CONTACTAUTHOR] = "Contact author";
+    $allConflictTypes[CONFLICT_CONTACTAUTHOR] = "Contact";
 
     if ($result) {
 	$texts = array();

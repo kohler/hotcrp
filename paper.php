@@ -357,7 +357,7 @@ function check_contacts($prow) {
 
     $cau = array();
     if ($prow) {
-        $result = $Conf->qe("select c.email, c.contactId from ContactInfo c join PaperConflict pc on (pc.contactId=c.contactId) where paperId=$prow->paperId and conflictType>=" . CONFLICT_AUTHOR);
+        $result = $Conf->qe("select email, ContactInfo.contactId from ContactInfo join PaperConflict using (contactId) where paperId=$prow->paperId and conflictType>=" . CONFLICT_AUTHOR);
         while (($row = edb_row($result)))
             $cau[$row[0]] = $row[1];
     }
