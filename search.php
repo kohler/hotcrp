@@ -506,7 +506,7 @@ if ($getaction == "pcconf" && isset($papersel) && $Me->privChair) {
 	$pcme[$pc->contactId] = $pc->email;
     asort($pcme);
 
-    $allConflictTypes = $authorConflictTypes;
+    $allConflictTypes = Conflict::$type_descriptions;
     $allConflictTypes[CONFLICT_CHAIRMARK] = "Chair-confirmed";
     $allConflictTypes[CONFLICT_AUTHOR] = "Author";
     $allConflictTypes[CONFLICT_CONTACTAUTHOR] = "Contact author";

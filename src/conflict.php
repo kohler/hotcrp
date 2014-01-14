@@ -14,7 +14,7 @@ class Conflict {
                                1 => true,
                                2 => "collaborator",
                                3 => "advisor",
-                               4 => "institutional",
+                               4 => "institution",
                                5 => "personal",
                                6 => "other",
                                CONFLICT_CHAIRMARK => "confirmed",
