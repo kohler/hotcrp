@@ -500,7 +500,8 @@ function crpSubmitKeyFilter(elt, event) {
 	form = form.parentNode;
     if (form && form.tagName) {
 	elt.blur();
-	form.submit();
+        if (!form.onsubmit || !(form.onsubmit instanceof Function) || form.onsubmit())
+	    form.submit();
 	return false;
     } else
 	return true;
