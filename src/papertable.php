@@ -1255,13 +1255,13 @@ class PaperTable {
 		"<input type='hidden' name='set$type' value='1' />";
 	    $Conf->footerScript("Miniajax.onload(\"${type}form\")");
 
-	    $opt = array("0" => "None");
+	    $sel = array("0" => "None");
             $textarg = array("lastFirst" => @$Opt["sortByLastName"]);
 	    foreach ($pc as $row)
-		$opt[htmlspecialchars($row->email)] =
+		$sel[htmlspecialchars($row->email)] =
                 Text::name_html($row, $textarg);
 
-	    echo Ht::select($type, $opt,
+	    echo Ht::select($type, $sel,
                              ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
                              array("onchange" => "dosubmitstripselector('${type}')",
                                    "id" => "fold${type}_d")),
