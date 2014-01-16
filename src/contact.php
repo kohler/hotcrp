@@ -1472,7 +1472,8 @@ class Contact {
                        "myReviewType" => ($this->is_reviewer() ? 1 : 0),
                        "myReviewSubmitted" => 1,
                        "myReviewNeedsSubmit" => 0,
-                       "paperId" => 1, "timeSubmitted" => 1), $this);
+                       "paperId" => 1, "timeSubmitted" => 1,
+                       "paperBlind" => false), $this);
         $rights = $this->rights($prow, $forceShow);
 	if ($rights->can_administer
 	    || ($rrow && $rrow_contactId == $this->contactId)
