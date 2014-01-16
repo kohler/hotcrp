@@ -1348,7 +1348,7 @@ function pcMembers() {
         || $_SESSION["pcmembers"][3] != @$Opt["sortByLastName"]) {
 	$pc = array();
 	$qa = ($Conf->sversion >= 35 ? ", contactTags" : "") . ($Conf->sversion >= 47 ? ", disabled" : "");
-	$result = $Conf->q("select firstName, lastName, affiliation, email, u.contactId contactId, roles$qa from ContactInfo u join PCMember using (contactId)");
+	$result = $Conf->q("select firstName, lastName, affiliation, email, ContactInfo.contactId contactId, roles$qa from ContactInfo join PCMember using (contactId)");
 	$by_name_text = array();
 	while (($row = edb_orow($result))) {
 	    $pc[$row->contactId] = $row = Contact::make($row);
