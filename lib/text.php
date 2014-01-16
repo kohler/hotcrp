@@ -8,12 +8,25 @@ class Text {
     static private $argkeys = array("firstName", "lastName", "email",
                                     "withMiddle", "middleName", "lastFirst",
                                     "nameAmbiguous", "name");
-    static private $defaults = array("firstName" => "", "lastName" => "",
-                                     "email" => "", "withMiddle" => false,
+    static private $defaults = array("firstName" => "",
+                                     "lastName" => "",
+                                     "email" => "",
+                                     "withMiddle" => false,
                                      "middleName" => null,
                                      "lastFirst" => false,
                                      "nameAmbiguous" => false,
                                      "name" => null);
+    static private $mapkeys = array("firstName" => "firstName",
+                                    "first" => "firstName",
+                                    "lastName" => "lastName",
+                                    "last" => "lastName",
+                                    "email" => "email",
+                                    "withMiddle" => "withMiddle",
+                                    "middleName" => "middleName",
+                                    "middle" => "middleName",
+                                    "lastFirst" => "lastFirst",
+                                    "nameAmbiguous" => "nameAmbiguous",
+                                    "name" => "name");
 
     static function analyze_von($lastName) {
         if (preg_match('@\A(v[oa]n|d[eu])\s+(.*)\z@s', $lastName, $m))
@@ -40,14 +53,15 @@ class Text {
                 }
             } else if (is_array($v)) {
                 foreach ($v as $k => $x)
-                    if (array_key_exists($k, self::$defaults)
-                        && !property_exists($ret, $k))
-                        $ret->$k = $x;
+                    if (@($mk = self::$mapkeys[$k])
+                        && !property_exists($ret, $mk))
+                        $ret->$mk = $x;
                 $delta = 3;
             } else if (is_object($v)) {
-                foreach (self::$argkeys as $k)
-                    if (property_exists($v, $k) && !property_exists($ret, $k))
-                        $ret->$k = $v->$k;
+                foreach (self::$mapkeys as $k => $mk)
+                    if (property_exists($v, $k)
+                        && !property_exists($ret, $mk))
+                        $ret->$mk = $v->$k;
             }
         }
         foreach (self::$defaults as $k => $v)
