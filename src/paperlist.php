@@ -216,8 +216,7 @@ class PaperList extends BaseList {
 	// reviewer preferences
 	$prefs = array();
 	if (isset($row->allReviewerPreference))
-            foreach ($row->review_preferences() as $cid => $pref)
-                $prefs[$what[0]] = $what[1];
+            $prefs = $row->reviewer_preferences();
 	// if conflict, reviewer preference is set to "X"
 	if (isset($row->allConflictType))
             foreach ($row->conflicts() as $cid => $conf)
