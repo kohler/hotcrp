@@ -1382,7 +1382,7 @@ function pcTags() {
 function pcByEmail($email) {
     $pc = pcMembers();
     foreach ($pc as $id => $row)
-	if ($row->email == $email)
+	if (strcasecmp($row->email, $email) == 0)
 	    return $row;
     return null;
 }
