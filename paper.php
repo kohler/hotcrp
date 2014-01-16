@@ -238,7 +238,7 @@ function clean_request($prow, $isfinal) {
     foreach (PaperOption::option_list() as $o) {
         $oname = "opt$o->id";
         $v = trim(defval($_REQUEST, $oname, ""));
-        if ($o->final && !$isfinal)
+        if (@$o->final && !$isfinal)
             continue;
         else if ($o->type == "checkbox")
             $_REQUEST[$oname] = ($v == 0 || $v == "" ? 0 : 1);
@@ -293,7 +293,7 @@ function request_differences($prow, $isfinal) {
         $oname = "opt$o->id";
         $v = @$_REQUEST[$oname];
         $ox = @$prow->option_array[$o->id];
-        if ($o->final && !$isfinal)
+        if (@$o->final && !$isfinal)
             continue;
         else if ($o->type == "checkbox"
                  || $o->type == "selector"
@@ -545,7 +545,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     foreach (PaperOption::option_list() as $o) {
 	$oname = "opt$o->id";
 	$v = trim(defval($_REQUEST, $oname, ""));
-        if ($o->final && !$isSubmitFinal)
+        if (@$o->final && !$isSubmitFinal)
             $no_delete_options[] = "optionId!=" . $o->id;
 	else if (($o->type == "checkbox" && $_REQUEST[$oname])
                  || $o->type == "selector"
