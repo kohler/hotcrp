@@ -687,8 +687,10 @@ function downloadAllRevpref() {
             $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, $pref);
         foreach (array_intersect_key($prow->conflicts(), $pc) as $pcid => $conf)
             $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, "conflict");
-        ksort($out);
-        arrayappend($texts[$paperselmap[$prow->paperId]], $out);
+        if (count($out)) {
+            ksort($out);
+            arrayappend($texts[$paperselmap[$prow->paperId]], $out);
+        }
     }
 
     if (count($texts)) {
