@@ -292,7 +292,7 @@ function request_differences($prow, $isfinal) {
     foreach (PaperOption::option_list() as $o) {
         $oname = "opt$o->id";
         $v = @$_REQUEST[$oname];
-        $ox = @$prow->option_array[$o->id];
+        $ox = @$prow->option($o->id);
         if (@$o->final && !$isfinal)
             continue;
         else if ($o->type == "checkbox"
@@ -559,10 +559,8 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
             if ($_REQUEST[$oname] !== "")
                 $opt_data[] = "$o->id, 1, '" . sqlq($_REQUEST[$oname]) . "'";
         } else if ($o->type == "attachments") {
-            if (!$prow || !isset($prow->option_array[$o->id]))
+            if (!$prow || !($ox = @$prow->option($o->id)))
                 $ox = (object) array("values" => array(), "data" => array());
-            else
-                $ox = $prow->option_array[$o->id];
             if (($next_ordinal = count($ox->data)))
                 $next_ordinal = max($next_ordinal, cvtint($ox->data[count($ox->values) - 1]));
             foreach (attachment_request_keys($o) as $k)

@@ -37,8 +37,6 @@ class PaperTable {
 	global $Conf, $Me;
 
 	$this->prow = $prow;
-        if (!isset($prow->option_array))
-            PaperOption::parse_paper_options($prow);
 	$this->rrows = null;
 	$this->crows = null;
 	$this->rrow = null;
@@ -321,9 +319,9 @@ class PaperTable {
                     && $o->is_document()
 		    && (!@$o->final || $final)
                     && $prow
-                    && isset($prow->option_array[$id])
-                    && $prow->option_array[$id]->value > 1
-                    && ($d = paperDocumentData($prow, $id, $prow->option_array[$id]->value))) {
+                    && ($oa = $prow->option($id))
+                    && $oa->value > 1
+                    && ($d = paperDocumentData($prow, $id, $oa->value))) {
                     $pdfs[] = "<span class='papfn'>"
                         . htmlspecialchars($o->name)
                         . "</span>: &nbsp;"
@@ -708,7 +706,7 @@ class PaperTable {
 	$ndocuments = 0;
         $nfolded = 0;
 
-        foreach ($this->prow->option_array as $oa) {
+        foreach ($this->prow->options() as $oa) {
             $o = $oa->option;
             if ((@$o->near_submission && $o->is_document())
                 || (!$showAllOptions && !$Me->canViewPaperOption($this->prow, $o)))
@@ -1032,7 +1030,7 @@ class PaperTable {
         if ($o->description)
             echo "<div class='paphint'>", $o->description, "</div>";
         echo "<div class='papv'>";
-        if (($prow = $this->prow) && ($optx = defval($prow->option_array, $o->id))) {
+        if (($prow = $this->prow) && ($optx = $prow->option($o->id))) {
             $docclass = new HotCRPDocument($o->id, $o);
             foreach ($optx->values as $docid)
                 if (($doc = paperDocumentData($prow, $o->id, $docid))) {
@@ -1064,7 +1062,7 @@ class PaperTable {
 		continue;
 
 	    $optid = "opt$o->id";
-            $optx = ($prow ? defval($prow->option_array, $o->id) : null);
+            $optx = ($prow ? $prow->option($o->id) : null);
             if ($o->type == "attachments") {
                 $this->editable_attachments($o);
                 continue;
@@ -2169,8 +2167,6 @@ class PaperTable {
 
 	if (!($prow = $Conf->paperRow($sel, $Me, $whyNot)))
 	    return null;
-        if (isset($prow->optionIds))
-            PaperOption::parse_paper_options($prow);
 	$rrow = null;
 	if (isset($sel["reviewId"]))
 	    $rrow = $Conf->reviewRow($sel);

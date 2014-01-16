@@ -164,31 +164,40 @@ class PaperInfo {
         return $x;
     }
 
-    private function load_conflicts($email) {
+    public function conflicts($email = false) {
         global $Conf;
-        $this->conflicts_ = array();
-        if (!$email && isset($this->allConflictType)) {
-            foreach (explode(",", $this->allConflictType) as $x) {
-                list($cid, $ct) = explode(" ", $x);
-                if ($ct > 0)
-                    $this->conflicts_[(int) $cid] = (object) array("contactId" => (int) $cid, "conflictType" => (int) $ct);
+        if ($email ? !@$this->conflicts_email_ : !isset($this->conflicts_)) {
+            $this->conflicts_ = array();
+            if (!$email && isset($this->allConflictType)) {
+                foreach (explode(",", $this->allConflictType) as $x) {
+                    list($cid, $ct) = explode(" ", $x);
+                    if ($ct > 0)
+                        $this->conflicts_[(int) $cid] = (object) array("contactId" => (int) $cid, "conflictType" => (int) $ct);
+                }
+            } else {
+                $result = $Conf->qe("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId");
+                while (($row = edb_orow($result))) {
+                    $row->contactId = (int) $row->contactId;
+                    $row->conflictType = (int) $row->conflictType;
+                    if ($row->conflictType > 0)
+                        $this->conflicts_[$row->contactId] = $row;
+                }
+                $this->conflicts_email_ = true;
             }
-        } else {
-            $result = $Conf->qe("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId");
-            while (($row = edb_orow($result))) {
-                $row->contactId = (int) $row->contactId;
-                $row->conflictType = (int) $row->conflictType;
-                if ($row->conflictType > 0)
-                    $this->conflicts_[$row->contactId] = $row;
-            }
-            $this->conflicts_email_ = true;
         }
+        return $this->conflicts_;
     }
 
-    public function conflicts($email = false) {
-        if ($email ? !@$this->conflicts_email_ : !isset($this->conflicts_))
-            $this->load_conflicts($email);
-        return $this->conflicts_;
+    public function pc_conflicts($email = false) {
+        return array_intersect_key($this->conflicts($email), pcMembers());
+    }
+
+    public function contacts($email = false) {
+        $c = array();
+        foreach ($this->conflicts($email) as $id => $conf)
+            if ($conf->conflictType >= CONFLICT_AUTHOR)
+                $c[$id] = $conf;
+        return $c;
     }
 
     private function load_reviewer_preferences() {
@@ -210,5 +219,17 @@ class PaperInfo {
             }
         }
         return $x;
+    }
+
+    public function options() {
+        if (!property_exists($this, "option_array"))
+            PaperOption::parse_paper_options($this);
+        return $this->option_array;
+    }
+
+    public function option($id) {
+        if (!property_exists($this, "option_array"))
+            PaperOption::parse_paper_options($this);
+        return @$this->option_array[$id];
     }
 }
