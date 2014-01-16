@@ -544,12 +544,8 @@ class Contact {
         $reg = (object) ($reg === true ? array() : $reg);
 
         // Set up registration
-        if (!isset($reg->firstName) && !isset($reg->lastName)
-            && isset($reg->name)) {
-            $matches = Text::split_name($reg->name);
-            $reg->firstName = $matches[0];
-            $reg->lastName = $matches[1];
-        }
+        $name = Text::analyze_name($reg);
+        list($reg->firstName, $reg->lastName) = array($name->firstName, $name->lastName);
 
         $this->password_type = 0;
         if (isset($reg->password)
