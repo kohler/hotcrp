@@ -291,34 +291,36 @@ class LeadAssigner extends Assigner {
     }
 }
 class ConflictAssigner extends Assigner {
-    private $isadd;
-    function __construct($pid, $contact, $isadd) {
+    private $ctype;
+    function __construct($pid, $contact, $ctype) {
         parent::__construct($pid, $contact);
-        $this->isadd = $isadd;
+        $this->ctype = $ctype;
     }
     function allow_contact_type($type) {
-        return $type == "conflict" || ($type == "any" && !$this->isadd);
+        return $type == "conflict" || ($type == "any" && !$this->ctype);
     }
     function load_state($state) {
         global $Conf;
-        $result = $Conf->qe("select paperId, contactId from PaperConflict");
+        $result = $Conf->qe("select paperId, contactId, conflictType from PaperConflict where conflictType>0");
         while (($row = edb_row($result)))
-            $state->load(array("type" => "conflict", "pid" => $row[0], "cid" => $row[1]));
+            $state->load(array("type" => "conflict", "pid" => $row[0], "cid" => $row[1], "_ctype" => $row[2]));
     }
     function apply($pid, $contact, $req, $state) {
         $state->load_type("conflict", $this);
-        $state->remove(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId));
-        if ($this->isadd)
-            $state->add(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId));
+        $res = $state->remove(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId));
+        if (count($res) && $res[0]["_ctype"] >= CONFLICT_AUTHOR)
+            $state->add($res[0]);
+        else if ($this->ctype)
+            $state->add(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId, "_ctype" => $this->ctype));
     }
     function realize($old, $new, $cmap) {
         $x = $new ? $new : $old;
-        return new ConflictAssigner($x["pid"], $cmap->get_id($x["cid"]), !!$x);
+        return new ConflictAssigner($x["pid"], $cmap->get_id($x["cid"]), $new ? $new["_ctype"] : 0);
     }
     function unparse_display() {
         global $Conf;
         $t = Text::name_html($this->contact) . ' ';
-        if ($this->isadd)
+        if ($this->ctype)
             $t .= review_type_icon(-1);
         else
             $t .= '(remove conflict)';
@@ -326,10 +328,10 @@ class ConflictAssigner extends Assigner {
     }
     function execute($when) {
         global $Conf;
-        if ($this->isadd)
-            $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($this->pid,$this->cid," . CONFLICT_CHAIRMARK . ") on duplicate key update conflictType=greatest(conflictType,values(conflictType))");
+        if ($this->ctype)
+            $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($this->pid,$this->cid,$this->ctype) on duplicate key update conflictType=values(conflictType)");
         else
-            $Conf->qe("delete from PaperConflict where paperId=$this->pid and contactId=$this->cid and conflictType<" . CONFLICT_AUTHOR);
+            $Conf->qe("delete from PaperConflict where paperId=$this->pid and contactId=$this->cid");
     }
 }
 
@@ -342,8 +344,8 @@ Assigner::register("lead", new LeadAssigner(0, null, "lead", true));
 Assigner::register("nolead", new LeadAssigner(0, null, "lead", false));
 Assigner::register("shepherd", new LeadAssigner(0, null, "shepherd", true));
 Assigner::register("noshepherd", new LeadAssigner(0, null, "shepherd", false));
-Assigner::register("conflict", new ConflictAssigner(0, null, true));
-Assigner::register("noconflict", new ConflictAssigner(0, null, false));
+Assigner::register("conflict", new ConflictAssigner(0, null, CONFLICT_CHAIRMARK));
+Assigner::register("noconflict", new ConflictAssigner(0, null, 0));
 
 class AssignmentSet {
     private $assigners = array();
@@ -398,9 +400,9 @@ class AssignmentSet {
     private function set_my_conflicts() {
         global $Conf, $Me;
         if ($Conf->sversion >= 51)
-            $result = $Conf->qe("select p.paperId, p.managerContactId from Paper p join PaperConflict c on (c.paperId=p.paperId) where c.conflictType!=0 and c.contactId=$Me->cid");
+            $result = $Conf->qe("select Paper.paperId, managerContactId from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId) where conflictType>0 and PaperConflict.contactId=$Me->cid");
         else
-            $result = $Conf->qe("select paperId, 0 from PaperConflict where conflictType!=0 and contactId=$Me->cid");
+            $result = $Conf->qe("select paperId, 0 from PaperConflict where conflictType>0 and contactId=$Me->cid");
         $this->my_conflicts = array();
         while (($row = edb_row($result)))
             $this->my_conflicts[$row[0]] = ($row[1] ? $row[1] : true);
