@@ -683,18 +683,10 @@ function downloadAllRevpref() {
     $pc = pcMembers();
     while (($prow = PaperInfo::fetch($result, $Me))) {
         $out = array();
-        if ($prow->allReviewerPreference != "")
-            foreach (explode(",", $prow->allReviewerPreference) as $t) {
-                list($pcid, $pref) = explode(" ", $t);
-                if (isset($pc[$pcid]))
-                    $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, $pref);
-            }
-        if ($prow->allConflictType != "")
-            foreach (explode(",", $prow->allConflictType) as $t) {
-                list($pcid, $ctype) = explode(" ", $t);
-                if (isset($pc[$pcid]) && $ctype > 0)
-                    $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, "conflict");
-            }
+        foreach (array_intersect_key($prow->reviewer_preferences(), $pc) as $pcid => $pref)
+            $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, $pref);
+        foreach (array_intersect_key($prow->conflicts(), $pc) as $pcid => $conf)
+            $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, "conflict");
         ksort($out);
         arrayappend($texts[$paperselmap[$prow->paperId]], $out);
     }

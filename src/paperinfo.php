@@ -146,4 +146,69 @@ class PaperInfo {
             $this->load_tags();
         return $this->paperTags && strpos($this->paperTags, " $tag#") !== false;
     }
+
+    private function load_topics() {
+        global $Conf;
+        $result = $Conf->qe("select group_concat(topicId) from PaperTopic where paperId=$this->paperId");
+        $row = edb_row($result);
+        $this->topicIds = $row ? $row[0] : "";
+    }
+
+    public function topics() {
+        if (!property_exists($this, "topicIds"))
+            $this->load_topics();
+        $x = array();
+        if ($this->topicIds !== "" && $this->topicIds !== null)
+            foreach (explode(",", $this->topicIds) as $topic)
+                $x[] = (int) $topic;
+        return $x;
+    }
+
+    private function load_conflicts($email) {
+        global $Conf;
+        $this->conflicts_ = array();
+        if (!$email && isset($this->allConflictType)) {
+            foreach (explode(",", $this->allConflictType) as $x) {
+                list($cid, $ct) = explode(" ", $x);
+                if ($ct > 0)
+                    $this->conflicts_[(int) $cid] = (object) array("contactId" => (int) $cid, "conflictType" => (int) $ct);
+            }
+        } else {
+            $result = $Conf->qe("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId");
+            while (($row = edb_orow($result))) {
+                $row->contactId = (int) $row->contactId;
+                $row->conflictType = (int) $row->conflictType;
+                if ($row->conflictType > 0)
+                    $this->conflicts_[$row->contactId] = $row;
+            }
+            $this->conflicts_email_ = true;
+        }
+    }
+
+    public function conflicts($email = false) {
+        if ($email ? !@$this->conflicts_email_ : !isset($this->conflicts_))
+            $this->load_conflicts($email);
+        return $this->conflicts_;
+    }
+
+    private function load_reviewer_preferences() {
+        global $Conf;
+        $result = $Conf->qe("select group_concat(concat(contactId,' ',preference)) from PaperReviewPreference where paperId=$this->paperId");
+        $row = edb_row($result);
+        $this->allReviewerPreference = $row ? $row[0] : null;
+    }
+
+    public function reviewer_preferences() {
+        if (!property_exists($this, "allReviewerPreference"))
+            $this->load_reviewer_preferences();
+        $x = array();
+        if ($this->allReviewerPreference !== "" && $this->allReviewerPreference !== null) {
+            $p = preg_split('/[ ,]/', $this->allReviewerPreference);
+            for ($i = 0; $i < count($p); $i += 2) {
+                if ($p[$i + 1] != 0)
+                    $x[(int) $p[$i]] = (int) $p[$i + 1];
+            }
+        }
+        return $x;
+    }
 }

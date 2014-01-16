@@ -696,10 +696,10 @@ class PCConflictListPaperColumn extends PaperColumn {
         return "PC conflicts";
     }
     public function content($pl, $row) {
-        $x = "," . $row->allConflictType;
+        $conf = $row->conflicts();
         $y = array();
-        foreach (pcMembers() as $pc)
-            if (strpos($x, "," . $pc->contactId . " ") !== false)
+        foreach (pcMembers() as $id => $pc)
+            if (@$conf[$id])
                 $y[] = Text::name_html($pc);
         return join(", ", $y);
     }

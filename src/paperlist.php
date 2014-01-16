@@ -216,21 +216,15 @@ class PaperList extends BaseList {
 	// reviewer preferences
 	$prefs = array();
 	if (isset($row->allReviewerPreference))
-	    foreach (explode(',', $row->allReviewerPreference) as $rp) {
-		$what = explode(' ', $rp);
-		if (count($what) == 2 && $what[1])
-		    $prefs[$what[0]] = $what[1];
-	    }
+            foreach ($row->review_preferences() as $cid => $pref)
+                $prefs[$what[0]] = $what[1];
 	// if conflict, reviewer preference is set to "X"
 	if (isset($row->allConflictType))
-	    foreach (explode(',', $row->allConflictType) as $rp) {
-		$what = explode(' ', $rp);
-		if (count($what) == 2 && $what[1])
-		    $prefs[$what[0]] = false;
-	    }
+            foreach ($row->conflicts() as $cid => $conf)
+                $prefs[$cid] = false;
 	// topic interest scores (except for conflicts)
 	if (isset($row->topicIds) && $row->topicIds != "") {
-	    $topicids = explode(" ", $row->topicIds);
+	    $topicids = explode(",", $row->topicIds);
 	    foreach (pcMembers() as $pcid => $pc) {
 		$pref = defval($prefs, $pcid, 0);
 		if ($pref !== false) {
