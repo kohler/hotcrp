@@ -378,12 +378,6 @@ class ReviewForm {
 	return $field;
     }
 
-    function unparseOption($field, $value, $preserveEmpty = false,
-			   $scclass = false) {
-	$f = defval($this->fmap, $field);
-        return $f ? $f->unparse_value($value, $scclass) : $value;
-    }
-
     public function field($id) {
         if (isset($this->fmap[$id]))
             return $this->fmap[$id];
