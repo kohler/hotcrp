@@ -74,9 +74,9 @@ class Mailer {
     public static $mailHeaders = array("cc" => "Cc", "bcc" => "Bcc",
                                        "replyto" => "Reply-To");
 
-    var $row;
-    var $contact;
-    var $permissionContact;
+    private $row;
+    private $contact;
+    private $permissionContact;
     var $contacts;
     var $hideSensitive;
     var $hideReviews;
@@ -363,7 +363,7 @@ class Mailer {
 	}
 
 	if ($what == "%REVIEWS%")
-	    return $this->getReviews($this->contact, false);
+	    return $this->get_reviews(false);
 	if ($what == "%COMMENTS%")
 	    return $this->getComments($this->contact);
 
@@ -457,25 +457,22 @@ class Mailer {
 	return $text . $rest;
     }
 
-    function getReviews($contact, $finalized) {
+    private function get_reviews($finalized) {
 	global $Conf;
 	if ($this->hideReviews)
 	    return "[Reviews are hidden since you have incomplete reviews of your own.]";
 
-	$result = $Conf->qe("select Paper.title, PaperReview.*,
-		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email,
-		conflictType, ContactReview.reviewType myReviewType
+	$result = $Conf->qe("select PaperReview.*,
+		ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
 		from PaperReview
-		join Paper using (paperId)
 		join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
-		left join PaperConflict on (PaperConflict.contactId=$contact->contactId and PaperConflict.paperId=PaperReview.paperId)
-		left join PaperReview as ContactReview on (ContactReview.contactId=$contact->contactId and ContactReview.paperId=PaperReview.paperId)
 		where PaperReview.paperId=" . $this->row->paperId . " order by reviewOrdinal", "while retrieving reviews");
         $rf = reviewForm();
         $text = "";
         while (($row = edb_orow($result)))
             if ($row->reviewSubmitted)
-                $text .= $rf->prettyTextForm($row, $row, $contact, true) . "\n";
+                $text .= $rf->prettyTextForm($this->row, $row,
+                                             $this->contact, true) . "\n";
         return $text;
     }
 

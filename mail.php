@@ -266,7 +266,7 @@ function checkMail($send) {
     $cbcount = 0;
     $preperrors = array();
     $revinform = ($_REQUEST["recipients"] == "newpcrev" ? array() : null);
-    while (($row = edb_orow($result))) {
+    while (($row = PaperInfo::fetch($result, $Me))) {
 	$nrows_left--;
 	if ($nrows_left % 5 == 0)
 	    $nrows_print = true;
