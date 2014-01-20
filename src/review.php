@@ -158,8 +158,10 @@ class ReviewField {
     public function unparse_value($value, $scclass = false) {
         if (is_object($value))
             $value = defval($value, $this->id);
-	if (!$value || !$this->has_options)
+	if (!$this->has_options)
             return $value;
+        else if (!$value)
+            return "";
         else if (!$this->option_letter)
 	    $x = $value;
 	else if (is_int($value) || ctype_digit($value))
