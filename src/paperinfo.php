@@ -92,8 +92,7 @@ class PaperInfo {
         return $old_cimap;
     }
 
-    public function assign_contact_info($row, $cid = null) {
-        $cid = $cid ? $cid : $row->contactId;
+    public function assign_contact_info($row, $cid) {
         $this->contact_info_[$cid] = PaperContactInfo::load_my($row);
     }
 

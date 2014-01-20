@@ -723,7 +723,7 @@ class Mailer {
 
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
-            $row->assign_contact_info($contact);
+            $row->assign_contact_info($contact, $contact->contactId);
 	    Mailer::send($template, $row, Contact::make($contact), $otherContact, $rest);
 	    $contacts[] = Text::user_html($contact);
 	}
@@ -760,7 +760,7 @@ class Mailer {
 
 	$contacts = array();
 	while (($contact = edb_orow($result))) {
-	    $row->assign_contact_info($contact);
+	    $row->assign_contact_info($contact, $contact->contactId);
 	    Mailer::send($template, $row, Contact::make($contact), $otherContact, $rest);
 	    $contacts[] = Text::user_html($contact);
 	}

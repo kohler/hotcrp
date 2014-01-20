@@ -903,7 +903,7 @@ function genericWatch($prow, $watchtype, $callback) {
     $method = is_array($callback) ? $callback[1] : null;
     foreach ($watchers as $row) {
 	$minic = Contact::make($row);
-        $prow->assign_contact_info($row);
+        $prow->assign_contact_info($row, $row->contactId);
         if ($method)
             $callback[0]->$method($prow, $minic);
         else
