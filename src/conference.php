@@ -135,11 +135,9 @@ class Conference {
 	if (!isset($this->settings["rev_blind"]))
 	    $this->settings["rev_blind"] = BLIND_ALWAYS;
 	if (!isset($this->settings["seedec"])) {
-	    $au = defval($this->settings, "au_seedec", false);
-	    $re = defval($this->settings, "rev_seedec", false);
-	    if ($au)
+	    if (@$this->settings["au_seedec"])
 		$this->settings["seedec"] = SEEDEC_ALL;
-	    else if ($re)
+	    else if (@$this->settings["rev_seedec"])
 		$this->settings["seedec"] = SEEDEC_REV;
 	}
 	if ($this->settings["pc_seeall"] && !$this->timeFinalizePaper())
