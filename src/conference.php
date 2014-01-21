@@ -1678,9 +1678,7 @@ class Conference {
 	if ($Me->privChair
 	    && (!isset($Me->_updatecheck) || $Me->_updatecheck + 20 <= $Now)
 	    && (!isset($Opt["updatesSite"]) || $Opt["updatesSite"])) {
-	    $m = defval($Opt, "updatesSite", "http://hotcrp.lcdf.org/updates");
-            if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off")
-                $m = preg_replace(',\Ahttp://,', "https://", $m);
+	    $m = defval($Opt, "updatesSite", "//hotcrp.lcdf.org/updates");
 	    $m .= (strpos($m, "?") === false ? "?" : "&") . "version=" . HOTCRP_VERSION
                 . "&addr=" . urlencode($_SERVER["SERVER_ADDR"])
                 . "&base=" . urlencode($ConfSiteBase);
