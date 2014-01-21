@@ -53,14 +53,6 @@ class Conference {
 
         // load current settings
 	$this->load_settings();
-
-        // set conferenceKey
-        if (!isset($Opt["conferenceKey"])) {
-            if (!isset($this->settingTexts["conf_key"])
-                && ($key = hotcrp_random_bytes(32)) !== "")
-                $this->save_setting("conf_key", 1, $key);
-            $Opt["conferenceKey"] = defval($this->settingTexts, "conf_key", "");
-        }
     }
 
     static function make_dsn($opt) {
@@ -109,9 +101,12 @@ class Conference {
 
     function load_settings() {
 	global $Opt, $OK;
+
+        // load settings from database
 	$this->settings = array();
 	$this->settingTexts = array();
 	$this->deadline_cache = null;
+
 	$result = $this->q("select name, value, data from Settings");
 	while ($result && ($row = $result->fetch_row())) {
 	    $this->settings[$row[0]] = (int) $row[1];
@@ -120,6 +115,8 @@ class Conference {
 	    if (substr($row[0], 0, 4) == "opt.")
 		$Opt[substr($row[0], 4)] = ($row[2] === null ? $row[1] : $row[2]);
 	}
+
+        // clean settings, enforce invariants
 	foreach (array("pc_seeall", "pcrev_any", "extrev_view", "rev_notifychair") as $x)
 	    if (!isset($this->settings[$x]))
 		$this->settings[$x] = 0;
@@ -145,6 +142,8 @@ class Conference {
 		if ($r != "")
 		    $this->settings["rounds"][] = $r;
 	}
+
+        // update schema
         if ($this->settings["allowPaperOption"] < 67) {
 	    require_once("updateschema.php");
 	    $oldOK = $OK;
@@ -152,16 +151,30 @@ class Conference {
 	    $OK = $oldOK;
 	}
 	$this->sversion = $this->settings["allowPaperOption"];
+
+        // invalidate caches after loading from backup
 	if (isset($this->settings["frombackup"])
             && $this->invalidateCaches()) {
 	    $this->qe("delete from Settings where name='frombackup' and value=" . $this->settings["frombackup"]);
 	    unset($this->settings["frombackup"]);
 	} else
             $this->invalidateCaches(array("rf" => true));
+
+        // update options
 	if (isset($Opt["ldapLogin"]) && !$Opt["ldapLogin"])
 	    unset($Opt["ldapLogin"]);
 	if (isset($Opt["httpAuthLogin"]) && !$Opt["httpAuthLogin"])
 	    unset($Opt["httpAuthLogin"]);
+
+        // set conferenceKey
+        if (!isset($Opt["conferenceKey"])) {
+            if (!isset($this->settingTexts["conf_key"])
+                && ($key = hotcrp_random_bytes(32)) !== "")
+                $this->save_setting("conf_key", 1, $key);
+            $Opt["conferenceKey"] = defval($this->settingTexts, "conf_key", "");
+        }
+
+        // GC old capabilities
         if ($this->sversion >= 58
             && defval($this->settings, "capability_gc", 0) < time() - 86400) {
             $now = time();
