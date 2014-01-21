@@ -14,8 +14,6 @@ class Conference {
 
     private $save_messages = true;
     var $headerPrinted;
-    var $tableMessages;
-    var $tableMessagesObj;
 
     var $scriptStuff;
     var $footerStuff;
@@ -27,7 +25,6 @@ class Conference {
 	global $Opt;
 
 	$this->headerPrinted = 0;
-	$this->tableMessages = false;
 	$this->scriptStuff = "";
 	$this->footerStuff = "";
 	$this->footerScripting = false;
@@ -1490,12 +1487,7 @@ class Conference {
 	if ($this->save_messages) {
 	    ensure_session();
 	    $_SESSION["msgs"][] = $x;
-	} else if ($this->tableMessages)
-	    echo "<tr>
-  <td class='caption'></td>
-  <td class='entry' colspan='", $this->tableMessages, "'>", $x, "</td>
-</tr>\n\n";
-	else
+	} else
 	    echo $x;
     }
 
@@ -1517,16 +1509,10 @@ class Conference {
     }
 
     function errorMsgExit($text) {
-	$this->closeTableMessages();
 	if ($text)
 	    $this->msg($text, 'merror');
 	$this->footer();
 	exit;
-    }
-
-    function tableMsg($colspan, $obj = null) {
-	$this->tableMessages = $colspan;
-	$this->tableMessagesObj = $obj;
     }
 
     function tagRoundLocker($dolocker) {
@@ -1735,22 +1721,8 @@ class Conference {
 	}
     }
 
-    function closeTableMessages() {
-	if ($this->tableMessages) {
-	    echo "<tr>
-  <td class='caption final'></td>
-  <td class='entry final' colspan='2'></td>
-</tr>
-</table>\n\n";
-	    if ($this->tableMessagesObj)
-		$this->tableMessagesObj->echoDivExit();
-	    $this->tableMessages = false;
-	}
-    }
-
     function footer() {
 	global $Opt, $Me, $ConfSitePATH;
-	$this->closeTableMessages();
 	echo "</div>\n", // class='body'
 	    "<div id='footer'>\n  <div id='footer_crp'>",
 	    defval($Opt, "extraFooter", ""),
