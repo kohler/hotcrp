@@ -87,7 +87,7 @@ set_myargs "$DBUSER" "$PASSWORD"
 
 
 if ! (echo 'show databases;' | eval $MYSQL $myargs $FLAGS >/dev/null); then
-    echo "Could not run $MYSQL $myargs_redacted $FLAGS. Did you enter the right password?" 1>&2
+    echo "* Could not run $MYSQL $myargs_redacted $FLAGS. Did you enter the right password?" 1>&2
     exit 1
 fi
 grants=`echo 'show grants;' | eval $MYSQL $myargs $FLAGS | grep -i -e create -e all | grep -i 'on \*\.\*'`
@@ -134,13 +134,13 @@ while true; do
     c="`echo_dbname | wc -c`"
     if test -z "$DBNAME"; then
 	echo 1>&2
-	echo "You must enter a database name." 1>&2
+	echo "* You must enter a database name." 1>&2
     elif test -n "$x"; then
 	echo 1>&2
-	echo "The database name must only contain characters in [-.a-zA-Z0-9_]." 1>&2
+	echo "* The database name must only contain characters in [-.a-zA-Z0-9_]." 1>&2
     elif test "$c" -gt 16; then
 	echo 1>&2
-	echo "The database name can be at most 16 characters long." 1>&2
+	echo "* The database name can be at most 16 characters long." 1>&2
     else
 	break
     fi
