@@ -182,13 +182,12 @@ class Contact {
         global $Conf, $Opt;
 
         // Set capability key (should happen only first time)
-        if (!$Conf->setting("cap_key")) {
-            $key = hotcrp_random_bytes(16);
-            if ($key && ($key = base64_encode($key))
-                && $Conf->qx("insert into Settings (name, value, data) values ('cap_key', 1, '" . sqlq($key) . "')"))
-                $Conf->updateSettings();
-            else
-                return ($Opt["disableCapabilities"] = true);
+        if (!$Conf->setting("cap_key")
+            && !(($key = hotcrp_random_bytes(16))
+                 && ($key = base64_encode($key))
+                 && $Conf->save_setting("cap_key", 1, $key))) {
+            $Opt["disableCapabilities"] = true;
+            return;
         }
 
         // Add capabilities from session

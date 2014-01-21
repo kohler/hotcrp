@@ -130,10 +130,8 @@ class PaperActions {
 	    $field = $type . "ContactId";
 	    if ($contactId != $prow->$field) {
 		$Conf->qe("update Paper set $field=$contactId where paperId=$prow->paperId", "while updating $type");
-		if (!$Conf->setting("paperlead")) {
-		    $Conf->qe("insert into Settings (name, value) values ('paperlead', 1) on duplicate key update value=1");
-		    $Conf->updateSettings();
-		}
+		if (!$Conf->setting("paperlead"))
+                    $Conf->save_setting("paperlead", 1);
 		if ($OK)
 		    $Conf->log("set $type to " . $_REQUEST[$type], $Me, $prow->paperId);
 	    }

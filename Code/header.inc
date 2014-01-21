@@ -366,9 +366,8 @@ initialize_user();
 // Set conference key
 function setConferenceKey() {
     global $Conf;
-    if (($key = hotcrp_random_bytes(32))
-	&& $Conf->qx("insert into Settings (name, value, data) values ('conf_key', 1, '" . sqlq($key) . "')"))
-	$Conf->updateSettings();
+    if (($key = hotcrp_random_bytes(32)))
+        $Conf->save_setting("conf_key", 1, $key);
 }
 
 if (!isset($Opt["conferenceKey"])) {
