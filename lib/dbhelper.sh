@@ -9,9 +9,12 @@ echo_n () {
 }
 
 findoptions () {
-    if test -r "${CONFDIR}options.php"; then echo "${CONFDIR}options.php"
+    if test -n "$options_file" -a \( -r "$options_file" -o -n "$1" \); then echo "$options_file"
+    elif test -n "$options_file"; then echo /dev/null; return 1
+    elif test -r "${CONFDIR}options.php" -o -n "$1"; then echo "${CONFDIR}options.php"
     elif test -r "${CONFDIR}options.inc"; then echo "${CONFDIR}options.inc"
-    elif test -r "${OLDCONFDIR}options.inc"; then echo "${OLDCONFDIR}options.inc"; fi
+    elif test -r "${OLDCONFDIR}options.inc"; then echo "${OLDCONFDIR}options.inc"
+    else echo /dev/null; return 1; fi
 }
 
 getdbopt () {

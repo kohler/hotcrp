@@ -12,17 +12,27 @@ export PROG=$0
 export FLAGS=
 structure=false
 pc=false
+options_file=
 while [ $# -gt 0 ]; do
     case "$1" in
     --structure|--schema) structure=true;;
     --pc) pc=true;;
+    -c|--co|--con|--conf|--confi|--config)
+        test "$#" -gt 1 -a -z "$options_file" || usage
+        options_file="$2"; shift;;
+    -c*)
+        test -z "$options_file" || usage
+        options_file="`echo "$1" | sed 's/^-c//'`";;
+    --co=*|--con=*|--conf=*|--confi=*|--config=*)
+        test -z "$options_file" || usage
+        options_file="`echo "$1" | sed 's/^[^=]*=//'`";;
     -*)	FLAGS="$FLAGS $1";;
-    *)	echo "Usage: $PROG [--schema] [--pc] [MYSQL-OPTIONS]" 1>&2; exit 1;;
+    *)	echo "Usage: $PROG [-c CONFIGFILE] [--schema] [--pc] [MYSQL-OPTIONS]" 1>&2; exit 1;;
     esac
     shift
 done
 
-if [ -z "`findoptions`" ]; then
+if ! findoptions >/dev/null; then
     echo "backupdb.sh: Can't read options file! Is this a CRP directory?" 1>&2
     exit 1
 fi

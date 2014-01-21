@@ -9,7 +9,7 @@ else LIBDIR=`echo "$0" | sed 's,^\(.*/\)[^/]*$,\1,'`; fi
 . ${LIBDIR}dbhelper.sh
 
 usage () {
-    echo "Usage: $PROG [MYSQL-OPTIONS] BACKUPFILE" 1>&2
+    echo "Usage: $PROG [-c CONFIGFILE] [MYSQL-OPTIONS] BACKUPFILE" 1>&2
     exit 1
 }
 
@@ -17,15 +17,25 @@ export PROG=$0
 export FLAGS=""
 input=
 inputfilter=
+options_file=
 while [ $# -gt 0 ]; do
     case "$1" in
+    -c|--co|--con|--conf|--confi|--config)
+        test "$#" -gt 1 -a -z "$options_file" || usage
+        options_file="$2"; shift;;
+    -c*)
+        test -z "$options_file" || usage
+        options_file="`echo "$1" | sed 's/^-c//'`";;
+    --co=*|--con=*|--conf=*|--confi=*|--config=*)
+        test -z "$options_file" || usage
+        options_file="`echo "$1" | sed 's/^[^=]*=//'`";;
     -*)	FLAGS="$FLAGS $1";;
     *)	if [ -z "$input" ]; then input="$1"; else usage; fi;;
     esac
     shift
 done
 
-if [ -z "`findoptions`" ]; then
+if ! findoptions >/dev/null; then
     echo "restoredb.sh: Can't read options file! Is this a CRP directory?" 1>&2
     exit 1
 elif [ -n "$input" ]; then

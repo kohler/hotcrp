@@ -11,7 +11,7 @@ export PROG=$0
 
 usage () {
     if [ -z "$1" ]; then status=1; else status=$1; fi
-    echo "Usage: $PROG [MYSQL-OPTIONS]
+    echo "Usage: $PROG [-c CONFIGFILE] [MYSQL-OPTIONS]
        $PROG --show-password EMAIL
        $PROG --set-password EMAIL PASSWORD
        $PROG --create-user EMAIL [COLUMN=VALUE...]" |
@@ -27,6 +27,7 @@ makeuservals=
 pwuser=
 pwvalue=
 cmdlinequery=
+options_file=
 while [ $# -gt 0 ]; do
     case "$1" in
     --show-password=*)
@@ -38,6 +39,15 @@ while [ $# -gt 0 ]; do
     --set-password)
         test "$#" -eq 3 -a -z "$mode" || usage
         pwuser="$2"; pwvalue="$3"; shift; shift; mode=setpw;;
+    -c|--co|--con|--conf|--confi|--config)
+        test "$#" -gt 1 -a -z "$options_file" || usage
+        options_file="$2"; shift;;
+    -c*)
+        test -z "$options_file" || usage
+        options_file="`echo "$1" | sed 's/^-c//'`";;
+    --co=*|--con=*|--conf=*|--confi=*|--config=*)
+        test -z "$options_file" || usage
+        options_file="`echo "$1" | sed 's/^[^=]*=//'`";;
     --create-user)
         test "$#" -gt 1 -a -z "$mode" || usage
         makeuser="$2"; mode=makeuser; shift;;
@@ -66,7 +76,7 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ -z "`findoptions`" ]; then
+if ! findoptions >/dev/null; then
     echo "runsql.sh: Can't read options file! Is this a CRP directory?" 1>&2
     exit 1
 fi

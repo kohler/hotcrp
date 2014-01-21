@@ -11,7 +11,7 @@ else LIBDIR=`echo "$0" | sed 's,^\(.*/\)[^/]*$,\1,'`; fi
 help () {
     echo "${LIBDIR}createdb.sh performs MySQL database setup for HotCRP."
     echo
-    echo "Usage: ${LIBDIR}createdb.sh [MYSQLOPTIONS] [DBNAME]"
+    echo "Usage: ${LIBDIR}createdb.sh [-c CONFIGFILE] [MYSQLOPTIONS] [DBNAME]"
     echo
     echo "MYSQLOPTIONS are sent to mysql and mysqladmin."
     echo "Common options include '--user=ADMIN_USERNAME' and '--password=ADMIN_PASSWORD'"
@@ -25,37 +25,48 @@ DBUSER=""
 DBNAME=""
 PASSWORD=""
 distoptions_file=distoptions.php
+options_file=
 needpassword=false
 force=false
 while [ $# -gt 0 ]; do
     case "$1" in
     -p|--pas|--pass|--passw|--passwo|--passwor|--password)
-	needpassword=true; shift;;
+	needpassword=true;;
     -u|--us|--use|--user)
-        DBUSER="$2"; shift 2;;
+        DBUSER="$2"; shift;;
     -u*)
-        DBUSER="`echo "$1" | sed s/^-u//`"; shift;;
+        DBUSER="`echo "$1" | sed s/^-u//`";;
     --u=*|--us=*|--use=*|--user=*)
-	DBUSER="`echo "$1" | sed 's/^[^=]*=//'`"; shift;;
+	DBUSER="`echo "$1" | sed 's/^[^=]*=//'`";;
     -p*)
-        PASSWORD="`echo "$1" | sed s/^-p//`"; shift;;
+        PASSWORD="`echo "$1" | sed s/^-p//`";;
     --pas=*|--pass=*|--passw=*|--passwo=*|--passwor=*|--password=*)
-        PASSWORD="`echo "$1" | sed 's/^[^=]*=//'`"; shift;;
+        PASSWORD="`echo "$1" | sed 's/^[^=]*=//'`";;
     --he|--hel|--help)
 	help;;
     --force)
-        force=true; shift;;
+        force=true;;
+    -c|--co|--con|--conf|--confi|--config)
+        test "$#" -gt 1 -a -z "$options_file" || usage
+        options_file="$2"; shift;;
+    -c*)
+        test -z "$options_file" || usage
+        options_file="`echo "$1" | sed 's/^-c//'`";;
+    --co=*|--con=*|--conf=*|--confi=*|--config=*)
+        test -z "$options_file" || usage
+        options_file="`echo "$1" | sed 's/^[^=]*=//'`";;
     -*)
-	FLAGS="$FLAGS '$1'"; shift;;
+	FLAGS="$FLAGS '$1'";;
     *)
 	if [ -z "$DBNAME" ]; then
-	    DBNAME="$1"; shift
+	    DBNAME="$1"
 	else
 	    echo "Usage: $PROG [MYSQLOPTIONS]" 1>&2
 	    echo "Type ${LIBDIR}createdb.sh --help for more information." 1>&2
 	    exit 1
 	fi;;
     esac
+    shift
 done
 
 ### Test mysql binary
@@ -381,18 +392,20 @@ is_group_member () {
     fi
 }
 
-expected_options="${CONFDIR}options.php"
-if [ -n "`findoptions`" ]; then
+expected_options="`findoptions expected`"
+current_options="`findoptions`"
+if findoptions >/dev/null; then
     echo
-    echo "* Your `findoptions` file already exists."
+    echo "* Your $current_options file already exists."
     echo "* Edit it to use the database name, username, and password you chose."
-    if [ "`findoptions`" != "$expected_options" ]; then
+    if [ "$current_options" != "$expected_options" ]; then
         echo
         echo "* Also, the new location for the options file is $expected_options."
-        echo "* You should move `findoptions` there."
+        echo "* You should move $current_options there."
     fi
     echo
 elif [ -r "${SRCDIR}${distoptions_file}" ]; then
+    echo
     echo "Creating $expected_options..."
     create_options > "$expected_options"
     if [ -n "$SUDO_USER" ]; then
