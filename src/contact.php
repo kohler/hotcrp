@@ -666,9 +666,10 @@ class Contact {
         // check first whether administration is allowed
         if (@$ci->rights_version != $this->rights_version_) {
             $ci->allow_administer = false;
-            if (!($prow->managerContactId
-                  && $prow->managerContactId != $this->contactId
-                  && $ci->conflict_type)
+            if ($this->contactId > 0
+                && !($prow->managerContactId
+                     && $prow->managerContactId != $this->contactId
+                     && $ci->conflict_type)
                 && ($this->privChair
                     || $prow->managerContactId == $this->contactId))
                 $ci->allow_administer = true;
