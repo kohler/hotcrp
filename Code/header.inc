@@ -363,20 +363,6 @@ global $Me;
 initialize_user();
 
 
-// Set conference key
-function setConferenceKey() {
-    global $Conf;
-    if (($key = hotcrp_random_bytes(32)))
-        $Conf->save_setting("conf_key", 1, $key);
-}
-
-if (!isset($Opt["conferenceKey"])) {
-    if (!isset($Conf->settingTexts["conf_key"]))
-	setConferenceKey();
-    $Opt["conferenceKey"] = defval($Conf->settingTexts, "conf_key", "");
-}
-
-
 // Extract an error that we redirected through
 if (isset($_SESSION["redirect_error"])) {
     global $Error;

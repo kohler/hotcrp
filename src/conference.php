@@ -70,6 +70,14 @@ class Conference {
 
         // load current settings
 	$this->updateSettings();
+
+        // set conferenceKey
+        if (!isset($Opt["conferenceKey"])) {
+            if (!isset($this->settingTexts["conf_key"])
+                && ($key = hotcrp_random_bytes(32)) !== "")
+                $this->save_setting("conf_key", 1, $key);
+            $Opt["conferenceKey"] = defval($this->settingTexts, "conf_key", "");
+        }
     }
 
     static function make_dsn($opt) {
