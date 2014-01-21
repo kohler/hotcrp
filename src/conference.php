@@ -12,7 +12,7 @@ class Conference {
     var $sversion;
     private $deadline_cache = null;
 
-    var $saveMessages;
+    private $save_messages = true;
     var $headerPrinted;
     var $tableMessages;
     var $tableMessagesObj;
@@ -26,7 +26,6 @@ class Conference {
     function __construct($dsn) {
 	global $Opt;
 
-	$this->saveMessages = true;
 	$this->headerPrinted = 0;
 	$this->tableMessages = false;
 	$this->scriptStuff = "";
@@ -69,7 +68,7 @@ class Conference {
             $Opt["downloadPrefix"] = $dbname . "-";
 
         // load current settings
-	$this->updateSettings();
+	$this->load_settings();
 
         // set conferenceKey
         if (!isset($Opt["conferenceKey"])) {
@@ -122,13 +121,13 @@ class Conference {
     // Initialization functions
     //
 
-    function updateSettings() {
+    function load_settings() {
 	global $Opt, $OK;
 	$this->settings = array();
 	$this->settingTexts = array();
 	$this->deadline_cache = null;
 	$result = $this->q("select name, value, data from Settings");
-	while (($row = edb_row($result))) {
+	while ($result && ($row = $result->fetch_row())) {
 	    $this->settings[$row[0]] = (int) $row[1];
 	    if ($row[2] !== null)
 		$this->settingTexts[$row[0]] = $row[2];
@@ -183,6 +182,7 @@ class Conference {
             $this->q("delete from Capability where timeExpires>0 and timeExpires<$now");
             $this->q("delete from CapabilityMap where timeExpires>0 and timeExpires<$now");
             $this->q("insert into Settings (name, value) values ('capability_gc', $now) on duplicate key update value=values(value)");
+            $this->settings["capability_gc"] = $now;
         }
     }
 
@@ -1491,7 +1491,7 @@ class Conference {
 
     function msg($text, $type) {
 	$x = "<div class=\"$type\">$text</div>\n";
-	if ($this->saveMessages) {
+	if ($this->save_messages) {
 	    ensure_session();
 	    $_SESSION["msgs"][] = $x;
 	} else if ($this->tableMessages)
@@ -1712,7 +1712,7 @@ class Conference {
 	    unset($_SESSION["msgs"]);
             echo "<div id=\"initialmsgspacer\"></div>";
 	}
-	$this->saveMessages = false;
+	$this->save_messages = false;
 	echo "</div>\n";
 
 	$this->headerPrinted = 2;
