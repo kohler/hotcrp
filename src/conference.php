@@ -13,23 +13,16 @@ class Conference {
     private $deadline_cache = null;
 
     private $save_messages = true;
-    var $headerPrinted;
+    var $headerPrinted = 0;
 
-    var $scriptStuff;
-    var $footerStuff;
-    var $footerScripting;
-    var $footerMap;
-    var $usertimeId;
+    private $scriptStuff = "";
+    private $footerStuff = "";
+    private $footerScripting = false;
+    private $footerMap = null;
+    private $usertimeId = 1;
 
     function __construct($dsn) {
 	global $Opt;
-
-	$this->headerPrinted = 0;
-	$this->scriptStuff = "";
-	$this->footerStuff = "";
-	$this->footerScripting = false;
-        $this->footerMap = null;
-	$this->usertimeId = 1;
 
 	// unpack dsn and connect to database
         list($this->dblink, $dbname) = self::connect_dsn($dsn);
