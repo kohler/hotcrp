@@ -37,13 +37,7 @@ class Conference {
 	// unpack dsn and connect to database
         list($this->dblink, $dbname) = self::connect_dsn($dsn);
 	if (!$this->dblink)
-	    die("Unable to connect to database at " . self::sanitize_dsn($dsn));
-	$this->dblink->query("set names 'utf8'");
-	// XXX NB: Many MySQL versions, if not all of them, will ignore the
-	// @@max_allowed_packet setting.  Keeping the code in case it's
-	// useful for some installations.
-	$max_file_size = ini_get_bytes("upload_max_filesize");
-	$this->dblink->query("set @@max_allowed_packet = $max_file_size");
+            return;
 
 	// clean up options
         // remove final slash from $Opt["paperSite"]
@@ -111,7 +105,9 @@ class Conference {
 	    $dbname = urldecode($m[4]);
 	} else
             $dblink = $dbname = null;
-	if ($dblink && (mysqli_connect_errno() || !$dblink->select_db($dbname)))
+	if ($dblink && !mysqli_connect_errno() && $dblink->select_db($dbname))
+            $dblink->set_charset("utf8");
+        else
             $dblink = null;
         return array($dblink, $dbname);
     }

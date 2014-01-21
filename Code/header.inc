@@ -239,8 +239,10 @@ function __autoload($class_name) {
 
 // Set up conference options
 global $Opt;
-$Opt = array();
-if ((@include "$ConfSitePATH/conf/options.php") === false // see also `cacheable.php`
+if (!@$Opt)
+    $Opt = array();
+if (!@$Opt["loaded"]
+    && (@include "$ConfSitePATH/conf/options.php") === false // see also `cacheable.php`
     && (@include "$ConfSitePATH/conf/options.inc") === false
     && (@include "$ConfSitePATH/Code/options.inc") === false) {
     if (isset($_REQUEST["ajax"]) && $_REQUEST["ajax"]) {
@@ -254,7 +256,8 @@ if ((@include "$ConfSitePATH/conf/options.php") === false // see also `cacheable
         echo "<p>HotCRP has been installed, but you haven’t yet configured a conference. You must run <code>Code/createdb.sh</code> to create a database for your conference. See <code>README.md</code> for further guidance.</p></body></html>\n";
     }
     exit;
-}
+} else
+    $Opt["loaded"] = true;
 
 // Multi-conference support
 function setMulticonference() {
@@ -291,8 +294,12 @@ if (isset($Opt["multiconference"]) && $Opt["multiconference"])
 
 // Create the conference
 global $Conf;
-$Opt["dsn"] = Conference::make_dsn($Opt);
-$Conf = new Conference($Opt["dsn"]);
+if (!@$Conf) {
+    $Opt["dsn"] = Conference::make_dsn($Opt);
+    $Conf = new Conference($Opt["dsn"]);
+}
+if (!$Conf->dblink)
+    die("Unable to connect to database at " . Conference::sanitize_dsn($Opt["dsn"]) . "\n");
 
 // Set server timezone
 if (function_exists("date_default_timezone_set")) {
