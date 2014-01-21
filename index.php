@@ -81,12 +81,12 @@ if ($Me->privChair) {
     // Weird URLs?
     foreach (array("conferenceSite", "paperSite") as $k)
 	if (isset($Opt[$k]) && $Opt[$k] && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', $Opt[$k]))
-	    $Conf->warnMsg("The <code>\$Opt[\"$k\"]</code> setting, <code>&laquo;" . htmlspecialchars($Opt[$k]) . "&raquo;</code>, is not a valid URL.  Edit the <code>Code/options.inc</code> file to fix this problem.");
+	    $Conf->warnMsg("The <code>\$Opt[\"$k\"]</code> setting, <code>&laquo;" . htmlspecialchars($Opt[$k]) . "&raquo;</code>, is not a valid URL.  Edit the <code>conf/options.php</code> file to fix this problem.");
     // Weird options?
     if (!isset($Opt["shortName"]) || $Opt["shortName"] == "")
-	$Conf->warnMsg("The <code>\$Opt[\"shortName\"]</code> setting is missing. Edit the <code>Code/options.inc</code> file to fix this problem.");
+	$Conf->warnMsg("The <code>\$Opt[\"shortName\"]</code> setting is missing. Edit the <code>conf/options.php</code> file to fix this problem.");
     else if (simplify_whitespace($Opt["shortName"]) != $Opt["shortName"])
-	$Conf->warnMsg("The <code>\$Opt[\"shortName\"]</code> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more). Edit the <code>Code/options.inc</code> file to fix this problem.");
+	$Conf->warnMsg("The <code>\$Opt[\"shortName\"]</code> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more). Edit the <code>conf/options.php</code> file to fix this problem.");
     // Double-encoding bugs found?
     if ($Conf->setting("bug_doubleencoding"))
 	$Conf->warnMsg("Double-encoded URLs have been detected. Incorrect uses of Apache’s <code>mod_rewrite</code>, and other middleware, can encode URL parameters twice. This can cause problems, for instance when users log in via links in email. (“<code>a@b.com</code>” should be encoded as “<code>a%40b.com</code>”; a double encoding will produce “<code>a%2540b.com</code>”.) HotCRP has tried to compensate, but you really should fix the problem. For <code>mod_rewrite</code> add <a href='http://httpd.apache.org/docs/current/mod/mod_rewrite.html'>the <code>[NE]</code> option</a> to the relevant RewriteRule. <a href=\"" . hoturl_post("index", "clearbug=doubleencoding") . "\">(Clear&nbsp;this&nbsp;message)</a>");

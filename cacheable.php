@@ -17,7 +17,10 @@ if ($zlib_output_compression) {
 }
 global $Opt;
 $Opt = array();
-@include "Code/options.inc";
+if ((@include "conf/options.php") === false
+    && (@include "conf/options.inc") === false
+    && (@include "Code/options.inc") === false)
+    error_log("cannot load conf/options.php");
 
 function css_ok($file) {
     global $Opt;

@@ -1,6 +1,6 @@
 <?php
 // conference.php -- HotCRP central helper class (singleton)
-// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class Conference {
@@ -37,7 +37,7 @@ class Conference {
 
 	// unpack dsn and connect to database
 	if (!isset($Opt["dsn"]))
-	    die("Package misconfigured: \$Opt[\"dsn\"] is not set.  Perhaps the web server cannot read <tt>Code/options.inc</tt>?");
+	    die("Package misconfigured: \$Opt[\"dsn\"] is not set. Perhaps the web server cannot read <tt>conf/options.php</tt>?");
 	else if (preg_match('|^mysql://([^:@/]*)/(.*)|', $Opt['dsn'], $m)) {
 	    $this->dblink = new mysqli(urldecode($m[1]));
 	    $dbname = urldecode($m[2]);
@@ -68,7 +68,7 @@ class Conference {
 	// clean up options: remove final slash from $Opt["paperSite"]
 	$Opt["paperSite"] = preg_replace('|/+\z|', '', $Opt["paperSite"]);
 	if (!$Opt["paperSite"])
-	    die("Package misconfigured: \$Opt[\"paperSite\"] is not set.  Perhaps the web server cannot read <tt>Code/options.inc</tt>?");
+	    die("Package misconfigured: \$Opt[\"paperSite\"] is not set. Perhaps the web server cannot read <tt>conf/options.php</tt>?");
     }
 
 

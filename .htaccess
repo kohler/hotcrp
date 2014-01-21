@@ -42,7 +42,7 @@ RewriteRule ^[^/]*(/.*)$ %1.php$1 [L,NE]
 
 # HTTP Authentication: To ask the server to authenticate users,
 # uncomment these lines and set $Opt["httpAuthLogin"] in
-# Code/options.inc. The $Opt["httpAuthLogin"] value should correspond
+# conf/options.php. The $Opt["httpAuthLogin"] value should correspond
 # to your AuthType and AuthName.
 #
 # AuthType Basic

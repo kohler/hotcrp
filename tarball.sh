@@ -76,6 +76,8 @@ style.css
 supersleight.js
 users.php
 
+conf/.htaccess
+
 lib/.htaccess
 lib/backupdb.sh
 lib/cleanxhtml.php
@@ -106,6 +108,7 @@ src/conference.php
 src/conflict.php
 src/contact.php
 src/contactlist.php
+src/distoptions.php
 src/formula.php
 src/helpers.php
 src/hotcrpdocument.php
@@ -124,16 +127,14 @@ src/review.php
 src/reviewformlibrary.json
 src/reviewsetform.php
 src/reviewtable.php
+src/schema.sql
 src/updateschema.php
 
 Code/.htaccess
 Code/banal
-Code/distoptions.inc
 Code/header.inc
 Code/mailtemplate.inc
 Code/sample.pdf
-Code/schema.sql
-Code/updateschema.sql
 
 extra/hotcrp.vim
 

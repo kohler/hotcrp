@@ -24,7 +24,7 @@ FLAGS=""
 DBUSER=""
 DBNAME=""
 PASSWORD=""
-distoptions_file=distoptions.inc
+distoptions_file=distoptions.php
 needpassword=false
 force=false
 while [ $# -gt 0 ]; do
@@ -346,7 +346,7 @@ if [ "$populatedb" = y ]; then
 fi
 
 ##
-## Create options.inc
+## Create options.php
 ##
 
 create_options () {
@@ -381,7 +381,7 @@ is_group_member () {
     fi
 }
 
-expected_options="${CONFDIR}options.inc"
+expected_options="${CONFDIR}options.php"
 if [ -n "`findoptions`" ]; then
     echo
     echo "* Your `findoptions` file already exists."

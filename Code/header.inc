@@ -1,6 +1,6 @@
 <?php
 // header.inc -- HotCRP central helper file; includes other helpers
-// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 define("HOTCRP_VERSION", "2.61");
@@ -240,7 +240,9 @@ function __autoload($class_name) {
 // Set up conference options
 global $Opt;
 $Opt = array();
-if ((@include "$ConfSitePATH/Code/options.inc") == false) {
+if ((@include "$ConfSitePATH/conf/options.php") === false // see also `cacheable.php`
+    && (@include "$ConfSitePATH/conf/options.inc") === false
+    && (@include "$ConfSitePATH/Code/options.inc") === false) {
     if (isset($_REQUEST["ajax"]) && $_REQUEST["ajax"]) {
         if (isset($_REQUEST["jsontext"]) && $_REQUEST["jsontext"])
             header("Content-Type: text/plain");

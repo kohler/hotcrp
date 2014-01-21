@@ -71,13 +71,13 @@ tables, so you may need `sudo lib/createdb.sh OPTIONS`. Run
 decide on a name for your database (no spaces allowed).
 
     The username and password information for the conference database
-is stored in `Code/options.inc`, which HotCRP marks as
+is stored in `conf/options.php`, which HotCRP marks as
 world-unreadable. You must ensure that your web server can read this
 file, for instance by changing its group.
 
-2. Edit `Code/options.inc`, which is annotated to guide you.
+2. Edit `conf/options.php`, which is annotated to guide you.
 (`lib/createdb.sh` creates this file based on
-`Code/distoptions.inc`.)
+`src/distoptions.php`.)
 
 3. Redirect Apache so your server URL will point at the HotCRP
 directory. (If you get an Error 500, see "Configuration notes".) This
@@ -116,8 +116,8 @@ stored in `/etc/php.ini`. The suggested value for this setting is
         session.gc_maxlifetime = 86400
 
     If you want sessions to expire sooner, we recommend you set
-`session.gc_maxlifetime` to 86400 anyway, then edit Code/options.inc to
-set `$Opt["sessionLifetime"]` to the correct session timeout.
+`session.gc_maxlifetime` to 86400 anyway, then edit `conf/options.php`
+to set `$Opt["sessionLifetime"]` to the correct session timeout.
 
 5. Edit MySQL’s my.cnf (typical location: `/etc/mysql/my.cnf`) to ensure
 that MySQL can handle paper-sized objects.  It should contain something
@@ -173,7 +173,7 @@ Updates
 HotCRP code can be updated at any time without bringing down the site.
 If you obtained the code from git, use `git pull`. if you obtained
 the code from a tarball, copy the new version over your old code,
-preserving `Code/options.inc`. For instance, using GNU tar:
+preserving `conf/options.php`. For instance, using GNU tar:
 
     % cd HOTCRPINSTALLATION
     % tar --strip=1 -xf ~/hotcrp-NEWVERSION.tar.gz
@@ -182,7 +182,7 @@ Multiconference support
 -----------------------
 
 HotCRP supports running multiple conferences from a single
-installation. Edit options.inc to set $Opt["multiconference"] to 1.
+installation. Edit `conf/options.php` to set $Opt["multiconference"] to 1.
 The last directory component of the URL is used for the database name,
 user, and password. For instance:
 

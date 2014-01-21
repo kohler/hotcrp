@@ -1,5 +1,5 @@
 <?php
-// options.inc -- HotCRP conference options
+// options.php -- HotCRP conference options
 // Placed in the public domain
 
 /*****************************************************************************

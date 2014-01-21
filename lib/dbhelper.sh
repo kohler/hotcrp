@@ -11,7 +11,7 @@ echo_n () {
 findoptions () {
     if test -r "${CONFDIR}options.php"; then echo "${CONFDIR}options.php"
     elif test -r "${CONFDIR}options.inc"; then echo "${CONFDIR}options.inc"
-    elif test -r "${SRCDIR}options.inc"; then echo "${SRCDIR}options.inc"; fi
+    elif test -r "${OLDCONFDIR}options.inc"; then echo "${OLDCONFDIR}options.inc"; fi
 }
 
 getdbopt () {
@@ -122,6 +122,7 @@ else
     MAINDIR="${LIBDIR}../"
 fi
 # set CONFDIR and SRCDIR from MAINDIR
-CONFDIR="`echo "${MAINDIR}Code/" | sed 's,^\./\(.\),\1,'`"
-SRCDIR="`echo "${MAINDIR}Code/" | sed 's,^\./\(.\),\1,'`"
-export MAINDIR LIBDIR CONFDIR SRCDIR
+CONFDIR="`echo "${MAINDIR}conf/" | sed 's,^\./\(.\),\1,'`"
+OLDCONFDIR="`echo "${MAINDIR}Code/" | sed 's,^\./\(.\),\1,'`"
+SRCDIR="`echo "${MAINDIR}src/" | sed 's,^\./\(.\),\1,'`"
+export MAINDIR LIBDIR CONFDIR OLDCONFDIR SRCDIR
