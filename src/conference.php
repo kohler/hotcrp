@@ -23,7 +23,7 @@ class Conference {
     var $footerMap;
     var $usertimeId;
 
-    function __construct() {
+    function __construct($dsn) {
 	global $Opt;
 
 	$this->saveMessages = true;
@@ -36,26 +36,9 @@ class Conference {
 	$this->usertimeId = 1;
 
 	// unpack dsn and connect to database
-	if (!isset($Opt["dsn"]))
-	    die("Package misconfigured: \$Opt[\"dsn\"] is not set. Perhaps the web server cannot read <tt>conf/options.php</tt>?");
-	else if (preg_match('|^mysql://([^:@/]*)/(.*)|', $Opt['dsn'], $m)) {
-	    $this->dblink = new mysqli(urldecode($m[1]));
-	    $dbname = urldecode($m[2]);
-	} else if (preg_match('|^mysql://([^:@/]*)@([^/]*)/(.*)|', $Opt['dsn'], $m)) {
-	    $this->dblink = new mysqli(urldecode($m[2]), urldecode($m[1]));
-	    $dbname = urldecode($m[3]);
-	} else if (preg_match('|^mysql://([^:@/]*):([^@/]*)@([^/]*)/(.*)|', $Opt['dsn'], $m)) {
-	    $this->dblink = new mysqli(urldecode($m[3]), urldecode($m[1]), urldecode($m[2]));
-	    $dbname = urldecode($m[4]);
-	} else
-	    die("Package misconfigured: dsn syntax error");
-
-	if (!$this->dblink || mysqli_connect_errno()
-            || !$this->dblink->select_db($dbname)) {
-	    // Obscure password
-	    $dsn = preg_replace('{\A(\w+://[^/:]*:)[^\@/]+([\@/])}', '$1PASSWORD$2', $Opt["dsn"]);
-	    die("Unable to connect to database at " . $dsn);
-	}
+        list($this->dblink, $dbname) = self::connect_dsn($dsn);
+	if (!$this->dblink)
+	    die("Unable to connect to database at " . self::sanitize_dsn($dsn));
 	$this->dblink->query("set names 'utf8'");
 	// XXX NB: Many MySQL versions, if not all of them, will ignore the
 	// @@max_allowed_packet setting.  Keeping the code in case it's
@@ -63,12 +46,67 @@ class Conference {
 	$max_file_size = ini_get_bytes("upload_max_filesize");
 	$this->dblink->query("set @@max_allowed_packet = $max_file_size");
 
-	$this->updateSettings();
+	// clean up options
+        // remove final slash from $Opt["paperSite"]
+        if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "") {
+            $https = isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] != "off";
+            $Opt["paperSite"] = ($https ? "https://" : "http://") . urlencode($_SERVER["HTTP_HOST"]);
+            if (isset($_SERVER["SERVER_PORT"]) && $_SERVER["SERVER_PORT"] != ($https ? 443 : 80))
+                $Opt["paperSite"] .= ":" . $_SERVER["SERVER_PORT"];
+            $uri = $_SERVER["REQUEST_URI"];
+            if (isset($_SERVER["QUERY_STRING"]) && ($len = strlen($_SERVER["QUERY_STRING"])))
+                $uri = substr($uri, 0, -$len);
+            if (isset($_SERVER["PATH_INFO"]) && ($len = strlen($_SERVER["PATH_INFO"])))
+                $uri = substr($uri, 0, -$len);
+            $Opt["paperSite"] .= substr($uri, 0, strrpos($uri, "/"));
+        }
+	$Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
 
-	// clean up options: remove final slash from $Opt["paperSite"]
-	$Opt["paperSite"] = preg_replace('|/+\z|', '', $Opt["paperSite"]);
-	if (!$Opt["paperSite"])
-	    die("Package misconfigured: \$Opt[\"paperSite\"] is not set. Perhaps the web server cannot read <tt>conf/options.php</tt>?");
+        // set sessionName and downloadPrefix
+        if (!isset($Opt["sessionName"]))
+            $Opt["sessionName"] = $dbname;
+        if (!isset($Opt["downloadPrefix"]))
+            $Opt["downloadPrefix"] = $dbname . "-";
+
+        // load current settings
+	$this->updateSettings();
+    }
+
+    static function make_dsn($opt) {
+        if (isset($opt["dsn"])) {
+            if (is_string($opt["dsn"]))
+                return $opt["dsn"];
+        } else {
+            list($user, $password, $host, $name) =
+                array(@$opt["dbUser"], @$opt["dbPassword"], @$opt["dbHost"], @$opt["dbName"]);
+            $user = ($user !== null ? $user : $name);
+            $password = ($password !== null ? $password : $name);
+            $host = ($host !== null ? $host : "localhost");
+            if (is_string($user) && is_string($password) && is_string($host) && is_string($name))
+                return "mysql://" . urlencode($user) . ":" . urlencode($password) . "@" . urlencode($host) . "/" . urlencode($name);
+        }
+        return null;
+    }
+
+    static function sanitize_dsn($dsn) {
+        return preg_replace('{\A(\w+://[^/:]*:)[^\@/]+([\@/])}', '$1PASSWORD$2', $dsn);
+    }
+
+    static function connect_dsn($dsn) {
+        if ($dsn && preg_match('|^mysql://([^:@/]*)/(.*)|', $dsn, $m)) {
+	    $dblink = new mysqli(urldecode($m[1]));
+	    $dbname = urldecode($m[2]);
+	} else if ($dsn && preg_match('|^mysql://([^:@/]*)@([^/]*)/(.*)|', $dsn, $m)) {
+	    $dblink = new mysqli(urldecode($m[2]), urldecode($m[1]));
+	    $dbname = urldecode($m[3]);
+	} else if ($dsn && preg_match('|^mysql://([^:@/]*):([^@/]*)@([^/]*)/(.*)|', $dsn, $m)) {
+	    $dblink = new mysqli(urldecode($m[3]), urldecode($m[1]), urldecode($m[2]));
+	    $dbname = urldecode($m[4]);
+	} else
+            $dblink = $dbname = null;
+	if ($dblink && (mysqli_connect_errno() || !$dblink->select_db($dbname)))
+            $dblink = null;
+        return array($dblink, $dbname);
     }
 
 

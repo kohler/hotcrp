@@ -289,39 +289,10 @@ function setMulticonference() {
 if (isset($Opt["multiconference"]) && $Opt["multiconference"])
     setMulticonference();
 
-if (isset($Opt["dbName"])) {
-    if (!isset($Opt["sessionName"]))
-	$Opt["sessionName"] = $Opt["dbName"];
-    if (!isset($Opt["downloadPrefix"]))
-	$Opt["downloadPrefix"] = $Opt["dbName"] . "-";
-    if (!isset($Opt["dbUser"]))
-	$Opt["dbUser"] = $Opt["dbName"];
-    if (!isset($Opt["dbPassword"]))
-	$Opt["dbPassword"] = $Opt["dbName"];
-    if (!isset($Opt["dsn"]))
-	$Opt["dsn"] = "mysql://" . urlencode($Opt["dbUser"]) . ":" . urlencode($Opt["dbPassword"]) . "@" . urlencode(defval($Opt, "dbHost", "localhost")) . "/" . urlencode($Opt["dbName"]);
-}
-
-function setPaperSite() {
-    global $Opt;
-    $https = isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] != "off";
-    $Opt["paperSite"] = ($https ? "https://" : "http://") . urlencode($_SERVER["HTTP_HOST"]);
-    if (isset($_SERVER["SERVER_PORT"]) && $_SERVER["SERVER_PORT"] != ($https ? 443 : 80))
-	$Opt["paperSite"] .= ":" . $_SERVER["SERVER_PORT"];
-    $uri = $_SERVER["REQUEST_URI"];
-    if (isset($_SERVER["QUERY_STRING"]) && ($len = strlen($_SERVER["QUERY_STRING"])))
-	$uri = substr($uri, 0, -$len);
-    if (isset($_SERVER["PATH_INFO"]) && ($len = strlen($_SERVER["PATH_INFO"])))
-	$uri = substr($uri, 0, -$len);
-    $Opt["paperSite"] .= substr($uri, 0, strrpos($uri, "/"));
-}
-
-if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
-     setPaperSite();
-
 // Create the conference
 global $Conf;
-$Conf = new Conference();
+$Opt["dsn"] = Conference::make_dsn($Opt);
+$Conf = new Conference($Opt["dsn"]);
 
 // Set server timezone
 if (function_exists("date_default_timezone_set")) {
