@@ -43,6 +43,17 @@ class PaperOption {
         return @self::$list[$id];
     }
 
+    static function find_abbr($k) {
+        if (self::$list === null)
+            self::option_list();
+        if (($o = self::$list[$id]))
+            return $o;
+        foreach (self::$list as $o)
+            if ($o->abbr == $k)
+                return $o;
+        return null;
+    }
+
     static function abbreviate($name, $id) {
         $abbr = strtolower(UnicodeHelper::deaccent($name));
         $abbr = preg_replace('/[^a-z_0-9]/', "-", $abbr);
