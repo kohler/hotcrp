@@ -186,15 +186,6 @@ class Contact {
     private function update_capabilities($use_session) {
         global $Conf, $Opt;
 
-        // Set capability key (should happen only first time)
-        if (!$Conf->setting("cap_key")
-            && !(($key = hotcrp_random_bytes(16))
-                 && ($key = base64_encode($key))
-                 && $Conf->save_setting("cap_key", 1, $key))) {
-            $Opt["disableCapabilities"] = true;
-            return;
-        }
-
         // Add capabilities from session
         if ($use_session && @$_SESSION["capabilities"]) {
             $this->capabilities = $_SESSION["capabilities"];
@@ -1845,7 +1836,7 @@ class Contact {
 	$n = count($l);
 
 	$bytes = hotcrp_random_bytes($length + 10, true);
-	if (!$bytes) {
+	if ($bytes === false) {
 	    $bytes = "";
 	    while (strlen($bytes) < $length)
 		$bytes .= sha1($Opt["conferenceKey"] . pack("V", mt_rand()));

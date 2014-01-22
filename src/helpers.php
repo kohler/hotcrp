@@ -1599,15 +1599,18 @@ function hotcrp_random_bytes($length = 16, $secure_only = false) {
 	$key = openssl_random_pseudo_bytes($length, $strong);
 	$key = ($strong ? $key : false);
     }
-    if (!$key)
+    if ($key === false || $key === "")
 	$key = @file_get_contents("/dev/urandom", false, null, 0, $length);
-    if (!$key && !$secure_only) {
+    if (($key === false || $key === "") && !$secure_only) {
 	$key = "";
 	while (strlen($key) < $length)
 	    $key .= pack("V", mt_rand());
 	$key = substr($key, 0, $length);
     }
-    return $key;
+    if ($key === false || $key === "")
+        return false;
+    else
+        return $key;
 }
 
 
