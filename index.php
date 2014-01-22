@@ -68,6 +68,8 @@ if ($Me->privChair) {
         $Conf->warnMsg("Your PHP was built without JSON functionality. HotCRP is using its built-in replacements, but you really want the native functions.");
     if ($Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
 	$Conf->warnMsg("PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect.");
+    if (!function_exists("imagecreate"))
+        $Conf->warnMsg("Your PHP installation appears to lack GD support, which is required for drawing score graphs.  You may want to fix this problem and restart Apache.");
     $result = $Conf->qx("show variables like 'max_allowed_packet'");
     $max_file_size = ini_get_bytes("upload_max_filesize");
     if (($row = edb_row($result)) && $row[1] < $max_file_size)

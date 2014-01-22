@@ -251,8 +251,6 @@ class LoginHelper {
         $Conf->qe("delete from Settings where name='setupPhase'", "while leaving setup phase");
         $Conf->log("Granted system administrator privilege to first user", $user);
         $Conf->confirmMsg($msg);
-        if (!function_exists("imagecreate"))
-            $Conf->warnMsg("Your PHP installation appears to lack GD support, which is required for drawing score graphs.  You may want to fix this problem and restart Apache.");
         return $user;
     }
 
