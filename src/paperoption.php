@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperOption {
-
     private static $list = null;
 
     function __construct($args) {
@@ -88,11 +87,11 @@ class PaperOption {
     }
 
     function unparse() {
-        $j = (object) array("id" => $this->id,
+        $j = (object) array("id" => (int) $this->id,
                             "name" => $this->name,
                             "abbr" => $this->abbr,
                             "type" => $this->type,
-                            "position" => $this->position);
+                            "position" => (int) $this->position);
         if (@$this->description)
             $j->description = $this->description;
         if (@$this->final)
