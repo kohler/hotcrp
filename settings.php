@@ -418,8 +418,8 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
     $oarg = array("name" => $name, "id" => (int) $id, "req_id" => $id);
     if ($id[0] == "n") {
         $newid = $Conf->setting("options", 1);
-        while (@$current_opts[$newid] || @$new_opts[$newid])
-            ++$newid;
+        foreach ($new_opts as $id => $o)
+            $newid = max($newid, $id + 1);
         $oarg["id"] = $newid;
         $oarg["is_new"] = true;
     }
@@ -474,7 +474,7 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
 function option_clean_form_positions($new_opts, $current_opts) {
     foreach ($new_opts as $id => $o) {
         $current_o = @$current_opts[$id];
-        $o->old_position = ($current_o ? $current_o->position : -1);
+        $o->old_position = ($current_o ? $current_o->position : $o->position);
     }
     for ($i = 0; $i < count($new_opts); ++$i) {
 	$best = null;
@@ -507,11 +507,11 @@ function doOptions($set) {
         // convert request to JSON
         $new_opts = array();
         foreach ($current_opts as $id => $o)
-            option_request_to_json($new_opts, $id, $o);
+            option_request_to_json($new_opts, $id, $current_opts);
         foreach ($_REQUEST as $k => $v)
             if (substr($k, 0, 4) == "optn"
                 && !@$current_opts[substr($k, 4)])
-                option_request_to_json($new_opts, substr($k, 4), $o);
+                option_request_to_json($new_opts, substr($k, 4), $current_opts);
 
         // check abbreviations
         $optabbrs = array();
@@ -538,11 +538,11 @@ function doOptions($set) {
 
     $newj = (object) array();
     uasort($new_opts, array("PaperOption", "compare"));
-    foreach ($new_opts as $id => $o)
-        $newj->$id = $o->unparse();
     $nextid = $Conf->setting("options", 1);
-    while (isset($new_opts[$nextid]))
-        ++$nextid;
+    foreach ($new_opts as $id => $o) {
+        $newj->$id = $o->unparse();
+        $nextid = max($nextid, $id + 1);
+    }
     $Conf->save_setting("options", $nextid, count($newj) ? $newj : null);
 
     $deleted_ids = array();
@@ -1273,23 +1273,34 @@ function doOptGroupOption($o) {
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
 	decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
+
     $optvt = $o->type;
-    $finalOptions = ($Conf->collectFinalPapers() || preg_match('/:final(?::|\z)/', $optvt));
+    if ($optvt == "text" && @$o->display_space > 3)
+        $optvt .= ":ds_" . $o->display_space;
+    if (@$o->final)
+        $optvt .= ":final";
+
+    $show_final = $Conf->collectFinalPapers();
+    foreach (PaperOption::option_list() as $ox)
+        $show_final = $show_final || @$ox->final;
 
     $otypes = array();
-    if ($finalOptions)
+    if ($show_final)
 	$otypes["xxx1"] = array("optgroup", "Options for submissions");
     $otypes["checkbox"] = "Checkbox";
     $otypes["selector"] = "Selector";
     $otypes["radio"] = "Radio buttons";
     $otypes["numeric"] = "Numeric";
     $otypes["text"] = "Text";
-    $otypes["text:ds_5"] = "Multiline text";
+    if ($o->type == "text" && @$o->display_space > 3 && $o->display_space != 5)
+        $otypes[$optvt] = "Multiline text";
+    else
+        $otypes["text:ds_5"] = "Multiline text";
     $otypes["pdf"] = "PDF";
     $otypes["slides"] = "Slides";
     $otypes["video"] = "Video";
     $otypes["attachments"] = "Attachments";
-    if ($finalOptions) {
+    if ($show_final) {
 	$otypes["xxx2"] = array("optgroup", "Options for accepted papers");
 	$otypes["pdf:final"] = "Alternate final version";
 	$otypes["slides:final"] = "Final slides";
@@ -1355,7 +1366,8 @@ function doOptGroup() {
     echo "<div class='g'></div>\n";
     echo "<table>";
     $sep = "";
-    foreach (PaperOption::option_list() as $o) {
+    $all_options = array_merge(PaperOption::option_list()); // get our own iterator
+    foreach ($all_options as $o) {
 	echo $sep;
 	doOptGroupOption($o);
 	$sep = "<tr><td colspan='2'><hr class='hr' /></td></tr>\n";
