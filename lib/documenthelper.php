@@ -291,20 +291,20 @@ class DocumentHelper {
         return $doc;
     }
 
-    static function upload($docclass, $uploadId, $docinfo) {
-	global $Conf, $Opt, $OK;
+    static function file_upload_json($uploadId) {
+        global $Now;
         $doc = (object) array();
 
-	if (!$uploadId
-	    || !fileUploaded($_FILES[$uploadId])
-	    || !isset($_FILES[$uploadId]["tmp_name"]))
+        if (!$uploadId
+            || !fileUploaded($_FILES[$uploadId])
+            || !isset($_FILES[$uploadId]["tmp_name"]))
             return set_error_html($doc, "Upload error. Please try again.");
-	$filename = $_FILES[$uploadId]["tmp_name"];
 
         // prepare document
-        $doc->content = file_get_contents($filename);
+        $doc->content = file_get_contents($_FILES[$uploadId]["tmp_name"]);
 	if ($doc->content === false || strlen($doc->content) == 0)
             return set_error_html($doc, "The uploaded file was empty. Please try again.");
+
 	if (isset($_FILES[$uploadId]["name"])
 	    && strlen($_FILES[$uploadId]["name"]) <= 255
 	    && is_valid_utf8($_FILES[$uploadId]["name"]))
@@ -322,6 +322,25 @@ class DocumentHelper {
 	    $doc->mimetype = Mimetype::type("ppt");
 	else
 	    $doc->mimetype = Mimetype::type(defval($_FILES[$uploadId], "type", "application/octet-stream"));
+
+        $doc->timestamp = time();
+        return $doc;
+    }
+
+    static function upload($docclass, $upload, $docinfo) {
+	global $Conf, $Opt, $OK;
+        if (is_object($upload)) {
+            $doc = $upload;
+            if (@$doc->content === null || $doc->content === "")
+                set_error_html($doc, "The uploaded file was empty.");
+        } else
+            $doc = self::file_upload_json($upload);
+        if (@$doc->error)
+            return $doc;
+
+	// Check if paper one of the allowed mimetypes.
+        if (!@$doc->mimetype)
+            $doc->mimetype = "application/octet-stream";
         if (($m = Mimetype::lookup($doc->mimetype)))
             $doc->mimetypeid = $m->mimetypeid;
 
@@ -335,7 +354,8 @@ class DocumentHelper {
 	    return set_error_html($doc, $e);
 	}
 
-        $doc->timestamp = time();
+        if (!@$doc->timestamp)
+            $doc->timestamp = time();
         return self::store($docclass, $doc, $docinfo);
     }
 
