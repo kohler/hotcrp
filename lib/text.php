@@ -15,7 +15,8 @@ class Text {
                                      "middleName" => null,
                                      "lastFirst" => false,
                                      "nameAmbiguous" => false,
-                                     "name" => null);
+                                     "name" => null,
+                                     "affiliation" => null);
     static private $mapkeys = array("firstName" => "firstName",
                                     "first" => "firstName",
                                     "lastName" => "lastName",
@@ -26,7 +27,11 @@ class Text {
                                     "middle" => "middleName",
                                     "lastFirst" => "lastFirst",
                                     "nameAmbiguous" => "nameAmbiguous",
-                                    "name" => "name");
+                                    "name" => "name",
+                                    "affiliation" => "affiliation");
+    static private $boolkeys = array("withMiddle" => true,
+                                     "lastFirst" => true,
+                                     "nameAmbiguous" => true);
 
     static function analyze_von($lastName) {
         if (preg_match('@\A(v[oa]n|d[eu])\s+(.*)\z@s', $lastName, $m))
@@ -60,7 +65,10 @@ class Text {
             } else if (is_object($v)) {
                 foreach (self::$mapkeys as $k => $mk)
                     if (property_exists($v, $k)
-                        && !property_exists($ret, $mk))
+                        && !property_exists($ret, $mk)
+                        && (@self::$boolkeys[$mk]
+                            ? is_bool($v->$k)
+                            : is_string($v->$k) || $v->$k === null))
                         $ret->$mk = $v->$k;
             }
         }
