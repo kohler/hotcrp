@@ -890,9 +890,9 @@ if (isset($_REQUEST["update"]) && check_post()) {
 	$Conf->warnMsg("Authors can now see reviews and comments although it is before the review deadline.  This is sometimes unintentional.");
     if (value("final_open")
         && (!value("final_done") || value("final_done") > $Now)
-	&& value_or_setting("seedec") != SEEDEC_ALL)
+	&& value_or_setting("seedec") != Conference::SEEDEC_ALL)
 	$Conf->warnMsg("The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”");
-    if (value("seedec") == SEEDEC_ALL
+    if (value("seedec") == Conference::SEEDEC_ALL
         && value_or_setting("au_seerev", -1) == AU_SEEREV_NO)
         $Conf->warnMsg("Authors can see decisions, but not reviews. This is sometimes unintentional.");
 
@@ -1597,7 +1597,10 @@ function doDecGroup() {
 
     echo "<div class='g'></div>\n<hr class='hr' />\n",
 	"Who can see paper <b>decisions</b> (accept/reject)?<br />\n";
-    doRadio("seedec", array(SEEDEC_ADMIN => "Only administrators", SEEDEC_NCREV => "Reviewers and non-conflicted PC members", SEEDEC_REV => "Reviewers and <em>all</em> PC members", SEEDEC_ALL => "<b>Authors</b>, reviewers, and all PC members (and reviewers can see accepted papers’ author lists)"));
+    doRadio("seedec", array(Conference::SEEDEC_ADMIN => "Only administrators",
+                            Conference::SEEDEC_NCREV => "Reviewers and non-conflicted PC members",
+                            Conference::SEEDEC_REV => "Reviewers and <em>all</em> PC members",
+                            Conference::SEEDEC_ALL => "<b>Authors</b>, reviewers, and all PC members (and reviewers can see accepted papers’ author lists)"));
 
     echo "<div class='g'></div>\n";
     echo "<table>\n";

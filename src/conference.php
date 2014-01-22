@@ -26,6 +26,11 @@ class Conference {
     const BLIND_ALWAYS = 2;
     const BLIND_UNTILREVIEW = 3;
 
+    const SEEDEC_ADMIN = 0;
+    const SEEDEC_REV = 1;
+    const SEEDEC_ALL = 2;
+    const SEEDEC_NCREV = 3;
+
     function __construct($dsn) {
 	global $Opt;
 
@@ -131,9 +136,9 @@ class Conference {
 	    $this->settings["rev_blind"] = self::BLIND_ALWAYS;
 	if (!isset($this->settings["seedec"])) {
 	    if (@$this->settings["au_seedec"])
-		$this->settings["seedec"] = SEEDEC_ALL;
+		$this->settings["seedec"] = self::SEEDEC_ALL;
 	    else if (@$this->settings["rev_seedec"])
-		$this->settings["seedec"] = SEEDEC_REV;
+		$this->settings["seedec"] = self::SEEDEC_REV;
 	}
 	if ($this->settings["pc_seeall"] && !$this->timeFinalizePaper())
 	    $this->settings["pc_seeall"] = -1;
@@ -612,7 +617,7 @@ class Conference {
 	return $this->deadlinesBetween("resp_open", "resp_done", "resp_grace");
     }
     function timeAuthorViewDecision() {
-	return $this->setting("seedec") == SEEDEC_ALL;
+	return $this->setting("seedec") == self::SEEDEC_ALL;
     }
     function timeReviewOpen() {
 	$dl = $this->deadlines();
@@ -634,15 +639,15 @@ class Conference {
     function timePCViewDecision($conflicted) {
 	$s = $this->setting("seedec");
 	if ($conflicted)
-	    return $s == SEEDEC_ALL || $s == SEEDEC_REV;
+	    return $s == self::SEEDEC_ALL || $s == self::SEEDEC_REV;
 	else
-	    return $s >= SEEDEC_REV;
+	    return $s >= self::SEEDEC_REV;
     }
     function timeReviewerViewDecision() {
-	return $this->setting("seedec") >= SEEDEC_REV;
+	return $this->setting("seedec") >= self::SEEDEC_REV;
     }
     function timeReviewerViewAcceptedAuthors() {
-	return $this->setting("seedec") == SEEDEC_ALL;
+	return $this->setting("seedec") == self::SEEDEC_ALL;
     }
     function timePCViewPaper($prow, $download) {
 	if ($prow->timeWithdrawn > 0)
