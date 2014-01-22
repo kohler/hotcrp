@@ -50,7 +50,8 @@ class Contact {
     var $privChair = false;
     var $contactTags = null;
     const CAP_AUTHORVIEW = 1;
-    private $capabilities;
+    private $capabilities = null;
+    private $activated_ = false;
 
 
     public function __construct() {
@@ -130,6 +131,7 @@ class Contact {
 
     function activate() {
         global $Opt;
+        $this->activated_ = true;
 
         // Set $_SESSION["adminuser"] based on administrator status
         if ($this->contactId > 0 && !$this->privChair
@@ -167,13 +169,21 @@ class Contact {
         if ($this->contactId <= 0 && @$Opt["validatorContact"]
             && @$_REQUEST["validator"]) {
             unset($_REQUEST["validator"]);
-            if (($newc = Contact::find_by_email($Opt["validatorContact"])))
+            if (($newc = Contact::find_by_email($Opt["validatorContact"]))) {
+                $this->activated_ = false;
                 return $newc->activate();
+            }
         }
 
-        // Add capabilities
-        if (!@$Opt["disableCapabilities"])
-            $this->update_capabilities(true);
+        // Add capabilities from session and request
+        if (!@$Opt["disableCapabilities"]) {
+            if (@$_SESSION["capabilities"]) {
+                $this->capabilities = $_SESSION["capabilities"];
+                ++$this->rights_version_;
+            }
+            if (isset($_REQUEST["cap"]) || isset($_REQUEST["testcap"]))
+                $this->activate_capabilities();
+        }
 
         // Set user session
         if ($this->contactId)
@@ -183,27 +193,18 @@ class Contact {
         return $this;
     }
 
-    private function update_capabilities($use_session) {
+    private function activate_capabilities() {
         global $Conf, $Opt;
 
-        // Add capabilities from session
-        if ($use_session && @$_SESSION["capabilities"]) {
-            $this->capabilities = $_SESSION["capabilities"];
-            ++$this->rights_version_;
-        }
-
         // Add capabilities from arguments
-        $original_rights_version = $this->rights_version_;
         if (@$_REQUEST["cap"] && $_REQUEST["cap"][0] == "0") {
             if (preg_match('/\A0([1-9]\d*)a\S+\z/', $_REQUEST["cap"], $m)
                 && ($result = $Conf->qx("select paperId, capVersion from Paper where paperId=$m[1]"))
                 && ($row = edb_orow($result))) {
                 $rowcap = $Conf->capabilityText($row, "a");
                 if ($_REQUEST["cap"] == $rowcap
-                    || str_replace("/", "_", $_REQUEST["cap"]) == $rowcap) {
+                    || str_replace("/", "_", $_REQUEST["cap"]) == $rowcap)
                     $this->change_capability($m[1], Contact::CAP_AUTHORVIEW, true);
-                    ++$this->rights_version_;
-                }
             }
             unset($_REQUEST["cap"]);
         }
@@ -215,22 +216,13 @@ class Contact {
 	    foreach ($m as $mm) {
 		$c = ($mm[3] == "a" ? Contact::CAP_AUTHORVIEW : 0);
 		$this->change_capability($mm[2], $c, $mm[1] != "-");
-                ++$this->rights_version_;
 	    }
             unset($_REQUEST["testcap"]);
-        }
-
-        // Save capabilities in session
-        if ($use_session && $this->rights_version_ != $original_rights_version) {
-            if (@$this->capabilities)
-                $_SESSION["capabilities"] = $this->capabilities;
-            else
-                unset($_SESSION["capabilities"]);
         }
     }
 
     function is_empty() {
-        return $this->contactId <= 0 && !@$this->capabilities;
+        return $this->contactId <= 0 && !$this->capabilities;
     }
 
     function is_known_user() {
@@ -287,7 +279,7 @@ class Contact {
         $this->has_outstanding_review_ = $row && $row[2] > 0;
 
         // Update contact information from capabilities
-        if (@$this->capabilities)
+        if ($this->capabilities)
             foreach ($this->capabilities as $pid => $cap)
                 if ($cap & self::CAP_AUTHORVIEW)
                     $this->is_author_ = true;
@@ -357,16 +349,22 @@ class Contact {
     }
 
     function change_capability($pid, $c, $on) {
-	$newcap = defval($this, "capabilities", array());
-	$v = (defval($newcap, $pid, 0) | ($on ? $c : 0)) & ~($on ? 0 : $c);
-	if ($v)
-	    $newcap[$pid] = $v;
-	else
-	    unset($newcap[$pid]);
-	if (count($newcap))
-	    $this->capabilities = $newcap;
-	else
-	    unset($this->capabilities);
+        if (!$this->capabilities)
+            $this->capabilities = array();
+        $oldval = @$cap[$pid] ? $cap[$pid] : 0;
+        $newval = ($oldval | ($on ? $c : 0)) & ~($on ? 0 : $c);
+        if ($newval != $oldval) {
+            ++$this->rights_version_;
+            if ($newval != 0)
+                $this->capabilities[$pid] = $newval;
+            else
+                unset($this->capabilities[$pid]);
+        }
+        if (!count($this->capabilities))
+            $this->capabilities = null;
+        if ($this->activated_ && $newval != $oldval)
+            $_SESSION["capabilities"] = $this->capabilities;
+        return $newval != $oldval;
     }
 
     function trim() {
