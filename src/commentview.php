@@ -187,9 +187,9 @@ class CommentView {
     <td><table id='foldcmtvis' class='fold2o'>";
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_REVIEWER | COMMENTTYPE_BLIND;
 	echo "<tr><td>", Ht::radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : $ctype >= COMMENTTYPE_AUTHOR), array("id" => "cmtvis_a", "onchange" => "docmtvis(this)")),
-	    "&nbsp;</td><td>", Ht::label("Authors and reviewers" . ($Conf->blindReview() == BLIND_ALWAYS ? " (anonymous to authors)" : ""));
+	    "&nbsp;</td><td>", Ht::label("Authors and reviewers" . ($Conf->review_blindness() == Conference::BLIND_ALWAYS ? " (anonymous to authors)" : ""));
 	// blind?
-	if ($Conf->blindReview() == BLIND_OPTIONAL)
+	if ($Conf->review_blindness() == Conference::BLIND_OPTIONAL)
 	    echo " &nbsp; (",
 		Ht::checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, "blind") : $ctype & COMMENTTYPE_BLIND)),
 		"&nbsp;", Ht::label("Anonymous to authors"), ")";

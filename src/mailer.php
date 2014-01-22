@@ -348,7 +348,7 @@ class Mailer {
 	}
 
 	if ($what == "%REVIEWAUTHOR%" && $this->contacts[1]) {
-	    if (reviewBlind($this->rrow)
+	    if ($Conf->is_review_blind($this->rrow)
 		&& defval($this->permissionContact, "privChair") <= 0
 		&& (!isset($this->permissionContact->canViewReviewerIdentity)
 		    || !$this->permissionContact->canViewReviewerIdentity($this->row, $this->rrow, false))) {

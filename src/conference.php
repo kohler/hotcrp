@@ -21,6 +21,11 @@ class Conference {
     private $footerMap = null;
     private $usertimeId = 1;
 
+    const BLIND_NEVER = 0;
+    const BLIND_OPTIONAL = 1;
+    const BLIND_ALWAYS = 2;
+    const BLIND_UNTILREVIEW = 3;
+
     function __construct($dsn) {
 	global $Opt;
 
@@ -121,9 +126,9 @@ class Conference {
 	    if (!isset($this->settings[$x]))
 		$this->settings[$x] = 0;
 	if (!isset($this->settings["sub_blind"]))
-	    $this->settings["sub_blind"] = BLIND_ALWAYS;
+	    $this->settings["sub_blind"] = self::BLIND_ALWAYS;
 	if (!isset($this->settings["rev_blind"]))
-	    $this->settings["rev_blind"] = BLIND_ALWAYS;
+	    $this->settings["rev_blind"] = self::BLIND_ALWAYS;
 	if (!isset($this->settings["seedec"])) {
 	    if (@$this->settings["au_seedec"])
 		$this->settings["seedec"] = SEEDEC_ALL;
@@ -661,19 +666,27 @@ class Conference {
     }
 
     function subBlindAlways() {
-	return $this->settings["sub_blind"] == BLIND_ALWAYS;
+	return $this->settings["sub_blind"] == self::BLIND_ALWAYS;
     }
     function subBlindNever() {
-	return $this->settings["sub_blind"] == BLIND_NEVER;
+	return $this->settings["sub_blind"] == self::BLIND_NEVER;
     }
     function subBlindOptional() {
-	return $this->settings["sub_blind"] == BLIND_OPTIONAL;
+	return $this->settings["sub_blind"] == self::BLIND_OPTIONAL;
     }
     function subBlindUntilReview() {
-	return $this->settings["sub_blind"] == BLIND_UNTILREVIEW;
+	return $this->settings["sub_blind"] == self::BLIND_UNTILREVIEW;
     }
 
-    function blindReview() {
+    function is_review_blind($rrow) {
+        if (is_object($rrow))
+            $rrow = (bool) $rrow->reviewBlind;
+        $rb = $this->settings["rev_blind"];
+        return $rb == self::BLIND_ALWAYS
+            || ($rb == self::BLIND_OPTIONAL
+                && ($rrow === null || $rrow));
+    }
+    function review_blindness() {
         return $this->settings["rev_blind"];
     }
 

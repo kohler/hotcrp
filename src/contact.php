@@ -723,10 +723,10 @@ class Contact {
 
             // check blindness
             $bs = $Conf->setting("sub_blind");
-            $ci->nonblind = $bs == BLIND_NEVER
-                || ($bs == BLIND_OPTIONAL
+            $ci->nonblind = $bs == Conference::BLIND_NEVER
+                || ($bs == Conference::BLIND_OPTIONAL
                     && !(isset($prow->paperBlind) ? $prow->paperBlind : $prow->blind))
-                || ($bs == BLIND_UNTILREVIEW
+                || ($bs == Conference::BLIND_UNTILREVIEW
                     && $ci->review_type > 0
                     && $ci->review_submitted > 0)
                 || ($prow->outcome > 0
@@ -1482,7 +1482,7 @@ class Contact {
                 && $prow->review_not_incomplete($this)
 		&& ($rights->allow_core_pc
                     || $Conf->settings["extrev_view"] >= 2))
-	    || !reviewBlind($rrow))
+	    || !$Conf->is_review_blind($rrow))
 	    return true;
 	return false;
     }
@@ -1512,9 +1512,7 @@ class Contact {
 	    || $rights->allow_core_pc
 	    || ($rights->allow_review
 		&& $Conf->settings["extrev_view"] >= 2)
-            || ($br = $Conf->blindReview()) == BLIND_NEVER
-            || ($br == BLIND_OPTIONAL && $crow
-                && !($crow->commentType & COMMENTTYPE_BLIND)))
+            || $Conf->is_review_blind(!$crow || ($crow->commentType & COMMENTTYPE_BLIND) != 0))
 	    return true;
 	return false;
     }

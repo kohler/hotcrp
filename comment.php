@@ -115,9 +115,7 @@ function saveComment($text) {
         $ctype = COMMENTTYPE_REVIEWER;
     if (isset($_REQUEST["response"])
         ? $prow->blind
-        : ($Conf->blindReview() > BLIND_OPTIONAL
-           || ($Conf->blindReview() == BLIND_OPTIONAL
-               && defval($_REQUEST, "blind"))))
+        : $Conf->is_review_blind(!!@$_REQUEST["blind"]))
         $ctype |= COMMENTTYPE_BLIND;
 
     // backwards compatibility

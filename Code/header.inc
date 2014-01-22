@@ -53,11 +53,6 @@ define("SEEDEC_ALL", 2);
 define("SEEDEC_REV", 1);
 define("SEEDEC_ADMIN", 0);
 
-define("BLIND_UNTILREVIEW", 3);
-define("BLIND_ALWAYS", 2);	/* ordering is important for rev/cmt */
-define("BLIND_OPTIONAL", 1);
-define("BLIND_NEVER", 0);
-
 define("DTYPE_SUBMISSION", 0);
 define("DTYPE_FINAL", -1);
 define("DTYPE_COMMENT", -2);

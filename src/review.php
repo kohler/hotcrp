@@ -609,7 +609,7 @@ class ReviewForm {
 	    && array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) !== false;
 
 	// blind? reviewer type? edit version?
-	$reviewBlind = ($Conf->blindReview() > BLIND_OPTIONAL || ($Conf->blindReview() == BLIND_OPTIONAL && defval($req, 'blind')) ? 1 : 0);
+	$reviewBlind = $Conf->is_review_blind(!!@$req["blind"]);
 	if ($rrow && $reviewBlind != $rrow->reviewBlind)
 	    $diff_view_score = max($diff_view_score, VIEWSCORE_ADMINONLY);
 	$q[] = "reviewBlind=$reviewBlind";
@@ -713,8 +713,8 @@ class ReviewForm {
 
 	    if ($Conf->timeEmailAuthorsAboutReview() && $notify_author) {
 		$rest["infoMsg"] = "since a review was updated during the response period.";
-		if (reviewBlind($fake_rrow))
-		    $rest["infoMsg"] .= "  Reviewer anonymity was preserved.";
+		if ($Conf->is_review_blind($fake_rrow))
+		    $rest["infoMsg"] .= " Reviewer anonymity was preserved.";
 		Mailer::sendContactAuthors($tmpl, $prow, $submitter, $rest);
 	    }
 	}
@@ -811,7 +811,7 @@ class ReviewForm {
 ==-== Enter \"Ready\" if the review is ready for others to see:
 
 Ready\n";
-	    if ($Conf->blindReview() == BLIND_OPTIONAL) {
+	    if ($Conf->review_blindness() == Conference::BLIND_OPTIONAL) {
 		$blind = "Anonymous";
 		if ($rrow && !$rrow->reviewBlind)
 		    $blind = "Open";
@@ -1553,7 +1553,7 @@ $blind\n";
 	}
 
 	// blind?
-	if ($Conf->blindReview() == BLIND_OPTIONAL) {
+	if ($Conf->review_blindness() == Conference::BLIND_OPTIONAL) {
 	    echo "<div class='revt'><span class='revfn'>",
 		Ht::checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))),
 		"&nbsp;", Ht::label("Anonymous review"),

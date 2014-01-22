@@ -804,13 +804,6 @@ function tempdir($mode = 0700) {
 }
 
 
-function reviewBlind($rrow) {
-    global $Conf;
-    $br = $Conf->blindReview();
-    return $br == BLIND_ALWAYS
-	|| ($br == BLIND_OPTIONAL && (!$rrow || $rrow->reviewBlind));
-}
-
 function setCommentType($crow) {
     if ($crow && !isset($crow->commentType)) {
         if ($crow->forAuthors == 2)
