@@ -413,7 +413,7 @@ function doAssign() {
 	    if ($pref >= -1000000 && isset($papers[$pid]) && $papers[$pid] > 0
 		&& (!isset($badpairs[$pc]) || noBadPair($pc, $pid, $prefs))) {
 		// make assignment
-		$assignments[] = "$pid,$action," . $pcx->email . $round;
+		$assignments[] = "$pid,$action," . $pcm[$pc]->email . $round;
 		$prefs[$pc][$pid] = -1000001;
 		$papers[$pid]--;
 		$load[$pc]++;
