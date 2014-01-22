@@ -105,17 +105,22 @@ class Contact {
             $c->has_review_ = $o->has_review;
         if (isset($o->has_outstanding_review))
             $c->has_outstanding_review_ = $o->has_outstanding_review;
-	$c->roles = defval($o, "roles", 0);
+	$roles = defval($o, "roles", 0);
 	if (@$o->isPC)
-	    $c->roles |= self::ROLE_PC;
+	    $roles |= self::ROLE_PC;
 	if (@$o->isAssistant)
-	    $c->roles |= self::ROLE_ADMIN;
+	    $roles |= self::ROLE_ADMIN;
 	if (@$o->isChair)
-	    $c->roles |= self::ROLE_CHAIR;
-	$c->isPC = ($c->roles & self::ROLE_PCLIKE) != 0;
-	$c->privChair = ($c->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
+	    $roles |= self::ROLE_CHAIR;
+        $c->assign_roles($roles);
         $c->contactTags = defval($o, "contactTags", null);
 	return $c;
+    }
+
+    private function assign_roles($roles) {
+        $this->roles = $roles;
+        $this->isPC = ($roles & self::ROLE_PCLIKE) != 0;
+        $this->privChair = ($roles & (self::ROLE_ADMIN|self::ROLE_CHAIR)) != 0;
     }
 
 
@@ -420,7 +425,7 @@ class Contact {
             error_go(false, "You don’t have permission to access that page.");
     }
 
-    function updateDB($where = "") {
+    function save() {
 	global $Conf;
 	$this->trim();
 	$qa = ", roles='$this->roles', defaultWatch='$this->defaultWatch'";
@@ -444,14 +449,14 @@ class Contact {
 			 sqlq($this->password),
 			 sqlq($this->collaborators),
 			 $this->contactId);
-	$result = $Conf->qe($query, $where);
+	$result = $Conf->qe($query);
 	if (!$result)
 	    return $result;
 	$Conf->qx("delete from ContactAddress where contactId=$this->contactId");
 	if ($this->addressLine1 || $this->addressLine2 || $this->city
 	    || $this->state || $this->zipCode || $this->country) {
 	    $query = "insert into ContactAddress (contactId, addressLine1, addressLine2, city, state, zipCode, country) values ($this->contactId, '" . sqlq($this->addressLine1) . "', '" . sqlq($this->addressLine2) . "', '" . sqlq($this->city) . "', '" . sqlq($this->state) . "', '" . sqlq($this->zipCode) . "', '" . sqlq($this->country) . "')";
-	    $result = $Conf->qe($query, $where);
+	    $result = $Conf->qe($query);
 	}
 	return $result;
     }
@@ -487,6 +492,44 @@ class Contact {
         }
     }
 
+    function save_roles($new_roles, $actor) {
+        global $Conf;
+        $old_roles = $this->roles;
+        // change the roles tables and log
+        $tables = Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR;
+        $actor_email = ($actor ? " by $actor->email" : "");
+        $diff = 0;
+        foreach (array(Contact::ROLE_PC => "PCMember",
+                       Contact::ROLE_ADMIN => "ChairAssistant",
+                       Contact::ROLE_CHAIR => "Chair",
+                       Contact::ROLE_ERC => "ERCMember") as $role => $tablename)
+            if (($new_roles & $role) && !($old_roles & $role)) {
+                if ($tables & $role)
+                    $Conf->qe("insert into $tablename (contactId) values ($this->contactId)");
+                $Conf->log("Added as $tablename$actor_email", $this);
+                $diff |= $role;
+            } else if (!($new_roles & $role) && ($old_roles & $role)) {
+                if ($tables & $role)
+                    $Conf->qe("delete from $tablename where contactId=$this->contactId");
+                $Conf->log("Removed as $tablename$actor_email", $this);
+                $diff |= $role;
+            }
+        // ensure there's at least one system administrator
+        if ($diff & Contact::ROLE_ADMIN) {
+            $result = $Conf->qe("select contactId from ChairAssistant");
+            if (edb_nrows($result) == 0) {
+                $Conf->qe("insert into ChairAssistant (contactId) values ($this->contactId)");
+                $new_roles |= Contact::ROLE_ADMIN;
+            }
+        }
+        // save the roles bits
+        if ($diff) {
+            $Conf->qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
+            $this->assign_roles($new_roles);
+        }
+        return $diff != 0;
+    }
+
     private function load_by_query($where) {
 	global $Conf, $Opt;
 
@@ -512,10 +555,7 @@ class Contact {
         $this->collaborators = $row->collaborators;
         $this->defaultWatch = defval($row, "defaultWatch", 0);
         $this->contactTags = defval($row, "contactTags", null);
-
-        $this->roles = $row->roles;
-        $this->isPC = ($this->roles & self::ROLE_PCLIKE) != 0;
-        $this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
+        $this->assign_roles($row->roles);
 
         $this->trim();
         return true;

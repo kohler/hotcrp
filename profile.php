@@ -21,7 +21,7 @@ function change_email_by_capability() {
 
     $Acct->email = $capdata->data->uemail;
     $aupapers = Contact::email_authored_papers($Acct->email, $Acct);
-    $Acct->updateDB();
+    $Acct->save();
     if (count($aupapers))
         $Acct->save_authored_papers($aupapers);
     if ($Acct->roles & Contact::ROLE_PCLIKE)
@@ -95,24 +95,6 @@ function set_request_pctype() {
             if (@$_REQUEST[$k])
                 $_REQUEST["pctype"] = $k;
     }
-}
-
-function set_role($acct, $role, $table, $rolename, $hasrole) {
-    global $Conf;
-    if (($acct->roles & $role) != 0 && !$hasrole) {
-        $acct->roles &= ~$role;
-        if ($table)
-            $Conf->qe("delete from $table where contactId=$acct->contactId");
-        $Conf->log("Removed as $rolename by $Me->email", $acct);
-        return true;
-    } else if (($acct->roles & $role) == 0 && $hasrole) {
-        $acct->roles |= $role;
-        if ($table)
-            $Conf->qe("insert into $table (contactId) values ($acct->contactId)");
-        $Conf->log("Added as $rolename by $Me->email", $acct);
-        return true;
-    } else
-        return false;
 }
 
 function createUser(&$tf, $newProfile, $useRequestPassword = false) {
@@ -196,35 +178,17 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
     if ($Me->privChair) {
 	// initialize roles too
         set_request_pctype();
-	$checkass = !isset($_REQUEST["ass"])
-            && $Me->contactId == $Acct->contactId
-            && ($Acct->roles & Contact::ROLE_ADMIN) != 0;
-
-	$while = "while initializing roles";
-        $updatepc |=
-            set_role($Acct, Contact::ROLE_PC, "PCMember", "PCMember",
-                     $_REQUEST["pctype"] != "no");
-        $updatepc |=
-            set_role($Acct, Contact::ROLE_ADMIN,
-                     "ChairAssistant", "ChairAssistant",
-                     isset($_REQUEST["ass"]));
-        $updatepc |=
-            set_role($Acct, Contact::ROLE_CHAIR, "Chair", "Chair",
-                     $_REQUEST["pctype"] == "chair");
-        $updatepc |=
-            set_role($Acct, Contact::ROLE_ERC, null, "ERCMember",
-                     $_REQUEST["pctype"] == "erc");
-
-	// ensure there's at least one system administrator
-	if ($checkass) {
-	    $result = $Conf->qe("select contactId from ChairAssistant", $while);
-	    if (edb_nrows($result) == 0) {
-		$Conf->qe("insert into ChairAssistant (contactId) values ($Acct->contactId)", $while);
-		$Conf->warnMsg("Refusing to drop the only system administrator.");
-		$_REQUEST["ass"] = 1;
-		$Acct->roles |= Contact::ROLE_ADMIN;
-	    }
-	}
+        $new_roles = ($_REQUEST["pctype"] != "no" ? Contact::ROLE_PC : 0)
+            | (isset($_REQUEST["ass"]) ? Contact::ROLE_ADMIN : 0)
+            | ($_REQUEST["pctype"] == "chair" ? Contact::ROLE_CHAIR : 0)
+            | ($_REQUEST["pctype"] == "erc" ? Contact::ROLE_ERC : 0);
+        if ($Acct->save_roles($new_roles, $Me))
+            $updatepc = true;
+        if (!isset($_REQUEST["ass"])
+            && ($Acct->roles & Contact::ROLE_ADMIN)) {
+            $Conf->warnMsg("Refusing to drop the only system administrator.");
+            $_REQUEST["ass"] = 1;
+        }
     }
 
     // ensure changes in PC member data are reflected immediately
@@ -285,7 +249,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
     }
 
     if ($OK)
-	$Acct->updateDB();
+	$Acct->save();
 
     if ($updatepc)
 	$Conf->invalidateCaches(array("pc" => 1));
