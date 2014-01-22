@@ -218,7 +218,6 @@ class LoginHelper {
         }
 
         $user->sendAccountInfo(true, true);
-        $Conf->log("Account created", $user);
         $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".";
 
         // handle setup phase
@@ -244,12 +243,9 @@ class LoginHelper {
         global $Conf, $Opt;
         $msg .= " As the first user, you have been automatically signed in and assigned system administrator privilege.";
         if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
-            $msg .= "  Your password is “<tt>" . htmlspecialchars($user->password_plaintext) . "</tt>”.  All later users will have to sign in normally.";
-        $while = "while granting system administrator privilege";
-        $Conf->qe("insert into ChairAssistant (contactId) values (" . $user->cid . ")", $while);
-        $Conf->qe("update ContactInfo set roles=" . (Contact::ROLE_ADMIN) . " where contactId=" . $user->cid, $while);
-        $Conf->qe("delete from Settings where name='setupPhase'", "while leaving setup phase");
-        $Conf->log("Granted system administrator privilege to first user", $user);
+            $msg .= " Your password is “<tt>" . htmlspecialchars($user->password_plaintext) . "</tt>”. All later users will have to sign in normally.";
+        $user->save_roles(Contact::ROLE_ADMIN, null);
+        $Conf->save_setting("setupPhase", null);
         $Conf->confirmMsg($msg);
         return $user;
     }
