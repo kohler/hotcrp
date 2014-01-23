@@ -65,7 +65,6 @@ function html_id_decode($text) {
 
 if (!function_exists("json_encode") || !function_exists("json_decode"))
     require_once("$ConfSitePATH/lib/json.php");
-
 if (!function_exists("json_last_error_msg")) {
     function json_last_error_msg() {
         return false;

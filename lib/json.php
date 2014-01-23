@@ -1,21 +1,20 @@
 <?php
 // json.php -- HotCRP JSON function replacements (if PHP JSON not available)
-// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-define("JSON_ERROR_NONE", 0);
-define("JSON_ERROR_DEPTH", 1);
-define("JSON_ERROR_STATE_MISMATCH", 2);
-define("JSON_ERROR_CTRL_CHAR", 3);
-define("JSON_ERROR_SYNTAX", 4);
-define("JSON_ERROR_UTF8", 5);
+@define("JSON_ERROR_NONE", 0);
+@define("JSON_ERROR_DEPTH", 1);
+@define("JSON_ERROR_STATE_MISMATCH", 2);
+@define("JSON_ERROR_CTRL_CHAR", 3);
+@define("JSON_ERROR_SYNTAX", 4);
+@define("JSON_ERROR_UTF8", 5);
 
-define("JSON_FORCE_OBJECT", 1);
+@define("JSON_FORCE_OBJECT", 1);
 
 define("JSON_HOTCRP", 1);
 
-class _JsonHelper {
-
+class Json {
     static $string_map =
         array("\\" => "\\\\", "\"" => "\\\"",
               "\000" => "\\u0000", "\001" => "\\u0001", "\002" => "\\u0002",
@@ -30,17 +29,23 @@ class _JsonHelper {
               "\033" => "\\u001B", "\034" => "\\u001C", "\035" => "\\u001D",
               "\036" => "\\u001E", "\037" => "\\u001F");
 
-    static $string_unmap =
+    static private $string_unmap =
         array("\\\"" => "\"", "\\\\" => "\\", "\\/" => "/",
               "\\b" => "\010", "\\t" => "\011", "\\n" => "\012",
               "\\f" => "\014", "\\r" => "\015");
-    static $error_position;
-    static $error_type;
 
-    static function set_error(&$x, $etype) {
+    static private $error_type;
+    static private $error_input;
+    static private $error_position;
+    static private $error_line;
+
+    private static function set_error(&$x, $etype) {
         if ($x !== null) {
-            self::$error_position -= strlen($x);
             self::$error_type = $etype;
+            $prefix = substr(self::$error_input, 0,
+                             strlen(self::$error_input) - strlen($x));
+            self::$error_position = strlen($prefix);
+            self::$error_line = 1 + preg_match_all(',\r\n?|\n,s', $prefix);
         }
         return ($x = null);
     }
@@ -62,7 +67,7 @@ class _JsonHelper {
 	    return self::$string_unmap[$e];
     }
 
-    static function decode_part(&$x, $assoc, $depth, $options) {
+    private static function decode_part(&$x, $assoc, $depth, $options) {
 	$x = ltrim($x);
 	if ($x === "")
 	    return self::set_error($x, JSON_ERROR_SYNTAX);
@@ -76,11 +81,14 @@ class _JsonHelper {
 	    $x = substr($x, 4);
 	    return true;
 	} else if ($x[0] == "\"") {
-	    if (preg_match(',\A"((?:[^\\\\"\000-\037]|\\\\["\\\\/bfnrt]|\\\\u[0-9a-fA-F]{4})*)"(.*)\z,s', $x, $m)) {
-		$x = $m[2];
-		return preg_replace(',(\\\\(?:["\\\\/bfnrt]|u[0-9a-fA-F]{4})),e', '_JsonHelper::decode_escape("\1")', $m[1]);
-	    } else
+	    preg_match(',\A"((?:[^\\\\"\000-\037]|\\\\["\\\\/bfnrt]|\\\\u[0-9a-fA-F]{4})*)(.*)\z,s', $x, $m);
+            if ($m[2][0] == "\"") {
+		$x = substr($m[2], 1);
+		return preg_replace(',(\\\\(?:["\\\\/bfnrt]|u[0-9a-fA-F]{4})),e', 'Json::decode_escape("\1")', $m[1]);
+	    } else {
+                $x = $m[2];
                 return self::set_error($x, JSON_ERROR_SYNTAX);
+            }
 	} else if ($x[0] == "{") {
 	    if ($depth < 0)
                 return self::set_error($x, JSON_ERROR_DEPTH);
@@ -143,76 +151,106 @@ class _JsonHelper {
             return self::set_error($x, JSON_ERROR_SYNTAX);
     }
 
-}
-
-// XXX not a full emulation of json_encode(); hopefully that won't matter
-// in the fullness of time
-function json_encode($x, $options = 0) {
-    if ($x === null)
-        return "null";
-    else if ($x === false)
-        return "false";
-    else if ($x === true)
-        return "true";
-    else if (is_int($x) || is_float($x))
-        return (string) $x;
-    else if (is_string($x))
-        return "\"" . preg_replace('/([\\"\000-\037])/e', '_JsonHelper::$string_map["\1"]', $x) . "\"";
-    else if (is_object($x) || is_array($x)) {
-        $as_object = null;
-        $as_array = array();
-        $nextkey = 0;
-        foreach ($x as $k => $v) {
-            if ((!is_int($k) && !is_string($k))
-                || ($v = json_encode($v, $options)) === null)
-                continue;
-            if ($as_array !== null && $k !== $nextkey) {
-                $as_object = array();
-                foreach ($as_array as $kk => $vv)
-                    $as_object[] = "\"$kk\":$vv";
-                $as_array = null;
+    // XXX not a full emulation of json_encode(); hopefully that won't matter
+    // in the fullness of time
+    static function encode($x, $options = 0) {
+        if ($x === null)
+            return "null";
+        else if ($x === false)
+            return "false";
+        else if ($x === true)
+            return "true";
+        else if (is_int($x) || is_float($x))
+            return (string) $x;
+        else if (is_string($x))
+            return "\"" . preg_replace('/([\\"\000-\037])/e', 'Json::$string_map["\1"]', $x) . "\"";
+        else if (is_object($x) || is_array($x)) {
+            $as_object = null;
+            $as_array = array();
+            $nextkey = 0;
+            foreach ($x as $k => $v) {
+                if ((!is_int($k) && !is_string($k))
+                    || ($v = self::encode($v, $options)) === null)
+                    continue;
+                if ($as_array !== null && $k !== $nextkey) {
+                    $as_object = array();
+                    foreach ($as_array as $kk => $vv)
+                        $as_object[] = "\"$kk\":$vv";
+                    $as_array = null;
+                }
+                if ($as_array === null)
+                    $as_object[] = self::encode((string) $k) . ":" . $v;
+                else {
+                    $as_array[] = $v;
+                    ++$nextkey;
+                }
             }
             if ($as_array === null)
-                $as_object[] = json_encode((string) $k) . ":" . $v;
-            else {
-                $as_array[] = $v;
-                ++$nextkey;
-            }
+                return "{" . join(",", $as_object) . "}";
+            else if (count($as_array) == 0)
+                return (is_object($x) || ($options & JSON_FORCE_OBJECT)) ? "{}" : "[]";
+            else
+                return "[" . join(",", $as_array) . "]";
+        } else
+            return null;
+    }
+
+    static function decode($x, $assoc = false, $depth = 512, $options = 0) {
+        self::$error_type = JSON_ERROR_NONE;
+        self::$error_input = $x;
+        $v = self::decode_part($x, $assoc, $depth, $options);
+        if ($x !== null && !ctype_space($x))
+            self::set_error($x, JSON_ERROR_SYNTAX);
+        self::$error_input = null;
+        return $x === null ? null : $v;
+    }
+
+    static function last_error() {
+        return self::$error_type;
+    }
+
+    static function last_error_msg() {
+        static $errors =
+            array(JSON_ERROR_NONE => null,
+                  JSON_ERROR_DEPTH => "Maximum stack depth exceeded",
+                  JSON_ERROR_STATE_MISMATCH => "Underflow or the modes mismatch",
+                  JSON_ERROR_CTRL_CHAR => "Unexpected control character found",
+                  JSON_ERROR_SYNTAX => "Syntax error, malformed JSON",
+                  JSON_ERROR_UTF8 => "Malformed UTF-8 characters, possibly incorrectly encoded");
+        $error = self::last_error();
+        $error = array_key_exists($error, $errors) ? $errors[$error] : "Unknown error ({$error})";
+        if ($error) {
+            $error .= " at character " . self::$error_position;
+            if (self::$error_line != 1)
+                $error .= ", line " . self::$error_line;
         }
-        if ($as_array === null)
-            return "{" . join(",", $as_object) . "}";
-        else if (count($as_array) == 0)
-            return (is_object($x) || ($options & JSON_FORCE_OBJECT)) ? "{}" : "[]";
-        else
-            return "[" . join(",", $as_array) . "]";
-    } else
-        return null;
+        return $error;
+    }
 }
 
-function json_decode($x, $assoc = false, $depth = 512, $options = 0) {
-    _JsonHelper::$error_position = strlen($x);
-    _JsonHelper::$error_type = JSON_ERROR_NONE;
-    $v = _JsonHelper::decode_part($x, $assoc, $depth, $options);
-    if ($x && !ctype_space($x))
-        _JsonHelper::set_error($x, JSON_ERROR_SYNTAX);
-    return $x === null ? null : $v;
+if (!function_exists("json_encode")) {
+    function json_encode($x, $options = 0) {
+        return Json::encode($x, $options);
+    }
 }
-
-function json_last_error() {
-    return _JsonHelper::$error_type;
+if (!function_exists("json_decode")) {
+    function json_decode($x, $assoc = false, $depth = 512, $options = 0) {
+        return Json::decode($x, $assoc, $depth, $options);
+    }
+    function json_last_error() {
+        return Json::last_error();
+    }
+    function json_last_error_msg() {
+        return Json::last_error_msg();
+    }
 }
-
-function json_last_error_msg() {
-    static $errors =
-        array(JSON_ERROR_NONE => null,
-              JSON_ERROR_DEPTH => "Maximum stack depth exceeded",
-              JSON_ERROR_STATE_MISMATCH => "Underflow or the modes mismatch",
-              JSON_ERROR_CTRL_CHAR => "Unexpected control character found",
-              JSON_ERROR_SYNTAX => "Syntax error, malformed JSON",
-              JSON_ERROR_UTF8 => "Malformed UTF-8 characters, possibly incorrectly encoded");
-    $error = json_last_error();
-    $error = array_key_exists($error, $errors) ? $errors[$error] : "Unknown error ({$error})";
-    if ($error)
-        $error .= " at character " . _JsonHelper::$error_position;
-    return $error;
+if (!function_exists("json_last_error")) {
+    function json_last_error() {
+        return false;
+    }
+}
+if (!function_exists("json_last_error_msg")) {
+    function json_last_error_msg() {
+        return false;
+    }
 }
