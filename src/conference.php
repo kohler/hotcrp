@@ -271,7 +271,7 @@ class Conference {
         return is_object($x) ? $x : null;
     }
 
-    function capabilityText($prow, $capType) {
+    function capability_text($prow, $capType) {
 	// A capability has the following representation (. is concatenation):
 	//    capFormat . paperId . capType . hashPrefix
 	// capFormat -- Character denoting format (currently 0).

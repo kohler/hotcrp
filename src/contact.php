@@ -197,15 +197,9 @@ class Contact {
         global $Conf, $Opt;
 
         // Add capabilities from arguments
-        if (@$_REQUEST["cap"] && $_REQUEST["cap"][0] == "0") {
-            if (preg_match('/\A0([1-9]\d*)a\S+\z/', $_REQUEST["cap"], $m)
-                && ($result = $Conf->qx("select paperId, capVersion from Paper where paperId=$m[1]"))
-                && ($row = edb_orow($result))) {
-                $rowcap = $Conf->capabilityText($row, "a");
-                if ($_REQUEST["cap"] == $rowcap
-                    || str_replace("/", "_", $_REQUEST["cap"]) == $rowcap)
-                    $this->change_capability($m[1], Contact::CAP_AUTHORVIEW, true);
-            }
+        if (@$_REQUEST["cap"]) {
+            foreach (preg_split(',\s+,', $_REQUEST["cap"]) as $cap)
+                $this->apply_capability_text($cap);
             unset($_REQUEST["cap"]);
         }
 
@@ -365,6 +359,20 @@ class Contact {
         if ($this->activated_ && $newval != $oldval)
             $_SESSION["capabilities"] = $this->capabilities;
         return $newval != $oldval;
+    }
+
+    function apply_capability_text($text) {
+        global $Conf;
+        if (preg_match(',\A([-+]?)0([1-9][0-9]*)(a)(\S+)\z,', $text, $m)
+            && ($result = $Conf->qx("select paperId, capVersion from Paper where paperId=$m[2]"))
+            && ($row = edb_orow($result))) {
+            $rowcap = $Conf->capability_text($row, $m[3]);
+            $text = substr($text, strlen($m[1]));
+            if ($rowcap === $text
+                || $rowcap === str_replace("/", "_", $text))
+                return $this->change_capability((int) $m[2], self::CAP_AUTHORVIEW, $m[1] !== "-");
+        }
+        return null;
     }
 
     function trim() {

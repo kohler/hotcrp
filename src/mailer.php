@@ -325,7 +325,7 @@ class Mailer {
 	}
 	if ($what == "%AUTHORVIEWCAPABILITY%" && isset($this->row->capVersion)
 	    && $this->permissionContact->actAuthorView($this->row))
-	    return "cap=" . $Conf->capabilityText($this->row, "a");
+	    return "cap=" . $Conf->capability_text($this->row, "a");
 	if ($what == "%SHEPHERD%" || $what == "%SHEPHERDNAME%"
 	    || $what == "%SHEPHERDEMAIL%") {
 	    $pc = pcMembers();
