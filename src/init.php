@@ -138,6 +138,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/src/papersearch.php");
     else if ($class_name == "PaperActions")
         require_once("$ConfSitePATH/src/paperactions.php");
+    else if ($class_name == "PaperStatus")
+        require_once("$ConfSitePATH/src/paperstatus.php");
     else if ($class_name == "Text")
         require_once("$ConfSitePATH/lib/text.php");
     else if ($class_name == "Tagger")

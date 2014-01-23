@@ -123,6 +123,7 @@ src/paperinfo.php
 src/paperlist.php
 src/paperoption.php
 src/papersearch.php
+src/paperstatus.php
 src/papertable.php
 src/rank.php
 src/review.php
