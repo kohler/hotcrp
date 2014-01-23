@@ -312,16 +312,7 @@ class DocumentHelper {
         else
             $doc->filename = null;
 
-	// Check if paper one of the allowed mimetypes.
-	// We prefer to look at data since MacOS browsers get this wrong.
-	if (strncmp("%PDF-", $doc->content, 5) == 0)
-	    $doc->mimetype = Mimetype::type("pdf");
-	else if (strncmp("%!PS-", $doc->content, 5) == 0)
-	    $doc->mimetype = Mimetype::type("ps");
-	else if (substr($doc->content, 512, 4) == "\x00\x6E\x1E\xF0")
-	    $doc->mimetype = Mimetype::type("ppt");
-	else
-	    $doc->mimetype = Mimetype::type(defval($_FILES[$uploadId], "type", "application/octet-stream"));
+        $doc->mimetype = Mimetype::type(defval($_FILES[$uploadId], "type", "application/octet-stream"));
 
         $doc->timestamp = time();
         return $doc;
@@ -341,6 +332,13 @@ class DocumentHelper {
 	// Check if paper one of the allowed mimetypes.
         if (!@$doc->mimetype)
             $doc->mimetype = "application/octet-stream";
+	// Sniff content since MacOS browsers supply bad mimetypes.
+	if (strncmp("%PDF-", $doc->content, 5) == 0)
+	    $doc->mimetype = Mimetype::type("pdf");
+	else if (strncmp("%!PS-", $doc->content, 5) == 0)
+	    $doc->mimetype = Mimetype::type("ps");
+	else if (substr($doc->content, 512, 4) == "\x00\x6E\x1E\xF0")
+	    $doc->mimetype = Mimetype::type("ppt");
         if (($m = Mimetype::lookup($doc->mimetype)))
             $doc->mimetypeid = $m->mimetypeid;
 
