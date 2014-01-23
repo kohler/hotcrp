@@ -83,7 +83,7 @@ class HotCRPDocument {
                          "paper" => $doc->content,
                          "sha1" => $doc->sha1,
                          "documentType" => $doc->documentType);
-        if ($Conf->sversion >= 45 && $doc->filename)
+        if ($Conf->sversion >= 45 && @$doc->filename)
             $columns["filename"] = $doc->filename;
         return array("PaperStorage", "paperStorageId", $columns, "paper");
     }
