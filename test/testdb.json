@@ -1,0 +1,20 @@
+{
+"contacts": [
+    {"name": "Deborah Estrin", "email": "estrin@usc.edu", "affiliation": "University of Southern California", "roles": ["pc"]},
+    {"name": "Eddie Kohler", "email": "kohler@seas.harvard.edu", "affiliation": "Harvard"},
+    {"name": "Marina Tsvetaeva", "email": "marina@poema.ru", "roles": ["pc"]},
+    {"name": "Van Jacobson", "email": "van@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"}
+],
+"papers": [{
+    "title": "Scalable Timers for Soft State Protocols",
+    "abstract": "Soft state protocols use periodic refresh messages to keep network state alive while adapting to changing network conditions; this has raised concerns regarding the scalability of protocols that use the soft-state approach. In existing soft state protocols, the values of the timers that control the sending of these messages, and the timers for aging out state, are chosen by matching empirical observations with desired recovery and response times. These fixed timer-values fail because they use time as a metric for bandwidth; they adapt neither to (1) the wide range of link speeds that exist in most wide-area internets, nor to (2) fluctuations in the amount of network state over time.\n\nWe propose and evaluate a new approach in which timer-values adapt dynamically to the volume of control traffic and available bandwidth on the link. The essential mechanisms required to realize this scalable timers approach are: (1) dynamic adjustment of the senders’ refresh rate so that the bandwidth allocated for control traffic is not exceeded, and (2) estimation of the senders’ refresh rate at the receiver in order to determine when the state can be timed-out and deleted. The refresh messages are sent in a round robin manner not exceeding the bandwidth allocated to control traffic, and taking into account message priorities. We evaluate two receiver estimation methods for dynamically adjusting network state timeout values: (1) counting of the rounds and (2) exponential weighted moving average.",
+    "authors": [
+        {"name": "Puneet Sharma", "email": "puneet@catarina.usc.edu", "affiliation": "Information Sciences Institute, University of Southern California"},
+        {"name": "Deborah Estrin", "email": "estrin@usc.edu", "affiliation": "Information Sciences Institute, University of Southern California"},
+        {"name": "Sally Floyd", "email": "floyd@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"},
+        {"name": "Van Jacobson", "email": "van@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"}
+    ],
+    "submission": {"content": "%PDF-whatever"},
+    "submitted": true
+}]
+}

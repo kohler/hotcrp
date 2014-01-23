@@ -29,10 +29,17 @@ while ($Conf->dblink->more_results())
 $Admin = Contact::find_by_email("chair@_.com", array("name" => "Jane Chair"));
 $Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC, $Admin);
 
-// Create PC.
-$Pc = array();
-foreach (array("Joseph PC", "Roberta PC", "Ampere Voluble", "Moderna Pangloss",
-               "Janet Abelfeld") as $i => $name) {
-    $Pc[$i] = Contact::find_by_email("pc" . ($i + 1) . "@_.com", array("name" => $name));
-    $Pc[$i]->save_roles(Contact::ROLE_PC, $Admin);
+// Load data.
+$json = json_decode(file_get_contents("$ConfSitePATH/test/testdb.json"));
+if (!$json)
+    die("* test/testdb.json error: " . json_last_error_msg() . "\n");
+foreach ($json->contacts as $c)
+    if (!Contact::find_by_email($c->email, $c))
+        die("* failed to create user $c->email\n");
+foreach ($json->papers as $p) {
+    $ps = new PaperStatus;
+    if (!$ps->save($p))
+        die("* failed to create paper $p->title:\n" . join("\n", $ps->error_messages()) . "\n");
 }
+
+echo "* Tests initialized.\n";
