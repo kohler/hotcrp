@@ -22,3 +22,17 @@ if (!$Conf->dblink)
 // Initialize from an empty database.
 if (!$Conf->dblink->multi_query(file_get_contents("$ConfSitePATH/src/schema.sql")))
     die("* Can't reinitialize database.\n" . $Conf->dblink->error);
+while ($Conf->dblink->more_results())
+    $Conf->dblink->next_result();
+
+// Create initial administrator user.
+$Admin = Contact::find_by_email("chair@_.com", array("name" => "Jane Chair"));
+$Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC, $Admin);
+
+// Create PC.
+$Pc = array();
+foreach (array("Joseph PC", "Roberta PC", "Ampere Voluble", "Moderna Pangloss",
+               "Janet Abelfeld") as $i => $name) {
+    $Pc[$i] = Contact::find_by_email("pc" . ($i + 1) . "@_.com", array("name" => $name));
+    $Pc[$i]->save_roles(Contact::ROLE_PC, $Admin);
+}

@@ -225,16 +225,16 @@ class LoginHelper {
             return self::first_user($user, $msg);
 
         if ($Conf->allowEmailTo($user->email))
-            $msg .= "  A password has been emailed to you.  Return here when you receive it to complete the registration process.  If you don’t receive the email, check your spam folders and verify that you entered the correct address.";
+            $msg .= " A password has been emailed to you.  Return here when you receive it to complete the registration process.  If you don’t receive the email, check your spam folders and verify that you entered the correct address.";
         else {
             if ($Opt["sendEmail"])
-                $msg .= "  The email address you provided seems invalid.";
+                $msg .= " The email address you provided seems invalid.";
             else
-                $msg .= "  The conference system is not set up to mail passwords at this time.";
-            $msg .= "  Although an account was created for you, you need the site administrator’s help to retrieve your password.  The site administrator is " . htmlspecialchars($Opt["contactName"] . " <" . $Opt["contactEmail"] . ">") . ".";
+                $msg .= " The conference system is not set up to mail passwords at this time.";
+            $msg .= " Although an account was created for you, you need the site administrator’s help to retrieve your password.  The site administrator is " . htmlspecialchars($Opt["contactName"] . " <" . $Opt["contactEmail"] . ">") . ".";
         }
         if (isset($_REQUEST["password"]) && trim($_REQUEST["password"]) != "")
-            $msg .= "  Note that the password you supplied on the login screen was ignored.";
+            $msg .= " Note that the password you supplied on the login screen was ignored.";
         $Conf->confirmMsg($msg);
         return null;
     }

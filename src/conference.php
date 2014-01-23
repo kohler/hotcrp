@@ -1825,7 +1825,13 @@ class Conference {
             $text .= " (papers " . join(", ", $paperId) . ")";
             $paperId = "null";
         }
-	$this->q("insert into ActionLog (ipaddr, contactId, paperId, action) values ('" . sqlq($_SERVER['REMOTE_ADDR']) . "', " . (is_numeric($who) ? $who : $who->contactId) . ", $paperId, '" . sqlq(substr($text, 0, 4096)) . "')");
+
+        if (!$who)
+            $who = 0;
+        else if (!is_numeric($who))
+            $who = $who->contactId;
+
+	$this->q("insert into ActionLog (ipaddr, contactId, paperId, action) values ('" . sqlq(@$_SERVER["REMOTE_ADDR"]) . "', " . (int) $who . ", $paperId, '" . sqlq(substr($text, 0, 4096)) . "')");
     }
 
 

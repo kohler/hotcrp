@@ -606,7 +606,7 @@ class Contact {
                 $qb .= ",'" . sqlq($reg->$k) . "'";
             }
 
-        $result = $Conf->q("insert into ContactInfo ($qa) values ($qb)");
+        $result = $Conf->ql("insert into ContactInfo ($qa) values ($qb)");
         if (!$result)
             return false;
         $cid = (int) $Conf->lastInsertId("while creating contact");
@@ -641,11 +641,11 @@ class Contact {
 
         // Log
 	if ($ok) {
-            if ($Me->privChair)
+            if ($Me && $Me->privChair)
                 $Conf->infoMsg("Created account for " . htmlspecialchars($email) . ".");
             if ($send)
                 $acct->sendAccountInfo(true, false);
-	    $Conf->log($Me->is_known_user() ? "Created account ($Me->email)" : "Created account", $acct);
+	    $Conf->log($Me && $Me->is_known_user() ? "Created account ($Me->email)" : "Created account", $acct);
 	} else
 	    $Conf->log("Account $email creation failure", $Me);
 
