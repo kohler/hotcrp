@@ -465,9 +465,9 @@ class PaperTable {
 
     private function editable_submission($flags) {
 	if ($this->canUploadFinal)
-	    $this->editable_document(new PaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null)), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
+	    $this->editable_document(PaperOption::find_document(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
         else
-	    $this->editable_document(new PaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null)), $this->prow ? $this->prow->paperStorageId : 0, $flags);
+	    $this->editable_document(PaperOption::find_document(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0, $flags);
     }
 
     private function editable_abstract() {

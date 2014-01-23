@@ -54,6 +54,15 @@ class PaperOption {
         return null;
     }
 
+    static function find_document($id) {
+        if ($id == DTYPE_SUBMISSION)
+            return new PaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null));
+        else if ($id == DTYPE_FINAL)
+            return new PaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null));
+        else
+            return self::find($id);
+    }
+
     static function abbreviate($name, $id) {
         $abbr = strtolower(UnicodeHelper::deaccent($name));
         $abbr = preg_replace('/[^a-z_0-9]/', "-", $abbr);
