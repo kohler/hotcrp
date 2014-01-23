@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 $Error = $Warning = array();
-require_once("Code/header.inc");
+require_once("src/initweb.php");
 require_once("src/papertable.php");
 if ($Me->is_empty())
     $Me->escape();

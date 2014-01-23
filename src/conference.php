@@ -283,7 +283,7 @@ class Conference {
 	// capability version (usually 0, but could allow conference admins
 	// to disable old capabilities paper-by-paper), and capKey
 	// is a random string specific to the conference, stored in Settings
-	// under cap_key (created in header.inc).  Then hashPrefix
+	// under cap_key (created in load_settings).  Then hashPrefix
 	// is the base-64 encoding of the first 8 bytes of this hash, except
 	// that "+" is re-encoded as "-", "/" is re-encoded as "_", and
 	// trailing "="s are removed.

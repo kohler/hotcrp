@@ -12,11 +12,7 @@ if ((@include "$ConfSitePATH/test/testoptions.php") === false)
     die("* Can't load test/testoptions.php.\n");
 $Opt["loaded"] = true;
 
-global $Conf;
-require_once("$ConfSitePATH/lib/base.php");
-require_once("$ConfSitePATH/lib/redirect.php");
-require_once("$ConfSitePATH/src/helpers.php");
-require_once("$ConfSitePATH/src/conference.php");
+require_once("$ConfSitePATH/src/init.php");
 $Opt["dsn"] = Conference::make_dsn($Opt);
 $Conf = new Conference($Opt["dsn"]);
 if (!$Conf->dblink)

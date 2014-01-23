@@ -10,9 +10,9 @@ if [ "$updatenum" != "$schemanum" ]; then
 fi
 
 # check that HOTCRP_VERSION is up to date -- unless first argument is -n
-versionnum=`grep 'HOTCRP_VERSION' Code/header.inc | head -n 1 | sed 's/.*, "//;s/".*//'`
+versionnum=`grep 'HOTCRP_VERSION' src/init.php | head -n 1 | sed 's/.*, "//;s/".*//'`
 if [ "$versionnum" != "$VERSION" -a "$1" != "-n" ]; then
-    echo "error: HOTCRP_VERSION in Code/header.inc ($versionnum)" 1>&2
+    echo "error: HOTCRP_VERSION in src/init.php ($versionnum)" 1>&2
     echo "error: differs from current version ($VERSION)" 1>&2
     exit 1
 fi
@@ -112,6 +112,8 @@ src/distoptions.php
 src/formula.php
 src/helpers.php
 src/hotcrpdocument.php
+src/init.php
+src/initweb.php
 src/mailer.php
 src/meetingtracker.php
 src/messages.csv
@@ -132,7 +134,6 @@ src/updateschema.php
 
 Code/.htaccess
 Code/banal
-Code/header.inc
 Code/mailtemplate.inc
 Code/sample.pdf
 

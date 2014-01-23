@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once("Code/header.inc");
+require_once("src/initweb.php");
 if (!isset($_REQUEST["cap"]) && isset($_SERVER["PATH_INFO"])
     && preg_match(',\A/(1[-\w]+)(?:/|\z),i', $_SERVER["PATH_INFO"], $m))
     $_REQUEST["cap"] = $m[1];

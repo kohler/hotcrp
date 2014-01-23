@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once("Code/header.inc");
+require_once("src/initweb.php");
 
 // *** NB If you change this script, also change the logic in index.php ***
 // *** that hides the link when there are no deadlines to show.         ***

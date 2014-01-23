@@ -7,7 +7,7 @@
 // paper is specified as a suffix to the request.  It may help automatic file
 // naming work for some browsers.
 
-require_once("Code/header.inc");
+require_once("src/initweb.php");
 if ($Me->is_empty())
     $Me->escape();
 
