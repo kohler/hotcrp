@@ -628,6 +628,31 @@ class Contact {
         // Success! Save newly authored papers
         if (count($authored_papers))
             $this->save_authored_papers($authored_papers);
+
+        // Set roles
+        if (isset($reg->roles)) {
+            $rolex = $reg->roles;
+            if (is_string($rolex))
+                $rolex = array($rolex);
+            if (is_array($rolex) || is_object($rolex)) {
+                $r = 0;
+                foreach ($rolex as $k => $v)
+                    if ($v === "pc" || ($v && $k === "pc"))
+                        $r |= self::ROLE_PC;
+                    else if ($v === "admin" || ($v && $k === "admin"))
+                        $r |= self::ROLE_ADMIN;
+                    else if ($v === "chair" || ($v && $k === "chair"))
+                        $r |= self::ROLE_CHAIR;
+                    else if ($v === "corepc" || ($v && $k === "corepc"))
+                        $r = ($r | self::ROLE_PC) & ~self::ROLE_ERC;
+                    else if ($v === "erc" || ($v && $k === "erc"))
+                        $r |= self::ROLE_PC | self::ROLE_ERC;
+                $rolex = $r;
+            }
+            if (is_int($rolex) && $rolex > 0)
+                $this->save_roles($rolex, null);
+        }
+
         $this->password_plaintext = $password;
         return true;
     }
