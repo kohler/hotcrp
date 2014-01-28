@@ -4,14 +4,15 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("src/initweb.php");
-if (!isset($_REQUEST["cap"]) && isset($_SERVER["PATH_INFO"])
+if (!isset($_REQUEST["resetcap"])
+    && isset($_SERVER["PATH_INFO"])
     && preg_match(',\A/(1[-\w]+)(?:/|\z),i', $_SERVER["PATH_INFO"], $m))
-    $_REQUEST["cap"] = $m[1];
+    $_REQUEST["resetcap"] = $m[1];
 
-if (!isset($_REQUEST["cap"]))
+if (!isset($_REQUEST["resetcap"]))
     error_go(false, "You didn’t enter the full password reset link into your browser. Make sure you include the reset code (the string of letters, numbers, and other characters at the end).");
 
-$capdata = $Conf->check_capability($_REQUEST["cap"]);
+$capdata = $Conf->check_capability($_REQUEST["resetcap"]);
 if (!$capdata || $capdata->capabilityType != CAPTYPE_RESETPASSWORD)
     error_go(false, "That password reset code has expired, or you didn’t enter it correctly.");
 
@@ -65,11 +66,12 @@ if (isset($Opt["conferenceSite"]))
 
 echo "</div>
 <hr class='home' />
-<div class='homegrp' id='homereset'>
-<form method='post' action='", hoturl_post("resetpassword"), "' accept-charset='UTF-8'><div class='f-contain'>
-<input type=\"hidden\" name=\"cap\" value=\"", htmlspecialchars($_REQUEST["cap"]), "\" />
-<input type=\"hidden\" name=\"autopassword\" value=\"", htmlspecialchars($_REQUEST["autopassword"]), "\" />
-<p>This form will reset the password for <b>", htmlspecialchars($Acct->email), "</b>. We have randomly generated a potential password, or you can choose your own.</p>
+<div class='homegrp' id='homereset'>\n",
+    Ht::form(hoturl_post("resetpassword")),
+    '<div class="f-contain">',
+    Ht::hidden("resetcap", $_REQUEST["resetcap"]),
+    Ht::hidden("autopassword", $_REQUEST["autopassword"]),
+    "<p>This form will reset the password for <b>", htmlspecialchars($Acct->email), "</b>. Use our suggested replacement password, or choose your own.</p>
 <table>
   <tr><td>",
     Ht::radio("useauto", "y", null),
