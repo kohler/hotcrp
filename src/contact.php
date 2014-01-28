@@ -1892,7 +1892,10 @@ class Contact {
         $rest = array();
         if ($create)
             $template = "@createaccount";
-        else if ($this->password_type == 0)
+        else if ($this->password_type == 0
+                 && (!@$Opt["safePasswords"]
+                     || !is_int($Opt["safePasswords"])
+                     || $Opt["safePasswords"] <= 1))
             $template = "@accountinfo";
         else {
             $rest["capability"] = $Conf->create_capability(CAPTYPE_RESETPASSWORD, array("contactId" => $this->contactId, "timeExpires" => time() + 259200));
