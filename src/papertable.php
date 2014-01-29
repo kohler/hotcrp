@@ -557,7 +557,7 @@ class PaperTable {
 	} else {
 	    foreach ($table as $au) {
                 if (is_object($au))
-                    $au = array($au->firstName, $au->lastName, $au->email, $au->affiliation, 0);
+                    $au = array($au->firstName, $au->lastName, $au->email, $au->affiliation, @$au->contactId);
                 $nm1 = $nm2 = $nm3 = 0;
                 $n = $e = $t = "";
 		$n = trim(Text::highlight("$au[0] $au[1]", $highpreg, $nm1));
@@ -574,7 +574,7 @@ class PaperTable {
                 $this->entryMatches += $nm1 + $nm2 + $nm3;
 		$t = trim($t);
 		if ($au[2] != "" && $viewAs !== null && $viewAs->email != $au[2]
-		    && $viewAs->privChair && defval($au, 4))
+		    && $viewAs->privChair && @$au[4])
 		    $t .= " <a href=\"" . selfHref(array("actas" => $au[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($au)) . "</a>";
 		$names[] = '<p class="odname">' . $prefix . $t . '</p>';
 		$prefix = "";
