@@ -624,8 +624,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
 
     // update PaperOption table
     if (count(PaperOption::option_list())) {
-	$while = "while updating paper options";
-	if (!$Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options), $while))
+	if (!$Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options), "while updating paper options"))
 	    return false;
         foreach ($opt_data as &$x)
             $x = "($paperId, $x)";
@@ -637,7 +636,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
 
     // update PaperStorage.paperId for newly registered papers
     if ($newPaper && count($uploaded_documents))
-        $Conf->qe("update PaperStorage set paperId=$paperId where paperStorageId in (" . join(",", $uploaded_documents) . ")", $while);
+        $Conf->qe("update PaperStorage set paperId=$paperId where paperStorageId in (" . join(",", $uploaded_documents) . ")", "while linking PDFs with paper");
 
     // update PC conflicts if appropriate
     if ($Conf->setting("sub_pcconf") && (!$isSubmitFinal || $Me->privChair)) {
