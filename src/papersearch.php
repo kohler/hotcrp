@@ -1,6 +1,6 @@
 <?php
 // papersearch.php -- HotCRP helper class for searching for papers
-// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $searchKeywords;
@@ -296,7 +296,7 @@ class PaperSearch {
     var $orderTags;
     var $reviewerContact;
     var $matchPreg;
-    var $urlbase;
+    private $urlbase;
     var $warnings;
 
     var $q;
@@ -316,7 +316,7 @@ class PaperSearch {
     var $headingmap;
     var $viewmap;
 
-    var $_matchTable;
+    private $_matchTable;
 
     function __construct($me, $opt) {
 	global $Conf;
