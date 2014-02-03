@@ -880,7 +880,14 @@ class PaperList extends BaseList {
 	return true;
     }
 
-    private function _set_viewmap() {
+    private function _prepare($contact) {
+        $this->contact = $contact;
+        $this->count = 0;
+        $this->any = new Qobject;
+        $this->tagger = new Tagger($contact);
+        $this->scoresOk = $contact->privChair || $contact->is_reviewer()
+            || $Conf->timeAuthorViewReviews();
+
 	$this->viewmap = new Qobject($this->search->viewmap);
 	if ($this->viewmap->cc || $this->viewmap->compactcolumn
             || $this->viewmap->ccol || $this->viewmap->compactcolumns)
@@ -892,15 +899,8 @@ class PaperList extends BaseList {
     public function text($listname, $contact, $options = array()) {
 	global $Conf, $ConfSiteBase;
 
-	$this->contact = $contact;
-	$this->count = 0;
-	$this->any = new Qobject;
-        $this->tagger = new Tagger($contact);
+        $this->_prepare($contact);
 	$url = $this->search->url();
-
-	// check role type
-	$this->scoresOk = $contact->privChair || $contact->is_reviewer()
-	    || $Conf->timeAuthorViewReviews();
 
 	// initialize query
 	$queryOptions = array("joins" => array());
@@ -913,13 +913,10 @@ class PaperList extends BaseList {
 	    $queryOptions["joins"][] = "join $table on (Paper.paperId=$table.paperId)";
 	}
 
-	// collect view data
-        $this->_set_viewmap();
-
 	// get paper list
         $field_list = $this->_listFields($listname);
 	if (!$field_list) {
-	    $Conf->errorMsg("There is no paper list query named '" . htmlspecialchars($listname) . "'.");
+	    $Conf->errorMsg("There is no paper list query named “" . htmlspecialchars($listname) . "”.");
 	    return null;
 	}
 	if (defval($_REQUEST, "selectall") > 0
@@ -1165,15 +1162,7 @@ class PaperList extends BaseList {
     function ajaxColumn($fieldId, $contact) {
 	global $Conf;
 
-	$this->contact = $contact;
-	$this->count = 0;
-	$this->any = new Qobject;
-        $this->tagger = new Tagger($contact);
-	$url = $this->search->url();
-
-	// check role type
-	$this->scoresOk = $contact->privChair || $contact->is_reviewer()
-	    || $Conf->timeAuthorViewReviews();
+        $this->_prepare($contact);
 
 	// initialize query
 	$queryOptions = array("joins" => array());
@@ -1182,9 +1171,6 @@ class PaperList extends BaseList {
 		return null;
 	    $queryOptions["joins"][] = "join $table on (Paper.paperId=$table.paperId)";
 	}
-
-        // collect view data
-        $this->_set_viewmap();
 
 	// get field array
 	$ncol = 0;
