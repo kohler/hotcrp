@@ -107,12 +107,15 @@ class SelectorPaperColumn extends PaperColumn {
     public function col() {
         return "<col width='0*' />";
     }
+    private function checked($pl, $row) {
+        return ($this->name == "selon"
+                || ($this->name == "selconf" && $row->reviewerConflictType > 0))
+            && (!$pl->papersel || defval($pl->papersel, $row->paperId, 1));
+    }
     public function content($pl, $row) {
         $pl->any->sel = true;
         $c = "";
-        if (($this->name == "selon"
-             || ($this->name == "selconf" && $row->reviewerConflictType > 0))
-            && (!$pl->papersel || defval($pl->papersel, $row->paperId, 1))) {
+        if ($this->checked($pl, $row)) {
             $c .= " checked='checked'";
             unset($row->folded);
         }
@@ -236,6 +239,26 @@ class AuthorsPaperColumn extends PaperColumn {
         $this->aufull = !$pl->is_folded("aufull");
         return true;
     }
+    private function full_authors($row) {
+        $lastaff = "";
+        $anyaff = false;
+        $aus = $affaus = array();
+        foreach ($row->authorTable as $au) {
+            if ($au[3] != $lastaff && count($aus)) {
+                $affaus[] = array($aus, $lastaff);
+                $aus = array();
+                $anyaff = $anyaff || ($au[3] != "");
+            }
+            $lastaff = $au[3];
+            $aus[] = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $au[2];
+        }
+        if (count($aus))
+            $affaus[] = array($aus, $lastaff);
+        foreach ($affaus as &$ax)
+            if ($ax[1] === "" && $anyaff)
+                $ax[1] = "unaffiliated";
+        return $affaus;
+    }
     public function content($pl, $row) {
 	if (!$pl->contact->canViewAuthors($row, true))
 	    return "";
@@ -243,24 +266,12 @@ class AuthorsPaperColumn extends PaperColumn {
 	$aus = array();
         $highlight = defval($pl->search->matchPreg, "authorInformation", "");
 	if ($this->aufull) {
-	    $lastaff = "";
-	    $anyaff = false;
-	    $affaus = array();
-	    foreach ($row->authorTable as $au) {
-		if ($au[3] != $lastaff && count($aus)) {
-		    $affaus[] = array($aus, $lastaff);
-		    $aus = array();
-		    $anyaff = $anyaff || ($au[3] != "");
-		}
-		$lastaff = $au[3];
-		$n = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $au[2];
-		$aus[] = Text::highlight($n, $highlight);
-	    }
-	    if (count($aus))
-		$affaus[] = array($aus, $lastaff);
+            $affaus = $this->full_authors($row);
 	    foreach ($affaus as &$ax) {
-		$aff = ($ax[1] == "" && $anyaff ? "unaffiliated" : $ax[1]);
-                $aff = Text::highlight($aff, $highlight);
+                foreach ($ax[0] as &$axn)
+                    $axn = Text::highlight($axn, $highlight);
+                unset($axn);
+                $aff = Text::highlight($ax[1], $highlight);
 		$ax = commajoin($ax[0]) . ($aff ? " <span class='auaff'>($aff)</span>" : "");
 	    }
 	    return commajoin($affaus);
