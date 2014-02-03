@@ -1211,14 +1211,15 @@ class PaperList extends BaseList {
 	$data = array();
 	$name = $fdef->name;
 	if (($x = $fdef->header($this, null, 0)))
-	    $data["$name.title"] = $x;
+	    $data["$name.headerhtml"] = $x;
+        $m = array();
 	foreach ($rows as $row) {
 	    if ($fdef->content_empty($this, $row))
-		$c = "";
+		$m[$row->paperId] = "";
 	    else
-		$c = $fdef->content($this, $row);
-	    $data["$name.$row->paperId"] = $c;
-	}
+		$m[$row->paperId] = $fdef->content($this, $row);
+        }
+        $data["$name.html"] = $m;
 
 	return $data;
     }

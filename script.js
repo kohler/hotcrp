@@ -1968,13 +1968,14 @@ function make_callback(dofold, type, which) {
     var xtype = ({au: 1, anonau: 1, aufull: 1}[type] ? "authors" : type);
     return function (rv) {
 	var i, x, elt, eltx, h6 = "";
-	if ((x = rv[xtype + ".title"]))
+	if ((x = rv[xtype + ".headerhtml"]))
 	    title[type] = x;
 	if ((x = title[type]) && !plinfo.notitle[type])
 	    h6 = "<h6>" + x + ":</h6> ";
-	for (i in rv)
-	    if (i.substr(0, xtype.length) == xtype && (elt = $$(i)))
-		set(elt, rv[i], which, type);
+        x = rv[xtype + ".html"] || {};
+        for (i in x)
+            if ((elt = $$(xtype + "." + i)))
+                set(elt, x[i], which, type);
 	plinfo.needload[xtype] = false;
 	fold(which, dofold, xtype);
 	if (type == "aufull")
