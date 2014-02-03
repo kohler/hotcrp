@@ -186,6 +186,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/lib/message.php");
     else if ($class_name == "Formula")
         require_once("$ConfSitePATH/src/formula.php");
+    else if ($class_name == "S3Document")
+        require_once("$ConfSitePATH/lib/s3document.php");
     else if ($class_name == "Ht")
         require_once("$ConfSitePATH/lib/ht.php");
 }

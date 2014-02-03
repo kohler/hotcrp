@@ -73,6 +73,18 @@ class HotCRPDocument {
         return $mimetypes;
     }
 
+    public function prepare_storage($doc, $docinfo) {
+        global $Conf;
+        if ($Conf->setting_data("s3_bucket")) {
+            $s3 = new S3Document(array("bucket" => $Conf->setting_data("s3_bucket"),
+                                       "key" => $Conf->setting_data("s3_key"),
+                                       "secret" => $Conf->setting_data("s3_secret")));
+            $s3->save(bin2hex($doc->sha1) . Mimetype::extension($doc->mimetype),
+                      $doc->content,
+                      $doc->mimetype);
+        }
+    }
+
     public function database_storage($doc, $docinfo) {
         global $Conf;
         $doc->paperId = $docinfo->paperId;

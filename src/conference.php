@@ -192,6 +192,16 @@ class Conference {
                  && $this->save_setting("cap_key", 1, $key)))
             $Opt["disableCapabilities"] = true;
 
+        // S3 settings
+        foreach (array("s3_bucket", "s3_key", "s3_secret") as $k)
+            if (!@$this->settingTexts[$k] && @$Opt[$k])
+                $this->settingTexts[$k] = $Opt[$k];
+        if (!@$this->settingTexts["s3_bucket"]
+            || !@$this->settingTexts["s3_key"]
+            || !@$this->settingTexts["s3_secret"])
+            unset($this->settingTexts["s3_bucket"], $this->settingTexts["s3_key"],
+                  $this->settingTexts["s3_secret"]);
+
         // GC old capabilities
         if ($this->sversion >= 58
             && defval($this->settings, "capability_gc", 0) < time() - 86400) {

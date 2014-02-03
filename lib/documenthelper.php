@@ -281,6 +281,7 @@ class DocumentHelper {
             $doc->size = strlen($doc->content);
 	if (!isset($doc->sha1) && isset($doc->content))
 	    $doc->sha1 = sha1($doc->content, true);
+        $docclass->prepare_storage($doc, $docinfo);
         if (($dbinfo = $docclass->database_storage($doc, $docinfo)))
             self::_store_database($dbinfo, $doc);
         if (($fsinfo = $docclass->filestore_pattern($doc, $docinfo))) {
