@@ -92,8 +92,10 @@ class SelectorPaperColumn extends PaperColumn {
 	global $Conf;
         if ($this->name == "selconf" && !$pl->contact->privChair)
             return false;
-        if ($this->name == "selconf")
+        if ($this->name == "selconf") {
+            $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
 	    $Conf->footerScript("add_conflict_ajax()");
+        }
         return true;
     }
     public function header($pl, $row, $ordinal) {
@@ -109,12 +111,12 @@ class SelectorPaperColumn extends PaperColumn {
         $pl->any->sel = true;
         $c = "";
         if (($this->name == "selon"
-             || ($this->name == "selconf" && $row->conflictType > 0))
+             || ($this->name == "selconf" && $row->reviewerConflictType > 0))
             && (!$pl->papersel || defval($pl->papersel, $row->paperId, 1))) {
             $c .= " checked='checked'";
             unset($row->folded);
         }
-        if ($this->name == "selconf" && $row->conflictType >= CONFLICT_AUTHOR)
+        if ($this->name == "selconf" && $row->reviewerConflictType >= CONFLICT_AUTHOR)
             $c .= " disabled='disabled'";
         if ($this->name != "selconf")
             $c .= " onclick='pselClick(event,this)'";
