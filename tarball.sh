@@ -94,6 +94,7 @@ lib/mimetype.php
 lib/qobject.php
 lib/restoredb.sh
 lib/runsql.sh
+lib/s3document.php
 lib/tagger.php
 lib/text.php
 lib/unicodehelper.php
