@@ -64,6 +64,9 @@ class PaperColumn extends Column {
     public function content($pl, $row) {
         return "";
     }
+    public function text($pl, $row) {
+        return "";
+    }
 }
 
 class IdPaperColumn extends PaperColumn {
@@ -80,6 +83,9 @@ class IdPaperColumn extends PaperColumn {
     public function content($pl, $row) {
         $href = $pl->_paperLink($row);
         return "<a href='$href' tabindex='4'>#$row->paperId</a>";
+    }
+    public function text($pl, $row) {
+        return $row->paperId;
     }
 }
 
@@ -126,6 +132,9 @@ class SelectorPaperColumn extends PaperColumn {
         $t = "<span class=\"pl_rownum fx6\">" . $pl->count . ". </span>" . "<input type='checkbox' class='cb' name='pap[]' value='$row->paperId' tabindex='3' id='psel$pl->count' $c/>";
         return $t;
     }
+    public function text($pl, $row) {
+        return $this->checked($pl, $row) ? "X" : "";
+    }
 }
 
 class TitlePaperColumn extends PaperColumn {
@@ -143,6 +152,9 @@ class TitlePaperColumn extends PaperColumn {
         $href = $pl->_paperLink($row);
         $x = Text::highlight($row->title, defval($pl->search->matchPreg, "title"));
         return "<a href='$href' tabindex='5'>" . $x . "</a>" . $pl->_contentDownload($row);
+    }
+    public function text($pl, $row) {
+        return $row->title;
     }
 }
 
@@ -179,6 +191,10 @@ class StatusPaperColumn extends PaperColumn {
         if (!$this->is_long && $status_info[0] == "pstat_sub")
             return "";
         return "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span>";
+    }
+    public function text($pl, $row) {
+        $status_info = $pl->contact->paper_status_info($row, $pl->search->limitName != "a" && $pl->contact->allowAdminister($row));
+        return $status_info[1];
     }
 }
 
@@ -224,6 +240,12 @@ class ReviewStatusPaperColumn extends PaperColumn {
             return "<b>$row->reviewCount</b>/$row->startedReviewCount";
         else
             return "<b>$row->reviewCount</b>";
+    }
+    public function text($pl, $row) {
+        if ($row->reviewCount != $row->startedReviewCount)
+            return "$row->reviewCount/$row->startedReviewCount";
+        else
+            return $row->reviewCount;
     }
 }
 
@@ -291,6 +313,22 @@ class AuthorsPaperColumn extends PaperColumn {
 	    return join(", ", $aus);
 	}
     }
+    public function text($pl, $row) {
+	if (!$pl->contact->canViewAuthors($row, true))
+	    return "";
+	cleanAuthor($row);
+	if ($this->aufull) {
+            $affaus = $this->full_authors($row);
+	    foreach ($affaus as &$ax)
+		$ax = commajoin($ax[0]) . ($ax[1] ? " ($ax[1])" : "");
+            return commajoin($affaus);
+	} else {
+            $aus = array();
+	    foreach ($row->authorTable as $au)
+		$aus[] = Text::abbrevname_text($au);
+	    return join(", ", $aus);
+	}
+    }
 }
 
 class CollabPaperColumn extends PaperColumn {
@@ -315,6 +353,12 @@ class CollabPaperColumn extends PaperColumn {
             $x .= ($x === "" ? "" : ", ") . trim($c);
         return Text::highlight($x, defval($pl->search->matchPreg, "collaborators"));
     }
+    public function text($pl, $row) {
+        $x = "";
+        foreach (explode("\n", $row->collaborators) as $c)
+            $x .= ($x === "" ? "" : ", ") . trim($c);
+        return $x;
+    }
 }
 
 class AbstractPaperColumn extends PaperColumn {
@@ -329,6 +373,9 @@ class AbstractPaperColumn extends PaperColumn {
     }
     public function content($pl, $row) {
         return Text::highlight($row->abstract, defval($pl->search->matchPreg, "abstract"));
+    }
+    public function text($pl, $row) {
+        return $row->abstract;
     }
 }
 
@@ -544,10 +591,10 @@ class DesirabilityPaperColumn extends PaperColumn {
         return "<col width='0*' />";
     }
     public function content($pl, $row) {
-        if (isset($row->desirability))
-            return htmlspecialchars($row->desirability);
-        else
-            return "0";
+        return htmlspecialchars(@($row->desirability + 0));
+    }
+    public function text($pl, $row) {
+        return @($row->desirability + 0);
     }
 }
 
@@ -575,6 +622,9 @@ class TopicScorePaperColumn extends PaperColumn {
     }
     public function content($pl, $row) {
         return htmlspecialchars($row->topicInterestScore + 0);
+    }
+    public function text($pl, $row) {
+        return $row->topicInterestScore + 0;
     }
 }
 
@@ -622,6 +672,9 @@ class PreferencePaperColumn extends PaperColumn {
             return "N/A";
         else
             return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' id='revpref$row->paperId' value=\"$pref\" tabindex='2' />";
+    }
+    public function text($pl, $row) {
+        return @($row->reviewerPreference + 0);
     }
 }
 
@@ -836,6 +889,14 @@ class TagPaperColumn extends PaperColumn {
             return "";
         else if ($v === 0 && !$this->is_value)
             return "&#x2713;";
+        else
+            return $v;
+    }
+    public function text($pl, $row) {
+        if (($v = $this->_tag_value($row)) === null)
+            return "";
+        else if ($v === 0 && !$this->is_value)
+            return "X";
         else
             return $v;
     }
