@@ -172,12 +172,10 @@ class StatusPaperColumn extends PaperColumn {
         if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0
             && $pl->contact->canViewDecision($row))
             $pl->any->need_final = true;
-        $long = 0;
-        if ($pl->search->limitName != "a" && $pl->contact->allowAdminister($row))
-            $long = 2;
-        if (!$this->is_long)
-            $long = ($long == 2 ? -2 : -1);
-        return $pl->contact->paperStatus($row->paperId, $row, $long);
+        $status_info = $pl->contact->paper_status_info($row, $pl->search->limitName != "a" && $pl->contact->allowAdminister($row));
+        if (!$this->is_long && $status_info[0] == "pstat_sub")
+            return "";
+        return "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span>";
     }
 }
 

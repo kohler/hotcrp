@@ -53,6 +53,8 @@ class Contact {
     private $capabilities = null;
     private $activated_ = false;
 
+    static private $status_info_cache = array();
+
 
     public function __construct() {
     }
@@ -1734,42 +1736,32 @@ class Contact {
     }
 
 
-    function paperStatus($paperId, $row, $long) {
-	global $Conf, $paperStatusCache;
+    function paper_status_info($row, $forceShow = null) {
+	global $Conf;
 	if ($row->timeWithdrawn > 0)
-	    return "<span class='pstat pstat_with'>Withdrawn</span>";
-	else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1)
-	    return "<span class='pstat pstat_noup'>No submission</span>";
-	else if (isset($row->outcome) && $row->outcome != 0
-		 && $this->canViewDecision($row, abs($long) > 1)) {
-	    if (!isset($paperStatusCache) || !$paperStatusCache)
-		$paperStatusCache = array();
-	    if (!isset($paperStatusCache[$row->outcome])) {
-		$data = "<span class=\"pstat "
-		    . ($row->outcome > 0 ? "pstat_decyes" : "pstat_decno");
+            return array("pstat_with", "Withdrawn");
+	else if (@$row->outcome && $this->canViewDecision($row, $forceShow)) {
+            if (!($data = @self::$status_info_cache[$row->outcome])) {
+                $decclass = ($row->outcome > 0 ? "pstat_decyes" : "pstat_decno");
 
 		$outcomes = $Conf->outcome_map();
 		$decname = @$outcomes[$row->outcome];
 		if ($decname) {
 		    $trdecname = preg_replace('/[^-.\w]/', '', $decname);
 		    if ($trdecname != "")
-			$data .= " pstat_" . strtolower($trdecname);
-		    $data .= "\">" . htmlspecialchars($decname) . "</span>";
-		} else
-		    $data .= "\">Unknown decision #" . htmlspecialchars($row->outcome) . "</span>";
+                        $decclass .= " pstat_" . strtolower($trdecname);
+                } else
+                    $decname = "Unknown decision #" . $row->outcome;
 
-		$paperStatusCache[$row->outcome] = $data;
+		$data = self::$status_info_cache[$row->outcome] = array($decclass, $decname);
 	    }
-	    return $paperStatusCache[$row->outcome];
-	} else {
-	    if ($row->timeSubmitted > 0) {
-		if ($long < 0)
-		    return "";
-		$x = "<span class='pstat pstat_sub'>Submitted</span>";
-	    } else
-		$x = "<span class='pstat pstat_prog'>Not ready</span>";
-	    return $x;
-	}
+	    return $data;
+	} else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1)
+	    return array("pstat_noup", "No submission");
+        else if ($row->timeSubmitted > 0)
+            return array("pstat_sub", "Submitted");
+        else
+            return array("pstat_prog", "Not ready");
     }
 
 

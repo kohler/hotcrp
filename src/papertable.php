@@ -299,7 +299,9 @@ class PaperTable {
 
 	// status and download
 	if ($Me->canDownloadPaper($prow)) {
-	    $t = "<td class='nowrap pad'>" . $Me->paperStatus($prow->paperId, $prow, 0) . "</td>";
+            $status_info = $Me->paper_status_info($prow);
+	    $t = "<td class=\"nowrap pad\">"
+                . "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span></td>";
 	    $pdfs = array();
 
 	    $dprefix = "";
