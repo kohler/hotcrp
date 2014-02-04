@@ -1219,7 +1219,7 @@ class PaperList extends BaseList {
 	return $data;
     }
 
-    public function text_json($fields, $options = array()) {
+    public function text_json($fields) {
         if (!$this->_prepare())
             return null;
 
@@ -1241,7 +1241,7 @@ class PaperList extends BaseList {
                     && !$fdef->content_empty($this, $row)
                     && ($text = $fdef->text($this, $row)) !== "")
                     $p[$fdef->name] = $text;
-            $x[$row->paperId] = (object) $x;
+            $x[$row->paperId] = (object) $p;
         }
         return $x;
     }

@@ -5,7 +5,7 @@
     {"name": "Marina Tsvetaeva", "email": "marina@poema.ru", "roles": ["pc"]},
     {"name": "Van Jacobson", "email": "van@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"},
     {"name": "Mary Baker", "email": "mgbaker@cs.stanford.edu", "affiliation": "Stanford University", "roles": ["pc"]},
-    {"name": "Jon Crowcroft", "email": "jon@cs.ucla.edu", "affiliation": "University College London", "roles": ["pc"]},
+    {"name": "Jon Crowcroft", "email": "jon@cs.ucl.ac.uk", "affiliation": "University College London", "roles": ["pc"]},
     {"name": "Peter Danzig", "email": "peter.danzig@usc.edu", "affiliation": "University of Southern California", "roles": ["pc"]},
     {"name": "Christophe Diot", "email": "christophe.diot@sophia.inria.fr", "affiliation": "INRIA", "roles": ["pc"]},
     {"name": "Peter Druschel", "email": "pdruschel@cs.rice.edu", "affiliation": "Rice", "roles": ["pc"]},
@@ -53,6 +53,7 @@
         {"name":"Steven Lin", "email": "sclin@leland.stanford.edu", "affiliation": "Stanford University", "contact": true},
         {"name":"Nick McKeown", "email": "nickm@ee.stanford.edu", "affiliation": "Stanford University"}
     ],
+    "pc_conflicts": ["mgbaker@cs.stanford.edu"],
     "submission": {"content": "%PDF-whatever3"},
     "submitted": true
 },

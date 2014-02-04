@@ -14,8 +14,9 @@ $user_estrin = Contact::find_by_email("estrin@usc.edu");
 $user_kohler = Contact::find_by_email("kohler@seas.harvard.edu");
 $user_marina = Contact::find_by_email("marina@poema.ru");
 $user_van = Contact::find_by_email("van@ee.lbl.gov");
-$user_mbaker = Contact::find_by_email("mgbaker@cs.stanford.edu");
-$user_sshenker = Contact::find_by_email("shenker@parc.xerox.com");
+$user_mgbaker = Contact::find_by_email("mgbaker@cs.stanford.edu");
+$user_shenker = Contact::find_by_email("shenker@parc.xerox.com");
+$user_jon = Contact::find_by_email("jon@cs.ucl.ac.uk");
 $user_nobody = new Contact;
 
 // users are different
@@ -72,12 +73,37 @@ assert(!$user_capability->canAdminister($paper1));
 assert(!$user_capability->canViewTags($paper1));
 
 // role assignment works
-$paper18 = $Conf->paperRow(18, $user_mbaker);
-assert($user_sshenker->canAdminister($paper18));
-assert(!$user_mbaker->canAdminister($paper1));
-assert(!$user_mbaker->canAdminister($paper18));
+$paper18 = $Conf->paperRow(18, $user_mgbaker);
+assert($user_shenker->canAdminister($paper18));
+assert(!$user_mgbaker->canAdminister($paper1));
+assert(!$user_mgbaker->canAdminister($paper18));
 
 // author derivation works
-assert($user_mbaker->actAuthorView($paper18));
+assert($user_mgbaker->actAuthorView($paper18));
+
+// simple search
+$pl = new PaperList(new PaperSearch($user_shenker, "au:berkeley"));
+$j = $pl->text_json("id title");
+assert(join(";", array_keys($j)) == "1;6;13;15");
+
+// sorting works
+$pl = new PaperList(new PaperSearch($user_shenker, "au:berkeley sort:title"));
+$j = $pl->text_json("id title");
+assert(join(";", array_keys($j)) == "15;13;1;6");
+
+// correct conflict information returned
+$pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18"),
+                    array("reviewer" => $user_mgbaker));
+$j = $pl->text_json("id selconf");
+assert(join(";", array_keys($j)) == "1;2;3;4;5;15;16;17;18");
+assert(!@$j[1]->selconf && !@$j[2]->selconf && @$j[3]->selconf && !@$j[4]->selconf && !@$j[5]->selconf
+       && !@$j[15]->selconf && !@$j[16]->selconf && !@$j[17]->selconf && @$j[18]->selconf);
+
+$pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18"),
+                    array("reviewer" => $user_jon));
+$j = $pl->text_json("id selconf");
+assert(join(";", array_keys($j)) == "1;2;3;4;5;15;16;17;18");
+assert(!@$j[1]->selconf && !@$j[2]->selconf && !@$j[3]->selconf && !@$j[4]->selconf && !@$j[5]->selconf
+       && !@$j[15]->selconf && !@$j[16]->selconf && @$j[17]->selconf && !@$j[18]->selconf);
 
 echo "* Tests complete.\n";

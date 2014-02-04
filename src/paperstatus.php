@@ -304,15 +304,17 @@ class PaperStatus {
         $conflicts = @$pj->pc_conflicts;
         $pj->pc_conflicts = (object) array();
         $pj->bad_pc_conflicts = (object) array();
-        if ($conflicts && is_object($conflicts)) {
+        if ($conflicts && (is_object($conflicts) || is_array($conflicts))) {
             foreach ($conflicts as $email => $ct) {
+                if (is_int($email) && is_string($ct))
+                    list($email, $ct) = array($ct, true);
                 if ($ct === "none" || $ct === "" || $ct === false || $ct === 0)
                     continue;
                 if ($ct === "conflict")
                     $ct = true;
                 if (!($pccid = pcByEmail($email)))
                     $pj->bad_pc_conflicts->$email = true;
-                else if (!is_int($ct) && !is_string($ct))
+                else if (!is_int($ct) && !is_string($ct) && $ct !== true)
                     $this->set_error("pc_conflicts", "Format error [PC conflicts]");
                 else {
                     if (is_int($ct) && isset(Conflict::$type_names[$ct]))

@@ -320,6 +320,8 @@ class PaperSearch {
 
     function __construct($me, $opt) {
 	global $Conf;
+        if (is_string($opt))
+            $opt = array("q" => $opt);
 
 	// contact facts
 	$this->contact = $me;
