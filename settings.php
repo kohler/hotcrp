@@ -863,7 +863,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
     // warn on other relationships
     if (value("resp_open") > 0
-        && value("au_seerev") <= 0
+        && value("au_seerev", -1) <= 0
         && value("resp_done", $Now + 1) > $Now)
 	$Conf->warnMsg("Authors are allowed to respond to the reviews, but authors can’t see the reviews.  This seems odd.");
     if (value("sub_freeze", -1) == 0
@@ -883,7 +883,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
 	    $Highlight["rev_open"] = true;
 	    break;
 	}
-    if (value("au_seerev", -1) != AU_SEEREV_NO
+    if (value_or_setting("au_seerev") != AU_SEEREV_NO
 	&& $Conf->setting("pcrev_soft") > 0
 	&& $Now < $Conf->setting("pcrev_soft")
 	&& count($Error) == 0)
@@ -893,7 +893,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
 	&& value_or_setting("seedec") != Conference::SEEDEC_ALL)
 	$Conf->warnMsg("The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”");
     if (value("seedec") == Conference::SEEDEC_ALL
-        && value_or_setting("au_seerev", -1) == AU_SEEREV_NO)
+        && value_or_setting("au_seerev") == AU_SEEREV_NO)
         $Conf->warnMsg("Authors can see decisions, but not reviews. This is sometimes unintentional.");
 
     // unset text messages that equal the default
