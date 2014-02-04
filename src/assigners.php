@@ -600,7 +600,7 @@ class AssignmentSet {
                                         "q" => join(" ", array_keys(AutoassignmentPaperColumn::$info))));
         $plist = new PaperList($search);
         $plist->display .= " reviewers ";
-        echo $plist->text("reviewers", $Me);
+        echo $plist->text("reviewers");
 
 	echo "<div class='g'></div>";
 	echo "<h3>Assignment summary</h3>\n";

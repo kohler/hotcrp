@@ -338,7 +338,7 @@ if ($reviewer > 0) {
 	Ht::checkbox(false, false, true, array("id" => "assrevimmediate")),
 	"&nbsp;", Ht::label("Automatically save assignments", "assrevimmediate"),
 	"</span></div>\n",
-	$paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"), $Me,
+	$paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"),
                          array("class" => "pltable_full", "header_links" => true)),
 	"<div class='aa'><input type='submit' class='bb' name='update' value='Save assignments' /></div>\n",
 	"</div></form></div>\n";

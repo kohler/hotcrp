@@ -486,31 +486,6 @@ class PaperList extends BaseList {
 	    . " </tfoot>\n";
     }
 
-    function _canonicalize_fields($fields) {
-	$field_list = array();
-	foreach ($fields as $fid) {
-	    $nf = array();
-	    if ($fid == "scores") {
-		if ($this->scoresOk) {
-                    $nf = ScorePaperColumn::lookup_all();
-                    $this->scoresOk = "present";
-                }
-	    } else if ($fid == "formulas") {
-		if ($this->scoresOk)
-                    $nf = FormulaPaperColumn::lookup_all();
-	    } else if ($fid == "tagreports") {
-                $nf = TagReportPaperColumn::lookup_all();
-	    } else if (($f = PaperColumn::lookup($fid)))
-		$nf[] = $f;
-	    foreach ($nf as $f)
-                $field_list[] = $f;
-        }
-	if (defval($_REQUEST, "selectall") > 0
-            && $field_list[0]->name == "sel")
-	    $field_list[0] = PaperColumn::lookup("selon");
-	return $field_list;
-    }
-
     static function _listDescription($listname) {
 	switch ($listname) {
 	  case "reviewAssignment":
@@ -535,64 +510,76 @@ class PaperList extends BaseList {
     private function _list_columns($listname) {
 	switch ($listname) {
 	case "a":
-            $fields = "id title statusfull revstat scores";
-            break;
+            return "id title statusfull revstat scores";
 	case "authorHome":
-	    $fields = "id title statusfull";
-	    break;
+	    return "id title statusfull";
 	case "s":
 	case "acc":
-	    $fields = "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
-	    break;
+	    return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	case "all":
 	case "act":
-            $fields = "sel id title statusfull revtype authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
-	    break;
+            return "sel id title statusfull revtype authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	case "reviewerHome":
 	    $this->_default_linkto("review");
-	    $fields = "id title revtype status";
-	    break;
+	    return "id title revtype status";
 	case "r":
 	case "lead":
 	    $this->_default_linkto("review");
-            $fields = "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
-	    break;
+            return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	case "rout":
 	    $this->_default_linkto("review");
-            $fields = "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
-	    break;
+            return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	case "req":
 	    $this->_default_linkto("review");
-            $fields = "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
-	    break;
+            return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
 	case "reqrevs":
 	    $this->_default_linkto("review");
-            $fields = "id title revdelegation revsubmitted revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
-	    break;
+            return "id title revdelegation revsubmitted revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
         case "reviewAssignment":
             $this->_default_linkto("assign");
-            $fields = "id title revpref topicscore desirability assrev authors tags topics reviewers allrevpref authorsmatch collabmatch scores formulas";
-	    break;
+            return "id title revpref topicscore desirability assrev authors tags topics reviewers allrevpref authorsmatch collabmatch scores formulas";
         case "conflict":
 	    $this->_default_linkto("assign");
-            $fields = "selconf id title authors abstract tags authorsmatch collabmatch foldall";
-	    break;
+            return "selconf id title authors abstract tags authorsmatch collabmatch foldall";
         case "editReviewPreference":
             $this->_default_linkto("paper");
-            $fields = "sel id title topicscore revtype editrevpref authors abstract topics";
-	    break;
+            return "sel id title topicscore revtype editrevpref authors abstract topics";
         case "reviewers":
             $this->_default_linkto("assign");
-            $fields = "id title status reviewers autoassignment";
-	    break;
+            return "id title status reviewers autoassignment";
         case "reviewersSel":
             $this->_default_linkto("assign");
-            $fields = "selon id title status reviewers";
-	    break;
-	  default:
+            return "selon id title status reviewers";
+        default:
 	    return null;
 	}
-	return $this->_canonicalize_fields(explode(" ", $fields));
+    }
+
+    function _canonicalize_columns($fields) {
+        if (is_string($fields))
+            $fields = explode(" ", $fields);
+        $field_list = array();
+	foreach ($fields as $fid) {
+	    $nf = array();
+	    if ($fid == "scores") {
+		if ($this->scoresOk) {
+                    $nf = ScorePaperColumn::lookup_all();
+                    $this->scoresOk = "present";
+                }
+	    } else if ($fid == "formulas") {
+		if ($this->scoresOk)
+                    $nf = FormulaPaperColumn::lookup_all();
+	    } else if ($fid == "tagreports") {
+                $nf = TagReportPaperColumn::lookup_all();
+	    } else if (($f = PaperColumn::lookup($fid)))
+		$nf[] = $f;
+	    foreach ($nf as $f)
+                $field_list[] = $f;
+        }
+	if (defval($_REQUEST, "selectall") > 0
+            && $field_list[0]->name == "sel")
+	    $field_list[0] = PaperColumn::lookup("selon");
+	return $field_list;
     }
 
     private function _addAjaxLoadForm($pap, $extra = "") {
@@ -906,12 +893,13 @@ class PaperList extends BaseList {
 	return true;
     }
 
-    private function _prepare($contact) {
-        $this->contact = $contact;
+    private function _prepare() {
+        $this->contact = $this->search->contact;
         $this->count = 0;
         $this->any = new Qobject;
-        $this->tagger = new Tagger($contact);
-        $this->scoresOk = $contact->privChair || $contact->is_reviewer()
+        $this->tagger = new Tagger($this->contact);
+        $this->scoresOk = $this->contact->privChair
+            || $this->contact->is_reviewer()
             || $Conf->timeAuthorViewReviews();
 
 	$this->query_options = array("joins" => array());
@@ -1007,10 +995,10 @@ class PaperList extends BaseList {
         $this->sorter->type = $this->sorter->field->name;
     }
 
-    public function text($listname, $contact, $options = array()) {
+    public function text($listname, $options = array()) {
 	global $Conf, $ConfSiteBase;
 
-        if (!$this->_prepare($contact))
+        if (!$this->_prepare())
             return null;
 
 	// get column list, check sort
@@ -1019,6 +1007,7 @@ class PaperList extends BaseList {
 	    $Conf->errorMsg("There is no paper list query named “" . htmlspecialchars($listname) . "”.");
 	    return null;
 	}
+        $field_list = $this->_canonicalize_columns($field_list);
         $field_list = $this->_view_columns($field_list);
         $field_list = $this->_prepare_columns($field_list);
         $this->_prepare_sort();
@@ -1195,10 +1184,8 @@ class PaperList extends BaseList {
 	return $x;
     }
 
-    function ajaxColumn($fieldId, $contact) {
-	global $Conf;
-
-        if (!$this->_prepare($contact)
+    function ajaxColumn($fieldId) {
+        if (!$this->_prepare()
             || !($fdef = PaperColumn::lookup($fieldId)))
             return null;
 

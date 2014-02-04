@@ -111,7 +111,7 @@ function topic_ids_to_text($tids, $tmap, $tomap) {
 if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $Search = new PaperSearch($Me, $_REQUEST);
     $pl = new PaperList($Search);
-    $response = $pl->ajaxColumn("abstract", $Me);
+    $response = $pl->ajaxColumn("abstract");
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
 } else if ($getaction == "abstract" && isset($papersel)) {
@@ -162,7 +162,7 @@ if ($getaction && ($fdef = PaperColumn::lookup($getaction))
     }
     $Search = new PaperSearch($Me, $_REQUEST);
     $pl = new PaperList($Search);
-    $response = $pl->ajaxColumn($getaction, $Me);
+    $response = $pl->ajaxColumn($getaction);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
 }
@@ -1110,7 +1110,7 @@ $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, array("sort" => true, "list" => true,
 				       "display" => defval($_REQUEST, "display")));
-    $pl_text = $pl->text($Search->limitName, $Me, array("class" => "pltable_full"));
+    $pl_text = $pl->text($Search->limitName, array("class" => "pltable_full"));
     $pldisplay = $pl->display;
 } else
     $pl = null;

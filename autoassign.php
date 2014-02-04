@@ -579,7 +579,7 @@ if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
     foreach (preg_split('/\s+/', defval($_REQUEST, "prevpap")) as $p)
 	if (!isset($plist->papersel[$p]))
 	    $plist->papersel[$p] = 0;
-    echo $plist->text("reviewersSel", $Me, array("nofooter" => true));
+    echo $plist->text("reviewersSel", array("nofooter" => true));
     echo "<input type='hidden' name='prevt' value=\"", htmlspecialchars($_REQUEST["t"]), "\" />",
 	"<input type='hidden' name='prevq' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />";
     if ($plist->ids)
