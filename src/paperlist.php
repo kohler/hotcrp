@@ -1219,4 +1219,31 @@ class PaperList extends BaseList {
 	return $data;
     }
 
+    public function text_json($fields, $options = array()) {
+        if (!$this->_prepare())
+            return null;
+
+        // get column list, check sort
+        $field_list = $this->_canonicalize_columns($fields);
+        $field_list = $this->_view_columns($field_list);
+        $field_list = $this->_prepare_columns($field_list);
+        $this->_prepare_sort();
+
+        $rows = $this->_make_query($field_list);
+        if ($rows === null)
+            return null;
+
+        $x = array();
+        foreach ($rows as $row) {
+            $p = array("id" => $row->paperId);
+            foreach ($field_list as $fdef)
+                if ($fdef->view != Column::VIEW_NONE
+                    && !$fdef->content_empty($this, $row)
+                    && ($text = $fdef->text($this, $row)) !== "")
+                    $p[$fdef->name] = $text;
+            $x[$row->paperId] = (object) $x;
+        }
+        return $x;
+    }
+
 }
