@@ -1173,12 +1173,10 @@ class PaperList extends BaseList {
 	}
 
 	// get field array
-	$ncol = 0;
 	$this->unfolded = true;
 	if (!($fdef = PaperColumn::lookup($fieldId))
 	    || !$fdef->prepare($this, $queryOptions, 1))
 	    return null;
-	$unfolded = $this->unfolded;
 
 	// make query
 	$result = $this->_prepareQuery($contact, $queryOptions);
