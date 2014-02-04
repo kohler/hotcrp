@@ -29,6 +29,9 @@ class PaperList extends BaseList {
     private $viewmap;
     private $atab;
 
+    private $query_options;
+    private $default_sort_column;
+
     // collected during render and exported to caller
     public $count;
     public $ids;
@@ -484,8 +487,7 @@ class PaperList extends BaseList {
     }
 
     function _canonicalize_fields($fields) {
-	$minimal = $this->viewmap->compactcolumns;
-	$newFields = array();
+	$field_list = array();
 	foreach ($fields as $fid) {
 	    $nf = array();
 	    if ($fid == "scores") {
@@ -501,10 +503,12 @@ class PaperList extends BaseList {
 	    } else if (($f = PaperColumn::lookup($fid)))
 		$nf[] = $f;
 	    foreach ($nf as $f)
-		if (!$minimal || $f->minimal || $this->viewmap[$f->name])
-		    $newFields[] = $f;
-	}
-	return $newFields;
+                $field_list[] = $f;
+        }
+	if (defval($_REQUEST, "selectall") > 0
+            && $field_list[0]->name == "sel")
+	    $field_list[0] = PaperColumn::lookup("selon");
+	return $field_list;
     }
 
     static function _listDescription($listname) {
@@ -528,7 +532,7 @@ class PaperList extends BaseList {
             $this->_paper_link_page = $page;
     }
 
-    private function _listFields($listname) {
+    private function _list_columns($listname) {
 	switch ($listname) {
 	case "a":
             $fields = "id title statusfull revstat scores";
@@ -609,12 +613,12 @@ class PaperList extends BaseList {
 	$Conf->footerHtml($t);
     }
 
-    private function _prepareQuery($contact, $queryOptions) {
+    private function _make_query($field_list) {
 	global $Conf;
 
 	// prepare review query (see also search > getaction == "reviewers")
 	$this->review_list = array();
-	if (isset($queryOptions["reviewList"])) {
+	if (isset($this->query_options["reviewList"])) {
 	    $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
 		reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
 		reviewOrdinal,
@@ -629,7 +633,7 @@ class PaperList extends BaseList {
 	}
 
 	// prepare PC topic interests
-	if (isset($queryOptions["allReviewerPreference"])) {
+	if (isset($this->query_options["allReviewerPreference"])) {
 	    $ord = 0;
 	    $pcm = pcMembers();
 	    foreach ($pcm as $pc) {
@@ -641,14 +645,36 @@ class PaperList extends BaseList {
 		$pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
 	}
 
-	if (isset($queryOptions["scores"]))
-	    $queryOptions["scores"] = array_keys($queryOptions["scores"]);
+	if (isset($this->query_options["scores"]))
+	    $this->query_options["scores"] = array_keys($this->query_options["scores"]);
 
 	// prepare query text
-        $pq = $Conf->paperQuery($contact, $queryOptions);
+        $pq = $Conf->paperQuery($this->contact, $this->query_options);
 
 	// make query
-	return $Conf->qe($pq, "while selecting papers");
+	$result = $Conf->qe($pq, "while selecting papers");
+        if (!$result)
+            return null;
+
+        // fetch rows
+        $rows = array();
+        while (($row = PaperInfo::fetch($result, $this->contact)))
+            $rows[] = $row;
+
+        // analyze rows (usually noop)
+        foreach ($field_list as $fdef)
+            $fdef->analyze($this, $rows);
+
+        // sort rows
+        if ($this->sorter) {
+            $rows = $this->_sort($rows, $this->sorter->field);
+            if ($this->sorter->reverse)
+                $rows = array_reverse($rows);
+            if (isset($this->query_options["allReviewScores"]))
+                $this->_sortReviewOrdinal($rows);
+        }
+
+        return $rows;
     }
 
     public function is_folded($field) {
@@ -888,44 +914,29 @@ class PaperList extends BaseList {
         $this->scoresOk = $contact->privChair || $contact->is_reviewer()
             || $Conf->timeAuthorViewReviews();
 
+	$this->query_options = array("joins" => array());
+	if ($this->search->complexSearch($this->query_options)) {
+	    if (!($table = $this->search->matchTable()))
+		return false;
+	    $this->query_options["joins"][] = "join $table on (Paper.paperId=$table.paperId)";
+	}
+        // NB that actually processed the search, setting PaperSearch::viewmap
+
 	$this->viewmap = new Qobject($this->search->viewmap);
 	if ($this->viewmap->cc || $this->viewmap->compactcolumn
             || $this->viewmap->ccol || $this->viewmap->compactcolumns)
             $this->viewmap->compactcolumns = $this->viewmap->columns = true;
 	if ($this->viewmap->column || $this->viewmap->col)
 	    $this->viewmap->columns = true;
+
+        return true;
     }
 
-    public function text($listname, $contact, $options = array()) {
-	global $Conf, $ConfSiteBase;
-
-        $this->_prepare($contact);
-	$url = $this->search->url();
-
-	// initialize query
-	$queryOptions = array("joins" => array());
-	// need tags for row coloring
-	if ($this->contact->canViewTags(null))
-	    $queryOptions["tags"] = 1;
-	if ($this->search->complexSearch($queryOptions)) {
-	    if (!($table = $this->search->matchTable()))
-		return null;
-	    $queryOptions["joins"][] = "join $table on (Paper.paperId=$table.paperId)";
-	}
-
-	// get paper list
-        $field_list = $this->_listFields($listname);
-	if (!$field_list) {
-	    $Conf->errorMsg("There is no paper list query named “" . htmlspecialchars($listname) . "”.");
-	    return null;
-	}
-	if (defval($_REQUEST, "selectall") > 0
-            && $field_list[0]->name == "sel")
-	    $field_list[0] = PaperColumn::lookup("selon");
-
-        // add requested fields
-        $specials = array_flip(array("cc", "compactcolumn", "compactcolumns", "column", "col", "columns", "sort"));
-        $new_names = array();
+    private function _view_columns($field_list) {
+        // add explicitly requested columns
+        $specials = array_flip(array("cc", "compactcolumn", "compactcolumns",
+                                     "column", "col", "columns", "sort"));
+        $viewmap_add = array();
         foreach ($this->viewmap as $k => $v)
             if (!isset($specials[$k])) {
                 $f = null;
@@ -934,94 +945,114 @@ class PaperList extends BaseList {
                 if (!$f)
                     $f = PaperColumn::lookup($k);
                 if ($f && $f->name != $k)
-                    $new_names[$f->name] = $v;
+                    $viewmap_add[$f->name] = $v;
                 foreach ($field_list as $ff)
                     if ($f && $ff->name == $f->name)
                         $f = null;
                 if ($f && $v)
                     $field_list[] = $f;
             }
-        foreach ($new_names as $k => $v)
+        foreach ($viewmap_add as $k => $v)
             $this->viewmap[$k] = $v;
 
-        // check sort
-        $special_sort = $sort_field = null;
-        if (!$special_sort && count($this->search->orderTags)
-            && ($special_sort = PaperColumn::lookup("tagordersort"))
-            && !$special_sort->prepare($this, $queryOptions, -1))
-            $special_sort = null;
-        if (!$special_sort && $this->search->simplePaperList() !== null)
-            $special_sort = PaperColumn::lookup("searchsort");
+        // remove deselected columns;
+        // in compactcolumns view, remove non-minimal columns
+        $minimal = $this->viewmap->compactcolumns;
+        $field_list2 = array();
+        foreach ($field_list as $fdef)
+            if ($this->viewmap[$fdef->name] !== false
+                && (!$minimal || $fdef->minimal || $this->viewmap[$fdef->name]))
+                $field_list2[] = $fdef;
+        return $field_list2;
+    }
+
+    private function _prepare_columns($field_list) {
+        $field_list2 = array();
+        foreach ($field_list as $fdef)
+            if ($fdef && $fdef->prepare($this, $this->query_options,
+                                        $this->is_folded($fdef) ? 0 : 1))
+                $field_list2[] = $fdef;
+        return $field_list2;
+    }
+
+    private function _prepare_sort() {
+        if (count($this->search->orderTags)
+            && ($s = PaperColumn::lookup("tagordersort"))
+            && $s->prepare($this, $this->query_options, -1))
+            $this->default_sort_column = $s;
+        else if ($this->search->simplePaperList() !== null)
+            $this->default_sort_column = PaperColumn::lookup("searchsort");
+        else
+            $this->default_sort_column = PaperColumn::lookup("id");
+
+        $this->sorter->field = null;
         if ($this->viewmap->sort
-            && ($new_sorter = BaseList::parse_sorter($this->viewmap->sort))
-            && ($new_sort_field = PaperColumn::lookup($new_sorter->type))
-            && $new_sort_field->prepare($this, $queryOptions, -1)) {
-            if ($this->sorter->empty) {
-                $this->sorter = $new_sorter;
-                $sort_field = $new_sort_field;
-            } else {
-                $this->subsorter = $new_sorter;
-                $this->subsorter->field = $new_sort_field;
-            }
+            && ($s = BaseList::parse_sorter($this->viewmap->sort))
+            && ($c = PaperColumn::lookup($s->type))
+            && $c->prepare($this, $this->query_options, -1)) {
+            $s->field = $c;
+            if ($this->sorter->empty)
+                $this->sorter = $s;
+            else
+                $this->subsorter = $s;
         }
-        if ($this->sorter->type
-            && ($sort_field = PaperColumn::lookup($this->sorter->type))
-            && !$sort_field->prepare($this, $queryOptions, -1))
-            $sort_field = null;
-        if (!$sort_field)
-            $sort_field = $special_sort;
-        if (!$sort_field)
-            $sort_field = PaperColumn::lookup("id");
-        $this->sorter->type = $sort_field->name;
+        if ($this->sorter->field)
+            /* all set */;
+        else if ($this->sorter->type
+                 && ($c = PaperColumn::lookup($this->sorter->type))
+                 && $c->prepare($this, $this->query_options, -1))
+            $this->sorter->field = $c;
+        else
+            $this->sorter->field = $this->default_sort_column;
+        $this->sorter->type = $this->sorter->field->name;
+    }
+
+    public function text($listname, $contact, $options = array()) {
+	global $Conf, $ConfSiteBase;
+
+        if (!$this->_prepare($contact))
+            return null;
+
+	// get column list, check sort
+        $field_list = $this->_list_columns($listname);
+	if (!$field_list) {
+	    $Conf->errorMsg("There is no paper list query named “" . htmlspecialchars($listname) . "”.");
+	    return null;
+	}
+        $field_list = $this->_view_columns($field_list);
+        $field_list = $this->_prepare_columns($field_list);
+        $this->_prepare_sort();
+
+	// make query; need tags for row coloring
+	if ($this->contact->canViewTags(null))
+	    $this->query_options["tags"] = 1;
+
+	$rows = $this->_make_query($field_list);
+	if ($rows === null)
+	    return null;
+
+        // return IDs if requested
+        if (@$options["idarray"]) {
+            $idarray = array();
+            foreach ($rows as $row)
+                $idarray[] = $row->paperId;
+            return $idarray;
+        }
 
 	// get field array
 	$fieldDef = array();
 	$ncol = 0;
         // folds: au:1, anonau:2, fullrow:3, aufull:4, force:5, rownum:6, [fields]
         $next_fold = 7;
-	foreach ($field_list as $f)
-	    if ($this->viewmap[$f->name] !== false
-                && $f->prepare($this, $queryOptions,
-                               $this->is_folded($f) ? 0 : 1)) {
-                if ($f->view != Column::VIEW_NONE)
-                    $fieldDef[] = $f;
-                if ($f->view != Column::VIEW_NONE && $f->foldable) {
-                    $f->foldable = $next_fold;
-                    ++$next_fold;
-                }
-		if ($f->view == Column::VIEW_COLUMN)
-		    $ncol++;
-	    }
-
-	// make query
-	$result = $this->_prepareQuery($contact, $queryOptions);
-	if (!$result)
-	    return NULL;
-
-	// fetch data
-	if (edb_nrows($result) == 0)
-	    return "No matching papers";
-	$rows = array();
-	while (($row = PaperInfo::fetch($result, $contact)))
-	    $rows[] = $row;
-
-        // analyze rows (usually noop)
-        foreach ($fieldDef as $fdef)
-            $fdef->analyze($this, $rows);
-
-	// sort rows
-	$srows = $this->_sort($rows, $sort_field);
-	if ($this->sorter->reverse)
-	    $srows = array_reverse($srows);
-	if (isset($queryOptions["allReviewScores"]))
-	    $this->_sortReviewOrdinal($srows);
-
-        // return IDs if requested
-        if (@$options["idarray"]) {
-            $idarray = array();
-            foreach ($srows as $row)
-                $idarray[] = $row->paperId;
-            return $idarray;
+	foreach ($field_list as $fdef) {
+            if ($fdef->view != Column::VIEW_NONE)
+                $fieldDef[] = $fdef;
+            if ($fdef->view != Column::VIEW_NONE && $fdef->foldable) {
+                $fdef->foldable = $next_fold;
+                ++$next_fold;
+            }
+            if ($fdef->view == Column::VIEW_COLUMN)
+                $ncol++;
         }
 
 	// count non-callout columns
@@ -1045,10 +1076,10 @@ class PaperList extends BaseList {
 	// collect row data
 	$body = array();
 	$lastheading = ($this->search->headingmap === null ? false : "");
-	foreach ($srows as $row) {
+	foreach ($rows as $row) {
 	    ++$this->count;
 	    if ($lastheading !== false)
-		$lastheading = $this->_row_check_heading($rstate, $srows, $row, $lastheading, $body);
+		$lastheading = $this->_row_check_heading($rstate, $rows, $row, $lastheading, $body);
 	    $body[] = $this->_row_text($rstate, $row, $fieldDef);
 	}
 
@@ -1060,6 +1091,7 @@ class PaperList extends BaseList {
 	}
 
 	// header cells
+	$url = $this->search->url();
 	if (!defval($options, "noheader")) {
 	    $colhead .= " <thead>\n  <tr class=\"pl_headrow\">\n";
 	    $ord = 0;
@@ -1085,21 +1117,25 @@ class PaperList extends BaseList {
 		$colhead .= "\">";
 		$ftext = $fdef->header($this, null, $ord++);
 
-                $has_special_sort = isset($fdef->is_selector) && $sortUrl && $special_sort;
-                if ($has_special_sort && $special_sort->name == "tagordersort")
+                if (isset($fdef->is_selector) && $sortUrl
+                    && $this->default_sort_column->name !== "id")
+                    $defsortname = $this->default_sort_column->name;
+                else
+                    $defsortname = null;
+
+                if ($defsortname == "tagordersort")
                     $ftext = "<span class='hastitle' title='Sort by tag order'>#</span>";
-                else if ($has_special_sort && $special_sort->name == "searchsort")
+                else if ($defsortname == "searchsort")
                     $ftext = "<span class='hastitle' title='Sort by search term order'>#</span>";
-		if ((($fdef->name == $sort_field->name
-                      || $fdef->name == "edit" . $sort_field->name)
+		if ((($fdef->name == $this->sorter->type
+                      || $fdef->name == "edit" . $this->sorter->type)
                      && $sortUrl)
-                    || ($has_special_sort
-                        && $special_sort->name == $sort_field->name))
-		    $colhead .= "<a class='pl_sort_def" . ($this->sorter->reverse ? "_rev" : "") . "' title='Reverse sort' href=\"" . $sortUrl . urlencode($sort_field->name . "," . ($this->sorter->reverse ? "n" : "r")) . "\">" . $ftext . "</a>";
+                    || $defsortname == $this->sorter->type)
+		    $colhead .= "<a class='pl_sort_def" . ($this->sorter->reverse ? "_rev" : "") . "' title='Reverse sort' href=\"" . $sortUrl . urlencode($this->sorter->type . "," . ($this->sorter->reverse ? "n" : "r")) . "\">" . $ftext . "</a>";
 		else if ($fdef->sorter && $sortUrl)
 		    $colhead .= $q . urlencode($fdef->name) . "\">" . $ftext . "</a>";
-		else if ($has_special_sort)
-		    $colhead .= $q . urlencode($special_sort->name) . "\">" . $ftext . "</a>";
+		else if ($defsortname)
+		    $colhead .= $q . urlencode($defsortname) . "\">" . $ftext . "</a>";
 		else
 		    $colhead .= $ftext;
 		if ($titleextra && $fdef->cssname == "title") {
@@ -1162,40 +1198,28 @@ class PaperList extends BaseList {
     function ajaxColumn($fieldId, $contact) {
 	global $Conf;
 
-        $this->_prepare($contact);
+        if (!$this->_prepare($contact)
+            || !($fdef = PaperColumn::lookup($fieldId)))
+            return null;
 
-	// initialize query
-	$queryOptions = array("joins" => array());
-	if ($this->search->complexSearch($queryOptions)) {
-	    if (!($table = $this->search->matchTable()))
-		return null;
-	    $queryOptions["joins"][] = "join $table on (Paper.paperId=$table.paperId)";
-	}
+        // field is never folded, no sorting
+        $fname = $fdef->name;
+        $this->viewmap->$fname = true;
+        assert(!$this->is_folded($fdef));
+        $this->sorter = null;
 
-	// get field array
-	$this->unfolded = true;
-	if (!($fdef = PaperColumn::lookup($fieldId))
-	    || !$fdef->prepare($this, $queryOptions, 1))
+	// get rows
+        $field_list = $this->_prepare_columns(array($fdef));
+        if (!count($field_list))
+            return null;
+	$rows = $this->_make_query($field_list);
+	if ($rows === null)
 	    return null;
-
-	// make query
-	$result = $this->_prepareQuery($contact, $queryOptions);
-	if (!$result)
-	    return null;
-
-	// collect row data
-        $rows = array();
-        while (($row = PaperInfo::fetch($result, $contact)))
-            $rows[] = $row;
-
-        // analyze rows (usually noop)
-        $fdef->analyze($this, $rows);
 
         // output field data
 	$data = array();
-	$name = $fdef->name;
 	if (($x = $fdef->header($this, null, 0)))
-	    $data["$name.headerhtml"] = $x;
+	    $data["$fname.headerhtml"] = $x;
         $m = array();
 	foreach ($rows as $row) {
 	    if ($fdef->content_empty($this, $row))
@@ -1203,7 +1227,7 @@ class PaperList extends BaseList {
 	    else
 		$m[$row->paperId] = $fdef->content($this, $row);
         }
-        $data["$name.html"] = $m;
+        $data["$fname.html"] = $m;
 
 	return $data;
     }
