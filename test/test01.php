@@ -14,6 +14,8 @@ $user_estrin = Contact::find_by_email("estrin@usc.edu");
 $user_kohler = Contact::find_by_email("kohler@seas.harvard.edu");
 $user_marina = Contact::find_by_email("marina@poema.ru");
 $user_van = Contact::find_by_email("van@ee.lbl.gov");
+$user_mbaker = Contact::find_by_email("mgbaker@cs.stanford.edu");
+$user_sshenker = Contact::find_by_email("shenker@parc.xerox.com");
 $user_nobody = new Contact;
 
 // users are different
@@ -59,6 +61,7 @@ $paper1 = $Conf->paperRow(1, $user_chair);
 check_paper1($paper1);
 check_paper1($Conf->paperRow(1, $user_estrin));
 
+// grant user capability to read paper 1, check it doesn't allow PC view
 $user_capability = new Contact;
 assert(!$user_capability->canViewPaper($paper1));
 $user_capability->apply_capability_text($Conf->capability_text($paper1, "a"));
@@ -67,5 +70,14 @@ assert($user_capability->canViewPaper($paper1));
 assert(!$user_capability->allowAdminister($paper1));
 assert(!$user_capability->canAdminister($paper1));
 assert(!$user_capability->canViewTags($paper1));
+
+// role assignment works
+$paper18 = $Conf->paperRow(18, $user_mbaker);
+assert($user_sshenker->canAdminister($paper18));
+assert(!$user_mbaker->canAdminister($paper1));
+assert(!$user_mbaker->canAdminister($paper18));
+
+// author derivation works
+assert($user_mbaker->actAuthorView($paper18));
 
 echo "* Tests complete.\n";
