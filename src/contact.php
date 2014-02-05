@@ -1533,7 +1533,7 @@ class Contact {
                        "myReviewSubmitted" => 1,
                        "myReviewNeedsSubmit" => 0,
                        "paperId" => 1, "timeSubmitted" => 1,
-                       "paperBlind" => false), $this);
+                       "paperBlind" => false, "outcome" => 1), $this);
         $rights = $this->rights($prow, $forceShow);
 	if ($rights->can_administer
 	    || ($rrow && $rrow_contactId == $this->contactId)
