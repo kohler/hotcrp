@@ -2062,11 +2062,11 @@ class PaperSearch {
                 && !isset($row->$fieldname)) {
                 $row->$fieldname = 0;
                 $rrow = (object) array("paperId" => $row->paperId);
-                $account = !$t->value->contactsql && !$t->value->fieldsql;
+                $count_only = !$t->value->fieldsql;
                 foreach (explode(",", defval($row, $fieldname . "_info", "")) as $info)
                     if ($info != "") {
                         list($rrow->reviewId, $rrow->contactId, $rrow->reviewType, $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->requestedBy, $rrow->reviewToken, $rrow->reviewBlind) = explode(" ", $info);
-                        if (($account
+                        if (($count_only
                              ? $this->contact->canCountReview($row, $rrow, true)
                              : $this->contact->canViewReview($row, $rrow, true))
                             && (!$t->value->contactsql
