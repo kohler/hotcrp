@@ -2251,8 +2251,10 @@ class PaperSearch {
         $sqi = new SearchQueryInfo;
         $sqi->add_table("Paper");
         $sqi->add_column("paperId", "Paper.paperId");
+        // always include columns needed by righs machinery
         $sqi->add_column("timeSubmitted", "Paper.timeSubmitted");
         $sqi->add_column("timeWithdrawn", "Paper.timeWithdrawn");
+        $sqi->add_column("outcome", "Paper.outcome");
         $filters = array();
 	$this->needflags = 0;
 	$this->_clauseTermSet($qe, false, $sqi, $filters);
@@ -2304,8 +2306,6 @@ class PaperSearch {
 	if ($this->needflags & self::F_REVIEWER) {
             if ($Conf->subBlindOptional())
                 $sqi->add_column("paperBlind", "Paper.blind");
-            if ($Conf->timeReviewerViewAcceptedAuthors())
-                $sqi->add_column("outcome", "Paper.outcome");
 	    $qb = "";
 	    if (($tokens = $this->contact->review_tokens()))
 		$qb = " or MyReview.reviewToken in (" . join(",", $tokens) . ")";
