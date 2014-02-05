@@ -130,7 +130,7 @@ class PaperOption {
     }
 
     private static function sort_multiples($o, $ox) {
-        if ($o->type == self::T_ATTACHMENTS)
+        if ($o->type == "attachments")
             array_multisort($ox->data, SORT_NUMERIC, $ox->values);
     }
 
