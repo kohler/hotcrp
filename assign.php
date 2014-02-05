@@ -145,11 +145,10 @@ function pcAssignments() {
 	    $Conf->errorMsg("The review round must contain only letters and numbers.");
 	    $rev_roundtag = "";
 	}
-	if ($rev_roundtag) {
-	    $Conf->settings["rev_roundtag"] = 1;
-	    $Conf->settingTexts["rev_roundtag"] = $rev_roundtag;
-	} else
-	    unset($Conf->settings["rev_roundtag"]);
+	if ($rev_roundtag)
+            $Conf->save_setting("rev_roundtag", 1, $rev_roundtag);
+        else
+            $Conf->save_setting("rev_roundtag", null);
     }
 
     $while = "while updating PC assignments";
