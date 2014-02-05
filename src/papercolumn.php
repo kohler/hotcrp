@@ -422,10 +422,12 @@ class ReviewerTypePaperColumn extends PaperColumn {
             foreach ($rows as $row)
                 $by_pid[$row->paperId] = $row;
             $result = $Conf->qe("select paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, contactId reviewContactId, requestedBy, reviewToken, reviewRound, 0 conflictType from PaperReview where paperId in (" . join(",", array_keys($by_pid)) . ") and contactId=" . $pl->search->reviewerContact, "while examining reviews");
-            while (($xrow = edb_orow($result)))
-                if ($pl->contact->allowAdminister($xrow)
-                    || $pl->contact->canViewReviewerIdentity($by_pid[$xrow->paperId], $xrow, true))
-                    $by_pid[$xrow->paperId]->_xreviewer = $xrow;
+            while (($xrow = edb_orow($result))) {
+                $prow = $by_pid[$xrow->paperId];
+                if ($pl->contact->allowAdminister($prow)
+                    || $pl->contact->canViewReviewerIdentity($prow, $xrow, true))
+                    $prow->_xreviewer = $xrow;
+            }
             $this->xreviewer = Contact::find_by_id($pl->search->reviewerContact);
         } else
             $this->xreviewer = false;
