@@ -1026,7 +1026,8 @@ class PaperList extends BaseList {
             foreach ($rows as $row)
                 $idarray[] = $row->paperId;
             return $idarray;
-        }
+        } else if (count($rows) == 0)
+            return "No matching papers";
 
 	// get field array
 	$fieldDef = array();
