@@ -445,7 +445,7 @@ class PaperStatus {
         if ($pj && @$pj->contacts)
             foreach ($pj->contacts as $email => $crap) {
                 $email = strtolower($email);
-                if (!@$x[$email] || $x[$email] < CONTACT_AUTHOR)
+                if (!@$x[$email] || $x[$email] < CONFLICT_CONTACTAUTHOR)
                     $x[$email] = CONFLICT_CONTACTAUTHOR;
             }
         if ($old_pj && @$old_pj->pc_conflicts)
