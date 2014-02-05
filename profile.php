@@ -89,9 +89,9 @@ function tfError(&$tf, $errorField, $text) {
 
 function set_request_pctype() {
     if (!in_array(@$_REQUEST["pctype"],
-                  array("no", "pc", "erc", "chair"))) {
+                  array("no", "pc", "chair"))) {
         $_REQUEST["pctype"] = "no";
-        foreach (array("erc", "pc", "chair") as $k)
+        foreach (array("pc", "chair") as $k)
             if (@$_REQUEST[$k])
                 $_REQUEST["pctype"] = $k;
     }
@@ -180,8 +180,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
         set_request_pctype();
         $new_roles = ($_REQUEST["pctype"] != "no" ? Contact::ROLE_PC : 0)
             | (isset($_REQUEST["ass"]) ? Contact::ROLE_ADMIN : 0)
-            | ($_REQUEST["pctype"] == "chair" ? Contact::ROLE_CHAIR : 0)
-            | ($_REQUEST["pctype"] == "erc" ? Contact::ROLE_ERC : 0);
+            | ($_REQUEST["pctype"] == "chair" ? Contact::ROLE_CHAIR : 0);
         if ($Acct->save_roles($new_roles, $Me))
             $updatepc = true;
         if (!isset($_REQUEST["ass"])
@@ -235,7 +234,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
                 /* do nothing */;
             else if (!$tagger->check($t, Tagger::NOPRIVATE | Tagger::NOVALUE))
                 $warn .= $tagger->error_html . "<br />\n";
-            else if ($t != "pc" && $t != "corepc" && $t != "erc")
+            else if ($t != "pc")
                 $tout .= " " . $t;
         }
 	if ($warn != "")
@@ -502,8 +501,7 @@ function textinput($name, $value, $size, $id = false, $password = false) {
 
 
 if (!$newProfile) {
-    $_REQUEST["erc"] = ($Acct->roles & Contact::ROLE_ERC) != 0;
-    $_REQUEST["pc"] = ($Acct->roles & Contact::ROLE_PCERC) == Contact::ROLE_PC;
+    $_REQUEST["pc"] = ($Acct->roles & Contact::ROLE_PC) != 0;
     $_REQUEST["ass"] = ($Acct->roles & Contact::ROLE_ADMIN) != 0;
     $_REQUEST["chair"] = ($Acct->roles & Contact::ROLE_CHAIR) != 0;
 }
@@ -669,8 +667,7 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
   <td class='entry'><table><tr><td class='nowrap'>\n";
 
     foreach (array("chair" => "PC chair",
-                   "pc" => "Core PC member",
-                   "erc" => "ERC member",
+                   "pc" => "PC member",
 		   "no" => "Not on the PC") as $k => $v) {
 	echo Ht::radio_h("pctype", $k, $k == $_REQUEST["pctype"],
 			  array("id" => "pctype_$k", "onchange" => "hiliter(this);fold('account',\$\$('pctype_no').checked,1)")),
@@ -680,7 +677,7 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     echo "</td><td><span class='sep'></span></td><td class='nowrap'>";
     echo Ht::checkbox_h("ass", 1, defval($_REQUEST, "ass")),
 	"&nbsp;", Ht::label("System administrator"), "</td>",
-        '<td style="padding-left:2em"><div class="hint"><p>The program committee can be divided into a <strong>core PC</strong> and an <strong>external review committee (ERC)</strong>. ERC members have fewer privileges than core PC members; for example, they can’t see reviews for papers they were not assigned. All PC members can enter review preferences and are available for paper auto-assignment. You may also use <strong>PC tags</strong> to divide the PC into groups such as “heavy” and “light” without affecting privileges.</p><p><strong>System administrators</strong> have full control over all site operations.  Administrators need not be members of the PC.  There’s always at least one system administrator.</div></td></tr></table>', "\n";
+        '<td style="padding-left:2em"><div class="hint"><strong>System administrators</strong> have full control over all site operations.  Administrators need not be members of the PC.  There’s always at least one system administrator.</div></td></tr></table>', "\n";
     echo "  </td>\n</tr>\n\n";
 }
 
@@ -732,7 +729,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 	    echo "<div class='", feclass("contactTags"), "'>",
 		textinput("contactTags", trim(crpformvalue("contactTags")), 60),
 		"</div>
-  <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc”, “corepc”, and “erc” tags are set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=rev&amp;tagcolor=1#tagcolor"), "'>tag colors</a> to highlight subgroups in review lists.</div></td>
+  <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=rev&amp;tagcolor=1#tagcolor"), "'>tag colors</a> to highlight subgroups in review lists.</div></td>
 </tr>\n\n";
 	} else {
 	    echo trim($Acct->contactTags), "

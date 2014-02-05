@@ -1361,7 +1361,7 @@ function pcMembers() {
 
 function pcTags() {
     $pcm = pcMembers();
-    $tags = array("pc" => "pc", "corepc" => "corepc", "erc" => "erc");
+    $tags = array("pc" => "pc");
     foreach ($pcm as $pc)
 	if (isset($pc->contactTags) && $pc->contactTags) {
 	    foreach (explode(" ", $pc->contactTags) as $t)

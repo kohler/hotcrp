@@ -553,15 +553,7 @@ class PaperSearch {
         $pcm = pcMembers();
         if ($tag == "pc")
             $a = array_keys($pcm);
-        else if ($tag == "corepc") {
-            foreach ($pcm as $pc)
-                if ($pc->is_core_pc())
-                    $a[] = $pc->contactId;
-        } else if ($tag == "erc") {
-            foreach ($pcm as $pc)
-                if ($pc->is_erc())
-                    $a[] = $pc->contactId;
-        } else {
+        else {
             foreach ($pcm as $pc)
                 if ($pc->contactTags
                     && stripos($pc->contactTags, " $tag ") !== false)

@@ -1453,18 +1453,15 @@ function doRevGroup() {
 
     // Review visibility
     echo "<h3>Review visibility</h3>\n";
-    $has_erc = $Conf->setting("erc");
 
-    echo "Can ", ($has_erc ? "core PC members" : "PC members"),
-        " <strong>see all reviews</strong> except for conflicts?<br />\n";
+    echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
     doRadio("pc_seeallrev", array(1 => "Yes",
 				  3 => "Yes, unless they haven’t completed an assigned review for the same paper",
 				  4 => "Yes, after completing all their assigned reviews",
 				  0 => "Only after completing a review for the same paper"));
 
     echo "<div class='g'></div>\n";
-    echo "Can ", ($has_erc ? "core PC members" : "PC members"),
-        " see <strong>reviewer names</strong> except for conflicts?<br />\n";
+    echo "Can PC members see <strong>reviewer names</strong> except for conflicts?<br />\n";
     doRadio("pc_seeblindrev", array(0 => "Yes",
 				    1 => "Only after completing a review for the same paper<br /><span class='hint'>This setting also hides reviewer-only comments from PC members who have not completed a review for the paper.</span>"));
 
@@ -1489,8 +1486,7 @@ function doRevGroup() {
     echo "</table>\n";
 
     echo "<div class='g'></div>\n";
-    doCheckbox('pcrev_any', ($has_erc ? "Core PC members" : "PC members")
-               . ' can review <strong>any</strong> submitted paper');
+    doCheckbox('pcrev_any', "PC members can review <strong>any</strong> submitted paper");
 
     echo "<hr class='hr' />";
 

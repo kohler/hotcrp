@@ -36,8 +36,6 @@ class Contact {
     const ROLE_PC = 1;
     const ROLE_ADMIN = 2;
     const ROLE_CHAIR = 4;
-    const ROLE_ERC = 8;
-    const ROLE_PCERC = 9;
     const ROLE_PCLIKE = 15;
     private $is_author_;
     private $has_review_;
@@ -242,15 +240,6 @@ class Contact {
             && $fs != "0";
     }
 
-    function is_core_pc() {
-        return ($this->roles & self::ROLE_PCLIKE) != 0
-            && ($this->roles & self::ROLE_ERC) == 0;
-    }
-
-    function is_erc() {
-        return ($this->roles & self::ROLE_PCERC) == self::ROLE_PCERC;
-    }
-
     function has_tag($t) {
         return $this->contactTags && strpos($this->contactTags, " $t ") !== false;
     }
@@ -338,7 +327,7 @@ class Contact {
     static function roles_all_contact_tags($roles, $tags) {
         $t = "";
         if ($roles & self::ROLE_PC)
-            $t = " pc" . ($roles & self::ROLE_ERC ? " erc" : " corepc");
+            $t = " pc";
         if ($tags)
             return $t . $tags;
         else
@@ -538,8 +527,7 @@ class Contact {
         $diff = 0;
         foreach (array(Contact::ROLE_PC => "PCMember",
                        Contact::ROLE_ADMIN => "ChairAssistant",
-                       Contact::ROLE_CHAIR => "Chair",
-                       Contact::ROLE_ERC => "ERCMember") as $role => $tablename)
+                       Contact::ROLE_CHAIR => "Chair") as $role => $tablename)
             if (($new_roles & $role) && !($old_roles & $role)) {
                 if ($tables & $role)
                     $Conf->qe("insert into $tablename (contactId) values ($this->contactId)");
@@ -683,10 +671,6 @@ class Contact {
                         $r |= self::ROLE_ADMIN;
                     else if ($v === "chair" || ($v && $k === "chair"))
                         $r |= self::ROLE_CHAIR;
-                    else if ($v === "corepc" || ($v && $k === "corepc"))
-                        $r = ($r | self::ROLE_PC) & ~self::ROLE_ERC;
-                    else if ($v === "erc" || ($v && $k === "erc"))
-                        $r |= self::ROLE_PC | self::ROLE_ERC;
                 $rolex = $r;
             }
             if (is_int($rolex) && $rolex > 0)
@@ -805,7 +789,7 @@ class Contact {
             $ci->allow_pc = $ci->can_administer
                 || ($isPC && !$ci->conflict_type);
             $ci->allow_core_pc = $ci->can_administer
-                || ($isPC && $this->is_core_pc() && !$ci->conflict_type);
+                || ($isPC && !$ci->conflict_type);
 
             // check whether this is a potential reviewer
             // (existing external reviewer or PC)
@@ -1304,7 +1288,7 @@ class Contact {
 
     function can_review_any() {
         global $Conf;
-        return $this->is_core_pc()
+        return $this->isPC
             && $Conf->setting("pcrev_any") > 0
             && $Conf->time_review(true, true);
     }
@@ -1553,7 +1537,7 @@ class Contact {
     function canViewCommentReviewWheres() {
 	global $Conf;
 	if ($this->privChair
-	    || ($this->is_core_pc() && $Conf->setting("pc_seeallrev") > 0))
+	    || ($this->isPC && $Conf->setting("pc_seeallrev") > 0))
 	    return array();
 	else
 	    return array("(" . $this->actAuthorSql("PaperConflict")
@@ -1778,7 +1762,7 @@ class Contact {
 	}
 
         // add meeting tracker
-        if ($this->is_core_pc() && $Conf->setting("tracker")
+        if ($this->isPC && $Conf->setting("tracker")
             && ($tracker = MeetingTracker::status($this)))
             $dl["tracker"] = $tracker;
 

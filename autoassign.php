@@ -657,12 +657,8 @@ if (count($pctags)) {
     foreach (pcMembers() as $pc)
         $tagsjson[] = "\"$pc->contactId\":\"" . strtolower($pc->all_contact_tags()) . "\"";
     $Conf->footerScript("pc_tags_json={" . join(",", $tagsjson) . "};");
-    if ($Conf->setting("erc")) {
-        $pctyp_sel[] = array("corepc", "pc_tags_members(\"corepc\")", "core PC");
-        $pctyp_sel[] = array("erc", "pc_tags_members(\"erc\")", "ERC");
-    }
     foreach ($pctags as $tagname => $pctag)
-        if ($tagname != "pc" && $tagname != "corepc" && $tagname != "erc")
+        if ($tagname != "pc")
             $pctyp_sel[] = array($pctag, "pc_tags_members(\"$tagname\")", "“${pctag}”&nbsp;tag");
 }
 $sep = "";

@@ -423,16 +423,6 @@ class Conference {
 		unset($this->settings["pc"]);
 	    }
 	    unset($_SESSION["pcmembers"]);
-            // check for ERC
-            $result = $this->qe("select pc.contactId from PCMember pc join ContactInfo c using (contactId) where (c.roles&" . Contact::ROLE_ERC . ")!=0 limit 1");
-            $has_erc = !!edb_row($result);
-            if ($has_erc && !$this->settings["erc"]) {
-                $inserts[] = "('erc',$time)";
-                $this->settings["erc"] = $time;
-            } else if (!$has_erc && $this->settings["erc"]) {
-                $removes[] = "'erc'";
-                unset($this->settings["erc"]);
-            }
 	}
 	if (!$caches || isset($caches["paperOption"]))
             PaperOption::option_list(true);

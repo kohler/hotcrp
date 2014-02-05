@@ -38,7 +38,7 @@ class MeetingTracker {
     static function status($acct) {
         global $Conf;
         $tracker = $Conf->setting_json("tracker");
-        if (!$tracker || !$acct->is_core_pc())
+        if (!$tracker || !$acct->isPC)
             return false;
         if (($status = @$_SESSION["tracker"])
             && $status->trackerid == $tracker->trackerid

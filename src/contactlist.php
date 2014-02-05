@@ -278,11 +278,8 @@ class ContactList extends BaseList {
 		$t .= " <span class='pcrole'>(Chair)</span>";
 	    else if ($row->roles & Contact::ROLE_ADMIN)
 		$t .= " <span class='pcrole'>(Administrator)</span>";
-            else if (($row->roles & Contact::ROLE_ERC)
-                     && $this->limit != "erc")
-                $t .= " <span class='pcrole'>(ERC)</span>";
-	    else if (($row->roles & Contact::ROLE_PCERC) == Contact::ROLE_PC
-                     && $this->limit != "pc" && $this->limit != "corepc")
+	    else if (($row->roles & Contact::ROLE_PC)
+                     && $this->limit != "pc")
 		$t .= " <span class='pcrole'>(PC)</span>";
 	    if ($this->contact->privChair && $row->email != $this->contact->email)
 		$t .= " <a href=\"" . hoturl("index", "actas=" . urlencode($row->email)) . "\">"
@@ -425,8 +422,6 @@ class ContactList extends BaseList {
     function listFields($listname) {
 	switch ($listname) {
 	case "pc":
-        case "corepc":
-        case "erc":
 	case "admin":
 	case "pcadmin":
 	    return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_LEADS, self::FIELD_SHEPHERDS));
@@ -505,8 +500,7 @@ class ContactList extends BaseList {
 	    $pq .= ",\n\tgroup_concat(PaperConflict.paperId) as paperIds";
 
 	$pq .= "\n	from ContactInfo u\n";
-        if ($this->limit == "pc" || $this->limit == "corepc"
-            || $this->limit == "erc")
+        if ($this->limit == "pc")
             $pq .= "\tjoin PCMember on (PCMember.contactId=u.contactId)\n";
 	if (isset($queryOptions['topics']))
 	    $pq .= "	left join (select contactId, group_concat(topicId) as topicIds, group_concat(interest) as topicInterest
@@ -585,10 +579,6 @@ class ContactList extends BaseList {
 	    $mainwhere[] = $queryOptions["where"];
 	if ($this->limit == "admin")
 	    $mainwhere[] = "(u.roles&" . (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR) . ")!=0";
-	if ($this->limit == "corepc")
-	    $mainwhere[] = "(u.roles&" . Contact::ROLE_PCERC . ")=" . Contact::ROLE_PC;
-	if ($this->limit == "erc")
-	    $mainwhere[] = "(u.roles&" . Contact::ROLE_PCERC . ")=" . Contact::ROLE_PCERC;
 	if ($this->limit == "pcadmin" || $this->limit == "pcadminx")
 	    $mainwhere[] = "(u.roles&" . Contact::ROLE_PCLIKE . ")!=0";
 	if (count($mainwhere))
