@@ -103,7 +103,7 @@ if (isset($_REQUEST["uploadForm"])
     else {
 	$req['paperId'] = $prow->paperId;
 	if ($rf->checkRequestFields($req, $paperTable->editrrow, $tf)) {
-	    if ($rf->saveRequest($req, $paperTable->editrrow, $prow))
+	    if ($rf->saveRequest($req, $paperTable->editrrow, $prow, $Me))
 		$tf['confirm'][] = "Uploaded review for paper #$prow->paperId.";
 	}
     }
@@ -177,7 +177,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
 	$Conf->errorMsg(whyNotText($whyNot, "review"));
 	$useRequest = true;
     } else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow)) {
-	if ($rf->saveRequest($_REQUEST, $paperTable->editrrow, $prow)) {
+	if ($rf->saveRequest($_REQUEST, $paperTable->editrrow, $prow, $Me)) {
 	    $Conf->confirmMsg(defval($_REQUEST, "ready", false) && !defval($_REQUEST, "unready", false) ? "Review submitted." : "Review saved.  However, this version is marked as not ready for others to see.  Please finish the review and submit again.");
 	    redirectSelf();		// normally does not return
 	    loadRows();

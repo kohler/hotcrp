@@ -756,7 +756,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
 
     // other mail confirmations
     if ($isSubmitFinal && $OK && !count($Error) && $Conf->sversion >= 36)
-	genericWatch($prow, WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback");
+	genericWatch($prow, WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback", $Me);
 
     $Conf->log($actiontext, $Me, $paperId);
 

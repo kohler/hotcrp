@@ -85,12 +85,12 @@ function comment_watch_callback($prow, $minic) {
 }
 
 function watch() {
-    global $prow, $savedCrow;
+    global $prow, $savedCrow, $Me;
     if (!$savedCrow
 	// ignore changes to a comment within 3 hours (see saveComment())
 	|| $savedCrow->timeNotified != $savedCrow->timeModified)
 	return;
-    genericWatch($prow, WATCHTYPE_COMMENT, "comment_watch_callback");
+    genericWatch($prow, WATCHTYPE_COMMENT, "comment_watch_callback", $Me);
 }
 
 

@@ -835,8 +835,8 @@ function saveWatchPreference($paperId, $contactId, $watchtype, $on) {
     return $OK;
 }
 
-function genericWatch($prow, $watchtype, $callback) {
-    global $Conf, $Me;
+function genericWatch($prow, $watchtype, $callback, $contact) {
+    global $Conf;
 
     $q = "select ContactInfo.contactId, firstName, lastName, email,
 		password, roles, defaultWatch,
@@ -861,7 +861,7 @@ function genericWatch($prow, $watchtype, $callback) {
     $lastContactId = 0;
     while (($row = edb_orow($result))) {
 	if ($row->contactId == $lastContactId
-	    || $row->contactId == $Me->contactId
+	    || ($contact && $row->contactId == $contact->contactId)
 	    || preg_match('/\Aanonymous\d*\z/', $row->email))
 	    continue;
 	$lastContactId = $row->contactId;

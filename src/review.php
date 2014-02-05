@@ -543,13 +543,13 @@ class ReviewForm {
                          null, $this->mailer_info);
     }
 
-    function saveRequest($req, $rrow, $prow, &$tf = null) {
-	global $Conf, $Opt, $Me;
+    function saveRequest($req, $rrow, $prow, $contact, &$tf = null) {
+	global $Conf, $Opt;
 	$submit = defval($req, "ready", false) && !defval($req, "unready", false);
 	$while = "while storing review";
-	$admin = $Me->allowAdminister($prow);
+	$admin = $contact->allowAdminister($prow);
 
-	if (!$Me->timeReview($prow, $rrow)
+	if (!$contact->timeReview($prow, $rrow)
 	    && (!isset($req['override']) || !$admin))
 	    return $Conf->errorMsg("The <a href='" . hoturl("deadlines") . "'>deadline</a> for entering this review has passed." . ($admin ? "  Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""));
 
@@ -605,7 +605,7 @@ class ReviewForm {
 
 	// check whether used a review token
 	$usedReviewToken = $rrow && $rrow->reviewToken
-	    && ($tokens = $Me->review_tokens())
+	    && ($tokens = $contact->review_tokens())
 	    && array_search($rrow->reviewToken, $tokens) !== false;
 
 	// blind? reviewer type? edit version?
@@ -614,8 +614,8 @@ class ReviewForm {
 	    $diff_view_score = max($diff_view_score, VIEWSCORE_ADMINONLY);
 	$q[] = "reviewBlind=$reviewBlind";
 	if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL
-	    && $Me->contactId == $rrow->contactId
-	    && $Me->isPC && !$usedReviewToken)
+	    && $contact->contactId == $rrow->contactId
+	    && $contact->isPC && !$usedReviewToken)
 	    $q[] = "reviewType=" . REVIEW_PC;
 	if ($rrow && $diff_view_score > VIEWSCORE_FALSE
             && isset($req["version"])
@@ -642,9 +642,9 @@ class ReviewForm {
 	    $reviewId = $rrow->reviewId;
 	    $contactId = $rrow->contactId;
 	} else {
-	    $result = $Conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$Me->contactId, reviewType=" . REVIEW_PC . ", requestedBy=$Me->contactId, " . join(", ", $q), $while);
+	    $result = $Conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contact->contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contact->contactId, " . join(", ", $q), $while);
 	    $reviewId = $Conf->lastInsertId($while);
-	    $contactId = $Me->contactId;
+	    $contactId = $contact->contactId;
 	}
 
 	// unlock tables even if problem
@@ -661,11 +661,11 @@ class ReviewForm {
 	// log updates -- but not if review token is used
 	if (!$usedReviewToken && $diff_view_score > VIEWSCORE_FALSE) {
 	    $reviewLogname = "Review $reviewId";
-	    if ($rrow && $Me->contactId != $rrow->contactId)
+	    if ($rrow && $contact->contactId != $rrow->contactId)
 		$reviewLogname .= " by $rrow->email";
-	    $Conf->log("$reviewLogname saved", $Me, $prow->paperId);
+	    $Conf->log("$reviewLogname saved", $contact, $prow->paperId);
 	    if ($submit && (!$rrow || !$rrow->reviewSubmitted))
-		$Conf->log("$reviewLogname submitted", $Me, $prow->paperId);
+		$Conf->log("$reviewLogname submitted", $contact, $prow->paperId);
 	}
 
 	// potentially email chair, reviewers, and authors
@@ -696,7 +696,7 @@ class ReviewForm {
                  "reviewSubmitted" => $rrow->reviewSubmitted ? $rrow->reviewSubmitted : $now);
 
 	    $tmpl = ($rrow && $rrow->reviewSubmitted ? "@reviewupdate" : "@reviewsubmit");
-	    $submitter = $Me;
+            $submitter = $contact;
 	    if ($contactId != $submitter->contactId)
 		$submitter = Contact::find_by_id($contactId);
 	    $rest = array("template" => $tmpl, "rrow" => $fake_rrow,
@@ -707,7 +707,7 @@ class ReviewForm {
 
             if ($diff_view_score >= VIEWSCORE_PC) {
                 $this->mailer_info = $rest;
-                genericWatch($prow, WATCHTYPE_REVIEW, array($this, "review_watch_callback"));
+                genericWatch($prow, WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
                 unset($this->mailer_info);
             }
 

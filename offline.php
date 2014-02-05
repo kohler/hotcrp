@@ -35,7 +35,7 @@ if (isset($_REQUEST["uploadForm"])
 					   "rev_tokens" => $Me->review_tokens(),
 					   "first" => true));
 	    if ($rf->checkRequestFields($req, $rrow, $tf))
-		$rf->saveRequest($req, $rrow, $prow, $tf);
+		$rf->saveRequest($req, $rrow, $prow, $Me, $tf);
 	} else
 	    $rf->tfError($tf, true, whyNotText($whyNot, "review"));
     }
