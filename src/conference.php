@@ -324,6 +324,19 @@ class Conference {
         return true;
     }
 
+    function check_any_tracks($contact, $type) {
+        if ($this->tracks)
+            foreach ($this->tracks as $k => $v)
+                if (@($perm = $v->$type) === null)
+                    return true;
+                else {
+                    $has_tag = $contact->has_tag(substr($perm, 1));
+                    if ($perm[0] == "-" ? !$has_tag : $has_tag)
+                        return true;
+                }
+        return !$this->tracks;
+    }
+
     function capability_text($prow, $capType) {
 	// A capability has the following representation (. is concatenation):
 	//    capFormat . paperId . capType . hashPrefix

@@ -1290,7 +1290,8 @@ class Contact {
         global $Conf;
         return $this->isPC
             && $Conf->setting("pcrev_any") > 0
-            && $Conf->time_review(true, true);
+            && $Conf->time_review(true, true)
+            && $Conf->check_any_tracks($this, "review_any");
     }
 
     function timeReview($prow, $rrow) {
