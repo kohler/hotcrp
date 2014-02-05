@@ -188,6 +188,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/src/formula.php");
     else if ($class_name == "S3Document")
         require_once("$ConfSitePATH/lib/s3document.php");
+    else if ($class_name == "AssignmentSet")
+        require_once("$ConfSitePATH/src/assigners.php");
     else if ($class_name == "Ht")
         require_once("$ConfSitePATH/lib/ht.php");
 }

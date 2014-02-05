@@ -236,10 +236,10 @@ class ReviewAssigner extends Assigner {
             }
         }
     }
-    function execute($when) {
-        global $Conf, $Me;
+    function execute($who, $when) {
+        global $Conf;
         $result = $Conf->qe("select contactId, paperId, reviewId, reviewType, reviewModified from PaperReview where paperId=$this->pid and contactId=$this->cid");
-        $Me->assign_paper($this->pid, edb_orow($result), $this->cid, $this->type, $when);
+        $who->assign_paper($this->pid, edb_orow($result), $this->cid, $this->type, $when);
     }
 }
 class LeadAssigner extends Assigner {
@@ -280,7 +280,7 @@ class LeadAssigner extends Assigner {
             $t = "remove $t as $this->type";
         return $t;
     }
-    function execute($when) {
+    function execute($who, $when) {
         global $Conf;
         if ($this->isadd)
             $Conf->qe("update Paper set " . $this->type . "ContactId=$this->cid where paperId=$this->pid");
@@ -326,7 +326,7 @@ class ConflictAssigner extends Assigner {
             $t .= '(remove conflict)';
         return $t;
     }
-    function execute($when) {
+    function execute($who, $when) {
         global $Conf;
         if ($this->ctype)
             $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($this->pid,$this->cid,$this->ctype) on duplicate key update conflictType=values(conflictType)");
@@ -352,14 +352,16 @@ class AssignmentSet {
     private $filename;
     private $errors = array();
     private $my_conflicts = null;
+    private $contact;
     private $override;
     private $papers;
     private $conflicts;
     private $astate;
     private $cmap;
 
-    function __construct($override) {
+    function __construct($contact, $override) {
         global $Conf;
+        $this->contact = $contact;
         $this->override = $override;
         $this->astate = new AssignmentState;
         $this->cmap = new AssignerContacts;
@@ -398,11 +400,11 @@ class AssignmentSet {
     }
 
     private function set_my_conflicts() {
-        global $Conf, $Me;
+        global $Conf;
         if ($Conf->sversion >= 51)
-            $result = $Conf->qe("select Paper.paperId, managerContactId from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId) where conflictType>0 and PaperConflict.contactId=$Me->cid");
+            $result = $Conf->qe("select Paper.paperId, managerContactId from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId) where conflictType>0 and PaperConflict.contactId=" . $this->contact->contactId);
         else
-            $result = $Conf->qe("select paperId, 0 from PaperConflict where conflictType>0 and contactId=$Me->cid");
+            $result = $Conf->qe("select paperId, 0 from PaperConflict where conflictType>0 and contactId=" . $this->contact->contactId);
         $this->my_conflicts = array();
         while (($row = edb_row($result)))
             $this->my_conflicts[$row[0]] = ($row[1] ? $row[1] : true);
@@ -552,7 +554,7 @@ class AssignmentSet {
     }
 
     function echo_unparse_display($papersel = null) {
-        global $Conf, $Me;
+        global $Conf;
         if (!$papersel) {
             $papersel = array();
             foreach ($this->assigners as $assigner)
@@ -595,7 +597,7 @@ class AssignmentSet {
         }
 
         ksort(AutoassignmentPaperColumn::$info);
-        $search = new PaperSearch($Me,
+        $search = new PaperSearch($this->contact,
                                   array("t" => defval($_REQUEST, "t", "s"),
                                         "q" => join(" ", array_keys(AutoassignmentPaperColumn::$info))));
         $plist = new PaperList($search);
@@ -636,8 +638,8 @@ class AssignmentSet {
             return false;
     }
 
-    function execute() {
-        global $Conf, $Now;
+    function execute($when) {
+        global $Conf;
         if ($this->report_errors())
             return false;
         else if (!count($this->assigners)) {
@@ -662,12 +664,12 @@ class AssignmentSet {
         $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, PaperReviewRefused write, Paper write, PaperConflict write, ActionLog write, Settings write, PaperTag write");
 
         foreach ($this->assigners as $assigner)
-            $assigner->execute($Now);
+            $assigner->execute($this->contact, $when);
 
         $Conf->qe("unlock tables");
 
         // confirmation message
-        if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $Now)
+        if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $when)
             $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
         else
             $Conf->confirmMsg("Assignments saved!");

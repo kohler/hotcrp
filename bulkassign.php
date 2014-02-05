@@ -26,10 +26,10 @@ if (isset($_REQUEST["saveassignment"]) && check_post()) {
     if (isset($_REQUEST["cancel"]))
         redirectSelf();
     else if (isset($_REQUEST["file"])) {
-        $assignset = new AssignmentSet(false);
+        $assignset = new AssignmentSet($Me, false);
         $assignset->parse($_REQUEST["file"], @$_REQUEST["filename"],
                           assignment_defaults());
-        if ($assignset->execute())
+        if ($assignset->execute($Now))
             redirectSelf();
     }
 }
@@ -67,7 +67,7 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
     if (($text = file_get_contents($_FILES["uploadfile"]["tmp_name"])) === false)
         $Conf->errorMsg("Internal error: cannot read file.");
     else {
-        $assignset = new AssignmentSet(false);
+        $assignset = new AssignmentSet($Me, false);
         $defaults = assignment_defaults();
         $assignset->parse($text, $_FILES["uploadfile"]["name"], $defaults);
         if ($assignset->report_errors())

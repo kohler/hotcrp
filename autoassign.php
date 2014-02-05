@@ -457,9 +457,9 @@ if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"])
     doAssign();
 else if (isset($_REQUEST["saveassign"])
 	 && isset($_REQUEST["assignment"]) && check_post()) {
-    $assignset = new AssignmentSet(true);
+    $assignset = new AssignmentSet($Me, true);
     $assignset->parse($_REQUEST["assignment"], null, @$_REQUEST["default_action"]);
-    $assignset->execute();
+    $assignset->execute($Now);
 }
 
 
@@ -516,7 +516,7 @@ if (isset($assignments) && count($assignments) > 0) {
     $helplist = "";
     $Conf->infoMsg("If this assignment looks OK to you, select “Save assignment” to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as “P#”.");
 
-    $assignset = new AssignmentSet(true);
+    $assignset = new AssignmentSet($Me, true);
     $assignset->parse(join("\n", $assignments));
     $assignset->echo_unparse_display($papersel);
 
