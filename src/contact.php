@@ -51,6 +51,7 @@ class Contact {
     var $contactTags = null;
     const CAP_AUTHORVIEW = 1;
     private $capabilities = null;
+    private $review_tokens_ = null;
     private $activated_ = false;
 
     static private $status_info_cache = array();
@@ -187,6 +188,12 @@ class Contact {
                 $this->activate_capabilities();
         }
 
+        // Add review tokens from session
+        if (@$_SESSION["rev_tokens"]) {
+            $this->review_tokens_ = $_SESSION["rev_tokens"];
+            ++$this->rights_version_;
+        }
+
         // Set user session
         if ($this->contactId)
             $_SESSION["user"] = "$this->contactId " . $Opt["dsn"] . " $this->email";
@@ -257,9 +264,8 @@ class Contact {
         // Load from database
         if ($this->contactId > 0) {
             $qr = "";
-            if ($Me->contactId == $this->contactId
-                && isset($_SESSION["rev_tokens"]))
-                $qr = " or r.reviewToken in (" . join(", ", $_SESSION["rev_tokens"]) . ")";
+            if ($this->review_tokens_)
+                $qr = " or r.reviewToken in (" . join(",", $this->review_tokens_) . ")";
             $result = $Conf->qe("select max(conf.conflictType),
 		r.contactId as reviewer,
 		max(r.reviewNeedsSubmit) as reviewNeedsSubmit
@@ -375,6 +381,34 @@ class Contact {
                 return $this->change_capability((int) $m[2], self::CAP_AUTHORVIEW, $m[1] !== "-");
         }
         return null;
+    }
+
+    function review_tokens() {
+        return $this->review_tokens_ ? $this->review_tokens_ : array();
+    }
+
+    function change_review_token($token, $on) {
+        assert($token !== false || $on === false);
+        if (!$this->review_tokens_)
+            $this->review_tokens_ = array();
+        $old_ntokens = count($this->review_tokens_);
+        if (!$on && $token === false)
+            $this->review_tokens_ = array();
+        else {
+            $pos = array_search($token, $this->review_tokens_);
+            if (!$on && $pos !== false)
+                array_splice($this->review_tokens_, $pos, 1);
+            else if ($on && $pos === false)
+                $this->review_tokens_[] = $token;
+        }
+        $new_ntokens = count($this->review_tokens_);
+        if ($new_ntokens == 0)
+            $this->review_tokens_ = null;
+        if ($new_ntokens != $old_ntokens)
+            $this->update_cached_roles();
+        if ($this->activated_ && $new_ntokens != $old_ntokens)
+            $_SESSION["rev_tokens"] = $this->review_tokens_;
+        return $new_ntokens != $old_ntokens;
     }
 
     function trim() {
@@ -1129,7 +1163,7 @@ class Contact {
 	else if (isset($rrow->contactId))
 	    $rrow_contactId = $rrow->contactId;
 	return $rrow_contactId == $this->contactId
-	    || (isset($_SESSION["rev_tokens"]) && array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) !== false)
+	    || ($this->review_tokens_ && array_search($rrow->reviewToken, $this->review_tokens_) !== false)
 	    || ($rrow->requestedBy == $this->contactId && $rrow->reviewType == REVIEW_EXTERNAL && $Conf->setting("pcrev_editdelegate"));
     }
 

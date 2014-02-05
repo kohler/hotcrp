@@ -106,9 +106,9 @@ if ($Me->privChair) {
 
 
 // review tokens
-if (isset($_REQUEST["token"]) && check_post() && !$Me->is_empty()) {
-    $oldtokens = isset($_SESSION["rev_tokens"]);
-    unset($_SESSION["rev_tokens"]);
+function change_review_tokens() {
+    global $Conf, $Me;
+    $cleared = $Me->change_review_token(false, false);
     $tokeninfo = array();
     foreach (preg_split('/\s+/', $_REQUEST["token"]) as $x)
 	if ($x == "")
@@ -121,21 +121,22 @@ if (isset($_REQUEST["token"]) && check_post() && !$Me->is_empty()) {
 	    $result = $Conf->qe("select paperId from PaperReview where reviewToken=" . $token, "while searching for review token");
 	    if (($row = edb_row($result))) {
 		$tokeninfo[] = "Review token “" . htmlspecialchars($x) . "” lets you review <a href='" . hoturl("paper", "p=$row[0]") . "'>paper #" . $row[0] . "</a>.";
-		if (!isset($_SESSION["rev_tokens"]) || array_search($token, $_SESSION["rev_tokens"]) === false)
-		    $_SESSION["rev_tokens"][] = $token;
-                $Me->update_cached_roles();
+                $Me->change_review_token($token, true);
 	    } else {
 		$Conf->errorMsg("Review token “" . htmlspecialchars($x) . "” hasn’t been assigned.");
 		$_SESSION["rev_token_fail"] = defval($_SESSION, "rev_token_fail", 0) + 1;
 	    }
 	}
+    if ($cleared && !count($tokeninfo))
+        $tokeninfo[] = "Review tokens cleared.";
     if (count($tokeninfo))
 	$Conf->infoMsg(join("<br />\n", $tokeninfo));
-    else if ($oldtokens)
-	$Conf->infoMsg("Review tokens cleared.");
 }
+
+if (isset($_REQUEST["token"]) && check_post() && !$Me->is_empty())
+    change_review_tokens();
 if (isset($_REQUEST["cleartokens"]))
-    unset($_SESSION["rev_tokens"]);
+    $Me->change_review_token(false, false);
 
 
 $title = ($Me->is_empty() || isset($_REQUEST["signin"]) ? "Sign in" : "Home");

@@ -427,8 +427,8 @@ if ($getaction == "authors" && isset($papersel)
 	else if ($Conf->subBlindUntilReview()) {
 	    $idq = "($idq) and MyReview.reviewSubmitted>0";
 	    $qb = "";
-	    if (isset($_SESSION["rev_tokens"]))
-		$qb = " or MyReview.reviewToken in (" . join(",", $_SESSION["rev_tokens"]) . ")";
+	    if ($Me->review_tokens())
+		$qb = " or MyReview.reviewToken in (" . join(",", $Me->review_tokens()) . ")";
 	    $join = " left join PaperReview MyReview on (MyReview.paperId=Paper.paperId and (MyReview.contactId=$Me->contactId$qb))";
 	}
     }

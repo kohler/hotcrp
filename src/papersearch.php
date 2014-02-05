@@ -2307,8 +2307,8 @@ class PaperSearch {
             if ($Conf->timeReviewerViewAcceptedAuthors())
                 $sqi->add_column("outcome", "Paper.outcome");
 	    $qb = "";
-	    if (isset($_SESSION["rev_tokens"]))
-		$qb = " or MyReview.reviewToken in (" . join(",", $_SESSION["rev_tokens"]) . ")";
+	    if (($tokens = $this->contact->review_tokens()))
+		$qb = " or MyReview.reviewToken in (" . join(",", $tokens) . ")";
 	    $sqi->add_table("MyReview", array("left join", "PaperReview", "(MyReview.contactId=$this->cid$qb)"));
             $sqi->add_column("myReviewType", "MyReview.reviewType");
 	    $sqi->add_column("myReviewNeedsSubmit", "MyReview.reviewNeedsSubmit");

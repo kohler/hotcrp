@@ -32,7 +32,7 @@ if (isset($_REQUEST["uploadForm"])
 	if (($prow = $Conf->paperRow($req['paperId'], $Me, $whyNot))
 	    && $Me->canSubmitReview($prow, null, $whyNot)) {
 	    $rrow = $Conf->reviewRow(array("paperId" => $prow->paperId, "contactId" => $Me->contactId,
-					   "rev_tokens" => defval($_SESSION, "rev_tokens", array()),
+					   "rev_tokens" => $Me->review_tokens(),
 					   "first" => true));
 	    if ($rf->checkRequestFields($req, $rrow, $tf))
 		$rf->saveRequest($req, $rrow, $prow, $tf);

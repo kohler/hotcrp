@@ -605,8 +605,8 @@ class ReviewForm {
 
 	// check whether used a review token
 	$usedReviewToken = $rrow && $rrow->reviewToken
-	    && isset($_SESSION["rev_tokens"])
-	    && array_search($rrow->reviewToken, $_SESSION["rev_tokens"]) !== false;
+	    && ($tokens = $Me->review_tokens())
+	    && array_search($rrow->reviewToken, $tokens) !== false;
 
 	// blind? reviewer type? edit version?
 	$reviewBlind = $Conf->is_review_blind(!!@$req["blind"]);
