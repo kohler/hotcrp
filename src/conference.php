@@ -344,6 +344,7 @@ class Conference {
 	    if ($this->qe("delete from Settings where name='$qname'")) {
 		unset($this->settings[$name]);
 		unset($this->settingTexts[$name]);
+                $this->deadline_cache = null;
                 return true;
 	    } else
                 return false;
@@ -357,6 +358,7 @@ class Conference {
 	    if ($this->qe("insert into Settings (name, value, data) values ('$qname', $value, $dval) on duplicate key update value=values(value), data=values(data)", "while updating settings")) {
 		$this->settings[$name] = $value;
 		$this->settingTexts[$name] = $data;
+                $this->deadline_cache = null;
                 return true;
 	    } else
                 return false;
