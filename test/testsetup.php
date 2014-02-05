@@ -24,9 +24,11 @@ if (!$Conf->dblink->multi_query(file_get_contents("$ConfSitePATH/src/schema.sql"
     die("* Can't reinitialize database.\n" . $Conf->dblink->error);
 while ($Conf->dblink->more_results())
     $Conf->dblink->next_result();
+$Conf->load_settings();
 
 // Create initial administrator user.
-$Admin = Contact::find_by_email("chair@_.com", array("name" => "Jane Chair"));
+$Admin = Contact::find_by_email("chair@_.com", array("name" => "Jane Chair",
+                                                     "password" => "testchair"));
 $Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC, $Admin);
 
 // Load data.
@@ -41,5 +43,8 @@ foreach ($json->papers as $p) {
     if (!$ps->save($p))
         die("* failed to create paper $p->title:\n" . join("\n", $ps->error_messages()) . "\n");
 }
+$assignset = new AssignmentSet($Admin, true);
+$assignset->parse($json->assignments_1, null, null);
+$assignset->execute($Now);
 
 echo "* Tests initialized.\n";

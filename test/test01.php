@@ -106,4 +106,30 @@ assert(join(";", array_keys($j)) == "1;2;3;4;5;15;16;17;18");
 assert(!@$j[1]->selconf && !@$j[2]->selconf && !@$j[3]->selconf && !@$j[4]->selconf && !@$j[5]->selconf
        && !@$j[15]->selconf && !@$j[16]->selconf && @$j[17]->selconf && !@$j[18]->selconf);
 
+$pl = new PaperList(new PaperSearch($user_shenker, "re:estrin"));
+$j = $pl->text_json("id");
+assert(join(";", array_keys($j)) == "4;8;18");
+
+// normals don't see conflicted reviews
+$pl = new PaperList(new PaperSearch($user_mgbaker, "re:estrin"));
+$j = $pl->text_json("id");
+assert(join(";", array_keys($j)) == "4;8");
+
+// make reviewer identity anonymous until review completion
+$Conf->save_setting("rev_open", 1);
+$Conf->save_setting("pc_seeblindrev", 1);
+$pl = new PaperList(new PaperSearch($user_mgbaker, "re:varghese"));
+$j = $pl->text_json("id");
+assert(join(";", array_keys($j)) == "");
+
+$revreq = array("overAllMerit" => 5, "reviewerQualification" => 4, "ready" => true);
+$rf = reviewForm();
+$rf->saveRequest($revreq,
+                 $Conf->reviewRow(array("paperId" => 1, "contactId" => $user_mgbaker->contactId)),
+                 $Conf->paperRow(1, $user_mgbaker),
+                 $user_mgbaker);
+$pl = new PaperList(new PaperSearch($user_mgbaker, "re:varghese"));
+$j = $pl->text_json("id");
+assert(join(";", array_keys($j)) == "1");
+
 echo "* Tests complete.\n";
