@@ -251,6 +251,10 @@ class Contact {
         return ($this->roles & self::ROLE_PCERC) == self::ROLE_PCERC;
     }
 
+    function has_tag($t) {
+        return $this->contactTags && strpos($this->contactTags, " $t ") !== false;
+    }
+
     function update_cached_roles() {
         foreach (array("is_author_", "has_review_", "has_outstanding_review_",
                        "is_requester_", "is_lead_") as $k)
@@ -791,18 +795,30 @@ class Contact {
             $ci->can_administer = $ci->allow_administer
                 && (!$ci->conflict_type || $forceShow);
 
+            // check PC tracking
+            $tracks = $Conf->has_tracks();
+            $isPC = $this->isPC
+                && (!$tracks || $Conf->check_tracks($prow, $this, "view"));
+
             // check whether PC privileges apply
-            $ci->allow_pc_broad = $ci->allow_administer || $this->isPC;
+            $ci->allow_pc_broad = $ci->allow_administer || $isPC;
             $ci->allow_pc = $ci->can_administer
-                || ($this->isPC && !$ci->conflict_type);
+                || ($isPC && !$ci->conflict_type);
             $ci->allow_core_pc = $ci->can_administer
-                || ($this->is_core_pc() && !$ci->conflict_type);
+                || ($isPC && $this->is_core_pc() && !$ci->conflict_type);
 
             // check whether this is a potential reviewer
             // (existing external reviewer or PC)
-            $ci->potential_reviewer = $ci->allow_pc || $ci->review_type > 0;
-            $ci->allow_review = $ci->allow_core_pc
-                || ($ci->review_type > 0 && !$ci->conflict_type);
+            if ($ci->review_type > 0 || $ci->allow_administer)
+                $ci->potential_reviewer = true;
+            else if ($ci->allow_pc)
+                $ci->potential_reviewer = !$tracks
+                    || ($Conf->check_tracks($prow, $this, "review")
+                        && $Conf->check_tracks($prow, $this, "review_any"));
+            else
+                $ci->potential_reviewer = false;
+            $ci->allow_review = $ci->potential_reviewer
+                && ($ci->can_administer || !$ci->conflict_type);
 
             // check capabilities
             // If an author-view capability is set, then use it -- unless
@@ -811,7 +827,7 @@ class Contact {
             if (isset($this->capabilities)
                 && isset($this->capabilities[$prow->paperId])
                 && ($this->capabilities[$prow->paperId] & self::CAP_AUTHORVIEW)
-                && !$this->isPC
+                && !$isPC
                 && $ci->review_type <= 0)
                 $ci->act_conflict_type = CONFLICT_AUTHOR;
             $ci->act_author = $ci->act_conflict_type >= CONFLICT_AUTHOR;

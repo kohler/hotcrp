@@ -2251,7 +2251,7 @@ class PaperSearch {
         $sqi = new SearchQueryInfo;
         $sqi->add_table("Paper");
         $sqi->add_column("paperId", "Paper.paperId");
-        // always include columns needed by righs machinery
+        // always include columns needed by rights machinery
         $sqi->add_column("timeSubmitted", "Paper.timeSubmitted");
         $sqi->add_column("timeWithdrawn", "Paper.timeWithdrawn");
         $sqi->add_column("outcome", "Paper.outcome");
@@ -2314,6 +2314,21 @@ class PaperSearch {
 	    $sqi->add_column("myReviewNeedsSubmit", "MyReview.reviewNeedsSubmit");
             $sqi->add_column("myReviewSubmitted", "MyReview.reviewSubmitted");
 	}
+
+        // add permissions tables if we will filter the results
+        $need_filter = (($this->needflags & self::F_XVIEW)
+                        || $Conf->has_tracks()
+                        || $qe->type == "then"
+                        || $qe->get_float("heading"));
+        if ($need_filter) {
+            $sqi->add_manager_column();
+            if ($Conf->has_track_tags()) {
+                $sqi->add_table("PaperTags", array("left join", "(select paperId, group_concat(' ', tag, '#', tagIndex separator '') as paperTags from PaperTag group by paperId)"));
+                $sqi->add_column("paperTags", "PaperTags.paperTags");
+            }
+            if ($Conf->setting("sub_blind") == Conference::BLIND_OPTIONAL)
+                $sqi->add_column("paperBlind", "Paper.blind");
+        }
 
 	// search contacts
 	if (count($this->contactmatch)) {
@@ -2379,13 +2394,14 @@ class PaperSearch {
 	// correct query, create thenmap and headingmap
 	$this->thenmap = ($qe->type == "then" ? array() : null);
 	$this->headingmap = array();
-	if (($this->needflags & self::F_XVIEW)
-            || $this->thenmap !== null || $qe->get_float("heading")) {
+	if ($need_filter) {
 	    $delete = array();
 	    $result = $Conf->qe("select * from $this->_matchTable", "while performing search");
 	    $qe_heading = $qe->get_float("heading");
 	    while (($row = PaperInfo::fetch($result, $this->cid))) {
-		if ($this->thenmap !== null) {
+                if (!$this->contact->canViewPaper($row))
+                    $x = false;
+		else if ($this->thenmap !== null) {
 		    $x = false;
 		    for ($i = 0; $i < count($qe->value) && $x === false; ++$i)
 			if ($this->_clauseTermCheck($qe->value[$i], $row))
@@ -2448,10 +2464,13 @@ class PaperSearch {
     function complexSearch(&$queryOptions) {
         global $Conf;
 	$limit = $this->limitName;
-	if (($limit == "s" || $limit == "act") && $this->q == "re:me")
+	if (($limit == "s" || $limit == "act")
+            && $this->q == "re:me")
 	    $limit = "r";
 	else if ($this->q)
 	    return true;
+        if ($Conf->has_tracks() && !$this->privChair)
+            return true;
 	if ($limit == "s" || $limit == "revs")
 	    $queryOptions["finalized"] = 1;
 	else if ($limit == "unsub") {

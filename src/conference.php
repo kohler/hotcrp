@@ -21,6 +21,9 @@ class Conference {
     private $footerMap = null;
     private $usertimeId = 1;
 
+    private $tracks = null;
+    private $track_tags = null;
+
     const BLIND_NEVER = 0;
     const BLIND_OPTIONAL = 1;
     const BLIND_ALWAYS = 2;
@@ -202,6 +205,17 @@ class Conference {
             unset($this->settingTexts["s3_bucket"], $this->settingTexts["s3_key"],
                   $this->settingTexts["s3_secret"]);
 
+        // tracks settings
+        if (@($j = $this->settingTexts["tracks"])
+            && @($j = json_decode($j))) {
+            $this->tracks = $j;
+            $this->track_tags = array();
+            foreach ($this->tracks as $k => $v)
+                if ($k !== "_")
+                    $this->track_tags[] = $k;
+        } else
+            $this->tracks = $this->track_tags = null;
+
         // GC old capabilities
         if ($this->sversion >= 58
             && defval($this->settings, "capability_gc", 0) < time() - 86400) {
@@ -279,6 +293,35 @@ class Conference {
         if (is_string($x))
             $x = $this->settingTexts["review_form"] = json_decode($x);
         return is_object($x) ? $x : null;
+    }
+
+    function has_tracks() {
+        return $this->tracks !== null;
+    }
+
+    function has_track_tags() {
+        return $this->track_tags !== null;
+    }
+
+    function check_tracks($prow, $contact, $type) {
+        if ($this->tracks) {
+            $checked = false;
+            foreach ($this->track_tags as $t)
+                if (@($perm = $this->tracks->$t->$type)
+                    && $prow->has_tag($t)) {
+                    $has_tag = $contact->has_tag(substr($perm, 1));
+                    if ($perm[0] == "-" ? $has_tag : !$has_tag)
+                        return false;
+                    $checked = true;
+                }
+            if (!$checked
+                && @($perm = $this->tracks->_->$type)) {
+                $has_tag = $contact->has_tag(substr($perm, 1));
+                if ($perm[0] == "-" ? $has_tag : !$has_tag)
+                    return false;
+            }
+        }
+        return true;
     }
 
     function capability_text($prow, $capType) {
