@@ -580,6 +580,12 @@ class PaperStatus {
                 if (count($this->uploaded_documents))
                     $Conf->qe("update PaperStorage set paperId=$pj->id where paperStorageId in (" . join(",", $this->uploaded_documents) . ")");
             }
+
+            // maybe update `papersub` settings
+            $is_submitted = !@$pj->withdrawn && @$pj->submitted;
+            $was_submitted = $old_pj && !@$old_pj->withdrawn && @$old_pj->submitted;
+            if ($is_submitted != $was_submitted)
+                $Conf->updatePapersubSetting($is_submitted);
         }
 
         // update PaperTopics
