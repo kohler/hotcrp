@@ -52,7 +52,6 @@ class PaperInfo {
     private $contact_info_ = array();
 
     function __construct($p = null, $contact = null) {
-        global $Me;
         if ($p)
             foreach ($p as $k => $v)
                 $this->$k = $v;
