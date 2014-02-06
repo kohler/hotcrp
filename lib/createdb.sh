@@ -238,7 +238,7 @@ if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
 	expr "$createdbuser" : "[ynqYNQ].*" >/dev/null && break
 	test -z "$createdbuser" && break
     done
-    expr "$createdbuser" : "[nNqQ].*" >/dev/null && echo "Exiting" && exit 0
+    expr "$createdbuser" : "[qQ].*" >/dev/null && echo "Exiting" && exit 0
     expr "$createdbuser" : "[nN].*" >/dev/null || createdbuser=y
 
     if [ "$createdbuser" = y -a "$dbexists" = 0 ]; then
