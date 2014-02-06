@@ -158,10 +158,14 @@ class PaperActions {
 		$tagger->save($prow->paperId, $_REQUEST["addtags"], "a");
 	    if (isset($_REQUEST["deltags"]))
 		$tagger->save($prow->paperId, $_REQUEST["deltags"], "d");
+            $prow->load_tags();
+            $tags_edit_text = $tagger->unparse($tagger->editable($prow->paperTags));
+            $tags_view_html = $tagger->unparse_link_viewable($prow->paperTags, false, !$prow->has_conflict($Me));
+            $tags_color = $tagger->color_classes($prow->paperTags);
 	} else
-	    $Error["tags"] = "You can’t set tags for paper #$prow->paperId." . ($Me->allowAdminister($prow) ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
+	    $Error["tags"] = "You can’t set tags for paper #$prow->paperId." . ($Me->allowAdminister($prow) ? " (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
 	if ($ajax && $OK && !isset($Error["tags"]))
-            $Conf->ajaxExit(array("ok" => true));
+            $Conf->ajaxExit(array("ok" => true, "tags_edit_text" => $tags_edit_text, "tags_view_html" => $tags_view_html, "tags_color" => $tags_color));
         else if ($ajax)
             $Conf->ajaxExit(array("ok" => false, "error" => defval($Error, "tags", "")));
 	if (isset($Error) && isset($Error["tags"])) {

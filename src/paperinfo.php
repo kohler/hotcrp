@@ -129,7 +129,7 @@ class PaperInfo {
         return $ci && $ci->review_type > 0 && $ci->review_submitted > 0;
     }
 
-    private function load_tags() {
+    public function load_tags() {
         global $Conf;
         $result = $Conf->qe("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=$this->paperId group by paperId");
         if (($row = edb_row($result)))

@@ -1300,13 +1300,15 @@ class PaperTable {
 		echo "<div class='pscopen ${color}'>";
 
 	    if ($editable)
-		echo "<form method='post' action='", hoturl_post($site, "p=" . $this->prow->paperId), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+                echo Ht::form(hoturl_post($site, "p=" . $this->prow->paperId), array("id" => "tagform", "onsubmit" => "return save_tags()")),
+                    '<div class="inform">';
 
 	    echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($editable ? "tags" : 0))),
 		"<div class='psv' style='position:relative'>";
 	    if ($editable) {
 		// tag report form
-		$Conf->footerHtml("<form id='tagreportform' class='fold7o' method='post' action='" . hoturl_post("paper", "p=" . $this->prow->paperId . "&amp;tagreport=1") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"tagreportform\")'></form>");
+		$Conf->footerHtml(Ht::form(hoturl_post("paper", "p=" . $this->prow->paperId . "&amp;tagreport=1"), array("id" => "tagreportform", "onsubmit" => "return Miniajax.submit('tagreportform')"))
+                                  . "</form>");
 
 		echo "<div class='fn'>", ($tx == "" ? "None" : $tx),
 		    "</div><div id='papstriptagsedit' class='fx'><div id='tagreportformresult'>";
@@ -1321,7 +1323,7 @@ class PaperTable {
                     $tagger->unparse($tagger->editable($this->prow->paperTags)),
                     "</textarea></div>",
 		    "<div style='padding:1ex 0;text-align:right'>",
-		    "<input type='hidden' name='settags' value='1' />",
+                    Ht::hidden("settags", "1"),
 		    "<input class='bsm' type='submit' name='cancelsettags' value='Cancel' onclick='return fold(\"tags\",1)' />",
 		    " &nbsp;<input class='bsm' type='submit' value='Save' />",
                     "</div>",

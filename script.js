@@ -422,15 +422,6 @@ function fold(which, dofold, foldtype) {
 	else if ((selt = $$('foldsession.' + which)))
 	    selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&sub=' + (foldtype || foldnumid) + '&u=' + foldsession_unique++);
 
-	// check for focus
-	if (!dofold && (selt = $$("fold" + which + foldnumid + "_d"))) {
-	    if (selt.setSelectionRange && selt.hotcrp_ever_focused == null) {
-		selt.setSelectionRange(selt.value.length, selt.value.length);
-		selt.hotcrp_ever_focused = true;
-	    }
-	    selt.focus();
-	}
-
     } else if (which) {
 	foldnumid = foldtype ? foldtype : "";
 	opentxt = "fold" + foldnumid + "o";
@@ -447,6 +438,16 @@ function fold(which, dofold, foldtype) {
 		which.innerHTML = which.innerHTML + "";
 	    } catch (err) {
 	    }
+
+	// check for focus
+	if (!dofold && which.id && /^fold/.test(which.id)
+            && (selt = $$(which.id + foldnumid + "_d"))) {
+	    if (selt.setSelectionRange && selt.hotcrp_ever_focused == null) {
+		selt.setSelectionRange(selt.value.length, selt.value.length);
+		selt.hotcrp_ever_focused = true;
+	    }
+	    selt.focus();
+	}
     }
 
     return false;
@@ -462,15 +463,16 @@ function foldup(e, event, foldnum, session) {
     if (!foldnum && (m = e.className.match(/\bfold(\d*)[oc]\b/)))
         foldnum = m[1];
     dofold = !(new RegExp("\\bfold" + (foldnum ? foldnum : "") + "c\\b")).test(e.className);
-    if ((attr = e.getAttribute(dofold ? "onfold" : "onunfold"))) {
-        attr = new Function(attr);
-        attr.call(e);
-    }
     if (session)
         Miniajax.get(hotcrp_base + "sessionvar.php?j=1&var=" + session + "&val=" + (dofold ? 1 : 0));
     if (event)
         event_stop(event);
-    return fold(e, dofold, foldnum);
+    m = fold(e, dofold, foldnum);
+    if ((attr = e.getAttribute(dofold ? "onfold" : "onunfold"))) {
+        attr = new Function(attr);
+        attr.call(e);
+    }
+    return m;
 }
 
 function crpfocus(id, subfocus, seltype) {
@@ -2128,6 +2130,19 @@ function set_response_wc(taid, wcid, wordlimit) {
     var e = $$(taid);
     if (e && e.addEventListener)
 	e.addEventListener("input", wc, false);
+}
+
+function save_tags() {
+    return Miniajax.submit("tagform", function (rv) {
+        jQuery("#foldtags .xmerror").remove();
+        if (rv.ok) {
+            jQuery("#foldtags .pscopen")[0].className = "pscopen " + (rv.tags_color || "");
+            jQuery("#foldtags .psv .fn").html(rv.tags_view_html);
+            jQuery("#foldtags textarea").val(rv.tags_edit_text);
+            fold("tags", true);
+        } else
+            jQuery("#papstriptagsedit").prepend("<div class='xmerror'>" + rv.error + "</div>"); 
+    });
 }
 
 
