@@ -894,6 +894,7 @@ class PaperList extends BaseList {
     }
 
     private function _prepare() {
+        global $Conf;
         $this->contact = $this->search->contact;
         $this->count = 0;
         $this->any = new Qobject;
