@@ -232,7 +232,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 	foreach (preg_split('/\s+/', $_REQUEST["contactTags"]) as $t) {
             if ($t == "")
                 /* do nothing */;
-            else if (!$tagger->check($t, Tagger::NOPRIVATE | Tagger::NOVALUE))
+            else if (!$tagger->check($t, Tagger::NOPRIVATE | Tagger::NOVALUE | Tagger::NOCHAIR))
                 $warn .= $tagger->error_html . "<br />\n";
             else if ($t != "pc")
                 $tout .= " " . $t;

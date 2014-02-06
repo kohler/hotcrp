@@ -10,7 +10,6 @@ if ($Me->is_empty())
     $Me->escape();
 $_REQUEST["forceShow"] = 1;
 $rf = reviewForm();
-$PC = pcMembers();
 $Error = $Warning = array();
 
 
@@ -131,10 +130,10 @@ if (isset($_REQUEST["retract"]) && check_post()) {
 // change PC assignments
 function pcAssignments() {
     global $Conf, $Me, $prow;
+    $pcm = pcMembers();
 
     $where = "";
     if (isset($_REQUEST["reviewer"])) {
-	$pcm = pcMembers();
 	if (isset($pcm[$_REQUEST["reviewer"]]))
 	    $where = "where PCMember.contactId='" . $_REQUEST["reviewer"] . "'";
     }
@@ -174,7 +173,11 @@ function pcAssignments() {
 
 	// manage assignments
 	$pctype = max($pctype, 0);
-	if ($pctype != $row->reviewType && ($pctype == 0 || $pctype == REVIEW_PRIMARY || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC))
+	if ($pctype != $row->reviewType
+            && ($pctype == 0 || $pctype == REVIEW_PRIMARY
+                || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC)
+            && ($pctype == 0
+                || $pcm[$row->contactId]->allow_review_assignment($prow)))
 	    $Me->assign_paper($prow->paperId, $row, $row->contactId, $pctype, $when);
     }
 }
@@ -524,27 +527,23 @@ if ($Me->canAdminister($prow)) {
 	echo ", topic scores as &ldquo;T#&rdquo;";
     echo ".</div><div class='papv' style='padding-left:0'>";
 
-    echo "<table class='pctb'><tr><td class='pctbcolleft'><table>\n";
     $colorizer = new Tagger;
-
-    $i = 0;
-    $n = intval((count($pcx) + 2) / 3);
+    $pctexts = array();
     foreach (pcMembers() as $pc) {
-	if (($i % $n) == 0 && $i)
-	    echo "    </table></td><td class='pctbcolmid'><table>\n";
-	++$i;
 	$p = $pcx[$pc->cid];
+        if (!$pc->allow_review_assignment_ignore_conflict($prow))
+            continue;
 
 	// first, name and assignment
 	$color = $colorizer->color_classes($pc->all_contact_tags());
 	$color = ($color ? " class='${color}'" : "");
-	echo "      <tr$color>";
+	$pctext = "      <tr$color>";
 	if ($p->conflictType >= CONFLICT_AUTHOR) {
-	    echo "<td id='ass$p->contactId' class='pctbname-2 pctbl'>",
-		str_replace(' ', "&nbsp;", Text::name_html($pc)),
-		"</td><td class='pctbass'>",
-                review_type_icon(-2),
-		"</td>";
+	    $pctext .= "<td id='ass$p->contactId' class='pctbname-2 pctbl'>"
+		. str_replace(' ', "&nbsp;", Text::name_html($pc))
+		. "</td><td class='pctbass'>"
+                . review_type_icon(-2)
+		. "</td>";
 	} else {
 	    if ($p->conflictType > 0)
 		$revtype = -1;
@@ -553,15 +552,15 @@ if ($Me->canAdminister($prow)) {
 	    else
 		$revtype = ($p->refused ? -3 : 0);
 	    $title = ($revtype == -3 ? "' title='Review previously declined" : "");
-	    echo "<td id='ass$p->contactId' class='pctbname$revtype pctbl'>";
-	    echo str_replace(' ', "&nbsp;", Text::name_html($pc));
+	    $pctext .= "<td id='ass$p->contactId' class='pctbname$revtype pctbl'>"
+                . str_replace(' ', "&nbsp;", Text::name_html($pc));
 	    if ($p->conflictType == 0
 		&& ($p->preference || $p->topicInterestScore))
-		echo preferenceSpan($p->preference, $p->topicInterestScore);
-	    echo "</td><td class='pctbass'>";
-	    echo "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'>", review_type_icon($revtype, false, "Assignment"), "<img class='next' src='", hoturl_image("images/_.gif"), "' alt='&gt;' /></a>&nbsp;";
+		$pctext .= preferenceSpan($p->preference, $p->topicInterestScore);
+	    $pctext .= "</td><td class='pctbass'>"
+                . "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'>" . review_type_icon($revtype, false, "Assignment") . "<img class='next' src='" . hoturl_image("images/_.gif") . "' alt='&gt;' /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
-	    echo Ht::select("pcs$p->contactId",
+	    $pctext .= Ht::select("pcs$p->contactId",
 			     array(0 => "None", REVIEW_PRIMARY => "Primary",
 				   REVIEW_SECONDARY => "Secondary",
 				   REVIEW_PC => "Optional",
@@ -573,27 +572,38 @@ if ($Me->canAdminister($prow)) {
 				   "onchange" => "selassign(this, $p->contactId)",
 				   "onclick" => "selassign(null, $p->contactId)",
 				   "onblur" => "selassign(0, $p->contactId)",
-				   "style" => "position: absolute"));
-	    echo "</div></td>";
+				   "style" => "position: absolute"))
+                . "</div></td>";
 	}
-	echo "</tr>\n";
+	$pctext .= "</tr>\n";
 
 	// then, number of reviews
-	echo "      <tr$color><td class='pctbnrev pctbl' colspan='2'>";
+	$pctext .= "      <tr$color><td class='pctbnrev pctbl' colspan='2'>";
 	$numReviews = strlen($p->allReviews);
 	$numPrimary = preg_match_all("|" . REVIEW_PRIMARY . "|", $p->allReviews, $matches);
 	if (!$numReviews)
-	    echo "0 reviews";
+	    $pctext .= "0 reviews";
 	else {
-	    echo "<a class='q' href=\"",
-		hoturl("search", "q=re:" . urlencode($pc->email)), "\">",
-		plural($numReviews, "review"), "</a>";
+	    $pctext .= "<a class='q' href=\""
+		. hoturl("search", "q=re:" . urlencode($pc->email)) . "\">"
+		. plural($numReviews, "review") . "</a>";
 	    if ($numPrimary && $numPrimary < $numReviews)
-		echo "&nbsp; (<a class='q' href=\"",
-		    hoturl("search", "q=pri:" . urlencode($pc->email)), "\">",
-		    $numPrimary, " primary</a>)";
+		$pctext .= "&nbsp; (<a class='q' href=\""
+		    . hoturl("search", "q=pri:" . urlencode($pc->email))
+                    . "\">$numPrimary primary</a>)";
 	}
-	echo "</td></tr>\n";
+	$pctext .= "</td></tr>\n";
+
+        $pctexts[] = $pctext;
+    }
+
+    echo "<table class='pctb'><tr><td class='pctbcolleft'><table>\n";
+
+    $n = intval((count($pctexts) + 2) / 3);
+    for ($i = 0; $i != count($pctexts); ++$i) {
+	if (($i % $n) == 0 && $i)
+	    echo "    </table></td><td class='pctbcolmid'><table>\n";
+        echo $pctexts[$i];
     }
 
     echo "    </table></td></tr></table></div>\n\n",

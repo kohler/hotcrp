@@ -195,6 +195,20 @@ class Conference {
                  && $this->save_setting("cap_key", 1, $key)))
             $Opt["disableCapabilities"] = true;
 
+        // GC old capabilities
+        if ($this->sversion >= 58
+            && defval($this->settings, "capability_gc", 0) < time() - 86400) {
+            $now = time();
+            $this->q("delete from Capability where timeExpires>0 and timeExpires<$now");
+            $this->q("delete from CapabilityMap where timeExpires>0 and timeExpires<$now");
+            $this->q("insert into Settings (name, value) values ('capability_gc', $now) on duplicate key update value=values(value)");
+            $this->settings["capability_gc"] = $now;
+        }
+
+        $this->crosscheck_settings();
+    }
+
+    private function crosscheck_settings() {
         // S3 settings
         foreach (array("s3_bucket", "s3_key", "s3_secret") as $k)
             if (!@$this->settingTexts[$k] && @$Opt[$k])
@@ -215,16 +229,6 @@ class Conference {
                     $this->track_tags[] = $k;
         } else
             $this->tracks = $this->track_tags = null;
-
-        // GC old capabilities
-        if ($this->sversion >= 58
-            && defval($this->settings, "capability_gc", 0) < time() - 86400) {
-            $now = time();
-            $this->q("delete from Capability where timeExpires>0 and timeExpires<$now");
-            $this->q("delete from CapabilityMap where timeExpires>0 and timeExpires<$now");
-            $this->q("insert into Settings (name, value) values ('capability_gc', $now) on duplicate key update value=values(value)");
-            $this->settings["capability_gc"] = $now;
-        }
     }
 
     function setting($name, $defval = false) {
@@ -396,14 +400,13 @@ class Conference {
 
     function save_setting($name, $value, $data = null) {
         $qname = $this->dblink->escape_string($name);
+        $change = false;
 	if ($value === null && $data === null) {
 	    if ($this->qe("delete from Settings where name='$qname'")) {
 		unset($this->settings[$name]);
 		unset($this->settingTexts[$name]);
-                $this->deadline_cache = null;
-                return true;
-	    } else
-                return false;
+                $change = true;
+	    }
 	} else {
             if ($data === null)
                 $dval = "null";
@@ -414,11 +417,14 @@ class Conference {
 	    if ($this->qe("insert into Settings (name, value, data) values ('$qname', $value, $dval) on duplicate key update value=values(value), data=values(data)", "while updating settings")) {
 		$this->settings[$name] = $value;
 		$this->settingTexts[$name] = $data;
-                $this->deadline_cache = null;
-                return true;
-	    } else
-                return false;
-	}
+                $change = true;
+            }
+        }
+        if ($change) {
+            $this->deadline_cache = null;
+            $this->crosscheck_settings();
+        }
+        return $change;
     }
 
     function invalidateCaches($caches = null) {

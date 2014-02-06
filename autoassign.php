@@ -313,7 +313,7 @@ function doAssign() {
 	    if ($row->conflictType > 0
                 || $row->myReviewType > 0
 		|| $row->refused > 0
-                || !$pcm[$row->contactId]->canViewPaper($row))
+                || !$pcm[$row->contactId]->allow_review_assignment($row))
 		$prefs[$row->contactId][$row->paperId] = -1000001;
 	    else
 		$prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
