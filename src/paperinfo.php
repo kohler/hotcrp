@@ -66,7 +66,10 @@ class PaperInfo {
         $pi = $result ? $result->fetch_object("PaperInfo") : null;
         if ($pi && (property_exists($pi, "conflictType")
                     || property_exists($pi, "myReviewType"))) {
-            $cid = is_object($contact) ? $contact->contactId : $contact;
+            if ($contact === true)
+                $cid = property_exists($pi, "contactId") ? $pi->contactId : null;
+            else
+                $cid = is_object($contact) ? $contact->contactId : $contact;
             $pi->assign_contact_info($pi, $cid);
         }
         return $pi;

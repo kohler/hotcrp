@@ -289,8 +289,8 @@ function doAssign() {
     $result = $Conf->qe("select Paper.paperId, PCMember.contactId,
 	coalesce(PaperConflict.conflictType, 0) as conflictType,
 	coalesce(PaperReviewPreference.preference, 0) as preference,
-	coalesce(PaperReview.reviewType, 0) as reviewType,
-	coalesce(PaperReview.reviewSubmitted, 0) as reviewSubmitted,
+	coalesce(PaperReview.reviewType, 0) as myReviewType,
+	coalesce(PaperReview.reviewSubmitted, 0) as myReviewSubmitted,
 	coalesce($score, 0) as reviewScore,
 	topicInterestScore,
 	coalesce(PRR.contactId, 0) as refused
@@ -308,10 +308,12 @@ function doAssign() {
 	group by Paper.paperId, PCMember.contactId");
 
     if ($atype == "rev" || $atype == "revadd" || $atype == "revpc") {
-	while (($row = edb_orow($result))) {
+	while (($row = PaperInfo::fetch($result, true))) {
 	    $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
-	    if ($row->conflictType > 0 || $row->reviewType > 0
-		|| $row->refused > 0)
+	    if ($row->conflictType > 0
+                || $row->myReviewType > 0
+		|| $row->refused > 0
+                || !$pcm[$row->contactId]->canViewPaper($row))
 		$prefs[$row->contactId][$row->paperId] = -1000001;
 	    else
 		$prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
@@ -323,8 +325,8 @@ function doAssign() {
 	$rows = array();
 	while (($row = edb_orow($result))) {
 	    $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
-	    if ($row->conflictType > 0 || $row->reviewType == 0
-		|| $row->reviewSubmitted == 0 || $row->reviewScore == 0)
+	    if ($row->conflictType > 0 || $row->myReviewType == 0
+		|| $row->myReviewSubmitted == 0 || $row->reviewScore == 0)
 		/* ignore row */;
 	    else {
 		if (!isset($scoreextreme[$row->paperId])
