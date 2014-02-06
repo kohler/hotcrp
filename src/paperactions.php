@@ -33,7 +33,7 @@ class PaperActions {
 	global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
 	if (!$Me->allowAdminister($prow)
-	    || ($contactId = rcvtint($_REQUEST["contactId"])) <= 0)
+	    || ($contactId = rcvtint($_REQUEST["reviewer"])) <= 0)
 	    $contactId = $Me->contactId;
 	$v = cvtpref($_REQUEST["revpref"]);
 	if ($v >= -1000000) {
