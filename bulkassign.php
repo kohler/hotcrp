@@ -112,7 +112,9 @@ echo 'Default action:&nbsp; assign&nbsp; ',
                                        "review" => "external reviews",
                                        "conflict" => "PC conflicts",
                                        "lead" => "discussion leads",
-                                       "shepherd" => "shepherds"),
+                                       "shepherd" => "shepherds",
+                                       "tag" => "add tags",
+                                       "settag" => "replace tags"),
                defval($_REQUEST, "default_action", "primary"),
                array("id" => "tsel", "onchange" => "fold(\"email\",this.value!=\"review\")")),
     '<div class="g"></div>', "\n";
@@ -156,7 +158,7 @@ paper,name,email
 
 <p>Possible columns include “<code>paper</code>”, “<code>action</code>”,
 “<code>email</code>”, “<code>first</code>”, “<code>last</code>”,
-“<code>name</code>”, and “<code>round</code>”. The “<code>action</code>”
+“<code>name</code>”, “<code>round</code>”, and “<code>tag</code>”. The “<code>action</code>”
 column, if given, is the assignment type for that row;
 it should be one of ";
 $anames = array();

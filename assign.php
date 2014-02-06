@@ -218,10 +218,10 @@ function requestReviewChecks($themHtml, $reqId) {
 	if ($row[1] == "<conflict>")
 	    return $Conf->errorMsg("$themHtml has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
 	else if ($Me->allowAdminister($prow) && Contact::override_deadlines()) {
-	    $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was &ldquo;" . htmlspecialchars($row[1]) . "&rdquo;.)" : ""));
+	    $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was “" . htmlspecialchars($row[1]) . "”.)" : ""));
 	    $Conf->qe("delete from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId", $while);
 	} else
-	    return $Conf->errorMsg("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was &ldquo;" . htmlspecialchars($row[1]) . "&rdquo;.)" : "") . ($Me->allowAdminister($prow) ? "  As an administrator, you can override this refusal with the \"Override...\" checkbox." : ""));
+	    return $Conf->errorMsg("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? " (Their reason was “" . htmlspecialchars($row[1]) . "”.)" : "") . ($Me->allowAdminister($prow) ? " As an administrator, you can override this refusal with the “Override...” checkbox." : ""));
     }
 
     return true;
