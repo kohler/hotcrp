@@ -1086,7 +1086,7 @@ function doAccGroup() {
 
     doCheckbox("acct_addr", "Collect users&rsquo; addresses and phone numbers");
 
-    echo "<hr class='hr' /><h3>Program committee &amp; system administrators</h3>";
+    echo "<h3 class=\"settings g\">Program committee &amp; system administrators</h3>";
 
     echo "<p><a href='", hoturl("profile", "u=new"), "' class='button'>Create account</a> &nbsp;|&nbsp; ",
 	"Select a user&rsquo;s name to edit a profile or change PC/administrator status.</p>\n";
@@ -1360,7 +1360,7 @@ function doOptGroupOption($o) {
 function doOptGroup() {
     global $Conf;
 
-    echo "<h3>Submission options</h3>\n";
+    echo "<h3 class=\"settings\">Submission options</h3>\n";
     echo "Options are selected by authors at submission time.  Examples have included “PC-authored paper,” “Consider this paper for a Best Student Paper award,” and “Allow the shadow PC to see this paper.”  The “option name” should be brief (“PC paper,” “Best Student Paper,” “Shadow PC”).  The optional description can explain further and may use XHTML.  ";
     echo "Add options one at a time.\n";
     echo "<div class='g'></div>\n";
@@ -1392,7 +1392,7 @@ function doOptGroup() {
 	$ninterests += ($row[2] ? 1 : 0);
     }
 
-    echo "<hr class='hr' /><h3>Topics</h3>\n";
+    echo "<h3 class=\"settings g\">Topics</h3>\n";
     echo "Enter topics one per line.  Authors select the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its name.\n";
     echo "<div class='g'></div><table id='newtoptable' class='", ($ninterests ? "foldo" : "foldc"), "'>";
     echo "<tr><th colspan='2'></th><th class='fx'><small>Low</small></th><th class='fx'><small>High</small></th></tr>";
@@ -1448,11 +1448,9 @@ function doRevGroup() {
     echo "<div class='g'></div>\n";
     doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
 
-    echo "<hr class='hr' />";
-
 
     // Review visibility
-    echo "<h3>Review visibility</h3>\n";
+    echo "<h3 class=\"settings g\">Review visibility</h3>\n";
 
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
     doRadio("pc_seeallrev", array(1 => "Yes",
@@ -1469,11 +1467,9 @@ function doRevGroup() {
     echo "Can external reviewers see the other reviews for their assigned papers, once they&rsquo;ve submitted their own?<br />\n";
     doRadio("extrev_view", array(2 => "Yes", 1 => "Yes, but they can&rsquo;t see who wrote blind reviews", 0 => "No"));
 
-    echo "<hr class='hr' />";
-
 
     // PC reviews
-    echo "<h3>PC reviews</h3>\n";
+    echo "<h3 class=\"settings g\">PC reviews</h3>\n";
 
     echo "<table>\n";
     $date_text = $DateExplanation;
@@ -1482,17 +1478,15 @@ function doRevGroup() {
     doDateRow("pcrev_hard", array("Hard deadline", "Reviews <em>cannot be entered or changed</em> after the hard deadline.  If set, this should generally be after the PC meeting.<br />$date_text"));
     if (!($rev_roundtag = setting_data("rev_roundtag")))
 	$rev_roundtag = "(None)";
-    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: “R1”, “R2” &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lcaption", "(None)");
+    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: “R1”, “R2” &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lxcaption", "(None)");
     echo "</table>\n";
 
     echo "<div class='g'></div>\n";
     doCheckbox('pcrev_any', "PC members can review <strong>any</strong> submitted paper");
 
-    echo "<hr class='hr' />";
-
 
     // External reviews
-    echo "<h3>External reviews</h3>\n";
+    echo "<h3 class=\"settings g\">External reviews</h3>\n";
 
     doCheckbox('extrev_chairreq', "PC chair must approve proposed external reviewers");
     doCheckbox("pcrev_editdelegate", "PC members can edit external reviews they requested");
@@ -1512,11 +1506,10 @@ function doRevGroup() {
 <textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20' onchange='hiliter(this)'>", htmlspecialchars($t["body"]), "</textarea>",
 	"</td></tr></table>\n";
 
-    echo "<hr class='hr' />";
 
     // Tags
     $tagger = new Tagger;
-    echo "<h3>Tags</h3>\n";
+    echo "<h3 class=\"settings g\">Tags</h3>\n";
 
     echo "<table><tr><td class='lcaption'>", decorateSettingName("tag_chair", "Chair-only tags"), "</td>";
     if (count($Error) > 0)
@@ -1541,7 +1534,7 @@ function doRevGroup() {
 	$v = defval($_REQUEST, "tag_rank", "");
     else
 	$v = $Conf->setting_data("tag_rank", "");
-    echo "<td><input type='text' class='textlite' name='tag_rank' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>If set, the <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
+    echo "<td><input type='text' class='textlite' name='tag_rank' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
     echo "</table>";
 
     echo "<div class='g'></div>\n";
@@ -1571,10 +1564,8 @@ function doRevGroup() {
     }
     echo "</table></td></tr></table>\n";
 
-    echo "<hr class='hr' />";
-
     // Tags
-    echo "<h3>Review ratings</h3>\n";
+    echo "<h3 class=\"settings g\">Review ratings</h3>\n";
 
     echo "Should HotCRP collect ratings of reviews? &nbsp; <a class='hint' href='", hoturl("help", "t=revrate"), "'>(Learn more)</a><br />\n";
     doRadio("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"));
@@ -1661,8 +1652,7 @@ function doDecGroup() {
     echo "</tr>\n</table>\n";
 
     // Final versions
-    echo "<hr class='hr' />";
-    echo "<h3>Final versions</h3>\n";
+    echo "<h3 class=\"settings g\">Final versions</h3>\n";
     echo "<table id='foldfinal' class='foldo'>";
     doCheckbox('final_open', "<b>Collect final versions of accepted papers<span class='fx'>:</span></b>", true, "void fold('final',!this.checked)");
     echo "<tr class='fx'><td></td><td><table>";
