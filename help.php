@@ -10,6 +10,7 @@ $topicTitles = array("topics" => "Help topics",
 		     "keywords" => "Search keywords",
 		     "search" => "Search",
 		     "tags" => "Tags",
+                     "tracks" => "Tracks",
 		     "revround" => "Review rounds",
 		     "revrate" => "Review ratings",
 		     "votetags" => "Voting tags",
@@ -65,6 +66,7 @@ function topics() {
     _alternateRow("<a href='" . hoturl("help", "t=keywords") . "'>Search keywords</a>", "Quick reference to search keywords and search syntax.");
     _alternateRow("<a href='" . hoturl("help", "t=tags") . "'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
     _alternateRow("<a href='" . hoturl("help", "t=scoresort") . "'>Sorting scores</a>", "How scores are sorted in paper lists.");
+    _alternateRow("<a href='" . hoturl("help", "t=tracks") . "'>Tracks</a>", "Defining tracks.");
     _alternateRow("<a href='" . hoturl("help", "t=revround") . "'>Review rounds</a>", "Defining review rounds.");
     _alternateRow("<a href='" . hoturl("help", "t=revrate") . "'>Review ratings</a>", "Rating reviews.");
     _alternateRow("<a href='" . hoturl("help", "t=votetags") . "'>Voting tags</a>", "Voting for papers.");
@@ -382,7 +384,7 @@ function tags() {
 	$votetags = _currentVoteTags();
 
 	if ($Me->privChair)
-	    $setting = "  (<a href='" . hoturl("settings", "group=rev") . "'>Change this setting</a>)";
+	    $setting = "  (<a href='" . hoturl("settings", "group=reviews") . "'>Change this setting</a>)";
 
 	if ($Conf->setting("tag_seeall") > 0) {
 	    $conflictmsg3 = "Currently PC members can see tags for any paper, including conflicts.";
@@ -523,10 +525,62 @@ The tag names “red”, “orange”, “yellow”,
 “red” will appear red in paper lists (for people who can see that
 tag).  Tag a paper “~red” to make it red on your displays, but not
 others’.  System administrators can <a
-href='" . hoturl("settings", "group=rev") . "'>associate other tags with colors</a>
+href='" . hoturl("settings", "group=reviews") . "'>associate other tags with colors</a>
 so that, for example, “<a
 href='" . hoturl("search", "q=%23reject") . "'>#reject</a>” papers show up
 as grey.");
+    echo "</table>\n";
+}
+
+
+function tracks() {
+    global $Conf, $Me;
+
+    echo "<table>";
+    _alternateRow("Track basics", "
+Tracks can control whether PC members can view or review
+specific papers. Tracks are managed through the <a href=\"" . hoturl("help", "t=tags") . "\">tags system</a>.
+Without tracks, all PC members are treated equally.
+With tracks, PC members with different tags can have different rights to
+view or review papers, depending on the papers’ tags.
+
+<p>Set up tracks on the <a href=\"" . hoturl("settings", "group=reviews#tracks") . "\">Settings &gt;
+Reviews</a> page.</p>");
+    _alternateRow("Examples", "
+An <em>external review committee</em> is a subset of the PC that may bid on
+papers to review, and may be assigned reviews (using, for example, the
+<a href=\"" . hoturl("autoassign") . "\">autoassignment tool</a>), but may
+not review papers they were not assigned, and may not view reviews except
+for papers they have reviewed. To set this up:
+
+<ul>
+<li>Give external review committee members the “erc” tag.</li>
+<li>Under “Tracks” on Settings &gt; Reviews, “For papers not on other
+tracks,” select “Who can view reviews? &gt; PC members without tag: &gt; erc”
+and “Who can review without an assignment? &gt; PC members without tag: &gt; erc”.</li>
+</ul>
+
+<p>A <em>PC-paper review committee</em> is a subset of the PC that reviews papers
+with PC coauthors. PC-paper review committees are kept separate from the main
+PC; they only bid on and review PC papers, while the main PC handles all other
+papers. To set this up:</p>
+
+<ul>
+<li>Give PC-paper review committee members the “pcrc” tag.</li>
+<li>Give PC papers the “pcrc” tag.</li>
+<li>Under “Tracks” on Settings &gt; Reviews, add a track for tag “pcrc”.
+  For all permissions, select “PC members with tag: &gt; pcrc”.</li>
+<li>For papers not on other tracks, for all permissions, select
+  “PC members without tag: &gt; pcrc”.</li>
+</ul>");
+    _alternateRow("Understanding permissions", "
+Tracks restrict the permissions granted to the PC by other settings.
+For example, if
+the main “PC members can review <strong>any</strong> submitted paper”
+permissions is off, then no PC member can enter an unassigned review,
+independent of the track settings.
+It can be useful to “act as” a member of the PC to check what permissions
+are actually live.");
     echo "</table>\n";
 }
 
@@ -553,7 +607,7 @@ To list another PC member’s round “R1” review assignments, <a href='" . ho
 
     _alternateRow("Assigning rounds", "
 New assignments are marked by default with the current round defined in
-<a href='" . hoturl("settings", "group=rev") . "'>review settings</a>.
+<a href='" . hoturl("settings", "group=reviews") . "'>review settings</a>.
 The automatic and bulk assignment pages also let you set a review round.");
 
     echo "</table>\n";
@@ -623,7 +677,7 @@ You may also search for reviews with specific ratings; for instance,
 	$what = "no one";
     _alternateRow("Settings", "
 Chairs set how ratings work on the <a
-href='" . hoturl("settings", "group=rev") . "'>review settings
+href='" . hoturl("settings", "group=reviews") . "'>review settings
 page</a>." . ($Me->is_reviewer() ? "  Currently, $what can rate reviews." : ""));
     _alternateRow("Visibility", "
 A review’s ratings are visible to any unconflicted PC members who can see
@@ -689,7 +743,7 @@ The PC’s aggregated vote totals might help determine
 which papers to discuss.
 
 <p>HotCRP supports voting through the <a href='" . hoturl("help", "t=tags") . "'>tags system</a>.
-The chair can <a href='" . hoturl("settings", "group=rev") . "'>define a set of voting tags</a> and allotments" . _currentVoteTags() . ".
+The chair can <a href='" . hoturl("settings", "group=reviews") . "'>define a set of voting tags</a> and allotments" . _currentVoteTags() . ".
 PC members vote by assigning the corresponding twiddle tags;
 the aggregated PC vote is visible in the public tag.</p>
 
@@ -736,7 +790,7 @@ method</a> by default, combines these rankings into a global preference order.
 <p>HotCRP supports ranking through the <a
 href='" . hoturl("help", "t=tags") . "'>tags system</a>.  The chair chooses
 a tag for ranking—“rank” is a good default—and enters it on <a
-href='" . hoturl("settings", "group=rev") . "'>the settings page</a>.
+href='" . hoturl("settings", "group=reviews") . "'>the settings page</a>.
 PC members then rank papers using their private versions of this tag,
 tagging their first preference with “~rank#1”,
 their second preference with “~rank#2”,
@@ -966,11 +1020,11 @@ After the submission deadline has passed:
   uploaded (you can tell from the icon in the search list).  Sometimes a
   user will uncheck “The paper is ready for review” by mistake.</p></li>
 
-<li><p><strong><a href='" . hoturl("settings", "group=rfo") . "'>Prepare the
+<li><p><strong><a href='" . hoturl("settings", "group=reviewform") . "'>Prepare the
   review form.</a></strong> Take a look at the templates to get
   ideas.</p></li>
 
-<li><p><strong><a href='" . hoturl("settings", "group=rev") . "'>Set review
+<li><p><strong><a href='" . hoturl("settings", "group=reviews") . "'>Set review
   policies and deadlines</a></strong>, including reviewing deadlines, whether
   review is blind, and whether PC members may review any paper
   (usually “yes” is the right answer).</p></li>
@@ -1014,7 +1068,7 @@ After the submission deadline has passed:
   href='" . hoturl("search", "q=cre:%3C3&amp;t=s") . "'>papers
   with fewer than three completed reviews</a>.</p></li>
 
-<li><p><strong><a href='" . hoturl("settings", "group=rev") . "'>Open the site
+<li><p><strong><a href='" . hoturl("settings", "group=reviews") . "'>Open the site
   for reviewing.</a></strong></p></li>
 
 </ol>
@@ -1076,13 +1130,13 @@ manager’s identity.</p>
   reviews,” then <a href='" . hoturl("mail") . "'>send mail to
   authors</a> informing them of the response deadline.  PC members can still
   update their reviews up to the <a
-  href='" . hoturl("settings", "group=rev") . "'>review deadline</a>; authors
+  href='" . hoturl("settings", "group=reviews") . "'>review deadline</a>; authors
   are informed via email of any review changes.  At the end of the response
   period you should generally <a
   href='" . hoturl("settings", "group=dec") . "'>turn off “Authors can see
   reviews”</a> so PC members can update their reviews in peace.</p></li>
 
-<li><p>Set <strong><a href='" . hoturl("settings", "group=rev") . "'>PC can
+<li><p>Set <strong><a href='" . hoturl("settings", "group=reviews") . "'>PC can
   see all reviews</a></strong> if you haven’t already, allowing the program
   committee to see reviews and scores for
   non-conflicted papers.  (During most conferences’ review periods, a PC member
@@ -1192,6 +1246,8 @@ else if ($topic == "keywords")
     searchQuickref();
 else if ($topic == "tags")
     tags();
+else if ($topic == "tracks")
+    tracks();
 else if ($topic == "revround")
     revround();
 else if ($topic == "revrate")

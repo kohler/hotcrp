@@ -351,7 +351,12 @@ class Tagger {
             return;
         $ct = $Conf->setting("tag_chair") ? $Conf->setting_data("tag_chair", "") : "";
         foreach (preg_split('/\s+/', $ct) as $t)
-            if ($t != "") {
+            if ($t != "" && !$map[self::base($t)]->chair) {
+                $map[self::base($t)]->chair = true;
+                ++$map->nchair;
+            }
+        foreach ($Conf->track_tags() as $t)
+            if (!$map[self::base($t)]->chair) {
                 $map[self::base($t)]->chair = true;
                 ++$map->nchair;
             }

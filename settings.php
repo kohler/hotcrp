@@ -6,6 +6,11 @@
 require_once("src/initweb.php");
 if ($Me->is_empty() || !$Me->privChair)
     $Me->escape();
+
+if (!isset($_REQUEST["group"]) && isset($_SERVER["PATH_INFO"])
+    && preg_match(',\A/(\w+)\z,i', $_SERVER["PATH_INFO"]))
+    $_REQUEST["group"] = substr($_SERVER["PATH_INFO"], 1);
+
 $Highlight = defval($_SESSION, "settings_highlight", array());
 unset($_SESSION["settings_highlight"]);
 $Error = array();
@@ -81,7 +86,13 @@ $SettingGroups = array("acc" => array(
 			     "final_done" => "date",
 			     "final_grace" => "grace"));
 
+$GroupMapping = array("rev" => "reviews", "rfo" => "reviewform");
+
 $Group = defval($_REQUEST, "group");
+if ($Group === "reviews" || $Group === "review")
+    $Group = "rev";
+if ($Group === "reviewform")
+    $Group = "rfo";
 if (!isset($SettingGroups[$Group])) {
     if ($Conf->timeAuthorViewReviews())
 	$Group = "dec";
@@ -259,12 +270,12 @@ function doTags($set, $what) {
 	$vs = array();
 	foreach (preg_split('/\s+/', $_REQUEST["tag_chair"]) as $t)
 	    if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
-		$vs[] = $t;
+		$vs[$t] = true;
 	    else if ($t !== "") {
 		$Error[] = "Chair-only tag “" . htmlspecialchars($t) . "” contains odd characters.";
 		$Highlight["tag_chair"] = true;
 	    }
-	$v = array(count($vs), join(" ", $vs));
+	$v = array(count($vs), join(" ", array_keys($vs)));
 	if (!isset($Highlight["tag_chair"])
 	    && ($Conf->setting("tag_chair") !== $v[0]
 		|| $Conf->setting_data("tag_chair") !== $v[1]))
@@ -1666,7 +1677,7 @@ function doRevGroup() {
 	(defval($_REQUEST, "tracks") || $Conf->has_tracks() || @$Highlight["tracks"] ? "foldo" : "foldc"), "'><tr>",
 	"<td>", foldbutton("tracks", ""), "</td>",
 	"<td><a href='#' onclick='return fold(\"tracks\")' name='tracks' class='q'><strong>Tracks</strong></a><br />\n",
-	"<div class='hint fx'>Tracks let you control whether specific PC members can view or review specific papers.</div>",
+	"<div class='hint fx'>Tracks control whether specific PC members can view or review specific papers.</div>",
 	"<div class='smg fx'></div>",
         "<div class='fx'>";
     do_track("", 0);
@@ -1795,11 +1806,12 @@ foreach (array("acc" => "Accounts",
 	       "rev" => "Reviews",
 	       "rfo" => "Review form",
 	       "dec" => "Decisions") as $k => $v) {
+    $kk = defval($GroupMapping, $k, $k);
     echo "<tr><td>";
     if ($Group == $k)
-	echo "<div class='lhl1'><a class='q' href='", hoturl("settings", "group=$k"), "'>$v</a></div>";
+	echo "<div class='lhl1'><a class='q' href='", hoturl("settings", "group=$kk"), "'>$v</a></div>";
     else
-	echo "<div class='lhl0'><a href='", hoturl("settings", "group=$k"), "'>$v</a></div>";
+	echo "<div class='lhl0'><a href='", hoturl("settings", "group=$kk"), "'>$v</a></div>";
     echo "</td></tr>";
 }
 echo "</table></td><td class='top'><div class='lht'>";

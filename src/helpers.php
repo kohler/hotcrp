@@ -211,20 +211,24 @@ function hoturl($page, $options = null) {
             $x .= "#" . urlencode($options[$anchor]);
         $options = $x;
     }
+    // anchor
+    $anchor = "";
+    if (preg_match('/\A(.*?)(#.*)\z/', $options, $m))
+        list($options, $anchor) = array($m[1], $m[2]);
     // append forceShow to links to same paper if appropriate
     $are = '/\A(|.*?(?:&|&amp;))';
-    $zre = '(?:&(?:amp;)?|#|\z)(.*)\z/';
+    $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
     $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
     if (@$paperTable && $paperTable->prow && $is_paper_page
         && preg_match($are . 'p=' . $paperTable->prow->paperId . $zre, $options)
         && $Me->canAdminister($paperTable->prow)
         && $paperTable->prow->has_conflict($Me)
         && !preg_match($are . 'forceShow=/', $options))
-        $options = preg_replace('/\A([^#]*)/', '$1&amp;forceShow=1', $options);
+        $options .= "&amp;forceShow=1";
     if (@$paperTable && $paperTable->prow && $is_paper_page
         && @$CurrentList && $CurrentList > 0
         && !preg_match($are . 'ls=/', $options))
-        $options = preg_replace('/\A([^#]*)/', '$1&amp;ls=' . $CurrentList, $options);
+        $options .= "&amp;ls=$CurrentList";
     // create slash-based URLs if appropriate
     if ($options && !defval($Opt, "disableSlashURLs")) {
         if ($page == "review"
@@ -239,6 +243,8 @@ function hoturl($page, $options = null) {
                        && preg_match($are . 'u=([^&]+)' . $zre, $options, $m))
                    || ($page == "help"
                        && preg_match($are . 't=(\w+)' . $zre, $options, $m))
+                   || ($page == "settings"
+                       && preg_match($are . 'group=(\w+)' . $zre, $options, $m))
                    || preg_match($are . '__PATH__=([^&]+)' . $zre, $options, $m)) {
             $t .= "/" . $m[2];
             $options = $m[1] . $m[3];
@@ -247,9 +253,9 @@ function hoturl($page, $options = null) {
     if ($options && preg_match('/\A\&(?:amp;)?(.*)\z/', $options, $m))
 	$options = $m[1];
     if ($options)
-	return $t . "?" . $options;
+	return $t . "?" . $options . $anchor;
     else
-	return $t;
+	return $t . $anchor;
 }
 
 function hoturl_post($page, $options = null) {

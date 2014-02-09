@@ -671,7 +671,11 @@ class PreferencePaperColumn extends PaperColumn {
     }
     public function content($pl, $row) {
         $pref = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
-        if (!$this->editable)
+        if ($pl->reviewer
+            && $pl->reviewer != $pl->contact->cid
+            && !$pl->contact->allowAdminister($row))
+            return "N/A";
+        else if (!$this->editable)
             return $pref;
         else if ($row->reviewerConflictType > 0)
             return "N/A";

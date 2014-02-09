@@ -22,7 +22,7 @@ class Conference {
     private $usertimeId = 1;
 
     private $tracks = null;
-    private $track_tags = null;
+    private $_track_tags = null;
 
     const BLIND_NEVER = 0;
     const BLIND_OPTIONAL = 1;
@@ -228,12 +228,12 @@ class Conference {
         if (@($j = $this->settingTexts["tracks"])
             && @($j = json_decode($j))) {
             $this->tracks = $j;
-            $this->track_tags = array();
+            $this->_track_tags = array();
             foreach ($this->tracks as $k => $v)
                 if ($k !== "_")
-                    $this->track_tags[] = $k;
+                    $this->_track_tags[] = $k;
         } else
-            $this->tracks = $this->track_tags = null;
+            $this->tracks = $this->_track_tags = null;
     }
 
     function setting($name, $defval = false) {
@@ -309,13 +309,17 @@ class Conference {
     }
 
     function has_track_tags() {
-        return $this->track_tags !== null;
+        return $this->_track_tags !== null;
+    }
+
+    function track_tags() {
+        return $this->_track_tags ? $this->_track_tags : array();
     }
 
     function check_tracks($prow, $contact, $type) {
         if ($this->tracks) {
             $checked = false;
-            foreach ($this->track_tags as $t)
+            foreach ($this->_track_tags as $t)
                 if (@($perm = $this->tracks->$t->$type)
                     && $prow->has_tag($t)) {
                     $has_tag = $contact->has_tag(substr($perm, 1));
