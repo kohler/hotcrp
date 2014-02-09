@@ -8,7 +8,7 @@ if ($Me->is_empty() || !$Me->privChair)
     $Me->escape();
 $Highlight = defval($_SESSION, "settings_highlight", array());
 unset($_SESSION["settings_highlight"]);
-$Error = $Warning = array();
+$Error = array();
 $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST” <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
 $TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small";
@@ -63,6 +63,7 @@ $SettingGroups = array("acc" => array(
 			     "extrev_view" => 2,
 			     "mailbody_requestreview" => "string",
 			     "rev_ratings" => 2,
+                             "x_tracks" => "special",
 			     "next" => "rfo"),
 		       "rfo" => array(
 			     "reviewform" => "special",
@@ -756,6 +757,47 @@ function doBanal($set) {
     }
 }
 
+function do_save_tracks($set) {
+    global $Values, $Error, $Highlight;
+    if ($set)
+        return true;
+    $tagger = new Tagger;
+    $tracks = (object) array();
+    $missing_tags = false;
+    for ($i = 1; isset($_REQUEST["name_track$i"]); ++$i) {
+        $trackname = trim($_REQUEST["name_track$i"]);
+        if ($trackname === "" || $trackname === "(tag)")
+            continue;
+        else if (!$tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)
+                 || ($trackname === "_" && $i != 1)) {
+            $Error[] = "Track name “" . htmlspecialchars($trackname) . "” contains odd characters.";
+            $Highlight["name_track$i"] = $Highlight["tracks"] = true;
+            continue;
+        }
+        $t = (object) array();
+        foreach (array("view", "viewrev", "assrev", "unassrev") as $type)
+            if (($ttype = defval($_REQUEST, "${type}_track$i", "")) == "+"
+                || $ttype == "-") {
+                $ttag = trim(defval($_REQUEST, "${type}tag_track$i", ""));
+                if ($ttag === "" || $ttag === "(tag)") {
+                    $Error[] = "Tag missing for track setting.";
+                    $Highlight["${type}_track$i"] = $Highlight["tracks"] = true;
+                } else if ($tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
+                    $t->$type = $ttype . $ttag;
+                else {
+                    $Error[] = "Tag “" . htmlspecialchars($ttag) . "” contains odd characters.";
+                    $Highlight["${type}_track$i"] = $Highlight["tracks"] = true;
+                }
+            }
+        if (count((array) $t) || @$tracks->_)
+            $tracks->$trackname = $t;
+    }
+    if (count((array) $tracks))
+        $Values["tracks"] = array(1, json_encode($tracks));
+    else
+        $Values["tracks"] = null;
+}
+
 function doSpecial($name, $set) {
     global $Values, $Error, $Highlight;
     if ($name == "x_tag_chair" || $name == "x_tag_vote"
@@ -788,7 +830,8 @@ function doSpecial($name, $set) {
 		$Highlight["rev_roundtag"] = true;
 	    }
 	}
-    }
+    } else if ($name == "x_tracks")
+        do_save_tracks($set);
 }
 
 function accountValue($name, $type) {
@@ -964,12 +1007,12 @@ if (isset($_REQUEST["cancel"]) && check_post())
 $Conf->header("Settings", "settings", actionBar());
 
 
-function decorateSettingName($name, $text, $islabel = false) {
+function setting_label($name, $text, $islabel = false) {
     global $Highlight;
     if (isset($Highlight[$name]))
-	$text = "<span class='error'>$text</span>";
+	$text = "<span class=\"error\">$text</span>";
     if ($islabel)
-	$text = Ht::label($text);
+	$text = Ht::label($text, $islabel);
     return $text;
 }
 
@@ -994,7 +1037,7 @@ function doCheckbox($name, $text, $tr = false, $js = "hiliter(this)") {
     echo ($tr ? "<tr><td class='nowrap'>" : ""),
 	Ht::checkbox($name, 1, $x !== null && $x > 0, array("onchange" => $js, "id" => "cb$name")),
 	"&nbsp;", ($tr ? "</td><td>" : ""),
-	decorateSettingName($name, $text, true),
+	setting_label($name, $text, true),
 	($tr ? "</td></tr>\n" : "<br />\n");
 }
 
@@ -1007,9 +1050,9 @@ function doRadio($name, $varr) {
 	echo "<tr><td class='nowrap'>", Ht::radio_h($name, $k, $k == $x),
 	    "&nbsp;</td><td>";
 	if (is_array($text))
-	    echo decorateSettingName($name, $text[0], true), "<br /><small>", $text[1], "</small>";
+	    echo setting_label($name, $text[0], true), "<br /><small>", $text[1], "</small>";
 	else
-	    echo decorateSettingName($name, $text, true);
+	    echo setting_label($name, $text, true);
 	echo "</td></tr>\n";
     }
     echo "</table>\n";
@@ -1017,7 +1060,7 @@ function doRadio($name, $varr) {
 
 function doSelect($name, $nametext, $varr, $tr = false) {
     echo ($tr ? "<tr><td class='nowrap lcaption'>" : ""),
-	decorateSettingName($name, $nametext),
+	setting_label($name, $nametext),
 	($tr ? "</td><td class='lentry'>" : ": &nbsp;"),
 	Ht::select($name, $varr, setting($name),
 		    array("onchange" => "hiliter(this)")),
@@ -1034,7 +1077,7 @@ function doTextRow($name, $text, $v, $size = 30,
         $ttid = " id='tptx$temp_text_id'";
     } else
         $ttid = "";
-    echo "<tr><td class='$capclass nowrap'>", decorateSettingName($name, $settingname), "</td><td class='lentry'><input$ttid type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='$size' onchange='hiliter(this)' />";
+    echo "<tr><td class='$capclass nowrap'>", setting_label($name, $settingname), "</td><td class='lentry'><input$ttid type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='$size' onchange='hiliter(this)' />";
     if (is_array($text) && isset($text[2]))
 	echo $text[2];
     if (is_array($text) && $text[1])
@@ -1105,9 +1148,9 @@ function do_message($name, $description, $rows = 10) {
         '" hotcrpfold="yes">',
         '<div class="f-c childfold" onclick="return foldup(this,event)">',
         '<a class="q fn" href="#" onclick="return foldup(this,event)">',
-        expander(true), decorateSettingName("msg.$base", $description),
+        expander(true), setting_label("msg.$base", $description),
         '</a><a class="q fx" href="#" onclick="return foldup(this,event)">',
-        expander(false), decorateSettingName("msg.$base", $description),
+        expander(false), setting_label("msg.$base", $description),
         '</a> <span class="f-cx fx">(HTML allowed)</span></div>',
         '<textarea class="textlite fx" name="msg.', $base, '" cols="80"',
         ' rows="', $rows, '" onchange="hiliter(this)">',
@@ -1119,11 +1162,11 @@ function do_message($name, $description, $rows = 10) {
 function doMsgGroup() {
     global $Conf, $Opt;
 
-    echo "<div class='f-c'>", decorateSettingName("opt.shortName", "Conference abbreviation"), "</div>
+    echo "<div class='f-c'>", setting_label("opt.shortName", "Conference abbreviation"), "</div>
 <input class='textlite' name='opt.shortName' size='20' onchange='hiliter(this)' value=\"", htmlspecialchars($Opt["shortName"]), "\" />
 <div class='g'></div>\n";
 
-    echo "<div class='f-c'>", decorateSettingName("opt.longName", "Full conference name"), "</div>
+    echo "<div class='f-c'>", setting_label("opt.longName", "Full conference name"), "</div>
 <input class='textlite' name='opt.longName' size='70' onchange='hiliter(this)' value=\"", htmlspecialchars($Opt["longName"]), "\" />
 <div class='g'></div>\n";
 
@@ -1237,14 +1280,14 @@ function doOptGroupOption($o) {
     echo "<tr><td><div class='f-contain'>\n",
 	"  <div class='f-i'>",
 	"<div class='f-c'>",
-	decorateSettingName("optn$id", ($id === "n" ? "New option name" : "Option name")),
+	setting_label("optn$id", ($id === "n" ? "New option name" : "Option name")),
 	"</div>",
 	"<div class='f-e'><input$ttid type='text' class='textlite temptext",
 	($o->name == "(Enter new option)" ? "" : "off"),
 	"' name='optn$id' value=\"", htmlspecialchars($o->name), "\" size='50' onchange='hiliter(this)' /></div>\n",
 	"  <div class='f-i'>",
 	"<div class='f-c'>",
-	decorateSettingName("optd$id", "Description"),
+	setting_label("optd$id", "Description"),
 	"</div>",
 	"<div class='f-e'><textarea class='textlite' name='optd$id' rows='2' cols='50' onchange='hiliter(this)'>", htmlspecialchars($o->description), "</textarea></div>",
 	"</div></td>";
@@ -1272,7 +1315,7 @@ function doOptGroupOption($o) {
     echo "</tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2c fold3o'><tr>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
-	decorateSettingName("optvt$id", "Type"), "</div><div class='f-e'>";
+	setting_label("optvt$id", "Type"), "</div><div class='f-e'>";
 
     $optvt = $o->type;
     if ($optvt == "text" && @$o->display_space > 3)
@@ -1311,12 +1354,12 @@ function doOptGroupOption($o) {
     $Conf->footerScript("do_option_type(\$\$('optvt$id'),true)");
 
     echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
-	decorateSettingName("optp$id", "Visibility"), "</div><div class='f-e'>",
+	setting_label("optp$id", "Visibility"), "</div><div class='f-e'>",
 	Ht::select("optp$id", array("admin" => "Administrators only", "pc" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->view_type, array("onchange" => "hiliter(this)")),
 	"</div></div></td>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
-        decorateSettingName("optfp$id", "Form order"), "</div><div class='f-e'>";
+        setting_label("optfp$id", "Form order"), "</div><div class='f-e'>";
     $x = array();
     // can't use "foreach (PaperOption::option_list())" because caller
     // uses cursor
@@ -1330,7 +1373,7 @@ function doOptGroupOption($o) {
         "</div></div></td>";
 
     echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
-        decorateSettingName("optdt$id", "Display"), "</div><div class='f-e'>";
+        setting_label("optdt$id", "Display"), "</div><div class='f-e'>";
     echo Ht::select("optdt$id", array("normal" => "Normal",
                                       "highlight" => "Prominent",
                                       "near_submission" => "Near submission"),
@@ -1433,8 +1476,62 @@ function doOptGroup() {
 }
 
 // Reviews
+function do_track_permission($type, $question, $tnum, $thistrack) {
+    global $Conf, $Error, $temp_text_id;
+    if (count($Error) > 0) {
+        $tclass = defval($_REQUEST, "${type}_track$tnum", "");
+        $ttag = defval($_REQUEST, "${type}tag_track$tnum", "");
+    } else if ($thistrack && @$thistrack->$type) {
+        $tclass = substr($thistrack->$type, 0, 1);
+        $ttag = substr($thistrack->$type, 1);
+    } else
+        $tclass = $ttag = "";
+    $tempclass = "temptext" . ($ttag === "" ? "" : "off");
+    if ($ttag === "")
+        $ttag = "(tag)";
+
+    ++$temp_text_id;
+    echo "<tr hotcrpfold=\"1\" class=\"fold", ($tclass == "" ? "c" : "o"), "\">",
+        "<td class=\"lxcaption\">",
+        setting_label("${type}_track$tnum", $question, "${type}_track$tnum"),
+        "</td>",
+        "<td>",
+        Ht::select("${type}_track$tnum", array("" => "Whole PC", "+" => "PC members with tag:", "-" => "PC members without tag:"), $tclass,
+                   array("onchange" => "foldup(this,event,{f:this.selectedIndex==0})")),
+        " &nbsp;",
+        Ht::entry("${type}tag_track$tnum", $ttag,
+                  array("class" => "fx textlite $tempclass",
+                        "id" => "${type}tag_track$tnum")),
+        "</td></tr>";
+    $Conf->footerScript("mktemptext('${type}tag_track$tnum','(tag)')");
+}
+
+function do_track($trackname, $tnum) {
+    global $Conf;
+    echo "<div id=\"trackgroup$tnum\"",
+        ($tnum ? "" : " style=\"display:none\""),
+        "><div class=\"trackname\" style=\"margin-bottom:3px\">";
+    if ($trackname === "_")
+        echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
+    else {
+        $tracktext = ($trackname === "" ? "(tag)" : $trackname);
+        echo "For papers with tag &nbsp;", Ht::entry("name_track$tnum", $tracktext, array("class" => "textlite temptext" . ($trackname === "" ? "" : "off"), "id" => "name_track$tnum")), ":";
+        $Conf->footerScript("mktemptext('name_track$tnum','(tag)')");
+    }
+    echo "</div>\n";
+
+    $t = $Conf->setting_json("tracks");
+    $t = $t && $trackname !== "" ? @$t->$trackname : null;
+    echo "<table style=\"margin-left:1.5em;margin-bottom:0.5em\">";
+    do_track_permission("view", "Who can view these papers?", $tnum, $t);
+    do_track_permission("viewrev", "Who can view reviews?", $tnum, $t);
+    do_track_permission("assrev", "Who can be assigned a review?", $tnum, $t);
+    do_track_permission("unassrev", "Who can review without an assignment?", $tnum, $t);
+    echo "</table></div>";
+}
+
 function doRevGroup() {
-    global $Conf, $Error, $DateExplanation, $TagStyles;
+    global $Conf, $Error, $Highlight, $DateExplanation, $TagStyles;
 
     doCheckbox('rev_open', '<b>Open site for reviewing</b>');
     doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
@@ -1453,10 +1550,10 @@ function doRevGroup() {
     echo "<h3 class=\"settings g\">Review visibility</h3>\n";
 
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
-    doRadio("pc_seeallrev", array(1 => "Yes",
-				  3 => "Yes, unless they haven’t completed an assigned review for the same paper",
-				  4 => "Yes, after completing all their assigned reviews",
-				  0 => "Only after completing a review for the same paper"));
+    doRadio("pc_seeallrev", array(Conference::PCSEEREV_YES => "Yes",
+				  Conference::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
+				  Conference::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
+				  Conference::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper"));
 
     echo "<div class='g'></div>\n";
     echo "Can PC members see <strong>reviewer names</strong> except for conflicts?<br />\n";
@@ -1511,14 +1608,14 @@ function doRevGroup() {
     $tagger = new Tagger;
     echo "<h3 class=\"settings g\">Tags</h3>\n";
 
-    echo "<table><tr><td class='lcaption'>", decorateSettingName("tag_chair", "Chair-only tags"), "</td>";
+    echo "<table><tr><td class='lcaption'>", setting_label("tag_chair", "Chair-only tags"), "</td>";
     if (count($Error) > 0)
 	$v = defval($_REQUEST, "tag_chair", "");
     else
         $v = join(" ", array_keys($tagger->chair_tags()));
     echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
-    echo "<tr><td class='lcaption'>", decorateSettingName("tag_vote", "Voting tags"), "</td>";
+    echo "<tr><td class='lcaption'>", setting_label("tag_vote", "Voting tags"), "</td>";
     if (count($Error) > 0)
 	$v = defval($_REQUEST, "tag_vote", "");
     else {
@@ -1529,7 +1626,7 @@ function doRevGroup() {
     }
     echo "<td><input type='text' class='textlite' name='tag_vote' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
-    echo "<tr><td class='lcaption'>", decorateSettingName("tag_rank", "Ranking tag"), "</td>";
+    echo "<tr><td class='lcaption'>", setting_label("tag_rank", "Ranking tag"), "</td>";
     if (count($Error) > 0)
 	$v = defval($_REQUEST, "tag_rank", "");
     else
@@ -1544,7 +1641,7 @@ function doRevGroup() {
     echo "<table id='foldtag_color' class='",
 	(defval($_REQUEST, "tagcolor") ? "foldo" : "foldc"), "'><tr>",
 	"<td>", foldbutton("tag_color", ""), "</td>",
-	"<td><a href='javascript:void fold(\"tag_color\")' name='tagcolor' class='q'><strong>Styles and colors</strong></a><br />\n",
+	"<td><a href='#' onclick='return fold(\"tag_color\")' name='tagcolor' class='q'><strong>Styles and colors</strong></a><br />\n",
 	"<div class='hint fx'>Papers tagged with a style name, or with one of the associated tags (if any), will appear in that style in paper lists.</div>",
 	"<div class='smg fx'></div>",
 	"<table class='fx'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>";
@@ -1564,7 +1661,27 @@ function doRevGroup() {
     }
     echo "</table></td></tr></table>\n";
 
-    // Tags
+    echo "<div class='g'></div>\n";
+    echo "<table id='foldtracks' class='",
+	(defval($_REQUEST, "tracks") || $Conf->has_tracks() || @$Highlight["tracks"] ? "foldo" : "foldc"), "'><tr>",
+	"<td>", foldbutton("tracks", ""), "</td>",
+	"<td><a href='#' onclick='return fold(\"tracks\")' name='tracks' class='q'><strong>Tracks</strong></a><br />\n",
+	"<div class='hint fx'>Tracks let you control whether specific PC members can view or review specific papers.</div>",
+	"<div class='smg fx'></div>",
+        "<div class='fx'>";
+    do_track("", 0);
+    do_track("_", 1);
+    $tracknum = 2;
+    if (($trackj = $Conf->setting_json("tracks")))
+        foreach ($trackj as $trackname => $x)
+            if ($trackname !== "_") {
+                do_track($trackname, $tracknum);
+                ++$tracknum;
+            }
+    echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
+    echo "</div></td></tr></table>\n";
+
+    // Review ratings
     echo "<h3 class=\"settings g\">Review ratings</h3>\n";
 
     echo "Should HotCRP collect ratings of reviews? &nbsp; <a class='hint' href='", hoturl("help", "t=revrate"), "'>(Learn more)</a><br />\n";
@@ -1638,7 +1755,7 @@ function doDecGroup() {
 	$vclass = defval($_REQUEST, "dtypn", $vclass);
     }
     echo "<tr><td class='lcaption'>",
-	decorateSettingName("decn", "New decision type"),
+	setting_label("decn", "New decision type"),
 	"<br /></td>",
 	"<td class='lentry nowrap'><input type='text' class='textlite' name='decn' value=\"", htmlspecialchars($v), "\" size='35' onchange='hiliter(this)' /> &nbsp; ",
 	Ht::select("dtypn", array(1 => "Accept class", -1 => "Reject class"),

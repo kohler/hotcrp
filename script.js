@@ -453,18 +453,24 @@ function fold(which, dofold, foldtype) {
     return false;
 }
 
-function foldup(e, event, foldnum, session) {
-    var dofold = false, attr, m;
+function foldup(e, event, opts) {
+    var dofold = false, attr, m, foldnum;
     while (e && e.id.substr(0, 4) != "fold" && !e.getAttribute("hotcrpfold"))
         e = e.parentNode;
     if (!e)
         return true;
-    foldnum = foldnum || 0;
+    if (typeof opts === "number")
+        opts = {n: opts};
+    else if (!opts)
+        opts = {};
+    foldnum = opts.n || 0;
     if (!foldnum && (m = e.className.match(/\bfold(\d*)[oc]\b/)))
         foldnum = m[1];
     dofold = !(new RegExp("\\bfold" + (foldnum ? foldnum : "") + "c\\b")).test(e.className);
-    if (session)
-        Miniajax.get(hotcrp_base + "sessionvar.php?j=1&var=" + session + "&val=" + (dofold ? 1 : 0));
+    if ("f" in opts && !!opts.f == !dofold)
+        return false;
+    if (opts.s)
+        Miniajax.get(hotcrp_base + "sessionvar.php?j=1&var=" + opts.s + "&val=" + (dofold ? 1 : 0));
     if (event)
         event_stop(event);
     m = fold(e, dofold, foldnum);
@@ -2163,6 +2169,18 @@ function do_option_type(e, nohilite) {
 	fold("optvis" + m[1], !/:final/.test(e.value), 2);
 	fold("optvis" + m[1], e.value != "pdf:final", 3);
     }
+}
+
+function settings_add_track() {
+    var i, h, j;
+    for (i = 1; jQuery("#trackgroup" + i).length; ++i)
+        /* do nothing */;
+    jQuery("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\"></div>");
+    j = jQuery("#trackgroup" + i);
+    j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
+    j = j.find(".temptext");
+    for (i = 0; i != j.length; ++i)
+        mktemptext(j[i].id, jQuery(j[i]).val());
 }
 
 window.review_form_settings = (function () {

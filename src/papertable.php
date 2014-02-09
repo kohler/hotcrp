@@ -180,7 +180,7 @@ class PaperTable {
         if ($fold || $editfolder) {
             $foldnum = defval($extra, "foldnum", 0);
             if (isset($extra["foldsession"]))
-                $foldnumarg = "," . (+$foldnum) . ",'" . $extra["foldsession"] . "'";
+                $foldnumarg = ",{n:" . (+$foldnum) . ",s:'" . $extra["foldsession"] . "'}";
             else
                 $foldnumarg = $foldnum ? ",$foldnum" : "";
         }

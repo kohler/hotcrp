@@ -34,6 +34,11 @@ class Conference {
     const SEEDEC_ALL = 2;
     const SEEDEC_NCREV = 3;
 
+    const PCSEEREV_IFCOMPLETE = 0;
+    const PCSEEREV_YES = 1;
+    const PCSEEREV_UNLESSINCOMPLETE = 3;
+    const PCSEEREV_UNLESSANYINCOMPLETE = 4;
+
     function __construct($dsn) {
 	global $Opt;
 
@@ -147,7 +152,7 @@ class Conference {
 	    $this->settings["pc_seeall"] = -1;
 	if (@$this->settings["pc_seeallrev"] == 2) {
 	    $this->settings["pc_seeblindrev"] = 1;
-	    $this->settings["pc_seeallrev"] = 1;
+	    $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
 	}
 	$this->settings["rounds"] = array("");
 	if (isset($this->settingTexts["tag_rounds"])) {
@@ -705,8 +710,10 @@ class Conference {
     }
     function timePCViewAllReviews($myReviewNeedsSubmit = false, $reviewsOutstanding = false) {
 	return ($this->settingsAfter("pc_seeallrev")
-		&& (!$myReviewNeedsSubmit || $this->settings["pc_seeallrev"] != 3)
-		&& (!$reviewsOutstanding || $this->settings["pc_seeallrev"] != 4));
+		&& (!$myReviewNeedsSubmit
+                    || $this->settings["pc_seeallrev"] != self::PCSEEREV_UNLESSINCOMPLETE)
+		&& (!$reviewsOutstanding
+                    || $this->settings["pc_seeallrev"] != self::PCSEEREV_UNLESSANYINCOMPLETE));
     }
     function timePCViewDecision($conflicted) {
 	$s = $this->setting("seedec");

@@ -124,7 +124,7 @@ class Ht {
     }
 
     static function label($text, $id = null) {
-        if (!$id)
+        if (!$id || $id === true)
             $id = self::$_lastcontrolid;
         return '<label for="' . $id . '">' . $text . "</label>";
     }

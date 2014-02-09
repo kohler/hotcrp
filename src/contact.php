@@ -812,8 +812,7 @@ class Contact {
                 $ci->potential_reviewer = true;
             else if ($ci->allow_pc)
                 $ci->potential_reviewer = !$tracks
-                    || ($Conf->check_tracks($prow, $this, "review")
-                        && $Conf->check_tracks($prow, $this, "review_any"));
+                    || $Conf->check_tracks($prow, $this, "unassrev");
             else
                 $ci->potential_reviewer = false;
             $ci->allow_review = $ci->potential_reviewer
@@ -1217,10 +1216,11 @@ class Contact {
                     || ($rights->allow_pc
                         && $rrowSubmitted
                         && $pc_seeallrev > 0 // see also timePCViewAllReviews()
-                        && ($pc_seeallrev != 4
+                        && ($pc_seeallrev != Conference::PCSEEREV_UNLESSANYINCOMPLETE
                             || !$this->has_outstanding_review())
-                        && ($pc_seeallrev != 3
+                        && ($pc_seeallrev != Conference::PCSEEREV_UNLESSINCOMPLETE
                             || !$rights->review_type)
+                        && $Conf->check_tracks($prow, $this, "viewrev")
                         && $viewscore >= VIEWSCORE_PC)
                     || ($rights->review_type
                         && !$rights->act_conflict_type
@@ -1261,7 +1261,7 @@ class Contact {
 	else if (!$rrowSubmitted)
 	    $whyNot['reviewNotSubmitted'] = 1;
 	else if ($rights->allow_pc
-                 && $pc_seeallrev == 4
+                 && $pc_seeallrev == Conference::PCSEEREV_UNLESSANYINCOMPLETE
                  && $this->has_outstanding_review())
 	    $whyNot["reviewsOutstanding"] = 1;
 	else if (!$Conf->timeReviewOpen())
@@ -1306,7 +1306,7 @@ class Contact {
         return $this->isPC
             && $Conf->setting("pcrev_any") > 0
             && $Conf->time_review(true, true)
-            && $Conf->check_any_tracks($this, "review_any");
+            && $Conf->check_any_tracks($this, "unassrev");
     }
 
     function timeReview($prow, $rrow) {
@@ -1335,7 +1335,7 @@ class Contact {
         return $rights->allow_pc_broad
             && ($rights->review_type > 0
                 || $rights->allow_administer
-                || $Conf->check_tracks($prow, $this, "review"));
+                || $Conf->check_tracks($prow, $this, "assrev"));
     }
 
     function allow_review_assignment($prow, &$whyNot = null) {
@@ -1345,7 +1345,7 @@ class Contact {
         $rights = $this->rights($prow);
         return $rights->allow_pc
             && ($rights->allow_review
-                || $Conf->check_tracks($prow, $this, "review"));
+                || $Conf->check_tracks($prow, $this, "assrev"));
     }
 
     function canReview($prow, $rrow, &$whyNot = null, $submit = false) {

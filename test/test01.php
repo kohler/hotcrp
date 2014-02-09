@@ -135,9 +135,9 @@ assert(join(";", array_keys($j)) == "1");
 // set up some tags and tracks
 $tagger = new Tagger($user_chair);
 $tagger->save(array(3, 9, 13, 17), "green", "a");
-$Conf->save_setting("tracks", 1, "{\"green\":{\"review\":\"-red\"}}");
+$Conf->save_setting("tracks", 1, "{\"green\":{\"assrev\":\"-red\"}}");
 $paper17 = $Conf->paperRow(17, $user_jon);
-assert(!$Conf->check_tracks($paper17, $user_jon, "review"));
+assert(!$Conf->check_tracks($paper17, $user_jon, "assrev"));
 assert(!$user_jon->allow_review_assignment_ignore_conflict($paper17));
 
 echo "* Tests complete.\n";
