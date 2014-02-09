@@ -421,11 +421,14 @@ class ReviewerTypePaperColumn extends PaperColumn {
             $by_pid = array();
             foreach ($rows as $row)
                 $by_pid[$row->paperId] = $row;
-            $result = $Conf->qe("select paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, contactId reviewContactId, requestedBy, reviewToken, reviewRound, 0 conflictType from PaperReview where paperId in (" . join(",", array_keys($by_pid)) . ") and contactId=" . $pl->search->reviewer_cid(), "while examining reviews");
+            $result = $Conf->qe("select Paper.paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, reviewBlind, PaperReview.contactId reviewContactId, requestedBy, reviewToken, reviewRound, conflictType from Paper left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=" . $pl->search->reviewer_cid() . ") left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $pl->search->reviewer_cid() . ") where Paper.paperId in (" . join(",", array_keys($by_pid)) . ") and (PaperReview.contactId is not null or PaperConflict.contactId is not null)", "while examining reviews");
             while (($xrow = edb_orow($result))) {
                 $prow = $by_pid[$xrow->paperId];
                 if ($pl->contact->allowAdminister($prow)
-                    || $pl->contact->canViewReviewerIdentity($prow, $xrow, true))
+                    || $pl->contact->canViewReviewerIdentity($prow, $xrow, true)
+                    || ($pl->contact->privChair
+                        && $xrow->conflictType > 0
+                        && !$xrow->reviewType))
                     $prow->_xreviewer = $xrow;
             }
             $this->xreviewer = $pl->search->reviewer();
@@ -460,7 +463,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
     public function content($pl, $row) {
         global $Conf;
         if ($this->xreviewer && !isset($row->_xreviewer))
-            $xrow = (object) array("reviewType" => 0);
+            $xrow = (object) array("reviewType" => 0, "conflictType" => 0);
         else if ($this->xreviewer)
             $xrow = $row->_xreviewer;
         else
