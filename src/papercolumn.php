@@ -415,20 +415,20 @@ class ReviewerTypePaperColumn extends PaperColumn {
         global $Conf;
         // PaperSearch is responsible for access control checking use of
         // `reviewerContact`, but we are careful anyway.
-        if ($pl->search->reviewerContact
-            && $pl->search->reviewerContact != $pl->contact->cid
+        if ($pl->search->reviewer_cid()
+            && $pl->search->reviewer_cid() != $pl->contact->cid
             && count($rows)) {
             $by_pid = array();
             foreach ($rows as $row)
                 $by_pid[$row->paperId] = $row;
-            $result = $Conf->qe("select paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, contactId reviewContactId, requestedBy, reviewToken, reviewRound, 0 conflictType from PaperReview where paperId in (" . join(",", array_keys($by_pid)) . ") and contactId=" . $pl->search->reviewerContact, "while examining reviews");
+            $result = $Conf->qe("select paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, contactId reviewContactId, requestedBy, reviewToken, reviewRound, 0 conflictType from PaperReview where paperId in (" . join(",", array_keys($by_pid)) . ") and contactId=" . $pl->search->reviewer_cid(), "while examining reviews");
             while (($xrow = edb_orow($result))) {
                 $prow = $by_pid[$xrow->paperId];
                 if ($pl->contact->allowAdminister($prow)
                     || $pl->contact->canViewReviewerIdentity($prow, $xrow, true))
                     $prow->_xreviewer = $xrow;
             }
-            $this->xreviewer = Contact::find_by_id($pl->search->reviewerContact);
+            $this->xreviewer = $pl->search->reviewer();
         } else
             $this->xreviewer = false;
     }

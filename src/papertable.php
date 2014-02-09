@@ -1698,7 +1698,8 @@ class PaperTable {
 	if ($Me->actPC($prow) || $Me->canViewDecision($prow))
 	    $this->papstripShepherd($this->mode == "assign", $foldShepherd);
 
-	if ($Me->actPC($prow) && $Conf->timePCReviewPreferences())
+	if ($Me->allow_review_assignment($prow)
+            && $Conf->timePCReviewPreferences())
 	    $this->papstripReviewPreference();
     }
 

@@ -10,7 +10,6 @@ if ($Me->is_empty() || (!$Me->privChair && !$Me->isPC))
 $reviewer = rcvtint($_REQUEST["reviewer"]);
 if ($reviewer <= 0 || !$Me->privChair)
     $reviewer = $Me->contactId;
-$_REQUEST["t"] = ($Conf->setting("pc_seeall") > 0 ? "act" : "s");
 
 // choose a sensible default action (if someone presses enter on a form element)
 if (isset($_REQUEST["default"]) && isset($_REQUEST["defaultact"])
@@ -174,9 +173,10 @@ $Conf->infoMsg(Message::html($Conf->has_topics()
 
 
 // search
-$search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
+$search = new PaperSearch($Me, array("t" => "rable",
                                      "urlbase" => hoturl("reviewprefs", "reviewer=$reviewer"),
-                                     "q" => defval($_REQUEST, "q", "")));
+                                     "q" => defval($_REQUEST, "q", ""),
+                                     "reviewer" => $reviewer));
 $pl = new PaperList($search, array("sort" => true, "list" => true, "foldtype" => "pf", "reviewer" => $reviewer));
 $pl_text = $pl->text("editReviewPreference",
                      array("class" => "pltable_full",

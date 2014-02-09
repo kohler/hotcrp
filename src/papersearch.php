@@ -294,7 +294,8 @@ class PaperSearch {
     var $allowAuthor;
     var $fields;
     var $orderTags;
-    var $reviewerContact;
+    private $_reviewer;
+    private $_reviewer_fixed;
     var $matchPreg;
     private $urlbase;
     var $warnings;
@@ -346,12 +347,14 @@ class PaperSearch {
 	    $this->limitName = "und";
 	else if ($me->isPC && ($ptype == "acc" || $ptype == "revs"
 			       || $ptype == "reqrevs" || $ptype == "req"
-			       || $ptype == "lead"))
+			       || $ptype == "lead" || $ptype == "rable"))
 	    $this->limitName = $ptype;
-	else if ($this->privChair && ($ptype == "all" || $ptype == "unsub"))
+        else if ($this->privChair && ($ptype == "all" || $ptype == "unsub"))
 	    $this->limitName = $ptype;
 	else if ($ptype == "r" || $ptype == "rout" || $ptype == "a")
 	    $this->limitName = $ptype;
+        else if ($ptype == "rable")
+            $this->limitName = "r";
 	else if (!$me->is_reviewer())
 	    $this->limitName = "a";
 	else if (!$me->is_author())
@@ -411,7 +414,8 @@ class PaperSearch {
 	$this->thenmap = null;
 	$this->headingmap = null;
 	$this->orderTags = array();
-	$this->reviewerContact = false;
+        $this->_reviewer = defval($opt, "reviewer", false);
+        $this->_reviewer_fixed = !!$this->_reviewer;
 	$this->_matchTable = null;
 	$this->_ssRecursion = array();
     }
@@ -1650,18 +1654,18 @@ class PaperSearch {
 	}
 	if (($x = $qe->get("tagorder")))
 	    $this->orderTags[] = $x;
-	if ($top && $qe->type == "re") {
-	    if ($this->reviewerContact === false) {
+	if ($top && $qe->type == "re" && !$this->_reviewer_fixed) {
+	    if ($this->_reviewer === false) {
 		$v = $qe->value->contactsql;
 		if ($v[0] == "=")
-		    $this->reviewerContact = (int) substr($v, 1);
+		    $this->_reviewer = (int) substr($v, 1);
 		else if ($v[0] == "\1") {
 		    $v = (int) substr($v, 1, strpos($v, "\1", 1) - 1);
 		    if (count($this->contactmatch[$v]) == 1)
-			$this->reviewerContact = $this->contactmatch[$v][0];
+			$this->_reviewer = $this->contactmatch[$v][0];
 		}
 	    } else
-		$this->reviewerContact = null;
+		$this->_reviewer = null;
 	}
 	if ($top && ($x = $qe->get("contradiction_warning")))
 	    $contradictions[$x] = true;
@@ -2225,7 +2229,8 @@ class PaperSearch {
 	    $qe = new SearchTerm("t");
 
         // apply complex limiters (only current example: "acc" for non-chairs)
-        if ($this->limitName == "acc" && !$this->privChair)
+        $limit = $this->limitName;
+        if ($limit == "acc" && !$this->privChair)
             $qe = SearchTerm::combine("and", array($qe, $this->_searchQueryWord("dec:yes", false)));
 
         // clean query
@@ -2253,41 +2258,49 @@ class PaperSearch {
 	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($filters, true)))));
 
 	// status limitation parts
-	if ($this->limitName == "s" || $this->limitName == "req"
-	    || $this->limitName == "acc" || $this->limitName == "und"
-            || $this->limitName == "unm")
+        $pc_seeall = $Conf->setting("pc_seeall") > 0;
+        if ($limit == "rable") {
+            $limitcontact = $this->_reviewer_fixed ? $this->reviewer() : $this->contact;
+            if ($limitcontact->allow_review_assignment_ignore_conflict(null))
+                $limit = $pc_seeall ? "act" : "s";
+            else if (!$limitcontact->isPC)
+                $limit = "r";
+        }
+	if ($limit == "s" || $limit == "req"
+	    || $limit == "acc" || $limit == "und"
+            || $limit == "unm" || ($limit == "rable" && !$pc_seeall))
 	    $filters[] = "Paper.timeSubmitted>0";
-	else if ($this->limitName == "act" || $this->limitName == "r")
+	else if ($limit == "act" || $limit == "r" || $limit == "rable")
 	    $filters[] = "Paper.timeWithdrawn<=0";
-	else if ($this->limitName == "unsub")
+	else if ($limit == "unsub")
 	    $filters[] = "(Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0)";
-	else if ($this->limitName == "lead")
+	else if ($limit == "lead")
 	    $filters[] = "Paper.leadContactId=" . $this->cid;
 
 	// decision limitation parts
-	if ($this->limitName == "acc")
+	if ($limit == "acc")
 	    $filters[] = "Paper.outcome>0";
-	else if ($this->limitName == "und")
+	else if ($limit == "und")
 	    $filters[] = "Paper.outcome=0";
 
 	// other search limiters
-        if ($this->limitName == "a") {
+        if ($limit == "a") {
 	    $filters[] = $this->contact->actAuthorSql("PaperConflict");
 	    $this->needflags |= self::F_AUTHOR;
-	} else if ($this->limitName == "r") {
+	} else if ($limit == "r") {
 	    $filters[] = "MyReview.reviewType is not null";
 	    $this->needflags |= self::F_REVIEWER;
-	} else if ($this->limitName == "ar") {
+	} else if ($limit == "ar") {
 	    $filters[] = "(" . $this->contact->actAuthorSql("PaperConflict") . " or (Paper.timeWithdrawn<=0 and MyReview.reviewType is not null))";
 	    $this->needflags |= self::F_AUTHOR | self::F_REVIEWER;
-	} else if ($this->limitName == "rout") {
+	} else if ($limit == "rout") {
 	    $filters[] = "MyReview.reviewNeedsSubmit!=0";
 	    $this->needflags |= self::F_REVIEWER;
-	} else if ($this->limitName == "revs")
+	} else if ($limit == "revs")
 	    $sqi->add_table("Limiter", array("join", "PaperReview"));
-	else if ($this->limitName == "req")
+	else if ($limit == "req")
 	    $sqi->add_table("Limiter", array("join", "PaperReview", "Limiter.requestedBy=$this->cid and Limiter.reviewType=" . REVIEW_EXTERNAL));
-        else if ($this->limitName == "unm")
+        else if ($limit == "unm")
             $filters[] = "Paper.managerContactId=0";
 
 	// add common tables: conflicts, my own review, paper blindness
@@ -2311,7 +2324,8 @@ class PaperSearch {
         $need_filter = (($this->needflags & self::F_XVIEW)
                         || $Conf->has_tracks()
                         || $qe->type == "then"
-                        || $qe->get_float("heading"));
+                        || $qe->get_float("heading")
+                        || $limit == "rable");
         if ($need_filter) {
             $sqi->add_manager_column();
             if ($Conf->has_track_tags()) {
@@ -2391,7 +2405,9 @@ class PaperSearch {
 	    $result = $Conf->qe("select * from $this->_matchTable", "while performing search");
 	    $qe_heading = $qe->get_float("heading");
 	    while (($row = PaperInfo::fetch($result, $this->cid))) {
-                if (!$this->contact->canViewPaper($row))
+                if (!$this->contact->canViewPaper($row)
+                    || ($limit == "rable"
+                        && !$limitcontact->allow_review_assignment_ignore_conflict($row)))
                     $x = false;
 		else if ($this->thenmap !== null) {
 		    $x = false;
@@ -2423,7 +2439,7 @@ class PaperSearch {
 	}
 	$this->viewmap = $qe->get_float("view", array());
 
-	// extract regular expressions and set reviewerContact if the query is
+	// extract regular expressions and set _reviewer if the query is
 	// about exactly one reviewer, and warn about contradictions
 	$contradictions = array();
 	$this->_queryExtractInfo($qe, true, $contradictions);
@@ -2461,8 +2477,17 @@ class PaperSearch {
 	    $limit = "r";
 	else if ($this->q)
 	    return true;
-        if ($Conf->has_tracks() && !$this->privChair)
-            return true;
+        if ($Conf->has_tracks()) {
+            if (!$this->privChair || $limit == "rable")
+                return true;
+        }
+        if ($limit == "rable") {
+            $c = ($this->_reviewer_fixed ? $this->reviewer() : $this->contact);
+            if ($c->isPC)
+                $limit = $Conf->setting("pc_seeall") > 0 ? "act" : "s";
+            else
+                $limit = "r";
+        }
 	if ($limit == "s" || $limit == "revs")
 	    $queryOptions["finalized"] = 1;
 	else if ($limit == "unsub") {
@@ -2541,6 +2566,24 @@ class PaperSearch {
 	return $url;
     }
 
+    function reviewer() {
+        if (is_object($this->_reviewer))
+            return $this->_reviewer;
+        else if ($this->_reviewer)
+            return Contact::find_by_id($this->_reviewer);
+        else
+            return null;
+    }
+
+    function reviewer_cid() {
+        if (is_object($this->_reviewer))
+            return $this->_reviewer->contactId;
+        else if ($this->_reviewer)
+            return $this->_reviewer;
+        else
+            return 0;
+    }
+
     function _tagDescription() {
 	if ($this->q == "")
 	    return false;
@@ -2573,7 +2616,8 @@ class PaperSearch {
 		       "r" => "Your reviews", "a" => "Your submissions",
 		       "rout" => "Your incomplete reviews",
 		       "req" => "Your review requests",
-		       "reqrevs" => "Your review requests");
+		       "reqrevs" => "Your review requests",
+                       "rable" => "Reviewable papers");
 	    if (isset($a[$this->limitName]))
 		$listname = $a[$this->limitName];
 	    else

@@ -1329,6 +1329,8 @@ class Contact {
 
     function allow_review_assignment_ignore_conflict($prow, &$whyNot = null) {
         global $Conf;
+        if (!$prow)
+            return $this->isPC && $Conf->check_all_tracks($this, "assrev");
         if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
             return false;
         $rights = $this->rights($prow);
