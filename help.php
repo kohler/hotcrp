@@ -801,9 +801,14 @@ and chooses Tags &gt; Calculate&nbsp;rank, entering
 by a <a href='" . hoturl("search", "q=order:rank") . "'>search for
 “order:rank”</a>.</p>
 
-<p>PC members may enter rankings by manipulating tags directly, but it will
-generally be easier to use the <a href='" . hoturl("offline") . "'>offline
-ranking form</a>.  Download a ranking file, rearrange the lines to create a
+<p>PC members can enter rankings by reordering rows in a paper list.
+For example, for rank tag “rank”, PC members should
+<a href=\"" . hoturl("search", "q=editsort%3A%23~rank") . "\">search for “editsort:#~rank”</a>.
+Ranks can be entered directly in the text fields, or PC members can drag paper
+rows into position using the dotted areas on the right-hand side of the list.</p>
+
+<p>Alternately, PC members can use an <a href='" . hoturl("offline") . "'>offline
+ranking form</a>. Download a ranking file, rearrange the lines to create a
 rank, and upload the form again.  For example, here is an initial ranking
 file:</p>
 
