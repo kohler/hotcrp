@@ -7,7 +7,7 @@ class ZipDocument {
 
     private $tmpdir;
     private $files;
-    private $warnings;
+    public $warnings;
     private $recurse;
     private $downloadname;
     private $mimetype;
