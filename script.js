@@ -9,15 +9,15 @@ function $$(id) {
 }
 
 jQuery.fn.extend({
-    geometry: function () {
+    geometry: function (outer) {
         var x;
         if (this[0] == window)
             x = {left: this.scrollLeft(), top: this.scrollTop()};
         else
             x = this.offset();
         if (x) {
-            x.width = this.width();
-            x.height = this.height();
+            x.width = outer ? this.outerWidth() : this.width();
+            x.height = outer ? this.outerHeight() : this.height();
             x.right = x.left + x.width;
             x.bottom = x.top + x.height;
         }
@@ -1214,7 +1214,7 @@ function make_bubble(content) {
 
     function position_tail() {
 	var ch = bubdiv.childNodes, x, y;
-	var pos = $(bubdiv).geometry(), tailpos = $(ch[0]).geometry();
+	var pos = $(bubdiv).geometry(true), tailpos = $(ch[0]).geometry(true);
 	if (dir == "r" || dir == "l")
 	    y = Math.floor((pos.height - tailpos.height) / 2);
 	if (x != null)
@@ -1225,7 +1225,7 @@ function make_bubble(content) {
 
     var bubble = {
 	show: function (x, y) {
-	    var pos = $(bubdiv).geometry();
+	    var pos = $(bubdiv).geometry(true);
 	    if (dir == "r")
 		x -= pos.width, y -= pos.height / 2;
 	    bubdiv.style.visibility = "visible";
