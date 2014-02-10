@@ -1,6 +1,6 @@
 <?php
 // ldaplogin.inc -- HotCRP helper function for LDAP login
-// HotCRP is Copyright (c) 2009-2013 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2009-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 function ldapLoginBindFailure($ldapc) {

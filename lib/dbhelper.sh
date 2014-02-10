@@ -1,5 +1,5 @@
 ## dbhelper.sh -- shell program helpers for HotCRP database access
-## HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
+## HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 ## Distributed under an MIT-like license; see LICENSE
 
 echo_n () {

@@ -1,6 +1,6 @@
 <?php
 // qobject.php -- HotCRP helper class for quiet objects (no warnings)
-// HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class Qobject implements ArrayAccess, IteratorAggregate {

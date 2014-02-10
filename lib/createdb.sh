@@ -1,6 +1,6 @@
 #! /bin/sh
 ## createdb.sh -- HotCRP database setup
-## HotCRP is Copyright (c) 2006-2013 Eddie Kohler and Regents of the UC
+## HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 ## Distributed under an MIT-like license; see LICENSE
 
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C
