@@ -1010,8 +1010,8 @@ class PaperList extends BaseList {
 	}
         $field_list = $this->_canonicalize_columns($field_list);
         $field_list = $this->_view_columns($field_list);
+        $this->_prepare_sort(); // NB before prepare_columns so columns see sorter
         $field_list = $this->_prepare_columns($field_list);
-        $this->_prepare_sort();
 
 	// make query; need tags for row coloring
 	if ($this->contact->canViewTags(null))
