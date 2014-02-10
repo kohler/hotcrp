@@ -556,8 +556,8 @@ for papers they have reviewed. To set this up:
 <ul>
 <li>Give external review committee members the “erc” tag.</li>
 <li>Under “Tracks” on Settings &gt; Reviews, “For papers not on other
-tracks,” select “Who can view reviews? &gt; PC members without tag: &gt; erc”
-and “Who can review without an assignment? &gt; PC members without tag: &gt; erc”.</li>
+tracks,” select “Who can view reviews? &gt; PC members without tag: erc”
+and “Who can review without an assignment? &gt; PC members without tag: erc”.</li>
 </ul>
 
 <p>A <em>PC-paper review committee</em> is a subset of the PC that reviews papers
@@ -569,9 +569,9 @@ papers. To set this up:</p>
 <li>Give PC-paper review committee members the “pcrc” tag.</li>
 <li>Give PC papers the “pcrc” tag.</li>
 <li>Under “Tracks” on Settings &gt; Reviews, add a track for tag “pcrc”.
-  For all permissions, select “PC members with tag: &gt; pcrc”.</li>
+  For all permissions, select “PC members with tag: pcrc”.</li>
 <li>For papers not on other tracks, for all permissions, select
-  “PC members without tag: &gt; pcrc”.</li>
+  “PC members without tag: pcrc”.</li>
 </ul>");
     _alternateRow("Understanding permissions", "
 Tracks restrict the permissions granted to the PC by other settings.
