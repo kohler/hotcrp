@@ -538,7 +538,7 @@ function tracks() {
 
     echo "<table>";
     _alternateRow("Track basics", "
-Tracks can control whether PC members can view or review
+Tracks control which PC members can view and review
 specific papers. Tracks are managed through the <a href=\"" . hoturl("help", "t=tags") . "\">tags system</a>.
 Without tracks, all PC members are treated equally.
 With tracks, PC members with different tags can have different rights to

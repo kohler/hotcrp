@@ -1677,7 +1677,7 @@ function doRevGroup() {
 	(defval($_REQUEST, "tracks") || $Conf->has_tracks() || @$Highlight["tracks"] ? "foldo" : "foldc"), "'><tr>",
 	"<td>", foldbutton("tracks", ""), "</td>",
 	"<td><a href='#' onclick='return fold(\"tracks\")' name='tracks' class='q'><strong>Tracks</strong></a><br />\n",
-	"<div class='hint fx'>Tracks control whether specific PC members can view or review specific papers.</div>",
+	"<div class='hint fx'>Tracks control whether specific PC members can view or review specific papers. &nbsp;|&nbsp; <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
 	"<div class='smg fx'></div>",
         "<div class='fx'>";
     do_track("", 0);
