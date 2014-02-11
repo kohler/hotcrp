@@ -214,6 +214,7 @@ class Conference {
     }
 
     private function crosscheck_settings() {
+        global $Opt;
         // S3 settings
         foreach (array("s3_bucket", "s3_key", "s3_secret") as $k)
             if (!@$this->settingTexts[$k] && @$Opt[$k])
@@ -223,6 +224,8 @@ class Conference {
             || !@$this->settingTexts["s3_secret"])
             unset($this->settingTexts["s3_bucket"], $this->settingTexts["s3_key"],
                   $this->settingTexts["s3_secret"]);
+        if (!@$Opt["filestore"] && !@$this->settingTexts["s3_bucket"])
+            unset($Opt["dbNoPapers"]);
 
         // tracks settings
         if (@($j = $this->settingTexts["tracks"])
@@ -886,7 +889,7 @@ class Conference {
 	else
 	    $paperMatch = "=" . $prow->paperId;
 	$q = "select p.paperId, s.mimetype, s.sha1, ";
-	if (!defval($Opt, "filestore") && !is_array($prow))
+	if (!@$Opt["filestore"] && !is_array($prow))
 	    $q .= "s.paper as content, ";
 	if ($this->sversion >= 45)
 	    $q .= "s.filename, ";
@@ -911,7 +914,7 @@ class Conference {
         $docclass = new HotCRPDocument($dtype);
         // in modern versions sha1 is set at storage time; before it wasn't
 	if ($doc->paperStorageId && $doc->sha1 == "") {
-	    if (!$docclass->load_database_content($doc))
+	    if (!$docclass->load_content($doc))
 		return false;
 	    $doc->sha1 = sha1($doc->content, true);
 	    $this->q("update PaperStorage set sha1='" . sqlq($doc->sha1) . "' where paperStorageId=" . $doc->paperStorageId);

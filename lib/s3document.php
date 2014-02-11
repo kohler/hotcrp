@@ -23,17 +23,30 @@ class S3Document {
         $this->s3_signing_key = @$opt["signing_key"];
     }
 
-    private function check_scope($region, $time) {
+    private function check_scope($time) {
         return $this->s3_scope
             && preg_match(',\A\d\d\d\d\d\d\d\d/([^/]*)/s3/aws4_request\z,',
                           $this->s3_scope, $m)
-            && $m[1] === $region
+            && $m[1] === $this->s3_region
             && ($t = mktime(0, 0, 0,
                             (int) substr($this->s3_scope, 4, 2),
                             (int) substr($this->s3_scope, 6, 2),
                             (int) substr($this->s3_scope, 0, 4)))
             && $t <= $time
             && $t + 432000 >= $time;
+    }
+
+    public function scope_and_signing_key($time) {
+        if (!$this->check_scope($time)) {
+            $s3_scope_date = gmdate("Ymd", $time);
+            $this->s3_scope = $s3_scope_date . "/" . $this->s3_region
+                . "/s3/aws4_request";
+            $date_key = hash_hmac("sha256", $s3_scope_date, "AWS4" . $this->s3_secret, true);
+            $region_key = hash_hmac("sha256", $this->s3_region, $date_key, true);
+            $service_key = hash_hmac("sha256", "s3", $region_key, true);
+            $this->s3_signing_key = hash_hmac("sha256", "aws4_request", $service_key, true);
+        }
+        return array($this->s3_scope, $this->s3_signing_key);
     }
 
     public function signature($url, $hdr, $content = null) {
@@ -97,41 +110,42 @@ class S3Document {
             . substr($chk, 1) . "\n"
             . $chdr["x-amz-content-sha256"];
 
-        if (!$this->check_scope($this->s3_region, $Now)) {
-            $s3_scope_date = substr($chdr["x-amz-date"], 0, 8);
-            $this->s3_scope = $s3_scope_date . "/" . $this->s3_region
-                . "/s3/aws4_request";
-            $date_key = hash_hmac("sha256", $s3_scope_date, "AWS4" . $this->s3_secret, true);
-            $region_key = hash_hmac("sha256", $this->s3_region, $date_key, true);
-            $service_key = hash_hmac("sha256", "s3", $region_key, true);
-            $this->s3_signing_key = hash_hmac("sha256", "aws4_request", $service_key, true);
-        }
+        list($scope, $signing_key) = $this->scope_and_signing_key($Now);
 
         $signable = "AWS4-HMAC-SHA256\n"
             . $chdr["x-amz-date"] . "\n"
-            . $this->s3_scope . "\n"
+            . $scope . "\n"
             . hash("sha256", $canonical_request);
 
-        $signature = hash_hmac("sha256", $signable, $this->s3_signing_key);
+        $signature = hash_hmac("sha256", $signable, $signing_key);
         $hdrtext .= "Authorization: AWS4-HMAC-SHA256 Credential="
-            . $this->s3_key . "/" . $this->s3_scope
+            . $this->s3_key . "/" . $scope
             . ",SignedHeaders=" . substr($chk, 1)
             . ",Signature=" . $signature . "\r\n";
 
         return array("header" => $hdrtext, "signature" => $signature);
     }
 
-    public function save($filename, $content, $content_type) {
+    private function http_headers($filename, $method, $content = null,
+                                  $content_type = null) {
         global $Now;
+        $content_empty = $content === false || $content === "" || $content === null;
         $url = "https://$this->s3_bucket.s3.amazonaws.com/$filename";
-        $hdr = array("method" => "PUT",
+        $hdr = array("method" => $method,
                      "Date" => gmdate("D, d M Y H:i:s GMT", $Now));
         $sig = $this->signature($url, $hdr, $content);
-        $hdr["header"] = $sig["header"]
-            . "Content-Type: $content_type\r\n";
-        $hdr["content"] = $content;
+        $hdr["header"] = $sig["header"];
+        if (!$content_empty && $content_type)
+            $hdr["header"] .= "Content-Type: $content_type\r\n";
+        $hdr["content"] = $content_empty ? "" : $content;
         $hdr["protocol_version"] = 1.1;
         $hdr["ignore_errors"] = true;
+        return array($url, $hdr);
+    }
+
+    public function save($filename, $content, $content_type) {
+        list($url, $hdr) = $this->http_headers($filename, "PUT",
+                                               $content, $content_type);
 
         $context = stream_context_create(array("http" => $hdr));
         $stream = fopen($url, "r", false, $context);
@@ -141,6 +155,20 @@ class S3Document {
         error_log(var_export(stream_get_meta_data($stream), true));
         error_log(var_export(stream_get_contents($stream), true));
         fclose($stream);
+    }
+
+    public function load($filename) {
+        list($url, $hdr) = $this->http_headers($filename, "GET");
+
+        $context = stream_context_create(array("http" => $hdr));
+        $stream = fopen($url, "r", false, $context);
+        global $http_response_header;
+        error_log(var_export($stream, true));
+        error_log(var_export($http_response_header, true));
+        error_log(var_export(stream_get_meta_data($stream), true));
+        $data = stream_get_contents($stream);
+        fclose($stream);
+        return $data;
     }
 
 }

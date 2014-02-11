@@ -367,7 +367,7 @@ class DocumentHelper {
                 return true;
             }
         }
-        if (!isset($doc->content) && !$docclass->load_database_content($doc))
+        if (!isset($doc->content) && !$docclass->load_content($doc))
             return false;
         if ($fsinfo)
             self::_store_filestore($fsinfo, $doc);

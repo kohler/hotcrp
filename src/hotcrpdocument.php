@@ -10,6 +10,7 @@ class HotCRPDocument {
 
     private $dtype;
     private $option;
+    static private $_s3_document = false;
 
     public function __construct($dtype, $option = null) {
         $this->dtype = $dtype;
@@ -73,28 +74,50 @@ class HotCRPDocument {
         return $mimetypes;
     }
 
-    public function prepare_storage($doc, $docinfo) {
-        global $Conf;
-        if ($Conf->setting_data("s3_bucket")) {
-            $s3 = new S3Document(array("bucket" => $Conf->setting_data("s3_bucket"),
-                                       "key" => $Conf->setting_data("s3_key"),
-                                       "secret" => $Conf->setting_data("s3_secret")));
-            $s3->save(bin2hex($doc->sha1) . Mimetype::extension($doc->mimetype),
-                      $doc->content,
-                      $doc->mimetype);
+    private static function s3_document() {
+        global $Conf, $Now;
+        if (self::$_s3_document === false) {
+            if ($Conf->setting_data("s3_bucket")) {
+                $opt = array("bucket" => $Conf->setting_data("s3_bucket"),
+                             "key" => $Conf->setting_data("s3_key"),
+                             "secret" => $Conf->setting_data("s3_secret"),
+                             "scope" => $Conf->setting_data("s3_scope"),
+                             "signing_key" => $Conf->setting_data("s3_signing_key"));
+                self::$_s3_document = new S3Document($opt);
+                list($scope, $signing_key) = self::$_s3_document->scope_and_signing_key($Now);
+                if ($opt["scope"] !== $scope
+                    || $opt["signing_key"] !== $signing_key) {
+                    $Conf->save_setting("s3_scope", 1, $scope);
+                    $Conf->save_setting("s3_signing_key", 1, $signing_key);
+                }
+            } else
+                self::$_s3_document = null;
         }
+        return self::$_s3_document;
+    }
+
+    private static function s3_filename($doc) {
+        $sha1 = bin2hex($doc->sha1);
+        return "doc/" . substr($sha1, 0, 2) . "/" . $sha1
+            . Mimetype::extension($doc->mimetype);
+    }
+
+    public function prepare_storage($doc, $docinfo) {
+        if (($s3 = self::s3_document()))
+            $s3->save(self::s3_filename($doc), $doc->content, $doc->mimetype);
     }
 
     public function database_storage($doc, $docinfo) {
-        global $Conf;
+        global $Conf, $Opt;
         $doc->paperId = $docinfo->paperId;
         $doc->documentType = $this->dtype;
         $columns = array("paperId" => $docinfo->paperId,
                          "timestamp" => $doc->timestamp,
                          "mimetype" => $doc->mimetype,
-                         "paper" => $doc->content,
                          "sha1" => $doc->sha1,
                          "documentType" => $doc->documentType);
+        if (!@$Opt["dbNoPapers"])
+            $columns["paper"] = $doc->content;
         if ($Conf->sversion >= 45 && @$doc->filename)
             $columns["filename"] = $doc->filename;
         return array("PaperStorage", "paperStorageId", $columns, "paper");
@@ -122,7 +145,7 @@ class HotCRPDocument {
         return $ConfFilestore;
     }
 
-    public function load_database_content($doc) {
+    public function load_content($doc) {
         global $Conf;
         if (!$doc->paperStorageId) {
             if ($this->dtype == DTYPE_SUBMISSION)
@@ -133,16 +156,28 @@ class HotCRPDocument {
                 $doc->error_text = "";
             return false;
         }
+
         assert(isset($doc->paperStorageId));
-        $result = $Conf->q("select paper, compression from PaperStorage where paperStorageId=" . $doc->paperStorageId);
+        $result = null;
         $ok = true;
-        if (!$result || !($row = edb_row($result))) {
+        if (!@$Opt["dbNoPapers"])
+            $result = $Conf->q("select paper, compression from PaperStorage where paperStorageId=" . $doc->paperStorageId);
+        if (!$result || !($row = edb_row($result)) || $row[0] === null) {
             $doc->content = "";
             $ok = false;
         } else if ($row[1] == 1)
             $doc->content = gzinflate($row[0]);
         else
             $doc->content = $row[0];
+
+        if (!$ok
+            && ($s3 = self::s3_document())
+            && ($content = $s3->load(self::s3_filename($doc))) !== ""
+            && $content !== null) {
+            $doc->content = $content;
+            $ok = true;
+        }
+
         $doc->size = strlen($doc->content);
         return $ok;
     }

@@ -93,14 +93,30 @@ $Opt["sendEmail"] = true;
 $Opt["emailFrom"] = "you@example.com";
 
 
-// OPTIONAL SETTINGS (the defaults are reasonable)
+// PAPER STORAGE SETTINGS
 //
-//   multiconference Set to true to run multiple conferences out of this
-//                   installation. See README.
+//   disablePS       Set to true to disable PostScript format submissions.
+//   noPapers        Set to true to collect abstracts only, not papers.
 //   filestore       Set to true to serve papers and other downloads from a
 //                   cache on the local filesystem. By default this cache is
 //                   created in the "filestore" directory. You can also set
 //                   $Opt["filestore"] to a directory name.
+//   filestoreSubdir Set to true (or a small number, like 3) if the filestore
+//                   should use subdirectories. This can be useful if you
+//                   expect thousands of submissions.
+//   s3_bucket       Amazon S3 bucket name to store paper submissions.
+//   s3_key          Amazon AWS access key ID (used for S3).
+//   s3_secret       Amazon AWS secret access key (used for S3).
+//   dbNoPapers      Set to true to not store papers in the database.
+//                   Requires filestore, S3 storage, or both.
+
+$Opt["disablePS"] = true;
+
+
+// OPTIONAL SETTINGS (the defaults are reasonable)
+//
+//   multiconference Set to true to run multiple conferences out of this
+//                   installation. See README.
 //   sortByLastName  Set to true to sort users by last name.
 //   dsn             Database configuration string in the format
 //                   "mysql://DBUSER:DBPASSWORD@DBHOST/DBNAME".
@@ -139,8 +155,6 @@ $Opt["emailFrom"] = "you@example.com";
 //                   end with " <span class='barsep'>|</span> ".
 //   favicon         Optional link to favicon. Default is images/review24.png.
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
-//   disablePS       Set to true to disable PostScript format submissions.
-//   noPapers        Set to true to collect abstracts only, not papers.
 //   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
 //                   paper format checker).
 //   banalLimit      Limit on number of parallel paper format checker
@@ -162,9 +176,6 @@ $Opt["emailFrom"] = "you@example.com";
 //   smartScoreCompare Set to true if a search like "ovemer:>B" should search
 //                   for scores better than B (i.e., A), rather than scores
 //                   alphabetically after B (i.e., C or D).
-//   filestoreSubdir Set to true (or a small number, like 3) if the filestore
-//                   should use subdirectories. This can be useful if you
-//                   expect thousands of submissions.
 //   noSearchAutocomplete  If set, do not implement Javascript autocompletion
 //                   on searchboxes.
 //   hideManager     If set, PC members are not shown paper managers.
@@ -173,5 +184,4 @@ $Opt["emailFrom"] = "you@example.com";
 //   jqueryURL       URL for jQuery. Defaults to the local minified jquery.
 //   jqueryCDN       If true, use the jQuery CDN.
 
-$Opt["disablePS"] = true;
 $Opt["smartScoreCompare"] = true;
