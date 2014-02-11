@@ -117,6 +117,7 @@ src/hotcrpdocument.php
 src/init.php
 src/initweb.php
 src/mailer.php
+src/mailtemplate.php
 src/meetingtracker.php
 src/messages.csv
 src/paperactions.php
@@ -137,7 +138,6 @@ src/schema.sql
 src/updateschema.php
 
 Code/.htaccess
-Code/mailtemplate.inc
 
 extra/hotcrp.vim
 

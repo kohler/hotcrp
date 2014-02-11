@@ -78,7 +78,7 @@ $Opt["passwordHmacKey"] = null;
 //                   HotCRP.
 //   sendmailParam   Extra parameters to be passed to PHP's mail() function.
 //                   If your system's mailer is not sendmail, you may need to
-//                   change the default value; see Code/mailtemplate.inc,
+//                   change the default value; see src/mailtemplate.php,
 //                   sendPrepared().
 //   postfixEOL      Set to true if your system mailer is UNIX Postfix and
 //                   HotCRP mail has garbled headers, particularly for long or

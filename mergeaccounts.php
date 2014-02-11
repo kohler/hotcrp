@@ -44,7 +44,6 @@ if (isset($_REQUEST["merge"]) && check_post()) {
                 $_SESSION["user"] = "$Me->contactId " . $Opt["dsn"] . " $Me->email";
 	    }
 
-	    require_once("Code/mailtemplate.inc");
 	    Mailer::send("@mergeaccount", null, $MiniMe, $Me, array("cc" => Text::user_email_to($Me)));
 
 	    // Now, scan through all the tables that possibly

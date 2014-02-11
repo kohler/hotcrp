@@ -5,7 +5,6 @@
 
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
-require_once("Code/mailtemplate.inc");
 if ($Me->is_empty() || (!$Me->privChair && !$Me->isPC))
     $Me->escape();
 $rf = reviewForm();

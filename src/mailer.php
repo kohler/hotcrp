@@ -959,6 +959,10 @@ class Mailer {
 
 // load mail templates, including local ones if any
 global $ConfSitePATH;
-require_once("$ConfSitePATH/Code/mailtemplate.inc");
+require_once("$ConfSitePATH/src/mailtemplate.php");
+if (file_exists("$ConfSitePATH/conf/mailtemplate-local.php"))
+    require_once("$ConfSitePATH/conf/mailtemplate-local.php");
+if (file_exists("$ConfSitePATH/conf/mailtemplate-local.inc"))
+    require_once("$ConfSitePATH/conf/mailtemplate-local.inc");
 if (file_exists("$ConfSitePATH/Code/mailtemplate-local.inc"))
     require_once("$ConfSitePATH/Code/mailtemplate-local.inc");

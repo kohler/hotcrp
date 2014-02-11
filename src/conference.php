@@ -704,7 +704,7 @@ class Conference {
     }
     function timeAuthorViewReviews($reviewsOutstanding = false) {
 	// also used to determine when authors can see review counts
-	// and comments.  see also mailtemplate.inc and genericWatch
+	// and comments.  see also mailtemplate.php and genericWatch
 	$s = $this->setting("au_seerev");
 	return $s == AU_SEEREV_ALWAYS || ($s > 0 && !$reviewsOutstanding);
     }
