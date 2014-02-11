@@ -1649,7 +1649,7 @@ class Contact {
 	    || $rights->allow_pc
 	    || ($rights->allow_review
 		&& $Conf->settings["extrev_view"] >= 2)
-            || $Conf->is_review_blind(!$crow || ($crow->commentType & COMMENTTYPE_BLIND) != 0))
+            || !$Conf->is_review_blind(!$crow || ($crow->commentType & COMMENTTYPE_BLIND) != 0))
 	    return true;
 	return false;
     }
