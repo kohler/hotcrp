@@ -2,9 +2,9 @@ export VERSION=2.61
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/;.*//'`
-schemanum=`grep 'allowPaperOption' Code/schema.sql | sed 's/.*, *//;s/).*//'`
+schemanum=`grep 'allowPaperOption' src/schema.sql | sed 's/.*, *//;s/).*//'`
 if [ "$updatenum" != "$schemanum" ]; then
-    echo "error: allowPaperOption schema number in Code/schema.sql ($schemanum)" 1>&2
+    echo "error: allowPaperOption schema number in src/schema.sql ($schemanum)" 1>&2
     echo "error: differs from number in src/updateschema.php ($updatenum)" 1>&2
     exit 1
 fi
@@ -102,6 +102,7 @@ lib/xlsx.php
 
 src/.htaccess
 src/assigners.php
+src/banal
 src/baselist.php
 src/checkformat.php
 src/commentview.php
@@ -131,13 +132,12 @@ src/review.php
 src/reviewformlibrary.json
 src/reviewsetform.php
 src/reviewtable.php
+src/sample.pdf
 src/schema.sql
 src/updateschema.php
 
 Code/.htaccess
-Code/banal
 Code/mailtemplate.inc
-Code/sample.pdf
 
 extra/hotcrp.vim
 
