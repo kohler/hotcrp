@@ -1,5 +1,32 @@
 HotCRP NEWS
 
+Version 3.0
+
+* Major refactoring release.
+
+* Add meeting tracker. Chairs can click a button which will broadcast
+  their position in a discussion list to all PC members.
+
+* Support encrypted passwords, and encrypt passwords by default.
+
+* Improve bulk assignment: allow more kinds of assignment upload,
+  including tags, and give users a chance to confirm uploaded
+  assignments.
+
+* Add "has:final", "has:paper", "has:comment", "has:response", and
+  "has:OPTION" search options.
+
+* Add support for a "timestamp" column, hidden by default. So you can
+  search for "sort:timestamp" and "show:timestamp".
+
+* Add a test suite.
+
+* Many other improvements, including MySQL 5.6 compatibility.
+
+* Thanks to Nickolai Zeldovich, Peter Sewell, Garth Gibson, Colin
+  Scott, Chris Kanich, Adrian Sampson, Fred Douglis, and Kevin Fu.
+
+
 Version 2.61   14.Aug.2013
 
 * Correct some XSS errors and one SQL injection error reported by
