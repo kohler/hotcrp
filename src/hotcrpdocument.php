@@ -103,8 +103,15 @@ class HotCRPDocument {
     }
 
     public function prepare_storage($doc, $docinfo) {
-        if (($s3 = self::s3_document()))
-            $s3->save(self::s3_filename($doc), $doc->content, $doc->mimetype);
+        global $Opt;
+        if (($s3 = self::s3_document())) {
+            $meta = json_encode(array("conf" => $Opt["shortName"],
+                                      "pid" => (int) $docinfo->paperId));
+            $s3->save(self::s3_filename($doc), $doc->content, $doc->mimetype,
+                      array("hotcrp" => $meta));
+            if ($s3->status != 200)
+                error_log("S3 error: $s3->status $s3->status_text " . json_encode($s3->response_headers));
+        }
     }
 
     public function database_storage($doc, $docinfo) {
@@ -170,12 +177,13 @@ class HotCRPDocument {
         else
             $doc->content = $row[0];
 
-        if (!$ok
-            && ($s3 = self::s3_document())
-            && ($content = $s3->load(self::s3_filename($doc))) !== ""
-            && $content !== null) {
-            $doc->content = $content;
-            $ok = true;
+        if (!$ok && ($s3 = self::s3_document())) {
+            $content = $s3->load(self::s3_filename($doc));
+            if ($content !== "" && $content !== null) {
+                $doc->content = $content;
+                $ok = true;
+            } else if ($s3->status != 200)
+                error_log("S3 error: $s3->status $s3->status_text " . json_encode($s3->response_headers));
         }
 
         $doc->size = strlen($doc->content);

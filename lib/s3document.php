@@ -14,6 +14,11 @@ class S3Document {
     private $s3_scope;
     private $s3_signing_key;
 
+    public $status;
+    public $status_text;
+    public $response_headers;
+    public $user_data;
+
     function __construct($opt = array()) {
         $this->s3_key = @$opt["key"];
         $this->s3_secret = @$opt["secret"];
@@ -127,12 +132,15 @@ class S3Document {
     }
 
     private function http_headers($filename, $method, $content = null,
-                                  $content_type = null) {
+                                  $content_type = null, $user_data = null) {
         global $Now;
         $content_empty = $content === false || $content === "" || $content === null;
         $url = "https://$this->s3_bucket.s3.amazonaws.com/$filename";
         $hdr = array("method" => $method,
                      "Date" => gmdate("D, d M Y H:i:s GMT", $Now));
+        if ($user_data)
+            foreach ($user_data as $key => $value)
+                $hdr["x-amz-meta-$key"] = $value;
         $sig = $this->signature($url, $hdr, $content);
         $hdr["header"] = $sig["header"];
         if (!$content_empty && $content_type)
@@ -143,29 +151,40 @@ class S3Document {
         return array($url, $hdr);
     }
 
-    public function save($filename, $content, $content_type) {
-        list($url, $hdr) = $this->http_headers($filename, "PUT",
-                                               $content, $content_type);
+    private function parse_response_headers($url, $metadata) {
+        $this->status = $this->status_text = null;
+        $this->response_headers = $this->user_data = array();
+        $this->response_headers["url"] = $url;
+        if ($metadata && ($w = @$metadata["wrapper_data"]) && is_array($w)) {
+            if (preg_match(',\AHTTP/[\d.]+\s+(\d+)\s+(.+)\z,', $w[0], $m)) {
+                $this->status = (int) $m[1];
+                $this->status_text = $m[2];
+            }
+            for ($i = 1; $i != count($w); ++$i)
+                if (preg_match(',\A(.*?):\s*(.*)\z,', $w[$i], $m)) {
+                    $this->response_headers[strtolower($m[1])] = $m[2];
+                    if (substr($m[1], 0, 11) == "x-amz-meta-")
+                        $this->user_data[substr($m[1], 11)] = $m[2];
+                }
+        }
+    }
 
+    public function save($filename, $content, $content_type, $user_data = null) {
+        list($url, $hdr) = $this->http_headers($filename, "PUT",
+                                               $content, $content_type, $user_data);
         $context = stream_context_create(array("http" => $hdr));
         $stream = fopen($url, "r", false, $context);
-        global $http_response_header;
-        error_log(var_export($stream, true));
-        error_log(var_export($http_response_header, true));
-        error_log(var_export(stream_get_meta_data($stream), true));
-        error_log(var_export(stream_get_contents($stream), true));
+        $this->parse_response_headers($url, stream_get_meta_data($stream));
+        $this->response_headers["content"] = stream_get_contents($stream);
         fclose($stream);
+        return $this->status == 200;
     }
 
     public function load($filename) {
         list($url, $hdr) = $this->http_headers($filename, "GET");
-
         $context = stream_context_create(array("http" => $hdr));
         $stream = fopen($url, "r", false, $context);
-        global $http_response_header;
-        error_log(var_export($stream, true));
-        error_log(var_export($http_response_header, true));
-        error_log(var_export(stream_get_meta_data($stream), true));
+        $this->parse_response_headers($url, stream_get_meta_data($stream));
         $data = stream_get_contents($stream);
         fclose($stream);
         return $data;
