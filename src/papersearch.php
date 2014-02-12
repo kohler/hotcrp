@@ -697,11 +697,17 @@ class PaperSearch {
 	    return;
 	}
 
-	$contacts = ($m[0] == "" ? null : $contacts = $this->_reviewerMatcher($m[0], $quoted, 0));
-	$value = new SearchReviewValue($m[1], $contacts);
         $rt = ($ctype == "response" ? self::F_AUTHORRESPONSE
                : ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0));
-        $qt[] = new SearchTerm("cmt", $rt | self::F_XVIEW, $value);
+        if ($m[0] !== "" && $m[0][0] == "#") {
+            $value = new SearchReviewValue($m[1], substr($m[0], 1));
+            $rt |= $this->privChair ? 0 : self::F_NONCONFLICT;
+            $qt[] = new SearchTerm("cmttag", $rt | self::F_XVIEW, $value);
+        } else {
+            $contacts = ($m[0] == "" ? null : $contacts = $this->_reviewerMatcher($m[0], $quoted, 0));
+            $value = new SearchReviewValue($m[1], $contacts);
+            $qt[] = new SearchTerm("cmt", $rt | self::F_XVIEW, $value);
+        }
     }
 
     function _searchReviews($word, $rf, $field, &$qt, $quoted,
@@ -1954,6 +1960,9 @@ class PaperSearch {
                 $thistab = "Numcomments_" . $rtype;
             }
 	    $f[] = $this->_clauseTermSetComments($thistab, $t->value->contactWhere("contactId"), $t, $sqi);
+	} else if ($tt == "cmttag") {
+            $thistab = "TaggedComments_" . count($sqi->tables);
+	    $f[] = $this->_clauseTermSetComments($thistab, "commentTags like '% " . sqlq($t->value->contactsql) . " %'", $t, $sqi);
 	} else if ($tt == "pn") {
 	    $q = array();
 	    if (count($t->value[0]))
@@ -2072,7 +2081,8 @@ class PaperSearch {
                             ++$row->$fieldname;
                     }
             }
-            if ($t->type == "cmt" && ($fieldname = $t->link)
+            if (($t->type == "cmt" || $t->type == "cmttag")
+                && ($fieldname = $t->link)
                 && !isset($row->$fieldname)) {
                 $row->$fieldname = 0;
                 $crow = (object) array("paperId" => $row->paperId);
@@ -2131,7 +2141,7 @@ class PaperSearch {
 	if ($tt == "ti" || $tt == "ab" || $tt == "au" || $tt == "co")
 	    return $this->_clauseTermCheckField($t, $row);
 	else if ($tt == "re" || $tt == "conflict" || $tt == "revpref"
-		 || $tt == "cmt") {
+		 || $tt == "cmt" || $tt == "cmttag") {
 	    if (!$this->_clauseTermCheckFlags($t, $row))
 		return false;
 	    else {
