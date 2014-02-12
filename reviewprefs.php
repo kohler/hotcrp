@@ -34,9 +34,9 @@ function savePreferences($reviewer) {
     foreach ($_REQUEST as $k => $v)
 	if (strlen($k) > 7 && $k[0] == "r" && substr($k, 0, 7) == "revpref"
 	    && ($p = cvtint(substr($k, 7))) > 0) {
-	    if (($v = cvtpref($v)) >= -1000000) {
-		$setting[$p] = $v;
-		$pmax = max($pmax, $p);
+	    if (($pref = parse_preference($v))) {
+		$setting[$p] = $pref;
+		$pmax = max($pmax, $pref[0]);
 	    } else
 		$error = true;
 	}
@@ -64,12 +64,11 @@ function savePreferences($reviewer) {
     if (count($deletes))
 	$Conf->qe("delete from PaperReviewPreference where contactId=$reviewer and (" . join(" or ", $deletes) . ")", $while);
 
-    $q = "";
+    $q = array();
     for ($p = 1; $p <= $pmax; $p++)
-	if (isset($setting[$p]) && $setting[$p] != 0)
-	    $q .= "($p, $reviewer, $setting[$p]), ";
-    if (strlen($q))
-	$Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values " . substr($q, 0, strlen($q) - 2) . " on duplicate key update preference=values(preference)", $while);
+	if (($pref = @$setting[$p]) && ($pref[0] || $pref[1]))
+            $q[] = array($p, $reviewer, $pref[0], $pref[1]);
+    PaperActions::save_review_preferences($q);
 
     if ($OK) {
 	$Conf->confirmMsg("Preferences saved.");
@@ -91,11 +90,11 @@ PaperSearch::clearPaperselRequest();
 
 // Set multiple paper preferences
 if (isset($_REQUEST["setpaprevpref"]) && isset($papersel) && check_post()) {
-    if (($v = cvtpref($_REQUEST["paprevpref"])) < -1000000)
+    if (!parse_preference($_REQUEST["paprevpref"]))
 	$Conf->errorMsg("Preferences must be small positive or negative integers.");
     else {
 	foreach ($papersel as $p)
-	    $_REQUEST["revpref$p"] = $v;
+	    $_REQUEST["revpref$p"] = $_REQUEST["paprevpref"];
 	savePreferences($reviewer);
     }
 }
@@ -118,11 +117,10 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
 	if ($line == "" || $line[0] == "#" || substr($line, 0, 6) == "==-== ")
 	    /* do nothing */;
 	else if (preg_match('/^(\d+)\s*[\t,]\s*([^\s,]+)\s*([\t,]|$)/', $line, $m)) {
-	    if (($pref = cvtpref($m[2])) >= -1000000) {
+	    if (parse_preference($m[2])) {
 		$_REQUEST["revpref$m[1]"] = $m[2];
 		$successes++;
-	    } else if (($m[2] = strtolower($m[2])) != "x"
-		       && $m[2] != "conflict")
+	    } else if (strcasecmp($m[2], "conflict") != 0)
 		$errors[] = "<span class='lineno'>$printFilename:$lineno:</span> bad review preference, should be integer";
 	} else if (count($errors) < 20)
 	    $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> syntax error, expected <code>paperID,preference</code>";

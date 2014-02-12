@@ -556,7 +556,7 @@ if ($Me->canAdminister($prow)) {
                 . str_replace(' ', "&nbsp;", Text::name_html($pc));
 	    if ($p->conflictType == 0
 		&& ($p->preference || $p->topicInterestScore))
-		$pctext .= preferenceSpan($p->preference, $p->topicInterestScore);
+		$pctext .= unparse_preference_span($p->preference, $p->topicInterestScore);
 	    $pctext .= "</td><td class='pctbass'>"
                 . "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'>" . review_type_icon($revtype, false, "Assignment") . "<img class='next' src='" . hoturl_image("images/_.gif") . "' alt='&gt;' /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention

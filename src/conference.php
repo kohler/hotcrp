@@ -135,7 +135,7 @@ class Conference {
 	}
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 68) {
+        if ($this->settings["allowPaperOption"] < 69) {
 	    require_once("updateschema.php");
 	    $oldOK = $OK;
 	    updateSchema($this);
@@ -976,6 +976,13 @@ class Conference {
 	return (count($ids) ? "(" . join(" or ", $ids) . ")" : "false");
     }
 
+    function query_all_reviewer_preference() {
+        if ($this->sversion >= 69)
+            return "group_concat(concat(contactId,' ',preference,' ',coalesce(expertise,'.')) separator ',')";
+        else
+            return "group_concat(concat(contactId,' ',preference,' .') separator ',')";
+    }
+
     function paperQuery($contact, $options = array()) {
 	// Options:
 	//   "paperId" => $pid	Only paperId $pid (if array, any of those)
@@ -1108,9 +1115,14 @@ class Conference {
 	if (@$options["topicInterestScore"])
 	    $pq .= ",
 		coalesce(PaperTopics.topicInterestScore, 0) as topicInterestScore";
-	if (@$options["reviewerPreference"])
+	if (@$options["reviewerPreference"]) {
 	    $pq .= ",
 		coalesce(PaperReviewPreference.preference, 0) as reviewerPreference";
+            if ($this->sversion >= 69)
+                $pq .= ", PaperReviewPreference.expertise as reviewerExpertise";
+            else
+                $pq .= ", NULL as reviewerExpertise";
+        }
 	if (@$options["allReviewerPreference"])
 	    $pq .= ",
 		APRP.allReviewerPreference";
@@ -1208,7 +1220,7 @@ class Conference {
 	if (@$options["allReviewerPreference"] || @$options["desirability"]) {
 	    $subq = "select paperId";
 	    if (@$options["allReviewerPreference"])
-		$subq .= ", group_concat(concat(contactId,' ',preference) separator ',') as allReviewerPreference";
+		$subq .= ", " . $this->query_all_reviewer_preference() . " as allReviewerPreference";
 	    if (@$options["desirability"])
 		$subq .= ", sum(if(preference<=-100,0,greatest(least(preference,1),-1))) as desirability";
 	    $subq .= " from PaperReviewPreference group by paperId";

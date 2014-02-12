@@ -684,7 +684,7 @@ function downloadAllRevpref() {
     while (($prow = PaperInfo::fetch($result, $Me))) {
         $out = array();
         foreach (array_intersect_key($prow->reviewer_preferences(), $pc) as $pcid => $pref)
-            $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, $pref);
+            $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, unparse_preference($pref));
         foreach (array_intersect_key($prow->conflicts(), $pc) as $pcid => $conf)
             $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, "conflict");
         if (count($out)) {

@@ -400,6 +400,7 @@ CREATE TABLE `PaperReviewPreference` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `preference` int(4) NOT NULL DEFAULT '0',
+  `expertise` int(4) DEFAULT NULL,
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   KEY `paperId` (`paperId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -566,7 +567,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 68);
+insert into Settings (name, value) values ('allowPaperOption', 69);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

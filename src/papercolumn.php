@@ -710,7 +710,7 @@ class PreferenceListPaperColumn extends PaperColumn {
         foreach (pcMembers() as $pcid => $pc)
             if (($pref = defval($prefs, $pcid, null))) {
                 $text .= ($text == "" ? "" : ", ")
-                    . Text::name_html($pc) . preferenceSpan($pref);
+                    . Text::name_html($pc) . unparse_preference_span($pref);
             }
         return $text;
     }
@@ -746,7 +746,7 @@ class ReviewerListPaperColumn extends PaperColumn {
                     if ($xrow->reviewType >= REVIEW_SECONDARY)
                         $n .= "&nbsp;" . PaperList::_reviewIcon($xrow, $ranal, false);
                     if (($pref = defval($prefs, $xrow->contactId, null)))
-                        $n .= preferenceSpan($pref);
+                        $n .= unparse_preference_span($pref);
                 }
             $n = $pl->maybeConflict($row, $n, $pl->contact->canViewReviewerIdentity($row, null, false));
         }

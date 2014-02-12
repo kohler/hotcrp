@@ -588,4 +588,8 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table PaperComment add `commentTags` varbinary(1024) DEFAULT NULL")
         && $Conf->ql("update Settings set value=68 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 68;
+    if ($Conf->settings["allowPaperOption"] == 68
+        && $Conf->ql("alter table PaperReviewPreference add `expertise` int(4) DEFAULT NULL")
+        && $Conf->ql("update Settings set value=69 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 69;
 }

@@ -573,28 +573,11 @@ function highlightMatch($match, $text, &$n = null) {
 
 function decorateNumber($n) {
     if ($n < 0)
-	return "&minus;" . (-$n);
+	return "&#8722;" . (-$n);
     else if ($n > 0)
 	return $n;
     else
 	return 0;
-}
-
-function preferenceSpan($preference, $topicInterestScore = 0) {
-    if (is_array($preference))
-	list($preference, $topicInterestScore) = $preference;
-    if ($preference != 0)
-	$type = ($preference > 0 ? 1 : -1);
-    else
-	$type = ($topicInterestScore > 0 ? 1 : -1);
-    $t = " <span class='asspref$type'>";
-    if ($preference)
-	$t .= "P" . decorateNumber($preference);
-    if ($preference && $topicInterestScore)
-	$t .= " ";
-    if ($topicInterestScore)
-	$t .= "T" . decorateNumber($topicInterestScore);
-    return $t . "</span>";
 }
 
 
@@ -1298,21 +1281,64 @@ function downloadText($text, $filename, $inline = false) {
     }
 }
 
-function cvtpref($n) {
-    $n = trim($n);
-    if (preg_match('/^-+$/', $n))
-	return -strlen($n);
-    else if (preg_match('/^\++$/', $n))
-	return strlen($n);
-    else if ($n == "")
-	return 0;
-    else if (is_numeric($n) && $n <= 1000000)
-	return round($n);
-    else if (strpos($n, "\xE2") !== false)
+function parse_preference($n) {
+    if (preg_match(',\A\s*(-+|\++|[-+]?\d+(?:\.\d*)?|)\s*([xyz]|)\s*\z,i', $n, $m)) {
+        if ($m[1] === "")
+            $p = 0;
+        else if (is_numeric($m[1])) {
+            if ($m[1] <= 1000000)
+                $p = round($m[1]);
+            else
+                return null;
+        } else if ($m[1][0] === "-")
+            $p = -strlen($m[1]);
+        else
+            $p = strlen($m[1]);
+        if ($m[2] === "")
+            $e = null;
+        else
+            $e = (ord($m[2]) & 15) - 9;
+        return array($p, $e);
+    } else if (strpos($n, "\xE2") !== false)
 	// Translate UTF-8 for minus sign into a real minus sign ;)
-	return cvtpref(str_replace("\xE2\x88\x92", '-', $n));
+	return parse_preference(str_replace("\xE2\x88\x92", '-', $n));
     else
-	return -1000001;
+	return null;
+}
+
+function unparse_expertise($expertise) {
+    if ($expertise === null)
+        return "";
+    else
+        return $expertise < 0 ? "X" : ($expertise == 0 ? "Y" : "Z");
+}
+
+function unparse_preference($preference, $expertise = null) {
+    if (is_object($preference))
+        list($preference, $expertise) = array(@$preference->reviewerPreference,
+                                              @$preference->reviewerExpertise);
+    else if (is_array($preference))
+        list($preference, $expertise) = $preference;
+    if ($preference === null || $preference === false)
+        $preference = "0";
+    return $preference . unparse_expertise($expertise);
+}
+
+function unparse_preference_span($preference, $topicInterestScore = 0) {
+    if (@$preference[2] !== null)
+	$topicInterestScore = $preference[2];
+    if ($preference[0] != 0)
+	$type = ($preference[0] > 0 ? 1 : -1);
+    else
+	$type = ($topicInterestScore > 0 ? 1 : -1);
+    $t = "";
+    if ($preference[0] || $preference[1])
+	$t .= "P" . decorateNumber($preference[0]) . unparse_expertise($preference[1]);
+    if ($t !== "" && $topicInterestScore)
+	$t .= " ";
+    if ($topicInterestScore)
+	$t .= "T" . decorateNumber($topicInterestScore);
+    return " <span class='asspref$type'>$t</span>";
 }
 
 function decisionSelector($curOutcome = 0, $id = null, $extra = "") {

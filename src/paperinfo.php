@@ -203,7 +203,7 @@ class PaperInfo {
 
     private function load_reviewer_preferences() {
         global $Conf;
-        $result = $Conf->qe("select group_concat(concat(contactId,' ',preference)) from PaperReviewPreference where paperId=$this->paperId");
+        $result = $Conf->qe("select " . $Conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
         $row = edb_row($result);
         $this->allReviewerPreference = $row ? $row[0] : null;
     }
@@ -214,9 +214,10 @@ class PaperInfo {
         $x = array();
         if ($this->allReviewerPreference !== "" && $this->allReviewerPreference !== null) {
             $p = preg_split('/[ ,]/', $this->allReviewerPreference);
-            for ($i = 0; $i < count($p); $i += 2) {
-                if ($p[$i + 1] != 0)
-                    $x[(int) $p[$i]] = (int) $p[$i + 1];
+            for ($i = 0; $i < count($p); $i += 3) {
+                if ($p[$i+1] != "0" || $p[$i+2] != ".")
+                    $x[(int) $p[$i]] = array((int) $p[$i+1],
+                                             $p[$i+2] == "." ? null : (int) $p[$i+2]);
             }
         }
         return $x;

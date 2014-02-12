@@ -29,17 +29,32 @@ class PaperActions {
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "decision")));
     }
 
+    static function save_review_preferences($prefarray) {
+        global $Conf;
+        $q = array();
+        if ($Conf->sversion >= 69) {
+            foreach ($prefarray as $p)
+                $q[] = "($p[0],$p[1],$p[2]," . ($p[3] === null ? "NULL" : $p[3]) . ")";
+            if (count($q))
+                return $Conf->qe("insert into PaperReviewPreference (paperId,contactId,preference,expertise) values " . join(",", $q) . " on duplicate key update preference=values(preference), expertise=values(expertise)", "while saving review preferences");
+        } else {
+            foreach ($prefarray as $p)
+                $q[] = "($p[0],$p[1],$p[2])";
+            if (count($q))
+                return $Conf->qe("insert into PaperReviewPreference (paperId,contactId,preference) values " . join(",", $q) . " on duplicate key update preference=values(preference)", "while saving review preferences");
+        }
+        return true;
+    }
+
     static function setReviewPreference($prow) {
 	global $Conf, $Me, $Error, $OK;
 	$ajax = defval($_REQUEST, "ajax", false);
 	if (!$Me->allowAdminister($prow)
 	    || ($contactId = rcvtint($_REQUEST["reviewer"])) <= 0)
 	    $contactId = $Me->contactId;
-	$v = cvtpref($_REQUEST["revpref"]);
-	if ($v >= -1000000) {
-	    $while = "while saving review preference";
-	    $result = $Conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ($prow->paperId, $contactId, $v) on duplicate key update preference=values(preference)", $while);
-	    if ($result)
+	$v = parse_preference($_REQUEST["revpref"]);
+	if ($v) {
+            if (self::save_review_preferences(array(array($prow->paperId, $contactId, $v[0], $v[1]))))
 		$Conf->confirmMsg($ajax ? "Saved" : "Review preference saved.");
 	    else
 		$Error["revpref"] = true;

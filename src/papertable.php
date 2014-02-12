@@ -1370,7 +1370,7 @@ class PaperTable {
 	    "<input type='hidden' name='setrevpref' value='1' />";
 	if (isset($_REQUEST["forceShow"]))
 	    echo "<input type='hidden' name='forceShow' value='", ($_REQUEST['forceShow'] ? 1 : 0), "' />";
-	$rp = (isset($this->prow->reviewerPreference) ? htmlspecialchars($this->prow->reviewerPreference) : "0");
+	$rp = unparse_preference($this->prow);
 	$rp = ($rp == "0" ? "" : $rp);
 	echo "<input id='revprefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$rp\" onchange='Miniajax.submit(\"revprefform\")' tabindex='1' />",
 	    " <input class='fx7' type='submit' value='Save' />",
