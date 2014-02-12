@@ -560,7 +560,8 @@ function updateSchema($Conf) {
         && isset($Conf->settings["outcome_map"])
         && $Conf->ql("update Settings set value=63 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 63;
-    if (!isset($Conf->settings["review_form"]))
+    if (!isset($Conf->settings["review_form"])
+        && $Conf->settings["allowPaperOption"] < 65)
         update_schema_create_review_form($Conf);
     if ($Conf->settings["allowPaperOption"] == 63
         && isset($Conf->settings["review_form"])
@@ -571,7 +572,8 @@ function updateSchema($Conf) {
         && $Conf->ql("drop table if exists `ReviewFormOptions`")
         && $Conf->ql("update Settings set value=65 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 65;
-    if (!isset($Conf->settings["options"]))
+    if (!isset($Conf->settings["options"])
+        && $Conf->settings["allowPaperOption"] < 67)
         update_schema_create_options($Conf);
     if ($Conf->settings["allowPaperOption"] == 65
         && isset($Conf->settings["options"])
