@@ -134,33 +134,6 @@ class Conference {
 		$Opt[substr($row[0], 4)] = ($row[2] === null ? $row[1] : $row[2]);
 	}
 
-        // clean settings, enforce invariants
-	foreach (array("pc_seeall", "pcrev_any", "extrev_view", "rev_notifychair") as $x)
-	    if (!isset($this->settings[$x]))
-		$this->settings[$x] = 0;
-	if (!isset($this->settings["sub_blind"]))
-	    $this->settings["sub_blind"] = self::BLIND_ALWAYS;
-	if (!isset($this->settings["rev_blind"]))
-	    $this->settings["rev_blind"] = self::BLIND_ALWAYS;
-	if (!isset($this->settings["seedec"])) {
-	    if (@$this->settings["au_seedec"])
-		$this->settings["seedec"] = self::SEEDEC_ALL;
-	    else if (@$this->settings["rev_seedec"])
-		$this->settings["seedec"] = self::SEEDEC_REV;
-	}
-	if ($this->settings["pc_seeall"] && !$this->timeFinalizePaper())
-	    $this->settings["pc_seeall"] = -1;
-	if (@$this->settings["pc_seeallrev"] == 2) {
-	    $this->settings["pc_seeblindrev"] = 1;
-	    $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
-	}
-	$this->settings["rounds"] = array("");
-	if (isset($this->settingTexts["tag_rounds"])) {
-	    foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r)
-		if ($r != "")
-		    $this->settings["rounds"][] = $r;
-	}
-
         // update schema
         if ($this->settings["allowPaperOption"] < 67) {
 	    require_once("updateschema.php");
@@ -215,6 +188,33 @@ class Conference {
 
     private function crosscheck_settings() {
         global $Opt;
+        // enforce invariants
+	foreach (array("pc_seeall", "pcrev_any", "extrev_view", "rev_notifychair") as $x)
+	    if (!isset($this->settings[$x]))
+		$this->settings[$x] = 0;
+	if (!isset($this->settings["sub_blind"]))
+	    $this->settings["sub_blind"] = self::BLIND_ALWAYS;
+	if (!isset($this->settings["rev_blind"]))
+	    $this->settings["rev_blind"] = self::BLIND_ALWAYS;
+	if (!isset($this->settings["seedec"])) {
+	    if (@$this->settings["au_seedec"])
+		$this->settings["seedec"] = self::SEEDEC_ALL;
+	    else if (@$this->settings["rev_seedec"])
+		$this->settings["seedec"] = self::SEEDEC_REV;
+	}
+	if ($this->settings["pc_seeall"] && !$this->timeFinalizePaper())
+	    $this->settings["pc_seeall"] = -1;
+	if (@$this->settings["pc_seeallrev"] == 2) {
+	    $this->settings["pc_seeblindrev"] = 1;
+	    $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
+	}
+	$this->settings["rounds"] = array("");
+	if (isset($this->settingTexts["tag_rounds"])) {
+	    foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r)
+		if ($r != "")
+		    $this->settings["rounds"][] = $r;
+	}
+
         // S3 settings
         foreach (array("s3_bucket", "s3_key", "s3_secret") as $k)
             if (!@$this->settingTexts[$k] && @$Opt[$k])
