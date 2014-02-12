@@ -1312,6 +1312,12 @@ class Conference {
 	return $rrows;
     }
 
+    function comment_query($where) {
+        return "select PaperComment.*, firstName reviewFirstName, lastName reviewLastName, email reviewEmail
+		from PaperComment join ContactInfo on (contactInfo.contactId=PaperComment.contactId)
+		where $where order by commentId";
+    }
+
     function comment_rows($q, $contact) {
 	$result = $this->qe($q, "while loading comments");
 	$crows = array();

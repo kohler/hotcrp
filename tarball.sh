@@ -105,6 +105,7 @@ src/assigners.php
 src/banal
 src/baselist.php
 src/checkformat.php
+src/commentsave.php
 src/commentview.php
 src/conference.php
 src/conflict.php

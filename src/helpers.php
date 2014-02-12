@@ -899,14 +899,10 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
 	}
     }
 
-    $method = is_array($callback) ? $callback[1] : null;
     foreach ($watchers as $row) {
 	$minic = Contact::make($row);
         $prow->assign_contact_info($row, $row->contactId);
-        if ($method)
-            $callback[0]->$method($prow, $minic);
-        else
-            $callback($prow, $minic);
+        call_user_func($callback, $prow, $minic);
     }
 }
 

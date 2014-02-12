@@ -190,6 +190,8 @@ function __autoload($class_name) {
         require_once("$ConfSitePATH/lib/s3document.php");
     else if ($class_name == "AssignmentSet")
         require_once("$ConfSitePATH/src/assigners.php");
+    else if ($class_name == "CommentSave")
+        require_once("$ConfSitePATH/src/commentsave.php");
     else if ($class_name == "Ht")
         require_once("$ConfSitePATH/lib/ht.php");
 }

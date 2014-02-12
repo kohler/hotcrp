@@ -32,7 +32,7 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $prow, $paperTable, $crow, $savedCommentId, $savedCrow, $Error;
+    global $Conf, $Me, $prow, $paperTable, $crow, $Error;
     if (!($prow = PaperTable::paperRow($whyNot)))
 	errorMsgExit(whyNotText($whyNot, "view"));
     $paperTable = new PaperTable($prow);
@@ -45,8 +45,6 @@ function loadRows() {
 	if ($row->commentId == $cid
 	    || ($cid == "response" && ($row->commentType & COMMENTTYPE_RESPONSE)))
 	    $crow = $row;
-	if (isset($savedCommentId) && $row->commentId == $savedCommentId)
-	    $savedCrow = $row;
     }
     if ($cid != "xxx" && !$crow && $cid != "response" && $cid != "new")
 	errorMsgExit("That comment does not exist.");
@@ -76,186 +74,48 @@ if (isset($_REQUEST["setwatch"]) && $prow && check_post()) {
 }
 
 
-// send watch messages
-function comment_watch_callback($prow, $minic) {
-    global $savedCrow;
-    $tmpl = ($savedCrow->commentType & COMMENTTYPE_RESPONSE ? "@responsenotify" : "@commentnotify");
-    if ($minic->canViewComment($prow, $savedCrow, false))
-	Mailer::send($tmpl, $prow, $minic, null, array("commentId" => $savedCrow->commentId));
-}
-
-function watch() {
-    global $prow, $savedCrow, $Me;
-    if (!$savedCrow
-	// ignore changes to a comment within 3 hours (see saveComment())
-	|| $savedCrow->timeNotified != $savedCrow->timeModified)
-	return;
-    genericWatch($prow, WATCHTYPE_COMMENT, "comment_watch_callback", $Me);
-}
-
-
 // update comment action
-function saveComment($text) {
-    global $Me, $Conf, $prow, $crow, $savedCommentId;
-
-    // options
-    $visibility = defval($_REQUEST, "visibility", "r");
-    if (isset($_REQUEST["response"]) && (defval($_REQUEST, "forReviewers")
-                                         || isset($_REQUEST["submitresponse"])))
-        $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR;
-    else if (isset($_REQUEST["response"]))
-        $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR | COMMENTTYPE_DRAFT;
-    else if ($visibility == "a")
-        $ctype = COMMENTTYPE_AUTHOR;
-    else if ($visibility == "p")
-        $ctype = COMMENTTYPE_PCONLY;
-    else if ($visibility == "admin")
-        $ctype = COMMENTTYPE_ADMINONLY;
-    else // $visibility == "r"
-        $ctype = COMMENTTYPE_REVIEWER;
-    if (isset($_REQUEST["response"])
-        ? $prow->blind
-        : $Conf->is_review_blind(!!@$_REQUEST["blind"]))
-        $ctype |= COMMENTTYPE_BLIND;
-
-    // backwards compatibility
-    if ($Conf->sversion < 53) {
-        $fora = ($ctype & COMMENTTYPE_RESPONSE ? 2
-                 : ($ctype >= COMMENTTYPE_AUTHOR ? 1 : 0));
-        $forr = ($ctype & COMMENTTYPE_DRAFT ? 0
-                 : ($ctype < COMMENTTYPE_PCONLY ? 2
-                    : ($ctype >= COMMENTTYPE_REVIEWER ? 1 : 0)));
-        $blind = ($ctype & COMMENTTYPE_BLIND ? 1 : 0);
-    }
-
-    $while = $insert_id_while = "while saving comment";
-
-    // query
-    $now = time();
-    if (!$text) {
-	$change = true;
-	$q = "delete from PaperComment where commentId=$crow->commentId";
-    } else if (!$crow) {
-	$change = true;
-        $qa = "contactId, paperId, timeModified, comment, timeNotified, replyTo";
-        $qb = "$Me->cid, $prow->paperId, $now, '" . sqlq($text) . "', $now, 0";
-	if (!($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
-            && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY
-	    && $Conf->sversion >= 43) {
-	    $qa .= ", ordinal";
-	    $qb .= ", greatest(commentCount,maxOrdinal)+1";
-	}
-        if ($Conf->sversion >= 53) {
-            $qa .= ", commentType";
-            $qb .= ", $ctype";
-        } else {
-            $qa .= ", forAuthors, forReviewers, blind";
-            $qb .= ", $fora, $forr, $blind";
+function saveComment($text, $is_response) {
+    global $Me, $Conf, $prow, $crow;
+    $req = array("visibility" => @$_REQUEST["visibility"],
+                 "submit" => $is_response && @$_REQUEST["submitresponse"],
+                 "text" => $text,
+                 "tags" => @$_REQUEST["commenttags"],
+                 "blind" => @$_REQUEST["blind"]);
+    $next_crow = CommentSave::save($req, $prow, $crow, $Me, $is_response);
+    if ($next_crow === false) {
+        if ($is_response) {
+            $q = ($Conf->sversion >= 53 ? "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0" : "forAuthors>1");
+            $result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and $q");
+            if (($row = edb_row($result)))
+                return $Conf->errorMsg("A paper response has already been entered.  <a href=\"" . hoturl("comment", "c=$row[0]") . "\">Edit that response</a>");
         }
-	$q = "insert into PaperComment ($qa) select $qb\n";
-	if ($ctype & COMMENTTYPE_RESPONSE) {
-	    // make sure there is exactly one response
-	    $q .= "	from (select p.paperId, coalesce(cmt.commentId,0) commentId, 0 commentCount, 0 maxOrdinal
-		from Paper p
-		left join PaperComment cmt on (cmt.paperId=p.paperId and ";
-            if ($Conf->sversion >= 53)
-                $q .= "(cmt.commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
-            else
-                $q .= "cmt.forAuthors=2";
-            $q .= ") where p.paperId=$prow->paperId group by p.paperId) t
-	where t.commentId=0";
-	    $insert_id_while = false;
-	} else {
-	    $q .= "	from (select p.paperId, coalesce(count(cmt.commentId),0) commentCount, coalesce(max(cmt.ordinal),0) maxOrdinal
-		from Paper p
-		left join PaperComment cmt on (cmt.paperId=p.paperId and ";
-            if ($Conf->sversion >= 53) {
-                $q .= "(cmt.commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and ";
-                if ($ctype >= COMMENTTYPE_AUTHOR)
-                    $q .= "cmt.commentType>=" . COMMENTTYPE_AUTHOR;
-                else
-                    $q .= "cmt.commentType>=" . COMMENTTYPE_PCONLY . " and cmt.commentType<" . COMMENTTYPE_AUTHOR;
-            } else
-                $q .= "cmt.forReviewers!=2 and cmt.forAuthors=$fora";
-            $q .= ") where p.paperId=$prow->paperId group by p.paperId) t";
-	}
-    } else {
-	$change = ($crow->commentType >= COMMENTTYPE_AUTHOR)
-            != ($ctype >= COMMENTTYPE_AUTHOR);
-	if ($crow->timeModified >= $now)
-	    $now = $crow->timeModified + 1;
-	// do not notify on updates within 3 hours
-	$qa = "";
-	if ($crow->timeNotified + 10800 < $now
-            || (($ctype & COMMENTTYPE_RESPONSE)
-                && !($ctype & COMMENTTYPE_DRAFT)
-                && ($crow->commentType & COMMENTTYPE_DRAFT)))
-	    $qa = ", timeNotified=$now";
-	$q = "update PaperComment set timeModified=$now$qa, comment='" . sqlq($text) . "', ";
-        if ($Conf->sversion >= 53)
-            $q .= "commentType=$ctype";
-        else
-            $q .= "forReviewers=$forr, forAuthors=$fora, blind=$blind";
-        $q .= " where commentId=$crow->commentId";
+        return false;
     }
 
-    $result = $Conf->qe($q, $while);
-    if (!$result)
-	return false;
-
-    // comment ID
-    if ($crow)
-	$savedCommentId = $crow->commentId;
-    else if (!($savedCommentId = $Conf->lastInsertId($insert_id_while)))
-	return false;
-
-    // log, end
-    $what = (isset($_REQUEST["response"]) ? "Response" : "Comment");
-    if ($text != "" && !isset($_SESSION["comment_msgs"]))
+    $what = ($is_response ? "Response" : "Comment");
+    if ($next_crow && !isset($_SESSION["comment_msgs"]))
 	$_SESSION["comment_msgs"] = array();
-    if ($text != "" && isset($_REQUEST["response"]) && ($ctype & COMMENTTYPE_DRAFT)) {
+    if ($next_crow && $is_response && ($next_crow->commentType & COMMENTTYPE_DRAFT)) {
 	$deadline = $Conf->printableTimeSetting("resp_done");
 	if ($deadline != "N/A")
 	    $extratext = "  You have until $deadline to send the response to the reviewers.";
 	else
 	    $extratext = "";
-	$_SESSION["comment_msgs"][$savedCommentId] = "<div class='xwarning'>$what saved. However, at your request, this response will not be shown to reviewers.$extratext</div>";
-    } else if ($text != "")
-	$_SESSION["comment_msgs"][$savedCommentId] = "<div class='xconfirm'>$what submitted.</div>";
+	$_SESSION["comment_msgs"][$next_crow->commentId] = "<div class='xwarning'>$what saved. However, at your request, this response will not be shown to reviewers.$extratext</div>";
+    } else if ($next_crow)
+	$_SESSION["comment_msgs"][$next_crow->commentId] = "<div class='xconfirm'>$what submitted.</div>";
     else
 	$Conf->confirmMsg("$what deleted.");
-    $Conf->log("Comment $savedCommentId " . ($text != "" ? "saved" : "deleted"),
-	       $Me, $prow->paperId);
 
-    unset($_REQUEST["c"]);
-    $_REQUEST["paperId"] = $prow->paperId;
-    if ($text != "")
-	$_REQUEST["commentId"] = $savedCommentId;
-    else
-	unset($_REQUEST["commentId"]);
-    $_REQUEST["noedit"] = 1;
-
-    loadRows();
-    if ($text != "") {
-	watch();
-	redirectSelf(array("anchor" => "comment$savedCommentId",
+    if ($next_crow)
+	redirectSelf(array("anchor" => "comment$next_crow->commentId",
 			   "noedit" => null, "c" => null));
-    } else
-	redirectSelf();
+    else
+	redirectSelf(array("c" => null));
     // NB normally redirectSelf() does not return
+    loadRows();
     return true;
-}
-
-function saveResponse($text) {
-    global $Me, $Conf, $prow;
-
-    $success = saveComment($text);
-    if (!$success) {
-        $q = ($Conf->sversion >= 53 ? "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0" : "forAuthors>1");
-	$result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and $q");
-	if (($row = edb_row($result)))
-	    return $Conf->errorMsg("A paper response has already been entered.  <a href=\"" . hoturl("comment", "c=$row[0]") . "\">Edit that response</a>");
-    }
 }
 
 if (!check_post())
@@ -270,7 +130,7 @@ else if ((isset($_REQUEST["submit"]) || isset($_REQUEST["submitresponse"])
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
     } else
-	saveResponse($text);
+	saveComment($text, true);
 } else if (isset($_REQUEST["submit"])) {
     if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "comment on"));
@@ -279,13 +139,13 @@ else if ((isset($_REQUEST["submit"]) || isset($_REQUEST["submitresponse"])
 	$Conf->errorMsg("Enter a comment.");
 	$useRequest = true;
     } else
-	saveComment($text);
+	saveComment($text, false);
 } else if (isset($_REQUEST["delete"]) && $crow) {
     if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
 	$Conf->errorMsg(whyNotText($whyNot, "comment on"));
 	$useRequest = true;
     } else
-	saveComment("");
+	saveComment("", ($crow->commentType & COMMENTTYPE_RESPONSE) != 0);
 } else if (isset($_REQUEST["cancel"]) && $crow)
     $_REQUEST["noedit"] = 1;
 

@@ -103,7 +103,7 @@ class Mailer {
 	$this->notes = defval($rest, "notes", "");
 	$this->rrow = defval($rest, "rrow", null);
 	$this->reviewNumber = defval($rest, "reviewNumber", "");
-	$this->commentId = defval($rest, "commentId", null);
+	$this->comment_row = defval($rest, "comment_row", null);
 	$this->hideReviews = defval($rest, "hideReviews", false);
         $this->capability = defval($rest, "capability", null);
 	$this->statistics = null;
@@ -471,8 +471,7 @@ class Mailer {
         $text = "";
         while (($row = edb_orow($result)))
             if ($row->reviewSubmitted)
-                $text .= $rf->prettyTextForm($this->row, $row,
-                                             $this->contact, true) . "\n";
+                $text .= $rf->prettyTextForm($this->row, $row, $this->contact, true) . "\n";
         return $text;
     }
 
@@ -481,27 +480,23 @@ class Mailer {
 	if ($this->hideReviews)
 	    return "";
 
-	$q = "select cmt.*,
-		u.firstName as reviewFirstName,
-		u.lastName as reviewLastName,
-		u.email as reviewEmail
-		from PaperComment cmt
-		join ContactInfo u on (u.contactId=cmt.contactId)";
-	if (is_array($this->commentId))
-	    $q .= "\n\t\twhere cmt.commentId in (" . join(", ", $this->commentId) . ")";
-	else if ($this->commentId)
-	    $q .= "\n\t\twhere cmt.commentId=$this->commentId";
-	else
-	    $q .= "\n\t\twhere cmt.paperId=" . $this->row->paperId;
-	// save old au_seerev setting, and reset it so authors can see them.
-	$old_au_seerev = $Conf->setting("au_seerev");
+        // save old au_seerev setting, and reset it so authors can see them.
+        $old_au_seerev = $Conf->setting("au_seerev");
 	$Conf->settings["au_seerev"] = AU_SEEREV_ALWAYS;
-	$crows = $Conf->comment_rows($q . "\n\t\torder by commentId", $contact);
+
+        if ($this->comment_row)
+            $crows = array($this->comment_row);
+        else {
+            $where = "paperId=$this->row->paperId";
+            $crows = $Conf->comment_rows($Conf->comment_query($where), $this->comment);
+        }
+
         $rf = reviewForm();
 	$text = "";
 	foreach ($crows as $crow)
-	    if ($contact->canViewComment($this->row, $crow, false))
-		$text .= $rf->prettyTextComment($this->row, $crow, $contact) . "\n";
+	    if ($this->contact->canViewComment($this->row, $crow, false))
+		$text .= $rf->prettyTextComment($this->row, $crow, $this->contact) . "\n";
+
 	$Conf->settings["au_seerev"] = $old_au_seerev;
 	return $text;
     }
