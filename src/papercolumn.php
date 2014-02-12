@@ -98,10 +98,10 @@ class SelectorPaperColumn extends PaperColumn {
 	global $Conf;
         if ($this->name == "selconf" && !$pl->contact->privChair)
             return false;
-        if ($this->name == "selconf") {
+        if ($this->name == "selconf" || $this->name == "selunlessconf")
             $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
+        if ($this->name == "selconf")
 	    $Conf->footerScript("add_conflict_ajax()");
-        }
         return true;
     }
     public function header($pl, $row, $ordinal) {
@@ -119,6 +119,8 @@ class SelectorPaperColumn extends PaperColumn {
             && (!$pl->papersel || defval($pl->papersel, $row->paperId, 1));
     }
     public function content($pl, $row) {
+        if ($this->name == "selunlessconf" && $row->reviewerConflictType)
+            return "";
         $pl->any->sel = true;
         $c = "";
         if ($this->checked($pl, $row)) {
@@ -670,7 +672,7 @@ class PreferencePaperColumn extends PaperColumn {
         return "<col width='0*' />";
     }
     public function content($pl, $row) {
-        $pref = (isset($row->reviewerPreference) ? htmlspecialchars($row->reviewerPreference) : "0");
+        $pref = unparse_preference($row);
         if ($pl->reviewer
             && $pl->reviewer != $pl->contact->cid
             && !$pl->contact->allowAdminister($row))
@@ -1308,6 +1310,7 @@ function initialize_paper_columns() {
     PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)));
     PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "cssname" => "sel")));
     PaperColumn::register(new SelectorPaperColumn("selconf", array("cssname" => "confselector")));
+    PaperColumn::register(new SelectorPaperColumn("selunlessconf", array("minimal" => true, "cssname" => "sel")));
     PaperColumn::register(new IdPaperColumn);
     PaperColumn::register(new TitlePaperColumn);
     PaperColumn::register(new StatusPaperColumn("status", false));

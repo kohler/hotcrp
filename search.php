@@ -641,16 +641,16 @@ function downloadRevpref($extended) {
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = PaperInfo::fetch($result, $Rev)) {
-	$t = $prow->paperId . "\t";
+	$t = $prow->paperId;
 	if ($prow->conflictType > 0)
-	    $t .= "conflict";
+	    $t .= ",conflict";
 	else
-	    $t .= $prow->reviewerPreference;
-	$t .= "\t" . $prow->title . "\n";
+	    $t .= "," . unparse_preference($prow);
+	$t .= "," . $prow->title . "\n";
 	if ($extended) {
 	    if ($Rev->canViewAuthors($prow, false)) {
                 cleanAuthor($prow);
-		$t .= wordWrapIndent($prow->authorInformation, "#  Authors: ", "#           ") . "\n";
+		$t .= wordWrapIndent($prow->authorInformation, "#  Authors: ", "#           ");
             }
 	    $t .= wordWrapIndent(rtrim($prow->abstract), "# Abstract: ", "#           ") . "\n";
 	    if ($prow->topicIds != "") {
@@ -664,7 +664,7 @@ function downloadRevpref($extended) {
 
     if (count($texts)) {
 	ksort($texts);
-	$header = "#paper\tpreference\ttitle\n";
+	$header = "paper,preference,title\n";
 	downloadText($header . join("", $texts), "revprefs");
 	exit;
     }

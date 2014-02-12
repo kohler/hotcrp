@@ -36,7 +36,7 @@ function savePreferences($reviewer) {
 	    && ($p = cvtint(substr($k, 7))) > 0) {
 	    if (($pref = parse_preference($v))) {
 		$setting[$p] = $pref;
-		$pmax = max($pmax, $pref[0]);
+		$pmax = max($pmax, $p);
 	    } else
 		$error = true;
 	}
@@ -122,8 +122,10 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
 		$successes++;
 	    } else if (strcasecmp($m[2], "conflict") != 0)
 		$errors[] = "<span class='lineno'>$printFilename:$lineno:</span> bad review preference, should be integer";
-	} else if (count($errors) < 20)
-	    $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> syntax error, expected <code>paperID,preference</code>";
+	} else if (preg_match('/^\s*paper(?:id)?\s*[\t,]\s*preference/i', $line))
+            /* header; no error */;
+        else if (count($errors) < 20)
+	    $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> syntax error, expected <code>paper,preference[,title]</code>";
 	else {
 	    $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> too many syntax errors, giving up";
 	    break;

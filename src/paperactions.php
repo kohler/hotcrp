@@ -58,6 +58,7 @@ class PaperActions {
 		$Conf->confirmMsg($ajax ? "Saved" : "Review preference saved.");
 	    else
 		$Error["revpref"] = true;
+            $v = unparse_preference($v);
 	} else {
 	    $v = null;
 	    $Conf->errorMsg($ajax ? "Preferences must be small positive or negative integers." : "Preferences must be small integers.  0 means don’t care; positive numbers mean you want to review a paper, negative numbers mean you don’t.  The greater the absolute value, the stronger your feelings.");

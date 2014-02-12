@@ -1163,7 +1163,7 @@ class PaperList extends BaseList {
             $tbody = $rstate->hascolors ? ' class="pltable_colored"' : '';
         }
 
-	if (($fieldDef[0]->name == "sel" || $fieldDef[0]->name == "selon")
+	if ($fieldDef[0] instanceof SelectorPaperColumn
             && !defval($options, "nofooter"))
 	    $enter .= $this->_footer($ncol, $listname, $rstate->last_trclass,
                                      defval($options, "footer_extra", ""));
