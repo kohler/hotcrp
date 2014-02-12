@@ -77,6 +77,7 @@ class Mailer {
     private $row;
     private $contact;
     private $permissionContact;
+    private $_tagger = null;
     var $contacts;
     var $hideSensitive;
     var $hideReviews;
@@ -84,13 +85,13 @@ class Mailer {
     var $adminupdate;
     var $notes;
     var $rrow;
-    var $reviewNumber;
-    var $commentId;
+    private $reviewNumber;
+    private $comment_row;
     public $capability;
-    var $statistics;
+    private $statistics = null;
     var $width;
-    var $expansionType;
-    var $mstate;
+    private $expansionType = null;
+    private $mstate;
 
     function Mailer($row, $contact, $otherContact = null, $rest = array()) {
 	$this->row = $row;
@@ -106,7 +107,6 @@ class Mailer {
 	$this->comment_row = defval($rest, "comment_row", null);
 	$this->hideReviews = defval($rest, "hideReviews", false);
         $this->capability = defval($rest, "capability", null);
-	$this->statistics = null;
 	$this->width = 75;
 	$this->expansionType = null;
 	if (isset($rest["mstate"]))
@@ -151,6 +151,12 @@ class Mailer {
 	    $t = ($t == "" ? $email : "$t <$email>");
 
 	return $t;
+    }
+
+    private function tagger()  {
+        if (!$this->_tagger)
+            $this->_tagger = new Tagger($this->contact);
+        return $this->_tagger;
     }
 
     function expandvar($what, $isbool = false) {
@@ -365,12 +371,16 @@ class Mailer {
 	if ($what == "%REVIEWS%")
 	    return $this->get_reviews(false);
 	if ($what == "%COMMENTS%")
-	    return $this->getComments($this->contact);
+	    return $this->get_comments(null);
+        else if ($len > 12 && substr($what, 0, 10) == "%COMMENTS("
+                 && substr($what, $len - 2) == ")%") {
+            if (($t = $this->tagger()->check(substr($what, 10, $len - 12), Tagger::NOVALUE)))
+                return $this->get_comments($t);
+        }
 
 	if ($len > 12 && substr($what, 0, 10) == "%TAGVALUE("
 	    && substr($what, $len - 2) == ")%") {
-	    $tagger = new Tagger;
-	    if (($t = $tagger->check(substr($what, 10, $len - 12), Tagger::NOVALUE | Tagger::NOPRIVATE))) {
+	    if (($t = $this->tagger()->check(substr($what, 10, $len - 12), Tagger::NOVALUE | Tagger::NOPRIVATE))) {
 		if (!isset($this->mstate->tags[$t])) {
 		    $this->mstate->tags[$t] = array();
 		    $result = $Conf->qe("select paperId, tagIndex from PaperTag where tag='" . sqlq($t) . "'");
@@ -475,9 +485,12 @@ class Mailer {
         return $text;
     }
 
-    function getComments($contact) {
+    private function get_comments($tag) {
 	global $Conf;
-	if ($this->hideReviews)
+	if ($this->hideReviews
+            || ($tag && $Conf->sversion < 68)
+            || ($this->comment_row && $tag
+                && stripos($this->comment_row->commentTags, " $tag ") === false))
 	    return "";
 
         // save old au_seerev setting, and reset it so authors can see them.
@@ -488,6 +501,8 @@ class Mailer {
             $crows = array($this->comment_row);
         else {
             $where = "paperId=$this->row->paperId";
+            if ($tag)
+                $where .= " and commentTags like '% " . sqlq_for_like($tag) . " %'";
             $crows = $Conf->comment_rows($Conf->comment_query($where), $this->comment);
         }
 
@@ -565,8 +580,7 @@ class Mailer {
 	    $line = rtrim($lines[$i]);
 	    if ($line == "")
 		$text .= "\n";
-	    else if (preg_match('/^%[\w()]+%$/', $line)
-		     && ($line == "%REVIEWS%" || $line == "%COMMENTS%")) {
+	    else if (preg_match('/^%(?:REVIEWS|COMMENTS)(?:[(].*[)])?%$/', $line)) {
 		if (($m = $this->expandvar($line, false)) != "")
 		    $text .= $m . "\n";
 	    } else if (preg_match('/^([ \t][ \t]*.*?: )(%OPT\([\w()]+\)%)$/', $line, $m)) {

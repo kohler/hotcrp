@@ -624,6 +624,8 @@ echo "<div class='aa' style='clear:both'>
     <td class='llentry'>Pretty-printed paper reviews.</td></tr>
 <tr><td class='lxcaption'><code>%COMMENTS%</code></td>
     <td class='llentry'>Pretty-printed paper comments, if any.</td></tr>
+<tr><td class='lxcaption'><code>%COMMENTS(TAG)%</code></td>
+    <td class='llentry'>Comments tagged #TAG, if any.</td></tr>
 <tr><td><div class='g'></div></td></tr>
 <tr><td class='lxcaption'><code>%IF(SHEPHERD)%...%ENDIF%</code></td>
     <td class='llentry'>Include text only if a shepherd is assigned.</td></tr>

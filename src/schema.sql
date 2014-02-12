@@ -235,11 +235,12 @@ CREATE TABLE `PaperComment` (
   `paperId` int(11) NOT NULL,
   `timeModified` int(11) NOT NULL,
   `timeNotified` int(11) NOT NULL DEFAULT '0',
-  `comment` mediumtext NOT NULL,
+  `comment` varbinary(32767) DEFAULT NULL,
   `commentType` int(11) NOT NULL DEFAULT '0',
   `replyTo` int(11) NOT NULL,
   `paperStorageId` int(11) NOT NULL DEFAULT '0',
   `ordinal` int(11) NOT NULL DEFAULT '0',
+  `commentTags` varbinary(1024) DEFAULT NULL,
   PRIMARY KEY (`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
@@ -565,7 +566,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 67);
+insert into Settings (name, value) values ('allowPaperOption', 68);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

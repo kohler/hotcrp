@@ -83,6 +83,16 @@ class CommentView {
 	echo "</span>";
 	if ($crow && !$response
 	    && (!$prow->has_conflict($Me) || $Me->canAdminister($prow))) {
+            if (@$crow->commentTags) {
+                $t = array();
+                foreach (explode(" ", $crow->commentTags) as $tag)
+                    if ($tag !== "")
+                        $t[] = "#$tag";
+                if (count($t)) {
+                    echo $sep, join(" ", $t);
+                    $sep = $xsep;
+                }
+            }
             if ($crow->commentType >= COMMENTTYPE_AUTHOR)
                 $x = "";
             else if ($crow->commentType >= COMMENTTYPE_REVIEWER)
@@ -181,9 +191,13 @@ class CommentView {
 	    echo htmlspecialchars(defval($_REQUEST, 'comment'));
 	else if ($crow)
 	    echo htmlspecialchars($crow->comment);
-	echo "</textarea>
-  <div class='g'></div>
-  <table><tr><td>Show to: &nbsp; </td>
+	echo "</textarea>\n  <div class='g'></div>\n";
+        // tags
+        if ($Conf->sversion >= 68)
+            echo "<table style=\"float:right\"><tr><td>Tags: &nbsp; </td>
+  <td>", Ht::entry("commenttags", $crow ? @$crow->commentTags : "", array("size" => 40, "onchange" => "hiliter(this)")), "</td></tr></table>";
+        // visibility
+        echo "<table><tr><td>Show to: &nbsp; </td>
     <td><table id='foldcmtvis' class='fold2o'>";
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_REVIEWER | COMMENTTYPE_BLIND;
 	echo "<tr><td>", Ht::radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : $ctype >= COMMENTTYPE_AUTHOR), array("id" => "cmtvis_a", "onchange" => "docmtvis(this)")),
@@ -208,6 +222,7 @@ class CommentView {
 	$Conf->footerScript("docmtvis(false)");
 
 	// actions
+        echo "<div class=\"clear\"></div>\n";
         $buttons = array();
         $buttons[] = Ht::submit("submit", "Save", array("class" => "bb"));
         if ($crow) {
