@@ -83,8 +83,9 @@ file, for instance by changing its group.
 directory. (If you get an Error 500, see "Configuration notes".) This
 will generally require adding a `<Directory>` for the HotCRP
 directory, and an Alias redirecting a particular URL to that
-directory. For example, this section of httpd.conf makes the
-"/testconf" URL point at a HotCRP installation in /home/kohler/hotcrp.
+directory. This section of httpd.conf makes "/testconf" point at a
+HotCRP installation in /home/kohler/hotcrp; it works in Apache 2.2 or
+earlier.
 
         <Directory "/home/kohler/hotcrp">
             Options Indexes Includes FollowSymLinks
@@ -105,6 +106,11 @@ directory. For example, this section of httpd.conf makes the
 
     Note that the first argument to Alias should NOT end in a slash. The
 "AllowOverride all" directive is required.
+
+    All files under HOTCRPROOT (here, "/testconf") should be served by
+HotCRP. This normally happens automatically. However, if HOTCRPROOT is
+`/`, you may need to turn off your server’s default handlers for
+subdirectories such as `/doc`.
 
 4. Update the systemwide setting for PHP’s `session.gc_maxlifetime`
 configuration variable. This provides an upper bound on HotCRP session
