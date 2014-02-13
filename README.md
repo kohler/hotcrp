@@ -162,8 +162,13 @@ You can set up everything else through the web site itself.
   - HotCRP benefits from Apache’s `mod_expires` and `mod_rewrite`
     modules; consider enabling them.
 
-Backups
--------
+  - Most HotCRP settings are assigned in the conference database’s
+    Settings table. The Settings table can also override values in
+    `conf/options.php`: a Settings record with name "opt.XXX" takes
+    precedence over option $Opt["XXX"].
+
+Database access
+---------------
 
 Run `lib/backupdb.sh` at the shell prompt to back up the database.
 This will write the database’s current structure and comments to the
@@ -172,6 +177,9 @@ so the backup file may be quite large.
 
 Run `lib/restoredb.sh BACKUPFILE` at the shell prompt to restore the
 database from a backup stored in `BACKUPFILE`.
+
+Run `lib/runsql.sh` at the shell prompt to get a MySQL command prompt
+for the conference database.
 
 Updates
 -------
@@ -187,37 +195,39 @@ preserving `conf/options.php`. For instance, using GNU tar:
 Multiconference support
 -----------------------
 
-HotCRP supports running multiple conferences from a single
-installation. Edit `conf/options.php` to set $Opt["multiconference"] to 1.
-The last directory component of the URL is used for the database name,
-user, and password. For instance:
+HotCRP can run multiple conferences from a single installation. The
+last directory component of the URL will define the conference name.
+For instance:
 
     http://read.seas.harvard.edu/conferences/testconf/doc/testconf-paper1.pdf
                                              ^^^^^^^^
-                                     last directory component
+                                          conference name
 
-Alternately, you may set $Opt["dbName"], $Opt["dbUser"],
-$Opt["dbPassword"], and/or $Opt["dsn"]. HotCRP will edit each of those
-settings to replace the "*" character with the last directory component.
-(This replacement is also performed on the sessionName, downloadPrefix,
-conferenceSite, and paperSite options.)
+The conference name can only contain characters in [-_.A-Za-z0-9], and
+it must not start with a period. HotCRP will check for funny
+conference names and replace them with `__invalid__`.
+
+To turn on multiconference support, edit `conf/options.php` and set
+$Opt["multiconference"] to true. You will then need to tell HotCRP how
+to find the options relevant for each conference. The most flexible
+mechanism is to use $Opt["include"] to include a conference-specific
+options file. For example:
+
+    $Opt["include"] = "conf/options-${confname}.php";
+
+The `${confname}` substring is replaced with the conference name.
+HotCRP will refuse to proceed if the conference-specific options file
+doesn’t exist. To ignore nonexistent options files, use wildcards:
+
+    $Opt["include"] = "conf/[o]ptions-${confname}.php";
+
+`${confname}` replacement is also performed on these settings: dbName,
+dbUser, dbPassword, sessionName, downloadPrefix, conferenceSite,
+and paperSite.
 
 You will still need to create a new database for each conference using the
 `lib/createdb.sh` script, and convince your Apache to use the HotCRP
 install directory for all relevant URLs.
-
-To set other $Opt options per conference, such as the conference name and
-contact email, modify the conference’s Settings database table. A Settings
-row with name "opt.XXX" takes precedence over option $Opt["XXX"]. For
-example, to set a conference’s longName:
-
-    mysql> insert into Settings (name, value, data)
-	   values ('opt.longName', 1, 'My Conference')
-	   on duplicate key update data=values(data);
-
-Note that the `lib/backupdb.sh` script doesn't work for multiconference
-installations, and that several important options, such as contactName and
-contactEmail, cannot yet be set using the web interface.
 
 License
 -------

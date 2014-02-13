@@ -40,7 +40,7 @@ class Conference {
     const PCSEEREV_UNLESSANYINCOMPLETE = 4;
 
     function __construct($dsn) {
-	global $Opt;
+	global $Opt, $ConfMulticonf;
 
 	// unpack dsn and connect to database
         list($this->dblink, $dbname) = self::connect_dsn($dsn);
@@ -64,10 +64,15 @@ class Conference {
 	$Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
 
         // set sessionName and downloadPrefix
+        $confname = @$ConfMulticonf ? $ConfMulticonf : $dbname;
         if (!isset($Opt["sessionName"]))
             $Opt["sessionName"] = $dbname;
+        if (!isset($Opt["longName"]))
+            $Opt["longName"] = defval($Opt, "shortName", $confname);
+        if (!isset($Opt["shortName"]))
+            $Opt["shortName"] = defval($Opt, "longName", $confname);
         if (!isset($Opt["downloadPrefix"]))
-            $Opt["downloadPrefix"] = $dbname . "-";
+            $Opt["downloadPrefix"] = $confname . "-";
 
         // load current settings
 	$this->load_settings();

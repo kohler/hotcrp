@@ -109,16 +109,33 @@ $allowedSessionVars = array("foldassigna", "foldpaperp", "foldpaperb",
 			    "pfdisplay", "pldisplay", "ppldisplay");
 
 
-// set up $ConfSitePATH: path to conference site on file system
-global $ConfSitePATH;
-if (!@$ConfSitePATH) {
-    $ConfSitePATH = substr(__FILE__, 0, strrpos(__FILE__, "/"));
-    if (!file_exists("$ConfSitePATH/src/init.php")) {
-        $ConfSitePATH = substr($ConfSitePATH, 0, strrpos($ConfSitePATH, "/"));
-        if (!file_exists("$ConfSitePATH/src/init.php"))
+// set $ConfSitePATH (path to conference site), $ConfSiteBase, and $ConfSiteSuffix
+function set_path_variables() {
+    global $ConfSitePATH, $ConfSiteBase, $ConfSiteSuffix;
+
+    if (!@$ConfSitePATH) {
+        $ConfSitePATH = substr(__FILE__, 0, strrpos(__FILE__, "/"));
+        while ($ConfSitePATH !== "" && !file_exists("$ConfSitePATH/src/init.php"))
+            $ConfSitePATH = substr($ConfSitePATH, 0, strrpos($ConfSitePATH, "/"));
+        if ($ConfSitePATH === "")
             $ConfSitePATH = "/var/www/html";
     }
+
+    if (@$ConfSiteBase === null) {
+        if (@$_SERVER["PATH_INFO"])
+            $ConfSiteBase = str_repeat("../", substr_count($_SERVER["PATH_INFO"], "/"));
+        else
+            $ConfSiteBase = "";
+    }
+
+    if (@$ConfSiteSuffix === null) {
+        $ConfSiteSuffix = ".php";
+        if (function_exists("apache_get_modules")
+            && array_search("mod_rewrite", apache_get_modules()) !== false)
+            $ConfSiteSuffix = "";
+    }
 }
+set_path_variables();
 
 
 // Load code
@@ -198,14 +215,46 @@ function __autoload($class_name) {
 
 
 // Set up conference options
+function read_included_options($files) {
+    global $Opt, $ConfMulticonf, $ConfSitePATH;
+    if (is_string($files))
+        $files = array($files);
+    $confname = @$ConfMulticonf ? $ConfMulticonf : @$Opt["dbName"];
+    $cwd = null;
+    foreach ($files as $f) {
+        $f = preg_replace(',\$\{confname\}|\$confname\b,', $confname, $f);
+        if (preg_match(',[\[\]\*\?],', $f)) {
+            if ($cwd === null) {
+                $cwd = getcwd();
+                if (!chdir($ConfSitePATH)) {
+                    $Opt["missing"][] = $f;
+                    break;
+                }
+            }
+            $flist = glob($f, GLOB_BRACE);
+        } else
+            $flist = array($f);
+        foreach ($flist as $f) {
+            $f = ($f[0] == "/" ? $f : "$ConfSitePATH/$f");
+            if (!@include $f)
+                $Opt["missing"][] = $f;
+        }
+    }
+}
+
 global $Opt;
 if (!@$Opt)
     $Opt = array();
-if (!@$Opt["loaded"]
-    && ((@include "$ConfSitePATH/conf/options.php") !== false // see also `cacheable.php`
+if (!@$Opt["loaded"]) {
+    if ((@include "$ConfSitePATH/conf/options.php") !== false // see also `cacheable.php`
         || (@include "$ConfSitePATH/conf/options.inc") !== false
-        || (@include "$ConfSitePATH/Code/options.inc") !== false))
-    $Opt["loaded"] = true;
+        || (@include "$ConfSitePATH/Code/options.inc") !== false)
+        $Opt["loaded"] = true;
+    if (@$Opt["multiconference"])
+        require_once("$ConfSitePATH/src/multiconference.php");
+    if (@$Opt["include"])
+        read_included_options($Opt["include"]);
+}
 
 
 // Set timezone

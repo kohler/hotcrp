@@ -18,9 +18,8 @@ findoptions () {
 }
 
 getdbopt () {
-    perl -e 'undef $/; $t = <STDIN>;
-$t =~ s|/\*.*?\*/||gs;
-$t =~ s|//.*$||gm;
+    (cd $MAINDIR && perl -e 'my(%Opt);
+my($Confname) = "'"$CONFNAME"'";
 
 sub unslash ($) {
    my($a) = @_;
@@ -45,14 +44,55 @@ sub unslash ($) {
    $b;
 }
 
-while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*\"(([^\"\\]|\\.)*)\"&g) {
-   $Opt{$1} = unslash($2);
+sub process ($) {
+   my($t) = @_;
+
+   $t =~ s|/\*.*?\*/||gs;
+   $t =~ s|//.*$||gm;
+
+   while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*\"((?:[^\"\\]|\\.)*)\"&g) {
+       $Opt{$1} = unslash($2);
+   }
+   while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*'"'"'([^'"'"']*)'"'"'&g) {
+       $Opt{$1} = $2;
+   }
+   while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*([\d.]+|true)&g) {
+       $Opt{$1} = $2;
+   }
+   while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*(?:array\(|\[)(.*)[\)\]]\s*;\s*$&gm) {
+       my($n, $x, $a) = ($1, $2, []);
+       while (1) {
+           if ($x =~ m&\A[\s,]*\"((?:[^\"\\]|\\.)*)\"(.*)\z&) {
+               push @$a, unslash($1);
+               $x = $2;
+           } elsif ($x =~ m&\A[\s,]*'"'"'([^'"'"']*)'"'"'(.*)\z&) {
+               push @$a, $1;
+               $x = $2;
+           } else {
+               last;
+           }
+       }
+       $Opt{$n} = $a;
+   }
 }
-while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*'"'"'([^'"'"']*)'"'"'&g) {
-   $Opt{$1} = $2;
-}
-while ($t =~ m&\$Opt\[['"'"'"](.*?)['"'"'"]\]\s*=\s*([\d.]+)&g) {
-   $Opt{$1} = $2;
+
+undef $/;
+process(<STDIN>);
+if (exists($Opt{"include"})) {
+    $Opt{"include"} = [$Opt{"include"}] if !ref $Opt{"include"};
+    my($confname, @flist) = $Confname ? $Confname : $Opt{"dbName"};
+    foreach my $f (@{$Opt{"include"}}) {
+        $f =~ s,\$\{confname\}|\$confname\b,$confname,g;
+        @flist = ($f =~ m,[\[\]\*\?], ? glob($f) : $f);
+        foreach my $ff (@flist) {
+            if (open(F, "<", $ff)) {
+                process(<F>);
+                close(F);
+            } else {
+                print STDERR "$ff: $!\n";
+            }
+        }
+    }
 }
 
 sub fixshell ($) {
@@ -61,13 +101,23 @@ sub fixshell ($) {
     $a;
 }
 
-if ($Opt{"multiconference"} || exists($Opt{"dsn"}) || !exists($Opt{"dbName"})) {
+if ($Opt{"multiconference"} && $Confname ne "") {
+   foreach my $i ("dbName", "dbUser", "dbPassword",
+                  "sessionName", "downloadPrefix", "conferenceSite") {
+       $Opt{$i} =~ s,\*|\*\{confname\}|\$confname\b,$Confname,g if exists($Opt{$i});
+   }
+}
+
+if ("'$1'" =~ /^db/
+    && (($Opt{"multiconference"} && $Confname eq "")
+        || exists($Opt{"dsn"})
+        || !exists($Opt{"dbName"}))) {
     print "";
 } else {
-    $Opt{"dbUser"} = $Opt{"dbName"} if (!exists($Opt{"dbUser"}));
-    $Opt{"dbPassword"} = $Opt{"dbName"} if (!exists($Opt{"dbPassword"}));
+    $Opt{"dbUser"} = $Opt{"dbName"} if !exists($Opt{"dbUser"}) && exists($Opt{"dbName"});
+    $Opt{"dbPassword"} = $Opt{"dbName"} if !exists($Opt{"dbPassword"}) && exists($Opt{"dbName"});
     print "'"'"'", fixshell($Opt{"'$1'"}), "'"'"'";
-}' < "`findoptions`"
+}') < "`findoptions`"
 }
 
 sql_quote () {
@@ -105,6 +155,44 @@ set_myargs () {
             PASSWORDFILE=""
             myargs="$myargs -p'$2'"
         fi
+    fi
+}
+
+parse_common_argument () {
+    case "$1" in
+    -c|--co|--con|--conf|--confi|--config)
+        test "$#" -gt 1 -a -z "$options_file" || usage
+        options_file="$2"; shift=2;;
+    -c*)
+        test -z "$options_file" || usage
+        options_file="`echo "$1" | sed 's/^-c//'`"; shift=1;;
+    --co=*|--con=*|--conf=*|--confi=*|--config=*)
+        test -z "$options_file" || usage
+        options_file="`echo "$1" | sed 's/^[^=]*=//'`"; shift=1;;
+    -n|--n|--na|--nam|--name)
+        test "$#" -gt 1 -a -z "$CONFNAME" || usage
+        CONFNAME="$2"; shift=2;;
+    -n*)
+        test -z "$CONFNAME" || usage
+        CONFNAME="`echo "$1" | sed 's/^-n//'`"; shift=1;;
+    --n=*|--na=*|--nam=*|--name=*)
+        test -z "$CONFNAME" || usage
+        CONFNAME="`echo "$1" | sed 's/^-n//'`"; shift=1;;
+    *)
+        shift=0;;
+    esac
+}
+
+get_dboptions () {
+    dbname="`getdbopt dbName 2>/dev/null`"
+    dbuser="`getdbopt dbUser 2>/dev/null`"
+    dbpass="`getdbopt dbPassword 2>/dev/null`"
+    if test -z "$dbname" -o -z "$dbuser" -o -z "$dbpass"; then
+        echo "$1: Can't extract database options from `findoptions`!" 1>&2
+        if test "`getdbopt multiconference 2>/dev/null`" '!=' "''"; then
+            echo "This is a multiconference installation; check your '-n CONFNAME' option." 1>&2
+        fi
+        exit 1
     fi
 }
 

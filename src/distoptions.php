@@ -10,6 +10,13 @@
 
 global $Opt;
 
+// GENERAL CONFIGURATION
+//
+//   include         Other configuration files to load. String or array of
+//                   strings. Wildcards are expanded (e.g., "conf/*.conf");
+//                   relative paths are interpreted based on HOTCRPDIR.
+
+
 // DATABASE CONFIGURATION
 //
 //   dbName          Database name. NO SPACES ALLOWED.

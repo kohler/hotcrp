@@ -3,13 +3,13 @@
 ## HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 ## Distributed under an MIT-like license; see LICENSE
 
-export LC_ALL=C LC_CTYPE=C LC_COLLATE=C
+export LC_ALL=C LC_CTYPE=C LC_COLLATE=C CONFNAME=
 if ! expr "$0" : '.*[/]' >/dev/null; then LIBDIR=./
 else LIBDIR=`echo "$0" | sed 's,^\(.*/\)[^/]*$,\1,'`; fi
 . ${LIBDIR}dbhelper.sh
 
 usage () {
-    echo "Usage: $PROG [-c CONFIGFILE] [MYSQL-OPTIONS] BACKUPFILE" 1>&2
+    echo "Usage: $PROG [-c CONFIGFILE] [-n CONFNAME] [MYSQL-OPTIONS] BACKUPFILE" 1>&2
     exit 1
 }
 
@@ -19,20 +19,16 @@ input=
 inputfilter=
 options_file=
 while [ $# -gt 0 ]; do
+    shift=1
     case "$1" in
-    -c|--co|--con|--conf|--confi|--config)
-        test "$#" -gt 1 -a -z "$options_file" || usage
-        options_file="$2"; shift;;
-    -c*)
-        test -z "$options_file" || usage
-        options_file="`echo "$1" | sed 's/^-c//'`";;
-    --co=*|--con=*|--conf=*|--confi=*|--config=*)
-        test -z "$options_file" || usage
-        options_file="`echo "$1" | sed 's/^[^=]*=//'`";;
+    -c|--co|--con|--conf|--confi|--config|-c*|--co=*|--con=*|--conf=*|--confi=*|--config=*)
+        parse_common_argument "$@";;
+    -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
+        parse_common_argument "$@";;
     -*)	FLAGS="$FLAGS $1";;
     *)	if [ -z "$input" ]; then input="$1"; else usage; fi;;
     esac
-    shift
+    shift $shift
 done
 
 if ! findoptions >/dev/null; then
@@ -53,10 +49,7 @@ elif [ -t 0 ]; then
     echo "restoredb.sh: Standard input is a terminal" 1>&2; usage
 fi
 
-dbname="`getdbopt dbName 2>/dev/null`"
-dbuser="`getdbopt dbUser 2>/dev/null`"
-dbpass="`getdbopt dbPassword 2>/dev/null`"
-test -z "$dbname" -o -z "$dbuser" -o -z "$dbpass" && { echo "backupdb.sh: Cannot extract database run options from `findoptions`!" 1>&2; exit 1; }
+get_dboptions restoredb.sh
 
 ### Test mysqldump binary
 check_mysqlish MYSQL mysql

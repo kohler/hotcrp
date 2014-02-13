@@ -1,42 +1,9 @@
 <?php
-// initweb.inc -- HotCRP initialization for web scripts
+// initweb.php -- HotCRP initialization for web scripts
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("init.php");
-
-// Set up conference path variables
-function set_path_variables() {
-    global $ConfSiteBase, $ConfSiteSuffix;
-
-    // Determine relative path to conference home in URLs
-    if (isset($_SERVER["PATH_INFO"]))
-	$ConfSiteBase = str_repeat("../", substr_count($_SERVER["PATH_INFO"], "/"));
-    else {
-	$toplev = array("Code" => 1, "doc" => 1, "doc.php" => 1);
-	$url = $_SERVER["PHP_SELF"];
-	$ndotdot = 0;
-	$ConfSiteBase = "";
-	while (($rpos = strrpos($url, "/")) !== false) {
-	    $last = substr($url, $rpos + 1);
-	    if (isset($toplev[$last])) {
-		$ConfSiteBase = str_repeat("../", $ndotdot);
-		break;
-	    }
-	    $ndotdot++;
-	    $url = substr($url, 0, $rpos);
-	}
-    }
-
-    // Determine whether to include the .php suffix
-    $ConfSiteSuffix = ".php";
-    if (function_exists("apache_get_modules")
-        && array_search("mod_rewrite", apache_get_modules()) !== false)
-        $ConfSiteSuffix = "";
-}
-
-set_path_variables();
-
 
 // Check for obsolete pages.
 // These are pages that we've removed from the source. But some user might
@@ -49,7 +16,7 @@ if (array_search(request_script_base(),
 
 // Redirect if options unavailable
 global $Opt;
-if (!@$Opt["loaded"]) {
+if (!@$Opt["loaded"] || @$Opt["missing"]) {
     if (isset($_REQUEST["ajax"]) && $_REQUEST["ajax"]) {
         if (isset($_REQUEST["jsontext"]) && $_REQUEST["jsontext"])
             header("Content-Type: text/plain");
@@ -62,40 +29,6 @@ if (!@$Opt["loaded"]) {
     }
     exit;
 }
-
-
-// Multi-conference support
-function setMulticonference() {
-    global $ConfSiteBase, $ConfMulticonf, $Opt;
-
-    $url = explode("/", $_SERVER["PHP_SELF"]);
-    $npop = strlen($ConfSiteBase) / 3;
-    if ($url[count($url) - 1] == "")
-	$npop++;
-    if ($npop + 2 > count($url))
-	return;
-    $ConfMulticonf = $url[count($url) - $npop - 2];
-
-    $nchanged = 0;
-    foreach (array("dbName", "dbUser", "dbPassword", "dsn") as $k)
-	if (isset($Opt[$k])) {
-	    $Opt[$k] = str_replace("*", $ConfMulticonf, $Opt[$k]);
-	    ++$nchanged;
-	}
-    if ($nchanged == 0)
-	$Opt["dbName"] = $ConfMulticonf;
-
-    foreach (array("sessionName", "downloadPrefix", "conferenceSite",
-		   "paperSite") as $k)
-	if (isset($Opt[$k]))
-	    $Opt[$k] = str_replace("*", $ConfMulticonf, $Opt[$k]);
-
-    if (!isset($Opt["downloadPrefix"]))
-	$Opt["downloadPrefix"] = $ConfMulticonf . "-";
-}
-
-if (isset($Opt["multiconference"]) && $Opt["multiconference"])
-    setMulticonference();
 
 
 // Create the conference

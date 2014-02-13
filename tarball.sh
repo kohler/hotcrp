@@ -121,6 +121,7 @@ src/mailer.php
 src/mailtemplate.php
 src/meetingtracker.php
 src/messages.csv
+src/multiconference.php
 src/paperactions.php
 src/papercolumn.php
 src/paperinfo.php

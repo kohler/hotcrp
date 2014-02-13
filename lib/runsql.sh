@@ -3,7 +3,7 @@
 ## HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 ## Distributed under an MIT-like license; see LICENSE
 
-export LC_ALL=C LC_CTYPE=C LC_COLLATE=C
+export LC_ALL=C LC_CTYPE=C LC_COLLATE=C CONFNAME=
 if ! expr "$0" : '.*[/]' >/dev/null; then LIBDIR=./
 else LIBDIR=`echo "$0" | sed 's,^\(.*/\)[^/]*$,\1,'`; fi
 . ${LIBDIR}dbhelper.sh
@@ -29,6 +29,7 @@ pwvalue=
 cmdlinequery=
 options_file=
 while [ $# -gt 0 ]; do
+    shift=1
     case "$1" in
     --show-password=*)
         test -z "$mode" || usage
@@ -39,18 +40,13 @@ while [ $# -gt 0 ]; do
     --set-password)
         test "$#" -eq 3 -a -z "$mode" || usage
         pwuser="$2"; pwvalue="$3"; shift; shift; mode=setpw;;
-    -c|--co|--con|--conf|--confi|--config)
-        test "$#" -gt 1 -a -z "$options_file" || usage
-        options_file="$2"; shift;;
-    -c*)
-        test -z "$options_file" || usage
-        options_file="`echo "$1" | sed 's/^-c//'`";;
-    --co=*|--con=*|--conf=*|--confi=*|--config=*)
-        test -z "$options_file" || usage
-        options_file="`echo "$1" | sed 's/^[^=]*=//'`";;
     --create-user)
         test "$#" -gt 1 -a -z "$mode" || usage
         makeuser="$2"; mode=makeuser; shift;;
+    -c|--co|--con|--conf|--confi|--config|-c*|--co=*|--con=*|--conf=*|--confi=*|--config=*)
+        parse_common_argument "$@";;
+    -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
+        parse_common_argument "$@";;
     --help) usage 0;;
     -*)
         if [ "$mode" = cmdlinequery ]; then
@@ -73,7 +69,7 @@ while [ $# -gt 0 ]; do
             cmdlinequery="$cmdlinequery $1"
         else usage; fi
     esac
-    shift
+    shift $shift
 done
 
 if ! findoptions >/dev/null; then
@@ -81,10 +77,7 @@ if ! findoptions >/dev/null; then
     exit 1
 fi
 
-dbname="`getdbopt dbName 2>/dev/null`"
-dbuser="`getdbopt dbUser 2>/dev/null`"
-dbpass="`getdbopt dbPassword 2>/dev/null`"
-test -z "$dbname" -o -z "$dbuser" -o -z "$dbpass" && { echo "runsql.sh: Cannot extract database run options from `findoptions`!" 1>&2; exit 1; }
+get_dboptions runsql.sh
 
 check_mysqlish MYSQL mysql
 set_myargs "$dbuser" "$dbpass"

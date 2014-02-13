@@ -3,7 +3,7 @@
 ## HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 ## Distributed under an MIT-like license; see LICENSE
 
-export LC_ALL=C LC_CTYPE=C LC_COLLATE=C
+export LC_ALL=C LC_CTYPE=C LC_COLLATE=C CONFNAME=
 if ! expr "$0" : '.*[/]' >/dev/null; then LIBDIR=./
 else LIBDIR=`echo "$0" | sed 's,^\(.*/\)[^/]*$,\1,'`; fi
 . ${LIBDIR}dbhelper.sh
@@ -11,12 +11,18 @@ else LIBDIR=`echo "$0" | sed 's,^\(.*/\)[^/]*$,\1,'`; fi
 help () {
     echo "${LIBDIR}createdb.sh performs MySQL database setup for HotCRP."
     echo
-    echo "Usage: ${LIBDIR}createdb.sh [-c CONFIGFILE] [MYSQLOPTIONS] [DBNAME]"
+    echo "Usage: ${LIBDIR}createdb.sh [-c CONFIGFILE] [-n CONFNAME] [MYSQLOPTIONS] [DBNAME]"
     echo
     echo "MYSQLOPTIONS are sent to mysql and mysqladmin."
     echo "Common options include '--user=ADMIN_USERNAME' and '--password=ADMIN_PASSWORD'"
     echo "to select a database admin user able to create new tables."
     exit 0
+}
+
+usage () {
+    echo "Usage: $PROG [MYSQLOPTIONS]" 1>&2
+    echo "Type ${LIBDIR}createdb.sh --help for more information." 1>&2
+    exit 1
 }
 
 PROG=$0
@@ -29,6 +35,7 @@ options_file=
 needpassword=false
 force=false
 while [ $# -gt 0 ]; do
+    shift=1
     case "$1" in
     -p|--pas|--pass|--passw|--passwo|--passwor|--password)
 	needpassword=true;;
@@ -46,27 +53,16 @@ while [ $# -gt 0 ]; do
 	help;;
     --force)
         force=true;;
-    -c|--co|--con|--conf|--confi|--config)
-        test "$#" -gt 1 -a -z "$options_file" || usage
-        options_file="$2"; shift;;
-    -c*)
-        test -z "$options_file" || usage
-        options_file="`echo "$1" | sed 's/^-c//'`";;
-    --co=*|--con=*|--conf=*|--confi=*|--config=*)
-        test -z "$options_file" || usage
-        options_file="`echo "$1" | sed 's/^[^=]*=//'`";;
+    -c|--co|--con|--conf|--confi|--config|-c*|--co=*|--con=*|--conf=*|--confi=*|--config=*)
+        parse_common_argument "$@";;
+    -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
+        parse_common_argument "$@";;
     -*)
 	FLAGS="$FLAGS '$1'";;
     *)
-	if [ -z "$DBNAME" ]; then
-	    DBNAME="$1"
-	else
-	    echo "Usage: $PROG [MYSQLOPTIONS]" 1>&2
-	    echo "Type ${LIBDIR}createdb.sh --help for more information." 1>&2
-	    exit 1
-	fi;;
+	if [ -z "$DBNAME" ]; then DBNAME="$1"; else usage; fi;;
     esac
-    shift
+    shift $shift
 done
 
 ### Test mysql binary
