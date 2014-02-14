@@ -999,9 +999,6 @@ span.textlite {
 	padding: 0 4px;
 	background: #fcfcfc;
 }
-textarea {
-	font-family: verdana, tahoma, sans-serif;
-}
 input.textlite, textarea {
 	font-size: 100%;
 }
