@@ -72,7 +72,9 @@ if ($Me->privChair) {
         $Conf->warnMsg("Your PHP installation appears to lack GD support, which is required for drawing score graphs.  You may want to fix this problem and restart Apache.");
     $result = $Conf->qx("show variables like 'max_allowed_packet'");
     $max_file_size = ini_get_bytes("upload_max_filesize");
-    if (($row = edb_row($result)) && $row[1] < $max_file_size)
+    if (($row = edb_row($result))
+	&& $row[1] < $max_file_size
+	&& !$Opt["dbNoPapers"])
 	$Conf->warnMsg("MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.");
     if (!function_exists("imagecreate"))
 	$Conf->warnMsg("This PHP installation lacks support for the GD library, so HotCRP cannot generate score charts. You should update your PHP installation. For example, on Ubuntu Linux, install the <code>php5-gd</code> package.");
