@@ -13,6 +13,13 @@ help () {
     echo
     echo "Usage: ${LIBDIR}createdb.sh [-c CONFIGFILE] [-n CONFNAME] [MYSQLOPTIONS] [DBNAME]"
     echo
+    echo "Options:"
+    echo "  -c, --config=CONFIG     Configuration file is CONFIG [conf/options.php]."
+    echo "      --minimal           Output minimal configuration file."
+    echo "      --batch             Batch installation."
+    echo "      --replace           Replace existing database and user."
+    echo "      --force             Answer yes to all questions."
+    echo
     echo "MYSQLOPTIONS are sent to mysql and mysqladmin."
     echo "Common options include '--user=ADMIN_USERNAME' and '--password=ADMIN_PASSWORD'"
     echo "to select a database admin user able to create new tables."
@@ -32,8 +39,11 @@ DBNAME=""
 PASSWORD=""
 distoptions_file=distoptions.php
 options_file=
+minimal_options=
 needpassword=false
 force=false
+batch=false
+replace=false
 while [ $# -gt 0 ]; do
     shift=1
     case "$1" in
@@ -53,6 +63,12 @@ while [ $# -gt 0 ]; do
 	help;;
     --force)
         force=true;;
+    --batch)
+        batch=true;;
+    --minimal)
+        minimal_options=y;;
+    --replace)
+        replace=true;;
     -c|--co|--con|--conf|--confi|--config|-c*|--co=*|--con=*|--conf=*|--confi=*|--config=*)
         parse_common_argument "$@";;
     -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
@@ -107,6 +123,15 @@ $DBNAME
 __EOF__
 }
 
+batch_fail () {
+    if $batch; then
+        echo 1>&2
+        echo "* Giving up. Try '--batch --replace' or other arguments and try again." 1>&2
+        echo 1>&2
+        exit 1
+    fi
+}
+
 default_dbname=
 x="`getdbopt dbName 2>/dev/null`"
 x="`eval "echo $x"`"
@@ -137,10 +162,15 @@ while true; do
     elif test "$c" -gt 16; then
 	echo 1>&2
 	echo "* The database name can be at most 16 characters long." 1>&2
+    elif test "`echo "$DBNAME" | head -c 1`" = "."; then
+	echo 1>&2
+	echo "* The database name must not start with a period." 1>&2
     else
 	break
     fi
+
     DBNAME=
+    batch_fail
 done
 
 
@@ -186,18 +216,22 @@ else
     default_dbpass_description="is `echo $default_dbpass_length` random characters"
 fi
 while true; do
-    echo_n "Enter password for mysql user $DBNAME [default $default_dbpass_description]: "
-    stty -echo; trap "stty echo; exit 1" INT
-    read -r DBPASS
-    stty echo; trap - INT
+    if ! $batch; then
+        echo_n "Enter password for mysql user $DBNAME [default $default_dbpass_description]: "
+        stty -echo; trap "stty echo; exit 1" INT
+        read -r DBPASS
+        stty echo; trap - INT
+    else
+        DBPASS=
+    fi
     if [ -z "`echo_dbpass`" ]; then DBPASS=$default_dbpass; fi
     x=`echo_dbpass | tr -d -c '\000'"'"`
     if test -z "$x" >/dev/null; then break; fi
     echo 1>&2
-    echo "The database password can't contain single quotes or null characters." 1>&2
+    echo "The database password must not contain single quotes or null characters." 1>&2
+    batch_fail
 done
-echo
-
+$batch || echo
 
 sql_dbpass () {
     echo_dbpass | sql_quote
@@ -209,12 +243,6 @@ php_dbpass () {
 
 
 echo
-if [ -z "$myargs$FLAGS" ]; then
-    echo "Creating database."
-    echo "This should work if you are root and haven't changed the default mysql"
-    echo "administrative password. If you have changed the password, you will need to"
-    echo "run '$PROG -p' or '$PROG -pPASSWD' (no space)."
-fi
 echo "+ echo 'show databases;' | $MYSQL $myargs_redacted $FLAGS | grep $DBNAME"
 echo 'show databases;' | eval $MYSQL $myargs $FLAGS >/dev/null || exit 1
 echo 'show databases;' | eval $MYSQL $myargs $FLAGS | grep $DBNAME >/dev/null 2>&1
@@ -228,8 +256,9 @@ if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
     echo
     test "$dbexists" = 0 && echo "A database named '$DBNAME' already exists!"
     test "$userexists" = 0 && echo "A user named '$DBNAME' already exists!"
-    while true; do
-	echo_n "Delete and recreate database and user? [Y/n] "
+    while ! $replace; do
+        batch_fail
+	echo_n "Replace database and user? [Y/n] "
 	read createdbuser
 	expr "$createdbuser" : "[ynqYNQ].*" >/dev/null && break
 	test -z "$createdbuser" && break
@@ -244,7 +273,7 @@ if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
 fi
 if [ "$createdbuser" = y ]; then
     echo
-    echo "Creating $DBNAME database."
+    echo "Creating $DBNAME database..."
     echo "+ $MYSQLADMIN $myargs_redacted $FLAGS --default-character-set=utf8 create $DBNAME"
     eval $MYSQLADMIN $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
 
@@ -320,7 +349,9 @@ __EOF__
     eval $MYSQLADMIN $myargs $FLAGS reload || exit 1
 
     if [ ! -r "${SRCDIR}schema.sql" ]; then
-	echo "Can't read schema.sql!  You'll have to populate the database yourself."
+	echo 1>&2
+        echo "* Can't read schema.sql! You'll have to populate the database yourself." 1>&2
+        echo 1>&2
 	exit 1
     fi
 else
@@ -331,22 +362,23 @@ fi
 ##
 ## Populate the database schema
 ##
-echo
-echo "Now, we will populate the database with the schema."
-echo "However, if you need to restore from a backup you don't want to populate."
-echo "If the preceeding steps worked, you won't need to enter a password."
-while true; do
-    echo_n "Populate database? [Y/n] "
-    read populatedb
-    expr "$populatedb" : "[ynqYNQ].*" >/dev/null && break
-    test -z "$populatedb" && break
-done
-expr "$populatedb" : "[qQ].*" >/dev/null && echo "Exiting..." && exit 0
-expr "$populatedb" : "[nN].*" >/dev/null || populatedb=y
-echo
-
+populatedb=y
+if ! $replace && test "$createdb" = n; then
+    batch_fail
+    echo
+    echo "Do you want to replace the current database contents with a fresh install?"
+    while true; do
+        echo_n "Replace database contents? [Y/n] "
+        read populatedb
+        expr "$populatedb" : "[ynqYNQ].*" >/dev/null && break
+        test -z "$populatedb" && break
+    done
+    expr "$populatedb" : "[qQ].*" >/dev/null && echo "Exiting..." && exit 0
+    expr "$populatedb" : "[nN].*" >/dev/null || populatedb=y
+    echo
+fi
 if [ "$populatedb" = y ]; then
-    echo "Populating database."
+    echo "Populating database..."
     set_myargs $DBNAME "`echo_dbpass`"
     echo "+ $MYSQL $myargs_redacted $FLAGS $DBNAME < ${SRCDIR}schema.sql"
     eval $MYSQL $myargs $FLAGS $DBNAME < ${SRCDIR}schema.sql || exit 1
@@ -357,21 +389,22 @@ fi
 ##
 
 create_options () {
-    awk 'BEGIN { p = 1 }
+    test -n "$minimal_options" && echo '<?php'
+    test -z "$minimal_options" && awk 'BEGIN { p = 1 }
 /^\$Opt\[.db/ { p = 0 }
 { if (p) print }' < "${SRCDIR}${distoptions_file}"
     cat <<__EOF__
 \$Opt["dbName"] = "$DBNAME";
 \$Opt["dbPassword"] = "`php_dbpass`";
 __EOF__
-    awk 'BEGIN { p = 0 }
+    test -z "$minimal_options" && awk 'BEGIN { p = 0 }
 /^\$Opt\[.db/ { p = 1; next }
 /^\$Opt\[.passwordHmacKey/ { p = 0; next }
 { if (p) print }' < "${SRCDIR}${distoptions_file}"
     cat <<__EOF__
 \$Opt["passwordHmacKey"] = "`generate_random_ints | generate_password 40`";
 __EOF__
-    awk 'BEGIN { p = 0 }
+    test -z "$minimal_options" && awk 'BEGIN { p = 0 }
 /^\$Opt\[.passwordHmacKey/ { p = 1; next }
 { if (p) print }' < "${SRCDIR}${distoptions_file}"
 }
@@ -400,7 +433,7 @@ if findoptions >/dev/null; then
         echo "* You should move $current_options there."
     fi
     echo
-elif [ -r "${SRCDIR}${distoptions_file}" ]; then
+elif [ -r "${SRCDIR}${distoptions_file}" -o -n "$minimal_options" ]; then
     echo
     echo "Creating $expected_options..."
     create_options > "$expected_options"
@@ -409,25 +442,32 @@ elif [ -r "${SRCDIR}${distoptions_file}" ]; then
 	chown $SUDO_USER "$expected_options"
     fi
     chmod o-rwx "$expected_options"
+    current_options="$expected_options"
+else
+    echo
+    echo "* Not creating $expected_options."
+    current_options=
+fi
 
+if test -n "$current_options"; then
     # warn about unreadable options file
-    group="`ls -l "$expected_options" | awk '{print $4}'`"
+    group="`ls -l "$current_options" | awk '{print $4}'`"
 
     httpd_user="`ps axho user,comm | grep -E 'httpd|apache' | uniq | grep -v root | awk 'END {if ($1) print $1}'`"
 
     if test -z "$httpd_user"; then
 	echo
-	echo "* The $expected_options file contains sensitive data."
+	echo "* The $current_options file contains sensitive data."
 	echo "* You may need to change its group so the Web server can read it."
 	echo
     elif ! is_group_member "$httpd_user" "$group"; then
-	if [ -n "$SUDO_USER" ] && chgrp "$httpd_user" "$expected_options" 2>/dev/null; then
-	    echo "Making $expected_options readable by the Web server..."
-	    echo + chgrp "$httpd_user" "$expected_options"
+	if [ -n "$SUDO_USER" ] && chgrp "$httpd_user" "$current_options" 2>/dev/null; then
+	    echo "Making $current_options readable by the Web server..."
+	    echo + chgrp "$httpd_user" "$current_options"
 	else
 	    echo
-	    echo "* The $expected_options file contains important data, but the Web server"
-	    echo "* cannot read it. Use 'chgrp GROUP $expected_options' to change its group."
+	    echo "* The $current_options file contains important data, but the Web server"
+	    echo "* cannot read it. Use 'chgrp GROUP $current_options' to change its group."
 	    echo
 	fi
     fi
