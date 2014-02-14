@@ -3,23 +3,22 @@
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-function request_absolute_uri_base() {
+function request_absolute_uri_base($downcase_host = false) {
     if (!@$_SERVER["HTTP_HOST"] || !@$_SERVER["SERVER_PORT"]
         || !@$_SERVER["REQUEST_URI"])
         return false;
-
-    if (@$_SERVER["HTTPS"] && $_SERVER["HTTPS"] != "off") {
-	$host = "https://" . $_SERVER["HTTP_HOST"];
-	if (($port = defval($_SERVER, "SERVER_PORT", 443)) != 443)
-	    $host .= ":" . $port;
-    } else {
-	$host = "http://" . $_SERVER["HTTP_HOST"];
-	if (($port = defval($_SERVER, "SERVER_PORT", 80)) != 80)
-	    $host .= ":" . $port;
-    }
-
-    return $host . preg_replace('_\A([^\?\#]*).*\z_', '\1',
-                                $_SERVER["REQUEST_URI"]);
+    if (@$_SERVER["HTTPS"] && $_SERVER["HTTPS"] != "off")
+        list($x, $xport) = array("https://", 443);
+    else
+        list($x, $xport) = array("http://", 80);
+    if ($downcase_host)
+        $x .= strtolower($_SERVER["HTTP_HOST"]);
+    else
+        $x .= $_SERVER["HTTP_HOST"];
+    if (($port = @$_SERVER["SERVER_PORT"]) && $port != $xport)
+        $x .= ":" . $port;
+    return $x . preg_replace('_\A([^\?\#]*).*\z_', '\1',
+                             $_SERVER["REQUEST_URI"]);
 }
 
 function request_trim_path_info($uri) {

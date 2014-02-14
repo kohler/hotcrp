@@ -225,9 +225,19 @@ doesn’t exist. To ignore nonexistent options files, use wildcards:
 dbUser, dbPassword, sessionName, downloadPrefix, conferenceSite,
 and paperSite.
 
-You will still need to create a new database for each conference using the
-`lib/createdb.sh` script, and convince your Apache to use the HotCRP
-install directory for all relevant URLs.
+You will still need to create a database for each conference using the
+`lib/createdb.sh` script (the `-c CONFIGFILE` option will be useful).
+Also, you will need to convince your Apache to use the HotCRP install
+directory for all relevant URLs.
+
+If you don't want to use the last directory component, set
+$Opt["multiconferenceUrl"] to a URL regular expression, a space, and a
+replacement pattern. HotCRP matches the input URL to the regex. If it
+matches, it constructs a conference name from the replacement pattern.
+For example, this setting will use "conf_CONFNAME" as the conference
+name for a URL like "http://CONFNAME.crap.com/":
+
+    $Opt["multiconferenceUrl"] = '[a-z]*//([^.]+)[.]crap[.]com[.]?/.* conf_$1';
 
 License
 -------

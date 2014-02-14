@@ -9,15 +9,26 @@ function set_multiconference() {
     global $ConfSiteBase, $ConfMulticonf, $Opt;
 
     if (!@$ConfMulticonf) {
-        $url = explode("/", $_SERVER["PHP_SELF"]);
-        $npop = strlen($ConfSiteBase) / 3;
-        if ($url[count($url) - 1] == "")
-            $npop++;
-        if ($npop + 2 > count($url))
-            return;
-        $ConfMulticonf = $url[count($url) - $npop - 2];
+        if (@$Opt["multiconferenceUrl"]
+            && ($base = request_absolute_uri_base(true))) {
+            list($match, $replace) = explode(" ", $Opt["multiconferenceUrl"]);
+            if (preg_match("&\\A$match\\z&", $base, $m)) {
+                $ConfMulticonf = $replace;
+                for ($i = 1; $i < count($m); ++$i)
+                    $ConfMulticonf = str_replace("\$$i", $m[$i], $ConfMulticonf);
+            }
+        } else {
+            $url = explode("/", $_SERVER["PHP_SELF"]);
+            $npop = strlen($ConfSiteBase) / 3;
+            if ($url[count($url) - 1] == "")
+                $npop++;
+            if ($npop + 2 > count($url))
+                return;
+            $ConfMulticonf = $url[count($url) - $npop - 2];
+        }
 
-        if (!preg_match(',\A[-a-zA-Z0-9._]+\z,', $ConfMulticonf)
+        if (!@$ConfMulticonf
+            || !preg_match(',\A[-a-zA-Z0-9._]+\z,', $ConfMulticonf)
             || $ConfMulticonf[0] == ".")
             $ConfMulticonf = "__invalid__";
     }
