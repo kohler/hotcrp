@@ -98,6 +98,7 @@ $Opt["contactName"] = "Your Name";
 $Opt["contactEmail"] = "you@example.com";
 $Opt["sendEmail"] = true;
 $Opt["emailFrom"] = "you@example.com";
+$Opt["emailSender"] = null;
 
 
 // PAPER STORAGE SETTINGS
