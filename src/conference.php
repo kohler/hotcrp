@@ -49,18 +49,8 @@ class Conference {
 
 	// clean up options
         // remove final slash from $Opt["paperSite"]
-        if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "") {
-            $https = isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] != "off";
-            $Opt["paperSite"] = ($https ? "https://" : "http://") . urlencode($_SERVER["HTTP_HOST"]);
-            if (isset($_SERVER["SERVER_PORT"]) && $_SERVER["SERVER_PORT"] != ($https ? 443 : 80))
-                $Opt["paperSite"] .= ":" . $_SERVER["SERVER_PORT"];
-            $uri = $_SERVER["REQUEST_URI"];
-            if (isset($_SERVER["QUERY_STRING"]) && ($len = strlen($_SERVER["QUERY_STRING"])))
-                $uri = substr($uri, 0, -$len);
-            if (isset($_SERVER["PATH_INFO"]) && ($len = strlen($_SERVER["PATH_INFO"])))
-                $uri = substr($uri, 0, -$len);
-            $Opt["paperSite"] .= substr($uri, 0, strrpos($uri, "/"));
-        }
+        if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
+            $Opt["paperSite"] = request_absolute_uri_dir();
 	$Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
 
         // set sessionName and downloadPrefix
