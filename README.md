@@ -211,15 +211,15 @@ To turn on multiconference support, edit `conf/options.php` and set
 $Opt["multiconference"] to true. You will then need to tell HotCRP how
 to find the options relevant for each conference. The most flexible
 mechanism is to use $Opt["include"] to include a conference-specific
-options file. For example:
+options file. For example (note the single quotes):
 
-    $Opt["include"] = "conf/options-${confname}.php";
+    $Opt["include"] = 'conf/options-${confname}.php';
 
 The `${confname}` substring is replaced with the conference name.
 HotCRP will refuse to proceed if the conference-specific options file
 doesn’t exist. To ignore nonexistent options files, use wildcards:
 
-    $Opt["include"] = "conf/[o]ptions-${confname}.php";
+    $Opt["include"] = 'conf/[o]ptions-${confname}.php';
 
 `${confname}` replacement is also performed on these settings: dbName,
 dbUser, dbPassword, sessionName, downloadPrefix, conferenceSite,
