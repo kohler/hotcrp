@@ -46,13 +46,13 @@ $Opt["longName"] = "";
 
 // USER PASSWORDS
 //
-//   safePasswords   If true, the database will store cryptographic hashes
-//                   of user passwords. If false, the database will store
+//   safePasswords   If true, the database stores cryptographic hashes
+//                   of user passwords according to security best
+//                   practices. If false, the database stores
 //                   user passwords in plaintext. If set to the integer 2,
 //                   existing plaintext passwords are opportunistically
-//                   upgraded to hashes. Cryptographic hashes follow security
-//                   best practices and are safer, but plaintext passwords
-//                   offer some usability advantages.
+//                   upgraded to hashes. Randomly-generated passwords
+//                   are initially stored in plaintext.
 //   passwordHmacKey  Secret key used for password HMAC.
 //   passwordHmacKeyid  If a secret key is compromised, change
 //                   passwordHmacKeyid to switch keys. Defaults to 0.

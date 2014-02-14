@@ -136,6 +136,7 @@ src/reviewtable.php
 src/sample.pdf
 src/schema.sql
 src/updateschema.php
+src/useractions.php
 
 Code/.htaccess
 

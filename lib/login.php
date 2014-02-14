@@ -138,7 +138,7 @@ class LoginHelper {
             return $Conf->errorMsg("Your account is disabled. Contact the site administrator for more information.");
 
         if ($_REQUEST["action"] == "forgot") {
-            $worked = $user->sendAccountInfo(false, true);
+            $worked = $user->sendAccountInfo("forgot", true);
             if ($worked == "@resetpassword")
                 $Conf->confirmMsg("A password reset link has been emailed to " . htmlspecialchars($_REQUEST["email"]) . ". When you receive that email, follow its instructions to create a new password.");
             else if ($worked) {
@@ -217,7 +217,7 @@ class LoginHelper {
                 return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
         }
 
-        $user->sendAccountInfo(true, true);
+        $user->sendAccountInfo("create", true);
         $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".";
 
         // handle setup phase

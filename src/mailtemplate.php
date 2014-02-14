@@ -6,16 +6,16 @@
 global $mailTemplates;
 $mailTemplates = array
     ("createaccount" =>
-     array("subject" => "[%CONFSHORTNAME%] New account information",
+     array("subject" => "[%CONFSHORTNAME%] Account information",
 	   "body" => "Greetings,
 
-An account has been created for you at the %CONFNAME% submissions site, including an initial password.
+An account has been created for you at the %CONFNAME% submissions site.
 
         Site: %URL%/
        Email: %EMAIL%
     Password: %OPT(PASSWORD)%
 
-Use the link below to sign in directly.
+Use the link below to sign in.
 
 %LOGINURL%
 

@@ -180,6 +180,7 @@ function __autoload($class_name) {
                                "Tagger" => "lib/tagger.php",
                                "Text" => "lib/text.php",
                                "UnicodeHelper" => "lib/unicodehelper.php",
+                               "UserActions" => "src/useractions.php",
                                "XlsxGenerator" => "lib/xlsx.php",
                                "ZipDocument" => "lib/documenthelper.php");
     if (($f = @$ConfAutoloads[$class_name]))

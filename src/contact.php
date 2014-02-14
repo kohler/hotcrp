@@ -718,7 +718,7 @@ class Contact {
             if ($Me && $Me->privChair)
                 $Conf->infoMsg("Created account for " . htmlspecialchars($email) . ".");
             if ($send)
-                $acct->sendAccountInfo(true, false);
+                $acct->sendAccountInfo("create", false);
 	    $Conf->log($Me && $Me->is_known_user() ? "Created account ($Me->email)" : "Created account", $acct);
 	} else
 	    $Conf->log("Account $email creation failure", $Me);
@@ -1892,9 +1892,8 @@ class Contact {
 
     public function password_needs_upgrade() {
         global $Opt;
-        if ((@$Opt["safePasswords"] && $this->visits == 0)
-            || (is_int(@$Opt["safePasswords"])
-                && $Opt["safePasswords"] > 1)) {
+        if (@$Opt["safePasswords"] === true
+            || (is_int(@$Opt["safePasswords"]) && $Opt["safePasswords"] > 1)) {
             $expected_prefix = " " . self::password_hash_method()
                 . " " . defval($Opt, "passwordHmacKeyid", 0) . " ";
             return $this->password_type == 0
@@ -1952,15 +1951,15 @@ class Contact {
 	return $pw;
     }
 
-    function sendAccountInfo($create, $sensitive) {
+    function sendAccountInfo($sendtype, $sensitive) {
 	global $Conf, $Opt;
         $rest = array();
-        if ($create)
+        if ($sendtype == "create")
             $template = "@createaccount";
         else if ($this->password_type == 0
                  && (!@$Opt["safePasswords"]
-                     || !is_int($Opt["safePasswords"])
-                     || $Opt["safePasswords"] <= 1))
+                     || (is_int($Opt["safePasswords"]) && $Opt["safePasswords"] <= 1)
+                     || $sendtype != "forgot"))
             $template = "@accountinfo";
         else {
             $rest["capability"] = $Conf->create_capability(CAPTYPE_RESETPASSWORD, array("contactId" => $this->contactId, "timeExpires" => time() + 259200));

@@ -5,7 +5,6 @@
 
 require_once("src/initweb.php");
 require_once("src/contactlist.php");
-$rf = reviewForm();
 $getaction = "";
 if (isset($_REQUEST["get"]))
     $getaction = $_REQUEST["get"];
@@ -54,12 +53,7 @@ if (!isset($_REQUEST["t"]))
 
 // paper selection and download actions
 function paperselPredicate($papersel) {
-    if (count($papersel) == 0)
-	return "contactId=-1";
-    else if (count($papersel) == 1)
-	return "contactId=$papersel[0]";
-    else
-	return "contactId in (" . join(", ", $papersel) . ")";
+    return "contactId" . sql_in_numeric_set($papersel);
 }
 
 if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
@@ -124,6 +118,28 @@ if ($getaction == "address" && isset($papersel) && $Me->isPC) {
 }
 
 
+// modifications
+function modify_confirm($j, $ok_message, $ok_message_optional) {
+    global $Conf;
+    if (@$j->ok && @$j->warnings)
+        $Conf->warnMsg("<div>" . join("</div><div style='margin-top:0.5em'>", $j->warnings) . "</div>");
+    if (@$j->ok && $ok_message && (!$ok_message_optional || !@$j->warnings))
+        $Conf->confirmMsg($ok_message);
+}
+
+if ($Me->privChair && @$_REQUEST["modifygo"] && check_post() && isset($papersel)) {
+    if (@$_REQUEST["modifytype"] == "disableaccount")
+        modify_confirm(UserActions::disable($papersel, $Me), "Accounts disabled.", true);
+    else if (@$_REQUEST["modifytype"] == "enableaccount")
+        modify_confirm(UserActions::enable($papersel, $Me), "Accounts enabled.", true);
+    else if (@$_REQUEST["modifytype"] == "resetpassword")
+        modify_confirm(UserActions::reset_password($papersel, $Me), "Passwords reset. <a href=\"" . hoturl_post("users", "t=" . $_REQUEST["t"] . "&amp;modifygo=1&amp;modifytype=sendaccount&amp;pap=" . join("+", $papersel)) . "\">Send account information to those accounts</a>", false);
+    else if (@$_REQUEST["modifytype"] == "sendaccount")
+        modify_confirm(UserActions::send_account_info($papersel, $Me), "Account information sent.", false);
+    redirectSelf(array("modifygo" => null, "modifytype" => null));
+}
+
+
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {
     $_SESSION["ppldisplay"] = "";
@@ -162,7 +178,7 @@ if (count($tOpt) > 1) {
     echo "<table id='contactsform' class='tablinks1'>
 <tr><td><div class='tlx'><div class='tld1'>";
 
-    echo "<form method='get' action='", hoturl("users"), "' accept-charset='UTF-8'><div class='inform'>";
+    echo Ht::form(hoturl("users", "t=" . $_REQUEST["t"]), array("method" => "get")), "<div class='inform'>";
     if (isset($_REQUEST["sort"]))
 	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
     echo Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "contactsform1_d")),
@@ -240,7 +256,7 @@ else if ($Me->privChair && $_REQUEST["t"] == "all")
 
 
 if (isset($pl->any->sel)) {
-    echo "<form method='get' action='", hoturl("users"), "' accept-charset='UTF-8'><div>";
+    echo Ht::form(hoturl_post("users", "t=" . $_REQUEST["t"])), "<div>";
     foreach (array("t", "sort") as $x)
 	if (isset($_REQUEST[$x]))
 	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";

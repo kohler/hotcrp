@@ -456,12 +456,24 @@ class ContactList extends BaseList {
 	$t .= "    <td id='pplact' class='pl_footer linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
 	// Begin linelinks
-	$t .= "<span class='lll1'><a href='javascript:void crpfocus(\"pplact\",1)'>Download</a></span><span class='lld1'><b>:</b> &nbsp;"
+	$t .= "<span class='lll1'><a href='#' onclick='return crpfocus(\"pplact\",1)'>Download</a></span><span class='lld1'><b>:</b> &nbsp;"
 	    . Ht::select("getaction", array("nameemail" => "Names and emails",
                                             "nameaffemail" => "Names, affiliations, and emails",
                                             "address" => "Addresses"),
                          null, array("id" => "pplact1_d"))
 	    . "&nbsp; <input type='submit' class='bsm' name='getgo' value='Go' /></span>";
+
+        $barsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
+        if ($this->contact->privChair) {
+            $t .= $barsep;
+            $t .= "<span class='lll3'><a href='#' onclick='return crpfocus(\"pplact\",3)'>Modify</a></span><span class='lld3'><b>:</b> &nbsp;";
+            $t .= Ht::select("modifytype", array("disableaccount" => "Disable",
+                                                 "enableaccount" => "Enable",
+                                                 "resetpassword" => "Reset password",
+                                                 "sendaccount" => "Send account information"),
+                             null, array("id" => "pplact3_d"))
+                . "&nbsp; " . Ht::submit("modifygo", "Go", array("class" => "bsm")) . "</span>";
+        }
 
 	return $t . "</td></tr>\n";
     }
