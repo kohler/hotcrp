@@ -9,13 +9,16 @@ function set_multiconference() {
     global $ConfSiteBase, $ConfMulticonf, $Opt;
 
     if (!@$ConfMulticonf) {
-        if (@$Opt["multiconferenceUrl"]
+        if (($multis = @$Opt["multiconferenceUrl"])
             && ($base = request_absolute_uri_base(true))) {
-            list($match, $replace) = explode(" ", $Opt["multiconferenceUrl"]);
-            if (preg_match("`\\A$match`", $base, $m)) {
-                $ConfMulticonf = $replace;
-                for ($i = 1; $i < count($m); ++$i)
-                    $ConfMulticonf = str_replace("\$$i", $m[$i], $ConfMulticonf);
+            foreach (is_array($multis) ? $multis : array($multis) as $multi) {
+                list($match, $replace) = explode(" ", $Opt["multiconferenceUrl"]);
+                if (preg_match("`\\A$match`", $base, $m)) {
+                    $ConfMulticonf = $replace;
+                    for ($i = 1; $i < count($m); ++$i)
+                        $ConfMulticonf = str_replace("\$$i", $m[$i], $ConfMulticonf);
+                    break;
+                }
             }
         } else {
             $url = explode("/", $_SERVER["PHP_SELF"]);
