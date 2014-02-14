@@ -146,71 +146,44 @@ require_once("$ConfSitePATH/src/conference.php");
 require_once("$ConfSitePATH/src/contact.php");
 
 function __autoload($class_name) {
-    global $ConfSitePATH;
-    if ($class_name == "ReviewForm")
-	require_once("$ConfSitePATH/src/review.php");
-    else if ($class_name == "PaperInfo")
-        require_once("$ConfSitePATH/src/paperinfo.php");
-    else if ($class_name == "PaperSearch")
-        require_once("$ConfSitePATH/src/papersearch.php");
-    else if ($class_name == "PaperActions")
-        require_once("$ConfSitePATH/src/paperactions.php");
-    else if ($class_name == "PaperStatus")
-        require_once("$ConfSitePATH/src/paperstatus.php");
-    else if ($class_name == "Text")
-        require_once("$ConfSitePATH/lib/text.php");
-    else if ($class_name == "Tagger")
-        require_once("$ConfSitePATH/lib/tagger.php");
-    else if ($class_name == "Mimetype")
-        require_once("$ConfSitePATH/lib/mimetype.php");
-    else if ($class_name == "DocumentHelper" || $class_name == "ZipDocument")
-        require_once("$ConfSitePATH/lib/documenthelper.php");
-    else if ($class_name == "HotCRPDocument")
-        require_once("$ConfSitePATH/src/hotcrpdocument.php");
-    else if ($class_name == "Mailer")
-        require_once("$ConfSitePATH/src/mailer.php");
-    else if ($class_name == "UnicodeHelper")
-        require_once("$ConfSitePATH/lib/unicodehelper.php");
-    else if ($class_name == "Qobject")
-        require_once("$ConfSitePATH/lib/qobject.php");
-    else if ($class_name == "PaperList")
-        require_once("$ConfSitePATH/src/paperlist.php");
-    else if ($class_name == "Column")
-        require_once("$ConfSitePATH/lib/column.php");
-    else if ($class_name == "PaperColumn")
-        require_once("$ConfSitePATH/src/papercolumn.php");
-    else if ($class_name == "PaperOption")
-        require_once("$ConfSitePATH/src/paperoption.php");
-    else if ($class_name == "PaperRank")
-        require_once("$ConfSitePATH/src/rank.php");
-    else if ($class_name == "Conflict")
-        require_once("$ConfSitePATH/src/conflict.php");
-    else if ($class_name == "MeetingTracker")
-        require_once("$ConfSitePATH/src/meetingtracker.php");
-    else if ($class_name == "CsvParser" || $class_name == "CsvGenerator")
-        require_once("$ConfSitePATH/lib/csv.php");
-    else if ($class_name == "XlsxGenerator")
-        require_once("$ConfSitePATH/lib/xlsx.php");
-    else if ($class_name == "LoginHelper")
-        require_once("$ConfSitePATH/lib/login.php");
-    else if ($class_name == "CleanHTML")
-        require_once("$ConfSitePATH/lib/cleanhtml.php");
-    else if ($class_name == "CheckFormat")
-        require_once("$ConfSitePATH/lib/checkformat.php");
-    else if ($class_name == "Countries")
-        require_once("$ConfSitePATH/lib/countries.php");
-    else if ($class_name == "Message")
-        require_once("$ConfSitePATH/lib/message.php");
-    else if ($class_name == "Formula")
-        require_once("$ConfSitePATH/src/formula.php");
-    else if ($class_name == "S3Document")
-        require_once("$ConfSitePATH/lib/s3document.php");
-    else if ($class_name == "AssignmentSet")
-        require_once("$ConfSitePATH/src/assigners.php");
-    else if ($class_name == "CommentSave")
-        require_once("$ConfSitePATH/src/commentsave.php");
-    else if ($class_name == "Ht")
-        require_once("$ConfSitePATH/lib/ht.php");
+    global $ConfSitePATH, $ConfAutoloads;
+    if (!@$ConfAutoloads)
+        $ConfAutoloads = array("AssignmentSet" => "src/assigners.php",
+                               "CheckFormat" => "lib/checkformat.php",
+                               "CleanHTML" => "lib/cleanhtml.php",
+                               "Column" => "lib/column.php",
+                               "CommentSave" => "src/commentsave.php",
+                               "Conflict" => "src/conflict.php",
+                               "Countries" => "lib/countries.php",
+                               "CsvGenerator" => "lib/csv.php",
+                               "CsvParser" => "lib/csv.php",
+                               "DocumentHelper" => "lib/documenthelper.php",
+                               "Formula" => "src/formula.php",
+                               "HotCRPDocument" => "src/hotcrpdocument.php",
+                               "Ht" => "lib/ht.php",
+                               "LoginHelper" => "lib/login.php",
+                               "Mailer" => "src/mailer.php",
+                               "MeetingTracker" => "src/meetingtracker.php",
+                               "Message" => "lib/message.php",
+                               "Mimetype" => "lib/mimetype.php",
+                               "PaperActions" => "src/paperactions.php",
+                               "PaperColumn" => "src/papercolumn.php",
+                               "PaperInfo" => "src/paperinfo.php",
+                               "PaperList" => "src/paperlist.php",
+                               "PaperOption" => "src/paperoption.php",
+                               "PaperRank" => "src/rank.php",
+                               "PaperSearch" => "src/papersearch.php",
+                               "PaperStatus" => "src/paperstatus.php",
+                               "Qobject" => "lib/qobject.php",
+                               "ReviewForm" => "src/review.php",
+                               "S3Document" => "lib/s3document.php",
+                               "Tagger" => "lib/tagger.php",
+                               "Text" => "lib/text.php",
+                               "UnicodeHelper" => "lib/unicodehelper.php",
+                               "XlsxGenerator" => "lib/xlsx.php",
+                               "ZipDocument" => "lib/documenthelper.php");
+    if (($f = @$ConfAutoloads[$class_name]))
+        require_once("$ConfSitePATH/$f");
 }
 
 
