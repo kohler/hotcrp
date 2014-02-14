@@ -165,6 +165,9 @@ while true; do
     elif test "`echo "$DBNAME" | head -c 1`" = "."; then
 	echo 1>&2
 	echo "* The database name must not start with a period." 1>&2
+    elif test "$DBNAME" = mysql || expr "$DBNAME" : '.*_schema$' >/dev/null; then
+	echo 1>&2
+	echo "* Database name '$DBNAME' is reserved." 1>&2
     else
 	break
     fi
