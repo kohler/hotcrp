@@ -17,17 +17,8 @@ if (array_search(request_script_base(),
 // Redirect if options unavailable
 global $Opt;
 if (!@$Opt["loaded"] || @$Opt["missing"]) {
-    if (isset($_REQUEST["ajax"]) && $_REQUEST["ajax"]) {
-        if (isset($_REQUEST["jsontext"]) && $_REQUEST["jsontext"])
-            header("Content-Type: text/plain");
-        else
-            header("Content-Type: application/json");
-        echo "{\"error\":\"unconfigured installation\"}\n";
-    } else {
-        echo "<html><head><title>HotCRP error</title><head><body><h1>Unconfigured HotCRP installation</h1>";
-        echo "<p>HotCRP has been installed, but you haven’t yet configured a conference. You must run <code>Code/createdb.sh</code> to create a database for your conference. See <code>README.md</code> for further guidance.</p></body></html>\n";
-    }
-    exit;
+    require_once("$ConfSitePATH/src/multiconference.php");
+    multiconference_fail(false);
 }
 
 
@@ -37,8 +28,10 @@ if (!@$Conf) {
     $Opt["dsn"] = Conference::make_dsn($Opt);
     $Conf = new Conference($Opt["dsn"]);
 }
-if (!$Conf->dblink)
-    die("Unable to connect to database at " . Conference::sanitize_dsn($Opt["dsn"]) . "\n");
+if (!$Conf->dblink) {
+    require_once("$ConfSitePATH/src/multiconference.php");
+    multiconference_fail(true);
+}
 
 
 // How long before a session is automatically logged out?

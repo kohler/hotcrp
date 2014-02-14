@@ -5,7 +5,7 @@
 
 class Conference {
 
-    var $dblink;
+    var $dblink = null;
 
     var $settings;
     var $settingTexts;
@@ -43,9 +43,9 @@ class Conference {
 	global $Opt, $ConfMulticonf;
 
 	// unpack dsn and connect to database
-        list($this->dblink, $dbname) = self::connect_dsn($dsn);
-	if (!$this->dblink)
-            return;
+        $dbname = "__invalid__";
+        if ($dsn)
+            list($this->dblink, $dbname) = self::connect_dsn($dsn);
 
 	// clean up options
         // remove final slash from $Opt["paperSite"]
@@ -75,7 +75,8 @@ class Conference {
             $Opt["downloadPrefix"] = $confname . "-";
 
         // load current settings
-	$this->load_settings();
+	if ($this->dblink)
+            $this->load_settings();
     }
 
     static function make_dsn($opt) {
@@ -1736,7 +1737,7 @@ class Conference {
 	    $actionBar = actionBar();
 
 	$this->header_head($title);
-	echo "</head><body", ($id ? " id='$id'" : ""), " onload='hotcrp_load()'>\n";
+	echo "</head><body", ($id ? " id='$id'" : ""), ($Me ? " onload='hotcrp_load()'" : ""), ">\n";
 
         $this->scriptStuff .= "<script type=\"text/javascript\">"
             . "hotcrp_base=\"$ConfSiteBase\""
@@ -1754,17 +1755,20 @@ class Conference {
         // JavaScript's timezone offsets are the negative of PHP's
         $this->scriptStuff .= ";hotcrp_load.time($Now," . (-date("Z", $Now) / 60) . "," . (@$Opt["time24hour"] ? 1 : 0) . ")";
 
-	$dl = $Me->deadlines();
-        $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($dl) . ",\"" . hoturl("deadlines") . "\")";
+        if ($Me) {
+            $dl = $Me->deadlines();
+            $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($dl) . ",\"" . hoturl("deadlines") . "\")";
+        } else
+            $dl = array();
 
         // Register meeting tracker
-        $trackerowner = $Me->privChair
+        $trackerowner = $Me && $Me->privChair
             && ($trackerstate = $this->setting_json("tracker"))
             && $trackerstate->sessionid == session_id();
         if ($trackerowner)
             $this->scriptStuff .= ";hotcrp_deadlines.tracker(0)";
 
-        if ($Me->isPC)
+        if ($Me && $Me->isPC)
             $this->scriptStuff .= ";alltags.url=\"" . hoturl("search", "alltags=1") . "\"";
         $this->scriptStuff .= "</script>";
 
@@ -1780,7 +1784,7 @@ class Conference {
 	else
 	    echo "<a class='x' href='", hoturl("index"), "' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a></h1></div><div id='header_left_page'><h1>", $title;
 	echo "</h1></div><div id='header_right'>";
-	if ($Me->is_known_user()) {
+	if ($Me && $Me->is_known_user()) {
 	    $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
 	    if ($Me->contactId > 0) {
 		echo "<a class='q' href='", hoturl("profile"), "'><strong>",
@@ -1806,7 +1810,7 @@ class Conference {
 	// This is repeated in script.js:hotcrp_deadlines
 	$dlname = "";
 	$dltime = 0;
-	if ($dl["sub_open"]) {
+	if (@$dl["sub_open"]) {
 	    foreach (array("sub_reg" => "registration", "sub_update" => "update", "sub_sub" => "submission") as $subtype => $subname)
 		if (isset($dl["${subtype}_ingrace"]) || $Now <= defval($dl, $subtype, 0)) {
 		    $dlname = "Paper $subname deadline";
@@ -1845,7 +1849,7 @@ class Conference {
 	echo "</div>\n<div class='body'>\n";
 
 	// Callback for version warnings
-	if ($Me->privChair
+	if ($Me && $Me->privChair
 	    && (!isset($Me->_updatecheck) || $Me->_updatecheck + 20 <= $Now)
 	    && (!isset($Opt["updatesSite"]) || $Opt["updatesSite"])) {
 	    $m = defval($Opt, "updatesSite", "//hotcrp.lcdf.org/updates");
@@ -1872,7 +1876,7 @@ class Conference {
 	    defval($Opt, "extraFooter", ""),
 	    "<a href='http://read.seas.harvard.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software";
 	if (!defval($Opt, "noFooterVersion", 0)) {
-	    if ($Me->privChair) {
+	    if ($Me && $Me->privChair) {
 		echo " v", HOTCRP_VERSION;
 		if (is_dir("$ConfSitePATH/.git")) {
 		    $args = array();
