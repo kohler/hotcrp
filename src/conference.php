@@ -111,9 +111,14 @@ class Conference {
 	    $dbname = urldecode($m[4]);
 	} else
             $dblink = $dbname = null;
-	if ($dblink && !mysqli_connect_errno() && $dblink->select_db($dbname))
-            $dblink->set_charset("utf8");
-        else
+        if ($dblink && !mysqli_connect_errno()) {
+            // disallow reserved databases
+            if ($dbname == "mysql" || substr($dbname, -7) === "_schema") {
+                $dblink->close();
+                $dblink = null;
+            } else if ($dblink->select_db($dbname))
+                $dblink->set_charset("utf8");
+        } else
             $dblink = null;
         return array($dblink, $dbname);
     }

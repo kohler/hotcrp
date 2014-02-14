@@ -99,7 +99,9 @@ set_myargs "$DBUSER" "$PASSWORD"
 
 
 if ! (echo 'show databases;' | eval $MYSQL $myargs $FLAGS >/dev/null); then
+    echo 1>&2
     echo "* Could not run $MYSQL $myargs_redacted $FLAGS. Did you enter the right password?" 1>&2
+    echo 1>&2
     exit 1
 fi
 grants=`echo 'show grants;' | eval $MYSQL $myargs $FLAGS | grep -i -e create -e all | grep -i 'on \*\.\*'`
@@ -141,7 +143,7 @@ if test -n "$x"; then
 fi
 
 while true; do
-    echo_n "Enter database name (NO SPACES)"
+    if $batch; then echo_n "Database"; else echo_n "Enter database name (NO SPACES)"; fi
     if [ -z "$DBNAME" ]; then
 	test -n "$default_dbname" && echo_n " [default $default_dbname]"
 	echo_n ": "
@@ -154,19 +156,15 @@ while true; do
     x="`echo_dbname | tr -d a-zA-Z0-9_.-`"
     c="`echo_dbname | wc -c`"
     if test -z "$DBNAME"; then
-	echo 1>&2
-	echo "* You must enter a database name." 1>&2
+	echo "* Quitting." 1>&2
+	exit 1
     elif test -n "$x"; then
-	echo 1>&2
 	echo "* The database name must only contain characters in [-.a-zA-Z0-9_]." 1>&2
     elif test "$c" -gt 16; then
-	echo 1>&2
 	echo "* The database name can be at most 16 characters long." 1>&2
     elif test "`echo "$DBNAME" | head -c 1`" = "."; then
-	echo 1>&2
 	echo "* The database name must not start with a period." 1>&2
     elif test "$DBNAME" = mysql || expr "$DBNAME" : '.*_schema$' >/dev/null; then
-	echo 1>&2
 	echo "* Database name '$DBNAME' is reserved." 1>&2
     else
 	break
@@ -246,13 +244,13 @@ php_dbpass () {
 
 
 echo
-echo "+ echo 'show databases;' | $MYSQL $myargs_redacted $FLAGS | grep $DBNAME"
-echo 'show databases;' | eval $MYSQL $myargs $FLAGS >/dev/null || exit 1
-echo 'show databases;' | eval $MYSQL $myargs $FLAGS | grep $DBNAME >/dev/null 2>&1
+echo "+ echo 'show databases;' | $MYSQL $myargs_redacted $FLAGS -N | grep '^$DBNAME\$'"
+echo 'show databases;' | eval $MYSQL $myargs $FLAGS -N >/dev/null || exit 1
+echo 'show databases;' | eval $MYSQL $myargs $FLAGS -N | grep "^$DBNAME\$" >/dev/null 2>&1
 dbexists="$?"
-echo "+ echo 'select User from user group by User;' | $MYSQL $myargs_redacted $FLAGS mysql | grep $DBNAME"
-echo 'select User from user group by User;' | eval $MYSQL $myargs $FLAGS mysql >/dev/null || exit 1
-echo 'select User from user group by User;' | eval $MYSQL $myargs $FLAGS mysql | grep '^'$DBNAME'$' >/dev/null 2>&1
+echo "+ echo 'select User from user group by User;' | $MYSQL $myargs_redacted $FLAGS -N mysql | grep '^$DBNAME\$'"
+echo 'select User from user group by User;' | eval $MYSQL $myargs $FLAGS -N mysql >/dev/null || exit 1
+echo 'select User from user group by User;' | eval $MYSQL $myargs $FLAGS -N mysql | grep "^$DBNAME\$" >/dev/null 2>&1
 userexists="$?"
 createdbuser=y
 if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
