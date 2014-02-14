@@ -58,9 +58,10 @@ class Conference {
         if (!isset($Opt["sessionName"]) || $Opt["sessionName"] == "")
             $Opt["sessionName"] = $dbname;
         if ((!isset($Opt["longName"]) || $Opt["longName"] == "")
-            && (!isset($Opt["shortName"]) || $Opt["shortName"] == ""))
+            && (!isset($Opt["shortName"]) || $Opt["shortName"] == "")) {
+            $Opt["shortNameDefaulted"] = true;
             $Opt["longName"] = $Opt["shortName"] = $confname;
-        else if (!isset($Opt["longName"]) || $Opt["longName"] == "")
+        } else if (!isset($Opt["longName"]) || $Opt["longName"] == "")
             $Opt["longName"] = $Opt["shortName"];
         else if (!isset($Opt["shortName"]) || $Opt["shortName"] == "")
             $Opt["shortName"] = $Opt["longName"];

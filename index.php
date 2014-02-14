@@ -49,6 +49,59 @@ if ($Me->is_known_user() && isset($Me->fresh) && $Me->fresh === true) {
 }
 
 // check global system settings
+function admin_home_messages() {
+    global $Opt, $Conf;
+    $m = array();
+    $errmarker = "<span class=\"error\">Error:</span> ";
+    if (preg_match("/^(?:[1-4]\\.|5\\.[01])/", phpversion()))
+	$m[] = $errmarker . "HotCRP requires PHP version 5.2 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".";
+    if (get_magic_quotes_gpc())
+	$m[] = $errmarker . "The PHP <code>magic_quotes_gpc</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP’s <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_gpc</code> in your <code>php.ini</code> configuration file.";
+    if (get_magic_quotes_runtime())
+	$m[] = $errmarker . "The PHP <code>magic_quotes_runtime</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP’s <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_runtime</code> in your <code>php.ini</code> configuration file.";
+    if (defined("JSON_HOTCRP"))
+        $m[] = "Your PHP was built without JSON functionality. HotCRP is using its built-in replacements; the native functions would be faster.";
+    if ($Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
+	$m[] = "PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect.";
+    if (!function_exists("imagecreate"))
+	$m[] = $errmarker . "This PHP installation lacks support for the GD library, so HotCRP cannot generate score charts. You should update your PHP installation. For example, on Ubuntu Linux, install the <code>php5-gd</code> package.";
+    $result = $Conf->qx("show variables like 'max_allowed_packet'");
+    $max_file_size = ini_get_bytes("upload_max_filesize");
+    if (($row = edb_row($result))
+	&& $row[1] < $max_file_size
+	&& !$Opt["dbNoPapers"])
+	$m[] = $errmarker . "MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.";
+    // Weird options?
+    if (@$Opt["shortNameDefaulted"])
+	$m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the conference abbreviation</a> to a short name for your conference.";
+    else if (simplify_whitespace($Opt["shortName"]) != $Opt["shortName"])
+	$m[] = "The <a href=\"" . hoturl("settings", "group=msg") . "\">conference abbreviation</a> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more).";
+    // Any -100 preferences around?
+    $result = $Conf->qx($Conf->preferenceConflictQuery(false, "limit 1"));
+    if (($row = edb_row($result)))
+	$m[] = "PC members have indicated paper conflicts (using review preferences of &#8722;100 or less) that aren’t yet confirmed. <a href='" . hoturl_post("autoassign", "a=prefconflict&amp;assign=1") . "' class='nowrap'>Confirm these conflicts</a>";
+    // Weird URLs?
+    foreach (array("conferenceSite", "paperSite") as $k)
+	if (isset($Opt[$k]) && $Opt[$k] && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', $Opt[$k]))
+	    $m[] = $errmarker . "The <code>\$Opt[\"$k\"]</code> setting, ‘<code>" . htmlspecialchars($Opt[$k]) . "</code>’, is not a valid URL.  Edit the <code>conf/options.php</code> file to fix this problem.";
+    // Double-encoding bugs found?
+    if ($Conf->setting("bug_doubleencoding"))
+	$m[] = "Double-encoded URLs have been detected. Incorrect uses of Apache’s <code>mod_rewrite</code>, and other middleware, can encode URL parameters twice. This can cause problems, for instance when users log in via links in email. (“<code>a@b.com</code>” should be encoded as “<code>a%40b.com</code>”; a double encoding will produce “<code>a%2540b.com</code>”.) HotCRP has tried to compensate, but you really should fix the problem. For <code>mod_rewrite</code> add <a href='http://httpd.apache.org/docs/current/mod/mod_rewrite.html'>the <code>[NE]</code> option</a> to the relevant RewriteRule. <a href=\"" . hoturl_post("index", "clearbug=doubleencoding") . "\">(Clear&nbsp;this&nbsp;message)</a>";
+    // Unnotified reviews?
+    if ($Conf->setting("pcrev_assigntime", 0) > $Conf->setting("pcrev_informtime", 0)
+	&& $Conf->sversion >= 46) {
+	$assigntime = $Conf->setting("pcrev_assigntime");
+	$result = $Conf->qe("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1", "when searching for unnotified review assignments");
+	if (edb_nrows($result))
+	    $m[] = "PC review assignments have changed. You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>. <a href=\"" . hoturl_post("index", "clearnewpcrev=$assigntime") . "\">(Clear&nbsp;this&nbsp;message)</a>";
+	else
+	    $Conf->save_setting("pcrev_informtime", $assigntime);
+    }
+
+    if (count($m))
+        $Conf->warnMsg("<div>" . join("</div><div style='margin-top:0.5em'>", $m) . "</div>");
+}
+
 if ($Me->privChair) {
     if (isset($_REQUEST["clearbug"]) && check_post())
 	$Conf->save_setting("bug_" . $_REQUEST["clearbug"], null);
@@ -57,53 +110,7 @@ if ($Me->privChair) {
 	$Conf->save_setting("pcrev_informtime", $_REQUEST["clearnewpcrev"]);
     if (isset($_REQUEST["clearbug"]) || isset($_REQUEST["clearnewpcrev"]))
 	redirectSelf(array("clearbug" => null, "clearnewpcrev" => null));
-
-    if (preg_match("/^[1-4]\\./", phpversion()))
-	$Conf->warnMsg("HotCRP requires PHP version 5.2 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".");
-    if (get_magic_quotes_gpc())
-	$Conf->errorMsg("The PHP <code>magic_quotes_gpc</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP’s <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_gpc</code> in your <code>php.ini</code> configuration file.");
-    if (get_magic_quotes_runtime())
-	$Conf->errorMsg("The PHP <code>magic_quotes_runtime</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP’s <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_runtime</code> in your <code>php.ini</code> configuration file.");
-    if (defined("JSON_HOTCRP"))
-        $Conf->warnMsg("Your PHP was built without JSON functionality. HotCRP is using its built-in replacements, but you really want the native functions.");
-    if ($Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
-	$Conf->warnMsg("PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect.");
-    if (!function_exists("imagecreate"))
-        $Conf->warnMsg("Your PHP installation appears to lack GD support, which is required for drawing score graphs.  You may want to fix this problem and restart Apache.");
-    $result = $Conf->qx("show variables like 'max_allowed_packet'");
-    $max_file_size = ini_get_bytes("upload_max_filesize");
-    if (($row = edb_row($result))
-	&& $row[1] < $max_file_size
-	&& !$Opt["dbNoPapers"])
-	$Conf->warnMsg("MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.");
-    if (!function_exists("imagecreate"))
-	$Conf->warnMsg("This PHP installation lacks support for the GD library, so HotCRP cannot generate score charts. You should update your PHP installation. For example, on Ubuntu Linux, install the <code>php5-gd</code> package.");
-    // Any -100 preferences around?
-    $result = $Conf->qx($Conf->preferenceConflictQuery(false, "limit 1"));
-    if (($row = edb_row($result)))
-	$Conf->warnMsg("PC members have indicated paper conflicts (using review preferences of &minus;100 or less) that aren’t yet confirmed.  <a href='" . hoturl_post("autoassign", "a=prefconflict&amp;assign=1") . "' class='nowrap'>Confirm these conflicts</a>");
-    // Weird URLs?
-    foreach (array("conferenceSite", "paperSite") as $k)
-	if (isset($Opt[$k]) && $Opt[$k] && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', $Opt[$k]))
-	    $Conf->warnMsg("The <code>\$Opt[\"$k\"]</code> setting, <code>&laquo;" . htmlspecialchars($Opt[$k]) . "&raquo;</code>, is not a valid URL.  Edit the <code>conf/options.php</code> file to fix this problem.");
-    // Weird options?
-    if (!isset($Opt["shortName"]) || $Opt["shortName"] == "")
-	$Conf->warnMsg("The <code>\$Opt[\"shortName\"]</code> setting is missing. Edit the <code>conf/options.php</code> file to fix this problem.");
-    else if (simplify_whitespace($Opt["shortName"]) != $Opt["shortName"])
-	$Conf->warnMsg("The <code>\$Opt[\"shortName\"]</code> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more). Edit the <code>conf/options.php</code> file to fix this problem.");
-    // Double-encoding bugs found?
-    if ($Conf->setting("bug_doubleencoding"))
-	$Conf->warnMsg("Double-encoded URLs have been detected. Incorrect uses of Apache’s <code>mod_rewrite</code>, and other middleware, can encode URL parameters twice. This can cause problems, for instance when users log in via links in email. (“<code>a@b.com</code>” should be encoded as “<code>a%40b.com</code>”; a double encoding will produce “<code>a%2540b.com</code>”.) HotCRP has tried to compensate, but you really should fix the problem. For <code>mod_rewrite</code> add <a href='http://httpd.apache.org/docs/current/mod/mod_rewrite.html'>the <code>[NE]</code> option</a> to the relevant RewriteRule. <a href=\"" . hoturl_post("index", "clearbug=doubleencoding") . "\">(Clear&nbsp;this&nbsp;message)</a>");
-    // Unnotified reviews?
-    if ($Conf->setting("pcrev_assigntime", 0) > $Conf->setting("pcrev_informtime", 0)
-	&& $Conf->sversion >= 46) {
-	$assigntime = $Conf->setting("pcrev_assigntime");
-	$result = $Conf->qe("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1", "when searching for unnotified review assignments");
-	if (edb_nrows($result))
-	    $Conf->warnMsg("PC review assignments have changed. You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>. <a href=\"" . hoturl_post("index", "clearnewpcrev=$assigntime") . "\">(Clear&nbsp;this&nbsp;message)</a>");
-	else
-	    $Conf->save_setting("pcrev_informtime", $assigntime);
-    }
+    admin_home_messages();
 }
 
 
