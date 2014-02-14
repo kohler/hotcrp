@@ -10,7 +10,7 @@ require_once("init.php");
 // have an old version of the page lying around their directory. Don't run
 // that code; redirect to index.
 if (array_search(request_script_base(),
-                 array("login", "logout", "contactauthors")) !== false)
+                 array("account", "contactauthors", "contacts", "login", "logout")) !== false)
     go();
 
 

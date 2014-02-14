@@ -1,8 +1,0 @@
-<?php
-// contacts.php -- HotCRP people listing/editing page
-// HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
-// Distributed under an MIT-like license; see LICENSE
-
-require_once("src/initweb.php");
-go(hoturl("users", array("t" => defval($_REQUEST, "t"),
-                         "get" => defval($_REQUEST, "get"))));

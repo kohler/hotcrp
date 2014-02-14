@@ -45,14 +45,12 @@ mkdistdir <<EOF
 LICENSE
 NEWS
 README.md
-account.php
 assign.php
 autoassign.php
 bulkassign.php
 cacheable.php
 checkupdates.php
 comment.php
-contacts.php
 deadlines.php
 doc.php
 help.php
