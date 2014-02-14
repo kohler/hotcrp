@@ -237,7 +237,7 @@ matches, it constructs a conference name from the replacement pattern.
 For example, this setting will use "conf_CONFNAME" as the conference
 name for a URL like "http://CONFNAME.crap.com/":
 
-    $Opt["multiconferenceUrl"] = '[a-z]*//([^.]+)[.]crap[.]com[.]?/.* conf_$1';
+    $Opt["multiconferenceUrl"] = '\w+://([^./]+)[.]crap[.]com[.]?/ conf_$1';
 
 License
 -------

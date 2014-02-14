@@ -12,7 +12,7 @@ function set_multiconference() {
         if (@$Opt["multiconferenceUrl"]
             && ($base = request_absolute_uri_base(true))) {
             list($match, $replace) = explode(" ", $Opt["multiconferenceUrl"]);
-            if (preg_match("&\\A$match\\z&", $base, $m)) {
+            if (preg_match("`\\A$match`", $base, $m)) {
                 $ConfMulticonf = $replace;
                 for ($i = 1; $i < count($m); ++$i)
                     $ConfMulticonf = str_replace("\$$i", $m[$i], $ConfMulticonf);
