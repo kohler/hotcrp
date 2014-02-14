@@ -65,14 +65,19 @@ class Conference {
 
         // set sessionName and downloadPrefix
         $confname = @$ConfMulticonf ? $ConfMulticonf : $dbname;
-        if (!isset($Opt["sessionName"]))
+        if (!isset($Opt["sessionName"]) || $Opt["sessionName"] == "")
             $Opt["sessionName"] = $dbname;
-        if (!isset($Opt["longName"]))
-            $Opt["longName"] = defval($Opt, "shortName", $confname);
-        if (!isset($Opt["shortName"]))
-            $Opt["shortName"] = defval($Opt, "longName", $confname);
-        if (!isset($Opt["downloadPrefix"]))
+        if ((!isset($Opt["longName"]) || $Opt["longName"] == "")
+            && (!isset($Opt["shortName"]) || $Opt["shortName"] == ""))
+            $Opt["longName"] = $Opt["shortName"] = $confname;
+        else if (!isset($Opt["longName"]) || $Opt["longName"] == "")
+            $Opt["longName"] = $Opt["shortName"];
+        else if (!isset($Opt["shortName"]) || $Opt["shortName"] == "")
+            $Opt["shortName"] = $Opt["longName"];
+        if (!isset($Opt["downloadPrefix"]) || $Opt["downloadPrefix"] == "")
             $Opt["downloadPrefix"] = $confname . "-";
+        if (!isset($Opt["conferenceId"]) || $Opt["conferenceId"] == "")
+            $Opt["conferenceId"] = $confname;
 
         // load current settings
 	if ($this->dblink)

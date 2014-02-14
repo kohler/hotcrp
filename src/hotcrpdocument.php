@@ -105,7 +105,7 @@ class HotCRPDocument {
     public function prepare_storage($doc, $docinfo) {
         global $Opt;
         if (($s3 = self::s3_document())) {
-            $meta = json_encode(array("conf" => $Opt["shortName"],
+            $meta = json_encode(array("conf" => $Opt["conferenceId"],
                                       "pid" => (int) $docinfo->paperId));
             $s3->save(self::s3_filename($doc), $doc->content, $doc->mimetype,
                       array("hotcrp" => $meta));
@@ -127,7 +127,8 @@ class HotCRPDocument {
             $columns["paper"] = $doc->content;
         if ($Conf->sversion >= 45 && @$doc->filename)
             $columns["filename"] = $doc->filename;
-        return array("PaperStorage", "paperStorageId", $columns, "paper");
+        return array("PaperStorage", "paperStorageId", $columns,
+                     @$Opt["dbNoPapers"] ? null : "paper");
     }
 
     public function filestore_pattern($doc, $docinfo) {
