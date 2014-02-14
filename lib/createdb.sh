@@ -390,7 +390,8 @@ fi
 ##
 
 create_options () {
-    test -n "$minimal_options" && echo '<?php'
+    test -n "$minimal_options" && echo '<?php
+global $Opt;'
     test -z "$minimal_options" && awk 'BEGIN { p = 1 }
 /^\$Opt\[.db/ { p = 0 }
 { if (p) print }' < "${SRCDIR}${distoptions_file}"
