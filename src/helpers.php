@@ -1325,6 +1325,9 @@ function unparse_preference($preference, $expertise = null) {
 }
 
 function unparse_preference_span($preference, $topicInterestScore = 0) {
+    if (is_object($preference))
+        $preference = array(@$preference->reviewerPreference,
+                            @$preference->reviewerExpertise);
     if (@$preference[2] !== null)
 	$topicInterestScore = $preference[2];
     if ($preference[0] != 0)

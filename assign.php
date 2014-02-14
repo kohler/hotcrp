@@ -498,9 +498,12 @@ if ($t != "")
 
 // PC assignments
 if ($Me->canAdminister($prow)) {
+    $expertise = $Conf->sversion >= 69 ? "expertise" : "NULL";
     $result = $Conf->qe("select PCMember.contactId,
 	PaperConflict.conflictType,
-	PaperReview.reviewType,	coalesce(preference, 0) as preference,
+	PaperReview.reviewType,
+	coalesce(preference, 0) as reviewerPreference,
+	$expertise as reviewerExpertise,
 	coalesce(allReviews,'') as allReviews,
 	coalesce(PaperTopics.topicInterestScore,0) as topicInterestScore,
 	coalesce(PRR.paperId,0) as refused
@@ -555,8 +558,9 @@ if ($Me->canAdminister($prow)) {
 	    $pctext .= "<td id='ass$p->contactId' class='pctbname$revtype pctbl'>"
                 . str_replace(' ', "&nbsp;", Text::name_html($pc));
 	    if ($p->conflictType == 0
-		&& ($p->preference || $p->topicInterestScore))
-		$pctext .= unparse_preference_span($p->preference, $p->topicInterestScore);
+		&& ($p->reviewerPreference || $p->reviewerExpertise
+                    || $p->topicInterestScore))
+		$pctext .= unparse_preference_span($p);
 	    $pctext .= "</td><td class='pctbass'>"
                 . "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'>" . review_type_icon($revtype, false, "Assignment") . "<img class='next' src='" . hoturl_image("images/_.gif") . "' alt='&gt;' /></a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
