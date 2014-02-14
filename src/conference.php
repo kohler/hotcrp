@@ -1722,7 +1722,7 @@ class Conference {
             if (isset($Opt["jqueryURL"]))
                 $jquery = htmlspecialchars($Opt["jqueryURL"]);
             else if (@$Opt["jqueryCDN"])
-                $jquery = "http://code.jquery.com/jquery-1.10.2.min.js";
+                $jquery = "//code.jquery.com/jquery-1.10.2.min.js";
             else
                 $jquery = "${ConfSiteBase}cacheable$ConfSiteSuffix?file=jquery-1.10.2.min.js";
 	    $this->scriptStuff = "<script type=\"text/javascript\" src=\"$jquery\"></script>\n"
