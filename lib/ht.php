@@ -164,9 +164,19 @@ class Ht {
 
     static function entry($name, $value, $js = null) {
         $js = $js ? $js : array();
+        if (($temp = @$js["hottemptext"])) {
+            global $Conf;
+            if ($value === null || $value === "" || $value === $temp)
+                $js["class"] = trim(defval($js, "class", "") . " temptext");
+            if ($value === null || $value === "")
+                $value = $temp;
+            $temp = ' hottemptext="' . htmlspecialchars($temp) . '"';
+            $Conf->footerScript("hotcrp_load(hotcrp_load.temptext)", "temptext");
+        } else
+            $temp = "";
         return '<input type="text" name="' . $name . '" value="'
             . htmlspecialchars($value === null ? "" : $value) . '"'
-            . self::extra($js) . ' />';
+            . self::extra($js) . $temp . ' />';
     }
 
     static function textarea($name, $value, $js = null) {

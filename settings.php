@@ -17,7 +17,6 @@ $Error = array();
 $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST” <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
 $TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small";
-$temp_text_id = 0;
 
 $SettingGroups = array("acc" => array(
 			     "acct_addr" => "check",
@@ -906,6 +905,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
     // so we can join on later review changes
     if (value("resp_open") > 0 && $Conf->setting("resp_open") <= 0)
 	$Values["resp_open"] = $Now;
+    if (@($Values["opt.longName"][1] === "(same as abbreviation)"))
+        $Values["opt.longName"][1] = "";
 
     // update 'papersub'
     if (isset($settings["pc_seeall"])) {
@@ -1080,15 +1081,11 @@ function doSelect($name, $nametext, $varr, $tr = false) {
 
 function doTextRow($name, $text, $v, $size = 30,
                    $capclass = "lcaption", $tempText = "") {
-    global $Conf, $temp_text_id;
+    global $Conf;
     $settingname = (is_array($text) ? $text[0] : $text);
-    if ($tempText) {
-        ++$temp_text_id;
-        $Conf->footerScript("mktemptext('tptx$temp_text_id','$tempText')");
-        $ttid = " id='tptx$temp_text_id'";
-    } else
-        $ttid = "";
-    echo "<tr><td class='$capclass nowrap'>", setting_label($name, $settingname), "</td><td class='lentry'><input$ttid type='text' class='textlite' name='$name' value=\"", htmlspecialchars($v), "\" size='$size' onchange='hiliter(this)' />";
+    $js = array("class" => "textlite", "size" => $size,
+                "onchange" => "hiliter(this)", "hottemptext" => $tempText);
+    echo "<tr><td class='$capclass nowrap'>", setting_label($name, $settingname), "</td><td class='lentry'>", Ht::entry($name, $v, $js);
     if (is_array($text) && isset($text[2]))
 	echo $text[2];
     if (is_array($text) && $text[1])
@@ -1173,13 +1170,16 @@ function do_message($name, $description, $rows = 10) {
 function doMsgGroup() {
     global $Conf, $Opt;
 
-    echo "<div class='f-c'>", setting_label("opt.shortName", "Conference abbreviation"), "</div>
-<input class='textlite' name='opt.shortName' size='20' onchange='hiliter(this)' value=\"", htmlspecialchars($Opt["shortName"]), "\" />
-<div class='g'></div>\n";
+    echo "<div class='f-c'>", setting_label("opt.shortName", "Conference abbreviation"), "</div>\n",
+        Ht::entry("opt.shortName", $Opt["shortName"], array("class" => "textlite", "size" => 20, "onchange" => "hiliter(this)")),
+        "<div class='g'></div>\n";
 
-    echo "<div class='f-c'>", setting_label("opt.longName", "Full conference name"), "</div>
-<input class='textlite' name='opt.longName' size='70' onchange='hiliter(this)' value=\"", htmlspecialchars($Opt["longName"]), "\" />
-<div class='g'></div>\n";
+    $long = $Opt["longName"];
+    if ($long == $Opt["shortName"])
+        $long = "";
+    echo "<div class='f-c'>", setting_label("opt.longName", "Full conference name"), "</div>\n",
+        Ht::entry("opt.longName", $long, array("class" => "textlite", "size" => 70, "onchange" => "hiliter(this)", "hottemptext" => "(same as abbreviation)")),
+        "<div class='g'></div>\n";
 
     do_message("home", "Home page message");
     do_message("conflictdef", "Definition of conflict of interest", 5);
@@ -1259,7 +1259,7 @@ function checkOptionNameUnique($oname) {
 }
 
 function doOptGroupOption($o) {
-    global $Conf, $Error, $temp_text_id;
+    global $Conf, $Error;
 
     if (is_string($o))
         $o = new PaperOption(array("id" => $o,
@@ -1282,20 +1282,14 @@ function doOptGroupOption($o) {
             $o->selector = explode("\n", rtrim(defval($_REQUEST, "optv$id", "")));
     }
 
-    if ($id == "n") {
-        ++$temp_text_id;
-        $Conf->footerScript("mktemptext('tptx$temp_text_id','(Enter new option)')");
-        $ttid = " id='tptx$temp_text_id'";
-    } else
-        $ttid = "";
     echo "<tr><td><div class='f-contain'>\n",
 	"  <div class='f-i'>",
 	"<div class='f-c'>",
 	setting_label("optn$id", ($id === "n" ? "New option name" : "Option name")),
 	"</div>",
-	"<div class='f-e'><input$ttid type='text' class='textlite temptext",
-	($o->name == "(Enter new option)" ? "" : "off"),
-	"' name='optn$id' value=\"", htmlspecialchars($o->name), "\" size='50' onchange='hiliter(this)' /></div>\n",
+	"<div class='f-e'>",
+        Ht::entry("optn$id", $o->name, array("class" => "textlite", "hottemptext" => "(Enter new option)", "size" => 50, "onchange" => "hiliter(this)")),
+	"</div>\n",
 	"  <div class='f-i'>",
 	"<div class='f-c'>",
 	setting_label("optd$id", "Description"),
@@ -1488,7 +1482,7 @@ function doOptGroup() {
 
 // Reviews
 function do_track_permission($type, $question, $tnum, $thistrack) {
-    global $Conf, $Error, $temp_text_id;
+    global $Conf, $Error;
     if (count($Error) > 0) {
         $tclass = defval($_REQUEST, "${type}_track$tnum", "");
         $ttag = defval($_REQUEST, "${type}tag_track$tnum", "");
@@ -1497,24 +1491,21 @@ function do_track_permission($type, $question, $tnum, $thistrack) {
         $ttag = substr($thistrack->$type, 1);
     } else
         $tclass = $ttag = "";
-    $tempclass = "temptext" . ($ttag === "" ? "" : "off");
-    if ($ttag === "")
-        $ttag = "(tag)";
 
-    ++$temp_text_id;
     echo "<tr hotcrpfold=\"1\" class=\"fold", ($tclass == "" ? "c" : "o"), "\">",
         "<td class=\"lxcaption\">",
         setting_label("${type}_track$tnum", $question, "${type}_track$tnum"),
         "</td>",
         "<td>",
         Ht::select("${type}_track$tnum", array("" => "Whole PC", "+" => "PC members with tag:", "-" => "PC members without tag:"), $tclass,
-                   array("onchange" => "foldup(this,event,{f:this.selectedIndex==0})")),
+                   array("onchange" => "foldup(this,event,{f:this.selectedIndex==0});hiliter(this)")),
         " &nbsp;",
         Ht::entry("${type}tag_track$tnum", $ttag,
-                  array("class" => "fx textlite $tempclass",
-                        "id" => "${type}tag_track$tnum")),
+                  array("class" => "fx textlite",
+                        "id" => "${type}tag_track$tnum",
+                        "onchange" => "hiliter(this)",
+                        "hottemptext" => "(tag)")),
         "</td></tr>";
-    $Conf->footerScript("mktemptext('${type}tag_track$tnum','(tag)')");
 }
 
 function do_track($trackname, $tnum) {
@@ -1524,11 +1515,9 @@ function do_track($trackname, $tnum) {
         "><div class=\"trackname\" style=\"margin-bottom:3px\">";
     if ($trackname === "_")
         echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
-    else {
-        $tracktext = ($trackname === "" ? "(tag)" : $trackname);
-        echo "For papers with tag &nbsp;", Ht::entry("name_track$tnum", $tracktext, array("class" => "textlite temptext" . ($trackname === "" ? "" : "off"), "id" => "name_track$tnum")), ":";
-        $Conf->footerScript("mktemptext('name_track$tnum','(tag)')");
-    }
+    else
+        echo "For papers with tag &nbsp;",
+            Ht::entry("name_track$tnum", $trackname, array("class" => "textlite", "id" => "name_track$tnum", "hottemptext" => "(tag)")), ":";
     echo "</div>\n";
 
     $t = $Conf->setting_json("tracks");

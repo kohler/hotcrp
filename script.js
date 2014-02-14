@@ -358,6 +358,11 @@ hotcrp_load.opencomment = function () {
     if (location.hash.match(/^\#?commentnew$/))
 	open_new_comment();
 };
+hotcrp_load.temptext = function () {
+    var i, j = jQuery("input[hottemptext]");
+    for (i = 0; i != j.length; ++i)
+        mktemptext(j[i], j[i].getAttribute("hottemptext"));
+};
 
 
 function highlightUpdate(which, off) {
@@ -760,8 +765,7 @@ function staged_foreach(a, f, backwards) {
 // temporary text
 window.mktemptext = (function () {
 function setclass(e, on) {
-    e.className = e.className.replace(on ? /\btemptextoff\b/ : /\btemptext\b/,
-				      on ? "temptext" : "temptextoff");
+    jQuery(e).toggleClass("temptext", on);
 }
 function blank() {
 }
@@ -784,6 +788,8 @@ return function (e, text) {
 	}
 	onblur.call(this, evt);
     };
+    if (e.value == "")
+        e.value = text;
     setclass(e, e.value == text);
 };
 })();
@@ -2178,9 +2184,9 @@ function settings_add_track() {
     jQuery("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\"></div>");
     j = jQuery("#trackgroup" + i);
     j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
-    j = j.find(".temptext");
+    j = j.find("input[hottemptext]");
     for (i = 0; i != j.length; ++i)
-        mktemptext(j[i].id, jQuery(j[i]).val());
+        mktemptext(j[i].id, j[i].getAttribute("hottemptext"));
 }
 
 window.review_form_settings = (function () {

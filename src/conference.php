@@ -18,7 +18,7 @@ class Conference {
     private $scriptStuff = "";
     private $footerStuff = "";
     private $footerScripting = false;
-    private $footerMap = null;
+    private $footerMap = array();
     private $usertimeId = 1;
 
     private $tracks = null;
@@ -824,7 +824,11 @@ class Conference {
 	echo "<script type='text/javascript'>", $script, "</script>";
     }
 
-    function footerScript($script) {
+    function footerScript($script, $uniqueid = null) {
+        if ($uniqueid && @$this->footerMap[$uniqueid])
+            return;
+        else if ($uniqueid)
+            $this->footerMap[$uniqueid] = true;
 	if ($script != "") {
 	    if (!$this->footerScripting) {
 		$this->footerStuff .= "<script type='text/javascript'>";
@@ -836,17 +840,14 @@ class Conference {
     }
 
     function footerHtml($html, $uniqueid = null) {
+        if ($uniqueid && @$this->footerMap[$uniqueid])
+            return;
+        else if ($uniqueid)
+            $this->footerMap[$uniqueid] = true;
 	if ($this->footerScripting) {
 	    $this->footerStuff .= "</script>";
 	    $this->footerScripting = false;
 	}
-        if ($uniqueid) {
-            if (!$this->footerMap)
-                $this->footerMap = array();
-            if (isset($this->footerMap[$uniqueid]))
-                return;
-            $this->footerMap[$uniqueid] = true;
-        }
 	$this->footerStuff .= $html;
     }
 
