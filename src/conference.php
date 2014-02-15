@@ -40,39 +40,17 @@ class Conference {
     const PCSEEREV_UNLESSANYINCOMPLETE = 4;
 
     function __construct($dsn) {
-	global $Opt, $ConfMulticonf;
-
-	// unpack dsn and connect to database
+	global $Opt, $ConfId;
+	// unpack dsn, connect to database, load current settings
         $dbname = "__invalid__";
         if ($dsn)
-            list($this->dblink, $dbname) = self::connect_dsn($dsn);
-
-	// clean up options
-        // remove final slash from $Opt["paperSite"]
-        if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
-            $Opt["paperSite"] = request_absolute_uri_dir();
-	$Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
-
-        // set sessionName and downloadPrefix
-        $confname = @$ConfMulticonf ? $ConfMulticonf : $dbname;
+            list($this->dblink, $ConfId) = self::connect_dsn($dsn);
         if (!isset($Opt["sessionName"]) || $Opt["sessionName"] == "")
-            $Opt["sessionName"] = $dbname;
-        if ((!isset($Opt["longName"]) || $Opt["longName"] == "")
-            && (!isset($Opt["shortName"]) || $Opt["shortName"] == "")) {
-            $Opt["shortNameDefaulted"] = true;
-            $Opt["longName"] = $Opt["shortName"] = $confname;
-        } else if (!isset($Opt["longName"]) || $Opt["longName"] == "")
-            $Opt["longName"] = $Opt["shortName"];
-        else if (!isset($Opt["shortName"]) || $Opt["shortName"] == "")
-            $Opt["shortName"] = $Opt["longName"];
-        if (!isset($Opt["downloadPrefix"]) || $Opt["downloadPrefix"] == "")
-            $Opt["downloadPrefix"] = $confname . "-";
-        if (!isset($Opt["conferenceId"]) || $Opt["conferenceId"] == "")
-            $Opt["conferenceId"] = $confname;
-
-        // load current settings
+            $Opt["sessionName"] = $ConfId;
 	if ($this->dblink)
             $this->load_settings();
+        else
+            $this->crosscheck_options();
     }
 
     static function make_dsn($opt) {
@@ -191,6 +169,7 @@ class Conference {
         }
 
         $this->crosscheck_settings();
+        $this->crosscheck_options();
     }
 
     private function crosscheck_settings() {
@@ -244,6 +223,29 @@ class Conference {
                     $this->_track_tags[] = $k;
         } else
             $this->tracks = $this->_track_tags = null;
+    }
+
+    private function crosscheck_options() {
+        global $Opt, $ConfId, $ConfMulticonf;
+        // remove final slash from $Opt["paperSite"]
+        if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
+            $Opt["paperSite"] = request_absolute_uri_dir();
+	$Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
+
+        // set sessionName and downloadPrefix
+        $confname = @$ConfMulticonf ? $ConfMulticonf : $ConfId;
+        if ((!isset($Opt["longName"]) || $Opt["longName"] == "")
+            && (!isset($Opt["shortName"]) || $Opt["shortName"] == "")) {
+            $Opt["shortNameDefaulted"] = true;
+            $Opt["longName"] = $Opt["shortName"] = $confname;
+        } else if (!isset($Opt["longName"]) || $Opt["longName"] == "")
+            $Opt["longName"] = $Opt["shortName"];
+        else if (!isset($Opt["shortName"]) || $Opt["shortName"] == "")
+            $Opt["shortName"] = $Opt["longName"];
+        if (!isset($Opt["downloadPrefix"]) || $Opt["downloadPrefix"] == "")
+            $Opt["downloadPrefix"] = $confname . "-";
+        if (!isset($Opt["conferenceId"]) || $Opt["conferenceId"] == "")
+            $Opt["conferenceId"] = $confname;
     }
 
     function setting($name, $defval = false) {
@@ -453,6 +455,8 @@ class Conference {
         if ($change) {
             $this->deadline_cache = null;
             $this->crosscheck_settings();
+            if (str_starts_with($name, "opt."))
+                $this->crosscheck_options();
         }
         return $change;
     }

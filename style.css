@@ -171,6 +171,9 @@ span.lgsep {
 
 
 /* generic vertical styles */
+div.lg { /* large gap */
+	margin: 1.5em 0;
+}
 div.g { /* small gap */
 	margin: 0.65em 0;
 }

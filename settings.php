@@ -24,6 +24,8 @@ $SettingGroups = array("acc" => array(
 		       "msg" => array(
 			     "opt.shortName" => "simplestring",
 			     "opt.longName" => "simplestring",
+                             "opt.contactName" => "simplestring",
+                             "opt.contactEmail" => "emailstring",
 			     "msg.home" => "htmlstring",
 			     "msg.conflictdef" => "htmlstring",
 			     "next" => "sub"),
@@ -145,7 +147,8 @@ $SettingText = array(
 	"final_done" => "Final version upload hard deadline",
 	"msg.home" => "Home page message",
 	"msg.conflictdef" => "Definition of conflict of interest",
-	"mailbody_requestreview" => "Mail template for external review requests"
+	"mailbody_requestreview" => "Mail template for external review requests",
+        "opt.contactEmail" => "Primary administrator email"
 	);
 
 function parseGrace($v) {
@@ -243,6 +246,12 @@ function parseValue($name, $type) {
     } else if ($type == "simplestring") {
 	$v = simplify_whitespace($v);
 	return ($v == "" ? 0 : array(0, $v));
+    } else if ($type == "emailstring") {
+        $v = trim($v);
+        if (validateEmail($v))
+            return ($v == "" ? 0 : array(0, $v));
+        else
+            $err = $SettingText[$name] . ": invalid email.";
     } else if ($type == "htmlstring") {
 	if (($v = CleanHTML::clean($v, $err)) === false)
 	    $err = $SettingText[$name] . ": $err";
@@ -1044,6 +1053,14 @@ function setting_data($name, $defval = null) {
 	return defval($Conf->settingTexts, $name, $defval);
 }
 
+function opt_data($name, $defval = "") {
+    global $Error, $Opt;
+    if (count($Error) > 0)
+        return defval($_REQUEST, "opt.$name", $defval);
+    else
+        return defval($Opt, $name, $defval);
+}
+
 function doCheckbox($name, $text, $tr = false, $js = "hiliter(this)") {
     $x = setting($name);
     echo ($tr ? "<tr><td class='nowrap'>" : ""),
@@ -1171,15 +1188,25 @@ function doMsgGroup() {
     global $Conf, $Opt;
 
     echo "<div class='f-c'>", setting_label("opt.shortName", "Conference abbreviation"), "</div>\n",
-        Ht::entry("opt.shortName", $Opt["shortName"], array("class" => "textlite", "size" => 20, "onchange" => "hiliter(this)")),
+        Ht::entry("opt.shortName", opt_data("shortName"), array("class" => "textlite", "size" => 20, "onchange" => "hiliter(this)")),
         "<div class='g'></div>\n";
 
-    $long = $Opt["longName"];
-    if ($long == $Opt["shortName"])
+    $long = opt_data("longName");
+    if ($long == opt_data("shortName"))
         $long = "";
     echo "<div class='f-c'>", setting_label("opt.longName", "Full conference name"), "</div>\n",
         Ht::entry("opt.longName", $long, array("class" => "textlite", "size" => 70, "onchange" => "hiliter(this)", "hottemptext" => "(same as abbreviation)")),
+        "<div class='lg'></div>\n";
+
+    echo "<div class='f-c'>", setting_label("opt.contactName", "Name of primary administrator"), "</div>\n",
+        Ht::entry("opt.contactName", opt_data("contactName"), array("class" => "textlite", "size" => 50, "onchange" => "hiliter(this)")),
         "<div class='g'></div>\n";
+
+    echo "<div class='f-c'>", setting_label("opt.contactEmail", "Primary administrator email"), "</div>\n",
+        Ht::entry("opt.contactEmail", opt_data("contactEmail"), array("class" => "textlite", "size" => 40, "onchange" => "hiliter(this)")),
+        "<div class='ug'></div>\n",
+        "<div class='hint'>The primary administrator is listed as the conference contact in system emails.</div>",
+        "<div class='lg'></div>\n";
 
     do_message("home", "Home page message");
     do_message("conflictdef", "Definition of conflict of interest", 5);

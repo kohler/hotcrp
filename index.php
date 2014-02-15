@@ -71,11 +71,13 @@ function admin_home_messages() {
 	&& $row[1] < $max_file_size
 	&& !$Opt["dbNoPapers"])
 	$m[] = $errmarker . "MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.";
-    // Weird options?
+    // Conference names
     if (@$Opt["shortNameDefaulted"])
-	$m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the conference abbreviation</a> to a short name for your conference.";
+	$m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the conference abbreviation</a> to a short name for your conference, such as “OSDI ’14”.";
     else if (simplify_whitespace($Opt["shortName"]) != $Opt["shortName"])
 	$m[] = "The <a href=\"" . hoturl("settings", "group=msg") . "\">conference abbreviation</a> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more).";
+    if (!@$Opt["contactName"] || !@$Opt["contactEmail"])
+        $m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the primary administrator’s name and email</a> so submitters know who to contact if things go wrong.";
     // Any -100 preferences around?
     $result = $Conf->qx($Conf->preferenceConflictQuery(false, "limit 1"));
     if (($row = edb_row($result)))
