@@ -21,7 +21,7 @@ class Contact {
     public $password_type = 0;
     public $password_plaintext = "";
     public $disabled = false;
-    var $note;
+    private $data_ = null;
     var $defaultWatch = WATCH_COMMENT;
 
     // Address information (loaded separately)
@@ -116,6 +116,7 @@ class Contact {
 	    $roles |= self::ROLE_CHAIR;
         $c->assign_roles($roles);
         $c->contactTags = defval($o, "contactTags", null);
+        $c->data_ = defval($o, "data", null);
 	return $c;
     }
 
@@ -410,8 +411,7 @@ class Contact {
 	$this->firstName = simplify_whitespace($this->firstName);
 	$this->lastName = simplify_whitespace($this->lastName);
 	foreach (array("email", "preferredEmail", "affiliation",
-		       "voicePhoneNumber", "note",
-		       "addressLine1", "addressLine2", "city", "state",
+		       "voicePhoneNumber", "addressLine1", "addressLine2", "city", "state",
 		       "zipCode", "country")
 		 as $k)
 	    if ($this->$k)
@@ -465,6 +465,14 @@ class Contact {
 	}
         if ($Conf->sversion >= 47)
             $qa .= ", disabled=" . ($this->disabled ? 1 : 0);
+        if ($Conf->sversion >= 71) {
+            if (!$this->data_)
+                $qa .= ", data=NULL";
+            else if (is_string($this->data_))
+                $qa .= ", data='" . sqlq($this->data_) . "'";
+            else if (is_object($this->data_))
+                $qa .= ", data='" . sqlq(json_encode($this->data_)) . "'";
+        }
 	$query = sprintf("update ContactInfo set firstName='%s', lastName='%s',
 		email='%s', affiliation='%s', voicePhoneNumber='%s',
 		password='%s', collaborators='%s'$qa
@@ -576,10 +584,10 @@ class Contact {
         if ($this->password_type == 0)
             $this->password_plaintext = $this->password;
         $this->disabled = !!defval($row, "disabled", 0);
-        $this->note = $row->note;
         $this->collaborators = $row->collaborators;
         $this->defaultWatch = defval($row, "defaultWatch", 0);
         $this->contactTags = defval($row, "contactTags", null);
+        $this->data_ = defval($row, "data", null);
         $this->assign_roles($row->roles);
 
         $this->trim();

@@ -596,4 +596,12 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table Paper drop column `pcPaper`")
         && $Conf->ql("update Settings set value=70 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 70;
+    if ($Conf->settings["allowPaperOption"] == 70
+        && $Conf->ql("alter table ContactInfo modify `voicePhoneNumber` varbinary(256) DEFAULT NULL")
+        && $Conf->ql("alter table ContactInfo modify `faxPhoneNumber` varbinary(256) DEFAULT NULL")
+        && $Conf->ql("alter table ContactInfo modify `collaborators` varbinary(8192) DEFAULT NULL")
+        && $Conf->ql("alter table ContactInfo drop column `note`")
+        && $Conf->ql("alter table ContactInfo add `data` varbinary(32767) DEFAULT NULL")
+        && $Conf->ql("update Settings set value=71 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 71;
 }

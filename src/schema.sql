@@ -107,17 +107,17 @@ CREATE TABLE `ContactInfo` (
   `email` varchar(120) NOT NULL,
   `preferredEmail` varchar(120) DEFAULT NULL,
   `affiliation` varchar(2048) NOT NULL DEFAULT '',
-  `voicePhoneNumber` varchar(2048) NOT NULL DEFAULT '',
-  `faxPhoneNumber` varchar(2048) NOT NULL DEFAULT '',
+  `voicePhoneNumber` varchar(256) DEFAULT NULL,
+  `faxPhoneNumber` varchar(256) DEFAULT NULL,
   `password` varbinary(2048) NOT NULL,
-  `note` varbinary(4096) DEFAULT NULL,
-  `collaborators` varbinary(32767) DEFAULT NULL,
+  `collaborators` varbinary(8192) DEFAULT NULL,
   `creationTime` int(11) NOT NULL DEFAULT '0',
   `lastLogin` int(11) NOT NULL DEFAULT '0',
   `defaultWatch` int(11) NOT NULL DEFAULT '2',
   `roles` tinyint(1) NOT NULL DEFAULT '0',
   `disabled` tinyint(1) NOT NULL DEFAULT '0',
   `contactTags` varbinary(4096) DEFAULT NULL,
+  `data` varbinary(32767) DEFAULT NULL,
   PRIMARY KEY (`contactId`),
   UNIQUE KEY `contactId` (`contactId`),
   UNIQUE KEY `contactIdRoles` (`contactId`,`roles`),
@@ -566,7 +566,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 70);
+insert into Settings (name, value) values ('allowPaperOption', 71);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
