@@ -21,6 +21,7 @@ $TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small";
 $SettingList = array("acct_addr" => "checkbox",
                      "au_seerev" => 2,
                      "banal" => "xspecial",
+                     "clickthrough_submit" => "htmlstring",
                      "cmt_always" => "checkbox",
                      "decisions" => "xspecial",
                      "extrev_chairreq" => "checkbox",
@@ -138,6 +139,7 @@ $SettingText = array(
 	"msg.conflictdef" => "Definition of conflict of interest",
         "msg.responseinstructions" => "Authors’ response instructions",
         "msg.revprefdescription" => "Review preference instructions",
+        "clickthrough_submit" => "Clickthrough submission terms",
 	"mailbody_requestreview" => "Mail template for external review requests",
         "opt.contactEmail" => "Primary administrator email"
 	);
@@ -193,7 +195,7 @@ function expandMailTemplate($name, $default) {
 }
 
 function parseValue($name, $type) {
-    global $SettingText, $Error, $Highlight;
+    global $SettingText, $Error, $Highlight, $Now;
 
     if (!isset($_REQUEST[$name]))
 	return null;
@@ -242,7 +244,7 @@ function parseValue($name, $type) {
 	if (($v = CleanHTML::clean($v, $err)) === false)
 	    $err = $SettingText[$name] . ": $err";
 	else
-	    return ($v == "" ? 0 : array(0, $v));
+	    return ($v == "" ? 0 : array($Now, $v));
     } else if (is_int($type)) {
 	if (ctype_digit($v) && $v >= 0 && $v <= $type)
 	    return intval($v);
@@ -1167,24 +1169,26 @@ function doAccGroup() {
 }
 
 // Messages
-function do_message($name, $description, $rows = 10) {
+function do_message($name, $description, $rows = 10, $hint = "") {
     $base = $name;
-    if (($p = strrpos($name, ".")))
+    if (($p = strrpos($name, "."))
+        && str_starts_with($name, "msg.")
+        && $p !== 3)
         $base = substr($name, 0, $p);
-    $default = Message::default_html($name);
-    $current = setting_data("msg.$base", $default);
+    $default = Message::default_html(str_starts_with($name, "msg.") ? substr($name, 4) : $name);
+    $current = setting_data($base, $default);
     echo '<div class="fold', ($current == $default ? "c" : "o"),
         '" hotcrpfold="yes">',
         '<div class="f-c childfold" onclick="return foldup(this,event)">',
         '<a class="q fn" href="#" onclick="return foldup(this,event)">',
-        expander(true), setting_label("msg.$base", $description),
+        expander(true), setting_label($base, $description),
         '</a><a class="q fx" href="#" onclick="return foldup(this,event)">',
-        expander(false), setting_label("msg.$base", $description),
+        expander(false), setting_label($base, $description),
         '</a> <span class="f-cx fx">(HTML allowed)</span></div>',
-        '<textarea class="textlite fx" name="msg.', $base, '" cols="80"',
+        $hint,
+        '<textarea class="textlite fx" name="', $base, '" cols="80"',
         ' rows="', $rows, '" onchange="hiliter(this)">',
-        htmlspecialchars(setting_data("msg.$base",
-                                      Message::default_html($name))),
+        htmlspecialchars($current),
         '</textarea></div><div class="g"></div>', "\n";
 }
 
@@ -1212,11 +1216,13 @@ function doMsgGroup() {
         "<div class='hint'>The primary administrator is listed as the conference contact in system emails.</div>",
         "<div class='lg'></div>\n";
 
-    do_message("home", "Home page message");
-    do_message("conflictdef", "Definition of conflict of interest", 5);
-    do_message($Conf->has_topics() ? "revprefdescription.withtopics" : "revprefdescription",
+    do_message("msg.home", "Home page message");
+    do_message("clickthrough_submit", "Clickthrough submission terms", 10,
+               "<div class=\"hint fx\">Users will be forced to “accept” these terms before they can edit a paper. Use HTML, and consider including a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
+    do_message("msg.conflictdef", "Definition of conflict of interest", 5);
+    do_message($Conf->has_topics() ? "msg.revprefdescription.withtopics" : "msg.revprefdescription",
                "Review preference instructions", 20);
-    do_message($Conf->setting("resp_words", 500) > 0 ? "responseinstructions.wordlimit" : "responseinstructions",
+    do_message($Conf->setting("resp_words", 500) > 0 ? "msg.responseinstructions.wordlimit" : "msg.responseinstructions",
                "Authors’ response instructions");
 }
 

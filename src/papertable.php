@@ -1760,6 +1760,65 @@ class PaperTable {
 	echo "</div>\n";
     }
 
+    private function _echo_clickthrough($form, $ctype, $ctime) {
+        global $Conf;
+        echo $form, "<div class='aahc'>", $Conf->setting_data("clickthrough_$ctype");
+        $buttons = array(Ht::submit("clickthrough_accept", "Accept", array("class" => "bb")),
+                         Ht::submit("clickthrough_decline", "Decline", array("class" => "b")));
+        echo "<div class='g'></div>",
+            Ht::hidden("clickthrough", $ctype),
+            Ht::hidden("clickthrough_time", $ctime),
+            Ht::actions($buttons), "</div></form>";
+    }
+
+    private function _echo_editable_body($form) {
+        global $Conf, $Me;
+        $prow = $this->prow;
+
+        $spacer = "<div class='g'></div>\n\n";
+        echo $form, "<div class='aahc'>";
+        $this->canUploadFinal = $prow && $prow->outcome > 0
+            && ($Me->canSubmitFinalPaper($prow, $whyNot, true)
+                || defval($whyNot, "deadline") == "final_done");
+
+        if (($m = $this->editMessage()))
+            echo $m, $spacer;
+
+        $this->editable_title();
+        $this->editable_submission(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0);
+        $this->editable_options(array("near_submission" => true));
+
+        // Authorship
+        echo $spacer;
+        $this->editable_authors();
+        if (!$prow)
+            $this->editable_new_contact_author();
+        else
+            $this->editable_contact_author(false);
+        if ($Conf->subBlindOptional() && $this->editable !== "f")
+            $this->editable_anonymity();
+
+        echo $spacer;
+        $this->editable_abstract();
+
+        // Topics and options
+        echo $spacer;
+        $this->editable_topics();
+        $this->editable_options(array("normal" => true, "highlight" => true));
+
+        // Potential conflicts
+        if ($this->editable !== "f" || $this->admin) {
+            $this->editable_pc_conflicts();
+            $this->editable_collaborators();
+        }
+
+        // Submit button
+        echo $spacer;
+        $this->echoActions();
+
+        echo "</div></form>";
+    }
+
     function paptabBegin() {
 	global $Conf, $Me;
 	$prow = $this->prow;
@@ -1798,49 +1857,12 @@ class PaperTable {
 
 	$this->echoDivEnter();
 	if ($this->editable) {
-	    $spacer = "<div class='g'></div>\n\n";
-	    echo $form, "<div class='aahc'>";
-	    $this->canUploadFinal = $prow && $prow->outcome > 0
-		&& ($Me->canSubmitFinalPaper($prow, $whyNot, true)
-		    || defval($whyNot, "deadline") == "final_done");
-
-	    if (($m = $this->editMessage()))
-		echo $m, $spacer;
-
-	    $this->editable_title();
-	    $this->editable_submission(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0);
-	    $this->editable_options(array("near_submission" => true));
-
-	    // Authorship
-	    echo $spacer;
-	    $this->editable_authors();
-	    if (!$prow)
-		$this->editable_new_contact_author();
-	    else
-		$this->editable_contact_author(false);
-	    if ($Conf->subBlindOptional() && $this->editable !== "f")
-		$this->editable_anonymity();
-
-	    echo $spacer;
-	    $this->editable_abstract();
-
-	    // Topics and options
-	    echo $spacer;
-	    $this->editable_topics();
-	    $this->editable_options(array("normal" => true, "highlight" => true));
-
-	    // Potential conflicts
-	    if ($this->editable !== "f" || $this->admin) {
-		$this->editable_pc_conflicts();
-		$this->editable_collaborators();
-	    }
-
-	    // Submit button
-	    echo $spacer;
-	    $this->echoActions();
-
-	    echo "</div></form>";
-
+            if (!$Me->privChair
+                && @($ctime = $Conf->setting("clickthrough_submit"))
+                && @($Me->data("clickthrough_submit") < $ctime))
+                $this->_echo_clickthrough($form, "submit", $ctime);
+            else
+                $this->_echo_editable_body($form);
 	} else {
 	    if ($this->mode == "pe" && ($m = $this->editMessage()))
 		echo $m, "<div class='g'></div>\n";

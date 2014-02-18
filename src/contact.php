@@ -405,6 +405,36 @@ class Contact {
         return $new_ntokens != $old_ntokens;
     }
 
+    function data($key = null) {
+        if ($this->data_ && is_string($this->data_))
+            $this->data_ = json_decode($this->data_, true);
+        if (!$key)
+            return $this->data_;
+        else if (!$this->data_)
+            return null;
+        else
+            return @$this->data_[$key];
+    }
+
+    function save_data($key, $value) {
+        global $Conf;
+        if ($this->data_ && is_string($this->data_))
+            $this->data_ = json_decode($this->data_, true);
+        $old = $this->data_ ? json_encode($this->data_) : "NULL";
+        if ($value !== null) {
+            if (!$this->data_)
+                $this->data_ = array();
+            $this->data_[$key] = $value;
+        } else if ($this->data_) {
+            unset($this->data_[$key]);
+            if (!count($this->data_))
+                $this->data_ = null;
+        }
+        $new = $this->data_ ? json_encode($this->data_) : "NULL";
+        if ($old !== $new)
+            $Conf->qe("update ContactInfo set data=" . ($this->data_ ? "'" . sqlq($new) . "'" : $new) . " where contactId=" . $this->contactId);
+    }
+
     function trim() {
 	$this->contactId = (int) trim($this->contactId);
 	$this->visits = trim($this->visits);
