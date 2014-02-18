@@ -432,9 +432,6 @@ class PaperList extends BaseList {
 			      array("id" => "plact${nlll}_d",
 				    "onchange" => "plactions_dofold()"))
 		. "<span class='fx'> &nbsp;for &nbsp;";
-	    // <option value='-2' disabled='disabled'></option>
-	    // <option value='xpcpaper'>Mark as PC-authored</option>
-	    // <option value='xunpcpaper'>Mark as not PC-authored</option>
 	    $pc = pcMembers();
 	    $sel_opt = array();
 	    foreach ($pc as $id => $row)

@@ -196,7 +196,6 @@ CREATE TABLE `Paper` (
   `timeSubmitted` int(11) NOT NULL DEFAULT '0',
   `timeWithdrawn` int(11) NOT NULL DEFAULT '0',
   `timeFinalSubmitted` int(11) NOT NULL DEFAULT '0',
-  `pcPaper` tinyint(1) NOT NULL DEFAULT '0',
   `paperStorageId` int(11) NOT NULL DEFAULT '0',
   `sha1` varbinary(20) NOT NULL DEFAULT '',
   `finalPaperStorageId` int(11) NOT NULL DEFAULT '0',
@@ -567,7 +566,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 69);
+insert into Settings (name, value) values ('allowPaperOption', 70);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags

@@ -1217,8 +1217,6 @@ class PaperTable {
 	foreach ($pcm as $id => $p)
 	    if (defval($conflict, $id))
 		$pcconfs[] = Text::name_html($p);
-	if ($this->prow->pcPaper)
-	    $pcconfs[] = "<b>PC paper</b>";
 	if (!count($pcconfs))
 	    $pcconfs[] = "None";
 

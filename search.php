@@ -854,9 +854,6 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
 	$t = (in_array($_REQUEST["t"], array("acc", "s")) ? $_REQUEST["t"] : "all");
 	$q = join($papersel, "+");
 	go(hoturl("autoassign", "pap=" . join($papersel, "+") . "&t=$t&q=$q"));
-    } else if ($mt == "xpcpaper" || $mt == "xunpcpaper") {
-	$Conf->qe("update Paper set pcPaper=" . ($mt == "xpcpaper" ? 1 : 0) . " where " . paperselPredicate($papersel), "while marking PC papers");
-	$Conf->log("Change PC paper status", $Me, $papersel);
     } else if (!$mpc || !($pc = Contact::find_by_email($mpc)))
 	$Conf->errorMsg("“" . htmlspecialchars($mpc) . "” is not a PC member.");
     else if ($mt == "conflict" || $mt == "unconflict") {
