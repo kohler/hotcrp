@@ -967,7 +967,7 @@ class PaperTable {
 	at the authors’ own institutions.";
 	else
 	    echo "List people and institutions with which the authors have
-	conflicts of interest.  ", Message::html("conflictdef"), "
+	conflicts of interest. ", $Conf->message_html("conflictdef"), "
 	Be sure to include conflicted <a href='", hoturl("users", "t=pc"), "'>PC members</a>.
 	We use this information when assigning PC and external reviews.";
 	echo "  List one conflict per line.  For example: &ldquo;<tt>Jelena Markovic (EPFL)</tt>&rdquo; or, for a whole institution, &ldquo;<tt>EPFL</tt>&rdquo;.</div>",
@@ -1190,7 +1190,7 @@ class PaperTable {
 	}
 
 	echo $this->editable_papt("pcconf", "PC conflicts"),
-	    "<div class='paphint'>Select the PC members who have conflicts of interest with this paper.  ", Message::html("conflictdef"), "</div>\n",
+	    "<div class='paphint'>Select the PC members who have conflicts of interest with this paper. ", $Conf->message_html("conflictdef"), "</div>\n",
 	    "<div class='papv'", $tclass, "><tr>", $topen;
 	$n = ($selectors
 	      ? intval((count($pcconfs) + 1) / 2)

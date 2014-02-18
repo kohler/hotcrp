@@ -296,14 +296,10 @@ class CommentView {
 	    return;
 	}
 
-        echo '<div class="hint">';
         $wordlimit = $Conf->setting("resp_words", 500);
-        if ($wordlimit > 0)
-            echo Message::html("responseinstructions.wordlimit",
-                               array("wordlimit" => $wordlimit));
-        else
-            echo Message::html("responseinstructions");
-        echo "</div>\n";
+        echo '<div class="hint">',
+            $Conf->message_html("responseinstructions", array("wordlimit" => $wordlimit)),
+            "</div>\n";
         if (!$prow->has_author($Me))
             echo "<div class='hint'>Although you aren’t a contact for this paper, as an administrator you can edit the authors’ response.</div>\n";
 

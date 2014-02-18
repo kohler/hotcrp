@@ -52,7 +52,7 @@ $SettingList = array("acct_addr" => "checkbox",
                      "resp_done" => "date",
                      "resp_grace" => "grace",
                      "resp_open" => "checkbox",
-                     "resp_words" => "int",
+                     "resp_words" => "zint",
                      "rev_blind" => 2,
                      "rev_notifychair" => "checkbox",
                      "rev_open" => "cdate",
@@ -195,7 +195,7 @@ function expandMailTemplate($name, $default) {
 }
 
 function parseValue($name, $type) {
-    global $SettingText, $Error, $Highlight, $Now;
+    global $Conf, $SettingText, $Error, $Highlight, $Now;
 
     if (!isset($_REQUEST[$name]))
 	return null;
@@ -217,7 +217,7 @@ function parseValue($name, $type) {
 	    return intval($v);
 	else
 	    $err = $SettingText[$name] . ": invalid grace period.";
-    } else if ($type === "int") {
+    } else if ($type === "int" || $type === "zint") {
         if (preg_match("/\\A[-+]?[0-9]+\\z/", $v))
             return intval($v);
 	else
@@ -243,7 +243,12 @@ function parseValue($name, $type) {
     } else if ($type === "htmlstring") {
 	if (($v = CleanHTML::clean($v, $err)) === false)
 	    $err = $SettingText[$name] . ": $err";
-	else
+        else if (str_starts_with($name, "msg.")
+                 && $v === $Conf->message_default_html($name))
+            return 0;
+	else if ($v === $Conf->setting_data($name))
+            return null;
+        else
 	    return ($v == "" ? 0 : array($Now, $v));
     } else if (is_int($type)) {
 	if (ctype_digit($v) && $v >= 0 && $v <= $type)
@@ -868,7 +873,7 @@ function accountValue($name, $type) {
 		return;
 	    $v = 0;
 	}
-	if (!is_array($v) && $v <= 0 && !is_int($type))
+	if (!is_array($v) && $v <= 0 && !is_int($type) && $type !== "zint")
 	    $Values[$name] = null;
 	else
 	    $Values[$name] = $v;
@@ -962,11 +967,6 @@ if (isset($_REQUEST["update"]) && check_post()) {
     if (value("seedec") == Conference::SEEDEC_ALL
         && value_or_setting("au_seerev") == AU_SEEREV_NO)
         $Conf->warnMsg("Authors can see decisions, but not reviews. This is sometimes unintentional.");
-
-    // unset text messages that equal the default
-    if (value("msg.conflictdef")
-	&& trim($Values["msg.conflictdef"][1]) == Message::default_html("conflictdef"))
-	$Values["msg.conflictdef"] = null;
 
     // make settings
     if (count($Error) == 0 && count($Values) > 0) {
@@ -1170,23 +1170,19 @@ function doAccGroup() {
 
 // Messages
 function do_message($name, $description, $rows = 10, $hint = "") {
-    $base = $name;
-    if (($p = strrpos($name, "."))
-        && str_starts_with($name, "msg.")
-        && $p !== 3)
-        $base = substr($name, 0, $p);
-    $default = Message::default_html(str_starts_with($name, "msg.") ? substr($name, 4) : $name);
-    $current = setting_data($base, $default);
+    global $Conf;
+    $default = $Conf->message_default_html($name);
+    $current = setting_data($name, $default);
     echo '<div class="fold', ($current == $default ? "c" : "o"),
         '" hotcrpfold="yes">',
         '<div class="f-c childfold" onclick="return foldup(this,event)">',
         '<a class="q fn" href="#" onclick="return foldup(this,event)">',
-        expander(true), setting_label($base, $description),
+        expander(true), setting_label($name, $description),
         '</a><a class="q fx" href="#" onclick="return foldup(this,event)">',
-        expander(false), setting_label($base, $description),
+        expander(false), setting_label($name, $description),
         '</a> <span class="f-cx fx">(HTML allowed)</span></div>',
         $hint,
-        '<textarea class="textlite fx" name="', $base, '" cols="80"',
+        '<textarea class="textlite fx" name="', $name, '" cols="80"',
         ' rows="', $rows, '" onchange="hiliter(this)">',
         htmlspecialchars($current),
         '</textarea></div><div class="g"></div>', "\n";
@@ -1218,12 +1214,10 @@ function doMsgGroup() {
 
     do_message("msg.home", "Home page message");
     do_message("clickthrough_submit", "Clickthrough submission terms", 10,
-               "<div class=\"hint fx\">Users will be forced to “accept” these terms before they can edit a paper. Use HTML, and consider including a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
+               "<div class=\"hint fx\">Users must “accept” these terms to edit or submit a paper. Use HTML, and consider including a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
     do_message("msg.conflictdef", "Definition of conflict of interest", 5);
-    do_message($Conf->has_topics() ? "msg.revprefdescription.withtopics" : "msg.revprefdescription",
-               "Review preference instructions", 20);
-    do_message($Conf->setting("resp_words", 500) > 0 ? "msg.responseinstructions.wordlimit" : "msg.responseinstructions",
-               "Authors’ response instructions");
+    do_message("msg.revprefdescription", "Review preference instructions", 20);
+    do_message("msg.responseinstructions", "Authors’ response instructions");
 }
 
 // Submissions

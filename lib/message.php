@@ -38,19 +38,6 @@ class Message {
             self::load_one("$ConfSitePATH/conf/messages-local.$lang.csv");
     }
 
-    public static function html($name, $expansions = null) {
-        global $Conf;
-        if (($html = $Conf->setting_data("msg.$name")) !== false
-            && ($p = strrpos($name, ".")))
-            $html = $Conf->setting_data("msg." . substr($name, 0, $p));
-        if ($html === false)
-            $html = self::default_html($name);
-        if ($html && $expansions)
-            foreach ($expansions as $k => $v)
-                $html = str_replace("%$k%", $v, $html);
-        return $html;
-    }
-
     public static function default_html($name) {
         if (self::$messages === null)
             self::load();

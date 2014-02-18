@@ -167,9 +167,7 @@ $Conf->header("Review Preferences", "revpref", actionBar());
 
 
 $rf = reviewForm();
-$Conf->infoMsg(Message::html($Conf->has_topics()
-                             ? "revprefdescription.withtopics"
-                             : "revprefdescription"));
+$Conf->infoMsg($Conf->message_html("revprefdescription"));
 
 
 // search

@@ -2025,4 +2025,31 @@ class Conference {
         }
     }
 
+    public function message_name($name) {
+        if (str_starts_with($name, "msg."))
+            $name = substr($name, 4);
+        if ($name === "revprefdescription" && $this->has_topics())
+            $name .= ".withtopics";
+        else if ($name === "responseinstructions" && $this->setting("resp_words", 500) > 0)
+            $name .= ".wordlimit";
+        return $name;
+    }
+
+    public function message_html($name, $expansions = null) {
+        $name = $this->message_name($name);
+        $html = @$this->settingTexts["msg.$name"];
+        if ($html === null && ($p = strrpos($name, ".")) !== false)
+            $html = @$this->settingTexts["msg." . substr($name, 0, $p)];
+        if ($html === null)
+            $html = Message::default_html($name);
+        if ($html && $expansions)
+            foreach ($expansions as $k => $v)
+                $html = str_replace("%$k%", $v, $html);
+        return $html ? $html : "";
+    }
+
+    public function message_default_html($name) {
+        return Message::default_html($this->message_name($name));
+    }
+
 }
