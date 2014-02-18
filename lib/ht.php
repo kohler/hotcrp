@@ -179,6 +179,13 @@ class Ht {
             . self::extra($js) . $temp . ' />';
     }
 
+    static function entry_h($name, $value, $js = null) {
+        $js = $js ? $js : array();
+        if (!isset($js["onchange"]))
+            $js["onchange"] = "hiliter(this)";
+        return self::entry($name, $value, $js);
+    }
+
     static function textarea($name, $value, $js = null) {
         $js = $js ? $js : array();
         return '<textarea name="' . $name . '"' . self::extra($js)

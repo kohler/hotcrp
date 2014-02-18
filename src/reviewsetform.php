@@ -200,7 +200,9 @@ function rf_show() {
 3. Weak accept
 4. Accept</pre> Or use consecutive capital letters (lower letters are better).");
 
-    echo "<div id=\"reviewform_container\"></div>";
+    echo "<div id=\"reviewform_container\">",
+        Ht::hidden("has_reviewform", 1),
+        "</div>";
     echo Ht::button("Add score field", array("onclick" => "review_form_settings.add(1)")),
         "<span class='sep'></span>",
         Ht::button("Add text field", array("onclick" => "review_form_settings.add(0)"));

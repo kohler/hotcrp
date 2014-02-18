@@ -18,74 +18,61 @@ $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST” <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
 $TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small";
 
-$SettingGroups = array("acc" => array(
-			     "acct_addr" => "check",
-			     "next" => "msg"),
-		       "msg" => array(
-			     "opt.shortName" => "simplestring",
-			     "opt.longName" => "simplestring",
-                             "opt.contactName" => "simplestring",
-                             "opt.contactEmail" => "emailstring",
-			     "msg.home" => "htmlstring",
-			     "msg.conflictdef" => "htmlstring",
-			     "next" => "sub"),
-		       "sub" => array(
-			     "sub_open" => "cdate",
-			     "sub_blind" => 3,
-			     "sub_reg" => "date",
-			     "sub_sub" => "date",
-			     "sub_grace" => "grace",
-			     "sub_pcconf" => "check",
-			     "sub_pcconfsel" => "check",
-			     "sub_collab" => "check",
-			     "banal" => "special",
-			     "sub_freeze" => 1,
-			     "pc_seeall" => "check",
-			     "next" => "opt"),
-		       "opt" => array(
-			     "topics" => "special",
-			     "options" => "special",
-			     "next" => "rev"),
-		       "rev" => array(
-			     "rev_open" => "cdate",
-			     "cmt_always" => "check",
-			     "rev_blind" => 2,
-			     "rev_notifychair" => "check",
-			     "pcrev_any" => "check",
-			     "pcrev_soft" => "date",
-			     "pcrev_hard" => "date",
-			     "x_rev_roundtag" => "special",
-			     "pc_seeallrev" => 4,
-			     "pc_seeblindrev" => 1,
-			     "pcrev_editdelegate" => "check",
-			     "extrev_chairreq" => "check",
-			     "x_tag_chair" => "special",
-			     "x_tag_vote" => "special",
-			     "x_tag_rank" => "special",
-			     "x_tag_color" => "special",
-			     "tag_seeall" => "check",
-			     "extrev_soft" => "date",
-			     "extrev_hard" => "date",
-			     "extrev_view" => 2,
-			     "mailbody_requestreview" => "string",
-			     "rev_ratings" => 2,
-                             "x_tracks" => "special",
-			     "next" => "rfo"),
-		       "rfo" => array(
-			     "reviewform" => "special",
-			     "next" => "dec"),
-		       "dec" => array(
-			     "au_seerev" => 2,
-			     "seedec" => 3,
-			     "resp_open" => "check",
-			     "resp_done" => "date",
-			     "resp_grace" => "grace",
-                             "resp_words" => "int",
-			     "decisions" => "special",
-			     "final_open" => "check",
-			     "final_soft" => "date",
-			     "final_done" => "date",
-			     "final_grace" => "grace"));
+$SettingList = array("acct_addr" => "checkbox",
+                     "au_seerev" => 2,
+                     "banal" => "xspecial",
+                     "cmt_always" => "checkbox",
+                     "decisions" => "xspecial",
+                     "extrev_chairreq" => "checkbox",
+                     "extrev_hard" => "date",
+                     "extrev_soft" => "date",
+                     "extrev_view" => 2,
+                     "final_done" => "date",
+                     "final_grace" => "grace",
+                     "final_open" => "checkbox",
+                     "final_soft" => "date",
+                     "mailbody_requestreview" => "string",
+                     "msg.conflictdef" => "htmlstring",
+                     "msg.home" => "htmlstring",
+                     "opt.contactEmail" => "emailstring",
+                     "opt.contactName" => "simplestring",
+                     "opt.longName" => "simplestring",
+                     "opt.shortName" => "simplestring",
+                     "options" => "xspecial",
+                     "pc_seeall" => "checkbox",
+                     "pc_seeallrev" => 4,
+                     "pc_seeblindrev" => 1,
+                     "pcrev_any" => "checkbox",
+                     "pcrev_editdelegate" => "checkbox",
+                     "pcrev_hard" => "date",
+                     "pcrev_soft" => "date",
+                     "resp_done" => "date",
+                     "resp_grace" => "grace",
+                     "resp_open" => "checkbox",
+                     "resp_words" => "int",
+                     "rev_blind" => 2,
+                     "rev_notifychair" => "checkbox",
+                     "rev_open" => "cdate",
+                     "rev_ratings" => 2,
+                     "rev_roundtag" => "special",
+                     "reviewform" => "xspecial",
+                     "seedec" => 3,
+                     "sub_blind" => 3,
+                     "sub_collab" => "checkbox",
+                     "sub_freeze" => 1,
+                     "sub_grace" => "grace",
+                     "sub_open" => "cdate",
+                     "sub_pcconf" => "checkbox",
+                     "sub_pcconfsel" => "checkbox",
+                     "sub_reg" => "date",
+                     "sub_sub" => "date",
+                     "tag_chair" => "special",
+                     "tag_color" => "special",
+                     "tag_rank" => "special",
+                     "tag_seeall" => "checkbox",
+                     "tag_vote" => "special",
+                     "topics" => "xspecial",
+                     "tracks" => "special");
 
 $GroupMapping = array("rev" => "reviews", "rfo" => "reviewform");
 
@@ -94,7 +81,7 @@ if ($Group === "reviews" || $Group === "review")
     $Group = "rev";
 if ($Group === "reviewform")
     $Group = "rfo";
-if (!isset($SettingGroups[$Group])) {
+if (array_search($Group, array("acc", "msg", "sub", "opt", "rev", "rfo", "dec")) === false) {
     if ($Conf->timeAuthorViewReviews())
 	$Group = "dec";
     else if ($Conf->deadlinesAfter("sub_sub") || $Conf->timeReviewOpen())
@@ -204,37 +191,32 @@ function expandMailTemplate($name, $default) {
 function parseValue($name, $type) {
     global $SettingText, $Error, $Highlight;
 
-    // PHP changes incoming variable names, substituting "." with "_".
-    if (!isset($_REQUEST[$name]) && substr($name, 3, 1) === "."
-	&& isset($_REQUEST[substr($name, 0, 3) . "_" . substr($name, 4)]))
-	$_REQUEST[$name] = $_REQUEST[substr($name, 0, 3) . "_" . substr($name, 4)];
-
     if (!isset($_REQUEST[$name]))
 	return null;
     $v = trim($_REQUEST[$name]);
 
-    if ($type == "check")
+    if ($type === "checkbox")
 	return $v != "";
-    if ($type == "cdate" && $v == "1")
+    else if ($type === "cdate" && $v == "1")
 	return 1;
-    if ($type == "date" || $type == "cdate") {
+    else if ($type === "date" || $type === "cdate") {
 	if ($v == "" || strtoupper($v) == "N/A" || $v == "0")
 	    return -1;
 	else if (($v = strtotime($v)) !== false)
 	    return $v;
 	else
 	    $err = $SettingText[$name] . ": invalid date.";
-    } else if ($type == "grace") {
+    } else if ($type === "grace") {
 	if (($v = parseGrace($v)) !== null)
 	    return intval($v);
 	else
 	    $err = $SettingText[$name] . ": invalid grace period.";
-    } else if ($type == "int") {
+    } else if ($type === "int") {
         if (preg_match("/\\A[-+]?[0-9]+\\z/", $v))
             return intval($v);
 	else
 	    $err = $SettingText[$name] . ": should be a number.";
-    } else if ($type == "string") {
+    } else if ($type === "string") {
 	// Avoid storing the default message in the database
 	if (substr($name, 0, 9) == "mailbody_") {
 	    $t = expandMailTemplate(substr($name, 9), true);
@@ -243,16 +225,16 @@ function parseValue($name, $type) {
 		return 0;
 	}
 	return ($v == "" ? 0 : array(0, $v));
-    } else if ($type == "simplestring") {
+    } else if ($type === "simplestring") {
 	$v = simplify_whitespace($v);
 	return ($v == "" ? 0 : array(0, $v));
-    } else if ($type == "emailstring") {
+    } else if ($type === "emailstring") {
         $v = trim($v);
         if (validateEmail($v))
             return ($v == "" ? 0 : array(0, $v));
         else
             $err = $SettingText[$name] . ": invalid email.";
-    } else if ($type == "htmlstring") {
+    } else if ($type === "htmlstring") {
 	if (($v = CleanHTML::clean($v, $err)) === false)
 	    $err = $SettingText[$name] . ": $err";
 	else
@@ -304,10 +286,8 @@ function doTags($set, $what) {
 	$v = array(count($vs), join(" ", $vs));
 	if (!isset($Highlight["tag_vote"])
 	    && ($Conf->setting("tag_vote") != $v[0]
-		|| $Conf->setting_data("tag_vote") !== $v[1])) {
+		|| $Conf->setting_data("tag_vote") !== $v[1]))
 	    $Values["tag_vote"] = $v;
-	    $Values["x_tag_vote"] = 1; /* want to get called at set time */
-	}
     }
 
     if ($set && $what == "tag_vote" && isset($Values["tag_vote"])) {
@@ -437,10 +417,12 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
 
     $oarg = array("name" => $name, "id" => (int) $id, "req_id" => $id);
     if ($id[0] == "n") {
-        $newid = $Conf->setting("options", 1);
+        $nextid = max($Conf->setting("next_optionid", 1), 1);
         foreach ($new_opts as $id => $o)
-            $newid = max($newid, $id + 1);
-        $oarg["id"] = $newid;
+            $nextid = max($nextid, $id + 1);
+        foreach ($current_opts as $id => $o)
+            $nextid = max($nextid, $id + 1);
+        $oarg["id"] = $nextid;
         $oarg["is_new"] = true;
     }
 
@@ -558,12 +540,13 @@ function doOptions($set) {
 
     $newj = (object) array();
     uasort($new_opts, array("PaperOption", "compare"));
-    $nextid = $Conf->setting("options", 1);
+    $nextid = $Conf->setting("next_optionid", 1);
     foreach ($new_opts as $id => $o) {
         $newj->$id = $o->unparse();
         $nextid = max($nextid, $id + 1);
     }
-    $Conf->save_setting("options", $nextid, count($newj) ? $newj : null);
+    $Conf->save_setting("next_optionid", $nextid);
+    $Conf->save_setting("options", 1, count($newj) ? $newj : null);
 
     $deleted_ids = array();
     foreach ($current_opts as $id => $o)
@@ -819,9 +802,9 @@ function do_save_tracks($set) {
 
 function doSpecial($name, $set) {
     global $Values, $Error, $Highlight;
-    if ($name == "x_tag_chair" || $name == "x_tag_vote"
-	|| $name == "x_tag_rank" || $name == "x_tag_color")
-	doTags($set, substr($name, 2));
+    if ($name == "tag_chair" || $name == "tag_vote"
+	|| $name == "tag_rank" || $name == "tag_color")
+	doTags($set, $name);
     else if ($name == "topics")
 	doTopics($set);
     else if ($name == "options")
@@ -835,7 +818,7 @@ function doSpecial($name, $set) {
 	    rf_update();
     } else if ($name == "banal")
 	doBanal($set);
-    else if ($name == "x_rev_roundtag") {
+    else if ($name == "rev_roundtag") {
 	if (!$set && !isset($_REQUEST["rev_roundtag"]))
 	    $Values["rev_roundtag"] = null;
 	else if (!$set) {
@@ -849,18 +832,33 @@ function doSpecial($name, $set) {
 		$Highlight["rev_roundtag"] = true;
 	    }
 	}
-    } else if ($name == "x_tracks")
+    } else if ($name == "tracks")
         do_save_tracks($set);
+}
+
+function truthy($x) {
+    return !($x === null || $x === 0 || $x === false
+             || $x === "" || $x === "0" || $x === "false");
 }
 
 function accountValue($name, $type) {
     global $Values;
-    if ($type == "special")
-	doSpecial($name, false);
-    else if ($name != "next") {
+    $xname = $name;
+    if (($dot = strpos($name, ".")) !== false) {
+        $xname = str_replace(".", "_", $name);
+        if (isset($_REQUEST[$xname]))
+            $_REQUEST[$name] = $_REQUEST[$xname];
+    }
+
+    if ($type === "special" || $type === "xspecial") {
+        if (truthy(@$_REQUEST["has_$xname"]))
+            doSpecial($name, false);
+    } else if (isset($_REQUEST[$xname])
+               || (($type === "cdate" || $type === "checkbox")
+                   && truthy(@$_REQUEST["has_$xname"]))) {
 	$v = parseValue($name, $type);
 	if ($v === null) {
-	    if ($type != "cdate" && $type != "check")
+	    if ($type !== "cdate" && $type !== "checkbox")
 		return;
 	    $v = 0;
 	}
@@ -889,9 +887,8 @@ function value_or_setting($name) {
 
 if (isset($_REQUEST["update"]) && check_post()) {
     // parse settings
-    $settings = $SettingGroups[$Group];
-    foreach ($settings as $name => $value)
-	accountValue($name, $value);
+    foreach ($SettingList as $name => $type)
+        accountValue($name, $type);
 
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "pcrev_soft" => "pcrev_hard",
@@ -918,7 +915,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Values["opt.longName"][1] = "";
 
     // update 'papersub'
-    if (isset($settings["pc_seeall"])) {
+    if (isset($_REQUEST["pc_seeall"])) {
 	// see also conference.php
 	$result = $Conf->q("select ifnull(min(paperId),0) from Paper where " . (defval($Values, "pc_seeall", 0) <= 0 ? "timeSubmitted>0" : "timeWithdrawn<=0"));
 	if (($row = edb_row($result)) && $row[0] != $Conf->setting("papersub"))
@@ -979,19 +976,21 @@ if (isset($_REQUEST["update"]) && check_post()) {
 	$Conf->qe("lock tables $tables", $while);
 
 	// apply settings
+	foreach ($Values as $n => $v)
+	    if (@$SettingList[$n] == "special" || @$SettingList[$n] == "xspecial")
+		doSpecial($n, true);
+
 	$dq = $aq = "";
 	foreach ($Values as $n => $v)
-	    if (defval($settings, $n) == "special")
-		doSpecial($n, true);
-	    else {
-		$dq .= " or name='$n'";
-		if (is_array($v))
-		    $aq .= ", ('$n', '" . sqlq($v[0]) . "', '" . sqlq($v[1]) . "')";
-		else if ($v !== null)
-		    $aq .= ", ('$n', '" . sqlq($v) . "', null)";
-		if (substr($n, 0, 4) === "opt.")
-		    $Opt[substr($n, 4)] = (is_array($v) ? $v[1] : $v);
-	    }
+            if (@$SettingList[$n] != "xspecial") {
+                $dq .= " or name='$n'";
+                if (is_array($v))
+                    $aq .= ", ('$n', '" . sqlq($v[0]) . "', '" . sqlq($v[1]) . "')";
+                else if ($v !== null)
+                    $aq .= ", ('$n', '" . sqlq($v) . "', null)";
+                if (substr($n, 0, 4) === "opt.")
+                    $Opt[substr($n, 4)] = (is_array($v) ? $v[1] : $v);
+            }
         if (strlen($dq))
             $Conf->qe("delete from Settings where " . substr($dq, 4), $while);
 	if (strlen($aq))
@@ -1064,6 +1063,7 @@ function opt_data($name, $defval = "") {
 function doCheckbox($name, $text, $tr = false, $js = "hiliter(this)") {
     $x = setting($name);
     echo ($tr ? "<tr><td class='nowrap'>" : ""),
+        Ht::hidden("has_$name", 1),
 	Ht::checkbox($name, 1, $x !== null && $x > 0, array("onchange" => $js, "id" => "cb$name")),
 	"&nbsp;", ($tr ? "</td><td>" : ""),
 	setting_label($name, $text, true),
@@ -1246,7 +1246,9 @@ function doSubGroup() {
     echo "</table>\n";
 
     if (is_executable("src/banal")) {
-	echo "<div class='g'></div><table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
+	echo "<div class='g'></div>",
+            Ht::hidden("has_banal", 1),
+            "<table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
 	doCheckbox("sub_banal", "<strong>Automated format checker<span class='fx'>:</span></strong>", true, "hiliter(this);void fold('banal',!this.checked)");
 	echo "<tr class='fx'><td></td><td class='top'><table>";
 	$bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
@@ -1438,8 +1440,9 @@ function doOptGroup() {
     echo "<h3 class=\"settings\">Submission options</h3>\n";
     echo "Options are selected by authors at submission time.  Examples have included “PC-authored paper,” “Consider this paper for a Best Student Paper award,” and “Allow the shadow PC to see this paper.”  The “option name” should be brief (“PC paper,” “Best Student Paper,” “Shadow PC”).  The optional description can explain further and may use XHTML.  ";
     echo "Add options one at a time.\n";
-    echo "<div class='g'></div>\n";
-    echo "<table>";
+    echo "<div class='g'></div>\n",
+        Ht::hidden("has_options", 1),
+        "<table>";
     $sep = "";
     $all_options = array_merge(PaperOption::option_list()); // get our own iterator
     foreach ($all_options as $o) {
@@ -1469,7 +1472,9 @@ function doOptGroup() {
 
     echo "<h3 class=\"settings g\">Topics</h3>\n";
     echo "Enter topics one per line.  Authors select the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its name.\n";
-    echo "<div class='g'></div><table id='newtoptable' class='", ($ninterests ? "foldo" : "foldc"), "'>";
+    echo "<div class='g'></div>",
+        Ht::hidden("has_topics", 1),
+        "<table id='newtoptable' class='", ($ninterests ? "foldo" : "foldc"), "'>";
     echo "<tr><th colspan='2'></th><th class='fx'><small>Low</small></th><th class='fx'><small>High</small></th></tr>";
     $td1 = "<td class='lcaption'>Current</td>";
     foreach ($Conf->topic_map() as $tid => $tname) {
@@ -1560,8 +1565,8 @@ function do_track($trackname, $tnum) {
 function doRevGroup() {
     global $Conf, $Error, $Highlight, $DateExplanation, $TagStyles;
 
-    doCheckbox('rev_open', '<b>Open site for reviewing</b>');
-    doCheckbox('cmt_always', 'Allow comments even if reviewing is closed');
+    doCheckbox("rev_open", "<b>Open site for reviewing</b>");
+    doCheckbox("cmt_always", "Allow comments even if reviewing is closed");
 
     echo "<div class='g'></div>\n";
     echo "<strong>Review anonymity:</strong> Are reviewer names hidden from authors?<br />\n";
@@ -1603,7 +1608,8 @@ function doRevGroup() {
     if (!($rev_roundtag = setting_data("rev_roundtag")))
 	$rev_roundtag = "(None)";
     doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: “R1”, “R2” &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lxcaption", "(None)");
-    echo "</table>\n";
+    echo "</table>\n",
+        Ht::hidden("has_rev_roundtag", 1);
 
     echo "<div class='g'></div>\n";
     doCheckbox('pcrev_any', "PC members can review <strong>any</strong> submitted paper");
@@ -1612,7 +1618,7 @@ function doRevGroup() {
     // External reviews
     echo "<h3 class=\"settings g\">External reviews</h3>\n";
 
-    doCheckbox('extrev_chairreq', "PC chair must approve proposed external reviewers");
+    doCheckbox("extrev_chairreq", "PC chair must approve proposed external reviewers");
     doCheckbox("pcrev_editdelegate", "PC members can edit external reviews they requested");
     echo "<div class='g'></div>";
 
@@ -1640,7 +1646,9 @@ function doRevGroup() {
 	$v = defval($_REQUEST, "tag_chair", "");
     else
         $v = join(" ", array_keys($tagger->chair_tags()));
-    echo "<td><input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
+    echo "<td>",
+        Ht::hidden("has_tag_chair", 1),
+        "<input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lcaption'>", setting_label("tag_vote", "Voting tags"), "</td>";
     if (count($Error) > 0)
@@ -1651,14 +1659,20 @@ function doRevGroup() {
 	    $x .= "$n#$v ";
 	$v = trim($x);
     }
-    echo "<td><input type='text' class='textlite' name='tag_vote' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
+    echo "<td>",
+        Ht::hidden("has_tag_vote", 1),
+        Ht::entry_h("tag_vote", $v, array("class" => "textlite", "size" => 40)),
+        "<br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lcaption'>", setting_label("tag_rank", "Ranking tag"), "</td>";
     if (count($Error) > 0)
 	$v = defval($_REQUEST, "tag_rank", "");
     else
 	$v = $Conf->setting_data("tag_rank", "");
-    echo "<td><input type='text' class='textlite' name='tag_rank' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
+    echo "<td>",
+        Ht::hidden("has_tag_rank", 1),
+        Ht::entry_h("tag_rank", $v, array("class" => "textlite", "size" => 40)),
+        "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
     echo "</table>";
 
     echo "<div class='g'></div>\n";
@@ -1667,7 +1681,7 @@ function doRevGroup() {
     echo "<div class='g'></div>\n";
     echo "<table id='foldtag_color' class='",
 	(defval($_REQUEST, "tagcolor") ? "foldo" : "foldc"), "'><tr>",
-	"<td>", foldbutton("tag_color", ""), "</td>",
+	"<td>", foldbutton("tag_color", ""), Ht::hidden("has_tag_color", 1), "</td>",
 	"<td><a href='#' onclick='return fold(\"tag_color\")' name='tagcolor' class='q'><strong>Styles and colors</strong></a><br />\n",
 	"<div class='hint fx'>Papers tagged with a style name, or with one of the associated tags (if any), will appear in that style in paper lists.</div>",
 	"<div class='smg fx'></div>",
@@ -1691,7 +1705,7 @@ function doRevGroup() {
     echo "<div class='g'></div>\n";
     echo "<table id='foldtracks' class='",
 	(defval($_REQUEST, "tracks") || $Conf->has_tracks() || @$Highlight["tracks"] ? "foldo" : "foldc"), "'><tr>",
-	"<td>", foldbutton("tracks", ""), "</td>",
+	"<td>", foldbutton("tracks", ""), Ht::hidden("has_tracks", 1), "</td>",
 	"<td><a href='#' onclick='return fold(\"tracks\")' name='tracks' class='q'><strong>Tracks</strong></a><br />\n",
 	"<div class='hint fx'>Tracks control whether specific PC members can view or review specific papers. &nbsp;|&nbsp; <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
 	"<div class='smg fx'></div>",
@@ -1784,7 +1798,9 @@ function doDecGroup() {
     echo "<tr><td class='lcaption'>",
 	setting_label("decn", "New decision type"),
 	"<br /></td>",
-	"<td class='lentry nowrap'><input type='text' class='textlite' name='decn' value=\"", htmlspecialchars($v), "\" size='35' onchange='hiliter(this)' /> &nbsp; ",
+	"<td class='lentry nowrap'>",
+        Ht::hidden("has_decisions", 1),
+        "<input type='text' class='textlite' name='decn' value=\"", htmlspecialchars($v), "\" size='35' onchange='hiliter(this)' /> &nbsp; ",
 	Ht::select("dtypn", array(1 => "Accept class", -1 => "Reject class"),
 		    $vclass, array("onchange" => "hiliter(this)")),
 	"<br /><small>Examples: “Accepted as short paper”, “Early reject”</small>",
