@@ -34,6 +34,8 @@ $SettingList = array("acct_addr" => "checkbox",
                      "mailbody_requestreview" => "string",
                      "msg.conflictdef" => "htmlstring",
                      "msg.home" => "htmlstring",
+                     "msg.responseinstructions" => "htmlstring",
+                     "msg.revprefdescription" => "htmlstring",
                      "opt.contactEmail" => "emailstring",
                      "opt.contactName" => "simplestring",
                      "opt.longName" => "simplestring",
@@ -134,6 +136,8 @@ $SettingText = array(
 	"final_done" => "Final version upload hard deadline",
 	"msg.home" => "Home page message",
 	"msg.conflictdef" => "Definition of conflict of interest",
+        "msg.responseinstructions" => "Authors’ response instructions",
+        "msg.revprefdescription" => "Review preference instructions",
 	"mailbody_requestreview" => "Mail template for external review requests",
         "opt.contactEmail" => "Primary administrator email"
 	);
