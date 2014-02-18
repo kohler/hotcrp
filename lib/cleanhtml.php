@@ -42,7 +42,7 @@ class CleanHTML {
                 $t = $m[2];
             else if (preg_match('/\A<!(\S+)/s', $t, $m))
                 return self::_cleanHTMLError($err, "<code>$m[1]</code> declarations");
-            else if (preg_match('/\A<\s*([A-Za-z]+)\s*(.*)\z/s', $t, $m)) {
+            else if (preg_match('/\A<\s*([A-Za-z0-9]+)\s*(.*)\z/s', $t, $m)) {
                 $tag = strtolower($m[1]);
                 $t = $m[2];
                 $x .= "<" . $tag;
@@ -83,7 +83,7 @@ class CleanHTML {
                     $t = $m[1];
                 } else
                     return self::_cleanHTMLError($err, "garbage in some <code>&lt;$tag&gt;</code> tag");
-            } else if (preg_match(',\A<\s*/\s*([A-Za-z]+)\s*>(.*)\z,s', $t, $m)) {
+            } else if (preg_match(',\A<\s*/\s*([A-Za-z0-9]+)\s*>(.*)\z,s', $t, $m)) {
                 $tag = strtolower($m[1]);
                 if (!isset(self::$goodtags[$tag]))
                     return self::_cleanHTMLError($err, "some <code>&lt;/$tag&gt;</code> tag");
