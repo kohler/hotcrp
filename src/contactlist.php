@@ -487,7 +487,7 @@ class ContactList extends BaseList {
 	u.contactId as paperId,
 	firstName, lastName, email, affiliation, roles, contactTags,
 	voicePhoneNumber,
-	u.collaborators, lastLogin$qa, visits, note";
+	u.collaborators, lastLogin$qa, visits";
 	if (isset($queryOptions['topics']))
 	    $pq .= ",\n	topicIds, topicInterest";
 	if (isset($queryOptions['reviews'])) {
