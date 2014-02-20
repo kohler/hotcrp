@@ -291,7 +291,7 @@ class Formula {
 		$state->queryOptions["scores"][$score] = true;
 		$t_f = self::_addgtemp($state, "explode(',', \$prow->${score}Scores)", "rev $score") . "[\$ri_" . $state->lprefix . "]";
 	    }
-	    return "($t_f === 0 ? null : $t_f)";
+	    return "($t_f == 0 ? null : (int) $t_f)";
 	}
 
 	if ($op == "?:") {
