@@ -480,12 +480,12 @@ class ReviewForm {
 	    if (!isset($req[$field]) && !$submit)
 		continue;
 	    $fval = defval($req, $field, ($rrow ? $rrow->$field : ""));
-	    if (!isset($req[$field]) && $f->author_view >= VIEWSCORE_PC)
+	    if (!isset($req[$field]) && $f->view_score >= VIEWSCORE_PC)
 		$missing[] = $f->name;
 	    if ($f->has_options) {
 		$fval = trim($fval);
 		if ($fval === "" || $fval === "0" || $fval[0] === "(") {
-		    if ($submit && $f->author_view >= VIEWSCORE_PC) {
+		    if ($submit && $f->view_score >= VIEWSCORE_PC) {
 			$provide[] = $f->name;
 			$ReviewFormError[$field] = 1;
 		    }
