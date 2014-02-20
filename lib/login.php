@@ -93,10 +93,10 @@ class LoginHelper {
         }
 
         // Check for the cookie
-        if (!isset($_COOKIE["CRPTestCookie"]) && !isset($_REQUEST["cookie"])) {
+        if (!isset($_COOKIE["CRPTestCookie"]) && !isset($_REQUEST["testcookie"])) {
             // set a cookie to test that their browser supports cookies
             setcookie("CRPTestCookie", true);
-            $url = "cookie=1";
+            $url = "testcookie=1";
             foreach (array("email", "password", "action", "go", "afterLogin", "signin") as $a)
                 if (isset($_REQUEST[$a]))
                     $url .= "&$a=" . urlencode($_REQUEST[$a]);

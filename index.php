@@ -28,6 +28,7 @@ else if (isset($_REQUEST["email"])
     LoginHelper::check_login();
 
 // set a cookie to test that their browser supports cookies
+// NB need to set a cookie whenever we'll send a "testcookie=1" param
 if ($Me->is_empty() || isset($_REQUEST["signin"]))
     setcookie("CRPTestCookie", true);
 
@@ -233,10 +234,12 @@ Sign in to submit or review papers.";
     $passwordFocus = ($email_class == "" && $password_class != "");
     echo "</div>
 <hr class='home' />
-<div class='homegrp' id='homeacct'>
-<form method='post' action='", hoturl_post("index"), "' accept-charset='UTF-8'><div class='f-contain'>
-<input type='hidden' name='cookie' value='1' />
-<div class='f-ii'>
+<div class='homegrp' id='homeacct'>\n",
+        Ht::form(hoturl_post("index")),
+        "<div class=\"f-contain\">";
+    if ($Me->is_empty() || isset($_REQUEST["signin"]))
+        echo Ht::hidden("testcookie", 1);
+    echo "<div class='f-ii'>
   <div class='f-c", $email_class, "'>",
 	(isset($Opt["ldapLogin"]) ? "Username" : "Email"),
 	"</div>
