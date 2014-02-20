@@ -199,8 +199,8 @@ class Json {
         self::$error_type = JSON_ERROR_NONE;
         self::$error_input = $x;
         $v = self::decode_part($x, $assoc, $depth, $options);
-        if ($x !== null && !ctype_space($x))
-            self::set_error($x, JSON_ERROR_SYNTAX);
+        if ($x !== null && $x !== false && !ctype_space($x))
+            self::set_error($x, JSON_ERROR_SYNTAX, var_export($x, true));
         self::$error_input = null;
         return $x === null ? null : $v;
     }
