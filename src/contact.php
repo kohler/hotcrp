@@ -1161,7 +1161,7 @@ class Contact {
                 && $rights->allow_pc
                 && $Conf->setting("pc_seeall") > 0)
             || ($rights->allow_administer
-                ? $rights->rights_force /* chair can't see blind authors unless forceShow */
+                ? $rights->nonblind || $rights->rights_force /* chair can't see blind authors unless forceShow */
                 : $rights->act_author))
             return true;
 	// collect failure reasons
