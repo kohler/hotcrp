@@ -275,13 +275,13 @@ class ReviewForm {
 
         $rfj = $Conf->review_form_json();
         if (!$rfj)
-            $rfj = json_decode('{\
-"overAllMerit":{"name":"Overall merit","position":1,"view_score":1,\
-  "options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},\
-"reviewerQualification":{"name":"Reviewer expertise","position":2,"view_score":1,\
-  "options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},\
-"paperSummary":{"name":"Paper summary","position":3,"display_space":5,"view_score":1},\
-"commentsToAuthor":{"name":"Comments to authors","position":4,"view_score":1},\
+            $rfj = json_decode('{
+"overAllMerit":{"name":"Overall merit","position":1,"view_score":1,
+  "options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},
+"reviewerQualification":{"name":"Reviewer expertise","position":2,"view_score":1,
+  "options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},
+"paperSummary":{"name":"Paper summary","position":3,"display_space":5,"view_score":1},
+"commentsToAuthor":{"name":"Comments to authors","position":4,"view_score":1},
 "commentsToPC":{"name":"Comments to PC","position":5,"view_score":0}}');
 
         foreach ($rfj as $fname => $j)
