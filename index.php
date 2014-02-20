@@ -76,7 +76,9 @@ function admin_home_messages() {
 	$m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the conference abbreviation</a> to a short name for your conference, such as “OSDI ’14”.";
     else if (simplify_whitespace($Opt["shortName"]) != $Opt["shortName"])
 	$m[] = "The <a href=\"" . hoturl("settings", "group=msg") . "\">conference abbreviation</a> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more).";
-    if (!@$Opt["contactName"] || !@$Opt["contactEmail"])
+    if (!@$Opt["contactName"] || !@$Opt["contactEmail"]
+        || $Opt["contactName"] == "Your Name"
+        || $Opt["contactEmail"] == "you@example.com")
         $m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the primary administrator’s name and email</a> so submitters know who to contact if things go wrong.";
     // Any -100 preferences around?
     $result = $Conf->qx($Conf->preferenceConflictQuery(false, "limit 1"));

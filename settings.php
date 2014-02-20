@@ -1058,12 +1058,15 @@ function setting_data($name, $defval = null) {
 	return defval($Conf->settingTexts, $name, $defval);
 }
 
-function opt_data($name, $defval = "") {
+function opt_data($name, $defval = "", $killval = "") {
     global $Error, $Opt;
     if (count($Error) > 0)
-        return defval($_REQUEST, "opt.$name", $defval);
+        $val = defval($_REQUEST, "opt.$name", $defval);
     else
-        return defval($Opt, $name, $defval);
+        $val = defval($Opt, $name, $defval);
+    if ($val == $killval)
+        $val = "";
+    return $val;
 }
 
 function doCheckbox($name, $text, $tr = false, $js = "hiliter(this)") {
@@ -1203,11 +1206,11 @@ function doMsgGroup() {
         "<div class='lg'></div>\n";
 
     echo "<div class='f-c'>", setting_label("opt.contactName", "Name of primary administrator"), "</div>\n",
-        Ht::entry("opt.contactName", opt_data("contactName"), array("class" => "textlite", "size" => 50, "onchange" => "hiliter(this)")),
+        Ht::entry("opt.contactName", opt_data("contactName", null, "Your Name"), array("class" => "textlite", "size" => 50, "onchange" => "hiliter(this)")),
         "<div class='g'></div>\n";
 
     echo "<div class='f-c'>", setting_label("opt.contactEmail", "Primary administrator email"), "</div>\n",
-        Ht::entry("opt.contactEmail", opt_data("contactEmail"), array("class" => "textlite", "size" => 40, "onchange" => "hiliter(this)")),
+        Ht::entry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), array("class" => "textlite", "size" => 40, "onchange" => "hiliter(this)")),
         "<div class='ug'></div>\n",
         "<div class='hint'>The primary administrator is listed as the conference contact in system emails.</div>",
         "<div class='lg'></div>\n";
