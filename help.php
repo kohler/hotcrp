@@ -901,11 +901,12 @@ weights low expertise just slightly less than high expertise.</p>
 
 <p>Formula expressions are built from the following parts:</p>");
     _alternateRow("Arithmetic", "2", "Numbers");
+    _alternateRow("", "true, false", "Booleans");
     _alternateRow("", "<em>e</em> + <em>e</em>, <em>e</em> - <em>e</em>", "Addition, subtraction");
     _alternateRow("", "<em>e</em> * <em>e</em>, <em>e</em> / <em>e</em>, <em>e</em> % <em>e</em>", "Multiplication, division, remainder");
     _alternateRow("", "<em>e</em> ** <em>e</em>", "Exponentiation");
-    _alternateRow("", "<em>e</em> == <em>e</em>, <em>e</em> != <em>e</em>,<br /><em>e</em> &lt; <em>e</em>, <em>e</em> &gt; <em>e</em>, <em>e</em> &lt;= <em>e</em>, <em>e</em> &gt;= <em>e</em>", "Comparisons (return 0 or 1)");
-    _alternateRow("", "!<em>e</em>", "Logical not (returns 0 or 1)");
+    _alternateRow("", "<em>e</em> == <em>e</em>, <em>e</em> != <em>e</em>,<br /><em>e</em> &lt; <em>e</em>, <em>e</em> &gt; <em>e</em>, <em>e</em> &lt;= <em>e</em>, <em>e</em> &gt;= <em>e</em>", "Comparisons");
+    _alternateRow("", "!<em>e</em>", "Logical not");
     _alternateRow("", "<em>e1</em> &amp;&amp; <em>e2</em>", "Logical and (returns <em>e1</em> if <em>e1</em> is false, otherwise returns <em>e2</em>)");
     _alternateRow("", "<em>e1</em> || <em>e2</em>", "Logical or (returns <em>e1</em> if <em>e1</em> is true, otherwise returns <em>e2</em>)");
     _alternateRow("", "<em>test</em> ? <em>iftrue</em> : <em>iffalse</em>", "If-then-else operator");
@@ -913,9 +914,9 @@ weights low expertise just slightly less than high expertise.</p>
     _alternateRow("", "greatest(<em>e</em>, <em>e</em>, ...)", "Maximum");
     _alternateRow("", "least(<em>e</em>, <em>e</em>, ...)", "Minimum");
     _alternateRow("", "null", "The null value");
-    _alternateRow("Tags", "tag:<em>tagname</em>", "True if this paper has tag <em>tagname</em> (returns 0 or 1)");
+    _alternateRow("Tags", "tag:<em>tagname</em>", "True if this paper has tag <em>tagname</em>");
     _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or null if this paper doesn’t have that tag");
-    _alternateRow("Review scores", "overall-merit", "This paper’s Overall merit score");
+    _alternateRow("Reviews", "overall-merit", "This review’s Overall merit score");
     _alternateRow("", "OveMer", "Abbreviations are also accepted");
     _alternateRow("Aggregate functions", "Aggregate functions calculate a
 value based on all of a paper’s visible reviews.  For instance,

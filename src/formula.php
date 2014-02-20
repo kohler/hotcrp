@@ -286,8 +286,8 @@ class Formula {
 	if ($op == "rf") {
 	    $score = $e[2];
             $f = $ReviewFormCache->field($score);
-	    $revView = $state->contact->viewReviewFieldsScore(null, true);
-	    if ($f->view_score <= $revView)
+	    $view_score = $state->contact->viewReviewFieldsScore(null, true);
+	    if ($f->view_score <= $view_score)
 		$t_f = "0";
 	    else {
 		if (!isset($state->queryOptions["scores"]))
