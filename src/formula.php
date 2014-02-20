@@ -150,7 +150,7 @@ class Formula {
 		   || preg_match('/\Atag(?:v|-?val|-?value)\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
 	    $e = array("tagval", false, $m[1]);
 	    $t = $m[2];
-	} else if (preg_match('/\A(avg|count|min|max|std(?:dev(?:_pop|_samp)?)?|sum|var(?:iance|_pop|_samp)?|wavg)\b(.*)\z/s', $t, $m)) {
+	} else if (preg_match('/\A(all|any|avg|count|min|max|std(?:dev(?:_pop|_samp)?)?|sum|var(?:iance|_pop|_samp)?|wavg)\b(.*)\z/s', $t, $m)) {
 	    $t = $m[2];
 	    if (!($e = self::_parse_function($m[1], $t, true)))
 		return null;
@@ -224,7 +224,8 @@ class Formula {
 	return "\$numScores";
     }
 
-    static function _compilereviewloop($state, $initial_value, $combiner, $e, $e2 = null) {
+    static function _compilereviewloop($state, $initial_value, $combiner, $e,
+                                       $e2 = null, $type = "int") {
 	$t_result = self::_addltemp($state, $initial_value, true);
 	$combiner = str_replace("~r~", $t_result, $combiner);
 
@@ -255,7 +256,10 @@ class Formula {
 	$state->lprefix = $save_lprefix;
 	$state->lstmt = $save_lstmt;
 	$state->lstmt[] = $loop;
-        $state->lstmt[] = "if ($t_result === true) $t_result = 1;\n";
+        if ($type == "int")
+            $state->lstmt[] = "if ($t_result === true || $t_result === false) $t_result = (int) $t_result;\n";
+        else if ($type == "bool")
+            $state->lstmt[] = "if ($t_result !== null) $t_result = (bool) $t_result;\n";
 	return $t_result;
     }
 
@@ -319,6 +323,12 @@ class Formula {
 	    else
 		return "($t1 === null || $t2 === null ? null : $t1 $op $t2)";
 	}
+
+	if (count($e) == 3 && $op == "all")
+	    return self::_compilereviewloop($state, "null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", $e[2], null, "bool");
+
+	if (count($e) == 3 && $op == "any")
+	    return self::_compilereviewloop($state, "null", "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)", $e[2], null, "bool");
 
 	if (count($e) == 3 && $op == "min")
 	    return self::_compilereviewloop($state, "null", "(~l~ !== null && (~r~ === null || ~l~ < ~r~) ? ~l~ : ~r~)", $e[2]);

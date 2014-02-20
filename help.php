@@ -938,6 +938,8 @@ Use an aggregate function to calculate a property over all review scores.</p>");
     _alternateRow("", "stddev(<em>e</em>)", "Sample standard deviation");
     _alternateRow("", "var(<em>e</em>)", "Sample variance");
     _alternateRow("", "stddev_pop(<em>e</em>), var_pop(<em>e</em>)", "Population standard deviation, population variance");
+    _alternateRow("", "any(<em>e</em>)", "True if any of the reviews have <em>e</em> true");
+    _alternateRow("", "all(<em>e</em>)", "True if all of the reviews have <em>e</em> true");
 
     echo "</table>\n";
 }
