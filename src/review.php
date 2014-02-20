@@ -526,7 +526,7 @@ class ReviewForm {
 	    return 0;
 	}
 	if (isset($provide)) {
-	    $w = "This review is still not ready for others to see because you did not set some mandatory fields.  Please set " . htmlspecialchars(commajoin($provide)) . " and submit again.";
+	    $w = "You did not set some mandatory fields.  Please set " . htmlspecialchars(commajoin($provide)) . " and submit again.";
 	    if ($tf)
 		self::tfError($tf, false, $w);
 	    else
@@ -545,7 +545,8 @@ class ReviewForm {
 
     function saveRequest($req, $rrow, $prow, $contact, &$tf = null) {
 	global $Conf, $Opt;
-	$submit = defval($req, "ready", false) && !defval($req, "unready", false);
+	$submit = defval($req, "ready", false) && !defval($req, "unready", false)
+            && (!$rrow || !$rrow->reviewSubmitted);
 	$while = "while storing review";
 	$admin = $contact->allowAdminister($prow);
 

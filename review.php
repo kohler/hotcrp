@@ -178,7 +178,11 @@ if (isset($_REQUEST["update"]) && check_post()) {
 	$useRequest = true;
     } else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow)) {
 	if ($rf->saveRequest($_REQUEST, $paperTable->editrrow, $prow, $Me)) {
-	    $Conf->confirmMsg(defval($_REQUEST, "ready", false) && !defval($_REQUEST, "unready", false) ? "Review submitted." : "Review saved.  However, this version is marked as not ready for others to see.  Please finish the review and submit again.");
+            if ((@$_REQUEST["ready"] && !@$_REQUEST["unready"])
+                || ($paperTable->editrrow && $paperTable->editrrow->reviewSubmitted))
+                $Conf->confirmMsg("Review submitted.");
+            else
+                $Conf->confirmMsg("Review saved.  However, this version is marked as not ready for others to see.  Please finish the review and submit again.");
 	    redirectSelf();		// normally does not return
 	    loadRows();
 	} else
