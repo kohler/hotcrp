@@ -163,6 +163,16 @@ class Formula {
 	} else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
 	    $e = array("", false, "null");
 	    $t = $m[1];
+        } else if (preg_match('/\A(ispri(?:mary)?|issec(?:ondary)?|(?:is)?ext(?:ernal)?)\b(.*)\z/s', $t, $m)) {
+            if ($m[1] == "ispri" || $m[1] == "isprimary")
+                $rt = REVIEW_PRIMARY;
+            else if ($m[1] == "issec" || $m[1] == "issecondary")
+                $rt = REVIEW_SECONDARY;
+            else if ($m[1] == "ext" || $m[1] == "external"
+                     || $m[1] == "isext" || $m[1] == "isexternal")
+                $rt = REVIEW_EXTERNAL;
+            $e = array("revtype", true, $rt);
+            $t = $m[2];
 	} else if (preg_match('/\A([a-zA-Z0-9_]+|\".*?\")(.*)\z/s', $t, $m)
 		   && $m[1] !== "\"\"") {
 	    $field = $m[1];
@@ -281,6 +291,17 @@ class Formula {
 		return "($t_tagval !== null)";
 	    else
 		return $t_tagval;
+	}
+
+	if ($op == "revtype") {
+	    $view_score = $state->contact->viewReviewFieldsScore(null, true);
+	    if (VIEWSCORE_PC <= $view_score)
+		$t_f = "null";
+	    else {
+                $state->queryOptions["reviewTypes"] = true;
+		$t_f = "(" . self::_addgtemp($state, "explode(',', \$prow->reviewTypes)", "rev type") . "[\$ri_" . $state->lprefix . "]==" . $e[2] . ")";
+	    }
+	    return $t_f;
 	}
 
 	if ($op == "rf") {
@@ -417,6 +438,9 @@ class Formula {
 	    $rf = reviewForm();
 	    return $rf->field($e[2])->view_score;
 	}
+
+        if ($op == "revtype")
+            return VIEWSCORE_PC;
 
 	if ($op == "?:") {
 	    $t = self::expression_view_score($e[2], $contact);

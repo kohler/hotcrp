@@ -918,6 +918,9 @@ weights low expertise just slightly less than high expertise.</p>
     _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or null if this paper doesn’t have that tag");
     _alternateRow("Reviews", "overall-merit", "This review’s Overall merit score");
     _alternateRow("", "OveMer", "Abbreviations are also accepted");
+    _alternateRow("", "isprimary", "True for primary reviews");
+    _alternateRow("", "issecondary", "True for secondary reviews");
+    _alternateRow("", "isexternal", "True for external reviews");
     _alternateRow("Aggregate functions", "Aggregate functions calculate a
 value based on all of a paper’s visible reviews.  For instance,
 “max(OveMer)” would return the maximum Overall merit score

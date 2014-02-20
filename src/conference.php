@@ -1124,6 +1124,8 @@ class Conference {
 	    }
 	    $pq .= ",\n		PaperScores.numScores";
 	}
+        if (@$options["reviewTypes"])
+            $pq .= ",\n		PaperScores.reviewTypes";
 	if (@$options["topicInterestScore"])
 	    $pq .= ",
 		coalesce(PaperTopics.topicInterestScore, 0) as topicInterestScore";
@@ -1219,10 +1221,13 @@ class Conference {
 	    for ($i = 0; $i < count($options["tagIndex"]); ++$i)
 		$pq .= "		left join PaperTag as TagIndex$i on (TagIndex$i.paperId=Paper.paperId and TagIndex$i.tag='" . sqlq($options["tagIndex"][$i]) . "')\n";
 
-	if (@$options["scores"]) {
+	if (@$options["scores"] || @$options["reviewTypes"]) {
 	    $pq .= "		left join (select paperId";
-	    foreach ($options['scores'] as $field)
-		$pq .= ", group_concat($field) as ${field}Scores";
+            if (@$options["scores"])
+                foreach ($options["scores"] as $field)
+                    $pq .= ", group_concat($field) as ${field}Scores";
+            if (@$options["reviewTypes"])
+                $pq .= ", group_concat(reviewType) as reviewTypes";
 	    $pq .= ", count(*) as numScores";
 	    $pq .= " from PaperReview where reviewSubmitted>0 group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)\n";
 	}
