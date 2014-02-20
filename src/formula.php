@@ -252,6 +252,7 @@ class Formula {
 	$state->lprefix = $save_lprefix;
 	$state->lstmt = $save_lstmt;
 	$state->lstmt[] = $loop;
+        $state->lstmt[] = "if ($t_result === true) $t_result = 1;\n";
 	return $t_result;
     }
 
@@ -363,7 +364,7 @@ class Formula {
 	    . join("\n  ", $state->lstmt) . "\n"
 	    . "  \$x = $e;\n"
 	    . '  if ($format == "h") {
-    if ($x === null)
+    if ($x === null || $x === false)
       return "";
     else if ($x === true)
       return "&#x2713;";
