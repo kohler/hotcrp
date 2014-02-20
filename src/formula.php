@@ -139,6 +139,9 @@ class Formula {
 	} else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
 	    $e = array("", false, $m[1] + 0.0);
 	    $t = $m[2];
+	} else if (preg_match('/\A(false|true)\b(.*)\z/s', $t, $m)) {
+	    $e = array("", false, $m[1]);
+	    $t = $m[2];
 	} else if (preg_match('/\A(?:tag(?:\s*:\s*|\s+)|#)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
 		   || preg_match('/\Atag\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
 	    $e = array("tag", false, $m[1]);
