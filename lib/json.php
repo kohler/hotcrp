@@ -38,14 +38,16 @@ class Json {
     static private $error_input;
     static private $error_position;
     static private $error_line;
+    static private $error_description;
 
-    private static function set_error(&$x, $etype) {
+    private static function set_error(&$x, $etype, $desc = null) {
         if ($x !== null) {
             self::$error_type = $etype;
             $prefix = substr(self::$error_input, 0,
                              strlen(self::$error_input) - strlen($x));
             self::$error_position = strlen($prefix);
             self::$error_line = 1 + preg_match_all(',\r\n?|\n,s', $prefix);
+            self::$error_description = $desc;
         }
         return ($x = null);
     }
@@ -84,7 +86,7 @@ class Json {
 	    preg_match(',\A"((?:[^\\\\"\000-\037]|\\\\["\\\\/bfnrt]|\\\\u[0-9a-fA-F]{4})*)(.*)\z,s', $x, $m);
             if ($m[2][0] == "\"") {
 		$x = substr($m[2], 1);
-		return preg_replace(',(\\\\(?:["\\\\/bfnrt]|u[0-9a-fA-F]{4})),e', 'Json::decode_escape("\1")', $m[1]);
+		return preg_replace_callback(',(\\\\(?:["\\\\/bfnrt]|u[0-9a-fA-F]{4})),', 'Json::decode_escape', $m[1]);
 	    } else {
                 $x = $m[2];
                 return self::set_error($x, JSON_ERROR_SYNTAX);
@@ -151,6 +153,10 @@ class Json {
             return self::set_error($x, JSON_ERROR_SYNTAX);
     }
 
+    static function escape_encode($x) {
+        return self::$string_map[$x];
+    }
+
     // XXX not a full emulation of json_encode(); hopefully that won't matter
     // in the fullness of time
     static function encode($x, $options = 0) {
@@ -163,7 +169,7 @@ class Json {
         else if (is_int($x) || is_float($x))
             return (string) $x;
         else if (is_string($x))
-            return "\"" . preg_replace('/([\\"\000-\037])/e', 'Json::$string_map["\1"]', $x) . "\"";
+            return "\"" . preg_replace_callback('/([\\"\000-\037])/', "Json::escape_encode", $x) . "\"";
         else if (is_object($x) || is_array($x)) {
             $as_object = null;
             $as_array = array();
@@ -223,6 +229,8 @@ class Json {
             $error .= " at character " . self::$error_position;
             if (self::$error_line != 1)
                 $error .= ", line " . self::$error_line;
+            if (self::$error_description)
+                $error .= " [" . self::$error_description . "]";
         }
         return $error;
     }
