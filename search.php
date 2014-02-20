@@ -948,7 +948,9 @@ if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
 
 // save formula
 function formulas_with_new() {
-    global $paperListFormulas;
+    global $paperListFormulas, $ConfSitePATH;
+    if (!$paperListFormulas)
+        require_once("$ConfSitePATH/src/papercolumn.php");
     $formulas = $paperListFormulas;
     $formulas["n"] = (object) array("formulaId" => "n", "name" => "",
 				    "expression" => "", "createdBy" => 0);
