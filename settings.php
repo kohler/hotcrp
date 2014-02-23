@@ -141,7 +141,7 @@ $SettingText = array(
         "msg.revprefdescription" => "Review preference instructions",
         "clickthrough_submit" => "Clickthrough submission terms",
 	"mailbody_requestreview" => "Mail template for external review requests",
-        "opt.contactEmail" => "Primary administrator email"
+        "opt.contactEmail" => "Primary site administrator email"
 	);
 
 function parseGrace($v) {
@@ -1166,7 +1166,7 @@ function doAccGroup() {
     echo "<h3 class=\"settings g\">Program committee &amp; system administrators</h3>";
 
     echo "<p><a href='", hoturl("profile", "u=new"), "' class='button'>Create account</a> &nbsp;|&nbsp; ",
-	"Select a user&rsquo;s name to edit a profile or change PC/administrator status.</p>\n";
+	"Select a user&rsquo;s name to edit a profile.</p>\n";
     $pl = new ContactList($Me, false);
     echo $pl->text("pcadminx", hoturl("users", "t=pcadmin"));
 }
@@ -1205,14 +1205,14 @@ function doMsgGroup() {
         Ht::entry("opt.longName", $long, array("class" => "textlite", "size" => 70, "onchange" => "hiliter(this)", "hottemptext" => "(same as abbreviation)")),
         "<div class='lg'></div>\n";
 
-    echo "<div class='f-c'>", setting_label("opt.contactName", "Name of primary administrator"), "</div>\n",
+    echo "<div class='f-c'>", setting_label("opt.contactName", "Name of primary site administrator"), "</div>\n",
         Ht::entry("opt.contactName", opt_data("contactName", null, "Your Name"), array("class" => "textlite", "size" => 50, "onchange" => "hiliter(this)")),
         "<div class='g'></div>\n";
 
-    echo "<div class='f-c'>", setting_label("opt.contactEmail", "Primary administrator email"), "</div>\n",
+    echo "<div class='f-c'>", setting_label("opt.contactEmail", "Email of primary site administrator"), "</div>\n",
         Ht::entry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), array("class" => "textlite", "size" => 40, "onchange" => "hiliter(this)")),
         "<div class='ug'></div>\n",
-        "<div class='hint'>The primary administrator is listed as the conference contact in system emails.</div>",
+        "<div class='hint'>The primary site administrator is listed as the contact in system emails.</div>",
         "<div class='lg'></div>\n";
 
     do_message("msg.home", "Home page message");

@@ -276,8 +276,10 @@ class ContactList extends BaseList {
 		$t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->disabled ? " class='uu'" : "") . ">$t</a>";
 	    if ($row->roles & Contact::ROLE_CHAIR)
 		$t .= " <span class='pcrole'>(Chair)</span>";
+	    else if (($row->roles & (Contact::ROLE_ADMIN | Contact::ROLE_PC)) == (Contact::ROLE_ADMIN | Contact::ROLE_PC))
+		$t .= " <span class='pcrole'>(PC, sysadmin)</span>";
 	    else if ($row->roles & Contact::ROLE_ADMIN)
-		$t .= " <span class='pcrole'>(Administrator)</span>";
+		$t .= " <span class='pcrole'>(Sysadmin)</span>";
 	    else if (($row->roles & Contact::ROLE_PC)
                      && $this->limit != "pc")
 		$t .= " <span class='pcrole'>(PC)</span>";

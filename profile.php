@@ -675,9 +675,9 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     }
 
     echo "</td><td><span class='sep'></span></td><td class='nowrap'>";
-    echo Ht::checkbox_h("ass", 1, defval($_REQUEST, "ass")),
-	"&nbsp;", Ht::label("System administrator"), "</td>",
-        '<td style="padding-left:2em"><div class="hint"><strong>System administrators</strong> have full control over all site operations.  Administrators need not be members of the PC.  There’s always at least one system administrator.</div></td></tr></table>', "\n";
+    echo Ht::checkbox_h("ass", 1, defval($_REQUEST, "ass")), "&nbsp;</td>",
+        "<td>", Ht::label("Sysadmin"), "<br/>",
+        '<div class="hint">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</div></td></tr></table>', "\n";
     echo "  </td>\n</tr>\n\n";
 }
 
