@@ -218,7 +218,7 @@ function doAssign() {
 	$papers = array_fill_keys($papersel, 1);
 	$result = $Conf->qe($Conf->preferenceConflictQuery($_REQUEST["t"], ""), "while fetching preferences");
 	while (($row = edb_row($result))) {
-	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
+	    if (!isset($papers[$row[0]]) || !@$pcm[$row[1]])
 		continue;
             $assignments[] = "$row[0],conflict," . $pcm[$row[1]]->email;
 	    $assignprefs["$row[0]:$row[1]"] = $row[2];
@@ -247,7 +247,7 @@ function doAssign() {
         }
 	$result = $Conf->qe($q, "while checking clearable assignments");
 	while (($row = edb_row($result))) {
-	    if (!isset($papers[$row[0]]) || !isset($pcm[$row[1]]))
+	    if (!isset($papers[$row[0]]) || !@$pcm[$row[1]])
 		continue;
             $assignments[] = "$row[0],$action," . $pcm[$row[1]]->email;
 	    $assignprefs["$row[0]:$row[1]"] = "*";
@@ -292,8 +292,10 @@ function doAssign() {
 	coalesce(PaperReview.reviewType, 0) as myReviewType,
 	coalesce(PaperReview.reviewSubmitted, 0) as myReviewSubmitted,
 	coalesce($score, 0) as reviewScore,
+	Paper.outcome,
 	topicInterestScore,
-	coalesce(PRR.contactId, 0) as refused
+	coalesce(PRR.contactId, 0) as refused,
+	" . ($Conf->sversion >= 51 ? "Paper.managerContactId" : "0 as managerContactId") . "
 	from Paper join PCMember
 	left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PCMember.contactId=PaperConflict.contactId)
 	left join PaperReviewPreference on (Paper.paperId=PaperReviewPreference.paperId and PCMember.contactId=PaperReviewPreference.contactId)
@@ -313,6 +315,7 @@ function doAssign() {
 	    if ($row->conflictType > 0
                 || $row->myReviewType > 0
 		|| $row->refused > 0
+                || !@$pcm[$row->contactId]
                 || !$pcm[$row->contactId]->allow_review_assignment($row))
 		$prefs[$row->contactId][$row->paperId] = -1000001;
 	    else
