@@ -61,9 +61,12 @@ $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowr
 $Conf->header("Review Assignments", "assignpc", $abar);
 
 
+$pcm = pcMembers();
 $reviewer = rcvtint($_REQUEST["reviewer"]);
 if ($reviewer <= 0)
     $reviewer = $Me->contactId;
+if ($reviewer <= 0 || !@$pcm[$reviewer])
+    $reviewer = 0;
 
 
 function saveAssignments($reviewer) {
@@ -142,7 +145,6 @@ if ($kind == "a")
 echo "</dl>\nClick a heading to sort.\n</div></div>";
 
 
-$pcm = pcMembers();
 if ($reviewer > 0)
     echo "<h2 style='margin-top:1em'>Assignments for ", Text::name_html($pcm[$reviewer]), ($pcm[$reviewer]->affiliation ? " (" . htmlspecialchars($pcm[$reviewer]->affiliation) . ")" : ""), "</h2>\n";
 else
