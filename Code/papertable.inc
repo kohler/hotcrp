@@ -51,8 +51,6 @@ class PaperTable {
 	}
 
 	$ms = array();
-	if (isset($_REQUEST["reviewId"]))
-	    $ms["re"] = true;
 	if ($Me->canViewReview($prow, null, null))
 	    $ms["r"] = true;
 	if ($Me->canReview($prow, null))
@@ -76,6 +74,8 @@ class PaperTable {
 	    $this->mode = key($ms);
 	if ($this->mode == "p" && isset($ms["r"]))
 	    $this->mode = "r";
+	if (@$ms["re"] && isset($_REQUEST["reviewId"]))
+	    $this->mode = "re";
     }
 
     function initialize($editable, $useRequest) {
