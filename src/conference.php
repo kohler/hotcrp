@@ -642,6 +642,29 @@ class Conference {
         }
         return $d;
     }
+    function parse_time($d, $reference = null) {
+        global $Now, $Opt;
+        if ($reference === null)
+            $reference = $Now;
+        if (!isset($Opt["dateFormatTimezoneRemover"])
+            && function_exists("timezone_abbreviations_list")) {
+            $mytz = date_default_timezone_get();
+            $x = array();
+            foreach (timezone_abbreviations_list() as $tzname => $tzinfo) {
+                foreach ($tzinfo as $tz)
+                    if ($tz["timezone_id"] == $mytz)
+                        $x[] = preg_quote($tzname);
+            }
+            if (count($x) == 0)
+                $x[] = preg_quote(date("T", $reference));
+            $Opt["dateFormatTimezoneRemover"] =
+                "/(?:\\s|\\A)(?:" . join("|", $x) . ")(?:\\s|\\z)/i";
+        }
+        if (@$Opt["dateFormatTimezoneRemover"])
+            $d = preg_replace($Opt["dateFormatTimezoneRemover"], " ", $d);
+        return strtotime($d, $reference);
+    }
+
     function _printableTime($value, $long, $useradjust, $preadjust = null) {
 	global $Opt;
 	if ($value <= 0)

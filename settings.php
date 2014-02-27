@@ -208,7 +208,7 @@ function parseValue($name, $type) {
     else if ($type === "date" || $type === "cdate") {
 	if ($v == "" || strtoupper($v) == "N/A" || $v == "0")
 	    return -1;
-	else if (($v = strtotime($v)) !== false)
+	else if (($v = $Conf->parse_time($v)) !== false)
 	    return $v;
 	else
 	    $err = $SettingText[$name] . ": invalid date.";

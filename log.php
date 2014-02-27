@@ -94,8 +94,8 @@ $firstDate = false;
 if ($_REQUEST["date"] == "")
     $_REQUEST["date"] = "now";
 if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"]))
-    if (($firstDate = strtotime($_REQUEST["date"])) === false) {
-	$Conf->errorMsg("\"" . htmlspecialchars($_REQUEST["date"]) . "\" is not a valid date.");
+    if (($firstDate = $Conf->parse_time($_REQUEST["date"])) === false) {
+	$Conf->errorMsg("“" . htmlspecialchars($_REQUEST["date"]) . "” is not a valid date.");
 	$Eclass["date"] = " error";
     }
 

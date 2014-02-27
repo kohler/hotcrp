@@ -217,7 +217,7 @@ class PaperStatus {
                 if (is_numeric($pj->$k))
                     $pj->$k = (int) $pj->$k;
                 else if (is_string($pj->$k))
-                    $pj->$k = strtotime($pj->$k, $Now);
+                    $pj->$k = $Conf->parse_time($pj->$k, $Now);
                 else
                     $pj->$k = false;
                 if ($pj->$k === false || $pj->$k < 0)
