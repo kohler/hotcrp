@@ -9,8 +9,7 @@ require_once("init.php");
 // These are pages that we've removed from the source. But some user might
 // have an old version of the page lying around their directory. Don't run
 // that code; redirect to index.
-if (array_search(request_script_base(),
-                 array("account", "contactauthors", "contacts", "login", "logout")) !== false)
+if (array_search(request_script_base(), array("account", "contactauthors", "contacts", "login", "logout")) !== false)
     go();
 
 
@@ -42,7 +41,7 @@ if (!$Conf->dblink) {
 $Opt["globalSessionLifetime"] = ini_get('session.gc_maxlifetime');
 if (!isset($Opt["sessionLifetime"]))
     $Opt["sessionLifetime"] = 86400;
-ini_set('session.gc_maxlifetime', defval($Opt, "sessionLifetime", 86400));
+ini_set("session.gc_maxlifetime", defval($Opt, "sessionLifetime", 86400));
 
 
 // Check and fix Zlib output compression

@@ -231,14 +231,6 @@ if (!@$Opt["loaded"]) {
 }
 
 
-// Set timezone
-if (function_exists("date_default_timezone_set")) {
-    if (isset($Opt["timezone"]))
-        date_default_timezone_set($Opt["timezone"]);
-    else if (!ini_get("date.timezone") && !getenv("TZ"))
-        date_default_timezone_set("America/New_York");
-}
-
 // Set locale to C (so that, e.g., strtolower() on UTF-8 data doesn't explode)
 setlocale(LC_COLLATE, "C");
 setlocale(LC_CTYPE, "C");

@@ -246,6 +246,17 @@ class Conference {
             $Opt["downloadPrefix"] = $confname . "-";
         if (!isset($Opt["conferenceId"]) || $Opt["conferenceId"] == "")
             $Opt["conferenceId"] = $confname;
+
+        // handle timezone
+        if (function_exists("date_default_timezone_set")) {
+            if (isset($Opt["timezone"])) {
+                if (!date_default_timezone_set($Opt["timezone"])) {
+                    $this->errorMsg("Timezone option “" . htmlspecialchars($Opt["timezone"]) . "” is invalid; falling back to “America/New_York”.");
+                    date_default_timezone_set("America/New_York");
+                }
+            } else if (!ini_get("date.timezone") && !getenv("TZ"))
+                date_default_timezone_set("America/New_York");
+        }
     }
 
     function setting($name, $defval = false) {
