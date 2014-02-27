@@ -587,20 +587,25 @@ echofield(3, "lastName", "Last&nbsp;name", textinput("lastName", crpformvalue("l
 
 if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])) {
     echo "<div class='f-i'><div class='f-ix'>
-  <div class='", fcclass('password'), "'>Password</div>
-  <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"", crpformvalue('upassword', 'password'), "\" onchange='hiliter(this)' />";
+  <div class='", fcclass('password'), "'>New password</div>
+  <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"\" onchange='hiliter(this)' />";
     if ($Me->privChair && $Acct->password_type == 0)
 	echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upasswordt', 'password'), "\" onchange='hiliter(this)' />";
     echo "</div>
 </div><div class='fn f-ix'>
   <div class='", fcclass('password'), "'>Repeat password</div>
-  <div class='", feclass('password'), "'>", textinput("upassword2", crpformvalue("upassword2", "password"), 24, false, true), "</div>
+  <div class='", feclass('password'), "'>", textinput("upassword2", "", 24, false, true), "</div>
 </div>\n";
-    if ($Acct->password_type == 0) {
-        echo "  <div class='f-h'>The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
+    if ($Acct->password_type == 0
+        && ($Me->privChair || Contact::password_cleartext())) {
+        echo "  <div class=\"f-h\">";
+        if (Contact::password_cleartext())
+            echo "The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
         if ($Me->privChair) {
             $Conf->footerScript("function shift_password(dir){var form=$$(\"accountform\");fold(\"account\",dir);if(form&&form.whichpassword)form.whichpassword.value=dir?\"\":\"t\";return false}");
-            echo "  <span class='sep'></span><span class='f-cx'><a class='fn' href='#' onclick='return shift_password(0)'>Show password</a><a class='fx' href='#' onclick='return shift_password(1)'>Hide password</a></span>";
+            if (Contact::password_cleartext())
+                echo " <span class=\"sep\"></span>";
+            echo "<span class='f-cx'><a class='fn' href='#' onclick='return shift_password(0)'>Show password</a><a class='fx' href='#' onclick='return shift_password(1)'>Hide password</a></span>";
         }
         echo "</div>\n";
     }

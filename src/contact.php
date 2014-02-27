@@ -1928,6 +1928,12 @@ class Contact {
             return PHP_INT_SIZE == 8 ? "sha512" : "sha256";
     }
 
+    static public function password_cleartext() {
+        global $Opt;
+        return !@$Opt["safePasswords"]
+            || (is_int(@$Opt["safePasswords"]) && $Opt["safePasswords"] < 1);
+    }
+
     public function password_needs_upgrade() {
         global $Opt;
         if (@$Opt["safePasswords"] === true
