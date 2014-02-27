@@ -570,6 +570,10 @@ class ReviewForm {
 		}
 		$q[] = "$field='" . sqlq($fval) . "'";
 	    }
+        foreach ($this->fmap as $f)
+            if ((!isset($this->forder[$f->id]) || !isset($req[$f->id]))
+                && !$f->has_options)
+                $q[] = "$f->id=''";
 
 	// get the current time
 	$now = time();
