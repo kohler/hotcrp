@@ -957,15 +957,14 @@ class Conference {
 	if (!($doc = edb_orow($result)))
 	    return $doc;
         // type doesn't matter
-        $docclass = new HotCRPDocument($dtype);
+        $doc->docclass = new HotCRPDocument($dtype);
         // in modern versions sha1 is set at storage time; before it wasn't
 	if ($doc->paperStorageId && $doc->sha1 == "") {
-	    if (!$docclass->load_content($doc))
+	    if (!$doc->docclass->load_content($doc))
 		return false;
 	    $doc->sha1 = sha1($doc->content, true);
 	    $this->q("update PaperStorage set sha1='" . sqlq($doc->sha1) . "' where paperStorageId=" . $doc->paperStorageId);
 	}
-        DocumentHelper::load($docclass, $doc);
 	return $doc;
     }
 

@@ -31,6 +31,12 @@ class ZipDocument {
         $this->headers = false;
     }
 
+    static private function _add_done($doc, $result) {
+        if (@$doc->_content_reset)
+            unset($doc->content, $doc->_content_reset);
+        return $result;
+    }
+
     private function _add($doc, $filename, $check_filename) {
         if ($this->tmpdir === null)
             if (($this->tmpdir = tempdir()) === false) {
@@ -48,11 +54,15 @@ class ZipDocument {
         if (is_string($doc))
             $doc = (object) array("content" => $doc);
         else if (!isset($doc->filestore) && !isset($doc->content)) {
-            if (!isset($doc->error_text))
-                $this->warnings[] = "$filename: Couldn’t load document.";
-            else if ($doc->error_text)
-                $this->warnings[] = $doc->error_text;
-            return false;
+            if ($doc->docclass && DocumentHelper::load($doc->docclass, $doc))
+                $doc->_content_reset = true;
+            else {
+                if (!isset($doc->error_text))
+                    $this->warnings[] = "$filename: Couldn’t load document.";
+                else if ($doc->error_text)
+                    $this->warnings[] = $doc->error_text;
+                return false;
+            }
         }
         $fn = $filename;
         $zip_filename = "$this->tmpdir/";
@@ -62,14 +72,14 @@ class ZipDocument {
                 && (file_exists($zip_filename) || !@mkdir($zip_filename, 0777))) {
                 $this->warnings[] = "$filename: Couldn’t save document to this name.";
                 error_log($zip_filename);
-                return false;
+                return self::_add_done($doc, false);
             }
             $zip_filename .= "/";
             $fn = substr($fn, $p + 1);
         }
         if ($fn == "") {
             $this->warnings[] = "$filename: Bad filename.";
-            return false;
+            return self::_add_done($doc, false);
         }
         $zip_filename .= $fn;
         if (isset($doc->filestore)
@@ -83,7 +93,7 @@ class ZipDocument {
             }
             if ($trylen != strlen($doc->content)) {
                 $this->warnings[] = "$filename: Could not save.";
-                return false;
+                return self::_add_done($doc, false);
             }
         }
         $zip_filename = substr($zip_filename, strlen($this->tmpdir) + 1);
@@ -92,7 +102,7 @@ class ZipDocument {
             $this->recurse = true;
         }
         $this->files[$zip_filename] = true;
-        return true;
+        return self::_add_done($doc, true);
     }
 
     public function add($doc, $filename = null) {
