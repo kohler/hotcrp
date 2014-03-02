@@ -1376,7 +1376,7 @@ class Conference {
 
     function comment_query($where) {
         return "select PaperComment.*, firstName reviewFirstName, lastName reviewLastName, email reviewEmail
-		from PaperComment join ContactInfo on (contactInfo.contactId=PaperComment.contactId)
+		from PaperComment join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
 		where $where order by commentId";
     }
 
