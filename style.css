@@ -1147,52 +1147,6 @@ span.asspref-1 {
 	text-align: center;
 }
 
-/* XXX 10/29/13 These CSS rules are obsolete */
-img.ass-1, img.ass-2, img.ass-3 {
-	background-image: url(images/sprite.png?2);
-	width: 12px;
-	height: 12px;
-}
-img.ass0, img.ass1, img.ass1n, img.ass2, img.ass2n, img.ass3, img.ass3n,
-img.ass4, img.ass4n {
-	background-image: url(images/asprite.gif);
-	width: 12px;
-	height: 12px;
-}
-img.ass-1 {
-	background-position: 0 -11px;
-}
-img.ass-2 {
-	background-position: -14px -11px;
-}
-img.ass-3 {
-	background-position: -62px 0;
-}
-img.ass1 {
-	background-position: -14px 0;
-}
-img.ass1n {
-	background-position: -14px -14px;
-}
-img.ass2 {
-	background-position: -28px 0;
-}
-img.ass2n {
-	background-position: -28px -14px;
-}
-img.ass3 {
-	background-position: -42px 0;
-}
-img.ass3n {
-	background-position: -42px -14px;
-}
-img.ass4 {
-	background-position: -56px 0;
-}
-img.ass4n {
-	background-position: -56px -14px;
-}
-
 img.prev, img.next {
 	background-image: url(images/sprite.png?2);
 	width: 8px;
