@@ -569,9 +569,12 @@ class PaperSearch {
     function _reviewerMatcher($word, $quoted, $type) {
 	if (!$quoted && ($word == "" || strcasecmp($word, "pc") == 0))
 	    return array_keys(pcMembers());
-	else if (!$quoted && strcasecmp($word, "me") == 0)
-	    return array($this->cid);
-        else if (!$quoted && $type == 1 && ($word == "no" || $word == "none"))
+	else if (!$quoted && strcasecmp($word, "me") == 0) {
+            if ($this->_reviewer_fixed)
+                return array($this->reviewer_cid());
+            else
+                return array($this->cid);
+        } else if (!$quoted && $type == 1 && ($word == "no" || $word == "none"))
             return "=0";
         else if (!$quoted && $type == 1 && ($word == "yes" || $word == "any"))
             return "!=0";
