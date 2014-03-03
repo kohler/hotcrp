@@ -196,19 +196,16 @@ echo "<form method='get' action='", hoturl("reviewprefs"), "' accept-charset='UT
 if ($Me->privChair) {
     echo "<tr><td class='lxcaption'><strong>Preferences:</strong> &nbsp;</td><td class='lentry'>";
 
-    $query = "select ContactInfo.contactId, firstName, lastName,
-		count(preference) as preferenceCount
-		from ContactInfo
-		join PCMember using (contactId)
-		left join PaperReviewPreference on (ContactInfo.contactId=PaperReviewPreference.contactId)
-		group by contactId
-		order by lastName, firstName, email";
-    $result = $Conf->qe($query);
+    $prefcount = array();
+    $result = $Conf->qe("select contactId, count(preference) from PaperReviewPreference where preference!=0 group by contactId");
+    while (($row = edb_row($result)))
+        $prefcount[$row[0]] = $row[1];
+
     $revopt = array();
-    while (($row = edb_orow($result))) {
-	$revopt[$row->contactId] = Text::user_html($row);
-	if ($row->preferenceCount <= 0)
-	    $revopt[$row->contactId] .= " (no preferences)";
+    foreach (pcMembers() as $id => $pcm) {
+        $revopt[$id] = Text::name_html($pcm);
+        if (!@$prefcount[$id])
+            $revopt[$id] .= " (no preferences)";
     }
 
     echo Ht::select("reviewer", $revopt, $reviewer, array("onchange" => "\$\$(\"redisplayform\").submit()")),
