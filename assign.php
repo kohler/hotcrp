@@ -647,10 +647,15 @@ echo "<div class='f-i'><div class='f-ix'>
   <div class='f-e'><input class='textlite' type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST, "email", "")), "\" size='28' tabindex='1' /></div>
 </div><div class='clear'></div></div>\n\n";
 
-echo "<div class='f-i'>
+// reason area
+$null_mailer = new Mailer(null, null);
+$reqbody = $null_mailer->expandTemplate("requestreview", false);
+if (strpos($reqbody["body"], "%REASON%") !== false) {
+    echo "<div class='f-i'>
   <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
   <div class='f-e'><textarea class='papertext' name='reason' rows='2' cols='60' tabindex='1'>", htmlspecialchars(defval($_REQUEST, "reason", "")), "</textarea></div>
 <div class='clear'></div></div>\n\n";
+}
 
 echo "<div class='f-i'>
   <input type='submit' name='add' value='Request review' tabindex='2' /></div>\n\n";
