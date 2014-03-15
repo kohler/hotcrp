@@ -155,7 +155,7 @@ class Mailer {
 
     private function tagger()  {
         if (!$this->_tagger)
-            $this->_tagger = new Tagger($this->contact);
+            $this->_tagger = new Tagger($this->permissionContact);
         return $this->_tagger;
     }
 
@@ -481,7 +481,7 @@ class Mailer {
         $text = "";
         while (($row = edb_orow($result)))
             if ($row->reviewSubmitted)
-                $text .= $rf->prettyTextForm($this->row, $row, $this->contact, true) . "\n";
+                $text .= $rf->prettyTextForm($this->row, $row, $this->permissionContact, true) . "\n";
         return $text;
     }
 
@@ -509,8 +509,8 @@ class Mailer {
         $rf = reviewForm();
 	$text = "";
 	foreach ($crows as $crow)
-	    if ($this->contact->canViewComment($this->row, $crow, false))
-		$text .= $rf->prettyTextComment($this->row, $crow, $this->contact) . "\n";
+	    if ($this->permissionContact->canViewComment($this->row, $crow, false))
+		$text .= $rf->prettyTextComment($this->row, $crow, $this->permissionContact) . "\n";
 
 	$Conf->settings["au_seerev"] = $old_au_seerev;
 	return $text;
