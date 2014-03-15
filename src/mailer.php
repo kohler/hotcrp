@@ -321,9 +321,7 @@ class Mailer {
 	if ($what == "%REVIEWNUMBER%")
 	    return $this->reviewNumber;
 	if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
-	    if (defval($this->row, "conflictType", 0) < CONFLICT_AUTHOR
-		&& defval($this->permissionContact, "conflictType", 0) < CONFLICT_AUTHOR
-		&& !defval($this->permissionContact, "privSuperChair")
+	    if (!defval($this->permissionContact, "privSuperChair")
 		&& !$this->permissionContact->canViewAuthors($this->row, false))
 		return ($isbool ? false : "Hidden for blind review");
 	    cleanAuthor($this->row);
