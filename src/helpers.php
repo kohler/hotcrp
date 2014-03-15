@@ -610,12 +610,13 @@ class SessionList {
         return $empty ? $empty : $oldest;
     }
     static function create($listid, $ids, $description, $url) {
-        global $ConfSiteBase, $Now;
+        global $Me, $ConfSiteBase, $Now;
         if ($url && $ConfSiteBase && str_starts_with($url, $ConfSiteBase))
             $url = substr($url, strlen($ConfSiteBase));
         return (object) array("listid" => $listid, "ids" => $ids,
                               "description" => $description,
-                              "url" => $url, "timestamp" => $Now);
+                              "url" => $url, "timestamp" => $Now,
+                              "cid" => $Me ? $Me->contactId : 0);
     }
 }
 
@@ -672,7 +673,8 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
     if (isset($_REQUEST["ls"])
 	&& ($listno = rcvtint($_REQUEST["ls"])) > 0
         && ($xlist = SessionList::lookup($listno))
-        && str_starts_with($xlist->listid, $listtype)) {
+        && str_starts_with($xlist->listid, $listtype)
+        && (!@$xlist->cid || $xlist->cid == ($Me ? $Me->contactId : 0))) {
 	$list = $xlist;
 	$CurrentList = $listno;
     } else if (isset($_REQUEST["ls"]) && $listtype == "p") {
