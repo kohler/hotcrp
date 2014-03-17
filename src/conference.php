@@ -1732,7 +1732,7 @@ class Conference {
 	global $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH, $Opt;
 	if (!$this->headerPrinted) {
 	    echo "<!DOCTYPE html>
-<html>
+<html lang=\"en\">
 <head>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
 <meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />
