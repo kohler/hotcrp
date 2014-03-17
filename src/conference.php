@@ -1732,11 +1732,13 @@ class Conference {
 	global $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH, $Opt;
 	if (!$this->headerPrinted) {
 	    echo "<!DOCTYPE html>
-<html lang=\"en\">
+<html>
 <head>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
 <meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />
-<meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />\n";
+<meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />
+<meta http-equiv=\"Content-Language\" content=\"en\" />
+<meta name=\"google\" content=\"notranslate\" />\n";
 	    if (strstr($title, "<") !== false)
 		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
 
