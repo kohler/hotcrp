@@ -619,9 +619,9 @@ class ReviewForm {
 	    && $contact->isPC && !$usedReviewToken)
 	    $q[] = "reviewType=" . REVIEW_PC;
 	if ($rrow && $diff_view_score > VIEWSCORE_FALSE
-            && isset($req["version"])
+            && isset($req["version"]) && ctype_digit($req["version"])
 	    && $req["version"] > defval($rrow, "reviewEditVersion"))
-	    $q[] = "reviewEditVersion=" . $req["version"];
+	    $q[] = "reviewEditVersion=" . ($req["version"] + 0);
 	$notify = $notify_author = false;
 	if (!$rrow || $diff_view_score > VIEWSCORE_FALSE) {
 	    $q[] = "reviewModified=" . $now;
