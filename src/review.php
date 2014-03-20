@@ -613,7 +613,7 @@ class ReviewForm {
 	$reviewBlind = $Conf->is_review_blind(!!@$req["blind"]);
 	if ($rrow && $reviewBlind != $rrow->reviewBlind)
 	    $diff_view_score = max($diff_view_score, VIEWSCORE_ADMINONLY);
-	$q[] = "reviewBlind=$reviewBlind";
+	$q[] = "reviewBlind=" . ($reviewBlind ? 1 : 0);
 	if ($rrow && $rrow->reviewType == REVIEW_EXTERNAL
 	    && $contact->contactId == $rrow->contactId
 	    && $contact->isPC && !$usedReviewToken)
