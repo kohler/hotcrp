@@ -181,7 +181,8 @@ class S3Document {
 
     public function save($filename, $content, $content_type, $user_data = null) {
         $this->run($filename, "HEAD", array());
-        if ($this->status != 200)
+        if ($this->status != 200
+            || @$this->response_headers["content-length"] != strlen($content))
             $this->run($filename, "PUT", array("content" => $content,
                                                "content_type" => $content_type,
                                                "user_data" => $user_data));
