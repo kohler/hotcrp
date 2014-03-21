@@ -131,9 +131,10 @@ class S3Document {
         return array("header" => $hdrtext, "signature" => $signature);
     }
 
-    private function http_headers($filename, $method, $content = null,
-                                  $content_type = null, $user_data = null) {
+    private function http_headers($filename, $method, $args) {
         global $Now;
+        list($content, $content_type, $user_data) =
+            array(@$args["content"], @$args["content_type"], @$args["user_data"]);
         $content_empty = $content === false || $content === "" || $content === null;
         $url = "https://$this->s3_bucket.s3.amazonaws.com/$filename";
         $hdr = array("method" => $method,
@@ -169,25 +170,27 @@ class S3Document {
         }
     }
 
-    public function save($filename, $content, $content_type, $user_data = null) {
-        list($url, $hdr) = $this->http_headers($filename, "PUT",
-                                               $content, $content_type, $user_data);
+    private function run($filename, $method, $args) {
+        list($url, $hdr) = $this->http_headers($filename, $method, $args);
         $context = stream_context_create(array("http" => $hdr));
         $stream = fopen($url, "r", false, $context);
         $this->parse_response_headers($url, stream_get_meta_data($stream));
         $this->response_headers["content"] = stream_get_contents($stream);
         fclose($stream);
+    }
+
+    public function save($filename, $content, $content_type, $user_data = null) {
+        $this->run($filename, "HEAD", array());
+        if ($this->status != 200)
+            $this->run($filename, "PUT", array("content" => $content,
+                                               "content_type" => $content_type,
+                                               "user_data" => $user_data));
         return $this->status == 200;
     }
 
     public function load($filename) {
-        list($url, $hdr) = $this->http_headers($filename, "GET");
-        $context = stream_context_create(array("http" => $hdr));
-        $stream = fopen($url, "r", false, $context);
-        $this->parse_response_headers($url, stream_get_meta_data($stream));
-        $data = stream_get_contents($stream);
-        fclose($stream);
-        return $data;
+        $this->run($filename, "GET", array());
+        return $this->response_headers["content"];
     }
 
 }
