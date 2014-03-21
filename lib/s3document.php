@@ -199,4 +199,9 @@ class S3Document {
         return $this->status == 200;
     }
 
+    public function delete($filename) {
+        $this->run($filename, "DELETE", array());
+        return $this->status == 204;
+    }
+
 }
