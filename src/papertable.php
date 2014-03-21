@@ -2178,7 +2178,7 @@ class PaperTable {
 	if (isset($_REQUEST["paperId"])
 	    || (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["commentId"]))) {
 	    self::_maybeSearchPaperId();
-	    $sel["paperId"] = $_REQUEST["paperId"];
+	    $sel["paperId"] = defval($_REQUEST, "paperId", 1);
 	} else if (isset($_REQUEST["reviewId"]))
 	    $sel["reviewId"] = $_REQUEST["reviewId"];
 	else if (isset($_REQUEST["commentId"]))
