@@ -604,4 +604,9 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table ContactInfo add `data` varbinary(32767) DEFAULT NULL")
         && $Conf->ql("update Settings set value=71 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 71;
+    if ($Conf->settings["allowPaperOption"] == 71
+        && $Conf->ql("alter table Settings modify `name` varbinary(256) DEFAULT NULL")
+        && $Conf->ql("update Settings set name=rtrim(name)")
+        && $Conf->ql("update Settings set value=72 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 72;
 }

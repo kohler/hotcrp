@@ -528,7 +528,7 @@ CREATE TABLE `ReviewRequest` (
 
 DROP TABLE IF EXISTS `Settings`;
 CREATE TABLE `Settings` (
-  `name` char(40) NOT NULL,
+  `name` varbinary(256) DEFAULT NULL,
   `value` int(11) NOT NULL,
   `data` varbinary(32767) DEFAULT NULL,
   UNIQUE KEY `name` (`name`)
@@ -566,7 +566,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 71);
+insert into Settings (name, value) values ('allowPaperOption', 72);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
