@@ -1940,7 +1940,7 @@ function check_version(url) {
     }
     function updatecb(json) {
 	if (json && json.updates && JSON.stringify)
-	    Miniajax.get("checkupdates.php?data="
+	    Miniajax.get(hotcrp_base + "checkupdates.php?data="
 			 + encodeURIComponent(JSON.stringify(json)),
 			 updateverifycb);
     }
