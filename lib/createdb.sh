@@ -397,6 +397,7 @@ global $Opt;'
 { if (p) print }' < "${SRCDIR}${distoptions_file}"
     cat <<__EOF__
 \$Opt["dbName"] = "$DBNAME";
+\$Opt["dbUser"] = "$DBNAME";
 \$Opt["dbPassword"] = "`php_dbpass`";
 __EOF__
     test -z "$minimal_options" && awk 'BEGIN { p = 0 }
