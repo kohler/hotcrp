@@ -43,6 +43,12 @@ while [ $# -gt 0 ]; do
     --create-user)
         test "$#" -gt 1 -a -z "$mode" || usage
         makeuser="$2"; mode=makeuser; shift;;
+    --show-opt=*|--show-option=*)
+        test -z "$mode" || usage
+	optname="`echo "+$1" | sed 's/^[^=]*=//'`"; mode=showopt;;
+    --show-opt|--show-option)
+	test "$#" -gt 1 -a -z "$mode" || usage
+	optname="$2"; shift; mode=showopt;;
     -c|--co|--con|--conf|--confi|--config|-c*|--co=*|--con=*|--conf=*|--confi=*|--config=*)
         parse_common_argument "$@";;
     -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
@@ -96,6 +102,14 @@ if test -n "$pwuser"; then
         elif [ $nupdates != 1 ]; then
             echo "$nupdates users updated" 1>&2
         fi
+    fi
+elif test "$mode" = showopt; then
+    if test -n "`echo "$optname" | tr -d A-Za-z0-9._:-`"; then
+        echo "bad option name" 1>&2; exitval=1
+    else
+        opt="`getdbopt "$optname" 2>/dev/null`"
+        optopt="`echo "select data from Settings where name='opt.$optname'" | eval "$MYSQL $myargs -N $FLAGS $dbname"`"
+        if test -n "$optopt"; then eval "echo $optopt"; else eval "echo $opt"; fi
     fi
 elif test "$mode" = makeuser; then
     echo "insert into ContactInfo (email,password$makeusercols) values ('`echo "$makeuser" | sql_quote`',''$makeuservals)" | eval "$MYSQL $myargs -N $FLAGS $dbname"
