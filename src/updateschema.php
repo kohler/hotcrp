@@ -138,7 +138,7 @@ function update_schema_create_options($Conf) {
 
 function updateSchema($Conf) {
     global $Opt, $OK;
-    error_log("Note: updating schema from version " . $Conf->settings["allowPaperOption"]);
+    error_log($Opt["dbName"] . ": updating schema from version " . $Conf->settings["allowPaperOption"]);
 
     if ($Conf->settings["allowPaperOption"] == 6
 	&& $Conf->ql("alter table ReviewRequest add `reason` text")
