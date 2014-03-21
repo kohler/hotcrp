@@ -6,6 +6,8 @@
 class S3Document {
 
     const EMPTY_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+    static private $known_headers = array("cache-control" => 1, "content-disposition" => 1,
+                                          "content-encoding" => 1, "expires" => 1);
 
     private $s3_bucket;
     private $s3_key;
@@ -140,8 +142,11 @@ class S3Document {
         $hdr = array("method" => $method,
                      "Date" => gmdate("D, d M Y H:i:s GMT", $Now));
         if ($user_data)
-            foreach ($user_data as $key => $value)
-                $hdr["x-amz-meta-$key"] = $value;
+            foreach ($user_data as $key => $value) {
+                if (!@self::$known_headers[strtolower($key)])
+                    $key = "x-amz-meta-$key";
+                $hdr[$key] = $value;
+            }
         $sig = $this->signature($url, $hdr, $content);
         $hdr["header"] = $sig["header"];
         if (!$content_empty && $content_type)
