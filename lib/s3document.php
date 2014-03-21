@@ -194,4 +194,9 @@ class S3Document {
         return $this->response_headers["content"];
     }
 
+    public function check($filename) {
+        $this->run($filename, "HEAD", array());
+        return $this->status == 200;
+    }
+
 }
