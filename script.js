@@ -1809,7 +1809,7 @@ Miniajax.submit = function (formname, callback, timeout) {
     var resultelt = $$(resultname + "result") || {};
     if (!callback)
 	callback = function (rv) {
-	    resultelt.innerHTML = rv.response;
+	    resultelt.innerHTML = ("response" in rv ? rv.response : "");
 	};
     if (!timeout)
 	timeout = 4000;
