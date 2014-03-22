@@ -323,7 +323,7 @@ class CommentView {
         }
         if ($wordlimit > 0) {
             $buttons[] = "";
-            $wc = preg_match_all("/\\PZ+/u", $ctext, $cm);
+            $wc = preg_match_all("/\\P{Xps}+/u", $ctext, $cm);
             $wct = ($wordlimit < $wc ? plural($wc - $wordlimit, "word") . " over" : plural($wordlimit - $wc, "word") . " left");
             $buttons[] = "<div id='responsewc' class='words"
                 . ($wordlimit < $wc ? " wordsover" :
