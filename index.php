@@ -127,8 +127,8 @@ function change_review_tokens() {
     foreach (preg_split('/\s+/', $_REQUEST["token"]) as $x)
 	if ($x == "")
 	    /* no complaints */;
-	else if (($token = decode_token($x, "V")) === false)
-	    $Conf->errorMsg("Invalid review token &ldquo;" . htmlspecialchars($token) . ".&rdquo;  Check your typing and try again.");
+	else if (!($token = decode_token($x, "V")))
+	    $Conf->errorMsg("Invalid review token &ldquo;" . htmlspecialchars($x) . "&rdquo;.  Check your typing and try again.");
 	else if (defval($_SESSION, "rev_token_fail", 0) >= 5)
 	    $Conf->errorMsg("Too many failed attempts to use a review token.  <a href='" . hoturl("index", "signout=1") . "'>Sign out</a> and in to try again.");
 	else {
