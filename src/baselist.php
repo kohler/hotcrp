@@ -108,19 +108,48 @@ class BaseList {
             return defval($Opt, "defaultScoreSort", "C");
     }
 
+    private static function check_sorter(&$text, &$parts, $regex, $symbol) {
+        if (preg_match('/\A(|.*\s)' . $regex . '(\s.*|)\z/', $text, $m)) {
+            $parts[2] .= $symbol;
+            $text = simplify_whitespace($m[1] . $m[2]);
+        }
+    }
+
     public static function parse_sorter($text) {
         $sort = (object) array("type" => null,
                                "reverse" => false,
                                "score" => self::default_score_sort(),
                                "empty" => $text == "");
-        if (!preg_match('/\A(\d+)([a-z]*)\z/i', $text, $m)
-            && !preg_match('/\A([^,+]+)(?:[,+]([a-z]*))?\z/i', $text, $m))
-            $m = array();
-        if (isset($m[1]))
-            $sort->type = $m[1];
-        if (isset($m[2]) && $m[2] != "")
-            for ($i = 0; $i < strlen($m[2]); ++$i) {
-                $x = strtoupper($m[2][$i]);
+
+        // parse the sorter
+        $text = simplify_whitespace($text);
+        if (preg_match('/\A(\d+)([a-z]*)\z/i', $text, $parts)
+            || preg_match('/\A([^,+#]+)[,+#]([a-z]*)\z/i', $text, $parts))
+            /* ok */;
+        else {
+            $parts = array("", $text, "");
+            self::check_sorter($text, $parts, "reversed?", "R");
+            if (preg_match('/\A(|.*\s)by (.*)\z/', $text, $m))
+                list($text, $bytext, $hasby) = array($m[1], $m[2], "by ");
+            else
+                list($text, $bytext, $hasby) = array("", $text, "");
+            self::check_sorter($bytext, $parts, "counts?", "C");
+            self::check_sorter($bytext, $parts, "(?:av|ave|average)", "A");
+            self::check_sorter($bytext, $parts, "(?:med|median)", "E");
+            self::check_sorter($bytext, $parts, "(?:var|variance)", "V");
+            self::check_sorter($bytext, $parts, "(?:max-min)", "D");
+            self::check_sorter($bytext, $parts, "(?:my|my score)", "Y");
+            if ($bytext)
+                $text = simplify_whitespace($text . $hasby . $bytext);
+            $parts[1] = $text;
+        }
+
+        // generate the sorter
+        if (isset($parts[1]))
+            $sort->type = $parts[1];
+        if (isset($parts[2]) && $parts[2] != "")
+            for ($i = 0; $i < strlen($parts[2]); ++$i) {
+                $x = strtoupper($parts[2][$i]);
                 if ($x == "R")
                     $sort->reverse = true;
                 else if ($x == "N")

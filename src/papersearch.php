@@ -1207,24 +1207,29 @@ class PaperSearch {
             || $keyword == "sort" || $keyword == "showsort"
             || $keyword == "editsort") {
             $editing = strpos($keyword, "edit") !== false;
+            $sorting = strpos($keyword, "sort") !== false;
 	    $views = array();
-	    foreach (preg_split('/\s+/', $word) as $w) {
-                $a = ($keyword == "hide" ? false : ($editing ? "edit" : true));
-		if ($w[0] == "-")
-                    list($a, $w) = array(false, substr($w, 1));
-                if ($w[0] == "#") {
-                    if ($editing)
-                        $w = "tagval:" . substr($w, 1);
-                    else
-                        $w = "tag:" . substr($w, 1);
-                }
-                $comma = strpos($w, ",");
-                $subw = $comma === false ? $w : substr($w, 0, $comma);
-                if ($subw != "" && $keyword != "sort")
-                    $views[$subw] = $a;
-                if (strpos($keyword, "sort") !== false)
-                    $views["sort"] = $w;
+            $a = ($keyword == "hide" ? false : ($editing ? "edit" : true));
+            $word = simplify_whitespace($word);
+            if ($word[0] == "-")
+                list($a, $w) = array(false, substr($word, 1));
+            if ($word[0] == "#") {
+                if ($editing)
+                    $word = "tagval:" . substr($word, 1);
+                else
+                    $word = "tag:" . substr($woird, 1);
             }
+            $wtype = $word;
+            if (preg_match('/\A(.*?)[#]/', $wtype, $m))
+                $wtype = $m[1];
+            else if ($sorting) {
+                $wtype = preg_replace('/(?:\A|\s)(?:rev|reversed?|by|av|ave|average|median|var|variance|counts?|max-min|my|my score)(?:\z|\s)/', " ", $wtype);
+                $wtype = simplify_whitespace($wtype);
+            }
+            if ($wtype != "" && $keyword != "sort")
+                $views[$wtype] = $a;
+            if ($sorting)
+                $views["sort"] = $word;
 	    $qt[] = SearchTerm::make_float(array("view" => $views));
 	}
 
