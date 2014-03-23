@@ -233,6 +233,8 @@ class Ht {
     static function pre_h($text) {
         if (is_array($text))
             $text = join("\n", $text);
+        else if (is_object($text))
+            $text = var_export($text, true);
         return "<pre>" . htmlspecialchars($text) . "</pre>";
     }
 
