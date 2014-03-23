@@ -917,7 +917,8 @@ if (isset($_REQUEST["redisplay"])) {
 displayOptionsSet("pldisplay");
 if (defval($_REQUEST, "scoresort") == "M")
     $_REQUEST["scoresort"] = "C";
-if (isset($_REQUEST["scoresort"]) && isset($scoreSorts[$_REQUEST["scoresort"]]))
+if (isset($_REQUEST["scoresort"])
+    && isset(PaperList::$score_sorts[$_REQUEST["scoresort"]]))
     $_SESSION["scoresort"] = $_REQUEST["scoresort"];
 if (!isset($_SESSION["scoresort"]))
     $_SESSION["scoresort"] = PaperList::default_score_sort();
@@ -1260,7 +1261,7 @@ if ($pl) {
 	    if ($Me->privChair)
 		$onchange .= ";plinfo.extra()";
 	    displayOptionText("<div style='padding-top:1ex'>Sort by: &nbsp;"
-		. Ht::select("scoresort", $scoreSorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
+                              . Ht::select("scoresort", PaperList::$score_sorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
 		. "<a class='help' href='" . hoturl("help", "t=scoresort") . "' target='_blank' title='Learn more'>?</a></div>", 3);
 	}
 	$anyScores = count($displayOptions) != $n;

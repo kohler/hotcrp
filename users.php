@@ -230,8 +230,8 @@ if (count($tOpt) > 1) {
     if (isset($pl->scoreMax)) {
 	$ss = array();
 	foreach (array("A", "V", "D") as $k) /* ghetto array_intersect_key */
-	    if (isset($scoreSorts[$k]))
-		$ss[$k] = $scoreSorts[$k];
+	    if (isset(ContactList::$score_sorts[$k]))
+		$ss[$k] = ContactList::$score_sorts[$k];
 	echo "<tr><td colspan='3'><div class='g'></div><b>Sort scores by:</b> &nbsp;",
 	    Ht::select("scoresort", $ss, defval($_SESSION, "pplscoresort", "A")),
 	    "</td></tr>";

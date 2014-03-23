@@ -3,18 +3,17 @@
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-global $scoreSorts;
-$scoreSorts = array("C" => "Counts",
-		    "A" => "Average",
-		    "E" => "Median",
-		    "V" => "Variance",
-		    "D" => "Max &minus; min",
-		    "Y" => "Your score");
-
 class BaseList {
 
     const FIELD_SCORE = 50;
     const FIELD_NUMSCORES = 11;
+
+    static public $score_sorts = array("C" => "Counts",
+                                       "A" => "Average",
+                                       "E" => "Median",
+                                       "V" => "Variance",
+                                       "D" => "Max &minus; min",
+                                       "Y" => "Your score");
 
     function _sortBase($a, $b) {
 	return $a->paperId - $b->paperId;
@@ -110,7 +109,6 @@ class BaseList {
     }
 
     public static function parse_sorter($text) {
-        global $scoreSorts;
         $sort = (object) array("type" => null,
                                "reverse" => false,
                                "score" => self::default_score_sort(),
@@ -129,7 +127,7 @@ class BaseList {
                     $sort->reverse = false;
                 else if ($x == "M")
                     $sort->score = "C";
-                else if (isset($scoreSorts[$x]))
+                else if (isset(self::$score_sorts[$x]))
                     $sort->score = $x;
             }
         return $sort;
