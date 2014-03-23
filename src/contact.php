@@ -392,7 +392,7 @@ class Contact {
             $pos = array_search($token, $this->review_tokens_);
             if (!$on && $pos !== false)
                 array_splice($this->review_tokens_, $pos, 1);
-            else if ($on && $pos === false)
+            else if ($on && $pos === false && $token != 0)
                 $this->review_tokens_[] = $token;
         }
         $new_ntokens = count($this->review_tokens_);
