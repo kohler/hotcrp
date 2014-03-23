@@ -13,7 +13,7 @@ class BaseList {
                                        "E" => "Median",
                                        "V" => "Variance",
                                        "D" => "Max &minus; min",
-                                       "Y" => "Your score");
+                                       "Y" => "My score");
 
     function _sortBase($a, $b) {
 	return $a->paperId - $b->paperId;

@@ -721,7 +721,7 @@ below the paper’s lowest real score.  Also known as Minshall score.</dd>
 <dd>Sort by the difference between the largest and smallest scores (a good
 measure of differences of opinion).</dd>
 
-<dt><strong>Your score</strong></dt>
+<dt><strong>My score</strong></dt>
 <dd>Sort by your score.  In the score graphs, your score is highlighted with a
 darker colored square.</dd>
 
