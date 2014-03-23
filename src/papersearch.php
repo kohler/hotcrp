@@ -1602,7 +1602,7 @@ class PaperSearch {
         $rt = $this->privChair ? 0 : self::F_NONCONFLICT;
         if (!$this->amPC)
             $rt |= self::F_REVIEWER;
-	$term = new SearchTerm("re", $rt, $value, $roundterm->value);
+	$term = new SearchTerm("re", $rt | self::F_XVIEW, $value, $roundterm->value);
 	if (defval($roundterm->value, "revadjnegate")) {
 	    $term->set("revadjnegate", false);
 	    return SearchTerm::negate($term);
@@ -1857,7 +1857,7 @@ class PaperSearch {
         // constraints to >= constraints, and ignore <=/</!= constraints).
         // We'll do the precise query later.
         $q[] = "coalesce($thistab.count,0)" . $t->value->conservative_countexpr();
-        $t->link = $thistab . "_info";
+        $t->link = $thistab;
 	return "(" . join(" and ", $q) . ")";
     }
 
