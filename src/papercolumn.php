@@ -1346,12 +1346,14 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("edittagval:", new EditTagPaperColumn(null, null, true));
 
     $rf = reviewForm();
+    $score = null;
     foreach ($reviewScoreNames as $n) {
         $score = new ScorePaperColumn($n);
         $f = $rf->field($n);
         ScorePaperColumn::register_score($score, $f->display_order);
     }
-    PaperColumn::register_factory("", $score);
+    if ($score)
+        PaperColumn::register_factory("", $score);
 
     $paperListFormulas = array();
     if ($Conf && $Conf->setting("formulas") && $Conf->sversion >= 32) {
