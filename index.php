@@ -437,8 +437,8 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
 	if (edb_nrows($result)) {
 	    $a = array();
 	    while (($row = edb_row($result)))
-		if (isset($ratingTypes[$row[0]]))
-		    $a[] = "<a href=\"" . hoturl("search", "q=rate:%22" . urlencode($ratingTypes[$row[0]]) . "%22") . "\" title='List rated reviews'>$row[1] of your reviews</a> as " . htmlspecialchars($ratingTypes[$row[0]]);
+		if (isset(ReviewForm::$rating_types[$row[0]]))
+		    $a[] = "<a href=\"" . hoturl("search", "q=rate:%22" . urlencode(ReviewForm::$rating_types[$row[0]]) . "%22") . "\" title='List rated reviews'>$row[1] of your reviews</a> as " . htmlspecialchars(ReviewForm::$rating_types[$row[0]]);
 	    if (count($a) > 0) {
 		echo "<div class='hint g'>\nOther reviewers ",
 		    "<a href='", hoturl("help", "t=revrate"), "' title='What is this?'>rated</a> ",
@@ -452,8 +452,8 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
 	if (edb_nrows($result)) {
 	    $a = array();
 	    while (($row = edb_row($result)))
-		if (isset($ratingTypes[$row[0]]))
-		    $a[] = "<a href=\"" . hoturl("search", "q=rate:%22" . urlencode($ratingTypes[$row[0]]) . "%22") . "\" title='List rated reviews'>$row[1] &ldquo;" . htmlspecialchars($ratingTypes[$row[0]]) . "&rdquo; " . pluralx($row[1], "rating") . "</a>";
+		if (isset(ReviewForm::$rating_types[$row[0]]))
+		    $a[] = "<a href=\"" . hoturl("search", "q=rate:%22" . urlencode(ReviewForm::$rating_types[$row[0]]) . "%22") . "\" title='List rated reviews'>$row[1] &ldquo;" . htmlspecialchars(ReviewForm::$rating_types[$row[0]]) . "&rdquo; " . pluralx($row[1], "rating") . "</a>";
 	    if (count($a) > 0) {
 		echo "<div class='hint g'>\nYour reviews have received ",
 		    commajoin($a);

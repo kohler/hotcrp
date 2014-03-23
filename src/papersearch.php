@@ -1018,8 +1018,7 @@ class PaperSearch {
                 $this->interestingRatings["any"] = "!=100";
                 $term = "nrate_any";
             } else {
-                $rf = reviewForm();	/* load for $ratingTypes */
-                $x = array_diff(matchValue($ratingTypes, $m[1]),
+                $x = array_diff(matchValue(ReviewForm::$rating_types, $m[1]),
                                 array("n")); /* don't allow "average" */
                 if (count($x) == 0) {
                     $this->warn("Unknown rating type &ldquo;" . htmlspecialchars($m[1]) . "&rdquo;.");
@@ -1048,7 +1047,7 @@ class PaperSearch {
     }
 
     function _searchQueryWord($word, $report_error) {
-	global $searchKeywords, $ratingTypes, $Conf;
+	global $searchKeywords, $Conf;
 
 	// check for paper number or "#TAG"
 	if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $word, $m)) {
@@ -1858,7 +1857,7 @@ class PaperSearch {
         // constraints to >= constraints, and ignore <=/</!= constraints).
         // We'll do the precise query later.
         $q[] = "coalesce($thistab.count,0)" . $t->value->conservative_countexpr();
-        $t->link = $thistab;
+        $t->link = $thistab . "_info";
 	return "(" . join(" and ", $q) . ")";
     }
 

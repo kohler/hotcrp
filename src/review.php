@@ -11,12 +11,6 @@
 global $scoreHelps;
 $scoreHelps = array();
 
-global $ratingTypes;
-$ratingTypes = array("n" => "average", 1 => "very helpful",
-		     0 => "too short", -1 => "too vague",
-		     -4 => "too narrow",
-		     -2 => "not constructive", -3 => "not correct");
-
 class ReviewField {
     public $id;
     public $name;
@@ -258,6 +252,14 @@ class ReviewForm {
     public $forder;
 
     var $fieldName;
+
+    static public $rating_types = array("n" => "average",
+                                        1 => "very helpful",
+                                        0 => "too short",
+                                        -1 => "too vague",
+                                        -4 => "too narrow",
+                                        -2 => "not constructive",
+                                        -3 => "not correct");
 
     function __construct() {
         global $Conf;
@@ -1338,7 +1340,7 @@ $blind\n";
     }
 
     function _showWebDisplayBody($prow, $rrows, $rrow, $reviewOrdinal, &$options) {
-	global $Conf, $Me, $ratingTypes;
+	global $Conf, $Me;
 
 	// Do not show rating counts if rater identity is unambiguous.
 	// See also PaperSearch::_clauseTermSetRating.
@@ -1370,8 +1372,8 @@ $blind\n";
 		echo "<span class='rev_rating_summary'>Ratings: ";
 		$ratearr = array();
 		foreach ($rates as $type => $count)
-		    if (isset($ratingTypes[$type]))
-			$ratearr[] = $count . " &ldquo;" . htmlspecialchars($ratingTypes[$type]) . "&rdquo;";
+		    if (isset(self::$rating_types[$type]))
+			$ratearr[] = $count . " &ldquo;" . htmlspecialchars(self::$rating_types[$type]) . "&rdquo;";
 		echo join(", ", $ratearr), "</span>";
 		$ratesep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
 	    }
@@ -1379,7 +1381,7 @@ $blind\n";
 		$ratinglink = hoturl_post("review", "r=$reviewOrdinal" . (isset($_REQUEST["reviewId"]) ? "" : "&amp;allr=1"));
 		echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
 		    "How helpful is this review? &nbsp;",
-		    Ht::select("rating", $ratingTypes, ($rrow->myRating === null ? "n" : $rrow->myRating)),
+		    Ht::select("rating", self::$rating_types, ($rrow->myRating === null ? "n" : $rrow->myRating)),
 		    " <input class='fx7' type='submit' value='Save' />",
 		    "</div></form>",
 		    "<span id='ratingform_${reviewOrdinal}result'></span>";

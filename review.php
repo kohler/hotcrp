@@ -151,7 +151,7 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
 	$Conf->errorMsg("You can’t rate that review.");
     else if ($Me->contactId == $paperTable->rrow->contactId)
 	$Conf->errorMsg("You can’t rate your own review.");
-    else if (!isset($ratingTypes[$_REQUEST["rating"]]))
+    else if (!isset(ReviewForm::$rating_types[$_REQUEST["rating"]]))
 	$Conf->errorMsg("Invalid rating.");
     else if ($_REQUEST["rating"] == "n")
 	$Conf->qe("delete from ReviewRating where reviewId=" . $paperTable->rrow->reviewId . " and contactId=$Me->contactId", "while updating rating");

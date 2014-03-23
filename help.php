@@ -615,7 +615,7 @@ The automatic and bulk assignment pages also let you set a review round.");
 
 
 function revrate() {
-    global $Conf, $ratingTypes, $Me;
+    global $Conf, $Me;
     $rf = reviewForm();
 
     echo "<table>";
@@ -628,7 +628,7 @@ their reviews.  The interface appears above each visible review:
 
 <div class='rev_rating'>
   How helpful is this review? &nbsp;<form><div class='inform'>"
-		  . Ht::select("rating", $ratingTypes, "n")
+		  . Ht::select("rating", ReviewForm::$rating_types, "n")
 		  . "</div></form>
 </div>
 
