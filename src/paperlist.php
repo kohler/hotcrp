@@ -48,7 +48,7 @@ class PaperList extends BaseList {
             $this->sorter = BaseList::parse_sorter($_REQUEST["sort"]);
         else
             $this->sorter = BaseList::parse_sorter("");
-        $this->subsorter = null;
+        $this->subsorter = array();
 
 	$this->_paper_link_page = "";
         if (isset($_REQUEST["linkto"])
@@ -74,10 +74,10 @@ class PaperList extends BaseList {
     }
 
     function _sort($rows, $fdef) {
-        global $sort_info;      /* ugh, PHP constraints */
-        $sort_info = (object) array("f" => $fdef);
+        global $magic_sort_info;      /* ugh, PHP constraints */
+        $magic_sort_info = array($fdef);
 
-        $code = "global \$sort_info; \$x = 0;\n";
+        $code = "global \$magic_sort_info; \$x = 0;\n";
         if (($thenmap = $this->search->thenmap)) {
             foreach ($rows as $row)
                 $row->_then_sort_info = $thenmap[$row->paperId];
@@ -85,19 +85,21 @@ class PaperList extends BaseList {
         }
 
         $fdef->sort_prepare($this, $rows);
-        $code .= "\$x = \$x ? \$x : \$sort_info->f->" . $fdef->sorter . "(\$a, \$b);\n";
+        $code .= "\$x = \$x ? \$x : \$magic_sort_info[0]->" . $fdef->sorter . "(\$a, \$b);\n";
 
-        if (($sub = $this->subsorter)) {
+        foreach ($this->subsorter as $sub) {
             $sub->field->sort_prepare($this, $rows);
-            $sort_info->g = $sub->field;
-            $code .= "\$x = \$x ? \$x : \$sort_info->g->" . $sub->field->sorter . "(\$a, \$b);\n";
+            $magic_sort_info[] = $sub->field;
+            $code .= "\$x = \$x ? \$x : \$magic_sort_info["
+                . (count($magic_sort_info) - 1) . "]->"
+                . $sub->field->sorter . "(\$a, \$b);\n";
         }
 
         $code .= "\$x = \$x ? \$x : \$a->paperId - \$b->paperId;\n";
         $code .= "return \$x < 0 ? -1 : (\$x == 0 ? 0 : 1);\n";
 
         usort($rows, create_function("\$a, \$b", $code));
-        unset($sort_info);
+        unset($magic_sort_info);
 	return $rows;
     }
 
@@ -975,15 +977,18 @@ class PaperList extends BaseList {
             $this->default_sort_column = PaperColumn::lookup("id");
 
         $this->sorter->field = null;
-        if ($this->viewmap->sort
-            && ($s = BaseList::parse_sorter($this->viewmap->sort))
-            && ($c = PaperColumn::lookup($s->type))
-            && $c->prepare($this, $this->query_options, -1)) {
-            $s->field = $c;
-            if ($this->sorter->empty)
-                $this->sorter = $s;
-            else
-                $this->subsorter = $s;
+        if ($this->viewmap->sort) {
+            $sorters = is_array($this->viewmap->sort) ? $this->viewmap->sort : array($this->viewmap->sort);
+            foreach ($sorters as $sorter)
+                if (($s = BaseList::parse_sorter($sorter))
+                    && ($c = PaperColumn::lookup($s->type))
+                    && $c->prepare($this, $this->query_options, -1)) {
+                    $s->field = $c;
+                    if ($this->sorter->empty)
+                        $this->sorter = $s;
+                    else
+                        $this->subsorter[] = $s;
+                }
         }
         if ($this->sorter->field)
             /* all set */;
