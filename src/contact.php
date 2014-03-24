@@ -950,7 +950,7 @@ class Contact {
 
     function canEditPaper($prow, &$whyNot = null) {
         $rights = $this->rights($prow, "any");
-	return $rights->allow_author;
+	return $rights->allow_administer || $prow->has_author($this);
     }
 
     function canUpdatePaper($prow, &$whyNot = null) {
@@ -1624,7 +1624,7 @@ class Contact {
 
     function canEditContactAuthors($prow) {
         $rights = $this->rights($prow);
-	return $rights->allow_author;
+        return $rights->allow_administer || $prow->has_author($this);
     }
 
     function canViewReviewerIdentity($prow, $rrow, $forceShow = null) {
