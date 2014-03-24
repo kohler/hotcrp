@@ -398,7 +398,8 @@ class DocumentHelper {
                 $z->add($d);
             return $z->download();
         }
-	if (!isset($doc->filestore) && !isset($doc->content))
+	if (!isset($doc->filestore) && !isset($doc->content)
+            && (!@$doc->docclass || !DocumentHelper::load($doc->docclass, $doc)))
 	    return set_error_html("Don’t know how to download.");
 
 	// Print paper
