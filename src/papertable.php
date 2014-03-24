@@ -1889,7 +1889,11 @@ class PaperTable {
 	    $this->echoActions();
 	    echo "</form>";
 	    $this->_paptabSepEnd();
-	}
+	} else if (!$this->editable && $Me->actAuthorView($prow) && !$Me->contactId) {
+            $this->_paptabSepBegin();
+            echo "To edit this paper, <a href=\"", hoturl("index"), "\">sign in using your email and password</a>.";
+            $this->_paptabSepEnd();
+        }
 
         $Conf->footerScript("shortcut().add()");
     }
