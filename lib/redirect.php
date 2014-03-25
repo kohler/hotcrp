@@ -105,11 +105,15 @@ function error_go($url, $message) {
 
 function ensure_session() {
     global $Opt;
-    if (!session_id()) {
+    if (session_id())
+        return true;
+    else if (@$Opt["sessionName"]) {
         session_name($Opt["sessionName"]);
         session_cache_limiter("");
         session_start();
-    }
+        return true;
+    } else
+        return false;
 }
 
 function post_value() {
