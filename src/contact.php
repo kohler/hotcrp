@@ -476,7 +476,7 @@ class Contact {
             // "p", "q", etc.
             $_SESSION["afterLogin"] = substr(selfHref($x, false),
                                              strlen($ConfSiteBase));
-            error_go(false, "You have invalid credentials and need to sign in.");
+            error_go(false, "You must sign in to access that page.");
         } else
             error_go(false, "You don’t have permission to access that page.");
     }
