@@ -175,6 +175,8 @@ $Opt["disablePS"] = true;
 //                   Requires additional web server configuration. A string
 //                   value is sent as a WWW-Authenticate header. The default
 //                   string is "Basic realm="HotCRP"".
+//   redirectToHttps If set to true, then HotCRP will redirect all http
+//                   connections to https.
 //   defaultEmailDomain Set to the default domain for account email addresses
 //                   when using httpAuthLogin.
 //   zipCommand      Set to the path to the `zip` executable. Defaults to

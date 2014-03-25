@@ -56,11 +56,10 @@ function request_script_base() {
         return false;
 }
 
-function go($url = false) {
+function make_absolute_uri($url = false) {
     global $ConfSiteBase, $ConfSiteSuffix;
     if ($url === false)
-	$url = "${ConfSiteBase}index$ConfSiteSuffix";
-
+        $url = "${ConfSiteBase}index$ConfSiteSuffix";
     // The URL is often relative; make it absolute if possible.
     if (!preg_match('_\A[a-z]+://_', $url)
 	&& ($absuri = request_absolute_uri_base())) {
@@ -75,7 +74,11 @@ function go($url = false) {
 	    $url = $pfx . $url;
 	}
     }
+    return $url;
+}
 
+function go($url = false) {
+    $url = make_absolute_uri($url);
     // Might have an HTML-encoded URL; decode at least &amp;.
     $url = str_replace("&amp;", "&", $url);
 

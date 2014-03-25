@@ -88,6 +88,15 @@ global $Me;
 initialize_user();
 
 
+// Perhaps redirect to https
+if (@$Opt["redirectToHttps"]
+    && (!@$_SERVER["HTTPS"] || $_SERVER["HTTPS"] == "off")) {
+    $url = make_absolute_uri(selfHref(array(), false));
+    if (str_starts_with($url, "http:"))
+        go("https:" . substr($url, 5));
+}
+
+
 // Extract an error that we redirected through
 if (isset($_SESSION["redirect_error"])) {
     global $Error;
