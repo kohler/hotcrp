@@ -1000,10 +1000,8 @@ class Conference {
 	if ($result->error) {
 	    $this->errorMsg($result->error_html);
             return false;
-        } else {
-	    $this->log("Downloaded paper", $Me, $paperId);
+        } else
             return true;
-        }
     }
 
 
