@@ -859,17 +859,19 @@ class Contact {
             // check capabilities
             // If an author-view capability is set, then use it -- unless
             // this user is a PC member or reviewer, which takes priority.
-            $ci->act_conflict_type = $ci->conflict_type;
+            $ci->view_conflict_type = $ci->conflict_type;
             if (isset($this->capabilities)
                 && isset($this->capabilities[$prow->paperId])
                 && ($this->capabilities[$prow->paperId] & self::CAP_AUTHORVIEW)
                 && !$isPC
                 && $ci->review_type <= 0)
-                $ci->act_conflict_type = CONFLICT_AUTHOR;
-            $ci->act_author = $ci->act_conflict_type >= CONFLICT_AUTHOR;
+                $ci->view_conflict_type = CONFLICT_AUTHOR;
+            $ci->act_author = $ci->conflict_type >= CONFLICT_AUTHOR;
+            $ci->act_author_view = $ci->view_conflict_type >= CONFLICT_AUTHOR;
 
             // check author behavior rights
             $ci->allow_author = $ci->act_author || $ci->allow_administer;
+            $ci->allow_author_view = $ci->act_author_view || $ci->allow_administer;
 
             // check blindness
             $bs = $Conf->setting("sub_blind");
@@ -914,14 +916,14 @@ class Contact {
             return $this->privChair || $this->isPC;
     }
 
-    public function actConflictType($prow) {
+    public function view_conflict_type($prow) {
         $rights = $this->rights($prow);
-        return $rights->act_conflict_type;
+        return $rights->view_conflict_type;
     }
 
     public function actAuthorView($prow, $download = false) {
         $rights = $this->rights($prow);
-	return $rights->act_author;
+	return $rights->act_author_view;
     }
 
     public function actAuthorSql($table, $only_if_complex = false) {
@@ -966,7 +968,9 @@ class Contact {
                 || ($rights->allow_administer && self::override_deadlines())))
 	    return true;
 	// collect failure reasons
-	if (!$rights->allow_author)
+        if (!$rights->allow_author && $rights->allow_author_view)
+            $whyNot["signin"] = 1;
+	else if (!$rights->allow_author)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
@@ -993,7 +997,9 @@ class Contact {
                 || ($rights->allow_administer && self::override_deadlines())))
 	    return true;
 	// collect failure reasons
-	if (!$rights->allow_author)
+        if (!$rights->allow_author && $rights->allow_author_view)
+            $whyNot["signin"] = 1;
+	else if (!$rights->allow_author)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
@@ -1022,7 +1028,9 @@ class Contact {
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
-	if (!$rights->allow_author)
+        if (!$rights->allow_author && $rights->allow_author_view)
+            $whyNot["signin"] = 1;
+	else if (!$rights->allow_author)
 	    $whyNot["author"] = 1;
         else if ($prow->outcome != 0 && !$override)
             $whyNot["decided"] = 1;
@@ -1044,7 +1052,9 @@ class Contact {
                 || ($rights->allow_administer && self::override_deadlines())))
 	    return true;
 	// collect failure reasons
-	if (!$rights->allow_author)
+        if (!$rights->allow_author && $rights->allow_author_view)
+            $whyNot["signin"] = 1;
+	else if (!$rights->allow_author)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn <= 0)
 	    $whyNot["notWithdrawn"] = 1;
@@ -1071,7 +1081,9 @@ class Contact {
 	    && ($Conf->timeSubmitFinalPaper() || $override))
 	    return true;
 	// collect failure reasons
-	if (!$rights->allow_author)
+        if (!$rights->allow_author && $rights->allow_author_view)
+            $whyNot["signin"] = 1;
+	else if (!$rights->allow_author)
 	    $whyNot["author"] = 1;
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
@@ -1095,16 +1107,16 @@ class Contact {
 	    return false;
         $rights = $this->rights($prow, "any");
 	// policy
-	if ($rights->allow_author
+	if ($rights->allow_author_view
 	    || ($rights->review_type
                 && $Conf->timeReviewerViewSubmittedPaper())
 	    || ($rights->allow_pc_broad
                 && $Conf->timePCViewPaper($prow, $download)))
 	    return true;
 	// collect failure reasons
-	if (!$rights->allow_pc_broad
-            && !$rights->allow_author
-	    && !$rights->review_type) {
+        if (!$rights->allow_author_view
+            && !$rights->review_type
+            && !$rights->allow_pc_broad) {
 	    $whyNot["permission"] = 1;
 	    return false;
 	}
@@ -1162,7 +1174,7 @@ class Contact {
                 && $Conf->setting("pc_seeall") > 0)
             || ($rights->allow_administer
                 ? $rights->nonblind || $rights->rights_force /* chair can't see blind authors unless forceShow */
-                : $rights->act_author))
+                : $rights->act_author_view))
             return true;
 	// collect failure reasons
 	if ($prow->timeWithdrawn > 0)
@@ -1191,7 +1203,7 @@ class Contact {
 	if (!$this->canViewPaper($prow, $whyNot))
 	    return false;	// $whyNot already set
         $oview = @$o->view_type;
-        if ($rights->act_author
+        if ($rights->act_author_view
             || (($rights->allow_administer
                  || $rights->allow_pc_broad
                  || $rights->review_type)
@@ -1247,7 +1259,7 @@ class Contact {
             || (($prow->timeSubmitted > 0
                  || $rights->review_type
                  || $rights->allow_administer)
-                && (($rights->act_author
+                && (($rights->act_author_view
                      && $Conf->timeAuthorViewReviews($this->has_outstanding_review() && $this->has_review())
                      && $rrowSubmitted
                      && $viewscore >= VIEWSCORE_AUTHOR)
@@ -1261,7 +1273,7 @@ class Contact {
                         && $Conf->check_tracks($prow, $this, "viewrev")
                         && $viewscore >= VIEWSCORE_PC)
                     || ($rights->review_type
-                        && !$rights->act_conflict_type
+                        && !$rights->view_conflict_type
                         && $rrowSubmitted
                         && $prow->review_not_incomplete($this)
                         && ($rights->allow_pc
@@ -1277,21 +1289,21 @@ class Contact {
 	    $whyNot["withdrawn"] = 1;
 	else if ($prow->timeSubmitted <= 0)
 	    $whyNot["notSubmitted"] = 1;
-	else if (!$rights->act_author
+	else if (!$rights->act_author_view
                  && !$rights->allow_pc
                  && !$rights->review_type)
 	    $whyNot['permission'] = 1;
-	else if ($rights->act_author
+	else if ($rights->act_author_view
                  && $Conf->timeAuthorViewReviews()
 		 && $this->has_outstanding_review()
                  && $this->has_review())
 	    $whyNot['reviewsOutstanding'] = 1;
-	else if ($rights->act_author
+	else if ($rights->act_author_view
                  && !$rrowSubmitted)
 	    $whyNot['permission'] = 1;
-	else if ($rights->act_author)
+	else if ($rights->act_author_view)
 	    $whyNot['deadline'] = 'au_seerev';
-	else if ($rights->act_conflict_type)
+	else if ($rights->view_conflict_type)
 	    $whyNot['conflict'] = 1;
 	else if (!$rights->allow_pc
                  && $prow->review_submitted($this))
@@ -1541,12 +1553,12 @@ class Contact {
 	// policy
 	if ($crow_contactId == $this->contactId        // wrote this comment
             || $rights->can_administer
-	    || ($rights->act_author
+	    || ($rights->act_author_view
                 && $ctype >= COMMENTTYPE_AUTHOR
                 && (($ctype & COMMENTTYPE_RESPONSE)    // author's response
                     || ($Conf->timeAuthorViewReviews() // author-visible cmt
                         && !($ctype & COMMENTTYPE_DRAFT))))
-            || (!$rights->act_conflict_type
+            || (!$rights->view_conflict_type
                 && !($ctype & COMMENTTYPE_DRAFT)
                 && $this->canViewReview($prow, null, $forceShow)
                 && (($rights->allow_pc
@@ -1557,13 +1569,13 @@ class Contact {
                     : $ctype >= COMMENTTYPE_REVIEWER)))
 	    return true;
 	// collect failure reasons
-	if ((!$rights->act_author && !$rights->allow_review)
+	if ((!$rights->act_author_view && !$rights->allow_review)
 	    || (!$rights->allow_administer
                 && ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY))
 	    $whyNot["permission"] = 1;
-	else if ($rights->act_author)
+	else if ($rights->act_author_view)
 	    $whyNot["deadline"] = 'au_seerev';
-	else if ($rights->act_conflict_type)
+	else if ($rights->view_conflict_type)
 	    $whyNot["conflict"] = 1;
 	else if (!$rights->allow_pc
                  && !$rights->review_submitted)
@@ -1603,7 +1615,7 @@ class Contact {
 	    $whyNot['notSubmitted'] = 1;
 	else {
 	    $whyNot['deadline'] = "resp_done";
-	    if ($rights->allow_administer && $rights->act_conflict_type)
+	    if ($rights->allow_administer && $rights->conflict_type)
 		$whyNot['chairMode'] = 1;
 	    if ($rights->allow_administer && isset($whyNot['deadline']))
 		$whyNot['override'] = 1;
@@ -1696,10 +1708,10 @@ class Contact {
 	global $Conf;
         $rights = $this->rights($prow, $forceShow);
         if ($rights->can_administer
-            || ($rights->act_author
+            || ($rights->act_author_view
                 && $Conf->timeAuthorViewDecision())
             || ($rights->allow_pc
-                && $Conf->timePCViewDecision($rights->act_conflict_type > 0))
+                && $Conf->timePCViewDecision($rights->view_conflict_type > 0))
 	    || ($rights->review_type > 0
                 && $rights->review_submitted
 		&& $Conf->timeReviewerViewDecision()))
@@ -1726,7 +1738,7 @@ class Contact {
 	    return VIEWSCORE_ADMINONLY - 1;
 
 	// author can see author information
-	if ($rights ? $rights->act_author : !$this->is_reviewer())
+	if ($rights ? $rights->act_author_view : !$this->is_reviewer())
 	    return VIEWSCORE_AUTHOR - 1;
 
 	// if you can't review this paper you can't see anything

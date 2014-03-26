@@ -19,7 +19,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $subrev = array();
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = 0;
-    $conflictType = $Me->actConflictType($prow);
+    $conflictType = $Me->view_conflict_type($prow);
     $allow_admin = $Me->allowAdminister($prow);
     $admin = $Me->canAdminister($prow);
     $hideUnviewable = ($conflictType > 0 && !$admin)
@@ -231,7 +231,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     global $Conf, $Me;
 
-    $conflictType = $Me->actConflictType($prow);
+    $conflictType = $Me->view_conflict_type($prow);
     $allow_admin = $Me->allowAdminister($prow);
     $admin = $Me->canAdminister($prow);
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";

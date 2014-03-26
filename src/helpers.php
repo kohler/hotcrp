@@ -1086,6 +1086,8 @@ function whyNotText($whyNot, $action) {
 	$text .= $whyNot['dbError'] . " ";
     if (isset($whyNot['permission']))
 	$text .= "You don’t have permission to $action $thisPaper. ";
+    if (isset($whyNot["signin"]))
+        $text .= "You must sign in to $action $thisPaper. ";
     if (isset($whyNot['withdrawn']))
 	$text .= ucfirst($thisPaper) . " has been withdrawn. ";
     if (isset($whyNot['notWithdrawn']))
