@@ -81,6 +81,7 @@ assert($user_capability->canViewPaper($paper1));
 assert(!$user_capability->allowAdminister($paper1));
 assert(!$user_capability->canAdminister($paper1));
 assert(!$user_capability->canViewTags($paper1));
+assert(!$user_capability->canUpdatePaper($paper1));
 
 // change submission date
 $Conf->save_setting("sub_update", $Now - 5);
