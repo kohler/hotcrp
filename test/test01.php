@@ -7,6 +7,9 @@ global $ConfSitePATH;
 $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
 
 require_once("$ConfSitePATH/test/testsetup.php");
+$Conf->save_setting("sub_open", 1);
+$Conf->save_setting("sub_update", $Now + 10);
+$Conf->save_setting("sub_sub", $Now + 10);
 
 // load users
 $user_chair = Contact::find_by_email("chair@_.com");
@@ -56,6 +59,13 @@ function check_paper1($paper1) {
     assert(!$user_van->canViewTags($paper1));
     assert(!$user_kohler->canViewTags($paper1));
     assert(!$user_nobody->canViewTags($paper1));
+
+    assert($user_chair->canUpdatePaper($paper1));
+    assert($user_estrin->canUpdatePaper($paper1));
+    assert(!$user_marina->canUpdatePaper($paper1));
+    assert($user_van->canUpdatePaper($paper1));
+    assert(!$user_kohler->canUpdatePaper($paper1));
+    assert(!$user_nobody->canUpdatePaper($paper1));
 }
 
 $paper1 = $Conf->paperRow(1, $user_chair);
@@ -71,6 +81,16 @@ assert($user_capability->canViewPaper($paper1));
 assert(!$user_capability->allowAdminister($paper1));
 assert(!$user_capability->canAdminister($paper1));
 assert(!$user_capability->canViewTags($paper1));
+
+// change submission date
+$Conf->save_setting("sub_update", $Now - 5);
+$Conf->save_setting("sub_sub", $Now - 5);
+assert(!$user_chair->canUpdatePaper($paper1));
+assert(!$user_estrin->canUpdatePaper($paper1));
+assert(!$user_marina->canUpdatePaper($paper1));
+assert(!$user_van->canUpdatePaper($paper1));
+assert(!$user_kohler->canUpdatePaper($paper1));
+assert(!$user_nobody->canUpdatePaper($paper1));
 
 // role assignment works
 $paper18 = $Conf->paperRow(18, $user_mgbaker);
