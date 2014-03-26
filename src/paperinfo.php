@@ -14,13 +14,16 @@ class PaperContactInfo {
 
     static function load($pid, $cid) {
         global $Conf;
-        $result = $Conf->qe("select conflictType as conflict_type,
+        if ($cid)
+            $result = $Conf->qe("select conflictType as conflict_type,
 		reviewType as review_type,
 		reviewSubmitted as review_submitted,
 		reviewNeedsSubmit as review_needs_submit
 		from (select $pid paperId) crap
 		left join PaperConflict on (PaperConflict.paperId=crap.paperId and PaperConflict.contactId=$cid)
 		left join PaperReview on (PaperReview.paperId=crap.paperId and PaperReview.contactId=$cid)");
+        else
+            $result = null;
         if (!$result || !($ci = $result->fetch_object("PaperContactInfo"))) {
             $ci = new PaperContactInfo;
             $ci->conflict_type = $ci->review_type = 0;

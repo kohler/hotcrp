@@ -548,7 +548,7 @@ class Contact {
 
     function save_authored_papers($aupapers) {
         global $Conf;
-        if (count($aupapers)) {
+        if (count($aupapers) && $this->contactId) {
             $q = array();
             foreach ($aupapers as $pid)
                 $q[] = "($pid, $this->contactId, " . CONFLICT_AUTHOR . ")";

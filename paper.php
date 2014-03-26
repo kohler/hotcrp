@@ -405,7 +405,7 @@ function check_contacts($prow) {
     }
 
     // Check for zero contacts
-    if (!$prow && (!count($ncau) || !$Me->privChair))
+    if (!$prow && (!count($ncau) || !$Me->privChair) && $Me->contactId)
         $ncau[$Me->email] = $Me->contactId;
     if (!$Me->privChair && !count($ncau))
         $errs[] = "Every paper must have at least one contact.";
@@ -483,7 +483,6 @@ function final_submit_watch_callback($prow, $minic) {
 
 function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     global $paperId, $newPaper, $Error, $Warning, $Conf, $Opt, $prow, $OK;
-    $contactId = $Me->contactId;
     $uploaded_documents = array();
     assert(!$newPaper == !!$prow);
 
@@ -654,7 +653,8 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
 	foreach ($_REQUEST as $key => $value)
 	    if (strlen($key) > 3
 		&& $key[0] == 'p' && $key[1] == 'c' && $key[2] == 'c'
-		&& ($id = cvtint(substr($key, 3))) > 0 && isset($pcm[$id])
+		&& ($id = cvtint(substr($key, 3))) > 0
+                && isset($pcm[$id])
 		&& $value > 0) {
 		$q[] = "($paperId, $id, " . max(min($value, $max_conflict), CONFLICT_AUTHORMARK) . ")";
 	    }
