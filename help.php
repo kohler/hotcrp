@@ -240,7 +240,7 @@ function searchQuickref() {
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains “very novel”");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains “poletto”");
     if ($Me->isPC)
-	_searchQuickrefRow("", "au:pc", "one or more authors are PC members");
+	_searchQuickrefRow("", "au:pc", "one or more authors are PC members (author email matches PC email)");
     _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains “liskov”");
     _searchQuickrefRow("Topics", "topic:link", "selected topics match “link”");
     _searchQuickrefRow("Options", "opt:shadow", "selected submission options match “shadow”");
