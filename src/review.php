@@ -1361,8 +1361,8 @@ $blind\n";
 		    || $Conf->timePCViewAllReviews()
 		    || strpos($rrow->allRatings, ",") !== false);
 	}
-	if ($Me->canRateReview($prow, $rrow)
-	    && ($rrow->contactId != $Me->contactId || $visibleRatings)) {
+	if ($Me->can_view_review_ratings($prow, $rrow)
+	    && ($Me->can_rate_review($prow, $rrow) || $visibleRatings)) {
 	    $ratesep = "";
 	    echo "<div class='rev_rating'>";
 	    if ($visibleRatings) {

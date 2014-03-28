@@ -146,11 +146,9 @@ if (isset($_REQUEST["unsubmit"]) && $paperTable->editrrow
 
 // review rating action
 if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
-    if (!$Me->canRateReview($prow, $paperTable->rrow)
+    if (!$Me->can_rate_review($prow, $paperTable->rrow)
 	|| !$Me->canViewReview($prow, $paperTable->rrow, null))
 	$Conf->errorMsg("You can’t rate that review.");
-    else if ($Me->contactId == $paperTable->rrow->contactId)
-	$Conf->errorMsg("You can’t rate your own review.");
     else if (!isset(ReviewForm::$rating_types[$_REQUEST["rating"]]))
 	$Conf->errorMsg("Invalid rating.");
     else if ($_REQUEST["rating"] == "n")

@@ -1462,7 +1462,7 @@ class Contact {
 	return $this->canReview($prow, $rrow, $whyNot, true);
     }
 
-    function canRateReview($prow, $rrow) {
+    function can_view_review_ratings($prow, $rrow) {
 	global $Conf;
 	$rs = $Conf->setting("rev_ratings");
         if ($rs != REV_RATINGS_PC && $rs != REV_RATINGS_PC_EXTERNAL)
@@ -1470,6 +1470,11 @@ class Contact {
         $rights = $this->rights($prow);
         return $this->canViewReview($prow, $rrow, null)
             && ($rights->allow_pc || $rights->allow_review);
+    }
+
+    function can_rate_review($prow, $rrow) {
+        return $this->can_view_review_ratings($prow, $rrow)
+            && !$this->ownReview($rrow);
     }
 
     function canSetRank($prow, $forceShow = null) {
