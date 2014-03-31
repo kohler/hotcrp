@@ -168,13 +168,13 @@ function updateSchema($Conf) {
 	&& $Conf->ql("alter table PaperReview add key `reviewRound` (`reviewRound`)")
 	&& $Conf->ql("update Settings set value=11 where name='allowPaperOption'")) {
 	$Conf->settings["allowPaperOption"] = 11;
-	if (count($Conf->settings["rounds"]) > 1) {
+	if (count($Conf->round_list()) > 1) {
 	    // update review rounds (XXX locking)
 	    $result = $Conf->ql("select paperId, tag from PaperTag where tag like '%~%'");
 	    $rrs = array();
 	    while (($row = edb_row($result))) {
 		list($contact, $round) = explode("~", $row[1]);
-		if (($round = array_search($round, $Conf->settings["rounds"]))) {
+		if (($round = array_search($round, $Conf->round_list()))) {
 		    if (!isset($rrs[$round]))
 			$rrs[$round] = array();
 		    $rrs[$round][] = "(contactId=$contact and paperId=$row[0])";

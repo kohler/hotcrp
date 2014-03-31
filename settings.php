@@ -1605,7 +1605,7 @@ function doRevGroup() {
 
 
     // PC reviews
-    echo "<h3 class=\"settings g\">PC reviews</h3>\n";
+    echo "<h3 id=\"reviewround\" class=\"settings g\">PC reviews</h3>\n";
 
     echo "<table>\n";
     $date_text = $DateExplanation;
@@ -1614,7 +1614,7 @@ function doRevGroup() {
     doDateRow("pcrev_hard", array("Hard deadline", "Reviews <em>cannot be entered or changed</em> after the hard deadline.  If set, this should generally be after the PC meeting.<br />$date_text"));
     if (!($rev_roundtag = setting_data("rev_roundtag")))
 	$rev_roundtag = "(None)";
-    doTextRow("rev_roundtag", array("Review round", "This will mark new PC review assignments by default.  Examples: “R1”, “R2” &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lxcaption", "(None)");
+    doTextRow("rev_roundtag", array("Review round", "This is the default review round for new review assignments. Examples: “R1”, “R2” &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lxcaption", "(None)");
     echo "</table>\n",
         Ht::hidden("has_rev_roundtag", 1);
 

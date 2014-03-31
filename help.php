@@ -262,10 +262,8 @@ function searchQuickref() {
     _searchQuickrefRow("", "ire:>0", "at least one incomplete review");
     _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (“cpri:”, “ipri:”, and reviewer name/email also work)");
     _searchQuickrefRow("", "sec:pai", "“pai” (reviewer name/email) is secondary reviewer (“csec:”, “isec:”, and review counts also work)");
-    if (($roundtags = $Conf->setting_data("tag_rounds"))) {
-	preg_match('/ (\S+) /', $roundtags, $m);
-	_searchQuickrefRow("", "round:$m[1]", "review assignment is “" . $m[1] . "”");
-    }
+    if (($r = $Conf->round_name(1, false)))
+	_searchQuickrefRow("", "round:$r", "review assignment is “" . htmlspecialchars($r) . "”");
     if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE)
 	_searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");
     _searchQuickrefRow("Comments", "cmt:>0", "at least one comment visible to PC (including authors’ response)");
@@ -592,23 +590,46 @@ function revround() {
     echo "<table>";
     _alternateRow("Review round basics", "
 Many conferences divide reviews into multiple <em>rounds</em>.
-HotCRP lets chairs label assignments in each round with names, such as
+Chairs label assignments in each round with names, such as
 “R1” or “lastround”.
 (We suggest very short names like “R1”.)
-To list another PC member’s round “R1” review assignments, <a href='" . hoturl("search", "q=re:membername+round:R1") . "'>search for “re:membername round:R1”</a>.");
-
-    // get current tag settings
-    if (!$Me->isPC)
-	/* do nothing */;
-    else if (($rounds = trim($Conf->setting_data("tag_rounds"))))
-	_alternateRow("Defined rounds", "So far the following review rounds have been defined: “" . join("”, “", preg_split('/\s+/', htmlspecialchars($rounds))) . "”.");
-    else
-	_alternateRow("Defined rounds", "So far no review rounds have been defined.");
+Rounds are purely informational; different rounds have the same review form.
+To search for any paper with a round “R2” review assignment, <a href='" . hoturl("search", "q=round:R2") . "'>search for “round:R2”</a>.
+To list a PC member’s round “R1” review assignments, <a href='" . hoturl("search", "q=re:membername+round:R1") . "'>search for “re:membername round:R1”</a>.");
 
     _alternateRow("Assigning rounds", "
-New assignments are marked by default with the current round defined in
-<a href='" . hoturl("settings", "group=reviews") . "'>review settings</a>.
+New assignments are marked by default with the round defined in
+<a href='" . hoturl("settings", "group=reviews#reviewround") . "'>review settings</a>.
 The automatic and bulk assignment pages also let you set a review round.");
+
+    // get current tag settings
+    if ($Me->isPC) {
+        $texts = array();
+        if (($rr = $Conf->setting_data("rev_roundtag"))) {
+            $texts[] = "The current review round is “<a href=\""
+                . hoturl("search", "q=round%3A" . urlencode($rr))
+                . "\">" . htmlspecialchars($rr) . "</a>”";
+            if ($Me->privChair)
+                $texts[0] .= " (use <a href=\"" . hoturl("settings", "group=reviews#reviewround") . "\">Settings &gt; Reviews</a> to change this).";
+            else
+                $texts[0] .= ".";
+        }
+        $rounds = array();
+        if ($Conf->has_rounds()) {
+            $result = $Conf->qe("select distinct reviewRound from PaperReview");
+            while (($row = edb_row($result)))
+                if ($row[0] && ($rname = $Conf->round_name($row[0], false)))
+                    $rounds[] = "“<a href=\""
+                        . hoturl("search", "q=round%3A" . urlencode($rname))
+                        . "\">" . htmlspecialchars($rname) . "</a>”";
+            sort($rounds);
+        }
+        if (count($rounds))
+            $texts[] = "The following review rounds are currently in use: " . commajoin($rounds) . ".";
+        else if (!count($texts))
+            $texts[] = "So far no review rounds have been defined.";
+        _alternateRow("Round status", join(" ", $texts));
+    }
 
     echo "</table>\n";
 }

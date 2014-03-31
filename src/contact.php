@@ -2053,17 +2053,8 @@ class Contact {
 	    $qa = $qb = "";
 	    if (($type == REVIEW_PRIMARY || $type == REVIEW_SECONDARY)
 		&& ($t = $Conf->setting_data("rev_roundtag"))) {
-		if (!($k = array_search($t, $Conf->settings["rounds"]))) {
-		    $rounds = $Conf->setting_data("tag_rounds", "");
-		    $rounds = ($rounds ? "$rounds$t " : " $t ");
-		    $Conf->qe("insert into Settings (name, value, data) values ('tag_rounds', 1, '" . sqlq($rounds) . "') on duplicate key update data='" . sqlq($rounds) . "'");
-		    $Conf->settings["tag_rounds"] = 1;
-		    $Conf->settingTexts["tag_rounds"] = $rounds;
-		    $Conf->settings["rounds"][] = $t;
-		    $k = array_search($t, $Conf->settings["rounds"]);
-		}
-		$qa .= ", reviewRound";
-		$qb .= ", $k";
+                $qa .= ", reviewRound";
+                $qb .= ", " . $Conf->round_number($t, true);
 	    }
 	    if ($Conf->sversion >= 46) {
 		$qa .= ", timeRequested";

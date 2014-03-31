@@ -276,10 +276,8 @@ class PaperList extends BaseList {
 		$link = hoturl("paper", "p=" . $row->paperId . $this->_paper_link_args . "#review" . unparseReviewOrdinal($row));
 	    $ranal->link1 = "<a href=\"$link\">";
 	    $ranal->link2 = "</a>";
-	    if ($row->reviewRound) {
-		$t = defval($Conf->settings["rounds"], $row->reviewRound);
-		$ranal->round = $t ? htmlspecialchars($t) : "?$row->reviewRound?";
-	    }
+	    if ($row->reviewRound)
+		$ranal->round = htmlspecialchars($Conf->round_name($row->reviewRound, true));
 	}
 	return $ranal;
     }

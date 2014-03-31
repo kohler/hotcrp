@@ -1164,10 +1164,10 @@ class PaperSearch {
 	    if ($word == "none")
 		$qt[] = new SearchTerm("revadj", 0, array("round" => 0));
 	    else if ($word == "any")
-		$qt[] = new SearchTerm("revadj", 0, array("round" => range(1, count($Conf->settings["rounds"]) - 1)));
+		$qt[] = new SearchTerm("revadj", 0, array("round" => range(1, count($Conf->round_list()) - 1)));
 	    else {
 		$x = simplify_whitespace($word);
-		$rounds = matchValue($Conf->settings["rounds"], $x);
+		$rounds = matchValue($Conf->round_list(), $x);
 		if (count($rounds) == 0) {
 		    $this->warn("“" . htmlspecialchars($x) . "” doesn’t match a review round.");
 		    $qt[] = new SearchTerm("f");
@@ -1499,7 +1499,7 @@ class PaperSearch {
 
     static function _reviewAdjustmentNegate($ra) {
 	if (isset($ra->value["round"]))
-	    $ra->value["round"] = array_diff(array_keys($Conf->settings["rounds"]), $ra->value["round"]);
+	    $ra->value["round"] = array_diff(array_keys($Conf->round_list()), $ra->value["round"]);
 	if (isset($ra->value["rate"]))
 	    $ra->value["rate"] = "not (" . $ra->value["rate"] . ")";
 	$ra->value["revadjnegate"] = false;

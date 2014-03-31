@@ -78,13 +78,11 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 	    $x = "";
 	else if ($rr->reviewType > 0) {
 	    $x = review_type_icon($rr->reviewType);
-	    if ($rr->reviewRound > 0) {
-		if (($rround = defval($Conf->settings["rounds"], $rr->reviewRound)))
-		    $x .= "&nbsp;<span class='revround' title='Review round'>" . htmlspecialchars($rround) . "</span>";
-		else
-		    $x .= "&nbsp;<span class='revround' title='Review round'>?$rr->reviewRound</span>";
-	    }
-	} else
+	    if ($rr->reviewRound > 0)
+                $x .= "&nbsp;<span class=\"revround\" title=\"Review round\">"
+                    . htmlspecialchars($Conf->round_name($rr->reviewRound, true))
+                    . "</span>";
+        } else
 	    $x = "";
 
 	// reviewer identity

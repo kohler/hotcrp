@@ -21,6 +21,7 @@ class Conference {
     private $footerMap = array();
     private $usertimeId = 1;
 
+    private $rounds = null;
     private $tracks = null;
     private $_track_tags = null;
 
@@ -194,11 +195,11 @@ class Conference {
 	    $this->settings["pc_seeblindrev"] = 1;
 	    $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
 	}
-	$this->settings["rounds"] = array("");
+        $this->rounds = array("");
 	if (isset($this->settingTexts["tag_rounds"])) {
 	    foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r)
 		if ($r != "")
-		    $this->settings["rounds"][] = $r;
+		    $this->rounds[] = $r;
 	}
 
         // S3 settings
@@ -382,6 +383,37 @@ class Conference {
                         return false;
                 }
         return true;
+    }
+
+    function has_rounds() {
+        return count($this->rounds) > 0;
+    }
+
+    function round_list() {
+        return $this->rounds;
+    }
+
+    function round_name($roundno, $expand) {
+        if ($roundno > 0) {
+            if (($rtext = @$this->rounds[$roundno]))
+                return $rtext;
+            else if ($expand)
+                return "?$roundno?"; /* should not happen */
+        }
+        return "";
+    }
+
+    function round_number($name, $add) {
+        $r = 0;
+        if ($name
+            && !($r = array_search($name, $this->rounds))
+            && $add) {
+            $rtext = $this->setting_data("tag_rounds", "");
+            $rtext = ($rtext ? "$rtext$name " : " $name ");
+            $this->save_setting("tag_rounds", 1, $rtext);
+            $r = array_search($name, $this->rounds);
+        }
+        return $r ? $r : 0;
     }
 
     function capability_text($prow, $capType) {

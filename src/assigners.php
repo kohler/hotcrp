@@ -193,9 +193,7 @@ class ReviewAssigner extends Assigner {
         global $Conf;
         $result = $Conf->qe("select paperId, contactId, reviewType, reviewRound from PaperReview");
         while (($row = edb_row($result))) {
-            $round = "";
-            if ($row[3] && isset($Conf->settings["rounds"][$row[3]]))
-                $round = $Conf->settings["rounds"][$row[3]];
+            $round = $Conf->round_name($row[3], false);
             $state->load(array("type" => "review", "pid" => $row[0], "cid" => $row[1],
                                "_rtype" => $row[2], "_round" => $round));
         }
