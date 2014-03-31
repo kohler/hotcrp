@@ -84,7 +84,7 @@ class ContactList extends BaseList {
 	    $this->haveTopics = true;
 	}
 	if ($fieldId == self::FIELD_REVIEWS)
-	    $queryOptions['reviews'] = true;
+	    $queryOptions["reviews"] = true;
 	if ($fieldId == self::FIELD_LEADS)
 	    $queryOptions["leads"] = true;
 	if ($fieldId == self::FIELD_SHEPHERDS)
@@ -97,7 +97,7 @@ class ContactList extends BaseList {
 	if ($fieldId == self::FIELD_PAPERS)
 	    $queryOptions['papers'] = true;
 	if ($fieldId == self::FIELD_REVIEW_PAPERS)
-	    $queryOptions['repapers'] = true;
+	    $queryOptions["repapers"] = $queryOptions["reviews"] = true;
 	if ($fieldId == self::FIELD_AFFILIATION_ROW)
 	    $this->haveAffrow = true;
 	if ($fieldId == self::FIELD_TAGS)
@@ -111,7 +111,7 @@ class ContactList extends BaseList {
 		return false;
 	    if (!isset($queryOptions['scores']))
 		$queryOptions['scores'] = array();
-	    $queryOptions['reviews'] = true;
+	    $queryOptions["reviews"] = true;
 	    $queryOptions['scores'][] = $score;
 	    $this->scoreMax[$score] = $this->rf->maxNumericScore($score);
 	}
@@ -492,7 +492,7 @@ class ContactList extends BaseList {
 	u.collaborators, lastLogin$qa, visits";
 	if (isset($queryOptions['topics']))
 	    $pq .= ",\n	topicIds, topicInterest";
-	if (isset($queryOptions['reviews'])) {
+	if (isset($queryOptions["reviews"])) {
 	    $pq .= ",
 	count(if(r.reviewNeedsSubmit<=0,r.reviewSubmitted,r.reviewId)) as numReviews,
 	count(r.reviewSubmitted) as numReviewsSubmitted";
@@ -507,7 +507,7 @@ class ContactList extends BaseList {
 	if (isset($queryOptions['scores']))
 	    foreach ($queryOptions['scores'] as $score)
 		$pq .= ",\n\tgroup_concat(if(r.reviewSubmitted>0,r.$score,null)) as $score";
-	if (isset($queryOptions['repapers']))
+	if (isset($queryOptions["repapers"]))
 	    $pq .= ",\n\tgroup_concat(r.paperId) as paperIds,
 	group_concat(r.reviewId) as reviewIds";
 	else if (isset($queryOptions['papers']))
@@ -520,7 +520,7 @@ class ContactList extends BaseList {
 	    $pq .= "	left join (select contactId, group_concat(topicId) as topicIds, group_concat(interest) as topicInterest
 		from TopicInterest
 		group by contactId) as ti on (ti.contactId=u.contactId)\n";
-	if (isset($queryOptions['reviews'])) {
+	if (isset($queryOptions["reviews"])) {
 	    $j = "left join";
 	    if ($this->limit == "re" || $this->limit == "req" || $this->limit == "ext" || $this->limit == "resub" || $this->limit == "extsub")
 		$j = "join";
@@ -545,6 +545,7 @@ class ContactList extends BaseList {
 		$jwhere[] = "r.requestedBy=" . $this->contact->contactId;
 	    if (!$this->contact->privChair)
 		$jwhere[] = "(pc.conflictType is null or pc.conflictType=0 or r.contactId=" . $this->contact->contactId . ")";
+            $jwhere[] = "(p.timeWithdrawn<=0 or r.reviewSubmitted>0)";
 	    if (count($jwhere))
 		$pq .= "\n\t\twhere " . join(" and ", $jwhere);
 	    if (isset($queryOptions["revratings"]))
