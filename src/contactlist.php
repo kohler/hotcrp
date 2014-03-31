@@ -252,8 +252,9 @@ class ContactList extends BaseList {
 	case self::FIELD_SELECTOR:
 	    return "";
 	case self::FIELD_PAPERS:
-	case self::FIELD_REVIEW_PAPERS:
 	    return "Papers";
+	case self::FIELD_REVIEW_PAPERS:
+	    return "Assigned papers";
 	case self::FIELD_TAGS:
 	    return "Tags";
 	case self::FIELD_SCORE: {
@@ -375,12 +376,21 @@ class ContactList extends BaseList {
 	case self::FIELD_REVIEW_PAPERS:
 	    if (!$row->paperIds)
 		return "";
-	    $x = array_combine(explode(",", $row->paperIds), explode(",", $row->reviewIds));
-	    ksort($x, SORT_NUMERIC);
-	    $extra = "&amp;ls=" . urlencode("p/s/" . join(" ", array_keys($x)));
+            $pids = explode(",", $row->paperIds);
+            $rids = explode(",", $row->reviewIds);
+            $ords = explode(",", $row->reviewOrdinals);
+            $spids = $pids;
+	    ksort($spids, SORT_NUMERIC);
+	    $extra = "&amp;ls=" . urlencode("p/s/" . join(" ", array_keys($spids)));
 	    $m = array();
-	    foreach ($x as $k => $v)
-		$m[] = "<a href=\"" . hoturl("review", "r=$v$extra") . "\">$k</a>";
+            for ($i = 0; $i != count($pids); ++$i) {
+                if ($ords[$i])
+                    $url = hoturl("paper", "p=" . $pids[$i] . "$extra#review" . $pids[$i] . unparseReviewOrdinal($ords[$i]));
+                else
+                    $url = hoturl("review", "p=" . $pids[$i] . "&amp;r=" . $rids[$i] . $extra);
+                $m[$pids[$i]] = "<a href=\"$url\">" . $pids[$i] . "</a>";
+            }
+            ksort($m, SORT_NUMERIC);
 	    return join(", ", $m);
 	case self::FIELD_TAGS:
 	    if (!$this->contact->isPC || !$row->contactTags)
@@ -509,7 +519,8 @@ class ContactList extends BaseList {
 		$pq .= ",\n\tgroup_concat(if(r.reviewSubmitted>0,r.$score,null)) as $score";
 	if (isset($queryOptions["repapers"]))
 	    $pq .= ",\n\tgroup_concat(r.paperId) as paperIds,
-	group_concat(r.reviewId) as reviewIds";
+	group_concat(r.reviewId) as reviewIds,
+	group_concat(coalesce(r.reviewOrdinal,0)) as reviewOrdinals";
 	else if (isset($queryOptions['papers']))
 	    $pq .= ",\n\tgroup_concat(PaperConflict.paperId) as paperIds";
 
