@@ -94,14 +94,10 @@ function setLocalTime(elt, servtime) {
 	}
     }
 }
-setLocalTime.initialize = function (servtime, servzone, hr24) {
-    var now = new Date(), x;
-    if (Math.abs(now.getTime() - servtime * 1000) >= 300000
-	&& (x = $$("clock_drift_container")))
-	x.innerHTML = "<div class='warning'>The HotCRP server’s clock is more than 5 minutes off from your computer’s clock. If your computer’s clock is correct, you should update the server’s clock.</div>";
+setLocalTime.initialize = function (servzone, hr24) {
     servhr24 = hr24;
     // print local time if server time is in a different time zone
-    showdifference = Math.abs(now.getTimezoneOffset() - servzone) >= 60;
+    showdifference = Math.abs((new Date).getTimezoneOffset() - servzone) >= 60;
 };
 return setLocalTime;
 })();
@@ -132,13 +128,19 @@ function redisplay_main() {
 }
 
 // this logic is repeated in the back end
-function display_main() {
+function display_main(is_initial) {
     var s = "", amt, what = null, x, subtype,
-	time_since_load = new Date().getTime() / 1000 - +dl.load,
+        browser_now = (new Date).getTime() / 1000,
+	time_since_load = browser_now - +dl.load,
 	now = +dl.now + time_since_load,
 	elt = $$("maindeadline");
     if (!elt)
 	return;
+
+    if (!is_initial
+        && Math.abs(browser_now - dl.now) >= 300000
+        && (x = $$("clock_drift_container")))
+        x.innerHTML = "<div class='warning'>The HotCRP server’s clock is more than 5 minutes off from your computer’s clock. If your computer’s clock is correct, you should update the server’s clock.</div>";
 
     dlname = "";
     dltime = 0;
@@ -286,17 +288,19 @@ function reload() {
     Miniajax.get(dlurl + "?ajax=1", hotcrp_deadlines, 10000);
 }
 
-function hotcrp_deadlines(dlx) {
+function hotcrp_deadlines(dlx, is_initial) {
     var t;
     if (dlx)
 	dl = dlx;
     if (!dl.load)
-	dl.load = new Date().getTime() / 1000;
-    display_main();
+	dl.load = (new Date).getTime() / 1000;
+    display_main(is_initial);
     if (dl.tracker || has_tracker)
         display_tracker();
     if (dlurl && !reload_timeout) {
-        if (ever_had_tracker)
+        if (is_initial && $$("clock_drift_container"))
+            t = 10;
+        else if (ever_had_tracker)
             t = 10000;
         else if (dlname && (!dltime || dltime - dl.load <= 120))
             t = 45000;
@@ -308,7 +312,7 @@ function hotcrp_deadlines(dlx) {
 
 hotcrp_deadlines.init = function (dlx, dlurlx) {
     dlurl = dlurlx;
-    hotcrp_deadlines(dlx);
+    hotcrp_deadlines(dlx, true);
 };
 
 hotcrp_deadlines.tracker = function (start) {
@@ -351,8 +355,8 @@ function hotcrp_load(arg) {
     else
 	hotcrp_onload.push(arg);
 }
-hotcrp_load.time = function (servtime, servzone, hr24) {
-    setLocalTime.initialize(servtime, servzone, hr24);
+hotcrp_load.time = function (servzone, hr24) {
+    setLocalTime.initialize(servzone, hr24);
 };
 hotcrp_load.opencomment = function () {
     if (location.hash.match(/^\#?commentnew$/))

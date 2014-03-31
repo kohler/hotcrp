@@ -1797,7 +1797,7 @@ class Conference {
             $this->scriptStuff .= ";hotcrp_paperid=$pid";
 
         // JavaScript's timezone offsets are the negative of PHP's
-        $this->scriptStuff .= ";hotcrp_load.time($Now," . (-date("Z", $Now) / 60) . "," . (@$Opt["time24hour"] ? 1 : 0) . ")";
+        $this->scriptStuff .= ";hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . (@$Opt["time24hour"] ? 1 : 0) . ")";
 
         if ($Me) {
             $dl = $Me->deadlines();
