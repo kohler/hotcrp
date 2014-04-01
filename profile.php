@@ -305,7 +305,7 @@ function parseBulkFile($text, $filename) {
 	foreach (array("firstname" => "firstName", "first" => "firstName",
 		       "lastname" => "lastName", "last" => "lastName",
 		       "voice" => "voicePhoneNumber", "phone" => "voicePhoneNumber",
-		       "address1" => "addressLine1",
+		       "address1" => "addressLine1", "province" => "state", "region" => "state",
 		       "address2" => "addressLine2", "postalcode" => "zipCode",
 		       "zip" => "zipCode", "tags" => "contactTags") as $k => $x)
 	    if (isset($line[$k]) && !isset($line[$x]))
@@ -637,8 +637,9 @@ if ($newProfile) {
     echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", "", 2),
 	"</td><td><a href=\"javascript:void fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
 	"<tr class='fx2'><td></td><td>",
-	"<p>Upload a CSV file with one line per account. Either specify a header like “<code>name,email,affiliation,address1</code>” or give name, email address, and affiliation, in that order.  Each new account’s role and PC information is set from the form below.  Example:</p>\n",
+	"<p>Upload a CSV file with one line per account. The header must define an <code>email</code> field. Other fields can include <code>name</code>, <code>first</code>, <code>last</code>, and <code>affiliation</code>.  Each new account’s role and PC information is set from the form below.  Example:</p>\n",
 	"<pre class='entryexample'>
+name,email,affiliation
 John Adams,john@earbox.org,UC Berkeley
 \"Adams, John Quincy\",quincy@whitehouse.gov
 </pre>\n",
