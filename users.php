@@ -53,12 +53,13 @@ if (!isset($_REQUEST["t"]))
 
 // paper selection and download actions
 function paperselPredicate($papersel) {
-    return "contactId" . sql_in_numeric_set($papersel);
+    return "ContactInfo.contactId" . sql_in_numeric_set($papersel);
 }
 
 if (isset($_REQUEST["pap"]) && is_string($_REQUEST["pap"]))
     $_REQUEST["pap"] = preg_split('/\s+/', $_REQUEST["pap"]);
-if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
+if ((isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]))
+    || ($getaction && !isset($_REQUEST["pap"]))) {
     $allowed_papers = array();
     $pl = new ContactList($Me, true);
     // Ensure that we only select contacts we're allowed to see.
@@ -67,53 +68,126 @@ if (isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"])) {
 	    $allowed_papers[$row->paperId] = true;
     }
     $papersel = array();
-    foreach ($_REQUEST["pap"] as $p)
-	if (($p = cvtint($p)) > 0 && isset($allowed_papers[$p]))
-	    $papersel[] = $p;
+    if (isset($_REQUEST["pap"])) {
+        foreach ($_REQUEST["pap"] as $p)
+            if (($p = cvtint($p)) > 0 && isset($allowed_papers[$p]))
+                $papersel[] = $p;
+    } else
+        $papersel = array_keys($allowed_papers);
     if (count($papersel) == 0)
 	unset($papersel);
 }
 
 if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
-    $result = $Conf->qe("select firstName, lastName, email from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
-    $people = array();
-    while ($row = edb_row($result))
-	$people[] = array($row[0] && $row[1] ? "$row[1], $row[0]" : "$row[1]$row[0]", $row[2]);
-    downloadCSV($people, array("name", "email"), "users");
-    exit;
-}
-
-if ($getaction == "nameaffemail" && isset($papersel) && $Me->isPC) {
-    $result = $Conf->qe("select firstName, lastName, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
-    $people = array();
-    while ($row = edb_row($result))
-	$people[] = array($row[0] && $row[1] ? "$row[1], $row[0]" : "$row[1]$row[0]", $row[3], $row[2]);
-    downloadCSV($people, array("name", "affiliation", "email"), "users");
+    $result = $Conf->qe("select firstName first, lastName last, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
+    $people = edb_orows($result);
+    downloadCSV($people, array("first", "last", "email", "affiliation"), "users");
     exit;
 }
 
 if ($getaction == "address" && isset($papersel) && $Me->isPC) {
-    $result = $Conf->qe("select firstName, lastName, email, voicePhoneNumber, ContactAddress.* from ContactInfo left join ContactAddress using (contactId) where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
-    $people = array();
+    $result = $Conf->qe("select firstName first, lastName last, email, affiliation,
+	voicePhoneNumber phone,
+	addressLine1 address1, addressLine2 address2, city, state, zipCode zip, country
+	from ContactInfo
+	left join ContactAddress using (contactId)
+	where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
+    $people = edb_orows($result);
     $phone = false;
-    while (($row = edb_orow($result))) {
-	$p = array(null, $row->email, $row->addressLine1, $row->addressLine2,
-		   $row->city, $row->state, $row->zipCode, $row->country);
-	if ($row->voicePhoneNumber) {
-	    $phone = true;
-	    $p[] = $row->voicePhoneNumber;
-	}
-	if ($row->firstName && $row->lastName)
-	    $p[0] = "$row->lastName, $row->firstName";
-	else
-	    $p[0] = "$row->lastName$row->firstName";
-	$people[] = $p;
-    }
-    $header = array("name", "email", "address1", "address2",
-		    "city", "state", "postalcode", "country");
+    foreach ($people as $p)
+        $phone = $phone || $p->phone;
+    $header = array("first", "last", "email", "address1", "address2",
+		    "city", "state", "zip", "country");
     if ($phone)
 	$header[] = "phone";
     downloadCSV($people, $header, "addresses");
+    exit;
+}
+
+function urlencode_matches($m) {
+    return urlencode($m[0]);
+}
+
+if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
+    $result = $Conf->qe("select firstName first, lastName last, email,
+	preferredEmail preferred_email, affiliation,
+	voicePhoneNumber phone,
+	addressLine1 address1, addressLine2 address2, city, state, zipCode zip, country,
+	collaborators, defaultWatch, roles, disabled, contactTags tags, data,
+	group_concat(concat(topicId,':',interest)) topic_interest
+	from ContactInfo
+	left join ContactAddress on (ContactAddress.contactId=ContactInfo.contactId)
+	left join TopicInterest on (TopicInterest.contactId=ContactInfo.contactId and TopicInterest.interest is not null and TopicInterest.interest!=1)
+	where " . paperselPredicate($papersel) . "
+	group by ContactInfo.contactId order by lastName, firstName, email", "while selecting users");
+
+    $topics = array();
+    foreach ($Conf->topic_map() as $id => $tname)
+        $topics[$id] = preg_replace_callback('|[=,:;+\\%\200-\377]|', "urlencode_matches", $tname);
+
+    $people = array();
+    $has = (object) array();
+    while (($row = edb_orow($result))) {
+        if ($row->phone)
+            $has->phone = true;
+        if ($row->preferred_email && $row->preferred_email != $row->email)
+            $has->preferred_email = true;
+        if ($row->disabled)
+            $has->disabled = true;
+        if ($row->tags && ($row->tags = trim($row->tags)))
+            $has->tags = true;
+        if ($row->address1 || $row->address2 || $row->city || $row->state || $row->zip || $row->country)
+            $has->address = true;
+        if ($row->topic_interest
+            && preg_match_all('|(\d+):(\d+)|', $row->topic_interest, $m, PREG_SET_ORDER)) {
+            $t = array();
+            foreach ($m as $x)
+                if (($tn = @$topics[$x[1]]))
+                    $t[] = $tn . "=" . ($x[2] < 1 ? "low" : "high");
+            if (count($t)) {
+                $row->topic_interest = join(";", $t);
+                $has->topic_interest = true;
+            } else
+                $row->topic_interest = "";
+        }
+        $row->follow = array();
+        if ($row->defaultWatch & WATCH_COMMENT)
+            $row->follow[] = "reviews";
+        if (($row->defaultWatch & WATCH_ALLCOMMENTS)
+            && ($row->roles & Contact::ROLE_PCLIKE))
+            $row->follow[] = "allreviews";
+        if (($row->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL))
+            && ($row->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)))
+            $row->follow[] = "allfinal";
+        $row->follow = join(",", $row->follow);
+        if ($row->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) {
+            $r = array();
+            if ($row->roles & Contact::ROLE_CHAIR)
+                $r[] = "chair";
+            if ($row->roles & Contact::ROLE_PC)
+                $r[] = "pc";
+            if ($row->roles & Contact::ROLE_ADMIN)
+                $r[] = "sysadmin";
+            $row->roles = join(",", $r);
+        } else
+            $row->roles = "";
+        $people[] = $row;
+    }
+
+    $header = array("first", "last", "email");
+    if (@$has->preferred_email)
+        $header[] = "preferred_email";
+    $header[] = "roles";
+    if (@$has->tags)
+        $header[] = "tags";
+    array_push($header, "affiliation", "collaborators", "follow");
+    if (@$has->phone)
+        $header[] = "phone";
+    if (@$has->address)
+        array_push($header, "address1", "address2", "city", "state", "zip", "country");
+    if (@$has->topic_interest)
+        $header[] = "topic_interest";
+    downloadCSV($people, $header, "pcinfo", array("selection" => $header));
     exit;
 }
 

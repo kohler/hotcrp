@@ -468,11 +468,12 @@ class ContactList extends BaseList {
 	$t .= "    <td id='pplact' class='pl_footer linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
 	// Begin linelinks
+        $types = array("nameemail" => "Names and emails",
+                       "address" => "Addresses");
+        if ($this->contact->privChair)
+            $types["pcinfo"] = "PC info";
 	$t .= "<span class='lll1'><a href='#' onclick='return crpfocus(\"pplact\",1)'>Download</a></span><span class='lld1'><b>:</b> &nbsp;"
-	    . Ht::select("getaction", array("nameemail" => "Names and emails",
-                                            "nameaffemail" => "Names, affiliations, and emails",
-                                            "address" => "Addresses"),
-                         null, array("id" => "pplact1_d"))
+	    . Ht::select("getaction", $types, null, array("id" => "pplact1_d"))
 	    . "&nbsp; <input type='submit' class='bsm' name='getgo' value='Go' /></span>";
 
         $barsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
