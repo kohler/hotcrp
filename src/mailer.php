@@ -185,14 +185,18 @@ class Mailer {
 	}
 
 	if ($what == "%REVIEWDEADLINE%") {
-	    $row_reviewType = @$this->row->reviewType;
-	    if ($row_reviewType <= 0 && $Conf->setting("pcrev_soft") != $Conf->setting("extrev_soft")) {
+            if (@$this->row->reviewType > 0)
+                $rev = ($this->row->reviewType >= REVIEW_PC ? "pc" : "ext");
+            else if (isset($this->row->roles))
+                $rev = ($this->row->roles & Contact::ROLE_PCLIKE ? "pc" : "ext");
+            else if ($Conf->setting("pcrev_soft") != $Conf->setting("extrev_soft")) {
 		if ($isbool && ($Conf->setting("pcrev_soft") > 0) == ($Conf->setting("extrev_soft") > 0))
 		    return $Conf->setting("pcrev_soft") > 0;
 		else
 		    return ($isbool ? null : $what);
-	    }
-	    $what = "%DEADLINE(" . ($row_reviewType >= REVIEW_PC ? "pcrev_soft" : "extrev_soft") . ")%";
+	    } else
+                $rev = "ext";
+	    $what = "%DEADLINE(" . $rev . "rev_soft)%";
 	    $len = strlen($what);
 	}
 	if ($len > 12 && substr($what, 0, 10) == "%DEADLINE(" && substr($what, $len - 2) == ")%") {
@@ -718,12 +722,12 @@ class Mailer {
 	global $Conf, $Me, $mailTemplates;
 
         $qa = ($Conf->sversion >= 47 ? ", disabled" : "");
-	$result = $Conf->qe("select u.contactId,
-		firstName, lastName, email, preferredEmail, password$qa,
+	$result = $Conf->qe("select ContactInfo.contactId,
+		firstName, lastName, email, preferredEmail, password, roles$qa,
 		conflictType, 0 myReviewType
-		from ContactInfo u join PaperConflict using (contactId)
+		from ContactInfo join PaperConflict using (contactId)
 		where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
-		group by u.contactId", "while looking up contacts to send email");
+		group by ContactInfo.contactId", "while looking up contacts to send email");
 
 	// must set the current conflict type in $row for each contact
         $contact_info_map = $row->replace_contact_info_map(null);
@@ -751,13 +755,13 @@ class Mailer {
 	global $Conf, $Me, $Opt, $mailTemplates;
 
         $qa = ($Conf->sversion >= 47 ? ", disabled" : "");
-	$result = $Conf->qe("select u.contactId,
-		firstName, lastName, email, preferredEmail, password$qa,
+	$result = $Conf->qe("select ContactInfo.contactId,
+		firstName, lastName, email, preferredEmail, password, roles$qa,
 		conflictType, reviewType myReviewType
-		from ContactInfo u
-		join PaperReview on (PaperReview.contactId=u.contactId and PaperReview.paperId=$row->paperId)
-		left join PaperConflict on (PaperConflict.contactId=u.contactId and PaperConflict.paperId=$row->paperId)
-		group by u.contactId", "while looking up reviewers to send email");
+		from ContactInfo
+		join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$row->paperId)
+		left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$row->paperId)
+		group by ContactInfo.contactId", "while looking up reviewers to send email");
 
 	if (!isset($rest["cc"]))
 	    $rest["cc"] = defval($Opt, "emailCc", $Opt["contactName"] . " <" . $Opt["contactEmail"] . ">");
