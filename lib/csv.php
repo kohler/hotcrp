@@ -294,7 +294,8 @@ class CsvGenerator {
             return;
         }
         reset($row);
-        if (count($row) && is_array(current($row))) {
+        if (count($row)
+            && (is_array(current($row)) || is_object(current($row)))) {
             foreach ($row as $x)
                 $this->add($x);
         } else {

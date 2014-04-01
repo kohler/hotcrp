@@ -1264,14 +1264,16 @@ function titleWords($title, $chars = 40) {
     return $xtitle . "...";
 }
 
-function downloadCSV($info, $header, $filename, $opt = array()) {
+function downloadCSV($info, $header, $filename, $options = array()) {
     global $Opt;
-    $iscsv = defval($opt, "type", "csv") == "csv" && !isset($Opt["disableCSV"]);
+    $iscsv = defval($options, "type", "csv") == "csv" && !isset($Opt["disableCSV"]);
     $csvg = new CsvGenerator($iscsv ? CsvGenerator::TYPE_COMMA : CsvGenerator::TYPE_TAB);
     if ($header)
         $csvg->set_header($header, true);
+    if (@$options["selection"])
+        $csvg->set_selection($options["selection"] === true ? $header : $options["selection"]);
     $csvg->add($info);
-    $csvg->download_headers($Opt["downloadPrefix"] . $filename . $csvg->extension(), !defval($opt, "inline"));
+    $csvg->download_headers($Opt["downloadPrefix"] . $filename . $csvg->extension(), !defval($options, "inline"));
     $csvg->download();
 }
 
