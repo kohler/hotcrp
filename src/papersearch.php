@@ -915,20 +915,20 @@ class PaperSearch {
 	    if ($oname == "none" || $oname == "any"
 		|| strstr(strtolower($o->name), $oname) !== false) {
 		// find the relevant values
-                if ($oval === "" || $oval === "yes")
-                    $xval = "!=0";
-                else if ($oval === "no")
-                    $xval = "=0";
-		else if ($o->type == "numeric") {
+                if ($o->type == "numeric") {
 		    if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
 			$xval = $ocompar . $m[1];
+                    else if ($oval === "" || $oval === "yes")
+                        $xval = "!=0";
+                    else if ($oval === "no")
+                        $xval = "=0";
 		    else {
 			$this->warn("Submission option “" . htmlspecialchars($o->name) . "” takes integer values.");
 			$option_failure = true;
 			continue;
 		    }
 		} else if ($o->has_selector()) {
-		    $xval = matchValue($o->selector, $oval);
+		    $xval = matchValue($o->selector, $oval !== "" ? $oval : "yes");
 		    if (count($xval) == 0)
 			continue;
 		    else if (count($xval) == 1)
@@ -940,8 +940,14 @@ class PaperSearch {
 		    } else
 			$xval = ($ocompar == "!=" ? " not in " : " in ")
 			    . "(" . join(",", $xval) . ")";
-		} else
-		    continue;
+		} else {
+                    if ($oval === "" || $oval === "yes")
+                        $xval = "!=0";
+                    else if ($oval === "no")
+                        $xval = "=0";
+                    else
+                        continue;
+                }
 		$qo[] = array($o, $xval);
 	    } else if ($o->has_selector()
 		       && ($ocompar == "=" || $ocompar == "!=")
@@ -2241,7 +2247,7 @@ class PaperSearch {
 
 	// parse and clean the query
 	$qe = $this->_searchQueryType($this->q);
-	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($qe, true)))));
+	//$Conf->infoMsg(Ht::pre_h(var_export($qe, true)));
 	if (!$qe)
 	    $qe = new SearchTerm("t");
 
@@ -2259,7 +2265,7 @@ class PaperSearch {
 		$Conf->errorMsg("Unexpected use of &ldquo;round:&rdquo; or &ldquo;rate:&rdquo; ignored.  Stick to the basics, such as &ldquo;re:reviewername round:roundname&rdquo;.");
 	}
 
-	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($qe, true)))));
+	//$Conf->infoMsg(Ht::pre_h(var_export($qe, true)));
 
 	// collect clauses into tables, columns, and filters
         $sqi = new SearchQueryInfo;
@@ -2272,7 +2278,7 @@ class PaperSearch {
         $filters = array();
 	$this->needflags = 0;
 	$this->_clauseTermSet($qe, false, $sqi, $filters);
-	//$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($filters, true)))));
+	//$Conf->infoMsg(Ht::pre_h(var_export($filters, true)));
 
 	// status limitation parts
         $pc_seeall = $Conf->setting("pc_seeall") > 0;
