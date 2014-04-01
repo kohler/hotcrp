@@ -716,16 +716,17 @@ class Contact {
         if (isset($reg->roles)) {
             $rolex = $reg->roles;
             if (is_string($rolex))
-                $rolex = array($rolex);
+                $rolex = preg_split('/[\s,]+/', $rolex);
             if (is_array($rolex) || is_object($rolex)) {
                 $r = 0;
                 foreach ($rolex as $k => $v)
                     if ($v === "pc" || ($v && $k === "pc"))
                         $r |= self::ROLE_PC;
-                    else if ($v === "admin" || ($v && $k === "admin"))
+                    else if ($v === "admin" || ($v && $k === "admin")
+                             || $v === "sysadmin" || ($v && $k === "sysadmin"))
                         $r |= self::ROLE_ADMIN;
                     else if ($v === "chair" || ($v && $k === "chair"))
-                        $r |= self::ROLE_CHAIR;
+                        $r |= self::ROLE_CHAIR | self::ROLE_PC;
                 $rolex = $r;
             }
             if (is_int($rolex) && $rolex > 0)
