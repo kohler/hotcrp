@@ -24,9 +24,9 @@ class PaperOption {
             return $a->id - $b->id;
     }
 
-    static function option_list($force = false) {
+    static function option_list() {
         global $Conf;
-        if (self::$list === null || $force) {
+        if (self::$list === null) {
             self::$list = array();
             if (($optj = $Conf->setting_json("options"))) {
                 foreach ($optj as $j)
@@ -35,6 +35,10 @@ class PaperOption {
             }
         }
         return self::$list;
+    }
+
+    static function invalidate_option_list() {
+        self::$list = null;
     }
 
     static function find($id) {

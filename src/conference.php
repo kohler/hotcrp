@@ -521,7 +521,7 @@ class Conference {
 	    unset($_SESSION["pcmembers"]);
 	}
 	if (!$caches || isset($caches["paperOption"]))
-            PaperOption::option_list(true);
+            PaperOption::invalidate_option_list();
 	if (!$caches || isset($caches["rf"]))
             $ReviewFormCache = null;
 	$ok = true;

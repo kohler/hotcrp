@@ -567,7 +567,7 @@ function doOptions($set) {
         $Conf->qe("delete from PaperOption where optionId in (" . join(",", $deleted_ids) . ")");
 
     // invalidate cached option list
-    PaperOption::option_list(true);
+    PaperOption::invalidate_option_list();
 }
 
 function doDecisions($set) {
