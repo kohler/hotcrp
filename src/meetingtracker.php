@@ -14,6 +14,10 @@ class MeetingTracker {
         global $Conf, $Me, $Now;
         assert($list && str_starts_with($list->listid, "p/"));
         ensure_session();
+        if (preg_match('/\A[1-9][0-9]*\z/', $trackerid))
+            $trackerid = (int) $trackerid;
+        if (preg_match('/\A[1-9][0-9]*\z/', $position))
+            $position = (int) $position;
         $tracker = (object) array("trackerid" => $trackerid,
                                   "listid" => $list->listid,
                                   "ids" => $list->ids,
