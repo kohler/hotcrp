@@ -1241,7 +1241,7 @@ class Conference {
 	$pq .= "		left join PaperReview as AllReviews on (AllReviews.paperId=Paper.paperId)\n";
 
 	$qr = "";
-	if (($tokens = $contact->review_tokens()))
+	if ($contact && ($tokens = $contact->review_tokens()))
 	    $qr = " or PaperReview.reviewToken in (" . join(", ", $tokens) . ")";
 	if (@$options["myReviewRequests"])
 	    $pq .= "		join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$contactId and PaperReview.reviewType=" . REVIEW_EXTERNAL . ")\n";
