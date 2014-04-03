@@ -1404,6 +1404,59 @@ $blind\n";
 	    "</td></tr>\n</table></div>\n\n";
     }
 
+    private function _review_buttons($prow, $rrow, $type, $reviewPostLink) {
+        global $Conf, $Me;
+        $buttons = array();
+
+	// refuse?
+	if ($type == "top" && $rrow && !$rrow->reviewModified
+            && $rrow->reviewType < REVIEW_SECONDARY) {
+            $buttons[] = Ht::submit("accept", "Accept review", array("class" => "b"));
+            $buttons[] = Ht::button("Decline review",
+                                    array("class" => "b",
+                                          "onclick" => "popup(this,'ref',0)"));
+	    // Also see $_REQUEST["refuse"] case in review.php.
+	    $Conf->footerHtml("<div id='popup_ref' class='popupc'>
+  <p style='margin:0 0 0.3em'>Select “Decline review” to decline this review. Thank you for keeping us informed.</p>
+  <form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
+    <input type='hidden' name='refuse' value='refuse' />
+    <textarea id='refusereviewreason' class='temptext' name='reason' rows='3' cols='40'>Optional explanation</textarea>
+    <div class='popup_actions'>
+      <button type='button' onclick=\"popup(null,'ref',1)\">Cancel</button>
+      &nbsp;<input class='bb' type='submit' value='Decline review' />
+    </div>
+  </div></form></div>", "declinereviewform");
+	    $Conf->footerScript("mktemptext('refusereviewreason','Optional explanation')", "declinereviewform_temptext");
+            $buttons[] = "";
+	}
+
+        $submitted = $rrow && $rrow->reviewSubmitted;
+        if (!$submitted) {
+            $buttons[] = Ht::submit("submit", "Submit review", array("class" => "bb"));
+            $buttons[] = Ht::submit("savedraft", "Save as draft");
+        } else
+            $buttons[] = Ht::submit("submit", "Save changes", array("class" => "bb"));
+
+        if ($rrow && $type == "bottom" && $Me->allowAdminister($prow)) {
+            $buttons[] = "";
+            if ($submitted)
+                $buttons[] = array(Ht::submit("unsubmit", "Unsubmit review"), "(admin only)");
+            $buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
+            $Conf->footerHtml("<div id='popup_d' class='popupc'>
+  <p>Be careful: This will permanently delete all information about this
+  review assignment from the database and <strong>cannot be
+  undone</strong>.</p>
+  <form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'>
+    <div class='popup_actions'>
+      <button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button>
+      &nbsp;<input class='bb' type='submit' name='delete' value='Delete review' />
+    </div>
+  </form></div>");
+        }
+
+        return $buttons;
+    }
+
     function show($prow, $rrows, $rrow, &$options) {
 	global $Conf, $Opt, $Me, $useRequest;
 
@@ -1484,23 +1537,6 @@ $blind\n";
 	if (defval($options, "editmessage"))
 	    echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
 
-	// refuse?
-	if ($rrow && !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY) {
-	    echo "\n<div class='revref'><a id='popupanchor_ref' href=\"javascript:void popup(null, 'ref', 0)\">Decline review</a> if you are unable or unwilling to complete it</div>\n";
-	    // Also see $_REQUEST["refuse"] case in review.php.
-	    $Conf->footerHtml("<div id='popup_ref' class='popupc'>
-  <p style='margin:0 0 0.3em'>Select “Decline review” to decline this review, and thank you for keeping us informed.</p>
-  <form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
-    <input type='hidden' name='refuse' value='refuse' />
-    <textarea id='refusereviewreason' class='temptext' name='reason' rows='3' cols='40'>Optional explanation</textarea>
-    <div class='popup_actions'>
-      <button type='button' onclick=\"popup(null, 'ref', 1)\">Cancel</button>
-      &nbsp;<input class='bb' type='submit' value='Decline review' />
-    </div>
-  </div></form></div>");
-	    $Conf->footerScript("mktemptext('refusereviewreason','Optional explanation')");
-	}
-
 	// delegate?
 	if ($rrow && !$rrow->reviewSubmitted
 	    && $rrow->contactId == $Me->contactId
@@ -1541,17 +1577,11 @@ $blind\n";
 
 	// ready?
 	$ready = ($useRequest ? defval($_REQUEST, "ready") : !($rrow && $rrow->reviewModified && !$rrow->reviewSubmitted));
-	$submitted = $rrow && $rrow->reviewSubmitted;
 
 	// top save changes button
 	echo "  <tr><td></td><td class='revcc'>";
 	if ($Me->timeReview($prow, $rrow) || $admin) {
-	    $buttons = array();
-	    if (!$submitted) {
-		$buttons[] = Ht::submit("submit", "Submit review", array("class" => "bb"));
-		$buttons[] = Ht::submit("savedraft", "Save as draft");
-	    } else
-		$buttons[] = Ht::submit("submit", "Save changes", array("class" => "bb"));
+	    $buttons = $this->_review_buttons($prow, $rrow, "top", $reviewPostLink);
 	    echo Ht::actions($buttons, array("style" => "margin-top:0"));
 	}
 
@@ -1570,30 +1600,9 @@ $blind\n";
 
 	// review actions
 	if ($Me->timeReview($prow, $rrow) || $admin) {
-	    $buttons = array();
-	    if (!$submitted) {
-		$buttons[] = Ht::submit("submit", "Submit review", array("class" => "bb"));
-		$buttons[] = Ht::submit("savedraft", "Save as draft");
-	    } else
-		$buttons[] = Ht::submit("submit", "Save changes", array("class" => "bb"));
-	    if ($rrow && $admin) {
-                $buttons[] = "";
-		if ($submitted)
-		    $buttons[] = array(Ht::submit("unsubmit", "Unsubmit review"), "(admin only)");
-		$buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
-		$Conf->footerHtml("<div id='popup_d' class='popupc'>
-  <p>Be careful: This will permanently delete all information about this
-  review assignment from the database and <strong>cannot be
-  undone</strong>.</p>
-  <form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'>
-    <div class='popup_actions'>
-      <button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button>
-      &nbsp;<input class='bb' type='submit' name='delete' value='Delete review' />
-    </div>
-  </form></div>");
-	    }
-
+	    $buttons = $this->_review_buttons($prow, $rrow, "bottom", $reviewPostLink);
 	    echo Ht::actions($buttons);
+
 	    if ($admin)
 		echo Ht::checkbox("override"), "&nbsp;", Ht::label("Override deadlines");
 	    if ($rrow && $rrow->reviewSubmitted && !$admin)
