@@ -601,9 +601,9 @@ class PaperSearch {
     }
 
     private function _one_pc_matcher($text, $quoted) {
-        if (($word == "any" || $word == "" || $word == "yes") && !$quoted)
+        if (($text == "any" || $text == "" || $text == "yes") && !$quoted)
             return "!=0";
-        else if (($word == "none" || $word == "no") && !$quoted)
+        else if (($text == "none" || $text == "no") && !$quoted)
             return "=0";
         else
             return $this->_reviewerMatcher($text, $quoted, true);
