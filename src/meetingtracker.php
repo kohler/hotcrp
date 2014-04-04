@@ -68,7 +68,7 @@ class MeetingTracker {
                     $p->is_reviewer = true;
                 if ($row->conflictType)
                     $p->is_conflict = true;
-                if ($row->leadContactId)
+                if ($row->leadContactId == $acct->contactId)
                     $p->is_lead = true;
             }
             $status->papers = array();
