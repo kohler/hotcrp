@@ -63,6 +63,51 @@ function event_prevent(evt) {
 	evt.returnValue = false;
 }
 
+function sprintf(fmt) {
+    var words = fmt.split(/(%(?:%|-?\d*(?:[.]\d*)?[sdefgoxX]))/), wordno, word,
+        arg, argno, conv, pad, t = "";
+    for (wordno = 0, argno = 1; wordno != words.length; ++wordno) {
+        word = words[wordno];
+        if (word.charAt(0) != "%")
+            t += word;
+        else if (word.charAt(1) == "%")
+            t += "%";
+        else {
+            arg = arguments[argno];
+            ++argno;
+            conv = word.match(/^%(-?)(\d*)(?:|[.](\d*))(\w)/);
+            if (conv[4] >= "e" && conv[4] <= "g" && conv[3] == null)
+                conv[3] = 6;
+            if (conv[4] == "g") {
+                arg = Number(arg).toPrecision(conv[3]).toString();
+                arg = arg.replace(/[.](\d*[1-9])?0+(|e.*)$/,
+                                  function (match, p1, p2) {
+                                      return (p1 == null ? "" : "." + p1) + p2;
+                                  });
+            } else if (conv[4] == "f")
+                arg = Number(arg).toFixed(conv[3]);
+            else if (conv[4] == "e")
+                arg = Number(arg).toExponential(conv[3]);
+            else if (conv[4] == "d")
+                arg = Math.floor(arg);
+            else if (conv[4] == "o")
+                arg = Math.floor(arg).toString(8);
+            else if (conv[4] == "x")
+                arg = Math.floor(arg).toString(16);
+            else if (conv[4] == "X")
+                arg = Math.floor(arg).toString(16).toUpperCase();
+            arg = arg.toString();
+            if (conv[2] !== "" && conv[2] !== "0") {
+                pad = conv[2].charAt(0) === "0" ? "0" : " ";
+                while (arg.length < parseInt(conv[2], 10))
+                    arg = conv[1] ? arg + pad : pad + arg;
+            }
+            t += arg;
+        }
+    }
+    return t;
+}
+
 
 window.setLocalTime = (function () {
 var servhr24, showdifference = false;
@@ -72,19 +117,21 @@ function setLocalTime(elt, servtime) {
 	elt = $$(elt);
     if (elt && showdifference) {
 	d = new Date(servtime * 1000);
-	s = ["Sun", "Mon", "Tues", "Wednes", "Thurs", "Fri", "Satur"][d.getDay()];
-	s += "day " + d.getDate() + " ";
-	s += ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
-	s += " " + d.getFullYear();
-	hr = d.getHours();
-	s += " " + (servhr24 ? hr : ((hr + 11) % 12) + 1);
-	if (servhr24 || d.getMinutes() || d.getSeconds())
-	    s += ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
-	if (d.getSeconds())
-	    s += ":" + (d.getSeconds() < 10 ? "0" : "") + d.getSeconds();
-	if (!servhr24)
-	    s += (hr < 12 ? "am" : "pm");
-	s += " your time";
+        if (servhr24)
+            s = sprintf("%02d:%02d:%02d ",
+                         d.getHours(), d.getMinutes(), d.getSeconds());
+        else
+            s = sprintf("%d:%02d:%02d%s ",
+                        (d.getHours() + 11) % 12 + 1, d.getMinutes(), d.getSeconds(),
+                        d.getHours() < 12 ? "am" : "pm");
+        s = s.replace(/:00([ ap])/, "$1");
+        if (!servhr24)
+            s = s.replace(/:00([ ap])/, "$1");
+        s = sprintf("%sday %d %s %d %syour time",
+                    ["Sun", "Mon", "Tues", "Wednes", "Thurs", "Fri", "Satur"][d.getDay()],
+                    d.getDate(),
+                    ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()],
+                    d.getFullYear(), s);
 	if (elt.tagName.toUpperCase() == "SPAN") {
 	    elt.innerHTML = " (" + s + ")";
 	    elt.style.display = "inline";
