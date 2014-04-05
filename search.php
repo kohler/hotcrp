@@ -1281,9 +1281,9 @@ echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas
 
 // Basic search
 echo "<form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'><div class='inform' style='position:relative'>
-  <input id='searchform1_d' class='textlite' type='text' size='40' style='width:30em' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;
-  <input type='submit' value='Search' />
-<div id='taghelp_searchform1' class='taghelp_s'></div>
+  <input id='searchform1_d' class='textlite' type='text' size='40' style='width:30em' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;\n",
+    Ht::submit("Search"),
+    "<div id='taghelp_searchform1' class='taghelp_s'></div>
 </div></form>";
 
 if (!defval($Opt, "noSearchAutocomplete"))
@@ -1328,7 +1328,7 @@ echo Ht::select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 <tr>
   <td class='lxcaption'>With <b>all</b> the words</td>
   <td class='lentry'><input id='searchform2_d' class='textlite' type='text' size='40' style='width:30em' name='qa' value=\"", htmlspecialchars(defval($_REQUEST, "qa", defval($_REQUEST, "q", ""))), "\" tabindex='1' /><span class='sep'></span></td>
-  <td rowspan='3'><input type='submit' value='Search' tabindex='2' /></td>
+  <td rowspan='3'>", Ht::submit("Search", array("tabindex" => 2)), "</td>
 </tr><tr>
   <td class='lxcaption'>With <b>any</b> of the words</td>
   <td class='lentry'><input class='textlite' type='text' size='40' name='qo' style='width:30em' value=\"", htmlspecialchars(defval($_REQUEST, "qo", "")), "\" tabindex='1' /></td>
@@ -1349,9 +1349,9 @@ function echo_request_as_hidden_inputs($specialscore = false) {
 	if (isset($_REQUEST[$x])
 	    && ($x != "q" || !isset($_REQUEST["qa"]))
 	    && ($x != "sort" || !$specialscore || !$pl))
-	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
+	    echo Ht::hidden($x, $_REQUEST[$x]);
     if ($specialscore && $pl)
-	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($pl->sortdef(true)), "\" />\n";
+        echo Ht::hidden("sort", $pl->sortdef(true));
 }
 
 // Saved searches
@@ -1393,7 +1393,8 @@ if ($Me->isPC || $Me->privChair) {
 	    echo "search “", htmlspecialchars($_REQUEST["q"]), "”";
 	else
 	    echo "empty search";
-	echo " as:<br />ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;<input type='submit' value='Save' tabindex='8' />",
+	echo " as:<br />ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;",
+            Ht::submit("Save", array("tabindex" => 8)),
 	    "</div></td></tr></table>",
 	    "</div></form>";
 
@@ -1455,15 +1456,16 @@ if ($pl && $pl->count > 0) {
 
     // Formulas link
     if (count($paperListFormulas) || ($Me->isPC && $Conf->sversion >= 32))
-	echo "<td class='padlb'><button type='button' onclick='fold(\"searchform\",0,3)'>Edit formulas</button></td>";
+	echo "<td class='padlb'>", Ht::js_button("Edit formulas", "fold('searchform',0,3)"), "</td>";
 
     echo "<td class='padlb'>";
     // "Set default display"
     if ($Me->privChair) {
-	echo "<button type='button' id='savedisplayoptionsbutton' onclick='savedisplayoptions()' disabled='disabled'>Make default</button>&nbsp; ";
+	echo Ht::js_button("Make default", "savedisplayoptions()",
+                           array("id" => "savedisplayoptionsbutton",
+                                 "disabled" => true)), "&nbsp; ";
 	$Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='" . hoturl_post("search", "savedisplayoptions=1") . "' enctype='multipart/form-data' accept-charset='UTF-8'>"
-. "<div><input id='scoresortsave' type='hidden' name='scoresort' value='"
-. $_SESSION["scoresort"] . "' /></div></form>");
+                          . "<div>" . Ht::hidden("scoresort", $_SESSION["scoresort"], array("id" => "scoresortsave")) . "</div></form>");
 	$Conf->footerScript("plinfo.extra=function(){\$\$('savedisplayoptionsbutton').disabled=false};");
 	// strings might be in different orders, so sort before comparing
 	$pld = explode(" ", trim($Conf->setting_data("pldisplay_default", " overAllMerit ")));
@@ -1473,7 +1475,7 @@ if ($pl && $pl->count > 0) {
 	    $Conf->footerScript("plinfo.extra()");
     }
 
-    echo "<input id='redisplay' type='submit' value='Redisplay' /></td>";
+    echo Ht::submit("Redisplay", array("id" => "redisplay")), "</td>";
 
     echo "</tr></table></td>";
 
@@ -1515,8 +1517,8 @@ would display the sum of a paper&rsquo;s Overall merit scores.
 		"</td></tr>\n";
 	}
 	echo "<tr><td colspan='3' style='padding:1ex 0 0;text-align:right'>",
-	    "<input type='reset' value='Cancel' onclick='fold(\"searchform\",1,3)' tabindex='8' />",
-	    "&nbsp; <input type='submit' style='font-weight:bold' value='Save changes' tabindex='8' />",
+            Ht::js_button("Cancel", "fold('searchform',1,3)", array("tabindex" => 8)),
+	    "&nbsp; ", Ht::submit("Save changes", array("style" => "font-weight:bold", "tabindex" => 8)),
 	    "</td></tr></tbody></table></div></form>\n";
     }
 
@@ -1548,8 +1550,8 @@ if ($pl) {
 
     if (isset($pl->any->sel))
 	echo "<form method='post' action=\"", selfHref(array("selector" => 1, "post" => post_value())), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck()'><div class='inform'>\n",
-	    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
-	    "<input class='hidden' type='submit' name='default' value='1' />";
+            Ht::hidden("defaultact", "", array("id" => "defaultact")),
+            Ht::hidden_default_submit("default", 1);
 
     echo $pl_text;
     if ($pl->count == 0 && $_REQUEST["t"] != "s") {

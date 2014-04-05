@@ -80,11 +80,11 @@ function _searchForm($forwhat, $other = null, $size = 20) {
     $text = "";
     if ($other && preg_match_all('/(\w+)=([^&]*)/', $other, $matches, PREG_SET_ORDER))
 	foreach ($matches as $m)
-	    $text .= "<input type='hidden' name='$m[1]' value=\"" . htmlspecialchars(urldecode($m[2])) . "\" />";
+	    $text .= Ht::hidden($m[1], urldecode($m[2]));
     return "<form method='get' action='" . hoturl("search") . "' accept-charset='UTF-8'>"
 	. "<input type='text' class='textlite' name='q' value=\""
 	. htmlspecialchars($forwhat) . "\" size='$size' /> &nbsp;"
-	. "<input type='submit' name='go' value='Search' />"
+        . Ht::submit("go", "Search")
 	. $text . "</form>";
 }
 

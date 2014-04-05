@@ -170,17 +170,16 @@ function checkMailPrologue($send) {
     echo "<form method='post' action='", hoturl_post("mail"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
     foreach (array("recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit") as $x)
 	if (isset($_REQUEST[$x]))
-	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
+            echo Ht::hidden($x, $_REQUEST[$x]);
     if ($send) {
 	echo "<div id='foldmail' class='foldc fold2c'>",
 	    "<div class='fn fx2 merror'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br /><span id='mailcount'></span></div>",
 	    "<div id='mailwarnings'></div>",
 	    "<div class='fx'><div class='confirm'>Sent mail as follows.</div>
-	<div class='aa'>
-	<input type='submit' name='go' value='Prepare more mail' />
-	</div></div>",
+	<div class='aa'>",
+            Ht::submit("go", "Prepare more mail"), "</div></div>",
 	    // This next is only displayed when Javascript is off
-	    "<div class='fn2 warning'>Sending mail.  <strong>Do not leave this page until it finishes rendering!</strong></div>",
+	    "<div class='fn2 warning'>Sending mail. <strong>Do not leave this page until it finishes rendering!</strong></div>",
 	    "</div>";
     } else {
 	if (isset($_REQUEST["emailBody"]) && $Me->privChair
@@ -204,11 +203,8 @@ function checkMailPrologue($send) {
 	if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $_REQUEST["recipients"])
 	    && defval($_REQUEST, "plimit") && $_REQUEST["q"] !== "")
 	    echo "<br />Paper selection:&nbsp;", htmlspecialchars($_REQUEST["q"]);
-	echo "</div>
-        <div class='aa fx'>
-	<input type='submit' name='send' value='Send' /> &nbsp;
-	<input type='submit' name='cancel' value='Cancel' />
-        </div>",
+	echo "</div><div class='aa fx'>", Ht::submit("send", "Send"),
+            " &nbsp; ", Ht::submit("cancel", "Cancel"), "</div>",
 	    // This next is only displayed when Javascript is off
 	    "<div class='fn2 warning'>Scroll down to send the prepared mail once the page finishes loading.</div>",
 	    "</div>\n";
@@ -351,8 +347,7 @@ function checkMail($send) {
 	return false;
     else if (!$send) {
 	echo "<div class='aa'>",
-	    "<input type='submit' name='send' value='Send' /> &nbsp;
-<input type='submit' name='cancel' value='Cancel' />",
+            Ht::submit("send", "Send"), " &nbsp; ", Ht::submit("cancel", "Cancel"),
 	    "</div>\n";
     }
     if ($revinform)
@@ -500,8 +495,8 @@ if (isset($_REQUEST["monreq"])) {
     }
 }
 
-echo "<form method='post' action='", hoturl_post("mail", "check=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
-<input class='hidden' type='submit' name='default' value='1' />
+echo "<form method='post' action='", hoturl_post("mail", "check=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n",
+    Ht::hidden_default_submit("default", 1), "
 
 <div class='aa' style='padding-left:8px'>
   <strong>Template:</strong> &nbsp;";
@@ -518,7 +513,9 @@ foreach ($tmpl as $k => &$v) {
 if (!isset($_REQUEST["template"]) || !isset($tmpl[$_REQUEST["template"]]))
     $_REQUEST["template"] = "genericmailtool";
 echo Ht::select("template", $tmpl, $_REQUEST["template"], array("onchange" => "highlightUpdate(\"loadtmpl\")")),
-    " &nbsp;<input id='loadtmpl' type='submit' name='loadtmpl' value='Load' /> &nbsp;
+    " &nbsp;",
+    Ht::submit("loadtmpl", "Load", array("id" => "loadtmpl")),
+    " &nbsp;
  <span class='hint'>Templates are mail texts tailored for common conference tasks.</span>
 </div>
 
@@ -585,8 +582,8 @@ if ($Me->privChair && $Conf->sversion >= 40) {
 }
 
 
-echo "<div class='aa' style='clear:both'>
-  <input type='submit' value='Prepare mail' /> &nbsp; <span class='hint'>You'll be able to review the mails before they are sent.</span>
+echo "<div class='aa' style='clear:both'>\n",
+    Ht::submit("Prepare mail"), " &nbsp; <span class='hint'>You'll be able to review the mails before they are sent.</span>
 </div>
 
 

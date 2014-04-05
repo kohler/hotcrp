@@ -1382,7 +1382,7 @@ $blind\n";
 		echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
 		    "How helpful is this review? &nbsp;",
 		    Ht::select("rating", self::$rating_types, ($rrow->myRating === null ? "n" : $rrow->myRating)),
-		    " <input class='fx7' type='submit' value='Save' />",
+                    " ", Ht::submit("Save", array("class" => "fx7")),
 		    "</div></form>",
 		    "<span id='ratingform_${reviewOrdinal}result'></span>";
 		if (!defval($options, "ratingsajax")) {
@@ -1418,14 +1418,13 @@ $blind\n";
 	    // Also see $_REQUEST["refuse"] case in review.php.
 	    $Conf->footerHtml("<div id='popup_ref' class='popupc'>
   <p style='margin:0 0 0.3em'>Select “Decline review” to decline this review. Thank you for keeping us informed.</p>
-  <form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>
-    <input type='hidden' name='refuse' value='refuse' />
-    <textarea id='refusereviewreason' class='temptext' name='reason' rows='3' cols='40'>Optional explanation</textarea>
-    <div class='popup_actions'>
-      <button type='button' onclick=\"popup(null,'ref',1)\">Cancel</button>
-      &nbsp;<input class='bb' type='submit' value='Decline review' />
-    </div>
-  </div></form></div>", "declinereviewform");
+  <form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>"
+    . Ht::hidden("refuse", "refuse")
+    . "<textarea id='refusereviewreason' class='temptext' name='reason' rows='3' cols='40'>Optional explanation</textarea>
+    <div class='popup_actions'>"
+    . Ht::js_button("Cancel", "popup(null,'ref',1)")
+    . " &nbsp;" . Ht::submit("Decline review", array("class" => "bb"))
+    . "</div></div></form></div>", "declinereviewform");
 	    $Conf->footerScript("mktemptext('refusereviewreason','Optional explanation')", "declinereviewform_temptext");
             $buttons[] = "";
 	}
@@ -1441,17 +1440,16 @@ $blind\n";
             $buttons[] = "";
             if ($submitted)
                 $buttons[] = array(Ht::submit("unsubmit", "Unsubmit review"), "(admin only)");
-            $buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete review</button>", "(admin only)");
+            $buttons[] = array(Ht::js_button("Delete review", "popup(this,'d',0)"), "(admin only)");
             $Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   review assignment from the database and <strong>cannot be
   undone</strong>.</p>
   <form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'>
-    <div class='popup_actions'>
-      <button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button>
-      &nbsp;<input class='bb' type='submit' name='delete' value='Delete review' />
-    </div>
-  </form></div>");
+    <div class='popup_actions'>"
+    . Ht::js_button("Cancel", "popup(null,'d',1)") . " &nbsp;"
+    . Ht::submit("delete", "Delete review", array("class" => "bb"))
+    . "</div></form></div>");
         }
 
         return $buttons;
@@ -1473,9 +1471,9 @@ $blind\n";
 	if ($editmode) {
 	    echo "<form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",
 		"<div class='aahc pboxc'>",
-		"<input class='hidden' type='submit' name='default' value='' />";
+                Ht::hidden_default_submit("default", "");
 	    if ($rrow)
-		echo "<input type='hidden' name='version' value=\"", defval($rrow, "reviewEditVersion", 0) + 1, "\" />";
+                echo Ht::hidden("version", defval($rrow, "reviewEditVersion", 0) + 1);
 	} else
 	    echo "<div class='pboxc'>";
 
@@ -1567,7 +1565,7 @@ $blind\n";
   <tr><td></td><td><table class='revoff'><tr>
       <td><span class='revfn'>Offline reviewing</span></td>
       <td>Upload form: &nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />
-      &nbsp; <input type='submit' value='Go' name='uploadForm' /></td>
+      &nbsp; ", Ht::submit("uploadForm", "Go"), "</td>
     </tr><tr>
       <td></td>
       <td><a href='$reviewDownloadLink'>Download form</a>

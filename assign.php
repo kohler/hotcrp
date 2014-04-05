@@ -612,8 +612,8 @@ if ($Me->canAdminister($prow)) {
 
     echo "    </table></td></tr></table></div>\n\n",
 	"<div class='aa' style='margin-bottom:0'>",
-	"<input type='submit' class='bb' name='update' value='Save assignments' />",
-	" &nbsp;<input type='submit' name='cancel' value='Cancel' />",
+        Ht::submit("update", "Save assignments", array("class" => "bb")),
+	" &nbsp;", Ht::submit("cancel", "Cancel"),
 	" <span id='assresult' style='padding-left:1em'></span></div>\n\n",
         '</div></form>',
 	"</td><td></td></tr>\n";
@@ -657,8 +657,9 @@ if (strpos($reqbody["body"], "%REASON%") !== false) {
 <div class='clear'></div></div>\n\n";
 }
 
-echo "<div class='f-i'>
-  <input type='submit' name='add' value='Request review' tabindex='2' /></div>\n\n";
+echo "<div class='f-i'>\n",
+    Ht::submit("add", "Request review", array("tabindex" => 2)),
+    "</div>\n\n";
 
 
 if ($Me->canAdminister($prow))

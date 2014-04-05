@@ -747,10 +747,10 @@ function goPaperForm($baseUrl = null, $args = array()) {
     $x .= "<input id='quicksearchq' class='textlite temptext' type='text' size='10' name='p' value='(All)' title='Enter paper numbers or search terms' />";
     $Conf->footerScript("mktemptext('quicksearchq','(All)')");
     foreach ($args as $what => $val)
-	$x .= "<input type='hidden' name=\"" . htmlspecialchars($what) . "\" value=\"" . htmlspecialchars($val) . "\" />";
+	$x .= Ht::hidden($what, $val);
     if (isset($CurrentList) && $CurrentList > 0)
-	$x .= "<input type='hidden' name='ls' value='$CurrentList' />";
-    $x .= "&nbsp; <input type='submit' value='Search' /></div></form>";
+	$x .= Ht::hidden("ls", $CurrentList);
+    $x .= "&nbsp; " . Ht::submit("Search") . "</div></form>";
     return $x;
 }
 

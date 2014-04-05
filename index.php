@@ -257,7 +257,7 @@ Sign in to submit or review papers.";
 	" type='password' class='textlite' name='password' size='36' tabindex='1' value='' /></div>
 </div>\n";
     if (isset($Opt["ldapLogin"]))
-	echo "<input type='hidden' name='action' value='login' />\n";
+	echo Ht::hidden("action", "login");
     else {
 	echo "<div class='f-i'>\n  ",
 	    Ht::radio("action", "login", true, array("tabindex" => 2)),
@@ -268,10 +268,9 @@ Sign in to submit or review papers.";
 	    "&nbsp;", Ht::label("I’m a new user and want to create an account using this email address");
 	echo "\n</div>\n";
     }
-    echo "<div class='f-i'>
-  <input type='submit' value='Sign in' name='signin' tabindex='1' />
-</div>
-</div></form>
+    echo "<div class='f-i'>",
+        Ht::submit("signin", "Sign in", array("tabindex" => 1)),
+        "</div></div></form>
 <hr class='home' /></div>\n";
     $Conf->footerScript("crpfocus(\"login\", null, 2)");
 }
@@ -296,8 +295,8 @@ if ($homelist) {
 	"\" title='Enter paper numbers or search terms' />
     &nbsp;in&nbsp; ",
 	PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
-    &nbsp; <input type='submit' value='Search' />
-    <div id='taghelp_homeq' class='taghelp_s'></div>
+    &nbsp; ", Ht::submit("Search"),
+        "    <div id='taghelp_homeq' class='taghelp_s'></div>
     <div style='font-size:85%'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("search", "tab=advanced"), "'>Advanced search</a></div>
   </div></form>
   </td></tr></table>
@@ -324,7 +323,7 @@ function reviewTokenGroup($close_hr) {
 	"<form action='", hoturl_post("index"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
 	"<input class='textlite' type='text' name='token' size='15' value=\"",
 	htmlspecialchars(join(" ", $tokens)), "\" />",
-	" &nbsp;<input type='submit' value='Go' />",
+	" &nbsp;", Ht::submit("Go"),
 	"<div class='hint'>Enter review tokens here to gain access to the corresponding reviews.</div>",
 	"</div></form>\n";
 

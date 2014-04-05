@@ -561,9 +561,9 @@ echo "<form id='accountform' method='post' action='",
     hoturl_post("profile", (count($params) ? join("&amp;", $params) : "")),
     "' enctype='multipart/form-data' accept-charset='UTF-8' autocomplete='off'><div class='aahc'>\n";
 if (isset($_REQUEST["redirect"]))
-    echo "<input type='hidden' name='redirect' value=\"", htmlspecialchars($_REQUEST["redirect"]), "\" />\n";
+    echo Ht::hidden("redirect", $_REQUEST["redirect"]);
 if ($Me->privChair)
-    echo "<input type='hidden' name='whichpassword' value='' />\n";
+    echo Ht::hidden("whichpassword", "");
 
 echo "<table id='foldaccount' class='form foldc ",
     ($_REQUEST["pctype"] == "no" ? "fold1c" : "fold1o"),
@@ -750,21 +750,19 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 
 echo "<tr class='last'><td class='caption'></td>
   <td class='entry'><div class='aa'><table class='pt_buttons'>\n";
-$buttons = array("<input class='bb' type='submit' value='"
-		 . ($newProfile ? "Create account" : "Save changes")
-		 . "' name='register' />");
+$buttons = array(Ht::submit("register", $newProfile ? "Create account" : "Save changes", array("class" => "bb")));
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
-    $buttons[] = array("<button type='button' onclick=\"popup(this, 'd', 0)\">Delete user</button>", "(admin only)");
+    $buttons[] = array(Ht::js_button("Delete user", "popup(this,'d',0)"), "(admin only)");
     if (count($tracks->soleAuthor)) {
 	$Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p><strong>This user cannot be deleted</strong> because they are the sole
   contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".
   Delete these papers from the database or add alternate paper contacts and
   you will be able to delete this user.</p>
-  <div class='popup_actions'>
-    <button type='button' onclick=\"popup(null, 'd', 1)\">Close</button>
-  </div></div>");
+  <div class='popup_actions'>"
+    . Ht::button_js("Close", "popup(null,'d',1)")
+    . "</div></div>");
     } else {
 	if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
 	    $x = $y = array();
@@ -789,15 +787,15 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   user from the database and <strong>cannot be undone</strong>.</p>
   $dialog
   <form method='post' action=\"" . hoturl_post("profile", "u=" . urlencode($Acct->email)) . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
-    <div class='popup_actions'>
-      <button type='button' onclick=\"popup(null, 'd', 1)\">Cancel</button>
-      &nbsp;<input class='bb' type='submit' name='delete' value='Delete user' />
-    </div>
-  </form></div>");
+    <div class='popup_actions'>"
+      . Ht::js_button("Cancel", "popup(null,'d',1)")
+      . " &nbsp;" . Ht::submit("delete", "Delete user", array("class" => "bb"))
+      . "</div></form></div>");
     }
 }
 if (!$newProfile && $Acct->contactId == $Me->contactId)
-    $buttons[] = "<input type='submit' value='Merge with another account' name='merge' style='margin-left:2ex' />";
+    $buttons[] = Ht::submit("merge", "Merge with another account",
+                            array("style" => "margin-left:2ex"));
 echo "    <tr>\n";
 foreach ($buttons as $b) {
     $x = (is_array($b) ? $b[0] : $b);

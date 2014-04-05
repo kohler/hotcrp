@@ -230,7 +230,7 @@ class CommentView {
             $buttons[] = "";
             $buttons[] = Ht::submit("delete", "Delete comment");
         } else
-            $buttons[] = "<button type='button' onclick='cancel_comment()'>Cancel</button>";
+            $buttons[] = Ht::js_button("Cancel", "cancel_comment()");
         $post = "";
 	if (!$Me->timeReview($prow, null))
 	    $post = Ht::checkbox("override") . "&nbsp;" . Ht::label("Override&nbsp;deadlines");

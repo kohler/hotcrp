@@ -178,7 +178,7 @@ $search = new PaperSearch($Me, array("t" => "rable",
 $pl = new PaperList($search, array("sort" => true, "list" => true, "foldtype" => "pf", "reviewer" => $reviewer));
 $pl_text = $pl->text("editReviewPreference",
                      array("class" => "pltable_full",
-                           "footer_extra" => "<div id='plactr'><input class='hb' type='submit' name='update' value='Save changes' /></div>"));
+                           "footer_extra" => "<div id='plactr'>" . Ht::submit("update", "Save changes", array("class" => "hb")) . "</div>"));
 SessionList::change($pl->listNumber, array("revprefs" => true));
 
 
@@ -213,7 +213,7 @@ if ($Me->privChair) {
 }
 
 echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'><input class='textlite' type='text' size='32' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>",
-    "<td><input type='submit' name='redisplay' value='Redisplay' /></td>",
+    "<td>", Ht::submit("redisplay", "Redisplay"), "</td>",
     "</tr>\n";
 
 echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;",
@@ -277,12 +277,10 @@ echo "</td></tr></table>\n";
 echo "<form class='assignpc' method='post' action=\"", hoturl_post("reviewprefs", "reviewer=$reviewer" . (defval($_REQUEST, "q") ? "&amp;q=" . urlencode($_REQUEST["q"]) : "")),
     "\" enctype='multipart/form-data' accept-charset='UTF-8'>",
     "<div class='inform'>",
-    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
-    "<input class='hidden' type='submit' name='default' value='1' />",
+    Ht::hidden("defaultact", "", array("id" => "defaultact")),
+    Ht::hidden_default_submit("default", 1),
     "<div class='pltable_full_ctr'>\n",
     $pl_text,
-    "</div>";
-// echo "<table class='center'><tr><td><input class='hb' type='submit' name='update' value='Save preferences' /></td></tr></table>\n";
-echo "</div></form>\n";
+    "</div></div></form>\n";
 
 $Conf->footer();

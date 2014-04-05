@@ -154,7 +154,7 @@ else
 echo "<form method='post' action=\"", hoturl_post("mergeaccounts"), "\" accept-charset='UTF-8'>\n";
 
 // Try to prevent glasses interactions from screwing up merges
-echo "<input type='hidden' name='actas' value='", $Me->contactId, "' />";
+echo Ht::hidden("actas", $Me->contactId);
 ?>
 
 <table class='form'>
@@ -179,7 +179,9 @@ echo "<input type='hidden' name='actas' value='", $Me->contactId, "' />";
   ?></td>
 </tr>
 
-<tr><td class='caption'></td><td class='entry'><input type='submit' value='Merge accounts' name='merge' /></td></tr>
+<tr><td class='caption'></td><td class='entry'><?php
+    echo Ht::submit("merge", "Merge accounts");
+?></td></tr>
 <tr class='last'><td class='caption'></td></tr>
 </table>
 </form>

@@ -212,7 +212,7 @@ if ($kind == "a") {
 }
 
 echo "<tr><td colspan='2'><div class='aax' style='text-align:right'>",
-    "<input class='bb' type='submit' value='Go' />",
+    Ht::submit("Go", array("class" => "bb")),
     "</div></td></tr>\n",
     "</table>\n</div></form></div></td></tr></table>\n";
 
@@ -305,11 +305,11 @@ if ($reviewer > 0) {
 
     // ajax assignment form
     echo "<form id='assrevform' method='post' action=\"", hoturl_post("assign", "update=1"), "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='clear'>",
-	"<input type='hidden' name='kind' value='$kind' />",
-	"<input type='hidden' name='p' value='' />",
-	"<input type='hidden' name='pcs$reviewer' value='' />",
-	"<input type='hidden' name='reviewer' value='$reviewer' />",
-	"<input type='hidden' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag), "\" />",
+        Ht::hidden("kind", $kind),
+        Ht::hidden("p", ""),
+        Ht::hidden("pcs$reviewer", ""),
+        Ht::hidden("reviewer", $reviewer),
+        Ht::hidden("rev_roundtag", $rev_roundtag),
 	"</div></form>\n\n";
 
     // main assignment form
@@ -331,10 +331,11 @@ if ($reviewer > 0) {
     $a = isset($_REQUEST["sort"]) ? "&amp;sort=" . urlencode($_REQUEST["sort"]) : "";
     echo "<div class='aahc'><form class='assignpc' method='post' action=\"", hoturl_post("manualassign", "reviewer=$reviewer&amp;kind=$kind$a"),
 	"\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
-	"<input type='hidden' name='t' value='", $_REQUEST["t"], "' />",
-	"<input type='hidden' name='q' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />",
-	"<input type='hidden' name='papx' value='", join(" ", $search->paperList()), "' />",
-	"<div class='aa'><input type='submit' class='bb' name='update' value='Save assignments' />",
+        Ht::hidden("t", $_REQUEST["t"]),
+        Ht::hidden("q", $_REQUEST["q"]),
+        Ht::hidden("papx", join(" ", $search->paperList())),
+        "<div class=\"aa\">",
+        Ht::submit("update", "Save assignments", array("class" => "bb")),
 	"<span style='padding:0 0 0 2em'>",
 	Ht::checkbox(false, false, true, array("id" => "assrevimmediate")),
 	"&nbsp;", Ht::label("Automatically save assignments", "assrevimmediate"),
@@ -342,8 +343,9 @@ if ($reviewer > 0) {
 	$paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"),
                          array("class" => "pltable_full", "header_links" => true,
                                "nofooter" => true)),
-	"<div class='aa'><input type='submit' class='bb' name='update' value='Save assignments' /></div>\n",
-	"</div></form></div>\n";
+	"<div class='aa'>",
+        Ht::submit("update", "Save assignments", array("class" => "bb")),
+        "</div></div></form></div>\n";
 }
 
 echo "<div class='clear'></div>";

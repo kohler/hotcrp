@@ -254,9 +254,9 @@ if (count($tOpt) > 1) {
 
     echo Ht::form(hoturl("users", "t=" . $_REQUEST["t"]), array("method" => "get")), "<div class='inform'>";
     if (isset($_REQUEST["sort"]))
-	echo "<input type='hidden' name='sort' value=\"", htmlspecialchars($_REQUEST["sort"]), "\" />";
+	echo Ht::hidden("sort", $_REQUEST["sort"]);
     echo Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "contactsform1_d")),
-	" &nbsp;<input type='submit' value='Go' /></div></form>";
+	" &nbsp;", Ht::submit("Go"), "</div></form>";
 
     echo "</div><div class='tld2'>";
 
@@ -264,7 +264,7 @@ if (count($tOpt) > 1) {
     echo "<form method='get' action='", hoturl("users"), "' accept-charset='UTF-8'><div>\n";
     foreach (array("t", "sort") as $x)
 	if (isset($_REQUEST[$x]))
-	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
+	    echo Ht::hidden($x, $_REQUEST[$x]);
 
     echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
@@ -300,7 +300,7 @@ if (count($tOpt) > 1) {
 	    }
 	echo "</td>";
     }
-    echo "<td><input type='submit' name='redisplay' value='Redisplay' /></td></tr>\n";
+    echo "<td>", Ht::submit("redisplay", "Redisplay"), "</td></tr>\n";
     if (isset($pl->scoreMax)) {
 	$ss = array();
 	foreach (array("A", "V", "D") as $k) /* ghetto array_intersect_key */
@@ -333,7 +333,7 @@ if (isset($pl->any->sel)) {
     echo Ht::form(hoturl_post("users", "t=" . $_REQUEST["t"])), "<div>";
     foreach (array("t", "sort") as $x)
 	if (isset($_REQUEST[$x]))
-	    echo "<input type='hidden' name='$x' value=\"", htmlspecialchars($_REQUEST[$x]), "\" />\n";
+	    echo Ht::hidden($x, $_REQUEST[$x]);
 }
 echo $pl_text;
 if (isset($pl->any->sel))

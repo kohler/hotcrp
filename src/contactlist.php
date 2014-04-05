@@ -474,7 +474,8 @@ class ContactList extends BaseList {
             $types["pcinfo"] = "PC info";
 	$t .= "<span class='lll1'><a href='#' onclick='return crpfocus(\"pplact\",1)'>Download</a></span><span class='lld1'><b>:</b> &nbsp;"
 	    . Ht::select("getaction", $types, null, array("id" => "pplact1_d"))
-	    . "&nbsp; <input type='submit' class='bsm' name='getgo' value='Go' /></span>";
+	    . "&nbsp; " . Ht::submit("getgo", "Go", array("class" => "bsm"))
+            . "</span>";
 
         $barsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
         if ($this->contact->privChair) {

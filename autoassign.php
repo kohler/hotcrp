@@ -527,23 +527,22 @@ if (isset($assignments) && count($assignments) > 0) {
 
     echo "<div class='g'></div>",
 	"<form method='post' action='", hoturl_post("autoassign"), "' accept-charset='UTF-8'><div class='aahc'><div class='aa'>\n",
-	"<input type='submit' name='saveassign' value='Save assignment' />\n",
-	"&nbsp;<input type='submit' name='cancel' value='Cancel' />\n";
+        Ht::submit("saveassign", "Save assignment"), "\n&nbsp;",
+        Ht::submit("cancel", "Cancel"), "\n";
     foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
 	if (isset($_REQUEST[$t]))
-	    echo "<input type='hidden' name='$t' value=\"", htmlspecialchars($_REQUEST[$t]), "\" />\n";
-    echo "<input type='hidden' name='pcs' value='", join(" ", array_keys($pcsel)), "' />\n";
+            echo Ht::hidden($t, $_REQUEST[$t]);
+    echo Ht::hidden("pcs", join(" ", array_keys($pcsel))), "\n";
     for ($i = 1; $i <= 20; $i++) {
 	if (defval($_REQUEST, "bpa$i"))
-	    echo "<input type='hidden' name='bpa$i' value=\"", htmlspecialchars($_REQUEST["bpa$i"]), "\" />\n";
+            echo Ht::hidden("bpa$i", $_REQUEST["bpa$i"]);
 	if (defval($_REQUEST, "bpb$i"))
-	    echo "<input type='hidden' name='bpb$i' value=\"", htmlspecialchars($_REQUEST["bpb$i"]), "\" />\n";
+	    echo Ht::hidden("bpb$i", $_REQUEST["bpb$i"]);
     }
-    echo "<input type='hidden' name='p' value=\"", join(" ", $papersel), "\" />\n";
+    echo Ht::hidden("p", join(" ", $papersel)), "\n";
 
     // save the assignment
-    echo '<input type="hidden" name="assignment" value="',
-        join("\n", $assignments), '" />', "\n";
+    echo Ht::hidden("assignment", join("\n", $assignments)), "\n";
 
     echo "</div></div></form></div>\n";
     $Conf->footer();
@@ -551,8 +550,8 @@ if (isset($assignments) && count($assignments) > 0) {
 }
 
 echo "<form method='post' action='", hoturl_post("autoassign"), "' accept-charset='UTF-8'><div class='aahc'>", $helplist,
-    "<input id='defaultact' type='hidden' name='defaultact' value='' />",
-    "<input class='hidden' type='submit' name='default' value='1' />";
+    Ht::hidden("defaultact", "", array("id" => "defaultact")),
+    Ht::hidden_default_submit("default", 1, array("class" => "hidden"));
 
 // paper selection
 echo divClass("pap"), "<h3>Paper selection</h3>";
@@ -571,7 +570,7 @@ if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
 $q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
 echo "<input id='autoassignq' class='textlite temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"autosub('requery',this)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
-    " &nbsp; <input id='requery' name='requery' type='submit' value='List' />\n";
+    " &nbsp; ", Ht::submit("requery", "List", array("id" => "requery"));
 $Conf->footerScript("mktemptext('autoassignq','(All)')");
 if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
     echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>
@@ -585,10 +584,9 @@ if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
 	if (!isset($plist->papersel[$p]))
 	    $plist->papersel[$p] = 0;
     echo $plist->text("reviewersSel", array("nofooter" => true));
-    echo "<input type='hidden' name='prevt' value=\"", htmlspecialchars($_REQUEST["t"]), "\" />",
-	"<input type='hidden' name='prevq' value=\"", htmlspecialchars($_REQUEST["q"]), "\" />";
+    echo Ht::hidden("prevt", $_REQUEST["t"]), Ht::hidden("prevq", $_REQUEST["q"]);
     if ($plist->ids)
-	echo "<input type='hidden' name='prevpap' value=\"", htmlspecialchars(join(" ", $plist->ids)), "\" />";
+        echo Ht::hidden("prevpap", join(" ", $plist->ids));
 }
 echo "</div>\n";
 // echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
@@ -738,7 +736,7 @@ for ($i = 1; $i <= 50; $i++) {
 	echo " &nbsp;to the same paper &nbsp;(<a href='javascript:void authorfold(\"bp\",1,1)'>More</a> | <a href='javascript:void authorfold(\"bp\",1,-1)'>Fewer</a>)";
     echo "</td></tr>\n";
 }
-echo "</table><input id='bpcount' type='hidden' name='bpcount' value='50' />";
+echo "</table>", Ht::hidden("bpcount", 50, array("id" => "bpcount"));
 $Conf->echoScript("authorfold(\"bp\",0,$numBadPairs)");
 echo "</div>\n";
 
@@ -753,7 +751,8 @@ doRadio('balance', 'all', "Spread assignments so that PC members have roughly eq
 
 // Create assignment
 echo "<div class='g'></div>\n";
-echo "<div class='aa'><input type='submit' name='assign' value='Prepare assignment' /> &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
+echo "<div class='aa'>", Ht::submit("assign", "Prepare assignment"),
+    " &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
 
 
 echo "</div></form>";

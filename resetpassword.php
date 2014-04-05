@@ -89,9 +89,9 @@ echo "</div>
   <div class='f-e'><input id='login_d' type='password' class='textlite' name='upassword2' size='36' tabindex='1' value='' /></div>
 </div></td></tr>
 <tr><td></td><td style='padding-top:1em'>
-<div class='f-i'>
-  <input type='submit' value='Reset password' name='go' tabindex='1' />
-</div></td>
+<div class='f-i'>",
+    Ht::submit("go", "Reset password", array("tabindex" => 1)),
+    "</div></td>
 </tr></table>
 </div></form>
 <hr class='home' /></div>\n";

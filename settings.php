@@ -1149,10 +1149,9 @@ function doGraceRow($name, $text, $capclass = "lcaption") {
 }
 
 function doActionArea($top) {
-    echo "<div class='aa'", ($top ? " style='margin-top:0'" : ""), ">
-  <input type='submit' class='bb' name='update' value='Save changes' />
-  &nbsp;<input type='submit' name='cancel' value='Cancel' />
-</div>";
+    echo "<div class='aa'", ($top ? " style='margin-top:0'" : ""), ">",
+        Ht::submit("update", "Save changes", array("class" => "bb")),
+        " &nbsp;", Ht::submit("cancel", "Cancel"), "</div>";
 }
 
 
@@ -1515,7 +1514,7 @@ function doOptGroup() {
 	$td1 = "";
     }
     echo "</table>",
-	"<input id='newtopcount' type='hidden' name='newtopcount' value='40' />";
+        Ht::hidden("newtopcount", 40, array("id" => "newtopcount"));
     $Conf->echoScript("authorfold(\"newtop\",0,3)");
 }
 
@@ -1835,7 +1834,8 @@ function doDecGroup() {
 
 $belowHr = true;
 
-echo "<form method='post' action='", hoturl_post("settings"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div><input type='hidden' name='group' value='$Group' />\n";
+echo "<form method='post' action='", hoturl_post("settings"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div>",
+    Ht::hidden("group", $Group);
 
 echo "<table class='settings'><tr><td class='caption initial final'>";
 echo "<table class='lhsel'>";

@@ -162,6 +162,27 @@ class Ht {
         return self::button($text ? $name : "", $text ? $text : $name, $js);
     }
 
+    static function js_button($text, $onclick, $js = null) {
+        if (!$js && is_array($onclick)) {
+            $js = $onclick;
+            $onclick = null;
+        } else if (!$js)
+            $js = array();
+        if ($onclick)
+            $js["onclick"] = $onclick;
+        return self::button("", $text, $js);
+    }
+
+    static function hidden_default_submit($name, $text = null, $js = null) {
+        if (!$js && is_array($text)) {
+            $js = $text;
+            $text = null;
+        } else if (!$js)
+            $js = array();
+        $js["class"] = trim(defval($js, "class", "") . " hidden");
+        return self::submit($name, $text, $js);
+    }
+
     static function entry($name, $value, $js = null) {
         $js = $js ? $js : array();
         if (($temp = @$js["hottemptext"])) {
