@@ -276,12 +276,13 @@ function tracker_paper_columns(idx, paper) {
 }
 
 function tracker_elapsed() {
-    var now = (new Date).getTime() / 1000, sec, min;
+    var now = (new Date).getTime() / 1000, sec, min, t;
     if (dl.tracker && dl.tracker.position_at) {
         sec = Math.round(now - (dl.tracker.position_at + (dl.load - dl.now)));
-        min = Math.floor(sec / 60);
-        sec %= 60;
-        return Math.floor(min) + ":" + (sec < 10 ? "0" : "") + sec;
+        if (sec >= 3600)
+            return sprintf("%d:%02d:%02d", sec / 3600, (sec / 60) % 60, sec % 60);
+        else
+            return sprintf("%d:%02d", sec / 60, sec % 60);
     } else
         return null;
 }

@@ -2463,7 +2463,7 @@ div.cmthint {
 #trackerelapsed {
 	font-weight: bold;
         padding-right: 1em;
-        color: gray;
+        opacity: 0.5;
 }
 
 /* mail */
