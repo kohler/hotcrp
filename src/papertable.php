@@ -1294,8 +1294,8 @@ class PaperTable {
 
 	    echo $this->_papstripBegin("tags", !$unfolded,
                                        array("onunfold" => "Miniajax.submit(\"tagreportform\")"));
-	    if (($color = $tagger->color_classes($this->prow->paperTags)))
-		echo "<div class='pscopen ${color}'>";
+            $color = $tagger->color_classes($this->prow->paperTags);
+            echo "<div class=\"", trim("pscopen $color"), "\">";
 
 	    if ($editable)
                 echo Ht::form(hoturl_post($site, "p=" . $this->prow->paperId), array("id" => "tagform", "onsubmit" => "return save_tags()")),
@@ -1334,9 +1334,7 @@ class PaperTable {
 
 	    if ($editable)
 		echo "</div></form>";
-	    if ($color)
-		echo "</div>";
-	    echo "</div>\n";
+            echo "</div></div>\n";
 	}
     }
 
