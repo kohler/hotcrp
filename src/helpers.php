@@ -621,7 +621,7 @@ class SessionList {
 }
 
 function _tryNewList($opt, $listtype, $sort = null) {
-    global $Conf, $ConfSiteSuffix, $ConfSitePATH, $Me;
+    global $Conf, $ConfSiteSuffix, $Me;
     if ($listtype == "u" && $Me->privChair) {
 	$searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
 	$q = "select email from ContactInfo";
@@ -637,7 +637,7 @@ function _tryNewList($opt, $listtype, $sort = null) {
     } else {
 	$search = new PaperSearch($Me, $opt);
 	$x = $search->session_list_object($sort);
-        if ($sort) {
+        if ($sort || $search->has_sort()) {
             $pl = new PaperList($search, array("sort" => $sort));
             $x->ids = $pl->text("s", array("idarray" => true));
         }

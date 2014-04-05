@@ -2556,22 +2556,29 @@ class PaperSearch {
 	return false;
     }
 
-    function simplePaperList() {
+    function numbered_papers() {
 	if (preg_match('/\A\s*#?\d[-#\d\s]*\z/s', $this->q)) {
 	    $a = array();
 	    foreach (preg_split('/\s+/', $this->q) as $word) {
-		if ($word[0] == "#" && preg_match('/\A#\d+(-#?\d+)?/', $word))
+		if ($word[0] == "#" && preg_match('/\A#\d+(?:-#?\d+)?/', $word))
 		    $word = substr($word, 1);
 		if (ctype_digit($word))
-		    $a[] = $word;
-		else if (preg_match('/\A(\d+)-#?(\d+)\z/s', $word, $m))
-		    $a = array_merge($a, range($m[1], $m[2]));
-		else
+		    $a[$word] = (int) $word;
+		else if (preg_match('/\A(\d+)-#?(\d+)\z/s', $word, $m)) {
+                    foreach (range($m[1], $m[2]) as $num)
+                        $a[$num] = $num;
+                } else
 		    return null;
 	    }
-	    return $a;
+	    return array_values($a);
 	} else
 	    return null;
+    }
+
+    function has_sort() {
+        return count($this->orderTags)
+            || $this->numbered_papers() !== null
+            || @$this->viewmap["sort"];
     }
 
     function matchTable() {

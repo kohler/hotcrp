@@ -969,7 +969,7 @@ class PaperList extends BaseList {
             && ($s = PaperColumn::lookup("tagordersort"))
             && $s->prepare($this, $this->query_options, -1))
             $this->default_sort_column = $s;
-        else if ($this->search->simplePaperList() !== null)
+        else if ($this->search->numbered_papers() !== null)
             $this->default_sort_column = PaperColumn::lookup("searchsort");
         else
             $this->default_sort_column = PaperColumn::lookup("id");

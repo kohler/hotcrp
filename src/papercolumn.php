@@ -1197,7 +1197,7 @@ class SearchSortPaperColumn extends PaperColumn {
     }
     public function sort_prepare($pl, &$rows) {
         $sortInfo = array();
-        foreach ($pl->search->simplePaperList() as $k => $v)
+        foreach ($pl->search->numbered_papers() as $k => $v)
             if (!isset($sortInfo[$v]))
                 $sortInfo[$v] = $k;
         foreach ($rows as $row)
