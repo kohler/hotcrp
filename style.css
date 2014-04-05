@@ -2460,6 +2460,11 @@ div.cmthint {
 #tracker .trackeris_conflict, #tracker .trackeris_lead {
 	font-weight: bold;
 }
+#trackerelapsed {
+	font-weight: bold;
+        padding-right: 1em;
+        color: gray;
+}
 
 /* mail */
 .mail {

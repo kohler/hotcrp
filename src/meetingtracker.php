@@ -22,12 +22,17 @@ class MeetingTracker {
                                   "url" => $list->url,
                                   "description" => $list->description,
                                   "start_at" => $Now,
+                                  "position_at" => $Now,
                                   "owner" => $Me->contactId,
                                   "sessionid" => session_id(),
                                   "position" => $position);
         $old_tracker = $Conf->setting_json("tracker");
-        if ($old_tracker && $old_tracker->trackerid == $tracker->trackerid)
+        if ($old_tracker && $old_tracker->trackerid == $tracker->trackerid) {
             $tracker->start_at = $old_tracker->start_at;
+            if ($old_tracker->listid == $tracker->listid
+                && $old_tracker->position == $tracker->position)
+                $tracker->position_at = $old_tracker->position_at;
+        }
         self::save($tracker);
         return $tracker;
     }
@@ -51,6 +56,8 @@ class MeetingTracker {
                                  "position" => $tracker->position,
                                  "url" => $tracker->url);
         if ($status->position !== false) {
+            if (@$tracker->position_at)
+                $status->position_at = $tracker->position_at;
             $pids = array_slice($tracker->ids, $tracker->position, 3);
             $result = $Conf->qe("select p.paperId, p.title, p.leadContactId, p.managerContactId, r.reviewType, conf.conflictType
 		from Paper p

@@ -120,7 +120,7 @@ function text_to_html(text) {
 
 window.hotcrp_deadlines = (function () {
 var dl, dlname, dltime, dlurl, has_tracker, ever_had_tracker,
-    redisplay_timeout, reload_timeout;
+    redisplay_timeout, reload_timeout, tracker_timer;
 
 function redisplay_main() {
     redisplay_timeout = null;
@@ -228,6 +228,27 @@ function tracker_paper_columns(idx, paper) {
     return t + "</td>";
 }
 
+function tracker_elapsed() {
+    var now = (new Date).getTime() / 1000, sec, min;
+    if (dl.tracker && dl.tracker.position_at) {
+        sec = Math.round(now - (dl.tracker.position_at + (dl.load - dl.now)));
+        min = Math.floor(sec / 60);
+        sec %= 60;
+        return Math.floor(min) + ":" + (sec < 10 ? "0" : "") + sec;
+    } else
+        return null;
+}
+
+function tracker_show_elapsed() {
+    var e = $$("trackerelapsed"), t;
+    if (e && (t = tracker_elapsed()))
+        e.innerHTML = t;
+    else {
+        clearInterval(tracker_timer);
+        tracker_timer = null;
+    }
+}
+
 function display_tracker() {
     var mne = $$("tracker"), mnspace = $$("trackerspace"), mytracker,
         body, pid, trackerstate, t = "", i, e;
@@ -268,6 +289,11 @@ function display_tracker() {
 
     if (dl.is_admin)
         t += "<div style=\"float:right\"><a class=\"btn btn-transparent\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\" title=\"Stop meeting tracker\">x</a></div>";
+    if ((i = tracker_elapsed())) {
+        t += "<div style=\"float:right\" id=\"trackerelapsed\">" + i + "</div>";
+        if (!tracker_timer)
+            tracker_timer = setInterval(tracker_show_elapsed, 1000);
+    }
     if (!pid) {
         t += "<a href=\"" + hotcrp_base + dl.tracker.url + "\">Discussion list</a>";
     } else {
