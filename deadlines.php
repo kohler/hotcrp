@@ -26,6 +26,17 @@ if (@$_REQUEST["track"] && $Me->privChair && check_post()) {
 
 $dl = $Me->deadlines();
 
+if (@$_REQUEST["checktracker"]) {
+    if (@$dl["tracker"])
+        $dl["tracker_status"] = $dl["tracker"]->trackerid . "@"
+            . $dl["tracker"]->position_at;
+    else if (($tracker = $Conf->setting_json("tracker")))
+        $dl["tracker_status"] = $tracker->trackerid . "@"
+            . $tracker->position_at;
+    else
+        $dl["tracker_status"] = false;
+}
+
 if (@$_REQUEST["ajax"]) {
     $dl["ok"] = true;
     $Conf->ajaxExit($dl);
