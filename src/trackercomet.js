@@ -31,6 +31,11 @@ function get_now() {
     return (new Date).getTime();
 }
 
+function extend(dst, src) {
+    for (var i in src)
+	dst[i] = src[i];
+}
+
 
 // LOGGING AND RESPONSES
 
@@ -374,27 +379,30 @@ function server(req, res) {
         server_config.conference_matcher = new RegExp(server_config.conference_matcher, "i");
 })();
 
+function server_listener() {
+    var now_s = log_format(get_now()), access_log_sep = "", stats;
+    if (server_config.opened_access_log
+        && (stats = fs.statSync(server_config.access_log))
+        && stats.isFile() && stats.size != 0)
+        access_log_sep = "\n";
+    access_log.write(util.format("%s- - - [%s] \"START http://%s:%s/\" 0 0\n",
+				 access_log_sep, now_s,
+				 server_config.host || "localhost",
+				 server_config.port));
+    console.warn("[%s] HotCRP trackercomet server running at http://%s:%s/",
+		 now_s,
+		 server_config.host || "localhost",
+		 server_config.port);
+}
+
+function server_error(e) {
+    if (e.code != "EMFILE") {
+        console.log(e.toString());
+        process.exit(1);
+    }
+}
+
 (function () {
     var s = http.createServer(server);
-    s.on("error", function (e) {
-        if (e.code != "EMFILE") {
-            console.log(e.toString());
-            process.exit(1);
-        }
-    });
-    s.listen(server_config.port, function () {
-        var now_s = log_format(get_now()), access_log_sep = "", stats;
-        if (server_config.opened_access_log
-            && (stats = fs.statSync(server_config.access_log))
-            && stats.isFile() && stats.size != 0)
-            access_log_sep = "\n";
-	access_log.write(util.format("%s- - - [%s] \"START http://%s:%s/\" 0 0\n",
-				     access_log_sep, now_s,
-				     server_config.host || "localhost",
-				     server_config.port));
-	console.warn("[%s] HotCRP trackercomet server running at http://%s:%s/",
-		     now_s,
-		     server_config.host || "localhost",
-		     server_config.port);
-    });
+    s.on("error", server_error).listen(server_config.port, server_listener);
 })();
