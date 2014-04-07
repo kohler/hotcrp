@@ -167,7 +167,7 @@ function text_to_html(text) {
 
 window.hotcrp_deadlines = (function () {
 var dl, dlname, dltime, dlurl, has_tracker, ever_had_tracker,
-    redisplay_timeout, reload_timeout, tracker_timer;
+    redisplay_timeout, reload_timeout, tracker_timer, tracker_comet_error;
 
 function redisplay_main() {
     redisplay_timeout = null;
@@ -363,6 +363,26 @@ function reload() {
     Miniajax.get(dlurl + "?ajax=1", hotcrp_deadlines, 10000);
 }
 
+function run_comet() {
+    if (dl.tracker_poll && !tracker_comet_error)
+        jQuery.ajax({
+            url: dl.tracker_poll,
+            timeout: 300000,
+            dataType: "json",
+            complete: function (xhr, status) {
+                if (status == "success")
+                    reload();
+                else if (status == "timeout")
+                    run_comet();
+                else {
+                    tracker_comet_error = true;
+                    setTimeout(120000, function() { tracker_comet_error = false; });
+                    reload();
+                }
+            }
+        });
+}
+
 function hotcrp_deadlines(dlx, is_initial) {
     var t;
     if (dlx)
@@ -375,9 +395,9 @@ function hotcrp_deadlines(dlx, is_initial) {
     if (dlurl && !reload_timeout) {
         if (is_initial && $$("clock_drift_container"))
             t = 10;
-        else if (ever_had_tracker && dl.tracker_poll) {
+        else if (ever_had_tracker && dl.tracker_poll && !tracker_comet_error) {
             t = 120000;
-            Miniajax.get(dl.tracker_poll, reload, 300000);
+            run_comet();
         } else if (ever_had_tracker)
             t = 10000;
         else if (dlname && (!dltime || dltime - dl.load <= 120))
