@@ -711,7 +711,7 @@ class ContactList extends BaseList {
                     $trclass .= " " . $c;
             }
             if ($row->disabled)
-                $trclass .= " greytext";
+                $trclass .= " graytext";
 	    $this->count++;
 	    $ids[] = $row->email;
 

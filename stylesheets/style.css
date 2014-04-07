@@ -1706,7 +1706,7 @@ tr.pl.smalltag, tr.plx.smalltag {
 	background-image: url(../images/tag_red_purple.png);
 }
 .redtag.graytag, .redtag.graytag.psc {
-	background-image: url(../images/tag_red_grey.png);
+	background-image: url(../images/tag_red_gray.png);
 }
 .redtag.whitetag, .redtag.whitetag.psc {
 	background-image: url(../images/tag_red_white.png);
@@ -1724,7 +1724,7 @@ tr.pl.smalltag, tr.plx.smalltag {
 	background-image: url(../images/tag_orange_purple.png);
 }
 .orangetag.graytag, .orangetag.graytag.psc {
-	background-image: url(../images/tag_orange_grey.png);
+	background-image: url(../images/tag_orange_gray.png);
 }
 .orangetag.whitetag, .orangetag.whitetag.psc {
 	background-image: url(../images/tag_orange_white.png);
@@ -1739,7 +1739,7 @@ tr.pl.smalltag, tr.plx.smalltag {
 	background-image: url(../images/tag_yellow_purple.png);
 }
 .yellowtag.graytag, .yellowtag.graytag.psc {
-	background-image: url(../images/tag_yellow_grey.png);
+	background-image: url(../images/tag_yellow_gray.png);
 }
 .yellowtag.whitetag, .yellowtag.whitetag.psc {
 	background-image: url(../images/tag_yellow_white.png);
@@ -1751,7 +1751,7 @@ tr.pl.smalltag, tr.plx.smalltag {
 	background-image: url(../images/tag_green_purple.png);
 }
 .greentag.graytag, .greentag.graytag.psc {
-	background-image: url(../images/tag_green_grey.png);
+	background-image: url(../images/tag_green_gray.png);
 }
 .greentag.whitetag, .greentag.whitetag.psc {
 	background-image: url(../images/tag_green_white.png);
@@ -1760,22 +1760,22 @@ tr.pl.smalltag, tr.plx.smalltag {
 	background-image: url(../images/tag_blue_purple.png);
 }
 .bluetag.graytag, .bluetag.graytag.psc {
-	background-image: url(../images/tag_blue_grey.png);
+	background-image: url(../images/tag_blue_gray.png);
 }
 .bluetag.whitetag, .bluetag.whitetag.psc {
 	background-image: url(../images/tag_blue_white.png);
 }
 .purpletag.graytag, .purpletag.graytag.psc {
-	background-image: url(../images/tag_purple_grey.png);
+	background-image: url(../images/tag_purple_gray.png);
 }
 .purpletag.whitetag, .purpletag.whitetag.psc {
 	background-image: url(../images/tag_purple_white.png);
 }
 .graytag.whitetag, .graytag.whitetag.psc {
-	background-image: url(../images/tag_grey_white.png);
+	background-image: url(../images/tag_gray_white.png);
 }
 
-.graytext, .greytext {
+.graytext {
 	color: #999999;
 }
 
@@ -2037,14 +2037,14 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	border-width: 5px 0 5px 8px;
 }
 
-.bubble.grey {
+.bubble.gray {
 	background-color: rgba(246, 246, 246, 0.88);
 	border: 1px solid #b8b8b8;
 }
-.bubtail0.l.grey, .bubtail0.r.grey {
+.bubtail0.l.gray, .bubtail0.r.gray {
 	border-color: transparent #b8b8b8;
 }
-.bubtail1.l.grey, .bubtail1.r.grey {
+.bubtail1.l.gray, .bubtail1.r.gray {
 	border-color: transparent rgba(246, 246, 246, 0.9);
 }
 

@@ -519,14 +519,14 @@ strictly sequential values, like “tag#1”,
     _alternateRow("Tag colors", "
 The tag names “red”, “orange”, “yellow”,
 “green”, “blue”, “purple”, and
-“grey” act as highlight colors.  For example, papers tagged with
+“gray” act as highlight colors.  For example, papers tagged with
 “red” will appear red in paper lists (for people who can see that
 tag).  Tag a paper “~red” to make it red on your displays, but not
 others’.  System administrators can <a
 href='" . hoturl("settings", "group=reviews") . "'>associate other tags with colors</a>
 so that, for example, “<a
 href='" . hoturl("search", "q=%23reject") . "'>#reject</a>” papers show up
-as grey.");
+as gray.");
     echo "</table>\n";
 }
 

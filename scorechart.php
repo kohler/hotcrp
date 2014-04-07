@@ -67,16 +67,16 @@ if ($s == 0 || $s == 1) {
 
 $cWhite = imagecolorallocate($pic, 255, 255, 255);
 $cBlack = imagecolorallocate($pic, 0, 0, 0);
-$cgrey = imagecolorallocate($pic, 190, 190, 255);
+$cgray = imagecolorallocate($pic, 190, 190, 255);
 
 if ($s == 0) {
     imagefilledrectangle($pic, 0, 0, $picWidth + 1, $picHeight + 1, $cBlack);
     imagefilledrectangle($pic, 1, 1, $picWidth - 1, $picHeight - 1, $cWhite);
 } else if ($s == 1) {
     imagecolortransparent($pic, $cWhite);
-    imagefilledrectangle($pic, 0, $picHeight, $picWidth + 1, $picHeight + 1, $cgrey);
-    imagefilledrectangle($pic, 0, $picHeight - $blockHeight - $blockPad, 0, $picHeight + 1, $cgrey);
-    imagefilledrectangle($pic, $picWidth, $picHeight - $blockHeight - $blockPad, $picWidth + 1, $picHeight + 1, $cgrey);
+    imagefilledrectangle($pic, 0, $picHeight, $picWidth + 1, $picHeight + 1, $cgray);
+    imagefilledrectangle($pic, 0, $picHeight - $blockHeight - $blockPad, 0, $picHeight + 1, $cgray);
+    imagefilledrectangle($pic, $picWidth, $picHeight - $blockHeight - $blockPad, $picWidth + 1, $picHeight + 1, $cgray);
 }
 
 $cv_black = array(0, 0, 0);
@@ -129,14 +129,14 @@ if ($s == 0) {
     $y = $picHeight - $blockHeight - $blockSkip - 3;
     if (isset($_REQUEST["c"]) && ord($_REQUEST["c"]) >= 65) {
 	if ($values[$valMin] == 0)
-	    imagestring($pic, 1, $rx, $y, $_REQUEST["c"], $cgrey);
+	    imagestring($pic, 1, $rx, $y, $_REQUEST["c"], $cgray);
 	if ($values[$valMax - 1] == 0)
-	    imagestring($pic, 1, $lx, $y, chr(ord($_REQUEST["c"]) - $valMax + 2), $cgrey);
+	    imagestring($pic, 1, $lx, $y, chr(ord($_REQUEST["c"]) - $valMax + 2), $cgray);
     } else {
 	if ($values[$valMin] == 0)
-	    imagestring($pic, 1, $lx, $y, $valMin, $cgrey);
+	    imagestring($pic, 1, $lx, $y, $valMin, $cgray);
 	if ($values[$valMax - 1] == 0)
-	    imagestring($pic, 1, $rx, $y, $valMax - 1, $cgrey);
+	    imagestring($pic, 1, $rx, $y, $valMax - 1, $cgray);
     }
 }
 

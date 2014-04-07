@@ -253,7 +253,7 @@ void makeit(const char* name1, const char* name2) {
 }
 
 int main() {
-    const char* names[] = {"red", "orange", "yellow", "green", "blue", "purple", "grey", "white", nullptr};
+    const char* names[] = {"red", "orange", "yellow", "green", "blue", "purple", "gray", "white", nullptr};
 
     colormap["red"] = Rgba{0xff, 0xd8, 0xd8, 1};
     colormap["reddark"] = Rgba{0xf8, 0xd0, 0xd0, 1};
@@ -267,8 +267,8 @@ int main() {
     colormap["bluedark"] = Rgba{0xcc, 0xcc, 0xf2, 1};
     colormap["purple"] = Rgba{0xf2, 0xd8, 0xf8, 1};
     colormap["purpledark"] = Rgba{0xea, 0xc7, 0xf2, 1};
-    colormap["grey"] = Rgba{0xe2, 0xe2, 0xe2, 1};
-    colormap["greydark"] = Rgba{0d9, 0xd9, 0xd9, 1};
+    colormap["gray"] = Rgba{0xe2, 0xe2, 0xe2, 1};
+    colormap["graydark"] = Rgba{0d9, 0xd9, 0xd9, 1};
     colormap["white"] = Rgba{0xff, 0xff, 0xff, 1};
     colormap["whitedark"] = Rgba{0xf8, 0xf8, 0xf8, 1};
 

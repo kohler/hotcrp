@@ -1569,7 +1569,7 @@ function tag_mousemove(evt) {
 	    m += " <span class='dim'> &rarr; " + dragtag + "#" + a[srcindex].newvalue + "</span>";
     }
     dragger.content(m);
-    dragger.color(dragindex == srcindex && dragwander ? "grey" : "");
+    dragger.color(dragindex == srcindex && dragwander ? "gray" : "");
     dragger.show(Math.min($(rowanal[srcindex].entry).offset().left - 30,
 			  evt.clientX - 20), y);
 
