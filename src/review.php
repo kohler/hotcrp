@@ -202,7 +202,7 @@ class ReviewField {
 	$url = "";
 	for ($key = 1; $key <= $max; $key++)
 	    $url .= ($url == "" ? "" : ",") . $v->v[$key];
-	$url = "${ConfSiteBase}images/GenChart$ConfSiteSuffix?v=$url";
+	$url = "${ConfSiteBase}scorechart$ConfSiteSuffix?v=$url";
 	if ($myscore && $v->v[$myscore] > 0)
 	    $url .= "&h=$myscore";
 	if ($this->option_letter)

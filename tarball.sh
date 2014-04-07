@@ -65,6 +65,7 @@ profile.php
 resetpassword.php
 review.php
 reviewprefs.php
+scorechart.php
 scorehelp.php
 script.js
 search.php
@@ -144,7 +145,6 @@ extra/hotcrp.vim
 
 images/.htaccess
 images/_.gif
-images/GenChart.php
 images/allreviews24.png
 images/assign18.png
 images/assign24.png
