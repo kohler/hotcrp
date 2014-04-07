@@ -149,7 +149,7 @@ function __autoload($class_name) {
     global $ConfSitePATH, $ConfAutoloads;
     if (!@$ConfAutoloads)
         $ConfAutoloads = array("AssignmentSet" => "src/assigners.php",
-                               "CheckFormat" => "lib/checkformat.php",
+                               "CheckFormat" => "src/checkformat.php",
                                "CleanHTML" => "lib/cleanhtml.php",
                                "Column" => "lib/column.php",
                                "CommentSave" => "src/commentsave.php",
