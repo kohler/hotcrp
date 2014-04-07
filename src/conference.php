@@ -1749,13 +1749,12 @@ class Conference {
     //
 
     function header_css_link($css) {
-	global $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH;
-	echo "<link rel='stylesheet' type='text/css' href=\"";
-	if (strpos($css, "/") === false
-	    && ($mtime = @filemtime("$ConfSitePATH/$css")) !== false)
-	    echo "${ConfSiteBase}cacheable$ConfSiteSuffix?file=", urlencode($css), "&amp;mtime=", $mtime, "\" />\n";
-	else
-	    echo str_replace("\"", "&quot;", $css), "\" />\n";
+        global $ConfSiteBase, $ConfSitePATH;
+        echo '<link rel="stylesheet" type="text/css" href="', $ConfSiteBase, $css;
+        if (strpos($css, "/") !== 0 && strpos($css, "..") === false
+            && ($mtime = @filemtime("$ConfSitePATH/$css")) !== false)
+            echo "?mtime=", $mtime;
+        echo "\" />\n";
     }
 
     function header_head($title) {
@@ -1772,7 +1771,7 @@ class Conference {
 	    if (strstr($title, "<") !== false)
 		$title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
 
-	    $this->header_css_link("style.css");
+	    $this->header_css_link("stylesheets/style.css");
 	    if (isset($Opt["stylesheets"]))
 		foreach ($Opt["stylesheets"] as $css)
 		    $this->header_css_link($css);
@@ -1795,10 +1794,10 @@ class Conference {
             else if (@$Opt["jqueryCDN"])
                 $jquery = "//code.jquery.com/jquery-1.10.2.min.js";
             else
-                $jquery = "${ConfSiteBase}cacheable$ConfSiteSuffix?file=jquery-1.10.2.min.js";
+                $jquery = "${ConfSiteBase}scripts/jquery-1.10.2.min.js";
 	    $this->scriptStuff = "<script type=\"text/javascript\" src=\"$jquery\"></script>\n"
-                . "<script type=\"text/javascript\" src=\"${ConfSiteBase}cacheable$ConfSiteSuffix?file=script.js&amp;mtime=" . filemtime("$ConfSitePATH/script.js") . "\"></script>\n"
-                . "<!--[if lte IE 6]> <script type='text/javascript' src='${ConfSiteBase}cacheable$ConfSiteSuffix?file=supersleight.js'></script> <![endif]-->\n";
+                . "<script type=\"text/javascript\" src=\"${ConfSiteBase}scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js") . "\"></script>\n"
+                . "<!--[if lte IE 6]> <script type='text/javascript' src='${ConfSiteBase}scripts/supersleight.js'></script> <![endif]-->\n";
 	    echo "<title>", $title, " - ", htmlspecialchars($Opt["shortName"]), "</title>\n";
 	    $this->headerPrinted = 1;
 	}

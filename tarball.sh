@@ -67,12 +67,9 @@ review.php
 reviewprefs.php
 scorechart.php
 scorehelp.php
-script.js
 search.php
 sessionvar.php
 settings.php
-style.css
-supersleight.js
 users.php
 
 conf/.htaccess
@@ -98,6 +95,11 @@ lib/tagger.php
 lib/text.php
 lib/unicodehelper.php
 lib/xlsx.php
+
+scripts/.htaccess
+scripts/jquery-1.10.2.min.js
+scripts/script.js
+scripts/supersleight.js
 
 src/.htaccess
 src/assigners.php
@@ -138,6 +140,9 @@ src/sample.pdf
 src/schema.sql
 src/updateschema.php
 src/useractions.php
+
+stylesheets/.htaccess
+stylesheets/style.css
 
 Code/.htaccess
 

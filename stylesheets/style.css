@@ -14,7 +14,7 @@ body {
 
 /* header */
 #header {
-	background-image: url("images/headgrad.png");
+	background-image: url(../images/headgrad.png);
 	background-repeat: repeat-x;
 	background-position: top;
 }
@@ -37,7 +37,7 @@ body {
 	border-bottom: 2px solid #b2a584;
 	border-right: 1px solid #b2a584;
 	background-color: #ffffbb;
-	background-image: url("images/homegrad.png");
+	background-image: url(../images/homegrad.png);
 	background-repeat: repeat-x;
 	background-position: bottom;
 }
@@ -268,7 +268,7 @@ div#footer_crp {
 
 /* infoboxes */
 div.info, div.warning, div.confirm, div.merror {
-	background: #eeeeff url(images/info45.png) 10px 10px no-repeat;
+	background: #eeeeff url(../images/info45.png) 10px 10px no-repeat;
 	padding: 0.5em 0.5em 0.5em 65px;
 	border: 1px solid #ccccee;
 	margin: 0.5em 0;
@@ -283,15 +283,15 @@ div.help {
 	background: #f8f8f8;
 }
 div.confirm {
-	background: #eeffee url(images/info45.png) 10px 10px no-repeat;
+	background: #eeffee url(../images/info45.png) 10px 10px no-repeat;
 	border: 1px solid #cceecc;
 }
 div.warning {
-	background: #ffffdd url(images/info45.png) 10px 10px no-repeat;
+	background: #ffffdd url(../images/info45.png) 10px 10px no-repeat;
 	border: 1px solid #ddddcc;
 }
 div.merror {
-	background: #ffeeee url(images/stophand45.png) 10px 10px no-repeat;
+	background: #ffeeee url(../images/stophand45.png) 10px 10px no-repeat;
 	border: 1px solid #eecccc;
 }
 div.merror p:first-child, div.info p:first-child, div.warning p:first-child, div.confirm p:first-child, div.help p:first-child {
@@ -692,7 +692,7 @@ span.ajaxcheck, span.ajaxcheck_good, span.ajaxcheck_bad {
 	height: 9px;
 }
 .ajaxcheck_good, .ajaxcheck_bad {
-	background-image: url(images/sprite.png?2);
+	background-image: url(../images/sprite.png?2);
 }
 .ajaxcheck_good {
 	background-position: -52px 0;
@@ -980,7 +980,7 @@ img.dlimgsp {
 img.placthook {
 	width: 12px;
 	height: 12px;
-	background-image: url(images/sprite.png?2);
+	background-image: url(../images/sprite.png?2);
 	background-position: -40px 0;
 }
 img.sdlimg {
@@ -1133,8 +1133,8 @@ span.asspref-1 {
 	font-weight: bold;
 }
 .rt-1, .rt-2, .rt-3 {
-	color: grey;
-	border: 1px solid grey;
+	color: gray;
+	border: 1px solid gray;
 }
 .rti {
 	display: table-cell;
@@ -1148,7 +1148,7 @@ span.asspref-1 {
 }
 
 img.prev, img.next {
-	background-image: url(images/sprite.png?2);
+	background-image: url(../images/sprite.png?2);
 	width: 8px;
 	height: 9px;
 }
@@ -1160,7 +1160,7 @@ img.next {
 }
 
 img.checksum12, img.timestamp12 {
-	background-image: url(images/sprite.png?2);
+	background-image: url(../images/sprite.png?2);
 	width: 12px;
 	height: 12px;
 }
@@ -1172,7 +1172,7 @@ img.timestamp12 {
 }
 
 img.expander {
-	background-image: url(images/sprite.png?2);
+	background-image: url(../images/sprite.png?2);
 	width: 9px;
 	height: 9px;
 	border: 0 none;
@@ -1582,14 +1582,14 @@ a.pl_sort {
 a.pl_sort_def {
 	padding-right: 11px;
 	margin-right: 0.4em;
-	background: url("images/sortdown.png") 100% 75% no-repeat;
+	background: url(../images/sortdown.png) 100% 75% no-repeat;
 	text-decoration: none;
 	color: #660000;
 }
 a.pl_sort_def_rev {
 	padding-right: 11px;
 	margin-right: 0.4em;
-	background: url("images/sortup.png") 100% 75% no-repeat;
+	background: url(../images/sortup.png) 100% 75% no-repeat;
 	text-decoration: none;
 	color: #660000;
 }
@@ -1691,88 +1691,88 @@ tr.pl.smalltag, tr.plx.smalltag {
 }
 
 .redtag.orangetag, .redtag.orangetag.psc {
-	background-image: url(images/tag_red_orange.png);
+	background-image: url(../images/tag_red_orange.png);
 }
 .redtag.yellowtag, .redtag.yellowtag.psc {
-	background-image: url(images/tag_red_yellow.png);
+	background-image: url(../images/tag_red_yellow.png);
 }
 .redtag.greentag, .redtag.greentag.psc {
-	background-image: url(images/tag_red_green.png);
+	background-image: url(../images/tag_red_green.png);
 }
 .redtag.bluetag, .redtag.bluetag.psc {
-	background-image: url(images/tag_red_blue.png);
+	background-image: url(../images/tag_red_blue.png);
 }
 .redtag.purpletag, .redtag.purpletag.psc {
-	background-image: url(images/tag_red_purple.png);
+	background-image: url(../images/tag_red_purple.png);
 }
 .redtag.graytag, .redtag.graytag.psc {
-	background-image: url(images/tag_red_grey.png);
+	background-image: url(../images/tag_red_grey.png);
 }
 .redtag.whitetag, .redtag.whitetag.psc {
-	background-image: url(images/tag_red_white.png);
+	background-image: url(../images/tag_red_white.png);
 }
 .orangetag.yellowtag, .orangetag.yellowtag.psc {
-	background-image: url(images/tag_orange_yellow.png);
+	background-image: url(../images/tag_orange_yellow.png);
 }
 .orangetag.greentag, .orangetag.greentag.psc {
-	background-image: url(images/tag_orange_green.png);
+	background-image: url(../images/tag_orange_green.png);
 }
 .orangetag.bluetag, .orangetag.bluetag.psc {
-	background-image: url(images/tag_orange_blue.png);
+	background-image: url(../images/tag_orange_blue.png);
 }
 .orangetag.purpletag, .orangetag.purpletag.psc {
-	background-image: url(images/tag_orange_purple.png);
+	background-image: url(../images/tag_orange_purple.png);
 }
 .orangetag.graytag, .orangetag.graytag.psc {
-	background-image: url(images/tag_orange_grey.png);
+	background-image: url(../images/tag_orange_grey.png);
 }
 .orangetag.whitetag, .orangetag.whitetag.psc {
-	background-image: url(images/tag_orange_white.png);
+	background-image: url(../images/tag_orange_white.png);
 }
 .yellowtag.greentag, .yellowtag.greentag.psc {
-	background-image: url(images/tag_yellow_green.png);
+	background-image: url(../images/tag_yellow_green.png);
 }
 .yellowtag.bluetag, .yellowtag.bluetag.psc {
-	background-image: url(images/tag_yellow_blue.png);
+	background-image: url(../images/tag_yellow_blue.png);
 }
 .yellowtag.purpletag, .yellowtag.purpletag.psc {
-	background-image: url(images/tag_yellow_purple.png);
+	background-image: url(../images/tag_yellow_purple.png);
 }
 .yellowtag.graytag, .yellowtag.graytag.psc {
-	background-image: url(images/tag_yellow_grey.png);
+	background-image: url(../images/tag_yellow_grey.png);
 }
 .yellowtag.whitetag, .yellowtag.whitetag.psc {
-	background-image: url(images/tag_yellow_white.png);
+	background-image: url(../images/tag_yellow_white.png);
 }
 .greentag.bluetag, .greentag.bluetag.psc {
-	background-image: url(images/tag_green_blue.png);
+	background-image: url(../images/tag_green_blue.png);
 }
 .greentag.purpletag, .greentag.purpletag.psc {
-	background-image: url(images/tag_green_purple.png);
+	background-image: url(../images/tag_green_purple.png);
 }
 .greentag.graytag, .greentag.graytag.psc {
-	background-image: url(images/tag_green_grey.png);
+	background-image: url(../images/tag_green_grey.png);
 }
 .greentag.whitetag, .greentag.whitetag.psc {
-	background-image: url(images/tag_green_white.png);
+	background-image: url(../images/tag_green_white.png);
 }
 .bluetag.purpletag, .bluetag.purpletag.psc {
-	background-image: url(images/tag_blue_purple.png);
+	background-image: url(../images/tag_blue_purple.png);
 }
 .bluetag.graytag, .bluetag.graytag.psc {
-	background-image: url(images/tag_blue_grey.png);
+	background-image: url(../images/tag_blue_grey.png);
 }
 .bluetag.whitetag, .bluetag.whitetag.psc {
-	background-image: url(images/tag_blue_white.png);
+	background-image: url(../images/tag_blue_white.png);
 }
 .purpletag.graytag, .purpletag.graytag.psc {
-	background-image: url(images/tag_purple_grey.png);
+	background-image: url(../images/tag_purple_grey.png);
 }
 .purpletag.whitetag, .purpletag.whitetag.psc {
-	background-image: url(images/tag_purple_white.png);
+	background-image: url(../images/tag_purple_white.png);
 }
 .graytag.whitetag, .graytag.whitetag.psc {
-	background-image: url(images/tag_grey_white.png);
+	background-image: url(../images/tag_grey_white.png);
 }
 
 .graytext, .greytext {
