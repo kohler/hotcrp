@@ -1970,7 +1970,7 @@ class Conference {
 	$this->scriptStuff = "";
     }
 
-    function ajaxExit($values = null, $div = false) {
+    function output_ajax($values = null, $div = false) {
         if ($values === false || $values === true)
             $values = array("ok" => $values);
 	else if ($values === null)
@@ -1994,8 +1994,12 @@ class Conference {
 	    header("Content-Type: text/plain");
 	else
 	    header("Content-Type: application/json");
-	echo json_encode($values);
-	exit;
+        echo json_encode($values);
+    }
+
+    function ajaxExit($values = null, $div = false) {
+        $this->output_ajax($values, $div);
+        exit;
     }
 
 

@@ -11,7 +11,7 @@ require_once("src/initweb.php");
 if (@$_REQUEST["track"] && $Me->privChair && check_post()) {
     // arguments: IDENTIFIER LISTNUM [POSITION] -OR- stop
     if ($_REQUEST["track"] == "stop")
-        $Conf->save_setting("tracker", null);
+        MeetingTracker::clear();
     else {
         $args = preg_split('/\s+/', $_REQUEST["track"]);
         if (count($args) >= 2
@@ -26,17 +26,14 @@ if (@$_REQUEST["track"] && $Me->privChair && check_post()) {
 
 $dl = $Me->deadlines();
 
+if (@$dl["tracker"] && @$Opt["trackerCometSite"])
+    $dl["tracker_poll"] = $Opt["trackerCometSite"]
+        . "?conference=" . urlencode(request_absolute_uri_dir())
+        . "&poll=" . urlencode(MeetingTracker::tracker_status($dl["tracker"]));
 if (@$_REQUEST["checktracker"]) {
-    if (@$dl["tracker"])
-        $dl["tracker_status"] = $dl["tracker"]->trackerid . "@"
-            . $dl["tracker"]->position_at;
-    else if (($tracker = $Conf->setting_json("tracker")))
-        $dl["tracker_status"] = $tracker->trackerid . "@"
-            . $tracker->position_at;
-    else
-        $dl["tracker_status"] = false;
+    $tracker = @$dl["tracker"] ? $dl["tracker"] : $Conf->setting_json("tracker");
+    $dl["tracker_status"] = MeetingTracker::tracker_status($tracker);
 }
-
 if (@$_REQUEST["ajax"]) {
     $dl["ok"] = true;
     $Conf->ajaxExit($dl);

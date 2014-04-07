@@ -10,6 +10,13 @@ class MeetingTracker {
         return $Conf->setting_json("tracker");
     }
 
+    static function clear() {
+        global $Conf;
+        $Conf->save_setting("tracker", null);
+        self::contact_tracker_comet(null);
+        return null;
+    }
+
     static function update($list, $trackerid, $position) {
         global $Conf, $Me, $Now;
         assert($list && str_starts_with($list->listid, "p/"));
@@ -34,7 +41,38 @@ class MeetingTracker {
                 $tracker->position_at = $old_tracker->position_at;
         }
         self::save($tracker);
+        self::contact_tracker_comet($tracker);
         return $tracker;
+    }
+
+    static function contact_tracker_comet($tracker) {
+        global $Opt;
+        if (!($comet_url = @$Opt["trackerCometSite"]))
+            return;
+        $conference = request_absolute_uri_dir();
+
+        if (!preg_match(',\Ahttps?:,', $comet_url)) {
+            preg_match(',\A(.*:)(//[^/]*),', $conference, $m);
+            if (preg_match(',\A//,', $comet_url))
+                $comet_url = $m[1] . $comet_url;
+            else
+                $comet_url = $m[1] . $m[2] . $comet_url;
+        }
+
+        $context = stream_context_create(array("http" =>
+                                               array("method" => "GET",
+                                                     "ignore_errors" => true,
+                                                     "content" => "",
+                                                     "timeout" => 1.0)));
+        $comet_url .= "?conference=" . urlencode($conference)
+            . "&update=" . urlencode(self::tracker_status($tracker));
+        $stream = fopen($comet_url, "r", false, $context);
+        if (!$stream)
+            return false;
+        if (!($data = stream_get_contents($stream))
+            || !($data = json_decode($data)))
+            error_log($comet_url . ": read failure");
+        fclose($stream);
     }
 
     static function save($mn) {
@@ -84,6 +122,13 @@ class MeetingTracker {
         }
         $_SESSION["tracker"] = $status;
         return $status;
+    }
+
+    static function tracker_status($tracker) {
+        if ($tracker)
+            return $tracker->trackerid . "@" . $tracker->position_at;
+        else
+            return false;
     }
 
 }

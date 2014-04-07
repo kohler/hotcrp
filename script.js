@@ -358,6 +358,7 @@ function display_tracker() {
 }
 
 function reload() {
+    clearTimeout(reload_timeout);
     reload_timeout = null;
     Miniajax.get(dlurl + "?ajax=1", hotcrp_deadlines, 10000);
 }
@@ -374,7 +375,10 @@ function hotcrp_deadlines(dlx, is_initial) {
     if (dlurl && !reload_timeout) {
         if (is_initial && $$("clock_drift_container"))
             t = 10;
-        else if (ever_had_tracker)
+        else if (ever_had_tracker && dl.tracker_poll) {
+            t = 120000;
+            Miniajax.get(dl.tracker_poll, reload, 300000);
+        } else if (ever_had_tracker)
             t = 10000;
         else if (dlname && (!dltime || dltime - dl.load <= 120))
             t = 45000;
