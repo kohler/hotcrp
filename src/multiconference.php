@@ -9,10 +9,10 @@ function set_multiconference() {
     global $ConfSiteBase, $ConfMulticonf, $Opt;
 
     if (!@$ConfMulticonf) {
-        if (($multis = @$Opt["multiconferenceUrl"])
+        if (($multis = @$Opt["multiconferenceAnalyzer"])
             && ($base = request_absolute_uri_base(true))) {
             foreach (is_array($multis) ? $multis : array($multis) as $multi) {
-                list($match, $replace) = explode(" ", $Opt["multiconferenceUrl"]);
+                list($match, $replace) = explode(" ", $Opt["multiconferenceAnalyzer"]);
                 if (preg_match("`\\A$match`", $base, $m)) {
                     $ConfMulticonf = $replace;
                     for ($i = 1; $i < count($m); ++$i)

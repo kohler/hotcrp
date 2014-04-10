@@ -207,9 +207,9 @@ The conference name can only contain characters in [-_.A-Za-z0-9], and
 it must not start with a period. HotCRP will check for funny
 conference names and replace them with `__invalid__`.
 
-To turn on multiconference support, edit `conf/options.php` and set
-$Opt["multiconference"] to true. You will then need to tell HotCRP how
-to find the options relevant for each conference. The most flexible
+To turn on multiconference support, set $Opt["multiconference"] to
+true in `conf/options.php`. You will then need to tell HotCRP how to
+find the options relevant for each conference. The most flexible
 mechanism is to use $Opt["include"] to include a conference-specific
 options file. For example (note the single quotes):
 
@@ -221,23 +221,22 @@ doesn’t exist. To ignore nonexistent options files, use wildcards:
 
     $Opt["include"] = 'conf/[o]ptions-${confname}.php';
 
-`${confname}` replacement is also performed on these settings: dbName,
-dbUser, dbPassword, sessionName, downloadPrefix, conferenceSite,
-and paperSite.
+`${confname}` replacement is also performed on these $Opt settings:
+dbName, dbUser, dbPassword, sessionName, downloadPrefix,
+conferenceSite, and paperSite.
 
-You will still need to create a database for each conference using the
+Each conference needs its own database. Create one using the
 `lib/createdb.sh` script (the `-c CONFIGFILE` option will be useful).
-Also, you will need to convince your Apache to use the HotCRP install
-directory for all relevant URLs.
+Also, make sure Apache uses the HotCRP install directory for all
+relevant URLs.
 
-If you don't want to use the last directory component, set
-$Opt["multiconferenceUrl"] to a URL regular expression, a space, and a
-replacement pattern. HotCRP matches the input URL to the regex. If it
-matches, it constructs a conference name from the replacement pattern.
-For example, this setting will use "conf_CONFNAME" as the conference
-name for a URL like "http://CONFNAME.crap.com/":
+You can also set $Opt["multiconferenceAnalyzer"] to a regular
+expression, a space, and a replacement pattern. HotCRP matches the
+full input URL to the regex, then uses the replacement pattern as the
+conference name. For example, this setting will use "conf_CONFNAME" as
+the conference name for a URL like "http://CONFNAME.crap.com/":
 
-    $Opt["multiconferenceUrl"] = '\w+://([^./]+)[.]crap[.]com[.]?/ conf_$1';
+    $Opt["multiconferenceAnalyzer"] = '\w+://([^./]+)[.]crap[.]com[.]?/ conf_$1';
 
 License
 -------

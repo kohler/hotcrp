@@ -10,56 +10,37 @@
 
 global $Opt;
 
+// MANDATORY CONFIGURATION
+//
+//   dbName          Database name. NO SPACES ALLOWED.
+//   dbUser          Database user name. Defaults to $Opt["dbName"].
+//   dbPassword      Password for database user.
+
+$Opt["dbName"] = "FIXME";
+
+
 // GENERAL CONFIGURATION
 //
 //   include         Other configuration files to load. String or array of
 //                   strings. Wildcards are expanded (e.g., "conf/*.conf");
 //                   relative paths are interpreted based on HOTCRPDIR.
+//   multiconference, multiconferenceAnalyzer
+//                   Support multiple conferences from a single installation.
+//                   See README.md.
 
 
-// DATABASE CONFIGURATION
-//
-//   dbName          Database name. NO SPACES ALLOWED.
-//   dbUser          Database user name. Defaults to $Opt["dbName"].
-//   dbPassword      Password for database user.
-//   dbHost          Database host. Defaults to localhost.
-
-$Opt["dbName"] = "YourConfI";
-
-
-// CONFERENCE SETTINGS
+// NAMES AND SITES
 //
 //   shortName       Short name of the conference, including the year or
 //                   number. Examples: "SIGCOMM 2007", "HotNets V".
 //   longName        Longer name of the conference. Example: "ACM SIGCOMM
 //                   2007 Conference".
-//   paperSite       URL for this HotCRP installation. Used in emails.
-//                   Default is derived from the access URL.
-//   conferenceSite  [OPTIONAL] Conference site URL (CFP, registration).
 //   downloadPrefix  Prefix for downloaded files, such as papers; should
 //                   end in a dash. Example: "hotnets5-". Defaults to
 //                   $Opt["dbName"] plus a dash.
-
-$Opt["shortName"] = "";
-$Opt["longName"] = "";
-
-
-// USER PASSWORDS
-//
-//   safePasswords   If true, the database stores cryptographic hashes
-//                   of user passwords according to security best
-//                   practices. If false, the database stores
-//                   user passwords in plaintext. If set to the integer 2,
-//                   existing plaintext passwords are opportunistically
-//                   upgraded to hashes. Randomly-generated passwords
-//                   are initially stored in plaintext.
-//   passwordHmacKey  Secret key used for password HMAC.
-//   passwordHmacKeyid  If a secret key is compromised, change
-//                   passwordHmacKeyid to switch keys. Defaults to 0.
-//   passwordHmacKey.ID  Secret key for passwordHmacKeyid==ID.
-
-$Opt["safePasswords"] = true;
-$Opt["passwordHmacKey"] = null;
+//   paperSite       [OPTIONAL] URL for this HotCRP installation. Used in
+//                   emails. Default is derived from the access URL.
+//   conferenceSite  [OPTIONAL] Conference site URL (CFP, registration).
 
 
 // EMAIL
@@ -101,7 +82,43 @@ $Opt["emailFrom"] = "you@example.com";
 $Opt["emailSender"] = null;
 
 
-// PAPER STORAGE SETTINGS
+// -------------------------------------------------------------------------
+// OTHER CONFIGURATION OPTIONS
+// -------------------------------------------------------------------------
+
+// USER ACCOUNTS
+//
+//   ldapLogin       If set, use LDAP to authenticate users. The ldapLogin
+//                   string must have the form "LDAP_URL DN_PATTERN", where
+//                   DN_PATTERN contains a "*" character to be replaced by
+//                   the username. Example: "ldaps://ldapserver/ uid=*,o=ORG"
+//   httpAuthLogin   If set, use HTTP authentication to authenticate users.
+//                   Requires additional web server configuration. A string
+//                   value is sent as a WWW-Authenticate header. The default
+//                   string is "Basic realm="HotCRP"".
+//   defaultEmailDomain Set to the default domain for account email addresses
+//                   when using httpAuthLogin.
+
+
+// USER PASSWORDS
+//
+//   safePasswords   If true, the database stores cryptographic hashes
+//                   of user passwords according to security best
+//                   practices. If false, the database stores
+//                   user passwords in plaintext. If set to the integer 2,
+//                   existing plaintext passwords are opportunistically
+//                   upgraded to hashes. Randomly-generated passwords
+//                   are initially stored in plaintext.
+//   passwordHmacKey  Secret key used for password HMAC.
+//   passwordHmacKeyid  If a secret key is compromised, change
+//                   passwordHmacKeyid to switch keys. Defaults to 0.
+//   passwordHmacKey.ID  Secret key for passwordHmacKeyid==ID.
+
+$Opt["safePasswords"] = true;
+$Opt["passwordHmacKey"] = null;
+
+
+// PAPER STORAGE
 //
 //   disablePS       Set to true to disable PostScript format submissions.
 //   noPapers        Set to true to collect abstracts only, not papers.
@@ -121,24 +138,8 @@ $Opt["emailSender"] = null;
 $Opt["disablePS"] = true;
 
 
-// OPTIONAL SETTINGS (the defaults are reasonable)
+// TIMES AND DATES
 //
-//   multiconference Set to true to run multiple conferences out of this
-//                   installation. See README.
-//   sortByLastName  Set to true to sort users by last name.
-//   dsn             Database configuration string in the format
-//                   "mysql://DBUSER:DBPASSWORD@DBHOST/DBNAME".
-//                   The default is derived from $Opt["dbName"], etc.
-//   sessionName     Internal name used to distinguish conference sessions
-//                   running on the same server. NO SPACES ALLOWED. Defaults
-//                   to $Opt["dbName"].
-//   sessionLifetime Number of seconds a user may be idle before their session
-//                   is garbage collected and they must log in again. Defaults
-//                   to 86400 (24 hours). Should be less than or equal to the
-//                   system-wide setting for `session.gc_maxlifetime` in
-//                   the PHP initialization file, `php.ini`.
-//   memoryLimit     Maximum amount of memory a PHP script can use. Defaults
-//                   to 128MB.
 //   timezone        Server timezone. See http://php.net/manual/en/timezones
 //                   for a list. Defaults to America/New_York if you haven't
 //                   set a server-wide PHP timestamp in `php.ini`.
@@ -156,42 +157,55 @@ $Opt["disablePS"] = true;
 //                   default removes ":00" from the ends of dates.
 //   dateFormatTimezone Timezone abbreviation used to print dates. Defaults to
 //                   the system's timezone abbreviation.
-//   stylesheets     Optional array of additional stylesheet filenames/URIs to
-//                   be included after "style.css". Example: array("x.css").
-//   extraFooter     Optional extra HTML text shown at the bottom of every
-//                   page, before the HotCRP link. If set, should generally
-//                   end with " <span class='barsep'>|</span> ".
-//   favicon         Optional link to favicon. Default is images/review24.png.
-//   noFooterVersion Set to true to avoid a version comment in footer HTML.
-//   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
-//                   paper format checker).
-//   banalLimit      Limit on number of parallel paper format checker
-//                   executions. Defaults to 8.
-//   ldapLogin       If set, use LDAP to authenticate users. The ldapLogin
-//                   string must have the form "LDAP_URL DN_PATTERN", where
-//                   DN_PATTERN contains a "*" character to be replaced by
-//                   the username. Example: "ldaps://ldapserver/ uid=*,o=ORG"
-//   httpAuthLogin   If set, use HTTP authentication to authenticate users.
-//                   Requires additional web server configuration. A string
-//                   value is sent as a WWW-Authenticate header. The default
-//                   string is "Basic realm="HotCRP"".
+
+
+// INTERFACE OPTIONS
+//
 //   redirectToHttps If set to true, then HotCRP will redirect all http
 //                   connections to https.
-//   defaultEmailDomain Set to the default domain for account email addresses
-//                   when using httpAuthLogin.
-//   zipCommand      Set to the path to the `zip` executable. Defaults to
-//                   `zip`.
-//   disableCSV      Set to true if all downloaded tabular text files should be
-//                   tab-separated rather than CSV.
+//   sortByLastName  Set to true to sort users by last name.
 //   smartScoreCompare Set to true if a search like "ovemer:>B" should search
 //                   for scores better than B (i.e., A), rather than scores
 //                   alphabetically after B (i.e., C or D).
+//   favicon         Link to favicon. Default is images/review24.png.
+//   stylesheets     Array of additional stylesheet filenames/URIs to be
+//                   included after "style.css". Example: array("x.css").
+//   extraFooter     Extra HTML text shown at the bottom of every page, before
+//                   the HotCRP link. If set, should generally end with
+//                   " <span class='barsep'>|</span> ".
+//   noFooterVersion Set to true to avoid a version comment in footer HTML.
 //   noSearchAutocomplete  If set, do not implement Javascript autocompletion
 //                   on searchboxes.
-//   hideManager     If set, PC members are not shown paper managers.
 //   strictJavascript  If true, send Javascript over with "use strict" to
 //                   catch errors.
+//   disableCSV      Set to true if downloaded information files should be
+//                   tab-separated rather than CSV.
+//   hideManager     If set, PC members are not shown paper managers.
 //   jqueryURL       URL for jQuery. Defaults to the local minified jquery.
 //   jqueryCDN       If true, use the jQuery CDN.
 
 $Opt["smartScoreCompare"] = true;
+
+
+// EXTERNAL SOFTWARE CONFIGURATION
+//
+//   dbHost          Database host. Defaults to localhost.
+//   dsn             Database configuration string in the format
+//                   "mysql://DBUSER:DBPASSWORD@DBHOST/DBNAME".
+//                   The default is derived from $Opt["dbName"], etc.
+//   sessionName     Internal name used to distinguish conference sessions
+//                   running on the same server. NO SPACES ALLOWED. Defaults
+//                   to $Opt["dbName"].
+//   sessionLifetime Number of seconds a user may be idle before their session
+//                   is garbage collected and they must log in again. Defaults
+//                   to 86400 (24 hours). Should be less than or equal to the
+//                   system-wide setting for `session.gc_maxlifetime` in
+//                   the PHP initialization file, `php.ini`.
+//   memoryLimit     Maximum amount of memory a PHP script can use. Defaults
+//                   to 128MB.
+//   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
+//                   paper format checker).
+//   banalLimit      Limit on number of parallel paper format checker
+//                   executions. Defaults to 8.
+//   zipCommand      Set to the path to the `zip` executable. Defaults to
+//                   `zip`.
