@@ -273,11 +273,6 @@ function hoturl_absolute($page, $options = null) {
     return $Opt["paperSite"] . "/" . substr(hoturl($page, $options), strlen($ConfSiteBase));
 }
 
-function hoturl_image($page) {
-    global $ConfSiteBase;
-    return $ConfSiteBase . $page;
-}
-
 
 function fileUploaded(&$var) {
     global $Conf;
