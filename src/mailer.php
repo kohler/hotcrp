@@ -502,10 +502,10 @@ class Mailer {
         if ($this->comment_row)
             $crows = array($this->comment_row);
         else {
-            $where = "paperId=$this->row->paperId";
+            $where = "paperId=" . $this->row->paperId;
             if ($tag)
                 $where .= " and commentTags like '% " . sqlq_for_like($tag) . " %'";
-            $crows = $Conf->comment_rows($Conf->comment_query($where), $this->comment);
+            $crows = $Conf->comment_rows($Conf->comment_query($where), $this->permissionContact);
         }
 
         $rf = reviewForm();
