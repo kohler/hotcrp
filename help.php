@@ -152,7 +152,7 @@ to navigate through the rest of the search matches.
 
 <p>Underneath the paper list is the action area:</p>
 
-<img src='" . hoturl_image("images/exsearchaction.png") . "' alt='[Search action area example]' /><br />
+" . Ht::img("exsearchaction.png", "[Search action area]") . "<br />
 
 <p>Use the checkboxes to select some papers, then choose an action.
 You can:</p>
@@ -176,13 +176,13 @@ tag.</p>
 ");
     _alternateRow("<a name='quicklinks'>Quicksearch<br />and quicklinks</a>", "
 Most screens have a quicksearch box in the upper right corner:<br />
-<img src='" . hoturl_image("images/quicksearchex.png") . "' alt='[Quick search example]' /><br />
+" . Ht::img("quicksearchex.png", "[Quicksearch box]") . "<br />
 This box supports the full search syntax.  Enter
 a paper number, or search terms that match exactly
 one paper, to go directly to that paper.
 
 <p>Paper screens have quicklinks that step through search results:<br />
-<img src='" . hoturl_image("images/pageresultsex.png") . "' alt='[Result paging example]' /><br />
+" . Ht::img("pageresultsex.png", "[Quicklinks]") . "<br />
 Click on the search description (here, “Submitted papers search”) to return
 to the search results.  On many pages, you can press “<code>j</code>” or
 “<code>k</code>” to go to the previous or next paper in the list.</p>
@@ -455,7 +455,7 @@ Here are some example ways to use tags.
     _alternateRow("Finding tags", "
 A paper’s tags are shown like this:
 
-<p><img src='" . hoturl_image("images/extagsnone.png") . "' alt='[Tag list on review screen]' /></p>
+<p>" . Ht::img("extagsnone.png", "[Tag list on review screen]") . "</p>
 
 To find all papers with tag “discuss”:&nbsp; " . _searchForm("#discuss") . "
 
@@ -465,17 +465,16 @@ Additionally, twiddle tags, which have names like “~tag”, are
 visible only to their creators; each PC member has an independent set.
 Tags are not case sensitive.</p>");
     _alternateRow("<a name='changing'>Changing tags</a>", "
-To change a paper’s tags, click the Tags box’s <img src='" . hoturl_image("images/edit.png") . "'
-alt='[Edit]' />&nbsp;Edit link, then enter one or more alphanumeric tags
-separated by spaces.
+To change a paper’s tags, click the Tags box’s " . Ht::img("edit.png", "[Edit]") . "&nbsp;Edit
+link, then enter one or more alphanumeric tags separated by spaces.
 
-<p><img src='" . hoturl_image("images/extagsset.png") . "' alt='[Tags entry on review screen]' /></p>
+<p>" . Ht::img("extagsset.png", "[Tag entry on review screen]") . "</p>
 
 <p>To tag multiple papers at once, find the papers in a
 <a href='" . hoturl("search") . "'>search</a>, select
 their checkboxes, and add tags using the action area.</p>
 
-<p><img src='" . hoturl_image("images/extagssearch.png") . "' alt='[Setting tags on the search page]' /></p>
+<p>" . Ht::img("extagssearch.png", "[Setting tags on the search page]") . "</p>
 
 <p><b>Add</b> adds tags to the selected papers, <b>Remove</b> removes existing
 tags from the selected papers, and <b>Define</b> adds the tag to all selected
@@ -792,7 +791,7 @@ in the search results (or set up a
 <p>
 Hover to learn how the PC voted:</p>
 
-<p><img src='" . hoturl_image("images/extagvotehover.png") . "' alt='[Hovering over a voting tag]' /></p>");
+<p>" . Ht::img("extagvotehover.png", "[Hovering over a voting tag]") . "</p>");
 
     echo "</table>\n";
 }

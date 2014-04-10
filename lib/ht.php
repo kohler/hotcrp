@@ -5,6 +5,7 @@
 
 class Ht {
 
+    public static $img_base = "";
     private static $_controlid = 0;
     private static $_lastcontrolid = 0;
 
@@ -13,8 +14,8 @@ class Ht {
         if ($js) {
             foreach (array("id", "tabindex", "onchange", "onclick", "onfocus",
                            "onblur", "onsubmit", "class", "style", "size",
-                           "rows", "cols") as $k)
-                if (isset($js[$k]))
+                           "title", "rows", "cols") as $k)
+                if (@$js[$k] !== null)
                     $x .= " $k=\"" . str_replace("\"", "'", $js[$k]) . "\"";
             if (isset($js["disabled"]) && $js["disabled"])
                 $x .= " disabled=\"disabled\"";
@@ -257,6 +258,15 @@ class Ht {
         else if (is_object($text))
             $text = var_export($text, true);
         return "<pre>" . htmlspecialchars($text) . "</pre>";
+    }
+
+    static function img($src, $alt, $js = null) {
+        if (is_string($js))
+            $js = array("class" => $js);
+        if (self::$img_base && !preg_match(',\A(https?:|/),i', $src))
+            $src = self::$img_base . $src;
+        return "<img src=\"" . $src . "\" alt=\"" . htmlspecialchars($alt) . "\""
+            . self::extra($js) . " />";
     }
 
 }

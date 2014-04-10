@@ -227,7 +227,8 @@ class Conference {
     }
 
     private function crosscheck_options() {
-        global $Opt, $ConfId, $ConfMulticonf;
+        global $Opt, $ConfId, $ConfMulticonf, $ConfSiteBase;
+
         // remove final slash from $Opt["paperSite"]
         if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
             $Opt["paperSite"] = request_absolute_uri_dir();
@@ -247,6 +248,13 @@ class Conference {
             $Opt["downloadPrefix"] = $confname . "-";
         if (!isset($Opt["conferenceId"]) || $Opt["conferenceId"] == "")
             $Opt["conferenceId"] = $confname;
+
+        // set assetsURL
+        if (!@$Opt["assetsURL"])
+            $Opt["assetsURL"] = $ConfSiteBase;
+        if ($Opt["assetsURL"] !== "" && !str_ends_with($Opt["assetsURL"], "/"))
+            $Opt["assetsURL"] .= "/";
+        Ht::$img_base = $Opt["assetsURL"] . "images/";
 
         // handle timezone
         if (function_exists("date_default_timezone_set")) {
@@ -874,18 +882,6 @@ class Conference {
         return !!edb_row($result);
     }
 
-
-    function cacheableImage($name, $alt, $title = null, $class = null, $style = null) {
-	global $ConfSiteBase, $ConfSitePATH;
-	$t = "<img src='${ConfSiteBase}images/$name' alt=\"$alt\"";
-	if ($title)
-	    $t .= " title=\"$title\"";
-	if ($class)
-	    $t .= " class=\"$class\"";
-	if ($style)
-	    $t .= " style=\"$style\"";
-	return $t . " />";
-    }
 
     function echoScript($script) {
 	if ($this->scriptStuff)
@@ -1749,10 +1745,13 @@ class Conference {
     //
 
     function header_css_link($css) {
-        global $ConfSiteBase, $ConfSitePATH;
-        echo '<link rel="stylesheet" type="text/css" href="', $ConfSiteBase, $css;
-        if (strpos($css, "/") !== 0 && strpos($css, "..") === false
-            && ($mtime = @filemtime("$ConfSitePATH/$css")) !== false)
+        global $ConfSiteBase, $ConfSitePATH, $Opt;
+        echo '<link rel="stylesheet" type="text/css" href="';
+        if (str_starts_with($css, "stylesheets/")
+            || !preg_match(',\A(?:https?:|/),i', $css))
+            echo $Opt["assetsURL"];
+        echo $css;
+        if (($mtime = @filemtime("$ConfSitePATH/$css")) !== false)
             echo "?mtime=", $mtime;
         echo "\" />\n";
     }
@@ -1794,10 +1793,10 @@ class Conference {
             else if (@$Opt["jqueryCDN"])
                 $jquery = "//code.jquery.com/jquery-1.10.2.min.js";
             else
-                $jquery = "${ConfSiteBase}scripts/jquery-1.10.2.min.js";
+                $jquery = $Opt["assetsURL"] . "scripts/jquery-1.10.2.min.js";
 	    $this->scriptStuff = "<script type=\"text/javascript\" src=\"$jquery\"></script>\n"
-                . "<script type=\"text/javascript\" src=\"${ConfSiteBase}scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js") . "\"></script>\n"
-                . "<!--[if lte IE 6]> <script type='text/javascript' src='${ConfSiteBase}scripts/supersleight.js'></script> <![endif]-->\n";
+                . "<script type=\"text/javascript\" src=\"" . $Opt["assetsURL"] . "scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js") . "\"></script>\n"
+                . "<!--[if lte IE 6]> <script type=\"text/javascript\" src=\"" . $Opt["assetsURL"] . "scripts/supersleight.js\"></script> <![endif]-->\n";
 	    echo "<title>", $title, " - ", htmlspecialchars($Opt["shortName"]), "</title>\n";
 	    $this->headerPrinted = 1;
 	}
@@ -1869,9 +1868,9 @@ class Conference {
 	    }
 	    if (@$_SESSION["adminuser"]) {
 		if (!$Me->privChair)
-		    echo "<a href=\"", selfHref(array("actas" => "admin")), "\">Admin&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Return to administrator view]' /></a>", $xsep;
+		    echo "<a href=\"", selfHref(array("actas" => "admin")), "\">Admin&nbsp;", Ht::img("viewas.png", "[Return to administrator view]"), "</a>", $xsep;
 		else if (@$_SESSION["actasuser"])
-		    echo "<a href=\"", selfHref(array("actas" => $_SESSION["actasuser"])), "\">", htmlspecialchars($_SESSION["actasuser"]), "&nbsp;<img src='${ConfSiteBase}images/viewas.png' alt='[Unprivileged view]' /></a>", $xsep;
+		    echo "<a href=\"", selfHref(array("actas" => $_SESSION["actasuser"])), "\">", htmlspecialchars($_SESSION["actasuser"]), "&nbsp;", Ht::img("viewas.png", "[Unprivileged view]"), "</a>", $xsep;
 	    }
 	    $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
 	    echo "<a href='", hoturl("help", $x), "'>Help</a>", $xsep;

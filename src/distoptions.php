@@ -181,6 +181,8 @@ $Opt["disablePS"] = true;
 //   disableCSV      Set to true if downloaded information files should be
 //                   tab-separated rather than CSV.
 //   hideManager     If set, PC members are not shown paper managers.
+//   assetsURL       URL prefix for assets (stylesheets/, scripts/, images/).
+//                   Defaults to the conference installation.
 //   jqueryURL       URL for jQuery. Defaults to the local minified jquery.
 //   jqueryCDN       If true, use the jQuery CDN.
 

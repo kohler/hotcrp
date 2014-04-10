@@ -160,11 +160,11 @@ class PaperList extends BaseList {
 	$this->any->paper = true;
         $t = "&nbsp;<a href=\"" . HotCRPDocument::url($row) . "\">";
 	if ($row->mimetype == "application/pdf")
-	    return $t . $Conf->cacheableImage("pdf$finalsuffix.png", "[PDF]", $finaltitle) . "</a>";
+	    return $t . Ht::img("pdf$finalsuffix.png", "[PDF]", array("title" => $finaltitle)) . "</a>";
 	else if ($row->mimetype == "application/postscript")
-	    return $t . $Conf->cacheableImage("postscript$finalsuffix.png", "[PS]", $finaltitle) . "</a>";
+	    return $t . Ht::img("postscript$finalsuffix.png", "[PS]", array("title" => $finaltitle)) . "</a>";
 	else
-	    return $t . $Conf->cacheableImage("generic$finalsuffix.png", "[Download]", $finaltitle) . "</a>";
+	    return $t . Ht::img("generic$finalsuffix.png", "[Download]", array("title" => $finaltitle)) . "</a>";
     }
 
     function _paperLink($row) {
@@ -398,7 +398,7 @@ class PaperList extends BaseList {
 			      $tagextra) . " &nbsp;";
 	    if ($this->contact->privChair) {
 		$t .= "<span class='fx99'><a href='#' onclick=\"return fold('placttags')\">"
-		    . $Conf->cacheableImage("_.gif", "More...", null, "expander")
+		    . Ht::img("_.gif", "More...", "expander")
 		    . "</a>&nbsp;</span></td><td>";
 	    }
 	    $t .= "tag<span class='fn99'>(s)</span> &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value=\"" . htmlspecialchars(defval($_REQUEST, "tag", "")) . "\"' size='15' onfocus='autosub(\"tagact\",this)' /> &nbsp;"
@@ -478,7 +478,7 @@ class PaperList extends BaseList {
 	    $foot .= "    <td class='pl_footer' colspan='$ncol'>";
 	else
 	    $foot .= "    <td class='pl_footselector'>"
-		. $Conf->cacheableImage("_.gif", "^^", null, "placthook")
+		. Ht::img("_.gif", "^^", "placthook")
 		. "</td>\n    <td class='pl_footer' colspan='" . ($ncol - 1) . "'>";
 	return $foot . "<table id='plact' class='linelinks$whichlll'><tr><td><a name='plact'><b>Select papers</b></a> (or <a href=\""
 	    . selfHref(array("selectall" => 1))

@@ -99,7 +99,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 		$n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
 	    $t .= "<td>" . $n . ($x ? " $x" : "");
 	    if ($allow_admin && $rr->email != $Me->email)
-		$t .= " <a href=\"" . selfHref(array("actas" => $rr->email)) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($rr)) . "</a>";
+		$t .= " <a href=\"" . selfHref(array("actas" => $rr->email)) . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($rr))) . "</a>";
             if ($mode == "assign"
                 && ($conflictType <= 0 || $admin)
                 && $rr->reviewType == REVIEW_EXTERNAL
@@ -275,7 +275,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 	&& ($mode != "r" || $rrow)) {
 	$allreviewslink = true;
 	$x = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=r") . "' class='xx'>"
-	    . $Conf->cacheableImage("view24.png", "[All reviews]", null, "dlimg") . "&nbsp;<u>All reviews</u></a>";
+	    . Ht::img("view24.png", "[All reviews]", "dlimg") . "&nbsp;<u>All reviews</u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
@@ -283,7 +283,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if ($mode != "pe" && $prow->conflictType >= CONFLICT_AUTHOR
 	&& !$Me->canAdminister($prow)) {
 	$x = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;m=pe") . "' class='xx'>"
-	    . $Conf->cacheableImage("edit24.png", "[Edit paper]", null, "dlimg") . "&nbsp;<u><strong>Edit paper</strong></u></a>";
+	    . Ht::img("edit24.png", "[Edit paper]", "dlimg") . "&nbsp;<u><strong>Edit paper</strong></u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
@@ -294,13 +294,13 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 	$myrlink = unparseReviewOrdinal($myrr);
 	$a = "<a href='" . hoturl("review", "r=$myrlink") . "' class='xx'>";
 	if ($Me->canReview($prow, $myrr))
-	    $x = $a . $Conf->cacheableImage("review24.png", "[Edit review]", null, "dlimg") . "&nbsp;<u><b>Edit your review</b></u></a>";
+	    $x = $a . Ht::img("review24.png", "[Edit review]", "dlimg") . "&nbsp;<u><b>Edit your review</b></u></a>";
 	else
-	    $x = $a . $Conf->cacheableImage("review24.png", "[Your review]", null, "dlimg") . "&nbsp;<u><b>Your review</b></u></a>";
+	    $x = $a . Ht::img("review24.png", "[Your review]", "dlimg") . "&nbsp;<u><b>Your review</b></u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     } else if (!$myrr && !$rrow && $Me->canReview($prow, null)) {
 	$x = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=re") . "' class='xx'>"
-	    . $Conf->cacheableImage("review24.png", "[Write review]", null, "dlimg") . "&nbsp;<u><b>Write review</b></u></a>";
+	    . Ht::img("review24.png", "[Write review]", "dlimg") . "&nbsp;<u><b>Write review</b></u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
@@ -308,7 +308,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if ($mode != "assign"
 	&& ($prow->reviewType >= REVIEW_SECONDARY || $admin)) {
 	$x = "<a href='" . hoturl("assign", "p=$prow->paperId") . "' class='xx'>"
-	    . $Conf->cacheableImage("assign24.png", "[Assign]", null, "dlimg") . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
+	    . Ht::img("assign24.png", "[Assign]", "dlimg") . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
@@ -316,7 +316,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if (!$allreviewslink && $mode != "assign" && $mode != "contact"
 	&& $Me->canComment($prow, null)) {
 	$x = "<a href=\"" . selfHref(array("c" => "new")) . "#commentnew\" onclick='return open_new_comment(1)' class='xx'>"
-	    . $Conf->cacheableImage("comment24.png", "[Add comment]", null, "dlimg") . "&nbsp;<u>Add comment</u></a>";
+	    . Ht::img("comment24.png", "[Add comment]", "dlimg") . "&nbsp;<u>Add comment</u></a>";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     }
 
@@ -332,7 +332,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 	    $a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;c=$cid[0]#$cid[1]") . "' class='xx'>";
 	else
 	    $a = "<a href=\"#$cid[1]\" class='xx'>";
-	$x = $a . $Conf->cacheableImage("comment24.png", "[$cid[2] response]", null, "dlimg") . "&nbsp;<u>";
+	$x = $a . Ht::img("comment24.png", "[$cid[2] response]", "dlimg") . "&nbsp;<u>";
 	if ($conflictType >= CONFLICT_AUTHOR)
 	    $x .= "<strong>$cid[2] response</strong></u></a>";
 	else
@@ -343,7 +343,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     // override conflict
     if ($allow_admin && !$admin) {
 	$x = "<a href=\"" . selfHref(array("forceShow" => 1)) . "\" class='xx'>"
-	    . $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing";
+	    . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing";
 	$t .= ($t == "" ? "" : $xsep) . $x;
     } else if ($Me->privChair && !$allow_admin) {
         $x = "You can’t override your conflict because this paper has an administrator.";

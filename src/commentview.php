@@ -153,7 +153,7 @@ class CommentView {
 	    && !$editMode && $Me->canComment($prow, $crow))
 	    echo "<div class='floatright'>",
 		"<a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId#comment$crow->commentId"), "' class='xx'>",
-		$Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
+		Ht::img("edit.png", "[Edit]", "b"),
 		"&nbsp;<u>Edit</u></a></div>";
 
 	if (!$crow) {
@@ -263,7 +263,7 @@ class CommentView {
 	    && !$editMode && $Me->canRespond($prow, $crow))
 	    echo "<div class='floatright'>",
 		"<a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId#comment$crow->commentId") . "' class='xx'>",
-		$Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
+                Ht::img("edit.png", "[Edit]", "b"),
 		"&nbsp;<u>Edit</u></a></div>";
 
 	echo "<h3";
@@ -346,7 +346,7 @@ class CommentView {
 	global $Conf;
 	$a = "<a href='" . hoturl("paper", "p=$crow->paperId#comment$crow->commentId") . "'>";
 	$t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a
-	    . $Conf->cacheableImage("comment24.png", "[Comment]", null, "dlimg")
+	    . Ht::img("comment24.png", "[Comment]", "dlimg")
 	    . "</a></td><td class='pl_activityid'>"
 	    . $a . "#$crow->paperId</a></td><td class='pl_activitymain'><small>"
 	    . $a . htmlspecialchars($crow->shortTitle);

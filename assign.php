@@ -562,7 +562,10 @@ if ($Me->canAdminister($prow)) {
                     || $p->topicInterestScore))
 		$pctext .= unparse_preference_span($p);
 	    $pctext .= "</td><td class='pctbass'>"
-                . "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'>" . review_type_icon($revtype, false, "Assignment") . "<img class='next' src='" . hoturl_image("images/_.gif") . "' alt='&gt;' /></a>&nbsp;";
+                . "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'>"
+                . review_type_icon($revtype, false, "Assignment")
+                . Ht::img("_.gif", ">", array("class" => "next"))
+                . "</a>&nbsp;";
 	    // NB manualassign.php also uses the "pcs$contactId" convention
 	    $pctext .= Ht::select("pcs$p->contactId",
 			     array(0 => "None", REVIEW_PRIMARY => "Primary",

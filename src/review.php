@@ -1488,10 +1488,10 @@ $blind\n";
 	    echo "<div class='floatright'>";
 	    if (!$editmode && $Me->canReview($prow, $rrow))
 		echo "<a href='" . hoturl("review", "r=$reviewOrdinal") . "' class='xx'>",
-		    $Conf->cacheableImage("edit.png", "[Edit]", null, "b"),
+		    Ht::img("edit.png", "[Edit]", "b"),
 		    "&nbsp;<u>Edit</u></a><br />";
 	    echo "<a href='" . hoturl("review", "r=$reviewOrdinal&amp;text=1") . "' class='xx'>",
-		$Conf->cacheableImage("txt.png", "[Text]", null, "b"),
+		Ht::img("txt.png", "[Text]", "b"),
 		"&nbsp;<u>Plain text</u></a>",
 		"</div>";
 	}
@@ -1634,7 +1634,7 @@ $blind\n";
 	$barsep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
 	$a = "<a href='" . hoturl("paper", "p=$rrow->paperId#review" . unparseReviewOrdinal($rrow)) . "'>";
 	$t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a
-	    . $Conf->cacheableImage("review24.png", "[Review]", null, "dlimg")
+	    . Ht::img("review24.png", "[Review]", "dlimg")
 	    . "</a></td><td class='pl_activityid'>"
 	    . $a . "#$rrow->paperId</a></td><td class='pl_activitymain'><small>"
 	    . $a . htmlspecialchars($rrow->shortTitle);

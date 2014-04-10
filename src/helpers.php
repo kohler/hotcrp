@@ -403,11 +403,11 @@ function documentDownload($doc, $dlimg_class = "dlimg", $text = null) {
     $sp = "&nbsp;";
     $imgsize = ($dlimg_class[0] == "s" ? "" : "24");
     if ($doc->mimetype == "application/postscript")
-	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("postscript${finalsuffix}${imgsize}.png", "[PS]", null, $dlimg_class);
+	$x = "<a href=\"$p\" class='q nowrap'>" . Ht::img("postscript${finalsuffix}${imgsize}.png", "[PS]", $dlimg_class);
     else if ($doc->mimetype == "application/pdf")
-	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("pdf${finalsuffix}${imgsize}.png", "[PDF]", null, $dlimg_class);
+	$x = "<a href=\"$p\" class='q nowrap'>" . Ht::img("pdf${finalsuffix}${imgsize}.png", "[PDF]", $dlimg_class);
     else
-	$x = "<a href=\"$p\" class='q nowrap'>" . $Conf->cacheableImage("generic${finalsuffix}${imgsize}.png", "[Download]", null, $dlimg_class);
+	$x = "<a href=\"$p\" class='q nowrap'>" . Ht::img("generic${finalsuffix}${imgsize}.png", "[Download]", $dlimg_class);
     if ($text)
 	$x .= $sp . $text;
     if (isset($doc->size) && $doc->size > 0) {
@@ -537,7 +537,7 @@ function viewas_link($cid, $contact = null) {
     $contact = !$contact && is_object($cid) ? $cid : $contact;
     $cid = is_object($contact) ? $cid->email : $cid;
     return '<a href="' . selfHref(array("actas" => $cid))
-        . '">' . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($contact)) . '</a>';
+        . '">' . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($contact))) . '</a>';
 }
 
 function authorTable($aus, $viewAs = null) {
@@ -659,9 +659,9 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
     return "<a id=\"quicklink_" . ($isprev ? "prev" : "next")
 	. "\" href=\"" . hoturl($baseUrl, $urlrest)
 	. "\" onclick=\"return !Miniajax.isoutstanding('revprevform', make_link_callback(this))\">"
-	. ($isprev ? $Conf->cacheableImage("_.gif", "&lt;-", null, "prev") : "")
+	. ($isprev ? Ht::img("_.gif", "<-", "prev") : "")
 	. $paperText
-	. ($isprev ? "" : $Conf->cacheableImage("_.gif", "-&gt;", null, "next"))
+	. ($isprev ? "" : Ht::img("_.gif", "->", "next"))
 	. "</a>";
 }
 

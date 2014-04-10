@@ -220,7 +220,7 @@ class PaperTable {
 		. "<a class=\"xx\" href=\"" . selfHref(array("atab" => $what))
 		. "\" onclick=\"return foldup(this,event$foldnumarg)\" title=\"Edit\">"
 		. "<span style='display:inline-block;position:relative;width:15px'>"
-		. $Conf->cacheableImage("edit.png", "[Edit]", null, "bmabs")
+		. Ht::img("edit.png", "[Edit]", "bmabs")
 		. "</span>&nbsp;<u class=\"x\">Edit</u></a></span>";
 	}
 	$c .= "<div class=\"clear\"></div></div>";
@@ -280,10 +280,10 @@ class PaperTable {
 	$t = array();
 	$tm = defval($data, "timestamp", defval($data, "timeSubmitted", 0));
 	if ($tm > 0)
-	    $t[] = "<span class='nowrap' title='Time of most recent update'>" . $Conf->cacheableImage("_.gif", "Updated", "Time of most recent update", "timestamp12") . " " . $Conf->printableTimestamp($tm) . "</span>";
+	    $t[] = "<span class='nowrap' title='Time of most recent update'>" . Ht::img("_.gif", "Updated", array("class" => "timestamp12", "title" => "Time of most recent update")) . " " . $Conf->printableTimestamp($tm) . "</span>";
 	$sha1 = defval($data, "sha1");
 	if ($sha1)
-	    $t[] = "<span class='nowrap' title='SHA-1 checksum'>" . $Conf->cacheableImage("_.gif", "SHA-1", "SHA-1 checksum", "checksum12") . " " . bin2hex($sha1) . "</span>";
+	    $t[] = "<span class='nowrap' title='SHA-1 checksum'>" . Ht::img("_.gif", "SHA-1", array("class" => "checksum12", "title" => "SHA-1 checksum")) . " " . bin2hex($sha1) . "</span>";
 	if (count($t) > 0)
 	    return "<span class='hint'>" . join(" &nbsp;<span class='barsep'>|</span>&nbsp; ", $t) . "</span>";
 	else
@@ -579,7 +579,7 @@ class PaperTable {
 		$t = trim($t);
 		if ($au[2] != "" && $viewAs !== null && $viewAs->email != $au[2]
 		    && $viewAs->privChair && @$au[4])
-		    $t .= " <a href=\"" . selfHref(array("actas" => $au[2])) . "\">" . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($au)) . "</a>";
+		    $t .= " <a href=\"" . selfHref(array("actas" => $au[2])) . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($au))) . "</a>";
 		$names[] = '<p class="odname">' . $prefix . $t . '</p>';
 		$prefix = "";
 	    }
@@ -1698,7 +1698,7 @@ class PaperTable {
 	global $Conf;
 	echo "<div class='", ($highlight ? "papmodex" : "papmode"),
 	    "'><a href='", $link, "' class='", ($highlight ? "qx" : "xx"),
-	    "'>", $Conf->cacheableImage($image, "[$text]", null, "b"),
+	    "'>", Ht::img($image, "[$text]", "b"),
 	    "&nbsp;<u", ($highlight ? " class='x'" : ""), ">", $text,
 	    "</u></a></div>\n";
     }
@@ -1836,7 +1836,7 @@ class PaperTable {
 	}
 	echo "    <td class='${pboxclass}r'><table class='papcpap'>
 	<tr><td class='papcl'>",
-	    $Conf->cacheableImage("_.gif", "", null, "_"),
+	    Ht::img("_.gif", "", "_"),
 	    "</td><td class='papct'><div class='inpapct'>";
 
 	$form = "<form method='post' action=\""
@@ -1871,7 +1871,7 @@ class PaperTable {
 	$this->echoDivExit();
 
 	echo "</div></td><td class='papcr'>",
-	    $Conf->cacheableImage("_.gif", "", null, "_"),
+	    Ht::img("_.gif", "", "_"),
 	    "</td></tr>\n";
 
 	if (!$this->editable && $this->mode == "pe") {
@@ -1927,7 +1927,7 @@ class PaperTable {
     function _privilegeMessage() {
 	global $Conf;
 	$a = "<a href=\"" . selfHref(array("forceShow" => 0)) . "\">";
-	return $a . $Conf->cacheableImage("override24.png", "[Override]", null, "dlimg")
+	return $a . Ht::img("override24.png", "[Override]", "dlimg")
 	    . "</a>&nbsp;You have used administrator privileges to view and edit "
 	    . "reviews for this paper. (" . $a . "Unprivileged view</a>)";
     }
@@ -1961,7 +1961,7 @@ class PaperTable {
 		"<table class='pbox'><tr><td class='pboxl'></td>",
 		"<td class='pboxr'>",
 		"<a href='", hoturl("review", "p=$prow->paperId&amp;m=r&amp;text=1"), "' class='xx'>",
-		$Conf->cacheableImage("txt24.png", "[Text]", null, "dlimg"),
+		Ht::img("txt24.png", "[Text]", "dlimg"),
 		"&nbsp;<u>", ucfirst(join(" and ", $viewable)),
 		" in plain text</u></a></td></tr></table></div>\n";
 

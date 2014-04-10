@@ -286,7 +286,7 @@ class ContactList extends BaseList {
 		$t .= " <span class='pcrole'>(PC)</span>";
 	    if ($this->contact->privChair && $row->email != $this->contact->email)
 		$t .= " <a href=\"" . hoturl("index", "actas=" . urlencode($row->email)) . "\">"
-		    . $Conf->cacheableImage("viewas.png", "[Act as]", "Act as " . Text::name_html($row))
+                    . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($row)))
 		    . "</a>";
             if ($row->disabled)
                 $t .= " <span class='hint'>(disabled)</span>";
@@ -464,7 +464,8 @@ class ContactList extends BaseList {
 	if ($this->count == 0)
 	    return "";
 
-	$t = "  <tr class='pl_footrow'>\n    <td class='pl_footselector' style='vertical-align: top'>" . $Conf->cacheableImage("_.gif", "^^", null, "placthook") . "</td>\n";
+	$t = "  <tr class='pl_footrow'>\n    <td class='pl_footselector' style='vertical-align: top'>"
+            . Ht::img("_.gif", "^^", array("class" => "placthook")) . "</td>\n";
 	$t .= "    <td id='pplact' class='pl_footer linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
 	// Begin linelinks
