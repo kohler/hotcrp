@@ -13,8 +13,8 @@ var util = require("util");
 
 var server_config = {
     port: 20444,
-    access_log: "log/trackercomet_access_log",
-    error_log: "log/trackercomet_error_log",
+    access_log: "logs/trackercomet_access_log",
+    error_log: "logs/trackercomet_error_log",
     update_checker: true,
     conference_capacity: 1000
 };
