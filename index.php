@@ -4,9 +4,12 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("src/initweb.php");
-if (Navigation::page() !== "index" && is_readable(Navigation::page() . ".php")) {
-    include(Navigation::page() . ".php");
-    exit;
+if (Navigation::page() !== "index") {
+    if (is_readable(Navigation::page() . ".php")) {
+        include(Navigation::page() . ".php");
+        exit;
+    } else
+        go(hoturl("index"));
 }
 
 require_once("src/papersearch.php");
