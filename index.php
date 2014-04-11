@@ -4,6 +4,11 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("src/initweb.php");
+if (Navigation::page() !== "index" && is_readable(Navigation::page() . ".php")) {
+    include(Navigation::page() . ".php");
+    exit;
+}
+
 require_once("src/papersearch.php");
 
 $email_class = "";

@@ -198,9 +198,9 @@ if (function_exists("iconv")) {
 
 // web helpers
 
-function hoturl($page, $options = null) {
-    global $ConfSiteBase, $ConfSiteSuffix, $Opt, $Me, $paperTable, $CurrentList;
-    $t = $ConfSiteBase . $page . $ConfSiteSuffix;
+function hoturl_site_relative($page, $options = null) {
+    global $ConfSiteSuffix, $Opt, $Me, $paperTable, $CurrentList;
+    $t = $page . $ConfSiteSuffix;
     // see also redirectSelf
     if ($options && is_array($options)) {
         $x = "";
@@ -230,7 +230,7 @@ function hoturl($page, $options = null) {
         && !preg_match($are . 'ls=/', $options))
         $options .= "&amp;ls=$CurrentList";
     // create slash-based URLs if appropriate
-    if ($options && !defval($Opt, "disableSlashURLs")) {
+    if ($options && !@$Opt["disableSlashURLs"]) {
         if ($page == "review"
             && preg_match($are . 'r=(\d+[A-Z]+)' . $zre, $options, $m)) {
             $t .= "/" . $m[2];
@@ -258,6 +258,20 @@ function hoturl($page, $options = null) {
 	return $t . $anchor;
 }
 
+function hoturl($page, $options = null) {
+    global $ConfSiteBase, $ConfSiteSuffix;
+    $t = hoturl_site_relative($page, $options);
+    if ($page !== "index")
+        return $ConfSiteBase . $t;
+    else {
+        $trail = substr($t, 5 + strlen($ConfSiteSuffix));
+        if ($ConfSiteBase !== "")
+            return $ConfSiteBase . $trail;
+        else
+            return Navigation::site_path() . $trail;
+    }
+}
+
 function hoturl_post($page, $options = null) {
     if (is_array($options))
         $options["post"] = post_value();
@@ -269,8 +283,8 @@ function hoturl_post($page, $options = null) {
 }
 
 function hoturl_absolute($page, $options = null) {
-    global $Opt, $ConfSiteBase;
-    return $Opt["paperSite"] . "/" . substr(hoturl($page, $options), strlen($ConfSiteBase));
+    global $Opt;
+    return $Opt["paperSite"] . "/" . hoturl_site_relative($page, $options);
 }
 
 
@@ -296,7 +310,7 @@ function fileUploaded(&$var) {
     }
 }
 
-function selfHref($extra = array(), $htmlspecialchars = true) {
+function selfHref($extra = array(), $options = null) {
     global $CurrentList, $ConfSiteSuffix, $Opt;
     // clean parameters from pathinfo URLs
     foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
@@ -315,15 +329,21 @@ function selfHref($extra = array(), $htmlspecialchars = true) {
         && !isset($_REQUEST["ls"]) && !array_key_exists("ls", $extra))
 	$param .= "&ls=" . $CurrentList;
 
-    $base = request_script_base();
-    $uri = hoturl($base ? $base : "index", $param ? substr($param, 1) : "");
+    $param = $param ? substr($param, 1) : "";
+    if (!$options || !@$options["site_relative"])
+        $uri = hoturl(Navigation::page(), $param);
+    else
+        $uri = hoturl_site_relative(Navigation::page(), $param);
     if (isset($extra["anchor"]))
 	$uri .= "#" . $extra["anchor"];
-    return $htmlspecialchars ? htmlspecialchars($uri) : $uri;
+    if (!$options || !@$options["raw"])
+        return $uri;
+    else
+        return htmlspecialchars($uri);
 }
 
 function redirectSelf($extra = array()) {
-    go(selfHref($extra, false));
+    go(selfHref($extra, array("raw" => true)));
 }
 
 function validateEmail($email) {
@@ -605,9 +625,7 @@ class SessionList {
         return $empty ? $empty : $oldest;
     }
     static function create($listid, $ids, $description, $url) {
-        global $Me, $ConfSiteBase, $Now;
-        if ($url && $ConfSiteBase && str_starts_with($url, $ConfSiteBase))
-            $url = substr($url, strlen($ConfSiteBase));
+        global $Me, $Now;
         return (object) array("listid" => $listid, "ids" => $ids,
                               "description" => $description,
                               "url" => $url, "timestamp" => $Now,

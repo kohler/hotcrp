@@ -9,7 +9,8 @@ require_once("init.php");
 // These are pages that we've removed from the source. But some user might
 // have an old version of the page lying around their directory. Don't run
 // that code; redirect to index.
-if (array_search(request_script_base(), array("account", "contactauthors", "contacts", "login", "logout")) !== false)
+if (array_search(Navigation::page(),
+                 array("account", "contactauthors", "contacts", "login", "logout")) !== false)
     go();
 
 
@@ -91,7 +92,7 @@ initialize_user();
 // Perhaps redirect to https
 if (@$Opt["redirectToHttps"]
     && (!@$_SERVER["HTTPS"] || $_SERVER["HTTPS"] == "off")) {
-    $url = make_absolute_uri(selfHref(array(), false));
+    $url = Navigation::make_absolute(selfHref(array(), array("raw" => true)));
     if (str_starts_with($url, "http:"))
         go("https:" . substr($url, 5));
 }

@@ -21,7 +21,7 @@ if (isset($_REQUEST["p"]))
 else if (isset($_REQUEST["paperId"]))
     $paperId = rcvtint($_REQUEST["paperId"]);
 else {
-    $s = $orig_s = preg_replace(',\A/*,', "", $_SERVER["PATH_INFO"]);
+    $s = $orig_s = preg_replace(',\A/*,', "", Navigation::path());
     if (str_starts_with($s, $Opt["downloadPrefix"]))
         $s = substr($s, strlen($Opt["downloadPrefix"]));
     if (preg_match(',\Ap(?:aper)?([1-9]\d*)/+(.*)\z,', $s, $m)) {

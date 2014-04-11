@@ -1003,7 +1003,7 @@ class PaperList extends BaseList {
     }
 
     public function text($listname, $options = array()) {
-	global $Conf, $ConfSiteBase;
+	global $Conf;
 
         if (!$this->_prepare())
             return null;
@@ -1088,7 +1088,7 @@ class PaperList extends BaseList {
 	}
 
 	// header cells
-	$url = $this->search->url();
+	$url = $this->search->url_site_relative();
 	if (!defval($options, "noheader")) {
 	    $colhead .= " <thead>\n  <tr class=\"pl_headrow\">\n";
 	    $ord = 0;
@@ -1096,7 +1096,8 @@ class PaperList extends BaseList {
                                                           defval($options, "header_links"));
 
 	    if ($this->sortable && $url) {
-		$sortUrl = htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
+                global $ConfSiteBase;
+		$sortUrl = htmlspecialchars($ConfSiteBase . $url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
 		$q = "<a class='pl_sort' title='Change sort' href=\"" . $sortUrl;
 	    } else
 		$sortUrl = false;
@@ -1181,9 +1182,6 @@ class PaperList extends BaseList {
 	    $sl = $this->search->create_session_list_object($rstate->ids, self::_listDescription($listname), $this->sortdef());
 	    if (isset($_REQUEST["sort"]))
 		$url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
-	    if ($ConfSiteBase
-		&& substr($url, 0, strlen($ConfSiteBase)) == $ConfSiteBase)
-		$url = substr($url, strlen($ConfSiteBase));
 	    $sl->url = $url;
             SessionList::change($this->listNumber, $sl);
 	}

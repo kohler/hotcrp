@@ -44,9 +44,9 @@ if (!isset($_REQUEST["u"]) && isset($_REQUEST["user"]))
     $_REQUEST["u"] = $_REQUEST["user"];
 if (!isset($_REQUEST["u"]) && isset($_REQUEST["contact"]))
     $_REQUEST["u"] = $_REQUEST["contact"];
-if (!isset($_REQUEST["u"]) && isset($_SERVER["PATH_INFO"])
-    && preg_match(',\A/(?:new|[^\s/]+)\z,i', $_SERVER["PATH_INFO"]))
-    $_REQUEST["u"] = substr($_SERVER["PATH_INFO"], 1);
+if (!isset($_REQUEST["u"])
+    && preg_match(',\A/(?:new|[^\s/]+)\z,i', Navigation::path()))
+    $_REQUEST["u"] = substr(Navigation::path(), 1);
 
 
 if (!$Me->privChair)

@@ -6,13 +6,13 @@
 global $Opt;
 
 function set_multiconference() {
-    global $ConfSiteBase, $ConfMulticonf, $Opt;
+    global $ConfMulticonf, $Opt;
 
     if (!@$ConfMulticonf) {
-        if (($multis = @$Opt["multiconferenceAnalyzer"])
-            && ($base = request_absolute_uri_base(true))) {
+        $base = Navigation::site_absolute(true);
+        if (($multis = @$Opt["multiconferenceAnalyzer"])) {
             foreach (is_array($multis) ? $multis : array($multis) as $multi) {
-                list($match, $replace) = explode(" ", $Opt["multiconferenceAnalyzer"]);
+                list($match, $replace) = explode(" ", $multi);
                 if (preg_match("`\\A$match`", $base, $m)) {
                     $ConfMulticonf = $replace;
                     for ($i = 1; $i < count($m); ++$i)
@@ -20,15 +20,8 @@ function set_multiconference() {
                     break;
                 }
             }
-        } else {
-            $url = explode("/", $_SERVER["PHP_SELF"]);
-            $npop = strlen($ConfSiteBase) / 3;
-            if ($url[count($url) - 1] == "")
-                $npop++;
-            if ($npop + 2 > count($url))
-                return;
-            $ConfMulticonf = $url[count($url) - $npop - 2];
-        }
+        } else if (preg_match(',/([^/]+)/\z,', $base, $m))
+            $ConfMulticonf = $m[1];
 
         if (!@$ConfMulticonf
             || !preg_match(',\A[-a-zA-Z0-9._]+\z,', $ConfMulticonf)

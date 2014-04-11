@@ -90,6 +90,7 @@ lib/ldaplogin.php
 lib/login.php
 lib/message.php
 lib/mimetype.php
+lib/navigation.php
 lib/qobject.php
 lib/redirect.php
 lib/restoredb.sh

@@ -188,7 +188,6 @@ class ReviewField {
     }
 
     public function unparse_graph($v, $style, $myscore) {
-	global $ConfSiteBase, $ConfSiteSuffix;
         assert($this->has_options);
         $max = count($this->options);
 
@@ -199,20 +198,19 @@ class ReviewField {
 	if ($v->n > 1 && $v->stddev)
 	    $avgtext .= sprintf(" &plusmn; %0.2f", $v->stddev);
 
-	$url = "";
+	$args = "v=";
 	for ($key = 1; $key <= $max; $key++)
-	    $url .= ($url == "" ? "" : ",") . $v->v[$key];
-	$url = "${ConfSiteBase}scorechart$ConfSiteSuffix?v=$url";
+	    $args .= ($args == "v=" ? "" : ",") . $v->v[$key];
 	if ($myscore && $v->v[$myscore] > 0)
-	    $url .= "&h=$myscore";
+	    $args .= "&amp;h=$myscore";
 	if ($this->option_letter)
-	    $url .= "&c=" . chr($this->option_letter - 1);
+	    $args .= "&amp;c=" . chr($this->option_letter - 1);
 
 	if ($style == 1) {
-	    $retstr = "<img src=\"" . htmlspecialchars($url) . "&amp;s=1\" alt=\"$avgtext\" title=\"$avgtext\" width='" . (5 * $max + 3)
+	    $retstr = "<img src=\"" . hoturl("scorechart", "$args&amp;s=1") . "\" alt=\"$avgtext\" title=\"$avgtext\" width='" . (5 * $max + 3)
 		. "' height='" . (5 * max(3, max($v->v)) + 3) . "' />";
 	} else if ($style == 2) {
-	    $retstr = "<div class='sc'><img src=\"" . htmlspecialchars($url) . "&amp;s=2\" alt=\"$avgtext\" title=\"$avgtext\" /><br />";
+	    $retstr = "<div class='sc'><img src=\"" . hoturl("scorechart", "$args&amp;s=2") . "\" alt=\"$avgtext\" title=\"$avgtext\" /><br />";
 	    if ($this->option_letter) {
 		for ($key = $max; $key >= 1; $key--)
                     $retstr .= ($key < $max ? " " : "") . "<span class='" . $this->value_class($key) . "'>" . $v->v[$key] . "</span>";

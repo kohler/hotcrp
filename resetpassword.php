@@ -5,8 +5,7 @@
 
 require_once("src/initweb.php");
 if (!isset($_REQUEST["resetcap"])
-    && isset($_SERVER["PATH_INFO"])
-    && preg_match(',\A/(1[-\w]+)(?:/|\z),i', $_SERVER["PATH_INFO"], $m))
+    && preg_match(',\A/(1[-\w]+)(?:/|\z),i', Navigation::path(), $m))
     $_REQUEST["resetcap"] = $m[1];
 
 if (!isset($_REQUEST["resetcap"]))

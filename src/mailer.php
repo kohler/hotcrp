@@ -160,7 +160,7 @@ class Mailer {
     }
 
     function expandvar($what, $isbool = false) {
-	global $Conf, $ConfSiteBase, $ConfSiteSuffix, $Opt;
+	global $Conf, $ConfSiteSuffix, $Opt;
 	$len = strlen($what);
 
 	if ($len > 7 && substr($what, 0, 5) == "%OPT(" && substr($what, $len - 2) == ")%") {

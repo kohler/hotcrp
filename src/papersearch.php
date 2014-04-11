@@ -396,7 +396,7 @@ class PaperSearch {
 	if (isset($opt["urlbase"]))
 	    $this->urlbase = $opt["urlbase"];
 	else {
-	    $this->urlbase = hoturl("search", "t=" . urlencode($this->limitName));
+	    $this->urlbase = hoturl_site_relative("search", "t=" . urlencode($this->limitName));
 	    if ($qtype != "n")
 		$this->urlbase .= "&qt=" . urlencode($qtype);
 	}
@@ -2598,11 +2598,9 @@ class PaperSearch {
 	return $x;
     }
 
-    function url() {
-        global $ConfSiteBase;
+    function url_site_relative() {
 	$url = $this->urlbase;
-        if ($this->q != ""
-            || substr($this->urlbase, strlen($ConfSiteBase), 6) == "search")
+        if ($this->q != "" || substr($this->urlbase, 0, 6) == "search")
 	    $url .= "&q=" . urlencode($this->q);
 	return $url;
     }
@@ -2687,7 +2685,8 @@ class PaperSearch {
 
     function create_session_list_object($ids, $listname, $sort = "") {
         $l = SessionList::create($this->listId($sort), $ids,
-                                 $this->description($listname), $this->url());
+                                 $this->description($listname),
+                                 $this->url_site_relative());
 	if ($this->matchPreg)
 	    $l->matchPreg = $this->matchPreg;
 	return $l;

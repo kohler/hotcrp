@@ -121,19 +121,12 @@ function set_path_variables() {
             $ConfSitePATH = "/var/www/html";
     }
 
-    if (@$ConfSiteBase === null) {
-        if (@$_SERVER["PATH_INFO"])
-            $ConfSiteBase = str_repeat("../", substr_count($_SERVER["PATH_INFO"], "/"));
-        else
-            $ConfSiteBase = "";
-    }
-
-    if (@$ConfSiteSuffix === null) {
-        $ConfSiteSuffix = ".php";
-        if (function_exists("apache_get_modules")
-            && array_search("mod_rewrite", apache_get_modules()) !== false)
-            $ConfSiteSuffix = "";
-    }
+    require_once("$ConfSitePATH/lib/navigation.php");
+    Navigation::analyze();
+    if (@$ConfSiteBase === null)
+        $ConfSiteBase = Navigation::site_relative();
+    if (@$ConfSiteSuffix === null)
+        $ConfSiteSuffix = Navigation::php_suffix();
 }
 set_path_variables();
 

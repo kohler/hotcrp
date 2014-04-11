@@ -2153,12 +2153,12 @@ class PaperTable {
 	    $_REQUEST["reviewId"] = $_REQUEST["r"];
 	if (!isset($_REQUEST["commentId"]) && isset($_REQUEST["c"]))
 	    $_REQUEST["commentId"] = $_REQUEST["c"];
-	if (!isset($_REQUEST["paperId"]) && isset($_SERVER["PATH_INFO"])
-	    && preg_match(',\A/(?:new|\d+)\z,i', $_SERVER["PATH_INFO"]))
-	    $_REQUEST["paperId"] = substr($_SERVER["PATH_INFO"], 1);
-	else if (!isset($_REQUEST["reviewId"]) && isset($_SERVER["PATH_INFO"])
-		 && preg_match(',\A/\d+[A-Z]+\z,i', $_SERVER["PATH_INFO"]))
-	    $_REQUEST["reviewId"] = substr($_SERVER["PATH_INFO"], 1);
+	if (!isset($_REQUEST["paperId"])
+	    && preg_match(',\A/(?:new|\d+)\z,i', Navigation::path()))
+	    $_REQUEST["paperId"] = substr(Navigation::path(), 1);
+	else if (!isset($_REQUEST["reviewId"])
+		 && preg_match(',\A/\d+[A-Z]+\z,i', Navigation::path()))
+	    $_REQUEST["reviewId"] = substr(Navigation::path(), 1);
 	if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["reviewId"])
 	    && preg_match('/^(\d+)[A-Z]+$/', $_REQUEST["reviewId"], $m))
 	    $_REQUEST["paperId"] = $m[1];

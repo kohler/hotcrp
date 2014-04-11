@@ -19,9 +19,9 @@ $topicTitles = array("topics" => "Help topics",
 		     "formulas" => "Formulas",
 		     "chair" => "Chair’s guide");
 
-if (!isset($_REQUEST["t"]) && isset($_SERVER["PATH_INFO"])
-    && preg_match(',\A/(\w+)\z,i', $_SERVER["PATH_INFO"]))
-    $_REQUEST["t"] = substr($_SERVER["PATH_INFO"], 1);
+if (!isset($_REQUEST["t"])
+    && preg_match(',\A/(\w+)\z,i', Navigation::path()))
+    $_REQUEST["t"] = substr(Navigation::path(), 1);
 $topic = defval($_REQUEST, "t", "topics");
 if ($topic == "syntax")
     $topic = "keywords";

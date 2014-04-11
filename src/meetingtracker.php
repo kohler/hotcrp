@@ -49,7 +49,7 @@ class MeetingTracker {
         global $Opt;
         if (!($comet_url = @$Opt["trackerCometSite"]))
             return;
-        $conference = request_absolute_uri_dir();
+        $conference = Navigation::site_absolute();
 
         if (!preg_match(',\Ahttps?:,', $comet_url)) {
             preg_match(',\A(.*:)(//[^/]*),', $conference, $m);

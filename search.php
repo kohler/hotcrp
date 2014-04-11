@@ -1105,7 +1105,6 @@ if ($Me->privChair) {
 
 // search
 $Conf->header("Search", "search", actionBar());
-unset($_REQUEST["urlbase"]);
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, array("sort" => true, "list" => true,

@@ -231,7 +231,7 @@ class Conference {
 
         // remove final slash from $Opt["paperSite"]
         if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
-            $Opt["paperSite"] = request_absolute_uri_dir();
+            $Opt["paperSite"] = Navigation::site_absolute();
 	$Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
 
         // set sessionName and downloadPrefix
@@ -1745,7 +1745,7 @@ class Conference {
     //
 
     function header_css_link($css) {
-        global $ConfSiteBase, $ConfSitePATH, $Opt;
+        global $ConfSitePATH, $Opt;
         echo '<link rel="stylesheet" type="text/css" href="';
         if (str_starts_with($css, "stylesheets/")
             || !preg_match(',\A(?:https?:|/),i', $css))

@@ -28,7 +28,7 @@ $dl = $Me->deadlines();
 
 if (@$dl["tracker"] && @$Opt["trackerCometSite"])
     $dl["tracker_poll"] = $Opt["trackerCometSite"]
-        . "?conference=" . urlencode(request_absolute_uri_dir())
+        . "?conference=" . urlencode(Navigation::site_absolute(true))
         . "&poll=" . urlencode(MeetingTracker::tracker_status($dl["tracker"]));
 if (@$_REQUEST["checktracker"]) {
     $tracker = @$dl["tracker"] ? $dl["tracker"] : $Conf->setting_json("tracker");

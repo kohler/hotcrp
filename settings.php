@@ -7,9 +7,9 @@ require_once("src/initweb.php");
 if ($Me->is_empty() || !$Me->privChair)
     $Me->escape();
 
-if (!isset($_REQUEST["group"]) && isset($_SERVER["PATH_INFO"])
-    && preg_match(',\A/(\w+)\z,i', $_SERVER["PATH_INFO"]))
-    $_REQUEST["group"] = substr($_SERVER["PATH_INFO"], 1);
+if (!isset($_REQUEST["group"])
+    && preg_match(',\A/(\w+)\z,i', Navigation::path()))
+    $_REQUEST["group"] = substr(Navigation::path(), 1);
 
 $Highlight = defval($_SESSION, "settings_highlight", array());
 unset($_SESSION["settings_highlight"]);
