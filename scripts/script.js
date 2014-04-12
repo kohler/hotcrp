@@ -364,6 +364,9 @@ function reload() {
 }
 
 function run_comet() {
+    if (!dl.tracker_poll_corrected
+        && !/^(?:https?:|\/)/.test(dl.tracker_poll))
+        dl.tracker_poll = hotcrp_base + dl.tracker_poll;
     if (dl.tracker_poll && !tracker_comet_error)
         jQuery.ajax({
             url: dl.tracker_poll,
