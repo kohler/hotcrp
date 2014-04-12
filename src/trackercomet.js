@@ -342,7 +342,7 @@ function server(req, res) {
     if ((x = opt["init-file"] || opt.config || opt.f))
 	eval(fs.readFileSync(x, "utf8"));
     else if (!opt["no-init-file"] && fs.existsSync("conf/trackercomet.opt.js"))
-	eval(fs.readFileSync("jkconfig.js", "utf8"));
+	eval(fs.readFileSync("conf/trackercomet.opt.js", "utf8"));
 
     access_log_name = opt["access-log"] || server_config.access_log;
     if (access_log_name == "-" || access_log_name == "stdout")
