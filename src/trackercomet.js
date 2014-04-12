@@ -404,5 +404,7 @@ function server_error(e) {
 
 (function () {
     var s = http.createServer(server);
-    s.on("error", server_error).listen(server_config.port, server_listener);
+    s.on("error", server_error).listen(server_config.port,
+                                       server_config.listen_host || null,
+                                       server_listener);
 })();
