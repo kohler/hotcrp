@@ -48,7 +48,6 @@ README.md
 assign.php
 autoassign.php
 bulkassign.php
-cacheable.php
 checkupdates.php
 comment.php
 deadlines.php
