@@ -100,11 +100,6 @@ lib/text.php
 lib/unicodehelper.php
 lib/xlsx.php
 
-scripts/.htaccess
-scripts/jquery-1.10.2.min.js
-scripts/script.js
-scripts/supersleight.js
-
 src/.htaccess
 src/assigners.php
 src/banal
@@ -145,9 +140,6 @@ src/schema.sql
 src/trackercomet.js
 src/updateschema.php
 src/useractions.php
-
-stylesheets/.htaccess
-stylesheets/style.css
 
 Code/.htaccess
 
@@ -232,5 +224,13 @@ images/txt24.png
 images/view18.png
 images/view24.png
 images/viewas.png
+
+scripts/.htaccess
+scripts/jquery-1.10.2.min.js
+scripts/script.js
+scripts/supersleight.js
+
+stylesheets/.htaccess
+stylesheets/style.css
 
 EOF
