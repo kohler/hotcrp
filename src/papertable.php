@@ -1665,7 +1665,7 @@ class PaperTable {
 	global $Conf, $Me;
 	$prow = $this->prow;
         if (($prow->managerContactId || ($Me->privChair && $this->mode == "assign"))
-            && $Me->canViewPaperManager($prow))
+            && $Me->can_view_paper_manager($prow))
             $this->papstripManager($Me->privChair);
 	if ($Me->canViewTags($prow))
 	    $this->papstripTags("review");
@@ -1684,9 +1684,9 @@ class PaperTable {
 	    && $prow->shepherdContactId == 0 && $this->mode != "assign";
 	if ($Me->canSetOutcome($prow))
 	    $this->papstripOutcomeSelector();
-	if ($Me->actPC($prow))
+	if ($Me->can_view_lead($prow))
 	    $this->papstripLead($this->mode == "assign");
-	if ($Me->actPC($prow) || $Me->canViewDecision($prow))
+	if ($Me->can_view_shepherd($prow))
 	    $this->papstripShepherd($this->mode == "assign", $foldShepherd);
 
 	if ($Me->allow_review_assignment($prow)

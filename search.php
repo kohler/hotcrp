@@ -547,7 +547,7 @@ if (($getaction == "lead" || $getaction == "shepherd")
     if ($result) {
 	$texts = array();
 	while (($row = PaperInfo::fetch($result, $Me)))
-	    if ($Me->actPC($row, true) || ($shep && $Me->canViewDecision($row)))
+	    if ($shep ? $Me->can_view_shepherd($row, true) : $Me->can_view_lead($row, true))
 		arrayappend($texts[$paperselmap[$row->paperId]],
 			    array($row->paperId, $row->title, $row->email, trim("$row->firstName $row->lastName")));
 	ksort($texts);

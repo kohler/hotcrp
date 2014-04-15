@@ -2118,14 +2118,13 @@ class PaperSearch {
                     }
             }
             if ($t->type == "pf" && $t->value[0] == "leadContactId"
-                && !$this->contact->actPC($row))
+                && !$this->contact->can_view_lead($row))
                 return false;
             if ($t->type == "pf" && $t->value[0] == "shepherdContactId"
-                && !($this->contact->actPC($row)
-                     || $this->contact->canViewDecision($row)))
+                && !$this->contact->can_view_shepherd($row))
                 return false;
             if ($t->type == "pf" && $t->value[0] == "managerContactId"
-                && !$this->contact->canViewPaperManager($row))
+                && !$this->contact->can_view_paper_manager($row))
                 return false;
         }
 	if ($flags & self::F_FALSE)

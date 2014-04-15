@@ -1142,7 +1142,7 @@ class Contact {
 	return $this->canViewPaper($prow, $whyNot, true);
     }
 
-    function canViewPaperManager($prow) {
+    function can_view_paper_manager($prow) {
         global $Opt;
         if ($this->privChair)
             return true;
@@ -1151,6 +1151,22 @@ class Contact {
         $rights = $this->rights($prow);
         return $prow->managerContactId == $this->contactId
             || ($rights->potential_reviewer && !@$Opt["hideManager"]);
+    }
+
+    function can_view_lead($prow, $forceShow = null) {
+        if ($prow) {
+            $rights = $this->rights($prow, $forceShow);
+            return $rights->can_administer
+                || $prow->leadContactId == $this->contactId
+                || (($rights->allow_pc || $rights->allow_review)
+                    && $this->canViewReviewerIdentity($prow, null, $forceShow));
+        } else
+            return $this->privChair || $this->isPC;
+    }
+
+    function can_view_shepherd($prow, $forceShow = null) {
+        return $this->actPC($prow, $forceShow)
+            || $this->canViewDecision($prow, $forceShow);
     }
 
     function allowViewAuthors($prow, &$whyNot = null) {
@@ -1678,14 +1694,6 @@ class Contact {
 	    || !$Conf->is_review_blind($rrow))
 	    return true;
 	return false;
-    }
-
-    function canViewDiscussionLead($prow, $forceShow) {
-        $rights = $this->rights($prow, $forceShow);
-        return $rights->can_administer
-            || $prow->leadContactId == $this->contactId
-            || (($rights->allow_pc || $rights->allow_review)
-                && $this->canViewReviewerIdentity($prow, null, $forceShow));
     }
 
     function canViewCommentIdentity($prow, $crow, $forceShow) {

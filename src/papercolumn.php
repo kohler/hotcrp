@@ -1262,10 +1262,10 @@ class LeadPaperColumn extends PaperColumn {
     }
     public function content_empty($pl, $row) {
         return !$row->leadContactId
-            || !$pl->contact->canViewDiscussionLead($row, true);
+            || !$pl->contact->can_view_lead($row, true);
     }
     public function content($pl, $row) {
-        $visible = $pl->contact->canViewDiscussionLead($row, null);
+        $visible = $pl->contact->can_view_lead($row, null);
         return $pl->_contentPC($row, $row->leadContactId, $visible);
     }
 }
@@ -1284,12 +1284,12 @@ class ShepherdPaperColumn extends PaperColumn {
     }
     public function content_empty($pl, $row) {
         return !$row->shepherdContactId
-            || !$pl->contact->canViewDecision($row, true);
+            || !$pl->contact->can_view_shepherd($row, true);
         // XXX external reviewer can view shepherd even if external reviewer
         // cannot view reviewer identities? WHO GIVES A SHIT
     }
     public function content($pl, $row) {
-        $visible = $pl->contact->actPC($row) || $pl->contact->canViewDecision($row);
+        $visible = $pl->contact->can_view_shepherd($row, null);
         return $pl->_contentPC($row, $row->shepherdContactId, $visible);
     }
 }
