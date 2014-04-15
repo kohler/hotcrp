@@ -5,7 +5,9 @@
 
 require_once("src/initweb.php");
 if (Navigation::page() !== "index") {
-    if (is_readable(Navigation::page() . ".php")) {
+    if (is_readable(Navigation::page() . ".php")
+        /* The following is paranoia (currently can't happen): */
+        && strpos(Navigation::page(), "/") === false) {
         include(Navigation::page() . ".php");
         exit;
     } else
