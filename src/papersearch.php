@@ -2118,10 +2118,10 @@ class PaperSearch {
                     }
             }
             if ($t->type == "pf" && $t->value[0] == "leadContactId"
-                && !$this->contact->can_view_lead($row))
+                && !$this->contact->can_view_lead($row, true))
                 return false;
             if ($t->type == "pf" && $t->value[0] == "shepherdContactId"
-                && !$this->contact->can_view_shepherd($row))
+                && !$this->contact->can_view_shepherd($row, true))
                 return false;
             if ($t->type == "pf" && $t->value[0] == "managerContactId"
                 && !$this->contact->can_view_paper_manager($row))
