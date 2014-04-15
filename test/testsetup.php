@@ -47,4 +47,21 @@ $assignset = new AssignmentSet($Admin, true);
 $assignset->parse($json->assignments_1, null, null);
 $assignset->execute($Now);
 
+function assert_location() {
+    $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+    return " in " . $bt[1]["file"] . " on line " . $bt[1]["line"];
+}
+
+function assert_eqq($a, $b) {
+    if ($a !== $b)
+        trigger_error("Assertion failed, " . var_export($a, true) . " !== " . var_export($b, true)
+                      . assert_location(), E_USER_WARNING);
+}
+
+function assert_neqq($a, $b) {
+    if ($a === $b)
+        trigger_error("Assertion failed, " . var_export($a, true) . " !== " . var_export($b, true)
+                      . assert_location(), E_USER_WARNING);
+}
+
 echo "* Tests initialized.\n";

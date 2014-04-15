@@ -133,32 +133,58 @@ class PaperActions {
 	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "rank")), true);
     }
 
-    static function setLeadOrShepherd($prow, $type, $ajaxexit = true) {
-        global $Conf, $Me, $Error, $OK;
-	$ajax = defval($_REQUEST, "ajax", false);
-	if ($type == "manager" ? !$Me->privChair : !$Me->canAdminister($prow)) {
+    private static function set_paper_pc($prow, $value, $contact, $ajax, $type) {
+        global $Conf, $Error, $OK;
+
+        // canonicalize $value
+        if ($value === "0" || $value === 0 || $value === "none")
+            $pc = 0;
+        else if (is_string($value))
+            $pc = pcByEmail($value);
+        else if (is_object($value) && ($value instanceof Contact))
+            $pc = $value;
+        else
+            $pc = null;
+
+	if ($type == "manager" ? !$contact->privChair : !$contact->canAdminister($prow)) {
 	    $Conf->errorMsg("You don’t have permission to set the $type.");
 	    $Error[$type] = true;
-	} else if (isset($_REQUEST[$type])
-		   && ($_REQUEST[$type] === "0"
-		       || ($pc = pcByEmail($_REQUEST[$type])))) {
-	    $contactId = ($_REQUEST[$type] === "0" ? 0 : $pc->contactId);
+	} else if ($pc === 0
+                   || ($pc && $pc->isPC && $pc->canReview($prow, null))) {
+	    $contactId = ($pc === 0 ? 0 : $pc->contactId);
 	    $field = $type . "ContactId";
 	    if ($contactId != $prow->$field) {
 		$Conf->qe("update Paper set $field=$contactId where paperId=$prow->paperId", "while updating $type");
-		if (!$Conf->setting("paperlead"))
+		if ($contactId && !$Conf->setting("paperlead"))
                     $Conf->save_setting("paperlead", 1);
 		if ($OK)
-		    $Conf->log("set $type to " . $_REQUEST[$type], $Me, $prow->paperId);
+		    $Conf->log("set $type to " . $_REQUEST[$type], $contact, $prow->paperId);
 	    }
 	    if ($OK && $ajax)
 		$Conf->confirmMsg("Saved");
+        } else if ($pc) {
+            $Conf->errorMsg(Text::user_html($pc) . " can’t be the $type for paper #" . $prow->paperId . ".");
+            $Error[$type] = true;
 	} else {
-	    $Conf->errorMsg("Bad $type setting “" . htmlspecialchars(defval($_REQUEST, $type, "")) . "”.");
+	    $Conf->errorMsg("Bad $type setting “" . htmlspecialchars($value) . "”.");
 	    $Error[$type] = true;
 	}
-	if ($ajax && $ajaxexit)
-	    $Conf->ajaxExit(array("ok" => $OK && !defval($Error, $type)));
+
+	if ($ajax)
+	    $Conf->ajaxExit(array("ok" => $OK && !@$Error[$type]));
+        return $OK && !@$Error[$type];
+    }
+
+    static function set_lead($prow, $value, $contact, $ajax = false) {
+        return self::set_paper_pc($prow, $value, $contact, $ajax, "lead");
+    }
+
+    static function set_shepherd($prow, $value, $contact, $ajax = false) {
+        return self::set_paper_pc($prow, $value, $contact, $ajax, "shepherd");
+    }
+
+    static function set_manager($prow, $value, $contact, $ajax = false) {
+        return self::set_paper_pc($prow, $value, $contact, $ajax, "manager");
     }
 
     static function setTags($prow) {

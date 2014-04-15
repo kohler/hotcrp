@@ -162,6 +162,7 @@
         {"name":"Robert Morris", "email": "rtm@eecs.harvard.edu", "affiliation": "Harvard University", "contact": true}
     ],
     "submission": {"content": "%PDF-whatever12"},
+    "pc_conflicts": ["shenker@parc.xerox.com"],
     "submitted": true
 },
 {

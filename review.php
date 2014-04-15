@@ -378,15 +378,15 @@ if (isset($_REQUEST["setrank"]) && check_post()) {
     loadRows();
 }
 if (isset($_REQUEST["setlead"]) && check_post()) {
-    PaperActions::setLeadOrShepherd($prow, "lead");
+    PaperActions::set_lead($prow, @$_REQUEST["lead"], $Me, @$_REQUEST["ajax"]);
     loadRows();
 }
 if (isset($_REQUEST["setshepherd"]) && check_post()) {
-    PaperActions::setLeadOrShepherd($prow, "shepherd");
+    PaperActions::set_shepherd($prow, @$_REQUEST["shepherd"], $Me, @$_REQUEST["ajax"]);
     loadRows();
 }
 if (isset($_REQUEST["setmanager"]) && check_post()) {
-    PaperActions::setLeadOrShepherd($prow, "manager");
+    PaperActions::set_manager($prow, @$_REQUEST["manager"], $Me, @$_REQUEST["ajax"]);
     loadRows();
 }
 if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_post()) {

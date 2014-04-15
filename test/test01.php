@@ -13,13 +13,13 @@ $Conf->save_setting("sub_sub", $Now + 10);
 
 // load users
 $user_chair = Contact::find_by_email("chair@_.com");
-$user_estrin = Contact::find_by_email("estrin@usc.edu");
-$user_kohler = Contact::find_by_email("kohler@seas.harvard.edu");
-$user_marina = Contact::find_by_email("marina@poema.ru");
-$user_van = Contact::find_by_email("van@ee.lbl.gov");
-$user_mgbaker = Contact::find_by_email("mgbaker@cs.stanford.edu");
-$user_shenker = Contact::find_by_email("shenker@parc.xerox.com");
-$user_jon = Contact::find_by_email("jon@cs.ucl.ac.uk");
+$user_estrin = Contact::find_by_email("estrin@usc.edu"); // pc
+$user_kohler = Contact::find_by_email("kohler@seas.harvard.edu"); // none
+$user_marina = Contact::find_by_email("marina@poema.ru"); // pc
+$user_van = Contact::find_by_email("van@ee.lbl.gov"); // none
+$user_mgbaker = Contact::find_by_email("mgbaker@cs.stanford.edu"); // pc
+$user_shenker = Contact::find_by_email("shenker@parc.xerox.com"); // pc, chair
+$user_jon = Contact::find_by_email("jon@cs.ucl.ac.uk"); // pc, red
 $user_nobody = new Contact;
 
 // users are different
@@ -180,5 +180,17 @@ $Conf->save_setting("tracks", 1, "{\"green\":{\"assrev\":\"-red\"}}");
 $paper17 = $Conf->paperRow(17, $user_jon);
 assert(!$Conf->check_tracks($paper17, $user_jon, "assrev"));
 assert(!$user_jon->allow_review_assignment_ignore_conflict($paper17));
+
+// check shepherd search visibility
+$paper11 = $Conf->paperRow(11, $user_chair);
+$paper12 = $Conf->paperRow(12, $user_chair);
+assert(PaperActions::set_shepherd($paper11, $user_estrin, $user_chair));
+assert(PaperActions::set_shepherd($paper12, $user_estrin, $user_chair));
+$pl = new PaperList(new PaperSearch($user_chair, "shep:any"));
+$j = $pl->text_json("id");
+assert_eqq(join(";", array_keys($j)), "11;12");
+$pl = new PaperList(new PaperSearch($user_shenker, "shep:any"));
+$j = $pl->text_json("id");
+assert_eqq(join(";", array_keys($j)), "11;12");
 
 echo "* Tests complete.\n";
