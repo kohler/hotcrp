@@ -71,7 +71,7 @@ class ZipDocument {
             if (!is_dir($zip_filename)
                 && (file_exists($zip_filename) || !@mkdir($zip_filename, 0777))) {
                 $this->warnings[] = "$filename: Couldn’t save document to this name.";
-                error_log($zip_filename);
+                error_log(join(" ", $this->warnings));
                 return self::_add_done($doc, false);
             }
             $zip_filename .= "/";
