@@ -889,8 +889,11 @@ class Contact {
         return $ci;
     }
 
-    static public function override_deadlines() {
-        return isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
+    static public function override_deadlines($override = null) {
+        if ($override !== null)
+            return !!$override;
+        else
+            return isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
     }
 
     public function allowAdminister($prow) {
@@ -939,11 +942,11 @@ class Contact {
 	    return $only_if_complex ? false : $m[0];
     }
 
-    function canStartPaper(&$whyNot = null) {
+    function canStartPaper(&$whyNot = null, $override = null) {
 	global $Conf;
 	$whyNot = array();
 	if ($Conf->timeStartPaper()
-            || ($this->privChair && self::override_deadlines()))
+            || ($this->privChair && self::override_deadlines($override)))
 	    return true;
 	$whyNot["deadline"] = "sub_reg";
 	if ($this->privChair)
@@ -956,17 +959,17 @@ class Contact {
 	return $rights->allow_administer || $prow->has_author($this);
     }
 
-    function canUpdatePaper($prow, &$whyNot = null) {
+    function canUpdatePaper($prow, &$whyNot = null, $override = null) {
 	global $Conf;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
         $rights = $this->rights($prow, "any");
+        $override = $rights->allow_administer && self::override_deadlines($override);
 	// policy
 	if ($rights->allow_author
 	    && $prow->timeWithdrawn <= 0
-	    && ($Conf->timeUpdatePaper($prow)
-                || ($rights->allow_administer && self::override_deadlines())))
+	    && ($Conf->timeUpdatePaper($prow) || $override))
 	    return true;
 	// collect failure reasons
         if (!$rights->allow_author && $rights->allow_author_view)
@@ -977,8 +980,7 @@ class Contact {
 	    $whyNot["withdrawn"] = 1;
 	if ($prow->timeSubmitted > 0 && $Conf->setting('sub_freeze') > 0)
 	    $whyNot["updateSubmitted"] = 1;
-	if (!$Conf->timeUpdatePaper($prow)
-            && !($rights->allow_administer && self::override_deadlines()))
+	if (!$Conf->timeUpdatePaper($prow) && !$override)
 	    $whyNot["deadline"] = "sub_update";
 	if ($rights->allow_administer)
 	    $whyNot["override"] = 1;
@@ -1014,13 +1016,12 @@ class Contact {
 	return false;
     }
 
-    function canWithdrawPaper($prow, &$whyNot = null, $override = false) {
+    function canWithdrawPaper($prow, &$whyNot = null, $override = null) {
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
         $rights = $this->rights($prow, "any");
-        $override = $rights->allow_administer
-            && ($override || self::override_deadlines());
+        $override = $rights->allow_administer && self::override_deadlines($override);
 	// policy
 	if ($rights->allow_author
 	    && $prow->timeWithdrawn <= 0
@@ -1067,18 +1068,19 @@ class Contact {
 	return false;
     }
 
-    function canSubmitFinalPaper($prow, &$whyNot = null, $override = false) {
+    function canSubmitFinalPaper($prow, &$whyNot = null, $override = null) {
 	global $Conf;
 	// fetch paper
 	if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
 	    return false;
         $rights = $this->rights($prow, "any");
-	$override = $rights->allow_administer
-            && ($override || self::override_deadlines());
+	$override = $rights->allow_administer && self::override_deadlines($override);
 	// policy
 	if ($rights->allow_author
 	    && $Conf->collectFinalPapers()
-	    && $prow->timeWithdrawn <= 0 && $prow->outcome > 0
+	    && $prow->timeWithdrawn <= 0
+            && $prow->outcome > 0
+            && $Conf->timeAuthorViewDecision()
 	    && ($Conf->timeSubmitFinalPaper() || $override))
 	    return true;
 	// collect failure reasons
@@ -1089,11 +1091,11 @@ class Contact {
 	if ($prow->timeWithdrawn > 0)
 	    $whyNot["withdrawn"] = 1;
 	// NB logic order here is important elsewhere
-	if (!$Conf->collectFinalPapers()
-	    || (!$Conf->timeAuthorViewDecision() && !$override))
+        if (!$Conf->timeAuthorViewDecision()
+            || $prow->outcome <= 0)
+            $whyNot["notAccepted"] = 1;
+        else  if (!$Conf->collectFinalPapers())
 	    $whyNot["deadline"] = "final_open";
-	else if ($prow->outcome <= 0)
-	    $whyNot["notAccepted"] = 1;
 	else if (!$Conf->timeSubmitFinalPaper() && !$override)
 	    $whyNot["deadline"] = "final_done";
 	if ($rights->allow_administer)
