@@ -294,7 +294,6 @@ class PaperTable {
 	global $Conf, $Me;
 	assert(!$this->editable);
         $prow = $this->prow;
-	$final = ($prow->outcome > 0 && $Conf->collectFinalPapers());
 	$out = array();
 
 	// status and download
@@ -305,7 +304,7 @@ class PaperTable {
 	    $pdfs = array();
 
 	    $dprefix = "";
-	    if ($final && $prow->finalPaperStorageId > 1) {
+	    if ($this->canUploadFinal && $prow->finalPaperStorageId > 1) {
 		$data = paperDocumentData($prow, DTYPE_FINAL);
 		$dprefix = "Final version: &nbsp;";
 	    } else
@@ -319,7 +318,7 @@ class PaperTable {
 	    foreach (PaperOption::option_list() as $id => $o)
 		if (@$o->near_submission
                     && $o->is_document()
-		    && (!@$o->final || $final)
+		    && (!@$o->final || $this->canUploadFinal)
                     && $prow
                     && ($oa = $prow->option($id))
                     && $oa->value > 1
@@ -330,7 +329,7 @@ class PaperTable {
                         . documentDownload($d, count($pdfs) ? "dlimgsp" : "dlimg");
 		}
 
-	    if ($final && $prow->finalPaperStorageId > 1
+	    if ($this->canUploadFinal && $prow->finalPaperStorageId > 1
 		&& $prow->paperStorageId > 1) {
                 $doc = (object) array("paperId" => $prow->paperId,
                                       "mimetype" => null,
@@ -414,7 +413,7 @@ class PaperTable {
 	    if ($documentType == DTYPE_SUBMISSION)
 		$uploader .= ";fold(\"isready\",0)";
 	    if ($flags & self::ENABLESUBMIT)
-		$uploader .= ";form.submit.disabled=false";
+		$uploader .= ";form.submitpaper.disabled=false";
 	    $uploader .= "' />";
 	    if ($doc && $optionType)
 		$uploader .= " &nbsp;<span class='barsep'>|</span>&nbsp; "
@@ -442,7 +441,7 @@ class PaperTable {
 
 	if ($documentType == DTYPE_SUBMISSION) {
 	    if ($this->useRequest)
-		$checked = defval($_REQUEST, "submit");
+		$checked = !!@$_REQUEST["submitpaper"];
 	    else if ($Conf->setting('sub_freeze'))
 		$checked = $prow && $prow->timeSubmitted > 0;
 	    else
@@ -451,7 +450,7 @@ class PaperTable {
 	    echo "<div id='foldisready' class='",
 		(($prow && $storageId > 1) || $noPapers ? "foldo" : "foldc"),
 		"'$s><table class='fx'><tr><td class='nowrap'>",
-		Ht::checkbox_h("submit", 1, $checked, array("id" => "paperisready")), "&nbsp;";
+		Ht::checkbox_h("submitpaper", 1, $checked, array("id" => "paperisready")), "&nbsp;";
 	    if ($Conf->setting('sub_freeze'))
 		echo "</td><td>", Ht::label("<strong>This is the final submission.</strong>"),
 		    "</td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
@@ -460,7 +459,7 @@ class PaperTable {
 	    echo "</td></tr></table></div>\n";
 	    $Conf->footerScript("hotcrp_onload.push(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
 	} else if ($documentType == DTYPE_FINAL)
-            echo Ht::hidden("submit", 1);
+            echo Ht::hidden("submitpaper", 1);
 
 	echo $uploader;
 
@@ -1480,7 +1479,7 @@ class PaperTable {
 	$prow = $this->prow;
 	$m = "";
 
-	$override = ($this->admin ? "  As an administrator, you can override this deadline using the “Override deadlines” checkbox." : "");
+	$override = ($this->admin ? "  As an administrator, you can override this deadline." : "");
 	if (!$prow) {
 	    $timeStart = $Conf->timeStartPaper();
 	    $startDeadline = $this->deadlineSettingIs("sub_reg");
@@ -1532,16 +1531,19 @@ class PaperTable {
 	} else if ($prow->has_author($Me) && $prow->outcome > 0
 		   && $Conf->timeSubmitFinalPaper()) {
 	    $updateDeadline = $this->deadlineSettingIs("final_soft");
-	    $m .= "<div class='xinfo'>" . "Congratulations!  This paper was accepted.  Submit a final version for the paper here.$updateDeadline  You may also edit paper contacts, allowing others to view reviews and make changes." . "</div>";
+	    $m .= "<div class='xinfo'>Congratulations! This paper was accepted. Submit a final version for the paper here.$updateDeadline You may also edit paper contacts, allowing others to view reviews and make changes.</div>";
 	} else if ($prow->has_author($Me)) {
-	    $override2 = ($this->admin ? " As an administrator, you can update the paper anyway by selecting “Override deadlines.”" : "");
+	    $override2 = ($this->admin ? " As an administrator, you can update the paper anyway." : "");
 	    if ($this->mode == "pe") {
 		$m .= "<div class='xinfo'>This paper is under review and can’t be changed, but you can change its contacts";
                 if ($Me->canWithdrawPaper($prow))
                     $m .= " or withdraw it from consideration";
                 $m .= ".$override2</div>";
             }
-	} else
+	} else if ($prow->outcome > 0 && !$Conf->timeAuthorViewDecision()
+                   && $Conf->collectFinalPapers())
+            $m .= "<div class='xinfo'>This paper was accepted, but authors can’t view paper decisions yet. Once decisions are visible, the system will allow accepted authors to upload final versions.</div>";
+        else
 	    $m .= "<div class='xinfo'>" . "You aren’t a contact for this paper, but as an administrator you can still make changes." . "</div>";
 
 	return $m;
@@ -1550,13 +1552,10 @@ class PaperTable {
     function _collectActionButtons() {
         global $Conf, $Me;
         $prow = $this->prow;
-
-        // Absent paper can only be saved
-        if (!$prow)
-            return array(Ht::submit("update", "Save paper", array("class" => "bb")));
+        $pid = $prow ? $prow->paperId : "new";
 
         // Withdrawn papers can be revived
-        if ($prow->timeWithdrawn > 0) {
+        if ($prow && $prow->timeWithdrawn > 0) {
             $revivable = $Conf->timeFinalizePaper($prow);
             if ($revivable || $this->admin) {
                 $b = Ht::submit("revive", "Revive paper");
@@ -1569,20 +1568,44 @@ class PaperTable {
 
         $buttons = array();
 
-        if ($prow->outcome > 0 && $Conf->collectFinalPapers()
-            && ($Conf->timeSubmitFinalPaper() || $this->admin)
-            && $this->mode == "pe")
-            $buttons[] = array(Ht::submit("submitfinal", "Save changes", array("class" => "bb")), "");
-        else if ($Conf->timeUpdatePaper($prow) && $this->mode == "pe")
-            $buttons[] = array(Ht::submit("update", "Save changes", array("class" => "bb")), "");
-        else if ($this->admin && $this->mode == "pe") {
-            $class = ($prow->outcome > 0 && $Conf->collectFinalPapers() ? "b" : "bb");
-            $buttons[] = array(Ht::submit("update", "Save changes", array("class" => $class)), "(admin only)");
-        } else if ($this->mode == "pe" && $prow->timeSubmitted > 0)
-            $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", array("class" => "b")), "");
+        if ($this->mode == "pe") {
+            // check whether we can save
+            if ($this->canUploadFinal) {
+                $updater = "submitfinal";
+                $can_update = $Me->canSubmitFinalPaper($prow, $whyNot, false);
+            } else if ($prow) {
+                $updater = "update";
+                $can_update = $Me->canUpdatePaper($prow, $whyNot, false);
+            } else {
+                $updater = "update";
+                $can_update = $Me->canStartPaper($whyNot, false);
+            }
+            // pay attention only to the deadline
+            if (!$can_update && @$whyNot["deadline"])
+                $whyNot = array("deadline" => $whyNot["deadline"]);
+            else if (!$can_update)
+                $can_update = true;
+            // produce button
+            if ($can_update)
+                $buttons[] = array(Ht::submit($updater, "Save changes", array("class" => "bb")), "");
+            else if ($this->admin) {
+                $buttons[] = array(Ht::js_button("Save changes", "popup(this,'saveoverride',0)"), "(admin only)");
+                Ht::popup("saveoverride",
+                          "<p>" . whyNotText($whyNot, $prow ? "update" : "register")
+                          . " Are you sure you want to override this deadline?</p>",
+                          Ht::form(hoturl_post("paper", "p=$pid&amp;m=pe"),
+                                   array("onsubmit" => "return false")),
+                          Ht::js_button("Cancel", "popup(null,'saveoverride',1)")
+                          . " &nbsp;"
+                          . Ht::js_button("Save changes", "paperedit_submit_override('$updater');popup(null,'saveoverride',1)"));
+            } else if ($prow->timeSubmitted > 0)
+                $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", array("class" => "b")), "");
+            else if ($Conf->timeFinalizePaper($prow))
+                $buttons[] = array(Ht::submit("update", "Save changes", array("class" => "bb")));
+        }
 
         // withdraw button
-        if (!$Me->canWithdrawPaper($prow, $whyNot, true))
+        if (!$prow || !$Me->canWithdrawPaper($prow, $whyNot, true))
             $b = null;
         else if ($prow->timeSubmitted <= 0)
             $b = Ht::submit("withdraw", "Withdraw paper");
@@ -1625,17 +1648,15 @@ class PaperTable {
 	$buttons = $this->_collectActionButtons();
 
 	if ($this->admin && $prow) {
-	    $buttons[] = array(Ht::js_button("Delete paper", "popup(this,'d',0,true)"), "(admin only)");
-	    $Conf->footerHtml("<div id='popup_d' class='popupc'>
-  <p>Be careful: This will permanently delete all information about this
-  paper from the database and <strong>cannot be undone</strong>.</p>
-  <form method='post' action=\"" . hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=pe") . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
-    <div class='popup_actions'>"
-    . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
-    . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
-    . Ht::js_button("Cancel", "popup(null,'d',1)")
-    . " &nbsp;" . Ht::submit("delete", "Delete paper", array("class" => "bb"))
-    . "</div></form></div>");
+	    $buttons[] = array(Ht::js_button("Delete paper", "popup(this,'delp',0,true)"), "(admin only)");
+            Ht::popup("delp",
+                "<p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p>",
+                Ht::form(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=pe")),
+                Ht::hidden("doemail", 1, array("class" => "popup_populate"))
+                    . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
+                    . Ht::js_button("Cancel", "popup(null,'delp',1)")
+                    . " &nbsp;"
+                    . Ht::submit("delete", "Delete paper", array("class" => "bb")));
 	}
 
 	echo Ht::actions($buttons);
@@ -1647,13 +1668,9 @@ class PaperTable {
 		Ht::label("Email authors, including:"), "&nbsp; ",
 		"<input id='emailNote' type='text' class='textlite temptext' name='emailNote' size='30' value=\"",
 		htmlspecialchars($v == "" ? "Optional explanation" : $v),
-		"\" /></td></tr>\n    <tr><td>",
-		Ht::checkbox("override", array("onclick" => "copy_override_status(this)")), "&nbsp;";
-            if ($Conf->timeUpdatePaper($prow))
-                echo "<span class='dim'>", Ht::label("Override deadlines"), "</span>";
-            else
-                echo "<strong>", Ht::label("Override deadlines"), "</strong>";
-            echo "</td></tr>\n  </table>\n";
+		"\" />",
+                Ht::hidden("override", 1),
+                "</td></tr>\n  </table>\n";
 	    $Conf->footerScript("mktemptext('emailNote','Optional explanation')");
 	}
     }
@@ -1772,7 +1789,7 @@ class PaperTable {
         echo $form, "<div class='aahc'>";
         $this->canUploadFinal = $prow && $prow->outcome > 0
             && ($Me->canSubmitFinalPaper($prow, $whyNot, true)
-                || defval($whyNot, "deadline") == "final_done");
+                || @$whyNot["deadline"] == "final_done");
 
         if (($m = $this->editMessage()))
             echo $m, $spacer;
@@ -1839,14 +1856,11 @@ class PaperTable {
 	    Ht::img("_.gif", "", "_"),
 	    "</td><td class='papct'><div class='inpapct'>";
 
-	$form = "<form method='post' action=\""
-	    . hoturl_post("paper", "p="
-			  . ($prow ? $prow->paperId : "new")
-			  . "&amp;m=pe") . "\"";
+        $form_js = array("id" => "paperedit");
 	if ($prow && $prow->paperStorageId > 1 && $prow->timeSubmitted > 0
 	    && !$Conf->setting('sub_freeze'))
-	    $form .= " onsubmit='return docheckpaperstillready()'";
-	$form .= " enctype='multipart/form-data' accept-charset='UTF-8'>";
+            $form_js["onsubmit"] = "return docheckpaperstillready()";
+	$form = Ht::form(hoturl_post("paper", "p=" . ($prow ? $prow->paperId : "new") . "&amp;m=pe"), $form_js);
 
 	$this->echoDivEnter();
 	if ($this->editable) {

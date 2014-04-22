@@ -1079,7 +1079,7 @@ function ini_get_bytes($varname) {
 }
 
 function whyNotText($whyNot, $action) {
-    global $Conf;
+    global $Conf, $Now;
     if (!is_array($whyNot))
 	$whyNot = array($whyNot => 1);
     $paperId = (isset($whyNot['paperId']) ? $whyNot['paperId'] : -1);
@@ -1120,7 +1120,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['reviewNotComplete']))
 	$text .= "Your own review for $thisPaper is not complete, so you can’t view other people’s reviews. ";
     if (isset($whyNot['responseNotReady']))
-	$text .= "The authors&rsquo; response for $thisPaper is not yet ready for reviewers to view. ";
+	$text .= "The authors’ response for $thisPaper is not yet ready for reviewers to view. ";
     if (isset($whyNot['reviewsOutstanding']))
 	$text .= "You will get access to the reviews once you complete <a href=\"" . hoturl("search", "q=&amp;t=r") . "\">your assigned reviews for other papers</a>.  If you can’t complete your reviews, please let the conference organizers know via the “Refuse review” links. ";
     if (isset($whyNot['reviewNotAssigned']))
@@ -1134,12 +1134,11 @@ function whyNotText($whyNot, $action) {
 	else
 	    $start = 1;
 	$end = $Conf->setting($dname, -1);
-	$now = time();
-	if ($start <= 0)
+	if ($start <= 0 || $start == $end)
 	    $text .= "You can’t $action $thisPaper yet. ";
-	else if ($start > 0 && $now < $start)
+        else if ($start > 0 && $Now < $start)
 	    $text .= "You can’t $action $thisPaper until " . $Conf->printableTime($start, "span") . ". ";
-	else if ($end > 0 && $now > $end) {
+	else if ($end > 0 && $Now > $end) {
 	    if ($dname == "sub_reg")
 		$text .= "The paper registration deadline has passed. ";
 	    else if ($dname == "sub_update")
@@ -1150,6 +1149,8 @@ function whyNotText($whyNot, $action) {
 		$text .= "The external review deadline has passed. ";
 	    else if ($dname == "pcrev_hard")
 		$text .= "The PC review deadline has passed. ";
+            else if ($dname == "final_done")
+                $text .= "The deadline to update final versions has passed. ";
 	    else
 		$text .= "The deadline to $action $thisPaper has passed. ";
 	    $text .= "It was " . $Conf->printableTime($end, "span") . ". ";
@@ -1162,7 +1163,7 @@ function whyNotText($whyNot, $action) {
 	    $text .= "You can’t $action $thisPaper at the moment. ";
 	$text .= "(<a class='nowrap' href='" . hoturl("deadlines") . "'>View deadlines</a>) ";
     }
-    if (isset($whyNot['override']) && $whyNot['override'])
+    if (@$whyNot["override"])
         $text .= "“Override deadlines” can override this restriction. ";
     if (isset($whyNot['blindSubmission']))
 	$text .= "Submission to this conference is blind. ";

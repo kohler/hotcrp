@@ -263,10 +263,18 @@ class Ht {
     static function img($src, $alt, $js = null) {
         if (is_string($js))
             $js = array("class" => $js);
-        if (self::$img_base && !preg_match(',\A(https?:|/),i', $src))
+        if (self::$img_base && !preg_match(',\A(?:https?:/|/),i', $src))
             $src = self::$img_base . $src;
         return "<img src=\"" . $src . "\" alt=\"" . htmlspecialchars($alt) . "\""
             . self::extra($js) . " />";
+    }
+
+    static function popup($idpart, $content, $form = null, $actions = null) {
+        global $Conf;
+        if ($form && $actions)
+            $form .= "<div class=\"popup_actions\">" . $actions . "</div></form>";
+        $Conf->footerHtml("<div id=\"popup_$idpart\" class=\"popupc\">"
+                          . $content . ($form ? $form : "") . "</div>");
     }
 
 }

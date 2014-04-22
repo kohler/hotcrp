@@ -2203,6 +2203,11 @@ function docheckpaperstillready() {
 	return true;
 }
 
+function paperedit_submit_override(updater) {
+    $("#paperedit > div").append("<input type='hidden' name='" + updater + "' value='1' /><input type='hidden' name='override' value='1' />");
+    $("#paperedit")[0].submit();
+}
+
 function doremovedocument(elt) {
     var name = elt.id.replace(/^remover_/, ""), e, estk, tn, i;
     if (!(e = $$("remove_" + name))) {

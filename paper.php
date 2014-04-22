@@ -768,36 +768,36 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     return $OK && !count($Error);
 }
 
-if ((isset($_REQUEST["update"]) || isset($_REQUEST["submitfinal"]))
+if ((@$_REQUEST["update"] || @$_REQUEST["submitfinal"])
     && check_post()) {
     // get missing parts of request
-    clean_request($prow, isset($_REQUEST["submitfinal"]));
-    $diffs = request_differences($prow, isset($_REQUEST["submitfinal"]));
+    clean_request($prow, !!@$_REQUEST["submitfinal"]);
+    $diffs = request_differences($prow, !!@$_REQUEST["submitfinal"]);
 
     // check deadlines
     if ($newPaper)
 	// we know that canStartPaper implies canFinalizePaper
 	$ok = $Me->canStartPaper($whyNot);
-    else if (isset($_REQUEST["submitfinal"]))
+    else if (@$_REQUEST["submitfinal"])
 	$ok = $Me->canSubmitFinalPaper($prow, $whyNot);
     else {
 	$ok = $Me->canUpdatePaper($prow, $whyNot);
-	if (!$ok && isset($_REQUEST["submit"]) && !count($diffs))
+	if (!$ok && @$_REQUEST["submitpaper"] && !count($diffs))
 	    $ok = $Me->canFinalizePaper($prow, $whyNot);
     }
 
     // actually update
     if ($ok) {
-        if (update_paper($Me, isset($_REQUEST["submit"]),
-                         isset($_REQUEST["submitfinal"]), $diffs))
+        if (update_paper($Me, !!@$_REQUEST["submitpaper"],
+                         !!@$_REQUEST["submitfinal"], $diffs))
             redirectSelf(array("p" => $paperId, "m" => "pe"));
         else
             report_update_paper_errors();
     } else {
-	if (isset($_REQUEST["submitfinal"]))
+	if (@$_REQUEST["submitfinal"])
 	    $action = "submit final version for";
 	else
-	    $action = ($newPaper ? "register" : "update");
+	    $action = (!$newPaper ? "update" : "register");
 	$Conf->errorMsg(whyNotText($whyNot, $action));
     }
 
