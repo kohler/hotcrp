@@ -213,7 +213,7 @@ global $Opt;
 if (!@$Opt)
     $Opt = array();
 if (!@$Opt["loaded"]) {
-    if ((@include "$ConfSitePATH/conf/options.php") !== false
+    if ((@include "$ConfSitePATH/conf/options.php") !== false // see also `cacheable.php`
         || (@include "$ConfSitePATH/conf/options.inc") !== false
         || (@include "$ConfSitePATH/Code/options.inc") !== false)
         $Opt["loaded"] = true;
