@@ -1789,14 +1789,20 @@ class Conference {
 	    }
 
             if (isset($Opt["jqueryURL"]))
-                $jquery = htmlspecialchars($Opt["jqueryURL"]);
+                $jquery = $Opt["jqueryURL"];
             else if (@$Opt["jqueryCDN"])
                 $jquery = "//code.jquery.com/jquery-1.10.2.min.js";
             else
                 $jquery = $Opt["assetsURL"] . "scripts/jquery-1.10.2.min.js";
-	    $this->scriptStuff = "<script type=\"text/javascript\" src=\"$jquery\"></script>\n"
-                . "<script type=\"text/javascript\" src=\"" . $Opt["assetsURL"] . "scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js") . "\"></script>\n"
-                . "<!--[if lte IE 6]> <script type=\"text/javascript\" src=\"" . $Opt["assetsURL"] . "scripts/supersleight.js\"></script> <![endif]-->\n";
+	    $this->scriptStuff = Ht::script_file($jquery) . "\n";
+
+            if (@$Opt["strictJavascript"])
+                $this->scriptStuff .= Ht::script_file($Opt["assetsURL"] . "cacheable.php?file=scripts/script.js&mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
+            else
+                $this->scriptStuff .= Ht::script_file($Opt["assetsURL"] . "scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
+
+            $this->scriptStuff .= "<!--[if lte IE 6]> " . Ht::script_file($Opt["assetsURL"] . "scripts/supersleight.js") . " <![endif]-->\n";
+
 	    echo "<title>", $title, " - ", htmlspecialchars($Opt["shortName"]), "</title>\n";
 	    $this->headerPrinted = 1;
 	}

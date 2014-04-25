@@ -23,6 +23,11 @@ class Ht {
         return $x;
     }
 
+    static function script_file($src) {
+        return "<script type=\"text/javascript\" src=\""
+            . htmlspecialchars($src) . "\"></script>";
+    }
+
     static function form($action, $extra = null) {
         $method = $extra && isset($extra["method"]) ? $extra["method"] : "post";
         return '<form method="' . $method . '" action="'

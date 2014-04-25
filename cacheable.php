@@ -22,39 +22,41 @@ if ((@include "conf/options.php") === false
     && (@include "Code/options.inc") === false)
     error_log("cannot load conf/options.php");
 
-function css_ok($file) {
-    global $Opt;
-    return $file == "style.css"
-        || (@$Opt["stylesheets"]
-            && array_search($file, $Opt["stylesheets"]) !== false);
-}
-
-$file = isset($_REQUEST["file"]) ? $_REQUEST["file"] : "";
-if (strpos($file, "/") !== false)
-    $file = "";
-if ($file)
-    $mtime = @filemtime($file);
-
-$prefix = "";
-if ($file == "script.js") {
-    header("Content-Type: text/javascript; charset=utf-8");
-    if (@$Opt["strictJavascript"])
-        $prefix = "\"use strict\";\n";
-} else if ($file == "jquery-1.10.2.min.js" || $file == "jquery-1.10.2.js")
-    header("Content-Type: text/javascript; charset=utf-8");
-else if ($file == "jquery-1.10.2.min.map")
-    header("Content-Type: application/json; charset=utf-8");
-else if (substr($file, -4) === ".css" && css_ok($file))
-    header("Content-Type: text/css; charset=utf-8");
-else if ($file == "supersleight-min.js" || $file == "supersleight.js")
-    header("Content-Type: text/javascript; charset=utf-8");
-else {
+function fail() {
+    global $zlib_output_compression;
     header("Content-Type: text/plain; charset=utf-8");
     if (!$zlib_output_compression)
 	header("Content-Length: 10");
     echo "Go away.\r\n";
     exit;
 }
+
+$file = isset($_REQUEST["file"]) ? $_REQUEST["file"] : "";
+if ($file)
+    $mtime = @filemtime($file);
+
+$prefix = "";
+if (preg_match(',\A(?:images|scripts|stylesheets)(?:/[^./][^/]+)+\z,', $file)
+    && preg_match(',.*([.][a-z]*)\z,', $file, $m)) {
+    $s = $m[1];
+    if ($s == ".js") {
+        header("Content-Type: text/javascript; charset=utf-8");
+        if (@$Opt["strictJavascript"])
+            $prefix = "\"use strict\";\n";
+    } else if ($s == ".map")
+        header("Content-Type: application/json; charset=utf-8");
+    else if ($s == ".css")
+        header("Content-Type: text/css; charset=utf-8");
+    else if ($s == ".gif")
+        header("Content-Type: image/gif");
+    else if ($s == ".jpg")
+        header("Content-Type: image/jpeg");
+    else if ($s == ".png")
+        header("Content-Type: image/png");
+    else
+        fail();
+} else
+    fail();
 
 $last_modified = gmdate("D, d M Y H:i:s", $mtime) . " GMT";
 $etag = '"' . md5($last_modified) . '"';
