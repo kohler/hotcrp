@@ -1,6 +1,6 @@
 HotCRP NEWS
 
-Version 2.90
+Version 2.90   25.Apr.2014
 
 * Major refactoring release.
 
@@ -16,15 +16,23 @@ Version 2.90
 * Add "has:final", "has:paper", "has:comment", "has:response", and
   "has:OPTION" search options.
 
+* Support multiple "sort:" keywords, such as "sort:overall-merit
+  sort:title"; and support complex sorters, such as ‘sort:"overall
+  merit by variance"’.
+
 * Add support for a "timestamp" column, hidden by default. So you can
   search for "sort:timestamp" and "show:timestamp".
 
 * Add a test suite.
 
-* Many other improvements, including MySQL 5.6 compatibility.
+* Support running under nginx.
 
-* Thanks to Nickolai Zeldovich, Peter Sewell, Garth Gibson, Colin
-  Scott, Chris Kanich, Adrian Sampson, Fred Douglis, and Kevin Fu.
+* Many other bug fixes and improvements, including a SQL injection fix
+  in offline review uploads and MySQL 5.6 compatibility.
+
+* Thanks to Nickolai Zeldovich, Todd Millstein, Peter Sewell, Garth
+  Gibson, Colin Scott, Chris Kanich, Adrian Sampson, Fred Douglis,
+  Kevin Fu, Soheil Hassas Yeganeh, Robby Findler, and Johannes Dahse.
 
 
 Version 2.61   14.Aug.2013
