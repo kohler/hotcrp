@@ -75,17 +75,38 @@ class Conference {
     }
 
     static function connect_dsn($dsn) {
+        global $Opt;
+
+        $dbhost = $dbuser = $dbpass = $dbname = $dbport = $dbsocket = null;
         if ($dsn && preg_match('|^mysql://([^:@/]*)/(.*)|', $dsn, $m)) {
-	    $dblink = new mysqli(urldecode($m[1]));
-	    $dbname = urldecode($m[2]);
+            $dbhost = urldecode($m[1]);
+            $dbname = urldecode($m[2]);
 	} else if ($dsn && preg_match('|^mysql://([^:@/]*)@([^/]*)/(.*)|', $dsn, $m)) {
-	    $dblink = new mysqli(urldecode($m[2]), urldecode($m[1]));
+            $dbhost = urldecode($m[2]);
+            $dbuser = urldecode($m[1]);
 	    $dbname = urldecode($m[3]);
 	} else if ($dsn && preg_match('|^mysql://([^:@/]*):([^@/]*)@([^/]*)/(.*)|', $dsn, $m)) {
-	    $dblink = new mysqli(urldecode($m[3]), urldecode($m[1]), urldecode($m[2]));
+            $dbhost = urldecode($m[3]);
+            $dbuser = urldecode($m[1]);
+            $dbpass = urldecode($m[2]);
 	    $dbname = urldecode($m[4]);
 	} else
-            $dblink = $dbname = null;
+            return array(null, null);
+
+        if ($dbhost === null)
+            $dbhost = ini_get("mysqli.default_host");
+        if ($dbuser === null)
+            $dbuser = ini_get("mysqli.default_user");
+        if ($dbpass === null)
+            $dbpass = ini_get("mysqli.default_pw");
+        if ($dbport === null)
+            $dbport = ini_get("mysqli.default_port");
+        if ($dbsocket === null && @$Opt["dbSocket"])
+            $dbsocket = $Opt["dbSocket"];
+        else if ($dbsocket === null)
+            $dbsocket = ini_get("mysqli.default_socket");
+
+        $dblink = new mysqli($dbhost, $dbuser, $dbpass, "", $dbport, $dbsocket);
         if ($dblink && !mysqli_connect_errno()) {
             // disallow reserved databases
             if ($dbname == "mysql" || substr($dbname, -7) === "_schema") {
@@ -95,6 +116,7 @@ class Conference {
                 $dblink->set_charset("utf8");
         } else
             $dblink = null;
+
         return array($dblink, $dbname);
     }
 
