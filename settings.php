@@ -429,10 +429,10 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
     $oarg = array("name" => $name, "id" => (int) $id, "req_id" => $id);
     if ($id[0] == "n") {
         $nextid = max($Conf->setting("next_optionid", 1), 1);
-        foreach ($new_opts as $id => $o)
-            $nextid = max($nextid, $id + 1);
-        foreach ($current_opts as $id => $o)
-            $nextid = max($nextid, $id + 1);
+        foreach ($new_opts as $haveid => $o)
+            $nextid = max($nextid, $haveid + 1);
+        foreach ($current_opts as $haveid => $o)
+            $nextid = max($nextid, $haveid + 1);
         $oarg["id"] = $nextid;
         $oarg["is_new"] = true;
     }
