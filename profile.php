@@ -761,7 +761,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   Delete these papers from the database or add alternate paper contacts and
   you will be able to delete this user.</p>
   <div class='popup_actions'>"
-    . Ht::button_js("Close", "popup(null,'d',1)")
+    . Ht::js_button("Close", "popup(null,'d',1)")
     . "</div></div>");
     } else {
 	if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
