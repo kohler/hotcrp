@@ -288,14 +288,10 @@ function updateSchema($Conf) {
 	&& $Conf->ql("alter table OptionType add `sortOrder` tinyint(1) NOT NULL default '0'")
 	&& $Conf->ql("update Settings set value=29 where name='allowPaperOption'"))
 	$Conf->settings["allowPaperOption"] = 29;
-    if ($Conf->settings["allowPaperOption"] == 29) {
-	$pld = $Conf->setting_data("pldisplay_default");
-	$pld2 = updatePaperListDisplayOptions($pld);
-	if ((!$pld || $pld == $pld2
-	     || $Conf->ql("update Settings set data='" . $Conf->dblink->escape_string($pld2) . "' where name='pldisplay_default'"))
-	    && $Conf->ql("update Settings set value=30 where name='allowPaperOption'"))
-	    $Conf->settings["allowPaperOption"] = 30;
-    }
+    if ($Conf->settings["allowPaperOption"] == 29
+        && $Conf->ql("delete from Settings where name='pldisplay_default'")
+        && $Conf->ql("update Settings set value=30 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 30;
     if ($Conf->settings["allowPaperOption"] == 30
 	&& $Conf->ql("DROP TABLE IF EXISTS `Formula`")
 	&& $Conf->ql("CREATE TABLE `Formula` (
