@@ -42,7 +42,16 @@ class Navigation {
         preg_match(',\A([^\?\#]*)(.*)\z,', $_SERVER["REQUEST_URI"], $m);
         self::$query = $m[2];
 
-        $sitepage = substr($m[1], 0, strlen($m[1]) - strlen(self::$path));
+        // beware: PATH_INFO is URL-decoded, REQUEST_URI is not.
+        // be careful; make sure $site and $page are not URL-decoded.
+        $sitepage = urldecode($m[1]);
+        $sitepage = substr($sitepage, 0, strlen($sitepage) - strlen(self::$path));
+        if (substr($m[1], 0, strlen($sitepage)) !== $sitepage) {
+            $sitepage = $m[1];
+            for ($nslashes = substr_count(self::$path, "/"); $nslashes > 0; --$nslashes)
+                $sitepage = substr($sitepage, 0, strrpos($sitepage, "/"));
+        }
+
         if ($is_index) {
             if (preg_match(',\A(.*/)index(?:[.]php)?\z,i', $sitepage, $m))
                 $sitepage = $m[1];
