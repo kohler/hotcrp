@@ -1,4 +1,4 @@
-export VERSION=2.90
+export VERSION=2.91
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/;.*//'`

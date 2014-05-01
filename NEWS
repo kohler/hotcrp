@@ -1,5 +1,11 @@
 HotCRP NEWS
 
+Version 2.91   1.May.2014
+
+* Bug fixes to profile editing and submission options problems
+  reported by Lars Eggert and Kevin Fu.
+
+
 Version 2.90   25.Apr.2014
 
 * Major refactoring release.
