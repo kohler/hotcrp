@@ -290,6 +290,7 @@ class PaperTable {
 	global $Conf, $Me;
 	assert(!$this->editable);
         $prow = $this->prow;
+        $final = ($prow->outcome > 0 && $Conf->collectFinalPapers());
 	$out = array();
 
 	// status and download
@@ -300,7 +301,7 @@ class PaperTable {
 	    $pdfs = array();
 
 	    $dprefix = "";
-	    if ($this->canUploadFinal && $prow->finalPaperStorageId > 1) {
+	    if ($final && $prow->finalPaperStorageId > 1) {
 		$data = paperDocumentData($prow, DTYPE_FINAL);
 		$dprefix = "Final version: &nbsp;";
 	    } else
@@ -314,7 +315,7 @@ class PaperTable {
 	    foreach (PaperOption::option_list() as $id => $o)
 		if (@$o->near_submission
                     && $o->is_document()
-		    && (!@$o->final || $this->canUploadFinal)
+		    && (!@$o->final || $final)
                     && $prow
                     && ($oa = $prow->option($id))
                     && $oa->value > 1
@@ -325,7 +326,7 @@ class PaperTable {
                         . documentDownload($d, count($pdfs) ? "dlimgsp" : "dlimg");
 		}
 
-	    if ($this->canUploadFinal && $prow->finalPaperStorageId > 1
+	    if ($final && $prow->finalPaperStorageId > 1
 		&& $prow->paperStorageId > 1) {
                 $doc = (object) array("paperId" => $prow->paperId,
                                       "mimetype" => null,
