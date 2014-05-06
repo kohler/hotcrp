@@ -38,6 +38,7 @@ $searchKeywords = array("ti" => "ti", "title" => "ti",
 	"shepherd" => "shepherd", "shep" => "shepherd",
 	"conflict" => "conflict", "conf" => "conflict",
 	"reconflict" => "reconflict", "reconf" => "reconflict",
+        "pcconflict" => "pcconflict", "pcconf" => "pcconflict",
         "status" => "status", "has" => "has",
 	"rating" => "rate", "rate" => "rate",
 	"revpref" => "revpref", "pref" => "revpref",
@@ -664,14 +665,14 @@ class PaperSearch {
             $qt[] = new SearchTerm("pf", self::F_XVIEW, $value);
     }
 
-    function _searchConflict($word, &$qt, $quoted) {
+    private function _search_conflict($word, &$qt, $quoted, $pc_only) {
 	$m = self::_matchCompar($word, $quoted);
 	if (($type = self::_comparTautology($m))) {
 	    $qt[] = new SearchTerm($type);
 	    return;
 	}
 
-	$contacts = $this->_reviewerMatcher($m[0], $quoted, false);
+	$contacts = $this->_reviewerMatcher($m[0], $quoted, $pc_only);
         $value = new SearchReviewValue($m[1], $contacts);
 	if ($this->privChair
             || (is_array($contacts) && count($contacts) == 1 && $contacts[0] == $this->cid))
@@ -1171,7 +1172,10 @@ class PaperSearch {
             $this->_searchDecision($word, $qt, $quoted);
 	if (($keyword ? $keyword == "conflict" : isset($this->fields["conflict"]))
 	    && $this->amPC)
-	    $this->_searchConflict($word, $qt, $quoted);
+	    $this->_search_conflict($word, $qt, $quoted, false);
+        if (($keyword ? $keyword == "pcconflict" : isset($this->fields["pcconflict"]))
+            && $this->amPC)
+            $this->_search_conflict($word, $qt, $quoted, true);
 	if (($keyword ? $keyword == "reconflict" : isset($this->fields["reconflict"]))
 	    && $this->privChair)
 	    $this->_searchReviewerConflict($word, $qt, $quoted);
