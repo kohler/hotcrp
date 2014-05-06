@@ -645,7 +645,9 @@ class PaperSearch {
             $value = ">0";
         else if (!$quoted && strcasecmp($word, "no") == 0)
             $value = "<0";
-        else if ($word == "?" || (!$quoted && strcasecmp($word, "none") == 0))
+        else if ($word == "?"
+                 || (!$quoted && strcasecmp($word, "none") == 0)
+                 || (!$quoted && strcasecmp($word, "unknown") == 0))
             $value = "=0";
         else if (!$quoted && strcasecmp($word, "any") == 0)
             $value = "!=0";
