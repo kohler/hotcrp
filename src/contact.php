@@ -1726,7 +1726,7 @@ class Contact {
         if ($rights->can_administer
             || ($rights->act_author_view
                 && $Conf->timeAuthorViewDecision())
-            || ($rights->allow_pc
+            || ($rights->allow_pc_broad
                 && $Conf->timePCViewDecision($rights->view_conflict_type > 0))
             || ($rights->review_type > 0
                 && $rights->review_submitted
