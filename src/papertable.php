@@ -22,15 +22,13 @@ class PaperTable {
 
     var $editable;
     var $useRequest;
-    var $npapstrip;
-    var $allFolded;
-    var $foldState;
-    var $highlight;
-    var $matchPreg;
-    var $watchCheckbox;
-    var $initial;
-    var $entryMatches;
-    var $canUploadFinal;
+    private $npapstrip;
+    private $allFolded;
+    private $foldState;
+    private $matchPreg;
+    private $watchCheckbox;
+    private $entryMatches;
+    private $canUploadFinal;
     private $admin;
 
     function __construct($prow) {
@@ -132,20 +130,18 @@ class PaperTable {
 	if (count($this->matchPreg) == 0)
 	    $this->matchPreg = null;
 
-	$this->highlight = $this->matchPreg !== null;
 	$this->watchCheckbox = WATCH_COMMENT;
-	$this->initial = true;
     }
 
     private function echoDivEnter() {
 	// if highlighting, automatically unfold abstract/authors
-	if ($this->highlight && $this->prow && $this->allFolded
+	if ($this->matchPreg && $this->prow && $this->allFolded
 	    && ($this->foldState & 64)) {
 	    $data = $this->entryData("abstract");
 	    if ($this->entryMatches)
 		$this->foldState &= ~64;
 	}
-	if ($this->highlight && $this->prow && ($this->foldState & 256)) {
+	if ($this->matchPreg && $this->prow && ($this->foldState & 256)) {
 	    cleanAuthor($this->prow);
 	    $data = $this->entryData("authorInformation");
 	    if ($this->entryMatches)
@@ -238,7 +234,7 @@ class PaperTable {
 	else
 	    $text = "";
 
-	if ($this->highlight && isset($textAreaRows[$fieldName])
+	if ($this->matchPreg && isset($textAreaRows[$fieldName])
 	    && !$this->editable && isset($this->matchPreg[$fieldName]))
 	    $text = Text::highlight($text, $this->matchPreg[$fieldName], $this->entryMatches);
 	else
@@ -263,7 +259,7 @@ class PaperTable {
     }
 
     private function echoTitle() {
-	if ($this->highlight && isset($this->matchPreg["title"]))
+	if ($this->matchPreg && isset($this->matchPreg["title"]))
 	    echo Text::highlight($this->prow->title, $this->matchPreg["title"]);
 	else
 	    echo htmlspecialchars($this->prow->title);
@@ -542,7 +538,7 @@ class PaperTable {
 
     function authorData($table, $type, $viewAs = null, $prefix = "") {
 	global $Conf;
-	if ($this->highlight && isset($this->matchPreg["authorInformation"]))
+	if ($this->matchPreg && isset($this->matchPreg["authorInformation"]))
 	    $highpreg = $this->matchPreg["authorInformation"];
 	else
 	    $highpreg = false;
