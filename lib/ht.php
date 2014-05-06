@@ -265,6 +265,14 @@ class Ht {
         return "<pre>" . htmlspecialchars($text) . "</pre>";
     }
 
+    static function pre_h_wrap($text) {
+        if (is_array($text))
+            $text = join("\n", $text);
+        else if (is_object($text))
+            $text = var_export($text, true);
+        return "<pre style=\"white-space: pre-wrap\">" . htmlspecialchars($text) . "</pre>";
+    }
+
     static function img($src, $alt, $js = null) {
         if (is_string($js))
             $js = array("class" => $js);
