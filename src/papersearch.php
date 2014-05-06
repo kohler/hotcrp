@@ -250,11 +250,13 @@ class SearchReviewValue {
 class SearchQueryInfo {
     public $tables;
     public $columns;
+    public $negated;
 
     function __construct() {
         $this->tables = array();
         $this->columns = array();
         $this->filters = array();
+        $this->negated = false;
     }
     public function add_table($table, $joiner = false) {
         assert($joiner || !count($this->tables));
@@ -1713,7 +1715,7 @@ class PaperSearch {
     // The query may be liberal (returning more papers than actually match);
     // QUERY EVALUATION makes it precise.
 
-    function _clauseTermSetFlags($t, $sqi, &$q) {
+    private function _clauseTermSetFlags($t, $sqi, &$q) {
         global $Conf;
         $flags = $t->flags;
         $this->needflags |= $flags;
@@ -1728,18 +1730,19 @@ class PaperSearch {
             $this->needflags |= self::F_NONCONFLICT | self::F_REVIEWER;
             $sqi->add_manager_column();
         }
-        if ($flags & self::F_FALSE)
+        if (($flags & self::F_FALSE)
+            || ($sqi->negated && ($flags & self::F_XVIEW)))
             $q[] = "false";
     }
 
-    function _clauseTermSetField(&$t, $field, $negated, $sqi, &$f) {
+    private function _clauseTermSetField(&$t, $field, $sqi, &$f) {
         $this->needflags |= $t->flags;
         $v = $t->value;
         if ($v != "" && $v[0] == "*")
             $v = substr($v, 1);
         if ($v != "" && $v[strlen($v) - 1] == "*")
             $v = substr($v, 0, strlen($v) - 1);
-        if ($negated)
+        if ($sqi->negated)
             // The purpose of _clauseTermSetField is to match AT LEAST those
             // papers that contain "$t->value" as a word in the $field field.
             // A substring match contains at least those papers; but only if
@@ -1759,8 +1762,8 @@ class PaperSearch {
         $this->needflags |= self::F_XVIEW;
     }
 
-    function _clauseTermSetTable(&$t, $value, $compar, $shorttab,
-                                 $table, $field, $where, $sqi, &$f) {
+    private function _clauseTermSetTable(&$t, $value, $compar, $shorttab,
+                                         $table, $field, $where, $sqi, &$f) {
         // see also first "tag" case below
         $q = array();
         $this->_clauseTermSetFlags($t, $sqi, $q);
@@ -1838,7 +1841,7 @@ class PaperSearch {
         return $noratings;
     }
 
-    function _clauseTermSetRating(&$reviewtable, &$where, $rate) {
+    private function _clauseTermSetRating(&$reviewtable, &$where, $rate) {
         $noratings = "";
         if ($this->noratings === false)
             $this->noratings = self::unusableRatings($this->privChair, $this->cid);
@@ -1852,7 +1855,7 @@ class PaperSearch {
         $where[] = $rate;
     }
 
-    function _clauseTermSetReviews($thistab, $extrawhere, &$t, $sqi) {
+    private function _clauseTermSetReviews($thistab, $extrawhere, &$t, $sqi) {
         if (!isset($sqi->tables[$thistab])) {
             $where = array();
             $reviewtable = "PaperReview r";
@@ -1889,7 +1892,7 @@ class PaperSearch {
         return "(" . join(" and ", $q) . ")";
     }
 
-    function _clauseTermSetRevpref($thistab, $extrawhere, &$t, $sqi) {
+    private function _clauseTermSetRevpref($thistab, $extrawhere, &$t, $sqi) {
         if (!isset($sqi->tables[$thistab])) {
             $where = array();
             $reviewtable = "PaperReviewPreference";
@@ -1908,7 +1911,7 @@ class PaperSearch {
         return "(" . join(" and ", $q) . ")";
     }
 
-    function _clauseTermSetComments($thistab, $extrawhere, &$t, $sqi) {
+    private function _clauseTermSetComments($thistab, $extrawhere, &$t, $sqi) {
         global $Conf;
         if (!isset($sqi->tables[$thistab])) {
             $where = array();
@@ -1935,23 +1938,23 @@ class PaperSearch {
         return "(" . join(" and ", $q) . ")";
     }
 
-    function _clauseTermSet(&$t, $negated, $sqi, &$f) {
+    private function _clauseTermSet(&$t, $sqi, &$f) {
         $tt = $t->type;
         $thistab = null;
 
         // collect columns
         if ($tt == "ti") {
             $sqi->add_column("title", "Paper.title");
-            $this->_clauseTermSetField($t, "title", $negated, $sqi, $f);
+            $this->_clauseTermSetField($t, "title", $sqi, $f);
         } else if ($tt == "ab") {
             $sqi->add_column("abstract", "Paper.abstract");
-            $this->_clauseTermSetField($t, "abstract", $negated, $sqi, $f);
+            $this->_clauseTermSetField($t, "abstract", $sqi, $f);
         } else if ($tt == "au") {
             $sqi->add_column("authorInformation", "Paper.authorInformation");
-            $this->_clauseTermSetField($t, "authorInformation", $negated, $sqi, $f);
+            $this->_clauseTermSetField($t, "authorInformation", $sqi, $f);
         } else if ($tt == "co") {
             $sqi->add_column("collaborators", "Paper.collaborators");
-            $this->_clauseTermSetField($t, "collaborators", $negated, $sqi, $f);
+            $this->_clauseTermSetField($t, "collaborators", $sqi, $f);
         } else if ($tt == "au_cid") {
             $this->_clauseTermSetTable($t, $t->value, null, "AuthorConflict",
                                        "PaperConflict", "contactId",
@@ -2038,21 +2041,23 @@ class PaperSearch {
             $f[] = "(" . join(" and ", $q) . ")";
         } else if ($tt == "not") {
             $ff = array();
-            $this->_clauseTermSet($t->value, !$negated, $sqi, $ff);
+            $sqi->negated = !$sqi->negated;
+            $this->_clauseTermSet($t->value, $sqi, $ff);
+            $sqi->negated = !$sqi->negated;
             if (!count($ff))
                 $ff[] = "true";
             $f[] = "not (" . join(" or ", $ff) . ")";
         } else if ($tt == "and") {
             $ff = array();
             foreach ($t->value as $subt)
-                $this->_clauseTermSet($subt, $negated, $sqi, $ff);
+                $this->_clauseTermSet($subt, $sqi, $ff);
             if (!count($ff))
                 $ff[] = "false";
             $f[] = "(" . join(" and ", $ff) . ")";
         } else if ($tt == "or" || $tt == "then") {
             $ff = array();
             foreach ($t->value as $subt)
-                $this->_clauseTermSet($subt, $negated, $sqi, $ff);
+                $this->_clauseTermSet($subt, $sqi, $ff);
             if (!count($ff))
                 $ff[] = "false";
             $f[] = "(" . join(" or ", $ff) . ")";
@@ -2293,7 +2298,7 @@ class PaperSearch {
         $sqi->add_column("outcome", "Paper.outcome");
         $filters = array();
         $this->needflags = 0;
-        $this->_clauseTermSet($qe, false, $sqi, $filters);
+        $this->_clauseTermSet($qe, $sqi, $filters);
         //$Conf->infoMsg(Ht::pre_h(var_export($filters, true)));
 
         // status limitation parts
@@ -2430,7 +2435,7 @@ class PaperSearch {
         if (count($this->contactmatch))
             for ($i = 0; $i < count($this->contactmatch); $i++)
                 $q = str_replace("\1$i\1", sql_in_numeric_set($this->contactmatch[$i]), $q);
-        //$Conf->infoMsg(htmlspecialchars($q));
+        //$Conf->infoMsg(Ht::pre_h_wrap($q));
 
         // actually perform query
         if (!$Conf->qe("create temporary table $this->_matchTable $q", "while performing search"))
