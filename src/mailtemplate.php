@@ -7,7 +7,7 @@ global $mailTemplates;
 $mailTemplates = array
     ("createaccount" =>
      array("subject" => "[%CONFSHORTNAME%] Account information",
-	   "body" => "Greetings,
+           "body" => "Greetings,
 
 An account has been created for you at the %CONFNAME% submissions site.
 
@@ -27,7 +27,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "accountinfo" =>
      array("subject" => "[%CONFSHORTNAME%] Account information",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 Here is your account information for the %CONFNAME% submissions site.
 
@@ -45,7 +45,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "resetpassword" =>
      array("subject" => "[%CONFSHORTNAME%] Password reset request",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 We have received a request to reset the password for your account on the %CONFNAME% submissions site. If you made this request, please use the following link to create a new password. The link is only valid for 3 days from the time this email was sent.
 
@@ -59,7 +59,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "changeemail" =>
      array("subject" => "[%CONFSHORTNAME%] Email change request",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 We have received a request to change the email address for your account on the %CONFNAME% submissions site. If you made this request, please use the following link to update your account to use %EMAIL%. The link is only valid for 3 days from the time this email was sent.
 
@@ -73,7 +73,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "mergeaccount" =>
      array("subject" => "[%CONFSHORTNAME%] Merged account",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 Your account at the %CONFSHORTNAME% submissions site has been merged with the account of %OTHERCONTACT%. From now on, you should log in using the %OTHEREMAIL% account.
 
@@ -83,7 +83,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "requestreview" =>
      array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER%",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 On behalf of the %CONFNAME% program committee, %OTHERCONTACT% would like to solicit your help with the review of %CONFNAME% paper #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
 
@@ -115,7 +115,7 @@ Thanks for your help -- we appreciate that reviewing is hard work!
 
      "retractrequest" =>
      array("subject" => "[%CONFSHORTNAME%] Retracting review request for paper #%NUMBER%",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 %OTHERNAME% has retracted a previous request that you review %CONFNAME% paper #%NUMBER%. There's no need to complete your review.
 
@@ -129,7 +129,7 @@ Thank you,
 
      "proposereview" =>
      array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER%",
-	   "body" => "Greetings,
+           "body" => "Greetings,
 
 %OTHERCONTACT% would like %CONTACT3% to review %CONFNAME% paper #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
 
@@ -143,7 +143,7 @@ Visit the assignment page to approve or deny the request.
 
      "denyreviewrequest" =>
      array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER% denied",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 Your proposal that %OTHERCONTACT% review %CONFNAME% paper #%NUMBER% has been denied by an administrator. You may want to propose someone else.
 
@@ -158,7 +158,7 @@ Thank you,
 
      "refusereviewrequest" =>
      array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER% declined",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 %OTHERCONTACT% cannot complete the review of %CONFNAME% paper #%NUMBER% that you requested. %IF(REASON)%They gave the following reason: %REASON% %ENDIF%You may want to find an alternate reviewer.
 
@@ -170,7 +170,7 @@ Thank you,
 
      "authorwithdraw" =>
      array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 An author of %CONFNAME% paper #%NUMBER% has withdrawn the paper from consideration. The paper will not be reviewed.%IF(REASON)% They gave the following reason: %REASON%%ENDIF%
 
@@ -185,7 +185,7 @@ Thank you,
 
      "adminwithdraw" =>
      array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 %CONFNAME% paper #%NUMBER% has been withdrawn from consideration and will not be reviewed.
 
@@ -202,7 +202,7 @@ Thank you,
 
      "withdrawreviewer" =>
      array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 %CONFSHORTNAME% paper #%NUMBER%, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.
 
@@ -220,7 +220,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "deletepaper" =>
      array("subject" => "[%CONFSHORTNAME%] Deleted paper #%NUMBER% %TITLEHINT%",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by an administrator. This can be done to remove duplicate papers. %IF(REASON)%The following reason was provided for deleting the paper: %REASON%%ENDIF%
 
@@ -233,7 +233,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "reviewsubmit" =>
      array("subject" => "[%CONFSHORTNAME%] Submitted review #%REVIEWNUMBER% %TITLEHINT%",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted. The review is available at the paper site.
 
@@ -250,7 +250,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "reviewupdate" =>
      array("subject" => "[%CONFSHORTNAME%] Updated review #%REVIEWNUMBER% %TITLEHINT%",
-	   "body" => "Dear %NAME%,
+           "body" => "Dear %NAME%,
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated. The review is available at the paper site.
 
@@ -267,10 +267,10 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "acceptnotify" =>
      array("mailtool_name" => "Accept notification",
-	   "mailtool_priority" => 10,
-	   "mailtool_recipients" => "dec:yes",
-	   "subject" => "[%CONFSHORTNAME%] Accepted paper #%NUMBER% %TITLEHINT%",
-	   "body" => "Dear %NAME%,
+           "mailtool_priority" => 10,
+           "mailtool_recipients" => "dec:yes",
+           "subject" => "[%CONFSHORTNAME%] Accepted paper #%NUMBER% %TITLEHINT%",
+           "body" => "Dear %NAME%,
 
 The %CONFNAME% program committee is delighted to inform you that your paper #%NUMBER% has been accepted to appear in the conference.
 
@@ -291,10 +291,10 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "rejectnotify" =>
      array("mailtool_name" => "Reject notification",
-	   "mailtool_priority" => 11,
-	   "mailtool_recipients" => "dec:no",
-	   "subject" => "[%CONFSHORTNAME%] Rejected paper #%NUMBER% %TITLEHINT%",
-	   "body" => "Dear %NAME%,
+           "mailtool_priority" => 11,
+           "mailtool_recipients" => "dec:no",
+           "subject" => "[%CONFSHORTNAME%] Rejected paper #%NUMBER% %TITLEHINT%",
+           "body" => "Dear %NAME%,
 
 The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER% was rejected, and will not appear in the conference.
 
@@ -315,7 +315,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "commentnotify" =>
      array("subject" => "[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
-	   "body" => "A comment for %CONFNAME% paper #%NUMBER% has been posted. For the most up-to-date comments, or to unsubscribe from email notification, see the paper site.
+           "body" => "A comment for %CONFNAME% paper #%NUMBER% has been posted. For the most up-to-date comments, or to unsubscribe from email notification, see the paper site.
 
   Paper site: %URL(paper, p=%NUMBER%)%
 
@@ -327,7 +327,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "responsenotify" =>
      array("subject" => "[%CONFSHORTNAME%] Response for #%NUMBER% %TITLEHINT%",
-	   "body" => "The authors' response for %CONFNAME% paper #%NUMBER% is available as shown below. The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the paper site.
+           "body" => "The authors' response for %CONFNAME% paper #%NUMBER% is available as shown below. The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the paper site.
 
   Paper site: %URL(paper, p=%NUMBER%)%
 
@@ -339,7 +339,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "finalsubmitnotify" =>
      array("subject" => "[%CONFSHORTNAME%] Updated final paper #%NUMBER% %TITLEHINT%",
-	   "body" => "The final version for %CONFNAME% paper #%NUMBER% has been updated. The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the paper site.
+           "body" => "The final version for %CONFNAME% paper #%NUMBER% has been updated. The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the paper site.
 
   Paper site: %URL(paper, p=%NUMBER%)%
 
@@ -349,11 +349,11 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "genericmailtool" =>
      array("mailtool_name" => "Generic",
-	   "mailtool_pc" => true,
-	   "mailtool_priority" => 0,
-	   "mailtool_recipients" => "s",
-	   "subject" => "[%CONFSHORTNAME%] Paper #%NUMBER% %TITLEHINT%",
-	   "body" => "Dear %NAME%,
+           "mailtool_pc" => true,
+           "mailtool_priority" => 0,
+           "mailtool_recipients" => "s",
+           "subject" => "[%CONFSHORTNAME%] Paper #%NUMBER% %TITLEHINT%",
+           "body" => "Dear %NAME%,
 
 Your message here.
 
@@ -370,11 +370,11 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "reviewremind" =>
      array("mailtool_name" => "Review reminder",
-	   "mailtool_pc" => true,
-	   "mailtool_priority" => 20,
-	   "mailtool_recipients" => "uncrev",
-	   "subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
-	   "body" => "Dear %NAME%,
+           "mailtool_pc" => true,
+           "mailtool_priority" => 20,
+           "mailtool_recipients" => "uncrev",
+           "subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
+           "body" => "Dear %NAME%,
 
 This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please decline the review using the site or contact the person who requested the review directly.
 
@@ -394,12 +394,12 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "myreviewremind" =>
      array("mailtool_name" => "Personalized review reminder",
-	   "mailtool_pc" => true,
-	   "mailtool_priority" => 21,
-	   "mailtool_recipients" => "uncmyextrev",
-	   "mailtool_search_type" => "t",
-	   "subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
-	   "body" => "Dear %NAME%,
+           "mailtool_pc" => true,
+           "mailtool_priority" => 21,
+           "mailtool_recipients" => "uncmyextrev",
+           "mailtool_search_type" => "t",
+           "subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
+           "body" => "Dear %NAME%,
 
 This is a reminder from %OTHERCONTACT% to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please decline the review using the site or contact %OTHERNAME% directly.
 
@@ -419,9 +419,9 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "newpcrev" =>
      array("mailtool_name" => "Review assignment notification",
-	   "mailtool_recipients" => "newpcrev",
-	   "subject" => "[%CONFSHORTNAME%] New review assignments",
-	   "body" => "Dear %NAME%,
+           "mailtool_recipients" => "newpcrev",
+           "subject" => "[%CONFSHORTNAME%] New review assignments",
+           "body" => "Dear %NAME%,
 
 You have been assigned new reviews for %CONFNAME%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%.%ENDIF%
 
@@ -437,7 +437,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "registerpaper" =>
      array("subject" => "[%CONFSHORTNAME%] Registered paper #%NUMBER% %TITLEHINT%",
-	   "body" => "Paper #%PAPER% has been registered at the %CONFNAME% submissions site.
+           "body" => "Paper #%PAPER% has been registered at the %CONFNAME% submissions site.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -453,7 +453,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "updatepaper" =>
      array("subject" => "[%CONFSHORTNAME%] Updated paper #%NUMBER% %TITLEHINT%",
-	   "body" => "Paper #%PAPER% has been updated at the %CONFNAME% submissions site.
+           "body" => "Paper #%PAPER% has been updated at the %CONFNAME% submissions site.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -469,7 +469,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "submitpaper" =>
      array("subject" => "[%CONFSHORTNAME%] Submitted paper #%NUMBER% %TITLEHINT%",
-	   "body" => "Paper #%PAPER% has been submitted to the %CONFNAME% submissions site.
+           "body" => "Paper #%PAPER% has been submitted to the %CONFNAME% submissions site.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -485,7 +485,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
      "submitfinalpaper" =>
      array("subject" => "[%CONFSHORTNAME%] Updated final paper #%NUMBER% %TITLEHINT%",
-	   "body" => "The final version for paper #%PAPER% has been updated at the %CONFNAME% submissions site.
+           "body" => "The final version for paper #%PAPER% has been updated at the %CONFNAME% submissions site.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%

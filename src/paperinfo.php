@@ -16,12 +16,12 @@ class PaperContactInfo {
         global $Conf;
         if ($cid)
             $result = $Conf->qe("select conflictType as conflict_type,
-		reviewType as review_type,
-		reviewSubmitted as review_submitted,
-		reviewNeedsSubmit as review_needs_submit
-		from (select $pid paperId) crap
-		left join PaperConflict on (PaperConflict.paperId=crap.paperId and PaperConflict.contactId=$cid)
-		left join PaperReview on (PaperReview.paperId=crap.paperId and PaperReview.contactId=$cid)");
+                reviewType as review_type,
+                reviewSubmitted as review_submitted,
+                reviewNeedsSubmit as review_needs_submit
+                from (select $pid paperId) crap
+                left join PaperConflict on (PaperConflict.paperId=crap.paperId and PaperConflict.contactId=$cid)
+                left join PaperReview on (PaperReview.paperId=crap.paperId and PaperReview.contactId=$cid)");
         else
             $result = null;
         if (!$result || !($ci = $result->fetch_object("PaperContactInfo"))) {

@@ -98,10 +98,10 @@ class MeetingTracker {
                 $status->position_at = $tracker->position_at;
             $pids = array_slice($tracker->ids, $tracker->position, 3);
             $result = $Conf->qe("select p.paperId, p.title, p.leadContactId, p.managerContactId, r.reviewType, conf.conflictType
-		from Paper p
-		left join PaperReview r on (r.paperId=p.paperId and r.contactId=$acct->contactId)
-		left join PaperConflict conf on (conf.paperId=p.paperId and conf.contactId=$acct->contactId)
-		where p.paperId in (" . join(",", $pids) . ")");
+                from Paper p
+                left join PaperReview r on (r.paperId=p.paperId and r.contactId=$acct->contactId)
+                left join PaperConflict conf on (conf.paperId=p.paperId and conf.contactId=$acct->contactId)
+                where p.paperId in (" . join(",", $pids) . ")");
             $papers = array();
             while (($row = edb_orow($result))) {
                 $papers[$row->paperId] = $p = (object)

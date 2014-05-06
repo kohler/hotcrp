@@ -81,7 +81,7 @@ class PaperOption {
     }
 
     function has_selector() {
-	return self::type_has_selector($this->type);
+        return self::type_has_selector($this->type);
     }
 
     static function type_takes_pdf($type) {

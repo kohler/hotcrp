@@ -59,7 +59,7 @@ define("OPTIONTYPE_CHECKBOX", 0);
 define("OPTIONTYPE_SELECTOR", 1); /* see also script.js:doopttype */
 define("OPTIONTYPE_NUMERIC", 2);
 define("OPTIONTYPE_TEXT", 3);
-define("OPTIONTYPE_PDF", 4);	/* order matters */
+define("OPTIONTYPE_PDF", 4);    /* order matters */
 define("OPTIONTYPE_SLIDES", 5);
 define("OPTIONTYPE_VIDEO", 6);
 define("OPTIONTYPE_FINALPDF", 100);
@@ -94,9 +94,9 @@ $CurrentList = 0;
 
 global $reviewScoreNames;
 $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
-			  "grammar", "reviewerQualification", "potential",
-			  "fixability", "interestToCommunity", "longevity",
-			  "likelyPresentation", "suitableForShort");
+                          "grammar", "reviewerQualification", "potential",
+                          "fixability", "interestToCommunity", "longevity",
+                          "likelyPresentation", "suitableForShort");
 
 global $OK;
 $OK = 1;
@@ -105,8 +105,8 @@ $Now = time();
 
 global $allowedSessionVars;
 $allowedSessionVars = array("foldassigna", "foldpaperp", "foldpaperb",
-			    "foldpapert", "foldpscollab", "foldhomeactivity",
-			    "pfdisplay", "pldisplay", "ppldisplay");
+                            "foldpapert", "foldpscollab", "foldhomeactivity",
+                            "pfdisplay", "pldisplay", "ppldisplay");
 
 
 // set $ConfSitePATH (path to conference site), $ConfSiteBase, and $ConfSiteSuffix

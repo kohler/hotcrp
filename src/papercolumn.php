@@ -95,20 +95,20 @@ class SelectorPaperColumn extends PaperColumn {
         parent::__construct($name, Column::VIEW_COLUMN, $extra);
     }
     public function prepare($pl, &$queryOptions, $visible) {
-	global $Conf;
+        global $Conf;
         if ($this->name == "selconf" && !$pl->contact->privChair)
             return false;
         if ($this->name == "selconf" || $this->name == "selunlessconf")
             $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
         if ($this->name == "selconf")
-	    $Conf->footerScript("add_conflict_ajax()");
+            $Conf->footerScript("add_conflict_ajax()");
         return true;
     }
     public function header($pl, $row, $ordinal) {
         if ($this->name == "selconf")
             return "Conflict?";
         else
-	    return ($ordinal ? "&nbsp;" : "");
+            return ($ordinal ? "&nbsp;" : "");
     }
     public function col() {
         return "<col width='0*' />";
@@ -173,10 +173,10 @@ class StatusPaperColumn extends PaperColumn {
             $row->_status_sort_info = ($pl->contact->canViewDecision($row, $force) ? $row->outcome : -10000);
     }
     public function status_sorter($a, $b) {
-	$x = $b->_status_sort_info - $a->_status_sort_info;
-	$x = $x ? $x : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
-	$x = $x ? $x : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
-	return $x ? $x : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
+        $x = $b->_status_sort_info - $a->_status_sort_info;
+        $x = $x ? $x : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
+        $x = $x ? $x : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
+        return $x ? $x : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
     }
     public function header($pl, $row, $ordinal) {
         return "Status";
@@ -217,13 +217,13 @@ class ReviewStatusPaperColumn extends PaperColumn {
             $row->_review_status_sort_info = !$this->content_empty($pl, $row);
     }
     public function review_status_sorter($a, $b) {
-	$av = ($a->_review_status_sort_info ? $a->reviewCount : 2147483647);
-	$bv = ($b->_review_status_sort_info ? $b->reviewCount : 2147483647);
-	if ($av == $bv) {
-	    $av = ($a->_review_status_sort_info ? $a->startedReviewCount : 2147483647);
-	    $bv = ($b->_review_status_sort_info ? $b->startedReviewCount : 2147483647);
-	}
-	return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
+        $av = ($a->_review_status_sort_info ? $a->reviewCount : 2147483647);
+        $bv = ($b->_review_status_sort_info ? $b->reviewCount : 2147483647);
+        if ($av == $bv) {
+            $av = ($a->_review_status_sort_info ? $a->startedReviewCount : 2147483647);
+            $bv = ($b->_review_status_sort_info ? $b->startedReviewCount : 2147483647);
+        }
+        return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
     }
     public function header($pl, $row, $ordinal) {
         return "<span class='hastitle' title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</span>";
@@ -284,52 +284,52 @@ class AuthorsPaperColumn extends PaperColumn {
         return $affaus;
     }
     public function content($pl, $row) {
-	if (!$pl->contact->canViewAuthors($row, true))
-	    return "";
-	cleanAuthor($row);
-	$aus = array();
+        if (!$pl->contact->canViewAuthors($row, true))
+            return "";
+        cleanAuthor($row);
+        $aus = array();
         $highlight = defval($pl->search->matchPreg, "authorInformation", "");
-	if ($this->aufull) {
+        if ($this->aufull) {
             $affaus = $this->full_authors($row);
-	    foreach ($affaus as &$ax) {
+            foreach ($affaus as &$ax) {
                 foreach ($ax[0] as &$axn)
                     $axn = Text::highlight($axn, $highlight);
                 unset($axn);
                 $aff = Text::highlight($ax[1], $highlight);
-		$ax = commajoin($ax[0]) . ($aff ? " <span class='auaff'>($aff)</span>" : "");
-	    }
-	    return commajoin($affaus);
-	} else if (!$highlight) {
-	    foreach ($row->authorTable as $au)
-		$aus[] = Text::abbrevname_html($au);
-	    return join(", ", $aus);
-	} else {
-	    foreach ($row->authorTable as $au) {
-		$first = htmlspecialchars($au[0]);
-		$x = Text::highlight(trim("$au[0] $au[1]"), $highlight, $nm);
-		if ((!$nm || substr($x, 0, strlen($first)) == $first)
-		    && ($initial = Text::initial($first)) != "")
-		    $x = $initial . substr($x, strlen($first));
-		$aus[] = $x;
-	    }
-	    return join(", ", $aus);
-	}
+                $ax = commajoin($ax[0]) . ($aff ? " <span class='auaff'>($aff)</span>" : "");
+            }
+            return commajoin($affaus);
+        } else if (!$highlight) {
+            foreach ($row->authorTable as $au)
+                $aus[] = Text::abbrevname_html($au);
+            return join(", ", $aus);
+        } else {
+            foreach ($row->authorTable as $au) {
+                $first = htmlspecialchars($au[0]);
+                $x = Text::highlight(trim("$au[0] $au[1]"), $highlight, $nm);
+                if ((!$nm || substr($x, 0, strlen($first)) == $first)
+                    && ($initial = Text::initial($first)) != "")
+                    $x = $initial . substr($x, strlen($first));
+                $aus[] = $x;
+            }
+            return join(", ", $aus);
+        }
     }
     public function text($pl, $row) {
-	if (!$pl->contact->canViewAuthors($row, true))
-	    return "";
-	cleanAuthor($row);
-	if ($this->aufull) {
+        if (!$pl->contact->canViewAuthors($row, true))
+            return "";
+        cleanAuthor($row);
+        if ($this->aufull) {
             $affaus = $this->full_authors($row);
-	    foreach ($affaus as &$ax)
-		$ax = commajoin($ax[0]) . ($ax[1] ? " ($ax[1])" : "");
+            foreach ($affaus as &$ax)
+                $ax = commajoin($ax[0]) . ($ax[1] ? " ($ax[1])" : "");
             return commajoin($affaus);
-	} else {
+        } else {
             $aus = array();
-	    foreach ($row->authorTable as $au)
-		$aus[] = Text::abbrevname_text($au);
-	    return join(", ", $aus);
-	}
+            foreach ($row->authorTable as $au)
+                $aus[] = Text::abbrevname_text($au);
+            return join(", ", $aus);
+        }
     }
 }
 
@@ -393,7 +393,7 @@ class TopicListPaperColumn extends PaperColumn {
             $queryOptions["topics"] = 1;
             reviewForm();       /* create $ReviewFormCache */
         }
-	return true;
+        return true;
     }
     public function header($pl, $row, $ordinal) {
         return "Topics";
@@ -520,15 +520,15 @@ class ReviewDelegationPaperColumn extends PaperColumn {
                                   "sorter" => "review_delegation_sorter"));
     }
     public function prepare($pl, &$queryOptions, $visible) {
-	if (!$pl->contact->isPC)
+        if (!$pl->contact->isPC)
             return false;
         $queryOptions["allReviewScores"] = $queryOptions["reviewerName"] = 1;
-	return true;
+        return true;
     }
     public function review_delegation_sorter($a, $b) {
-	$x = strcasecmp($a->reviewLastName, $b->reviewLastName);
-	$x = $x ? $x : strcasecmp($a->reviewFirstName, $b->reviewFirstName);
-	return $x ? $x : strcasecmp($a->reviewEmail, $b->reviewEmail);
+        $x = strcasecmp($a->reviewLastName, $b->reviewLastName);
+        $x = $x ? $x : strcasecmp($a->reviewFirstName, $b->reviewFirstName);
+        return $x ? $x : strcasecmp($a->reviewEmail, $b->reviewEmail);
     }
     public function header($pl, $row, $ordinal) {
         return "Reviewer";
@@ -551,7 +551,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         if ($visible > 0)
             $Conf->footerScript("add_assrev_ajax()");
         $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
-	return true;
+        return true;
     }
     public function analyze($pl, &$rows) {
         $this->xreviewer = false;
@@ -586,10 +586,10 @@ class DesirabilityPaperColumn extends PaperColumn {
         if (!$pl->contact->privChair)
             return false;
         $queryOptions["desirability"] = 1;
-	return true;
+        return true;
     }
     public function desirability_sorter($a, $b) {
-	return $b->desirability - $a->desirability;
+        return $b->desirability - $a->desirability;
     }
     public function header($pl, $row, $ordinal) {
         return "Desirability";
@@ -616,10 +616,10 @@ class TopicScorePaperColumn extends PaperColumn {
             return false;
         $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
         $queryOptions["topicInterestScore"] = 1;
-	return true;
+        return true;
     }
     public function topic_score_sorter($a, $b) {
-	return $b->topicInterestScore - $a->topicInterestScore;
+        return $b->topicInterestScore - $a->topicInterestScore;
     }
     public function header($pl, $row, $ordinal) {
         return "Topic<br/>score";
@@ -643,7 +643,7 @@ class PreferencePaperColumn extends PaperColumn {
         $this->editable = $editable;
     }
     public function prepare($pl, &$queryOptions, $visible) {
-	global $Conf;
+        global $Conf;
         if (!$pl->contact->isPC)
             return false;
         $queryOptions["reviewerPreference"] = $queryOptions["topicInterestScore"] = 1;
@@ -659,11 +659,11 @@ class PreferencePaperColumn extends PaperColumn {
                  . "</div></form>", "prefform");
             $Conf->footerScript("add_revpref_ajax()");
         }
-	return true;
+        return true;
     }
     public function preference_sorter($a, $b) {
-	$x = $b->reviewerPreference - $a->reviewerPreference;
-	return $x ? $x : $b->topicInterestScore - $a->topicInterestScore;
+        $x = $b->reviewerPreference - $a->reviewerPreference;
+        return $x ? $x : $b->topicInterestScore - $a->topicInterestScore;
     }
     public function header($pl, $row, $ordinal) {
         return "Preference";
@@ -698,7 +698,7 @@ class PreferenceListPaperColumn extends PaperColumn {
             return false;
         $queryOptions["allReviewerPreference"] = $queryOptions["topics"]
             = $queryOptions["allConflictType"] = 1;
-	return true;
+        return true;
     }
     public function header($pl, $row, $ordinal) {
         return "Preferences";
@@ -730,7 +730,7 @@ class ReviewerListPaperColumn extends PaperColumn {
             if ($pl->contact->privChair)
                 $queryOptions["allReviewerPreference"] = $queryOptions["topics"] = 1;
         }
-	return true;
+        return true;
     }
     public function header($pl, $row, $ordinal) {
         return "Reviewers";
@@ -765,7 +765,7 @@ class PCConflictListPaperColumn extends PaperColumn {
             return false;
         if ($visible)
             $queryOptions["allConflictType"] = 1;
-	return true;
+        return true;
     }
     public function header($pl, $row, $ordinal) {
         return "PC conflicts";
@@ -787,13 +787,13 @@ class ConflictMatchPaperColumn extends PaperColumn {
         $this->field = $field;
     }
     public function prepare($pl, &$queryOptions, $visible) {
-	return $pl->contact->privChair;
+        return $pl->contact->privChair;
     }
     public function header($pl, $row, $ordinal) {
-	if ($this->field == "authorInformation")
-	    return "<strong>Potential conflict in authors</strong>";
+        if ($this->field == "authorInformation")
+            return "<strong>Potential conflict in authors</strong>";
         else
-	    return "<strong>Potential conflict in collaborators</strong>";
+            return "<strong>Potential conflict in collaborators</strong>";
     }
     public function content_empty($pl, $row) {
         return defval($pl->search->matchPreg, $this->field, "") == "";
@@ -810,9 +810,9 @@ class ConflictMatchPaperColumn extends PaperColumn {
                 if ($n)
                     $text .= ($text ? "; " : "") . $line;
             }
-	if ($text != "")
-	    unset($row->folded);
-	return $text;
+        if ($text != "")
+            unset($row->folded);
+        return $text;
     }
 }
 
@@ -1003,7 +1003,7 @@ class ScorePaperColumn extends PaperColumn {
             $queryOptions["scores"][$this->score] = true;
             $this->max_score = count($f->options);
         }
-	return true;
+        return true;
     }
     public function sort_prepare($pl, &$rows) {
         $scoreName = $this->score . "Scores";
@@ -1037,11 +1037,11 @@ class ScorePaperColumn extends PaperColumn {
         return !$pl->contact->canViewReview($row, $this->viewscore, true);
     }
     public function content($pl, $row) {
-	global $Conf, $ReviewFormCache;
+        global $Conf, $ReviewFormCache;
         $allowed = $pl->contact->canViewReview($row, $this->viewscore, false);
         $fname = $this->score . "Scores";
         if (($allowed || $pl->contact->allowAdminister($row))
-	    && $row->$fname) {
+            && $row->$fname) {
             $t = $ReviewFormCache->field($this->score)->unparse_graph($row->$fname, 1, defval($row, $this->score));
             if (!$allowed)
                 $t = "<span class='fx20'>$t</span>";
@@ -1085,7 +1085,7 @@ class FormulaPaperColumn extends PaperColumn {
             return false;
         $this->formula_function = Formula::compile_function($expr, $pl->contact);
         Formula::add_query_options($queryOptions, $expr, $pl->contact);
-	return true;
+        return true;
     }
     public function sort_prepare($pl, &$rows) {
         $formulaf = $this->formula_function;
@@ -1204,7 +1204,7 @@ class SearchSortPaperColumn extends PaperColumn {
             $row->_search_sort_info = $sortInfo[$row->paperId];
     }
     public function search_sort_sorter($a, $b) {
-	return $a->_search_sort_info - $b->_search_sort_info;
+        return $a->_search_sort_info - $b->_search_sort_info;
     }
 }
 
@@ -1222,7 +1222,7 @@ class TagOrderSortPaperColumn extends PaperColumn {
         return true;
     }
     public function sort_prepare($pl, &$rows) {
-	global $Conf;
+        global $Conf;
         $careful = !$pl->contact->privChair
             && $Conf->setting("tag_seeall") <= 0;
         $ot = $pl->search->orderTags;
@@ -1239,14 +1239,14 @@ class TagOrderSortPaperColumn extends PaperColumn {
         }
     }
     public function tag_order_sorter($a, $b) {
-	$i = $x = 0;
+        $i = $x = 0;
         for ($i = $x = 0; $x == 0; ++$i) {
-	    $n = "tagIndex" . ($i ? $i : "");
+            $n = "tagIndex" . ($i ? $i : "");
             if (!isset($a->$n))
                 break;
             $x = ($a->$n < $b->$n ? -1 : ($a->$n == $b->$n ? 0 : 1));
-	}
-	return $x;
+        }
+        return $x;
     }
 }
 

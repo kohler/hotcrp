@@ -94,20 +94,20 @@ class CommentSave {
             $q = "insert into PaperComment ($qa) select $qb\n";
             if ($ctype & COMMENTTYPE_RESPONSE) {
                 // make sure there is exactly one response
-                $q .= "	from (select Paper.paperId, coalesce(commentId,0) commentId, 0 commentCount, 0 maxOrdinal
-		from Paper
-		left join PaperComment on (PaperComment.paperId=Paper.paperId and ";
+                $q .= " from (select Paper.paperId, coalesce(commentId,0) commentId, 0 commentCount, 0 maxOrdinal
+                from Paper
+                left join PaperComment on (PaperComment.paperId=Paper.paperId and ";
                 if ($Conf->sversion >= 53)
                     $q .= "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
                 else
                     $q .= "forAuthors=2";
                 $q .= ") where Paper.paperId=$prow->paperId group by Paper.paperId) t
-	where t.commentId=0";
+        where t.commentId=0";
                 $insert_id_while = false;
             } else {
-                $q .= "	from (select Paper.paperId, coalesce(count(commentId),0) commentCount, coalesce(max(PaperComment.ordinal),0) maxOrdinal
-		from Paper
-		left join PaperComment on (PaperComment.paperId=Paper.paperId and ";
+                $q .= " from (select Paper.paperId, coalesce(count(commentId),0) commentCount, coalesce(max(PaperComment.ordinal),0) maxOrdinal
+                from Paper
+                left join PaperComment on (PaperComment.paperId=Paper.paperId and ";
                 if ($Conf->sversion >= 53) {
                     $q .= "(commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and ";
                     if ($ctype >= COMMENTTYPE_AUTHOR)

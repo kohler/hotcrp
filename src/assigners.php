@@ -691,29 +691,29 @@ class AssignmentSet {
         $plist->display .= " reviewers ";
         echo $plist->text("reviewers");
 
-	echo "<div class='g'></div>";
-	echo "<h3>Assignment summary</h3>\n";
-	echo '<table class="pctb"><tr><td class="pctbcolleft"><table>';
-	$colorizer = new Tagger;
-	$pcdesc = array();
-	foreach (pcMembers() as $cid => $pc) {
-	    $nnew = @+$countbycid[$cid];
-	    $color = $colorizer->color_classes($pc->all_contact_tags());
-	    $color = ($color ? ' class="' . $color . '"' : "");
-	    $c = "<tr$color><td class='pctbname pctbl'>"
-		. Text::name_html($pc)
-		. ": " . plural($nnew, "assignment")
-		. "</td></tr><tr$color><td class='pctbnrev pctbl'>"
-		. self::review_count_report($nrev, $pc, $nnew ? "After assignment:&nbsp;" : "");
-	    $pcdesc[] = $c . "</td></tr>\n";
-	}
-	$n = intval((count($pcdesc) + 2) / 3);
-	for ($i = 0; $i < count($pcdesc); $i++) {
-	    if (($i % $n) == 0 && $i)
-		echo "</table></td><td class='pctbcolmid'><table>";
-	    echo $pcdesc[$i];
-	}
-	echo "</table></td></tr></table>\n";
+        echo "<div class='g'></div>";
+        echo "<h3>Assignment summary</h3>\n";
+        echo '<table class="pctb"><tr><td class="pctbcolleft"><table>';
+        $colorizer = new Tagger;
+        $pcdesc = array();
+        foreach (pcMembers() as $cid => $pc) {
+            $nnew = @+$countbycid[$cid];
+            $color = $colorizer->color_classes($pc->all_contact_tags());
+            $color = ($color ? ' class="' . $color . '"' : "");
+            $c = "<tr$color><td class='pctbname pctbl'>"
+                . Text::name_html($pc)
+                . ": " . plural($nnew, "assignment")
+                . "</td></tr><tr$color><td class='pctbnrev pctbl'>"
+                . self::review_count_report($nrev, $pc, $nnew ? "After assignment:&nbsp;" : "");
+            $pcdesc[] = $c . "</td></tr>\n";
+        }
+        $n = intval((count($pcdesc) + 2) / 3);
+        for ($i = 0; $i < count($pcdesc); $i++) {
+            if (($i % $n) == 0 && $i)
+                echo "</table></td><td class='pctbcolmid'><table>";
+            echo $pcdesc[$i];
+        }
+        echo "</table></td></tr></table>\n";
     }
 
     function report_errors() {
@@ -774,11 +774,11 @@ class AssignmentSet {
             $nrev->any[$id] = $nrev->pri[$id] = $nrev->sec[$id] = 0;
 
         $q = "select pc.contactId, group_concat(r.reviewType separator '')
-		from PCMember pc
-		left join PaperReview r on (r.contactId=pc.contactId)\n\t\t";
+                from PCMember pc
+                left join PaperReview r on (r.contactId=pc.contactId)\n\t\t";
         if (!$papers)
             $q .= "left join Paper p on (p.paperId=r.paperId)
-		where p.paperId is null or p.timeWithdrawn<=0";
+                where p.paperId is null or p.timeWithdrawn<=0";
         else {
             $q .= "where r.paperId" . sql_in_numeric_set($papers);
             $nrev->papers = $papers;

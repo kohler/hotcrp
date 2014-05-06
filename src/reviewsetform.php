@@ -22,37 +22,37 @@ function rf_check_options($fid, $fj) {
     $lowonum = 10000;
 
     foreach (explode("\n", $text) as $line) {
-	$line = trim($line);
-	if ($line != "") {
-	    if ((preg_match("/^($expect)\\.\\s*(\\S.*)/", $line, $m)
-		 || preg_match("/^($expect)\\s+(\\S.*)/", $line, $m))
-		&& !isset($opts[$m[1]])) {
-		$onum = ($letters ? ord($m[1]) : (int) $m[1]);
-		$lowonum = min($lowonum, $onum);
-		$opts[$onum] = $m[2];
-	    } else
-		return false;
-	}
+        $line = trim($line);
+        if ($line != "") {
+            if ((preg_match("/^($expect)\\.\\s*(\\S.*)/", $line, $m)
+                 || preg_match("/^($expect)\\s+(\\S.*)/", $line, $m))
+                && !isset($opts[$m[1]])) {
+                $onum = ($letters ? ord($m[1]) : (int) $m[1]);
+                $lowonum = min($lowonum, $onum);
+                $opts[$onum] = $m[2];
+            } else
+                return false;
+        }
     }
 
     // numeric options must start from 1
     if (!$letters && count($opts) > 0 && $lowonum != 1)
-	return false;
+        return false;
     // must have at least 2 options, but off-form fields don't count
     if (count($opts) < 2 && @$fj->position)
-	return false;
+        return false;
 
     $text = "";
     $seqopts = array();
     for ($onum = $lowonum; $onum < $lowonum + count($opts); ++$onum) {
-	if (!isset($opts[$onum]))	// options out of order
-	    return false;
+        if (!isset($opts[$onum]))       // options out of order
+            return false;
         $seqopts[] = $opts[$onum];
     }
 
     if ($letters) {
-	$seqopts = array_reverse($seqopts, true);
-	$fj->option_letter = chr($lowonum);
+        $seqopts = array_reverse($seqopts, true);
+        $fj->option_letter = chr($lowonum);
     }
     $fj->options = array_values($seqopts);
     return true;
@@ -62,7 +62,7 @@ function rf_update() {
     global $Conf, $Error, $review_form_setting_prefixes;
 
     if (!isset($_REQUEST["update"]) || !check_post())
-	return;
+        return;
 
     $while = "while updating review form";
     $scoreModified = array();
@@ -103,17 +103,17 @@ function rf_update() {
         if ($pos > 0)
             $fj->position = $pos;
 
-	if ($f->has_options) {
+        if ($f->has_options) {
             $fj->options = array_values($f->options); // default
-	    if (!rf_check_options($fid, $fj) && $pos > 0)
-		$optionError = $Error["options_$fid"] = true;
-	}
+            if (!rf_check_options($fid, $fj) && $pos > 0)
+                $optionError = $Error["options_$fid"] = true;
+        }
     }
 
     if ($shortNameError)
-	$Conf->errorMsg("Each review field should have a name.  Please fix the highlighted fields and save again.");
+        $Conf->errorMsg("Each review field should have a name.  Please fix the highlighted fields and save again.");
     if ($optionError)
-	$Conf->errorMsg("Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
+        $Conf->errorMsg("Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
 2. Medium quality
 3. High quality</pre>  Please fix the highlighted errors and save again.");
     if (!$shortNameError && !$optionError) {
@@ -138,11 +138,11 @@ function rf_update() {
 
 function rf_getField($f, $formname, $fname, $backup = null) {
     if (isset($_REQUEST["${formname}_$f->id"]))
-	return $_REQUEST["${formname}_$f->id"];
+        return $_REQUEST["${formname}_$f->id"];
     else if ($backup !== null)
         return $backup;
     else
-	return $f->$fname;
+        return $f->$fname;
 }
 
 function rf_show() {
@@ -191,11 +191,11 @@ function rf_show() {
                         . json_encode($req) . ")");
 
     $captions = array
-	("description" => "Enter an HTML description for the review field here,
-	including any guidance you’d like to provide to reviewers and authors.
-	(Note that complex HTML will not appear on offline review forms.)",
-	 "options" => "Enter one option per line, numbered starting from 1 (higher numbers are better).  For example:
-	<pre class='entryexample'>1. Reject
+        ("description" => "Enter an HTML description for the review field here,
+        including any guidance you’d like to provide to reviewers and authors.
+        (Note that complex HTML will not appear on offline review forms.)",
+         "options" => "Enter one option per line, numbered starting from 1 (higher numbers are better).  For example:
+        <pre class='entryexample'>1. Reject
 2. Weak reject
 3. Weak accept
 4. Accept</pre> Or use consecutive capital letters (lower letters are better).");

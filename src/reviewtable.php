@@ -33,90 +33,90 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
     // actual rows
     foreach ($rrows as $rr) {
-	$highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
-	$foundRrow += $highlight;
+        $highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
+        $foundRrow += $highlight;
         if ($Me->ownReview($rr))
-	    $foundMyReview++;
-	$canView = $Me->canViewReview($prow, $rr, null);
+            $foundMyReview++;
+        $canView = $Me->canViewReview($prow, $rr, null);
 
-	// skip unsubmitted reviews
-	if (!$canView && $hideUnviewable) {
-	    if ($rr->reviewNeedsSubmit == 1 && $rr->reviewModified)
-		$notShown++;
-	    continue;
-	}
+        // skip unsubmitted reviews
+        if (!$canView && $hideUnviewable) {
+            if ($rr->reviewNeedsSubmit == 1 && $rr->reviewModified)
+                $notShown++;
+            continue;
+        }
 
-	$t = "";
-	$tclass = ($rrow && $highlight ? "hilite" : "");
+        $t = "";
+        $tclass = ($rrow && $highlight ? "hilite" : "");
 
-	// review ID
-	$id = "Review";
-	if ($rr->reviewSubmitted)
-	    $id .= "&nbsp;#" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
-	else if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit <= 0)
-	    $id .= "&nbsp;(delegated)";
-	else if ($rr->reviewModified > 0)
-	    $id .= "&nbsp;(in&nbsp;progress)";
-	else
-	    $id .= "&nbsp;(not&nbsp;started)";
-	$rlink = unparseReviewOrdinal($rr);
-	if ($rrow && $rrow->reviewId == $rr->reviewId) {
-	    if ($Me->contactId == $rr->contactId && !$rr->reviewSubmitted)
-		$id = "Your $id";
-	    $t .= "<td><a href='" . hoturl("review", "r=$rlink") . "' class='q'><b>$id</b></a></td>";
-	} else if (!$canView)
-	    $t .= "<td>$id</td>";
-	else if ($rrow || $rr->reviewModified <= 0)
-	    $t .= "<td><a href='" . hoturl("review", "r=$rlink") . "'>$id</a></td>";
-	else if ($mode == "assign")
-	    $t .= "<td><a href='" . hoturl("review", "r=$rlink") . "'>$id</a></td>";
-	else
-	    $t .= "<td><a href='#review$rlink'>$id</a></td>";
+        // review ID
+        $id = "Review";
+        if ($rr->reviewSubmitted)
+            $id .= "&nbsp;#" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
+        else if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit <= 0)
+            $id .= "&nbsp;(delegated)";
+        else if ($rr->reviewModified > 0)
+            $id .= "&nbsp;(in&nbsp;progress)";
+        else
+            $id .= "&nbsp;(not&nbsp;started)";
+        $rlink = unparseReviewOrdinal($rr);
+        if ($rrow && $rrow->reviewId == $rr->reviewId) {
+            if ($Me->contactId == $rr->contactId && !$rr->reviewSubmitted)
+                $id = "Your $id";
+            $t .= "<td><a href='" . hoturl("review", "r=$rlink") . "' class='q'><b>$id</b></a></td>";
+        } else if (!$canView)
+            $t .= "<td>$id</td>";
+        else if ($rrow || $rr->reviewModified <= 0)
+            $t .= "<td><a href='" . hoturl("review", "r=$rlink") . "'>$id</a></td>";
+        else if ($mode == "assign")
+            $t .= "<td><a href='" . hoturl("review", "r=$rlink") . "'>$id</a></td>";
+        else
+            $t .= "<td><a href='#review$rlink'>$id</a></td>";
 
-	// primary/secondary glyph
-	if ($conflictType > 0 && !$admin)
-	    $x = "";
-	else if ($rr->reviewType > 0) {
-	    $x = review_type_icon($rr->reviewType);
-	    if ($rr->reviewRound > 0)
+        // primary/secondary glyph
+        if ($conflictType > 0 && !$admin)
+            $x = "";
+        else if ($rr->reviewType > 0) {
+            $x = review_type_icon($rr->reviewType);
+            if ($rr->reviewRound > 0)
                 $x .= "&nbsp;<span class=\"revround\" title=\"Review round\">"
                     . htmlspecialchars($Conf->round_name($rr->reviewRound, true))
                     . "</span>";
         } else
-	    $x = "";
+            $x = "";
 
-	// reviewer identity
-	$showtoken = $rr->reviewToken && $Me->canReview($prow, $rr);
-	if (!$Me->canViewReviewerIdentity($prow, $rr, null)) {
-	    $t .= ($x ? "<td>$x</td>" : "<td class='empty'></td>");
-	} else {
-	    if (!$showtoken || !preg_match('/^anonymous\d*$/', $rr->email)) {
+        // reviewer identity
+        $showtoken = $rr->reviewToken && $Me->canReview($prow, $rr);
+        if (!$Me->canViewReviewerIdentity($prow, $rr, null)) {
+            $t .= ($x ? "<td>$x</td>" : "<td class='empty'></td>");
+        } else {
+            if (!$showtoken || !preg_match('/^anonymous\d*$/', $rr->email)) {
                 if ($mode == "assign")
                     $n = Text::user_html($rr);
                 else
                     $n = Text::name_html($rr);
             } else
-		$n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
-	    $t .= "<td>" . $n . ($x ? " $x" : "");
-	    if ($allow_admin && $rr->email != $Me->email)
-		$t .= " <a href=\"" . selfHref(array("actas" => $rr->email)) . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($rr))) . "</a>";
+                $n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
+            $t .= "<td>" . $n . ($x ? " $x" : "");
+            if ($allow_admin && $rr->email != $Me->email)
+                $t .= " <a href=\"" . selfHref(array("actas" => $rr->email)) . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($rr))) . "</a>";
             if ($mode == "assign"
                 && ($conflictType <= 0 || $admin)
                 && $rr->reviewType == REVIEW_EXTERNAL
                 && $rr->reviewModified <= 0
                 && ($rr->requestedBy == $Me->contactId || $admin))
                 $t .= ' ' . _retract_review_request_form($prow, $rr);
-	    $t .= "</td>";
-	    if ($colorizer && (@$rr->contactRoles || @$rr->contactTags)) {
+            $t .= "</td>";
+            if ($colorizer && (@$rr->contactRoles || @$rr->contactTags)) {
                 $tags = Contact::roles_all_contact_tags(@$rr->contactRoles, @$rr->contactTags);
-		if (($color = $colorizer->color_classes($tags)))
-		    $tclass = $color;
-	    }
-	}
+                if (($color = $colorizer->color_classes($tags)))
+                    $tclass = $color;
+            }
+        }
 
-	// requester
+        // requester
         $reqt = "";
-	if ($mode == "assign"
+        if ($mode == "assign"
             && ($conflictType <= 0 || $admin)
             && $rr->reviewType == REVIEW_EXTERNAL
             && !$showtoken) {
@@ -128,23 +128,23 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             else
                 $reqt .= Text::user_html($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
             $reqt .= '</td>';
-	}
+        }
 
-	// scores or retract request
-	if ($mode != "assign" && $mode != "edit" && $mode != "re")
-	    $t .= $rf->webNumericScoresRow($rr, $prow, $Me, $anyScores);
+        // scores or retract request
+        if ($mode != "assign" && $mode != "edit" && $mode != "re")
+            $t .= $rf->webNumericScoresRow($rr, $prow, $Me, $anyScores);
 
-	// affix
-	if (!$rr->reviewSubmitted) {
-	    $nonsubrev[] = array($tclass, $t);
+        // affix
+        if (!$rr->reviewSubmitted) {
+            $nonsubrev[] = array($tclass, $t);
             if ($reqt)
                 $nonsubrev[] = array($tclass, $reqt);
         } else {
-	    $subrev[] = array($tclass, $t);
+            $subrev[] = array($tclass, $t);
             if ($reqt)
                 $subrev[] = array($tclass, $reqt);
         }
-	$anyColors = $anyColors || ($tclass != "");
+        $anyColors = $anyColors || ($tclass != "");
     }
 
     // proposed review rows
@@ -186,7 +186,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             }
 
             // affix
-	    $nonsubrev[] = array("", $t);
+            $nonsubrev[] = array("", $t);
             if ($reqt)
                 $nonsubrev[] = array("", $reqt);
         }
@@ -194,34 +194,34 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     // headers
     $numericHeaders = "";
     if ($anyScores)
-	$numericHeaders = "<td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me);
+        $numericHeaders = "<td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me);
 
     // unfinished review notification
     $notetxt = "";
     if ($conflictType >= CONFLICT_AUTHOR && !$admin && $notShown
-	&& $Me->canViewReview($prow, null, null)) {
-	$qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
-	if ($notShown == 1)
-	    $t = "1$qualifier review remains outstanding.";
-	else
-	    $t = "$notShown$qualifier reviews remain outstanding.";
-	$t .= "<br /><span class='hint'>You will be emailed if$qualifier reviews are submitted or existing reviews are changed.</span>";
-	$notetxt = "<div class='revnotes'>" . $t . "</div>";
+        && $Me->canViewReview($prow, null, null)) {
+        $qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
+        if ($notShown == 1)
+            $t = "1$qualifier review remains outstanding.";
+        else
+            $t = "$notShown$qualifier reviews remain outstanding.";
+        $t .= "<br /><span class='hint'>You will be emailed if$qualifier reviews are submitted or existing reviews are changed.</span>";
+        $notetxt = "<div class='revnotes'>" . $t . "</div>";
     }
 
     // completion
     if (count($nonsubrev) + count($subrev)) {
-	$t = "<table class='reviewers'>\n";
-	$trstart = ($anyColors ? "<td class='empty' style='padding-right:7px'></td>" : "");
-	if ($numericHeaders)
-	    $t .= "<tr>" . $trstart . $numericHeaders . "</tr>\n";
-	foreach ($subrev as $r)
-	    $t .= "<tr" . ($r[0] ? " class='$r[0]'>" : ">") . $trstart . $r[1] . "</tr>\n";
-	foreach ($nonsubrev as $r)
-	    $t .= "<tr" . ($r[0] ? " class='$r[0]'>" : ">") . $trstart . $r[1] . "</tr>\n";
-	return $t . "</table>\n" . $notetxt;
+        $t = "<table class='reviewers'>\n";
+        $trstart = ($anyColors ? "<td class='empty' style='padding-right:7px'></td>" : "");
+        if ($numericHeaders)
+            $t .= "<tr>" . $trstart . $numericHeaders . "</tr>\n";
+        foreach ($subrev as $r)
+            $t .= "<tr" . ($r[0] ? " class='$r[0]'>" : ">") . $trstart . $r[1] . "</tr>\n";
+        foreach ($nonsubrev as $r)
+            $t .= "<tr" . ($r[0] ? " class='$r[0]'>" : ">") . $trstart . $r[1] . "</tr>\n";
+        return $t . "</table>\n" . $notetxt;
     } else
-	return $notetxt;
+        return $notetxt;
 }
 
 
@@ -237,34 +237,34 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     $nvisible = 0;
     $myrr = null;
     if ($rrows)
-	foreach ($rrows as $rr) {
-	    if ($Me->canViewReview($prow, $rr, null))
-		$nvisible++;
-	    if ($rr->contactId == $Me->contactId
-		|| (!$myrr && $Me->ownReview($rr)))
-		$myrr = $rr;
-	}
+        foreach ($rrows as $rr) {
+            if ($Me->canViewReview($prow, $rr, null))
+                $nvisible++;
+            if ($rr->contactId == $Me->contactId
+                || (!$myrr && $Me->ownReview($rr)))
+                $myrr = $rr;
+        }
 
     // comments
     $pret = "";
     if ($crows && count($crows) > 0 && !$rrow) {
-	$cids = array();
-	$cnames = array();
-	foreach ($crows as $cr)
-	    if ($Me->canViewComment($prow, $cr, null)) {
-		$cids[] = $cr->commentId;
-		$n = "<a class='nowrap' href='#comment$cr->commentId'>";
-		if ($Me->canViewCommentIdentity($prow, $cr, null))
-		    $n .= Text::abbrevname_html($cr);
-		else
-		    $n .= "anonymous";
-		if ($cr->commentType & COMMENTTYPE_RESPONSE)
+        $cids = array();
+        $cnames = array();
+        foreach ($crows as $cr)
+            if ($Me->canViewComment($prow, $cr, null)) {
+                $cids[] = $cr->commentId;
+                $n = "<a class='nowrap' href='#comment$cr->commentId'>";
+                if ($Me->canViewCommentIdentity($prow, $cr, null))
+                    $n .= Text::abbrevname_html($cr);
+                else
+                    $n .= "anonymous";
+                if ($cr->commentType & COMMENTTYPE_RESPONSE)
                     $n .= ($cr->commentType & COMMENTTYPE_DRAFT
                            ? " (Response in progress)" : " (Response)");
-		$cnames[] = $n . "</a>";
-	    }
-	if (count($cids) > 0)
-	    $pret = "<div class='revnotes'><a href='#comment$cids[0]'><strong>" . plural(count($cids), "Comment") . "</strong></a> by " . join(", ", $cnames) . "</div>";
+                $cnames[] = $n . "</a>";
+            }
+        if (count($cids) > 0)
+            $pret = "<div class='revnotes'><a href='#comment$cids[0]'><strong>" . plural(count($cids), "Comment") . "</strong></a> by " . join(", ", $cnames) . "</div>";
     }
 
     $t = "";
@@ -272,79 +272,79 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     // see all reviews
     $allreviewslink = false;
     if (($nvisible > 1 || ($nvisible > 0 && !$myrr))
-	&& ($mode != "r" || $rrow)) {
-	$allreviewslink = true;
-	$x = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=r") . "' class='xx'>"
-	    . Ht::img("view24.png", "[All reviews]", "dlimg") . "&nbsp;<u>All reviews</u></a>";
-	$t .= ($t == "" ? "" : $xsep) . $x;
+        && ($mode != "r" || $rrow)) {
+        $allreviewslink = true;
+        $x = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=r") . "' class='xx'>"
+            . Ht::img("view24.png", "[All reviews]", "dlimg") . "&nbsp;<u>All reviews</u></a>";
+        $t .= ($t == "" ? "" : $xsep) . $x;
     }
 
     // edit paper
     if ($mode != "pe" && $prow->conflictType >= CONFLICT_AUTHOR
-	&& !$Me->canAdminister($prow)) {
-	$x = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;m=pe") . "' class='xx'>"
-	    . Ht::img("edit24.png", "[Edit paper]", "dlimg") . "&nbsp;<u><strong>Edit paper</strong></u></a>";
-	$t .= ($t == "" ? "" : $xsep) . $x;
+        && !$Me->canAdminister($prow)) {
+        $x = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;m=pe") . "' class='xx'>"
+            . Ht::img("edit24.png", "[Edit paper]", "dlimg") . "&nbsp;<u><strong>Edit paper</strong></u></a>";
+        $t .= ($t == "" ? "" : $xsep) . $x;
     }
 
     // edit review
     if ($mode == "re" || ($mode == "assign" && $t != ""))
-	/* no link */;
+        /* no link */;
     else if ($myrr && $rrow != $myrr) {
-	$myrlink = unparseReviewOrdinal($myrr);
-	$a = "<a href='" . hoturl("review", "r=$myrlink") . "' class='xx'>";
-	if ($Me->canReview($prow, $myrr))
-	    $x = $a . Ht::img("review24.png", "[Edit review]", "dlimg") . "&nbsp;<u><b>Edit your review</b></u></a>";
-	else
-	    $x = $a . Ht::img("review24.png", "[Your review]", "dlimg") . "&nbsp;<u><b>Your review</b></u></a>";
-	$t .= ($t == "" ? "" : $xsep) . $x;
+        $myrlink = unparseReviewOrdinal($myrr);
+        $a = "<a href='" . hoturl("review", "r=$myrlink") . "' class='xx'>";
+        if ($Me->canReview($prow, $myrr))
+            $x = $a . Ht::img("review24.png", "[Edit review]", "dlimg") . "&nbsp;<u><b>Edit your review</b></u></a>";
+        else
+            $x = $a . Ht::img("review24.png", "[Your review]", "dlimg") . "&nbsp;<u><b>Your review</b></u></a>";
+        $t .= ($t == "" ? "" : $xsep) . $x;
     } else if (!$myrr && !$rrow && $Me->canReview($prow, null)) {
-	$x = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=re") . "' class='xx'>"
-	    . Ht::img("review24.png", "[Write review]", "dlimg") . "&nbsp;<u><b>Write review</b></u></a>";
-	$t .= ($t == "" ? "" : $xsep) . $x;
+        $x = "<a href='" . hoturl("review", "p=$prow->paperId&amp;m=re") . "' class='xx'>"
+            . Ht::img("review24.png", "[Write review]", "dlimg") . "&nbsp;<u><b>Write review</b></u></a>";
+        $t .= ($t == "" ? "" : $xsep) . $x;
     }
 
     // review assignments
     if ($mode != "assign"
-	&& ($prow->reviewType >= REVIEW_SECONDARY || $admin)) {
-	$x = "<a href='" . hoturl("assign", "p=$prow->paperId") . "' class='xx'>"
-	    . Ht::img("assign24.png", "[Assign]", "dlimg") . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
-	$t .= ($t == "" ? "" : $xsep) . $x;
+        && ($prow->reviewType >= REVIEW_SECONDARY || $admin)) {
+        $x = "<a href='" . hoturl("assign", "p=$prow->paperId") . "' class='xx'>"
+            . Ht::img("assign24.png", "[Assign]", "dlimg") . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
+        $t .= ($t == "" ? "" : $xsep) . $x;
     }
 
     // new comment
     if (!$allreviewslink && $mode != "assign" && $mode != "contact"
-	&& $Me->canComment($prow, null)) {
-	$x = "<a href=\"" . selfHref(array("c" => "new")) . "#commentnew\" onclick='return open_new_comment(1)' class='xx'>"
-	    . Ht::img("comment24.png", "[Add comment]", "dlimg") . "&nbsp;<u>Add comment</u></a>";
-	$t .= ($t == "" ? "" : $xsep) . $x;
+        && $Me->canComment($prow, null)) {
+        $x = "<a href=\"" . selfHref(array("c" => "new")) . "#commentnew\" onclick='return open_new_comment(1)' class='xx'>"
+            . Ht::img("comment24.png", "[Add comment]", "dlimg") . "&nbsp;<u>Add comment</u></a>";
+        $t .= ($t == "" ? "" : $xsep) . $x;
     }
 
     // new response
     if ($mode != "assign" && $Conf->timeAuthorRespond()
-	&& ($prow->conflictType >= CONFLICT_AUTHOR || $Me->allowAdminister($prow))) {
-	$cid = array("response", "response", "Add");
-	if ($crows)
-	    foreach ($crows as $cr)
-		if ($cr->commentType & COMMENTTYPE_RESPONSE)
-		    $cid = array($cr->commentId, "comment$cr->commentId", "Edit");
-	if ($rrow || $conflictType < CONFLICT_AUTHOR)
-	    $a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;c=$cid[0]#$cid[1]") . "' class='xx'>";
-	else
-	    $a = "<a href=\"#$cid[1]\" class='xx'>";
-	$x = $a . Ht::img("comment24.png", "[$cid[2] response]", "dlimg") . "&nbsp;<u>";
-	if ($conflictType >= CONFLICT_AUTHOR)
-	    $x .= "<strong>$cid[2] response</strong></u></a>";
-	else
-	    $x .= "$cid[2] response</u></a>";
-	$t .= ($t == "" ? "" : $xsep) . $x;
+        && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->allowAdminister($prow))) {
+        $cid = array("response", "response", "Add");
+        if ($crows)
+            foreach ($crows as $cr)
+                if ($cr->commentType & COMMENTTYPE_RESPONSE)
+                    $cid = array($cr->commentId, "comment$cr->commentId", "Edit");
+        if ($rrow || $conflictType < CONFLICT_AUTHOR)
+            $a = "<a href='" . hoturl("paper", "p=$prow->paperId&amp;c=$cid[0]#$cid[1]") . "' class='xx'>";
+        else
+            $a = "<a href=\"#$cid[1]\" class='xx'>";
+        $x = $a . Ht::img("comment24.png", "[$cid[2] response]", "dlimg") . "&nbsp;<u>";
+        if ($conflictType >= CONFLICT_AUTHOR)
+            $x .= "<strong>$cid[2] response</strong></u></a>";
+        else
+            $x .= "$cid[2] response</u></a>";
+        $t .= ($t == "" ? "" : $xsep) . $x;
     }
 
     // override conflict
     if ($allow_admin && !$admin) {
-	$x = "<a href=\"" . selfHref(array("forceShow" => 1)) . "\" class='xx'>"
-	    . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing";
-	$t .= ($t == "" ? "" : $xsep) . $x;
+        $x = "<a href=\"" . selfHref(array("forceShow" => 1)) . "\" class='xx'>"
+            . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing";
+        $t .= ($t == "" ? "" : $xsep) . $x;
     } else if ($Me->privChair && !$allow_admin) {
         $x = "You can’t override your conflict because this paper has an administrator.";
         $t .= ($t == "" ? "" : $xsep) . $x;
