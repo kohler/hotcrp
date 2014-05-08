@@ -1069,7 +1069,7 @@ function opt_data($name, $defval = "", $killval = "") {
     return $val;
 }
 
-function doCheckbox($name, $text, $tr = false, $js = "hiliter(this)") {
+function doCheckbox($name, $text, $tr = false, $js = null) {
     $x = setting($name);
     echo ($tr ? "<tr><td class='nowrap'>" : ""),
         Ht::hidden("has_$name", 1),
@@ -1085,7 +1085,7 @@ function doRadio($name, $varr) {
 	$x = 0;
     echo "<table>\n";
     foreach ($varr as $k => $text) {
-	echo "<tr><td class='nowrap'>", Ht::radio_h($name, $k, $k == $x),
+	echo "<tr><td class='nowrap'>", Ht::radio($name, $k, $k == $x),
 	    "&nbsp;</td><td>";
 	if (is_array($text))
 	    echo setting_label($name, $text[0], true), "<br /><small>", $text[1], "</small>";
@@ -1100,8 +1100,7 @@ function doSelect($name, $nametext, $varr, $tr = false) {
     echo ($tr ? "<tr><td class='nowrap lcaption'>" : ""),
 	setting_label($name, $nametext),
 	($tr ? "</td><td class='lentry'>" : ": &nbsp;"),
-	Ht::select($name, $varr, setting($name),
-		    array("onchange" => "hiliter(this)")),
+	Ht::select($name, $varr, setting($name)),
 	($tr ? "</td></tr>\n" : "<br />\n");
 }
 
@@ -1110,7 +1109,7 @@ function doTextRow($name, $text, $v, $size = 30,
     global $Conf;
     $settingname = (is_array($text) ? $text[0] : $text);
     $js = array("class" => "textlite", "size" => $size,
-                "onchange" => "hiliter(this)", "hottemptext" => $tempText);
+                "hottemptext" => $tempText);
     echo "<tr><td class='$capclass nowrap'>", setting_label($name, $settingname), "</td><td class='lentry'>", Ht::entry($name, $v, $js);
     if (is_array($text) && isset($text[2]))
 	echo $text[2];
@@ -1185,7 +1184,7 @@ function do_message($name, $description, $rows = 10, $hint = "") {
         '</a> <span class="f-cx fx">(HTML allowed)</span></div>',
         $hint,
         '<textarea class="textlite fx" name="', $name, '" cols="80"',
-        ' rows="', $rows, '" onchange="hiliter(this)">',
+        ' rows="', $rows, '">',
         htmlspecialchars($current),
         '</textarea></div><div class="g"></div>', "\n";
 }
@@ -1194,22 +1193,22 @@ function doMsgGroup() {
     global $Conf, $Opt;
 
     echo "<div class='f-c'>", setting_label("opt.shortName", "Conference abbreviation"), "</div>\n",
-        Ht::entry("opt.shortName", opt_data("shortName"), array("class" => "textlite", "size" => 20, "onchange" => "hiliter(this)")),
+        Ht::entry("opt.shortName", opt_data("shortName"), array("class" => "textlite", "size" => 20)),
         "<div class='g'></div>\n";
 
     $long = opt_data("longName");
     if ($long == opt_data("shortName"))
         $long = "";
     echo "<div class='f-c'>", setting_label("opt.longName", "Full conference name"), "</div>\n",
-        Ht::entry("opt.longName", $long, array("class" => "textlite", "size" => 70, "onchange" => "hiliter(this)", "hottemptext" => "(same as abbreviation)")),
+        Ht::entry("opt.longName", $long, array("class" => "textlite", "size" => 70, "hottemptext" => "(same as abbreviation)")),
         "<div class='lg'></div>\n";
 
     echo "<div class='f-c'>", setting_label("opt.contactName", "Name of primary site administrator"), "</div>\n",
-        Ht::entry("opt.contactName", opt_data("contactName", null, "Your Name"), array("class" => "textlite", "size" => 50, "onchange" => "hiliter(this)")),
+        Ht::entry("opt.contactName", opt_data("contactName", null, "Your Name"), array("class" => "textlite", "size" => 50)),
         "<div class='g'></div>\n";
 
     echo "<div class='f-c'>", setting_label("opt.contactEmail", "Email of primary site administrator"), "</div>\n",
-        Ht::entry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), array("class" => "textlite", "size" => 40, "onchange" => "hiliter(this)")),
+        Ht::entry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), array("class" => "textlite", "size" => 40)),
         "<div class='ug'></div>\n",
         "<div class='hint'>The primary site administrator is listed as the contact in system emails.</div>",
         "<div class='lg'></div>\n";
@@ -1244,7 +1243,7 @@ function doSubGroup() {
     echo "<div class='g'></div>\n<table id='foldpcconf' class='fold",
 	($Conf->setting("sub_pcconf") ? "o" : "c"), "'>\n";
     doCheckbox("sub_pcconf", "Collect authors&rsquo; PC conflicts", true,
-	       "hiliter(this);void fold('pcconf',!this.checked)");
+	       "void fold('pcconf',!this.checked)");
     echo "<tr class='fx'><td></td><td>";
     doCheckbox("sub_pcconfsel", "Collect PC conflict types (“Advisor/student,” “Recent collaborator,” etc.)");
     echo "</td></tr>\n";
@@ -1255,7 +1254,7 @@ function doSubGroup() {
 	echo "<div class='g'></div>",
             Ht::hidden("has_banal", 1),
             "<table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
-	doCheckbox("sub_banal", "<strong>Automated format checker<span class='fx'>:</span></strong>", true, "hiliter(this);void fold('banal',!this.checked)");
+	doCheckbox("sub_banal", "<strong>Automated format checker<span class='fx'>:</span></strong>", true, "void fold('banal',!this.checked)");
 	echo "<tr class='fx'><td></td><td class='top'><table>";
 	$bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
 	for ($i = 0; $i < 6; $i++)
@@ -1323,13 +1322,13 @@ function doOptGroupOption($o) {
 	setting_label("optn$id", ($id === "n" ? "New option name" : "Option name")),
 	"</div>",
 	"<div class='f-e'>",
-        Ht::entry("optn$id", $o->name, array("class" => "textlite", "hottemptext" => "(Enter new option)", "size" => 50, "onchange" => "hiliter(this)")),
+        Ht::entry("optn$id", $o->name, array("class" => "textlite", "hottemptext" => "(Enter new option)", "size" => 50)),
 	"</div>\n",
 	"  <div class='f-i'>",
 	"<div class='f-c'>",
 	setting_label("optd$id", "Description"),
 	"</div>",
-	"<div class='f-e'><textarea class='textlite' name='optd$id' rows='2' cols='50' onchange='hiliter(this)'>", htmlspecialchars($o->description), "</textarea></div>",
+	"<div class='f-e'><textarea class='textlite' name='optd$id' rows='2' cols='50'>", htmlspecialchars($o->description), "</textarea></div>",
 	"</div></td>";
 
     if ($id !== "n") {
@@ -1395,7 +1394,7 @@ function doOptGroupOption($o) {
 
     echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
 	setting_label("optp$id", "Visibility"), "</div><div class='f-e'>",
-	Ht::select("optp$id", array("admin" => "Administrators only", "pc" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->view_type, array("onchange" => "hiliter(this)")),
+	Ht::select("optp$id", array("admin" => "Administrators only", "pc" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->view_type),
 	"</div></div></td>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
@@ -1409,7 +1408,7 @@ function doOptGroupOption($o) {
         $x[$n + 1] = ordinal($n + 1);
     else
         $x["delete"] = "Delete option";
-    echo Ht::select("optfp$id", $x, $o->position, array("onchange" => "hiliter(this)")),
+    echo Ht::select("optfp$id", $x, $o->position),
         "</div></div></td>";
 
     echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
@@ -1417,7 +1416,7 @@ function doOptGroupOption($o) {
     echo Ht::select("optdt$id", array("normal" => "Normal",
                                       "highlight" => "Prominent",
                                       "near_submission" => "Near submission"),
-                    $o->display_type(), array("onchange" => "hiliter(this)")),
+                    $o->display_type()),
         "</div></div></td>";
 
     if (isset($otypes["pdf:final"]))
@@ -1434,7 +1433,7 @@ function doOptGroupOption($o) {
     echo "<div id='foldoptv$id' class='", (PaperOption::type_has_selector($optvt) ? "foldo" : "foldc"),
 	"'><div class='fx'>",
 	"<div class='hint' style='margin-top:1ex'>Enter choices one per line.  The first choice will be the default.</div>",
-	"<textarea class='textlite' name='optv$id' rows='", $rows, "' cols='50' onchange='hiliter(this)'>", htmlspecialchars($value), "</textarea>",
+	"<textarea class='textlite' name='optv$id' rows='", $rows, "' cols='50'>", htmlspecialchars($value), "</textarea>",
 	"</div></div>";
 
     echo "</div></td></tr>\n";
@@ -1484,7 +1483,7 @@ function doOptGroup() {
     echo "<tr><th colspan='2'></th><th class='fx'><small>Low</small></th><th class='fx'><small>High</small></th></tr>";
     $td1 = "<td class='lcaption'>Current</td>";
     foreach ($Conf->topic_map() as $tid => $tname) {
-	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($tname), "\" size='40' onchange='hiliter(this)' /></td>";
+	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($tname), "\" size='40' /></td>";
 
 	$tinterests = defval($interests, $tid, array());
 	echo "<td class='fx rpentry'>", (defval($tinterests, 0) ? "<span class='topic0'>" . $tinterests[0] . "</span>" : ""), "</td>",
@@ -1510,7 +1509,7 @@ function doOptGroup() {
     }
     $td1 = "<td class='lcaption' rowspan='40'>New<br /><small><a href='#' onclick='return authorfold(\"newtop\",1,1)'>More</a> | <a href='#' onclick='return authorfold(\"newtop\",1,-1)'>Fewer</a></small></td>";
     for ($i = 1; $i <= 40; $i++) {
-	echo "<tr id='newtop$i' class='auedito'>$td1<td class='lentry'><input type='text' class='textlite' name='topn$i' value=\"\" size='40' onchange='hiliter(this)' /></td></tr>\n";
+	echo "<tr id='newtop$i' class='auedito'>$td1<td class='lentry'><input type='text' class='textlite' name='topn$i' value=\"\" size='40' /></td></tr>\n";
 	$td1 = "";
     }
     echo "</table>",
@@ -1536,12 +1535,11 @@ function do_track_permission($type, $question, $tnum, $thistrack) {
         "</td>",
         "<td>",
         Ht::select("${type}_track$tnum", array("" => "Whole PC", "+" => "PC members with tag:", "-" => "PC members without tag:"), $tclass,
-                   array("onchange" => "foldup(this,event,{f:this.selectedIndex==0});hiliter(this)")),
+                   array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0})")),
         " &nbsp;",
         Ht::entry("${type}tag_track$tnum", $ttag,
                   array("class" => "fx textlite",
                         "id" => "${type}tag_track$tnum",
-                        "onchange" => "hiliter(this)",
                         "hottemptext" => "(tag)")),
         "</td></tr>";
 }
@@ -1640,7 +1638,7 @@ function doRevGroup() {
         "'><tr><td>", foldbutton("mailbody_requestreview", ""), "</td>",
 	"<td><a href='#' onclick='return fold(\"mailbody_requestreview\")' class='q'><strong>Mail template for external review requests</strong></a>",
 	" <span class='fx'>(<a href='", hoturl("mail"), "'>keywords</a> allowed; set to empty for default)<br /></span>
-<textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20' onchange='hiliter(this)'>", htmlspecialchars($t["body"]), "</textarea>",
+<textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20'>", htmlspecialchars($t["body"]), "</textarea>",
 	"</td></tr></table>\n";
 
 
@@ -1655,7 +1653,7 @@ function doRevGroup() {
         $v = join(" ", array_keys($tagger->chair_tags()));
     echo "<td>",
         Ht::hidden("has_tag_chair", 1),
-        "<input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /><br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
+        "<input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='40' /><br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lcaption'>", setting_label("tag_vote", "Voting tags"), "</td>";
     if (count($Error) > 0)
@@ -1668,7 +1666,7 @@ function doRevGroup() {
     }
     echo "<td>",
         Ht::hidden("has_tag_vote", 1),
-        Ht::entry_h("tag_vote", $v, array("class" => "textlite", "size" => 40)),
+        Ht::entry("tag_vote", $v, array("class" => "textlite", "size" => 40)),
         "<br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lcaption'>", setting_label("tag_rank", "Ranking tag"), "</td>";
@@ -1678,7 +1676,7 @@ function doRevGroup() {
 	$v = $Conf->setting_data("tag_rank", "");
     echo "<td>",
         Ht::hidden("has_tag_rank", 1),
-        Ht::entry_h("tag_rank", $v, array("class" => "textlite", "size" => 40)),
+        Ht::entry("tag_rank", $v, array("class" => "textlite", "size" => 40)),
         "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
     echo "</table>";
 
@@ -1705,7 +1703,7 @@ function doRevGroup() {
             $v = join(" ", $tag_colors[$k]);
         else
             $v = "";
-	echo "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' class='textlite' name='tag_color_$k' value=\"", htmlspecialchars($v), "\" size='40' onchange='hiliter(this)' /></td></tr>"; /* MAINSIZE */
+	echo "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' class='textlite' name='tag_color_$k' value=\"", htmlspecialchars($v), "\" size='40' /></td></tr>"; /* MAINSIZE */
     }
     echo "</table></td></tr></table>\n";
 
@@ -1787,7 +1785,7 @@ function doDecGroup() {
 	    if (count($Error) > 0)
 		$v = defval($_REQUEST, "dec$k", $v);
 	    echo "<tr>$caption<td class='lentry nowrap'>",
-		"<input type='text' class='textlite' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' onchange='hiliter(this)' />",
+		"<input type='text' class='textlite' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' />",
 		" &nbsp; ", ($k > 0 ? "Accept class" : "Reject class"), "</td>";
 	    if (isset($decs_pcount[$k]) && $decs_pcount[$k])
 		echo "<td class='lentry nowrap'>", plural($decs_pcount[$k], "paper"), "</td>";
@@ -1807,14 +1805,13 @@ function doDecGroup() {
 	"<br /></td>",
 	"<td class='lentry nowrap'>",
         Ht::hidden("has_decisions", 1),
-        "<input type='text' class='textlite' name='decn' value=\"", htmlspecialchars($v), "\" size='35' onchange='hiliter(this)' /> &nbsp; ",
-	Ht::select("dtypn", array(1 => "Accept class", -1 => "Reject class"),
-		    $vclass, array("onchange" => "hiliter(this)")),
+        "<input type='text' class='textlite' name='decn' value=\"", htmlspecialchars($v), "\" size='35' /> &nbsp; ",
+	Ht::select("dtypn", array(1 => "Accept class", -1 => "Reject class"), $vclass),
 	"<br /><small>Examples: “Accepted as short paper”, “Early reject”</small>",
 	"</td>";
     if (defval($Highlight, "decn"))
 	echo "<td class='lentry nowrap'>",
-	    Ht::checkbox_h("decn_confirm", 1, false),
+	    Ht::checkbox("decn_confirm", 1, false),
 	    "&nbsp;<span class='error'>", Ht::label("Confirm"), "</span></td>";
     echo "</tr>\n</table>\n";
 
@@ -1834,7 +1831,7 @@ function doDecGroup() {
 
 $belowHr = true;
 
-echo "<form method='post' action='", hoturl_post("settings"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div>",
+echo Ht::form(hoturl_post("settings"), array("id" => "settingsform")), "<div>",
     Ht::hidden("group", $Group);
 
 echo "<table class='settings'><tr><td class='caption initial final'>";
@@ -1882,4 +1879,5 @@ doActionArea(false);
 echo "</div></div></td></tr>
 </table></div></form>\n";
 
+$Conf->footerScript("hiliter_children('#settingsform')");
 $Conf->footer();

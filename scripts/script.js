@@ -501,6 +501,8 @@ function highlightUpdate(which, off) {
 function hiliter(elt, off) {
     if (typeof elt === "string")
         elt = document.getElementById(elt);
+    else if (!elt || elt.preventDefault)
+        elt = this;
     while (elt && elt.tagName && (elt.tagName.toUpperCase() != "DIV"
                                   || elt.className.substr(0, 4) != "aahc"))
         elt = elt.parentNode;
@@ -510,6 +512,10 @@ function hiliter(elt, off) {
         elt.className = elt.className.replace(" alert", "");
     else if (elt.className)
         elt.className = elt.className + " alert";
+}
+
+function hiliter_children(form) {
+    jQuery(form).find("input, select, textarea").on("change", hiliter);
 }
 
 var foldmap = {}, foldsession_unique = 1;
