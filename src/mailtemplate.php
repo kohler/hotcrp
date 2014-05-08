@@ -337,6 +337,18 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 %COMMENTS%\n"),
 
+     "responsedraftnotify" =>
+     array("subject" => "[%CONFSHORTNAME%] Draft response for #%NUMBER% %TITLEHINT%",
+           "body" => "The draft authors' response for %CONFNAME% paper #%NUMBER% has been updated as shown below. This response has not yet been submitted to reviewers. For the most up-to-date version, or to turn off notification emails, see the paper site.
+
+  Paper site: %URL(paper, p=%NUMBER%)%
+
+Contact the site administrator, %ADMIN%, with any questions or concerns.
+
+- %CONFSHORTNAME% Submissions
+
+%COMMENTS%\n"),
+
      "finalsubmitnotify" =>
      array("subject" => "[%CONFSHORTNAME%] Updated final paper #%NUMBER% %TITLEHINT%",
            "body" => "The final version for %CONFNAME% paper #%NUMBER% has been updated. The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the paper site.

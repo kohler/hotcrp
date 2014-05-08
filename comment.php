@@ -99,10 +99,10 @@ function saveComment($text, $is_response) {
     if ($next_crow && $is_response && ($next_crow->commentType & COMMENTTYPE_DRAFT)) {
 	$deadline = $Conf->printableTimeSetting("resp_done");
 	if ($deadline != "N/A")
-	    $extratext = "  You have until $deadline to send the response to the reviewers.";
+	    $extratext = "  You have until $deadline to submit the response.";
 	else
 	    $extratext = "";
-	$_SESSION["comment_msgs"][$next_crow->commentId] = "<div class='xwarning'>$what saved. However, at your request, this response will not be shown to reviewers.$extratext</div>";
+	$_SESSION["comment_msgs"][$next_crow->commentId] = "<div class='xwarning'>$what saved. <strong>This draft response will not be shown to reviewers.</strong>$extratext</div>";
     } else if ($next_crow)
 	$_SESSION["comment_msgs"][$next_crow->commentId] = "<div class='xconfirm'>$what submitted.</div>";
     else

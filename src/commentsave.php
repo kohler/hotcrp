@@ -8,8 +8,17 @@ class CommentSave {
     static private $crow;
 
     static function watch_callback($prow, $minic) {
-        $tmpl = (self::$crow->commentType & COMMENTTYPE_RESPONSE ? "@responsenotify" : "@commentnotify");
-        if ($minic->canViewComment($prow, self::$crow, false))
+        $ctype = self::$crow->commentType;
+        if (($ctype & COMMENTTYPE_RESPONSE) && ($ctype & COMMENTTYPE_DRAFT))
+            $tmpl = "@responsedraftnotify";
+        else if ($ctype & COMMENTTYPE_RESPONSE)
+            $tmpl = "@responsenotify";
+        else
+            $tmpl = "@commentnotify";
+        if ($minic->canViewComment($prow, self::$crow, false)
+            // Don't send notifications about draft responses to the chair,
+            // even though the chair can see draft responses.
+            && ($tmpl !== "@responsedraftnotify" || $minic->actAuthorView($prow)))
             Mailer::send($tmpl, $prow, $minic, null, array("comment_row" => self::$crow));
     }
 
