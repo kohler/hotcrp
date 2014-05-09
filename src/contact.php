@@ -1184,12 +1184,12 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         if (($rights->nonblind
              && $prow->timeSubmitted > 0
-             && ($rights->allow_pc
+             && ($rights->allow_pc_broad
                  || ($rights->review_type
                      && $Conf->timeReviewerViewSubmittedPaper())))
             || ($rights->nonblind
                 && $prow->timeWithdrawn <= 0
-                && $rights->allow_pc
+                && $rights->allow_pc_broad
                 && $Conf->setting("pc_seeall") > 0)
             || ($rights->allow_administer
                 ? $rights->nonblind || $rights->rights_force /* chair can't see blind authors unless forceShow */
@@ -1200,7 +1200,7 @@ class Contact {
             $whyNot["withdrawn"] = 1;
         else if ($prow->timeSubmitted <= 0)
             $whyNot["notSubmitted"] = 1;
-        else if ($rights->allow_pc || $rights->review_type)
+        else if ($rights->allow_pc_broad || $rights->review_type)
             $whyNot["blindSubmission"] = 1;
         else
             $whyNot["permission"] = 1;
