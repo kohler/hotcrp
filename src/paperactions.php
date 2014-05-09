@@ -150,7 +150,7 @@ class PaperActions {
             $Conf->errorMsg("You don’t have permission to set the $type.");
             $Error[$type] = true;
         } else if ($pc === 0
-                   || ($pc && $pc->isPC && $pc->canReview($prow, null))) {
+                   || ($pc && $pc->isPC && $pc->allow_review_assignment($prow))) {
             $contactId = ($pc === 0 ? 0 : $pc->contactId);
             $field = $type . "ContactId";
             if ($contactId != $prow->$field) {
