@@ -81,7 +81,8 @@ if ((isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]))
 if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
     $result = $Conf->qe("select firstName first, lastName last, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
     $people = edb_orows($result);
-    downloadCSV($people, array("first", "last", "email", "affiliation"), "users");
+    downloadCSV($people, array("first", "last", "email", "affiliation"), "users",
+                array("selection" => true));
     exit;
 }
 
@@ -100,7 +101,7 @@ if ($getaction == "address" && isset($papersel) && $Me->isPC) {
 		    "city", "state", "zip", "country");
     if ($phone)
 	$header[] = "phone";
-    downloadCSV($people, $header, "addresses");
+    downloadCSV($people, $header, "addresses", array("selection" => true));
     exit;
 }
 
@@ -187,7 +188,7 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
         array_push($header, "address1", "address2", "city", "state", "zip", "country");
     if (@$has->topic_interest)
         $header[] = "topic_interest";
-    downloadCSV($people, $header, "pcinfo", array("selection" => $header));
+    downloadCSV($people, $header, "pcinfo", array("selection" => true));
     exit;
 }
 
