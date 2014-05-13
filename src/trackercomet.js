@@ -33,7 +33,7 @@ function get_now() {
 
 function extend(dst, src) {
     for (var i in src)
-	dst[i] = src[i];
+        dst[i] = src[i];
 }
 
 
@@ -41,16 +41,16 @@ function extend(dst, src) {
 
 function log_format(now) {
     var d = new Date(now), i, tzo = d.getTimezoneOffset(), atzo = Math.abs(tzo),
-	x = [d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds(),
-	     Math.floor(atzo / 60), atzo % 60];
+        x = [d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds(),
+             Math.floor(atzo / 60), atzo % 60];
     for (i = 0; i < 6; ++i)
-	if (x[i] < 10)
-	    x[i] = "0" + x[i];
+        if (x[i] < 10)
+            x[i] = "0" + x[i];
     i = x[0] + "/" +
-	"JanFebMarAprMayJunJulAugSepOctNovDec".substr(d.getMonth() * 3, 3) +
-	"/" + (d.getYear() + 1900) + ":" + x[1] + ":" + x[2] + ":" + x[3];
+        "JanFebMarAprMayJunJulAugSepOctNovDec".substr(d.getMonth() * 3, 3) +
+        "/" + (d.getYear() + 1900) + ":" + x[1] + ":" + x[2] + ":" + x[3];
     if (atzo)
-	i += (atzo < 0 ? " +" : " -") + x[4] + x[5];
+        i += (atzo < 0 ? " +" : " -") + x[4] + x[5];
     return i;
 }
 
@@ -67,30 +67,30 @@ function end_and_log(u, req, res, data) {
     }
     res.end(data);
     access_log.write(util.format("%s - - [%s] \"%s %s HTTP/%s\" %d %s\n",
-				 u.remoteAddress, log_format(u.now),
-				 req.method, path, req.httpVersion,
-				 res.statusCode, data.length));
+                                 u.remoteAddress, log_format(u.now),
+                                 req.method, path, req.httpVersion,
+                                 res.statusCode, data.length));
 }
 
 function json_response(u, req, res, j) {
     var content_type;
     if (u.query.callback)
-	content_type = "application/javascript";
+        content_type = "application/javascript";
     else if (u.query.jsontext)
-	content_type = "text/plain";
+        content_type = "text/plain";
     else
-	content_type = "application/json";
+        content_type = "application/json";
 
     j = JSON.stringify(j);
     if (u.query.callback)
-	j = u.query.callback + "(" + j + ")";
+        j = u.query.callback + "(" + j + ")";
 
     res.writeHead(200, {
-	"Content-Type": content_type,
-	"Content-Length": Buffer.byteLength(j),
-	"Access-Control-Allow-Origin": req.headers.origin || "*",
-	"Access-Control-Allow-Credentials": true,
-	"Access-Control-Allow-Headers": "Accept-Encoding"
+        "Content-Type": content_type,
+        "Content-Length": Buffer.byteLength(j),
+        "Access-Control-Allow-Origin": req.headers.origin || "*",
+        "Access-Control-Allow-Credentials": true,
+        "Access-Control-Allow-Headers": "Accept-Encoding"
     });
     end_and_log(u, req, res, j);
 }
@@ -98,13 +98,13 @@ function json_response(u, req, res, j) {
 function redirect(where, u, req, res) {
     var m = "Redirecting\n";
     if (where[0] == "/")
-	where = where.substr(1);
+        where = where.substr(1);
     res.writeHead(302, {
-	"Location": "/" + u.course + "/" + where,
-	"Content-Length": m.length,
-	"Access-Control-Allow-Origin": req.headers.origin || "*",
-	"Access-Control-Allow-Credentials": true,
-	"Access-Control-Allow-Headers": "Accept-Encoding"
+        "Location": "/" + u.course + "/" + where,
+        "Content-Length": m.length,
+        "Access-Control-Allow-Origin": req.headers.origin || "*",
+        "Access-Control-Allow-Credentials": true,
+        "Access-Control-Allow-Headers": "Accept-Encoding"
     });
     end_and_log(u, req, res, m);
 }
@@ -187,7 +187,7 @@ Conference.prototype.update = function (tracker_status) {
     if (this.tracker_status === "")
         this.tracker_status = false;
     for (var i in this.pollers)
-	this.pollers[i](now);
+        this.pollers[i](now);
     this.pollers = {};
     this.npollers = 0;
 };
@@ -196,35 +196,35 @@ Conference.prototype.add_poller = function (u, req, res) {
     var that = this, timeout = null, poller;
 
     function pollf(arg) {
-	if (arg) {
+        if (arg) {
             timeout && clearTimeout(timeout);
-	    u.now = arg;
-	} else {
-	    u.now = get_now();
-	    delete that.pollers[poller];
-	    --that.npollers;
-	}
-	timeout = null;
-	that.poll_response(u, req, res);
+            u.now = arg;
+        } else {
+            u.now = get_now();
+            delete that.pollers[poller];
+            --that.npollers;
+        }
+        timeout = null;
+        that.poll_response(u, req, res);
     }
 
     timeout = that.poll_timeout ? setTimeout(f, that.poll_timeout, 0) : null;
     if (that.poll_capacity && that.npollers == that.poll_capacity)
-	pollf(u.now);
+        pollf(u.now);
     else {
-	poller = that.next_poller;
-	++that.next_poller;
-	++that.npollers;
-	while (that.pollers[poller])
-	    poller = (poller + 1) % 32768;
-	that.pollers[poller] = pollf;
-	res.on("close", function () {
-	    if (timeout) {
-		clearTimeout(timeout);
-		delete that.pollers[poller];
-		--that.npollers;
-	    }
-	});
+        poller = that.next_poller;
+        ++that.next_poller;
+        ++that.npollers;
+        while (that.pollers[poller])
+            poller = (poller + 1) % 32768;
+        that.pollers[poller] = pollf;
+        res.on("close", function () {
+            if (timeout) {
+                clearTimeout(timeout);
+                delete that.pollers[poller];
+                --that.npollers;
+            }
+        });
     }
 };
 
@@ -330,19 +330,19 @@ function server(req, res) {
         "access-log": 1, "error-log": 1
     }, opt = {}, i, x, m, access_log_name, error_log_name;
     for (var i = 2; i < process.argv.length; ++i) {
-	if ((m = process.argv[i].match(/^--([^=]*)(=.*)?$/)))
-	    m[2] = m[2] ? m[2].substr(1) : null;
+        if ((m = process.argv[i].match(/^--([^=]*)(=.*)?$/)))
+            m[2] = m[2] ? m[2].substr(1) : null;
         else if (!(m = process.argv[i].match(/^-(\w)(.*)$/)))
-	    break;
-	if (needargs[m[1]] && !m[2])
-	    m[2] = process.argv[++i];
-	opt[m[1]] = m[2] ? m[2] : true;
+            break;
+        if (needargs[m[1]] && !m[2])
+            m[2] = process.argv[++i];
+        opt[m[1]] = m[2] ? m[2] : true;
     }
 
     if ((x = opt["init-file"] || opt.config || opt.f))
-	eval(fs.readFileSync(x, "utf8"));
+        eval(fs.readFileSync(x, "utf8"));
     else if (!opt["no-init-file"] && fs.existsSync("conf/trackercomet.opt.js"))
-	eval(fs.readFileSync("conf/trackercomet.opt.js", "utf8"));
+        eval(fs.readFileSync("conf/trackercomet.opt.js", "utf8"));
 
     access_log_name = opt["access-log"] || server_config.access_log;
     if (access_log_name == "-" || access_log_name == "stdout")
@@ -350,29 +350,29 @@ function server(req, res) {
     error_log_name = opt["error-log"] || server_config.error_log;
 
     if (!opt.fg) {
-	if (access_log_name != "ignore" && access_log_name != "inherit")
-	    access_log_name = "ignore";
-	if (error_log_name != "ignore" && error_log_name != "inherit")
-	    error_log_name = fs.openSync(error_log_name, "a");
-	require("child_process").spawn(process.argv[0],
-				       process.argv.slice(1).concat(["--fg", "--nohup"]),
-				       {stdio: ["ignore",
+        if (access_log_name != "ignore" && access_log_name != "inherit")
+            access_log_name = "ignore";
+        if (error_log_name != "ignore" && error_log_name != "inherit")
+            error_log_name = fs.openSync(error_log_name, "a");
+        require("child_process").spawn(process.argv[0],
+                                       process.argv.slice(1).concat(["--fg", "--nohup"]),
+                                       {stdio: ["ignore",
                                                 access_log_name,
                                                 error_log_name],
-					detached: true});
-	process.exit();
+                                        detached: true});
+        process.exit();
     }
     if (opt.nohup)
-	process.on("SIGHUP", function () {});
+        process.on("SIGHUP", function () {});
     if (opt.port || opt.p)
-	server_config.port = +(opt.port || opt.p);
+        server_config.port = +(opt.port || opt.p);
 
     server_config.opened_access_log = false;
     if (access_log_name == "ignore")
-	access_log = fs.createWriteStream("/dev/null", {flags: "a"});
+        access_log = fs.createWriteStream("/dev/null", {flags: "a"});
     else if (access_log_name && access_log_name != "inherit") {
         server_config.opened_access_log = true;
-	access_log = fs.createWriteStream(access_log_name, {flags: "a"});
+        access_log = fs.createWriteStream(access_log_name, {flags: "a"});
     }
     if (server_config.conference_matcher
         && typeof server_config.conference_matcher === "string")
@@ -386,13 +386,13 @@ function server_listener() {
         && stats.isFile() && stats.size != 0)
         access_log_sep = "\n";
     access_log.write(util.format("%s- - - [%s] \"START http://%s:%s/\" 0 0\n",
-				 access_log_sep, now_s,
-				 server_config.host || "localhost",
-				 server_config.port));
+                                 access_log_sep, now_s,
+                                 server_config.host || "localhost",
+                                 server_config.port));
     console.warn("[%s] HotCRP trackercomet server running at http://%s:%s/",
-		 now_s,
-		 server_config.host || "localhost",
-		 server_config.port);
+                 now_s,
+                 server_config.host || "localhost",
+                 server_config.port);
 }
 
 function server_error(e) {
