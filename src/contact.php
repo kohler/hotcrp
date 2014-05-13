@@ -1807,7 +1807,7 @@ class Contact {
 
     function deadlines() {
         // Return cleaned deadline-relevant settings that this user can see.
-        global $Conf;
+        global $Conf, $Opt;
         $dlx = $Conf->deadlines();
         $now = $dlx["now"];
         $dl = array("now" => $now);
@@ -1868,8 +1868,13 @@ class Contact {
 
         // add meeting tracker
         if ($this->isPC && $Conf->setting("tracker")
-            && ($tracker = MeetingTracker::status($this)))
+            && ($tracker = MeetingTracker::status($this))) {
             $dl["tracker"] = $tracker;
+            if (@$Opt["trackerCometSite"])
+                $dl["tracker_poll"] = $Opt["trackerCometSite"]
+                    . "?conference=" . urlencode(Navigation::site_absolute(true))
+                    . "&poll=" . urlencode(MeetingTracker::tracker_status($dl["tracker"]));
+        }
 
         return $dl;
     }
