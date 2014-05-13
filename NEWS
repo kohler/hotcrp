@@ -1,5 +1,11 @@
 HotCRP NEWS
 
+Version 2.92   13.May.2014
+
+* Bug fixes for bugs reported by Shriram Krishnamurthy, Aditya Akella,
+  Yoshi Kohno, Garth Gibson.
+
+
 Version 2.91   1.May.2014
 
 * Bug fixes to profile editing and submission options problems
