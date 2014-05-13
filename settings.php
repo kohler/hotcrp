@@ -16,7 +16,7 @@ unset($_SESSION["settings_highlight"]);
 $Error = array();
 $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST” <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
-$TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small";
+$TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small|dim";
 
 $SettingList = array("acct_addr" => "checkbox",
                      "au_seerev" => 2,

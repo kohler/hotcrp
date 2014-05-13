@@ -1689,6 +1689,9 @@ tr.pl.bigtag, tr.plx.bigtag {
 tr.pl.smalltag, tr.plx.smalltag {
 	font-size: inherit;
 }
+.dimtag, .dimtag a {
+	color: gray;
+}
 
 .redtag.orangetag, .redtag.orangetag.psc {
 	background-image: url(../images/tag_red_orange.png);

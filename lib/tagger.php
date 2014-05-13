@@ -165,7 +165,7 @@ class Tagger {
         if ($this->contact)
             $re .= "(?:" . $this->contact->cid . "~"
                 . ($this->contact->privChair ? "|~~" : "") .")?";
-        $re .= "(red|orange|yellow|green|blue|purple|violet|grey|gray|white|bold|italic|big|small";
+        $re .= "(red|orange|yellow|green|blue|purple|violet|grey|gray|white|dim|bold|italic|big|small";
         $this->color_tagmap = $this->defined_tags();
         foreach ($this->color_tagmap as $v)
             if ($v->colors)
@@ -201,7 +201,7 @@ class Tagger {
     }
 
     public static function class_has_colors($classes) {
-        return preg_match('_\b(?:\A|\s)(?:red|orange|yellow|green|blue|purple|gray|white)tag(?:\z|\s)_', $classes);
+        return preg_match('_\b(?:\A|\s)(?:red|orange|yellow|green|blue|purple|gray|white|dim)tag(?:\z|\s)_', $classes);
     }
 
 
