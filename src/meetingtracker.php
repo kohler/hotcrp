@@ -128,7 +128,7 @@ class MeetingTracker {
         if ($tracker)
             return $tracker->trackerid . "@" . $tracker->position_at;
         else
-            return false;
+            return "off";
     }
 
 }
