@@ -1683,19 +1683,13 @@ function doRevGroup() {
     echo "<div class='g'></div>\n";
     doCheckbox('tag_seeall', "PC can see tags for conflicted papers");
 
-    echo "<div class='g'></div>\n";
-    echo "<table id='foldtag_color' class='",
-	(defval($_REQUEST, "tagcolor") ? "foldo" : "foldc"), "'><tr>",
-	"<td>", foldbutton("tag_color", ""), Ht::hidden("has_tag_color", 1), "</td>",
-	"<td><a href='#' onclick='return fold(\"tag_color\")' name='tagcolor' class='q'><strong>Styles and colors</strong></a><br />\n",
-	"<div class='hint fx'>Papers tagged with a style name, or with one of the associated tags (if any), will appear in that style in paper lists.</div>",
-	"<div class='smg fx'></div>",
-	"<table class='fx'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>";
-    $tag_colors = array();
     preg_match_all('_(\S+)=(\S+)_', $Conf->setting_data("tag_color", ""), $m,
                    PREG_SET_ORDER);
+    $tag_colors = array();
     foreach ($m as $x)
         $tag_colors[Tagger::canonical_color($x[2])][] = $x[1];
+    $tag_colors_open = 0;
+    $tag_colors_rows = array();
     foreach (explode("|", $TagStyles) as $k) {
 	if (count($Error) > 0)
 	    $v = defval($_REQUEST, "tag_color_$k", "");
@@ -1703,9 +1697,18 @@ function doRevGroup() {
             $v = join(" ", $tag_colors[$k]);
         else
             $v = "";
-	echo "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' class='textlite' name='tag_color_$k' value=\"", htmlspecialchars($v), "\" size='40' /></td></tr>"; /* MAINSIZE */
+        $tag_colors_open += ($v !== "");
+        $tag_colors_rows[] = "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' class='textlite' name='tag_color_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
     }
-    echo "</table></td></tr></table>\n";
+    echo "<div class='g'></div>\n";
+    echo "<table id='foldtag_color' class='",
+        ($tag_colors_open ? "foldo" : "foldc"), "'><tr>",
+        "<td>", foldbutton("tag_color", ""), Ht::hidden("has_tag_color", 1), "</td>",
+        "<td><a href='#' onclick='return fold(\"tag_color\")' name='tagcolor' class='q'><strong>Styles and colors</strong></a><br />\n",
+        "<div class='hint fx'>Papers tagged with a style name, or with one of the associated tags (if any), will appear in that style in paper lists.</div>",
+        "<div class='smg fx'></div>",
+        "<table class='fx'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>",
+        join("", $tag_colors_rows), "</table></td></tr></table>\n";
 
     echo "<div class='g'></div>\n";
     echo "<table id='foldtracks' class='",
