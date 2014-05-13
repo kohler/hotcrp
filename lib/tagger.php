@@ -181,11 +181,13 @@ class Tagger {
     }
 
     public function color_classes($tags) {
+        if (is_array($tags))
+            $tags = join(" ", $tags);
+        if (!$tags || $tags === " ")
+            return "";
         $dt = $this->defined_tags();
         if ($dt != $this->color_tagmap)
             $this->analyze_colors();
-        if (is_array($tags))
-            $tags = join(" ", $tags);
         if (!preg_match_all($this->color_re, strtolower($tags), $m))
             return false;
         $classes = array();
