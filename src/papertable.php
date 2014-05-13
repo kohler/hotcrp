@@ -14,11 +14,11 @@ class PaperTable {
     var $prow;
     var $rrows;
     var $crows;
-    var $mycrows;
+    private $mycrows;
     var $rrow;
     var $editrrow;
     var $mode;
-    var $allreviewslink;
+    private $allreviewslink;
 
     var $editable;
     var $useRequest;
@@ -1201,25 +1201,26 @@ class PaperTable {
     private function papstripPCConflicts() {
         global $Conf;
         assert(!$this->editable);
-        $pcm = pcMembers();
-        if (!count($pcm) || !$this->prow)
+        if (!$this->prow)
             return;
-        $conflict = array();
-        $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=" . $this->prow->paperId, "while finding conflicted PC members");
-        while (($row = edb_row($result)))
-            $conflict[$row[0]] = $row[1];
-        $pcconfs = array();
-        foreach ($pcm as $id => $p)
-            if (defval($conflict, $id))
-                $pcconfs[] = Text::name_html($p);
-        if (!count($pcconfs))
-            $pcconfs[] = "None";
 
+        $pcconf = array();
+        $pcm = pcMembers();
+        $tagger = new Tagger;
+        foreach ($this->prow->pc_conflicts() as $id => $x) {
+            $p = $pcm[$id];
+            $text = "<p class=\"odname\">" . Text::name_html($p) . "</p>";
+            if (($tags = $tagger->color_classes($p->contactTags)))
+                $text = "<div class=\"pscopen $tags\">$text</div>";
+            $pcconf[$p->sort_position] = $text;
+        }
+
+        if (!count($pcconf))
+            $pcconf[] = "<p class=\"odname\">None</p>";
+        ksort($pcconf);
         echo $this->_papstripBegin(),
             $this->papt("pcconflict", "PC conflicts", array("type" => "ps")),
-            "<div class='psv psconf'><p class='odname'>",
-            join("</p><p class='odname'>", $pcconfs),
-            "</p></div></div>\n";
+            "<div class='psv psconf'>", join("", $pcconf), "</div></div>\n";
     }
 
     private function _papstripLeadShepherd($type, $name, $showedit, $wholefold) {

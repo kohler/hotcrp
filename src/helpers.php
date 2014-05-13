@@ -52,6 +52,14 @@ function edb_row($result) {
     return ($result ? $result->fetch_row() : false);
 }
 
+// array of all rows as arrays
+function edb_rows($result) {
+    $x = array();
+    while ($result && ($row = $result->fetch_row()))
+        $x[] = $row;
+    return $x;
+}
+
 // next row as an object, or 'false' if no more rows or result is an error
 function edb_orow($result) {
     return ($result ? $result->fetch_object() : false);
@@ -1382,7 +1390,7 @@ function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
 
 function pcMembers() {
     global $Conf, $Opt;
-    $version = 2;
+    $version = 4;
     if (!isset($_SESSION["pcmembers"]) || !is_array($_SESSION["pcmembers"])
         || count($_SESSION["pcmembers"]) < 4
         || $Conf->setting("pc") <= 0
@@ -1395,7 +1403,8 @@ function pcMembers() {
         $result = $Conf->q("select firstName, lastName, affiliation, email, ContactInfo.contactId contactId, roles$qa from ContactInfo join PCMember using (contactId)");
         $by_name_text = array();
         while (($row = edb_orow($result))) {
-            $pc[$row->contactId] = $row = Contact::make($row);
+            $row = Contact::make($row);
+            $pc[$row->contactId] = $row;
             if ($row->firstName || $row->lastName) {
                 $name_text = Text::name_text($row);
                 if (isset($by_name_text[$name_text]))
@@ -1404,6 +1413,11 @@ function pcMembers() {
             }
         }
         uasort($pc, "Contact::compare");
+        $order = 0;
+        foreach ($pc as $row) {
+            $row->sort_position = $order;
+            ++$order;
+        }
         $_SESSION["pcmembers"] = array($Conf->setting("pc"), $version, $pc,
                                        @$Opt["sortByLastName"]);
     }

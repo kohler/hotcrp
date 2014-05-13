@@ -173,21 +173,22 @@ class PaperInfo {
         if ($email ? !@$this->conflicts_email_ : !isset($this->conflicts_)) {
             $this->conflicts_ = array();
             if (!$email && isset($this->allConflictType)) {
-                foreach (explode(",", $this->allConflictType) as $x) {
-                    list($cid, $ct) = explode(" ", $x);
-                    if ($ct > 0)
-                        $this->conflicts_[(int) $cid] = (object) array("contactId" => (int) $cid, "conflictType" => (int) $ct);
-                }
-            } else {
-                $result = $Conf->qe("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId");
-                while (($row = edb_orow($result))) {
-                    $row->contactId = (int) $row->contactId;
-                    $row->conflictType = (int) $row->conflictType;
-                    if ($row->conflictType > 0)
-                        $this->conflicts_[$row->contactId] = $row;
-                }
+                $vals = array();
+                foreach (explode(",", $this->allConflictType) as $x)
+                    $vals[] = explode(" ", $x);
+            } else if (!$email)
+                $vals = edb_rows($Conf->qe("select contactId, conflictType from PaperConflict where paperId=$this->paperId"));
+            else {
+                $vals = edb_rows($Conf->qe("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId"));
                 $this->conflicts_email_ = true;
             }
+            foreach ($vals as $v)
+                if ($v[1] > 0) {
+                    $row = (object) array("contactId" => (int) $v[0], "conflictType" => (int) $v[1]);
+                    if (@$v[2])
+                        $row->email = $v[2];
+                    $this->conflicts_[$row->contactId] = $row;
+                }
         }
         return $this->conflicts_;
     }
