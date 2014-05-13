@@ -170,7 +170,7 @@ class Tagger {
         foreach ($this->color_tagmap as $v)
             if ($v->colors)
                 $re .= "|" . $v->tag;
-	$this->color_re = $re . ")[# ]}";
+        $this->color_re = $re . ")[# ]}";
     }
 
     public static function canonical_color($tag) {
@@ -551,7 +551,7 @@ class Tagger {
                 $val = $this->vote_setting(substr($base, strpos($base, "~") + 1));
             }
             unset($val);
-            if ($mode != "p")	// must delete old versions for correct totals
+            if ($mode != "p")   // must delete old versions for correct totals
                 $Conf->qe("delete from $table where $pidcol in (" . join(",", $pids) . ") and tag in ($q)", "while deleting old votes");
             $result = $Conf->qe("select tag, sum(tagIndex) from $table where tag in ($q) group by tag", "while checking vote totals");
             while (($row = edb_row($result))) {

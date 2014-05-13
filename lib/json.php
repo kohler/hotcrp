@@ -53,99 +53,99 @@ class Json {
     }
 
     static function decode_escape($e) {
-	if ($e[1] == "u") {
-	    $v = intval(substr($e, 2), 16);
-	    if ($v < 0x80)
-		return chr($v);
-	    else if ($v < 0x800)
-		return chr(0xC0 + ($v >> 6)) . chr(0x80 + ($v & 0x3F));
-	    else if ($v < 0x10000)
-		return chr(0xE0 + ($v >> 12)) . chr(0x80 + (($v >> 6) & 0x3F))
-		    . chr(0x80 + ($v & 0x3F));
-	    else
-		return chr(0xF0 + ($v >> 18)) . chr(0x80 + (($v >> 12) & 0x3F))
-		    . chr(0x80 + (($v >> 6) & 0x3F)) . chr(0x80 + ($v & 0x3F));
-	} else
-	    return self::$string_unmap[$e];
+        if ($e[1] == "u") {
+            $v = intval(substr($e, 2), 16);
+            if ($v < 0x80)
+                return chr($v);
+            else if ($v < 0x800)
+                return chr(0xC0 + ($v >> 6)) . chr(0x80 + ($v & 0x3F));
+            else if ($v < 0x10000)
+                return chr(0xE0 + ($v >> 12)) . chr(0x80 + (($v >> 6) & 0x3F))
+                    . chr(0x80 + ($v & 0x3F));
+            else
+                return chr(0xF0 + ($v >> 18)) . chr(0x80 + (($v >> 12) & 0x3F))
+                    . chr(0x80 + (($v >> 6) & 0x3F)) . chr(0x80 + ($v & 0x3F));
+        } else
+            return self::$string_unmap[$e];
     }
 
     private static function decode_part(&$x, $assoc, $depth, $options) {
-	$x = ltrim($x);
-	if ($x === "")
-	    return self::set_error($x, JSON_ERROR_SYNTAX);
-	else if (substr($x, 0, 4) === "null") {
-	    $x = substr($x, 4);
-	    return null;
-	} else if (substr($x, 0, 5) === "false") {
-	    $x = substr($x, 5);
-	    return false;
-	} else if (substr($x, 0, 4) === "true") {
-	    $x = substr($x, 4);
-	    return true;
-	} else if ($x[0] == "\"") {
-	    preg_match(',\A"((?:[^\\\\"\000-\037]|\\\\["\\\\/bfnrt]|\\\\u[0-9a-fA-F]{4})*)(.*)\z,s', $x, $m);
+        $x = ltrim($x);
+        if ($x === "")
+            return self::set_error($x, JSON_ERROR_SYNTAX);
+        else if (substr($x, 0, 4) === "null") {
+            $x = substr($x, 4);
+            return null;
+        } else if (substr($x, 0, 5) === "false") {
+            $x = substr($x, 5);
+            return false;
+        } else if (substr($x, 0, 4) === "true") {
+            $x = substr($x, 4);
+            return true;
+        } else if ($x[0] == "\"") {
+            preg_match(',\A"((?:[^\\\\"\000-\037]|\\\\["\\\\/bfnrt]|\\\\u[0-9a-fA-F]{4})*)(.*)\z,s', $x, $m);
             if ($m[2][0] == "\"") {
-		$x = substr($m[2], 1);
-		return preg_replace_callback(',(\\\\(?:["\\\\/bfnrt]|u[0-9a-fA-F]{4})),', 'Json::decode_escape', $m[1]);
-	    } else {
+                $x = substr($m[2], 1);
+                return preg_replace_callback(',(\\\\(?:["\\\\/bfnrt]|u[0-9a-fA-F]{4})),', 'Json::decode_escape', $m[1]);
+            } else {
                 $x = $m[2];
                 return self::set_error($x, JSON_ERROR_SYNTAX);
             }
-	} else if ($x[0] == "{") {
-	    if ($depth < 0)
+        } else if ($x[0] == "{") {
+            if ($depth < 0)
                 return self::set_error($x, JSON_ERROR_DEPTH);
-	    $arr = array();
-	    $x = substr($x, 1);
-	    while (1) {
-		if (!is_string($x))
+            $arr = array();
+            $x = substr($x, 1);
+            while (1) {
+                if (!is_string($x))
                     return self::set_error($x, JSON_ERROR_SYNTAX);
-		$x = ltrim($x);
-		if ($x[0] == "}") {
-		    $x = substr($x, 1);
-		    break;
-		} else if (count($arr)) {
-		    if ($x[0] != ",")
+                $x = ltrim($x);
+                if ($x[0] == "}") {
+                    $x = substr($x, 1);
+                    break;
+                } else if (count($arr)) {
+                    if ($x[0] != ",")
                         return self::set_error($x, JSON_ERROR_SYNTAX);
-		    $x = substr($x, 1);
-		}
+                    $x = substr($x, 1);
+                }
 
-		$k = self::decode_part($x, $assoc, $depth - 1, $options);
-		if (!is_string($k) || !is_string($x))
+                $k = self::decode_part($x, $assoc, $depth - 1, $options);
+                if (!is_string($k) || !is_string($x))
                     return self::set_error($x, JSON_ERROR_SYNTAX);
-		$x = ltrim($x);
-		if ($x[0] != ":")
+                $x = ltrim($x);
+                if ($x[0] != ":")
                     return self::set_error($x, JSON_ERROR_SYNTAX);
-		$x = substr($x, 1);
-		$v = self::decode_part($x, $assoc, $depth - 1, $options);
-		$arr[$k] = $v;
-	    }
-	    return $assoc ? $arr : (object) $arr;
-	} else if ($x[0] == "[") {
-	    if ($depth < 0)
+                $x = substr($x, 1);
+                $v = self::decode_part($x, $assoc, $depth - 1, $options);
+                $arr[$k] = $v;
+            }
+            return $assoc ? $arr : (object) $arr;
+        } else if ($x[0] == "[") {
+            if ($depth < 0)
                 return self::set_error($x, JSON_ERROR_DEPTH);
-	    $arr = array();
-	    $x = substr($x, 1);
-	    while (1) {
-		if (!is_string($x))
+            $arr = array();
+            $x = substr($x, 1);
+            while (1) {
+                if (!is_string($x))
                     return self::set_error($x, JSON_ERROR_SYNTAX);
-		$x = ltrim($x);
-		if ($x[0] == "]") {
-		    $x = substr($x, 1);
-		    break;
-		} else if (count($arr)) {
-		    if ($x[0] != ",")
+                $x = ltrim($x);
+                if ($x[0] == "]") {
+                    $x = substr($x, 1);
+                    break;
+                } else if (count($arr)) {
+                    if ($x[0] != ",")
                         return self::set_error($x, JSON_ERROR_SYNTAX);
-		    $x = substr($x, 1);
-		}
+                    $x = substr($x, 1);
+                }
 
-		$v = self::decode_part($x, $assoc, $depth - 1, $options);
-		$arr[] = $v;
-	    }
-	    return $arr;
-	} else if (preg_match('/\A(-?(?:0|[1-9]\d*))((?:\.\d+)?(?:[Ee][-+]?\d+)?)(.*)\z/s', $x, $m)) {
-	    $x = $m[3];
-	    return $m[2] ? floatval($m[1] . $m[2]) : intval($m[1]);
-	} else if ($x[0] == "]" || $x[0] == "}")
+                $v = self::decode_part($x, $assoc, $depth - 1, $options);
+                $arr[] = $v;
+            }
+            return $arr;
+        } else if (preg_match('/\A(-?(?:0|[1-9]\d*))((?:\.\d+)?(?:[Ee][-+]?\d+)?)(.*)\z/s', $x, $m)) {
+            $x = $m[3];
+            return $m[2] ? floatval($m[1] . $m[2]) : intval($m[1]);
+        } else if ($x[0] == "]" || $x[0] == "}")
             return self::set_error($x, JSON_ERROR_STATE_MISMATCH);
         else if (ord($x[0]) < 32)
             return self::set_error($x, JSON_ERROR_CTRL_CHAR);
