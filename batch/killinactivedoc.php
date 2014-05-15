@@ -1,9 +1,6 @@
 <?php
 require_once("src/init.php");
 
-if (!$Conf->setting_data("s3_bucket"))
-    die("* S3 is not configured for this conference\n");
-
 $storageIds = $Conf->active_document_ids();
 
 $result = $Conf->qe("select paperStorageId, paperId, timestamp, mimetype,
