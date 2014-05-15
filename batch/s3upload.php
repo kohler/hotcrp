@@ -2,7 +2,7 @@
 require_once("src/init.php");
 
 $arg = getopt("hakn:", array("help", "active", "kill", "name:"));
-if (@$arg["h"] || @$arg["help"]) {
+if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/s3upload.php [--active] [--kill]\n");
     exit(0);
 }
