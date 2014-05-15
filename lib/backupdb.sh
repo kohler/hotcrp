@@ -12,18 +12,25 @@ export PROG=$0
 export FLAGS=
 structure=false
 pc=false
+gzip=false
+output=
 options_file=
 while [ $# -gt 0 ]; do
     shift=1
     case "$1" in
     --structure|--schema) structure=true;;
     --pc) pc=true;;
+    -z|--g|--gz|--gzi|--gzip) gzip=true;;
     -c|--co|--con|--conf|--confi|--config|-c*|--co=*|--con=*|--conf=*|--confi=*|--config=*)
         parse_common_argument "$@";;
     -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
         parse_common_argument "$@";;
     -*)	FLAGS="$FLAGS $1";;
-    *)	echo "Usage: $PROG [-c CONFIGFILE] [-n CONFNAME] [--schema] [--pc] [MYSQL-OPTIONS]" 1>&2; exit 1;;
+    *)  if [ -z "$output" ]; then
+            output="$1"
+        else
+            echo "Usage: $PROG [-c CONFIGFILE] [-n CONFNAME] [--schema] [--pc] [-z] [MYSQL-OPTIONS] [OUTPUT]" 1>&2; exit 1
+        fi;;
     esac
     shift $shift
 done
@@ -40,18 +47,21 @@ check_mysqlish MYSQL mysql
 check_mysqlish MYSQLDUMP mysqldump
 set_myargs "$dbuser" "$dbpass"
 
-echo + $MYSQLDUMP $myargs_redacted $FLAGS $dbname 1>&2
-if $structure; then
-    eval "$MYSQLDUMP $myargs $FLAGS $dbname" | sed '/^LOCK/d
-/^INSERT/d
-/^UNLOCK/d
-/^\/\*/d
-/^)/s/AUTO_INCREMENT=[0-9]* //
-/^--$/N
-/^--.*-- Dumping data/N
-/^--.*-- Dumping data.*--/d
-/^-- Dump/d'
+if $gzip && test -n "$output"; then
+    echotail="$dbname | gzip > $output"
+    tailcmd="gzip >'$output'"
+elif $gzip; then
+    echotail="$dbname | gzip"
+    tailcmd=gzip
+elif test -n "$output"; then
+    echotail="$dbname > $output"
+    tailcmd="cat >'$output'"
 else
+    echotail="$dbname"
+    tailcmd=cat
+fi
+
+database_dump () {
     if $pc; then
 	eval "$MYSQLDUMP $FLAGS $myargs $dbname --where='(roles & 7) != 0' ContactInfo"
 	pcs=`echo 'select group_concat(contactId) from ContactInfo where (roles & 7) != 0' | eval "$MYSQL $myargs $FLAGS -N $dbname"`
@@ -65,6 +75,21 @@ else
     echo "-- Force HotCRP to invalidate server caches"
     echo "--"
     echo "INSERT INTO "'`Settings` (`name`,`value`)'" VALUES ('frombackup',UNIX_TIMESTAMP()) ON DUPLICATE KEY UPDATE value=greatest(value,values(value));"
+}
+
+echo + $MYSQLDUMP $myargs_redacted $FLAGS $echotail 1>&2
+if $structure; then
+    eval "$MYSQLDUMP $myargs $FLAGS $dbname" | sed '/^LOCK/d
+/^INSERT/d
+/^UNLOCK/d
+/^\/\*/d
+/^)/s/AUTO_INCREMENT=[0-9]* //
+/^--$/N
+/^--.*-- Dumping data/N
+/^--.*-- Dumping data.*--/d
+/^-- Dump/d' | eval "$tailcmd"
+else
+    database_dump | eval "$tailcmd"
 fi
 
 test -n "$PASSWORDFILE" && rm -f $PASSWORDFILE
