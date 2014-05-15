@@ -21,8 +21,8 @@ class ZipDocument {
     }
 
     function clean() {
-	if ($this->tmpdir) {
-	    exec("/bin/rm -rf $this->tmpdir");
+        if ($this->tmpdir) {
+            exec("/bin/rm -rf $this->tmpdir");
             $this->tmpdir = null;
         }
         $this->files = array();
@@ -125,14 +125,14 @@ class ZipDocument {
         global $Opt;
         if (!($zipcmd = defval($Opt, "zipCommand", "zip")))
             return set_error_html("<code>zip</code> is not supported on this installation.");
-	if (count($this->warnings))
-	    $this->add(join("\n", $this->warnings) . "\n", "README-warnings.txt");
+        if (count($this->warnings))
+            $this->add(join("\n", $this->warnings) . "\n", "README-warnings.txt");
         $opts = ($this->recurse ? "-rq" : "-q");
-	$out = system("cd $this->tmpdir; $zipcmd $opts _hotcrp.zip '" . join("' '", array_keys($this->files)) . "' 2>&1", $status);
-	if ($status != 0)
-	    return set_error_html("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-	if (!file_exists("$this->tmpdir/_hotcrp.zip"))
-	    return set_error_html("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
+        $out = system("cd $this->tmpdir; $zipcmd $opts _hotcrp.zip '" . join("' '", array_keys($this->files)) . "' 2>&1", $status);
+        if ($status != 0)
+            return set_error_html("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
+        if (!file_exists("$this->tmpdir/_hotcrp.zip"))
+            return set_error_html("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
         return "$this->tmpdir/_hotcrp.zip";
     }
 
@@ -230,7 +230,7 @@ class DocumentHelper {
             if ($m[3] == "%")
                 $xfpath .= "%";
             else if ($m[3] == "x")
-	        $xfpath .= Mimetype::extension(self::_mimetype($doc));
+                $xfpath .= Mimetype::extension(self::_mimetype($doc));
             else {
                 if (!$sha1) {
                     $sha1 = bin2hex($doc->sha1);
@@ -252,27 +252,27 @@ class DocumentHelper {
     private static function _store_filestore($fsinfo, $doc) {
         list($fdir, $fpath) = $fsinfo;
 
-	if (!is_dir($fdir) && !@mkdir($fdir, 0700)) {
-	    @rmdir($fdir);
-	    return false;
-	}
+        if (!is_dir($fdir) && !@mkdir($fdir, 0700)) {
+            @rmdir($fdir);
+            return false;
+        }
 
-	// Ensure an .htaccess file exists, even if someone else made the
-	// filestore directory
-	$htaccess = "$fdir/.htaccess";
-	if (!is_file($htaccess)
-	    && file_put_contents($htaccess, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n") === false) {
-	    @unlink("$fdir/.htaccess");
-	    return false;
-	}
+        // Ensure an .htaccess file exists, even if someone else made the
+        // filestore directory
+        $htaccess = "$fdir/.htaccess";
+        if (!is_file($htaccess)
+            && file_put_contents($htaccess, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n") === false) {
+            @unlink("$fdir/.htaccess");
+            return false;
+        }
 
         // Create subdirectory
         $pos = strlen($fdir) + 1;
         while ($pos < strlen($fpath)
                && ($pos = strpos($fpath, "/", $pos)) !== false) {
             $superdir = substr($fpath, 0, $pos);
-	    if (!is_dir($superdir) && !@mkdir($superdir, 0770))
-		return false;
+            if (!is_dir($superdir) && !@mkdir($superdir, 0770))
+                return false;
             ++$pos;
         }
 
@@ -282,15 +282,15 @@ class DocumentHelper {
             return false;
         }
         @chmod($fpath, 0660 & ~umask());
-	$doc->filestore = $fpath;
+        $doc->filestore = $fpath;
         return true;
     }
 
     static function store($docclass, $doc, $docinfo) {
         if (!isset($doc->size) && isset($doc->content))
             $doc->size = strlen($doc->content);
-	if (!isset($doc->sha1) && isset($doc->content))
-	    $doc->sha1 = sha1($doc->content, true);
+        if (!isset($doc->sha1) && isset($doc->content))
+            $doc->sha1 = sha1($doc->content, true);
         $docclass->prepare_storage($doc, $docinfo);
         if (($dbinfo = $docclass->database_storage($doc, $docinfo)))
             self::_store_database($dbinfo, $doc);
@@ -313,13 +313,13 @@ class DocumentHelper {
 
         // prepare document
         $doc->content = file_get_contents($_FILES[$uploadId]["tmp_name"]);
-	if ($doc->content === false || strlen($doc->content) == 0)
+        if ($doc->content === false || strlen($doc->content) == 0)
             return set_error_html($doc, "The uploaded file was empty. Please try again.");
 
-	if (isset($_FILES[$uploadId]["name"])
-	    && strlen($_FILES[$uploadId]["name"]) <= 255
-	    && is_valid_utf8($_FILES[$uploadId]["name"]))
-	    $doc->filename = $_FILES[$uploadId]["name"];
+        if (isset($_FILES[$uploadId]["name"])
+            && strlen($_FILES[$uploadId]["name"]) <= 255
+            && is_valid_utf8($_FILES[$uploadId]["name"]))
+            $doc->filename = $_FILES[$uploadId]["name"];
         else
             $doc->filename = null;
 
@@ -330,7 +330,7 @@ class DocumentHelper {
     }
 
     static function upload($docclass, $upload, $docinfo) {
-	global $Conf, $Opt, $OK;
+        global $Conf, $Opt, $OK;
         if (is_object($upload)) {
             $doc = $upload;
             if (@$doc->content === null || $doc->content === "")
@@ -340,28 +340,28 @@ class DocumentHelper {
         if (@$doc->error)
             return $doc;
 
-	// Check if paper one of the allowed mimetypes.
+        // Check if paper one of the allowed mimetypes.
         if (!@$doc->mimetype)
             $doc->mimetype = "application/octet-stream";
-	// Sniff content since MacOS browsers supply bad mimetypes.
-	if (strncmp("%PDF-", $doc->content, 5) == 0)
-	    $doc->mimetype = Mimetype::type("pdf");
-	else if (strncmp("%!PS-", $doc->content, 5) == 0)
-	    $doc->mimetype = Mimetype::type("ps");
-	else if (substr($doc->content, 512, 4) == "\x00\x6E\x1E\xF0")
-	    $doc->mimetype = Mimetype::type("ppt");
+        // Sniff content since MacOS browsers supply bad mimetypes.
+        if (strncmp("%PDF-", $doc->content, 5) == 0)
+            $doc->mimetype = Mimetype::type("pdf");
+        else if (strncmp("%!PS-", $doc->content, 5) == 0)
+            $doc->mimetype = Mimetype::type("ps");
+        else if (substr($doc->content, 512, 4) == "\x00\x6E\x1E\xF0")
+            $doc->mimetype = Mimetype::type("ppt");
         if (($m = Mimetype::lookup($doc->mimetype)))
             $doc->mimetypeid = $m->mimetypeid;
 
-	$mimetypes = $docclass->mimetypes($doc, $docinfo);
+        $mimetypes = $docclass->mimetypes($doc, $docinfo);
         for ($i = 0; $i < count($mimetypes); ++$i)
             if ($mimetypes[$i]->mimetype == $doc->mimetype)
                 break;
-	if ($i >= count($mimetypes) && count($mimetypes)) {
-	    $e = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";
-	    $e .= " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
-	    return set_error_html($doc, $e);
-	}
+        if ($i >= count($mimetypes) && count($mimetypes)) {
+            $e = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";
+            $e .= " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
+            return set_error_html($doc, $e);
+        }
 
         if (!@$doc->timestamp)
             $doc->timestamp = time();
@@ -398,36 +398,36 @@ class DocumentHelper {
                 $z->add($d);
             return $z->download();
         }
-	if (!isset($doc->filestore) && !isset($doc->content)
+        if (!isset($doc->filestore) && !isset($doc->content)
             && (!@$doc->docclass || !DocumentHelper::load($doc->docclass, $doc)))
-	    return set_error_html("Don’t know how to download.");
+            return set_error_html("Don’t know how to download.");
 
-	// Print paper
-	$doc_mimetype = self::_mimetype($doc);
-	header("Content-Type: " . Mimetype::type($doc_mimetype));
+        // Print paper
+        $doc_mimetype = self::_mimetype($doc);
+        header("Content-Type: " . Mimetype::type($doc_mimetype));
         if ($attachment === null)
-	    $attachment = !Mimetype::disposition_inline($doc_mimetype);
+            $attachment = !Mimetype::disposition_inline($doc_mimetype);
         if (!$downloadname) {
             $downloadname = $doc->filename;
             if (($slash = strrpos($downloadname, "/")) !== false)
                 $downloadname = substr($downloadname, $slash + 1);
         }
-	header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
-	// reduce likelihood of XSS attacks in IE
-	header("X-Content-Type-Options: nosniff");
-	if (isset($doc->filestore)) {
-	    if (!$zlib_output_compression)
-		header("Content-Length: " . filesize($doc->filestore));
-	    flush();
+        header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
+        // reduce likelihood of XSS attacks in IE
+        header("X-Content-Type-Options: nosniff");
+        if (isset($doc->filestore)) {
+            if (!$zlib_output_compression)
+                header("Content-Length: " . filesize($doc->filestore));
+            flush();
             while (@ob_end_flush())
                 /* do nothing */;
-	    readfile($doc->filestore);
-	} else {
-	    if (!$zlib_output_compression)
-		header("Content-Length: " . strlen($doc->content));
-	    echo $doc->content;
-	}
-	return (object) array("error" => false);
+            readfile($doc->filestore);
+        } else {
+            if (!$zlib_output_compression)
+                header("Content-Length: " . strlen($doc->content));
+            echo $doc->content;
+        }
+        return (object) array("error" => false);
     }
 
 }
