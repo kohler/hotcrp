@@ -20,9 +20,9 @@ foreach ($sids as $sid) {
     $front = "[" . $Conf->unparse_time_log($doc->timestamp) . "] "
         . HotCRPDocument::filename($doc) . " ($sid)";
     if ($checked)
-        fwrite(STDOUT, "$front: already on S3\n");
+        fwrite(STDOUT, "$front: " . HotCRPDocument::s3_filename($doc) . " exists\n");
     else if ($saved)
-        fwrite(STDOUT, "$front: saved\n");
+        fwrite(STDOUT, "$front: " . HotCRPDocument::s3_filename($doc) . " saved\n");
     else {
         fwrite(STDOUT, "$front: SAVE FAILED\n");
         ++$failures;

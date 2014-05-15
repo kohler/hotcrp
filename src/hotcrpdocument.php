@@ -96,7 +96,7 @@ class HotCRPDocument {
         return self::$_s3_document;
     }
 
-    private static function s3_filename($doc) {
+    public static function s3_filename($doc) {
         $sha1 = bin2hex($doc->sha1);
         return "doc/" . substr($sha1, 0, 2) . "/" . $sha1
             . Mimetype::extension($doc->mimetype);
