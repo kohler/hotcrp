@@ -57,9 +57,8 @@ class S3Document {
     }
 
     public function signature($url, $hdr, $content = null) {
-        global $Now;
-
         $verb = defval($hdr, "method", "GET");
+        $current_time = time();
 
         preg_match(',\Ahttps?://([^/?]*)([^?]*)(?:[?]?)(.*)\z,', $url, $m);
         $host = $m[1];
@@ -98,7 +97,7 @@ class S3Document {
             $hdrtext .= "x-amz-content-sha256: $h\r\n";
         }
         if (!isset($chdr["x-amz-date"])) {
-            $d = gmdate("Ymd\\THis\\Z", $Now);
+            $d = gmdate("Ymd\\THis\\Z", $current_time);
             $chdr["x-amz-date"] = $d;
             $hdrtext .= "x-amz-date: $d\r\n";
         }
@@ -117,7 +116,7 @@ class S3Document {
             . substr($chk, 1) . "\n"
             . $chdr["x-amz-content-sha256"];
 
-        list($scope, $signing_key) = $this->scope_and_signing_key($Now);
+        list($scope, $signing_key) = $this->scope_and_signing_key($current_time);
 
         $signable = "AWS4-HMAC-SHA256\n"
             . $chdr["x-amz-date"] . "\n"
@@ -134,13 +133,12 @@ class S3Document {
     }
 
     private function http_headers($filename, $method, $args) {
-        global $Now;
         list($content, $content_type, $user_data) =
             array(@$args["content"], @$args["content_type"], @$args["user_data"]);
         $content_empty = $content === false || $content === "" || $content === null;
         $url = "https://$this->s3_bucket.s3.amazonaws.com/$filename";
         $hdr = array("method" => $method,
-                     "Date" => gmdate("D, d M Y H:i:s GMT", $Now));
+                     "Date" => gmdate("D, d M Y H:i:s GMT", time()));
         if ($user_data)
             foreach ($user_data as $key => $value) {
                 if (!@self::$known_headers[strtolower($key)])
