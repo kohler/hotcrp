@@ -381,7 +381,7 @@ function run_comet() {
                 if (status == "error"
                     && (new Date).getTime() - tracker_comet_at > 100000)
                     status = "timeout";
-                if (status == "success") {
+                if (status == "success" && xhr.status == 200) {
                     tracker_comet_errors = 0;
                     reload();
                 } else if (status == "timeout")
