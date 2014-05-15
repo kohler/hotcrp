@@ -1,6 +1,17 @@
 <?php
 require_once("src/init.php");
 
+$arg = getopt("hakn:", array("help", "active", "kill", "name:"));
+if (@$arg["h"] || @$arg["help"]) {
+    fwrite(STDOUT, "Usage: php batch/s3upload.php [--active] [--kill]\n");
+    exit(0);
+}
+
+$active = false;
+if (isset($arg["a"]) || isset($arg["active"]))
+    $active = array_flip($Conf->active_document_ids());
+$kill = isset($arg["k"]) || isset($arg["kill"]);
+
 if (!$Conf->setting_data("s3_bucket"))
     die("* S3 is not configured for this conference\n");
 
@@ -11,6 +22,8 @@ while (($row = edb_row($result)))
 
 $failures = 0;
 foreach ($sids as $sid) {
+    if ($active !== false && !isset($active[$sid]))
+        continue;
     $result = $Conf->qe("select paperStorageId, paperId, timestamp, mimetype,
         compression, sha1, documentType, filename, infoJson
         from PaperStorage where paperStorageId=$sid");
@@ -27,6 +40,8 @@ foreach ($sids as $sid) {
         fwrite(STDOUT, "$front: SAVE FAILED\n");
         ++$failures;
     }
+    if ($saved && $kill)
+        $Conf->qe("update PaperStorage set paper=null where paperStorageId=$sid");
 }
 if ($failures) {
     fwrite(STDERR, "Failed to save " . plural($failures, "document") . ".\n");
