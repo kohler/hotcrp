@@ -587,9 +587,19 @@ class Conference {
         if ($while)
             $text .= " $while";
         if ($getdb)
-            $text .= ": " . htmlspecialchars($this->dblink->error) . "</p>";
+            $text .= ": " . htmlspecialchars($this->dblink->error);
+        $text .= "</p>";
         if ($suggestRetry)
             $text .= "\n<p>Please try again or contact the site administrator at " . $Opt["emailFrom"] . ".</p>";
+        return $text;
+    }
+
+    function db_error_text($getdb = true, $while = "") {
+        $text = "Database error";
+        if ($while)
+            $text .= " $while";
+        if ($getdb)
+            $text .= ": " . $this->dblink->error;
         return $text;
     }
 
@@ -597,7 +607,10 @@ class Conference {
         global $OK;
         $result = $this->dblink->query($query);
         if ($result === false) {
-            $this->errorMsg($this->db_error_html(true, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
+            if (PHP_SAPI == "cli")
+                fwrite(STDERR, $this->db_error_text(true, "$while ($query)") . "\n");
+            else
+                $this->errorMsg($this->db_error_html(true, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
             $OK = false;
         }
         return $result;
@@ -607,7 +620,10 @@ class Conference {
         global $OK;
         $result = $this->dblink->insert_id;
         if (!$result && $while !== false) {
-            $this->errorMsg($this->db_error_html($result === false, $while, $suggestRetry));
+            if (PHP_SAPI == "cli")
+                fwrite(STDERR, $this->db_error_text($result === false, $while) . "\n");
+            else
+                $this->errorMsg($this->db_error_html($result === false, $while, $suggestRetry));
             $OK = false;
         }
         return $result;
