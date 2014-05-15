@@ -146,7 +146,7 @@ class S3Document {
                 $hdr[$key] = $value;
             }
         $sig = $this->signature($url, $hdr, $content);
-        $hdr["header"] = $sig["header"];
+        $hdr["header"] = $sig["header"] . "Connection: close\r\n";
         if (!$content_empty && $content_type)
             $hdr["header"] .= "Content-Type: $content_type\r\n";
         $hdr["content"] = $content_empty ? "" : $content;
