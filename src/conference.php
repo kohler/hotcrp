@@ -757,6 +757,9 @@ class Conference {
     function printableTimeShort($value, $useradjust = false, $preadjust = null) {
         return $this->_printableTime($value, false, $useradjust, $preadjust);
     }
+    function unparse_time_log($value) {
+        return date("d/M/Y:H:i:s O", $value);
+    }
 
     function printableTimeSetting($what, $useradjust = false, $preadjust = null) {
         return $this->printableTime(defval($this->settings, $what, 0), $useradjust, $preadjust);
@@ -944,6 +947,26 @@ class Conference {
     // Paper storage
     //
 
+    function active_document_ids() {
+        $q = array("select paperStorageId from Paper where paperStorageId>1",
+            "select finalPaperStorageId from Paper where finalPaperStorageId>1",
+            "select paperStorageId from PaperComment where paperStorageId>1");
+        $document_option_ids = array();
+        foreach (PaperOption::option_list() as $id => $o)
+            if ($o->value_is_document())
+                $document_option_ids[] = $id;
+        if (count($document_option_ids))
+            $q[] = "select value from PaperOption where optionId in ("
+                . join(",", $document_option_ids) . ") and value>1";
+
+        $result = $this->qe(join(" UNION ", $q));
+        $ids = array();
+        while (($row = edb_row($result)))
+            $ids[(int) $row[0]] = true;
+        ksort($ids);
+        return array_keys($ids);
+    }
+
     function storeDocument($uploadId, $paperId, $documentType) {
         return DocumentHelper::upload(new HotCRPDocument($documentType),
                                       $uploadId,
@@ -1007,6 +1030,8 @@ class Conference {
         if (!($doc = edb_orow($result)))
             return $doc;
         // type doesn't matter
+        if ($dtype === null && isset($doc->documentType))
+            $dtype = (int) $doc->documentType;
         $doc->docclass = new HotCRPDocument($dtype);
         // in modern versions sha1 is set at storage time; before it wasn't
         if ($doc->paperStorageId && $doc->sha1 == "") {

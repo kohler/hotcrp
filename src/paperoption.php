@@ -93,6 +93,10 @@ class PaperOption {
             || $this->type == "video";
     }
 
+    function value_is_document() {
+        return $this->is_document() || $this->type == "attachments";
+    }
+
     function needs_data() {
         return $this->type == "text" || $this->type == "attachments";
     }

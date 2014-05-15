@@ -8,7 +8,13 @@ global $Opt;
 function set_multiconference() {
     global $ConfMulticonf, $Opt;
 
-    if (!@$ConfMulticonf) {
+    if (!@$ConfMulticonf && PHP_SAPI == "cli") {
+        $cliopt = getopt("n:", array("name:"));
+        if ($cliopt["n"])
+            $ConfMulticonf = $cliopt["n"];
+        else if ($cliopt["name"])
+            $ConfMulticonf = $cliopt["name"];
+    } else if (!@$ConfMulticonf) {
         $base = Navigation::site_absolute(true);
         if (($multis = @$Opt["multiconferenceAnalyzer"])) {
             foreach (is_array($multis) ? $multis : array($multis) as $multi) {
@@ -64,7 +70,7 @@ function multiconference_fail($tried_db) {
         $errors[] = "You may need to run `lib/createdb.sh -c test/testoptions.php` to create the database.\n";
 
     if (PHP_SAPI == "cli") {
-        fwrite(STDERR, join("\n", $errors));
+        fwrite(STDERR, join("\n", $errors) . "\n");
         exit(1);
     } else if (@$_REQUEST["ajax"]) {
         header("Content-Type: " . (@$_REQUEST["jsontext"] ? "text/plain" : "application/json"));

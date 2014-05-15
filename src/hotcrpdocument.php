@@ -102,16 +102,27 @@ class HotCRPDocument {
             . Mimetype::extension($doc->mimetype);
     }
 
-    public function prepare_storage($doc, $docinfo) {
+    public function s3_check($doc) {
+        return ($s3 = self::s3_document()) && $s3->check(self::s3_filename($doc));
+    }
+
+    public function s3_store($doc, $docinfo) {
         global $Opt;
-        if (($s3 = self::s3_document())) {
-            $meta = json_encode(array("conf" => $Opt["conferenceId"],
-                                      "pid" => (int) $docinfo->paperId));
-            $s3->save(self::s3_filename($doc), $doc->content, $doc->mimetype,
-                      array("hotcrp" => $meta));
-            if ($s3->status != 200)
-                error_log("S3 error: $s3->status $s3->status_text " . json_encode($s3->response_headers));
-        }
+        if (!isset($doc->content) && !$this->load_content($doc))
+            return false;
+        $s3 = self::s3_document();
+        $meta = json_encode(array("conf" => $Opt["conferenceId"],
+                                  "pid" => (int) $docinfo->paperId));
+        $s3->save(self::s3_filename($doc), $doc->content, $doc->mimetype,
+                  array("hotcrp" => $meta));
+        if ($s3->status != 200)
+            error_log("S3 error: $s3->status $s3->status_text " . json_encode($s3->response_headers));
+        return $s3->status == 200;
+    }
+
+    public function prepare_storage($doc, $docinfo) {
+        if (($s3 = self::s3_document()))
+            $this->s3_store($doc, $docinfo);
     }
 
     public function database_storage($doc, $docinfo) {
