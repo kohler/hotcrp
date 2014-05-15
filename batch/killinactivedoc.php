@@ -6,7 +6,7 @@ $storageIds = $Conf->active_document_ids();
 $result = $Conf->qe("select paperStorageId, paperId, timestamp, mimetype,
         compression, sha1, documentType, filename, infoJson
         from PaperStorage where paperStorageId not in (" . join(",", $storageIds) . ")
-        and paper is not null order by timestamp");
+        and paper is not null and paperStorageId>1 order by timestamp");
 $killable = array();
 while (($doc = $Conf->document_row($result, null)))
     $killable[$doc->paperStorageId] = "[" . $Conf->unparse_time_log($doc->timestamp)
