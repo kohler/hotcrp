@@ -1873,7 +1873,7 @@ class Contact {
         if ($this->isPC && @$Opt["trackerCometSite"])
             $dl["tracker_poll"] = $Opt["trackerCometSite"]
                 . "?conference=" . urlencode(Navigation::site_absolute(true))
-                . "&poll=" . urlencode(MeetingTracker::tracker_status($dl["tracker"]));
+                . "&poll=" . urlencode(MeetingTracker::tracker_status(@$dl["tracker"]));
 
         return $dl;
     }
