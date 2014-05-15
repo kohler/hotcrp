@@ -16,9 +16,9 @@ $useRequest = false;
 function confHeader() {
     global $prow, $mode, $Conf;
     if ($prow)
-	$title = "Paper #$prow->paperId";
+        $title = "Paper #$prow->paperId";
     else
-	$title = "Paper Comments";
+        $title = "Paper Comments";
     $Conf->header($title, "comment", actionBar("c", $prow), false);
 }
 
@@ -34,7 +34,7 @@ function errorMsgExit($msg) {
 function loadRows() {
     global $Conf, $Me, $prow, $paperTable, $crow, $Error;
     if (!($prow = PaperTable::paperRow($whyNot)))
-	errorMsgExit(whyNotText($whyNot, "view"));
+        errorMsgExit(whyNotText($whyNot, "view"));
     $paperTable = new PaperTable($prow);
     $paperTable->resolveReview();
     $paperTable->resolveComments();
@@ -42,14 +42,14 @@ function loadRows() {
     $crow = null;
     $cid = defval($_REQUEST, "commentId", "xxx");
     foreach ($paperTable->crows as $row) {
-	if ($row->commentId == $cid
-	    || ($cid == "response" && ($row->commentType & COMMENTTYPE_RESPONSE)))
-	    $crow = $row;
+        if ($row->commentId == $cid
+            || ($cid == "response" && ($row->commentType & COMMENTTYPE_RESPONSE)))
+            $crow = $row;
     }
     if ($cid != "xxx" && !$crow && $cid != "response" && $cid != "new")
-	errorMsgExit("That comment does not exist.");
+        errorMsgExit("That comment does not exist.");
     if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
-	$Error = array();
+        $Error = array();
 }
 
 loadRows();
@@ -64,13 +64,13 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 if (isset($_REQUEST["setwatch"]) && $prow && check_post()) {
     $ajax = defval($_REQUEST, "ajax", 0);
     if (!$Me->privChair
-	|| ($contactId = rcvtint($_REQUEST["contactId"])) <= 0)
-	$contactId = $Me->cid;
+        || ($contactId = rcvtint($_REQUEST["contactId"])) <= 0)
+        $contactId = $Me->cid;
     saveWatchPreference($prow->paperId, $contactId, WATCHTYPE_COMMENT, defval($_REQUEST, "watch"));
     if ($OK)
-	$Conf->confirmMsg("Saved");
+        $Conf->confirmMsg("Saved");
     if ($ajax)
-	$Conf->ajaxExit(array("ok" => $OK));
+        $Conf->ajaxExit(array("ok" => $OK));
 }
 
 
@@ -95,24 +95,24 @@ function saveComment($text, $is_response) {
 
     $what = ($is_response ? "Response" : "Comment");
     if ($next_crow && !isset($_SESSION["comment_msgs"]))
-	$_SESSION["comment_msgs"] = array();
+        $_SESSION["comment_msgs"] = array();
     if ($next_crow && $is_response && ($next_crow->commentType & COMMENTTYPE_DRAFT)) {
-	$deadline = $Conf->printableTimeSetting("resp_done");
-	if ($deadline != "N/A")
-	    $extratext = "  You have until $deadline to submit the response.";
-	else
-	    $extratext = "";
-	$_SESSION["comment_msgs"][$next_crow->commentId] = "<div class='xwarning'>$what saved. <strong>This draft response will not be shown to reviewers.</strong>$extratext</div>";
+        $deadline = $Conf->printableTimeSetting("resp_done");
+        if ($deadline != "N/A")
+            $extratext = "  You have until $deadline to submit the response.";
+        else
+            $extratext = "";
+        $_SESSION["comment_msgs"][$next_crow->commentId] = "<div class='xwarning'>$what saved. <strong>This draft response will not be shown to reviewers.</strong>$extratext</div>";
     } else if ($next_crow)
-	$_SESSION["comment_msgs"][$next_crow->commentId] = "<div class='xconfirm'>$what submitted.</div>";
+        $_SESSION["comment_msgs"][$next_crow->commentId] = "<div class='xconfirm'>$what submitted.</div>";
     else
-	$Conf->confirmMsg("$what deleted.");
+        $Conf->confirmMsg("$what deleted.");
 
     if ($next_crow)
-	redirectSelf(array("anchor" => "comment$next_crow->commentId",
-			   "noedit" => null, "c" => null));
+        redirectSelf(array("anchor" => "comment$next_crow->commentId",
+                           "noedit" => null, "c" => null));
     else
-	redirectSelf(array("c" => null));
+        redirectSelf(array("c" => null));
     // NB normally redirectSelf() does not return
     loadRows();
     return true;
@@ -124,28 +124,28 @@ else if ((isset($_REQUEST["submit"]) || isset($_REQUEST["submitresponse"])
           || isset($_REQUEST["savedraft"]))
          && defval($_REQUEST, "response")) {
     if (!$Me->canRespond($prow, $crow, $whyNot, true)) {
-	$Conf->errorMsg(whyNotText($whyNot, "respond to reviews for"));
-	$useRequest = true;
+        $Conf->errorMsg(whyNotText($whyNot, "respond to reviews for"));
+        $useRequest = true;
     } else if (!($text = defval($_REQUEST, "comment")) && !$crow) {
-	$Conf->errorMsg("Enter a comment.");
-	$useRequest = true;
+        $Conf->errorMsg("Enter a comment.");
+        $useRequest = true;
     } else
-	saveComment($text, true);
+        saveComment($text, true);
 } else if (isset($_REQUEST["submit"])) {
     if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
-	$Conf->errorMsg(whyNotText($whyNot, "comment on"));
-	$useRequest = true;
+        $Conf->errorMsg(whyNotText($whyNot, "comment on"));
+        $useRequest = true;
     } else if (!($text = defval($_REQUEST, "comment")) && !$crow) {
-	$Conf->errorMsg("Enter a comment.");
-	$useRequest = true;
+        $Conf->errorMsg("Enter a comment.");
+        $useRequest = true;
     } else
-	saveComment($text, false);
+        saveComment($text, false);
 } else if (isset($_REQUEST["delete"]) && $crow) {
     if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
-	$Conf->errorMsg(whyNotText($whyNot, "comment on"));
-	$useRequest = true;
+        $Conf->errorMsg(whyNotText($whyNot, "comment on"));
+        $useRequest = true;
     } else
-	saveComment("", ($crow->commentType & COMMENTTYPE_RESPONSE) != 0);
+        saveComment("", ($crow->commentType & COMMENTTYPE_RESPONSE) != 0);
 } else if (isset($_REQUEST["cancel"]) && $crow)
     $_REQUEST["noedit"] = 1;
 
@@ -165,10 +165,10 @@ $editAny = $Me->canReview($prow, null, $whyNotEdit);
 // can we see any reviews?
 if (!$viewAny && !$editAny) {
     if (!$Me->canViewPaper($prow, $whyNotPaper))
-	errorMsgExit(whyNotText($whyNotPaper, "view"));
+        errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
-	$Conf->errorMsg("You can’t see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
-	go(hoturl("paper", "p=$prow->paperId"));
+        $Conf->errorMsg("You can’t see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
+        go(hoturl("paper", "p=$prow->paperId"));
     }
 }
 
@@ -190,7 +190,7 @@ $paperTable->paptabBegin();
 
 if (!$viewAny && !$editAny
     && (!$paperTable->rrow
-	|| !$Me->canViewReview($prow, $paperTable->rrow, null)))
+        || !$Me->canViewReview($prow, $paperTable->rrow, null)))
     $paperTable->paptabEndWithReviewMessage();
 else if ($paperTable->mode == "r" && !$paperTable->rrow)
     $paperTable->paptabEndWithReviews();

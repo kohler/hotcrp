@@ -11,7 +11,7 @@ if ($Me->is_empty())
 $useRequest = false;
 foreach (array("emailNote", "reason") as $x)
     if (isset($_REQUEST[$x]) && $_REQUEST[$x] == "Optional explanation")
-	unset($_REQUEST[$x]);
+        unset($_REQUEST[$x]);
 if (defval($_REQUEST, "mode") == "edit")
     $_REQUEST["mode"] = "pe";
 else if (defval($_REQUEST, "mode") == "view")
@@ -25,17 +25,17 @@ if (!isset($_REQUEST["p"]) && !isset($_REQUEST["paperId"])
 function confHeader() {
     global $paperId, $newPaper, $prow, $paperTable, $Conf, $Error;
     if ($paperTable)
-	$mode = $paperTable->mode;
+        $mode = $paperTable->mode;
     else
-	$mode = "p";
+        $mode = "p";
     if ($paperId <= 0)
-	$title = ($newPaper ? "New Paper" : "Paper View");
+        $title = ($newPaper ? "New Paper" : "Paper View");
     /* else if ($mode == "pe")
-	$title = "Edit Paper #$paperId";
+        $title = "Edit Paper #$paperId";
     else if ($mode == "r")
-	$title = "Paper #$paperId Reviews"; */
+        $title = "Paper #$paperId Reviews"; */
     else
-	$title = "Paper #$paperId";
+        $title = "Paper #$paperId";
 
     $Conf->header($title, "paper_" . ($mode == "pe" ? "edit" : "view"), actionBar($mode, $prow), false);
 }
@@ -50,7 +50,7 @@ function errorMsgExit($msg) {
 
 // collect paper ID: either a number or "new"
 $newPaper = (defval($_REQUEST, "p") == "new"
-	     || defval($_REQUEST, "paperId") == "new");
+             || defval($_REQUEST, "paperId") == "new");
 $paperId = -1;
 
 
@@ -63,9 +63,9 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 function loadRows() {
     global $prow, $Error;
     if (!($prow = PaperTable::paperRow($whyNot)))
-	errorMsgExit(whyNotText($whyNot, "view"));
+        errorMsgExit(whyNotText($whyNot, "view"));
     if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
-	$Error = array();
+        $Error = array();
 }
 $prow = null;
 if (!$newPaper) {
@@ -101,104 +101,104 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
     $cf = new CheckFormat();
     $dt = requestDocumentType($_REQUEST);
     if ($Conf->setting("sub_banal$dt"))
-	$format = $Conf->setting_data("sub_banal$dt", "");
+        $format = $Conf->setting_data("sub_banal$dt", "");
     else
-	$format = $Conf->setting_data("sub_banal", "");
+        $format = $Conf->setting_data("sub_banal", "");
     $status = $cf->analyzePaper($prow->paperId, $dt, $format);
 
     // chairs get a hint message about multiple checking
     if ($Me->privChair) {
-	if (!isset($_SESSION["info"]))
-	    $_SESSION["info"] = array();
-	$_SESSION["info"]["nbanal"] = defval($_SESSION["info"], "nbanal", 0) + 1;
-	if ($_SESSION["info"]["nbanal"] >= 3 && $_SESSION["info"]["nbanal"] <= 6)
-	    $cf->msg("info", "To run the format checker for many papers, use Download &gt; Format check on the <a href='" . hoturl("search", "q=") . "'>search page</a>.");
+        if (!isset($_SESSION["info"]))
+            $_SESSION["info"] = array();
+        $_SESSION["info"]["nbanal"] = defval($_SESSION["info"], "nbanal", 0) + 1;
+        if ($_SESSION["info"]["nbanal"] >= 3 && $_SESSION["info"]["nbanal"] <= 6)
+            $cf->msg("info", "To run the format checker for many papers, use Download &gt; Format check on the <a href='" . hoturl("search", "q=") . "'>search page</a>.");
     }
 
     $cf->reportMessages();
     if ($ajax)
-	$Conf->ajaxExit(array("status" => $status), true);
+        $Conf->ajaxExit(array("status" => $status), true);
 }
 
 
 // withdraw and revive actions
 if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
     if ($Me->canWithdrawPaper($prow, $whyNot)) {
-	$q = "update Paper set timeWithdrawn=" . time()
-	    . ", timeSubmitted=if(timeSubmitted>0,-100,0)";
-	$reason = defval($_REQUEST, "reason", "");
-	if ($reason == "" && $Me->privChair && defval($_REQUEST, "doemail") > 0)
-	    $reason = defval($_REQUEST, "emailNote", "");
-	if ($Conf->sversion >= 44 && $reason != "")
-	    $q .= ", withdrawReason='" . sqlq($reason) . "'";
-	$Conf->qe($q . " where paperId=$paperId", "while withdrawing paper");
-	$result = $Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId", "while withdrawing paper");
-	$numreviews = edb_nrows_affected($result);
-	$Conf->updatePapersubSetting(false);
-	loadRows();
+        $q = "update Paper set timeWithdrawn=" . time()
+            . ", timeSubmitted=if(timeSubmitted>0,-100,0)";
+        $reason = defval($_REQUEST, "reason", "");
+        if ($reason == "" && $Me->privChair && defval($_REQUEST, "doemail") > 0)
+            $reason = defval($_REQUEST, "emailNote", "");
+        if ($Conf->sversion >= 44 && $reason != "")
+            $q .= ", withdrawReason='" . sqlq($reason) . "'";
+        $Conf->qe($q . " where paperId=$paperId", "while withdrawing paper");
+        $result = $Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId", "while withdrawing paper");
+        $numreviews = edb_nrows_affected($result);
+        $Conf->updatePapersubSetting(false);
+        loadRows();
 
-	// email contact authors themselves
-	if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
-	    Mailer::sendContactAuthors(($prow->conflictType >= CONFLICT_AUTHOR ? "@authorwithdraw" : "@adminwithdraw"),
-				       $prow, null, array("reason" => $reason, "infoNames" => 1));
+        // email contact authors themselves
+        if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
+            Mailer::sendContactAuthors(($prow->conflictType >= CONFLICT_AUTHOR ? "@authorwithdraw" : "@adminwithdraw"),
+                                       $prow, null, array("reason" => $reason, "infoNames" => 1));
 
-	// email reviewers
-	if (($numreviews > 0 && $Conf->timeReviewOpen())
-	    || $prow->startedReviewCount > 0)
-	    Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => $reason));
+        // email reviewers
+        if (($numreviews > 0 && $Conf->timeReviewOpen())
+            || $prow->startedReviewCount > 0)
+            Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => $reason));
 
-	// remove voting tags so people don't have phantom votes
+        // remove voting tags so people don't have phantom votes
         $tagger = new Tagger;
-	if ($tagger->has_vote()) {
-	    $q = array();
-	    foreach ($tagger->vote_tags() as $t => $v)
-		$q[] = "tag='" . sqlq($t) . "' or tag like '%~" . sqlq_for_like($t) . "'";
-	    $Conf->qe("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")", "while cleaning up voting tags");
-	}
+        if ($tagger->has_vote()) {
+            $q = array();
+            foreach ($tagger->vote_tags() as $t => $v)
+                $q[] = "tag='" . sqlq($t) . "' or tag like '%~" . sqlq_for_like($t) . "'";
+            $Conf->qe("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")", "while cleaning up voting tags");
+        }
 
-	$Conf->log("Withdrew", $Me, $paperId);
-	redirectSelf();
+        $Conf->log("Withdrew", $Me, $paperId);
+        redirectSelf();
     } else
-	$Conf->errorMsg(whyNotText($whyNot, "withdraw"));
+        $Conf->errorMsg(whyNotText($whyNot, "withdraw"));
 }
 if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
     if ($Me->canRevivePaper($prow, $whyNot)) {
-	$q = "update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0)";
-	if ($Conf->sversion >= 44)
-	    $q .= ", withdrawReason=null";
-	$Conf->qe($q . " where paperId=$paperId", "while reviving paper");
-	$Conf->qe("update PaperReview set reviewNeedsSubmit=1 where paperId=$paperId and reviewSubmitted is null", "while reviving paper");
-	$Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
-	$Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
-	$Conf->updatePapersubSetting(true);
-	loadRows();
-	$Conf->log("Revived", $Me, $paperId);
-	redirectSelf();
+        $q = "update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0)";
+        if ($Conf->sversion >= 44)
+            $q .= ", withdrawReason=null";
+        $Conf->qe($q . " where paperId=$paperId", "while reviving paper");
+        $Conf->qe("update PaperReview set reviewNeedsSubmit=1 where paperId=$paperId and reviewSubmitted is null", "while reviving paper");
+        $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
+        $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
+        $Conf->updatePapersubSetting(true);
+        loadRows();
+        $Conf->log("Revived", $Me, $paperId);
+        redirectSelf();
     } else
-	$Conf->errorMsg(whyNotText($whyNot, "revive"));
+        $Conf->errorMsg(whyNotText($whyNot, "revive"));
 }
 
 
 // set request authorTable from individual components
 function set_request_author_table() {
     if (!isset($_REQUEST["aueditcount"]))
-	$_REQUEST["aueditcount"] = 50;
+        $_REQUEST["aueditcount"] = 50;
     if ($_REQUEST["aueditcount"] < 1)
-	$_REQUEST["aueditcount"] = 1;
+        $_REQUEST["aueditcount"] = 1;
     $_REQUEST["authorTable"] = array();
     $anyAuthors = false;
     for ($i = 1; $i <= $_REQUEST["aueditcount"]; $i++) {
-	if (isset($_REQUEST["auname$i"]) || isset($_REQUEST["auemail$i"]) || isset($_REQUEST["auaff$i"]))
-	    $anyAuthors = true;
-	$a = simplify_whitespace(defval($_REQUEST, "auname$i", ""));
-	$b = simplify_whitespace(defval($_REQUEST, "auemail$i", ""));
-	$c = simplify_whitespace(defval($_REQUEST, "auaff$i", ""));
-	if ($a != "" || $b != "" || $c != "") {
-	    $a = Text::split_name($a);
-	    $a[2] = $b;
-	    $a[3] = $c;
-	    $_REQUEST["authorTable"][] = $a;
-	}
+        if (isset($_REQUEST["auname$i"]) || isset($_REQUEST["auemail$i"]) || isset($_REQUEST["auaff$i"]))
+            $anyAuthors = true;
+        $a = simplify_whitespace(defval($_REQUEST, "auname$i", ""));
+        $b = simplify_whitespace(defval($_REQUEST, "auemail$i", ""));
+        $c = simplify_whitespace(defval($_REQUEST, "auaff$i", ""));
+        if ($a != "" || $b != "" || $c != "") {
+            $a = Text::split_name($a);
+            $a[2] = $b;
+            $a[3] = $c;
+            $_REQUEST["authorTable"][] = $a;
+        }
     }
     if (!count($_REQUEST["authorTable"]) && !$anyAuthors)
         $_REQUEST["authorTable"] = array();
@@ -272,7 +272,7 @@ function request_differences($prow, $isfinal) {
 
     // direct entries
     foreach (array("title", "abstract", "collaborators") as $x)
-	if ($_REQUEST[$x] != $prow->$x)
+        if ($_REQUEST[$x] != $prow->$x)
             $diffs[$x] = true;
     $ai = "";
     foreach ($prow->authorTable as $x)
@@ -290,7 +290,7 @@ function request_differences($prow, $isfinal) {
     // topics
     $result = $Conf->q("select TopicArea.topicId, PaperTopic.paperId from TopicArea left join PaperTopic on PaperTopic.paperId=$prow->paperId and PaperTopic.topicId=TopicArea.topicId");
     while (($row = edb_row($result)))
-	if (($row[1] > 0) != (rcvtint($_REQUEST["top$row[0]"]) > 0))
+        if (($row[1] > 0) != (rcvtint($_REQUEST["top$row[0]"]) > 0))
             $diffs["topics"] = true;
 
     // options
@@ -326,7 +326,7 @@ function request_differences($prow, $isfinal) {
         while (($row = edb_row($result)))
             $curconf[$row[0]] = $row[1];
 
-	$cmax = $Me->privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
+        $cmax = $Me->privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
         foreach (pcMembers() as $pcid => $pc) {
             $ctype = cvtint(defval($_REQUEST, "pcc$pcid", 0), 0);
             $otype = defval($curconf, $pcid, 0);
@@ -349,7 +349,7 @@ function upload_option($o, $oname, $prow) {
     global $Conf, $Me, $Error;
     $doc = $Conf->storeDocument($oname, $prow ? $prow->paperId : -1, $o->id);
     if (isset($doc->error_html)) {
-	$Error["opt$o->id"] = $doc->error_html;
+        $Error["opt$o->id"] = $doc->error_html;
         return 0;
     } else
         return $doc->paperStorageId;
@@ -440,9 +440,9 @@ function save_contacts($paperId, $contact_changes, $request_authors) {
 
     $aunew = $auold = "";
     if ($prow)
-	foreach ($prow->authorTable as $au)
-	    if ($au[2] != "")
-		$auold .= "'" . sqlq($au[2]) . "', ";
+        foreach ($prow->authorTable as $au)
+            if ($au[2] != "")
+                $auold .= "'" . sqlq($au[2]) . "', ";
     if ($request_authors) {
         foreach ($_REQUEST["authorTable"] as $au)
             if ($au[2] != "")
@@ -451,10 +451,10 @@ function save_contacts($paperId, $contact_changes, $request_authors) {
         $aunew = $auold;
 
     if ($auold != $aunew || count($contact_changes[1])) {
-	if ($auold && !$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType=" . CONFLICT_AUTHOR, "while updating paper authors"))
-	    return false;
-	if ($aunew && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) select $paperId, contactId, " . CONFLICT_AUTHOR . " from ContactInfo where email in (" . substr($aunew, 0, strlen($aunew) - 2) . ") on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")", "while updating paper authors"))
-	    return false;
+        if ($auold && !$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType=" . CONFLICT_AUTHOR, "while updating paper authors"))
+            return false;
+        if ($aunew && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) select $paperId, contactId, " . CONFLICT_AUTHOR . " from ContactInfo where email in (" . substr($aunew, 0, strlen($aunew) - 2) . ") on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")", "while updating paper authors"))
+            return false;
     }
 
     return count($contact_changes[0]) || count($contact_changes[1]);
@@ -477,7 +477,7 @@ function report_update_paper_errors() {
 // send watch messages
 function final_submit_watch_callback($prow, $minic) {
     if ($minic->canViewPaper($prow))
-	Mailer::send("@finalsubmitnotify", $prow, $minic);
+        Mailer::send("@finalsubmitnotify", $prow, $minic);
 }
 
 function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
@@ -492,7 +492,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
          && ($newPaper || $prow->size == 0)
          && !defval($Opt, "noPapers"))
         || $isSubmitFinal)
-	$isSubmit = false;
+        $isSubmit = false;
 
     // Paper table, uploaded documents: collect updates, check for errors
     $q = array();
@@ -547,11 +547,11 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     $opt_data = array();
     $no_delete_options = array("true");
     foreach (PaperOption::option_list() as $o) {
-	$oname = "opt$o->id";
-	$v = trim(defval($_REQUEST, $oname, ""));
+        $oname = "opt$o->id";
+        $v = trim(defval($_REQUEST, $oname, ""));
         if (@$o->final && !$isSubmitFinal)
             $no_delete_options[] = "optionId!=" . $o->id;
-	else if (($o->type == "checkbox" && $_REQUEST[$oname])
+        else if (($o->type == "checkbox" && $_REQUEST[$oname])
                  || $o->type == "selector"
                  || $o->type == "radio"
                  || $o->type == "numeric") {
@@ -585,7 +585,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
                 $uploaded_documents[] = $docid;
             } else if (!defval($_REQUEST, "remove_$oname"))
                 $no_delete_options[] = "optionId!=" . $o->id;
-	} else
+        } else
             $no_delete_options[] = "optionId!=" . $o->id;
     }
 
@@ -628,8 +628,8 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
 
     // update PaperOption table
     if (count(PaperOption::option_list())) {
-	if (!$Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options), "while updating paper options"))
-	    return false;
+        if (!$Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options), "while updating paper options"))
+            return false;
         foreach ($opt_data as &$x)
             $x = "($paperId, $x)";
         unset($x);
@@ -644,20 +644,20 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
 
     // update PC conflicts if appropriate
     if ($Conf->setting("sub_pcconf") && (!$isSubmitFinal || $Me->privChair)) {
-	$max_conflict = $Me->privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
-	if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHORMARK . " and conflictType<=" . $max_conflict, "while updating conflicts"))
-	    return false;
-	$q = array();
-	$pcm = pcMembers();
-	foreach ($_REQUEST as $key => $value)
-	    if (strlen($key) > 3
-		&& $key[0] == 'p' && $key[1] == 'c' && $key[2] == 'c'
-		&& ($id = cvtint(substr($key, 3))) > 0
+        $max_conflict = $Me->privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
+        if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHORMARK . " and conflictType<=" . $max_conflict, "while updating conflicts"))
+            return false;
+        $q = array();
+        $pcm = pcMembers();
+        foreach ($_REQUEST as $key => $value)
+            if (strlen($key) > 3
+                && $key[0] == 'p' && $key[1] == 'c' && $key[2] == 'c'
+                && ($id = cvtint(substr($key, 3))) > 0
                 && isset($pcm[$id])
-		&& $value > 0) {
-		$q[] = "($paperId, $id, " . max(min($value, $max_conflict), CONFLICT_AUTHORMARK) . ")";
-	    }
-	if (count($q))
+                && $value > 0) {
+                $q[] = "($paperId, $id, " . max(min($value, $max_conflict), CONFLICT_AUTHORMARK) . ")";
+            }
+        if (count($q))
             $Conf->qe("insert into PaperConflict (paperId,contactId,conflictType) values " . join(", ", $q) . " on duplicate key update conflictType=conflictType",
                       "while updating conflicts");
     }
@@ -678,27 +678,27 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
             $Conf->errorMsg(whyNotText("notUploaded", "submit", $paperId));
         }
     } else if ($OK && !count($Error) && !$isSubmitFinal && !$isSubmit) {
-	$Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while unsubmitting paper");
+        $Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while unsubmitting paper");
         loadRows();
     }
     if ($isSubmit || $Conf->setting("pc_seeall"))
-	$Conf->updatePapersubSetting(true);
+        $Conf->updatePapersubSetting(true);
     if ($wasSubmitted != ($prow->$submitkey > 0))
         $diffs["submission"] = 1;
 
     // confirmation message
     if ($isSubmitFinal) {
-	$actiontext = "Updated final version of";
-	$template = "@submitfinalpaper";
+        $actiontext = "Updated final version of";
+        $template = "@submitfinalpaper";
     } else if ($didSubmit && $isSubmit && !$wasSubmitted) {
-	$actiontext = "Submitted";
-	$template = "@submitpaper";
+        $actiontext = "Submitted";
+        $template = "@submitpaper";
     } else if ($newPaper) {
-	$actiontext = "Registered new";
-	$template = "@registerpaper";
+        $actiontext = "Registered new";
+        $template = "@registerpaper";
     } else {
-	$actiontext = "Updated";
-	$template = "@updatepaper";
+        $actiontext = "Updated";
+        $template = "@updatepaper";
     }
 
     // additional information
@@ -706,26 +706,26 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     if ($isSubmitFinal) {
         if ($prow->$submitkey === null || $prow->$submitkey <= 0)
             $notes[] = "The final version has not yet been submitted.";
-	$deadline = $Conf->printableTimeSetting("final_soft", "span");
-	if ($deadline != "N/A" && $Conf->deadlinesAfter("final_soft"))
-	    $notes[] = "<strong>The deadline for submitting final versions was $deadline.</strong>";
-	else if ($deadline != "N/A")
-	    $notes[] = "You have until $deadline to make further changes.";
+        $deadline = $Conf->printableTimeSetting("final_soft", "span");
+        if ($deadline != "N/A" && $Conf->deadlinesAfter("final_soft"))
+            $notes[] = "<strong>The deadline for submitting final versions was $deadline.</strong>";
+        else if ($deadline != "N/A")
+            $notes[] = "You have until $deadline to make further changes.";
     } else {
-	if ($isSubmit || $prow->timeSubmitted > 0)
-	    $notes[] = "You will receive email when reviews are available.";
-	else if ($prow->size == 0 && !defval($Opt, "noPapers"))
-	    $notes[] = "The paper has not yet been uploaded.";
-	else if ($Conf->setting("sub_freeze") > 0)
-	    $notes[] = "The paper has not yet been submitted.";
-	else
-	    $notes[] = "The paper is marked as not ready for review.";
-	$deadline = $Conf->printableTimeSetting("sub_update", "span");
-	if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
-	    $notes[] = "Further updates are allowed until $deadline.";
-	$deadline = $Conf->printableTimeSetting("sub_sub", "span");
-	if ($deadline != "N/A" && $prow->timeSubmitted <= 0)
-	    $notes[] = "<strong>If the paper "
+        if ($isSubmit || $prow->timeSubmitted > 0)
+            $notes[] = "You will receive email when reviews are available.";
+        else if ($prow->size == 0 && !defval($Opt, "noPapers"))
+            $notes[] = "The paper has not yet been uploaded.";
+        else if ($Conf->setting("sub_freeze") > 0)
+            $notes[] = "The paper has not yet been submitted.";
+        else
+            $notes[] = "The paper is marked as not ready for review.";
+        $deadline = $Conf->printableTimeSetting("sub_update", "span");
+        if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
+            $notes[] = "Further updates are allowed until $deadline.";
+        $deadline = $Conf->printableTimeSetting("sub_sub", "span");
+        if ($deadline != "N/A" && $prow->timeSubmitted <= 0)
+            $notes[] = "<strong>If the paper "
                 . ($Conf->setting("sub_freeze") > 0 ? "has not been submitted"
                    : "is not ready for review")
                 . " by $deadline, it will not be considered.</strong>";
@@ -743,25 +743,25 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
 
     // HTML confirmation
     if ($prow->$submitkey > 0)
-	$Conf->confirmMsg($actiontext . " paper #$paperId. " . $notes . $webnotes);
+        $Conf->confirmMsg($actiontext . " paper #$paperId. " . $notes . $webnotes);
     else
-	$Conf->warnMsg($actiontext . " paper #$paperId. " . $notes . $webnotes);
+        $Conf->warnMsg($actiontext . " paper #$paperId. " . $notes . $webnotes);
 
     // mail confirmation to all contact authors
     if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {
-	$options = array("infoNames" => 1);
-	if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
-	    $options["adminupdate"] = true;
-	if ($Me->privChair && isset($_REQUEST["emailNote"]))
-	    $options["reason"] = $_REQUEST["emailNote"];
-	if ($notes !== "")
-	    $options["notes"] = preg_replace(",</?(?:span.*?|strong)>,", "", $notes) . "\n\n";
-	Mailer::sendContactAuthors($template, $prow, null, $options);
+        $options = array("infoNames" => 1);
+        if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
+            $options["adminupdate"] = true;
+        if ($Me->privChair && isset($_REQUEST["emailNote"]))
+            $options["reason"] = $_REQUEST["emailNote"];
+        if ($notes !== "")
+            $options["notes"] = preg_replace(",</?(?:span.*?|strong)>,", "", $notes) . "\n\n";
+        Mailer::sendContactAuthors($template, $prow, null, $options);
     }
 
     // other mail confirmations
     if ($isSubmitFinal && $OK && !count($Error) && $Conf->sversion >= 36)
-	genericWatch($prow, WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback", $Me);
+        genericWatch($prow, WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback", $Me);
 
     $Conf->log($actiontext, $Me, $paperId);
 
@@ -776,14 +776,14 @@ if ((@$_REQUEST["update"] || @$_REQUEST["submitfinal"])
 
     // check deadlines
     if ($newPaper)
-	// we know that canStartPaper implies canFinalizePaper
-	$ok = $Me->canStartPaper($whyNot);
+        // we know that canStartPaper implies canFinalizePaper
+        $ok = $Me->canStartPaper($whyNot);
     else if (@$_REQUEST["submitfinal"])
-	$ok = $Me->canSubmitFinalPaper($prow, $whyNot);
+        $ok = $Me->canSubmitFinalPaper($prow, $whyNot);
     else {
-	$ok = $Me->canUpdatePaper($prow, $whyNot);
-	if (!$ok && @$_REQUEST["submitpaper"] && !count($diffs))
-	    $ok = $Me->canFinalizePaper($prow, $whyNot);
+        $ok = $Me->canUpdatePaper($prow, $whyNot);
+        if (!$ok && @$_REQUEST["submitpaper"] && !count($diffs))
+            $ok = $Me->canFinalizePaper($prow, $whyNot);
     }
 
     // actually update
@@ -794,11 +794,11 @@ if ((@$_REQUEST["update"] || @$_REQUEST["submitfinal"])
         else
             report_update_paper_errors();
     } else {
-	if (@$_REQUEST["submitfinal"])
-	    $action = "submit final version for";
-	else
-	    $action = (!$newPaper ? "update" : "register");
-	$Conf->errorMsg(whyNotText($whyNot, $action));
+        if (@$_REQUEST["submitfinal"])
+            $action = "submit final version for";
+        else
+            $action = (!$newPaper ? "update" : "register");
+        $Conf->errorMsg(whyNotText($whyNot, $action));
     }
 
     // use request?
@@ -810,8 +810,8 @@ if (isset($_REQUEST["updatecontacts"]) && check_post() && !$newPaper) {
         $Conf->errorMsg(whyNotText(array("permission" => 1), "update contacts for"));
     } else if (($contact_changes = check_contacts($prow))
                && save_contacts($prow->paperId, $contact_changes, false)) {
-	redirectSelf(array("p" => $paperId, "m" => "pe"));
-	// NB normally redirectSelf() does not return
+        redirectSelf(array("p" => $paperId, "m" => "pe"));
+        // NB normally redirectSelf() does not return
     }
 
     // use request?
@@ -822,31 +822,31 @@ if (isset($_REQUEST["updatecontacts"]) && check_post() && !$newPaper) {
 // delete action
 if (isset($_REQUEST["delete"]) && check_post()) {
     if ($newPaper)
-	$Conf->confirmMsg("Paper deleted.");
+        $Conf->confirmMsg("Paper deleted.");
     else if (!$Me->privChair)
-	$Conf->errorMsg("Only the program chairs can permanently delete papers. Authors can withdraw papers, which is effectively the same.");
+        $Conf->errorMsg("Only the program chairs can permanently delete papers. Authors can withdraw papers, which is effectively the same.");
     else {
-	// mail first, before contact info goes away
-	if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
-	    Mailer::sendContactAuthors("@deletepaper", $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
-	// XXX email self?
+        // mail first, before contact info goes away
+        if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
+            Mailer::sendContactAuthors("@deletepaper", $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
+        // XXX email self?
 
-	$error = false;
-	$tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic', 'PaperTag', "PaperOption");
-	foreach ($tables as $table) {
-	    $result = $Conf->qe("delete from $table where paperId=$paperId", "while deleting paper");
-	    $error |= ($result == false);
-	}
-	if (!$error) {
-	    $Conf->confirmMsg("Paper #$paperId deleted.");
-	    $Conf->updatePapersubSetting(false);
-	    if ($prow->outcome > 0)
-		$Conf->updatePaperaccSetting(false);
-	    $Conf->log("Deleted", $Me, $paperId);
-	}
+        $error = false;
+        $tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic', 'PaperTag', "PaperOption");
+        foreach ($tables as $table) {
+            $result = $Conf->qe("delete from $table where paperId=$paperId", "while deleting paper");
+            $error |= ($result == false);
+        }
+        if (!$error) {
+            $Conf->confirmMsg("Paper #$paperId deleted.");
+            $Conf->updatePapersubSetting(false);
+            if ($prow->outcome > 0)
+                $Conf->updatePaperaccSetting(false);
+            $Conf->log("Deleted", $Me, $paperId);
+        }
 
-	$prow = null;
-	errorMsgExit("");
+        $prow = null;
+        errorMsgExit("");
     }
 }
 
@@ -876,12 +876,12 @@ confHeader();
 // prepare paper table
 if ($paperTable->mode == "pe") {
     $editable = $newPaper
-	|| ($prow->timeWithdrawn <= 0
-	    && ($Conf->timeUpdatePaper($prow) || $Me->allowAdminister($prow)));
+        || ($prow->timeWithdrawn <= 0
+            && ($Conf->timeUpdatePaper($prow) || $Me->allowAdminister($prow)));
     if ($prow && $prow->outcome > 0 && $Conf->collectFinalPapers()
-	&& (($Conf->timeAuthorViewDecision() && $Conf->timeSubmitFinalPaper())
-	    || $Me->allowAdminister($prow)))
-	$editable = "f";
+        && (($Conf->timeAuthorViewDecision() && $Conf->timeSubmitFinalPaper())
+            || $Me->allowAdminister($prow)))
+        $editable = "f";
 } else
     $editable = false;
 
