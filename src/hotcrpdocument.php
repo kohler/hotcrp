@@ -111,8 +111,10 @@ class HotCRPDocument {
         if (!isset($doc->content) && !$this->load_content($doc))
             return false;
         $s3 = self::s3_document();
+        $dtype = isset($doc->documentType) ? $doc->documentType : $this->dtype;
         $meta = json_encode(array("conf" => $Opt["conferenceId"],
-                                  "pid" => (int) $docinfo->paperId));
+                                  "pid" => (int) $docinfo->paperId,
+                                  "dtype" => (int) $dtype));
         $s3->save(self::s3_filename($doc), $doc->content, $doc->mimetype,
                   array("hotcrp" => $meta));
         if ($s3->status != 200)
