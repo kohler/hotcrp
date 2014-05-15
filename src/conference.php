@@ -1047,7 +1047,7 @@ class Conference {
             return $doc;
         // type doesn't matter
         if ($dtype === null && isset($doc->documentType))
-            $dtype = (int) $doc->documentType;
+            $dtype = $doc->documentType = (int) $doc->documentType;
         $doc->docclass = new HotCRPDocument($dtype);
         // in modern versions sha1 is set at storage time; before it wasn't
         if ($doc->paperStorageId && $doc->sha1 == "") {
