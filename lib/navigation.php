@@ -16,6 +16,9 @@ class Navigation {
     private static $php_suffix;
 
     public static function analyze() {
+        if (PHP_SAPI == "cli")
+            return;
+
         if (@$_SERVER["HTTPS"] && $_SERVER["HTTPS"] != "off")
             list($x, $xport) = array("https://", 443);
         else

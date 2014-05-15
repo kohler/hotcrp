@@ -22,12 +22,12 @@ function set_multiconference() {
             }
         } else if (preg_match(',/([^/]+)/\z,', $base, $m))
             $ConfMulticonf = $m[1];
-
-        if (!@$ConfMulticonf
-            || !preg_match(',\A[-a-zA-Z0-9._]+\z,', $ConfMulticonf)
-            || $ConfMulticonf[0] == ".")
-            $ConfMulticonf = "__invalid__";
     }
+
+    if (!@$ConfMulticonf
+        || !preg_match(',\A[-a-zA-Z0-9._]+\z,', $ConfMulticonf)
+        || $ConfMulticonf[0] == ".")
+        $ConfMulticonf = "__invalid__";
 
     foreach (array("dbName", "dbUser", "dbPassword", "dsn",
                    "sessionName", "downloadPrefix", "conferenceSite",
@@ -44,7 +44,29 @@ if (@$Opt["multiconference"])
 
 function multiconference_fail($tried_db) {
     global $Conf, $ConfMulticonf, $Me, $Opt;
-    if (@$_REQUEST["ajax"]) {
+
+    $errors = array();
+    if (@$Opt["multiconference"])
+        $errors[] = "The “${ConfMulticonf}” conference does not exist. Check your URL to make sure you spelled it correctly.";
+    else if (!@$Opt["loaded"])
+        $errors[] = "HotCRP has been installed, but not yet configured. You must run `lib/createdb.sh` to create a database for your conference. See `README.md` for further guidance.";
+    else
+        $errors[] = "HotCRP was unable to load. A system administrator must fix this problem.";
+    if ($tried_db && (!@$Opt["multiconference"] || !@$Opt["include"] || !@$Opt["missing"]))
+        $errors[] = "Error: Unable to connect to database " . Conference::sanitize_dsn($Opt["dsn"]);
+    else if (!@$Opt["loaded"] && defined("HOTCRP_OPTIONS"))
+        $errors[] = "Error: Unable to load options file `" . HOTCRP_OPTIONS . "`";
+    else if (!@$Opt["loaded"])
+        $errors[] = "Error: Unable to load options file";
+    else if (@$Opt["missing"])
+        $errors[] = "Error: Unable to load options from " . commajoin($Opt["missing"]);
+    if ($tried_db && defined("HOTCRP_TESTHARNESS"))
+        $errors[] = "You may need to run `lib/createdb.sh -c test/testoptions.php` to create the database.\n";
+
+    if (PHP_SAPI == "cli") {
+        fwrite(STDERR, join("\n", $errors));
+        exit(1);
+    } else if (@$_REQUEST["ajax"]) {
         header("Content-Type: " . (@$_REQUEST["jsontext"] ? "text/plain" : "application/json"));
         echo "{\"error\":\"unconfigured installation\"}\n";
     } else {
@@ -55,18 +77,9 @@ function multiconference_fail($tried_db) {
         $Me = null;
         header("HTTP/1.1 404 Not Found");
         $Conf->header("HotCRP Error", "", false);
-        if (@$Opt["multiconference"])
-            echo "<p>The “" . htmlspecialchars($ConfMulticonf) . "” conference does not exist. Check your URL to make sure you spelled it correctly.</p>";
-        else if (!@$Opt["loaded"])
-            echo "<p>HotCRP has been installed, but not yet configured. You must run <code>Code/createdb.sh</code> to create a database for your conference. See <code>README.md</code> for further guidance.</p>";
-        else
-            echo "<p>HotCRP was unable to load. A system administrator must fix this problem.</p>";
-        if ($tried_db && (!@$Opt["multiconference"] || !@$Opt["include"] || !@$Opt["missing"]))
-            echo "<div class=\"hint\">Error: Unable to connect to database " . Conference::sanitize_dsn($Opt["dsn"]) . "</div>";
-        else if (!@$Opt["loaded"])
-            echo "<div class=\"hint\">Error: Unable to load options file</div>";
-        else if (@$Opt["missing"])
-            echo "<div class=\"hint\">Error: Unable to load options from " . htmlspecialchars(commajoin($Opt["missing"])) . "</div>";
+        foreach ($errors as $i => &$e)
+            $e = ($i ? "<div class=\"hint\">" : "<p>") . htmlspecialchars($e) . ($i ? "</div>" : "</p>");
+        echo join("", $errors);
         $Conf->footer();
     }
     exit;

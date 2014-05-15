@@ -4,6 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("init.php");
+global $Conf, $Opt;
 
 // Check for obsolete pages.
 // These are pages that we've removed from the source. But some user might
@@ -12,26 +13,6 @@ require_once("init.php");
 if (array_search(Navigation::page(),
                  array("account", "contactauthors", "contacts", "login", "logout")) !== false)
     go();
-
-
-// Redirect if options unavailable
-global $Opt;
-if (!@$Opt["loaded"] || @$Opt["missing"]) {
-    require_once("$ConfSitePATH/src/multiconference.php");
-    multiconference_fail(false);
-}
-
-
-// Create the conference
-global $Conf;
-if (!@$Conf) {
-    $Opt["dsn"] = Conference::make_dsn($Opt);
-    $Conf = new Conference($Opt["dsn"]);
-}
-if (!$Conf->dblink) {
-    require_once("$ConfSitePATH/src/multiconference.php");
-    multiconference_fail(true);
-}
 
 
 // How long before a session is automatically logged out?

@@ -181,6 +181,11 @@ function __autoload($class_name) {
 }
 
 
+// Set locale to C (so that, e.g., strtolower() on UTF-8 data doesn't explode)
+setlocale(LC_COLLATE, "C");
+setlocale(LC_CTYPE, "C");
+
+
 // Set up conference options
 function read_included_options($files) {
     global $Opt, $ConfMulticonf, $ConfSitePATH;
@@ -214,20 +219,35 @@ if (!@$Opt)
     $Opt = array();
 if (!@$Opt["loaded"]) {
     // see also `cacheable.php`
-    if ((@include "$ConfSitePATH/conf/options.php") !== false
-        || (@include "$ConfSitePATH/conf/options.inc") !== false
-        || (@include "$ConfSitePATH/Code/options.inc") !== false)
+    if (defined("HOTCRP_OPTIONS")) {
+        if ((@include HOTCRP_OPTIONS) !== false)
+            $Opt["loaded"] = true;
+    } else if ((@include "$ConfSitePATH/conf/options.php") !== false
+               || (@include "$ConfSitePATH/conf/options.inc") !== false
+               || (@include "$ConfSitePATH/Code/options.inc") !== false)
         $Opt["loaded"] = true;
     if (@$Opt["multiconference"])
         require_once("$ConfSitePATH/src/multiconference.php");
     if (@$Opt["include"])
         read_included_options($Opt["include"]);
 }
+if (!@$Opt["loaded"] || @$Opt["missing"]) {
+    require_once("$ConfSitePATH/src/multiconference.php");
+    multiconference_fail(false);
+}
 
-
-// Set locale to C (so that, e.g., strtolower() on UTF-8 data doesn't explode)
-setlocale(LC_COLLATE, "C");
-setlocale(LC_CTYPE, "C");
 
 // Allow lots of memory
 ini_set("memory_limit", defval($Opt, "memoryLimit", "128M"));
+
+
+// Create the conference
+global $Conf;
+if (!@$Conf) {
+    $Opt["dsn"] = Conference::make_dsn($Opt);
+    $Conf = new Conference($Opt["dsn"]);
+}
+if (!$Conf->dblink) {
+    require_once("$ConfSitePATH/src/multiconference.php");
+    multiconference_fail(true);
+}
