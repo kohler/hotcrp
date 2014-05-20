@@ -528,7 +528,7 @@ class Contact {
     static function email_authored_papers($email, $reg) {
         global $Conf;
         $aupapers = array();
-        $result = $Conf->q("select paperId, authorInformation from Paper where authorInformation like '%        " . sqlq_for_like($email) . "   %'");
+        $result = $Conf->q("select paperId, authorInformation from Paper where authorInformation like '%\t" . sqlq_for_like($email) . "\t%'");
         while (($row = edb_orow($result))) {
             cleanAuthor($row);
             foreach ($row->authorTable as $au)
