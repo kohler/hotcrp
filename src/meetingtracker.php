@@ -66,9 +66,12 @@ class MeetingTracker {
                                                      "timeout" => 1.0)));
         $comet_url .= "?conference=" . urlencode($conference)
             . "&update=" . urlencode(self::tracker_status($tracker));
-        $stream = fopen($comet_url, "r", false, $context);
-        if (!$stream)
+        $stream = @fopen($comet_url, "r", false, $context);
+        if (!$stream) {
+            $e = error_get_last();
+            error_log($comet_url . ": " . $e["message"]);
             return false;
+        }
         if (!($data = stream_get_contents($stream))
             || !($data = json_decode($data)))
             error_log($comet_url . ": read failure");
