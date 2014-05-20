@@ -168,7 +168,7 @@ function text_to_html(text) {
 window.hotcrp_deadlines = (function () {
 var dl, dlname, dltime, dlurl, has_tracker, ever_had_tracker,
     redisplay_timeout, reload_timeout, tracker_timer,
-    tracker_comet_at, tracker_comet_errors = 0;
+    tracker_comet_at, tracker_comet_stop_until, tracker_comet_errors = 0;
 
 function redisplay_main() {
     redisplay_timeout = null;
@@ -368,28 +368,30 @@ function run_comet() {
     if (!dl.tracker_poll_corrected
         && !/^(?:https?:|\/)/.test(dl.tracker_poll))
         dl.tracker_poll = hotcrp_base + dl.tracker_poll;
-    if (dl.tracker_poll && tracker_comet_errors < 5 && !tracker_comet_at) {
+    if (dl.tracker_poll && !tracker_comet_at) {
         tracker_comet_at = (new Date).getTime();
         jQuery.ajax({
             url: dl.tracker_poll,
             timeout: 300000,
             dataType: "json",
             complete: function (xhr, status) {
+                var now = (new Date).getTime(), delta = now - tracker_comet_at;
                 tracker_comet_at = null;
                 // Assume errors after long delays are actually timeouts
                 // (Chrome shuts down long polls sometimes)
-                if (status == "error"
-                    && (new Date).getTime() - tracker_comet_at > 100000)
+                if (status == "error" && delta > 100000)
                     status = "timeout";
                 if (status == "success" && xhr.status == 200) {
-                    tracker_comet_errors = 0;
+                    tracker_comet_errors = tracker_comet_stop_until = 0;
                     reload();
                 } else if (status == "timeout")
                     run_comet();
-                else if (++tracker_comet_errors < 2)
-                    setTimeout(128 << Math.min(tracker_comet_errors, 12), run_comet);
-                else
+                else if (++tracker_comet_errors % 3)
+                    setTimeout(run_comet, 128 << Math.min(tracker_comet_errors, 12));
+                else {
+                    tracker_comet_stop_until = now + 10000 * Math.min(tracker_comet_errors, 60);
                     reload();
+                }
             }
         });
     }
@@ -407,7 +409,9 @@ function hotcrp_deadlines(dlx, is_initial) {
     if (dlurl && !reload_timeout) {
         if (is_initial && $$("clock_drift_container"))
             t = 10;
-        else if (ever_had_tracker && dl.tracker_poll && tracker_comet_errors < 5)
+        else if (ever_had_tracker && dl.tracker_poll
+                 && (!tracker_comet_stop_until
+                     || tracker_comet_stop_until >= (new Date).getTime()))
             run_comet();
         else if (ever_had_tracker)
             t = 10000;
