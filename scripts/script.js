@@ -2331,7 +2331,7 @@ function analyze_sc(sc) {
 
 function color_interp(a, b, f) {
     var f1 = 1 - f;
-    return [a[0]*f + b[0]*f1, a[1]*f + b[1]*f1, a[2]*f + b[2]*f1];
+    return [a[0]*f1 + b[0]*f, a[1]*f1 + b[1]*f, a[2]*f1 + b[2]*f];
 }
 
 function color_unparse(a) {
