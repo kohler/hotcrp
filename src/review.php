@@ -188,6 +188,7 @@ class ReviewField {
     }
 
     public function unparse_graph($v, $style, $myscore) {
+        global $Conf;
         assert($this->has_options);
         $max = count($this->options);
 
@@ -207,8 +208,10 @@ class ReviewField {
             $args .= "&amp;c=" . chr($this->option_letter - 1);
 
         if ($style == 1) {
-            $retstr = "<img src=\"" . hoturl("scorechart", "$args&amp;s=1") . "\" alt=\"$avgtext\" title=\"$avgtext\" width='" . (5 * $max + 3)
-                . "' height='" . (5 * max(3, max($v->v)) + 3) . "' />";
+            $width = 5 * $max + 3;
+            $height = 5 * max(3, max($v->v)) + 3;
+            $retstr = "<div class=\"scorechart\" style=\"width:${width}px;height:${height}px\" hotcrpscorechart=\"$args&amp;s=1\" title=\"$avgtext\"></div>";
+            $Conf->footerScript("scorechart()", "scorechart");
         } else if ($style == 2) {
             $retstr = "<div class='sc'><img src=\"" . hoturl("scorechart", "$args&amp;s=2") . "\" alt=\"$avgtext\" title=\"$avgtext\" /><br />";
             if ($this->option_letter) {

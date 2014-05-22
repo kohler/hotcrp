@@ -2608,6 +2608,9 @@ div.popup_actions {
 }
 
 /* scores */
+div.scorechart {
+	display: inline-block;
+}
 div.sc {
 	font-size: smaller;
 }

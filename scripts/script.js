@@ -2120,6 +2120,7 @@ function make_callback(dofold, type, which) {
         fold(which, dofold, xtype);
         if (type == "aufull")
             aufull[!!dofold] = rv;
+        scorechart();
     };
 }
 
@@ -2294,6 +2295,35 @@ function setmailpsel(sel) {
     var dofold = !!sel.value.match(/^(?:pc$|pc:|all$)/);
     fold("psel", dofold, 9);
 }
+
+
+// score charts
+var scorechart = (function ($) {
+function has_canvas() {
+    var e = document.createElement("canvas");
+    return !!(e.getContext && e.getContext("2d"));
+}
+
+function scorechart1() {
+    var sc = this.getAttribute("hotcrpscorechart"), img;
+    if (this.firstChild
+        && this.firstChild.getAttribute("hotcrpscorechart") === sc)
+        return;
+    while (this.firstChild)
+        this.removeChild(this.firstChild);
+    img = document.createElement("img");
+    img.src = hotcrp_base + "scorechart.php?" + sc;
+    img.alt = this.getAttribute("title");
+    img.setAttribute("hotcrpscorechart", sc);
+    this.insertBefore(img, null);
+}
+
+return function (j) {
+    if (j == null)
+        j = $("[hotcrpscorechart]");
+    j.each(scorechart1);
+}
+})(jQuery);
 
 
 // settings
