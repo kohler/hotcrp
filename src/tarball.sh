@@ -227,7 +227,7 @@ images/view24.png
 images/viewas.png
 
 scripts/.htaccess
-scripts/jquery-1.10.2.min.js
+scripts/jquery-1.11.1.min.js
 scripts/script.js
 scripts/supersleight.js
 

@@ -1854,9 +1854,9 @@ class Conference {
             if (isset($Opt["jqueryURL"]))
                 $jquery = $Opt["jqueryURL"];
             else if (@$Opt["jqueryCDN"])
-                $jquery = "//code.jquery.com/jquery-1.10.2.min.js";
+                $jquery = "//code.jquery.com/jquery-1.11.1.min.js";
             else
-                $jquery = $Opt["assetsURL"] . "scripts/jquery-1.10.2.min.js";
+                $jquery = $Opt["assetsURL"] . "scripts/jquery-1.11.1.min.js";
             $this->scriptStuff = Ht::script_file($jquery) . "\n";
 
             if (@$Opt["strictJavascript"])
