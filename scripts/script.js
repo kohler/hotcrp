@@ -2299,23 +2299,119 @@ function setmailpsel(sel) {
 
 // score charts
 var scorechart = (function ($) {
-function has_canvas() {
+var has_canvas = (function () {
     var e = document.createElement("canvas");
     return !!(e.getContext && e.getContext("2d"));
+})();
+var blackcolor = [0, 0, 0], badcolor = [200, 128, 128],
+    goodcolor = [0, 232, 0], graycolor = [190, 190, 255];
+
+function analyze_sc(sc) {
+    var anal = {v: [], max: 0, h: 0, c: 0}, m, i, vs, x;
+
+    m = /(?:^|&)v=(.*?)(?:&|$)/.exec(sc);
+    vs = m[1].split(/,/);
+    for (i = 0; i < vs.length; ++i) {
+        if (/^\d+$/.test(vs[i]))
+            x = parseInt(vs[i], 10);
+        else
+            x = 0;
+        anal.v[i + 1] = x;
+        anal.max = Math.max(anal.max, x);
+    }
+
+    if ((m = /(?:^|&)h=(\d+)(?:&|$)/.exec(sc)))
+        anal.h = parseInt(m[1], 10);
+
+    if ((m = /(?:^|&)c=([A-Z])(?:&|$)/.exec(sc)))
+        anal.c = m[1].charCodeAt(0);
+
+    return anal;
+}
+
+function color_interp(a, b, f) {
+    var f1 = 1 - f;
+    return [a[0]*f + b[0]*f1, a[1]*f + b[1]*f1, a[2]*f + b[2]*f1];
+}
+
+function color_unparse(a) {
+    return sprintf("#%02x%02x%02x", a[0], a[1], a[2]);
+}
+
+function scorechart1_s1(sc, parent) {
+    var canvas = document.createElement("canvas"),
+        ctx = canvas.getContext("2d"),
+        anal = analyze_sc(sc),
+        blocksize = 3, blockpad = 2,
+        cwidth, cheight,
+        x, vindex, h, color, fracmultiplier;
+    anal.max = Math.max(anal.max, 3);
+    fracmultiplier = 1 / Math.max(anal.v.length - 1, 1);
+
+    cwidth = (blocksize + blockpad) * (anal.v.length - 1) + blockpad + 1;
+    cheight = (blocksize + blockpad) * anal.max + blockpad + 1;
+    if (typeof(window.devicePixelRatio) === "number"
+        && window.devicePixelRatio > 1) {
+        canvas.width = cwidth * window.devicePixelRatio;
+        canvas.height = cheight * window.devicePixelRatio;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        canvas.style.width = cwidth + "px";
+        canvas.style.height = cheight + "px";
+    } else {
+        canvas.width = cwidth;
+        canvas.height = cheight;
+    }
+
+    ctx.fillStyle = color_unparse(graycolor);
+    ctx.fillRect(0, cheight - 1, cwidth, 1);
+    ctx.fillRect(0, cheight - 1 - blocksize - blockpad, 1, blocksize + blockpad);
+    ctx.fillRect(cwidth - 1, cheight - 1 - blocksize - blockpad, 1, blocksize + blockpad);
+
+    ctx.font = "7px Monaco, Consolas, monospace";
+    if (anal.c ? !anal.v[anal.v.length - 1] : !anal.v[1]) {
+        h = anal.c ? String.fromCharCode(anal.c - anal.v.length + 2) : 1;
+        ctx.fillText(h, blockpad, cheight - 2);
+    }
+    if (anal.c ? !anal.v[1] : !anal.v[anal.v.length - 1]) {
+        h = anal.c ? String.fromCharCode(anal.c) : anal.v.length - 1;
+        x = ctx.measureText(h);
+        ctx.fillText(h, cwidth - 1.5 - x.width, cheight - 2);
+    }
+
+    for (x = 1; x < anal.v.length; ++x) {
+        vindex = anal.c ? anal.v.length - x : x;
+        if (!anal.v[vindex])
+            continue;
+        color = color_interp(badcolor, goodcolor, (vindex - 1) * fracmultiplier);
+        ctx.fillStyle = color_unparse(color);
+        for (h = 1; h <= anal.v[vindex]; ++h) {
+            if (vindex == anal.h && h == 1)
+                ctx.fillStyle = color_unparse(color_interp(blackcolor, color, 0.5));
+            ctx.fillRect((blocksize + blockpad) * x - blocksize,
+                         cheight - 1 - (blocksize + blockpad) * h,
+                         blocksize + 1, blocksize + 1);
+        }
+    }
+
+    return canvas;
 }
 
 function scorechart1() {
-    var sc = this.getAttribute("hotcrpscorechart"), img;
+    var sc = this.getAttribute("hotcrpscorechart"), e;
     if (this.firstChild
         && this.firstChild.getAttribute("hotcrpscorechart") === sc)
         return;
     while (this.firstChild)
         this.removeChild(this.firstChild);
-    img = document.createElement("img");
-    img.src = hotcrp_base + "scorechart.php?" + sc;
-    img.alt = this.getAttribute("title");
-    img.setAttribute("hotcrpscorechart", sc);
-    this.insertBefore(img, null);
+    if (/.*&s=1$/.test(sc) && has_canvas)
+        e = scorechart1_s1(sc, this);
+    else {
+        e = document.createElement("img");
+        e.src = hotcrp_base + "scorechart.php?" + sc;
+        e.alt = this.getAttribute("title");
+    }
+    e.setAttribute("hotcrpscorechart", sc);
+    this.insertBefore(e, null);
 }
 
 return function (j) {
