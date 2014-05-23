@@ -1211,7 +1211,7 @@ function doMsgGroup() {
     echo "<div class='f-c'>", setting_label("opt.contactEmail", "Email of site contact"), "</div>\n",
         Ht::entry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), array("class" => "textlite", "size" => 40)),
         "<div class='ug'></div>\n",
-        "<div class='hint'>Emails from the system advise users to write the site contact if something goes wrong.</div>",
+        "<div class='hint'>The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>",
         "<div class='lg'></div>\n";
 
     do_message("msg.home", "Home page message");
