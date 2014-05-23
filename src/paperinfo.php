@@ -138,17 +138,32 @@ class PaperInfo {
     public function load_tags() {
         global $Conf;
         $result = $Conf->qe("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=$this->paperId group by paperId");
-        if (($row = edb_row($result)))
+        $this->paperTags = "";
+        if (($row = edb_row($result)) && $row[0] !== null)
             $this->paperTags = $row[0];
-        else
-            $this->paperTags = null;
     }
 
     public function has_tag($tag) {
-        global $Conf;
         if (!property_exists($this, "paperTags"))
             $this->load_tags();
-        return $this->paperTags && strpos($this->paperTags, " $tag#") !== false;
+        return $this->paperTags !== ""
+            && strpos($this->paperTags, " $tag#") !== false;
+    }
+
+    public function tag_value($tag) {
+        if (!property_exists($this, "paperTags"))
+            $this->load_tags();
+        if ($this->paperTags !== ""
+            && ($pos = strpos($this->paperTags, " $tag#")) !== false)
+            return (int) substr($this->paperTags, $pos + strlen($tag) + 2);
+        else
+            return false;
+    }
+
+    public function all_tags_text() {
+        if (!property_exists($this, "paperTags"))
+            $this->load_tags();
+        return $this->paperTags;
     }
 
     private function load_topics() {

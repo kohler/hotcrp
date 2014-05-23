@@ -1280,16 +1280,17 @@ class PaperTable {
 
     private function papstripTags($site = null) {
         global $Conf, $Me, $Error;
-        if ($site || defval($this->prow, "paperTags", "") !== "") {
+        $tags = $this->prow ? $this->prow->all_tags_text() : "";
+        if ($site || $tags !== "") {
             // Note that tags MUST NOT contain HTML special characters.
             $tagger = new Tagger;
-            $tx = $tagger->unparse_link_viewable($this->prow->paperTags, false, !$this->prow->has_conflict($Me));
+            $tx = $tagger->unparse_link_viewable($tags, false, !$this->prow->has_conflict($Me));
             $editable = $site && $Me->canSetTags($this->prow);
             $unfolded = $editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") == "tags");
 
             echo $this->_papstripBegin("tags", !$unfolded,
                                        array("onunfold" => "Miniajax.submit(\"tagreportform\")"));
-            $color = $tagger->color_classes($this->prow->paperTags);
+            $color = $tagger->color_classes($tags);
             echo "<div class=\"", trim("pscopen $color"), "\">";
 
             if ($editable)
@@ -1313,7 +1314,7 @@ class PaperTable {
                 echo "<div style='position:relative'>",
                     "<div id='taghelp_p' class='taghelp_p'></div>",
                     "<textarea id='foldtags_d' cols='20' rows='4' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>",
-                    $tagger->unparse($tagger->editable($this->prow->paperTags)),
+                    $tagger->unparse($tagger->editable($tags)),
                     "</textarea></div>",
                     "<div style='padding:1ex 0;text-align:right'>",
                     Ht::hidden("settags", "1"),
@@ -1378,10 +1379,7 @@ class PaperTable {
             return;
 
         // load rank
-        $tagsearch = " " . $Me->contactId . "~" . $tag . "#";
-        if (($pos = strpos($this->prow->paperTags, $tagsearch)) !== false)
-            $rp = (int) substr($this->prow->paperTags, $pos + strlen($tagsearch));
-        else
+        if (($rp = $this->prow->tag_value($Me->contactId . "~$tag")) === false)
             $rp = "";
 
         // rank context form
