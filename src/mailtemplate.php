@@ -21,7 +21,7 @@ Use the link below to sign in.
 
 If you already have an account under a different email address, you may merge this new account into that one. Go to your profile page and select \"Merge with another account\".
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -39,7 +39,7 @@ Use the link below to sign in directly.
 
 %LOGINURL%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -53,7 +53,7 @@ We have received a request to reset the password for your account on the %CONFNA
 
 If you did not make this request, please ignore this email.
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -67,7 +67,7 @@ We have received a request to change the email address for your account on the %
 
 If you did not make this request, please ignore this email.
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -77,7 +77,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 Your account at the %CONFSHORTNAME% submissions site has been merged with the account of %OTHERCONTACT%. From now on, you should log in using the %OTHEREMAIL% account.
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -108,7 +108,7 @@ Or use the link below to sign in.
 
 %LOGINURL%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 Thanks for your help -- we appreciate that reviewing is hard work!
 - %CONFSHORTNAME% Submissions\n"),
@@ -122,7 +122,7 @@ Thanks for your help -- we appreciate that reviewing is hard work!
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 Thank you,
 - %CONFSHORTNAME% Submissions\n"),
@@ -151,7 +151,7 @@ Your proposal that %OTHERCONTACT% review %CONFNAME% paper #%NUMBER% has been den
      Authors: %OPT(AUTHORS)%
   Paper site: %URL(paper, p=%NUMBER%)%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 Thank you,
 - %CONFSHORTNAME% Submissions\n"),
@@ -178,7 +178,7 @@ An author of %CONFNAME% paper #%NUMBER% has withdrawn the paper from considerati
      Authors: %OPT(AUTHORS)%
   Paper site: %URL(paper, p=%NUMBER%)%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 Thank you,
 - %CONFSHORTNAME% Submissions\n"),
@@ -195,7 +195,7 @@ Thank you,
      Authors: %OPT(AUTHORS)%
   Paper site: %URL(paper, p=%NUMBER%)%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 Thank you,
 - %CONFSHORTNAME% Submissions\n"),
@@ -214,7 +214,7 @@ Authors and administrators can withdraw submissions during the review process.%I
 
 You are not expected to complete your review (and the system will not allow it unless the paper is revived).
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -227,7 +227,7 @@ Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -244,7 +244,7 @@ Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted. The re
 
 For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the paper site.
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -261,7 +261,7 @@ Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated. The revi
 
 For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the paper site.
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -282,7 +282,7 @@ Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions. 
 
 Reviews and comments on your paper are appended to this email. The submissions site also has the paper's reviews and comments, as well as more information about review scores.%LOGINNOTICE%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions
 
@@ -306,7 +306,7 @@ The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER
 
 Reviews and comments on your paper are appended to this email. The submissions site also has the paper's reviews and comments, as well as more information about review scores.%LOGINNOTICE%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions
 
@@ -319,7 +319,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
   Paper site: %URL(paper, p=%NUMBER%)%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions
 
@@ -331,7 +331,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
   Paper site: %URL(paper, p=%NUMBER%)%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions
 
@@ -343,7 +343,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
   Paper site: %URL(paper, p=%NUMBER%)%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions
 
@@ -355,7 +355,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
   Paper site: %URL(paper, p=%NUMBER%)%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -376,7 +376,7 @@ Use the link below to sign in to the submissions site.
 
 %LOGINURL%
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -400,7 +400,7 @@ Use the link below to sign in to the submissions site.
 
 Thank you for your help -- we appreciate that reviewing is hard work.
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -425,7 +425,7 @@ Use the link below to sign in to the submissions site.
 
 Thank you for your help -- we appreciate that reviewing is hard work.
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -443,7 +443,7 @@ You have been assigned new reviews for %CONFNAME%. %IF(REVIEWDEADLINE)% Reviews 
 
 Thank you for your help -- we appreciate that reviewing is hard work.
 
-Contact the site administrator, %ADMIN%, with any questions or concerns.
+Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -459,7 +459,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 %ELSEIF(ADMINUPDATE)%An administrator performed this registration.
 
-%ENDIF%Contact the site administrator, %ADMIN%, with any questions or concerns.
+%ENDIF%Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -475,7 +475,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 %ELSEIF(ADMINUPDATE)%An administrator performed this update.
 
-%ENDIF%Contact the site administrator, %ADMIN%, with any questions or concerns.
+%ENDIF%Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -491,7 +491,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 %ELSEIF(ADMINUPDATE)%An administrator performed this update.
 
-%ENDIF%Contact the site administrator, %ADMIN%, with any questions or concerns.
+%ENDIF%Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n"),
 
@@ -507,7 +507,7 @@ Contact the site administrator, %ADMIN%, with any questions or concerns.
 
 %ELSEIF(ADMINUPDATE)%An administrator performed this update.
 
-%ENDIF%Contact the site administrator, %ADMIN%, with any questions or concerns.
+%ENDIF%Contact %ADMIN% with any questions or concerns.
 
 - %CONFSHORTNAME% Submissions\n")
 

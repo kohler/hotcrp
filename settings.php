@@ -141,7 +141,8 @@ $SettingText = array(
         "msg.revprefdescription" => "Review preference instructions",
         "clickthrough_submit" => "Clickthrough submission terms",
 	"mailbody_requestreview" => "Mail template for external review requests",
-        "opt.contactEmail" => "Primary site administrator email"
+        "opt.contactName" => "Name of site contact",
+        "opt.contactEmail" => "Email of site contact"
 	);
 
 function parseGrace($v) {
@@ -1203,14 +1204,14 @@ function doMsgGroup() {
         Ht::entry("opt.longName", $long, array("class" => "textlite", "size" => 70, "hottemptext" => "(same as abbreviation)")),
         "<div class='lg'></div>\n";
 
-    echo "<div class='f-c'>", setting_label("opt.contactName", "Name of primary site administrator"), "</div>\n",
+    echo "<div class='f-c'>", setting_label("opt.contactName", "Name of site contact"), "</div>\n",
         Ht::entry("opt.contactName", opt_data("contactName", null, "Your Name"), array("class" => "textlite", "size" => 50)),
         "<div class='g'></div>\n";
 
-    echo "<div class='f-c'>", setting_label("opt.contactEmail", "Email of primary site administrator"), "</div>\n",
+    echo "<div class='f-c'>", setting_label("opt.contactEmail", "Email of site contact"), "</div>\n",
         Ht::entry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), array("class" => "textlite", "size" => 40)),
         "<div class='ug'></div>\n",
-        "<div class='hint'>The primary site administrator is listed as the contact in system emails.</div>",
+        "<div class='hint'>Emails from the system advise users to write the site contact if something goes wrong.</div>",
         "<div class='lg'></div>\n";
 
     do_message("msg.home", "Home page message");

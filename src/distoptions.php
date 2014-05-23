@@ -45,9 +45,9 @@ $Opt["dbName"] = "FIXME";
 
 // EMAIL
 //
-//   contactName     Full name for site administrator (the person to contact
-//                   about site problems). Usually the PC chair(s).
-//   contactEmail    Email address for site administrator.
+//   contactName     Full name for site contact (the person to contact about
+//                   site problems). Usually the PC chair(s).
+//   contactEmail    Email address for site contact.
 //   sendEmail       Boolean. If false, HotCRP will send no email. This should
 //                   almost always be set to true.
 //   emailFrom       "From:" address for email sent by HotCRP. Should be a

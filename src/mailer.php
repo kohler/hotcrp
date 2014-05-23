@@ -218,11 +218,11 @@ class Mailer {
         if ($what == "%CONFLONGNAME%")
             return $Opt["longName"];
         if ($what == "%ADMIN%")
-            return $this->_expandContact((object) array("fullName" => $Opt["contactName"], "email" => $Opt["contactEmail"]), "CONTACT");
+            return $this->_expandContact(Contact::site_contact(), "CONTACT");
         if ($what == "%ADMINNAME%")
-            return $this->_expandContact((object) array("fullName" => $Opt["contactName"], "email" => $Opt["contactEmail"]), "NAME");
+            return $this->_expandContact(Contact::site_contact(), "NAME");
         if ($what == "%ADMINEMAIL%")
-            return $this->_expandContact((object) array("fullName" => $Opt["contactName"], "email" => $Opt["contactEmail"]), "EMAIL");
+            return $this->_expandContact(Contact::site_contact(), "EMAIL");
         if ($what == "%URL%")
             return $Opt["paperSite"];
         else if ($len > 7 && substr($what, 0, 5) == "%URL(" && substr($what, $len - 2) == ")%") {
@@ -763,8 +763,10 @@ class Mailer {
                 left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$row->paperId)
                 group by ContactInfo.contactId", "while looking up reviewers to send email");
 
-        if (!isset($rest["cc"]))
-            $rest["cc"] = defval($Opt, "emailCc", $Opt["contactName"] . " <" . $Opt["contactEmail"] . ">");
+        if (!isset($rest["cc"]) && isset($Opt["emailCc"]))
+            $rest["cc"] = $Opt["emailCc"];
+        else if (!isset($rest["cc"]))
+            $rest["cc"] = Text::user_email_to(Contact::site_contact());
 
         // must set the current conflict type in $row for each contact
         $contact_info_map = $row->replace_contact_info_map(null);
@@ -785,9 +787,7 @@ class Mailer {
     }
 
     static function sendAdmin($template, $row, $otherContact = null, $rest = array()) {
-        global $Opt;
-        $chairContact = (object) array("email" => $Opt["contactEmail"], "fullName" => $Opt["contactName"], "privChair" => 1, "privSuperChair" => 1);
-        Mailer::send($template, $row, $chairContact, $otherContact, $rest);
+        Mailer::send($template, $row, Contact::site_contact(), $otherContact, $rest);
     }
 
 

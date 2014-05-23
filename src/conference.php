@@ -590,7 +590,7 @@ class Conference {
             $text .= ": " . htmlspecialchars($this->dblink->error);
         $text .= "</p>";
         if ($suggestRetry)
-            $text .= "\n<p>Please try again or contact the site administrator at " . $Opt["emailFrom"] . ".</p>";
+            $text .= "\n<p>Please try again or contact us at " . $Opt["contactEmail"] . ".</p>";
         return $text;
     }
 

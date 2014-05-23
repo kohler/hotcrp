@@ -120,6 +120,26 @@ class Contact {
         return $c;
     }
 
+    static public function site_contact() {
+        global $Conf, $Opt;
+        if (!@$Opt["contactEmail"] || $Opt["contactEmail"] == "you@example.com")
+            foreach (pcMembers() as $pc)
+                if ($pc->privChair) {
+                    $Opt["contactName"] = Text::name_text($pc);
+                    $Opt["contactEmail"] = $pc->email;
+                    break;
+                }
+        if (!@$Opt["contactEmail"] || $Opt["contactEmail"] == "you@example.com") {
+            $result = $Conf->qe("select firstName, lastName, email from ContactInfo join ChairAssitant using (contactId)");
+            if (($row = edb_orow($result))) {
+                $Opt["contactName"] = Text::name_text($row);
+                $Opt["contactEmail"] = $row->email;
+            }
+        }
+        return (object) array("fullName" => $Opt["contactName"], "email" => $Opt["contactEmail"],
+                              "privChair" => 1, "privSuperChair" => 1);
+    }
+
     private function assign_roles($roles) {
         $this->roles = $roles;
         $this->isPC = ($roles & self::ROLE_PCLIKE) != 0;

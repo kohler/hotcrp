@@ -458,7 +458,7 @@ if (isset($_REQUEST["cc"]) && $Me->privChair)
 else if (isset($Opt["emailCc"]))
     $_REQUEST["cc"] = $Opt["emailCc"] ? $Opt["emailCc"] : "";
 else
-    $_REQUEST["cc"] = $Opt["contactName"] . " <" . $Opt["contactEmail"] . ">";
+    $_REQUEST["cc"] = Text::user_email_to(Contact::site_contact());
 if (isset($_REQUEST["replyto"]) && $Me->privChair)
     $_REQUEST["replyto"] = simplify_whitespace($_REQUEST["replyto"]);
 else

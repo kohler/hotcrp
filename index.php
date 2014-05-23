@@ -90,7 +90,7 @@ function admin_home_messages() {
     if (!@$Opt["contactName"] || !@$Opt["contactEmail"]
         || $Opt["contactName"] == "Your Name"
         || $Opt["contactEmail"] == "you@example.com")
-        $m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the primary site administrator’s name and email</a> so submitters know who to contact if things go wrong.";
+        $m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the conference contact’s name and email</a> so submitters can reach someone if things go wrong.";
     // Any -100 preferences around?
     $result = $Conf->qx($Conf->preferenceConflictQuery(false, "limit 1"));
     if (($row = edb_row($result)))
