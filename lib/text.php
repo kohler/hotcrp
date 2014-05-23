@@ -28,6 +28,7 @@ class Text {
                                     "lastFirst" => "lastFirst",
                                     "nameAmbiguous" => "nameAmbiguous",
                                     "name" => "name",
+                                    "fullName" => "name",
                                     "affiliation" => "affiliation");
     static private $boolkeys = array("withMiddle" => true,
                                      "lastFirst" => true,
