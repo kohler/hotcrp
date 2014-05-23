@@ -1204,6 +1204,9 @@ function doMsgGroup() {
         Ht::entry("opt.longName", $long, array("class" => "textlite", "size" => 70, "hottemptext" => "(same as abbreviation)")),
         "<div class='lg'></div>\n";
 
+    // maybe set $Opt["contactName"] and $Opt["contactEmail"]
+    (void) Contact::site_contact();
+
     echo "<div class='f-c'>", setting_label("opt.contactName", "Name of site contact"), "</div>\n",
         Ht::entry("opt.contactName", opt_data("contactName", null, "Your Name"), array("class" => "textlite", "size" => 50)),
         "<div class='g'></div>\n";
