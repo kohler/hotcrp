@@ -2383,7 +2383,7 @@ function scorechart1_s1(sc, parent) {
     if (anal.c ? !anal.v[1] : !anal.v[anal.v.length - 1]) {
         h = anal.c ? String.fromCharCode(anal.c) : anal.v.length - 1;
         x = ctx.measureText(h);
-        ctx.fillText(h, cwidth - 1.5 - x.width, cheight - 2);
+        ctx.fillText(h, cwidth - 1.75 - x.width, cheight - 2);
     }
 
     for (x = 1; x < anal.v.length; ++x) {
