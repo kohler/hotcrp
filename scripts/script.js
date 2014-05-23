@@ -2306,6 +2306,25 @@ var has_canvas = (function () {
 var blackcolor = [0, 0, 0], badcolor = [200, 128, 128],
     goodcolor = [0, 232, 0], graycolor = [190, 190, 255];
 
+function setup_canvas(canvas, w, h) {
+    var ctx = canvas.getContext("2d"),
+        dpr = window.devicePixelRatio || 1,
+        bspr = ctx.webkitBackingStorePixelRatio
+            || ctx.mozBackingStorePixelRatio
+            || ctx.msBackingStorePixelRatio
+            || ctx.oBackingStorePixelRatio
+            || ctx.backingStorePixelRatio || 1,
+        r = dpr / bspr;
+    canvas.width = w * r;
+    canvas.height = h * r;
+    if (dpr !== bspr) {
+        canvas.style.width = w + "px";
+        canvas.style.height = h + "px";
+        ctx.scale(r, r);
+    }
+    return ctx;
+}
+
 function analyze_sc(sc) {
     var anal = {v: [], max: 0, h: 0, c: 0}, m, i, vs, x;
 
@@ -2340,8 +2359,7 @@ function color_unparse(a) {
 
 function scorechart1_s1(sc, parent) {
     var canvas = document.createElement("canvas"),
-        ctx = canvas.getContext("2d"),
-        anal = analyze_sc(sc),
+        ctx, anal = analyze_sc(sc),
         blocksize = 3, blockpad = 2,
         cwidth, cheight,
         x, vindex, h, color, fracmultiplier;
@@ -2350,17 +2368,7 @@ function scorechart1_s1(sc, parent) {
 
     cwidth = (blocksize + blockpad) * (anal.v.length - 1) + blockpad + 1;
     cheight = (blocksize + blockpad) * anal.max + blockpad + 1;
-    if (typeof(window.devicePixelRatio) === "number"
-        && window.devicePixelRatio > 1) {
-        canvas.width = cwidth * window.devicePixelRatio;
-        canvas.height = cheight * window.devicePixelRatio;
-        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-        canvas.style.width = cwidth + "px";
-        canvas.style.height = cheight + "px";
-    } else {
-        canvas.width = cwidth;
-        canvas.height = cheight;
-    }
+    ctx = setup_canvas(canvas, cwidth, cheight);
 
     ctx.fillStyle = color_unparse(graycolor);
     ctx.fillRect(0, cheight - 1, cwidth, 1);
