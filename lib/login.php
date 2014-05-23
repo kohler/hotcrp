@@ -231,7 +231,7 @@ class LoginHelper {
                 $msg .= " The email address you provided seems invalid.";
             else
                 $msg .= " The conference system is not set up to mail passwords at this time.";
-            $msg .= " Although an account was created for you, you need help to retrieve your password. Contact " . Text::user_html(Contact::site_contact())) . ".";
+            $msg .= " Although an account was created for you, you need help to retrieve your password. Contact " . Text::user_html(Contact::site_contact()) . ".";
         }
         if (isset($_REQUEST["password"]) && trim($_REQUEST["password"]) != "")
             $msg .= " Note that the password you supplied on the login screen was ignored.";
