@@ -645,7 +645,7 @@ class Mailer {
         // use preferredEmail if it's set
         if (defval($emailTo, "preferredEmail", "") != "") {
             $xemailTo = (object) array("email" => $emailTo->preferredEmail);
-            foreach (array("firstName", "lastName", "fullName") as $k)
+            foreach (array("firstName", "lastName", "name", "fullName") as $k)
                 if (defval($emailTo, $k, "") != "")
                     $xemailTo->$k = $emailTo->$k;
             $emailTo = $xemailTo;

@@ -136,7 +136,8 @@ class Contact {
                 $Opt["contactEmail"] = $row->email;
             }
         }
-        return (object) array("fullName" => $Opt["contactName"], "email" => $Opt["contactEmail"],
+        return (object) array("fullName" => $Opt["contactName"],
+                              "email" => $Opt["contactEmail"],
                               "privChair" => 1, "privSuperChair" => 1);
     }
 
