@@ -122,16 +122,15 @@ class Contact {
 
     static public function site_contact() {
         global $Conf, $Opt;
-        if (!@$Opt["contactEmail"] || $Opt["contactEmail"] == "you@example.com")
-            foreach (pcMembers() as $pc)
-                if ($pc->privChair) {
-                    $Opt["contactName"] = Text::name_text($pc);
-                    $Opt["contactEmail"] = $pc->email;
-                    break;
-                }
         if (!@$Opt["contactEmail"] || $Opt["contactEmail"] == "you@example.com") {
-            $result = $Conf->qe("select firstName, lastName, email from ContactInfo join ChairAssitant using (contactId)");
-            if (($row = edb_orow($result))) {
+            $result = $Conf->qx("select firstName, lastName, email from ContactInfo join Chair using (contactId) limit 1");
+            $row = edb_orow($result);
+            if (!$row) {
+                $result = $Conf->qx("select firstName, lastName, email from ContactInfo join ChairAssistant using (contactId) limit 1");
+                $row = edb_orow($result);
+            }
+            if ($row) {
+                $Opt["defaultSiteContact"] = true;
                 $Opt["contactName"] = Text::name_text($row);
                 $Opt["contactEmail"] = $row->email;
             }

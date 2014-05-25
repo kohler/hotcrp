@@ -37,7 +37,7 @@ $SettingList = array("acct_addr" => "checkbox",
                      "msg.home" => "htmlstring",
                      "msg.responseinstructions" => "htmlstring",
                      "msg.revprefdescription" => "htmlstring",
-                     "opt.contactEmail" => "emailstring",
+                     "opt.contactEmail" => "optemailstring",
                      "opt.contactName" => "simplestring",
                      "opt.longName" => "simplestring",
                      "opt.shortName" => "simplestring",
@@ -235,9 +235,11 @@ function parseValue($name, $type) {
     } else if ($type === "simplestring") {
 	$v = simplify_whitespace($v);
 	return ($v == "" ? 0 : array(0, $v));
-    } else if ($type === "emailstring") {
+    } else if ($type === "emailstring" || $type === "optemailstring") {
         $v = trim($v);
-        if (validateEmail($v))
+        if ($v === "" && $type === "optemailstring")
+            return 0;
+        else if (validateEmail($v))
             return ($v == "" ? 0 : array(0, $v));
         else
             $err = $SettingText[$name] . ": invalid email.";
@@ -925,6 +927,16 @@ if (isset($_REQUEST["update"]) && check_post()) {
 	$Values["resp_open"] = $Now;
     if (@($Values["opt.longName"][1] === "(same as abbreviation)"))
         $Values["opt.longName"][1] = "";
+    if (array_key_exists("opt.contactName", $Values)
+        || array_key_exists("opt.contactEmail", $Values)) {
+        $site_contact = Contact::site_contact();
+        if (@$Opt["defaultSiteContact"]
+            && @($Opt["contactName"] === $Values["opt.contactName"][1]))
+            $Values["opt.contactName"] = null;
+        if (@$Opt["defaultSiteContact"]
+            && @($Opt["contactEmail"] === $Values["opt.contactEmail"][1]))
+            $Values["opt.contactEmail"] = null;
+    }
 
     // update 'papersub'
     if (isset($_REQUEST["pc_seeall"])) {
