@@ -72,6 +72,10 @@ sessionvar.php
 settings.php
 users.php
 
+batch/.htaccess
+batch/killinactivedoc.php
+batch/s3upload.php
+
 conf/.htaccess
 
 lib/.htaccess
