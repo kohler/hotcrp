@@ -536,7 +536,6 @@ class Conference {
 
     function invalidateCaches($caches = null) {
         global $OK, $ReviewFormCache;
-        ensure_session();
         $inserts = array();
         $removes = array();
         $time = time();
@@ -548,7 +547,8 @@ class Conference {
                 $removes[] = "'pc'";
                 unset($this->settings["pc"]);
             }
-            unset($_SESSION["pcmembers"]);
+            if (session_id())
+                unset($_SESSION["pcmembers"]);
         }
         if (!$caches || isset($caches["paperOption"]))
             PaperOption::invalidate_option_list();
