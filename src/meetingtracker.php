@@ -53,6 +53,8 @@ class MeetingTracker {
 
         if (!preg_match(',\Ahttps?:,', $comet_url)) {
             preg_match(',\A(.*:)(//[^/]*),', $conference, $m);
+            if ($comet_url[0] !== "/")
+                $comet_url = "/" . $comet_url;
             if (preg_match(',\A//,', $comet_url))
                 $comet_url = $m[1] . $comet_url;
             else
