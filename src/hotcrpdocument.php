@@ -147,16 +147,18 @@ class HotCRPDocument {
     public function filestore_pattern($doc, $docinfo) {
         global $Opt, $ConfSitePATH, $ConfMulticonf, $ConfFilestore;
         if ($ConfFilestore === null) {
-            $fdir = defval($Opt, "filestore");
+            $fdir = defval($Opt, "docstore");
             if (!$fdir)
                 return ($ConfFilestore = false);
             if ($fdir === true)
-                $fdir = "$ConfSitePATH/filestore";
+                $fdir = "docstore";
+            if ($fdir[0] !== "/")
+                $fdir = "$ConfSitePATH/$fdir";
             if (@$Opt["multiconference"])
                 $fdir = str_replace("*", $ConfMulticonf, $fdir);
 
             $fpath = $fdir;
-            $use_subdir = defval($Opt, "filestoreSubdir", false);
+            $use_subdir = defval($Opt, "docstoreSubdir", false);
             if ($use_subdir && ($use_subdir === true || $use_subdir > 0))
                 $fpath .= "/%" . ($use_subdir === true ? 2 : $use_subdir) . "h";
             $fpath .= "/%h%x";

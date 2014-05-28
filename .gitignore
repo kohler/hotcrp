@@ -1,5 +1,6 @@
 *~
+docs
 filestore
-log
+logs
 conf/options.php
 Code/options.inc

@@ -233,7 +233,8 @@ class Conference {
             || !@$this->settingTexts["s3_secret"])
             unset($this->settingTexts["s3_bucket"], $this->settingTexts["s3_key"],
                   $this->settingTexts["s3_secret"]);
-        if (!@$Opt["filestore"] && !@$this->settingTexts["s3_bucket"])
+        if (@$Opt["dbNoPapers"] && !@$Opt["docstore"] && !@$Opt["filestore"]
+            && !@$this->settingTexts["s3_bucket"])
             unset($Opt["dbNoPapers"]);
 
         // tracks settings
@@ -277,6 +278,13 @@ class Conference {
         if ($Opt["assetsURL"] !== "" && !str_ends_with($Opt["assetsURL"], "/"))
             $Opt["assetsURL"] .= "/";
         Ht::$img_base = $Opt["assetsURL"] . "images/";
+
+        // set docstore from filestore
+        if (!@$Opt["docstore"] && @$Opt["filestore"]) {
+            if (($Opt["docstore"] = $Opt["filestore"]) === true)
+                $Opt["docstore"] = "filestore";
+            $Opt["docstoreSubdir"] = @$Opt["filestoreSubdir"];
+        }
 
         // handle timezone
         if (function_exists("date_default_timezone_set")) {
@@ -1024,7 +1032,7 @@ class Conference {
         else
             $paperMatch = "=" . $prow->paperId;
         $q = "select p.paperId, s.mimetype, s.sha1, ";
-        if (!@$Opt["filestore"] && !is_array($prow))
+        if (!@$Opt["docstore"] && !is_array($prow))
             $q .= "s.paper as content, ";
         if ($this->sversion >= 45)
             $q .= "s.filename, ";

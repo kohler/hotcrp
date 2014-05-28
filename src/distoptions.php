@@ -122,13 +122,13 @@ $Opt["passwordHmacKey"] = null;
 //
 //   disablePS       Set to true to disable PostScript format submissions.
 //   noPapers        Set to true to collect abstracts only, not papers.
-//   filestore       Set to true to serve papers and other downloads from a
+//   docstore        Set to true to serve papers and other downloads from a
 //                   cache on the local filesystem. By default this cache is
-//                   created in the "filestore" directory. You can also set
-//                   $Opt["filestore"] to a directory name.
-//   filestoreSubdir Set to true (or a small number, like 3) if the filestore
-//                   should use subdirectories. This can be useful if you
-//                   expect thousands of submissions.
+//                   created in the "docs" directory. You can also set
+//                   $Opt["docstore"] to a directory name.
+//   docstoreSubdir  Set to true (or a small number, like 3) if the document
+//                   store should use subdirectories. This can be useful if
+//                   you expect thousands of submissions.
 //   s3_bucket       Amazon S3 bucket name to store paper submissions.
 //   s3_key          Amazon AWS access key ID (used for S3).
 //   s3_secret       Amazon AWS secret access key (used for S3).
