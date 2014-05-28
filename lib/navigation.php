@@ -59,7 +59,7 @@ class Navigation {
             if (preg_match(',\A(.*/)index(?:[.]php)?\z,i', $sitepage, $m))
                 $sitepage = $m[1];
             self::$site = $sitepage;
-            if (preg_match(',\A/([^/]+)(.*)\z,', self::$path, $m)) {
+            if (preg_match(',\A/([^/]+?)(?:[.]php)?(|/.*)\z,', self::$path, $m)) {
                 self::$site .= "/";
                 self::$page = $m[1];
                 self::$path = $m[2];
