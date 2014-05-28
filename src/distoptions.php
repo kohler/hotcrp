@@ -163,6 +163,9 @@ $Opt["disablePS"] = true;
 //
 //   redirectToHttps If set to true, then HotCRP will redirect all http
 //                   connections to https.
+//   allowLocalHttp  Only meaningful if redirectToHttps is set. If true, then
+//                   HotCRP will *not* redirect http connections that
+//                   originate from localhost.
 //   sortByLastName  Set to true to sort users by last name.
 //   smartScoreCompare Set to true if a search like "ovemer:>B" should search
 //                   for scores better than B (i.e., A), rather than scores
