@@ -211,9 +211,10 @@ class ReviewField {
             $width = 5 * $max + 3;
             $height = 5 * max(3, max($v->v)) + 3;
             $retstr = "<div class=\"scorechart\" style=\"width:${width}px;height:${height}px\" hotcrpscorechart=\"$args&amp;s=1\" title=\"$avgtext\"></div>";
-            $Conf->footerScript("scorechart()", "scorechart");
         } else if ($style == 2) {
-            $retstr = "<div class='sc'><img src=\"" . hoturl("scorechart", "$args&amp;s=2") . "\" alt=\"$avgtext\" title=\"$avgtext\" /><br />";
+            $retstr = "<div class=\"sc\">"
+                . "<div class=\"scorechart\" style=\"width:64px;height:8px\" hotcrpscorechart=\"$args&amp;s=2\" title=\"$avgtext\"></div>"
+                . "<br />";
             if ($this->option_letter) {
                 for ($key = $max; $key >= 1; $key--)
                     $retstr .= ($key < $max ? " " : "") . "<span class='" . $this->value_class($key) . "'>" . $v->v[$key] . "</span>";
@@ -223,6 +224,7 @@ class ReviewField {
             }
             $retstr .= "<br /><span class='sc_sum'>" . $avgtext . "</span></div>";
         }
+        $Conf->footerScript("scorechart()", "scorechart");
 
         return $retstr;
     }

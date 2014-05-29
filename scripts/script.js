@@ -2326,7 +2326,7 @@ function setup_canvas(canvas, w, h) {
 }
 
 function analyze_sc(sc) {
-    var anal = {v: [], max: 0, h: 0, c: 0}, m, i, vs, x;
+    var anal = {v: [], max: 0, h: 0, c: 0, sum: 0}, m, i, vs, x;
 
     m = /(?:^|&)v=(.*?)(?:&|$)/.exec(sc);
     vs = m[1].split(/,/);
@@ -2337,6 +2337,7 @@ function analyze_sc(sc) {
             x = 0;
         anal.v[i + 1] = x;
         anal.max = Math.max(anal.max, x);
+        anal.sum += x;
     }
 
     if ((m = /(?:^|&)h=(\d+)(?:&|$)/.exec(sc)))
@@ -2345,6 +2346,7 @@ function analyze_sc(sc) {
     if ((m = /(?:^|&)c=([A-Z])(?:&|$)/.exec(sc)))
         anal.c = m[1].charCodeAt(0);
 
+    anal.fm = 1 / Math.max(anal.v.length - 1, 1);
     return anal;
 }
 
@@ -2362,9 +2364,8 @@ function scorechart1_s1(sc, parent) {
         ctx, anal = analyze_sc(sc),
         blocksize = 3, blockpad = 2,
         cwidth, cheight,
-        x, vindex, h, color, fracmultiplier;
+        x, vindex, h, color;
     anal.max = Math.max(anal.max, 3);
-    fracmultiplier = 1 / Math.max(anal.v.length - 1, 1);
 
     cwidth = (blocksize + blockpad) * (anal.v.length - 1) + blockpad + 1;
     cheight = (blocksize + blockpad) * anal.max + blockpad + 1;
@@ -2390,7 +2391,7 @@ function scorechart1_s1(sc, parent) {
         vindex = anal.c ? anal.v.length - x : x;
         if (!anal.v[vindex])
             continue;
-        color = color_interp(badcolor, goodcolor, (vindex - 1) * fracmultiplier);
+        color = color_interp(badcolor, goodcolor, (vindex - 1) * anal.fm);
         ctx.fillStyle = color_unparse(color);
         for (h = 1; h <= anal.v[vindex]; ++h) {
             if (vindex == anal.h && h == 1)
@@ -2404,6 +2405,25 @@ function scorechart1_s1(sc, parent) {
     return canvas;
 }
 
+function scorechart1_s2(sc, parent) {
+    var canvas = document.createElement("canvas"),
+        ctx, anal = analyze_sc(sc),
+        cwidth = 64, cheight = 8,
+        x, vindex, pos = 0, x1 = 0, x2;
+    ctx = setup_canvas(canvas, cwidth, cheight);
+    for (x = 1; x < anal.v.length; ++x) {
+        vindex = anal.c ? anal.v.length - x : x;
+        if (!anal.v[vindex])
+            continue;
+        ctx.fillStyle = color_unparse(color_interp(badcolor, goodcolor, (vindex - 1) * anal.fm));
+        x2 = Math.round((cwidth + 1) * (pos + anal.v[vindex]) / anal.sum);
+        ctx.fillRect(x1, 0, x2 - x1 - 1, cheight);
+        pos += anal.v[vindex];
+        x1 = x2;
+    }
+    return canvas;
+}
+
 function scorechart1() {
     var sc = this.getAttribute("hotcrpscorechart"), e;
     if (this.firstChild
@@ -2413,6 +2433,8 @@ function scorechart1() {
         this.removeChild(this.firstChild);
     if (/.*&s=1$/.test(sc) && has_canvas)
         e = scorechart1_s1(sc, this);
+    else if (/.*&s=2$/.test(sc) && has_canvas)
+        e = scorechart1_s2(sc, this);
     else {
         e = document.createElement("img");
         e.src = hotcrp_base + "scorechart.php?" + sc;
