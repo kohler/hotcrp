@@ -319,14 +319,16 @@ class ContactList extends BaseList {
         case self::FIELD_LOWTOPICS:
             if (!defval($row, "topicIds"))
                 return "";
-            $want = ($fieldId == self::FIELD_HIGHTOPICS ? 2 : 0);
+            $wanthigh = ($fieldId == self::FIELD_HIGHTOPICS);
             $topics = array_combine(explode(",", $row->topicIds), explode(",", $row->topicInterest));
-            $nt = array();
+            $nt = $nti = array();
             foreach ($topics as $k => $v)
-                if ($v == $want)
+                if ($wanthigh ? $v > 0 : $v < 0) {
                     $nt[] = $k;
+                    $nti[] = $v;
+                }
             if (count($nt))
-                return join(", ", $this->rf->webTopicArray($nt, array_fill(0, count($nt), $want)));
+                return join(", ", $this->rf->webTopicArray($nt, $nti));
             else
                 return "";
         case self::FIELD_REVIEWS:

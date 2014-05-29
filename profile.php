@@ -262,7 +262,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 	    if ($OK && strlen($key) > 2 && $key[0] == 't' && $key[1] == 'i'
 		&& ($id = (int) substr($key, 2)) > 0
 		&& is_numeric($value)
-		&& ($value = (int) $value) >= 0 && $value < 3)
+		&& ($value = (int) $value) >= -4 && $value <= 4)
 		$Conf->qe("insert into TopicInterest (contactId, topicId, interest) values ($Acct->contactId, $id, $value)", "while updating topic interests");
     }
 
@@ -703,26 +703,32 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     <textarea class='textlite' name='collaborators' rows='5' cols='50' onchange='hiliter(this)'>", crpformvalue("collaborators"), "</textarea></td>
 </tr>\n\n";
 
-    $result = $Conf->q("select TopicArea.topicId, TopicArea.topicName, TopicInterest.interest from TopicArea left join TopicInterest on TopicInterest.contactId=$Acct->contactId and TopicInterest.topicId=TopicArea.topicId order by TopicArea.topicName");
-    if (edb_nrows($result) > 0) {
+    $topics = $Conf->topic_map();
+    if (count($topics)) {
 	echo "<tr id='topicinterest' class='fx1'>
   <td class='caption'>Topic interests</td>
   <td class='entry' id='topicinterest'><div class='hint'>
     Please indicate your interest in reviewing papers on these conference
     topics. We use this information to help match papers to reviewers.</div>
     <table class='topicinterest'>
-       <tr><td></td><th>Low</th><th>Med.</th><th>High</th></tr>\n";
-	for ($i = 0; $i < edb_nrows($result); $i++) {
-	    $row = edb_row($result);
-	    echo "      <tr><td class='ti_topic'>", htmlspecialchars($row[1]), "</td>";
-	    $tiname = "ti$row[0]";
-	    $interest = cvtint(defval($_REQUEST, $tiname, ""));
-	    if ($interest < 0 || $interest > 2)
-		$interest = isset($row[2]) ? $row[2] : 1;
-	    for ($j = 0; $j < 3; $j++) {
-		echo "<td class='ti_interest'>",
-		    Ht::radio_h("ti$row[0]", $j, $interest == $j), "</td>";
-	    }
+       <tr><td></td><th>Low</th><th style='width:2.2em'>-</th><th style='width:2.2em'>-</th><th style='width:2.2em'>-</th><th>High</th></tr>\n";
+
+        $result = $Conf->qe("select topicId, " . $Conf->query_topic_interest() . " from TopicInterest where contactId=$Acct->contactId");
+        $imap = array();
+        while (($row = edb_row($result)))
+            $imap[(int) $row[0]] = (int) $row[1];
+
+        $interests = array(-2, -1.5,  -1, -0.5,  0, 1,  2, 3,  4);
+        foreach ($topics as $id => $name) {
+	    echo "      <tr><td class=\"ti_topic\">", htmlspecialchars($name), "</td>";
+	    $tiname = "ti$id";
+	    $ival = cvtint(defval($_REQUEST, $tiname, ""), -100);
+	    if ($ival <= -100)
+		$ival = isset($imap[$id]) ? (int) $imap[$id] : 0;
+            for ($xj = 0; $xj + 1 < count($interests) && $ival > $interests[$xj + 1]; $xj += 2)
+                /* nothing */;
+            for ($j = 0; $j < count($interests); $j += 2)
+		echo "<td class='ti_interest'>", Ht::radio_h("ti$id", $interests[$j], $j == $xj), "</td>";
 	    echo "</td></tr>\n";
 	}
 	echo "    </table></td>

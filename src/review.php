@@ -1335,7 +1335,7 @@ $blind\n";
         list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
         for ($i = 0; $i < count($topicIds); $i++)
             $out[$tomap[$topicIds[$i]]] =
-                "<span class='topic" . ($interests ? $interests[$i] : 1)
+                "<span class='topic" . ($interests ? $interests[$i] : 0)
                 . "'>" . htmlspecialchars($tmap[$topicIds[$i]])
                 . "</span>";
         ksort($out);

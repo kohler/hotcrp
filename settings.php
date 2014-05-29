@@ -1481,7 +1481,8 @@ function doOptGroup() {
 
     // Topics
     // load topic interests
-    $result = $Conf->q("select topicId, interest, count(*) from TopicInterest group by topicId, interest");
+    $qinterest = $Conf->query_topic_interest();
+    $result = $Conf->q("select topicId, if($qinterest>0,1,0), count(*) from TopicInterest where $qinterest!=0 group by topicId, $qinterest>0");
     $interests = array();
     $ninterests = 0;
     while (($row = edb_row($result))) {
@@ -1502,8 +1503,8 @@ function doOptGroup() {
 	echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($tname), "\" size='40' /></td>";
 
 	$tinterests = defval($interests, $tid, array());
-	echo "<td class='fx rpentry'>", (defval($tinterests, 0) ? "<span class='topic0'>" . $tinterests[0] . "</span>" : ""), "</td>",
-	    "<td class='fx rpentry'>", (defval($tinterests, 2) ? "<span class='topic2'>" . $tinterests[2] . "</span>" : ""), "</td>";
+	echo "<td class='fx rpentry'>", (@$tinterests[0] ? "<span class='topic-2'>" . $tinterests[0] . "</span>" : ""), "</td>",
+	    "<td class='fx rpentry'>", (@$tinterests[1] ? "<span class='topic2'>" . $tinterests[1] . "</span>" : ""), "</td>";
 
 	if ($td1 !== "<td></td>") {
 	    // example search

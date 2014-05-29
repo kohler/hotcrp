@@ -234,8 +234,8 @@ class PaperList extends BaseList {
                 if ($pref !== false) {
                     $tscore = 0;
                     foreach ($topicids as $t) {
-                        $i = defval($pc->topicInterest, $t, 1);
-                        $tscore += ($i == 2 ? 2 : $i - 1);
+                        $i = defval($pc->topicInterest, $t, 0);
+                        $tscore += ($i < 0 ? $i / 2 : $i);
                     }
                     if ($tscore) {
                         if ($pref === null)
@@ -630,7 +630,8 @@ class PaperList extends BaseList {
                 $pc->prefOrdinal = sprintf("-0.%04d", $ord++);
                 $pc->topicInterest = array();
             }
-            $result = $Conf->qe("select contactId, topicId, interest from TopicInterest", "while finding topic interests");
+            $result = $Conf->qe("select contactId, topicId, " . $Conf->query_topic_interest()
+                                . " from TopicInterest", "while finding topic interests");
             while (($row = edb_row($result)))
                 $pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
         }

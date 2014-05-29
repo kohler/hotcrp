@@ -140,7 +140,7 @@ if ($kind == "a")
 echo "<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>\n";
 if ($kind == "a")
     echo "<dt>Preference</dt><dd><a href='", hoturl("reviewprefs"), "'>Review preference</a></dd>
-  <dt>Topic score</dt><dd>+2 for each high interest paper topic, &minus;1 for each low interest paper topic</dd>
+  <dt>Topic score</dt><dd>+4 per high interest paper topic, &minus;2 per low interest paper topic</dd>
   <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd>\n";
 echo "</dl>\nClick a heading to sort.\n</div></div>";
 
@@ -267,28 +267,30 @@ if ($reviewer > 0) {
 		$useless[$s] = 1;
 	    }
 
-	$col[2][] = "<div class='f-c'>Conflict search terms for paper authors</div><div class='f-e'>"
-	    . htmlspecialchars(substr($showau, 0, strlen($showau) - 1))
-	    . "</div>";
-	$col[2][] = "<div class='f-c'>Conflict search terms for paper collaborators</div><div class='f-e'>"
-	    . htmlspecialchars(substr($showco, 0, strlen($showco) - 1))
-	    . "</div>";
+        if ($showau !== "")
+            $col[2][] = "<div class='f-c'>Conflict search terms for paper authors</div><div class='f-e'>"
+                . htmlspecialchars(rtrim($showau)) . "</div>";
+        if ($showco !== "")
+            $col[2][] = "<div class='f-c'>Conflict search terms for paper collaborators</div><div class='f-e'>"
+                . htmlspecialchars(rtrim($showco)) . "</div>";
 	$col[2][] = "<a href=\"" . hoturl("search", "q=" . urlencode(join(" OR ", $search)) . "&amp;linkto=assign") . "\">Search for potential conflicts</a>";
     }
 
     // Topic links
-    $result = $Conf->qe("select topicName, interest from TopicArea join TopicInterest using (topicId) where contactId=$reviewer order by topicName");
-    $interest = array();
+    $rf = reviewForm();
+    $result = $Conf->qe("select topicId, " . $Conf->query_topic_interest() . " from TopicArea join TopicInterest using (topicId) where contactId=$reviewer");
+    $interest = array(array(), array());
     while (($row = edb_row($result)))
-	$interest[$row[1]][] = htmlspecialchars($row[0]);
-    if (isset($interest[2]))
-	$col[0][] = "<div class='f-c'>High interest topics</div><div class='f-e'><span class='topic2'>"
-	    . join("</span>, <span class='topic2'>", $interest[2])
-	    . "</span></div>";
-    if (isset($interest[0]))
-	$col[0][] = "<div class='f-c'>Low interest topics</div><div class='f-e'><span class='topic0'>"
-	    . join("</span>, <span class='topic0'>", $interest[0])
-	    . "</span></div>";
+        if ($row[1] != 0)
+            $interest[$row[1] > 0 ? 1 : 0][$row[0]] = $row[1];
+    if (count($interest[1]))
+	$col[0][] = "<div class='f-c'>High interest topics</div><div class='f-e'>"
+            . join(", ", $rf->webTopicArray(array_keys($interest[1]), array_values($interest[1])))
+	    . "</div>";
+    if (count($interest[0]))
+	$col[0][] = "<div class='f-c'>Low interest topics</div><div class='f-e'>"
+            . join(", ", $rf->webTopicArray(array_keys($interest[0]), array_values($interest[0])))
+	    . "</div>";
 
     // Table
     if (count($col[0]) || count($col[1]) || count($col[2])) {

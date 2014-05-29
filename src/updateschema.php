@@ -605,4 +605,10 @@ function updateSchema($Conf) {
         && $Conf->ql("update Settings set name=rtrim(name)")
         && $Conf->ql("update Settings set value=72 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 72;
+    if ($Conf->settings["allowPaperOption"] == 72
+        && $Conf->ql("update TopicInterest set interest=-2 where interest=0")
+        && $Conf->ql("update TopicInterest set interest=4 where interest=2")
+        && $Conf->ql("delete from TopicInterest where interest=1")
+        && $Conf->ql("update Settings set value=73 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 73;
 }

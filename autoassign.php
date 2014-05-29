@@ -301,7 +301,7 @@ function doAssign() {
 	left join PaperReviewPreference on (Paper.paperId=PaperReviewPreference.paperId and PCMember.contactId=PaperReviewPreference.contactId)
 	left join PaperReview on (Paper.paperId=PaperReview.paperId and PCMember.contactId=PaperReview.contactId)
 	left join (select paperId, PCMember.contactId,
-		sum(if(interest=2,2,interest-1)) as topicInterestScore
+		sum(" . $Conf->query_topic_interest_score() . ") as topicInterestScore
 		from PaperTopic join PCMember
 		join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId)
 		group by paperId, PCMember.contactId) as PaperTopics on (Paper.paperId=PaperTopics.paperId and PCMember.contactId=PaperTopics.contactId)

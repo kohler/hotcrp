@@ -110,15 +110,16 @@ function urlencode_matches($m) {
 }
 
 if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
+    assert($Conf->sversion >= 73);
     $result = $Conf->qe("select firstName first, lastName last, email,
 	preferredEmail preferred_email, affiliation,
 	voicePhoneNumber phone,
 	addressLine1 address1, addressLine2 address2, city, state, zipCode zip, country,
 	collaborators, defaultWatch, roles, disabled, contactTags tags, data,
-	group_concat(concat(topicId,':',interest)) topic_interest
+	group_concat(concat(topicId,':'," . $Conf->query_topic_interest() . ")) topic_interest
 	from ContactInfo
 	left join ContactAddress on (ContactAddress.contactId=ContactInfo.contactId)
-	left join TopicInterest on (TopicInterest.contactId=ContactInfo.contactId and TopicInterest.interest is not null and TopicInterest.interest!=1)
+	left join TopicInterest on (TopicInterest.contactId=ContactInfo.contactId and TopicInterest.interest is not null)
 	where " . paperselPredicate($papersel) . "
 	group by ContactInfo.contactId order by lastName, firstName, email", "while selecting users");
 
@@ -139,9 +140,9 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
         if ($row->topic_interest
             && preg_match_all('|(\d+):(\d+)|', $row->topic_interest, $m, PREG_SET_ORDER)) {
             foreach ($m as $x)
-                if (($tn = @$topics[$x[1]]) && (int) $x[2] !== 1) {
+                if (($tn = @$topics[$x[1]])) {
                     $k = "topic_$x[1]";
-                    $row->$k = (int) $x[2] - 1;
+                    $row->$k = (int) $x[2];
                     @($has->topics[$k] = "topic: $tn");
                 }
         }

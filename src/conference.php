@@ -143,7 +143,7 @@ class Conference {
         }
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 72) {
+        if ($this->settings["allowPaperOption"] < 73) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -325,9 +325,9 @@ class Conference {
             $to = $tx = array();
             while (($row = edb_row($result))) {
                 if (strcasecmp(substr($row[1], 0, 7), "none of") == 0)
-                    $tx[$row[0]] = $row[1];
+                    $tx[(int) $row[0]] = $row[1];
                 else
-                    $to[$row[0]] = $row[1];
+                    $to[(int) $row[0]] = $row[1];
             }
             foreach ($tx as $tid => $tname)
                 $to[$tid] = $tname;
@@ -1125,6 +1125,20 @@ class Conference {
             return "group_concat(concat(contactId,' ',preference,' .') separator ',')";
     }
 
+    function query_topic_interest($table = "") {
+        if ($this->sversion >= 73)
+            return $table . "interest";
+        else
+            return "if(" . $table . "interest=2,4,(" . $table . "interest-1)*2)";
+    }
+
+    function query_topic_interest_score() {
+        if ($this->sversion >= 73)
+            return "interest";
+        else
+            return "(if(interest=2,2,interest-1)*2)";
+    }
+
     function paperQuery($contact, $options = array()) {
         // Options:
         //   "paperId" => $pid  Only paperId $pid (if array, any of those)
@@ -1336,9 +1350,9 @@ class Conference {
         if (@$options["topics"] || @$options["topicInterestScore"]) {
             $pq .= "            left join (select paperId";
             if (@$options["topics"])
-                $pq .= ", group_concat(PaperTopic.topicId) as topicIds, group_concat(ifnull(TopicInterest.interest,1)) as topicInterest";
+                $pq .= ", group_concat(PaperTopic.topicId) as topicIds, group_concat(ifnull(" . $this->query_topic_interest("TopicInterest.") . ",0)) as topicInterest";
             if (@$options["topicInterestScore"])
-                $pq .= ", sum(if(interest=2,2,interest-1)) as topicInterestScore";
+                $pq .= ", sum(" . $this->query_topic_interest_score() . ") as topicInterestScore";
             $pq .= " from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$reviewerContactId) group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)\n";
         }
 

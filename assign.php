@@ -512,7 +512,7 @@ if ($Me->canAdminister($prow)) {
         left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId)
         left join PaperReviewPreference on (PaperReviewPreference.contactId=PCMember.contactId and PaperReviewPreference.paperId=$prow->paperId)
         left join (select PaperReview.contactId, group_concat(reviewType separator '') as allReviews from PaperReview join Paper on (Paper.paperId=PaperReview.paperId and timeWithdrawn<=0) group by PaperReview.contactId) as AllReviews on (AllReviews.contactId=PCMember.contactId)
-        left join (select contactId, sum(if(interest=2,2,interest-1)) as topicInterestScore from PaperTopic join TopicInterest using (topicId) where paperId=$prow->paperId group by contactId) as PaperTopics on (PaperTopics.contactId=PCMember.contactId)
+        left join (select contactId, sum(" . $Conf->query_topic_interest_score() . ") as topicInterestScore from PaperTopic join TopicInterest using (topicId) where paperId=$prow->paperId group by contactId) as PaperTopics on (PaperTopics.contactId=PCMember.contactId)
         left join PaperReviewRefused PRR on (PRR.paperId=$prow->paperId and PRR.contactId=PCMember.contactId)
         group by PCMember.contactId", "while looking up PC");
     $pcx = array();
