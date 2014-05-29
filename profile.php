@@ -87,88 +87,95 @@ function tfError(&$tf, $errorField, $text) {
     return false;
 }
 
-function set_request_pctype() {
-    if (!in_array(@$_REQUEST["pctype"],
-                  array("no", "pc", "chair"))) {
-        $_REQUEST["pctype"] = "no";
+function set_request_pctype(&$req) {
+    if (!in_array(@$req["pctype"], array("no", "pc", "chair"))) {
+        $req["pctype"] = "no";
         foreach (array("pc", "chair") as $k)
-            if (@$_REQUEST[$k])
-                $_REQUEST["pctype"] = $k;
+            if (@$req[$k] || @preg_match('/\b' . $k . '\b/', $req["roles"]))
+                $req["pctype"] = $k;
+    }
+    if (@$req["roles"]) {
+        if (preg_match('/\bchair\b/', $req["roles"]))
+            $req["pctype"] = "chair";
+        else if (preg_match('/\bpc\b/', $req["roles"]))
+            $req["pctype"] = "pc";
+        if (@preg_match('/\bsysadmin\b/', $req["roles"]))
+            $req["ass"] = 1;
     }
 }
 
-function createUser(&$tf, $newProfile, $useRequestPassword = false) {
+function createUser(&$req, &$tf, $newProfile, $useRequestPassword = false) {
     global $Conf, $Acct, $Me, $Opt, $OK;
     $external_login = isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]);
 
     if (!$external_login)
-	$_REQUEST["uemail"] = trim(defval($_REQUEST, "uemail", ""));
+	$req["uemail"] = trim(defval($req, "uemail", ""));
     else if ($newProfile)
-	$_REQUEST["uemail"] = trim(defval($_REQUEST, "newUsername", ""));
+	$req["uemail"] = trim(defval($req, "newUsername", ""));
     else
-	$_REQUEST["uemail"] = $Acct->email;
+	$req["uemail"] = $Acct->email;
 
     if ($external_login)
-	$_REQUEST["upassword"] = $_REQUEST["upassword2"] = $Acct->password;
+	$req["upassword"] = $req["upassword2"] = $Acct->password;
     else if ($newProfile)
-	$_REQUEST["upassword"] = "";
-    else if (defval($_REQUEST, "whichpassword") == "t"
-	     && isset($_REQUEST["upasswordt"]))
-	$_REQUEST["upassword"] = $_REQUEST["upassword2"] = $_REQUEST["upasswordt"];
+	$req["upassword"] = "";
+    else if (defval($req, "whichpassword") == "t"
+	     && isset($req["upasswordt"]))
+	$req["upassword"] = $req["upassword2"] = $req["upasswordt"];
 
     // check for missing fields
     $any_missing = false;
     foreach (array("firstName", "lastName", "affiliation", "uemail", "upassword") as $field)
-	if (!isset($_REQUEST[$field]))
+	if (!isset($req[$field]))
 	    $Error[$field] = $any_missing = true;
     if ($any_missing)
 	return tfError($tf, false, "Required form fields missing.");
 
     // check passwords
-    if (!$newProfile && trim(defval($_REQUEST, "upassword", "")) == "")
-        $_REQUEST["upassword"] = "";
-    if (!$newProfile && $_REQUEST["upassword"] != "") {
-	if ($_REQUEST["upassword"] != defval($_REQUEST, "upassword2", ""))
+    if (!$newProfile && trim(defval($req, "upassword", "")) == "")
+        $req["upassword"] = "";
+    if (!$newProfile && $req["upassword"] != "") {
+	if ($req["upassword"] != defval($req, "upassword2", ""))
 	    return tfError($tf, "password", "The two passwords you entered did not match.");
-	else if (trim($_REQUEST["upassword"]) != $_REQUEST["upassword"])
+	else if (trim($req["upassword"]) != $req["upassword"])
 	    return tfError($tf, "password", "Passwords cannot begin or end with spaces.");
     }
 
     // check email
-    if ($newProfile || $_REQUEST["uemail"] != $Acct->email) {
-	if (Contact::id_by_email($_REQUEST["uemail"])) {
-	    $msg = "An account is already registered with email address &ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo;.";
+    if ($newProfile || $req["uemail"] != $Acct->email) {
+	if (Contact::id_by_email($req["uemail"])) {
+	    $msg = "An account is already registered with email address &ldquo;" . htmlspecialchars($req["uemail"]) . "&rdquo;.";
 	    if (!$newProfile)
 		$msg .= "You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
 	    return tfError($tf, "uemail", $msg);
 	} else if ($external_login) {
-	    if ($_REQUEST["uemail"] == "")
+	    if ($req["uemail"] == "")
 		return tfError($tf, "newUsername", "Not a valid username.");
-	} else if ($_REQUEST["uemail"] == "")
+	} else if ($req["uemail"] == "")
 	    return tfError($tf, "uemail", "You must supply an email address.");
-	else if (!validateEmail($_REQUEST["uemail"]))
-	    return tfError($tf, "uemail", "&ldquo;" . htmlspecialchars($_REQUEST["uemail"]) . "&rdquo; is not a valid email address.");
+	else if (!validateEmail($req["uemail"]))
+	    return tfError($tf, "uemail", "&ldquo;" . htmlspecialchars($req["uemail"]) . "&rdquo; is not a valid email address.");
         if (!$newProfile && !$Me->privChair) {
-            $rest = array("emailTo" => $_REQUEST["uemail"],
-                          "capability" => $Conf->create_capability(CAPTYPE_CHANGEEMAIL, array("contactId" => $Acct->contactId, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $_REQUEST["uemail"])))));
+            $rest = array("emailTo" => $req["uemail"],
+                          "capability" => $Conf->create_capability(CAPTYPE_CHANGEEMAIL, array("contactId" => $Acct->contactId, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $req["uemail"])))));
             $prep = Mailer::prepareToSend("@changeemail", null, $Acct, null, $rest);
             if ($prep["allowEmail"]) {
                 Mailer::sendPrepared($prep);
-                $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($_REQUEST["uemail"]) . " to check that the address works. Use the link it contains to confirm your email change request.");
+                $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($req["uemail"]) . " to check that the address works. Use the link it contains to confirm your email change request.");
             } else
-                $Conf->errorMsg("Mail cannot be sent to " . htmlspecialchars($_REQUEST["uemail"]) . " at this time. Your email address was unchanged.");
-            $_REQUEST["uemail"] = $Acct->email;
+                $Conf->errorMsg("Mail cannot be sent to " . htmlspecialchars($req["uemail"]) . " at this time. Your email address was unchanged.");
+            $req["uemail"] = $Acct->email;
         }
     }
-    if (isset($_REQUEST["preferredEmail"]) && !validateEmail($_REQUEST["preferredEmail"]))
-	return tfError($tf, "preferredEmail", "&ldquo;" . htmlspecialchars($_REQUEST["preferredEmail"]) . "&rdquo; is not a valid email address.");
+    if (isset($req["preferredEmail"]) && !validateEmail($req["preferredEmail"]))
+	return tfError($tf, "preferredEmail", "&ldquo;" . htmlspecialchars($req["preferredEmail"]) . "&rdquo; is not a valid email address.");
 
     // at this point we will create the account
     if ($newProfile) {
-        $reg = Contact::safe_registration($_REQUEST);
-        if ($useRequestPassword && @$_REQUEST["password"])
-            $reg["password"] = $_REQUEST["password"];
-        $Acct = Contact::find_by_email($_REQUEST["uemail"], $reg, true);
+        $reg = Contact::safe_registration($req);
+        if ($useRequestPassword && @$req["password"])
+            $reg["password"] = $req["password"];
+        $Acct = Contact::find_by_email($req["uemail"], $reg, true);
 	if (!$Acct)
 	    return tfError($tf, "uemail", "Database error, please try again");
     }
@@ -177,59 +184,65 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 
     if ($Me->privChair) {
 	// initialize roles too
-        set_request_pctype();
-        $new_roles = ($_REQUEST["pctype"] != "no" ? Contact::ROLE_PC : 0)
-            | (isset($_REQUEST["ass"]) ? Contact::ROLE_ADMIN : 0)
-            | ($_REQUEST["pctype"] == "chair" ? Contact::ROLE_CHAIR : 0);
+        set_request_pctype($req);
+        $new_roles = ($req["pctype"] != "no" ? Contact::ROLE_PC : 0)
+            | (isset($req["ass"]) ? Contact::ROLE_ADMIN : 0)
+            | ($req["pctype"] == "chair" ? Contact::ROLE_CHAIR : 0);
         if ($Acct->save_roles($new_roles, $Me))
             $updatepc = true;
-        if (!isset($_REQUEST["ass"])
+        if (!isset($req["ass"])
             && ($Acct->roles & Contact::ROLE_ADMIN)) {
             $Conf->warnMsg("Refusing to drop the only system administrator.");
-            $_REQUEST["ass"] = 1;
+            $req["ass"] = 1;
         }
     }
 
     // ensure changes in PC member data are reflected immediately
     if (($Acct->roles & Contact::ROLE_PCLIKE)
 	&& !$updatepc
-	&& ($Acct->firstName != $_REQUEST["firstName"]
-	    || $Acct->lastName != $_REQUEST["lastName"]
-	    || $Acct->email != $_REQUEST["uemail"]
-	    || $Acct->affiliation != $_REQUEST["affiliation"]))
+	&& ($Acct->firstName != $req["firstName"]
+	    || $Acct->lastName != $req["lastName"]
+	    || $Acct->email != $req["uemail"]
+	    || $Acct->affiliation != $req["affiliation"]))
 	$updatepc = true;
 
-    $Acct->firstName = $_REQUEST["firstName"];
-    $Acct->lastName = $_REQUEST["lastName"];
-    $Acct->email = $_REQUEST["uemail"];
-    $Acct->affiliation = $_REQUEST["affiliation"];
-    if (!$newProfile && !$external_login && $_REQUEST["upassword"] != "")
-	$Acct->change_password($_REQUEST["upassword"]);
-    if (isset($_REQUEST["preferredEmail"]))
-	$Acct->preferredEmail = $_REQUEST["preferredEmail"];
+    $Acct->firstName = $req["firstName"];
+    $Acct->lastName = $req["lastName"];
+    $Acct->email = $req["uemail"];
+    $Acct->affiliation = $req["affiliation"];
+    if (!$newProfile && !$external_login && $req["upassword"] != "")
+	$Acct->change_password($req["upassword"]);
+    if (isset($req["preferredEmail"]))
+	$Acct->preferredEmail = $req["preferredEmail"];
     foreach (array("voicePhoneNumber", "collaborators",
 		   "addressLine1", "addressLine2", "city", "state",
 		   "zipCode", "country") as $v)
-	if (isset($_REQUEST[$v]))
-	    $Acct->$v = $_REQUEST[$v];
+	if (isset($req[$v]))
+	    $Acct->$v = $req[$v];
     $Acct->defaultWatch = 0;
-    if (isset($_REQUEST["watchcomment"]) || isset($_REQUEST["watchcommentall"])) {
+    if (@$req["follow"] && preg_match('/\breviews\b/', $req["follow"]))
+        $req["watchcomment"] = true;
+    if (@$req["follow"] && preg_match('/\ballreviews\b/', $req["follow"]))
+        $req["watchcommentall"] = true;
+    if (@$req["follow"] && preg_match('/\ballfinal\b/', $req["follow"]))
+        $req["watchfinalall"] = true;
+    if (@$req["watchcomment"] || @$req["watchcommentall"]) {
 	$Acct->defaultWatch |= WATCH_COMMENT;
 	if (($Acct->roles & Contact::ROLE_PCLIKE)
-	    && isset($_REQUEST["watchcommentall"]))
+	    && @$req["watchcommentall"])
 	    $Acct->defaultWatch |= WATCH_ALLCOMMENTS;
     }
-    if (isset($_REQUEST["watchfinalall"])
+    if (@$req["watchfinalall"]
 	&& ($Acct->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)))
 	$Acct->defaultWatch |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL);
     $newTags = ($Me->privChair ? null : $Acct->contactTags);
     if (($Acct->roles & Contact::ROLE_PCLIKE)
 	&& $Me->privChair
-	&& defval($_REQUEST, "contactTags", "") != "") {
+	&& defval($req, "contactTags", "") != "") {
 	$tagger = new Tagger;
 	$tout = "";
 	$warn = "";
-	foreach (preg_split('/\s+/', $_REQUEST["contactTags"]) as $t) {
+	foreach (preg_split('/\s+/', $req["contactTags"]) as $t) {
             if ($t == "")
                 /* do nothing */;
             else if (!$tagger->check($t, Tagger::NOPRIVATE | Tagger::NOVALUE | Tagger::NOCHAIR))
@@ -258,7 +271,7 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 	// remove all current interests
 	$Conf->qe("delete from TopicInterest where contactId=$Acct->contactId", "while updating topic interests");
 
-	foreach ($_REQUEST as $key => $value)
+	foreach ($req as $key => $value)
 	    if ($OK && strlen($key) > 2 && $key[0] == 't' && $key[1] == 'i'
 		&& ($id = (int) substr($key, 2)) > 0
 		&& is_numeric($value)
@@ -268,13 +281,13 @@ function createUser(&$tf, $newProfile, $useRequestPassword = false) {
 
     if ($OK) {
 	// Refresh the results
-	$Acct = Contact::find_by_email($_REQUEST["uemail"]);
+	$Acct = Contact::find_by_email($req["uemail"]);
 	if (!$newProfile)
 	    $Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
 	foreach (array("firstName", "lastName", "affiliation") as $k)
-	    $_REQUEST[$k] = $Acct->$k;
+	    $req[$k] = $Acct->$k;
         foreach (array("upassword", "upassword2", "upasswordt") as $k)
-            unset($_REQUEST[$k]);
+            unset($req[$k]);
     }
 
     return $Acct;
@@ -298,12 +311,21 @@ function parseBulkFile($text, $filename) {
         $csv->unshift($line);
     }
 
-    $original_request = $_REQUEST;
+    $req_template = array();
+    foreach (array("pctype", "pc", "chair", "ass", "watchcomment", "watchcommentall",
+                   "watchfinalall", "contactTags") as $k)
+        if (isset($_REQUEST[$k]))
+            $req_template[$k] = $_REQUEST[$k];
+    $topic_revmap = array();
+    foreach ($Conf->topic_map() as $id => $name)
+        $topic_revmap[strtolower($name)] = $id;
+    $unknown_topics = array();
 
     while (($line = $csv->next()) !== false) {
         $tf["lineno"] = $csv->lineno();
 	foreach (array("firstname" => "firstName", "first" => "firstName",
 		       "lastname" => "lastName", "last" => "lastName",
+                       "fullname" => "name", "fullName" => "name",
 		       "voice" => "voicePhoneNumber", "phone" => "voicePhoneNumber",
 		       "address1" => "addressLine1", "province" => "state", "region" => "state",
 		       "address2" => "addressLine2", "postalcode" => "zipCode",
@@ -312,27 +334,35 @@ function parseBulkFile($text, $filename) {
 		$line[$x] = $line[$k];
 	if (isset($line["name"]) && !isset($line["firstName"]) && !isset($line["lastName"]))
 	    list($line["firstName"], $line["lastName"]) = Text::split_name($line["name"]);
-	foreach ($line as $k => $v)
-	    if (is_string($k))
-		$_REQUEST[$k] = $v;
-	list($_REQUEST["firstName"], $_REQUEST["lastName"], $_REQUEST["uemail"]) =
+	foreach ($req_template as $k => $v)
+	    if (!isset($line[$k]))
+		$line[$k] = $v;
+	list($line["firstName"], $line["lastName"], $line["uemail"]) =
 	    array(defval($line, "firstName", ""), defval($line, "lastName", ""), defval($line, "email", ""));
+        if (count($topic_revmap)) {
+            foreach (array_keys($line) as $k)
+                if (preg_match('/^topic:\s+(.*?)\s*$/i', $k, $m)) {
+                    if (($ti = @$topic_revmap[strtolower($m[1])]) !== null) {
+                        $x = $line[$k];
+                        if (strtolower($x) === "low")
+                            $x = -2;
+                        else if (strtolower($x) === "high")
+                            $x = 4;
+                        else if (!is_numeric($x))
+                            $x = 0;
+                        $line["ti$ti"] = $x;
+                    } else
+                        $unknown_topics[$m[1]] = true;
+                }
+        }
 
-	if (createUser($tf, true, true))
+	if (createUser($line, $tf, true, true))
 	    $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">"
                 . Text::user_html_nolink($Acct) . "</a>";
-
-	foreach (array("firstName", "lastName", "uemail", "affiliation", "preferredEmail",
-		       "voicePhoneNumber", "collaborators",
-		       "addressLine1", "addressLine2", "city", "state", "zipCode", "country",
-		       "pctype", "pc", "chair", "ass",
-		       "watchcomment", "watchcommentall", "watchfinalall", "contactTags") as $k)
-	    if (isset($original_request[$k]))
-		$_REQUEST[$k] = $original_request[$k];
-	    else
-		unset($_REQUEST[$k]);
     }
 
+    if (count($unknown_topics))
+        $tf["err"][] = "There were unrecognized topics (" . htmlspecialchars(commajoin($unknown_topics)) . ").";
     if (count($tf["err"]) > 0) {
 	ksort($tf["err"]);
 	$errorMsg = "were errors while parsing the uploaded account file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf["err"]) . "</p></div>";
@@ -358,7 +388,7 @@ else if (isset($_REQUEST["register"]) && $newProfile
     $Acct = new Contact;
 } else if (isset($_REQUEST["register"])) {
     $tf = array();
-    if (createUser($tf, $newProfile)) {
+    if (createUser($_REQUEST, $tf, $newProfile)) {
 	if ($newProfile) {
 	    $Conf->confirmMsg("Created <a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now create another account.");
 	    $_REQUEST["uemail"] = $_REQUEST["newUsername"] = $_REQUEST["firstName"] = $_REQUEST["lastName"] = $_REQUEST["affiliation"] = "";
@@ -505,7 +535,7 @@ if (!$newProfile) {
     $_REQUEST["ass"] = ($Acct->roles & Contact::ROLE_ADMIN) != 0;
     $_REQUEST["chair"] = ($Acct->roles & Contact::ROLE_CHAIR) != 0;
 }
-set_request_pctype();
+set_request_pctype($_REQUEST);
 
 
 if ($newProfile)

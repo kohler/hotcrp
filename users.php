@@ -123,6 +123,7 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
 	where " . paperselPredicate($papersel) . "
 	group by ContactInfo.contactId order by lastName, firstName, email", "while selecting users");
 
+    // NB This format is expected to be parsed by profile.php's bulk upload.
     $topics = $Conf->topic_map();
     $people = array();
     $has = (object) array("topics" => array());
@@ -138,12 +139,12 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
         if ($row->address1 || $row->address2 || $row->city || $row->state || $row->zip || $row->country)
             $has->address = true;
         if ($row->topic_interest
-            && preg_match_all('|(\d+):(\d+)|', $row->topic_interest, $m, PREG_SET_ORDER)) {
+            && preg_match_all('|(\d+):(-?\d+)|', $row->topic_interest, $m, PREG_SET_ORDER)) {
             foreach ($m as $x)
-                if (($tn = @$topics[$x[1]])) {
-                    $k = "topic_$x[1]";
+                if (($tn = @$topics[$x[1]]) && $x[2]) {
+                    $k = "ti$x[1]";
                     $row->$k = (int) $x[2];
-                    @($has->topics[$k] = "topic: $tn");
+                    @($has->topics[$x[1]] = true);
                 }
         }
         $row->follow = array();
@@ -182,10 +183,11 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
     if (@$has->address)
         array_push($header, "address1", "address2", "city", "state", "zip", "country");
     $selection = $header;
-    if (count($has->topics)) {
-        $header = array_merge($header, array_values($has->topics));
-        $selection = array_merge($selection, array_keys($has->topics));
-    }
+    foreach ($topics as $id => $tn)
+        if (isset($has->topics[$id])) {
+            $header[] = "topic: " . $tn;
+            $selection[] = "ti$id";
+        }
     downloadCSV($people, $header, "pcinfo", array("selection" => $selection));
     exit;
 }
