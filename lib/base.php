@@ -70,6 +70,10 @@ if (!function_exists("json_last_error_msg")) {
         return false;
     }
 }
+if (!defined("JSON_PRETTY_PRINT"))
+    define("JSON_PRETTY_PRINT", 0);
+if (!defined("JSON_UNESCAPED_UNICODE"))
+    define("JSON_UNESCAPED_UNICODE", 0);
 
 
 // array and object helpers

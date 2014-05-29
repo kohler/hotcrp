@@ -10,18 +10,19 @@ class PaperStatus {
     private $errmsg = array();
     public $nerrors = 0;
 
-    static function load($pid, $opt = array()) {
+    static function load($pid, $sel = array()) {
         global $Conf;
-        $contact = @$opt["contact"];
-        $prow = $Conf->paperRow($pid, $contact, array("topics" => true,
-                                                      "options" => true));
-        return $prow ? self::row_to_json($prow, $opt) : null;
+        $contact = @$sel["contact"];
+        $prow = $Conf->paperRow(array("paperId" => $pid,
+                                      "topics" => true,
+                                      "options" => true), $contact);
+        return $prow ? self::row_to_json($prow, $sel) : null;
     }
 
-    static function row_to_json($prow, $opt) {
+    static function row_to_json($prow, $sel) {
         global $Conf;
-        $contact = @$opt["contact"];
-        $forceShow = @$opt["forceShow"];
+        $contact = @$sel["contact"];
+        $forceShow = @$sel["forceShow"];
         if (!$prow || ($contact && !$contact->canViewPaper($prow)))
             return null;
 
@@ -55,6 +56,7 @@ class PaperStatus {
                 $contacts[$conf->email] = true;
 
             $pj->authors = array();
+            cleanAuthor($prow);
             foreach ($prow->authorTable as $au) {
                 $aux = (object) array();
                 if ($au[2])
@@ -78,7 +80,7 @@ class PaperStatus {
 
         $pj->abstract = $prow->abstract;
 
-        $usenames = @$opt["usenames"];
+        $usenames = @$sel["usenames"];
         $topics = array();
         foreach (array_intersect_key($Conf->topic_map(), array_flip($prow->topics())) as $tid => $tname)
             $topics[$usenames ? $tname : $tid] = true;

@@ -11,12 +11,15 @@
 @define("JSON_ERROR_UTF8", 5);
 
 @define("JSON_FORCE_OBJECT", 1);
+@define("JSON_PRETTY_PRINT", 8);
+@define("JSON_UNESCAPED_SLASHES", 16);
+@define("JSON_UNESCAPED_UNICODE", 32);
 
 define("JSON_HOTCRP", 1);
 
 class Json {
     static $string_map =
-        array("\\" => "\\\\", "\"" => "\\\"",
+        array("\\" => "\\\\", "\"" => "\\\"", "/" => "\\/",
               "\000" => "\\u0000", "\001" => "\\u0001", "\002" => "\\u0002",
               "\003" => "\\u0003", "\004" => "\\u0004", "\005" => "\\u0005",
               "\006" => "\\u0006", "\007" => "\\u0007", "\010" => "\\b",
@@ -168,9 +171,10 @@ class Json {
             return "true";
         else if (is_int($x) || is_float($x))
             return (string) $x;
-        else if (is_string($x))
-            return "\"" . preg_replace_callback('/([\\"\000-\037])/', "Json::escape_encode", $x) . "\"";
-        else if (is_object($x) || is_array($x)) {
+        else if (is_string($x)) {
+            $pat = ($options & JSON_UNESCAPED_SLASHES) ? '/([\\"\000-\037])/' : ',([\\"/\000-\037]),';
+            return "\"" . preg_replace_callback($pat, "Json::escape_encode", $x) . "\"";
+        } else if (is_object($x) || is_array($x)) {
             $as_object = null;
             $as_array = array();
             $nextkey = 0;

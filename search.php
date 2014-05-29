@@ -825,6 +825,21 @@ if ($getaction == "acmcms" && isset($papersel) && $Me->privChair) {
 }
 
 
+// download status JSON for selected papers
+if ($getaction == "metajson" && isset($papersel) && $Me->privChair) {
+    $pj = array();
+    foreach ($papersel as $pid)
+        $pj[] = PaperStatus::load($pid, array("contact" => $Me,
+                                              "usenames" => true));
+    if (count($pj) == 1)
+        $pj = $pj[0];
+    header("Content-Type: application/json");
+    header("Content-Disposition: attachment; filename=" . mime_quote_string($Opt["downloadPrefix"] . (is_array($pj) ? "papers" : "paper" . $papersel[0]) . ".js"));
+    echo json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+    exit;
+}
+
+
 // set outcome for selected papers
 if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != ""
     && isset($papersel) && check_post())

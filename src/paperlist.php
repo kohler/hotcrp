@@ -319,9 +319,8 @@ class PaperList extends BaseList {
             if ($this->any->final) {
                 $sel_opt["final"] = "Final papers";
                 foreach (PaperOption::option_list() as $id => $o)
-                    if ($o->type == "pdf" && @$o->final)
-                        $sel_opt["opt-" . $o->abbr] = htmlspecialchars($o->name) . " papers";
-                    else if ($o->type == "slides" && @$o->final)
+                    if (($o->type == "pdf" || $o->type == "slides")
+                        && @$o->final)
                         $sel_opt["opt-" . $o->abbr] = htmlspecialchars(pluralx($o->name, 2));
                 $sel_opt["paper"] = "Submitted papers";
             } else if ($this->any->paper)
@@ -350,8 +349,10 @@ class PaperList extends BaseList {
             $sel_opt["lead"] = "Discussion leads";
             $sel_opt["shepherd"] = "Shepherds";
         }
-        if ($this->contact->privChair)
+        if ($this->contact->privChair) {
             $sel_opt["acmcms"] = "ACM CMS report";
+            $sel_opt["metajson"] = "Metadata (JSON)";
+        }
         $t .= Ht::select("getaction", $sel_opt, defval($_REQUEST, "getaction"),
                           array("id" => "plact${nlll}_d", "tabindex" => 6))
             . "&nbsp; " . Ht::submit("getgo", "Go", array("tabindex" => 6, "onclick" => "return (papersel_check_safe=true)")) . "</td>";
