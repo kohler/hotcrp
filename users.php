@@ -122,12 +122,9 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
 	where " . paperselPredicate($papersel) . "
 	group by ContactInfo.contactId order by lastName, firstName, email", "while selecting users");
 
-    $topics = array();
-    foreach ($Conf->topic_map() as $id => $tname)
-        $topics[$id] = preg_replace_callback('|[=,:;+\\%\200-\377]|', "urlencode_matches", $tname);
-
+    $topics = $Conf->topic_map();
     $people = array();
-    $has = (object) array();
+    $has = (object) array("topics" => array());
     while (($row = edb_orow($result))) {
         if ($row->phone)
             $has->phone = true;
@@ -141,15 +138,12 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
             $has->address = true;
         if ($row->topic_interest
             && preg_match_all('|(\d+):(\d+)|', $row->topic_interest, $m, PREG_SET_ORDER)) {
-            $t = array();
             foreach ($m as $x)
-                if (($tn = @$topics[$x[1]]))
-                    $t[] = $tn . "=" . ($x[2] < 1 ? "low" : "high");
-            if (count($t)) {
-                $row->topic_interest = join(";", $t);
-                $has->topic_interest = true;
-            } else
-                $row->topic_interest = "";
+                if (($tn = @$topics[$x[1]]) && (int) $x[2] !== 1) {
+                    $k = "topic_$x[1]";
+                    $row->$k = (int) $x[2] - 1;
+                    @($has->topics[$k] = "topic: $tn");
+                }
         }
         $row->follow = array();
         if ($row->defaultWatch & WATCH_COMMENT)
@@ -186,9 +180,12 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
         $header[] = "phone";
     if (@$has->address)
         array_push($header, "address1", "address2", "city", "state", "zip", "country");
-    if (@$has->topic_interest)
-        $header[] = "topic_interest";
-    downloadCSV($people, $header, "pcinfo", array("selection" => true));
+    $selection = $header;
+    if (count($has->topics)) {
+        $header = array_merge($header, array_values($has->topics));
+        $selection = array_merge($selection, array_keys($has->topics));
+    }
+    downloadCSV($people, $header, "pcinfo", array("selection" => $selection));
     exit;
 }
 
