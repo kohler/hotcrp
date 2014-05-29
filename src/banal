@@ -1349,7 +1349,11 @@ sub parse_p2h_text ($$) {
 #	next if (check_p2h_error ($line));
 
 	unless ($line =~ /<text top=\"(-?\d+)\" left=\"(-?\d+)\" width=\"(-?\d+)\" height=\"(-?\d+)\" font=\"(-?\d+)\"/) {
-	    # if we didn't match a <text>, then it should be an end of page
+	    # if we didn't match a <text>, then it should be an end of page or <image>
+            if ($line =~ /<image/) {
+                $line = <FILE>;
+                next;
+            }
 	    unless ($line =~ /<\/page>/) {
 		if ($debug_parse) {
 		    print "$banal_filename: Curious, expecting a </page> but found:\n";
@@ -1469,7 +1473,7 @@ sub parse_p2h_page ($) {
 
 
     # process text segments
-    if ($line =~ /<text/) {
+    if ($line =~ /<(?:text|image)/) {
 	parse_p2h_text ($line, $page);
     } elsif ($debug_parse) {
 	print "$banal_filename: Curious, empty page $page->{num}, found:\n";
@@ -1620,7 +1624,7 @@ sub banal_open_input ($) {
     # 2>&1
     if ($ext =~ /[pP][dD][fF]/) {
 	$zoomarg = "-zoom $zoom";
-	$cmd = "$pdftohtml -stdout -enc UTF-8 -xml $zoomarg $fname 2>/dev/null |";
+	$cmd = "$pdftohtml -stdout -enc UTF-8 -xml -i $zoomarg $fname 2>/dev/null |";
 	print STDERR "$cmd\n" if ($debug_pdftohtml);
 
 	unless (open (FILE, $cmd)) {
@@ -1644,7 +1648,7 @@ sub banal_open_input ($) {
 sub banal_config_p2h ($) {
     my ($fname) = @_;
     $fname = basename($fname);
-    my ($major, $minor);
+    my ($major, $minor, $poppler);
 
     if (!defined($zoom)) {
 	unless (open (P2H, "$pdftohtml -v 2>&1 |")) {
@@ -1652,12 +1656,12 @@ sub banal_config_p2h ($) {
 	    return 0;
 	}
 	while (<P2H>) {
+            $poppler = 1 if /Poppler/;
 	    next unless (/pdftohtml version (\d+\.\d+)([a-z]*)/);
 	    $p2h_version = "$1$2";
 	    $major = $1;
 	    $minor = $2;
 	    print "version $major$minor\n";
-	    last;
 	}
 	close (P2H);
 
@@ -1745,7 +1749,7 @@ exit (main ());
 #
 # 2011-1-07
 #    uniformly print filename in error messages.
-# 
+#
 # 2010-12-31
 #
 #    (judge_format): new flag, option 'list' reports all violations
