@@ -292,7 +292,7 @@ div.warning {
 }
 div.merror {
 	background: #ffeeee url(../images/stophand45.png) 10px 10px no-repeat;
-	border: 1px solid #eecccc;
+	border: 2px solid #ee2222;
 }
 div.merror p:first-child, div.info p:first-child, div.warning p:first-child, div.confirm p:first-child, div.help p:first-child {
 	margin-top: 0;
