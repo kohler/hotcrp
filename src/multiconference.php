@@ -52,13 +52,17 @@ function multiconference_fail($tried_db) {
     global $Conf, $ConfMulticonf, $Me, $Opt;
 
     $errors = array();
-    if (@$Opt["multiconference"])
+    if (@$Opt["maintenance"])
+        $errors[] = "The site is down for maintenance. " . (is_string($Opt["maintenance"]) ? $Opt["maintenance"] : "Please check back later.");
+    else if (@$Opt["multiconference"])
         $errors[] = "The “${ConfMulticonf}” conference does not exist. Check your URL to make sure you spelled it correctly.";
     else if (!@$Opt["loaded"])
         $errors[] = "HotCRP has been installed, but not yet configured. You must run `lib/createdb.sh` to create a database for your conference. See `README.md` for further guidance.";
     else
         $errors[] = "HotCRP was unable to load. A system administrator must fix this problem.";
-    if ($tried_db && (!@$Opt["multiconference"] || !@$Opt["include"] || !@$Opt["missing"]))
+    if (@$Opt["maintenance"])
+        /* do nothing */;
+    else if ($tried_db && (!@$Opt["multiconference"] || !@$Opt["include"] || !@$Opt["missing"]))
         $errors[] = "Error: Unable to connect to database " . Conference::sanitize_dsn($Opt["dsn"]);
     else if (!@$Opt["loaded"] && defined("HOTCRP_OPTIONS"))
         $errors[] = "Error: Unable to load options file `" . HOTCRP_OPTIONS . "`";
@@ -74,7 +78,10 @@ function multiconference_fail($tried_db) {
         exit(1);
     } else if (@$_REQUEST["ajax"]) {
         header("Content-Type: " . (@$_REQUEST["jsontext"] ? "text/plain" : "application/json"));
-        echo "{\"error\":\"unconfigured installation\"}\n";
+        if (@$Opt["maintenance"])
+            echo "{\"error\":\"maintenance\"}\n";
+        else
+            echo "{\"error\":\"unconfigured installation\"}\n";
     } else {
         if (!$Conf)
             $Conf = new Conference(false);

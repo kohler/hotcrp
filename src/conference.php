@@ -1987,6 +1987,8 @@ class Conference {
         echo $actionBar;
 
         echo "</div>\n<div id=\"initialmsgs\">\n";
+        if (@$Opt["maintenance"])
+            echo "<div class=\"merror\"><strong>The site is down for maintenance.</strong> ", (is_string($Opt["maintenance"]) ? $Opt["maintenance"] : "Please check back later."), "</div>";
         if (isset($_SESSION["msgs"]) && count($_SESSION["msgs"])) {
             foreach ($_SESSION["msgs"] as $m)
                 echo $m;
