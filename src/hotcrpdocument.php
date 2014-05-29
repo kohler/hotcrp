@@ -151,7 +151,7 @@ class HotCRPDocument {
             if (!$fdir)
                 return ($ConfFilestore = false);
             if ($fdir === true)
-                $fdir = "docstore";
+                $fdir = "docs";
             if ($fdir[0] !== "/")
                 $fdir = "$ConfSitePATH/$fdir";
             if (@$Opt["multiconference"])
