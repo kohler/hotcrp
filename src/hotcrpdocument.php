@@ -112,6 +112,12 @@ class HotCRPDocument {
         global $Opt;
         if (!isset($doc->content) && !$this->load_content($doc))
             return false;
+        if (@$doc->sha1 !== null
+            && DocumentHelper::binary_sha1($doc) !== sha1($doc->content, true)) {
+            error_log("S3 upload cancelled: data claims SHA-1 " . DocumentHelper::text_sha1($doc)
+                      . ", has SHA-1 " . sha1($doc->content));
+            return false;
+        }
         $s3 = self::s3_document();
         $dtype = isset($doc->documentType) ? $doc->documentType : $this->dtype;
         $meta = json_encode(array("conf" => $Opt["conferenceId"],

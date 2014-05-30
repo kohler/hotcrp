@@ -217,6 +217,15 @@ class DocumentHelper {
         return (isset($doc->mimetype) ? $doc->mimetype : $doc->mimetypeid);
     }
 
+    public static function binary_sha1($doc) {
+        if (is_string(@$doc->sha1) && strlen($doc->sha1) === 20)
+            return $doc->sha1;
+        else if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40 && ctype_xdigit($doc->sha1))
+            return hex2bin($doc->sha1);
+        else
+            return null;
+    }
+
     public static function text_sha1($doc) {
         if (is_string(@$doc->sha1) && strlen($doc->sha1) === 20)
             return bin2hex($doc->sha1);
