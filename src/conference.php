@@ -1031,7 +1031,7 @@ class Conference {
             $paperMatch = " in (" . join(",", $prow) . ")";
         else
             $paperMatch = "=" . $prow->paperId;
-        $q = "select p.paperId, s.mimetype, s.sha1, ";
+        $q = "select p.paperId, s.mimetype, s.sha1, s.timestamp, ";
         if (!@$Opt["docstore"] && !is_array($prow))
             $q .= "s.paper as content, ";
         if ($this->sversion >= 45)

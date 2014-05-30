@@ -828,9 +828,9 @@ if ($getaction == "acmcms" && isset($papersel) && $Me->privChair) {
 // download status JSON for selected papers
 if ($getaction == "metajson" && isset($papersel) && $Me->privChair) {
     $pj = array();
+    $ps = new PaperStatus(array("contact" => $Me));
     foreach ($papersel as $pid)
-        $pj[] = PaperStatus::load($pid, array("contact" => $Me,
-                                              "usenames" => true));
+        $pj[] = $ps->load($pid);
     if (count($pj) == 1)
         $pj = $pj[0];
     header("Content-Type: application/json");

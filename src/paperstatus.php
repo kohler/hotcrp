@@ -5,34 +5,66 @@
 
 class PaperStatus {
 
-    private $uploaded_documents = array();
-    private $errf = array();
-    private $errmsg = array();
-    public $nerrors = 0;
+    private $uploaded_documents;
+    private $errf;
+    private $errmsg;
+    public $nerrors;
     private $no_email = false;
     private $allow_error = array();
+    private $contact = null;
+    private $forceShow = null;
+    private $export_ids = false;
+    private $export_content = false;
 
     function __construct($options = array()) {
-        if (array_key_exists("no_email", $options))
-            $this->no_email = $options["no_email"];
-        if (array_key_exists("allow_error", $options))
-            $this->allow_error = $options["allow_error"];
+        foreach (array("no_email", "allow_error", "contact",
+                       "forceShow", "export_ids", "export_content") as $k)
+            if (array_key_exists($k, $options))
+                $this->$k = $options[$k];
+        $this->clear();
     }
 
-    static function load($pid, $sel = array()) {
+    function clear() {
+        $this->uploaded_documents = array();
+        $this->errf = array();
+        $this->errmsg = array();
+        $this->nerrors = 0;
+    }
+
+    function load($pid) {
         global $Conf;
-        $contact = @$sel["contact"];
         $prow = $Conf->paperRow(array("paperId" => $pid,
                                       "topics" => true,
-                                      "options" => true), $contact);
-        return $prow ? self::row_to_json($prow, $sel) : null;
+                                      "options" => true), $this->contact);
+        error_log(var_export($prow, true) . "? " . ($this->contact ? "C" : "."));
+        return $prow ? $this->row_to_json($prow) : null;
     }
 
-    static function row_to_json($prow, $sel) {
+    function document_to_json($prow, $dtype, $docid) {
         global $Conf;
-        $contact = @$sel["contact"];
-        $forceShow = @$sel["forceShow"];
-        if (!$prow || ($contact && !$contact->canViewPaper($prow)))
+        $d = (object) array();
+        if ($this->export_ids)
+            $d->docid = $docid;
+        $dresult = $Conf->document_result($prow, $dtype, $docid);
+        if (($drow = $Conf->document_row($dresult, $dtype))) {
+            if ($drow->mimetype)
+                $d->mimetype = $drow->mimetype;
+            if ($drow->sha1 !== null && $drow->sha1 !== "")
+                $d->sha1 = bin2hex($drow->sha1);
+            if ($drow->timestamp)
+                $d->timestamp = (int) $drow->timestamp;
+            if (@$drow->filename)
+                $d->filename = $drow->filename;
+            if ($this->export_content
+                && DocumentHelper::load($drow->docclass, $drow))
+                $d->content_base64 = base64_encode($drow->content);
+        }
+        return count(get_object_vars($d)) ? $d : null;
+    }
+
+    function row_to_json($prow) {
+        global $Conf;
+        if (!$prow || ($this->contact && !$this->contact->canViewPaper($prow)))
             return null;
 
         $pj = (object) array();
@@ -57,8 +89,8 @@ class PaperStatus {
         if ($prow->timestamp > 0)
             $pj->updated_at = (int) $prow->timestamp;
 
-        $can_view_authors = !$contact
-            || $contact->canViewAuthors($prow, $forceShow);
+        $can_view_authors = !$this->contact
+            || $this->contact->canViewAuthors($prow, $this->forceShow);
         if ($can_view_authors) {
             $contacts = array();
             foreach ($prow->contacts(true) as $id => $conf)
@@ -89,24 +121,32 @@ class PaperStatus {
 
         $pj->abstract = $prow->abstract;
 
-        $usenames = @$sel["usenames"];
         $topics = array();
         foreach (array_intersect_key($Conf->topic_map(), array_flip($prow->topics())) as $tid => $tname)
-            $topics[$usenames ? $tname : $tid] = true;
+            $topics[$this->export_ids ? $tid : $tname] = true;
         if (count($topics))
             $pj->topics = (object) $topics;
 
         if ($prow->paperStorageId > 1
-            && (!$contact || $contact->canDownloadPaper($prow)))
-            $pj->submission = (object) array("docid" => (int) $prow->paperStorageId);
+            && (!$this->contact || $this->contact->canDownloadPaper($prow))
+            && ($doc = $this->document_to_json($prow, DTYPE_SUBMISSION,
+                                               (int) $prow->paperStorageId)))
+            $pj->submission = $doc;
+
+        if ($prow->finalPaperStorageId > 1
+            && (!$this->contact || $this->contact->canDownloadPaper($prow))
+            && ($doc = $this->document_to_json($prow, DTYPE_FINAL,
+                                               (int) $prow->finalPaperStorageId)))
+            $pj->final = $doc;
 
         if (count($prow->options())) {
             $options = array();
             foreach ($prow->options() as $oa) {
                 $o = $oa->option;
-                if ($contact && !$contact->canViewPaperOption($prow, $o))
+                if ($this->contact
+                    && !$this->contact->canViewPaperOption($prow, $o, $this->forceShow))
                     continue;
-                $okey = $usenames ? $o->abbr : $o->id;
+                $okey = $this->export_ids ? $o->id : $o->abbr;
                 if ($o->type == "checkbox" && $oa->value)
                     $options[$okey] = true;
                 else if ($o->has_selector()
@@ -120,12 +160,13 @@ class PaperStatus {
                 else if ($o->type == "attachments") {
                     $attachments = array();
                     foreach ($oa->values as $docid)
-                        if ($docid)
-                            $attachments[] = (object) array("docid" => $docid);
+                        if ($docid && ($doc = $this->document_to_json($prow, $o->id, $docid)))
+                            $attachments[] = $doc;
                     if (count($attachments))
                         $options[$okey] = $attachments;
-                } else if ($o->is_document() && $oa->value)
-                    $options[$okey] = (object) array("docid" => $oa->value);
+                } else if ($o->is_document() && $oa->value
+                           && ($doc = $this->document_to_json($prow, $o->id, $oa->value)))
+                    $options[$okey] = $doc;
             }
             if (count($options))
                 $pj->options = (object) $options;
