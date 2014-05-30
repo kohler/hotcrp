@@ -176,28 +176,22 @@ class HotCRPDocument {
 
     public function load_content($doc) {
         global $Conf;
-        if (!@$doc->paperStorageId || $doc->paperStorageId <= 1) {
-            if ($this->dtype == DTYPE_SUBMISSION)
-                $doc->error_text = "Paper #" . $doc->paperId . " has not been uploaded.";
-            else if ($this->dtype == DTYPE_FINAL)
-                $doc->error_text = "Paper #" . $doc->paperId . "’s final copy has not been uploaded.";
-            else
-                $doc->error_text = "";
-            return false;
-        }
+        $ok = false;
 
         assert(isset($doc->paperStorageId));
         $result = null;
-        $ok = true;
-        if (!@$Opt["dbNoPapers"])
+        if (!@$Opt["dbNoPapers"]
+            && @($doc->paperStorageId > 1))
             $result = $Conf->q("select paper, compression from PaperStorage where paperStorageId=" . $doc->paperStorageId);
-        if (!$result || !($row = edb_row($result)) || $row[0] === null) {
+        if (!$result || !($row = edb_row($result)) || $row[0] === null)
             $doc->content = "";
-            $ok = false;
-        } else if ($row[1] == 1)
+        else if ($row[1] == 1) {
             $doc->content = gzinflate($row[0]);
-        else
+            $ok = true;
+        } else {
             $doc->content = $row[0];
+            $ok = true;
+        }
 
         if (!$ok && ($s3 = self::s3_document())) {
             $content = $s3->load(self::s3_filename($doc));
@@ -206,6 +200,16 @@ class HotCRPDocument {
                 $ok = true;
             } else if ($s3->status != 200)
                 error_log("S3 error: $s3->status $s3->status_text " . json_encode($s3->response_headers));
+        }
+
+        if (!$ok) {
+            $num = @$doc->paperId ? " #$doc->paperId" : "";
+            if ($this->dtype == DTYPE_SUBMISSION)
+                $doc->error_text = "Paper$num has not been uploaded.";
+            else if ($this->dtype == DTYPE_FINAL)
+                $doc->error_text = "Paper{$num}’s final copy has not been uploaded.";
+            else
+                $doc->error_text = "";
         }
 
         $doc->size = strlen($doc->content);
