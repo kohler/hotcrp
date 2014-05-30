@@ -178,7 +178,6 @@ class HotCRPDocument {
         global $Conf;
         $ok = false;
 
-        assert(isset($doc->paperStorageId));
         $result = null;
         if (!@$Opt["dbNoPapers"]
             && @($doc->paperStorageId > 1))
