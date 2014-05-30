@@ -97,7 +97,12 @@ class HotCRPDocument {
     }
 
     public static function s3_filename($doc) {
-        $sha1 = bin2hex($doc->sha1);
+        if (is_string(@$doc->sha1) && strlen($doc->sha1) === 20)
+            $sha1 = bin2hex($doc->sha1);
+        else if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40 && ctype_xdigit($doc->sha1))
+            $sha1 = strtolower($doc->sha1);
+        else
+            return null;
         return "doc/" . substr($sha1, 0, 2) . "/" . $sha1
             . Mimetype::extension($doc->mimetype);
     }

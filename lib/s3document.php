@@ -156,8 +156,6 @@ class S3Document {
     }
 
     private function parse_response_headers($url, $metadata) {
-        $this->status = $this->status_text = null;
-        $this->response_headers = $this->user_data = array();
         $this->response_headers["url"] = $url;
         if ($metadata && ($w = @$metadata["wrapper_data"]) && is_array($w)) {
             if (preg_match(',\AHTTP/[\d.]+\s+(\d+)\s+(.+)\z,', $w[0], $m)) {
@@ -174,12 +172,16 @@ class S3Document {
     }
 
     private function run($filename, $method, $args) {
-        list($url, $hdr) = $this->http_headers($filename, $method, $args);
-        $context = stream_context_create(array("http" => $hdr));
-        $stream = fopen($url, "r", false, $context);
-        $this->parse_response_headers($url, stream_get_meta_data($stream));
-        $this->response_headers["content"] = stream_get_contents($stream);
-        fclose($stream);
+        $this->status = $this->status_text = null;
+        $this->response_headers = $this->user_data = array();
+        if ($filename) {
+            list($url, $hdr) = $this->http_headers($filename, $method, $args);
+            $context = stream_context_create(array("http" => $hdr));
+            $stream = fopen($url, "r", false, $context);
+            $this->parse_response_headers($url, stream_get_meta_data($stream));
+            $this->response_headers["content"] = stream_get_contents($stream);
+            fclose($stream);
+        }
     }
 
     public function save($filename, $content, $content_type, $user_data = null) {
