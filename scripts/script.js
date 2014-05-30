@@ -2416,9 +2416,10 @@ function scorechart1_s2(sc, parent) {
         if (!anal.v[vindex])
             continue;
         ctx.fillStyle = color_unparse(color_interp(badcolor, goodcolor, (vindex - 1) * anal.fm));
-        x2 = Math.round((cwidth + 1) * (pos + anal.v[vindex]) / anal.sum);
-        ctx.fillRect(x1, 0, x2 - x1 - 1, cheight);
         pos += anal.v[vindex];
+        x2 = Math.round((cwidth + 1) * pos / anal.sum);
+        if (x2 > x1)
+            ctx.fillRect(x1, 0, x2 - x1 - 1, cheight);
         x1 = x2;
     }
     return canvas;
