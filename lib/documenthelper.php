@@ -233,8 +233,12 @@ class DocumentHelper {
                 $xfpath .= Mimetype::extension(self::_mimetype($doc));
             else {
                 if (!$sha1) {
-                    $sha1 = bin2hex($doc->sha1);
-                    if (strlen($sha1) != 40)
+                    if (is_string(@$doc->sha1) && strlen($doc->sha1) === 20)
+                        $sha1 = bin2hex($doc->sha1);
+                    else if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40
+                             && ctype_xdigit($doc->sha1))
+                        $sha1 = strtolower($doc->sha1);
+                    else
                         return array(null, null);
                 }
                 if ($m[2] != "")
@@ -333,7 +337,13 @@ class DocumentHelper {
         global $Conf, $Opt, $OK;
         if (is_object($upload)) {
             $doc = $upload;
-            if (@$doc->content === null || $doc->content === "")
+            if (@$doc->content === null && @$doc->filestore)
+                $doc->content = @file_get_contents($doc->filestore);
+            if (@$doc->content === null)
+                $docclass->load_content($doc);
+            if (@$doc->content === null
+                || $doc->content === false
+                || $doc->content === "")
                 set_error_html($doc, "The uploaded file was empty.");
         } else
             $doc = self::file_upload_json($upload);

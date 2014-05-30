@@ -36,7 +36,6 @@ class PaperStatus {
         $prow = $Conf->paperRow(array("paperId" => $pid,
                                       "topics" => true,
                                       "options" => true), $this->contact);
-        error_log(var_export($prow, true) . "? " . ($this->contact ? "C" : "."));
         return $prow ? $this->row_to_json($prow) : null;
     }
 
@@ -207,19 +206,44 @@ class PaperStatus {
         $this->errmsg[] = $html;
     }
 
-    private function upload_document($docj, $paperid, $doctype) {
-        if (!@$docj->docid && @$docj->content) {
-            $doc = DocumentHelper::upload(new HotCRPDocument($doctype), $docj, (object) array("paperId" => $paperid));
-            if (@$doc->paperStorageId > 1) {
-                $docj->docid = $doc->paperStorageId;
-                foreach (array("size", "sha1", "mimetype", "timestamp") as $k)
-                    $docj->$k = $doc->$k;
-                $this->uploaded_documents[] = $doc->paperStorageId;
-            } else {
-                $opt = PaperOption::find_document($doctype);
-                $docj->docid = 1;
-                $this->set_error($opt->abbr, htmlspecialchars($opt->name) . ": " . $doc->error_html);
-            }
+    private function upload_document($docj, $paperid, $dtype) {
+        global $Conf;
+
+        // look for an existing document with same sha1;
+        // check existing docid's sha1
+        $docid = @$docj->docid;
+        if ($docid) {
+            $oldj = $this->document_to_json($paperid, $dtype, $docid);
+            if (@$docj->sha1 && @$oldj->sha1 !== $docj->sha1)
+                $docid = null;
+        } else if (!$docid && $paperid && @$docj->sha1) {
+            $result = $Conf->qe("select paperStorageId from PaperStorage where paperId=$paperid and documentType=$dtype and sha1='" . sqlq($docj->sha1) . "'");
+            if (($row = edb_row($result)))
+                $docid = $row[0];
+        }
+
+        // if no sha1 match, upload
+        $docclass = new HotCRPDocument($dtype);
+        if (!$docid && !@$docj->content && !@$docj->content_base64)
+            DocumentHelper::load($docclass, $docj);
+        $upload = null;
+        if (!$docid && (@$docj->content || @$docj->content_base64 || @$docj->filestore)) {
+            if (!@$docj->content && @$docj->content_base64)
+                $docj->content = base64_decode($docj->content_base64);
+            $upload = DocumentHelper::upload(new HotCRPDocument($dtype), $docj,
+                                             (object) array("paperId" => $paperid));
+        }
+        if ($docid)
+            $docj->docid = $docid;
+        else if ($upload && @$upload->paperStorageId > 1) {
+            foreach (array("size", "sha1", "mimetype", "timestamp") as $k)
+                $docj->$k = $upload->$k;
+            $this->uploaded_documents[] = $docj->docid = $upload->paperStorageId;
+        } else {
+            $opt = PaperOption::find_document($dtype);
+            $docj->docid = 1;
+            $this->set_error($opt->abbr, htmlspecialchars($opt->name) . ": "
+                             . ($upload ? $upload->error_html : "empty document"));
         }
     }
 
@@ -312,7 +336,7 @@ class PaperStatus {
         // Options
         $options = @$pj->options;
         $pj->options = (object) array();
-        $pj->bad_options = (object) array();
+        $pj->bad_options = array();
         if ($options && is_object($options)) {
             $option_list = PaperOption::option_list();
 
@@ -322,7 +346,7 @@ class PaperStatus {
                     $id = $o->id;
                     $pj->options->$id = $oa;
                 } else
-                    $pj->bad_options->$id = true;
+                    $pj->bad_options[$id] = true;
 
             // check values
             foreach ($pj->options as $id => $oa) {
@@ -454,7 +478,7 @@ class PaperStatus {
         if (count($pj->bad_topics))
             $this->set_error("topics", "Unknown topics ignored (" . commajoin($pj->bad_topics) . ").");
         if (count($pj->bad_options))
-            $this->set_error("options", "Unknown options ignored (" . commajoin(array_keys(get_object_vars($pj->bad_options))) . ").");
+            $this->set_error("options", "Unknown options ignored (" . commajoin(array_keys($pj->bad_options)) . ").");
     }
 
     static function author_information($pj) {
