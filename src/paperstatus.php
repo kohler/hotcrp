@@ -12,7 +12,7 @@ class PaperStatus {
     private $no_email = false;
     private $allow_error = array();
 
-    function __constructor($options = array()) {
+    function __construct($options = array()) {
         if (array_key_exists("no_email", $options))
             $this->no_email = $options["no_email"];
         if (array_key_exists("allow_error", $options))
