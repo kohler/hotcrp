@@ -315,8 +315,6 @@ class DocumentHelper {
         if (@$doc->content === null || @$doc->content === false)
             $docclass->load_content($doc);
     }
-        return true;
-    }
 
     static function store($docclass, $doc, $docinfo) {
         // load data (if unloaded)
