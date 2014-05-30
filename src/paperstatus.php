@@ -578,7 +578,8 @@ class PaperStatus {
                 $old_joindoc = $old_pj ? @$old_pj->submission : null;
             }
             if ($joindoc
-                && (!$old_joindoc || $old_joindoc->docid != $joindoc->docid)) {
+                && (!$old_joindoc || $old_joindoc->docid != $joindoc->docid)
+		&& @$joindoc->size && @$joindoc->timestamp) {
                 $q[] = "size=" . $joindoc->size;
                 $q[] = "mimetype='" . sqlq($joindoc->mimetype) . "'";
                 $q[] = "sha1='" . sqlq($joindoc->sha1) . "'";
@@ -588,7 +589,8 @@ class PaperStatus {
 
             if ($pj->id) {
                 $result = $Conf->qe("update Paper set " . join(",", $q) . " where paperId=$pj->id");
-                if (edb_nrows_affected($result) === 0)
+                if (edb_nrows_affected($result) === 0
+                    && edb_nrows($Conf->qe("select paperId from Paper where paperId=$pj->id")) === 0)
                     $result = $Conf->qe("insert into Paper set paperId=$pj->id, " . join(",", $q));
             } else {
                 $result = $Conf->qe("insert into Paper set " . join(",", $q));
