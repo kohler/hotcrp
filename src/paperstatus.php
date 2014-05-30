@@ -9,6 +9,15 @@ class PaperStatus {
     private $errf = array();
     private $errmsg = array();
     public $nerrors = 0;
+    private $no_email = false;
+    private $allow_error = array();
+
+    function __constructor($options = array()) {
+        if (array_key_exists("no_email", $options))
+            $this->no_email = $options["no_email"];
+        if (array_key_exists("allow_error", $options))
+            $this->allow_error = $options["allow_error"];
+    }
 
     static function load($pid, $sel = array()) {
         global $Conf;
@@ -142,7 +151,10 @@ class PaperStatus {
         if ($field)
             $this->errf[$field] = true;
         $this->errmsg[] = $html;
-        ++$this->nerrors;
+        if (!$field
+            || ($this->allow_error
+                && array_search($field, $this->allow_error) === false))
+            ++$this->nerrors;
     }
 
     private function set_warning($field, $html) {
@@ -388,13 +400,15 @@ class PaperStatus {
             $this->set_error("author", "Each paper must have at least one author.");
         if (count($pj->bad_authors))
             $this->set_error("author", "Some authors ignored.");
-        if (count($pj->bad_topics))
-            $this->set_error("topics", "Unknown topics ignored (" . commajoin($pj->bad_topics) . ").");
         foreach ($pj->bad_contacts as $reg)
             if (!isset($reg->email))
                 $this->set_error("contacts", "Contact " . Text::user_html($reg) . " has no associated email.");
             else
                 $this->set_error("contacts", "Contact email " . htmlspecialchars($reg->email) . " is invalid.");
+        if (count($pj->bad_topics))
+            $this->set_error("topics", "Unknown topics ignored (" . commajoin($pj->bad_topics) . ").");
+        if (count($pj->bad_options))
+            $this->set_error("options", "Unknown options ignored (" . commajoin(array_keys(get_object_vars($pj->bad_options))) . ").");
     }
 
     static function author_information($pj) {
@@ -497,7 +511,7 @@ class PaperStatus {
             }
         }
         foreach ($pj->contacts as $email => $c)
-            if (!Contact::find_by_email($c->email, $c, true))
+            if (!Contact::find_by_email($c->email, $c, !$this->no_email))
                 $this->set_error("contacts", "Could not create an account for contact " . Text::user_html($c) . ".");
 
         // catch errors
@@ -572,9 +586,11 @@ class PaperStatus {
             } else if (!$joindoc)
                 $q[] = "size=0,mimetype='',sha1='',timestamp=0";
 
-            if ($pj->id)
+            if ($pj->id) {
                 $result = $Conf->qe("update Paper set " . join(",", $q) . " where paperId=$pj->id");
-            else {
+                if (edb_nrows_affected($result) === 0)
+                    $result = $Conf->qe("insert into Paper set paperId=$pj->id, " . join(",", $q));
+            } else {
                 $result = $Conf->qe("insert into Paper set " . join(",", $q));
                 if (!$result
                     || !($pj->id = $Conf->lastInsertId()))
