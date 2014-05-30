@@ -75,6 +75,17 @@ class Mimetype {
         return $x && $x->mimetypeid <= 2;
     }
 
+    static function sniff($content) {
+        if (strncmp("%PDF-", $content, 5) == 0)
+            return self::type("pdf");
+        else if (strncmp("%!PS-", $content, 5) == 0)
+            return self::type("ps");
+        else if (substr($content, 512, 4) == "\x00\x6E\x1E\xF0")
+            return self::type("ppt");
+        else
+            return null;
+    }
+
 }
 
 Mimetype::register("text/plain", "txt", 1, "text");

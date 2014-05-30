@@ -9,7 +9,8 @@ $ConfFilestore = null;
 class HotCRPDocument {
 
     private $dtype;
-    private $option;
+    private $option = null;
+    private $no_database = false;
     static private $_s3_document = false;
 
     public function __construct($dtype, $option = null) {
@@ -18,8 +19,10 @@ class HotCRPDocument {
             $this->option = $option;
         else if ($this->dtype > 0)
             $this->option = PaperOption::find($dtype);
-        else
-            $this->option = null;
+    }
+
+    public function set_no_database() {
+        $this->no_database = true;
     }
 
     public static function unparse_dtype($dtype) {
@@ -137,6 +140,8 @@ class HotCRPDocument {
 
     public function database_storage($doc, $docinfo) {
         global $Conf, $Opt;
+        if ($this->no_database)
+            return null;
         $doc->paperId = $docinfo->paperId;
         $doc->documentType = $this->dtype;
         $columns = array("paperId" => $docinfo->paperId,

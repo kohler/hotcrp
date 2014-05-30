@@ -18,6 +18,7 @@ if ($content === false) {
     fwrite(STDERR, "$file: Read error\n");
     exit(1);
 }
+
 if (($jp = json_decode($content)) === false) {
     fwrite(STDERR, "$file: bad JSON (" . json_last_error_msg() . ")\n");
     exit(1);
