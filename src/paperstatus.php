@@ -152,8 +152,8 @@ class PaperStatus {
             $this->errf[$field] = true;
         $this->errmsg[] = $html;
         if (!$field
-            || ($this->allow_error
-                && array_search($field, $this->allow_error) === false))
+	    || !$this->allow_error
+            || array_search($field, $this->allow_error) === false)
             ++$this->nerrors;
     }
 
