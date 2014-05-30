@@ -305,11 +305,34 @@ class DocumentHelper {
         return true;
     }
 
+    static function prepare_content($docclass, $doc) {
+        if ((@$doc->content === null || @$doc->content === false)
+            && @$doc->content_base64)
+            $doc->content = base64_decode($doc->content_base64);
+        if ((@$doc->content === null || @$doc->content === false)
+            && @$doc->filestore)
+            $doc->content = @file_get_contents($doc->filestore);
+        if (@$doc->content === null || @$doc->content === false)
+            $docclass->load_content($doc);
+    }
+        return true;
+    }
+
     static function store($docclass, $doc, $docinfo) {
+        // load data (if unloaded)
+        self::prepare_content($docclass, $doc);
+        // calculate SHA-1, complain on mismatch
+        if (@$doc->content) {
+            $sha1 = sha1($doc->content, true);
+            if (isset($doc->sha1) && self::binary_sha1($doc) !== $sha1)
+                set_error_html($doc, "Document claims checksum " . self::text_sha1($doc) . ", but has checksum " . bin2hex($sha1) . ".");
+            $doc->sha1 = $sha1;
+        }
+        // exit on error
+        if (@$doc->error)
+            return $doc;
         if (!isset($doc->size) && isset($doc->content))
             $doc->size = strlen($doc->content);
-        if (!isset($doc->sha1) && isset($doc->content))
-            $doc->sha1 = sha1($doc->content, true);
         $docclass->prepare_storage($doc, $docinfo);
         if (($dbinfo = $docclass->database_storage($doc, $docinfo)))
             self::_store_database($dbinfo, $doc);
@@ -352,18 +375,9 @@ class DocumentHelper {
         global $Conf, $Opt, $OK;
         if (is_object($upload)) {
             $doc = clone $upload;
-            if (@$doc->content === null && @$doc->content_base64)
-                $doc->content = base64_decode($doc->content_base64);
-            if (@$doc->content === null && @$doc->filestore)
-                $doc->content = @file_get_contents($doc->filestore);
-            if (@$doc->content === null)
-                $docclass->load_content($doc);
-            if (@$doc->content === null
-                || $doc->content === false
-                || $doc->content === "")
+            self::prepare_content($docclass, $doc);
+            if (@$doc->content === null || $doc->content === false || $doc->content === "")
                 set_error_html($doc, "The uploaded file was empty.");
-            if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40 && ctype_xdigit($doc->sha1))
-                $doc->sha1 = hex2bin($doc->sha1);
         } else
             $doc = self::file_upload_json($upload);
         if (@$doc->error)

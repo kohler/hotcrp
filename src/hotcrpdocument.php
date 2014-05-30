@@ -111,14 +111,13 @@ class HotCRPDocument {
         return ($s3 = self::s3_document()) && $s3->check(self::s3_filename($doc));
     }
 
-    public function s3_store($doc, $docinfo) {
+    public function s3_store($doc, $docinfo, $trust_sha1 = false) {
         global $Opt;
         if (!isset($doc->content) && !$this->load_content($doc))
             return false;
-        if (@$doc->sha1 !== null
-            && DocumentHelper::binary_sha1($doc) !== sha1($doc->content, true)) {
-            error_log("S3 upload cancelled: data claims SHA-1 " . DocumentHelper::text_sha1($doc)
-                      . ", has SHA-1 " . sha1($doc->content));
+        if (!$trust_sha1 && DocumentHelper::binary_sha1($doc) !== sha1($doc->content, true)) {
+            error_log("S3 upload cancelled: data claims checksum " . DocumentHelper::text_sha1($doc)
+                      . ", has checksum " . sha1($doc->content));
             return false;
         }
         $s3 = self::s3_document();
@@ -135,7 +134,7 @@ class HotCRPDocument {
 
     public function prepare_storage($doc, $docinfo) {
         if (($s3 = self::s3_document()))
-            $this->s3_store($doc, $docinfo);
+            $this->s3_store($doc, $docinfo, true);
     }
 
     public function database_storage($doc, $docinfo) {
