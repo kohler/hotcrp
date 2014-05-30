@@ -217,6 +217,15 @@ class DocumentHelper {
         return (isset($doc->mimetype) ? $doc->mimetype : $doc->mimetypeid);
     }
 
+    public static function text_sha1($doc) {
+        if (is_string(@$doc->sha1) && strlen($doc->sha1) === 20)
+            return bin2hex($doc->sha1);
+        else if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40 && ctype_xdigit($doc->sha1))
+            return strtolower($doc->sha1);
+        else
+            return null;
+    }
+
     private static function _expand_filestore($fsinfo, $doc) {
         list($fdir, $fpath) = $fsinfo;
         $sha1 = null;
@@ -232,15 +241,9 @@ class DocumentHelper {
             else if ($m[3] == "x")
                 $xfpath .= Mimetype::extension(self::_mimetype($doc));
             else {
-                if (!$sha1) {
-                    if (is_string(@$doc->sha1) && strlen($doc->sha1) === 20)
-                        $sha1 = bin2hex($doc->sha1);
-                    else if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40
-                             && ctype_xdigit($doc->sha1))
-                        $sha1 = strtolower($doc->sha1);
-                    else
-                        return array(null, null);
-                }
+                if ($sha1 === null
+                    && ($sha1 = self::text_sha1($doc)) === null)
+                    return array(null, null);
                 if ($m[2] != "")
                     $xfpath .= substr($sha1, 0, +$m[2]);
                 else
