@@ -834,7 +834,7 @@ if ($getaction == "metajson" && isset($papersel) && $Me->privChair) {
     if (count($pj) == 1)
         $pj = $pj[0];
     header("Content-Type: application/json");
-    header("Content-Disposition: attachment; filename=" . mime_quote_string($Opt["downloadPrefix"] . (is_array($pj) ? "papers" : "paper" . $papersel[0]) . ".js"));
+    header("Content-Disposition: attachment; filename=" . mime_quote_string($Opt["downloadPrefix"] . (is_array($pj) ? "papers" : "paper" . $papersel[0]) . ".json"));
     echo json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
     exit;
 }
