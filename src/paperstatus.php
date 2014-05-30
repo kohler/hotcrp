@@ -253,13 +253,15 @@ class PaperStatus {
         }
         if ($topics && is_object($topics)) {
             $topic_map = $Conf->topic_map();
-            foreach ($pj->topics as $k => $v)
-                if ($v && @$topic_map[$k])
+            foreach ($topics as $k => $v)
+                if (!$v)
+                    /* skip */;
+                else if (@$topic_map[$k])
                     $pj->topics->$k = true;
-                else if ($v && ($x = array_search($k, $topic_map)) !== false)
+                else if (($x = array_search($k, $topic_map, true)) !== false)
                     $pj->topics->$x = true;
-                else if ($v)
-                    $pj->bad_topics[] = $v;
+                else
+                    $pj->bad_topics[] = $k;
         } else if ($topics)
             $this->set_error("topics", "Format error [topics]");
 
