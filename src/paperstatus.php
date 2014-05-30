@@ -227,12 +227,9 @@ class PaperStatus {
         if (!$docid && !@$docj->content && !@$docj->content_base64)
             DocumentHelper::load($docclass, $docj);
         $upload = null;
-        if (!$docid && (@$docj->content || @$docj->content_base64 || @$docj->filestore)) {
-            if (!@$docj->content && @$docj->content_base64)
-                $docj->content = base64_decode($docj->content_base64);
+        if (!$docid && (@$docj->content || @$docj->content_base64 || @$docj->filestore))
             $upload = DocumentHelper::upload(new HotCRPDocument($dtype), $docj,
                                              (object) array("paperId" => $paperid));
-        }
         if ($docid)
             $docj->docid = $docid;
         else if ($upload && @$upload->paperStorageId > 1) {

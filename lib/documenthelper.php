@@ -336,7 +336,9 @@ class DocumentHelper {
     static function upload($docclass, $upload, $docinfo) {
         global $Conf, $Opt, $OK;
         if (is_object($upload)) {
-            $doc = $upload;
+            $doc = clone $upload;
+            if (@$doc->content === null && @$doc->content_base64)
+                $doc->content = base64_decode($doc->content_base64);
             if (@$doc->content === null && @$doc->filestore)
                 $doc->content = @file_get_contents($doc->filestore);
             if (@$doc->content === null)
@@ -345,6 +347,8 @@ class DocumentHelper {
                 || $doc->content === false
                 || $doc->content === "")
                 set_error_html($doc, "The uploaded file was empty.");
+            if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40 && ctype_xdigit($doc->sha1))
+                $doc->sha1 = hex2bin($doc->sha1);
         } else
             $doc = self::file_upload_json($upload);
         if (@$doc->error)
