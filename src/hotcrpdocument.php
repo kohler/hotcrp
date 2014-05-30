@@ -21,7 +21,7 @@ class HotCRPDocument {
             $this->option = PaperOption::find($dtype);
     }
 
-    public function set_no_database() {
+    public function set_no_database_storage() {
         $this->no_database = true;
     }
 
