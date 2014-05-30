@@ -474,7 +474,8 @@ function paperDocumentData($prow, $documentType = DTYPE_SUBMISSION, $paperStorag
     if ($paperStorageId > 0
         && ($doc->documentType != $documentType
             || $paperStorageId != $doc->paperStorageId)) {
-        $result = $Conf->qe("select paperStorageId, paperId, length(paper) as size, mimetype, timestamp, sha1, filename, documentType from PaperStorage where paperStorageId=$paperStorageId", "while reading documents");
+        $size = $Conf->sversion >= 74 ? "size" : "length(paper) as size";
+        $result = $Conf->qe("select paperStorageId, paperId, $size, mimetype, timestamp, sha1, filename, documentType from PaperStorage where paperStorageId=$paperStorageId", "while reading documents");
         $doc = edb_orow($result);
     }
 

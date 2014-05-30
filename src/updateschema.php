@@ -611,4 +611,9 @@ function updateSchema($Conf) {
         && $Conf->ql("delete from TopicInterest where interest=1")
         && $Conf->ql("update Settings set value=73 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 73;
+    if ($Conf->settings["allowPaperOption"] == 73
+        && $Conf->ql("alter table PaperStorage add `size` bigint(11) DEFAULT NULL")
+        && $Conf->ql("update PaperStorage set `size`=length(paper) where paper is not null")
+        && $Conf->ql("update Settings set value=74 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 74;
 }
