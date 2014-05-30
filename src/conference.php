@@ -1036,6 +1036,8 @@ class Conference {
             $q .= "s.paper as content, ";
         if ($this->sversion >= 45)
             $q .= "s.filename, ";
+        if ($this->sversion >= 55)
+            $q .= "s.infoJson, ";
         $q .= "$documentType documentType, s.paperStorageId from Paper p";
         if ($docid)
             $sjoin = $docid;

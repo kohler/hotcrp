@@ -55,6 +55,9 @@ class PaperStatus {
                 $d->timestamp = (int) $drow->timestamp;
             if (@$drow->filename)
                 $d->filename = $drow->filename;
+            if (@$drow->infoJson
+                && ($meta = json_decode($drow->infoJson)))
+                $d->metadata = $meta;
             if ($this->export_content
                 && DocumentHelper::load($drow->docclass, $drow))
                 $d->content_base64 = base64_encode($drow->content);
