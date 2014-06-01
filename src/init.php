@@ -194,7 +194,7 @@ function read_included_options($files) {
     $confname = @$ConfMulticonf ? $ConfMulticonf : @$Opt["dbName"];
     $cwd = null;
     foreach ($files as $f) {
-        $f = preg_replace(',\$\{confname\}|\$confname\b,', $confname, $f);
+        $f = preg_replace(',\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $confname, $f);
         if (preg_match(',[\[\]\*\?],', $f)) {
             if ($cwd === null) {
                 $cwd = getcwd();

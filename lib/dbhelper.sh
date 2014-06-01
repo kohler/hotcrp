@@ -82,7 +82,7 @@ if (exists($Opt{"include"})) {
     $Opt{"include"} = [$Opt{"include"}] if !ref $Opt{"include"};
     my($confname, @flist) = $Confname ? $Confname : $Opt{"dbName"};
     foreach my $f (@{$Opt{"include"}}) {
-        $f =~ s,\$\{confname\}|\$confname\b,$confname,g;
+        $f =~ s,\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,$confname,g;
         @flist = ($f =~ m,[\[\]\*\?], ? glob($f) : $f);
         foreach my $ff (@flist) {
             if (open(F, "<", $ff)) {
@@ -104,7 +104,7 @@ sub fixshell ($) {
 if ($Opt{"multiconference"} && $Confname ne "") {
    foreach my $i ("dbName", "dbUser", "dbPassword",
                   "sessionName", "downloadPrefix", "conferenceSite") {
-       $Opt{$i} =~ s,\*|\*\{confname\}|\$confname\b,$Confname,g if exists($Opt{$i});
+       $Opt{$i} =~ s,\*|\*\{conf(?:id|name)\}|\$conf(?:id|name)\b,$Confname,g if exists($Opt{$i});
    }
 }
 
