@@ -88,7 +88,7 @@ function admin_home_messages() {
     else if (simplify_whitespace($Opt["shortName"]) != $Opt["shortName"])
 	$m[] = "The <a href=\"" . hoturl("settings", "group=msg") . "\">conference abbreviation</a> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more).";
     $site_contact = Contact::site_contact();
-    if (!$site_contact->fullName || !$site_contact->email || $site_contact->email == "you@example.com")
+    if (!$site_contact->email || $site_contact->email == "you@example.com")
         $m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the conference contact’s name and email</a> so submitters can reach someone if things go wrong.";
     // Any -100 preferences around?
     $result = $Conf->qx($Conf->preferenceConflictQuery(false, "limit 1"));
