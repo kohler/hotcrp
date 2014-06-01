@@ -196,7 +196,7 @@ function checkMailPrologue($send) {
 		echo "<div class='warning'>You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (<a href='", hoturl("settings", "group=dec"), "' class='nowrap'>Change this setting</a>)</div>\n";
 	}
 	echo "<div id='foldmail' class='foldc fold2c'>",
-	    "<div class='fn fx2 merror'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div>",
+	    "<div class='fn fx2 warning'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div>",
 	    "<div id='mailwarnings'></div>",
 	    "<div class='fx info'>Verify that the mails look correct, then select “Send” to send the checked mails.<br />",
 	    "Mailing to:&nbsp;", $recip[$_REQUEST["recipients"]], "<span id='mailinfo'></span>";
