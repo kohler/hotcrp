@@ -222,8 +222,9 @@ exist. To ignore nonexistent options files, use wildcards:
     $Opt["include"] = 'conf/[o]ptions-${confid}.php';
 
 `${confid}` replacement is also performed on these $Opt settings:
-dbName, dbUser, dbPassword, sessionName, downloadPrefix,
-conferenceSite, and paperSite.
+dbName, dbUser, dbPassword, sessionName, downloadPrefix, conferenceSite,
+paperSite, contactName, contactEmail, emailFrom, emailSender, emailCc,
+and emailReplyTo.
 
 Each conference needs its own database. Create one using the
 `lib/createdb.sh` script (the `-c CONFIGFILE` option will be useful).
