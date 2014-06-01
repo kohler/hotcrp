@@ -181,30 +181,6 @@ $DBPASS
 __EOF__
 }
 
-generate_random_ints () {
-    random="`head -c 48 /dev/urandom 2>/dev/null | tr -d '\000'`"
-    test -z "$random" && random="`head -c 48 /dev/random 2>/dev/null | tr -d '\000'`"
-    test -z "$random" && random="`openssl rand 48 2>/dev/null | tr -d '\000'`"
-    echo "$random" | awk '
-BEGIN { for (i = 0; i < 256; ++i) { ord[sprintf("%c", i)] = i; } }
-{ for (i = 1; i <= length($0); ++i) { printf("%d\n", ord[substr($0, i, 1)]); } }'
-    # generate some very low-quality random bytes in case all the
-    # higher-quality mechanisms fail
-    awk 'BEGIN { srand(); for (i = 0; i < 256; ++i) { printf("%d\n", rand() * 256); } }' < /dev/null
-}
-
-generate_password () {
-    awk 'BEGIN {
-    npwchars = split("a e i o u y a e i o u y a e i o u y a e i o u y a e i o u y b c d g h j k l m n p r s t u v w tr cr br fr th dr ch ph wr st sp sw pr sl cl 2 3 4 5 6 7 8 9 - @ _ + =", pwchars, " ");
-    pw = ""; nvow = 0;
-}
-{   x = ($0 % npwchars); if (x < 30) ++nvow;
-    pw = pw pwchars[x + 1];
-    if (length(pw) >= '"$1"' + nvow / 3) exit;
-}
-END { printf("%s\n", pw); }'
-}
-
 default_dbpass=
 x="`getdbopt dbPassword 2>/dev/null`"
 x="`eval "echo $x"`"

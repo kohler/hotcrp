@@ -13,7 +13,7 @@ usage () {
     if [ -z "$1" ]; then status=1; else status=$1; fi
     echo "Usage: $PROG [-c CONFIGFILE] [MYSQL-OPTIONS]
        $PROG --show-password EMAIL
-       $PROG --set-password EMAIL PASSWORD
+       $PROG --set-password EMAIL [PASSWORD]
        $PROG --create-user EMAIL [COLUMN=VALUE...]" |
        if [ $status = 0 ]; then cat; else cat 1>&2; fi
     exit $status
@@ -38,7 +38,7 @@ while [ $# -gt 0 ]; do
 	test "$#" -gt 1 -a -z "$mode" || usage
 	pwuser="$2"; shift; mode=showpw;;
     --set-password)
-        test "$#" -eq 3 -a -z "$mode" || usage
+        test "$#" -gt 1 -a -z "$mode" || usage
         pwuser="$2"; pwvalue="$3"; shift; shift; mode=setpw;;
     --create-user)
         test "$#" -gt 1 -a -z "$mode" || usage
@@ -94,6 +94,11 @@ if test -n "$pwuser"; then
     if test "$mode" = showpw; then
         echo "select concat(email, ',', if(substr(password,1,1)=' ','<HASH>',password)) from ContactInfo where email like '$pwuser' and disabled=0" | eval "$MYSQL $myargs -N $FLAGS $dbname"
     else
+        showpwvalue=n
+        if [ -z "$pwvalue" ]; then
+            pwvalue=`generate_random_ints | generate_password 12`
+            showpwvalue=y
+        fi
         pwvalue="`echo "+$pwvalue" | sed -e 's,^.,,' | sql_quote`"
         query="update ContactInfo set password='$pwvalue' where email='$pwuser'; select row_count()"
         nupdates="`echo "$query" | eval "$MYSQL $myargs -N $FLAGS $dbname"`"
@@ -101,6 +106,9 @@ if test -n "$pwuser"; then
             echo "no such user" 1>&2; exitval=1
         elif [ $nupdates != 1 ]; then
             echo "$nupdates users updated" 1>&2
+        fi
+        if [ "$showpwvalue" = y -a $nupdates != 0 ]; then
+            echo "Password: $pwvalue" 1>&2
         fi
     fi
 elif test "$mode" = showopt; then
