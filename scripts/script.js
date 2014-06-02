@@ -166,7 +166,7 @@ function text_to_html(text) {
 }
 
 window.hotcrp_deadlines = (function () {
-var dl, dlname, dltime, dlurl, has_tracker, ever_had_tracker,
+var dl, dlname, dltime, dlurl, has_tracker, had_tracker_at,
     redisplay_timeout, reload_timeout, tracker_timer,
     tracker_comet_at, tracker_comet_stop_until, tracker_comet_errors = 0;
 
@@ -276,8 +276,9 @@ function tracker_paper_columns(idx, paper) {
     return t + "</td>";
 }
 
-function tracker_elapsed() {
-    var now = (new Date).getTime() / 1000, sec, min, t;
+function tracker_elapsed(now) {
+    var sec, min, t;
+    now /= 1000;
     if (dl.tracker && dl.tracker.position_at) {
         sec = Math.round(now - (dl.tracker.position_at + (dl.load - dl.now)));
         if (sec >= 3600)
@@ -290,7 +291,7 @@ function tracker_elapsed() {
 
 function tracker_show_elapsed() {
     var e = $$("trackerelapsed"), t;
-    if (e && (t = tracker_elapsed()))
+    if (e && (t = tracker_elapsed((new Date).getTime())))
         e.innerHTML = t;
     else {
         clearInterval(tracker_timer);
@@ -300,7 +301,7 @@ function tracker_show_elapsed() {
 
 function display_tracker() {
     var mne = $$("tracker"), mnspace = $$("trackerspace"), mytracker,
-        body, pid, trackerstate, t = "", i, e;
+        body, pid, trackerstate, t = "", i, e, now = (new Date).getTime();
 
     mytracker = dl.tracker && (i = window_trackerstate())
         && dl.tracker.trackerid == i[1];
@@ -338,7 +339,7 @@ function display_tracker() {
 
     if (dl.is_admin)
         t += "<div style=\"float:right\"><a class=\"btn btn-transparent\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\" title=\"Stop meeting tracker\">x</a></div>";
-    if ((i = tracker_elapsed())) {
+    if ((i = tracker_elapsed(now))) {
         t += "<div style=\"float:right\" id=\"trackerelapsed\">" + i + "</div>";
         if (!tracker_timer)
             tracker_timer = setInterval(tracker_show_elapsed, 1000);
@@ -355,7 +356,8 @@ function display_tracker() {
     mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
     mnspace.style.height = mne.offsetHeight + "px";
 
-    has_tracker = ever_had_tracker = true;
+    has_tracker = true;
+    had_tracker_at = now;
 }
 
 function reload() {
@@ -409,11 +411,11 @@ function hotcrp_deadlines(dlx, is_initial) {
     if (dlurl && !reload_timeout) {
         if (is_initial && $$("clock_drift_container"))
             t = 10;
-        else if (ever_had_tracker && dl.tracker_poll
+        else if (had_tracker_at && dl.tracker_poll
                  && (!tracker_comet_stop_until
                      || tracker_comet_stop_until >= (new Date).getTime()))
             run_comet();
-        else if (ever_had_tracker)
+        else if (had_tracker_at && dl.load - had_tracker_at < 1200000)
             t = 10000;
         else if (dlname && (!dltime || dltime - dl.load <= 120))
             t = 45000;
