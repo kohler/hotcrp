@@ -1931,12 +1931,10 @@ div.pscopen div.pst {
 	margin: 0 -2px;
 	padding: 0 2px;
 }
-div.pst span.psfn {
-	font-variant: small-caps;
-	font-weight: bold;
+span.psfn {
 	color: #555555;
 }
-div.pst span.psfn a.q {
+span.psfn a.q {
 	color: #555555;
 }
 div.pst span.hint {
@@ -2154,7 +2152,7 @@ div.papt, div.pavt {
 	padding: 0.25em 1em 0.25em 8px;
 	background: #eaeaff; /*#ffeaee;*/
 }
-span.papfn, span.pavfn {
+span.papfn, span.pavfn, span.psfn, span.revfn {
 	font-variant: small-caps;
 	font-weight: bold;
 }
@@ -2249,8 +2247,6 @@ div.revt {
 	-moz-border-radius-topright: 2px;
 }
 span.revfn {
-	font-variant: small-caps;
-	font-weight: bold;
 	float: left;
 }
 .revvis, .cmtvis {
@@ -2393,15 +2389,6 @@ div.cmtv {
 }
 div#foldaddcomment div.cmtv {
 	padding-bottom: 0;
-}
-table.cmtoff {
-	margin: 0.2em 0 0.5em 0;
-	font-size: smaller;
-}
-table.cmtoff span.cmtfn {
-	font-variant: small-caps;
-	font-weight: bold;
-	padding: 0 1em 5px 0;
 }
 span.cmtnumhead span.cmtnumat {
 	color: #aaaaaa;

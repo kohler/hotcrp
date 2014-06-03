@@ -181,12 +181,17 @@ class PaperTable {
                 $foldnumarg = $foldnum ? ",$foldnum" : "";
         }
 
-        $c = "<div class=\"${type}t";
+        if (@$extra["type"] === "ps")
+            list($divclass, $hdrclass) = array("pst", "psfn");
+        else
+            list($divclass, $hdrclass) = array("pavt", "pavfn");
+
+        $c = "<div class=\"$divclass";
         if (isset($Error[$what]))
             $c .= " error";
         if ($fold || $editfolder)
             $c .= " childfold\" onclick=\"return foldup(this,event$foldnumarg)";
-        $c .= "\"><span class=\"${type}fn\">";
+        $c .= "\"><span class=\"$hdrclass\">";
         if (!$fold) {
             $n = (is_array($name) ? $name[0] : $name);
             if ($editfolder)
