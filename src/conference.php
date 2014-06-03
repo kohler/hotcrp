@@ -1857,6 +1857,9 @@ class Conference {
             if (strstr($title, "<") !== false)
                 $title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
 
+            if (isset($Opt["fontScript"]))
+                echo $Opt["fontScript"];
+
             $this->header_css_link("stylesheets/style.css");
             if (isset($Opt["stylesheets"]))
                 foreach ($Opt["stylesheets"] as $css)

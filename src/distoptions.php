@@ -159,23 +159,32 @@ $Opt["disablePS"] = true;
 //                   the system's timezone abbreviation.
 
 
-// INTERFACE OPTIONS
+// DISPLAY CUSTOMIZATION OPTIONS
 //
+//   favicon         Link to favicon. Default is images/review24.png.
+//   stylesheets     Array of additional stylesheet filenames/URIs to be
+//                   included after "style.css". Example: array("x.css").
+//   fontScript      HTML added to <head> before stylesheets.
+//   extraFooter     Extra HTML text shown at the bottom of every page, before
+//                   the HotCRP link. If set, should generally end with
+//                   " <span class='barsep'>|</span> ".
+//   assetsURL       URL prefix for assets (stylesheets/, scripts/, images/).
+//                   Defaults to the conference installation.
+//   jqueryURL       URL for jQuery. Defaults to the local minified jquery.
+//   jqueryCDN       If true, use the jQuery CDN.
 //   redirectToHttps If set to true, then HotCRP will redirect all http
 //                   connections to https.
 //   allowLocalHttp  Only meaningful if redirectToHttps is set. If true, then
 //                   HotCRP will *not* redirect http connections that
 //                   originate from localhost.
+
+
+// BEHAVIOR OPTIONS
+//
 //   sortByLastName  Set to true to sort users by last name.
 //   smartScoreCompare Set to true if a search like "ovemer:>B" should search
 //                   for scores better than B (i.e., A), rather than scores
 //                   alphabetically after B (i.e., C or D).
-//   favicon         Link to favicon. Default is images/review24.png.
-//   stylesheets     Array of additional stylesheet filenames/URIs to be
-//                   included after "style.css". Example: array("x.css").
-//   extraFooter     Extra HTML text shown at the bottom of every page, before
-//                   the HotCRP link. If set, should generally end with
-//                   " <span class='barsep'>|</span> ".
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
 //   noSearchAutocomplete  If set, do not implement Javascript autocompletion
 //                   on searchboxes.
@@ -184,10 +193,6 @@ $Opt["disablePS"] = true;
 //   disableCSV      Set to true if downloaded information files should be
 //                   tab-separated rather than CSV.
 //   hideManager     If set, PC members are not shown paper managers.
-//   assetsURL       URL prefix for assets (stylesheets/, scripts/, images/).
-//                   Defaults to the conference installation.
-//   jqueryURL       URL for jQuery. Defaults to the local minified jquery.
-//   jqueryCDN       If true, use the jQuery CDN.
 
 $Opt["smartScoreCompare"] = true;
 

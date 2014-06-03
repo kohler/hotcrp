@@ -1,3 +1,4 @@
+/* -*- mode: css; indent-tabs-mode: t -*- */
 /* style.css -- HotCRP CSS styles */
 /* HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC */
 /* Distributed under an MIT-like license; see LICENSE */
@@ -631,6 +632,7 @@ span.expander0, span.expander1 {
 }
 span.expander0 > span.in, span.expander1 > span.in {
 	position: relative;
+	font-family: verdana, sans-serif;
 	font-size: 80%;
 }
 span.expander0 > span.in {
