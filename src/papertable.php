@@ -1478,7 +1478,7 @@ class PaperTable {
         $prow = $this->prow;
         $m = "";
 
-        $override = ($this->admin ? "  As an administrator, you can override this deadline." : "");
+        $override = ($this->admin ? " As an administrator, you can override this deadline." : "");
         if (!$prow) {
             $timeStart = $Conf->timeStartPaper();
             $startDeadline = $this->deadlineSettingIs("sub_reg");
@@ -1491,7 +1491,7 @@ class PaperTable {
                     errorMsgExit($msg);
                 $m .= "<div class='xinfo'>" . $msg . "</div>";
             } else {
-                $m .= "<div class='xinfo'>" . "Enter information about your paper.  ";
+                $m .= "<div class='xinfo'>" . "Enter information about your paper. ";
                 if ($startDeadline && !$Conf->setting("sub_freeze"))
                     $m .= "You can make changes until the deadline, but thereafter ";
                 else
@@ -1527,11 +1527,12 @@ class PaperTable {
                 $m .= "<div class='xwarning'>The site is not open for submission updates at the moment.$override</div>";
             else
                 $m .= "<div class='xwarning'>The <a href='" . hoturl("deadlines") . "'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override</div>";
-        } else if ($prow->has_author($Me) && $prow->outcome > 0
-                   && $Conf->timeSubmitFinalPaper()) {
-            $updateDeadline = $this->deadlineSettingIs("final_soft");
-            $m .= "<div class='xinfo'>Congratulations! This paper was accepted. Submit a final version for the paper here.$updateDeadline You may also edit paper contacts, allowing others to view reviews and make changes.</div>";
-        } else if ($prow->has_author($Me)) {
+        } else if ($prow->has_author($Me)
+                   && $prow->outcome > 0
+                   && $Conf->timeSubmitFinalPaper()
+                   && ($t = $Conf->message_html("finalsubmit", array("deadline" => $this->deadlineSettingIs("final_soft")))))
+            $m .= "<div class='xinfo'>" . $t . "</div>";
+        else if ($prow->has_author($Me)) {
             $override2 = ($this->admin ? " As an administrator, you can update the paper anyway." : "");
             if ($this->mode == "pe") {
                 $m .= "<div class='xinfo'>This paper is under review and can’t be changed, but you can change its contacts";

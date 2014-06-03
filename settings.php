@@ -37,6 +37,7 @@ $SettingList = array("acct_addr" => "checkbox",
                      "msg.home" => "htmlstring",
                      "msg.responseinstructions" => "htmlstring",
                      "msg.revprefdescription" => "htmlstring",
+                     "msg.finalsubmit" => "htmlstring",
                      "opt.contactEmail" => "optemailstring",
                      "opt.contactName" => "simplestring",
                      "opt.longName" => "simplestring",
@@ -139,6 +140,7 @@ $SettingText = array(
 	"msg.conflictdef" => "Definition of conflict of interest",
         "msg.responseinstructions" => "Authors’ response instructions",
         "msg.revprefdescription" => "Review preference instructions",
+        "msg.finalsubmit" => "Final version submission notice",
         "clickthrough_submit" => "Clickthrough submission terms",
 	"mailbody_requestreview" => "Mail template for external review requests",
         "opt.contactName" => "Name of site contact",
@@ -1837,13 +1839,15 @@ function doDecGroup() {
 
     // Final versions
     echo "<h3 class=\"settings g\">Final versions</h3>\n";
-    echo "<table id='foldfinal' class='foldo'>";
-    doCheckbox('final_open', "<b>Collect final versions of accepted papers<span class='fx'>:</span></b>", true, "void fold('final',!this.checked)");
-    echo "<tr class='fx'><td></td><td><table>";
+    echo "<table id='foldfinal' class='fold2o'>";
+    doCheckbox('final_open', "<b>Collect final versions of accepted papers<span class='fx'>:</span></b>", true, "void fold('final',!this.checked,2)");
+    echo "<tr class='fx2'><td></td><td><table>";
     doDateRow("final_soft", "Deadline", "final_done", "lxcaption");
     doDateRow("final_done", "Hard deadline", null, "lxcaption");
     doGraceRow("final_grace", "Grace period", "lxcaption");
-    echo "</table><div class='gs'></div>",
+    echo "</table><div class='g'></div>";
+    do_message("msg.finalsubmit", "Final version submission notice");
+    echo "<div class='g'></div>",
 	"<small>To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</small>",
 	"</div></td></tr></table>\n\n";
     $Conf->footerScript("fold('final',!\$\$('cbfinal_open').checked)");
