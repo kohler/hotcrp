@@ -13,7 +13,7 @@ if (!isset($arg["m"]))
 if (isset($arg["h"]) || isset($arg["help"]) || !is_numeric($arg["d"]) || !is_numeric($arg["p"])
     || count($arg["_"]) > 1
     || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
-    fwrite(STDOUT, "Usage: php batch/s3upload.php [-p PID] [-m MIMETYPE] [-d DTYPE] FILE\n");
+    fwrite(STDOUT, "Usage: php batch/adddoc.php [-p PID] [-m MIMETYPE] [-d DTYPE] FILE\n");
     exit(0);
 }
 

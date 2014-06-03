@@ -5,7 +5,7 @@ $arg = getopt_rest($argv, "hn:", array("help", "name:"));
 if (isset($arg["h"]) || isset($arg["help"])
     || count($arg["_"]) > 1
     || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
-    fwrite(STDOUT, "Usage: php batch/jsonupload.php FILE\n");
+    fwrite(STDOUT, "Usage: php batch/savepapers.php FILE\n");
     exit(0);
 }
 
