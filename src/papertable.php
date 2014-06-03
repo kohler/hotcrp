@@ -1752,10 +1752,10 @@ class PaperTable {
         $pa = "<a href='" . hoturl("paper", "p=$prow->paperId") . "' class='q'>";
         echo "<table class='pban'><tr>
     <td class='pboxi'><div class='papnum'>",
-            "<h2>", $pa, "#", $prow->paperId, "</a></h2></div></td>\n";
+            "<h2 class=\"pnum\">", $pa, "#", $prow->paperId, "</a></h2></div></td>\n";
 
         // paper title
-        echo "    <td class='pboxt'><h2>", $pa;
+        echo "    <td class='pboxt'><h2 class=\"ptitle\">", $pa;
         $this->echoTitle();
         echo "</a></h2></td>
     <td class='pboxj'></td>

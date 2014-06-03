@@ -1635,19 +1635,19 @@ $blind\n";
         // See also CommentView::commentFlowEntry
         global $Conf;
         $barsep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
-        $a = "<a href='" . hoturl("paper", "p=$rrow->paperId#review" . unparseReviewOrdinal($rrow)) . "'>";
-        $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a
+        $a = "<a href='" . hoturl("paper", "p=$rrow->paperId#review" . unparseReviewOrdinal($rrow)) . "'";
+        $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a . ">"
             . Ht::img("review24.png", "[Review]", "dlimg")
-            . "</a></td><td class='pl_activityid'>"
-            . $a . "#$rrow->paperId</a></td><td class='pl_activitymain'><small>"
-            . $a . htmlspecialchars($rrow->shortTitle);
+            . "</a></td><td class='pl_activityid pnum'>"
+            . $a . ">#$rrow->paperId</a></td><td class='pl_activitymain'><small>"
+            . $a . " class=\"ptitle\">" . htmlspecialchars($rrow->shortTitle);
         if (strlen($rrow->shortTitle) != strlen($rrow->title))
             $t .= "...";
         $t .= "</a>";
         if ($contact->canViewReviewerIdentity($rrow, $rrow, false))
             $t .= $barsep . "<span class='hint'>review by</span> " . Text::user_html($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
         $t .= $barsep . "<span class='hint'>submitted</span> " . $Conf->parseableTime($rrow->reviewSubmitted, false);
-        $t .= "</small><br /><a class='q'" . substr($a, 3);
+        $t .= "</small><br /><a class='q'" . substr($a, 3) . ">";
 
         $revViewScore = $contact->viewReviewFieldsScore($rrow, $rrow);
         if ($rrow->reviewSubmitted) {

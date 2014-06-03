@@ -82,7 +82,7 @@ class IdPaperColumn extends PaperColumn {
     }
     public function content($pl, $row) {
         $href = $pl->_paperLink($row);
-        return "<a href='$href' tabindex='4'>#$row->paperId</a>";
+        return "<a href=\"$href\" class=\"pnum\" tabindex=\"4\">#$row->paperId</a>";
     }
     public function text($pl, $row) {
         return $row->paperId;
@@ -153,7 +153,7 @@ class TitlePaperColumn extends PaperColumn {
     public function content($pl, $row) {
         $href = $pl->_paperLink($row);
         $x = Text::highlight($row->title, defval($pl->search->matchPreg, "title"));
-        return "<a href='$href' tabindex='5'>" . $x . "</a>" . $pl->_contentDownload($row);
+        return "<a href=\"$href\" class=\"ptitle\" tabindex=\"5\">" . $x . "</a>" . $pl->_contentDownload($row);
     }
     public function text($pl, $row) {
         return $row->title;

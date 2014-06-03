@@ -344,12 +344,12 @@ class CommentView {
     static function commentFlowEntry($contact, $crow, $trclass) {
         // See also ReviewForm::reviewFlowEntry
         global $Conf;
-        $a = "<a href='" . hoturl("paper", "p=$crow->paperId#comment$crow->commentId") . "'>";
-        $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a
+        $a = "<a href=\"" . hoturl("paper", "p=$crow->paperId#comment$crow->commentId") . "\"";
+        $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a . ">"
             . Ht::img("comment24.png", "[Comment]", "dlimg")
-            . "</a></td><td class='pl_activityid'>"
-            . $a . "#$crow->paperId</a></td><td class='pl_activitymain'><small>"
-            . $a . htmlspecialchars($crow->shortTitle);
+            . "</a></td><td class='pl_activityid pnum'>"
+            . $a . ">#$crow->paperId</a></td><td class='pl_activitymain'><small>"
+            . $a . " class=\"ptitle\">" . htmlspecialchars($crow->shortTitle);
         if (strlen($crow->shortTitle) != strlen($crow->title))
             $t .= "...";
         $t .= "</a>";
@@ -357,7 +357,7 @@ class CommentView {
             $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>comment by</span> " . Text::user_html($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
         $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>posted</span> " . $Conf->parseableTime($crow->timeModified, false);
         $t .= "</small><br /><a class='q'" . substr($a, 3)
-            . htmlspecialchars($crow->shortComment);
+            . ">" . htmlspecialchars($crow->shortComment);
         if (strlen($crow->shortComment) < strlen($crow->comment))
             $t .= "...";
         return $t . "</a></td></tr>";
