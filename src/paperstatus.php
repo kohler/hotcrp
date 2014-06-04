@@ -245,6 +245,7 @@ class PaperStatus {
     }
 
     function normalize($pj, $old_pj) {
+        // Errors prevent saving
         global $Conf, $Now;
         foreach (array("topics", "options") as $k)
             if (!is_object(@$pj->$k))
@@ -460,9 +461,8 @@ class PaperStatus {
     }
 
     function check_invariants($pj) {
+        // Errors don't prevent saving
         global $Now;
-
-        // Title, abstract, authors
         if ($pj->title == "")
             $this->set_error("title", "Each paper must have a title.");
         if ($pj->abstract == "")
@@ -477,9 +477,9 @@ class PaperStatus {
             else
                 $this->set_error("contacts", "Contact email " . htmlspecialchars($reg->email) . " is invalid.");
         if (count($pj->bad_topics))
-            $this->set_error("topics", "Unknown topics ignored (" . commajoin($pj->bad_topics) . ").");
+            $this->set_warning("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($pj->bad_topics)) . ").");
         if (count($pj->bad_options))
-            $this->set_error("options", "Unknown options ignored (" . commajoin(array_keys($pj->bad_options)) . ").");
+            $this->set_warning("options", "Unknown options ignored (" . htmlspecialchars(commajoin(array_keys($pj->bad_options))) . ").");
     }
 
     static function author_information($pj) {
