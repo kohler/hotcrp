@@ -145,6 +145,7 @@ src/schema.sql
 src/trackercomet.js
 src/updateschema.php
 src/useractions.php
+src/userstatus.php
 
 Code/.htaccess
 

@@ -25,12 +25,12 @@ class Contact {
     var $defaultWatch = WATCH_COMMENT;
 
     // Address information (loaded separately)
-    var $addressLine1;
-    var $addressLine2;
-    var $city;
-    var $state;
-    var $zipCode;
-    var $country;
+    public $addressLine1 = false;
+    public $addressLine2;
+    public $city;
+    public $state;
+    public $zipCode;
+    public $country;
 
     // Roles
     const ROLE_PC = 1;
@@ -144,6 +144,11 @@ class Contact {
         $this->roles = $roles;
         $this->isPC = ($roles & self::ROLE_PCLIKE) != 0;
         $this->privChair = ($roles & (self::ROLE_ADMIN|self::ROLE_CHAIR)) != 0;
+    }
+
+    static function external_login() {
+        global $Opt;
+        return @$Opt["ldapLogin"] || @$Opt["httpAuthLogin"];
     }
 
 
@@ -502,40 +507,46 @@ class Contact {
     }
 
     function save() {
-        global $Conf;
+        global $Conf, $Now;
         $this->trim();
-        $qa = ", roles='$this->roles', defaultWatch='$this->defaultWatch'";
+        $qf = array();
+        foreach (array("firstName", "lastName", "email", "affiliation",
+                       "voicePhoneNumber", "password", "collaborators",
+                       "roles", "defaultWatch") as $k)
+            $qf[] = "$k='" . sqlq($this->$k) . "'";
         if ($this->preferredEmail != "")
-            $qa .= ", preferredEmail='" . sqlq($this->preferredEmail) . "'";
+            $qf[] = "preferredEmail='" . sqlq($this->preferredEmail) . "'";
+        else
+            $qf[] = "preferredEmail=null";
         if ($Conf->sversion >= 35) {
             if ($this->contactTags)
-                $qa .= ", contactTags='" . sqlq($this->contactTags) . "'";
+                $qf[] = "contactTags='" . sqlq($this->contactTags) . "'";
             else
-                $qa .= ", contactTags=null";
+                $qf[] = "contactTags=null";
         }
         if ($Conf->sversion >= 47)
-            $qa .= ", disabled=" . ($this->disabled ? 1 : 0);
+            $qf[] = "disabled=" . ($this->disabled ? 1 : 0);
         if ($Conf->sversion >= 71) {
             if (!$this->data_)
-                $qa .= ", data=NULL";
+                $qf[] = "data=NULL";
             else if (is_string($this->data_))
-                $qa .= ", data='" . sqlq($this->data_) . "'";
+                $qf[] = "data='" . sqlq($this->data_) . "'";
             else if (is_object($this->data_))
-                $qa .= ", data='" . sqlq(json_encode($this->data_)) . "'";
+                $qf[] = "data='" . sqlq(json_encode($this->data_)) . "'";
         }
-        $query = sprintf("update ContactInfo set firstName='%s', lastName='%s',
-                email='%s', affiliation='%s', voicePhoneNumber='%s',
-                password='%s', collaborators='%s'$qa
-                where contactId='%s'",
-                         sqlq($this->firstName), sqlq($this->lastName),
-                         sqlq($this->email), sqlq($this->affiliation),
-                         sqlq($this->voicePhoneNumber),
-                         sqlq($this->password),
-                         sqlq($this->collaborators),
-                         $this->contactId);
-        $result = $Conf->qe($query);
+        $q = ($this->contactId ? "update" : "insert into")
+            . " ContactInfo set " . join(", ", $qf);
+        if ($this->contactId)
+            $q .= " where contactId=" . $this->contactId;
+        else {
+            $this->creationTime = $Now;
+            $q .= ", creationTime=$Now";
+        }
+        $result = $Conf->qe($q);
         if (!$result)
             return $result;
+        if (!$this->contactId)
+            $this->contactId = $Conf->lastInsertId();
         $Conf->qx("delete from ContactAddress where contactId=$this->contactId");
         if ($this->addressLine1 || $this->addressLine2 || $this->city
             || $this->state || $this->zipCode || $this->country) {
@@ -662,6 +673,7 @@ class Contact {
     }
 
     private function register_by_email($email, $reg) {
+        // For more complicated registrations, use UserStatus
         global $Conf, $Opt, $Now;
         $reg = (object) ($reg === true ? array() : $reg);
 
@@ -699,24 +711,6 @@ class Contact {
                 $qa .= ",$k";
                 $qb .= ",'" . sqlq($reg->$k) . "'";
             }
-        if (isset($reg->tags) && is_string($reg->tags))
-            $reg->tags = preg_split('/\s+/', $reg->tags);
-        if (isset($reg->tags)) {
-            $tags = array();
-            $tagger = new Tagger;
-            foreach ($reg->tags as $t)
-                if ($t == "")
-                    /* do nothing */;
-                else if (!$tagger->check($t, Tagger::NOPRIVATE | Tagger::NOVALUE | Tagger::NOCHAIR))
-                    $Conf->errorMsg($tagger->error_html);
-                else if ($t != "pc")
-                    $tags[] = $t;
-            if (count($tags)) {
-                $qa .= ",contactTags";
-                $qb .= ",' " . join(" ", $tags) . " '";
-            }
-        }
-
         $result = $Conf->ql("insert into ContactInfo ($qa) values ($qb)");
         if (!$result)
             return false;
@@ -731,27 +725,6 @@ class Contact {
         // Success! Save newly authored papers
         if (count($authored_papers))
             $this->save_authored_papers($authored_papers);
-
-        // Set roles
-        if (isset($reg->roles)) {
-            $rolex = $reg->roles;
-            if (is_string($rolex))
-                $rolex = preg_split('/[\s,]+/', $rolex);
-            if (is_array($rolex) || is_object($rolex)) {
-                $r = 0;
-                foreach ($rolex as $k => $v)
-                    if ($v === "pc" || ($v && $k === "pc"))
-                        $r |= self::ROLE_PC;
-                    else if ($v === "admin" || ($v && $k === "admin")
-                             || $v === "sysadmin" || ($v && $k === "sysadmin"))
-                        $r |= self::ROLE_ADMIN;
-                    else if ($v === "chair" || ($v && $k === "chair"))
-                        $r |= self::ROLE_CHAIR | self::ROLE_PC;
-                $rolex = $r;
-            }
-            if (is_int($rolex) && $rolex > 0)
-                $this->save_roles($rolex, null);
-        }
 
         $this->password_plaintext = $password;
         return true;
@@ -785,14 +758,14 @@ class Contact {
         return $ok ? $acct : null;
     }
 
-    function lookupAddress() {
+    function load_address() {
         global $Conf;
-        $result = $Conf->qx("select * from ContactAddress where contactId=$this->contactId");
-        foreach (self::_addressKeys() as $k)
-            $this->$k = null;
-        if (($row = edb_orow($result)))
+        if ($this->addressLine1 === false && $this->contactId) {
+            $result = $Conf->qx("select * from ContactAddress where contactId=$this->contactId");
+            $row = edb_orow($result);
             foreach (self::_addressKeys() as $k)
-                $this->$k = $row->$k;
+                $this->$k = @($row->$k);
+        }
     }
 
     static function id_by_email($email) {

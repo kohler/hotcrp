@@ -25,9 +25,11 @@ $Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC,
 $json = json_decode(file_get_contents("$ConfSitePATH/test/testdb.json"));
 if (!$json)
     die("* test/testdb.json error: " . json_last_error_msg() . "\n");
-foreach ($json->contacts as $c)
-    if (!Contact::find_by_email($c->email, $c))
+foreach ($json->contacts as $c) {
+    $us = new UserStatus;
+    if (!$us->save($c))
         die("* failed to create user $c->email\n");
+}
 foreach ($json->papers as $p) {
     $ps = new PaperStatus;
     if (!$ps->save($p))
