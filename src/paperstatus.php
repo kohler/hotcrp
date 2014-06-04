@@ -1,5 +1,5 @@
 <?php
-// paperactions.php -- HotCRP helpers for common paper actions
+// paperstatus.php -- HotCRP helper for reading/storing papers as JSON
 // HotCRP is Copyright (c) 2008-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
@@ -195,7 +195,7 @@ class PaperStatus {
             $this->errf[$field] = true;
         $this->errmsg[] = $html;
         if (!$field
-	    || !$this->allow_error
+            || !$this->allow_error
             || array_search($field, $this->allow_error) === false)
             ++$this->nerrors;
     }
@@ -246,7 +246,7 @@ class PaperStatus {
 
     function normalize($pj, $old_pj) {
         global $Conf, $Now;
-        foreach (array("topics", "options", "contacts") as $k)
+        foreach (array("topics", "options") as $k)
             if (!is_object(@$pj->$k))
                 $pj->$k = (object) array();
 
@@ -414,9 +414,14 @@ class PaperStatus {
 
         // Contacts
         $contacts = @$pj->contacts;
-        $old_contacts = $old_pj ? $old_pj->contacts : (object) array();
+        if (is_object($contacts))
+            $contacts = (array) $contacts;
+        $old_contacts = $old_pj ? $old_pj->contacts : array();
+        if (is_object($old_contacts))
+            $old_contacts = (array) $old_contacts;
         $pj->contacts = array();
         $pj->bad_contacts = array();
+        // 1. authors who are contacts
         foreach ($pj->authors as $au)
             if (@$au->contact) {
                 if (@$au->email && validateEmail($au->email))
@@ -424,7 +429,8 @@ class PaperStatus {
                 else
                     $pj->bad_contacts[] = $au;
             }
-        if ($contacts && (is_array($contacts) || is_object($contacts)))
+        // 2. named contacts
+        if ($contacts && is_array($contacts))
             foreach ($contacts as $k => $v) {
                 if (!$v)
                     continue;
@@ -441,9 +447,7 @@ class PaperStatus {
                     if (!@$v->email && is_string($k))
                         $v->email = $k;
                     $email = strtolower($v->email);
-                    if (!validateEmail($email)
-                        && !@$old_contacts->$email
-                        && !Contact::id_by_email($email))
+                    if (!validateEmail($email))
                         $pj->bad_contacts[] = $v;
                     else if (!@$pj->contacts[$email])
                         $pj->contacts[$email] = $v;
@@ -646,7 +650,7 @@ class PaperStatus {
             }
             if ($joindoc
                 && (!$old_joindoc || $old_joindoc->docid != $joindoc->docid)
-		&& @$joindoc->size && @$joindoc->timestamp) {
+                && @$joindoc->size && @$joindoc->timestamp) {
                 $q[] = "size=" . $joindoc->size;
                 $q[] = "mimetype='" . sqlq($joindoc->mimetype) . "'";
                 $q[] = "sha1='" . sqlq($joindoc->sha1) . "'";
