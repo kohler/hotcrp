@@ -23,15 +23,15 @@ if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
     $_REQUEST["p"] = preg_split('/\s+/', $_REQUEST["p"]);
 if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"]) && $kind == "c") {
     foreach ($_REQUEST["p"] as $p)
-	if (($p = cvtint($p)) > 0)
-	    $_REQUEST["assrev$p"] = -1;
+        if (($p = cvtint($p)) > 0)
+            $_REQUEST["assrev$p"] = -1;
 }
 if (isset($_REQUEST["papx"]) && is_string($_REQUEST["papx"]))
     $_REQUEST["papx"] = preg_split('/\s+/', $_REQUEST["papx"]);
 if (isset($_REQUEST["papx"]) && is_array($_REQUEST["papx"])) {
     foreach ($_REQUEST["papx"] as $p)
-	if (($p = cvtint($p)) > 0 && !isset($_REQUEST["assrev$p"]))
-	    $_REQUEST["assrev$p"] = 0;
+        if (($p = cvtint($p)) > 0 && !isset($_REQUEST["assrev$p"]))
+            $_REQUEST["assrev$p"] = 0;
 }
 
 // set review round
@@ -75,44 +75,44 @@ function saveAssignments($reviewer) {
     $while = "while saving review assignments";
     $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperReviewRefused write, PaperConflict write" . $Conf->tagRoundLocker($kind == "a"), $while);
     if (!$result)
-	return $result;
+        return $result;
 
     $result = $Conf->qe("select Paper.paperId, PaperConflict.conflictType,
-	reviewId, reviewType, reviewModified
-	from Paper
-	left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=$reviewer)
-	left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$reviewer)
-	where timeSubmitted>0
-	order by paperId asc, reviewId asc", $while);
+        reviewId, reviewType, reviewModified
+        from Paper
+        left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=$reviewer)
+        left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$reviewer)
+        where timeSubmitted>0
+        order by paperId asc, reviewId asc", $while);
 
     $lastPaperId = -1;
     $del = $ins = "";
     $when = time();
     while (($row = edb_orow($result))) {
-	if ($row->paperId == $lastPaperId
-	    || $row->conflictType >= CONFLICT_AUTHOR
-	    || !isset($_REQUEST["assrev$row->paperId"]))
-	    continue;
-	$lastPaperId = $row->paperId;
-	$type = cvtint($_REQUEST["assrev$row->paperId"], 0);
-	if ($type >= 0 && $row->conflictType > 0 && $row->conflictType < CONFLICT_AUTHOR)
-	    $del .= " or paperId=$row->paperId";
-	if ($type < 0 && $row->conflictType < CONFLICT_CHAIRMARK)
-	    $ins .= ", ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")";
-	if ($kind == "a")
-	    $Me->assign_paper($row->paperId, $row, $reviewer, $type, $when);
+        if ($row->paperId == $lastPaperId
+            || $row->conflictType >= CONFLICT_AUTHOR
+            || !isset($_REQUEST["assrev$row->paperId"]))
+            continue;
+        $lastPaperId = $row->paperId;
+        $type = cvtint($_REQUEST["assrev$row->paperId"], 0);
+        if ($type >= 0 && $row->conflictType > 0 && $row->conflictType < CONFLICT_AUTHOR)
+            $del .= " or paperId=$row->paperId";
+        if ($type < 0 && $row->conflictType < CONFLICT_CHAIRMARK)
+            $ins .= ", ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")";
+        if ($kind == "a")
+            $Me->assign_paper($row->paperId, $row, $reviewer, $type, $when);
     }
 
     if ($ins)
-	$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))", $while);
+        $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))", $while);
     if ($del)
-	$Conf->qe("delete from PaperConflict where contactId=$reviewer and (" . substr($del, 4) . ")", $while);
+        $Conf->qe("delete from PaperConflict where contactId=$reviewer and (" . substr($del, 4) . ")", $while);
 
     $Conf->qe("unlock tables", $while);
     $Conf->updateRevTokensSetting(false);
 
     if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $when)
-	$Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
+        $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
 }
 
 
@@ -155,9 +155,9 @@ else
 echo "<table><tr><td><div class='aahc assignpc_pcsel'><form method='get' action='", hoturl("manualassign"), "' accept-charset='UTF-8' id='selectreviewerform'><div class='inform'>\n";
 
 $result = $Conf->qe("select PCMember.contactId, count(reviewId) as reviewCount
-		from PCMember
-		left join PaperReview on (PCMember.contactId=PaperReview.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
-		group by contactId");
+                from PCMember
+                left join PaperReview on (PCMember.contactId=PaperReview.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
+                group by contactId");
 $rev_count = array();
 while (($row = edb_row($result)))
     $rev_count[$row[0]] = $row[1];
@@ -193,21 +193,21 @@ echo "<tr><td>Paper selection: &nbsp;</td>",
 $Conf->footerScript("mktemptext('manualassignq','(All)')");
 
 echo Ht::radio("kind", "a", $kind == "a",
-	       array("onchange" => "hiliter(this)")),
+               array("onchange" => "hiliter(this)")),
     "&nbsp;", Ht::label("Assign reviews and/or conflicts"), "<br />\n",
     Ht::radio("kind", "c", $kind == "c",
-	       array("onchange" => "hiliter(this)")),
+               array("onchange" => "hiliter(this)")),
     "&nbsp;", Ht::label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
 
 if ($kind == "a") {
     echo "<tr><td colspan='2'><div class='g'></div></td></tr>\n",
-	"<tr><td>",
-	(isset($Error["rev_roundtag"]) ? "<span class='error'>" : ""),
-	"Review round: &nbsp;</td>",
-	"<td><input id='assrevroundtag' class='textlite temptextoff' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" />",
-	(isset($Error["rev_roundtag"]) ? "</span>" : ""),
-	" &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a>\n",
-	"</td></tr>";
+        "<tr><td>",
+        (isset($Error["rev_roundtag"]) ? "<span class='error'>" : ""),
+        "Review round: &nbsp;</td>",
+        "<td><input id='assrevroundtag' class='textlite temptextoff' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" />",
+        (isset($Error["rev_roundtag"]) ? "</span>" : ""),
+        " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a>\n",
+        "</td></tr>";
     $Conf->footerScript("mktemptext('assrevroundtag','(None)')");
 }
 
@@ -238,34 +238,34 @@ if ($reviewer > 0) {
     // Conflict information
     $result = $Conf->qe("select firstName, lastName, affiliation, collaborators from ContactInfo where contactId=$reviewer");
     if ($result && ($row = edb_orow($result))) {
-	if ($row->collaborators)
-	    $col[1][] = "<div class='f-c'>Collaborators</div><div class='f-e'>"
-		. nl2br(htmlspecialchars($row->collaborators))
-		. "</div>";
+        if ($row->collaborators)
+            $col[1][] = "<div class='f-c'>Collaborators</div><div class='f-e'>"
+                . nl2br(htmlspecialchars($row->collaborators))
+                . "</div>";
 
-	$useless_words = array("university" => 1, "the" => 1, "and" => 1, "of" => 1, "univ" => 1, "none" => 1, "a" => 1, "an" => 1, "jr" => 1, "sr" => 1, "iii" => 1);
+        $useless_words = array("university" => 1, "the" => 1, "and" => 1, "of" => 1, "univ" => 1, "none" => 1, "a" => 1, "an" => 1, "jr" => 1, "sr" => 1, "iii" => 1);
 
-	// search outline from old CRP, done here in a very different way
-	preg_match_all('/[a-z&]{2,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation), $match);
-	$useless = $useless_words;
-	$search = array();
-	$showco = "";
-	foreach ($match[0] as $s)
-	    if (!isset($useless[$s])) {
-		$search[] = "co:" . (ctype_alnum($s) ? $s : "\"$s\"");
-		$showco .= $s . " ";
-		$useless[$s] = 1;
-	    }
+        // search outline from old CRP, done here in a very different way
+        preg_match_all('/[a-z&]{2,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation), $match);
+        $useless = $useless_words;
+        $search = array();
+        $showco = "";
+        foreach ($match[0] as $s)
+            if (!isset($useless[$s])) {
+                $search[] = "co:" . (ctype_alnum($s) ? $s : "\"$s\"");
+                $showco .= $s . " ";
+                $useless[$s] = 1;
+            }
 
-	preg_match_all('/[a-z&]{2,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation . " " . $row->collaborators), $match);
-	$useless = $useless_words;
-	$showau = "";
-	foreach ($match[0] as $s)
-	    if (!isset($useless[$s])) {
-		$search[] = "au:" . (ctype_alnum($s) ? $s : "\"$s\"");
-		$showau .= $s . " ";
-		$useless[$s] = 1;
-	    }
+        preg_match_all('/[a-z&]{2,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation . " " . $row->collaborators), $match);
+        $useless = $useless_words;
+        $showau = "";
+        foreach ($match[0] as $s)
+            if (!isset($useless[$s])) {
+                $search[] = "au:" . (ctype_alnum($s) ? $s : "\"$s\"");
+                $showau .= $s . " ";
+                $useless[$s] = 1;
+            }
 
         if ($showau !== "")
             $col[2][] = "<div class='f-c'>Conflict search terms for paper authors</div><div class='f-e'>"
@@ -273,7 +273,7 @@ if ($reviewer > 0) {
         if ($showco !== "")
             $col[2][] = "<div class='f-c'>Conflict search terms for paper collaborators</div><div class='f-e'>"
                 . htmlspecialchars(rtrim($showco)) . "</div>";
-	$col[2][] = "<a href=\"" . hoturl("search", "q=" . urlencode(join(" OR ", $search)) . "&amp;linkto=assign") . "\">Search for potential conflicts</a>";
+        $col[2][] = "<a href=\"" . hoturl("search", "q=" . urlencode(join(" OR ", $search)) . "&amp;linkto=assign") . "\">Search for potential conflicts</a>";
     }
 
     // Topic links
@@ -284,25 +284,25 @@ if ($reviewer > 0) {
         if ($row[1] != 0)
             $interest[$row[1] > 0 ? 1 : 0][$row[0]] = $row[1];
     if (count($interest[1]))
-	$col[0][] = "<div class='f-c'>High interest topics</div><div class='f-e'>"
+        $col[0][] = "<div class='f-c'>High interest topics</div><div class='f-e'>"
             . join(", ", $rf->webTopicArray(array_keys($interest[1]), array_values($interest[1])))
-	    . "</div>";
+            . "</div>";
     if (count($interest[0]))
-	$col[0][] = "<div class='f-c'>Low interest topics</div><div class='f-e'>"
+        $col[0][] = "<div class='f-c'>Low interest topics</div><div class='f-e'>"
             . join(", ", $rf->webTopicArray(array_keys($interest[0]), array_values($interest[0])))
-	    . "</div>";
+            . "</div>";
 
     // Table
     if (count($col[0]) || count($col[1]) || count($col[2])) {
-	echo "<table><tr>\n";
-	foreach ($col as $thecol)
-	    if (count($thecol)) {
-		echo "<td class='top'><table>";
-		foreach ($thecol as $td)
-		    echo "<tr><td style='padding:0 2em 1ex 0'>", $td, "</td></tr>";
-		echo "</table></td>\n";
-	    }
-	echo "</tr></table>\n";
+        echo "<table><tr>\n";
+        foreach ($col as $thecol)
+            if (count($thecol)) {
+                echo "<td class='top'><table>";
+                foreach ($thecol as $td)
+                    echo "<tr><td style='padding:0 2em 1ex 0'>", $td, "</td></tr>";
+                echo "</table></td>\n";
+            }
+        echo "</tr></table>\n";
     }
 
     // ajax assignment form
@@ -312,7 +312,7 @@ if ($reviewer > 0) {
         Ht::hidden("pcs$reviewer", ""),
         Ht::hidden("reviewer", $reviewer),
         Ht::hidden("rev_roundtag", $rev_roundtag),
-	"</div></form>\n\n";
+        "</div></form>\n\n";
 
     // main assignment form
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
@@ -323,29 +323,29 @@ if ($reviewer > 0) {
     if ($kind != "c")
         $paperList->display .= "reviewers ";
     if (isset($showau)) {
-	$search->overrideMatchPreg = true;
-	$search->matchPreg = array();
-	if ($showau)
-	    $search->matchPreg["authorInformation"] = make_match_preg($showau);
-	if ($showco)
-	    $search->matchPreg["collaborators"] = make_match_preg($showco);
+        $search->overrideMatchPreg = true;
+        $search->matchPreg = array();
+        if ($showau)
+            $search->matchPreg["authorInformation"] = make_match_preg($showau);
+        if ($showco)
+            $search->matchPreg["collaborators"] = make_match_preg($showco);
     }
     $a = isset($_REQUEST["sort"]) ? "&amp;sort=" . urlencode($_REQUEST["sort"]) : "";
     echo "<div class='aahc'><form class='assignpc' method='post' action=\"", hoturl_post("manualassign", "reviewer=$reviewer&amp;kind=$kind$a"),
-	"\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
+        "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
         Ht::hidden("t", $_REQUEST["t"]),
         Ht::hidden("q", $_REQUEST["q"]),
         Ht::hidden("papx", join(" ", $search->paperList())),
         "<div class=\"aa\">",
         Ht::submit("update", "Save assignments", array("class" => "bb")),
-	"<span style='padding:0 0 0 2em'>",
-	Ht::checkbox(false, false, true, array("id" => "assrevimmediate")),
-	"&nbsp;", Ht::label("Automatically save assignments", "assrevimmediate"),
-	"</span></div>\n",
-	$paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"),
+        "<span style='padding:0 0 0 2em'>",
+        Ht::checkbox(false, false, true, array("id" => "assrevimmediate")),
+        "&nbsp;", Ht::label("Automatically save assignments", "assrevimmediate"),
+        "</span></div>\n",
+        $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"),
                          array("class" => "pltable_full", "header_links" => true,
                                "nofooter" => true)),
-	"<div class='aa'>",
+        "<div class='aa'>",
         Ht::submit("update", "Save assignments", array("class" => "bb")),
         "</div></div></form></div>\n";
 }

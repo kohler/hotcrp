@@ -49,23 +49,23 @@ if ((isset($_REQUEST["qa"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"]))
 
 // paper selection
 PaperSearch::parsePapersel();
-PaperSearch::clearPaperselRequest();	// Don't want "p=" and "pap=" to
-					// clutter up URLs
+PaperSearch::clearPaperselRequest();    // Don't want "p=" and "pap=" to
+                                        // clutter up URLs
 
 function paperselPredicate($papersel, $prefix = "") {
     if (count($papersel) == 0)
-	return "${prefix}paperId=-1";
+        return "${prefix}paperId=-1";
     else if (count($papersel) == 1)
-	return "${prefix}paperId=$papersel[0]";
+        return "${prefix}paperId=$papersel[0]";
     else
-	return "${prefix}paperId in (" . join(", ", $papersel) . ")";
+        return "${prefix}paperId in (" . join(", ", $papersel) . ")";
 }
 
 function cleanAjaxResponse(&$response, $type) {
     global $papersel;
     foreach ($papersel as $pid)
-	if (!isset($response[$type . $pid]))
-	    $response[$type . $pid] = "";
+        if (!isset($response[$type . $pid]))
+            $response[$type . $pid] = "";
 }
 
 
@@ -85,15 +85,15 @@ if (($getaction == "paper" || $getaction == "final"
     $result = $Conf->qe($q, "while selecting papers");
     $downloads = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
-	if (!$Me->canViewPaper($row, $whyNot, true))
-	    $Conf->errorMsg(whyNotText($whyNot, "view"));
-	else
-	    $downloads[] = $row->paperId;
+        if (!$Me->canViewPaper($row, $whyNot, true))
+            $Conf->errorMsg(whyNotText($whyNot, "view"));
+        else
+            $downloads[] = $row->paperId;
     }
 
-    session_write_close();	// to allow concurrent clicks
+    session_write_close();      // to allow concurrent clicks
     if ($Conf->downloadPaper($downloads, true, $dt))
-	exit;
+        exit;
 }
 
 
@@ -120,35 +120,35 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = PaperInfo::fetch($result, $Me)) {
-	if (!$Me->canViewPaper($prow, $whyNot))
-	    $Conf->errorMsg(whyNotText($whyNot, "view"));
-	else {
-	    $text = "===========================================================================\n";
-	    $n = "Paper #" . $prow->paperId . ": ";
-	    $l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
-	    $text .= wordWrapIndent($prow->title, $n, $l) . "\n";
-	    $text .= "---------------------------------------------------------------------------\n";
-	    $l = strlen($text);
-	    if ($Me->canViewAuthors($prow, $_REQUEST["t"] == "a")) {
+        if (!$Me->canViewPaper($prow, $whyNot))
+            $Conf->errorMsg(whyNotText($whyNot, "view"));
+        else {
+            $text = "===========================================================================\n";
+            $n = "Paper #" . $prow->paperId . ": ";
+            $l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
+            $text .= wordWrapIndent($prow->title, $n, $l) . "\n";
+            $text .= "---------------------------------------------------------------------------\n";
+            $l = strlen($text);
+            if ($Me->canViewAuthors($prow, $_REQUEST["t"] == "a")) {
                 cleanAuthor($prow);
-		$text .= wordWrapIndent($prow->authorInformation, "Authors: ", 14) . "\n";
+                $text .= wordWrapIndent($prow->authorInformation, "Authors: ", 14) . "\n";
             }
-	    if ($prow->topicIds != "") {
-		$tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
-		$text .= wordWrapIndent(substr($tt, 2), "Topics: ", 14) . "\n";
-	    }
-	    if ($l != strlen($text))
-		$text .= "---------------------------------------------------------------------------\n";
-	    $text .= rtrim($prow->abstract) . "\n\n";
-	    defappend($texts[$paperselmap[$prow->paperId]], $text);
-	    $rfSuffix = (count($texts) == 1 ? $prow->paperId : "s");
-	}
+            if ($prow->topicIds != "") {
+                $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
+                $text .= wordWrapIndent(substr($tt, 2), "Topics: ", 14) . "\n";
+            }
+            if ($l != strlen($text))
+                $text .= "---------------------------------------------------------------------------\n";
+            $text .= rtrim($prow->abstract) . "\n\n";
+            defappend($texts[$paperselmap[$prow->paperId]], $text);
+            $rfSuffix = (count($texts) == 1 ? $prow->paperId : "s");
+        }
     }
 
     if (count($texts)) {
-	ksort($texts);
-	downloadText(join("", $texts), "abstract$rfSuffix");
-	exit;
+        ksort($texts);
+        downloadText(join("", $texts), "abstract$rfSuffix");
+        exit;
     }
 }
 
@@ -178,11 +178,11 @@ function downloadReviews(&$texts, &$errors) {
 
     ksort($texts);
     if (count($texts) == 0) {
-	if (count($errors) == 0)
-	    $Conf->errorMsg("No papers selected.");
-	else
-	    $Conf->errorMsg(join("<br />\n", array_keys($errors)) . "<br />Nothing to download.");
-	return;
+        if (count($errors) == 0)
+            $Conf->errorMsg("No papers selected.");
+        else
+            $Conf->errorMsg(join("<br />\n", array_keys($errors)) . "<br />Nothing to download.");
+        return;
     }
 
     $getforms = ($getaction == "revform" || $getaction == "revformz");
@@ -191,45 +191,45 @@ function downloadReviews(&$texts, &$errors) {
     $warnings = array();
     $nerrors = 0;
     foreach ($errors as $ee => $iserror) {
-	$warnings[] = whyNotToText($ee);
-	if ($iserror)
-	    $nerrors++;
+        $warnings[] = whyNotToText($ee);
+        if ($iserror)
+            $nerrors++;
     }
     if ($nerrors)
-	array_unshift($warnings, "Some " . ($getforms ? "review forms" : "reviews") . " are missing:");
+        array_unshift($warnings, "Some " . ($getforms ? "review forms" : "reviews") . " are missing:");
 
     if ($getforms && (count($texts) == 1 || !$gettext))
-	$rfname = "review";
+        $rfname = "review";
     else
-	$rfname = "reviews";
+        $rfname = "reviews";
     if (count($texts) == 1 && $gettext)
-	$rfname .= $papersel[key($texts)];
+        $rfname .= $papersel[key($texts)];
 
     $rf = reviewForm();
     if ($getforms)
-	$header = $rf->textFormHeader(count($texts) > 1 && $gettext, true);
+        $header = $rf->textFormHeader(count($texts) > 1 && $gettext, true);
     else
-	$header = "";
+        $header = "";
 
     if ($gettext) {
-	$text = $header;
-	if (count($warnings) && $getforms) {
-	    foreach ($warnings as $w)
-		$text .= wordWrapIndent(whyNotToText($w) . "\n", "==-== ", "==-== ");
-	    $text .= "\n";
-	} else if (count($warnings))
-	    $text .= join("\n", $warnings) . "\n\n";
-	$text .= join("", $texts);
-	downloadText($text, $rfname);
-	exit;
+        $text = $header;
+        if (count($warnings) && $getforms) {
+            foreach ($warnings as $w)
+                $text .= wordWrapIndent(whyNotToText($w) . "\n", "==-== ", "==-== ");
+            $text .= "\n";
+        } else if (count($warnings))
+            $text .= join("\n", $warnings) . "\n\n";
+        $text .= join("", $texts);
+        downloadText($text, $rfname);
+        exit;
     } else {
         $zip = new ZipDocument($Opt["downloadPrefix"] . "reviews.zip");
         $zip->warnings = $warnings;
-	foreach ($texts as $sel => $text)
-	    $zip->add($header . $text, $Opt["downloadPrefix"] . $rfname . $papersel[$sel] . ".txt");
-	$result = $zip->download();
-	if (!$result->error)
-	    exit;
+        foreach ($texts as $sel => $text)
+            $zip->add($header . $text, $Opt["downloadPrefix"] . $rfname . $papersel[$sel] . ".txt");
+        $result = $zip->download();
+        if (!$result->error)
+            exit;
     }
 }
 
@@ -240,7 +240,7 @@ if (($getaction == "revform" || $getaction == "revformz")
     && !isset($papersel)) {
     $rf = reviewForm();
     $text = $rf->textFormHeader("blank", true)
-	. $rf->textForm(null, null, $Me, null) . "\n";
+        . $rf->textForm(null, null, $Me, null) . "\n";
     downloadText($text, "review");
     exit;
 } else if ($getaction == "revform" || $getaction == "revformz") {
@@ -250,19 +250,19 @@ if (($getaction == "revform" || $getaction == "revformz")
     $texts = array();
     $errors = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
-	$canreview = $Me->canReview($row, null, $whyNot);
-	if (!$canreview && !isset($whyNot["deadline"])
-	    && !isset($whyNot["reviewNotAssigned"]))
-	    $errors[whyNotText($whyNot, "review")] = true;
-	else {
-	    if (!$canreview) {
-		$t = whyNotText($whyNot, "review");
-		$errors[$t] = false;
-		if (!isset($whyNot["deadline"]))
-		    defappend($texts[$paperselmap[$row->paperId]], wordWrapIndent(strtoupper(whyNotToText($t)) . "\n\n", "==-== ", "==-== "));
-	    }
-	    defappend($texts[$paperselmap[$row->paperId]], $rf->textForm($row, $row, $Me, null) . "\n");
-	}
+        $canreview = $Me->canReview($row, null, $whyNot);
+        if (!$canreview && !isset($whyNot["deadline"])
+            && !isset($whyNot["reviewNotAssigned"]))
+            $errors[whyNotText($whyNot, "review")] = true;
+        else {
+            if (!$canreview) {
+                $t = whyNotText($whyNot, "review");
+                $errors[$t] = false;
+                if (!isset($whyNot["deadline"]))
+                    defappend($texts[$paperselmap[$row->paperId]], wordWrapIndent(strtoupper(whyNotToText($t)) . "\n\n", "==-== ", "==-== "));
+            }
+            defappend($texts[$paperselmap[$row->paperId]], $rf->textForm($row, $row, $Me, null) . "\n");
+        }
     }
 
     downloadReviews($texts, $errors);
@@ -277,18 +277,18 @@ if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
     $texts = array();
     $errors = array();
     if ($Me->privChair)
-	$_REQUEST["forceShow"] = 1;
+        $_REQUEST["forceShow"] = 1;
     while (($row = PaperInfo::fetch($result, $Me))) {
-	if (!$Me->canViewReview($row, null, null, $whyNot))
-	    $errors[whyNotText($whyNot, "view review")] = true;
-	else if ($row->reviewSubmitted)
-	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextForm($row, $row, $Me, false) . "\n");
+        if (!$Me->canViewReview($row, null, null, $whyNot))
+            $errors[whyNotText($whyNot, "view review")] = true;
+        else if ($row->reviewSubmitted)
+            defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextForm($row, $row, $Me, false) . "\n");
     }
 
     $crows = $Conf->comment_rows($Conf->paperQuery($Me, array("paperId" => $papersel, "allComments" => 1, "reviewerName" => 1)), $Me);
     foreach ($crows as $row)
-	if ($Me->canViewComment($row, $row, null))
-	    defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextComment($row, $row, $Me) . "\n");
+        if ($Me->canViewComment($row, $row, null))
+            defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextComment($row, $row, $Me) . "\n");
 
     downloadReviews($texts, $errors);
 }
@@ -301,49 +301,49 @@ function tagaction() {
     $errors = array();
     $papers = $papersel;
     if (!$Me->privChair) {
-	$result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)), "while selecting papers");
-	while (($row = PaperInfo::fetch($result, $Me)))
-	    if ($row->conflictType > 0) {
-		$errors[] = "You have a conflict with paper #" . $row->paperId . " and cannot change its tags.";
-		$papers = array_diff($papers, array($row->paperId));
-	    }
+        $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)), "while selecting papers");
+        while (($row = PaperInfo::fetch($result, $Me)))
+            if ($row->conflictType > 0) {
+                $errors[] = "You have a conflict with paper #" . $row->paperId . " and cannot change its tags.";
+                $papers = array_diff($papers, array($row->paperId));
+            }
     }
 
     if (count($errors))
-	$Conf->errorMsg(join("<br/>", $errors));
+        $Conf->errorMsg(join("<br/>", $errors));
 
     $act = $_REQUEST["tagtype"];
     $tag = $_REQUEST["tag"];
     $tagger = new Tagger;
     if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao" || $act == "sos" || $act == "sor" || $act == "aos" || $act == "da"))
-	$tagger->save($papers, $tag, $act);
+        $tagger->save($papers, $tag, $act);
     else if (count($papers) && $act == "cr" && $Me->privChair) {
-	$source_tag = trim(defval($_REQUEST, "tagcr_source", ""));
+        $source_tag = trim(defval($_REQUEST, "tagcr_source", ""));
         if ($source_tag == "")
             $source_tag = (substr($tag, 0, 2) == "~~" ? substr($tag, 2) : $tag);
         if ($tagger->check($tag, Tagger::NOPRIVATE | Tagger::NOVALUE)
             && $tagger->check($source_tag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
-	    ini_set("max_execution_time", 1200);
-	    $r = new PaperRank($source_tag, $tag, $papers,
-			       defval($_REQUEST, "tagcr_gapless"),
-			       "Search", "search");
+            ini_set("max_execution_time", 1200);
+            $r = new PaperRank($source_tag, $tag, $papers,
+                               defval($_REQUEST, "tagcr_gapless"),
+                               "Search", "search");
             $r->run(defval($_REQUEST, "tagcr_method"));
-	    $r->save();
-	    if ($_REQUEST["q"] === "")
-		$_REQUEST["q"] = "order:$tag";
-	} else
+            $r->save();
+            if ($_REQUEST["q"] === "")
+                $_REQUEST["q"] = "order:$tag";
+        } else
             defappend($Error["tags"], $tagger->error_html . "<br />\n");
     }
     if (isset($Error["tags"]))
-	$Conf->errorMsg($Error["tags"]);
+        $Conf->errorMsg($Error["tags"]);
     if (!$Conf->headerPrinted && defval($_REQUEST, "ajax"))
-	$Conf->ajaxExit(array("ok" => !isset($Error["tags"])));
+        $Conf->ajaxExit(array("ok" => !isset($Error["tags"])));
     else if (!$Conf->headerPrinted && !isset($Error["tags"])) {
-	$args = array();
-	foreach (array("tag", "tagtype", "tagact", "tagcr_method", "tagcr_source", "tagcr_gapless") as $arg)
-	    if (isset($_REQUEST[$arg]))
-		$args[$arg] = $_REQUEST[$arg];
-	redirectSelf($args);
+        $args = array();
+        foreach (array("tag", "tagtype", "tagact", "tagcr_method", "tagcr_source", "tagcr_gapless") as $arg)
+            if (isset($_REQUEST[$arg]))
+                $args[$arg] = $_REQUEST[$arg];
+        redirectSelf($args);
     }
 }
 if (isset($_REQUEST["tagact"]) && $Me->isPC && isset($papersel)
@@ -358,16 +358,16 @@ if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
     && $Me->isPC) {
     $tagger = new Tagger;
     if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
-	$showtag = trim($_REQUEST["tag"]); // no "23~" prefix
-	$q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag));
-	$result = $Conf->qe($q, "while selecting papers");
-	$texts = array();
-	while (($row = PaperInfo::fetch($result, $Me)))
-	    if ($Me->canViewTags($row, true))
-		arrayappend($texts[$paperselmap[$row->paperId]], array($showtag, (int) $row->tagIndex, $row->paperId, $row->title));
-	ksort($texts);
-	downloadCSV($texts, array("tag", "votes", "paper", "title"), "votes");
-	exit;
+        $showtag = trim($_REQUEST["tag"]); // no "23~" prefix
+        $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag));
+        $result = $Conf->qe($q, "while selecting papers");
+        $texts = array();
+        while (($row = PaperInfo::fetch($result, $Me)))
+            if ($Me->canViewTags($row, true))
+                arrayappend($texts[$paperselmap[$row->paperId]], array($showtag, (int) $row->tagIndex, $row->paperId, $row->title));
+        ksort($texts);
+        downloadCSV($texts, array("tag", "votes", "paper", "title"), "votes");
+        exit;
     } else
         $Conf->errorMsg($tagger->error_html);
 }
@@ -379,24 +379,24 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
     && ($Me->isPC || ($Me->is_reviewer() && $settingrank))) {
     $tagger = new Tagger;
     if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
-	$q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"));
-	$result = $Conf->qe($q, "while selecting papers");
-	$real = "";
-	$null = "\n";
-	while (($row = PaperInfo::fetch($result, $Me)))
-	    if ($settingrank ? $Me->canSetRank($row)
-		: $Me->canSetTags($row, true)) {
-		if ($row->tagIndex === null)
-		    $null .= "X\t$row->paperId\t$row->title\n";
-		else if ($real === "" || $lastIndex == $row->tagIndex - 1)
-		    $real .= "\t$row->paperId\t$row->title\n";
-		else if ($lastIndex == $row->tagIndex)
-		    $real .= "=\t$row->paperId\t$row->title\n";
-		else
-		    $real .= str_pad("", min($row->tagIndex - $lastIndex, 5), ">") . "\t$row->paperId\t$row->title\n";
-		$lastIndex = $row->tagIndex;
-	    }
-	$text = "# Edit the rank order by rearranging this file's lines.
+        $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"));
+        $result = $Conf->qe($q, "while selecting papers");
+        $real = "";
+        $null = "\n";
+        while (($row = PaperInfo::fetch($result, $Me)))
+            if ($settingrank ? $Me->canSetRank($row)
+                : $Me->canSetTags($row, true)) {
+                if ($row->tagIndex === null)
+                    $null .= "X\t$row->paperId\t$row->title\n";
+                else if ($real === "" || $lastIndex == $row->tagIndex - 1)
+                    $real .= "\t$row->paperId\t$row->title\n";
+                else if ($lastIndex == $row->tagIndex)
+                    $real .= "=\t$row->paperId\t$row->title\n";
+                else
+                    $real .= str_pad("", min($row->tagIndex - $lastIndex, 5), ">") . "\t$row->paperId\t$row->title\n";
+                $lastIndex = $row->tagIndex;
+            }
+        $text = "# Edit the rank order by rearranging this file's lines.
 
 # The first line has the highest rank. Lines starting with \"#\" are
 # ignored. Unranked papers appear at the end in lines starting with
@@ -405,12 +405,12 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 # same rank as the preceding papers. Lines starting with \">>\", \">>>\",
 # and so forth indicate rank gaps between papers. When you are done,
 # upload the file at\n"
-	    . "#   " . hoturl_absolute("offline") . "\n\n"
-	    . "Tag: " . trim($_REQUEST["tag"]) . "\n"
-	    . "\n"
-	    . $real . $null;
-	downloadText($text, "rank");
-	exit;
+            . "#   " . hoturl_absolute("offline") . "\n\n"
+            . "Tag: " . trim($_REQUEST["tag"]) . "\n"
+            . "\n"
+            . $real . $null;
+        downloadText($text, "rank");
+        exit;
     } else
         $Conf->errorMsg($tagger->error_html);
 }
@@ -422,72 +422,72 @@ if ($getaction == "authors" && isset($papersel)
     $idq = paperselPredicate($papersel, "Paper.");
     $join = "";
     if (!$Me->privChair) {
-	if ($Conf->subBlindOptional())
-	    $idq = "($idq) and blind=0";
-	else if ($Conf->subBlindUntilReview()) {
-	    $idq = "($idq) and MyReview.reviewSubmitted>0";
-	    $qb = "";
-	    if ($Me->review_tokens())
-		$qb = " or MyReview.reviewToken in (" . join(",", $Me->review_tokens()) . ")";
-	    $join = " left join PaperReview MyReview on (MyReview.paperId=Paper.paperId and (MyReview.contactId=$Me->contactId$qb))";
-	}
+        if ($Conf->subBlindOptional())
+            $idq = "($idq) and blind=0";
+        else if ($Conf->subBlindUntilReview()) {
+            $idq = "($idq) and MyReview.reviewSubmitted>0";
+            $qb = "";
+            if ($Me->review_tokens())
+                $qb = " or MyReview.reviewToken in (" . join(",", $Me->review_tokens()) . ")";
+            $join = " left join PaperReview MyReview on (MyReview.paperId=Paper.paperId and (MyReview.contactId=$Me->contactId$qb))";
+        }
     }
 
     // first fetch contacts if chair
     $contactline = array();
     if ($Me->privChair) {
-	$result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq", "while fetching contacts");
-	while (($row = PaperInfo::fetch($result, $Me))) {
-	    $key = $row->paperId . " " . $row->email;
-	    if ($row->firstName && $row->lastName)
-		$a = $row->firstName . " " . $row->lastName;
-	    else
-		$a = $row->firstName . $row->lastName;
-	    $contactline[$key] = array($row->paperId, $row->title, $a, $row->email, $row->affiliation, "contact_only");
-	}
+        $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq", "while fetching contacts");
+        while (($row = PaperInfo::fetch($result, $Me))) {
+            $key = $row->paperId . " " . $row->email;
+            if ($row->firstName && $row->lastName)
+                $a = $row->firstName . " " . $row->lastName;
+            else
+                $a = $row->firstName . $row->lastName;
+            $contactline[$key] = array($row->paperId, $row->title, $a, $row->email, $row->affiliation, "contact_only");
+        }
     }
 
     // first fetch authors
     $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper$join where $idq", "while fetching authors");
     if ($result) {
-	$texts = array();
-	while (($row = PaperInfo::fetch($result, $Me))) {
-	    cleanAuthor($row);
-	    foreach ($row->authorTable as $au) {
-		if ($au[0] && $au[1])
-		    $a = $au[0] . " " . $au[1];
-		else
-		    $a = $au[0] . $au[1];
-		$line = array($row->paperId, $row->title, $a, $au[2], $au[3]);
+        $texts = array();
+        while (($row = PaperInfo::fetch($result, $Me))) {
+            cleanAuthor($row);
+            foreach ($row->authorTable as $au) {
+                if ($au[0] && $au[1])
+                    $a = $au[0] . " " . $au[1];
+                else
+                    $a = $au[0] . $au[1];
+                $line = array($row->paperId, $row->title, $a, $au[2], $au[3]);
 
-		if ($Me->privChair) {
-		    $key = $au[2] ? $row->paperId . " " . $au[2] : "XXX";
-		    if (isset($contactline[$key])) {
-			unset($contactline[$key]);
-			$line[] = "contact_author";
-		    } else
-			$line[] = "author";
-		}
+                if ($Me->privChair) {
+                    $key = $au[2] ? $row->paperId . " " . $au[2] : "XXX";
+                    if (isset($contactline[$key])) {
+                        unset($contactline[$key]);
+                        $line[] = "contact_author";
+                    } else
+                        $line[] = "author";
+                }
 
-		arrayappend($texts[$paperselmap[$row->paperId]], $line);
-		if ($au[2])
-		    $authormap[$row->paperId . " " . $au[2]] = true;
-	    }
-	}
+                arrayappend($texts[$paperselmap[$row->paperId]], $line);
+                if ($au[2])
+                    $authormap[$row->paperId . " " . $au[2]] = true;
+            }
+        }
 
-	// If chair, append the remaining non-author contacts
-	if ($Me->privChair)
-	    foreach ($contactline as $key => $line) {
-		$paperId = (int) $key;
-		arrayappend($texts[$paperselmap[$paperId]], $line);
-	    }
+        // If chair, append the remaining non-author contacts
+        if ($Me->privChair)
+            foreach ($contactline as $key => $line) {
+                $paperId = (int) $key;
+                arrayappend($texts[$paperselmap[$paperId]], $line);
+            }
 
-	ksort($texts);
-	$header = array("paper", "title", "name", "email", "affiliation");
-	if ($Me->privChair)
-	    $header[] = "type";
-	downloadCSV($texts, $header, "authors");
-	exit;
+        ksort($texts);
+        $header = array("paper", "title", "name", "email", "affiliation");
+        if ($Me->privChair)
+            $header[] = "type";
+        downloadCSV($texts, $header, "authors");
+        exit;
     }
 }
 
@@ -496,14 +496,14 @@ if ($getaction == "authors" && isset($papersel)
 if ($getaction == "pcconf" && isset($papersel) && $Me->privChair) {
     $idq = paperselPredicate($papersel, "Paper.");
     $result = $Conf->qe("select Paper.paperId, title, group_concat(concat(PaperConflict.contactId, ':', conflictType) separator ' ')
-		from Paper
-		left join PaperConflict on (PaperConflict.paperId=Paper.paperId)
-		where $idq
-		group by Paper.paperId", "while fetching PC conflicts");
+                from Paper
+                left join PaperConflict on (PaperConflict.paperId=Paper.paperId)
+                where $idq
+                group by Paper.paperId", "while fetching PC conflicts");
 
     $pcme = array();
     foreach (pcMembers() as $pc)
-	$pcme[$pc->contactId] = $pc->email;
+        $pcme[$pc->contactId] = $pc->email;
     asort($pcme);
 
     $allConflictTypes = Conflict::$type_descriptions;
@@ -512,23 +512,23 @@ if ($getaction == "pcconf" && isset($papersel) && $Me->privChair) {
     $allConflictTypes[CONFLICT_CONTACTAUTHOR] = "Contact";
 
     if ($result) {
-	$texts = array();
-	while (($row = edb_row($result))) {
-	    $x = " " . $row[2];
-	    foreach ($pcme as $pcid => $pcemail) {
-		$pcid = " $pcid:";
-		if (($p = strpos($x, $pcid)) !== false) {
-		    $ctype = (int) substr($x, $p + strlen($pcid));
-		    $ctype = defval($allConflictTypes, $ctype, "Conflict $ctype");
-		    arrayappend($texts[$paperselmap[$row[0]]], array($row[0], $row[1], $pcemail, $ctype));
-		}
-	    }
-	}
-	ksort($texts);
-	downloadCSV($texts,
-		    array("paper", "title", "PC email", "conflict type"),
-		    "pcconflicts");
-	exit;
+        $texts = array();
+        while (($row = edb_row($result))) {
+            $x = " " . $row[2];
+            foreach ($pcme as $pcid => $pcemail) {
+                $pcid = " $pcid:";
+                if (($p = strpos($x, $pcid)) !== false) {
+                    $ctype = (int) substr($x, $p + strlen($pcid));
+                    $ctype = defval($allConflictTypes, $ctype, "Conflict $ctype");
+                    arrayappend($texts[$paperselmap[$row[0]]], array($row[0], $row[1], $pcemail, $ctype));
+                }
+            }
+        }
+        ksort($texts);
+        downloadCSV($texts,
+                    array("paper", "title", "PC email", "conflict type"),
+                    "pcconflicts");
+        exit;
     }
 }
 
@@ -538,21 +538,21 @@ if (($getaction == "lead" || $getaction == "shepherd")
     && isset($papersel) && $Me->isPC) {
     $idq = paperselPredicate($papersel, "Paper.");
     $result = $Conf->qe("select Paper.paperId, title, email, firstName, lastName, conflictType
-		from Paper
-		join ContactInfo on (ContactInfo.contactId=Paper.${getaction}ContactId)
-		left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Me->contactId)
-		where $idq
-		group by Paper.paperId", "while fetching ${getaction}s");
+                from Paper
+                join ContactInfo on (ContactInfo.contactId=Paper.${getaction}ContactId)
+                left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Me->contactId)
+                where $idq
+                group by Paper.paperId", "while fetching ${getaction}s");
     $shep = $getaction == "shepherd";
     if ($result) {
-	$texts = array();
-	while (($row = PaperInfo::fetch($result, $Me)))
-	    if ($shep ? $Me->can_view_shepherd($row, true) : $Me->can_view_lead($row, true))
-		arrayappend($texts[$paperselmap[$row->paperId]],
-			    array($row->paperId, $row->title, $row->email, trim("$row->firstName $row->lastName")));
-	ksort($texts);
-	downloadCSV($texts, array("paper", "title", "${getaction}email", "${getaction}name"), "${getaction}s");
-	exit;
+        $texts = array();
+        while (($row = PaperInfo::fetch($result, $Me)))
+            if ($shep ? $Me->can_view_shepherd($row, true) : $Me->can_view_lead($row, true))
+                arrayappend($texts[$paperselmap[$row->paperId]],
+                            array($row->paperId, $row->title, $row->email, trim("$row->firstName $row->lastName")));
+        ksort($texts);
+        downloadCSV($texts, array("paper", "title", "${getaction}email", "${getaction}name"), "${getaction}s");
+        exit;
     }
 }
 
@@ -563,14 +563,14 @@ if ($getaction == "contact" && $Me->privChair && isset($papersel)) {
     $idq = paperselPredicate($papersel, "Paper.");
     $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq order by Paper.paperId", "while fetching contacts");
     if ($result) {
-	$texts = array();
-	while (($row = edb_row($result))) {
-	    $a = ($row[3] && $row[2] ? "$row[3], $row[2]" : "$row[3]$row[2]");
-	    arrayappend($texts[$paperselmap[$row[0]]], array($row[0], $row[1], $a, $row[4]));
-	}
-	ksort($texts);
-	downloadCSV($texts, array("paper", "title", "name", "email"), "contacts");
-	exit;
+        $texts = array();
+        while (($row = edb_row($result))) {
+            $a = ($row[3] && $row[2] ? "$row[3], $row[2]" : "$row[3]$row[2]");
+            arrayappend($texts[$paperselmap[$row[0]]], array($row[0], $row[1], $a, $row[4]));
+        }
+        ksort($texts);
+        downloadCSV($texts, array("paper", "title", "name", "email"), "contacts");
+        exit;
     }
 }
 
@@ -584,46 +584,46 @@ if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
     $score_fields = array();
     $revViewScore = $Me->viewReviewFieldsScore(null, true);
     foreach ($rf->forder as $f)
-	if ($f->view_score > $revViewScore && $f->has_options)
+        if ($f->view_score > $revViewScore && $f->has_options)
             $score_fields[$f->id] = $f;
 
     $header = array("paper", "title");
     if ($Conf->subBlindOptional())
-	$header[] = "blind";
+        $header[] = "blind";
     $header[] = "decision";
     foreach ($score_fields as $f)
-	$header[] = $f->abbreviation;
+        $header[] = $f->abbreviation;
     $header[] = "revieweremail";
     $header[] = "reviewername";
 
     $errors = array();
     if ($Me->privChair)
-	$_REQUEST["forceShow"] = 1;
+        $_REQUEST["forceShow"] = 1;
     $texts = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
-	if (!$Me->canViewReview($row, null, null, $whyNot))
-	    $errors[] = whyNotText($whyNot, "view review") . "<br />";
-	else if ($row->reviewSubmitted) {
-	    $a = array($row->paperId, $row->title);
-	    if ($Conf->subBlindOptional())
-		$a[] = $row->blind;
-	    $a[] = $row->outcome;
-	    foreach ($score_fields as $field => $f)
-		$a[] = $f->unparse_value($row->$field);
-	    if ($Me->canViewReviewerIdentity($row, $row, null)) {
-		$a[] = $row->reviewEmail;
-		$a[] = trim($row->reviewFirstName . " " . $row->reviewLastName);
-	    }
-	    arrayappend($texts[$paperselmap[$row->paperId]], $a);
-	}
+        if (!$Me->canViewReview($row, null, null, $whyNot))
+            $errors[] = whyNotText($whyNot, "view review") . "<br />";
+        else if ($row->reviewSubmitted) {
+            $a = array($row->paperId, $row->title);
+            if ($Conf->subBlindOptional())
+                $a[] = $row->blind;
+            $a[] = $row->outcome;
+            foreach ($score_fields as $field => $f)
+                $a[] = $f->unparse_value($row->$field);
+            if ($Me->canViewReviewerIdentity($row, $row, null)) {
+                $a[] = $row->reviewEmail;
+                $a[] = trim($row->reviewFirstName . " " . $row->reviewLastName);
+            }
+            arrayappend($texts[$paperselmap[$row->paperId]], $a);
+        }
     }
 
     if (count($texts)) {
-	ksort($texts);
-	downloadCSV($texts, $header, "scores");
-	exit;
+        ksort($texts);
+        downloadCSV($texts, $header, "scores");
+        exit;
     } else
-	$Conf->errorMsg(join("", $errors) . "No papers selected.");
+        $Conf->errorMsg(join("", $errors) . "No papers selected.");
 }
 
 
@@ -633,40 +633,40 @@ function downloadRevpref($extended) {
     // maybe download preferences for someone else
     $Rev = $Me;
     if (($rev = rcvtint($_REQUEST["reviewer"])) > 0 && $Me->privChair) {
-	if (!($Rev = Contact::find_by_id($rev)))
-	    return $Conf->errorMsg("No such reviewer");
+        if (!($Rev = Contact::find_by_id($rev)))
+            return $Conf->errorMsg("No such reviewer");
     }
     $q = $Conf->paperQuery($Rev, array("paperId" => $papersel, "topics" => 1, "reviewerPreference" => 1));
     $result = $Conf->qe($q, "while selecting papers");
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = PaperInfo::fetch($result, $Rev)) {
-	$t = $prow->paperId;
-	if ($prow->conflictType > 0)
-	    $t .= ",conflict";
-	else
-	    $t .= "," . unparse_preference($prow);
-	$t .= "," . $prow->title . "\n";
-	if ($extended) {
-	    if ($Rev->canViewAuthors($prow, false)) {
+        $t = $prow->paperId;
+        if ($prow->conflictType > 0)
+            $t .= ",conflict";
+        else
+            $t .= "," . unparse_preference($prow);
+        $t .= "," . $prow->title . "\n";
+        if ($extended) {
+            if ($Rev->canViewAuthors($prow, false)) {
                 cleanAuthor($prow);
-		$t .= wordWrapIndent($prow->authorInformation, "#  Authors: ", "#           ");
+                $t .= wordWrapIndent($prow->authorInformation, "#  Authors: ", "#           ");
             }
-	    $t .= wordWrapIndent(rtrim($prow->abstract), "# Abstract: ", "#           ") . "\n";
-	    if ($prow->topicIds != "") {
-		$tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
-		$t .= wordWrapIndent(substr($tt, 2), "#   Topics: ", "#           ") . "\n";
-	    }
-	    $t .= "\n";
-	}
-	defappend($texts[$paperselmap[$prow->paperId]], $t);
+            $t .= wordWrapIndent(rtrim($prow->abstract), "# Abstract: ", "#           ") . "\n";
+            if ($prow->topicIds != "") {
+                $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
+                $t .= wordWrapIndent(substr($tt, 2), "#   Topics: ", "#           ") . "\n";
+            }
+            $t .= "\n";
+        }
+        defappend($texts[$paperselmap[$prow->paperId]], $t);
     }
 
     if (count($texts)) {
-	ksort($texts);
-	$header = "paper,preference,title\n";
-	downloadText($header . join("", $texts), "revprefs");
-	exit;
+        ksort($texts);
+        $header = "paper,preference,title\n";
+        downloadText($header . join("", $texts), "revprefs");
+        exit;
     }
 }
 if (($getaction == "revpref" || $getaction == "revprefx") && $Me->isPC && isset($papersel))
@@ -694,9 +694,9 @@ function downloadAllRevpref() {
     }
 
     if (count($texts)) {
-	ksort($texts);
-	downloadCSV($texts, array("paper", "title", "name", "email", "preference"), "allprefs");
-	exit;
+        ksort($texts);
+        downloadCSV($texts, array("paper", "title", "name", "email", "preference"), "allprefs");
+        exit;
     }
 }
 if ($getaction == "allrevpref" && $Me->privChair && isset($papersel))
@@ -713,12 +713,12 @@ if ($getaction == "topics" && isset($papersel)) {
     $tomap = $Conf->topic_order_map();
 
     while (($row = PaperInfo::fetch($result, $Me))) {
-	if (!$Me->canViewPaper($row))
-	    continue;
-	$out = array();
+        if (!$Me->canViewPaper($row))
+            continue;
+        $out = array();
         $topicIds = ($row->topicIds == "" ? "x" : $row->topicIds);
-	foreach (explode(",", $topicIds) as $tid) {
-	    if ($tid === "")
+        foreach (explode(",", $topicIds) as $tid) {
+            if ($tid === "")
                 continue;
             else if ($tid === "x")
                 list($order, $name) = array(99999, "<none>");
@@ -726,16 +726,16 @@ if ($getaction == "topics" && isset($papersel)) {
                 list($order, $name) = array($tomap[$tid], $tmap[$tid]);
             $out[$order] = array($row->paperId, $row->title, $name);
         }
-	ksort($out);
-	arrayappend($texts[$paperselmap[$row->paperId]], $out);
+        ksort($out);
+        arrayappend($texts[$paperselmap[$row->paperId]], $out);
     }
 
     if (count($texts)) {
-	ksort($texts);
-	downloadCSV($texts, array("paper", "title", "topic"), "topics");
-	exit;
+        ksort($texts);
+        downloadCSV($texts, array("paper", "title", "topic"), "topics");
+        exit;
     } else
-	$Conf->errorMsg(join("", $errors) . "No papers selected.");
+        $Conf->errorMsg(join("", $errors) . "No papers selected.");
 }
 
 
@@ -751,28 +751,28 @@ if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
     // compose report
     $texts = array();
     while ($row = edb_row($result))
-	$texts[$paperselmap[$row[0]]] = $row;
+        $texts[$paperselmap[$row[0]]] = $row;
     foreach ($texts as $row) {
-	if ($row[2] == "application/pdf") {
-	    $cf = new CheckFormat;
-	    if ($cf->analyzePaper($row[0], false, $format)) {
-		$fchk = array();
-		foreach (CheckFormat::$error_types as $en => $etxt)
-		    if ($cf->errors & $en)
-			$fchk[] = $etxt;
-		$fchk = (count($fchk) ? join(",", $fchk) : "ok");
-		$pp = $cf->pages;
-	    } else {
-		$fchk = "error";
-		$pp = "?";
-	    }
-	} else {
-	    $fchk = "notpdf";
-	    $pp = "?";
-	}
-	echo $row[0], "\t", $fchk, "\t", $pp, "\t", $row[1], "\n";
-	ob_flush();
-	flush();
+        if ($row[2] == "application/pdf") {
+            $cf = new CheckFormat;
+            if ($cf->analyzePaper($row[0], false, $format)) {
+                $fchk = array();
+                foreach (CheckFormat::$error_types as $en => $etxt)
+                    if ($cf->errors & $en)
+                        $fchk[] = $etxt;
+                $fchk = (count($fchk) ? join(",", $fchk) : "ok");
+                $pp = $cf->pages;
+            } else {
+                $fchk = "error";
+                $pp = "?";
+            }
+        } else {
+            $fchk = "notpdf";
+            $pp = "?";
+        }
+        echo $row[0], "\t", $fchk, "\t", $pp, "\t", $row[1], "\n";
+        ob_flush();
+        flush();
     }
 
     exit;
@@ -844,17 +844,17 @@ if ($getaction == "metajson" && isset($papersel) && $Me->privChair) {
 if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != ""
     && isset($papersel) && check_post())
     if (!$Me->canSetOutcome(null))
-	$Conf->errorMsg("You cannot set paper decisions.");
+        $Conf->errorMsg("You cannot set paper decisions.");
     else {
-	$o = rcvtint($_REQUEST["decision"]);
-	$outcome_map = $Conf->outcome_map();
-	if (isset($outcome_map[$o])) {
-	    $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel), "while changing decision");
-	    $Conf->updatePaperaccSetting($o > 0);
-	    redirectSelf(array("atab" => "decide", "decision" => $o));
-	    // normally does not return
-	} else
-	    $Conf->errorMsg("Bad decision value!");
+        $o = rcvtint($_REQUEST["decision"]);
+        $outcome_map = $Conf->outcome_map();
+        if (isset($outcome_map[$o])) {
+            $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel), "while changing decision");
+            $Conf->updatePaperaccSetting($o > 0);
+            redirectSelf(array("atab" => "decide", "decision" => $o));
+            // normally does not return
+        } else
+            $Conf->errorMsg("Bad decision value!");
     }
 
 
@@ -864,49 +864,49 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
     $mt = $_REQUEST["marktype"];
     $mpc = defval($_REQUEST, "markpc", "");
     if (!$Me->privChair)
-	$Conf->errorMsg("Only PC chairs can set assignments and conflicts.");
+        $Conf->errorMsg("Only PC chairs can set assignments and conflicts.");
     else if ($mt == "xauto") {
-	$t = (in_array($_REQUEST["t"], array("acc", "s")) ? $_REQUEST["t"] : "all");
-	$q = join($papersel, "+");
-	go(hoturl("autoassign", "pap=" . join($papersel, "+") . "&t=$t&q=$q"));
+        $t = (in_array($_REQUEST["t"], array("acc", "s")) ? $_REQUEST["t"] : "all");
+        $q = join($papersel, "+");
+        go(hoturl("autoassign", "pap=" . join($papersel, "+") . "&t=$t&q=$q"));
     } else if (!$mpc || !($pc = Contact::find_by_email($mpc)))
-	$Conf->errorMsg("“" . htmlspecialchars($mpc) . "” is not a PC member.");
+        $Conf->errorMsg("“" . htmlspecialchars($mpc) . "” is not a PC member.");
     else if ($mt == "conflict" || $mt == "unconflict") {
-	$while = "while marking conflicts";
-	if ($mt == "conflict") {
-	    $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) (select paperId, $pc->contactId, " . CONFLICT_CHAIRMARK . " from Paper where " . paperselPredicate($papersel) . ") on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $while);
-	    $Conf->log("Mark conflicts with $mpc", $Me, $papersel);
-	} else {
-	    $Conf->qe("delete from PaperConflict where PaperConflict.conflictType<" . CONFLICT_AUTHOR . " and contactId=$pc->contactId and (" . paperselPredicate($papersel) . ")", $while);
-	    $Conf->log("Remove conflicts with $mpc", $Me, $papersel);
-	}
+        $while = "while marking conflicts";
+        if ($mt == "conflict") {
+            $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) (select paperId, $pc->contactId, " . CONFLICT_CHAIRMARK . " from Paper where " . paperselPredicate($papersel) . ") on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $while);
+            $Conf->log("Mark conflicts with $mpc", $Me, $papersel);
+        } else {
+            $Conf->qe("delete from PaperConflict where PaperConflict.conflictType<" . CONFLICT_AUTHOR . " and contactId=$pc->contactId and (" . paperselPredicate($papersel) . ")", $while);
+            $Conf->log("Remove conflicts with $mpc", $Me, $papersel);
+        }
     } else if (substr($mt, 0, 6) == "assign"
-	       && isset($reviewTypeName[($asstype = substr($mt, 6))])) {
-	$while = "while making assignments";
-	$Conf->qe("lock tables PaperConflict write, PaperReview write, PaperReviewRefused write, Paper write, ActionLog write" . $Conf->tagRoundLocker($asstype == REVIEW_PRIMARY || $asstype == REVIEW_SECONDARY || $asstype == REVIEW_PC));
-	$result = $Conf->qe("select Paper.paperId, reviewId, reviewType, reviewModified, conflictType from Paper left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $pc->contactId . ") left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=" . $pc->contactId .") where " . paperselPredicate($papersel, "Paper."), $while);
-	$conflicts = array();
-	$assigned = array();
-	$nworked = 0;
-	$when = time();
-	while (($row = PaperInfo::fetch($result, $Me))) {
-	    if ($asstype && $row->conflictType > 0)
-		$conflicts[] = $row->paperId;
-	    else if ($asstype && $row->reviewType >= REVIEW_PC && $asstype != $row->reviewType)
-		$assigned[] = $row->paperId;
-	    else {
-		$Me->assign_paper($row->paperId, $row, $pc->contactId, $asstype, $when);
-		$nworked++;
-	    }
-	}
-	if (count($conflicts))
-	    $Conf->errorMsg("Some papers were not assigned because of conflicts (" . join(", ", $conflicts) . ").  If these conflicts are in error, remove them and try to assign again.");
-	if (count($assigned))
-	    $Conf->errorMsg("Some papers were not assigned because the PC member already had an assignment (" . join(", ", $assigned) . ").");
-	if ($nworked)
-	    $Conf->confirmMsg(($asstype == 0 ? "Unassigned reviews." : "Assigned reviews."));
-	$Conf->qe("unlock tables");
-	$Conf->updateRevTokensSetting(false);
+               && isset($reviewTypeName[($asstype = substr($mt, 6))])) {
+        $while = "while making assignments";
+        $Conf->qe("lock tables PaperConflict write, PaperReview write, PaperReviewRefused write, Paper write, ActionLog write" . $Conf->tagRoundLocker($asstype == REVIEW_PRIMARY || $asstype == REVIEW_SECONDARY || $asstype == REVIEW_PC));
+        $result = $Conf->qe("select Paper.paperId, reviewId, reviewType, reviewModified, conflictType from Paper left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $pc->contactId . ") left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=" . $pc->contactId .") where " . paperselPredicate($papersel, "Paper."), $while);
+        $conflicts = array();
+        $assigned = array();
+        $nworked = 0;
+        $when = time();
+        while (($row = PaperInfo::fetch($result, $Me))) {
+            if ($asstype && $row->conflictType > 0)
+                $conflicts[] = $row->paperId;
+            else if ($asstype && $row->reviewType >= REVIEW_PC && $asstype != $row->reviewType)
+                $assigned[] = $row->paperId;
+            else {
+                $Me->assign_paper($row->paperId, $row, $pc->contactId, $asstype, $when);
+                $nworked++;
+            }
+        }
+        if (count($conflicts))
+            $Conf->errorMsg("Some papers were not assigned because of conflicts (" . join(", ", $conflicts) . ").  If these conflicts are in error, remove them and try to assign again.");
+        if (count($assigned))
+            $Conf->errorMsg("Some papers were not assigned because the PC member already had an assignment (" . join(", ", $assigned) . ").");
+        if ($nworked)
+            $Conf->confirmMsg(($asstype == 0 ? "Unassigned reviews." : "Assigned reviews."));
+        $Conf->qe("unlock tables");
+        $Conf->updateRevTokensSetting(false);
     }
 }
 
@@ -914,10 +914,10 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
 // mark conflicts/PC-authored papers
 if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
     if (!$Me->privChair)
-	$Conf->errorMsg("Only the PC chairs can send mail.");
+        $Conf->errorMsg("Only the PC chairs can send mail.");
     else {
-	$r = (in_array($_REQUEST["recipients"], array("au", "rev")) ? $_REQUEST["recipients"] : "all");
-	go(hoturl("mail", "p=" . join($papersel, "+") . "&recipients=$r"));
+        $r = (in_array($_REQUEST["recipients"], array("au", "rev")) ? $_REQUEST["recipients"] : "all");
+        go(hoturl("mail", "p=" . join($papersel, "+") . "&recipients=$r"));
     }
 }
 
@@ -945,20 +945,20 @@ if (isset($_REQUEST["redisplay"]))
 if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
     $while = "while saving display options";
     if ($_SESSION["pldisplay"] != " overAllMerit ") {
-	$pldisplay = explode(" ", trim($_SESSION["pldisplay"]));
-	sort($pldisplay);
-	$_SESSION["pldisplay"] = " " . simplify_whitespace(join(" ", $pldisplay)) . " ";
-	$Conf->qe("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($_SESSION["pldisplay"]) . "') on duplicate key update data=values(data)", $while);
+        $pldisplay = explode(" ", trim($_SESSION["pldisplay"]));
+        sort($pldisplay);
+        $_SESSION["pldisplay"] = " " . simplify_whitespace(join(" ", $pldisplay)) . " ";
+        $Conf->qe("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($_SESSION["pldisplay"]) . "') on duplicate key update data=values(data)", $while);
     } else
-	$Conf->qe("delete from Settings where name='pldisplay_default'", $while);
+        $Conf->qe("delete from Settings where name='pldisplay_default'", $while);
     if ($_SESSION["scoresort"] != "C")
-	$Conf->qe("insert into Settings (name, value, data) values ('scoresort_default', 1, '" . sqlq($_SESSION["scoresort"]) . "') on duplicate key update data=values(data)", $while);
+        $Conf->qe("insert into Settings (name, value, data) values ('scoresort_default', 1, '" . sqlq($_SESSION["scoresort"]) . "') on duplicate key update data=values(data)", $while);
     else
-	$Conf->qe("delete from Settings where name='scoresort_default'", $while);
+        $Conf->qe("delete from Settings where name='scoresort_default'", $while);
     if ($OK && defval($_REQUEST, "ajax"))
-	$Conf->ajaxExit(array("ok" => 1));
+        $Conf->ajaxExit(array("ok" => 1));
     else if ($OK)
-	$Conf->confirmMsg("Display options saved.");
+        $Conf->confirmMsg("Display options saved.");
 }
 
 
@@ -969,7 +969,7 @@ function formulas_with_new() {
         require_once("$ConfSitePATH/src/papercolumn.php");
     $formulas = $paperListFormulas;
     $formulas["n"] = (object) array("formulaId" => "n", "name" => "",
-				    "expression" => "", "createdBy" => 0);
+                                    "expression" => "", "createdBy" => 0);
     return $formulas;
 }
 
@@ -984,48 +984,48 @@ function saveformulas() {
     $names = array();
 
     foreach (formulas_with_new() as $fdef) {
-	$name = simplify_whitespace(defval($_REQUEST, "name_$fdef->formulaId", $fdef->name));
-	$expr = simplify_whitespace(defval($_REQUEST, "expression_$fdef->formulaId", $fdef->expression));
+        $name = simplify_whitespace(defval($_REQUEST, "name_$fdef->formulaId", $fdef->name));
+        $expr = simplify_whitespace(defval($_REQUEST, "expression_$fdef->formulaId", $fdef->expression));
 
-	if ($name != "" && $expr != "") {
-	    if (isset($names[$name]))
-		$ok = $Conf->errorMsg("You have two formulas with the same name, &ldquo;" . htmlspecialchars($name) . ".&rdquo;  Please change one of the names.");
-	    $names[$name] = true;
-	}
+        if ($name != "" && $expr != "") {
+            if (isset($names[$name]))
+                $ok = $Conf->errorMsg("You have two formulas with the same name, &ldquo;" . htmlspecialchars($name) . ".&rdquo;  Please change one of the names.");
+            $names[$name] = true;
+        }
 
-	if ($name == $fdef->name && $expr == $fdef->expression)
-	    /* do nothing */;
-	else if (!$Me->privChair && $fdef->createdBy < 0)
-	    $ok = $Conf->errorMsg("You can't change formula &ldquo;" . htmlspecialchars($fdef->name) . "&rdquo; because it was created by an administrator.");
-	else if (($name == "" || $expr == "") && $fdef->formulaId != "n")
-	    $changes[] = "delete from Formula where formulaId=$fdef->formulaId";
-	else if ($name == "")
-	    $ok = $Conf->errorMsg("Please enter a name for your new formula.");
-	else if ($expr == "")
-	    $ok = $Conf->errorMsg("Please enter a definition for your new formula.");
-	else if (!($paperexpr = Formula::parse($expr)))
-	    $ok = false;	/* errors already generated */
-	else {
-	    $exprViewScore = Formula::expression_view_score($paperexpr, $Me);
-	    if ($exprViewScore <= $Me->viewReviewFieldsScore(null, true))
-		$ok = $Conf->errorMsg("The expression &ldquo;" . htmlspecialchars($expr) . "&rdquo; refers to paper properties that you aren't allowed to view.  Please define a different expression.");
-	    else if ($fdef->formulaId == "n") {
-		$changes[] = "insert into Formula (name, heading, headingTitle, expression, authorView, createdBy, timeModified) values ('" . sqlq($name) . "', '', '', '" . sqlq($expr) . "', $exprViewScore, " . ($Me->privChair ? -$Me->contactId : $Me->contactId) . ", " . time() . ")";
-		if (!$Conf->setting("formulas"))
-		    $changes[] = "insert into Settings (name, value) values ('formulas', 1) on duplicate key update value=1";
-	    } else
-		$changes[] = "update Formula set name='" . sqlq($name) . "', expression='" . sqlq($expr) . "', authorView=$exprViewScore, timeModified=" . time() . " where formulaId=$fdef->formulaId";
-	}
+        if ($name == $fdef->name && $expr == $fdef->expression)
+            /* do nothing */;
+        else if (!$Me->privChair && $fdef->createdBy < 0)
+            $ok = $Conf->errorMsg("You can't change formula &ldquo;" . htmlspecialchars($fdef->name) . "&rdquo; because it was created by an administrator.");
+        else if (($name == "" || $expr == "") && $fdef->formulaId != "n")
+            $changes[] = "delete from Formula where formulaId=$fdef->formulaId";
+        else if ($name == "")
+            $ok = $Conf->errorMsg("Please enter a name for your new formula.");
+        else if ($expr == "")
+            $ok = $Conf->errorMsg("Please enter a definition for your new formula.");
+        else if (!($paperexpr = Formula::parse($expr)))
+            $ok = false;        /* errors already generated */
+        else {
+            $exprViewScore = Formula::expression_view_score($paperexpr, $Me);
+            if ($exprViewScore <= $Me->viewReviewFieldsScore(null, true))
+                $ok = $Conf->errorMsg("The expression &ldquo;" . htmlspecialchars($expr) . "&rdquo; refers to paper properties that you aren't allowed to view.  Please define a different expression.");
+            else if ($fdef->formulaId == "n") {
+                $changes[] = "insert into Formula (name, heading, headingTitle, expression, authorView, createdBy, timeModified) values ('" . sqlq($name) . "', '', '', '" . sqlq($expr) . "', $exprViewScore, " . ($Me->privChair ? -$Me->contactId : $Me->contactId) . ", " . time() . ")";
+                if (!$Conf->setting("formulas"))
+                    $changes[] = "insert into Settings (name, value) values ('formulas', 1) on duplicate key update value=1";
+            } else
+                $changes[] = "update Formula set name='" . sqlq($name) . "', expression='" . sqlq($expr) . "', authorView=$exprViewScore, timeModified=" . time() . " where formulaId=$fdef->formulaId";
+        }
     }
 
     $_REQUEST["tab"] = "formulas";
     if ($ok) {
-	foreach ($changes as $change)
-	    $Conf->qe($change, $while);
-	if ($OK) {
-	    $Conf->confirmMsg("Formulas saved.");
-	    redirectSelf();
-	}
+        foreach ($changes as $change)
+            $Conf->qe($change, $while);
+        if ($OK) {
+            $Conf->confirmMsg("Formulas saved.");
+            redirectSelf();
+        }
     }
 }
 
@@ -1042,57 +1042,57 @@ function savesearch() {
     $name = simplify_whitespace(defval($_REQUEST, "ssname", ""));
     $tagger = new Tagger;
     if (!$tagger->check($name, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
-	if ($name == "")
-	    return $Conf->errorMsg("Saved search name missing.");
-	else
-	    return $Conf->errorMsg("“" . htmlspecialchars($name) . "” contains characters not allowed in saved search names.  Stick to letters, numbers, and simple punctuation.");
+        if ($name == "")
+            return $Conf->errorMsg("Saved search name missing.");
+        else
+            return $Conf->errorMsg("“" . htmlspecialchars($name) . "” contains characters not allowed in saved search names.  Stick to letters, numbers, and simple punctuation.");
     }
 
     // support directly recursive definition (to e.g. change display options)
     if (($t = $Conf->setting_data("ss:$name")) && ($t = json_decode($t))) {
-	if (isset($_REQUEST["q"]) && $_REQUEST["q"] == "ss:$name")
-	    $_REQUEST["q"] = (isset($t->q) ? $t->q : "");
-	if (isset($t->owner) && !$Me->privChair && $t->owner != $Me->contactId)
-	    return $Conf->errorMsg("You don’t have permission to change “ss:" . htmlspecialchars($name) . "”.");
+        if (isset($_REQUEST["q"]) && $_REQUEST["q"] == "ss:$name")
+            $_REQUEST["q"] = (isset($t->q) ? $t->q : "");
+        if (isset($t->owner) && !$Me->privChair && $t->owner != $Me->contactId)
+            return $Conf->errorMsg("You don’t have permission to change “ss:" . htmlspecialchars($name) . "”.");
     }
 
     $arr = array();
     foreach (array("q", "qt", "t", "sort") as $k)
-	if (isset($_REQUEST[$k]))
-	    $arr[$k] = $_REQUEST[$k];
+        if (isset($_REQUEST[$k]))
+            $arr[$k] = $_REQUEST[$k];
     if ($Me->privChair)
-	$arr["owner"] = "chair";
+        $arr["owner"] = "chair";
     else
-	$arr["owner"] = $Me->contactId;
+        $arr["owner"] = $Me->contactId;
 
     // clean display settings
     if (isset($_SESSION["pldisplay"])) {
-	global $reviewScoreNames, $paperListFormulas;
-	$acceptable = array("abstract" => 1, "topics" => 1, "tags" => 1,
-			    "rownum" => 1, "reviewers" => 1,
-			    "pcconf" => 1, "lead" => 1, "shepherd" => 1);
-	if (!$Conf->subBlindAlways() || $Me->privChair)
-	    $acceptable["au"] = $acceptable["aufull"] = $acceptable["collab"] = 1;
-	if ($Me->privChair && !$Conf->subBlindNever())
-	    $acceptable["anonau"] = 1;
-	foreach ($reviewScoreNames as $x)
-	    $acceptable[$x] = 1;
-	foreach ($paperListFormulas as $x)
-	    $acceptable["formula" . $x->formulaId] = 1;
-	$display = array();
-	foreach (preg_split('/\s+/', $_SESSION["pldisplay"]) as $x)
-	    if (isset($acceptable[$x]))
-		$display[$x] = true;
-	ksort($display);
-	$arr["display"] = trim(join(" ", array_keys($display)));
+        global $reviewScoreNames, $paperListFormulas;
+        $acceptable = array("abstract" => 1, "topics" => 1, "tags" => 1,
+                            "rownum" => 1, "reviewers" => 1,
+                            "pcconf" => 1, "lead" => 1, "shepherd" => 1);
+        if (!$Conf->subBlindAlways() || $Me->privChair)
+            $acceptable["au"] = $acceptable["aufull"] = $acceptable["collab"] = 1;
+        if ($Me->privChair && !$Conf->subBlindNever())
+            $acceptable["anonau"] = 1;
+        foreach ($reviewScoreNames as $x)
+            $acceptable[$x] = 1;
+        foreach ($paperListFormulas as $x)
+            $acceptable["formula" . $x->formulaId] = 1;
+        $display = array();
+        foreach (preg_split('/\s+/', $_SESSION["pldisplay"]) as $x)
+            if (isset($acceptable[$x]))
+                $display[$x] = true;
+        ksort($display);
+        $arr["display"] = trim(join(" ", array_keys($display)));
     }
 
     if (isset($_REQUEST["deletesearch"])) {
-	$Conf->qe("delete from Settings where name='ss:" . sqlq($name) . "'", $while);
-	redirectSelf();
+        $Conf->qe("delete from Settings where name='ss:" . sqlq($name) . "'", $while);
+        redirectSelf();
     } else {
-	$Conf->qe("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode($arr)) . "') on duplicate key update value=values(value), data=values(data)", $while);
-	redirectSelf(array("q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null));
+        $Conf->qe("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode($arr)) . "') on duplicate key update value=values(value), data=values(data)", $while);
+        redirectSelf(array("q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null));
     }
 }
 
@@ -1112,9 +1112,9 @@ if (defval($_REQUEST, "ajax"))
 $pldisplay = $_SESSION["pldisplay"];
 if ($Me->privChair) {
     if (strpos($pldisplay, " force ") !== false)
-	$_REQUEST["forceShow"] = 1;
+        $_REQUEST["forceShow"] = 1;
     else
-	unset($_REQUEST["forceShow"]);
+        unset($_REQUEST["forceShow"]);
 }
 
 
@@ -1123,7 +1123,7 @@ $Conf->header("Search", "search", actionBar());
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, array("sort" => true, "list" => true,
-				       "display" => defval($_REQUEST, "display")));
+                                       "display" => defval($_REQUEST, "display")));
     $pl_text = $pl->text($Search->limitName, array("class" => "pltable_full"));
     $pldisplay = $pl->display;
 } else
@@ -1138,7 +1138,7 @@ else if (isset($_REQUEST["qa"]) || defval($_REQUEST, "qt", "n") != "n")
 else
     $activetab = 1;
 $tabs = array("display" => 3, "advanced" => 2, "basic" => 1, "normal" => 1,
-	      "ss" => 4);
+              "ss" => 4);
 $searchform_formulas = "c";
 if (isset($tabs[defval($_REQUEST, "tab", "x")]))
     $activetab = $tabs[$_REQUEST["tab"]];
@@ -1169,123 +1169,123 @@ function displayOptionCheckbox($type, $column, $title, $opt = array()) {
     $loadresult = "";
 
     if (!isset($opt["onchange"])) {
-	$opt["onchange"] = "plinfo('$type',this)";
-	$loadresult = "<div id='${type}loadformresult'></div>";
+        $opt["onchange"] = "plinfo('$type',this)";
+        $loadresult = "<div id='${type}loadformresult'></div>";
     } else
-	$loadresult = "<div></div>";
+        $loadresult = "<div></div>";
     $opt["class"] = "cbx";
 
     $text = Ht::checkbox("show$type", 1, $checked, $opt)
-	. "&nbsp;" . Ht::label($title) . $loadresult;
+        . "&nbsp;" . Ht::label($title) . $loadresult;
     $displayOptions[] = (object) array("type" => $type, "text" => $text,
-		"checked" => $checked, "column" => $column,
-		"indent" => defval($opt, "indent"));
+                "checked" => $checked, "column" => $column,
+                "indent" => defval($opt, "indent"));
 }
 
 function displayOptionText($text, $column, $opt = array()) {
     global $displayOptions;
     $displayOptions[] = (object) array("text" => $text,
-		"column" => $column, "indent" => defval($opt, "indent"));
+                "column" => $column, "indent" => defval($opt, "indent"));
 }
 
 // Create checkboxes
 
 if ($pl) {
     $viewAcceptedAuthors =
-	$Me->is_reviewer() && $Conf->timeReviewerViewAcceptedAuthors();
+        $Me->is_reviewer() && $Conf->timeReviewerViewAcceptedAuthors();
     $viewAllAuthors = ($_REQUEST["t"] == "a"
-		       || ($_REQUEST["t"] == "acc" && $viewAcceptedAuthors)
+                       || ($_REQUEST["t"] == "acc" && $viewAcceptedAuthors)
                        || $Conf->subBlindNever());
 
     displayOptionText("<strong>Show:</strong>" . foldsessionpixel("pl", "pldisplay", null), 1);
 
     // Authors group
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors) {
-	$onchange = "fold('pl',!this.checked,'au')";
-	if ($Me->privChair && $viewAllAuthors)
-	    $onchange .= ";fold('pl',!this.checked,'anonau')";
-	if ($Me->privChair)
-	    $onchange .= ";plinfo.extra()";
-	displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange));
+        $onchange = "fold('pl',!this.checked,'au')";
+        if ($Me->privChair && $viewAllAuthors)
+            $onchange .= ";fold('pl',!this.checked,'anonau')";
+        if ($Me->privChair)
+            $onchange .= ";plinfo.extra()";
+        displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange));
     } else if ($Conf->subBlindAlways() && $Me->privChair) {
-	$onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
-	displayOptionCheckbox("anonau", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau)));
+        $onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
+        displayOptionCheckbox("anonau", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau)));
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
-	displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
+        displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
     if (!$viewAllAuthors && $Me->privChair) {
-	$onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
-	displayOptionCheckbox("anonau", 1, "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau), "indent" => true));
+        $onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
+        displayOptionCheckbox("anonau", 1, "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau), "indent" => true));
     }
     if ($pl->any->collab)
-	displayOptionCheckbox("collab", 1, "Collaborators", array("indent" => true));
+        displayOptionCheckbox("collab", 1, "Collaborators", array("indent" => true));
 
     // Abstract group
     if ($pl->any->abstract)
-	displayOptionCheckbox("abstract", 1, "Abstracts");
+        displayOptionCheckbox("abstract", 1, "Abstracts");
     if ($pl->any->topics)
-	displayOptionCheckbox("topics", 1, "Topics");
+        displayOptionCheckbox("topics", 1, "Topics");
 
     // Tags group
     if ($Me->isPC && $pl->any->tags) {
-	$opt = array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair));
-	displayOptionCheckbox("tags", 1, "Tags", $opt);
-	if ($Me->privChair) {
+        $opt = array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair));
+        displayOptionCheckbox("tags", 1, "Tags", $opt);
+        if ($Me->privChair) {
             $tagger = new Tagger;
             foreach ($tagger->defined_tags() as $t)
                 if ($t->vote || $t->rank)
                     displayOptionCheckbox("tagrep_" . preg_replace('/\W+/', '_', $t->tag), 1, "“" . $t->tag . "” tag report", $opt);
-	}
+        }
     }
 
     // Row numbers
     if (isset($pl->any->sel))
-	displayOptionCheckbox("rownum", 1, "Row numbers", array("onchange" => "fold('pl',!this.checked,'rownum')"));
+        displayOptionCheckbox("rownum", 1, "Row numbers", array("onchange" => "fold('pl',!this.checked,'rownum')"));
 
     // Reviewers group
     if ($Me->canViewReviewerIdentity(true, null, null))
-	displayOptionCheckbox("reviewers", 2, "Reviewers");
+        displayOptionCheckbox("reviewers", 2, "Reviewers");
     if ($Me->privChair)
-	displayOptionCheckbox("pcconf", 2, "PC conflicts");
+        displayOptionCheckbox("pcconf", 2, "PC conflicts");
     if ($Me->isPC && $pl->any->lead)
-	displayOptionCheckbox("lead", 2, "Discussion leads");
+        displayOptionCheckbox("lead", 2, "Discussion leads");
     if ($Me->isPC && $pl->any->shepherd)
-	displayOptionCheckbox("shepherd", 2, "Shepherds");
+        displayOptionCheckbox("shepherd", 2, "Shepherds");
 
     // Scores group
     $anyScores = false;
     if ($pl->scoresOk == "present") {
-	$rf = reviewForm();
-	if ($Me->is_reviewer() && $_REQUEST["t"] != "a")
-	    $revViewScore = $Me->viewReviewFieldsScore(null, true);
-	else
-	    $revViewScore = VIEWSCORE_AUTHOR - 1;
-	$n = count($displayOptions);
-	$nchecked = 0;
-	foreach ($rf->forder as $f)
-	    if ($f->view_score > $revViewScore && $f->has_options) {
-		if (count($displayOptions) == $n)
-		    displayOptionText("<strong>Scores:</strong>", 3);
-		displayOptionCheckbox($f->id, 3, $f->name_html);
-		if ($displayOptions[count($displayOptions) - 1]->checked)
-		    ++$nchecked;
-	    }
-	if (count($displayOptions) > $n) {
-	    $onchange = "highlightUpdate(\"redisplay\")";
-	    if ($Me->privChair)
-		$onchange .= ";plinfo.extra()";
-	    displayOptionText("<div style='padding-top:1ex'>Sort by: &nbsp;"
+        $rf = reviewForm();
+        if ($Me->is_reviewer() && $_REQUEST["t"] != "a")
+            $revViewScore = $Me->viewReviewFieldsScore(null, true);
+        else
+            $revViewScore = VIEWSCORE_AUTHOR - 1;
+        $n = count($displayOptions);
+        $nchecked = 0;
+        foreach ($rf->forder as $f)
+            if ($f->view_score > $revViewScore && $f->has_options) {
+                if (count($displayOptions) == $n)
+                    displayOptionText("<strong>Scores:</strong>", 3);
+                displayOptionCheckbox($f->id, 3, $f->name_html);
+                if ($displayOptions[count($displayOptions) - 1]->checked)
+                    ++$nchecked;
+            }
+        if (count($displayOptions) > $n) {
+            $onchange = "highlightUpdate(\"redisplay\")";
+            if ($Me->privChair)
+                $onchange .= ";plinfo.extra()";
+            displayOptionText("<div style='padding-top:1ex'>Sort by: &nbsp;"
                               . Ht::select("scoresort", PaperList::$score_sorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
-		. "<a class='help' href='" . hoturl("help", "t=scoresort") . "' target='_blank' title='Learn more'>?</a></div>", 3);
-	}
-	$anyScores = count($displayOptions) != $n;
+                . "<a class='help' href='" . hoturl("help", "t=scoresort") . "' target='_blank' title='Learn more'>?</a></div>", 3);
+        }
+        $anyScores = count($displayOptions) != $n;
     }
 
     // Formulas group
     if (count($paperListFormulas)) {
-	displayOptionText("<strong>Formulas:</strong>", 4);
-	foreach ($paperListFormulas as $formula)
-	    displayOptionCheckbox("formula" . $formula->formulaId, 4, htmlspecialchars($formula->name));
+        displayOptionText("<strong>Formulas:</strong>", 4);
+        foreach ($paperListFormulas as $formula)
+            displayOptionCheckbox("formula" . $formula->formulaId, 4, htmlspecialchars($formula->name));
     }
 }
 
@@ -1315,7 +1315,7 @@ echo "<form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'>
   <td class='lxcaption'>Using these fields</td>
   <td class='lentry'>";
 $qtOpt = array("ti" => "Title",
-	       "ab" => "Abstract");
+               "ab" => "Abstract");
 if ($Me->privChair || $Conf->subBlindNever()) {
     $qtOpt["au"] = "Authors";
     $qtOpt["n"] = "Title, abstract, and authors";
@@ -1360,10 +1360,10 @@ echo "</div>";
 function echo_request_as_hidden_inputs($specialscore = false) {
     global $pl;
     foreach (array("q", "qa", "qo", "qx", "qt", "t", "sort") as $x)
-	if (isset($_REQUEST[$x])
-	    && ($x != "q" || !isset($_REQUEST["qa"]))
-	    && ($x != "sort" || !$specialscore || !$pl))
-	    echo Ht::hidden($x, $_REQUEST[$x]);
+        if (isset($_REQUEST[$x])
+            && ($x != "q" || !isset($_REQUEST["qa"]))
+            && ($x != "sort" || !$specialscore || !$pl))
+            echo Ht::hidden($x, $_REQUEST[$x]);
     if ($specialscore && $pl)
         echo Ht::hidden("sort", $pl->sortdef(true));
 }
@@ -1372,50 +1372,50 @@ function echo_request_as_hidden_inputs($specialscore = false) {
 $ss = array();
 if ($Me->isPC || $Me->privChair) {
     foreach ($Conf->settingTexts as $k => $v)
-	if (substr($k, 0, 3) == "ss:" && ($v = json_decode($v)))
-	    $ss[substr($k, 3)] = $v;
+        if (substr($k, 0, 3) == "ss:" && ($v = json_decode($v)))
+            $ss[substr($k, 3)] = $v;
     if (count($ss) > 0 || $pl) {
-	echo "<div class='tld4' style='padding-bottom:1ex'>";
-	ksort($ss);
-	if (count($ss)) {
-	    $n = 0;
-	    foreach ($ss as $sn => $sv) {
-		echo "<table id='ssearch$n' class='foldc'><tr><td>",
-		    foldbutton("ssearch$n", "saved search information"),
-		    "</td><td>";
-		$arest = "";
-		foreach (array("qt", "t", "sort", "display") as $k)
-		    if (isset($sv->$k))
-			$arest .= "&amp;" . $k . "=" . urlencode($sv->$k);
-		echo "<a href=\"", hoturl("search", "q=ss%3A" . urlencode($sn) . $arest), "\">", htmlspecialchars($sn), "</a><div class='fx' style='padding-bottom:0.5ex;font-size:smaller'>",
-		    "Definition: “<a href=\"", hoturl("search", "q=" . urlencode(defval($sv, "q", "")) . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
-		if ($Me->privChair || !defval($sv, "owner") || $sv->owner == $Me->contactId)
-		    echo " &nbsp;<span class='barsep'>|</span>&nbsp; ",
-			"<a href=\"", selfHref(array("deletesearch" => 1, "ssname" => $sn, "post" => post_value())), "\">Delete</a>";
-		echo "</div></td></tr></table>";
-		++$n;
-	    }
-	    echo "<div class='g'></div>\n";
-	}
-	echo "<form method='post' action='", hoturl_post("search", "savesearch=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
-	echo_request_as_hidden_inputs(true);
-	echo "<table id='ssearchnew' class='foldc'>",
-	    "<tr><td>", foldbutton("ssearchnew", "saved search options"), "</td>",
-	    "<td><a class='q fn' href='javascript:void fold(\"ssearchnew\")'>New saved search</a><div class='fx'>",
-	    "Save ";
-	if (defval($_REQUEST, "q"))
-	    echo "search “", htmlspecialchars($_REQUEST["q"]), "”";
-	else
-	    echo "empty search";
-	echo " as:<br />ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;",
+        echo "<div class='tld4' style='padding-bottom:1ex'>";
+        ksort($ss);
+        if (count($ss)) {
+            $n = 0;
+            foreach ($ss as $sn => $sv) {
+                echo "<table id='ssearch$n' class='foldc'><tr><td>",
+                    foldbutton("ssearch$n", "saved search information"),
+                    "</td><td>";
+                $arest = "";
+                foreach (array("qt", "t", "sort", "display") as $k)
+                    if (isset($sv->$k))
+                        $arest .= "&amp;" . $k . "=" . urlencode($sv->$k);
+                echo "<a href=\"", hoturl("search", "q=ss%3A" . urlencode($sn) . $arest), "\">", htmlspecialchars($sn), "</a><div class='fx' style='padding-bottom:0.5ex;font-size:smaller'>",
+                    "Definition: “<a href=\"", hoturl("search", "q=" . urlencode(defval($sv, "q", "")) . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
+                if ($Me->privChair || !defval($sv, "owner") || $sv->owner == $Me->contactId)
+                    echo " &nbsp;<span class='barsep'>|</span>&nbsp; ",
+                        "<a href=\"", selfHref(array("deletesearch" => 1, "ssname" => $sn, "post" => post_value())), "\">Delete</a>";
+                echo "</div></td></tr></table>";
+                ++$n;
+            }
+            echo "<div class='g'></div>\n";
+        }
+        echo "<form method='post' action='", hoturl_post("search", "savesearch=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+        echo_request_as_hidden_inputs(true);
+        echo "<table id='ssearchnew' class='foldc'>",
+            "<tr><td>", foldbutton("ssearchnew", "saved search options"), "</td>",
+            "<td><a class='q fn' href='javascript:void fold(\"ssearchnew\")'>New saved search</a><div class='fx'>",
+            "Save ";
+        if (defval($_REQUEST, "q"))
+            echo "search “", htmlspecialchars($_REQUEST["q"]), "”";
+        else
+            echo "empty search";
+        echo " as:<br />ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;",
             Ht::submit("Save", array("tabindex" => 8)),
-	    "</div></td></tr></table>",
-	    "</div></form>";
+            "</div></td></tr></table>",
+            "</div></form>";
 
-	echo "</div>";
-	$ss = true;
+        echo "</div>";
+        $ss = true;
     } else
-	$ss = false;
+        $ss = false;
 }
 
 // Display options
@@ -1431,30 +1431,30 @@ if ($pl && $pl->count > 0) {
     $cheaders = array();
     $cbodies = array();
     foreach ($displayOptions as $do) {
-	if (preg_match('/\A<strong>/', $do->text)
-	    && !isset($cheaders[$do->column]))
-	    $cheaders[$do->column] = $do->text;
-	else {
-	    $t = "<tr><td";
-	    if ($do->indent)
-		$t .= " style='padding-left:2em'";
-	    $t .= ">" . $do->text . "</td></tr>\n";
-	    defappend($cbodies[$do->column], $t);
-	}
+        if (preg_match('/\A<strong>/', $do->text)
+            && !isset($cheaders[$do->column]))
+            $cheaders[$do->column] = $do->text;
+        else {
+            $t = "<tr><td";
+            if ($do->indent)
+                $t .= " style='padding-left:2em'";
+            $t .= ">" . $do->text . "</td></tr>\n";
+            defappend($cbodies[$do->column], $t);
+        }
     }
 
     $header = $body = "";
     $ncolumns = 0;
     for ($i = 1; $i < 10; ++$i)
-	if (isset($cbodies[$i]) && $cbodies[$i]) {
-	    $klass = $ncolumns ? "padlb " : "";
-	    if (isset($cheaders[$i]))
-		$header .= "  <td class='${klass}nowrap'>" . $cheaders[$i] . "</td>\n";
-	    else
-		$header .= "  <td></td>\n";
-	    $body .= "  <td class='${klass}top'><table>" . $cbodies[$i] . "</table></td>\n";
-	    ++$ncolumns;
-	}
+        if (isset($cbodies[$i]) && $cbodies[$i]) {
+            $klass = $ncolumns ? "padlb " : "";
+            if (isset($cheaders[$i]))
+                $header .= "  <td class='${klass}nowrap'>" . $cheaders[$i] . "</td>\n";
+            else
+                $header .= "  <td></td>\n";
+            $body .= "  <td class='${klass}top'><table>" . $cbodies[$i] . "</table></td>\n";
+            ++$ncolumns;
+        }
     echo "<tr>\n", $header, "</tr><tr>\n", $body, "</tr>";
 
     // "Redisplay" row
@@ -1462,31 +1462,31 @@ if ($pl && $pl->count > 0) {
 
     // Conflict display
     if ($Me->privChair)
-	echo "<td class='padlb'>",
-	    Ht::checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
-			  array("id" => "showforce", "class" => "cbx",
-				"onchange" => "fold('pl',!this.checked,'force')")),
-	    "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
+        echo "<td class='padlb'>",
+            Ht::checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
+                          array("id" => "showforce", "class" => "cbx",
+                                "onchange" => "fold('pl',!this.checked,'force')")),
+            "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
     // Formulas link
     if (count($paperListFormulas) || ($Me->isPC && $Conf->sversion >= 32))
-	echo "<td class='padlb'>", Ht::js_button("Edit formulas", "fold('searchform',0,3)"), "</td>";
+        echo "<td class='padlb'>", Ht::js_button("Edit formulas", "fold('searchform',0,3)"), "</td>";
 
     echo "<td class='padlb'>";
     // "Set default display"
     if ($Me->privChair) {
-	echo Ht::js_button("Make default", "savedisplayoptions()",
+        echo Ht::js_button("Make default", "savedisplayoptions()",
                            array("id" => "savedisplayoptionsbutton",
                                  "disabled" => true)), "&nbsp; ";
-	$Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='" . hoturl_post("search", "savedisplayoptions=1") . "' enctype='multipart/form-data' accept-charset='UTF-8'>"
+        $Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='" . hoturl_post("search", "savedisplayoptions=1") . "' enctype='multipart/form-data' accept-charset='UTF-8'>"
                           . "<div>" . Ht::hidden("scoresort", $_SESSION["scoresort"], array("id" => "scoresortsave")) . "</div></form>");
-	$Conf->footerScript("plinfo.extra=function(){\$\$('savedisplayoptionsbutton').disabled=false};");
-	// strings might be in different orders, so sort before comparing
-	$pld = explode(" ", trim($Conf->setting_data("pldisplay_default", " overAllMerit ")));
-	sort($pld);
-	if ($_SESSION["pldisplay"] != " " . ltrim(join(" ", $pld) . " ")
-	    || $_SESSION["scoresort"] != PaperList::default_score_sort(true))
-	    $Conf->footerScript("plinfo.extra()");
+        $Conf->footerScript("plinfo.extra=function(){\$\$('savedisplayoptionsbutton').disabled=false};");
+        // strings might be in different orders, so sort before comparing
+        $pld = explode(" ", trim($Conf->setting_data("pldisplay_default", " overAllMerit ")));
+        sort($pld);
+        if ($_SESSION["pldisplay"] != " " . ltrim(join(" ", $pld) . " ")
+            || $_SESSION["scoresort"] != PaperList::default_score_sort(true))
+            $Conf->footerScript("plinfo.extra()");
     }
 
     echo Ht::submit("Redisplay", array("id" => "redisplay")), "</td>";
@@ -1498,42 +1498,42 @@ if ($pl && $pl->count > 0) {
 
     // Formulas
     if ($Me->isPC && $Conf->sversion >= 32) {
-	echo "<form class='fx3' method='post' action='", hoturl_post("search", "saveformulas=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
-	echo_request_as_hidden_inputs();
+        echo "<form class='fx3' method='post' action='", hoturl_post("search", "saveformulas=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+        echo_request_as_hidden_inputs();
 
-	echo "<p style='width:44em;margin-top:0'><strong>Formulas</strong> are calculated
+        echo "<p style='width:44em;margin-top:0'><strong>Formulas</strong> are calculated
 from review statistics.  For example, &ldquo;sum(OveMer)&rdquo;
 would display the sum of a paper&rsquo;s Overall merit scores.
 <a class='hint' href='", hoturl("help", "t=formulas"), "' target='_blank'>Learn more</a></p>";
 
-	echo "<table id='formuladefinitions'><thead><tr>",
-	    "<th></th><th class='f-c'>Name</th><th class='f-c'>Definition</th>",
-	    "</tr></thead><tbody>";
-	$any = 0;
-	$fs = $paperListFormulas;
-	$fs["n"] = (object) array("formulaId" => "n", "name" => "", "expression" => "", "createdBy" => 0);
-	foreach ($fs as $formulaId => $fdef) {
-	    $name = defval($_REQUEST, "name_$formulaId", $fdef->name);
-	    $expression = defval($_REQUEST, "expression_$formulaId", $fdef->expression);
-	    $disabled = ($Me->privChair || $fdef->createdBy > 0 ? "" : " disabled='disabled'");
-	    echo "<tr>";
-	    if ($fdef->formulaId == "n")
-		echo "<td class='lmcaption' style='padding:10px 1em 0 0'>New formula</td>";
-	    else if ($any == 0) {
-		echo "<td class='lmcaption' style='padding:0 1em 0 0'>Existing formulas</td>";
-		$any = 1;
-	    } else
-		echo "<td></td>";
-	    echo "<td class='lxcaption'>",
-		"<input class='textlite' type='text' style='width:16em' name='name_$formulaId'$disabled tabindex='8' value=\"" . htmlspecialchars($name) . "\" />",
-		"</td><td style='padding:2px 0'>",
-		"<input class='textlite' type='text' style='width:30em' name='expression_$formulaId'$disabled tabindex='8' value=\"" . htmlspecialchars($expression) . "\" />",
-		"</td></tr>\n";
-	}
-	echo "<tr><td colspan='3' style='padding:1ex 0 0;text-align:right'>",
+        echo "<table id='formuladefinitions'><thead><tr>",
+            "<th></th><th class='f-c'>Name</th><th class='f-c'>Definition</th>",
+            "</tr></thead><tbody>";
+        $any = 0;
+        $fs = $paperListFormulas;
+        $fs["n"] = (object) array("formulaId" => "n", "name" => "", "expression" => "", "createdBy" => 0);
+        foreach ($fs as $formulaId => $fdef) {
+            $name = defval($_REQUEST, "name_$formulaId", $fdef->name);
+            $expression = defval($_REQUEST, "expression_$formulaId", $fdef->expression);
+            $disabled = ($Me->privChair || $fdef->createdBy > 0 ? "" : " disabled='disabled'");
+            echo "<tr>";
+            if ($fdef->formulaId == "n")
+                echo "<td class='lmcaption' style='padding:10px 1em 0 0'>New formula</td>";
+            else if ($any == 0) {
+                echo "<td class='lmcaption' style='padding:0 1em 0 0'>Existing formulas</td>";
+                $any = 1;
+            } else
+                echo "<td></td>";
+            echo "<td class='lxcaption'>",
+                "<input class='textlite' type='text' style='width:16em' name='name_$formulaId'$disabled tabindex='8' value=\"" . htmlspecialchars($name) . "\" />",
+                "</td><td style='padding:2px 0'>",
+                "<input class='textlite' type='text' style='width:30em' name='expression_$formulaId'$disabled tabindex='8' value=\"" . htmlspecialchars($expression) . "\" />",
+                "</td></tr>\n";
+        }
+        echo "<tr><td colspan='3' style='padding:1ex 0 0;text-align:right'>",
             Ht::js_button("Cancel", "fold('searchform',1,3)", array("tabindex" => 8)),
-	    "&nbsp; ", Ht::submit("Save changes", array("style" => "font-weight:bold", "tabindex" => 8)),
-	    "</td></tr></tbody></table></div></form>\n";
+            "&nbsp; ", Ht::submit("Save changes", array("style" => "font-weight:bold", "tabindex" => 8)),
+            "</td></tr></tbody></table></div></form>\n";
     }
 
     echo "</div>";
@@ -1556,32 +1556,32 @@ echo "</tr></table></td></tr>
 
 if ($pl) {
     if ($Search->warnings) {
-	echo "<div class='maintabsep'></div>\n";
-	$Conf->warnMsg(join("<br />\n", $Search->warnings));
+        echo "<div class='maintabsep'></div>\n";
+        $Conf->warnMsg(join("<br />\n", $Search->warnings));
     }
 
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
     if (isset($pl->any->sel))
-	echo "<form method='post' action=\"", selfHref(array("selector" => 1, "post" => post_value())), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck()'><div class='inform'>\n",
+        echo "<form method='post' action=\"", selfHref(array("selector" => 1, "post" => post_value())), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck()'><div class='inform'>\n",
             Ht::hidden("defaultact", "", array("id" => "defaultact")),
             Ht::hidden_default_submit("default", 1);
 
     echo $pl_text;
     if ($pl->count == 0 && $_REQUEST["t"] != "s") {
-	$a = array();
-	foreach (array("q", "qa", "qo", "qx", "qt", "sort", "showtags") as $xa)
-	    if (isset($_REQUEST[$xa])
-		&& ($xa != "q" || !isset($_REQUEST["qa"])))
-		$a[] = "$xa=" . urlencode($_REQUEST[$xa]);
-	reset($tOpt);
-	echo " in ", strtolower($tOpt[$_REQUEST["t"]]);
-	if (key($tOpt) != $_REQUEST["t"] && $_REQUEST["t"] !== "all")
-	    echo " (<a href=\"", hoturl("search", join("&amp;", $a)), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
+        $a = array();
+        foreach (array("q", "qa", "qo", "qx", "qt", "sort", "showtags") as $xa)
+            if (isset($_REQUEST[$xa])
+                && ($xa != "q" || !isset($_REQUEST["qa"])))
+                $a[] = "$xa=" . urlencode($_REQUEST[$xa]);
+        reset($tOpt);
+        echo " in ", strtolower($tOpt[$_REQUEST["t"]]);
+        if (key($tOpt) != $_REQUEST["t"] && $_REQUEST["t"] !== "all")
+            echo " (<a href=\"", hoturl("search", join("&amp;", $a)), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
     }
 
     if (isset($pl->any->sel))
-	echo "</div></form>";
+        echo "</div></form>";
     echo "</div>\n";
 } else
     echo "<div class='g'></div>\n";

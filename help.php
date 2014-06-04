@@ -7,17 +7,17 @@ require_once("src/initweb.php");
 
 
 $topicTitles = array("topics" => "Help topics",
-		     "keywords" => "Search keywords",
-		     "search" => "Search",
-		     "tags" => "Tags",
+                     "keywords" => "Search keywords",
+                     "search" => "Search",
+                     "tags" => "Tags",
                      "tracks" => "Tracks",
-		     "revround" => "Review rounds",
-		     "revrate" => "Review ratings",
-		     "votetags" => "Voting tags",
-		     "scoresort" => "Sorting scores",
-		     "ranking" => "Paper ranking",
-		     "formulas" => "Formulas",
-		     "chair" => "Chair’s guide");
+                     "revround" => "Review rounds",
+                     "revrate" => "Review ratings",
+                     "votetags" => "Voting tags",
+                     "scoresort" => "Sorting scores",
+                     "ranking" => "Paper ranking",
+                     "formulas" => "Formulas",
+                     "chair" => "Chair’s guide");
 
 if (!isset($_REQUEST["t"])
     && preg_match(',\A/(\w+)\z,i', Navigation::path()))
@@ -49,12 +49,12 @@ function _alternateRow($caption, $entry, $next = null) {
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
     $anchor = strtolower(preg_replace('/\W/', "_", $caption));
     echo "<tr class='k", ($rowidx % 2), "'>",
-	"<td class='srcaption nowrap'><a class='q' name='$anchor' href='#$anchor'>",
+        "<td class='srcaption nowrap'><a class='q' name='$anchor' href='#$anchor'>",
         $caption, "</a></td>",
-	"<td class='sentry'", ($next === null ? " colspan='2'>" : ">"),
-	$entry, "</td>";
+        "<td class='sentry'", ($next === null ? " colspan='2'>" : ">"),
+        $entry, "</td>";
     if ($next !== null)
-	echo "<td class='sentry'>", $next, "</td>";
+        echo "<td class='sentry'>", $next, "</td>";
     echo "</tr>\n";
 }
 
@@ -79,13 +79,13 @@ function topics() {
 function _searchForm($forwhat, $other = null, $size = 20) {
     $text = "";
     if ($other && preg_match_all('/(\w+)=([^&]*)/', $other, $matches, PREG_SET_ORDER))
-	foreach ($matches as $m)
-	    $text .= Ht::hidden($m[1], urldecode($m[2]));
+        foreach ($matches as $m)
+            $text .= Ht::hidden($m[1], urldecode($m[2]));
     return "<form method='get' action='" . hoturl("search") . "' accept-charset='UTF-8'>"
-	. "<input type='text' class='textlite' name='q' value=\""
-	. htmlspecialchars($forwhat) . "\" size='$size' /> &nbsp;"
+        . "<input type='text' class='textlite' name='q' value=\""
+        . htmlspecialchars($forwhat) . "\" size='$size' /> &nbsp;"
         . Ht::submit("go", "Search")
-	. $text . "</form>";
+        . $text . "</form>";
 }
 
 function search() {
@@ -204,19 +204,19 @@ function searchQuickref() {
 
     // how to report author searches?
     if ($Conf->subBlindNever())
-	$aunote = "";
+        $aunote = "";
     else if (!$Conf->subBlindAlways())
-	$aunote = "<br /><span class='hint'>Search only examines visible fields.  For example, PC member searches do not examine anonymous authors.</span>";
+        $aunote = "<br /><span class='hint'>Search only examines visible fields.  For example, PC member searches do not examine anonymous authors.</span>";
     else
-	$aunote = "<br /><span class='hint'>Search only examines visible fields.  For example, PC member searches do not examine authors.</span>";
+        $aunote = "<br /><span class='hint'>Search only examines visible fields.  For example, PC member searches do not examine authors.</span>";
 
     // does a reviewer tag exist?
     $retag = "";
     if ($Me->isPC) {
-	foreach (pcMembers() as $pc)
-	    if ($pc->contactTags
-		&& preg_match('/(\S+)/', $pc->contactTags, $m))
-		$retag = $m[1];
+        foreach (pcMembers() as $pc)
+            if ($pc->contactTags
+                && preg_match('/(\S+)/', $pc->contactTags, $m))
+                $retag = $m[1];
     }
 
     echo "<table>\n";
@@ -240,7 +240,7 @@ function searchQuickref() {
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains “very novel”");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains “poletto”");
     if ($Me->isPC)
-	_searchQuickrefRow("", "au:pc", "one or more authors are PC members (author email matches PC email)");
+        _searchQuickrefRow("", "au:pc", "one or more authors are PC members (author email matches PC email)");
     _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains “liskov”");
     _searchQuickrefRow("Topics", "topic:link", "selected topics match “link”");
     _searchQuickrefRow("Options", "opt:shadow", "selected submission options match “shadow”");
@@ -251,21 +251,21 @@ function searchQuickref() {
     _searchQuickrefRow("", "#disc*", "matches any tag that <em>starts with</em> “disc”");
     _searchQuickrefRow("Reviews", "re:fdabek", "“fdabek” in reviewer name/email");
     if ($retag) {
-	_searchQuickrefRow("", "re:$retag", "has a reviewer tagged “" . $retag . "”");
-	_searchQuickrefRow("", "re:\"$retag\"", "“" . $retag . "” in reviewer name/email");
+        _searchQuickrefRow("", "re:$retag", "has a reviewer tagged “" . $retag . "”");
+        _searchQuickrefRow("", "re:\"$retag\"", "“" . $retag . "” in reviewer name/email");
     }
     _searchQuickrefRow("", "cre:fdabek", "“fdabek” (in reviewer name/email) has completed a review");
     _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
     if ($retag)
-	_searchQuickrefRow("", "re:$retag>1", "at least two reviewers (assigned and/or completed) tagged “" . $retag . "”");
+        _searchQuickrefRow("", "re:$retag>1", "at least two reviewers (assigned and/or completed) tagged “" . $retag . "”");
     _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
     _searchQuickrefRow("", "ire:>0", "at least one incomplete review");
     _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (“cpri:”, “ipri:”, and reviewer name/email also work)");
     _searchQuickrefRow("", "sec:pai", "“pai” (reviewer name/email) is secondary reviewer (“csec:”, “isec:”, and review counts also work)");
     if (($r = $Conf->round_name(1, false)))
-	_searchQuickrefRow("", "round:$r", "review assignment is “" . htmlspecialchars($r) . "”");
+        _searchQuickrefRow("", "round:$r", "review assignment is “" . htmlspecialchars($r) . "”");
     if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE)
-	_searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");
+        _searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");
     _searchQuickrefRow("Comments", "cmt:>0", "at least one comment visible to PC (including authors’ response)");
     _searchQuickrefRow("", "aucmt:>0", "at least one comment visible to authors (including authors’ response)");
     _searchQuickrefRow("", "cmt:sylvia", "“sylvia” (in name/email) wrote at least one comment visible to PC; can combine with counts, use reviewer tags");
@@ -286,7 +286,7 @@ function searchQuickref() {
     _searchQuickrefRow("", "has:final", "final copy uploaded");
 
     foreach ($Conf->outcome_map() as $dec)
-	$dec = simplify_whitespace(strtolower($dec));
+        $dec = simplify_whitespace(strtolower($dec));
     $qdec = (strpos($dec, " ") !== false ? "\"$dec\"" : $dec);
     _searchQuickrefRow("Decision", "dec:$qdec", "decision is “" . $dec . "” (partial matches OK)");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
@@ -298,43 +298,43 @@ function searchQuickref() {
     $rf = reviewForm();
     $farr = array(array(), array());
     foreach ($rf->forder as $f) {
-	$fx = ($f->has_options ? 0 : 1);
-	$farr[$fx][] = $f->analyze();
+        $fx = ($f->has_options ? 0 : 1);
+        $farr[$fx][] = $f->analyze();
     }
     $t = "Review&nbsp;fields";
     if (count($farr[0])) {
         $r = $farr[0][0];
-	_searchQuickrefRow($t, "$r->abbreviation1:$r->typical_score", "at least one completed review has $r->name_html score $r->typical_score");
-	_searchQuickrefRow("", "$r->abbreviation:$r->typical_score", "other abbreviations accepted");
-	if (count($farr[0]) > 1) {
-	    $r2 = $farr[0][1];
-	    _searchQuickrefRow("", "$r2->abbreviation:$r2->typical_score", "other fields accepted (here, $r2->name_html)");
-	}
-	if (isset($r->typical_score_range)) {
-	    _searchQuickrefRow("", "$r->abbreviation:$r->typical_score0..$r->typical_score", "completed reviews’ $r->name_html scores are in the $r->typical_score0&ndash;$r->typical_score range<br /><small>(all scores between $r->typical_score0 and $r->typical_score)</small>");
-	    _searchQuickrefRow("", "$r->abbreviation:$r->typical_score_range", "completed reviews’ $r->name_html scores <em>fill</em> the $r->typical_score0&ndash;$r->typical_score range<br /><small>(all scores between $r->typical_score0 and $r->typical_score, with at least one $r->typical_score0 and at least one $r->typical_score)</small>");
-	}
-	if (!$r->option_letter)
-	    list($greater, $less, $hint) = array("greater", "less", "");
-	else {
-	    $hint = "<br /><small>(better scores are closer to A than Z)</small>";
-	    if (defval($Opt, "smartScoreCompare"))
-		list($greater, $less) = array("better", "worse");
-	    else
-		list($greater, $less) = array("worse", "better");
-	}
-	_searchQuickrefRow("", "$r->abbreviation:>$r->typical_score", "at least one completed review has $r->name_html score $greater than $r->typical_score" . $hint);
-	_searchQuickrefRow("", "$r->abbreviation:2<=$r->typical_score", "at least two completed reviews have $r->name_html score $less than or equal to $r->typical_score");
-	_searchQuickrefRow("", "$r->abbreviation:pc>$r->typical_score", "at least one completed PC review has $r->name_html score $greater than $r->typical_score");
-	_searchQuickrefRow("", "$r->abbreviation:pc:2>$r->typical_score", "at least two completed PC reviews have $r->name_html score $greater than $r->typical_score");
-	_searchQuickrefRow("", "$r->abbreviation:sylvia=$r->typical_score", "“sylvia” (reviewer name/email) gave $r->name_html score $r->typical_score");
-	$t = "";
+        _searchQuickrefRow($t, "$r->abbreviation1:$r->typical_score", "at least one completed review has $r->name_html score $r->typical_score");
+        _searchQuickrefRow("", "$r->abbreviation:$r->typical_score", "other abbreviations accepted");
+        if (count($farr[0]) > 1) {
+            $r2 = $farr[0][1];
+            _searchQuickrefRow("", "$r2->abbreviation:$r2->typical_score", "other fields accepted (here, $r2->name_html)");
+        }
+        if (isset($r->typical_score_range)) {
+            _searchQuickrefRow("", "$r->abbreviation:$r->typical_score0..$r->typical_score", "completed reviews’ $r->name_html scores are in the $r->typical_score0&ndash;$r->typical_score range<br /><small>(all scores between $r->typical_score0 and $r->typical_score)</small>");
+            _searchQuickrefRow("", "$r->abbreviation:$r->typical_score_range", "completed reviews’ $r->name_html scores <em>fill</em> the $r->typical_score0&ndash;$r->typical_score range<br /><small>(all scores between $r->typical_score0 and $r->typical_score, with at least one $r->typical_score0 and at least one $r->typical_score)</small>");
+        }
+        if (!$r->option_letter)
+            list($greater, $less, $hint) = array("greater", "less", "");
+        else {
+            $hint = "<br /><small>(better scores are closer to A than Z)</small>";
+            if (defval($Opt, "smartScoreCompare"))
+                list($greater, $less) = array("better", "worse");
+            else
+                list($greater, $less) = array("worse", "better");
+        }
+        _searchQuickrefRow("", "$r->abbreviation:>$r->typical_score", "at least one completed review has $r->name_html score $greater than $r->typical_score" . $hint);
+        _searchQuickrefRow("", "$r->abbreviation:2<=$r->typical_score", "at least two completed reviews have $r->name_html score $less than or equal to $r->typical_score");
+        _searchQuickrefRow("", "$r->abbreviation:pc>$r->typical_score", "at least one completed PC review has $r->name_html score $greater than $r->typical_score");
+        _searchQuickrefRow("", "$r->abbreviation:pc:2>$r->typical_score", "at least two completed PC reviews have $r->name_html score $greater than $r->typical_score");
+        _searchQuickrefRow("", "$r->abbreviation:sylvia=$r->typical_score", "“sylvia” (reviewer name/email) gave $r->name_html score $r->typical_score");
+        $t = "";
     }
     if (count($farr[1])) {
-	$r = $farr[1][0];
-	_searchQuickrefRow($t, "$r->abbreviation1:finger", "at least one completed review has “finger” in the $r->name_html field");
-	_searchQuickrefRow($t, "$r->abbreviation:finger", "other abbreviations accepted");
-	_searchQuickrefRow($t, "$r->abbreviation:any", "at least one completed review has text in the $r->name_html field");
+        $r = $farr[1][0];
+        _searchQuickrefRow($t, "$r->abbreviation1:finger", "at least one completed review has “finger” in the $r->name_html field");
+        _searchQuickrefRow($t, "$r->abbreviation:finger", "other abbreviations accepted");
+        _searchQuickrefRow($t, "$r->abbreviation:any", "at least one completed review has text in the $r->name_html field");
     }
     echo "</table>\n";
 }
@@ -343,12 +343,12 @@ function searchQuickref() {
 function _currentVoteTags() {
     $tagger = new Tagger;
     if ($tagger->has_vote()) {
-	$votetags = " (currently ";
-	foreach ($tagger->vote_tags() as $tag => $v)
-	    $votetags .= "“<a href=\"" . hoturl("search", "q=rorder:$tag") . "\">$tag</a>”, ";
-	return substr($votetags, 0, strlen($votetags) - 2) . ")";
+        $votetags = " (currently ";
+        foreach ($tagger->vote_tags() as $tag => $v)
+            $votetags .= "“<a href=\"" . hoturl("search", "q=rorder:$tag") . "\">$tag</a>”, ";
+        return substr($votetags, 0, strlen($votetags) - 2) . ")";
     } else
-	return "";
+        return "";
 }
 
 function _singleVoteTag() {
@@ -370,27 +370,27 @@ function tags() {
 
     if ($Me->isPC) {
         $tagger = new Tagger;
-	$ct = array_keys($tagger->chair_tags());
-	if (count($ct)) {
-	    sort($ct);
-	    $chairtags = " (currently ";
-	    foreach ($ct as $c)
-		$chairtags .= "“<a href=\"" . hoturl("search", "q=%23$c") . "\">$c</a>”, ";
-	    $chairtags = substr($chairtags, 0, strlen($chairtags) - 2) . ")";
-	}
+        $ct = array_keys($tagger->chair_tags());
+        if (count($ct)) {
+            sort($ct);
+            $chairtags = " (currently ";
+            foreach ($ct as $c)
+                $chairtags .= "“<a href=\"" . hoturl("search", "q=%23$c") . "\">$c</a>”, ";
+            $chairtags = substr($chairtags, 0, strlen($chairtags) - 2) . ")";
+        }
 
-	$votetags = _currentVoteTags();
+        $votetags = _currentVoteTags();
 
-	if ($Me->privChair)
-	    $setting = "  (<a href='" . hoturl("settings", "group=reviews") . "'>Change this setting</a>)";
+        if ($Me->privChair)
+            $setting = "  (<a href='" . hoturl("settings", "group=reviews") . "'>Change this setting</a>)";
 
-	if ($Conf->setting("tag_seeall") > 0) {
-	    $conflictmsg3 = "Currently PC members can see tags for any paper, including conflicts.";
-	} else {
-	    $conflictmsg1 = " or conflicted PC members";
-	    $conflictmsg2 = "  However, since PC members currently can’t see tags for conflicted papers, each PC member might see a different list." . $setting;
-	    $conflictmsg3 = "They are currently hidden from conflicted PC members&mdash;for instance, if a PC member searches for a tag, the results will never include conflicts.";
-	}
+        if ($Conf->setting("tag_seeall") > 0) {
+            $conflictmsg3 = "Currently PC members can see tags for any paper, including conflicts.";
+        } else {
+            $conflictmsg1 = " or conflicted PC members";
+            $conflictmsg2 = "  However, since PC members currently can’t see tags for conflicted papers, each PC member might see a different list." . $setting;
+            $conflictmsg3 = "They are currently hidden from conflicted PC members&mdash;for instance, if a PC member searches for a tag, the results will never include conflicts.";
+        }
     }
 
     echo "<table>";
@@ -648,8 +648,8 @@ their reviews.  The interface appears above each visible review:
 
 <div class='rev_rating'>
   How helpful is this review? &nbsp;<form><div class='inform'>"
-		  . Ht::select("rating", ReviewForm::$rating_types, "n")
-		  . "</div></form>
+                  . Ht::select("rating", ReviewForm::$rating_types, "n")
+                  . "</div></form>
 </div>
 
 <p>When rating a review, please consider its value for both the program
@@ -690,11 +690,11 @@ To find all reviews with positive ratings,
 You may also search for reviews with specific ratings; for instance,
 <a href='" . hoturl("search", "q=rate:helpful") . "'>search for “rate:helpful”</a>.</p>");
     if ($Conf->setting("rev_ratings") == REV_RATINGS_PC)
-	$what = "only PC members";
+        $what = "only PC members";
     else if ($Conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
-	$what = "PC members and external reviewers";
+        $what = "PC members and external reviewers";
     else
-	$what = "no one";
+        $what = "no one";
     _alternateRow("Settings", "
 Chairs set how ratings work on the <a
 href='" . hoturl("settings", "group=reviews") . "'>review settings

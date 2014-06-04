@@ -68,9 +68,9 @@ if (!isset($Error) && $need_docid && !$docid)
 
 // Actually download paper.
 if (!isset($Error)) {
-    session_write_close();	// to allow concurrent clicks
+    session_write_close();      // to allow concurrent clicks
     if ($Conf->downloadPaper($prow, rcvtint($_REQUEST["save"]) > 0, $documentType, $docid))
-	exit;
+        exit;
 }
 
 // If we get here, there is an error.

@@ -50,18 +50,18 @@ if (!isset($_REQUEST["u"])
 
 
 if (!$Me->privChair)
-    $Acct = $Me;		// always this contact
+    $Acct = $Me;                // always this contact
 else if (isset($_REQUEST["new"]) || defval($_REQUEST, "u") == "new") {
     $Acct = new Contact;
     $newProfile = true;
 } else if (isset($_REQUEST["u"])) {
     if (($id = cvtint($_REQUEST["u"])) > 0)
-	$Acct = Contact::find_by_id($id);
+        $Acct = Contact::find_by_id($id);
     else
-	$Acct = Contact::find_by_email($_REQUEST["u"]);
+        $Acct = Contact::find_by_email($_REQUEST["u"]);
     if (!$Acct) {
-	$Conf->errorMsg("Invalid contact.");
-	$Acct = $Me;
+        $Conf->errorMsg("Invalid contact.");
+        $Acct = $Me;
     }
 } else
     $Acct = $Me;
@@ -73,16 +73,16 @@ if ($Acct)
 function tfError(&$tf, $errorField, $text) {
     global $Conf, $Error, $UpdateError;
     if (!isset($tf["lineno"])) {
-	$UpdateError = $text;
-	if ($errorField)
-	    $Error[$errorField] = true;
+        $UpdateError = $text;
+        if ($errorField)
+            $Error[$errorField] = true;
     } else {
-	$lineno = $tf["lineno"];
-	if ($tf["filename"])
-	    $l = htmlspecialchars($tf["filename"]) . ":" . $lineno;
-	else
-	    $l = "line " . $lineno;
-	$tf["err"][$lineno] = "<span class='lineno'>$l:</span> $text";
+        $lineno = $tf["lineno"];
+        if ($tf["filename"])
+            $l = htmlspecialchars($tf["filename"]) . ":" . $lineno;
+        else
+            $l = "line " . $lineno;
+        $tf["err"][$lineno] = "<span class='lineno'>$l:</span> $text";
     }
     return false;
 }
@@ -109,52 +109,52 @@ function createUser(&$req, &$tf, $newProfile, $useRequestPassword = false) {
     $external_login = isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]);
 
     if (!$external_login)
-	$req["uemail"] = trim(defval($req, "uemail", ""));
+        $req["uemail"] = trim(defval($req, "uemail", ""));
     else if ($newProfile)
-	$req["uemail"] = trim(defval($req, "newUsername", ""));
+        $req["uemail"] = trim(defval($req, "newUsername", ""));
     else
-	$req["uemail"] = $Acct->email;
+        $req["uemail"] = $Acct->email;
 
     if ($external_login)
-	$req["upassword"] = $req["upassword2"] = $Acct->password;
+        $req["upassword"] = $req["upassword2"] = $Acct->password;
     else if ($newProfile)
-	$req["upassword"] = "";
+        $req["upassword"] = "";
     else if (defval($req, "whichpassword") == "t"
-	     && isset($req["upasswordt"]))
-	$req["upassword"] = $req["upassword2"] = $req["upasswordt"];
+             && isset($req["upasswordt"]))
+        $req["upassword"] = $req["upassword2"] = $req["upasswordt"];
 
     // check for missing fields
     $any_missing = false;
     foreach (array("firstName", "lastName", "affiliation", "uemail", "upassword") as $field)
-	if (!isset($req[$field]))
-	    $Error[$field] = $any_missing = true;
+        if (!isset($req[$field]))
+            $Error[$field] = $any_missing = true;
     if ($any_missing)
-	return tfError($tf, false, "Required form fields missing.");
+        return tfError($tf, false, "Required form fields missing.");
 
     // check passwords
     if (!$newProfile && trim(defval($req, "upassword", "")) == "")
         $req["upassword"] = "";
     if (!$newProfile && $req["upassword"] != "") {
-	if ($req["upassword"] != defval($req, "upassword2", ""))
-	    return tfError($tf, "password", "The two passwords you entered did not match.");
-	else if (trim($req["upassword"]) != $req["upassword"])
-	    return tfError($tf, "password", "Passwords cannot begin or end with spaces.");
+        if ($req["upassword"] != defval($req, "upassword2", ""))
+            return tfError($tf, "password", "The two passwords you entered did not match.");
+        else if (trim($req["upassword"]) != $req["upassword"])
+            return tfError($tf, "password", "Passwords cannot begin or end with spaces.");
     }
 
     // check email
     if ($newProfile || $req["uemail"] != $Acct->email) {
-	if (Contact::id_by_email($req["uemail"])) {
-	    $msg = "An account is already registered with email address &ldquo;" . htmlspecialchars($req["uemail"]) . "&rdquo;.";
-	    if (!$newProfile)
-		$msg .= "You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
-	    return tfError($tf, "uemail", $msg);
-	} else if ($external_login) {
-	    if ($req["uemail"] == "")
-		return tfError($tf, "newUsername", "Not a valid username.");
-	} else if ($req["uemail"] == "")
-	    return tfError($tf, "uemail", "You must supply an email address.");
-	else if (!validateEmail($req["uemail"]))
-	    return tfError($tf, "uemail", "&ldquo;" . htmlspecialchars($req["uemail"]) . "&rdquo; is not a valid email address.");
+        if (Contact::id_by_email($req["uemail"])) {
+            $msg = "An account is already registered with email address &ldquo;" . htmlspecialchars($req["uemail"]) . "&rdquo;.";
+            if (!$newProfile)
+                $msg .= "You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
+            return tfError($tf, "uemail", $msg);
+        } else if ($external_login) {
+            if ($req["uemail"] == "")
+                return tfError($tf, "newUsername", "Not a valid username.");
+        } else if ($req["uemail"] == "")
+            return tfError($tf, "uemail", "You must supply an email address.");
+        else if (!validateEmail($req["uemail"]))
+            return tfError($tf, "uemail", "&ldquo;" . htmlspecialchars($req["uemail"]) . "&rdquo; is not a valid email address.");
         if (!$newProfile && !$Me->privChair) {
             $rest = array("emailTo" => $req["uemail"],
                           "capability" => $Conf->create_capability(CAPTYPE_CHANGEEMAIL, array("contactId" => $Acct->contactId, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $req["uemail"])))));
@@ -168,7 +168,7 @@ function createUser(&$req, &$tf, $newProfile, $useRequestPassword = false) {
         }
     }
     if (isset($req["preferredEmail"]) && !validateEmail($req["preferredEmail"]))
-	return tfError($tf, "preferredEmail", "&ldquo;" . htmlspecialchars($req["preferredEmail"]) . "&rdquo; is not a valid email address.");
+        return tfError($tf, "preferredEmail", "&ldquo;" . htmlspecialchars($req["preferredEmail"]) . "&rdquo; is not a valid email address.");
 
     // at this point we will create the account
     if ($newProfile) {
@@ -176,14 +176,14 @@ function createUser(&$req, &$tf, $newProfile, $useRequestPassword = false) {
         if ($useRequestPassword && @$req["password"])
             $reg["password"] = $req["password"];
         $Acct = Contact::find_by_email($req["uemail"], $reg, true);
-	if (!$Acct)
-	    return tfError($tf, "uemail", "Database error, please try again");
+        if (!$Acct)
+            return tfError($tf, "uemail", "Database error, please try again");
     }
 
     $updatepc = false;
 
     if ($Me->privChair) {
-	// initialize roles too
+        // initialize roles too
         set_request_pctype($req);
         $new_roles = ($req["pctype"] != "no" ? Contact::ROLE_PC : 0)
             | (isset($req["ass"]) ? Contact::ROLE_ADMIN : 0)
@@ -199,26 +199,26 @@ function createUser(&$req, &$tf, $newProfile, $useRequestPassword = false) {
 
     // ensure changes in PC member data are reflected immediately
     if (($Acct->roles & Contact::ROLE_PCLIKE)
-	&& !$updatepc
-	&& ($Acct->firstName != $req["firstName"]
-	    || $Acct->lastName != $req["lastName"]
-	    || $Acct->email != $req["uemail"]
-	    || $Acct->affiliation != $req["affiliation"]))
-	$updatepc = true;
+        && !$updatepc
+        && ($Acct->firstName != $req["firstName"]
+            || $Acct->lastName != $req["lastName"]
+            || $Acct->email != $req["uemail"]
+            || $Acct->affiliation != $req["affiliation"]))
+        $updatepc = true;
 
     $Acct->firstName = $req["firstName"];
     $Acct->lastName = $req["lastName"];
     $Acct->email = $req["uemail"];
     $Acct->affiliation = $req["affiliation"];
     if (!$newProfile && !$external_login && $req["upassword"] != "")
-	$Acct->change_password($req["upassword"]);
+        $Acct->change_password($req["upassword"]);
     if (isset($req["preferredEmail"]))
-	$Acct->preferredEmail = $req["preferredEmail"];
+        $Acct->preferredEmail = $req["preferredEmail"];
     foreach (array("voicePhoneNumber", "collaborators",
-		   "addressLine1", "addressLine2", "city", "state",
-		   "zipCode", "country") as $v)
-	if (isset($req[$v]))
-	    $Acct->$v = $req[$v];
+                   "addressLine1", "addressLine2", "city", "state",
+                   "zipCode", "country") as $v)
+        if (isset($req[$v]))
+            $Acct->$v = $req[$v];
     $Acct->defaultWatch = 0;
     if (@$req["follow"] && preg_match('/\breviews\b/', $req["follow"]))
         $req["watchcomment"] = true;
@@ -227,22 +227,22 @@ function createUser(&$req, &$tf, $newProfile, $useRequestPassword = false) {
     if (@$req["follow"] && preg_match('/\ballfinal\b/', $req["follow"]))
         $req["watchfinalall"] = true;
     if (@$req["watchcomment"] || @$req["watchcommentall"]) {
-	$Acct->defaultWatch |= WATCH_COMMENT;
-	if (($Acct->roles & Contact::ROLE_PCLIKE)
-	    && @$req["watchcommentall"])
-	    $Acct->defaultWatch |= WATCH_ALLCOMMENTS;
+        $Acct->defaultWatch |= WATCH_COMMENT;
+        if (($Acct->roles & Contact::ROLE_PCLIKE)
+            && @$req["watchcommentall"])
+            $Acct->defaultWatch |= WATCH_ALLCOMMENTS;
     }
     if (@$req["watchfinalall"]
-	&& ($Acct->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)))
-	$Acct->defaultWatch |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL);
+        && ($Acct->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)))
+        $Acct->defaultWatch |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL);
     $newTags = ($Me->privChair ? null : $Acct->contactTags);
     if (($Acct->roles & Contact::ROLE_PCLIKE)
-	&& $Me->privChair
-	&& defval($req, "contactTags", "") != "") {
-	$tagger = new Tagger;
-	$tout = "";
-	$warn = "";
-	foreach (preg_split('/\s+/', $req["contactTags"]) as $t) {
+        && $Me->privChair
+        && defval($req, "contactTags", "") != "") {
+        $tagger = new Tagger;
+        $tout = "";
+        $warn = "";
+        foreach (preg_split('/\s+/', $req["contactTags"]) as $t) {
             if ($t == "")
                 /* do nothing */;
             else if (!$tagger->check($t, Tagger::NOPRIVATE | Tagger::NOVALUE | Tagger::NOCHAIR))
@@ -250,42 +250,42 @@ function createUser(&$req, &$tf, $newProfile, $useRequestPassword = false) {
             else if ($t != "pc")
                 $tout .= " " . $t;
         }
-	if ($warn != "")
-	    return tfError($tf, "contactTags", $warn);
-	if ($tout != "")
-	    $newTags = $tout . " ";
+        if ($warn != "")
+            return tfError($tf, "contactTags", $warn);
+        if ($tout != "")
+            $newTags = $tout . " ";
     }
     if ($newTags !== $Acct->contactTags) {
-	$Acct->contactTags = $newTags;
-	$updatepc = true;
+        $Acct->contactTags = $newTags;
+        $updatepc = true;
     }
 
     if ($OK)
-	$Acct->save();
+        $Acct->save();
 
     if ($updatepc)
-	$Conf->invalidateCaches(array("pc" => 1));
+        $Conf->invalidateCaches(array("pc" => 1));
 
     // if PC member, update collaborators and areas of expertise
     if (($Acct->isPC || $newProfile) && $OK) {
-	// remove all current interests
-	$Conf->qe("delete from TopicInterest where contactId=$Acct->contactId", "while updating topic interests");
+        // remove all current interests
+        $Conf->qe("delete from TopicInterest where contactId=$Acct->contactId", "while updating topic interests");
 
-	foreach ($req as $key => $value)
-	    if ($OK && strlen($key) > 2 && $key[0] == 't' && $key[1] == 'i'
-		&& ($id = (int) substr($key, 2)) > 0
-		&& is_numeric($value)
-		&& ($value = (int) $value) >= -4 && $value <= 4)
-		$Conf->qe("insert into TopicInterest (contactId, topicId, interest) values ($Acct->contactId, $id, $value)", "while updating topic interests");
+        foreach ($req as $key => $value)
+            if ($OK && strlen($key) > 2 && $key[0] == 't' && $key[1] == 'i'
+                && ($id = (int) substr($key, 2)) > 0
+                && is_numeric($value)
+                && ($value = (int) $value) >= -4 && $value <= 4)
+                $Conf->qe("insert into TopicInterest (contactId, topicId, interest) values ($Acct->contactId, $id, $value)", "while updating topic interests");
     }
 
     if ($OK) {
-	// Refresh the results
-	$Acct = Contact::find_by_email($req["uemail"]);
-	if (!$newProfile)
-	    $Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
-	foreach (array("firstName", "lastName", "affiliation") as $k)
-	    $req[$k] = $Acct->$k;
+        // Refresh the results
+        $Acct = Contact::find_by_email($req["uemail"]);
+        if (!$newProfile)
+            $Conf->log("Account updated" . ($Me->contactId == $Acct->contactId ? "" : " by $Me->email"), $Acct);
+        foreach (array("firstName", "lastName", "affiliation") as $k)
+            $req[$k] = $Acct->$k;
         foreach (array("upassword", "upassword2", "upasswordt") as $k)
             unset($req[$k]);
     }
@@ -297,7 +297,7 @@ function parseBulkFile($text, $filename) {
     global $Conf, $Acct;
     $text = cleannl($text);
     if (!is_valid_utf8($text))
-	$text = windows_1252_to_utf8($text);
+        $text = windows_1252_to_utf8($text);
     $tf = array("err" => array(), "filename" => $filename, "lineno" => 0);
     $success = array();
 
@@ -305,9 +305,9 @@ function parseBulkFile($text, $filename) {
     $csv->set_comment_chars("#%");
     $line = $csv->next();
     if ($line && array_search("email", $line) !== false)
-	$csv->set_header($line);
+        $csv->set_header($line);
     else {
-	$csv->set_header(array("name", "email", "affiliation"));
+        $csv->set_header(array("name", "email", "affiliation"));
         $csv->unshift($line);
     }
 
@@ -323,22 +323,22 @@ function parseBulkFile($text, $filename) {
 
     while (($line = $csv->next()) !== false) {
         $tf["lineno"] = $csv->lineno();
-	foreach (array("firstname" => "firstName", "first" => "firstName",
-		       "lastname" => "lastName", "last" => "lastName",
+        foreach (array("firstname" => "firstName", "first" => "firstName",
+                       "lastname" => "lastName", "last" => "lastName",
                        "fullname" => "name", "fullName" => "name",
-		       "voice" => "voicePhoneNumber", "phone" => "voicePhoneNumber",
-		       "address1" => "addressLine1", "province" => "state", "region" => "state",
-		       "address2" => "addressLine2", "postalcode" => "zipCode",
-		       "zip" => "zipCode", "tags" => "contactTags") as $k => $x)
-	    if (isset($line[$k]) && !isset($line[$x]))
-		$line[$x] = $line[$k];
-	if (isset($line["name"]) && !isset($line["firstName"]) && !isset($line["lastName"]))
-	    list($line["firstName"], $line["lastName"]) = Text::split_name($line["name"]);
-	foreach ($req_template as $k => $v)
-	    if (!isset($line[$k]))
-		$line[$k] = $v;
-	list($line["firstName"], $line["lastName"], $line["uemail"]) =
-	    array(defval($line, "firstName", ""), defval($line, "lastName", ""), defval($line, "email", ""));
+                       "voice" => "voicePhoneNumber", "phone" => "voicePhoneNumber",
+                       "address1" => "addressLine1", "province" => "state", "region" => "state",
+                       "address2" => "addressLine2", "postalcode" => "zipCode",
+                       "zip" => "zipCode", "tags" => "contactTags") as $k => $x)
+            if (isset($line[$k]) && !isset($line[$x]))
+                $line[$x] = $line[$k];
+        if (isset($line["name"]) && !isset($line["firstName"]) && !isset($line["lastName"]))
+            list($line["firstName"], $line["lastName"]) = Text::split_name($line["name"]);
+        foreach ($req_template as $k => $v)
+            if (!isset($line[$k]))
+                $line[$k] = $v;
+        list($line["firstName"], $line["lastName"], $line["uemail"]) =
+            array(defval($line, "firstName", ""), defval($line, "lastName", ""), defval($line, "email", ""));
         if (count($topic_revmap)) {
             foreach (array_keys($line) as $k)
                 if (preg_match('/^topic:\s+(.*?)\s*$/i', $k, $m)) {
@@ -356,25 +356,25 @@ function parseBulkFile($text, $filename) {
                 }
         }
 
-	if (createUser($line, $tf, true, true))
-	    $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">"
+        if (createUser($line, $tf, true, true))
+            $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">"
                 . Text::user_html_nolink($Acct) . "</a>";
     }
 
     if (count($unknown_topics))
         $tf["err"][] = "There were unrecognized topics (" . htmlspecialchars(commajoin($unknown_topics)) . ").";
     if (count($tf["err"]) > 0) {
-	ksort($tf["err"]);
-	$errorMsg = "were errors while parsing the uploaded account file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf["err"]) . "</p></div>";
+        ksort($tf["err"]);
+        $errorMsg = "were errors while parsing the uploaded account file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf["err"]) . "</p></div>";
     }
     if (count($success) > 0 && count($tf["err"]) > 0)
-	$Conf->confirmMsg("Created " . plural($success, "account") . " " . commajoin($success) . ".<br />However, there $errorMsg");
+        $Conf->confirmMsg("Created " . plural($success, "account") . " " . commajoin($success) . ".<br />However, there $errorMsg");
     else if (count($success) > 0)
-	$Conf->confirmMsg("Created " . plural($success, "account") . " " . commajoin($success) . ".");
+        $Conf->confirmMsg("Created " . plural($success, "account") . " " . commajoin($success) . ".");
     else if (count($tf["err"]) > 0)
-	$Conf->errorMsg("There $errorMsg");
+        $Conf->errorMsg("There $errorMsg");
     else
-	$Conf->warnMsg("Nothing to do.");
+        $Conf->warnMsg("Nothing to do.");
 }
 
 if (!check_post())
@@ -382,62 +382,62 @@ if (!check_post())
 else if (isset($_REQUEST["register"]) && $newProfile
          && fileUploaded($_FILES["bulk"])) {
     if (($text = file_get_contents($_FILES["bulk"]["tmp_name"])) === false)
-	$Conf->errorMsg("Internal error: cannot read file.");
+        $Conf->errorMsg("Internal error: cannot read file.");
     else
-	parseBulkFile($text, $_FILES["bulk"]["name"]);
+        parseBulkFile($text, $_FILES["bulk"]["name"]);
     $Acct = new Contact;
 } else if (isset($_REQUEST["register"])) {
     $tf = array();
     if (createUser($_REQUEST, $tf, $newProfile)) {
-	if ($newProfile) {
-	    $Conf->confirmMsg("Created <a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now create another account.");
-	    $_REQUEST["uemail"] = $_REQUEST["newUsername"] = $_REQUEST["firstName"] = $_REQUEST["lastName"] = $_REQUEST["affiliation"] = "";
-	} else {
-	    $Conf->confirmMsg("Account profile updated.");
+        if ($newProfile) {
+            $Conf->confirmMsg("Created <a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now create another account.");
+            $_REQUEST["uemail"] = $_REQUEST["newUsername"] = $_REQUEST["firstName"] = $_REQUEST["lastName"] = $_REQUEST["affiliation"] = "";
+        } else {
+            $Conf->confirmMsg("Account profile updated.");
             if ($Acct->contactId != $Me->contactId)
                 $_REQUEST["u"] = $Acct->email;
         }
-	if (isset($_REQUEST["redirect"]))
-	    go(hoturl("index"));
-	else
-	    redirectSelf();
+        if (isset($_REQUEST["redirect"]))
+            go(hoturl("index"));
+        else
+            redirectSelf();
     }
 } else if (isset($_REQUEST["merge"]) && !$newProfile
-	   && $Acct->contactId == $Me->contactId)
+           && $Acct->contactId == $Me->contactId)
     go(hoturl("mergeaccounts"));
 
 function databaseTracks($who) {
     global $Conf;
     $tracks = (object) array("soleAuthor" => array(),
-			     "author" => array(),
-			     "review" => array(),
-			     "comment" => array());
+                             "author" => array(),
+                             "review" => array(),
+                             "comment" => array());
 
     // find authored papers
     $result = $Conf->qe("select Paper.paperId, count(pc.contactId)
-	from Paper
-	join PaperConflict c on (c.paperId=Paper.paperId and c.contactId=$who and c.conflictType>=" . CONFLICT_AUTHOR . ")
-	join PaperConflict pc on (pc.paperId=Paper.paperId and pc.conflictType>=" . CONFLICT_AUTHOR . ")
-	group by Paper.paperId order by Paper.paperId");
+        from Paper
+        join PaperConflict c on (c.paperId=Paper.paperId and c.contactId=$who and c.conflictType>=" . CONFLICT_AUTHOR . ")
+        join PaperConflict pc on (pc.paperId=Paper.paperId and pc.conflictType>=" . CONFLICT_AUTHOR . ")
+        group by Paper.paperId order by Paper.paperId");
     while (($row = edb_row($result))) {
-	if ($row[1] == 1)
-	    $tracks->soleAuthor[] = $row[0];
-	$tracks->author[] = $row[0];
+        if ($row[1] == 1)
+            $tracks->soleAuthor[] = $row[0];
+        $tracks->author[] = $row[0];
     }
 
     // find reviews
     $result = $Conf->qe("select paperId from PaperReview
-	where PaperReview.contactId=$who
-	group by paperId order by paperId");
+        where PaperReview.contactId=$who
+        group by paperId order by paperId");
     while (($row = edb_row($result)))
-	$tracks->review[] = $row[0];
+        $tracks->review[] = $row[0];
 
     // find comments
     $result = $Conf->qe("select paperId from PaperComment
-	where PaperComment.contactId=$who
-	group by paperId order by paperId");
+        where PaperComment.contactId=$who
+        group by paperId order by paperId");
     while (($row = edb_row($result)))
-	$tracks->comment[] = $row[0];
+        $tracks->comment[] = $row[0];
 
     return $tracks;
 }
@@ -448,58 +448,58 @@ function textArrayPapers($pids) {
 
 if (isset($_REQUEST["delete"]) && $OK && check_post()) {
     if (!$Me->privChair)
-	$Conf->errorMsg("Only administrators can delete users.");
+        $Conf->errorMsg("Only administrators can delete users.");
     else if ($Acct->contactId == $Me->contactId)
-	$Conf->errorMsg("You aren’t allowed to delete yourself.");
+        $Conf->errorMsg("You aren’t allowed to delete yourself.");
     else {
-	$tracks = databaseTracks($Acct->contactId);
-	if (count($tracks->soleAuthor))
-	    $Conf->errorMsg("This user can’t be deleted since they are sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional paper contacts.");
-	else {
-	    $while = "while deleting user";
-	    foreach (array("ContactInfo", "Chair", "ChairAssistant",
-			   "ContactAddress",
-			   "PCMember", "PaperComment",
-			   "PaperConflict", "PaperReview",
-			   "PaperReviewPreference", "PaperReviewRefused",
-			   "PaperWatch", "ReviewRating", "TopicInterest")
-		     as $table)
-		$Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
-	    // tags are special because of voting tags, so go through Tagger
-	    $result = $Conf->qe("select paperId, tag from PaperTag where tag like '" . $Acct->contactId . "~%'", $while);
-	    $pids = $tags = array();
-	    while (($row = edb_row($result))) {
-		$pids[$row[0]] = 1;
-		$tags[substr($row[1], strlen($Acct->contactId))] = 1;
-	    }
-	    if (count($pids) > 0) {
+        $tracks = databaseTracks($Acct->contactId);
+        if (count($tracks->soleAuthor))
+            $Conf->errorMsg("This user can’t be deleted since they are sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional paper contacts.");
+        else {
+            $while = "while deleting user";
+            foreach (array("ContactInfo", "Chair", "ChairAssistant",
+                           "ContactAddress",
+                           "PCMember", "PaperComment",
+                           "PaperConflict", "PaperReview",
+                           "PaperReviewPreference", "PaperReviewRefused",
+                           "PaperWatch", "ReviewRating", "TopicInterest")
+                     as $table)
+                $Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
+            // tags are special because of voting tags, so go through Tagger
+            $result = $Conf->qe("select paperId, tag from PaperTag where tag like '" . $Acct->contactId . "~%'", $while);
+            $pids = $tags = array();
+            while (($row = edb_row($result))) {
+                $pids[$row[0]] = 1;
+                $tags[substr($row[1], strlen($Acct->contactId))] = 1;
+            }
+            if (count($pids) > 0) {
                 $tagger = new Tagger($Acct);
-		$tagger->save(array_keys($pids), join(" ", array_keys($tags)), "d");
+                $tagger->save(array_keys($pids), join(" ", array_keys($tags)), "d");
             }
             // clear caches
             if ($Acct->isPC || $Acct->privChair)
                 $Conf->invalidateCaches(array("pc" => 1));
-	    // done
-	    $Conf->confirmMsg("Permanently deleted user " . htmlspecialchars($Acct->email) . ".");
-	    $Conf->log("Permanently deleted user " . htmlspecialchars($Acct->email) . " ($Acct->contactId)", $Me);
-	    go(hoturl("users", "t=all"));
-	}
+            // done
+            $Conf->confirmMsg("Permanently deleted user " . htmlspecialchars($Acct->email) . ".");
+            $Conf->log("Permanently deleted user " . htmlspecialchars($Acct->email) . " ($Acct->contactId)", $Me);
+            go(hoturl("users", "t=all"));
+        }
     }
 }
 
 function crpformvalue($val, $field = null) {
     global $Acct;
     if (isset($_REQUEST[$val]))
-	return htmlspecialchars($_REQUEST[$val]);
+        return htmlspecialchars($_REQUEST[$val]);
     else if ($field == "password" && $Acct->password_type != 0)
         return "";
     else if ($val == "contactTags")
         return htmlspecialchars($Acct->all_contact_tags());
     else if ($field !== false) {
-	$v = $field ? $Acct->$field : $Acct->$val;
-	return htmlspecialchars($v === null ? "" : $v);
+        $v = $field ? $Acct->$field : $Acct->$val;
+        return htmlspecialchars($v === null ? "" : $v);
     } else
-	return "";
+        return "";
 }
 
 function fcclass($what = false) {
@@ -514,19 +514,19 @@ function feclass($what = false) {
 
 function echofield($type, $classname, $captiontext, $entrytext) {
     if ($type <= 1)
-	echo "<div class='f-i'>";
+        echo "<div class='f-i'>";
     if ($type >= 1)
-	echo "<div class='f-ix'>";
+        echo "<div class='f-ix'>";
     echo "<div class='", fcclass($classname), "'>", $captiontext, "</div>",
-	"<div class='", feclass($classname), "'>", $entrytext, "</div></div>\n";
+        "<div class='", feclass($classname), "'>", $entrytext, "</div></div>\n";
     if ($type > 2)
-	echo "<div class='clear'></div></div>\n";
+        echo "<div class='clear'></div></div>\n";
 }
 
 function textinput($name, $value, $size, $id = false, $password = false) {
     return "<input type=\"" . ($password ? "password" : "text")
-	. "\" class=\"textlite\" name=\"$name\" " . ($id ? "id=\"$id\" " : "")
-	. "size=\"$size\" value=\"$value\" onchange=\"hiliter(this)\" />";
+        . "\" class=\"textlite\" name=\"$name\" " . ($id ? "id=\"$id\" " : "")
+        . "size=\"$size\" value=\"$value\" onchange=\"hiliter(this)\" />";
 }
 
 
@@ -552,29 +552,29 @@ else if (isset($Me->fresh) && $Me->fresh === "redirect") {
     $msgs = array();
     $amsg = "";
     if (!$Me->firstName && !$Me->lastName)
-	$msgs[] = "enter your name";
+        $msgs[] = "enter your name";
     if (!$Me->affiliation)
-	$msgs[] = "enter your affiliation";
+        $msgs[] = "enter your affiliation";
     if ($ispc && !$Me->collaborators)
-	$msgs[] = "list your recent collaborators";
+        $msgs[] = "list your recent collaborators";
     $msgs[] = "update your " . (count($msgs) ? "other " : "") . "contact information";
     if (!$Me->affiliation || ($ispc && !$Me->collaborators)) {
-	$amsg .= "  We use your ";
-	if (!$Me->affiliation)
-	    $amsg .= "affiliation ";
-	if ($ispc && !$Me->collaborators)
-	    $amsg .= ($Me->affiliation ? "" : "and ") . "recent collaborators ";
-	$amsg .= "to detect paper conflicts; enter “None”";
-	if (!$Me->affiliation)
-	    $amsg .= " or “Unaffiliated”";
-	$amsg .= " if you have none.";
+        $amsg .= "  We use your ";
+        if (!$Me->affiliation)
+            $amsg .= "affiliation ";
+        if ($ispc && !$Me->collaborators)
+            $amsg .= ($Me->affiliation ? "" : "and ") . "recent collaborators ";
+        $amsg .= "to detect paper conflicts; enter “None”";
+        if (!$Me->affiliation)
+            $amsg .= " or “Unaffiliated”";
+        $amsg .= " if you have none.";
     }
     if ($ispc) {
-	$result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
-	if (($row = edb_row($result)) && $row[0] && !$row[1]) {
-	    $msgs[] = "tell us your topic interests";
-	    $amsg .= "  We use your topic interests to assign you papers you might like.";
-	}
+        $result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
+        if (($row = edb_row($result)) && $row[0] && !$row[1]) {
+            $msgs[] = "tell us your topic interests";
+            $amsg .= "  We use your topic interests to assign you papers you might like.";
+        }
     }
     $Conf->infoMsg("Please take a moment to " . commajoin($msgs) . "." . $amsg);
 }
@@ -620,7 +620,7 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])) 
   <div class='", fcclass('password'), "'>New password</div>
   <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"\" onchange='hiliter(this)' />";
     if ($Me->privChair && $Acct->password_type == 0)
-	echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upasswordt', 'password'), "\" onchange='hiliter(this)' />";
+        echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upasswordt', 'password'), "\" onchange='hiliter(this)' />";
     echo "</div>
 </div><div class='fn f-ix'>
   <div class='", fcclass('password'), "'>Repeat password</div>
@@ -647,17 +647,17 @@ echofield(0, "affiliation", "Affiliation", textinput("affiliation", crpformvalue
 
 
 $any_address = ($Acct->addressLine1 || $Acct->addressLine2 || $Acct->city
-		|| $Acct->state || $Acct->zipCode || $Acct->country);
+                || $Acct->state || $Acct->zipCode || $Acct->country);
 if ($Conf->setting("acct_addr") || $Acct->is_reviewer()
     || $any_address || $Acct->voicePhoneNumber) {
     echo "<div class='g'></div>\n";
     if ($Conf->setting("acct_addr") || $any_address) {
-	echofield(0, false, "Address line 1", textinput("addressLine1", crpformvalue("addressLine1"), 52));
-	echofield(0, false, "Address line 2", textinput("addressLine2", crpformvalue("addressLine2"), 52));
-	echofield(0, false, "City", textinput("city", crpformvalue("city"), 52));
-	echofield(1, false, "State/Province/Region", textinput("state", crpformvalue("state"), 24));
-	echofield(3, false, "ZIP/Postal code", textinput("zipCode", crpformvalue("zipCode"), 12));
-	echofield(0, false, "Country", Countries::selector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : $Acct->country)));
+        echofield(0, false, "Address line 1", textinput("addressLine1", crpformvalue("addressLine1"), 52));
+        echofield(0, false, "Address line 2", textinput("addressLine2", crpformvalue("addressLine2"), 52));
+        echofield(0, false, "City", textinput("city", crpformvalue("city"), 52));
+        echofield(1, false, "State/Province/Region", textinput("state", crpformvalue("state"), 24));
+        echofield(3, false, "ZIP/Postal code", textinput("zipCode", crpformvalue("zipCode"), 12));
+        echofield(0, false, "Country", Countries::selector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : $Acct->country)));
     }
     echofield(1, false, "Phone <span class='f-cx'>(optional)</span>", textinput("voicePhoneNumber", crpformvalue("voicePhoneNumber"), 24));
     echo "<div class='clear'></div></div>\n";
@@ -665,16 +665,16 @@ if ($Conf->setting("acct_addr") || $Acct->is_reviewer()
 
 if ($newProfile) {
     echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", "", 2),
-	"</td><td><a href=\"javascript:void fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
-	"<tr class='fx2'><td></td><td>",
-	"<p>Upload a CSV file with one line per account. The header must define an <code>email</code> field. Other fields can include <code>name</code>, <code>first</code>, <code>last</code>, and <code>affiliation</code>.  Each new account’s role and PC information is set from the form below.  Example:</p>\n",
-	"<pre class='entryexample'>
+        "</td><td><a href=\"javascript:void fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
+        "<tr class='fx2'><td></td><td>",
+        "<p>Upload a CSV file with one line per account. The header must define an <code>email</code> field. Other fields can include <code>name</code>, <code>first</code>, <code>last</code>, and <code>affiliation</code>.  Each new account’s role and PC information is set from the form below.  Example:</p>\n",
+        "<pre class='entryexample'>
 name,email,affiliation
 John Adams,john@earbox.org,UC Berkeley
 \"Adams, John Quincy\",quincy@whitehouse.gov
 </pre>\n",
-	"<div class='g'></div>Upload: <input type='file' name='bulk' size='30' onchange='hiliter(this)' />",
-	"</td></tr></table></div>\n\n";
+        "<div class='g'></div>Upload: <input type='file' name='bulk' size='30' onchange='hiliter(this)' />",
+        "</td></tr></table></div>\n\n";
 }
 
 echo "</div></td>\n</tr>\n\n";
@@ -683,17 +683,17 @@ echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td><
     "<tr><td class='caption'>Email notification</td><td class='entry'>";
 if ((!$newProfile && $Acct->isPC) || $Me->privChair) {
     echo "<table><tr><td>Send mail on: &nbsp;</td>",
-	"<td>", Ht::checkbox_h("watchcomment", 1, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
-	Ht::label("Reviews and comments for authored or reviewed papers"), "</td></tr>",
-	"<tr><td></td><td>", Ht::checkbox_h("watchcommentall", 1, $Acct->defaultWatch & WATCH_ALLCOMMENTS), "&nbsp;",
-	Ht::label("Reviews and comments for <i>any</i> paper"), "</td></tr>";
+        "<td>", Ht::checkbox_h("watchcomment", 1, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
+        Ht::label("Reviews and comments for authored or reviewed papers"), "</td></tr>",
+        "<tr><td></td><td>", Ht::checkbox_h("watchcommentall", 1, $Acct->defaultWatch & WATCH_ALLCOMMENTS), "&nbsp;",
+        Ht::label("Reviews and comments for <i>any</i> paper"), "</td></tr>";
     if ($Me->privChair)
-	echo "<tr><td></td><td>", Ht::checkbox_h("watchfinalall", 1, $Acct->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL)), "&nbsp;",
-	    Ht::label("Updates to final versions"), "</td></tr>";
+        echo "<tr><td></td><td>", Ht::checkbox_h("watchfinalall", 1, $Acct->defaultWatch & (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL)), "&nbsp;",
+            Ht::label("Updates to final versions"), "</td></tr>";
     echo "</table>";
 } else
     echo Ht::checkbox_h("watchcomment", WATCH_COMMENT, $Acct->defaultWatch & (WATCH_COMMENT | WATCH_ALLCOMMENTS)), "&nbsp;",
-	Ht::label("Send mail on new comments for authored or reviewed papers");
+        Ht::label("Send mail on new comments for authored or reviewed papers");
 echo "</td></tr>\n\n";
 
 
@@ -704,10 +704,10 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
 
     foreach (array("chair" => "PC chair",
                    "pc" => "PC member",
-		   "no" => "Not on the PC") as $k => $v) {
-	echo Ht::radio_h("pctype", $k, $k == $_REQUEST["pctype"],
-			  array("id" => "pctype_$k", "onchange" => "hiliter(this);fold('account',\$\$('pctype_no').checked,1)")),
-	    "&nbsp;", Ht::label($v), "<br />\n";
+                   "no" => "Not on the PC") as $k => $v) {
+        echo Ht::radio_h("pctype", $k, $k == $_REQUEST["pctype"],
+                          array("id" => "pctype_$k", "onchange" => "hiliter(this);fold('account',\$\$('pctype_no').checked,1)")),
+            "&nbsp;", Ht::label($v), "<br />\n";
     }
 
     echo "</td><td><span class='sep'></span></td><td class='nowrap'>";
@@ -735,7 +735,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 
     $topics = $Conf->topic_map();
     if (count($topics)) {
-	echo "<tr id='topicinterest' class='fx1'>
+        echo "<tr id='topicinterest' class='fx1'>
   <td class='caption'>Topic interests</td>
   <td class='entry' id='topicinterest'><div class='hint'>
     Please indicate your interest in reviewing papers on these conference
@@ -750,36 +750,36 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 
         $interests = array(-2, -1.5,  -1, -0.5,  0, 1,  2, 3,  4);
         foreach ($topics as $id => $name) {
-	    echo "      <tr><td class=\"ti_topic\">", htmlspecialchars($name), "</td>";
-	    $tiname = "ti$id";
-	    $ival = cvtint(defval($_REQUEST, $tiname, ""), -100);
-	    if ($ival <= -100)
-		$ival = isset($imap[$id]) ? (int) $imap[$id] : 0;
+            echo "      <tr><td class=\"ti_topic\">", htmlspecialchars($name), "</td>";
+            $tiname = "ti$id";
+            $ival = cvtint(defval($_REQUEST, $tiname, ""), -100);
+            if ($ival <= -100)
+                $ival = isset($imap[$id]) ? (int) $imap[$id] : 0;
             for ($xj = 0; $xj + 1 < count($interests) && $ival > $interests[$xj + 1]; $xj += 2)
                 /* nothing */;
             for ($j = 0; $j < count($interests); $j += 2)
-		echo "<td class='ti_interest'>", Ht::radio_h("ti$id", $interests[$j], $j == $xj), "</td>";
-	    echo "</td></tr>\n";
-	}
-	echo "    </table></td>
+                echo "<td class='ti_interest'>", Ht::radio_h("ti$id", $interests[$j], $j == $xj), "</td>";
+            echo "</td></tr>\n";
+        }
+        echo "    </table></td>
 </tr>";
     }
 
 
     if ($Conf->sversion >= 35 && ($Me->privChair || $Acct->contactTags)) {
-	echo "<tr class='fx1'><td class='caption'></td><td class='entry'><div class='gs'></div></td></tr>\n",
-	    "<tr class='fx1'><td class='caption'>Tags</td><td class='entry'>";
-	if ($Me->privChair) {
-	    echo "<div class='", feclass("contactTags"), "'>",
-		textinput("contactTags", trim(crpformvalue("contactTags")), 60),
-		"</div>
+        echo "<tr class='fx1'><td class='caption'></td><td class='entry'><div class='gs'></div></td></tr>\n",
+            "<tr class='fx1'><td class='caption'>Tags</td><td class='entry'>";
+        if ($Me->privChair) {
+            echo "<div class='", feclass("contactTags"), "'>",
+                textinput("contactTags", trim(crpformvalue("contactTags")), 60),
+                "</div>
   <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=rev&amp;tagcolor=1#tagcolor"), "'>tag colors</a> to highlight subgroups in review lists.</div></td>
 </tr>\n\n";
-	} else {
-	    echo trim($Acct->contactTags), "
+        } else {
+            echo trim($Acct->contactTags), "
   <div class='hint'>Tags represent PC subgroups and are set by administrators.</div></td>
 </tr>\n\n";
-	}
+        }
     }
 }
 
@@ -791,7 +791,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
     $buttons[] = array(Ht::js_button("Delete user", "popup(this,'d',0)"), "(admin only)");
     if (count($tracks->soleAuthor)) {
-	$Conf->footerHtml("<div id='popup_d' class='popupc'>
+        $Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p><strong>This user cannot be deleted</strong> because they are the sole
   contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".
   Delete these papers from the database or add alternate paper contacts and
@@ -800,25 +800,25 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     . Ht::js_button("Close", "popup(null,'d',1)")
     . "</div></div>");
     } else {
-	if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
-	    $x = $y = array();
-	    if (count($tracks->author)) {
-		$x[] = "contact for " . pluralx($tracks->author, "paper") . " " . textArrayPapers($tracks->author);
-		$y[] = "delete " . pluralx($tracks->author, "this") . " " . pluralx($tracks->author, "authorship association");
-	    }
-	    if (count($tracks->review)) {
-		$x[] = "reviewer for " . pluralx($tracks->review, "paper") . " " . textArrayPapers($tracks->review);
-		$y[] = "<strong>permanently delete</strong> " . pluralx($tracks->review, "this") . " " . pluralx($tracks->review, "review");
-	    }
-	    if (count($tracks->comment)) {
-		$x[] = "commenter for " . pluralx($tracks->comment, "paper") . " " . textArrayPapers($tracks->comment);
-		$y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this") . " " . pluralx($tracks->comment, "comment");
-	    }
-	    $dialog = "<p>This user is " . commajoin($x) . ".
+        if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
+            $x = $y = array();
+            if (count($tracks->author)) {
+                $x[] = "contact for " . pluralx($tracks->author, "paper") . " " . textArrayPapers($tracks->author);
+                $y[] = "delete " . pluralx($tracks->author, "this") . " " . pluralx($tracks->author, "authorship association");
+            }
+            if (count($tracks->review)) {
+                $x[] = "reviewer for " . pluralx($tracks->review, "paper") . " " . textArrayPapers($tracks->review);
+                $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->review, "this") . " " . pluralx($tracks->review, "review");
+            }
+            if (count($tracks->comment)) {
+                $x[] = "commenter for " . pluralx($tracks->comment, "paper") . " " . textArrayPapers($tracks->comment);
+                $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this") . " " . pluralx($tracks->comment, "comment");
+            }
+            $dialog = "<p>This user is " . commajoin($x) . ".
   Deleting the user will also " . commajoin($y) . ".</p>";
-	} else
-	    $dialog = "";
-	$Conf->footerHtml("<div id='popup_d' class='popupc'>
+        } else
+            $dialog = "";
+        $Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   user from the database and <strong>cannot be undone</strong>.</p>
   $dialog

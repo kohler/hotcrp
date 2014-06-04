@@ -39,47 +39,47 @@ if ($_REQUEST["pap"] && !preg_match('/\A(?:#?\d+(?:-#?\d+)?[\s,]+)+\z/', $_REQUE
 } else if ($_REQUEST["pap"]) {
     $where = array();
     foreach (preg_split('/[\s,]+/', $_REQUEST["pap"]) as $term) {
-	if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $term, $m)) {
-	    $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
-	    foreach (range($m[1], $m[2]) as $pap) {
-		$where[] = "paperId=$pap";
-		$where[] = "action like '%(papers% $pap,%'";
-		$where[] = "action like '%(papers% $pap)%'";
-	    }
-	}
+        if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $term, $m)) {
+            $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
+            foreach (range($m[1], $m[2]) as $pap) {
+                $where[] = "paperId=$pap";
+                $where[] = "action like '%(papers% $pap,%'";
+                $where[] = "action like '%(papers% $pap)%'";
+            }
+        }
     }
     if (count($where))
-	$wheres[] = "(" . join(" or ", $where) . ")";
+        $wheres[] = "(" . join(" or ", $where) . ")";
 }
 
 if ($_REQUEST["acct"]) {
     $where = array();
     foreach (preg_split('/\s+/', $_REQUEST["acct"]) as $acct) {
-	if (strpos($acct, "@") === false) {
-	    $where[] = "firstName like '%" . sqlq_for_like($acct) . "%'";
-	    $where[] = "lastName like '%" . sqlq_for_like($acct) . "%'";
-	}
-	$where[] = "email like '%" . sqlq_for_like($acct) . "%'";
+        if (strpos($acct, "@") === false) {
+            $where[] = "firstName like '%" . sqlq_for_like($acct) . "%'";
+            $where[] = "lastName like '%" . sqlq_for_like($acct) . "%'";
+        }
+        $where[] = "email like '%" . sqlq_for_like($acct) . "%'";
     }
     $result = $Conf->qe("select contactId, email from ContactInfo where " . join(" or ", $where), "while finding matching accounts");
     $where = array();
     while (($row = edb_row($result))) {
-	$where[] = "contactId=$row[0]";
-	$where[] = "action like '%" . sqlq_for_like($row[1]) . "%'";
+        $where[] = "contactId=$row[0]";
+        $where[] = "action like '%" . sqlq_for_like($row[1]) . "%'";
     }
     if (count($where) == 0) {
-	$Conf->infoMsg("No accounts match '" . htmlspecialchars($_REQUEST["acct"]) . "'.");
-	$wheres[] = "false";
+        $Conf->infoMsg("No accounts match '" . htmlspecialchars($_REQUEST["acct"]) . "'.");
+        $wheres[] = "false";
     } else
-	$wheres[] = "(" . join(" or ", $where) . ")";
+        $wheres[] = "(" . join(" or ", $where) . ")";
 }
 
 if (($str = $_REQUEST["q"])) {
     $where = array();
     while (($str = ltrim($str)) != "") {
-	preg_match('/^("[^"]+"?|[^"\s]+)/s', $str, $m);
-	$str = substr($str, strlen($m[0]));
-	$where[] = "action like '%" . sqlq_for_like($m[0]) . "%'";
+        preg_match('/^("[^"]+"?|[^"\s]+)/s', $str, $m);
+        $str = substr($str, strlen($m[0]));
+        $where[] = "action like '%" . sqlq_for_like($m[0]) . "%'";
     }
     $wheres[] = "(" . join(" or ", $where) . ")";
 }
@@ -95,8 +95,8 @@ if ($_REQUEST["date"] == "")
     $_REQUEST["date"] = "now";
 if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"]))
     if (($firstDate = $Conf->parse_time($_REQUEST["date"])) === false) {
-	$Conf->errorMsg("“" . htmlspecialchars($_REQUEST["date"]) . "” is not a valid date.");
-	$Eclass["date"] = " error";
+        $Conf->errorMsg("“" . htmlspecialchars($_REQUEST["date"]) . "” is not a valid date.");
+        $Eclass["date"] = " error";
     }
 
 function searchbar() {
@@ -122,44 +122,44 @@ function searchbar() {
 </tr></table></form>";
 
     if ($nrows > 0 || $page > 1) {
-	$urls = array();
-	$_REQUEST["offset"] = $offset;
-	foreach (array("q", "pap", "acct", "n", "offset") as $x)
-	    if ($_REQUEST[$x])
-		$urls[] = "$x=" . urlencode($_REQUEST[$x]);
-	$url = hoturl("log", join("&amp;", $urls));
-	echo "<table class='lognav'><tr><td id='newest'><div>";
-	if ($page > 1)
-	    echo "<a href='$url&amp;page=1'><strong>Newest</strong></a> &nbsp;|&nbsp;&nbsp;";
-	echo "</div></td><td id='newer'><div>";
-	if ($page > 1)
-	    echo "<a href='$url&amp;page=", ($page - 1), "'><strong>", Ht::img("_.gif", "<-", array("class" => "prev")), " Newer</strong></a>";
-	echo "</div></td><td id='newnum'><div>";
-	if ($page - $nlinks > 1)
-	    echo "&nbsp;...";
-	for ($p = max($page - $nlinks - 1, 0); $p + 1 < $page; $p++)
-	    echo "&nbsp;<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>";
-	echo "</div></td><td id='thisnum'><div><strong class='thispage'>&nbsp;", $page, "&nbsp;</strong></div></td><td id='oldnum'><div>";
-	$o = ($offset ? $offset - $count : 0);
-	for ($p = $page; $p * $count + $o < $start + min($nlinks * $count + 1, $nrows); $p++)
-	    echo "<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>&nbsp;";
-	if ($nrows == $maxNrows)
-	    echo "...&nbsp;";
-	echo "</div></td><td id='older'><div>";
-	if ($nrows > $count)
-	    echo "<a href='$url&amp;page=", ($page + 1), "'><strong>Older ", Ht::img("_.gif", "->", array("class" => "next")), "</strong></a>";
-	echo "</div></td><td id='oldest'><div>";
-	if ($nrows > $count)
-	    echo "&nbsp;&nbsp;|&nbsp; <a href='$url&amp;page=earliest'><strong>Oldest</strong></a>";
-	/* echo "</div></td><td id='gopage'><div>";
-	if ($page > 1 || $nrows > $count) {
-	    echo "&nbsp;&nbsp;|&nbsp; Page: <form method='get' action='", hoturl("log"), "' accept-charset='UTF-8'>";
-	    foreach (array("q", "pap", "acct", "n", "offset") as $x)
-		if ($_REQUEST[$x])
-		    echo Ht::hidden($x, $_REQUEST[$x]);
-	    echo "<input class='textlite' type='text' size='3' name='page' value='' /> &nbsp;", Ht::submit("gopage", "Go"), "</form>";
-	    } */
-	echo "</div></td></tr></table><div class='g'></div>\n";
+        $urls = array();
+        $_REQUEST["offset"] = $offset;
+        foreach (array("q", "pap", "acct", "n", "offset") as $x)
+            if ($_REQUEST[$x])
+                $urls[] = "$x=" . urlencode($_REQUEST[$x]);
+        $url = hoturl("log", join("&amp;", $urls));
+        echo "<table class='lognav'><tr><td id='newest'><div>";
+        if ($page > 1)
+            echo "<a href='$url&amp;page=1'><strong>Newest</strong></a> &nbsp;|&nbsp;&nbsp;";
+        echo "</div></td><td id='newer'><div>";
+        if ($page > 1)
+            echo "<a href='$url&amp;page=", ($page - 1), "'><strong>", Ht::img("_.gif", "<-", array("class" => "prev")), " Newer</strong></a>";
+        echo "</div></td><td id='newnum'><div>";
+        if ($page - $nlinks > 1)
+            echo "&nbsp;...";
+        for ($p = max($page - $nlinks - 1, 0); $p + 1 < $page; $p++)
+            echo "&nbsp;<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>";
+        echo "</div></td><td id='thisnum'><div><strong class='thispage'>&nbsp;", $page, "&nbsp;</strong></div></td><td id='oldnum'><div>";
+        $o = ($offset ? $offset - $count : 0);
+        for ($p = $page; $p * $count + $o < $start + min($nlinks * $count + 1, $nrows); $p++)
+            echo "<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>&nbsp;";
+        if ($nrows == $maxNrows)
+            echo "...&nbsp;";
+        echo "</div></td><td id='older'><div>";
+        if ($nrows > $count)
+            echo "<a href='$url&amp;page=", ($page + 1), "'><strong>Older ", Ht::img("_.gif", "->", array("class" => "next")), "</strong></a>";
+        echo "</div></td><td id='oldest'><div>";
+        if ($nrows > $count)
+            echo "&nbsp;&nbsp;|&nbsp; <a href='$url&amp;page=earliest'><strong>Oldest</strong></a>";
+        /* echo "</div></td><td id='gopage'><div>";
+        if ($page > 1 || $nrows > $count) {
+            echo "&nbsp;&nbsp;|&nbsp; Page: <form method='get' action='", hoturl("log"), "' accept-charset='UTF-8'>";
+            foreach (array("q", "pap", "acct", "n", "offset") as $x)
+                if ($_REQUEST[$x])
+                    echo Ht::hidden($x, $_REQUEST[$x]);
+            echo "<input class='textlite' type='text' size='3' name='page' value='' /> &nbsp;", Ht::submit("gopage", "Go"), "</form>";
+            } */
+        echo "</div></td></tr></table><div class='g'></div>\n";
     }
 }
 
@@ -185,60 +185,60 @@ $n = 0;
 $trs = array();
 while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
     if ($firstDate && $row->timestamp > $firstDate) {
-	$start++;
-	$nrows--;
-	continue;
+        $start++;
+        $nrows--;
+        continue;
     } else if ($page === false && ($n % $count != 0 || $n + $count < $nrows)) {
-	$n++;
-	continue;
+        $n++;
+        continue;
     } else if ($page === false) {
-	$start = $n;
-	$page = ($n / $count) + 1;
-	$nrows -= $n;
-	$maxNrows -= $n - 1;
-	$n = 0;
+        $start = $n;
+        $page = ($n / $count) + 1;
+        $nrows -= $n;
+        $maxNrows -= $n - 1;
+        $n = 0;
     }
 
     $n++;
     if ($n == 1) {
-	if ($start != 0 && !$firstDate)
-	    $_REQUEST["date"] = $Conf->printableTimeShort($row->timestamp);
-	else if ($firstDate) {
-	    $offset = $start % $count;
-	    $page = (int) ($start / $count) + ($offset ? 2 : 1);
-	    $nrows = min($nlinks * $count + 1, $nrows);
-	    $maxNrows = min($nlinks * $count + 1, $maxNrows);
-	}
+        if ($start != 0 && !$firstDate)
+            $_REQUEST["date"] = $Conf->printableTimeShort($row->timestamp);
+        else if ($firstDate) {
+            $offset = $start % $count;
+            $page = (int) ($start / $count) + ($offset ? 2 : 1);
+            $nrows = min($nlinks * $count + 1, $nrows);
+            $maxNrows = min($nlinks * $count + 1, $maxNrows);
+        }
     }
 
     $t = "<td class='pl_id'>" . htmlspecialchars($row->logId) . "</td>"
-	. "<td class='al_time'>" . $Conf->printableTimeShort($row->timestamp) . "</td>"
-	. "<td class='al_ip'>" . htmlspecialchars($row->ipaddr) . "</td>"
-	. "<td class='pl_name'>" . Text::user_html($row) . "</td>"
-	. "<td class='al_act'>";
+        . "<td class='al_time'>" . $Conf->printableTimeShort($row->timestamp) . "</td>"
+        . "<td class='al_ip'>" . htmlspecialchars($row->ipaddr) . "</td>"
+        . "<td class='pl_name'>" . Text::user_html($row) . "</td>"
+        . "<td class='al_act'>";
 
     $act = $row->action;
     if (preg_match('/^Review (\d+)/', $act, $m)) {
-	$t .= "<a href=\"" . hoturl("review", "r=$m[1]") . "\">Review " . $m[1] . "</a>";
-	$act = substr($act, strlen($m[0]));
+        $t .= "<a href=\"" . hoturl("review", "r=$m[1]") . "\">Review " . $m[1] . "</a>";
+        $act = substr($act, strlen($m[0]));
     } else if (preg_match('/^Comment (\d+)/', $act, $m)) {
-	$t .= "<a href=\"" . hoturl("comment", "c=$m[1]") . "\">Comment " . $m[1] . "</a>";
-	$act = substr($act, strlen($m[0]));
+        $t .= "<a href=\"" . hoturl("comment", "c=$m[1]") . "\">Comment " . $m[1] . "</a>";
+        $act = substr($act, strlen($m[0]));
     } else if (preg_match('/^(Sending|Account was sent) mail #(\d+)/', $act, $m)) {
-	$t .= $m[1] . " <a href=\"" . hoturl("mail", "fromlog=$m[2]") . "\">mail #$m[2]</a>";
-	$act = substr($act, strlen($m[0]));
+        $t .= $m[1] . " <a href=\"" . hoturl("mail", "fromlog=$m[2]") . "\">mail #$m[2]</a>";
+        $act = substr($act, strlen($m[0]));
     }
     if (preg_match('/ \(papers ([\d, ]+)\)?$/', $act, $m)) {
-	$t .= htmlspecialchars(substr($act, 0, strlen($act) - strlen($m[0])))
-	    . " (<a href=\"" . hoturl("search", "t=all&amp;q=" . preg_replace('/[\s,]+/', "+", $m[1]))
-	    . "\">papers</a> "
-	    . preg_replace('/(\d+)/', "<a href=\"" . hoturl("paper", "p=\$1") . "\">\$1</a>", $m[1])
-	    . ")";
+        $t .= htmlspecialchars(substr($act, 0, strlen($act) - strlen($m[0])))
+            . " (<a href=\"" . hoturl("search", "t=all&amp;q=" . preg_replace('/[\s,]+/', "+", $m[1]))
+            . "\">papers</a> "
+            . preg_replace('/(\d+)/', "<a href=\"" . hoturl("paper", "p=\$1") . "\">\$1</a>", $m[1])
+            . ")";
     } else
-	$t .= htmlspecialchars($act);
+        $t .= htmlspecialchars($act);
 
     if ($row->paperId)
-	$t .= " (paper <a href=\"" . hoturl("paper", "p=" . urlencode($row->paperId)) . "\">" . htmlspecialchars($row->paperId) . "</a>)";
+        $t .= " (paper <a href=\"" . hoturl("paper", "p=" . urlencode($row->paperId)) . "\">" . htmlspecialchars($row->paperId) . "</a>)";
     $trs[] = $t . "</td>";
 }
 
@@ -256,7 +256,7 @@ if (count($trs)) {
   <tfoot><tr class='pl_footgap k", (count($trs) - 1) % 2, "'><td colspan='5'></td></tr></tfoot>
   <tbody>\n";
     for ($i = 0; $i < count($trs); ++$i)
-	echo "    <tr class='k", $i % 2, " al'>", $trs[$i], "</tr>\n";
+        echo "    <tr class='k", $i % 2, " al'>", $trs[$i], "</tr>\n";
     echo "</tbody></table>\n";
 } else
     echo "No records\n";

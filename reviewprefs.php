@@ -32,47 +32,47 @@ function savePreferences($reviewer) {
     $error = false;
     $pmax = 0;
     foreach ($_REQUEST as $k => $v)
-	if (strlen($k) > 7 && $k[0] == "r" && substr($k, 0, 7) == "revpref"
-	    && ($p = cvtint(substr($k, 7))) > 0) {
-	    if (($pref = parse_preference($v))) {
-		$setting[$p] = $pref;
-		$pmax = max($pmax, $p);
-	    } else
-		$error = true;
-	}
+        if (strlen($k) > 7 && $k[0] == "r" && substr($k, 0, 7) == "revpref"
+            && ($p = cvtint(substr($k, 7))) > 0) {
+            if (($pref = parse_preference($v))) {
+                $setting[$p] = $pref;
+                $pmax = max($pmax, $p);
+            } else
+                $error = true;
+        }
 
     if ($error)
-	$Conf->errorMsg("Preferences must be small positive or negative integers.");
+        $Conf->errorMsg("Preferences must be small positive or negative integers.");
     if ($pmax == 0 && !$error)
-	$Conf->errorMsg("No reviewer preferences to update.");
+        $Conf->errorMsg("No reviewer preferences to update.");
     if ($pmax == 0)
-	return;
+        return;
 
     $while = "while saving review preferences";
 
     $deletes = array();
     for ($p = 1; $p <= $pmax; $p++)
-	if (isset($setting[$p])) {
-	    $p0 = $p;
-	    while (isset($setting[$p + 1]))
-		++$p;
-	    if ($p0 == $p)
-		$deletes[] = "paperId=$p0";
-	    else
-		$deletes[] = "paperId between $p0 and $p";
-	}
+        if (isset($setting[$p])) {
+            $p0 = $p;
+            while (isset($setting[$p + 1]))
+                ++$p;
+            if ($p0 == $p)
+                $deletes[] = "paperId=$p0";
+            else
+                $deletes[] = "paperId between $p0 and $p";
+        }
     if (count($deletes))
-	$Conf->qe("delete from PaperReviewPreference where contactId=$reviewer and (" . join(" or ", $deletes) . ")", $while);
+        $Conf->qe("delete from PaperReviewPreference where contactId=$reviewer and (" . join(" or ", $deletes) . ")", $while);
 
     $q = array();
     for ($p = 1; $p <= $pmax; $p++)
-	if (($pref = @$setting[$p]) && ($pref[0] || $pref[1]))
+        if (($pref = @$setting[$p]) && ($pref[0] || $pref[1]))
             $q[] = array($p, $reviewer, $pref[0], $pref[1]);
     PaperActions::save_review_preferences($q);
 
     if ($OK) {
-	$Conf->confirmMsg("Preferences saved.");
-	redirectSelf();
+        $Conf->confirmMsg("Preferences saved.");
+        redirectSelf();
     }
 }
 if (isset($_REQUEST["update"]) && check_post())
@@ -83,7 +83,7 @@ if (isset($_REQUEST["update"]) && check_post())
 if (isset($_REQUEST["setpaprevpref"]) || isset($_REQUEST["get"])) {
     PaperSearch::parsePapersel();
     if (!isset($papersel))
-	$Conf->errorMsg("No papers selected.");
+        $Conf->errorMsg("No papers selected.");
 }
 PaperSearch::clearPaperselRequest();
 
@@ -91,11 +91,11 @@ PaperSearch::clearPaperselRequest();
 // Set multiple paper preferences
 if (isset($_REQUEST["setpaprevpref"]) && isset($papersel) && check_post()) {
     if (!parse_preference($_REQUEST["paprevpref"]))
-	$Conf->errorMsg("Preferences must be small positive or negative integers.");
+        $Conf->errorMsg("Preferences must be small positive or negative integers.");
     else {
-	foreach ($papersel as $p)
-	    $_REQUEST["revpref$p"] = $_REQUEST["paprevpref"];
-	savePreferences($reviewer);
+        foreach ($papersel as $p)
+            $_REQUEST["revpref$p"] = $_REQUEST["paprevpref"];
+        savePreferences($reviewer);
     }
 }
 
@@ -104,38 +104,38 @@ if (isset($_REQUEST["setpaprevpref"]) && isset($papersel) && check_post()) {
 function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     global $Conf;
     if (($text = file_get_contents($filename)) === false)
-	return $Conf->errorMsg("Cannot read uploaded file.");
+        return $Conf->errorMsg("Cannot read uploaded file.");
     $printFilename = htmlspecialchars($printFilename);
     $text = cleannl($text);
     $lineno = 0;
     $successes = 0;
     $errors = array();
     foreach (explode("\n", $text) as $line) {
-	$line = trim($line);
-	$lineno++;
+        $line = trim($line);
+        $lineno++;
 
-	if ($line == "" || $line[0] == "#" || substr($line, 0, 6) == "==-== ")
-	    /* do nothing */;
-	else if (preg_match('/^(\d+)\s*[\t,]\s*([^\s,]+)\s*([\t,]|$)/', $line, $m)) {
-	    if (parse_preference($m[2])) {
-		$_REQUEST["revpref$m[1]"] = $m[2];
-		$successes++;
-	    } else if (strcasecmp($m[2], "conflict") != 0)
-		$errors[] = "<span class='lineno'>$printFilename:$lineno:</span> bad review preference, should be integer";
-	} else if (preg_match('/^\s*paper(?:id)?\s*[\t,]\s*preference/i', $line))
+        if ($line == "" || $line[0] == "#" || substr($line, 0, 6) == "==-== ")
+            /* do nothing */;
+        else if (preg_match('/^(\d+)\s*[\t,]\s*([^\s,]+)\s*([\t,]|$)/', $line, $m)) {
+            if (parse_preference($m[2])) {
+                $_REQUEST["revpref$m[1]"] = $m[2];
+                $successes++;
+            } else if (strcasecmp($m[2], "conflict") != 0)
+                $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> bad review preference, should be integer";
+        } else if (preg_match('/^\s*paper(?:id)?\s*[\t,]\s*preference/i', $line))
             /* header; no error */;
         else if (count($errors) < 20)
-	    $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> syntax error, expected <code>paper,preference[,title]</code>";
-	else {
-	    $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> too many syntax errors, giving up";
-	    break;
-	}
+            $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> syntax error, expected <code>paper,preference[,title]</code>";
+        else {
+            $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> too many syntax errors, giving up";
+            break;
+        }
     }
 
     if (count($errors) > 0)
-	$Conf->errorMsg("There were some errors while parsing the uploaded preferences file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>");
+        $Conf->errorMsg("There were some errors while parsing the uploaded preferences file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>");
     if ($successes > 0)
-	savePreferences($reviewer);
+        savePreferences($reviewer);
 }
 if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"])
     && check_post())
@@ -209,7 +209,7 @@ if ($Me->privChair) {
     }
 
     echo Ht::select("reviewer", $revopt, $reviewer, array("onchange" => "\$\$(\"redisplayform\").submit()")),
-	"<div class='g'></div></td></tr>\n";
+        "<div class='g'></div></td></tr>\n";
 }
 
 echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'><input class='textlite' type='text' size='32' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>",
@@ -223,47 +223,47 @@ $sep = "";
 $loadforms = "";
 if (!$Conf->subBlindAlways()) {
     echo $sep,
-	Ht::checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
-		      array("disabled" => (!$Conf->subBlindNever() && !$pl->any->openau),
-			    "onchange" => "plinfo('au',this)",
-			    "id" => "showau")),
-	"&nbsp;", Ht::label("Authors");
+        Ht::checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
+                      array("disabled" => (!$Conf->subBlindNever() && !$pl->any->openau),
+                            "onchange" => "plinfo('au',this)",
+                            "id" => "showau")),
+        "&nbsp;", Ht::label("Authors");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='auloadformresult'></div>";
 }
 if (!$Conf->subBlindNever() && $Me->privChair) {
     echo (!$Conf->subBlindAlways() ? "<span class='fx10'>" : ""),
         $sep,
-	Ht::checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
-		      array("disabled" => !$pl->any->anonau,
-			    "onchange" => (!$Conf->subBlindAlways() ? "" : "plinfo('au',this);") . "plinfo('anonau',this)",
-			    "id" => (!$Conf->subBlindAlways() ? "showanonau" : "showau"))),
-	"&nbsp;", Ht::label(!$Conf->subBlindAlways() ? "Anonymous authors" : "Authors"),
+        Ht::checkbox("showanonau", 1, strpos($pldisplay, " anonau ") !== false,
+                      array("disabled" => !$pl->any->anonau,
+                            "onchange" => (!$Conf->subBlindAlways() ? "" : "plinfo('au',this);") . "plinfo('anonau',this)",
+                            "id" => (!$Conf->subBlindAlways() ? "showanonau" : "showau"))),
+        "&nbsp;", Ht::label(!$Conf->subBlindAlways() ? "Anonymous authors" : "Authors"),
         (!$Conf->subBlindAlways() ? "</span>" : "");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='anonauloadformresult'></div>";
 }
 if (!$Conf->subBlindAlways() || $Me->privChair) {
     echo "<span class='fx10'>", $sep,
-	Ht::checkbox("showaufull", 1, strpos($pldisplay, " aufull ") !== false,
-		      array("onchange" => "plinfo('aufull',this)")),
-	"&nbsp;", Ht::label("Full author info"), "</span>";
+        Ht::checkbox("showaufull", 1, strpos($pldisplay, " aufull ") !== false,
+                      array("onchange" => "plinfo('aufull',this)")),
+        "&nbsp;", Ht::label("Full author info"), "</span>";
     $Conf->footerScript("plinfo.extra=function(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked);fold('redisplayform',!x,10)};");
     $loadforms .= "<div id='aufullloadformresult'></div>";
 }
 if ($pl->any->abstract) {
     echo $sep,
-	Ht::checkbox("showabstract", 1, strpos($pldisplay, " abstract ") !== false,
-		      array("onchange" => "plinfo('abstract',this)")),
-	"&nbsp;", Ht::label("Abstracts");
+        Ht::checkbox("showabstract", 1, strpos($pldisplay, " abstract ") !== false,
+                      array("onchange" => "plinfo('abstract',this)")),
+        "&nbsp;", Ht::label("Abstracts");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='abstractloadformresult'></div>";
 }
 if ($pl->any->topics) {
     echo $sep,
-	Ht::checkbox("showtopics", 1, strpos($pldisplay, " topics ") !== false,
-		      array("onchange" => "plinfo('topics',this)")),
-	"&nbsp;", Ht::label("Topics");
+        Ht::checkbox("showtopics", 1, strpos($pldisplay, " topics ") !== false,
+                      array("onchange" => "plinfo('topics',this)")),
+        "&nbsp;", Ht::label("Topics");
     $sep = "<span class='sep'></span>\n";
     $loadforms .= "<div id='topicsloadformresult'></div>";
 }

@@ -26,7 +26,7 @@ function fail() {
     global $zlib_output_compression;
     header("Content-Type: text/plain; charset=utf-8");
     if (!$zlib_output_compression)
-	header("Content-Length: 10");
+        header("Content-Length: 10");
     echo "Go away.\r\n";
     exit;
 }
@@ -77,7 +77,7 @@ else if (function_exists("ob_gzhandler") && !$zlib_output_compression) {
     ob_end_flush();
 } else {
     if (!$zlib_output_compression)
-	header("Content-Length: " . (filesize($file) + strlen($prefix)));
+        header("Content-Length: " . (filesize($file) + strlen($prefix)));
     echo $prefix;
     readfile($file);
 }

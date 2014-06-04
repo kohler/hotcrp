@@ -20,7 +20,7 @@ if ($Me->isPC && count($pctags = pcTags())) {
         if ($t != "pc")
             $tOpt["pc:$t"] = "PC members tagged &ldquo;$t&rdquo;";
     if (!isset($_SESSION["foldppltags"]))
-	$_SESSION["foldppltags"] = 0;
+        $_SESSION["foldppltags"] = 0;
 }
 if ($Me->isPC)
     $tOpt["admin"] = "System administrators";
@@ -64,8 +64,8 @@ if ((isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]))
     $pl = new ContactList($Me, true);
     // Ensure that we only select contacts we're allowed to see.
     if (($rows = $pl->rows($_REQUEST["t"]))) {
-	foreach ($rows as $row)
-	    $allowed_papers[$row->paperId] = true;
+        foreach ($rows as $row)
+            $allowed_papers[$row->paperId] = true;
     }
     $papersel = array();
     if (isset($_REQUEST["pap"])) {
@@ -75,7 +75,7 @@ if ((isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]))
     } else
         $papersel = array_keys($allowed_papers);
     if (count($papersel) == 0)
-	unset($papersel);
+        unset($papersel);
 }
 
 if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
@@ -88,19 +88,19 @@ if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
 
 if ($getaction == "address" && isset($papersel) && $Me->isPC) {
     $result = $Conf->qe("select firstName first, lastName last, email, affiliation,
-	voicePhoneNumber phone,
-	addressLine1 address1, addressLine2 address2, city, state, zipCode zip, country
-	from ContactInfo
-	left join ContactAddress using (contactId)
-	where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
+        voicePhoneNumber phone,
+        addressLine1 address1, addressLine2 address2, city, state, zipCode zip, country
+        from ContactInfo
+        left join ContactAddress using (contactId)
+        where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
     $people = edb_orows($result);
     $phone = false;
     foreach ($people as $p)
         $phone = $phone || $p->phone;
     $header = array("first", "last", "email", "address1", "address2",
-		    "city", "state", "zip", "country");
+                    "city", "state", "zip", "country");
     if ($phone)
-	$header[] = "phone";
+        $header[] = "phone";
     downloadCSV($people, $header, "addresses", array("selection" => true));
     exit;
 }
@@ -112,16 +112,16 @@ function urlencode_matches($m) {
 if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
     assert($Conf->sversion >= 73);
     $result = $Conf->qe("select firstName first, lastName last, email,
-	preferredEmail preferred_email, affiliation,
-	voicePhoneNumber phone,
-	addressLine1 address1, addressLine2 address2, city, state, zipCode zip, country,
-	collaborators, defaultWatch, roles, disabled, contactTags tags, data,
-	group_concat(concat(topicId,':'," . $Conf->query_topic_interest() . ")) topic_interest
-	from ContactInfo
-	left join ContactAddress on (ContactAddress.contactId=ContactInfo.contactId)
-	left join TopicInterest on (TopicInterest.contactId=ContactInfo.contactId and TopicInterest.interest is not null)
-	where " . paperselPredicate($papersel) . "
-	group by ContactInfo.contactId order by lastName, firstName, email", "while selecting users");
+        preferredEmail preferred_email, affiliation,
+        voicePhoneNumber phone,
+        addressLine1 address1, addressLine2 address2, city, state, zipCode zip, country,
+        collaborators, defaultWatch, roles, disabled, contactTags tags, data,
+        group_concat(concat(topicId,':'," . $Conf->query_topic_interest() . ")) topic_interest
+        from ContactInfo
+        left join ContactAddress on (ContactAddress.contactId=ContactInfo.contactId)
+        left join TopicInterest on (TopicInterest.contactId=ContactInfo.contactId and TopicInterest.interest is not null)
+        where " . paperselPredicate($papersel) . "
+        group by ContactInfo.contactId order by lastName, firstName, email", "while selecting users");
 
     // NB This format is expected to be parsed by profile.php's bulk upload.
     $topics = $Conf->topic_map();
@@ -226,11 +226,11 @@ if (isset($_REQUEST["redisplay"])) {
 if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
     $_SESSION["pplscores"] = 0;
     foreach ($_REQUEST["score"] as $s)
-	$_SESSION["pplscores"] |= (1 << $s);
+        $_SESSION["pplscores"] |= (1 << $s);
 }
 if (isset($_REQUEST["scoresort"])
     && ($_REQUEST["scoresort"] == "A" || $_REQUEST["scoresort"] == "V"
-	|| $_REQUEST["scoresort"] == "D"))
+        || $_REQUEST["scoresort"] == "D"))
     $_SESSION["pplscoresort"] = $_REQUEST["scoresort"];
 
 
@@ -255,61 +255,61 @@ if (count($tOpt) > 1) {
 
     echo Ht::form(hoturl("users", "t=" . $_REQUEST["t"]), array("method" => "get")), "<div class='inform'>";
     if (isset($_REQUEST["sort"]))
-	echo Ht::hidden("sort", $_REQUEST["sort"]);
+        echo Ht::hidden("sort", $_REQUEST["sort"]);
     echo Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "contactsform1_d")),
-	" &nbsp;", Ht::submit("Go"), "</div></form>";
+        " &nbsp;", Ht::submit("Go"), "</div></form>";
 
     echo "</div><div class='tld2'>";
 
     // Display options
     echo "<form method='get' action='", hoturl("users"), "' accept-charset='UTF-8'><div>\n";
     foreach (array("t", "sort") as $x)
-	if (isset($_REQUEST[$x]))
-	    echo Ht::hidden($x, $_REQUEST[$x]);
+        if (isset($_REQUEST[$x]))
+            echo Ht::hidden($x, $_REQUEST[$x]);
 
     echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
     if ($pl->haveAffrow !== null) {
-	echo Ht::checkbox("showaff", 1, $pl->haveAffrow,
-			   array("onchange" => "fold('ppl',!this.checked,2)")),
-	    "&nbsp;", Ht::label("Affiliations"),
-	    foldsessionpixel("ppl2", "ppldisplay", "aff"), "<br />\n";
+        echo Ht::checkbox("showaff", 1, $pl->haveAffrow,
+                           array("onchange" => "fold('ppl',!this.checked,2)")),
+            "&nbsp;", Ht::label("Affiliations"),
+            foldsessionpixel("ppl2", "ppldisplay", "aff"), "<br />\n";
     }
     if ($pl->haveTags !== null) {
-	echo Ht::checkbox("showtags", 1, $pl->haveTags,
-			   array("onchange" => "fold('ppl',!this.checked,3)")),
-	    "&nbsp;", Ht::label("Tags"),
-	    foldsessionpixel("ppl3", "ppldisplay", "tags"), "<br />\n";
+        echo Ht::checkbox("showtags", 1, $pl->haveTags,
+                           array("onchange" => "fold('ppl',!this.checked,3)")),
+            "&nbsp;", Ht::label("Tags"),
+            foldsessionpixel("ppl3", "ppldisplay", "tags"), "<br />\n";
     }
     if ($pl->haveTopics !== null) {
-	echo Ht::checkbox("showtop", 1, $pl->haveTopics,
-			   array("onchange" => "fold('ppl',!this.checked,1)")),
-	    "&nbsp;", Ht::label("Topic interests"),
-	    foldsessionpixel("ppl1", "ppldisplay", "topics"), "<br />\n";
+        echo Ht::checkbox("showtop", 1, $pl->haveTopics,
+                           array("onchange" => "fold('ppl',!this.checked,1)")),
+            "&nbsp;", Ht::label("Topic interests"),
+            foldsessionpixel("ppl1", "ppldisplay", "topics"), "<br />\n";
     }
     echo "</td>";
     if (isset($pl->scoreMax)) {
-	echo "<td class='pad'>";
-	$rf = reviewForm();
-	$theScores = defval($_SESSION, "pplscores", 1);
-	$revViewScore = $Me->viewReviewFieldsScore(null, true);
-	foreach ($rf->forder as $f)
-	    if ($f->view_score > $revViewScore && $f->has_options) {
-		$i = array_search($f->id, $reviewScoreNames);
-		echo Ht::checkbox("score[]", $i, $theScores & (1 << $i)),
-		    "&nbsp;", Ht::label($f->name_html), "<br />";
-	    }
-	echo "</td>";
+        echo "<td class='pad'>";
+        $rf = reviewForm();
+        $theScores = defval($_SESSION, "pplscores", 1);
+        $revViewScore = $Me->viewReviewFieldsScore(null, true);
+        foreach ($rf->forder as $f)
+            if ($f->view_score > $revViewScore && $f->has_options) {
+                $i = array_search($f->id, $reviewScoreNames);
+                echo Ht::checkbox("score[]", $i, $theScores & (1 << $i)),
+                    "&nbsp;", Ht::label($f->name_html), "<br />";
+            }
+        echo "</td>";
     }
     echo "<td>", Ht::submit("redisplay", "Redisplay"), "</td></tr>\n";
     if (isset($pl->scoreMax)) {
-	$ss = array();
-	foreach (array("A", "V", "D") as $k) /* ghetto array_intersect_key */
-	    if (isset(ContactList::$score_sorts[$k]))
-		$ss[$k] = ContactList::$score_sorts[$k];
-	echo "<tr><td colspan='3'><div class='g'></div><b>Sort scores by:</b> &nbsp;",
-	    Ht::select("scoresort", $ss, defval($_SESSION, "pplscoresort", "A")),
-	    "</td></tr>";
+        $ss = array();
+        foreach (array("A", "V", "D") as $k) /* ghetto array_intersect_key */
+            if (isset(ContactList::$score_sorts[$k]))
+                $ss[$k] = ContactList::$score_sorts[$k];
+        echo "<tr><td colspan='3'><div class='g'></div><b>Sort scores by:</b> &nbsp;",
+            Ht::select("scoresort", $ss, defval($_SESSION, "pplscoresort", "A")),
+            "</td></tr>";
     }
     echo "</table></div></form>";
 
@@ -333,8 +333,8 @@ else if ($Me->privChair && $_REQUEST["t"] == "all")
 if (isset($pl->any->sel)) {
     echo Ht::form(hoturl_post("users", "t=" . $_REQUEST["t"])), "<div>";
     foreach (array("t", "sort") as $x)
-	if (isset($_REQUEST[$x]))
-	    echo Ht::hidden($x, $_REQUEST[$x]);
+        if (isset($_REQUEST[$x]))
+            echo Ht::hidden($x, $_REQUEST[$x]);
 }
 echo $pl_text;
 if (isset($pl->any->sel))
