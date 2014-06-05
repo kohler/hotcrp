@@ -14,7 +14,7 @@ class Ht {
         if ($js) {
             foreach (array("id", "tabindex", "onchange", "onclick", "onfocus",
                            "onblur", "onsubmit", "class", "style", "size",
-                           "title", "rows", "cols") as $k)
+                           "title", "rows", "cols", "autocomplete") as $k)
                 if (@$js[$k] !== null)
                     $x .= " $k=\"" . str_replace("\"", "'", $js[$k]) . "\"";
             if (isset($js["disabled"]) && $js["disabled"])
@@ -201,7 +201,8 @@ class Ht {
             $Conf->footerScript("hotcrp_load(hotcrp_load.temptext)", "temptext");
         } else
             $temp = "";
-        return '<input type="text" name="' . $name . '" value="'
+        $type = @$js["type"] ? : "text";
+        return '<input type="' . $type . '" name="' . $name . '" value="'
             . htmlspecialchars($value === null ? "" : $value) . '"'
             . self::extra($js) . $temp . ' />';
     }
@@ -210,6 +211,12 @@ class Ht {
         $js = $js ? $js : array();
         if (!isset($js["onchange"]))
             $js["onchange"] = "hiliter(this)";
+        return self::entry($name, $value, $js);
+    }
+
+    static function password($name, $value, $js = null) {
+        $js = $js ? $js : array();
+        $js["type"] = "password";
         return self::entry($name, $value, $js);
     }
 
