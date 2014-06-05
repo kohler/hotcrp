@@ -15,6 +15,7 @@ class S3Document {
     private $s3_region;
     private $s3_scope;
     private $s3_signing_key;
+    private $fixed_time;
 
     public $status;
     public $status_text;
@@ -28,6 +29,7 @@ class S3Document {
         $this->s3_bucket = @$opt["bucket"];
         $this->s3_scope = @$opt["scope"];
         $this->s3_signing_key = @$opt["signing_key"];
+        $this->fixed_time = @$opt["fixed_time"];
     }
 
     private function check_scope($time) {
@@ -58,7 +60,7 @@ class S3Document {
 
     public function signature($url, $hdr, $content = null) {
         $verb = defval($hdr, "method", "GET");
-        $current_time = time();
+        $current_time = $this->fixed_time ? : time();
 
         preg_match(',\Ahttps?://([^/?]*)([^?]*)(?:[?]?)(.*)\z,', $url, $m);
         $host = $m[1];
@@ -138,7 +140,7 @@ class S3Document {
         $content_empty = $content === false || $content === "" || $content === null;
         $url = "https://$this->s3_bucket.s3.amazonaws.com/$filename";
         $hdr = array("method" => $method,
-                     "Date" => gmdate("D, d M Y H:i:s GMT", time()));
+                     "Date" => gmdate("D, d M Y H:i:s GMT", $this->fixed_time ? : time()));
         if ($user_data)
             foreach ($user_data as $key => $value) {
                 if (!@self::$known_headers[strtolower($key)])

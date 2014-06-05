@@ -9,7 +9,9 @@ $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
 require_once("$ConfSitePATH/test/testsetup.php");
 
 $s3d = new S3Document(array("key" => "AKIAIOSFODNN7EXAMPLE",
-                            "secret" => "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"));
+                            "secret" => "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                            "fixed_time" => gmmktime(0, 0, 0, 5, 24, 2013)));
+global $Now;
 $Now = gmmktime(0, 0, 0, 5, 24, 2013);
 
 $sig = $s3d->signature("https://examplebucket.s3.amazonaws.com/test.txt",
