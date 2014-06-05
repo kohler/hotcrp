@@ -1,3 +1,5 @@
+# Apache settings for HotCRP
+
 # These directives limit how large a paper can be uploaded.
 # post_max_size should be >= upload_max_filesize.
 php_value upload_max_filesize 15M
