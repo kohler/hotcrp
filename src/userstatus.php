@@ -379,8 +379,8 @@ class UserStatus {
         }
 
         // Roles
+        $roles = 0;
         if (isset($cj->roles)) {
-            $roles = 0;
             if (@$cj->roles->pc)
                 $roles |= Contact::ROLE_PC;
             if (@$cj->roles->chair)
