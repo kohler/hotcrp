@@ -48,24 +48,38 @@ if (!isset($_REQUEST["u"]) && isset($_REQUEST["contact"]))
 if (!isset($_REQUEST["u"])
     && preg_match(',\A/(?:new|[^\s/]+)\z,i', Navigation::path()))
     $_REQUEST["u"] = substr(Navigation::path(), 1);
+if ($Me->privChair && @$_REQUEST["new"])
+    $_REQUEST["u"] = "new";
 
 
-if (!$Me->privChair)
-    $Acct = $Me;                // always this contact
-else if (isset($_REQUEST["new"]) || defval($_REQUEST, "u") == "new") {
-    $Acct = new Contact;
-    $newProfile = true;
-} else if (isset($_REQUEST["u"])) {
-    if (($id = cvtint($_REQUEST["u"])) > 0)
+// Load user.
+$Acct = $Me;
+if ($Me->privChair && @$_REQUEST["u"]) {
+    if ($_REQUEST["u"] === "new") {
+        $Acct = new Contact;
+        $newProfile = true;
+    } else if (($id = cvtint($_REQUEST["u"])) > 0)
         $Acct = Contact::find_by_id($id);
     else
         $Acct = Contact::find_by_email($_REQUEST["u"]);
-    if (!$Acct) {
-        $Conf->errorMsg("Invalid contact.");
-        $Acct = $Me;
-    }
-} else
-    $Acct = $Me;
+}
+
+// Redirect if requested user isn't loaded user.
+if (!$Acct
+    || (isset($_REQUEST["u"])
+        && $_REQUEST["u"] !== (string) $Acct->contactId
+        && strcasecmp($_REQUEST["u"], $Acct->email)
+        && ($Acct->contactId || $_REQUEST["u"] !== "new"))
+    || (isset($_REQUEST["profile_contactid"])
+        && $_REQUEST["profile_contactid"] !== (string) $Acct->contactId)) {
+    if (!$Acct)
+        $Conf->errorMsg("Invalid user.");
+    else if (isset($_REQUEST["register"]))
+        $Conf->errorMsg("You’re logged in as a different user now, so your changes were ignored.");
+    unset($_REQUEST["u"]);
+    unset($_REQUEST["register"]);
+    redirectSelf();
+}
 
 if ($Acct)
     $Acct->load_address();
@@ -498,7 +512,8 @@ echo Ht::form(hoturl_post("profile", join("&amp;", $params)),
     // Don't want chrome to autofill the password changer.
     // But chrome defaults to autofilling the password changer
     // unless we supply an earlier password input.
-    Ht::password("chromefooler", "", array("style" => "display:none"));
+    Ht::password("chromefooler", "", array("style" => "display:none")),
+    Ht::hidden("profile_contactid", $Acct->contactId);
 if (isset($_REQUEST["redirect"]))
     echo Ht::hidden("redirect", $_REQUEST["redirect"]);
 if ($Me->privChair)
