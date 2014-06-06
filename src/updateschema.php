@@ -616,4 +616,8 @@ function updateSchema($Conf) {
         && $Conf->ql("update PaperStorage set `size`=length(paper) where paper is not null")
         && $Conf->ql("update Settings set value=74 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 74;
+    if ($Conf->settings["allowPaperOption"] == 74
+        && $Conf->ql("alter table ContactInfo drop column `visits`")
+        && $Conf->ql("update Settings set value=75 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 75;
 }

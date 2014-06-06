@@ -101,7 +101,6 @@ CREATE TABLE `ContactAddress` (
 DROP TABLE IF EXISTS `ContactInfo`;
 CREATE TABLE `ContactInfo` (
   `contactId` int(11) NOT NULL AUTO_INCREMENT,
-  `visits` int(11) NOT NULL DEFAULT '0',
   `firstName` varchar(60) NOT NULL DEFAULT '',
   `lastName` varchar(60) NOT NULL DEFAULT '',
   `email` varchar(120) NOT NULL,
@@ -567,7 +566,7 @@ CREATE TABLE `TopicInterest` (
 
 delete from Settings where name='setupPhase';
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 74);
+insert into Settings (name, value) values ('allowPaperOption', 75);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
