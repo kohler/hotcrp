@@ -400,7 +400,7 @@ function fcclass($field = false) {
         return "f-c";
 }
 
-function feclass($what = false) {
+function feclass($field = false) {
     global $UserStatus;
     if ($field && $UserStatus->has_error($field))
         return "f-e error";
