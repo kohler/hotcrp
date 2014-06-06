@@ -160,7 +160,7 @@ class LoginHelper {
         }
 
         if (!$user->activity_at)
-            $Conf->qe("update ContactInfo set lastLogin=$Now where contactId=" . $user->cid, "while recording login statistics");
+            $user->mark_activity();
         if (!$external_login && $user->password_needs_upgrade()) {
             $user->change_password($_REQUEST["password"]);
             $Conf->qe("update ContactInfo set password='" . sqlq($user->password) . "' where contactId=" . $user->cid, "while updating password");

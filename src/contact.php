@@ -2100,4 +2100,19 @@ class Contact {
         }
     }
 
+    function mark_activity() {
+        global $Conf, $Now;
+        if ($this->contactId > 0
+            && (!$this->activity_at || $this->activity_at < $Now)) {
+            $this->activity_at = $Now;
+            $Conf->qx("update ContactInfo set lastLogin=$Now where contactId=" . $this->contactId);
+        }
+    }
+
+    function log_activity($text, $paperId = null) {
+        global $Conf;
+        $this->mark_activity();
+        $Conf->log($text, $this, $paperId);
+    }
+
 }

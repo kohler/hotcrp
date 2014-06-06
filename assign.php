@@ -283,7 +283,7 @@ function requestReview($email) {
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
     $Conf->qx("unlock tables");
-    $Conf->log("Asked $Them->email to review", $Me, $prow->paperId);
+    $Me->log_activity("Asked $Them->email to review", $prow);
 
     return true;
 }
@@ -314,7 +314,7 @@ function proposeReview($email) {
     // confirmation message
     $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");
     $Conf->qx("unlock tables");
-    $Conf->log("Logged proposal for $email to review", $Me, $prow->paperId);
+    $Me->log_activity("Logged proposal for $email to review", $prow);
     return true;
 }
 
@@ -379,7 +379,7 @@ function createAnonymousReview() {
     $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId. The review token is " . encode_token((int) $token) . ".");
 
     $Conf->qx("unlock tables");
-    $Conf->log("Created $contactemail review", $Me, $prow->paperId);
+    $Me->log_activity("Created $contactemail review", $prow);
     if ($token)
         $Conf->updateRevTokensSetting(true);
 

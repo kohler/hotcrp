@@ -735,8 +735,7 @@ class Tagger {
         }
 
         $modeexplanation = array("so" => "define order", "ao" => "add to order", "sos" => "define gapless order", "sor" => "define random order", "aos" => "add to gapless order", "d" => "remove", "da" => "clear twiddle", "s" => "define", "a" => "add", "p" => "set");
-        $Conf->log("Tag " . $modeexplanation[$mode] . ": " . join(", ", $tags),
-                   $this->contact, $pids);
+        $this->contact->log_activity("Tag " . $modeexplanation[$mode] . ": " . join(", ", $tags), $pids);
 
         return true;
     }

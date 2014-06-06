@@ -124,10 +124,10 @@ if (isset($_REQUEST["merge"]) && check_post()) {
 
             if ($MergeError == "") {
                 $Conf->confirmMsg("Account " . htmlspecialchars($MiniMe->email) . " successfully merged.");
-                $Conf->log("Merged account $MiniMe->email", $Me);
+                $Me->log_activity("Merged account $MiniMe->email");
                 go(hoturl("index"));
             } else {
-                $Conf->log("Merged account $MiniMe->email with errors", $Me);
+                $Me->log_activity("Merged account $MiniMe->email with errors");
                 $MergeError .= $Conf->db_error_html(null);
             }
         }

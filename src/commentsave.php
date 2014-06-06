@@ -157,7 +157,7 @@ class CommentSave {
         $cid = $crow ? $crow->commentId : $Conf->lastInsertId($insert_id_while);
         if (!$cid)
             return false;
-        $Conf->log("Comment $cid " . ($text !== "" ? "saved" : "deleted"), $contact, $prow->paperId);
+        $contact->log_activity("Comment $cid " . ($text !== "" ? "saved" : "deleted"), $prow->paperId);
         if ($text !== "") {
             $crows = $Conf->comment_rows($Conf->comment_query("commentId=$cid"), $contact);
             if ((self::$crow = @$crows[$cid])

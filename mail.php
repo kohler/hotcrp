@@ -238,7 +238,7 @@ function checkMail($send) {
         if ($Conf->sversion >= 40
             && $Conf->q("insert into MailLog (recipients, cc, replyto, subject, emailBody) values ('" . sqlq($_REQUEST["recipients"]) . "', '" . sqlq($_REQUEST["cc"]) . "', '" . sqlq($_REQUEST["replyto"]) . "', '" . sqlq($subject) . "', '" . sqlq($_REQUEST["emailBody"]) . "')"))
             $mailId = " #" . $Conf->lastInsertId();
-        $Conf->log("Sending mail$mailId \"$subject\"", $Me->contactId);
+        $Me->log_activity("Sending mail$mailId \"$subject\"");
     }
     $emailBody = $_REQUEST["emailBody"];
 

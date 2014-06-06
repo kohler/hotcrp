@@ -726,7 +726,7 @@ class PaperRank {
         $result = $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values " . join(", ", $values), "while saving ranks");
         if ($result) {
             $Conf->confirmMsg("Ranks saved.");
-            $Conf->log("Tag calculate rank: " . $this->dest_tag, $Me, array_keys($this->rank));
+            $Me->log_activity("Tag calculate rank: " . $this->dest_tag, array_keys($this->rank));
         }
     }
 

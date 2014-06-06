@@ -158,7 +158,7 @@ class PaperActions {
                 if ($contactId && !$Conf->setting("paperlead"))
                     $Conf->save_setting("paperlead", 1);
                 if ($OK)
-                    $Conf->log("set $type to " . ($pc ? $pc->email : "none"),
+                    $Conf->log("Set $type to " . ($pc ? $pc->email : "none"),
                                $contact, $prow->paperId);
             }
             if ($OK && $ajax)

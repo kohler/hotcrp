@@ -134,7 +134,7 @@ if (isset($_REQUEST["unsubmit"]) && $paperTable->editrrow
     $result = $Conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=$needsSubmit where reviewId=" . $paperTable->editrrow->reviewId, $while);
     $Conf->qe("unlock tables", $while);
     if ($result) {
-        $Conf->log("$editRrowLogname unsubmitted", $Me, $prow->paperId);
+        $Me->log_activity("$editRrowLogname unsubmitted", $prow);
         $Conf->confirmMsg("Unsubmitted review.");
     }
     redirectSelf();             // normally does not return
@@ -199,7 +199,7 @@ if (isset($_REQUEST["delete"]) && $Me->canAdminister($prow) && check_post())
         $while = "while deleting review";
         $result = $Conf->qe("delete from PaperReview where reviewId=" . $paperTable->editrrow->reviewId, $while);
         if ($result) {
-            $Conf->log("$editRrowLogname deleted", $Me, $prow->paperId);
+            $Me->log_activity("$editRrowLogname deleted", $prow);
             $Conf->confirmMsg("Deleted review.");
             if (defval($paperTable->editrrow, "reviewToken", 0) != 0)
                 $Conf->updateRevTokensSetting(true);

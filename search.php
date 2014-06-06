@@ -875,10 +875,10 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
         $while = "while marking conflicts";
         if ($mt == "conflict") {
             $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) (select paperId, $pc->contactId, " . CONFLICT_CHAIRMARK . " from Paper where " . paperselPredicate($papersel) . ") on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $while);
-            $Conf->log("Mark conflicts with $mpc", $Me, $papersel);
+            $Me->log_activity("Mark conflicts with $mpc", $papersel);
         } else {
             $Conf->qe("delete from PaperConflict where PaperConflict.conflictType<" . CONFLICT_AUTHOR . " and contactId=$pc->contactId and (" . paperselPredicate($papersel) . ")", $while);
-            $Conf->log("Remove conflicts with $mpc", $Me, $papersel);
+            $Me->log_activity("Remove conflicts with $mpc", $papersel);
         }
     } else if (substr($mt, 0, 6) == "assign"
                && isset($reviewTypeName[($asstype = substr($mt, 6))])) {

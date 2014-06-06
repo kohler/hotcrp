@@ -377,7 +377,7 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
                 $Conf->invalidateCaches(array("pc" => 1));
             // done
             $Conf->confirmMsg("Permanently deleted user " . htmlspecialchars($Acct->email) . ".");
-            $Conf->log("Permanently deleted user " . htmlspecialchars($Acct->email) . " ($Acct->contactId)", $Me);
+            $Me->log_activity("Permanently deleted user " . htmlspecialchars($Acct->email) . " ($Acct->contactId)");
             go(hoturl("users", "t=all"));
         }
     }

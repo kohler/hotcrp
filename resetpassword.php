@@ -37,7 +37,7 @@ if (isset($_REQUEST["go"]) && check_post()) {
     else {
         $Acct->change_password($_REQUEST["upassword"]);
         $Conf->q("update ContactInfo set password='" . sqlq($Acct->password) . "' where contactId=" . $Acct->contactId);
-        $Conf->log("Reset password", $Acct);
+        $Acct->log_activity("Reset password");
         $Conf->infoMsg("Your password has been changed and you are now signed in to the conference site.");
         $Conf->delete_capability($capdata);
         go(hoturl("index", "email=" . urlencode($Acct->email) . "&password=" . urlencode($_REQUEST["upassword"])));

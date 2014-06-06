@@ -1018,7 +1018,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
             $Conf->qe("insert into Settings (name, value, data) values " . substr($aq, 2), $while);
 
         $Conf->qe("unlock tables", $while);
-        $Conf->log("Updated settings group '$Group'", $Me);
+        $Me->log_activity("Updated settings group '$Group'");
         $Conf->load_settings();
     }
 

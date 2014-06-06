@@ -669,9 +669,10 @@ class ReviewForm {
             $reviewLogname = "Review $reviewId";
             if ($rrow && $contact->contactId != $rrow->contactId)
                 $reviewLogname .= " by $rrow->email";
-            $Conf->log("$reviewLogname saved", $contact, $prow->paperId);
             if ($submit && (!$rrow || !$rrow->reviewSubmitted))
-                $Conf->log("$reviewLogname submitted", $contact, $prow->paperId);
+                $contact->log_activity("$reviewLogname submitted", $prow);
+            else
+                $contact->log_activity("$reviewLogname saved", $prow);
         }
 
         // potentially email chair, reviewers, and authors

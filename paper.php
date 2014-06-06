@@ -156,7 +156,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
             $Conf->qe("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")", "while cleaning up voting tags");
         }
 
-        $Conf->log("Withdrew", $Me, $paperId);
+        $Conf->log_activity("Withdrew", $paperId);
         redirectSelf();
     } else
         $Conf->errorMsg(whyNotText($whyNot, "withdraw"));
@@ -172,7 +172,7 @@ if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
         $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
         $Conf->updatePapersubSetting(true);
         loadRows();
-        $Conf->log("Revived", $Me, $paperId);
+        $Me->log_activity("Revived", $paperId);
         redirectSelf();
     } else
         $Conf->errorMsg(whyNotText($whyNot, "revive"));
@@ -763,7 +763,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     if ($isSubmitFinal && $OK && !count($Error) && $Conf->sversion >= 36)
         genericWatch($prow, WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback", $Me);
 
-    $Conf->log($actiontext, $Me, $paperId);
+    $Me->log_activity($actiontext, $paperId);
 
     return $OK && !count($Error);
 }
@@ -842,7 +842,7 @@ if (isset($_REQUEST["delete"]) && check_post()) {
             $Conf->updatePapersubSetting(false);
             if ($prow->outcome > 0)
                 $Conf->updatePaperaccSetting(false);
-            $Conf->log("Deleted", $Me, $paperId);
+            $Me->log_activity("Deleted", $paperId);
         }
 
         $prow = null;
