@@ -2025,18 +2025,24 @@ class Conference {
             && (!isset($Me->_updatecheck) || $Me->_updatecheck + 20 <= $Now)
             && (!isset($Opt["updatesSite"]) || $Opt["updatesSite"])) {
             $m = defval($Opt, "updatesSite", "//hotcrp.lcdf.org/updates");
-            $m .= (strpos($m, "?") === false ? "?" : "&") . "version=" . HOTCRP_VERSION
-                . "&addr=" . urlencode($_SERVER["SERVER_ADDR"])
-                . "&base=" . urlencode($ConfSiteBase);
+            $m .= (strpos($m, "?") === false ? "?" : "&")
+                . "addr=" . urlencode($_SERVER["SERVER_ADDR"])
+                . "&base=" . urlencode($ConfSiteBase)
+                . "&version=" . HOTCRP_VERSION;
+            $v = HOTCRP_VERSION;
             if (is_dir("$ConfSitePATH/.git")) {
                 $args = array();
                 exec("export GIT_DIR=" . escapeshellarg($ConfSitePATH) . "/.git; git rev-parse HEAD 2>/dev/null; git merge-base origin/master HEAD 2>/dev/null", $args);
-                if (count($args) >= 1)
+                if (count($args) >= 1) {
                     $m .= "&git-head=" . urlencode($args[0]);
-                if (count($args) >= 2)
+                    $v .= " " . $args[0];
+                }
+                if (count($args) >= 2) {
                     $m .= "&git-upstream=" . urlencode($args[1]);
+                    $v .= " " . $args[1];
+                }
             }
-            $this->footerScript("check_version(\"$m\")");
+            $this->footerScript("check_version(\"$m\",\"$v\")");
             $Me->_updatecheck = $Now;
         }
     }

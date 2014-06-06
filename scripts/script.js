@@ -2057,7 +2057,8 @@ return Miniajax;
 
 
 // ajax checking for paper updates
-function check_version(url) {
+function check_version(url, versionstr) {
+    var x;
     function updateverifycb(json) {
         var e;
         if (json && json.messages && (e = $$("initialmsgs"))) {
@@ -2071,9 +2072,21 @@ function check_version(url) {
             Miniajax.get(hotcrp_base + "checkupdates.php?data="
                          + encodeURIComponent(JSON.stringify(json)),
                          updateverifycb);
+        else if (json && json.status && window.localStorage)
+            window.localStorage.hotcrp_version_check = JSON.stringify({
+                at: (new Date).getTime(), version: versionstr
+            });
     }
-    Miniajax.getjsonp(url + "&site=" + encodeURIComponent(window.location.toString())
-                      + "&jsonp=?", updatecb, null);
+    try {
+        if (window.localStorage
+            && localStorage.hotcrp_version_check
+            && (x = JSON.parse(localStorage.hotcrp_version_check))
+            && x.at >= (new Date).getTime() - 600000 /* 10 minutes */
+            && x.version == versionstr)
+            return;
+    } catch (x) {
+    }
+    Miniajax.getjsonp(url + "&site=" + encodeURIComponent(window.location.toString()) + "&jsonp=?", updatecb, null);
 }
 check_version.ignore = function (id) {
     Miniajax.get(hotcrp_base + "checkupdates.php?ignore=" + id, function () {}, null);
