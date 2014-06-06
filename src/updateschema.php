@@ -138,6 +138,11 @@ function update_schema_create_options($Conf) {
 
 function updateSchema($Conf) {
     global $Opt, $OK;
+    // avoid error message abut timezone, set to $Opt
+    // (which might be overridden by database values later)
+    if (function_exists("date_default_timezone_set") && @$Opt["timezone"])
+        date_default_timezone_set($Opt["timezone"]);
+
     error_log($Opt["dbName"] . ": updating schema from version " . $Conf->settings["allowPaperOption"]);
 
     if ($Conf->settings["allowPaperOption"] == 6
