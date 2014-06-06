@@ -280,12 +280,12 @@ else if (isset($_REQUEST["register"]) && $newProfile
     $cj = (object) array();
     web_request_as_json($cj);
     pc_request_as_json($cj);
-    $cj = save_user($cj, $UserStatus);
+    $Acct = save_user($cj, $UserStatus);
     if ($UserStatus->nerrors)
         $Conf->errorMsg("<div>" . join("</div><div style='margin-top:0.5em'>", $UserStatus->error_messages()) . "</div>");
     else {
         if ($newProfile)
-            $Conf->confirmMsg("Created <a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account for " . htmlspecialchars($cj->email) . "</a>.  A password has been emailed to that address.  You may now create another account.");
+            $Conf->confirmMsg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">" . Text::user_html_nolink($Acct) . "</a>.  A password has been emailed to that address.  You may now create another account.");
         else {
             $Conf->confirmMsg("Account profile updated.");
             if ($Acct->contactId != $Me->contactId)
@@ -293,8 +293,10 @@ else if (isset($_REQUEST["register"]) && $newProfile
         }
         if (isset($_REQUEST["redirect"]))
             go(hoturl("index"));
-        else
+        else {
+            $_SESSION["profile_redirect"] = $cj;
             redirectSelf();
+        }
     }
 } else if (isset($_REQUEST["merge"]) && !$newProfile
            && $Acct->contactId == $Me->contactId)
@@ -471,7 +473,10 @@ if (!$UserStatus->nerrors && isset($Me->fresh) && $Me->fresh === "redirect") {
 }
 
 
-if (!$useRequest)
+if (!$useRequest && isset($_SESSION["profile_redirect"])) {
+    $formcj = $_SESSION["profile_redirect"];
+    unset($_SESSION["profile_redirect"]);
+} else if (!$useRequest)
     $formcj = $UserStatus->user_to_json($Acct);
 else {
     $formcj = (object) array();
