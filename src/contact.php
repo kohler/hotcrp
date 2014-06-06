@@ -1218,7 +1218,7 @@ class Contact {
         // policy
         if (!$this->canViewPaper($prow, $whyNot))
             return false;       // $whyNot already set
-        $oview = @$o->view_type;
+        $oview = @$opt->view_type;
         if ($rights->act_author_view
             || (($rights->allow_administer
                  || $rights->allow_pc_broad
