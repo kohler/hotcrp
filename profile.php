@@ -251,12 +251,16 @@ function parseBulkFile($text, $filename) {
 
     if (count($unknown_topics))
         $errors[] = "There were unrecognized topics (" . htmlspecialchars(commajoin($unknown_topics)) . ").";
+    if (count($success) == 1)
+        $successMsg = "Created account " . $success[0] . ".";
+    else if (count($success))
+        $successMsg = "Created " . plural($success, "account") . ": " . commajoin($success) . ".";
     if (count($errors))
         $errorMsg = "were errors while parsing the uploaded account file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>";
     if (count($success) && count($errors))
-        $Conf->confirmMsg("Created " . plural($success, "account") . " " . commajoin($success) . ".<br />However, there $errorMsg");
+        $Conf->confirmMsg($successMsg . "<br />However, there $errorMsg");
     else if (count($success))
-        $Conf->confirmMsg("Created " . plural($success, "account") . " " . commajoin($success) . ".");
+        $Conf->confirmMsg($successMsg);
     else if (count($errors))
         $Conf->errorMsg("There $errorMsg");
     else
@@ -430,7 +434,8 @@ if ($newProfile)
     $Conf->header("Create Account", "account", actionBar("account"));
 else
     $Conf->header($Me->contactId == $Acct->contactId ? "Your Profile" : "Account Profile", "account", actionBar("account", $Acct));
-$useRequest = !$Acct->contactId || $UserStatus->nerrors;
+$useRequest = (!$Acct->contactId && isset($_REQUEST["watchcomment"]))
+    || $UserStatus->nerrors;
 
 if (!$UserStatus->nerrors && isset($Me->fresh) && $Me->fresh === "redirect") {
     $ispc = ($Acct->roles & Contact::ROLE_PC) != 0;
@@ -495,8 +500,8 @@ if ($Me->privChair)
     echo Ht::hidden("whichpassword", "");
 
 echo "<table id='foldaccount' class='form foldc ",
-    ($pcrole == "no" ? "fold1c" : "fold1o"),
-    " fold2c'>
+    ($pcrole == "no" ? "fold1c " : "fold1o "),
+    (fileUploaded($_FILES["bulk"]) ? "fold2o" : "fold2c"), "'>
 <tr>
   <td class='caption initial'>Contact information</td>
   <td class='entry'><div class='f-contain'>\n\n";

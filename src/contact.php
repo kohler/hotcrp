@@ -746,17 +746,17 @@ class Contact {
 
         // Log
         if ($ok)
-            $acct->mark_create($send);
+            $acct->mark_create($send, true);
         else
             $Conf->log("Account $email creation failure", $Me);
 
         return $ok ? $acct : null;
     }
 
-    function mark_create($send_email) {
+    function mark_create($send_email, $message_chair) {
         global $Conf, $Me;
-        if ($Me && $Me->privChair)
-            $Conf->infoMsg("Created account for " . htmlspecialchars($this->email) . ".");
+        if ($Me && $Me->privChair && $message_chair)
+            $Conf->infoMsg("Created account for <a href=\"" . hoturl("profile", "u=" . urlencode($this->email)) . "\">" . Text::user_html_nolink($this) . "</a>.");
         if ($send_email)
             $this->sendAccountInfo("create", false);
         $Conf->log($Me && $Me->is_known_user() ? "Created account ($Me->email)" : "Created account", $this);

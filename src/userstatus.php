@@ -400,7 +400,7 @@ class UserStatus {
             $Conf->invalidateCaches(array("pc" => 1));
 
         if (!$old_user || !$old_user->is_known_user())
-            $user->mark_create(!$this->no_email);
+            $user->mark_create(!$this->no_email, false);
         return $user;
     }
 
