@@ -1421,8 +1421,7 @@ img.bmabs {
 	bottom: -2px;
 }
 td.pl_lastvisit, td.al_time {
-	padding-left: 0.125em;
-	padding-right: 0.4em;
+	padding-right: 1.25em;
 	font-size: smaller;
 	white-space: nowrap;
 }
