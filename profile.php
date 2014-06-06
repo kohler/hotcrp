@@ -664,16 +664,22 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 
 
     if ($Conf->sversion >= 35 && ($Me->privChair || @$formcj->tags)) {
+        if (is_object(@$formcj->tags))
+            $tags = array_keys(get_object_vars($formcj->tags));
+        else if (is_array(@$formcj->tags))
+            $tags = $formcj->tags;
+        else
+            $tags = array();
         echo "<tr class='fx1'><td class='caption'></td><td class='entry'><div class='gs'></div></td></tr>\n",
             "<tr class='fx1'><td class='caption'>Tags</td><td class='entry'>";
         if ($Me->privChair) {
             echo "<div class='", feclass("contactTags"), "'>",
-                textinput("contactTags", @$formcj->tags ? join(" ", $formcj->tags) : "", 60),
+                textinput("contactTags", join(" ", $tags), 60),
                 "</div>
   <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=rev&amp;tagcolor=1#tagcolor"), "'>tag colors</a> to highlight subgroups in review lists.</div></td>
 </tr>\n\n";
         } else {
-            echo join(" ", $formcj->tags), "
+            echo join(" ", $tags), "
   <div class='hint'>Tags represent PC subgroups and are set by administrators.</div></td>
 </tr>\n\n";
         }
