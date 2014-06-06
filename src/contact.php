@@ -508,6 +508,7 @@ class Contact {
     function save() {
         global $Conf, $Now;
         $this->trim();
+        $inserting = !$this->contactId;
         $qf = array();
         foreach (array("firstName", "lastName", "email", "affiliation",
                        "voicePhoneNumber", "password", "collaborators",
@@ -533,18 +534,17 @@ class Contact {
             else if (is_object($this->data_))
                 $qf[] = "data='" . sqlq(json_encode($this->data_)) . "'";
         }
-        $q = ($this->contactId ? "update" : "insert into")
+        $q = ($inserting ? "insert into" : "update")
             . " ContactInfo set " . join(", ", $qf);
-        if ($this->contactId)
-            $q .= " where contactId=" . $this->contactId;
-        else {
+        if ($inserting) {
             $this->creationTime = $Now;
             $q .= ", creationTime=$Now";
-        }
+        } else
+            $q .= " where contactId=" . $this->contactId;
         $result = $Conf->qe($q);
         if (!$result)
             return $result;
-        if (!$this->contactId)
+        if ($inserting)
             $this->contactId = $Conf->lastInsertId();
         $Conf->qx("delete from ContactAddress where contactId=$this->contactId");
         if ($this->addressLine1 || $this->addressLine2 || $this->city
@@ -745,16 +745,21 @@ class Contact {
         $ok = $acct->register_by_email($email, $reg);
 
         // Log
-        if ($ok) {
-            if ($Me && $Me->privChair)
-                $Conf->infoMsg("Created account for " . htmlspecialchars($email) . ".");
-            if ($send)
-                $acct->sendAccountInfo("create", false);
-            $Conf->log($Me && $Me->is_known_user() ? "Created account ($Me->email)" : "Created account", $acct);
-        } else
+        if ($ok)
+            $acct->mark_create($send);
+        else
             $Conf->log("Account $email creation failure", $Me);
 
         return $ok ? $acct : null;
+    }
+
+    function mark_create($send_email) {
+        global $Conf, $Me;
+        if ($Me && $Me->privChair)
+            $Conf->infoMsg("Created account for " . htmlspecialchars($this->email) . ".");
+        if ($send_email)
+            $this->sendAccountInfo("create", false);
+        $Conf->log($Me && $Me->is_known_user() ? "Created account ($Me->email)" : "Created account", $this);
     }
 
     function load_address() {

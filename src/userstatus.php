@@ -259,6 +259,7 @@ class UserStatus {
             $topics = $this->make_keyed_object($cj->topics, "topics");
             $topic_map = $Conf->topic_map();
             $cj->topics = (object) array();
+            $cj->bad_topics = array();
             foreach ((array) $topics as $k => $v) {
                 if (@$topic_map[$k])
                     /* OK */;
@@ -292,10 +293,10 @@ class UserStatus {
 
     function check_invariants($cj) {
         global $Now;
-        if (count($pj->bad_follow))
-            $this->set_warning("follow", "Unknown follow types ignored (" . htmlspecialchars(commajoin($pj->bad_follow)) . ").");
-        if (count($pj->bad_topics))
-            $this->set_warning("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($pj->bad_topics)) . ").");
+        if (@count($cj->bad_follow))
+            $this->set_warning("follow", "Unknown follow types ignored (" . htmlspecialchars(commajoin($cj->bad_follow)) . ").");
+        if (@count($cj->bad_topics))
+            $this->set_warning("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($cj->bad_topics)) . ").");
     }
 
 
@@ -318,7 +319,7 @@ class UserStatus {
             return false;
         $this->check_invariants($cj);
 
-        $user = $old_user ? $old_user : new Contact;
+        $user = $old_user ? : new Contact;
         $old_roles = $user->roles;
         $old_email = $user->email;
 
@@ -331,12 +332,13 @@ class UserStatus {
                        "country") as $k)
             if (isset($cj->$k))
                 $user->$k = $cj->$k;
-        if (!isset($cj->password) && isset($cj->password_plaintext))
-            $user->change_password($cj->password_plaintext);
         if (isset($cj->phone))
             $user->voicePhoneNumber = $cj->phone;
+        if (!isset($cj->password) && isset($cj->password_plaintext))
+            $user->change_password($cj->password_plaintext);
         if (!$user->password && !Contact::external_login())
-            $user->password = Contact::random_password();
+            $user->password = $user->password_plaintext =
+                Contact::random_password();
         if (isset($cj->zip))
             $user->zipCode = $cj->zip;
         if (isset($cj->address)) {
@@ -397,6 +399,8 @@ class UserStatus {
         if (($roles | $old_roles) & Contact::ROLE_PCLIKE)
             $Conf->invalidateCaches(array("pc" => 1));
 
+        if (!$old_user || !$old_user->is_known_user())
+            $user->mark_create(!$this->no_email);
         return $user;
     }
 

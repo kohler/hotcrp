@@ -276,14 +276,13 @@ else if (isset($_REQUEST["register"]) && $newProfile
     $cj = (object) array();
     web_request_as_json($cj);
     pc_request_as_json($cj);
-    save_user($cj, $UserStatus);
+    $cj = save_user($cj, $UserStatus);
     if ($UserStatus->nerrors)
         $Conf->errorMsg("<div>" . join("</div><div style='margin-top:0.5em'>", $UserStatus->error_messages()) . "</div>");
     else {
-        if ($newProfile) {
-            $Conf->confirmMsg("Created <a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">an account for " . htmlspecialchars($Acct->email) . "</a>.  A password has been emailed to that address.  You may now create another account.");
-            $_REQUEST["uemail"] = $_REQUEST["newUsername"] = $_REQUEST["firstName"] = $_REQUEST["lastName"] = $_REQUEST["affiliation"] = "";
-        } else {
+        if ($newProfile)
+            $Conf->confirmMsg("Created <a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account for " . htmlspecialchars($cj->email) . "</a>.  A password has been emailed to that address.  You may now create another account.");
+        else {
             $Conf->confirmMsg("Account profile updated.");
             if ($Acct->contactId != $Me->contactId)
                 $_REQUEST["u"] = $Acct->email;
@@ -467,6 +466,15 @@ if (!$UserStatus->nerrors && isset($Me->fresh) && $Me->fresh === "redirect") {
 }
 
 
+if (!$useRequest)
+    $formcj = $UserStatus->user_to_json($Acct);
+else {
+    $formcj = (object) array();
+    pc_request_as_json($formcj);
+}
+$pcrole = @($formcj->roles->chair) ? "chair" : (@($formcj->roles->pc) ? "pc" : "no");
+
+
 $params = array();
 if ($newProfile)
     $params[] = "u=new";
@@ -487,7 +495,7 @@ if ($Me->privChair)
     echo Ht::hidden("whichpassword", "");
 
 echo "<table id='foldaccount' class='form foldc ",
-    ($_REQUEST["pctype"] == "no" ? "fold1c" : "fold1o"),
+    ($pcrole == "no" ? "fold1c" : "fold1o"),
     " fold2c'>
 <tr>
   <td class='caption initial'>Contact information</td>
@@ -567,13 +575,6 @@ John Adams,john@earbox.org,UC Berkeley
 
 echo "</div></td>\n</tr>\n\n";
 
-if (!$useRequest)
-    $formcj = $UserStatus->user_to_json($Acct);
-else {
-    $formcj = (object) array();
-    pc_request_as_json($formcj);
-}
-
 
 echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n\n",
     "<tr><td class='caption'>Email notification</td><td class='entry'>";
@@ -597,7 +598,6 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     echo "<tr>
   <td class='caption'>Roles</td>
   <td class='entry'><table><tr><td class='nowrap'>\n";
-    $pcrole = @($formcj->roles->chair) ? "chair" : (@($formcj->roles->pc) ? "pc" : "no");
     foreach (array("chair" => "PC chair",
                    "pc" => "PC member",
                    "no" => "Not on the PC") as $k => $v) {
