@@ -50,9 +50,9 @@ class UserStatus {
 
         $user->load_address();
         $address = array();
-        if (@$user->addressLine1 !== null && @$user->addressLine1 !== "")
+        if (@$user->addressLine1 !== null && $user->addressLine1 !== "")
             $address[] = $user->addressLine1;
-        if (@$user->addressLine2 !== null && @$user->addressLine2 !== "")
+        if (@$user->addressLine2 !== null && $user->addressLine2 !== "")
             $address[] = $user->addressLine2;
         if (count($address))
             $cj->address = $address;
