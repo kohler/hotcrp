@@ -14,7 +14,6 @@ class ContactList extends BaseList {
     const FIELD_NAME = 1;
     const FIELD_EMAIL = 2;
     const FIELD_AFFILIATION = 3;
-    const FIELD_VISITS = 4;
     const FIELD_LASTVISIT = 5;
     const FIELD_HIGHTOPICS = 6;
     const FIELD_LOWTOPICS = 7;
@@ -133,11 +132,6 @@ class ContactList extends BaseList {
         return $x ? $x : self::_sortBase($a, $b);
     }
 
-    function _sortVisits($a, $b) {
-        $x = $b->visits - $a->visits;
-        return $x ? $x : self::_sortBase($a, $b);
-    }
-
     function _sortLastVisit($a, $b) {
         $x = $b->lastLogin - $a->lastLogin;
         return $x ? $x : self::_sortBase($a, $b);
@@ -183,9 +177,6 @@ class ContactList extends BaseList {
         case self::FIELD_AFFILIATION:
         case self::FIELD_AFFILIATION_ROW:
             usort($rows, array("ContactList", "_sortAffiliation"));
-            break;
-        case self::FIELD_VISITS:
-            usort($rows, array("ContactList", "_sortVisits"));
             break;
         case self::FIELD_LASTVISIT:
             usort($rows, array("ContactList", "_sortLastVisit"));
@@ -233,10 +224,8 @@ class ContactList extends BaseList {
         case self::FIELD_AFFILIATION:
         case self::FIELD_AFFILIATION_ROW:
             return "Affiliation";
-        case self::FIELD_VISITS:
-            return "Logins";
         case self::FIELD_LASTVISIT:
-            return "Last login";
+            return "Last activity";
         case self::FIELD_HIGHTOPICS:
             return "High-interest topics";
         case self::FIELD_LOWTOPICS:
@@ -302,8 +291,6 @@ class ContactList extends BaseList {
         case self::FIELD_AFFILIATION:
         case self::FIELD_AFFILIATION_ROW:
             return htmlspecialchars($row->affiliation);
-        case self::FIELD_VISITS:
-            return $row->visits;
         case self::FIELD_LASTVISIT:
             if (!$row->lastLogin)
                 return "Never";
@@ -438,24 +425,24 @@ class ContactList extends BaseList {
         case "pc":
         case "admin":
         case "pcadmin":
-            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_LEADS, self::FIELD_SHEPHERDS));
+            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_LEADS, self::FIELD_SHEPHERDS));
         case "pcadminx":
-            return array($listname, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS);
+            return array($listname, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS);
           case "re":
           case "resub":
-            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS));
+            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS));
           case "ext":
           case "extsub":
-            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
+            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
           case "req":
-            return $this->addScores(array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
+            return $this->addScores(array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
           case "au":
           case "aurej":
           case "auacc":
           case "auuns":
-            return array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
+            return array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
           case "all":
-            return array("all", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_VISITS, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
+            return array("all", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
           default:
             return null;
         }
@@ -504,7 +491,7 @@ class ContactList extends BaseList {
         u.contactId as paperId,
         firstName, lastName, email, affiliation, roles, contactTags,
         voicePhoneNumber,
-        u.collaborators, lastLogin$qa, visits";
+        u.collaborators, lastLogin$qa";
         if (isset($queryOptions['topics']))
             $pq .= ",\n topicIds, topicInterest";
         if (isset($queryOptions["reviews"])) {
@@ -862,7 +849,6 @@ $contactListFields = array(
         ContactList::FIELD_EMAIL => array('email', 1, 1),
         ContactList::FIELD_AFFILIATION => array('affiliation', 1, 1),
         ContactList::FIELD_AFFILIATION_ROW => array('affrow', 4, 0),
-        ContactList::FIELD_VISITS => array('visits', 1, 1),
         ContactList::FIELD_LASTVISIT => array('lastvisit', 1, 1),
         ContactList::FIELD_HIGHTOPICS => array('topics', 3, 0),
         ContactList::FIELD_LOWTOPICS => array('topics', 3, 0),

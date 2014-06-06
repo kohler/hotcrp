@@ -8,7 +8,6 @@ class Contact {
     // Information from the SQL definition
     public $contactId = 0;
     private $cid;               // for forward compatibility
-    var $visits;
     var $firstName = "";
     var $lastName = "";
     var $email = "";
@@ -21,6 +20,7 @@ class Contact {
     public $password_type = 0;
     public $password_plaintext = "";
     public $disabled = false;
+    public $activity_at = false;
     private $data_ = null;
     var $defaultWatch = WATCH_COMMENT;
 
@@ -462,7 +462,6 @@ class Contact {
 
     function trim() {
         $this->contactId = (int) trim($this->contactId);
-        $this->visits = trim($this->visits);
         $this->firstName = simplify_whitespace($this->firstName);
         $this->lastName = simplify_whitespace($this->lastName);
         foreach (array("email", "preferredEmail", "affiliation",
@@ -632,7 +631,6 @@ class Contact {
             return false;
 
         $this->contactId = (int) $row->contactId;
-        $this->visits = $row->visits;
         $this->firstName = $row->firstName;
         $this->lastName = $row->lastName;
         $this->email = $row->email;
@@ -648,6 +646,7 @@ class Contact {
         $this->collaborators = $row->collaborators;
         $this->defaultWatch = defval($row, "defaultWatch", 0);
         $this->contactTags = defval($row, "contactTags", null);
+        $this->activity_at = (int) defval($row, "lastLogin", 0);
         $this->data_ = defval($row, "data", null);
         $this->assign_roles($row->roles);
 

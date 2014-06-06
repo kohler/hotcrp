@@ -159,7 +159,8 @@ class LoginHelper {
             return $Conf->errorMsg("That password doesn’t match. If you’ve forgotten your password, enter your email address and use the “I forgot my password” option.");
         }
 
-        $Conf->qe("update ContactInfo set visits=visits+1, lastLogin=$Now where contactId=" . $user->cid, "while recording login statistics");
+        if (!$user->activity_at)
+            $Conf->qe("update ContactInfo set lastLogin=$Now where contactId=" . $user->cid, "while recording login statistics");
         if (!$external_login && $user->password_needs_upgrade()) {
             $user->change_password($_REQUEST["password"]);
             $Conf->qe("update ContactInfo set password='" . sqlq($user->password) . "' where contactId=" . $user->cid, "while updating password");
@@ -206,7 +207,7 @@ class LoginHelper {
     static private function create_account($user) {
         global $Conf, $Opt, $email_class;
 
-        if ($user && $user->is_known_user() && $user->visits > 0) {
+        if ($user && $user->is_known_user() && $user->activity_at > 0) {
             $email_class = " error";
             return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
         } else if (!validateEmail($_REQUEST["email"])) {
