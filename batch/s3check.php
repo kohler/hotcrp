@@ -32,7 +32,7 @@ while (1) {
         if ($sha1sum !== $m[1]) {
             echo "bad checksum $sha1sum\n";
             error_log("$node->Key: bad checksum $sha1sum");
-        else
+        } else
             echo "ok\n";
     }
     ++$xmlpos;
