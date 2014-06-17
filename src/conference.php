@@ -47,11 +47,15 @@ class Conference {
         if ($dsn)
             list($this->dblink, $ConfId) = self::connect_dsn($dsn);
         if (!isset($Opt["sessionName"]) || $Opt["sessionName"] == "")
-            $Opt["sessionName"] = $ConfId;
+            $Opt["sessionName"] = preg_replace_callback('/[^A-Ya-z0-9]/', $ConfId, "Conference::session_name_fixer");
         if ($this->dblink)
             $this->load_settings();
         else
             $this->crosscheck_options();
+    }
+
+    static function session_name_fixer($m) {
+        return "Z" . hex(ord($m[0]));
     }
 
     static function make_dsn($opt) {
@@ -257,7 +261,7 @@ class Conference {
             $Opt["paperSite"] = Navigation::site_absolute();
         $Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
 
-        // set sessionName and downloadPrefix
+        // set longName, downloadPrefix, etc.
         $confname = @$ConfMulticonf ? $ConfMulticonf : $ConfId;
         if ((!isset($Opt["longName"]) || $Opt["longName"] == "")
             && (!isset($Opt["shortName"]) || $Opt["shortName"] == "")) {
