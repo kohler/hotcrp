@@ -40,6 +40,7 @@ PASSWORD=""
 distoptions_file=distoptions.php
 options_file=
 minimal_options=
+mycreatedb_args=" --defaults-group-suffix=_hotcrp_createdb"
 needpassword=false
 force=false
 batch=false
@@ -73,6 +74,8 @@ while [ $# -gt 0 ]; do
         parse_common_argument "$@";;
     -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
         parse_common_argument "$@";;
+    --defaults-group-suffix=*)
+        mycreatedb_args=; FLAGS="$FLAGS '$1'";;
     -*)
 	FLAGS="$FLAGS '$1'";;
     *)
@@ -98,13 +101,13 @@ fi
 set_myargs "$DBUSER" "$PASSWORD"
 
 
-if ! (echo 'show databases;' | eval $MYSQL $myargs $FLAGS >/dev/null); then
+if ! (echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS >/dev/null); then
     echo 1>&2
     echo "* Could not run $MYSQL $myargs_redacted $FLAGS. Did you enter the right password?" 1>&2
     echo 1>&2
     exit 1
 fi
-grants=`echo 'show grants;' | eval $MYSQL $myargs $FLAGS | grep -i -e create -e all | grep -i 'on \*\.\*'`
+grants=`echo 'show grants;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS | grep -i -e create -e all | grep -i 'on \*\.\*'`
 if ! $force && test -z "$grants"; then
     echo 1>&2
     echo "* This account doesn't appear to have the privilege to create MySQL databases." 1>&2
@@ -160,8 +163,8 @@ while true; do
 	exit 1
     elif test -n "$x"; then
 	echo "* The database name must only contain characters in [-.a-zA-Z0-9_]." 1>&2
-    elif test "$c" -gt 16; then
-	echo "* The database name can be at most 16 characters long." 1>&2
+    elif test "$c" -gt 64; then
+	echo "* The database name can be at most 64 characters long." 1>&2
     elif test "`echo "$DBNAME" | head -c 1`" = "."; then
 	echo "* The database name must not start with a period." 1>&2
     elif test "$DBNAME" = mysql || expr "$DBNAME" : '.*_schema$' >/dev/null; then
@@ -219,14 +222,15 @@ php_dbpass () {
 }
 
 
+DBNAME_QUOTED=`echo "$DBNAME" | sed 's/[.]/[.]/g'`
 echo
-echo "+ echo 'show databases;' | $MYSQL $myargs_redacted $FLAGS -N | grep '^$DBNAME\$'"
-echo 'show databases;' | eval $MYSQL $myargs $FLAGS -N >/dev/null || exit 1
-echo 'show databases;' | eval $MYSQL $myargs $FLAGS -N | grep "^$DBNAME\$" >/dev/null 2>&1
+echo "+ echo 'show databases;' | $MYSQL$mycreatedb_args$myargs_redacted$FLAGS -N | grep '^$DBNAME_QUOTED\$'"
+echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N >/dev/null || exit 1
+echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N | grep "^$DBNAME_QUOTED\$" >/dev/null 2>&1
 dbexists="$?"
-echo "+ echo 'select User from user group by User;' | $MYSQL $myargs_redacted $FLAGS -N mysql | grep '^$DBNAME\$'"
-echo 'select User from user group by User;' | eval $MYSQL $myargs $FLAGS -N mysql >/dev/null || exit 1
-echo 'select User from user group by User;' | eval $MYSQL $myargs $FLAGS -N mysql | grep "^$DBNAME\$" >/dev/null 2>&1
+echo "+ echo 'select User from user group by User;' | $MYSQL$mycreatedb_args$myargs_redacted$FLAGS -N mysql | grep '^$DBNAME_QUOTED\$'"
+echo 'select User from user group by User;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql >/dev/null || exit 1
+echo 'select User from user group by User;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql | grep "^$DBNAME_QUOTED\$" >/dev/null 2>&1
 userexists="$?"
 createdbuser=y
 if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
@@ -244,18 +248,18 @@ if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
     expr "$createdbuser" : "[nN].*" >/dev/null || createdbuser=y
 
     if [ "$createdbuser" = y -a "$dbexists" = 0 ]; then
-	echo "+ $MYSQLADMIN $myargs_redacted $FLAGS -f drop $DBNAME"
-	eval $MYSQLADMIN $myargs $FLAGS -f drop $DBNAME || exit 1
+	echo "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS -f drop $DBNAME"
+	eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS -f drop $DBNAME || exit 1
     fi
 fi
 if [ "$createdbuser" = y ]; then
     echo
     echo "Creating $DBNAME database..."
-    echo "+ $MYSQLADMIN $myargs_redacted $FLAGS --default-character-set=utf8 create $DBNAME"
-    eval $MYSQLADMIN $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
+    echo "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS --default-character-set=utf8 create $DBNAME"
+    eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
 
     echo "Creating $DBNAME user and password..."
-    eval $MYSQL $myargs $FLAGS mysql <<__EOF__ || exit 1
+    eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
 DELETE FROM user WHERE user='$DBNAME';
 DELETE FROM db WHERE User='$DBNAME';
 FLUSH PRIVILEGES;
@@ -317,13 +321,13 @@ __EOF__
 ##
 
     echo_n "Granting RELOAD privilege..."
-    eval $MYSQL $myargs $FLAGS mysql <<__EOF__ || echo_n " FAILED!"
+    eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || echo_n " FAILED!"
 GRANT RELOAD ON *.* TO '$DBNAME'@'localhost', '$DBNAME'@'127.0.0.1', '$DBNAME'@'localhost.localdomain';
 __EOF__
     echo
 
     echo "Reloading grant tables..."
-    eval $MYSQLADMIN $myargs $FLAGS reload || exit 1
+    eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS reload || exit 1
 
     if [ ! -r "${SRCDIR}schema.sql" ]; then
 	echo 1>&2
@@ -357,7 +361,7 @@ fi
 if [ "$populatedb" = y ]; then
     echo "Populating database..."
     set_myargs $DBNAME "`echo_dbpass`"
-    echo "+ $MYSQL $myargs_redacted $FLAGS $DBNAME < ${SRCDIR}schema.sql"
+    echo "+ $MYSQL$myargs_redacted$FLAGS $DBNAME < ${SRCDIR}schema.sql"
     eval $MYSQL $myargs $FLAGS $DBNAME < ${SRCDIR}schema.sql || exit 1
 fi
 

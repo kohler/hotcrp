@@ -141,7 +141,8 @@ check_mysqlish () {
 }
 
 set_myargs () {
-    if test -n "$1"; then myargs="-u$1"; else myargs=""; fi
+    myargs=""
+    if test -n "$1"; then myargs=" -u$1"; fi
     if test -n "$2"; then
         myargs_redacted="$myargs -p<REDACTED>"
         PASSWORDFILE="`mktemp -q /tmp/hotcrptmp.XXXXXX`"
@@ -149,7 +150,7 @@ set_myargs () {
             echo "[client]" >> "$PASSWORDFILE"
             echo "password = $2" >> "$PASSWORDFILE"
             chmod 600 "$PASSWORDFILE" # should be redundant
-            myargs="--defaults-extra-file=$PASSWORDFILE $myargs"
+            myargs=" --defaults-extra-file=$PASSWORDFILE$myargs"
             trap "rm -f $PASSWORDFILE" EXIT 2>/dev/null
         else
             PASSWORDFILE=""
