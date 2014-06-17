@@ -18,6 +18,7 @@ help () {
     echo "      --minimal           Output minimal configuration file."
     echo "      --batch             Batch installation."
     echo "      --replace           Replace existing database and user."
+    echo "      --dbuser=USER,PASS  Use existing database USER and PASS."
     echo "      --force             Answer yes to all questions."
     echo
     echo "MYSQLOPTIONS are sent to mysql and mysqladmin."
@@ -32,11 +33,22 @@ usage () {
     exit 1
 }
 
+set_dbuserpass () {
+    if ! expr "$1" : ".*,.*" >/dev/null; then
+        echo "Expected --dbuser=USER,PASS" 1>&2
+        usage
+    fi
+    DBUSER="`echo "$1" | sed 's/^\([^,]*\),.*/\1/'`"
+    DBPASS="`echo "$1" | sed 's/^[^,]*,//'`"
+    dbuser_existing=true
+}
+
 PROG=$0
 FLAGS=""
 MYCREATEDB_USER=""
 DBNAME=""
 DBUSER=""
+DBPASS=""
 PASSWORD=""
 distoptions_file=distoptions.php
 options_file=
@@ -46,6 +58,7 @@ needpassword=false
 force=false
 batch=false
 replace=false
+dbuser_existing=false
 while [ $# -gt 0 ]; do
     shift=1
     case "$1" in
@@ -61,6 +74,10 @@ while [ $# -gt 0 ]; do
         PASSWORD="`echo "$1" | sed s/^-p//`";;
     --pas=*|--pass=*|--passw=*|--passwo=*|--passwor=*|--password=*)
         PASSWORD="`echo "$1" | sed 's/^[^=]*=//'`";;
+    --dbuser)
+        set_dbuserpass "$2"; shift;;
+    --dbuser=*)
+        set_dbuserpass "`echo "$1" | sed 's/^[^=]*=//'`";;
     --he|--hel|--help)
 	help;;
     --force)
@@ -166,6 +183,9 @@ while true; do
 	echo "* The database name must only contain characters in [-.a-zA-Z0-9_]." 1>&2
     elif test "$c" -gt 64; then
 	echo "* The database name can be at most 64 characters long." 1>&2
+    elif ! $dbuser_existing && test "$c" -gt 16; then
+	echo "* Database user names can be at most 16 characters long." 1>&2
+        echo "* Either choose a shorter database name, or use --dbuser." 1>&2
     elif test "`echo "$DBNAME" | head -c 1`" = "."; then
 	echo "* The database name must not start with a period." 1>&2
     elif test "$DBNAME" = mysql || expr "$DBNAME" : '.*_schema$' >/dev/null; then
@@ -196,7 +216,7 @@ else
     default_dbpass_length="`echo_n "$default_dbpass" | wc -c`"
     default_dbpass_description="is `echo $default_dbpass_length` random characters"
 fi
-while true; do
+while test -z "$DBPASS"; do
     if ! $batch; then
         echo_n "Enter password for mysql user $DBNAME [default $default_dbpass_description]: "
         stty -echo; trap "stty echo; exit 1" INT
@@ -211,6 +231,7 @@ while true; do
     echo 1>&2
     echo "* The database password must not contain single quotes or null characters." 1>&2
     batch_fail
+    DBPASS=""
 done
 $batch || echo
 
@@ -236,11 +257,19 @@ echo "+ echo 'select User from user group by User;' | $MYSQL$mycreatedb_args$mya
 echo 'select User from user group by User;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql >/dev/null || exit 1
 echo 'select User from user group by User;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql | grep "^$DBUSER_QUOTED\$" >/dev/null 2>&1
 userexists="$?"
-createdbuser=y
-if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
+
+if $dbuser_existing && [ "$userexists" != 0 ]; then
+    echo "* The requested database user $DBUSER does not exist." 1>&2
+    exit 1
+fi
+
+createdb=y; createuser=y; createdbuser=y
+$dbuser_existing && createuser=n
+
+if [ "$dbexists" = 0 -o \( "$userexists" = 0 -a "$dbuser_existing" != true \) ]; then
     echo
     test "$dbexists" = 0 && echo "A database named '$DBNAME' already exists!"
-    test "$userexists" = 0 && echo "A user named '$DBUSER' already exists!"
+    test "$userexists" = 0 -a "$dbuser_existing" != true && echo "A user named '$DBUSER' already exists!"
     while ! $replace; do
         batch_fail
 	echo_n "Replace? [Y/n] "
@@ -250,27 +279,42 @@ if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
     done
     expr "$createdbuser" : "[qQ].*" >/dev/null && echo "Exiting" && exit 0
     expr "$createdbuser" : "[nN].*" >/dev/null || createdbuser=y
+    test "$createdbuser$createdb" = yy || createdb=n
+    test "$createdbuser$createuser" = yy || createuser=n
+fi
 
-    if [ "$createdbuser" = y -a "$dbexists" = 0 ]; then
+echo
+if [ "$createdb" = y ]; then
+    echo "Creating $DBNAME database..."
+    if [ "$dbexists" = 0 ]; then
 	echo "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS -f drop $DBNAME"
 	eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS -f drop $DBNAME || exit 1
+        eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
+DELETE FROM db WHERE db='$DBNAME';
+FLUSH PRIVILEGES;
+__EOF__
     fi
-fi
-if [ "$createdbuser" = y ]; then
-    echo
-    echo "Creating $DBNAME database..."
     echo "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS --default-character-set=utf8 create $DBNAME"
     eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
+fi
 
+if [ "$createuser" = y ]; then
     echo "Creating $DBUSER user and password..."
     eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
 DELETE FROM user WHERE user='$DBUSER';
-DELETE FROM db WHERE db='$DBNAME';
 FLUSH PRIVILEGES;
 
 CREATE USER '$DBUSER'@'localhost' IDENTIFIED BY '`sql_dbpass`',
     '$DBUSER'@'127.0.0.1' IDENTIFIED BY '`sql_dbpass`',
     '$DBUSER'@'localhost.localdomain' IDENTIFIED BY '`sql_dbpass`';
+
+__EOF__
+fi
+
+if [ "$createdbuser" = y ]; then
+    echo "Granting $DBUSER access to $DBNAME..."
+    eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1    
+DELETE FROM db WHERE db='$DBNAME' AND User='$DBUSER';
 
 INSERT INTO db SET
     Host='127.0.0.1',
@@ -331,13 +375,6 @@ __EOF__
 
     echo "Reloading grant tables..."
     eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS reload || exit 1
-
-    if [ ! -r "${SRCDIR}schema.sql" ]; then
-	echo 1>&2
-        echo "* Can't read schema.sql! You'll have to populate the database yourself." 1>&2
-        echo 1>&2
-	exit 1
-    fi
 else
     echo
     echo "Continuing with existing database and user."
