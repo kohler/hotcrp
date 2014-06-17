@@ -142,8 +142,8 @@ check_mysqlish () {
 
 set_myargs () {
     if test -n "$1"; then myargs="-u$1"; else myargs=""; fi
-    myargs_redacted="$myargs -p<REDACTED>"
     if test -n "$2"; then
+        myargs_redacted="$myargs -p<REDACTED>"
         PASSWORDFILE="`mktemp -q /tmp/hotcrptmp.XXXXXX`"
         if test -n "$PASSWORDFILE"; then
             echo "[client]" >> "$PASSWORDFILE"
@@ -155,6 +155,8 @@ set_myargs () {
             PASSWORDFILE=""
             myargs="$myargs -p'$2'"
         fi
+    else
+        myargs_redacted="$myargs"
     fi
 }
 
