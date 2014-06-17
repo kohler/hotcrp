@@ -34,8 +34,9 @@ usage () {
 
 PROG=$0
 FLAGS=""
-DBUSER=""
+MYCREATEDB_USER=""
 DBNAME=""
+DBUSER=""
 PASSWORD=""
 distoptions_file=distoptions.php
 options_file=
@@ -51,11 +52,11 @@ while [ $# -gt 0 ]; do
     -p|--pas|--pass|--passw|--passwo|--passwor|--password)
 	needpassword=true;;
     -u|--us|--use|--user)
-        DBUSER="$2"; shift;;
+        MYCREATEDB_USER="$2"; shift;;
     -u*)
-        DBUSER="`echo "$1" | sed s/^-u//`";;
+        MYCREATEDB_USER="`echo "$1" | sed s/^-u//`";;
     --u=*|--us=*|--use=*|--user=*)
-	DBUSER="`echo "$1" | sed 's/^[^=]*=//'`";;
+	MYCREATEDB_USER="`echo "$1" | sed 's/^[^=]*=//'`";;
     -p*)
         PASSWORD="`echo "$1" | sed s/^-p//`";;
     --pas=*|--pass=*|--passw=*|--passwo=*|--passwor=*|--password=*)
@@ -98,7 +99,7 @@ if $needpassword; then
     stty echo; trap - INT
     echo
 fi
-set_myargs "$DBUSER" "$PASSWORD"
+set_myargs "$MYCREATEDB_USER" "$PASSWORD"
 
 
 if ! (echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS >/dev/null); then
@@ -208,7 +209,7 @@ while true; do
     x=`echo_dbpass | tr -d -c '\000'"'"`
     if test -z "$x" >/dev/null; then break; fi
     echo 1>&2
-    echo "The database password must not contain single quotes or null characters." 1>&2
+    echo "* The database password must not contain single quotes or null characters." 1>&2
     batch_fail
 done
 $batch || echo
@@ -228,18 +229,21 @@ echo "+ echo 'show databases;' | $MYSQL$mycreatedb_args$myargs_redacted$FLAGS -N
 echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N >/dev/null || exit 1
 echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N | grep "^$DBNAME_QUOTED\$" >/dev/null 2>&1
 dbexists="$?"
-echo "+ echo 'select User from user group by User;' | $MYSQL$mycreatedb_args$myargs_redacted$FLAGS -N mysql | grep '^$DBNAME_QUOTED\$'"
+
+test -z "$DBUSER" && DBUSER="$DBNAME"
+DBUSER_QUOTED=`echo "$DBUSER" | sed 's/[.]/[.]/g'`
+echo "+ echo 'select User from user group by User;' | $MYSQL$mycreatedb_args$myargs_redacted$FLAGS -N mysql | grep '^$DBUSER_QUOTED\$'"
 echo 'select User from user group by User;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql >/dev/null || exit 1
-echo 'select User from user group by User;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql | grep "^$DBNAME_QUOTED\$" >/dev/null 2>&1
+echo 'select User from user group by User;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql | grep "^$DBUSER_QUOTED\$" >/dev/null 2>&1
 userexists="$?"
 createdbuser=y
 if [ "$dbexists" = 0 -o "$userexists" = 0 ]; then
     echo
     test "$dbexists" = 0 && echo "A database named '$DBNAME' already exists!"
-    test "$userexists" = 0 && echo "A user named '$DBNAME' already exists!"
+    test "$userexists" = 0 && echo "A user named '$DBUSER' already exists!"
     while ! $replace; do
         batch_fail
-	echo_n "Replace database and user? [Y/n] "
+	echo_n "Replace? [Y/n] "
 	read createdbuser
 	expr "$createdbuser" : "[ynqYNQ].*" >/dev/null && break
 	test -z "$createdbuser" && break
@@ -258,21 +262,20 @@ if [ "$createdbuser" = y ]; then
     echo "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS --default-character-set=utf8 create $DBNAME"
     eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
 
-    echo "Creating $DBNAME user and password..."
+    echo "Creating $DBUSER user and password..."
     eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
-DELETE FROM user WHERE user='$DBNAME';
-DELETE FROM db WHERE User='$DBNAME';
+DELETE FROM user WHERE user='$DBUSER';
+DELETE FROM db WHERE db='$DBNAME';
 FLUSH PRIVILEGES;
 
-CREATE USER '$DBNAME'@'localhost' IDENTIFIED BY '`sql_dbpass`',
-    '$DBNAME'@'127.0.0.1' IDENTIFIED BY '`sql_dbpass`',
-    '$DBNAME'@'localhost.localdomain' IDENTIFIED BY '`sql_dbpass`';
+CREATE USER '$DBUSER'@'localhost' IDENTIFIED BY '`sql_dbpass`',
+    '$DBUSER'@'127.0.0.1' IDENTIFIED BY '`sql_dbpass`',
+    '$DBUSER'@'localhost.localdomain' IDENTIFIED BY '`sql_dbpass`';
 
-DELETE FROM db WHERE db='$DBNAME';
 INSERT INTO db SET
     Host='127.0.0.1',
     Db='$DBNAME',
-    User='$DBNAME',
+    User='$DBUSER',
     Select_priv='Y',
     Insert_priv='Y',
     Update_priv='Y',
@@ -288,7 +291,7 @@ INSERT INTO db SET
 INSERT INTO db SET
     Host='localhost.localdomain',
     Db='$DBNAME',
-    User='$DBNAME',
+    User='$DBUSER',
     Select_priv='Y',
     Insert_priv='Y',
     Update_priv='Y',
@@ -304,7 +307,7 @@ INSERT INTO db SET
 INSERT INTO db SET
     Host='localhost',
     Db='$DBNAME',
-    User='$DBNAME',
+    User='$DBUSER',
     Select_priv='Y',
     Insert_priv='Y',
     Update_priv='Y',
@@ -322,7 +325,7 @@ __EOF__
 
     echo_n "Granting RELOAD privilege..."
     eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || echo_n " FAILED!"
-GRANT RELOAD ON *.* TO '$DBNAME'@'localhost', '$DBNAME'@'127.0.0.1', '$DBNAME'@'localhost.localdomain';
+GRANT RELOAD ON *.* TO '$DBUSER'@'localhost', '$DBUSER'@'127.0.0.1', '$DBUSER'@'localhost.localdomain';
 __EOF__
     echo
 
@@ -360,7 +363,7 @@ if ! $replace && test "$createdb" = n; then
 fi
 if [ "$populatedb" = y ]; then
     echo "Populating database..."
-    set_myargs $DBNAME "`echo_dbpass`"
+    set_myargs "$DBUSER" "`echo_dbpass`"
     echo "+ $MYSQL$myargs_redacted$FLAGS $DBNAME < ${SRCDIR}schema.sql"
     eval $MYSQL $myargs $FLAGS $DBNAME < ${SRCDIR}schema.sql || exit 1
 fi
@@ -377,7 +380,7 @@ global $Opt;'
 { if (p) print }' < "${SRCDIR}${distoptions_file}"
     cat <<__EOF__
 \$Opt["dbName"] = "$DBNAME";
-\$Opt["dbUser"] = "$DBNAME";
+\$Opt["dbUser"] = "$DBUSER";
 \$Opt["dbPassword"] = "`php_dbpass`";
 __EOF__
     test -z "$minimal_options" && awk 'BEGIN { p = 0 }
