@@ -55,7 +55,7 @@ class Conference {
     }
 
     static function session_name_fixer($m) {
-        return "Z" . hex(ord($m[0]));
+        return "Z" . dechex(ord($m[0]));
     }
 
     static function make_dsn($opt) {
