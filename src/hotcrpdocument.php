@@ -77,7 +77,7 @@ class HotCRPDocument {
         return $mimetypes;
     }
 
-    private static function s3_document() {
+    public static function s3_document() {
         global $Conf, $Now;
         if (self::$_s3_document === false) {
             if ($Conf->setting_data("s3_bucket")) {

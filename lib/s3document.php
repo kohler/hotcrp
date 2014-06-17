@@ -212,4 +212,13 @@ class S3Document {
         return $this->status == 204;
     }
 
+    public function ls($prefix, $args = array()) {
+        $url = "?prefix=" . urlencode($prefix);
+        foreach (array("marker", "max-keys") as $k)
+            if (isset($args[$k]))
+                $url .= "&" . $k . "=" . urlencode($args[$k]);
+        $this->run($url, "GET", array());
+        return $this->response_headers["content"];
+    }
+
 }
