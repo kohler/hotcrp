@@ -16,12 +16,6 @@ function arrayappend(&$var, $value) {
         $var = array($value);
 }
 
-function &array_ensure(&$arr, $key, $val) {
-    if (!isset($arr[$key]))
-        $arr[$key] = $val;
-    return $arr[$key];
-}
-
 function set_error_html($x, $error_html = null) {
     if (!$error_html) {
         $error_html = $x;
