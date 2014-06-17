@@ -179,10 +179,11 @@ class S3Document {
         if ($filename) {
             list($url, $hdr) = $this->http_headers($filename, $method, $args);
             $context = stream_context_create(array("http" => $hdr));
-            $stream = fopen($url, "r", false, $context);
-            $this->parse_response_headers($url, stream_get_meta_data($stream));
-            $this->response_headers["content"] = stream_get_contents($stream);
-            fclose($stream);
+            if (($stream = fopen($url, "r", false, $context))) {
+                $this->parse_response_headers($url, stream_get_meta_data($stream));
+                $this->response_headers["content"] = stream_get_contents($stream);
+                fclose($stream);
+            }
         }
     }
 
