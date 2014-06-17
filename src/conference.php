@@ -47,7 +47,7 @@ class Conference {
         if ($dsn)
             list($this->dblink, $ConfId) = self::connect_dsn($dsn);
         if (!isset($Opt["sessionName"]) || $Opt["sessionName"] == "")
-            $Opt["sessionName"] = preg_replace_callback('/[^A-Ya-z0-9]/', $ConfId, "Conference::session_name_fixer");
+            $Opt["sessionName"] = preg_replace_callback('/[^A-Ya-z0-9]/', "Conference::session_name_fixer", $ConfId);
         if ($this->dblink)
             $this->load_settings();
         else
