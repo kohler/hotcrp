@@ -1,5 +1,6 @@
 <?php
 require_once("src/init.php");
+require_once("lib/getopt.php");
 
 $arg = getopt_rest($argv, "hm:p:n:d:f:", array("help", "mimetype:", "paper:", "dtype:", "filename:", "name:"));
 if (!isset($arg["d"]))

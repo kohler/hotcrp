@@ -1,5 +1,6 @@
 <?php
 require_once("src/init.php");
+require_once("lib/getopt.php");
 
 $arg = getopt_rest($argv, "hn:", array("help", "name:"));
 if (isset($arg["h"]) || isset($arg["help"])
