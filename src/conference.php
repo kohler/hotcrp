@@ -300,6 +300,12 @@ class Conference {
             } else if (!ini_get("date.timezone") && !getenv("TZ"))
                 date_default_timezone_set("America/New_York");
         }
+
+        // set safePasswords
+        if (!@$Opt["safePasswords"] || (is_int($Opt["safePasswords"]) && $Opt["safePasswords"] < 1))
+            $Opt["safePasswords"] = 0;
+        else if ($Opt["safePasswords"] === true)
+            $Opt["safePasswords"] = 1;
     }
 
     function setting($name, $defval = false) {

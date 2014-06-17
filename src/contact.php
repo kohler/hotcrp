@@ -1960,26 +1960,26 @@ class Contact {
 
     static public function password_cleartext() {
         global $Opt;
-        return !@$Opt["safePasswords"]
-            || (is_int(@$Opt["safePasswords"]) && $Opt["safePasswords"] < 1);
+        return $Opt["safePasswords"] < 1;
     }
 
-    public function password_needs_upgrade() {
+    public function check_password_encryption($is_change) {
         global $Opt;
-        if (@$Opt["safePasswords"] === true
-            || (is_int(@$Opt["safePasswords"]) && $Opt["safePasswords"] > 1)) {
-            $expected_prefix = " " . self::password_hash_method()
-                . " " . defval($Opt, "passwordHmacKeyid", 0) . " ";
-            return $this->password_type == 0
-                || ($this->password_type == 1 && !str_starts_with($this->password, $expected_prefix));
-        } else
+        if ($Opt["safePasswords"] < 1
+            || ($Opt["safePasswords"] == 1 && !$is_change))
             return false;
+        if ($this->password_type == 0)
+            return true;
+        $expected_prefix = " " . self::password_hash_method()
+            . " " . defval($Opt, "passwordHmacKeyid", 0) . " ";
+        return $this->password_type == 1
+            && !str_starts_with($this->password, $expected_prefix);
     }
 
     public function change_password($new_password) {
         global $Conf, $Opt;
         $this->password_plaintext = $new_password;
-        if ($this->password_needs_upgrade())
+        if ($this->check_password_encryption(true))
             $this->password_type = 1;
         if ($this->password_type == 1 && function_exists("hash_hmac")) {
             list($keyid, $key) = self::password_hmac_key(null, true);

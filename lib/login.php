@@ -161,7 +161,7 @@ class LoginHelper {
 
         if (!$user->activity_at)
             $user->mark_activity();
-        if (!$external_login && $user->password_needs_upgrade()) {
+        if (!$external_login && $user->check_password_encryption(false)) {
             $user->change_password($_REQUEST["password"]);
             $Conf->qe("update ContactInfo set password='" . sqlq($user->password) . "' where contactId=" . $user->cid, "while updating password");
         }
