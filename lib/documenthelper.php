@@ -235,7 +235,11 @@ class DocumentHelper {
             return null;
     }
 
-    private static function _expand_filestore($fsinfo, $doc) {
+    private static function _filestore($docclass, $doc, $docinfo) {
+        $fsinfo = $docclass->filestore_pattern($doc, $docinfo);
+        if (!$fsinfo)
+            return $fsinfo;
+
         list($fdir, $fpath) = $fsinfo;
         $sha1 = null;
 
@@ -334,8 +338,7 @@ class DocumentHelper {
         $docclass->prepare_storage($doc, $docinfo);
         if (($dbinfo = $docclass->database_storage($doc, $docinfo)))
             self::_store_database($dbinfo, $doc);
-        if (($fsinfo = $docclass->filestore_pattern($doc, $docinfo))) {
-            $fsinfo = self::_expand_filestore($fsinfo, $doc);
+        if (($fsinfo = self::_filestore($docclass, $doc, $docinfo))) {
             if (!self::_store_filestore($fsinfo, $doc) && !$dbinfo)
                 set_error_html($doc, "Internal error: could not store document.");
         }
@@ -405,14 +408,16 @@ class DocumentHelper {
         return self::store($docclass, $doc, $docinfo);
     }
 
+    static function filestore_check($docclass, $doc) {
+        $fsinfo = self::_filestore($docclass, $doc, null);
+        return $fsinfo && is_readable($fsinfo[1]);
+    }
+
     static function load($docclass, $doc) {
-        $fsinfo = $docclass->filestore_pattern($doc, null);
-        if ($fsinfo) {
-            $fsinfo = self::_expand_filestore($fsinfo, $doc);
-            if (is_readable($fsinfo[1])) {
-                $doc->filestore = $fsinfo[1];
-                return true;
-            }
+        $fsinfo = self::_filestore($docclass, $doc, null);
+        if ($fsinfo && is_readable($fsinfo[1])) {
+            $doc->filestore = $fsinfo[1];
+            return true;
         }
         if (!isset($doc->content) && !$docclass->load_content($doc))
             return false;

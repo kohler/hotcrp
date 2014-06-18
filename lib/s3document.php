@@ -199,7 +199,7 @@ class S3Document {
 
     public function load($filename) {
         $this->run($filename, "GET", array());
-        return $this->response_headers["content"];
+        return @$this->response_headers["content"];
     }
 
     public function check($filename) {

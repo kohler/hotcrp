@@ -25,9 +25,12 @@ foreach ($sids as $sid) {
     if ($active !== false && !isset($active[$sid]))
         continue;
     $result = $Conf->qe("select paperStorageId, paperId, timestamp, mimetype,
-        compression, sha1, documentType, filename, infoJson
+        compression, sha1, documentType, filename, infoJson,
+        paper is null as paper_null
         from PaperStorage where paperStorageId=$sid");
     $doc = $Conf->document_row($result, null);
+    if ($doc->paper_null && !$doc->docclass->filestore_check($doc))
+        continue;
     $saved = $checked = $doc->docclass->s3_check($doc);
     if (!$saved)
         $saved = $doc->docclass->s3_store($doc, $doc);

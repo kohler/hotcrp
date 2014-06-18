@@ -108,7 +108,8 @@ class HotCRPDocument {
     }
 
     public function s3_check($doc) {
-        return ($s3 = self::s3_document()) && $s3->check(self::s3_filename($doc));
+        return ($s3 = self::s3_document())
+            && $s3->check(self::s3_filename($doc));
     }
 
     public function s3_store($doc, $docinfo, $trust_sha1 = false) {
@@ -186,6 +187,10 @@ class HotCRPDocument {
             $ConfFilestore = array($fdir, $fpath);
         }
         return $ConfFilestore;
+    }
+
+    public function filestore_check($doc) {
+        return DocumentHelper::filestore_check($this, $doc);
     }
 
     public function load_content($doc) {
