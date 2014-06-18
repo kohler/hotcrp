@@ -15,6 +15,7 @@ usage () {
 
 export PROG=$0
 export FLAGS=""
+max_allowed_packet=1000M
 input=
 inputfilter=
 options_file=
@@ -25,6 +26,8 @@ while [ $# -gt 0 ]; do
         parse_common_argument "$@";;
     -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
         parse_common_argument "$@";;
+    --max_allowed_packet=*)
+        max_allowed_packet="`echo "$1" | sed 's/^[^=]*=//'`";;
     -*)	FLAGS="$FLAGS $1";;
     *)	if [ -z "$input" ]; then input="$1"; else usage; fi;;
     esac
@@ -50,6 +53,7 @@ elif [ -t 0 ]; then
 fi
 
 get_dboptions restoredb.sh
+FLAGS="$FLAGS --max_allowed_packet=$max_allowed_packet"
 
 ### Test mysqldump binary
 check_mysqlish MYSQL mysql
