@@ -28,8 +28,13 @@ foreach ($sids as $sid) {
         compression, sha1, documentType, filename, infoJson
         from PaperStorage where paperStorageId=$sid");
     $doc = $Conf->document_row($result, null);
-    $checked = $doc->docclass->s3_check($doc);
-    $saved = $checked || $doc->docclass->s3_store($doc, $doc);
+    $saved = $checked = $doc->docclass->s3_check($doc);
+    if (!$saved)
+        $saved = $doc->docclass->s3_store($doc, $doc);
+    if (!$saved) {
+        sleep(0.5);
+        $saved = $doc->docclass->s3_store($doc, $doc);
+    }
     $front = "[" . $Conf->unparse_time_log($doc->timestamp) . "] "
         . HotCRPDocument::filename($doc) . " ($sid)";
     if ($checked)
