@@ -19,6 +19,7 @@ help () {
     echo "      --batch             Batch installation: never stop for input."
     echo "      --force             Answer yes to all questions."
     echo "      --replace           Replace existing database and user."
+    echo "  -q, --quiet             Be quiet."
     echo "      --dbuser=USER,PASS  Specify database USER and PASS."
     echo "      --no-setup-phase    Don't give special treatment to the first user."
     echo
@@ -60,6 +61,9 @@ force=false
 batch=false
 replace=false
 dbuser_existing=false
+quiet=false
+qecho=echo
+qecho_n=echo_n
 setup_phase=cat
 while [ $# -gt 0 ]; do
     shift=1
@@ -90,6 +94,8 @@ while [ $# -gt 0 ]; do
         minimal_options=y;;
     --replace)
         replace=true;;
+    -q|--quie|--quiet)
+        quiet=true; qecho=true; qecho_n=true;;
     -c|--co|--con|--conf|--confi|--config|-c*|--co=*|--con=*|--conf=*|--confi=*|--config=*)
         parse_common_argument "$@";;
     -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
@@ -262,15 +268,15 @@ php_dbpass () {
 
 
 DBNAME_QUOTED=`echo "$DBNAME" | sed 's/[.]/[.]/g'`
-echo
-echo "+ echo 'show databases;' | $MYSQL$mycreatedb_args$myargs_redacted$FLAGS -N | grep '^$DBNAME_QUOTED\$'"
+$qecho
+$qecho "+ echo 'show databases;' | $MYSQL$mycreatedb_args$myargs_redacted$FLAGS -N | grep '^$DBNAME_QUOTED\$'"
 echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N >/dev/null || exit 1
 echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N | grep "^$DBNAME_QUOTED\$" >/dev/null 2>&1
 dbexists="$?"
 
 test -z "$DBUSER" && DBUSER="$DBNAME"
 DBUSER_QUOTED=`echo "$DBUSER" | sed 's/[.]/[.]/g'`
-echo "+ echo 'select User from user group by User;' | $MYSQL$mycreatedb_args$myargs_redacted$FLAGS -N mysql | grep '^$DBUSER_QUOTED\$'"
+$qecho "+ echo 'select User from user group by User;' | $MYSQL$mycreatedb_args$myargs_redacted$FLAGS -N mysql | grep '^$DBUSER_QUOTED\$'"
 echo 'select User from user group by User;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql >/dev/null || exit 1
 echo 'select User from user group by User;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql | grep "^$DBUSER_QUOTED\$" >/dev/null 2>&1
 userexists="$?"
@@ -284,9 +290,9 @@ createdb=y; createuser=y; createdbuser=y
 $dbuser_existing && createuser=n
 
 if [ "$dbexists" = 0 -o \( "$userexists" = 0 -a "$dbuser_existing" != true \) ]; then
-    echo
-    test "$dbexists" = 0 && echo "A database named '$DBNAME' already exists!"
-    test "$userexists" = 0 -a "$dbuser_existing" != true && echo "A user named '$DBUSER' already exists!"
+    echo 1>&2
+    test "$dbexists" = 0 && echo "* A database named '$DBNAME' already exists!" 1>&2
+    test "$userexists" = 0 -a "$dbuser_existing" != true && echo "* A user named '$DBUSER' already exists!" 1>&2
     while ! $replace; do
         batch_fail
 	echo_n "Replace? [Y/n] "
@@ -302,21 +308,21 @@ fi
 
 echo
 if [ "$createdb" = y ]; then
-    echo "Creating $DBNAME database..."
+    $qecho "Creating $DBNAME database..."
     if [ "$dbexists" = 0 ]; then
-	echo "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS -f drop $DBNAME"
+	$qecho "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS -f drop $DBNAME"
 	eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS -f drop $DBNAME || exit 1
         eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
 DELETE FROM db WHERE db='$DBNAME';
 FLUSH PRIVILEGES;
 __EOF__
     fi
-    echo "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS --default-character-set=utf8 create $DBNAME"
+    $qecho "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS --default-character-set=utf8 create $DBNAME"
     eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
 fi
 
 if [ "$createuser" = y ]; then
-    echo "Creating $DBUSER user and password..."
+    $qecho "Creating $DBUSER user and password..."
     eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
 DELETE FROM user WHERE user='$DBUSER';
 FLUSH PRIVILEGES;
@@ -329,7 +335,7 @@ __EOF__
 fi
 
 if [ "$createdbuser" = y ]; then
-    echo "Granting $DBUSER access to $DBNAME..."
+    $qecho "Granting $DBUSER access to $DBNAME..."
     eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1    
 DELETE FROM db WHERE db='$DBNAME' AND User='$DBUSER';
 
@@ -384,17 +390,17 @@ INSERT INTO db SET
 __EOF__
 ##
 
-    echo_n "Granting RELOAD privilege..."
-    eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || echo_n " FAILED!"
+    $qecho "Granting RELOAD privilege..."
+    eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || echo "* Failed to grant RELOAD privilege!" 1>&2
 GRANT RELOAD ON *.* TO '$DBUSER'@'localhost', '$DBUSER'@'127.0.0.1', '$DBUSER'@'localhost.localdomain';
 __EOF__
-    echo
+    $qecho
 
-    echo "Reloading grant tables..."
+    $qecho "Reloading grant tables..."
     eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS reload || exit 1
 else
-    echo
-    echo "Continuing with existing database and user."
+    $qecho
+    $qecho "Continuing with existing database and user."
 fi
 
 ##
@@ -416,9 +422,9 @@ if ! $replace && test "$createdb" = n; then
     echo
 fi
 if [ "$populatedb" = y ]; then
-    echo "Populating database..."
+    $qecho "Populating database..."
     set_myargs "$DBUSER" "`echo_dbpass`"
-    echo "+ $setup_phase ${SRCDIR}schema.sql | $MYSQL$myargs_redacted$FLAGS $DBNAME"
+    $qecho "+ $setup_phase ${SRCDIR}schema.sql | $MYSQL$myargs_redacted$FLAGS $DBNAME"
     eval $setup_phase ${SRCDIR}schema.sql | eval $MYSQL $myargs $FLAGS $DBNAME || exit 1
 fi
 
@@ -474,18 +480,18 @@ if findoptions >/dev/null; then
     fi
     echo
 elif [ -r "${SRCDIR}${distoptions_file}" -o -n "$minimal_options" ]; then
-    echo
-    echo "Creating $expected_options..."
+    $qecho
+    $qecho "Creating $expected_options..."
     create_options > "$expected_options"
     if [ -n "$SUDO_USER" ]; then
-	echo + chown $SUDO_USER "$expected_options"
+	$qecho + chown $SUDO_USER "$expected_options"
 	chown $SUDO_USER "$expected_options"
     fi
     chmod o-rwx "$expected_options"
     current_options="$expected_options"
 else
-    echo
-    echo "* Not creating $expected_options."
+    $qecho
+    $qecho "* Not creating $expected_options."
     current_options=
 fi
 
@@ -502,8 +508,8 @@ if test -n "$current_options"; then
 	echo
     elif ! is_group_member "$httpd_user" "$group"; then
 	if [ -n "$SUDO_USER" ] && chgrp "$httpd_user" "$current_options" 2>/dev/null; then
-	    echo "Making $current_options readable by the Web server..."
-	    echo + chgrp "$httpd_user" "$current_options"
+	    $qecho "Making $current_options readable by the Web server..."
+	    $qecho + chgrp "$httpd_user" "$current_options"
 	else
 	    echo
 	    echo "* The $current_options file contains important data, but the Web server"
