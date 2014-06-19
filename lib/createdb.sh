@@ -125,7 +125,7 @@ set_myargs "$MYCREATEDB_USER" "$PASSWORD"
 
 if ! (echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS >/dev/null); then
     echo 1>&2
-    echo "* Could not run $MYSQL $myargs_redacted $FLAGS. Did you enter the right password?" 1>&2
+    echo "* Failure running '$MYSQL$myargs_redacted$FLAGS'." 1>&2
     echo 1>&2
     exit 1
 fi
