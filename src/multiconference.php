@@ -10,9 +10,9 @@ function set_multiconference() {
 
     if (!@$ConfMulticonf && PHP_SAPI == "cli") {
         $cliopt = getopt("n:", array("name:"));
-        if ($cliopt["n"])
+        if (@$cliopt["n"])
             $ConfMulticonf = $cliopt["n"];
-        else if ($cliopt["name"])
+        else if (@$cliopt["name"])
             $ConfMulticonf = $cliopt["name"];
     } else if (!@$ConfMulticonf) {
         $base = Navigation::site_absolute(true);
@@ -30,9 +30,10 @@ function set_multiconference() {
             $ConfMulticonf = $m[1];
     }
 
-    if (!@$ConfMulticonf
-        || !preg_match(',\A[-a-zA-Z0-9._]+\z,', $ConfMulticonf)
-        || $ConfMulticonf[0] == ".")
+    if (!@$ConfMulticonf)
+        $ConfMulticonf = "__nonexistent__";
+    else if (!preg_match(',\A[-a-zA-Z0-9._]+\z,', $ConfMulticonf)
+             || $ConfMulticonf[0] == ".")
         $ConfMulticonf = "__invalid__";
 
     foreach (array("dbName", "dbUser", "dbPassword", "dsn",
@@ -55,6 +56,8 @@ function multiconference_fail($tried_db) {
     $errors = array();
     if (@$Opt["maintenance"])
         $errors[] = "The site is down for maintenance. " . (is_string($Opt["maintenance"]) ? $Opt["maintenance"] : "Please check back later.");
+    else if (@$Opt["multiconference"] && $ConfMulticonf === "__nonexistent__")
+        $errors[] = "You haven’t specified a conference and this is a multiconference installation.";
     else if (@$Opt["multiconference"])
         $errors[] = "The “${ConfMulticonf}” conference does not exist. Check your URL to make sure you spelled it correctly.";
     else if (!@$Opt["loaded"])
