@@ -100,7 +100,7 @@ class Ht {
         }
         $js = $js ? $js : array();
         if (!defval($js, "id"))
-            $js["id"] = "taggctl" . ++self::$_controlid;
+            $js["id"] = "htctl" . ++self::$_controlid;
         self::$_lastcontrolid = $js["id"];
         if (!isset($js["class"]))
             $js["class"] = "cb";
@@ -131,46 +131,46 @@ class Ht {
         return '<input type="radio"' . substr($t, 22);
     }
 
-    static function label($text, $id = null) {
+    static function label($html, $id = null) {
         if (!$id || $id === true)
             $id = self::$_lastcontrolid;
-        return '<label for="' . $id . '">' . $text . "</label>";
+        return '<label for="' . $id . '">' . $html . "</label>";
     }
 
-    static function button($name, $text, $js = null) {
-        if (!$js && is_array($text)) {
-            $js = $text;
-            $text = null;
+    static function button($name, $html, $js = null) {
+        if (!$js && is_array($html)) {
+            $js = $html;
+            $html = null;
         } else if (!$js)
             $js = array();
         if (!isset($js["class"]))
             $js["class"] = "b";
         $type = isset($js["type"]) ? $js["type"] : "button";
-        if ($name && !$text) {
-            $text = $name;
+        if ($name && !$html) {
+            $html = $name;
             $name = "";
         } else
             $name = $name ? " name=\"$name\"" : "";
-        if (preg_match("_[<>]_", $text) || isset($js["value"]))
+        if (preg_match("_[<>]_", $html) || isset($js["value"]))
             return "<button type=\"$type\"$name value=\""
                 . defval($js, "value", 1) . "\"" . self::extra($js)
-                . ">" . $text . "</button>";
+                . ">" . $html . "</button>";
         else
-            return "<input type=\"$type\"$name value=\"$text\""
+            return "<input type=\"$type\"$name value=\"$html\""
                 . self::extra($js) . " />";
     }
 
-    static function submit($name, $text = null, $js = null) {
-        if (!$js && is_array($text)) {
-            $js = $text;
-            $text = null;
+    static function submit($name, $html = null, $js = null) {
+        if (!$js && is_array($html)) {
+            $js = $html;
+            $html = null;
         } else if (!$js)
             $js = array();
         $js["type"] = "submit";
-        return self::button($text ? $name : "", $text ? $text : $name, $js);
+        return self::button($html ? $name : "", $html ? : $name, $js);
     }
 
-    static function js_button($text, $onclick, $js = null) {
+    static function js_button($html, $onclick, $js = null) {
         if (!$js && is_array($onclick)) {
             $js = $onclick;
             $onclick = null;
@@ -178,7 +178,7 @@ class Ht {
             $js = array();
         if ($onclick)
             $js["onclick"] = $onclick;
-        return self::button("", $text, $js);
+        return self::button("", $html, $js);
     }
 
     static function hidden_default_submit($name, $text = null, $js = null) {
@@ -259,13 +259,13 @@ class Ht {
         return $t . $extra . "</div>\n";
     }
 
-    static function pre($text) {
-        if (is_array($text))
-            $text = join("\n", $text);
-        return "<pre>" . $text . "</pre>";
+    static function pre($html) {
+        if (is_array($html))
+            $text = join("\n", $html);
+        return "<pre>" . $html . "</pre>";
     }
 
-    static function pre_h($text) {
+    static function pre_text($text) {
         if (is_array($text))
             $text = join("\n", $text);
         else if (is_object($text))
@@ -273,7 +273,7 @@ class Ht {
         return "<pre>" . htmlspecialchars($text) . "</pre>";
     }
 
-    static function pre_h_wrap($text) {
+    static function pre_text_wrap($text) {
         if (is_array($text))
             $text = join("\n", $text);
         else if (is_object($text))

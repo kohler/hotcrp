@@ -2268,7 +2268,7 @@ class PaperSearch {
 
         // parse and clean the query
         $qe = $this->_searchQueryType($this->q);
-        //$Conf->infoMsg(Ht::pre_h(var_export($qe, true)));
+        //$Conf->infoMsg(Ht::pre_text(var_export($qe, true)));
         if (!$qe)
             $qe = new SearchTerm("t");
 
@@ -2286,7 +2286,7 @@ class PaperSearch {
                 $Conf->errorMsg("Unexpected use of &ldquo;round:&rdquo; or &ldquo;rate:&rdquo; ignored.  Stick to the basics, such as &ldquo;re:reviewername round:roundname&rdquo;.");
         }
 
-        //$Conf->infoMsg(Ht::pre_h(var_export($qe, true)));
+        //$Conf->infoMsg(Ht::pre_text(var_export($qe, true)));
 
         // collect clauses into tables, columns, and filters
         $sqi = new SearchQueryInfo;
@@ -2299,7 +2299,7 @@ class PaperSearch {
         $filters = array();
         $this->needflags = 0;
         $this->_clauseTermSet($qe, $sqi, $filters);
-        //$Conf->infoMsg(Ht::pre_h(var_export($filters, true)));
+        //$Conf->infoMsg(Ht::pre_text(var_export($filters, true)));
 
         // status limitation parts
         $pc_seeall = $Conf->setting("pc_seeall") > 0;
@@ -2435,7 +2435,7 @@ class PaperSearch {
         if (count($this->contactmatch))
             for ($i = 0; $i < count($this->contactmatch); $i++)
                 $q = str_replace("\1$i\1", sql_in_numeric_set($this->contactmatch[$i]), $q);
-        //$Conf->infoMsg(Ht::pre_h_wrap($q));
+        //$Conf->infoMsg(Ht::pre_text_wrap($q));
 
         // actually perform query
         if (!$Conf->qe("create temporary table $this->_matchTable $q", "while performing search"))
