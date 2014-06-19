@@ -30,6 +30,11 @@ class Ht {
         return "<script src=\"" . htmlspecialchars($src) . "\"></script>";
     }
 
+    static function stylesheet_file($src) {
+        return "<link rel=\"stylesheet\" type=\"text/css\" href=\""
+            . htmlspecialchars($src) . "\" />";
+    }
+
     static function form($action, $extra = null) {
         $method = $extra && isset($extra["method"]) ? $extra["method"] : "post";
         return '<form method="' . $method . '" action="'
