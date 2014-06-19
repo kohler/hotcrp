@@ -172,8 +172,10 @@ class UserStatus {
 
         // ID
         if (@$cj->id === "new") {
-            if (@$cj->email && Contact::id_by_email($cj->email))
+            if (@$cj->email && Contact::id_by_email($cj->email)) {
                 $this->set_error("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use for another account.");
+                $this->errf["email_inuse"] = true;
+            }
         } else {
             if (!@$cj->id && $old_user && $old_user->contactId)
                 $cj->id = $old_user->contactId;
@@ -337,8 +339,7 @@ class UserStatus {
         if (!isset($cj->password) && isset($cj->password_plaintext))
             $user->change_password($cj->password_plaintext);
         if (!$user->password && !Contact::external_login())
-            $user->password = $user->password_plaintext =
-                Contact::random_password();
+            $user->password = $user->password_plaintext = Contact::random_password();
         if (isset($cj->zip))
             $user->zipCode = $cj->zip;
         if (isset($cj->address)) {
