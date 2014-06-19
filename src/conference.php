@@ -1795,12 +1795,19 @@ class Conference {
     //
 
     function msg($text, $type) {
-        $x = "<div class=\"$type\">$text</div>\n";
-        if ($this->save_messages) {
-            ensure_session();
-            $_SESSION["msgs"][] = $x;
-        } else
-            echo $x;
+        if (PHP_SAPI == "cli") {
+            if ($type === "xmerror" || $type === "merror")
+                fwrite(STDERR, "$text\n");
+            else
+                fwrite(STDOUT, "$text\n");
+        } else {
+            $text = "<div class=\"$type\">$text</div>\n";
+            if ($this->save_messages) {
+                ensure_session();
+                $_SESSION["msgs"][] = $text;
+            } else
+                echo $text;
+        }
     }
 
     function infoMsg($text, $minimal = false) {
