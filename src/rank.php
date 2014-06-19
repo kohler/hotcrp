@@ -93,12 +93,12 @@ class PaperRank {
             $this->info_printed = true;
         }
         if ($n < count($this->papersel)) {
-            echo "<script type='text/javascript'>document.getElementById('rankpercentage').innerHTML = '$pct'";
+            echo "<script>document.getElementById('rankpercentage').innerHTML = '$pct'";
             if ($this->deletedpref > 0)
                 echo ";document.getElementById('rankdeletedpref').innerHTML = ', ", round(($this->totalpref - $this->deletedpref) / $this->totalpref * 100), "% of preferences remain'";
             echo "</script>\n";
         } else
-            echo "<script type='text/javascript'>document.getElementById('foldrankcalculation').className = 'foldo'</script>\n";
+            echo "<script>document.getElementById('foldrankcalculation').className = 'foldo'</script>\n";
         flush();
     }
 

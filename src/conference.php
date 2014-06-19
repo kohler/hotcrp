@@ -946,7 +946,7 @@ class Conference {
         if ($this->scriptStuff)
             echo $this->scriptStuff;
         $this->scriptStuff = "";
-        echo "<script type='text/javascript'>", $script, "</script>";
+        echo "<script>", $script, "</script>";
     }
 
     function footerScript($script, $uniqueid = null) {
@@ -956,7 +956,7 @@ class Conference {
             $this->footerMap[$uniqueid] = true;
         if ($script != "") {
             if (!$this->footerScripting) {
-                $this->footerStuff .= "<script type='text/javascript'>";
+                $this->footerStuff .= "<script>";
                 $this->footerScripting = true;
             } else if (($c = $this->footerStuff[strlen($this->footerStuff) - 1]) != "}" && $c != "{" && $c != ";")
                 $this->footerStuff .= ";";
@@ -1926,7 +1926,7 @@ class Conference {
         $this->header_head($title);
         echo "</head><body", ($id ? " id='$id'" : ""), ($Me ? " onload='hotcrp_load()'" : ""), ">\n";
 
-        $this->scriptStuff .= "<script type=\"text/javascript\">"
+        $this->scriptStuff .= "<script>"
             . "hotcrp_base=\"$ConfSiteBase\""
             . ";hotcrp_postvalue=\"" . post_value() . "\""
             . ";hotcrp_suffix=\"" . $ConfSiteSuffix . "\"";

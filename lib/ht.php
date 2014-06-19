@@ -24,8 +24,7 @@ class Ht {
     }
 
     static function script_file($src) {
-        return "<script type=\"text/javascript\" src=\""
-            . htmlspecialchars($src) . "\"></script>";
+        return "<script src=\"" . htmlspecialchars($src) . "\"></script>";
     }
 
     static function form($action, $extra = null) {

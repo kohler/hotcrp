@@ -11,15 +11,13 @@ function go($url = false) {
     if (preg_match('|\A[a-z]+://|', $url))
 	header("Location: $url");
 
-    echo "<!DOCTYPE html><html lang=\"en\">
-<head>
+    echo "<!DOCTYPE html><html lang=\"en\"><head>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
 <meta http-equiv=\"Content-Style-Type\" content=\"text/css\" />
 <meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />
 <title>Redirection</title>
-<script type='text/javascript'>
-  location=\"$url\";
-</script></head><body>
+<script>location=\"$url\";</script></head>
+<body>
 <p>You should be redirected <a href='", htmlspecialchars($url), "'>to here</a>.</p>
 </body></html>\n";
     exit();
