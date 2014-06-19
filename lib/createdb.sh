@@ -176,7 +176,7 @@ fi
 while true; do
     if [ -z "$DBNAME" -a -n "$default_dbname" ] && $batch; then
         DBNAME="$default_dbname"
-    if [ -z "$DBNAME" ] && $batch; then
+    elif [ -z "$DBNAME" ] && $batch; then
         echo 1>&2
         echo "* Supply the database name on the command line or drop '--batch'." 1>&2
         echo 1>&2
