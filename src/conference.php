@@ -256,6 +256,8 @@ class Conference {
         // remove final slash from $Opt["paperSite"]
         if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
             $Opt["paperSite"] = Navigation::site_absolute();
+        if ($Opt["paperSite"] == "" && isset($Opt["defaultPaperSite"]))
+            $Opt["paperSite"] = $Opt["defaultPaperSite"];
         $Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
 
         // set longName, downloadPrefix, etc.
