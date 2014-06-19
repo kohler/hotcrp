@@ -7,7 +7,6 @@ class Navigation {
 
     private static $protocol;
     private static $server;
-    private static $site;
     private static $sitedir;
     private static $page;
     private static $path;
@@ -58,29 +57,29 @@ class Navigation {
         if ($is_index) {
             if (preg_match(',\A(.*/)index(?:[.]php)?\z,i', $sitepage, $m))
                 $sitepage = $m[1];
-            self::$site = $sitepage;
+            $site = $sitepage;
             if (preg_match(',\A/([^/]+?)(?:[.]php)?(|/.*)\z,', self::$path, $m)) {
-                self::$site .= "/";
+                $site .= "/";
                 self::$page = $m[1];
                 self::$path = $m[2];
             } else {
-                self::$site .= self::$path;
+                $site .= self::$path;
                 self::$page = "index";
                 self::$path = "";
             }
         } else {
             preg_match(',\A(.*/)([^/]*?)(?:[.]php)?/?\z,i', $sitepage, $m);
-            self::$site = $m[1];
+            $site = $m[1];
             self::$page = $m[2];
         }
-        self::$sitedir = self::$site;
+        self::$sitedir = $site;
         if (self::$sitedir === ""
             || self::$sitedir[strlen(self::$sitedir) - 1] !== "/")
             self::$sitedir .= "/";
 
         self::$sitedir_relative = str_repeat("../", substr_count(self::$path, "/"));
         if (self::$sitedir_relative === ""
-            && self::$sitedir !== self::$site)
+            && self::$sitedir !== $site)
             self::$sitedir_relative = self::$sitedir;
 
         self::$php_suffix = ".php";
