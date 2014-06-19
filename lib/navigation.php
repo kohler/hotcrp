@@ -14,7 +14,7 @@ class Navigation {
     private static $sitedir_relative;
     private static $php_suffix;
 
-    public static function analyze() {
+    public static function analyze($index_name = "index.php") {
         if (PHP_SAPI == "cli")
             return;
 
@@ -34,8 +34,9 @@ class Navigation {
         self::$server = $x;
 
         $script_name = $_SERVER["SCRIPT_FILENAME"];
-        $is_index = strlen($script_name) > 9
-            && substr($script_name, strlen($script_name) - 9) === "index.php";
+        $index_len = strlen($index_name);
+        $is_index = strlen($script_name) > $index_len
+            && substr($script_name, strlen($script_name) - $index_len) === $index_name;
 
         self::$path = "";
         if (@$_SERVER["PATH_INFO"])
