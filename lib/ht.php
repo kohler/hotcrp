@@ -304,7 +304,7 @@ class Ht {
 
     static function stash_html($html, $uniqueid = null) {
         if ($html !== null && $html !== false && $html !== ""
-            && (!$uniqueid || !self::$_stash_map[$uniqueid])) {
+            && (!$uniqueid || !@self::$_stash_map[$uniqueid])) {
             if ($uniqueid)
                 self::$_stash_map[$uniqueid] = true;
             if (self::$_stash_inscript)
@@ -316,7 +316,7 @@ class Ht {
 
     static function stash_script($js, $uniqueid = null) {
         if ($js !== null && $js !== false && $js !== ""
-            && (!$uniqueid || !self::$_stash_map[$uniqueid])) {
+            && (!$uniqueid || !@self::$_stash_map[$uniqueid])) {
             if ($uniqueid)
                 self::$_stash_map[$uniqueid] = true;
             if (!self::$_stash_inscript)
