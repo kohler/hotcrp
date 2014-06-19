@@ -134,4 +134,23 @@ class Navigation {
         }
     }
 
+    public static function redirect_to($url) {
+        $url = self::make_absolute($url);
+        // Might have an HTML-encoded URL; decode at least &amp;.
+        $url = str_replace("&amp;", "&", $url);
+
+        if (preg_match('|\A[a-z]+://|', $url))
+            header("Location: $url");
+
+        echo "<!DOCTYPE html><html lang=\"en\"><head>
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
+<meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />
+<title>Redirection</title>
+<script>location=\"$url\";</script></head>
+<body>
+<p>You should be redirected <a href='", htmlspecialchars($url), "'>to here</a>.</p>
+</body></html>\n";
+        exit();
+    }
+
 }
