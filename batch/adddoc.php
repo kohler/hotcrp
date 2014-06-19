@@ -2,7 +2,7 @@
 require_once("src/init.php");
 require_once("lib/getopt.php");
 
-$arg = getopt_rest($argv, "hm:p:n:d:f:", array("help", "mimetype:", "paper:", "dtype:", "filename:", "name:"));
+$arg = getopt_rest($argv, "hn:m:p:d:f:", array("help", "name:", "mimetype:", "paper:", "dtype:", "filename:"));
 if (!isset($arg["d"]))
     $arg["d"] = @$arg["dtype"] ? $arg["dtype"] : "0";
 if (!isset($arg["p"]))
@@ -11,11 +11,15 @@ if (!isset($arg["f"]))
     $arg["f"] = @$arg["filename"] ? $arg["filename"] : null;
 if (!isset($arg["m"]))
     $arg["m"] = @$arg["mimetype"] ? $arg["mimetype"] : null;
-if (isset($arg["h"]) || isset($arg["help"]) || !is_numeric($arg["d"]) || !is_numeric($arg["p"])
+if (isset($arg["h"]) || isset($arg["help"])
+    || !is_numeric($arg["d"])
+    || !is_numeric($arg["p"])
     || count($arg["_"]) > 1
     || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
-    fwrite(STDOUT, "Usage: php batch/adddoc.php [-p PID] [-m MIMETYPE] [-d DTYPE] FILE\n");
-    exit(0);
+    $status = isset($arg["h"]) || isset($arg["help"]) ? 0 : 1;
+    fwrite($status ? STDERR : STDOUT,
+           "Usage: php batch/adddoc.php [-n CONFID] [-p PID] [-m MIMETYPE] [-d DTYPE] FILE\n");
+    exit($status);
 }
 
 $file = count($arg["_"]) ? $arg["_"][0] : "-";
