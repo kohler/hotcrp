@@ -18,8 +18,9 @@ help () {
     echo "      --minimal           Output minimal configuration file."
     echo "      --batch             Batch installation."
     echo "      --replace           Replace existing database and user."
-    echo "      --dbuser=USER,PASS  Use existing database USER and PASS."
+    echo "      --dbuser=USER,PASS  Specify database USER and PASS."
     echo "      --force             Answer yes to all questions."
+    echo "      --no-setup-phase    Don't give special treatment to the first user."
     echo
     echo "MYSQLOPTIONS are sent to mysql and mysqladmin."
     echo "Common options include '--user=ADMIN_USERNAME' and '--password=ADMIN_PASSWORD'"
@@ -59,6 +60,7 @@ force=false
 batch=false
 replace=false
 dbuser_existing=false
+setup_phase=cat
 while [ $# -gt 0 ]; do
     shift=1
     case "$1" in
@@ -94,6 +96,8 @@ while [ $# -gt 0 ]; do
         parse_common_argument "$@";;
     --defaults-group-suffix=*)
         mycreatedb_args=; FLAGS="$FLAGS '$1'";;
+    --no-setup-phase)
+        setup_phase="grep -v 'setupPhase'";;
     -*)
 	FLAGS="$FLAGS '$1'";;
     *)
@@ -401,8 +405,8 @@ fi
 if [ "$populatedb" = y ]; then
     echo "Populating database..."
     set_myargs "$DBUSER" "`echo_dbpass`"
-    echo "+ $MYSQL$myargs_redacted$FLAGS $DBNAME < ${SRCDIR}schema.sql"
-    eval $MYSQL $myargs $FLAGS $DBNAME < ${SRCDIR}schema.sql || exit 1
+    echo "+ $setup_phase ${SRCDIR}schema.sql | $MYSQL$myargs_redacted$FLAGS $DBNAME"
+    eval $setup_phase ${SRCDIR}schema.sql | eval $MYSQL $myargs $FLAGS $DBNAME || exit 1
 fi
 
 ##
