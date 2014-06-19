@@ -71,15 +71,8 @@ initialize_user();
 
 
 // Perhaps redirect to https
-if (@$Opt["redirectToHttps"]
-    && (!@$_SERVER["HTTPS"] || $_SERVER["HTTPS"] == "off")
-    && (!@$Opt["allowLocalHttp"]
-        || ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"
-            && $_SERVER["REMOTE_ADDR"] !== "::1"))) {
-    $url = Navigation::make_absolute(selfHref(array(), array("raw" => true)));
-    if (str_starts_with($url, "http:"))
-        go("https:" . substr($url, 5));
-}
+if (@$Opt["redirectToHttps"])
+    Navigation::redirect_http_to_https(@$Opt["allowLocalHttp"]);
 
 
 // Extract an error that we redirected through

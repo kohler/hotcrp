@@ -5,10 +5,10 @@
 
 class Navigation {
 
-    private static $protocol;
-    private static $server;
-    private static $sitedir;
-    private static $page;
+    private static $protocol;           // "http://" or "https://"
+    private static $server;             // "PROTOCOL://SITE[:PORT]"
+    private static $sitedir;            // "/PATH", does not include $page, ends in /
+    private static $page;               // Name of page
     private static $path;
     private static $query;
     private static $sitedir_relative;
@@ -150,6 +150,22 @@ class Navigation {
 <p>You should be redirected <a href='", htmlspecialchars($url), "'>to here</a>.</p>
 </body></html>\n";
         exit();
+    }
+
+    public static function redirect_http_to_https($allow_http_if_localhost = false) {
+        if ((!@$_SERVER["HTTPS"] || $_SERVER["HTTPS"] == "off")
+            && self::$protocol == "http://"
+            && (!$allow_http_if_localhost
+                || ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"
+                    && $_SERVER["REMOTE_ADDR"] !== "::1"))) {
+            $x = "https://";
+            if (!@$_SERVER["HTTP_HOST"])
+                $x .= "localhost";
+            else
+                $x .= $_SERVER["HTTP_HOST"];
+            $x .= self::$sitedir . self::$page . self::$php_suffix . self::$path . self::$query;
+            self::redirect_to($x);
+        }
     }
 
 }
