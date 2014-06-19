@@ -16,10 +16,10 @@ help () {
     echo "Options:"
     echo "  -c, --config=CONFIG     Configuration file is CONFIG [conf/options.php]."
     echo "      --minimal           Output minimal configuration file."
-    echo "      --batch             Batch installation."
+    echo "      --batch             Batch installation: never stop for input."
+    echo "      --force             Answer yes to all questions."
     echo "      --replace           Replace existing database and user."
     echo "      --dbuser=USER,PASS  Specify database USER and PASS."
-    echo "      --force             Answer yes to all questions."
     echo "      --no-setup-phase    Don't give special treatment to the first user."
     echo
     echo "MYSQLOPTIONS are sent to mysql and mysqladmin."
@@ -122,7 +122,7 @@ if $needpassword; then
 fi
 set_myargs "$MYCREATEDB_USER" "$PASSWORD"
 
-
+# check that we can run mysql
 if ! (echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS >/dev/null); then
     echo 1>&2
     echo "* Failure running '$MYSQL$myargs_redacted$FLAGS'." 1>&2
@@ -140,9 +140,15 @@ if ! $force && test -z "$grants"; then
 fi
 
 
-echo "Creating the database and database user for your conference."
-echo "Access is allowed only from the local host."
-echo
+if ! $batch; then
+    if $dbuser_existing; then
+        echo "Creating the database for your conference."
+    else
+        echo "Creating the database and database user for your conference."
+    fi
+    echo "Access is allowed only from the local host."
+    echo
+fi
 
 echo_dbname () {
     cat <<__EOF__
@@ -168,13 +174,20 @@ if test -n "$x"; then
 fi
 
 while true; do
-    if $batch; then echo_n "Database"; else echo_n "Enter database name (NO SPACES)"; fi
-    if [ -z "$DBNAME" ]; then
+    if [ -z "$DBNAME" -a -n "$default_dbname" ] && $batch; then
+        DBNAME="$default_dbname"
+    if [ -z "$DBNAME" ] && $batch; then
+        echo 1>&2
+        echo "* Supply the database name on the command line or drop '--batch'." 1>&2
+        echo 1>&2
+        exit 1
+    elif [ -z "$DBNAME" ]; then
+        echo_n "Enter database name (NO SPACES)"
 	test -n "$default_dbname" && echo_n " [default $default_dbname]"
 	echo_n ": "
 	read -r DBNAME
-    else
-	echo ": $DBNAME"
+    elif ! $batch; then
+	echo "Database: $DBNAME"
     fi
 
     test -z "$DBNAME" -a -n "$default_dbname" && DBNAME="$default_dbname"
