@@ -156,7 +156,7 @@ function save_user($cj, $user_status) {
     // check for missing fields
     foreach (array("firstName", "lastName", "email") as $field)
         if (!isset($cj->$field))
-            $user_status->set_error($field, "Required field “$field” is missing.");
+            $user_status->set_error($field, "Required field “${field}” is missing.");
 
     // check email
     if ($newProfile || $cj->email != $Acct->email) {
@@ -164,7 +164,7 @@ function save_user($cj, $user_status) {
             $msg = htmlspecialchars($cj->email);
             if ($Me->privChair)
                 $msg = "<a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">" . $msg . "</a>";
-            $msg = "An account is already registered with email address “" . $msg . "”.";
+            $msg = "An account is already registered with email address “${msg}”.";
             if (!$newProfile)
                 $msg .= "You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
             return $user_status->set_error("email", $msg);
@@ -184,6 +184,7 @@ function save_user($cj, $user_status) {
                 $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($cj->email) . " to check that the address works. Use the link it contains to confirm your email change request.");
             } else
                 $Conf->errorMsg("Mail cannot be sent to " . htmlspecialchars($cj->email) . " at this time. Your email address was unchanged.");
+            // Save changes *except* for new email, by restoring old email.
             $cj->email = $Acct->email;
         }
     }
