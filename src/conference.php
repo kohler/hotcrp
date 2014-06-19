@@ -16,9 +16,6 @@ class Conference {
     var $headerPrinted = 0;
 
     private $scriptStuff = "";
-    private $footerStuff = "";
-    private $footerScripting = false;
-    private $footerMap = array();
     private $usertimeId = 1;
 
     private $rounds = null;
@@ -777,7 +774,7 @@ class Conference {
         if ($useradjust) {
             $sp = strpos($useradjust, " ");
             $t .= "<$useradjust class='usertime' id='usertime$this->usertimeId' style='display:none'></" . ($sp ? substr($useradjust, 0, $sp) : $useradjust) . ">";
-            $this->footerScript("setLocalTime('usertime$this->usertimeId',$value)");
+            Ht::stash_script("setLocalTime('usertime$this->usertimeId',$value)");
             ++$this->usertimeId;
         }
         return $t;
@@ -950,30 +947,11 @@ class Conference {
     }
 
     function footerScript($script, $uniqueid = null) {
-        if ($uniqueid && @$this->footerMap[$uniqueid])
-            return;
-        else if ($uniqueid)
-            $this->footerMap[$uniqueid] = true;
-        if ($script != "") {
-            if (!$this->footerScripting) {
-                $this->footerStuff .= "<script>";
-                $this->footerScripting = true;
-            } else if (($c = $this->footerStuff[strlen($this->footerStuff) - 1]) != "}" && $c != "{" && $c != ";")
-                $this->footerStuff .= ";";
-            $this->footerStuff .= $script;
-        }
+        Ht::stash_script($script, $uniqueid);
     }
 
     function footerHtml($html, $uniqueid = null) {
-        if ($uniqueid && @$this->footerMap[$uniqueid])
-            return;
-        else if ($uniqueid)
-            $this->footerMap[$uniqueid] = true;
-        if ($this->footerScripting) {
-            $this->footerStuff .= "</script>";
-            $this->footerScripting = false;
-        }
-        $this->footerStuff .= $html;
+        Ht::stash_html($html, $uniqueid);
     }
 
 
@@ -2059,7 +2037,7 @@ class Conference {
                     $v .= " " . $args[1];
                 }
             }
-            $this->footerScript("check_version(\"$m\",\"$v\")");
+            Ht::stash_script("check_version(\"$m\",\"$v\")");
             $Me->_updatecheck = $Now;
         }
     }
@@ -2083,9 +2061,7 @@ class Conference {
                 echo "<!-- Version ", HOTCRP_VERSION, " -->";
         }
         echo "</div>\n  <div class='clear'></div></div>\n";
-        if ($this->footerScripting)
-            $this->footerHtml("");
-        echo $this->scriptStuff, $this->footerStuff, "</body>\n</html>\n";
+        echo $this->scriptStuff, Ht::take_stash(), "</body>\n</html>\n";
         $this->scriptStuff = "";
     }
 

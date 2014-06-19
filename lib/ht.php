@@ -8,6 +8,9 @@ class Ht {
     public static $img_base = "";
     private static $_controlid = 0;
     private static $_lastcontrolid = 0;
+    private static $_stash = "";
+    private static $_stash_inscript = false;
+    private static $_stash_map = array();
 
     static function extra($js) {
         $x = "";
@@ -191,13 +194,12 @@ class Ht {
     static function entry($name, $value, $js = null) {
         $js = $js ? $js : array();
         if (($temp = @$js["hottemptext"])) {
-            global $Conf;
             if ($value === null || $value === "" || $value === $temp)
                 $js["class"] = trim(defval($js, "class", "") . " temptext");
             if ($value === null || $value === "")
                 $value = $temp;
             $temp = ' hottemptext="' . htmlspecialchars($temp) . '"';
-            $Conf->footerScript("hotcrp_load(hotcrp_load.temptext)", "temptext");
+            self::stash_script("hotcrp_load(hotcrp_load.temptext)", "temptext");
         } else
             $temp = "";
         $type = @$js["type"] ? : "text";
@@ -289,11 +291,46 @@ class Ht {
     }
 
     static function popup($idpart, $content, $form = null, $actions = null) {
-        global $Conf;
         if ($form && $actions)
             $form .= "<div class=\"popup_actions\">" . $actions . "</div></form>";
-        $Conf->footerHtml("<div id=\"popup_$idpart\" class=\"popupc\">"
-                          . $content . ($form ? $form : "") . "</div>");
+        self::stash_html("<div id=\"popup_$idpart\" class=\"popupc\">"
+                         . $content . ($form ? $form : "") . "</div>");
+    }
+
+    static function stash_html($html, $uniqueid = null) {
+        if ($html !== null && $html !== false && $html !== ""
+            && (!$uniqueid || !self::$_stash_map[$uniqueid])) {
+            if ($uniqueid)
+                self::$_stash_map[$uniqueid] = true;
+            if (self::$_stash_inscript)
+                self::$_stash .= "</script>";
+            self::$_stash .= $html;
+            self::$_stash_inscript = false;
+        }
+    }
+
+    static function stash_script($js, $uniqueid = null) {
+        if ($js !== null && $js !== false && $js !== ""
+            && (!$uniqueid || !self::$_stash_map[$uniqueid])) {
+            if ($uniqueid)
+                self::$_stash_map[$uniqueid] = true;
+            if (!self::$_stash_inscript)
+                self::$_stash .= "<script>";
+            else if (($c = self::$_stash[strlen(self::$_stash) - 1]) !== "}"
+                     && $c !== "{" && $c !== ";")
+                self::$_stash .= ";";
+            self::$_stash .= $js;
+            self::$_stash_inscript = true;
+        }
+    }
+
+    static function take_stash() {
+        $stash = self::$_stash;
+        if (self::$_stash_inscript)
+            $stash .= "</script>";
+        self::$_stash = "";
+        self::$_stash_inscript = false;
+        return $stash;
     }
 
 }
