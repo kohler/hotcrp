@@ -586,8 +586,8 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
 }
 
 if ($newProfile) {
-    echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", "", 2),
-        "</td><td><a href=\"javascript:void fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
+    echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", 2),
+        "</td><td><a href=\"#\" onclick=\"return fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
         "<tr class='fx2'><td></td><td>",
         "<p>Upload a CSV file with one line per account. The header must define an <code>email</code> field. Other fields can include <code>name</code>, <code>first</code>, <code>last</code>, and <code>affiliation</code>.  Each new account’s role and PC information is set from the form below.  Example:</p>\n",
         "<pre class='entryexample'>

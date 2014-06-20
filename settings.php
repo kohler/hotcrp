@@ -1653,7 +1653,7 @@ function doRevGroup() {
     $t = expandMailTemplate("requestreview", false);
     echo "<table id='foldmailbody_requestreview' class='",
         ($t == expandMailTemplate("requestreview", true) ? "foldc" : "foldo"),
-        "'><tr><td>", foldbutton("mailbody_requestreview", ""), "</td>",
+        "'><tr><td>", foldbutton("mailbody_requestreview"), "</td>",
         "<td><a href='#' onclick='return fold(\"mailbody_requestreview\")' class='q'><strong>Mail template for external review requests</strong></a>",
         " <span class='fx'>(<a href='", hoturl("mail"), "'>keywords</a> allowed; set to empty for default)<br /></span>
 <textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20'>", htmlspecialchars($t["body"]), "</textarea>",
@@ -1721,7 +1721,7 @@ function doRevGroup() {
     echo "<div class='g'></div>\n";
     echo "<table id='foldtag_color' class='",
         ($tag_colors_open ? "foldo" : "foldc"), "'><tr>",
-        "<td>", foldbutton("tag_color", ""), Ht::hidden("has_tag_color", 1), "</td>",
+        "<td>", foldbutton("tag_color"), Ht::hidden("has_tag_color", 1), "</td>",
         "<td><a href='#' onclick='return fold(\"tag_color\")' name='tagcolor' class='q'><strong>Styles and colors</strong></a><br />\n",
         "<div class='hint fx'>Papers tagged with a style name, or with one of the associated tags (if any), will appear in that style in paper lists.</div>",
         "<div class='smg fx'></div>",
@@ -1731,7 +1731,7 @@ function doRevGroup() {
     echo "<div class='g'></div>\n";
     echo "<table id='foldtracks' class='",
         (defval($_REQUEST, "tracks") || $Conf->has_tracks() || @$Highlight["tracks"] ? "foldo" : "foldc"), "'><tr>",
-        "<td>", foldbutton("tracks", ""), Ht::hidden("has_tracks", 1), "</td>",
+        "<td>", foldbutton("tracks"), Ht::hidden("has_tracks", 1), "</td>",
         "<td><a href='#' onclick='return fold(\"tracks\")' name='tracks' class='q'><strong>Tracks</strong></a><br />\n",
         "<div class='hint fx'>Tracks control whether specific PC members can view or review specific papers. &nbsp;|&nbsp; <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
         "<div class='smg fx'></div>",
