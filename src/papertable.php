@@ -395,7 +395,7 @@ class PaperTable {
             echo "<table id='current_$inputid'><tr>",
                 "<td class='nowrap'>", documentDownload($doc), "</td>";
             if ($doc->mimetype == "application/pdf" && $banal)
-                echo "<td><span class='sep'></span></td><td><a href='javascript:docheckformat($documentType)'>Check format</a></td>";
+                echo "<td><span class='sep'></span></td><td><a href='#' onclick='return docheckformat($documentType)'>Check format</a></td>";
             if (($stamps = self::pdfStamps($doc)))
                 echo "<td><span class='sep'></span></td><td>$stamps</td>";
             echo "</tr></table>\n";
@@ -495,7 +495,7 @@ class PaperTable {
                                       "hidetitle" => "Abbreviate abstract")),
                     "<div class='pavb abstract'>",
                     "<div class='fn6'>", $shortdata,
-                    " <a class='fn6' href='javascript:void fold(\"paper\", 0, 6)'>[more]</a>",
+                    " <a class='fn6' href='#' onclick='return fold(\"paper\",0,6)'>[more]</a>",
                     "</div><div class='fx6'>", $data,
                     "</div></div></div>\n\n";
                 return;
@@ -510,7 +510,7 @@ class PaperTable {
         global $Conf;
         cleanAuthor($this->prow);
 
-        echo $this->editable_papt("authorInformation", "Authors <span class='papfnh'>(<a href='javascript:void authorfold(\"auedit\",1,1)'>More</a> | <a href='javascript:void authorfold(\"auedit\",1,-1)'>Fewer</a>)</span>"),
+        echo $this->editable_papt("authorInformation", "Authors <span class='papfnh'>(<a href='#' onclick='return authorfold(\"auedit\",1,1)'>More</a> | <a href='#' onclick='return authorfold(\"auedit\",1,-1)'>Fewer</a>)</span>"),
             "<div class='paphint'>List the paper&rsquo;s authors one per line, including their email addresses and affiliations.";
         if ($Conf->subBlindAlways())
             echo " Submission is blind, so reviewers will not be able to see author information.";
@@ -651,14 +651,14 @@ class PaperTable {
             echo "<div class='pg pgtop fn8'>",
                 $this->papt("authorInformation", "Authors"),
                 "<div class='pavb'><a class='q fn8' ",
-                "href='javascript:void fold(\"paper\", 0, 8)' title='Show authors'>",
+                "href='#' onclick='return fold(\"paper\",0,8)' title='Show authors'>",
                 "+&nbsp;<i>Hidden for blind review</i></a>";
             if ($this->mode == "assign")
                 echo foldsessionpixel("paper8", "foldassigna");
             echo "</div></div>\n",
                 "<div class='pg pgtop fx8'>";
             $inauthors1 = $inauthors2 = "<a class='q fx8' "
-                . "href='javascript:void fold(\"paper\", 1, 8)' "
+                . "href='#' onclick='return fold(\"paper\",1,8)' "
                 . "title='Hide authors'>[blind]</a> ";
         } else {
             echo "<div class='pg pgtop'>";
@@ -679,7 +679,7 @@ class PaperTable {
                                    "hidetitle" => "Show abbreviated authors")),
                 "<div class='pavb'><span class='fn9'>",
                 $this->authorData($autable, "last", null, $inauthors1),
-                " <a class='fn9' href='javascript:void fold(\"paper\", 0, 9)'>[details]</a>",
+                " <a class='fn9' href='#' onclick='return fold(\"paper\", 0, 9)'>[details]</a>",
                 "</span><span class='fx9'>",
                 $this->authorData($autable, "col", $Me, $inauthors2),
                 "</span>";
@@ -1404,7 +1404,7 @@ class PaperTable {
             "<div class='fn'>",
             ($rp === "" ? "None" : $rp);
         if ($rp != "")
-            echo " <span class='fn2'>&nbsp; <a href='javascript:void 0' onclick='fold(\"rank\", 0, 2);void Miniajax.submit(\"rankctxform\")'>(context)</a></span>";
+            echo " <span class='fn2'>&nbsp; <a href='#' onclick='fold(\"rank\", 0, 2);return void Miniajax.submit(\"rankctxform\")'>(context)</a></span>";
         echo " &nbsp; <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>(all)</a>";
         echo "</div>",
             "<div id='rankctxformresult' class='fx2'>Loading...</div>",
