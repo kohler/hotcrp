@@ -623,19 +623,19 @@ a.button_small.on, a.button.on {
 a.button_small {
 	vertical-align: 1px;
 }
-span.expander0, span.expander1 {
+span.expander {
 	display: inline-block;
 	width: 0.8em;
         padding-right: 0.2em;
 	opacity: 0.65;
         text-decoration: none;
 }
-span.expander0 > span.in, span.expander1 > span.in {
+span.expander > span.in0, span.expander > span.in1 {
 	position: relative;
 	font-family: verdana, sans-serif;
 	font-size: 80%;
 }
-span.expander0 > span.in {
+span.expander > span.in0 {
 	left: -0.05em;
 	top: 0.1em;
 }
@@ -912,7 +912,7 @@ div.f-ix {
 	width: auto;
 	float: left;
 }
-div.f-c, th.f-c {
+div.f-c, th.f-c, div.f-cl {
 	font-weight: bold;
 	color: #555555;
 }
@@ -929,6 +929,9 @@ div.f-h {
 }
 span.f-cx {
 	font-weight: normal;
+}
+div.f-cl span.f-cx {
+	font-size: smaller;
 }
 
 

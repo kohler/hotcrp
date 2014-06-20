@@ -390,10 +390,15 @@ function foldbutton($foldtype, $title, $foldnum = 0) {
         . $hidetitle . '>' . expander(false) . '</a>';
 }
 
-function expander($open) {
-    return '<span class="expander' . ($open ? 1 : 0) . '">'
-        . '<span class="in">' . ($open ? '&#x25B6;' : '&#x25BC;')
-        . '</span></span>';
+function expander($open, $foldnum = null) {
+    $f = $foldnum !== null;
+    $foldnum = ($foldnum !== 0 ? $foldnum : "");
+    $t = '<span class="expander">';
+    if ($open === null || !$open)
+        $t .= '<span class="in0' . ($f ? " fx$foldnum" : "") . '">&#x25BC;</span>';
+    if ($open === null || $open)
+        $t .= '<span class="in1' . ($f ? " fn$foldnum" : "") . '">&#x25B6;</span>';
+    return $t . '</span>';
 }
 
 function reviewType($paperId, $row, $long = 0) {
