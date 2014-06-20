@@ -92,19 +92,12 @@ class PaperTable {
         $this->npapstrip = 0;
 
         $this->foldState = 1023;
-        $pfold = defval($_REQUEST, "pfold");
         foreach (array("a" => 8, "p" => 9, "b" => 6, "t" => 5) as $k => $v) {
             if ($k == "a")
                 $svar = ($this->mode == "assign" ? "foldassigna" : null);
             else
                 $svar = "foldpaper$k";
-            if ($pfold && substr($pfold, 0, 1) == $v) {
-                $sval = (substr($pfold, 1, 1) == "o" ? 0 : 1);
-                if ($svar)
-                    $_SESSION[$svar] = $sval;
-                if (!$sval)
-                    $this->foldState &= ~(1 << $v);
-            } else if ($svar && !defval($_SESSION, $svar, 1))
+            if ($svar && !defval($_SESSION, $svar, 1))
                 $this->foldState &= ~(1 << $v);
         }
 
@@ -202,18 +195,18 @@ class PaperTable {
             else
                 $c .= $n;
         } else {
+            $c .= '<a class="q" href="#" onclick="return foldup(this,event'
+                . $foldnumarg . '"';
+            if (($title = defval($extra, "foldtitle")))
+                $c .= ' title="' . $title . '"';
+            $c .= '>' . expander(null, $foldnum);
             if (!is_array($name))
                 $name = array($name, $name);
-            $c .= "<a class=\"q fn$foldnum\" "
-                . "href=\"" . selfHref(array("pfold" => $foldnum . "o"))
-                . "\" onclick=\"return foldup(this,event$foldnumarg)\" "
-                . "title=\"" . defval($extra, "showtitle", "Show")
-                . "\">" . expander(true) . $name[1] . "</a>"
-                . "<a class=\"q fx$foldnum\" "
-                . "href=\"" . selfHref(array("pfold" => $foldnum . "c"))
-                . "\" onclick=\"return foldup(this,event$foldnumarg)\" "
-                . "title=\"" . defval($extra, "hidetitle", "Hide")
-                . "\">" . expander(false) . $name[0] . "</a>";
+            if ($name[0] !== $name[1])
+                $c .= '<span class="fn' . $foldnum . '">' . $name[1] . '</span><span class="fx' . $foldnum . '">' . $name[0] . '</span>';
+            else
+                $c .= $name[0];
+            $c .= '</a>';
         }
         $c .= "</span>";
         if ($editfolder) {
@@ -491,8 +484,7 @@ class PaperTable {
                     $this->papt("abstract", "Abstract",
                                 array("fold" => "paper", "foldnum" => 6,
                                       "foldsession" => "foldpaperb",
-                                      "showtitle" => "Show full abstract",
-                                      "hidetitle" => "Abbreviate abstract")),
+                                      "foldtitle" => "Toggle full abstract")),
                     "<div class='pavb abstract'>",
                     "<div class='fn6'>", $shortdata,
                     " <a class='fn6' href='#' onclick='return fold(\"paper\",0,6)'>[more]</a>",
@@ -675,8 +667,7 @@ class PaperTable {
             echo $this->papt("authorInformation", $auname,
                              array("fold" => "paper", "foldnum" => 9,
                                    "foldsession" => "foldpaperp",
-                                   "showtitle" => "Show full authors",
-                                   "hidetitle" => "Show abbreviated authors")),
+                                   "foldtitle" => "Toggle full author display")),
                 "<div class='pavb'><span class='fn9'>",
                 $this->authorData($autable, "last", null, $inauthors1),
                 " <a class='fn9' href='#' onclick='return fold(\"paper\", 0, 9)'>[details]</a>",
@@ -797,8 +788,7 @@ class PaperTable {
             if ($this->allFolded) {
                 $extra = array("fold" => "paper", "foldnum" => 5,
                                "foldsession" => "foldpapert",
-                               "showtitle" => "Show " . strtolower($tanda),
-                               "hidetitle" => "Hide " . strtolower($tanda));
+                               "foldtitle" => "Toggle " . strtolower($tanda));
                 $eclass = " fx5";
             } else {
                 $extra = null;
