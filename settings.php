@@ -1209,13 +1209,15 @@ function doMsgGroup() {
 
     echo "<div class='f-c'>", setting_label("opt.shortName", "Conference abbreviation"), "</div>\n",
         Ht::entry("opt.shortName", opt_data("shortName"), array("class" => "textlite", "size" => 20)),
+        "<div class='f-h'>Examples: “HotOS XIV”, “NSDI '14”</div>",
         "<div class='g'></div>\n";
 
     $long = opt_data("longName");
     if ($long == opt_data("shortName"))
         $long = "";
-    echo "<div class='f-c'>", setting_label("opt.longName", "Full conference name"), "</div>\n",
+    echo "<div class='f-c'>", setting_label("opt.longName", "Conference name"), "</div>\n",
         Ht::entry("opt.longName", $long, array("class" => "textlite", "size" => 70, "hottemptext" => "(same as abbreviation)")),
+        "<div class='f-h'>Example: “14th Workshop on Hot Topics in Operating Systems”</div>",
         "<div class='lg'></div>\n";
 
     // maybe set $Opt["contactName"] and $Opt["contactEmail"]
@@ -1227,8 +1229,7 @@ function doMsgGroup() {
 
     echo "<div class='f-c'>", setting_label("opt.contactEmail", "Email of site contact"), "</div>\n",
         Ht::entry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), array("class" => "textlite", "size" => 40)),
-        "<div class='ug'></div>\n",
-        "<div class='hint'>The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>",
+        "<div class='f-h'>The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>",
         "<div class='lg'></div>\n";
 
     do_message("msg.home", "Home page message");
