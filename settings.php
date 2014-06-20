@@ -1254,8 +1254,8 @@ function doSubGroup() {
                                Conference::BLIND_OPTIONAL => "Depends—authors decide whether to expose their names"));
 
     echo "<div class='g'></div>\n<table>\n";
-    doDateRow("sub_reg", "Paper registration deadline", "sub_sub");
-    doDateRow("sub_sub", "Paper submission deadline");
+    doDateRow("sub_reg", "Registration deadline", "sub_sub");
+    doDateRow("sub_sub", "Submission deadline");
     doGraceRow("sub_grace", 'Grace period');
     echo "</table>\n";
 
