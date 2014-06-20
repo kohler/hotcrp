@@ -914,6 +914,8 @@ div.f-ix {
 }
 div.f-c, th.f-c, div.f-cl {
 	font-weight: bold;
+}
+div.f-c, th.f-c {
 	color: #555555;
 }
 div.f-c {

@@ -77,7 +77,10 @@ function rf_update() {
         $sn = simplify_whitespace(defval($_REQUEST, "shortName_$fid", ""));
         if ($sn == "<None>" || $sn == "<New field>")
             $sn = "";
-        $pos = rcvtint($_REQUEST["order_$fid"]);
+        if (@$_REQUEST["removed_$fid"] == "1")
+            $pos = 0;
+        else
+            $pos = rcvtint($_REQUEST["order_$fid"]);
         if ($pos > 0 && $sn == ""
             && trim(defval($_REQUEST, "description_$fid", "")) == ""
             && trim(defval($_REQUEST, "options_$fid", "")) == "")
@@ -157,23 +160,36 @@ function rf_show() {
 
     $Conf->footerHtml
         ("<div id='revfield_template' style='display:none'>"
-         . "<table id='revfield_\$' class='setreviewform foldo errloc_\$' style='width:100%'>"
-         . "<tbody><tr class='errloc_shortName_\$'><td class='rxcaption nowrap'>Field name</td>"
-         .   "<td colspan='3' class='entry'>" . Ht::entry("shortName_\$", "", array("size" => 50, "class" => "textlite", "style" => "font-weight:bold", "id" => "shortName_\$")) . "</td></tr>"
-         . "<tr><td class='rxcaption nowrap'>Form position</td>"
-         .   "<td class='entry'>" . Ht::select("order_\$", array(), array("class" => "reviewfield_order", "id" => "order_\$"))
-         .   "<span class='sep'></span><span class='fx'>Visibility &nbsp;"
-         .   Ht::select("authorView_\$", array("author" => "Authors &amp; reviewers", "pc" => "Reviewers only", "admin" => "Administrators only"), array("class" => "reviewfield_authorView", "id" => "authorView_\$")) . "</span>"
-         .   "<span class='fn'>" . Ht::button("Revert", array("class" => "revfield_revert", "id" => "revert2_\$")) . "</span>"
-         . "</td></tr>"
-         . "<tr class='errloc_description_\$ fx'><td class='rxcaption textarea'>Description</td>"
-         .   "<td class='entry'>" . Ht::textarea("description_\$", null, array("class" => "reviewtext", "rows" => 6, "id" => "description_\$")) . "</td></tr>"
-         . "<tr class='errloc_options_\$ fx reviewrow_options'><td class='rxcaption textarea'>Options</td>"
-         .   "<td class='entry'>" . Ht::textarea("options_\$", null, array("class" => "reviewtext", "rows" => 6, "id" => "options_\$")) . "</td></tr>"
-         . "<tr class='fx'><td class='rxcaption'></td>"
-         .   "<td class='entry'>" . Ht::select("samples_\$", array(), array("class" => "revfield_samples", "id" => "samples_\$"))
-         .   "<span class='sep'></span>" . Ht::button("Revert", array("class" => "revfield_revert", "id" => "revert_\$", "style" => "display:none")) . "</td></tr>"
-         . "</tbody></table></div>");
+         . '<div id="revfield_$" class="f-contain foldo errloc_$">'
+         . '<div class="f-i errloc_shortName_$">'
+         .   '<div class="f-c">Field name</div>'
+         .   Ht::entry('shortName_$', "", array("size" => 50, "class" => "textlite", "style" => "font-weight:bold", "id" => 'shortName_$'))
+         . '</div>'
+         . '<div class="f-i fx">'
+         . '<div class="f-ix">'
+         .   '<div class="f-c">Form position</div>'
+         .   Ht::select('order_$', array(), array("class" => "reviewfield_order", "id" => 'order_$'))
+         .   '<span class="fn"><span class="sep"></span>' . Ht::button("Revert", array("class" => "revfield_revert", "id" => 'revert2_$')) . '</span>'
+         . '</div><div class="f-ix">'
+         .   '<div class="f-c">Visibility</div>'
+         .   Ht::select('authorView_$', array("author" => "Authors &amp; reviewers", "pc" => "Reviewers only", "admin" => "Administrators only"), array("class" => "reviewfield_authorView", "id" => 'authorView_$'))
+         . '</div><div class="clear"></div></div>'
+         . '<div class="f-i errloc_description_$ fx">'
+         .   '<div class="f-c">Description</div>'
+         .   Ht::textarea('description_$', null, array("class" => "reviewtext", "rows" => 6, "id" => 'description_$'))
+         . '</div>'
+         . '<div class="f-i errloc_options_$ fx reviewrow_options">'
+         .   '<div class="f-c">Options</div>'
+         .   Ht::textarea('options_$', null, array("class" => "reviewtext", "rows" => 6, "id" => 'options_$'))
+         . '</div>'
+         . '<div class="f-i">'
+         .   Ht::select('samples_$', array(), array("class" => "revfield_samples fx", "id" => 'samples_$'))
+         .   '<span class="fx"><span class="sep"></span>' . Ht::button("Remove field from form", array("class" => "revfield_remove", "id" => 'remove_$'))
+         .   '</span><span class="fn" style="font-style:italic">Removed from form</span>'
+         .   Ht::hidden('removed_$', 0, array("id" => 'removed_$'))
+         .   '<span class="sep"></span>' . Ht::button("Revert", array("class" => "revfield_revert", "id" => 'revert_$', "style" => "display:none"))
+         . '</div>'
+         . '</div></div>');
 
     $req = array();
     if (count($Error))

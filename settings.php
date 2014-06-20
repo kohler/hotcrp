@@ -1185,13 +1185,14 @@ function doAccGroup() {
 }
 
 // Messages
-function do_message($name, $description, $rows = 10, $hint = "") {
+function do_message($name, $description, $type, $rows = 10, $hint = "") {
     global $Conf;
     $default = $Conf->message_default_html($name);
     $current = setting_data($name, $default);
     echo '<div class="fold', ($current == $default ? "c" : "o"),
         '" hotcrpfold="yes">',
-        '<div class="f-cl childfold" onclick="return foldup(this,event)">',
+        '<div class="', ($type ? "f-cn" : "f-cl"),
+        ' childfold" onclick="return foldup(this,event)">',
         '<a class="q" href="#" onclick="return foldup(this,event)">',
         expander(null, 0), setting_label($name, $description),
         '</a> <span class="f-cx fx">(HTML allowed)</span></div>',
@@ -1230,12 +1231,11 @@ function doMsgGroup() {
         "<div class='f-h'>The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>",
         "<div class='lg'></div>\n";
 
-    do_message("msg.home", "Home page message");
-    do_message("clickthrough_submit", "Clickthrough submission terms", 10,
+    do_message("msg.home", "Home page message", 0);
+    do_message("clickthrough_submit", "Clickthrough submission terms", 0, 10,
                "<div class=\"hint fx\">Users must “accept” these terms to edit or submit a paper. Use HTML, and consider including a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
-    do_message("msg.conflictdef", "Definition of conflict of interest", 5);
-    do_message("msg.revprefdescription", "Review preference instructions", 20);
-    do_message("msg.responseinstructions", "Authors’ response instructions");
+    do_message("msg.conflictdef", "Definition of conflict of interest", 0, 5);
+    do_message("msg.revprefdescription", "Review preference instructions", 0, 20);
 }
 
 // Submissions
@@ -1264,7 +1264,7 @@ function doSubGroup() {
     echo "<tr class='fx'><td></td><td>";
     doCheckbox("sub_pcconfsel", "Collect PC conflict types (“Advisor/student,” “Recent collaborator,” etc.)");
     echo "</td></tr>\n";
-    doCheckbox("sub_collab", "Collect authors&rsquo; other collaborators as text", true);
+    doCheckbox("sub_collab", "Collect authors’ other collaborators as text", true);
     echo "</table>\n";
 
     if (is_executable("src/banal")) {
@@ -1769,14 +1769,17 @@ function doDecGroup() {
     echo "Can <b>authors see reviews and comments</b> for their papers?<br />";
     doRadio("au_seerev", array(AU_SEEREV_NO => "No", AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they&rsquo;ve completed any requested reviews"));
 
-    echo "<div class='g'></div>\n<table id='foldauresp' class='foldo'>";
-    doCheckbox('resp_open', "<b>Collect authors&rsquo; responses to the reviews<span class='fx'>:</span></b>", true, "void fold('auresp',!this.checked)");
-    echo "<tr class='fx'><td></td><td><table>";
+    echo "<div class='g'></div>\n<table id='foldauresp' class='fold2o'>";
+    doCheckbox('resp_open', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>", true, "void fold('auresp',!this.checked,2)");
+    echo "<tr class='fx2'><td></td><td><table>";
     doDateRow('resp_done', 'Hard deadline', null, "lxcaption");
     doGraceRow('resp_grace', 'Grace period', "lxcaption");
     doTextRow("resp_words", array("Word limit", "This is a soft limit: authors may submit longer responses. 0 means no limit."), setting("resp_words", 500), 5, "lxcaption", "none");
-    echo "</table></td></tr></table>";
-    $Conf->footerScript("fold('auresp',!\$\$('cbresp_open').checked)");
+    echo "</table>";
+    echo "<div class='g'></div>";
+    do_message("msg.responseinstructions", "Instructions", 1);
+    echo "</td></tr></table>";
+    $Conf->footerScript("fold('auresp',!\$\$('cbresp_open').checked,2)");
 
     echo "<div class='g'></div>\n<hr class='hr' />\n",
         "Who can see paper <b>decisions</b> (accept/reject)?<br />\n";
@@ -1845,7 +1848,7 @@ function doDecGroup() {
     doDateRow("final_done", "Hard deadline", null, "lxcaption");
     doGraceRow("final_grace", "Grace period", "lxcaption");
     echo "</table><div class='g'></div>";
-    do_message("msg.finalsubmit", "Final version submission notice");
+    do_message("msg.finalsubmit", "Instructions", 1);
     echo "<div class='g'></div>",
         "<small>To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</small>",
         "</div></td></tr></table>\n\n";

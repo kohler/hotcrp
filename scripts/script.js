@@ -2520,22 +2520,23 @@ function set_position(fid, pos) {
     var i, t = "", p;
     for (i = 0; i != fieldorder.length; ++i)
         t += "<option value='" + (i + 1) + "'>" + ordinal(i + 1) + "</option>";
-    t += "<option value='0'>Remove from form</option>";
     $("#order_" + fid).html(t).val(pos);
 }
 
 function check_change(fid) {
-    var fieldj = original[fid] || {};
+    var fieldj = original[fid] || {},
+        removed = $("#removed_" + fid).val() != "0";
     if ($.trim($("#shortName_" + fid).val()) != fieldj.name
         || $("#order_" + fid).val() != (fieldj.position || 0)
         || $("#description_" + fid).val() != (fieldj.description || "")
         || $("#authorView_" + fid).val() != (fieldj.view_score || "pc")
-        || $.trim($("#options_" + fid).val()) != $.trim(options_to_text(fieldj))) {
+        || $.trim($("#options_" + fid).val()) != $.trim(options_to_text(fieldj))
+        || removed) {
         $("#revfield_" + fid + " .revfield_revert").show();
         hiliter("reviewform_container");
     } else
         $("#revfield_" + fid + " .revfield_revert").hide();
-    fold("revfield_" + fid, $("#order_" + fid).val() == 0);
+    fold("revfield_" + fid, removed);
 }
 
 function check_this_change() {
@@ -2552,6 +2553,7 @@ function fill_field(fid, fieldj) {
     $("#description_" + fid).val(fieldj.description || "");
     $("#authorView_" + fid).val(fieldj.view_score || "pc");
     $("#options_" + fid).val(options_to_text(fieldj));
+    $("#removed_" + fid).val(fieldj.position ? 0 : 1);
     check_change(fid);
     return false;
 }
@@ -2559,6 +2561,12 @@ function fill_field(fid, fieldj) {
 function revert() {
     fill_field(this);
     $("#samples_" + get_fid(this)).val("x");
+}
+
+function remove() {
+    var fid = get_fid(this);
+    $("#removed_" + fid).val(1);
+    check_change(fid);
 }
 
 function samples_change() {
@@ -2571,7 +2579,7 @@ function samples_change() {
 
 function append_field(fid) {
     var jq = $($("#revfield_template").html().replace(/\$/g, fid)),
-        sampleopt = "<option value=\"x\">Field library...</option>", i;
+        sampleopt = "<option value=\"x\">Load field from library...</option>", i;
     for (i = 0; i != samples.length; ++i)
         if (!samples[i].options == !fieldmap[fid])
             sampleopt += "<option value=\"" + i + "\">" + samples[i].selector + "</option>";
@@ -2579,6 +2587,7 @@ function append_field(fid) {
     if (!fieldmap[fid])
         jq.find(".reviewrow_options").remove();
     jq.find(".revfield_samples").html(sampleopt).on("change", samples_change);
+    jq.find(".revfield_remove").on("click", remove);
     jq.find(".revfield_revert").on("click", revert);
     jq.find("input, textarea, select").on("change", check_this_change);
     jq.appendTo("#reviewform_container");
