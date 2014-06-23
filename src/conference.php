@@ -464,10 +464,17 @@ class Conference {
         return $r ? $r : 0;
     }
 
-    function session($name, $defval = null) {
+    private function setup_session() {
         global $Opt;
-        if ($this->_session === null)
+        if (@$Opt["dsn"])
             $this->_session = &$_SESSION[$Opt["dsn"]];
+        else
+            $this->_session = array();
+    }
+
+    function session($name, $defval = null) {
+        if ($this->_session === null)
+            $this->setup_session();
         if (isset($this->_session[$name]))
             return $this->_session[$name];
         else
@@ -475,18 +482,16 @@ class Conference {
     }
 
     function &session_array($name) {
-        global $Opt;
         if ($this->_session === null)
-            $this->_session = &$_SESSION[$Opt["dsn"]];
+            $this->setup_session();
         if (!is_array(@$this->_session[$name]))
             $this->_session[$name] = array();
         return $this->_session[$name];
     }
 
     function save_session($name, $value) {
-        global $Opt;
         if ($this->_session === null)
-            $this->_session = &$_SESSION[$Opt["dsn"]];
+            $this->setup_session();
         if ($value !== null)
             $this->_session[$name] = $value;
         else
