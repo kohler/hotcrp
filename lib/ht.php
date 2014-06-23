@@ -271,9 +271,10 @@ class Ht {
     }
 
     static function pre_text($text) {
-        if (is_array($text))
+        if (is_array($text)
+            && array_keys($text) === range(0, count($text) - 1))
             $text = join("\n", $text);
-        else if (is_object($text))
+        else if (is_array($text) || is_object($text))
             $text = var_export($text, true);
         return "<pre>" . htmlspecialchars($text) . "</pre>";
     }
