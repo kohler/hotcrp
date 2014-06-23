@@ -484,7 +484,7 @@ class Conference {
     }
 
     function save_session_array($name, $index, $value) {
-        $sa = $this->session_array($name);
+        $sa = &$this->session_array($name);
         if ($index !== true)
             $sa[$index] = $value;
         else
