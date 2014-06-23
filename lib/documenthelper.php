@@ -293,7 +293,7 @@ class DocumentHelper {
             $superdir = substr($fpath, 0, $pos);
             if (!is_dir($superdir)) {
                 $fmode = fileperms($fdir);
-                if (!@mkdir($superdir, 0770) || !@chmod($superdir, 0770 & $fmode))
+                if (!@mkdir($superdir, 0770) || !@chmod($superdir, 02770 & $fmode))
                     return false;
             }
             ++$pos;
