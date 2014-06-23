@@ -379,9 +379,9 @@ function foldsessionpixel($name, $var, $sub = false) {
 }
 
 function foldbutton($foldtype, $foldnum = 0) {
-    $foldnum = ($foldnum ? ",$foldnum" : "");
+    $foldnumid = ($foldnum ? ",$foldnum" : "");
     return '<a href="#" class="q" onclick="return fold(\''
-        . $foldtype . '\',null' . $foldnum . ')">'
+        . $foldtype . '\',null' . $foldnumid . ')">'
         . expander(null, $foldnum) . '</a>';
 }
 
