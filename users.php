@@ -19,8 +19,6 @@ if ($Me->isPC && count($pctags = pcTags())) {
     foreach ($pctags as $t)
         if ($t != "pc")
             $tOpt["pc:$t"] = "PC members tagged &ldquo;$t&rdquo;";
-    if (!isset($_SESSION["foldppltags"]))
-        $_SESSION["foldppltags"] = 0;
 }
 if ($Me->isPC)
     $tOpt["admin"] = "System administrators";
