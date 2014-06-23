@@ -13,8 +13,7 @@ class LoginHelper {
         $Me = new Contact;
         $Me->fresh = true;
         unset($_SESSION["user"]);
-        unset($_SESSION["adminuser"]);
-        unset($_SESSION["actasuser"]);
+        unset($_SESSION["trueuser"]);
         if (isset($_REQUEST["signout"]))
             $Conf->save_session("capabilities", null);
         foreach (array("l", "comment_msgs", "nbanal", "pplscores", "scoresort",

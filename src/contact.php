@@ -160,34 +160,34 @@ class Contact {
         global $Conf, $Opt;
         $this->activated_ = true;
 
-        // Set $_SESSION["adminuser"] based on administrator status
-        if ($this->contactId > 0 && !$this->privChair
-            && @$_SESSION["adminuser"] == $this->contactId)
-            unset($_SESSION["adminuser"]);
-        else if ($this->privChair && !@$_SESSION["adminuser"])
-            $_SESSION["adminuser"] = $this->contactId;
-
-        // Handle adminuser actas requests
-        if (@$_SESSION["adminuser"] && isset($_REQUEST["actas"])) {
-            $cid = cvtint($_REQUEST["actas"]);
-            if ($cid <= 0 && $_REQUEST["actas"] == "admin"
-                && @$_SESSION["adminuser"])
-                $cid = (int) $_SESSION["adminuser"];
-            else if ($cid <= 0)
-                $cid = Contact::id_by_email($_REQUEST["actas"]);
+        // Handle actas requests
+        if (isset($_REQUEST["actas"]) && !isset($_SESSION["trueuser"]))
+            $_SESSION["trueuser"] = $_SESSION["user"];
+        if (isset($_REQUEST["actas"])) {
+            $trueuser = explode(" ", $_SESSION["trueuser"]);
+            if (is_numeric($_REQUEST["actas"]))
+                $actasemail = self::email_by_id($_REQUEST["actas"]);
+            else if ($_REQUEST["actas"] === "admin")
+                $actasemail = $trueuser[2];
+            else
+                $actasemail = $_REQUEST["actas"];
             unset($_REQUEST["actas"]);
-            if ($cid > 0) {
-                if (($newc = Contact::find_by_id($cid))) {
-                    $Conf->save_session("l", null);
-                    if ($newc->contactId != $_SESSION["adminuser"])
-                        $_SESSION["actasuser"] = $newc->email;
-                    return $newc->activate();
-                }
+            if ($actasemail
+                && strcasecmp($actasemail, $this->email) != 0
+                && (strcasecmp($actasemail, $trueuser[2]) == 0
+                    || $this->privChair
+                    || (($truecontact = self::find_by_email($trueuser[2]))
+                        && $truecontact->privChair))
+                && ($actascontact = self::find_by_email($actasemail))) {
+                $trueuser[3] = $this->email;
+                $_SESSION["trueuser"] = join(" ", $trueuser);
+                $Conf->save_session("l", null);
+                return $actascontact->activate();
             }
         }
 
         // Handle invalidate-caches requests
-        if (@$_REQUEST["invalidatecaches"] && @$_SESSION["adminuser"]) {
+        if (@$_REQUEST["invalidatecaches"] && $this->privChair) {
             unset($_REQUEST["invalidatecaches"]);
             $Conf->invalidateCaches();
         }
@@ -278,7 +278,7 @@ class Contact {
     }
 
     private function load_author_reviewer_status() {
-        global $Me, $Conf;
+        global $Conf;
 
         // Load from database
         if ($this->contactId > 0) {
@@ -777,6 +777,13 @@ class Contact {
     static function id_by_email($email) {
         global $Conf;
         $result = $Conf->qe("select contactId from ContactInfo where email='" . sqlq(trim($email)) . "'");
+        $row = edb_row($result);
+        return $row ? $row[0] : false;
+    }
+
+    static function email_by_id($id) {
+        global $Conf;
+        $result = $Conf->qe("select email from ContactInfo where id=" . (int) $id);
         $row = edb_row($result);
         return $row ? $row[0] : false;
     }
