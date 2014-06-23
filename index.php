@@ -37,10 +37,10 @@ else if (isset($_REQUEST["email"])
          && isset($_REQUEST["signin"]))
     LoginHelper::check_login();
 
-// set a cookie to test that their browser supports cookies
-// NB need to set a cookie whenever we'll send a "testcookie=1" param
+// set a session variable to test that their browser supports cookies
+// NB need to do this whenever we'll send a "testsession=1" param
 if ($Me->is_empty() || isset($_REQUEST["signin"]))
-    setcookie("CRPTestCookie", true);
+    $_SESSION["testsession"] = true;
 
 // perhaps redirect through account
 if ($Me->is_known_user() && isset($Me->fresh) && $Me->fresh === true) {
@@ -247,7 +247,7 @@ Sign in to submit or review papers.";
         Ht::form(hoturl_post("index")),
         "<div class=\"f-contain\">";
     if ($Me->is_empty() || isset($_REQUEST["signin"]))
-        echo Ht::hidden("testcookie", 1);
+        echo Ht::hidden("testsession", 1);
     echo "<div class='f-ii'>
   <div class='f-c", $email_class, "'>",
         (isset($Opt["ldapLogin"]) ? "Username" : "Email"),

@@ -93,15 +93,17 @@ class LoginHelper {
         }
 
         // Check for the cookie
-        if (!isset($_COOKIE["CRPTestCookie"]) && !isset($_REQUEST["testcookie"])) {
+        if (isset($_SESSION["testsession"]))
+            /* Session cookie set */;
+        else if (!isset($_REQUEST["testsession"])) {
             // set a cookie to test that their browser supports cookies
-            setcookie("CRPTestCookie", true);
-            $url = "testcookie=1";
+            $_SESSION["testsession"] = true;
+            $url = "testsession=1";
             foreach (array("email", "password", "action", "go", "afterLogin", "signin") as $a)
                 if (isset($_REQUEST[$a]))
                     $url .= "&$a=" . urlencode($_REQUEST[$a]);
             go("?" . $url);
-        } else if (!isset($_COOKIE["CRPTestCookie"]))
+        } else
             return $Conf->errorMsg("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
 
         // do LDAP login before validation, since we might create an account
@@ -174,7 +176,7 @@ class LoginHelper {
             $where = hoturl("index");
 
         $user = $user->activate();
-        setcookie("CRPTestCookie", false);
+        unset($_SESSION["testsession"]);
         unset($_SESSION["afterLogin"]);
         go($where);
         exit;
