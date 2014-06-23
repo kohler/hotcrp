@@ -309,7 +309,7 @@ else if (isset($_REQUEST["register"]) && $newProfile
         if (isset($_REQUEST["redirect"]))
             go(hoturl("index"));
         else {
-            $_SESSION["profile_redirect"] = $cj;
+            $Conf->save_session("profile_redirect", $cj);
             redirectSelf();
         }
     }
@@ -488,15 +488,13 @@ if (!$UserStatus->nerrors && isset($Me->fresh) && $Me->fresh === "redirect") {
 }
 
 
-if (!$useRequest && isset($_SESSION["profile_redirect"])) {
-    $formcj = $_SESSION["profile_redirect"];
-    unset($_SESSION["profile_redirect"]);
-} else if (!$useRequest)
-    $formcj = $UserStatus->user_to_json($Acct);
-else {
+if ($useRequest) {
     $formcj = (object) array();
     pc_request_as_json($formcj);
-}
+} else if (($formcj = $Conf->session("profile_redirect")))
+    $Conf->save_session("profile_redirect", null);
+else
+    $formcj = $UserStatus->user_to_json($Acct);
 $pcrole = @($formcj->roles->chair) ? "chair" : (@($formcj->roles->pc) ? "pc" : "no");
 
 

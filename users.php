@@ -215,21 +215,22 @@ if ($Me->privChair && @$_REQUEST["modifygo"] && check_post() && isset($papersel)
 
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {
-    $_SESSION["ppldisplay"] = "";
+    $Conf->save_session("ppldisplay", "");
     displayOptionsSet("ppldisplay", "aff", defval($_REQUEST, "showaff", 0));
     displayOptionsSet("ppldisplay", "topics", defval($_REQUEST, "showtop", 0));
     displayOptionsSet("ppldisplay", "tags", defval($_REQUEST, "showtags", 0));
-    $_SESSION["pplscores"] = 0;
+    $Conf->save_session("pplscores", 0);
 }
 if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
-    $_SESSION["pplscores"] = 0;
+    $ss = 0;
     foreach ($_REQUEST["score"] as $s)
-        $_SESSION["pplscores"] |= (1 << $s);
+        $ss |= (1 << $s);
+    $Conf->save_session("pplscores", $ss);
 }
 if (isset($_REQUEST["scoresort"])
     && ($_REQUEST["scoresort"] == "A" || $_REQUEST["scoresort"] == "V"
         || $_REQUEST["scoresort"] == "D"))
-    $_SESSION["pplscoresort"] = $_REQUEST["scoresort"];
+    $Conf->save_session("pplscoresort", $_REQUEST["scoresort"]);
 
 
 if ($_REQUEST["t"] == "pc")
@@ -289,7 +290,7 @@ if (count($tOpt) > 1) {
     if (isset($pl->scoreMax)) {
         echo "<td class='pad'>";
         $rf = reviewForm();
-        $theScores = defval($_SESSION, "pplscores", 1);
+        $theScores = $Conf->session("pplscores", 1);
         $revViewScore = $Me->viewReviewFieldsScore(null, true);
         foreach ($rf->forder as $f)
             if ($f->view_score > $revViewScore && $f->has_options) {
@@ -306,7 +307,7 @@ if (count($tOpt) > 1) {
             if (isset(ContactList::$score_sorts[$k]))
                 $ss[$k] = ContactList::$score_sorts[$k];
         echo "<tr><td colspan='3'><div class='g'></div><b>Sort scores by:</b> &nbsp;",
-            Ht::select("scoresort", $ss, defval($_SESSION, "pplscoresort", "A")),
+            Ht::select("scoresort", $ss, $Conf->session("pplscoresort", "A")),
             "</td></tr>";
     }
     echo "</table></div></form>";

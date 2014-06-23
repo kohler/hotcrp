@@ -90,7 +90,7 @@ class MeetingTracker {
         $tracker = $Conf->setting_json("tracker");
         if (!$tracker || !$acct->isPC)
             return false;
-        if (($status = @$_SESSION["tracker"])
+        if (($status = $Conf->session("tracker"))
             && $status->trackerid == $tracker->trackerid
             && $status->position == $tracker->position)
             return $status;
@@ -125,7 +125,7 @@ class MeetingTracker {
             foreach ($pids as $pid)
                 $status->papers[] = $papers[$pid];
         }
-        $_SESSION["tracker"] = $status;
+        $Conf->save_session("tracker", "status");
         return $status;
     }
 

@@ -65,8 +65,10 @@ class PaperList extends BaseList {
         $this->papersel = null;
         if (is_string(defval($args, "display", null)))
             $this->display = " " . $args["display"] . " ";
-        else
-            $this->display = defval($_SESSION, defval($args, "foldtype", "pl") . "display", "");
+        else {
+            $svar = defval($args, "foldtype", "pl") . "display";
+            $this->display = $Conf->session($svar, "");
+        }
         if (isset($args["reviewer"]))
             $this->reviewer = $args["reviewer"];
         $this->atab = defval($_REQUEST, "atab", "");
@@ -484,7 +486,7 @@ class PaperList extends BaseList {
         return $foot . "<table id='plact' class='linelinks$whichlll'><tr><td><a name='plact'><b>Select papers</b></a> (or <a href=\""
             . selfHref(array("selectall" => 1))
             . "#plact\" onclick='return papersel(true)'>select all " . $this->count . "</a>), then&nbsp;"
-            . "<img id='foldplactsession' alt='' src='" . hoturl("sessionvar", "var=foldplact&amp;val=" . defval($_SESSION, "foldplact", 1) . "&amp;cache=1") . "' width='1' height='1' />"
+            . "<img id='foldplactsession' alt='' src='" . hoturl("sessionvar", "var=foldplact&amp;val=" . $Conf->session("foldplact", 1) . "&amp;cache=1") . "' width='1' height='1' />"
             . "</td>"
             . $t . "</tr></td></table>" . $extra . "</td></tr>\n"
             . " </tfoot>\n";

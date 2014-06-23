@@ -94,17 +94,17 @@ function saveComment($text, $is_response) {
     }
 
     $what = ($is_response ? "Response" : "Comment");
-    if ($next_crow && !isset($_SESSION["comment_msgs"]))
-        $_SESSION["comment_msgs"] = array();
     if ($next_crow && $is_response && ($next_crow->commentType & COMMENTTYPE_DRAFT)) {
         $deadline = $Conf->printableTimeSetting("resp_done");
         if ($deadline != "N/A")
             $extratext = "  You have until $deadline to submit the response.";
         else
             $extratext = "";
-        $_SESSION["comment_msgs"][$next_crow->commentId] = "<div class='xwarning'>$what saved. <strong>This draft response will not be shown to reviewers.</strong>$extratext</div>";
+        $Conf->save_session_array("comment_msgs", $next_crow->commentId,
+                                  "<div class='xwarning'>$what saved. <strong>This draft response will not be shown to reviewers.</strong>$extratext</div>");
     } else if ($next_crow)
-        $_SESSION["comment_msgs"][$next_crow->commentId] = "<div class='xconfirm'>$what submitted.</div>";
+        $Conf->save_session_array("comment_msgs", $next_crow->commentId,
+                                  "<div class='xconfirm'>$what submitted.</div>");
     else
         $Conf->confirmMsg("$what deleted.");
 

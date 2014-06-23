@@ -200,7 +200,7 @@ class ContactList extends BaseList {
         case self::FIELD_SCORE:
             $scoreName = $reviewScoreNames[$this->sortField - self::FIELD_SCORE];
             $scoreMax = $this->scoreMax[$scoreName];
-            $scoresort = defval($_SESSION, "pplscoresort", "A");
+            $scoresort = $Conf->session("pplscoresort", "A");
             if ($scoresort != "A" && $scoresort != "V" && $scoresort != "D")
                 $scoresort = "A";
             foreach ($rows as $row)
@@ -410,8 +410,9 @@ class ContactList extends BaseList {
     }
 
     function addScores($a) {
+        global $Conf;
         if ($this->contact->isPC) {
-            $scores = defval($_SESSION, "pplscores", 1);
+            $scores = $Conf->session("pplscores", 1);
             for ($i = 0; $i < self::FIELD_NUMSCORES; $i++)
                 if ($scores & (1 << $i))
                     array_push($a, self::FIELD_SCORE + $i);

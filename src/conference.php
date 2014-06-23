@@ -463,6 +463,34 @@ class Conference {
         return $r ? $r : 0;
     }
 
+    function session($name, $defval = null) {
+        if (isset($_SESSION[$name]))
+            return $_SESSION[$name];
+        else
+            return $defval;
+    }
+
+    function &session_array($name) {
+        if (!is_array(@$_SESSION[$name]))
+            $_SESSION[$name] = array();
+        return $_SESSION[$name];
+    }
+
+    function save_session($name, $value) {
+        if ($value !== null)
+            $_SESSION[$name] = $value;
+        else
+            unset($_SESSION[$name]);
+    }
+
+    function save_session_array($name, $index, $value) {
+        $sa = $this->session_array($name);
+        if ($index !== true)
+            $sa[$index] = $value;
+        else
+            $sa[] = $value;
+    }
+
     function capability_text($prow, $capType) {
         // A capability has the following representation (. is concatenation):
         //    capFormat . paperId . capType . hashPrefix
@@ -1784,7 +1812,7 @@ class Conference {
             $text = "<div class=\"$type\">$text</div>\n";
             if ($this->save_messages) {
                 ensure_session();
-                $_SESSION["msgs"][] = $text;
+                $this->save_session_array("msgs", true, $text);
             } else
                 echo $text;
         }
@@ -2005,10 +2033,10 @@ class Conference {
         echo "</div>\n<div id=\"initialmsgs\">\n";
         if (@$Opt["maintenance"])
             echo "<div class=\"merror\"><strong>The site is down for maintenance.</strong> ", (is_string($Opt["maintenance"]) ? $Opt["maintenance"] : "Please check back later."), "</div>";
-        if (isset($_SESSION["msgs"]) && count($_SESSION["msgs"])) {
-            foreach ($_SESSION["msgs"] as $m)
+        if (($msgs = $this->session("msgs")) && count($msgs)) {
+            foreach ($msgs as $m)
                 echo $m;
-            unset($_SESSION["msgs"]);
+            $this->save_session("msgs", null);
             echo "<div id=\"initialmsgspacer\"></div>";
         }
         $this->save_messages = false;
@@ -2075,7 +2103,9 @@ class Conference {
         else if (is_object($values))
             $values = get_object_vars($values);
         $t = "";
-        foreach (defval($_SESSION, "msgs", array()) as $msg)
+        $msgs = $this->session("msgs", array());
+        $this->save_session("msgs", null);
+        foreach ($msgs as $msg)
             if (preg_match('|\A<div class="(.*?)">([\s\S]*)</div>\s*\z|', $msg, $m)) {
                 if ($m[1] == "merror" && !isset($values["error"]))
                     $values["error"] = $m[2];
@@ -2086,7 +2116,6 @@ class Conference {
             }
         if (!isset($values["response"]) && $t !== "")
             $values["response"] = $t;
-        unset($_SESSION["msgs"]);
         if (isset($_REQUEST["jsontext"]) && $_REQUEST["jsontext"])
             header("Content-Type: text/plain");
         else

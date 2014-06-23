@@ -172,9 +172,9 @@ class CommentView {
 
         echo "</div><div class='cmtv", (!$crow && $editMode && $foldnew ? " fx" : ""), "'>";
 
-        if (isset($_SESSION["comment_msgs"]) && $crow
-            && isset($_SESSION["comment_msgs"][$crow->commentId]))
-            echo $_SESSION["comment_msgs"][$crow->commentId];
+        $cmsgs = $Conf->session("comment_msgs");
+        if ($crow && $cmsgs && isset($cmsgs[$crow->commentId]))
+            echo $cmsgs[$crow->commentId];
 
         if (!$editMode) {
             echo htmlWrapText(htmlspecialchars($crow->comment)), "</div>";
@@ -276,9 +276,9 @@ class CommentView {
 
         $this->table_tobody();
 
-        if (isset($_SESSION["comment_msgs"]) && $crow
-            && isset($_SESSION["comment_msgs"][$crow->commentId]))
-            echo $_SESSION["comment_msgs"][$crow->commentId];
+        $cmsgs = $Conf->session("comment_msgs");
+        if ($crow && $cmsgs && isset($cmsgs[$crow->commentId]))
+            echo $cmsgs[$crow->commentId];
         else if ($editMode && $crow && ($crow->commentType & COMMENTTYPE_DRAFT))
             echo "<div class='xwarning'>This is a draft response. Reviewers won’t see it until you submit.</div>";
 

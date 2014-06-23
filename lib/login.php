@@ -16,13 +16,12 @@ class LoginHelper {
         unset($_SESSION["adminuser"]);
         unset($_SESSION["actasuser"]);
         if (isset($_REQUEST["signout"]))
-            unset($_SESSION["capabilities"]);
-        foreach (array("l", "info", "rev_tokens", "rev_token_fail",
-                       "comment_msgs", "pplscores", "pplscoresort",
-                       "scoresort") as $v)
-            unset($_SESSION[$v]);
-        foreach ($allowedSessionVars as $v)
-            unset($_SESSION[$v]);
+            $Conf->save_session("capabilities", null);
+        foreach (array("l", "comment_msgs", "nbanal", "pplscores", "scoresort",
+                       "pplscoresort", "rev_tokens", "rev_token_fail") as $k)
+            $Conf->save_session($k, null);
+        foreach ($allowedSessionVars as $k)
+            $Conf->save_session($k, null);
         if (isset($_REQUEST["signout"])) {
             unset($_SESSION["afterLogin"]);
             if (isset($Opt["httpAuthLogin"])) {

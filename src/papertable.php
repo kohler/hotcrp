@@ -85,7 +85,7 @@ class PaperTable {
     }
 
     function initialize($editable, $useRequest) {
-        global $CurrentList;
+        global $Conf, $CurrentList;
 
         $this->editable = $editable;
         $this->useRequest = $useRequest;
@@ -97,7 +97,7 @@ class PaperTable {
                 $svar = ($this->mode == "assign" ? "foldassigna" : null);
             else
                 $svar = "foldpaper$k";
-            if ($svar && !defval($_SESSION, $svar, 1))
+            if ($svar && !$Conf->session($svar, 1))
                 $this->foldState &= ~(1 << $v);
         }
 
@@ -109,9 +109,9 @@ class PaperTable {
         if ($CurrentList > 0 && @($l = SessionList::lookup($CurrentList))
             && @$l->matchPreg)
             $matcher = self::_combine_match_preg($matcher, $l->matchPreg);
-        if (@$_SESSION["temp_matchPreg"]) {
-            $matcher = self::_combine_match_preg($matcher, $_SESSION["temp_matchPreg"]);
-            unset($_SESSION["temp_matchPreg"]);
+        if (($mpreg = $Conf->session("temp_matchPreg"))) {
+            $matcher = self::_combine_match_preg($matcher, $mpreg);
+            $Conf->save_session("temp_matchPreg", null);
         }
         foreach ($matcher as $k => $v)
             if (is_string($v) && $v != "") {
@@ -991,7 +991,7 @@ class PaperTable {
             || strcasecmp(trim($this->prow->collaborators), "None") == 0)
             return;
         $name = $Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts";
-        $fold = defval($_SESSION, "foldpscollab", 1) ? 1 : 0;
+        $fold = $Conf->session("foldpscollab", 1) ? 1 : 0;
 
         $data = $this->entryData("collaborators", "col");
         if ($this->entryMatches || !$this->allFolded)
@@ -2011,7 +2011,7 @@ class PaperTable {
                 $cv->showResponse($prow, null, false, true);
 
             $cv->table_end();
-            unset($_SESSION["comment_msgs"]);
+            $Conf->save_session("comment_msgs", null);
         }
     }
 
@@ -2139,7 +2139,7 @@ class PaperTable {
                 $_REQUEST["ls"] = SessionList::allocate($pl->listid);
                 SessionList::change($_REQUEST["ls"], $pl);
             } else if (@$pl->matchPreg)
-                $_SESSION["temp_matchPreg"] = $pl->matchPreg;
+                $Conf->save_session("temp_matchPreg", $pl->matchPreg);
             // ensure URI makes sense ("paper/2" not "paper/searchterm")
             redirectSelf();
             return true;

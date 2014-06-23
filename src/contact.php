@@ -157,7 +157,7 @@ class Contact {
     //
 
     function activate() {
-        global $Opt;
+        global $Conf, $Opt;
         $this->activated_ = true;
 
         // Set $_SESSION["adminuser"] based on administrator status
@@ -178,7 +178,7 @@ class Contact {
             unset($_REQUEST["actas"]);
             if ($cid > 0) {
                 if (($newc = Contact::find_by_id($cid))) {
-                    unset($_SESSION["l"]);
+                    $Conf->save_session("l", null);
                     if ($newc->contactId != $_SESSION["adminuser"])
                         $_SESSION["actasuser"] = $newc->email;
                     return $newc->activate();
@@ -204,8 +204,8 @@ class Contact {
 
         // Add capabilities from session and request
         if (!@$Opt["disableCapabilities"]) {
-            if (@$_SESSION["capabilities"]) {
-                $this->capabilities = $_SESSION["capabilities"];
+            if (($caps = $Conf->session("capabilities"))) {
+                $this->capabilities = $caps;
                 ++$this->rights_version_;
             }
             if (isset($_REQUEST["cap"]) || isset($_REQUEST["testcap"]))
@@ -213,8 +213,8 @@ class Contact {
         }
 
         // Add review tokens from session
-        if (@$_SESSION["rev_tokens"]) {
-            $this->review_tokens_ = $_SESSION["rev_tokens"];
+        if (($rtokens = $Conf->session("rev_tokens"))) {
+            $this->review_tokens_ = $rtokens;
             ++$this->rights_version_;
         }
 
@@ -370,6 +370,7 @@ class Contact {
     }
 
     function change_capability($pid, $c, $on) {
+        global $Conf;
         if (!$this->capabilities)
             $this->capabilities = array();
         $oldval = @$cap[$pid] ? $cap[$pid] : 0;
@@ -384,7 +385,7 @@ class Contact {
         if (!count($this->capabilities))
             $this->capabilities = null;
         if ($this->activated_ && $newval != $oldval)
-            $_SESSION["capabilities"] = $this->capabilities;
+            $Conf->save_session("capabilities", $this->capabilities);
         return $newval != $oldval;
     }
 
@@ -407,6 +408,7 @@ class Contact {
     }
 
     function change_review_token($token, $on) {
+        global $Conf;
         assert($token !== false || $on === false);
         if (!$this->review_tokens_)
             $this->review_tokens_ = array();
@@ -426,7 +428,7 @@ class Contact {
         if ($new_ntokens != $old_ntokens)
             $this->update_cached_roles();
         if ($this->activated_ && $new_ntokens != $old_ntokens)
-            $_SESSION["rev_tokens"] = $this->review_tokens_;
+            $Conf->save_session("rev_tokens", $this->review_tokens_);
         return $new_ntokens != $old_ntokens;
     }
 

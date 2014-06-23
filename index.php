@@ -138,7 +138,7 @@ function change_review_tokens() {
             /* no complaints */;
         else if (!($token = decode_token($x, "V")))
             $Conf->errorMsg("Invalid review token &ldquo;" . htmlspecialchars($x) . "&rdquo;.  Check your typing and try again.");
-        else if (defval($_SESSION, "rev_token_fail", 0) >= 5)
+        else if ($Conf->session("rev_token_fail", 0) >= 5)
             $Conf->errorMsg("Too many failed attempts to use a review token.  <a href='" . hoturl("index", "signout=1") . "'>Sign out</a> and in to try again.");
         else {
             $result = $Conf->qe("select paperId from PaperReview where reviewToken=" . $token, "while searching for review token");
@@ -147,7 +147,8 @@ function change_review_tokens() {
                 $Me->change_review_token($token, true);
             } else {
                 $Conf->errorMsg("Review token “" . htmlspecialchars($x) . "” hasn’t been assigned.");
-                $_SESSION["rev_token_fail"] = defval($_SESSION, "rev_token_fail", 0) + 1;
+                $nfail = $Conf->session("rev_token_fail", 0) + 1;
+                $Conf->save_session("rev_token_fail", $nfail);
             }
         }
     if ($cleared && !count($tokeninfo))
@@ -319,14 +320,14 @@ if ($homelist) {
 
 // Review token printing
 function reviewTokenGroup($close_hr) {
-    global $reviewTokenGroupPrinted;
+    global $Conf, $reviewTokenGroupPrinted;
     if ($reviewTokenGroupPrinted)
         return;
 
     echo "<div class='homegrp' id='homerev'>\n";
 
     $tokens = array();
-    foreach (defval($_SESSION, "rev_tokens", array()) as $tt)
+    foreach ($Conf->session("rev_tokens", array()) as $tt)
         $tokens[] = encode_token((int) $tt);
     echo "  <h4>Review tokens: &nbsp;</h4> ",
         "<form action='", hoturl_post("index"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
@@ -486,7 +487,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         require_once("src/commentview.php");
         $entries = $Conf->reviewerActivity($Me, time(), 30);
         if (count($entries)) {
-            $fold20 = defval($_SESSION, "foldhomeactivity", 1) ? "fold20c" : "fold20o";
+            $fold20 = $Conf->session("foldhomeactivity", 1) ? "fold20c" : "fold20o";
             echo "<div class='homegrp $fold20 fold21c' id='homeactivity'>",
                 foldbutton("homeactivity", 20),
                 "<h4><a href=\"javascript:void fold('homeactivity',null,20)\" class='x homeactivity'>Recent activity<span class='fx20'>:</span></a></h4>";

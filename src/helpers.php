@@ -360,14 +360,15 @@ function validateEmail($email) {
 }
 
 function foldsessionpixel($name, $var, $sub = false) {
+    global $Conf;
     $val = "&amp;val=";
     if ($sub === false)
-        $val .= defval($_SESSION, $var, 1);
+        $val .= $Conf->session($var, 1);
     else if ($sub === null)
         $val .= "&amp;sub=";
     else if ($sub !== null) {
-        if (!isset($_SESSION[$var])
-            || array_search($sub, explode(" ", $_SESSION[$var])) === false)
+        if (!($sv = $Conf->session($var))
+            || array_search($sub, explode(" ", $sv)) === false)
             $val .= "1";
         else
             $val .= "0";
@@ -600,25 +601,27 @@ function decorateNumber($n) {
 
 class SessionList {
     static function lookup($idx) {
-        if (!isset($_SESSION["l"]))
-            $_SESSION["l"] = array();
-        $x = @($_SESSION["l"][$idx]);
+        global $Conf;
+        $lists = $Conf->session("l", array());
+        $x = @($lists[$idx]);
         return $x ? (object) $x : null;
     }
     static function change($idx, $delta) {
+        global $Conf;
         $l = self::lookup($idx);
         $l = $l ? $l : (object) array();
         foreach ($delta as $k => $v)
             $l->$k = $v;
-        $_SESSION["l"][$idx] = $l;
+        $Conf->save_session_array("l", $idx, $l);
     }
     static function allocate($listid) {
+        $lists = $Conf->session("l", array());
         $oldest = $empty = 0;
         for ($i = 1; $i <= 8; ++$i)
             if (($l = self::lookup($i))) {
                 if ($listid && @($l->listid == $listid))
                     return $i;
-                else if (!$oldest || @($_SESSION["l"][$oldest]->timestamp < $l->timestamp))
+                else if (!$oldest || @($lists[$oldest]->timestamp < $l->timestamp))
                     $oldest = $i;
             } else if (@$_REQUEST["ls"] == $i)
                 return $i;
@@ -1559,8 +1562,8 @@ function scoreCounts($text, $max = null) {
 
 function displayOptionsSet($sessionvar, $var = null, $val = null) {
     global $Conf;
-    if (isset($_SESSION[$sessionvar]))
-        $x = $_SESSION[$sessionvar];
+    if (($x = $Conf->session($sessionvar)) !== null)
+        /* use session value */;
     else if ($sessionvar == "pldisplay")
         $x = $Conf->setting_data("pldisplay_default", "");
     else if ($sessionvar == "ppldisplay")
@@ -1584,7 +1587,8 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
     }
 
     // store list in $_SESSION
-    return ($_SESSION[$sessionvar] = $x);
+    $Conf->save_session($sessionvar, $x);
+    return $x;
 }
 
 

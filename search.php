@@ -924,19 +924,20 @@ if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
 
 // set fields to view
 if (isset($_REQUEST["redisplay"])) {
-    $_SESSION["pldisplay"] = " ";
+    $pld = " ";
     foreach ($_REQUEST as $k => $v)
         if (substr($k, 0, 4) == "show" && $v)
-            $_SESSION["pldisplay"] .= substr($k, 4) . " ";
+            $pld .= substr($k, 4) . " ";
+    $Conf->save_session("pldisplay", $pld);
 }
 displayOptionsSet("pldisplay");
 if (defval($_REQUEST, "scoresort") == "M")
     $_REQUEST["scoresort"] = "C";
 if (isset($_REQUEST["scoresort"])
     && isset(PaperList::$score_sorts[$_REQUEST["scoresort"]]))
-    $_SESSION["scoresort"] = $_REQUEST["scoresort"];
-if (!isset($_SESSION["scoresort"]))
-    $_SESSION["scoresort"] = PaperList::default_score_sort();
+    $Conf->save_session("scoresort", $_REQUEST["scoresort"]);
+if (!$Conf->session("scoresort"))
+    $Conf->save_session("scoresort", PaperList::default_score_sort());
 if (isset($_REQUEST["redisplay"]))
     redirectSelf(array("tab" => "display"));
 
@@ -944,15 +945,16 @@ if (isset($_REQUEST["redisplay"]))
 // save display options
 if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
     $while = "while saving display options";
-    if ($_SESSION["pldisplay"] != " overAllMerit ") {
-        $pldisplay = explode(" ", trim($_SESSION["pldisplay"]));
+    if ($Conf->session("pldisplay") !== " overAllMerit ") {
+        $pldisplay = explode(" ", trim($Conf->session("pldisplay")));
         sort($pldisplay);
-        $_SESSION["pldisplay"] = " " . simplify_whitespace(join(" ", $pldisplay)) . " ";
-        $Conf->qe("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($_SESSION["pldisplay"]) . "') on duplicate key update data=values(data)", $while);
+        $pldisplay = " " . simplify_whitespace(join(" ", $pldisplay)) . " ";
+        $Conf->save_session("pldisplay", $pldisplay);
+        $Conf->qe("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($pldisplay) . "') on duplicate key update data=values(data)", $while);
     } else
         $Conf->qe("delete from Settings where name='pldisplay_default'", $while);
-    if ($_SESSION["scoresort"] != "C")
-        $Conf->qe("insert into Settings (name, value, data) values ('scoresort_default', 1, '" . sqlq($_SESSION["scoresort"]) . "') on duplicate key update data=values(data)", $while);
+    if ($Conf->session("scoresort") != "C")
+        $Conf->qe("insert into Settings (name, value, data) values ('scoresort_default', 1, '" . sqlq($Conf->session("scoresort")) . "') on duplicate key update data=values(data)", $while);
     else
         $Conf->qe("delete from Settings where name='scoresort_default'", $while);
     if ($OK && defval($_REQUEST, "ajax"))
@@ -1066,7 +1068,7 @@ function savesearch() {
         $arr["owner"] = $Me->contactId;
 
     // clean display settings
-    if (isset($_SESSION["pldisplay"])) {
+    if ($Conf->session("pldisplay")) {
         global $reviewScoreNames, $paperListFormulas;
         $acceptable = array("abstract" => 1, "topics" => 1, "tags" => 1,
                             "rownum" => 1, "reviewers" => 1,
@@ -1080,7 +1082,7 @@ function savesearch() {
         foreach ($paperListFormulas as $x)
             $acceptable["formula" . $x->formulaId] = 1;
         $display = array();
-        foreach (preg_split('/\s+/', $_SESSION["pldisplay"]) as $x)
+        foreach (preg_split('/\s+/', $Conf->session("pldisplay")) as $x)
             if (isset($acceptable[$x]))
                 $display[$x] = true;
         ksort($display);
@@ -1109,7 +1111,7 @@ if (defval($_REQUEST, "ajax"))
 
 
 // set display options, including forceShow if chair
-$pldisplay = $_SESSION["pldisplay"];
+$pldisplay = $Conf->session("pldisplay");
 if ($Me->privChair) {
     if (strpos($pldisplay, " force ") !== false)
         $_REQUEST["forceShow"] = 1;
@@ -1275,7 +1277,7 @@ if ($pl) {
             if ($Me->privChair)
                 $onchange .= ";plinfo.extra()";
             displayOptionText("<div style='padding-top:1ex'>Sort by: &nbsp;"
-                              . Ht::select("scoresort", PaperList::$score_sorts, $_SESSION["scoresort"], array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
+                              . Ht::select("scoresort", PaperList::$score_sorts, $Conf->session("scoresort"), array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
                 . "<a class='help' href='" . hoturl("help", "t=scoresort") . "' target='_blank' title='Learn more'>?</a></div>", 3);
         }
         $anyScores = count($displayOptions) != $n;
@@ -1479,13 +1481,13 @@ if ($pl && $pl->count > 0) {
                            array("id" => "savedisplayoptionsbutton",
                                  "disabled" => true)), "&nbsp; ";
         $Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='" . hoturl_post("search", "savedisplayoptions=1") . "' enctype='multipart/form-data' accept-charset='UTF-8'>"
-                          . "<div>" . Ht::hidden("scoresort", $_SESSION["scoresort"], array("id" => "scoresortsave")) . "</div></form>");
+                          . "<div>" . Ht::hidden("scoresort", $Conf->session("scoresort"), array("id" => "scoresortsave")) . "</div></form>");
         $Conf->footerScript("plinfo.extra=function(){\$\$('savedisplayoptionsbutton').disabled=false};");
         // strings might be in different orders, so sort before comparing
         $pld = explode(" ", trim($Conf->setting_data("pldisplay_default", " overAllMerit ")));
         sort($pld);
-        if ($_SESSION["pldisplay"] != " " . ltrim(join(" ", $pld) . " ")
-            || $_SESSION["scoresort"] != PaperList::default_score_sort(true))
+        if ($Conf->session("pldisplay") != " " . ltrim(join(" ", $pld) . " ")
+            || $Conf->session("scoresort") != PaperList::default_score_sort(true))
             $Conf->footerScript("plinfo.extra()");
     }
 

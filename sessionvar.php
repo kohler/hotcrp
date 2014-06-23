@@ -6,8 +6,8 @@
 require_once("src/initweb.php");
 
 if (isset($_REQUEST["var"])) {
-    $v = $_REQUEST["var"];
-    if (in_array($v, $allowedSessionVars)) {
+    $k = $_REQUEST["var"];
+    if (in_array($k, $allowedSessionVars)) {
         if (isset($_REQUEST["sub"]) && $_REQUEST["sub"] == "")
             /* do nothing */;
         else if (isset($_REQUEST["sub"])) {
@@ -16,11 +16,11 @@ if (isset($_REQUEST["var"])) {
             // "val" is NOT 1.
             $on = !(isset($_REQUEST["val"]) && intval($_REQUEST["val"]) > 0);
             if (preg_match('/\A[a-zA-Z0-9_]+\z/', $_REQUEST["sub"]))
-                displayOptionsSet($v, $_REQUEST["sub"], $on);
+                displayOptionsSet($k, $_REQUEST["sub"], $on);
         } else if (isset($_REQUEST["val"]))
-            $_SESSION[$v] = intval($_REQUEST["val"]);
+            $Conf->save_session($k, intval($_REQUEST["val"]));
         else
-            unset($_SESSION[$v]);
+            $Conf->save_session($k, null);
     }
 }
 

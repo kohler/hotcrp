@@ -11,8 +11,8 @@ if (!isset($_REQUEST["group"])
     && preg_match(',\A/(\w+)\z,i', Navigation::path()))
     $_REQUEST["group"] = substr(Navigation::path(), 1);
 
-$Highlight = defval($_SESSION, "settings_highlight", array());
-unset($_SESSION["settings_highlight"]);
+$Highlight = $Conf->session("settings_highlight", array());
+$Conf->save_session("settings_highlight", null);
 $Error = array();
 $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST” <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
@@ -1034,10 +1034,10 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
     // update the review form in case it's changed
     reviewForm(true);
-    $_SESSION["settings_highlight"] = $Highlight;
-    if (count($Error) == 0)
+    if (count($Error) == 0) {
+        $Conf->save_session("settings_highlight", $Highlight);
         redirectSelf();
-    unset($_SESSION["settings_highlight"]);
+    }
 } else if ($Group == "rfo")
     rf_update();
 if (isset($_REQUEST["cancel"]) && check_post())

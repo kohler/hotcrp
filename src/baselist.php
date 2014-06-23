@@ -100,8 +100,8 @@ class BaseList {
 
     public static function default_score_sort($nosession = false) {
         global $Conf, $Opt;
-        if (isset($_SESSION["scoresort"]) && !$nosession)
-            return $_SESSION["scoresort"];
+        if (!$nosession && $Conf && ($sv = $Conf->session("scoresort")))
+            return $sv;
         else if ($Conf && ($s = $Conf->setting_data("scoresort_default")))
             return $s;
         else

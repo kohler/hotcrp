@@ -108,10 +108,9 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
 
     // chairs get a hint message about multiple checking
     if ($Me->privChair) {
-        if (!isset($_SESSION["info"]))
-            $_SESSION["info"] = array();
-        $_SESSION["info"]["nbanal"] = defval($_SESSION["info"], "nbanal", 0) + 1;
-        if ($_SESSION["info"]["nbanal"] >= 3 && $_SESSION["info"]["nbanal"] <= 6)
+        $nbanal = $Conf->session("nbanal", 0) + 1;
+        $Conf->save_session("nbanal", $nbanal);
+        if ($nbanal >= 3 && $nbanal <= 6)
             $cf->msg("info", "To run the format checker for many papers, use Download &gt; Format check on the <a href='" . hoturl("search", "q=") . "'>search page</a>.");
     }
 
