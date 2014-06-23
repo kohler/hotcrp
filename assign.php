@@ -38,7 +38,7 @@ function loadRows() {
     if (!$Me->canRequestReview($prow, false, $whyNot)) {
         $wnt = whyNotText($whyNot, "request reviews for");
         if (!$Conf->headerPrinted)
-            error_go(hoturl("paper", "p=$prow->paperId"), $wnt);
+            error_go(hoturl("paper", array("p" => $prow->paperId, "ls" => @$_REQUEST["ls"])), $wnt);
         else
             errorMsgExit($wnt);
     }

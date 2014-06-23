@@ -415,7 +415,7 @@ if (!$viewAny && !$editAny) {
 if ($paperTable->mode == "r" || $paperTable->mode == "re")
     $paperTable->fixReviewMode();
 if ($paperTable->mode == "pe")
-    go(hoturl("paper", "p=$prow->paperId"));
+    go(hoturl("paper", array("p" => $prow->paperId, "ls" => @$_REQUEST["ls"])));
 
 
 // page header
