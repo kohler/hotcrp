@@ -1806,7 +1806,8 @@ class Conference {
         if (PHP_SAPI == "cli") {
             if ($type === "xmerror" || $type === "merror")
                 fwrite(STDERR, "$text\n");
-            else
+            else if ($type === "xwarning" || $type === "mxwarning"
+                     || !defined("HOTCRP_TESTHARNESS"))
                 fwrite(STDOUT, "$text\n");
         } else {
             $text = "<div class=\"$type\">$text</div>\n";
