@@ -6,7 +6,7 @@
 class LoginHelper {
 
     static function logout() {
-        global $Me, $Conf, $Opt, $allowedSessionVars;
+        global $Me, $Conf, $Opt;
         if (!$Me->is_empty() && isset($_REQUEST["signout"])
             && !isset($Opt["httpAuthLogin"]))
             $Conf->confirmMsg("You have been signed out. Thanks for using the system.");
@@ -14,13 +14,11 @@ class LoginHelper {
         $Me->fresh = true;
         unset($_SESSION["user"]);
         unset($_SESSION["trueuser"]);
-        if (isset($_REQUEST["signout"]))
-            $Conf->save_session("capabilities", null);
-        foreach (array("l", "comment_msgs", "nbanal", "pplscores", "scoresort",
-                       "pplscoresort", "rev_tokens", "rev_token_fail") as $k)
-            $Conf->save_session($k, null);
-        foreach ($allowedSessionVars as $k)
-            $Conf->save_session($k, null);
+        // clear all conference session info, except maybe capabilities
+        $capabilities = $Conf->session("capabilities");
+        unset($_SESSION[$Opt["dsn"]]);
+        if (!isset($_REQUEST["signout"]) && $capabilities)
+            $Conf->save_session("capabilities", $capabilities);
         if (isset($_REQUEST["signout"])) {
             unset($_SESSION["afterLogin"]);
             if (isset($Opt["httpAuthLogin"])) {

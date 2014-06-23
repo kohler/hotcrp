@@ -21,6 +21,7 @@ class Conference {
     private $rounds = null;
     private $tracks = null;
     private $_track_tags = null;
+    private $_session = null;
 
     const BLIND_NEVER = 0;
     const BLIND_OPTIONAL = 1;
@@ -464,23 +465,32 @@ class Conference {
     }
 
     function session($name, $defval = null) {
-        if (isset($_SESSION[$name]))
-            return $_SESSION[$name];
+        global $Opt;
+        if ($this->_session === null)
+            $this->_session = &$_SESSION[$Opt["dsn"]];
+        if (isset($this->_session[$name]))
+            return $this->_session[$name];
         else
             return $defval;
     }
 
     function &session_array($name) {
-        if (!is_array(@$_SESSION[$name]))
-            $_SESSION[$name] = array();
-        return $_SESSION[$name];
+        global $Opt;
+        if ($this->_session === null)
+            $this->_session = &$_SESSION[$Opt["dsn"]];
+        if (!is_array(@$this->_session[$name]))
+            $this->_session[$name] = array();
+        return $this->_session[$name];
     }
 
     function save_session($name, $value) {
+        global $Opt;
+        if ($this->_session === null)
+            $this->_session = &$_SESSION[$Opt["dsn"]];
         if ($value !== null)
-            $_SESSION[$name] = $value;
+            $this->_session[$name] = $value;
         else
-            unset($_SESSION[$name]);
+            unset($this->_session[$name]);
     }
 
     function save_session_array($name, $index, $value) {
