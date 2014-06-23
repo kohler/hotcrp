@@ -241,7 +241,7 @@ function parseValue($name, $type) {
         $v = trim($v);
         if ($v === "" && $type === "optemailstring")
             return 0;
-        else if (validateEmail($v))
+        else if (validate_email($v))
             return ($v == "" ? 0 : array(0, $v));
         else
             $err = $SettingText[$name] . ": invalid email.";

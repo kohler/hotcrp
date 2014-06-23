@@ -235,7 +235,7 @@ function requestReview($email) {
 
     $Them = Contact::find_by_email($email, array("name" => @$_REQUEST["name"]), false);
     if (!$Them) {
-        if (trim($email) === "" || !validateEmail($email)) {
+        if (trim($email) === "" || !validate_email($email)) {
             $Conf->errorMsg("“" . htmlspecialchars(trim($email)) . "” is not a valid email address.");
             $Error["email"] = true;
         } else

@@ -166,7 +166,7 @@ class UserStatus {
         if (!@$cj->email)
             $this->set_error("email", "Email is required.");
         else if (!@$this->errf["email"]
-                 && !validateEmail($cj->email)
+                 && !validate_email($cj->email)
                  && (!$old_user || $old_user->email !== $cj->email))
             $this->set_error("email", "Invalid email address “" . htmlspecialchars($cj->email) . "”.");
 
@@ -190,7 +190,7 @@ class UserStatus {
         // Preferred email
         if (@$cj->preferred_email
             && !@$this->errf["preferred_email"]
-            && !validateEmail($cj->preferred_email)
+            && !validate_email($cj->preferred_email)
             && (!$old_user || $old_user->preferredEmail !== $cj->preferred_email))
             $this->set_error("preferred_email", "Invalid email address “" . htmlspecialchars($cj->preferred_email) . "”");
 

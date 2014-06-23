@@ -173,7 +173,7 @@ function save_user($cj, $user_status) {
                 return $user_status->set_error("email", "Not a valid username.");
         } else if ($cj->email === "")
             return $user_status->set_error("email", "You must supply an email address.");
-        else if (!validateEmail($cj->email))
+        else if (!validate_email($cj->email))
             return $user_status->set_error("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
         if (!$newProfile && !$Me->privChair) {
             $rest = array("emailTo" => $cj->email,

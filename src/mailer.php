@@ -890,7 +890,7 @@ class Mailer {
                 break;
 
             list($name, $email, $str) = array($m[1], $m[2], $m[3]);
-            if (strpos($email, "@") !== false && !validateEmail($email))
+            if (strpos($email, "@") !== false && !validate_email($email))
                 return false;
             if ($str != "" && $str[0] != ",")
                 return false;

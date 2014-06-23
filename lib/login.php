@@ -55,10 +55,10 @@ class LoginHelper {
             exit;
         }
         $_REQUEST["email"] = $_SERVER["REMOTE_USER"];
-        if (validateEmail($_REQUEST["email"]))
+        if (validate_email($_REQUEST["email"]))
             $_REQUEST["preferredEmail"] = $_REQUEST["email"];
         else if (isset($Opt["defaultEmailDomain"])
-                 && validateEmail($_REQUEST["email"] . "@" . $Opt["defaultEmailDomain"]))
+                 && validate_email($_REQUEST["email"] . "@" . $Opt["defaultEmailDomain"]))
             $_REQUEST["preferredEmail"] = $_REQUEST["email"] . "@" . $Opt["defaultEmailDomain"];
         $_REQUEST["action"] = "login";
         if (!self::check_login()) {
@@ -208,7 +208,7 @@ class LoginHelper {
         if ($user && $user->is_known_user() && $user->activity_at > 0) {
             $email_class = " error";
             return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
-        } else if (!validateEmail($_REQUEST["email"])) {
+        } else if (!validate_email($_REQUEST["email"])) {
             $email_class = " error";
             return $Conf->errorMsg("&ldquo;" . htmlspecialchars($_REQUEST["email"]) . "&rdquo; is not a valid email address.");
         } else if (!$user || !$user->is_known_user()) {

@@ -608,7 +608,7 @@ class AssignmentSet {
                 }
                 $contact = $this->cmap->get_email($email);
                 if ($contact->contactId < 0) {
-                    if (!validateEmail($email)) {
+                    if (!validate_email($email)) {
                         $this->error($csv->lineno(), "email address “" . htmlspecialchars($email) . "” is invalid");
                         continue;
                     }

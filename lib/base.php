@@ -30,7 +30,17 @@ function simplify_whitespace($x) {
 }
 
 
-// MIME helpers
+// email and MIME helpers
+
+function validate_email($email) {
+    // Allow @_.com email addresses.  Simpler than RFC822 validation.
+    if (!preg_match(':\A[-!#$%&\'*+./0-9=?A-Z^_`a-z{|}~]+@(.+)\z:', $email, $m))
+        return false;
+    if ($m[1][0] == "_")
+        return preg_match(':\A_\.[0-9A-Za-z]+\z:', $m[1]);
+    else
+        return preg_match(':\A([-0-9A-Za-z]+\.)+[0-9A-Za-z]+\z:', $m[1]);
+}
 
 function mime_quote_string($word) {
     return '"' . preg_replace('_([\x00-\x1F\\"])_', '\$1', $word) . '"';

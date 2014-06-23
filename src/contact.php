@@ -742,7 +742,7 @@ class Contact {
             return $acct;
 
         // Not found: register
-        if (!$reg || !validateEmail($email))
+        if (!$reg || !validate_email($email))
             return null;
         $ok = $acct->register_by_email($email, $reg);
 

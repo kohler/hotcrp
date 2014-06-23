@@ -374,7 +374,7 @@ function check_contacts($prow) {
                 $email = html_id_decode(substr($k, 8));
                 if (@$cau[$email])
                     $ncau[$email] = $cau[$email];
-                else if (validateEmail($email)) {
+                else if (validate_email($email)) {
                     if (($c = Contact::find_by_email($email, array("name" => $v), true)))
                         $ncau[$email] = $c->contactId;
                     else
@@ -393,7 +393,7 @@ function check_contacts($prow) {
         $new_email = "";
     if ($new_email == "" && $new_name == "")
         /* no new contact */;
-    else if (!validateEmail($new_email))
+    else if (!validate_email($new_email))
         $errs[] = "Enter a valid email address for the new contact.";
     else {
         if (($new_contact = Contact::find_by_email($new_email, array("name" => $new_name), true)))

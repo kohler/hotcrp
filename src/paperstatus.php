@@ -425,7 +425,7 @@ class PaperStatus {
         // 1. authors who are contacts
         foreach ($pj->authors as $au)
             if (@$au->contact) {
-                if (@$au->email && validateEmail($au->email))
+                if (@$au->email && validate_email($au->email))
                     $pj->contacts[strtolower($au->email)] = $au;
                 else
                     $pj->bad_contacts[] = $au;
@@ -439,7 +439,7 @@ class PaperStatus {
                     $v = (object) array();
                 else if (is_string($v) && is_int($k)) {
                     $v = trim($v);
-                    if (validateEmail($v))
+                    if (validate_email($v))
                         $v = (object) array("email" => $v);
                     else
                         $v = Text::analyze_name($v);
@@ -448,7 +448,7 @@ class PaperStatus {
                     if (!@$v->email && is_string($k))
                         $v->email = $k;
                     $email = strtolower($v->email);
-                    if (!validateEmail($email))
+                    if (!validate_email($email))
                         $pj->bad_contacts[] = $v;
                     else if (!@$pj->contacts[$email])
                         $pj->contacts[$email] = $v;

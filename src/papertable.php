@@ -886,7 +886,7 @@ class PaperTable {
         echo '<table>';
         $title = "Authors";
         foreach ($autable as $au) {
-            if (!@$au[4] && (!$au[2] || !validateEmail($au[2])))
+            if (!@$au[4] && (!$au[2] || !validate_email($au[2])))
                 continue;
             $control = "contact_" . html_id_encode($au[2]);
             $checked = $this->useRequest ? !!@$_REQUEST[$control] : @$au[4];

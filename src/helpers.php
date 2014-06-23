@@ -348,17 +348,6 @@ function redirectSelf($extra = array()) {
     go(selfHref($extra, array("raw" => true)));
 }
 
-function validateEmail($email) {
-    // validate email address
-    // Allow @_.com email addresses.  Simpler than RFC822 validation.
-    if (!preg_match(':\A[-!#$%&\'*+./0-9=?A-Z^_`a-z{|}~]+@(.+)\z:', $email, $m))
-        return false;
-    if ($m[1][0] == "_")
-        return preg_match(':\A_\.[0-9A-Za-z]+\z:', $m[1]);
-    else
-        return preg_match(':\A([-0-9A-Za-z]+\.)+[0-9A-Za-z]+\z:', $m[1]);
-}
-
 function foldsessionpixel($name, $var, $sub = false) {
     global $Conf;
     $val = "&amp;val=";
