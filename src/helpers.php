@@ -615,6 +615,7 @@ class SessionList {
         $Conf->save_session_array("l", $idx, $l);
     }
     static function allocate($listid) {
+        global $Conf;
         $lists = $Conf->session("l", array());
         $oldest = $empty = 0;
         for ($i = 1; $i <= 8; ++$i)
