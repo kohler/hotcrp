@@ -530,7 +530,8 @@ function hiliter(elt, off) {
 }
 
 function hiliter_children(form) {
-    jQuery(form).find("input, select, textarea").on("change", hiliter);
+    jQuery(form).find("input, select, textarea").on("change", hiliter)
+        .on("keyup", hiliter);
 }
 
 var foldmap = {}, foldsession_unique = 1;
