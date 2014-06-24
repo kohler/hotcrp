@@ -196,7 +196,7 @@ class PaperTable {
                 $c .= $n;
         } else {
             $c .= '<a class="q" href="#" onclick="return foldup(this,event'
-                . $foldnumarg . '"';
+                . $foldnumarg . ')"';
             if (($title = defval($extra, "foldtitle")))
                 $c .= ' title="' . $title . '"';
             $c .= '>' . expander(null, $foldnum);
