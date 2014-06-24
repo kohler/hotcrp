@@ -571,17 +571,16 @@ class ReviewForm {
                     $fval = rtrim($fval);
                     if ($fval != "")
                         $fval .= "\n";
-                    $req[$field] = $fval;
-                }
-                if ($rrow && strcmp($rrow->$field, $fval) != 0
-                    && strcmp(cleannl($rrow->$field), cleannl($fval)) != 0) {
-                    $diff_view_score = max($diff_view_score, $f->view_score);
                     // Check for valid UTF-8.  Re-encode invalid UTF-8 as if
                     // it were Windows-1252, which is a superset of
                     // ISO-8859-1.
                     if (!is_valid_utf8($fval))
-                        $req[$field] = $fval = windows_1252_to_utf8($fval);
+                        $fval = windows_1252_to_utf8($fval);
+                    $req[$field] = $fval;
                 }
+                if ($rrow && strcmp($rrow->$field, $fval) != 0
+                    && strcmp(cleannl($rrow->$field), cleannl($fval)) != 0)
+                    $diff_view_score = max($diff_view_score, $f->view_score);
                 $q[] = "$field='" . sqlq($fval) . "'";
             }
 
