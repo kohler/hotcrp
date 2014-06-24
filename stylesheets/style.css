@@ -2158,9 +2158,17 @@ div.paple {
 div.papre {
 	padding-left: 0.75em;
 }
-div.papt, div.pavt {
+div.papt {
 	padding: 0.25em 1em 0.25em 8px;
 	background: #eaeaff; /*#ffeaee;*/
+}
+div.pavt {
+	margin: 0 -5px;
+	padding: 0.25em 5px;
+	background: #eaeaff; /*#ffeaee;*/
+}
+div.pavb {
+	padding: 2px 0 0 0;
 }
 span.papfn, span.pavfn, span.psfn, span.revfn {
 	font-variant: small-caps;
@@ -2199,9 +2207,6 @@ div.pg.pgtop {
 }
 div.pgsm {
 	margin-top: 0.5em;
-}
-div.pavb {
-	padding: 2px 0 0 7px;
 }
 
 
