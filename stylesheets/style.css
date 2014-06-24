@@ -2289,7 +2289,7 @@ div.rvr div.rv {
 	padding-left: 10px;
 }
 div.rv div.revt {
-	padding: 0.25em 1em 0.25em 0;
+	padding: 0.25em 1em 0.25em 5px;
 	background: none; /* #ffe6f8; */
 	border-top-left-radius: 0;
 	border-top-right-radius: 0;
