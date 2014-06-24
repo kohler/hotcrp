@@ -38,7 +38,8 @@ function set_multiconference() {
 
     foreach (array("dbName", "dbUser", "dbPassword", "dsn",
                    "sessionName", "downloadPrefix", "conferenceSite",
-                   "paperSite", "contactName", "contactEmail",
+                   "paperSite", "defaultPaperSite",
+                   "contactName", "contactEmail",
                    "emailFrom", "emailSender", "emailCc", "emailReplyTo") as $k)
         if (isset($Opt[$k]) && is_string($Opt[$k]))
             $Opt[$k] = preg_replace(',\*|\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $ConfMulticonf, $Opt[$k]);
