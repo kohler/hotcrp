@@ -1425,7 +1425,7 @@ class PaperTable {
         $row = edb_row($result);
 
         echo $this->_papstripBegin(),
-            "<form id='watchform' class='fold7o' action=\"", hoturl_post("comment", "p=$prow->paperId"), "\" method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"watchform\")'>",
+            "<form id='watchform' class='fold7c' action=\"", hoturl_post("comment", "p=$prow->paperId"), "\" method='post' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"watchform\")'>",
             "<div class='inform'>", Ht::hidden("setwatch", 1);
 
         if ($row[4] && ($row[4] & ($this->watchCheckbox >> 1)))
