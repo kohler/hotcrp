@@ -2218,7 +2218,7 @@ div.revcard {
 	-moz-border-radius: 2px;
 }
 div.revcard_head {
-	padding: 3px 0 4px 0;
+	padding: 3px 12px 4px 12px;
 }
 div.revcard_body {
 	background: #ffffff;
@@ -2234,7 +2234,8 @@ span.revinfo {
 }
 div.revt {
 	font-size: smaller;
-	padding: 0.25em 1em 0.25em 8px;
+	margin: 0 -5px;
+	padding: 0.25em 1em 0.25em 5px;
 	background: #ffecef; /* #ffe6f8; */
 	border-top-left-radius: 2px;
 	border-top-right-radius: 2px;
@@ -2263,13 +2264,14 @@ table.revoff span.revfn {
 	padding: 0 1em 5px 0;
 }
 div.revev {
-	padding: 5px 0 1em 2px;
+	padding: 5px 0 1em 0;
 }
 div.revhint {
 	font-size: smaller;
 	color: #555555;
 	background: #fff9fb;
-	padding: 0.2em 1em 0.3em 8px;
+	padding: 0.2em 1em 0.3em 5px;
+	margin: 0 -5px;
 }
 div.rvl, div.rvr {
 	width: 50%;
@@ -2332,7 +2334,7 @@ div.cmtcard.response {
 	background: #ffddc1;
 }
 div.cmtcard_head {
-	padding: 3px 0 4px 0;
+	padding: 3px 12px 4px 12px;
 }
 div.cmtcard_body {
 	background: #ffffff;
