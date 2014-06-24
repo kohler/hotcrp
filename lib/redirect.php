@@ -18,6 +18,18 @@ function ensure_session() {
     if (session_id())
         return true;
     else if (@$Opt["sessionName"]) {
+        if (isset($Opt["sessionLifetime"]) || isset($Opt["sessionSecure"])
+            || isset($Opt["sessionDomain"])) {
+            $params = session_get_cookie_params();
+            if (isset($Opt["sessionLifetime"]))
+                $params["lifetime"] = $Opt["sessionLifetime"];
+            if (isset($Opt["sessionSecure"]))
+                $params["secure"] = !!$Opt["sessionSecure"];
+            if (isset($Opt["sessionDomain"]))
+                $params["domain"] = $Opt["sessionDomain"];
+            session_set_cookie_params($params["lifetime"], $params["path"],
+                                      $params["domain"], $params["secure"]);
+        }
         session_name($Opt["sessionName"]);
         session_cache_limiter("");
         session_start();
