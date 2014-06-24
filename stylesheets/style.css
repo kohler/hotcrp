@@ -2206,9 +2206,10 @@ div.pavb {
 
 
 /* reviews */
-table.revc {
+div.revcard {
+	margin: 16px 0 0 14em;
+	padding: 0 5px 8px 5px;
 	background: #fad5d5;
-	width: 100%;
 	position: relative;
 	box-shadow: 0 1px 5px #46678c;
 	-moz-box-shadow: 0 1px 5px #46678c;
@@ -2216,31 +2217,15 @@ table.revc {
 	border-radius: 2px;
 	-moz-border-radius: 2px;
 }
-td.revcul, td.revcur, td.revcll, td.revclr {
-	width: 5px;
-	height: 8px;
+div.revcard_head {
+	padding: 3px 0 4px 0;
 }
-td.revcc {
+div.revcard_body {
 	background: #ffffff;
 	padding: 8px 12px;
 	border-radius: 2px;
-	-moz-border-radius: 2px;
 }
-td.revct {
-	background: #ffffff;
-	border-radius: 2px;
-	-moz-border-radius: 2px;
-}
-div.inrevct {
-	margin: 7px 12px;
-}
-td.revcc div.aa, td.revct div.aa {
-	margin: 0.2em 0 0.3em;
-}
-td.revhead {
-	padding: 3px 0 4px 0;
-}
-td.revhead h3 {
+div.revcard_head h3 {
 	display: inline;
 	padding: 0 0.5em 0 0;
 }
@@ -2332,42 +2317,33 @@ span.rev_rating_summary {
 
 
 /* comments */
-table.cmtc {
-	width: 100%;
-	position: relative;
+div.cmtcard {
+	margin: 16px 0 0 14em;
+	padding: 0 5px 8px 5px;
 	background: #e6e1cf;
+	position: relative;
 	box-shadow: 0 1px 5px #46678c;
 	-moz-box-shadow: 0 1px 5px #46678c;
 	-webkit-box-shadow: 0 1px 5px #46678c;
 	border-radius: 2px;
 	-moz-border-radius: 2px;
 }
-table.cmtc.response {
+div.cmtcard.response {
 	background: #ffddc1;
 }
-td.cmtcul, td.cmtcur, td.cmtcll, td.cmtclr {
-	width: 5px;
+div.cmtcard_head {
+	padding: 3px 0 4px 0;
 }
-td.cmtcll, td.cmtclr {
-	height: 8px;
-}
-td.cmtcc {
+div.cmtcard_body {
 	background: #ffffff;
 	padding: 6px 12px;
 	border-radius: 2px;
-	-moz-border-radius: 2px;
 }
-td.cmtcc div.aa {
-	margin: 0.2em 0 0.3em;
-}
-td.cmthead {
-	padding: 3px 0 4px 0;
-}
-td.cmthead h3 {
+div.cmtcard h3 {
 	display: inline;
 	padding: 0 0.5em 0 0;
 }
-td.cmthead span.cmtfn {
+div.cmtcard_head span.cmtfn {
 	font-size: smaller;
 }
 div.cmtg {
@@ -2383,8 +2359,8 @@ div.cmtg.cmtg1 {
 }
 div.cmtadminvis {
 	background: #f3f3f3;
-	margin: 0 -4px;
-	padding: 2px 4px;
+	margin: 0 -5px;
+	padding: 2px 5px;
 }
 div.cmtt {
 	font-size: smaller;

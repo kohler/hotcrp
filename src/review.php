@@ -1388,12 +1388,9 @@ $blind\n";
         if (defval($options, "editmessage"))
             echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
 
-        echo "<div class='clear'></div></td><td></td></tr>
-  <tr><td></td><td class='revct'><div class='inrevct'>",
+        echo "<div class='clear'></div></div><div class=\"revcard_body\">",
             $this->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow)),
-            "</div></td>",
-            "<td></td></tr>\n", Ht::cbox("rev", true),
-            "</td></tr>\n</table></div>\n\n";
+            "</div></div>\n\n";
     }
 
     private function _review_buttons($prow, $rrow, $type, $reviewPostLink) {
@@ -1461,19 +1458,12 @@ $blind\n";
         $admin = $Me->allowAdminister($prow);
 
         if ($editmode) {
-            echo "<form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'>",
-                "<div class='aahc pboxc'>",
+            echo Ht::form($reviewPostLink), '<div class="aahc">',
                 Ht::hidden_default_submit("default", "");
             if ($rrow)
                 echo Ht::hidden("version", defval($rrow, "reviewEditVersion", 0) + 1);
-        } else
-            echo "<div class='pboxc'>";
-
-        echo "<table class='pbox'><tr>
-  <td class='pboxl'></td>
-  <td class='pboxr'>";
-
-        echo Ht::cbox("rev", false), "\t<tr><td></td><td class='revhead'>";
+        }
+        echo '<div class="revcard"><div class="revcard_head">';
 
         // Links
         if ($rrow) {
@@ -1553,8 +1543,8 @@ $blind\n";
             echo "<div class='hint'>You didn’t write this review, but as an administrator you can still make changes.</div>\n";
 
         // download?
-        echo "<div class='clear'></div></td><td></td></tr>
-  <tr><td></td><td><table class='revoff'><tr>
+        echo '<div class="clear"></div>';
+        echo "<table class='revoff'><tr>
       <td><span class='revfn'>Offline reviewing</span></td>
       <td>Upload form: &nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />
       &nbsp; ", Ht::submit("uploadForm", "Go"), "</td>
@@ -1563,13 +1553,13 @@ $blind\n";
       <td><a href='$reviewDownloadLink'>Download form</a>
       &nbsp;<span class='barsep'>|</span>&nbsp;
       <span class='hint'><strong>Tip:</strong> Use <a href='", hoturl("search"), "'>Search</a> or <a href='", hoturl("offline"), "'>Offline reviewing</a> to download or upload many forms at once.</span></td>
-    </tr></table></td><td></td></tr>\n";
+    </tr></table></div>\n";
 
         // ready?
         $ready = ($useRequest ? defval($_REQUEST, "ready") : !($rrow && $rrow->reviewModified && !$rrow->reviewSubmitted));
 
         // top save changes button
-        echo "  <tr><td></td><td class='revcc'>";
+        echo '<div class="revcard_body">';
         if ($Me->timeReview($prow, $rrow) || $admin) {
             $buttons = $this->_review_buttons($prow, $rrow, "top", $reviewPostLink);
             echo Ht::actions($buttons, array("style" => "margin-top:0"));
@@ -1599,8 +1589,7 @@ $blind\n";
                 echo "<div class='hint'>Only administrators can remove or unsubmit the review at this point.</div>";
         }
 
-        echo "</td><td></td></tr>\n", Ht::cbox("rev", true),
-            "</td></tr>\n</table></div></form>\n\n";
+        echo "</div></div></div></form>\n\n";
     }
 
     function numNumericScores($prow, $contact) {

@@ -17,23 +17,20 @@ class CommentView {
 
     function table_begin($classextra) {
         // div.pbox > table.pbox > tr > td.pboxr > table.cmtc > tr > td.cmtcc
-        echo "<div class='pboxc'><table class='pbox'><tr>
-  <td class='pboxl'></td>
-  <td class='pboxr'>", Ht::cbox("cmt", false, $classextra),
-            "\t<tr><td></td><td class='cmthead'>";
+        echo '<div class="cmtcard', ($classextra ? " $classextra" : ""),
+            '"><div class="cmtcard_head">';
         $this->mode = 1;
         $this->ncomment_in_table = 0;
         $this->numbers = array();
     }
 
     function table_tobody() {
-        echo "</td><td></td></tr>\n  <tr><td></td><td class='cmtcc'>";
+        echo '</div><div class="cmtcard_body">';
     }
 
     function table_end() {
         if ($this->mode) {
-            echo "</td><td></td></tr>\n", Ht::cbox("cmt", true),
-                "</td></tr>\n</table></div>\n\n";
+            echo "</div></div>\n\n";
             $this->mode = 0;
         }
     }
@@ -246,6 +243,7 @@ class CommentView {
             && ($crow || !$Me->allowAdminister($prow)))
             $editMode = false;
         $this->nresponse++;
+        $this->table_end();
 
         if ($editMode) {
             echo "<form action='", hoturl_post("comment", "p=$prow->paperId" . ($crow ? "&amp;c=$crow->commentId" : "") . "&amp;response=1");
@@ -254,7 +252,6 @@ class CommentView {
             echo "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
         }
 
-        $this->table_end();
         $this->table_begin("response");
 
         // Links
@@ -337,7 +334,7 @@ class CommentView {
         echo Ht::actions($buttons, null, $post);
 
         $this->table_end();
-        echo "</form>\n\n";
+        echo "</div></form>\n\n";
     }
 
 

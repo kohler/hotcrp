@@ -626,12 +626,7 @@ if ($Me->canAdminister($prow)) {
 echo Ht::cbox("pap", true), "</td></tr></table>\n";
 
 // add external reviewers
-echo "<div class='pboxc'>", Ht::form($loginUrl), '<div class="aahc">',
-    "<table class='pbox'><tr>
-  <td class='pboxl'></td>
-  <td class='pboxr'>";
-
-echo Ht::cbox("rev", false), "\t<tr><td></td><td class='revhead'>",
+echo Ht::form($loginUrl), '<div class="revcard aahc"><div class="revcard_head">',
     "<h3>Request an external review</h3>\n",
     "<div class='hint'>External reviewers get access to their assigned papers, including ";
 if ($Conf->setting("extrev_view") >= 2)
@@ -640,8 +635,7 @@ echo "any eventual decision.  Before requesting an external review,
  you should generally check personally whether they are interested.";
 if ($Me->allowAdminister($prow))
     echo "\nTo create a review with no associated reviewer, leave Name and Email blank.";
-echo "</div></td><td></td></tr>
-        <tr><td></td><td class='revcc'>";
+echo '</div><div class="revcard_body">';
 echo "<div class='f-i'><div class='f-ix'>
   <div class='f-c'>Name</div>
   <div class='f-e'><input class='textlite' type='text' name='name' value=\"", htmlspecialchars(defval($_REQUEST, "name", "")), "\" size='32' tabindex='1' /></div>
@@ -668,7 +662,6 @@ echo "<div class='f-i'>\n",
 if ($Me->canAdminister($prow))
     echo "<div class='f-i'>\n  ", Ht::checkbox("override"), "&nbsp;", Ht::label("Override deadlines and any previous refusal"), "\n</div>\n";
 
-echo "</td><td></td></tr>\n", Ht::cbox("rev", true),
-    "</td></tr></table>\n</div></form></div>\n";
+echo "</div></div></form>\n";
 
 $Conf->footer();
