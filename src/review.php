@@ -675,48 +675,37 @@ class ReviewForm {
         }
 
         // potentially email chair, reviewers, and authors
+        $notify_rrow = null;
         if ($submit && ($notify || $notify_author)) {
-            // fetch review ordinal
-            if (!$rrow || !$rrow->reviewSubmitted) {
-                $result = $Conf->q("select reviewOrdinal from PaperReview where reviewId=$reviewId");
-                if (edb_nrows($result) == 1) {
-                    $crow = edb_row($result);
-                    $req['reviewOrdinal'] = $crow[0];
-                }
-            }
-
-            // construct mail
-            if (isset($req['reviewOrdinal']))
-                $reviewnum = unparseReviewOrdinal($req['reviewOrdinal']);
-            else if ($rrow && $rrow->reviewSubmitted)
-                $reviewnum = unparseReviewOrdinal($rrow->reviewOrdinal);
+            if ($rrow && $rrow->reviewSubmitted)
+                $notify_rrow = $rrow;
             else
-                $reviewnum = "x";
-
+                $notify_rrow = $Conf->reviewRow(array("reviewId" => $reviewId));
+        }
+        if ($notify_rrow) {
             // need an up-to-date review row to send email successfully
             $fake_rrow = (object) array("paperId" => $prow->paperId,
                  "reviewId" => $reviewId, "contactId" => $contactId,
-                 "reviewType" => $rrow->reviewType,
-                 "requestedBy" => $rrow->requestedBy,
+                 "reviewType" => $notify_rrow->reviewType,
+                 "requestedBy" => $notify_rrow->requestedBy,
                  "reviewBlind" => $reviewBlind,
-                 "reviewSubmitted" => $rrow->reviewSubmitted ? $rrow->reviewSubmitted : $now);
+                 "reviewSubmitted" => $notify_rrow->reviewSubmitted);
 
             $tmpl = ($rrow && $rrow->reviewSubmitted ? "@reviewupdate" : "@reviewsubmit");
             $submitter = $contact;
             if ($contactId != $submitter->contactId)
                 $submitter = Contact::find_by_id($contactId);
-            $rest = array("template" => $tmpl, "rrow" => $fake_rrow,
-                          "reviewNumber" => $prow->paperId . $reviewnum);
 
+            // construct mail
+            $rest = array("template" => $tmpl, "rrow" => $fake_rrow,
+                          "reviewNumber" => $prow->paperId . unparseReviewOrdinal($notify_rrow->reviewOrdinal));
             if ($Conf->timeEmailChairAboutReview())
                 Mailer::sendAdmin($tmpl, $prow, $submitter, $rest);
-
             if ($diff_view_score >= VIEWSCORE_PC) {
                 $this->mailer_info = $rest;
                 genericWatch($prow, WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
                 unset($this->mailer_info);
             }
-
             if ($Conf->timeEmailAuthorsAboutReview() && $notify_author) {
                 $rest["infoMsg"] = "since a review was updated during the response period.";
                 if ($Conf->is_review_blind($fake_rrow))
