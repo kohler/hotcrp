@@ -1207,10 +1207,16 @@ table.topicinterest tr td.ti_topic {
 table.reviewers, div.revnotes {
 	margin-bottom: 0.5em;
 }
+table.reviewers {
+	margin-left: -6px;
+}
+table.reviewers > tbody > tr > td:first-child {
+	padding-left: 6px;
+}
 table.reviewers td {
 	padding-right: 1em;
 }
-table.reviewers tr.hilite {
+table.reviewers > tbody > tr.hilite {
 	background: #f0f0ff;
 }
 table.reviewers th {

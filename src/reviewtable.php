@@ -25,7 +25,6 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $hideUnviewable = ($conflictType > 0 && !$admin)
         || (!$Me->actPC($prow) && !$Conf->setting("extrev_view"));
     $anyScores = false;
-    $anyColors = false;
     $colorizer = ($Me->actPC($prow) ? new Tagger : null);
     $rf = reviewForm();
     $nNumeric = $rf->numNumericScores($prow, $Me);
@@ -144,7 +143,6 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             if ($reqt)
                 $subrev[] = array($tclass, $reqt);
         }
-        $anyColors = $anyColors || ($tclass != "");
     }
 
     // proposed review rows
@@ -212,13 +210,12 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     // completion
     if (count($nonsubrev) + count($subrev)) {
         $t = "<table class='reviewers'>\n";
-        $trstart = ($anyColors ? "<td class='empty' style='padding-right:7px'></td>" : "");
         if ($numericHeaders)
-            $t .= "<tr>" . $trstart . $numericHeaders . "</tr>\n";
+            $t .= "<tr>" . $numericHeaders . "</tr>\n";
         foreach ($subrev as $r)
-            $t .= "<tr" . ($r[0] ? " class='$r[0]'>" : ">") . $trstart . $r[1] . "</tr>\n";
+            $t .= "<tr" . ($r[0] ? " class='$r[0]'>" : ">") . $r[1] . "</tr>\n";
         foreach ($nonsubrev as $r)
-            $t .= "<tr" . ($r[0] ? " class='$r[0]'>" : ">") . $trstart . $r[1] . "</tr>\n";
+            $t .= "<tr" . ($r[0] ? " class='$r[0]'>" : ">") . $r[1] . "</tr>\n";
         return $t . "</table>\n" . $notetxt;
     } else
         return $notetxt;
