@@ -234,6 +234,8 @@ class Ht {
     }
 
     static function actions($actions, $js = null, $extra = "") {
+        if (!count($actions))
+            return "";
         $t = "<div class=\"aa\"" . self::extra($js) . ">";
         if (count($actions) > 1 || is_array($actions[0])) {
             $t .= "<table class=\"pt_buttons\"><tr>";
