@@ -233,7 +233,7 @@ class CommentView {
             $post = Ht::checkbox("override") . "&nbsp;" . Ht::label("Override&nbsp;deadlines");
         echo Ht::actions($buttons, null, $post);
 
-        echo "</div></div></form>\n\n";
+        echo "</div></div></div></form>\n\n";
     }
 
     function showResponse($prow, $crow, $useRequest, $editMode) {
