@@ -240,7 +240,7 @@ function hoturl_site_relative($page, $options = null) {
             if (preg_match($are . 'p=\d+' . $zre, $options, $m))
                 $options = $m[1] . $m[2];
         } else if (($is_paper_page
-                    && preg_match($are . 'p=(\d+|%\w+%)' . $zre, $options, $m))
+                    && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $options, $m))
                    || ($page == "profile"
                        && preg_match($are . 'u=([^&]+)' . $zre, $options, $m))
                    || ($page == "help"
