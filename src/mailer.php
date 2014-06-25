@@ -120,6 +120,24 @@ class Mailer {
         if (is_object($contact) && defval($contact, "preferredEmail", "") != "")
             $r->email = $contact->preferredEmail;
 
+        // If user hasn't entered a name, try to infer it from author records
+        if ($r->firstName == "" && $r->lastName == "" && $this->row
+            && is_object($contact)
+            && (defval($contact, "email", "") !== ""
+                || defval($contact, "preferredEmail", "") !== "")) {
+            $e1 = defval($contact, "email", "");
+            $e2 = defval($contact, "preferredEmail", "");
+            cleanAuthor($this->row);
+            foreach ($this->row->authorTable as $au)
+                if (($au[0] || $au[1]) && $au[2]
+                    && (strcasecmp($au[2], $e1) == 0 || strcasecmp($au[2], $e2) == 0)) {
+                    $r->firstName = $au[0];
+                    $r->lastName = $au[1];
+                    $r->name = trim("$au[0] $au[1]");
+                    break;
+                }
+        }
+
         if ($out == "NAME" || $out == "CONTACT")
             $t = $r->name;
         else if ($out == "FIRST")
