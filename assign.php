@@ -490,10 +490,8 @@ if ($Conf->setting("extrev_chairreq")) {
 }
 $t = reviewTable($prow, $rrows, null, null, "assign", $proposals);
 $t .= reviewLinks($prow, $rrows, null, null, "assign", $allreviewslink);
-
 if ($t != "")
-    echo "      <tr><td colspan='3' class='papsep'></td></tr>
-        <tr><td></td><td class='papcc'>", $t, "</td><td></td></tr>\n";
+    echo '<div class="papcard_sep"></div>', $t;
 
 
 // PC assignments
@@ -520,8 +518,7 @@ if ($Me->canAdminister($prow)) {
         $pcx[$row->contactId] = $row;
 
     // PC conflicts row
-    echo "      <tr><td colspan='3' class='papsep'></td></tr>
-        <tr><td></td><td class='papcc'>",
+    echo '<div class="papcard_sep"></div>',
         Ht::form($loginUrl, array("id" => "ass")), '<div class="aahc">',
         "<div class='papt'><span class='papfn'>PC review assignments</span>",
         "<div class='clear'></div></div>",
@@ -618,12 +615,11 @@ if ($Me->canAdminister($prow)) {
         Ht::submit("update", "Save assignments", array("class" => "bb")),
         " &nbsp;", Ht::submit("cancel", "Cancel"),
         " <span id='assresult' style='padding-left:1em'></span></div>\n\n",
-        '</div></form>',
-        "</td><td></td></tr>\n";
+        '</div></form>';
 }
 
 
-echo Ht::cbox("pap", true), "</td></tr></table>\n";
+echo "</div></div>\n";
 
 // add external reviewers
 echo Ht::form($loginUrl), '<div class="revcard aahc"><div class="revcard_head">',
@@ -635,7 +631,7 @@ echo "any eventual decision.  Before requesting an external review,
  you should generally check personally whether they are interested.";
 if ($Me->allowAdminister($prow))
     echo "\nTo create a review with no associated reviewer, leave Name and Email blank.";
-echo '</div><div class="revcard_body">';
+echo '</div></div><div class="revcard_body">';
 echo "<div class='f-i'><div class='f-ix'>
   <div class='f-c'>Name</div>
   <div class='f-e'><input class='textlite' type='text' name='name' value=\"", htmlspecialchars(defval($_REQUEST, "name", "")), "\" size='32' tabindex='1' /></div>

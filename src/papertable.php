@@ -12,11 +12,11 @@ class PaperTable {
     const ENABLESUBMIT = 8;
 
     var $prow;
-    var $rrows;
-    var $crows;
+    var $rrows = null;
+    var $crows = null;
     private $mycrows;
-    var $rrow;
-    var $editrrow;
+    var $rrow = null;
+    var $editrrow = null;
     var $mode;
     private $allreviewslink;
 
@@ -30,15 +30,12 @@ class PaperTable {
     private $entryMatches;
     private $canUploadFinal;
     private $admin;
+    private $quit = false;
 
     function __construct($prow) {
         global $Conf, $Me;
 
         $this->prow = $prow;
-        $this->rrows = null;
-        $this->crows = null;
-        $this->rrow = null;
-        $this->editrrow = null;
         $this->admin = $Me->allowAdminister($prow);
 
         if ($this->prow == null) {
@@ -1228,9 +1225,12 @@ class PaperTable {
         $value = $this->prow->$field;
         $pc = pcMembers();
 
-        echo "<div id='fold${type}' class='foldc fold2", ($wholefold ? "c" : "o"), "'>",
-            $this->_papstripBegin(null, true, "fx2"),
-            $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
+        if ($wholefold === null)
+            echo $this->_papstripBegin($type, true);
+        else
+            echo "<div id='fold${type}' class='foldc fold2", ($wholefold ? "c" : "o"), "'>",
+                $this->_papstripBegin(null, true, "fx2");
+        echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
             "<div class='psv'><p class='fn odname'>";
         if ($value)
             echo isset($pc[$value]) ? Text::name_html($pc[$value]) : "Unknown!";
@@ -1258,11 +1258,14 @@ class PaperTable {
                 "</div></form>";
         }
 
-        echo "</div></div></div>\n";
+        if ($wholefold === null)
+            echo "</div></div>\n";
+        else
+            echo "</div></div></div>\n";
     }
 
     private function papstripLead($showedit) {
-        $this->_papstripLeadShepherd("lead", "Discussion lead", $showedit || defval($_REQUEST, "atab") == "lead", false);
+        $this->_papstripLeadShepherd("lead", "Discussion lead", $showedit || defval($_REQUEST, "atab") == "lead", null);
     }
 
     private function papstripShepherd($showedit, $fold) {
@@ -1270,7 +1273,7 @@ class PaperTable {
     }
 
     private function papstripManager($showedit) {
-        $this->_papstripLeadShepherd("manager", "Paper administrator", $showedit || defval($_REQUEST, "atab") == "manager", false);
+        $this->_papstripLeadShepherd("manager", "Paper administrator", $showedit || defval($_REQUEST, "atab") == "manager", null);
     }
 
     private function papstripTags($site = null) {
@@ -1463,7 +1466,7 @@ class PaperTable {
             return "  The deadline was $deadline.";
     }
 
-    function editMessage() {
+    private function editMessage() {
         global $Conf, $Me;
         $prow = $this->prow;
         $m = "";
@@ -1477,8 +1480,10 @@ class PaperTable {
                     $msg = "You can’t register new papers because the conference site has not been opened for submissions.$override";
                 else
                     $msg = "You can’t register new papers since the <a href='" . hoturl("deadlines") . "'>deadline</a> has passed.$startDeadline$override";
-                if (!$this->admin)
-                    errorMsgExit($msg);
+                if (!$this->admin) {
+                    $this->quit = true;
+                    return '<div class="merror">' . $msg . '</div>';
+                }
                 $m .= "<div class='xinfo'>" . $msg . "</div>";
             } else {
                 $m .= "<div class='xinfo'>" . "Enter information about your paper. ";
@@ -1588,7 +1593,7 @@ class PaperTable {
                           Ht::js_button("Cancel", "popup(null,'saveoverride',1)")
                           . " &nbsp;"
                           . Ht::js_button("Save changes", "paperedit_submit_override('$updater');popup(null,'saveoverride',1)"));
-            } else if ($prow->timeSubmitted > 0)
+            } else if ($prow && $prow->timeSubmitted > 0)
                 $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", array("class" => "b")), "");
             else if ($Conf->timeFinalizePaper($prow))
                 $buttons[] = array(Ht::submit("update", "Save changes", array("class" => "bb")));
@@ -1783,6 +1788,10 @@ class PaperTable {
 
         if (($m = $this->editMessage()))
             echo $m, $spacer;
+        if ($this->quit) {
+            echo "</div></form>";
+            return;
+        }
 
         $this->editable_title();
         $this->editable_submission(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0);
@@ -1822,29 +1831,19 @@ class PaperTable {
     function paptabBegin() {
         global $Conf, $Me;
         $prow = $this->prow;
-        $pboxclass = $prow ? "pbox" : "pboxn";
 
         if ($prow) {
             $this->_paptabBeginKnown();
-            echo "<div class='pbox1'><table class='pbox'><tr>\n",
-                "    <td class='pboxi'><div class='papstripc'><div class='papstrip'><div class='papstripi'>\n";
+            echo '<div class="pspcard_container">',
+                '<div class="pspcard">',
+                '<div class="pspcard_body">';
             $this->_papstrip();
-            echo "</div></div></div></td>\n";
-        } else {
-            echo "<div class='pbox1'><table class='pbox'><tr>\n",
-                "    <td class='pboxni'></td>\n",
-                "    <td class='pboxnt'><table class='papcbar'>\n",
-                "       <tr><td class='papculs'></td><td></td><td class='papcur'></td></tr>\n",
-                "       <tr><td></td><td><h2>New paper</h2></td><td></td></tr>\n",
-                "    </table></td>\n",
-                "    <td class='pboxnj'></td>\n",
-                "</tr><tr>",
-                "    <td class='pboxnl'></td>\n";
-        }
-        echo "    <td class='${pboxclass}r'><table class='papcpap'>
-        <tr><td class='papcl'>",
-            Ht::img("_.gif", "", "_"),
-            "</td><td class='papct'><div class='inpapct'>";
+            echo "</div></div></div>\n";
+            echo '<div class="papcard"><div class="papcard_body">';
+        } else
+            echo '<div class="pedcard">',
+                '<div class="pedcard_head"><h2>New paper</h2></div>',
+                '<div class="pedcard_body">';
 
         $form_js = array("id" => "paperedit");
         if ($prow && $prow->paperStorageId > 1 && $prow->timeSubmitted > 0
@@ -1874,43 +1873,23 @@ class PaperTable {
         }
         $this->echoDivExit();
 
-        echo "</div></td><td class='papcr'>",
-            Ht::img("_.gif", "", "_"),
-            "</td></tr>\n";
-
         if (!$this->editable && $this->mode == "pe") {
-            $this->_paptabSepBegin(true);
             echo $form;
             if ($prow->timeSubmitted > 0)
                 $this->editable_contact_author(true);
             $this->echoActions();
             echo "</form>";
-            $this->_paptabSepEnd();
         } else if (!$this->editable && $Me->actAuthorView($prow) && !$Me->contactId) {
-            $this->_paptabSepBegin();
-            echo "To edit this paper, <a href=\"", hoturl("index"), "\">sign in using your email and password</a>.";
-            $this->_paptabSepEnd();
+            echo '<div class="papcard_sep"></div>',
+                "To edit this paper, <a href=\"", hoturl("index"), "\">sign in using your email and password</a>.";
         }
 
         $Conf->footerScript("shortcut().add()");
     }
 
-    function _paptabSepBegin($nosep = false) {
-        if (!$nosep)
-            echo "      <tr><td colspan='3' class='papsep'></td></tr>\n";
-        echo "  <tr><td></td><td class='papcc'>";
-    }
-
-    function _paptabSepEnd() {
-        echo "</td><td></td></tr>\n";
-    }
-
-    function _paptabSepContaining($t) {
-        if ($t !== "") {
-            $this->_paptabSepBegin();
-            echo $t;
-            $this->_paptabSepEnd();
-        }
+    private function _paptabSepContaining($t) {
+        if ($t !== "")
+            echo '<div class="papcard_sep"></div>', $t;
     }
 
     function _paptabReviewLinks($rtable, $editrrow, $ifempty) {
@@ -1924,7 +1903,7 @@ class PaperTable {
         if (($empty = ($t == "")))
             $t = $ifempty;
         $this->_paptabSepContaining($t);
-        echo Ht::cbox("pap", true), "</td></tr></table></div>\n";
+        echo "</div></div>\n";
         return $empty;
     }
 
@@ -1942,7 +1921,7 @@ class PaperTable {
 
         if ($Me->is_admin_force()
             && !$Me->canViewReview($prow, null, false))
-            $this->_paptabSepContaining("<div class='inpapcc'>" . $this->_privilegeMessage() . "</div>");
+            $this->_paptabSepContaining($this->_privilegeMessage());
 
         $empty = $this->_paptabReviewLinks(true, null, "<div class='hint'>There are no reviews or comments for you to view.</div>");
         if ($empty)
@@ -1961,13 +1940,11 @@ class PaperTable {
                 break;
             }
         if (count($viewable))
-            echo "<div class='pboxc'>",
-                "<table class='pbox'><tr><td class='pboxl'></td>",
-                "<td class='pboxr'>",
+            echo '<div class="notecard"><div class="notecard_body">',
                 "<a href='", hoturl("review", "p=$prow->paperId&amp;m=r&amp;text=1"), "' class='xx'>",
                 Ht::img("txt24.png", "[Text]", "dlimg"),
                 "&nbsp;<u>", ucfirst(join(" and ", $viewable)),
-                " in plain text</u></a></td></tr></table></div>\n";
+                " in plain text</u></a></div></div>\n";
 
         $opt = array("edit" => false);
         $rf = reviewForm();
@@ -2025,7 +2002,7 @@ class PaperTable {
         if ($this->mode != "pe")
             $this->_paptabReviewLinks(false, null, "");
         else
-            echo Ht::cbox("pap", true), "</td></tr></table></div>\n";
+            echo "</div></div>\n";
     }
 
     function paptabEndWithEditableReview() {

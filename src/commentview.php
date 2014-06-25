@@ -16,7 +16,6 @@ class CommentView {
     }
 
     function table_begin($classextra) {
-        // div.pbox > table.pbox > tr > td.pboxr > table.cmtc > tr > td.cmtcc
         echo '<div class="cmtcard', ($classextra ? " $classextra" : ""),
             '"><div class="cmtcard_head">';
         $this->mode = 1;

@@ -87,14 +87,6 @@ class Ht {
         return $x . $optgroup . "</select>";
     }
 
-    static function cbox($type, $bottom, $classextra = "") {
-        if ($bottom)
-            return "	<tr><td class='${type}cll'></td><td></td><td class='${type}clr'></td></tr>\n</table>";
-        else
-            return "<table class='${type}c" . ($classextra ? " $classextra" : "")
-                . "'>\n";
-    }
-
     static function checkbox($name, $value = 1, $checked = false, $js = null) {
         if (is_array($value)) {
             $js = $value;

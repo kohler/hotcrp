@@ -346,8 +346,6 @@ span.hastitle {
 	border-right: 2px solid #f3d06e;
 	border-bottom-left-radius: 5px;
 	border-bottom-right-radius: 5px;
-	-moz-border-radius-bottomleft: 5px;
-	-moz-border-radius-bottomright: 5px;
 	font-weight: bold;
 }
 .tablinks1 .tll1 a.tla, .tablinks2 .tll2 a.tla,
@@ -645,7 +643,6 @@ span.expander > span.in0 {
 
 .btn {
 	border-radius: 5px;
-	-moz-border-radius: 5px;
         display: inline-block;
         padding: 2px 4px;
         text-decoration: none;
@@ -682,7 +679,6 @@ input.cbx {
 	background: #f2f2f2;
 	clear: both;
 	border-radius: 5px;
-	-moz-border-radius: 5px;
 }
 div.aahc.alert .aa, div.aahc.alert .aax {
 	background: #ffaaaa;
@@ -1831,8 +1827,6 @@ div.papmodex {
 	background: #cec1ff;
 	border-top-left-radius: 5px;
 	border-top-right-radius: 5px;
-	-moz-border-radius-topleft: 5px;
-	-moz-border-radius-topright: 5px;
 }
 div.papmodex a {
 	font-weight: bold;
@@ -1873,36 +1867,23 @@ div.pbanb {
 }
 
 /* reviews and comments */
-div.pbox1 {
-	position: relative;
-	margin: 0 0 16px;
-}
-div.pboxc {
-	position: relative;
-	margin: 16px 0;
-}
 table.pbox {
 	width: 100%;
 }
-td.pboxi, td.pboxl {
+td.pboxi {
 	width: 14em;
 	vertical-align: top;
 	position: relative;
 }
-td.pboxni, td.pboxnl, td.pboxnj {
-	width: 3em;
-	vertical-align: top;
-}
 
 /* paper strip */
-div.papstripc {
+div.pspcard_container {
+	float: left;
+	margin-left: 0.7em;
 	width: 12em;
-	position: relative;
-	left: 0.7em;
-}
-div.papstrip {
 	position: absolute;
-	width: 100%;
+}
+div.pspcard {
 	z-index: 4;
 	font-size: 8.7pt; /* 10.5pt / 1.2 */
 	background: white;
@@ -1911,17 +1892,15 @@ div.papstrip {
 	-webkit-box-shadow: 0 1px 5px #46678c;
 	border-bottom-left-radius: 2px;
 	border-bottom-right-radius: 2px;
-	-moz-border-radius-bottomleft: 2px;
-	-moz-border-radius-bottomright: 2px;
+}
+div.pspcard_body {
+	padding-bottom: 0.5em;
+	margin: 0 8px;
 }
 div#papstriptagsedit {
 	font-size: 8.7pt;
 }
-div.papstripi {
-	padding-bottom: 0.5em;
-	margin: 0 8px;
-}
-div.papstrip textarea, div.papstrip select {
+div.pspcard_body textarea, div.pspcard_body select {
 	font-size: inherit;
 }
 div.psc {
@@ -1931,7 +1910,7 @@ div.psc {
 }
 div.psc.psc1 {
 	border-top: 0 none;
-	margin-top: 0.45em;
+	margin-top: 0;
 }
 div.pscopen {
 	margin: 0 -2px;
@@ -2083,64 +2062,6 @@ div.rankctx_h {
 }
 
 /* paper */
-table.papc, table.papcpap, table.papcbar {
-	background: #cec1ff;
-	width: 100%;
-	position: relative;
-}
-table.papcbar {
-	border-top-right-radius: 8px;
-	-moz-border-radius-topright: 8px;
-}
-table.papcpap {
-	box-shadow: 0 1px 5px #46678c;
-	-moz-box-shadow: 0 1px 5px #46678c;
-	-webkit-box-shadow: 0 1px 5px #46678c;
-	border-bottom-left-radius: 2px;
-	border-bottom-right-radius: 2px;
-	-moz-border-radius-bottomleft: 2px;
-	-moz-border-radius-bottomright: 2px;
-}
-td.papculs, td.papcur, td.papcll, td.papclr {
-	width: 5px;
-	height: 8px;
-}
-td.papcur {
-	border-top-right-radius: 8px;
-	-moz-border-radius-topright: 8px;
-}
-td.papcl, td.papcr, td.papcl img._ {
-	width: 5px;
-}
-table.papc h2, table.papcbar h2 {
-	padding-bottom: 8px;
-}
-td.papcc {
-	background: #ffffff;
-	padding: 8px 12px;
-}
-td.papct {
-	background: #ffffff;
-}
-td.papctop {
-	border-top-left-radius: 5px;
-	border-top-right-radius: 5px;
-	-moz-border-radius-topleft: 5px;
-	-moz-border-radius-topright: 5px;
-}
-td.papcbot {
-	border-bottom-left-radius: 5px;
-	border-bottom-right-radius: 5px;
-	-moz-border-radius-bottomleft: 5px;
-	-moz-border-radius-bottomright: 5px;
-}
-div.inpapct {
-	margin: 8px 12px 12px;
-}
-td.papsep {
-	background: #cec1ff;
-	height: 2px;
-}
 table.paptab {
 	width: 100%;
 }
@@ -2209,6 +2130,47 @@ div.pgsm {
 	margin-top: 0.5em;
 }
 
+/* papers */
+div.papcard, div.pedcard {
+	margin: 0 0 0 14em;
+	padding: 0 5px 8px 5px;
+	background: #cec1ff;
+	position: relative;
+	box-shadow: 0 1px 5px #46678c;
+	-moz-box-shadow: 0 1px 5px #46678c;
+	-webkit-box-shadow: 0 1px 5px #46678c;
+	border-bottom-right-radius: 2px;
+	border-bottom-left-radius: 2px;
+}
+div.pedcard {
+	margin: 0 8em;
+}
+div.papcard_body, div.pedcard_body {
+	background: #ffffff;
+	padding: 8px 12px;
+	border-radius: 2px;
+}
+div.papcard_sep {
+	background: #cec1ff;
+	padding: 1px 0;
+	margin: 8px -12px;
+}
+div.pedcard_head {
+	padding: 3px 12px 4px 12px;
+}
+div.pedcard_head h2 {
+	display: inline;
+}
+
+/* paper notes */
+div.notecard {
+	margin: 16px 0 0 14em;
+	padding: 0 5px 0 5px;
+	position: relative;
+}
+div.notecard_body {
+	padding: 0 12px;
+}
 
 /* reviews */
 div.revcard {
@@ -2220,7 +2182,6 @@ div.revcard {
 	-moz-box-shadow: 0 1px 5px #46678c;
 	-webkit-box-shadow: 0 1px 5px #46678c;
 	border-radius: 2px;
-	-moz-border-radius: 2px;
 }
 div.revcard_head {
 	padding: 3px 12px 4px 12px;
@@ -2244,8 +2205,6 @@ div.revt {
 	background: #ffecef; /* #ffe6f8; */
 	border-top-left-radius: 2px;
 	border-top-right-radius: 2px;
-	-moz-border-radius-topleft: 2px;
-	-moz-border-radius-topright: 2px;
 }
 span.revfn {
 	float: left;
@@ -2293,8 +2252,6 @@ div.rv div.revt {
 	background: none; /* #ffe6f8; */
 	border-top-left-radius: 0;
 	border-top-right-radius: 0;
-	-moz-border-radius-topleft: 0;
-	-moz-border-radius-topright: 0;
 }
 div.rv span.revfn {
 	color: #555555;
@@ -2333,7 +2290,6 @@ div.cmtcard {
 	-moz-box-shadow: 0 1px 5px #46678c;
 	-webkit-box-shadow: 0 1px 5px #46678c;
 	border-radius: 2px;
-	-moz-border-radius: 2px;
 }
 div.cmtcard.response {
 	background: #ffddc1;
@@ -2461,7 +2417,6 @@ div.cmthint {
 	margin: 8px 0;
 	padding: 8px 12px 2px;
 	border-radius: 5px;
-	-moz-border-radius: 5px;
 	display: table;
 }
 .mhx {
