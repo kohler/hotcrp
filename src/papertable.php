@@ -418,7 +418,7 @@ class PaperTable {
         if ($prow && $storageId > 1 && $banal
             && defval($prow, "mimetype", "application/pdf") == "application/pdf") {
             echo "<div id='foldcheckformat$documentType' class='foldc'><div id='checkformatform${documentType}result' class='fx'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
-            $Conf->footerHtml("<form id='checkformatform$documentType' class='fold7o' method='post' action='" . hoturl_post("paper", "p=$prow->paperId&amp;dt=$documentType") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform$documentType\")'><div>"
+            $Conf->footerHtml("<form id='checkformatform$documentType' class='fold7c' method='post' action='" . hoturl_post("paper", "p=$prow->paperId&amp;dt=$documentType") . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"checkformatform$documentType\")'><div>"
                               . Ht::hidden("checkformat", 1)
                               . "</div></form>");
         }
@@ -1239,7 +1239,7 @@ class PaperTable {
         echo "</p>";
 
         if ($editable) {
-            echo "<form id='${type}form' class='fx fold7o' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitstripselector(\"${type}\")'>",
+            echo "<form id='${type}form' class='fx fold7c' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitstripselector(\"${type}\")'>",
                 "<div class='inform'>", Ht::hidden("set$type", 1);
             $Conf->footerScript("Miniajax.onload(\"${type}form\")");
 
@@ -1336,7 +1336,7 @@ class PaperTable {
         global $Conf, $Error;
         echo $this->_papstripBegin("decision", defval($_REQUEST, "atab") != "decision"),
             $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
-            "<div class='psv'><form id='decisionform' class='fx fold7o' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitstripselector(\"decision\")'>",
+            "<div class='psv'><form id='decisionform' class='fx fold7c' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return dosubmitstripselector(\"decision\")'>",
             "<div class='inform'>", Ht::hidden("setdecision", 1);
         if (isset($_REQUEST["forceShow"]))
             echo Ht::hidden("forceShow", $_REQUEST["forceShow"] ? 1 : 0);
@@ -1354,7 +1354,7 @@ class PaperTable {
         global $Conf, $CurrentList;
         echo $this->_papstripBegin(),
             $this->papt("revpref", "Review preference", array("type" => "ps")),
-            "<div class='psv'><form id='revprefform' class='fold7o' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"revprefform\")'>",
+            "<div class='psv'><form id='revprefform' class='fold7c' method='post' action='", hoturl_post("review", "p=" . $this->prow->paperId), "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"revprefform\")'>",
             "<div class='aahc inform'>",
             Ht::hidden("setrevpref", 1);
         if (isset($_REQUEST["forceShow"]))
@@ -1381,11 +1381,11 @@ class PaperTable {
             $rp = "";
 
         // rank context form
-        $Conf->footerHtml("<form id='rankctxform' class='fold7o' method='post' action='" . hoturl_post("paper", "p=" . $this->prow->paperId) . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><div class='aahc'>" . Ht::hidden("rankctx", 1) . "</div></form>");
+        $Conf->footerHtml("<form id='rankctxform' class='fold7c' method='post' action='" . hoturl_post("paper", "p=" . $this->prow->paperId) . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankctxform\")'><div class='aahc'>" . Ht::hidden("rankctx", 1) . "</div></form>");
 
         echo $this->_papstripBegin("rank", true, "fold2c"),
             $this->papt("rank", "Your rank", array("type" => "ps", "editfolder" => "rank")),
-            "<div class='psv'><form id='rankform' class='fx fold7o' method='post' action='" . hoturl_post("review", "p=" . $this->prow->paperId) . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankform\")'>",
+            "<div class='psv'><form id='rankform' class='fx fold7c' method='post' action='" . hoturl_post("review", "p=" . $this->prow->paperId) . "' enctype='multipart/form-data' accept-charset='UTF-8' onsubmit='return Miniajax.submit(\"rankform\")'>",
             "<div class='inform'>", Ht::hidden("setrank", 1);
         if (isset($_REQUEST["forceShow"]))
             echo Ht::hidden("forceShow", $_REQUEST["forceShow"] ? 1 : 0);
