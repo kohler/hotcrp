@@ -752,8 +752,10 @@ function goPaperForm($baseUrl = null, $args = array()) {
     if ($baseUrl === null)
         $baseUrl = ($Me->isPC && $Conf->setting("rev_open") ? "review" : "paper");
     $x = "<form class='gopaper' action='" . hoturl($baseUrl) . "' method='get' accept-charset='UTF-8'><div class='inform'>";
-    $x .= "<input id='quicksearchq' class='textlite temptext' type='text' size='10' name='p' value='(All)' title='Enter paper numbers or search terms' />";
-    $Conf->footerScript("mktemptext('quicksearchq','(All)')");
+    if ($baseUrl == "profile")
+        $x .= Ht::entry("u", "(User)", array("id" => "quicksearchq", "class" => "textlite", "size" => 10, "hottemptext" => "(User)"));
+    else
+        $x .= Ht::entry("p", "(All)", array("id" => "quicksearchq", "class" => "textlite", "size" => 10, "hottemptext" => "(All)"));
     foreach ($args as $what => $val)
         $x .= Ht::hidden($what, $val);
     if (isset($CurrentList) && $CurrentList > 0)
