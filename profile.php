@@ -84,6 +84,17 @@ if (!$Acct
 if ($Acct)
     $Acct->load_address();
 
+if ($Acct->contactId != $Me->contactId && $Acct->email
+    && !$Acct->firstName && !$Acct->lastName && !$Acct->affiliation) {
+    $prow = $Conf->qe("select Paper.paperId, authorInformation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Acct->contactId)");
+    cleanAuthor($prow);
+    foreach ($prow->authorTable as $au)
+        if ($au[3] && strcasecmp($au[3], $Acct->email) === 0) {
+            list($Acct->firstName, $Acct->lastName, $Acct->affiliation) = $au;
+            ++$UserStatus->nerrors;
+        }
+}
+
 
 function pc_request_as_json($cj) {
     global $Conf, $Me, $Acct, $newProfile;
