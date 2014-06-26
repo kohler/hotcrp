@@ -189,10 +189,10 @@ setlocale(LC_CTYPE, "C");
 
 // Set up conference options
 function read_included_options($files) {
-    global $Opt, $ConfMulticonf, $ConfSitePATH;
+    global $Opt, $ConfSitePATH;
     if (is_string($files))
         $files = array($files);
-    $confname = @$ConfMulticonf ? $ConfMulticonf : @$Opt["dbName"];
+    $confname = @$Opt["confid"] ? : @$Opt["dbName"];
     $cwd = null;
     foreach ($files as $f) {
         $f = preg_replace(',\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $confname, $f);

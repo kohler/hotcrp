@@ -41,11 +41,13 @@ class Conference {
     function __construct($dsn) {
         global $Opt;
         // unpack dsn, connect to database, load current settings
-        $dbname = "__invalid__";
+        $dbName = "__invalid__";
         if ($dsn)
-            list($this->dblink, $Opt["dbName"]) = self::connect_dsn($dsn);
+            list($this->dblink, $dbName) = self::connect_dsn($dsn);
+        if (!@$Opt["confid"])
+            $Opt["confid"] = $dbName;
         if (!isset($Opt["sessionName"]) || $Opt["sessionName"] == "")
-            $Opt["sessionName"] = preg_replace_callback('/[^A-Ya-z0-9]/', "Conference::session_name_fixer", $Opt["dbName"]);
+            $Opt["sessionName"] = preg_replace_callback('/[^A-Ya-z0-9]/', "Conference::session_name_fixer", $dbName);
         if ($this->dblink)
             $this->load_settings();
         else
@@ -252,7 +254,7 @@ class Conference {
     }
 
     private function crosscheck_options() {
-        global $Opt, $ConfMulticonf, $ConfSiteBase;
+        global $Opt, $ConfSiteBase;
 
         // remove final slash from $Opt["paperSite"]
         if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
@@ -262,7 +264,7 @@ class Conference {
         $Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
 
         // set longName, downloadPrefix, etc.
-        $confid = @$ConfMulticonf ? $ConfMulticonf : $Opt["dbName"];
+        $confid = $Opt["confid"];
         if ((!isset($Opt["longName"]) || $Opt["longName"] == "")
             && (!isset($Opt["shortName"]) || $Opt["shortName"] == "")) {
             $Opt["shortNameDefaulted"] = true;

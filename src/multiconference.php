@@ -6,35 +6,35 @@
 global $Opt;
 
 function set_multiconference() {
-    global $ConfMulticonf, $Opt;
+    global $Opt;
 
-    if (!@$ConfMulticonf && PHP_SAPI == "cli") {
+    $confid = @$Opt["confid"];
+    if (!$confid && PHP_SAPI == "cli") {
         $cliopt = getopt("n:", array("name:"));
         if (@$cliopt["n"])
-            $ConfMulticonf = $cliopt["n"];
+            $confid = $cliopt["n"];
         else if (@$cliopt["name"])
-            $ConfMulticonf = $cliopt["name"];
-    } else if (!@$ConfMulticonf) {
+            $confid = $cliopt["name"];
+    } else if (!$confid) {
         $base = Navigation::site_absolute(true);
         if (($multis = @$Opt["multiconferenceAnalyzer"])) {
             foreach (is_array($multis) ? $multis : array($multis) as $multi) {
                 list($match, $replace) = explode(" ", $multi);
                 if (preg_match("`\\A$match`", $base, $m)) {
-                    $ConfMulticonf = $replace;
+                    $confid = $replace;
                     for ($i = 1; $i < count($m); ++$i)
-                        $ConfMulticonf = str_replace("\$$i", $m[$i], $ConfMulticonf);
+                        $confid = str_replace("\$$i", $m[$i], $confid);
                     break;
                 }
             }
         } else if (preg_match(',/([^/]+)/\z,', $base, $m))
-            $ConfMulticonf = $m[1];
+            $confid = $m[1];
     }
 
-    if (!@$ConfMulticonf)
-        $ConfMulticonf = "__nonexistent__";
-    else if (!preg_match(',\A[-a-zA-Z0-9._]+\z,', $ConfMulticonf)
-             || $ConfMulticonf[0] == ".")
-        $ConfMulticonf = "__invalid__";
+    if (!@$confid)
+        $confid = "__nonexistent__";
+    else if (!preg_match(',\A[-a-zA-Z0-9_][-a-zA-Z0-9_.]*\z,', $confid))
+        $confid = "__invalid__";
 
     foreach (array("dbName", "dbUser", "dbPassword", "dsn",
                    "sessionName", "downloadPrefix", "conferenceSite",
@@ -42,25 +42,26 @@ function set_multiconference() {
                    "contactName", "contactEmail",
                    "emailFrom", "emailSender", "emailCc", "emailReplyTo") as $k)
         if (isset($Opt[$k]) && is_string($Opt[$k]))
-            $Opt[$k] = preg_replace(',\*|\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $ConfMulticonf, $Opt[$k]);
+            $Opt[$k] = preg_replace(',\*|\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $confid, $Opt[$k]);
 
     if (!@$Opt["dbName"] && !@$Opt["dsn"])
-        $Opt["dbName"] = $ConfMulticonf;
+        $Opt["dbName"] = $confid;
+    $Opt["confid"] = $confid;
 }
 
 if (@$Opt["multiconference"])
     set_multiconference();
 
 function multiconference_fail($tried_db) {
-    global $Conf, $ConfMulticonf, $Me, $Opt;
+    global $Conf, $Me, $Opt;
 
     $errors = array();
     if (@$Opt["maintenance"])
         $errors[] = "The site is down for maintenance. " . (is_string($Opt["maintenance"]) ? $Opt["maintenance"] : "Please check back later.");
-    else if (@$Opt["multiconference"] && $ConfMulticonf === "__nonexistent__")
+    else if (@$Opt["multiconference"] && $Opt["confid"] === "__nonexistent__")
         $errors[] = "You haven’t specified a conference and this is a multiconference installation.";
     else if (@$Opt["multiconference"])
-        $errors[] = "The “${ConfMulticonf}” conference does not exist. Check your URL to make sure you spelled it correctly.";
+        $errors[] = "The “" . $Opt["confid"] . "” conference does not exist. Check your URL to make sure you spelled it correctly.";
     else if (!@$Opt["loaded"])
         $errors[] = "HotCRP has been installed, but not yet configured. You must run `lib/createdb.sh` to create a database for your conference. See `README.md` for further guidance.";
     else
