@@ -628,7 +628,7 @@ function updateSchema($Conf) {
     if ($Conf->settings["allowPaperOption"] == 75) {
         foreach (array("capability_gc", "s3_scope", "s3_signing_key") as $k)
             if (isset($Conf->settings[$k])) {
-                $Conf->save_setting("__" . $k, $Conf->settings[$k], $Conf->settingTexts[$k]);
+                $Conf->save_setting("__" . $k, $Conf->settings[$k], @$Conf->settingTexts[$k]);
                 $Conf->save_setting($k, null);
             }
         $Conf->save_setting("allowPaperOption", 76);
