@@ -589,7 +589,7 @@ class PaperTable {
         while (($row = edb_orow($result))) {
             $match = -1;
             for ($i = 0; $match < 0 && $i < count($autable); ++$i)
-                if ($autable[$i][2] == $row->email)
+                if (strcasecmp($autable[$i][2], $row->email) == 0)
                     $match = $i;
             if (($row->firstName != "" || $row->lastName != "") && $match < 0) {
                 $contact_n = $row->firstName . " " . $row->lastName;
