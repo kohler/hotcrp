@@ -155,7 +155,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
             $Conf->qe("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")", "while cleaning up voting tags");
         }
 
-        $Conf->log_activity("Withdrew", $paperId);
+        $Me->log_activity("Withdrew", $paperId);
         redirectSelf();
     } else
         $Conf->errorMsg(whyNotText($whyNot, "withdraw"));
