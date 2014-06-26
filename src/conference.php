@@ -41,21 +41,14 @@ class Conference {
     function __construct($dsn) {
         global $Opt;
         // unpack dsn, connect to database, load current settings
-        $dbName = "__invalid__";
         if ($dsn)
-            list($this->dblink, $dbName) = self::connect_dsn($dsn);
+            list($this->dblink, $Opt["dbName"]) = self::connect_dsn($dsn);
         if (!@$Opt["confid"])
-            $Opt["confid"] = $dbName;
-        if (!isset($Opt["sessionName"]) || $Opt["sessionName"] == "")
-            $Opt["sessionName"] = preg_replace_callback('/[^A-Ya-z0-9]/', "Conference::session_name_fixer", $dbName);
+            $Opt["confid"] = $Opt["dbName"];
         if ($this->dblink)
             $this->load_settings();
         else
             $this->crosscheck_options();
-    }
-
-    static function session_name_fixer($m) {
-        return "Z" . dechex(ord($m[0]));
     }
 
     static function make_dsn($opt) {
