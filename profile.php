@@ -538,9 +538,26 @@ else if (!$newProfile) {
 
 echofield(1, "firstName", "First&nbsp;name", textinput("firstName", crpformvalue("firstName"), 24));
 echofield(3, "lastName", "Last&nbsp;name", textinput("lastName", crpformvalue("lastName"), 24));
+echofield(0, "affiliation", "Affiliation", textinput("affiliation", crpformvalue("affiliation"), 52));
+
+
+$any_address = @($Acct->addressLine1 || $Acct->addressLine2 || $Acct->city
+                 || $Acct->state || $Acct->zipCode || $Acct->country);
+if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
+    echo "<div style='margin-top:20px'></div>\n";
+    echofield(0, false, "Address line 1", textinput("addressLine1", crpformvalue("addressLine1"), 52));
+    echofield(0, false, "Address line 2", textinput("addressLine2", crpformvalue("addressLine2"), 52));
+    echofield(0, false, "City", textinput("city", crpformvalue("city"), 52));
+    echofield(1, false, "State/Province/Region", textinput("state", crpformvalue("state"), 24));
+    echofield(3, false, "ZIP/Postal code", textinput("zipCode", crpformvalue("zipCode"), 12));
+    echofield(0, false, "Country", Countries::selector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : $Acct->country)));
+    echofield(1, false, "Phone <span class='f-cx'>(optional)</span>", textinput("voicePhoneNumber", crpformvalue("voicePhoneNumber"), 24));
+    echo "<div class='clear'></div></div>\n";
+}
+
 
 if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])) {
-    echo "<div class='f-i'><div class='f-ix'>
+    echo "<div style='margin-top:20px'></div><div class='f-i'><div class='f-ix'>
   <div class='", fcclass('password'), "'>New password</div>
   <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"\" onchange='hiliter(this)' />";
     if ($Me->privChair && $Acct->password_type == 0)
@@ -566,23 +583,6 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])) 
     echo "  <div class='clear'></div></div>\n\n";
 }
 
-
-echofield(0, "affiliation", "Affiliation", textinput("affiliation", crpformvalue("affiliation"), 52));
-
-
-$any_address = @($Acct->addressLine1 || $Acct->addressLine2 || $Acct->city
-                 || $Acct->state || $Acct->zipCode || $Acct->country);
-if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
-    echo "<div class='g'></div>\n";
-    echofield(0, false, "Address line 1", textinput("addressLine1", crpformvalue("addressLine1"), 52));
-    echofield(0, false, "Address line 2", textinput("addressLine2", crpformvalue("addressLine2"), 52));
-    echofield(0, false, "City", textinput("city", crpformvalue("city"), 52));
-    echofield(1, false, "State/Province/Region", textinput("state", crpformvalue("state"), 24));
-    echofield(3, false, "ZIP/Postal code", textinput("zipCode", crpformvalue("zipCode"), 12));
-    echofield(0, false, "Country", Countries::selector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : $Acct->country)));
-    echofield(1, false, "Phone <span class='f-cx'>(optional)</span>", textinput("voicePhoneNumber", crpformvalue("voicePhoneNumber"), 24));
-    echo "<div class='clear'></div></div>\n";
-}
 
 if ($newProfile) {
     echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", 2),
