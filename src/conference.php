@@ -39,13 +39,13 @@ class Conference {
     const PCSEEREV_UNLESSANYINCOMPLETE = 4;
 
     function __construct($dsn) {
-        global $Opt, $ConfId;
+        global $Opt;
         // unpack dsn, connect to database, load current settings
         $dbname = "__invalid__";
         if ($dsn)
-            list($this->dblink, $ConfId) = self::connect_dsn($dsn);
+            list($this->dblink, $Opt["dbName"]) = self::connect_dsn($dsn);
         if (!isset($Opt["sessionName"]) || $Opt["sessionName"] == "")
-            $Opt["sessionName"] = preg_replace_callback('/[^A-Ya-z0-9]/', "Conference::session_name_fixer", $ConfId);
+            $Opt["sessionName"] = preg_replace_callback('/[^A-Ya-z0-9]/', "Conference::session_name_fixer", $Opt["dbName"]);
         if ($this->dblink)
             $this->load_settings();
         else
@@ -252,7 +252,7 @@ class Conference {
     }
 
     private function crosscheck_options() {
-        global $Opt, $ConfId, $ConfMulticonf, $ConfSiteBase;
+        global $Opt, $ConfMulticonf, $ConfSiteBase;
 
         // remove final slash from $Opt["paperSite"]
         if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
@@ -262,19 +262,19 @@ class Conference {
         $Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
 
         // set longName, downloadPrefix, etc.
-        $confname = @$ConfMulticonf ? $ConfMulticonf : $ConfId;
+        $confid = @$ConfMulticonf ? $ConfMulticonf : $Opt["dbName"];
         if ((!isset($Opt["longName"]) || $Opt["longName"] == "")
             && (!isset($Opt["shortName"]) || $Opt["shortName"] == "")) {
             $Opt["shortNameDefaulted"] = true;
-            $Opt["longName"] = $Opt["shortName"] = $confname;
+            $Opt["longName"] = $Opt["shortName"] = $confid;
         } else if (!isset($Opt["longName"]) || $Opt["longName"] == "")
             $Opt["longName"] = $Opt["shortName"];
         else if (!isset($Opt["shortName"]) || $Opt["shortName"] == "")
             $Opt["shortName"] = $Opt["longName"];
         if (!isset($Opt["downloadPrefix"]) || $Opt["downloadPrefix"] == "")
-            $Opt["downloadPrefix"] = $confname . "-";
+            $Opt["downloadPrefix"] = $confid . "-";
         if (!isset($Opt["conferenceId"]) || $Opt["conferenceId"] == "")
-            $Opt["conferenceId"] = $confname;
+            $Opt["conferenceId"] = $confid;
 
         // set assetsURL
         if (!@$Opt["assetsURL"])
