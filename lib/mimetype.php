@@ -95,6 +95,7 @@ Mimetype::register("application/vnd.ms-powerpoint", "ppt", 4, "PowerPoint");
 Mimetype::register("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx", 5, "PowerPoint");
 Mimetype::register("video/mp4", "mp4", 6);
 Mimetype::register("video/x-msvideo", "avi", 7);
+Mimetype::register("application/json", "json", 8);
 
 Mimetype::register_synonym("application/mspowerpoint", "application/vnd.ms-powerpoint");
 Mimetype::register_synonym("application/powerpoint", "application/vnd.ms-powerpoint");
