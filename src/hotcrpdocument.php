@@ -84,14 +84,14 @@ class HotCRPDocument {
                 $opt = array("bucket" => $Conf->setting_data("s3_bucket"),
                              "key" => $Conf->setting_data("s3_key"),
                              "secret" => $Conf->setting_data("s3_secret"),
-                             "scope" => $Conf->setting_data("s3_scope"),
-                             "signing_key" => $Conf->setting_data("s3_signing_key"));
+                             "scope" => $Conf->setting_data("__s3_scope"),
+                             "signing_key" => $Conf->setting_data("__s3_signing_key"));
                 self::$_s3_document = new S3Document($opt);
                 list($scope, $signing_key) = self::$_s3_document->scope_and_signing_key($Now);
                 if ($opt["scope"] !== $scope
                     || $opt["signing_key"] !== $signing_key) {
-                    $Conf->save_setting("s3_scope", 1, $scope);
-                    $Conf->save_setting("s3_signing_key", 1, $signing_key);
+                    $Conf->save_setting("__s3_scope", 1, $scope);
+                    $Conf->save_setting("__s3_signing_key", 1, $signing_key);
                 }
             } else
                 self::$_s3_document = null;

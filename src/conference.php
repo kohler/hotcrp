@@ -140,7 +140,7 @@ class Conference {
         }
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 75) {
+        if ($this->settings["allowPaperOption"] < 76) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -180,12 +180,12 @@ class Conference {
 
         // GC old capabilities
         if ($this->sversion >= 58
-            && defval($this->settings, "capability_gc", 0) < time() - 86400) {
+            && defval($this->settings, "__capability_gc", 0) < time() - 86400) {
             $now = time();
             $this->q("delete from Capability where timeExpires>0 and timeExpires<$now");
             $this->q("delete from CapabilityMap where timeExpires>0 and timeExpires<$now");
-            $this->q("insert into Settings (name, value) values ('capability_gc', $now) on duplicate key update value=values(value)");
-            $this->settings["capability_gc"] = $now;
+            $this->q("insert into Settings (name, value) values ('__capability_gc', $now) on duplicate key update value=values(value)");
+            $this->settings["__capability_gc"] = $now;
         }
 
         $this->crosscheck_settings();
