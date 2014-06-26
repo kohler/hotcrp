@@ -124,7 +124,6 @@ if ($Me->privChair) {
         $Conf->save_setting("pcrev_informtime", $_REQUEST["clearnewpcrev"]);
     if (isset($_REQUEST["clearbug"]) || isset($_REQUEST["clearnewpcrev"]))
         redirectSelf(array("clearbug" => null, "clearnewpcrev" => null));
-    admin_home_messages();
 }
 
 
@@ -155,6 +154,7 @@ function change_review_tokens() {
         $tokeninfo[] = "Review tokens cleared.";
     if (count($tokeninfo))
         $Conf->infoMsg(join("<br />\n", $tokeninfo));
+    redirectSelf();
 }
 
 if (isset($_REQUEST["token"]) && check_post() && !$Me->is_empty())
@@ -162,6 +162,9 @@ if (isset($_REQUEST["token"]) && check_post() && !$Me->is_empty())
 if (isset($_REQUEST["cleartokens"]))
     $Me->change_review_token(false, false);
 
+
+if ($Me->privChair)
+    admin_home_messages();
 
 $title = ($Me->is_empty() || isset($_REQUEST["signin"]) ? "Sign in" : "Home");
 $Conf->header($title, "home", actionBar());
@@ -319,27 +322,34 @@ if ($homelist) {
 
 
 // Review token printing
-function reviewTokenGroup($close_hr) {
+function reviewTokenGroup($non_reviews) {
     global $Conf, $reviewTokenGroupPrinted;
     if ($reviewTokenGroupPrinted)
         return;
 
-    echo "<div class='homegrp' id='homerev'>\n";
-
     $tokens = array();
     foreach ($Conf->session("rev_tokens", array()) as $tt)
         $tokens[] = encode_token((int) $tt);
-    echo "  <h4>Review tokens: &nbsp;</h4> ",
-        "<form action='", hoturl_post("index"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
-        "<input class='textlite' type='text' name='token' size='15' value=\"",
-        htmlspecialchars(join(" ", $tokens)), "\" />",
-        " &nbsp;", Ht::submit("Go"),
-        "<div class='hint'>Enter review tokens here to gain access to the corresponding reviews.</div>",
-        "</div></form>\n";
 
-    if ($close_hr)
-        echo "<hr class='home' />";
-    echo "</div>\n";
+    if ($non_reviews)
+        echo '<div class="homegrp" id="homerev">',
+            "<h4>Review tokens: &nbsp;</h4>";
+    else
+        echo '<table id="foldrevtokens" class="', count($tokens) ? "fold2o" : "fold2c", '" style="display:inline-table">',
+            '<tr><td class="fn2"><a class="fn2" href="#" onclick="return foldup(this,event)">Add review tokens</a></td>',
+            '<td class="fx2">Review tokens: &nbsp;';
+
+    echo Ht::form(hoturl_post("index")), '<div class="inform">',
+        Ht::entry("token", join(" ", $tokens), array("class" => "textlite", "size" => max(15, count($tokens) * 8))),
+        " &nbsp;", Ht::submit("Save");
+    if (!count($tokens))
+        echo '<div class="hint">Enter tokens to gain access to the corresponding reviews.</div>';
+    echo '</div></form>';
+
+    if ($non_reviews)
+        echo '<hr class="home" /></div>', "\n";
+    else
+        echo '</td></tr></table>', "\n";
     $reviewTokenGroupPrinted = true;
 }
 
@@ -438,6 +448,11 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         echo $sep, "<a href='", hoturl("mail", "monreq=1"), "'>Monitor external reviews</a>";
         $sep = $xsep;
     }
+    if ($Conf->setting("rev_tokens")) {
+        echo $sep;
+        reviewTokenGroup(false);
+        $sep = $xsep;
+    }
 
     if ($myrow && $Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
         $badratings = PaperSearch::unusableRatings($Me->privChair, $Me->cid);
@@ -479,9 +494,6 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         if ($plist->count > 0)
             echo "<div class='fx'><div class='g'></div>", $ptext, "</div>";
     }
-
-    if ($Conf->setting("rev_tokens"))
-        reviewTokenGroup(false);
 
     if ($Me->is_reviewer()) {
         require_once("src/commentview.php");
