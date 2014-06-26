@@ -43,7 +43,7 @@ if ($Me->is_empty() || isset($_REQUEST["signin"]))
     $_SESSION["testsession"] = true;
 
 // perhaps redirect through account
-if ($Me->is_known_user() && isset($Me->fresh) && $Me->fresh === true) {
+if ($Me->is_known_user() && $Conf->session("freshlogin") === true) {
     $needti = false;
     if (($Me->roles & Contact::ROLE_PC) && !$Me->has_review()) {
         $result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->cid and ti.topicId=ta.topicId)");
@@ -53,10 +53,10 @@ if ($Me->is_known_user() && isset($Me->fresh) && $Me->fresh === true) {
         || !$Me->affiliation
         || (($Me->roles & Contact::ROLE_PC) && !$Me->collaborators)
         || $needti) {
-        $Me->fresh = "redirect";
+        $Conf->save_session("freshlogin", "redirect");
         go(hoturl("profile", "redirect=1"));
     } else
-        unset($Me->fresh);
+        $Conf->save_session("freshlogin", null);
 }
 
 // check global system settings

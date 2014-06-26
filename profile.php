@@ -454,18 +454,19 @@ else
 $useRequest = (!$Acct->contactId && isset($_REQUEST["watchcomment"]))
     || $UserStatus->nerrors;
 
-if (!$UserStatus->nerrors && isset($Me->fresh) && $Me->fresh === "redirect") {
+if (!$UserStatus->nerrors && @$Conf->session("freshlogin") === "redirect") {
+    $Conf->save_session("freshlogin", null);
     $ispc = ($Acct->roles & Contact::ROLE_PC) != 0;
-    unset($Me->fresh);
     $msgs = array();
     $amsg = "";
     if (!$Me->firstName && !$Me->lastName)
-        $msgs[] = "enter your name";
-    if (!$Me->affiliation)
+        $msgs[] = "enter your name" . ($Me->affiliation ? "" : " and affiliation");
+    else if (!$Me->affiliation)
         $msgs[] = "enter your affiliation";
     if ($ispc && !$Me->collaborators)
         $msgs[] = "list your recent collaborators";
-    $msgs[] = "update your " . (count($msgs) ? "other " : "") . "contact information";
+    if ($ispc || $Conf->setting("acct_addr") || !count($msgs))
+        $msgs[] = "update your " . (count($msgs) ? "other " : "") . "contact information";
     if (!$Me->affiliation || ($ispc && !$Me->collaborators)) {
         $amsg .= "  We use your ";
         if (!$Me->affiliation)

@@ -59,10 +59,8 @@ function initialize_user() {
         $Me = Contact::find_by_id($userwords[0]);
     else if (count($userwords) >= 3)
         $Me = Contact::find_by_email($userwords[2]);
-    if (!$Me) {
+    if (!$Me)
         $Me = new Contact;
-        $Me->fresh = true;
-    }
     $Me = $Me->activate();
 }
 

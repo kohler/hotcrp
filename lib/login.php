@@ -11,7 +11,6 @@ class LoginHelper {
             && !isset($Opt["httpAuthLogin"]))
             $Conf->confirmMsg("You have been signed out. Thanks for using the system.");
         $Me = new Contact;
-        $Me->fresh = true;
         unset($_SESSION["user"]);
         unset($_SESSION["trueuser"]);
         // clear all conference session info, except maybe capabilities
@@ -174,6 +173,7 @@ class LoginHelper {
         $user = $user->activate();
         unset($_SESSION["testsession"]);
         unset($_SESSION["afterLogin"]);
+        $Conf->save_session("freshlogin", true);
         go($where);
         exit;
     }
