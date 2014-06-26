@@ -85,14 +85,23 @@ if ($Acct)
     $Acct->load_address();
 
 if ($Acct->contactId != $Me->contactId && $Acct->email
-    && !$Acct->firstName && !$Acct->lastName && !$Acct->affiliation) {
-    $prow = $Conf->qe("select Paper.paperId, authorInformation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Acct->contactId)");
-    cleanAuthor($prow);
-    foreach ($prow->authorTable as $au)
-        if ($au[3] && strcasecmp($au[3], $Acct->email) === 0) {
-            list($Acct->firstName, $Acct->lastName, $Acct->affiliation) = $au;
-            ++$UserStatus->nerrors;
-        }
+    && !$Acct->firstName && !$Acct->lastName && !$Acct->affiliation
+    && !isset($_REQUEST["post"])) {
+    $result = $Conf->qe("select Paper.paperId, authorInformation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Acct->contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")");
+    while (($prow = edb_orow($result))) {
+        cleanAuthor($prow);
+        foreach ($prow->authorTable as $au)
+            if (strcasecmp($au[2], $Acct->email) == 0
+                && ($au[0] || $au[1] || $au[3])) {
+                if (!$Acct->firstName && $au[0])
+                    $Acct->firstName = $au[0];
+                if (!$Acct->lastName && $au[1])
+                    $Acct->lastName = $au[1];
+                if (!$Acct->affiliation && $au[3])
+                    $Acct->affiliation = $au[3];
+                ++$UserStatus->nerrors;
+            }
+    }
 }
 
 
