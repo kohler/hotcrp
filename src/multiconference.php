@@ -36,14 +36,9 @@ function set_multiconference() {
     else if (!preg_match(',\A[-a-zA-Z0-9_][-a-zA-Z0-9_.]*\z,', $confid))
         $confid = "__invalid__";
 
-    foreach (array("dbName", "dbUser", "dbPassword", "dsn",
-                   "sessionName", "downloadPrefix", "conferenceSite",
-                   "paperSite", "defaultPaperSite",
-                   "contactName", "contactEmail",
-                   "emailFrom", "emailSender", "emailCc", "emailReplyTo") as $k)
+    foreach (array("dbName", "dbUser", "dbPassword", "dsn") as $k)
         if (isset($Opt[$k]) && is_string($Opt[$k]))
             $Opt[$k] = preg_replace(',\*|\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $confid, $Opt[$k]);
-
     if (!@$Opt["dbName"] && !@$Opt["dsn"])
         $Opt["dbName"] = $confid;
     $Opt["confid"] = $confid;

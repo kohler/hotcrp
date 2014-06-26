@@ -249,13 +249,6 @@ class Conference {
     private function crosscheck_options() {
         global $Opt, $ConfSiteBase;
 
-        // remove final slash from $Opt["paperSite"]
-        if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
-            $Opt["paperSite"] = Navigation::site_absolute();
-        if ($Opt["paperSite"] == "" && isset($Opt["defaultPaperSite"]))
-            $Opt["paperSite"] = $Opt["defaultPaperSite"];
-        $Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
-
         // set longName, downloadPrefix, etc.
         $confid = $Opt["confid"];
         if ((!isset($Opt["longName"]) || $Opt["longName"] == "")
@@ -270,6 +263,24 @@ class Conference {
             $Opt["downloadPrefix"] = $confid . "-";
         if (!isset($Opt["conferenceId"]) || $Opt["conferenceId"] == "")
             $Opt["conferenceId"] = $confid;
+
+        // expand ${confid}, ${confshortname}
+        foreach (array("sessionName", "downloadPrefix", "conferenceSite",
+                       "paperSite", "defaultPaperSite", "contactName",
+                       "contactEmail", "emailFrom", "emailSender",
+                       "emailCc", "emailReplyTo") as $k)
+            if (isset($Opt[$k]) && is_string($Opt[$k])
+                && strpos($Opt[$k], "$") !== false) {
+                $Opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $Opt[$k]);
+                $Opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $Opt["shortName"], $Opt[$k]);
+            }
+
+        // remove final slash from $Opt["paperSite"]
+        if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
+            $Opt["paperSite"] = Navigation::site_absolute();
+        if ($Opt["paperSite"] == "" && isset($Opt["defaultPaperSite"]))
+            $Opt["paperSite"] = $Opt["defaultPaperSite"];
+        $Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
 
         // set assetsURL
         if (!@$Opt["assetsURL"])
