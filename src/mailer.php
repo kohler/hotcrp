@@ -723,7 +723,9 @@ class Mailer {
             } else if ($topos !== false)
                 $to = "";
 
-            return mail($to, $preparation["subject"], $preparation["body"], $headers . "From: " . $Opt["emailFrom"], $extra);
+            if (!@$Opt["emailFromHeader"])
+                $Opt["emailFromHeader"] = Mailer::mimeEmailHeader("From: ", $Opt["emailFrom"]);
+            return mail($to, $preparation["subject"], $preparation["body"], $headers . $Opt["emailFromHeader"], $extra);
         } else if (!$Opt["sendEmail"])
             return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\n" . $preparation["headers"] . "Subject: " . $preparation["subject"] . "\n\n" . $preparation["body"]) . "</pre>");
     }

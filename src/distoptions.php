@@ -50,10 +50,9 @@ $Opt["dbName"] = "FIXME";
 //   contactEmail    Email address for site contact.
 //   sendEmail       Boolean. If false, HotCRP will send no email. This should
 //                   almost always be set to true.
-//   emailFrom       "From:" address for email sent by HotCRP. Should be a
+//   emailFrom       "From:" header for email sent by HotCRP. Should be a
 //                   plausible email address for mail originating at the
-//                   conference server, so things like SPF don't mistake
-//                   the mail for spam.
+//                   conference server.
 //   emailSender     Envelope sender address for email sent by HotCRP. Usually
 //                   defaults to something like "www-data@yourservername".
 //                   This email address should be connected to a valid mailbox
