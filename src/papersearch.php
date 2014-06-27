@@ -2585,6 +2585,18 @@ class PaperSearch {
             return null;
     }
 
+    function alternate_query() {
+        global $Conf;
+        if ($this->q !== "" && $this->q[0] !== "#"
+            && preg_match('/\A' . TAG_REGEX . '\z/', $this->q)) {
+            if ($this->q[0] === "~"
+                || (($result = $Conf->qe("select paperId from PaperTag where tag='" . sqlq($this->q) . "' limit 1"))
+                    && edb_row($result)))
+                return "#" . $this->q;
+        }
+        return false;
+    }
+
     function has_sort() {
         return count($this->orderTags)
             || $this->numbered_papers() !== null
@@ -2608,10 +2620,13 @@ class PaperSearch {
         return $x;
     }
 
-    function url_site_relative() {
+    function url_site_relative($q = null) {
         $url = $this->urlbase;
-        if ($this->q != "" || substr($this->urlbase, 0, 6) == "search")
-            $url .= "&q=" . urlencode($this->q);
+        if ($q === null)
+            $q = $this->q;
+        if ($q != "" || substr($this->urlbase, 0, 6) == "search")
+            $url .= (strpos($url, "?") === false ? "?" : "&")
+                . "q=" . urlencode($q);
         return $url;
     }
 
@@ -2633,26 +2648,17 @@ class PaperSearch {
             return 0;
     }
 
-    function _tagDescription() {
+    private function _tag_description() {
         if ($this->q == "")
             return false;
         else if (strlen($this->q) <= 24)
             return htmlspecialchars($this->q);
-        else if (substr($this->q, 0, 4) == "tag:")
-            $t = substr($this->q, 4);
-        else if (substr($this->q, 0, 5) == "-tag:")
-            $t = substr($this->q, 5);
-        else if (substr($this->q, 0, 6) == "notag:"
-                 || substr($this->q, 0, 6) == "order:")
-            $t = substr($this->q, 6);
-        else if (substr($this->q, 0, 7) == "rorder:")
-            $t = substr($this->q, 7);
-        else
+        else if (!preg_match(',\A(#|-#|tag:|-tag:|notag:|order:|rorder:)(.*)\z,', $this->q, $m))
             return false;
         $tagger = new Tagger($this->contact);
-        if (!$tagger->check($t))
+        if (!$tagger->check($m[2]))
             return false;
-        if ($this->q[0] == "-")
+        else if ($m[1] == "-tag:")
             return "no" . substr($this->q, 1);
         else
             return $this->q;
@@ -2674,7 +2680,7 @@ class PaperSearch {
         }
         if ($this->q == "")
             return $listname;
-        if (($td = $this->_tagDescription())) {
+        if (($td = $this->_tag_description())) {
             if ($listname == "Submitted papers") {
                 if ($this->q == "re:me")
                     return "Your reviews";

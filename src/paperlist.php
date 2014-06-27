@@ -1037,8 +1037,16 @@ class PaperList extends BaseList {
             foreach ($rows as $row)
                 $idarray[] = $row->paperId;
             return $idarray;
-        } else if (count($rows) == 0)
-            return "No matching papers";
+        } else if (count($rows) == 0) {
+            if (($altq = $this->search->alternate_query())) {
+                $altqh = htmlspecialchars($altq);
+                $url = $this->search->url_site_relative($altq);
+                if (substr($url, 0, 5) == "search")
+                    $altqh = "<a href=\"" . $ConfSiteBase . htmlspecialchars($url) . "\">" . $altqh . "</a>";
+                return "No matching papers. Did you mean “${altqh}”?";
+            } else
+                return "No matching papers";
+        }
 
         // get field array
         $fieldDef = array();
