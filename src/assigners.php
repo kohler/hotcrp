@@ -374,7 +374,7 @@ class TagAssigner extends Assigner {
         }
         if (!($tag = @$req["tag"]))
             return "tag missing";
-        else if (!$tagger->check($tag))
+        else if (!($tag = $tagger->check($tag)))
             return $tagger->error_html;
         else if (!$state->contact->privChair
                  && $tagger->is_chair($tag))
