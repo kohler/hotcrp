@@ -98,12 +98,9 @@ echo "<h2 style='margin-top:1em'>Upload assignments</h2>\n\n";
 
 echo Ht::form(hoturl_post("bulkassign", "upload=1")), '<div class="inform">';
 
-echo '<table><tr>',
-    '<td colspan="2">Upload:&nbsp; ',
-    '<input type="file" name="uploadfile" accept="text/plain,text/csv" size="30" /> ',
-    Ht::submit("Go"),
-    '</td></tr>',
-    '<tr><td style="padding-left:2em"></td><td style="padding-top:0.5em;font-size:smaller">';
+// Upload
+echo '<input type="file" name="uploadfile" accept="text/plain,text/csv" size="30" />',
+    '<div style="margin:0.5em 0">';
 
 echo 'Default action:&nbsp; assign&nbsp; ',
     Ht::select("default_action", array("primary" => "primary reviews",
@@ -133,49 +130,99 @@ echo "<div id='foldemail' class='foldo'><table class='fx'>
 <tr><td>", Ht::checkbox("email", 1, true), "&nbsp;</td>
 <td>", Ht::label("Send email to external reviewers:"), "</td></tr>
 <tr><td></td><td><textarea class='tt' name='email_requestreview' cols='80' rows='20'>", htmlspecialchars($t), "</textarea></td></tr></table>
-<div class='fn";
+<div";
 if (isset($Error["rev_roundtag"]))
-    echo " error";
-echo "'>Default review round: &nbsp;",
+    echo ' class="error"';
+echo ">Default review round: &nbsp;",
     "<input id='rev_roundtag' class='textlite temptextoff' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"),
     "\" />",
-    " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a></div></div>
-</td></tr></table>
-</div></form>
+    " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a></div></div>",
+    Ht::submit("Upload"),
+    "</div></div></form>
 
-<div class='g'></div>
+<hr style='margin-top:1em' />
 
-<p>Use this page to upload many assignments at once. The upload format is a
-comma-separated file with one line per assignment. For example:</p>
+<h3>Instructions</h3>
 
-<table style='width:60%'><tr><td><pre class='entryexample'>
-paper,name,email
-1,Alice Man,man@alice.org
-10,,noname@anonymous.org
-11,Manny Ramirez,slugger@manny.com
-</pre></td></tr></table>
+<p>Upload a comma-separated value file to assign reviews, conflicts, leads,
+shepherds, and tags. You’ll be given a chance to review the assignments before
+they are applied.</p>
 
-<p>Possible columns include “<code>paper</code>”, “<code>action</code>”,
-“<code>email</code>”, “<code>first</code>”, “<code>last</code>”,
-“<code>name</code>”, “<code>round</code>”, and “<code>tag</code>”. The “<code>action</code>”
-column, if given, is the assignment type for that row;
-it should be one of ";
-$anames = array();
-foreach (Assigner::assigner_names() as $a)
-    $anames[] = "“<code>$a</code>”";
-echo commajoin($anames), ".</p>
+<p>A simple example:</p>
 
-<p>Primary, secondary, and optional PC reviews must be PC members, so for
-those reviewer types you don't need a full name or email address, just some
-substring that identifies the PC member uniquely. For example:</p>
+<pre class='entryexample'>paper,action,email
+1,primary,man@alice.org
+2,secondary,slugger@manny.com
+1,primary,slugger@manny.com</pre>
 
-<table style='width:60%'><tr><td><pre class='entryexample'>
-paper,user
-24,sylvia
-1,Frank
-100,feldmann
-</pre></td></tr></table>\n";
+<p>This assigns PC members man@alice.org and slugger@manny.com as primary
+reviewers for paper #1, and PC member slugger@manny.com as a secondary
+reviewer for paper #2. Errors will be reported if those users aren’t PC
+members, or if they have conflicts with their assigned papers.</p>
+
+<p>A more complex example:</p>
+
+<pre class='entryexample'>paper,action,email,round
+all,clearreview,all,R2
+1,primary,man@alice.org,R2
+10,primary,slugger@manny.com,R2
+#manny OR #ramirez,primary,slugger@manny.com,R2</pre>
+
+<p>The first assignment line clears all review assignments in
+round R2. (Review assignments in other rounds are left alone.) The next
+lines assign man@alice.org as a primary reviewer for paper #1, and slugger@manny.com
+as a primary reviewer for paper #10. The last line assigns slugger@manny.com
+as a primary reviewer for all papers tagged #manny or #ramirez.</p>
+
+<p>HotCRP parses each assignment file line by line, but commits the
+file as a unit. If file makes no overall changes to the current
+state, the upload process does nothing. For instance, if a file
+removes an active assignment and then restores it, the assignment is left alone.</p>
+
+<p>Actions are:</p>
+
+<dl>
+<dt><code>primary</code>, <code>secondary</code>, <code>pcreview</code></dt>
+<dd>Assign a primary, secondary, or optional PC review. The <code>email</code>,
+<code>name</code>, and/or <code>user</code> columns locate the user.
+It’s an error if a user doesn’t correspond to a PC member.
+The optional <code>round</code> column sets the review round.</dd>
+
+<dt><code>review</code></dt>
+<dd>Assign an external review (or an optional PC review, if the user is a PC member).
+The <code>email</code> and/or <code>name</code> columns locate the user.
+(<code>first</code> and <code>last</code> columns may be used in place of <code>name</code>.)
+If the user doesn’t have an account, one will be created.
+The optional <code>round</code> column sets the review round.</dd>
+
+<dt><code>clearreview</code></dt>
+<dd>Clear an existing review assignment. The <code>email</code> and/or
+<code>name</code> columns locate the user. The optional <code>round</code>
+column sets the review round; only matching assignments are cleared.
+Note that clearing an assignment doesn’t remove reviews that are already
+submitted (though clearing a primary or secondary assignment will change any associated
+review into a PC review).</dd>
+
+<dt><code>lead</code></dt>
+<dd>Set the discussion lead. The <code>email</code>, <code>name</code>,
+and/or <code>user</code> columns locate the PC user. To clear the discussion lead,
+use email <code>none</code> or action <code>clearlead</code>.</dd>
+
+<dt><code>shepherd</code></dt>
+<dd>Set the shepherd. The <code>email</code>, <code>name</code>,
+and/or <code>user</code> columns locate the PC user. To clear the shepherd,
+use email <code>none</code> or action <code>clearshepherd</code>.</dd>
+
+<dt><code>conflict</code></dt>
+<dd>Mark a PC conflict. The <code>email</code>, <code>name</code>,
+and/or <code>user</code> columns locate the PC user. To clear a conflict,
+use action <code>clearconflict</code>.</dd>
+
+<dt><code>tag</code></dt>
+<dd>Add a tag. The optional <code>value</code> column sets the tag value.
+To clear a tag, use action <code>cleartag</code> or value <code>none</code>.</dd>
+</dl>\n";
 
 $Conf->footerScript("mktemptext('rev_roundtag','(None)')");
 $Conf->footerScript("fold('email',\$\$('tsel').value!=" . REVIEW_EXTERNAL . ")");
