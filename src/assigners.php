@@ -684,9 +684,10 @@ class AssignmentSet {
         }
 
         ksort(AutoassignmentPaperColumn::$info);
+        $papers = join(" ", array_keys(AutoAssignmentPaperColumn::$info));
         $search = new PaperSearch($this->contact,
                                   array("t" => defval($_REQUEST, "t", "s"),
-                                        "q" => join(" ", array_keys(AutoassignmentPaperColumn::$info))));
+                                        "q" => $papers !== "" ? $papers : "NONE"));
         $plist = new PaperList($search);
         $plist->display .= " reviewers ";
         echo $plist->text("reviewers");
