@@ -1329,7 +1329,7 @@ class PaperSearch {
     }
 
     function _searchQueryType($str) {
-        global $searchOperators, $Conf;
+        global $searchOperators;
 
         $stack = array();
         $parens = 0;
@@ -1417,7 +1417,7 @@ class PaperSearch {
     }
 
     static function _canonicalizeQueryType($str, $type) {
-        global $searchOperators, $Conf;
+        global $searchOperators;
 
         $stack = array();
         $parens = 0;
@@ -1491,7 +1491,6 @@ class PaperSearch {
     // assign review adjustments (rates & rounds).
 
     function _queryClean($qe, $below = false) {
-        global $Conf;
         if (!$qe)
             return $qe;
         else if ($qe->type == "not")
@@ -1717,7 +1716,6 @@ class PaperSearch {
     // QUERY EVALUATION makes it precise.
 
     private function _clauseTermSetFlags($t, $sqi, &$q) {
-        global $Conf;
         $flags = $t->flags;
         $this->needflags |= $flags;
 
