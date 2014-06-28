@@ -402,8 +402,8 @@ It’s easy to add and remove tags and to list all papers with a given tag,
 and <em>ordered</em> tags preserve a particular paper order.
 Tags also affect color highlighting in paper lists.
 
-<p><em>Twiddle tags</em>, with names like “~tag”, are visible only
-to their creators.  Tags with two twiddles, such as “~~tag”, are
+<p><em>Twiddle tags</em>, with names like “#~tag”, are visible only
+to their creators.  Tags with two twiddles, such as “#~~tag”, are
 visible only to PC chairs.  All other tags are visible to the entire PC.</p>");
 
     _alternateRow("Using tags", "
@@ -411,44 +411,44 @@ Here are some example ways to use tags.
 
 <ul>
 <li><strong>Avoid discussing low-ranked submissions at the PC meeting.</strong>
- Mark low-ranked submissions with tag “nodiscuss”, then ask the PC to
+ Mark low-ranked submissions with tag “#nodiscuss”, then ask the PC to
  <a href='" . hoturl("search", "q=%23nodiscuss") . "'>search for “#nodiscuss”</a>
  (<a href='" . hoturl("search", "q=tag:nodiscuss") . "'>“tag:nodiscuss”</a> also works).
- PC members can easily check the list for controversial papers they'd like to discuss despite their ranking.
- They can email the chairs about such papers, or, even easier, add a “discussanyway” tag.
- (You might make the “nodiscuss” tag chair-only so an evil PC member couldn’t add it to a high-ranked paper, but it’s usually better to trust the PC.)</li>
+ PC members can easily check the list for controversial papers they’d like to discuss despite their ranking.
+ They can email the chairs about such papers, or, even easier, add a “#discussanyway” tag.
+ (You might make the “#nodiscuss” tag chair-only so an evil PC member couldn’t add it to a high-ranked paper, but it’s usually better to trust the PC.)</li>
 
 <li><strong>Mark controversial papers that would benefit from additional review.</strong>
- PC members could add the “controversy” tag when the current reviewers disagree.
+ PC members could add the “#controversy” tag when the current reviewers disagree.
  A <a href='" . hoturl("search", "q=%23controversy") . "'>search</a> shows where the PC thinks more review is needed.</li>
 
 <li><strong>Mark PC-authored papers for extra scrutiny.</strong>
  First, <a href='" . hoturl("search", "t=s&amp;qt=au") . "'>search for PC members’ last names in author fields</a>.
- Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag “pcpaper”.
+ Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag “#pcpaper”.
  A <a href='" . hoturl("search", "t=s&amp;qx=%23pcpaper") . "'>search</a> shows papers without PC authors.
- (Since PC members can see whether a paper is tagged “pcpaper”, you may want to delay defining the tag until just before the meeting.)</li>
+ (Since PC members can see whether a paper is tagged “#pcpaper”, you may want to delay defining the tag until just before the meeting.)</li>
 
 <li><strong>Vote for papers.</strong>
  The chair can define special voting tags$votetags$setting.
  Each PC member is assigned an allotment of votes to distribute among papers.
- For instance, if “v” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “~v#5”.
- The system automatically sums PC members’ votes into the public “v” tag.
+ For instance, if “#v” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “#~v#5”.
+ The system automatically sums PC members’ votes into the public “#v” tag.
  To search for papers by vote count, search for “<a href='" . hoturl("search", "t=s&amp;q=rorder:v") . "'>rorder:v</a>”. (<a href='" . hoturl("help", "t=votetags") . "'>Learn more</a>)</li>
 
 <li><strong>Rank papers.</strong>
  Each PC member can set tags indicating their preference ranking for papers.
- For instance, a PC member’s favorite paper would get tag “~rank#1”, the next favorite “~rank#2”, and so forth.
+ For instance, a PC member’s favorite paper would get tag “#~rank#1”, the next favorite “#~rank#2”, and so forth.
  The chair can then combine these rankings into a global preference order using a Condorcet method.
  (<a href='" . hoturl("help", "t=ranking") . "'>Learn more</a>)</li>
 
 <li><strong>Define a discussion order for the PC meeting.</strong>
  Publishing the order lets PC members prepare to discuss upcoming papers.
- Define an ordered tag such as “discuss” (see below for how), then ask the PC to <a href='" . hoturl("search", "q=order:discuss") . "'>search for “order:discuss”</a>.
+ Define an ordered tag such as “#discuss” (see below for how), then ask the PC to <a href='" . hoturl("search", "q=order:discuss") . "'>search for “order:discuss”</a>.
  The PC can now see the order and use quick links to go from paper to paper.$conflictmsg2</li>
 
 <li><strong>Mark tentative decisions during the PC meeting</strong> either
- using decision selectors or, perhaps, “accept” and
- “reject” tags.</li>
+ using decision selectors or, perhaps, “#accept” and
+ “#reject” tags.</li>
 
 </ul>
 ");
@@ -457,11 +457,11 @@ A paper’s tags are shown like this:
 
 <p>" . Ht::img("extagsnone.png", "[Tag list on review screen]") . "</p>
 
-To find all papers with tag “discuss”:&nbsp; " . _searchForm("#discuss") . "
+To find all papers with tag “#discuss”:&nbsp; " . _searchForm("#discuss") . "
 
 <p>Tags are only shown to PC members and administrators.
 $conflictmsg3$setting
-Additionally, twiddle tags, which have names like “~tag”, are
+Additionally, twiddle tags, which have names like “#~tag”, are
 visible only to their creators; each PC member has an independent set.
 Tags are not case sensitive.</p>");
     _alternateRow("<a name='changing'>Changing tags</a>", "
@@ -481,12 +481,15 @@ tags from the selected papers, and <b>Define</b> adds the tag to all selected
 papers and removes it from all non-selected papers.  The chair-only <b>Clear
 twiddle</b> action removes a tag and all users’ matching twiddle tags.</p>
 
+<p>The chair may also upload tags using the <a href='" . hoturl("bulkassign") . "'>bulk
+assignment page</a>.</p>
+
 <p>Although any PC member can view or search
-most tags, only PC chairs can change certain tags$chairtags.  $setting</p>");
+most tags, certain tags may be changed only by PC chairs$chairtags.  $setting</p>");
     _alternateRow("Tag values<br />and discussion orders", "
 Tags have optional per-paper numeric values, which are displayed as
 “tag#100”.  Searching for a tag with “<a
-href='" . hoturl("search", "q=order:tagname") . "'>order:tagname</a>” will
+href='" . hoturl("search", "q=order:tag") . "'>order:tag</a>” will
 return the papers sorted by the tag value.  This is useful, for example, for
 PC meeting discussion orders.  Change the order by editing the tag values.
 Search for specific values with search terms like “<a
@@ -504,24 +507,25 @@ you might search for “<a href='" . hoturl("search", "q=4+1+12+9") . "'>4 1 12
 new papers at the end of an existing discussion order, use <b>Add to order</b>.
 To insert papers into an existing order, use <b>Add to order</b> with a tag
 value; for example, to insert starting at value 5, use <b>Add to order</b> with
-“tag#5”.  The rest of the order is renumbered to accomodate the
+“#tag#5”.  The rest of the order is renumbered to accomodate the
 insertion.</p>
 
-<p><b>Define order</b> might assign values “tag#1”,
-“tag#3”, “tag#6”, and “tag#7”
+<p><b>Define order</b> might assign values “#tag#1”,
+“#tag#3”, “#tag#6”, and “#tag#7”
 to adjacent papers.  The gaps make it harder to infer
 conflicted papers’ positions.  (Any given gap might or might not hold a
-conflicted paper.)  In contrast, the <b>Define gapless order</b> action assigns
-strictly sequential values, like “tag#1”,
-“tag#2”, “tag#3”, “tag#4”.
+conflicted paper.)  The <b>Define gapless order</b> action assigns
+strictly sequential values, like “#tag#1”,
+“#tag#2”, “#tag#3”, “#tag#4”.
 <b>Define order</b> is better for most purposes.</p>");
     _alternateRow("Tag colors", "
 The tag names “red”, “orange”, “yellow”,
 “green”, “blue”, “purple”, and
-“gray” act as highlight colors.  For example, papers tagged with
-“red” will appear red in paper lists (for people who can see that
-tag).  Tag a paper “~red” to make it red on your displays, but not
-others’.  System administrators can <a
+“gray” act as highlight colors. For example, papers tagged with
+“#red” will appear red in paper lists (for people who can see that
+tag).  Tag a paper “#~red” to make it red on your displays, but not
+others’. Other styles are available; try
+“#bold”, “#italic”, “#big”, “#small”, and “#dim”. System administrators can <a
 href='" . hoturl("settings", "group=reviews") . "'>associate other tags with colors</a>
 so that, for example, “<a
 href='" . hoturl("search", "q=%23reject") . "'>#reject</a>” papers show up
