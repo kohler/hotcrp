@@ -301,7 +301,7 @@ class PaperSearch {
     private $_reviewer_fixed;
     var $matchPreg;
     private $urlbase;
-    var $warnings;
+    public $warnings = array();
 
     var $q;
 
@@ -370,7 +370,6 @@ class PaperSearch {
         if ($me->privChair || $me->is_author()
             || ($this->amPC && !$Conf->subBlindAlways()))
             $this->allowAuthor = true;
-        $this->warnings = null;
 
         // default query fields
         // NB: If a complex query field, e.g., "re", "tag", or "option", is
@@ -450,8 +449,6 @@ class PaperSearch {
 
 
     function warn($text) {
-        if (!$this->warnings)
-            $this->warnings = array();
         $this->warnings[] = $text;
     }
 
@@ -880,9 +877,9 @@ class PaperSearch {
             $c = substr($tagword, 0, $twiddle);
             $twiddlecid = matchContact(pcMembers(), null, null, $c);
             if ($twiddlecid == -2)
-                $this->warn("&ldquo;" . htmlspecialchars($c) . "&rdquo; matches no PC member.");
+                $this->warn("“" . htmlspecialchars($c) . "” matches no PC member.");
             else if ($twiddlecid <= 0)
-                $this->warn("&ldquo;" . htmlspecialchars($c) . "&rdquo; matches more than one PC member; be more specific to disambiguate.");
+                $this->warn("“" . htmlspecialchars($c) . "” matches more than one PC member; be more specific to disambiguate.");
             $tagword = substr($tagword, $twiddle);
         } else if ($twiddle === 0 && $tagword[1] === "~")
             $twiddlecid = "";
@@ -1043,7 +1040,7 @@ class PaperSearch {
                 $x = array_diff(matchValue(ReviewForm::$rating_types, $m[1]),
                                 array("n")); /* don't allow "average" */
                 if (count($x) == 0) {
-                    $this->warn("Unknown rating type &ldquo;" . htmlspecialchars($m[1]) . "&rdquo;.");
+                    $this->warn("Unknown rating type “" . htmlspecialchars($m[1]) . "”.");
                     $qt[] = new SearchTerm("f");
                 } else {
                     $type = count($this->interestingRatings);
@@ -1063,7 +1060,7 @@ class PaperSearch {
             if ($Conf->setting("rev_ratings") == REV_RATINGS_NONE)
                 $this->warn("Review ratings are disabled.");
             else
-                $this->warn("Bad review rating query &ldquo;" . htmlspecialchars($word) . "&rdquo;.");
+                $this->warn("Bad review rating query “" . htmlspecialchars($word) . "”.");
             $qt[] = new SearchTerm("f");
         }
     }
@@ -1153,7 +1150,7 @@ class PaperSearch {
                     if (strstr(strtolower($tname), $x) !== false)
                         $tids[] = $tid;
                 if (count($tids) == 0 && $word != "none" && $word != "any") {
-                    $this->warn("&ldquo;" . htmlspecialchars($x) . "&rdquo; does not match any defined paper topic.");
+                    $this->warn("“" . htmlspecialchars($x) . "” does not match any defined paper topic.");
                     $type = "f";
                 } else
                     $value = $tids;
@@ -1267,7 +1264,7 @@ class PaperSearch {
                 $this->_searchReviews($word, $rf, $field, $qt, $quoted);
             else if (!$this->_searchOptions("$keyword:$word", $qt, false)
                      && $report_error)
-                $this->warn("Unrecognized keyword &ldquo;" . htmlspecialchars($keyword) . "&rdquo;.");
+                $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
         }
 
         // Must always return something
@@ -2291,7 +2288,7 @@ class PaperSearch {
         if ($this->reviewAdjust) {
             $qe = $this->_queryAdjustReviews($qe, null);
             if ($this->_reviewAdjustError)
-                $Conf->errorMsg("Unexpected use of &ldquo;round:&rdquo; or &ldquo;rate:&rdquo; ignored.  Stick to the basics, such as &ldquo;re:reviewername round:roundname&rdquo;.");
+                $this->warn("Unexpected use of “round:” or “rate:” ignored.  Stick to the basics, such as “re:reviewername round:roundname”.");
         }
 
         //$Conf->infoMsg(Ht::pre_text(var_export($qe, true)));
