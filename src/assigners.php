@@ -466,7 +466,7 @@ class AssignmentSet {
         $this->cmap = new AssignerContacts;
 
         $this->papers = array();
-        $result = $Conf->qe('select paperId, timeSubmitted, timeWithdrawn from Paper');
+        $result = $Conf->qe("select paperId, timeSubmitted, timeWithdrawn from Paper");
         while (($row = edb_row($result)))
             $this->papers[$row[0]] = ($row[1]>0 ? 1 : ($row[2]>0 ? -1 : 0));
 
@@ -549,6 +549,7 @@ class AssignmentSet {
             $pc_by_email[$pc->email] = $pc;
             $this->cmap->store($pc);
         }
+        $searches = array();
 
         // parse file
         while (($req = $csv->next()) !== false) {
@@ -557,19 +558,36 @@ class AssignmentSet {
                 if (!isset($req[$k]))
                     $req[$k] = $v;
 
-            // check paper
-            $pid = @trim($req["paper"]);
-            if ($pid == "" || !ctype_digit($pid)) {
+            // parse paper
+            $pfield = @trim($req["paper"]);
+            if ($pfield !== "" && ctype_digit($pfield))
+                $pids = array(intval($pfield));
+            else if ($pfield !== "") {
+                if (!($pids = @$searches[$pfield])) {
+                    $search = new PaperSearch($this->contact, $pfield);
+                    $pids = $searches[$pfield] = $search->paperList();
+                    foreach ($search->warnings as $w)
+                        $this->error($csv->lineno(), $w);
+                }
+                if (!count($pids)) {
+                    $this->error($csv->lineno(), "no papers match “" . htmlspecialchars($pfield) . "”");
+                    continue;
+                }
+            } else {
                 $this->error($csv->lineno(), "bad paper column");
                 continue;
             }
-            $pid = intval($pid);
-            if (!isset($this->papers[$pid])) {
-                $this->error($csv->lineno(), "paper $pid does not exist");
-                continue;
-            } else if ($this->papers[$pid] <= 0 && !$this->override) {
-                $this->error($csv->lineno(), $this->papers[$pid] < 0 ? "paper $pid has been withdrawn" : "paper $pid was never submitted");
-                continue;
+
+            // check papers
+            $npids = array();
+            foreach ($pids as $p) {
+                if (isset($this->papers[$p])
+                    && ($this->papers[$p] > 0 || $this->override))
+                    $npids[] = $p;
+                else if (!isset($this->papers[$p]))
+                    $this->error($csv->lineno(), "paper $p does not exist");
+                else
+                    $this->error($csv->lineno(), $this->papers[$p] < 0 ? "paper $p has been withdrawn" : "paper $p was never submitted");
             }
 
             // check action
@@ -636,16 +654,16 @@ class AssignmentSet {
                         $contact->lastName = $req["lastName"];
                 }
             }
-            if ($contact && @$contact->contactId > 0 && !$this->override
-                && @$this->conflict[$pid][$contact->contactId]
-                && !$assigner->allow_contact_type("conflict")) {
-                $this->error($csv->lineno(), Text::user_html_nolink($contact) . " has a conflict with paper #$pid");
-                continue;
-            }
 
-            // perform assignment
-            if (($err = $assigner->apply($pid, $contact, $req, $this->astate)))
-                $this->error($csv->lineno(), $err);
+            // check conflicts and perform assignment
+            foreach ($npids as $p) {
+                if ($contact && @$contact->contactId > 0 && !$this->override
+                    && @$this->conflict[$p][$contact->contactId]
+                    && !$assigner->allow_contact_type("conflict"))
+                    $this->error($csv->lineno(), Text::user_html_nolink($contact) . " has a conflict with paper #$p");
+                else if (($err = $assigner->apply($p, $contact, $req, $this->astate)))
+                    $this->error($csv->lineno(), $err);
+            }
         }
 
         // create assigners for difference
@@ -749,7 +767,7 @@ class AssignmentSet {
         if ($this->report_errors())
             return false;
         else if (!count($this->assigners)) {
-            $Conf->warnMsg('Nothing to assign.');
+            $Conf->warnMsg("Nothing to assign.");
             return false;
         }
 

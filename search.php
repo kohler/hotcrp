@@ -1557,7 +1557,7 @@ echo "</tr></table></td></tr>
 
 
 if ($pl) {
-    if ($Search->warnings) {
+    if (count($Search->warnings)) {
         echo "<div class='maintabsep'></div>\n";
         $Conf->warnMsg(join("<br />\n", $Search->warnings));
     }
