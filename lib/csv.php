@@ -137,6 +137,8 @@ class CsvParser {
         $linelen = self::linelen($line);
         $pos = 0;
         while ($pos != $linelen) {
+            if ($i && $line[$pos] == ",")
+                ++$pos;
             $bpos = $pos;
             if ($line[$pos] == "\"") {
                 while (1) {
@@ -167,8 +169,6 @@ class CsvParser {
             else
                 $a[$i] = $field;
             ++$i;
-            if ($pos != $linelen && $line[$pos] == ",")
-                ++$pos;
         }
         return $a;
     }
