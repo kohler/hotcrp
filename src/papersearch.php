@@ -1523,6 +1523,7 @@ class PaperSearch {
     }
 
     static function _reviewAdjustmentNegate($ra) {
+        global $Conf;
         if (isset($ra->value["round"]))
             $ra->value["round"] = array_diff(array_keys($Conf->round_list()), $ra->value["round"]);
         if (isset($ra->value["rate"]))
