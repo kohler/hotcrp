@@ -187,7 +187,7 @@ class ReviewAssigner extends Assigner {
         return $this->type > REVIEW_EXTERNAL;
     }
     function allow_contact_type($type) {
-        return $this->type == 0 && $type != "none" && $type != "absent";
+        return $this->type == 0 && $type != "none";
     }
     function load_state($state) {
         global $Conf;
@@ -206,12 +206,15 @@ class ReviewAssigner extends Assigner {
         if ($rtype == REVIEW_EXTERNAL && ($contact->roles & Contact::ROLE_PC))
             $rtype = REVIEW_PC;
         $state->load_type("review", $this);
-        $r = $state->remove(array("type" => "review", "pid" => $pid, "cid" => $contact->contactId));
+        $cid = $contact ? $contact->contactId : null;
+        $remround = $round === "none" ? "" : ($round === "" ? null : $round);
+        $r = $state->remove(array("type" => "review", "pid" => $pid, "cid" => $cid,
+                                  "_round" => $rtype ? null : $remround));
         if (!$round && count($r) && $r[0]["_round"])
             $round = $r[0]["_round"];
-        $round = $round == "none" ? "" : $round;
+        $round = $round === "none" ? "" : $round;
         if ($rtype)
-            $state->add(array("type" => "review", "pid" => $pid, "cid" => $contact->contactId,
+            $state->add(array("type" => "review", "pid" => $pid, "cid" => $cid,
                               "_rtype" => $rtype, "_round" => $round));
     }
     function realize($old, $new, $cmap, $state) {
