@@ -72,6 +72,8 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
         $assignset->parse($text, $_FILES["uploadfile"]["name"], $defaults);
         if ($assignset->report_errors())
             /* do nothing */;
+        else if ($assignset->is_empty())
+            $Conf->warnMsg("That assignment file makes no changes.");
         else {
             echo '<h3>Proposed assignment</h3>';
             $Conf->infoMsg("If this assignment looks OK to you, select “Save assignment” to apply it. (You can always alter the assignment afterwards.)");

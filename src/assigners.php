@@ -765,6 +765,10 @@ class AssignmentSet {
             return false;
     }
 
+    function is_empty() {
+        return count($this->assigners) == 0;
+    }
+
     function execute($when) {
         global $Conf;
         if ($this->report_errors())
