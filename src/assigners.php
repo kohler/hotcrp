@@ -618,16 +618,19 @@ class AssignmentSet {
 
             // check user
             $email = @trim($req["email"]);
+            $lemail = @strtolower($email);
+            if ($lemail === "all")
+                $lemail = "any";
             if ($email && ($contact = @$pc_by_email[$email]))
                 /* ok */;
             else if (!$email && $assigner->allow_contact_type("absent"))
                 $contact = null;
-            else if ($email == "none" || $email == "any") {
-                if (!$assigner->allow_contact_type($email)) {
+            else if ($lemail == "none" || $lemail == "any") {
+                if (!$assigner->allow_contact_type($lemail)) {
                     $this->error($csv->lineno(), "“$email” not allowed here");
                     continue;
                 }
-                $contact = (object) array("roles" => 0, "contactId" => null, "email" => $email, "sorter" => "");
+                $contact = (object) array("roles" => 0, "contactId" => null, "email" => $lemail, "sorter" => "");
             } else if ($assigner->require_pc()) {
                 $cid = matchContact($pcm, @$req["firstName"], @$req["lastName"], $email);
                 if ($cid == -2)
