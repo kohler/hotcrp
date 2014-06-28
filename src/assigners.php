@@ -378,15 +378,24 @@ class TagAssigner extends Assigner {
             return $tagger->error_html;
         else if (!$state->contact->privChair
                  && $tagger->is_chair($tag))
-            return "Tag “" . htmlspecialchars($tag) . "“ can only be changed by the chair.";
-        if (($index = @$req["index"])
-            && $index !== "none" && $index !== "clear"
-            && ($index = cvtint($index, null)) === null)
-            return "Index “" . htmlspecialchars($req["index"]) . "“ should be an integer.";
-        if (!$this->isadd && !$state->set_extra("tag.$tag", true))
+            return "Tag “" . htmlspecialchars($tag) . "” can only be changed by the chair.";
+        // index parsing
+        $index = @$req["index"];
+        if ($index === null)
+            $index = @$req["value"];
+        if (is_string($index))
+            $index = trim(strtolower($index));
+        if ($index === "clear")
+            $index = "none";
+        if ($index === "" || (!$this->isadd && ($index === "any" || $index === "all" || $index === "none")))
+            $index = null;
+        if ($index !== null && $index !== "none" && ($index = cvtint($index, null)) === null)
+            return "Index “" . htmlspecialchars($req["index"]) . "” should be an integer.";
+        // save assignment
+        if ($this->isadd === "set" && !$state->set_extra("tag.$tag", true))
             $state->remove(array("type" => "tag", "tag" => $tag));
-        $state->remove(array("type" => "tag", "pid" => $pid, "tag" => $tag));
-        if ($index !== "none" && $index !== "clear")
+        $state->remove(array("type" => "tag", "pid" => $pid, "tag" => $tag, "_index" => ($this->isadd ? null : $index)));
+        if ($this->isadd && $index !== "none")
             $state->add(array("type" => "tag", "pid" => $pid, "tag" => $tag, "_index" => ($index ? $index : 0)));
     }
     function realize($old, $new, $cmap, $state) {
@@ -419,14 +428,20 @@ Assigner::register("secondary", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""
 Assigner::register("pcreview", new ReviewAssigner(0, null, REVIEW_PC, ""));
 Assigner::register("review", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
 Assigner::register("noreview", new ReviewAssigner(0, null, 0, ""));
+Assigner::register("clearreview", new ReviewAssigner(0, null, 0, ""));
 Assigner::register("lead", new LeadAssigner(0, null, "lead", true));
 Assigner::register("nolead", new LeadAssigner(0, null, "lead", false));
+Assigner::register("clearlead", new LeadAssigner(0, null, "lead", false));
 Assigner::register("shepherd", new LeadAssigner(0, null, "shepherd", true));
 Assigner::register("noshepherd", new LeadAssigner(0, null, "shepherd", false));
+Assigner::register("clearshepherd", new LeadAssigner(0, null, "shepherd", false));
 Assigner::register("conflict", new ConflictAssigner(0, null, CONFLICT_CHAIRMARK));
 Assigner::register("noconflict", new ConflictAssigner(0, null, 0));
+Assigner::register("clearconflict", new ConflictAssigner(0, null, 0));
 Assigner::register("tag", new TagAssigner(0, true, null, 0));
-Assigner::register("settag", new TagAssigner(0, false, null, 0));
+Assigner::register("settag", new TagAssigner(0, "set", null, 0));
+Assigner::register("notag", new TagAssigner(0, false, null, 0));
+Assigner::register("cleartag", new TagAssigner(0, false, null, 0));
 
 class AssignmentSet {
     private $assigners = array();
