@@ -1091,6 +1091,8 @@ class PaperSearch {
         // Treat unquoted "*", "ANY", and "ALL" as special; return true.
         if ($word == "*" || $word == "ANY" || $word == "ALL")
             return new SearchTerm("t");
+        else if ($word == "NONE")
+            return new SearchTerm("f");
 
         $keyword = null;
         if (($colon = strpos($word, ':')) !== false) {
@@ -1347,6 +1349,13 @@ class PaperSearch {
 
             if ($opstr === null) {
                 $word = self::_searchPopWord($nextstr);
+                // Bare lower-case "all", "any", "none" are treated as keywords.
+                if (!$curqe
+                    && (!count($stack) || $stack[count($stack) - 1]->op->op == "then")
+                    && ($uword = strtoupper($word))
+                    && ($uword === "ALL" || $uword === "ANY" || $uword === "NONE")
+                    && preg_match(',\A\s*(?:|THEN(?:\s|\().*)\z,', $nextstr))
+                    $word = $uword;
                 $curqe = $this->_searchQueryWord($word, true);
             } else if ($opstr == ")") {
                 while (count($stack)
