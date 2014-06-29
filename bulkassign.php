@@ -222,7 +222,8 @@ and/or <code>user</code> columns locate the PC user. To clear a conflict,
 use action <code>clearconflict</code>.</dd>
 
 <dt><code>tag</code></dt>
-<dd>Add a tag. The optional <code>value</code> column sets the tag value.
+<dd>Add a tag. The <code>tag</code> column names the tag and the optional
+<code>value</code> column sets the tag value.
 To clear a tag, use action <code>cleartag</code> or value <code>none</code>.</dd>
 </dl>\n";
 
