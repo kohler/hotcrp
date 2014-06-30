@@ -155,8 +155,10 @@ class PaperActions {
             $field = $type . "ContactId";
             if ($contactId != $prow->$field) {
                 $Conf->qe("update Paper set $field=$contactId where paperId=$prow->paperId", "while updating $type");
-                if ($contactId && !$Conf->setting("paperlead"))
-                    $Conf->save_setting("paperlead", 1);
+                if (!$contactId != !$Conf->setting("paperlead"))
+                    $Conf->update_paperlead_setting();
+                if (!$contactId != !$Conf->setting("papermanager"))
+                    $Conf->update_papermanager_setting();
                 if ($OK)
                     $Conf->log("Set $type to " . ($pc ? $pc->email : "none"),
                                $contact, $prow->paperId);

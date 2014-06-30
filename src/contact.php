@@ -42,6 +42,7 @@ class Contact {
     private $has_outstanding_review_;
     private $is_requester_;
     private $is_lead_;
+    private $is_manager_;
     private $rights_version_ = 1;
     var $roles = 0;
     var $isPC = false;
@@ -272,7 +273,7 @@ class Contact {
 
     function update_cached_roles() {
         foreach (array("is_author_", "has_review_", "has_outstanding_review_",
-                       "is_requester_", "is_lead_") as $k)
+                       "is_requester_", "is_lead_", "is_manager_") as $k)
             unset($this->$k);
         ++$this->rights_version_;
     }
@@ -348,6 +349,15 @@ class Contact {
             $this->is_lead_ = edb_nrows($result) > 0;
         }
         return $this->is_lead_;
+    }
+
+    function is_manager() {
+        global $Conf;
+        if (!isset($this->is_manager_)) {
+            $result = $Conf->qe("select paperId from Paper where managerContactId=$this->contactId limit 1");
+            $this->is_manager_ = edb_nrows($result) > 0;
+        }
+        return $this->is_manager_;
     }
 
     static function roles_all_contact_tags($roles, $tags) {

@@ -530,6 +530,7 @@ class PaperList extends BaseList {
             return "id title revtype status";
         case "r":
         case "lead":
+        case "manager":
             $this->_default_linkto("review");
             return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
         case "rout":

@@ -350,7 +350,8 @@ class PaperSearch {
             $this->limitName = "und";
         else if ($me->isPC && ($ptype == "acc" || $ptype == "revs"
                                || $ptype == "reqrevs" || $ptype == "req"
-                               || $ptype == "lead" || $ptype == "rable"))
+                               || $ptype == "lead" || $ptype == "rable"
+                               || $ptype == "manager"))
             $this->limitName = $ptype;
         else if ($this->privChair && ($ptype == "all" || $ptype == "unsub"))
             $this->limitName = $ptype;
@@ -2329,6 +2330,12 @@ class PaperSearch {
             $filters[] = "(Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0)";
         else if ($limit == "lead")
             $filters[] = "Paper.leadContactId=" . $this->cid;
+        else if ($limit == "manager") {
+            if ($this->privChair)
+                $filters[] = "(Paper.managerContactId=" . $this->cid . " or Paper.managerContactId=0)";
+            else
+                $filters[] = "Paper.managerContactId=" . $this->cid;
+        }
 
         // decision limitation parts
         if ($limit == "acc")
@@ -2775,6 +2782,9 @@ class PaperSearch {
         if ($me->isPC && $Conf->setting("paperlead") > 0
             && $me->is_discussion_lead())
             $tOpt["lead"] = "Your discussion leads";
+        if ($me->isPC && $Conf->setting("papermanager") > 0
+            && ($me->is_manager() || $me->privChair))
+            $tOpt["manager"] = "Papers you administer";
         if ($me->is_author())
             $tOpt["a"] = "Your submissions";
         return $tOpt;

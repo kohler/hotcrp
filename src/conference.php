@@ -569,6 +569,10 @@ class Conference {
         $this->qe("insert into Settings (name, value) select 'paperlead', count(paperId) from Paper where leadContactId>0 or shepherdContactId>0 limit 1 on duplicate key update value=values(value)", "while updating paper lead settings");
     }
 
+    function update_papermanager_setting() {
+        $this->qe("insert into Settings (name, value) select 'papermanager', count(paperId) from Paper where managerContactId>0 limit 1 on duplicate key update value=values(value)", "while updating paper manager settings");
+    }
+
     function save_setting($name, $value, $data = null) {
         $qname = $this->dblink->escape_string($name);
         $change = false;
