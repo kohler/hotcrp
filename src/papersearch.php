@@ -1136,6 +1136,8 @@ class PaperSearch {
             if ($keyword ? $keyword == $ctype : isset($this->fields[$ctype])) {
                 $x = $this->_one_pc_matcher($word, $quoted);
                 $qt[] = new SearchTerm("pf", self::F_XVIEW, array("${ctype}ContactId", $x));
+                if ($ctype == "manager" && $word == "me" && !$quoted && $this->privChair)
+                    $qt[] = new SearchTerm("pf", self::F_XVIEW, array("${ctype}ContactId", "=0"));
             }
         if (($keyword ? $keyword == "tag" : isset($this->fields["tag"]))
             || $keyword == "order" || $keyword == "rorder")
