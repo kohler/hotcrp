@@ -61,7 +61,7 @@ class PaperActions {
             $v = unparse_preference($v);
         } else {
             $v = null;
-            $Conf->errorMsg($ajax ? "Preferences must be small positive or negative integers." : "Preferences must be small integers.  0 means don’t care; positive numbers mean you want to review a paper, negative numbers mean you don’t.  The greater the absolute value, the stronger your feelings.");
+            $Conf->errorMsg($ajax ? "Bad preference" : "Bad preference “" . htmlspecialchars($_REQUEST["revpref"]) . "”.");
             $Error["revpref"] = true;
         }
         if ($ajax)
