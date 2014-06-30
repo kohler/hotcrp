@@ -81,8 +81,7 @@ if (!$Acct
     redirectSelf();
 }
 
-if ($Acct)
-    $Acct->load_address();
+$Acct->load_address();
 
 if ($Acct->contactId != $Me->contactId && $Acct->email
     && !$Acct->firstName && !$Acct->lastName && !$Acct->affiliation
@@ -276,9 +275,9 @@ function parseBulkFile($text, $filename) {
         $cj->id = "new";
 
         $ustatus = new UserStatus;
-        if (($cj = save_user($cj, $ustatus)))
+        if (($saved_user = save_user($cj, $ustatus)))
             $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">"
-                . Text::user_html_nolink($cj) . "</a>";
+                . Text::user_html_nolink($saved_user) . "</a>";
         else
             foreach ($ustatus->error_messages() as $e)
                 $errors[] = "<span class='lineno'>" . $filename . $csv->lineno() . ":</span> " . $e;
@@ -315,7 +314,7 @@ else if (isset($_REQUEST["register"]) && $newProfile
     $cj = (object) array();
     web_request_as_json($cj);
     pc_request_as_json($cj);
-    $Acct = save_user($cj, $UserStatus);
+    $saved_user = save_user($cj, $UserStatus);
     if ($UserStatus->nerrors)
         $Conf->errorMsg("<div>" . join("</div><div style='margin-top:0.5em'>", $UserStatus->error_messages()) . "</div>");
     else {
