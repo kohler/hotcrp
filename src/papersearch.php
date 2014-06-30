@@ -33,7 +33,7 @@ $searchKeywords = array("ti" => "ti", "title" => "ti",
         "decision" => "decision", "dec" => "decision",
         "topic" => "topic",
         "option" => "option", "opt" => "option",
-        "manager" => "manager",
+        "manager" => "manager", "admin" => "manager", "administrator" => "manager",
         "lead" => "lead",
         "shepherd" => "shepherd", "shep" => "shepherd",
         "conflict" => "conflict", "conf" => "conflict",
@@ -1000,6 +1000,8 @@ class PaperSearch {
             $qt[] = new SearchTerm("cmt", self::F_AUTHORRESPONSE | self::F_XVIEW, SearchReviewValue::any());
         else if (strcasecmp($word, "cmt") == 0 || strcasecmp($word, "comment") == 0)
             $qt[] = new SearchTerm("cmt", self::F_XVIEW, SearchReviewValue::any());
+        else if (strcasecmp($word, "manager") == 0 || strcasecmp($word, "admin") == 0 || strcasecmp($word, "administrator") == 0)
+            $qt[] = new SearchTerm("pf", 0, array("managerContactId", "!=0"));
         else if (preg_match('/\A\w+\z/', $word) && $this->_searchOptions("$word:yes", $qt, false))
             /* OK */;
         else {
