@@ -328,7 +328,8 @@ else if (isset($_REQUEST["register"]) && $newProfile
         if (isset($_REQUEST["redirect"]))
             go(hoturl("index"));
         else {
-            $Conf->save_session("profile_redirect", $cj);
+            if ($newProfile)
+                $Conf->save_session("profile_redirect", $cj);
             redirectSelf();
         }
     }
