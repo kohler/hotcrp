@@ -700,7 +700,7 @@ class ReviewForm {
             $rest = array("template" => $tmpl, "rrow" => $fake_rrow,
                           "reviewNumber" => $prow->paperId . unparseReviewOrdinal($notify_rrow->reviewOrdinal));
             if ($Conf->timeEmailChairAboutReview())
-                Mailer::sendAdmin($tmpl, $prow, $submitter, $rest);
+                Mailer::send_manager($tmpl, $prow, $submitter, $rest);
             if ($diff_view_score >= VIEWSCORE_PC) {
                 $this->mailer_info = $rest;
                 genericWatch($prow, WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);

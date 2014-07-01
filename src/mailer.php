@@ -806,8 +806,12 @@ class Mailer {
         }
     }
 
-    static function sendAdmin($template, $row, $otherContact = null, $rest = array()) {
-        Mailer::send($template, $row, Contact::site_contact(), $otherContact, $rest);
+    static function send_manager($template, $row, $otherContact = null, $rest = array()) {
+        if ($row && $row->managerContactId
+            && ($c = Contact::find_by_id($row->managerContactId)))
+            Mailer::send($template, $row, $c, $otherContact, $rest);
+        else
+            Mailer::send($template, $row, Contact::site_contact(), $otherContact, $rest);
     }
 
 

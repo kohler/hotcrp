@@ -856,6 +856,8 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
         or conflictType>=" . CONFLICT_AUTHOR . "
         or reviewType is not null or commentId is not null
         or (defaultWatch & " . ($watchtype << WATCHSHIFT_ALL) . ")!=0";
+    if ($prow->managerContactId > 0)
+        $q .= " or ContactInfo.contactId=" . $prow->managerContactId;
 
     $result = $Conf->qe($q, "while processing email notifications");
     $watchers = array();

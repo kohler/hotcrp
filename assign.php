@@ -309,7 +309,7 @@ function proposeReview($email) {
         values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->cid, '" . sqlq(trim($_REQUEST["reason"])) . "') on duplicate key update paperId=paperId", $while);
 
     // send confirmation email
-    Mailer::sendAdmin("@proposereview", $prow, $Me, array("permissionContact" => $Me, "cc" => Text::user_email_to($Me), "contact3" => (object) array("fullName" => $name, "email" => $email), "reason" => $reason));
+    Mailer::send_manager("@proposereview", $prow, $Me, array("permissionContact" => $Me, "cc" => Text::user_email_to($Me), "contact3" => (object) array("fullName" => $name, "email" => $email), "reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");

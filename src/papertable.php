@@ -1434,7 +1434,8 @@ class PaperTable {
 
         if ($row[4] && ($row[4] & ($this->watchCheckbox >> 1)))
             $watchValue = $row[4];
-        else if ($row[1] || $row[2] || $row[3] >= CONFLICT_AUTHOR)
+        else if ($row[1] || $row[2] || $row[3] >= CONFLICT_AUTHOR
+                 || $prow->managerContactId == $Me->contactId)
             $watchValue = $Me->defaultWatch;
         else
             $watchValue = 0;
@@ -1923,6 +1924,9 @@ class PaperTable {
         if ($Me->is_admin_force()
             && !$Me->canViewReview($prow, null, false))
             $this->_paptabSepContaining($this->_privilegeMessage());
+        else if ($Me->contactId == $prow->managerContactId && !$Me->privChair
+                 && $Me->contactId > 0)
+            $this->_paptabSepContaining("You are this paper’s administrator.");
 
         $empty = $this->_paptabReviewLinks(true, null, "<div class='hint'>There are no reviews or comments for you to view.</div>");
         if ($empty)
