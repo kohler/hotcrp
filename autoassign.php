@@ -346,14 +346,23 @@ function doAssign() {
                 $prefs[$row->contactId][$row->paperId] = max($scoredifference * 1001 + max(min($row->preference, 1000), -1000) + ($row->topicInterestScore / 100), -1000000);
         }
         $badpairs = array();    // bad pairs only relevant for reviews,
-                                // not discussion leads or shephers
+                                // not discussion leads or shepherds
         unset($rows);           // don't need the memory any more
     }
 
     // sort preferences
-    foreach ($pcm as $pc) {
-        arsort($prefs[$pc->contactId]);
-        reset($prefs[$pc->contactId]);
+    $pref_unhappiness = $pref_dist = $pref_nextdist = array_fill_keys(array_keys($pcm), 0);
+    $pref_groups = array();
+    foreach ($pcm as $pc => $pcval) {
+        arsort($prefs[$pc]);
+        $last_group = null;
+        foreach ($prefs[$pc] as $pid => $pref)
+            if (!$last_group || $pref != $last_group->pref) {
+                $last_group = (object) array("pref" => $pref, "pids" => array($pid));
+                $pref_groups[$pc][] = $last_group;
+            } else
+                $last_group->pids[] = $pid;
+        reset($pref_groups[$pc]);
     }
 
     // get papers
@@ -400,34 +409,53 @@ function doAssign() {
     while (count($pcm)) {
         // choose a pc member at random, equalizing load
         $pc = null;
-        foreach ($pcm as $pcx)
-            if ($pc == null || $load[$pcx->contactId] < $load[$pc]) {
+        foreach ($pcm as $pcx => $pcxval)
+            if ($pc == null
+                || $load[$pcx] < $load[$pc]
+                || ($load[$pcx] == $load[$pc]
+                    && $pref_unhappiness[$pcx] > $pref_unhappiness[$pc])) {
                 $numminpc = 0;
-                $pc = $pcx->contactId;
-            } else if ($load[$pcx->contactId] == $load[$pc]) {
+                $pc = $pcx;
+            } else if ($load[$pcx] == $load[$pc]
+                       && $pref_unhappiness[$pcx] == $pref_unhappiness[$pc]) {
                 $numminpc++;
                 if (mt_rand(0, $numminpc) == 0)
-                    $pc = $pcx->contactId;
+                    $pc = $pcx;
             }
 
         // traverse preferences in descending order until encountering an
         // assignable paper
-        while (($pid = key($prefs[$pc])) !== null) {
-            $pref = current($prefs[$pc]);
-            next($prefs[$pc]);
-            if ($pref >= -1000000 && isset($papers[$pid]) && $papers[$pid] > 0
-                && (!isset($badpairs[$pc]) || noBadPair($pc, $pid, $prefs))) {
-                // make assignment
-                $assignments[] = "$pid,$action," . $pcm[$pc]->email . $round;
-                $prefs[$pc][$pid] = -1000001;
-                $papers[$pid]--;
-                $load[$pc]++;
-                break;
+        while (($pg = current($pref_groups[$pc]))) {
+            // skip if no papers left
+            if (!count($pg->pids)) {
+                next($pref_groups[$pc]);
+                $pref_dist[$pc] = $pref_nextdist[$pc];
+                continue;
             }
+            // pick a random paper at current preference level
+            $pididx = mt_rand(0, count($pg->pids) - 1);
+            $pid = $pg->pids[$pididx];
+            array_splice($pg->pids, $pididx, 1);
+            // skip if not assignable
+            if (!isset($papers[$pid]) || $prefs[$pc][$pid] < -1000000)
+                continue;
+            // skip if already completely assigned
+            if ($papers[$pid] == 0
+                || (isset($badpairs[$pc]) && !noBadPair($pc, $pid, $prefs))) {
+                ++$pref_nextdist[$pc];
+                continue;
+            }
+            // make assignment
+            $assignments[] = "$pid,$action," . $pcm[$pc]->email . $round;
+            $prefs[$pc][$pid] = -1000001;
+            $papers[$pid]--;
+            $load[$pc]++;
+            $pref_unhappiness[$pc] += $pref_dist[$pc];
+            break;
         }
 
         // if have exhausted preferences, remove pc member
-        if ($pid === null || $load[$pc] === $loadlimit)
+        if (!$pg || $load[$pc] === $loadlimit)
             unset($pcm[$pc]);
     }
 
