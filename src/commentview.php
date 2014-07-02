@@ -135,8 +135,6 @@ class CommentView {
                 echo ($opendiv = '<div class="cmtadminvis">');
             else if ($cmttags && ($colors = $this->tagger->color_classes($cmttags)))
                 echo ($opendiv = '<div class="cmtcolor ' . $colors . '">');
-            if ($cmttags)
-                error_log($cmttags . " : " . $this->tagger->color_classes($cmttags));
         }
         echo "<div class='cmtt'>";
 
