@@ -52,6 +52,7 @@ class CommentSave {
             foreach ($m[0] as $text)
                 if (($text = $tagger->check($text, Tagger::NOVALUE)))
                     $ctags[] = $text;
+            $tagger->sort($ctags);
             $ctags = count($ctags) ? " " . join(" ", $ctags) . " " : null;
         } else
             $ctags = null;

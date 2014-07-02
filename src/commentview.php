@@ -5,14 +5,13 @@
 
 class CommentView {
 
-    var $ncomment_in_table;
-    var $nresponse;
-    var $mode;
-    var $numbers;
+    private $ncomment_in_table = 0;
+    public $nresponse = 0;
+    private $mode = 0;
+    private $numbers = array();
+    private $tagger = null;
 
     function __construct() {
-        $this->ncomment_in_table = $this->nresponse = $this->mode = 0;
-        $this->numbers = array();
     }
 
     function table_begin($classextra) {
@@ -48,46 +47,33 @@ class CommentView {
         return $p . $n;
     }
 
-    private function _commentIdentityTime($prow, $crow, $response) {
+    private function _commentIdentityTime($prow, $crow, $cmttags, $response) {
         global $Conf, $Me;
-        echo "<span class='cmtfn'>";
-        $sep = "";
-        $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-        if ($crow && ($number = $this->_commentOrdinal($prow, $crow))) {
-            echo "<span class='cmtnumhead'><a class='qq' href='#comment",
-                $crow->commentId, "'><span class='cmtnumat'>@</span>",
-                "<span class='cmtnumnum'>", $number, "</span></a></span>";
-            $sep = $xsep;
-        }
+        $cmtfn = array();
+        $cmtvis = "";
+        if ($crow && ($number = $this->_commentOrdinal($prow, $crow)))
+            $cmtfn[] = "<span class='cmtnumhead'><a class='qq' href='#comment"
+                . $crow->commentId . "'><span class='cmtnumat'>@</span>"
+                . "<span class='cmtnumnum'>" . $number . "</span></a></span>";
         if ($crow && $Me->canViewCommentIdentity($prow, $crow, null)) {
             $blind = ($crow->commentType & COMMENTTYPE_BLIND)
                 && $crow->commentType >= COMMENTTYPE_AUTHOR;
-            echo $sep, "<span class='cmtname'>", ($blind ? "[" : ""),
-                Text::user_html($crow), ($blind ? "]" : ""), "</span>";
-            $sep = $xsep;
-        } else if ($crow && $Me->allowAdminister($prow)) {
-            echo $sep, "<span id='foldcid$crow->commentId' class='cmtname fold4c'>",
-                "<a class='q fn4' href=\"javascript:void fold('cid$crow->commentId', 0, 4)\" title='Show author'>+&nbsp;<i>Hidden for blind review</i></a>",
-                "<span class='fx4'><a class='fx4' href=\"javascript:void fold('cid$crow->commentId', 1, 4)\" title='Hide author'>[blind]</a> ", Text::user_html($crow), "</span>",
-                "</span>";
-            $sep = $xsep;
-        }
-        if ($crow && $crow->timeModified > 0) {
-            echo $sep, "<span class='cmttime'>", $Conf->printableTime($crow->timeModified), "</span>";
-            $sep = $xsep;
-        }
-        echo "</span>";
+            $cmtfn[] = "<span class='cmtname'>" . ($blind ? "[" : "")
+                . Text::user_html($crow) . ($blind ? "]" : "") . "</span>";
+        } else if ($crow && $Me->allowAdminister($prow))
+            $cmtfn[] = "<span id='foldcid$crow->commentId' class='cmtname fold4c'>"
+                . "<a class='q fn4' href=\"javascript:void fold('cid$crow->commentId', 0, 4)\" title='Show author'>+&nbsp;<i>Hidden for blind review</i></a>"
+                . "<span class='fx4'><a class='fx4' href=\"javascript:void fold('cid$crow->commentId', 1, 4)\" title='Hide author'>[blind]</a> " . Text::user_html($crow) . "</span>"
+                . "</span>";
+        if ($crow && $crow->timeModified > 0)
+            $cmtfn[] = "<span class='cmttime'>" . $Conf->printableTime($crow->timeModified) . "</span>";
         if ($crow && !$response
             && (!$prow->has_conflict($Me) || $Me->canAdminister($prow))) {
-            if (@$crow->commentTags) {
+            if ($cmttags) {
                 $t = array();
-                foreach (explode(" ", $crow->commentTags) as $tag)
-                    if ($tag !== "")
-                        $t[] = "#$tag";
-                if (count($t)) {
-                    echo $sep, join(" ", $t);
-                    $sep = $xsep;
-                }
+                foreach (explode(" ", $this->tagger->unparse($cmttags)) as $tag)
+                    $t[] = "<a href=\"" . hoturl("search", "q=" . urlencode("cmt:#$tag")) . "\" class=\"qq\">#$tag</a>";
+                $cmtfn[] = join(" ", $t);
             }
             if ($crow->commentType >= COMMENTTYPE_AUTHOR)
                 $x = "";
@@ -98,9 +84,10 @@ class CommentView {
             else
                 $x = "shown only to administrators";
             if ($x)
-                echo "<span class='cmtvis'>(", $x, ")</span>";
+                $cmtvis = "<span class='cmtvis'>($x)</span>";
         }
-        echo "<div class='clear'></div>";
+        echo '<span class="cmtfn">', join(' <span class="barsep">&nbsp;|&nbsp;</span> ', $cmtfn), '</span>',
+            $cmtvis, '<div class="clear"></div>';
     }
 
     function show($prow, $crow, $useRequest, $editMode, $foldnew = true) {
@@ -115,6 +102,11 @@ class CommentView {
             return;
         if ($editMode && !$Me->canComment($prow, $crow))
             $editMode = false;
+        if ($crow && @$crow->commentTags && !$this->tagger)
+            $this->tagger = new Tagger;
+        $cmttags = "";
+        if ($crow && @$crow->commentTags)
+            $cmttags = $this->tagger->viewable($crow->commentTags);
 
         if ($this->mode != 1) {
             $this->table_begin("");
@@ -124,8 +116,7 @@ class CommentView {
         $this->ncomment_in_table++;
 
         if ($editMode) {
-            echo "<form action='", hoturl_post("comment", "p=$prow->paperId&amp;c=" . ($crow ? $crow->commentId : "new")),
-                "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'>";
+            echo Ht::form(hoturl_post("comment", "p=$prow->paperId&amp;c=" . ($crow ? $crow->commentId : "new")));
             if (!$crow && $foldnew)
                 echo "<div class='aahc foldc' id='foldaddcomment'>";
             else
@@ -138,9 +129,15 @@ class CommentView {
         else
             echo " id='commentnew'";
         echo " class='cmtg", ($this->ncomment_in_table == 1 ? " cmtg1" : ""), "'>";
-        if ($crow && !$editMode
-            && ($crow->commentType & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY)
-            echo "<div class='cmtadminvis'>";
+        $opendiv = "";
+        if ($crow && !$editMode) {
+            if (($crow->commentType & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY)
+                echo ($opendiv = '<div class="cmtadminvis">');
+            else if ($cmttags && ($colors = $this->tagger->color_classes($cmttags)))
+                echo ($opendiv = '<div class="cmtcolor ' . $colors . '">');
+            if ($cmttags)
+                error_log($cmttags . " : " . $this->tagger->color_classes($cmttags));
+        }
         echo "<div class='cmtt'>";
 
         // Links
@@ -161,7 +158,7 @@ class CommentView {
                 echo "<h3>Add Comment</h3>";
             $Conf->footerScript("hotcrp_load('opencomment')");
         }
-        $this->_commentIdentityTime($prow, $crow, false);
+        $this->_commentIdentityTime($prow, $crow, $cmttags, false);
 
         if ($crow && $editMode && $crow->contactId != $Me->contactId)
             echo "<div class='hint'>You didn’t write this comment, but as an administrator you can still make changes.</div>\n";
@@ -173,10 +170,8 @@ class CommentView {
             echo $cmsgs[$crow->commentId];
 
         if (!$editMode) {
-            echo htmlWrapText(htmlspecialchars($crow->comment)), "</div>";
-            if ($crow && ($crow->commentType & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY)
-                echo "</div>";
-            echo "</div>\n\n";
+            echo htmlWrapText(htmlspecialchars($crow->comment)), "</div>",
+                ($opendiv ? "</div>" : ""), "</div>\n\n";
             return;
         }
 
@@ -189,9 +184,13 @@ class CommentView {
             echo htmlspecialchars($crow->comment);
         echo "</textarea>\n  <div class='g'></div>\n";
         // tags
-        if ($Conf->sversion >= 68)
+        if ($Conf->sversion >= 68) {
+            $cmtedittags = "";
+            if ($crow && @$crow->commentTags)
+                $cmtedittags = $this->tagger->unparse($this->tagger->editable($crow->commentTags));
             echo "<table style=\"float:right\"><tr><td>Tags: &nbsp; </td>
-  <td>", Ht::entry("commenttags", $crow ? @$crow->commentTags : "", array("size" => 40, "onchange" => "hiliter(this)", "tabindex" => 1)), "</td></tr></table>";
+  <td>", Ht::entry("commenttags", $cmtedittags, array("size" => 40, "onchange" => "hiliter(this)", "tabindex" => 1)), "</td></tr></table>";
+        }
         // visibility
         echo "<table><tr><td>Show to: &nbsp; </td>
     <td><table id='foldcmtvis' class='fold2o'>";
@@ -268,7 +267,7 @@ class CommentView {
         else
             echo " id='response'";
         echo ">Response</h3>";
-        $this->_commentIdentityTime($prow, $crow, true);
+        $this->_commentIdentityTime($prow, $crow, " response ", true);
 
         $this->table_tobody();
 

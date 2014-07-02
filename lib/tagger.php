@@ -283,6 +283,24 @@ class Tagger {
         return trim($tags);
     }
 
+    private function trim_for_sort($x) {
+        if ($x[0] == "#")
+            $x = substr($x, 1);
+        if ($x[0] == "~" && $x[1] != "~")
+            $x = ($this->contact ? $this->contact->contactId : "0") . $x;
+        else if ($x[0] == "~")
+            $x = ";" . $x;
+        return $x;
+    }
+
+    public function sorter($a, $b) {
+        return strcasecmp($this->trim_for_sort($a), $this->trim_for_sort($b));
+    }
+
+    public function sort(&$tags) {
+        usort($tags, array($this, "sorter"));
+    }
+
     public function unparse_link_viewable($tags, $highlight = false, $votereport = false) {
         $vtags = $this->unparse($this->viewable($tags));
         if ($vtags == "")

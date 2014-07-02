@@ -2321,10 +2321,12 @@ div.cmtg.cmtg1 {
 	border-top: 0 none;
 	padding: 0;
 }
-div.cmtadminvis {
-	background: #f3f3f3;
+div.cmtadminvis, div.cmtcolor {
 	margin: 0 -5px;
 	padding: 2px 5px;
+}
+div.cmtadminvis {
+	background: #f3f3f3;
 }
 div.cmtt {
 	font-size: smaller;
