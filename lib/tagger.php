@@ -164,13 +164,13 @@ class Tagger {
         $re = "{(?:\\A| )";
         if ($this->contact)
             $re .= "(?:" . $this->contact->cid . "~"
-                . ($this->contact->privChair ? "|~~" : "") .")?";
+                . ($this->contact->privChair ? "|~~" : "") ."|)";
         $re .= "(red|orange|yellow|green|blue|purple|violet|grey|gray|white|dim|bold|italic|big|small";
         $this->color_tagmap = $this->defined_tags();
         foreach ($this->color_tagmap as $v)
             if ($v->colors)
                 $re .= "|" . $v->tag;
-        $this->color_re = $re . ")[# ]}";
+        $this->color_re = $re . ")(?=\\z|[# ])}";
     }
 
     public static function canonical_color($tag) {
