@@ -2319,7 +2319,7 @@ span.cmtfn > span.barsep {
 }
 div.cmtg.cmtg1 {
 	border-top: 0 none;
-	padding: 0;
+	padding: 0 0 5px;
 }
 div.cmtadminvis, div.cmtcolor {
 	margin: 0 -5px;
