@@ -1918,15 +1918,20 @@ class Conference {
 
             // favicon
             if (($favicon = defval($Opt, "favicon", "images/review24.png"))) {
-                $url = (strpos($favicon, "://") !== false || $favicon[0] == "/" ? $favicon : $ConfSiteBase . $favicon);
+                if (strpos($favicon, "://") === false && $favicon[0] != "/") {
+                    if (@$Opt["assetsURL"] && substr($favicon, 0, 7) === "images/")
+                        $favicon = $Opt["assetsURL"] . $favicon;
+                    else
+                        $favicon = $ConfSiteBase . $favicon;
+                }
                 if (substr($favicon, -4) == ".png")
-                    echo "<link rel=\"icon\" type=\"image/png\" href=\"$url\" />\n";
+                    echo "<link rel=\"icon\" type=\"image/png\" href=\"$favicon\" />\n";
                 else if (substr($favicon, -4) == ".ico")
-                    echo "<link rel=\"shortcut icon\" href=\"$url\" />\n";
+                    echo "<link rel=\"shortcut icon\" href=\"$favicon\" />\n";
                 else if (substr($favicon, -4) == ".gif")
-                    echo "<link rel=\"icon\" type=\"image/gif\" href=\"$url\" />\n";
+                    echo "<link rel=\"icon\" type=\"image/gif\" href=\"$favicon\" />\n";
                 else
-                    echo "<link rel=\"icon\" href=\"$url\" />\n";
+                    echo "<link rel=\"icon\" href=\"$favicon\" />\n";
             }
 
             if (isset($Opt["jqueryURL"]))
