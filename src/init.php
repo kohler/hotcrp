@@ -104,7 +104,7 @@ global $Now;
 $Now = time();
 
 global $allowedSessionVars;
-$allowedSessionVars = array("foldassigna", "foldpaperp", "foldpaperb",
+$allowedSessionVars = array("foldpapera", "foldpaperp", "foldpaperb",
                             "foldpapert", "foldpscollab", "foldhomeactivity",
                             "pfdisplay", "pldisplay", "ppldisplay");
 

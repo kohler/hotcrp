@@ -89,14 +89,9 @@ class PaperTable {
         $this->npapstrip = 0;
 
         $this->foldState = 1023;
-        foreach (array("a" => 8, "p" => 9, "b" => 6, "t" => 5) as $k => $v) {
-            if ($k == "a")
-                $svar = ($this->mode == "assign" ? "foldassigna" : null);
-            else
-                $svar = "foldpaper$k";
-            if ($svar && !$Conf->session($svar, 1))
+        foreach (array("a" => 8, "p" => 9, "b" => 6, "t" => 5) as $k => $v)
+            if (!$Conf->session("foldpaper$k", 1))
                 $this->foldState &= ~(1 << $v);
-        }
 
         $this->allFolded = ($this->mode == "re" || $this->mode == "assign"
                             || ($this->mode != "pe" && (count($this->rrows) || count($this->crows))));
@@ -641,10 +636,9 @@ class PaperTable {
                 $this->papt("authorInformation", "Authors"),
                 "<div class='pavb'><a class='q fn8' ",
                 "href='#' onclick='return fold(\"paper\",0,8)' title='Show authors'>",
-                "+&nbsp;<i>Hidden for blind review</i></a>";
-            if ($this->mode == "assign")
-                echo foldsessionpixel("paper8", "foldassigna");
-            echo "</div></div>\n",
+                "+&nbsp;<i>Hidden for blind review</i></a>",
+                foldsessionpixel("paper8", "foldpapera"),
+                "</div></div>\n",
                 "<div class='pg pgtop fx8'>";
             $inauthors1 = $inauthors2 = "<a class='q fx8' "
                 . "href='#' onclick='return fold(\"paper\",1,8)' "
