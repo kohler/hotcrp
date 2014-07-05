@@ -608,10 +608,8 @@ function foldup(e, event, opts) {
     if (event)
         event_stop(event);
     m = fold(e, dofold, foldnum);
-    if ((attr = e.getAttribute(dofold ? "onfold" : "onunfold"))) {
-        attr = new Function(attr);
-        attr.call(e);
-    }
+    if ((attr = e.getAttribute(dofold ? "onfold" : "onunfold")))
+        (new Function("foldnum", attr)).call(e, opts);
     return m;
 }
 
@@ -809,6 +807,11 @@ function plactions_dofold() {
                 fold("ass", folded);
             }
     }
+}
+
+function aufolder(e, opt) {
+    if (opt && opt.n == 9 && /\bfold8o\b/.test(e.className))
+        foldup(e, null, {n: 8, s: "foldpapera"});
 }
 
 

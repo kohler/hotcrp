@@ -133,11 +133,12 @@ class PaperTable {
                 $this->foldState &= ~(256 | 512);
         }
 
-        echo "<div id='foldpaper' class='",
+        echo '<div id="foldpaper" class="',
             ($this->foldState & 256 ? "fold8c" : "fold8o"),
             ($this->foldState & 512 ? " fold9c" : " fold9o"),
             ($this->foldState & 64 ? " fold6c" : " fold6o"),
-            ($this->foldState & 32 ? " fold5c" : " fold5o"), "'>";
+            ($this->foldState & 32 ? " fold5c" : " fold5o"),
+            '" onfold="aufolder(this, foldnum)">';
     }
 
     function echoDivExit() {
@@ -633,32 +634,32 @@ class PaperTable {
         // anonymity folding
         if (!$viewable) {
             echo "<div class='pg pgtop fn8'>",
-                $this->papt("authorInformation", "Authors"),
+                $this->papt("authorInformation", '<a class="q" href="#" onclick="return foldup(this,event,{n:8,s:\'foldpapera\'})">Authors</a>'),
                 "<div class='pavb'><a class='q fn8' ",
-                "href='#' onclick='return fold(\"paper\",0,8)' title='Show authors'>",
+                "href='#' onclick='return fold(\"paper\",0,8)' title='Toggle author display'>",
                 "+&nbsp;<i>Hidden for blind review</i></a>",
                 foldsessionpixel("paper8", "foldpapera"),
                 "</div></div>\n",
                 "<div class='pg pgtop fx8'>";
-            $inauthors1 = $inauthors2 = "<a class='q fx8' "
-                . "href='#' onclick='return fold(\"paper\",1,8)' "
-                . "title='Hide authors'>[blind]</a> ";
+            $inauthors1 = $inauthors2 = "";
         } else {
             echo "<div class='pg pgtop'>";
-            $inauthors1 = $inauthors2 = $afterauthors = "";
+            $inauthors1 = $inauthors2 = "";
             if ($Conf->subBlindOptional() && $this->prow->blind)
                 $inauthors1 = $inauthors2 = "[blind] ";
         }
 
         // "author" or "authors"?
         $auname = pluralx(count($autable), "Author");
+        if (!$viewable)
+            $auname = "$auname (deblinded)";
 
         // actually print
         if ($this->allFolded) {
             echo $this->papt("authorInformation", $auname,
                              array("fold" => "paper", "foldnum" => 9,
                                    "foldsession" => "foldpaperp",
-                                   "foldtitle" => "Toggle full author display")),
+                                   "foldtitle" => "Toggle author display")),
                 "<div class='pavb'><span class='fn9'>",
                 $this->authorData($autable, "last", null, $inauthors1),
                 " <a class='fn9' href='#' onclick='return fold(\"paper\", 0, 9)'>[details]</a>",
