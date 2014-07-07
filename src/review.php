@@ -253,8 +253,7 @@ class ReviewForm {
 
     public $fmap;
     public $forder;
-
-    var $fieldName;
+    public $fieldName;
 
     static public $rating_types = array("n" => "average",
                                         1 => "very helpful",

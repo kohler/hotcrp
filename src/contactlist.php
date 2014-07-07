@@ -639,6 +639,7 @@ class ContactList extends BaseList {
 
         // get field array
         $fieldDef = array();
+        $acceptable_fields = array();
         $this->any = (object) array("sel" => false);
         $ncol = 0;
         foreach ($baseFieldId as $fid) {
@@ -646,6 +647,7 @@ class ContactList extends BaseList {
                 continue;
             $normFid = self::_normalizeField($fid);
             $fieldDef[$fid] = $contactListFields[$normFid];
+            $acceptable_fields[$fid] = $acceptable_fields[$normFid] = true;
             if ($contactListFields[$normFid][1] == 1)
                 $ncol++;
         }
@@ -662,7 +664,7 @@ class ContactList extends BaseList {
         }
 
         // sort rows
-        if (!in_array($this->sortField, $baseFieldId))
+        if (!@$acceptable_fields[$this->sortField])
             $this->sortField = null;
         $srows = $this->_sort($rows);
 
