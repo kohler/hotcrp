@@ -119,6 +119,8 @@ class PaperTable {
     }
 
     private function echoDivEnter() {
+        global $Me;
+
         // if highlighting, automatically unfold abstract/authors
         if ($this->matchPreg && $this->prow && $this->allFolded
             && ($this->foldState & 64)) {
@@ -133,12 +135,21 @@ class PaperTable {
                 $this->foldState &= ~(256 | 512);
         }
 
-        echo '<div id="foldpaper" class="',
-            ($this->foldState & 256 ? "fold8c" : "fold8o"),
-            ($this->foldState & 512 ? " fold9c" : " fold9o"),
-            ($this->foldState & 64 ? " fold6c" : " fold6o"),
-            ($this->foldState & 32 ? " fold5c" : " fold5o"),
-            '" onfold="aufolder(this, foldnum)">';
+        // collect folders
+        $folders = array();
+        if ($this->prow) {
+            $ever_viewable = $Me->canViewAuthors($this->prow, true);
+            $viewable = $ever_viewable && $Me->canViewAuthors($this->prow, false);
+            if ($ever_viewable && !$viewable)
+                $folders[] = $this->foldState & 256 ? "fold8c" : "fold8o";
+            if ($ever_viewable && $this->allFolded)
+                $folders[] = $this->foldState & 512 ? "fold9c" : "fold9o";
+        }
+        $folders[] = $this->foldState & 64 ? "fold6c" : "fold6o";
+        $folders[] = $this->foldState & 32 ? "fold5c" : "fold5o";
+
+        // echo div
+        echo '<div id="foldpaper" class="', join(" ", $folders), '">';
     }
 
     function echoDivExit() {
@@ -525,7 +536,7 @@ class PaperTable {
         $Conf->echoScript("authorfold(\"auedit\",0," . max(count($authorTable) + 1, 5) . ")");
     }
 
-    function authorData($table, $type, $viewAs = null, $prefix = "") {
+    private function authorData($table, $type, $viewAs = null, $prefix = "") {
         global $Conf;
         if ($this->matchPreg && isset($this->matchPreg["authorInformation"]))
             $highpreg = $this->matchPreg["authorInformation"];
@@ -631,50 +642,53 @@ class PaperTable {
         // clean author information
         list($autable, $contacts) = $this->_analyze_authors();
 
-        // anonymity folding
-        if (!$viewable) {
-            echo "<div class='pg pgtop fn8'>",
-                $this->papt("authorInformation", '<a class="q" href="#" onclick="return foldup(this,event,{n:8,s:\'foldpapera\'})">Authors</a>'),
-                "<div class='pavb'><a class='q fn8' ",
-                "href='#' onclick='return fold(\"paper\",0,8)' title='Toggle author display'>",
-                "+&nbsp;<i>Hidden for blind review</i></a>",
-                foldsessionpixel("paper8", "foldpapera"),
-                "</div></div>\n",
-                "<div class='pg pgtop fx8'>";
-            $inauthors1 = $inauthors2 = "";
-        } else {
-            echo "<div class='pg pgtop'>";
-            $inauthors1 = $inauthors2 = "";
-            if ($Conf->subBlindOptional() && $this->prow->blind)
-                $inauthors1 = $inauthors2 = "[blind] ";
-        }
-
         // "author" or "authors"?
         $auname = pluralx(count($autable), "Author");
         if (!$viewable)
             $auname = "$auname (deblinded)";
 
-        // actually print
-        if ($this->allFolded) {
-            echo $this->papt("authorInformation", $auname,
-                             array("fold" => "paper", "foldnum" => 9,
-                                   "foldsession" => "foldpaperp",
-                                   "foldtitle" => "Toggle author display")),
-                "<div class='pavb'><span class='fn9'>",
-                $this->authorData($autable, "last", null, $inauthors1),
-                " <a class='fn9' href='#' onclick='return fold(\"paper\", 0, 9)'>[details]</a>",
-                "</span><span class='fx9'>",
-                $this->authorData($autable, "col", $Me, $inauthors2),
-                "</span>";
+        // header with folding
+        echo '<div class="pg pgtop">',
+            '<div class="pavt childfold', (@$Error["authorInformation"] ? " error" : ""),
+            '" onclick="return aufoldup(this,event)">',
+            '<span class="pavfn">';
+        if (!$viewable || $this->allFolded)
+            echo '<a class="q" href="#" onclick="return aufoldup(this,event)" title="Toggle author display">';
+        if (!$viewable)
+            echo '<span class="fn8">Authors</span><span class="fx8">';
+        if ($this->allFolded)
+            echo expander(null, 9);
+        else if (!$viewable)
+            echo expander(false);
+        echo $auname;
+        if (!$viewable)
+            echo '</span>';
+        if (!$viewable || $this->allFolded)
+            echo '</a>';
+        echo '</span><div class="clear"></div></div>';
 
-        } else {
-            echo $this->papt("authorInformation", $auname),
-                "<div class='pavb'>", $inauthors1,
-                $this->authorData($autable, "col", $Me);
-        }
-
+        // contents
+        $inauthors = "";
+        if ($viewable && $Conf->subBlindOptional() && $this->prow->blind)
+            $inauthors = "[blind] ";
+        echo '<div class="pavb">';
+        if (!$viewable)
+            echo '<a class="q fn8" href="#" onclick="return aufoldup(this,event)" title="Toggle author display">',
+                '+&nbsp;<i>Hidden for blind review</i>',
+                '</a><div class="fx8">';
+        if ($this->allFolded)
+            echo '<div class="fn9">',
+                $this->authorData($autable, "last", null, $inauthors),
+                ' <a href="#" onclick="return aufoldup(this,event)">[details]</a>',
+                '</div><div class="fx9">';
+        echo $this->authorData($autable, "col", $Me, $inauthors);
+        if ($this->allFolded)
+            echo '</div>';
+        if (!$viewable)
+            echo '</div>';
         echo "</div></div>\n\n";
 
+        // contacts
         if (count($contacts) > 0 && !$skip_contacts) {
             echo "<div class='pg fx9", ($viewable ? "" : " fx8"), "'>",
                 $this->papt("authorInformation", pluralx(count($contacts), "Contact")),

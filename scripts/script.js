@@ -613,6 +613,18 @@ function foldup(e, event, opts) {
     return m;
 }
 
+// special-case folding for author table
+function aufoldup(event) {
+    var e = $$("foldpaper"),
+        m9 = e.className.match(/\bfold9([co])\b/),
+        m8 = e.className.match(/\bfold8([co])\b/);
+    if (m9 && (!m8 || m8[1] == "o"))
+        foldup(e, event, {n: 9, s: "foldpaperp"});
+    if (m8 && (!m9 || m8[1] == "c" || m9[1] == "o"))
+        foldup(e, event, {n: 8, s: "foldpapera"});
+    return false;
+}
+
 function crpfocus(id, subfocus, seltype) {
     var selt = $$(id);
     if (selt && subfocus)
@@ -807,11 +819,6 @@ function plactions_dofold() {
                 fold("ass", folded);
             }
     }
-}
-
-function aufolder(e, opt) {
-    if (opt && opt.n == 9 && /\bfold8o\b/.test(e.className))
-        foldup(e, null, {n: 8, s: "foldpapera"});
 }
 
 
