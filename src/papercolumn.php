@@ -956,7 +956,7 @@ class EditTagPaperColumn extends TagPaperColumn {
 class ScorePaperColumn extends PaperColumn {
     public $score;
     public $max_score;
-    private $viewscore;
+    private $form_field;
     private static $registered = array();
     public function __construct($score) {
         parent::__construct($score, Column::VIEW_COLUMN | Column::FOLDABLE,
@@ -976,7 +976,6 @@ class ScorePaperColumn extends PaperColumn {
         }
     }
     public function make_field($name) {
-        global $reviewScoreNames;
         $rf = reviewForm();
         if ((($f = $rf->field($name))
              || (($name = $rf->unabbreviateField($name))
@@ -988,24 +987,24 @@ class ScorePaperColumn extends PaperColumn {
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->scoresOk)
             return false;
+        $rf = reviewForm();
+        $this->form_field = $rf->field($this->score);
         if ($visible) {
-            $rf = reviewForm();
-            $f = $rf->field($this->score);
-            $this->viewscore = $f->view_score;
             $auview = $pl->contact->viewReviewFieldsScore(null, true);
-            if ($this->viewscore <= $auview)
+            if ($this->form_field->view_score <= $auview)
                 return false;
             if (!isset($queryOptions["scores"]))
                 $queryOptions["scores"] = array();
             $queryOptions["scores"][$this->score] = true;
-            $this->max_score = count($f->options);
+            $this->max_score = count($this->form_field->options);
         }
         return true;
     }
     public function sort_prepare($pl, &$rows) {
         $scoreName = $this->score . "Scores";
+        $view_score = $this->form_field->view_score;
         foreach ($rows as $row)
-            if ($pl->contact->canViewReview($row, $this->viewscore, null))
+            if ($pl->contact->canViewReview($row, $view_score, null))
                 $pl->score_analyze($row, $scoreName, $this->max_score,
                                    $pl->sorter->score);
             else
@@ -1024,22 +1023,20 @@ class ScorePaperColumn extends PaperColumn {
         }
     }
     public function header($pl, $row, $ordinal) {
-        global $ReviewFormCache;
-        return $ReviewFormCache->field($this->score)->web_abbreviation();
+        return $this->form_field->web_abbreviation();
     }
     public function col() {
         return "<col width='0*' />";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->canViewReview($row, $this->viewscore, true);
+        return !$pl->contact->canViewReview($row, $this->form_field->view_score, true);
     }
     public function content($pl, $row) {
-        global $Conf, $ReviewFormCache;
-        $allowed = $pl->contact->canViewReview($row, $this->viewscore, false);
+        $allowed = $pl->contact->canViewReview($row, $this->form_field->view_score, false);
         $fname = $this->score . "Scores";
         if (($allowed || $pl->contact->allowAdminister($row))
             && $row->$fname) {
-            $t = $ReviewFormCache->field($this->score)->unparse_graph($row->$fname, 1, defval($row, $this->score));
+            $t = $this->form_field->unparse_graph($row->$fname, 1, defval($row, $this->score));
             if (!$allowed)
                 $t = "<span class='fx20'>$t</span>";
             return $t;

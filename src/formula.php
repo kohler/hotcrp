@@ -274,7 +274,6 @@ class Formula {
     }
 
     static function _compile($state, $e) {
-        global $ReviewFormCache;
         $op = $e[0];
 
         if ($op == "")
@@ -306,7 +305,8 @@ class Formula {
 
         if ($op == "rf") {
             $score = $e[2];
-            $f = $ReviewFormCache->field($score);
+            $rf = reviewForm();
+            $f = $rf->field($score);
             $view_score = $state->contact->viewReviewFieldsScore(null, true);
             if ($f->view_score <= $view_score)
                 $t_f = "0";
@@ -391,7 +391,6 @@ class Formula {
     static function compile_function_body($e, $contact) {
         global $Conf;
         $state = new FormulaCompileState($contact);
-        $rf = reviewForm();     /* sets $ReviewFormCache */
         $e = self::_compile($state, $e);
         $t =  join("\n  ", $state->gstmt)
             . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
