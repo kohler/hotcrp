@@ -650,10 +650,10 @@ class PaperTable {
         // header with folding
         echo '<div class="pg pgtop">',
             '<div class="pavt childfold', (@$Error["authorInformation"] ? " error" : ""),
-            '" onclick="return aufoldup(this,event)">',
+            '" onclick="return aufoldup(event)">',
             '<span class="pavfn">';
         if (!$viewable || $this->allFolded)
-            echo '<a class="q" href="#" onclick="return aufoldup(this,event)" title="Toggle author display">';
+            echo '<a class="q" href="#" onclick="return aufoldup(event)" title="Toggle author display">';
         if (!$viewable)
             echo '<span class="fn8">Authors</span><span class="fx8">';
         if ($this->allFolded)
@@ -673,13 +673,13 @@ class PaperTable {
             $inauthors = "[blind] ";
         echo '<div class="pavb">';
         if (!$viewable)
-            echo '<a class="q fn8" href="#" onclick="return aufoldup(this,event)" title="Toggle author display">',
+            echo '<a class="q fn8" href="#" onclick="return aufoldup(event)" title="Toggle author display">',
                 '+&nbsp;<i>Hidden for blind review</i>',
                 '</a><div class="fx8">';
         if ($this->allFolded)
             echo '<div class="fn9">',
                 $this->authorData($autable, "last", null, $inauthors),
-                ' <a href="#" onclick="return aufoldup(this,event)">[details]</a>',
+                ' <a href="#" onclick="return aufoldup(event)">[details]</a>',
                 '</div><div class="fx9">';
         echo $this->authorData($autable, "col", $Me, $inauthors);
         if ($this->allFolded)
