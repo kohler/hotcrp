@@ -274,10 +274,11 @@ class ReviewForm {
         if (!@self::$cache[0])
             self::$cache[0] = new ReviewForm(0);
         if ($round && $Conf->review_form_json($round))
-            self::$cache[$round] = new ReviewForm($round);
+            return self::$cache[$round] = new ReviewForm($round);
         else if ($round)
-            self::$cache[$round] = self::$cache[0];
-        return self::$cache[$round];
+            return self::$cache[$round] = self::$cache[0];
+        else
+            return self::$cache[0];
     }
 
     static public function clear_cache() {
