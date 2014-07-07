@@ -315,7 +315,7 @@ class ContactList extends BaseList {
                     $nti[] = $v;
                 }
             if (count($nt))
-                return join(", ", $this->rf->webTopicArray($nt, $nti));
+                return join(", ", PaperInfo::unparse_topics($nt, $nti));
             else
                 return "";
         case self::FIELD_REVIEWS:

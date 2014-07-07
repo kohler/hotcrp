@@ -389,10 +389,8 @@ class TopicListPaperColumn extends PaperColumn {
         global $Conf;
         if (!$Conf->has_topics())
             return false;
-        if ($visible) {
+        if ($visible)
             $queryOptions["topics"] = 1;
-            reviewForm();       /* create $ReviewFormCache */
-        }
         return true;
     }
     public function header($pl, $row, $ordinal) {
@@ -402,8 +400,7 @@ class TopicListPaperColumn extends PaperColumn {
         return !isset($row->topicIds) || $row->topicIds == "";
     }
     public function content($pl, $row) {
-        global $ReviewFormCache;
-        return join(", ", $ReviewFormCache->webTopicArray($row->topicIds, defval($row, "topicInterest")));
+        return join(", ", PaperInfo::unparse_topics($row->topicIds, defval($row, "topicInterest")));
     }
 }
 

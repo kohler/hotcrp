@@ -183,6 +183,26 @@ class PaperInfo {
         return $x;
     }
 
+    public static function unparse_topics($topicIds, $interests = null) {
+        global $Conf;
+        if (!$topicIds)
+            return array();
+        if (!is_array($topicIds))
+            $topicIds = explode(",", $topicIds);
+        if ($interests !== null && !is_array($interests))
+            $interests = explode(",", $interests);
+        $out = array();
+        $tmap = $Conf->topic_map();
+        $tomap = $Conf->topic_order_map();
+        for ($i = 0; $i < count($topicIds); $i++)
+            $out[$tomap[$topicIds[$i]]] =
+                '<span class="topic' . ($interests ? $interests[$i] : 0)
+                . '">' . htmlspecialchars($tmap[$topicIds[$i]])
+                . "</span>";
+        ksort($out);
+        return array_values($out);
+    }
+
     public function conflicts($email = false) {
         global $Conf;
         if ($email ? !@$this->conflicts_email_ : !isset($this->conflicts_)) {
