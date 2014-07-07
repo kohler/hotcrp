@@ -441,7 +441,7 @@ class Conference {
     }
 
     function has_rounds() {
-        return count($this->rounds) > 0;
+        return count($this->rounds) > 1;
     }
 
     function round_list() {
