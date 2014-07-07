@@ -1270,7 +1270,7 @@ class Conference {
             $rf = reviewForm();
             $pq .= ",\n\t\tPaperReview.reviewEditVersion as reviewEditVersion";
             foreach ($rf->forder as $f)
-                if (!$scoresQuery || $f->has_options)
+                if ($reviewerQuery || $f->has_options)
                     $pq .= ",\n\t\tPaperReview.$f->id as $f->id";
         }
         if (@$options["allComments"]) {
