@@ -92,8 +92,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
             // archive duplicate reviews
             $result = $Conf->q("select PaperReview.reviewId from PaperReview join PaperReview B on (PaperReview.paperId=B.paperId and PaperReview.contactId=$oldid and B.contactId=$newid)");
             while (($row = edb_row($result))) {
-                $rf = reviewForm();
-                $fields = $rf->reviewArchiveFields();
+                $fields = ReviewForm::reviewArchiveFields();
                 if (!$Conf->q("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$row[0]"))
                     $MergeError .= $Conf->db_error_html(true, "", 0);
             }

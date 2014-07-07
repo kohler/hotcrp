@@ -295,9 +295,8 @@ function searchQuickref() {
     _searchQuickrefRow("", "dec:none", "decision unspecified");
 
     // find names of review fields to demonstrate syntax
-    $rf = reviewForm();
     $farr = array(array(), array());
-    foreach ($rf->forder as $f) {
+    foreach (ReviewForm::field_list_all_rounds() as $f) {
         $fx = ($f->has_options ? 0 : 1);
         $farr[$fx][] = $f->analyze();
     }

@@ -1961,14 +1961,17 @@ class PaperTable {
                 " in plain text</u></a></div></div>\n";
 
         $opt = array("edit" => false);
-        $rf = reviewForm();
         foreach ($this->rrows as $rr)
-            if ($rr->reviewSubmitted)
+            if ($rr->reviewSubmitted) {
+                $rf = ReviewForm::get($rr);
                 $rf->show($prow, $this->rrows, $rr, $opt);
+            }
         foreach ($this->rrows as $rr)
             if (!$rr->reviewSubmitted && $rr->reviewModified > 0
-                && $Me->canViewReview($prow, $rr, null))
+                && $Me->canViewReview($prow, $rr, null)) {
+                $rf = ReviewForm::get($rr);
                 $rf->show($prow, $this->rrows, $rr, $opt);
+            }
     }
 
     function paptabComments() {
@@ -2067,7 +2070,7 @@ class PaperTable {
         } else if (!$Me->canReview($prow, $this->editrrow))
             $opt["edit"] = false;
 
-        $rf = reviewForm();
+        $rf = ReviewForm::get($this->editrrow);
         $rf->show($prow, $this->rrows, $this->editrrow, $opt);
     }
 

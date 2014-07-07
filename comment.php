@@ -8,7 +8,6 @@ require_once("src/initweb.php");
 require_once("src/papertable.php");
 if ($Me->is_empty())
     $Me->escape();
-$rf = reviewForm();
 $useRequest = false;
 
 

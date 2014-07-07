@@ -289,10 +289,9 @@ if (count($tOpt) > 1) {
     echo "</td>";
     if (isset($pl->scoreMax)) {
         echo "<td class='pad'>";
-        $rf = reviewForm();
         $theScores = $Conf->session("pplscores", 1);
         $revViewScore = $Me->viewReviewFieldsScore(null, true);
-        foreach ($rf->forder as $f)
+        foreach (ReviewForm::field_list_all_rounds() as $f)
             if ($f->view_score > $revViewScore && $f->has_options) {
                 $i = array_search($f->id, $reviewScoreNames);
                 echo Ht::checkbox("score[]", $i, $theScores & (1 << $i)),

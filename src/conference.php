@@ -1267,9 +1267,8 @@ class Conference {
                 ReviewerContactInfo.email as reviewEmail,
                 ReviewerContactInfo.lastLogin as reviewLastLogin";
         if ($reviewerQuery || $scoresQuery) {
-            $rf = reviewForm();
             $pq .= ",\n\t\tPaperReview.reviewEditVersion as reviewEditVersion";
-            foreach ($rf->forder as $f)
+            foreach (ReviewForm::field_list_all_rounds() as $f)
                 if ($reviewerQuery || $f->has_options)
                     $pq .= ",\n\t\tPaperReview.$f->id as $f->id";
         }

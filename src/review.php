@@ -284,6 +284,20 @@ class ReviewForm {
         self::$cache = array();
     }
 
+    static public function field_list_all_rounds() {
+        global $Conf;
+        $fields = array();
+        foreach ($Conf->round_list() as $i => $rn) {
+            $rf = self::get($i);
+            if ($rf->round == $i) {
+                foreach ($rf->forder as $f)
+                    if (!@$fields[$f->id])
+                        $fields[$f->id] = $f;
+            }
+        }
+        return $fields;
+    }
+
     function __construct($round) {
         global $Conf;
 
@@ -420,11 +434,12 @@ class ReviewForm {
         return $fmap;
     }
 
-    function reviewArchiveFields() {
+    static public function reviewArchiveFields() {
         global $Conf;
+        $rf = self::get(0);
         $fields = "reviewId, paperId, contactId, reviewType, requestedBy,
                 reviewModified, reviewSubmitted, reviewNeedsSubmit, "
-            . join(", ", array_keys($this->fmap))
+            . join(", ", array_keys($rf->fmap))
             . ", reviewRound";
         if ($Conf->sversion >= 37)
             $fields .= ", reviewNotified";
@@ -1306,33 +1321,6 @@ $blind\n";
         return $x;
     }
 
-    function webNumericScoresHeader($prow, $contact) {
-        $revViewScore = $contact->viewReviewFieldsScore($prow, null);
-        $x = "";
-        foreach ($this->forder as $f)
-            if ($f->view_score > $revViewScore && $f->has_options)
-                $x .= "<th>" . $f->web_abbreviation() . "</th>";
-        return $x;
-    }
-
-    function webNumericScoresRow($rrow, $prow, $contact, &$anyScores) {
-        $view = $contact->canViewReview($prow, $rrow, null);
-        $revNullViewScore = $contact->viewReviewFieldsScore($prow, null);
-        $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
-        $x = "";
-        foreach ($this->forder as $field => $f)
-            if ($f->view_score > $revNullViewScore && $f->has_options) {
-                if ($view && $rrow->$field && $f->view_score > $revViewScore) {
-                    $x .= "<td class='revscore rs_$field'>"
-                        . $f->unparse_value($rrow->$field, true)
-                        . "</td>";
-                    $anyScores = true;
-                } else
-                    $x .= "<td class='revscore rs_$field'></td>";
-            }
-        return $x;
-    }
-
     function _showWebDisplayBody($prow, $rrows, $rrow, $reviewOrdinal, &$options) {
         global $Conf, $Me;
 
@@ -1592,15 +1580,6 @@ $blind\n";
         }
 
         echo "</div></div></div></form>\n\n";
-    }
-
-    function numNumericScores($prow, $contact) {
-        $revNullViewScore = $contact->viewReviewFieldsScore($prow, null);
-        $n = 0;
-        foreach ($this->forder as $f)
-            if ($f->view_score > $revNullViewScore && $f->has_options)
-                ++$n;
-        return $n;
     }
 
     function maxNumericScore($field) {

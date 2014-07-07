@@ -277,8 +277,7 @@ else if (isset($_REQUEST["text"]))
 // refuse review action
 function archiveReview($rrow) {
     global $Conf;
-    $rf = reviewForm();
-    $fields = $rf->reviewArchiveFields();
+    $fields = ReviewForm::reviewArchiveFields();
     $Conf->qe("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$rrow->reviewId", "while archiving review");
 }
 

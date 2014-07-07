@@ -24,11 +24,10 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $admin = $Me->canAdminister($prow);
     $hideUnviewable = ($conflictType > 0 && !$admin)
         || (!$Me->actPC($prow) && !$Conf->setting("extrev_view"));
-    $anyScores = false;
     $colorizer = ($Me->actPC($prow) ? new Tagger : null);
-    $rf = reviewForm();
-    $nNumeric = $rf->numNumericScores($prow, $Me);
     $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
+    $want_scores = $mode != "assign" && $mode != "edit" && $mode != "re";
+    $score_header = array();
 
     // actual rows
     foreach ($rrows as $rr) {
@@ -129,17 +128,32 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             $reqt .= '</td>';
         }
 
-        // scores or retract request
-        if ($mode != "assign" && $mode != "edit" && $mode != "re")
-            $t .= $rf->webNumericScoresRow($rr, $prow, $Me, $anyScores);
+        // scores
+        $scores = array();
+        if ($want_scores && $canView) {
+            $view_score = $Me->viewReviewFieldsScore($prow, $rr);
+            $rf = ReviewForm::get($rr);
+            foreach ($rf->forder as $fid => $f) {
+                if (!$f->has_options || $f->view_score <= $view_score)
+                    /* do nothing */;
+                else if ($rr->$fid) {
+                    if (!@$score_header[$fid])
+                        $score_header[$fid] = "<th>" . $f->web_abbreviation() . "</th>";
+                    $scores[$fid] = '<td class="revscore rs_' . $fid . '">'
+                        . $f->unparse_value($rr->$fid, true)
+                        . '</td>';
+                } else if (@$score_header[$fid] === null)
+                    $score_header[$fid] = "";
+            }
+        }
 
         // affix
         if (!$rr->reviewSubmitted) {
-            $nonsubrev[] = array($tclass, $t);
+            $nonsubrev[] = array($tclass, $t, $scores);
             if ($reqt)
                 $nonsubrev[] = array($tclass, $reqt);
         } else {
-            $subrev[] = array($tclass, $t);
+            $subrev[] = array($tclass, $t, $scores);
             if ($reqt)
                 $subrev[] = array($tclass, $reqt);
         }
@@ -189,11 +203,6 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 $nonsubrev[] = array("", $reqt);
         }
 
-    // headers
-    $numericHeaders = "";
-    if ($anyScores)
-        $numericHeaders = "<td class='empty' colspan='2'></td>" . $rf->webNumericScoresHeader($prow, $Me);
-
     // unfinished review notification
     $notetxt = "";
     if ($conflictType >= CONFLICT_AUTHOR && !$admin && $notShown
@@ -209,13 +218,20 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
     // completion
     if (count($nonsubrev) + count($subrev)) {
-        $t = "<table class='reviewers'>\n";
-        if ($numericHeaders)
-            $t .= "<tr>" . $numericHeaders . "</tr>\n";
-        foreach ($subrev as $r)
-            $t .= "<tr" . ($r[0] ? " class='$r[0]'>" : ">") . $r[1] . "</tr>\n";
-        foreach ($nonsubrev as $r)
-            $t .= "<tr" . ($r[0] ? " class='$r[0]'>" : ">") . $r[1] . "</tr>\n";
+        $t = "<table class=\"reviewers\">\n";
+        if (count($score_header))
+            $t .= '<tr><td class="empty" colspan="2"></td>'
+                . join("", $score_header) . "</tr>\n";
+        foreach (array_merge($subrev, $nonsubrev) as $r) {
+            $t .= '<tr' . ($r[0] ? " class=\"$r[0]\"" : "") . '>' . $r[1];
+            if (@$r[2])
+                foreach ($score_header as $fid => $header_needed)
+                    if ($header_needed) {
+                        $x = @$r[2][$fid];
+                        $t .= $x ? : "<td class=\"revscore rs_$fid\"></td>";
+                    }
+            $t .= "</tr>\n";
+        }
         return $t . "</table>\n" . $notetxt;
     } else
         return $notetxt;
