@@ -238,6 +238,9 @@ class CommentView {
         if ($editMode && !$Me->canRespond($prow, $crow)
             && ($crow || !$Me->allowAdminister($prow)))
             $editMode = false;
+        if (!$crow && !$editMode)
+            return;
+
         $this->nresponse++;
         $this->table_end();
 
