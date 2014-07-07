@@ -7,7 +7,6 @@ require_once("src/initweb.php");
 require_once("src/papersearch.php");
 if ($Me->is_empty() || (!$Me->privChair && !$Me->isPC))
     $Me->escape();
-$rf = reviewForm();
 $nullMailer = new Mailer(null, null, $Me);
 $nullMailer->width = 10000000;
 $checkReviewNeedsSubmit = false;

@@ -165,9 +165,6 @@ $pldisplay = displayOptionsSet("pfdisplay");
 
 // Header and body
 $Conf->header("Review Preferences", "revpref", actionBar());
-
-
-$rf = reviewForm();
 $Conf->infoMsg($Conf->message_html("revprefdescription"));
 
 

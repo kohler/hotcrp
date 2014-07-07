@@ -9,7 +9,6 @@ require_once("src/reviewtable.php");
 if ($Me->is_empty())
     $Me->escape();
 $_REQUEST["forceShow"] = 1;
-$rf = reviewForm();
 $Error = $Warning = array();
 
 
