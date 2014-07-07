@@ -498,16 +498,16 @@ class PaperSearch {
     }
 
     private function _searchAuthors($word, &$qt, $keyword, $quoted) {
-        if ($keyword && !$quoted && $this->amPC) {
-            $lword = strtolower($word);
-            if ($lword == "pc" || (count(($pctags = pcTags()))
-                                   && isset($pctags[$lword]))) {
-                $cids = self::_pcContactIdsWithTag($lword);
-                $this->_searchField($cids, "au_cid", $qt);
-                return;
-            }
-        }
-        $this->_searchField($word, "au", $qt);
+        $lword = strtolower($word);
+        if ($keyword && !$quoted && $lword === "me")
+            $this->_searchField(array($this->cid), "au_cid", $qt);
+        else if ($keyword && !$quoted && $this->amPC
+                 && ($lword == "pc"
+                     || (($pctags = pcTags()) && isset($pctags[$lword])))) {
+            $cids = self::_pcContactIdsWithTag($lword);
+            $this->_searchField($cids, "au_cid", $qt);
+        } else
+            $this->_searchField($word, "au", $qt);
     }
 
     static function _cleanCompar($compar) {

@@ -1415,9 +1415,8 @@ function pcMembers() {
 }
 
 function pcTags() {
-    $pcm = pcMembers();
     $tags = array("pc" => "pc");
-    foreach ($pcm as $pc)
+    foreach (pcMembers() as $pc)
         if (isset($pc->contactTags) && $pc->contactTags) {
             foreach (explode(" ", $pc->contactTags) as $t)
                 if ($t !== "")
@@ -1428,8 +1427,7 @@ function pcTags() {
 }
 
 function pcByEmail($email) {
-    $pc = pcMembers();
-    foreach ($pc as $id => $row)
+    foreach (pcMembers() as $id => $row)
         if (strcasecmp($row->email, $email) == 0)
             return $row;
     return null;
