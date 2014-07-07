@@ -2418,10 +2418,11 @@ function scorechart1_s1(sc, parent) {
         if (!anal.v[vindex])
             continue;
         color = color_interp(badcolor, goodcolor, (vindex - 1) * anal.fm);
-        ctx.fillStyle = color_unparse(color);
         for (h = 1; h <= anal.v[vindex]; ++h) {
             if (vindex == anal.h && h == 1)
                 ctx.fillStyle = color_unparse(color_interp(blackcolor, color, 0.5));
+            else if (vindex == anal.h ? h == 2 : h == 1)
+                ctx.fillStyle = color_unparse(color);
             ctx.fillRect((blocksize + blockpad) * x - blocksize,
                          cheight - 1 - (blocksize + blockpad) * h,
                          blocksize + 1, blocksize + 1);
