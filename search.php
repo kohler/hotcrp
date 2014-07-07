@@ -1127,7 +1127,7 @@ if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, array("sort" => true, "list" => true,
                                        "display" => defval($_REQUEST, "display")));
     $pl_text = $pl->text($Search->limitName, array("class" => "pltable_full",
-                                                   "attributes" => array("hotcrp_foldsession" => "pldisplay.$")));
+                                                   "attributes" => array("hotcrp_foldsession" => 'pldisplay.$')));
     $pldisplay = $pl->display;
 } else
     $pl = null;
@@ -1212,7 +1212,7 @@ if ($pl) {
         displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange));
     } else if ($Me->privChair && $Conf->subBlindAlways()) {
         $onchange = "fold('pl',!this.checked,'au');fold('pl',!this.checked,'anonau');plinfo.extra()";
-        displayOptionCheckbox("anonau", 1, "Deblinded authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau)));
+        displayOptionCheckbox("anonau", 1, "Authors (deblinded)", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau)));
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
         displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));

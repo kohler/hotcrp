@@ -243,7 +243,8 @@ $Conf->header($title, "accounts", actionBar());
 
 
 $pl = new ContactList($Me, true);
-$pl_text = $pl->text($_REQUEST["t"], hoturl("users", "t=" . $_REQUEST["t"]), $tOpt[$_REQUEST["t"]]);
+$pl_text = $pl->text($_REQUEST["t"], hoturl("users", "t=" . $_REQUEST["t"]),
+                     $tOpt[$_REQUEST["t"]], 'ppldisplay.$');
 
 
 // form
@@ -268,23 +269,21 @@ if (count($tOpt) > 1) {
 
     echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
+    $Conf->footerScript('foldmap.ppl={"aff":2,"tags":3,"topics":1};');
     if ($pl->haveAffrow !== null) {
         echo Ht::checkbox("showaff", 1, $pl->haveAffrow,
-                           array("onchange" => "fold('ppl',!this.checked,2)")),
-            "&nbsp;", Ht::label("Affiliations"),
-            foldsessionpixel("ppl2", "ppldisplay", "aff"), "<br />\n";
+                           array("onchange" => "fold('ppl',!this.checked,'aff')")),
+            "&nbsp;", Ht::label("Affiliations"), "<br />\n";
     }
     if ($pl->haveTags !== null) {
         echo Ht::checkbox("showtags", 1, $pl->haveTags,
-                           array("onchange" => "fold('ppl',!this.checked,3)")),
-            "&nbsp;", Ht::label("Tags"),
-            foldsessionpixel("ppl3", "ppldisplay", "tags"), "<br />\n";
+                           array("onchange" => "fold('ppl',!this.checked,'tags')")),
+            "&nbsp;", Ht::label("Tags"), "<br />\n";
     }
     if ($pl->haveTopics !== null) {
         echo Ht::checkbox("showtop", 1, $pl->haveTopics,
-                           array("onchange" => "fold('ppl',!this.checked,1)")),
-            "&nbsp;", Ht::label("Topic interests"),
-            foldsessionpixel("ppl1", "ppldisplay", "topics"), "<br />\n";
+                           array("onchange" => "fold('ppl',!this.checked,'topics')")),
+            "&nbsp;", Ht::label("Topic interests"), "<br />\n";
     }
     echo "</td>";
     if (isset($pl->scoreMax)) {

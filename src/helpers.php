@@ -348,25 +348,6 @@ function redirectSelf($extra = array()) {
     go(selfHref($extra, array("raw" => true)));
 }
 
-function foldsessionpixel($name, $var, $sub = false) {
-    global $Conf;
-    $val = "&amp;val=";
-    if ($sub === false)
-        $val .= $Conf->session($var, 1);
-    else if ($sub === null)
-        $val .= "&amp;sub=";
-    else if ($sub !== null) {
-        if (!($sv = $Conf->session($var))
-            || array_search($sub, explode(" ", $sv)) === false)
-            $val .= "1";
-        else
-            $val .= "0";
-        $val = "&amp;sub=" . $sub . $val;
-    }
-
-    return "<img id='foldsession." . $name . "' alt='' src='" . hoturl("sessionvar", "var=" . $var . $val . "&amp;cache=1") . "' width='1' height='1' />";
-}
-
 function foldbutton($foldtype, $foldnum = 0) {
     $foldnumid = ($foldnum ? ",$foldnum" : "");
     return '<a href="#" class="q" onclick="return fold(\''

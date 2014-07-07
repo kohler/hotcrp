@@ -620,7 +620,7 @@ class ContactList extends BaseList {
         return $rows;
     }
 
-    function text($listname, $url, $listtitle = "") {
+    function text($listname, $url, $listtitle = "", $foldsession = null) {
         global $Conf, $ConfSiteSuffix, $contactListFields;
 
         // PC tags
@@ -748,20 +748,26 @@ class ContactList extends BaseList {
             $body .= $t . $tt;
         }
 
-        $x = "<table class=\"ppltable plt_" . htmlspecialchars($listname);
+        $foldclasses = array();
         if ($this->haveAffrow !== null) {
             $this->haveAffrow = strpos(displayOptionsSet("ppldisplay"), " aff ") !== false;
-            $x .= ($this->haveAffrow ? " fold2o" : " fold2c");
+            $foldclasses[] = ($this->haveAffrow ? "fold2o" : "fold2c");
         }
         if ($this->haveTopics !== null) {
             $this->haveTopics = strpos(displayOptionsSet("ppldisplay"), " topics ") !== false;
-            $x .= ($this->haveTopics ? " fold1o" : " fold1c");
+            $foldclasses[] = ($this->haveTopics ? "fold1o" : "fold1c");
         }
         if ($this->haveTags !== null) {
             $this->haveTags = strpos(displayOptionsSet("ppldisplay"), " tags ") !== false;
-            $x .= ($this->haveTags ? " fold3o" : " fold3c");
+            $foldclasses[] = ($this->haveTags ? "fold3o" : "fold3c");
         }
-        $x .= "\" id=\"foldppl\">\n";
+
+        $x = "<table id=\"foldppl\" class=\"ppltable plt_" . htmlspecialchars($listname);
+        if ($foldclasses)
+            $x .= " " . join(" ", $foldclasses);
+        if ($foldclasses && $foldsession)
+            $x .= "\" hotcrp_foldsession=\"$foldsession";
+        $x .= "\">\n";
 
         if ($this->showHeader) {
             $x .= "  <tr class=\"pl_headrow\">\n";

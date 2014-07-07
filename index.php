@@ -500,13 +500,13 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         $entries = $Conf->reviewerActivity($Me, time(), 30);
         if (count($entries)) {
             $fold20 = $Conf->session("foldhomeactivity", 1) ? "fold20c" : "fold20o";
-            echo "<div class='homegrp $fold20 fold21c' id='homeactivity'>",
+            echo "<div class=\"homegrp $fold20\" id=\"homeactivity\" hotcrp_foldsession=\"foldhomeactivity\">",
+                "<div class=\"fold21c\" id=\"homeactivitymore\">",
                 foldbutton("homeactivity", 20),
-                "<h4><a href=\"javascript:void fold('homeactivity',null,20)\" class='x homeactivity'>Recent activity<span class='fx20'>:</span></a></h4>";
+                "<h4><a href=\"#\" onclick=\"return fold('homeactivity',null,20)\" class=\"x homeactivity\">Recent activity<span class='fx20'>:</span></a></h4>";
             if (count($entries) > 10)
-                echo "&nbsp; <a href=\"javascript:void fold('homeactivity',null,21)\" class='fx20'><span class='fn21'>More &#187;</span><span class='fx21'>&#171; Fewer</span></a>";
-            echo foldsessionpixel("homeactivity20", "foldhomeactivity"),
-                "<div class='fx20' style='overflow:hidden;padding-top:3px'><table><tbody>";
+                echo "&nbsp; <a href=\"#\" onclick=\"return fold('homeactivitymore',null,21)\" class='fx20'><span class='fn21'>More &#187;</span><span class='fx21'>&#171; Fewer</span></a>";
+            echo "<div class='fx20' style='overflow:hidden;padding-top:3px'><table><tbody>";
             foreach ($entries as $which => $xr) {
                 $tr_class = "k" . ($which % 2) . ($which >= 10 ? " fx21" : "");
                 if ($xr->isComment)
@@ -514,7 +514,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
                 else
                     echo $rf->reviewFlowEntry($Me, $xr, $tr_class);
             }
-            echo "</tbody></table></div></div>";
+            echo "</tbody></table></div></div></div>";
         }
     }
 

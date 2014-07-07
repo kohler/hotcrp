@@ -534,66 +534,58 @@ function hiliter_children(form) {
         .on("keyup", hiliter);
 }
 
-var foldmap = {}, foldsession_unique = 1;
-function fold(which, dofold, foldtype) {
-    var i, elt, selt, opentxt, closetxt, foldnum, foldnumid;
-    if (which instanceof Array) {
-        for (i = 0; i < which.length; i++)
-            fold(which[i], dofold, foldtype);
+var foldmap = {};
+function fold(elt, dofold, foldtype) {
+    var i, foldname, selt, opentxt, closetxt, foldnum, foldnumid;
 
-    } else if (typeof which == "string") {
-        foldnum = foldtype;
-        if (foldmap[which] != null && foldmap[which][foldtype] != null)
-            foldnum = foldmap[which][foldtype];
-        foldnumid = foldnum ? foldnum : "";
+    // find element
+    if (elt instanceof Array) {
+        for (i = 0; i < elt.length; i++)
+            fold(elt[i], dofold, foldtype);
+        return false;
+    } else if (typeof elt == "string")
+        elt = $$("fold" + elt) || $$(elt);
+    if (!elt)
+        return false;
 
-        elt = $$("fold" + which) || $$(which);
-        fold(elt, dofold, foldnum);
+    // find element name, fold number, fold/unfold
+    foldname = /^fold/.test(elt.id || "") ? elt.id.substr(4) : false;
+    foldnum = foldtype;
+    if (foldname && foldmap[foldname] && foldmap[foldname][foldtype] != null)
+        foldnum = foldmap[foldname][foldtype];
+    foldnumid = foldnum ? foldnum : "";
+    opentxt = "fold" + foldnumid + "o";
+    closetxt = "fold" + foldnumid + "c";
+    if (dofold == null && elt.className.indexOf(opentxt) >= 0)
+        dofold = true;
 
-        // check for session
-        if ((opentxt = elt.getAttribute("hotcrp_foldsession")))
-            Miniajax.get(hotcrp_base + "sessionvar.php?j=1&var="
-                         + opentxt.replace("$", foldtype)
-                         + "&val=" + (dofold ? 1 : 0));
-        else if ((selt = $$('foldsession.' + which + foldnumid)))
-            selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&u=' + foldsession_unique++);
-        else if ((selt = $$('foldsession.' + which)))
-            selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&sub=' + (foldtype || foldnumid) + '&u=' + foldsession_unique++);
+    // perform fold
+    if (dofold)
+        elt.className = elt.className.replace(opentxt, closetxt);
+    else
+        elt.className = elt.className.replace(closetxt, opentxt);
 
-    } else if (which) {
-        foldnumid = foldtype ? foldtype : "";
-        opentxt = "fold" + foldnumid + "o";
-        closetxt = "fold" + foldnumid + "c";
-        if (dofold == null && which.className.indexOf(opentxt) >= 0)
-            dofold = true;
-        if (dofold)
-            which.className = which.className.replace(opentxt, closetxt);
-        else
-            which.className = which.className.replace(closetxt, opentxt);
-        // IE won't actually do the fold unless we yell at it
-        if (document.recalc)
-            try {
-                which.innerHTML = which.innerHTML + "";
-            } catch (err) {
-            }
-
-        // check for focus
-        if (!dofold && which.id && /^fold/.test(which.id)
-            && (selt = $$(which.id + foldnumid + "_d"))) {
-            if (selt.setSelectionRange && selt.hotcrp_ever_focused == null) {
-                selt.setSelectionRange(selt.value.length, selt.value.length);
-                selt.hotcrp_ever_focused = true;
-            }
-            selt.focus();
+    // check for focus
+    if (!dofold && foldname
+        && (selt = $$("fold" + foldname + foldnumid + "_d"))) {
+        if (selt.setSelectionRange && selt.hotcrp_ever_focused == null) {
+            selt.setSelectionRange(selt.value.length, selt.value.length);
+            selt.hotcrp_ever_focused = true;
         }
+        selt.focus();
     }
+
+    // check for session
+    if ((opentxt = elt.getAttribute("hotcrp_foldsession")))
+        Miniajax.get(hotcrp_base + "sessionvar.php?j=1&var="
+                     + opentxt.replace("$", foldtype) + "&val=" + (dofold ? 1 : 0));
 
     return false;
 }
 
 function foldup(e, event, opts) {
     var dofold = false, attr, m, foldnum;
-    while (e && e.id.substr(0, 4) != "fold" && !e.getAttribute("hotcrpfold"))
+    while (e && e.id.substr(0, 4) != "fold" && !e.getAttribute("hotcrp_fold"))
         e = e.parentNode;
     if (!e)
         return true;
