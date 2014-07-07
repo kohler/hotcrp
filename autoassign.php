@@ -691,7 +691,7 @@ if (count($pctags)) {
     $Conf->footerScript("pc_tags_json={" . join(",", $tagsjson) . "};");
     foreach ($pctags as $tagname => $pctag)
         if ($tagname != "pc")
-            $pctyp_sel[] = array($pctag, "pc_tags_members(\"$tagname\")", "“${pctag}”&nbsp;tag");
+            $pctyp_sel[] = array($pctag, "pc_tags_members(\"$tagname\")", "#$pctag");
 }
 $sep = "";
 foreach ($pctyp_sel as $pctyp) {

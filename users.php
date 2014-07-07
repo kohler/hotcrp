@@ -18,7 +18,7 @@ $tOpt["pc"] = "Program committee";
 if ($Me->isPC && count($pctags = pcTags())) {
     foreach ($pctags as $t)
         if ($t != "pc")
-            $tOpt["pc:$t"] = "PC members tagged &ldquo;$t&rdquo;";
+            $tOpt["pc:$t"] = "#$t program committee";
 }
 if ($Me->isPC)
     $tOpt["admin"] = "System administrators";
