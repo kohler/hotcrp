@@ -176,6 +176,7 @@ $search = new PaperSearch($Me, array("t" => "rable",
 $pl = new PaperList($search, array("sort" => true, "list" => true, "foldtype" => "pf", "reviewer" => $reviewer));
 $pl_text = $pl->text("editReviewPreference",
                      array("class" => "pltable_full",
+                           "attributes" => array("hotcrp_foldsession" => "pfdisplay.$"),
                            "footer_extra" => "<div id='plactr'>" . Ht::submit("update", "Save changes", array("class" => "hb")) . "</div>"));
 SessionList::change($pl->listNumber, array("revprefs" => true));
 
@@ -188,7 +189,7 @@ $showing_au = (!$Conf->subBlindAlways() && strpos($pldisplay, " au ") !== false)
 $showing_anonau = ((!$Conf->subBlindNever() || $Me->privChair) && strpos($pldisplay, " anonau ") !== false);
 
 echo "<form method='get' action='", hoturl("reviewprefs"), "' accept-charset='UTF-8' id='redisplayform' class='",
-    ($showing_au ? "fold10o" : "fold10c"),
+    ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c"),
     "'>\n<table>";
 
 if ($Me->privChair) {
@@ -215,7 +216,6 @@ echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'>
     "</tr>\n";
 
 echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;",
-    foldsessionpixel("pl", "pfdisplay", null),
     "</td><td colspan='2' class='lentry'>";
 $sep = "";
 $loadforms = "";

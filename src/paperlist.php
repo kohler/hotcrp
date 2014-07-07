@@ -1168,6 +1168,9 @@ class PaperList extends BaseList {
             $enter .= " " . $options["class"];
         if (count($foldclasses))
             $enter .= " " . join(" ", $foldclasses) . "\" id=\"foldpl";
+        if (defval($options, "attributes"))
+            foreach ($options["attributes"] as $n => $v)
+                $enter .= "\" $n=\"$v";
         $enter .= "\">\n";
         $exit = "</table>";
 

@@ -5,24 +5,33 @@
 
 require_once("src/initweb.php");
 
-if (isset($_REQUEST["var"])) {
-    $k = $_REQUEST["var"];
-    if (in_array($k, $allowedSessionVars)) {
-        if (isset($_REQUEST["sub"]) && $_REQUEST["sub"] == "")
-            /* do nothing */;
-        else if (isset($_REQUEST["sub"])) {
-            // sessionvar.php is called from fold(), which sets "val" to 1 iff
-            // the element is folded.  So add $sub to the session variable iff
-            // "val" is NOT 1.
-            $on = !(isset($_REQUEST["val"]) && intval($_REQUEST["val"]) > 0);
-            if (preg_match('/\A[a-zA-Z0-9_]+\z/', $_REQUEST["sub"]))
-                displayOptionsSet($k, $_REQUEST["sub"], $on);
-        } else if (isset($_REQUEST["val"]))
-            $Conf->save_session($k, intval($_REQUEST["val"]));
-        else
-            $Conf->save_session($k, null);
-    }
+function change_sessionvar($k, $sub, $val) {
+    global $allowedSessionVars, $Conf;
+    if (in_array($k, $allowedSessionVars))
+        /* OK */;
+    else if (($dot = strpos($k, "."))
+             && in_array(substr($k, 0, $dot), $allowedSessionVars)) {
+        $sub = substr($k, $dot + 1);
+        $k = substr($k, 0, $dot);
+    } else
+        return;
+    if ($sub === "")
+        /* do nothing */;
+    else if ($sub) {
+        // sessionvar.php is called from fold(), which sets "val" to 1 iff
+        // the element is folded.  So add $sub to the session variable iff
+        // "val" is NOT 1.
+        $on = !($val !== null && intval($val) > 0);
+        if (preg_match('/\A[a-zA-Z0-9_]+\z/', $sub))
+            displayOptionsSet($k, $sub, $on);
+    } else if ($val !== null)
+        $Conf->save_session($k, intval($val));
+    else
+        $Conf->save_session($k, null);
 }
+
+if (isset($_REQUEST["var"]))
+    change_sessionvar($_REQUEST["var"], @$_REQUEST["sub"], @$_REQUEST["val"]);
 
 if (isset($_REQUEST["j"])) {
     header("Content-Type: application/json");

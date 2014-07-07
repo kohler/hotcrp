@@ -1126,7 +1126,8 @@ $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, array("sort" => true, "list" => true,
                                        "display" => defval($_REQUEST, "display")));
-    $pl_text = $pl->text($Search->limitName, array("class" => "pltable_full"));
+    $pl_text = $pl->text($Search->limitName, array("class" => "pltable_full",
+                                                   "attributes" => array("hotcrp_foldsession" => "pldisplay.$")));
     $pldisplay = $pl->display;
 } else
     $pl = null;
@@ -1199,7 +1200,7 @@ if ($pl) {
                        || ($_REQUEST["t"] == "acc" && $viewAcceptedAuthors)
                        || $Conf->subBlindNever());
 
-    displayOptionText("<strong>Show:</strong>" . foldsessionpixel("pl", "pldisplay", null), 1);
+    displayOptionText("<strong>Show:</strong>", 1);
 
     // Authors group
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors) {
@@ -1209,13 +1210,13 @@ if ($pl) {
         if ($Me->privChair)
             $onchange .= ";plinfo.extra()";
         displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange));
-    } else if ($Conf->subBlindAlways() && $Me->privChair) {
-        $onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
+    } else if ($Me->privChair && $Conf->subBlindAlways()) {
+        $onchange = "fold('pl',!this.checked,'au');fold('pl',!this.checked,'anonau');plinfo.extra()";
         displayOptionCheckbox("anonau", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau)));
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
         displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
-    if (!$viewAllAuthors && $Me->privChair) {
+    if ($Me->privChair && !$viewAllAuthors && !$Conf->subBlindAlways()) {
         $onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
         displayOptionCheckbox("anonau", 1, "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau), "indent" => true));
     }

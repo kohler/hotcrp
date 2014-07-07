@@ -551,7 +551,11 @@ function fold(which, dofold, foldtype) {
         fold(elt, dofold, foldnum);
 
         // check for session
-        if ((selt = $$('foldsession.' + which + foldnumid)))
+        if ((opentxt = elt.getAttribute("hotcrp_foldsession")))
+            Miniajax.get(hotcrp_base + "sessionvar.php?j=1&var="
+                         + opentxt.replace("$", foldtype)
+                         + "&val=" + (dofold ? 1 : 0));
+        else if ((selt = $$('foldsession.' + which + foldnumid)))
             selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&u=' + foldsession_unique++);
         else if ((selt = $$('foldsession.' + which)))
             selt.src = selt.src.replace(/val=.*/, 'val=' + (dofold ? 1 : 0) + '&sub=' + (foldtype || foldnumid) + '&u=' + foldsession_unique++);
