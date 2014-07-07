@@ -1212,13 +1212,13 @@ if ($pl) {
         displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange));
     } else if ($Me->privChair && $Conf->subBlindAlways()) {
         $onchange = "fold('pl',!this.checked,'au');fold('pl',!this.checked,'anonau');plinfo.extra()";
-        displayOptionCheckbox("anonau", 1, "Authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau)));
+        displayOptionCheckbox("anonau", 1, "Deblinded authors", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau)));
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
         displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
     if ($Me->privChair && !$viewAllAuthors && !$Conf->subBlindAlways()) {
         $onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
-        displayOptionCheckbox("anonau", 1, "Anonymous authors", array("onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau), "indent" => true));
+        displayOptionCheckbox("anonau", 1, "Deblinded authors", array("onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau), "indent" => true));
     }
     if ($pl->any->collab)
         displayOptionCheckbox("collab", 1, "Collaborators", array("indent" => true));
