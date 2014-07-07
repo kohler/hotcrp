@@ -1641,11 +1641,8 @@ function cleanAuthor($row) {
     }
 }
 
-function reviewForm($force = false) {
-    global $Conf, $ReviewFormCache;
-    if (!$ReviewFormCache || $force)
-        $ReviewFormCache = new ReviewForm;
-    return $ReviewFormCache;
+function reviewForm() {
+    return ReviewForm::get(0);
 }
 
 

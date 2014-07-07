@@ -375,10 +375,11 @@ class Conference {
         return count($this->topic_map());
     }
 
-    function review_form_json() {
-        $x = @$this->settingTexts["review_form"];
+    function review_form_json($round) {
+        $key = $round ? "review_form.$round" : "review_form";
+        $x = @$this->settingTexts[$key];
         if (is_string($x))
-            $x = $this->settingTexts["review_form"] = json_decode($x);
+            $x = $this->settingTexts[$key] = json_decode($x);
         return is_object($x) ? $x : null;
     }
 
@@ -605,7 +606,7 @@ class Conference {
     }
 
     function invalidateCaches($caches = null) {
-        global $OK, $ReviewFormCache;
+        global $OK;
         $inserts = array();
         $removes = array();
         $time = time();
@@ -623,7 +624,7 @@ class Conference {
         if (!$caches || isset($caches["paperOption"]))
             PaperOption::invalidate_option_list();
         if (!$caches || isset($caches["rf"]))
-            $ReviewFormCache = null;
+            ReviewForm::clear_cache();
         $ok = true;
         if (count($inserts))
             $ok = $ok && ($this->qe("insert into Settings (name, value) values " . join(",", $inserts) . " on duplicate key update value=values(value)") !== false);

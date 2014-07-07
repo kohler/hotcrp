@@ -1033,7 +1033,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
     }
 
     // update the review form in case it's changed
-    reviewForm(true);
+    ReviewForm::clear_cache();
     if (count($Error) == 0) {
         $Conf->save_session("settings_highlight", $Highlight);
         redirectSelf();

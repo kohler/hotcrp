@@ -251,6 +251,7 @@ class ReviewForm {
     const WEB_RIGHT = 8;
     const WEB_FINAL = 32;
 
+    public $round;
     public $fmap;
     public $forder;
     public $fieldName;
@@ -262,10 +263,31 @@ class ReviewForm {
                                         -4 => "too narrow",
                                         -2 => "not constructive",
                                         -3 => "not correct");
+    static private $cache = array();
 
-    function __construct() {
+    static public function get($round = 0) {
+        global $Conf;
+        if (is_object($round))
+            $round = $round->reviewRound;
+        if (($rf = @self::$cache[$round]))
+            return $rf;
+        if (!@self::$cache[0])
+            self::$cache[0] = new ReviewForm(0);
+        if ($round && $Conf->review_form_json($round))
+            self::$cache[$round] = new ReviewForm($round);
+        else if ($round)
+            self::$cache[$round] = self::$cache[0];
+        return self::$cache[$round];
+    }
+
+    static public function clear_cache() {
+        self::$cache = array();
+    }
+
+    function __construct($round) {
         global $Conf;
 
+        $this->round = $round;
         $this->fmap = array();
         foreach (array("paperSummary", "commentsToAuthor", "commentsToPC",
                        "commentsToAddress", "weaknessOfPaper",
@@ -277,7 +299,7 @@ class ReviewForm {
                        "likelyPresentation", "suitableForShort") as $fid)
             $this->fmap[$fid] = new ReviewField($this, $fid, true);
 
-        $rfj = $Conf->review_form_json();
+        $rfj = $Conf->review_form_json($round);
         if (!$rfj)
             $rfj = json_decode('{
 "overAllMerit":{"name":"Overall merit","position":1,"view_score":1,
