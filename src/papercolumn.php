@@ -1038,7 +1038,7 @@ class ScorePaperColumn extends PaperColumn {
             && $row->$fname) {
             $t = $this->form_field->unparse_graph($row->$fname, 1, defval($row, $this->score));
             if (!$allowed)
-                $t = "<span class='fx20'>$t</span>";
+                $t = "<span class='fx5'>$t</span>";
             return $t;
         } else
             return "";
@@ -1110,7 +1110,7 @@ class FormulaPaperColumn extends PaperColumn {
         $formulaf = $this->formula_function;
         $t = $formulaf($row, $pl->contact, "h");
         if ($row->conflictType > 0 && $pl->contact->allowAdminister($row))
-            return "<span class='fn20'>$t</span><span class='fx20'>"
+            return "<span class='fn5'>$t</span><span class='fx5'>"
                 . $formulaf($row, $pl->contact, "h", true) . "</span>";
         else
             return $t;
