@@ -125,7 +125,7 @@ class MeetingTracker {
             foreach ($pids as $pid)
                 $status->papers[] = $papers[$pid];
         }
-        $Conf->save_session("tracker", "status");
+        $Conf->save_session("tracker", $status);
         return $status;
     }
 
