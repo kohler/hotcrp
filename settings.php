@@ -1552,7 +1552,7 @@ function do_track_permission($type, $question, $tnum, $thistrack) {
         setting_label("${type}_track$tnum", $question, "${type}_track$tnum"),
         "</td>",
         "<td>",
-        Ht::select("${type}_track$tnum", array("" => "Whole PC", "+" => "PC members with tag:", "-" => "PC members without tag:"), $tclass,
+        Ht::select("${type}_track$tnum", array("" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag"), $tclass,
                    array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0})")),
         " &nbsp;",
         Ht::entry("${type}tag_track$tnum", $ttag,
@@ -1737,7 +1737,6 @@ function doRevGroup() {
         "<div class='smg fx'></div>",
         "<div class='fx'>";
     do_track("", 0);
-    do_track("_", 1);
     $tracknum = 2;
     if (($trackj = $Conf->setting_json("tracks")))
         foreach ($trackj as $trackname => $x)
@@ -1746,6 +1745,8 @@ function doRevGroup() {
                 ++$tracknum;
             }
     echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
+    echo "</div><div class='fx' style='padding-top:0.5em'>";
+    do_track("_", 1);
     echo "</div></td></tr></table>\n";
 
     // Review ratings
