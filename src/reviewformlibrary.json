@@ -1,6 +1,6 @@
 [
     {
-        "selector": "Overall merit (percentage rankings)",
+        "selector": "Overall merit (1–5, percentage rankings)",
         "name": "Overall merit",
         "preferred_id": "overAllMerit",
         "options": [
@@ -13,7 +13,7 @@
         "view_score": "author"
     },
     {
-        "selector": "Overall merit (Reject through Strong Accept)",
+        "selector": "Overall merit (1–5, Reject through Strong Accept)",
         "name": "Overall merit",
         "preferred_id": "overAllMerit",
         "options": [
@@ -26,7 +26,7 @@
         "view_score": "author"
     },
     {
-        "selector": "Overall merit (Identify the Champion)",
+        "selector": "Overall merit (A–D, Identify the Champion)",
         "name": "Overall merit",
         "preferred_id": "overAllMerit",
         "options": [
@@ -39,7 +39,7 @@
         "view_score": "author"
     },
     {
-        "selector": "Reviewer confidence (Low through High)",
+        "selector": "Reviewer confidence (1–3, Low through High)",
         "name": "Reviewer confidence",
         "preferred_id": "reviewerQualification",
         "options": [
@@ -50,7 +50,7 @@
         "view_score": "author"
     },
     {
-        "selector": "Reviewer expertise (5 options)",
+        "selector": "Reviewer expertise (1–5)",
         "name": "Reviewer expertise",
         "preferred_id": "reviewerQualification",
         "options": [
@@ -63,7 +63,7 @@
         "view_score": "author"
     },
     {
-        "selector": "Confidence (Identify the Champion)",
+        "selector": "Confidence (X–Z, Identify the Champion)",
         "name": "Confidence",
         "preferred_id": "reviewerQualification",
         "options": [
@@ -75,7 +75,7 @@
         "view_score": "author"
     },
     {
-        "selector": "Novelty (4 options)",
+        "selector": "Novelty (1–4)",
         "name": "Novelty",
         "preferred_id": "novelty",
         "options": [
@@ -87,7 +87,7 @@
         "view_score": "author"
     },
     {
-        "selector": "Writing quality (5 options)",
+        "selector": "Writing quality (1–5)",
         "name": "Writing quality",
         "preferred_id": "grammar",
         "options": [
@@ -100,7 +100,7 @@
         "view_score": "author"
     },
     {
-        "selector": "Experimental methodology (5 options)",
+        "selector": "Experimental methodology (1–5)",
         "name": "Experimental methodology",
         "preferred_id": "technicalMerit",
         "options": [
