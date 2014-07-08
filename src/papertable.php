@@ -2127,14 +2127,19 @@ class PaperTable {
         if (count($pl) == 1) {
             $pl = $search->session_list_object();
             $_REQUEST["paperId"] = $_REQUEST["p"] = $pl->ids[0];
-            // check if the paper is in the current list. If not, make a new one
-            if (!@$_REQUEST["ls"]
-                || !($curpl = SessionList::lookup($_REQUEST["ls"]))
-                || array_search($pl->ids[0], $curpl->ids) === false) {
+            // check if the paper is in the current list
+            if (@$_REQUEST["ls"]
+                && ($curpl = SessionList::lookup($_REQUEST["ls"]))
+                && !preg_match(',\Ap/[^/]*//,', $curpl->listid)
+                && array_search($pl->ids[0], $curpl->ids) !== false) {
+                // preserve current list
+                if (@$pl->matchPreg)
+                    $Conf->save_session("temp_matchPreg", $pl->matchPreg);
+            } else {
+                // make new list
                 $_REQUEST["ls"] = SessionList::allocate($pl->listid);
                 SessionList::change($_REQUEST["ls"], $pl);
-            } else if (@$pl->matchPreg)
-                $Conf->save_session("temp_matchPreg", $pl->matchPreg);
+            }
             // ensure URI makes sense ("paper/2" not "paper/searchterm")
             redirectSelf();
             return true;
