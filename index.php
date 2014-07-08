@@ -361,12 +361,12 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     // Overview
     echo "<h4>Reviews: &nbsp;</h4> ";
     $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(if(reviewNeedsSubmit=0,reviewSubmitted,1)), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId", "while fetching review status");
-    $rf = reviewForm();
-    $maxOverAllMerit = $rf->maxNumericScore("overAllMerit");
+    $all_review_fields = ReviewForm::field_list_all_rounds();
+    $merit_field = @$all_review_fields["overAllMerit"];
     $npc = $npcScore = $sumpcScore = $sumpcSubmit = 0;
     $myrow = null;
     while (($row = edb_row($result))) {
-        $row[3] = scoreCounts($row[3], $maxOverAllMerit);
+        $row[3] = scoreCounts($row[3], $merit_field ? count($merit_field->options) : 0);
         if ($row[0] == $Me->cid)
             $myrow = $row;
         if ($row[4]) {
@@ -383,16 +383,14 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
             echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='", hoturl("search", "q=&amp;t=r"), "'>review</a>";
         else
             echo "You have submitted ", $myrow[1], " of <a href='", hoturl("search", "q=&amp;t=r"), "'>", plural($myrow[2], "review"), "</a>";
-        $f = $rf->field("overAllMerit");
-        if ($f->displayed && $myrow[1])
-            echo " with an average $f->name_html score of ", $f->unparse_average($myrow[3]->avg);
+        if ($merit_field->displayed && $myrow[1])
+            echo " with an average $merit_field->name_html score of ", $merit_field->unparse_average($myrow[3]->avg);
         echo ".<br />\n";
     }
     if (($Me->isPC || $Me->privChair) && $npc) {
         echo sprintf("  The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
-        $f = $rf->field("overAllMerit");
-        if ($f->displayed && $npcScore)
-            echo " with an average $f->name_html score of ", $f->unparse_average($sumpcScore / $npcScore);
+        if ($merit_field->displayed && $npcScore)
+            echo " with an average $merit_field->name_html score of ", $merit_field->unparse_average($sumpcScore / $npcScore);
         echo ".";
         if ($Me->isPC || $Me->privChair)
             echo "&nbsp; <small>(<a href='", hoturl("users", "t=pc&amp;score%5B%5D=0"), "'>Details</a>)</small>";
@@ -496,7 +494,6 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     }
 
     if ($Me->is_reviewer()) {
-        require_once("src/commentview.php");
         $entries = $Conf->reviewerActivity($Me, time(), 30);
         if (count($entries)) {
             $fold20 = $Conf->session("foldhomeactivity", 1) ? "fold20c" : "fold20o";
@@ -511,8 +508,10 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
                 $tr_class = "k" . ($which % 2) . ($which >= 10 ? " fx21" : "");
                 if ($xr->isComment)
                     echo CommentView::commentFlowEntry($Me, $xr, $tr_class);
-                else
+                else {
+                    $rf = ReviewForm::get($xr);
                     echo $rf->reviewFlowEntry($Me, $xr, $tr_class);
+                }
             }
             echo "</tbody></table></div></div></div>";
         }

@@ -143,6 +143,7 @@ function __autoload($class_name) {
                                "CheckFormat" => "src/checkformat.php",
                                "CleanHTML" => "lib/cleanhtml.php",
                                "Column" => "lib/column.php",
+                               "CommentView" => "src/commentview.php",
                                "CommentSave" => "src/commentsave.php",
                                "Conflict" => "src/conflict.php",
                                "Countries" => "lib/countries.php",

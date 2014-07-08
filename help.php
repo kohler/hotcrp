@@ -639,7 +639,6 @@ The automatic and bulk assignment pages also let you set a review round.");
 
 function revrate() {
     global $Conf, $Me;
-    $rf = reviewForm();
 
     echo "<table>";
     _alternateRow("Review ratings basics", "

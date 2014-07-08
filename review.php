@@ -259,12 +259,12 @@ function downloadForm($editable) {
         $paperTable->resolveComments();
         foreach ($paperTable->crows as $cr)
             if ($Me->canViewComment($prow, $cr, false))
-                $text .= $rf->prettyTextComment($prow, $cr, $Me) . "\n";
+                $text .= CommentView::unparse_text($prow, $cr, $Me) . "\n";
     }
     if (!$text)
         return $Conf->errorMsg(whyNotText($whyNot, "review"));
     if ($editable)
-        $text = $rf->textFormHeader(count($downrrows) > 1, $Me->viewReviewFieldsScore($prow, null)) . $text;
+        $text = ReviewForm::textFormHeader(count($downrrows) > 1, $Me->viewReviewFieldsScore($prow, null)) . $text;
     downloadText($text, "review-" . $prow->paperId, !$editable);
     exit;
 }

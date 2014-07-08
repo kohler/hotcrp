@@ -205,9 +205,8 @@ function downloadReviews(&$texts, &$errors) {
     if (count($texts) == 1 && $gettext)
         $rfname .= $papersel[key($texts)];
 
-    $rf = reviewForm();
     if ($getforms)
-        $header = $rf->textFormHeader(count($texts) > 1 && $gettext, true);
+        $header = ReviewForm::textFormHeader(count($texts) > 1 && $gettext, true);
     else
         $header = "";
 
@@ -244,7 +243,6 @@ if (($getaction == "revform" || $getaction == "revformz")
     downloadText($text, "review");
     exit;
 } else if ($getaction == "revform" || $getaction == "revformz") {
-    $rf = reviewForm();
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "myReviewsOpt" => 1)), "while selecting papers");
 
     $texts = array();
@@ -261,6 +259,7 @@ if (($getaction == "revform" || $getaction == "revformz")
                 if (!isset($whyNot["deadline"]))
                     defappend($texts[$paperselmap[$row->paperId]], wordWrapIndent(strtoupper(whyNotToText($t)) . "\n\n", "==-== ", "==-== "));
             }
+            $rf = ReviewForm::get($row);
             defappend($texts[$paperselmap[$row->paperId]], $rf->textForm($row, $row, $Me, null) . "\n");
         }
     }
@@ -271,7 +270,6 @@ if (($getaction == "revform" || $getaction == "revformz")
 
 // download all reviews for selected papers
 if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
-    $rf = reviewForm();
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allReviews" => 1, "reviewerName" => 1)), "while selecting papers");
 
     $texts = array();
@@ -281,14 +279,16 @@ if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
     while (($row = PaperInfo::fetch($result, $Me))) {
         if (!$Me->canViewReview($row, null, null, $whyNot))
             $errors[whyNotText($whyNot, "view review")] = true;
-        else if ($row->reviewSubmitted)
+        else if ($row->reviewSubmitted) {
+            $rf = ReviewForm::get($row);
             defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextForm($row, $row, $Me, false) . "\n");
+        }
     }
 
     $crows = $Conf->comment_rows($Conf->paperQuery($Me, array("paperId" => $papersel, "allComments" => 1, "reviewerName" => 1)), $Me);
     foreach ($crows as $row)
         if ($Me->canViewComment($row, $row, null))
-            defappend($texts[$paperselmap[$row->paperId]], $rf->prettyTextComment($row, $row, $Me) . "\n");
+            defappend($texts[$paperselmap[$row->paperId]], CommentView::unparse_text($row, $row, $Me) . "\n");
 
     downloadReviews($texts, $errors);
 }

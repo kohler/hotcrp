@@ -1981,7 +1981,6 @@ class PaperTable {
         // show comments as well
         if ((count($this->mycrows) || $Me->canComment($prow, null)
              || $Conf->timeAuthorRespond()) && !$this->allreviewslink) {
-            require_once("src/commentview.php");
             $cv = new CommentView;
             $editablecid = defval($_REQUEST, "commentId", "xxx");
             if (isset($_REQUEST["noedit"]))

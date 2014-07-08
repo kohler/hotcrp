@@ -359,4 +359,26 @@ class CommentView {
         return $t . "</a></td></tr>";
     }
 
+
+    static function unparse_text($prow, $crow, $contact) {
+        global $Conf;
+
+        $x = "===========================================================================\n";
+        $n = ($crow->commentType & COMMENTTYPE_RESPONSE ? "Response" : "Comment");
+        if ($contact->canViewCommentIdentity($prow, $crow, false)) {
+            $n .= " by ";
+            if (isset($crow->reviewFirstName))
+                $n .= Text::user_text($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
+            else
+                $n .= Text::user_text($crow);
+        }
+        $x .= str_pad($n, (int) (37.5 + strlen(UnicodeHelper::deaccent($n)) / 2), " ", STR_PAD_LEFT) . "\n";
+        $x .= ReviewForm::unparse_title_text($prow, $l);
+        // $n = "Updated " . $Conf->printableTime($crow->timeModified);
+        // $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+        $x .= "---------------------------------------------------------------------------\n";
+        $x .= $crow->comment . "\n";
+        return $x;
+    }
+
 }

@@ -497,11 +497,12 @@ class Mailer {
                 from PaperReview
                 join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
                 where PaperReview.paperId=" . $this->row->paperId . " order by reviewOrdinal", "while retrieving reviews");
-        $rf = reviewForm();
         $text = "";
         while (($row = edb_orow($result)))
-            if ($row->reviewSubmitted)
+            if ($row->reviewSubmitted) {
+                $rf = ReviewForm::get($row);
                 $text .= $rf->prettyTextForm($this->row, $row, $this->permissionContact, true) . "\n";
+            }
         return $text;
     }
 
@@ -526,11 +527,10 @@ class Mailer {
             $crows = $Conf->comment_rows($Conf->comment_query($where), $this->permissionContact);
         }
 
-        $rf = reviewForm();
         $text = "";
         foreach ($crows as $crow)
             if ($this->permissionContact->canViewComment($this->row, $crow, false))
-                $text .= $rf->prettyTextComment($this->row, $crow, $this->permissionContact) . "\n";
+                $text .= CommentView::unparse_text($this->row, $crow, $this->permissionContact) . "\n";
 
         $Conf->settings["au_seerev"] = $old_au_seerev;
         return $text;

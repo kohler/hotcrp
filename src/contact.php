@@ -497,7 +497,7 @@ class Contact {
         if ($this->is_empty()) {
             // Preserve review form values and comments across session expiration.
             $x = array("afterLogin" => 1, "blind" => 1);
-            $rf = reviewForm();
+            $rf = ReviewForm::get(0); // check all review fields
             foreach ($rf->fmap as $field => $f)
                 if (isset($_REQUEST[$field]))
                     $x[$field] = $_REQUEST[$field];

@@ -770,19 +770,13 @@ class ReviewForm {
     }
 
 
-    function textFormHeader($type, $editable) {
+    static function textFormHeader($type, $editable) {
         global $Conf, $ConfSiteSuffix, $Opt;
 
         $x = "==+== " . $Opt["shortName"] . " Paper Review";
         if ($editable) {
-            $x .= " Form" . ($type === true ? "s" : "") . "\n==-== ";
-            if ($type === "blank")
-                $x .= "Set the paper number and fill ";
-            else
-                $x .= "Fill ";
-            $x .= "out lettered sections A through " . chr(65 + count($this->forder) - 1) . ".
-==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
-==-== A single file can contain multiple forms.
+            $x .= " Form" . ($type === true ? "s" : "") . "\n";
+            $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
 ==-== For further guidance, or to upload this file when you are done, go to:
 ==-== " . $Opt["paperSite"] . "/offline$ConfSiteSuffix\n\n";
         } else
@@ -913,7 +907,7 @@ $blind\n";
         return $x . "\n==+== Scratchpad (for unsaved private notes)\n\n==+== End Review\n";
     }
 
-    function _prettyPaperTitle($prow, &$l) {
+    static function unparse_title_text($prow, &$l) {
         $n = "Paper #" . $prow->paperId . ": ";
         $l = max(14, (int) ((75.5 - strlen(UnicodeHelper::deaccent($prow->title)) - strlen($n)) / 2) + strlen($n));
         return wordWrapIndent($prow->title, $n, $l) . "\n";
@@ -942,7 +936,7 @@ $blind\n";
             $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
         }
         $x .= "---------------------------------------------------------------------------\n";
-        $x .= $this->_prettyPaperTitle($prow, $l);
+        $x .= self::unparse_title_text($prow, $l);
         if ($rrow && $contact->canViewReviewerIdentity($prow, $rrow, false)) {
             if (isset($rrow->reviewFirstName))
                 $n = Text::user_text($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
@@ -989,27 +983,6 @@ $blind\n";
                 $lastNumeric = false;
             }
         }
-        return $x;
-    }
-
-    function prettyTextComment($prow, $crow, $contact) {
-        global $Conf;
-
-        $x = "===========================================================================\n";
-        $n = ($crow->commentType & COMMENTTYPE_RESPONSE ? "Response" : "Comment");
-        if ($contact->canViewCommentIdentity($prow, $crow, false)) {
-            $n .= " by ";
-            if (isset($crow->reviewFirstName))
-                $n .= Text::user_text($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
-            else
-                $n .= Text::user_text($crow);
-        }
-        $x .= str_pad($n, (int) (37.5 + strlen(UnicodeHelper::deaccent($n)) / 2), " ", STR_PAD_LEFT) . "\n";
-        $x .= $this->_prettyPaperTitle($prow, $l);
-        // $n = "Updated " . $Conf->printableTime($crow->timeModified);
-        // $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
-        $x .= "---------------------------------------------------------------------------\n";
-        $x .= $crow->comment . "\n";
         return $x;
     }
 
