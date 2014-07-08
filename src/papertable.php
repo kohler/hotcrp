@@ -4,8 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 global $textAreaRows;
-$textAreaRows = array("title" => 1, "abstract" => 12, "authorInformation" => 5,
-                      "collaborators" => 6);
+$textAreaRows = array("title" => 1, "abstract" => 5, "authorInformation" => 5,
+                      "collaborators" => 5);
 
 class PaperTable {
 
@@ -1837,6 +1837,7 @@ class PaperTable {
         $this->echoActions();
 
         echo "</div></form>";
+        Ht::stash_script("jQuery('textarea.papertext').autogrow()");
     }
 
     function paptabBegin() {
@@ -2071,6 +2072,7 @@ class PaperTable {
 
         $rf = ReviewForm::get($this->editrrow);
         $rf->show($prow, $this->rrows, $this->editrrow, $opt);
+        Ht::stash_script("jQuery('textarea.reviewtext').autogrow()");
     }
 
 

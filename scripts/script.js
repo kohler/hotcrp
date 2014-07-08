@@ -2663,3 +2663,65 @@ return rfs;
 function copy_override_status(e) {
     $("#dialog_override").prop("checked", e.checked);
 }
+
+
+// autogrowing text areas; based on https://github.com/jaz303/jquery-grab-bag
+(function ($) {
+    $.fn.autogrow = function (options)
+    {
+	return this.filter('textarea').each(function()
+	{
+	    var self	     = this;
+	    var $self	     = $(self);
+	    var minHeight    = $self.height();
+	    var noFlickerPad = $self.hasClass('autogrow-short') ? 0 : parseInt($self.css('lineHeight')) || 0;
+	    var settings = $.extend({
+		preGrowCallback: null,
+		postGrowCallback: null
+	      }, options );
+
+	    var shadow = $('<div></div>').css({
+		position:    'absolute',
+		top:	     -10000,
+		left:	     -10000,
+		width:	     $self.width(),
+		fontSize:    $self.css('fontSize'),
+		fontFamily:  $self.css('fontFamily'),
+		fontWeight:  $self.css('fontWeight'),
+		lineHeight:  $self.css('lineHeight'),
+		resize:	     'none',
+		'word-wrap': 'break-word',
+		whiteSpace:  'pre-wrap'
+	    }).appendTo(document.body);
+
+	    var update = function(event)
+	    {
+		var val = self.value;
+
+		// Did enter get pressed?  Resize in this keydown event so that the flicker doesn't occur.
+		if (event && event.data && event.data.event === 'keydown' && event.keyCode === 13) {
+		    val += "\n";
+		}
+
+		shadow.css('width', $self.width());
+		shadow.text(val + (noFlickerPad === 0 ? '...' : '')); // Append '...' to resize pre-emptively.
+
+		var newHeight=Math.max(shadow.height() + noFlickerPad, minHeight);
+		if(settings.preGrowCallback!=null){
+		  newHeight=settings.preGrowCallback($self,shadow,newHeight,minHeight);
+		}
+
+		$self.height(newHeight);
+
+		if(settings.postGrowCallback!=null){
+		  settings.postGrowCallback($self);
+		}
+	    }
+
+	    $self.on("change keyup", update).keydown({event:'keydown'},update);
+	    $(window).resize(update);
+
+	    update();
+	});
+    };
+})(jQuery);
