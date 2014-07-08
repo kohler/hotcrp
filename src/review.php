@@ -269,6 +269,8 @@ class ReviewForm {
         global $Conf;
         if (is_object($round))
             $round = $round->reviewRound;
+        else if ($round === null)
+            $round = 0;
         if (($rf = @self::$cache[$round]))
             return $rf;
         if (!@self::$cache[0])
