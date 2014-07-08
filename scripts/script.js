@@ -1081,14 +1081,16 @@ function shortcut(top_elt) {
 
 
     function add(code, f) {
+        if (arguments.length > 2)
+            f = bind_append(f, Array.prototype.slice.call(arguments, 2));
         if (code != null)
             keys[code] = f;
         else {
-            add(106, quicklink_shortcut);
-            add(107, quicklink_shortcut);
+            add(106 /* j */, quicklink_shortcut);
+            add(107 /* k */, quicklink_shortcut);
             if (top_elt == document) {
-                add(99, comment_shortcut);
-                add(103, gopaper_shortcut);
+                add(99 /* c */, comment_shortcut);
+                add(103 /* g */, gopaper_shortcut);
             }
         }
         return self;
