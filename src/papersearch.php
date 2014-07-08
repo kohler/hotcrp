@@ -1270,7 +1270,7 @@ class PaperSearch {
                 if ($editing)
                     $word = "tagval:" . substr($word, 1);
                 else
-                    $word = "tag:" . substr($woird, 1);
+                    $word = "tag:" . substr($word, 1);
             }
             $wtype = $word;
             if (preg_match('/\A(.*?)[#]/', $wtype, $m))
