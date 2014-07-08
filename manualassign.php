@@ -277,7 +277,6 @@ if ($reviewer > 0) {
     }
 
     // Topic links
-    $rf = reviewForm();
     $result = $Conf->qe("select topicId, " . $Conf->query_topic_interest() . " from TopicArea join TopicInterest using (topicId) where contactId=$reviewer");
     $interest = array(array(), array());
     while (($row = edb_row($result)))

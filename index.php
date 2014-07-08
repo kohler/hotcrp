@@ -80,7 +80,7 @@ function admin_home_messages() {
     $max_file_size = ini_get_bytes("upload_max_filesize");
     if (($row = edb_row($result))
         && $row[1] < $max_file_size
-        && !$Opt["dbNoPapers"])
+        && !@$Opt["dbNoPapers"])
         $m[] = $errmarker . "MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.";
     // Conference names
     if (@$Opt["shortNameDefaulted"])
