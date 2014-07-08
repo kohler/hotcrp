@@ -239,6 +239,8 @@ class Text {
     }
 
     public static function word_regex($word) {
+        if ($word === "")
+            return "";
         list($aw, $zw) = array(ctype_alnum($word[0]),
                                ctype_alnum($word[strlen($word) - 1]));
         return ($aw ? '\b' : '')
@@ -247,6 +249,8 @@ class Text {
     }
 
     public static function utf8_word_regex($word) {
+        if ($word === "")
+            return "";
         list($aw, $zw) = array(preg_match('{\A(?:\pL|\pN)}u', $word),
                                preg_match('{(?:\pL|\pN)\z}u', $word));
         return ($aw ? '(?:\A|(?!\pL|\pN)\X)' : '')

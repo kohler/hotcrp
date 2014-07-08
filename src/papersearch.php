@@ -483,7 +483,6 @@ class PaperSearch {
     }
 
     private function _searchField($word, $rtype, &$qt) {
-        global $Conf;
         if (!is_array($word))
             $extra = array("regex" => array($rtype, self::_analyze_field_preg($word)));
         else
@@ -1112,12 +1111,6 @@ class PaperSearch {
                 return $qe;
         }
 
-        // Treat unquoted "*", "ANY", and "ALL" as special; return true.
-        if ($word == "*" || $word == "ANY" || $word == "ALL")
-            return new SearchTerm("t");
-        else if ($word == "NONE")
-            return new SearchTerm("f");
-
         $keyword = null;
         if (($colon = strpos($word, ':')) !== false) {
             $x = substr($word, 0, $colon);
@@ -1128,7 +1121,15 @@ class PaperSearch {
                 $keyword = $x;
                 $word = substr($word, $colon + 1);
             }
+            if ($word === false)
+                $word = "";
         }
+
+        // Treat unquoted "*", "ANY", and "ALL" as special; return true.
+        if ($word == "*" || $word == "ANY" || $word == "ALL" || $word == "")
+            return new SearchTerm("t");
+        else if ($word == "NONE")
+            return new SearchTerm("f");
 
         $quoted = ($word[0] == '"');
         $negated = false;
@@ -1306,7 +1307,7 @@ class PaperSearch {
 
     static function _searchPopWord(&$str) {
         global $searchKeywords;
-        $wordre = '/\A-?"[^"]*"?|-?[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?[^\s()]*|[^"\s()]+/s';
+        $wordre = '/\A-?"[^"]*"?|\A-?[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?[^\s()]*|\A[^"\s()]+/s';
 
         preg_match($wordre, $str, $m);
         $str = ltrim(substr($str, strlen($m[0])));
