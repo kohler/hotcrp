@@ -82,13 +82,18 @@ function sqlqtrim($value) {
     return $Conf->dblink->escape_string(trim($value));
 }
 
-function sql_in_numeric_set($set, $negated = false) {
+function sql_in_numeric_set($set) {
     if (count($set) == 0)
-        return $negated ? "!=-1" : "=-1";
+        return "=-1";
     else if (count($set) == 1)
-        return ($negated ? "!=" : "=") . $set[0];
+        return "=" . $set[0];
     else
-        return ($negated ? " not" : "") . " in (" . join(",", $set) . ")";
+        return " in (" . join(",", $set) . ")";
+}
+
+function sql_not_in_numeric_set($set) {
+    $sql = sql_in_numeric_set($set);
+    return ($sql[0] == "=" ? "!" : " not") . $sql;
 }
 
 

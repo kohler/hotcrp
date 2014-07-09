@@ -279,7 +279,7 @@ function searchQuickref() {
     _searchQuickrefRow("", "conflict:pc", "some PC member has a conflict with the paper");
     _searchQuickrefRow("", "conflict:pc>2", "at least three PC members have conflicts with the paper");
     _searchQuickrefRow("", "reconflict:\"1 2 3\"", "a reviewer of paper 1, 2, or 3 has a conflict with the paper");
-    _searchQuickrefRow("Preferences", "pref:fdabek>0", "“fdabek” (in name/email) has review preference &gt;&nbsp;0");
+    _searchQuickrefRow("Preferences", "pref:fdabek>0", "“fdabek” (in name/email) has review preference &gt;&nbsp;0<br /><span class='hint'>PC members can search their own preferences; chairs can search anyone’s preferences.</span>");
     _searchQuickrefRow("Status", "status:sub", "paper is submitted for review", "t=all");
     _searchQuickrefRow("", "status:unsub", "paper is neither submitted nor withdrawn", "t=all");
     _searchQuickrefRow("", "status:withdrawn", "paper has been withdrawn", "t=all");

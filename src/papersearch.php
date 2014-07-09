@@ -177,8 +177,8 @@ class SearchReviewValue {
     public $contactsql;
     private $_contactset;
     public $fieldsql;
-    public $compar;
-    public $allowed;
+    public $compar = 0;
+    public $allowed = 0;
     public $view_score;
 
     function __construct($countexpr, $contacts = null, $fieldsql = null,
@@ -190,7 +190,6 @@ class SearchReviewValue {
             $this->contactsql = sql_in_numeric_set($contacts);
         $this->_contactset = $contacts;
         $this->fieldsql = $fieldsql;
-        $this->allowed = $this->compar = 0;
         if (preg_match('/\A([!<>]?=|[<>])(-?\d+)\z/', $countexpr, $m)) {
             if ($m[1] == "!=" || $m[1] == ">" || $m[1] == ">=")
                 $this->allowed |= 4;
@@ -248,16 +247,10 @@ class SearchReviewValue {
 }
 
 class SearchQueryInfo {
-    public $tables;
-    public $columns;
-    public $negated;
+    public $tables = array();
+    public $columns = array();
+    public $negated = false;
 
-    function __construct() {
-        $this->tables = array();
-        $this->columns = array();
-        $this->filters = array();
-        $this->negated = false;
-    }
     public function add_table($table, $joiner = false) {
         assert($joiner || !count($this->tables));
         $this->tables[$table] = $joiner;
@@ -270,6 +263,17 @@ class SearchQueryInfo {
         global $Conf;
         if (!isset($this->columns["managerContactId"]))
             $this->columns["managerContactId"] = ($Conf->sversion >= 51 ? "Paper.managerContactId" : "0");
+    }
+}
+
+class SearchContactMatch {
+    public $sql;
+    public $pc_only;
+    public $ids = null;
+
+    public function __construct($sql, $pc_only = false) {
+        $this->sql = $sql;
+        $this->pc_only = $pc_only;
     }
 }
 
@@ -290,13 +294,13 @@ class PaperSearch {
     public $cid;
     private $contactId;         // for backward compatibility
     var $privChair;
-    var $amPC;
+    private $amPC;
 
     var $limitName;
     var $qt;
     var $allowAuthor;
     var $fields;
-    var $orderTags;
+    var $orderTags = array();
     private $_reviewer;
     private $_reviewer_fixed;
     var $matchPreg;
@@ -305,22 +309,21 @@ class PaperSearch {
 
     var $q;
 
-    var $regex;
-    public $overrideMatchPreg;
-    private $contactmatch;
-    private $contactmatchPC;
-    private $noratings;
-    private $interestingRatings;
+    var $regex = array();
+    public $overrideMatchPreg = false;
+    private $contact_match = array();
+    private $noratings = false;
+    private $interestingRatings = array();
     private $needflags;
-    private $reviewAdjust;
-    private $_reviewAdjustError;
-    private $_thenError;
-    private $_ssRecursion;
-    var $thenmap;
-    var $headingmap;
+    private $reviewAdjust = false;
+    private $_reviewAdjustError = false;
+    private $_thenError = false;
+    private $_ssRecursion = array();
+    var $thenmap = null;
+    var $headingmap = null;
     var $viewmap;
 
-    private $_matchTable;
+    private $_matchTable = null;
 
     function __construct($me, $opt) {
         global $Conf;
@@ -404,23 +407,8 @@ class PaperSearch {
                 $this->urlbase .= "&qt=" . urlencode($qtype);
         }
 
-        $this->overrideMatchPreg = false;
-
-        $this->regex = array();
-        $this->contactmatch = array();
-        $this->contactmatchPC = true;
-        $this->noratings = false;
-        $this->interestingRatings = array();
-        $this->reviewAdjust = false;
-        $this->_reviewAdjustError = false;
-        $this->_thenError = false;
-        $this->thenmap = null;
-        $this->headingmap = null;
-        $this->orderTags = array();
         $this->_reviewer = defval($opt, "reviewer", false);
         $this->_reviewer_fixed = !!$this->_reviewer;
-        $this->_matchTable = null;
-        $this->_ssRecursion = array();
     }
 
     function __destruct() {
@@ -553,20 +541,27 @@ class PaperSearch {
     }
 
     private static function _pcContactIdsWithTag($tag) {
-        $a = array();
-        $pcm = pcMembers();
         if ($tag == "pc")
-            $a = array_keys($pcm);
-        else {
-            foreach ($pcm as $pc)
-                if ($pc->contactTags
-                    && stripos($pc->contactTags, " $tag ") !== false)
-                    $a[] = $pc->contactId;
-        }
+            return array_keys(pcMembers());
+        $a = array();
+        foreach (pcMembers() as $cid => $pc)
+            if (stripos($pc->contactTags, " $tag ") !== false)
+                $a[] = $cid;
         return $a;
     }
 
-    function _reviewerMatcher($word, $quoted, $restrict_pc) {
+    private function add_contact_match($sql, $pc_only = false) {
+        $ncm = count($this->contact_match);
+        $sql = simplify_whitespace($sql);
+        if (!$ncm || $this->contact_match[$ncm - 1]->sql !== $sql
+            || $this->contact_match[$ncm - 1]->pc_only !== $pc_only) {
+            $this->contact_match[] = new SearchContactMatch($sql, $pc_only);
+            ++$ncm;
+        }
+        return "\1" . ($ncm - 1) . "\1";
+    }
+
+    private function _reviewerMatcher($word, $quoted, $pconly) {
         if (!$quoted && ($word == "" || strcasecmp($word, "pc") == 0))
             return array_keys(pcMembers());
         else if (!$quoted && strcasecmp($word, "me") == 0) {
@@ -582,22 +577,16 @@ class PaperSearch {
             $tag = strtolower($negtag ? substr($word, 1) : $word);
             if (isset($pctags[$tag])) {
                 $ids = self::_pcContactIdsWithTag($tag);
-                if ($negtag) {
-                    $this->contactmatch[] = "\2contactId" . sql_in_numeric_set($ids, true);
-                    $this->contactmatchPC = $this->contactmatchPC && $restrict_pc;
-                    return "\1" . (count($this->contactmatch) - 1) . "\1";
-                } else
+                if ($negtag && $pconly)
+                    return array_diff(array_keys(pcMembers()), $ids);
+                else if ($negtag)
+                    return $this->add_contact_match("\2contactId" . sql_not_in_numeric_set($ids));
+                else
                     return $ids;
             }
         }
 
-        $qword = sqlq_for_like($word);
-        if (!count($this->contactmatch)
-            || $this->contactmatch[count($this->contactmatch) - 1] != $qword) {
-            $this->contactmatch[] = sqlq_for_like($word);
-            $this->contactmatchPC = $this->contactmatchPC && $restrict_pc;
-        }
-        return "\1" . (count($this->contactmatch) - 1) . "\1";
+        return $this->add_contact_match(sqlq_for_like($word), $pconly);
     }
 
     private function _one_pc_matcher($text, $quoted) {
@@ -824,7 +813,7 @@ class PaperSearch {
         return true;
     }
 
-    function _searchRevpref($word, &$qt, $quoted) {
+    private function _search_revpref($word, &$qt, $quoted) {
         $contacts = null;
         if (preg_match('/\A(.*?[^:=<>!])([:=<>!])(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
@@ -849,6 +838,8 @@ class PaperSearch {
             $mx[1] = SearchReviewValue::negateCountexpr($mx[1]);
         }
 
+        // PC members can only search their own preferences; we enforce
+        // this restriction below in clauseTermSetRevpref.
         $value = new SearchReviewValue($mx[0], $contacts, "preference" . $mx[1]);
         $qt[] = new SearchTerm("revpref", 0, $value);
     }
@@ -1156,8 +1147,8 @@ class PaperSearch {
             if ($keyword ? $keyword == $ctype : isset($this->fields[$ctype]))
                 $this->_searchComment($word, $ctype, $qt, $quoted);
         if (($keyword ? $keyword == "revpref" : isset($this->fields["revpref"]))
-            && $this->privChair)
-            $this->_searchRevpref($word, $qt, $quoted);
+            && $this->amPC)
+            $this->_search_revpref($word, $qt, $quoted);
         foreach (array("lead", "shepherd", "manager") as $ctype)
             if ($keyword ? $keyword == $ctype : isset($this->fields[$ctype])) {
                 $x = $this->_one_pc_matcher($word, $quoted);
@@ -1755,8 +1746,8 @@ class PaperSearch {
                     $this->_reviewer = (int) substr($v, 1);
                 else if ($v[0] == "\1") {
                     $v = (int) substr($v, 1, strpos($v, "\1", 1) - 1);
-                    if (count($this->contactmatch[$v]) == 1)
-                        $this->_reviewer = $this->contactmatch[$v][0];
+                    if (count($this->contact_match[$v]->ids) == 1)
+                        $this->_reviewer = $this->contact_match[$v]->ids[0];
                 }
             } else
                 $this->_reviewer = null;
@@ -1953,6 +1944,8 @@ class PaperSearch {
             $reviewtable = "PaperReviewPreference";
             if ($extrawhere)
                 $where[] = $extrawhere;
+            if (!$this->privChair)
+                $where[] = "PaperReviewPreference.contactId=$this->cid";
             $wheretext = "";
             if (count($where))
                 $wheretext = " where " . join(" and ", $where);
@@ -2271,7 +2264,7 @@ class PaperSearch {
                     else if ($expr[0] == '>')
                         $ans = $row->$fieldname > substr($expr, 1);
                     else if ($expr[0] == "\1")
-                        $ans = array_search($row->$fieldname, $this->contactmatch[substr($expr, 1, strpos($expr, "\1", 1) - 1)]) !== false;
+                        $ans = array_search($row->$fieldname, $this->contact_match[substr($expr, 1, strpos($expr, "\1", 1) - 1)]->ids) !== false;
                     else
                         $ans = false;
                 }
@@ -2446,35 +2439,35 @@ class PaperSearch {
         }
 
         // search contacts
-        if (count($this->contactmatch)) {
-            $qa = "select ContactInfo.contactId";
-            $qb = " from ContactInfo"
-                . ($this->contactmatchPC ? " join PCMember using (contactId)" : "")
-                . " where ";
-            for ($i = 0; $i < count($this->contactmatch); ++$i) {
-                $s = simplify_whitespace($this->contactmatch[$i]);
-                if ($s[0] == "\2")
-                    $qm = "(" . substr($s, 1) . ")";
-                else if (($pos = strpos($s, "@")) !== false)
-                    $qm = "(email like '" . substr($s, 0, $pos + 1) . "%" . substr($s, $pos + 1) . "%')";
-                else if (preg_match('/\A(.*?)\s*([,\s])\s*(.*)\z/', $s, $m)) {
+        if (count($this->contact_match)) {
+            $qterm = array();
+            foreach ($this->contact_match as $cm) {
+                if ($cm->sql[0] == "\2")
+                    $qm = "(" . substr($cm->sql, 1) . ")";
+                else if (($pos = strpos($cm->sql, "@")) !== false)
+                    $qm = "(email like '" . substr($cm->sql, 0, $pos + 1) . "%" . substr($cm->sql, $pos + 1) . "%')";
+                else if (preg_match('/\A(.*?)\s*([,\s])\s*(.*)\z/', $cm->sql, $m)) {
                     if ($m[2] == ",")
                         $qm = "(firstName like '" . trim($m[3]) . "%' and lastName like '" . trim($m[1]) . "%')";
                     else
-                        $qm = "(concat(firstName, ' ', lastName) like '%$s%')";
+                        $qm = "(concat(firstName, ' ', lastName) like '%$cm->sql%')";
                 } else
-                    $qm = "(firstName like '%$s%' or lastName like '%$s%' or email like '%$s%')";
-                $qa .= (count($this->contactmatch) == 1 ? ", true" : ", $qm");
-                $qb .= ($i == 0 ? "" : " or ") . $qm;
+                    $qm = "(firstName like '%$cm->sql%' or lastName like '%$cm->sql%' or email like '%$cm->sql%')";
+                if ($cm->pc_only)
+                    $qm = "($qm and PCMember.contactId is not null)";
+                $qterm[] = $qm;
+                $cm->ids = array();
             }
-            //$Conf->infoMsg(htmlspecialchars($qa . $qb));
-            $result = $Conf->q($qa . $qb);
-            $contacts = array_fill(0, count($this->contactmatch), array());
+            $q = "select ContactInfo.contactId, "
+                . (count($qterm) == 1 ? "true" : join(", ", $qterm))
+                . " from ContactInfo left join PCMember using (contactId)"
+                . " where " . join(" or ", $qterm);
+            //$Conf->infoMsg(Ht::pre_text_wrap($q));
+            $result = $Conf->q($q);
             while (($row = edb_row($result)))
-                for ($i = 0; $i < count($this->contactmatch); ++$i)
+                for ($i = 0; $i < count($this->contact_match); ++$i)
                     if ($row[$i + 1])
-                        $contacts[$i][] = $row[0];
-            $this->contactmatch = $contacts;
+                        $this->contact_match[$i]->ids[] = (int) $row[0];
         }
 
         // create query
@@ -2497,9 +2490,9 @@ class PaperSearch {
         $q .= " group by Paper.paperId";
 
         // clean up contact matches
-        if (count($this->contactmatch))
-            for ($i = 0; $i < count($this->contactmatch); $i++)
-                $q = str_replace("\1$i\1", sql_in_numeric_set($this->contactmatch[$i]), $q);
+        if (count($this->contact_match))
+            for ($i = 0; $i < count($this->contact_match); $i++)
+                $q = str_replace("\1$i\1", sql_in_numeric_set($this->contact_match[$i]->ids), $q);
         //$Conf->infoMsg(Ht::pre_text_wrap($q));
 
         // actually perform query
