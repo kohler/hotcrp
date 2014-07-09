@@ -1211,22 +1211,25 @@ if ($pl) {
 
     // Authors group
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors) {
-        $onchange = "fold('pl',!this.checked,'au')";
+        displayOptionCheckbox("au", 1, "Authors", array("id" => "showau"));
         if ($Me->privChair && $viewAllAuthors)
-            $onchange .= ";fold('pl',!this.checked,'anonau')";
-        if ($Me->privChair)
-            $onchange .= ";plinfo.extra()";
-        displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange));
+            $display_options_extra .=
+                Ht::checkbox("showanonau", 1, display_option_checked("au"),
+                             array("id" => "showau_hidden",
+                                   "onchange" => "plinfo('anonau',this)",
+                                   "style" => "display:none"));
     } else if ($Me->privChair && $Conf->subBlindAlways()) {
-        $display_options_extra .= Ht::checkbox("showau", 1, display_option_checked("au"),
-                                               array("id" => "showau_hidden",
-                                                     "onchange" => "plinfo('au',this)",
-                                                     "style" => "display:none"));
         displayOptionCheckbox("anonau", 1, "Authors (deblinded)", array("id" => "showau", "disabled" => (!$pl || !$pl->any->anonau)));
+        $display_options_extra .=
+            Ht::checkbox("showau", 1, display_option_checked("anonau"),
+                         array("id" => "showanonau_hidden",
+                               "onchange" => "plinfo('au',this)",
+                               "style" => "display:none"));
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
         displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
-    if ($Me->privChair && !$viewAllAuthors && !$Conf->subBlindAlways())
+    if ($Me->privChair && !$Conf->subBlindNever()
+        && (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors))
         displayOptionCheckbox("anonau", 1, "Deblinded authors", array("disabled" => (!$pl || !$pl->any->anonau), "indent" => true));
     if ($pl->any->collab)
         displayOptionCheckbox("collab", 1, "Collaborators", array("indent" => true));
