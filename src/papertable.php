@@ -2006,6 +2006,9 @@ class PaperTable {
 
             $cv->table_end();
             $Conf->save_session("comment_msgs", null);
+
+            Ht::stash_script("jQuery('textarea.reviewtext').autogrow()",
+                             "reviewtext_autogrow");
         }
     }
 
@@ -2072,7 +2075,8 @@ class PaperTable {
 
         $rf = ReviewForm::get($this->editrrow);
         $rf->show($prow, $this->rrows, $this->editrrow, $opt);
-        Ht::stash_script("jQuery('textarea.reviewtext').autogrow()");
+        Ht::stash_script("jQuery('textarea.reviewtext').autogrow()",
+                         "reviewtext_autogrow");
     }
 
 

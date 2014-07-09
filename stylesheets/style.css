@@ -1021,6 +1021,9 @@ input.textlite-tt, textarea.tt {
 .reviewtext, div#popup_ref textarea {
 	width: 99%;
 }
+textarea[name=comment] {
+	min-height: 5em;
+}
 
 div.prevpaperlink, table.floatleft {
 	float: left;

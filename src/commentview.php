@@ -175,7 +175,7 @@ class CommentView {
 
         // From here on, edit mode.
         // form body
-        echo "<textarea name='comment' class='reviewtext' rows='10' cols='60' onchange='hiliter(this)'>";
+        echo "<textarea name='comment' class='reviewtext' rows='5' cols='60' onchange='hiliter(this)'>";
         if ($useRequest)
             echo htmlspecialchars(defval($_REQUEST, 'comment'));
         else if ($crow)
@@ -305,7 +305,7 @@ class CommentView {
             $ctext = defval($_REQUEST, "comment", "");
         else
             $ctext = ($crow ? $crow->comment : "");
-        echo "<textarea id='responsetext' name='comment' class='reviewtext' rows='10' cols='60' onchange='hiliter(this)'>", htmlspecialchars($ctext), "</textarea>\n  ";
+        echo "<textarea id='responsetext' name='comment' class='reviewtext' rows='5' cols='60' onchange='hiliter(this)'>", htmlspecialchars($ctext), "</textarea>\n  ";
 
         // actions
         $buttons = array();
