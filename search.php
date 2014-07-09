@@ -1216,10 +1216,8 @@ if ($pl) {
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
         displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
-    if ($Me->privChair && !$viewAllAuthors && !$Conf->subBlindAlways()) {
-        $onchange = "fold('pl',!this.checked,'anonau');plinfo.extra()";
-        displayOptionCheckbox("anonau", 1, "Deblinded authors", array("onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau), "indent" => true));
-    }
+    if ($Me->privChair && !$viewAllAuthors && !$Conf->subBlindAlways())
+        displayOptionCheckbox("anonau", 1, "Deblinded authors", array("disabled" => (!$pl || !$pl->any->anonau), "indent" => true));
     if ($pl->any->collab)
         displayOptionCheckbox("collab", 1, "Collaborators", array("indent" => true));
 
