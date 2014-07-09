@@ -638,7 +638,7 @@ class PaperSearch {
         $qt[] = new SearchTerm("re", $rt | self::F_XVIEW, $value);
     }
 
-    function _searchDecision($word, &$qt, $quoted) {
+    function _search_decision($word, &$qt, $quoted, $allow_status) {
         global $Conf;
         if (!$quoted && strcasecmp($word, "yes") == 0)
             $value = ">0";
@@ -653,7 +653,7 @@ class PaperSearch {
         else {
             $value = matchValue($Conf->outcome_map(), $word, true);
             if (count($value) == 0) {
-                $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a decision.");
+                $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a " . ($allow_status ? "decision or status." : "decision."));
                 $value[] = -10000000;
             }
             $value = sql_in_numeric_set($value);
@@ -1196,13 +1196,11 @@ class PaperSearch {
                 $qt[] = new SearchTerm("pf", 0, array("timeSubmitted", ">0"));
             else if (strcasecmp($word, "unsubmitted") == 0 || strcasecmp($word, "unsubmit") == 0 || strcasecmp($word, "unsub") == 0)
                 $qt[] = new SearchTerm("pf", 0, array("timeSubmitted", "<=0", "timeWithdrawn", "<=0"));
-            else {
-                $this->warn("Valid status searches are “withdrawn”, “submitted”, and “unsubmitted”.");
-                $qt[] = new SearchTerm("f");
-            }
+            else
+                $this->_search_decision($word, $qt, $quoted, true);
         }
         if ($keyword ? $keyword == "decision" : isset($this->fields["decision"]))
-            $this->_searchDecision($word, $qt, $quoted);
+            $this->_search_decision($word, $qt, $quoted, false);
         if (($keyword ? $keyword == "conflict" : isset($this->fields["conflict"]))
             && $this->amPC)
             $this->_search_conflict($word, $qt, $quoted, false);
