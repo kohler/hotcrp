@@ -1222,7 +1222,7 @@ if ($pl) {
         displayOptionCheckbox("anonau", 1, "Authors (deblinded)", array("id" => "showau", "disabled" => (!$pl || !$pl->any->anonau)));
         $display_options_extra .=
             Ht::checkbox("showau", 1, display_option_checked("anonau"),
-                         array("id" => "showanonau_hidden",
+                         array("id" => "showau_hidden",
                                "onchange" => "plinfo('au',this)",
                                "style" => "display:none"));
     }

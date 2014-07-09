@@ -2172,8 +2172,8 @@ function plinfo(type, dofold, which) {
         && (elt = $$("showau")) && !elt.checked)
         elt.click();
     if ((type == "au" || type == "anonau")
-        && (elt = $$("show" + type + "_hidden"))
-        && elt.checked != $$("show" + type).checked)
+        && (elt = $$("showau_hidden"))
+        && elt.checked != $$("showau").checked)
         elt.click();
     if (plinfo.extra)
         plinfo.extra(type, dofold);
