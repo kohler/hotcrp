@@ -1163,12 +1163,19 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 
 // Prepare more display options
 $displayOptions = array();
+$display_options_extra = "";
+
+function display_option_checked($type) {
+    global $pl, $pldisplay;
+    if ($pl)
+        return !$pl->is_folded($type);
+    else
+        return defval($_REQUEST, "show$type") || strpos($pldisplay, " $type ") !== false;
+}
 
 function displayOptionCheckbox($type, $column, $title, $opt = array()) {
-    global $displayOptions, $pldisplay, $pl;
-    $checked = ($pl ? !$pl->is_folded($type)
-                : (defval($_REQUEST, "show$type")
-                   || strpos($pldisplay, " $type ") !== false));
+    global $displayOptions;
+    $checked = display_option_checked($type);
     $loadresult = "";
 
     if (!isset($opt["onchange"])) {
@@ -1211,8 +1218,11 @@ if ($pl) {
             $onchange .= ";plinfo.extra()";
         displayOptionCheckbox("au", 1, "Authors", array("id" => "showau", "onchange" => $onchange));
     } else if ($Me->privChair && $Conf->subBlindAlways()) {
-        $onchange = "fold('pl',!this.checked,'au');fold('pl',!this.checked,'anonau');plinfo.extra()";
-        displayOptionCheckbox("anonau", 1, "Authors (deblinded)", array("id" => "showau", "onchange" => $onchange, "disabled" => (!$pl || !$pl->any->anonau)));
+        $display_options_extra .= Ht::checkbox("showau", 1, display_option_checked("au"),
+                                               array("id" => "showau_hidden",
+                                                     "onchange" => "plinfo('au',this)",
+                                                     "style" => "display:none"));
+        displayOptionCheckbox("anonau", 1, "Authors (deblinded)", array("id" => "showau", "disabled" => (!$pl || !$pl->any->anonau)));
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
         displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
@@ -1492,7 +1502,7 @@ if ($pl && $pl->count > 0) {
 
     echo Ht::submit("Redisplay", array("id" => "redisplay")), "</td>";
 
-    echo "</tr></table></td>";
+    echo "</tr></table>", $display_options_extra, "</td>";
 
     // Done
     echo "</tr></table></div></form>";
