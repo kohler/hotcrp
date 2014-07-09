@@ -1361,6 +1361,8 @@ class PaperSearch {
         global $searchOperators;
 
         $stack = array();
+        $defkwstack = array();
+        $defkw = $next_defkw = null;
         $parens = 0;
         $curqe = null;
         $xstr = $str;
@@ -1376,14 +1378,30 @@ class PaperSearch {
 
             if ($opstr === null) {
                 $word = self::_searchPopWord($nextstr);
-                // Bare lower-case "all", "any", "none" are treated as keywords.
+                // Bare any-case "all", "any", "none" are treated as keywords.
                 if (!$curqe
                     && (!count($stack) || $stack[count($stack) - 1]->op->op == "then")
                     && ($uword = strtoupper($word))
                     && ($uword === "ALL" || $uword === "ANY" || $uword === "NONE")
                     && preg_match(',\A\s*(?:|THEN(?:\s|\().*)\z,', $nextstr))
                     $word = $uword;
-                $curqe = $this->_searchQueryWord($word, true);
+                // Search like "ti:(foo OR bar)" adds a default keyword.
+                if ($word[strlen($word) - 1] === ":"
+                    && $nextstr !== ""
+                    && $nextstr[0] === "(")
+                    $next_defkw = $word;
+                else {
+                    // If no keyword, but default keyword exists, apply it.
+                    if ($defkw !== ""
+                        && !preg_match(',\A-?[a-zA-Z][a-zA-Z0-9]*:,', $word)) {
+                        if ($word[0] == "-")
+                            $word = "-" . $defkw . substr($word, 1);
+                        else
+                            $word = $defkw . $word;
+                    }
+                    // The heart of the matter.
+                    $curqe = $this->_searchQueryWord($word, true);
+                }
             } else if ($opstr == ")") {
                 while (count($stack)
                        && $stack[count($stack) - 1]->op->op != "(")
@@ -1391,10 +1409,14 @@ class PaperSearch {
                 if (count($stack)) {
                     array_pop($stack);
                     --$parens;
+                    $defkw = array_pop($defkwstack);
                 }
             } else if ($opstr == "(") {
                 assert(!$curqe);
                 $stack[] = (object) array("op" => $op, "leftqe" => null, "used" => false);
+                $defkwstack[] = $defkw;
+                $defkw = $next_defkw;
+                $next_defkw = null;
                 ++$parens;
             } else if (!$op->unary && !$curqe)
                 /* ignore bad operator */;
