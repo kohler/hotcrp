@@ -12,7 +12,7 @@ class PaperActions {
             $o = rcvtint($_REQUEST["decision"]);
             $outcomes = $Conf->outcome_map();
             if (isset($outcomes[$o])) {
-                $result = $Conf->qe("update Paper set outcome=$o where paperId=$prow->paperId", "while changing decision");
+                $result = $Conf->qe("update Paper set outcome=$o where paperId=$prow->paperId");
                 if ($result && $ajax)
                     $Conf->confirmMsg("Saved");
                 else if ($result)
@@ -36,12 +36,12 @@ class PaperActions {
             foreach ($prefarray as $p)
                 $q[] = "($p[0],$p[1],$p[2]," . ($p[3] === null ? "NULL" : $p[3]) . ")";
             if (count($q))
-                return $Conf->qe("insert into PaperReviewPreference (paperId,contactId,preference,expertise) values " . join(",", $q) . " on duplicate key update preference=values(preference), expertise=values(expertise)", "while saving review preferences");
+                return $Conf->qe("insert into PaperReviewPreference (paperId,contactId,preference,expertise) values " . join(",", $q) . " on duplicate key update preference=values(preference), expertise=values(expertise)");
         } else {
             foreach ($prefarray as $p)
                 $q[] = "($p[0],$p[1],$p[2])";
             if (count($q))
-                return $Conf->qe("insert into PaperReviewPreference (paperId,contactId,preference) values " . join(",", $q) . " on duplicate key update preference=values(preference)", "while saving review preferences");
+                return $Conf->qe("insert into PaperReviewPreference (paperId,contactId,preference) values " . join(",", $q) . " on duplicate key update preference=values(preference)");
         }
         return true;
     }
@@ -82,16 +82,15 @@ class PaperActions {
                 $rank = null;
             else
                 $rank = cvtint($rank, false);
-            $while = "while saving rank";
             if ($rank === false) {
                 $Conf->errorMsg("Rank must be an integer or “none”.");
                 $Error["rank"] = true;
             } else {
                 $mytag = $Me->contactId . "~" . $tag;
                 if ($rank === null)
-                    $result = $Conf->qe("delete from PaperTag where paperId=$prow->paperId and tag='" . sqlq($mytag) . "'", $while);
+                    $result = $Conf->qe("delete from PaperTag where paperId=$prow->paperId and tag='" . sqlq($mytag) . "'");
                 else
-                    $result = $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values ($prow->paperId, '" . sqlq($mytag) . "', $rank) on duplicate key update tagIndex=values(tagIndex)", $while);
+                    $result = $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values ($prow->paperId, '" . sqlq($mytag) . "', $rank) on duplicate key update tagIndex=values(tagIndex)");
                 if ($result)
                     $Conf->confirmMsg($ajax ? "Saved" : "Rank saved.");
                 else
@@ -113,7 +112,7 @@ class PaperActions {
             $Conf->errorMsg("You don’t have permission to rank this paper.");
             $Error["rank"] = true;
         } else {
-            $result = $Conf->qe("select Paper.paperId, title, tagIndex from Paper join PaperTag on (PaperTag.paperId=Paper.paperId and PaperTag.tag='" . sqlq($Me->contactId . "~" . $tag) . "') order by tagIndex, Paper.paperId", "while loading paper ranks");
+            $result = $Conf->qe("select Paper.paperId, title, tagIndex from Paper join PaperTag on (PaperTag.paperId=Paper.paperId and PaperTag.tag='" . sqlq($Me->contactId . "~" . $tag) . "') order by tagIndex, Paper.paperId");
             $x = array();
             $prowIndex = -1;
             while (($row = edb_row($result))) {
@@ -154,7 +153,7 @@ class PaperActions {
             $contactId = ($pc === 0 ? 0 : $pc->contactId);
             $field = $type . "ContactId";
             if ($contactId != $prow->$field) {
-                $Conf->qe("update Paper set $field=$contactId where paperId=$prow->paperId", "while updating $type");
+                $Conf->qe("update Paper set $field=$contactId where paperId=$prow->paperId");
                 if (!$contactId != !$Conf->setting("paperlead"))
                     $Conf->update_paperlead_setting();
                 if (!$contactId != !$Conf->setting("papermanager"))
@@ -235,7 +234,7 @@ class PaperActions {
                     $q .= ($q === "" ? "" : ", ") . "'$mytagprefix" . sqlq($tag) . "'";
                     $cur_votes[strtolower($tag)] = 0;
                 }
-                $result = $Conf->qe("select tag, sum(tagIndex) from PaperTag where tag in ($q) group by tag", "while finding vote tag totals");
+                $result = $Conf->qe("select tag, sum(tagIndex) from PaperTag where tag in ($q) group by tag");
                 while (($row = edb_row($result))) {
                     $lbase = strtolower($row[0]);
                     $cur_votes[substr($lbase, strlen($mytagprefix))] += $row[1];
@@ -277,7 +276,7 @@ class PaperActions {
         if (count($where))
             $q .= " where " . join(" and ", $where);
         $tags = array();
-        $result = $Conf->qe($q, "while reading tags");
+        $result = $Conf->qe($q);
         while (($row = edb_row($result))) {
             $twiddle = strpos($row[0], "~");
             if ($twiddle === false

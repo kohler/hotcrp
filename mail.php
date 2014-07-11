@@ -16,7 +16,7 @@ $pctags = pcTags();
 // load mail from log
 if (isset($_REQUEST["fromlog"]) && ctype_digit($_REQUEST["fromlog"])
     && $Conf->sversion >= 40 && $Me->privChair) {
-    $result = $Conf->qe("select * from MailLog where mailId=" . $_REQUEST["fromlog"], "while loading logged mail");
+    $result = $Conf->qe("select * from MailLog where mailId=" . $_REQUEST["fromlog"]);
     if (($row = edb_orow($result))) {
         foreach (array("recipients", "cc", "replyto", "subject", "emailBody") as $field)
             if (isset($row->$field) && !isset($_REQUEST[$field]))
@@ -225,7 +225,7 @@ function checkMail($send) {
     $q = contactQuery($_REQUEST["recipients"]);
     if (!$q)
         return $Conf->errorMsg("Bad recipients value");
-    $result = $Conf->qe($q, "while fetching mail recipients");
+    $result = $Conf->qe($q);
     if (!$result)
         return;
 
@@ -350,7 +350,7 @@ function checkMail($send) {
             "</div>\n";
     }
     if ($revinform)
-        $Conf->qe("update PaperReview set timeRequestNotified=" . time() . " where " . join(" or ", $revinform), "while recording review notifications");
+        $Conf->qe("update PaperReview set timeRequestNotified=" . time() . " where " . join(" or ", $revinform));
     echo "</div></form>";
     $Conf->echoScript("fold('mail', null);");
     $Conf->footer();
@@ -567,7 +567,7 @@ echo "  <tr><td class='mhnp'>Subject:</td><td class='mhdp'>",
 
 
 if ($Me->privChair && $Conf->sversion >= 40) {
-    $result = $Conf->qe("select * from MailLog order by mailId desc limit 18", "while loading logged mail");
+    $result = $Conf->qe("select * from MailLog order by mailId desc limit 18");
     if (edb_nrows($result)) {
         echo "<div style='padding-top:12px'>",
             "<strong>Recent mails:</strong>\n";

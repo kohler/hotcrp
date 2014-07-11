@@ -72,8 +72,7 @@ if ($reviewer <= 0 || !@$pcm[$reviewer])
 function saveAssignments($reviewer) {
     global $Conf, $Me, $kind;
 
-    $while = "while saving review assignments";
-    $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperReviewRefused write, PaperConflict write" . $Conf->tagRoundLocker($kind == "a"), $while);
+    $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperReviewRefused write, PaperConflict write" . $Conf->tagRoundLocker($kind == "a"));
     if (!$result)
         return $result;
 
@@ -83,7 +82,7 @@ function saveAssignments($reviewer) {
         left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=$reviewer)
         left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$reviewer)
         where timeSubmitted>0
-        order by paperId asc, reviewId asc", $while);
+        order by paperId asc, reviewId asc");
 
     $lastPaperId = -1;
     $del = $ins = "";
@@ -104,11 +103,11 @@ function saveAssignments($reviewer) {
     }
 
     if ($ins)
-        $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))", $while);
+        $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))");
     if ($del)
-        $Conf->qe("delete from PaperConflict where contactId=$reviewer and (" . substr($del, 4) . ")", $while);
+        $Conf->qe("delete from PaperConflict where contactId=$reviewer and (" . substr($del, 4) . ")");
 
-    $Conf->qe("unlock tables", $while);
+    $Conf->qe("unlock tables");
     $Conf->updateRevTokensSetting(false);
 
     if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $when)

@@ -374,9 +374,9 @@ class UserStatus {
             $qf = array();
             foreach ($cj->topics as $k => $v)
                 $qf[] = "($user->contactId,$k,$v)";
-            $Conf->qe("delete from TopicInterest where contactId=$user->contactId", "while updating topic interests");
+            $Conf->qe("delete from TopicInterest where contactId=$user->contactId");
             if (count($qf))
-                $Conf->qe("insert into TopicInterest (contactId,topicId,interest) values " . join(",", $qf), "while updating topic interests");
+                $Conf->qe("insert into TopicInterest (contactId,topicId,interest) values " . join(",", $qf));
         }
 
         // Roles

@@ -45,11 +45,10 @@ class PaperRank {
             $this->papershuffle = array();
 
         // delete global ranks
-        $while = "while computing global ranking";
-        $Conf->qe("delete from PaperTag where tag='" . sqlq($dest_tag) . "'", $while);
+        $Conf->qe("delete from PaperTag where tag='" . sqlq($dest_tag) . "'");
 
         // load current ranks: $userrank maps user => [rank, paper]
-        $result = $Conf->qe("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($source_tag) . "' and paperId in (" . join(",", $papersel) . ")", $while);
+        $result = $Conf->qe("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($source_tag) . "' and paperId in (" . join(",", $papersel) . ")");
         $len = strlen($source_tag) + 1;
         while (($row = edb_row($result))) {
             $l = (int) substr($row[1], 0, strlen($row[1]) - $len);
@@ -723,7 +722,7 @@ class PaperRank {
         $values = array();
         foreach ($this->rank as $p => $rank)
             $values[] = "($p, '$sqltag', $rank)";
-        $result = $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values " . join(", ", $values), "while saving ranks");
+        $result = $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values " . join(", ", $values));
         if ($result) {
             $Conf->confirmMsg("Ranks saved.");
             $Me->log_activity("Tag calculate rank: " . $this->dest_tag, array_keys($this->rank));

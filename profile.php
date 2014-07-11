@@ -387,7 +387,6 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
         if (count($tracks->soleAuthor))
             $Conf->errorMsg("This user can’t be deleted since they are sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional paper contacts.");
         else {
-            $while = "while deleting user";
             foreach (array("ContactInfo", "Chair", "ChairAssistant",
                            "ContactAddress",
                            "PCMember", "PaperComment",
@@ -395,9 +394,9 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
                            "PaperReviewPreference", "PaperReviewRefused",
                            "PaperWatch", "ReviewRating", "TopicInterest")
                      as $table)
-                $Conf->qe("delete from $table where contactId=$Acct->contactId", $while);
+                $Conf->qe("delete from $table where contactId=$Acct->contactId");
             // tags are special because of voting tags, so go through Tagger
-            $result = $Conf->qe("select paperId, tag from PaperTag where tag like '" . $Acct->contactId . "~%'", $while);
+            $result = $Conf->qe("select paperId, tag from PaperTag where tag like '" . $Acct->contactId . "~%'");
             $pids = $tags = array();
             while (($row = edb_row($result))) {
                 $pids[$row[0]] = 1;

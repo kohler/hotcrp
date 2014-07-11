@@ -591,7 +591,7 @@ class PaperTable {
         // find contact author information, combine with author table
         $result = $Conf->qe("select firstName, lastName, email, '' as affiliation, contactId
                 from ContactInfo join PaperConflict using (contactId)
-                where paperId=" . $this->prow->paperId . " and conflictType>=" . CONFLICT_AUTHOR, "while finding contacts");
+                where paperId=" . $this->prow->paperId . " and conflictType>=" . CONFLICT_AUTHOR);
         $contacts = array();
         while (($row = edb_orow($result))) {
             $match = -1;
@@ -1126,7 +1126,7 @@ class PaperTable {
                     $conflict[$id] = Conflict::force_author_mark($ct, $this->admin);
         }
         if ($this->prow) {
-            $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=" . $this->prow->paperId, "while finding conflicted PC members");
+            $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=" . $this->prow->paperId);
             while (($row = edb_row($result))) {
                 $ct = new Conflict($row[1]);
                 if (!$this->useRequest || (!$ct->is_author_mark() && !$this->admin))

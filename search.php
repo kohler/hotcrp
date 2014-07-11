@@ -82,7 +82,7 @@ if (($getaction == "paper" || $getaction == "final"
     && isset($papersel)
     && ($dt = requestDocumentType($getaction, null)) !== null) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
-    $result = $Conf->qe($q, "while selecting papers");
+    $result = $Conf->qe($q);
     $downloads = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
         if (!$Me->canViewPaper($row, $whyNot, true))
@@ -116,7 +116,7 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $Conf->ajaxExit($response);
 } else if ($getaction == "abstract" && isset($papersel)) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1));
-    $result = $Conf->qe($q, "while selecting papers");
+    $result = $Conf->qe($q);
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = PaperInfo::fetch($result, $Me)) {
@@ -243,7 +243,7 @@ if (($getaction == "revform" || $getaction == "revformz")
     downloadText($text, "review");
     exit;
 } else if ($getaction == "revform" || $getaction == "revformz") {
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "myReviewsOpt" => 1)), "while selecting papers");
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "myReviewsOpt" => 1)));
 
     $texts = array();
     $errors = array();
@@ -270,7 +270,7 @@ if (($getaction == "revform" || $getaction == "revformz")
 
 // download all reviews for selected papers
 if (($getaction == "rev" || $getaction == "revz") && isset($papersel)) {
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allReviews" => 1, "reviewerName" => 1)), "while selecting papers");
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allReviews" => 1, "reviewerName" => 1)));
 
     $texts = array();
     $errors = array();
@@ -301,7 +301,7 @@ function tagaction() {
     $errors = array();
     $papers = $papersel;
     if (!$Me->privChair) {
-        $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)), "while selecting papers");
+        $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)));
         while (($row = PaperInfo::fetch($result, $Me)))
             if ($row->conflictType > 0) {
                 $errors[] = "You have a conflict with paper #" . $row->paperId . " and cannot change its tags.";
@@ -360,7 +360,7 @@ if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
     if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
         $showtag = trim($_REQUEST["tag"]); // no "23~" prefix
         $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag));
-        $result = $Conf->qe($q, "while selecting papers");
+        $result = $Conf->qe($q);
         $texts = array();
         while (($row = PaperInfo::fetch($result, $Me)))
             if ($Me->canViewTags($row, true))
@@ -380,7 +380,7 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
     $tagger = new Tagger;
     if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
         $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"));
-        $result = $Conf->qe($q, "while selecting papers");
+        $result = $Conf->qe($q);
         $real = "";
         $null = "\n";
         while (($row = PaperInfo::fetch($result, $Me)))
@@ -436,7 +436,7 @@ if ($getaction == "authors" && isset($papersel)
     // first fetch contacts if chair
     $contactline = array();
     if ($Me->privChair) {
-        $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq", "while fetching contacts");
+        $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq");
         while (($row = PaperInfo::fetch($result, $Me))) {
             $key = $row->paperId . " " . $row->email;
             if ($row->firstName && $row->lastName)
@@ -448,7 +448,7 @@ if ($getaction == "authors" && isset($papersel)
     }
 
     // first fetch authors
-    $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper$join where $idq", "while fetching authors");
+    $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper$join where $idq");
     if ($result) {
         $texts = array();
         while (($row = PaperInfo::fetch($result, $Me))) {
@@ -499,7 +499,7 @@ if ($getaction == "pcconf" && isset($papersel) && $Me->privChair) {
                 from Paper
                 left join PaperConflict on (PaperConflict.paperId=Paper.paperId)
                 where $idq
-                group by Paper.paperId", "while fetching PC conflicts");
+                group by Paper.paperId");
 
     $pcme = array();
     foreach (pcMembers() as $pc)
@@ -542,7 +542,7 @@ if (($getaction == "lead" || $getaction == "shepherd")
                 join ContactInfo on (ContactInfo.contactId=Paper.${getaction}ContactId)
                 left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Me->contactId)
                 where $idq
-                group by Paper.paperId", "while fetching ${getaction}s");
+                group by Paper.paperId");
     $shep = $getaction == "shepherd";
     if ($result) {
         $texts = array();
@@ -561,7 +561,7 @@ if (($getaction == "lead" || $getaction == "shepherd")
 if ($getaction == "contact" && $Me->privChair && isset($papersel)) {
     // Note that this is chair only
     $idq = paperselPredicate($papersel, "Paper.");
-    $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq order by Paper.paperId", "while fetching contacts");
+    $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq order by Paper.paperId");
     if ($result) {
         $texts = array();
         while (($row = edb_row($result))) {
@@ -578,7 +578,7 @@ if ($getaction == "contact" && $Me->privChair && isset($papersel)) {
 // download scores and, maybe, anonymity for selected papers
 if ($getaction == "scores" && $Me->isPC && isset($papersel)) {
     $rf = reviewForm();
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allReviewScores" => 1, "reviewerName" => 1)), "while selecting papers");
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "allReviewScores" => 1, "reviewerName" => 1)));
 
     // compose scores
     $score_fields = array();
@@ -637,7 +637,7 @@ function downloadRevpref($extended) {
             return $Conf->errorMsg("No such reviewer");
     }
     $q = $Conf->paperQuery($Rev, array("paperId" => $papersel, "topics" => 1, "reviewerPreference" => 1));
-    $result = $Conf->qe($q, "while selecting papers");
+    $result = $Conf->qe($q);
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = PaperInfo::fetch($result, $Rev)) {
@@ -678,7 +678,7 @@ function downloadAllRevpref() {
     global $Conf, $Me, $Opt, $papersel, $paperselmap;
     // maybe download preferences for someone else
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "allReviewerPreference" => 1, "allConflictType" => 1));
-    $result = $Conf->qe($q, "while selecting papers");
+    $result = $Conf->qe($q);
     $texts = array();
     $pc = pcMembers();
     while (($prow = PaperInfo::fetch($result, $Me))) {
@@ -706,7 +706,7 @@ if ($getaction == "allrevpref" && $Me->privChair && isset($papersel))
 // download topics for selected papers
 if ($getaction == "topics" && isset($papersel)) {
     $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1));
-    $result = $Conf->qe($q, "while selecting papers");
+    $result = $Conf->qe($q);
 
     $texts = array();
     $tmap = $Conf->topic_map();
@@ -741,7 +741,7 @@ if ($getaction == "topics" && isset($papersel)) {
 
 // download format checker reports for selected papers
 if ($getaction == "checkformat" && $Me->privChair && isset($papersel)) {
-    $result = $Conf->qe("select paperId, title, mimetype from Paper where " . paperselPredicate($papersel) . " order by paperId", "while fetching topics");
+    $result = $Conf->qe("select paperId, title, mimetype from Paper where " . paperselPredicate($papersel) . " order by paperId");
     $format = $Conf->setting_data("sub_banal", "");
 
     // generate output gradually since this takes so long
@@ -784,12 +784,11 @@ if ($getaction == "acmcms" && isset($papersel) && $Me->privChair) {
     $xlsx = new XlsxGenerator($Opt["downloadPrefix"] . "acmcms.xlsx");
     $xlsx->download_headers();
     $idq = paperselPredicate($papersel, "Paper.");
-    $while = "while fetching papers";
 
     // maybe analyze paper page counts
     $pagecount = array();
     if ($Conf->sversion >= 55) {
-        $result = $Conf->qe("select Paper.paperId, ps.infoJson from Paper join PaperStorage ps on (ps.paperStorageId=Paper.finalPaperStorageId) where Paper.finalPaperStorageId>1 and $idq", $while);
+        $result = $Conf->qe("select Paper.paperId, ps.infoJson from Paper join PaperStorage ps on (ps.paperStorageId=Paper.finalPaperStorageId) where Paper.finalPaperStorageId>1 and $idq");
         while (($row = edb_row($result)))
             if ($row[1] && ($j = json_decode($row[1])) && isset($j->npages))
                 $pagecount[$row[0]] = $j->npages;
@@ -801,7 +800,7 @@ if ($getaction == "acmcms" && isset($papersel) && $Me->privChair) {
     }
 
     // generate report
-    $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper where $idq", "while fetching papers");
+    $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper where $idq");
     $texts = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
         $x = array($Opt["downloadPrefix"] . $row->paperId,
@@ -849,7 +848,7 @@ if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != ""
         $o = rcvtint($_REQUEST["decision"]);
         $outcome_map = $Conf->outcome_map();
         if (isset($outcome_map[$o])) {
-            $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel), "while changing decision");
+            $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel));
             $Conf->updatePaperaccSetting($o > 0);
             redirectSelf(array("atab" => "decide", "decision" => $o));
             // normally does not return
@@ -872,19 +871,17 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
     } else if (!$mpc || !($pc = Contact::find_by_email($mpc)))
         $Conf->errorMsg("“" . htmlspecialchars($mpc) . "” is not a PC member.");
     else if ($mt == "conflict" || $mt == "unconflict") {
-        $while = "while marking conflicts";
         if ($mt == "conflict") {
-            $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) (select paperId, $pc->contactId, " . CONFLICT_CHAIRMARK . " from Paper where " . paperselPredicate($papersel) . ") on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $while);
+            $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) (select paperId, $pc->contactId, " . CONFLICT_CHAIRMARK . " from Paper where " . paperselPredicate($papersel) . ") on duplicate key update conflictType=greatest(conflictType, values(conflictType))");
             $Me->log_activity("Mark conflicts with $mpc", $papersel);
         } else {
-            $Conf->qe("delete from PaperConflict where PaperConflict.conflictType<" . CONFLICT_AUTHOR . " and contactId=$pc->contactId and (" . paperselPredicate($papersel) . ")", $while);
+            $Conf->qe("delete from PaperConflict where PaperConflict.conflictType<" . CONFLICT_AUTHOR . " and contactId=$pc->contactId and (" . paperselPredicate($papersel) . ")");
             $Me->log_activity("Remove conflicts with $mpc", $papersel);
         }
     } else if (substr($mt, 0, 6) == "assign"
                && isset($reviewTypeName[($asstype = substr($mt, 6))])) {
-        $while = "while making assignments";
         $Conf->qe("lock tables PaperConflict write, PaperReview write, PaperReviewRefused write, Paper write, ActionLog write" . $Conf->tagRoundLocker($asstype == REVIEW_PRIMARY || $asstype == REVIEW_SECONDARY || $asstype == REVIEW_PC));
-        $result = $Conf->qe("select Paper.paperId, reviewId, reviewType, reviewModified, conflictType from Paper left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $pc->contactId . ") left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=" . $pc->contactId .") where " . paperselPredicate($papersel, "Paper."), $while);
+        $result = $Conf->qe("select Paper.paperId, reviewId, reviewType, reviewModified, conflictType from Paper left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $pc->contactId . ") left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=" . $pc->contactId .") where " . paperselPredicate($papersel, "Paper."));
         $conflicts = array();
         $assigned = array();
         $nworked = 0;
@@ -944,19 +941,18 @@ if (isset($_REQUEST["redisplay"]))
 
 // save display options
 if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
-    $while = "while saving display options";
     if ($Conf->session("pldisplay") !== " overAllMerit ") {
         $pldisplay = explode(" ", trim($Conf->session("pldisplay")));
         sort($pldisplay);
         $pldisplay = " " . simplify_whitespace(join(" ", $pldisplay)) . " ";
         $Conf->save_session("pldisplay", $pldisplay);
-        $Conf->qe("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($pldisplay) . "') on duplicate key update data=values(data)", $while);
+        $Conf->qe("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($pldisplay) . "') on duplicate key update data=values(data)");
     } else
-        $Conf->qe("delete from Settings where name='pldisplay_default'", $while);
+        $Conf->qe("delete from Settings where name='pldisplay_default'");
     if ($Conf->session("scoresort") != "C")
-        $Conf->qe("insert into Settings (name, value, data) values ('scoresort_default', 1, '" . sqlq($Conf->session("scoresort")) . "') on duplicate key update data=values(data)", $while);
+        $Conf->qe("insert into Settings (name, value, data) values ('scoresort_default', 1, '" . sqlq($Conf->session("scoresort")) . "') on duplicate key update data=values(data)");
     else
-        $Conf->qe("delete from Settings where name='scoresort_default'", $while);
+        $Conf->qe("delete from Settings where name='scoresort_default'");
     if ($OK && defval($_REQUEST, "ajax"))
         $Conf->ajaxExit(array("ok" => 1));
     else if ($OK)
@@ -977,7 +973,6 @@ function formulas_with_new() {
 
 function saveformulas() {
     global $Conf, $Me, $paperListFormulas, $OK;
-    $while = "while saving new formula";
 
     // parse names and expressions
     $revViewScore = $Me->viewReviewFieldsScore(null, true);
@@ -1023,7 +1018,7 @@ function saveformulas() {
     $_REQUEST["tab"] = "formulas";
     if ($ok) {
         foreach ($changes as $change)
-            $Conf->qe($change, $while);
+            $Conf->qe($change);
         if ($OK) {
             $Conf->confirmMsg("Formulas saved.");
             redirectSelf();
@@ -1039,7 +1034,6 @@ if (isset($_REQUEST["saveformulas"]) && $Me->isPC && $Conf->sversion >= 32
 // save formula
 function savesearch() {
     global $Conf, $Me, $paperListFormulas, $OK;
-    $while = "while saving search";
 
     $name = simplify_whitespace(defval($_REQUEST, "ssname", ""));
     $tagger = new Tagger;
@@ -1090,10 +1084,10 @@ function savesearch() {
     }
 
     if (isset($_REQUEST["deletesearch"])) {
-        $Conf->qe("delete from Settings where name='ss:" . sqlq($name) . "'", $while);
+        $Conf->qe("delete from Settings where name='ss:" . sqlq($name) . "'");
         redirectSelf();
     } else {
-        $Conf->qe("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode($arr)) . "') on duplicate key update value=values(value), data=values(data)", $while);
+        $Conf->qe("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode($arr)) . "') on duplicate key update value=values(value), data=values(data)");
         redirectSelf(array("q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null));
     }
 }

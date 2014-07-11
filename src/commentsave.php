@@ -69,8 +69,6 @@ class CommentSave {
         if ($Conf->sversion < 68)
             $ctags = null;
 
-        $while = $insert_id_while = "while saving comment";
-
         // query
         $text = @$req->text;
         if ($text === false || $text === null)
@@ -113,7 +111,6 @@ class CommentSave {
                     $q .= "forAuthors=2";
                 $q .= ") where Paper.paperId=$prow->paperId group by Paper.paperId) t
         where t.commentId=0";
-                $insert_id_while = false;
             } else {
                 $q .= " from (select Paper.paperId, coalesce(count(commentId),0) commentCount, coalesce(max(PaperComment.ordinal),0) maxOrdinal
                 from Paper
@@ -150,12 +147,12 @@ class CommentSave {
             $q .= " where commentId=$crow->commentId";
         }
 
-        $result = $Conf->qe($q, $while);
+        $result = $Conf->qe($q);
         if (!$result)
             return false;
 
         // comment ID
-        $cid = $crow ? $crow->commentId : $Conf->lastInsertId($insert_id_while);
+        $cid = $crow ? $crow->commentId : $Conf->lastInsertId();
         if (!$cid)
             return false;
         $contact->log_activity("Comment $cid " . ($text !== "" ? "saved" : "deleted"), $prow->paperId);

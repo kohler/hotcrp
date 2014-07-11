@@ -687,7 +687,7 @@ class PaperSearch {
             $this->warn("The <code>reconflict</code> keyword expects a list of paper numbers.");
             $qt[] = new SearchTerm("f");
         } else {
-            $result = $Conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")", "while evaluating reconflict keyword");
+            $result = $Conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")");
             $contacts = array();
             while (($row = edb_row($result)))
                 $contacts[] = $row[0];
@@ -2312,7 +2312,7 @@ class PaperSearch {
         ++$searchMatchNumber;
 
         if ($this->limitName == "x") {
-            if (!$Conf->qe("create temporary table $this->_matchTable select Paper.paperId from Paper where false", "while performing search"))
+            if (!$Conf->qe("create temporary table $this->_matchTable select Paper.paperId from Paper where false"))
                 return ($this->_matchTable = false);
             else
                 return true;
@@ -2496,7 +2496,7 @@ class PaperSearch {
         //$Conf->infoMsg(Ht::pre_text_wrap($q));
 
         // actually perform query
-        if (!$Conf->qe("create temporary table $this->_matchTable $q", "while performing search"))
+        if (!$Conf->qe("create temporary table $this->_matchTable $q"))
             return ($this->_matchTable = false);
 
         // correct query, create thenmap and headingmap
@@ -2504,7 +2504,7 @@ class PaperSearch {
         $this->headingmap = array();
         if ($need_filter) {
             $delete = array();
-            $result = $Conf->qe("select * from $this->_matchTable", "while performing search");
+            $result = $Conf->qe("select * from $this->_matchTable");
             $qe_heading = $qe->get_float("heading");
             while (($row = PaperInfo::fetch($result, $this->cid))) {
                 if (!$this->contact->canViewPaper($row)
@@ -2531,7 +2531,7 @@ class PaperSearch {
             if (count($delete)) {
                 $q = "delete from $this->_matchTable where paperId in (" . join(",", $delete) . ")";
                 //$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars($q))));
-                if (!$Conf->qe($q, "while performing search")) {
+                if (!$Conf->qe($q)) {
                     $Conf->q("drop temporary table $this->_matchTable");
                     return ($this->_matchTable = false);
                 }

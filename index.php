@@ -105,7 +105,7 @@ function admin_home_messages() {
     if ($Conf->setting("pcrev_assigntime", 0) > $Conf->setting("pcrev_informtime", 0)
         && $Conf->sversion >= 46) {
         $assigntime = $Conf->setting("pcrev_assigntime");
-        $result = $Conf->qe("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1", "when searching for unnotified review assignments");
+        $result = $Conf->qe("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1");
         if (edb_nrows($result))
             $m[] = "PC review assignments have changed. You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>. <a href=\"" . hoturl_post("index", "clearnewpcrev=$assigntime") . "\">(Clear&nbsp;this&nbsp;message)</a>";
         else
@@ -140,7 +140,7 @@ function change_review_tokens() {
         else if ($Conf->session("rev_token_fail", 0) >= 5)
             $Conf->errorMsg("Too many failed attempts to use a review token.  <a href='" . hoturl("index", "signout=1") . "'>Sign out</a> and in to try again.");
         else {
-            $result = $Conf->qe("select paperId from PaperReview where reviewToken=" . $token, "while searching for review token");
+            $result = $Conf->qe("select paperId from PaperReview where reviewToken=" . $token);
             if (($row = edb_row($result))) {
                 $tokeninfo[] = "Review token “" . htmlspecialchars($x) . "” lets you review <a href='" . hoturl("paper", "p=$row[0]") . "'>paper #" . $row[0] . "</a>.";
                 $Me->change_review_token($token, true);
@@ -214,7 +214,7 @@ if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite']
 if ($Conf->timeAuthorViewDecision()) {
     $dl = $Conf->deadlines();
     $dlt = max($dl["sub_sub"], $dl["sub_close"]);
-    $result = $Conf->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome", "while loading acceptance statistics");
+    $result = $Conf->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
     $n = $nyes = 0;
     while (($row = edb_row($result))) {
         $n += $row[1];
@@ -360,7 +360,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
 
     // Overview
     echo "<h4>Reviews: &nbsp;</h4> ";
-    $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(if(reviewNeedsSubmit=0,reviewSubmitted,1)), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId", "while fetching review status");
+    $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(if(reviewNeedsSubmit=0,reviewSubmitted,1)), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId");
     $all_review_fields = ReviewForm::field_list_all_rounds();
     $merit_field = @$all_review_fields["overAllMerit"];
     $npc = $npcScore = $sumpcScore = $sumpcSubmit = 0;
@@ -455,7 +455,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     if ($myrow && $Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
         $badratings = PaperSearch::unusableRatings($Me->privChair, $Me->cid);
         $qx = (count($badratings) ? " and not (PaperReview.reviewId in (" . join(",", $badratings) . "))" : "");
-        /*$result = $Conf->qe("select rating, count(distinct PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->cid and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc", "while checking ratings");
+        /*$result = $Conf->qe("select rating, count(distinct PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->cid and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc");
         if (edb_nrows($result)) {
             $a = array();
             while (($row = edb_row($result)))
@@ -470,7 +470,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
                 echo ".</div>\n";
             }
         }*/
-        $result = $Conf->qe("select rating, count(PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->cid and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc", "while checking ratings");
+        $result = $Conf->qe("select rating, count(PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->cid and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc");
         if (edb_nrows($result)) {
             $a = array();
             while (($row = edb_row($result)))

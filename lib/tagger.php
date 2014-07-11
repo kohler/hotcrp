@@ -451,8 +451,7 @@ class Tagger {
             return false;
 
         // lock
-        $while = "while tagging";
-        $Conf->qe("lock tables $table write", $while);
+        $Conf->qe("lock tables $table write");
 
         // check chair tags
         $badtags = array();
@@ -518,7 +517,7 @@ class Tagger {
 
         // exit if nothing to do
         if (count($tags) == 0 && $mode != 'p') {
-            $Conf->qe("unlock tables", $while);
+            $Conf->qe("unlock tables");
             if (count($badtags) == 0)
                 defappend($Error["tags"], "No tags specified.<br />\n");
             return false;
@@ -560,7 +559,7 @@ class Tagger {
                     $q .= " or tag like '~~%'";
                 $q .= ")";
             }
-            $Conf->qe($q, $while);
+            $Conf->qe($q);
         }
 
         // check for vote changes
@@ -572,8 +571,8 @@ class Tagger {
             }
             unset($val);
             if ($mode != "p")   // must delete old versions for correct totals
-                $Conf->qe("delete from $table where $pidcol in (" . join(",", $pids) . ") and tag in ($q)", "while deleting old votes");
-            $result = $Conf->qe("select tag, sum(tagIndex) from $table where tag in ($q) group by tag", "while checking vote totals");
+                $Conf->qe("delete from $table where $pidcol in (" . join(",", $pids) . ") and tag in ($q)");
+            $result = $Conf->qe("select tag, sum(tagIndex) from $table where tag in ($q) group by tag");
             while (($row = edb_row($result))) {
                 $lbase = strtolower($row[0]);
                 $vchanges[$lbase] = max($vchanges[$lbase] - $row[1], 0);
@@ -592,7 +591,7 @@ class Tagger {
                 $tagIndex[$lbase] = $explicitIndex[$lbase] =
                     (int) substr($tag, strlen($base) + 1);
             } else if (strlen($base) + 1 == strlen($tag) || $modeOrdered) {
-                $result = $Conf->qe("select max(tagIndex) from $table where tag='" . sqlq($base) . "'", $while);
+                $result = $Conf->qe("select max(tagIndex) from $table where tag='" . sqlq($base) . "'");
                 if (($row = edb_row($result)))
                     $tagIndex[$lbase] = $row[0] + self::value_increment($mode);
                 else
@@ -606,7 +605,7 @@ class Tagger {
             $q = "";
             foreach ($explicitIndex as $base => $index)
                 $q .= "(tag='" . sqlq($base) . "' and tagIndex>=$index) or ";
-            $result = $Conf->qe("select $pidcol, tag, tagIndex from $table where " . substr($q, 0, strlen($q) - 4) . " order by tagIndex", "while reordering tags");
+            $result = $Conf->qe("select $pidcol, tag, tagIndex from $table where " . substr($q, 0, strlen($q) - 4) . " order by tagIndex");
             while (($row = edb_row($result)))
                 if (!in_array($row[0], $pids))
                     $reorders[$row[1]][] = array($row[0], $row[2]);
@@ -666,11 +665,11 @@ class Tagger {
             }
             // store changes
             if ($q_keepnew != "")
-                $Conf->qe("insert into $table ($pidcol, tag, tagIndex) values " . substr($q_keepnew, 0, strlen($q_keepnew) - 2) . " on duplicate key update tagIndex=values(tagIndex)", $while);
+                $Conf->qe("insert into $table ($pidcol, tag, tagIndex) values " . substr($q_keepnew, 0, strlen($q_keepnew) - 2) . " on duplicate key update tagIndex=values(tagIndex)");
             if ($q_keepold != "")
-                $Conf->qe("insert into $table ($pidcol, tag, tagIndex) values " . substr($q_keepold, 0, strlen($q_keepold) - 2) . " on duplicate key update tagIndex=tagIndex", $while);
+                $Conf->qe("insert into $table ($pidcol, tag, tagIndex) values " . substr($q_keepold, 0, strlen($q_keepold) - 2) . " on duplicate key update tagIndex=tagIndex");
             if (count($delvotes))
-                $Conf->qe("delete from $table where " . join(" or ", $delvotes), "while deleting zero votes");
+                $Conf->qe("delete from $table where " . join(" or ", $delvotes));
         }
 
         // update vote totals
@@ -699,7 +698,7 @@ class Tagger {
                 $q = "";
                 foreach ($myvtags as $base)
                     $q .= "'" . sqlq($base) . "',";
-                $result = $Conf->qe("select $pidcol from $table where tag in (" . substr($q, 0, strlen($q) - 1) . ") group by $pidcol", "while counting votes");
+                $result = $Conf->qe("select $pidcol from $table where tag in (" . substr($q, 0, strlen($q) - 1) . ") group by $pidcol");
                 while (($row = edb_row($result)))
                     if (!in_array($row[0], $xpids))
                         $xpids[] = $row[0];
@@ -713,7 +712,7 @@ class Tagger {
                 foreach ($xpids as $p)
                     $vcount[$p . ", '" . sqlq($base) . "'"] = 0;
             }
-            $result = $Conf->qe(substr($q, 0, strlen($q) - 4) . ") group by $pidcol, tagBase", "while counting votes");
+            $result = $Conf->qe(substr($q, 0, strlen($q) - 4) . ") group by $pidcol, tagBase");
             while (($row = edb_row($result))) {
                 $lbase = strtolower($row[1]);
                 $x = $row[0] . ", '" . sqlq($vtag_casemap[$lbase]) . "'";
@@ -733,12 +732,12 @@ class Tagger {
 
             // execute queries
             if (count($ins))
-                $Conf->qe("insert into $table ($pidcol, tag, tagIndex) values " . join(", ", $ins) . " on duplicate key update tagIndex=values(tagIndex)", "while counting votes");
+                $Conf->qe("insert into $table ($pidcol, tag, tagIndex) values " . join(", ", $ins) . " on duplicate key update tagIndex=values(tagIndex)");
             if (count($del))
-                $Conf->qe("delete from $table where " . join(" or ", $del), "while counting votes");
+                $Conf->qe("delete from $table where " . join(" or ", $del));
         }
 
-        $Conf->qe("unlock tables", $while);
+        $Conf->qe("unlock tables");
 
         // complain about reduced tags
         if (count($vreduced) > 0) {

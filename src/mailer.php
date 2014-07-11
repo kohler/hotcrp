@@ -496,7 +496,7 @@ class Mailer {
                 ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
                 from PaperReview
                 join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
-                where PaperReview.paperId=" . $this->row->paperId . " order by reviewOrdinal", "while retrieving reviews");
+                where PaperReview.paperId=" . $this->row->paperId . " order by reviewOrdinal");
         $text = "";
         while (($row = edb_orow($result)))
             if ($row->reviewSubmitted) {
@@ -543,7 +543,7 @@ class Mailer {
                 where r.contactId=" . $contact->contactId . "
                 and r.timeRequested>r.timeRequestNotified
                 and r.reviewSubmitted is null and r.reviewNeedsSubmit!=0
-                order by r.paperId", "while retrieving assignments");
+                order by r.paperId");
         $text = "";
         while (($row = edb_row($result)))
             $text .= ($text ? "\n#" : "#") . $row[0] . " " . $row[1];
@@ -747,7 +747,7 @@ class Mailer {
                 conflictType, 0 myReviewType
                 from ContactInfo join PaperConflict using (contactId)
                 where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
-                group by ContactInfo.contactId", "while looking up contacts to send email");
+                group by ContactInfo.contactId");
 
         // must set the current conflict type in $row for each contact
         $contact_info_map = $row->replace_contact_info_map(null);
@@ -781,7 +781,7 @@ class Mailer {
                 from ContactInfo
                 join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$row->paperId)
                 left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$row->paperId)
-                group by ContactInfo.contactId", "while looking up reviewers to send email");
+                group by ContactInfo.contactId");
 
         if (!isset($rest["cc"]) && isset($Opt["emailCc"]))
             $rest["cc"] = $Opt["emailCc"];

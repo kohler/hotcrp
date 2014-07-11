@@ -2100,7 +2100,7 @@ class Contact {
         else
             return;
 
-        if ($Conf->qe($q, "while assigning review")) {
+        if ($Conf->qe($q)) {
             if ($qtag)
                 $Conf->q($qtag);
             if ($rrow && defval($rrow, "reviewToken", 0) != 0 && $type <= 0)

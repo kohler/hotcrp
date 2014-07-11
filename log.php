@@ -61,7 +61,7 @@ if ($_REQUEST["acct"]) {
         }
         $where[] = "email like '%" . sqlq_for_like($acct) . "%'";
     }
-    $result = $Conf->qe("select contactId, email from ContactInfo where " . join(" or ", $where), "while finding matching accounts");
+    $result = $Conf->qe("select contactId, email from ContactInfo where " . join(" or ", $where));
     $where = array();
     while (($row = edb_row($result))) {
         $where[] = "contactId=$row[0]";

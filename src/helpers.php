@@ -444,7 +444,7 @@ function paperDocumentData($prow, $documentType = DTYPE_SUBMISSION, $paperStorag
         && ($doc->documentType != $documentType
             || $paperStorageId != $doc->paperStorageId)) {
         $size = $Conf->sversion >= 74 ? "size" : "length(paper) as size";
-        $result = $Conf->qe("select paperStorageId, paperId, $size, mimetype, timestamp, sha1, filename, documentType from PaperStorage where paperStorageId=$paperStorageId", "while reading documents");
+        $result = $Conf->qe("select paperStorageId, paperId, $size, mimetype, timestamp, sha1, filename, documentType from PaperStorage where paperStorageId=$paperStorageId");
         $doc = edb_orow($result);
     }
 
@@ -816,8 +816,7 @@ function saveWatchPreference($paperId, $contactId, $watchtype, $on) {
     $onvalue = $explicit | ($on ? $selected : 0);
     $Conf->qe("insert into PaperWatch (paperId, contactId, watch)
                 values ($paperId, $contactId, $onvalue)
-                on duplicate key update watch = (watch & ~" . ($explicit | $selected) . ") | $onvalue",
-              "while saving email notification preference");
+                on duplicate key update watch = (watch & ~" . ($explicit | $selected) . ") | $onvalue");
     return $OK;
 }
 
@@ -844,7 +843,7 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
     if ($prow->managerContactId > 0)
         $q .= " or ContactInfo.contactId=" . $prow->managerContactId;
 
-    $result = $Conf->qe($q, "while processing email notifications");
+    $result = $Conf->qe($q);
     $watchers = array();
     $lastContactId = 0;
     while (($row = edb_orow($result))) {
@@ -874,7 +873,7 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
         $result = $Conf->qe("select ContactInfo.contactId, PaperReview.contactId, max(reviewNeedsSubmit) from ContactInfo
                 left join PaperReview on (PaperReview.contactId=ContactInfo.contactId)
                 where ContactInfo.contactId in (" . join(",", array_keys($watchers)) . ")
-                group by ContactInfo.contactId", "while processing email notifications");
+                group by ContactInfo.contactId");
         while (($row = edb_row($result))) {
             $watchers[$row[0]]->has_review = $row[1] > 0;
             $watchers[$row[0]]->has_outstanding_review = $row[2] > 0;

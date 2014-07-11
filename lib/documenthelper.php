@@ -205,7 +205,7 @@ class DocumentHelper {
 
         // check that paper storage succeeded
         if ($check_contents
-            && (!($result = $Conf->qe("select length($check_contents) from $table where $idcol=" . $doc->$idcol, $while))
+            && (!($result = $Conf->qe("select length($check_contents) from $table where $idcol=" . $doc->$idcol))
                 || !($row = edb_row($result))
                 || $row[0] != strlen($doc->content))) {
             set_error_html($doc, "Failed to store your document. Usually, this is because the file you tried to upload was too big for our system. Please try again.");

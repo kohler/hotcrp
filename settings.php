@@ -337,13 +337,13 @@ function doTags($set, $what) {
                 }
 
             $q = ($negative ? " or (tag like '%~" . sqlq_for_like($base) . "' and tagIndex<0)" : "");
-            $Conf->qe("delete from PaperTag where tag='" . sqlq($base) . "'$q", "while counting votes");
+            $Conf->qe("delete from PaperTag where tag='" . sqlq($base) . "'$q");
 
             $q = array();
             foreach ($pvals as $pid => $what)
                 $q[] = "($pid, '" . sqlq($base) . "', $what)";
             if (count($q) > 0)
-                $Conf->qe("insert into PaperTag values " . join(", ", $q), "while counting votes");
+                $Conf->qe("insert into PaperTag values " . join(", ", $q));
         }
     }
 
@@ -396,7 +396,6 @@ function doTopics($set) {
         $Values["topics"] = true;
         return;
     }
-    $while = "while updating topics";
 
     $numnew = defval($_REQUEST, "newtopcount", 50);
     $tmap = $Conf->topic_map();
@@ -405,14 +404,14 @@ function doTopics($set) {
             continue;
         $v = simplify_whitespace($v);
         if ($k[3] == "n" && $v != "" && !ctype_digit($v) && cvtint(substr($k, 4), 100) <= $numnew)
-            $Conf->qe("insert into TopicArea (topicName) values ('" . sqlq($v) . "')", $while);
+            $Conf->qe("insert into TopicArea (topicName) values ('" . sqlq($v) . "')");
         else if (($k = cvtint(substr($k, 3), -1)) >= 0) {
             if ($v == "") {
-                $Conf->qe("delete from TopicArea where topicId=$k", $while);
-                $Conf->qe("delete from PaperTopic where topicId=$k", $while);
-                $Conf->qe("delete from TopicInterest where topicId=$k", $while);
+                $Conf->qe("delete from TopicArea where topicId=$k");
+                $Conf->qe("delete from PaperTopic where topicId=$k");
+                $Conf->qe("delete from TopicInterest where topicId=$k");
             } else if (isset($tmap[$k]) && $v != $tmap[$k] && !ctype_digit($v))
-                $Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k", $while);
+                $Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k");
         }
     }
 }
@@ -548,8 +547,6 @@ function doOptions($set) {
         return;
     }
 
-    $while = "while updating options";
-
     $new_opts = $Values["options"];
     $current_opts = PaperOption::option_list();
     option_clean_form_positions($new_opts, $current_opts);
@@ -599,14 +596,13 @@ function doDecisions($set) {
     }
 
     // mark all used decisions
-    $while = "while updating decisions";
     $dec = $Conf->outcome_map();
     $update = false;
     foreach ($_REQUEST as $k => $v)
         if (str_starts_with($k, "dec")
             && ($k = cvtint(substr($k, 3), 0)) != 0) {
             if ($v == "") {
-                $Conf->qe("update Paper set outcome=0 where outcome=$k", $while);
+                $Conf->qe("update Paper set outcome=0 where outcome=$k");
                 unset($dec[$k]);
                 $update = true;
             } else if ($v != $dec[$k]) {
@@ -985,7 +981,6 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
     // make settings
     if (count($Error) == 0 && count($Values) > 0) {
-        $while = "updating settings";
         $tables = "Settings write, TopicArea write, PaperTopic write, TopicInterest write, PaperOption write";
         if (array_key_exists("decisions", $Values)
             || array_key_exists("tag_vote", $Values))
@@ -994,7 +989,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
             $tables .= ", PaperTag write";
         if (array_key_exists("reviewform", $Values))
             $tables .= ", PaperReview write";
-        $Conf->qe("lock tables $tables", $while);
+        $Conf->qe("lock tables $tables");
 
         // apply settings
         foreach ($Values as $n => $v)
@@ -1013,11 +1008,11 @@ if (isset($_REQUEST["update"]) && check_post()) {
                     $Opt[substr($n, 4)] = (is_array($v) ? $v[1] : $v);
             }
         if (strlen($dq))
-            $Conf->qe("delete from Settings where " . substr($dq, 4), $while);
+            $Conf->qe("delete from Settings where " . substr($dq, 4));
         if (strlen($aq))
-            $Conf->qe("insert into Settings (name, value, data) values " . substr($aq, 2), $while);
+            $Conf->qe("insert into Settings (name, value, data) values " . substr($aq, 2));
 
-        $Conf->qe("unlock tables", $while);
+        $Conf->qe("unlock tables");
         $Me->log_activity("Updated settings group '$Group'");
         $Conf->load_settings();
     }

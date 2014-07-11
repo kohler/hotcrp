@@ -621,7 +621,7 @@ class PaperList extends BaseList {
                 join PaperReview using (paperId)
                 join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
                 where " . ($this->search->limitName != 'a' ? "timeSubmitted>0" : "paperId=-1") . "
-                order by lastName, firstName, email", "while fetching reviews");
+                order by lastName, firstName, email");
             while (($row = edb_orow($result)))
                 $this->review_list[$row->paperId][] = $row;
         }
@@ -635,7 +635,7 @@ class PaperList extends BaseList {
                 $pc->topicInterest = array();
             }
             $result = $Conf->qe("select contactId, topicId, " . $Conf->query_topic_interest()
-                                . " from TopicInterest", "while finding topic interests");
+                                . " from TopicInterest");
             while (($row = edb_row($result)))
                 $pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
         }
@@ -647,7 +647,7 @@ class PaperList extends BaseList {
         $pq = $Conf->paperQuery($this->contact, $this->query_options);
 
         // make query
-        $result = $Conf->qe($pq, "while selecting papers");
+        $result = $Conf->qe($pq);
         if (!$result)
             return null;
 

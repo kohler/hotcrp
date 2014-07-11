@@ -77,7 +77,7 @@ if ((isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]))
 }
 
 if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
-    $result = $Conf->qe("select firstName first, lastName last, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
+    $result = $Conf->qe("select firstName first, lastName last, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email");
     $people = edb_orows($result);
     downloadCSV($people, array("first", "last", "email", "affiliation"), "users",
                 array("selection" => true));
@@ -90,7 +90,7 @@ if ($getaction == "address" && isset($papersel) && $Me->isPC) {
         addressLine1 address1, addressLine2 address2, city, state, zipCode zip, country
         from ContactInfo
         left join ContactAddress using (contactId)
-        where " . paperselPredicate($papersel) . " order by lastName, firstName, email", "while selecting users");
+        where " . paperselPredicate($papersel) . " order by lastName, firstName, email");
     $people = edb_orows($result);
     $phone = false;
     foreach ($people as $p)
@@ -119,7 +119,7 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
         left join ContactAddress on (ContactAddress.contactId=ContactInfo.contactId)
         left join TopicInterest on (TopicInterest.contactId=ContactInfo.contactId and TopicInterest.interest is not null)
         where " . paperselPredicate($papersel) . "
-        group by ContactInfo.contactId order by lastName, firstName, email", "while selecting users");
+        group by ContactInfo.contactId order by lastName, firstName, email");
 
     // NB This format is expected to be parsed by profile.php's bulk upload.
     $topics = $Conf->topic_map();

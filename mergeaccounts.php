@@ -52,37 +52,36 @@ if (isset($_REQUEST["merge"]) && check_post()) {
             $oldid = $MiniMe->contactId;
             $newid = $Me->contactId;
 
-            $while = "while merging conflicts";
-            $Conf->q("lock tables Paper write, ContactInfo write, PaperConflict write, PCMember write, ChairAssistant write, Chair write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewArchive write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write, ContactAddress write, PaperWatch write, ReviewRating write", $while);
+            $Conf->q("lock tables Paper write, ContactInfo write, PaperConflict write, PCMember write, ChairAssistant write, Chair write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewArchive write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write, ContactAddress write, PaperWatch write, ReviewRating write");
 
             crpmergeone("Paper", "leadContactId", $oldid, $newid);
             crpmergeone("Paper", "shepherdContactId", $oldid, $newid);
 
             // paper authorship
-            $result = $Conf->qe("select paperId, authorInformation from Paper where authorInformation like '%\t" . sqlq_for_like($MiniMe->email) . "\t%'", $while);
+            $result = $Conf->qe("select paperId, authorInformation from Paper where authorInformation like '%\t" . sqlq_for_like($MiniMe->email) . "\t%'");
             $qs = array();
             while (($row = edb_row($result))) {
                 $row[1] = str_ireplace("\t" . $MiniMe->email . "\t", "\t" . $Me->email . "\t", $row[1]);
                 $qs[] = "update Paper set authorInformation='" . sqlq($row[1]) . "' where paperId=$row[0]";
             }
             foreach ($qs as $q)
-                $Conf->qe($q, $while);
+                $Conf->qe($q);
 
             // ensure uniqueness in PaperConflict
-            $result = $Conf->qe("select paperId, conflictType from PaperConflict where contactId=$oldid", $while);
+            $result = $Conf->qe("select paperId, conflictType from PaperConflict where contactId=$oldid");
             $values = "";
             while (($row = edb_row($result)))
                 $values .= ", ($row[0], $newid, $row[1])";
             if ($values)
-                $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($values, 2) . " on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $while);
-            $Conf->qe("delete from PaperConflict where contactId=$oldid", $while);
+                $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($values, 2) . " on duplicate key update conflictType=greatest(conflictType, values(conflictType))");
+            $Conf->qe("delete from PaperConflict where contactId=$oldid");
 
             crpmergeoneignore("PCMember", "contactId", $oldid, $newid);
             crpmergeoneignore("ChairAssistant", "contactId", $oldid, $newid);
             crpmergeoneignore("Chair", "contactId", $oldid, $newid);
             if (($MiniMe->roles | $Me->roles) != $Me->roles) {
                 $Me->roles |= $MiniMe->roles;
-                $Conf->qe("update ContactInfo set roles=$Me->roles where contactId=$Me->contactId", $while);
+                $Conf->qe("update ContactInfo set roles=$Me->roles where contactId=$Me->contactId");
             }
 
             crpmergeone("ActionLog", "contactId", $oldid, $newid);
@@ -115,7 +114,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
                     $MergeError .= $Conf->db_error_html($result, "", 0);
             }
 
-            $Conf->qe("unlock tables", $while);
+            $Conf->qe("unlock tables");
 
             // Update PC settings if we need to
             if ($MiniMe->isPC)

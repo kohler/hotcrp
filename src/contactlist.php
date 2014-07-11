@@ -607,7 +607,7 @@ class ContactList extends BaseList {
         order by lastName, firstName, email";
 
         // make query
-        $result = $Conf->qe($pq, "while selecting people");
+        $result = $Conf->qe($pq);
         if (!$result)
             return NULL;
 

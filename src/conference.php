@@ -544,15 +544,15 @@ class Conference {
 
     function updateRevTokensSetting($always) {
         if ($always || defval($this->settings, "rev_tokens", 0) < 0)
-            $this->qe("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)", "while updating review tokens settings");
+            $this->qe("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)");
     }
 
     function update_paperlead_setting() {
-        $this->qe("insert into Settings (name, value) select 'paperlead', count(paperId) from Paper where leadContactId>0 or shepherdContactId>0 limit 1 on duplicate key update value=values(value)", "while updating paper lead settings");
+        $this->qe("insert into Settings (name, value) select 'paperlead', count(paperId) from Paper where leadContactId>0 or shepherdContactId>0 limit 1 on duplicate key update value=values(value)");
     }
 
     function update_papermanager_setting() {
-        $this->qe("insert into Settings (name, value) select 'papermanager', count(paperId) from Paper where managerContactId>0 limit 1 on duplicate key update value=values(value)", "while updating paper manager settings");
+        $this->qe("insert into Settings (name, value) select 'papermanager', count(paperId) from Paper where managerContactId>0 limit 1 on duplicate key update value=values(value)");
     }
 
     function save_setting($name, $value, $data = null) {
@@ -571,7 +571,7 @@ class Conference {
                 $dval = "'" . $this->dblink->escape_string($data) . "'";
             else
                 $dval = "'" . $this->dblink->escape_string(json_encode($data)) . "'";
-            if ($this->qe("insert into Settings (name, value, data) values ('$qname', $value, $dval) on duplicate key update value=values(value), data=values(data)", "while updating settings")) {
+            if ($this->qe("insert into Settings (name, value, data) values ('$qname', $value, $dval) on duplicate key update value=values(value), data=values(data)")) {
                 $this->settings[$name] = $value;
                 $this->settingTexts[$name] = $data;
                 $change = true;
@@ -1030,15 +1030,13 @@ class Conference {
             return false;
         }
 
-        $while = "while storing paper in database";
-
         if (!$this->qe("update Paper set "
                 . ($final ? "finalPaperStorageId" : "paperStorageId") . "=" . $doc->paperStorageId
                 . ", size=" . $doc->size
                 . ", mimetype='" . sqlq($doc->mimetype)
                 . "', timestamp=" . $doc->timestamp
                 . ", sha1='" . sqlq($doc->sha1)
-                . "' where paperId=$paperId and timeWithdrawn<=0", $while))
+                . "' where paperId=$paperId and timeWithdrawn<=0"))
             return false;
 
         return $doc->size;
@@ -1502,7 +1500,7 @@ class Conference {
     }
 
     function review_rows($q, $contact) {
-        $result = $this->qe($q, "while loading reviews");
+        $result = $this->qe($q);
         $rrows = array();
         while (($row = PaperInfo::fetch($result, $contact)))
             $rrows[$row->reviewId] = $row;
@@ -1516,7 +1514,7 @@ class Conference {
     }
 
     function comment_rows($q, $contact) {
-        $result = $this->qe($q, "while loading comments");
+        $result = $this->qe($q);
         $crows = array();
         while (($row = PaperInfo::fetch($result, $contact))) {
             if (!isset($row->commentType))

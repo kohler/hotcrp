@@ -50,7 +50,7 @@ if (isset($_REQUEST["uploadForm"])
 function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
     global $Conf, $Me, $Error;
 
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => array_keys($settings))), "while selecting papers");
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => array_keys($settings))));
     $settingrank = ($Conf->setting("tag_rank") && $tag == "~" . $Conf->setting_data("tag_rank"));
     while (($row = PaperInfo::fetch($result, $Me)))
 	if ($settings[$row->paperId] !== null

@@ -162,7 +162,7 @@ class PaperOption {
                 $ox = (object) array("id" => $o->id, "option" => $o);
                 if ($o->needs_data() && !$optdata) {
                     $optdata = array();
-                    $result = $Conf->qe("select optionId, value, data from PaperOption where paperId=$prow->paperId", "while selecting paper options");
+                    $result = $Conf->qe("select optionId, value, data from PaperOption where paperId=$prow->paperId");
                     while (($row = edb_row($result)))
                         $optdata[$row[0] . "." . $row[1]] = $row[2];
                 }

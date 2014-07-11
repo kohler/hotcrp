@@ -130,8 +130,8 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
             $reason = defval($_REQUEST, "emailNote", "");
         if ($Conf->sversion >= 44 && $reason != "")
             $q .= ", withdrawReason='" . sqlq($reason) . "'";
-        $Conf->qe($q . " where paperId=$paperId", "while withdrawing paper");
-        $result = $Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId", "while withdrawing paper");
+        $Conf->qe($q . " where paperId=$paperId");
+        $result = $Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId");
         $numreviews = edb_nrows_affected($result);
         $Conf->updatePapersubSetting(false);
         loadRows();
@@ -152,7 +152,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
             $q = array();
             foreach ($tagger->vote_tags() as $t => $v)
                 $q[] = "tag='" . sqlq($t) . "' or tag like '%~" . sqlq_for_like($t) . "'";
-            $Conf->qe("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")", "while cleaning up voting tags");
+            $Conf->qe("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")");
         }
 
         $Me->log_activity("Withdrew", $paperId);
@@ -165,10 +165,10 @@ if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
         $q = "update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0)";
         if ($Conf->sversion >= 44)
             $q .= ", withdrawReason=null";
-        $Conf->qe($q . " where paperId=$paperId", "while reviving paper");
-        $Conf->qe("update PaperReview set reviewNeedsSubmit=1 where paperId=$paperId and reviewSubmitted is null", "while reviving paper");
-        $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
-        $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY, "while reviving paper");
+        $Conf->qe($q . " where paperId=$paperId");
+        $Conf->qe("update PaperReview set reviewNeedsSubmit=1 where paperId=$paperId and reviewSubmitted is null");
+        $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
+        $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
         $Conf->updatePapersubSetting(true);
         loadRows();
         $Me->log_activity("Revived", $paperId);
@@ -429,11 +429,11 @@ function save_contacts($paperId, $contact_changes, $request_authors) {
         $q = array();
         foreach ($contact_changes[0] as $cid)
             $q[] = "($paperId,$cid," . CONFLICT_CONTACTAUTHOR . ")";
-        if (!$Conf->qe("insert into PaperConflict (paperId,contactId,conflictType) values " . join(",", $q) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))", "while updating contacts"))
+        if (!$Conf->qe("insert into PaperConflict (paperId,contactId,conflictType) values " . join(",", $q) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))"))
             return false;
     }
     if (count($contact_changes[1])) {
-        if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHOR . " and contactId in (" . join(",", $contact_changes[1]) . ")", "while updating contacts"))
+        if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHOR . " and contactId in (" . join(",", $contact_changes[1]) . ")"))
             return false;
     }
 
@@ -450,9 +450,9 @@ function save_contacts($paperId, $contact_changes, $request_authors) {
         $aunew = $auold;
 
     if ($auold != $aunew || count($contact_changes[1])) {
-        if ($auold && !$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType=" . CONFLICT_AUTHOR, "while updating paper authors"))
+        if ($auold && !$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType=" . CONFLICT_AUTHOR))
             return false;
-        if ($aunew && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) select $paperId, contactId, " . CONFLICT_AUTHOR . " from ContactInfo where email in (" . substr($aunew, 0, strlen($aunew) - 2) . ") on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")", "while updating paper authors"))
+        if ($aunew && !$Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) select $paperId, contactId, " . CONFLICT_AUTHOR . " from ContactInfo where email in (" . substr($aunew, 0, strlen($aunew) - 2) . ") on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")"))
             return false;
     }
 
@@ -600,9 +600,9 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     // Commit accumulated changes
     // update Paper table
     if (!$newPaper)
-        $Conf->qe("update Paper set " . join(", ", $q) . " where paperId=$paperId and timeWithdrawn<=0", "while updating paper");
+        $Conf->qe("update Paper set " . join(", ", $q) . " where paperId=$paperId and timeWithdrawn<=0");
     else {
-        if (!($result = $Conf->qe("insert into Paper set " . join(", ", $q), "while creating paper"))) {
+        if (!($result = $Conf->qe("insert into Paper set " . join(", ", $q)))) {
             $Conf->errorMsg("Could not create paper.");
             return false;
         }
@@ -616,35 +616,35 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
         $diffs["contacts"] = true;
 
     // update PaperTopic table
-    $Conf->qe("delete from PaperTopic where paperId=$paperId", "while updating paper topics");
+    $Conf->qe("delete from PaperTopic where paperId=$paperId");
     $tq = array();
     foreach ($_REQUEST as $key => $value)
         if ($value > 0 && str_starts_with($key, "top")
             && ($id = cvtint(substr($key, 3))) > 0)
             $tq[] = "($paperId, $id)";
     if (count($tq))
-        $Conf->qe("insert into PaperTopic (paperId, topicId) values " . join(",", $tq), "while updating paper topics");
+        $Conf->qe("insert into PaperTopic (paperId, topicId) values " . join(",", $tq));
 
     // update PaperOption table
     if (count(PaperOption::option_list())) {
-        if (!$Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options), "while updating paper options"))
+        if (!$Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options)))
             return false;
         foreach ($opt_data as &$x)
             $x = "($paperId, $x)";
         unset($x);
-        $Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options), "while updating paper options");
+        $Conf->qe("delete from PaperOption where paperId=$paperId and " . join(" and ", $no_delete_options));
         if (count($opt_data))
-            $Conf->qe("insert into PaperOption (paperId,optionId,value,data) values " . join(", ", $opt_data), "while updating paper options");
+            $Conf->qe("insert into PaperOption (paperId,optionId,value,data) values " . join(", ", $opt_data));
     }
 
     // update PaperStorage.paperId for newly registered papers
     if ($newPaper && count($uploaded_documents))
-        $Conf->qe("update PaperStorage set paperId=$paperId where paperStorageId in (" . join(",", $uploaded_documents) . ")", "while linking PDFs with paper");
+        $Conf->qe("update PaperStorage set paperId=$paperId where paperStorageId in (" . join(",", $uploaded_documents) . ")");
 
     // update PC conflicts if appropriate
     if ($Conf->setting("sub_pcconf") && (!$isSubmitFinal || $Me->privChair)) {
         $max_conflict = $Me->privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
-        if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHORMARK . " and conflictType<=" . $max_conflict, "while updating conflicts"))
+        if (!$Conf->qe("delete from PaperConflict where paperId=$paperId and conflictType>=" . CONFLICT_AUTHORMARK . " and conflictType<=" . $max_conflict))
             return false;
         $q = array();
         $pcm = pcMembers();
@@ -657,8 +657,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
                 $q[] = "($paperId, $id, " . max(min($value, $max_conflict), CONFLICT_AUTHORMARK) . ")";
             }
         if (count($q))
-            $Conf->qe("insert into PaperConflict (paperId,contactId,conflictType) values " . join(", ", $q) . " on duplicate key update conflictType=conflictType",
-                      "while updating conflicts");
+            $Conf->qe("insert into PaperConflict (paperId,contactId,conflictType) values " . join(", ", $q) . " on duplicate key update conflictType=conflictType");
     }
 
     // submit paper if no error so far
@@ -669,7 +668,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     $didSubmit = false;
     if ($OK && !count($Error) && ($isSubmitFinal || $isSubmit)) {
         if ($prow->$storekey > 1 || defval($Opt, "noPapers")) {
-            $result = $Conf->qe("update Paper set " . ($isSubmitFinal ? "timeFinalSubmitted=" : "timeSubmitted=") . time() . " where paperId=$paperId", "while submitting paper");
+            $result = $Conf->qe("update Paper set " . ($isSubmitFinal ? "timeFinalSubmitted=" : "timeSubmitted=") . time() . " where paperId=$paperId");
             $didSubmit = !!$result;
             loadRows();
         } else if (!$isSubmitFinal) {
@@ -677,7 +676,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
             $Conf->errorMsg(whyNotText("notUploaded", "submit", $paperId));
         }
     } else if ($OK && !count($Error) && !$isSubmitFinal && !$isSubmit) {
-        $Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId", "while unsubmitting paper");
+        $Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId");
         loadRows();
     }
     if ($isSubmit || $Conf->setting("pc_seeall"))
@@ -833,7 +832,7 @@ if (isset($_REQUEST["delete"]) && check_post()) {
         $error = false;
         $tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic', 'PaperTag', "PaperOption");
         foreach ($tables as $table) {
-            $result = $Conf->qe("delete from $table where paperId=$paperId", "while deleting paper");
+            $result = $Conf->qe("delete from $table where paperId=$paperId");
             $error |= ($result == false);
         }
         if (!$error) {

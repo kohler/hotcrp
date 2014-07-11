@@ -591,7 +591,6 @@ class ReviewForm {
         global $Conf, $Opt;
         $submit = defval($req, "ready", false) && !defval($req, "unready", false)
             && (!$rrow || !$rrow->reviewSubmitted);
-        $while = "while storing review";
         $admin = $contact->allowAdminister($prow);
 
         if (!$contact->timeReview($prow, $rrow)
@@ -635,11 +634,11 @@ class ReviewForm {
             $diff_view_score = max($diff_view_score, VIEWSCORE_AUTHOR);
             $q[] = "reviewSubmitted=$now, reviewNeedsSubmit=0";
             if (!$rrow || !$rrow->reviewOrdinal) {
-                $result = $Conf->qe("lock tables PaperReview write", $while);
+                $result = $Conf->qe("lock tables PaperReview write");
                 if (!$result)
                     return $result;
                 $locked = true;
-                $result = $Conf->qe("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=$prow->paperId group by paperId", $while);
+                $result = $Conf->qe("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=$prow->paperId group by paperId");
                 if ($result) {
                     $crow = edb_row($result);
                     $q[] = "reviewOrdinal=coalesce(reviewOrdinal, " . ($crow[0] + 1) . ")";
@@ -682,18 +681,18 @@ class ReviewForm {
 
         // actually affect database
         if ($rrow) {
-            $result = $Conf->qe("update PaperReview set " . join(", ", $q) . " where reviewId=$rrow->reviewId", $while);
+            $result = $Conf->qe("update PaperReview set " . join(", ", $q) . " where reviewId=$rrow->reviewId");
             $reviewId = $rrow->reviewId;
             $contactId = $rrow->contactId;
         } else {
-            $result = $Conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contact->contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contact->contactId, " . join(", ", $q), $while);
-            $reviewId = $Conf->lastInsertId($while);
+            $result = $Conf->qe("insert into PaperReview set paperId=$prow->paperId, contactId=$contact->contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contact->contactId, " . join(", ", $q));
+            $reviewId = $Conf->lastInsertId();
             $contactId = $contact->contactId;
         }
 
         // unlock tables even if problem
         if ($locked)
-            $Conf->qe("unlock tables", $while);
+            $Conf->qe("unlock tables");
         if (!$result)
             return $result;
 

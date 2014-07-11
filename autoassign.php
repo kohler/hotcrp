@@ -213,7 +213,7 @@ function doAssign() {
     // prefconflict is a special case
     if ($atype == "prefconflict") {
         $papers = array_fill_keys($papersel, 1);
-        $result = $Conf->qe($Conf->preferenceConflictQuery($_REQUEST["t"], ""), "while fetching preferences");
+        $result = $Conf->qe($Conf->preferenceConflictQuery($_REQUEST["t"], ""));
         while (($row = edb_row($result))) {
             if (!isset($papers[$row[0]]) || !@$pcm[$row[1]])
                 continue;
@@ -242,7 +242,7 @@ function doAssign() {
             $q = "select paperId, ${reviewtype}ContactId from Paper where ${reviewtype}ContactId!=0";
             $action = "no" . $reviewtype;
         }
-        $result = $Conf->qe($q, "while checking clearable assignments");
+        $result = $Conf->qe($q);
         while (($row = edb_row($result))) {
             if (!isset($papers[$row[0]]) || !@$pcm[$row[1]])
                 continue;
@@ -262,12 +262,12 @@ function doAssign() {
         if ($atype == "rev" || $atype == "revadd")
             $result = $Conf->qe("select PCMember.contactId, count(reviewId)
                 from PCMember left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.reviewType=$reviewtype)
-                group by PCMember.contactId", "while counting reviews");
+                group by PCMember.contactId");
         else
             $result = $Conf->qe("select PCMember.contactId, count(paperId)
                 from PCMember left join Paper on (Paper.${atype}ContactId=PCMember.contactId)
                 where not (paperId in (" . join(",", $papersel) . "))
-                group by PCMember.contactId", "while counting leads");
+                group by PCMember.contactId");
         while (($row = edb_row($result)))
             $load[$row[0]] = $row[1] + 0;
     }
@@ -372,14 +372,14 @@ function doAssign() {
         $papers = array_fill_keys($papersel, ceil((count($pcm) * $loadlimit) / count($papersel)));
     } else if ($atype == "rev") {
         $papers = array_fill_keys($papersel, rcvtint($_REQUEST["revct"]));
-        $result = $Conf->qe("select paperId, count(reviewId) from PaperReview where reviewType=$reviewtype group by paperId", "while counting reviews");
+        $result = $Conf->qe("select paperId, count(reviewId) from PaperReview where reviewType=$reviewtype group by paperId");
         while (($row = edb_row($result)))
             if (isset($papers[$row[0]]))
                 $papers[$row[0]] -= $row[1];
     } else if ($atype == "lead" || $atype == "shepherd") {
         $papers = array();
         $xpapers = array_fill_keys($papersel, 1);
-        $result = $Conf->qe("select paperId from Paper where ${atype}ContactId=0", "while selecting reviews");
+        $result = $Conf->qe("select paperId from Paper where ${atype}ContactId=0");
         while (($row = edb_row($result)))
             if (isset($xpapers[$row[0]]))
                 $papers[$row[0]] = 1;

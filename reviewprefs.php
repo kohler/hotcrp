@@ -48,8 +48,6 @@ function savePreferences($reviewer) {
     if ($pmax == 0)
         return;
 
-    $while = "while saving review preferences";
-
     $deletes = array();
     for ($p = 1; $p <= $pmax; $p++)
         if (isset($setting[$p])) {
@@ -62,7 +60,7 @@ function savePreferences($reviewer) {
                 $deletes[] = "paperId between $p0 and $p";
         }
     if (count($deletes))
-        $Conf->qe("delete from PaperReviewPreference where contactId=$reviewer and (" . join(" or ", $deletes) . ")", $while);
+        $Conf->qe("delete from PaperReviewPreference where contactId=$reviewer and (" . join(" or ", $deletes) . ")");
 
     $q = array();
     for ($p = 1; $p <= $pmax; $p++)

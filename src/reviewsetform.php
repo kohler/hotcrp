@@ -64,7 +64,6 @@ function rf_update() {
     if (!isset($_REQUEST["update"]) || !check_post())
         return;
 
-    $while = "while updating review form";
     $scoreModified = array();
 
     $nrfj = (object) array();
@@ -123,7 +122,7 @@ function rf_update() {
         $Conf->save_setting("review_form", 1, $nrfj);
         foreach ($nrfj as $fid => $fj)
             if (@$fj->position && @$fj->options) {
-                $result = $Conf->qe("update PaperReview set $fid=0 where $fid>" . count($fj->options), $while);
+                $result = $Conf->qe("update PaperReview set $fid=0 where $fid>" . count($fj->options));
                 if (edb_nrows_affected($result) > 0)
                     $scoreModified[] = htmlspecialchars($fj->name);
             }
