@@ -1394,8 +1394,6 @@ function pcMembers() {
             ++$order;
         }
         $PcMembersCache = array($Conf->setting("pc"), $pc, @$Opt["sortByLastName"]);
-        if (session_id())
-            unset($_SESSION["pcmembers"]);
     }
     return $PcMembersCache[1];
 }

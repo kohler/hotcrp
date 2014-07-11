@@ -47,7 +47,7 @@ function initialize_user() {
     if (!isset($_SESSION["user"]) && isset($_SESSION["Me"])) {
         $x = $_SESSION["Me"];
         $_SESSION["user"] = "$x->contactId $x->confDsn $x->email";
-        unset($_SESSION["Me"]);
+        unset($_SESSION["Me"], $_SESSION["pcmembers"]);
     }
 
     // load current user

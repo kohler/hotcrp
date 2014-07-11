@@ -599,8 +599,6 @@ class Conference {
                 $removes[] = "'pc'";
                 unset($this->settings["pc"]);
             }
-            if (session_id())
-                unset($_SESSION["pcmembers"]);
         }
         if (!$caches || isset($caches["paperOption"]))
             PaperOption::invalidate_option_list();
