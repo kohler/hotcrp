@@ -243,10 +243,8 @@ ini_set("memory_limit", defval($Opt, "memoryLimit", "128M"));
 
 // Create the conference
 global $Conf;
-if (!@$Conf) {
-    $Opt["dsn"] = Conference::make_dsn($Opt);
-    $Conf = new Conference($Opt["dsn"]);
-}
+if (!@$Conf)
+    $Conf = new Conference(Conference::make_dsn($Opt));
 if (!$Conf->dblink) {
     require_once("$ConfSitePATH/src/multiconference.php");
     multiconference_fail(true);

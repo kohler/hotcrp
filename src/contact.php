@@ -221,7 +221,7 @@ class Contact {
 
         // Set user session
         if ($this->contactId)
-            $_SESSION["user"] = "$this->contactId " . $Opt["dsn"] . " $this->email";
+            $_SESSION["user"] = "$this->contactId $Conf->dsn $this->email";
         else
             unset($_SESSION["user"]);
         return $this;

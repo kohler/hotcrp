@@ -21,7 +21,7 @@ class Conference {
     private $rounds = null;
     private $tracks = null;
     private $_track_tags = null;
-    private $_session = null;
+    public $dsn = null;
 
     const BLIND_NEVER = 0;
     const BLIND_OPTIONAL = 1;
@@ -41,8 +41,8 @@ class Conference {
     function __construct($dsn) {
         global $Opt;
         // unpack dsn, connect to database, load current settings
-        if ($dsn)
-            list($this->dblink, $Opt["dbName"]) = self::connect_dsn($dsn);
+        if (($this->dsn = $dsn))
+            list($this->dblink, $Opt["dbName"]) = self::connect_dsn($this->dsn);
         if (!@$Opt["confid"])
             $Opt["confid"] = $Opt["dbName"];
         if ($this->dblink)
@@ -471,46 +471,27 @@ class Conference {
         return $r ? $r : 0;
     }
 
-    private function setup_session() {
-        global $Opt;
-        if (@$Opt["dsn"])
-            $this->_session = &$_SESSION[$Opt["dsn"]];
-        else
-            $this->_session = array();
-    }
-
     function session($name, $defval = null) {
-        if ($this->_session === null)
-            $this->setup_session();
-        if (isset($this->_session[$name]))
-            return $this->_session[$name];
+        if (isset($_SESSION[$this->dsn][$name]))
+            return $_SESSION[$this->dsn][$name];
         else
             return $defval;
     }
 
-    function &session_array($name) {
-        if ($this->_session === null)
-            $this->setup_session();
-        if (!is_array(@$this->_session[$name]))
-            $this->_session[$name] = array();
-        return $this->_session[$name];
-    }
-
     function save_session($name, $value) {
-        if ($this->_session === null)
-            $this->setup_session();
         if ($value !== null)
-            $this->_session[$name] = $value;
+            $_SESSION[$this->dsn][$name] = $value;
         else
-            unset($this->_session[$name]);
+            unset($_SESSION[$this->dsn][$name]);
     }
 
     function save_session_array($name, $index, $value) {
-        $sa = &$this->session_array($name);
+        if (!is_array(@$_SESSION[$this->dsn][$name]))
+            $_SESSION[$this->dsn][$name] = array();
         if ($index !== true)
-            $sa[$index] = $value;
+            $_SESSION[$this->dsn][$name][$index] = $value;
         else
-            $sa[] = $value;
+            $_SESSION[$this->dsn][$name][] = $value;
     }
 
     function capability_text($prow, $capType) {

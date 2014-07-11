@@ -15,7 +15,7 @@ class LoginHelper {
         unset($_SESSION["trueuser"]);
         // clear all conference session info, except maybe capabilities
         $capabilities = $Conf->session("capabilities");
-        unset($_SESSION[$Opt["dsn"]]);
+        unset($_SESSION[$Conf->dsn]);
         if (!isset($_REQUEST["signout"]) && $capabilities)
             $Conf->save_session("capabilities", $capabilities);
         if (isset($_REQUEST["signout"])) {

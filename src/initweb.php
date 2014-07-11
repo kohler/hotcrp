@@ -41,7 +41,7 @@ ensure_session();
 
 // Initialize user
 function initialize_user() {
-    global $Opt, $Me;
+    global $Conf, $Opt, $Me;
 
     // backwards compat: set $_SESSION["user"] from $_SESSION["Me"]
     if (!isset($_SESSION["user"]) && isset($_SESSION["Me"])) {
@@ -55,7 +55,7 @@ function initialize_user() {
     if (isset($_SESSION["user"]))
         $userwords = explode(" ", $_SESSION["user"]);
     $Me = null;
-    if (count($userwords) >= 2 && $userwords[1] == $Opt["dsn"])
+    if (count($userwords) >= 2 && $userwords[1] == $Conf->dsn)
         $Me = Contact::find_by_id($userwords[0]);
     else if (count($userwords) >= 3)
         $Me = Contact::find_by_email($userwords[2]);
