@@ -182,7 +182,7 @@ class DocumentHelper {
         if (isset($cols[$idcol]))
             $doc->$idcol = $cols[$idcol];
         else {
-            $doc->$idcol = $Conf->lastInsertId(false);
+            $doc->$idcol = $Conf->lastInsertId(true);
             if (!$doc->$idcol) {
                 set_error_html($doc, $Conf->db_error_html(true, $while));
                 $OK = false;

@@ -655,6 +655,10 @@ class Conference {
 
     function qe($query, $while = "", $suggestRetry = false) {
         global $OK;
+        if ($while || $suggestRetry) {
+            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+            error_log($backtrace[1]["file"] . ":" . $backtrace[1]["line"] . ": bad call to Conference::qe");
+        }
         $result = $this->dblink->query($query);
         if ($result === false) {
             if (PHP_SAPI == "cli")
@@ -666,14 +670,14 @@ class Conference {
         return $result;
     }
 
-    function lastInsertId($while = "", $suggestRetry = false) {
+    function lastInsertId($ignore_errors = false) {
         global $OK;
         $result = $this->dblink->insert_id;
-        if (!$result && $while !== false) {
+        if (!$result && !$ignore_errors) {
             if (PHP_SAPI == "cli")
-                fwrite(STDERR, $this->db_error_text($result === false, $while) . "\n");
+                fwrite(STDERR, $this->db_error_text($result === false) . "\n");
             else
-                $this->errorMsg($this->db_error_html($result === false, $while, $suggestRetry));
+                $this->errorMsg($this->db_error_html($result === false));
             $OK = false;
         }
         return $result;

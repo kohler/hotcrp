@@ -606,7 +606,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
             $Conf->errorMsg("Could not create paper.");
             return false;
         }
-        if (!($result = $Conf->lastInsertId("while creating paper")))
+        if (!($result = $Conf->lastInsertId()))
             return false;
         $paperId = $_REQUEST["p"] = $_REQUEST["paperId"] = $result;
     }

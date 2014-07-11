@@ -725,7 +725,7 @@ class Contact {
         $result = $Conf->ql("insert into ContactInfo ($qa) values ($qb)");
         if (!$result)
             return false;
-        $cid = (int) $Conf->lastInsertId("while creating contact");
+        $cid = (int) $Conf->lastInsertId();
         if (!$cid)
             return false;
 
