@@ -1075,6 +1075,7 @@ tr.pt_conflict_ass td.entry, tr.propass td.entry {
 span.asspref, span.asspref1, span.asspref-1 {
 	font-size: 69%;
 	font-weight: normal;
+	white-space: nowrap;
 }
 span.asspref1 {
 	color: #008000;
