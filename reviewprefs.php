@@ -64,7 +64,7 @@ function savePreferences($reviewer) {
 
     $q = array();
     for ($p = 1; $p <= $pmax; $p++)
-        if (($pref = @$setting[$p]) && ($pref[0] || $pref[1]))
+        if (($pref = @$setting[$p]) && ($pref[0] || $pref[1] !== null))
             $q[] = array($p, $reviewer, $pref[0], $pref[1]);
     PaperActions::save_review_preferences($q);
 
