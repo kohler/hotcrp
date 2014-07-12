@@ -853,7 +853,7 @@ class PaperSearch {
         // PC members can only search their own preferences; we enforce
         // this restriction below in clauseTermSetRevpref.
         $value = new SearchReviewValue($mx[0], $contacts, join(" and ", array_slice($mx, 1)));
-        $qt[] = new SearchTerm("revpref", 0, $value);
+        $qt[] = new SearchTerm("revpref", $this->privChair ? 0 : self::F_NONCONFLICT, $value);
     }
 
     private function _check_tag($tagword, $allow_star) {
