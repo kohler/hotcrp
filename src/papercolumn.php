@@ -688,7 +688,7 @@ class PreferencePaperColumn extends PaperColumn {
 
 class PreferenceListPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("allrevpref", Column::VIEW_ROW);
+        parent::__construct("allrevpref", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->contact->privChair)

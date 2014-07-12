@@ -1253,8 +1253,10 @@ if ($pl) {
     // Reviewers group
     if ($Me->canViewReviewerIdentity(true, null, null))
         displayOptionCheckbox("reviewers", 2, "Reviewers");
-    if ($Me->privChair)
+    if ($Me->privChair) {
+        displayOptionCheckbox("allrevpref", 2, "Review preferences");
         displayOptionCheckbox("pcconf", 2, "PC conflicts");
+    }
     if ($Me->isPC && $pl->any->lead)
         displayOptionCheckbox("lead", 2, "Discussion leads");
     if ($Me->isPC && $pl->any->shepherd)

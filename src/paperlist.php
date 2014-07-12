@@ -521,10 +521,10 @@ class PaperList extends BaseList {
             return "id title statusfull";
         case "s":
         case "acc":
-            return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
+            return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers allrevpref pcconf lead shepherd scores formulas";
         case "all":
         case "act":
-            return "sel id title statusfull revtype authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
+            return "sel id title statusfull revtype authors abstract tags tagreports topics collab reviewers allrevpref pcconf lead shepherd scores formulas";
         case "reviewerHome":
             $this->_default_linkto("review");
             return "id title revtype status";
@@ -532,16 +532,16 @@ class PaperList extends BaseList {
         case "lead":
         case "manager":
             $this->_default_linkto("review");
-            return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
+            return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers allrevpref pcconf lead shepherd scores formulas";
         case "rout":
             $this->_default_linkto("review");
-            return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
+            return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers allrevpref pcconf lead shepherd scores formulas";
         case "req":
             $this->_default_linkto("review");
-            return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
+            return "sel id title revtype revstat status authors abstract tags tagreports topics collab reviewers allrevpref pcconf lead shepherd scores formulas";
         case "reqrevs":
             $this->_default_linkto("review");
-            return "id title revdelegation revsubmitted revstat status authors abstract tags tagreports topics collab reviewers pcconf lead shepherd scores formulas";
+            return "id title revdelegation revsubmitted revstat status authors abstract tags tagreports topics collab reviewers allrevpref pcconf lead shepherd scores formulas";
         case "reviewAssignment":
             $this->_default_linkto("assign");
             return "id title revpref topicscore desirability assrev authors tags topics reviewers allrevpref authorsmatch collabmatch scores formulas";
@@ -1012,6 +1012,9 @@ class PaperList extends BaseList {
 
         if (!$this->_prepare())
             return null;
+        if (isset($options["fold"]))
+            foreach ($options["fold"] as $n => $v)
+                $this->viewmap->$n = $v;
 
         // get column list, check sort
         $field_list = $this->_list_columns($listname);

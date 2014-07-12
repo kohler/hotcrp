@@ -341,8 +341,10 @@ if ($reviewer > 0) {
         "&nbsp;", Ht::label("Automatically save assignments", "assrevimmediate"),
         "</span></div>\n",
         $paperList->text(($kind == "c" ? "conflict" : "reviewAssignment"),
-                         array("class" => "pltable_full", "header_links" => true,
-                               "nofooter" => true)),
+                         array("class" => "pltable_full",
+                               "header_links" => true,
+                               "nofooter" => true,
+                               "fold" => array("allrevpref" => true))),
         "<div class='aa'>",
         Ht::submit("update", "Save assignments", array("class" => "bb")),
         "</div></div></form></div>\n";
