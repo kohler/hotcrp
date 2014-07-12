@@ -774,7 +774,7 @@ class PaperSearch {
                         $qt[] = $t;
                         return false;
                     } else {
-                        $countexpr = ">=" . $m[1];
+                        $countexpr = (int) $m[1] ? ">=" . $m[1] : "=0";
                         $value = $field . $m[2] . $m[3];
                     }
                 }
@@ -831,7 +831,7 @@ class PaperSearch {
             $m[1] = "1";
         else if ($m[2] === "")
             list($m[1], $m[3]) = array("1", $m[1]);
-        $mx = array(">=" . $m[1]);
+        $mx = array((int) $m[1] ? ">=" . $m[1] : "=0");
         $compar = self::_cleanCompar($m[2]);
         if ($m[3] !== "")
             $mx[] = "preference" . $compar . $m[3];
