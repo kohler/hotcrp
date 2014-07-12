@@ -198,6 +198,9 @@ class Formula {
                 $rt = REVIEW_EXTERNAL;
             $e = FormulaExpr::make_agg("revtype", true, $rt);
             $t = $m[2];
+        } else if (preg_match('/\A(?:rev)?pref\b(.*)\z/s', $t, $m)) {
+            $e = FormulaExpr::make_agg("revpref", "revpref");
+            $t = $m[1];
         } else if (preg_match('/\A([a-zA-Z0-9_]+|\".*?\")(.*)\z/s', $t, $m)
                    && $m[1] !== "\"\"") {
             $field = $m[1];
@@ -281,8 +284,12 @@ class Formula {
 
         $t_looper = "\$ri_" . $state->lprefix;
         $indent = "\n" . str_pad("", $state->indent + 2);
-        $t_bound = self::_addnumscores($state);
-        $loop = "for ($t_looper = 0; $t_looper < $t_bound; ++$t_looper) {\n" . $indent . join($indent, $state->lstmt) . "\n" . str_pad("", $state->indent) . "}\n";
+        if ($e->args[0]->agg === true) {
+            $t_bound = self::_addnumscores($state);
+            $loop = "for ($t_looper = 0; $t_looper < $t_bound; ++$t_looper)";
+        } else
+            $loop = "foreach (\$prow->reviewer_preferences() as $t_looper)";
+        $loop .= " {" . $indent . join($indent, $state->lstmt) . "\n" . str_pad("", $state->indent) . "}\n";
 
         $state->lprefix = $save_lprefix;
         $state->lstmt = $save_lstmt;
@@ -333,6 +340,14 @@ class Formula {
             $state->queryOptions["scores"][$f->id] = true;
             $t_f = self::_addgtemp($state, "explode(',', \$prow->{$f->id}Scores)", "rev $f->id") . "[\$ri_" . $state->lprefix . "]";
             return "($t_f == 0 ? null : (int) $t_f)";
+        }
+
+        if ($op == "revpref") {
+            $view_score = $state->contact->viewReviewFieldsScore(null, true);
+            if (VIEWSCORE_PC <= $view_score)
+                return "null";
+            $state->queryOptions["allReviewerPreference"] = true;
+            return "\$ri_{$state->lprefix}[0]";
         }
 
         if ($op == "?:") {
@@ -451,7 +466,7 @@ class Formula {
         if ($op == "rf")
             return $e->args[0]->view_score;
 
-        if ($op == "revtype")
+        if ($op == "revtype" || $op == "revpref")
             return VIEWSCORE_PC;
 
         if ($op == "?:") {
