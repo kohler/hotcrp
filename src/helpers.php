@@ -1304,7 +1304,7 @@ function parse_preference($n) {
         if ($m[2] === "")
             $e = null;
         else
-            $e = (ord($m[2]) & 15) - 9;
+            $e = 9 - (ord($m[2]) & 15);
         return array($p, $e);
     } else if (strpos($n, "\xE2") !== false)
         // Translate UTF-8 for minus sign into a real minus sign ;)
@@ -1317,7 +1317,7 @@ function unparse_expertise($expertise) {
     if ($expertise === null)
         return "";
     else
-        return $expertise < 0 ? "X" : ($expertise == 0 ? "Y" : "Z");
+        return $expertise > 0 ? "X" : ($expertise == 0 ? "Y" : "Z");
 }
 
 function unparse_preference($preference, $expertise = null) {

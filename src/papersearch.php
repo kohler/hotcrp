@@ -836,7 +836,7 @@ class PaperSearch {
         if ($m[3] !== "")
             $mx[] = "preference" . $compar . $m[3];
         if ($m[4] !== "")
-            $mx[] = "expertise" . $compar . (ord(strtolower($m[4])) - 121);
+            $mx[] = "expertise" . $compar . (121 - ord(strtolower($m[4])));
 
         // since 0 preferences are not stored, we must negate the sense of the
         // comparison if a preference of 0 might match

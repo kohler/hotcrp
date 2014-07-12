@@ -633,4 +633,8 @@ function updateSchema($Conf) {
             }
         $Conf->save_setting("allowPaperOption", 76);
     }
+    if ($Conf->settings["allowPaperOption"] == 76
+        && $Conf->ql("update PaperReviewPreference set expertise=-expertise")
+        && $Conf->ql("update Settings set value=77 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 77;
 }

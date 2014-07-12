@@ -140,7 +140,7 @@ class Conference {
         }
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 76) {
+        if ($this->settings["allowPaperOption"] < 77) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
