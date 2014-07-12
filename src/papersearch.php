@@ -821,26 +821,33 @@ class PaperSearch {
             $word = ($m[2] == ":" ? $m[3] : $m[2] . $m[3]);
         }
 
-        if (ctype_digit($word))
-            $mx = array(">0", "=" . $word);
-        else if (preg_match('/\A(\d*)\s*([<>!]|[<>!=]?=)\s*(-?\d+)\z/s', $word, $m))
-            $mx = array($m[1] == "" ? ">0" : ">=$m[1]", self::_cleanCompar($m[2]) . $m[3]);
-        else {
+        if (!preg_match(',\A(\d*)\s*([<>!]|[<>!=]?=|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
+            || ($m[1] === "" && $m[3] === "" && $m[4] === "")) {
             $qt[] = new SearchTerm("f");
             return;
         }
 
+        if ($m[1] === "")
+            $m[1] = "1";
+        else if ($m[2] === "")
+            list($m[1], $m[3]) = array("1", $m[1]);
+        $mx = array(">=" . $m[1]);
+        $compar = self::_cleanCompar($m[2]);
+        if ($m[3] !== "")
+            $mx[] = "preference" . $compar . $m[3];
+        if ($m[4] !== "")
+            $mx[] = "expertise" . $compar . (ord(strtolower($m[4])) - 121);
+
         // since 0 preferences are not stored, we must negate the sense of the
         // comparison if a preference of 0 might match
         $scratch = new SearchReviewValue($mx[1]);
-        if ($scratch->test(0)) {
-            $mx[0] = SearchReviewValue::negateCountexpr($mx[0]);
-            $mx[1] = SearchReviewValue::negateCountexpr($mx[1]);
-        }
+        if ($scratch->test(0))
+            foreach ($mx as &$mxv)
+                $mxv = SearchReviewValue::negateCountexpr($mxv);
 
         // PC members can only search their own preferences; we enforce
         // this restriction below in clauseTermSetRevpref.
-        $value = new SearchReviewValue($mx[0], $contacts, "preference" . $mx[1]);
+        $value = new SearchReviewValue($mx[0], $contacts, join(" and ", array_slice($mx, 1)));
         $qt[] = new SearchTerm("revpref", 0, $value);
     }
 
