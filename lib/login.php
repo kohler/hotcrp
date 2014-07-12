@@ -19,7 +19,7 @@ class LoginHelper {
         if (!isset($_REQUEST["signout"]) && $capabilities)
             $Conf->save_session("capabilities", $capabilities);
         if (isset($_REQUEST["signout"])) {
-            unset($_SESSION["afterLogin"]);
+            unset($_SESSION["login_bounce"]);
             if (isset($Opt["httpAuthLogin"])) {
                 $_SESSION["reauth"] = true;
                 go("");
@@ -94,7 +94,7 @@ class LoginHelper {
             // set a cookie to test that their browser supports cookies
             $_SESSION["testsession"] = true;
             $url = "testsession=1";
-            foreach (array("email", "password", "action", "go", "afterLogin", "signin") as $a)
+            foreach (array("email", "password", "action", "go", "signin") as $a)
                 if (isset($_REQUEST[$a]))
                     $url .= "&$a=" . urlencode($_REQUEST[$a]);
             go("?" . $url);
@@ -163,17 +163,17 @@ class LoginHelper {
             $Conf->qe("update ContactInfo set password='" . sqlq($user->password) . "' where contactId=" . $user->cid);
         }
 
-        if (isset($_REQUEST["go"]))
-            $where = $_REQUEST["go"];
-        else if (isset($_SESSION["afterLogin"]))
-            $where = $_SESSION["afterLogin"];
-        else
-            $where = hoturl("index");
-
         $user = $user->activate();
         unset($_SESSION["testsession"]);
-        unset($_SESSION["afterLogin"]);
         $Conf->save_session("freshlogin", true);
+
+        if (isset($_REQUEST["go"]))
+            $where = $_REQUEST["go"];
+        else if (isset($_SESSION["login_bounce"])
+                 && $_SESSION["login_bounce"][0] == $Conf->dsn)
+            $where = $_SESSION["login_bounce"][1];
+        else
+            $where = hoturl("index");
         go($where);
         exit;
     }

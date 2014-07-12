@@ -8,7 +8,7 @@ require_once("src/initweb.php");
 require_once("src/papertable.php");
 if ($Me->is_empty())
     $Me->escape();
-$useRequest = false;
+$useRequest = isset($_REQUEST["after_login"]);
 foreach (array("emailNote", "reason") as $x)
     if (isset($_REQUEST[$x]) && $_REQUEST[$x] == "Optional explanation")
         unset($_REQUEST[$x]);

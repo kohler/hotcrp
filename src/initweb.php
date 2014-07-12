@@ -62,6 +62,18 @@ function initialize_user() {
     if (!$Me)
         $Me = new Contact;
     $Me = $Me->activate();
+
+    // if bounced through login, add post data
+    if (isset($_SESSION["login_bounce"]) && !$Me->is_empty()) {
+        $lb = $_SESSION["login_bounce"];
+        if ($lb[0] == $Conf->dsn && $lb[2] !== "index" && $lb[2] == Navigation::page()) {
+            foreach ($lb[3] as $k => $v)
+                if (!isset($_REQUEST[$k]))
+                    $_REQUEST[$k] = $_GET[$k] = $v;
+            $_REQUEST["after_login"] = 1;
+        }
+        unset($_SESSION["login_bounce"]);
+    }
 }
 
 global $Me;

@@ -118,9 +118,10 @@ class CommentView {
         if ($editMode) {
             echo Ht::form(hoturl_post("comment", "p=$prow->paperId&amp;c=" . ($crow ? $crow->commentId : "new")));
             if (!$crow && $foldnew)
-                echo "<div class='aahc foldc' id='foldaddcomment'>";
+                echo '<div class="aahc foldc" id="foldaddcomment">';
             else
-                echo "<div class='aahc'>";
+                echo '<div class="aahc">';
+            echo Ht::hidden("anchor", $crow ? "comment$crow->commentId" : "commentnew");
         }
 
         echo "<div";
@@ -245,10 +246,8 @@ class CommentView {
         $this->table_end();
 
         if ($editMode) {
-            echo "<form action='", hoturl_post("comment", "p=$prow->paperId" . ($crow ? "&amp;c=$crow->commentId" : "") . "&amp;response=1");
-            if ($crow)
-                echo "#comment$crow->commentId";
-            echo "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>\n";
+            echo Ht::form(hoturl_post("comment", "p=$prow->paperId" . ($crow ? "&amp;c=$crow->commentId" : "") . "&amp;response=1")),
+                '<div class="aahc">', Ht::hidden("anchor", "comment$crow->commentId");
         }
 
         $this->table_begin("response");

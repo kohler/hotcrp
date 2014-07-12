@@ -495,23 +495,14 @@ class Contact {
         }
 
         if ($this->is_empty()) {
-            // Preserve review form values and comments across session expiration.
-            $x = array("afterLogin" => 1, "blind" => 1);
-            $rf = ReviewForm::get(0); // check all review fields
-            foreach ($rf->fmap as $field => $f)
-                if (isset($_REQUEST[$field]))
-                    $x[$field] = $_REQUEST[$field];
-            foreach (array("comment", "visibility", "override", "plimit",
-                           "subject", "emailBody", "cc", "recipients",
-                           "replyto") as $k)
-                if (isset($_REQUEST[$k]))
-                    $x[$k] = $_REQUEST[$k];
+            // Preserve post values across session expiration.
+            $x = array();
             if (Navigation::path())
                 $x["__PATH__"] = preg_replace(",^/+,", "", Navigation::path());
-            // NB: selfHref automagically preserves common parameters like
-            // "p", "q", etc.
-            $_SESSION["afterLogin"] = selfHref($x, array("raw" => true,
-                                                         "site_relative" => true));
+            if (@$_REQUEST["anchor"])
+                $x["anchor"] = $_REQUEST["anchor"];
+            $url = selfHref($x, array("raw" => true, "site_relative" => true));
+            $_SESSION["login_bounce"] = array($Conf->dsn, $url, Navigation::page(), $_POST);
             error_go(false, "You must sign in to access that page.");
         } else
             error_go(false, "You don’t have permission to access that page.");

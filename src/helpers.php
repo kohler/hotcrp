@@ -256,8 +256,9 @@ function hoturl_site_relative($page, $options = null) {
             $t .= "/" . $m[2];
             $options = $m[1] . $m[3];
         }
+        $options = preg_replace('/&(?:amp;)?\z/', "", $options);
     }
-    if ($options && preg_match('/\A\&(?:amp;)?(.*)\z/', $options, $m))
+    if ($options && preg_match('/\A&(?:amp;)?(.*)\z/', $options, $m))
         $options = $m[1];
     if ($options)
         return $t . "?" . $options . $anchor;
