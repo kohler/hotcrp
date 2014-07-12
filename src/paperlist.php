@@ -544,7 +544,7 @@ class PaperList extends BaseList {
             return "id title revdelegation revsubmitted revstat status authors abstract tags tagreports topics collab reviewers allrevpref pcconf lead shepherd scores formulas";
         case "reviewAssignment":
             $this->_default_linkto("assign");
-            return "id title revpref topicscore desirability assrev authors tags topics reviewers allrevpref authorsmatch collabmatch scores formulas";
+            return "id title revpref topicscore desirability assrev authors tags topics reviewers allrevtopicpref authorsmatch collabmatch scores formulas";
         case "conflict":
             $this->_default_linkto("assign");
             return "selconf id title authors abstract tags authorsmatch collabmatch foldall";

@@ -687,14 +687,18 @@ class PreferencePaperColumn extends PaperColumn {
 }
 
 class PreferenceListPaperColumn extends PaperColumn {
-    public function __construct() {
-        parent::__construct("allrevpref", Column::VIEW_ROW | Column::FOLDABLE);
+    private $topics;
+    public function __construct($topics) {
+        $this->topics = $topics;
+        parent::__construct($topics ? "allrevtopicpref" : "allrevpref",
+                            Column::VIEW_ROW | Column::FOLDABLE);
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare($pl, &$qopts, $visible) {
         if (!$pl->contact->privChair)
             return false;
-        $queryOptions["allReviewerPreference"] = $queryOptions["topics"]
-            = $queryOptions["allConflictType"] = 1;
+        $qopts["allReviewerPreference"] = $qopts["allConflictType"] = 1;
+        if ($this->topics)
+            $queryOptions["topics"] = 1;
         return true;
     }
     public function header($pl, $row, $ordinal) {
@@ -705,13 +709,13 @@ class PreferenceListPaperColumn extends PaperColumn {
     }
     public function content($pl, $row) {
         $prefs = PaperList::_rowPreferences($row);
-        $text = "";
+        $ts = array();
         foreach (pcMembers() as $pcid => $pc)
             if (($pref = defval($prefs, $pcid, null))) {
-                $text .= ($text == "" ? "" : ", ")
-                    . Text::name_html($pc) . unparse_preference_span($pref);
+                $pref = $this->topics ? $pref : array_slice($pref, 0, 2);
+                $ts[] = Text::name_html($pc) . unparse_preference_span($pref);
             }
-        return $text;
+        return join(", ", $ts);
     }
 }
 
@@ -1318,7 +1322,8 @@ function initialize_paper_columns() {
     PaperColumn::register(new TopicListPaperColumn);
     PaperColumn::register(new PreferencePaperColumn("revpref", false));
     PaperColumn::register(new PreferencePaperColumn("editrevpref", true));
-    PaperColumn::register(new PreferenceListPaperColumn);
+    PaperColumn::register(new PreferenceListPaperColumn(false));
+    PaperColumn::register(new PreferenceListPaperColumn(true));
     PaperColumn::register(new DesirabilityPaperColumn);
     PaperColumn::register(new ReviewerListPaperColumn);
     PaperColumn::register(new AuthorsPaperColumn);

@@ -344,7 +344,7 @@ if ($reviewer > 0) {
                          array("class" => "pltable_full",
                                "header_links" => true,
                                "nofooter" => true,
-                               "fold" => array("allrevpref" => true))),
+                               "fold" => array("allrevtopicpref" => true))),
         "<div class='aa'>",
         Ht::submit("update", "Save assignments", array("class" => "bb")),
         "</div></div></form></div>\n";
