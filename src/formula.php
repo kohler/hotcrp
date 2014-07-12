@@ -201,6 +201,9 @@ class Formula {
         } else if (preg_match('/\A(?:rev)?pref\b(.*)\z/s', $t, $m)) {
             $e = FormulaExpr::make_agg("revpref", "revpref");
             $t = $m[1];
+        } else if (preg_match('/\A(?:rev)?prefexp(?:ertise)?\b(.*)\z/s', $t, $m)) {
+            $e = FormulaExpr::make_agg("revprefexp", "revpref");
+            $t = $m[1];
         } else if (preg_match('/\A([a-zA-Z0-9_]+|\".*?\")(.*)\z/s', $t, $m)
                    && $m[1] !== "\"\"") {
             $field = $m[1];
@@ -352,12 +355,12 @@ class Formula {
             return "($t_f == 0 ? null : (int) $t_f)";
         }
 
-        if ($op == "revpref") {
+        if ($op == "revpref" || $op == "revprefexp") {
             $view_score = $state->contact->viewReviewFieldsScore(null, true);
             if (VIEWSCORE_PC <= $view_score)
                 return "null";
             $state->queryOptions["allReviewerPreference"] = true;
-            return "\$ri_{$state->lprefix}[0]";
+            return "\$ri_{$state->lprefix}[" . ($op == "revpref" ? 0 : 1) . "]";
         }
 
         if ($op == "?:") {
@@ -476,7 +479,7 @@ class Formula {
         if ($op == "rf")
             return $e->args[0]->view_score;
 
-        if ($op == "revtype" || $op == "revpref")
+        if ($op == "revtype" || $op == "revpref" || $op == "revprefexp")
             return VIEWSCORE_PC;
 
         if ($op == "?:") {
