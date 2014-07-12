@@ -827,8 +827,7 @@ class AssignmentSet {
             $q .= "where r.paperId" . sql_in_numeric_set($papers);
             $nrev->papers = $papers;
         }
-        $result = $Conf->qe($q . " group by pc.contactId",
-                            "while counting reviews");
+        $result = $Conf->qe($q . " group by pc.contactId");
         while (($row = edb_row($result))) {
             $nrev->any[$row[0]] = strlen($row[1]);
             $nrev->pri[$row[0]] = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
