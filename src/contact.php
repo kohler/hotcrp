@@ -503,7 +503,10 @@ class Contact {
                 $x["anchor"] = $_REQUEST["anchor"];
             $url = selfHref($x, array("raw" => true, "site_relative" => true));
             $_SESSION["login_bounce"] = array($Conf->dsn, $url, Navigation::page(), $_POST);
-            error_go(false, "You must sign in to access that page.");
+            if (check_post())
+                error_go(false, "You’ve been logged out due to inactivity, so your changes have not been saved. After logging in, you may submit them again.");
+            else
+                error_go(false, "You must sign in to access that page.");
         } else
             error_go(false, "You don’t have permission to access that page.");
     }
