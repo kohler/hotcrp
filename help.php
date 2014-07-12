@@ -957,7 +957,7 @@ maximum reviewer expertise.</p>
 <p>The top-level value of a formula expression cannot be a raw review score.
 Use an aggregate function to calculate a property over all review scores.</p>");
     _alternateRow("", "max(<em>e</em>), min(<em>e</em>)", "Maximum, minimum");
-    _alternateRow("", "count(<em>e</em>)", "Number of reviews where <em>e</em> is not null");
+    _alternateRow("", "count(<em>e</em>)", "Number of reviews where <em>e</em> is not null or false");
     _alternateRow("", "sum(<em>e</em>)", "Sum");
     _alternateRow("", "avg(<em>e</em>)", "Average");
     _alternateRow("", "wavg(<em>e</em>, <em>weight</em>)", "Weighted average; equals “sum(<em>e</em> * <em>weight</em>) / sum(<em>weight</em>)”");

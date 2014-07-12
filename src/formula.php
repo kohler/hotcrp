@@ -389,7 +389,7 @@ class Formula {
             return self::_compilereviewloop($state, "null", "(~l~ !== null && (~r~ === null || ~l~ > ~r~) ? ~l~ : ~r~)", $e);
 
         if (count($e->args) == 1 && $op == "count")
-            return self::_compilereviewloop($state, "0", "(~l~ !== null ? ~r~ + 1 : ~r~)", $e);
+            return self::_compilereviewloop($state, "0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)", $e);
 
         if (count($e->args) == 1 && $op == "sum")
             return self::_compilereviewloop($state, "null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : ~l~) : ~r~)", $e);
