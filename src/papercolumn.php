@@ -35,6 +35,11 @@ class PaperColumn extends Column {
     public static function register_factory($prefix, $f) {
         self::$factories[] = array(strtolower($prefix), $f);
     }
+    public static function register_synonym($new_name, $old_name) {
+        $fdef = self::$by_name[$old_name];
+        assert($fdef && !isset(self::$by_name[$new_name]));
+        self::$by_name[$new_name] = $fdef;
+    }
 
     public function prepare($pl, &$queryOptions, $visible) {
         return true;
@@ -688,10 +693,9 @@ class PreferencePaperColumn extends PaperColumn {
 
 class PreferenceListPaperColumn extends PaperColumn {
     private $topics;
-    public function __construct($topics) {
+    public function __construct($name, $topics) {
         $this->topics = $topics;
-        parent::__construct($topics ? "allrevtopicpref" : "allrevpref",
-                            Column::VIEW_ROW | Column::FOLDABLE);
+        parent::__construct($name, Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$qopts, $visible) {
         if (!$pl->contact->privChair)
@@ -1321,9 +1325,13 @@ function initialize_paper_columns() {
     PaperColumn::register(new TopicScorePaperColumn);
     PaperColumn::register(new TopicListPaperColumn);
     PaperColumn::register(new PreferencePaperColumn("revpref", false));
+    PaperColumn::register_synonym("pref", "revpref");
     PaperColumn::register(new PreferencePaperColumn("editrevpref", true));
-    PaperColumn::register(new PreferenceListPaperColumn(false));
-    PaperColumn::register(new PreferenceListPaperColumn(true));
+    PaperColumn::register_synonym("editpref", "editrevpref");
+    PaperColumn::register(new PreferenceListPaperColumn("allrevpref", false));
+    PaperColumn::register_synonym("allpref", "allrevpref");
+    PaperColumn::register(new PreferenceListPaperColumn("allrevtopicpref", true));
+    PaperColumn::register_synonym("alltopicpref", "allrevtopicpref");
     PaperColumn::register(new DesirabilityPaperColumn);
     PaperColumn::register(new ReviewerListPaperColumn);
     PaperColumn::register(new AuthorsPaperColumn);

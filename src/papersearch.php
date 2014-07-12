@@ -561,7 +561,8 @@ class PaperSearch {
         return "\1" . ($ncm - 1) . "\1";
     }
 
-    private function _reviewerMatcher($word, $quoted, $pconly) {
+    private function _reviewerMatcher($word, $quoted, $pc_only,
+                                      $limited = false) {
         if (!$quoted && ($word == "" || strcasecmp($word, "pc") == 0))
             return array_keys(pcMembers());
         else if (!$quoted && strcasecmp($word, "me") == 0) {
@@ -577,7 +578,7 @@ class PaperSearch {
             $tag = strtolower($negtag ? substr($word, 1) : $word);
             if (isset($pctags[$tag])) {
                 $ids = self::_pcContactIdsWithTag($tag);
-                if ($negtag && $pconly)
+                if ($negtag && $pc_only)
                     return array_diff(array_keys(pcMembers()), $ids);
                 else if ($negtag)
                     return $this->add_contact_match("\2contactId" . sql_not_in_numeric_set($ids));
@@ -586,7 +587,10 @@ class PaperSearch {
             }
         }
 
-        return $this->add_contact_match(sqlq_for_like($word), $pconly);
+        if ($limited)
+            return array(-1);
+        else
+            return $this->add_contact_match(sqlq_for_like($word), $pc_only);
     }
 
     private function _one_pc_matcher($text, $quoted) {
@@ -817,7 +821,8 @@ class PaperSearch {
         $contacts = null;
         if (preg_match('/\A(.*?[^:=<>!])([:=<>!])(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
-            $contacts = $this->_reviewerMatcher($m[1], $quoted, true);
+            $contacts = $this->_reviewerMatcher($m[1], $quoted, true,
+                                                !$this->privChair);
             $word = ($m[2] == ":" ? $m[3] : $m[2] . $m[3]);
         }
 
@@ -1951,8 +1956,6 @@ class PaperSearch {
             $reviewtable = "PaperReviewPreference";
             if ($extrawhere)
                 $where[] = $extrawhere;
-            if (!$this->privChair)
-                $where[] = "PaperReviewPreference.contactId=$this->cid";
             $wheretext = "";
             if (count($where))
                 $wheretext = " where " . join(" and ", $where);
