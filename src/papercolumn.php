@@ -717,7 +717,8 @@ class PreferenceListPaperColumn extends PaperColumn {
         foreach (pcMembers() as $pcid => $pc)
             if (($pref = defval($prefs, $pcid, null))) {
                 $pref = $this->topics ? $pref : array_slice($pref, 0, 2);
-                $ts[] = Text::name_html($pc) . unparse_preference_span($pref);
+                if (($pspan = unparse_preference_span($pref)) !== "")
+                    $ts[] = Text::name_html($pc) . $pspan;
             }
         return join(", ", $ts);
     }

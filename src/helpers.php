@@ -1348,7 +1348,9 @@ function unparse_preference_span($preference, $topicInterestScore = 0) {
         $t .= " ";
     if ($topicInterestScore)
         $t .= "T" . decorateNumber($topicInterestScore);
-    return " <span class='asspref$type'>$t</span>";
+    if ($t !== "")
+        $t = " <span class='asspref$type'>$t</span>";
+    return $t;
 }
 
 function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
