@@ -258,6 +258,14 @@ class Formula {
         return "\$numScores";
     }
 
+    static function _addreviewprefs($state) {
+        if (!isset($state->gtmp["allrevprefs"])) {
+            $state->gtmp["allrevprefs"] = "\$allrevprefs";
+            $state->gstmt[] = "\$allrevprefs = (\$forceShow || \$contact->canViewReview(\$prow, null, false) ? \$prow->reviewer_preferences() : array());";
+        }
+        return "\$allrevprefs";
+    }
+
     static function _compilereviewloop($state, $initial_value, $combiner, $e,
                                        $type = "int") {
         $t_result = self::_addltemp($state, $initial_value, true);
@@ -287,8 +295,10 @@ class Formula {
         if ($e->args[0]->agg === true) {
             $t_bound = self::_addnumscores($state);
             $loop = "for ($t_looper = 0; $t_looper < $t_bound; ++$t_looper)";
-        } else
-            $loop = "foreach (\$prow->reviewer_preferences() as $t_looper)";
+        } else {
+            $t_bound = self::_addreviewprefs($state);
+            $loop = "foreach ($t_bound as $t_looper)";
+        }
         $loop .= " {" . $indent . join($indent, $state->lstmt) . "\n" . str_pad("", $state->indent) . "}\n";
 
         $state->lprefix = $save_lprefix;
