@@ -1380,8 +1380,9 @@ function initialize_paper_columns() {
             FormulaPaperColumn::register($formula);
             $paperListFormulas[$fid] = $row;
         }
-        if ($formula)
-            PaperColumn::register_factory("", $formula);
+        if (!$formula)
+            $formula = new FormulaPaperColumn("", null);
+        PaperColumn::register_factory("", $formula);
     }
 
     $tagger = new Tagger;
