@@ -897,7 +897,7 @@ function showformulas() {
     global $Conf, $Me;
 
     echo "<table>";
-    _alternateRow("Formulas basics", "
+    _alternateRow("Formula basics", "
 Program committee members and administrators can display <em>formulas</em>
 that calculate properties of paper scores&mdash;for instance, the
 standard deviation of papers’ Overall merit scores, or average Overall
@@ -919,7 +919,14 @@ weights low expertise just slightly less than high expertise.</p>
 
 <blockquote>wavg(OveMer, RevExp < 3 ? 0.8 : 1)</blockquote>
 
-<p>Formulas do not work well for alphabetical scores.</p>
+<p>Formulas work better for numeric scores, but you can use them
+for alphabetical scores; for instance, this should work (assuming a
+Confidence score with choices X, Y, and Z):</p>
+
+<blockquote>count(confidence=X)</blockquote>
+
+<p>You can also name a formula as part of a search.
+For example, search for <a href=\"" . hoturl("search", "q=show%3Amax%28OveMer%29") . "\">show:max(OveMer)</a>.</p>
 
 <p>Formula expressions are built from the following parts:</p>");
     _alternateRow("Arithmetic", "2", "Numbers");
@@ -943,6 +950,8 @@ weights low expertise just slightly less than high expertise.</p>
     _alternateRow("", "isprimary", "True for primary reviews");
     _alternateRow("", "issecondary", "True for secondary reviews");
     _alternateRow("", "isexternal", "True for external reviews");
+    _alternateRow("Review preferences", "pref", "Review preference");
+    _alternateRow("", "prefexp", "Predicted expertise");
     _alternateRow("Aggregate functions", "Aggregate functions calculate a
 value based on all of a paper’s visible reviews.  For instance,
 “max(OveMer)” would return the maximum Overall merit score
