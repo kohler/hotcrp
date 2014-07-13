@@ -116,49 +116,24 @@ class BaseList {
     }
 
     public static function parse_sorter($text) {
-        $sort = (object) array("type" => null,
-                               "reverse" => false,
-                               "score" => self::default_score_sort(),
-                               "empty" => $text == "");
-
         // parse the sorter
         $text = simplify_whitespace($text);
-        if (preg_match('/\A(\d+)([a-z]*)\z/i', $text, $parts)
-            || preg_match('/\A([^,+#]+)[,+#]([a-z]*)\z/i', $text, $parts))
-            /* ok */;
-        else {
-            $parts = array("", $text, "");
-            self::check_sorter($text, $parts, "reversed?", "R");
-            if (preg_match('/\A(|.*\s)by (.*)\z/', $text, $m))
-                list($text, $bytext, $hasby) = array($m[1], $m[2], "by ");
-            else
-                list($text, $bytext, $hasby) = array("", $text, "");
-            self::check_sorter($bytext, $parts, "counts?", "C");
-            self::check_sorter($bytext, $parts, "(?:av|ave|average)", "A");
-            self::check_sorter($bytext, $parts, "(?:med|median)", "E");
-            self::check_sorter($bytext, $parts, "(?:var|variance)", "V");
-            self::check_sorter($bytext, $parts, "(?:max-min)", "D");
-            self::check_sorter($bytext, $parts, "(?:my|my score)", "Y");
-            if ($bytext)
-                $text = simplify_whitespace($text . $hasby . $bytext);
-            $parts[1] = $text;
-        }
-
-        // generate the sorter
-        if (isset($parts[1]))
-            $sort->type = $parts[1];
-        if (isset($parts[2]) && $parts[2] != "")
-            for ($i = 0; $i < strlen($parts[2]); ++$i) {
-                $x = strtoupper($parts[2][$i]);
-                if ($x == "R")
-                    $sort->reverse = true;
-                else if ($x == "N")
-                    $sort->reverse = false;
-                else if ($x == "M")
+        if (preg_match('/\A(\d+)([a-z]*)\z/i', $text, $m)
+            || preg_match('/\A([^,+#]+)[,+#]([a-z]*)\z/i', $text, $m)) {
+            $sort = (object) array("type" => $m[1], "reverse" => false,
+                                   "score" => null, "empty" => false);
+            foreach (str_split(strtoupper($m[2])) as $x)
+                if ($x === "R" || $x === "N")
+                    $sort->reverse = $x === "R";
+                else if ($x === "M")
                     $sort->score = "C";
                 else if (isset(self::$score_sorts[$x]))
                     $sort->score = $x;
-            }
+        } else
+            $sort = PaperSearch::parse_sorter($text);
+
+        if ($sort->score === null)
+            $sort->score = self::default_score_sort();
         return $sort;
     }
 

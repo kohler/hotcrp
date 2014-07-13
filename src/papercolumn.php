@@ -940,9 +940,10 @@ class EditTagPaperColumn extends TagPaperColumn {
                  . Ht::hidden("p") . Ht::hidden("addtags")
                  . Ht::hidden("deltags") . "</div></form>",
                  "edittagajaxform");
-            if (("edit" . $pl->sorter->type == $this->name
-                 || $pl->sorter->type == $this->name)
-                && !$pl->sorter->reverse
+            $sorter = @$pl->sorters[0];
+            if (("edit" . $sorter->type == $this->name
+                 || $sorter->type == $this->name)
+                && !$sorter->reverse
                 && !$pl->search->thenmap
                 && $this->is_value)
                 $Conf->footerScript("add_edittag_ajax('$this->dtag')");
@@ -1015,12 +1016,12 @@ class ScorePaperColumn extends PaperColumn {
         foreach ($rows as $row)
             if ($pl->contact->canViewReview($row, $view_score, null))
                 $pl->score_analyze($row, $scoreName, $this->max_score,
-                                   $pl->sorter->score);
+                                   $pl->sorters[0]->score);
             else
                 $pl->score_reset($row);
         $this->_textual_sort =
-            ($pl->sorter->score == "M" || $pl->sorter->score == "C"
-             || $pl->sorter->score == "Y");
+            ($pl->sorters[0]->score == "M" || $pl->sorters[0]->score == "C"
+             || $pl->sorters[0]->score == "Y");
     }
     public function score_sorter($a, $b) {
         if ($this->_textual_sort)

@@ -325,6 +325,8 @@ class PaperSearch {
 
     private $_matchTable = null;
 
+    static private $_sort_keywords = null;
+
     function __construct($me, $opt) {
         global $Conf;
         if (is_string($opt))
@@ -1094,6 +1096,75 @@ class PaperSearch {
         }
     }
 
+    static private function find_end_balanced_parens($str) {
+        $pcount = 0;
+        for ($pos = 0; $pos < strlen($str)
+                 && (!ctype_space($str[$pos]) || $pcount); ++$pos)
+            if ($str[$pos] === "(")
+                ++$pcount;
+            else if ($str[$pos] === ")")
+                --$pcount;
+        return $pos;
+    }
+
+    static public function parse_sorter($text) {
+        if (!self::$_sort_keywords)
+            self::$_sort_keywords =
+                array("by" => "by", "up" => "up", "down" => "down",
+                      "reverse" => "down", "reversed" => "down",
+                      "count" => "C", "counts" => "C", "av" => "A",
+                      "ave" => "A", "average" => "A", "med" => "E",
+                      "median" => "E", "var" => "V", "variance" => "V",
+                      "max-min" => "D", "my" => "Y", "score" => "");
+
+        $text = simplify_whitespace($text);
+        $sort = (object) array("type" => null, "field" => null, "reverse" => null,
+                               "score" => null, "empty" => $text == "");
+
+        // separate text into words
+        $words = array();
+        $bypos = false;
+        while ($text !== "") {
+            preg_match(',\A([^\s\(]*)(.*)\z,s', $text, $m);
+            if ($m[2] !== "" && $m[2][0] === "(") {
+                $pos = self::find_end_balanced_parens($m[2]);
+                $m[1] .= substr($m[2], 0, $pos);
+                $m[2] = substr($m[2], $pos);
+            }
+            $words[] = $m[1];
+            $text = ltrim($m[2]);
+            if ($m[1] == "by" && $bypos === false)
+                $bypos = count($words) - 1;
+        }
+
+        // go over words
+        $next_words = array();
+        for ($i = 0; $i != count($words); ++$i) {
+            $w = $words[$i];
+            if (($bypos === false || $pos > $bypos)
+                && isset(self::$_sort_keywords[$w])) {
+                $x = self::$_sort_keywords[$w];
+                if ($x === "up")
+                    $sort->reverse = false;
+                else if ($x === "down")
+                    $sort->reverse = true;
+                else if (ctype_upper($x))
+                    $sort->score = $x;
+            } else if ($bypos === false || $pos < $bypos)
+                $next_words[] = $w;
+        }
+
+        if (count($next_words))
+            $sort->type = join(" ", $next_words);
+        return $sort;
+    }
+
+    public static function combine_sorters($a, $b) {
+        foreach (array("type", "reverse", "score", "field") as $k)
+            if ($a->$k === null)
+                $a->$k = $b->$k;
+    }
+
     function _searchQueryWord($word, $report_error) {
         global $searchKeywords, $Conf;
 
@@ -1278,8 +1349,8 @@ class PaperSearch {
             if (preg_match('/\A(.*?)[#]/', $wtype, $m))
                 $wtype = $m[1];
             else if ($sorting) {
-                $wtype = preg_replace('/(?:\A|\s)(?:rev|reversed?|by|av|ave|average|median|var|variance|counts?|max-min|my|my score)(?:\z|\s)/', " ", $wtype);
-                $wtype = simplify_whitespace($wtype);
+                $sort = self::parse_sorter($wtype);
+                $wtype = $sort->type;
             }
             if ($wtype != "" && $keyword != "sort")
                 $views[$wtype] = $a;
@@ -1339,13 +1410,9 @@ class PaperSearch {
             && ($keyword = substr($word, 0, $colon)) !== ""
             && ($keyword = @$searchKeywords[$keyword])
             && substr($word, $colon + 1, 1) !== "\""
-            && ($keyword === "show" || $keyword === "showsort")) {
-            $pcount = 1;
-            for ($pos = 1; $pos < strlen($str) && (!ctype_space($str[$pos]) || $pcount); ++$pos)
-                if ($str[$pos] === "(")
-                    ++$pcount;
-                else if ($str[$pos] === ")")
-                    --$pcount;
+            && ($keyword === "show" || $keyword === "showsort"
+                || $keyword === "sort")) {
+            $pos = self::find_end_balanced_parens($str);
             $word .= substr($str, 0, $pos);
             $str = substr($str, $pos);
         }
