@@ -89,7 +89,7 @@ class FormulaExpr {
 
 class Formula {
 
-    const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|[=!]=|<[<=]?|>[>=]?)/';
+    const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|=|[=!]=|<[<=]?|>[>=]?)/';
 
     private static $_operators = array(
         "**" => 12,
@@ -251,12 +251,12 @@ class Formula {
                 || !preg_match(self::BINARY_OPERATOR_REGEX, $t, $m))
                 return $e;
 
-            $op = $m[0];
+            $op = $m[0] === "=" ? "==" : $m[0];
             $opprec = self::$_operators[$op];
             if ($opprec < $level)
                 return $e;
 
-            $t = substr($t, strlen($op));
+            $t = substr($t, strlen($m[0]));
             if (!($e2 = self::_parse_expr($t, $opprec == 12 ? $opprec : $opprec + 1)))
                 return null;
 
