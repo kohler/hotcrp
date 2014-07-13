@@ -1267,7 +1267,7 @@ class PaperSearch {
             $a = ($keyword == "hide" ? false : ($editing ? "edit" : true));
             $word = simplify_whitespace($word);
             if ($word[0] == "-")
-                list($a, $w) = array(false, substr($word, 1));
+                list($a, $word) = array(false, substr($word, 1));
             if ($word[0] == "#") {
                 if ($editing)
                     $word = "tagval:" . substr($word, 1);
