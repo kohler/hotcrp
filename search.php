@@ -419,25 +419,11 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
 // download text author information for selected papers
 if ($getaction == "authors" && isset($papersel)
     && ($Me->privChair || ($Me->isPC && !$Conf->subBlindAlways()))) {
-    $idq = paperselPredicate($papersel, "Paper.");
-    $join = "";
-    if (!$Me->privChair) {
-        if ($Conf->subBlindOptional())
-            $idq = "($idq) and blind=0";
-        else if ($Conf->subBlindUntilReview()) {
-            $idq = "($idq) and MyReview.reviewSubmitted>0";
-            $qb = "";
-            if ($Me->review_tokens())
-                $qb = " or MyReview.reviewToken in (" . join(",", $Me->review_tokens()) . ")";
-            $join = " left join PaperReview MyReview on (MyReview.paperId=Paper.paperId and (MyReview.contactId=$Me->contactId$qb))";
-        }
-    }
-
     // first fetch contacts if chair
     $contactline = array();
     if ($Me->privChair) {
-        $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where $idq");
-        while (($row = PaperInfo::fetch($result, $Me))) {
+        $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where Paper.paperId" . sql_in_numeric_set($papersel));
+        while (($row = edb_orow($result))) {
             $key = $row->paperId . " " . $row->email;
             if ($row->firstName && $row->lastName)
                 $a = $row->firstName . " " . $row->lastName;
@@ -447,48 +433,45 @@ if ($getaction == "authors" && isset($papersel)
         }
     }
 
-    // first fetch authors
-    $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper$join where $idq");
-    if ($result) {
-        $texts = array();
-        while (($row = PaperInfo::fetch($result, $Me))) {
-            cleanAuthor($row);
-            foreach ($row->authorTable as $au) {
-                if ($au[0] && $au[1])
-                    $a = $au[0] . " " . $au[1];
-                else
-                    $a = $au[0] . $au[1];
-                $line = array($row->paperId, $row->title, $a, $au[2], $au[3]);
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)));
+    $texts = array();
+    while (($prow = PaperInfo::fetch($result, $Me))) {
+        if (!$Me->canViewAuthors($prow, true))
+            continue;
+        cleanAuthor($prow);
+        foreach ($prow->authorTable as $au) {
+            if ($au[0] && $au[1])
+                $a = $au[0] . " " . $au[1];
+            else
+                $a = $au[0] . $au[1];
+            $line = array($prow->paperId, $prow->title, $a, $au[2], $au[3]);
 
-                if ($Me->privChair) {
-                    $key = $au[2] ? $row->paperId . " " . $au[2] : "XXX";
-                    if (isset($contactline[$key])) {
-                        unset($contactline[$key]);
-                        $line[] = "contact_author";
-                    } else
-                        $line[] = "author";
-                }
-
-                arrayappend($texts[$paperselmap[$row->paperId]], $line);
-                if ($au[2])
-                    $authormap[$row->paperId . " " . $au[2]] = true;
+            if ($Me->privChair) {
+                $key = $au[2] ? $prow->paperId . " " . $au[2] : "XXX";
+                if (isset($contactline[$key])) {
+                    unset($contactline[$key]);
+                    $line[] = "contact_author";
+                } else
+                    $line[] = "author";
             }
+
+            arrayappend($texts[$paperselmap[$prow->paperId]], $line);
+        }
+    }
+
+    // If chair, append the remaining non-author contacts
+    if ($Me->privChair)
+        foreach ($contactline as $key => $line) {
+            $paperId = (int) $key;
+            arrayappend($texts[$paperselmap[$paperId]], $line);
         }
 
-        // If chair, append the remaining non-author contacts
-        if ($Me->privChair)
-            foreach ($contactline as $key => $line) {
-                $paperId = (int) $key;
-                arrayappend($texts[$paperselmap[$paperId]], $line);
-            }
-
-        ksort($texts);
-        $header = array("paper", "title", "name", "email", "affiliation");
-        if ($Me->privChair)
-            $header[] = "type";
-        downloadCSV($texts, $header, "authors");
-        exit;
-    }
+    ksort($texts);
+    $header = array("paper", "title", "name", "email", "affiliation");
+    if ($Me->privChair)
+        $header[] = "type";
+    downloadCSV($texts, $header, "authors");
+    exit;
 }
 
 
