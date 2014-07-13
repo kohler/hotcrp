@@ -31,6 +31,7 @@ class FormulaExpr {
     public $agg;
     public $args = array();
     public $text;
+    public $format = null;
 
     public function __construct($op, $agg = false) {
         $this->op = $op;
@@ -54,6 +55,35 @@ class FormulaExpr {
         for ($i = 2; $i < count($args); ++$i)
             $e->add($args[$i]);
         return $e;
+    }
+    public function set_format() {
+        foreach ($this->args as $a)
+            if ($a instanceof FormulaExpr)
+                $a->set_format();
+        if ($this->op === "revprefexp")
+            $this->format = "revprefexp";
+        else if ($this->op === "rf")
+            $this->format = $this->args[0];
+        else if (($this->op === "max" || $this->op === "min"
+                  || $this->op === "avg" || $this->op === "wavg")
+                 && count($this->args) >= 1
+                 && $this->args[0] instanceof FormulaExpr)
+            $this->format = $this->args[0]->format;
+        else if ($this->op === "greatest" || $this->op === "least"
+                 || $this->op === "?:") {
+            $this->format = false;
+            for ($i = ($this->op === "?:" ? 1 : 0); $i < count($this->args); ++$i) {
+                $a = $this->args[$i];
+                if ($a instanceof FormulaExpr
+                    && ($this->format === false || $this->format === $a->format))
+                    $this->format = $a->format;
+                else
+                    $this->format = null;
+            }
+            if ($this->format === false)
+                $this->format = null;
+        } else
+            $this->format = null;
     }
 }
 
@@ -81,25 +111,24 @@ class Formula {
         global $Conf;
         $in_text = $t;
         $e = self::_parse_ternary($t);
-        if ($t !== "") {
-            if (!$noErrors)
-                $Conf->errorMsg("Illegal expression: parse error at “" . htmlspecialchars($t) . "”.");
-            return null;
-        } else if (!$e) {
-            if (!$noErrors)
-                $Conf->errorMsg("Illegal expression: parse error at end of expression.");
-            return null;
-        } else if ($e->agg) {
-            if (!$noErrors && $e->agg === "mix")
-                $Conf->errorMsg("Illegal expression: can’t mix scores and preferences, use an aggregate function.");
-            else if (!$noErrors)
-                $Conf->errorMsg("Illegal expression: can’t return a raw score, use an aggregate function.");
-            return null;
-        } else {
-            //$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars(var_export($e, true)))));
+        $errors = array();
+        if ($t !== "")
+            $errors[] = "Illegal expression: parse error at “" . htmlspecialchars($t) . "”.";
+        else if (!$e)
+            $errors[] = "Parse error at end of expression.";
+        else if ($e->agg === "mix")
+            $errors[] = "Illegal expression: can’t mix scores and preferences in the same aggregate function.";
+        else if ($e->agg)
+            $errors[] = "Illegal expression: can’t return a raw score, use an aggregate function.";
+        else {
+            //$Conf->infoMsg(Ht::pre_text($e));
             $e->text = $in_text;
-            return $e;
+            $e->set_format();
         }
+        if (!$noErrors)
+            foreach ($errors as $e)
+                $Conf->errorMsg($e);
+        return count($errors) ? null : $e;
     }
 
     static function _parse_ternary(&$t) {
@@ -436,6 +465,7 @@ class Formula {
         global $Conf;
         $state = new FormulaCompileState($contact);
         $expr = self::_compile($state, $e);
+
         $t = join("\n  ", $state->gstmt)
             . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
             . join("\n  ", $state->lstmt) . "\n"
@@ -445,9 +475,21 @@ class Formula {
       return "";
     else if ($x === true)
       return "&#x2713;";
-    else
-      return round($x * 100) / 100;
-  } else if ($format == "s")
+    else';
+
+        // HTML format for output depends on type of output
+        if ($e->format === "revprefexp")
+            $t .= "\n      "
+                . 'return ReviewField::unparse_letter(91, $x + 2);';
+        else if ($e->format instanceof ReviewField
+                 && $e->format->option_letter)
+            $t .= "\n      "
+                . 'return ReviewField::unparse_letter(' . $e->format->option_letter . ', $x);';
+        else
+            $t .= "\n      "
+                . 'return round($x * 100) / 100;';
+
+        $t .= "\n" . '  } else if ($format == "s")
     return ($x === true ? 1 : $x);
   else
     return $x;' . "\n";

@@ -171,20 +171,23 @@ class ReviewField {
             return $x;
     }
 
+    static public function unparse_letter($option_letter, $value) {
+        $ivalue = (int) $value;
+        $ch = $option_letter - $ivalue;
+        if ($value < $ivalue + 0.25)
+            return chr($ch);
+        else if ($value < $ivalue + 0.75)
+            return chr($ch - 1) . chr($ch);
+        else
+            return chr($ch - 1);
+    }
+
     public function unparse_average($value) {
         assert($this->has_options);
         if (!$this->option_letter)
             return sprintf("%0.2f", $value);
-        else {
-            $ivalue = (int) $value;
-            $ch = $this->option_letter - $ivalue;
-            if ($value < $ivalue + 0.25)
-                return chr($ch);
-            else if ($value < $ivalue + 0.75)
-                return chr($ch - 1) . chr($ch);
-            else
-                return chr($ch - 1);
-        }
+        else
+            return self::unparse_letter($this->option_letter, $value);
     }
 
     public function unparse_graph($v, $style, $myscore) {
