@@ -1311,14 +1311,14 @@ class PaperSearch {
         $wordre = '/\A-?"[^"]*"?|\A-?[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?[^\s()]*|\A[^"\s()]+/s';
 
         preg_match($wordre, $str, $m);
-        $str = ltrim(substr($str, strlen($m[0])));
+        $str = substr($str, strlen($m[0]));
         $word = $m[0];
 
         // commas in paper number strings turn into separate words
         if (preg_match('/\A(#?\d+(?:-#?\d+)?),((?:#?\d+(?:-#?\d+)?,?)*)\z/', $word, $m)) {
             $word = $m[1];
             if ($m[2] != "")
-                $str = $m[2] . ($str == "" ? "" : " " . $str);
+                $str = $m[2] . $str;
         }
 
         // allow a space after a keyword
@@ -1328,11 +1328,29 @@ class PaperSearch {
                 && strlen($word) <= $colon + 1) {
                 if (preg_match($wordre, $str, $m)) {
                     $word .= $m[0];
-                    $str = ltrim(substr($str, strlen($m[0])));
+                    $str = substr($str, strlen($m[0]));
                 }
             }
         }
 
+        // "show:" may be followed by a parenthesized expression
+        $keyword = ($colon !== false ? substr($word, $colon) : "");
+        if (substr($str, 0, 1) === "(" && $colon !== false
+            && ($keyword = substr($word, 0, $colon)) !== ""
+            && ($keyword = @$searchKeywords[$keyword])
+            && substr($word, $colon + 1, 1) !== "\""
+            && ($keyword === "show" || $keyword === "showsort")) {
+            $pcount = 1;
+            for ($pos = 1; $pos < strlen($str) && (!ctype_space($str[$pos]) || $pcount); ++$pos)
+                if ($str[$pos] === "(")
+                    ++$pcount;
+                else if ($str[$pos] === ")")
+                    --$pcount;
+            $word .= substr($str, 0, $pos);
+            $str = substr($str, $pos);
+        }
+
+        $str = ltrim($str);
         return $word;
     }
 

@@ -496,3 +496,25 @@ class Formula {
     }
 
 }
+
+class FormulaInfo {
+    public $name;
+    public $heading = "";
+    public $headingTitle = "";
+    public $expression;
+    public $authorView;
+
+    public function __construct($name, $fexpr) {
+        global $Me;
+        $this->name = $name;
+        if (is_string($fexpr))
+            $fexpr = Formula::parse($fexpr, true);
+        if (!$fexpr) {
+            $this->expression = "";
+            $this->authorView = VIEWSCORE_FALSE;
+        } else {
+            $this->expression = $fexpr->text;
+            $this->authorView = Formula::expression_view_score($fexpr, $Me);
+        }
+    }
+}

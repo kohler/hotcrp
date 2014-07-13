@@ -1073,6 +1073,13 @@ class FormulaPaperColumn extends PaperColumn {
         foreach (self::$registered as $col)
             if ($col->formula->name == $name)
                 return $col;
+        if (strpos($name, "(") !== false
+            && ($fexpr = Formula::parse($name, true))) {
+            $fdef = new FormulaPaperColumn("formulax" . (count(self::$registered) + 1),
+                                           new FormulaInfo($name, $fexpr));
+            self::register($fdef);
+            return $fdef;
+        }
         return null;
     }
     public function prepare($pl, &$queryOptions, $visible) {
