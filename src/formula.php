@@ -85,6 +85,41 @@ class FormulaExpr {
         } else
             $this->format = null;
     }
+    private function _resolve_using($e) {
+        $word = $this->args[0];
+        if (!($e instanceof FormulaExpr) || ($x = $e->resolve_scores()))
+            return $word;
+        $e->set_format();
+        if ($e->format === "revprefexp" && $word >= "X" && $word <= "Z") {
+            $this->op = "";
+            $this->args[0] = 89 - ord($word);
+            return false;
+        } else if ($e->format instanceof ReviewField
+                   && ($x = $e->format->parse_value($word, true))) {
+            $this->op = "";
+            $this->args[0] = $x;
+            return false;
+        } else
+            return $word;
+    }
+    public function resolve_scores() {
+        // comparison operators help us resolve
+        if (preg_match(',\A[<>=!]=?\z,', $this->op)
+            && count($this->args) === 2) {
+            list($a0, $a1) = $this->args;
+            if ($a0 instanceof FormulaExpr && $a0->op === "??")
+                $a0->_resolve_using($a1);
+            if ($a1 instanceof FormulaExpr && $a1->op === "??")
+                $a1->_resolve_using($a0);
+        }
+
+        if ($this->op === "??")
+            return $this->args[0];
+        foreach ($this->args as $a)
+            if ($a instanceof FormulaExpr && ($x = $a->resolve_scores()))
+                return $x;
+        return false;
+    }
 }
 
 class Formula {
@@ -107,25 +142,26 @@ class Formula {
         "?:" => 0
     );
 
-    static function parse($t, $noErrors = false) {
+    static function parse($t, $no_errors = false) {
         global $Conf;
         $in_text = $t;
         $e = self::_parse_ternary($t);
         $errors = array();
-        if ($t !== "")
-            $errors[] = "Illegal expression: parse error at “" . htmlspecialchars($t) . "”.";
-        else if (!$e)
-            $errors[] = "Parse error at end of expression.";
-        else if ($e->agg === "mix")
-            $errors[] = "Illegal expression: can’t mix scores and preferences in the same aggregate function.";
+        if ($t !== "" || !$e) {
+            $prefix = substr($in_text, 0, strlen($in_text) - strlen($t));
+            $errors[] = "Parse error in formula “" . htmlspecialchars($prefix) . "&nbsp;<span style='color:red'>&larr;</span>&nbsp;" . htmlspecialchars(substr($in_text, strlen($prefix))) . "”.";
+        } else if ($e->agg === "mix")
+            $errors[] = "Illegal formula: can’t mix scores and preferences in the same aggregate function.";
         else if ($e->agg)
-            $errors[] = "Illegal expression: can’t return a raw score, use an aggregate function.";
+            $errors[] = "Illegal formula: can’t return a raw score, use an aggregate function.";
+        else if (($x = $e->resolve_scores()))
+            $errors[] = "Illegal formula: can’t resolve “" . htmlspecialchars($x) . "” to a score.";
         else {
             //$Conf->infoMsg(Ht::pre_text($e));
             $e->text = $in_text;
             $e->set_format();
         }
-        if (!$noErrors)
+        if (!$no_errors)
             foreach ($errors as $e)
                 $Conf->errorMsg($e);
         return count($errors) ? null : $e;
@@ -237,12 +273,15 @@ class Formula {
                    && $m[1] !== "\"\"") {
             $field = $m[1];
             $t = $m[2];
-            if ($field[0] === "\"")
+            if (($quoted = $field[0] === "\""))
                 $field = substr($field, 1, strlen($field) - 2);
             $rf = reviewForm();
-            if (!($field = $rf->unabbreviateField($field)))
+            if (($fid = $rf->unabbreviateField($field)))
+                $e = FormulaExpr::make_agg("rf", true, $rf->field($fid));
+            else if (!$quoted && strlen($field) === 1 && ctype_alpha($field))
+                $e = FormulaExpr::make_agg("??", false, strtoupper($field));
+            else
                 return null;
-            $e = FormulaExpr::make_agg("rf", true, $rf->field($field));
         } else
             return null;
 
