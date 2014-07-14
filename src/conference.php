@@ -2017,9 +2017,9 @@ class Conference {
             $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
             echo "<a href='", hoturl("help", $x), "'>Help</a>", $xsep;
             if ($Me->contactId > 0 || isset($Opt["httpAuthLogin"]))
-                echo "<a href='", hoturl("index", "signout=1"), "'>Sign&nbsp;out</a>";
+                echo '<a href="', hoturl_post("index", "signout=1"), '">Sign&nbsp;out</a>';
             else
-                echo "<a href='", hoturl("index", "signin=1"), "'>Sign&nbsp;in</a>";
+                echo '<a href="', hoturl("index", "signin=1"), '">Sign&nbsp;in</a>';
         }
         echo "<div id='maindeadline' style='display:none'>";
 

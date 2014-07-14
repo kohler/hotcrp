@@ -20,17 +20,19 @@ $email_class = "";
 $password_class = "";
 
 // signin links
-if (isset($_REQUEST["email"]) && isset($_REQUEST["password"]))
+if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
+    && ($Me->is_empty() || check_post())) {
     if ($Me->email === $_REQUEST["email"])
         unset($_REQUEST["email"], $_REQUEST["password"]);
     else {
         $_REQUEST["action"] = defval($_REQUEST, "action", "login");
         $_REQUEST["signin"] = defval($_REQUEST, "signin", "go");
     }
+}
 
 if ((isset($_REQUEST["email"]) && isset($_REQUEST["password"])
      && isset($_REQUEST["signin"]) && !isset($Opt["httpAuthLogin"]))
-    || isset($_REQUEST["signout"]))
+    || (isset($_REQUEST["signout"]) && check_post()))
     LoginHelper::logout();
 
 if (isset($Opt["httpAuthLogin"]))
@@ -39,7 +41,8 @@ else if (isset($_REQUEST["email"])
          && isset($_REQUEST["action"])
          && isset($_REQUEST["signin"]))
     LoginHelper::check_login();
-else if (isset($_REQUEST["signin"]) && isset($_REQUEST["post"]))
+else if ((isset($_REQUEST["signin"]) || isset($_REQUEST["signout"]))
+         && isset($_REQUEST["post"]))
     redirectSelf();
 
 // set a session variable to test that their browser supports cookies
