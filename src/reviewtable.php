@@ -207,12 +207,11 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $notetxt = "";
     if ($conflictType >= CONFLICT_AUTHOR && !$admin && $notShown
         && $Me->canViewReview($prow, null, null)) {
-        $qualifier = (count($subrev) + count($nonsubrev) ? " additional" : "");
         if ($notShown == 1)
-            $t = "1$qualifier review remains outstanding.";
+            $t = "1 review remains outstanding.";
         else
-            $t = "$notShown$qualifier reviews remain outstanding.";
-        $t .= "<br /><span class='hint'>You will be emailed if$qualifier reviews are submitted or existing reviews are changed.</span>";
+            $t = "$notShown reviews remain outstanding.";
+        $t .= "<br /><span class='hint'>You will be emailed if new reviews are submitted or existing reviews are changed.</span>";
         $notetxt = "<div class='revnotes'>" . $t . "</div>";
     }
 
