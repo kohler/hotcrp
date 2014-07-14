@@ -1016,7 +1016,7 @@ Follow these steps to prepare to accept paper submissions.
 
 <li><p><strong><a href='" . hoturl("settings", "group=opt") . "'>Define
   submission options (optional).</a></strong>  You can add
-  additional checkboxes to the submission form, such as “Consider this
+  additional options to the submission form, such as “Consider this
   paper for the Best Student Paper award” or “Provide this paper to the
   European shadow PC.”  You can
   <a href='" . hoturl("search") . "'>search</a> for papers with or without
