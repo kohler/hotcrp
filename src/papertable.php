@@ -1477,81 +1477,85 @@ class PaperTable {
             return "  The deadline was $deadline.";
     }
 
+    private function _override_message() {
+        if ($this->admin)
+            return " As an administrator, you can override this deadline.";
+        else
+            return "";
+    }
+
+    private function _edit_message_new_paper() {
+        global $Conf;
+        $startDeadline = $this->deadlineSettingIs("sub_reg");
+        if (!$Conf->timeStartPaper()) {
+            if ($Conf->setting("sub_open") <= 0)
+                $msg = "You can’t register new papers because the conference site has not been opened for submissions." . $this->_override_message();
+            else
+                $msg = 'You can’t register new papers since the <a href="' . hoturl("deadlines") . '">deadline</a> has passed.' . $startDeadline . $this->_override_message();
+            if (!$this->admin) {
+                $this->quit = true;
+                return '<div class="merror">' . $msg . '</div>';
+            } else
+                return '<div class="xinfo">' . $msg . '</div>';
+        } else {
+            $msg = '<div class="xinfo">Enter information about your paper. ';
+            if ($startDeadline && !$Conf->setting("sub_freeze"))
+                $msg .= "You can make changes until the deadline, but thereafter ";
+            else
+                $msg .= "You don’t have to upload the paper itself right away, but ";
+            return "{$msg}incomplete submissions will not be considered.$startDeadline</div>";
+        }
+    }
+
     private function editMessage() {
         global $Conf, $Me;
-        $prow = $this->prow;
-        $m = "";
+        if (!($prow = $this->prow))
+            return $this->_edit_message_new_paper();
 
-        $override = ($this->admin ? " As an administrator, you can override this deadline." : "");
-        if (!$prow) {
-            $timeStart = $Conf->timeStartPaper();
-            $startDeadline = $this->deadlineSettingIs("sub_reg");
-            if (!$timeStart) {
-                if ($Conf->setting("sub_open") <= 0)
-                    $msg = "You can’t register new papers because the conference site has not been opened for submissions.$override";
+        $m = "";
+        $has_author = $prow->has_author($Me);
+        if ($has_author && $prow->outcome < 0 && $Conf->timeAuthorViewDecision())
+            $m .= '<div class="xwarning">This paper was not accepted.</div>';
+        else if ($has_author && $prow->timeWithdrawn > 0) {
+            if ($Me->canRevivePaper($prow))
+                $m .= '<div class="xinfo">This paper has been withdrawn, but you can still revive it.' . $updateDeadline . '</div>';
+        } else if ($has_author && $prow->timeSubmitted <= 0) {
+            if ($Me->canUpdatePaper($prow)) {
+                $m .= '<div class="xwarning">';
+                if ($Conf->setting("sub_freeze"))
+                    $m .= "A final version of this paper must be submitted before it can be reviewed.";
+                else if ($prow->paperStorageId <= 1)
+                    $m .= "The paper is not ready for review and will not be considered as is, but you can still make changes.";
                 else
-                    $msg = "You can’t register new papers since the <a href='" . hoturl("deadlines") . "'>deadline</a> has passed.$startDeadline$override";
-                if (!$this->admin) {
-                    $this->quit = true;
-                    return '<div class="merror">' . $msg . '</div>';
-                }
-                $m .= "<div class='xinfo'>" . $msg . "</div>";
-            } else {
-                $m .= "<div class='xinfo'>" . "Enter information about your paper. ";
-                if ($startDeadline && !$Conf->setting("sub_freeze"))
-                    $m .= "You can make changes until the deadline, but thereafter ";
-                else
-                    $m .= "You don’t have to upload the paper itself right away, but ";
-                $m .= "incomplete submissions will not be considered.$startDeadline" . "</div>";
-            }
-        } else if ($prow->has_author($Me)
-                   && ($Conf->timeUpdatePaper($prow)
-                       || $prow->timeSubmitted <= 0)) {
-            $timeUpdate = $Conf->timeUpdatePaper($prow);
-            $updateDeadline = $this->deadlineSettingIs("sub_update");
-            $timeSubmit = $Conf->timeFinalizePaper($prow);
-            $submitDeadline = $this->deadlineSettingIs("sub_sub");
-            if ($prow->timeWithdrawn > 0) {
-                if ($timeUpdate)
-                    $m .= "<div class='xinfo'>This paper has been withdrawn, but you can still revive it.$updateDeadline</div>";
-                // otherwise no message
-            } else if ($timeUpdate) {
-                if ($prow->timeSubmitted <= 0) {
-                    $m .= "<div class='xwarning'>";
-                    if ($Conf->setting('sub_freeze'))
-                        $m .= "A final version of this paper must be submitted before it can be reviewed.";
-                    else if ($prow->paperStorageId <= 1)
-                        $m .= "The paper is not ready for review and will not be considered as is, but you can still make changes.";
-                    else
-                        $m .= "The paper is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
-                    $m .= $updateDeadline . "</div>";
-                } else if ($this->mode == "pe")
-                    $m .= "<div class='xconfirm'>This paper is ready and will be considered for review.  You can still make changes if necessary.$updateDeadline</div>";
-            } else if ($timeSubmit)
-                $m .= "<div class='xwarning'>You cannot make any changes as the <a href='" . hoturl("deadlines") . "'>deadline</a> has passed, but the current version can still be submitted.  Only submitted papers will be reviewed.$submitDeadline$override</div>";
+                    $m .= "The paper is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
+                $m .= $this->deadlineSettingIs("sub_update") . "</div>";
+            } else if ($Me->canFinalizePaper($prow))
+                $m .= '<div class="xwarning">Unless the paper is submitted, it will not be reviewed. You cannot make any changes as the <a href="' . hoturl("deadlines") . '">deadline</a> has passed, but the current version can be still be submitted.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message() . '</div>';
             else if ($Conf->deadlinesBetween("", "sub_sub", "sub_grace"))
-                $m .= "<div class='xwarning'>The site is not open for submission updates at the moment.$override</div>";
+                $m .= '<div class="xwarning">The site is not open for submission updates at the moment.' . $this->_override_message() . '</div>';
             else
-                $m .= "<div class='xwarning'>The <a href='" . hoturl("deadlines") . "'>deadline</a> for submitting this paper has passed.  The paper will not be reviewed.$submitDeadline$override</div>";
-        } else if ($prow->has_author($Me)
+                $m .= '<div class="xwarning">The <a href="' . hoturl("deadlines") . '">deadline</a> for submitting this paper has passed. The paper will not be reviewed.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message() . '</div>';
+        } else if ($has_author && $Me->canUpdatePaper($prow)) {
+            if ($this->mode == "pe")
+                $m .= '<div class="xconfirm">This paper is ready and will be considered for review. You can still make changes if necessary.' . $this->deadlineSettingIs("sub_update") . '</div>';
+        } else if ($has_author
                    && $prow->outcome > 0
                    && $Conf->timeSubmitFinalPaper()
                    && ($t = $Conf->message_html("finalsubmit", array("deadline" => $this->deadlineSettingIs("final_soft")))))
             $m .= "<div class='xinfo'>" . $t . "</div>";
-        else if ($prow->has_author($Me)) {
+        else if ($has_author) {
             $override2 = ($this->admin ? " As an administrator, you can update the paper anyway." : "");
             if ($this->mode == "pe") {
-                $m .= "<div class='xinfo'>This paper is under review and can’t be changed, but you can change its contacts";
+                $m .= '<div class="xinfo">This paper is under review and can’t be changed, but you can change its contacts';
                 if ($Me->canWithdrawPaper($prow))
-                    $m .= " or withdraw it from consideration";
+                    $m .= ' or withdraw it from consideration';
                 $m .= ".$override2</div>";
             }
         } else if ($prow->outcome > 0 && !$Conf->timeAuthorViewDecision()
                    && $Conf->collectFinalPapers())
             $m .= "<div class='xinfo'>This paper was accepted, but authors can’t view paper decisions yet. Once decisions are visible, the system will allow accepted authors to upload final versions.</div>";
         else
-            $m .= "<div class='xinfo'>" . "You aren’t a contact for this paper, but as an administrator you can still make changes." . "</div>";
-
+            $m .= '<div class="xinfo">You aren’t a contact for this paper, but as an administrator you can still make changes.</div>';
         return $m;
     }
 
@@ -1761,13 +1765,13 @@ class PaperTable {
         }
 
         // paper number
-        $pa = "<a href='" . hoturl("paper", "p=$prow->paperId") . "' class='q'>";
-        echo "<table class='pban'><tr>
-    <td class='pboxi'><div class='papnum'>",
+        $pa = '<a href="' . hoturl("paper", "p=$prow->paperId") . '" class="q">';
+        echo '<table class="pban"><tr>
+    <td class="pboxi"><div class="papnum">',
             "<h2 class=\"pnum\">", $pa, "#", $prow->paperId, "</a></h2></div></td>\n";
 
         // paper title
-        echo "    <td class='pboxt'><h2 class=\"ptitle\">", $pa;
+        echo '    <td class="pboxt"><h2 class="ptitle">', $pa;
         $this->echoTitle();
         echo "</a></h2></td>
     <td class='pboxj'></td>

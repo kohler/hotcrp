@@ -1088,13 +1088,13 @@ function whyNotText($whyNot, $action) {
         $text .= "You don’t have permission to $action $thisPaper. ";
     if (isset($whyNot["signin"]))
         $text .= "You must sign in to $action $thisPaper. ";
-    if (isset($whyNot['withdrawn']))
+    if (isset($whyNot["withdrawn"]))
         $text .= ucfirst($thisPaper) . " has been withdrawn. ";
     if (isset($whyNot['notWithdrawn']))
         $text .= ucfirst($thisPaper) . " has not been withdrawn. ";
     if (isset($whyNot['notSubmitted']))
         $text .= ucfirst($thisPaper) . " was never officially submitted. ";
-    if (isset($whyNot['notAccepted']))
+    if (isset($whyNot["rejected"]))
         $text .= ucfirst($thisPaper) . " was not accepted for publication. ";
     if (isset($whyNot["decided"]))
         $text .= "The review process for $thisPaper has completed. ";

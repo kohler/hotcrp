@@ -873,9 +873,7 @@ confHeader();
 
 // prepare paper table
 if ($paperTable->mode == "pe") {
-    $editable = $newPaper
-        || ($prow->timeWithdrawn <= 0
-            && ($Conf->timeUpdatePaper($prow) || $Me->allowAdminister($prow)));
+    $editable = $newPaper || $Me->canUpdatePaper($prow, $whyNot, true);
     if ($prow && $prow->outcome > 0 && $Conf->collectFinalPapers()
         && (($Conf->timeAuthorViewDecision() && $Conf->timeSubmitFinalPaper())
             || $Me->allowAdminister($prow)))

@@ -979,6 +979,7 @@ class Contact {
         // policy
         if ($rights->allow_author
             && $prow->timeWithdrawn <= 0
+            && ($prow->outcome >= 0 || !$Conf->timeAuthorViewDecision())
             && ($Conf->timeUpdatePaper($prow) || $override))
             return true;
         // collect failure reasons
@@ -988,6 +989,8 @@ class Contact {
             $whyNot["author"] = 1;
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
+        if ($Conf->timeAuthorViewDecision() && $prow->outcome < 0)
+            $whyNot["rejected"] = 1;
         if ($prow->timeSubmitted > 0 && $Conf->setting('sub_freeze') > 0)
             $whyNot["updateSubmitted"] = 1;
         if (!$Conf->timeUpdatePaper($prow) && !$override)
@@ -1103,7 +1106,7 @@ class Contact {
         // NB logic order here is important elsewhere
         if (!$Conf->timeAuthorViewDecision()
             || $prow->outcome <= 0)
-            $whyNot["notAccepted"] = 1;
+            $whyNot["rejected"] = 1;
         else  if (!$Conf->collectFinalPapers())
             $whyNot["deadline"] = "final_open";
         else if (!$Conf->timeSubmitFinalPaper() && !$override)
