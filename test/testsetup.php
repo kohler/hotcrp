@@ -14,6 +14,8 @@ if (!$Conf->dblink->multi_query(file_get_contents("$ConfSitePATH/src/schema.sql"
     die("* Can't reinitialize database.\n" . $Conf->dblink->error);
 while ($Conf->dblink->more_results())
     $Conf->dblink->next_result();
+// No setup phase.
+$Conf->qe("delete from Settings where name='setupPhase'");
 $Conf->load_settings();
 
 // Create initial administrator user.
