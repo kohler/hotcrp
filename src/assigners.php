@@ -196,11 +196,12 @@ class ReviewAssigner extends Assigner {
     }
     function load_state($state) {
         global $Conf;
-        $result = $Conf->qe("select paperId, contactId, reviewType, reviewRound from PaperReview");
+        $result = $Conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview");
         while (($row = edb_row($result))) {
             $round = $Conf->round_name($row[3], false);
             $state->load(array("type" => "review", "pid" => $row[0], "cid" => $row[1],
-                               "_rtype" => $row[2], "_round" => $round));
+                               "_rtype" => $row[2], "_round" => $round,
+                               "_rsubmitted" => $row[4] > 0));
         }
     }
     function apply($pid, $contact, $req, $state, $defaults) {
@@ -213,16 +214,28 @@ class ReviewAssigner extends Assigner {
         if ($rtype == REVIEW_EXTERNAL && ($contact->roles & Contact::ROLE_PC))
             $rtype = REVIEW_PC;
         $state->load_type("review", $this);
-        $cid = $contact ? $contact->contactId : null;
-        $remround = $round === "none" ? "" : ($round === "" ? null : $round);
-        $r = $state->remove(array("type" => "review", "pid" => $pid, "cid" => $cid,
-                                  "_round" => $rtype ? null : $remround));
-        if (!$round && count($r) && $r[0]["_round"])
-            $round = $r[0]["_round"];
-        $round = $round === "none" ? "" : $round;
-        if ($rtype)
-            $state->add(array("type" => "review", "pid" => $pid, "cid" => $cid,
-                              "_rtype" => $rtype, "_round" => $round));
+
+        // remove existing review
+        $revmatch = array("type" => "review", "pid" => $pid,
+                          "cid" => $contact ? $contact->contactId : null);
+        if (!$rtype && @$req["round"] && $round !== "")
+            $revmatch["_round"] = $round === "none" ? "" : $round;
+        $matches = $state->remove($revmatch);
+
+        if ($rtype) {
+            // add new review or reclassify old one
+            $revmatch["_rtype"] = $rtype;
+            if (count($matches) && @$req["round"] === null)
+                $round = $matches[0]["_round"];
+            $revmatch["_round"] = $round === "none" ? "" : $round;
+            if (count($matches))
+                $revmatch["_rsubmitted"] = $matches[0]["_rsubmitted"];
+            $state->add($revmatch);
+        } else
+            // do not remove submitted reviews
+            foreach ($matches as $r)
+                if ($r["_rsubmitted"])
+                    $state->add($r);
     }
     function realize($old, $new, $cmap, $state) {
         $x = $new ? $new : $old;
