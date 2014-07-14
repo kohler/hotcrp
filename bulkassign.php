@@ -135,7 +135,7 @@ echo "<div id='foldemail' class='foldo'><table class='fx'>
 <div";
 if (isset($Error["rev_roundtag"]))
     echo ' class="error"';
-echo ">Default review round: &nbsp;",
+echo ">Default review round for new assignments: &nbsp;",
     "<input id='rev_roundtag' class='textlite temptextoff' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"),
     "\" />",

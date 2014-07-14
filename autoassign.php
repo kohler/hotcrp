@@ -488,7 +488,7 @@ if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"])
 else if (isset($_REQUEST["saveassign"])
          && isset($_REQUEST["assignment"]) && check_post()) {
     $assignset = new AssignmentSet($Me, true);
-    $assignset->parse($_REQUEST["assignment"], null, @$_REQUEST["default_action"]);
+    $assignset->parse($_REQUEST["assignment"]);
     $assignset->execute($Now);
 }
 
