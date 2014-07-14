@@ -538,7 +538,9 @@ class AssignmentSet {
         global $Conf;
 
         // move all usable identification data to email, firstName, lastName
-        foreach (array("first" => "firstName", "last" => "lastName") as $k1 => $k2)
+        foreach (array("first" => "firstName", "last" => "lastName",
+                       "firstname" => "firstName", "lastname" => "lastName")
+                 as $k1 => $k2)
             if (isset($req[$k1]) && !isset($req[$k2]))
                 $req[$k2] = $req[$k1];
         if (isset($req["name"]))
