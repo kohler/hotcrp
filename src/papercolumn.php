@@ -651,15 +651,10 @@ class PreferencePaperColumn extends PaperColumn {
         $queryOptions["reviewerPreference"] = $queryOptions["topicInterestScore"] = 1;
         $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
         if ($this->editable && $visible > 0) {
-            $arg = "setrevpref=1";
+            $arg = "ajax=1&amp;setrevpref=1";
             if ($pl->contact->privChair && $pl->reviewer)
                 $arg .= "&amp;reviewer=" . $pl->reviewer;
-            $Conf->footerHtml(
-                 Ht::form(hoturl_post("paper", $arg),
-                           array("id" => "prefform")) . "<div>"
-                 . Ht::hidden("p") . Ht::hidden("revpref", "")
-                 . "</div></form>", "prefform");
-            $Conf->footerScript("add_revpref_ajax()");
+            $Conf->footerScript("add_revpref_ajax('" . htmlspecialchars_decode(hoturl_post("paper", $arg)) . "')");
         }
         return true;
     }

@@ -1245,21 +1245,27 @@ function taghelp(elt, report_elt, cleanf) {
 
 // review preferences
 window.add_revpref_ajax = (function () {
+var prefurl;
 
 function rp_focus() {
     autosub("update", this);
 }
 
 function rp_change() {
-    var form = $$("prefform"), whichpaper = this.name.substr(7);
-    form.p.value = whichpaper;
-    form.revpref.value = this.value;
-    Miniajax.submit("prefform", function (rv) {
-            var e;
-            setajaxcheck("revpref" + whichpaper, rv);
-            if (rv.ok && rv.value != null && (e = $$("revpref" + whichpaper)))
-                e.value = rv.value;
-        });
+    var self = this, whichpaper = this.name.substr(7);
+    jQuery.ajax({
+        type: "POST", url: prefurl,
+        data: {"ajax": 1, "p": whichpaper, "revpref": self.value},
+        dataType: "json",
+        success: function (rv) {
+            setajaxcheck(self.id, rv);
+            if (rv.ok && rv.value != null)
+                self.value = rv.value;
+        },
+        complete: function (xhr, status) {
+            hiliter(self);
+        }
+    });
 }
 
 function rp_keypress(event) {
@@ -1272,19 +1278,15 @@ function rp_keypress(event) {
     }
 }
 
-return function () {
-    var inputs = document.getElementsByTagName("input"),
-        form = $$("prefform");
-    if (!(form && form.p && form.revpref))
-        form = null;
+return function (url) {
+    var inputs = document.getElementsByTagName("input");
+    prefurl = url;
     staged_foreach(inputs, function (elt) {
         if (elt.type == "text" && elt.name.substr(0, 7) == "revpref") {
             elt.onfocus = rp_focus;
+            elt.onchange = rp_change;
+            elt.onkeypress = rp_keypress;
             mktemptext(elt, "0");
-            if (form) {
-                elt.onchange = rp_change;
-                elt.onkeypress = rp_keypress;
-            }
         }
     });
 };
@@ -1984,20 +1986,20 @@ Miniajax.submit = function (formname, callback, timeout) {
     };
 
     // collect form value
-    var pairs = [], regexp = /%20/g;
+    var pairs = [];
     for (var i = 0; i < form.elements.length; i++) {
         var elt = form.elements[i];
         if (elt.name && elt.value && elt.type != "submit"
             && elt.type != "cancel" && (elt.type != "checkbox" || elt.checked))
-            pairs.push(encodeURIComponent(elt.name).replace(regexp, "+") + "="
-                       + encodeURIComponent(elt.value).replace(regexp, "+"));
+            pairs.push(encodeURIComponent(elt.name) + "="
+                       + encodeURIComponent(elt.value));
     }
     pairs.push("ajax=1");
 
     // send
     req.open("POST", form.action);
     req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    req.send(pairs.join("&"));
+    req.send(pairs.join("&").replace(/%20/g, "+"));
     return false;
 };
 function getorpost(method, url, callback, timeout) {
