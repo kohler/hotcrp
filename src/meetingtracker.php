@@ -5,6 +5,8 @@
 
 class MeetingTracker {
 
+    const PCCONFLICTS = 1;
+
     static function lookup() {
         global $Conf;
         return $Conf->setting_json("tracker");
@@ -85,48 +87,84 @@ class MeetingTracker {
         $Conf->save_setting("tracker", 1, $mn);
     }
 
-    static function status($acct) {
+    static private function status_papers($status, $tracker, $acct) {
         global $Conf;
+
+        if (@$tracker->position_at)
+            $status->position_at = $tracker->position_at;
+        $pids = array_slice($tracker->ids, $tracker->position, 3);
+
+        $result = $Conf->qe("select p.paperId, p.title, p.leadContactId, p.managerContactId, r.reviewType, conf.conflictType
+            from Paper p
+            left join PaperReview r on (r.paperId=p.paperId and r.contactId=$acct->contactId)
+            left join PaperConflict conf on (conf.paperId=p.paperId and conf.contactId=$acct->contactId)
+            where p.paperId in (" . join(",", $pids) . ")");
+        $papers = array();
+        while (($row = edb_orow($result))) {
+            $papers[$row->paperId] = $p = (object) array();
+            if ($acct->privChair || !$row->conflictType || !@$status->hide_conflicts) {
+                $p->pid = (int) $row->paperId;
+                $p->title = $row->title;
+            }
+            if ($row->managerContactId == $acct->contactId)
+                $p->is_manager = true;
+            if ($row->reviewType)
+                $p->is_reviewer = true;
+            if ($row->conflictType)
+                $p->is_conflict = true;
+            if ($row->leadContactId == $acct->contactId)
+                $p->is_lead = true;
+        }
+
+        $status->papers = array();
+        foreach ($pids as $pid)
+            $status->papers[] = $papers[$pid];
+    }
+
+    static function status($acct) {
+        global $Conf, $Opt, $Now;
         $tracker = $Conf->setting_json("tracker");
         if (!$tracker || !$acct->isPC)
             return false;
         if (($status = $Conf->session("tracker"))
             && $status->trackerid == $tracker->trackerid
-            && $status->position == $tracker->position)
+            && $status->position == $tracker->position
+            && @($status->calculated_at >= $Now - 30))
             return $status;
         $status = (object) array("trackerid" => $tracker->trackerid,
                                  "listid" => $tracker->listid,
                                  "position" => $tracker->position,
-                                 "url" => $tracker->url);
-        if ($status->position !== false) {
-            if (@$tracker->position_at)
-                $status->position_at = $tracker->position_at;
-            $pids = array_slice($tracker->ids, $tracker->position, 3);
-            $result = $Conf->qe("select p.paperId, p.title, p.leadContactId, p.managerContactId, r.reviewType, conf.conflictType
-                from Paper p
-                left join PaperReview r on (r.paperId=p.paperId and r.contactId=$acct->contactId)
-                left join PaperConflict conf on (conf.paperId=p.paperId and conf.contactId=$acct->contactId)
-                where p.paperId in (" . join(",", $pids) . ")");
-            $papers = array();
-            while (($row = edb_orow($result))) {
-                $papers[$row->paperId] = $p = (object)
-                    array("pid" => (int) $row->paperId,
-                          "title" => $row->title);
-                if ($row->managerContactId == $acct->contactId)
-                    $p->is_manager = true;
-                if ($row->reviewType)
-                    $p->is_reviewer = true;
-                if ($row->conflictType)
-                    $p->is_conflict = true;
-                if ($row->leadContactId == $acct->contactId)
-                    $p->is_lead = true;
-            }
-            $status->papers = array();
-            foreach ($pids as $pid)
-                $status->papers[] = $papers[$pid];
-        }
+                                 "url" => $tracker->url,
+                                 "calculated_at" => $Now);
+        if (!!@$Opt["trackerHideConflicts"])
+            $status->hide_conflicts = true;
+        if ($status->position !== false)
+            self::status_papers($status, $tracker, $acct);
         $Conf->save_session("tracker", $status);
         return $status;
+    }
+
+    static function status_add_pc_conflicts($status) {
+        global $Conf;
+        $pids = array();
+        foreach ($status->papers as $p)
+            if ($p->pid)
+                $pids[] = $p->pid;
+
+        $confs = array();
+        if (count($pids)) {
+            $pcm = pcMembers();
+            $result = $Conf->qe("select paperId, contactId from PaperConflict where paperId" . sql_in_numeric_set($pids) . " and conflictType>0");
+            while (($row = edb_row($result)))
+                if (($pc = @$pcm[$row[1]]))
+                    $confs[(int) $row[0]][$pc->sort_position] = (object) array("email" => $pc->email, "name" => Text::name_text($pc));
+        }
+
+        foreach ($status->papers as $p)
+            if ($p->pid && @$confs[$p->pid]) {
+                ksort($confs[$p->pid]);
+                $p->pc_conflicts = array_values($confs[$p->pid]);
+            }
     }
 
     static function tracker_status($tracker) {

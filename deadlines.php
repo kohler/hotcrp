@@ -26,6 +26,8 @@ if (@$_REQUEST["track"] && $Me->privChair && check_post()) {
 
 $dl = $Me->deadlines();
 
+if (@$dl["tracker"] && $Me->privChair && @$_REQUEST["pc_conflicts"])
+    MeetingTracker::status_add_pc_conflicts($dl["tracker"]);
 if (@$_REQUEST["checktracker"]) {
     $tracker = @$dl["tracker"] ? $dl["tracker"] : $Conf->setting_json("tracker");
     $dl["tracker_status"] = MeetingTracker::tracker_status($tracker);

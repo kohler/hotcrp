@@ -263,17 +263,18 @@ var tracker_map = [["is_manager", "Administrator"],
 
 function tracker_paper_columns(idx, paper) {
     var url = hotcrp_paperurl(paper.pid, dl.tracker.listid), i, x = [], title;
-    var t = "<td class=\"tracker" + idx + " trackerdesc\">";
+    var t = '<td class="tracker' + idx + ' trackerdesc">';
     t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
-    t += "</td>" +
-        "<td class=\"tracker" + idx + " trackerpid\"><a href=\"" + url + "\">#" + paper.pid + "</a></td>" +
-        "<td class=\"tracker" + idx + " trackerbody\"><a href=\"" + url + "\">" + text_to_html(paper.title) + "</a>";
+    t += '</td><td class="tracker' + idx + ' trackerpid">';
+    if (paper.pid)
+        t += '<a href="' + url + '">#' + paper.pid + '</a>';
+    t += '</td><td class="tracker' + idx + ' trackerbody">';
+    if (paper.title)
+        x.push('<a href="' + url + '">' + text_to_html(paper.title) + '</a>');
     for (i = 0; i != tracker_map.length; ++i)
         if (paper[tracker_map[i][0]])
-            x.push("<span class=\"tracker" + tracker_map[i][0] + "\">" + tracker_map[i][1] + "</span>");
-    if (x.length)
-        t += " &nbsp;&#183;&nbsp; " + x.join(" &nbsp;&#183;&nbsp; ");
-    return t + "</td>";
+            x.push('<span class="tracker' + tracker_map[i][0] + '">' + tracker_map[i][1] + '</span>');
+    return t + x.join(" &nbsp;&#183;&nbsp; ") + '</td>';
 }
 
 function tracker_elapsed(now) {
@@ -331,20 +332,22 @@ function display_tracker() {
         body.insertBefore(mne, body.firstChild);
     }
 
-    pid = dl.tracker.papers[0] ? dl.tracker.papers[0].pid : 0;
+    pid = 0;
+    if (dl.tracker.papers && dl.tracker.papers[0])
+        pid = dl.tracker.papers[0].pid;
     if (mytracker)
         mne.className = "active";
     else
         mne.className = (pid && pid != hotcrp_paperid ? "nomatch" : "match");
 
     if (dl.is_admin)
-        t += "<div style=\"float:right\"><a class=\"btn btn-transparent\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\" title=\"Stop meeting tracker\">x</a></div>";
+        t += '<div style="float:right"><a class="btn btn-transparent" href="#" onclick="return hotcrp_deadlines.tracker(-1)" title="Stop meeting tracker">x</a></div>';
     if ((i = tracker_elapsed(now))) {
-        t += "<div style=\"float:right\" id=\"trackerelapsed\">" + i + "</div>";
+        t += '<div style="float:right" id="trackerelapsed">' + i + "</div>";
         if (!tracker_timer)
             tracker_timer = setInterval(tracker_show_elapsed, 1000);
     }
-    if (!pid) {
+    if (!dl.tracker.papers || !dl.tracker.papers[0]) {
         t += "<a href=\"" + hotcrp_base + dl.tracker.url + "\">Discussion list</a>";
     } else {
         t += "<table class=\"trackerinfo\"><tbody><tr><td rowspan=\"" + dl.tracker.papers.length + "\">";
