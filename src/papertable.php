@@ -1518,7 +1518,7 @@ class PaperTable {
             $m .= '<div class="xwarning">This paper was not accepted.</div>';
         else if ($has_author && $prow->timeWithdrawn > 0) {
             if ($Me->canRevivePaper($prow))
-                $m .= '<div class="xwarning">This paper has been withdrawn, but you can still revive it.' . $updateDeadline . '</div>';
+                $m .= '<div class="xwarning">This paper has been withdrawn, but you can still revive it.' . $this->deadlineSettingIs("sub_update") . '</div>';
         } else if ($has_author && $prow->timeSubmitted <= 0) {
             if ($Me->canUpdatePaper($prow)) {
                 $m .= '<div class="xwarning">';
