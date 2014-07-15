@@ -713,7 +713,7 @@ class PreferenceListPaperColumn extends PaperColumn {
             if (($pref = defval($prefs, $pcid, null))) {
                 $pref = $this->topics ? $pref : array_slice($pref, 0, 2);
                 if (($pspan = unparse_preference_span($pref)) !== "")
-                    $ts[] = Text::name_html($pc) . $pspan;
+                    $ts[] = '<span class="nw">' . Text::name_html($pc) . $pspan . '</span>';
             }
         return join(", ", $ts);
     }

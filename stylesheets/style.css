@@ -163,7 +163,7 @@ span.sep {
 span.lgsep {
 	padding-right: 2em;
 }
-.nowrap {
+.nowrap, .nw {
 	white-space: nowrap;
 }
 .childfold {
