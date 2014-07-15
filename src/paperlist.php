@@ -1002,7 +1002,7 @@ class PaperList extends BaseList {
                             && $tagger->check($s->type)
                             && ($result = $Conf->qe("select paperId from PaperTag where tag='" . sqlq($s->type) . "' limit 1"))
                             && edb_nrows($result))
-                            $this->search->warn("Unrecognized sorter “" . htmlspecialchars($s->type) . "”. Did you mean “#" . htmlspecialchars($s->type) . "”?");
+                            $this->search->warn("Unrecognized sort “" . htmlspecialchars($s->type) . "”. Did you mean “sort:#" . htmlspecialchars($s->type) . "”?");
                         else
                             $this->search->warn("Unrecognized sort “" . htmlspecialchars($s->type) . "”.");
                     } else if ($last_sorter)
