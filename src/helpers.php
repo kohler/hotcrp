@@ -983,7 +983,7 @@ function wordWrapIndent($text, $info, $indent = 18, $totWidth = 75, $rjinfo = tr
 }
 
 function link_urls($html) {
-    return preg_replace('@((?:https?|ftp)://\S+[^\s").,:;])([").,:;<]*(?:\s|\z))@',
+    return preg_replace('@((?:https?|ftp)://[^\s<>"]*[^\s<>"().,:;])(["().,:;]*)(?=[\s<>]|\z)@s',
                         '<a href="$1" rel="noreferrer">$1</a>$2', $html);
 }
 
