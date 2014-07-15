@@ -1003,7 +1003,7 @@ class PaperList extends BaseList {
             if (count($this->sorters) == 2 && !$this->sorters[1]->type) {
                 PaperSearch::combine_sorters($this->sorters[0], $this->sorters[1]);
                 array_pop($this->sorters);
-            } else if ($this->sorters[0]->empty)
+            } else if (count($this->sorters) > 1 && $this->sorters[0]->empty)
                 array_shift($this->sorters);
         }
 
