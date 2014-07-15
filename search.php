@@ -81,8 +81,7 @@ if (($getaction == "paper" || $getaction == "final"
      || substr($getaction, 0, 4) == "opt-")
     && isset($papersel)
     && ($dt = requestDocumentType($getaction, null)) !== null) {
-    $q = $Conf->paperQuery($Me, array("paperId" => $papersel));
-    $result = $Conf->qe($q);
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)));
     $downloads = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
         if (!$Me->canViewPaper($row, $whyNot, true))
@@ -115,8 +114,7 @@ if ($getaction == "abstract" && isset($papersel) && defval($_REQUEST, "ajax")) {
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
 } else if ($getaction == "abstract" && isset($papersel)) {
-    $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1));
-    $result = $Conf->qe($q);
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1)));
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = PaperInfo::fetch($result, $Me)) {
@@ -359,8 +357,7 @@ if ($getaction == "votes" && isset($papersel) && defval($_REQUEST, "tag")
     $tagger = new Tagger;
     if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
         $showtag = trim($_REQUEST["tag"]); // no "23~" prefix
-        $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag));
-        $result = $Conf->qe($q);
+        $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag)));
         $texts = array();
         while (($row = PaperInfo::fetch($result, $Me)))
             if ($Me->canViewTags($row, true))
@@ -379,8 +376,7 @@ if ($getaction == "rank" && isset($papersel) && defval($_REQUEST, "tag")
     && ($Me->isPC || ($Me->is_reviewer() && $settingrank))) {
     $tagger = new Tagger;
     if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
-        $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"));
-        $result = $Conf->qe($q);
+        $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId")));
         $real = "";
         $null = "\n";
         while (($row = PaperInfo::fetch($result, $Me)))
@@ -520,19 +516,16 @@ if ($getaction == "pcconf" && isset($papersel) && $Me->privChair) {
 if (($getaction == "lead" || $getaction == "shepherd")
     && isset($papersel) && $Me->isPC) {
     $idq = paperselPredicate($papersel, "Paper.");
-    $result = $Conf->qe("select Paper.paperId, title, email, firstName, lastName, conflictType
-                from Paper
-                join ContactInfo on (ContactInfo.contactId=Paper.${getaction}ContactId)
-                left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Me->contactId)
-                where $idq
-                group by Paper.paperId");
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "reviewerName" => $getaction)));
     $shep = $getaction == "shepherd";
     if ($result) {
         $texts = array();
         while (($row = PaperInfo::fetch($result, $Me)))
-            if ($shep ? $Me->can_view_shepherd($row, true) : $Me->can_view_lead($row, true))
+            if ($row->reviewEmail
+                && (($shep && $Me->can_view_shepherd($row, true))
+                    || (!$shep && $Me->can_view_lead($row, true))))
                 arrayappend($texts[$paperselmap[$row->paperId]],
-                            array($row->paperId, $row->title, $row->email, trim("$row->firstName $row->lastName")));
+                            array($row->paperId, $row->title, $row->reviewEmail, trim("$row->reviewFirstName $row->reviewLastName")));
         ksort($texts);
         downloadCSV($texts, array("paper", "title", "${getaction}email", "${getaction}name"), "${getaction}s");
         exit;
@@ -688,8 +681,7 @@ if ($getaction == "allrevpref" && $Me->privChair && isset($papersel))
 
 // download topics for selected papers
 if ($getaction == "topics" && isset($papersel)) {
-    $q = $Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1));
-    $result = $Conf->qe($q);
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel, "topics" => 1)));
 
     $texts = array();
     $tmap = $Conf->topic_map();

@@ -1368,7 +1368,9 @@ class Conference {
             $pq .= "            join PaperComment on (PaperComment.paperId=Paper.paperId)
                 left join PaperConflict as CommentConflict on (CommentConflict.paperId=PaperComment.paperId and CommentConflict.contactId=PaperComment.contactId)\n";
 
-        if (@$options["reviewerName"] && @$options["allComments"])
+        if (@$options["reviewerName"] === "lead" || @$options["reviewerName"] === "shepherd")
+            $pq .= "            left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=Paper.{$options['reviewerName']}ContactId)\n";
+        else if (@$options["reviewerName"] && @$options["allComments"])
             $pq .= "            left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperComment.contactId)\n";
         else if (@$options["reviewerName"])
             $pq .= "            left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperReview.contactId)\n";
