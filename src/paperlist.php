@@ -972,6 +972,7 @@ class PaperList extends BaseList {
     }
 
     private function _prepare_sort() {
+        global $Conf;
         if (count($this->search->orderTags)
             && ($s = PaperColumn::lookup("tagordersort"))
             && $s->prepare($this, $this->query_options, -1))
@@ -995,9 +996,18 @@ class PaperList extends BaseList {
                             PaperSearch::combine_sorters($last_sorter, $s);
                         else
                             $this->sorters[] = $last_sorter = $s;
-                    } else if (!$s->type && $last_sorter)
+                    } else if ($s->type) {
+                        if ($this->contact->canViewTags(null)
+                            && ($tagger = new Tagger)
+                            && $tagger->check($s->type)
+                            && ($result = $Conf->qe("select paperId from PaperTag where tag='" . sqlq($s->type) . "' limit 1"))
+                            && edb_nrows($result))
+                            $this->search->warn("Unrecognized sorter “" . htmlspecialchars($s->type) . "”. Did you mean “#" . htmlspecialchars($s->type) . "”?");
+                        else
+                            $this->search->warn("Unrecognized sort “" . htmlspecialchars($s->type) . "”.");
+                    } else if ($last_sorter)
                         PaperSearch::combine_sorters($last_sorter, $s);
-                    else if (!$s->type)
+                    else
                         $this->sorters[] = $last_sorter = $s;
                 }
             if (count($this->sorters) == 2 && !$this->sorters[1]->type) {
