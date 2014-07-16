@@ -1481,7 +1481,7 @@ function matchContact($pcm, $firstName, $lastName, $email) {
             if (($pos = stripos($pc->lastName, $lastName)) !== false) {
                 if ($pos === 0 && strlen($pc->lastName) == strlen($lastName))
                     $lastprio = 10;
-                else if ($pos === 0 || !ctype_alnum($pc->firstName[$pos - 1]))
+                else if ($pos === 0 || !ctype_alnum($pc->lastName[$pos - 1]))
                     $lastprio = 1;
             }
         }
