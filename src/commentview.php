@@ -115,7 +115,19 @@ class CommentView {
         }
         $this->ncomment_in_table++;
 
-        if ($editMode) {
+        echo "<div";
+        if ($crow)
+            echo " id=\"comment$crow->commentId\"";
+        else
+            echo " id=\"commentnew\"";
+        echo ' class="cmtg">';
+        $opendiv = "";
+        if ($crow && !$editMode) {
+            if (($crow->commentType & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY)
+                echo ($opendiv = '<div class="cmtadminvis">');
+            else if ($cmttags && ($colors = $this->tagger->color_classes($cmttags)))
+                echo ($opendiv = '<div class="cmtcolor ' . $colors . '">');
+        } else if ($editMode) {
             echo Ht::form(hoturl_post("comment", "p=$prow->paperId&amp;c=" . ($crow ? $crow->commentId : "new")));
             if (!$crow && $foldnew)
                 echo '<div class="aahc foldc" id="foldaddcomment">';
@@ -123,30 +135,15 @@ class CommentView {
                 echo '<div class="aahc">';
             echo Ht::hidden("anchor", $crow ? "comment$crow->commentId" : "commentnew");
         }
-
-        echo "<div";
-        if ($crow)
-            echo " id='comment$crow->commentId'";
-        else
-            echo " id='commentnew'";
-        echo " class='cmtg", ($this->ncomment_in_table == 1 ? " cmtg1" : ""), "'>";
-        $opendiv = "";
-        if ($crow && !$editMode) {
-            if (($crow->commentType & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY)
-                echo ($opendiv = '<div class="cmtadminvis">');
-            else if ($cmttags && ($colors = $this->tagger->color_classes($cmttags)))
-                echo ($opendiv = '<div class="cmtcolor ' . $colors . '">');
-        }
         echo "<div class='cmtt'>";
 
         // Links
         if ($crow && ($crow->contactId == $Me->contactId
                       || $Me->allowAdminister($prow))
             && !$editMode && $Me->canComment($prow, $crow))
-            echo "<div class='floatright'>",
-                "<a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId#comment$crow->commentId"), "' class='xx'>",
-                Ht::img("edit.png", "[Edit]", "b"),
-                "&nbsp;<u>Edit</u></a></div>";
+            echo '<div class="floatright">',
+                '<a href="', hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId#comment$crow->commentId"), '" class="xx editor">',
+                '<u>Edit</u></a></div>';
 
         if (!$crow) {
             if ($editMode && $foldnew)
@@ -230,7 +227,7 @@ class CommentView {
             $post = Ht::checkbox("override") . "&nbsp;" . Ht::label("Override&nbsp;deadlines");
         echo Ht::actions($buttons, null, $post);
 
-        echo "</div></div></div></form>\n\n";
+        echo "</div></div></form></div>\n\n";
     }
 
     function showResponse($prow, $crow, $useRequest, $editMode) {
@@ -278,7 +275,7 @@ class CommentView {
             echo "<div class='xwarning'>This is a draft response. Reviewers won’t see it until you submit.</div>";
 
         if (!$editMode) {
-            echo "<div class='cmtg cmtg1'>";
+            echo '<div class="cmtg">';
             if ($Me->allowAdminister($prow)
                 && ($crow->commentType & COMMENTTYPE_DRAFT))
                 echo "<i>The <a href='", hoturl("comment", "c=$crow->commentId"), "'>authors’ response</a> is not yet ready for reviewers to view.</i>";

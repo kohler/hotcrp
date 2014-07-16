@@ -154,6 +154,12 @@ a.small {
 span.barsep {
 	color: #b4b4df;
 }
+a.editor {
+	background: url(../images/edit.png) 0px 50% no-repeat;
+	display: inline-block;
+	margin: -2px 0 -2px 0;
+	padding: 2px 0 2px 19px;
+}
 a img {
 	border: none;
 }
@@ -2318,12 +2324,12 @@ div.cmtg {
 	border-top: 1px solid #f7f1df;
 	padding: 5px 0;
 }
-span.cmtfn > span.barsep {
-	color: #eadeb7;
-}
-div.cmtg.cmtg1 {
+div.cmtg:first-child {
 	border-top: 0 none;
 	padding: 0 0 5px;
+}
+span.cmtfn > span.barsep {
+	color: #eadeb7;
 }
 div.cmtadminvis, div.cmtcolor {
 	margin: 0 -5px;
