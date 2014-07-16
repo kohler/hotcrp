@@ -156,13 +156,16 @@ class PaperTable {
         echo "</div>";
     }
 
-    private function editable_papt($what, $name) {
+    private function editable_papt($what, $name, $extra = array()) {
         global $Error, $Warning;
-        $c = "<div class='papt";
+        $c = '<div ';
+        if (@$extra["id"])
+            $c .= 'id="' . $extra["id"] . '" ';
+        $c .= 'class="papt';
         if (isset($Error[$what]) || isset($Warning[$what]))
             $c .= " error";
-        return $c . "'><span class='papfn'>" . $name
-            . "</span><div class='clear'></div></div>";
+        return $c . '"><span class="papfn">' . $name
+            . '</span><div class="clear"></div></div>';
     }
 
     private function papt($what, $name, $extra = array()) {
@@ -1077,10 +1080,12 @@ class PaperTable {
                 $myval = $optx->value;
 
             if ($o->type == "checkbox") {
-                echo $this->editable_papt($optid, Ht::checkbox_h($optid, 1, $myval) . "&nbsp;" . Ht::label(htmlspecialchars($o->name)));
+                echo $this->editable_papt($optid, Ht::checkbox_h($optid, 1, $myval) . "&nbsp;" . Ht::label(htmlspecialchars($o->name)),
+                                          array("id" => "{$optid}_div"));
                 if (@$o->description)
                     echo "<div class='paphint'>", $o->description, "</div>";
                 echo "<div class='papv'></div>\n\n";
+                Ht::stash_script("jQuery('#{$optid}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
             } else if (!$o->is_document()) {
                 echo $this->editable_papt($optid, htmlspecialchars($o->name));
                 if (@$o->description)

@@ -30,10 +30,6 @@ function confHeader() {
         $mode = "p";
     if ($paperId <= 0)
         $title = ($newPaper ? "New Paper" : "Paper View");
-    /* else if ($mode == "pe")
-        $title = "Edit Paper #$paperId";
-    else if ($mode == "r")
-        $title = "Paper #$paperId Reviews"; */
     else
         $title = "Paper #$paperId";
 
@@ -550,11 +546,13 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
         $v = trim(defval($_REQUEST, $oname, ""));
         if (@$o->final && !$isSubmitFinal)
             $no_delete_options[] = "optionId!=" . $o->id;
-        else if (($o->type == "checkbox" && $_REQUEST[$oname])
+        else if ($o->type == "checkbox"
                  || $o->type == "selector"
                  || $o->type == "radio"
                  || $o->type == "numeric") {
-            if ($_REQUEST[$oname] !== false)
+            if ($o->type == "checkbox" && !$_REQUEST[$oname])
+                /* skip */;
+            else if ($_REQUEST[$oname] !== false)
                 $opt_data[] = "$o->id, " . $_REQUEST[$oname] . ", null";
             else
                 $Error[$oname] = htmlspecialchars($o->name) . " must be an integer.";
