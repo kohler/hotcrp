@@ -19,7 +19,7 @@ function session_name_fixer($m) {
 
 function ensure_session() {
     global $Opt;
-    if (session_id())
+    if (session_id() !== "")
         return true;
     $sn = isset($Opt["sessionName"]) ? $Opt["sessionName"] : "";
     if ($sn === "" && @$Opt["dbName"])
