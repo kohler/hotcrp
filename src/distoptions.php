@@ -213,7 +213,8 @@ $Opt["smartScoreCompare"] = true;
 //   sessionSecure   If true, then set the session cookie only on secure
 //                   connections. Defaults to false.
 //   sessionDomain   The domain scope for the session cookie. Defaults to the
-//                   server's domain.
+//                   server's domain. To share a cookie across subdomains,
+//                   prefix it with a dot: ".hotcrp.com".
 //   memoryLimit     Maximum amount of memory a PHP script can use. Defaults
 //                   to 128MB.
 //   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
