@@ -3,9 +3,7 @@
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-global $Opt;
-
-function set_multiconference() {
+function multiconference_init() {
     global $Opt;
 
     $confid = @$Opt["confid"];
@@ -43,9 +41,6 @@ function set_multiconference() {
         $Opt["dbName"] = $confid;
     $Opt["confid"] = $confid;
 }
-
-if (@$Opt["multiconference"])
-    set_multiconference();
 
 function multiconference_fail($tried_db) {
     global $Conf, $Me, $Opt;

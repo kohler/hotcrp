@@ -6,7 +6,7 @@
 require_once("init.php");
 global $Conf, $Opt;
 
-// Check for obsolete pages.
+// Check for obsolete pages
 // These are pages that we've removed from the source. But some user might
 // have an old version of the page lying around their directory. Don't run
 // that code; redirect to index.
@@ -14,19 +14,11 @@ if (array_search(Navigation::page(),
                  array("account", "contactauthors", "contacts", "login", "logout")) !== false)
     go();
 
+// Check for redirect to https
+if (@$Opt["redirectToHttps"])
+    Navigation::redirect_http_to_https(@$Opt["allowLocalHttp"]);
 
-// How long before a session is automatically logged out?
-//
-// Note that on many installations, a cron job garbage-collects old
-// sessions.  That cron job ignores local 'session.gc_maxlifetime' settings,
-// so you'll also need to change the system-wide setting in 'php.ini'.
-$Opt["globalSessionLifetime"] = ini_get('session.gc_maxlifetime');
-if (!isset($Opt["sessionLifetime"]))
-    $Opt["sessionLifetime"] = 86400;
-ini_set("session.gc_maxlifetime", defval($Opt, "sessionLifetime", 86400));
-
-
-// Check and fix Zlib output compression
+// Check and fix zlib output compression
 global $zlib_output_compression;
 $zlib_output_compression = false;
 if (function_exists("zlib_get_coding_type"))
@@ -36,6 +28,11 @@ if ($zlib_output_compression) {
     header("Vary: Accept-Encoding", false);
 }
 
+// Set up sessions
+$Opt["globalSessionLifetime"] = ini_get("session.gc_maxlifetime");
+if (!isset($Opt["sessionLifetime"]))
+    $Opt["sessionLifetime"] = 86400;
+ini_set("session.gc_maxlifetime", defval($Opt, "sessionLifetime", 86400));
 ensure_session();
 
 
@@ -78,11 +75,6 @@ function initialize_user() {
 
 global $Me;
 initialize_user();
-
-
-// Perhaps redirect to https
-if (@$Opt["redirectToHttps"])
-    Navigation::redirect_http_to_https(@$Opt["allowLocalHttp"]);
 
 
 // Extract an error that we redirected through

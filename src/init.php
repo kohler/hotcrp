@@ -226,8 +226,10 @@ if (!@$Opt["loaded"]) {
                || (@include "$ConfSitePATH/conf/options.inc") !== false
                || (@include "$ConfSitePATH/Code/options.inc") !== false)
         $Opt["loaded"] = true;
-    if (@$Opt["multiconference"])
+    if (@$Opt["multiconference"]) {
         require_once("$ConfSitePATH/src/multiconference.php");
+        multiconference_init();
+    }
     if (@$Opt["include"])
         read_included_options($Opt["include"]);
 }

@@ -17,17 +17,30 @@ function session_name_fixer($m) {
     return "Z" . dechex(ord($m[0]));
 }
 
+function make_session_name($n) {
+    global $Opt;
+    if (($n === "" || $n === null || $n === true) && @$Opt["dbName"])
+        $n = $Opt["dbName"];
+    $n = preg_replace(',\*|\$\{confid\}|\$confid\b,', $Opt["confid"], $n);
+    return preg_replace_callback(',[^A-Ya-z0-9],', "session_name_fixer", $n);
+}
+
 function ensure_session() {
     global $Opt;
     if (session_id() !== "")
         return true;
-    $sn = isset($Opt["sessionName"]) ? $Opt["sessionName"] : "";
-    if ($sn === "" && @$Opt["dbName"])
-        $sn = $Opt["dbName"];
-    $sn = preg_replace(',\*|\$\{confid\}|\$confid\b,', $Opt["confid"], $sn);
-    $sn = preg_replace_callback(',[^A-Ya-z0-9],', "session_name_fixer", $sn);
-    if (!$sn)
+    if (!($sn = make_session_name(@$Opt["sessionName"])))
         return false;
+    // maybe upgrade from an old session name to this one
+    if (!isset($_COOKIE[$sn])
+        && isset($Opt["sessionUpgrade"])
+        && ($upgrade_sn = make_session_name($Opt["sessionUpgrade"]))
+        && isset($_COOKIE[$upgrade_sn])) {
+        session_id($_COOKIE[$upgrade_sn]);
+        setcookie($upgrade_sn, "", time() - 3600, "/",
+                  defval($Opt, "sessionDomain", ""),
+                  defval($Opt, "sessionSecure", false));
+    }
     if (isset($Opt["sessionLifetime"]) || isset($Opt["sessionSecure"])
         || isset($Opt["sessionDomain"])) {
         $params = session_get_cookie_params();
