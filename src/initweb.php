@@ -32,7 +32,7 @@ if ($zlib_output_compression) {
 $Opt["globalSessionLifetime"] = ini_get("session.gc_maxlifetime");
 if (!isset($Opt["sessionLifetime"]))
     $Opt["sessionLifetime"] = 86400;
-ini_set("session.gc_maxlifetime", defval($Opt, "sessionLifetime", 86400));
+ini_set("session.gc_maxlifetime", $Opt["sessionLifetime"]);
 ensure_session();
 
 
