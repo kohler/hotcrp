@@ -1616,11 +1616,11 @@ class PaperSearch {
 
     static function canonicalizeQuery($qa, $qo = null, $qx = null) {
         $x = array();
-        if ($qa && ($qa = self::_canonicalizeQueryType($qa, "all")))
+        if ($qa && ($qa = self::_canonicalizeQueryType(trim($qa), "all")))
             $x[] = $qa;
-        if ($qo && ($qo = self::_canonicalizeQueryType($qo, "any")))
+        if ($qo && ($qo = self::_canonicalizeQueryType(trim($qo), "any")))
             $x[] = $qo;
-        if ($qx && ($qx = self::_canonicalizeQueryType($qx, "none")))
+        if ($qx && ($qx = self::_canonicalizeQueryType(trim($qx), "none")))
             $x[] = $qx;
         if (count($x) == 1)
             return preg_replace('/\A\((.*)\)\z/', '$1', join("", $x));
