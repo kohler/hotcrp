@@ -48,7 +48,7 @@ function ensure_session() {
 
 function post_value() {
     ensure_session();
-    if (($sid = session_id())) {
+    if (($sid = session_id()) !== "") {
 	if (strlen($sid) > 16)
 	    $sid = substr($sid, 8);
 	$sid = substr($sid, 0, 8);
