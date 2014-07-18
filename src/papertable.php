@@ -232,7 +232,7 @@ class PaperTable {
         global $textAreaRows;
         $this->entryMatches = 0;
 
-        if ($this->useRequest)
+        if ($this->useRequest && isset($_REQUEST[$fieldName]))
             $text = $_REQUEST[$fieldName];
         else if ($this->prow)
             $text = $this->prow->$fieldName;
