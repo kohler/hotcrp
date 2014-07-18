@@ -210,6 +210,10 @@ $Opt["smartScoreCompare"] = true;
 //                   to 86400 (24 hours). Should be less than or equal to the
 //                   system-wide setting for `session.gc_maxlifetime` in
 //                   the PHP initialization file, `php.ini`.
+//   sessionSecure   If true, then set the session cookie only on secure
+//                   connections. Defaults to false.
+//   sessionDomain   The domain scope for the session cookie. Defaults to the
+//                   server's domain.
 //   memoryLimit     Maximum amount of memory a PHP script can use. Defaults
 //                   to 128MB.
 //   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
