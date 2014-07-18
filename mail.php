@@ -272,7 +272,7 @@ function checkMail($send) {
         } else if ($preparation["subject"] != $last["subject"]
                    || $preparation["body"] != $last["body"]
                    || $preparation["to"] != $last["to"]
-                   || $preparation["cc"] != $last["cc"]
+                   || @$preparation["cc"] != @$last["cc"]
                    || @$preparation["replyto"] != @$last["replyto"]) {
             $last = $preparation;
             $checker = "c" . $row->contactId . "p" . $row->paperId;
