@@ -41,11 +41,8 @@ function ensure_session() {
                   defval($Opt, "sessionDomain", ""),
                   defval($Opt, "sessionSecure", false));
     }
-    if (isset($Opt["sessionLifetime"]) || isset($Opt["sessionSecure"])
-        || isset($Opt["sessionDomain"])) {
+    if (isset($Opt["sessionSecure"]) || isset($Opt["sessionDomain"])) {
         $params = session_get_cookie_params();
-        if (isset($Opt["sessionLifetime"]))
-            $params["lifetime"] = $Opt["sessionLifetime"];
         if (isset($Opt["sessionSecure"]))
             $params["secure"] = !!$Opt["sessionSecure"];
         if (isset($Opt["sessionDomain"]))
