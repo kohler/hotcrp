@@ -38,7 +38,7 @@ function ensure_session() {
         && isset($_COOKIE[$upgrade_sn])) {
         session_id($_COOKIE[$upgrade_sn]);
         setcookie($upgrade_sn, "", time() - 3600, "/",
-                  defval($Opt, "sessionDomain", ""),
+                  defval($Opt, "sessionUpgradeDomain", defval($Opt, "sessionDomain", "")),
                   defval($Opt, "sessionSecure", false));
     }
     if (isset($Opt["sessionSecure"]) || isset($Opt["sessionDomain"])) {
