@@ -391,13 +391,13 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
             echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='", hoturl("search", "q=&amp;t=r"), "'>review</a>";
         else
             echo "You have submitted ", $myrow[1], " of <a href='", hoturl("search", "q=&amp;t=r"), "'>", plural($myrow[2], "review"), "</a>";
-        if ($merit_field->displayed && $myrow[1])
+        if ($merit_field && $merit_field->displayed && $myrow[1])
             echo " with an average $merit_field->name_html score of ", $merit_field->unparse_average($myrow[3]->avg);
         echo ".<br />\n";
     }
     if (($Me->isPC || $Me->privChair) && $npc) {
         echo sprintf("  The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
-        if ($merit_field->displayed && $npcScore)
+        if ($merit_field && $merit_field->displayed && $npcScore)
             echo " with an average $merit_field->name_html score of ", $merit_field->unparse_average($sumpcScore / $npcScore);
         echo ".";
         if ($Me->isPC || $Me->privChair)
