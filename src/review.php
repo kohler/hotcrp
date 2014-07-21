@@ -1246,7 +1246,7 @@ $blind\n";
             else
                 $x .= "<div class='rvb'>";
             $x .= "<div class='rv rv_$field'><div class='revt'>" . $c . "<div class='clear'></div>"
-                . "</div><div class='revv'>";
+                . '</div><div class="revv">';
             if ($f->has_options) {
                 if (!$fval || !isset($f->options[$fval]))
                     $x .= "<span class='rev_${field} rev_unknown'>Unknown</span>";
@@ -1257,7 +1257,7 @@ $blind\n";
                         . "</span>";
                 }
             } else
-                $x .= htmlWrapText(htmlspecialchars($fval));
+                $x .= '<div class="revtext">' . link_urls(htmlspecialchars($fval)) . '</div>';
             $x .= "</div></div></div>";
             if ($disp & self::WEB_RIGHT)
                 $x .= "<div class='clear'></div>";

@@ -269,6 +269,9 @@ class CommentView {
 
         $this->table_tobody();
 
+        if (!$editMode)
+            echo '<div class="cmtg">';
+
         $cmsgs = $Conf->session("comment_msgs");
         if ($crow && $cmsgs && isset($cmsgs[$crow->commentId]))
             echo $cmsgs[$crow->commentId];
@@ -276,14 +279,14 @@ class CommentView {
             echo "<div class='xwarning'>This is a draft response. Reviewers won’t see it until you submit.</div>";
 
         if (!$editMode) {
-            echo '<div class="cmtg">';
             if ($Me->allowAdminister($prow)
                 && ($crow->commentType & COMMENTTYPE_DRAFT))
                 echo "<i>The <a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId#comment$crow->commentId"), "'>authors’ response</a> is not yet ready for reviewers to view.</i>";
             else if (!$Me->canViewComment($prow, $crow, null))
                 echo "<i>The authors’ response is not yet ready for reviewers to view.</i>";
             else
-                echo htmlWrapText(htmlspecialchars($crow->comment));
+                echo '<div class="cmttext">',
+                    link_urls(htmlspecialchars($crow->comment)), '</div>';
             echo "</div>";
             $this->table_end();
             return;
