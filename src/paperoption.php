@@ -9,8 +9,12 @@ class PaperOption {
     function __construct($args) {
         foreach ($args as $k => $v)
             $this->$k = $v;
-        if (!@$this->view_type)
-            $this->view_type = "pc";
+        if (!@$this->visibility && @$this->view_type === "pc")
+            $this->visibility = "rev";
+        else if (!@$this->visibility && @$this->view_type)
+            $this->visibility = $this->view_type;
+        else if (!@$this->visibility)
+            $this->visibility = "rev";
         if (!@$this->abbr)
             $this->abbr = self::abbreviate($this->name, $this->id);
         if (!@$this->description)
@@ -128,8 +132,8 @@ class PaperOption {
             $j->near_submission = true;
         if (@$this->highlight)
             $j->highlight = true;
-        if (@$this->view_type && $this->view_type != "pc")
-            $j->view_type = $this->view_type;
+        if (@$this->visibility && $this->visibility != "rev")
+            $j->visibility = $this->visibility;
         if (@$this->display_space)
             $j->display_space = $this->display_space;
         if (@$this->selector)

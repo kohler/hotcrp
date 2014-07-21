@@ -473,9 +473,9 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
                 $oarg["selector"][] = $t;
     }
 
-    $oarg["view_type"] = defval($_REQUEST, "optp$id", "pc");
+    $oarg["visibility"] = defval($_REQUEST, "optp$id", "rev");
     if (@$oarg["final"])
-        $oarg["view_type"] = "pc";
+        $oarg["visibility"] = "rev";
 
     $oarg["position"] = (int) defval($_REQUEST, "optfp$id", 1);
 
@@ -1320,7 +1320,7 @@ function doOptGroupOption($o) {
                 "name" => $_REQUEST["optn$id"],
                 "description" => defval($_REQUEST, "optd$id", ""),
                 "type" => defval($_REQUEST, "optvt$id", "checkbox"),
-                "view_type" => defval($_REQUEST, "optp$id", ""),
+                "visibility" => defval($_REQUEST, "optp$id", ""),
                 "position" => defval($_REQUEST, "optfp$id", 1),
                 "highlight" => @($_REQUEST["optdt$id"] == "highlight"),
                 "near_submission" => @($_REQUEST["optdt$id"] == "near_submission")));
@@ -1406,7 +1406,7 @@ function doOptGroupOption($o) {
 
     echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
         setting_label("optp$id", "Visibility"), "</div><div class='f-e'>",
-        Ht::select("optp$id", array("admin" => "Administrators only", "pc" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->view_type),
+        Ht::select("optp$id", array("admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->visibility),
         "</div></div></td>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",

@@ -1232,14 +1232,14 @@ class Contact {
         // policy
         if (!$this->canViewPaper($prow, $whyNot))
             return false;       // $whyNot already set
-        $oview = @$opt->view_type;
+        $oview = @$opt->visibility;
         if ($rights->act_author_view
             || (($rights->allow_administer
                  || $rights->allow_pc_broad
                  || $rights->review_type)
                 && (($oview == "admin" && $rights->allow_administer)
                     || !$oview
-                    || $oview == "pc"
+                    || $oview == "rev"
                     || ($oview == "nonblind"
                         && $this->canViewAuthors($prow, $forceShow)))))
             return true;
