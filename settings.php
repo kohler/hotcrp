@@ -1185,7 +1185,7 @@ function do_message($name, $description, $type, $rows = 10, $hint = "") {
     $default = $Conf->message_default_html($name);
     $current = setting_data($name, $default);
     echo '<div class="fold', ($current == $default ? "c" : "o"),
-        '" hotcrpfold="yes">',
+        '" hotcrp_fold="yes">',
         '<div class="', ($type ? "f-cn" : "f-cl"),
         ' childfold" onclick="return foldup(this,event)">',
         '<a class="q" href="#" onclick="return foldup(this,event)">',
@@ -1542,7 +1542,7 @@ function do_track_permission($type, $question, $tnum, $thistrack) {
     } else
         $tclass = $ttag = "";
 
-    echo "<tr hotcrpfold=\"1\" class=\"fold", ($tclass == "" ? "c" : "o"), "\">",
+    echo "<tr hotcrp_fold=\"1\" class=\"fold", ($tclass == "" ? "c" : "o"), "\">",
         "<td class=\"lxcaption\">",
         setting_label("${type}_track$tnum", $question, "${type}_track$tnum"),
         "</td>",
