@@ -448,7 +448,7 @@ if (isset($_REQUEST["addpc"]) && $Me->allowAdminister($prow) && check_post()) {
 
 
 // paper actions
-if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_post()) {
+if (isset($_REQUEST["settags"]) && check_post()) {
     PaperActions::setTags($prow);
     loadRows();
 }

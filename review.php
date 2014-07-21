@@ -385,7 +385,7 @@ if (isset($_REQUEST["setmanager"]) && check_post()) {
     PaperActions::set_manager($prow, @$_REQUEST["manager"], $Me, @$_REQUEST["ajax"]);
     loadRows();
 }
-if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_post()) {
+if (isset($_REQUEST["settags"]) && check_post()) {
     PaperActions::setTags($prow);
     loadRows();
 }

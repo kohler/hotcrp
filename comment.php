@@ -136,7 +136,7 @@ else if ((isset($_REQUEST["submitcomment"]) || isset($_REQUEST["submitresponse"]
 
 
 // paper actions
-if ((isset($_REQUEST["settags"]) || isset($_REQUEST["settingtags"])) && check_post()) {
+if (isset($_REQUEST["settags"]) && check_post()) {
     PaperActions::setTags($prow);
     loadRows();
 }
