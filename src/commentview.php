@@ -279,7 +279,7 @@ class CommentView {
             echo '<div class="cmtg">';
             if ($Me->allowAdminister($prow)
                 && ($crow->commentType & COMMENTTYPE_DRAFT))
-                echo "<i>The <a href='", hoturl("comment", "c=$crow->commentId"), "'>authors’ response</a> is not yet ready for reviewers to view.</i>";
+                echo "<i>The <a href='", hoturl("paper", "p=$prow->paperId&amp;c=$crow->commentId#comment$crow->commentId"), "'>authors’ response</a> is not yet ready for reviewers to view.</i>";
             else if (!$Me->canViewComment($prow, $crow, null))
                 echo "<i>The authors’ response is not yet ready for reviewers to view.</i>";
             else

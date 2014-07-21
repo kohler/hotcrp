@@ -73,7 +73,7 @@ function saveComment($text, $is_response) {
             $q = ($Conf->sversion >= 53 ? "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0" : "forAuthors>1");
             $result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and $q");
             if (($row = edb_row($result)))
-                return $Conf->errorMsg("A paper response has already been entered.  <a href=\"" . hoturl("comment", "c=$row[0]") . "\">Edit that response</a>");
+                return $Conf->errorMsg("A response has already been entered.  <a href=\"" . hoturl("paper", "p=$prow->paperId&amp;c=$row[0]#comment$row[0]") . "\">Edit that response</a>");
         }
         return false;
     }

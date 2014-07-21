@@ -1165,8 +1165,7 @@ manager’s identity.</p>
   authors’ responses to the reviews (optional).</a></strong>  Authors’ responses
   (also called rebuttals) let authors correct reviewer misconceptions
   before decisions are made.  Responses are entered
-  into the system as <a
-  href='" . hoturl("comment") . "'>comments</a>.  On the <a
+  into the system as comments.  On the <a
   href='" . hoturl("settings", "group=dec") . "'>decision settings page</a>,
   update “Can authors see reviews” and “Collect responses to the
   reviews,” then <a href='" . hoturl("mail") . "'>send mail to
@@ -1227,8 +1226,7 @@ manager’s identity.</p>
   tab is broadcast to all logged-in PC members, along with the next paper
   in the current discussion order.</p></li>
 
-<li><p>Scribes can, if you like, capture discussions as <a
-  href='" . hoturl("comment") . "'>comments</a> for the authors’
+<li><p>Scribes can, if you like, capture discussions as comments for the authors’
   reference.</p></li>
 
 <li><p><strong>Paper decisions</strong> can be recorded on the <a

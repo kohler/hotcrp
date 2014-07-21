@@ -229,7 +229,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
         $t .= "<a href=\"" . hoturl("review", "r=$m[1]") . "\">Review " . $m[1] . "</a>";
         $act = substr($act, strlen($m[0]));
     } else if (preg_match('/^Comment (\d+)/', $act, $m)) {
-        $t .= "<a href=\"" . hoturl("comment", "c=$m[1]") . "\">Comment " . $m[1] . "</a>";
+        $t .= "<a href=\"" . hoturl("paper", "p=$row->paperId#comment$m[1]") . "\">Comment " . $m[1] . "</a>";
         $act = substr($act, strlen($m[0]));
     } else if (preg_match('/^(Sending|Account was sent) mail #(\d+)/', $act, $m)) {
         $t .= $m[1] . " <a href=\"" . hoturl("mail", "fromlog=$m[2]") . "\">mail #$m[2]</a>";
