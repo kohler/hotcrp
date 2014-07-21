@@ -134,6 +134,19 @@ class PaperActions {
             $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "rank")), true);
     }
 
+    static function set_follow($prow) {
+        global $Conf, $Me;
+        $ajax = defval($_REQUEST, "ajax", 0);
+        $cid = $Me->contactId;
+        if ($Me->privChair && ($x = rcvtint($_REQUEST["contactId"])) > 0)
+            $cid = $x;
+        saveWatchPreference($prow->paperId, $cid, WATCHTYPE_COMMENT, defval($_REQUEST, "follow"));
+        if ($OK)
+            $Conf->confirmMsg("Saved");
+        if ($ajax)
+            $Conf->ajaxExit(array("ok" => $OK));
+    }
+
     private static function set_paper_pc($prow, $value, $contact, $ajax, $type) {
         global $Conf, $Error, $OK;
 
