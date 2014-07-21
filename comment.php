@@ -105,8 +105,8 @@ function saveComment($text, $is_response) {
 
 if (!check_post())
     /* do nothing */;
-else if ((isset($_REQUEST["submit"]) || isset($_REQUEST["submitresponse"])
-          || isset($_REQUEST["savedraft"]))
+else if ((isset($_REQUEST["submitcomment"]) || isset($_REQUEST["submitresponse"])
+          || isset($_REQUEST["savedraftresponse"]))
          && defval($_REQUEST, "response")) {
     if (!$Me->canRespond($prow, $crow, $whyNot, true)) {
         $Conf->errorMsg(whyNotText($whyNot, "respond to reviews for"));
@@ -116,7 +116,7 @@ else if ((isset($_REQUEST["submit"]) || isset($_REQUEST["submitresponse"])
         $useRequest = true;
     } else
         saveComment($text, true);
-} else if (isset($_REQUEST["submit"])) {
+} else if (isset($_REQUEST["submitcomment"])) {
     if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
         $Conf->errorMsg(whyNotText($whyNot, "comment on"));
         $useRequest = true;
@@ -125,7 +125,7 @@ else if ((isset($_REQUEST["submit"]) || isset($_REQUEST["submitresponse"])
         $useRequest = true;
     } else
         saveComment($text, false);
-} else if (isset($_REQUEST["delete"]) && $crow) {
+} else if (isset($_REQUEST["deletecomment"]) && $crow) {
     if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
         $Conf->errorMsg(whyNotText($whyNot, "comment on"));
         $useRequest = true;

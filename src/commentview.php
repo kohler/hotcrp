@@ -216,11 +216,11 @@ class CommentView {
         // actions
         echo "<div class=\"clear\"></div>\n";
         $buttons = array();
-        $buttons[] = Ht::submit("submit", "Save", array("class" => "bb"));
+        $buttons[] = Ht::submit("submitcomment", "Save", array("class" => "bb"));
         if ($crow) {
-            $buttons[] = Ht::submit("cancel", "Cancel");
+            $buttons[] = Ht::submit("cancelcomment", "Cancel");
             $buttons[] = "";
-            $buttons[] = Ht::submit("delete", "Delete comment");
+            $buttons[] = Ht::submit("deletecomment", "Delete comment");
         } else
             $buttons[] = Ht::js_button("Cancel", "cancel_comment()");
         $post = "";
@@ -309,10 +309,10 @@ class CommentView {
         $buttons[] = Ht::submit("submitresponse", "Submit", array("class" => "bb"));
         if ($Me->allowAdminister($prow) || !$crow
             || ($crow->commentType & COMMENTTYPE_DRAFT))
-            $buttons[] = Ht::submit("savedraft", "Save as draft");
+            $buttons[] = Ht::submit("savedraftresponse", "Save as draft");
         if ($crow) {
             $buttons[] = "";
-            $buttons[] = Ht::submit("delete", "Delete response");
+            $buttons[] = Ht::submit("deletecomment", "Delete response");
         }
         if ($wordlimit > 0) {
             $buttons[] = "";
