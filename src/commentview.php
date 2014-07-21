@@ -8,8 +8,11 @@ class CommentView {
     private $ncomment_in_table = 0;
     public $nresponse = 0;
     private $mode = 0;
-    private $numbers = array();
+    private $ordinals = array();
     private $tagger = null;
+    private static $echoed = false;
+
+    static private $visibility_map = array(COMMENTTYPE_ADMINONLY => "admin", COMMENTTYPE_PCONLY => "pc", COMMENTTYPE_REVIEWER => "rev", COMMENTTYPE_AUTHOR => "au");
 
     function __construct() {
     }
@@ -19,7 +22,6 @@ class CommentView {
             '"><div class="cmtcard_head">';
         $this->mode = 1;
         $this->ncomment_in_table = 0;
-        $this->numbers = array();
     }
 
     function table_tobody() {
@@ -33,18 +35,85 @@ class CommentView {
         }
     }
 
+    private static function echo_script($prow) {
+        global $Conf;
+        $Conf->echoScript("papercomment.comment_edit_url=\"" . htmlspecialchars_decode(hoturl("paper", "p=$prow->paperId&amp;c=\$#comment\$")) . "\";papercomment.commenttag_search_url=\"" . htmlspecialchars_decode(hoturl("search", "q=cmt%3A%23\$")) . "\"");
+    }
+
     private function _commentOrdinal($prow, $crow) {
         if (($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
             || $crow->commentType < COMMENTTYPE_PCONLY)
             return null;
+        if (isset($this->ordinals[$crow->commentId]))
+            return $this->ordinals[$crow->commentId];
         $p = ($crow->commentType >= COMMENTTYPE_AUTHOR ? "A" : "");
-        $stored_number = defval($this->numbers, $p, 0);
+        $stored_ordinal = defval($this->ordinals, $p, 0);
         if (isset($crow->ordinal) && $crow->ordinal)
             $n = $crow->ordinal;
         else
-            $n = $stored_number + 1;
-        $this->numbers[$p] = max($n, $stored_number);
-        return $p . $n;
+            $n = $stored_ordinal + 1;
+        $this->ordinals[$p] = max($n, $stored_ordinal);
+        return ($this->ordinals[$crow->commentId] = $p . $n);
+    }
+
+    function json($prow, $crow, $response = false) {
+        global $Conf, $Me;
+
+        if ($crow && !isset($crow->commentType))
+            setCommentType($crow);
+        if ($crow && !$Me->canViewComment($prow, $crow, null))
+            return false;
+
+        // placeholder for new comment
+        if (!$crow) {
+            if (!($response ? $Me->canRespond($prow, $crow) : $Me->canComment($prow, $crow)))
+                return false;
+            $cj = (object) array("is_new" => true, "editable" => true);
+            if ($response)
+                $cj->response = true;
+            return $cj;
+        }
+
+        // otherwise, viewable comment
+        $cj = (object) array("cid" => (int) $crow->commentId);
+        if ($Me->canComment($prow, $crow))
+            $cj->editable = true;
+        $cj->ordinal = $this->_commentOrdinal($prow, $crow);
+        $cj->visibility = self::$visibility_map[$crow->commentType & COMMENTTYPE_VISIBILITY];
+        if ($crow->commentType & COMMENTTYPE_BLIND)
+            $cj->blind = true;
+        if ($crow->commentType & COMMENTTYPE_DRAFT)
+            $cj->draft = true;
+        if ($crow->commentType & COMMENTTYPE_RESPONSE)
+            $cj->response = true;
+
+        // tags
+        if (@$crow->commentTags) {
+            if (!$this->tagger)
+                $this->tagger = new Tagger;
+            if (($tags = $this->tagger->viewable($crow->commentTags)))
+                $cj->tags = Tagger::split($tags);
+            if ($tags && ($cc = $this->tagger->color_classes($tags)))
+                $cj->color_classes = $cc;
+        }
+
+        // identity and time
+        $idable = $Me->canViewCommentIdentity($prow, $crow, null);
+        $idable_override = $idable || $Me->canViewCommentIdentity($prow, $crow, true);
+        if ($idable || $idable_override) {
+            $cj->author = Text::user_html($crow);
+            $cj->author_email = $crow->email;
+            if (!$idable)
+                $cj->author_hidden = true;
+        }
+        if ($crow->timeModified > 0) {
+            $cj->modified_at = (int) $crow->timeModified;
+            $cj->modified_at_text = $Conf->printableTime($crow->timeModified);
+        }
+
+        // text
+        $cj->text = $crow->comment;
+        return $cj;
     }
 
     private function _commentIdentityTime($prow, $crow, $cmttags, $response) {

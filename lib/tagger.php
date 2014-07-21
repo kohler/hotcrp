@@ -85,7 +85,7 @@ class Tagger {
             return $tag;
     }
 
-    public static function split($tag) {
+    public static function split_index($tag) {
         if (!$tag)
             return array(false, false);
         else if (!($pos = strpos($tag, "#")) && !($pos = strpos($tag, "=")))
@@ -94,6 +94,14 @@ class Tagger {
             return array(substr($tag, 0, $pos), false);
         else
             return array(substr($tag, 0, $pos), (int) substr($tag, $pos + 1));
+    }
+
+    public static function split($taglist) {
+        $a = array();
+        foreach (explode(" ", $taglist) as $t)
+            if ($t !== "")
+                $a[] = $t;
+        return $a;
     }
 
     public static function basic_check($tag) {
@@ -384,7 +392,7 @@ class Tagger {
         if ($vt != "")
             foreach (preg_split('/\s+/', $vt) as $t)
                 if ($t != "") {
-                    list($b, $v) = self::split($t);
+                    list($b, $v) = self::split_index($t);
                     $map[$b]->vote = ($v ? $v : 1);
                     ++$map->nvote;
                 }
@@ -533,7 +541,7 @@ class Tagger {
             $dels = array();
             if ($mode != "p") {
                 foreach ($tags as $tag) {
-                    $ts = self::split($tag);
+                    $ts = self::split_index($tag);
                     $qx = "";
                     if ($ts[1] !== false && ($mode == "d" || $mode == "da"))
                         $qx = " and tagIndex=$ts[1]";

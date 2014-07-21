@@ -1005,6 +1005,111 @@ function cancel_comment() {
     fold("addcomment", 1);
 }
 
+function link_urls(t) {
+    var re = /((?:https?|ftp):\/\/(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;&])(["().,:;]*)(?=[\s<>&]|$)/g;
+    return t.replace(re, function (m, a, b) {
+        return '<a href="' + a + '" rel="noreferrer">' + a + '</a>' + b;
+    });
+}
+
+function HtmlCollector() {
+    this.clear();
+}
+HtmlCollector.prototype.push = function (open, close) {
+    if (open && close) {
+        this.open.push(this.html + open);
+        this.close.push(close);
+        this.html = "";
+        return this.open.length - 1;
+    } else
+        this.html += open;
+};
+HtmlCollector.prototype.pop = function (pos) {
+    if (pos == null)
+        pos = this.open.length ? this.open.length - 1 : 0;
+    while (this.open.length > pos) {
+        this.html = this.open[this.open.length - 1] + this.html
+            + this.close[this.open.length - 1];
+        this.open.pop();
+        this.close.pop();
+    }
+};
+HtmlCollector.prototype.render = function () {
+    this.pop(0);
+    return this.html;
+};
+HtmlCollector.prototype.clear = function () {
+    this.open = [];
+    this.close = [];
+    this.html = "";
+};
+
+window.papercomment = (function () {
+var vismap = {rev: "hidden from authors",
+              pc: "shown only to PC reviewers",
+              admin: "shown only to administrators"};
+
+function comment_identity_time(hc, cj) {
+    var t = [], x, i;
+    if (cj.ordinal)
+        t.push('<span class="cmtnumhead"><a class="qq" href="#comment'
+               + cj.cid + '"><span class="cmtnumat">@</span><span class="cmtnumnum">'
+               + cj.ordinal + '</span></a></span>');
+    if (cj.author && cj.author_hidden)
+        t.push('<span id="foldcid' + cj.cid + '" class="cmtname fold4c">'
+               + '<a class="q" href="#" onclick="fold(\'cid' + cj.cid + '\',null,4)" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fn4">&nbsp;'
+               + cj.author + '</span></span>');
+    else if (cj.author && cj.blind && cj.visibility == "au")
+        t.push('<span class="cmtname">[' + cj.author + ']</span>');
+    else if (cj.author)
+        t.push('<span class="cmtname">' + cj.author + '</span>');
+    if (cj.modified_at)
+        t.push('<span class="cmttime">' + cj.modified_at_text + '</span>');
+    if (!cj.response && cj.tags) {
+        x = [];
+        for (i in cj.tags)
+            x.push('<a class="qq" href="' + papercomment.commenttag_search_url.replace(/\$/g, encodeURIComponent(cj.tags[i])) + '">#' + cj.tags[i] + '</a>');
+        t.push(x.join(" "));
+    }
+    if (t.length)
+        hc.push('<span class="cmtfn">' + t.join(' <span class="barsep">&nbsp;|&nbsp;</span> ') + '</span>');
+    if (!cj.response && (i = vismap[cj.visibility]))
+        hc.push('<span class="cmtvis">(' + i + ')</span>');
+    hc.push('<div class="clear"></div>');
+}
+
+function make(cj) {
+    var hc = new HtmlCollector, cmtfn, j, textj, t;
+
+    // opener
+    hc.push(cj.is_new ? '<div id="commentnew" class="cmtg">'
+            : '<div id="comment' + cj.cid + '" class="cmtg">', '</div>');
+    if (cj.view_type == "admin")
+        hc.push('<div class="cmtadminvis">', '</div>');
+    else if (cj.color_classes)
+        hc.push('<div class="cmtcolor ' + cj.color_classes + '">', '</div>');
+    hc.push('<div class="cmtt">', '</div>');
+
+    // editor
+    if (!cj.is_new && cj.editable)
+        hc.push('<div class="floatright"><a href="'
+                + papercomment.comment_edit_url.replace(/\$/g, cj.cid)
+                + '" class="xx editor"><u>Edit</u></a></div>');
+
+    comment_identity_time(hc, cj);
+
+    hc.pop();
+    hc.push('<div class="cmtv"><div class="cmttext"></div></div>');
+
+    j = jQuery(hc.render());
+    textj = j.find(".cmttext").text(cj.text);
+    textj.html(link_urls(textj.html()));
+    return j;
+}
+
+return {make: make};
+})();
+
 // quicklink shortcuts
 function quicklink_shortcut(evt, code) {
     // find the quicklink, reject if not found
