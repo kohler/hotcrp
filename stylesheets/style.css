@@ -2349,6 +2349,9 @@ div.cmtt div.floatright {
 div.cmtv {
 	padding: 0 0 4px;
 }
+div.cmttext {
+	white-space: pre-wrap;
+}
 div#foldaddcomment div.cmtv {
 	padding-bottom: 0;
 }

@@ -166,8 +166,9 @@ class CommentView {
             echo $cmsgs[$crow->commentId];
 
         if (!$editMode) {
-            echo htmlWrapText(htmlspecialchars($crow->comment)), "</div>",
-                ($opendiv ? "</div>" : ""), "</div>\n\n";
+            echo '<div class="cmttext">',
+                link_urls(htmlspecialchars($crow->comment)),
+                '</div></div>', ($opendiv ? "</div>" : ""), "</div>\n\n";
             return;
         }
 
