@@ -142,46 +142,6 @@ if (isset($_REQUEST["settags"]) && check_post()) {
 }
 
 
-// can we view/edit reviews?
-$viewAny = $Me->canViewReview($prow, null, null, $whyNotView);
-$editAny = $Me->canReview($prow, null, $whyNotEdit);
-
-
-// can we see any reviews?
-if (!$viewAny && !$editAny) {
-    if (!$Me->canViewPaper($prow, $whyNotPaper))
-        errorMsgExit(whyNotText($whyNotPaper, "view"));
-    if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
-        $Conf->errorMsg("You can’t see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
-        go(hoturl("paper", "p=$prow->paperId"));
-    }
-}
-
-
-// mode
-if ($paperTable->mode == "r" || $paperTable->mode == "re")
-    $paperTable->fixReviewMode();
-if ($paperTable->mode == "pe")
-    go(hoturl("paper", array("p" => $prow->paperId, "ls" => @$_REQUEST["ls"])));
-
-
-// page header
-confHeader();
-
-
-// paper table
-$paperTable->initialize(false, false);
-$paperTable->paptabBegin();
-
-if (!$viewAny && !$editAny
-    && (!$paperTable->rrow
-        || !$Me->canViewReview($prow, $paperTable->rrow, null)))
-    $paperTable->paptabEndWithReviewMessage();
-else if ($paperTable->mode == "r" && !$paperTable->rrow)
-    $paperTable->paptabEndWithReviews();
-else
-    $paperTable->paptabEndWithEditableReview();
-
-$paperTable->paptabComments();
-
-$Conf->footer();
+go(hoturl("paper", array("p" => $prow->paperId,
+                         "c" => @$_REQUEST["c"],
+                         "ls" => @$_REQUEST["ls"])));
