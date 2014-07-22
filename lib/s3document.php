@@ -193,6 +193,7 @@ class S3Document {
             if (($this->status !== null && $this->status !== 500)
                 || self::$retry_timeout_allowance <= 0)
                 return;
+            error_log("S3 warning: $method $filename: retrying");
             $timeout = 0.005 * (1 << $i);
             self::$retry_timeout_allowance -= $timeout;
             usleep(1000000 * $timeout);
