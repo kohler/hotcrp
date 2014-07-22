@@ -261,8 +261,6 @@ class Conference {
             $Opt["shortName"] = $Opt["longName"];
         if (!isset($Opt["downloadPrefix"]) || $Opt["downloadPrefix"] == "")
             $Opt["downloadPrefix"] = $confid . "-";
-        if (!isset($Opt["conferenceId"]) || $Opt["conferenceId"] == "")
-            $Opt["conferenceId"] = $confid;
 
         // expand ${confid}, ${confshortname}
         foreach (array("sessionName", "downloadPrefix", "conferenceSite",

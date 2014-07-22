@@ -123,7 +123,7 @@ class HotCRPDocument {
         }
         $s3 = self::s3_document();
         $dtype = isset($doc->documentType) ? $doc->documentType : $this->dtype;
-        $meta = json_encode(array("conf" => $Opt["conferenceId"],
+        $meta = json_encode(array("conf" => $Opt["dbName"],
                                   "pid" => (int) $docinfo->paperId,
                                   "dtype" => (int) $dtype));
         $filename = self::s3_filename($doc);
