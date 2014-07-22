@@ -135,7 +135,7 @@ class PaperActions {
     }
 
     static function set_follow($prow) {
-        global $Conf, $Me;
+        global $Conf, $Me, $OK;
         $ajax = defval($_REQUEST, "ajax", 0);
         $cid = $Me->contactId;
         if ($Me->privChair && ($x = rcvtint($_REQUEST["contactId"])) > 0)
