@@ -37,7 +37,8 @@ class CommentView {
 
     private static function echo_script($prow) {
         global $Conf;
-        $Conf->echoScript("papercomment.comment_edit_url=\"" . htmlspecialchars_decode(hoturl("paper", "p=$prow->paperId&amp;c=\$#comment\$")) . "\";papercomment.commenttag_search_url=\"" . htmlspecialchars_decode(hoturl("search", "q=cmt%3A%23\$")) . "\"");
+        $Conf->echoScript("papercomment.comment_edit_url=\"" . hoturl_raw("paper", "p=$prow->paperId&amp;c=\$#comment\$")
+                          . "\";papercomment.commenttag_search_url=\"" . hoturl_raw("search", "q=cmt%3A%23\$") . "\"");
     }
 
     private function _commentOrdinal($prow, $crow) {

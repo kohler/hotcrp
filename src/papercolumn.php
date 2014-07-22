@@ -654,7 +654,7 @@ class PreferencePaperColumn extends PaperColumn {
             $arg = "ajax=1&amp;setrevpref=1";
             if ($pl->contact->privChair && $pl->reviewer)
                 $arg .= "&amp;reviewer=" . $pl->reviewer;
-            $Conf->footerScript("add_revpref_ajax('" . htmlspecialchars_decode(hoturl_post("paper", $arg)) . "')");
+            $Conf->footerScript("add_revpref_ajax('" . hoturl_post_raw("paper", $arg) . "')");
         }
         return true;
     }

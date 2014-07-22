@@ -93,14 +93,12 @@ function saveComment($text, $is_response) {
     else
         $Conf->confirmMsg("$what deleted.");
 
-    if ($next_crow)
-        redirectSelf(array("anchor" => "comment$next_crow->commentId",
-                           "noedit" => null, "c" => null));
-    else
-        redirectSelf(array("c" => null));
-    // NB normally redirectSelf() does not return
-    loadRows();
-    return true;
+    $x = array("p" => $prow->paperId, "c" => null, "noedit" => null, "ls" => @$_REQUEST["ls"]);
+    if ($next_crow) {
+        $x["anchor"] = "comment$next_crow->commentId";
+        go(hoturl("paper", $x));
+    } else
+        go(hoturl("paper", $x));
 }
 
 if (!check_post())

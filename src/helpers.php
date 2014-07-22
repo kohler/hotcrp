@@ -295,6 +295,14 @@ function hoturl_absolute($page, $options = null) {
     return $Opt["paperSite"] . "/" . hoturl_site_relative($page, $options);
 }
 
+function hoturl_raw($page, $options = null) {
+    return htmlspecialchars_decode(hoturl($page, $options));
+}
+
+function hoturl_post_raw($page, $options = null) {
+    return htmlspecialchars_decode(hoturl_post($page, $options));
+}
+
 
 function fileUploaded(&$var) {
     global $Conf;
