@@ -173,7 +173,7 @@ class S3Document {
         }
     }
 
-    private function run($filename, $method, $args) {
+    private function run_once($filename, $method, $args) {
         $this->status = $this->status_text = null;
         $this->response_headers = $this->user_data = array();
         list($url, $hdr) = $this->http_headers($filename, $method, $args);
@@ -182,6 +182,15 @@ class S3Document {
             $this->parse_response_headers($url, stream_get_meta_data($stream));
             $this->response_headers["content"] = stream_get_contents($stream);
             fclose($stream);
+        }
+    }
+
+    private function run($filename, $method, $args) {
+        for ($i = 1; $i <= 5; ++$i) {
+            $this->run_once($filename, $method, $args);
+            if ($this->status !== null && $this->status !== 500)
+                return;
+            usleep(500 * (1 << $i));
         }
     }
 
@@ -211,12 +220,12 @@ class S3Document {
     }
 
     public function ls($prefix, $args = array()) {
-        $url = "?prefix=" . urlencode($prefix);
+        $suffix = "?prefix=" . urlencode($prefix);
         foreach (array("marker", "max-keys") as $k)
             if (isset($args[$k]))
-                $url .= "&" . $k . "=" . urlencode($args[$k]);
-        $this->run($url, "GET", array());
-        return $this->response_headers["content"];
+                $suffix .= "&" . $k . "=" . urlencode($args[$k]);
+        $this->run($suffix, "GET", array());
+        return @$this->response_headers["content"];
     }
 
 }
