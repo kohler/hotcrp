@@ -176,14 +176,12 @@ class S3Document {
     private function run($filename, $method, $args) {
         $this->status = $this->status_text = null;
         $this->response_headers = $this->user_data = array();
-        if ($filename) {
-            list($url, $hdr) = $this->http_headers($filename, $method, $args);
-            $context = stream_context_create(array("http" => $hdr));
-            if (($stream = fopen($url, "r", false, $context))) {
-                $this->parse_response_headers($url, stream_get_meta_data($stream));
-                $this->response_headers["content"] = stream_get_contents($stream);
-                fclose($stream);
-            }
+        list($url, $hdr) = $this->http_headers($filename, $method, $args);
+        $context = stream_context_create(array("http" => $hdr));
+        if (($stream = fopen($url, "r", false, $context))) {
+            $this->parse_response_headers($url, stream_get_meta_data($stream));
+            $this->response_headers["content"] = stream_get_contents($stream);
+            fclose($stream);
         }
     }
 
