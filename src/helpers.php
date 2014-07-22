@@ -215,7 +215,7 @@ function hoturl_site_relative($page, $options = null) {
             if ($v !== null && $k !== "anchor")
                 $x .= ($x === "" ? "" : "&amp;") . $k . "=" . urlencode($v);
         if (isset($options["anchor"]))
-            $x .= "#" . urlencode($options[$anchor]);
+            $x .= "#" . urlencode($options["anchor"]);
         $options = $x;
     }
     // anchor
