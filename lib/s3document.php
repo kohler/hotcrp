@@ -22,6 +22,8 @@ class S3Document {
     public $response_headers;
     public $user_data;
 
+    static public $retry_timeout_allowance = 4; // in seconds
+
     function __construct($opt = array()) {
         $this->s3_key = @$opt["key"];
         $this->s3_secret = @$opt["secret"];
@@ -188,9 +190,12 @@ class S3Document {
     private function run($filename, $method, $args) {
         for ($i = 1; $i <= 5; ++$i) {
             $this->run_once($filename, $method, $args);
-            if ($this->status !== null && $this->status !== 500)
+            if (($this->status !== null && $this->status !== 500)
+                || self::$retry_timeout_allowance <= 0)
                 return;
-            usleep(500 * (1 << $i));
+            $timeout = 0.005 * (1 << $i);
+            self::$retry_timeout_allowance -= $timeout;
+            usleep(1000000 * $timeout);
         }
     }
 
