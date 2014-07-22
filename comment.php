@@ -68,18 +68,16 @@ function saveComment($text, $is_response) {
                  "tags" => @$_REQUEST["commenttags"],
                  "blind" => @$_REQUEST["blind"]);
     $next_crow = CommentSave::save($req, $prow, $crow, $Me, $is_response);
+    $what = ($is_response ? "Response" : "Comment");
+
     if ($next_crow === false) {
         if ($is_response) {
             $q = ($Conf->sversion >= 53 ? "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0" : "forAuthors>1");
             $result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and $q");
-            if (($row = edb_row($result)))
-                return $Conf->errorMsg("A response has already been entered.  <a href=\"" . hoturl("paper", "p=$prow->paperId&amp;c=$row[0]#comment$row[0]") . "\">Edit that response</a>");
+            if (($next_crow = edb_orow($result)))
+                $Conf->errorMsg("Edit this response, which has already been entered.");
         }
-        return false;
-    }
-
-    $what = ($is_response ? "Response" : "Comment");
-    if ($next_crow && $is_response && ($next_crow->commentType & COMMENTTYPE_DRAFT)) {
+    } else if ($next_crow && $is_response && ($next_crow->commentType & COMMENTTYPE_DRAFT)) {
         $deadline = $Conf->printableTimeSetting("resp_done");
         if ($deadline != "N/A")
             $extratext = "  You have until $deadline to submit the response.";
