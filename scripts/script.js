@@ -2394,9 +2394,12 @@ function doremovedocument(elt) {
 }
 
 function docmtvis(hilite) {
-    var e = $$("cmtvis_a"), dofold = !(e && e.checked);
-    fold("cmtvis", dofold, 2);
-    if (hilite)
+    jQuery(hilite).each(function () {
+        var j = jQuery(this).closest(".cmtvistable"),
+            dofold = !j.find(".cmtvis_a").is(":checked");
+        fold(j[0], dofold, 2);
+    });
+    if (hilite instanceof Node)
         hiliter(hilite);
 }
 

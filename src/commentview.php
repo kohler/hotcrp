@@ -259,10 +259,9 @@ class CommentView {
   <td>", Ht::entry("commenttags", $cmtedittags, array("size" => 40, "onchange" => "hiliter(this)", "tabindex" => 1)), "</td></tr></table>";
         }
         // visibility
-        echo "<table><tr><td>Show to: &nbsp; </td>
-    <td><table id='foldcmtvis' class='fold2o'>";
+        echo '<table class="cmtvistable fold2o"><tr><td>Show to: &nbsp; </td>';
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_REVIEWER | COMMENTTYPE_BLIND;
-        echo "<tr><td>", Ht::radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : $ctype >= COMMENTTYPE_AUTHOR), array("id" => "cmtvis_a", "onchange" => "docmtvis(this)", "tabindex" => 1)),
+        echo "<td>", Ht::radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : $ctype >= COMMENTTYPE_AUTHOR), array("class" => "cmtvis_a", "onchange" => "docmtvis(this)", "tabindex" => 1)),
             "&nbsp;</td><td>", Ht::label("Authors and reviewers" . ($Conf->review_blindness() == Conference::BLIND_ALWAYS ? " (anonymous to authors)" : ""));
         // blind?
         if ($Conf->review_blindness() == Conference::BLIND_OPTIONAL)
@@ -270,18 +269,18 @@ class CommentView {
                 Ht::checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, "blind") : $ctype & COMMENTTYPE_BLIND), array("tabindex" => 1)),
                 "&nbsp;", Ht::label("Anonymous to authors"), ")";
         if ($Conf->timeAuthorViewReviews())
-            echo "<br /><span class='fx2 hint'>Authors will be notified immediately.</span>";
+            echo "<br><span class='fx2 hint'>Authors will be notified immediately.</span>";
         else
-            echo "<br /><span class='fx2 hint'>Authors cannot view comments at the moment.</span>";
+            echo "<br><span class='fx2 hint'>Authors cannot view comments at the moment.</span>";
         echo "</td></tr>\n";
-        echo "<tr><td>", Ht::radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_REVIEWER), array("onchange" => "docmtvis(this)", "tabindex" => 1)),
+        echo "<tr><td></td><td>", Ht::radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_REVIEWER), array("onchange" => "docmtvis(this)", "tabindex" => 1)),
             "&nbsp;</td><td>", Ht::label("PC and external reviewers"), "</td></tr>\n";
-        echo "<tr><td>", Ht::radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_PCONLY), array("onchange" => "docmtvis(this)", "tabindex" => 1)),
+        echo "<tr><td></td><td>", Ht::radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_PCONLY), array("onchange" => "docmtvis(this)", "tabindex" => 1)),
             "&nbsp;</td><td>", Ht::label("PC reviewers only"), "</td></tr>\n";
-        echo "<tr><td>", Ht::radio_h("visibility", "admin", ($useRequest ? defval($_REQUEST, "visibility") == "admin" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY), array("onchange" => "docmtvis(this)", "tabindex" => 1)),
+        echo "<tr><td></td><td>", Ht::radio_h("visibility", "admin", ($useRequest ? defval($_REQUEST, "visibility") == "admin" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY), array("onchange" => "docmtvis(this)", "tabindex" => 1)),
             "&nbsp;</td><td>", Ht::label("Administrators only"), "</td></tr>\n";
-        echo "</table></td></tr></table>\n";
-        $Conf->footerScript("docmtvis(false)");
+        echo "</table>\n";
+        $Conf->footerScript("docmtvis('.cmtvistable')");
 
         // actions
         echo "<div class=\"clear\"></div>\n";
