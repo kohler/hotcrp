@@ -17,67 +17,7 @@ $Error = array();
 $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST” <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
 $TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small|dim";
-
-$SettingList = array("acct_addr" => "checkbox",
-                     "au_seerev" => 2,
-                     "banal" => "xspecial",
-                     "clickthrough_submit" => "htmlstring",
-                     "cmt_always" => "checkbox",
-                     "decisions" => "xspecial",
-                     "extrev_chairreq" => "checkbox",
-                     "extrev_hard" => "date",
-                     "extrev_soft" => "date",
-                     "extrev_view" => 2,
-                     "final_done" => "date",
-                     "final_grace" => "grace",
-                     "final_open" => "checkbox",
-                     "final_soft" => "date",
-                     "mailbody_requestreview" => "string",
-                     "msg.conflictdef" => "htmlstring",
-                     "msg.home" => "htmlstring",
-                     "msg.responseinstructions" => "htmlstring",
-                     "msg.revprefdescription" => "htmlstring",
-                     "msg.finalsubmit" => "htmlstring",
-                     "opt.contactEmail" => "optemailstring",
-                     "opt.contactName" => "simplestring",
-                     "opt.longName" => "simplestring",
-                     "opt.shortName" => "simplestring",
-                     "options" => "xspecial",
-                     "pc_seeall" => "checkbox",
-                     "pc_seeallrev" => 4,
-                     "pc_seeblindrev" => 1,
-                     "pcrev_any" => "checkbox",
-                     "pcrev_editdelegate" => "checkbox",
-                     "pcrev_hard" => "date",
-                     "pcrev_soft" => "date",
-                     "resp_done" => "date",
-                     "resp_grace" => "grace",
-                     "resp_open" => "checkbox",
-                     "resp_words" => "zint",
-                     "rev_blind" => 2,
-                     "rev_notifychair" => "checkbox",
-                     "rev_open" => "cdate",
-                     "rev_ratings" => 2,
-                     "rev_roundtag" => "special",
-                     "reviewform" => "xspecial",
-                     "seedec" => 3,
-                     "sub_blind" => 3,
-                     "sub_collab" => "checkbox",
-                     "sub_freeze" => 1,
-                     "sub_grace" => "grace",
-                     "sub_open" => "cdate",
-                     "sub_pcconf" => "checkbox",
-                     "sub_pcconfsel" => "checkbox",
-                     "sub_reg" => "date",
-                     "sub_sub" => "date",
-                     "tag_chair" => "special",
-                     "tag_color" => "special",
-                     "tag_rank" => "special",
-                     "tag_seeall" => "checkbox",
-                     "tag_vote" => "special",
-                     "topics" => "xspecial",
-                     "tracks" => "special");
-
+$SettingInfo = json_decode(file_get_contents("$ConfSitePATH/src/settinginfo.json"));
 $GroupMapping = array("rev" => "reviews", "rfo" => "reviewform");
 
 $Group = defval($_REQUEST, "group");
@@ -99,53 +39,11 @@ if ($Group == "acc")
     require_once("src/contactlist.php");
 
 
-$SettingText = array(
-        "sub_open" => "Submissions open setting",
-        "sub_reg" => "Paper registration deadline",
-        "sub_sub" => "Paper submission deadline",
-        "rev_open" => "Reviews open setting",
-        "cmt_always" => "Comments open setting",
-        "pcrev_soft" => "PC soft review deadline",
-        "pcrev_hard" => "PC hard review deadline",
-        "extrev_soft" => "External reviewer soft review deadline",
-        "extrev_hard" => "External reviewer hard review deadline",
-        "sub_grace" => "Submissions grace period",
-        "sub_blind" => "Blind submission setting",
-        "rev_blind" => "Blind review setting",
-        "sub_pcconf" => "Collect PC conflicts setting",
-        "sub_pcconfsel" => "Collect conflict types setting",
-        "sub_collab" => "Collect collaborators setting",
-        "acct_addr" => "Collect addresses setting",
-        "sub_freeze" => "Submitters can update until the deadline setting",
-        "rev_notifychair" => "Notify chairs about reviews setting",
-        "pc_seeall" => "PC can see all papers setting",
-        "pcrev_any" => "PC can review any paper setting",
-        "extrev_chairreq" => "PC chair must approve proposed external reviewers setting",
-        "pcrev_editdelegate" => "PC members can edit delegated reviews setting",
-        "pc_seeallrev" => "PC can see all reviews setting",
-        "pc_seeblindrev" => "PC can see blind reviewer identities setting",
-        "extrev_view" => "External reviewers can view reviews setting",
-        "tag_chair" => "Chair tags",
-        "tag_vote" => "Voting tags",
-        "tag_rank" => "Rank tag",
-        "tag_color" => "Tag colors",
-        "tag_seeall" => "PC can see tags for conflicted papers",
-        "rev_ratings" => "Review ratings setting",
-        "au_seerev" => "Authors can see reviews setting",
-        "seedec" => "Decision visibility",
-        "final_open" => "Collect final versions setting",
-        "final_soft" => "Final version upload deadline",
-        "final_done" => "Final version upload hard deadline",
-        "msg.home" => "Home page message",
-        "msg.conflictdef" => "Definition of conflict of interest",
-        "msg.responseinstructions" => "Authors’ response instructions",
-        "msg.revprefdescription" => "Review preference instructions",
-        "msg.finalsubmit" => "Final version submission notice",
-        "clickthrough_submit" => "Clickthrough submission terms",
-        "mailbody_requestreview" => "Mail template for external review requests",
-        "opt.contactName" => "Name of site contact",
-        "opt.contactEmail" => "Email of site contact"
-        );
+function setting_info($n, $k = null) {
+    global $SettingInfo;
+    $x = @$SettingInfo->$n ? : (object) array();
+    return $k ? @$x->$k : $x;
+}
 
 function parseGrace($v) {
     $t = 0;
@@ -197,35 +95,44 @@ function expandMailTemplate($name, $default) {
     return $nullMailer->expandTemplate($name, $default);
 }
 
-function parseValue($name, $type) {
-    global $Conf, $SettingText, $Error, $Highlight, $Now;
+function unparse_setting_error($info, $text) {
+    if (@$info->name)
+        return "$info->name: $text";
+    else
+        return $text;
+}
+
+function parseValue($name, $info) {
+    global $Conf, $Error, $Highlight, $Now;
 
     if (!isset($_REQUEST[$name]))
         return null;
     $v = trim($_REQUEST[$name]);
+    if (@$info->temptext && $info->temptext === $v)
+        $v = "";
 
-    if ($type === "checkbox")
+    if ($info->type === "checkbox")
         return $v != "";
-    else if ($type === "cdate" && $v == "1")
+    else if ($info->type === "cdate" && $v == "1")
         return 1;
-    else if ($type === "date" || $type === "cdate") {
+    else if ($info->type === "date" || $info->type === "cdate") {
         if ($v == "" || strtoupper($v) == "N/A" || $v == "0")
             return -1;
         else if (($v = $Conf->parse_time($v)) !== false)
             return $v;
         else
-            $err = $SettingText[$name] . ": invalid date.";
-    } else if ($type === "grace") {
+            $err = unparse_setting_error($info, "Invalid date.");
+    } else if ($info->type === "grace") {
         if (($v = parseGrace($v)) !== null)
             return intval($v);
         else
-            $err = $SettingText[$name] . ": invalid grace period.";
-    } else if ($type === "int" || $type === "zint") {
+            $err = unparse_setting_error($info, "Invalid grace period.");
+    } else if ($info->type === "int" || $info->type === "zint") {
         if (preg_match("/\\A[-+]?[0-9]+\\z/", $v))
             return intval($v);
         else
-            $err = $SettingText[$name] . ": should be a number.";
-    } else if ($type === "string") {
+            $err = unparse_setting_error($info, "Should be a number.");
+    } else if ($info->type === "string") {
         // Avoid storing the default message in the database
         if (substr($name, 0, 9) == "mailbody_") {
             $t = expandMailTemplate(substr($name, 9), true);
@@ -234,20 +141,20 @@ function parseValue($name, $type) {
                 return 0;
         }
         return ($v == "" ? 0 : array(0, $v));
-    } else if ($type === "simplestring") {
+    } else if ($info->type === "simplestring") {
         $v = simplify_whitespace($v);
         return ($v == "" ? 0 : array(0, $v));
-    } else if ($type === "emailstring" || $type === "optemailstring") {
+    } else if ($info->type === "emailstring") {
         $v = trim($v);
-        if ($v === "" && $type === "optemailstring")
+        if ($v === "" && @$info->optional)
             return 0;
         else if (validate_email($v))
             return ($v == "" ? 0 : array(0, $v));
         else
-            $err = $SettingText[$name] . ": invalid email.";
-    } else if ($type === "htmlstring") {
+            $err = unparse_setting_error($info, "Invalid email.");
+    } else if ($info->type === "htmlstring") {
         if (($v = CleanHTML::clean($v, $err)) === false)
-            $err = $SettingText[$name] . ": $err";
+            $err = unparse_setting_error($info, $err);
         else if (str_starts_with($name, "msg.")
                  && $v === $Conf->message_default_html($name))
             return 0;
@@ -255,11 +162,11 @@ function parseValue($name, $type) {
             return null;
         else
             return ($v == "" ? 0 : array($Now, $v));
-    } else if (is_int($type)) {
-        if (ctype_digit($v) && $v >= 0 && $v <= $type)
-            return intval($v);
-        else
-            $err = $SettingText[$name] . ": parse error on “" . htmlspecialchars($v) . "”.";
+    } else if ($info->type === "radio") {
+        foreach ($info->values as $allowedv)
+            if ((string) $allowedv === $v)
+                return $allowedv;
+        $err = unparse_setting_error($info, "Parse error (unexpected value).");
     } else
         return $v;
 
@@ -853,28 +760,24 @@ function truthy($x) {
              || $x === "" || $x === "0" || $x === "false");
 }
 
-function accountValue($name, $type) {
+function accountValue($name, $info) {
     global $Values;
-    $xname = $name;
-    if (($dot = strpos($name, ".")) !== false) {
-        $xname = str_replace(".", "_", $name);
-        if (isset($_REQUEST[$xname]))
-            $_REQUEST[$name] = $_REQUEST[$xname];
-    }
-
-    if ($type === "special" || $type === "xspecial") {
+    $xname = str_replace(".", "_", $name);
+    if (isset($_REQUEST[$xname]) && !isset($_REQUEST[$name]))
+        $_REQUEST[$name] = $_REQUEST[$xname];
+    if ($info->type === "special") {
         if (truthy(@$_REQUEST["has_$xname"]))
             doSpecial($name, false);
-    } else if (isset($_REQUEST[$xname])
-               || (($type === "cdate" || $type === "checkbox")
+    } else if (isset($_REQUEST[$name])
+               || (($info->type === "cdate" || $info->type === "checkbox")
                    && truthy(@$_REQUEST["has_$xname"]))) {
-        $v = parseValue($name, $type);
+        $v = parseValue($name, $info);
         if ($v === null) {
-            if ($type !== "cdate" && $type !== "checkbox")
+            if ($info->type !== "cdate" && $info->type !== "checkbox")
                 return;
             $v = 0;
         }
-        if (!is_array($v) && $v <= 0 && !is_int($type) && $type !== "zint")
+        if (!is_array($v) && $v <= 0 && $info->type !== "radio" && $info->type !== "zint")
             $Values[$name] = null;
         else
             $Values[$name] = $v;
@@ -899,8 +802,8 @@ function value_or_setting($name) {
 
 if (isset($_REQUEST["update"]) && check_post()) {
     // parse settings
-    foreach ($SettingList as $name => $type)
-        accountValue($name, $type);
+    foreach ($SettingInfo as $name => $info)
+        accountValue($name, $info);
 
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "pcrev_soft" => "pcrev_hard",
@@ -912,7 +815,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
             if ($Values[$second] && !$Values[$first])
                 $Values[$first] = $Values[$second];
             else if ($Values[$second] && $Values[$first] > $Values[$second]) {
-                $Error[] = $SettingText[$first] . " must come before " . $SettingText[$second] . ".";
+                $Error[] = unparse_setting_error($SettingInfo->$first, "Must come before " . setting_info($second, "name") . ".");
                 $Highlight[$first] = true;
                 $Highlight[$second] = true;
             }
@@ -923,8 +826,6 @@ if (isset($_REQUEST["update"]) && check_post()) {
     // so we can join on later review changes
     if (value("resp_open") > 0 && $Conf->setting("resp_open") <= 0)
         $Values["resp_open"] = $Now;
-    if (@($Values["opt.longName"][1] === "(same as abbreviation)"))
-        $Values["opt.longName"][1] = "";
     if (array_key_exists("opt.contactName", $Values)
         || array_key_exists("opt.contactEmail", $Values)) {
         $site_contact = Contact::site_contact();
@@ -993,12 +894,12 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
         // apply settings
         foreach ($Values as $n => $v)
-            if (@$SettingList[$n] == "special" || @$SettingList[$n] == "xspecial")
+            if (setting_info($n, "type") == "special")
                 doSpecial($n, true);
 
         $dq = $aq = "";
         foreach ($Values as $n => $v)
-            if (@$SettingList[$n] != "xspecial") {
+            if (!setting_info($n, "nodb")) {
                 $dq .= " or name='$n'";
                 if (is_array($v))
                     $aq .= ", ('$n', '" . sqlq($v[0]) . "', '" . sqlq($v[1]) . "')";
@@ -1169,12 +1070,12 @@ function doActionArea($top) {
 function doAccGroup() {
     global $Conf, $Me, $belowHr;
 
-    doCheckbox("acct_addr", "Collect users&rsquo; addresses and phone numbers");
+    doCheckbox("acct_addr", "Collect users’ addresses and phone numbers");
 
     echo "<h3 class=\"settings g\">Program committee &amp; system administrators</h3>";
 
     echo "<p><a href='", hoturl("profile", "u=new"), "' class='button'>Create account</a> &nbsp;|&nbsp; ",
-        "Select a user&rsquo;s name to edit a profile.</p>\n";
+        "Select a user’s name to edit a profile.</p>\n";
     $pl = new ContactList($Me, false);
     echo $pl->text("pcadminx", hoturl("users", "t=pcadmin"));
 }
@@ -1254,7 +1155,7 @@ function doSubGroup() {
 
     echo "<div class='g'></div>\n<table id='foldpcconf' class='fold",
         ($Conf->setting("sub_pcconf") ? "o" : "c"), "'>\n";
-    doCheckbox("sub_pcconf", "Collect authors&rsquo; PC conflicts", true,
+    doCheckbox("sub_pcconf", "Collect authors’ PC conflicts", true,
                "void fold('pcconf',!this.checked)");
     echo "<tr class='fx'><td></td><td>";
     doCheckbox("sub_pcconfsel", "Collect PC conflict types (“Advisor/student,” “Recent collaborator,” etc.)");
@@ -1592,7 +1493,7 @@ function doRevGroup() {
                                Conference::BLIND_OPTIONAL => "Depends—reviewers decide whether to expose their names"));
 
     echo "<div class='g'></div>\n";
-    doCheckbox('rev_notifychair', 'PC chairs are notified of new reviews by email');
+    doCheckbox('rev_notifychair', 'Notify PC chairs of new reviews by email');
 
 
     // Review visibility
@@ -1610,8 +1511,8 @@ function doRevGroup() {
                                     1 => "Only after completing a review for the same paper<br /><span class='hint'>This setting also hides reviewer-only comments from PC members who have not completed a review for the paper.</span>"));
 
     echo "<div class='g'></div>";
-    echo "Can external reviewers see the other reviews for their assigned papers, once they&rsquo;ve submitted their own?<br />\n";
-    doRadio("extrev_view", array(2 => "Yes", 1 => "Yes, but they can&rsquo;t see who wrote blind reviews", 0 => "No"));
+    echo "Can external reviewers see the other reviews for their assigned papers, once they’ve submitted their own?<br />\n";
+    doRadio("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see who wrote blind reviews", 0 => "No"));
 
 
     // PC reviews
@@ -1763,7 +1664,7 @@ function doDecGroup() {
 
     // doCheckbox('au_seerev', '<b>Authors can see reviews</b>');
     echo "Can <b>authors see reviews and comments</b> for their papers?<br />";
-    doRadio("au_seerev", array(AU_SEEREV_NO => "No", AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they&rsquo;ve completed any requested reviews"));
+    doRadio("au_seerev", array(AU_SEEREV_NO => "No", AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they’ve completed any requested reviews"));
 
     echo "<div class='g'></div>\n<table id='foldauresp' class='fold2o'>";
     doCheckbox('resp_open', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>", true, "void fold('auresp',!this.checked,2)");
