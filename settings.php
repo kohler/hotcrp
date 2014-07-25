@@ -1070,7 +1070,8 @@ function doActionArea($top) {
 function doAccGroup() {
     global $Conf, $Me, $belowHr;
 
-    doCheckbox("acct_addr", "Collect users’ addresses and phone numbers");
+    if (setting("acct_addr"))
+        doCheckbox("acct_addr", "Collect users’ addresses and phone numbers");
 
     echo "<h3 class=\"settings g\">Program committee &amp; system administrators</h3>";
 
@@ -1154,7 +1155,7 @@ function doSubGroup() {
     echo "</table>\n";
 
     echo "<div class='g'></div>\n<table id='foldpcconf' class='fold",
-        ($Conf->setting("sub_pcconf") ? "o" : "c"), "'>\n";
+        (setting("sub_pcconf") ? "o" : "c"), "'>\n";
     doCheckbox("sub_pcconf", "Collect authors’ PC conflicts", true,
                "void fold('pcconf',!this.checked)");
     echo "<tr class='fx'><td></td><td>";
@@ -1166,7 +1167,7 @@ function doSubGroup() {
     if (is_executable("src/banal")) {
         echo "<div class='g'></div>",
             Ht::hidden("has_banal", 1),
-            "<table id='foldbanal' class='", ($Conf->setting("sub_banal") ? "foldo" : "foldc"), "'>";
+            "<table id='foldbanal' class='", (setting("sub_banal") ? "foldo" : "foldc"), "'>";
         doCheckbox("sub_banal", "<strong>Automated format checker<span class='fx'>:</span></strong>", true, "void fold('banal',!this.checked)");
         echo "<tr class='fx'><td></td><td class='top'><table>";
         $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
