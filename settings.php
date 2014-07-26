@@ -18,14 +18,15 @@ $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST” <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
 $TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small|dim";
 $SettingInfo = json_decode(file_get_contents("$ConfSitePATH/src/settinginfo.json"));
-$GroupMapping = array("rev" => "reviews", "rfo" => "reviewform");
+// maybe set $Opt["contactName"] and $Opt["contactEmail"]
+Contact::site_contact();
 
 $Group = defval($_REQUEST, "group");
-if ($Group === "reviews" || $Group === "review")
-    $Group = "rev";
-if ($Group === "reviewform")
-    $Group = "rfo";
-if (array_search($Group, array("acc", "msg", "sub", "opt", "rev", "rfo", "dec")) === false) {
+if ($Group === "rev" || $Group === "review")
+    $Group = "reviews";
+if ($Group === "rfo")
+    $Group = "reviewform";
+if (array_search($Group, array("info", "acc", "msg", "sub", "opt", "reviews", "reviewform", "dec")) === false) {
     if ($Conf->timeAuthorViewReviews())
         $Group = "dec";
     else if ($Conf->deadlinesAfter("sub_sub") || $Conf->timeReviewOpen())
@@ -103,13 +104,16 @@ function unparse_setting_error($info, $text) {
 }
 
 function parseValue($name, $info) {
-    global $Conf, $Error, $Highlight, $Now;
+    global $Conf, $Error, $Highlight, $Now, $Opt;
 
     if (!isset($_REQUEST[$name]))
         return null;
     $v = trim($_REQUEST[$name]);
     if (@$info->temptext && $info->temptext === $v)
         $v = "";
+    $opt_value = null;
+    if (substr($name, 0, 4) === "opt.")
+        $opt_value = @$Opt[substr($name, 4)];
 
     if ($info->type === "checkbox")
         return $v != "";
@@ -144,14 +148,20 @@ function parseValue($name, $info) {
     } else if ($info->type === "simplestring") {
         $v = simplify_whitespace($v);
         return ($v == "" ? 0 : array(0, $v));
+    } else if ($info->type === "emailheader") {
+        $vx = Mailer::mimeEmailHeader("", $v);
+        if ($vx !== false)
+            return ($vx == "" ? 0 : array(0, Mailer::mimeHeaderUnquote($v)));
+        else
+            $err = unparse_setting_error($info, "Invalid email header.");
     } else if ($info->type === "emailstring") {
         $v = trim($v);
         if ($v === "" && @$info->optional)
             return 0;
-        else if (validate_email($v))
+        else if (validate_email($v) || $v === $opt_value)
             return ($v == "" ? 0 : array(0, $v));
         else
-            $err = unparse_setting_error($info, "Invalid email.");
+            $err = unparse_setting_error($info, "Invalid email." . var_export($opt_value,true));
     } else if ($info->type === "htmlstring") {
         if (($v = CleanHTML::clean($v, $err)) === false)
             $err = unparse_setting_error($info, $err);
@@ -901,12 +911,19 @@ if (isset($_REQUEST["update"]) && check_post()) {
         foreach ($Values as $n => $v)
             if (!setting_info($n, "nodb")) {
                 $dq .= " or name='$n'";
+                if (substr($n, 0, 4) === "opt.") {
+                    $okey = substr($n, 4);
+                    $oldv = (array_key_exists($okey, $OptOverride) ? $OptOverride[$okey] : @$Opt[$okey]);
+                    $Opt[$okey] = (is_array($v) ? $v[1] : $v);
+                    if ($oldv === $Opt[$okey])
+                        continue; // do not save value in database
+                    else if (!array_key_exists($okey, $OptOverride))
+                        $OptOverride[$okey] = $oldv;
+                }
                 if (is_array($v))
                     $aq .= ", ('$n', '" . sqlq($v[0]) . "', '" . sqlq($v[1]) . "')";
                 else if ($v !== null)
                     $aq .= ", ('$n', '" . sqlq($v) . "', null)";
-                if (substr($n, 0, 4) === "opt.")
-                    $Opt[substr($n, 4)] = (is_array($v) ? $v[1] : $v);
             }
         if (strlen($dq))
             $Conf->qe("delete from Settings where " . substr($dq, 4));
@@ -1100,34 +1117,45 @@ function do_message($name, $description, $type, $rows = 10, $hint = "") {
         '</textarea></div><div class="g"></div>', "\n";
 }
 
-function doMsgGroup() {
+function doInfoGroup() {
     global $Conf, $Opt;
 
-    echo "<div class='f-c'>", setting_label("opt.shortName", "Conference abbreviation"), "</div>\n",
+    echo '<div class="f-c">', setting_label("opt.shortName", "Conference abbreviation"), "</div>\n",
         Ht::entry("opt.shortName", opt_data("shortName"), array("class" => "textlite", "size" => 20)),
-        "<div class='f-h'>Examples: “HotOS XIV”, “NSDI '14”</div>",
-        "<div class='g'></div>\n";
+        '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>',
+        '<div class="g"></div>', "\n";
 
     $long = opt_data("longName");
     if ($long == opt_data("shortName"))
         $long = "";
     echo "<div class='f-c'>", setting_label("opt.longName", "Conference name"), "</div>\n",
         Ht::entry("opt.longName", $long, array("class" => "textlite", "size" => 70, "hottemptext" => "(same as abbreviation)")),
-        "<div class='f-h'>Example: “14th Workshop on Hot Topics in Operating Systems”</div>",
-        "<div class='lg'></div>\n";
+        '<div class="f-h">Example: “14th Workshop on Hot Topics in Operating Systems”</div>';
 
-    // maybe set $Opt["contactName"] and $Opt["contactEmail"]
-    Contact::site_contact();
 
-    echo "<div class='f-c'>", setting_label("opt.contactName", "Name of site contact"), "</div>\n",
+    echo '<div class="lg"></div>', "\n";
+
+    echo '<div class="f-c">', setting_label("opt.contactName", "Name of site contact"), "</div>\n",
         Ht::entry("opt.contactName", opt_data("contactName", null, "Your Name"), array("class" => "textlite", "size" => 50)),
-        "<div class='g'></div>\n";
+        '<div class="g"></div>', "\n";
 
     echo "<div class='f-c'>", setting_label("opt.contactEmail", "Email of site contact"), "</div>\n",
         Ht::entry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), array("class" => "textlite", "size" => 40)),
-        "<div class='f-h'>The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>",
-        "<div class='lg'></div>\n";
+        '<div class="f-h">The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>';
 
+
+    echo '<div class="lg"></div>', "\n";
+
+    echo '<div class="f-c">', setting_label("opt.emailReplyTo", "Reply-To field for email"), "</div>\n",
+        Ht::entry("opt.emailReplyTo", opt_data("emailReplyTo"), array("class" => "textlite", "size" => 80, "hottemptext" => "(none)")),
+        '<div class="g"></div>', "\n";
+
+    echo '<div class="f-c">', setting_label("opt.emailCc", "Default Cc for reviewer email"), "</div>\n",
+        Ht::entry("opt.emailCc", opt_data("emailCc"), array("class" => "textlite", "size" => 80, "hottemptext" => "(none)")),
+        '<div class="f-h">This applies to email sent to reviewers and email sent using the <a href="', hoturl("mail"), '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.</div>';
+}
+
+function doMsgGroup() {
     do_message("msg.home", "Home page message", 0);
     do_message("clickthrough_submit", "Clickthrough submission terms", 0, 10,
                "<div class=\"hint fx\">Users must “accept” these terms to edit or submit a paper. Use HTML, and consider including a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
@@ -1760,19 +1788,19 @@ echo Ht::form(hoturl_post("settings"), array("id" => "settingsform")), "<div>",
 
 echo "<table class='settings'><tr><td class='caption initial final'>";
 echo "<table class='lhsel'>";
-foreach (array("acc" => "Accounts",
+foreach (array("info" => "Conference information",
+               "acc" => "Accounts",
                "msg" => "Messages",
                "sub" => "Submissions",
                "opt" => "Submission options",
-               "rev" => "Reviews",
-               "rfo" => "Review form",
+               "reviews" => "Reviews",
+               "reviewform" => "Review form",
                "dec" => "Decisions") as $k => $v) {
-    $kk = defval($GroupMapping, $k, $k);
     echo "<tr><td>";
     if ($Group == $k)
-        echo "<div class='lhl1'><a class='q' href='", hoturl("settings", "group=$kk"), "'>$v</a></div>";
+        echo "<div class='lhl1'><a class='q' href='", hoturl("settings", "group=$k"), "'>$v</a></div>";
     else
-        echo "<div class='lhl0'><a href='", hoturl("settings", "group=$kk"), "'>$v</a></div>";
+        echo "<div class='lhl0'><a href='", hoturl("settings", "group=$k"), "'>$v</a></div>";
     echo "</td></tr>";
 }
 echo "</table></td><td class='top'><div class='lht'>";
@@ -1784,7 +1812,9 @@ if (!function_exists("imagecreate"))
 echo "<div class='aahc'>";
 doActionArea(true);
 
-if ($Group == "acc")
+if ($Group == "info")
+    doInfoGroup();
+else if ($Group == "acc")
     doAccGroup();
 else if ($Group == "msg")
     doMsgGroup();

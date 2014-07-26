@@ -214,9 +214,11 @@ function read_included_options($files) {
     }
 }
 
-global $Opt;
+global $Opt, $OptOverride;
 if (!@$Opt)
     $Opt = array();
+if (!@$OptOverride)
+    $OptOverride = array();
 if (!@$Opt["loaded"]) {
     // see also `cacheable.php`
     if (defined("HOTCRP_OPTIONS")) {

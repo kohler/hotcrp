@@ -20,6 +20,8 @@
     "msg.finalsubmit": {"type": "htmlstring", "name": "Final paper submission message"},
     "opt.contactEmail": {"type": "emailstring", "optional": true, "name": "Email of site contact"},
     "opt.contactName": {"type": "simplestring", "name": "Name of site contact"},
+    "opt.emailCc": {"type": "emailheader", "name": "Default Cc for reviewer email", "temptext": "(none)"},
+    "opt.emailReplyTo": {"type": "emailheader", "name": "Reply-To for email", "temptext": "(none)"},
     "opt.longName": {"type": "simplestring", "temptext": "(same as abbreviation)", "name": "Conference name"},
     "opt.shortName": {"type": "simplestring", "name": "Conference abbreviation"},
     "options": {"type": "special", "nodb": true},

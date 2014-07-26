@@ -123,7 +123,7 @@ class Conference {
     //
 
     function load_settings() {
-        global $Opt, $OK;
+        global $Opt, $OptOverride, $OK;
 
         // load settings from database
         $this->settings = array();
@@ -135,8 +135,12 @@ class Conference {
             $this->settings[$row[0]] = (int) $row[1];
             if ($row[2] !== null)
                 $this->settingTexts[$row[0]] = $row[2];
-            if (substr($row[0], 0, 4) == "opt.")
-                $Opt[substr($row[0], 4)] = ($row[2] === null ? $row[1] : $row[2]);
+            if (substr($row[0], 0, 4) == "opt.") {
+                $okey = substr($row[0], 4);
+                if (!array_key_exists($okey, $OptOverride))
+                    $OptOverride[$okey] = @$Opt[$okey];
+                $Opt[$okey] = ($row[2] === null ? $row[1] : $row[2]);
+            }
         }
 
         // update schema
