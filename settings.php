@@ -144,14 +144,14 @@ function parseValue($name, $info) {
             if ($t["body"] == $v)
                 return 0;
         }
-        return ($v == "" ? 0 : array(0, $v));
+        return ($v == "" && !$opt_value ? 0 : array(0, $v));
     } else if ($info->type === "simplestring") {
         $v = simplify_whitespace($v);
-        return ($v == "" ? 0 : array(0, $v));
+        return ($v == "" && !$opt_value ? 0 : array(0, $v));
     } else if ($info->type === "emailheader") {
-        $vx = Mailer::mimeEmailHeader("", $v);
-        if ($vx !== false)
-            return ($vx == "" ? 0 : array(0, Mailer::mimeHeaderUnquote($v)));
+        $v = Mailer::mimeEmailHeader("", $v);
+        if ($v !== false)
+            return ($v == "" && !$opt_value ? 0 : array(0, Mailer::mimeHeaderUnquote($v)));
         else
             $err = unparse_setting_error($info, "Invalid email header.");
     } else if ($info->type === "emailstring") {
