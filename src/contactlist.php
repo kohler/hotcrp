@@ -775,7 +775,7 @@ class ContactList extends BaseList {
 
             if ($this->sortable && $url) {
                 $sortUrl = htmlspecialchars($url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
-                $q = "<a class='pl_sort' href=\"" . $sortUrl;
+                $q = '<a class="pl_sort" rel="nofollow" href="' . $sortUrl;
                 foreach ($fieldDef as $fieldId => $fdef) {
                     if ($fdef[1] != 1)
                         continue;
@@ -788,7 +788,7 @@ class ContactList extends BaseList {
                     if ($this->sortField == null && $fieldId == 1)
                         $this->sortField = $fieldId;
                     if ($fieldId == $this->sortField)
-                        $x .= "<a class='pl_sort_def" . ($this->reverseSort ? "_rev" : "") . "' href=\"" . $sortUrl . $fieldId . ($this->reverseSort ? "N" : "R") . "\">" . $ftext . "</a>";
+                        $x .= '<a class="pl_sort_def' . ($this->reverseSort ? "_rev" : "") . '" rel="nofollow" href="' . $sortUrl . $fieldId . ($this->reverseSort ? "N" : "R") . '">' . $ftext . "</a>";
                     else if ($fdef[2])
                         $x .= $q . $fieldId . "\">" . $ftext . "</a>";
                     else

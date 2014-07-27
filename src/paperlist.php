@@ -1143,7 +1143,7 @@ class PaperList extends BaseList {
             if ($this->sortable && $url) {
                 global $ConfSiteBase;
                 $sortUrl = htmlspecialchars($ConfSiteBase . $url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
-                $q = "<a class='pl_sort' title='Change sort' href=\"" . $sortUrl;
+                $q = '<a class="pl_sort" rel="nofollow" title="Change sort" href="' . $sortUrl;
             } else
                 $sortUrl = false;
 
@@ -1175,7 +1175,7 @@ class PaperList extends BaseList {
                           || $fdef->name == "edit" . $this->sorters[0]->type)
                          && $sortUrl)
                         || $defsortname == $this->sorters[0]->type))
-                    $colhead .= "<a class='pl_sort_def" . ($this->sorters[0]->reverse ? "_rev" : "") . "' title='Reverse sort' href=\"" . $sortUrl . urlencode($this->sorters[0]->type . "," . ($this->sorters[0]->reverse ? "n" : "r")) . "\">" . $ftext . "</a>";
+                    $colhead .= '<a class="pl_sort_def' . ($this->sorters[0]->reverse ? "_rev" : "") . '" rel="nofollow" title="Reverse sort" href="' . $sortUrl . urlencode($this->sorters[0]->type . "," . ($this->sorters[0]->reverse ? "n" : "r")) . '">' . $ftext . "</a>";
                 else if ($fdef->sorter && $sortUrl)
                     $colhead .= $q . urlencode($fdef->name) . "\">" . $ftext . "</a>";
                 else if ($defsortname)
