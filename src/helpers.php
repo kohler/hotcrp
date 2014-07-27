@@ -252,8 +252,10 @@ function hoturl_site_relative($page, $options = null) {
                        && preg_match($are . 't=(\w+)' . $zre, $options, $m))
                    || ($page == "settings"
                        && preg_match($are . 'group=(\w+)' . $zre, $options, $m))
+                   || ($page == "doc"
+                       && preg_match($are . 'file=([^&]+)' . $zre, $options, $m))
                    || preg_match($are . '__PATH__=([^&]+)' . $zre, $options, $m)) {
-            $t .= "/" . $m[2];
+            $t .= "/" . str_replace("%2F", "/", $m[2]);
             $options = $m[1] . $m[3];
         }
         $options = preg_replace('/&(?:amp;)?\z/', "", $options);
