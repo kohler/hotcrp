@@ -49,7 +49,9 @@ function initialize_user() {
 
     // load current user
     $userwords = array();
-    if (isset($_SESSION["user"]))
+    if (isset($_SESSION["trueuser"]))
+        $userwords = explode(" ", $_SESSION["trueuser"]);
+    else if (isset($_SESSION["user"]))
         $userwords = explode(" ", $_SESSION["user"]);
     $Me = null;
     if (count($userwords) >= 2 && $userwords[1] == $Conf->dsn)

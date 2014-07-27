@@ -180,9 +180,11 @@ class Contact {
                     || (($truecontact = self::find_by_email($trueuser[2]))
                         && $truecontact->privChair))
                 && ($actascontact = self::find_by_email($actasemail))) {
-                $trueuser[3] = $this->email;
-                $_SESSION["trueuser"] = join(" ", $trueuser);
                 $Conf->save_session("l", null);
+                if ($actascontact->email !== $trueuser[2]) {
+                    hoturl_defaults(array("actas" => urlencode($actascontact->email)));
+                    $_SESSION["last_actas"] = $actascontact->email;
+                }
                 return $actascontact->activate();
             }
         }

@@ -205,8 +205,20 @@ if (function_exists("iconv")) {
 
 // web helpers
 
+global $_hoturl_defaults;
+$_hoturl_defaults = null;
+
+function hoturl_defaults($options) {
+    global $_hoturl_defaults;
+    foreach ($options as $k => $v)
+        if ($v !== null)
+            $_hoturl_defaults[$k] = $v;
+        else
+            unset($_hoturl_defaults[$k]);
+}
+
 function hoturl_site_relative($page, $options = null) {
-    global $ConfSiteSuffix, $Opt, $Me, $paperTable, $CurrentList;
+    global $ConfSiteSuffix, $Opt, $Me, $paperTable, $CurrentList, $_hoturl_defaults;
     $t = $page . $ConfSiteSuffix;
     // see also redirectSelf
     if ($options && is_array($options)) {
@@ -222,9 +234,14 @@ function hoturl_site_relative($page, $options = null) {
     $anchor = "";
     if (preg_match('/\A(.*?)(#.*)\z/', $options, $m))
         list($options, $anchor) = array($m[1], $m[2]);
-    // append forceShow to links to same paper if appropriate
+    // append defaults
     $are = '/\A(|.*?(?:&|&amp;))';
     $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
+    if ($_hoturl_defaults)
+        foreach ($_hoturl_defaults as $k => $v)
+            if (!preg_match($are . preg_quote($k) . '=/', $options))
+                $options .= "&amp;" . $k . "=" . $v;
+    // append forceShow to links to same paper if appropriate
     $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
     if (@$paperTable && $paperTable->prow && $is_paper_page
         && preg_match($are . 'p=' . $paperTable->prow->paperId . $zre, $options)

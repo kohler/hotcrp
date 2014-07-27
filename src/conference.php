@@ -2006,15 +2006,14 @@ class Conference {
             }
 
             // "act as" link
-            if (($trueuser = @$_SESSION["trueuser"])) {
-                $trueuser = explode(" ", $trueuser);
+            if (($actas = @$_SESSION["last_actas"])) {
                 // Become true user if not currently chair.
-                if (!@$trueuser[3] || !$Me->privChair
-                    || strcasecmp($Me->email, $trueuser[3]) == 0
-                    || strcasecmp($Me->email, $trueuser[2]) != 0)
-                    $trueuser[3] = $trueuser[2];
-                if (strcasecmp($trueuser[3], $Me->email) != 0)
-                    echo "<a href=\"", selfHref(array("actas" => $trueuser[3])), "\">", ($Me->privChair ? htmlspecialchars($trueuser[3]) : "Admin"), "&nbsp;", Ht::img("viewas.png", "Act as " . htmlspecialchars($trueuser[3])), "</a>", $xsep;
+                if (!$Me->privChair || strcasecmp($Me->email, $actas) == 0) {
+                    $actas = explode(" ", $_SESSION["trueuser"]);
+                    $actas = $actas[2];
+                }
+                if (strcasecmp($Me->email, $actas) != 0)
+                    echo "<a href=\"", selfHref(array("actas" => $actas)), "\">", ($Me->privChair ? htmlspecialchars($actas) : "Admin"), "&nbsp;", Ht::img("viewas.png", "Act as " . htmlspecialchars($actas)), "</a>", $xsep;
             }
 
             // help, sign out
