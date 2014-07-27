@@ -987,7 +987,7 @@ Follow these steps to prepare to accept paper submissions.
 
 <ol>
 
-<li><p><strong><a href='" . hoturl("settings", "group=acc") . "'>Set up PC
+<li><p><strong><a href='" . hoturl("settings", "group=users") . "'>Set up PC
   member accounts</a></strong> and decide whether to collect authors’
   snail-mail addresses and phone numbers.</li>
 

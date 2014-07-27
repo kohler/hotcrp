@@ -26,7 +26,9 @@ if ($Group === "rev" || $Group === "review")
     $Group = "reviews";
 if ($Group === "rfo")
     $Group = "reviewform";
-if (array_search($Group, array("info", "acc", "msg", "sub", "opt", "reviews", "reviewform", "dec")) === false) {
+if ($Group === "acc")
+    $Group = "users";
+if (array_search($Group, array("info", "users", "msg", "sub", "opt", "reviews", "reviewform", "dec")) === false) {
     if ($Conf->timeAuthorViewReviews())
         $Group = "dec";
     else if ($Conf->deadlinesAfter("sub_sub") || $Conf->timeReviewOpen())
@@ -36,7 +38,7 @@ if (array_search($Group, array("info", "acc", "msg", "sub", "opt", "reviews", "r
 }
 if ($Group == "rfo")
     require_once("src/reviewsetform.php");
-if ($Group == "acc")
+if ($Group == "users")
     require_once("src/contactlist.php");
 
 
@@ -1789,7 +1791,7 @@ echo Ht::form(hoturl_post("settings"), array("id" => "settingsform")), "<div>",
 echo "<table class='settings'><tr><td class='caption initial final'>";
 echo "<table class='lhsel'>";
 foreach (array("info" => "Conference information",
-               "acc" => "Accounts",
+               "users" => "Accounts",
                "msg" => "Messages",
                "sub" => "Submissions",
                "opt" => "Submission options",
@@ -1814,7 +1816,7 @@ doActionArea(true);
 
 if ($Group == "info")
     doInfoGroup();
-else if ($Group == "acc")
+else if ($Group == "users")
     doAccGroup();
 else if ($Group == "msg")
     doMsgGroup();
