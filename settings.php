@@ -30,7 +30,7 @@ if (array_search($Group, array("info", "acc", "msg", "sub", "opt", "reviews", "r
     if ($Conf->timeAuthorViewReviews())
         $Group = "dec";
     else if ($Conf->deadlinesAfter("sub_sub") || $Conf->timeReviewOpen())
-        $Group = "rev";
+        $Group = "reviews";
     else
         $Group = "sub";
 }
