@@ -18,9 +18,11 @@ if (isset($_REQUEST["fromlog"]) && ctype_digit($_REQUEST["fromlog"])
     && $Conf->sversion >= 40 && $Me->privChair) {
     $result = $Conf->qe("select * from MailLog where mailId=" . $_REQUEST["fromlog"]);
     if (($row = edb_orow($result))) {
-        foreach (array("recipients", "cc", "replyto", "subject", "emailBody") as $field)
+        foreach (array("recipients", "q", "cc", "replyto", "subject", "emailBody") as $field)
             if (isset($row->$field) && !isset($_REQUEST[$field]))
                 $_REQUEST[$field] = $row->$field;
+        if (@$row->q)
+            $_REQUEST["plimit"] = 1;
     }
 }
 
@@ -63,7 +65,8 @@ if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"])) {
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $papersel = $search->paperList();
     sort($papersel);
-}
+} else
+    $_REQUEST["q"] = "";
 if (isset($papersel) && count($papersel) == 0) {
     $Conf->errorMsg("No papers match that search.");
     unset($papersel);
@@ -234,9 +237,17 @@ function checkMail($send) {
         $subject = $subjectPrefix . $subject;
     if ($send) {
         $mailId = "";
-        if ($Conf->sversion >= 40
-            && $Conf->q("insert into MailLog (recipients, cc, replyto, subject, emailBody) values ('" . sqlq($_REQUEST["recipients"]) . "', '" . sqlq($_REQUEST["cc"]) . "', '" . sqlq($_REQUEST["replyto"]) . "', '" . sqlq($subject) . "', '" . sqlq($_REQUEST["emailBody"]) . "')"))
-            $mailId = " #" . $Conf->lastInsertId();
+        if ($Conf->sversion >= 40) {
+            $q = "recipients='" . sqlq($_REQUEST["recipients"])
+                . "', cc='" . sqlq($_REQUEST["cc"])
+                . "', replyto='" . sqlq($_REQUEST["replyto"])
+                . "', subject='" . sqlq($_REQUEST["subject"])
+                . "', emailBody='" . sqlq($_REQUEST["emailBody"]) . "'";
+            if ($Conf->sversion >= 78)
+                $q .= ", q='" . sqlq($_REQUEST["q"]) . "'";
+            if ($Conf->q("insert into MailLog set $q"))
+                $mailId = " #" . $Conf->lastInsertId();
+        }
         $Me->log_activity("Sending mail$mailId \"$subject\"");
     }
     $emailBody = $_REQUEST["emailBody"];

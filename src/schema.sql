@@ -159,6 +159,7 @@ DROP TABLE IF EXISTS `MailLog`;
 CREATE TABLE `MailLog` (
   `mailId` int(11) NOT NULL AUTO_INCREMENT,
   `recipients` varchar(200) NOT NULL,
+  `q` varchar(4096),
   `paperIds` text,
   `cc` text,
   `replyto` text,
@@ -565,7 +566,7 @@ CREATE TABLE `TopicInterest` (
 
 
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 77);
+insert into Settings (name, value) values ('allowPaperOption', 78);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
