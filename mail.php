@@ -402,7 +402,7 @@ if (defval($_REQUEST, "loadtmpl")) {
 // Set recipients list, now that template is loaded
 $recip = array();
 if ($Me->privChair) {
-    $recip["au"] = "Contact authors";
+    $recip["au"] = "All contact authors";
     $recip["s"] = "Contact authors of submitted papers";
     $recip["unsub"] = "Contact authors of unsubmitted papers";
     foreach ($Conf->outcome_map() as $num => $what) {
