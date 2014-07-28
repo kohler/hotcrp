@@ -283,12 +283,20 @@ class Tagger {
         return $tags;
     }
 
-    public function unparse($tags, $highlight = false) {
-        if ($tags == "")
+    public function unparse($tags) {
+        if ($tags == "" || (is_array($tags) && count($tags) == 0))
             return "";
+        if (is_array($tags))
+            $tags = join(" ", $tags);
         $tags = str_replace("#0 ", " ", " $tags ");
         $tags = str_replace(" " . $this->contact->cid . "~", " ~", $tags);
         return trim($tags);
+    }
+
+    public function unparse_hashed($tags) {
+        if (($tags = $this->unparse($tags)) !== "")
+            $tags = str_replace(" ", " #", "#" . $tags);
+        return $tags;
     }
 
     private function trim_for_sort($x) {

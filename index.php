@@ -439,19 +439,19 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     }
     if ($Me->isPC && $Conf->setting("paperlead") > 0
         && $Me->is_discussion_lead()) {
-        echo $sep, "<a href=\"", hoturl("search", "q=lead%3Ame"), "\" class='nowrap'>Your discussion leads</a>";
+        echo $sep, '<a href="', hoturl("search", "q=lead%3Ame"), '" class="nowrap">Your discussion leads</a>';
         $sep = $xsep;
     }
     if ($Me->isPC && $Conf->timePCReviewPreferences()) {
-        echo $sep, "<a href='", hoturl("reviewprefs"), "'>Review preferences</a>";
+        echo $sep, '<a href="', hoturl("reviewprefs"), '">Review preferences</a>';
         $sep = $xsep;
     }
     if ($Conf->deadlinesAfter("rev_open") || $Me->privChair) {
-        echo $sep, "<a href='", hoturl("offline"), "'>Offline reviewing</a>";
+        echo $sep, '<a href="', hoturl("offline"), '">Offline reviewing</a>';
         $sep = $xsep;
     }
     if ($Me->is_requester()) {
-        echo $sep, "<a href='", hoturl("mail", "monreq=1"), "'>Monitor external reviews</a>";
+        echo $sep, '<a href="', hoturl("mail", "monreq=1"), '">Monitor external reviews</a>';
         $sep = $xsep;
     }
     if ($Conf->setting("rev_tokens")) {

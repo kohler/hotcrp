@@ -104,19 +104,21 @@ if (!check_post())
 else if ((isset($_REQUEST["submitcomment"]) || isset($_REQUEST["submitresponse"])
           || isset($_REQUEST["savedraftresponse"]))
          && defval($_REQUEST, "response")) {
+    $text = @rtrim($_REQUEST["comment"]);
     if (!$Me->canRespond($prow, $crow, $whyNot, true)) {
         $Conf->errorMsg(whyNotText($whyNot, "respond to reviews for"));
         $useRequest = true;
-    } else if (!($text = defval($_REQUEST, "comment")) && !$crow) {
+    } else if ($text === "" && !$crow) {
         $Conf->errorMsg("Enter a comment.");
         $useRequest = true;
     } else
         saveComment($text, true);
 } else if (isset($_REQUEST["submitcomment"])) {
+    $text = @rtrim($_REQUEST["comment"]);
     if (!$Me->canSubmitComment($prow, $crow, $whyNot)) {
         $Conf->errorMsg(whyNotText($whyNot, "comment on"));
         $useRequest = true;
-    } else if (!($text = defval($_REQUEST, "comment")) && !$crow) {
+    } else if ($text === "" && !$crow) {
         $Conf->errorMsg("Enter a comment.");
         $useRequest = true;
     } else
