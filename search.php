@@ -61,6 +61,18 @@ function paperselPredicate($papersel, $prefix = "") {
         return "${prefix}paperId in (" . join(", ", $papersel) . ")";
 }
 
+function papersel_all_selected($papersel) {
+    global $Me;
+    $Search = new PaperSearch($Me, $_REQUEST);
+    $searchlist = $Search->paperList();
+    if (count($searchlist) !== count($papersel))
+        return false;
+    sort($searchlist);
+    $sorted_papersel = $papersel;
+    sort($sorted_papersel);
+    return join(" ", $searchlist) === join(" ", $sorted_papersel);
+}
+
 function cleanAjaxResponse(&$response, $type) {
     global $papersel;
     foreach ($papersel as $pid)
@@ -841,8 +853,8 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
         $Conf->errorMsg("Only PC chairs can set assignments and conflicts.");
     else if ($mt == "xauto") {
         $t = (in_array($_REQUEST["t"], array("acc", "s")) ? $_REQUEST["t"] : "all");
-        $q = join($papersel, "+");
-        go(hoturl("autoassign", "pap=" . join($papersel, "+") . "&t=$t&q=$q"));
+        $q = join("+", $papersel);
+        go(hoturl("autoassign", "pap=" . join("+", $papersel) . "&t=$t&q=$q"));
     } else if (!$mpc || !($pc = Contact::find_by_email($mpc)))
         $Conf->errorMsg("“" . htmlspecialchars($mpc) . "” is not a PC member.");
     else if ($mt == "conflict" || $mt == "unconflict") {
@@ -883,14 +895,17 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
 }
 
 
-// mark conflicts/PC-authored papers
+// send mail
 if (isset($_REQUEST["sendmail"]) && isset($papersel)) {
-    if (!$Me->privChair)
-        $Conf->errorMsg("Only the PC chairs can send mail.");
-    else {
+    if ($Me->privChair) {
         $r = (in_array($_REQUEST["recipients"], array("au", "rev")) ? $_REQUEST["recipients"] : "all");
-        go(hoturl("mail", "p=" . join($papersel, "+") . "&recipients=$r"));
-    }
+        if (papersel_all_selected($papersel))
+            $x = "q=" . urlencode($_REQUEST["q"]) . "&plimit=1";
+        else
+            $x = "p=" . join("+", $papersel);
+        go(hoturl("mail", $x . "&t=" . urlencode($_REQUEST["t"]) . "&recipients=$r"));
+    } else
+        $Conf->errorMsg("Only the PC chairs can send mail.");
 }
 
 

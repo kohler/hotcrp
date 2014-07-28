@@ -468,7 +468,7 @@ class PaperList extends BaseList {
             $t .= $barsep
                 . "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "mail")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Mail</a></td><td class='lld$nlll'><b>:</b> &nbsp;"
                 . Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), defval($_REQUEST, "recipients"), array("id" => "plact${nlll}_d"))
-                . " &nbsp;" . Ht::submit("sendmail", "Go") . "</td>";
+                . " &nbsp;" . Ht::submit("sendmail", "Go", array("onclick" => "return (papersel_check_safe=true)")) . "</td>";
             $nlll++;
         }
 

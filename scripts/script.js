@@ -716,7 +716,7 @@ function paperselCheck() {
     if (check_safe) {
         e = document.createElement("div");
         e.id = "sel_papstandin";
-        e.innerHTML = "<input type='hidden' name='pap' value=\"" + values.join(" ") + "\" />";
+        e.innerHTML = '<input type="hidden" name="pap" value="' + values.join(" ") + "\" />";
         $$("sel").appendChild(e);
         return true;
     }

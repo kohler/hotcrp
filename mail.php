@@ -18,7 +18,7 @@ if (isset($_REQUEST["fromlog"]) && ctype_digit($_REQUEST["fromlog"])
     && $Conf->sversion >= 40 && $Me->privChair) {
     $result = $Conf->qe("select * from MailLog where mailId=" . $_REQUEST["fromlog"]);
     if (($row = edb_orow($result))) {
-        foreach (array("recipients", "q", "cc", "replyto", "subject", "emailBody") as $field)
+        foreach (array("recipients", "q", "t", "cc", "replyto", "subject", "emailBody") as $field)
             if (isset($row->$field) && !isset($_REQUEST[$field]))
                 $_REQUEST[$field] = $row->$field;
         if (@$row->q)
@@ -243,8 +243,8 @@ function checkMail($send) {
                 . "', replyto='" . sqlq($_REQUEST["replyto"])
                 . "', subject='" . sqlq($_REQUEST["subject"])
                 . "', emailBody='" . sqlq($_REQUEST["emailBody"]) . "'";
-            if ($Conf->sversion >= 78)
-                $q .= ", q='" . sqlq($_REQUEST["q"]) . "'";
+            if ($Conf->sversion >= 79)
+                $q .= ", q='" . sqlq($_REQUEST["q"]) . "', t='" . sqlq($_REQUEST["t"]) . "'";
             if ($Conf->q("insert into MailLog set $q"))
                 $mailId = " #" . $Conf->lastInsertId();
         }
