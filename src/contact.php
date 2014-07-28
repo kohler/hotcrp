@@ -1826,7 +1826,7 @@ class Contact {
         $dl = array("now" => $now);
         if ($this->privChair)
             $dl["is_admin"] = true;
-        foreach (array("sub_open", "resp_open", "rev_open", "final_open") as $x)
+        foreach (array("sub_open", "resp_open") as $x)
             $dl[$x] = $dlx[$x] > 0;
 
         if ($dlx["sub_reg"] && $dlx["sub_reg"] != $dlx["sub_update"])
@@ -1834,28 +1834,19 @@ class Contact {
         if ($dlx["sub_update"] && $dlx["sub_update"] != $dlx["sub_sub"])
             $dl["sub_update"] = $dlx["sub_update"];
         $dl["sub_sub"] = $dlx["sub_sub"];
+        $sb = $Conf->submission_blindness();
+        if ($sb === Conference::BLIND_ALWAYS)
+            $dl["sub_blind"] = true;
+        else if ($sb === Conference::BLIND_OPTIONAL)
+            $dl["sub_blind"] = "optional";
+        else if ($sb === Conference::BLIND_UNTILREVIEW)
+            $dl["sub_blind"] = "until-review";
 
         $dl["resp_done"] = $dlx["resp_done"];
 
-        $dl["rev_open"] = $dl["rev_open"] && $this->is_reviewer();
-        if ($this->isPC) {
-            if ($dlx["pcrev_soft"] > $now)
-                $dl["pcrev_done"] = $dlx["pcrev_soft"];
-            else if ($dlx["pcrev_hard"]) {
-                $dl["pcrev_done"] = $dlx["pcrev_hard"];
-                $dl["pcrev_ishard"] = true;
-            }
-        }
-        if ($this->is_reviewer()) {
-            if ($dlx["extrev_soft"] > $now)
-                $dl["extrev_done"] = $dlx["extrev_soft"];
-            else if ($dlx["extrev_hard"]) {
-                $dl["extrev_done"] = $dlx["extrev_hard"];
-                $dl["extrev_ishard"] = true;
-            }
-        }
-
-        if ($dl["final_open"]) {
+        // final copy deadlines
+        if ($dlx["final_open"] > 0) {
+            $dl["final_open"] = true;
             if ($dlx["final_soft"] > $now)
                 $dl["final_done"] = $dlx["final_soft"];
             else {
@@ -1864,12 +1855,35 @@ class Contact {
             }
         }
 
-        // mark grace periods
+        // reviewer deadlines
+        if ($this->is_reviewer()) {
+            $dl["rev_open"] = $dlx["rev_open"] > 0;
+            if ($this->isPC && $dlx["pcrev_soft"] > $now)
+                $dl["pcrev_done"] = $dlx["pcrev_soft"];
+            else if ($this->isPC && $dlx["pcrev_hard"]) {
+                $dl["pcrev_done"] = $dlx["pcrev_hard"];
+                $dl["pcrev_ishard"] = true;
+            }
+            if ($dlx["extrev_soft"] > $now)
+                $dl["extrev_done"] = $dlx["extrev_soft"];
+            else if ($dlx["extrev_hard"]) {
+                $dl["extrev_done"] = $dlx["extrev_hard"];
+                $dl["extrev_ishard"] = true;
+            }
+            // blindness
+            $rb = $Conf->review_blindness();
+            if ($rb === Conference::BLIND_ALWAYS)
+                $dl["rev_blind"] = true;
+            else if ($rb === Conference::BLIND_OPTIONAL)
+                $dl["rev_blind"] = "optional";
+        }
+
+        // grace periods
         foreach (array("sub" => array("sub_reg", "sub_update", "sub_sub"),
                        "resp" => array("resp_done"),
                        "rev" => array("pcrev_done", "extrev_done"),
                        "final" => array("final_done")) as $type => $dlnames) {
-            if ($dl["${type}_open"] && ($grace = $dlx["${type}_grace"])) {
+            if (@$dl["${type}_open"] && ($grace = $dlx["${type}_grace"])) {
                 foreach ($dlnames as $dlname)
                     // Give a minute's notice that there will be a grace
                     // period to make the UI a little better.

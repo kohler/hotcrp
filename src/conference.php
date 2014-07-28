@@ -949,6 +949,9 @@ class Conference {
         return $this->settingsAfter('au_seerev');
     }
 
+    function submission_blindness() {
+        return $this->settings["sub_blind"];
+    }
     function subBlindAlways() {
         return $this->settings["sub_blind"] == self::BLIND_ALWAYS;
     }

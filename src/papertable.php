@@ -511,7 +511,7 @@ class PaperTable {
 
         echo $this->editable_papt("authorInformation", "Authors <span class='papfnh'>(<a href='#' onclick='return authorfold(\"auedit\",1,1)'>More</a> | <a href='#' onclick='return authorfold(\"auedit\",1,-1)'>Fewer</a>)</span>"),
             "<div class='paphint'>List the paper&rsquo;s authors one per line, including their email addresses and affiliations.";
-        if ($Conf->subBlindAlways())
+        if ($Conf->submission_blindness() == Conference::BLIND_ALWAYS)
             echo " Submission is blind, so reviewers will not be able to see author information.";
         echo "  Any author with an account on this site can edit the paper.</div>",
             "<div class='papv'><table id='auedittable' class='auedittable'><tr><th></th><th>Name</th><th>Email</th><th>Affiliation</th></tr>\n";
@@ -672,7 +672,7 @@ class PaperTable {
 
         // contents
         $inauthors = "";
-        if ($viewable && $Conf->subBlindOptional() && $this->prow->blind)
+        if ($viewable && $Conf->submission_blindness() == Conference::BLIND_OPTIONAL && $this->prow->blind)
             $inauthors = "[blind] ";
         echo '<div class="pavb">';
         if (!$viewable)
@@ -1824,7 +1824,8 @@ class PaperTable {
             $this->editable_new_contact_author();
         else
             $this->editable_contact_author(false);
-        if ($Conf->subBlindOptional() && $this->editable !== "f")
+        if ($Conf->submission_blindness() == Conference::BLIND_OPTIONAL
+            && $this->editable !== "f")
             $this->editable_anonymity();
 
         echo $spacer;

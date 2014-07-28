@@ -338,7 +338,8 @@ class PaperList extends BaseList {
         }
         if ($this->contact->privChair)
             $sel_opt["authors"] = "Authors &amp; contacts";
-        else if ($this->contact->has_review() && !$Conf->subBlindAlways())
+        else if ($this->contact->has_review()
+                 && $Conf->submission_blindness() != Conference::BLIND_ALWAYS)
             $sel_opt["authors"] = "Authors";
         $sel_opt["topics"] = "Topics";
         if ($this->contact->privChair) {
@@ -847,7 +848,7 @@ class PaperList extends BaseList {
             $titleextra .= "<span class='sep'></span><a class='fn3' href=\"javascript:void fold('pl',0,3)\">Show all papers</a>";
         if (($this->any->openau || $this->any->anonau) && $show_links) {
             $titleextra .= "<span class='sep'></span>";
-            if ($Conf->subBlindNever())
+            if ($Conf->submission_blindness() == Conference::BLIND_NEVER)
                 $titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
             else if ($this->contact->privChair && $this->any->anonau && !$this->any->openau)
                 $titleextra .= "<a class='fn1 fn2' href=\"javascript:fold('pl',0,'au');void fold('pl',0,'anonau')\">Show authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";

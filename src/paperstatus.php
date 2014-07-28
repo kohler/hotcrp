@@ -118,7 +118,7 @@ class PaperStatus {
         }
 
         if ((isset($pj->paperBlind) ? !$prow->paperBlind : $prow->blind)
-            && $Conf->subBlindOptional())
+            && $Conf->submission_blindness() == Conference::BLIND_OPTIONAL)
             $pj->nonblind = true;
 
         $pj->abstract = $prow->abstract;
@@ -603,7 +603,7 @@ class PaperStatus {
         if ($autext != $old_autext || !$old_pj)
             $q[] = "authorInformation='" . sqlq($autext) . "'";
 
-        if ($Conf->subBlindOptional()
+        if ($Conf->submission_blindness() == Conference::BLIND_OPTIONAL
             && (!$old_pj || !$old_pj->nonblind != !@$pj->nonblind))
             $q[] = "blind=" . (@$pj->nonblind ? 1 : 0);
 
@@ -637,8 +637,10 @@ class PaperStatus {
         }
 
         if (count($q)) {
-            if (!$Conf->subBlindOptional())
-                $q[] = "blind=" . ($Conf->subBlindNever() ? 0 : 1);
+            if ($Conf->submission_blindness() == Conference::BLIND_NEVER)
+                $q[] = "blind=0";
+            else if ($Conf->submission_blindness() != Conference::BLIND_OPTIONAL)
+                $q[] = "blind=1";
 
             $joindoc = $old_joindoc = null;
             if (@$pj->final) {

@@ -374,7 +374,7 @@ class PaperSearch {
         // track other information
         $this->allowAuthor = false;
         if ($me->privChair || $me->is_author()
-            || ($this->amPC && !$Conf->subBlindAlways()))
+            || ($this->amPC && $Conf->submission_blindness() != Conference::BLIND_ALWAYS))
             $this->allowAuthor = true;
 
         // default query fields
@@ -2506,7 +2506,7 @@ class PaperSearch {
             $sqi->add_column("conflictType", "PaperConflict.conflictType");
         }
         if ($this->needflags & self::F_REVIEWER) {
-            if ($Conf->subBlindOptional())
+            if ($Conf->submission_blindness() == Conference::BLIND_OPTIONAL)
                 $sqi->add_column("paperBlind", "Paper.blind");
             $qb = "";
             if (($tokens = $this->contact->review_tokens()))
