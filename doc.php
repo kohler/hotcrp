@@ -8,8 +8,6 @@
 // naming work for some browsers.
 
 require_once("src/initweb.php");
-if ($Me->is_empty())
-    $Me->escape();
 
 // Determine the intended paper
 $documentType = HotCRPDocument::parse_dtype(@$_REQUEST["dt"]);
@@ -54,9 +52,6 @@ else {
         $Error = "Unknown document “" . htmlspecialchars($orig_s) . "”.";
 }
 
-// Security checks - people who can download all paperss
-// are assistants, chairs & PC members. Otherwise, you need
-// to be a contact person for that paper.
 if (!isset($Error)
     && !($prow = $Conf->paperRow($paperId, $Me, $whyNot)))
     $Error = whyNotText($whyNot, "view");

@@ -5,7 +5,7 @@
 
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
-if ($Me->is_empty() || (!$Me->privChair && !$Me->isPC))
+if (!$Me->privChair && !$Me->isPC)
     $Me->escape();
 $nullMailer = new Mailer(null, null, $Me);
 $nullMailer->width = 10000000;

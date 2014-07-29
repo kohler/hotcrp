@@ -6,7 +6,7 @@
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
 require_once("src/assigners.php");
-if ($Me->is_empty() || !$Me->privChair)
+if (!$Me->privChair)
     $Me->escape();
 
 // paper selection

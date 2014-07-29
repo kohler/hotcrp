@@ -5,7 +5,6 @@
 
 require_once("src/initweb.php");
 
-
 $topicTitles = array("topics" => "Help topics",
                      "keywords" => "Search keywords",
                      "search" => "Search",
