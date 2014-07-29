@@ -1824,9 +1824,9 @@ else if ($Group == "sub")
     doSubGroup();
 else if ($Group == "opt")
     doOptGroup();
-else if ($Group == "rev")
+else if ($Group == "reviews")
     doRevGroup();
-else if ($Group == "rfo")
+else if ($Group == "reviewform")
     doRfoGroup();
 else
     doDecGroup();
