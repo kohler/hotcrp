@@ -1229,14 +1229,14 @@ function doSubGroup() {
 }
 
 // Submission options
-function checkOptionNameUnique($oname) {
-    if ($oname == "" || $oname == "none" || $oname == "any")
-        return false;
-    $m = 0;
-    foreach (PaperOption::option_list() as $id => $o)
-        if (strstr(strtolower($o->name), $oname) !== false)
-            $m++;
-    return $m == 1;
+function option_search_term($oname) {
+    $owords = preg_split(',[^a-z_0-9]+,', strtolower(trim($oname)));
+    for ($i = 0; $i < count($owords); ++$i) {
+        $attempt = join("-", array_slice($owords, 0, $i + 1));
+        if (count(PaperOption::search($attempt)) == 1)
+            return $attempt;
+    }
+    return simplify_whitespace($oname);
 }
 
 function doOptGroupOption($o) {
@@ -1282,12 +1282,7 @@ function doOptGroupOption($o) {
         echo "<td style='padding-left: 1em'><div class='f-i'>",
             "<div class='f-c'>Example search</div>",
             "<div class='f-e'>";
-        $oabbrev = simplify_whitespace($o->name);
-        foreach (preg_split('/\s+/', preg_replace('/[^a-z\s]/', '', strtolower($o->name))) as $oword)
-            if (checkOptionNameUnique($oword)) {
-                $oabbrev = $oword;
-                break;
-            }
+        $oabbrev = option_search_term($o->name);
         if ($o->has_selector() && count($o->selector) > 1
             && $o->selector[1] !== "")
             $oabbrev .= "#" . strtolower(simplify_whitespace($o->selector[1]));

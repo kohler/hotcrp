@@ -72,7 +72,11 @@ class PaperOption {
             self::option_list();
         if (($o = @self::$list[$name]))
             return array($o->id => $o);
-        $name = strtolower($name);
+        $name = @strtolower($name);
+        if ($name === "" || $name === "none")
+            return array();
+        else if ($name === "any")
+            return self::$list;
         if (substr($name, 0, 4) === "opt-")
             $name = substr($name, 4);
         foreach (self::$list as $o)
