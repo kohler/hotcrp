@@ -1828,8 +1828,11 @@ else if ($Group == "reviews")
     doRevGroup();
 else if ($Group == "reviewform")
     doRfoGroup();
-else
+else {
+    if ($Group != "dec")
+        error_log("bad settings group $Group");
     doDecGroup();
+}
 
 doActionArea(false);
 echo "</div></div></td></tr>
