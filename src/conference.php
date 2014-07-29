@@ -1998,7 +1998,7 @@ class Conference {
         else
             echo "<a class='x' href='", hoturl("index"), "' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a></h1></div><div id='header_left_page'><h1>", $title;
         echo "</h1></div><div id='header_right'>";
-        if ($Me && $Me->has_database_account()) {
+        if ($Me && $Me->has_email()) {
             // profile link
             $xsep = ' <span class="barsep">&nbsp;|&nbsp;</span> ';
             if ($Me->contactId > 0) {
@@ -2021,8 +2021,8 @@ class Conference {
 
             // help, sign out
             $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
-            echo "<a href='", hoturl("help", $x), "'>Help</a>", $xsep;
-            if ($Me->contactId > 0 || isset($Opt["httpAuthLogin"]))
+            echo '<a href="', hoturl("help", $x), '">Help</a>', $xsep;
+            if ($Me->has_email() || isset($Opt["httpAuthLogin"]))
                 echo '<a href="', hoturl_post("index", "signout=1"), '">Sign&nbsp;out</a>';
             else
                 echo '<a href="', hoturl("index", "signin=1"), '">Sign&nbsp;in</a>';

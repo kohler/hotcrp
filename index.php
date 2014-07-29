@@ -243,7 +243,7 @@ if (($v = $Conf->setting_data("msg.home")))
 
 
 // Sign in
-if (!$Me->has_database_account() || isset($_REQUEST["signin"])) {
+if (!$Me->has_email() || isset($_REQUEST["signin"])) {
     $confname = $Opt["longName"];
     if ($Opt["shortName"] && $Opt["shortName"] != $Opt["longName"])
         $confname .= " (" . $Opt["shortName"] . ")";
@@ -525,7 +525,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
         echo "<h4>Submissions: &nbsp;</h4> ";
 
     $startable = $Conf->timeStartPaper();
-    if ($startable && !$Me->has_database_account())
+    if ($startable && !$Me->has_email())
         echo "<span class='deadline'>", $Conf->printableDeadlineSetting("sub_reg", "span"), "</span><br />\n<small>You must sign in to register papers.</small>";
     else if ($startable || $Me->privChair) {
         echo "<strong><a href='", hoturl("paper", "p=new"), "'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting("sub_reg", "span"), ")</span>";
@@ -589,7 +589,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
 
 
 // Review tokens
-if ($Me->has_database_account() && $Conf->setting("rev_tokens"))
+if ($Me->has_email() && $Conf->setting("rev_tokens"))
     reviewTokenGroup(true);
 
 

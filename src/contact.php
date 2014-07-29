@@ -253,6 +253,10 @@ class Contact {
         return $this->contactId <= 0 && !$this->capabilities;
     }
 
+    function has_email() {
+        return $this->contactId > 0;
+    }
+
     function has_database_account() {
         return $this->contactId > 0;
     }
@@ -765,7 +769,10 @@ class Contact {
             $Conf->infoMsg("Created account for <a href=\"" . hoturl("profile", "u=" . urlencode($this->email)) . "\">" . Text::user_html_nolink($this) . "</a>.");
         if ($send_email)
             $this->sendAccountInfo("create", false);
-        $Conf->log($Me && $Me->has_database_account() ? "Created account ($Me->email)" : "Created account", $this);
+        if ($Me && $Me->has_email() && $Me->email !== $this->email)
+            $Conf->log("Created account ($Me->email)", $this);
+        else
+            $Conf->log("Created account", $this);
     }
 
     function load_address() {

@@ -35,7 +35,7 @@ function change_email_by_capability() {
 if (isset($_REQUEST["changeemail"]))
     change_email_by_capability();
 
-if (!$Me->has_database_account())
+if (!$Me->has_email())
     $Me->escape();
 $newProfile = false;
 $useRequest = false;
@@ -83,7 +83,8 @@ if (!$Acct
 
 $Acct->load_address();
 
-if ($Acct->contactId != $Me->contactId && $Acct->email
+if (($Acct->contactId != $Me->contactId || !$Me->has_database_account())
+    && $Acct->has_email()
     && !$Acct->firstName && !$Acct->lastName && !$Acct->affiliation
     && !isset($_REQUEST["post"])) {
     $result = $Conf->qe("select Paper.paperId, authorInformation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Acct->contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")");
@@ -138,7 +139,10 @@ function pc_request_as_json($cj) {
 function web_request_as_json($cj) {
     global $Conf, $Acct, $newProfile, $UserStatus;
 
-    $cj->id = $newProfile ? "new" : $Acct->contactId;
+    if ($newProfile || !$Acct->has_database_account())
+        $cj->id = "new";
+    else
+        $cj->id = $Acct->contactId;
 
     if (!Contact::external_login())
         $cj->email = trim(defval($_REQUEST, "uemail", ""));
@@ -382,7 +386,7 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
         $Conf->errorMsg("Only administrators can delete users.");
     else if ($Acct->contactId == $Me->contactId)
         $Conf->errorMsg("You aren’t allowed to delete yourself.");
-    else {
+    else if ($Acct->has_database_account()) {
         $tracks = databaseTracks($Acct->contactId);
         if (count($tracks->soleAuthor))
             $Conf->errorMsg("This user can’t be deleted since they are sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional paper contacts.");
@@ -469,8 +473,8 @@ function textinput($name, $value, $size, $id = false, $password = false) {
 if ($newProfile)
     $Conf->header("Create Account", "account", actionBar("account"));
 else
-    $Conf->header($Me->contactId == $Acct->contactId ? "Your Profile" : "Account Profile", "account", actionBar("account", $Acct));
-$useRequest = (!$Acct->contactId && isset($_REQUEST["watchcomment"]))
+    $Conf->header($Me->email == $Acct->email ? "Your Profile" : "Account Profile", "account", actionBar("account", $Acct));
+$useRequest = (!$Acct->has_database_account() && isset($_REQUEST["watchcomment"]))
     || $UserStatus->nerrors;
 
 if (!$UserStatus->nerrors && @$Conf->session("freshlogin") === "redirect") {
