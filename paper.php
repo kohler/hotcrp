@@ -99,7 +99,9 @@ if (isset($_REQUEST["setfollow"]) && $prow && check_post()) {
 if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
     $ajax = defval($_REQUEST, "ajax", 0);
     $cf = new CheckFormat();
-    $dt = requestDocumentType($_REQUEST);
+    $dt = HotCRPDocument::parse_dtype(@$_REQUEST["dt"]);
+    if ($dt === null)
+        $dt = @$_REQUEST["final"] ? DTYPE_FINAL : DTYPE_SUBMISSION;
     if ($Conf->setting("sub_banal$dt"))
         $format = $Conf->setting_data("sub_banal$dt", "");
     else

@@ -12,7 +12,9 @@ if ($Me->is_empty())
     $Me->escape();
 
 // Determine the intended paper
-$documentType = requestDocumentType($_REQUEST);
+$documentType = HotCRPDocument::parse_dtype(@$_REQUEST["dt"]);
+if ($documentType === null)
+    $documentType = @$_REQUEST["final"] ? DTYPE_FINAL : DTYPE_SUBMISSION;
 $need_docid = false;
 $docid = null;
 
@@ -28,9 +30,9 @@ else {
         $paperId = $m[1];
         $s = $m[2];
         if (preg_match(',\A([^/]*)\.[^/]+\z,', $s, $m))
-            $documentType = requestDocumentType($m[1], null);
+            $documentType = HotCRPDocument::parse_dtype($m[1]);
         else if (preg_match(',\A([^/]+)/+(.*)\z,', $s, $m)) {
-            $documentType = requestDocumentType($m[1], null);
+            $documentType = HotCRPDocument::parse_dtype($m[1]);
             if ($documentType
                 && ($o = PaperOption::find($documentType))
                 && $o->type == "attachments") {
@@ -42,10 +44,10 @@ else {
         }
     } else if (preg_match(',\Apaper([1-9]\d*)-([^/]*)\.[^/]+\z,', $s, $m)) {
         $paperId = $m[1];
-        $documentType = requestDocumentType($m[2], null);
+        $documentType = HotCRPDocument::parse_dtype($m[2]);
     } else if (preg_match(',\A([-A-Za-z0-9_]*?)?-?([1-9]\d*)\.[^/]*\z,', $s, $m)) {
         $paperId = $m[2];
-        $documentType = requestDocumentType($m[1], null);
+        $documentType = HotCRPDocument::parse_dtype($m[1]);
     } else
         $documentType = null;
     if ($documentType === null)

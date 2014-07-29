@@ -36,6 +36,20 @@ class HotCRPDocument {
             return null;
     }
 
+    public static function parse_dtype($dname) {
+        if (preg_match('/\A-?\d+\z/', $dname))
+            return (int) $dname;
+        $dname = strtolower($dname);
+        if ($dname === "paper" || $dname === "submission")
+            return DTYPE_SUBMISSION;
+        if ($dname === "final")
+            return DTYPE_FINAL;
+        $omatches = PaperOption::search($dname);
+        if (count($omatches) == 1)
+            return $omatches[0]->id;
+        return null;
+    }
+
     public static function filename($doc) {
         global $Opt;
         $fn = $Opt["downloadPrefix"];

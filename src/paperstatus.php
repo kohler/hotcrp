@@ -339,12 +339,14 @@ class PaperStatus {
             $option_list = PaperOption::option_list();
 
             // canonicalize option values to use IDs, not abbreviations
-            foreach ($options as $id => $oa)
-                if (@($o = PaperOption::find_abbr($id))) {
-                    $id = $o->id;
+            foreach ($options as $id => $oa) {
+                $omatches = PaperOption::search($id);
+                if (count($omatches) == 1) {
+                    $id = $omatches[0]->id;
                     $pj->options->$id = $oa;
                 } else
                     $pj->bad_options[$id] = true;
+            }
 
             // check values
             foreach ($pj->options as $id => $oa) {

@@ -952,10 +952,13 @@ class PaperSearch {
         $qo = array();
         $qxo = array();
         $option_failure = false;
-        foreach (PaperOption::option_list() as $oid => $o)
-            // See also checkOptionNameUnique() in settings.php
-            if ($oname == "none" || $oname == "any"
-                || strstr(strtolower($o->name), $oname) !== false) {
+        if ($oname == "none" || $oname == "any")
+            $omatches = PaperOption::option_list();
+        else
+            $omatches = PaperOption::search($oname);
+        // global $Conf; $Conf->infoMsg(Ht::pre_text(var_export($omatches, true)));
+        if (count($omatches)) {
+            foreach ($omatches as $oid => $o) {
                 // find the relevant values
                 if ($o->type == "numeric") {
                     if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
@@ -991,12 +994,15 @@ class PaperSearch {
                         continue;
                 }
                 $qo[] = array($o, $xval);
-            } else if ($o->has_selector()
-                       && ($ocompar == "=" || $ocompar == "!=")
-                       && $oval == "") {
-                foreach (matchValue($o->selector, $oname) as $xval)
-                    $qxo[] = array($o, $ocompar . $xval);
             }
+        } else
+            foreach (PaperOption::option_list() as $oid => $o)
+                if ($o->has_selector()
+                    && ($ocompar == "=" || $ocompar == "!=")
+                    && $oval == "") {
+                    foreach (matchValue($o->selector, $oname) as $xval)
+                        $qxo[] = array($o, $ocompar . $xval);
+                }
 
         // report failure
         if (count($qo) == 0 && count($qxo) == 0) {

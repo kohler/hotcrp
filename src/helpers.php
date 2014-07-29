@@ -488,28 +488,6 @@ function paperDownload($prow, $final = false) {
     return $doc ? documentDownload($doc) : "";
 }
 
-function requestDocumentType($req, $default = DTYPE_SUBMISSION) {
-    if (is_string($req))
-        $req = array("dt" => $req);
-    if (($dt = defval($req, "dt"))) {
-        if (preg_match('/\A-?\d+\z/', $dt))
-            return (int) $dt;
-        $dt = strtolower($dt);
-        if ($dt == "paper" || $dt == "submission")
-            return DTYPE_SUBMISSION;
-        if ($dt == "final")
-            return DTYPE_FINAL;
-        if (substr($dt, 0, 4) == "opt-")
-            $dt = substr($dt, 4);
-        foreach (PaperOption::option_list() as $o)
-            if ($dt == $o->abbr)
-                return $o->id;
-    }
-    if (defval($req, "final", 0) != 0)
-        return DTYPE_FINAL;
-    return $default;
-}
-
 function topicTable($prow, $active = 0) {
     global $Conf;
     $paperId = ($prow ? $prow->paperId : -1);

@@ -92,7 +92,7 @@ else if (isset($_REQUEST["alltags"]))
 if (($getaction == "paper" || $getaction == "final"
      || substr($getaction, 0, 4) == "opt-")
     && isset($papersel)
-    && ($dt = requestDocumentType($getaction, null)) !== null) {
+    && ($dt = HotCRPDocument::parse_dtype($getaction)) !== null) {
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papersel)));
     $downloads = array();
     while (($row = PaperInfo::fetch($result, $Me))) {

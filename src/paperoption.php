@@ -51,17 +51,6 @@ class PaperOption {
         return @self::$list[$id];
     }
 
-    static function find_abbr($k) {
-        if (self::$list === null)
-            self::option_list();
-        if (($o = self::$list[$id]))
-            return $o;
-        foreach (self::$list as $o)
-            if ($o->abbr == $k)
-                return $o;
-        return null;
-    }
-
     static function find_document($id) {
         if ($id == DTYPE_SUBMISSION)
             return new PaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null));
@@ -71,9 +60,47 @@ class PaperOption {
             return self::find($id);
     }
 
+    static function search($name) {
+        if ((string) $name == (string) DTYPE_SUBMISSION
+            || strcasecmp($name, "paper") == 0
+            || strcasecmp($name, "submission") == 0)
+            return array(DTYPE_SUBMISSION => self::find_document(DTYPE_SUBMISSION));
+        else if ((string) $name == (string) DTYPE_FINAL
+                 || strcasecmp($name, "final") == 0)
+            return array(DTYPE_FINAL => self::find_document(DTYPE_FINAL));
+        if (self::$list === null)
+            self::option_list();
+        if (($o = @self::$list[$name]))
+            return array($o->id => $o);
+        $name = strtolower($name);
+        if (substr($name, 0, 4) === "opt-")
+            $name = substr($name, 4);
+        foreach (self::$list as $o)
+            if ($o->abbr == $name)
+                return array($o->id => $o);
+        $rewords = array();
+        foreach (preg_split('/[^a-z_0-9*]+/', $name) as $word)
+            if ($word !== "")
+                $rewords[] = str_replace("*", ".*", $word);
+        $re = array(',\A\b' . join('\b.*\b', $rewords) . '\b,',
+                    ',\b' . join('.*\b', $rewords) . ',');
+        $matches = array();
+        $matchscore = count($re) - 1;
+        foreach (self::$list as $o)
+            for ($i = 0; $i <= $matchscore; ++$i)
+                if (preg_match($re[$i], $o->abbr)) {
+                    if ($i < $matchscore) {
+                        $matches = array();
+                        $matchscore = $i;
+                    }
+                    $matches[$o->id] = $o;
+                }
+        return $matches;
+    }
+
     static function abbreviate($name, $id) {
         $abbr = strtolower(UnicodeHelper::deaccent($name));
-        $abbr = preg_replace('/[^a-z_0-9]/', "-", $abbr);
+        $abbr = preg_replace('/[^a-z_0-9]+/', "-", $abbr);
         $abbr = preg_replace('/^-+|-+$/', "", $abbr);
         if (preg_match('/\A(?:|submission|paper|final|opt\d+|\d+)\z/', $abbr))
             $abbr = "opt$id";
