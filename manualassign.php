@@ -165,8 +165,8 @@ $rev_opt = array();
 if ($reviewer <= 0)
     $rev_opt[0] = "(Select a PC member)";
 foreach ($pcm as $pc)
-    $rev_opt[$pc->cid] = Text::name_html($pc) . " ("
-        . plural(defval($rev_count, $pc->cid, 0), "assignment") . ")";
+    $rev_opt[$pc->contactId] = Text::name_html($pc) . " ("
+        . plural(defval($rev_count, $pc->contactId, 0), "assignment") . ")";
 
 echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
     "<td>", Ht::select("reviewer", $rev_opt, $reviewer, array("onchange" => "hiliter(this)")), "</td></tr>",

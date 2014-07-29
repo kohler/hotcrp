@@ -81,7 +81,7 @@ class CommentSave {
         else if (!$crow) {
             $change = true;
             $qa = "contactId, paperId, timeModified, comment, timeNotified, replyTo";
-            $qb = "$contact->cid, $prow->paperId, $Now, '" . sqlq($text) . "', $Now, 0";
+            $qb = "$contact->contactId, $prow->paperId, $Now, '" . sqlq($text) . "', $Now, 0";
             if (!($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
                 && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY
                 && $Conf->sversion >= 43) {

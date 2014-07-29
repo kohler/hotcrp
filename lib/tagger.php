@@ -171,7 +171,7 @@ class Tagger {
     private function analyze_colors() {
         $re = "{(?:\\A| )";
         if ($this->contact)
-            $re .= "(?:" . $this->contact->cid . "~"
+            $re .= "(?:" . $this->contact->contactId . "~"
                 . ($this->contact->privChair ? "|~~" : "") ."|)";
         $re .= "(red|orange|yellow|green|blue|purple|violet|grey|gray|white|dim|bold|italic|big|small";
         $this->color_tagmap = $this->defined_tags();
@@ -242,7 +242,7 @@ class Tagger {
         if (($this->error_html = self::analyze($tag, $flags)))
             return false;
         else if ($tag[0] == "~" && $tag[1] != "~")
-            return $this->contact->cid . $tag;
+            return $this->contact->contactId . $tag;
         else
             return $tag;
     }
@@ -252,7 +252,7 @@ class Tagger {
             return VIEWSCORE_FALSE;
         else if (($pos = strpos($tag, "~")) !== false) {
             if (($pos == 0 && $tag[1] === "~")
-                || substr($tag, 0, $pos) != $this->contact->cid)
+                || substr($tag, 0, $pos) != $this->contact->contactId)
                 return VIEWSCORE_ADMINONLY;
             else
                 return VIEWSCORE_REVIEWERONLY;
@@ -263,7 +263,7 @@ class Tagger {
 
     public function viewable($tags) {
         if (strpos($tags, "~") !== false) {
-            $re = "{ (?:(?!" . $this->contact->cid . "~)\\d+~";
+            $re = "{ (?:(?!" . $this->contact->contactId . "~)\\d+~";
             if (!$this->contact->privChair)
                 $re .= "|~+";
             $tags = trim(preg_replace($re . ")\\S+}", "", " $tags "));
@@ -289,7 +289,7 @@ class Tagger {
         if (is_array($tags))
             $tags = join(" ", $tags);
         $tags = str_replace("#0 ", " ", " $tags ");
-        $tags = str_replace(" " . $this->contact->cid . "~", " ~", $tags);
+        $tags = str_replace(" " . $this->contact->contactId . "~", " ~", $tags);
         return trim($tags);
     }
 
@@ -354,7 +354,7 @@ class Tagger {
                 $v = array();
                 if ($votereport)
                     foreach (pcMembers() as $pcm)
-                        if (($count = defval($vote[$lbase], $pcm->cid, 0)) > 0)
+                        if (($count = defval($vote[$lbase], $pcm->contactId, 0)) > 0)
                             $v[] = Text::name_html($pcm) . ($count > 1 ? " ($count)" : "");
                 $title = ($v ? "PC votes: " . join(", ", $v) : "Vote search");
                 $link = "rorder:";
@@ -446,7 +446,7 @@ class Tagger {
         list($table, $pidcol) = array("PaperTag", "paperId");
         if (!is_array($pids))
             $pids = array($pids);
-        $mytagprefix = $this->contact->cid . "~";
+        $mytagprefix = $this->contact->contactId . "~";
 
         // check modes
         if ($mode == "da" && !$this->contact->privChair)
@@ -566,7 +566,7 @@ class Tagger {
                 if (!$this->contact->privChair) {
                     foreach ($this->chair_tags() as $ct => $x)
                         if ($ct[0] == '~')
-                            $q .= " and tag!='" . $this->contact->cid . sqlq($ct) . "'";
+                            $q .= " and tag!='" . $this->contact->contactId . sqlq($ct) . "'";
                         else
                             $q .= " and tag!='" . sqlq($ct) . "'";
                 }

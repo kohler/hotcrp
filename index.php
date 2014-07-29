@@ -54,7 +54,7 @@ if ($Me->is_empty() || isset($_REQUEST["signin"]))
 if ($Me->is_known_user() && $Conf->session("freshlogin") === true) {
     $needti = false;
     if (($Me->roles & Contact::ROLE_PC) && !$Me->has_review()) {
-        $result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->cid and ti.topicId=ta.topicId)");
+        $result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
         $needti = ($row = edb_row($result)) && $row[0] && !$row[1];
     }
     if (!($Me->firstName || $Me->lastName)
@@ -375,7 +375,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     $myrow = null;
     while (($row = edb_row($result))) {
         $row[3] = scoreCounts($row[3], $merit_field ? count($merit_field->options) : 0);
-        if ($row[0] == $Me->cid)
+        if ($row[0] == $Me->contactId)
             $myrow = $row;
         if ($row[4]) {
             $npc++;
@@ -461,24 +461,9 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     }
 
     if ($myrow && $Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
-        $badratings = PaperSearch::unusableRatings($Me->privChair, $Me->cid);
+        $badratings = PaperSearch::unusableRatings($Me->privChair, $Me->contactId);
         $qx = (count($badratings) ? " and not (PaperReview.reviewId in (" . join(",", $badratings) . "))" : "");
-        /*$result = $Conf->qe("select rating, count(distinct PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->cid and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc");
-        if (edb_nrows($result)) {
-            $a = array();
-            while (($row = edb_row($result)))
-                if (isset(ReviewForm::$rating_types[$row[0]]))
-                    $a[] = "<a href=\"" . hoturl("search", "q=rate:%22" . urlencode(ReviewForm::$rating_types[$row[0]]) . "%22") . "\" title='List rated reviews'>$row[1] of your reviews</a> as " . htmlspecialchars(ReviewForm::$rating_types[$row[0]]);
-            if (count($a) > 0) {
-                echo "<div class='hint g'>\nOther reviewers ",
-                    "<a href='", hoturl("help", "t=revrate"), "' title='What is this?'>rated</a> ",
-                    commajoin($a);
-                if (count($a) > 1)
-                    echo " (these sets might overlap)";
-                echo ".</div>\n";
-            }
-        }*/
-        $result = $Conf->qe("select rating, count(PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->cid and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc");
+        $result = $Conf->qe("select rating, count(PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->contactId and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc");
         if (edb_nrows($result)) {
             $a = array();
             while (($row = edb_row($result)))

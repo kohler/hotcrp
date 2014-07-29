@@ -104,7 +104,7 @@ class SelectorPaperColumn extends PaperColumn {
         if ($this->name == "selconf" && !$pl->contact->privChair)
             return false;
         if ($this->name == "selconf" || $this->name == "selunlessconf")
-            $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
+            $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->contactId;
         if ($this->name == "selconf")
             $Conf->footerScript("add_conflict_ajax()");
         return true;
@@ -420,7 +420,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
         // PaperSearch is responsible for access control checking use of
         // `reviewerContact`, but we are careful anyway.
         if ($pl->search->reviewer_cid()
-            && $pl->search->reviewer_cid() != $pl->contact->cid
+            && $pl->search->reviewer_cid() != $pl->contact->contactId
             && count($rows)) {
             $by_pid = array();
             foreach ($rows as $row)
@@ -552,7 +552,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
             return false;
         if ($visible > 0)
             $Conf->footerScript("add_assrev_ajax()");
-        $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
+        $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->contactId;
         return true;
     }
     public function analyze($pl, &$rows) {
@@ -616,7 +616,7 @@ class TopicScorePaperColumn extends PaperColumn {
         global $Conf;
         if (!$Conf->has_topics() || !$pl->contact->isPC)
             return false;
-        $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
+        $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->contactId;
         $queryOptions["topicInterestScore"] = 1;
         return true;
     }
@@ -649,7 +649,7 @@ class PreferencePaperColumn extends PaperColumn {
         if (!$pl->contact->isPC)
             return false;
         $queryOptions["reviewerPreference"] = $queryOptions["topicInterestScore"] = 1;
-        $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->cid;
+        $queryOptions["reviewer"] = $pl->reviewer ? $pl->reviewer : $pl->contact->contactId;
         if ($this->editable && $visible > 0) {
             $arg = "ajax=1&amp;setrevpref=1";
             if ($pl->contact->privChair && $pl->reviewer)
@@ -671,7 +671,7 @@ class PreferencePaperColumn extends PaperColumn {
     public function content($pl, $row) {
         $pref = unparse_preference($row);
         if ($pl->reviewer
-            && $pl->reviewer != $pl->contact->cid
+            && $pl->reviewer != $pl->contact->contactId
             && !$pl->contact->allowAdminister($row))
             return "N/A";
         else if (!$this->editable)

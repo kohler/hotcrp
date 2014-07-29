@@ -15,7 +15,7 @@ class UserActions {
                 $Acct->password = Contact::random_password();
                 $Acct->password_type = 0;
                 $Acct->password_plaintext = $Acct->password;
-                $Conf->qe("update ContactInfo set password='" . sqlq($Acct->password) . "' where contactId=" . $Acct->cid);
+                $Conf->qe("update ContactInfo set password='" . sqlq($Acct->password) . "' where contactId=" . $Acct->contactId);
             }
             if ($sendtype && $Acct->password != "" && !$Acct->disabled)
                 $Acct->sendAccountInfo($sendtype, false);
@@ -27,7 +27,7 @@ class UserActions {
 
     static function disable($ids, $contact) {
         global $Conf;
-        $result = $Conf->qe("update ContactInfo set disabled=1 where contactId" . sql_in_numeric_set($ids) . " and contactId!=" . $contact->cid);
+        $result = $Conf->qe("update ContactInfo set disabled=1 where contactId" . sql_in_numeric_set($ids) . " and contactId!=" . $contact->contactId);
         if ($result && edb_nrows_affected($result))
             return (object) array("ok" => true);
         else if ($result)
@@ -38,10 +38,10 @@ class UserActions {
 
     static function enable($ids, $contact) {
         global $Conf;
-        $result = $Conf->qe("update ContactInfo set disabled=1 where contactId" . sql_in_numeric_set($ids) . " and password='' and contactId!=" . $contact->cid);
-        $result = $Conf->qe("update ContactInfo set disabled=0 where contactId" . sql_in_numeric_set($ids) . " and contactId!=" . $contact->cid);
+        $result = $Conf->qe("update ContactInfo set disabled=1 where contactId" . sql_in_numeric_set($ids) . " and password='' and contactId!=" . $contact->contactId);
+        $result = $Conf->qe("update ContactInfo set disabled=0 where contactId" . sql_in_numeric_set($ids) . " and contactId!=" . $contact->contactId);
         if ($result && edb_nrows_affected($result))
-            return self::modify_password_mail("password='' and contactId!=" . $contact->cid, true, "create", $ids);
+            return self::modify_password_mail("password='' and contactId!=" . $contact->contactId, true, "create", $ids);
         else if ($result)
             return (object) array("ok" => true, "warnings" => array("Those accounts were already enabled."));
         else
@@ -50,7 +50,7 @@ class UserActions {
 
     static function reset_password($ids, $contact) {
         global $Conf;
-        return self::modify_password_mail("contactId!=" . $contact->cid, true, false, $ids);
+        return self::modify_password_mail("contactId!=" . $contact->contactId, true, false, $ids);
         $Conf->confirmMsg("Passwords reset. To send mail with the new passwords, <a href='" . hoturl_post("users", "modifygo=1&amp;modifytype=sendaccount&amp;pap[]=" . (is_array($ids) ? join("+", $ids) : $ids)) . "'>click here</a>.");
     }
 

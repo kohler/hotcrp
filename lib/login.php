@@ -160,7 +160,7 @@ class LoginHelper {
             $user->mark_activity();
         if (!$external_login && $user->check_password_encryption(false)) {
             $user->change_password($_REQUEST["password"]);
-            $Conf->qe("update ContactInfo set password='" . sqlq($user->password) . "' where contactId=" . $user->cid);
+            $Conf->qe("update ContactInfo set password='" . sqlq($user->password) . "' where contactId=" . $user->contactId);
         }
 
         $user = $user->activate();

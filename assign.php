@@ -93,8 +93,8 @@ function retractRequest($email, $prow, $confirm = true) {
     if ($row && $row->reviewModified > 0)
         return $Conf->errorMsg("You can’t retract that review request since the reviewer has already started their review.");
     if (!$Me->allowAdminister($prow)
-        && (($row && $row->requestedBy && $Me->cid != $row->requestedBy)
-            || ($row2 && $row2->requestedBy && $Me->cid != $row2->requestedBy)))
+        && (($row && $row->requestedBy && $Me->contactId != $row->requestedBy)
+            || ($row2 && $row2->requestedBy && $Me->contactId != $row2->requestedBy)))
         return $Conf->errorMsg("You can’t retract that review request since you didn’t make the request in the first place.");
 
     // at this point, success; remove the review request
@@ -299,7 +299,7 @@ function proposeReview($email) {
 
     // check for outstanding review request
     $result = $Conf->qe("insert into ReviewRequest (paperId, name, email, requestedBy, reason)
-        values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->cid, '" . sqlq(trim($_REQUEST["reason"])) . "') on duplicate key update paperId=paperId");
+        values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->contactId, '" . sqlq(trim($_REQUEST["reason"])) . "') on duplicate key update paperId=paperId");
 
     // send confirmation email
     Mailer::send_manager("@proposereview", $prow, $Me, array("permissionContact" => $Me, "cc" => Text::user_email_to($Me), "contact3" => (object) array("fullName" => $name, "email" => $email), "reason" => $reason));
@@ -367,7 +367,7 @@ function createAnonymousReview() {
         $qb .= ", $now, $now";  /* no way to notify, so count as notified already */
     }
     $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, reviewToken$qa)
-                values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->cid, $token$qb)");
+                values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, $token$qb)");
     $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId. The review token is " . encode_token((int) $token) . ".");
 
     $Conf->qx("unlock tables");
@@ -521,7 +521,7 @@ if ($Me->canAdminister($prow)) {
     $colorizer = new Tagger;
     $pctexts = array();
     foreach (pcMembers() as $pc) {
-        $p = $pcx[$pc->cid];
+        $p = $pcx[$pc->contactId];
         if (!$pc->allow_review_assignment_ignore_conflict($prow))
             continue;
 
