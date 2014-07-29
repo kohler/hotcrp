@@ -77,17 +77,17 @@ if ($dl["resp_open"] && $dl["resp_done"])
     printDeadline($dl, "resp_done", "Response deadline",
                   "This deadline controls when you can submit a response to the reviews.");
 
-if ($dl["rev_open"] && defval($dl, "pcrev_done") && !defval($dl, "pcrev_ishard"))
+if (@$dl["rev_open"] && @$dl["pcrev_done"] && !@$dl["pcrev_ishard"])
     printDeadline($dl, "pcrev_done", "PC review deadline",
                   "Reviews are requested by this deadline.");
-else if ($dl["rev_open"] && defval($dl, "pcrev_done"))
+else if (@$dl["rev_open"] && @$dl["pcrev_done"])
     printDeadline($dl, "pcrev_done", "PC review hard deadline",
                   "This deadline controls when you can submit or change your reviews.");
 
-if ($dl["rev_open"] && defval($dl, "extrev_done") && !defval($dl, "extrev_ishard"))
+if (@$dl["rev_open"] && @$dl["extrev_done"] && !@$dl["extrev_ishard"])
     printDeadline($dl, "extrev_done", "External review deadline",
                   "Reviews are requested by this deadline.");
-else if ($dl["rev_open"] && defval($dl, "extrev_done"))
+else if (@$dl["rev_open"] && @$dl["extrev_done"])
     printDeadline($dl, "extrev_done", "External review hard deadline",
                   "This deadline controls when you can submit or change your reviews.");
 
