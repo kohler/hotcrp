@@ -110,7 +110,6 @@ $allowedSessionVars = array("foldpapera", "foldpaperp", "foldpaperb",
 // set $ConfSitePATH (path to conference site), $ConfSiteBase, and $ConfSiteSuffix
 function set_path_variables() {
     global $ConfSitePATH, $ConfSiteBase, $ConfSiteSuffix;
-
     if (!@$ConfSitePATH) {
         $ConfSitePATH = substr(__FILE__, 0, strrpos(__FILE__, "/"));
         while ($ConfSitePATH !== "" && !file_exists("$ConfSitePATH/src/init.php"))
@@ -118,7 +117,6 @@ function set_path_variables() {
         if ($ConfSitePATH === "")
             $ConfSitePATH = "/var/www/html";
     }
-
     require_once("$ConfSitePATH/lib/navigation.php");
     Navigation::analyze();
     if (@$ConfSiteBase === null)
@@ -220,7 +218,6 @@ if (!@$Opt)
 if (!@$OptOverride)
     $OptOverride = array();
 if (!@$Opt["loaded"]) {
-    // see also `cacheable.php`
     if (defined("HOTCRP_OPTIONS")) {
         if ((@include HOTCRP_OPTIONS) !== false)
             $Opt["loaded"] = true;

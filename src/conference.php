@@ -1931,7 +1931,7 @@ class Conference {
             $this->scriptStuff = Ht::script_file($jquery) . "\n";
 
             if (@$Opt["strictJavascript"])
-                $this->scriptStuff .= Ht::script_file($Opt["assetsURL"] . "cacheable.php?file=scripts/script.js&mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
+                $this->scriptStuff .= Ht::script_file($Opt["assetsURL"] . "cacheable.php?file=scripts/script.js&strictjs=1&mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
             else
                 $this->scriptStuff .= Ht::script_file($Opt["assetsURL"] . "scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
 

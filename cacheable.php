@@ -15,12 +15,6 @@ if ($zlib_output_compression) {
     header("Content-Encoding: $zlib_output_compression");
     header("Vary: Accept-Encoding", false);
 }
-global $Opt;
-$Opt = array();
-if ((@include "conf/options.php") === false
-    && (@include "conf/options.inc") === false
-    && (@include "Code/options.inc") === false)
-    error_log("cannot load conf/options.php");
 
 function fail() {
     global $zlib_output_compression;
@@ -31,17 +25,18 @@ function fail() {
     exit;
 }
 
-$file = isset($_REQUEST["file"]) ? $_REQUEST["file"] : "";
-if ($file)
-    $mtime = @filemtime($file);
+$file = @$_REQUEST["file"];
+if (!$file)
+    fail();
 
+$mtime = @filemtime($file);
 $prefix = "";
 if (preg_match(',\A(?:images|scripts|stylesheets)(?:/[^./][^/]+)+\z,', $file)
     && preg_match(',.*([.][a-z]*)\z,', $file, $m)) {
     $s = $m[1];
     if ($s == ".js") {
         header("Content-Type: text/javascript; charset=utf-8");
-        if (@$Opt["strictJavascript"])
+        if (@$_REQUEST["strictjs"])
             $prefix = "\"use strict\";\n";
     } else if ($s == ".map")
         header("Content-Type: application/json; charset=utf-8");
@@ -64,8 +59,8 @@ header("Last-Modified: $last_modified");
 header("ETag: $etag");
 
 // check for a conditional request
-$if_modified_since = isset($_SERVER["HTTP_IF_MODIFIED_SINCE"]) ? $_SERVER["HTTP_IF_MODIFIED_SINCE"] : false;
-$if_none_match = isset($_SERVER["HTTP_IF_NONE_MATCH"]) ? $_SERVER["HTTP_IF_NONE_MATCH"] : false;
+$if_modified_since = @$_SERVER["HTTP_IF_MODIFIED_SINCE"];
+$if_none_match = @$_SERVER["HTTP_IF_NONE_MATCH"];
 if (($if_modified_since || $if_none_match)
     && (!$if_modified_since || $if_modified_since == $last_modified)
     && (!$if_none_match || $if_none_match == $etag))
