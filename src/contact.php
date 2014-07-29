@@ -162,26 +162,24 @@ class Contact {
         $this->activated_ = true;
 
         // Handle actas requests
-        if (isset($_REQUEST["actas"]) && !isset($_SESSION["trueuser"]))
-            $_SESSION["trueuser"] = $_SESSION["user"];
         if (isset($_REQUEST["actas"])) {
-            $trueuser = explode(" ", $_SESSION["trueuser"]);
+            $trueuser = $_SESSION["trueuser"];
             if (is_numeric($_REQUEST["actas"]))
                 $actasemail = self::email_by_id($_REQUEST["actas"]);
             else if ($_REQUEST["actas"] === "admin")
-                $actasemail = $trueuser[2];
+                $actasemail = $trueuser->email;
             else
                 $actasemail = $_REQUEST["actas"];
             unset($_REQUEST["actas"]);
             if ($actasemail
                 && strcasecmp($actasemail, $this->email) != 0
-                && (strcasecmp($actasemail, $trueuser[2]) == 0
+                && (strcasecmp($actasemail, $trueuser->email) == 0
                     || $this->privChair
-                    || (($truecontact = self::find_by_email($trueuser[2]))
+                    || (($truecontact = self::find_by_email($trueuser->email))
                         && $truecontact->privChair))
                 && ($actascontact = self::find_by_email($actasemail))) {
                 $Conf->save_session("l", null);
-                if ($actascontact->email !== $trueuser[2]) {
+                if ($actascontact->email !== $trueuser->email) {
                     hoturl_defaults(array("actas" => urlencode($actascontact->email)));
                     $_SESSION["last_actas"] = $actascontact->email;
                 }
@@ -221,9 +219,6 @@ class Contact {
             ++$this->rights_version_;
         }
 
-        // Set user session
-        if ($this->contactId)
-            $_SESSION["user"] = "$this->contactId $Conf->dsn $this->email";
         return $this;
     }
 

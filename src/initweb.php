@@ -46,20 +46,25 @@ function initialize_user() {
         $_SESSION["user"] = "$x->contactId $x->confDsn $x->email";
         unset($_SESSION["Me"], $_SESSION["pcmembers"]);
     }
+    if (!isset($_SESSION["trueuser"]) && isset($_SESSION["user"]))
+        $_SESSION["trueuser"] = $_SESSION["user"];
+    if (is_string(@$_SESSION["trueuser"])) {
+        $userwords = explode(" ", $_SESSION["trueuser"]);
+        $_SESSION["trueuser"] = (object) array("contactId" => $userwords[0], "dsn" => $userwords[1], "email" => @$userwords[2]);
+    }
 
     // load current user
-    $userwords = array();
-    if (isset($_SESSION["trueuser"]))
-        $userwords = explode(" ", $_SESSION["trueuser"]);
-    else if (isset($_SESSION["user"]))
-        $userwords = explode(" ", $_SESSION["user"]);
     $Me = null;
-    if (count($userwords) >= 2 && $userwords[1] == $Conf->dsn)
-        $Me = Contact::find_by_id($userwords[0]);
-    else if (count($userwords) >= 3)
-        $Me = Contact::find_by_email($userwords[2]);
-    if (!$Me)
+    $trueuser = @$_SESSION["trueuser"];
+    if ($trueuser && $trueuser->dsn == $Conf->dsn)
+        $Me = Contact::find_by_id($trueuser->contactId);
+    if (!$Me && $trueuser && $trueuser->email)
+        $Me = Contact::find_by_email($trueuser->email);
+    if (!$Me) {
         $Me = new Contact;
+        if ($trueuser && $trueuser->email)
+            $Me->email = $trueuser->email;
+    }
     $Me = $Me->activate();
 
     // if bounced through login, add post data

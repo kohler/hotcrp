@@ -41,7 +41,9 @@ if (isset($_REQUEST["merge"]) && check_post()) {
                 $mm = $Me;
                 $Me = $MiniMe;
                 $MiniMe = $mm;
-                $_SESSION["user"] = "$Me->contactId $Conf->dsn $Me->email";
+                $_SESSION["trueuser"]->contactId = $Me->contactId;
+                $_SESSION["trueuser"]->dsn = $Conf->dsn;
+                $_SESSION["trueuser"]->email = $Me->email;
             }
 
             Mailer::send("@mergeaccount", null, $MiniMe, $Me, array("cc" => Text::user_email_to($Me)));

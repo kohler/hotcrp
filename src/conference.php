@@ -2011,10 +2011,8 @@ class Conference {
             // "act as" link
             if (($actas = @$_SESSION["last_actas"])) {
                 // Become true user if not currently chair.
-                if (!$Me->privChair || strcasecmp($Me->email, $actas) == 0) {
-                    $actas = explode(" ", $_SESSION["trueuser"]);
-                    $actas = $actas[2];
-                }
+                if (!$Me->privChair || strcasecmp($Me->email, $actas) == 0)
+                    $actas = $_SESSION["trueuser"]->email;
                 if (strcasecmp($Me->email, $actas) != 0)
                     echo "<a href=\"", selfHref(array("actas" => $actas)), "\">", ($Me->privChair ? htmlspecialchars($actas) : "Admin"), "&nbsp;", Ht::img("viewas.png", "Act as " . htmlspecialchars($actas)), "</a>", $xsep;
             }

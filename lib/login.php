@@ -128,7 +128,7 @@ class LoginHelper {
                     return self::first_user($user, $msg);
             } else {
                 $email_class = " error";
-                return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?");
+                return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists. Did you enter the correct email address?");
             }
         }
 
@@ -166,6 +166,7 @@ class LoginHelper {
 
         $user = $user->activate();
         unset($_SESSION["testsession"]);
+        $_SESSION["trueuser"] = (object) array("contactId" => $user->contactId, "dsn" => $Conf->dsn, "email" => $user->email);
         $Conf->save_session("freshlogin", true);
 
         if (isset($_REQUEST["go"]))

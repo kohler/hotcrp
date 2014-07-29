@@ -323,7 +323,7 @@ else if (isset($_REQUEST["register"]) && $newProfile
         $Conf->errorMsg("<div>" . join("</div><div style='margin-top:0.5em'>", $UserStatus->error_messages()) . "</div>");
     else {
         if ($newProfile)
-            $Conf->confirmMsg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">" . Text::user_html_nolink($Acct) . "</a>.  A password has been emailed to that address.  You may now create another account.");
+            $Conf->confirmMsg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">" . Text::user_html_nolink($Acct) . "</a>. A password has been emailed to that address. You may now create another account.");
         else {
             $Conf->confirmMsg("Account profile updated.");
             if ($Acct->contactId != $Me->contactId)
