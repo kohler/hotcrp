@@ -1835,5 +1835,5 @@ doActionArea(false);
 echo "</div></div></td></tr>
 </table></div></form>\n";
 
-$Conf->footerScript("hiliter_children('#settingsform')");
+$Conf->footerScript("hiliter_children('#settingsform');jQuery('textarea').autogrow()");
 $Conf->footer();
