@@ -316,15 +316,19 @@ function doTopics($set) {
         return;
     }
 
-    $numnew = defval($_REQUEST, "newtopcount", 50);
     $tmap = $Conf->topic_map();
-    foreach ($_REQUEST as $k => $v) {
-        if (!(strlen($k) > 3 && $k[0] == "t" && $k[1] == "o" && $k[2] == "p"))
-            continue;
-        $v = simplify_whitespace($v);
-        if ($k[3] == "n" && $v != "" && !ctype_digit($v) && cvtint(substr($k, 4), 100) <= $numnew)
-            $Conf->qe("insert into TopicArea (topicName) values ('" . sqlq($v) . "')");
-        else if (($k = cvtint(substr($k, 3), -1)) >= 0) {
+    foreach ($_REQUEST as $k => $v)
+        if ($k === "topnew") {
+            $news = array();
+            foreach (explode("\n", $v) as $n)
+                if (($n = simplify_whitespace($n)) !== "")
+                    $news[] = "('" . sqlq($n) . "')";
+            if (count($news))
+                $Conf->qe("insert into TopicArea (topicName) values " . join(",", $news));
+        } else if (strlen($k) > 3 && substr($k, 0, 3) === "top"
+                   && ctype_digit(substr($k, 3))) {
+            $k = (int) substr($k, 3);
+            $v = simplify_whitespace($v);
             if ($v == "") {
                 $Conf->qe("delete from TopicArea where topicId=$k");
                 $Conf->qe("delete from PaperTopic where topicId=$k");
@@ -332,7 +336,6 @@ function doTopics($set) {
             } else if (isset($tmap[$k]) && $v != $tmap[$k] && !ctype_digit($v))
                 $Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k");
         }
-    }
 }
 
 
@@ -1384,7 +1387,7 @@ function doOptGroupOption($o) {
 }
 
 function doOptGroup() {
-    global $Conf;
+    global $Conf, $Error;
 
     echo "<h3 class=\"settings\">Submission options</h3>\n";
     echo "Options are selected by authors at submission time.  Examples have included “PC-authored paper,” “Consider this paper for a Best Student Paper award,” and “Allow the shadow PC to see this paper.”  The “option name” should be brief (“PC paper,” “Best Student Paper,” “Shadow PC”).  The optional description can explain further and may use XHTML.  ";
@@ -1426,17 +1429,21 @@ function doOptGroup() {
         Ht::hidden("has_topics", 1),
         "<table id='newtoptable' class='", ($ninterests ? "foldo" : "foldc"), "'>";
     echo "<tr><th colspan='2'></th><th class='fx'><small>Low</small></th><th class='fx'><small>High</small></th></tr>";
-    $td1 = "<td class='lcaption'>Current</td>";
+    $td1 = '<td class="lcaption">Current</td>';
     foreach ($Conf->topic_map() as $tid => $tname) {
-        echo "<tr>$td1<td class='lentry'><input type='text' class='textlite' name='top$tid' value=\"", htmlspecialchars($tname), "\" size='40' /></td>";
+        if (count($Error) > 0 && isset($_REQUEST["top$tid"]))
+            $tname = $_REQUEST["top$tid"];
+        echo '<tr>', $td1, '<td class="lentry">',
+            Ht::entry("top$tid", $tname, array("size" => 40, "class" => "textlite", "style" => "width:20em")),
+            '</td>';
 
         $tinterests = defval($interests, $tid, array());
-        echo "<td class='fx rpentry'>", (@$tinterests[0] ? "<span class='topic-2'>" . $tinterests[0] . "</span>" : ""), "</td>",
-            "<td class='fx rpentry'>", (@$tinterests[1] ? "<span class='topic2'>" . $tinterests[1] . "</span>" : ""), "</td>";
+        echo '<td class="fx rpentry">', (@$tinterests[0] ? '<span class="topic-2">' . $tinterests[0] . "</span>" : ""), "</td>",
+            '<td class="fx rpentry">', (@$tinterests[1] ? '<span class="topic2">' . $tinterests[1] . "</span>" : ""), "</td>";
 
         if ($td1 !== "<td></td>") {
             // example search
-            echo "<td class='llentry' style='vertical-align: top' rowspan='40'><div class='f-i'>",
+            echo "<td class='llentry' style='vertical-align:top' rowspan='40'><div class='f-i'>",
                 "<div class='f-c'>Example search</div>";
             $oabbrev = strtolower($tname);
             if (strstr($oabbrev, " ") !== false)
@@ -1452,14 +1459,9 @@ function doOptGroup() {
         echo "</tr>\n";
         $td1 = "<td></td>";
     }
-    $td1 = "<td class='lcaption' rowspan='40'>New<br /><small><a href='#' onclick='return authorfold(\"newtop\",1,1)'>More</a> | <a href='#' onclick='return authorfold(\"newtop\",1,-1)'>Fewer</a></small></td>";
-    for ($i = 1; $i <= 40; $i++) {
-        echo "<tr id='newtop$i' class='auedito'>$td1<td class='lentry'><input type='text' class='textlite' name='topn$i' value=\"\" size='40' /></td></tr>\n";
-        $td1 = "";
-    }
-    echo "</table>",
-        Ht::hidden("newtopcount", 40, array("id" => "newtopcount"));
-    $Conf->echoScript("authorfold(\"newtop\",0,3)");
+    echo '<tr><td class="lcaption top" rowspan="40">New<br><span class="hint">Enter one topic per line.</span></td><td class="lentry top">',
+        Ht::textarea("topnew", count($Error) ? @$_REQUEST["topnew"] : "", array("cols" => 40, "rows" => 2, "style" => "width:20em", "class" => "textlite")),
+        '</td></tr></table>';
 }
 
 // Reviews
