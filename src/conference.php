@@ -44,7 +44,7 @@ class Conference {
         if (($this->dsn = $dsn))
             list($this->dblink, $Opt["dbName"]) = self::connect_dsn($this->dsn);
         if (!@$Opt["confid"])
-            $Opt["confid"] = $Opt["dbName"];
+            $Opt["confid"] = @$Opt["dbName"];
         if ($this->dblink)
             $this->load_settings();
         else

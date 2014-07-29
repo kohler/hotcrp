@@ -13,6 +13,7 @@ class LoginHelper {
         $Me = new Contact;
         unset($_SESSION["user"]);
         unset($_SESSION["trueuser"]);
+        unset($_SESSION["last_actas"]);
         // clear all conference session info, except maybe capabilities
         $capabilities = $Conf->session("capabilities");
         unset($_SESSION[$Conf->dsn]);
