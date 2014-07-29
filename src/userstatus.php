@@ -400,7 +400,7 @@ class UserStatus {
         if (($roles | $old_roles) & Contact::ROLE_PCLIKE)
             $Conf->invalidateCaches(array("pc" => 1));
 
-        if (!$old_user || !$old_user->is_known_user())
+        if (!$old_user || !$old_user->has_database_account())
             $user->mark_create(!$this->no_email, false);
         return $user;
     }

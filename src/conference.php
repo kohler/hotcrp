@@ -1998,13 +1998,13 @@ class Conference {
         else
             echo "<a class='x' href='", hoturl("index"), "' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a></h1></div><div id='header_left_page'><h1>", $title;
         echo "</h1></div><div id='header_right'>";
-        if ($Me && $Me->is_known_user()) {
+        if ($Me && $Me->has_database_account()) {
             // profile link
-            $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
+            $xsep = ' <span class="barsep">&nbsp;|&nbsp;</span> ';
             if ($Me->contactId > 0) {
-                echo "<a class='q' href='", hoturl("profile"), "'><strong>",
+                echo '<a class="q" href="', hoturl("profile"), '"><strong>',
                     htmlspecialchars($Me->email),
-                    "</strong></a> &nbsp; <a href='", hoturl("profile"), "'>Profile</a>",
+                    '</strong></a> &nbsp; <a href="', hoturl("profile"), '">Profile</a>',
                     $xsep;
             }
 

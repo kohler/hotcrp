@@ -29,13 +29,13 @@ function change_email_by_capability() {
     $Conf->delete_capability($capdata);
 
     $Conf->confirmMsg("Your email address has been changed.");
-    if (!$Me->is_known_user() || $Me->contactId == $Acct->contactId)
+    if (!$Me->has_database_account() || $Me->contactId == $Acct->contactId)
         $Me = $Acct->activate();
 }
 if (isset($_REQUEST["changeemail"]))
     change_email_by_capability();
 
-if ($Me->is_empty() || !$Me->is_known_user())
+if (!$Me->has_database_account())
     $Me->escape();
 $newProfile = false;
 $useRequest = false;

@@ -51,7 +51,7 @@ if ($Me->is_empty() || isset($_REQUEST["signin"]))
     $_SESSION["testsession"] = true;
 
 // perhaps redirect through account
-if ($Me->is_known_user() && $Conf->session("freshlogin") === true) {
+if ($Me->has_database_account() && $Conf->session("freshlogin") === true) {
     $needti = false;
     if (($Me->roles & Contact::ROLE_PC) && !$Me->has_review()) {
         $result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
@@ -243,7 +243,7 @@ if (($v = $Conf->setting_data("msg.home")))
 
 
 // Sign in
-if (!$Me->is_known_user() || isset($_REQUEST["signin"])) {
+if (!$Me->has_database_account() || isset($_REQUEST["signin"])) {
     $confname = $Opt["longName"];
     if ($Opt["shortName"] && $Opt["shortName"] != $Opt["longName"])
         $confname .= " (" . $Opt["shortName"] . ")";
@@ -525,7 +525,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
         echo "<h4>Submissions: &nbsp;</h4> ";
 
     $startable = $Conf->timeStartPaper();
-    if ($startable && !$Me->is_known_user())
+    if ($startable && !$Me->has_database_account())
         echo "<span class='deadline'>", $Conf->printableDeadlineSetting("sub_reg", "span"), "</span><br />\n<small>You must sign in to register papers.</small>";
     else if ($startable || $Me->privChair) {
         echo "<strong><a href='", hoturl("paper", "p=new"), "'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting("sub_reg", "span"), ")</span>";
@@ -589,7 +589,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
 
 
 // Review tokens
-if ($Me->is_known_user() && $Conf->setting("rev_tokens"))
+if ($Me->has_database_account() && $Conf->setting("rev_tokens"))
     reviewTokenGroup(true);
 
 

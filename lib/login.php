@@ -43,7 +43,7 @@ class LoginHelper {
         }
 
         // if user is still valid, OK
-        if ($Me->is_known_user())
+        if ($Me->has_database_account())
             return;
 
         // check HTTP auth
@@ -205,13 +205,13 @@ class LoginHelper {
     static private function create_account($user) {
         global $Conf, $Opt, $email_class;
 
-        if ($user && $user->is_known_user() && $user->activity_at > 0) {
+        if ($user && $user->has_database_account() && $user->activity_at > 0) {
             $email_class = " error";
             return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
         } else if (!validate_email($_REQUEST["email"])) {
             $email_class = " error";
             return $Conf->errorMsg("&ldquo;" . htmlspecialchars($_REQUEST["email"]) . "&rdquo; is not a valid email address.");
-        } else if (!$user || !$user->is_known_user()) {
+        } else if (!$user || !$user->has_database_account()) {
             if (!($user = Contact::find_by_email($_REQUEST["email"], true)))
                 return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
         }
