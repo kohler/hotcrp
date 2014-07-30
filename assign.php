@@ -10,6 +10,8 @@ if ($Me->is_empty())
     $Me->escape();
 $_REQUEST["forceShow"] = 1;
 $Error = $Warning = array();
+// ensure site contact exists before locking tables
+Contact::site_contact();
 
 
 // header
