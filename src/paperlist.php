@@ -203,6 +203,10 @@ class PaperList extends BaseList {
         return "<span class='fn5'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Override conflicts</a></span><span class='fx5'>$text</span>";
     }
 
+    public function reviewer_cid() {
+        return $this->reviewer ? : $this->contact->contactId;
+    }
+
     public function maybeConflict($row, $text, $visible) {
         if ($visible)
             return $text;

@@ -1363,9 +1363,10 @@ class Conference {
             $pq .= "            join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr) and PaperReview.reviewNeedsSubmit!=0)\n";
         else if (@$options["myReviewsOpt"])
             $pq .= "            left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))\n";
-        else if (@$options["allReviews"] || @$options["allReviewScores"])
-            $pq .= "            join PaperReview on (PaperReview.paperId=Paper.paperId)\n";
-        else if (!@$options["author"])
+        else if (@$options["allReviews"] || @$options["allReviewScores"]) {
+            $x = (@$options["reviewLimitSql"] ? " and (" . $options["reviewLimitSql"] . ")" : "");
+            $pq .= "            join PaperReview on (PaperReview.paperId=Paper.paperId$x)\n";
+        } else if (!@$options["author"])
             $pq .= "            left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))\n";
         if ($myPaperReview == "MyPaperReview")
             $pq .= "            left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$contactId)\n";
