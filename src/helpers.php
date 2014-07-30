@@ -626,7 +626,7 @@ function _tryNewList($opt, $listtype, $sort = null) {
         $q = "select email from ContactInfo";
         if ($searchtype == "pc")
             $q .= " join PCMember using (contactId)";
-        $result = $Conf->qx("$q order by lastName, firstName, email");
+        $result = $Conf->ql("$q order by lastName, firstName, email");
         $a = array();
         while (($row = edb_row($result)))
             $a[] = $row[0];
@@ -647,7 +647,7 @@ function _tryNewList($opt, $listtype, $sort = null) {
 function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
     global $Conf;
     if ($listtype == "u") {
-        $result = $Conf->qx("select email from ContactInfo where email='" . sqlq($id) . "'");
+        $result = $Conf->ql("select email from ContactInfo where email='" . sqlq($id) . "'");
         $row = edb_row($result);
         $paperText = htmlspecialchars($row ? $row[0] : $id);
         $urlrest = "u=" . urlencode($id) . $urlrest;

@@ -124,10 +124,10 @@ class Contact {
     static public function site_contact() {
         global $Conf, $Opt;
         if (!@$Opt["contactEmail"] || $Opt["contactEmail"] == "you@example.com") {
-            $result = $Conf->qx("select firstName, lastName, email from ContactInfo join Chair using (contactId) limit 1");
+            $result = $Conf->ql("select firstName, lastName, email from ContactInfo join Chair using (contactId) limit 1");
             $row = edb_orow($result);
             if (!$row) {
-                $result = $Conf->qx("select firstName, lastName, email from ContactInfo join ChairAssistant using (contactId) limit 1");
+                $result = $Conf->ql("select firstName, lastName, email from ContactInfo join ChairAssistant using (contactId) limit 1");
                 $row = edb_orow($result);
             }
             if ($row) {
@@ -401,7 +401,7 @@ class Contact {
     function apply_capability_text($text) {
         global $Conf;
         if (preg_match(',\A([-+]?)0([1-9][0-9]*)(a)(\S+)\z,', $text, $m)
-            && ($result = $Conf->qx("select paperId, capVersion from Paper where paperId=$m[2]"))
+            && ($result = $Conf->ql("select paperId, capVersion from Paper where paperId=$m[2]"))
             && ($row = edb_orow($result))) {
             $rowcap = $Conf->capability_text($row, $m[3]);
             $text = substr($text, strlen($m[1]));
@@ -551,7 +551,7 @@ class Contact {
             return $result;
         if ($inserting)
             $this->contactId = $Conf->lastInsertId();
-        $Conf->qx("delete from ContactAddress where contactId=$this->contactId");
+        $Conf->ql("delete from ContactAddress where contactId=$this->contactId");
         if ($this->addressLine1 || $this->addressLine2 || $this->city
             || $this->state || $this->zipCode || $this->country) {
             $query = "insert into ContactAddress (contactId, addressLine1, addressLine2, city, state, zipCode, country) values ($this->contactId, '" . sqlq($this->addressLine1) . "', '" . sqlq($this->addressLine2) . "', '" . sqlq($this->city) . "', '" . sqlq($this->state) . "', '" . sqlq($this->zipCode) . "', '" . sqlq($this->country) . "')";
@@ -773,7 +773,7 @@ class Contact {
     function load_address() {
         global $Conf;
         if ($this->addressLine1 === false && $this->contactId) {
-            $result = $Conf->qx("select * from ContactAddress where contactId=$this->contactId");
+            $result = $Conf->ql("select * from ContactAddress where contactId=$this->contactId");
             $row = edb_orow($result);
             foreach (self::_addressKeys() as $k)
                 $this->$k = @($row->$k);
@@ -2136,7 +2136,7 @@ class Contact {
                 $msg = "Added " . $reviewTypeName[$type] . " review";
             $Conf->log($msg . " by " . $this->email, $reviewer_cid, $pid);
             if ($q[0] == "i")
-                $Conf->qx("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
+                $Conf->ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
             if ($q[0] == "i" && $type >= REVIEW_PC && $Conf->setting("pcrev_assigntime", 0) < $when)
                 $Conf->save_setting("pcrev_assigntime", $when);
         }
@@ -2147,7 +2147,7 @@ class Contact {
         if ($this->contactId > 0
             && (!$this->activity_at || $this->activity_at < $Now)) {
             $this->activity_at = $Now;
-            $Conf->qx("update ContactInfo set lastLogin=$Now where contactId=" . $this->contactId);
+            $Conf->ql("update ContactInfo set lastLogin=$Now where contactId=" . $this->contactId);
         }
     }
 

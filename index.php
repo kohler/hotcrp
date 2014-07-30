@@ -99,7 +99,7 @@ function admin_home_messages() {
     if (!$site_contact->email || $site_contact->email == "you@example.com")
         $m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the conference contact’s name and email</a> so submitters can reach someone if things go wrong.";
     // Any -100 preferences around?
-    $result = $Conf->qx($Conf->preferenceConflictQuery(false, "limit 1"));
+    $result = $Conf->ql($Conf->preferenceConflictQuery(false, "limit 1"));
     if (($row = edb_row($result)))
         $m[] = "PC members have indicated paper conflicts (using review preferences of &#8722;100 or less) that aren’t yet confirmed. <a href='" . hoturl_post("autoassign", "a=prefconflict&amp;assign=1") . "' class='nowrap'>Confirm these conflicts</a>";
     // Weird URLs?
