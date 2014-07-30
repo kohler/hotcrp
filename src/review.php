@@ -587,7 +587,7 @@ class ReviewForm {
         if ($prow->conflictType == 0
             && $minic->canViewReview($prow, $this->mailer_info["rrow"], false))
             Mailer::send($this->mailer_info["template"], $prow, $minic,
-                         null, $this->mailer_info);
+                         $this->mailer_info);
     }
 
     function saveRequest($req, $rrow, $prow, $contact, &$tf = null) {
@@ -739,9 +739,10 @@ class ReviewForm {
 
             // construct mail
             $rest = array("template" => $tmpl, "rrow" => $fake_rrow,
+                          "reviewer_contact" => $submitter,
                           "reviewNumber" => $prow->paperId . unparseReviewOrdinal($notify_rrow->reviewOrdinal));
             if ($Conf->timeEmailChairAboutReview())
-                Mailer::send_manager($tmpl, $prow, $submitter, $rest);
+                Mailer::send_manager($tmpl, $prow, $rest);
             if ($diff_view_score >= VIEWSCORE_PC) {
                 $this->mailer_info = $rest;
                 genericWatch($prow, WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
@@ -749,9 +750,11 @@ class ReviewForm {
             }
             if ($Conf->timeEmailAuthorsAboutReview() && $notify_author) {
                 $rest["infoMsg"] = "since a review was updated during the response period.";
-                if ($Conf->is_review_blind($fake_rrow))
+                if ($Conf->is_review_blind($fake_rrow)) {
                     $rest["infoMsg"] .= " Reviewer anonymity was preserved.";
-                Mailer::sendContactAuthors($tmpl, $prow, $submitter, $rest);
+                    unset($rest["reviewer_contact"]);
+                }
+                Mailer::send_contacts($tmpl, $prow, $rest);
             }
         }
 

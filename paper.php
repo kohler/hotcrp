@@ -140,13 +140,13 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
 
         // email contact authors themselves
         if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
-            Mailer::sendContactAuthors(($prow->conflictType >= CONFLICT_AUTHOR ? "@authorwithdraw" : "@adminwithdraw"),
-                                       $prow, null, array("reason" => $reason, "infoNames" => 1));
+            Mailer::send_contacts(($prow->conflictType >= CONFLICT_AUTHOR ? "@authorwithdraw" : "@adminwithdraw"),
+                                       $prow, array("reason" => $reason, "infoNames" => 1));
 
         // email reviewers
         if (($numreviews > 0 && $Conf->timeReviewOpen())
             || $prow->startedReviewCount > 0)
-            Mailer::sendReviewers("@withdrawreviewer", $prow, null, array("reason" => $reason));
+            Mailer::send_reviewers("@withdrawreviewer", $prow, array("reason" => $reason));
 
         // remove voting tags so people don't have phantom votes
         $tagger = new Tagger;
@@ -758,7 +758,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
             $options["reason"] = $_REQUEST["emailNote"];
         if ($notes !== "")
             $options["notes"] = preg_replace(",</?(?:span.*?|strong)>,", "", $notes) . "\n\n";
-        Mailer::sendContactAuthors($template, $prow, null, $options);
+        Mailer::send_contacts($template, $prow, $options);
     }
 
     // other mail confirmations
@@ -830,7 +830,7 @@ if (isset($_REQUEST["delete"]) && check_post()) {
     else {
         // mail first, before contact info goes away
         if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
-            Mailer::sendContactAuthors("@deletepaper", $prow, null, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
+            Mailer::send_contacts("@deletepaper", $prow, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
         // XXX email self?
 
         $error = false;

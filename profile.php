@@ -202,7 +202,7 @@ function save_user($cj, $user_status) {
         if (!$newProfile && !$Me->privChair) {
             $rest = array("emailTo" => $cj->email,
                           "capability" => $Conf->create_capability(CAPTYPE_CHANGEEMAIL, array("contactId" => $Acct->contactId, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $cj->email)))));
-            $prep = Mailer::prepareToSend("@changeemail", null, $Acct, null, $rest);
+            $prep = Mailer::prepareToSend("@changeemail", null, $Acct, $rest);
             if ($prep["allowEmail"]) {
                 Mailer::sendPrepared($prep);
                 $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($cj->email) . " to check that the address works. Use the link it contains to confirm your email change request.");

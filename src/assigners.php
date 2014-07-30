@@ -177,11 +177,13 @@ class ReviewAssigner extends Assigner {
     private $type;
     private $round;
     private $oldtype;
-    function __construct($pid, $contact, $type, $round, $oldtype = 0) {
+    private $notify;
+    function __construct($pid, $contact, $type, $round, $oldtype = 0, $notify = null) {
         parent::__construct($pid, $contact);
         $this->type = $type;
         $this->round = $round;
         $this->oldtype = $oldtype;
+        $this->notify = $notify;
     }
     function contact_set() {
         if ($this->type > REVIEW_EXTERNAL)
@@ -230,6 +232,9 @@ class ReviewAssigner extends Assigner {
             $revmatch["_round"] = $round === "none" ? "" : $round;
             if (count($matches))
                 $revmatch["_rsubmitted"] = $matches[0]["_rsubmitted"];
+            if ($rtype == REVIEW_EXTERNAL && !count($matches)
+                && @$defaults["extrev_notify"])
+                $revmatch["_notify"] = $defaults["extrev_notify"];
             $state->add($revmatch);
         } else
             // do not remove submitted reviews
@@ -241,7 +246,8 @@ class ReviewAssigner extends Assigner {
         $x = $new ? $new : $old;
         return new ReviewAssigner($x["pid"], $cmap->get_id($x["cid"]),
                                   $new ? $new["_rtype"] : 0, $x["_round"],
-                                  $old ? $old["_rtype"] : 0);
+                                  $old ? $old["_rtype"] : 0,
+                                  $new ? @$new["_notify"] : null);
     }
     function unparse_display() {
         global $assignprefs, $Conf;
@@ -274,6 +280,11 @@ class ReviewAssigner extends Assigner {
         global $Conf;
         $result = $Conf->qe("select contactId, paperId, reviewId, reviewType, reviewModified from PaperReview where paperId=$this->pid and contactId=$this->cid");
         $who->assign_paper($this->pid, edb_orow($result), $this->cid, $this->type, $when);
+        if ($this->notify) {
+            $reviewer = Contact::find_by_id($this->cid);
+            $prow = $Conf->paperRow(array("paperId" => $this->pid, "reviewer" => $this->cid), $reviewer);
+            Mailer::send($this->notify, $prow, $reviewer);
+        }
     }
 }
 class LeadAssigner extends Assigner {
@@ -450,6 +461,8 @@ Assigner::register("primary", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
 Assigner::register("secondary", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
 Assigner::register("pcreview", new ReviewAssigner(0, null, REVIEW_PC, ""));
 Assigner::register("review", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
+Assigner::register("extreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
+Assigner::register("ext", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
 Assigner::register("noreview", new ReviewAssigner(0, null, 0, ""));
 Assigner::register("clearreview", new ReviewAssigner(0, null, 0, ""));
 Assigner::register("lead", new LeadAssigner(0, null, "lead", true));

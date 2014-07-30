@@ -85,7 +85,7 @@ Contact %ADMIN% with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER%",
            "body" => "Dear %NAME%,
 
-On behalf of the %CONFNAME% program committee, %OTHERCONTACT% would like to solicit your help with the review of %CONFNAME% paper #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
+On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% would like to solicit your help with the review of %CONFNAME% paper #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -93,7 +93,7 @@ On behalf of the %CONFNAME% program committee, %OTHERCONTACT% would like to soli
 
 If you are willing to review this paper, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))% Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%
 
-Once you've decided, please take a moment to accept or decline this review request by using one of these links. You may also contact %OTHERNAME% directly or decline the review using the conference site.
+Once you've decided, please take a moment to accept or decline this review request by using one of these links. You may also contact %REQUESTERNAME% directly or decline the review using the conference site.
 
       Accept: %URL(review, p=%NUMBER%&accept=1&%LOGINURLPARTS%)%
      Decline: %URL(review, p=%NUMBER%&decline=1&%LOGINURLPARTS%)%
@@ -117,7 +117,7 @@ Thanks for your help -- we appreciate that reviewing is hard work!
      array("subject" => "[%CONFSHORTNAME%] Retracting review request for paper #%NUMBER%",
            "body" => "Dear %NAME%,
 
-%OTHERNAME% has retracted a previous request that you review %CONFNAME% paper #%NUMBER%. There's no need to complete your review.
+%REQUESTERNAME% has retracted a previous request that you review %CONFNAME% paper #%NUMBER%. There's no need to complete your review.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -131,7 +131,7 @@ Thank you,
      array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER%",
            "body" => "Greetings,
 
-%OTHERCONTACT% would like %CONTACT3% to review %CONFNAME% paper #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
+%REQUESTERCONTACT% would like %REVIEWERCONTACT% to review %CONFNAME% paper #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
 
 Visit the assignment page to approve or deny the request.
 
@@ -145,7 +145,7 @@ Visit the assignment page to approve or deny the request.
      array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER% denied",
            "body" => "Dear %NAME%,
 
-Your proposal that %OTHERCONTACT% review %CONFNAME% paper #%NUMBER% has been denied by an administrator. You may want to propose someone else.
+Your proposal that %REVIEWERCONTACT% review %CONFNAME% paper #%NUMBER% has been denied by an administrator. You may want to propose someone else.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -160,7 +160,7 @@ Thank you,
      array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER% declined",
            "body" => "Dear %NAME%,
 
-%OTHERCONTACT% cannot complete the review of %CONFNAME% paper #%NUMBER% that you requested. %IF(REASON)%They gave the following reason: %REASON% %ENDIF%You may want to find an alternate reviewer.
+%REVIEWERCONTACT% cannot complete the review of %CONFNAME% paper #%NUMBER% that you requested. %IF(REASON)%They gave the following reason: %REASON% %ENDIF%You may want to find an alternate reviewer.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -409,11 +409,11 @@ Contact %ADMIN% with any questions or concerns.
            "mailtool_pc" => true,
            "mailtool_priority" => 21,
            "mailtool_recipients" => "uncmyextrev",
-           "mailtool_search_type" => "t",
+           "mailtool_search_type" => "req",
            "subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 
-This is a reminder from %OTHERCONTACT% to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please decline the review using the site or contact %OTHERNAME% directly.
+This is a reminder from %REQUESTERCONTACT% to finish your review for %CONFNAME% paper #%NUMBER%.%IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF%If you are unable to complete the review, please decline the review using the site or contact %REQUESTERNAME% directly.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%

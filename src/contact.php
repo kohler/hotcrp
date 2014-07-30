@@ -2083,7 +2083,7 @@ class Contact {
             $template = "@resetpassword";
         }
 
-        $prep = Mailer::prepareToSend($template, null, $this, null, $rest);
+        $prep = Mailer::prepareToSend($template, null, $this, $rest);
         if ($prep["allowEmail"] || !$sensitive
             || @$Opt["debugShowSensitiveEmail"]) {
             Mailer::sendPrepared($prep);

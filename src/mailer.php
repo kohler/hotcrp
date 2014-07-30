@@ -78,37 +78,33 @@ class Mailer {
     private $recipient;
     private $permissionContact;
     private $_tagger = null;
-    private $contacts;
-    private $hideSensitive;
-    private $hideReviews;
-    private $reason;
-    private $adminupdate;
-    private $notes;
-    var $rrow;
-    private $reviewNumber;
-    private $comment_row;
-    public $capability;
+    private $contacts = array();
+    private $hideSensitive = false;
+    private $hideReviews = false;
+    private $reason = null;
+    private $adminupdate = null;
+    private $notes = null;
+    var $rrow = null;
+    private $reviewNumber = "";
+    private $comment_row = null;
+    public $capability = null;
     private $statistics = null;
-    var $width;
+    var $width = 75;
     private $expansionType = null;
     private $mstate;
 
-    function Mailer($row, $recipient, $otherContact = null, $rest = array()) {
+    function __construct($row, $recipient, $rest = array()) {
         $this->row = $row;
         $this->recipient = $recipient;
         $this->permissionContact = defval($rest, "permissionContact", $recipient);
-        $this->contacts = array($recipient, defval($rest, "contact2", $otherContact), defval($rest, "contact3", null));
-        $this->hideSensitive = defval($rest, "hideSensitive", false);
-        $this->reason = defval($rest, "reason", "");
-        $this->adminupdate = defval($rest, "adminupdate", false);
-        $this->notes = defval($rest, "notes", "");
-        $this->rrow = defval($rest, "rrow", null);
-        $this->reviewNumber = defval($rest, "reviewNumber", "");
-        $this->comment_row = defval($rest, "comment_row", null);
-        $this->hideReviews = defval($rest, "hideReviews", false);
-        $this->capability = defval($rest, "capability", null);
-        $this->width = 75;
-        $this->expansionType = null;
+        $this->contacts = array($recipient);
+        foreach (array("requester", "reviewer", "other") as $k)
+            if (($v = @$rest[$k . "_contact"]))
+                $this->contacts[$k] = $v;
+        foreach (array("hideSensitive", "hideReviews", "reason", "adminupdate", "notes",
+                       "rrow", "reviewNumber", "comment_row", "capability") as $k)
+            if (($v = @$rest[$k]) !== null)
+                $this->$k = $v;
         if (isset($rest["mstate"]))
             $this->mstate = $rest["mstate"];
         else
@@ -276,17 +272,29 @@ class Mailer {
         if ($what == "%NUMACCEPTED%")
             return $this->statistics[1];
 
-        if (preg_match('/\A%((?:OTHER)?)(CONTACT|NAME|EMAIL|FIRST|LAST)(|[1-9]\d*)%\z/', $what, $m)
-            && ($m[1] == "" || $m[3] == "")) {
-            $which = ($m[1] == "" && $m[3] == "" ? 0 : ($m[1] == "" ? (int) $m[3] - 1 : 1));
-            if (($c = defval($this->contacts, $which, null)))
+        if (preg_match('/\A%(OTHER|REQUESTER|REVIEWER|)(CONTACT|NAME|EMAIL|FIRST|LAST)%\z/', $what, $m)) {
+            $which = ($m[1] == "" ? 0 : strtolower($m[1]));
+            if (($c = @$this->contacts[$which]))
                 return $this->_expandContact($c, $m[2]);
+            else if ($isbool)
+                return false;
+        }
+
+        if ($what == "%REASON%" || $what == "%ADMINUPDATE%" || $what == "%NOTES%") {
+            $which = strtolower(substr($what, 1, strlen($what) - 2));
+            $value = $this->$which;
+            if ($value === null && !$this->recipient)
+                return ($isbool ? null : $what);
+            else if ($what == "%ADMINUPDATE%")
+                return $value ? "An administrator performed this update. " : "";
+            else
+                return $value === null ? "" : $value;
         }
 
         // if no contact, this is a pre-expansion
         $external_password = isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]);
         if (!$this->recipient) {
-            if ($what == "%PASSWORD%" && $external_password && $isbool)
+            if ($isbool && $what == "%PASSWORD%" && $external_password)
                 return false;
             else
                 return ($isbool ? null : $what);
@@ -317,12 +325,6 @@ class Mailer {
                 return ($isbool || $password !== null ? $password : "");
         }
 
-        if ($what == "%REASON%")
-            return $this->reason;
-        if ($what == "%ADMINUPDATE%")
-            return $this->adminupdate ? "An administrator performed this update. " : "";
-        if ($what == "%NOTES%")
-            return $this->notes;
         if ($what == "%CAPABILITY%")
             return ($isbool || $this->capability ? $this->capability : "");
         if ($what == "%NEWASSIGNMENTS%")
@@ -645,8 +647,7 @@ class Mailer {
         return $this->expand(self::getTemplate($templateName, $default));
     }
 
-    static function prepareToSend($template, $row, $recipient,
-                                  $otherContact = null, &$rest = array()) {
+    static function prepareToSend($template, $row, $recipient, &$rest = array()) {
         global $Conf, $mailTemplates;
 
         // look up template
@@ -676,7 +677,7 @@ class Mailer {
         }
 
         // expand the template
-        $mailer = new Mailer($row, $recipient, $otherContact, $rest);
+        $mailer = new Mailer($row, $recipient, $rest);
         $m = $mailer->expand($template);
         $m["subject"] = substr(Mailer::mimeHeader("Subject: ", $m["subject"]), 9);
         $m["to"] = $emailTo->email;
@@ -736,15 +737,13 @@ class Mailer {
             return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\n" . $preparation["headers"] . "Subject: " . $preparation["subject"] . "\n\n" . $preparation["body"]) . "</pre>");
     }
 
-    static function send($template, $row, $recipient, $otherContact = null, $rest = array()) {
-        if (defval($recipient, "disabled"))
-            return;
-        $preparation = self::prepareToSend($template, $row, $recipient, $otherContact, $rest);
-        if ($preparation)
+    static function send($template, $row, $recipient, $rest = array()) {
+        if (!defval($recipient, "disabled")
+            && ($preparation = self::prepareToSend($template, $row, $recipient, $rest)))
             self::sendPrepared($preparation);
     }
 
-    static function sendContactAuthors($template, $row, $otherContact = null, $rest = array()) {
+    static function send_contacts($template, $row, $rest = array()) {
         global $Conf, $Me, $mailTemplates;
 
         $qa = ($Conf->sversion >= 47 ? ", disabled" : "");
@@ -761,7 +760,7 @@ class Mailer {
         $contacts = array();
         while (($contact = edb_orow($result))) {
             $row->assign_contact_info($contact, $contact->contactId);
-            Mailer::send($template, $row, Contact::make($contact), $otherContact, $rest);
+            Mailer::send($template, $row, Contact::make($contact), $rest);
             $contacts[] = Text::user_html($contact);
         }
 
@@ -777,7 +776,7 @@ class Mailer {
         }
     }
 
-    static function sendReviewers($template, $row, $otherContact = null, $rest = array()) {
+    static function send_reviewers($template, $row, $rest = array()) {
         global $Conf, $Me, $Opt, $mailTemplates;
 
         $qa = ($Conf->sversion >= 47 ? ", disabled" : "");
@@ -800,7 +799,7 @@ class Mailer {
         $contacts = array();
         while (($contact = edb_orow($result))) {
             $row->assign_contact_info($contact, $contact->contactId);
-            Mailer::send($template, $row, Contact::make($contact), $otherContact, $rest);
+            Mailer::send($template, $row, Contact::make($contact), $rest);
             $contacts[] = Text::user_html($contact);
         }
 
@@ -812,12 +811,12 @@ class Mailer {
         }
     }
 
-    static function send_manager($template, $row, $otherContact = null, $rest = array()) {
+    static function send_manager($template, $row, $rest = array()) {
         if ($row && $row->managerContactId
             && ($c = Contact::find_by_id($row->managerContactId)))
-            Mailer::send($template, $row, $c, $otherContact, $rest);
+            Mailer::send($template, $row, $c, $rest);
         else
-            Mailer::send($template, $row, Contact::site_contact(), $otherContact, $rest);
+            Mailer::send($template, $row, Contact::site_contact(), $rest);
     }
 
 

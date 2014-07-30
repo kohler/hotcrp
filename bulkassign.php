@@ -8,7 +8,9 @@ require_once("src/papersearch.php");
 require_once("src/assigners.php");
 if (!$Me->privChair)
     $Me->escape();
-$nullMailer = new Mailer(null, null, $Me);
+$nullMailer = new Mailer(null, null, array("requester_contact" => $Me,
+                                           "other_contact" => $Me /* backwards compat */,
+                                           "reason" => ""));
 $nullMailer->width = 10000000;
 $Error = $Warning = array();
 
@@ -16,6 +18,9 @@ $Error = $Warning = array();
 function assignment_defaults() {
     $defaults = array("action" => @$_REQUEST["default_action"],
                       "round" => @$_REQUEST["rev_roundtag"]);
+    if (@$_REQUEST["requestreview_notify"] && @$_REQUEST["requestreview_body"])
+        $defaults["extrev_notify"] = array("subject" => @$_REQUEST["requestreview_subject"],
+                                           "body" => @$_REQUEST["requestreview_body"]);
     if (trim($defaults["round"]) == "(None)")
         $defaults["round"] = null;
     return $defaults;
@@ -88,6 +93,9 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
                 Ht::hidden("rev_roundtag", $defaults["round"]),
                 Ht::hidden("file", $text),
                 Ht::hidden("filename", $_FILES["uploadfile"]["name"]),
+                Ht::hidden("requestreview_notify", @$_REQUEST["requestreview_notify"]),
+                Ht::hidden("requestreview_subject", @$_REQUEST["requestreview_subject"]),
+                Ht::hidden("requestreview_body", @$_REQUEST["requestreview_body"]),
                 '</div></div></form>', "\n";
             $Conf->footer();
             exit;
@@ -122,16 +130,16 @@ if (!isset($_REQUEST["rev_roundtag"]))
     $rev_roundtag = $Conf->setting_data("rev_roundtag");
 else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
     $rev_roundtag = "";
-if (isset($_REQUEST["email_requestreview"]))
-    $t = $_REQUEST["email_requestreview"];
-else {
-    $t = $nullMailer->expandTemplate("requestreview");
-    $t = $t["body"];
-}
+$requestreview_template = $nullMailer->expandTemplate("requestreview");
+echo Ht::hidden("requestreview_subject", $requestreview_template["subject"]);
+if (isset($_REQUEST["requestreview_body"]))
+    $t = $_REQUEST["requestreview_body"];
+else
+    $t = $requestreview_template["body"];
 echo "<div id='foldemail' class='foldo'><table class='fx'>
-<tr><td>", Ht::checkbox("email", 1, true), "&nbsp;</td>
+<tr><td>", Ht::checkbox("requestreview_notify", 1, true), "&nbsp;</td>
 <td>", Ht::label("Send email to external reviewers:"), "</td></tr>
-<tr><td></td><td><textarea class='tt' name='email_requestreview' cols='80' rows='20'>", htmlspecialchars($t), "</textarea></td></tr></table>
+<tr><td></td><td><textarea class='tt' name='requestreview_body' cols='80' rows='20'>", htmlspecialchars($t), "</textarea></td></tr></table>
 <div";
 if (isset($Error["rev_roundtag"]))
     echo ' class="error"';
@@ -228,5 +236,5 @@ To clear a tag, use action <code>cleartag</code> or value <code>none</code>.</dd
 </dl>\n";
 
 $Conf->footerScript("mktemptext('rev_roundtag','(None)')");
-$Conf->footerScript("fold('email',\$\$('tsel').value!=" . REVIEW_EXTERNAL . ")");
+$Conf->footerScript("fold('email',\$\$('tsel').value!='review')");
 $Conf->footer();

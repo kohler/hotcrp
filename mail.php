@@ -7,8 +7,6 @@ require_once("src/initweb.php");
 require_once("src/papersearch.php");
 if (!$Me->privChair && !$Me->isPC)
     $Me->escape();
-$nullMailer = new Mailer(null, null, $Me);
-$nullMailer->width = 10000000;
 $checkReviewNeedsSubmit = false;
 $Error = $Warning = array();
 $pctags = pcTags();
@@ -28,16 +26,21 @@ if (isset($_REQUEST["fromlog"]) && ctype_digit($_REQUEST["fromlog"])
 
 // create options
 $tOpt = array();
-$tOpt["s"] = "Submitted papers";
-if ($Me->privChair && $Conf->timePCViewDecision(false) && $Conf->setting("paperacc") > 0)
-    $tOpt["acc"] = "Accepted papers";
 if ($Me->privChair) {
+    $tOpt["s"] = "Submitted papers";
+    if ($Conf->timePCViewDecision(false) && $Conf->setting("paperacc") > 0)
+        $tOpt["acc"] = "Accepted papers";
     $tOpt["unsub"] = "Unsubmitted papers";
     $tOpt["all"] = "All papers";
 }
 $tOpt["req"] = "Your review requests";
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = key($tOpt);
+
+// mailer
+$mailer_options = array("requester_contact" => $Me);
+$nullMailer = new Mailer(null, null, $mailer_options);
+$nullMailer->width = 10000000;
 
 // template options
 if (isset($_REQUEST["monreq"]))
@@ -224,7 +227,7 @@ function echo_mailinfo($mcount, $mrecipients, $mpapers) {
 
 function checkMail($send) {
     global $Conf, $Opt, $Me, $Error, $subjectPrefix, $recip,
-        $checkReviewNeedsSubmit;
+        $checkReviewNeedsSubmit, $mailer_options;
     $q = contactQuery($_REQUEST["recipients"]);
     if (!$q)
         return $Conf->errorMsg("Bad recipients value");
@@ -255,6 +258,7 @@ function checkMail($send) {
     $template = array("subject" => $subject, "body" => $emailBody);
     $rest = array("cc" => $_REQUEST["cc"], "replyto" => $_REQUEST["replyto"],
                   "error" => false, "mstate" => new MailerState());
+    $rest = array_merge($rest, $mailer_options);
     $last = array("subject" => "", "body" => "", "to" => "");
     $any = false;
     $mcount = 0;
@@ -273,7 +277,7 @@ function checkMail($send) {
         $contact = Contact::make($row);
         $rest["hideReviews"] = $checkReviewNeedsSubmit && $row->reviewNeedsSubmit;
         $rest["error"] = false;
-        $preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest); // see also $show_preparation below
+        $preparation = Mailer::prepareToSend($template, $row, $contact, $rest); // see also $show_preparation below
         if ($rest["error"] !== false) {
             $Error[$rest["error"]] = true;
             $emsg = "This " . Mailer::$mailHeaders[$rest["error"]] . " field isn’t a valid email list: <blockquote><tt>" . htmlspecialchars($rest[$rest["error"]]) . "</tt></blockquote>  Make sure email address are separated by commas.  When mixing names and email addresses, try putting names in \"quotes\" and email addresses in &lt;angle brackets&gt;.";
@@ -312,7 +316,7 @@ function checkMail($send) {
                 $show_preparation = $preparation;
             else {
                 $rest["hideSensitive"] = true;
-                $show_preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest);
+                $show_preparation = Mailer::prepareToSend($template, $row, $contact, $rest);
                 $rest["hideSensitive"] = false;
             }
 
