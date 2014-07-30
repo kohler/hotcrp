@@ -249,7 +249,7 @@ class Mailer {
                 $a[$i] = $this->expand($a[$i], "urlpart");
                 $a[$i] = preg_replace('/\&(?=\&|\z)/', "", $a[$i]);
             }
-            return hoturl_absolute($a[0], isset($a[1]) ? $a[1] : "");
+            return hoturl_absolute_nodefaults($a[0], isset($a[1]) ? $a[1] : "");
         }
         if ($what == "%PHP%")
             return $ConfSiteSuffix;

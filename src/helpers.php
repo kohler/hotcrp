@@ -314,6 +314,15 @@ function hoturl_absolute($page, $options = null) {
     return $Opt["paperSite"] . "/" . hoturl_site_relative($page, $options);
 }
 
+function hoturl_absolute_nodefaults($page, $options = null) {
+    global $Opt, $_hoturl_defaults;
+    $defaults = $_hoturl_defaults;
+    $_hoturl_defaults = null;
+    $url = hoturl_absolute($page, $options);
+    $_hoturl_defaults = $defaults;
+    return $url;
+}
+
 function hoturl_raw($page, $options = null) {
     return htmlspecialchars_decode(hoturl($page, $options));
 }
