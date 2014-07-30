@@ -137,7 +137,7 @@ function pc_request_as_json($cj) {
 }
 
 function web_request_as_json($cj) {
-    global $Conf, $Acct, $newProfile, $UserStatus;
+    global $Conf, $Me, $Acct, $newProfile, $UserStatus;
 
     if ($newProfile || !$Acct->has_database_account())
         $cj->id = "new";
@@ -157,7 +157,8 @@ function web_request_as_json($cj) {
         if (isset($_REQUEST[$k]))
             $cj->$k = $_REQUEST[$k];
 
-    if (!Contact::external_login() && !$newProfile) {
+    if (!Contact::external_login() && !$newProfile
+        && $Me->can_change_password($Acct)) {
         if (@$_REQUEST["whichpassword"] === "t" && @$_REQUEST["upasswordt"])
             $pw = $pw2 = @trim($_REQUEST["upasswordt"]);
         else {
@@ -579,7 +580,8 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
 }
 
 
-if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])) {
+if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
+    && $Me->can_change_password($Acct)) {
     echo "<div style='margin-top:20px'></div><div class='f-i'><div class='f-ix'>
   <div class='", fcclass('password'), "'>New password</div>
   <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"\" onchange='hiliter(this)' />";

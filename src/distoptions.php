@@ -112,6 +112,8 @@ $Opt["emailSender"] = null;
 //   passwordHmacKeyid  If a secret key is compromised, change
 //                   passwordHmacKeyid to switch keys. Defaults to 0.
 //   passwordHmacKey.ID  Secret key for passwordHmacKeyid==ID.
+//   chairHidePasswords  If true, then chairs cannot view or modify other
+//                   users' passwords. Defaults to false.
 
 $Opt["safePasswords"] = true;
 $Opt["passwordHmacKey"] = null;

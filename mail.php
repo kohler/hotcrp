@@ -308,8 +308,8 @@ function checkMail($send) {
             }
 
             // hide passwords from non-chair users
-            if ($Me->privChair)
-                $show_preparation =& $preparation;
+            if ($Me->privChair && !@$Opt["chairHidePasswords"])
+                $show_preparation = $preparation;
             else {
                 $rest["hideSensitive"] = true;
                 $show_preparation = Mailer::prepareToSend($template, $row, $contact, $Me, $rest);

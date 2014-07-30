@@ -916,6 +916,16 @@ class Contact {
             return $this->privChair;
     }
 
+    public function can_change_password($acct) {
+        global $Opt;
+        if (@$Opt["chairHidePasswords"])
+            return @$_SESSION["trueuser"] && $acct->email
+                && $_SESSION["trueuser"]->email == $acct->email;
+        else
+            return $this->contactId > 0
+                && ($this->contactId == $acct->contactId || $this->privChair);
+    }
+
     public function canAdminister($prow, $forceShow = null) {
         if ($prow) {
             $rights = $this->rights($prow, $forceShow);
