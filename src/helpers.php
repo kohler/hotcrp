@@ -371,7 +371,8 @@ function selfHref($extra = array(), $options = null) {
         $uri = hoturl_site_relative(Navigation::page(), $param);
     if (isset($extra["anchor"]))
         $uri .= "#" . $extra["anchor"];
-    if (!$options || !@$options["raw"])
+    $uri = str_replace("&amp;", "&", $uri);
+    if (!$options || @$options["raw"])
         return $uri;
     else
         return htmlspecialchars($uri);
