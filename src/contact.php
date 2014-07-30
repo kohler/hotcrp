@@ -245,11 +245,11 @@ class Contact {
     }
 
     function is_empty() {
-        return $this->contactId <= 0 && !$this->capabilities;
+        return $this->contactId <= 0 && !$this->capabilities && !$this->email;
     }
 
     function has_email() {
-        return $this->contactId > 0;
+        return !!$this->email;
     }
 
     function has_database_account() {

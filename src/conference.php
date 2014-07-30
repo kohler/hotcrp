@@ -1998,10 +1998,10 @@ class Conference {
         else
             echo "<a class='x' href='", hoturl("index"), "' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a></h1></div><div id='header_left_page'><h1>", $title;
         echo "</h1></div><div id='header_right'>";
-        if ($Me && $Me->has_email()) {
+        if ($Me && !$Me->is_empty()) {
             // profile link
             $xsep = ' <span class="barsep">&nbsp;|&nbsp;</span> ';
-            if ($Me->contactId > 0) {
+            if ($Me->has_email()) {
                 echo '<a class="q" href="', hoturl("profile"), '"><strong>',
                     htmlspecialchars($Me->email),
                     '</strong></a> &nbsp; <a href="', hoturl("profile"), '">Profile</a>',
@@ -2009,7 +2009,7 @@ class Conference {
             }
 
             // "act as" link
-            if (($actas = @$_SESSION["last_actas"])) {
+            if (($actas = @$_SESSION["last_actas"]) && @$_SESSION["trueuser"]) {
                 // Become true user if not currently chair.
                 if (!$Me->privChair || strcasecmp($Me->email, $actas) == 0)
                     $actas = $_SESSION["trueuser"]->email;
