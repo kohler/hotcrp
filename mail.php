@@ -223,7 +223,7 @@ function echo_mailinfo($mcount, $mrecipients, $mpapers) {
 }
 
 function checkMail($send) {
-    global $Conf, $Me, $Error, $subjectPrefix, $recip,
+    global $Conf, $Opt, $Me, $Error, $subjectPrefix, $recip,
         $checkReviewNeedsSubmit;
     $q = contactQuery($_REQUEST["recipients"]);
     if (!$q)
