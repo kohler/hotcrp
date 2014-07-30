@@ -46,9 +46,9 @@ class MailerState {
         else
             $m = "Keyword-like strings " . commajoin($a) . " were not recognized.";
         if ($ispaper)
-            $m .= "  (Paper-specific keywords like <code>%NUMBER%</code> weren’t recognized because this set of recipients is not linked to a paper collection.)";
+            $m .= " Paper-specific keywords like <code>%NUMBER%</code> weren’t recognized because this set of recipients is not linked to a paper collection.";
         if (isset($this->unexpanded["%AUTHORVIEWCAPABILITY%"]))
-            $m .= "  (Author view capabilities weren’t recognized because this mail isn’t meant for paper authors.)";
+            $m .= " Author view capabilities weren’t recognized because this mail isn’t meant for paper authors.";
         return $m;
     }
 
@@ -75,15 +75,15 @@ class Mailer {
                                        "replyto" => "Reply-To");
 
     private $row;
-    private $contact;
+    private $recipient;
     private $permissionContact;
     private $_tagger = null;
-    var $contacts;
-    var $hideSensitive;
-    var $hideReviews;
-    var $reason;
-    var $adminupdate;
-    var $notes;
+    private $contacts;
+    private $hideSensitive;
+    private $hideReviews;
+    private $reason;
+    private $adminupdate;
+    private $notes;
     var $rrow;
     private $reviewNumber;
     private $comment_row;
@@ -93,11 +93,11 @@ class Mailer {
     private $expansionType = null;
     private $mstate;
 
-    function Mailer($row, $contact, $otherContact = null, $rest = array()) {
+    function Mailer($row, $recipient, $otherContact = null, $rest = array()) {
         $this->row = $row;
-        $this->contact = $contact;
-        $this->permissionContact = defval($rest, "permissionContact", $contact);
-        $this->contacts = array($contact, defval($rest, "contact2", $otherContact), defval($rest, "contact3", null));
+        $this->recipient = $recipient;
+        $this->permissionContact = defval($rest, "permissionContact", $recipient);
+        $this->contacts = array($recipient, defval($rest, "contact2", $otherContact), defval($rest, "contact3", null));
         $this->hideSensitive = defval($rest, "hideSensitive", false);
         $this->reason = defval($rest, "reason", "");
         $this->adminupdate = defval($rest, "adminupdate", false);
@@ -285,7 +285,7 @@ class Mailer {
 
         // if no contact, this is a pre-expansion
         $external_password = isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]);
-        if (!$this->contact) {
+        if (!$this->recipient) {
             if ($what == "%PASSWORD%" && $external_password && $isbool)
                 return false;
             else
@@ -295,14 +295,20 @@ class Mailer {
         if ($what == "%LOGINURL%" || $what == "%LOGINURLPARTS%" || $what == "%PASSWORD%") {
             $password = null;
             if (!$external_password) {
-                if (isset($this->contact->password_plaintext))
-                    $password = ($this->hideSensitive ? "HIDDEN" : $this->contact->password_plaintext);
-                else if ($this->contact->password_type != 0)
+                if (isset($this->recipient->password_plaintext)) {
+                    if (!$this->hideSensitive)
+                        $password = $this->recipient->password_plaintext;
+                    else
+                        $password = "HIDDEN";
+                } else if ($this->recipient->password_type != 0)
                     $password = false;
             }
             $loginparts = "";
-            if (!isset($Opt["httpAuthLogin"]))
-                $loginparts = "email=" . urlencode($this->contact->email) . ($password ? "&password=" . urlencode($password) : "");
+            if (!isset($Opt["httpAuthLogin"])) {
+                $loginparts = "email=" . urlencode($this->recipient->email);
+                if ($password)
+                    $loginparts .= "&password=" . urlencode($password);
+            }
             if ($what == "%LOGINURL%")
                 return $Opt["paperSite"] . ($loginparts ? "/?" . $loginparts : "/");
             else if ($what == "%LOGINURLPARTS%")
@@ -320,7 +326,7 @@ class Mailer {
         if ($what == "%CAPABILITY%")
             return ($isbool || $this->capability ? $this->capability : "");
         if ($what == "%NEWASSIGNMENTS%")
-            return $this->get_new_assignments($this->contact);
+            return $this->get_new_assignments($this->recipient);
 
         // rest is only there if we have a real paper
         if (!$this->row || defval($this->row, "paperId") <= 0) {
@@ -639,7 +645,7 @@ class Mailer {
         return $this->expand(self::getTemplate($templateName, $default));
     }
 
-    static function prepareToSend($template, $row, $contact,
+    static function prepareToSend($template, $row, $recipient,
                                   $otherContact = null, &$rest = array()) {
         global $Conf, $mailTemplates;
 
@@ -652,7 +658,7 @@ class Mailer {
                 $template[$f] = $rest[$f];
 
         if (!isset($rest["emailTo"]) || !$rest["emailTo"])
-            $emailTo = $contact;
+            $emailTo = $recipient;
         else if (is_string($rest["emailTo"]))
             $emailTo = (object) array("email" => $rest["emailTo"]);
         else
@@ -670,7 +676,7 @@ class Mailer {
         }
 
         // expand the template
-        $mailer = new Mailer($row, $contact, $otherContact, $rest);
+        $mailer = new Mailer($row, $recipient, $otherContact, $rest);
         $m = $mailer->expand($template);
         $m["subject"] = substr(Mailer::mimeHeader("Subject: ", $m["subject"]), 9);
         $m["to"] = $emailTo->email;
@@ -687,7 +693,7 @@ class Mailer {
                     if (isset($rest["error"]))
                         $rest["error"] = $n;
                     else
-                        $Conf->errorMsg("$h &ldquo;<tt>" . htmlspecialchars($m[$n]) . "</tt>&rdquo; isn't a valid email list.");
+                        $Conf->errorMsg("$h “<tt>" . htmlspecialchars($m[$n]) . "</tt>” isn't a valid email list.");
                     return false;
                 }
                 $m[$n] = substr($hdr, strlen($h) + 2);
@@ -730,10 +736,10 @@ class Mailer {
             return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\n" . $preparation["headers"] . "Subject: " . $preparation["subject"] . "\n\n" . $preparation["body"]) . "</pre>");
     }
 
-    static function send($template, $row, $contact, $otherContact = null, $rest = array()) {
-        if (defval($contact, "disabled"))
+    static function send($template, $row, $recipient, $otherContact = null, $rest = array()) {
+        if (defval($recipient, "disabled"))
             return;
-        $preparation = self::prepareToSend($template, $row, $contact, $otherContact, $rest);
+        $preparation = self::prepareToSend($template, $row, $recipient, $otherContact, $rest);
         if ($preparation)
             self::sendPrepared($preparation);
     }

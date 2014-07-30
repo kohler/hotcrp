@@ -352,7 +352,7 @@ function checkMail($send) {
     echo_mailinfo($mcount, $mrecipients, $mpapers);
 
     if (!$any && !count($preperrors))
-        return $Conf->errorMsg("No users match &ldquo;" . $recip[$_REQUEST["recipients"]] . "&rdquo; for that search.");
+        return $Conf->errorMsg("No users match “" . $recip[$_REQUEST["recipients"]] . "” for that search.");
     else if (!$any)
         return false;
     else if (!$send) {
