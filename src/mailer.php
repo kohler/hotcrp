@@ -79,7 +79,7 @@ class Mailer {
     private $permissionContact;
     private $_tagger = null;
     private $contacts = array();
-    private $hideSensitive = false;
+    private $sensitivity = null;
     private $hideReviews = false;
     private $reason = null;
     private $adminupdate = null;
@@ -94,6 +94,7 @@ class Mailer {
     private $mstate;
 
     function __construct($row, $recipient, $rest = array()) {
+        global $Me, $Opt;
         $this->row = $row;
         $this->recipient = $recipient;
         $this->permissionContact = defval($rest, "permissionContact", $recipient);
@@ -101,10 +102,15 @@ class Mailer {
         foreach (array("requester", "reviewer", "other") as $k)
             if (($v = @$rest[$k . "_contact"]))
                 $this->contacts[$k] = $v;
-        foreach (array("hideSensitive", "hideReviews", "reason", "adminupdate", "notes",
+        foreach (array("sensitivity", "hideReviews", "reason", "adminupdate", "notes",
                        "rrow", "reviewNumber", "comment_row", "capability") as $k)
             if (($v = @$rest[$k]) !== null)
                 $this->$k = $v;
+        // Do not put passwords in email that is cc'd elsewhere
+        if ((!$Me->privChair || @$Opt["chairHidePasswords"])
+            && ($rest["cc"] || $rest["bcc"])
+            && (@$rest["sensitivity"] === null || @$rest["sensitivity"] === "display"))
+            $this->sensitivity = "high";
         if (isset($rest["mstate"]))
             $this->mstate = $rest["mstate"];
         else
@@ -303,12 +309,12 @@ class Mailer {
         if ($what == "%LOGINURL%" || $what == "%LOGINURLPARTS%" || $what == "%PASSWORD%") {
             $password = null;
             if (!$external_password) {
-                if (isset($this->recipient->password_plaintext)) {
-                    if (!$this->hideSensitive)
-                        $password = $this->recipient->password_plaintext;
-                    else
-                        $password = "HIDDEN";
-                } else if ($this->recipient->password_type != 0)
+                $pwd_plaintext = @$this->recipient->password_plaintext;
+                if ($pwd_plaintext && !$this->sensitivity)
+                    $password = $pwd_plaintext;
+                else if ($pwd_plaintext && $this->sensitivity === "display")
+                    $password = "HIDDEN";
+                else if ($this->sensitivity || $this->recipient->password_type != 0)
                     $password = false;
             }
             $loginparts = "";
@@ -351,7 +357,7 @@ class Mailer {
         if ($what == "%REVIEWNUMBER%")
             return $this->reviewNumber;
         if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
-            if (!defval($this->permissionContact, "privSuperChair")
+            if (!@$this->permissionContact->privSuperChair
                 && !$this->permissionContact->canViewAuthors($this->row, false))
                 return ($isbool ? false : "Hidden for blind review");
             cleanAuthor($this->row);
@@ -383,7 +389,7 @@ class Mailer {
 
         if ($what == "%REVIEWAUTHOR%" && $this->contacts[1]) {
             if ($Conf->is_review_blind($this->rrow)
-                && defval($this->permissionContact, "privChair") <= 0
+                && !@$this->permissionContact->privChair
                 && (!isset($this->permissionContact->canViewReviewerIdentity)
                     || !$this->permissionContact->canViewReviewerIdentity($this->row, $this->rrow, false))) {
                 if ($isbool)
@@ -657,6 +663,8 @@ class Mailer {
         foreach (self::$mailHeaders as $f => $x)
             if (isset($rest[$f]))
                 $template[$f] = $rest[$f];
+            else if (isset($template[$f]))
+                $rest[$f] = $template[$f];
 
         if (!isset($rest["emailTo"]) || !$rest["emailTo"])
             $emailTo = $recipient;
@@ -772,7 +780,7 @@ class Mailer {
                 $contactsmsg = pluralx($contacts, "contact") . ", " . commajoin($contacts);
             else
                 $contactsmsg = "contact(s)";
-            $Conf->infoMsg("Sent email to paper #$row->paperId&rsquo;s $contactsmsg$endmsg");
+            $Conf->infoMsg("Sent email to paper #{$row->paperId}’s $contactsmsg$endmsg");
         }
     }
 
@@ -807,7 +815,7 @@ class Mailer {
         if ($Me->allowAdminister($row) && !$row->has_author($Me)
             && count($contacts)) {
             $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
-            $Conf->infoMsg("Sent email to paper #$row->paperId&rsquo;s " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . $endmsg);
+            $Conf->infoMsg("Sent email to paper #{$row->paperId}’s " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . $endmsg);
         }
     }
 
@@ -998,11 +1006,11 @@ class Mailer {
 }
 
 // load mail templates, including local ones if any
-global $ConfSitePATH;
+global $ConfSitePATH, $Opt;
 require_once("$ConfSitePATH/src/mailtemplate.php");
-if (file_exists("$ConfSitePATH/conf/mailtemplate-local.php"))
-    require_once("$ConfSitePATH/conf/mailtemplate-local.php");
-if (file_exists("$ConfSitePATH/conf/mailtemplate-local.inc"))
-    require_once("$ConfSitePATH/conf/mailtemplate-local.inc");
-if (file_exists("$ConfSitePATH/Code/mailtemplate-local.inc"))
-    require_once("$ConfSitePATH/Code/mailtemplate-local.inc");
+if ((@include "$ConfSitePATH/conf/mailtemplate-local.php") !== false
+    || (@include "$ConfSitePATH/conf/mailtemplate-local.inc") !== false
+    || (@include "$ConfSitePATH/Code/mailtemplate-local.inc") !== false)
+    /* do nothing */;
+if (@$Opt["mailtemplate_include"])
+    read_included_options($Opt["mailtemplate_include"]);

@@ -315,9 +315,9 @@ function checkMail($send) {
             if ($Me->privChair && !@$Opt["chairHidePasswords"])
                 $show_preparation = $preparation;
             else {
-                $rest["hideSensitive"] = true;
+                $rest["sensitivity"] = "display";
                 $show_preparation = Mailer::prepareToSend($template, $row, $contact, $rest);
-                $rest["hideSensitive"] = false;
+                unset($rest["sensitivity"]);
             }
 
             echo "<div class='mail'><table>";

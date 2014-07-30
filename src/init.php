@@ -184,7 +184,7 @@ setlocale(LC_COLLATE, "C");
 setlocale(LC_CTYPE, "C");
 
 
-// Set up conference options
+// Set up conference options (also used in mailer.php)
 function read_included_options($files) {
     global $Opt, $ConfSitePATH;
     if (is_string($files))
