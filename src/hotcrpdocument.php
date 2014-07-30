@@ -46,7 +46,7 @@ class HotCRPDocument {
             return DTYPE_FINAL;
         $omatches = PaperOption::search($dname);
         if (count($omatches) == 1)
-            return $omatches[0]->id;
+            return current($omatches)->id;
         return null;
     }
 
