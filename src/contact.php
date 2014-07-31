@@ -158,7 +158,7 @@ class Contact {
     //
 
     function activate() {
-        global $Conf, $Opt;
+        global $Conf, $Opt, $Now;
         $this->activated_ = true;
         $trueuser = @$_SESSION["trueuser"];
 
@@ -217,6 +217,21 @@ class Contact {
         if (($rtokens = $Conf->session("rev_tokens"))) {
             $this->review_tokens_ = $rtokens;
             ++$this->rights_version_;
+        }
+
+        // Maybe auto-create a user
+        if ($trueuser && $this->email === $trueuser->email) {
+            foreach (array("firstName", "lastName", "affiliation") as $k)
+                if ($this->$k && !@$trueuser->$k)
+                    $trueuser->$k = $this->$k;
+            if (!$this->has_database_account()
+                && $Conf->session("trueuser_author_check", 0) + 600 < $Now) {
+                $Conf->save_session("trueuser_author_check", $Now);
+                $aupapers = self::email_authored_papers($trueuser->email, $trueuser);
+                if (count($aupapers)
+                    && ($contact = self::find_by_email($trueuser->email, $trueuser, false)))
+                    return $contact->activate();
+            }
         }
 
         return $this;
