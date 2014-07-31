@@ -160,10 +160,10 @@ class Contact {
     function activate() {
         global $Conf, $Opt;
         $this->activated_ = true;
+        $trueuser = @$_SESSION["trueuser"];
 
         // Handle actas requests
-        if (isset($_REQUEST["actas"])) {
-            $trueuser = $_SESSION["trueuser"];
+        if (isset($_REQUEST["actas"]) && $trueuser) {
             if (is_numeric($_REQUEST["actas"]))
                 $actasemail = self::email_by_id($_REQUEST["actas"]);
             else if ($_REQUEST["actas"] === "admin")
