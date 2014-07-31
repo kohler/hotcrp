@@ -60,11 +60,8 @@ function initialize_user() {
         $Me = Contact::find_by_id($trueuser->contactId);
     if (!$Me && $trueuser && $trueuser->email)
         $Me = Contact::find_by_email($trueuser->email);
-    if (!$Me) {
-        $Me = new Contact;
-        if ($trueuser && $trueuser->email)
-            $Me->email = $trueuser->email;
-    }
+    if (!$Me)
+        $Me = new Contact($trueuser);
     $Me = $Me->activate();
 
     // if bounced through login, add post data

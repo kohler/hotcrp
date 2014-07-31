@@ -56,7 +56,11 @@ class Contact {
     static private $status_info_cache = array();
 
 
-    public function __construct() {
+    public function __construct($trueuser = null) {
+        if ($trueuser)
+            foreach (array("firstName", "lastName", "email", "affiliation") as $k)
+                if ($trueuser->$k)
+                    $this->$k = $trueuser->$k;
     }
 
     // begin changing contactId to cid
@@ -220,21 +224,33 @@ class Contact {
         }
 
         // Maybe auto-create a user
-        if ($trueuser && $this->email === $trueuser->email) {
-            foreach (array("firstName", "lastName", "affiliation") as $k)
-                if ($this->$k && !@$trueuser->$k)
-                    $trueuser->$k = $this->$k;
-            if (!$this->has_database_account()
-                && $Conf->session("trueuser_author_check", 0) + 600 < $Now) {
-                $Conf->save_session("trueuser_author_check", $Now);
-                $aupapers = self::email_authored_papers($trueuser->email, $trueuser);
-                if (count($aupapers)
-                    && ($contact = self::find_by_email($trueuser->email, $trueuser, false)))
-                    return $contact->activate();
-            }
+        if ($trueuser && $this->update_trueuser(false)
+            && !$this->has_database_account()
+            && $Conf->session("trueuser_author_check", 0) + 600 < $Now) {
+            $Conf->save_session("trueuser_author_check", $Now);
+            $aupapers = self::email_authored_papers($trueuser->email, $trueuser);
+            if (count($aupapers))
+                return $this->activate_database_account();
         }
 
         return $this;
+    }
+
+    public function activate_database_account() {
+        assert(!$this->has_database_account() && $this->has_email());
+        $contact = self::find_by_email($this->email, $_SESSION["trueuser"], false);
+        return $contact ? $contact->activate() : $this;
+    }
+
+    public function update_trueuser($always) {
+        if (($trueuser = @$_SESSION["trueuser"])
+            && strcasecmp($trueuser->email, $this->email) == 0) {
+            foreach (array("firstName", "lastName", "affiliation") as $k)
+                if ($this->$k && ($always || !@$trueuser->$k))
+                    $trueuser->$k = $this->$k;
+            return true;
+        } else
+            return false;
     }
 
     private function activate_capabilities() {
