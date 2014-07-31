@@ -357,7 +357,7 @@ class Mailer {
         if ($what == "%REVIEWNUMBER%")
             return $this->reviewNumber;
         if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
-            if (!@$this->permissionContact->privSuperChair
+            if (!@$this->permissionContact->is_site_contact
                 && !$this->permissionContact->canViewAuthors($this->row, false))
                 return ($isbool ? false : "Hidden for blind review");
             cleanAuthor($this->row);

@@ -138,7 +138,7 @@ class Contact {
         }
         return (object) array("fullName" => $Opt["contactName"],
                               "email" => $Opt["contactEmail"],
-                              "privChair" => 1, "privSuperChair" => 1);
+                              "privChair" => 1, "is_site_contact" => 1);
     }
 
     private function assign_roles($roles) {
