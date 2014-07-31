@@ -19,7 +19,7 @@ class CommentSave {
             // Don't send notifications about draft responses to the chair,
             // even though the chair can see draft responses.
             && ($tmpl !== "@responsedraftnotify" || $minic->actAuthorView($prow)))
-            Mailer::send($tmpl, $prow, $minic, null, array("comment_row" => self::$crow));
+            Mailer::send($tmpl, $prow, $minic, array("comment_row" => self::$crow));
     }
 
     static function save($req, $prow, $crow, $contact, $is_response) {
