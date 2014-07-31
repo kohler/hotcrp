@@ -387,7 +387,7 @@ class Mailer {
                 return $this->_expandContact($shep, "EMAIL");
         }
 
-        if ($what == "%REVIEWAUTHOR%" && $this->contacts[1]) {
+        if ($what == "%REVIEWAUTHOR%" && $this->contacts["reviewer"]) {
             if ($Conf->is_review_blind($this->rrow)
                 && !@$this->permissionContact->privChair
                 && (!isset($this->permissionContact->canViewReviewerIdentity)
@@ -399,7 +399,7 @@ class Mailer {
                 else
                     return "Hidden for blind review";
             }
-            return $this->_expandContact($this->contacts[1], "CONTACT");
+            return $this->_expandContact($this->contacts["reviewer"], "CONTACT");
         }
 
         if ($what == "%REVIEWS%")
