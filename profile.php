@@ -482,7 +482,7 @@ $useRequest = (!$Acct->has_database_account() && isset($_REQUEST["watchcomment"]
 
 if (!$UserStatus->nerrors && @$Conf->session("freshlogin") === "redirect") {
     $Conf->save_session("freshlogin", null);
-    $ispc = ($Acct->roles & Contact::ROLE_PC) != 0;
+    $ispc = $Acct->is_pclike();
     $msgs = array();
     $amsg = "";
     if (!$Me->firstName && !$Me->lastName)

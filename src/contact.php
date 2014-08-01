@@ -37,6 +37,8 @@ class Contact {
     const ROLE_ADMIN = 2;
     const ROLE_CHAIR = 4;
     const ROLE_PCLIKE = 15;
+    const ROLE_AUTHOR = 16;
+    const ROLE_REVIEWER = 32;
     private $is_author_;
     private $has_review_;
     private $has_outstanding_review_;
@@ -295,6 +297,14 @@ class Contact {
         return $this->privChair
             && ($fs = @$_REQUEST["forceShow"])
             && $fs != "0";
+    }
+
+    function is_pc_member() {
+        return $this->roles & self::ROLE_PC;
+    }
+
+    function is_pclike() {
+        return $this->roles & self::ROLE_PCLIKE;
     }
 
     function has_tag($t) {

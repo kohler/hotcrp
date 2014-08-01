@@ -213,7 +213,7 @@ class ReviewAssigner extends Assigner {
         if ($round && !preg_match('/\A[a-zA-Z0-9]+\z/', $round))
             return "review round “" . htmlspecialchars($round) . "” should contain only letters and numbers";
         $rtype = $this->type;
-        if ($rtype == REVIEW_EXTERNAL && ($contact->roles & Contact::ROLE_PC))
+        if ($rtype == REVIEW_EXTERNAL && $contact->is_pc_member())
             $rtype = REVIEW_PC;
         $state->load_type("review", $this);
 
@@ -620,7 +620,7 @@ class AssignmentSet {
                    && $assigner->contact_set() === "reviewers") {
             $result = array();
             foreach ($this->reviewer_set() as $u)
-                if (!($u->roles & Contact::ROLE_PC))
+                if (!$u->is_pc_member())
                     $result[] = $u;
             return $result;
         }

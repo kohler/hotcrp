@@ -53,13 +53,13 @@ if ($Me->is_empty() || isset($_REQUEST["signin"]))
 // perhaps redirect through account
 if ($Me->has_database_account() && $Conf->session("freshlogin") === true) {
     $needti = false;
-    if (($Me->roles & Contact::ROLE_PC) && !$Me->has_review()) {
+    if ($Me->is_pc_member() && !$Me->has_review()) {
         $result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
         $needti = ($row = edb_row($result)) && $row[0] && !$row[1];
     }
     if (!($Me->firstName || $Me->lastName)
         || !$Me->affiliation
-        || (($Me->roles & Contact::ROLE_PC) && !$Me->collaborators)
+        || ($Me->is_pc_member() && !$Me->collaborators)
         || $needti) {
         $Conf->save_session("freshlogin", "redirect");
         go(hoturl("profile", "redirect=1"));
