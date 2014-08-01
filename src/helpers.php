@@ -40,15 +40,15 @@ function edb_format_query($dblink, $qstr) {
     while (($strpos = strpos($qstr, "?", $strpos)) !== false) {
         assert($argpos < count($args));
         $arg = $args[$argpos];
-        if (substr($qstr, $strpos, 1) === "?") {
+        if (substr($qstr, $strpos + 1, 1) === "?") {
             if ($arg === null)
                 $arg = "NULL";
             else if (!is_int($arg))
                 $arg = "'" . $dblink->real_escape_string($arg) . "'";
-            $suffix = substr($qstr, $strpos + 1);
+            $suffix = substr($qstr, $strpos + 2);
         } else {
             $arg = $dblink->real_escape_string($arg);
-            $suffix = substr($qstr, $strpos);
+            $suffix = substr($qstr, $strpos + 1);
         }
         $qstr = substr($qstr, 0, $strpos) . $arg . $suffix;
         ++$argpos;
@@ -58,13 +58,22 @@ function edb_format_query($dblink, $qstr) {
     return $qstr;
 }
 
-function edb_query($dblink, $qstr) {
-    $args = func_get_args();
+function edb_query_args($args) {
     if (count($args) === 3 && is_array($args[2]))
-        $args = $args[2];
+        return $args[2];
     else
-        $args = array_slice($args, 2);
-    return $dblink->query(edb_format_query($dblink, $qstr, $args));
+        return array_slice($args, 2);
+}
+
+function edb_query($dblink, $qstr) {
+    return $dblink->query(edb_format_query($dblink, $qstr, edb_query_args(func_get_args())));
+}
+
+function edb_ql($dblink, $qstr) {
+    $result = $dblink->query(edb_format_query($dblink, $qstr, edb_query_args(func_get_args())));
+    if (!$result)
+        error_log($dblink->error);
+    return $result;
 }
 
 // number of rows returned by a select query, or 'false' if result is an error
