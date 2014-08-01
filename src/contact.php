@@ -56,6 +56,7 @@ class Contact {
     private $activated_ = false;
 
     static private $status_info_cache = array();
+    static private $contactdb_dblink = null;
 
 
     public function __construct($trueuser = null) {
@@ -150,7 +151,7 @@ class Contact {
     private function assign_roles($roles) {
         $this->roles = $roles;
         $this->isPC = ($roles & self::ROLE_PCLIKE) != 0;
-        $this->privChair = ($roles & (self::ROLE_ADMIN|self::ROLE_CHAIR)) != 0;
+        $this->privChair = ($roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
     }
 
     static function external_login() {
@@ -235,6 +236,13 @@ class Contact {
                 return $this->activate_database_account();
         }
 
+        // Maybe set up the shared contacts database
+        if (@$Opt["contactdb_dsn"]
+            && $Conf->session("contactdb_roles", 0) != $this->all_roles()) {
+            if ($this->update_contactdb())
+                $Conf->save_session("contactdb_roles", $this->all_roles());
+        }
+
         return $this;
     }
 
@@ -242,6 +250,28 @@ class Contact {
         assert(!$this->has_database_account() && $this->has_email());
         $contact = self::find_by_email($this->email, $_SESSION["trueuser"], false);
         return $contact ? $contact->activate() : $this;
+    }
+
+    public function update_contactdb() {
+        global $Opt;
+        if (!self::$contactdb_dblink)
+            list(self::$contactdb_dblink, $dbname) = Conference::connect_dsn($Opt["contactdb_dsn"]);
+        if (!self::$contactdb_dblink)
+            return false;
+
+        $dblink = self::$contactdb_dblink;
+        $idquery = edb_format_query($dblink, "select contactId, confid from ContactInfo join Conferences where email='?' and dbname=??", $this->email, $Opt["dbName"]);
+        $result = $dblink->query($idquery);
+        if (!($result && $result->nrows)) {
+            $result = edb_query($dblink, "insert into ContactInfo set firstName=??, lastName=??, email=??, affiliation=?? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation);
+            $result = $dblink->query($idquery);
+        }
+        if ($result && $result->nrows) {
+            $row = edb_row($result);
+            $result = edb_query($dblink, "insert into Roles set contactId=??, confid=??, roles=?? on duplicate key update roles=values(roles)", $row[0], $row[1], $this->all_roles());
+            return !!$result;
+        } else
+            return false;
     }
 
     public function update_trueuser($always) {
@@ -357,6 +387,15 @@ class Contact {
         if (!$this->isPC && !isset($this->has_review_))
             $this->load_author_reviewer_status();
         return $this->isPC || $this->has_review_;
+    }
+
+    function all_roles() {
+        $r = $this->roles;
+        if ($this->is_author())
+            $r |= self::ROLE_AUTHOR;
+        if ($this->is_reviewer())
+            $r |= self::ROLE_REVIEWER;
+        return $r;
     }
 
     function has_review() {

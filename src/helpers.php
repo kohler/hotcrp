@@ -29,6 +29,44 @@ function set_error_html($x, $error_html = null) {
 
 // database helpers
 
+function edb_format_query($dblink, $qstr) {
+    $args = func_get_args();
+    if (count($args) === 3 && is_array($args[2])) {
+        $args = $args[2];
+        $argpos = 0;
+    } else
+        $argpos = 2;
+    $strpos = 0;
+    while (($strpos = strpos($qstr, "?", $strpos)) !== false) {
+        assert($argpos < count($args));
+        $arg = $args[$argpos];
+        if (substr($qstr, $strpos, 1) === "?") {
+            if ($arg === null)
+                $arg = "NULL";
+            else if (!is_int($arg))
+                $arg = "'" . $dblink->real_escape_string($arg) . "'";
+            $suffix = substr($qstr, $strpos + 1);
+        } else {
+            $arg = $dblink->real_escape_string($arg);
+            $suffix = substr($qstr, $strpos);
+        }
+        $qstr = substr($qstr, 0, $strpos) . $arg . $suffix;
+        ++$argpos;
+        $strpos += strlen($arg);
+    }
+    assert($argpos == count($args));
+    return $qstr;
+}
+
+function edb_query($dblink, $qstr) {
+    $args = func_get_args();
+    if (count($args) === 3 && is_array($args[2]))
+        $args = $args[2];
+    else
+        $args = array_slice($args, 2);
+    return $dblink->query(edb_format_query($dblink, $qstr, $args));
+}
+
 // number of rows returned by a select query, or 'false' if result is an error
 function edb_nrows($result) {
     return ($result ? $result->num_rows : false);
