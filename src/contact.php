@@ -237,7 +237,7 @@ class Contact {
         }
 
         // Maybe set up the shared contacts database
-        if (@$Opt["contactdb_dsn"]
+        if (@$Opt["contactdb_dsn"] && $this->has_database_account()
             && $Conf->session("contactdb_roles", 0) != $this->all_roles()) {
             if ($this->update_contactdb())
                 $Conf->save_session("contactdb_roles", $this->all_roles());
@@ -256,7 +256,7 @@ class Contact {
         global $Opt;
         if (!self::$contactdb_dblink)
             list(self::$contactdb_dblink, $dbname) = Conference::connect_dsn($Opt["contactdb_dsn"]);
-        if (!self::$contactdb_dblink)
+        if (!self::$contactdb_dblink || !$this->has_database_account())
             return false;
 
         $dblink = self::$contactdb_dblink;
