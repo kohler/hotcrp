@@ -1892,7 +1892,7 @@ class Contact {
         else {
             $rights = $this->rights($prow, $forceShow);
             return $rights->allow_pc
-                || $Conf->setting("tag_seeall") > 0;
+                || ($rights->allow_pc_broad && $Conf->setting("tag_seeall") > 0);
         }
     }
 
