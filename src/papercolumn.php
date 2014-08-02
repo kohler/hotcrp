@@ -1054,11 +1054,14 @@ class ScorePaperColumn extends PaperColumn {
 
 class FormulaPaperColumn extends PaperColumn {
     private static $registered = array();
+    public static $list = array();
     public function __construct($name, $formula) {
         parent::__construct($name, Column::VIEW_COLUMN | Column::FOLDABLE,
                             array("minimal" => true, "sorter" => "formula_sorter"));
         $this->cssname = "formula";
         $this->formula = $formula;
+        if ($formula)
+            self::$list[$formula->formulaId] = $formula;
     }
     public static function lookup_all() {
         return self::$registered;
@@ -1313,7 +1316,7 @@ class FoldAllPaperColumn extends PaperColumn {
 }
 
 function initialize_paper_columns() {
-    global $paperListFormulas, $reviewScoreNames, $Conf;
+    global $reviewScoreNames, $Conf;
 
     PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)));
     PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "cssname" => "sel")));
@@ -1368,7 +1371,6 @@ function initialize_paper_columns() {
     if ($score)
         PaperColumn::register_factory("", $score);
 
-    $paperListFormulas = array();
     if ($Conf && $Conf->setting("formulas") && $Conf->sversion >= 32) {
         $result = $Conf->q("select * from Formula order by lower(name)");
         $formula = null;
@@ -1376,7 +1378,6 @@ function initialize_paper_columns() {
             $fid = $row->formulaId;
             $formula = new FormulaPaperColumn("formula$fid", $row);
             FormulaPaperColumn::register($formula);
-            $paperListFormulas[$fid] = $row;
         }
         if (!$formula)
             $formula = new FormulaPaperColumn("", null);

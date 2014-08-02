@@ -952,17 +952,14 @@ if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
 
 // save formula
 function formulas_with_new() {
-    global $paperListFormulas, $ConfSitePATH;
-    if (!$paperListFormulas)
-        require_once("$ConfSitePATH/src/papercolumn.php");
-    $formulas = $paperListFormulas;
+    $formulas = FormulaPaperColumn::$list;
     $formulas["n"] = (object) array("formulaId" => "n", "name" => "",
                                     "expression" => "", "createdBy" => 0);
     return $formulas;
 }
 
 function saveformulas() {
-    global $Conf, $Me, $paperListFormulas, $OK;
+    global $Conf, $Me, $OK;
 
     // parse names and expressions
     $revViewScore = $Me->viewReviewFieldsScore(null, true);
@@ -1023,7 +1020,7 @@ if (isset($_REQUEST["saveformulas"]) && $Me->isPC && $Conf->sversion >= 32
 
 // save formula
 function savesearch() {
-    global $Conf, $Me, $paperListFormulas, $OK;
+    global $Conf, $Me, $OK;
 
     $name = simplify_whitespace(defval($_REQUEST, "ssname", ""));
     $tagger = new Tagger;
@@ -1053,7 +1050,7 @@ function savesearch() {
 
     // clean display settings
     if ($Conf->session("pldisplay")) {
-        global $reviewScoreNames, $paperListFormulas;
+        global $reviewScoreNames;
         $acceptable = array("abstract" => 1, "topics" => 1, "tags" => 1,
                             "rownum" => 1, "reviewers" => 1,
                             "pcconf" => 1, "lead" => 1, "shepherd" => 1);
@@ -1063,7 +1060,7 @@ function savesearch() {
             $acceptable["anonau"] = 1;
         foreach ($reviewScoreNames as $x)
             $acceptable[$x] = 1;
-        foreach ($paperListFormulas as $x)
+        foreach (FormulaPaperColumn::$list as $x)
             $acceptable["formula" . $x->formulaId] = 1;
         $display = array();
         foreach (preg_split('/\s+/', $Conf->session("pldisplay")) as $x)
@@ -1282,9 +1279,9 @@ if ($pl) {
     }
 
     // Formulas group
-    if (count($paperListFormulas)) {
+    if (count(FormulaPaperColumn::$list)) {
         displayOptionText("<strong>Formulas:</strong>", 4);
-        foreach ($paperListFormulas as $formula)
+        foreach (FormulaPaperColumn::$list as $formula)
             displayOptionCheckbox("formula" . $formula->formulaId, 4, htmlspecialchars($formula->name));
     }
 }
@@ -1469,7 +1466,7 @@ if ($pl && $pl->count > 0) {
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
     // Formulas link
-    if (count($paperListFormulas) || ($Me->isPC && $Conf->sversion >= 32))
+    if (count(FormulaPaperColumn::$list) || ($Me->isPC && $Conf->sversion >= 32))
         echo "<td class='padlb'>", Ht::js_button("Edit formulas", "fold('searchform',0,3)"), "</td>";
 
     echo "<td class='padlb'>";
@@ -1510,7 +1507,7 @@ would display the sum of a paper&rsquo;s Overall merit scores.
             "<th></th><th class='f-c'>Name</th><th class='f-c'>Definition</th>",
             "</tr></thead><tbody>";
         $any = 0;
-        $fs = $paperListFormulas;
+        $fs = FormulaPaperColumn::$list;
         $fs["n"] = (object) array("formulaId" => "n", "name" => "", "expression" => "", "createdBy" => 0);
         foreach ($fs as $formulaId => $fdef) {
             $name = defval($_REQUEST, "name_$formulaId", $fdef->name);
