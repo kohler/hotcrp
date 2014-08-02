@@ -2020,11 +2020,11 @@ class Conference {
 
             // help, sign out
             $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
-            echo '<a href="', hoturl("help", $x), '">Help</a>', $xsep;
-            if ($Me->has_email() || isset($Opt["httpAuthLogin"]))
-                echo '<a href="', hoturl_post("index", "signout=1"), '">Sign&nbsp;out</a>';
-            else
-                echo '<a href="', hoturl("index", "signin=1"), '">Sign&nbsp;in</a>';
+            echo '<a href="', hoturl("help", $x), '">Help</a>';
+            if (!$Me->has_email() && !isset($Opt["httpAuthLogin"]))
+                echo $xsep, '<a href="', hoturl("index", "signin=1"), '">Sign&nbsp;in</a>';
+            if (!$Me->is_empty() || isset($Opt["httpAuthLogin"]))
+                echo $xsep, '<a href="', hoturl_post("index", "signout=1"), '">Sign&nbsp;out</a>';
         }
         echo "<div id='maindeadline' style='display:none'>";
 
