@@ -862,7 +862,10 @@ class PaperSearch {
         $twiddle = strpos($tagword, "~");
         if ($this->privChair && $twiddle > 0) {
             $c = substr($tagword, 0, $twiddle);
-            $twiddlecid = matchContact(pcMembers(), null, null, $c);
+            if ($c === "me")
+                $twiddlecid = $this->cid;
+            else
+                $twiddlecid = matchContact(pcMembers(), null, null, $c);
             if ($twiddlecid == -2)
                 $this->warn("“" . htmlspecialchars($c) . "” matches no PC member.");
             else if ($twiddlecid <= 0)
@@ -1178,10 +1181,14 @@ class PaperSearch {
         if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $word, $m)) {
             $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
             return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
-        } else if (preg_match('/\A(-?)(#' . TAG_REGEX_OPTVALUE . '[#<>!=\d]*)\z/', $word, $m)) {
-            $qe = $this->_searchQueryWord($m[1] . "tag:" . $m[2], false);
-            if (!$qe->isfalse())
-                return $qe;
+        } else if (substr($word, 0, 1) == "#") {
+            $re = '/\A#' . ($this->privChair ? '(?:[\w@.]+~)?' : '')
+                . TAG_REGEX_OPTVALUE . '[#<>!=\d]*\z/';
+            if (preg_match($re, $word, $m)) {
+                $qe = $this->_searchQueryWord("tag:" . $word, false);
+                if (!$qe->isfalse())
+                    return $qe;
+            }
         }
 
         // Allow searches like "ovemer>2"; parse as "ovemer:>2".
@@ -1385,7 +1392,7 @@ class PaperSearch {
 
     static function _searchPopWord(&$str) {
         global $searchKeywords;
-        $wordre = '/\A-?"[^"]*"?|\A-?[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?[^\s()]*|\A[^"\s()]+/s';
+        $wordre = '/\A"[^"]*"?|\A[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?[^\s()]*|\A[^"\s()]+/s';
 
         preg_match($wordre, $str, $m);
         $str = substr($str, strlen($m[0]));

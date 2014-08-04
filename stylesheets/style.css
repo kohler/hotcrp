@@ -2445,6 +2445,9 @@ div.cmthint {
 .mhnp, .mhdd, .mhdp {
 	padding: 2px 4px;
 }
+td.mhcb {
+	padding-right: 0.5em;
+}
 .mhb {
 	padding: 4px;
 }

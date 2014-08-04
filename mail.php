@@ -332,7 +332,7 @@ function checkMail($send) {
                         echo "<td class='mhx'></td>";
                     else {
                         ++$cbcount;
-                        echo "<td class='mhcb'><input type='checkbox' class='cb' name='$checker' value='1' checked='checked' id='psel$cbcount' onclick='pselClick(event,this)' /> &nbsp;</td>";
+                        echo "<td class='mhcb'><input type='checkbox' class='cb' name='$checker' value='1' checked='checked' id='psel$cbcount' onclick='pselClick(event,this)' /></td>";
                     }
                     $x = htmlspecialchars(Mailer::mimeHeaderUnquote($show_preparation[$k]));
                     echo "<td class='mhnp'>", $t, ":</td><td class='mhdp'>", $x, "</td></tr>\n";
