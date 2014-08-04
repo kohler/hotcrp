@@ -4,6 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("src/initweb.php");
+require_once("src/reviewsetform.php");
 if (!$Me->privChair)
     $Me->escape();
 
@@ -36,8 +37,6 @@ if (array_search($Group, array("info", "users", "msg", "sub", "opt", "reviews", 
     else
         $Group = "sub";
 }
-if ($Group == "rfo")
-    require_once("src/reviewsetform.php");
 if ($Group == "users")
     require_once("src/contactlist.php");
 
