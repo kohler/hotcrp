@@ -790,22 +790,31 @@ if ($getaction == "acmcms" && isset($papersel) && $Me->privChair) {
     $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper where $idq");
     $texts = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
-        $x = array($Opt["downloadPrefix"] . $row->paperId,
-                   "" /* Paper type */,
-                   defval($pagecount, $row->paperId, ""),
-                   $row->title, array(), array(),
-                   "" /* Notes */);
+        $x = array("pid" => $Opt["downloadPrefix"] . $row->paperId,
+                   "papertype" => "",
+                   "pagecount" => defval($pagecount, $row->paperId, ""),
+                   "title" => $row->title,
+                   "auname" => array(),
+                   "auemail" => array(),
+                   "auaff" => array(),
+                   "notes" => "");
         cleanAuthor($row);
         foreach ($row->authorTable as $au) {
-            $email = $au[2] ? $au[2] : "<unknown>";
-            $x[4][] = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $email;
-            $x[5][] = $email;
+            $email = $au[2] ? : "unknown";
+            $x["auname"][] = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $email;
+            $x["auemail"][] = $email;
+            $x["auaff"][] = $au[3] ? : "unaffiliated";
         }
-        $x[4] = join("; ", $x[4]);
-        $x[5] = join("; ", $x[5]);
+        foreach (array("auname", "auemail", "auaff") as $k)
+            $x[$k] = join("; ", $x[$k]);
         $texts[$paperselmap[$row->paperId]] = $x;
     }
-    $xlsx->add_sheet(array("Paper ID", "Paper type", "Pages", "Title", "Author names", "Author email addresses", "Notes"), $texts);
+    $xlsx->add_sheet(array("pid" => "Paper ID", "papertype" => "Paper type",
+                           "pagecount" => "Pages", "title" => "Title",
+                           "auname" => "Author names",
+                           "auemail" => "Author email addresses",
+                           "auaff" => "Author affiliations",
+                           "notes" => "Notes"), $texts);
     $xlsx->download();
     exit;
 }
