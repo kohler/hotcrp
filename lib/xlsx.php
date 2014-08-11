@@ -14,6 +14,7 @@ class XlsxGenerator {
     private $nsheets = 0;
     private $any_headers = false;
     private $done = false;
+    private $widths;
 
     function __construct($downloadname) {
         $this->zip = new ZipDocument($downloadname, self::MIMETYPE);
@@ -28,7 +29,7 @@ class XlsxGenerator {
         }
     }
 
-    private function row_data($row, $data, $style, &$maxcol) {
+    private function row_data($row, $data, $style) {
         $t = "";
         $style = ($style ? " s=\"$style\"" : "");
         $col = 0;
@@ -44,8 +45,7 @@ class XlsxGenerator {
                     }
                     $t .= " t=\"s\"><v>" . $this->sst[$x] . "</v></c>";
                 }
-                if ($col > $maxcol)
-                    $maxcol = $col;
+                $this->widths[$col] = max(strlen($x), @($this->widths[$col] + 0));
             }
             ++$col;
         }
@@ -57,18 +57,26 @@ class XlsxGenerator {
 
     function add_sheet($header, $rows) {
         assert(!$this->done);
-        $maxcol = 0;
         $extra = "";
         $rout = array();
+        $this->widths = array();
         if ($header) {
-            $rout[] = $this->row_data(count($rout) + 1, $header, 1, $maxcol);
+            $rout[] = $this->row_data(count($rout) + 1, $header, 1);
             $this->any_headers = true;
             $extra = "<sheetViews><sheetView workbookViewId=\"0\"><pane topLeftCell=\"A2\" ySplit=\"1.0\" state=\"frozen\" activePane=\"bottomLeft\"/></sheetView></sheetViews>\n";
         }
         foreach ($rows as $row)
-            $rout[] = $this->row_data(count($rout) + 1, $row, 0, $maxcol);
+            $rout[] = $this->row_data(count($rout) + 1, $row, 0);
+        for ($c = $numcol = 0; $numcol != count($this->widths); ++$c)
+            if (isset($this->widths[$c])) {
+                $w = @min($this->widths[$c] + 3, 120);
+                $this->widths[$c] = "<col min=\"" . ($c + 1) . "\" max=\"" . ($c + 1) . "\" bestFit=\"1\" width=\"$w\"/>";
+                ++$numcol;
+            }
         $t = self::PROCESSING . "<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:mx=\"http://schemas.microsoft.com/office/mac/excel/2008/main\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" xmlns:mv=\"urn:schemas-microsoft-com:mac:vml\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\">\n"
             . $extra
+            . "<sheetFormatPr customHeight=\"1\" defaultRowHeight=\"15.75\"/>"
+            . "<cols>" . join("", $this->widths) . "</cols>\n"
             . "<sheetData>" . join("", $rout) . "</sheetData>\n"
             . "</worksheet>\n";
         ++$this->nsheets;
@@ -96,7 +104,7 @@ class XlsxGenerator {
     private function add_styles() {
         $t = array(self::PROCESSING, "<styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\">\n");
         if ($this->any_headers) {
-            $t[] = "<fonts count=\"2\"><font><b val=\"0\"/></font><font><b/></font></fonts>\n";
+            $t[] = "<fonts count=\"2\"><font><sz val=\"10.0\"/><name val=\"Arial\"/></font><font><sz val=\"10.0\"/><name val=\"Arial\"/><b/></font></fonts>\n";
             $t[] = "<fills count=\"1\"><fill><patternFill patternType=\"none\"/></fill></fills>\n";
             $t[] = "<borders count=\"1\"><border><left/><right/><top/><bottom/><diagonal/></border></borders>\n";
             $t[] = "<cellXfs count=\"2\">\n";
