@@ -1349,23 +1349,19 @@ function unparse_preference($preference, $expertise = null) {
     return $preference . unparse_expertise($expertise);
 }
 
-function unparse_preference_span($preference, $topicInterestScore = 0) {
+function unparse_preference_span($preference) {
     if (is_object($preference))
         $preference = array(@$preference->reviewerPreference,
-                            @$preference->reviewerExpertise);
-    if (@$preference[2] !== null)
-        $topicInterestScore = $preference[2];
-    if ($preference[0] != 0)
-        $type = ($preference[0] > 0 ? 1 : -1);
-    else
-        $type = ($topicInterestScore > 0 ? 1 : -1);
+                            @$preference->reviewerExpertise,
+                            @$preference->topicInterestScore);
+    $type = 1;
+    if ($preference[0] < 0 || (!$preference[0] && @($preference[2] < 0)))
+        $type = -1;
     $t = "";
     if ($preference[0] || $preference[1])
         $t .= "P" . decorateNumber($preference[0]) . unparse_expertise($preference[1]);
-    if ($t !== "" && $topicInterestScore)
-        $t .= " ";
-    if ($topicInterestScore)
-        $t .= "T" . decorateNumber($topicInterestScore);
+    if (@$preference[2])
+        $t .= ($t ? " " : "") . "T" . decorateNumber($preference[2]);
     if ($t !== "")
         $t = " <span class='asspref$type'>$t</span>";
     return $t;
