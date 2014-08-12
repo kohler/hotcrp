@@ -11,14 +11,16 @@ class LoginHelper {
             && !isset($Opt["httpAuthLogin"]))
             $Conf->confirmMsg("You have been signed out. Thanks for using the system.");
         $Me = new Contact;
-        unset($_SESSION["user"]);
         unset($_SESSION["trueuser"]);
         unset($_SESSION["last_actas"]);
+        unset($_SESSION["login_bounce"]);
         // clear all conference session info, except maybe capabilities
         $capabilities = $Conf->session("capabilities");
         unset($_SESSION[$Conf->dsn]);
         if (!isset($_REQUEST["signout"]) && $capabilities)
             $Conf->save_session("capabilities", $capabilities);
+        // backwards compatibility
+        unset($_SESSION["user"]);
         if (isset($_REQUEST["signout"])) {
             unset($_SESSION["login_bounce"]);
             if (isset($Opt["httpAuthLogin"])) {
