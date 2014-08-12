@@ -1575,7 +1575,7 @@ class Conference {
         $q = "select PaperReview.*,
                 ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.roles as contactRoles,
                 $contactTags,
-                ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail, ReqCI.contactId as reqContactId";
+                ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail";
         if (isset($selector["ratings"]))
             $q .= ",
                 group_concat(ReviewRating.rating order by ReviewRating.rating desc) as allRatings,

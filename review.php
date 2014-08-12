@@ -309,8 +309,8 @@ function refuseReview() {
     $Conf->qe("unlock tables");
 
     // send confirmation email
-    $Requester = Contact::find_by_id($rrow->reqContactId);
-    $reqprow = $Conf->paperRow($prow->paperId, $rrow->reqContactId);
+    $Requester = Contact::find_by_id($rrow->requestedBy);
+    $reqprow = $Conf->paperRow($prow->paperId, $rrow->requestedBy);
     Mailer::send("@refusereviewrequest", $reqprow, $Requester,
                  array("reviewer_contact" => $rrow,
                        "reason" => $reason));

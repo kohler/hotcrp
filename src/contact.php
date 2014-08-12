@@ -1788,8 +1788,10 @@ class Contact {
                        "paperBlind" => false, "outcome" => 1), $this);
         $rights = $this->rights($prow, $forceShow);
         if ($rights->can_administer
-            || ($rrow && $rrow_contactId == $this->contactId)
-            || ($rrow && $this->ownReview($rrow))
+            || ($rrow && ($rrow_contactId == $this->contactId
+                          || $this->ownReview($rrow)
+                          || ($rights->allow_pc
+                              && @$rrow->requestedBy == $this->contactId)))
             || ($rights->allow_pc
                 && (!($pc_seeblindrev = $Conf->setting("pc_seeblindrev"))
                     || ($pc_seeblindrev == 2
