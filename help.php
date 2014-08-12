@@ -573,11 +573,11 @@ papers. To set this up:</p>
   “PC members without tag: pcrc”.</li>
 </ul>");
     _alternateRow("Understanding permissions", "
-Tracks restrict the permissions granted to the PC by other settings.
-For example, if
-the main “PC members can review <strong>any</strong> submitted paper”
-permissions is off, then no PC member can enter an unassigned review,
-independent of the track settings.
+Tracks only restrict permissions.
+For example, when
+the “PC members can review <strong>any</strong> submitted paper”
+setting is off, <em>no</em> PC member can enter an unassigned review,
+no matter what the track settings say.
 It can be useful to “act as” a member of the PC to check what permissions
 are actually live.");
     echo "</table>\n";
