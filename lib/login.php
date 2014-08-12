@@ -111,9 +111,9 @@ class LoginHelper {
                 return null;
         }
 
+        if (strpos($_REQUEST["email"], "@") === false)
+            self::unquote_double_quoted_request();
         $user = Contact::find_by_email($_REQUEST["email"]);
-        if (!$user && self::unquote_double_quoted_request())
-            $user = Contact::find_by_email($_REQUEST["email"]);
         if ($_REQUEST["action"] == "new") {
             if (!($user = self::create_account($user)))
                 return null;
