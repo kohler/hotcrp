@@ -62,7 +62,7 @@ class Contact {
     public function __construct($trueuser = null) {
         if ($trueuser)
             foreach (array("firstName", "lastName", "email", "affiliation") as $k)
-                if ($trueuser->$k)
+                if (@$trueuser->$k)
                     $this->$k = $trueuser->$k;
     }
 
