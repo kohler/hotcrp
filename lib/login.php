@@ -111,27 +111,31 @@ class LoginHelper {
                 return null;
         }
 
+        // look up user in our database
         if (strpos($_REQUEST["email"], "@") === false)
             self::unquote_double_quoted_request();
         $user = Contact::find_by_email($_REQUEST["email"]);
+
+        // create account if requested
         if ($_REQUEST["action"] == "new") {
             if (!($user = self::create_account($user)))
                 return null;
             $_REQUEST["password"] = $user->password_plaintext;
         }
 
+        // auto-create account if external login
+        if (!$user && $external_login) {
+            $reg = Contact::safe_registration($_REQUEST);
+            if (!($user = Contact::find_by_email($_REQUEST["email"], $reg)))
+                return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
+            if (defval($Conf->settings, "setupPhase", false))
+                return self::first_user($user, $msg);
+        }
+
+        // if no user found, then fail
         if (!$user) {
-            if ($external_login) {
-                $reg = Contact::safe_registration($_REQUEST);
-                $user = Contact::find_by_email($_REQUEST["email"], $reg);
-                if (!$user)
-                    return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
-                if (defval($Conf->settings, "setupPhase", false))
-                    return self::first_user($user, $msg);
-            } else {
-                $email_class = " error";
-                return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists. Did you enter the correct email address?");
-            }
+            $email_class = " error";
+            return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists. Did you enter the correct email address?");
         }
 
         if (($user->password == "" && !$external_login) || $user->disabled)
