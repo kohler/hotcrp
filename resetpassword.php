@@ -11,7 +11,8 @@ if (!isset($_REQUEST["resetcap"])
 if (!isset($_REQUEST["resetcap"]))
     error_go(false, "You didn’t enter the full password reset link into your browser. Make sure you include the reset code (the string of letters, numbers, and other characters at the end).");
 
-$capdata = $Conf->check_capability($_REQUEST["resetcap"]);
+$capmgr = $Conf->capability_manager($_REQUEST["resetcap"]);
+$capdata = $capmgr->check($_REQUEST["resetcap"]);
 if (!$capdata || $capdata->capabilityType != CAPTYPE_RESETPASSWORD)
     error_go(false, "That password reset code has expired, or you didn’t enter it correctly.");
 
@@ -39,7 +40,7 @@ if (isset($_REQUEST["go"]) && check_post()) {
         $Conf->q("update ContactInfo set password='" . sqlq($Acct->password) . "' where contactId=" . $Acct->contactId);
         $Acct->log_activity("Reset password");
         $Conf->infoMsg("Your password has been changed and you are now signed in to the conference site.");
-        $Conf->delete_capability($capdata);
+        $capmgr->delete($capdata);
         go(hoturl("index", "email=" . urlencode($Acct->email) . "&password=" . urlencode($_REQUEST["upassword"])));
     }
     $password_class = " error";

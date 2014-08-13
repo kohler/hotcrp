@@ -8,7 +8,8 @@ require_once("src/initweb.php");
 // check for change-email capabilities
 function change_email_by_capability() {
     global $Conf, $Me;
-    $capdata = $Conf->check_capability($_REQUEST["changeemail"]);
+    $capmgr = $Conf->capability_manager($_REQUEST["changeemail"]);
+    $capdata = $capmgr->check($_REQUEST["changeemail"]);
     if (!$capdata || $capdata->capabilityType != CAPTYPE_CHANGEEMAIL
         || !($capdata->data = json_decode($capdata->data))
         || !@$capdata->data->uemail)
@@ -26,7 +27,7 @@ function change_email_by_capability() {
         $Acct->save_authored_papers($aupapers);
     if ($Acct->roles & Contact::ROLE_PCLIKE)
         $Conf->invalidateCaches(array("pc" => 1));
-    $Conf->delete_capability($capdata);
+    $capmgr->delete($capdata);
 
     $Conf->confirmMsg("Your email address has been changed.");
     if (!$Me->has_database_account() || $Me->contactId == $Acct->contactId)
@@ -200,8 +201,9 @@ function save_user($cj, $user_status) {
         else if (!validate_email($cj->email))
             return $user_status->set_error("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
         if (!$newProfile && !$Me->privChair) {
+            $capmgr = $Conf->capability_manager(CAPTYPE_CHANGEEMAIL);
             $rest = array("emailTo" => $cj->email,
-                          "capability" => $Conf->create_capability(CAPTYPE_CHANGEEMAIL, array("contactId" => $Acct->contactId, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $cj->email)))));
+                          "capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("contactId" => $Acct->contactId, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $cj->email)))));
             $prep = Mailer::prepareToSend("@changeemail", null, $Acct, $rest);
             if ($prep["allowEmail"]) {
                 Mailer::sendPrepared($prep);

@@ -2195,52 +2195,10 @@ class Conference {
     }
 
 
-    public function create_capability($capabilityType, $options = array()) {
-        global $Opt;
-        $contactId = defval($options, "contactId", 0);
-        $paperId = defval($options, "paperId", 0);
-        $timeExpires = defval($options, "timeExpires", time() + 259200);
-        $salt = hotcrp_random_bytes(24);
-        $data = defval($options, "data");
-        $this->q("insert into Capability (capabilityType, contactId, paperId, timeExpires, salt, data) values ($capabilityType, $contactId, $paperId, $timeExpires, '" . sqlq($salt) . "', " . ($data === null ? "null" : "'" . sqlq($data) . "'") . ")");
-        $capid = $this->lastInsertId();
-        if (!$capid || !function_exists("hash_hmac"))
-            return false;
-
-        list($keyid, $key) = Contact::password_hmac_key(null, true);
-        if (!($hash_method = @$Opt["capabilityHashMethod"]))
-            $hash_method = (PHP_INT_SIZE == 8 ? "sha512" : "sha256");
-        $text = substr(hash_hmac($hash_method, $capid . " " . $timeExpires . " " . $salt, $key, true), 0, 16);
-        $this->q("insert ignore into CapabilityMap (capabilityValue, capabilityId, timeExpires) values ('" . sqlq($text) . "', $capid, $timeExpires)");
-
-        return "1" . str_replace(array("+", "/", "="), array("-", "_", ""),
-                                 base64_encode($text));
+    public function capability_manager($for) {
+        return new CapabilityManager($this->dblink, "");
     }
 
-    public function check_capability($capabilityText) {
-        if ($capabilityText[0] != "1")
-            return false;
-        $value = base64_decode(str_replace(array("-", "_"), array("+", "/"),
-                                           substr($capabilityText, 1)));
-        if (strlen($value) >= 16
-            && ($result = $this->q("select * from CapabilityMap where capabilityValue='" . sqlq($value) . "'"))
-            && ($row = edb_orow($result))
-            && ($row->timeExpires == 0 || $row->timeExpires >= time())) {
-            $result = $this->q("select * from Capability where capabilityId=" . $row->capabilityId);
-            if (($row = edb_orow($result))) {
-                $row->capabilityValue = $value;
-                return $row;
-            }
-        }
-        return false;
-    }
-
-    public function delete_capability($capdata) {
-        if ($capdata) {
-            $this->q("delete from CapabilityMap where capabilityValue='" . sqlq($capdata->capabilityValue) . "'");
-            $this->q("delete from Capability where capabilityId=" . $capdata->capabilityId);
-        }
-    }
 
     public function message_name($name) {
         if (str_starts_with($name, "msg."))

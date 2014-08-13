@@ -2150,7 +2150,8 @@ class Contact {
                      || $sendtype != "forgot"))
             $template = "@accountinfo";
         else {
-            $rest["capability"] = $Conf->create_capability(CAPTYPE_RESETPASSWORD, array("contactId" => $this->contactId, "timeExpires" => time() + 259200));
+            $capmgr = $Conf->capability_manager(CAPTYPE_RESETPASSWORD);
+            $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, array("contactId" => $this->contactId, "timeExpires" => time() + 259200));
             $Conf->log("Created password reset request", $this);
             $template = "@resetpassword";
         }
