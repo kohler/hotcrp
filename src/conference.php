@@ -123,7 +123,7 @@ class Conference {
     //
 
     function load_settings() {
-        global $Opt, $OptOverride, $OK;
+        global $Opt, $OptOverride, $Now, $OK;
 
         // load settings from database
         $this->settings = array();
@@ -184,12 +184,14 @@ class Conference {
 
         // GC old capabilities
         if ($this->sversion >= 58
-            && defval($this->settings, "__capability_gc", 0) < time() - 86400) {
-            $now = time();
-            $this->q("delete from Capability where timeExpires>0 and timeExpires<$now");
-            $this->q("delete from CapabilityMap where timeExpires>0 and timeExpires<$now");
-            $this->q("insert into Settings (name, value) values ('__capability_gc', $now) on duplicate key update value=values(value)");
-            $this->settings["__capability_gc"] = $now;
+            && defval($this->settings, "__capability_gc", 0) < $Now - 86400) {
+            foreach (array($this->dblink, Contact::contactdb()) as $db)
+                if ($db) {
+                    edb_ql($db, "delete from Capability where timeExpires>0 and timeExpires<$Now");
+                    edb_ql($db, "delete from CapabilityMap where timeExpires>0 and timeExpires<$Now");
+                }
+            $this->q("insert into Settings (name, value) values ('__capability_gc', $Now) on duplicate key update value=values(value)");
+            $this->settings["__capability_gc"] = $Now;
         }
 
         $this->crosscheck_settings();
@@ -2196,7 +2198,13 @@ class Conference {
 
 
     public function capability_manager($for) {
-        return new CapabilityManager($this->dblink, "");
+        global $Opt;
+        if (@$Opt["contactdb_dsn"]
+            && ($cdb = Contact::contactdb())
+            && (!is_string($for) || substr($for, 0, 1) === "U"))
+            return new CapabilityManager($cdb, "U");
+        else
+            return new CapabilityManager($this->dblink, "");
     }
 
 
