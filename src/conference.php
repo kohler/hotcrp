@@ -2195,25 +2195,8 @@ class Conference {
     }
 
 
-    public function encode_capability($capid, $salt, $timeExpires, $save) {
-        global $Opt;
-        list($keyid, $key) = Contact::password_hmac_key(null, true);
-        if (($hash_method = defval($Opt, "capabilityHashMethod")))
-            /* OK */;
-        else if (($hash_method = $this->setting_data("capabilityHashMethod")))
-            /* OK */;
-        else {
-            $hash_method = (PHP_INT_SIZE == 8 ? "sha512" : "sha256");
-            $this->save_setting("capabilityHashMethod", 1, $hash_method);
-        }
-        $text = substr(hash_hmac($hash_method, $capid . " " . $timeExpires . " " . $salt, $key, true), 0, 16);
-        if ($save)
-            $this->q("insert ignore into CapabilityMap (capabilityValue, capabilityId, timeExpires) values ('" . sqlq($text) . "', $capid, $timeExpires)");
-        return "1" . str_replace(array("+", "/", "="), array("-", "_", ""),
-                                 base64_encode($text));
-    }
-
     public function create_capability($capabilityType, $options = array()) {
+        global $Opt;
         $contactId = defval($options, "contactId", 0);
         $paperId = defval($options, "paperId", 0);
         $timeExpires = defval($options, "timeExpires", time() + 259200);
@@ -2223,7 +2206,15 @@ class Conference {
         $capid = $this->lastInsertId();
         if (!$capid || !function_exists("hash_hmac"))
             return false;
-        return $this->encode_capability($capid, $salt, $timeExpires, true);
+
+        list($keyid, $key) = Contact::password_hmac_key(null, true);
+        if (!($hash_method = @$Opt["capabilityHashMethod"]))
+            $hash_method = (PHP_INT_SIZE == 8 ? "sha512" : "sha256");
+        $text = substr(hash_hmac($hash_method, $capid . " " . $timeExpires . " " . $salt, $key, true), 0, 16);
+        $this->q("insert ignore into CapabilityMap (capabilityValue, capabilityId, timeExpires) values ('" . sqlq($text) . "', $capid, $timeExpires)");
+
+        return "1" . str_replace(array("+", "/", "="), array("-", "_", ""),
+                                 base64_encode($text));
     }
 
     public function check_capability($capabilityText) {
