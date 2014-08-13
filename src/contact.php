@@ -56,7 +56,7 @@ class Contact {
     private $activated_ = false;
 
     static private $status_info_cache = array();
-    static private $contactdb_dblink = null;
+    static private $contactdb_dblink = false;
 
 
     public function __construct($trueuser = null) {
@@ -140,7 +140,7 @@ class Contact {
         return strcasecmp($a->sorter, $b->sorter);
     }
 
-    private function set_encoded_password($password) {
+    public function set_encoded_password($password) {
         if ($password === null || $password === false)
             $password = "";
         $this->password = $password;
@@ -273,14 +273,28 @@ class Contact {
         return $contact ? $contact->activate() : $this;
     }
 
+    static public function contactdb() {
+        global $Opt;
+        if (self::$contactdb_dblink === false) {
+            self::$contactdb_dblink = null;
+            if (@$Opt["contactdb_dsn"])
+                list(self::$contactdb_dblink, $dbname) = Conference::connect_dsn($Opt["contactdb_dsn"]);
+        }
+        return self::$contactdb_dblink;
+    }
+
+    static public function contactdb_find_by_email($email) {
+        if (($cdb = self::contactdb())
+            && ($result = edb_ql($cdb, "select * from ContactInfo where email=??", $email)))
+            return $result->fetch_object();
+        else
+            return null;
+    }
+
     public function update_contactdb() {
         global $Opt;
-        if (!self::$contactdb_dblink)
-            list(self::$contactdb_dblink, $dbname) = Conference::connect_dsn($Opt["contactdb_dsn"]);
-        if (!self::$contactdb_dblink || !$this->has_database_account())
+        if (!($dblink = self::contactdb()) || !$this->has_database_account())
             return false;
-
-        $dblink = self::$contactdb_dblink;
         $idquery = edb_format_query($dblink, "select contactDbId, confid from ContactInfo join Conferences where email='?' and `dbname`=??", $this->email, $Opt["dbName"]);
         $result = $dblink->query($idquery);
         if (!($result && $result->num_rows)) {
@@ -760,14 +774,28 @@ class Contact {
         // For more complicated registrations, use UserStatus
         global $Conf, $Opt, $Now;
         $reg = (object) ($reg === true ? array() : $reg);
+        $reg_keys = array("firstName", "lastName", "affiliation", "collaborators",
+                          "voicePhoneNumber", "preferredEmail");
 
         // Set up registration
         $name = Text::analyze_name($reg);
         $reg->firstName = $name->firstName;
         $reg->lastName = $name->lastName;
 
+        // Combine with information from contact database
+        $cdb_user = null;
+        if (@$Opt["contactdb_dsn"])
+            $cdb_user = self::contactdb_find_by_email($email);
+        if ($cdb_user)
+            foreach ($reg_keys as $k)
+                if (@$cdb_user->$k && !$reg->$k)
+                    $reg->$k = $cdb_user->$k;
+
         if (($password = @trim($reg->password)) !== "")
             $this->change_password($password);
+        else if ($cdb_user && $cdb_user->password
+                 && !$cdb_user->disable_shared_password)
+            $this->set_encoded_password($cdb_user->password);
         else
             // Always store initial, randomly-generated user passwords in
             // plaintext. The first time a user logs in, we will encrypt
@@ -786,9 +814,7 @@ class Contact {
         // Set up query
         $qa = "email, password, creationTime";
         $qb = "'" . sqlq($email) . "','" . sqlq($this->password) . "',$Now";
-        foreach (array("firstName", "lastName", "affiliation",
-                       "collaborators", "voicePhoneNumber", "preferredEmail")
-                 as $k)
+        foreach ($reg_keys as $k)
             if (isset($reg->$k)) {
                 $qa .= ",$k";
                 $qb .= ",'" . sqlq($reg->$k) . "'";
