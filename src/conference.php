@@ -5,7 +5,7 @@
 
 class Conference {
 
-    var $dblink = null;
+    public $dblink = null;
 
     var $settings;
     var $settingTexts;

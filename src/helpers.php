@@ -29,14 +29,23 @@ function set_error_html($x, $error_html = null) {
 
 // database helpers
 
-function edb_format_query($dblink, $qstr) {
-    $args = func_get_args();
-    if (count($args) === 3 && is_array($args[2])) {
-        $args = $args[2];
-        $argpos = 0;
-    } else
-        $argpos = 2;
-    $strpos = 0;
+function edb_query_args($args) {
+    global $Conf;
+    if (count($args) === 1 && is_array($args[0]))
+        return $args[0];
+    $argpos = is_string($args[0]) ? 0 : 1;
+    $dblink = $argpos ? $args[0] : $Conf->dblink;
+    if (count($args) === $argpos + 1)
+        return array($dblink, $args[$argpos], array());
+    else if (count($args) === $argpos + 2 && is_array($args[$argpos + 1]))
+        return array($dblink, $args[$argpos], $args[$argpos + 1]);
+    else
+        return array($dblink, $args[$argpos], array_slice($args, $argpos + 1));
+}
+
+function edb_format_query(/* [$dblink,] $qstr, ... */) {
+    list($dblink, $qstr, $args) = edb_query_args(func_get_args());
+    $strpos = $argpos = 0;
     while (($strpos = strpos($qstr, "?", $strpos)) !== false) {
         assert($argpos < count($args));
         $arg = $args[$argpos];
@@ -58,39 +67,34 @@ function edb_format_query($dblink, $qstr) {
     return $qstr;
 }
 
-function edb_query_args($args) {
-    if (count($args) === 3 && is_array($args[2]))
-        return $args[2];
-    else
-        return array_slice($args, 2);
+function edb_query(/* [$dblink,] $qstr, ... */) {
+    $args = edb_query_args(func_get_args());
+    return $args[0]->query(edb_format_query($args));
 }
 
-function edb_query($dblink, $qstr) {
-    return $dblink->query(edb_format_query($dblink, $qstr, edb_query_args(func_get_args())));
-}
-
-function edb_ql($dblink, $qstr) {
-    $result = $dblink->query(edb_format_query($dblink, $qstr, edb_query_args(func_get_args())));
+function edb_ql(/* [$dblink,] $qstr, ... */) {
+    $args = edb_query_args(func_get_args());
+    $result = $args[0]->query(edb_format_query($args));
     if (!$result)
-        error_log($dblink->error);
+        error_log($args[0]->error);
     return $result;
 }
 
 // number of rows returned by a select query, or 'false' if result is an error
 function edb_nrows($result) {
-    return ($result ? $result->num_rows : false);
+    return $result ? $result->num_rows : false;
 }
 
 // number of rows affected by an update/insert query, or 'false' if result is
 // an error
 function edb_nrows_affected($result) {
     global $Conf;
-    return ($result ? $Conf->dblink->affected_rows : false);
+    return $result ? $Conf->dblink->affected_rows : false;
 }
 
 // next row as an array, or 'false' if no more rows or result is an error
 function edb_row($result) {
-    return ($result ? $result->fetch_row() : false);
+    return $result ? $result->fetch_row() : false;
 }
 
 // array of all rows as arrays
@@ -103,7 +107,7 @@ function edb_rows($result) {
 
 // next row as an object, or 'false' if no more rows or result is an error
 function edb_orow($result) {
-    return ($result ? $result->fetch_object() : false);
+    return $result ? $result->fetch_object() : false;
 }
 
 // array of all rows as objects
