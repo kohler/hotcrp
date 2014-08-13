@@ -104,6 +104,7 @@ class Contact {
         $c->firstName = defval($o, "firstName", "");
         $c->lastName = defval($o, "lastName", "");
         $c->email = defval($o, "email", "");
+        $c->affiliation = defval($o, "affiliation");
         $c->preferredEmail = defval($o, "preferredEmail", "");
         self::set_sorter($c);
         $c->password = defval($o, "password", "");
