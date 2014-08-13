@@ -96,6 +96,15 @@ class Contact {
         return strcasecmp($a->sorter, $b->sorter);
     }
 
+    private function set_encoded_password($password) {
+        if ($password === null || $password === false)
+            $password = "";
+        $this->password = $password;
+        $this->password_type = substr($c->password, 0, 1) == " " ? 1 : 0;
+        if ($this->password_type == 0)
+            $this->password_plaintext = $password;
+    }
+
     static public function make($o) {
         // If you change this function, search for its callers to ensure
         // they provide all necessary information.
@@ -107,10 +116,7 @@ class Contact {
         $c->affiliation = defval($o, "affiliation");
         $c->preferredEmail = defval($o, "preferredEmail", "");
         self::set_sorter($c);
-        $c->password = defval($o, "password", "");
-        $c->password_type = (substr($c->password, 0, 1) == " " ? 1 : 0);
-        if ($c->password_type == 0)
-            $c->password_plaintext = $c->password;
+        $c->set_encoded_password(defval($o, "password", ""));
         $c->disabled = !!defval($o, "disabled", false);
         if (isset($o->has_review))
             $c->has_review_ = $o->has_review;
@@ -724,10 +730,7 @@ class Contact {
         self::set_sorter($this);
         $this->affiliation = $row->affiliation;
         $this->voicePhoneNumber = $row->voicePhoneNumber;
-        $this->password = $row->password;
-        $this->password_type = (substr($this->password, 0, 1) == " " ? 1 : 0);
-        if ($this->password_type == 0)
-            $this->password_plaintext = $this->password;
+        $this->set_encoded_password($row->password);
         $this->disabled = !!defval($row, "disabled", 0);
         $this->collaborators = $row->collaborators;
         $this->defaultWatch = defval($row, "defaultWatch", 0);
@@ -764,13 +767,12 @@ class Contact {
 
         // Set up registration
         $name = Text::analyze_name($reg);
-        list($reg->firstName, $reg->lastName) = array($name->firstName, $name->lastName);
+        $reg->firstName = $name->firstName;
+        $reg->lastName = $name->lastName;
 
-        $this->password_type = 0;
-        if (isset($reg->password)
-            && ($password = trim($reg->password)) != "")
+        if (($password = @trim($reg->password)) !== "")
             $this->change_password($password);
-        else {
+        else
             // Always store initial, randomly-generated user passwords in
             // plaintext. The first time a user logs in, we will encrypt
             // their password.
@@ -780,8 +782,7 @@ class Contact {
             // Specifically, if someone tries to "create an account", then
             // they don't get the email, then they try to create the account
             // again, the password will be visible in both emails.
-            $this->password = $password = self::random_password();
-        }
+            $this->set_encoded_password(self::random_password());
 
         $best_email = @$reg->preferredEmail ? $reg->preferredEmail : $email;
         $authored_papers = Contact::email_authored_papers($best_email, $reg);
@@ -811,7 +812,6 @@ class Contact {
         if (count($authored_papers))
             $this->save_authored_papers($authored_papers);
 
-        $this->password_plaintext = $password;
         return true;
     }
 
