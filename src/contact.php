@@ -1855,6 +1855,9 @@ class Contact {
         // (!$prow && !$rrow) ==> return best case scores that can be seen.
         // (!$prow &&  $rrow) ==> return worst case scores that can be seen.
         // ** See also canViewReview.
+        if ($prow && $rrow && $this->ownReview($rrow))
+            return VIEWSCORE_REVIEWERONLY - 1;
+
         $rights = $prow ? $this->rights($prow) : null;
 
         // chair can see everything
@@ -1869,22 +1872,12 @@ class Contact {
         if ($rights && !$rights->allow_review)
             return 10000;
 
-        // see who this reviewer is
-        if (!$rrow)
-            $rrowContactId = $this->contactId;
-        else if (isset($rrow->reviewContactId))
-            $rrowContactId = $rrow->reviewContactId;
-        else if (isset($rrow->contactId))
-            $rrowContactId = $rrow->contactId;
+        // in general, can see information visible for all reviewers
+        // but !$rrow => return best case: all information they entered
+        if ($rrow)
+            return VIEWSCORE_PC - 1;
         else
-            $rrowContactId = -1;
-
-        // reviewer can see any information they entered
-        if ($rrowContactId == $this->contactId)
             return VIEWSCORE_REVIEWERONLY - 1;
-
-        // otherwise, can see information visible for all reviewers
-        return VIEWSCORE_PC - 1;
     }
 
     function canViewTags($prow, $forceShow = null) {
