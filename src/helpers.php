@@ -76,7 +76,7 @@ function edb_ql(/* [$dblink,] $qstr, ... */) {
     $args = edb_query_args(func_get_args());
     $result = $args[0]->query(edb_format_query($args));
     if (!$result)
-        error_log($args[0]->error);
+        error_log(caller_landmark() . ": " . $args[0]->error);
     return $result;
 }
 
@@ -145,6 +145,14 @@ function sql_in_numeric_set($set) {
 function sql_not_in_numeric_set($set) {
     $sql = sql_in_numeric_set($set);
     return ($sql[0] == "=" ? "!" : " not") . $sql;
+}
+
+
+// debug helpers
+
+function caller_landmark($position = 1) {
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $position + 1);
+    return $trace[$position]["file"] . ":" . $trace[$position]["line"];
 }
 
 

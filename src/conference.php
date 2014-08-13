@@ -623,7 +623,7 @@ class Conference {
     function ql($query) {
         $result = $this->dblink->query($query);
         if (!$result)
-            error_log($this->dblink->error);
+            error_log(caller_landmark() . ": " . $this->dblink->error);
         return $result;
     }
 
@@ -659,14 +659,12 @@ class Conference {
 
     function qe($query, $while = "", $suggestRetry = false) {
         global $OK;
-        if ($while || $suggestRetry) {
-            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-            error_log($backtrace[1]["file"] . ":" . $backtrace[1]["line"] . ": bad call to Conference::qe");
-        }
+        if ($while || $suggestRetry)
+            error_log(caller_landmark() . ": bad call to Conference::qe");
         $result = $this->dblink->query($query);
         if ($result === false) {
             if (PHP_SAPI == "cli")
-                fwrite(STDERR, $this->db_error_text(true, "$while ($query)") . "\n");
+                fwrite(STDERR, caller_landmark() . ": " . $this->db_error_text(true, "$while ($query)") . "\n");
             else
                 $this->errorMsg($this->db_error_html(true, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
             $OK = false;
@@ -679,7 +677,7 @@ class Conference {
         $result = $this->dblink->insert_id;
         if (!$result && !$ignore_errors) {
             if (PHP_SAPI == "cli")
-                fwrite(STDERR, $this->db_error_text($result === false) . "\n");
+                fwrite(STDERR, caller_landmark() . ": " . $this->db_error_text($result === false) . "\n");
             else
                 $this->errorMsg($this->db_error_html($result === false));
             $OK = false;

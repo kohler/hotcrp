@@ -348,8 +348,7 @@ class ReviewForm {
     }
 
     private function get_deprecated($table, $element) {
-        $trace = debug_backtrace();
-        trigger_error($trace[1]["file"] . ":" . $trace[1]["line"] . ": ReviewForm->$table deprecated", E_USER_NOTICE);
+        trigger_error(caller_landmark(2) . ": ReviewForm->$table deprecated", E_USER_NOTICE);
         $x = array();
         foreach ($this->fmap as $f)
             $x[$f->id] = $f->$element;
@@ -368,14 +367,12 @@ class ReviewForm {
         else if ($name == "shortName")
             $x = $this->get_deprecated($name, "name");
         else if ($name == "fieldOrder") {
-            $trace = debug_backtrace();
-            trigger_error($trace[0]["file"] . ":" . $trace[0]["line"] . ": ReviewForm->$name deprecated", E_USER_NOTICE);
+            trigger_error(caller_landmark() . ": ReviewForm->$name deprecated", E_USER_NOTICE);
             $x = array();
             foreach ($this->forder as $f)
                 $x[] = $f->id;
         } else if ($name == "reviewFields") {
-            $trace = debug_backtrace();
-            trigger_error($trace[0]["file"] . ":" . $trace[0]["line"] . ": ReviewForm->$name deprecated", E_USER_NOTICE);
+            trigger_error(caller_landmark() . ": ReviewForm->$name deprecated", E_USER_NOTICE);
             $x = array();
             foreach ($this->fmap as $f)
                 $x[$f->id] = $f->has_options ? ($f->option_letter ? $f->option_letter : 1) : 0;

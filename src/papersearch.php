@@ -422,8 +422,7 @@ class PaperSearch {
     // begin changing contactId to cid
     public function __get($name) {
         if ($name == "contactId") {
-            $trace = debug_backtrace();
-            trigger_error($trace[0]["file"] . ":" . $trace[0]["line"] . ": PaperSearch->contactId deprecated, use cid", E_USER_NOTICE);
+            trigger_error(caller_landmark() . ": PaperSearch->contactId deprecated, use cid", E_USER_NOTICE);
             return $this->cid;
         } else
             return null;
@@ -431,8 +430,7 @@ class PaperSearch {
 
     public function __set($name, $value) {
         if ($name == "contactId") {
-            $trace = debug_backtrace();
-            error_log($trace[0]["file"] . ":" . $trace[0]["line"] . ": PaperSearch->contactId deprecated, use cid");
+            error_log(caller_landmark() . ": PaperSearch->contactId deprecated, use cid");
             $this->cid = $value;
         } else
             $this->$name = $value;
