@@ -24,5 +24,5 @@ $result = edb_ql($Conf->dblink, "select ContactInfo.contactId, email from Contac
     group by ContactInfo.contactId");
 while (($row = edb_row($result))) {
     $contact = Contact::find_by_id($row[0]);
-    $contact->update_contactdb();
+    $contact->contactdb_update();
 }

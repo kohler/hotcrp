@@ -7,6 +7,7 @@ class Contact {
 
     // Information from the SQL definition
     public $contactId = 0;
+    public $contactDbId = 0;
     private $cid;               // for forward compatibility
     var $firstName = "";
     var $lastName = "";
@@ -73,6 +74,8 @@ class Contact {
         if (isset($user->contactId)
             && (!isset($user->dsn) || $user->dsn === $Conf->dsn))
             $this->contactId = (int) $user->contactId;
+        if (isset($user->contactDbId))
+            $this->contactDbId = (int) $user->contactDbId;
         foreach (array("firstName", "lastName", "email", "preferredEmail", "affiliation",
                        "voicePhoneNumber", "collaborators", "addressLine1", "addressLine2",
                        "city", "state", "zipCode", "country") as $k)
@@ -260,7 +263,7 @@ class Contact {
         // Maybe set up the shared contacts database
         if (@$Opt["contactdb_dsn"] && $this->has_database_account()
             && $Conf->session("contactdb_roles", 0) != $this->all_roles()) {
-            if ($this->update_contactdb())
+            if ($this->contactdb_update())
                 $Conf->save_session("contactdb_roles", $this->all_roles());
         }
 
@@ -286,12 +289,12 @@ class Contact {
     static public function contactdb_find_by_email($email) {
         if (($cdb = self::contactdb())
             && ($result = edb_ql($cdb, "select * from ContactInfo where email=??", $email)))
-            return $result->fetch_object();
+            return new Contact($result->fetch_object());
         else
             return null;
     }
 
-    public function update_contactdb() {
+    public function contactdb_update() {
         global $Opt;
         if (!($dblink = self::contactdb()) || !$this->has_database_account())
             return false;
@@ -833,6 +836,9 @@ class Contact {
         // Success! Save newly authored papers
         if (count($authored_papers))
             $this->save_authored_papers($authored_papers);
+        // Maybe add to contact db
+        if (@$Opt["contactdb_dsn"] && !$cdb_user)
+            $this->contactdb_update();
 
         return true;
     }
@@ -2103,6 +2109,13 @@ class Contact {
         return $Opt["safePasswords"] < 1;
     }
 
+    private function preferred_password_keyid() {
+        if ($this->contactDbId)
+            return defval($Opt, "contactdb_passwordHmacKeyid", 0);
+        else
+            return defval($Opt, "passwordHmacKeyid", 0);
+    }
+
     public function check_password_encryption($is_change) {
         global $Opt;
         if ($Opt["safePasswords"] < 1
@@ -2110,10 +2123,10 @@ class Contact {
             return false;
         if ($this->password_type == 0)
             return true;
-        $expected_prefix = " " . self::password_hash_method()
-            . " " . defval($Opt, "passwordHmacKeyid", 0) . " ";
+        $expected_prefix = " " . self::password_hash_method() . " "
+            . $this->preferred_password_keyid() . " ";
         return $this->password_type == 1
-            && !str_starts_with($this->password, $expected_prefix);
+            && !str_starts_with($this->password, $expected_prefix . " ");
     }
 
     public function change_password($new_password) {
@@ -2122,7 +2135,7 @@ class Contact {
         if ($this->check_password_encryption(true))
             $this->password_type = 1;
         if ($this->password_type == 1 && function_exists("hash_hmac")) {
-            list($keyid, $key) = self::password_hmac_key(null, true);
+            list($keyid, $key) = self::password_hmac_key($this->preferred_password_keyid(), true);
             $hash_method = self::password_hash_method();
             $salt = hotcrp_random_bytes(16);
             $this->password = " " . $hash_method . " " . $keyid . " " . $salt
@@ -2243,10 +2256,12 @@ class Contact {
 
     function mark_activity() {
         global $Conf, $Now;
-        if ($this->contactId > 0
-            && (!$this->activity_at || $this->activity_at < $Now)) {
+        if (!$this->activity_at || $this->activity_at < $Now) {
             $this->activity_at = $Now;
-            $Conf->ql("update ContactInfo set lastLogin=$Now where contactId=" . $this->contactId);
+            if ($this->contactId)
+                $Conf->ql("update ContactInfo set lastLogin=$Now where contactId=" . $this->contactId);
+            if ($this->contactDbId)
+                edb_ql(self::contactdb(), "update ContactInfo set activity_at=$Now where contactId=$this->contactDbId");
         }
     }
 

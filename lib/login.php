@@ -116,9 +116,14 @@ class LoginHelper {
             self::unquote_double_quoted_request();
         $user = Contact::find_by_email($_REQUEST["email"]);
 
+        // look up user in contact database
+        $cdb_user = null;
+        if (@$Opt["contactdb_dsn"])
+            $cdb_user = Contact::contactdb_find_by_email($_REQUEST["email"]);
+
         // create account if requested
         if ($_REQUEST["action"] == "new") {
-            if (!($user = self::create_account($user)))
+            if (!($user = self::create_account($user, $cdb_user)))
                 return null;
             $_REQUEST["password"] = $user->password_plaintext;
         }
@@ -133,15 +138,21 @@ class LoginHelper {
         }
 
         // if no user found, then fail
-        if (!$user) {
+        if (!$user && !$cdb_user) {
             $email_class = " error";
             return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists. Did you enter the correct email address?");
         }
 
-        if (($user->password == "" && !$external_login) || $user->disabled)
+        // if user disabled, then fail
+        $user_password = $user ? $user->password : "";
+        $cdb_password = $cdb_user && !$cdb_user->disable_shared_password ? $cdb_user->password : "";
+        if (($user && $user->disabled)
+            || ($user_password == "" && $cdb_password == "" && !$external_login))
             return $Conf->errorMsg("Your account is disabled. Contact the site administrator for more information.");
 
+        // maybe reset password
         if ($_REQUEST["action"] == "forgot") {
+            $user = $user ? : $cdb_user;
             $worked = $user->sendAccountInfo("forgot", true);
             if ($worked == "@resetpassword")
                 $Conf->confirmMsg("A password reset link has been emailed to " . htmlspecialchars($_REQUEST["email"]) . ". When you receive that email, follow its instructions to create a new password.");
@@ -152,24 +163,42 @@ class LoginHelper {
             return null;
         }
 
-        $_REQUEST["password"] = trim(defval($_REQUEST, "password", ""));
-        if ($_REQUEST["password"] == "" && !isset($Opt["httpAuthLogin"])) {
-            $password_class = " error";
-            return $Conf->errorMsg("Enter your password. If you’ve forgotten it, enter your email address and use the “I forgot my password” option.");
+        // check password
+        if (!$external_login) {
+            if (($password = @trim($_REQUEST["password"])) === "") {
+                $password_class = " error";
+                return $Conf->errorMsg("Enter your password. If you’ve forgotten it, enter your email address and use the “I forgot my password” option.");
+            }
+
+            $user_match = $user_password && $user->check_password($password);
+            $cdb_match = $cdb_password && $cdb_user->check_password($password);
+            if (!$user_match && !$cdb_match) {
+                $password_class = " error";
+                return $Conf->errorMsg("That password doesn’t match. If you’ve forgotten your password, enter your email address and use the “I forgot my password” option.");
+            }
+
+            // maybe update database passwords
+            if ($user && (!$user_match || $user->check_password_encryption(false))) {
+                $user->change_password($password);
+                edb_ql($Conf->dblink, "update ContactInfo set password=?? where contactId=??",
+                       $user->password, $user->contactId);
+            }
+            if ($cdb_user && !$cdb->disable_shared_password
+                && (!$cdb_match || $cdb_user->check_password_encryption(false))) {
+                $cdb_user->change_password($password);
+                edb_ql(Contact::contactdb(), "update ContactInfo set password=?? where contactDbId=??",
+                       $cdb_user->password, $cdb_user->contactDbId);
+            }
         }
 
-        if (!$external_login && !$user->check_password($_REQUEST["password"])) {
-            $password_class = " error";
-            return $Conf->errorMsg("That password doesn’t match. If you’ve forgotten your password, enter your email address and use the “I forgot my password” option.");
-        }
-
-        if (!$user->activity_at)
+        // mark activity
+        if ($user && !$user->activity_at)
             $user->mark_activity();
-        if (!$external_login && $user->check_password_encryption(false)) {
-            $user->change_password($_REQUEST["password"]);
-            $Conf->qe("update ContactInfo set password='" . sqlq($user->password) . "' where contactId=" . $user->contactId);
-        }
+        if ($cdb_user && !$cdb_user->activity_at)
+            $cdb_user->mark_activity();
 
+        // activate and redirect
+        $user = $user ? : $cdb_user;
         $user = $user->activate();
         unset($_SESSION["testsession"]);
         $_SESSION["trueuser"] = (object) array("contactId" => $user->contactId, "dsn" => $Conf->dsn, "email" => $user->email);
@@ -210,16 +239,21 @@ class LoginHelper {
         return true;
     }
 
-    static private function create_account($user) {
+    static private function create_account($user, $cdb_user) {
         global $Conf, $Opt, $email_class;
 
-        if ($user && $user->has_database_account() && $user->activity_at > 0) {
+        // check for errors
+        if (($user && $user->has_database_account() && $user->activity_at > 0)
+            || ($cdb_user && $cdb_user->activity_at > 0)) {
             $email_class = " error";
             return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
         } else if (!validate_email($_REQUEST["email"])) {
             $email_class = " error";
             return $Conf->errorMsg("&ldquo;" . htmlspecialchars($_REQUEST["email"]) . "&rdquo; is not a valid email address.");
-        } else if (!$user || !$user->has_database_account()) {
+        }
+
+        // create database account
+        if (!$user || !$user->has_database_account()) {
             if (!($user = Contact::find_by_email($_REQUEST["email"], true)))
                 return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
         }
