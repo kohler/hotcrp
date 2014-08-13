@@ -100,7 +100,7 @@ class Contact {
         if ($password === null || $password === false)
             $password = "";
         $this->password = $password;
-        $this->password_type = substr($c->password, 0, 1) == " " ? 1 : 0;
+        $this->password_type = substr($this->password, 0, 1) == " " ? 1 : 0;
         if ($this->password_type == 0)
             $this->password_plaintext = $password;
     }
