@@ -1060,7 +1060,7 @@ class FormulaPaperColumn extends PaperColumn {
                             array("minimal" => true, "sorter" => "formula_sorter"));
         $this->cssname = "formula";
         $this->formula = $formula;
-        if ($formula)
+        if ($formula && @$formula->formulaId)
             self::$list[$formula->formulaId] = $formula;
     }
     public static function lookup_all() {
