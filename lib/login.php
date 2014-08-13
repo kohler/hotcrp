@@ -183,7 +183,7 @@ class LoginHelper {
                 edb_ql($Conf->dblink, "update ContactInfo set password=?? where contactId=??",
                        $user->password, $user->contactId);
             }
-            if ($cdb_user && !$cdb->disable_shared_password
+            if ($cdb_user && !$cdb_user->disable_shared_password
                 && (!$cdb_match || $cdb_user->check_password_encryption(false))) {
                 $cdb_user->change_password($password);
                 edb_ql(Contact::contactdb(), "update ContactInfo set password=?? where contactDbId=??",

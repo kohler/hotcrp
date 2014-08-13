@@ -2105,6 +2105,7 @@ class Contact {
     }
 
     private function preferred_password_keyid() {
+        global $Opt;
         if ($this->contactDbId)
             return defval($Opt, "contactdb_passwordHmacKeyid", 0);
         else
