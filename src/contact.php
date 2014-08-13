@@ -2052,25 +2052,20 @@ class Contact {
     }
 
 
-    public static function password_hmac_key($keyid, $create) {
+    public static function password_hmac_key($keyid) {
         global $Conf, $Opt;
         if ($keyid === null)
             $keyid = defval($Opt, "passwordHmacKeyid", 0);
-        if ($keyid == 0 && isset($Opt["passwordHmacKey"]))
-            $key = $Opt["passwordHmacKey"];
-        else if (isset($Opt["passwordHmacKey.$keyid"]))
-            $key = $Opt["passwordHmacKey.$keyid"];
-        else {
-            $key = $Conf->setting_data("passwordHmacKey.$keyid", "");
-            if ($key == "" && $create) {
-                $key = hotcrp_random_bytes(24);
-                $Conf->save_setting("passwordHmacKey.$keyid", time(), $key);
-            }
+        $key = @$Opt["passwordHmacKey.$keyid"];
+        if (!$key && $keyid == 0)
+            $key = @$Opt["passwordHmacKey"];
+        if (!$key) /* backwards compatibility */
+            $key = $Conf->setting_data("passwordHmacKey.$keyid");
+        if (!$key) {
+            error_log("missing passwordHmacKey.$keyid, using default");
+            $key = "NdHHynw6JwtfSZyG3NYPTSpgPFG8UN8NeXp4tduTk2JhnSVy";
         }
-        if ($create)
-            return array($keyid, $key);
-        else
-            return $key;
+        return $key;
     }
 
     public function check_password($password) {
@@ -2089,7 +2084,7 @@ class Contact {
             $keyid = substr($this->password, $hash_method_pos + 1, $keyid_pos - $hash_method_pos - 1);
             $salt = substr($this->password, $keyid_pos + 1, 16);
             return hash_hmac($hash_method, $salt . $password,
-                             self::password_hmac_key($keyid, false), true)
+                             self::password_hmac_key($keyid), true)
                 == substr($this->password, $keyid_pos + 17);
         } else if ($this->password_type == 1)
             error_log("cannot check hashed password for user " . $this->email);
@@ -2135,7 +2130,8 @@ class Contact {
         if ($this->check_password_encryption(true))
             $this->password_type = 1;
         if ($this->password_type == 1 && function_exists("hash_hmac")) {
-            list($keyid, $key) = self::password_hmac_key($this->preferred_password_keyid(), true);
+            $keyid = $this->preferred_password_keyid();
+            $key = self::password_hmac_key($keyid);
             $hash_method = self::password_hash_method();
             $salt = hotcrp_random_bytes(16);
             $this->password = " " . $hash_method . " " . $keyid . " " . $salt

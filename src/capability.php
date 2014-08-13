@@ -26,7 +26,7 @@ class CapabilityManager {
         if (!$capid || !function_exists("hash_hmac"))
             return false;
 
-        list($keyid, $key) = Contact::password_hmac_key(null, true);
+        $key = Contact::password_hmac_key(null);
         if (!($hash_method = @$Opt["capabilityHashMethod"]))
             $hash_method = (PHP_INT_SIZE == 8 ? "sha512" : "sha256");
         $text = substr(hash_hmac($hash_method, $capid . " " . $timeExpires . " " . $salt, $key, true), 0, 16);
