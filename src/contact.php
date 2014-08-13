@@ -61,9 +61,53 @@ class Contact {
 
     public function __construct($trueuser = null) {
         if ($trueuser)
-            foreach (array("firstName", "lastName", "email", "affiliation") as $k)
-                if (@$trueuser->$k)
-                    $this->$k = $trueuser->$k;
+            $this->merge($trueuser);
+    }
+
+    static public function make($o) {
+        return new Contact($o);
+    }
+
+    private function merge($user) {
+        global $Conf;
+        if (isset($user->contactId)
+            && (!isset($user->dsn) || $user->dsn === $Conf->dsn))
+            $this->contactId = (int) $user->contactId;
+        foreach (array("firstName", "lastName", "email", "preferredEmail", "affiliation",
+                       "voicePhoneNumber", "collaborators", "addressLine1", "addressLine2",
+                       "city", "state", "zipCode", "country") as $k)
+            if (isset($user->$k))
+                $this->$k = simplify_whitespace($user->$k);
+        self::set_sorter($this);
+        if (isset($user->password))
+            $this->set_encoded_password($user->password);
+        if (isset($user->disabled))
+            $this->disabled = !!$user->disabled;
+        if (isset($user->defaultWatch))
+            $this->defaultWatch = (int) $user->defaultWatch;
+        if (isset($user->contactTags))
+            $this->contactTags = $user->contactTags;
+        if (isset($user->activity_at))
+            $this->activity_at = (int) $user->activity_at;
+        else if (isset($user->lastLogin))
+            $this->activity_at = (int) $user->lastLogin;
+        if (isset($user->data))
+            $this->data_ = $user->data;
+        if (isset($user->roles) || isset($user->isPC) || isset($user->isAssistant)
+            || isset($user->isChair)) {
+            $roles = (int) @$user->roles;
+            if (@$user->isPC)
+                $roles |= self::ROLE_PC;
+            if (@$user->isAssistant)
+                $roles |= self::ROLE_ADMIN;
+            if (@$user->isChair)
+                $roles |= self::ROLE_CHAIR;
+            $this->assign_roles($roles);
+        }
+        if (isset($user->has_review))
+            $this->has_review_ = $user->has_review;
+        if (isset($user->has_outstanding_review))
+            $this->has_outstanding_review_ = $user->has_outstanding_review;
     }
 
     // begin changing contactId to cid
@@ -103,36 +147,6 @@ class Contact {
         $this->password_type = substr($this->password, 0, 1) == " " ? 1 : 0;
         if ($this->password_type == 0)
             $this->password_plaintext = $password;
-    }
-
-    static public function make($o) {
-        // If you change this function, search for its callers to ensure
-        // they provide all necessary information.
-        $c = new Contact;
-        $c->contactId = (int) $o->contactId;
-        $c->firstName = defval($o, "firstName", "");
-        $c->lastName = defval($o, "lastName", "");
-        $c->email = defval($o, "email", "");
-        $c->affiliation = defval($o, "affiliation");
-        $c->preferredEmail = defval($o, "preferredEmail", "");
-        self::set_sorter($c);
-        $c->set_encoded_password(defval($o, "password", ""));
-        $c->disabled = !!defval($o, "disabled", false);
-        if (isset($o->has_review))
-            $c->has_review_ = $o->has_review;
-        if (isset($o->has_outstanding_review))
-            $c->has_outstanding_review_ = $o->has_outstanding_review;
-        $roles = defval($o, "roles", 0);
-        if (@$o->isPC)
-            $roles |= self::ROLE_PC;
-        if (@$o->isAssistant)
-            $roles |= self::ROLE_ADMIN;
-        if (@$o->isChair)
-            $roles |= self::ROLE_CHAIR;
-        $c->assign_roles($roles);
-        $c->contactTags = defval($o, "contactTags", null);
-        $c->data_ = defval($o, "data", null);
-        return $c;
     }
 
     static public function site_contact() {
@@ -558,7 +572,7 @@ class Contact {
             $Conf->qe("update ContactInfo set data=" . ($this->data_ ? "'" . sqlq($new) . "'" : $new) . " where contactId=" . $this->contactId);
     }
 
-    function trim() {
+    private function trim() {
         $this->contactId = (int) trim($this->contactId);
         $this->firstName = simplify_whitespace($this->firstName);
         $this->lastName = simplify_whitespace($this->lastName);
@@ -716,31 +730,13 @@ class Contact {
     }
 
     private function load_by_query($where) {
-        global $Conf, $Opt;
-
+        global $Conf;
         $result = $Conf->q("select ContactInfo.* from ContactInfo where $where");
-        if (!($row = edb_orow($result)))
+        if (($row = edb_orow($result))) {
+            $this->merge($row);
+            return true;
+        } else
             return false;
-
-        $this->contactId = (int) $row->contactId;
-        $this->firstName = $row->firstName;
-        $this->lastName = $row->lastName;
-        $this->email = $row->email;
-        $this->preferredEmail = defval($row, "preferredEmail", null);
-        self::set_sorter($this);
-        $this->affiliation = $row->affiliation;
-        $this->voicePhoneNumber = $row->voicePhoneNumber;
-        $this->set_encoded_password($row->password);
-        $this->disabled = !!defval($row, "disabled", 0);
-        $this->collaborators = $row->collaborators;
-        $this->defaultWatch = defval($row, "defaultWatch", 0);
-        $this->contactTags = defval($row, "contactTags", null);
-        $this->activity_at = (int) defval($row, "lastLogin", 0);
-        $this->data_ = defval($row, "data", null);
-        $this->assign_roles($row->roles);
-
-        $this->trim();
-        return true;
     }
 
     static function find_by_id($cid) {
