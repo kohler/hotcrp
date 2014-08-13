@@ -267,7 +267,7 @@ class Contact {
             return false;
 
         $dblink = self::$contactdb_dblink;
-        $idquery = edb_format_query($dblink, "select contactId, confid from ContactInfo join Conferences where email='?' and `dbname`=??", $this->email, $Opt["dbName"]);
+        $idquery = edb_format_query($dblink, "select contactDbId, confid from ContactInfo join Conferences where email='?' and `dbname`=??", $this->email, $Opt["dbName"]);
         $result = $dblink->query($idquery);
         if (!($result && $result->num_rows)) {
             $result = edb_ql($dblink, "insert into ContactInfo set firstName=??, lastName=??, email=??, affiliation=?? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation);
@@ -275,7 +275,7 @@ class Contact {
         }
         if ($result && $result->num_rows) {
             $row = edb_row($result);
-            $result = edb_ql($dblink, "insert into Roles set contactId=??, confid=??, roles=?? on duplicate key update roles=values(roles)", $row[0], $row[1], $this->all_roles());
+            $result = edb_ql($dblink, "insert into Roles set contactDbId=??, confid=??, roles=?? on duplicate key update roles=values(roles)", $row[0], $row[1], $this->all_roles());
             return !!$result;
         } else
             return false;
