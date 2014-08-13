@@ -107,7 +107,7 @@ class Mailer {
             if (($v = @$rest[$k]) !== null)
                 $this->$k = $v;
         // Do not put passwords in email that is cc'd elsewhere
-        if ((!$Me->privChair || @$Opt["chairHidePasswords"])
+        if ((!$Me || !$Me->privChair || @$Opt["chairHidePasswords"])
             && (@$rest["cc"] || @$rest["bcc"])
             && (@$rest["sensitivity"] === null || @$rest["sensitivity"] === "display"))
             $this->sensitivity = "high";
