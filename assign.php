@@ -363,9 +363,7 @@ function createAnonymousReview() {
         $row = edb_row($result);
         $reqId = $row[0];
     } else {
-        $result = $Conf->qe("insert into ContactInfo
-                (firstName, lastName, email, affiliation, password, creationTime)
-                values ('Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '" . sqlq(Contact::random_password(20)) . "', $now)");
+        $result = $Conf->qe("insert into ContactInfo (firstName, lastName, email, affiliation, password, creationTime) values ('Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '', $now)");
         if (!$result)
             return $result;
         $reqId = $Conf->lastInsertId();
