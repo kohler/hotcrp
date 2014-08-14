@@ -116,10 +116,15 @@ class LoginHelper {
             self::unquote_double_quoted_request();
         $user = Contact::find_by_email($_REQUEST["email"]);
 
-        // look up user in contact database
+        // look up or create user in contact database
         $cdb_user = null;
-        if (@$Opt["contactdb_dsn"])
+        if (@$Opt["contactdb_dsn"]) {
             $cdb_user = Contact::contactdb_find_by_email($_REQUEST["email"]);
+            if ($user && !$cdb_user) {
+                $user->contactdb_update();
+                $cdb_user = Contact::contactdb_find_by_email($user->email);
+            }
+        }
 
         // create account if requested
         if ($_REQUEST["action"] == "new") {
