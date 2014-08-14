@@ -2258,7 +2258,7 @@ class Contact {
             if ($this->contactId)
                 $Conf->ql("update ContactInfo set lastLogin=$Now where contactId=" . $this->contactId);
             if ($this->contactDbId)
-                edb_ql(self::contactdb(), "update ContactInfo set activity_at=$Now where contactId=$this->contactDbId");
+                edb_ql(self::contactdb(), "update ContactInfo set activity_at=$Now where contactDbId=$this->contactDbId");
         }
     }
 
