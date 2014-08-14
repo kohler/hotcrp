@@ -1371,7 +1371,7 @@ function initialize_paper_columns() {
     if ($score)
         PaperColumn::register_factory("", $score);
 
-    if ($Conf && $Conf->setting("formulas") && $Conf->sversion >= 32) {
+    if ($Conf && $Conf->setting("formulas")) {
         $result = $Conf->q("select * from Formula order by lower(name)");
         $formula = null;
         while (($row = edb_orow($result))) {

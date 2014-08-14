@@ -13,7 +13,7 @@ $pctags = pcTags();
 
 // load mail from log
 if (isset($_REQUEST["fromlog"]) && ctype_digit($_REQUEST["fromlog"])
-    && $Conf->sversion >= 40 && $Me->privChair) {
+    && $Me->privChair) {
     $result = $Conf->qe("select * from MailLog where mailId=" . $_REQUEST["fromlog"]);
     if (($row = edb_orow($result))) {
         foreach (array("recipients", "q", "t", "cc", "replyto", "subject", "emailBody") as $field)
@@ -87,11 +87,7 @@ $subjectPrefix = "[" . $Opt["shortName"] . "] ";
 function contactQuery($type) {
     global $Conf, $Me, $papersel, $checkReviewNeedsSubmit;
     $contactInfo = "firstName, lastName, email, password, roles, ContactInfo.contactId, (PCMember.contactId is not null) as isPC, preferredEmail";
-    $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.shepherdContactId";
-    if ($Conf->sversion >= 41)
-        $paperInfo .= ", Paper.capVersion";
-    if ($Conf->sversion >= 51)
-        $paperInfo .= ", Paper.managerContactId";
+    $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.shepherdContactId, Paper.capVersion, Paper.managerContactId";
 
     // paper limit
     $where = array();
@@ -240,17 +236,15 @@ function checkMail($send) {
         $subject = $subjectPrefix . $subject;
     if ($send) {
         $mailId = "";
-        if ($Conf->sversion >= 40) {
-            $q = "recipients='" . sqlq($_REQUEST["recipients"])
-                . "', cc='" . sqlq($_REQUEST["cc"])
-                . "', replyto='" . sqlq($_REQUEST["replyto"])
-                . "', subject='" . sqlq($_REQUEST["subject"])
-                . "', emailBody='" . sqlq($_REQUEST["emailBody"]) . "'";
-            if ($Conf->sversion >= 79)
-                $q .= ", q='" . sqlq($_REQUEST["q"]) . "', t='" . sqlq($_REQUEST["t"]) . "'";
-            if ($Conf->q("insert into MailLog set $q"))
-                $mailId = " #" . $Conf->lastInsertId();
-        }
+        $q = "recipients='" . sqlq($_REQUEST["recipients"])
+            . "', cc='" . sqlq($_REQUEST["cc"])
+            . "', replyto='" . sqlq($_REQUEST["replyto"])
+            . "', subject='" . sqlq($_REQUEST["subject"])
+            . "', emailBody='" . sqlq($_REQUEST["emailBody"]) . "'";
+        if ($Conf->sversion >= 79)
+            $q .= ", q='" . sqlq($_REQUEST["q"]) . "', t='" . sqlq($_REQUEST["t"]) . "'";
+        if ($Conf->q("insert into MailLog set $q"))
+            $mailId = " #" . $Conf->lastInsertId();
         $Me->log_activity("Sending mail$mailId \"$subject\"");
     }
     $emailBody = $_REQUEST["emailBody"];
@@ -431,11 +425,9 @@ if ($Me->privChair) {
     $recip["uncrev"] = "Reviewers with incomplete reviews";
     $recip["pcrev"] = "PC reviewers";
     $recip["uncpcrev"] = "PC reviewers with incomplete reviews";
-    if ($Conf->sversion >= 46) {
-        $result = $Conf->q("select paperId from PaperReview where reviewType>=" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0");
-        if (edb_nrows($result) > 0)
-            $recip["newpcrev"] = "PC reviewers with new review assignments";
-    }
+    $result = $Conf->q("select paperId from PaperReview where reviewType>=" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0");
+    if (edb_nrows($result) > 0)
+        $recip["newpcrev"] = "PC reviewers with new review assignments";
     $recip["extrev"] = "External reviewers";
     $recip["uncextrev"] = "External reviewers with incomplete reviews";
     if ($anyLead)
@@ -581,7 +573,7 @@ echo "  <tr><td class='mhnp'>Subject:</td><td class='mhdp'>",
 </table></div>\n\n";
 
 
-if ($Me->privChair && $Conf->sversion >= 40) {
+if ($Me->privChair) {
     $result = $Conf->qe("select * from MailLog order by mailId desc limit 18");
     if (edb_nrows($result)) {
         echo "<div style='padding-top:12px'>",

@@ -903,10 +903,8 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
                 PaperReview.reviewType myReviewType,
                 PaperReview.reviewSubmitted myReviewSubmitted,
                 PaperReview.reviewNeedsSubmit myReviewNeedsSubmit,
-                conflictType, watch, preferredEmail";
-    if ($Conf->sversion >= 47)
-        $q .= ", disabled";
-    $q .= "\nfrom ContactInfo
+                conflictType, watch, preferredEmail, disabled
+        from ContactInfo
         left join PaperConflict on (PaperConflict.paperId=$prow->paperId and PaperConflict.contactId=ContactInfo.contactId)
         left join PaperWatch on (PaperWatch.paperId=$prow->paperId and PaperWatch.contactId=ContactInfo.contactId)
         left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
@@ -1402,8 +1400,7 @@ function pcMembers() {
         || $PcMembersCache[0] < $Conf->setting("pc")
         || $PcMembersCache[2] != @$Opt["sortByLastName"]) {
         $pc = array();
-        $qa = ($Conf->sversion >= 35 ? ", contactTags" : "") . ($Conf->sversion >= 47 ? ", disabled" : "");
-        $result = $Conf->q("select firstName, lastName, affiliation, email, ContactInfo.contactId contactId, roles$qa from ContactInfo join PCMember using (contactId)");
+        $result = $Conf->q("select firstName, lastName, affiliation, email, ContactInfo.contactId contactId, roles, contactTags, disabled from ContactInfo join PCMember using (contactId)");
         $by_name_text = array();
         while (($row = edb_orow($result))) {
             $row = Contact::make($row);

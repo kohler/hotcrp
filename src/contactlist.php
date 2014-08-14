@@ -487,12 +487,11 @@ class ContactList extends BaseList {
         global $Conf;
 
         $aulimit = (strlen($this->limit) >= 2 && $this->limit[0] == 'a' && $this->limit[1] == 'u');
-        $qa = ($Conf->sversion >= 47 ? ", disabled" : ", 0 disabled");
         $pq = "select u.contactId,
         u.contactId as paperId,
         firstName, lastName, email, affiliation, roles, contactTags,
         voicePhoneNumber,
-        u.collaborators, lastLogin$qa";
+        u.collaborators, lastLogin, disabled";
         if (isset($queryOptions['topics']))
             $pq .= ",\n topicIds, topicInterest";
         if (isset($queryOptions["reviews"])) {

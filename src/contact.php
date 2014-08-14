@@ -653,14 +653,11 @@ class Contact {
             $qf[] = "preferredEmail='" . sqlq($this->preferredEmail) . "'";
         else
             $qf[] = "preferredEmail=null";
-        if ($Conf->sversion >= 35) {
-            if ($this->contactTags)
-                $qf[] = "contactTags='" . sqlq($this->contactTags) . "'";
-            else
-                $qf[] = "contactTags=null";
-        }
-        if ($Conf->sversion >= 47)
-            $qf[] = "disabled=" . ($this->disabled ? 1 : 0);
+        if ($this->contactTags)
+            $qf[] = "contactTags='" . sqlq($this->contactTags) . "'";
+        else
+            $qf[] = "contactTags=null";
+        $qf[] = "disabled=" . ($this->disabled ? 1 : 0);
         if ($Conf->sversion >= 71) {
             if (!$this->data_)
                 $qf[] = "data=NULL";
@@ -2251,11 +2248,7 @@ class Contact {
                 $qa .= ", reviewRound";
                 $qb .= ", " . $Conf->round_number($t, true);
             }
-            if ($Conf->sversion >= 46) {
-                $qa .= ", timeRequested";
-                $qb .= ", " . $when;
-            }
-            $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy$qa) values ($pid, $reviewer_cid, $type, $this->contactId$qb)";
+            $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, timeRequested$qa) values ($pid, $reviewer_cid, $type, $this->contactId, $when$qb)";
         } else if ($type > 0 && $rrow->reviewType != $type)
             $q = "update PaperReview set reviewType=$type where reviewId=$rrow->reviewId";
         else if ($type <= 0 && $rrow && $rrow->reviewType)

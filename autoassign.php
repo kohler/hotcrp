@@ -292,7 +292,7 @@ function doAssign() {
         Paper.outcome,
         topicInterestScore,
         coalesce(PRR.contactId, 0) as refused,
-        " . ($Conf->sversion >= 51 ? "Paper.managerContactId" : "0 as managerContactId") . "
+        Paper.managerContactId
         from Paper join PCMember
         left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PCMember.contactId=PaperConflict.contactId)
         left join PaperReviewPreference on (Paper.paperId=PaperReviewPreference.paperId and PCMember.contactId=PaperReviewPreference.contactId)

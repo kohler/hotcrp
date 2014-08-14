@@ -58,14 +58,6 @@ class CommentSave {
             $ctags = null;
 
         // backwards compatibility
-        if ($Conf->sversion < 53) {
-            $fora = ($ctype & COMMENTTYPE_RESPONSE ? 2
-                     : ($ctype >= COMMENTTYPE_AUTHOR ? 1 : 0));
-            $forr = ($ctype & COMMENTTYPE_DRAFT ? 0
-                     : ($ctype < COMMENTTYPE_PCONLY ? 2
-                        : ($ctype >= COMMENTTYPE_REVIEWER ? 1 : 0)));
-            $blind = ($ctype & COMMENTTYPE_BLIND ? 1 : 0);
-        }
         if ($Conf->sversion < 68)
             $ctags = null;
 
@@ -80,20 +72,12 @@ class CommentSave {
             /* do nothing */;
         else if (!$crow) {
             $change = true;
-            $qa = "contactId, paperId, timeModified, comment, timeNotified, replyTo";
-            $qb = "$contact->contactId, $prow->paperId, $Now, '" . sqlq($text) . "', $Now, 0";
+            $qa = "contactId, paperId, timeModified, comment, timeNotified, replyTo, commentType";
+            $qb = "$contact->contactId, $prow->paperId, $Now, '" . sqlq($text) . "', $Now, 0, $ctype";
             if (!($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
-                && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY
-                && $Conf->sversion >= 43) {
+                && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY) {
                 $qa .= ", ordinal";
                 $qb .= ", greatest(commentCount,maxOrdinal)+1";
-            }
-            if ($Conf->sversion >= 53) {
-                $qa .= ", commentType";
-                $qb .= ", $ctype";
-            } else {
-                $qa .= ", forAuthors, forReviewers, blind";
-                $qb .= ", $fora, $forr, $blind";
             }
             if ($ctags !== null) {
                 $qa .= ", commentTags";
@@ -104,25 +88,17 @@ class CommentSave {
                 // make sure there is exactly one response
                 $q .= " from (select Paper.paperId, coalesce(commentId,0) commentId, 0 commentCount, 0 maxOrdinal
                 from Paper
-                left join PaperComment on (PaperComment.paperId=Paper.paperId and ";
-                if ($Conf->sversion >= 53)
-                    $q .= "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
-                else
-                    $q .= "forAuthors=2";
-                $q .= ") where Paper.paperId=$prow->paperId group by Paper.paperId) t
+                left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . COMMENTTYPE_RESPONSE . ")!=0)
+                where Paper.paperId=$prow->paperId group by Paper.paperId) t
         where t.commentId=0";
             } else {
                 $q .= " from (select Paper.paperId, coalesce(count(commentId),0) commentCount, coalesce(max(PaperComment.ordinal),0) maxOrdinal
                 from Paper
-                left join PaperComment on (PaperComment.paperId=Paper.paperId and ";
-                if ($Conf->sversion >= 53) {
-                    $q .= "(commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and ";
-                    if ($ctype >= COMMENTTYPE_AUTHOR)
-                        $q .= "commentType>=" . COMMENTTYPE_AUTHOR;
-                    else
-                        $q .= "commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR;
-                } else
-                    $q .= "forReviewers!=2 and forAuthors=$fora";
+                left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and ";
+                if ($ctype >= COMMENTTYPE_AUTHOR)
+                    $q .= "commentType>=" . COMMENTTYPE_AUTHOR;
+                else
+                    $q .= "commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR;
                 $q .= ") where Paper.paperId=$prow->paperId group by Paper.paperId) t";
             }
         } else {
@@ -137,11 +113,7 @@ class CommentSave {
                     && !($ctype & COMMENTTYPE_DRAFT)
                     && ($crow->commentType & COMMENTTYPE_DRAFT)))
                 $qa = ", timeNotified=$Now";
-            $q = "update PaperComment set timeModified=$Now$qa, comment='" . sqlq($text) . "', ";
-            if ($Conf->sversion >= 53)
-                $q .= "commentType=$ctype";
-            else
-                $q .= "forReviewers=$forr, forAuthors=$fora, blind=$blind";
+            $q = "update PaperComment set timeModified=$Now$qa, comment='" . sqlq($text) . "', commentType=$ctype";
             if ($Conf->sversion >= 68)
                 $q .= ", commentTags=" . ($ctags === null ? "NULL" : "'" . sqlq($ctags) . "'");
             $q .= " where commentId=$crow->commentId";

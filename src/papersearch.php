@@ -262,7 +262,7 @@ class SearchQueryInfo {
     public function add_manager_column() {
         global $Conf;
         if (!isset($this->columns["managerContactId"]))
-            $this->columns["managerContactId"] = ($Conf->sversion >= 51 ? "Paper.managerContactId" : "0");
+            $this->columns["managerContactId"] = "Paper.managerContactId";
     }
 }
 
@@ -2069,14 +2069,10 @@ class PaperSearch {
         global $Conf;
         if (!isset($sqi->tables[$thistab])) {
             $where = array();
-            if ($Conf->sversion >= 53) {
-                if ($t->flags & self::F_AUTHORRESPONSE)
-                    $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
-                else if ($t->flags & self::F_AUTHORCOMMENT)
-                    $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
-            } else
-                // lame out: don't support old schema
-                $where[] = "false";
+            if ($t->flags & self::F_AUTHORRESPONSE)
+                $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
+            else if ($t->flags & self::F_AUTHORCOMMENT)
+                $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
             if ($extrawhere)
                 $where[] = $extrawhere;
             $wheretext = "";

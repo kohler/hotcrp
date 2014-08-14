@@ -1022,8 +1022,7 @@ function saveformulas() {
     }
 }
 
-if (isset($_REQUEST["saveformulas"]) && $Me->isPC && $Conf->sversion >= 32
-    && check_post())
+if (isset($_REQUEST["saveformulas"]) && $Me->isPC && check_post())
     saveformulas();
 
 
@@ -1475,7 +1474,7 @@ if ($pl && $pl->count > 0) {
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
     // Formulas link
-    if (count(FormulaPaperColumn::$list) || ($Me->isPC && $Conf->sversion >= 32))
+    if (count(FormulaPaperColumn::$list) || $Me->isPC)
         echo "<td class='padlb'>", Ht::js_button("Edit formulas", "fold('searchform',0,3)"), "</td>";
 
     echo "<td class='padlb'>";
@@ -1503,7 +1502,7 @@ if ($pl && $pl->count > 0) {
     echo "</tr></table></div></form>";
 
     // Formulas
-    if ($Me->isPC && $Conf->sversion >= 32) {
+    if ($Me->isPC) {
         echo "<form class='fx3' method='post' action='", hoturl_post("search", "saveformulas=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
         echo_request_as_hidden_inputs();
 

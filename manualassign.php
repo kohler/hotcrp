@@ -110,7 +110,7 @@ function saveAssignments($reviewer) {
     $Conf->qe("unlock tables");
     $Conf->updateRevTokensSetting(false);
 
-    if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $when)
+    if ($Conf->setting("pcrev_assigntime") == $when)
         $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
 }
 

@@ -151,6 +151,8 @@ class Conference {
             $OK = $oldOK;
         }
         $this->sversion = $this->settings["allowPaperOption"];
+        if ($this->sversion < 55)
+            $this->errorMsg("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
 
         // invalidate caches after loading from backup
         if (isset($this->settings["frombackup"])
@@ -1064,8 +1066,7 @@ class Conference {
         $q = "select p.paperId, s.mimetype, s.sha1, s.timestamp, ";
         if (!@$Opt["docstore"] && !is_array($prow))
             $q .= "s.paper as content, ";
-        if ($this->sversion >= 45)
-            $q .= "s.filename, ";
+        $q .= "s.filename, ";
         if ($this->sversion >= 55)
             $q .= "s.infoJson, ";
         $q .= "$documentType documentType, s.paperStorageId from Paper p";
@@ -1221,8 +1222,6 @@ class Conference {
         $pq = "select Paper.*, PaperConflict.conflictType,
                 count(AllReviews.reviewSubmitted) as reviewCount,
                 count(if(AllReviews.reviewNeedsSubmit<=0,AllReviews.reviewSubmitted,AllReviews.reviewId)) as startedReviewCount";
-        if ($this->sversion < 51)
-            $pq .= ",\n\t\t0 as managerContactId";
         $myPaperReview = null;
         if (!isset($options["author"])) {
             if ($allReviewerQuery)
@@ -1265,13 +1264,8 @@ class Conference {
                 CommentConflict.conflictType as commentConflictType,
                 PaperComment.timeModified,
                 PaperComment.comment,
-                PaperComment.replyTo";
-            if ($this->sversion >= 53)
-                $pq .= ",\n\t\tPaperComment.commentType";
-            else
-                $pq .= ",\n\t\tPaperComment.forReviewers,
-                PaperComment.forAuthors,
-                PaperComment.blind as commentBlind";
+                PaperComment.replyTo,
+                PaperComment.commentType";
         }
         if (@$options["topics"])
             $pq .= ",
@@ -1568,9 +1562,7 @@ class Conference {
                 return null;
             }
         }
-        $contactTags = "NULL as contactTags";
-        if ($this->sversion >= 35)
-            $contactTags = "ContactInfo.contactTags";
+        $contactTags = "ContactInfo.contactTags";
 
         $q = "select PaperReview.*,
                 ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.roles as contactRoles,
@@ -1667,17 +1659,14 @@ class Conference {
     }
 
     private function _flowQueryRest() {
-        $q = "          Paper.title,
+        return "          Paper.title,
                 substring(Paper.title from 1 for 80) as shortTitle,
                 Paper.timeSubmitted,
                 Paper.timeWithdrawn,
                 Paper.blind as paperBlind,
-                Paper.outcome,\n";
-        if ($this->sversion >= 51)
-            $q .= "             Paper.managerContactId,\n";
-        else
-            $q .= "             0 as managerContactId,\n";
-        return $q . "           ContactInfo.firstName as reviewFirstName,
+                Paper.outcome,
+                Paper.managerContactId,
+                ContactInfo.firstName as reviewFirstName,
                 ContactInfo.lastName as reviewLastName,
                 ContactInfo.email as reviewEmail,
                 PaperConflict.conflictType,

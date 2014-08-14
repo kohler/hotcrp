@@ -264,13 +264,8 @@ function requestReview($email) {
     }
 
     // store the review request
-    $qa = $qb = "";
-    if ($Conf->sversion >= 46) {
-        $now = time();
-        $qa .= ", timeRequested, timeRequestNotified";
-        $qb .= ", $now, $now";
-    }
-    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy$qa) values ($prow->paperId, $Them->contactId, " . REVIEW_EXTERNAL . ", $Requester->contactId$qb)");
+    $now = time();
+    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, timeRequested, timeRequestNotified) values ($prow->paperId, $Them->contactId, " . REVIEW_EXTERNAL . ", $Requester->contactId, $now, $now)");
 
     // mark secondary as delegated
     $Conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1");
@@ -371,13 +366,8 @@ function createAnonymousReview() {
 
     // store the review request
     $token = unassignedReviewToken();
-    $qa = $qb = "";
-    if ($Conf->sversion >= 46) {
-        $qa .= ", timeRequested, timeRequestNotified";
-        $qb .= ", $now, $now";  /* no way to notify, so count as notified already */
-    }
-    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, reviewToken$qa)
-                values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, $token$qb)");
+    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, reviewToken, timeRequested, timeRequestNotified)
+                values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, $token, $now, $now)");
     $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId. The review token is " . encode_token((int) $token) . ".");
 
     $Conf->qx("unlock tables");

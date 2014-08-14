@@ -166,13 +166,13 @@ class HotCRPDocument {
                          "documentType" => $doc->documentType);
         if (!@$Opt["dbNoPapers"])
             $columns["paper"] = $doc->content;
-        if ($Conf->sversion >= 45 && @$doc->filename)
+        if (@$doc->filename)
             $columns["filename"] = $doc->filename;
-        if ($Conf->sversion >= 55 && is_string(@$doc->infoJson))
+        if (is_string(@$doc->infoJson))
             $columns["infoJson"] = $doc->infoJson;
-        else if ($Conf->sversion >= 55 && is_object(@$doc->infoJson))
+        else if (is_object(@$doc->infoJson))
             $columns["infoJson"] = json_encode($doc->infoJson);
-        else if ($Conf->sversion >= 55 && is_object(@$doc->metadata))
+        else if (is_object(@$doc->metadata))
             $columns["infoJson"] = json_encode($doc->metadata);
         if ($Conf->sversion >= 74 && @$doc->size)
             $columns["size"] = $doc->size;

@@ -440,17 +440,11 @@ class ReviewForm {
     static public function reviewArchiveFields() {
         global $Conf;
         $rf = self::get(0);
-        $fields = "reviewId, paperId, contactId, reviewType, requestedBy,
+        return "reviewId, paperId, contactId, reviewType, requestedBy,
                 reviewModified, reviewSubmitted, reviewNeedsSubmit, "
             . join(", ", array_keys($rf->fmap))
-            . ", reviewRound";
-        if ($Conf->sversion >= 37)
-            $fields .= ", reviewNotified";
-        if ($Conf->sversion >= 46)
-            $fields .= ", timeRequested, timeRequestNotified";
-        if ($Conf->sversion >= 49)
-            $fields .= ", reviewToken, reviewAuthorNotified";
-        return $fields;
+            . ", reviewRound, reviewNotified, timeRequested, timeRequestNotified,
+            reviewToken, reviewAuthorNotified";
     }
 
     function webFormRows($contact, $prow, $rrow, $useRequest = false) {
@@ -674,7 +668,7 @@ class ReviewForm {
                     $q[] = $notify = "reviewNotified=" . $now;
                 if ((!$rrow || !$rrow->reviewAuthorNotified
                      || $rrow->reviewAuthorNotified + 10800 < $now)
-                    && $Conf->sversion >= 49 && $diff_view_score >= VIEWSCORE_AUTHOR)
+                    && $diff_view_score >= VIEWSCORE_AUTHOR)
                     $q[] = $notify_author = "reviewAuthorNotified=" . $now;
             }
         }

@@ -72,8 +72,7 @@ function saveComment($text, $is_response) {
 
     if ($next_crow === false) {
         if ($is_response) {
-            $q = ($Conf->sversion >= 53 ? "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0" : "forAuthors>1");
-            $result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and $q");
+            $result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and (commentType&" . COMMENTTYPE_RESPONSE . ")!=0");
             if (($next_crow = edb_orow($result)))
                 $Conf->errorMsg("Edit this response, which has already been entered.");
         }

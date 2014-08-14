@@ -754,9 +754,8 @@ class Mailer {
     static function send_contacts($template, $row, $rest = array()) {
         global $Conf, $Me, $mailTemplates;
 
-        $qa = ($Conf->sversion >= 47 ? ", disabled" : "");
         $result = $Conf->qe("select ContactInfo.contactId,
-                firstName, lastName, email, preferredEmail, password, roles$qa,
+                firstName, lastName, email, preferredEmail, password, roles, disabled,
                 conflictType, 0 myReviewType
                 from ContactInfo join PaperConflict using (contactId)
                 where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
@@ -787,9 +786,8 @@ class Mailer {
     static function send_reviewers($template, $row, $rest = array()) {
         global $Conf, $Me, $Opt, $mailTemplates;
 
-        $qa = ($Conf->sversion >= 47 ? ", disabled" : "");
         $result = $Conf->qe("select ContactInfo.contactId,
-                firstName, lastName, email, preferredEmail, password, roles$qa,
+                firstName, lastName, email, preferredEmail, password, roles, disabled,
                 conflictType, reviewType myReviewType
                 from ContactInfo
                 join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$row->paperId)

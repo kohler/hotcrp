@@ -707,7 +707,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     }
 
 
-    if ($Conf->sversion >= 35 && ($Me->privChair || @$formcj->tags)) {
+    if ($Me->privChair || @$formcj->tags) {
         if (is_object(@$formcj->tags))
             $tags = array_keys(get_object_vars($formcj->tags));
         else if (is_array(@$formcj->tags))

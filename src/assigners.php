@@ -534,11 +534,8 @@ class AssignmentSet {
 
     private function set_my_conflicts() {
         global $Conf;
-        if ($Conf->sversion >= 51)
-            $result = $Conf->qe("select Paper.paperId, managerContactId from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId) where conflictType>0 and PaperConflict.contactId=" . $this->contact->contactId);
-        else
-            $result = $Conf->qe("select paperId, 0 from PaperConflict where conflictType>0 and contactId=" . $this->contact->contactId);
         $this->my_conflicts = array();
+        $result = $Conf->qe("select Paper.paperId, managerContactId from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId) where conflictType>0 and PaperConflict.contactId=" . $this->contact->contactId);
         while (($row = edb_row($result)))
             $this->my_conflicts[$row[0]] = ($row[1] ? $row[1] : true);
     }
@@ -894,7 +891,7 @@ class AssignmentSet {
         $Conf->qe("unlock tables");
 
         // confirmation message
-        if ($Conf->sversion >= 46 && $Conf->setting("pcrev_assigntime") == $when)
+        if ($Conf->setting("pcrev_assigntime") == $when)
             $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
         else
             $Conf->confirmMsg("Assignments saved!");
