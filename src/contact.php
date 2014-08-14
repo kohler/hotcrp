@@ -20,6 +20,7 @@ class Contact {
     var $password = "";
     public $password_type = 0;
     public $password_plaintext = "";
+    public $passwordTime = 0;
     public $disabled = false;
     public $activity_at = false;
     private $data_ = null;
@@ -86,8 +87,9 @@ class Contact {
             $this->set_encoded_password($user->password);
         if (isset($user->disabled))
             $this->disabled = !!$user->disabled;
-        if (isset($user->defaultWatch))
-            $this->defaultWatch = (int) $user->defaultWatch;
+        foreach (array("defaultWatch", "passwordTime") as $k)
+            if (isset($user->$k))
+                $this->$k = (int) $user->$k;
         if (isset($user->contactTags))
             $this->contactTags = $user->contactTags;
         if (isset($user->activity_at))
@@ -2137,7 +2139,7 @@ class Contact {
     }
 
     public function change_password($new_password, $save) {
-        global $Conf, $Opt;
+        global $Conf, $Opt, $Now;
         // set password fields
         $this->password_type = 0;
         if ($new_password && $this->check_password_encryption(true))
@@ -2154,11 +2156,12 @@ class Contact {
                 . hash_hmac($hash_method, $salt . $new_password, $key, true);
         } else
             $this->password = $new_password;
+        $this->passwordTime = $Now;
         // save possibly-encrypted password
         if ($save && $this->contactId)
-            edb_ql($Conf->dblink, "update ContactInfo set password=?? where contactId=??", $this->password, $this->contactId);
+            edb_ql($Conf->dblink, "update ContactInfo set password=??, passwordTime=?? where contactId=??", $this->password, $this->passwordTime, $this->contactId);
         if ($save && $this->contactDbId)
-            edb_ql(self::contactdb(), "update ContactInfo set password=?? where contactDbId=??", $this->password, $this->contactDbId);
+            edb_ql(self::contactdb(), "update ContactInfo set password=??, passwordTime=?? where contactDbId=??", $this->password, $this->passwordTime, $this->contactDbId);
     }
 
     static function random_password($length = 14) {
