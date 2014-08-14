@@ -288,16 +288,18 @@ class Contact {
 
     static public function contactdb_find_by_email($email) {
         if (($cdb = self::contactdb())
-            && ($result = edb_ql($cdb, "select * from ContactInfo where email=??", $email)))
-            return new Contact($result->fetch_object());
+            && ($result = edb_ql($cdb, "select * from ContactInfo where email=??", $email))
+            && ($row = $result->fetch_object()))
+            return new Contact($row);
         else
             return null;
     }
 
     static public function contactdb_find_by_id($cid) {
         if (($cdb = self::contactdb())
-            && ($result = edb_ql($cdb, "select * from ContactInfo where contactDbId=??", $cid)))
-            return new Contact($result->fetch_object());
+            && ($result = edb_ql($cdb, "select * from ContactInfo where contactDbId=??", $cid))
+            && ($row = $result->fetch_object()))
+            return new Contact($row);
         else
             return null;
     }
