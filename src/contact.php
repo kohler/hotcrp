@@ -690,7 +690,10 @@ class Contact {
             edb_ql($cdb, "insert into ContactInfo set firstName=??, lastName=??, email=??, affiliation=?? on duplicate key update firstName=values(firstName), lastName=values(lastName), affiliation=values(affiliation)",
                    $this->firstName, $this->lastName, $this->email, $this->affiliation);
             if ($this->password_plaintext
-                && ($cdb_user = self::contactdb_find_by_email($this->email)))
+                && ($cdb_user = self::contactdb_find_by_email($this->email))
+                && !$cdb_user->password
+                && !$cdb_user->disable_shared_password
+                && !@$Opt["contactdb_noPasswords"])
                 $cdb_user->change_password($this->password_plaintext, true);
         }
 
@@ -1047,11 +1050,11 @@ class Contact {
     public function can_change_password($acct) {
         global $Opt;
         if (@$Opt["chairHidePasswords"])
-            return @$_SESSION["trueuser"] && $acct->email
+            return @$_SESSION["trueuser"] && $acct && $acct->email
                 && $_SESSION["trueuser"]->email == $acct->email;
         else
-            return $this->contactId > 0
-                && ($this->contactId == $acct->contactId || $this->privChair);
+            return $this->privChair
+                || ($acct && $this->contactId > 0 && $this->contactId == $acct->contactId);
     }
 
     public function canAdminister($prow, $forceShow = null) {
@@ -2087,13 +2090,18 @@ class Contact {
         return $key;
     }
 
+    public static function valid_password($password) {
+        return $password != "" && trim($password) === $password
+            && $password !== "*";
+    }
+
     public function check_password($password) {
         global $Conf, $Opt;
         assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
-        if ($password == "")
+        if ($password == "" || $password === "*")
             return false;
         if ($this->password_type == 0)
-            return $password == $this->password;
+            return $password === $this->password;
         if ($this->password_type == 1
             && ($hash_method_pos = strpos($this->password, " ", 1)) !== false
             && ($keyid_pos = strpos($this->password, " ", $hash_method_pos + 1)) !== false

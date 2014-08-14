@@ -36,10 +36,10 @@ if (isset($_REQUEST["go"]) && check_post()) {
         $_REQUEST["upassword"] = $_REQUEST["upassword2"] = $_REQUEST["autopassword"];
     if (!isset($_REQUEST["upassword"]) || $_REQUEST["upassword"] == "")
         $Conf->errorMsg("You must enter a password.");
-    else if ($_REQUEST["upassword"] != $_REQUEST["upassword2"])
+    else if ($_REQUEST["upassword"] !== $_REQUEST["upassword2"])
         $Conf->errorMsg("The two passwords you entered did not match.");
-    else if (trim($_REQUEST["upassword"]) != $_REQUEST["upassword"])
-        $Conf->errorMsg("Passwords cannot begin or end with spaces.");
+    else if (!Contact::valid_password($_REQUEST["upassword"]))
+        $Conf->errorMsg("Invalid password.");
     else {
         $Acct->change_password($_REQUEST["upassword"], true);
         $Acct->log_activity("Reset password");

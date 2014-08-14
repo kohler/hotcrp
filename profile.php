@@ -166,10 +166,26 @@ function web_request_as_json($cj) {
             $pw = @trim($_REQUEST["upassword"]);
             $pw2 = @trim($_REQUEST["upassword2"]);
         }
-        if ($pw !== "" || $pw2 !== "") {
-            if ($pw !== $pw2)
-                $UserStatus->set_error("password", "Those passwords do not match.");
-            else
+        if ($pw === "" && $pw2 === "")
+            /* do nothing */;
+        else if ($pw !== $pw2)
+            $UserStatus->set_error("password", "Those passwords do not match.");
+        else if (!Contact::valid_password($pw))
+            $UserStatus->set_error("password", "Invalid new password.");
+        else if (!$Acct)
+            $cj->password_plaintext = $pw;
+        else {
+            $cdb_user = Contact::contactdb_find_by_email($Acct->email);
+            $oldpw = @trim($_REQUEST["oldpassword"]);
+            if (!$Me->can_change_password(null)
+                && ($oldpw === ""
+                    || (!$Acct->check_password($oldpw)
+                        && !($cdb_user && $cdb_user->check_password($oldpw)))))
+                $UserStatus->set_error("password", "Incorrect current password, new password ignored.");
+            else if ($cdb_user && !@$Opt["contactdb_noPasswords"]) {
+                $cdb_user->change_password($pw, true);
+                $cj->password = "*"; // mark valid login, require contactdb password
+            } else
                 $cj->password_plaintext = $pw;
         }
     }
@@ -469,9 +485,9 @@ function echofield($type, $classname, $captiontext, $entrytext) {
 }
 
 function textinput($name, $value, $size, $id = false, $password = false) {
-    return "<input type=\"" . ($password ? "password" : "text")
-        . "\" class=\"textlite\" name=\"$name\" " . ($id ? "id=\"$id\" " : "")
-        . "size=\"$size\" value=\"$value\" />";
+    return '<input type="' . ($password ? "password" : "text")
+        . '" class="textlite" name="' . $name . '" ' . ($id ? "id=\"$id\" " : "")
+        . 'size="' . $size . '" value="' . $value . '" />';
 }
 
 
@@ -586,15 +602,30 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
 
 if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
     && $Me->can_change_password($Acct)) {
-    echo "<div style='margin-top:20px'></div><div class='f-i'><div class='f-ix'>
-  <div class='", fcclass('password'), "'>New password</div>
-  <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"\" />";
+    echo '<div id="foldpassword" class="',
+        ($UserStatus->has_error("password") ? "fold3o" : "fold3c"),
+        '" style="margin-top:20px">';
+    // Hit a button to change your password
+    echo Ht::js_button("Change password", "fold('password',null,3)", array("class" => "fn3"));
+    // Display the following after the button is clicked
+    echo '<div class="fx3">';
+    if (!$Me->can_change_password(null)) {
+        echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
+        echo '<div class="f-i"><div class="', fcclass("password"), '">Current password</div>',
+            '<div class="', feclass("password"), '">', Ht::password("oldpassword", "", array("size" => 24, "class" => "textlite")), '</div>',
+            '</div>';
+    }
+    if (@$Opt["contactdb_dsn"] && @$Opt["contactdb_loginFormHeading"])
+        echo $Opt["contactdb_loginFormHeading"];
+    echo '<div class="f-i"><div class="f-ix">
+  <div class="', fcclass("password"), '">New password</div>
+  <div class="', feclass("password"), '">', Ht::password("upassword", "", array("size" => 24, "class" => "textlite fn"));
     if ($Me->privChair && $Acct->password_type == 0)
-        echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upasswordt', 'password'), "\" />";
-    echo "</div>
-</div><div class='fn f-ix'>
-  <div class='", fcclass('password'), "'>Repeat password</div>
-  <div class='", feclass('password'), "'>", textinput("upassword2", "", 24, false, true), "</div>
+        echo Ht::entry("upasswordt", crpformvalue("upasswordt", "password"), array("size" => 24, "class" => "textlite fx"));
+    echo '</div>
+</div><div class="fn f-ix">
+  <div class="', fcclass("password"), '">Repeat new password</div>
+  <div class="', feclass("password"), '">', Ht::password("upassword2", "", array("size" => 24, "class" => "textlite")), "</div>
 </div>\n";
     if ($Acct->password_type == 0
         && ($Me->privChair || Contact::password_cleartext())) {
@@ -609,7 +640,8 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
         }
         echo "</div>\n";
     }
-    echo "  <div class='clear'></div></div>\n\n";
+    echo '  <div class="clear"></div>';
+    echo "</div></div>\n\n";
 }
 
 
