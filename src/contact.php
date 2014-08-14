@@ -641,13 +641,13 @@ class Contact {
     }
 
     function save() {
-        global $Conf, $Now;
+        global $Conf, $Now, $Opt;
         $this->trim();
         $inserting = !$this->contactId;
         $qf = array();
         foreach (array("firstName", "lastName", "email", "affiliation",
                        "voicePhoneNumber", "password", "collaborators",
-                       "roles", "defaultWatch") as $k)
+                       "roles", "defaultWatch", "passwordTime") as $k)
             $qf[] = "$k='" . sqlq($this->$k) . "'";
         if ($this->preferredEmail != "")
             $qf[] = "preferredEmail='" . sqlq($this->preferredEmail) . "'";
@@ -687,6 +687,16 @@ class Contact {
             $query = "insert into ContactAddress (contactId, addressLine1, addressLine2, city, state, zipCode, country) values ($this->contactId, '" . sqlq($this->addressLine1) . "', '" . sqlq($this->addressLine2) . "', '" . sqlq($this->city) . "', '" . sqlq($this->state) . "', '" . sqlq($this->zipCode) . "', '" . sqlq($this->country) . "')";
             $result = $Conf->qe($query);
         }
+
+        // add to contact database
+        if (@$Opt["contactdb_dsn"] && ($cdb = self::contactdb())) {
+            edb_ql($cdb, "insert into ContactInfo set firstName=??, lastName=??, email=??, affiliation=?? on duplicate key update firstName=values(firstName), lastName=values(lastName), affiliation=values(affiliation)",
+                   $this->firstName, $this->lastName, $this->email, $this->affiliation);
+            if ($this->password_plaintext
+                && ($cdb_user = self::contactdb_find_by_email($this->email)))
+                $cdb_user->change_password($this->password_plaintext, true);
+        }
+
         return $result;
     }
 
