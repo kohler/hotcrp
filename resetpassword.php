@@ -43,9 +43,10 @@ if (isset($_REQUEST["go"]) && check_post()) {
     else {
         $Acct->change_password($_REQUEST["upassword"], true);
         $Acct->log_activity("Reset password");
-        $Conf->infoMsg("Your password has been changed and you are now signed in to the conference site.");
+        $Conf->confirmMsg("Your password has been changed. You may now sign in to the conference site.");
         $capmgr->delete($capdata);
-        go(hoturl("index", "email=" . urlencode($Acct->email) . "&password=" . urlencode($_REQUEST["upassword"])));
+        $Conf->save_session("password_reset", (object) array("time" => $Now, "email" => $Acct->email, "password" => $_REQUEST["upassword"]));
+        go(hoturl("index"));
     }
     $password_class = " error";
 }
@@ -92,7 +93,7 @@ echo "</div>
   <div class='f-c", $password_class, "'>Password (again)</div>
   <div class='f-e'><input id='login_d' type='password' class='textlite' name='upassword2' size='36' tabindex='1' value='' /></div>
 </div></td></tr>
-<tr><td></td><td style='padding-top:1em'>
+<tr><td colspan='2' style='padding-top:1em'>
 <div class='f-i'>",
     Ht::submit("go", "Reset password", array("tabindex" => 1)),
     "</div></td>

@@ -260,6 +260,8 @@ Sign in to submit or review papers.";
         "<div class=\"f-contain\">";
     if ($Me->is_empty() || isset($_REQUEST["signin"]))
         echo Ht::hidden("testsession", 1);
+    if (($password_reset = $Conf->session("password_reset")))
+        $Conf->save_session("password_reset", null);
     echo "<div class='f-ii'>
   <div class='f-c", $email_class, "'>",
         (isset($Opt["ldapLogin"]) ? "Username" : "Email"),
@@ -269,13 +271,20 @@ Sign in to submit or review papers.";
         " type='text' class='textlite' name='email' size='36' tabindex='1' ";
     if (isset($_REQUEST["email"]))
         echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" ";
+    else if ($password_reset)
+        echo "value=\"", htmlspecialchars($password_reset->email), "\" ";
     echo " /></div>
 </div>
 <div class='f-i'>
   <div class='f-c", $password_class, "'>Password</div>
   <div class='f-e'><input",
         ($passwordFocus ? " id='login_d'" : ""),
-        " type='password' class='textlite' name='password' size='36' tabindex='1' value='' /></div>
+        " type='password' class='textlite' name='password' size='36' tabindex='1'";
+    if ($password_reset)
+        echo " value=\"", htmlspecialchars($password_reset->password), "\"";
+    else
+        echo " value=\"\"";
+    echo " /></div>
 </div>\n";
     if (isset($Opt["ldapLogin"]))
         echo Ht::hidden("action", "login");
