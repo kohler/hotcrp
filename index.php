@@ -260,6 +260,8 @@ Sign in to submit or review papers.";
         "<div class=\"f-contain\">";
     if ($Me->is_empty() || isset($_REQUEST["signin"]))
         echo Ht::hidden("testsession", 1);
+    if (@$Opt["loginFormHeading"])
+        echo $Opt["loginFormHeading"];
     if (($password_reset = $Conf->session("password_reset")))
         $Conf->save_session("password_reset", null);
     echo "<div class='f-ii'>
