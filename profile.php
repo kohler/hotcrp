@@ -201,9 +201,9 @@ function save_user($cj, $user_status) {
         else if (!validate_email($cj->email))
             return $user_status->set_error("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
         if (!$newProfile && !$Me->privChair) {
-            $capmgr = $Conf->capability_manager(CAPTYPE_CHANGEEMAIL);
+            $capmgr = $Conf->capability_manager($Acct);
             $rest = array("emailTo" => $cj->email,
-                          "capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("contactId" => $Acct->contactId, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $cj->email)))));
+                          "capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("user" => $Acct, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $cj->email)))));
             $prep = Mailer::prepareToSend("@changeemail", null, $Acct, $rest);
             if ($prep["allowEmail"]) {
                 Mailer::sendPrepared($prep);

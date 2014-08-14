@@ -2199,7 +2199,8 @@ class Conference {
         global $Opt;
         if (@$Opt["contactdb_dsn"]
             && ($cdb = Contact::contactdb())
-            && (!is_string($for) || substr($for, 0, 1) === "U"))
+            && ((is_string($for) && substr($for, 0, 1) === "U")
+                || ($for instanceof Contact && $for->contactDbId)))
             return new CapabilityManager($cdb, "U");
         else
             return new CapabilityManager($this->dblink, "");

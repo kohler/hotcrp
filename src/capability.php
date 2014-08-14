@@ -16,6 +16,8 @@ class CapabilityManager {
     public function create($capabilityType, $options = array()) {
         global $Opt;
         $contactId = defval($options, "contactId", 0);
+        if (!$contactId && ($user = @$options["user"]))
+            $contactId = $this->prefix === "U" ? $user->contactDbId : $user->contactId;
         $paperId = defval($options, "paperId", 0);
         $timeExpires = defval($options, "timeExpires", time() + 259200);
         $salt = hotcrp_random_bytes(24);
