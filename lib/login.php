@@ -177,17 +177,11 @@ class LoginHelper {
             }
 
             // maybe update database passwords
-            if ($user && (!$user_match || $user->check_password_encryption(false))) {
-                $user->change_password($password);
-                edb_ql($Conf->dblink, "update ContactInfo set password=?? where contactId=??",
-                       $user->password, $user->contactId);
-            }
+            if ($user && (!$user_match || $user->check_password_encryption(false)))
+                $user->change_password($password, true);
             if ($cdb_user && !$cdb_user->disable_shared_password
-                && (!$cdb_match || $cdb_user->check_password_encryption(false))) {
-                $cdb_user->change_password($password);
-                edb_ql(Contact::contactdb(), "update ContactInfo set password=?? where contactDbId=??",
-                       $cdb_user->password, $cdb_user->contactDbId);
-            }
+                && (!$cdb_match || $cdb_user->check_password_encryption(false)))
+                $cdb_user->change_password($password, true);
         }
 
         // mark activity

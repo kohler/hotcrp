@@ -5,18 +5,23 @@
 
 require_once("src/initweb.php");
 if (!isset($_REQUEST["resetcap"])
-    && preg_match(',\A/(1[-\w]+)(?:/|\z),i', Navigation::path(), $m))
+    && preg_match(',\A/(U?1[-\w]+)(?:/|\z),i', Navigation::path(), $m))
     $_REQUEST["resetcap"] = $m[1];
 
 if (!isset($_REQUEST["resetcap"]))
     error_go(false, "You didn’t enter the full password reset link into your browser. Make sure you include the reset code (the string of letters, numbers, and other characters at the end).");
 
+$iscdb = substr($_REQUEST["resetcap"], 0, 1) === "U";
 $capmgr = $Conf->capability_manager($_REQUEST["resetcap"]);
 $capdata = $capmgr->check($_REQUEST["resetcap"]);
 if (!$capdata || $capdata->capabilityType != CAPTYPE_RESETPASSWORD)
     error_go(false, "That password reset code has expired, or you didn’t enter it correctly.");
 
-if (!($Acct = Contact::find_by_id($capdata->contactId)))
+if ($iscdb)
+    $Acct = Contact::contactdb_find_by_id($capdata->contactId);
+else
+    $Acct = Contact::find_by_id($capdata->contactId);
+if (!$Acct)
     error_go(false, "That password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
 
 if (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]))
@@ -36,8 +41,7 @@ if (isset($_REQUEST["go"]) && check_post()) {
     else if (trim($_REQUEST["upassword"]) != $_REQUEST["upassword"])
         $Conf->errorMsg("Passwords cannot begin or end with spaces.");
     else {
-        $Acct->change_password($_REQUEST["upassword"]);
-        $Conf->q("update ContactInfo set password='" . sqlq($Acct->password) . "' where contactId=" . $Acct->contactId);
+        $Acct->change_password($_REQUEST["upassword"], true);
         $Acct->log_activity("Reset password");
         $Conf->infoMsg("Your password has been changed and you are now signed in to the conference site.");
         $capmgr->delete($capdata);

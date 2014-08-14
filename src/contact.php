@@ -294,6 +294,14 @@ class Contact {
             return null;
     }
 
+    static public function contactdb_find_by_id($cid) {
+        if (($cdb = self::contactdb())
+            && ($result = edb_ql($cdb, "select * from ContactInfo where contactDbId=??", $cid)))
+            return new Contact($result->fetch_object());
+        else
+            return null;
+    }
+
     public function contactdb_update() {
         global $Opt;
         if (!($dblink = self::contactdb()) || !$this->has_database_account())
@@ -795,7 +803,7 @@ class Contact {
                     $reg->$k = $cdb_user->$k;
 
         if (($password = @trim($reg->password)) !== "")
-            $this->change_password($password);
+            $this->change_password($password, false);
         else if ($cdb_user && $cdb_user->password
                  && !$cdb_user->disable_shared_password)
             $this->set_encoded_password($cdb_user->password);
@@ -2115,7 +2123,8 @@ class Contact {
     public function check_password_encryption($is_change) {
         global $Opt;
         if ($Opt["safePasswords"] < 1
-            || ($Opt["safePasswords"] == 1 && !$is_change))
+            || ($Opt["safePasswords"] == 1 && !$is_change)
+            || !function_exists("hash_hmac"))
             return false;
         if ($this->password_type == 0)
             return true;
@@ -2125,22 +2134,29 @@ class Contact {
             && !str_starts_with($this->password, $expected_prefix . " ");
     }
 
-    public function change_password($new_password) {
+    public function change_password($new_password, $save) {
         global $Conf, $Opt;
-        $this->password_plaintext = $new_password;
-        if ($this->check_password_encryption(true))
+        // set password fields
+        $this->password_type = 0;
+        if ($new_password && $this->check_password_encryption(true))
             $this->password_type = 1;
-        if ($this->password_type == 1 && function_exists("hash_hmac")) {
+        if (!$new_password)
+            $new_password = self::random_password();
+        $this->password_plaintext = $new_password;
+        if ($this->password_type == 1) {
             $keyid = $this->preferred_password_keyid();
             $key = self::password_hmac_key($keyid);
             $hash_method = self::password_hash_method();
             $salt = hotcrp_random_bytes(16);
             $this->password = " " . $hash_method . " " . $keyid . " " . $salt
                 . hash_hmac($hash_method, $salt . $new_password, $key, true);
-        } else {
+        } else
             $this->password = $new_password;
-            $this->password_type = 0;
-        }
+        // save possibly-encrypted password
+        if ($save && $this->contactId)
+            edb_ql($Conf->dblink, "update ContactInfo set password=?? where contactId=??", $this->password, $this->contactId);
+        if ($save && $this->contactDbId)
+            edb_ql(self::contactdb(), "update ContactInfo set password=?? where contactDbId=??", $this->password, $this->contactDbId);
     }
 
     static function random_password($length = 14) {

@@ -11,12 +11,8 @@ class UserActions {
         $result = $Conf->qe("select * from ContactInfo where $where and contactId" . sql_in_numeric_set($ids));
         while (($row = edb_orow($result))) {
             $Acct = Contact::make($row);
-            if ($dopassword) {
-                $Acct->password = Contact::random_password();
-                $Acct->password_type = 0;
-                $Acct->password_plaintext = $Acct->password;
-                $Conf->qe("update ContactInfo set password='" . sqlq($Acct->password) . "' where contactId=" . $Acct->contactId);
-            }
+            if ($dopassword)
+                $Acct->change_password(null, true);
             if ($sendtype && $Acct->password != "" && !$Acct->disabled)
                 $Acct->sendAccountInfo($sendtype, false);
             else if ($sendtype)
