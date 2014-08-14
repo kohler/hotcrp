@@ -138,16 +138,15 @@ class LoginHelper {
         }
 
         // if no user found, then fail
-        if (!$user && !$cdb_user) {
+        $user_password = $user ? $user->password : "";
+        $cdb_password = $cdb_user && !$cdb_user->disable_shared_password ? $cdb_user->password : "";
+        if (!$user && !$cdb_password) {
             $email_class = " error";
-            return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . " exists. Did you enter the correct email address?");
+            return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . ". Did you enter the correct email address?");
         }
 
         // if user disabled, then fail
-        $user_password = $user ? $user->password : "";
-        $cdb_password = $cdb_user && !$cdb_user->disable_shared_password ? $cdb_user->password : "";
-        if (($user && $user->disabled)
-            || ($user_password == "" && $cdb_password == "" && !$external_login))
+        if ($user && ($user->disabled || $user_password == "") && !$external_login)
             return $Conf->errorMsg("Your account is disabled. Contact the site administrator for more information.");
 
         // maybe reset password
