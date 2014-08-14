@@ -471,7 +471,7 @@ function echofield($type, $classname, $captiontext, $entrytext) {
 function textinput($name, $value, $size, $id = false, $password = false) {
     return "<input type=\"" . ($password ? "password" : "text")
         . "\" class=\"textlite\" name=\"$name\" " . ($id ? "id=\"$id\" " : "")
-        . "size=\"$size\" value=\"$value\" onchange=\"hiliter(this)\" />";
+        . "size=\"$size\" value=\"$value\" />";
 }
 
 
@@ -588,9 +588,9 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
     && $Me->can_change_password($Acct)) {
     echo "<div style='margin-top:20px'></div><div class='f-i'><div class='f-ix'>
   <div class='", fcclass('password'), "'>New password</div>
-  <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"\" onchange='hiliter(this)' />";
+  <div class='", feclass('password'), "'><input class='textlite fn' type='password' name='upassword' size='24' value=\"\" />";
     if ($Me->privChair && $Acct->password_type == 0)
-        echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upasswordt', 'password'), "\" onchange='hiliter(this)' />";
+        echo "<input class='textlite fx' type='text' name='upasswordt' size='24' value=\"", crpformvalue('upasswordt', 'password'), "\" />";
     echo "</div>
 </div><div class='fn f-ix'>
   <div class='", fcclass('password'), "'>Repeat password</div>
@@ -623,7 +623,7 @@ name,email,affiliation
 John Adams,john@earbox.org,UC Berkeley
 \"Adams, John Quincy\",quincy@whitehouse.gov
 </pre>\n",
-        "<div class='g'></div>Upload: <input type='file' name='bulk' size='30' onchange='hiliter(this)' />",
+        "<div class='g'></div>Upload: <input type='file' name='bulk' size='30' />",
         "</td></tr></table></div>\n\n";
 }
 
@@ -656,7 +656,7 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
                    "pc" => "PC member",
                    "no" => "Not on the PC") as $k => $v) {
         echo Ht::radio_h("pctype", $k, $pcrole === $k,
-                          array("id" => "pctype_$k", "onchange" => "hiliter(this);fold('account',\$\$('pctype_no').checked,1)")),
+                          array("id" => "pctype_$k", "onchange" => "fold('account',\$\$('pctype_no').checked,1)")),
             "&nbsp;", Ht::label($v), "<br />\n";
     }
 
@@ -679,7 +679,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     We use this information when assigning reviews.
     For example: &ldquo;<tt>Ping Yen Zhang (INRIA)</tt>&rdquo;
     or, for a whole institution, &ldquo;<tt>INRIA</tt>&rdquo;.</div>
-    <textarea class='textlite' name='collaborators' rows='5' cols='50' onchange='hiliter(this)'>", crpformvalue("collaborators"), "</textarea></td>
+    <textarea class='textlite' name='collaborators' rows='5' cols='50'>", crpformvalue("collaborators"), "</textarea></td>
 </tr>\n\n";
 
     $topics = $Conf->topic_map();
@@ -792,5 +792,6 @@ foreach ($buttons as $b) {
 echo "    </tr>\n    </table></div></td>\n</tr>
 </table></div></form>\n";
 
+$Conf->footerScript("hiliter_children('#accountform');jQuery('textarea').autogrow()");
 $Conf->footerScript("crpfocus(\"account\")");
 $Conf->footer();

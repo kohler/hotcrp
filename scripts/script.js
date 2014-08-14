@@ -534,7 +534,7 @@ function hiliter(elt, off) {
 
 function hiliter_children(form) {
     jQuery(form).find("input, select, textarea").on("change", hiliter)
-        .on("keyup", hiliter);
+        .on("input", hiliter);
 }
 
 var foldmap = {};
