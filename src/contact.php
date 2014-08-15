@@ -307,18 +307,23 @@ class Contact {
     }
 
     public function contactdb_update() {
-        global $Opt;
+        global $Opt, $Now;
         if (!($dblink = self::contactdb()) || !$this->has_database_account())
             return false;
-        $idquery = edb_format_query($dblink, "select contactDbId, confid from ContactInfo join Conferences where email='?' and `dbname`=??", $this->email, $Opt["dbName"]);
+        $idquery = edb_format_query($dblink, "select ContactInfo.contactDbId, Conferences.confid, roles
+            from ContactInfo join Conferences
+            left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)
+            where email='?' and `dbname`=??", $this->email, $Opt["dbName"]);
         $result = $dblink->query($idquery);
-        if (!($result && $result->num_rows)) {
+        $row = edb_row($result);
+        if (!$row) {
             $result = edb_ql($dblink, "insert into ContactInfo set firstName=??, lastName=??, email=??, affiliation=?? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation);
             $result = $dblink->query($idquery);
-        }
-        if ($result && $result->num_rows) {
             $row = edb_row($result);
-            $result = edb_ql($dblink, "insert into Roles set contactDbId=??, confid=??, roles=?? on duplicate key update roles=values(roles)", $row[0], $row[1], $this->all_roles());
+        }
+
+        if ($row && (int) $row[2] != $this->all_roles()) {
+            $result = edb_ql($dblink, "insert into Roles set contactDbId=??, confid=??, roles=??, updated_at=?? on duplicate key update roles=values(roles), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), $Now);
             return !!$result;
         } else
             return false;
