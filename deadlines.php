@@ -32,6 +32,17 @@ if (@$_REQUEST["checktracker"]) {
     $tracker = @$dl["tracker"] ? $dl["tracker"] : $Conf->setting_json("tracker");
     $dl["tracker_status"] = MeetingTracker::tracker_status($tracker);
 }
+if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb())) {
+    $dl["conflist"] = array();
+    $result = edb_ql($cdb, "select c.confid, siteclass, shortName, url
+        from Roles r join Conferences c on (c.confid=r.confid)
+        join ContactInfo u on (u.contactDbId=r.contactDbId)
+        where u.email=?? order by r.updated_at desc", $Me->email);
+    while (($row = edb_orow($result))) {
+        $row->confid = (int) $row->confid;
+        $dl["conflist"][] = $row;
+    }
+}
 if (@$_REQUEST["ajax"]) {
     $dl["ok"] = true;
     $Conf->ajaxExit($dl);
