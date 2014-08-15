@@ -187,8 +187,8 @@ setlocale(LC_CTYPE, "C");
 
 
 // Set up conference options (also used in mailer.php)
-function read_included_options($files) {
-    global $Opt, $ConfSitePATH;
+function read_included_options($sitedir, $files) {
+    global $Opt;
     if (is_string($files))
         $files = array($files);
     $confname = @$Opt["confid"] ? : @$Opt["dbName"];
@@ -198,7 +198,7 @@ function read_included_options($files) {
         if (preg_match(',[\[\]\*\?],', $f)) {
             if ($cwd === null) {
                 $cwd = getcwd();
-                if (!chdir($ConfSitePATH)) {
+                if (!chdir($sitedir)) {
                     $Opt["missing"][] = $f;
                     break;
                 }
@@ -207,7 +207,7 @@ function read_included_options($files) {
         } else
             $flist = array($f);
         foreach ($flist as $f) {
-            $f = ($f[0] == "/" ? $f : "$ConfSitePATH/$f");
+            $f = ($f[0] == "/" ? $f : "$sitedir/$f");
             if (!@include $f)
                 $Opt["missing"][] = $f;
         }
@@ -232,7 +232,7 @@ if (!@$Opt["loaded"]) {
         multiconference_init();
     }
     if (@$Opt["include"])
-        read_included_options($Opt["include"]);
+        read_included_options($ConfSitePATH, $Opt["include"]);
 }
 if (!@$Opt["loaded"] || @$Opt["missing"]) {
     require_once("$ConfSitePATH/src/multiconference.php");

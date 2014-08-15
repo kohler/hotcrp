@@ -1011,4 +1011,4 @@ if ((@include "$ConfSitePATH/conf/mailtemplate-local.php") !== false
     || (@include "$ConfSitePATH/Code/mailtemplate-local.inc") !== false)
     /* do nothing */;
 if (@$Opt["mailtemplate_include"])
-    read_included_options($Opt["mailtemplate_include"]);
+    read_included_options($ConfSitePATH, $Opt["mailtemplate_include"]);
