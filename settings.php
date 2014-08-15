@@ -937,6 +937,11 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Conf->qe("unlock tables");
         $Me->log_activity("Updated settings group '$Group'");
         $Conf->load_settings();
+
+        // contactdb may need to hear about changes to shortName
+        if (array_key_exists("opt.shortName", $Values)
+            && @$Opt["contactdb_dsn"] && ($cdb = Contact::contactdb()))
+            edb_ql($cdb, "update Conferences set shortName=?? where dbName=??", $Opt["shortName"], $Opt["dbName"]);
     }
 
     // report errors
