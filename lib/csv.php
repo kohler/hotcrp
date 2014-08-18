@@ -164,7 +164,7 @@ class CsvParser {
                     $pos = $linelen;
                 $field = substr($line, $bpos, $pos - $bpos);
             }
-            if ($header && $i < count($header))
+            if (@((string) $header[$i]) !== "")
                 $a[$header[$i]] = $field;
             else
                 $a[$i] = $field;
@@ -184,7 +184,7 @@ class CsvParser {
             if ($pos === false)
                 $pos = $linelen;
             $field = substr($line, $bpos, $pos - $bpos);
-            if ($header && $i < count($header))
+            if (@((string) $header[$i]) !== "")
                 $a[$header[$i]] = $field;
             else
                 $a[$i] = $field;
@@ -206,7 +206,7 @@ class CsvParser {
             if ($pos === false)
                 $pos = $linelen;
             $field = substr($line, $bpos, $pos - $bpos);
-            if ($header && $i < count($header))
+            if (@((string) $header[$i]) !== "")
                 $a[$header[$i]] = $field;
             else
                 $a[$i] = $field;
@@ -221,7 +221,7 @@ class CsvParser {
         $i = 0;
         $a = array();
         foreach ($line as $field) {
-            if ($header && $i < count($header))
+            if (@((string) $header[$i]) !== "")
                 $a[$header[$i]] = $field;
             else
                 $a[$i] = $field;
