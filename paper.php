@@ -75,8 +75,8 @@ if (!$newPaper) {
 
 // paper actions
 if (isset($_REQUEST["clickthrough"]) && check_post()) {
-    if (@$_REQUEST["clickthrough_accept"])
-        $Me->save_data("clickthrough_" . $_REQUEST["clickthrough"], $Now);
+    if (@$_REQUEST["clickthrough_accept"] && @$_REQUEST["clickthrough_sha1"])
+        $Me->merge_and_save_data(array("clickthrough" => array($_REQUEST["clickthrough_sha1"] => $Now)));
     else if (@$_REQUEST["clickthrough_decline"])
         $Conf->errorMsg("You can’t edit a paper until you accept the submission terms.");
 }

@@ -1787,11 +1787,13 @@ class PaperTable {
 
     private function _echo_clickthrough($form, $ctype, $ctime) {
         global $Conf;
-        echo $form, "<div class='aahc'>", $Conf->setting_data("clickthrough_$ctype");
+        $data = $Conf->setting_data("clickthrough_$ctype");
+        echo $form, "<div class='aahc'>", $data;
         $buttons = array(Ht::submit("clickthrough_accept", "Accept", array("class" => "bb")),
                          Ht::submit("clickthrough_decline", "Decline", array("class" => "b")));
         echo "<div class='g'></div>",
             Ht::hidden("clickthrough", $ctype),
+            Ht::hidden("clickthrough_sha1", sha1($data)),
             Ht::hidden("clickthrough_time", $ctime),
             Ht::actions($buttons), "</div></form>";
     }
@@ -1875,9 +1877,14 @@ class PaperTable {
 
         $this->echoDivEnter();
         if ($this->editable) {
+            $need_clickthrough = false;
             if (!$Me->privChair
-                && @($ctime = $Conf->setting("clickthrough_submit"))
-                && @($Me->data("clickthrough_submit") < $ctime))
+                && @($clickthrough_msg = $Conf->setting_data("clickthrough_submit"))) {
+                $sha1 = sha1($clickthrough_msg);
+                $clickthrough = $Me->data("clickthrough");
+                $need_clickthrough = !$clickthrough || !@$clickthrough->$sha1;
+            }
+            if ($need_clickthrough)
                 $this->_echo_clickthrough($form, "submit", $ctime);
             else
                 $this->_echo_editable_body($form);

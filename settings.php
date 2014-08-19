@@ -172,7 +172,7 @@ function parseValue($name, $info) {
         else if ($v === $Conf->setting_data($name))
             return null;
         else
-            return ($v == "" ? 0 : array($Now, $v));
+            return ($v == "" ? 0 : array(1, $v));
     } else if ($info->type === "radio") {
         foreach ($info->values as $allowedv)
             if ((string) $allowedv === $v)

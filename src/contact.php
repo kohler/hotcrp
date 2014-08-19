@@ -97,7 +97,7 @@ class Contact {
         else if (isset($user->lastLogin))
             $this->activity_at = (int) $user->lastLogin;
         if (isset($user->data))
-            $this->data_ = $user->data;
+            $this->data_ = $user->data ? : (object) $user->data;
         if (isset($user->roles) || isset($user->isPC) || isset($user->isAssistant)
             || isset($user->isChair)) {
             $roles = (int) @$user->roles;
@@ -576,32 +576,54 @@ class Contact {
         return $new_ntokens != $old_ntokens;
     }
 
-    function data($key = null) {
+    private function make_data() {
         if ($this->data_ && is_string($this->data_))
-            $this->data_ = json_decode($this->data_, true);
-        if (!$key)
-            return $this->data_;
-        else if (!$this->data_)
-            return null;
+            $this->data_ = json_decode($this->data_);
+    }
+
+    function data($key = null) {
+        $this->make_data();
+        if ($key)
+            return @$this->data_->$key;
         else
-            return @$this->data_[$key];
+            return $this->data_;
+    }
+
+    private function encode_data() {
+        if ($this->data_ && ($t = json_encode($this->data_)) !== "{}")
+            return $t;
+        else
+            return null;
+    }
+
+    static private function merge_data_object(&$data, $value, $merge) {
+        if ($value === null)
+            unset($data);
+        else if ($merge && (is_array($value) || is_object($value))) {
+            if (!$data)
+                $data = (object) array();
+            foreach ($value as $k => $v)
+                self::merge_data_object($data->$k, $v, $merge);
+        } else
+            $data = $value;
     }
 
     function save_data($key, $value) {
         global $Conf;
-        if ($this->data_ && is_string($this->data_))
-            $this->data_ = json_decode($this->data_, true);
-        $old = $this->data_ ? json_encode($this->data_) : "NULL";
-        if ($value !== null) {
-            if (!$this->data_)
-                $this->data_ = array();
-            $this->data_[$key] = $value;
-        } else if ($this->data_) {
-            unset($this->data_[$key]);
-            if (!count($this->data_))
-                $this->data_ = null;
-        }
-        $new = $this->data_ ? json_encode($this->data_) : "NULL";
+        $this->make_data();
+        $old = $this->encode_data();
+        self::merge_data_object(@$this->data_->$key, $value, false);
+        $new = $this->encode_data();
+        if ($old !== $new)
+            $Conf->qe("update ContactInfo set data=" . ($this->data_ ? "'" . sqlq($new) . "'" : $new) . " where contactId=" . $this->contactId);
+    }
+
+    function merge_and_save_data($data) {
+        global $Conf;
+        $this->make_data();
+        $old = $this->encode_data();
+        self::merge_data_object(@$this->data_, (object) $data, true);
+        $new = $this->encode_data();
         if ($old !== $new)
             $Conf->qe("update ContactInfo set data=" . ($this->data_ ? "'" . sqlq($new) . "'" : $new) . " where contactId=" . $this->contactId);
     }
