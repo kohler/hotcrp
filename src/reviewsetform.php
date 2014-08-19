@@ -162,7 +162,7 @@ function rf_show() {
          . '<div id="revfield_$" class="f-contain foldo errloc_$">'
          . '<div class="f-i errloc_shortName_$">'
          .   '<div class="f-c">Field name</div>'
-         .   Ht::entry('shortName_$', "", array("size" => 50, "class" => "textlite", "style" => "font-weight:bold", "id" => 'shortName_$'))
+         .   Ht::entry('shortName_$', "", array("size" => 50, "style" => "font-weight:bold", "id" => 'shortName_$'))
          . '</div>'
          . '<div class="f-i fx">'
          . '<div class="f-ix">'

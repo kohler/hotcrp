@@ -1045,8 +1045,7 @@ function doTextRow($name, $text, $v, $size = 30,
                    $capclass = "lcaption", $tempText = "") {
     global $Conf;
     $settingname = (is_array($text) ? $text[0] : $text);
-    $js = array("class" => "textlite", "size" => $size,
-                "hottemptext" => $tempText);
+    $js = array("size" => $size, "hottemptext" => $tempText);
     echo "<tr><td class='$capclass nowrap'>", setting_label($name, $settingname), "</td><td class='lentry'>", Ht::entry($name, $v, $js);
     if (is_array($text) && isset($text[2]))
         echo $text[2];
@@ -1120,7 +1119,7 @@ function do_message($name, $description, $type, $rows = 10, $hint = "") {
         expander(null, 0), setting_label($name, $description),
         '</a> <span class="f-cx fx">(HTML allowed)</span></div>',
         $hint,
-        '<textarea class="textlite fx" name="', $name, '" cols="80"',
+        '<textarea class="fx" name="', $name, '" cols="80"',
         ' rows="', $rows, '">',
         htmlspecialchars($current),
         '</textarea></div><div class="g"></div>', "\n";
@@ -1130,7 +1129,7 @@ function doInfoGroup() {
     global $Conf, $Opt;
 
     echo '<div class="f-c">', setting_label("opt.shortName", "Conference abbreviation"), "</div>\n",
-        Ht::entry("opt.shortName", opt_data("shortName"), array("class" => "textlite", "size" => 20)),
+        Ht::entry("opt.shortName", opt_data("shortName"), array("size" => 20)),
         '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>',
         '<div class="g"></div>', "\n";
 
@@ -1138,29 +1137,29 @@ function doInfoGroup() {
     if ($long == opt_data("shortName"))
         $long = "";
     echo "<div class='f-c'>", setting_label("opt.longName", "Conference name"), "</div>\n",
-        Ht::entry("opt.longName", $long, array("class" => "textlite", "size" => 70, "hottemptext" => "(same as abbreviation)")),
+        Ht::entry("opt.longName", $long, array("size" => 70, "hottemptext" => "(same as abbreviation)")),
         '<div class="f-h">Example: “14th Workshop on Hot Topics in Operating Systems”</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
     echo '<div class="f-c">', setting_label("opt.contactName", "Name of site contact"), "</div>\n",
-        Ht::entry("opt.contactName", opt_data("contactName", null, "Your Name"), array("class" => "textlite", "size" => 50)),
+        Ht::entry("opt.contactName", opt_data("contactName", null, "Your Name"), array("size" => 50)),
         '<div class="g"></div>', "\n";
 
     echo "<div class='f-c'>", setting_label("opt.contactEmail", "Email of site contact"), "</div>\n",
-        Ht::entry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), array("class" => "textlite", "size" => 40)),
+        Ht::entry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), array("size" => 40)),
         '<div class="f-h">The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
     echo '<div class="f-c">', setting_label("opt.emailReplyTo", "Reply-To field for email"), "</div>\n",
-        Ht::entry("opt.emailReplyTo", opt_data("emailReplyTo"), array("class" => "textlite", "size" => 80, "hottemptext" => "(none)")),
+        Ht::entry("opt.emailReplyTo", opt_data("emailReplyTo"), array("size" => 80, "hottemptext" => "(none)")),
         '<div class="g"></div>', "\n";
 
     echo '<div class="f-c">', setting_label("opt.emailCc", "Default Cc for reviewer email"), "</div>\n",
-        Ht::entry("opt.emailCc", opt_data("emailCc"), array("class" => "textlite", "size" => 80, "hottemptext" => "(none)")),
+        Ht::entry("opt.emailCc", opt_data("emailCc"), array("size" => 80, "hottemptext" => "(none)")),
         '<div class="f-h">This applies to email sent to reviewers and email sent using the <a href="', hoturl("mail"), '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.</div>';
 }
 
@@ -1273,13 +1272,13 @@ function doOptGroupOption($o) {
         setting_label("optn$id", ($id === "n" ? "New option name" : "Option name")),
         "</div>",
         "<div class='f-e'>",
-        Ht::entry("optn$id", $o->name, array("class" => "textlite", "hottemptext" => "(Enter new option)", "size" => 50)),
+        Ht::entry("optn$id", $o->name, array("hottemptext" => "(Enter new option)", "size" => 50)),
         "</div>\n",
         "  <div class='f-i'>",
         "<div class='f-c'>",
         setting_label("optd$id", "Description"),
         "</div>",
-        "<div class='f-e'><textarea class='textlite' name='optd$id' rows='2' cols='50'>", htmlspecialchars($o->description), "</textarea></div>",
+        "<div class='f-e'><textarea name='optd$id' rows='2' cols='50'>", htmlspecialchars($o->description), "</textarea></div>",
         "</div></td>";
 
     if ($id !== "n") {
@@ -1379,7 +1378,7 @@ function doOptGroupOption($o) {
     echo "<div id='foldoptv$id' class='", (PaperOption::type_has_selector($optvt) ? "foldo" : "foldc"),
         "'><div class='fx'>",
         "<div class='hint' style='margin-top:1ex'>Enter choices one per line.  The first choice will be the default.</div>",
-        "<textarea class='textlite' name='optv$id' rows='", $rows, "' cols='50'>", htmlspecialchars($value), "</textarea>",
+        "<textarea name='optv$id' rows='", $rows, "' cols='50'>", htmlspecialchars($value), "</textarea>",
         "</div></div>";
 
     echo "</div></td></tr>\n";
@@ -1433,7 +1432,7 @@ function doOptGroup() {
         if (count($Error) > 0 && isset($_REQUEST["top$tid"]))
             $tname = $_REQUEST["top$tid"];
         echo '<tr>', $td1, '<td class="lentry">',
-            Ht::entry("top$tid", $tname, array("size" => 40, "class" => "textlite", "style" => "width:20em")),
+            Ht::entry("top$tid", $tname, array("size" => 40, "style" => "width:20em")),
             '</td>';
 
         $tinterests = defval($interests, $tid, array());
@@ -1459,7 +1458,7 @@ function doOptGroup() {
         $td1 = "<td></td>";
     }
     echo '<tr><td class="lcaption top" rowspan="40">New<br><span class="hint">Enter one topic per line.</span></td><td class="lentry top">',
-        Ht::textarea("topnew", count($Error) ? @$_REQUEST["topnew"] : "", array("cols" => 40, "rows" => 2, "style" => "width:20em", "class" => "textlite")),
+        Ht::textarea("topnew", count($Error) ? @$_REQUEST["topnew"] : "", array("cols" => 40, "rows" => 2, "style" => "width:20em")),
         '</td></tr></table>';
 }
 
@@ -1484,7 +1483,7 @@ function do_track_permission($type, $question, $tnum, $thistrack) {
                    array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0})")),
         " &nbsp;",
         Ht::entry("${type}tag_track$tnum", $ttag,
-                  array("class" => "fx textlite",
+                  array("class" => "fx",
                         "id" => "${type}tag_track$tnum",
                         "hottemptext" => "(tag)")),
         "</td></tr>";
@@ -1499,7 +1498,7 @@ function do_track($trackname, $tnum) {
         echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
     else
         echo "For papers with tag &nbsp;",
-            Ht::entry("name_track$tnum", $trackname, array("class" => "textlite", "id" => "name_track$tnum", "hottemptext" => "(tag)")), ":";
+            Ht::entry("name_track$tnum", $trackname, array("id" => "name_track$tnum", "hottemptext" => "(tag)")), ":";
     echo "</div>\n";
 
     $t = $Conf->setting_json("tracks");
@@ -1599,7 +1598,7 @@ function doRevGroup() {
         $v = join(" ", array_keys($tagger->chair_tags()));
     echo "<td>",
         Ht::hidden("has_tag_chair", 1),
-        "<input type='text' class='textlite' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='40' /><br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
+        "<input type='text' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='40' /><br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lcaption'>", setting_label("tag_vote", "Voting tags"), "</td>";
     if (count($Error) > 0)
@@ -1612,7 +1611,7 @@ function doRevGroup() {
     }
     echo "<td>",
         Ht::hidden("has_tag_vote", 1),
-        Ht::entry("tag_vote", $v, array("class" => "textlite", "size" => 40)),
+        Ht::entry("tag_vote", $v, array("size" => 40)),
         "<br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lcaption'>", setting_label("tag_rank", "Ranking tag"), "</td>";
@@ -1622,7 +1621,7 @@ function doRevGroup() {
         $v = $Conf->setting_data("tag_rank", "");
     echo "<td>",
         Ht::hidden("has_tag_rank", 1),
-        Ht::entry("tag_rank", $v, array("class" => "textlite", "size" => 40)),
+        Ht::entry("tag_rank", $v, array("size" => 40)),
         "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
     echo "</table>";
 
@@ -1644,7 +1643,7 @@ function doRevGroup() {
         else
             $v = "";
         $tag_colors_open += ($v !== "");
-        $tag_colors_rows[] = "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' class='textlite' name='tag_color_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
+        $tag_colors_rows[] = "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' name='tag_color_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
     }
     echo "<div class='g'></div>\n";
     echo "<table id='foldtag_color' class='",
@@ -1738,7 +1737,7 @@ function doDecGroup() {
             if (count($Error) > 0)
                 $v = defval($_REQUEST, "dec$k", $v);
             echo "<tr>$caption<td class='lentry nowrap'>",
-                "<input type='text' class='textlite' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' />",
+                "<input type='text' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' />",
                 " &nbsp; ", ($k > 0 ? "Accept class" : "Reject class"), "</td>";
             if (isset($decs_pcount[$k]) && $decs_pcount[$k])
                 echo "<td class='lentry nowrap'>", plural($decs_pcount[$k], "paper"), "</td>";
@@ -1758,7 +1757,7 @@ function doDecGroup() {
         "<br /></td>",
         "<td class='lentry nowrap'>",
         Ht::hidden("has_decisions", 1),
-        "<input type='text' class='textlite' name='decn' value=\"", htmlspecialchars($v), "\" size='35' /> &nbsp; ",
+        "<input type='text' name='decn' value=\"", htmlspecialchars($v), "\" size='35' /> &nbsp; ",
         Ht::select("dtypn", array(1 => "Accept class", -1 => "Reject class"), $vclass),
         "<br /><small>Examples: “Accepted as short paper”, “Early reject”</small>",
         "</td>";

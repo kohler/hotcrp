@@ -185,7 +185,7 @@ if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = "s";
 $q = (defval($_REQUEST, "q", "") == "" ? "(All)" : $_REQUEST["q"]);
 echo "<tr><td>Paper selection: &nbsp;</td>",
-    "<td><input id='manualassignq' class='textlite temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onchange='hiliter(this)' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
+    "<td><input id='manualassignq' class='temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onchange='hiliter(this)' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "hiliter(this)")),
     "</td></tr>\n",
     "<tr><td colspan='2'><div class='g'></div>\n";
@@ -203,7 +203,7 @@ if ($kind == "a") {
         "<tr><td>",
         (isset($Error["rev_roundtag"]) ? "<span class='error'>" : ""),
         "Review round: &nbsp;</td>",
-        "<td><input id='assrevroundtag' class='textlite temptextoff' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" />",
+        "<td><input id='assrevroundtag' class='temptextoff' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" />",
         (isset($Error["rev_roundtag"]) ? "</span>" : ""),
         " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a>\n",
         "</td></tr>";

@@ -681,7 +681,7 @@ class PreferencePaperColumn extends PaperColumn {
         else if ($row->reviewerConflictType > 0)
             return "N/A";
         else
-            return "<input class='textlite' type='text' size='4' name='revpref$row->paperId' id='revpref$row->paperId' value=\"$pref\" tabindex='2' />";
+            return "<input type='text' size='4' name='revpref$row->paperId' id='revpref$row->paperId' value=\"$pref\" tabindex='2' />";
     }
     public function text($pl, $row) {
         return @($row->reviewerPreference + 0);
@@ -955,7 +955,7 @@ class EditTagPaperColumn extends TagPaperColumn {
             return "<input type='checkbox' class='cb' name='tag:$this->dtag $row->paperId' value='x' tabindex='6'"
                 . ($v !== null ? " checked='checked'" : "") . " />";
         else
-            return "<input type='text' class='textlite' size='4' name='tag:$this->dtag $row->paperId' value=\""
+            return "<input type='text' size='4' name='tag:$this->dtag $row->paperId' value=\""
                 . ($v !== null ? htmlspecialchars($v) : "") . "\" tabindex='6' />";
     }
 }

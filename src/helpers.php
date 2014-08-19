@@ -813,9 +813,9 @@ function goPaperForm($baseUrl = null, $args = array()) {
         $baseUrl = ($Me->isPC && $Conf->setting("rev_open") ? "review" : "paper");
     $x = "<form class='gopaper' action='" . hoturl($baseUrl) . "' method='get' accept-charset='UTF-8'><div class='inform'>";
     if ($baseUrl == "profile")
-        $x .= Ht::entry("u", "(User)", array("id" => "quicksearchq", "class" => "textlite", "size" => 10, "hottemptext" => "(User)"));
+        $x .= Ht::entry("u", "(User)", array("id" => "quicksearchq", "size" => 10, "hottemptext" => "(User)"));
     else
-        $x .= Ht::entry("p", "(All)", array("id" => "quicksearchq", "class" => "textlite", "size" => 10, "hottemptext" => "(All)"));
+        $x .= Ht::entry("p", "(All)", array("id" => "quicksearchq", "size" => 10, "hottemptext" => "(All)"));
     foreach ($args as $what => $val)
         $x .= Ht::hidden($what, $val);
     if (isset($CurrentList) && $CurrentList > 0)

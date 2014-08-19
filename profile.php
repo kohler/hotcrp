@@ -486,7 +486,7 @@ function echofield($type, $classname, $captiontext, $entrytext) {
 
 function textinput($name, $value, $size, $id = false, $password = false) {
     return '<input type="' . ($password ? "password" : "text")
-        . '" class="textlite" name="' . $name . '" ' . ($id ? "id=\"$id\" " : "")
+        . '" name="' . $name . '" ' . ($id ? "id=\"$id\" " : "")
         . 'size="' . $size . '" value="' . $value . '" />';
 }
 
@@ -612,20 +612,20 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
     if (!$Me->can_change_password(null)) {
         echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
         echo '<div class="f-i"><div class="', fcclass("password"), '">Current password</div>',
-            '<div class="', feclass("password"), '">', Ht::password("oldpassword", "", array("size" => 24, "class" => "textlite")), '</div>',
+            '<div class="', feclass("password"), '">', Ht::password("oldpassword", "", array("size" => 24)), '</div>',
             '</div>';
     }
     if (@$Opt["contactdb_dsn"] && @$Opt["contactdb_loginFormHeading"])
         echo $Opt["contactdb_loginFormHeading"];
     echo '<div class="f-i"><div class="f-ix">
   <div class="', fcclass("password"), '">New password</div>
-  <div class="', feclass("password"), '">', Ht::password("upassword", "", array("size" => 24, "class" => "textlite fn"));
+  <div class="', feclass("password"), '">', Ht::password("upassword", "", array("size" => 24, "class" => "fn"));
     if ($Me->privChair && $Acct->password_type == 0)
-        echo Ht::entry("upasswordt", crpformvalue("upasswordt", "password"), array("size" => 24, "class" => "textlite fx"));
+        echo Ht::entry("upasswordt", crpformvalue("upasswordt", "password"), array("size" => 24, "class" => "fx"));
     echo '</div>
 </div><div class="fn f-ix">
   <div class="', fcclass("password"), '">Repeat new password</div>
-  <div class="', feclass("password"), '">', Ht::password("upassword2", "", array("size" => 24, "class" => "textlite")), "</div>
+  <div class="', feclass("password"), '">', Ht::password("upassword2", "", array("size" => 24)), "</div>
 </div>\n";
     if ($Acct->password_type == 0
         && ($Me->privChair || Contact::password_cleartext())) {
@@ -711,7 +711,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     We use this information when assigning reviews.
     For example: &ldquo;<tt>Ping Yen Zhang (INRIA)</tt>&rdquo;
     or, for a whole institution, &ldquo;<tt>INRIA</tt>&rdquo;.</div>
-    <textarea class='textlite' name='collaborators' rows='5' cols='50'>", crpformvalue("collaborators"), "</textarea></td>
+    <textarea name='collaborators' rows='5' cols='50'>", crpformvalue("collaborators"), "</textarea></td>
 </tr>\n\n";
 
     $topics = $Conf->topic_map();

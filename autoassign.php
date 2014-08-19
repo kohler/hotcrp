@@ -593,7 +593,7 @@ $tOpt["all"] = "All papers";
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = "s";
 $q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
-echo "<input id='autoassignq' class='textlite temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"autosub('requery',this)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
+echo "<input id='autoassignq' class='temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"autosub('requery',this)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
     " &nbsp; ", Ht::submit("requery", "List", array("id" => "requery"));
 $Conf->footerScript("mktemptext('autoassignq','(All)')");
@@ -621,20 +621,20 @@ echo "</div>\n";
 // action
 echo divClass("ass"), "<h3>Action</h3>", divClass("rev");
 doRadio("a", "rev", "Ensure each paper has <i>at least</i>");
-echo "&nbsp; <input type='text' class='textlite' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ";
+echo "&nbsp; <input type='text' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ";
 doSelect("revtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
 echo "&nbsp; review(s)</div>\n";
 
 echo divClass("revadd");
 doRadio("a", "revadd", "Assign");
-echo "&nbsp; <input type='text' class='textlite' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ",
+echo "&nbsp; <input type='text' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ",
     "<i>additional</i>&nbsp; ";
 doSelect("revaddtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
 echo "&nbsp; review(s) per paper</div>\n";
 
 echo divClass("revpc");
 doRadio("a", "revpc", "Assign each PC member");
-echo "&nbsp; <input type='text' class='textlite' name='revpcct' value=\"", htmlspecialchars(defval($_REQUEST, "revpcct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; additional&nbsp; ";
+echo "&nbsp; <input type='text' name='revpcct' value=\"", htmlspecialchars(defval($_REQUEST, "revpcct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; additional&nbsp; ";
 doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
 echo "&nbsp; review(s) from this paper selection</div>\n";
 
@@ -645,7 +645,7 @@ echo "Review round: &nbsp;";
 $rev_roundtag = defval($_REQUEST, "rev_roundtag", $Conf->setting_data("rev_roundtag"));
 if (!$rev_roundtag)
     $rev_roundtag = "(None)";
-echo "<input id='rev_roundtag' class='textlite temptextoff' type='text' size='15' name='rev_roundtag' value=\"",
+echo "<input id='rev_roundtag' class='temptextoff' type='text' size='15' name='rev_roundtag' value=\"",
     htmlspecialchars($rev_roundtag),
     "\" onfocus=\"autosub('assign',this)\" />",
     " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a></div>

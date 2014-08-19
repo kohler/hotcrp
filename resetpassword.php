@@ -87,11 +87,11 @@ echo "</div>
     "&nbsp;</td><td style='padding-top:1em'>", Ht::label("Use this password:"), "</td></tr>
   <tr><td></td><td><div class='f-i'>
   <div class='f-c", $password_class, "'>Password</div>
-  <div class='f-e'><input id='login_d' type='password' class='textlite' name='upassword' size='36' tabindex='1' value='' onkeypress='if(!((x=\$\$(\"usemy\")).checked)) x.click()' /></div>
+  <div class='f-e'><input id='login_d' type='password' name='upassword' size='36' tabindex='1' value='' onkeypress='if(!((x=\$\$(\"usemy\")).checked)) x.click()' /></div>
 </div>
 <div class='f-i'>
   <div class='f-c", $password_class, "'>Password (again)</div>
-  <div class='f-e'><input id='login_d' type='password' class='textlite' name='upassword2' size='36' tabindex='1' value='' /></div>
+  <div class='f-e'><input id='login_d' type='password' name='upassword2' size='36' tabindex='1' value='' /></div>
 </div></td></tr>
 <tr><td colspan='2' style='padding-top:1em'>
 <div class='f-i'>",

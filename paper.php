@@ -78,7 +78,7 @@ if (isset($_REQUEST["clickthrough"]) && check_post()) {
     if (@$_REQUEST["clickthrough_accept"])
         $Me->save_data("clickthrough_" . $_REQUEST["clickthrough"], $Now);
     else if (@$_REQUEST["clickthrough_decline"])
-        $Conf->errorMsg("You can’t edit a paper until you accept the current submission terms.");
+        $Conf->errorMsg("You can’t edit a paper until you accept the submission terms.");
 }
 if (isset($_REQUEST["setrevpref"]) && $prow && check_post()) {
     PaperActions::setReviewPreference($prow);

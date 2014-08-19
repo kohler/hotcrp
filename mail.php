@@ -542,8 +542,8 @@ echo "<span class='fx8'>:</span><br />
 <div class='fx8'>";
 $q = defval($_REQUEST, "q", "(All)");
 $q = ($q == "" ? "(All)" : $q);
-echo "Search&nbsp; <input id='q' class='textlite",
-    ($q == "(All)" ? " temptext" : " temptextoff"),
+echo "Search&nbsp; <input id='q' class='",
+    ($q == "(All)" ? "temptext" : "temptextoff"),
     "' type='text' size='36' name='q' value=\"", htmlspecialchars($q), "\" title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "t")),
     "</div>

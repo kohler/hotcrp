@@ -105,20 +105,20 @@ function searchbar() {
     echo "<form method='get' action='", hoturl("log"), "' accept-charset='UTF-8'>
 <table id='searchform'><tr>
   <td class='lxcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
-  <td class='lentry", $Eclass['q'], "'><input class='textlite' type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>
+  <td class='lentry", $Eclass['q'], "'><input type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>
   <td rowspan='3'>", Ht::submit("search", "Search"), "</td>
 </tr><tr>
   <td class='lxcaption", $Eclass['pap'], "'>Concerning paper(s)</td>
-  <td class='lentry", $Eclass['pap'], "'><input class='textlite' type='text' size='40' name='pap' value=\"", htmlspecialchars(defval($_REQUEST, "pap", "")), "\" /></td>
+  <td class='lentry", $Eclass['pap'], "'><input type='text' size='40' name='pap' value=\"", htmlspecialchars(defval($_REQUEST, "pap", "")), "\" /></td>
 </tr><tr>
   <td class='lxcaption", $Eclass['acct'], "'>Concerning account(s)</td>
-  <td class='lentry'><input class='textlite' type='text' size='40' name='acct' value=\"", htmlspecialchars(defval($_REQUEST, "acct", "")), "\" /></td>
+  <td class='lentry'><input type='text' size='40' name='acct' value=\"", htmlspecialchars(defval($_REQUEST, "acct", "")), "\" /></td>
 </tr><tr>
   <td class='lxcaption", $Eclass['n'], "'>Show</td>
-  <td class='lentry", $Eclass['n'], "'><input class='textlite' type='text' size='3' name='n' value=\"", htmlspecialchars($_REQUEST["n"]), "\" /> &nbsp;records at a time</td>
+  <td class='lentry", $Eclass['n'], "'><input type='text' size='3' name='n' value=\"", htmlspecialchars($_REQUEST["n"]), "\" /> &nbsp;records at a time</td>
 </tr><tr>
   <td class='lxcaption", $Eclass['date'], "'>Starting at</td>
-  <td class='lentry", $Eclass['date'], "'><input class='textlite' type='text' size='40' name='date' value=\"", htmlspecialchars($_REQUEST["date"]), "\" /></td>
+  <td class='lentry", $Eclass['date'], "'><input type='text' size='40' name='date' value=\"", htmlspecialchars($_REQUEST["date"]), "\" /></td>
 </tr></table></form>";
 
     if ($nrows > 0 || $page > 1) {
@@ -157,7 +157,7 @@ function searchbar() {
             foreach (array("q", "pap", "acct", "n", "offset") as $x)
                 if ($_REQUEST[$x])
                     echo Ht::hidden($x, $_REQUEST[$x]);
-            echo "<input class='textlite' type='text' size='3' name='page' value='' /> &nbsp;", Ht::submit("gopage", "Go"), "</form>";
+            echo "<input type='text' size='3' name='page' value='' /> &nbsp;", Ht::submit("gopage", "Go"), "</form>";
             } */
         echo "</div></td></tr></table><div class='g'></div>\n";
     }

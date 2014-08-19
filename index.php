@@ -269,7 +269,7 @@ Sign in to submit or review papers.";
         "</div>
   <div class='f-e", $email_class, "'><input",
         ($passwordFocus ? "" : " id='login_d'"),
-        " type='text' class='textlite' name='email' size='36' tabindex='1' ";
+        " type='text' name='email' size='36' tabindex='1' ";
     if (isset($_REQUEST["email"]))
         echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" ";
     else if ($password_reset)
@@ -280,7 +280,7 @@ Sign in to submit or review papers.";
   <div class='f-c", $password_class, "'>Password</div>
   <div class='f-e'><input",
         ($passwordFocus ? " id='login_d'" : ""),
-        " type='password' class='textlite' name='password' size='36' tabindex='1'";
+        " type='password' name='password' size='36' tabindex='1'";
     if ($password_reset)
         echo " value=\"", htmlspecialchars($password_reset->password), "\"";
     else
@@ -319,7 +319,7 @@ if ($homelist) {
     $tOpt = PaperSearch::searchTypes($Me);
     $q = defval($_REQUEST, "q", "(All)");
     echo "  <td><form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'><div class='inform'>
-    <input id='homeq' class='textlite ",
+    <input id='homeq' class='",
         ($q == "(All)" ? "temptext" : "temptextoff"),
         "' type='text' size='32' name='q' value=\"",
         htmlspecialchars($q),
@@ -358,7 +358,7 @@ function reviewTokenGroup($non_reviews) {
             '<td class="fx2">Review tokens: &nbsp;';
 
     echo Ht::form(hoturl_post("index")), '<div class="inform">',
-        Ht::entry("token", join(" ", $tokens), array("class" => "textlite", "size" => max(15, count($tokens) * 8))),
+        Ht::entry("token", join(" ", $tokens), array("size" => max(15, count($tokens) * 8))),
         " &nbsp;", Ht::submit("Save");
     if (!count($tokens))
         echo '<div class="hint">Enter tokens to gain access to the corresponding reviews.</div>';

@@ -383,7 +383,7 @@ class PaperList extends BaseList {
                 $whichlll = $nlll;
             $t .= $barsep;
             $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "setpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Set preferences</a></td><td class='lld$nlll nowrap'><b>:</b> &nbsp;";
-            $t .= "<input id='plact${nlll}_d' class='textlite' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='autosub(\"setpaprevpref\",this)' />"
+            $t .= "<input id='plact${nlll}_d' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='autosub(\"setpaprevpref\",this)' />"
                 . " &nbsp;" . Ht::submit("setpaprevpref", "Go", array("tabindex" => 6)) . "</td>";
             $nlll++;
         }
@@ -410,7 +410,7 @@ class PaperList extends BaseList {
                     . Ht::img("_.gif", "More...", "expander")
                     . "</a>&nbsp;</span></td><td>";
             }
-            $t .= "tag<span class='fn99'>(s)</span> &nbsp;<input id='plact${nlll}_d' class='textlite' type='text' name='tag' value=\"" . htmlspecialchars(defval($_REQUEST, "tag", "")) . "\"' size='15' onfocus='autosub(\"tagact\",this)' /> &nbsp;"
+            $t .= "tag<span class='fn99'>(s)</span> &nbsp;<input id='plact${nlll}_d' type='text' name='tag' value=\"" . htmlspecialchars(defval($_REQUEST, "tag", "")) . "\"' size='15' onfocus='autosub(\"tagact\",this)' /> &nbsp;"
                 . Ht::submit("tagact", "Go");
             if ($this->contact->privChair) {
                 $t .= "<div class='fx'><div style='margin:2px 0'>"
@@ -419,7 +419,7 @@ class PaperList extends BaseList {
                     . "<div style='margin:2px 0'>Using: &nbsp;"
                     . Ht::select("tagcr_method", PaperRank::methods(), defval($_REQUEST, "tagcr_method"))
                     . "</div>"
-                    . "<div style='margin:2px 0'>Source tag: &nbsp;~<input class='textlite' type='text' name='tagcr_source' value=\"" . htmlspecialchars(defval($_REQUEST, "tagcr_source", "")) . "\" size='15' /></div>"
+                    . "<div style='margin:2px 0'>Source tag: &nbsp;~<input type='text' name='tagcr_source' value=\"" . htmlspecialchars(defval($_REQUEST, "tagcr_source", "")) . "\" size='15' /></div>"
                     . "</div>";
             }
             $t .= "</td></tr></table></td>";

@@ -209,7 +209,7 @@ if ($Me->privChair) {
         "<div class='g'></div></td></tr>\n";
 }
 
-echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'><input class='textlite' type='text' size='32' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>",
+echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'><input type='text' size='32' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>",
     "<td>", Ht::submit("redisplay", "Redisplay"), "</td>",
     "</tr>\n";
 

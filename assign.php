@@ -626,10 +626,10 @@ if ($Me->allowAdminister($prow))
 echo '</div></div><div class="revcard_body">';
 echo "<div class='f-i'><div class='f-ix'>
   <div class='f-c'>Name</div>
-  <div class='f-e'><input class='textlite' type='text' name='name' value=\"", htmlspecialchars(defval($_REQUEST, "name", "")), "\" size='32' tabindex='1' /></div>
+  <div class='f-e'><input type='text' name='name' value=\"", htmlspecialchars(defval($_REQUEST, "name", "")), "\" size='32' tabindex='1' /></div>
 </div><div class='f-ix'>
   <div class='f-c", (isset($Error["email"]) ? " error" : ""), "'>Email</div>
-  <div class='f-e'><input class='textlite' type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST, "email", "")), "\" size='28' tabindex='1' /></div>
+  <div class='f-e'><input type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST, "email", "")), "\" size='28' tabindex='1' /></div>
 </div><div class='clear'></div></div>\n\n";
 
 // reason area

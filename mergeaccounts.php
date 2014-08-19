@@ -163,14 +163,14 @@ echo Ht::hidden("actas", $Me->contactId);
 
 <tr>
   <td class='caption initial'>Email</td>
-  <td class='entry'><input type='text' class='textlite' name='email' size='50'
+  <td class='entry'><input type='text' name='email' size='50'
     <?php if (isset($_REQUEST["email"])) echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" "; ?>
   /></td>
 </tr>
 
 <tr>
   <td class='caption'>Password</td>
-  <td class='entry'><input type='password' class='textlite' name='password' size='50' /></td>
+  <td class='entry'><input type='password' name='password' size='50' /></td>
 </tr>
 
 <tr>

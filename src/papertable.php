@@ -259,7 +259,7 @@ class PaperTable {
         }
 
         if ($this->editable)
-            $text = "<textarea class='textlite papertext' name='$fieldName' rows='" . $textAreaRows[$fieldName] . "' cols='60' onchange='hiliter(this)'>" . $text . "</textarea>";
+            $text = "<textarea class='papertext' name='$fieldName' rows='" . $textAreaRows[$fieldName] . "' cols='60' onchange='hiliter(this)'>" . $text . "</textarea>";
         return $text;
     }
 
@@ -530,9 +530,9 @@ class PaperTable {
             else
                 $auname = $au[0] . $au[1];
             echo "<tr id='auedit$n' class='auedito'><td class='rxcaption'>", $n, ".</td>",
-                "<td class='lentry'>", Ht::entry("auname$n", $auname, array("class" => "textlite", "size" => "35", "onchange" => "hiliter(this)")), "</td>",
-                "<td class='lentry'>", Ht::entry("auemail$n", $au[2], array("class" => "textlite", "size" => "30", "onchange" => "hiliter(this)")), "</td>",
-                "<td class='lentry'>", Ht::entry("auaff$n", $au[3], array("class" => "textlite", "size" => "32", "onchange" => "hiliter(this)")), "</td>",
+                "<td class='lentry'>", Ht::entry("auname$n", $auname, array("size" => "35", "onchange" => "hiliter(this)")), "</td>",
+                "<td class='lentry'>", Ht::entry("auemail$n", $au[2], array("size" => "30", "onchange" => "hiliter(this)")), "</td>",
+                "<td class='lentry'>", Ht::entry("auaff$n", $au[3], array("size" => "32", "onchange" => "hiliter(this)")), "</td>",
                 "</tr>\n";
         }
         echo "</table>", Ht::hidden("aueditcount", "25", array("id" => "aueditcount")), "</div>\n\n";
@@ -834,8 +834,8 @@ class PaperTable {
         $email = $this->useRequest ? @trim($_REQUEST["newcontact_email"]) : "";
         $email = $email == "Email" ? "" : $email;
         list($name, $email, $class) = $email
-            ? array($name, $email, "textlite temptextoff")
-            : array("Name", "Email", "textlite temptext");
+            ? array($name, $email, "temptextoff")
+            : array("Name", "Email", "temptext");
         echo '<table><tr><td class="lcaption">Add</td>',
             '<td></td><td>',
             Ht::entry('newcontact_name', $name,
@@ -926,8 +926,8 @@ class PaperTable {
         $email = $this->useRequest ? @trim($_REQUEST["newcontact_email"]) : "";
         $email = $email == "Email" ? "" : $email;
         list($name, $email, $class) = $email
-            ? array($name, $email, "textlite temptextoff")
-            : array("Name", "Email", "textlite temptext");
+            ? array($name, $email, "temptextoff")
+            : array("Name", "Email", "temptext");
         echo '<tr><td class="lcaption">Add</td>',
             '<td></td><td>',
             Ht::entry('newcontact_name', $name,
@@ -1101,11 +1101,11 @@ class PaperTable {
                     }
                     echo "</div>\n\n";
                 } else if ($o->type == "numeric")
-                    echo "<div class='papv'><input type='text' class='textlite' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
+                    echo "<div class='papv'><input type='text' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
                 else if ($o->type == "text" && @$o->display_space <= 1)
-                    echo "<div class='papv'><input type='text' class='textlite papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";
+                    echo "<div class='papv'><input type='text' class='papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";
                 else if ($o->type == "text")
-                    echo "<div class='papv'><textarea class='textlite papertext' name='$optid' rows='5' cols='60' onchange='hiliter(this)'>", htmlspecialchars($myval), "</textarea></div>\n\n";
+                    echo "<div class='papv'><textarea class='papertext' name='$optid' rows='5' cols='60' onchange='hiliter(this)'>", htmlspecialchars($myval), "</textarea></div>\n\n";
             } else
                 $this->editable_document($o, $optx ? $optx->value : 0, 0);
         }
@@ -1376,7 +1376,7 @@ class PaperTable {
             echo Ht::hidden("forceShow", $_REQUEST["forceShow"] ? 1 : 0);
         $rp = unparse_preference($this->prow);
         $rp = ($rp == "0" ? "" : $rp);
-        echo "<input id='revprefform_d' class='textlite' type='text' size='4' name='revpref' value=\"$rp\" onchange='Miniajax.submit(\"revprefform\")' tabindex='1' />",
+        echo "<input id='revprefform_d' type='text' size='4' name='revpref' value=\"$rp\" onchange='Miniajax.submit(\"revprefform\")' tabindex='1' />",
             " ", Ht::submit("Save", array("class" => "fx7")),
             " <span id='revprefformresult'></span>",
             "</div></form></div></div>\n";
@@ -1404,7 +1404,7 @@ class PaperTable {
             "<div class='inform'>", Ht::hidden("setrank", 1);
         if (isset($_REQUEST["forceShow"]))
             echo Ht::hidden("forceShow", $_REQUEST["forceShow"] ? 1 : 0);
-        echo "<input id='foldrank_d' class='textlite' type='text' size='4' name='rank' value=\"$rp\" onchange='Miniajax.submit(\"rankform\")' tabindex='1' />",
+        echo "<input id='foldrank_d' type='text' size='4' name='rank' value=\"$rp\" onchange='Miniajax.submit(\"rankform\")' tabindex='1' />",
             " ", Ht::submit("Save", array("class" => "fx7")),
             " <span id='rankformresult'></span>",
             " <div class='hint'><strong>Tip:</strong> <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>Search “editsort:#~${tag}”</a> to drag and drop your ranking, or <a href='", hoturl("offline"), "'>use offline reviewing</a> to rank many papers at once.</div>",
@@ -1681,7 +1681,7 @@ class PaperTable {
                 "    <tr><td>",
                 Ht::checkbox("doemail", 1, true), "&nbsp;",
                 Ht::label("Email authors, including:"), "&nbsp; ",
-                "<input id='emailNote' type='text' class='textlite temptext' name='emailNote' size='30' value=\"",
+                "<input id='emailNote' type='text' class='temptext' name='emailNote' size='30' value=\"",
                 htmlspecialchars($v == "" ? "Optional explanation" : $v),
                 "\" />",
                 Ht::hidden("override", 1),

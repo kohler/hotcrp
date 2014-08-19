@@ -81,7 +81,7 @@ function _searchForm($forwhat, $other = null, $size = 20) {
         foreach ($matches as $m)
             $text .= Ht::hidden($m[1], urldecode($m[2]));
     return "<form method='get' action='" . hoturl("search") . "' accept-charset='UTF-8'>"
-        . "<input type='text' class='textlite' name='q' value=\""
+        . "<input type='text' name='q' value=\""
         . htmlspecialchars($forwhat) . "\" size='$size' /> &nbsp;"
         . Ht::submit("go", "Search")
         . $text . "</form>";
