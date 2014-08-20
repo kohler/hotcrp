@@ -145,7 +145,7 @@ assert(join(";", array_keys($j)) == "");
 
 $revreq = array("overAllMerit" => 5, "reviewerQualification" => 4, "ready" => true);
 $rf = reviewForm();
-$rf->saveRequest($revreq,
+$rf->save_review($revreq,
                  $Conf->reviewRow(array("paperId" => 1, "contactId" => $user_mgbaker->contactId)),
                  $Conf->paperRow(1, $user_mgbaker),
                  $user_mgbaker);

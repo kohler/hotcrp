@@ -30,12 +30,12 @@ if (isset($_REQUEST["uploadForm"])
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
     while (($req = $rf->parseTextForm($tf))) {
 	if (($prow = $Conf->paperRow($req['paperId'], $Me, $whyNot))
-	    && $Me->canSubmitReview($prow, null, $whyNot)) {
+	    && $Me->can_submit_review($prow, null, $whyNot)) {
 	    $rrow = $Conf->reviewRow(array("paperId" => $prow->paperId, "contactId" => $Me->contactId,
 					   "rev_tokens" => $Me->review_tokens(),
 					   "first" => true));
 	    if ($rf->checkRequestFields($req, $rrow, $tf))
-		$rf->saveRequest($req, $rrow, $prow, $Me, $tf);
+		$rf->save_review($req, $rrow, $prow, $Me, $tf);
 	} else
 	    $rf->tfError($tf, true, whyNotText($whyNot, "review"));
     }

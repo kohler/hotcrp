@@ -581,7 +581,7 @@ class ReviewForm {
                          $this->mailer_info);
     }
 
-    function saveRequest($req, $rrow, $prow, $contact, &$tf = null) {
+    function save_review($req, $rrow, $prow, $contact, &$tf = null) {
         global $Conf, $Opt;
         $submit = defval($req, "ready", false) && !defval($req, "unready", false)
             && (!$rrow || !$rrow->reviewSubmitted);

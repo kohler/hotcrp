@@ -1660,7 +1660,7 @@ class Contact {
         return false;
     }
 
-    function canSubmitReview($prow, $rrow, &$whyNot = null) {
+    function can_submit_review($prow, $rrow, &$whyNot = null) {
         return $this->canReview($prow, $rrow, $whyNot, true);
     }
 

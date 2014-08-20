@@ -98,12 +98,12 @@ if (isset($_REQUEST["uploadForm"])
         /* error already reported */;
     else if (isset($req['paperId']) && $req['paperId'] != $prow->paperId)
         $rf->tfError($tf, true, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.<br /><a class='button_small' href='" . hoturl("review", "p=" . $req['paperId']) . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='" . hoturl("offline") . "'>General review upload site</a>");
-    else if (!$Me->canSubmitReview($prow, $paperTable->editrrow, $whyNot))
+    else if (!$Me->can_submit_review($prow, $paperTable->editrrow, $whyNot))
         $rf->tfError($tf, true, whyNotText($whyNot, "review"));
     else {
         $req['paperId'] = $prow->paperId;
         if ($rf->checkRequestFields($req, $paperTable->editrrow, $tf)) {
-            if ($rf->saveRequest($req, $paperTable->editrrow, $prow, $Me))
+            if ($rf->save_review($req, $paperTable->editrrow, $prow, $Me))
                 $tf['confirm'][] = "Uploaded review for paper #$prow->paperId.";
         }
     }
@@ -170,11 +170,11 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
 
 // update review action
 if (isset($_REQUEST["update"]) && check_post()) {
-    if (!$Me->canSubmitReview($prow, $paperTable->editrrow, $whyNot)) {
+    if (!$Me->can_submit_review($prow, $paperTable->editrrow, $whyNot)) {
         $Conf->errorMsg(whyNotText($whyNot, "review"));
         $useRequest = true;
     } else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow)) {
-        if ($rf->saveRequest($_REQUEST, $paperTable->editrrow, $prow, $Me)) {
+        if ($rf->save_review($_REQUEST, $paperTable->editrrow, $prow, $Me)) {
             if ((@$_REQUEST["ready"] && !@$_REQUEST["unready"])
                 || ($paperTable->editrrow && $paperTable->editrrow->reviewSubmitted))
                 $Conf->confirmMsg("Review submitted.");
