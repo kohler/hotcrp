@@ -182,7 +182,8 @@ class PaperList extends BaseList {
                 if ($row->reviewSubmitted > 0)
                     $pl .= "&amp;m=r";
             }
-        }
+        } else if ($pt === "review")
+            $pt = "paper";
         $pl .= $this->_paper_link_args;
         if ($doreview && $row->reviewSubmitted > 0)
             $pl .= "#review" . $rord;
