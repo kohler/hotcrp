@@ -28,9 +28,9 @@ if ($Me->is_empty())
     $Me->escape();
 $rf = reviewForm();
 $useRequest = isset($_REQUEST["after_login"]);
-if (defval($_REQUEST, "mode") == "edit")
+if (@$_REQUEST["mode"] == "edit")
     $_REQUEST["mode"] = "re";
-else if (defval($_REQUEST, "mode") == "view")
+else if (@$_REQUEST["mode"] == "view")
     $_REQUEST["mode"] = "r";
 
 
@@ -41,7 +41,7 @@ function confHeader() {
         $title = "Paper #$prow->paperId";
     else
         $title = "Paper Reviews";
-    $Conf->header($title, "review", actionBar("r", $prow), false);
+    $Conf->header($title, "review", actionBar(@$_REQUEST["mode"], $prow), false);
 }
 
 function errorMsgExit($msg) {

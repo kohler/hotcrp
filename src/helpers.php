@@ -809,9 +809,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
     global $Conf, $Me, $CurrentList;
     if ($Me->is_empty())
         return "";
-    if ($baseUrl === null)
-        $baseUrl = ($Me->isPC && $Conf->setting("rev_open") ? "review" : "paper");
-    $x = "<form class='gopaper' action='" . hoturl($baseUrl) . "' method='get' accept-charset='UTF-8'><div class='inform'>";
+    $x = "<form class='gopaper' action='" . hoturl($baseUrl ? : "paper") . "' method='get' accept-charset='UTF-8'><div class='inform'>";
     if ($baseUrl == "profile")
         $x .= Ht::entry("u", "(User)", array("id" => "quicksearchq", "size" => 10, "hottemptext" => "(User)"));
     else
@@ -1209,30 +1207,26 @@ function actionTab($text, $url, $default) {
         return "    <td><div class='vbtab'><a href='$url'>$text</a></div></td>\n";
 }
 
-function actionBar($mode = "", $prow = null) {
+function actionBar($mode = null, $prow = null) {
     global $Me, $Conf, $CurrentList;
     $forceShow = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 
-    $goBase = "paper";
     $paperArg = "p=*";
     $xmode = array();
     $listtype = "p";
 
+    $goBase = "paper";
     if ($mode == "assign")
         $goBase = "assign";
-    else if ($mode == "r" || $mode == "re" || $mode == "review")
+    else if ($mode == "re")
         $goBase = "review";
-    else if ($mode == "c" || $mode == "comment")
-        $goBase = "comment";
     else if ($mode == "account") {
         $listtype = "u";
         if ($Me->privChair)
             $goBase = "profile";
         else
             $prow = null;
-    } else if ($mode == "" && $Me->isPC && $Conf->setting("rev_open"))
-        $goBase = "review";
-    else if (($wantmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"))))
+    } else if (($wantmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"))))
         $xmode["m"] = $wantmode;
 
     $listarg = $forceShow;
