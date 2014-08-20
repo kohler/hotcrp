@@ -612,7 +612,7 @@ class Contact {
         global $Conf;
         $this->make_data();
         $old = $this->encode_data();
-        self::merge_data_object(@$this->data_->$key, $value, false);
+        self::merge_data_object($this->data_->$key, $value, false);
         $new = $this->encode_data();
         if ($old !== $new)
             $Conf->qe("update ContactInfo set data=" . ($this->data_ ? "'" . sqlq($new) . "'" : $new) . " where contactId=" . $this->contactId);
@@ -622,7 +622,7 @@ class Contact {
         global $Conf;
         $this->make_data();
         $old = $this->encode_data();
-        self::merge_data_object(@$this->data_, (object) $data, true);
+        self::merge_data_object($this->data_, (object) $data, true);
         $new = $this->encode_data();
         if ($old !== $new)
             $Conf->qe("update ContactInfo set data=" . ($this->data_ ? "'" . sqlq($new) . "'" : $new) . " where contactId=" . $this->contactId);
