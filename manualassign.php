@@ -151,7 +151,8 @@ else
 
 
 // Change PC member
-echo "<table><tr><td><div class='aahc assignpc_pcsel'><form method='get' action='", hoturl("manualassign"), "' accept-charset='UTF-8' id='selectreviewerform'><div class='inform'>\n";
+echo "<table><tr><td><div class='aahc assignpc_pcsel'>",
+    Ht::form_div(hoturl("manualassign"), array("method" => "get", "id" => "selectreviewerform"));
 
 $result = $Conf->qe("select PCMember.contactId, count(reviewId) as reviewCount
                 from PCMember
@@ -304,7 +305,7 @@ if ($reviewer > 0) {
     }
 
     // ajax assignment form
-    echo "<form id='assrevform' method='post' action=\"", hoturl_post("assign", "update=1"), "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='clear'>",
+    echo Ht::form(hoturl_post("assign", "update=1"), array("id" => "assrevform")), "<div class='clear'>",
         Ht::hidden("kind", $kind),
         Ht::hidden("p", ""),
         Ht::hidden("pcs$reviewer", ""),

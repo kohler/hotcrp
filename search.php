@@ -1299,8 +1299,8 @@ echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas
 <tr><td><div class='tlx'><div class='tld1'>";
 
 // Basic search
-echo "<form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'><div class='inform' style='position:relative'>
-  <input id='searchform1_d' type='text' size='40' style='width:30em' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;\n",
+echo Ht::form_div(hoturl("search"), array("method" => "get")),
+    "<input id='searchform1_d' type='text' size='40' style='width:30em' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;\n",
     Ht::submit("Search"),
     "<div id='taghelp_searchform1' class='taghelp_s'></div>
 </div></form>";
@@ -1311,8 +1311,8 @@ if (!defval($Opt, "noSearchAutocomplete"))
 echo "</div><div class='tld2'>";
 
 // Advanced search
-echo "<form method='get' action='", hoturl("search"), "' accept-charset='UTF-8'>
-<table><tr>
+echo Ht::form_div(hoturl("search"), array("method" => "get")),
+    "<table><tr>
   <td class='lxcaption'>Search these papers</td>
   <td class='lentry'>$tselect</td>
 </tr>
@@ -1358,7 +1358,7 @@ echo Ht::select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 <tr>
   <td class='lxcaption'></td>
   <td><span style='font-size: x-small'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a></span></td>
-</tr></table></form>";
+</tr></table></div></form>";
 
 echo "</div>";
 

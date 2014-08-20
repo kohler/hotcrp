@@ -809,7 +809,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
     global $Conf, $Me, $CurrentList;
     if ($Me->is_empty())
         return "";
-    $x = "<form class='gopaper' action='" . hoturl($baseUrl ? : "paper") . "' method='get' accept-charset='UTF-8'><div class='inform'>";
+    $x = Ht::form_div(hoturl($baseUrl ? : "paper"), array("method" => "get", "class" => "gopaper"));
     if ($baseUrl == "profile")
         $x .= Ht::entry("u", "(User)", array("id" => "quicksearchq", "size" => 10, "hottemptext" => "(User)"));
     else

@@ -36,10 +36,29 @@ class Ht {
     }
 
     static function form($action, $extra = null) {
-        $method = $extra && isset($extra["method"]) ? $extra["method"] : "post";
-        return '<form method="' . $method . '" action="'
-            . $action . '" enctype="multipart/form-data" accept-charset="UTF-8"'
-            . self::extra($extra) . '>';
+        $method = @$extra["method"] ? : "post";
+        if ($method === "get" && strpos($action, "?") !== false)
+            error_log(caller_landmark() . ": GET form action $action params will be ignored");
+        $enctype = @$extra["enctype"];
+        if (!$enctype && $method !== "get")
+            $enctype = "multipart/form-data";
+        $x = '<form method="' . $method . '" action="' . $action . '"';
+        if ($enctype)
+            $x .= ' enctype="' . $enctype . '"';
+        return $x . ' accept-charset="UTF-8"' . self::extra($extra) . '>';
+    }
+
+    static function form_div($action, $extra = null) {
+        $div = "<div>";
+        if (@$extra["method"] === "get" && ($qpos = strpos($action, "?")) !== false) {
+            if (($hpos = strpos($action, "#", $qpos + 1)) === false)
+                $hpos = strlen($action);
+            foreach (preg_split('/(?:&amp;|&)/', substr($action, $qpos + 1, $hpos - $qpos - 1)) as $m)
+                if (($eqpos = strpos($m, "=")) !== false)
+                    $div .= '<input type="hidden" name="' . substr($m, 0, $eqpos) . '" value="' . substr($m, $eqpos + 1) . '" />';
+            $action = substr($action, 0, $qpos) . substr($action, $hpos);
+        }
+        return self::form($action, $extra) . $div;
     }
 
     static function hidden($name, $value = "", $extra = null) {

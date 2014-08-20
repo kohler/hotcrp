@@ -253,7 +253,7 @@ if (count($tOpt) > 1) {
     echo "<table id='contactsform' class='tablinks1'>
 <tr><td><div class='tlx'><div class='tld1'>";
 
-    echo Ht::form(hoturl("users", "t=" . $_REQUEST["t"]), array("method" => "get")), "<div class='inform'>";
+    echo Ht::form_div(hoturl("users", "t=" . $_REQUEST["t"]), array("method" => "get"));
     if (isset($_REQUEST["sort"]))
         echo Ht::hidden("sort", $_REQUEST["sort"]);
     echo Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "contactsform1_d")),
@@ -262,7 +262,7 @@ if (count($tOpt) > 1) {
     echo "</div><div class='tld2'>";
 
     // Display options
-    echo "<form method='get' action='", hoturl("users"), "' accept-charset='UTF-8'><div>\n";
+    echo Ht::form_div(hoturl("users"), array("method" => "get"));
     foreach (array("t", "sort") as $x)
         if (isset($_REQUEST[$x]))
             echo Ht::hidden($x, $_REQUEST[$x]);

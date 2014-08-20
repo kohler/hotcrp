@@ -102,8 +102,7 @@ if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"]))
 function searchbar() {
     global $Conf, $Eclass, $page, $start, $count, $nrows, $maxNrows, $nlinks, $offset;
 
-    echo "<form method='get' action='", hoturl("log"), "' accept-charset='UTF-8'>
-<table id='searchform'><tr>
+    echo Ht::form_div(hoturl("log"), array("method" => "get")), "<table id='searchform'><tr>
   <td class='lxcaption", $Eclass['q'], "'>With <b>any</b> of the words</td>
   <td class='lentry", $Eclass['q'], "'><input type='text' size='40' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>
   <td rowspan='3'>", Ht::submit("search", "Search"), "</td>
@@ -119,7 +118,7 @@ function searchbar() {
 </tr><tr>
   <td class='lxcaption", $Eclass['date'], "'>Starting at</td>
   <td class='lentry", $Eclass['date'], "'><input type='text' size='40' name='date' value=\"", htmlspecialchars($_REQUEST["date"]), "\" /></td>
-</tr></table></form>";
+</tr></table></div></form>";
 
     if ($nrows > 0 || $page > 1) {
         $urls = array();
@@ -151,14 +150,6 @@ function searchbar() {
         echo "</div></td><td id='oldest'><div>";
         if ($nrows > $count)
             echo "&nbsp;&nbsp;|&nbsp; <a href='$url&amp;page=earliest'><strong>Oldest</strong></a>";
-        /* echo "</div></td><td id='gopage'><div>";
-        if ($page > 1 || $nrows > $count) {
-            echo "&nbsp;&nbsp;|&nbsp; Page: <form method='get' action='", hoturl("log"), "' accept-charset='UTF-8'>";
-            foreach (array("q", "pap", "acct", "n", "offset") as $x)
-                if ($_REQUEST[$x])
-                    echo Ht::hidden($x, $_REQUEST[$x]);
-            echo "<input type='text' size='3' name='page' value='' /> &nbsp;", Ht::submit("gopage", "Go"), "</form>";
-            } */
         echo "</div></td></tr></table><div class='g'></div>\n";
     }
 }

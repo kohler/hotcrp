@@ -186,9 +186,9 @@ echo "<table id='searchform' class='tablinks1'>
 $showing_au = (!$Conf->subBlindAlways() && strpos($pldisplay, " au ") !== false);
 $showing_anonau = ((!$Conf->subBlindNever() || $Me->privChair) && strpos($pldisplay, " anonau ") !== false);
 
-echo "<form method='get' action='", hoturl("reviewprefs"), "' accept-charset='UTF-8' id='redisplayform' class='",
-    ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c"),
-    "'>\n<table>";
+echo Ht::form_div(hoturl("reviewprefs"), array("method" => "get", "id" => "redisplayform",
+                                               "class" => ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c"))),
+    "<table>";
 
 if ($Me->privChair) {
     echo "<tr><td class='lxcaption'><strong>Preferences:</strong> &nbsp;</td><td class='lentry'>";
@@ -265,13 +265,12 @@ if ($pl->any->topics) {
 }
 if ($loadforms)
      echo "<br />", $loadforms;
-echo "</td></tr>\n</table></form>"; // </div></div>
+echo "</td></tr>\n</table></div></form>"; // </div></div>
 echo "</td></tr></table>\n";
 
 
 // main form
-echo "<form class='assignpc' method='post' action=\"", hoturl_post("reviewprefs", "reviewer=$reviewer" . (defval($_REQUEST, "q") ? "&amp;q=" . urlencode($_REQUEST["q"]) : "")),
-    "\" enctype='multipart/form-data' accept-charset='UTF-8'>",
+echo Ht::form(hoturl_post("reviewprefs", "reviewer=$reviewer" . (defval($_REQUEST, "q") ? "&amp;q=" . urlencode($_REQUEST["q"]) : "")), array("class" => "assignpc")),
     "<div class='inform'>",
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1),
