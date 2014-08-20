@@ -1333,7 +1333,8 @@ $blind\n";
             }
             if ($rrow->contactId != $Me->contactId) {
                 $ratinglink = hoturl_post("review", "r=$reviewOrdinal" . (isset($_REQUEST["reviewId"]) ? "" : "&amp;allr=1"));
-                echo $ratesep, "<form id='ratingform_$reviewOrdinal' action='$ratinglink' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
+                echo $ratesep,
+                    Ht::form_div($ratinglink, array("id" => "ratingform_$reviewOrdinal", "divclass" => "inline")),
                     "How helpful is this review? &nbsp;",
                     Ht::select("rating", self::$rating_types, ($rrow->myRating === null ? "n" : $rrow->myRating)),
                     " ", Ht::submit("Save", array("class" => "fx7")),

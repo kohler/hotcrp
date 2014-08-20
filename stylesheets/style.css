@@ -197,6 +197,9 @@ form {
 	margin-bottom: 0;
 	display: inline;
 }
+div.inline {
+	display: inline;
+}
 
 
 /* body */
