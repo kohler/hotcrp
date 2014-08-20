@@ -510,7 +510,7 @@ class PaperTable {
         cleanAuthor($this->prow);
 
         echo $this->editable_papt("authorInformation", "Authors <span class='papfnh'>(<a href='#' onclick='return authorfold(\"auedit\",1,1)'>More</a> | <a href='#' onclick='return authorfold(\"auedit\",1,-1)'>Fewer</a>)</span>"),
-            "<div class='paphint'>List the paper&rsquo;s authors one per line, including their email addresses and affiliations.";
+            "<div class='paphint'>List the paper’s authors one per line, including their email addresses and affiliations.";
         if ($Conf->submission_blindness() == Conference::BLIND_ALWAYS)
             echo " Submission is blind, so reviewers will not be able to see author information.";
         echo "  Any author with an account on this site can edit the paper.</div>",
@@ -948,7 +948,7 @@ class PaperTable {
         assert(!!$this->editable);
         echo $this->editable_papt("blind", Ht::checkbox_h("blind", 1, $blind)
                                   . "&nbsp;" . Ht::label("Anonymous submission")),
-            "<div class='paphint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won&rsquo;t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
+            "<div class='paphint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won’t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
             "<div class='papv'></div>\n\n";
     }
 
@@ -1785,8 +1785,19 @@ class PaperTable {
         echo "</div>\n";
     }
 
-    private function _echo_clickthrough($form, $ctype, $ctime) {
-        global $Conf;
+    private function _need_clickthrough($ctype) {
+        global $Conf, $Me;
+        if (!$Me->privChair
+            && @($cmsg = $Conf->setting_data("clickthrough_$ctype"))) {
+            $csha1 = sha1($cmsg);
+            $clickthrough = $Me->data("clickthrough");
+            return !$clickthrough || !@$clickthrough->$csha1;
+        } else
+            return false;
+    }
+
+    private function _echo_clickthrough($form, $ctype) {
+        global $Conf, $Now;
         $data = $Conf->setting_data("clickthrough_$ctype");
         echo $form, "<div class='aahc'>", $data;
         $buttons = array(Ht::submit("clickthrough_accept", "Accept", array("class" => "bb")),
@@ -1794,7 +1805,7 @@ class PaperTable {
         echo "<div class='g'></div>",
             Ht::hidden("clickthrough", $ctype),
             Ht::hidden("clickthrough_sha1", sha1($data)),
-            Ht::hidden("clickthrough_time", $ctime),
+            Ht::hidden("clickthrough_time", $Now),
             Ht::actions($buttons), "</div></form>";
     }
 
@@ -1877,15 +1888,8 @@ class PaperTable {
 
         $this->echoDivEnter();
         if ($this->editable) {
-            $need_clickthrough = false;
-            if (!$Me->privChair
-                && @($clickthrough_msg = $Conf->setting_data("clickthrough_submit"))) {
-                $sha1 = sha1($clickthrough_msg);
-                $clickthrough = $Me->data("clickthrough");
-                $need_clickthrough = !$clickthrough || !@$clickthrough->$sha1;
-            }
-            if ($need_clickthrough)
-                $this->_echo_clickthrough($form, "submit", $ctime);
+            if ($this->_need_clickthrough("submit"))
+                $this->_echo_clickthrough($form, "submit");
             else
                 $this->_echo_editable_body($form);
         } else {
@@ -2052,7 +2056,7 @@ class PaperTable {
         $viewall = $Me->canViewReview($prow, null, false, $whyNot);
         $msgs = array();
         if (!$this->rrow && $this->prow->reviewType <= 0)
-            $msgs[] = "You haven&rsquo;t been assigned to review this paper, but you can review it anyway.";
+            $msgs[] = "You haven’t been assigned to review this paper, but you can review it anyway.";
         if ($Me->is_admin_force() && !$viewall) {
             $msgs[] = $this->_privilegeMessage();
         } else if (!$viewall && isset($whyNot["reviewNotComplete"])
@@ -2069,6 +2073,15 @@ class PaperTable {
 
         // links
         $this->_paptabReviewLinks(true, $this->editrrow, "");
+
+        // maybe clickthrough
+        if ($this->_need_clickthrough("review")) {
+            $form = Ht::form(hoturl_post("review", "p=" . $prow->paperId . ($this->editrrow ? "&amp;r=" . $this->editrrow->reviewId : "") . "&amp;m=re"));
+            echo '<div class="revcard"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">';
+            $this->_echo_clickthrough($form, "review");
+            echo "</form></div></div>";
+            return;
+        }
 
         // review form, possibly with deadline warning
         $opt = array("edit" => $this->mode == "re");

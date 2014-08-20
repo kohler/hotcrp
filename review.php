@@ -363,6 +363,8 @@ if (isset($_REQUEST["accept"])) {
 
 
 // paper actions
+if (isset($_REQUEST["clickthrough"]) && check_post())
+    PaperActions::save_clickthrough();
 if (isset($_REQUEST["setdecision"]) && check_post()) {
     PaperActions::setDecision($prow);
     loadRows();

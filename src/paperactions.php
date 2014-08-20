@@ -235,6 +235,16 @@ class PaperActions {
         // NB normally redirectSelf() does not return
     }
 
+    static function save_clickthrough() {
+        global $Me, $Conf, $Now;
+        if (@$_REQUEST["clickthrough_accept"]
+            && @$_REQUEST["clickthrough_sha1"]) {
+            $Me->merge_and_save_data(array("clickthrough" => array($_REQUEST["clickthrough_sha1"] => $Now)));
+            redirectSelf();
+        } else if (@$_REQUEST["clickthrough_decline"])
+            $Conf->errorMsg("You can’t continue until you accept these terms.");
+    }
+
     static function tagReport($prow, $return = false) {
         global $Conf, $Me, $Error, $OK;
         $ajax = defval($_REQUEST, "ajax", false);
