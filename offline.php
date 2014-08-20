@@ -197,8 +197,8 @@ if ($Me->is_reviewer()) {
 echo "</td>\n";
 if ($Me->is_reviewer()) {
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
-    echo "<td><h3>Upload filled-out forms</h3>
-<form action='", hoturl_post("offline", "uploadForm=1"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
+    echo "<td><h3>Upload filled-out forms</h3>\n",
+        Ht::form_div(hoturl_post("offline", "uploadForm=1")),
         Ht::hidden("postnonempty", 1),
         "<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; ",
         Ht::submit("Go", array("disabled" => !!$disabled));
@@ -221,8 +221,8 @@ if ($Conf->setting("tag_rank") && $Me->is_reviewer()) {
     echo "</div></td>\n";
 
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
-    echo "<td><h3>Upload ranking file</h3>
-<form action='", hoturl_post("offline", "setrank=1&amp;tag=%7E$ranktag"), "' method='post' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>",
+    echo "<td><h3>Upload ranking file</h3>\n",
+        Ht::form_div(hoturl_post("offline", "setrank=1&amp;tag=%7E$ranktag")),
         Ht::hidden("upload", 1),
         "<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; ",
         Ht::submit("Go", array("disabled" => !!$disabled));

@@ -168,7 +168,7 @@ function contactQuery($type) {
 
 function checkMailPrologue($send) {
     global $Conf, $Me, $recip;
-    echo "<form method='post' action='", hoturl_post("mail"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
+    echo Ht::form_div(hoturl_post("mail"));
     foreach (array("recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit") as $x)
         if (isset($_REQUEST[$x]))
             echo Ht::hidden($x, $_REQUEST[$x]);
@@ -501,7 +501,7 @@ if (isset($_REQUEST["monreq"])) {
     }
 }
 
-echo "<form method='post' action='", hoturl_post("mail", "check=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n",
+echo Ht::form_div(hoturl_post("mail", "check=1")),
     Ht::hidden_default_submit("default", 1), "
 
 <div class='aa' style='padding-left:8px'>

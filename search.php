@@ -1402,7 +1402,7 @@ if ($Me->isPC || $Me->privChair) {
             }
             echo "<div class='g'></div>\n";
         }
-        echo "<form method='post' action='", hoturl_post("search", "savesearch=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+        echo Ht::form_div(hoturl_post("search", "savesearch=1"));
         echo_request_as_hidden_inputs(true);
         echo "<table id='ssearchnew' class='foldc'>",
             "<tr><td>", foldbutton("ssearchnew"), "</td>",
@@ -1427,7 +1427,7 @@ if ($Me->isPC || $Me->privChair) {
 if ($pl && $pl->count > 0) {
     echo "<div class='tld3' style='padding-bottom:1ex'>";
 
-    echo "<form id='foldredisplay' class='fn3 fold5c' method='post' action='", hoturl_post("search", "redisplay=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>\n";
+    echo Ht::form_div(hoturl_post("search", "redisplay=1"), array("id" => "foldredisplay", "class" => "fn3 fold5c"));
     echo_request_as_hidden_inputs();
 
     echo "<table>";
@@ -1503,7 +1503,7 @@ if ($pl && $pl->count > 0) {
 
     // Formulas
     if ($Me->isPC) {
-        echo "<form class='fx3' method='post' action='", hoturl_post("search", "saveformulas=1"), "' enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>";
+        echo Ht::form_div(hoturl_post("search", "saveformulas=1"), array("class" => "fx3"));
         echo_request_as_hidden_inputs();
 
         echo "<p style='width:44em;margin-top:0'><strong>Formulas</strong> are calculated
@@ -1568,7 +1568,7 @@ if ($pl) {
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
     if (isset($pl->any->sel))
-        echo "<form method='post' action=\"", selfHref(array("selector" => 1, "post" => post_value())), "\" enctype='multipart/formdata' accept-charset='UTF-8' id='sel' onsubmit='return paperselCheck()'><div class='inform'>\n",
+        echo Ht::form_div(selfHref(array("selector" => 1, "post" => post_value())), array("id" => "sel", "onsubmit" => "return paperselCheck()")),
             Ht::hidden("defaultact", "", array("id" => "defaultact")),
             Ht::hidden_default_submit("default", 1);
 

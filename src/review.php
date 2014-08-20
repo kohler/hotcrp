@@ -1370,8 +1370,7 @@ $blind\n";
             // Also see $_REQUEST["refuse"] case in review.php.
             $Conf->footerHtml("<div id='popup_ref' class='popupc'>
   <p style='margin:0 0 0.3em'>Select “Decline review” to decline this review. Thank you for keeping us informed.</p>
-  <form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='inform'>"
-    . Ht::hidden("refuse", "refuse")
+  " . Ht::form_div($reviewPostLink) . Ht::hidden("refuse", "refuse")
     . "<textarea id='refusereviewreason' class='temptext' name='reason' rows='3' cols='40'>Optional explanation</textarea>
     <div class='popup_actions'>"
     . Ht::js_button("Cancel", "popup(null,'ref',1)")
@@ -1397,8 +1396,7 @@ $blind\n";
   <p>Be careful: This will permanently delete all information about this
   review assignment from the database and <strong>cannot be
   undone</strong>.</p>
-  <form method='post' action=\"$reviewPostLink\" enctype='multipart/form-data' accept-charset='UTF-8'>
-    <div class='popup_actions'>"
+  " . Ht::form_div($reviewPostLink, array("divclass" => "popup_actions"))
     . Ht::js_button("Cancel", "popup(null,'d',1)") . " &nbsp;"
     . Ht::submit("delete", "Delete review", array("class" => "bb"))
     . "</div></form></div>");

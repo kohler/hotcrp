@@ -598,8 +598,7 @@ class PaperList extends BaseList {
 
     private function _addAjaxLoadForm($pap, $extra = "") {
         global $Conf;
-        $t = "<div><form id='plloadform' method='post' action='" . hoturl_post("search", "ajax=1" . $this->_paper_link_args) . "' accept-charset='UTF-8'>"
-            . "<div class='inform'>";
+        $t = "<div>" . Ht::form_div(hoturl_post("search", "ajax=1" . $this->_paper_link_args), array("id" => "plloadform"));
         $s = $this->search;
         if ($s->q)
             $t .= Ht::hidden("q", $s->q);

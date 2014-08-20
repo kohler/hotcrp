@@ -106,7 +106,7 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
 
 echo "<h2 style='margin-top:1em'>Upload assignments</h2>\n\n";
 
-echo Ht::form(hoturl_post("bulkassign", "upload=1")), '<div class="inform">';
+echo Ht::form_div(hoturl_post("bulkassign", "upload=1"));
 
 // Upload
 echo '<input type="file" name="uploadfile" accept="text/plain,text/csv" size="30" />',

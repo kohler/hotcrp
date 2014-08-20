@@ -357,7 +357,7 @@ function reviewTokenGroup($non_reviews) {
             '<tr><td class="fn2"><a class="fn2" href="#" onclick="return foldup(this,event)">Add review tokens</a></td>',
             '<td class="fx2">Review tokens: &nbsp;';
 
-    echo Ht::form(hoturl_post("index")), '<div class="inform">',
+    echo Ht::form_div(hoturl_post("index")),
         Ht::entry("token", join(" ", $tokens), array("size" => max(15, count($tokens) * 8))),
         " &nbsp;", Ht::submit("Save");
     if (!count($tokens))

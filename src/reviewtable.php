@@ -5,8 +5,7 @@
 
 function _retract_review_request_form($prow, $rr) {
     return '<small>'
-        . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
-        . '<div class="inform">'
+        . Ht::form_div(hoturl_post("assign", "p=$prow->paperId"))
         . Ht::hidden("retract", $rr->email)
         . Ht::submit("Retract", array("title" => "Retract this review request", "style" => "font-size:smaller"))
         . '</div></form></small>';
@@ -171,8 +170,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             $t .= "<td>" . Text::user_html($rr);
             if ($admin)
                 $t .= ' <small>'
-                    . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
-                    . '<div class="inform">'
+                    . Ht::form_div(hoturl_post("assign", "p=$prow->paperId"))
                     . Ht::hidden("name", $rr->name)
                     . Ht::hidden("email", $rr->email)
                     . Ht::hidden("reason", $rr->reason)
