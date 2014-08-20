@@ -52,8 +52,7 @@ class PaperActions {
         if (!$Me->allowAdminister($prow)
             || ($contactId = rcvtint($_REQUEST["reviewer"])) <= 0)
             $contactId = $Me->contactId;
-        $v = parse_preference($_REQUEST["revpref"]);
-        if ($v) {
+        if (isset($_REQUEST["revpref"]) && ($v = parse_preference($_REQUEST["revpref"]))) {
             if (self::save_review_preferences(array(array($prow->paperId, $contactId, $v[0], $v[1]))))
                 $Conf->confirmMsg($ajax ? "Saved" : "Review preference saved.");
             else
