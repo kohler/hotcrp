@@ -2094,8 +2094,8 @@ Miniajax.submit = function (formname, callback, timeout) {
     var pairs = [];
     for (var i = 0; i < form.elements.length; i++) {
         var elt = form.elements[i];
-        if (elt.name && elt.value && elt.type != "submit"
-            && elt.type != "cancel" && (elt.type != "checkbox" || elt.checked))
+        if (elt.name && elt.type != "submit" && elt.type != "cancel"
+            && (elt.type != "checkbox" || elt.checked))
             pairs.push(encodeURIComponent(elt.name) + "="
                        + encodeURIComponent(elt.value));
     }
