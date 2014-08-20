@@ -187,31 +187,37 @@ setlocale(LC_CTYPE, "C");
 
 
 // Set up conference options (also used in mailer.php)
-function read_included_options($sitedir, $files) {
+function expand_includes($sitedir, $files) {
     global $Opt;
     if (is_string($files))
         $files = array($files);
     $confname = @$Opt["confid"] ? : @$Opt["dbName"];
+    $results = array();
     $cwd = null;
     foreach ($files as $f) {
         $f = preg_replace(',\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $confname, $f);
         if (preg_match(',[\[\]\*\?],', $f)) {
             if ($cwd === null) {
                 $cwd = getcwd();
-                if (!chdir($sitedir)) {
-                    $Opt["missing"][] = $f;
-                    break;
-                }
+                chdir($sitedir);
             }
-            $flist = glob($f, GLOB_BRACE);
+            foreach (glob($f, GLOB_BRACE) as $x)
+                $results[] = $x;
         } else
-            $flist = array($f);
-        foreach ($flist as $f) {
-            $f = ($f[0] == "/" ? $f : "$sitedir/$f");
-            if (!@include $f)
-                $Opt["missing"][] = $f;
-        }
+            $results[] = $f;
     }
+    foreach ($results as &$f)
+        $f = ($f[0] == "/" ? $f : "$sitedir/$f");
+    if ($cwd)
+        chdir($cwd);
+    return $results;
+}
+
+function read_included_options($sitedir, $files) {
+    global $Opt;
+    foreach (expand_includes($sitedir, $files) as $f)
+        if (!@include $f)
+            $Opt["missing"][] = $f;
 }
 
 global $Opt, $OptOverride;

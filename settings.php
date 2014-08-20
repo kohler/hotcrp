@@ -18,7 +18,20 @@ $Error = array();
 $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST” <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
 $TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small|dim";
-$SettingInfo = json_decode(file_get_contents("$ConfSitePATH/src/settinginfo.json"));
+
+// read setting information
+$SettingInfo = json_decode(file_get_contents("$ConfSitePATH/src/settinginfo.json"), true);
+if (@$Opt["settinginfo_include"])
+    foreach (expand_includes($ConfSitePATH, $Opt["settinginfo_include"]) as $f)
+        if (($x = file_get_contents($f))) {
+            $x = json_decode($x, true);
+            if (is_array($x))
+                $SettingInfo = array_replace_recursive($SettingInfo, $x);
+            else if (json_last_error() !== JSON_ERROR_NONE)
+                trigger_error("settinginfo_include($f) parse error: " . json_last_error_msg());
+        }
+$SettingInfo = array_to_object_recursive($SettingInfo);
+
 // maybe set $Opt["contactName"] and $Opt["contactEmail"]
 Contact::site_contact();
 
@@ -45,6 +58,12 @@ function setting_info($n, $k = null) {
     global $SettingInfo;
     $x = @$SettingInfo->$n ? : (object) array();
     return $k ? @$x->$k : $x;
+}
+
+function setting_disabled($n) {
+    global $SettingInfo;
+    $x = @$SettingInfo->$n;
+    return $x && @$x->disabled;
 }
 
 function parseGrace($v) {
@@ -775,16 +794,23 @@ function truthy($x) {
 }
 
 function accountValue($name, $info) {
-    global $Values;
+    global $Values, $Error, $Highlight;
     $xname = str_replace(".", "_", $name);
     if (isset($_REQUEST[$xname]) && !isset($_REQUEST[$name]))
         $_REQUEST[$name] = $_REQUEST[$xname];
-    if ($info->type === "special") {
-        if (truthy(@$_REQUEST["has_$xname"]))
-            doSpecial($name, false);
-    } else if (isset($_REQUEST[$name])
-               || (($info->type === "cdate" || $info->type === "checkbox")
-                   && truthy(@$_REQUEST["has_$xname"]))) {
+
+    if ($info->type === "special")
+        $has_value = truthy(@$_REQUEST["has_$xname"]);
+    else
+        $has_value = isset($_REQUEST[$name])
+            || (($info->type === "cdate" || $info->type === "checkbox")
+                && truthy(@$_REQUEST["has_$xname"]));
+
+    if ($has_value && @$info->disabled)
+        /* ignore changes to disabled settings */;
+    else if ($has_value && $info->type === "special")
+        doSpecial($name, false);
+    else if ($has_value) {
         $v = parseValue($name, $info);
         if ($v === null) {
             if ($info->type !== "cdate" && $info->type !== "checkbox")
@@ -987,12 +1013,17 @@ function setting($name, $defval = null) {
         return defval($Conf->settings, $name, $defval);
 }
 
-function setting_data($name, $defval = null) {
+function setting_data($name, $defval = "", $killval = "") {
     global $Error, $Conf;
-    if (count($Error) > 0)
-        return defval($_REQUEST, $name, $defval);
+    if (substr($name, 0, 4) === "opt.")
+        return opt_data(substr($name, 4), $defval, $killval);
+    else if (count($Error) > 0)
+        $val = defval($_REQUEST, $name, $defval);
     else
-        return defval($Conf->settingTexts, $name, $defval);
+        $val = defval($Conf->settingTexts, $name, $defval);
+    if ($val == $killval)
+        $val = "";
+    return $val;
 }
 
 function opt_data($name, $defval = "", $killval = "") {
@@ -1010,7 +1041,7 @@ function doCheckbox($name, $text, $tr = false, $js = null) {
     $x = setting($name);
     echo ($tr ? "<tr><td class='nowrap'>" : ""),
         Ht::hidden("has_$name", 1),
-        Ht::checkbox($name, 1, $x !== null && $x > 0, array("onchange" => $js, "id" => "cb$name")),
+        Ht::checkbox($name, 1, $x !== null && $x > 0, array("onchange" => $js, "id" => "cb$name", "disabled" => setting_disabled($name))),
         "&nbsp;", ($tr ? "</td><td>" : ""),
         setting_label($name, $text, true),
         ($tr ? "</td></tr>\n" : "<br />\n");
@@ -1022,7 +1053,7 @@ function doRadio($name, $varr) {
         $x = 0;
     echo "<table>\n";
     foreach ($varr as $k => $text) {
-        echo "<tr><td class='nowrap'>", Ht::radio($name, $k, $k == $x),
+        echo "<tr><td class='nowrap'>", Ht::radio($name, $k, $k == $x, array("disabled" => setting_disabled($name))),
             "&nbsp;</td><td>";
         if (is_array($text))
             echo setting_label($name, $text[0], true), "<br /><small>", $text[1], "</small>";
@@ -1037,21 +1068,25 @@ function doSelect($name, $nametext, $varr, $tr = false) {
     echo ($tr ? "<tr><td class='nowrap lcaption'>" : ""),
         setting_label($name, $nametext),
         ($tr ? "</td><td class='lentry'>" : ": &nbsp;"),
-        Ht::select($name, $varr, setting($name)),
+        Ht::select($name, $varr, setting($name), array("disabled" => setting_disabled($name))),
         ($tr ? "</td></tr>\n" : "<br />\n");
 }
 
 function doTextRow($name, $text, $v, $size = 30,
                    $capclass = "lcaption", $tempText = "") {
     global $Conf;
-    $settingname = (is_array($text) ? $text[0] : $text);
-    $js = array("size" => $size, "hottemptext" => $tempText);
-    echo "<tr><td class='$capclass nowrap'>", setting_label($name, $settingname), "</td><td class='lentry'>", Ht::entry($name, $v, $js);
+    $nametext = (is_array($text) ? $text[0] : $text);
+    echo "<tr><td class='$capclass nowrap'>", setting_label($name, $nametext), "</td><td class='lentry'>",
+        Ht::entry($name, $v, array("size" => $size, "hottemptext" => $tempText, "disabled" => setting_disabled($name)));
     if (is_array($text) && isset($text[2]))
         echo $text[2];
     if (is_array($text) && $text[1])
         echo "<br /><span class='hint'>", $text[1], "</span>";
     echo "</td></tr>\n";
+}
+
+function doEntry($name, $v, $size = 30, $tempText = "") {
+    echo Ht::entry($name, $v, array("size" => $size, "hottemptext" => $tempText, "disabled" => setting_disabled($name)));
 }
 
 function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
@@ -1119,48 +1154,46 @@ function do_message($name, $description, $type, $rows = 10, $hint = "") {
         expander(null, 0), setting_label($name, $description),
         '</a> <span class="f-cx fx">(HTML allowed)</span></div>',
         $hint,
-        '<textarea class="fx" name="', $name, '" cols="80"',
-        ' rows="', $rows, '">',
-        htmlspecialchars($current),
-        '</textarea></div><div class="g"></div>', "\n";
+        Ht::textarea($name, $current, array("class" => "fx", "rows" => $rows, "cols" => 80, "disabled" => setting_disabled($name))),
+        '</div><div class="g"></div>', "\n";
 }
 
 function doInfoGroup() {
     global $Conf, $Opt;
 
-    echo '<div class="f-c">', setting_label("opt.shortName", "Conference abbreviation"), "</div>\n",
-        Ht::entry("opt.shortName", opt_data("shortName"), array("size" => 20)),
-        '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>',
+    echo '<div class="f-c">', setting_label("opt.shortName", "Conference abbreviation"), "</div>\n";
+    doEntry("opt.shortName", opt_data("shortName"), 20);
+    echo '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>',
         '<div class="g"></div>', "\n";
 
     $long = opt_data("longName");
     if ($long == opt_data("shortName"))
         $long = "";
-    echo "<div class='f-c'>", setting_label("opt.longName", "Conference name"), "</div>\n",
-        Ht::entry("opt.longName", $long, array("size" => 70, "hottemptext" => "(same as abbreviation)")),
-        '<div class="f-h">Example: “14th Workshop on Hot Topics in Operating Systems”</div>';
+    echo "<div class='f-c'>", setting_label("opt.longName", "Conference name"), "</div>\n";
+    doEntry("opt.longName", $long, 70, "(same as abbreviation)");
+    echo '<div class="f-h">Example: “14th Workshop on Hot Topics in Operating Systems”</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
-    echo '<div class="f-c">', setting_label("opt.contactName", "Name of site contact"), "</div>\n",
-        Ht::entry("opt.contactName", opt_data("contactName", null, "Your Name"), array("size" => 50)),
-        '<div class="g"></div>', "\n";
+    echo '<div class="f-c">', setting_label("opt.contactName", "Name of site contact"), "</div>\n";
+    doEntry("opt.contactName", opt_data("contactName", null, "Your Name"), 50);
+    echo '<div class="g"></div>', "\n";
 
-    echo "<div class='f-c'>", setting_label("opt.contactEmail", "Email of site contact"), "</div>\n",
-        Ht::entry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), array("size" => 40)),
-        '<div class="f-h">The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>';
+    echo "<div class='f-c'>", setting_label("opt.contactEmail", "Email of site contact"), "</div>\n";
+    doEntry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), 40);
+    echo '<div class="f-h">The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
-    echo '<div class="f-c">', setting_label("opt.emailReplyTo", "Reply-To field for email"), "</div>\n",
-        Ht::entry("opt.emailReplyTo", opt_data("emailReplyTo"), array("size" => 80, "hottemptext" => "(none)")),
-        '<div class="g"></div>', "\n";
+    echo '<div class="f-c">', setting_label("opt.emailReplyTo", "Reply-To field for email"), "</div>\n";
+    doEntry("opt.emailReplyTo", opt_data("emailReplyTo"), 80, "(none)");
+    echo '<div class="g"></div>', "\n";
 
-    echo '<div class="f-c">', setting_label("opt.emailCc", "Default Cc for reviewer email"), "</div>\n",
-        Ht::entry("opt.emailCc", opt_data("emailCc"), array("size" => 80, "hottemptext" => "(none)")),
-        '<div class="f-h">This applies to email sent to reviewers and email sent using the <a href="', hoturl("mail"), '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.</div>';
+    echo '<div class="f-c">', setting_label("opt.emailCc", "Default Cc for reviewer email"), "</div>\n";
+    doEntry("opt.emailCc", opt_data("emailCc"), 80, "(none)");
+    echo '<div class="f-h">This applies to email sent to reviewers and email sent using the <a href="', hoturl("mail"), '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.</div>';
 }
 
 function doMsgGroup() {
@@ -1598,9 +1631,9 @@ function doRevGroup() {
         $v = defval($_REQUEST, "tag_chair", "");
     else
         $v = join(" ", array_keys($tagger->chair_tags()));
-    echo "<td>",
-        Ht::hidden("has_tag_chair", 1),
-        "<input type='text' name='tag_chair' value=\"", htmlspecialchars($v), "\" size='40' /><br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
+    echo "<td>", Ht::hidden("has_tag_chair", 1);
+    doEntry("tag_chair", $v, 40);
+    echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lcaption'>", setting_label("tag_vote", "Voting tags"), "</td>";
     if (count($Error) > 0)
@@ -1611,20 +1644,18 @@ function doRevGroup() {
             $x .= "$n#$v ";
         $v = trim($x);
     }
-    echo "<td>",
-        Ht::hidden("has_tag_vote", 1),
-        Ht::entry("tag_vote", $v, array("size" => 40)),
-        "<br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
+    echo "<td>", Ht::hidden("has_tag_vote", 1);
+    doEntry("tag_vote", $v, 40);
+    echo "<br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lcaption'>", setting_label("tag_rank", "Ranking tag"), "</td>";
     if (count($Error) > 0)
         $v = defval($_REQUEST, "tag_rank", "");
     else
         $v = $Conf->setting_data("tag_rank", "");
-    echo "<td>",
-        Ht::hidden("has_tag_rank", 1),
-        Ht::entry("tag_rank", $v, array("size" => 40)),
-        "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
+    echo "<td>", Ht::hidden("has_tag_rank", 1);
+    doEntry("tag_rank", $v, 40);
+    echo "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
     echo "</table>";
 
     echo "<div class='g'></div>\n";
