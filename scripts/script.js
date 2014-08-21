@@ -853,6 +853,22 @@ function selassign(elt, which) {
 }
 
 
+// clickthrough
+function handle_clickthrough(form) {
+    jQuery.post(form.action,
+                jQuery(form).serialize() + "&clickthrough_accept=1&ajax=1",
+                function (data, status, jqxhr) {
+                    if (data && data.ok) {
+                        var jq = jQuery(form).closest(".clickthrough");
+                        jQuery("#clickthrough_show").show();
+                        jq.remove();
+                    } else
+                        alert((data && data.error) || "You can’t continue until you accept these terms.");
+                });
+    return false;
+}
+
+
 // author entry
 var numauthorfold = [];
 function authorfold(prefix, relative, n) {

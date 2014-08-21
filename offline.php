@@ -169,7 +169,7 @@ if ($pastDeadline && !$Conf->deadlinesAfter("rev_open") && !$Me->privChair) {
     go(hoturl("index"));
 }
 
-$Conf->header("Offline Reviewing", 'offrev', actionBar());
+$Conf->header("Offline Reviewing", "offline", actionBar());
 
 if ($Me->is_reviewer()) {
     if ($pastDeadline && !$Conf->deadlinesAfter("rev_open"))
@@ -177,6 +177,8 @@ if ($Me->is_reviewer()) {
     else if ($pastDeadline)
 	$Conf->infoMsg("The <a href='" . hoturl("deadlines") . "'>deadline</a> for submitting reviews has passed.");
     $Conf->infoMsg("Use this page to download a blank review form, or to upload review forms you’ve already filled out.");
+    if (!$Me->can_clickthrough("review"))
+        PaperTable::echo_review_clickthrough();
 } else
     $Conf->infoMsg("You aren’t registered as a reviewer or PC member for this conference, but for your information, you may download the review form anyway.");
 

@@ -361,6 +361,8 @@ else if (isset($_REQUEST["register"]) && $newProfile
 } else if (isset($_REQUEST["merge"]) && !$newProfile
            && $Acct->contactId == $Me->contactId)
     go(hoturl("mergeaccounts"));
+else if (isset($_REQUEST["clickthrough"]))
+    UserActions::save_clickthrough($Acct);
 
 function databaseTracks($who) {
     global $Conf;

@@ -210,7 +210,7 @@ div.body {
 }
 body#paper_view div.body, body#paper_edit div.body,
 body#review div.body, body#comment div.body,
-body#assign div.body, body#offrev div.body {
+body#assign div.body, body#offline div.body {
 	margin: 0 22px 0 12px;
 }
 body#account div.body, body#scorehelp div.body, body#settings div.body {
@@ -1545,7 +1545,7 @@ div.merror pre {
 	border: 1px dashed #eecccc;
 }
 
-hr.hr {
+hr {
 	margin: 0.75em 0;
 	border: 0 none;
 	height: 1px;
@@ -1804,7 +1804,7 @@ tr.pl.smalltag, tr.plx.smalltag {
 	color: #999999;
 }
 
-body#offrev td#upload {
+body#offline td#upload {
 	padding-left: 3em;
 }
 
@@ -2192,6 +2192,9 @@ div.revcard {
 	-moz-box-shadow: 0 1px 5px #46678c;
 	-webkit-box-shadow: 0 1px 5px #46678c;
 	border-radius: 2px;
+}
+body#offline div.revcard {
+	margin: 16px 7em;
 }
 div.revcard_head {
 	padding: 3px 12px 4px 12px;

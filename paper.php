@@ -74,8 +74,6 @@ if (!$newPaper) {
 
 
 // paper actions
-if (isset($_REQUEST["clickthrough"]) && check_post())
-    PaperActions::save_clickthrough();
 if (isset($_REQUEST["setrevpref"]) && $prow && check_post()) {
     PaperActions::setReviewPreference($prow);
     loadRows();

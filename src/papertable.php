@@ -1786,28 +1786,22 @@ class PaperTable {
         echo "</div>\n";
     }
 
-    private function _need_clickthrough($ctype) {
-        global $Conf, $Me;
-        if (!$Me->privChair
-            && @($cmsg = $Conf->setting_data("clickthrough_$ctype"))) {
-            $csha1 = sha1($cmsg);
-            $clickthrough = $Me->data("clickthrough");
-            return !$clickthrough || !@$clickthrough->$csha1;
-        } else
-            return false;
-    }
-
-    private function _echo_clickthrough($form, $ctype) {
+    static private function _echo_clickthrough($ctype) {
         global $Conf, $Now;
         $data = $Conf->setting_data("clickthrough_$ctype");
-        echo $form, "<div class='aahc'>", $data;
-        $buttons = array(Ht::submit("clickthrough_accept", "Accept", array("class" => "bb")),
-                         Ht::submit("clickthrough_decline", "Decline", array("class" => "b")));
+        echo Ht::form(hoturl_post("profile"), array("onsubmit" => "return handle_clickthrough(this)")), "<div class='aahc'>", $data;
+        $buttons = array(Ht::submit("clickthrough_accept", "Accept", array("class" => "bb")));
         echo "<div class='g'></div>",
             Ht::hidden("clickthrough", $ctype),
             Ht::hidden("clickthrough_sha1", sha1($data)),
             Ht::hidden("clickthrough_time", $Now),
             Ht::actions($buttons), "</div></form>";
+    }
+
+    static public function echo_review_clickthrough() {
+        echo '<div class="revcard clickthrough"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">You must agree to these terms before you can save reviews.<hr />';
+        self::_echo_clickthrough("review");
+        echo "</form></div></div>";
     }
 
     private function _echo_editable_body($form) {
@@ -1889,9 +1883,13 @@ class PaperTable {
 
         $this->echoDivEnter();
         if ($this->editable) {
-            if ($this->_need_clickthrough("submit"))
-                $this->_echo_clickthrough($form, "submit");
-            else
+            if (!$Me->can_clickthrough("submit")) {
+                echo '<div class="clickthrough"><h3>Submission terms</h3>You must agree to these terms before you can submit a paper.<hr />';
+                self::_echo_clickthrough("submit");
+                echo '</div><div id="clickthrough_show" style="display:none">';
+                $this->_echo_editable_body($form);
+                echo '</div>';
+            } else
                 $this->_echo_editable_body($form);
         } else {
             if ($this->mode == "pe" && ($m = $this->editMessage()))
@@ -2076,13 +2074,9 @@ class PaperTable {
         $this->_paptabReviewLinks(true, $this->editrrow, "");
 
         // maybe clickthrough
-        if ($this->_need_clickthrough("review")) {
-            $form = Ht::form(hoturl_post("review", "p=" . $prow->paperId . ($this->editrrow ? "&amp;r=" . $this->editrrow->reviewId : "") . "&amp;m=re"));
-            echo '<div class="revcard"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">';
-            $this->_echo_clickthrough($form, "review");
-            echo "</form></div></div>";
-            return;
-        }
+        $clickthrough_close = "";
+        if (!$Me->can_clickthrough("review"))
+            self::echo_review_clickthrough();
 
         // review form, possibly with deadline warning
         $opt = array("edit" => $this->mode == "re");

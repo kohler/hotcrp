@@ -1190,6 +1190,8 @@ function whyNotText($whyNot, $action) {
         $text .= "You didn’t write this review, so you can’t change it. ";
     if (isset($whyNot['reviewToken']))
         $text .= "If you know a valid review token, enter it above to edit that review. ";
+    if (@$whyNot["clickthrough"])
+        $text .= "You can’t do that until you agree to the current terms. ";
     // finish it off
     if (isset($whyNot['chairMode']))
         $text .= "(<a class='nowrap' href=\"" . selfHref(array("forceShow" => 1)) . "\">" . ucfirst($action) . " the paper anyway</a>) ";

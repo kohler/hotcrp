@@ -1661,7 +1661,24 @@ class Contact {
     }
 
     function can_submit_review($prow, $rrow, &$whyNot = null) {
-        return $this->canReview($prow, $rrow, $whyNot, true);
+        global $Conf;
+        if ($this->canReview($prow, $rrow, $whyNot, true)) {
+            if ($this->can_clickthrough("review"))
+                return true;
+            $whyNot["clickthrough"] = 1;
+        }
+        return false;
+    }
+
+    function can_clickthrough($ctype) {
+        global $Conf;
+        if (!$this->privChair
+            && @($cmsg = $Conf->setting_data("clickthrough_$ctype"))) {
+            $csha1 = sha1($cmsg);
+            $data = $this->data("clickthrough");
+            return $data && @$data->$csha1;
+        } else
+            return true;
     }
 
     function can_view_review_ratings($prow, $rrow) {

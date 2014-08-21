@@ -205,7 +205,7 @@ class PaperActions {
         global $Conf, $Me, $Error, $OK;
         if (isset($_REQUEST["cancelsettags"]))
             return;
-        $ajax = defval($_REQUEST, "ajax", false);
+        $ajax = @$_REQUEST["ajax"];
         if ($Me->canSetTags($prow)) {
             $tagger = new Tagger;
             if (isset($_REQUEST["tags"]))
@@ -230,16 +230,6 @@ class PaperActions {
         }
         redirectSelf();
         // NB normally redirectSelf() does not return
-    }
-
-    static function save_clickthrough() {
-        global $Me, $Conf, $Now;
-        if (@$_REQUEST["clickthrough_accept"]
-            && @$_REQUEST["clickthrough_sha1"]) {
-            $Me->merge_and_save_data(array("clickthrough" => array($_REQUEST["clickthrough_sha1"] => $Now)));
-            redirectSelf();
-        } else if (@$_REQUEST["clickthrough_decline"])
-            $Conf->errorMsg("You can’t continue until you accept these terms.");
     }
 
     static function tagReport($prow, $return = false) {
