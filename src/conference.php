@@ -1950,6 +1950,8 @@ class Conference {
         if (@$CurrentList
             && ($list = SessionList::lookup($CurrentList)))
             $this->scriptStuff .= ";hotcrp_list={num:$CurrentList,id:\"" . addcslashes($list->listid, "\n\r\\\"/") . "\"}";
+        if (($urldefaults = hoturl_defaults()))
+            $this->scriptStuff .= ";hotcrp_urldefaults=" . json_encode($urldefaults);
 
         $pid = @$_REQUEST["paperId"];
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
@@ -1961,7 +1963,7 @@ class Conference {
 
         if ($Me) {
             $dl = $Me->deadlines();
-            $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($dl) . ",\"" . hoturl("deadlines") . "\")";
+            $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($dl) . ")";
         } else
             $dl = array();
 

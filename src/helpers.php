@@ -267,13 +267,14 @@ if (function_exists("iconv")) {
 global $_hoturl_defaults;
 $_hoturl_defaults = null;
 
-function hoturl_defaults($options) {
+function hoturl_defaults($options = array()) {
     global $_hoturl_defaults;
     foreach ($options as $k => $v)
         if ($v !== null)
             $_hoturl_defaults[$k] = $v;
         else
             unset($_hoturl_defaults[$k]);
+    return $_hoturl_defaults;
 }
 
 function hoturl_site_relative($page, $options = null) {

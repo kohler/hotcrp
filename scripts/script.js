@@ -2,10 +2,32 @@
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix, hotcrp_list;
+var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix, hotcrp_list, hotcrp_urldefaults;
 
 function $$(id) {
     return document.getElementById(id);
+}
+
+window.escape_entities = (function () {
+    var re = /[&<>"]/g, rep = {"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"};
+    return function (s) {
+        return s.replace(re, function (match) {
+            return rep[match];
+        });
+    };
+})();
+
+function serialize_object(x) {
+    if (typeof x === "string")
+        return x;
+    else if (x) {
+        var k, v, a = [];
+        for (k in x)
+            if ((v = x[k]) !== null)
+                a.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
+        return a.join("&");
+    } else
+        return "";
 }
 
 jQuery.fn.extend({
@@ -150,17 +172,33 @@ return setLocalTime;
 })();
 
 
-function hoturl_post(page, options) {
-    return hotcrp_base + page + hotcrp_suffix + "?post=" + hotcrp_postvalue + (options ? "&" + options : "");
+function hoturl(page, options) {
+    var k, t, a, m;
+    options = serialize_object(options);
+    t = hotcrp_base + page + hotcrp_suffix;
+    if ((page === "paper" || page === "review") && options
+        && (m = options.match(/^(.*)(?:^|&)p=(\d+)(?:&|$)(.*)$/))) {
+        t += "/" + m[2];
+        options = m[1] + (m[1] && m[3] ? "&" : "") + m[3];
+    }
+    if (options && hotcrp_list
+        && (m = options.match(/^(.*(?:^|&)ls=)([^&]*)((?:&|$).*)$/))
+        && hotcrp_list.id == decodeURIComponent(m[2]))
+        options = m[1] + hotcrp_list.num + m[3];
+    a = [];
+    if (hotcrp_urldefaults)
+        a.push(serialize_object(hotcrp_urldefaults));
+    if (options)
+        a.push(options);
+    if (a.length)
+        t += "?" + a.join("&");
+    return t;
 }
 
-function hotcrp_paperurl(pid, listid) {
-    var t = hotcrp_base + "paper" + hotcrp_suffix + "/" + pid;
-    if (listid && hotcrp_list && hotcrp_list.id == listid)
-        t += "?ls=" + hotcrp_list.num;
-    else if (listid)
-        t += "?ls=" + encodeURIComponent(listid);
-    return t;
+function hoturl_post(page, options) {
+    options = serialize_object(options);
+    options += (options ? "&" : "") + "post=" + hotcrp_postvalue;
+    return hoturl(page, options);
 }
 
 function text_to_html(text) {
@@ -170,7 +208,7 @@ function text_to_html(text) {
 }
 
 window.hotcrp_deadlines = (function () {
-var dl, dlname, dltime, dlurl, has_tracker, had_tracker_at,
+var dl, dlname, dltime, has_tracker, had_tracker_at,
     redisplay_timeout, reload_timeout, tracker_timer,
     tracker_comet_at, tracker_comet_stop_until, tracker_comet_errors = 0;
 
@@ -209,10 +247,7 @@ function display_main(is_initial) {
     }
 
     if (dlname) {
-        if (dlurl)
-            s = "<a href=\"" + dlurl + "\">" + dlname + "</a> ";
-        else
-            s = dlname + " ";
+        s = "<a href=\"" + escape_entities(hoturl("deadlines")) + "\">" + dlname + "</a> ";
         amt = dltime - now;
         if (!dltime || amt <= 0)
             s += "is NOW";
@@ -266,12 +301,12 @@ var tracker_map = [["is_manager", "Administrator"],
                    ["is_conflict", "Conflict"]];
 
 function tracker_paper_columns(idx, paper) {
-    var url = hotcrp_paperurl(paper.pid, dl.tracker.listid), i, x = [], title;
+    var url = hoturl("paper", {p: paper.pid, ls: dl.tracker.listid}), i, x = [], title;
     var t = '<td class="tracker' + idx + ' trackerdesc">';
     t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     t += '</td><td class="tracker' + idx + ' trackerpid">';
     if (paper.pid)
-        t += '<a href="' + url + '">#' + paper.pid + '</a>';
+        t += '<a href="' + escape_entities(url) + '">#' + paper.pid + '</a>';
     t += '</td><td class="tracker' + idx + ' trackerbody">';
     if (paper.title)
         x.push('<a href="' + url + '">' + text_to_html(paper.title) + '</a>');
@@ -370,7 +405,7 @@ function display_tracker() {
 function reload() {
     clearTimeout(reload_timeout);
     reload_timeout = null;
-    Miniajax.get(dlurl + "?ajax=1", hotcrp_deadlines, 10000);
+    Miniajax.get(hoturl("deadlines", "ajax=1"), hotcrp_deadlines, 10000);
 }
 
 function run_comet() {
@@ -415,7 +450,7 @@ function hotcrp_deadlines(dlx, is_initial) {
     display_main(is_initial);
     if (dl.tracker || has_tracker)
         display_tracker();
-    if (dlurl && !reload_timeout) {
+    if (!reload_timeout) {
         if (is_initial && $$("clock_drift_container"))
             t = 10;
         else if (had_tracker_at && dl.tracker_poll
@@ -435,15 +470,14 @@ function hotcrp_deadlines(dlx, is_initial) {
     }
 }
 
-hotcrp_deadlines.init = function (dlx, dlurlx) {
-    dlurl = dlurlx;
+hotcrp_deadlines.init = function (dlx) {
     hotcrp_deadlines(dlx, true);
 };
 
 hotcrp_deadlines.tracker = function (start) {
     var trackerstate, list = "";
     if (start < 0)
-        Miniajax.post(dlurl + "?track=stop&ajax=1&post=" + hotcrp_postvalue,
+        Miniajax.post(hoturl_post("deadlines", "track=stop&ajax=1"),
                       hotcrp_deadlines, 10000);
     if (!window.sessionStorage || !window.JSON || start < 0)
         return false;
@@ -459,8 +493,8 @@ hotcrp_deadlines.tracker = function (start) {
         trackerstate = trackerstate[1] + "%20" + encodeURIComponent(list);
         if (hotcrp_paperid)
             trackerstate += "%20" + encodeURIComponent(hotcrp_paperid);
-        Miniajax.post(dlurl + "?track=" + trackerstate + "&ajax=1&post="
-                      + hotcrp_postvalue, hotcrp_deadlines, 10000);
+        Miniajax.post(hoturl_post("deadlines", "track=" + trackerstate + "&ajax=1"),
+                      hotcrp_deadlines, 10000);
     }
     return false;
 };
@@ -584,8 +618,7 @@ function fold(elt, dofold, foldtype) {
 
     // check for session
     if ((opentxt = elt.getAttribute("hotcrp_foldsession")))
-        Miniajax.get(hotcrp_base + "sessionvar.php?j=1&var="
-                     + opentxt.replace("$", foldtype) + "&val=" + (dofold ? 1 : 0));
+        Miniajax.get(hoturl("sessionvar", "j=1&var=" + opentxt.replace("$", foldtype) + "&val=" + (dofold ? 1 : 0)));
 
     return false;
 }
@@ -607,7 +640,7 @@ function foldup(e, event, opts) {
     if ("f" in opts && !!opts.f == !dofold)
         return false;
     if (opts.s)
-        Miniajax.get(hotcrp_base + "sessionvar.php?j=1&var=" + opts.s + "&val=" + (dofold ? 1 : 0));
+        Miniajax.get(hoturl("sessionvar", "j=1&var=" + opts.s + "&val=" + (dofold ? 1 : 0)));
     if (event)
         event_stop(event);
     m = fold(e, dofold, foldnum);
@@ -1168,8 +1201,12 @@ function analyze(e) {
 }
 
 function make_editor() {
-    var x = analyze(this);
+    var x = analyze(this), te;
     fill(x.j, x.cj, true);
+    te = x.j.find("textarea")[0];
+    te.focus();
+    te.select();
+    // XXX scroll to fit comment on screen
     return false;
 }
 
@@ -2758,7 +2795,7 @@ function scorechart1() {
         e = scorechart1_s2(sc, this);
     else {
         e = document.createElement("img");
-        e.src = hotcrp_base + "scorechart.php?" + sc;
+        e.src = hoturl("scorechart", sc);
         e.alt = this.getAttribute("title");
     }
     e.setAttribute("hotcrpscorechart", sc);
