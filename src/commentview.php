@@ -285,17 +285,18 @@ class CommentView {
         // actions
         echo "<div class=\"clear\"></div>\n";
         $buttons = array();
-        $buttons[] = Ht::submit("submitcomment", "Save", array("class" => "bb"));
+        if (!$Me->timeReview($prow, null)) {
+            $whyNot = array("deadline" => "pcrev_hard");
+            $buttons[] = array(Ht::js_button("Save", "override_deadlines(this)", array("class" => "bb", "hotoverridetext" => whyNotText($whyNot, "comment"), "hotoverridesubmit" => "submitcomment")), "(admin only)");
+        } else
+            $buttons[] = Ht::submit("submitcomment", "Save", array("class" => "bb"));
         if ($crow) {
             $buttons[] = Ht::submit("cancelcomment", "Cancel");
             $buttons[] = "";
             $buttons[] = Ht::submit("deletecomment", "Delete comment");
         } else
             $buttons[] = Ht::js_button("Cancel", "cancel_comment()");
-        $post = "";
-        if (!$Me->timeReview($prow, null))
-            $post = Ht::checkbox("override") . "&nbsp;" . Ht::label("Override&nbsp;deadlines");
-        echo Ht::actions($buttons, null, $post);
+        echo Ht::actions($buttons, null);
 
         echo "</div></div></form></div>\n\n";
     }
