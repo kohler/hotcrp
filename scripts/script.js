@@ -1990,20 +1990,27 @@ function addRatingAjax() {
 
 
 // popup dialogs
+function popup_near(elt, anchor) {
+    var anchorPos = $(anchor).geometry();
+    var wg = $(window).geometry();
+    var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
+    var y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
+    elt.style.left = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) + "px";
+    elt.style.top = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) + "px";
+}
+
 function popup(anchor, which, dofold, populate) {
-    var elt = $$("popup_" + which), form, elts, populates, i, xelt, type;
+    var elt, form, elts, populates, i, xelt, type;
+    if (typeof which === "string") {
+        elt = $$("popup_" + which);
+        anchor = anchor || $$("popupanchor_" + which);
+    }
+
     if (elt && dofold)
         elt.className = "popupc";
     else if (elt) {
-        if (!anchor)
-            anchor = $$("popupanchor_" + which);
-        var anchorPos = $(anchor).geometry();
-        var wg = $(window).geometry();
         elt.className = "popupo";
-        var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
-        var y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
-        elt.style.left = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) + "px";
-        elt.style.top = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) + "px";
+        popup_near(elt, anchor);
     }
 
     // transfer input values to the new form if asked
@@ -2027,6 +2034,27 @@ function popup(anchor, which, dofold, populate) {
     }
 
     return false;
+}
+
+function override_deadlines(elt) {
+    var ejq = jQuery(elt);
+    var djq = jQuery('<div class="popupo"><p>' + ejq.attr("hotdeadlinetext")
+                     + " Are you sure you want to override this deadline?</p>"
+                     + '<form><div class="popup_actions">'
+                     + '<button type="button" class="override_cancel">Cancel</button> &nbsp;'
+                     + '<button type="button" class="override_submit">Save changes</button>'
+                     + '</div></form></div>');
+    djq.find(".override_cancel").on("click", function () {
+        djq.remove();
+    });
+    djq.find(".override_submit").on("click", function () {
+        var fjq = ejq.closest("form");
+        fjq.children("div").append('<input type="hidden" name="' + ejq.attr("hotdeadlinesubmit") + '" value="1" /><input type="hidden" name="override" value="1" />');
+        fjq[0].submit();
+        djq.remove();
+    });
+    djq.appendTo(document.body);
+    popup_near(djq[0], elt);
 }
 
 
@@ -2376,11 +2404,6 @@ function docheckpaperstillready() {
         return window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered.");
     else
         return true;
-}
-
-function paperedit_submit_override(updater) {
-    $("#paperedit > div").append("<input type='hidden' name='" + updater + "' value='1' /><input type='hidden' name='override' value='1' />");
-    $("#paperedit")[0].submit();
 }
 
 function doremovedocument(elt) {

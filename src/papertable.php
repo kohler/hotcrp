@@ -1604,17 +1604,9 @@ class PaperTable {
             // produce button
             if ($can_update)
                 $buttons[] = array(Ht::submit($updater, "Save changes", array("class" => "bb")), "");
-            else if ($this->admin) {
-                $buttons[] = array(Ht::js_button("Save changes", "popup(this,'saveoverride',0)"), "(admin only)");
-                Ht::popup("saveoverride",
-                          "<p>" . whyNotText($whyNot, $prow ? "update" : "register")
-                          . " Are you sure you want to override this deadline?</p>",
-                          Ht::form(hoturl_post("paper", "p=$pid&amp;m=pe"),
-                                   array("onsubmit" => "return false")),
-                          Ht::js_button("Cancel", "popup(null,'saveoverride',1)")
-                          . " &nbsp;"
-                          . Ht::js_button("Save changes", "paperedit_submit_override('$updater');popup(null,'saveoverride',1)"));
-            } else if ($prow && $prow->timeSubmitted > 0)
+            else if ($this->admin)
+                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", array("hotdeadlinetext" => whyNotText($whyNot, $prow ? "update" : "register"), "hotdeadlinesubmit" => $updater)), "(admin only)");
+            else if ($prow && $prow->timeSubmitted > 0)
                 $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", array("class" => "b")), "");
             else if ($Conf->timeFinalizePaper($prow))
                 $buttons[] = array(Ht::submit("update", "Save changes", array("class" => "bb")));
