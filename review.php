@@ -79,7 +79,7 @@ else if (isset($_REQUEST["post"]) && isset($_REQUEST["default"])) {
         $_REQUEST["uploadForm"] = 1;
     else
         $_REQUEST["update"] = 1;
-} else if (isset($_REQUEST["submit"]))
+} else if (isset($_REQUEST["submitreview"]))
     $_REQUEST["update"] = $_REQUEST["ready"] = 1;
 else if (isset($_REQUEST["savedraft"])) {
     $_REQUEST["update"] = 1;
@@ -118,7 +118,7 @@ if (isset($_REQUEST["uploadForm"])
 
 
 // check review submit requirements
-if (isset($_REQUEST["unsubmit"]) && $paperTable->editrrow
+if (isset($_REQUEST["unsubmitreview"]) && $paperTable->editrrow
     && $paperTable->editrrow->reviewSubmitted && $Me->canAdminister($prow)
     && check_post()) {
     $Conf->qe("lock tables PaperReview write");
@@ -190,7 +190,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
 
 // delete review action
-if (isset($_REQUEST["delete"]) && $Me->canAdminister($prow) && check_post())
+if (isset($_REQUEST["deletereview"]) && check_post()
+    && $Me->canAdminister($prow))
     if (!$paperTable->editrrow)
         $Conf->errorMsg("No review to delete.");
     else {
@@ -212,6 +213,7 @@ if (isset($_REQUEST["delete"]) && $Me->canAdminister($prow) && check_post())
             unset($_REQUEST["reviewId"]);
             unset($_REQUEST["r"]);
             $_REQUEST["paperId"] = $paperTable->editrrow->paperId;
+            go(hoturl("paper", array("p" => $_REQUEST["paperId"], "ls" => @$_REQUEST["ls"])));
         }
         redirectSelf();         // normally does not return
         loadRows();

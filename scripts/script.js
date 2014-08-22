@@ -2038,7 +2038,7 @@ function popup(anchor, which, dofold, populate) {
 
 function override_deadlines(elt) {
     var ejq = jQuery(elt);
-    var djq = jQuery('<div class="popupo"><p>' + ejq.attr("hotdeadlinetext")
+    var djq = jQuery('<div class="popupo"><p>' + ejq.attr("hotoverridetext")
                      + " Are you sure you want to override this deadline?</p>"
                      + '<form><div class="popup_actions">'
                      + '<button type="button" class="override_cancel">Cancel</button> &nbsp;'
@@ -2049,7 +2049,7 @@ function override_deadlines(elt) {
     });
     djq.find(".override_submit").on("click", function () {
         var fjq = ejq.closest("form");
-        fjq.children("div").append('<input type="hidden" name="' + ejq.attr("hotdeadlinesubmit") + '" value="1" /><input type="hidden" name="override" value="1" />');
+        fjq.children("div").append('<input type="hidden" name="' + ejq.attr("hotoverridesubmit") + '" value="1" /><input type="hidden" name="override" value="1" />');
         fjq[0].submit();
         djq.remove();
     });

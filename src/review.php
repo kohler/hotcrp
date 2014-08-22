@@ -1381,16 +1381,24 @@ $blind\n";
         }
 
         $submitted = $rrow && $rrow->reviewSubmitted;
-        if (!$submitted) {
-            $buttons[] = Ht::submit("submit", "Submit review", array("class" => "bb"));
+        if (!$Conf->time_review($Me->actPC($prow, true), true)) {
+            $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
+            $override_text = whyNotText($whyNot, "review");
+            if (!$submitted) {
+                $buttons[] = array(Ht::js_button("Submit review", "override_deadlines(this)", array("class" => "bb", "hotoverridetext" => $override_text, "hotoverridesubmit" => "submitreview")), "(admin only)");
+                $buttons[] = array(Ht::js_button("Save as draft", "override_deadlines(this)", array("hotoverridetext" => $override_text, "hotoverridesubmit" => "savedraft")), "(admin only)");
+            } else
+                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", array("class" => "bb", "hotoverridetext" => $override_text, "hotoverridesubmit" => "submitreview")), "(admin only)");
+        } else if (!$submitted) {
+            $buttons[] = Ht::submit("submitreview", "Submit review", array("class" => "bb"));
             $buttons[] = Ht::submit("savedraft", "Save as draft");
         } else
-            $buttons[] = Ht::submit("submit", "Save changes", array("class" => "bb"));
+            $buttons[] = Ht::submit("submitreview", "Save changes", array("class" => "bb"));
 
         if ($rrow && $type == "bottom" && $Me->allowAdminister($prow)) {
             $buttons[] = "";
             if ($submitted)
-                $buttons[] = array(Ht::submit("unsubmit", "Unsubmit review"), "(admin only)");
+                $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)");
             $buttons[] = array(Ht::js_button("Delete review", "popup(this,'d',0)"), "(admin only)");
             $Conf->footerHtml("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
@@ -1398,7 +1406,7 @@ $blind\n";
   undone</strong>.</p>
   " . Ht::form_div($reviewPostLink, array("divclass" => "popup_actions"))
     . Ht::js_button("Cancel", "popup(null,'d',1)") . " &nbsp;"
-    . Ht::submit("delete", "Delete review", array("class" => "bb"))
+    . Ht::submit("deletereview", "Delete review", array("class" => "bb"))
     . "</div></form></div>");
         }
 
@@ -1543,9 +1551,6 @@ $blind\n";
         if ($Me->timeReview($prow, $rrow) || $admin) {
             $buttons = $this->_review_buttons($prow, $rrow, "bottom", $reviewPostLink);
             echo Ht::actions($buttons);
-
-            if ($admin)
-                echo Ht::checkbox("override"), "&nbsp;", Ht::label("Override deadlines");
             if ($rrow && $rrow->reviewSubmitted && !$admin)
                 echo "<div class='hint'>Only administrators can remove or unsubmit the review at this point.</div>";
         }

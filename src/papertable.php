@@ -1605,7 +1605,7 @@ class PaperTable {
             if ($can_update)
                 $buttons[] = array(Ht::submit($updater, "Save changes", array("class" => "bb")), "");
             else if ($this->admin)
-                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", array("hotdeadlinetext" => whyNotText($whyNot, $prow ? "update" : "register"), "hotdeadlinesubmit" => $updater)), "(admin only)");
+                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", array("hotoverridetext" => whyNotText($whyNot, $prow ? "update" : "register"), "hotoverridesubmit" => $updater)), "(admin only)");
             else if ($prow && $prow->timeSubmitted > 0)
                 $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", array("class" => "b")), "");
             else if ($Conf->timeFinalizePaper($prow))
@@ -2077,7 +2077,7 @@ class PaperTable {
             && ($Me->ownReview($this->editrrow) || $actChair)
             && !$Conf->time_review($actPC, true)) {
             if ($actChair)
-                $override = "  As an administrator, you can override this deadline using the “Override deadlines” checkbox.";
+                $override = " As an administrator, you can override this deadline.";
             else {
                 $override = "";
                 if ($this->editrrow->reviewSubmitted)
