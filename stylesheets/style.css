@@ -1292,6 +1292,15 @@ table.pt_buttons td.ptb_explain {
 table.pt_buttons td.ptb_button {
 	padding: 0 1em 0 0;
 }
+div.aabut {
+	float: left;
+	text-align: center;
+	margin: 0 1em 0 0;
+}
+div.aabutsep {
+	float: left;
+	padding: 0 0.5em;
+}
 
 .pltable_full_ctr {
 	padding: 0.75em 0.5em;
@@ -2312,7 +2321,7 @@ div.cmtcard_head {
 }
 div.cmtcard_body {
 	background: #ffffff;
-	padding: 6px 12px;
+	padding: 6px 12px 3px;
 	border-radius: 2px;
 }
 div.cmtcard h3 {

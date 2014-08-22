@@ -2057,6 +2057,9 @@ class Contact {
                 $dl["rev_blind"] = true;
             else if ($rb === Conference::BLIND_OPTIONAL)
                 $dl["rev_blind"] = "optional";
+            // can authors see reviews?
+            if ($Conf->timeAuthorViewReviews())
+                $dl["au_allowseerev"] = true;
         }
 
         // grace periods

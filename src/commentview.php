@@ -36,9 +36,18 @@ class CommentView {
     }
 
     public static function echo_script($prow) {
-        global $Conf;
-        if (Ht::mark_stash("papercomment"))
-            $Conf->echoScript("papercomment.commenttag_search_url=\"" . hoturl_raw("search", "q=cmt%3A%23\$") . "\"");
+        global $Conf, $Me;
+        if (Ht::mark_stash("papercomment")) {
+            $t = array("papercomment.commenttag_search_url=\"" . hoturl_raw("search", "q=cmt%3A%23\$") . "\"");
+            if ($Conf->timeAuthorRespond() || $Me->allowAdminister($prow)) {
+                $wordlimit = $Conf->setting("resp_words", 500);
+                if ($wordlimit > 0)
+                    $t[] = "papercomment.resp_words=$wordlimit";
+                if ($Me->canRespond($prow, null))
+                    $t[] = "papercomment.responseinstructions=" . json_encode($Conf->message_html("responseinstructions", array("wordlimit" => $wordlimit)));
+            }
+            $Conf->echoScript(join($t, ";"));
+        }
     }
 
     private function _commentOrdinal($prow, $crow) {
@@ -198,7 +207,10 @@ class CommentView {
             echo " id=\"comment$crow->commentId\"";
         else
             echo " id=\"commentnew\"";
-        echo ' class="cmtg">';
+        if (!$crow && $foldnew && $editMode)
+            echo " class=\"cmtg foldc\">";
+        else
+            echo " class=\"cmtg foldo\">";
         $opendiv = "";
         if ($crow && !$editMode) {
             if (($crow->commentType & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY)
@@ -206,11 +218,8 @@ class CommentView {
             else if ($cmttags && ($colors = $this->tagger->color_classes($cmttags)))
                 echo ($opendiv = '<div class="cmtcolor ' . $colors . '">');
         } else if ($editMode) {
-            echo Ht::form(hoturl_post("comment", "p=$prow->paperId&amp;c=" . ($crow ? $crow->commentId : "new")));
-            if (!$crow && $foldnew)
-                echo '<div class="aahc foldc" id="foldaddcomment">';
-            else
-                echo '<div class="aahc">';
+            echo Ht::form(hoturl_post("comment", "p=$prow->paperId&amp;c=" . ($crow ? $crow->commentId : "new"))),
+                '<div class="aahc">';
             echo Ht::hidden("anchor", $crow ? "comment$crow->commentId" : "commentnew");
         }
         echo "<div class='cmtt'>";
@@ -269,7 +278,7 @@ class CommentView {
         // visibility
         echo '<table class="cmtvistable fold2o"><tr><td>Show to: &nbsp; </td>';
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_REVIEWER | COMMENTTYPE_BLIND;
-        echo "<td>", Ht::radio_h("visibility", "a", ($useRequest ? defval($_REQUEST, "visibility") == "a" : $ctype >= COMMENTTYPE_AUTHOR), array("class" => "cmtvis_a", "onchange" => "docmtvis(this)", "tabindex" => 1)),
+        echo "<td>", Ht::radio_h("visibility", "au", ($useRequest ? defval($_REQUEST, "visibility") == "au" : $ctype >= COMMENTTYPE_AUTHOR), array("class" => "cmtvis_a", "onchange" => "docmtvis(this)", "tabindex" => 1)),
             "&nbsp;</td><td>", Ht::label("Authors and reviewers" . ($Conf->review_blindness() == Conference::BLIND_ALWAYS ? " (anonymous to authors)" : ""));
         // blind?
         if ($Conf->review_blindness() == Conference::BLIND_OPTIONAL)
@@ -281,9 +290,9 @@ class CommentView {
         else
             echo "<br><span class='fx2 hint'>Authors cannot view comments at the moment.</span>";
         echo "</td></tr>\n";
-        echo "<tr><td></td><td>", Ht::radio_h("visibility", "r", ($useRequest ? defval($_REQUEST, "visibility") == "r" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_REVIEWER), array("onchange" => "docmtvis(this)", "tabindex" => 1)),
+        echo "<tr><td></td><td>", Ht::radio_h("visibility", "rev", ($useRequest ? defval($_REQUEST, "visibility") == "rev" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_REVIEWER), array("onchange" => "docmtvis(this)", "tabindex" => 1)),
             "&nbsp;</td><td>", Ht::label("PC and external reviewers"), "</td></tr>\n";
-        echo "<tr><td></td><td>", Ht::radio_h("visibility", "p", ($useRequest ? defval($_REQUEST, "visibility") == "p" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_PCONLY), array("onchange" => "docmtvis(this)", "tabindex" => 1)),
+        echo "<tr><td></td><td>", Ht::radio_h("visibility", "pc", ($useRequest ? defval($_REQUEST, "visibility") == "pc" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_PCONLY), array("onchange" => "docmtvis(this)", "tabindex" => 1)),
             "&nbsp;</td><td>", Ht::label("PC reviewers only"), "</td></tr>\n";
         echo "<tr><td></td><td>", Ht::radio_h("visibility", "admin", ($useRequest ? defval($_REQUEST, "visibility") == "admin" : ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY), array("onchange" => "docmtvis(this)", "tabindex" => 1)),
             "&nbsp;</td><td>", Ht::label("Administrators only"), "</td></tr>\n";
@@ -399,11 +408,11 @@ class CommentView {
             $buttons[] = "";
             $wc = preg_match_all("/[^\\pZ\\s]+/u", $ctext, $cm);
             $wct = ($wordlimit < $wc ? plural($wc - $wordlimit, "word") . " over" : plural($wordlimit - $wc, "word") . " left");
-            $buttons[] = "<div id='responsewc' class='words"
+            $buttons[] = "<div class='words"
                 . ($wordlimit < $wc ? " wordsover" :
                    ($wordlimit * 0.9 < $wc ? " wordsclose" : "")) . "'>"
                 . $wct . "</div>";
-            $Conf->footerScript("set_response_wc(\"responsetext\",\"responsewc\",$wordlimit)");
+            $Conf->footerScript("set_response_wc(jQuery(\"#" . ($crow ? "comment" . $crow->commentId : "response") . "\"),$wordlimit)");
         }
         $post = "";
         if (!$Conf->timeAuthorRespond())

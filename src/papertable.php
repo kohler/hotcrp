@@ -2000,6 +2000,8 @@ class PaperTable {
                 $s = "";
                 foreach ($this->mycrows as $cr)
                     $s .= "papercomment.add(" . json_encode($cv->json($prow, $cr)) . ");\n";
+                if ($Me->canComment($prow, null))
+                    $s .= "papercomment.add({is_new:true,editable:true});\n";
                 echo '<div id="cmtcontainer"></div>';
                 CommentView::echo_script($prow);
                 $Conf->echoScript($s);

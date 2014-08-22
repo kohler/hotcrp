@@ -739,7 +739,7 @@ class ReviewForm {
                 genericWatch($prow, WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
                 unset($this->mailer_info);
             }
-            if ($Conf->timeEmailAuthorsAboutReview() && $notify_author) {
+            if ($Conf->timeAuthorViewReviews() && $notify_author) {
                 $rest["infoMsg"] = "since a review was updated during the response period.";
                 if ($Conf->is_review_blind($fake_rrow)) {
                     $rest["infoMsg"] .= " Reviewer anonymity was preserved.";

@@ -2,7 +2,7 @@
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix, hotcrp_list, hotcrp_urldefaults;
+var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix, hotcrp_list, hotcrp_urldefaults, hotcrp_status;
 
 function $$(id) {
     return document.getElementById(id);
@@ -444,7 +444,7 @@ function run_comet() {
 function hotcrp_deadlines(dlx, is_initial) {
     var t;
     if (dlx)
-        dl = dlx;
+        window.hotcrp_status = dl = dlx;
     if (!dl.load)
         dl.load = (new Date).getTime() / 1000;
     display_main(is_initial);
@@ -1039,23 +1039,24 @@ function setajaxcheck(elt, rv) {
 
 // open new comment
 function open_new_comment(sethash) {
-    var x;
-    fold("addcomment", 0);
-    x = $$("foldaddcomment");
-    x = x ? x.getElementsByTagName("textarea") : null;
-    if (x && x.length)
-        setTimeout(function () { x[0].focus(); }, 0);
+    var x = $$("commentnew"), ta;
+    ta = x ? x.getElementsByTagName("textarea") : null;
+    if (ta && ta.length) {
+        fold(x, 0);
+        setTimeout(function () { ta[0].focus(); }, 0);
+    } else if ((ta = jQuery(x).find("a.cmteditor")[0]))
+        ta.click();
     if (sethash)
         location.hash = "#commentnew";
     return false;
 }
 
 function cancel_comment() {
-    var x = $$("foldaddcomment");
-    x = x ? x.getElementsByTagName("textarea") : null;
-    if (x && x.length)
-        x[0].blur();
-    fold("addcomment", 1);
+    var x = $$("commentnew"), ta;
+    ta = x ? x.getElementsByTagName("textarea") : null;
+    if (ta && ta.length)
+        ta[0].blur();
+    fold(x, 1);
 }
 
 function link_urls(t) {
@@ -1104,15 +1105,15 @@ var vismap = {rev: "hidden from authors",
 var cmts = {}, cmtcontainer = null;
 var idctr = 0;
 
-function comment_identity_time(hc, cj) {
-    var t = [], x, i;
+function comment_identity_time(cj) {
+    var t = [], res = [], x, i;
     if (cj.ordinal)
         t.push('<span class="cmtnumhead"><a class="qq" href="#comment'
                + cj.cid + '"><span class="cmtnumat">@</span><span class="cmtnumnum">'
                + cj.ordinal + '</span></a></span>');
     if (cj.author && cj.author_hidden)
         t.push('<span id="foldcid' + cj.cid + '" class="cmtname fold4c">'
-               + '<a class="q" href="#" onclick="fold(\'cid' + cj.cid + '\',null,4)" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fn4">&nbsp;'
+               + '<a class="q" href="#" onclick="return fold(\'cid' + cj.cid + '\',null,4)" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
                + cj.author + '</span></span>');
     else if (cj.author && cj.blind && cj.visibility == "au")
         t.push('<span class="cmtname">[' + cj.author + ']</span>');
@@ -1127,22 +1128,23 @@ function comment_identity_time(hc, cj) {
         t.push(x.join(" "));
     }
     if (t.length)
-        hc.push('<span class="cmtfn">' + t.join(' <span class="barsep">&nbsp;|&nbsp;</span> ') + '</span>');
+        res.push('<span class="cmtinfo cmtfn">' + t.join(' <span class="barsep">&nbsp;|&nbsp;</span> ') + '</span>');
     if (!cj.response && (i = vismap[cj.visibility]))
-        hc.push('<span class="cmtvis">(' + i + ')</span>');
-    hc.push('<div class="clear"></div>');
+        res.push('<span class="cmtinfo cmtvis">(' + i + ')</span>');
+    res.push('<div class="cmtinfo clear"></div>');
+    return res.join("");
 }
 
-function make_visibility(hc, caption, value, label) {
+function make_visibility(hc, caption, value, label, rest) {
     hc.push('<tr><td>' + caption + '</td><td>'
             + '<input type="radio" name="visibility" value="' + value + '" tabindex="1" id="htctlcv' + value + idctr + '" />&nbsp;</td>'
-            + '<td><label for="htctlcv' + value + idctr + '">' + label + '</label></td></tr>');
+            + '<td><label for="htctlcv' + value + idctr + '">' + label + '</label>' + (rest || "") + '</td></tr>');
 }
 
 function fill_editing(hc, cj) {
     ++idctr;
     // XXX You didn't write this comment...
-    hc.push('<form><div>', '</div></form>');
+    hc.push('<form><div class="aahc">', '</div></form>');
     hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60"></textarea>');
     if (!cj.response) {
         // tags
@@ -1150,53 +1152,73 @@ function fill_editing(hc, cj) {
 
         // visibility
         hc.push('<table class="cmtvistable fold2o">', '</table>');
-        // XXX (anonymous to authors) label or checkbox
-        make_visibility(hc, "Show to: &nbsp; ", "au", "Authors and reviewers");
-        // XXX Authors will be notified immediately.
+        var lsuf = "", tsuf = "";
+        if (hotcrp_status.rev_blind === true)
+            lsuf = " (anonymous to authors)";
+        else if (hotcrp_status.rev_blind)
+            tsuf = ' &nbsp; (<input type="checkbox" name="blind" value="1" tabindex="1" id="htctlcb' + idctr + '">&nbsp;' +
+                '<label for="htctlcb' + idctr + '">Anonymous to authors</label>)';
+        tsuf += '<br><span class="fx2 hint">' + (hotcrp_status.au_allowseerev ? "Authors will be notified immediately." : "Authors cannot view comments at the moment.") + '</span>';
+        make_visibility(hc, "Visibility: &nbsp; ", "au", "Authors and reviewers" + lsuf, tsuf);
         make_visibility(hc, "", "rev", "PC and external reviewers");
         make_visibility(hc, "", "pc", "PC reviewers only");
         make_visibility(hc, "", "admin", "Administrators only");
         hc.pop();
 
         // actions
-        hc.push('<div class="clear"></div><div class="aa">', '<div class="clear"></div></div>');
+        hc.push('<div class="clear"></div><div class="aa" style="margin-bottom:0">', '<div class="clear"></div></div>');
         // XXX override deadlines
         hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Save</button></div>');
         hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
         if (!cj.is_new) {
-            hc.push('<div class="aabutsep"></div>');
+            hc.push('<div class="aabutsep">&nbsp;</div>');
             hc.push('<div class="aabut"><button type="button" name="delete">Delete comment</button></div>');
         }
     } else {
         // actions
         // XXX allowAdminister
         hc.push('<input type="hidden" name="response" value="1" />');
-        hc.push('<div class="clear"></div><div class="aa">', '<div class="clear"></div></div>');
+        hc.push('<div class="clear"></div><div class="aa" style="margin-bottom:0">', '<div class="clear"></div></div>');
         if (cj.is_new || cj.draft)
             hc.push('<div class="aabut"><button type="button" name="savedraft">Save draft</button></div>');
         hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Submit</button></div>');
+        hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
         if (!cj.is_new) {
-            hc.push('<div class="aabutsep"></div>');
+            hc.push('<div class="aabutsep">&nbsp;</div>');
             hc.push('<div class="aabut"><button type="button" name="delete">Delete response</button></div>');
         }
-        // XXX word count
+        if (papercomment.resp_words > 0) {
+            hc.push('<div class="aabutsep">&nbsp;</div>');
+            hc.push('<div class="aabut"><div class="words"></div></div>');
+        }
     }
 }
 
 function activate_editing(j, cj) {
+    var elt;
     j.find("textarea").text(cj.text);
     j.find("input[name=commenttags]").val((cj.tags || []).join(" "));
-    j.find("input[name=visibility][value=" + (cj.visibility || "au") + "]")[0].checked = true;
+    if ((elt = j.find("input[name=visibility][value=" + (cj.visibility || "au") + "]")[0]))
+        elt.checked = true;
+    if ((elt = j.find("input[name=blind]")[0]) && cj.blind)
+        elt.checked = true;
     j.find("button[name=submit]").click(submit_editor);
     j.find("button[name=cancel]").click(cancel_editor);
     j.find("button[name=delete]").click(delete_editor);
     j.find("button[name=savedraft]").click(savedraft_editor);
-    docmtvis(j);
+    if ((cj.visibility || "au") !== "au")
+        fold(j.find(".cmtvistable")[0], true, 2);
+    j.find("input[name=visibility]").on("change", docmtvis);
+    if (papercomment.resp_words > 0)
+        set_response_wc(j, papercomment.resp_words);
     hiliter_children(j);
 }
 
 function analyze(e) {
-    var j = jQuery(e).closest(".cmtg"), id = j[0].id.substr(7);
+    var j = jQuery(e).closest(".cmtg"), id;
+    if (!j.length)
+        j = jQuery(e).closest(".cmtcard").find(".cmtg");
+    id = j[0].id.substr(7);
     return {j: j, id: id, cj: cmts[id]};
 }
 
@@ -1205,24 +1227,28 @@ function make_editor() {
     fill(x.j, x.cj, true);
     te = x.j.find("textarea")[0];
     te.focus();
-    te.select();
+    if (te.setSelectionRange)
+        te.setSelectionRange(te.value.length, te.value.length);
     // XXX scroll to fit comment on screen
     return false;
 }
 
 function save_editor(elt, action) {
-    var x = analyze(elt);
-    var url = hoturl_post("comment", "p=" + hotcrp_paperid + "&c=" + x.id + "&ajax=1&"
-                          + action + (x.cj.response ? "response" : "comment") + "=1");
+    var x = analyze(elt), url;
+    url = hoturl_post("comment", "p=" + hotcrp_paperid + "&c=" + x.id + "&ajax=1&"
+                      + action + (x.cj.response ? "response" : "comment") + "=1");
     jQuery.post(url, x.j.find("form").serialize(), function (data, textStatus, jqxhr) {
         if (data.ok && x.id === "new")
             x.j.closest(".cmtg")[0].id = "comment" + data.cmt.cid;
-        if (!data.ok || data.cmt)
+        if (!data.ok)
+            x.j.find(".cmtmsg").html(data.error ? '<div class="xmerror">' + data.error + '</div>' : data.msg);
+        else if (data.cmt)
             fill(x.j, data.cmt || cmts[x.id], false, data.msg);
         else
             x.j.closest(".cmtg").html(data.msg);
+        if (x.id === "new" && cmts["new"])
+            papercomment.add(cmts["new"]);
     });
-    // XXX add new "new comment" link
 }
 
 function submit_editor() {
@@ -1243,9 +1269,13 @@ function cancel_editor() {
 }
 
 function fill(j, cj, editing, msg) {
-    var hc = new HtmlCollector, cmtfn, textj, t;
-    if (!cj.is_new)
-        cmts[cj.cid] = cj;
+    var hc = new HtmlCollector, hcid = new HtmlCollector, cmtfn, textj, t, chead,
+        cid = cj.is_new ? "new" + (cj.response ? "response" : "") : cj.cid;
+    cmts[cid] = cj;
+    if (cj.response) {
+        chead = j.closest(".cmtcard").find(".cmtcard_head");
+        chead.find(".cmtinfo").remove();
+    }
 
     // opener
     if (cj.visibility == "admin")
@@ -1255,15 +1285,28 @@ function fill(j, cj, editing, msg) {
 
     // header
     hc.push('<div class="cmtt">', '</div>');
-    if (!cj.is_new && cj.editable && !editing)
-        hc.push('<div class="floatright"><a href="#" class="xx editor"><u>Edit</u></a></div>');
-    comment_identity_time(hc, cj);
+    if (cj.is_new && !editing)
+        hc.push('<h3><a class="q fn cmteditor" href="#">+&nbsp;Add Comment</a></h3>');
+    else if (cj.is_new)
+        hc.push('<h3>Add Comment</h3>');
+    else if (cj.editable && !editing) {
+        t = '<div class="cmtinfo floatright"><a href="#" class="xx editor cmteditor"><u>Edit</u></a></div>';
+        cj.response ? jQuery(t).prependTo(chead) : hc.push(t);
+    }
+    t = comment_identity_time(cj);
+    cj.response ? jQuery(t).appendTo(chead) : hc.push(t);
     hc.pop();
 
     // text
     hc.push('<div class="cmtv">', '</div>');
+    hc.push('<div class="cmtmsg">', '</div>');
     if (msg)
         hc.push(msg);
+    else if (cj.response && cj.draft)
+        hc.push('<div class="xwarning">This is a draft response. Reviewers won’t see it until you submit.</div>');
+    hc.pop();
+    if (cj.response && editing && papercomment.responseinstructions)
+        hc.push('<div class="xinfo" style="margin-bottom:0.5em">' + papercomment.responseinstructions + '</div>');
     if (editing)
         fill_editing(hc, cj);
     else
@@ -1276,15 +1319,16 @@ function fill(j, cj, editing, msg) {
     else {
         textj = j.find(".cmttext").text(cj.text);
         textj.html(link_urls(textj.html()));
-        j.find("a.editor").click(make_editor);
+        (cj.response ? chead : j).find("a.cmteditor").click(make_editor);
     }
     return j;
 }
 
 function add(cj) {
-    var j = jQuery("#comment" + (cj.is_new ? "new" : cj.cid));
+    var cid = cj.is_new ? "new" + (cj.response ? "response" : "") : cj.cid;
+    var j = jQuery("#comment" + cid);
     if (!j.length) {
-        if (!cmtcontainer || cmtcontainer.hasClass("response") != !!cj.response) {
+        if (!cmtcontainer || cj.response || cmtcontainer.hasClass("response")) {
             if (cj.response)
                 cmtcontainer = '<div class="cmtcard response"><div class="cmtcard_head"><h3>Response</h3></div>';
             else
@@ -1292,7 +1336,7 @@ function add(cj) {
             cmtcontainer = jQuery(cmtcontainer + '<div class="cmtcard_body"></div></div>');
             cmtcontainer.appendTo("#cmtcontainer");
         }
-        j = jQuery('<div id="comment' + (cj.is_new ? "new" : cj.cid) + '" class="cmtg"></div>');
+        j = jQuery('<div id="comment' + cid + '" class="cmtg foldc"></div>');
         j.appendTo(cmtcontainer.find(".cmtcard_body"));
     }
     fill(j, cj, false);
@@ -1323,7 +1367,7 @@ function quicklink_shortcut(evt, code) {
 }
 
 function comment_shortcut() {
-    if ($$("foldaddcomment")) {
+    if ($$("commentnew")) {
         open_new_comment();
         return true;
     } else
@@ -2608,28 +2652,29 @@ function doremovedocument(elt) {
 }
 
 function docmtvis(hilite) {
+    hilite = this ? this : hilite;
     jQuery(hilite).each(function () {
         var j = jQuery(this).closest(".cmtvistable"),
-            dofold = !j.find(".cmtvis_a").is(":checked");
+            dofold = !j.find("input[name=visibility][value=au]").is(":checked");
         fold(j[0], dofold, 2);
     });
     if (hilite instanceof Node)
         hiliter(hilite);
 }
 
-function set_response_wc(taid, wcid, wordlimit) {
-    function wc(event) {
-        var wc = (this.value.match(/\S+/g) || []).length, e = $$(wcid), wct;
-        e.className = "words" + (wordlimit < wc ? " wordsover" :
-                                 (wordlimit * 0.9 < wc ? " wordsclose" : ""));
+function set_response_wc(jq, wordlimit) {
+    var wce = jq.find(".words")[0];
+    function setwc(event) {
+        var wc = (this.value.match(/\S+/g) || []).length, wct;
+        wce.className = "words" + (wordlimit < wc ? " wordsover" :
+                                   (wordlimit * 0.9 < wc ? " wordsclose" : ""));
         if (wordlimit < wc)
-            e.innerHTML = (wc - wordlimit) + " word" + (wc - wordlimit == 1 ? "" : "s") + " over";
+            wce.innerHTML = (wc - wordlimit) + " word" + (wc - wordlimit == 1 ? "" : "s") + " over";
         else
-            e.innerHTML = (wordlimit - wc) + " word" + (wordlimit - wc == 1 ? "" : "s") + " left";
+            wce.innerHTML = (wordlimit - wc) + " word" + (wordlimit - wc == 1 ? "" : "s") + " left";
     }
-    var e = $$(taid);
-    if (e && e.addEventListener)
-        e.addEventListener("input", wc, false);
+    if (wce)
+        jq.find("textarea").on("input", setwc).each(setwc);
 }
 
 function save_tags() {
