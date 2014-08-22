@@ -11,16 +11,22 @@ class Ht {
     private static $_stash = "";
     private static $_stash_inscript = false;
     private static $_stash_map = array();
+    private static $_bad_js = array("accept-charset" => true,
+                                    "action" => true,
+                                    "enctype" => true,
+                                    "method" => true,
+                                    "name" => true,
+                                    "optionstyles" => true,
+                                    "type" => true,
+                                    "value" => true);
 
     static function extra($js) {
         $x = "";
         if ($js) {
-            foreach (array("id", "tabindex", "onchange", "onclick", "onfocus",
-                           "onblur", "onsubmit", "class", "style", "size",
-                           "title", "rows", "cols", "autocomplete") as $k)
-                if (@$js[$k] !== null)
-                    $x .= " $k=\"" . str_replace("\"", "'", $js[$k]) . "\"";
-            if (isset($js["disabled"]) && $js["disabled"])
+            foreach ($js as $k => $v)
+                if (!@self::$_bad_js[$k] && $k !== "disabled")
+                    $x .= " $k=\"" . str_replace("\"", "'", $v) . "\"";
+            if (@$js["disabled"])
                 $x .= " disabled=\"disabled\"";
         }
         return $x;
@@ -69,21 +75,23 @@ class Ht {
             . self::extra($extra) . ' />';
     }
 
-    static function select($name, $opt, $selected = null, $extra = null) {
-        if (is_array($selected) && $extra === null)
-            list($extra, $selected) = array($selected, null);
-        $x = '<select name="' . $name . '"' . self::extra($extra) . ">";
+    static function select($name, $opt, $selected = null, $js = null) {
+        if (is_array($selected) && $js === null)
+            list($js, $selected) = array($selected, null);
+        $disabled = @$js["disabled"];
+        if (is_array($disabled))
+            unset($js["disabled"]);
+        $x = '<select name="' . $name . '"' . self::extra($js) . ">";
         if ($selected === null || !isset($opt[$selected]))
             $selected = key($opt);
-        $disabled = defval($extra, "disabled", null);
-        $optionstyles = defval($extra, "optionstyles", null);
+        $optionstyles = defval($js, "optionstyles", null);
         $optgroup = "";
         foreach ($opt as $value => $info) {
             if (is_array($info) && $info[0] == "optgroup")
                 $info = (object) array("type" => "optgroup", "label" => $info[1]);
             else if (is_string($info)) {
                 $info = (object) array("label" => $info);
-                if ($disabled && isset($disabled[$value]))
+                if (is_array($disabled) && isset($disabled[$value]))
                     $info->disabled = $disabled[$value];
                 if ($optionstyles && isset($optionstyles[$value]))
                     $info->style = $optionstyles[$value];
@@ -217,6 +225,7 @@ class Ht {
             if ($value === null || $value === "")
                 $value = $temp;
             $temp = ' hottemptext="' . htmlspecialchars($temp) . '"';
+            unset($js["hottemptext"]);
             self::stash_script("hotcrp_load(hotcrp_load.temptext)", "temptext");
         } else
             $temp = "";
