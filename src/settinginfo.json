@@ -2,6 +2,7 @@
     "acct_addr": {"type": "checkbox", "name": "Collect addresses"},
     "au_seerev": {"type": "radio", "values": [0, 1, 2], "name": "Authors can see reviews"},
     "banal": {"type": "special", "nodb": true},
+    "cmt_always": {"type": "checkbox", "name": "Allow comments even if reviewing is closed"},
     "decisions": {"type": "special", "nodb": true},
     "extrev_chairreq": {"type": "checkbox", "name": "PC chair must approve proposed external reviewers"},
     "extrev_hard": {"type": "date", "name": "External reviewer hard review deadline"},

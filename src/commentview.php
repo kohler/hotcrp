@@ -285,7 +285,7 @@ class CommentView {
         // actions
         echo "<div class=\"clear\"></div>\n";
         $buttons = array();
-        if (!$Me->timeReview($prow, null)) {
+        if (!$Me->timeReview($prow, null) && !$Conf->setting("cmt_always")) {
             $whyNot = array("deadline" => "pcrev_hard");
             $buttons[] = array(Ht::js_button("Save", "override_deadlines(this)", array("class" => "bb", "hotoverridetext" => whyNotText($whyNot, "comment"), "hotoverridesubmit" => "submitcomment")), "(admin only)");
         } else
