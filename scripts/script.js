@@ -1142,8 +1142,11 @@ function make_visibility(hc, caption, value, label, rest) {
 }
 
 function fill_editing(hc, cj) {
+    var bnote = "";
     ++idctr;
     // XXX You didn't write this comment...
+    if (cj.response ? !hotcrp_status.resp_allowed : !hotcrp_status.cmt_allowed)
+        bnote = '<br><span class="hint">(admin only)</span>';
     hc.push('<form><div class="aahc">', '</div></form>');
     hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60"></textarea>');
     if (!cj.response) {
@@ -1168,7 +1171,7 @@ function fill_editing(hc, cj) {
         // actions
         hc.push('<div class="clear"></div><div class="aa" style="margin-bottom:0">', '<div class="clear"></div></div>');
         // XXX override deadlines
-        hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Save</button></div>');
+        hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Save</button>' + bnote + '</div>');
         hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
         if (!cj.is_new) {
             hc.push('<div class="aabutsep">&nbsp;</div>');
@@ -1180,8 +1183,8 @@ function fill_editing(hc, cj) {
         hc.push('<input type="hidden" name="response" value="1" />');
         hc.push('<div class="clear"></div><div class="aa" style="margin-bottom:0">', '<div class="clear"></div></div>');
         if (cj.is_new || cj.draft)
-            hc.push('<div class="aabut"><button type="button" name="savedraft">Save draft</button></div>');
-        hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Submit</button></div>');
+            hc.push('<div class="aabut"><button type="button" name="savedraft">Save draft</button>' + bnote + '</div>');
+        hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Submit</button>' + bnote + '</div>');
         hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
         if (!cj.is_new) {
             hc.push('<div class="aabutsep">&nbsp;</div>');
@@ -1235,7 +1238,8 @@ function make_editor() {
 
 function save_editor(elt, action, really) {
     var x = analyze(elt);
-    if (x.cj.response && !hotcrp_status.resp_allowed && !really) {
+    if ((x.cj.response && !hotcrp_status.resp_allowed && !really)
+        || (!x.cj.response && !hotcrp_status.cmt_allowed && !really)) {
         override_deadlines(elt, function () {
             save_editor(elt, action, true);
         });
@@ -1259,7 +1263,7 @@ function save_editor(elt, action, really) {
             fill(x.j, data.cmt, editing_response, data.msg);
         else
             x.j.closest(".cmtg").html(data.msg);
-        if (x.id === "new" && cmts["new"])
+        if (x.id === "new" && data.ok && cmts["new"])
             papercomment.add(cmts["new"]);
     });
 }

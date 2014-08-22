@@ -2078,7 +2078,12 @@ class Contact {
         }
 
         // activeness
-        if (@$dl["resp_open"] && (!@$dl["resp_done"] || $dl["resp_done"] >= $now || @$dl["resp_ingrace"]))
+        $rt = $this->isPC ? "pcrev_done" : "extrev_done";
+        if (@$dl["rev_open"] && (!@$dl[$rt] || $dl[$rt] >= $now || @$dl["{$rt}_ingrace"]))
+            $dl["rev_allowed"] = true;
+        if (@$dl["rev_allowed"] || ($this->is_reviewer() && $Conf->setting("cmt_always") > 0))
+            $dl["cmt_allowed"] = true;
+        if (@$dl["resp_open"] && (!@$dl["resp_done"] || $dl["resp_done"] >= $now || @$dl["resp_done_ingrace"]))
             $dl["resp_allowed"] = true;
 
         // add meeting tracker
