@@ -150,6 +150,10 @@ return setLocalTime;
 })();
 
 
+function hoturl_post(page, options) {
+    return hotcrp_base + page + hotcrp_suffix + "?post=" + hotcrp_postvalue + (options ? "&" + options : "");
+}
+
 function hotcrp_paperurl(pid, listid) {
     var t = hotcrp_base + "paper" + hotcrp_suffix + "/" + pid;
     if (listid && hotcrp_list && hotcrp_list.id == listid)
@@ -1064,6 +1068,8 @@ window.papercomment = (function () {
 var vismap = {rev: "hidden from authors",
               pc: "shown only to PC reviewers",
               admin: "shown only to administrators"};
+var cmts = {}, cmtcontainer = null;
+var idctr = 0;
 
 function comment_identity_time(hc, cj) {
     var t = [], x, i;
@@ -1094,36 +1100,168 @@ function comment_identity_time(hc, cj) {
     hc.push('<div class="clear"></div>');
 }
 
-function make(cj) {
-    var hc = new HtmlCollector, cmtfn, j, textj, t;
+function make_visibility(hc, caption, value, label) {
+    hc.push('<tr><td>' + caption + '</td><td>'
+            + '<input type="radio" name="visibility" value="' + value + '" tabindex="1" id="htctlcv' + value + idctr + '" />&nbsp;</td>'
+            + '<td><label for="htctlcv' + value + idctr + '">' + label + '</label></td></tr>');
+}
+
+function fill_editing(hc, cj) {
+    ++idctr;
+    // XXX You didn't write this comment...
+    hc.push('<form><div>', '</div></form>');
+    hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60"></textarea>');
+    if (!cj.response) {
+        // tags
+        hc.push('<table style="float:right"><tr><td>Tags: &nbsp; </td><td><input name="commenttags" size="40" tabindex="1" /></td></tr></table>');
+
+        // visibility
+        hc.push('<table class="cmtvistable fold2o">', '</table>');
+        // XXX (anonymous to authors) label or checkbox
+        make_visibility(hc, "Show to: &nbsp; ", "au", "Authors and reviewers");
+        // XXX Authors will be notified immediately.
+        make_visibility(hc, "", "rev", "PC and external reviewers");
+        make_visibility(hc, "", "pc", "PC reviewers only");
+        make_visibility(hc, "", "admin", "Administrators only");
+        hc.pop();
+
+        // actions
+        hc.push('<div class="clear"></div><div class="aa">', '<div class="clear"></div></div>');
+        // XXX override deadlines
+        hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Save</button></div>');
+        hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
+        if (!cj.is_new) {
+            hc.push('<div class="aabutsep"></div>');
+            hc.push('<div class="aabut"><button type="button" name="delete">Delete comment</button></div>');
+        }
+    } else {
+        // actions
+        // XXX allowAdminister
+        hc.push('<input type="hidden" name="response" value="1" />');
+        hc.push('<div class="clear"></div><div class="aa">', '<div class="clear"></div></div>');
+        if (cj.is_new || cj.draft)
+            hc.push('<div class="aabut"><button type="button" name="savedraft">Save draft</button></div>');
+        hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Submit</button></div>');
+        if (!cj.is_new) {
+            hc.push('<div class="aabutsep"></div>');
+            hc.push('<div class="aabut"><button type="button" name="delete">Delete response</button></div>');
+        }
+        // XXX word count
+    }
+}
+
+function activate_editing(j, cj) {
+    j.find("textarea").text(cj.text);
+    j.find("input[name=commenttags]").val((cj.tags || []).join(" "));
+    j.find("input[name=visibility][value=" + (cj.visibility || "au") + "]")[0].checked = true;
+    j.find("button[name=submit]").click(submit_editor);
+    j.find("button[name=cancel]").click(cancel_editor);
+    j.find("button[name=delete]").click(delete_editor);
+    j.find("button[name=savedraft]").click(savedraft_editor);
+    docmtvis(j);
+    hiliter_children(j);
+}
+
+function analyze(e) {
+    var j = jQuery(e).closest(".cmtg"), id = j[0].id.substr(7);
+    return {j: j, id: id, cj: cmts[id]};
+}
+
+function make_editor() {
+    var x = analyze(this);
+    fill(x.j, x.cj, true);
+    return false;
+}
+
+function save_editor(elt, action) {
+    var x = analyze(elt);
+    var url = hoturl_post("comment", "p=" + hotcrp_paperid + "&c=" + x.id + "&ajax=1&"
+                          + action + (x.cj.response ? "response" : "comment") + "=1");
+    jQuery.post(url, x.j.find("form").serialize(), function (data, textStatus, jqxhr) {
+        if (data.ok && x.id === "new")
+            x.j.closest(".cmtg")[0].id = "comment" + data.cmt.cid;
+        if (!data.ok || data.cmt)
+            fill(x.j, data.cmt || cmts[x.id], false, data.msg);
+        else
+            x.j.closest(".cmtg").html(data.msg);
+    });
+    // XXX add new "new comment" link
+}
+
+function submit_editor() {
+    save_editor(this, "submit");
+}
+
+function savedraft_editor() {
+    save_editor(this, "savedraft");
+}
+
+function delete_editor() {
+    save_editor(this, "delete");
+}
+
+function cancel_editor() {
+    var x = analyze(this);
+    fill(x.j, x.cj, false);
+}
+
+function fill(j, cj, editing, msg) {
+    var hc = new HtmlCollector, cmtfn, textj, t;
+    if (!cj.is_new)
+        cmts[cj.cid] = cj;
 
     // opener
-    hc.push(cj.is_new ? '<div id="commentnew" class="cmtg">'
-            : '<div id="comment' + cj.cid + '" class="cmtg">', '</div>');
-    if (cj.view_type == "admin")
+    if (cj.visibility == "admin")
         hc.push('<div class="cmtadminvis">', '</div>');
     else if (cj.color_classes)
         hc.push('<div class="cmtcolor ' + cj.color_classes + '">', '</div>');
+
+    // header
     hc.push('<div class="cmtt">', '</div>');
-
-    // editor
-    if (!cj.is_new && cj.editable)
-        hc.push('<div class="floatright"><a href="'
-                + papercomment.comment_edit_url.replace(/\$/g, cj.cid)
-                + '" class="xx editor"><u>Edit</u></a></div>');
-
+    if (!cj.is_new && cj.editable && !editing)
+        hc.push('<div class="floatright"><a href="#" class="xx editor"><u>Edit</u></a></div>');
     comment_identity_time(hc, cj);
-
     hc.pop();
-    hc.push('<div class="cmtv"><div class="cmttext"></div></div>');
 
-    j = jQuery(hc.render());
-    textj = j.find(".cmttext").text(cj.text);
-    textj.html(link_urls(textj.html()));
+    // text
+    hc.push('<div class="cmtv">', '</div>');
+    if (msg)
+        hc.push(msg);
+    if (editing)
+        fill_editing(hc, cj);
+    else
+        hc.push('<div class="cmttext"></div>');
+
+    // render
+    j.html(hc.render());
+    if (editing)
+        activate_editing(j, cj);
+    else {
+        textj = j.find(".cmttext").text(cj.text);
+        textj.html(link_urls(textj.html()));
+        j.find("a.editor").click(make_editor);
+    }
     return j;
 }
 
-return {make: make};
+function add(cj) {
+    var j = jQuery("#comment" + (cj.is_new ? "new" : cj.cid));
+    if (!j.length) {
+        if (!cmtcontainer || cmtcontainer.hasClass("response") != !!cj.response) {
+            if (cj.response)
+                cmtcontainer = '<div class="cmtcard response"><div class="cmtcard_head"><h3>Response</h3></div>';
+            else
+                cmtcontainer = '<div class="cmtcard"><div class="cmtcard_head"><h3>Comments</h3></div>';
+            cmtcontainer = jQuery(cmtcontainer + '<div class="cmtcard_body"></div></div>');
+            cmtcontainer.appendTo("#cmtcontainer");
+        }
+        j = jQuery('<div id="comment' + (cj.is_new ? "new" : cj.cid) + '" class="cmtg"></div>');
+        j.appendTo(cmtcontainer.find(".cmtcard_body"));
+    }
+    fill(j, cj, false);
+}
+
+return {add: add};
 })();
 
 // quicklink shortcuts
@@ -2041,13 +2179,13 @@ function override_deadlines(elt) {
     var djq = jQuery('<div class="popupo"><p>' + ejq.attr("hotoverridetext")
                      + " Are you sure you want to override this deadline?</p>"
                      + '<form><div class="popup_actions">'
-                     + '<button type="button" class="override_cancel">Cancel</button> &nbsp;'
-                     + '<button type="button" class="override_submit">Save changes</button>'
+                     + '<button type="button" name="cancel">Cancel</button> &nbsp;'
+                     + '<button type="button" name="submit">Save changes</button>'
                      + '</div></form></div>');
-    djq.find(".override_cancel").on("click", function () {
+    djq.find("button[name=cancel]").on("click", function () {
         djq.remove();
     });
-    djq.find(".override_submit").on("click", function () {
+    djq.find("button[name=submit]").on("click", function () {
         var fjq = ejq.closest("form");
         fjq.children("div").append('<input type="hidden" name="' + ejq.attr("hotoverridesubmit") + '" value="1" /><input type="hidden" name="override" value="1" />');
         fjq[0].submit();

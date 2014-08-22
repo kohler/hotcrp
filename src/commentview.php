@@ -35,10 +35,10 @@ class CommentView {
         }
     }
 
-    private static function echo_script($prow) {
+    public static function echo_script($prow) {
         global $Conf;
-        $Conf->echoScript("papercomment.comment_edit_url=\"" . hoturl_raw("paper", "p=$prow->paperId&amp;c=\$#comment\$")
-                          . "\";papercomment.commenttag_search_url=\"" . hoturl_raw("search", "q=cmt%3A%23\$") . "\"");
+        if (Ht::mark_stash("papercomment"))
+            $Conf->echoScript("papercomment.commenttag_search_url=\"" . hoturl_raw("search", "q=cmt%3A%23\$") . "\"");
     }
 
     private function _commentOrdinal($prow, $crow) {
@@ -55,6 +55,13 @@ class CommentView {
             $n = $stored_ordinal + 1;
         $this->ordinals[$p] = max($n, $stored_ordinal);
         return ($this->ordinals[$crow->commentId] = $p . $n);
+    }
+
+    private static function user($crow) {
+        if (isset($crow->reviewEmail))
+            return (object) array("firstName" => @$crow->reviewFirstName, "lastName" => @$crow->reviewLastName, "email" => @$crow->reviewEmail);
+        else
+            return $crow;
     }
 
     function json($prow, $crow, $response = false) {
@@ -102,8 +109,9 @@ class CommentView {
         $idable = $Me->canViewCommentIdentity($prow, $crow, null);
         $idable_override = $idable || $Me->canViewCommentIdentity($prow, $crow, true);
         if ($idable || $idable_override) {
-            $cj->author = Text::user_html($crow);
-            $cj->author_email = $crow->email;
+            $user = self::user($crow);
+            $cj->author = Text::user_html($user);
+            $cj->author_email = $user->email;
             if (!$idable)
                 $cj->author_hidden = true;
         }
@@ -420,7 +428,7 @@ class CommentView {
             $t .= "...";
         $t .= "</a>";
         if ($contact->canViewCommentIdentity($crow, $crow, false))
-            $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>comment by</span> " . Text::user_html($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
+            $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>comment by</span> " . Text::user_html(self::user($crow));
         $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>posted</span> " . $Conf->parseableTime($crow->timeModified, false);
         $t .= "</small><br /><a class='q'" . substr($a, 3)
             . ">" . htmlspecialchars($crow->shortComment);
@@ -435,13 +443,8 @@ class CommentView {
 
         $x = "===========================================================================\n";
         $n = ($crow->commentType & COMMENTTYPE_RESPONSE ? "Response" : "Comment");
-        if ($contact->canViewCommentIdentity($prow, $crow, false)) {
-            $n .= " by ";
-            if (isset($crow->reviewFirstName))
-                $n .= Text::user_text($crow->reviewFirstName, $crow->reviewLastName, $crow->reviewEmail);
-            else
-                $n .= Text::user_text($crow);
-        }
+        if ($contact->canViewCommentIdentity($prow, $crow, false))
+            $n .= " by " . Text::user_text(self::user($crow));
         $x .= str_pad($n, (int) (37.5 + strlen(UnicodeHelper::deaccent($n)) / 2), " ", STR_PAD_LEFT) . "\n";
         $x .= ReviewForm::unparse_title_text($prow, $l);
         // $n = "Updated " . $Conf->printableTime($crow->timeModified);

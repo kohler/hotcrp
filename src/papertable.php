@@ -10,6 +10,7 @@ $textAreaRows = array("title" => 1, "abstract" => 5, "authorInformation" => 5,
 class PaperTable {
 
     const ENABLESUBMIT = 8;
+    const JSCOMMENTS = 0;
 
     var $prow;
     var $rrows = null;
@@ -1992,35 +1993,44 @@ class PaperTable {
         $prow = $this->prow;
 
         // show comments as well
-        if ((count($this->mycrows) || $Me->canComment($prow, null)
-             || $Conf->timeAuthorRespond()) && !$this->allreviewslink) {
+        if ((count($this->mycrows) || $Me->canComment($prow, null) || $Conf->timeAuthorRespond())
+            && !$this->allreviewslink) {
             $cv = new CommentView;
-            $editablecid = defval($_REQUEST, "commentId", "xxx");
-            if (isset($_REQUEST["noedit"]))
-                $editablecid = "xxx";
-            $editableresponse = $Conf->timeAuthorRespond() && $prow->has_author($Me);
+            if (self::JSCOMMENTS) {
+                $s = "";
+                foreach ($this->mycrows as $cr)
+                    $s .= "papercomment.add(" . json_encode($cv->json($prow, $cr)) . ");\n";
+                echo '<div id="cmtcontainer"></div>';
+                CommentView::echo_script($prow);
+                $Conf->echoScript($s);
+            } else {
+                $editablecid = defval($_REQUEST, "commentId", "xxx");
+                if (isset($_REQUEST["noedit"]))
+                    $editablecid = "xxx";
+                $editableresponse = $Conf->timeAuthorRespond() && $prow->has_author($Me);
 
-            foreach ($this->mycrows as $cr) {
-                $editMode = $editablecid == $cr->commentId
-                    || ($editableresponse
-                        && ($cr->commentType & COMMENTTYPE_RESPONSE));
-                $cv->show($prow, $cr, $editMode && $useRequest, $editMode);
+                foreach ($this->mycrows as $cr) {
+                    $editMode = $editablecid == $cr->commentId
+                        || ($editableresponse
+                            && ($cr->commentType & COMMENTTYPE_RESPONSE));
+                    $cv->show($prow, $cr, $editMode && $useRequest, $editMode);
+                }
+
+                // comment editing
+                if ($Me->canComment($prow, null))
+                    $cv->show($prow, null, $editablecid == "new" && $useRequest,
+                              true, $editablecid != "new");
+                if (!$cv->nresponse && $Conf->timeAuthorRespond()
+                    && ($prow->has_author($Me)
+                        || ($Me->canAdminister($prow) && $editablecid == "response")))
+                    $cv->showResponse($prow, null, false, true);
+
+                $cv->table_end();
+                $Conf->save_session("comment_msgs", null);
+
+                Ht::stash_script("jQuery('textarea.reviewtext').autogrow()",
+                                 "reviewtext_autogrow");
             }
-
-            // comment editing
-            if ($Me->canComment($prow, null))
-                $cv->show($prow, null, $editablecid == "new" && $useRequest,
-                          true, $editablecid != "new");
-            if (!$cv->nresponse && $Conf->timeAuthorRespond()
-                && ($prow->has_author($Me)
-                    || ($Me->canAdminister($prow) && $editablecid == "response")))
-                $cv->showResponse($prow, null, false, true);
-
-            $cv->table_end();
-            $Conf->save_session("comment_msgs", null);
-
-            Ht::stash_script("jQuery('textarea.reviewtext').autogrow()",
-                             "reviewtext_autogrow");
         }
     }
 

@@ -327,11 +327,15 @@ class Ht {
                          . $content . ($form ? $form : "") . "</div>");
     }
 
+    static function mark_stash($uniqueid) {
+        $marked = @self::$_stash_map[$uniqueid];
+        self::$_stash_map[$uniqueid] = true;
+        return !$marked;
+    }
+
     static function stash_html($html, $uniqueid = null) {
         if ($html !== null && $html !== false && $html !== ""
-            && (!$uniqueid || !@self::$_stash_map[$uniqueid])) {
-            if ($uniqueid)
-                self::$_stash_map[$uniqueid] = true;
+            && (!$uniqueid || self::mark_stash($uniqueid))) {
             if (self::$_stash_inscript)
                 self::$_stash .= "</script>";
             self::$_stash .= $html;
@@ -341,9 +345,7 @@ class Ht {
 
     static function stash_script($js, $uniqueid = null) {
         if ($js !== null && $js !== false && $js !== ""
-            && (!$uniqueid || !@self::$_stash_map[$uniqueid])) {
-            if ($uniqueid)
-                self::$_stash_map[$uniqueid] = true;
+            && (!$uniqueid || self::mark_stash($uniqueid))) {
             if (!self::$_stash_inscript)
                 self::$_stash .= "<script>";
             else if (($c = self::$_stash[strlen(self::$_stash) - 1]) !== "}"

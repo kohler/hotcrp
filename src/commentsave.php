@@ -31,13 +31,13 @@ class CommentSave {
             $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR;
         else if ($is_response)
             $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR | COMMENTTYPE_DRAFT;
-        else if (@$req->visibility == "a")
+        else if (@$req->visibility == "a" || @$req->visibility == "au")
             $ctype = COMMENTTYPE_AUTHOR;
-        else if (@$req->visibility == "p")
+        else if (@$req->visibility == "p" || @$req->visibility == "pc")
             $ctype = COMMENTTYPE_PCONLY;
         else if (@$req->visibility == "admin")
             $ctype = COMMENTTYPE_ADMINONLY;
-        else // $visibility == "r"
+        else // $req->visibility == "r" || $req->visibility == "rev"
             $ctype = COMMENTTYPE_REVIEWER;
         if ($is_response ? $prow->blind : $Conf->is_review_blind(!!@$req->blind))
             $ctype |= COMMENTTYPE_BLIND;
