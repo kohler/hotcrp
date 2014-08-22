@@ -1998,10 +1998,15 @@ class PaperTable {
             $cv = new CommentView;
             if (self::JSCOMMENTS) {
                 $s = "";
-                foreach ($this->mycrows as $cr)
+                $nresponse = 0;
+                foreach ($this->mycrows as $cr) {
+                    $nresponse = $nresponse || ($cr->commentType & COMMENTTYPE_RESPONSE);
                     $s .= "papercomment.add(" . json_encode($cv->json($prow, $cr)) . ");\n";
+                }
                 if ($Me->canComment($prow, null))
                     $s .= "papercomment.add({is_new:true,editable:true});\n";
+                if (!$nresponse && $Conf->timeAuthorRespond() && $prow->has_author($Me))
+                    $s .= "papercomment.add({is_new:true,editable:true,response:true,draft:true},true);\n";
                 echo '<div id="cmtcontainer"></div>';
                 CommentView::echo_script($prow);
                 $Conf->echoScript($s);

@@ -1233,17 +1233,30 @@ function make_editor() {
     return false;
 }
 
-function save_editor(elt, action) {
-    var x = analyze(elt), url;
-    url = hoturl_post("comment", "p=" + hotcrp_paperid + "&c=" + x.id + "&ajax=1&"
-                      + action + (x.cj.response ? "response" : "comment") + "=1");
+function save_editor(elt, action, really) {
+    var x = analyze(elt);
+    if (x.cj.response && !hotcrp_status.resp_allowed && !really) {
+        override_deadlines(elt, function () {
+            save_editor(elt, action, true);
+        });
+        return;
+    }
+    var url = hoturl_post("comment", "p=" + hotcrp_paperid + "&c=" + x.id + "&ajax=1&"
+                          + (really ? "override=1&" : "")
+                          + action + (x.cj.response ? "response" : "comment") + "=1");
     jQuery.post(url, x.j.find("form").serialize(), function (data, textStatus, jqxhr) {
-        if (data.ok && x.id === "new")
+        var x_new = x.id === "new" || x.id === "newresponse";
+        var editing_response = x.cj.response && hotcrp_status.resp_allowed;
+        if (data.ok && !data.cmt && !x_new)
+            delete cmts[x.id];
+        if (editing_response && data.ok && !data.cmt)
+            data.cmt = {is_new: true, response: true, editable: true, draft: true, cid: "newresponse"};
+        if (data.ok && (x_new || (data.cmt && data.cmt.is_new)))
             x.j.closest(".cmtg")[0].id = "comment" + data.cmt.cid;
         if (!data.ok)
             x.j.find(".cmtmsg").html(data.error ? '<div class="xmerror">' + data.error + '</div>' : data.msg);
         else if (data.cmt)
-            fill(x.j, data.cmt || cmts[x.id], false, data.msg);
+            fill(x.j, data.cmt, editing_response, data.msg);
         else
             x.j.closest(".cmtg").html(data.msg);
         if (x.id === "new" && cmts["new"])
@@ -1286,8 +1299,8 @@ function fill(j, cj, editing, msg) {
     // header
     hc.push('<div class="cmtt">', '</div>');
     if (cj.is_new && !editing)
-        hc.push('<h3><a class="q fn cmteditor" href="#">+&nbsp;Add Comment</a></h3>');
-    else if (cj.is_new)
+        hc.push('<h3><a class="q fn cmteditor" href="#">+&nbsp;' + (cj.response ? "Add Response" : "Add Comment") + '</a></h3>');
+    else if (cj.is_new && !cj.response)
         hc.push('<h3>Add Comment</h3>');
     else if (cj.editable && !editing) {
         t = '<div class="cmtinfo floatright"><a href="#" class="xx editor cmteditor"><u>Edit</u></a></div>';
@@ -1302,11 +1315,13 @@ function fill(j, cj, editing, msg) {
     hc.push('<div class="cmtmsg">', '</div>');
     if (msg)
         hc.push(msg);
-    else if (cj.response && cj.draft)
+    else if (cj.response && cj.draft && cj.text)
         hc.push('<div class="xwarning">This is a draft response. Reviewers won’t see it until you submit.</div>');
     hc.pop();
     if (cj.response && editing && papercomment.responseinstructions)
-        hc.push('<div class="xinfo" style="margin-bottom:0.5em">' + papercomment.responseinstructions + '</div>');
+        hc.push('<div class="xinfo">' + papercomment.responseinstructions + '</div>');
+    if (cj.response && editing && papercomment.nonauthor)
+        hc.push('<div class="xinfo">Although you aren’t a contact for this paper, as an administrator you can edit the authors’ response.</div>');
     if (editing)
         fill_editing(hc, cj);
     else
@@ -1319,12 +1334,12 @@ function fill(j, cj, editing, msg) {
     else {
         textj = j.find(".cmttext").text(cj.text);
         textj.html(link_urls(textj.html()));
-        (cj.response ? chead : j).find("a.cmteditor").click(make_editor);
+        (cj.response ? chead.parent() : j).find("a.cmteditor").click(make_editor);
     }
     return j;
 }
 
-function add(cj) {
+function add(cj, editing) {
     var cid = cj.is_new ? "new" + (cj.response ? "response" : "") : cj.cid;
     var j = jQuery("#comment" + cid);
     if (!j.length) {
@@ -1339,10 +1354,21 @@ function add(cj) {
         j = jQuery('<div id="comment' + cid + '" class="cmtg foldc"></div>');
         j.appendTo(cmtcontainer.find(".cmtcard_body"));
     }
-    fill(j, cj, false);
+    fill(j, cj, editing);
 }
 
-return {add: add};
+function edit_response() {
+    var j = jQuery(".response a.cmteditor");
+    if (j.length)
+        j[0].click();
+    else {
+        add({is_new: true, response: true, editable: true}, true);
+        location.hash = "#commentnewresponse";
+    }
+    return false;
+}
+
+return {add: add, edit_response: edit_response};
 })();
 
 // quicklink shortcuts
@@ -2255,10 +2281,11 @@ function popup(anchor, which, dofold, populate) {
     return false;
 }
 
-function override_deadlines(elt) {
+function override_deadlines(elt, callback) {
     var ejq = jQuery(elt);
-    var djq = jQuery('<div class="popupo"><p>' + ejq.attr("hotoverridetext")
-                     + " Are you sure you want to override this deadline?</p>"
+    var djq = jQuery('<div class="popupo"><p>'
+                     + (ejq.attr("hotoverridetext") || "")
+                     + " Are you sure you want to override the deadline?</p>"
                      + '<form><div class="popup_actions">'
                      + '<button type="button" name="cancel">Cancel</button> &nbsp;'
                      + '<button type="button" name="submit">Save changes</button>'
@@ -2267,9 +2294,13 @@ function override_deadlines(elt) {
         djq.remove();
     });
     djq.find("button[name=submit]").on("click", function () {
-        var fjq = ejq.closest("form");
-        fjq.children("div").append('<input type="hidden" name="' + ejq.attr("hotoverridesubmit") + '" value="1" /><input type="hidden" name="override" value="1" />');
-        fjq[0].submit();
+        if (callback)
+            callback();
+        else {
+            var fjq = ejq.closest("form");
+            fjq.children("div").append('<input type="hidden" name="' + ejq.attr("hotoverridesubmit") + '" value="1" /><input type="hidden" name="override" value="1" />');
+            fjq[0].submit();
+        }
         djq.remove();
     });
     djq.appendTo(document.body);

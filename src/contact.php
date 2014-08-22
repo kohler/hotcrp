@@ -2077,6 +2077,10 @@ class Contact {
             }
         }
 
+        // activeness
+        if (@$dl["resp_open"] && (!@$dl["resp_done"] || $dl["resp_done"] >= $now || @$dl["resp_ingrace"]))
+            $dl["resp_allowed"] = true;
+
         // add meeting tracker
         $tracker = null;
         if ($this->isPC && $Conf->setting("tracker")

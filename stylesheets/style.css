@@ -2360,6 +2360,26 @@ div.cmtt div.floatright {
 div.cmtv {
 	padding: 0 0 4px;
 }
+div.cmtv div.xinfo, div.cmtv div.xconfirm, div.cmtv div.xwarning, div.cmtv div.xmerror {
+	margin: 3px -12px 6px;
+	padding: 5px 12px;
+	font-size: smaller;
+	border: 0;
+}
+div.response div.cmtv div.xinfo {
+	background: rgba(255, 221, 193, 0.5);
+	background: linear-gradient(to bottom, transparent, rgba(255, 221, 193, 0.5) 10%, rgba(255, 221, 193, 0.5) 90%, transparent 100%);
+}
+div.cmtv div.aa {
+	margin: 0.2em -12px 0;
+	padding: 0.5em 12px;
+	background: none;
+	border-radius: 0;
+}
+div.cmtv div.aahc.alert div.aa {
+	background: #ffaaaa;
+	background: linear-gradient(to bottom, transparent, #ffaaaa 10%, #ffaaaa 90%, transparent 100%);
+}
 div.revtext, div.cmttext {
 	white-space: pre-wrap;
 }

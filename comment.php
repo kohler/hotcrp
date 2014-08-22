@@ -45,7 +45,7 @@ function loadRows() {
             || ($cid == "response" && ($row->commentType & COMMENTTYPE_RESPONSE)))
             $crow = $row;
     }
-    if ($cid != "xxx" && !$crow && $cid != "response" && $cid != "new")
+    if ($cid != "xxx" && !$crow && $cid != "response" && $cid != "new" && $cid != "newresponse")
         errorMsgExit("That comment does not exist.");
     if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
         $Error = array();

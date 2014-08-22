@@ -45,6 +45,8 @@ class CommentView {
                     $t[] = "papercomment.resp_words=$wordlimit";
                 if ($Me->canRespond($prow, null))
                     $t[] = "papercomment.responseinstructions=" . json_encode($Conf->message_html("responseinstructions", array("wordlimit" => $wordlimit)));
+                if (!$prow->has_author($Me))
+                    $t[] = "papercomment.nonauthor=true";
             }
             $Conf->echoScript(join($t, ";"));
         }
