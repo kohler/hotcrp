@@ -1788,7 +1788,7 @@ class PaperTable {
 
     static private function _echo_clickthrough($ctype) {
         global $Conf, $Now;
-        $data = $Conf->setting_data("clickthrough_$ctype");
+        $data = $Conf->message_html("clickthrough_$ctype");
         echo Ht::form(hoturl_post("profile"), array("onsubmit" => "return handle_clickthrough(this)")), "<div class='aahc'>", $data;
         $buttons = array(Ht::submit("clickthrough_accept", "Accept", array("class" => "bb")));
         echo "<div class='g'></div>",

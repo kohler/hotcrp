@@ -98,6 +98,9 @@ function admin_home_messages() {
     $site_contact = Contact::site_contact();
     if (!$site_contact->email || $site_contact->email == "you@example.com")
         $m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the conference contact’s name and email</a> so submitters can reach someone if things go wrong.";
+    // Backwards compatibility
+    if (@$Conf->setting_data("clickthrough_submit")) // delete 12/2014
+        $m[] = "You need to recreate the <a href=\"" . hoturl("settings", "group=msg") . "\">clickthrough submission terms</a>.";
     // Any -100 preferences around?
     $result = $Conf->ql($Conf->preferenceConflictQuery(false, "limit 1"));
     if (($row = edb_row($result)))

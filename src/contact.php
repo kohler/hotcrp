@@ -1671,10 +1671,9 @@ class Contact {
     }
 
     function can_clickthrough($ctype) {
-        global $Conf;
-        if (!$this->privChair
-            && @($cmsg = $Conf->setting_data("clickthrough_$ctype"))) {
-            $csha1 = sha1($cmsg);
+        global $Conf, $Opt;
+        if (!$this->privChair && @$Opt["clickthrough_$ctype"]) {
+            $csha1 = sha1($Conf->message_html("clickthrough_$ctype"));
             $data = $this->data("clickthrough");
             return $data && @$data->$csha1;
         } else

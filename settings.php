@@ -821,7 +821,14 @@ function accountValue($name, $info) {
             $Values[$name] = null;
         else
             $Values[$name] = $v;
+        if (@$info->ifnonempty)
+            $Values[$info->ifnonempty] = ($Values[$name] === null ? null : 1);
     }
+}
+
+function has_value($name) {
+    global $Values;
+    return array_key_exists($name, $Values);
 }
 
 function value($name, $default = null) {
@@ -919,6 +926,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
     if (value("seedec") == Conference::SEEDEC_ALL
         && value_or_setting("au_seerev") == AU_SEEREV_NO)
         $Conf->warnMsg("Authors can see decisions, but not reviews. This is sometimes unintentional.");
+    if (has_value("msg.clickthrough_submit"))
+        $Values["clickthrough_submit"] = null;
 
     // make settings
     if (count($Error) == 0 && count($Values) > 0) {
@@ -1198,9 +1207,9 @@ function doInfoGroup() {
 
 function doMsgGroup() {
     do_message("msg.home", "Home page message", 0);
-    do_message("clickthrough_submit", "Clickthrough submission terms", 0, 10,
+    do_message("msg.clickthrough_submit", "Clickthrough submission terms", 0, 10,
                "<div class=\"hint fx\">Users must “accept” these terms to edit or submit a paper. Use HTML and include a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
-    do_message("clickthrough_review", "Clickthrough reviewing terms", 0, 10,
+    do_message("msg.clickthrough_review", "Clickthrough reviewing terms", 0, 10,
                "<div class=\"hint fx\">Users must “accept” these terms to edit a review. Use HTML and include a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
     do_message("msg.conflictdef", "Definition of conflict of interest", 0, 5);
     do_message("msg.revprefdescription", "Review preference instructions", 0, 20);
