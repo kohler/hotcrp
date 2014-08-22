@@ -36,6 +36,10 @@ class Message {
         self::load_one("$ConfSitePATH/conf/messages-local.csv");
         if ($lang)
             self::load_one("$ConfSitePATH/conf/messages-local.$lang.csv");
+        if (@$Opt["messages_include"])
+            foreach (expand_includes($ConfSitePATH, $Opt["messages_include"],
+                                     array("lang" => $lang)) as $f)
+                self::load_one($f);
     }
 
     public static function default_html($name) {

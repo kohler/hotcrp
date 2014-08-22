@@ -188,7 +188,7 @@ setlocale(LC_CTYPE, "C");
 
 
 // Set up conference options (also used in mailer.php)
-function expand_includes($sitedir, $files) {
+function expand_includes($sitedir, $files, $expansions = array()) {
     global $Opt;
     if (is_string($files))
         $files = array($files);
@@ -196,8 +196,19 @@ function expand_includes($sitedir, $files) {
     $results = array();
     $cwd = null;
     foreach ($files as $f) {
-        $f = preg_replace(',\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $confname, $f);
-        if (preg_match(',[\[\]\*\?],', $f)) {
+        if (strpos($f, '$') !== false) {
+            $f = preg_replace(',\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $confname, $f);
+            foreach ($expansions as $k => $v)
+                if ($v !== false && $v !== null)
+                    $f = preg_replace(',\$\{' . $k . '\}|\$' . $k . '\b,', $v, $f);
+                else if (preg_match(',\$\{' . $k . '\}|\$' . $k . '\b,', $f)) {
+                    $f = false;
+                    break;
+                }
+        }
+        if ($f === false)
+            /* skip */;
+        else if (preg_match(',[\[\]\*\?],', $f)) {
             if ($cwd === null) {
                 $cwd = getcwd();
                 chdir($sitedir);
