@@ -2357,9 +2357,6 @@ div.cmtt {
 div.cmtt div.floatright {
 	padding-left: 0.5em;
 }
-div.cmtv {
-	padding: 0 0 4px;
-}
 div.cmtv div.xinfo, div.cmtv div.xconfirm, div.cmtv div.xwarning, div.cmtv div.xmerror {
 	margin: 3px -12px 6px;
 	padding: 5px 12px;
@@ -2402,6 +2399,9 @@ div.cmthint {
 
 .words {
 	color: #555555;
+}
+div.aabut .words {
+	padding-top: 2px;
 }
 .wordsclose {
 	color: #cc0000;

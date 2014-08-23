@@ -10,7 +10,7 @@ $textAreaRows = array("title" => 1, "abstract" => 5, "authorInformation" => 5,
 class PaperTable {
 
     const ENABLESUBMIT = 8;
-    const JSCOMMENTS = 0;
+    const JSCOMMENTS = 1;
 
     var $prow;
     var $rrows = null;
@@ -2006,7 +2006,7 @@ class PaperTable {
                 if ($Me->canComment($prow, null))
                     $s .= "papercomment.add({is_new:true,editable:true});\n";
                 if (!$nresponse && $Conf->timeAuthorRespond() && $prow->has_author($Me))
-                    $s .= "papercomment.add({is_new:true,editable:true,response:true,draft:true},true);\n";
+                    $s .= "papercomment.add({is_new:true,editable:true,response:true},true);\n";
                 echo '<div id="cmtcontainer"></div>';
                 CommentView::echo_script($prow);
                 $Conf->echoScript($s);

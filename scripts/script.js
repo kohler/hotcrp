@@ -1082,8 +1082,19 @@ HtmlCollector.prototype.pop = function (pos) {
     if (pos == null)
         pos = this.open.length ? this.open.length - 1 : 0;
     while (this.open.length > pos) {
-        this.html = this.open[this.open.length - 1] + this.html
-            + this.close[this.open.length - 1];
+        this.html = this.open[this.open.length - 1] + this.html +
+            this.close[this.open.length - 1];
+        this.open.pop();
+        this.close.pop();
+    }
+};
+HtmlCollector.prototype.pop_kill = function (pos) {
+    if (pos == null)
+        pos = this.open.length ? this.open.length - 1 : 0;
+    while (this.open.length > pos) {
+        if (this.html !== "")
+            this.html = this.open[this.open.length - 1] + this.html +
+                this.close[this.open.length - 1];
         this.open.pop();
         this.close.pop();
     }
@@ -1170,7 +1181,6 @@ function fill_editing(hc, cj) {
 
         // actions
         hc.push('<div class="clear"></div><div class="aa" style="margin-bottom:0">', '<div class="clear"></div></div>');
-        // XXX override deadlines
         hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Save</button>' + bnote + '</div>');
         hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
         if (!cj.is_new) {
@@ -1312,7 +1322,7 @@ function fill(j, cj, editing, msg) {
     }
     t = comment_identity_time(cj);
     cj.response ? jQuery(t).appendTo(chead) : hc.push(t);
-    hc.pop();
+    hc.pop_kill();
 
     // text
     hc.push('<div class="cmtv">', '</div>');
@@ -1367,7 +1377,7 @@ function edit_response() {
         j[0].click();
     else {
         add({is_new: true, response: true, editable: true}, true);
-        location.hash = "#commentnewresponse";
+        setTimeout(function () { location.hash = "#commentnewresponse"; }, 0);
     }
     return false;
 }
