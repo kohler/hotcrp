@@ -840,7 +840,7 @@ class Contact {
             $cdb_user = self::contactdb_find_by_email($email);
         if ($cdb_user)
             foreach ($reg_keys as $k)
-                if (@$cdb_user->$k && !$reg->$k)
+                if (@$cdb_user->$k && !@$reg->$k)
                     $reg->$k = $cdb_user->$k;
 
         if (($password = @trim($reg->password)) !== "")
