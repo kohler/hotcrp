@@ -2357,15 +2357,35 @@ div.cmtt {
 div.cmtt div.floatright {
 	padding-left: 0.5em;
 }
-div.cmtv div.xinfo, div.cmtv div.xconfirm, div.cmtv div.xwarning, div.cmtv div.xmerror {
+div.cmtg div.xinfo, div.cmtg div.xconfirm, div.cmtg div.xwarning, div.cmtg div.xmerror {
 	margin: 3px -12px 6px;
 	padding: 5px 12px;
 	font-size: smaller;
 	border: 0;
 }
-div.response div.cmtv div.xinfo {
+div.cmtg div.xinfo {
+	background: #eeeeff;
+	background: linear-gradient(to bottom, transparent, #eeeeff 4px, #eeeeff 50%, transparent 50%),
+		linear-gradient(to top, transparent, #eeeeff 4px, #eeeeff 50%, transparent 50%);
+}
+div.cmtg div.xconfirm {
+	background: #eeffee;
+	background: linear-gradient(to bottom, transparent, #eeffee 4px, #eeffee 50%, transparent 50%),
+		linear-gradient(to top, transparent, #eeffee 4px, #eeffee 50%, transparent 50%);
+}
+div.cmtg div.xwarning {
+	background: #ffffdd;
+	background: linear-gradient(to bottom, transparent, #ffffdd 4px, #ffffdd 50%, transparent 50%),
+		linear-gradient(to top, transparent, #ffffdd 4px, #ffffdd 50%, transparent 50%);
+}
+div.cmtg div.xmerror {
+	border-top: 2px solid red;
+	border-bottom: 2px solid red;
+}
+div.response div.cmtg div.xinfo {
 	background: rgba(255, 221, 193, 0.5);
-	background: linear-gradient(to bottom, transparent, rgba(255, 221, 193, 0.5) 10%, rgba(255, 221, 193, 0.5) 90%, transparent 100%);
+	background: linear-gradient(to bottom, transparent, rgba(255, 221, 193, 0.4) 4px, rgba(255, 221, 193, 0.4) 50%, transparent 50%),
+		linear-gradient(to top, transparent, rgba(255, 221, 193, 0.4) 4px, rgba(255, 221, 193, 0.4) 50%, transparent 50%);
 }
 div.cmtv div.aa {
 	margin: 0.2em -12px 0;
@@ -2375,7 +2395,8 @@ div.cmtv div.aa {
 }
 div.cmtv div.aahc.alert div.aa {
 	background: #ffaaaa;
-	background: linear-gradient(to bottom, transparent, #ffaaaa 10%, #ffaaaa 90%, transparent 100%);
+	background: linear-gradient(to bottom, transparent, #ffaaaa 4px, #ffaaaa 50%, transparent 50%),
+		linear-gradient(to top, transparent, #ffaaaa 4px, #ffaaaa 50%, transparent 50%);
 }
 div.revtext, div.cmttext {
 	white-space: pre-wrap;
