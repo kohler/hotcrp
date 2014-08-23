@@ -1949,6 +1949,10 @@ class Conference {
             $this->scriptStuff .= ";hotcrp_list={num:$CurrentList,id:\"" . addcslashes($list->listid, "\n\r\\\"/") . "\"}";
         if (($urldefaults = hoturl_defaults()))
             $this->scriptStuff .= ";hotcrp_urldefaults=" . json_encode($urldefaults);
+        $huser = (object) array();
+        if ($Me->email)
+            $huser->email = $Me->email;
+        $this->scriptStuff .= ";hotcrp_user=" . json_encode($huser);
 
         $pid = @$_REQUEST["paperId"];
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;

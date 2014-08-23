@@ -2,7 +2,7 @@
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix, hotcrp_list, hotcrp_urldefaults, hotcrp_status;
+var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix, hotcrp_list, hotcrp_urldefaults, hotcrp_status, hotcrp_user;
 
 function $$(id) {
     return document.getElementById(id);
@@ -1155,7 +1155,6 @@ function make_visibility(hc, caption, value, label, rest) {
 function fill_editing(hc, cj) {
     var bnote = "";
     ++idctr;
-    // XXX You didn't write this comment...
     if (cj.response ? !hotcrp_status.resp_allowed : !hotcrp_status.cmt_allowed)
         bnote = '<br><span class="hint">(admin only)</span>';
     hc.push('<form><div class="aahc">', '</div></form>');
@@ -1336,6 +1335,9 @@ function fill(j, cj, editing, msg) {
         hc.push('<div class="xinfo">' + papercomment.responseinstructions + '</div>');
     if (cj.response && editing && papercomment.nonauthor)
         hc.push('<div class="xinfo">Although you aren’t a contact for this paper, as an administrator you can edit the authors’ response.</div>');
+    else if (!cj.response && editing && cj.author_email && hotcrp_user.email
+             && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase())
+        hc.push('<div class="xinfo">You didn’t write this comment, but as an administrator you can still make changes.</div>');
     if (editing)
         fill_editing(hc, cj);
     else
