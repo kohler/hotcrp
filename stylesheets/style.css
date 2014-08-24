@@ -2365,18 +2365,18 @@ div.cmtg div.xinfo, div.cmtg div.xconfirm, div.cmtg div.xwarning, div.cmtg div.x
 }
 div.cmtg div.xinfo {
 	background: #eeeeff;
-	background: linear-gradient(to bottom, transparent, #eeeeff 4px, #eeeeff 50%, transparent 50%),
-		linear-gradient(to top, transparent, #eeeeff 4px, #eeeeff 50%, transparent 50%);
+	background: linear-gradient(to bottom, rgba(238,238,255,0), #eeeeff 4px, #eeeeff 50%, transparent 50%),
+		linear-gradient(to top, rgba(238,238,255,0), #eeeeff 4px, #eeeeff 50%, transparent 50%);
 }
 div.cmtg div.xconfirm {
 	background: #eeffee;
-	background: linear-gradient(to bottom, transparent, #eeffee 4px, #eeffee 50%, transparent 50%),
-		linear-gradient(to top, transparent, #eeffee 4px, #eeffee 50%, transparent 50%);
+	background: linear-gradient(to bottom, rgba(238,255,238,0), #eeffee 4px, #eeffee 50%, transparent 50%),
+		linear-gradient(to top, rgba(238,255,238,0), #eeffee 4px, #eeffee 50%, transparent 50%);
 }
 div.cmtg div.xwarning {
 	background: #ffffdd;
-	background: linear-gradient(to bottom, transparent, #ffffdd 4px, #ffffdd 50%, transparent 50%),
-		linear-gradient(to top, transparent, #ffffdd 4px, #ffffdd 50%, transparent 50%);
+	background: linear-gradient(to bottom, rgba(255,255,221,0), #ffffdd 4px, #ffffdd 50%, transparent 50%),
+		linear-gradient(to top, rgba(255,255,221,0), #ffffdd 4px, #ffffdd 50%, transparent 50%);
 }
 div.cmtg div.xmerror {
 	border-top: 2px solid red;
@@ -2384,8 +2384,8 @@ div.cmtg div.xmerror {
 }
 div.response div.cmtg div.xinfo {
 	background: rgba(255, 221, 193, 0.5);
-	background: linear-gradient(to bottom, transparent, rgba(255, 221, 193, 0.4) 4px, rgba(255, 221, 193, 0.4) 50%, transparent 50%),
-		linear-gradient(to top, transparent, rgba(255, 221, 193, 0.4) 4px, rgba(255, 221, 193, 0.4) 50%, transparent 50%);
+	background: linear-gradient(to bottom, rgba(255,221,193,0), rgba(255,221,193,0.4) 4px, rgba(255,221,193,0.4) 50%, transparent 50%),
+		linear-gradient(to top, rgba(255,221,193,0), rgba(255,221,193,0.4) 4px, rgba(255,221,193,0.4) 50%, transparent 50%);
 }
 div.cmtv div.aa {
 	margin: 0.2em -12px 0;
@@ -2395,8 +2395,8 @@ div.cmtv div.aa {
 }
 div.cmtv div.aahc.alert div.aa {
 	background: #ffaaaa;
-	background: linear-gradient(to bottom, transparent, #ffaaaa 4px, #ffaaaa 50%, transparent 50%),
-		linear-gradient(to top, transparent, #ffaaaa 4px, #ffaaaa 50%, transparent 50%);
+	background: linear-gradient(to bottom, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 50%, transparent 50%),
+		linear-gradient(to top, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 50%, transparent 50%);
 }
 div.revtext, div.cmttext {
 	white-space: pre-wrap;
