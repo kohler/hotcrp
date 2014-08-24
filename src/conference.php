@@ -1950,7 +1950,7 @@ class Conference {
         if (($urldefaults = hoturl_defaults()))
             $this->scriptStuff .= ";hotcrp_urldefaults=" . json_encode($urldefaults);
         $huser = (object) array();
-        if ($Me->email)
+        if ($Me && $Me->email)
             $huser->email = $Me->email;
         $this->scriptStuff .= ";hotcrp_user=" . json_encode($huser);
 
