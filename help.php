@@ -265,10 +265,12 @@ function searchQuickref() {
         _searchQuickrefRow("", "round:$r", "review assignment is “" . htmlspecialchars($r) . "”");
     if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE)
         _searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");
-    _searchQuickrefRow("Comments", "cmt:>0", "at least one comment visible to PC (including authors’ response)");
-    _searchQuickrefRow("", "aucmt:>0", "at least one comment visible to authors (including authors’ response)");
-    _searchQuickrefRow("", "cmt:sylvia", "“sylvia” (in name/email) wrote at least one comment visible to PC; can combine with counts, use reviewer tags");
-    _searchQuickrefRow("", "response:yes", "has author’s response");
+    _searchQuickrefRow("Comments", "has:cmt", "at least one visible reviewer comment (not including authors’ response)");
+    _searchQuickrefRow("", "cmt:>=3", "at least <em>three</em> visible reviewer comments");
+    _searchQuickrefRow("", "has:aucmt", "at least one reviewer comment visible to authors");
+    _searchQuickrefRow("", "cmt:sylvia", "“sylvia” (in name/email) wrote at least one visible comment; can combine with counts, use reviewer tags");
+    _searchQuickrefRow("", "has:response", "has author’s response");
+    _searchQuickrefRow("", "anycmt:>1", "at least two visible comments, possibly <em>including</em> author’s response");
     _searchQuickrefRow("Leads", "lead:fdabek", "“fdabek” (in name/email) is discussion lead");
     _searchQuickrefRow("", "lead:none", "no assigned discussion lead");
     _searchQuickrefRow("", "lead:any", "some assigned discussion lead");

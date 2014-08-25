@@ -25,6 +25,7 @@ $searchKeywords = array("ti" => "ti", "title" => "ti",
         "cmt" => "cmt", "comment" => "cmt",
         "aucmt" => "aucmt", "aucomment" => "aucmt",
         "resp" => "response", "response" => "response",
+        "anycmt" => "anycmt", "anycomment" => "anycmt",
         "tag" => "tag",
         "notag" => "notag",
         "ord" => "order", "order" => "order",
@@ -286,7 +287,8 @@ class PaperSearch {
     const F_AUTHOR = 0x00040;
     const F_REVIEWER = 0x00080;
     const F_AUTHORCOMMENT = 0x00100;
-    const F_AUTHORRESPONSE = 0x00200;
+    const F_ALLOWRESPONSE = 0x00200;
+    const F_ALLOWCOMMENT = 0x00400;
     const F_FALSE = 0x1000;
     const F_XVIEW = 0x2000;
 
@@ -708,8 +710,13 @@ class PaperSearch {
             return;
         }
 
-        $rt = ($ctype == "response" ? self::F_AUTHORRESPONSE
-               : ($ctype == "aucmt" ? self::F_AUTHORCOMMENT : 0));
+        $rt = 0;
+        if ($ctype == "response" || $ctype == "anycmt")
+            $rt |= self::F_ALLOWRESPONSE;
+        if ($ctype == "cmt" || $ctype == "aucmt" || $ctype == "anycmt")
+            $rt |= self::F_ALLOWCOMMENT;
+        if ($ctype == "aucmt")
+            $rt |= self::F_AUTHORCOMMENT;
         if ($m[0] !== "" && $m[0][0] == "#") {
             $tag = $this->_check_tag(substr($m[0], 1), false);
             if ($tag !== false) {
@@ -1029,24 +1036,23 @@ class PaperSearch {
 
     private function _searchHas($word, &$qt, $quoted) {
         global $searchKeywords;
+        $wordkw = @$searchKeywords[$word] ? : "";
         if (strcasecmp($word, "paper") == 0 || strcasecmp($word, "submission") == 0)
             $qt[] = new SearchTerm("pf", 0, array("paperStorageId", "!=0"));
         else if (strcasecmp($word, "final") == 0 || strcasecmp($word, "finalcopy") == 0)
             $qt[] = new SearchTerm("pf", 0, array("finalPaperStorageId", "!=0"));
         else if (strcasecmp($word, "abstract") == 0)
             $qt[] = new SearchTerm("pf", 0, array("abstract", "!=''"));
-        else if (strcasecmp($word, "response") == 0)
-            $qt[] = new SearchTerm("cmt", self::F_AUTHORRESPONSE | self::F_XVIEW, SearchReviewValue::any());
-        else if (strcasecmp($word, "cmt") == 0 || strcasecmp($word, "comment") == 0)
-            $qt[] = new SearchTerm("cmt", self::F_XVIEW, SearchReviewValue::any());
+        else if (preg_match('/\A(?:cmt|aucmt|anycmt|response)\z/', $wordkw))
+            $this->_searchComment(">0", $wordkw, $qt, $quoted);
         else if (strcasecmp($word, "manager") == 0 || strcasecmp($word, "admin") == 0 || strcasecmp($word, "administrator") == 0)
             $qt[] = new SearchTerm("pf", 0, array("managerContactId", "!=0"));
-        else if (preg_match('/\A[ci]?(?:re|pri|sec|ext)\z/', @$searchKeywords[$word] ? : ""))
-            $this->_searchReviewer(">0", $searchKeywords[$word], $qt, $quoted);
+        else if (preg_match('/\A[ci]?(?:re|pri|sec|ext)\z/', $wordkw))
+            $this->_searchReviewer(">0", $wordkw, $qt, $quoted);
         else if (preg_match('/\A\w+\z/', $word) && $this->_searchOptions("$word:yes", $qt, false))
             /* OK */;
         else {
-            $this->warn("Valid “has:” searches are “paper”, “final”, “abstract”, “comment”, “response”, “pcrev”, and “extrev”.");
+            $this->warn("Valid “has:” searches include “paper”, “final”, “abstract”, “comment”, “aucomment”, “response”, “pcrev”, and “extrev”.");
             $qt[] = new SearchTerm("f");
         }
     }
@@ -1242,7 +1248,7 @@ class PaperSearch {
         foreach (array("re", "cre", "ire", "pri", "cpri", "ipri", "sec", "csec", "isec", "ext", "cext", "iext") as $rtype)
             if ($keyword ? $keyword == $rtype : isset($this->fields[$rtype]))
                 $this->_searchReviewer($word, $rtype, $qt, $quoted);
-        foreach (array("cmt", "aucmt", "response") as $ctype)
+        foreach (array("cmt", "aucmt", "anycmt", "response") as $ctype)
             if ($keyword ? $keyword == $ctype : isset($this->fields[$ctype]))
                 $this->_searchComment($word, $ctype, $qt, $quoted);
         if (($keyword ? $keyword == "revpref" : isset($this->fields["revpref"]))
@@ -2074,9 +2080,11 @@ class PaperSearch {
         global $Conf;
         if (!isset($sqi->tables[$thistab])) {
             $where = array();
-            if ($t->flags & self::F_AUTHORRESPONSE)
+            if (!($t->flags & self::F_ALLOWRESPONSE))
+                $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")=0";
+            if (!($t->flags & self::F_ALLOWCOMMENT))
                 $where[] = "(commentType&" . COMMENTTYPE_RESPONSE . ")!=0";
-            else if ($t->flags & self::F_AUTHORCOMMENT)
+            if ($t->flags & self::F_AUTHORCOMMENT)
                 $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
             if ($extrawhere)
                 $where[] = $extrawhere;
@@ -2144,7 +2152,7 @@ class PaperSearch {
             if ($t->value->contactsql)
                 $thistab = "Comments_" . count($sqi->tables);
             else {
-                $rtype = $t->flags & (self::F_AUTHORCOMMENT | self::F_AUTHORRESPONSE);
+                $rtype = $t->flags & (self::F_ALLOWCOMMENT | self::F_ALLOWRESPONSE | self::F_AUTHORCOMMENT);
                 $thistab = "Numcomments_" . $rtype;
             }
             $f[] = $this->_clauseTermSetComments($thistab, $t->value->contactWhere("contactId"), $t, $sqi);
