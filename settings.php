@@ -1587,16 +1587,16 @@ function doRevGroup() {
     echo "<h3 id=\"reviewround\" class=\"settings g\">Deadlines</h3>\n";
     $date_text = $DateExplanation;
     $DateExplanation = "";
-    echo '<p class="hint">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t set hard deadlines for reviews.<br />', $date_text, '</p>';
+    echo '<p class="hint">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.<br />', $date_text, '</p>';
 
     echo "<table>\n";
-    echo '<tr><td><strong>PC</strong> review deadline &nbsp;</td>',
+    echo '<tr><td><strong>PC</strong> deadline &nbsp;</td>',
         '<td class="lentry" style="padding-right:3em">',
         render_entry("pcrev_soft", date_value("pcrev_soft", "pcrev_hard"), 30, "N/A"),
         '</td><td class="lentry">Hard deadline &nbsp;',
         render_entry("pcrev_hard", date_value("pcrev_hard"), 30, "N/A"),
         '</td></tr>';
-    echo '<tr><td><strong>External</strong> review deadline &nbsp;</td>',
+    echo '<tr><td><strong>External</strong> deadline &nbsp;</td>',
         '<td class="lentry" style="padding-right:3em">',
         render_entry("extrev_soft", date_value("extrev_soft", "pcrev_soft", "same as PC"), 30, "same as PC"),
         '</td><td class="lentry">Hard deadline &nbsp;',
@@ -1653,7 +1653,7 @@ function doRevGroup() {
     $tagger = new Tagger;
     echo "<h3 class=\"settings g\">Tags</h3>\n";
 
-    echo "<table><tr><td class='lcaption'>", setting_label("tag_chair", "Chair-only tags"), "</td>";
+    echo "<table><tr><td class='lxcaption'>", setting_label("tag_chair", "Chair-only tags"), "</td>";
     if (count($Error) > 0)
         $v = defval($_REQUEST, "tag_chair", "");
     else
@@ -1662,7 +1662,7 @@ function doRevGroup() {
     doEntry("tag_chair", $v, 40);
     echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
-    echo "<tr><td class='lcaption'>", setting_label("tag_vote", "Voting tags"), "</td>";
+    echo "<tr><td class='lxcaption'>", setting_label("tag_vote", "Voting tags"), "</td>";
     if (count($Error) > 0)
         $v = defval($_REQUEST, "tag_vote", "");
     else {
@@ -1675,7 +1675,7 @@ function doRevGroup() {
     doEntry("tag_vote", $v, 40);
     echo "<br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
-    echo "<tr><td class='lcaption'>", setting_label("tag_rank", "Ranking tag"), "</td>";
+    echo "<tr><td class='lxcaption'>", setting_label("tag_rank", "Ranking tag"), "</td>";
     if (count($Error) > 0)
         $v = defval($_REQUEST, "tag_rank", "");
     else
@@ -1731,10 +1731,11 @@ function doRevGroup() {
                 do_track($trackname, $tracknum);
                 ++$tracknum;
             }
-    echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
     echo "</div><div class='fx' style='padding-top:0.5em'>";
     do_track("_", 1);
-    echo "</div></td></tr></table>\n";
+    echo "</div>";
+    echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
+    echo "</td></tr></table>\n";
 
     // Review ratings
     echo "<h3 class=\"settings g\">Review ratings</h3>\n";
