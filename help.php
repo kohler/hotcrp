@@ -96,15 +96,16 @@ and it’s possible to download all matching papers and/or reviews at once.
 <p>Some useful hints for PC members and chairs:</p>
 
 <ul class='compact'>
-<li>" . _searchForm("") . "&nbsp; finds all papers.  (Leave the search field blank.)</li>
-<li>" . _searchForm("12") . "&nbsp; finds paper #12.  When entered from a
+<li><div style='display:inline-block'>" . _searchForm("") . "</div>&nbsp; finds all papers.  (Leave the search field blank.)</li>
+<li><div style='display:inline-block'>" . _searchForm("12") . "</div>&nbsp; finds paper #12.  When entered from a
  <a href='#quicklinks'>quicksearch</a> box, this search will jump to
  paper #12 directly.</li>
 <li><a href='" . hoturl("help", "t=keywords") . "'>Search keywords</a>
  let you search specific fields, review scores, and more.</li>
 <li>Use <a href='#quicklinks'>quicklinks</a> on paper pages to navigate
- through search results.</li>
-<li>On search results pages, <em>shift-click</em> the checkboxes to
+ through search results. Typing <code>j</code> and <code>k</code> also goes
+ from paper to paper.</li>
+<li>On search results pages, shift-click checkboxes to
  select paper ranges.</li>
 </ul>
 ");
@@ -118,7 +119,7 @@ type “term1 OR term2”.
 To search for papers that <em>don’t</em> match a term,
 try “-term”.  Or select
 <a href='" . hoturl("search", "opt=1") . "'>Advanced search</a>
-and use \"With <b>any</b> of the words\" and \"<b>Without</b> the words\".
+and use “With <b>any</b> of the words” and “<b>Without</b> the words.”
 
 <p>You can search in several paper classes, depending on your role in the
 conference. Options include:</p>
@@ -139,13 +140,12 @@ anonymous submission, then only the PC chairs can search by author.</p>
 can search other fields, including authors/collaborators and reviewers.
 Also, <b>keywords</b> search specific characteristics such as titles,
 authors, reviewer names, and numbers of reviewers.  For example,
-\"ti:foo\" means \"search for 'foo' in paper
-titles\".  Keywords are listed in the
+“ti:foo” means “search for ‘foo’ in paper
+titles.”  Keywords are listed in the
 <a href='" . hoturl("help", "t=keywords") . "'>search keywords reference</a>.</p>");
     _alternateRow("Search results", "
 Click on a paper number or title to jump to that paper.
-Search matches are <span class='match'>highlighted</span> on paper screens,
-which, for example, makes it easier to tell whether a conflict is real.
+Search matches are <span class='match'>highlighted</span> on paper screens.
 Once on a paper screen use <a href='#quicklinks'>quicklinks</a>
 to navigate through the rest of the search matches.
 
@@ -167,10 +167,10 @@ You can:</p>
 <li>Send mail to paper authors or reviewers (chairs only).</li>
 </ul>
 
-<p>Select papers one by one, in groups by <em>shift</em>-clicking on either end
-of a <em>range</em> of checkboxes, or using the \"select all\" link.
-For instance, the easiest way to tag a set of papers is
-to enter their numbers in the search box, search, \"select all\", and add the
+<p>Select papers one by one, select in groups by shift-clicking
+the checkboxes, or use the “select all” link.
+The easiest way to tag a set of papers is
+to enter their numbers in the search box, search, “select all,” and add the
 tag.</p>
 ");
     _alternateRow("<a name='quicklinks'>Quicksearch<br />and quicklinks</a>", "
