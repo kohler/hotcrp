@@ -1210,15 +1210,15 @@ function activate_editing(j, cj) {
     var elt;
     j.find("textarea").text(cj.text);
     j.find("input[name=commenttags]").val((cj.tags || []).join(" "));
-    if ((elt = j.find("input[name=visibility][value=" + (cj.visibility || "au") + "]")[0]))
+    if ((elt = j.find("input[name=visibility][value=" + (cj.visibility || "rev") + "]")[0]))
         elt.checked = true;
-    if ((elt = j.find("input[name=blind]")[0]) && cj.blind)
+    if ((elt = j.find("input[name=blind]")[0]) && (!cj.visibility || cj.blind))
         elt.checked = true;
     j.find("button[name=submit]").click(submit_editor);
     j.find("button[name=cancel]").click(cancel_editor);
     j.find("button[name=delete]").click(delete_editor);
     j.find("button[name=savedraft]").click(savedraft_editor);
-    if ((cj.visibility || "au") !== "au")
+    if ((cj.visibility || "rev") !== "au")
         fold(j.find(".cmtvistable")[0], true, 2);
     j.find("input[name=visibility]").on("change", docmtvis);
     if (papercomment.resp_words > 0)
