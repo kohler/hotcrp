@@ -1373,7 +1373,7 @@ class Contact {
             || ($rights->nonblind
                 && $prow->timeWithdrawn <= 0
                 && $rights->allow_pc_broad
-                && $Conf->setting("pc_seeall") > 0)
+                && $Conf->can_pc_see_all_submissions())
             || ($rights->allow_administer
                 ? $rights->nonblind || $rights->rights_force /* chair can't see blind authors unless forceShow */
                 : $rights->act_author_view))

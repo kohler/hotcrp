@@ -1268,9 +1268,6 @@ function doSubGroup() {
     doRadio("sub_freeze", array(0 => "<strong>Authors can update submissions until the deadline</strong>", 1 => array("Authors must freeze the final version of each submission", "“Authors can update submissions until the deadline” is usually the best choice.  Freezing submissions can be useful when there is no submission deadline.")));
 
     echo "<div class='g'></div><table>\n";
-    // compensate for pc_seeall magic
-    if ($Conf->setting("pc_seeall") < 0)
-        $Conf->settings["pc_seeall"] = 1;
     doCheckbox('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences <em>before</em> most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>", true);
     echo "</table>";
 }

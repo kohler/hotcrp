@@ -203,7 +203,7 @@ class Conference {
     private function crosscheck_settings() {
         global $Opt;
         // enforce invariants
-        foreach (array("pc_seeall", "pcrev_any", "extrev_view", "rev_notifychair") as $x)
+        foreach (array("pcrev_any", "extrev_view", "rev_notifychair") as $x)
             if (!isset($this->settings[$x]))
                 $this->settings[$x] = 0;
         if (!isset($this->settings["sub_blind"]))
@@ -216,8 +216,6 @@ class Conference {
             else if (@$this->settings["rev_seedec"])
                 $this->settings["seedec"] = self::SEEDEC_REV;
         }
-        if ($this->settings["pc_seeall"] && !$this->timeFinalizePaper())
-            $this->settings["pc_seeall"] = -1;
         if (@$this->settings["pc_seeallrev"] == 2) {
             $this->settings["pc_seeblindrev"] = 1;
             $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
@@ -538,7 +536,7 @@ class Conference {
             $this->q("insert into Settings (name, value) values ('papersub',1) on duplicate key update name=name");
         else if ($papersub <= 0 || !$forsubmit)
             // see also settings.php
-            $this->q("update Settings set value=(select ifnull(min(paperId),0) from Paper where " . (defval($this->settings, "pc_seeall") <= 0 ? "timeSubmitted>0" : "timeWithdrawn<=0") . ") where name='papersub'");
+            $this->q("update Settings set value=(select ifnull(min(paperId),0) from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . ") where name='papersub'");
     }
 
     function updatePaperaccSetting($foraccept) {
@@ -935,11 +933,8 @@ class Conference {
             return false;
         else if ($prow->timeSubmitted > 0)
             return true;
-            //return !$download || $this->setting('sub_freeze') > 0
-            //  || $this->deadlinesAfter("sub_sub", "sub_grace")
-            //  || $this->setting('sub_open') <= 0;
         else
-            return !$download && $this->setting('pc_seeall') > 0;
+            return !$download && $this->can_pc_see_all_submissions();
     }
     function timeReviewerViewSubmittedPaper() {
         return true;
@@ -979,6 +974,18 @@ class Conference {
     function has_managed_submissions() {
         $result = $this->q("select paperId from Paper where timeSubmitted>0 and managerContactId!=0 limit 1");
         return !!edb_row($result);
+    }
+
+    function can_pc_see_all_submissions() {
+        $dl = $this->deadlines();
+        $pc_seeall = @$dl["pc_seeall"];
+        if ($pc_seeall === null) {
+            $pc_seeall = @$this->settings["pc_seeall"] ? : 0;
+            if ($pc_seeall > 0 && !$this->timeFinalizePaper())
+                $pc_seeall = 0;
+            $this->deadline_cache["pc_seeall"] = $pc_seeall;
+        }
+        return $pc_seeall > 0;
     }
 
 
@@ -1637,7 +1644,7 @@ class Conference {
                 left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId)
                 where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0
                   and P.timeWithdrawn<=0";
-        if ($type != "all" && ($type || $this->setting("pc_seeall") <= 0))
+        if ($type != "all" && ($type || !$this->can_pc_see_all_submissions()))
             $q .= " and P.timeSubmitted>0";
         if ($extra)
             $q .= " " . $extra;

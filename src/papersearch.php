@@ -345,7 +345,9 @@ class PaperSearch {
         if ($this->privChair && !$ptype && $Conf->timeUpdatePaper())
             $this->limitName = "all";
         else if (($me->privChair && $ptype == "act")
-                 || ($me->isPC && (!$ptype || $ptype == "act" || $ptype == "all") && $Conf->setting("pc_seeall") > 0))
+                 || ($me->isPC
+                     && (!$ptype || $ptype == "act" || $ptype == "all")
+                     && $Conf->can_pc_see_all_submissions()))
             $this->limitName = "act";
         else if ($me->privChair && $ptype == "unm")
             $this->limitName = "unm";
@@ -2456,17 +2458,17 @@ class PaperSearch {
         //$Conf->infoMsg(Ht::pre_text(var_export($filters, true)));
 
         // status limitation parts
-        $pc_seeall = $Conf->setting("pc_seeall") > 0;
         if ($limit == "rable") {
             $limitcontact = $this->_reviewer_fixed ? $this->reviewer() : $this->contact;
             if ($limitcontact->allow_review_assignment_ignore_conflict(null))
-                $limit = $pc_seeall ? "act" : "s";
+                $limit = $Conf->can_pc_see_all_submissions() ? "act" : "s";
             else if (!$limitcontact->isPC)
                 $limit = "r";
         }
         if ($limit == "s" || $limit == "req"
             || $limit == "acc" || $limit == "und"
-            || $limit == "unm" || ($limit == "rable" && !$pc_seeall))
+            || $limit == "unm"
+            || ($limit == "rable" && !$Conf->can_pc_see_all_submissions()))
             $filters[] = "Paper.timeSubmitted>0";
         else if ($limit == "act" || $limit == "r" || $limit == "rable")
             $filters[] = "Paper.timeWithdrawn<=0";
@@ -2688,7 +2690,7 @@ class PaperSearch {
         if ($limit == "rable") {
             $c = ($this->_reviewer_fixed ? $this->reviewer() : $this->contact);
             if ($c->isPC)
-                $limit = $Conf->setting("pc_seeall") > 0 ? "act" : "s";
+                $limit = $Conf->can_pc_see_all_submissions() ? "act" : "s";
             else
                 $limit = "r";
         }
@@ -2906,7 +2908,7 @@ class PaperSearch {
     static function searchTypes($me) {
         global $Conf;
         $tOpt = array();
-        if ($me->isPC && $Conf->setting("pc_seeall") > 0)
+        if ($me->isPC && $Conf->can_pc_see_all_submissions())
             $tOpt["act"] = "Active papers";
         if ($me->isPC)
             $tOpt["s"] = "Submitted papers";
@@ -2914,7 +2916,8 @@ class PaperSearch {
             $tOpt["acc"] = "Accepted papers";
         if ($me->privChair)
             $tOpt["all"] = "All papers";
-        if ($me->privChair && $Conf->setting("pc_seeall") <= 0 && defval($_REQUEST, "t") == "act")
+        if ($me->privChair && !$Conf->can_pc_see_all_submissions()
+            && defval($_REQUEST, "t") == "act")
             $tOpt["act"] = "Active papers";
         if ($me->is_reviewer())
             $tOpt["r"] = "Your reviews";

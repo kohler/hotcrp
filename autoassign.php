@@ -22,7 +22,7 @@ if (isset($_REQUEST["pcs"]) && is_array($_REQUEST["pcs"])) {
 } else
     $pcsel = pcMembers();
 if (defval($_REQUEST, "a") == "prefconflict" && !isset($_REQUEST["t"])
-    && $Conf->setting("pc_seeall") > 0)
+    && $Conf->can_pc_see_all_submissions())
     $_REQUEST["t"] = "all";
 else if ($Conf->has_managed_submissions())
     $_REQUEST["t"] = defval($_REQUEST, "t", "unm");

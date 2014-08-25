@@ -680,7 +680,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
         $Conf->qe("update Paper set timeSubmitted=0 where paperId=$paperId");
         loadRows();
     }
-    if ($isSubmit || $Conf->setting("pc_seeall"))
+    if ($isSubmit || $Conf->can_pc_see_all_submissions())
         $Conf->updatePapersubSetting(true);
     if ($wasSubmitted != ($prow->$submitkey > 0))
         $diffs["submission"] = 1;
