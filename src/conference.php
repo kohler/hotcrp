@@ -220,6 +220,12 @@ class Conference {
             $this->settings["pc_seeblindrev"] = 1;
             $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
         }
+        if (!@$this->settings["extrev_soft"] && !@$this->settings["extrev_hard"]) {
+            if (@$this->settings["pcrev_soft"])
+                $this->settings["extrev_soft"] = $this->settings["pcrev_soft"];
+            if (@$this->settings["pcrev_hard"])
+                $this->settings["extrev_hard"] = $this->settings["pcrev_hard"];
+        }
         $this->rounds = array("");
         if (isset($this->settingTexts["tag_rounds"])) {
             foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r)

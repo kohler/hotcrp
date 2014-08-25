@@ -311,6 +311,14 @@ class Ht {
         return "<pre style=\"white-space: pre-wrap\">" . htmlspecialchars($text) . "</pre>";
     }
 
+    static function pre_export($x) {
+        return "<pre>" . htmlspecialchars(var_export($x, true)) . "</pre>";
+    }
+
+    static function pre_export_wrap($x) {
+        return "<pre style=\"white-space: pre-wrap\">" . htmlspecialchars(var_export($x, true)) . "</pre>";
+    }
+
     static function img($src, $alt, $js = null) {
         if (is_string($js))
             $js = array("class" => $js);

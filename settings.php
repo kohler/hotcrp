@@ -140,7 +140,8 @@ function parseValue($name, $info) {
     else if ($info->type === "cdate" && $v == "1")
         return 1;
     else if ($info->type === "date" || $info->type === "cdate") {
-        if ($v == "" || strtoupper($v) == "N/A" || $v == "0")
+        if ($v == "" || strtoupper($v) == "N/A" || strtoupper($v) == "SAME AS PC"
+            || $v == "0")
             return -1;
         else if (($v = $Conf->parse_time($v)) !== false)
             return $v;
@@ -853,6 +854,10 @@ if (isset($_REQUEST["update"]) && check_post()) {
         accountValue($name, $info);
 
     // check date relationships
+    foreach (array("soft", "hard") as $k)
+        if (isset($Values["pcrev_$k"]) && isset($Values["extrev_$k"])
+            && $Values["pcrev_$k"] == $Values["extrev_$k"])
+            $Values["extrev_$k"] = null;
     foreach (array("sub_reg" => "sub_sub", "pcrev_soft" => "pcrev_hard",
                    "extrev_soft" => "extrev_hard", "final_soft" => "final_done")
              as $first => $second)
@@ -910,7 +915,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
         if (value($deadline) > $Now
             && value($deadline) != $Conf->setting($deadline)
             && value_or_setting("rev_open") <= 0) {
-            $Conf->warnMsg("Review deadline set.  You may also want to open the site for reviewing.");
+            $Conf->warnMsg("Review deadline set. You may also want to open the site for reviewing.");
             $Highlight["rev_open"] = true;
             break;
         }
@@ -1081,12 +1086,16 @@ function doSelect($name, $nametext, $varr, $tr = false) {
         ($tr ? "</td></tr>\n" : "<br />\n");
 }
 
+function render_entry($name, $v, $size = 30, $temptext = "") {
+    return Ht::entry($name, $v, array("size" => $size, "hottemptext" => $temptext, "disabled" => setting_disabled($name)));
+}
+
 function doTextRow($name, $text, $v, $size = 30,
                    $capclass = "lcaption", $tempText = "") {
     global $Conf;
     $nametext = (is_array($text) ? $text[0] : $text);
     echo "<tr><td class='$capclass nowrap'>", setting_label($name, $nametext), "</td><td class='lentry'>",
-        Ht::entry($name, $v, array("size" => $size, "hottemptext" => $tempText, "disabled" => setting_disabled($name)));
+        render_entry($name, $v, $size, $tempText);
     if (is_array($text) && isset($text[2]))
         echo $text[2];
     if (is_array($text) && $text[1])
@@ -1098,24 +1107,27 @@ function doEntry($name, $v, $size = 30, $tempText = "") {
     echo Ht::entry($name, $v, array("size" => $size, "hottemptext" => $tempText, "disabled" => setting_disabled($name)));
 }
 
-function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
-    global $Conf, $Error, $DateExplanation;
+function date_value($name, $othername = array(), $temptext = "N/A") {
+    global $Conf, $Error;
     $x = setting($name);
-    if ($x === null || (count($Error) == 0 && $x <= 0)
-        || (count($Error) == 0 && $othername && setting($othername) == $x))
-        $v = "N/A";
-    else if (count($Error) == 0)
-        $v = $Conf->parseableTime($x, true);
-    else
-        $v = $x;
+    if ($x !== null && count($Error) != 0)
+        return $x;
+    foreach (is_array($othername) ? $othername : array($othername) as $on)
+        if (setting($on) == $x)
+            return $temptext;
+    return $x <= 0 ? $temptext : $Conf->parseableTime($x, true);
+}
+
+function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
+    global $DateExplanation;
     if ($DateExplanation) {
         if (is_array($text))
             $text[1] = $DateExplanation . "<br />" . $text[1];
         else
             $text = array($text, $DateExplanation);
-        $DateExplanation = null;
+        $DateExplanation = "";
     }
-    doTextRow($name, $text, $v, 30, $capclass, "N/A");
+    doTextRow($name, $text, date_value($name, $othername), 30, $capclass, "N/A");
 }
 
 function doGraceRow($name, $text, $capclass = "lcaption") {
@@ -1559,17 +1571,67 @@ function doRevGroup() {
     doCheckbox("cmt_always", "Allow comments even if reviewing is closed");
 
     echo "<div class='g'></div>\n";
+    doCheckbox('pcrev_any', "PC members can review <strong>any</strong> submitted paper");
+
+    echo "<div class='g'></div>\n";
     echo "<strong>Review anonymity:</strong> Are reviewer names hidden from authors?<br />\n";
     doRadio("rev_blind", array(Conference::BLIND_ALWAYS => "Yes—reviews are anonymous",
                                Conference::BLIND_NEVER => "No—reviewer names are visible to authors",
                                Conference::BLIND_OPTIONAL => "Depends—reviewers decide whether to expose their names"));
 
     echo "<div class='g'></div>\n";
-    doCheckbox('rev_notifychair', 'Notify PC chairs of new reviews by email');
+    doCheckbox('rev_notifychair', 'Notify PC chairs of newly submitted reviews by email');
+
+
+    // Deadlines
+    echo "<h3 id=\"reviewround\" class=\"settings g\">Deadlines</h3>\n";
+    $date_text = $DateExplanation;
+    $DateExplanation = "";
+    echo '<p class="hint">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t set hard deadlines for reviews.<br />', $date_text, '</p>';
+
+    echo "<table>\n";
+    echo '<tr><td><strong>PC</strong> review deadline &nbsp;</td>',
+        '<td class="lentry" style="padding-right:3em">',
+        render_entry("pcrev_soft", date_value("pcrev_soft", "pcrev_hard"), 30, "N/A"),
+        '</td><td class="lentry">Hard deadline &nbsp;',
+        render_entry("pcrev_hard", date_value("pcrev_hard"), 30, "N/A"),
+        '</td></tr>';
+    echo '<tr><td><strong>External</strong> review deadline &nbsp;</td>',
+        '<td class="lentry" style="padding-right:3em">',
+        render_entry("extrev_soft", date_value("extrev_soft", "pcrev_soft", "same as PC"), 30, "same as PC"),
+        '</td><td class="lentry">Hard deadline &nbsp;',
+        render_entry("extrev_hard", date_value("extrev_hard", "pcrev_hard", "same as PC"), 30, "same as PC"),
+        '</td></tr>';
+    echo "</table>\n";
+
+    if (!($rev_roundtag = setting_data("rev_roundtag")))
+        $rev_roundtag = "(None)";
+    echo '<div class="g"></div>', "<table>\n";
+    doTextRow("rev_roundtag", array("Review round", "This is the default review round for new review assignments. Examples: “R1”, “R2” &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lxcaption", "(None)");
+    echo "</table>\n";
+    echo Ht::hidden("has_rev_roundtag", 1);
+
+
+    // External reviews
+    echo "<h3 class=\"settings g\">External reviews</h3>\n";
+
+    echo "<div class='g'></div>";
+    doCheckbox("extrev_chairreq", "PC chair must approve proposed external reviewers");
+    doCheckbox("pcrev_editdelegate", "PC members can edit external reviews they requested");
+
+    echo "<div class='g'></div>\n";
+    $t = expandMailTemplate("requestreview", false);
+    echo "<table id='foldmailbody_requestreview' class='",
+        ($t == expandMailTemplate("requestreview", true) ? "foldc" : "foldo"),
+        "'><tr><td>", foldbutton("mailbody_requestreview"), "</td>",
+        "<td><a href='#' onclick='return fold(\"mailbody_requestreview\")' class='q'><strong>Mail template for external review requests</strong></a>",
+        " <span class='fx'>(<a href='", hoturl("mail"), "'>keywords</a> allowed; set to empty for default)<br /></span>
+<textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20'>", htmlspecialchars($t["body"]), "</textarea>",
+        "</td></tr></table>\n";
 
 
     // Review visibility
-    echo "<h3 class=\"settings g\">Review visibility</h3>\n";
+    echo "<h3 class=\"settings g\">Visibility</h3>\n";
 
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
     doRadio("pc_seeallrev", array(Conference::PCSEEREV_YES => "Yes",
@@ -1585,47 +1647,6 @@ function doRevGroup() {
     echo "<div class='g'></div>";
     echo "Can external reviewers see the other reviews for their assigned papers, once they’ve submitted their own?<br />\n";
     doRadio("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see who wrote blind reviews", 0 => "No"));
-
-
-    // PC reviews
-    echo "<h3 id=\"reviewround\" class=\"settings g\">PC reviews</h3>\n";
-
-    echo "<table>\n";
-    $date_text = $DateExplanation;
-    $DateExplanation = null;
-    doDateRow("pcrev_soft", array("Deadline", "Reviews are due by the deadline."), "pcrev_hard");
-    doDateRow("pcrev_hard", array("Hard deadline", "Reviews <em>cannot be entered or changed</em> after the hard deadline.  If set, this should generally be after the PC meeting.<br />$date_text"));
-    if (!($rev_roundtag = setting_data("rev_roundtag")))
-        $rev_roundtag = "(None)";
-    doTextRow("rev_roundtag", array("Review round", "This is the default review round for new review assignments. Examples: “R1”, “R2” &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lxcaption", "(None)");
-    echo "</table>\n",
-        Ht::hidden("has_rev_roundtag", 1);
-
-    echo "<div class='g'></div>\n";
-    doCheckbox('pcrev_any', "PC members can review <strong>any</strong> submitted paper");
-
-
-    // External reviews
-    echo "<h3 class=\"settings g\">External reviews</h3>\n";
-
-    doCheckbox("extrev_chairreq", "PC chair must approve proposed external reviewers");
-    doCheckbox("pcrev_editdelegate", "PC members can edit external reviews they requested");
-    echo "<div class='g'></div>";
-
-    echo "<table>\n";
-    doDateRow("extrev_soft", "Deadline", "extrev_hard");
-    doDateRow("extrev_hard", "Hard deadline");
-    echo "</table>\n";
-
-    echo "<div class='g'></div>\n";
-    $t = expandMailTemplate("requestreview", false);
-    echo "<table id='foldmailbody_requestreview' class='",
-        ($t == expandMailTemplate("requestreview", true) ? "foldc" : "foldo"),
-        "'><tr><td>", foldbutton("mailbody_requestreview"), "</td>",
-        "<td><a href='#' onclick='return fold(\"mailbody_requestreview\")' class='q'><strong>Mail template for external review requests</strong></a>",
-        " <span class='fx'>(<a href='", hoturl("mail"), "'>keywords</a> allowed; set to empty for default)<br /></span>
-<textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20'>", htmlspecialchars($t["body"]), "</textarea>",
-        "</td></tr></table>\n";
 
 
     // Tags
@@ -1699,7 +1720,7 @@ function doRevGroup() {
         (defval($_REQUEST, "tracks") || $Conf->has_tracks() || @$Highlight["tracks"] ? "foldo" : "foldc"), "'><tr>",
         "<td>", foldbutton("tracks"), Ht::hidden("has_tracks", 1), "</td>",
         "<td><a href='#' onclick='return fold(\"tracks\")' name='tracks' class='q'><strong>Tracks</strong></a><br />\n",
-        "<div class='hint fx'>Tracks control whether specific PC members can view or review specific papers. &nbsp;|&nbsp; <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
+        "<div class='hint fx'>Tracks control whether specific PC members can view or review specific papers. &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
         "<div class='smg fx'></div>",
         "<div class='fx'>";
     do_track("", 0);

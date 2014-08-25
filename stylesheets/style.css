@@ -806,11 +806,11 @@ td.srcaption {
 td.sentry {
 	padding: 3px 0.75em;
 }
-td.lcaption {
+th.lcaption, td.lcaption {
 	padding: 3px 1em 3px 0;
 	font-weight: bold;
 }
-td.lxcaption {
+th.lxcaption, td.lxcaption {
 	padding: 3px 1em 3px 0;
 }
 td.mcaption {
@@ -843,13 +843,13 @@ td.hint {
 div.hint {
 	margin-bottom: 0.5ex;
 }
-td.hint, div.hint, span.hint,
+td.hint, div.hint, span.hint, p.hint,
 .revvis, .revevis {
 	font-weight: normal;
 	font-style: normal;
 	color: #555555;
 }
-td.hint, div.hint, span.hint, a.hint {
+td.hint, div.hint, span.hint, p.hint, a.hint {
 	font-size: smaller;
 }
 td.caption span.hint {
