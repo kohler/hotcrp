@@ -1028,6 +1028,7 @@ class PaperSearch {
     }
 
     private function _searchHas($word, &$qt, $quoted) {
+        global $searchKeywords;
         if (strcasecmp($word, "paper") == 0 || strcasecmp($word, "submission") == 0)
             $qt[] = new SearchTerm("pf", 0, array("paperStorageId", "!=0"));
         else if (strcasecmp($word, "final") == 0 || strcasecmp($word, "finalcopy") == 0)
@@ -1040,10 +1041,12 @@ class PaperSearch {
             $qt[] = new SearchTerm("cmt", self::F_XVIEW, SearchReviewValue::any());
         else if (strcasecmp($word, "manager") == 0 || strcasecmp($word, "admin") == 0 || strcasecmp($word, "administrator") == 0)
             $qt[] = new SearchTerm("pf", 0, array("managerContactId", "!=0"));
+        else if (preg_match('/\A[ci]?(?:re|pri|sec|ext)\z/', @$searchKeywords[$word] ? : ""))
+            $this->_searchReviewer(">0", $searchKeywords[$word], $qt, $quoted);
         else if (preg_match('/\A\w+\z/', $word) && $this->_searchOptions("$word:yes", $qt, false))
             /* OK */;
         else {
-            $this->warn("Valid “has:” searches are “paper”, “final”, “abstract”, “comment”, and “response”.");
+            $this->warn("Valid “has:” searches are “paper”, “final”, “abstract”, “comment”, “response”, “pcrev”, and “extrev”.");
             $qt[] = new SearchTerm("f");
         }
     }
