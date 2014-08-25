@@ -40,9 +40,11 @@ if ($Group === "rev" || $Group === "review")
     $Group = "reviews";
 if ($Group === "rfo")
     $Group = "reviewform";
+if ($Group === "tracks")
+    $Group = "tags";
 if ($Group === "acc")
     $Group = "users";
-if (array_search($Group, array("info", "users", "msg", "sub", "opt", "reviews", "reviewform", "dec")) === false) {
+if (array_search($Group, array("info", "users", "msg", "sub", "opt", "reviews", "reviewform", "tags", "dec")) === false) {
     if ($Conf->timeAuthorViewReviews())
         $Group = "dec";
     else if ($Conf->deadlinesAfter("sub_sub") || $Conf->time_review_open())
@@ -1518,54 +1520,6 @@ function doOptGroup() {
 }
 
 // Reviews
-function do_track_permission($type, $question, $tnum, $thistrack) {
-    global $Conf, $Error;
-    if (count($Error) > 0) {
-        $tclass = defval($_REQUEST, "${type}_track$tnum", "");
-        $ttag = defval($_REQUEST, "${type}tag_track$tnum", "");
-    } else if ($thistrack && @$thistrack->$type) {
-        $tclass = substr($thistrack->$type, 0, 1);
-        $ttag = substr($thistrack->$type, 1);
-    } else
-        $tclass = $ttag = "";
-
-    echo "<tr hotcrp_fold=\"1\" class=\"fold", ($tclass == "" ? "c" : "o"), "\">",
-        "<td class=\"lxcaption\">",
-        setting_label("${type}_track$tnum", $question, "${type}_track$tnum"),
-        "</td>",
-        "<td>",
-        Ht::select("${type}_track$tnum", array("" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag"), $tclass,
-                   array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0})")),
-        " &nbsp;",
-        Ht::entry("${type}tag_track$tnum", $ttag,
-                  array("class" => "fx",
-                        "id" => "${type}tag_track$tnum",
-                        "hottemptext" => "(tag)")),
-        "</td></tr>";
-}
-
-function do_track($trackname, $tnum) {
-    global $Conf;
-    echo "<div id=\"trackgroup$tnum\"",
-        ($tnum ? "" : " style=\"display:none\""),
-        "><div class=\"trackname\" style=\"margin-bottom:3px\">";
-    if ($trackname === "_")
-        echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
-    else
-        echo "For papers with tag &nbsp;",
-            Ht::entry("name_track$tnum", $trackname, array("id" => "name_track$tnum", "hottemptext" => "(tag)")), ":";
-    echo "</div>\n";
-
-    $t = $Conf->setting_json("tracks");
-    $t = $t && $trackname !== "" ? @$t->$trackname : null;
-    echo "<table style=\"margin-left:1.5em;margin-bottom:0.5em\">";
-    do_track_permission("view", "Who can view these papers?", $tnum, $t);
-    do_track_permission("viewrev", "Who can view reviews?", $tnum, $t);
-    do_track_permission("assrev", "Who can be assigned a review?", $tnum, $t);
-    do_track_permission("unassrev", "Who can review without an assignment?", $tnum, $t);
-    echo "</table></div>";
-}
-
 function doRevGroup() {
     global $Conf, $Error, $Highlight, $DateExplanation, $TagStyles;
 
@@ -1651,9 +1605,74 @@ function doRevGroup() {
     doRadio("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see who wrote blind reviews", 0 => "No"));
 
 
+    // Review ratings
+    echo "<h3 class=\"settings g\">Review ratings</h3>\n";
+
+    echo "Should HotCRP collect ratings of reviews? &nbsp; <a class='hint' href='", hoturl("help", "t=revrate"), "'>(Learn more)</a><br />\n";
+    doRadio("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"));
+}
+
+// Review form
+function doRfoGroup() {
+    require_once("src/reviewsetform.php");
+    rf_show();
+}
+
+// Tags and tracks
+function do_track_permission($type, $question, $tnum, $thistrack) {
+    global $Conf, $Error;
+    if (count($Error) > 0) {
+        $tclass = defval($_REQUEST, "${type}_track$tnum", "");
+        $ttag = defval($_REQUEST, "${type}tag_track$tnum", "");
+    } else if ($thistrack && @$thistrack->$type) {
+        $tclass = substr($thistrack->$type, 0, 1);
+        $ttag = substr($thistrack->$type, 1);
+    } else
+        $tclass = $ttag = "";
+
+    echo "<tr hotcrp_fold=\"1\" class=\"fold", ($tclass == "" ? "c" : "o"), "\">",
+        "<td class=\"lxcaption\">",
+        setting_label("${type}_track$tnum", $question, "${type}_track$tnum"),
+        "</td>",
+        "<td>",
+        Ht::select("${type}_track$tnum", array("" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag"), $tclass,
+                   array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0})")),
+        " &nbsp;",
+        Ht::entry("${type}tag_track$tnum", $ttag,
+                  array("class" => "fx",
+                        "id" => "${type}tag_track$tnum",
+                        "hottemptext" => "(tag)")),
+        "</td></tr>";
+}
+
+function do_track($trackname, $tnum) {
+    global $Conf;
+    echo "<div id=\"trackgroup$tnum\"",
+        ($tnum ? "" : " style=\"display:none\""),
+        "><div class=\"trackname\" style=\"margin-bottom:3px\">";
+    if ($trackname === "_")
+        echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
+    else
+        echo "For papers with tag &nbsp;",
+            Ht::entry("name_track$tnum", $trackname, array("id" => "name_track$tnum", "hottemptext" => "(tag)")), ":";
+    echo "</div>\n";
+
+    $t = $Conf->setting_json("tracks");
+    $t = $t && $trackname !== "" ? @$t->$trackname : null;
+    echo "<table style=\"margin-left:1.5em;margin-bottom:0.5em\">";
+    do_track_permission("view", "Who can view these papers?", $tnum, $t);
+    do_track_permission("viewrev", "Who can view reviews?", $tnum, $t);
+    do_track_permission("assrev", "Who can be assigned a review?", $tnum, $t);
+    do_track_permission("unassrev", "Who can review without an assignment?", $tnum, $t);
+    echo "</table></div>";
+}
+
+function doTagsGroup() {
+    global $Conf, $Error, $Highlight, $DateExplanation, $TagStyles;
+
     // Tags
     $tagger = new Tagger;
-    echo "<h3 class=\"settings g\">Tags</h3>\n";
+    echo "<h3 class=\"settings\">Tags</h3>\n";
 
     echo "<table><tr><td class='lxcaption'>", setting_label("tag_chair", "Chair-only tags"), "</td>";
     if (count($Error) > 0)
@@ -1717,14 +1736,10 @@ function doRevGroup() {
         "<table class='fx'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>",
         join("", $tag_colors_rows), "</table></td></tr></table>\n";
 
-    echo "<div class='g'></div>\n";
-    echo "<table id='foldtracks' class='",
-        (defval($_REQUEST, "tracks") || $Conf->has_tracks() || @$Highlight["tracks"] ? "foldo" : "foldc"), "'><tr>",
-        "<td>", foldbutton("tracks"), Ht::hidden("has_tracks", 1), "</td>",
-        "<td><a href='#' onclick='return fold(\"tracks\")' name='tracks' class='q'><strong>Tracks</strong></a><br />\n",
-        "<div class='hint fx'>Tracks control whether specific PC members can view or review specific papers. &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
-        "<div class='smg fx'></div>",
-        "<div class='fx'>";
+
+    echo '<h3 class="settings g">Tracks</h3>', "\n";
+    echo "<div class='hint'>Tracks control the PC members allowed to view or review different sets of papers. &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
+        "<div class='smg'></div>";
     do_track("", 0);
     $tracknum = 2;
     if (($trackj = $Conf->setting_json("tracks")))
@@ -1733,24 +1748,10 @@ function doRevGroup() {
                 do_track($trackname, $tracknum);
                 ++$tracknum;
             }
-    echo "</div><div class='fx' style='padding-top:0.5em'>";
     do_track("_", 1);
-    echo "</div>";
     echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
-    echo "</td></tr></table>\n";
-
-    // Review ratings
-    echo "<h3 class=\"settings g\">Review ratings</h3>\n";
-
-    echo "Should HotCRP collect ratings of reviews? &nbsp; <a class='hint' href='", hoturl("help", "t=revrate"), "'>(Learn more)</a><br />\n";
-    doRadio("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"));
 }
 
-// Review form
-function doRfoGroup() {
-    require_once("src/reviewsetform.php");
-    rf_show();
-}
 
 // Responses and decisions
 function doDecGroup() {
@@ -1860,6 +1861,7 @@ foreach (array("info" => "Conference information",
                "opt" => "Submission options",
                "reviews" => "Reviews",
                "reviewform" => "Review form",
+               "tags" => "Tags &amp; tracks",
                "dec" => "Decisions") as $k => $v) {
     echo "<tr><td>";
     if ($Group == $k)
@@ -1891,6 +1893,8 @@ else if ($Group == "reviews")
     doRevGroup();
 else if ($Group == "reviewform")
     doRfoGroup();
+else if ($Group == "tags")
+    doTagsGroup();
 else {
     if ($Group != "dec")
         error_log("bad settings group $Group");

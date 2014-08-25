@@ -382,7 +382,7 @@ function tags() {
         $votetags = _currentVoteTags();
 
         if ($Me->privChair)
-            $setting = "  (<a href='" . hoturl("settings", "group=reviews") . "'>Change this setting</a>)";
+            $setting = "  (<a href='" . hoturl("settings", "group=tags") . "'>Change this setting</a>)";
 
         if ($Conf->setting("tag_seeall") > 0) {
             $conflictmsg3 = "Currently PC members can see tags for any paper, including conflicts.";
@@ -526,7 +526,7 @@ The tag names “red”, “orange”, “yellow”,
 tag).  Tag a paper “#~red” to make it red on your displays, but not
 others’. Other styles are available; try
 “#bold”, “#italic”, “#big”, “#small”, and “#dim”. System administrators can <a
-href='" . hoturl("settings", "group=reviews") . "'>associate other tags with colors</a>
+href='" . hoturl("settings", "group=tags") . "'>associate other tags with colors</a>
 so that, for example, “<a
 href='" . hoturl("search", "q=%23reject") . "'>#reject</a>” papers show up
 as gray.");
@@ -545,7 +545,7 @@ Without tracks, all PC members are treated equally.
 With tracks, PC members with different tags can have different rights to
 view or review papers, depending on the papers’ tags.
 
-<p>Set up tracks on the <a href=\"" . hoturl("settings", "group=reviews#tracks") . "\">Settings &gt;
+<p>Set up tracks on the <a href=\"" . hoturl("settings", "group=tags#tracks") . "\">Settings &gt;
 Reviews</a> page.</p>");
     _alternateRow("Examples", "
 An <em>external review committee</em> is a subset of the PC that may bid on
@@ -766,7 +766,7 @@ The PC’s aggregated vote totals might help determine
 which papers to discuss.
 
 <p>HotCRP supports voting through the <a href='" . hoturl("help", "t=tags") . "'>tags system</a>.
-The chair can <a href='" . hoturl("settings", "group=reviews") . "'>define a set of voting tags</a> and allotments" . _currentVoteTags() . ".
+The chair can <a href='" . hoturl("settings", "group=tags") . "'>define a set of voting tags</a> and allotments" . _currentVoteTags() . ".
 PC members vote by assigning the corresponding twiddle tags;
 the aggregated PC vote is visible in the public tag.</p>
 
@@ -813,7 +813,7 @@ method</a> by default, combines these rankings into a global preference order.
 <p>HotCRP supports ranking through the <a
 href='" . hoturl("help", "t=tags") . "'>tags system</a>.  The chair chooses
 a tag for ranking—“rank” is a good default—and enters it on <a
-href='" . hoturl("settings", "group=reviews") . "'>the settings page</a>.
+href='" . hoturl("settings", "group=tags") . "'>the settings page</a>.
 PC members then rank papers using their private versions of this tag,
 tagging their first preference with “~rank#1”,
 their second preference with “~rank#2”,
