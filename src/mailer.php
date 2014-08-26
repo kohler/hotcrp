@@ -741,7 +741,8 @@ class Mailer {
             if (!@$Opt["emailFromHeader"])
                 $Opt["emailFromHeader"] = Mailer::mimeEmailHeader("From: ", $Opt["emailFrom"]);
             return mail($to, $preparation["subject"], $preparation["body"], $headers . $Opt["emailFromHeader"], $extra);
-        } else if (!$Opt["sendEmail"])
+        } else if (!$Opt["sendEmail"]
+                   && !preg_match('/\Aanonymous\d*\z/', $preparation["to"]))
             return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\n" . $preparation["headers"] . "Subject: " . $preparation["subject"] . "\n\n" . $preparation["body"]) . "</pre>");
     }
 
