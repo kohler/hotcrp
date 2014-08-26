@@ -72,7 +72,7 @@ if ($reviewer <= 0 || !@$pcm[$reviewer])
 function saveAssignments($reviewer) {
     global $Conf, $Me, $Now, $kind;
 
-    $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperReviewRefused write, PaperConflict write" . $Conf->tagRoundLocker($kind == "a"));
+    $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperReviewRefused write, PaperConflict write, Settings write");
     if (!$result)
         return $result;
 

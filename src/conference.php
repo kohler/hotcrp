@@ -1855,15 +1855,6 @@ class Conference {
         exit;
     }
 
-    function tagRoundLocker($dolocker) {
-        if (!$dolocker)
-            return "";
-        else if (!defval($this->settings, "rev_roundtag", ""))
-            return ", Settings write";
-        else
-            return ", Settings write, PaperTag write";
-    }
-
 
     //
     // Conference header, footer

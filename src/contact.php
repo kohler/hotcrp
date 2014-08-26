@@ -2304,44 +2304,66 @@ class Contact {
     }
 
 
-    function assign_paper($pid, $rrow, $reviewer_cid, $type) {
+    private static function unassigned_review_token() {
+        global $Conf;
+        while (1) {
+            $token = mt_rand(1, 2000000000);
+            $result = $Conf->qe("select reviewId from PaperReview where reviewToken=$token");
+            if (edb_nrows($result) == 0)
+                return ", reviewToken=$token";
+        }
+    }
+
+    function assign_paper($pid, $rrow, $reviewer_cid, $type, $extra = array()) {
         global $Conf, $Now, $reviewTypeName;
+        $reviewId = $rrow ? $rrow->reviewId : 0;
+
+        // can't delete a review that's in progress
         if ($type <= 0 && $rrow && $rrow->reviewType && $rrow->reviewModified) {
             if ($rrow->reviewType >= REVIEW_SECONDARY)
                 $type = REVIEW_PC;
             else
-                return;
+                return $reviewId;
         }
+
+        // change database
         if ($type > 0 && (!$rrow || !$rrow->reviewType)) {
-            $qa = $qb = "";
-            if (($type == REVIEW_PRIMARY || $type == REVIEW_SECONDARY)
-                && ($t = $Conf->setting_data("rev_roundtag"))) {
-                $qa .= ", reviewRound";
-                $qb .= ", " . $Conf->round_number($t, true);
-            }
-            $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, timeRequested$qa) values ($pid, $reviewer_cid, $type, $this->contactId, $Now$qb)";
+            $qa = "";
+            if (($t = $Conf->setting_data("rev_roundtag")))
+                $qa .= ", reviewRound=" . $Conf->round_number($t, true);
+            if (@$extra["mark_notify"])
+                $qa .= ", timeRequestNotified=$Now";
+            if (@$extra["token"])
+                $qa .= self::unassigned_review_token();
+            $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, requestedBy=$this->contactId, timeRequested=$Now$qa";
         } else if ($type > 0 && $rrow->reviewType != $type)
             $q = "update PaperReview set reviewType=$type where reviewId=$rrow->reviewId";
         else if ($type <= 0 && $rrow && $rrow->reviewType)
             $q = "delete from PaperReview where reviewId=$rrow->reviewId";
         else
-            return;
+            return $rrow ? $rrow->reviewId : 0;
 
-        if ($Conf->qe($q)) {
-            if ($rrow && defval($rrow, "reviewToken", 0) != 0 && $type <= 0)
-                $Conf->settings["rev_tokens"] = -1;
-            if ($q[0] == "d")
-                $msg = "Removed " . $reviewTypeName[$rrow->reviewType] . " review";
-            else if ($q[0] == "u")
-                $msg = "Changed " . $reviewTypeName[$rrow->reviewType] . " review to " . $reviewTypeName[$type];
-            else
-                $msg = "Added " . $reviewTypeName[$type] . " review";
-            $Conf->log($msg . " by " . $this->email, $reviewer_cid, $pid);
-            if ($q[0] == "i")
-                $Conf->ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
-            if ($q[0] == "i" && $type >= REVIEW_PC && $Conf->setting("pcrev_assigntime", 0) < $Now)
-                $Conf->save_setting("pcrev_assigntime", $Now);
+        if (!$Conf->qe($q))
+            return false;
+
+        if ($q[0] == "d") {
+            $msg = "Removed " . $reviewTypeName[$rrow->reviewType] . " review";
+            $reviewId = 0;
+        } else if ($q[0] == "u")
+            $msg = "Changed " . $reviewTypeName[$rrow->reviewType] . " review to " . $reviewTypeName[$type];
+        else {
+            $msg = "Added " . $reviewTypeName[$type] . " review";
+            $reviewId = $Conf->lastInsertId();
         }
+        $Conf->log($msg . " by " . $this->email, $reviewer_cid, $pid);
+
+        if ($q[0] == "i")
+            $Conf->ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
+        if ($rrow && @$rrow["reviewToken"] && $type <= 0)
+            $Conf->settings["rev_tokens"] = -1;
+        if ($q[0] == "i" && $type >= REVIEW_PC && $Conf->setting("pcrev_assigntime", 0) < $Now)
+            $Conf->save_setting("pcrev_assigntime", $Now);
+        return $reviewId;
     }
 
     function mark_activity() {

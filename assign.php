@@ -152,7 +152,7 @@ function pcAssignments() {
             $Conf->save_setting("rev_roundtag", null);
     }
 
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write" . $Conf->tagRoundLocker(true));
+    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write, Settings write");
 
     // don't record separate PC conflicts on author conflicts
     $result = $Conf->qe("select PCMember.contactId,
@@ -244,7 +244,7 @@ function requestReview($email) {
     $reason = trim(defval($_REQUEST, "reason", ""));
 
     $otherTables = ($Conf->setting("extrev_chairreq") ? ", ReviewRequest write" : "");
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read, PaperConflict read" . $otherTables);
+    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read, PaperConflict read, ActionLog write" . $otherTables);
     // NB caller unlocks tables on error
 
     // check for outstanding review request
@@ -257,14 +257,14 @@ function requestReview($email) {
     if ($Conf->setting("extrev_chairreq")) {
         $result = $Conf->qe("select firstName, lastName, ContactInfo.email, ContactInfo.contactId from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'");
         if (($row = edb_orow($result))) {
-            $Requester = $row;
+            $Requester = Contact::make($row);
             $Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'");
         }
     }
 
     // store the review request
-    $now = time();
-    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, timeRequested, timeRequestNotified) values ($prow->paperId, $Them->contactId, " . REVIEW_EXTERNAL . ", $Requester->contactId, $now, $now)");
+    $Me->assign_paper($prow->paperId, null, $Them->contactId, REVIEW_EXTERNAL,
+                      array("mark_notify" => true));
 
     // mark secondary as delegated
     $Conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1");
@@ -278,8 +278,6 @@ function requestReview($email) {
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
     $Conf->qx("unlock tables");
-    $Me->log_activity("Asked $Them->email to review", $prow);
-
     return true;
 }
 
@@ -334,21 +332,10 @@ function unassignedAnonymousContact() {
     }
 }
 
-function unassignedReviewToken() {
-    global $Conf;
-    while (1) {
-        $token = mt_rand(1, 2000000000);
-        $result = $Conf->qe("select reviewId from PaperReview where reviewToken=$token", "while checking review token");
-        if (edb_nrows($result) == 0)
-            return $token;
-    }
-}
-
 function createAnonymousReview() {
-    global $Conf, $Me, $Opt, $prow, $rrows;
+    global $Conf, $Me, $Now, $Opt, $prow, $rrows;
 
-    $now = time();
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo write, PaperConflict read");
+    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo write, PaperConflict read, ActionLog write");
 
     // find an unassigned anonymous review contact
     $contactemail = unassignedAnonymousContact();
@@ -357,23 +344,23 @@ function createAnonymousReview() {
         $row = edb_row($result);
         $reqId = $row[0];
     } else {
-        $result = $Conf->qe("insert into ContactInfo (firstName, lastName, email, affiliation, password, creationTime) values ('Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '', $now)");
+        $result = $Conf->qe("insert into ContactInfo (firstName, lastName, email, affiliation, password, creationTime) values ('Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '', $Now)");
         if (!$result)
             return $result;
         $reqId = $Conf->lastInsertId();
     }
 
     // store the review request
-    $token = unassignedReviewToken();
-    $Conf->qe("insert into PaperReview (paperId, contactId, reviewType, requestedBy, reviewToken, timeRequested, timeRequestNotified)
-                values ($prow->paperId, $reqId, " . REVIEW_EXTERNAL . ", $Me->contactId, $token, $now, $now)");
-    $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId. The review token is " . encode_token((int) $token) . ".");
+    $reviewId = $Me->assign_paper($prow->paperId, null, $reqId, REVIEW_EXTERNAL,
+                                  array("mark_notify" => true, "token" => true));
+    if ($reviewId) {
+        $result = edb_ql("select reviewToken from PaperReview where reviewId=$reviewId");
+        $row = edb_row($result);
+        $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId. The review token is " . encode_token((int) $row[0]) . ".");
+    }
 
     $Conf->qx("unlock tables");
-    $Me->log_activity("Created $contactemail review", $prow);
-    if ($token)
-        $Conf->updateRevTokensSetting(true);
-
+    $Conf->updateRevTokensSetting(true);
     return true;
 }
 
