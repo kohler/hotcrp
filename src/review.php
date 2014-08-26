@@ -1381,7 +1381,7 @@ $blind\n";
         }
 
         $submitted = $rrow && $rrow->reviewSubmitted;
-        if (!$Conf->time_review($Me->actPC($prow, true), true)) {
+        if (!$Conf->time_review($rrow, $Me->actPC($prow, true), true)) {
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
             $override_text = whyNotText($whyNot, "review");
             if (!$submitted) {

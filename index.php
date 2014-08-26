@@ -414,15 +414,15 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         echo "<br />\n";
     }
     if ($myrow && $myrow[1] < $myrow[2]) {
-        $rtyp = ($Me->isPC ? "pcrev_" : "extrev_");
-        if ($Conf->time_review($Me->isPC, false)) {
-            $d = $Conf->printableTimeSetting("${rtyp}soft", "span");
+        if ($Conf->time_review(null, $Me->isPC, false)) {
+            $dn = $Conf->review_deadline(null, $Me->isPC, false);
+            $d = $Conf->printableTimeSetting($dn, "span");
             if ($d == "N/A")
-                $d = $Conf->printableTimeSetting("${rtyp}hard", "span");
+                $d = $Conf->printableTimeSetting($Conf->review_deadline(null, $Me->isPC, true), "span");
             if ($d != "N/A")
-                echo "  <span class='deadline'>Please submit your ", ($myrow[2] == 1 ? "review" : "reviews"), " by $d.</span><br />\n";
-        } else if ($Conf->time_review($Me->isPC, true))
-            echo "  <span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft", "span") . ".</span><br />\n";
+                echo '  <span class="deadline">Please submit your ', ($myrow[2] == 1 ? "review" : "reviews"), " by $d.</span><br />\n";
+        } else if ($Conf->time_review(null, $Me->isPC, true))
+            echo '  <span class="deadline"><strong class="overdue">Reviews are overdue.</strong> They were requested by ', $Conf->printableTimeSetting($Conf->review_deadline(null, $Me->isPC, false), "span"), ".</span><br />\n";
         else if ($Conf->time_review_open())
             echo "  <span class='deadline'>The <a href='", hoturl("deadlines"), "'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />\n";
         else

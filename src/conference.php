@@ -468,6 +468,10 @@ class Conference {
         return "";
     }
 
+    function current_round($add = false) {
+        return $this->round_number(@$this->settingTexts["rev_roundtag"], $add);
+    }
+
     function round_number($name, $add) {
         $r = 0;
         if ($name
@@ -699,14 +703,29 @@ class Conference {
         // Return all deadline-relevant settings as integers.
         if (!$this->deadline_cache) {
             $dl = array("now" => $Now);
+            // main deadlines
             foreach (array("sub_open", "sub_reg", "sub_update", "sub_sub",
                            "sub_close", "sub_grace",
                            "resp_open", "resp_done", "resp_grace",
-                           "rev_open", "pcrev_soft", "pcrev_hard",
-                           "extrev_soft", "extrev_hard", "rev_grace",
+                           "rev_open", "rev_grace",
                            "final_open", "final_soft", "final_done",
-                           "final_grace") as $x)
-                $dl[$x] = isset($this->settings[$x]) ? +$this->settings[$x] : 0;
+                           "final_grace") as $k)
+                $dl[$k] = @+$this->settings[$k];
+            // per-round review deadlines
+            for ($i = 0; $i < count($this->rounds); ++$i) {
+                $suffix = $i ? ".$i" : "";
+                $ka = array("pcrev_soft$suffix", "pcrev_hard$suffix",
+                            "extrev_soft$suffix", "extrev_hard$suffix");
+                if ($i && !@$this->settings[$ka[0]] && !@$this->settings[$ka[1]]
+                    && !@$this->settings[$ka[2]] && !@$this->settings[$ka[3]])
+                    continue;
+                foreach ($ka as $k)
+                    $dl[$k] = @+$this->settings[$k];
+                if (!$dl[$ka[2]] && !$dl[$ka[3]]) {
+                    $dl[$ka[2]] = $dl[$ka[0]]; // external defaults to PC
+                    $dl[$ka[3]] = $dl[$ka[1]];
+                }
+            }
             $this->deadline_cache = $dl;
         }
         return $this->deadline_cache;
@@ -906,9 +925,28 @@ class Conference {
         $dl = $this->deadlines();
         return $dl["rev_open"] > 0 && $dl["now"] >= $dl["rev_open"];
     }
-    function time_review($isPC, $hard) {
-        $d = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
-        return $this->deadlinesBetween("rev_open", $d, "rev_grace") > 0;
+    function review_deadline($round, $isPC, $hard) {
+        $dn = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
+        if ($round === null)
+            $round = $this->current_round(false);
+        else if (is_object($round))
+            $round = $round->reviewRound ? : 0;
+        if ($round && ($dl = $this->deadlines()) && isset($dl["$dn.$round"]))
+            $dn .= ".$round";
+        return $dn;
+    }
+    function missed_review_deadline($round, $isPC, $hard) {
+        $dl = $this->deadlines();
+        if (!($dl["rev_open"] > 0 && $dl["now"] >= $dl["rev_open"]))
+            return "rev_open";
+        $dn = $this->review_deadline($round, $isPC, $hard);
+        if (!$dl[$dn] || $dl["now"] <= $dl[$dn] + $dl["rev_grace"])
+            return false;
+        else
+            return $dn;
+    }
+    function time_review_round($round, $isPC, $hard) {
+        return !$this->missed_review_deadline($round, $isPC, $hard);
     }
     function timePCReviewPreferences() {
         return defval($this->settings, "papersub") > 0;

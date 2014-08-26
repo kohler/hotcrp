@@ -1518,11 +1518,8 @@ class Contact {
             $whyNot["reviewsOutstanding"] = 1;
         else if (!$Conf->time_review_open())
             $whyNot['deadline'] = "rev_open";
-        else {
-            $whyNot['reviewNotComplete'] = 1;
-            if (!$Conf->time_review($rights->allow_pc, true))
-                $whyNot['deadline'] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
-        }
+        else
+            $whyNot["reviewNotComplete"] = 1;
         if ($rights->allow_administer)
             $whyNot['forceShow'] = 1;
         return false;
@@ -1537,8 +1534,8 @@ class Contact {
         $rights = $this->rights($prow);
         if (($rights->review_type >= REVIEW_PC
              || $rights->allow_administer)
-            && ($Conf->time_review(false, true)
-                || !$time
+            && (!$time
+                || $Conf->time_review(null, false, true)
                 || ($rights->allow_administer
                     && self::override_deadlines())))
             return true;
@@ -1557,7 +1554,7 @@ class Contact {
         global $Conf;
         return $this->isPC
             && $Conf->setting("pcrev_any") > 0
-            && $Conf->time_review(true, true)
+            && $Conf->time_review(null, true, true)
             && $Conf->check_any_tracks($this, "unassrev");
     }
 
@@ -1571,10 +1568,10 @@ class Contact {
             || ($rrow
                 && $rrow->contactId != $this->contactId
                 && $rights->allow_administer))
-            return $Conf->time_review($rights->allow_pc, true);
+            return $Conf->time_review($rrow, $rights->allow_pc, true);
         else if ($rights->allow_review
                  && $Conf->setting("pcrev_any") > 0)
-            return $Conf->time_review(true, true);
+            return $Conf->time_review(null, true, true);
         else
             return false;
     }
@@ -1620,12 +1617,12 @@ class Contact {
             $myReview = $rights->review_type > 0;
         // policy
         if (($myReview
-             && $Conf->time_review($rights->allow_pc, true))
+             && $Conf->time_review($rrow, $rights->allow_pc, true))
             || (!$rrow
                 && $prow->timeSubmitted > 0
                 && $rights->allow_review
                 && $Conf->setting("pcrev_any") > 0
-                && $Conf->time_review(true, true))
+                && $Conf->time_review(null, true, true))
             || ($rights->can_administer
                 && ($prow->timeSubmitted > 0 || $rights->rights_force)
                 && (!$submit || self::override_deadlines())))
@@ -1721,8 +1718,8 @@ class Contact {
             && ($prow->timeSubmitted > 0
                 || $rights->review_type > 0
                 || ($rights->allow_administer && $rights->rights_force))
-            && ($Conf->time_review($rights->allow_pc, true)
-                || $Conf->setting("cmt_always") > 0
+            && ($Conf->setting("cmt_always") > 0
+                || $Conf->time_review(null, $rights->allow_pc, true)
                 || ($rights->allow_administer
                     && (!$submit || self::override_deadlines())))
             && (!$crow

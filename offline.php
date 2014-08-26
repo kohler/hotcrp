@@ -162,9 +162,9 @@ if ((isset($_REQUEST["setvote"]) || isset($_REQUEST["setrank"]))
     setTagIndexes();
 
 
-$pastDeadline = !$Conf->time_review($Me->isPC, true);
+$pastDeadline = !$Conf->time_review(null, $Me->isPC, true);
 
-if ($pastDeadline && !$Conf->deadlinesAfter("rev_open") && !$Me->privChair) {
+if (!$Conf->time_review_open() && !$Me->privChair) {
     $Conf->errorMsg("The site is not open for review.");
     go(hoturl("index"));
 }
@@ -172,10 +172,8 @@ if ($pastDeadline && !$Conf->deadlinesAfter("rev_open") && !$Me->privChair) {
 $Conf->header("Offline Reviewing", "offline", actionBar());
 
 if ($Me->is_reviewer()) {
-    if ($pastDeadline && !$Conf->deadlinesAfter("rev_open"))
+    if (!$Conf->time_review_open())
 	$Conf->infoMsg("The site is not open for review.");
-    else if ($pastDeadline)
-	$Conf->infoMsg("The <a href='" . hoturl("deadlines") . "'>deadline</a> for submitting reviews has passed.");
     $Conf->infoMsg("Use this page to download a blank review form, or to upload review forms you’ve already filled out.");
     if (!$Me->can_clickthrough("review"))
         PaperTable::echo_review_clickthrough();

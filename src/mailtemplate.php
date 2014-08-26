@@ -110,7 +110,7 @@ Or use the link below to sign in.
 
 Contact %ADMIN% with any questions or concerns.
 
-Thanks for your help -- we appreciate that reviewing is hard work!
+Thank you for your help -- we appreciate that reviewing is hard work.
 - %CONFSHORTNAME% Submissions\n"),
 
      "retractrequest" =>
