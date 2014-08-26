@@ -70,7 +70,7 @@ if ($reviewer <= 0 || !@$pcm[$reviewer])
 
 
 function saveAssignments($reviewer) {
-    global $Conf, $Me, $kind;
+    global $Conf, $Me, $Now, $kind;
 
     $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperReviewRefused write, PaperConflict write" . $Conf->tagRoundLocker($kind == "a"));
     if (!$result)
@@ -86,7 +86,6 @@ function saveAssignments($reviewer) {
 
     $lastPaperId = -1;
     $del = $ins = "";
-    $when = time();
     while (($row = edb_orow($result))) {
         if ($row->paperId == $lastPaperId
             || $row->conflictType >= CONFLICT_AUTHOR
@@ -99,7 +98,7 @@ function saveAssignments($reviewer) {
         if ($type < 0 && $row->conflictType < CONFLICT_CHAIRMARK)
             $ins .= ", ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")";
         if ($kind == "a")
-            $Me->assign_paper($row->paperId, $row, $reviewer, $type, $when);
+            $Me->assign_paper($row->paperId, $row, $reviewer, $type);
     }
 
     if ($ins)
@@ -110,7 +109,7 @@ function saveAssignments($reviewer) {
     $Conf->qe("unlock tables");
     $Conf->updateRevTokensSetting(false);
 
-    if ($Conf->setting("pcrev_assigntime") == $when)
+    if ($Conf->setting("pcrev_assigntime") == $Now)
         $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
 }
 

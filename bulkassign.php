@@ -34,7 +34,7 @@ if (isset($_REQUEST["saveassignment"]) && check_post()) {
         $assignset = new AssignmentSet($Me, false);
         $assignset->parse($_REQUEST["file"], @$_REQUEST["filename"],
                           assignment_defaults());
-        if ($assignset->execute($Now))
+        if ($assignset->execute())
             redirectSelf();
     }
 }

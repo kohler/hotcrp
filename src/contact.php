@@ -2304,8 +2304,8 @@ class Contact {
     }
 
 
-    function assign_paper($pid, $rrow, $reviewer_cid, $type, $when) {
-        global $Conf, $reviewTypeName;
+    function assign_paper($pid, $rrow, $reviewer_cid, $type) {
+        global $Conf, $Now, $reviewTypeName;
         if ($type <= 0 && $rrow && $rrow->reviewType && $rrow->reviewModified) {
             if ($rrow->reviewType >= REVIEW_SECONDARY)
                 $type = REVIEW_PC;
@@ -2319,7 +2319,7 @@ class Contact {
                 $qa .= ", reviewRound";
                 $qb .= ", " . $Conf->round_number($t, true);
             }
-            $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, timeRequested$qa) values ($pid, $reviewer_cid, $type, $this->contactId, $when$qb)";
+            $q = "insert into PaperReview (paperId, contactId, reviewType, requestedBy, timeRequested$qa) values ($pid, $reviewer_cid, $type, $this->contactId, $Now$qb)";
         } else if ($type > 0 && $rrow->reviewType != $type)
             $q = "update PaperReview set reviewType=$type where reviewId=$rrow->reviewId";
         else if ($type <= 0 && $rrow && $rrow->reviewType)
@@ -2339,8 +2339,8 @@ class Contact {
             $Conf->log($msg . " by " . $this->email, $reviewer_cid, $pid);
             if ($q[0] == "i")
                 $Conf->ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
-            if ($q[0] == "i" && $type >= REVIEW_PC && $Conf->setting("pcrev_assigntime", 0) < $when)
-                $Conf->save_setting("pcrev_assigntime", $when);
+            if ($q[0] == "i" && $type >= REVIEW_PC && $Conf->setting("pcrev_assigntime", 0) < $Now)
+                $Conf->save_setting("pcrev_assigntime", $Now);
         }
     }
 

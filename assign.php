@@ -153,7 +153,6 @@ function pcAssignments() {
     }
 
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write" . $Conf->tagRoundLocker(true));
-    $when = time();
 
     // don't record separate PC conflicts on author conflicts
     $result = $Conf->qe("select PCMember.contactId,
@@ -179,7 +178,7 @@ function pcAssignments() {
                 || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC)
             && ($pctype == 0
                 || $pcm[$row->contactId]->allow_review_assignment($prow)))
-            $Me->assign_paper($prow->paperId, $row, $row->contactId, $pctype, $when);
+            $Me->assign_paper($prow->paperId, $row, $row->contactId, $pctype);
     }
 }
 
@@ -441,7 +440,7 @@ if (isset($_REQUEST["addpc"]) && $Me->allowAdminister($prow) && check_post()) {
         $Conf->errorMsg("Enter a PC member.");
     else if (($pctype = rcvtint($_REQUEST["pctype"])) == REVIEW_PRIMARY
              || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC) {
-        $Me->assign_paper($prow->paperId, findRrow($pcid), $pcid, $pctype, time());
+        $Me->assign_paper($prow->paperId, findRrow($pcid), $pcid, $pctype);
         $Conf->updateRevTokensSetting(false);
     }
     loadRows();

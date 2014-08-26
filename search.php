@@ -881,14 +881,13 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
         $conflicts = array();
         $assigned = array();
         $nworked = 0;
-        $when = time();
         while (($row = PaperInfo::fetch($result, $Me))) {
             if ($asstype && $row->conflictType > 0)
                 $conflicts[] = $row->paperId;
             else if ($asstype && $row->reviewType >= REVIEW_PC && $asstype != $row->reviewType)
                 $assigned[] = $row->paperId;
             else {
-                $Me->assign_paper($row->paperId, $row, $pc->contactId, $asstype, $when);
+                $Me->assign_paper($row->paperId, $row, $pc->contactId, $asstype);
                 $nworked++;
             }
         }

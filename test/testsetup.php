@@ -39,7 +39,7 @@ foreach ($json->papers as $p) {
 }
 $assignset = new AssignmentSet($Admin, true);
 $assignset->parse($json->assignments_1, null, null);
-$assignset->execute($Now);
+$assignset->execute();
 
 function assert_location() {
     $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);

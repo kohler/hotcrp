@@ -276,10 +276,10 @@ class ReviewAssigner extends Assigner {
             }
         }
     }
-    function execute($who, $when) {
+    function execute($who) {
         global $Conf;
         $result = $Conf->qe("select contactId, paperId, reviewId, reviewType, reviewModified from PaperReview where paperId=$this->pid and contactId=$this->cid");
-        $who->assign_paper($this->pid, edb_orow($result), $this->cid, $this->type, $when);
+        $who->assign_paper($this->pid, edb_orow($result), $this->cid, $this->type);
         if ($this->notify) {
             $reviewer = Contact::find_by_id($this->cid);
             $prow = $Conf->paperRow(array("paperId" => $this->pid, "reviewer" => $this->cid), $reviewer);
@@ -325,7 +325,7 @@ class LeadAssigner extends Assigner {
             $t = "remove $t as $this->type";
         return $t;
     }
-    function execute($who, $when) {
+    function execute($who) {
         global $Conf;
         if ($this->isadd)
             $Conf->qe("update Paper set " . $this->type . "ContactId=$this->cid where paperId=$this->pid");
@@ -371,7 +371,7 @@ class ConflictAssigner extends Assigner {
             $t .= "(remove conflict)";
         return $t;
     }
-    function execute($who, $when) {
+    function execute($who) {
         global $Conf;
         if ($this->ctype)
             $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($this->pid,$this->cid,$this->ctype) on duplicate key update conflictType=values(conflictType)");
@@ -448,7 +448,7 @@ class TagAssigner extends Assigner {
             $t = "add $t";
         return $t;
     }
-    function execute($who, $when) {
+    function execute($who) {
         global $Conf;
         if ($this->index === null)
             $this->tagger->save($this->pid, $this->tag, "d");
@@ -860,8 +860,8 @@ class AssignmentSet {
         return count($this->assigners) == 0;
     }
 
-    function execute($when) {
-        global $Conf;
+    function execute() {
+        global $Conf, $Now;
         if ($this->report_errors())
             return false;
         else if (!count($this->assigners)) {
@@ -886,12 +886,12 @@ class AssignmentSet {
         $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, PaperReviewRefused write, Paper write, PaperConflict write, ActionLog write, Settings write, PaperTag write");
 
         foreach ($this->assigners as $assigner)
-            $assigner->execute($this->contact, $when);
+            $assigner->execute($this->contact);
 
         $Conf->qe("unlock tables");
 
         // confirmation message
-        if ($Conf->setting("pcrev_assigntime") == $when)
+        if ($Conf->setting("pcrev_assigntime") == $Now)
             $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
         else
             $Conf->confirmMsg("Assignments saved!");
