@@ -945,7 +945,7 @@ class Conference {
         else
             return $dn;
     }
-    function time_review_round($round, $isPC, $hard) {
+    function time_review($round, $isPC, $hard) {
         return !$this->missed_review_deadline($round, $isPC, $hard);
     }
     function timePCReviewPreferences() {
