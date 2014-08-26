@@ -649,4 +649,9 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table ContactInfo add `passwordTime` int(11) NOT NULL DEFAULT '0'")
         && $Conf->ql("update Settings set value=80 where name='allowPaperOption'"))
         $Conf->settings["allowPaperOption"] = 80;
+    if ($Conf->settings["allowPaperOption"] == 80
+        && $Conf->ql("alter table PaperReview modify `reviewRound` int(11) NOT NULL DEFAULT '0'")
+        && $Conf->ql("alter table PaperReviewArchive modify `reviewRound` int(11) NOT NULL DEFAULT '0'")
+        && $Conf->ql("update Settings set value=81 where name='allowPaperOption'"))
+        $Conf->settings["allowPaperOption"] = 81;
 }
