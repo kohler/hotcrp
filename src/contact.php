@@ -2312,7 +2312,6 @@ class Contact {
             else
                 return;
         }
-        $qtag = "";
         if ($type > 0 && (!$rrow || !$rrow->reviewType)) {
             $qa = $qb = "";
             if (($type == REVIEW_PRIMARY || $type == REVIEW_SECONDARY)
@@ -2329,8 +2328,6 @@ class Contact {
             return;
 
         if ($Conf->qe($q)) {
-            if ($qtag)
-                $Conf->q($qtag);
             if ($rrow && defval($rrow, "reviewToken", 0) != 0 && $type <= 0)
                 $Conf->settings["rev_tokens"] = -1;
             if ($q[0] == "d")
