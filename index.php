@@ -212,12 +212,8 @@ echo "<div class='homeinside'><div id='homeinfo'>
   <ul>\n";
 // Any deadlines set?
 $sep = "";
-if ($Conf->setting('sub_reg') || $Conf->setting('sub_update') || $Conf->setting('sub_sub')
-    || ($Me->is_author() && $Conf->setting('resp_open') > 0 && $Conf->setting('resp_done'))
-    || ($Me->isPC && $Conf->setting('rev_open') && $Conf->setting('pcrev_hard'))
-    || ($Me->is_reviewer() && $Conf->setting('rev_open') && $Conf->setting('extrev_hard'))) {
+if ($Me->has_reportable_deadline())
     echo "    <li><a href='", hoturl("deadlines"), "'>Deadlines</a></li>\n";
-}
 echo "    <li><a href='", hoturl("users", "t=pc"), "'>Program committee</a></li>\n";
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo "    <li><a href='", $Opt['conferenceSite'], "'>Conference site</a></li>\n";
@@ -427,7 +423,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
                 echo "  <span class='deadline'>Please submit your ", ($myrow[2] == 1 ? "review" : "reviews"), " by $d.</span><br />\n";
         } else if ($Conf->time_review($Me->isPC, true))
             echo "  <span class='deadline'><strong class='overdue'>Reviews are overdue.</strong>  They were requested by " . $Conf->printableTimeSetting("${rtyp}soft", "span") . ".</span><br />\n";
-        else if (!$Conf->time_review($Me->isPC, true, true))
+        else if ($Conf->time_review_open())
             echo "  <span class='deadline'>The <a href='", hoturl("deadlines"), "'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />\n";
         else
             echo "  <span class='deadline'>The site is not open for reviewing.</span><br />\n";

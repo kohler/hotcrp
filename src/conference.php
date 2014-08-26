@@ -863,10 +863,10 @@ class Conference {
     }
     function deadlinesBetween($name1, $name2, $grace = null) {
         $dl = $this->deadlines();
-        $t = defval($dl, $name1, null);
+        $t = @$dl[$name1];
         if (($t === null || $t <= 0 || $t > $dl["now"]) && $name1)
             return false;
-        $t = defval($dl, $name2, null);
+        $t = @$dl[$name2];
         if ($t !== null && $t > 0 && $grace && isset($dl[$grace]))
             $t += $dl[$grace];
         return ($t === null || $t <= 0 || $t >= $dl["now"]);
@@ -902,14 +902,13 @@ class Conference {
     function timeAuthorViewDecision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
     }
-    function timeReviewOpen() {
+    function time_review_open() {
         $dl = $this->deadlines();
         return $dl["rev_open"] > 0 && $dl["now"] >= $dl["rev_open"];
     }
-    function time_review($isPC, $hard, $assume_open = false) {
-        $od = ($assume_open ? "" : "rev_open");
+    function time_review($isPC, $hard) {
         $d = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
-        return $this->deadlinesBetween($od, $d, "rev_grace") > 0;
+        return $this->deadlinesBetween("rev_open", $d, "rev_grace") > 0;
     }
     function timePCReviewPreferences() {
         return defval($this->settings, "papersub") > 0;

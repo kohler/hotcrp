@@ -1516,7 +1516,7 @@ class Contact {
                  && $pc_seeallrev == Conference::PCSEEREV_UNLESSANYINCOMPLETE
                  && $this->has_outstanding_review())
             $whyNot["reviewsOutstanding"] = 1;
-        else if (!$Conf->timeReviewOpen())
+        else if (!$Conf->time_review_open())
             $whyNot['deadline'] = "rev_open";
         else {
             $whyNot['reviewNotComplete'] = 1;
@@ -2097,6 +2097,15 @@ class Contact {
                 . "&poll=" . urlencode(MeetingTracker::tracker_status($tracker));
 
         return $dl;
+    }
+
+    function has_reportable_deadline() {
+        $dl = $this->deadlines();
+        if (@$dl["sub_reg"] || @$dl["sub_update"] || @$dl["sub_sub"]
+            || ($dl["resp_open"] && @$dl["resp_done"])
+            || (@$dl["rev_open"] && (@$dl["pcrev_done"] || @$dl["extrev_done"])))
+            return true;
+        return false;
     }
 
 

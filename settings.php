@@ -45,7 +45,7 @@ if ($Group === "acc")
 if (array_search($Group, array("info", "users", "msg", "sub", "opt", "reviews", "reviewform", "dec")) === false) {
     if ($Conf->timeAuthorViewReviews())
         $Group = "dec";
-    else if ($Conf->deadlinesAfter("sub_sub") || $Conf->timeReviewOpen())
+    else if ($Conf->deadlinesAfter("sub_sub") || $Conf->time_review_open())
         $Group = "reviews";
     else
         $Group = "sub";

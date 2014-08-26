@@ -2100,7 +2100,7 @@ class PaperTable {
                 if ($this->editrrow->reviewSubmitted)
                     $opt["edit"] = false;
             }
-            if (!$Conf->time_review($actPC, true, true))
+            if ($Conf->time_review_open())
                 $opt["editmessage"] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for changing reviews has passed, so the review can no longer be changed.$override";
             else
                 $opt["editmessage"] = "The site is not open for reviewing, so the review cannot be changed.$override";

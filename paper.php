@@ -141,7 +141,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
                                        $prow, array("reason" => $reason, "infoNames" => 1));
 
         // email reviewers
-        if (($numreviews > 0 && $Conf->timeReviewOpen())
+        if (($numreviews > 0 && $Conf->time_review_open())
             || $prow->startedReviewCount > 0)
             Mailer::send_reviewers("@withdrawreviewer", $prow, array("reason" => $reason));
 

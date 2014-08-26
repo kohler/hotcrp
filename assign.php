@@ -108,7 +108,7 @@ function retractRequest($email, $prow, $confirm = true) {
     if (defval($row, "reviewToken", 0) != 0)
         $Conf->settings["rev_tokens"] = -1;
     // send confirmation email, if the review site is open
-    if ($Conf->timeReviewOpen() && $row) {
+    if ($Conf->time_review_open() && $row) {
         $Reviewer = Contact::make($row);
         Mailer::send("@retractrequest", $prow, $Reviewer,
                      array("requester_contact" => $Me,

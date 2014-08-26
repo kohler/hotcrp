@@ -72,19 +72,20 @@ function printDeadline($dl, $name, $phrase, $description) {
     echo "</dd>\n";
 }
 
-if (defval($dl, "sub_reg"))
+// If you change these, also change Contact::has_reportable_deadline().
+if (@$dl["sub_reg"])
     printDeadline($dl, "sub_reg", "Paper registration deadline",
                   "You can register new papers until this deadline.");
 
-if (defval($dl, "sub_update"))
+if (@$dl["sub_update"])
     printDeadline($dl, "sub_update", "Paper update deadline",
                   "You can upload new versions of your paper and change other paper information until this deadline.");
 
-if (defval($dl, "sub_sub"))
+if (@$dl["sub_sub"])
     printDeadline($dl, "sub_sub", "Paper submission deadline",
                   "Papers must be submitted by this deadline to be reviewed.");
 
-if ($dl["resp_open"] && $dl["resp_done"])
+if ($dl["resp_open"] && @$dl["resp_done"])
     printDeadline($dl, "resp_done", "Response deadline",
                   "This deadline controls when you can submit a response to the reviews.");
 
