@@ -1010,12 +1010,12 @@ if (isset($_REQUEST["cancel"]) && check_post())
 $Conf->header("Settings", "settings", actionBar());
 
 
-function setting_label($name, $text, $islabel = false) {
+function setting_label($name, $text, $islabel = null) {
     global $Highlight;
     if (isset($Highlight[$name]))
         $text = "<span class=\"error\">$text</span>";
-    if ($islabel)
-        $text = Ht::label($text, $islabel);
+    if ($islabel !== false)
+        $text = Ht::label($text, $islabel ? : $name);
     return $text;
 }
 
@@ -1087,7 +1087,7 @@ function doSelect($name, $nametext, $varr, $tr = false) {
 }
 
 function render_entry($name, $v, $size = 30, $temptext = "") {
-    return Ht::entry($name, $v, array("size" => $size, "hottemptext" => $temptext, "disabled" => setting_disabled($name)));
+    return Ht::entry($name, $v, array("size" => $size, "hottemptext" => $temptext, "disabled" => setting_disabled($name), "id" => $name));
 }
 
 function doTextRow($name, $text, $v, $size = 30,
@@ -1104,7 +1104,7 @@ function doTextRow($name, $text, $v, $size = 30,
 }
 
 function doEntry($name, $v, $size = 30, $tempText = "") {
-    echo Ht::entry($name, $v, array("size" => $size, "hottemptext" => $tempText, "disabled" => setting_disabled($name)));
+    echo Ht::entry($name, $v, array("size" => $size, "hottemptext" => $tempText, "disabled" => setting_disabled($name), "id" => $name));
 }
 
 function date_value($name, $othername = array(), $temptext = "N/A") {
@@ -1325,13 +1325,15 @@ function doOptGroupOption($o) {
         setting_label("optn$id", ($id === "n" ? "New option name" : "Option name")),
         "</div>",
         "<div class='f-e'>",
-        Ht::entry("optn$id", $o->name, array("hottemptext" => "(Enter new option)", "size" => 50)),
+        Ht::entry("optn$id", $o->name, array("hottemptext" => "(Enter new option)", "size" => 50, "id" => "optn$id")),
         "</div>\n",
         "  <div class='f-i'>",
         "<div class='f-c'>",
         setting_label("optd$id", "Description"),
         "</div>",
-        "<div class='f-e'><textarea name='optd$id' rows='2' cols='50'>", htmlspecialchars($o->description), "</textarea></div>",
+        "<div class='f-e'>",
+        Ht::textarea("optd$id", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd$id")),
+        "</div>",
         "</div></td>";
 
     if ($id !== "n") {
@@ -1392,7 +1394,7 @@ function doOptGroupOption($o) {
 
     echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
         setting_label("optp$id", "Visibility"), "</div><div class='f-e'>",
-        Ht::select("optp$id", array("admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->visibility),
+        Ht::select("optp$id", array("admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->visibility, array("id" => "optp$id")),
         "</div></div></td>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
@@ -1406,7 +1408,7 @@ function doOptGroupOption($o) {
         $x[$n + 1] = ordinal($n + 1);
     else
         $x["delete"] = "Delete option";
-    echo Ht::select("optfp$id", $x, $o->position),
+    echo Ht::select("optfp$id", $x, $o->position, array("id" => "optfp$id")),
         "</div></div></td>";
 
     echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
@@ -1414,7 +1416,7 @@ function doOptGroupOption($o) {
     echo Ht::select("optdt$id", array("normal" => "Normal",
                                       "highlight" => "Prominent",
                                       "near_submission" => "Near submission"),
-                    $o->display_type()),
+                    $o->display_type(), array("id" => "optdt$id")),
         "</div></div></td>";
 
     if (isset($otypes["pdf:final"]))
@@ -1590,7 +1592,7 @@ function doRevGroup() {
     echo '<p class="hint">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.<br />', $date_text, '</p>';
 
     echo "<table>\n";
-    echo '<tr><td><strong>PC</strong> deadline &nbsp;</td>',
+    echo '<tr><td><label for="pcrev_soft"><strong>PC</strong> deadline</label> &nbsp;</td>',
         '<td class="lentry" style="padding-right:3em">',
         render_entry("pcrev_soft", date_value("pcrev_soft", "pcrev_hard"), 30, "N/A"),
         '</td><td class="lentry">Hard deadline &nbsp;',
@@ -1659,7 +1661,7 @@ function doRevGroup() {
     else
         $v = join(" ", array_keys($tagger->chair_tags()));
     echo "<td>", Ht::hidden("has_tag_chair", 1);
-    doEntry("tag_chair", $v, 40);
+    doEntry("tag_chair", $v, 40, "");
     echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", setting_label("tag_vote", "Voting tags"), "</td>";
