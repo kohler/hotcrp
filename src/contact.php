@@ -1535,7 +1535,7 @@ class Contact {
             return false;
         // policy
         $rights = $this->rights($prow);
-        if (($rights->review_type >= REVIEW_SECONDARY
+        if (($rights->review_type >= REVIEW_PC
              || $rights->allow_administer)
             && ($Conf->time_review(false, true)
                 || !$time
@@ -1543,7 +1543,7 @@ class Contact {
                     && self::override_deadlines())))
             return true;
         // collect failure reasons
-        if ($rights->review_type < REVIEW_SECONDARY)
+        if ($rights->review_type < REVIEW_PC)
             $whyNot['permission'] = 1;
         else {
             $whyNot['deadline'] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
