@@ -290,7 +290,7 @@ class Contact {
 
     static public function contactdb_find_by_email($email) {
         if (($cdb = self::contactdb())
-            && ($result = edb_ql($cdb, "select * from ContactInfo where email=??", $email))
+            && ($result = edb_ql($cdb, "select * from ContactInfo where email=?", $email))
             && ($row = $result->fetch_object()))
             return new Contact($row);
         else
@@ -299,7 +299,7 @@ class Contact {
 
     static public function contactdb_find_by_id($cid) {
         if (($cdb = self::contactdb())
-            && ($result = edb_ql($cdb, "select * from ContactInfo where contactDbId=??", $cid))
+            && ($result = edb_ql($cdb, "select * from ContactInfo where contactDbId=?", $cid))
             && ($row = $result->fetch_object()))
             return new Contact($row);
         else
@@ -313,17 +313,17 @@ class Contact {
         $idquery = edb_format_query($dblink, "select ContactInfo.contactDbId, Conferences.confid, roles
             from ContactInfo join Conferences
             left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)
-            where email='?' and `dbname`=??", $this->email, $Opt["dbName"]);
+            where email=? and `dbname`=?", $this->email, $Opt["dbName"]);
         $result = $dblink->query($idquery);
         $row = edb_row($result);
         if (!$row) {
-            $result = edb_ql($dblink, "insert into ContactInfo set firstName=??, lastName=??, email=??, affiliation=?? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation);
+            $result = edb_ql($dblink, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation);
             $result = $dblink->query($idquery);
             $row = edb_row($result);
         }
 
         if ($row && (int) $row[2] != $this->all_roles()) {
-            $result = edb_ql($dblink, "insert into Roles set contactDbId=??, confid=??, roles=??, updated_at=?? on duplicate key update roles=values(roles), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), $Now);
+            $result = edb_ql($dblink, "insert into Roles set contactDbId=?, confid=?, roles=?, updated_at=? on duplicate key update roles=values(roles), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), $Now);
             return !!$result;
         } else
             return false;
@@ -714,7 +714,7 @@ class Contact {
 
         // add to contact database
         if (@$Opt["contactdb_dsn"] && ($cdb = self::contactdb())) {
-            edb_ql($cdb, "insert into ContactInfo set firstName=??, lastName=??, email=??, affiliation=?? on duplicate key update firstName=values(firstName), lastName=values(lastName), affiliation=values(affiliation)",
+            edb_ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=values(firstName), lastName=values(lastName), affiliation=values(affiliation)",
                    $this->firstName, $this->lastName, $this->email, $this->affiliation);
             if ($this->password_plaintext
                 && ($cdb_user = self::contactdb_find_by_email($this->email))
@@ -2235,9 +2235,9 @@ class Contact {
         $this->passwordTime = $Now;
         // save possibly-encrypted password
         if ($save && $this->contactId)
-            edb_ql($Conf->dblink, "update ContactInfo set password=??, passwordTime=?? where contactId=??", $this->password, $this->passwordTime, $this->contactId);
+            edb_ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
         if ($save && $this->contactDbId)
-            edb_ql(self::contactdb(), "update ContactInfo set password=??, passwordTime=?? where contactDbId=??", $this->password, $this->passwordTime, $this->contactDbId);
+            edb_ql(self::contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $this->password, $this->passwordTime, $this->contactDbId);
     }
 
     static function random_password($length = 14) {

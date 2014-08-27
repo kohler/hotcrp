@@ -983,7 +983,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
         // contactdb may need to hear about changes to shortName
         if (array_key_exists("opt.shortName", $Values)
             && @$Opt["contactdb_dsn"] && ($cdb = Contact::contactdb()))
-            edb_ql($cdb, "update Conferences set shortName=?? where dbName=??", $Opt["shortName"], $Opt["dbName"]);
+            edb_ql($cdb, "update Conferences set shortName=? where dbName=?", $Opt["shortName"], $Opt["dbName"]);
     }
 
     // report errors

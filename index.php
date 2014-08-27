@@ -424,7 +424,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         } else if ($Conf->time_review(null, $Me->isPC, true))
             echo '  <span class="deadline"><strong class="overdue">Reviews are overdue.</strong> They were requested by ', $Conf->printableTimeSetting($Conf->review_deadline(null, $Me->isPC, false), "span"), ".</span><br />\n";
         else if ($Conf->time_review_open())
-            echo "  <span class='deadline'>The <a href='", hoturl("deadlines"), "'>deadline</a> for submitting " . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />\n";
+            echo '  <span class="deadline">The <a href="', hoturl("deadlines"), '">deadline</a> for submitting ' . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />\n";
         else
             echo "  <span class='deadline'>The site is not open for reviewing.</span><br />\n";
     } else if ($Me->isPC && $Me->can_review_any()) {

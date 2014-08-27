@@ -45,25 +45,48 @@ function edb_query_args($args) {
 
 function edb_format_query(/* [$dblink,] $qstr, ... */) {
     list($dblink, $qstr, $args) = edb_query_args(func_get_args());
+    $original_qstr = $qstr;
     $strpos = $argpos = 0;
+    $usedargs = array();
     while (($strpos = strpos($qstr, "?", $strpos)) !== false) {
-        assert($argpos < count($args));
-        $arg = $args[$argpos];
-        if (substr($qstr, $strpos + 1, 1) === "?") {
+        // argument name
+        $nextpos = $strpos + 1;
+        $nextch = substr($qstr, $nextpos, 1);
+        if ($nextch === "?") {
+            $qstr = substr($qstr, 0, $strpos + 1) . substr($qstr, $strpos + 2);
+            $strpos = $strpos + 1;
+            continue;
+        } else if ($nextch === "{"
+                   && ($rbracepos = strpos($qstr, "}", $nextpos + 1)) !== false) {
+            $thisarg = substr($qstr, $nextpos + 1, $rbracepos - $nextpos - 1);
+            if ($thisarg === (string) (int) $thisarg)
+                --$thisarg;
+            $nextpos = $rbracepos + 1;
+            $nextch = substr($qstr, $nextpos, 1);
+        } else {
+            while (@$usedargs[$argpos])
+                ++$argpos;
+            $thisarg = $argpos;
+        }
+        if (!array_key_exists($thisarg, $args))
+            trigger_error(caller_landmark(1, "/^edb_/") . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " not set");
+        $usedargs[$thisarg] = true;
+        // argument format
+        $arg = @$args[$thisarg];
+        if ($nextch === "s") {
+            $arg = $dblink->real_escape_string($arg);
+            ++$nextpos;
+        } else {
             if ($arg === null)
                 $arg = "NULL";
             else if (!is_int($arg))
                 $arg = "'" . $dblink->real_escape_string($arg) . "'";
-            $suffix = substr($qstr, $strpos + 2);
-        } else {
-            $arg = $dblink->real_escape_string($arg);
-            $suffix = substr($qstr, $strpos + 1);
         }
+        // combine
+        $suffix = substr($qstr, $nextpos);
         $qstr = substr($qstr, 0, $strpos) . $arg . $suffix;
-        ++$argpos;
-        $strpos += strlen($arg);
+        $strpos = strlen($qstr) - strlen($suffix);
     }
-    assert($argpos == count($args));
     return $qstr;
 }
 
@@ -150,8 +173,11 @@ function sql_not_in_numeric_set($set) {
 
 // debug helpers
 
-function caller_landmark($position = 1) {
+function caller_landmark($position = 1, $skipfunction_re = null) {
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $position + 1);
+    while ($skipfunction_re && isset($trace[$position + 1])
+           && preg_match($skipfunction_re, $trace[$position]["function"]))
+        ++$position;
     return $trace[$position]["file"] . ":" . $trace[$position]["line"];
 }
 
