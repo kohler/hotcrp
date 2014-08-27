@@ -2939,7 +2939,6 @@ function add() {
 function kill(e) {
     var trj = jQuery(e).closest("tr"), roundnum = trj.attr("hotroundnum"),
         vj = trj.find("input[name=deleteround_" + roundnum + "]");
-console.log(vj.val());
     if (vj.val()) {
         vj.val("");
         trj.find("input[name=roundname_" + roundnum + "]").show();
@@ -2950,6 +2949,7 @@ console.log(vj.val());
         trj.find("input[name=roundname_" + roundnum + "]").hide().after('<span class="dim">(deleted)</span>');
         jQuery(e).html("Restore round");
     }
+    hiliter(e);
 }
 
 return {add: add, kill: kill};
