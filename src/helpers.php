@@ -128,6 +128,14 @@ function edb_rows($result) {
     return $x;
 }
 
+// map of all rows
+function edb_map($result) {
+    $x = array();
+    while ($result && ($row = $result->fetch_row()))
+        $x[$row[0]] = (count($row) == 2 ? $row[1] : array_slice($row, 1));
+    return $x;
+}
+
 // next row as an object, or 'false' if no more rows or result is an error
 function edb_orow($result) {
     return $result ? $result->fetch_object() : false;
