@@ -226,10 +226,10 @@ class Ht {
             if ($value === null || $value === "")
                 $value = $temp;
             $temp = ' hottemptext="' . htmlspecialchars($temp) . '"';
-            unset($js["hottemptext"]);
             self::stash_script("hotcrp_load(hotcrp_load.temptext)", "temptext");
         } else
             $temp = "";
+        unset($js["hottemptext"]);
         $type = @$js["type"] ? : "text";
         return '<input type="' . $type . '" name="' . $name . '" value="'
             . htmlspecialchars($value === null ? "" : $value) . '"'
