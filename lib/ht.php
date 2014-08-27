@@ -178,7 +178,7 @@ class Ht {
             $name = "";
         } else
             $name = $name ? " name=\"$name\"" : "";
-        if (preg_match("_[<>]_", $html) || isset($js["value"]))
+        if ($type == "button" || preg_match("_[<>]_", $html) || isset($js["value"]))
             return "<button type=\"$type\"$name value=\""
                 . defval($js, "value", 1) . "\"" . self::extra($js)
                 . ">" . $html . "</button>";
