@@ -460,7 +460,7 @@ class Conference {
 
     function round_name($roundno, $expand) {
         if ($roundno > 0) {
-            if (($rtext = @$this->rounds[$roundno]))
+            if (($rtext = @$this->rounds[$roundno]) && $rtext !== ";")
                 return $rtext;
             else if ($expand)
                 return "?$roundno?"; /* should not happen */

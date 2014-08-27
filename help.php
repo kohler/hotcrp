@@ -198,6 +198,15 @@ function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
     echo "<td class='sentry'>", $explanation, "<span class='sep'></span></td></tr>\n";
 }
 
+function meaningful_round_name() {
+    global $Conf;
+    $rounds = $Conf->round_list();
+    for ($i = 1; $i < count($rounds); ++$i)
+        if ($rounds[$i] !== ";")
+            return $rounds[$i];
+    return false;
+}
+
 function searchQuickref() {
     global $rowidx, $Conf, $Opt, $Me;
 
@@ -261,7 +270,7 @@ function searchQuickref() {
     _searchQuickrefRow("", "ire:>0", "at least one incomplete review");
     _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (“cpri:”, “ipri:”, and reviewer name/email also work)");
     _searchQuickrefRow("", "sec:pai", "“pai” (reviewer name/email) is secondary reviewer (“csec:”, “isec:”, and review counts also work)");
-    if (($r = $Conf->round_name(1, false)))
+    if (($r = meaningful_round_name()))
         _searchQuickrefRow("", "round:$r", "review assignment is “" . htmlspecialchars($r) . "”");
     if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE)
         _searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");

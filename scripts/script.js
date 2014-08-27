@@ -2926,6 +2926,35 @@ function settings_add_track() {
         mktemptext(j[i].id, j[i].getAttribute("hottemptext"));
 }
 
+window.review_round_settings = (function () {
+
+function add() {
+    var i, h, j;
+    for (i = 1; jQuery("#roundname_" + i).length; ++i)
+        /* do nothing */;
+    jQuery("#roundtable").append(jQuery("#newround").html().replace(/\$/g, i));
+    jQuery("#roundname_" + i).focus();
+}
+
+function kill(e) {
+    var trj = jQuery(e).closest("tr"), roundnum = trj.attr("hotroundnum"),
+        vj = trj.find("input[name=deleteround_" + roundnum + "]");
+console.log(vj.val());
+    if (vj.val()) {
+        vj.val("");
+        trj.find("input[name=roundname_" + roundnum + "]").show();
+        trj.find(".dim").remove();
+        jQuery(e).html("Delete round");
+    } else {
+        vj.val(1);
+        trj.find("input[name=roundname_" + roundnum + "]").hide().after('<span class="dim">(deleted)</span>');
+        jQuery(e).html("Restore round");
+    }
+}
+
+return {add: add, kill: kill};
+})();
+
 window.review_form_settings = (function () {
 var fieldmap, fieldorder, original, samples;
 

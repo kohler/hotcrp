@@ -128,9 +128,9 @@ function unparse_setting_error($info, $text) {
 function parseValue($name, $info) {
     global $Conf, $Error, $Highlight, $Now, $Opt;
 
-    if (!isset($_REQUEST[$name]))
+    if (!isset($_POST[$name]))
         return null;
-    $v = trim($_REQUEST[$name]);
+    $v = trim($_POST[$name]);
     if (@$info->temptext && $info->temptext === $v)
         $v = "";
     $opt_value = null;
@@ -208,13 +208,13 @@ function parseValue($name, $info) {
     return null;
 }
 
-function doTags($set, $what) {
+function save_tags($set, $what) {
     global $Conf, $Values, $Error, $Highlight, $TagStyles;
     $tagger = new Tagger;
 
-    if (!$set && $what == "tag_chair" && isset($_REQUEST["tag_chair"])) {
+    if (!$set && $what == "tag_chair" && isset($_POST["tag_chair"])) {
         $vs = array();
-        foreach (preg_split('/\s+/', $_REQUEST["tag_chair"]) as $t)
+        foreach (preg_split('/\s+/', $_POST["tag_chair"]) as $t)
             if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
                 $vs[$t] = true;
             else if ($t !== "") {
@@ -228,9 +228,9 @@ function doTags($set, $what) {
             $Values["tag_chair"] = $v;
     }
 
-    if (!$set && $what == "tag_vote" && isset($_REQUEST["tag_vote"])) {
+    if (!$set && $what == "tag_vote" && isset($_POST["tag_vote"])) {
         $vs = array();
-        foreach (preg_split('/\s+/', $_REQUEST["tag_vote"]) as $t)
+        foreach (preg_split('/\s+/', $_POST["tag_vote"]) as $t)
             if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR)) {
                 if (preg_match('/\A([^#]+)(|#|#0+|#-\d*)\z/', $t, $m))
                     $t = $m[1] . "#1";
@@ -287,9 +287,9 @@ function doTags($set, $what) {
         }
     }
 
-    if (!$set && $what == "tag_rank" && isset($_REQUEST["tag_rank"])) {
+    if (!$set && $what == "tag_rank" && isset($_POST["tag_rank"])) {
         $vs = array();
-        foreach (preg_split('/\s+/', $_REQUEST["tag_rank"]) as $t)
+        foreach (preg_split('/\s+/', $_POST["tag_rank"]) as $t)
             if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
                 $vs[] = $t;
             else if ($t !== "") {
@@ -311,9 +311,9 @@ function doTags($set, $what) {
         $vs = array();
         $any_set = false;
         foreach (explode("|", $TagStyles) as $k)
-            if (isset($_REQUEST["tag_color_" . $k])) {
+            if (isset($_POST["tag_color_" . $k])) {
                 $any_set = true;
-                foreach (preg_split('/,*\s+/', $_REQUEST["tag_color_" . $k]) as $t)
+                foreach (preg_split('/,*\s+/', $_POST["tag_color_" . $k]) as $t)
                     if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
                         $vs[] = $t . "=" . $k;
                     else if ($t !== "") {
@@ -330,7 +330,7 @@ function doTags($set, $what) {
         Tagger::invalidate_defined_tags();
 }
 
-function doTopics($set) {
+function save_topics($set) {
     global $Conf, $Values;
     if (!$set) {
         $Values["topics"] = true;
@@ -338,7 +338,7 @@ function doTopics($set) {
     }
 
     $tmap = $Conf->topic_map();
-    foreach ($_REQUEST as $k => $v)
+    foreach ($_POST as $k => $v)
         if ($k === "topnew") {
             $news = array();
             foreach (explode("\n", $v) as $n)
@@ -363,13 +363,13 @@ function doTopics($set) {
 function option_request_to_json(&$new_opts, $id, $current_opts) {
     global $Conf;
 
-    $name = simplify_whitespace(defval($_REQUEST, "optn$id", ""));
-    if (!isset($_REQUEST["optn$id"]) && $id[0] != "n") {
+    $name = simplify_whitespace(defval($_POST, "optn$id", ""));
+    if (!isset($_POST["optn$id"]) && $id[0] != "n") {
         if (@$current_opts[$id])
             $new_opts[$id] = $current_opts[$id];
         return;
     } else if ($name == ""
-               || @$_REQUEST["optfp$id"] == "delete"
+               || @$_POST["optfp$id"] == "delete"
                || ($id[0] == "n" && ($name == "New option" || $name == "(Enter new option)")))
         return;
 
@@ -384,8 +384,8 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
         $oarg["is_new"] = true;
     }
 
-    if (@$_REQUEST["optd$id"] && trim($_REQUEST["optd$id"]) != "") {
-        $t = CleanHTML::clean($_REQUEST["optd$id"], $err);
+    if (@$_POST["optd$id"] && trim($_POST["optd$id"]) != "") {
+        $t = CleanHTML::clean($_POST["optd$id"], $err);
         if ($t === false) {
             $Error[] = $err;
             $Highlight["optd$id"] = true;
@@ -393,7 +393,7 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
             $oarg["description"] = $t;
     }
 
-    if (($optvt = @$_REQUEST["optvt$id"])) {
+    if (($optvt = @$_POST["optvt$id"])) {
         if (($pos = strpos($optvt, ":")) !== false) {
             $oarg["type"] = substr($optvt, 0, $pos);
             if (preg_match('/:final/', $optvt))
@@ -407,7 +407,7 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
 
     if (PaperOption::type_has_selector($oarg["type"])) {
         $oarg["selector"] = array();
-        $seltext = trim(cleannl(defval($_REQUEST, "optv$id", "")));
+        $seltext = trim(cleannl(defval($_POST, "optv$id", "")));
         if ($seltext == "") {
             $Error[] = "Enter selectors one per line.";
             $Highlight["optv$id"] = true;
@@ -416,16 +416,16 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
                 $oarg["selector"][] = $t;
     }
 
-    $oarg["visibility"] = defval($_REQUEST, "optp$id", "rev");
+    $oarg["visibility"] = defval($_POST, "optp$id", "rev");
     if (@$oarg["final"])
         $oarg["visibility"] = "rev";
 
-    $oarg["position"] = (int) defval($_REQUEST, "optfp$id", 1);
+    $oarg["position"] = (int) defval($_POST, "optfp$id", 1);
 
-    if (@$_REQUEST["optdt$id"] == "near_submission"
+    if (@$_POST["optdt$id"] == "near_submission"
         || ($oarg["type"] == "pdf" && @$oarg["final"]))
         $oarg["near_submission"] = true;
-    else if (@$_REQUEST["optdt$id"] == "highlight")
+    else if (@$_POST["optdt$id"] == "highlight")
         $oarg["highlight"] = true;
 
     $new_opts[$oarg["id"]] = new PaperOption($oarg);
@@ -458,7 +458,7 @@ function option_clean_form_positions($new_opts, $current_opts) {
     }
 }
 
-function doOptions($set) {
+function save_options($set) {
     global $Conf, $Values, $Error, $Highlight;
 
     if (!$set) {
@@ -468,7 +468,7 @@ function doOptions($set) {
         $new_opts = array();
         foreach ($current_opts as $id => $o)
             option_request_to_json($new_opts, $id, $current_opts);
-        foreach ($_REQUEST as $k => $v)
+        foreach ($_POST as $k => $v)
             if (substr($k, 0, 4) == "optn"
                 && !@$current_opts[substr($k, 4)])
                 option_request_to_json($new_opts, substr($k, 4), $current_opts);
@@ -515,14 +515,14 @@ function doOptions($set) {
     PaperOption::invalidate_option_list();
 }
 
-function doDecisions($set) {
+function save_decisions($set) {
     global $Conf, $Values, $Error, $Highlight;
     if (!$set) {
-        if (defval($_REQUEST, "decn", "") != ""
-            && !defval($_REQUEST, "decn_confirm")) {
-            $delta = (defval($_REQUEST, "dtypn", 1) > 0 ? 1 : -1);
-            $match_accept = (stripos($_REQUEST["decn"], "accept") !== false);
-            $match_reject = (stripos($_REQUEST["decn"], "reject") !== false);
+        if (defval($_POST, "decn", "") != ""
+            && !defval($_POST, "decn_confirm")) {
+            $delta = (defval($_POST, "dtypn", 1) > 0 ? 1 : -1);
+            $match_accept = (stripos($_POST["decn"], "accept") !== false);
+            $match_reject = (stripos($_POST["decn"], "reject") !== false);
             if ($delta > 0 && $match_reject) {
                 $Error[] = "You are trying to add an Accept-class decision that has “reject” in its name, which is usually a mistake.  To add the decision anyway, check the “Confirm” box and try again.";
                 $Highlight["decn"] = true;
@@ -541,7 +541,7 @@ function doDecisions($set) {
     // mark all used decisions
     $dec = $Conf->outcome_map();
     $update = false;
-    foreach ($_REQUEST as $k => $v)
+    foreach ($_POST as $k => $v)
         if (str_starts_with($k, "dec")
             && ($k = cvtint(substr($k, 3), 0)) != 0) {
             if ($v == "") {
@@ -554,11 +554,11 @@ function doDecisions($set) {
             }
         }
 
-    if (defval($_REQUEST, "decn", "") != "") {
-        $delta = (defval($_REQUEST, "dtypn", 1) > 0 ? 1 : -1);
+    if (defval($_POST, "decn", "") != "") {
+        $delta = (defval($_POST, "dtypn", 1) > 0 ? 1 : -1);
         for ($k = $delta; isset($dec[$k]); $k += $delta)
             /* skip */;
-        $dec[$k] = $_REQUEST["decn"];
+        $dec[$k] = $_POST["decn"];
         $update = true;
     }
 
@@ -566,11 +566,11 @@ function doDecisions($set) {
         $Conf->save_setting("outcome_map", 1, $dec);
 }
 
-function doBanal($set) {
+function save_banal($set) {
     global $Conf, $Values, $Highlight, $Error, $ConfSitePATH;
     if ($set)
         return true;
-    if (!isset($_REQUEST["sub_banal"])) {
+    if (!isset($_POST["sub_banal"])) {
         if (($t = $Conf->setting_data("sub_banal", "")) != "")
             $Values["sub_banal"] = array(0, $t);
         else
@@ -581,7 +581,7 @@ function doBanal($set) {
     // check banal subsettings
     $old_error_count = count($Error);
     $bs = array_fill(0, 6, "");
-    if (($s = trim(defval($_REQUEST, "sub_banal_papersize", ""))) != ""
+    if (($s = trim(defval($_POST, "sub_banal_papersize", ""))) != ""
         && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
         $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
         $sout = array();
@@ -598,7 +598,7 @@ function doBanal($set) {
             $bs[0] = join(" OR ", $sout);
     }
 
-    if (($s = trim(defval($_REQUEST, "sub_banal_pagelimit", ""))) != ""
+    if (($s = trim(defval($_POST, "sub_banal_pagelimit", ""))) != ""
         && strcasecmp($s, "N/A") != 0) {
         if (($sx = cvtint($s, -1)) > 0)
             $bs[1] = $sx;
@@ -611,7 +611,7 @@ function doBanal($set) {
         }
     }
 
-    if (($s = trim(defval($_REQUEST, "sub_banal_columns", ""))) != ""
+    if (($s = trim(defval($_POST, "sub_banal_columns", ""))) != ""
         && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
         if (($sx = cvtint($s, -1)) >= 0)
             $bs[2] = ($sx > 0 ? $sx : $bs[2]);
@@ -621,7 +621,7 @@ function doBanal($set) {
         }
     }
 
-    if (($s = trim(defval($_REQUEST, "sub_banal_textblock", ""))) != ""
+    if (($s = trim(defval($_POST, "sub_banal_textblock", ""))) != ""
         && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
         // change margin specifications into text block measurements
         if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
@@ -665,7 +665,7 @@ function doBanal($set) {
             $bs[3] = $s;
     }
 
-    if (($s = trim(defval($_REQUEST, "sub_banal_bodyfontsize", ""))) != ""
+    if (($s = trim(defval($_POST, "sub_banal_bodyfontsize", ""))) != ""
         && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
         if (!is_numeric($s) || $s <= 0) {
             $Highlight["sub_banal_bodyfontsize"] = true;
@@ -674,7 +674,7 @@ function doBanal($set) {
             $bs[4] = $s;
     }
 
-    if (($s = trim(defval($_REQUEST, "sub_banal_bodyleading", ""))) != ""
+    if (($s = trim(defval($_POST, "sub_banal_bodyleading", ""))) != ""
         && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
         if (!is_numeric($s) || $s <= 0) {
             $Highlight["sub_banal_bodyleading"] = true;
@@ -714,15 +714,15 @@ function doBanal($set) {
     }
 }
 
-function do_save_tracks($set) {
+function save_tracks($set) {
     global $Values, $Error, $Highlight;
     if ($set)
         return true;
     $tagger = new Tagger;
     $tracks = (object) array();
     $missing_tags = false;
-    for ($i = 1; isset($_REQUEST["name_track$i"]); ++$i) {
-        $trackname = trim($_REQUEST["name_track$i"]);
+    for ($i = 1; isset($_POST["name_track$i"]); ++$i) {
+        $trackname = trim($_POST["name_track$i"]);
         if ($trackname === "" || $trackname === "(tag)")
             continue;
         else if (!$tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)
@@ -733,9 +733,9 @@ function do_save_tracks($set) {
         }
         $t = (object) array();
         foreach (array("view", "viewrev", "assrev", "unassrev") as $type)
-            if (($ttype = defval($_REQUEST, "${type}_track$i", "")) == "+"
+            if (($ttype = defval($_POST, "${type}_track$i", "")) == "+"
                 || $ttype == "-") {
-                $ttag = trim(defval($_REQUEST, "${type}tag_track$i", ""));
+                $ttag = trim(defval($_POST, "${type}tag_track$i", ""));
                 if ($ttag === "" || $ttag === "(tag)") {
                     $Error[] = "Tag missing for track setting.";
                     $Highlight["${type}_track$i"] = $Highlight["tracks"] = true;
@@ -755,40 +755,67 @@ function do_save_tracks($set) {
         $Values["tracks"] = null;
 }
 
+function save_rounds($set) {
+    global $Conf, $Values, $Error, $Highlight;
+    if (!$set && !isset($_POST["rev_roundtag"]))
+        $Values["rev_roundtag"] = null;
+    else if (!$set) {
+        $t = trim($_POST["rev_roundtag"]);
+        if ($t == "" || $t == "(None)")
+            $Values["rev_roundtag"] = null;
+        else if (preg_match('/^[a-zA-Z0-9]+$/', $t))
+            $Values["rev_roundtag"] = array(1, $t);
+        else {
+            $Error[] = "The review round must contain only letters and numbers.";
+            $Highlight["rev_roundtag"] = true;
+        }
+
+        $roundnames = $roundnames_set = array();
+        for ($i = 1; isset($_POST["roundname_$i"]); ++$i) {
+            $rname = trim($_POST["roundname_$i"]);
+            if (@$_POST["deleteround_$i"]) {
+                $roundnames[] = ";";
+                if ($Conf->round_name($i, false))
+                    $Values["newly_deleted_rounds"][] = $i;
+            } else if ($rname === "" && $i >= $_POST["oldroundcount"])
+                /* ignore */;
+            else if (!preg_match('/^[a-zA-Z0-9]+$/', $rname)) {
+                $Error[] = "Review round names must contain letters and numbers.";
+                $Highlight["roundname_$i"] = true;
+            } else if (@$roundnames_set[$rname]) {
+                $Error[] = "Round name “" . htmlspecialchars($rname) . "” reused.";
+                $Highlight["roundname_$i"] = true;
+            } else {
+                $roundnames[] = $rname;
+                $roundnames_set[$rname] = true;
+            }
+        }
+        $Values["tag_rounds"] = array(1, join(" ", $roundnames));
+    }
+}
+
 function doSpecial($name, $set) {
-    global $Values, $Error, $Highlight;
+    global $Values;
     if ($name == "tag_chair" || $name == "tag_vote"
         || $name == "tag_rank" || $name == "tag_color")
-        doTags($set, $name);
+        save_tags($set, $name);
     else if ($name == "topics")
-        doTopics($set);
+        save_topics($set);
     else if ($name == "options")
-        doOptions($set);
+        save_options($set);
     else if ($name == "decisions")
-        doDecisions($set);
+        save_decisions($set);
     else if ($name == "reviewform") {
         if (!$set)
             $Values[$name] = true;
         else
             rf_update();
     } else if ($name == "banal")
-        doBanal($set);
-    else if ($name == "rev_roundtag") {
-        if (!$set && !isset($_REQUEST["rev_roundtag"]))
-            $Values["rev_roundtag"] = null;
-        else if (!$set) {
-            $t = trim($_REQUEST["rev_roundtag"]);
-            if ($t == "" || $t == "(None)")
-                $Values["rev_roundtag"] = null;
-            else if (preg_match('/^[a-zA-Z0-9]+$/', $t))
-                $Values["rev_roundtag"] = array(1, $t);
-            else {
-                $Error[] = "The review round must contain only letters and numbers.";
-                $Highlight["rev_roundtag"] = true;
-            }
-        }
-    } else if ($name == "tracks")
-        do_save_tracks($set);
+        save_banal($set);
+    else if ($name == "rev_roundtag")
+        save_rounds($set);
+    else if ($name == "tracks")
+        save_tracks($set);
 }
 
 function truthy($x) {
@@ -799,17 +826,17 @@ function truthy($x) {
 function accountValue($name, $info) {
     global $Values, $Error, $Highlight;
     $xname = str_replace(".", "_", $name);
-    if (isset($_REQUEST[$xname]) && !isset($_REQUEST[$name]))
-        $_REQUEST[$name] = $_REQUEST[$xname];
+    if (isset($_POST[$xname]) && !isset($_POST[$name]))
+        $_POST[$name] = $_POST[$xname];
 
-    if ($info->type === "special")
-        $has_value = truthy(@$_REQUEST["has_$xname"]);
+    if (@$info->type === "special")
+        $has_value = truthy(@$_POST["has_$xname"]);
     else
-        $has_value = isset($_REQUEST[$name])
-            || (($info->type === "cdate" || $info->type === "checkbox")
-                && truthy(@$_REQUEST["has_$xname"]));
+        $has_value = isset($_POST[$name])
+            || ((@$info->type === "cdate" || @$info->type === "checkbox")
+                && truthy(@$_POST["has_$xname"]));
 
-    if ($has_value && @$info->disabled)
+    if ($has_value && (@$info->disabled || !@$info->type || $info->type === "none"))
         /* ignore changes to disabled settings */;
     else if ($has_value && $info->type === "special")
         doSpecial($name, false);
@@ -892,7 +919,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
     }
 
     // update 'papersub'
-    if (isset($_REQUEST["pc_seeall"])) {
+    if (isset($_POST["pc_seeall"])) {
         // see also conference.php
         $result = $Conf->q("select ifnull(min(paperId),0) from Paper where " . (defval($Values, "pc_seeall", 0) <= 0 ? "timeSubmitted>0" : "timeWithdrawn<=0"));
         if (($row = edb_row($result)) && $row[0] != $Conf->setting("papersub"))
@@ -980,6 +1007,10 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Me->log_activity("Updated settings group '$Group'");
         $Conf->load_settings();
 
+        // remove references to deleted rounds
+        if (array_key_exists("newly_deleted_rounds", $Values))
+            $Conf->qe("update PaperReview set reviewRound=0 where reviewRound" . sql_in_numeric_set($Values["newly_deleted_rounds"]));
+
         // contactdb may need to hear about changes to shortName
         if (array_key_exists("opt.shortName", $Values)
             && @$Opt["contactdb_dsn"] && ($cdb = Contact::contactdb()))
@@ -1015,7 +1046,7 @@ $Conf->header("Settings", "settings", actionBar());
 function setting_label($name, $text, $islabel = null) {
     global $Highlight;
     if (isset($Highlight[$name]))
-        $text = "<span class=\"error\">$text</span>";
+        $text = "<span class=\"setting_error\">$text</span>";
     if ($islabel !== false)
         $text = Ht::label($text, $islabel ? : $name);
     return $text;
@@ -1024,7 +1055,7 @@ function setting_label($name, $text, $islabel = null) {
 function setting($name, $defval = null) {
     global $Error, $Conf;
     if (count($Error) > 0)
-        return defval($_REQUEST, $name, $defval);
+        return defval($_POST, $name, $defval);
     else
         return defval($Conf->settings, $name, $defval);
 }
@@ -1034,7 +1065,7 @@ function setting_data($name, $defval = "", $killval = "") {
     if (substr($name, 0, 4) === "opt.")
         return opt_data(substr($name, 4), $defval, $killval);
     else if (count($Error) > 0)
-        $val = defval($_REQUEST, $name, $defval);
+        $val = defval($_POST, $name, $defval);
     else
         $val = defval($Conf->settingTexts, $name, $defval);
     if ($val == $killval)
@@ -1045,7 +1076,7 @@ function setting_data($name, $defval = "", $killval = "") {
 function opt_data($name, $defval = "", $killval = "") {
     global $Error, $Opt;
     if (count($Error) > 0)
-        $val = defval($_REQUEST, "opt.$name", $defval);
+        $val = defval($_POST, "opt.$name", $defval);
     else
         $val = defval($Opt, $name, $defval);
     if ($val == $killval)
@@ -1089,7 +1120,11 @@ function doSelect($name, $nametext, $varr, $tr = false) {
 }
 
 function render_entry($name, $v, $size = 30, $temptext = "") {
-    return Ht::entry($name, $v, array("size" => $size, "hottemptext" => $temptext, "disabled" => setting_disabled($name), "id" => $name));
+    global $Highlight;
+    return Ht::entry($name, $v, array("size" => $size, "hottemptext" => $temptext,
+                                      "disabled" => setting_disabled($name),
+                                      "class" => @$Highlight[$name] ? "error" : null,
+                                      "id" => $name));
 }
 
 function doTextRow($name, $text, $v, $size = 30,
@@ -1308,17 +1343,17 @@ function doOptGroupOption($o) {
                 "position" => count(PaperOption::option_list()) + 1));
     $id = $o->id;
 
-    if (count($Error) > 0 && isset($_REQUEST["optn$id"])) {
+    if (count($Error) > 0 && isset($_POST["optn$id"])) {
         $o = new PaperOption(array("id" => $id,
-                "name" => $_REQUEST["optn$id"],
-                "description" => defval($_REQUEST, "optd$id", ""),
-                "type" => defval($_REQUEST, "optvt$id", "checkbox"),
-                "visibility" => defval($_REQUEST, "optp$id", ""),
-                "position" => defval($_REQUEST, "optfp$id", 1),
-                "highlight" => @($_REQUEST["optdt$id"] == "highlight"),
-                "near_submission" => @($_REQUEST["optdt$id"] == "near_submission")));
+                "name" => $_POST["optn$id"],
+                "description" => defval($_POST, "optd$id", ""),
+                "type" => defval($_POST, "optvt$id", "checkbox"),
+                "visibility" => defval($_POST, "optp$id", ""),
+                "position" => defval($_POST, "optfp$id", 1),
+                "highlight" => @($_POST["optdt$id"] == "highlight"),
+                "near_submission" => @($_POST["optdt$id"] == "near_submission")));
         if ($o->has_selector())
-            $o->selector = explode("\n", rtrim(defval($_REQUEST, "optv$id", "")));
+            $o->selector = explode("\n", rtrim(defval($_POST, "optv$id", "")));
     }
 
     echo "<tr><td><div class='f-contain'>\n",
@@ -1486,8 +1521,8 @@ function doOptGroup() {
     echo "<tr><th colspan='2'></th><th class='fx'><small>Low</small></th><th class='fx'><small>High</small></th></tr>";
     $td1 = '<td class="lcaption">Current</td>';
     foreach ($Conf->topic_map() as $tid => $tname) {
-        if (count($Error) > 0 && isset($_REQUEST["top$tid"]))
-            $tname = $_REQUEST["top$tid"];
+        if (count($Error) > 0 && isset($_POST["top$tid"]))
+            $tname = $_POST["top$tid"];
         echo '<tr>', $td1, '<td class="lentry">',
             Ht::entry("top$tid", $tname, array("size" => 40, "style" => "width:20em")),
             '</td>';
@@ -1515,11 +1550,31 @@ function doOptGroup() {
         $td1 = "<td></td>";
     }
     echo '<tr><td class="lcaption top" rowspan="40">New<br><span class="hint">Enter one topic per line.</span></td><td class="lentry top">',
-        Ht::textarea("topnew", count($Error) ? @$_REQUEST["topnew"] : "", array("cols" => 40, "rows" => 2, "style" => "width:20em")),
+        Ht::textarea("topnew", count($Error) ? @$_POST["topnew"] : "", array("cols" => 40, "rows" => 2, "style" => "width:20em")),
         '</td></tr></table>';
 }
 
 // Reviews
+function echo_round($rnum, $nameval, $review_count) {
+    global $Conf, $Error;
+    $rname = "roundname_$rnum";
+    if (count($Error) && $rnum !== '$')
+        $nameval = (string) @$_POST[$rname];
+    echo '<tr hotroundnum="', $rnum, '"><td>', setting_label($rname, "Round"), ' &nbsp;</td>',
+        '<td class="pad">', render_entry($rname, $nameval, 12), '</td>';
+    echo '<td class="pad">';
+    if ($rnum !== '$' && $review_count)
+        echo '<a href="', hoturl("search", "q=" . urlencode("round:" . $Conf->round_name($rnum, false))), '">(', plural($review_count, "review"), ')</a>';
+    echo '</td>';
+    if ($rnum !== '$') {
+        echo '<td>',
+            Ht::hidden("deleteround_$rnum", ""),
+            Ht::js_button("Delete round", "review_round_settings.kill(this)"),
+            '</td>';
+    }
+    echo '</tr>';
+}
+
 function doRevGroup() {
     global $Conf, $Error, $Highlight, $DateExplanation, $TagStyles;
 
@@ -1540,7 +1595,7 @@ function doRevGroup() {
 
 
     // Deadlines
-    echo "<h3 id=\"reviewround\" class=\"settings g\">Deadlines</h3>\n";
+    echo "<h3 class=\"settings g\">Deadlines</h3>\n";
     $date_text = $DateExplanation;
     $DateExplanation = "";
     echo '<p class="hint">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.<br />', $date_text, '</p>';
@@ -1560,12 +1615,31 @@ function doRevGroup() {
         '</td></tr>';
     echo "</table>\n";
 
+
+    // Rounds
+    echo "<h3 id=\"reviewround\" class=\"settings g\">Review rounds</h3>\n";
     if (!($rev_roundtag = setting_data("rev_roundtag")))
         $rev_roundtag = "(None)";
     echo '<div class="g"></div>', "<table>\n";
     doTextRow("rev_roundtag", array("Review round", "This is the default review round for new review assignments. Examples: “R1”, “R2” &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lxcaption", "(None)");
     echo "</table>\n";
     echo Ht::hidden("has_rev_roundtag", 1);
+
+    $round_map = edb_map(edb_ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
+    $rounds = $Conf->round_list();
+    echo '<table><tbody id="roundtable">';
+    for ($i = 1; $i < count($rounds); ++$i)
+        if ($rounds[$i] !== ";")
+            echo_round($i, $rounds[$i], @+$round_map[$i]);
+    echo '</tbody></table><table style="display:none"><tbody id="newround">';
+    echo_round('$', "", "");
+    echo '</tbody></table><div class="g"></div>';
+    echo Ht::js_button("Add round", "review_round_settings.add();hiliter(this)"),
+        Ht::hidden("oldroundcount", count($rounds));
+    for ($i = 1; $i < count($rounds); ++$i)
+        if ($rounds[$i] === ";")
+            echo Ht::hidden("roundname_$i", "", array("id" => "roundname_$i")),
+                Ht::hidden("deleteround_$i", 1);
 
 
     // External reviews
@@ -1622,8 +1696,8 @@ function doRfoGroup() {
 function do_track_permission($type, $question, $tnum, $thistrack) {
     global $Conf, $Error;
     if (count($Error) > 0) {
-        $tclass = defval($_REQUEST, "${type}_track$tnum", "");
-        $ttag = defval($_REQUEST, "${type}tag_track$tnum", "");
+        $tclass = defval($_POST, "${type}_track$tnum", "");
+        $ttag = defval($_POST, "${type}tag_track$tnum", "");
     } else if ($thistrack && @$thistrack->$type) {
         $tclass = substr($thistrack->$type, 0, 1);
         $ttag = substr($thistrack->$type, 1);
@@ -1676,7 +1750,7 @@ function doTagsGroup() {
 
     echo "<table><tr><td class='lxcaption'>", setting_label("tag_chair", "Chair-only tags"), "</td>";
     if (count($Error) > 0)
-        $v = defval($_REQUEST, "tag_chair", "");
+        $v = defval($_POST, "tag_chair", "");
     else
         $v = join(" ", array_keys($tagger->chair_tags()));
     echo "<td>", Ht::hidden("has_tag_chair", 1);
@@ -1685,7 +1759,7 @@ function doTagsGroup() {
 
     echo "<tr><td class='lxcaption'>", setting_label("tag_vote", "Voting tags"), "</td>";
     if (count($Error) > 0)
-        $v = defval($_REQUEST, "tag_vote", "");
+        $v = defval($_POST, "tag_vote", "");
     else {
         $x = "";
         foreach ($tagger->vote_tags() as $n => $v)
@@ -1698,7 +1772,7 @@ function doTagsGroup() {
 
     echo "<tr><td class='lxcaption'>", setting_label("tag_rank", "Ranking tag"), "</td>";
     if (count($Error) > 0)
-        $v = defval($_REQUEST, "tag_rank", "");
+        $v = defval($_POST, "tag_rank", "");
     else
         $v = $Conf->setting_data("tag_rank", "");
     echo "<td>", Ht::hidden("has_tag_rank", 1);
@@ -1718,7 +1792,7 @@ function doTagsGroup() {
     $tag_colors_rows = array();
     foreach (explode("|", $TagStyles) as $k) {
         if (count($Error) > 0)
-            $v = defval($_REQUEST, "tag_color_$k", "");
+            $v = defval($_POST, "tag_color_$k", "");
         else if (isset($tag_colors[$k]))
             $v = join(" ", $tag_colors[$k]);
         else
@@ -1799,7 +1873,7 @@ function doDecGroup() {
     foreach ($decs as $k => $v)
         if ($k) {
             if (count($Error) > 0)
-                $v = defval($_REQUEST, "dec$k", $v);
+                $v = defval($_POST, "dec$k", $v);
             echo "<tr>$caption<td class='lentry nowrap'>",
                 "<input type='text' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' />",
                 " &nbsp; ", ($k > 0 ? "Accept class" : "Reject class"), "</td>";
@@ -1813,8 +1887,8 @@ function doDecGroup() {
     $v = "";
     $vclass = 1;
     if (count($Error) > 0) {
-        $v = defval($_REQUEST, "decn", $v);
-        $vclass = defval($_REQUEST, "dtypn", $vclass);
+        $v = defval($_POST, "decn", $v);
+        $vclass = defval($_POST, "dtypn", $vclass);
     }
     echo "<tr><td class='lcaption'>",
         setting_label("decn", "New decision type"),

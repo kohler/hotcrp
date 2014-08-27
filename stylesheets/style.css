@@ -950,8 +950,8 @@ td.padl, th.padl, div.padl {
 td.padlb, th.padlb, div.padlb {
 	padding-left: 2em;
 }
-div.error, div.error input, td.error, td.error input,
-tr.error > td, tr.error > td input {
+div.error, div.error input, td.error, td.error input, input.error,
+tr.error > td, tr.error > td input, span.setting_error, label.setting_error {
 	font-weight: bold;
 	color: #ff0000;
 }

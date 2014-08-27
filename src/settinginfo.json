@@ -20,6 +20,7 @@
     "msg.home": {"type": "htmlstring", "name": "Home page message"},
     "msg.responseinstructions": {"type": "htmlstring", "name": "Authors’ response instructions"},
     "msg.revprefdescription": {"type": "htmlstring", "name": "Review preference instructions"},
+    "newly_deleted_rounds": {"type": "none", "nodb": true},
     "opt.contactEmail": {"type": "emailstring", "optional": true, "name": "Email of site contact"},
     "opt.contactName": {"type": "simplestring", "name": "Name of site contact"},
     "opt.emailCc": {"type": "emailheader", "name": "Default Cc for reviewer email", "temptext": "(none)"},
