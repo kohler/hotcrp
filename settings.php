@@ -760,16 +760,6 @@ function save_rounds($set) {
     if (!$set && !isset($_POST["rev_roundtag"]))
         $Values["rev_roundtag"] = null;
     else if (!$set) {
-        $t = trim($_POST["rev_roundtag"]);
-        if ($t == "" || $t == "(None)")
-            $Values["rev_roundtag"] = null;
-        else if (preg_match('/^[a-zA-Z0-9]+$/', $t))
-            $Values["rev_roundtag"] = array(1, $t);
-        else {
-            $Error[] = "The review round must contain only letters and numbers.";
-            $Highlight["rev_roundtag"] = true;
-        }
-
         $roundnames = $roundnames_set = array();
         for ($i = 1; isset($_POST["roundname_$i"]); ++$i) {
             $rname = trim($_POST["roundname_$i"]);
@@ -779,8 +769,11 @@ function save_rounds($set) {
                     $Values["newly_deleted_rounds"][] = $i;
             } else if ($rname === "" && $i >= $_POST["oldroundcount"])
                 /* ignore */;
-            else if (!preg_match('/^[a-zA-Z0-9]+$/', $rname)) {
-                $Error[] = "Review round names must contain letters and numbers.";
+            else if ($rname === "") {
+                $Error[] = "Missing review round name.";
+                $Highlight["roundname_$i"] = true;
+            } else if (!preg_match('/^[a-zA-Z0-9]+$/', $rname)) {
+                $Error[] = "Review round names can only contain letters and numbers.";
                 $Highlight["roundname_$i"] = true;
             } else if (@$roundnames_set[$rname]) {
                 $Error[] = "Round name “" . htmlspecialchars($rname) . "” reused.";
@@ -791,6 +784,21 @@ function save_rounds($set) {
             }
         }
         $Values["tag_rounds"] = array(1, join(" ", $roundnames));
+
+        $t = trim($_POST["rev_roundtag"]);
+        $Values["rev_roundtag"] = null;
+        if ($t === "" || strtolower($t) === "(none)" || $t === "#0")
+            /* do nothing */;
+        else if (preg_match('/^#[1-9][0-9]*$/', $t)) {
+            $rname = @$roundnames[substr($t, 1) - 1];
+            if ($rname && $rname !== ";")
+                $Values["rev_roundtag"] = array(1, $rname);
+        } else if (preg_match('/^[a-zA-Z0-9]+$/', $t))
+            $Values["rev_roundtag"] = array(1, $t);
+        else {
+            $Error[] = "The review round must contain only letters and numbers.";
+            $Highlight["rev_roundtag"] = true;
+        }
     }
 }
 
@@ -1043,9 +1051,26 @@ if (isset($_REQUEST["cancel"]) && check_post())
 $Conf->header("Settings", "settings", actionBar());
 
 
+function setting_js($name, $extra = array()) {
+    global $Highlight;
+    $x = array("id" => $name);
+    if (setting_disabled($name))
+        $x["disabled"] = true;
+    foreach ($extra as $k => $v)
+        $x[$k] = $v;
+    if (@$Highlight[$name])
+        $x["class"] = trim("setting_error " + (@$x["class"] ? : ""));
+    return $x;
+}
+
+function setting_class($name) {
+    global $Highlight;
+    return @$Highlight[$name] ? "setting_error" : null;
+}
+
 function setting_label($name, $text, $islabel = null) {
     global $Highlight;
-    if (isset($Highlight[$name]))
+    if (@$Highlight[$name])
         $text = "<span class=\"setting_error\">$text</span>";
     if ($islabel !== false)
         $text = Ht::label($text, $islabel ? : $name);
@@ -1088,7 +1113,7 @@ function doCheckbox($name, $text, $tr = false, $js = null) {
     $x = setting($name);
     echo ($tr ? "<tr><td class='nowrap'>" : ""),
         Ht::hidden("has_$name", 1),
-        Ht::checkbox($name, 1, $x !== null && $x > 0, array("onchange" => $js, "id" => "cb$name", "disabled" => setting_disabled($name))),
+        Ht::checkbox($name, 1, $x !== null && $x > 0, setting_js($name, array("onchange" => $js, "id" => "cb$name"))),
         "&nbsp;", ($tr ? "</td><td>" : ""),
         setting_label($name, $text, true),
         ($tr ? "</td></tr>\n" : "<br />\n");
@@ -1100,7 +1125,7 @@ function doRadio($name, $varr) {
         $x = 0;
     echo "<table>\n";
     foreach ($varr as $k => $text) {
-        echo "<tr><td class='nowrap'>", Ht::radio($name, $k, $k == $x, array("disabled" => setting_disabled($name))),
+        echo "<tr><td class='nowrap'>", Ht::radio($name, $k, $k == $x, setting_js($name)),
             "&nbsp;</td><td>";
         if (is_array($text))
             echo setting_label($name, $text[0], true), "<br /><small>", $text[1], "</small>";
@@ -1115,16 +1140,12 @@ function doSelect($name, $nametext, $varr, $tr = false) {
     echo ($tr ? "<tr><td class='nowrap lcaption'>" : ""),
         setting_label($name, $nametext),
         ($tr ? "</td><td class='lentry'>" : ": &nbsp;"),
-        Ht::select($name, $varr, setting($name), array("disabled" => setting_disabled($name))),
+        Ht::select($name, $varr, setting($name), setting_js($name)),
         ($tr ? "</td></tr>\n" : "<br />\n");
 }
 
 function render_entry($name, $v, $size = 30, $temptext = "") {
-    global $Highlight;
-    return Ht::entry($name, $v, array("size" => $size, "hottemptext" => $temptext,
-                                      "disabled" => setting_disabled($name),
-                                      "class" => @$Highlight[$name] ? "error" : null,
-                                      "id" => $name));
+    return Ht::entry($name, $v, setting_js($name, array("size" => $size, "hottemptext" => $temptext)));
 }
 
 function doTextRow($name, $text, $v, $size = 30,
@@ -1140,8 +1161,8 @@ function doTextRow($name, $text, $v, $size = 30,
     echo "</td></tr>\n";
 }
 
-function doEntry($name, $v, $size = 30, $tempText = "") {
-    echo Ht::entry($name, $v, array("size" => $size, "hottemptext" => $tempText, "disabled" => setting_disabled($name), "id" => $name));
+function doEntry($name, $v, $size = 30, $temptext = "") {
+    echo render_entry($name, $v, $size, $temptext);
 }
 
 function date_value($name, $othername = array(), $temptext = "N/A") {
@@ -1212,7 +1233,7 @@ function do_message($name, $description, $type, $rows = 10, $hint = "") {
         expander(null, 0), setting_label($name, $description),
         '</a> <span class="f-cx fx">(HTML allowed)</span></div>',
         $hint,
-        Ht::textarea($name, $current, array("class" => "fx", "rows" => $rows, "cols" => 80, "disabled" => setting_disabled($name))),
+        Ht::textarea($name, $current, setting_js($name, array("class" => "fx", "rows" => $rows, "cols" => 80))),
         '</div><div class="g"></div>', "\n";
 }
 
@@ -1470,7 +1491,7 @@ function doOptGroupOption($o) {
     echo "<div id='foldoptv$id' class='", (PaperOption::type_has_selector($optvt) ? "foldo" : "foldc"),
         "'><div class='fx'>",
         "<div class='hint' style='margin-top:1ex'>Enter choices one per line.  The first choice will be the default.</div>",
-        "<textarea name='optv$id' rows='", $rows, "' cols='50'>", htmlspecialchars($value), "</textarea>",
+        Ht::textarea("optv$id", $value, setting_js("optv$id", array("rows" => $rows, "cols" => 50))),
         "</div></div>";
 
     echo "</div></td></tr>\n";
@@ -1617,29 +1638,52 @@ function doRevGroup() {
 
 
     // Rounds
-    echo "<h3 id=\"reviewround\" class=\"settings g\">Review rounds</h3>\n";
-    if (!($rev_roundtag = setting_data("rev_roundtag")))
-        $rev_roundtag = "(None)";
-    echo '<div class="g"></div>', "<table>\n";
-    doTextRow("rev_roundtag", array("Review round", "This is the default review round for new review assignments. Examples: “R1”, “R2” &nbsp;<span class='barsep'>|</span>&nbsp; <a href='" . hoturl("help", "t=revround") . "'>What is this?</a>"), $rev_roundtag, 15, "lxcaption", "(None)");
-    echo "</table>\n";
-    echo Ht::hidden("has_rev_roundtag", 1);
-
-    $round_map = edb_map(edb_ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
+    echo "<h3 id=\"rounds\" class=\"settings g\">Review rounds</h3>\n";
     $rounds = $Conf->round_list();
+    if (count($Error) > 0) {
+        for ($i = 1; isset($_POST["roundname_$i"]); ++$i)
+            $rounds[$i] = @$_POST["deleteround_$i"] ? ";" : trim(@$_POST["roundname_$i"]);
+    }
+    // prepare round selector
+    $selector = array("#0" => "(none)");
+    for ($i = 1; $i < count($rounds); ++$i)
+        if ($rounds[$i] !== ";")
+            $selector["#$i"] = (object) array("label" => $rounds[$i], "id" => "rev_roundtag_$i");
+    $round_value = trim(setting_data("rev_roundtag"));
+    $current_round_value = $Conf->setting_data("rev_roundtag");
+    if ($round_value === "" || strtolower($round_value) === "(none)" || $round_value === "#0")
+        $round_value = "#0";
+    else if (($round_number = $Conf->round_number($round_value, false))
+             || ($round_number = $Conf->round_number($current_round_value, false)))
+        $round_value = "#" . $round_number;
+    else
+        $round_value = $selector[$current_round_value] = $current_round_value;
+
+    echo '<div id="round_container"', (count($selector) == 1 ? ' style="display:none"' : ''), '>',
+        '<table id="rev_roundtag_table"><tr><td class="lxcaption">',
+        setting_label("rev_roundtag", "Current round"),
+        '</td><td>',
+        Ht::select("rev_roundtag", $selector, $round_value, setting_js("rev_roundtag")),
+        '</td></tr></table>',
+        '<div class="hint">This round is used for new assignments.</div><div class="g"></div>';
+
     echo '<table><tbody id="roundtable">';
+    $round_map = edb_map(edb_ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
     for ($i = 1; $i < count($rounds); ++$i)
         if ($rounds[$i] !== ";")
             echo_round($i, $rounds[$i], @+$round_map[$i]);
     echo '</tbody></table><table style="display:none"><tbody id="newround">';
     echo_round('$', "", "");
-    echo '</tbody></table><div class="g"></div>';
+    echo '</tbody></table><div class="g"></div></div>';
     echo Ht::js_button("Add round", "review_round_settings.add();hiliter(this)"),
-        Ht::hidden("oldroundcount", count($rounds));
+        ' &nbsp; <span class="hint"><a href="', hoturl("help", "t=revround"), '">What is this?</a></span>',
+        Ht::hidden("oldroundcount", count($Conf->round_list())),
+        Ht::hidden("has_rev_roundtag", 1);
     for ($i = 1; $i < count($rounds); ++$i)
         if ($rounds[$i] === ";")
             echo Ht::hidden("roundname_$i", "", array("id" => "roundname_$i")),
                 Ht::hidden("deleteround_$i", 1);
+    Ht::stash_script("review_round_settings.init()");
 
 
     // External reviews

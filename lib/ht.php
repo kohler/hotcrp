@@ -107,10 +107,12 @@ class Ht {
                 $x .= '<option value="' . $value . '"';
                 if (strcmp($value, $selected) == 0)
                     $x .= ' selected="selected"';
-                if (isset($info->disabled) && $info->disabled)
+                if (@$info->disabled)
                     $x .= ' disabled="disabled"';
-                if (isset($info->style) && $info->style)
+                if (@$info->style)
                     $x .= ' style="' . $info->style . '"';
+                if (@$info->id)
+                    $x .= ' id="' . $info->id . '"';
                 $x .= '>' . $info->label . '</option>';
             }
         }

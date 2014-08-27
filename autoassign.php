@@ -639,18 +639,14 @@ doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "se
 echo "&nbsp; review(s) from this paper selection</div>\n";
 
 // Review round
-echo divClass("rev_roundtag");
-echo "<input style='visibility: hidden' type='radio' class='cb' name='a' value='rev_roundtag' disabled='disabled' />&nbsp;";
-echo "Review round: &nbsp;";
-$rev_roundtag = defval($_REQUEST, "rev_roundtag", $Conf->setting_data("rev_roundtag"));
-if (!$rev_roundtag)
-    $rev_roundtag = "(None)";
-echo "<input id='rev_roundtag' class='temptextoff' type='text' size='15' name='rev_roundtag' value=\"",
-    htmlspecialchars($rev_roundtag),
-    "\" onfocus=\"autosub('assign',this)\" />",
-    " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a></div>
-<div class='g'></div>\n";
-$Conf->footerScript("mktemptext('rev_roundtag','(None)')");
+$rev_roundtag = $Conf->setting_data("rev_roundtag");
+if (count($Conf->round_list()) > 1 || $rev_roundtag) {
+    echo divClass("rev_roundtag"), Ht::hidden("rev_roundtag", $rev_roundtag);
+    echo "<input style='visibility: hidden' type='radio' class='cb' name='a' value='rev_roundtag' disabled='disabled' />&nbsp;";
+    echo '<span class="hint">Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(None)"),
+        ' &nbsp;<span class="barsep">|</span>&nbsp; <a href="', hoturl("settings", "group=reviews"), '">Configure rounds</a></span>';
+}
+echo "<div class='g'></div>\n";
 
 doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');
 echo "<br />\n";

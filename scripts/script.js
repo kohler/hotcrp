@@ -172,27 +172,34 @@ return setLocalTime;
 })();
 
 
-function hoturl(page, options) {
-    var k, t, a, m;
-    options = serialize_object(options);
-    t = hotcrp_base + page + hotcrp_suffix;
-    if ((page === "paper" || page === "review") && options
-        && (m = options.match(/^(.*)(?:^|&)p=(\d+)(?:&|$)(.*)$/))) {
-        t += "/" + m[2];
-        options = m[1] + (m[1] && m[3] ? "&" : "") + m[3];
+function hoturl_clean(x, page_component) {
+    var m;
+    if (x.o && (m = x.o.match(new RegExp("^(.*)(?:^|&)" + page_component + "(?:&|$)(.*)$")))) {
+        x.t += "/" + m[2];
+        x.o = m[1] + (m[1] && m[3] ? "&" : "") + m[3];
     }
-    if (options && hotcrp_list
-        && (m = options.match(/^(.*(?:^|&)ls=)([^&]*)((?:&|$).*)$/))
+}
+
+function hoturl(page, options) {
+    var k, t, a, m, x;
+    options = serialize_object(options);
+    x = {t: hotcrp_base + page + hotcrp_suffix, o: serialize_object(options)};
+    if (page === "paper" || page === "review")
+        hoturl_clean(x, "p=(\\d+)");
+    else if (page === "help")
+        hoturl_clean(x, "t=(\\w+)");
+    if (x.o && hotcrp_list
+        && (m = x.o.match(/^(.*(?:^|&)ls=)([^&]*)((?:&|$).*)$/))
         && hotcrp_list.id == decodeURIComponent(m[2]))
-        options = m[1] + hotcrp_list.num + m[3];
+        x.o = m[1] + hotcrp_list.num + m[3];
     a = [];
     if (hotcrp_urldefaults)
         a.push(serialize_object(hotcrp_urldefaults));
-    if (options)
-        a.push(options);
+    if (x.o)
+        a.push(x.o);
     if (a.length)
-        t += "?" + a.join("&");
-    return t;
+        x.t += "?" + a.join("&");
+    return x.t;
 }
 
 function hoturl_post(page, options) {
@@ -2927,13 +2934,27 @@ function settings_add_track() {
 }
 
 window.review_round_settings = (function () {
+var added = 0;
+
+function namechange() {
+    var roundnum = this.id.substr(10);
+    jQuery("#rev_roundtag_" + roundnum).text(jQuery(this).val());
+}
+
+function init() {
+    jQuery("#roundtable input[type=text]").on("input change", namechange);
+}
 
 function add() {
     var i, h, j;
     for (i = 1; jQuery("#roundname_" + i).length; ++i)
         /* do nothing */;
+    jQuery("#round_container").show();
     jQuery("#roundtable").append(jQuery("#newround").html().replace(/\$/g, i));
-    jQuery("#roundname_" + i).focus();
+    if (++added == 1 && i == 1)
+        jQuery("#roundtable").append('<tr><td></td><td colspan="4"><span class="hint">Example: “R1”</span></td></tr>');
+    jQuery("#rev_roundtag").append('<option value="#' + i + '" id="rev_roundtag_' + i + '">(new round)</option>');
+    jQuery("#roundname_" + i).focus().on("input change", namechange);
 }
 
 function kill(e) {
@@ -2952,7 +2973,7 @@ function kill(e) {
     hiliter(e);
 }
 
-return {add: add, kill: kill};
+return {init: init, add: add, kill: kill};
 })();
 
 window.review_form_settings = (function () {

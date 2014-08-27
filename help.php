@@ -611,7 +611,7 @@ To list a PC member’s round “R1” review assignments, <a href='" . hoturl("
 
     _alternateRow("Assigning rounds", "
 New assignments are marked by default with the round defined in
-<a href='" . hoturl("settings", "group=reviews#reviewround") . "'>review settings</a>.
+<a href='" . hoturl("settings", "group=reviews#rounds") . "'>review settings</a>.
 The automatic and bulk assignment pages also let you set a review round.");
 
     // get current tag settings
@@ -622,7 +622,7 @@ The automatic and bulk assignment pages also let you set a review round.");
                 . hoturl("search", "q=round%3A" . urlencode($rr))
                 . "\">" . htmlspecialchars($rr) . "</a>”";
             if ($Me->privChair)
-                $texts[0] .= " (use <a href=\"" . hoturl("settings", "group=reviews#reviewround") . "\">Settings &gt; Reviews</a> to change this).";
+                $texts[0] .= " (use <a href=\"" . hoturl("settings", "group=reviews#rounds") . "\">Settings &gt; Reviews</a> to change this).";
             else
                 $texts[0] .= ".";
         }

@@ -139,17 +139,16 @@ else
 echo "<div id='foldemail' class='foldo'><table class='fx'>
 <tr><td>", Ht::checkbox("requestreview_notify", 1, true), "&nbsp;</td>
 <td>", Ht::label("Send email to external reviewers:"), "</td></tr>
-<tr><td></td><td><textarea class='tt' name='requestreview_body' cols='80' rows='20'>", htmlspecialchars($t), "</textarea></td></tr></table>
-<div";
-if (isset($Error["rev_roundtag"]))
-    echo ' class="error"';
-echo ">Default review round for new assignments: &nbsp;",
-    "<input id='rev_roundtag' class='temptextoff' type='text' size='15' name='rev_roundtag' value=\"",
-    htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"),
-    "\" />",
-    " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a></div></div>",
-    Ht::submit("Upload"),
-    "</div></div></form>
+<tr><td></td><td>",
+    Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20)),
+    "</td></tr></table></div>\n";
+if (count($Conf->round_list()) > 1 || $rev_roundtag) {
+    echo Ht::hidden("rev_roundtag", $rev_roundtag),
+        'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(None)"),
+        ' &nbsp;<span class="barsep">|</span>&nbsp; <a href="', hoturl("settings", "group=reviews#rounds"), '">Configure rounds</a>';
+}
+
+echo '<div class="g"></div>', Ht::submit("Upload"), "</div></div></form>
 
 <hr style='margin-top:1em' />
 
@@ -235,6 +234,5 @@ use action <code>clearconflict</code>.</dd>
 To clear a tag, use action <code>cleartag</code> or value <code>none</code>.</dd>
 </dl>\n";
 
-$Conf->footerScript("mktemptext('rev_roundtag','(None)')");
 $Conf->footerScript("fold('email',\$\$('tsel').value!='review')");
 $Conf->footer();

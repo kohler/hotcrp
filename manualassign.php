@@ -198,16 +198,13 @@ echo Ht::radio("kind", "a", $kind == "a",
                array("onchange" => "hiliter(this)")),
     "&nbsp;", Ht::label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
 
-if ($kind == "a") {
-    echo "<tr><td colspan='2'><div class='g'></div></td></tr>\n",
-        "<tr><td>",
-        (isset($Error["rev_roundtag"]) ? "<span class='error'>" : ""),
-        "Review round: &nbsp;</td>",
-        "<td><input id='assrevroundtag' class='temptextoff' type='text' size='15' name='rev_roundtag' value=\"", htmlspecialchars($rev_roundtag ? $rev_roundtag : "(None)"), "\" />",
-        (isset($Error["rev_roundtag"]) ? "</span>" : ""),
-        " &nbsp;<a class='hint' href='", hoturl("help", "t=revround"), "'>What is this?</a>\n",
+$rev_roundtag = $Conf->setting_data("rev_roundtag");
+if ($kind == "a" && (count($Conf->round_list()) > 1 || $rev_roundtag)) {
+    echo "<tr><td colspan='2'><div class='g'></div>",
+        Ht::hidden("rev_roundtag", $rev_roundtag),
+        'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(None)"),
+        ' &nbsp;<span class="barsep">|</span>&nbsp; <a href="', hoturl("settings", "group=reviews"), '">Configure rounds</a>',
         "</td></tr>";
-    $Conf->footerScript("mktemptext('assrevroundtag','(None)')");
 }
 
 echo "<tr><td colspan='2'><div class='aax' style='text-align:right'>",
