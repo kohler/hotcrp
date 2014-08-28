@@ -1310,7 +1310,7 @@ class PaperSearch {
             && $this->amPC) {
             $this->reviewAdjust = true;
             if ($word == "none")
-                $qt[] = new SearchTerm("revadj", 0, array("round" => 0));
+                $qt[] = new SearchTerm("revadj", 0, array("round" => array(0)));
             else if ($word == "any")
                 $qt[] = new SearchTerm("revadj", 0, array("round" => range(1, count($Conf->round_list()) - 1)));
             else {
