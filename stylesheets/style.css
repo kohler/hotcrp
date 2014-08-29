@@ -181,6 +181,9 @@ span.lgsep {
 div.lg { /* large gap */
 	margin: 1.5em 0;
 }
+div.mg { /* medium gap */
+	margin: 1em 0;
+}
 div.g { /* small gap */
 	margin: 0.65em 0;
 }
@@ -479,7 +482,7 @@ table.ppltable td.pl_topics span.topic4 {
 span.optvalue {
 	color: #555555;
 }
-span.dim {
+.dim {
 	color: #777777;
 }
 
@@ -951,8 +954,11 @@ td.padlb, th.padlb, div.padlb {
 	padding-left: 2em;
 }
 div.error, div.error input, td.error, td.error input, input.error,
-tr.error > td, tr.error > td input, span.setting_error, label.setting_error {
+tr.error > td, tr.error > td input {
 	font-weight: bold;
+	color: #ff0000;
+}
+span.setting_error, label.setting_error, input.setting_error {
 	color: #ff0000;
 }
 td.lentry.error input, div.error input {
@@ -2620,7 +2626,7 @@ div.popup_actions {
 }
 
 /* scores */
-div.scorechart {
+div.scorechart, div.inb {
 	display: inline-block;
 }
 div.sc {

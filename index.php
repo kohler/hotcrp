@@ -374,63 +374,90 @@ function reviewTokenGroup($non_reviews) {
 // Review assignment
 if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     echo "<div class='homegrp' id='homerev'>\n";
+    $all_review_fields = ReviewForm::field_list_all_rounds();
+    $merit_field = @$all_review_fields["overAllMerit"];
+    $merit_noptions = $merit_field ? count($merit_field->options) : 0;
+
+    // Information about my reviews
+    $where = array();
+    if ($Me->contactId)
+        $where[] = "PaperReview.contactId=" . $Me->contactId;
+    if (($tokens = $Me->review_tokens()))
+        $where[] = "reviewToken in (" . join(",", $tokens) . ")";
+    $result = $Conf->qe("select count(reviewSubmitted) num_submitted,
+	count(if(reviewNeedsSubmit=0,reviewSubmitted,1)) num_needs_submit,
+	group_concat(if(reviewSubmitted is not null,overAllMerit,null)) scores,
+	group_concat(if(reviewNeedsSubmit=1 and reviewSubmitted is null,reviewRound,null)) unsubmitted_rounds
+	from PaperReview
+	join Paper using (paperId)
+	where " . join(" or ", $where) . " group by PaperReview.reviewId>0");
+    if (($myrow = edb_orow($result)))
+        $myrow->scores = scoreCounts($myrow->scores, $merit_noptions);
+
+    // Information about PC reviews
+    $npc = $sumpcSubmit = $npcScore = $sumpcScore = 0;
+    if ($Me->isPC || $Me->privChair) {
+        $result = $Conf->qe("select count(reviewId) num_submitted,
+	group_concat(overAllMerit) scores
+	from PCMember
+	left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.reviewSubmitted is not null)
+	group by PCMember.contactId");
+        while (($row = edb_row($result))) {
+            ++$npc;
+            if ($row[0]) {
+                $sumpcSubmit += $row[0];
+                $scores = scoreCounts($row[1], $merit_noptions);
+                ++$npcScore;
+                $sumpcScore += $scores->avg;
+            }
+        }
+    }
 
     // Overview
     echo "<h4>Reviews: &nbsp;</h4> ";
-    $result = $Conf->qe("select PaperReview.contactId, count(reviewSubmitted), count(if(reviewNeedsSubmit=0,reviewSubmitted,1)), group_concat(overAllMerit), PCMember.contactId as pc from PaperReview join Paper using (paperId) left join PCMember on (PaperReview.contactId=PCMember.contactId) where Paper.timeSubmitted>0 group by PaperReview.contactId");
-    $all_review_fields = ReviewForm::field_list_all_rounds();
-    $merit_field = @$all_review_fields["overAllMerit"];
-    $npc = $npcScore = $sumpcScore = $sumpcSubmit = 0;
-    $myrow = null;
-    while (($row = edb_row($result))) {
-        $row[3] = scoreCounts($row[3], $merit_field ? count($merit_field->options) : 0);
-        if ($row[0] == $Me->contactId)
-            $myrow = $row;
-        if ($row[4]) {
-            $npc++;
-            $sumpcSubmit += $row[1];
-        }
-        if ($row[4] && $row[1]) {
-            $npcScore++;
-            $sumpcScore += $row[3]->avg;
-        }
-    }
     if ($myrow) {
-        if ($myrow[2] == 1 && $myrow[1] <= 1)
-            echo "You ", ($myrow[1] == 1 ? "have" : "have not"), " submitted your <a href='", hoturl("search", "q=&amp;t=r"), "'>review</a>";
+        if ($myrow->num_needs_submit == 1 && $myrow->num_submitted <= 1)
+            echo "You ", ($myrow->num_submitted == 1 ? "have" : "have not"), " submitted your <a href=\"", hoturl("search", "q=&amp;t=r"), "\">review</a>";
         else
-            echo "You have submitted ", $myrow[1], " of <a href='", hoturl("search", "q=&amp;t=r"), "'>", plural($myrow[2], "review"), "</a>";
-        if ($merit_field && $merit_field->displayed && $myrow[1])
-            echo " with an average $merit_field->name_html score of ", $merit_field->unparse_average($myrow[3]->avg);
+            echo "You have submitted ", $myrow->num_submitted, " of <a href=\"", hoturl("search", "q=&amp;t=r"), "\">", plural($myrow->num_needs_submit, "review"), "</a>";
+        if ($merit_field && $merit_field->displayed && $myrow->num_submitted)
+            echo " with an average $merit_field->name_html score of ", $merit_field->unparse_average($myrow->scores->avg);
         echo ".<br />\n";
     }
     if (($Me->isPC || $Me->privChair) && $npc) {
-        echo sprintf("  The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
+        echo sprintf(" The average PC member has submitted %.1f reviews", $sumpcSubmit / $npc);
         if ($merit_field && $merit_field->displayed && $npcScore)
             echo " with an average $merit_field->name_html score of ", $merit_field->unparse_average($sumpcScore / $npcScore);
         echo ".";
         if ($Me->isPC || $Me->privChair)
-            echo "&nbsp; <small>(<a href='", hoturl("users", "t=pc&amp;score%5B%5D=0"), "'>Details</a>)</small>";
+            echo "&nbsp; <small>(<a href=\"", hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">Details</a>)</small>";
         echo "<br />\n";
     }
-    if ($myrow && $myrow[1] < $myrow[2]) {
-        if ($Conf->time_review(null, $Me->isPC, false)) {
-            $dn = $Conf->review_deadline(null, $Me->isPC, false);
-            $d = $Conf->printableTimeSetting($dn, "span");
-            if ($d == "N/A")
-                $d = $Conf->printableTimeSetting($Conf->review_deadline(null, $Me->isPC, true), "span");
-            if ($d != "N/A")
-                echo '  <span class="deadline">Please submit your ', ($myrow[2] == 1 ? "review" : "reviews"), " by $d.</span><br />\n";
-        } else if ($Conf->time_review(null, $Me->isPC, true))
-            echo '  <span class="deadline"><strong class="overdue">Reviews are overdue.</strong> They were requested by ', $Conf->printableTimeSetting($Conf->review_deadline(null, $Me->isPC, false), "span"), ".</span><br />\n";
-        else if ($Conf->time_review_open())
-            echo '  <span class="deadline">The <a href="', hoturl("deadlines"), '">deadline</a> for submitting ' . ($Me->isPC ? "PC" : "external") . " reviews has passed.</span><br />\n";
-        else
-            echo "  <span class='deadline'>The site is not open for reviewing.</span><br />\n";
+    if ($myrow && $myrow->num_submitted < $myrow->num_needs_submit
+        && !$Conf->time_review_open())
+        echo ' <span class="deadline">The site is not open for reviewing.</span><br />', "\n";
+    else if ($myrow && $myrow->num_submitted < $myrow->num_needs_submit) {
+        $missing_rounds = explode(",", $myrow->unsubmitted_rounds);
+        sort($missing_rounds, SORT_NUMERIC);
+        foreach ($missing_rounds as $round) {
+            if (($rname = $Conf->round_name($round, false)))
+                $rname .= " ";
+            if ($Conf->time_review($round, $Me->isPC, false)) {
+                $dn = $Conf->review_deadline($round, $Me->isPC, false);
+                $d = $Conf->printableTimeSetting($dn, "span");
+                if ($d == "N/A")
+                    $d = $Conf->printableTimeSetting($Conf->review_deadline($round, $Me->isPC, true), "span");
+                if ($d != "N/A")
+                    echo ' <span class="deadline">Please submit your ', $rname, ($myrow->num_needs_submit == 1 ? "review" : "reviews"), " by $d.</span><br />\n";
+            } else if ($Conf->time_review($round, $Me->isPC, true))
+                echo ' <span class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $Conf->printableTimeSetting($Conf->review_deadline($round, $Me->isPC, false), "span"), ".</span><br />\n";
+            else
+                echo ' <span class="deadline"><strong class="overdue">The <a href="', hoturl("deadlines"), '">deadline</a> for submitting ', $rname, "reviews has passed.</strong></span><br />\n";
+        }
     } else if ($Me->isPC && $Me->can_review_any()) {
-        $d = $Conf->printableTimeSetting("pcrev_soft", "span");
+        $d = $Conf->printableTimeSetting($Conf->reviewDeadline(null, $Me->isPC, false), "span");
         if ($d != "N/A")
-            echo "  <span class='deadline'>The review deadline is $d.</span><br />\n";
+            echo " <span class='deadline'>The review deadline is $d.</span><br />\n";
     }
     if ($Me->isPC && $Me->can_review_any())
         echo "  <span class='hint'>As a PC member, you may review <a href='", hoturl("search", "q=&amp;t=s"), "'>any submitted paper</a>.</span><br />\n";

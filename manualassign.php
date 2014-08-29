@@ -202,7 +202,7 @@ $rev_roundtag = $Conf->setting_data("rev_roundtag");
 if ($kind == "a" && (count($Conf->round_list()) > 1 || $rev_roundtag)) {
     echo "<tr><td colspan='2'><div class='g'></div>",
         Ht::hidden("rev_roundtag", $rev_roundtag),
-        'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(None)"),
+        'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(no name)"),
         ' &nbsp;<span class="barsep">|</span>&nbsp; <a href="', hoturl("settings", "group=reviews"), '">Configure rounds</a>',
         "</td></tr>";
 }

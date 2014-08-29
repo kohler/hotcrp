@@ -1996,7 +1996,22 @@ class Contact {
     }
 
 
-    function deadlines() {
+    function my_rounds() {
+        global $Conf;
+        $where = array();
+        if ($this->contactId)
+            $where[] = "contactId=" . $this->contactId;
+        if (($tokens = $this->review_tokens()))
+            $where[] = "reviewToken in (" . join(",", $tokens) . ")";
+        $result = $Conf->qe("select distinct reviewRound from PaperReview where " . join(" or ", $where));
+        $rounds = array();
+        while (($row = edb_row($result)))
+            $rounds[] = +$row[0];
+        sort($rounds);
+        return $rounds;
+    }
+
+    function my_deadlines() {
         // Return cleaned deadline-relevant settings that this user can see.
         global $Conf, $Opt;
         $dlx = $Conf->deadlines();
@@ -2034,19 +2049,32 @@ class Contact {
         }
 
         // reviewer deadlines
+        $revtypes = array();
+        $rev_allowed = false;
         if ($this->is_reviewer()) {
             $dl["rev_open"] = $dlx["rev_open"] > 0;
-            if ($this->isPC && $dlx["pcrev_soft"] > $now)
-                $dl["pcrev_done"] = $dlx["pcrev_soft"];
-            else if ($this->isPC && $dlx["pcrev_hard"]) {
-                $dl["pcrev_done"] = $dlx["pcrev_hard"];
-                $dl["pcrev_ishard"] = true;
-            }
-            if ($dlx["extrev_soft"] > $now)
-                $dl["extrev_done"] = $dlx["extrev_soft"];
-            else if ($dlx["extrev_hard"]) {
-                $dl["extrev_done"] = $dlx["extrev_hard"];
-                $dl["extrev_ishard"] = true;
+            $rounds = $this->my_rounds();
+            $dl["rev_rounds"] = array();
+            $grace = $dl["rev_open"] ? @$dlx["rev_grace"] : 0;
+            foreach ($this->my_rounds() as $i) {
+                $round_name = $Conf->round_name($i, true);
+                $dl["rev_rounds"][] = $i ? $round_name : "";
+                $isuffix = $i ? "_$i" : "";
+                $osuffix = $i ? "_$round_name" : "";
+                foreach (array("pcrev", "extrev") as $rt) {
+                    if ($rt == "pcrev" && !$this->isPC)
+                        continue;
+                    list($s, $h) = array($dlx["{$rt}_soft$isuffix"], $dlx["{$rt}_hard$isuffix"]);
+                    if ($h && ($h < $now || $s < $now)) {
+                        $dl["{$rt}_done$osuffix"] = $h;
+                        $dl["{$rt}_ishard$osuffix"] = true;
+                    } else if ($s)
+                        $dl["{$rt}_done$osuffix"] = $s;
+                    $revtypes[] = "{$rt}_done$osuffix";
+                    if (!$dlx["{$rt}_hard$isuffix"]
+                        || $dlx["{$rt}_hard$isuffix"] + $grace >= $now)
+                        $rev_allowed = true;
+                }
             }
             // blindness
             $rb = $Conf->review_blindness();
@@ -2057,18 +2085,19 @@ class Contact {
             // can authors see reviews?
             if ($Conf->timeAuthorViewReviews())
                 $dl["au_allowseerev"] = true;
+            $rev_allowed = $rev_allowed || $this->can_review_any();
         }
 
         // grace periods
         foreach (array("sub" => array("sub_reg", "sub_update", "sub_sub"),
                        "resp" => array("resp_done"),
-                       "rev" => array("pcrev_done", "extrev_done"),
+                       "rev" => $revtypes,
                        "final" => array("final_done")) as $type => $dlnames) {
             if (@$dl["${type}_open"] && ($grace = $dlx["${type}_grace"])) {
                 foreach ($dlnames as $dlname)
                     // Give a minute's notice that there will be a grace
                     // period to make the UI a little better.
-                    if (defval($dl, $dlname) && $dl[$dlname] + 60 < $now
+                    if (@$dl[$dlname] && $dl[$dlname] + 60 < $now
                         && $dl[$dlname] + $grace >= $now)
                         $dl["${dlname}_ingrace"] = true;
             }
@@ -2076,7 +2105,7 @@ class Contact {
 
         // activeness
         $rt = $this->isPC ? "pcrev_done" : "extrev_done";
-        if (@$dl["rev_open"] && (!@$dl[$rt] || $dl[$rt] >= $now || @$dl["{$rt}_ingrace"]))
+        if ($rev_allowed)
             $dl["rev_allowed"] = true;
         if (@$dl["rev_allowed"] || ($this->is_reviewer() && $Conf->setting("cmt_always") > 0))
             $dl["cmt_allowed"] = true;
@@ -2097,11 +2126,16 @@ class Contact {
     }
 
     function has_reportable_deadline() {
-        $dl = $this->deadlines();
+        $dl = $this->my_deadlines();
         if (@$dl["sub_reg"] || @$dl["sub_update"] || @$dl["sub_sub"]
-            || ($dl["resp_open"] && @$dl["resp_done"])
-            || (@$dl["rev_open"] && (@$dl["pcrev_done"] || @$dl["extrev_done"])))
+            || ($dl["resp_open"] && @$dl["resp_done"]))
             return true;
+        if (@$dl["rev_rounds"] && @$dl["rev_open"])
+            foreach ($dl["rev_rounds"] as $rname) {
+                $suffix = $rname === "" ? "" : "_$rname";
+                if (@$dl["pcrev_done$suffix"] || @$dl["extrev_done$suffix"])
+                    return true;
+            }
         return false;
     }
 

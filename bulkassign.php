@@ -142,11 +142,10 @@ echo "<div id='foldemail' class='foldo'><table class='fx'>
 <tr><td></td><td>",
     Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20)),
     "</td></tr></table></div>\n";
-if (count($Conf->round_list()) > 1 || $rev_roundtag) {
+if (count($Conf->round_list()) > 1 || $rev_roundtag)
     echo Ht::hidden("rev_roundtag", $rev_roundtag),
-        'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(None)"),
+        'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(no name)"),
         ' &nbsp;<span class="barsep">|</span>&nbsp; <a href="', hoturl("settings", "group=reviews#rounds"), '">Configure rounds</a>';
-}
 
 echo '<div class="g"></div>', Ht::submit("Upload"), "</div></div></form>
 

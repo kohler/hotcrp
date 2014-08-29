@@ -203,8 +203,8 @@ function parseValue($name, $info) {
     } else
         return $v;
 
-    $Highlight[$name] = true;
     $Error[] = $err;
+    $Highlight[$name] = true;
     return null;
 }
 
@@ -760,36 +760,108 @@ function save_rounds($set) {
     if (!$set && !isset($_POST["rev_roundtag"]))
         $Values["rev_roundtag"] = null;
     else if (!$set) {
+        // round names
         $roundnames = $roundnames_set = array();
-        for ($i = 1; isset($_POST["roundname_$i"]); ++$i) {
-            $rname = trim($_POST["roundname_$i"]);
-            if (@$_POST["deleteround_$i"]) {
+        $roundname0 = $round_deleted = null;
+        $Values["rev_round_changes"] = array();
+        for ($i = 0;
+             isset($_POST["roundname_$i"]) || isset($_POST["deleteround_$i"]) || !$i;
+             ++$i) {
+            $rname = @trim($_POST["roundname_$i"]);
+            if ($rname === "(no name)")
+                $rname = "";
+            if ((@$_POST["deleteround_$i"] || $rname === "") && $i) {
                 $roundnames[] = ";";
-                if ($Conf->round_name($i, false))
-                    $Values["newly_deleted_rounds"][] = $i;
-            } else if ($rname === "" && $i >= $_POST["oldroundcount"])
-                /* ignore */;
-            else if ($rname === "") {
-                $Error[] = "Missing review round name.";
+                $Values["rev_round_changes"][] = array($i, 0);
+                if ($round_deleted === null && !isset($_POST["roundname_0"])
+                    && $i < $_POST["oldroundcount"])
+                    $round_deleted = $i;
+            } else if (!strcasecmp($rname, "none") || !strcasecmp($rname, "any")) {
+                $Error[] = "Round name $rname is reserved.";
                 $Highlight["roundname_$i"] = true;
-            } else if (!preg_match('/^[a-zA-Z0-9]+$/', $rname)) {
+            } else if ($rname === "")
+                /* ignore */;
+            else if (!preg_match('/^[a-zA-Z0-9]*$/', $rname)) {
                 $Error[] = "Review round names can only contain letters and numbers.";
                 $Highlight["roundname_$i"] = true;
-            } else if (@$roundnames_set[$rname]) {
-                $Error[] = "Round name “" . htmlspecialchars($rname) . "” reused.";
-                $Highlight["roundname_$i"] = true;
+            } else if ($i == 0)
+                $roundname0 = $rname;
+            else if (@$roundnames_set[strtolower($rname)]) {
+                $roundnames[] = ";";
+                $Values["rev_round_changes"][] = array($i, $roundnames_set[strtolower($rname)]);
             } else {
                 $roundnames[] = $rname;
-                $roundnames_set[$rname] = true;
+                $roundnames_set[strtolower($rname)] = $i;
             }
         }
-        $Values["tag_rounds"] = array(1, join(" ", $roundnames));
+        if ($roundname0 && !@$roundnames_set[strtolower($roundname0)]) {
+            $roundnames[] = $roundname0;
+            $roundnames_set[strtolower($roundname0)] = count($roundnames);
+        }
+        if ($roundname0)
+            array_unshift($Values["rev_round_changes"], array(0, $roundnames_set[strtolower($roundname0)]));
 
+        // round deadlines
+        foreach ($Conf->round_list() as $i => $rname) {
+            $suffix = $i ? "_$i" : "";
+            foreach (Conference::$review_deadlines as $k)
+                $Values[$k . $suffix] = null;
+        }
+        $rtransform = array();
+        if ($roundname0 && ($ri = $roundnames_set[strtolower($roundname0)])
+            && !isset($_POST["pcrev_soft_$ri"])) {
+            $rtransform[0] = "_$ri";
+            $rtransform[$ri] = false;
+        }
+        if ($round_deleted) {
+            $rtransform[$round_deleted] = "";
+            if (!isset($rtransform[0]))
+                $rtransform[0] = false;
+        }
+        for ($i = 0; $i < count($roundnames) + 1; ++$i)
+            if ((isset($rtransform[$i])
+                 || ($i ? $roundnames[$i - 1] !== ";" : !isset($_POST["deleteround_0"])))
+                && @$rtransform[$i] !== false) {
+                $isuffix = $i ? "_$i" : "";
+                if (($osuffix = @$rtransform[$i]) === null)
+                    $osuffix = $isuffix;
+                $ndeadlines = 0;
+                foreach (Conference::$review_deadlines as $k) {
+                    $v = parseValue($k . $isuffix, setting_info($k));
+                    $Values[$k . $osuffix] = $v <= 0 ? null : $v;
+                    $ndeadlines += $v > 0;
+                }
+                if ($ndeadlines == 0 && $osuffix)
+                    $Values["pcrev_soft$osuffix"] = 0;
+                foreach (array("pcrev_", "extrev_") as $k) {
+                    list($soft, $hard) = array("{$k}soft$osuffix", "{$k}hard$osuffix");
+                    if (!@$Values[$soft] && @$Values[$hard])
+                        $Values[$soft] = $Values[$hard];
+                    else if (@$Values[$hard] && @$Values[$soft] > $Values[$hard]) {
+                        $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
+                        $Error[] = setting_info("{$k}soft", "name") . $desc . ": Must come before " . setting_info("{$k}hard", "name") . ".";
+                        $Highlight[$soft] = $Highlight[$hard] = true;
+                    }
+                }
+            }
+
+        // round list (save after deadlines processing)
+        while (count($roundnames) && $roundnames[count($roundnames) - 1] === ";")
+            array_pop($roundnames);
+        if (count($roundnames))
+            $Values["tag_rounds"] = array(1, join(" ", $roundnames));
+        else
+            $Values["tag_rounds"] = null;
+
+        // default round
         $t = trim($_POST["rev_roundtag"]);
         $Values["rev_roundtag"] = null;
-        if ($t === "" || strtolower($t) === "(none)" || $t === "#0")
+        if ($t === "" || strtolower($t) === "(none)" || strtolower($t) === "(no name)")
             /* do nothing */;
-        else if (preg_match('/^#[1-9][0-9]*$/', $t)) {
+        else if ($t === "#0") {
+            if ($roundname0)
+                $Values["rev_roundtag"] = array(1, $roundname0);
+        } else if (preg_match('/^#[1-9][0-9]*$/', $t)) {
             $rname = @$roundnames[substr($t, 1) - 1];
             if ($rname && $rname !== ";")
                 $Values["rev_roundtag"] = array(1, $rname);
@@ -844,8 +916,9 @@ function accountValue($name, $info) {
             || ((@$info->type === "cdate" || @$info->type === "checkbox")
                 && truthy(@$_POST["has_$xname"]));
 
-    if ($has_value && (@$info->disabled || !@$info->type || $info->type === "none"))
-        /* ignore changes to disabled settings */;
+    if ($has_value && (@$info->disabled || @$info->novalue
+                       || !@$info->type || $info->type === "none"))
+        /* ignore changes to disabled/novalue settings */;
     else if ($has_value && $info->type === "special")
         doSpecial($name, false);
     else if ($has_value) {
@@ -891,23 +964,13 @@ if (isset($_REQUEST["update"]) && check_post()) {
         accountValue($name, $info);
 
     // check date relationships
-    foreach (array("soft", "hard") as $k)
-        if (isset($Values["pcrev_$k"]) && isset($Values["extrev_$k"])
-            && $Values["pcrev_$k"] == $Values["extrev_$k"])
-            $Values["extrev_$k"] = null;
-    foreach (array("sub_reg" => "sub_sub", "pcrev_soft" => "pcrev_hard",
-                   "extrev_soft" => "extrev_hard", "final_soft" => "final_done")
+    foreach (array("sub_reg" => "sub_sub", "final_soft" => "final_done")
              as $first => $second)
-        if (!isset($Values[$first]) && isset($Values[$second]))
+        if (!@$Values[$first] && @$Values[$second])
             $Values[$first] = $Values[$second];
-        else if (isset($Values[$first]) && isset($Values[$second])) {
-            if ($Values[$second] && !$Values[$first])
-                $Values[$first] = $Values[$second];
-            else if ($Values[$second] && $Values[$first] > $Values[$second]) {
-                $Error[] = unparse_setting_error($SettingInfo->$first, "Must come before " . setting_info($second, "name") . ".");
-                $Highlight[$first] = true;
-                $Highlight[$second] = true;
-            }
+        else if (@$Values[$second] && @$Values[$first] > $Values[$second]) {
+            $Error[] = unparse_setting_error($SettingInfo->$first, "Must come before " . setting_info($second, "name") . ".");
+            $Highlight[$first] = $Highlight[$second] = true;
         }
     if (array_key_exists("sub_sub", $Values))
         $Values["sub_update"] = $Values["sub_sub"];
@@ -1016,8 +1079,9 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Conf->load_settings();
 
         // remove references to deleted rounds
-        if (array_key_exists("newly_deleted_rounds", $Values))
-            $Conf->qe("update PaperReview set reviewRound=0 where reviewRound" . sql_in_numeric_set($Values["newly_deleted_rounds"]));
+        if (array_key_exists("rev_round_changes", $Values))
+            foreach ($Values["rev_round_changes"] as $x)
+                $Conf->qe("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
 
         // contactdb may need to hear about changes to shortName
         if (array_key_exists("opt.shortName", $Values)
@@ -1059,7 +1123,7 @@ function setting_js($name, $extra = array()) {
     foreach ($extra as $k => $v)
         $x[$k] = $v;
     if (@$Highlight[$name])
-        $x["class"] = trim("setting_error " + (@$x["class"] ? : ""));
+        $x["class"] = trim("setting_error " . (@$x["class"] ? : ""));
     return $x;
 }
 
@@ -1100,7 +1164,7 @@ function setting_data($name, $defval = "", $killval = "") {
 
 function opt_data($name, $defval = "", $killval = "") {
     global $Error, $Opt;
-    if (count($Error) > 0)
+    if (count($Error))
         $val = defval($_POST, "opt.$name", $defval);
     else
         $val = defval($Opt, $name, $defval);
@@ -1165,14 +1229,24 @@ function doEntry($name, $v, $size = 30, $temptext = "") {
     echo render_entry($name, $v, $size, $temptext);
 }
 
-function date_value($name, $othername = array(), $temptext = "N/A") {
+function date_value($name, $othername = null, $temptext = "N/A") {
     global $Conf, $Error;
     $x = setting($name);
-    if ($x !== null && count($Error) != 0)
+    if ($x !== null && count($Error))
         return $x;
-    foreach (is_array($othername) ? $othername : array($othername) as $on)
-        if (setting($on) == $x)
-            return $temptext;
+    if ($othername && setting($othername) == $x)
+        return $temptext;
+    return $x <= 0 ? $temptext : $Conf->parseableTime($x, true);
+}
+
+function deadline_value($name, $othername = null, $temptext = "N/A") {
+    global $Conf, $Error;
+    if (count($Error) && isset($_POST[$name]))
+        return $_POST[$name];
+    $dl = $Conf->deadlines();
+    $x = @$dl[$name];
+    if ($othername && @$dl[$othername] == $x)
+        return $temptext;
     return $x <= 0 ? $temptext : $Conf->parseableTime($x, true);
 }
 
@@ -1576,24 +1650,48 @@ function doOptGroup() {
 }
 
 // Reviews
-function echo_round($rnum, $nameval, $review_count) {
+function echo_round($rnum, $nameval, $review_count, $deletable) {
     global $Conf, $Error;
     $rname = "roundname_$rnum";
     if (count($Error) && $rnum !== '$')
         $nameval = (string) @$_POST[$rname];
-    echo '<tr hotroundnum="', $rnum, '"><td>', setting_label($rname, "Round"), ' &nbsp;</td>',
-        '<td class="pad">', render_entry($rname, $nameval, 12), '</td>';
-    echo '<td class="pad">';
+
+    echo '<div class="mg" hotroundnum="', $rnum, '"><div>',
+        setting_label($rname, "Round"), ' &nbsp;',
+        render_entry($rname, $nameval, 12, "(no name)");
+    echo '<div class="inb" style="min-width:7em;margin-left:2em">';
     if ($rnum !== '$' && $review_count)
-        echo '<a href="', hoturl("search", "q=" . urlencode("round:" . $Conf->round_name($rnum, false))), '">(', plural($review_count, "review"), ')</a>';
-    echo '</td>';
-    if ($rnum !== '$') {
-        echo '<td>',
+        echo '<a href="', hoturl("search", "q=" . urlencode("round:" . ($rnum ? $Conf->round_name($rnum, false) : "none"))), '">(', plural($review_count, "review"), ')</a>';
+    echo '</div>';
+    if ($deletable)
+        echo '<div class="inb" style="padding-left:2em">',
             Ht::hidden("deleteround_$rnum", ""),
             Ht::js_button("Delete round", "review_round_settings.kill(this)"),
-            '</td>';
-    }
-    echo '</tr>';
+            '</div>';
+    echo '</div>';
+
+    // deadlines
+    $entrysuf = $rnum ? "_$rnum" : "";
+    if ($rnum === '$' && count($Conf->round_list()))
+        $dlsuf = "_" . (count($Conf->round_list()) - 1);
+    else if ($rnum !== '$' && $rnum)
+        $dlsuf = "_" . $rnum;
+    else
+        $dlsuf = "";
+    echo '<table style="margin-left:3em">';
+    echo '<tr><td>', setting_label("pcrev_soft$entrysuf", "PC deadline"), ' &nbsp;</td>',
+        '<td class="lentry" style="padding-right:3em">',
+        render_entry("pcrev_soft$entrysuf", deadline_value("pcrev_soft$dlsuf"), 28, "N/A"),
+        '</td><td class="lentry">', setting_label("pcrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
+        render_entry("pcrev_hard$entrysuf", deadline_value("pcrev_hard$dlsuf"), 28, "N/A"),
+        '</td></tr>';
+    echo '<tr><td>', setting_label("extrev_soft$entrysuf", "External deadline"), ' &nbsp;</td>',
+        '<td class="lentry" style="padding-right:3em">',
+        render_entry("extrev_soft$entrysuf", deadline_value("extrev_soft$dlsuf", "pcrev_soft$dlsuf", "same as PC"), 28, "same as PC"),
+        '</td><td class="lentry">', setting_label("extrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
+        render_entry("extrev_hard$entrysuf", deadline_value("extrev_hard$dlsuf", "pcrev_hard$dlsuf", "same as PC"), 28, "same as PC"),
+        '</td></tr>';
+    echo '</table></div>', "\n";
 }
 
 function doRevGroup() {
@@ -1616,42 +1714,21 @@ function doRevGroup() {
 
 
     // Deadlines
-    echo "<h3 class=\"settings g\">Deadlines</h3>\n";
+    echo "<h3 id=\"rounds\" class=\"settings g\">Deadlines &amp; rounds</h3>\n";
     $date_text = $DateExplanation;
     $DateExplanation = "";
     echo '<p class="hint">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.<br />', $date_text, '</p>';
 
-    echo "<table>\n";
-    echo '<tr><td><label for="pcrev_soft"><strong>PC</strong> deadline</label> &nbsp;</td>',
-        '<td class="lentry" style="padding-right:3em">',
-        render_entry("pcrev_soft", date_value("pcrev_soft", "pcrev_hard"), 30, "N/A"),
-        '</td><td class="lentry">Hard deadline &nbsp;',
-        render_entry("pcrev_hard", date_value("pcrev_hard"), 30, "N/A"),
-        '</td></tr>';
-    echo '<tr><td><strong>External</strong> deadline &nbsp;</td>',
-        '<td class="lentry" style="padding-right:3em">',
-        render_entry("extrev_soft", date_value("extrev_soft", "pcrev_soft", "same as PC"), 30, "same as PC"),
-        '</td><td class="lentry">Hard deadline &nbsp;',
-        render_entry("extrev_hard", date_value("extrev_hard", "pcrev_hard", "same as PC"), 30, "same as PC"),
-        '</td></tr>';
-    echo "</table>\n";
-
-
-    // Rounds
-    echo "<h3 id=\"rounds\" class=\"settings g\">Review rounds</h3>\n";
     $rounds = $Conf->round_list();
     if (count($Error) > 0) {
         for ($i = 1; isset($_POST["roundname_$i"]); ++$i)
             $rounds[$i] = @$_POST["deleteround_$i"] ? ";" : trim(@$_POST["roundname_$i"]);
     }
+
     // prepare round selector
-    $selector = array("#0" => "(none)");
-    for ($i = 1; $i < count($rounds); ++$i)
-        if ($rounds[$i] !== ";")
-            $selector["#$i"] = (object) array("label" => $rounds[$i], "id" => "rev_roundtag_$i");
     $round_value = trim(setting_data("rev_roundtag"));
-    $current_round_value = $Conf->setting_data("rev_roundtag");
-    if ($round_value === "" || strtolower($round_value) === "(none)" || $round_value === "#0")
+    $current_round_value = $Conf->setting_data("rev_roundtag", "");
+    if ($round_value === "" || strtolower($round_value) === "(none)" || strtolower($round_value) === "(no name)" || $round_value === "#0")
         $round_value = "#0";
     else if (($round_number = $Conf->round_number($round_value, false))
              || ($round_number = $Conf->round_number($current_round_value, false)))
@@ -1659,22 +1736,41 @@ function doRevGroup() {
     else
         $round_value = $selector[$current_round_value] = $current_round_value;
 
+    $round_map = edb_map(edb_ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
+
+    $dl = $Conf->deadlines();
+    $print_round0 = true;
+    if ($round_value !== "#0" && $round_value !== ""
+        && $current_round_value !== ""
+        && (!count($Error) || isset($_POST["roundname_0"]))
+        && !$dl["pcrev_soft"] && !$dl["pcrev_hard"] && !$dl["extrev_soft"] && !$dl["extrev_hard"])
+        $print_round0 = false;
+
+    $selector = array();
+    if ($print_round0)
+        $selector["#0"] = "(no name)";
+    for ($i = 1; $i < count($rounds); ++$i)
+        if ($rounds[$i] !== ";")
+            $selector["#$i"] = (object) array("label" => $rounds[$i], "id" => "rev_roundtag_$i");
+
     echo '<div id="round_container"', (count($selector) == 1 ? ' style="display:none"' : ''), '>',
         '<table id="rev_roundtag_table"><tr><td class="lxcaption">',
         setting_label("rev_roundtag", "Current round"),
         '</td><td>',
         Ht::select("rev_roundtag", $selector, $round_value, setting_js("rev_roundtag")),
         '</td></tr></table>',
-        '<div class="hint">This round is used for new assignments.</div><div class="g"></div>';
+        '<div class="hint">This round is used for new assignments.</div><div class="g"></div></div>';
 
-    echo '<table><tbody id="roundtable">';
-    $round_map = edb_map(edb_ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
-    for ($i = 1; $i < count($rounds); ++$i)
-        if ($rounds[$i] !== ";")
-            echo_round($i, $rounds[$i], @+$round_map[$i]);
-    echo '</tbody></table><table style="display:none"><tbody id="newround">';
-    echo_round('$', "", "");
-    echo '</tbody></table><div class="g"></div></div>';
+    echo '<div id="roundtable">';
+    $num_printed = 0;
+    for ($i = 0; $i < count($rounds); ++$i)
+        if ($i ? $rounds[$i] !== ";" : $print_round0) {
+            echo_round($i, $i ? $rounds[$i] : "", @+$round_map[$i], count($selector) !== 1);
+            ++$num_printed;
+        }
+    echo '</div><div id="newround" style="display:none">';
+    echo_round('$', "", "", true);
+    echo '</div><div class="g"></div>';
     echo Ht::js_button("Add round", "review_round_settings.add();hiliter(this)"),
         ' &nbsp; <span class="hint"><a href="', hoturl("help", "t=revround"), '">What is this?</a></span>',
         Ht::hidden("oldroundcount", count($Conf->round_list())),

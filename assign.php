@@ -139,18 +139,6 @@ function pcAssignments() {
         if (isset($pcm[$_REQUEST["reviewer"]]))
             $where = "where PCMember.contactId='" . $_REQUEST["reviewer"] . "'";
     }
-    if (isset($_REQUEST["rev_roundtag"])) {
-        if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
-            $rev_roundtag = "";
-        if ($rev_roundtag && !preg_match('/^[a-zA-Z0-9]+$/', $rev_roundtag)) {
-            $Conf->errorMsg("The review round must contain only letters and numbers.");
-            $rev_roundtag = "";
-        }
-        if ($rev_roundtag)
-            $Conf->save_setting("rev_roundtag", 1, $rev_roundtag);
-        else
-            $Conf->save_setting("rev_roundtag", null);
-    }
 
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write, Settings write");
 
@@ -503,7 +491,15 @@ if ($Me->canAdminister($prow)) {
         "<div class='paphint'>Review preferences display as &ldquo;P#&rdquo;";
     if ($Conf->has_topics())
         echo ", topic scores as &ldquo;T#&rdquo;";
-    echo ".</div><div class='papv' style='padding-left:0'>";
+    echo ".";
+
+    $rev_roundtag = $Conf->setting_data("rev_roundtag");
+    if (count($Conf->round_list()) > 1 || $rev_roundtag)
+        echo "<br />", Ht::hidden("rev_roundtag", $rev_roundtag),
+            'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(no name)"),
+            ' &nbsp;<span class="barsep">|</span>&nbsp; <a href="', hoturl("settings", "group=reviews#rounds"), '">Configure rounds</a>';
+
+    echo "</div><div class='papv' style='padding-left:0'>";
 
     $colorizer = new Tagger;
     $pctexts = array();

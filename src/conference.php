@@ -38,6 +38,8 @@ class Conference {
     const PCSEEREV_UNLESSINCOMPLETE = 3;
     const PCSEEREV_UNLESSANYINCOMPLETE = 4;
 
+    static public $review_deadlines = array("pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard");
+
     function __construct($dsn) {
         global $Opt;
         // unpack dsn, connect to database, load current settings
@@ -219,12 +221,6 @@ class Conference {
         if (@$this->settings["pc_seeallrev"] == 2) {
             $this->settings["pc_seeblindrev"] = 1;
             $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
-        }
-        if (!@$this->settings["extrev_soft"] && !@$this->settings["extrev_hard"]) {
-            if (@$this->settings["pcrev_soft"])
-                $this->settings["extrev_soft"] = $this->settings["pcrev_soft"];
-            if (@$this->settings["pcrev_hard"])
-                $this->settings["extrev_hard"] = $this->settings["pcrev_hard"];
         }
         $this->rounds = array("");
         if (isset($this->settingTexts["tag_rounds"])) {
@@ -473,16 +469,18 @@ class Conference {
     }
 
     function round_number($name, $add) {
-        $r = 0;
-        if ($name
-            && !($r = array_search($name, $this->rounds))
-            && $add) {
+        if (!$name)
+            return 0;
+        for ($i = 1; $i != count($this->rounds); ++$i)
+            if (!strcasecmp($this->rounds[$i], $name))
+                return $i;
+        if ($add) {
             $rtext = $this->setting_data("tag_rounds", "");
             $rtext = ($rtext ? "$rtext$name " : " $name ");
             $this->save_setting("tag_rounds", 1, $rtext);
-            $r = array_search($name, $this->rounds);
-        }
-        return $r ? $r : 0;
+            return $this->round_number($name, false);
+        } else
+            return 0;
     }
 
     function session($name, $defval = null) {
@@ -712,23 +710,34 @@ class Conference {
                            "final_grace") as $k)
                 $dl[$k] = @+$this->settings[$k];
             // per-round review deadlines
-            for ($i = 0; $i < count($this->rounds); ++$i) {
-                $suffix = $i ? ".$i" : "";
-                $ka = array("pcrev_soft$suffix", "pcrev_hard$suffix",
-                            "extrev_soft$suffix", "extrev_hard$suffix");
-                if ($i && !@$this->settings[$ka[0]] && !@$this->settings[$ka[1]]
-                    && !@$this->settings[$ka[2]] && !@$this->settings[$ka[3]])
-                    continue;
-                foreach ($ka as $k)
-                    $dl[$k] = @+$this->settings[$k];
-                if (!$dl[$ka[2]] && !$dl[$ka[3]]) {
-                    $dl[$ka[2]] = $dl[$ka[0]]; // external defaults to PC
-                    $dl[$ka[3]] = $dl[$ka[1]];
+            foreach ($this->rounds as $i => $rname)
+                if (!$i || $rname !== ";") {
+                    $suffix = $i ? "_$i" : "";
+                    $ndeadlines = 0;
+                    foreach (self::$review_deadlines as $k) {
+                        $dl[$k . $suffix] = @+$this->settings[$k . $suffix];
+                        $ndeadlines += isset($this->settings[$k . $suffix]);
+                    }
+                    if ($i && $ndeadlines == 0)
+                        foreach (self::$review_deadlines as $k)
+                            $dl[$k . $suffix] = $dl[$k];
+                    if (!$i && !$dl["extrev_soft"] && !$dl["extrev_hard"]) {
+                        $dl["extrev_soft"] = $dl["pcrev_soft"];
+                        $dl["extrev_hard"] = $dl["pcrev_hard"];
+                    }
                 }
-            }
             $this->deadline_cache = $dl;
         }
         return $this->deadline_cache;
+    }
+
+    function round_deadlines($roundnum) {
+        $dl = $this->deadlines();
+        $suffix = isset($dl["pcrev_soft_$roundnum"]) ? "_$roundnum" : "";
+        $dlx = array();
+        foreach (self::$review_deadlines as $k)
+            $dlx[$k] = $dl[$k . $suffix];
+        return $dlx;
     }
 
     function printableInterval($amt) {
@@ -931,8 +940,8 @@ class Conference {
             $round = $this->current_round(false);
         else if (is_object($round))
             $round = $round->reviewRound ? : 0;
-        if ($round && ($dl = $this->deadlines()) && isset($dl["$dn.$round"]))
-            $dn .= ".$round";
+        if ($round && ($dl = $this->deadlines()) && isset($dl["{$dn}_$round"]))
+            $dn .= "_$round";
         return $dn;
     }
     function missed_review_deadline($round, $isPC, $hard) {
@@ -2004,7 +2013,7 @@ class Conference {
         $this->scriptStuff .= ";hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . (@$Opt["time24hour"] ? 1 : 0) . ")";
 
         if ($Me) {
-            $dl = $Me->deadlines();
+            $dl = $Me->my_deadlines();
             $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($dl) . ")";
         } else
             $dl = array();
