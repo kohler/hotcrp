@@ -2356,7 +2356,7 @@ class Contact {
 
         if ($q[0] == "i")
             $Conf->ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
-        if ($rrow && @$rrow["reviewToken"] && $type <= 0)
+        if ($rrow && @$rrow->reviewToken && $type <= 0)
             $Conf->settings["rev_tokens"] = -1;
         if ($q[0] == "i" && $type >= REVIEW_PC && $Conf->setting("pcrev_assigntime", 0) < $Now)
             $Conf->save_setting("pcrev_assigntime", $Now);
