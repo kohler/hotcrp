@@ -455,7 +455,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
                 echo ' <span class="deadline"><strong class="overdue">The <a href="', hoturl("deadlines"), '">deadline</a> for submitting ', $rname, "reviews has passed.</strong></span><br />\n";
         }
     } else if ($Me->isPC && $Me->can_review_any()) {
-        $d = $Conf->printableTimeSetting($Conf->reviewDeadline(null, $Me->isPC, false), "span");
+        $d = $Conf->printableTimeSetting($Conf->review_deadline(null, $Me->isPC, false), "span");
         if ($d != "N/A")
             echo " <span class='deadline'>The review deadline is $d.</span><br />\n";
     }
