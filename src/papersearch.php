@@ -3,55 +3,6 @@
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-global $searchKeywords;
-$searchKeywords = array("ti" => "ti", "title" => "ti",
-        "ab" => "ab", "abstract" => "ab",
-        "au" => "au", "author" => "au",
-        "co" => "co", "collab" => "co", "collaborators" => "co",
-        "re" => "re", "rev" => "re", "review" => "re",
-        "sre" => "cre", "srev" => "cre", "sreview" => "cre",
-        "cre" => "cre", "crev" => "cre", "creview" => "cre",
-        "subre" => "cre", "subrev" => "cre", "subreview" => "cre",
-        "ire" => "ire", "irev" => "ire", "ireview" => "ire",
-        "pri" => "pri", "primary" => "pri", "prire" => "pri", "prirev" => "pri",
-        "cpri" => "cpri", "cprimary" => "cpri",
-        "ipri" => "ipri", "iprimary" => "ipri",
-        "sec" => "sec", "secondary" => "sec", "secre" => "sec", "secrev" => "sec",
-        "csec" => "csec", "csecondary" => "csec",
-        "isec" => "isec", "isecondary" => "isec",
-        "ext" => "ext", "external" => "ext", "extre" => "ext", "extrev" => "ext",
-        "cext" => "cext", "cexternal" => "cext",
-        "iext" => "iext", "iexternal" => "iext",
-        "cmt" => "cmt", "comment" => "cmt",
-        "aucmt" => "aucmt", "aucomment" => "aucmt",
-        "resp" => "response", "response" => "response",
-        "anycmt" => "anycmt", "anycomment" => "anycmt",
-        "tag" => "tag",
-        "notag" => "notag",
-        "ord" => "order", "order" => "order",
-        "rord" => "rorder", "rorder" => "rorder",
-        "revord" => "rorder", "revorder" => "rorder",
-        "decision" => "decision", "dec" => "decision",
-        "topic" => "topic",
-        "option" => "option", "opt" => "option",
-        "manager" => "manager", "admin" => "manager", "administrator" => "manager",
-        "lead" => "lead",
-        "shepherd" => "shepherd", "shep" => "shepherd",
-        "conflict" => "conflict", "conf" => "conflict",
-        "reconflict" => "reconflict", "reconf" => "reconflict",
-        "pcconflict" => "pcconflict", "pcconf" => "pcconflict",
-        "status" => "status", "has" => "has",
-        "rating" => "rate", "rate" => "rate",
-        "revpref" => "revpref", "pref" => "revpref",
-        "repref" => "revpref",
-        "ss" => "ss", "search" => "ss",
-        "HEADING" => "HEADING", "heading" => "HEADING",
-        "show" => "show", "VIEW" => "show", "view" => "show",
-        "hide" => "hide", "edit" => "edit",
-        "sort" => "sort", "showsort" => "showsort",
-        "sortshow" => "showsort", "editsort" => "editsort",
-        "sortedit" => "editsort");
-
 class SearchOperator {
     var $op;
     var $unary;
@@ -75,9 +26,6 @@ $searchOperators = array("(" => new SearchOperator("(", true, null),
                          "XOR" => new SearchOperator("or", false, 2),
                          "THEN" => new SearchOperator("then", false, 1),
                          ")" => null);
-
-global $searchMatchNumber;
-$searchMatchNumber = 0;
 
 class SearchTerm {
     var $type;
@@ -328,6 +276,56 @@ class PaperSearch {
     private $_matchTable = null;
 
     static private $_sort_keywords = null;
+    static private $_table_number = 0;
+
+    static private $_keywords = array("ti" => "ti", "title" => "ti",
+        "ab" => "ab", "abstract" => "ab",
+        "au" => "au", "author" => "au",
+        "co" => "co", "collab" => "co", "collaborators" => "co",
+        "re" => "re", "rev" => "re", "review" => "re",
+        "sre" => "cre", "srev" => "cre", "sreview" => "cre",
+        "cre" => "cre", "crev" => "cre", "creview" => "cre",
+        "subre" => "cre", "subrev" => "cre", "subreview" => "cre",
+        "ire" => "ire", "irev" => "ire", "ireview" => "ire",
+        "pri" => "pri", "primary" => "pri", "prire" => "pri", "prirev" => "pri",
+        "cpri" => "cpri", "cprimary" => "cpri",
+        "ipri" => "ipri", "iprimary" => "ipri",
+        "sec" => "sec", "secondary" => "sec", "secre" => "sec", "secrev" => "sec",
+        "csec" => "csec", "csecondary" => "csec",
+        "isec" => "isec", "isecondary" => "isec",
+        "ext" => "ext", "external" => "ext", "extre" => "ext", "extrev" => "ext",
+        "cext" => "cext", "cexternal" => "cext",
+        "iext" => "iext", "iexternal" => "iext",
+        "cmt" => "cmt", "comment" => "cmt",
+        "aucmt" => "aucmt", "aucomment" => "aucmt",
+        "resp" => "response", "response" => "response",
+        "anycmt" => "anycmt", "anycomment" => "anycmt",
+        "tag" => "tag",
+        "notag" => "notag",
+        "ord" => "order", "order" => "order",
+        "rord" => "rorder", "rorder" => "rorder",
+        "revord" => "rorder", "revorder" => "rorder",
+        "decision" => "decision", "dec" => "decision",
+        "topic" => "topic",
+        "option" => "option", "opt" => "option",
+        "manager" => "manager", "admin" => "manager", "administrator" => "manager",
+        "lead" => "lead",
+        "shepherd" => "shepherd", "shep" => "shepherd",
+        "conflict" => "conflict", "conf" => "conflict",
+        "reconflict" => "reconflict", "reconf" => "reconflict",
+        "pcconflict" => "pcconflict", "pcconf" => "pcconflict",
+        "status" => "status", "has" => "has",
+        "rating" => "rate", "rate" => "rate",
+        "revpref" => "revpref", "pref" => "revpref",
+        "repref" => "revpref",
+        "ss" => "ss", "search" => "ss",
+        "HEADING" => "HEADING", "heading" => "HEADING",
+        "show" => "show", "VIEW" => "show", "view" => "show",
+        "hide" => "hide", "edit" => "edit",
+        "sort" => "sort", "showsort" => "showsort",
+        "sortshow" => "showsort", "editsort" => "editsort",
+        "sortedit" => "editsort");
+
 
     function __construct($me, $opt) {
         global $Conf;
@@ -1035,8 +1033,7 @@ class PaperSearch {
     }
 
     private function _searchHas($word, &$qt, $quoted) {
-        global $searchKeywords;
-        $wordkw = @$searchKeywords[$word] ? : "";
+        $wordkw = @self::$_keywords[$word] ? : "";
         if (strcasecmp($word, "paper") == 0 || strcasecmp($word, "submission") == 0)
             $qt[] = new SearchTerm("pf", 0, array("paperStorageId", "!=0"));
         else if (strcasecmp($word, "final") == 0 || strcasecmp($word, "finalcopy") == 0)
@@ -1184,7 +1181,7 @@ class PaperSearch {
     }
 
     function _searchQueryWord($word, $report_error) {
-        global $searchKeywords, $Conf;
+        global $Conf;
 
         // check for paper number or "#TAG"
         if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $word, $m)) {
@@ -1210,8 +1207,8 @@ class PaperSearch {
         $keyword = null;
         if (($colon = strpos($word, ':')) !== false) {
             $x = substr($word, 0, $colon);
-            if (isset($searchKeywords[$x])) {
-                $keyword = $searchKeywords[$x];
+            if (isset(self::$_keywords[$x])) {
+                $keyword = self::$_keywords[$x];
                 $word = substr($word, $colon + 1);
             } else if (strpos($x, '"') === false) {
                 $keyword = $x;
@@ -1382,7 +1379,7 @@ class PaperSearch {
         }
 
         // Finally, look for a review field.
-        if ($keyword && !isset($searchKeywords[$keyword]) && count($qt) == 0) {
+        if ($keyword && !isset(self::$_keywords[$keyword]) && count($qt) == 0) {
             $rf = reviewForm();
             if (($field = $rf->unabbreviateField($keyword)))
                 $this->_searchReviews($word, $rf, $field, $qt, $quoted);
@@ -1400,7 +1397,6 @@ class PaperSearch {
     }
 
     static function _searchPopWord(&$str) {
-        global $searchKeywords;
         $wordre = '/\A"[^"]*"?|\A[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?[^\s()]*|\A[^"\s()]+/s';
 
         preg_match($wordre, $str, $m);
@@ -1417,7 +1413,7 @@ class PaperSearch {
         // allow a space after a keyword
         if (($colon = strpos($word, ":")) !== false) {
             $x = substr($word, 0, $colon);
-            if ((isset($searchKeywords[$x]) || strpos($x, '"') === false)
+            if ((isset(self::$_keywords[$x]) || strpos($x, '"') === false)
                 && strlen($word) <= $colon + 1) {
                 if (preg_match($wordre, $str, $m)) {
                     $word .= $m[0];
@@ -1430,7 +1426,7 @@ class PaperSearch {
         $keyword = ($colon !== false ? substr($word, $colon) : "");
         if (substr($str, 0, 1) === "(" && $colon !== false
             && ($keyword = substr($word, 0, $colon)) !== ""
-            && ($keyword = @$searchKeywords[$keyword])
+            && ($keyword = @self::$_keywords[$keyword])
             && substr($word, $colon + 1, 1) !== "\""
             && ($keyword === "show" || $keyword === "showsort"
                 || $keyword === "sort")) {
@@ -1474,6 +1470,7 @@ class PaperSearch {
         $parens = 0;
         $curqe = null;
         $xstr = $str;
+        $headstr = "";
 
         while ($str !== "") {
             list($opstr, $nextstr) = self::_searchPopKeyword($str);
@@ -1509,6 +1506,12 @@ class PaperSearch {
                     }
                     // The heart of the matter.
                     $curqe = $this->_searchQueryWord($word, true);
+                    // Don't include 'show:' in headings.
+                    if (($colon = strpos($word, ":")) !== false
+                        && @self::$_keywords[substr($word, 0, $colon)] === "show") {
+                        $headstr .= substr($xstr, 0, -strlen($str));
+                        $xstr = $nextstr;
+                    }
                 }
             } else if ($opstr == ")") {
                 while (count($stack)
@@ -1533,8 +1536,9 @@ class PaperSearch {
                        && $stack[count($stack) - 1]->op->precedence > $op->precedence)
                     $curqe = self::_searchPopStack($curqe, $stack);
                 if ($op->op == "then" && $curqe) {
-                    $curqe->set_float("substr", trim(substr($xstr, 0, -strlen($str))));
+                    $curqe->set_float("substr", trim($headstr . substr($xstr, 0, -strlen($str))));
                     $xstr = $nextstr;
+                    $headstr = "";
                 }
                 $top = count($stack) ? $stack[count($stack) - 1] : null;
                 if ($top && !$op->unary && $top->op->op == $op->op) {
@@ -1553,7 +1557,7 @@ class PaperSearch {
         }
 
         if ($curqe)
-            $curqe->set_float("substr", trim($xstr));
+            $curqe->set_float("substr", trim($headstr . $xstr));
         while (count($stack))
             $curqe = self::_searchPopStack($curqe, $stack);
         return $curqe;
@@ -2419,12 +2423,12 @@ class PaperSearch {
     // BASIC QUERY FUNCTION
 
     function _search() {
-        global $Conf, $searchMatchNumber;
+        global $Conf;
         if ($this->_matchTable === false)
             return false;
         assert($this->_matchTable === null);
-        $this->_matchTable = "PaperMatches_" . $searchMatchNumber;
-        ++$searchMatchNumber;
+        $this->_matchTable = "PaperMatches_" . self::$_table_number;
+        ++self::$_table_number;
 
         if ($this->limitName == "x") {
             if (!$Conf->qe("create temporary table $this->_matchTable select Paper.paperId from Paper where false"))
