@@ -447,52 +447,51 @@ class ReviewForm {
             reviewToken, reviewAuthorNotified";
     }
 
-    function webFormRows($contact, $prow, $rrow, $useRequest = false) {
+    private function webFormRows($contact, $prow, $rrow, $useRequest = false) {
         global $ReviewFormError, $Conf;
-        $x = "";
         $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
         foreach ($this->forder as $field => $f) {
             if ($f->view_score <= $revViewScore)
                 continue;
+
             $fval = "";
             if ($useRequest && isset($_REQUEST[$field]))
                 $fval = $_REQUEST[$field];
             else if ($rrow)
                 $fval = $f->unparse_value($rrow->$field);
 
-            $n = $f->name_html;
-            $c = "<span class='revfn'>" . $n . "</span>";
-            if ($f->view_score < VIEWSCORE_REVIEWERONLY)
-                $c .= "<div class='revevis'>(secret)</div>";
-            else if ($f->view_score < VIEWSCORE_PC)
-                $c .= "<div class='revevis'>(shown only to chairs)</div>";
-            else if ($f->view_score < VIEWSCORE_AUTHOR)
-                $c .= "<div class='revevis'>(hidden from authors)</div>";
-
-            $x .= "<div class='revt";
+            echo '<div class="revt';
             if (isset($ReviewFormError[$field]))
-                $x .= " error";
-            $x .= "'>" . $c . '<hr class="c" /></div>';
+                echo " error";
+            echo '"><span class="revfn">', $f->name_html, '</span>';
+            if ($f->view_score < VIEWSCORE_REVIEWERONLY)
+                echo '<div class="revevis">(secret)</div>';
+            else if ($f->view_score < VIEWSCORE_PC)
+                echo '<div class="revevis">(shown only to chairs)</div>';
+            else if ($f->view_score < VIEWSCORE_AUTHOR)
+                echo '<div class="revevis">(hidden from authors)</div>';
+            echo '<hr class="c" /></div>';
+
             if ($f->description)
-                $x .= '<div class="revhint">' . $f->description . "</div>\n";
-            $x .= '<div class="revev">';
+                echo '<div class="revhint">', $f->description, "</div>";
+
+            echo '<div class="revev">';
             if ($f->has_options) {
-                $x .= "<select name='$field' onchange='hiliter(this)'>\n";
+                echo '<select name="', $field, '" onchange="hiliter(this)">';
                 if (!$f->parse_value($fval, true))
-                    $x .= "    <option value='0' selected='selected'>(Your choice here)</option>\n";
+                    echo '<option value="0" selected="selected">(Your choice here)</option>';
                 foreach ($f->options as $num => $what) {
-                    $x .= "    <option value='$num'";
+                    echo '<option value="', $num, '"';
                     if ($num == $fval)
-                        $x .= " selected='selected'";
-                    $x .= ">$num. " . htmlspecialchars($what) . "</option>\n";
+                        echo ' selected="selected"';
+                    echo ">$num. ", htmlspecialchars($what), "</option>";
                 }
-                $x .= "</select>";
+                echo "</select>";
             } else {
-                $x .= "<textarea name='$field' class='reviewtext' onchange='hiliter(this)' rows='" . $f->display_space . "' cols='60'>" . htmlspecialchars($fval) . "</textarea>";
+                echo '<textarea name="' . $field . '" class="reviewtext" onchange="hiliter(this)" rows="' . $f->display_space . '" cols="60">' . htmlspecialchars($fval) . '</textarea>';
             }
-            $x .= "</div>\n";
+            echo "</div>\n";
         }
-        return $x;
     }
 
     function tfError(&$tf, $isError, $text, $field = null) {
@@ -1427,7 +1426,8 @@ $blind\n";
         $admin = $Me->allowAdminister($prow);
 
         if ($editmode) {
-            echo Ht::form($reviewPostLink), '<div class="aahc">',
+            echo Ht::form($reviewPostLink, array("class" => "revcard")),
+                '<div class="aahc">',
                 Ht::hidden_default_submit("default", "");
             if ($rrow)
                 echo Ht::hidden("version", defval($rrow, "reviewEditVersion", 0) + 1);
@@ -1536,26 +1536,27 @@ $blind\n";
 
         // blind?
         if ($Conf->review_blindness() == Conference::BLIND_OPTIONAL) {
-            echo "<div class='revt'><span class='revfn'>",
+            echo '<div class="revt"><span class="revfn">',
                 Ht::checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))),
                 "&nbsp;", Ht::label("Anonymous review"),
                 "</span><hr class=\"c\" /></div>\n",
-                "<div class='revhint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won&rsquo;t know who wrote the review).</div>\n",
-                "<div class='g'></div>\n";
+                '<div class="revhint">', htmlspecialchars($Opt["shortName"]), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>\n",
+                '<div class="g"></div>', "\n";
         }
 
         // form body
-        echo $this->webFormRows($Me, $prow, $rrow, $useRequest);
+        $this->webFormRows($Me, $prow, $rrow, $useRequest);
 
         // review actions
         if ($Me->timeReview($prow, $rrow) || $admin) {
             $buttons = $this->_review_buttons($prow, $rrow, "bottom", $reviewPostLink);
-            echo Ht::actions($buttons, array("class" => "aab"));
+            echo Ht::actions($buttons, array("class" => "aab", "style" => "margin-bottom:0"));
             if ($rrow && $rrow->reviewSubmitted && !$admin)
-                echo "<div class='hint'>Only administrators can remove or unsubmit the review at this point.</div>";
+                echo '<div class="hint">Only administrators can remove or unsubmit the review at this point.</div>';
         }
 
         echo "</div></div></div></form>\n\n";
+        Ht::stash_script('hiliter_children("form.revcard")', "form_revcard");
     }
 
     function maxNumericScore($field) {

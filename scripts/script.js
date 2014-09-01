@@ -571,10 +571,8 @@ function hiliter(elt, off) {
         elt = elt.parentNode;
     if (!elt || !elt.tagName)
         highlightUpdate(null, off);
-    else if (off && elt.className)
-        elt.className = elt.className.replace(" alert", "");
     else if (elt.className)
-        elt.className = elt.className + " alert";
+        elt.className = elt.className.replace(" alert", "") + (off ? "" : " alert");
 }
 
 function hiliter_children(form) {
