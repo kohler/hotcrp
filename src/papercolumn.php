@@ -1365,7 +1365,7 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("tagval:", new TagPaperColumn(null, null, true));
     PaperColumn::register_factory("edittag:", new EditTagPaperColumn(null, null, false));
     PaperColumn::register_factory("edittagval:", new EditTagPaperColumn(null, null, true));
-    PaperColumn::register_factory("#", new TagPaperColumn(null, null, true));
+    PaperColumn::register_factory("#", new TagPaperColumn(null, null, false));
     PaperColumn::register_factory("edit#", new EditTagPaperColumn(null, null, true));
 
     $rf = reviewForm();
