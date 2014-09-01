@@ -305,10 +305,14 @@ function hoturl_defaults($options = array()) {
     global $_hoturl_defaults;
     foreach ($options as $k => $v)
         if ($v !== null)
-            $_hoturl_defaults[$k] = $v;
+            $_hoturl_defaults[$k] = urlencode($v);
         else
             unset($_hoturl_defaults[$k]);
-    return $_hoturl_defaults;
+    $ret = array();
+    if ($_hoturl_defaults)
+        foreach ($_hoturl_defaults as $k => $v)
+            $ret[$k] = urldecode($v);
+    return $ret;
 }
 
 function hoturl_site_relative($page, $options = null) {
