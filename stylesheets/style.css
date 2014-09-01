@@ -1427,7 +1427,9 @@ div.pl_revtype_round {
 }
 .pl_revstat,
 table.pltable th.pl_revstat,
-table.pltable th.pl_formula {
+table.pltable th.pl_formula,
+table.pltable th.pl_tag,
+table.pltable th.pl_tagval {
 	text-align: center;
 }
 .pl_sel,
