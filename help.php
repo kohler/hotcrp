@@ -35,15 +35,22 @@ else
 
 function _alternateRow($caption, $entry, $next = null) {
     global $rowidx;
+    if ($caption) {
+        if (!preg_match('/<a/', $caption)) {
+            $anchor = strtolower(preg_replace('/\W+/', "_", $caption));
+            $caption = '<a class="qq" name="' . $anchor . '" href="#' . $anchor
+                . '">' . $caption . '</a>';
+        }
+        echo '<tr><td class="sentry nowrap" colspan="2">',
+            '<h4 class="helppage">', $caption, '</h4></td></tr>', "\n";
+        $rowidx = null;
+    }
     $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
-    $anchor = strtolower(preg_replace('/\W/', "_", $caption));
-    echo "<tr class='k", ($rowidx % 2), "'>",
-        "<td class='srcaption nowrap'><a class='q' name='$anchor' href='#$anchor'>",
-        $caption, "</a></td>",
-        "<td class='sentry'", ($next === null ? " colspan='2'>" : ">"),
+    echo '<tr class="k', ($rowidx % 2), '">',
+        '<td class="sentry"', ($next === null ? ' colspan="2">' : ">"),
         $entry, "</td>";
     if ($next !== null)
-        echo "<td class='sentry'>", $next, "</td>";
+        echo '<td class="sentry">', $next, "</td>";
     echo "</tr>\n";
 }
 
@@ -77,7 +84,7 @@ function _searchForm($forwhat, $other = null, $size = 20) {
     if ($other && preg_match_all('/(\w+)=([^&]*)/', $other, $matches, PREG_SET_ORDER))
         foreach ($matches as $m)
             $text .= Ht::hidden($m[1], urldecode($m[2]));
-    return Ht::form_div(hoturl("search"), array("method" => "get"))
+    return Ht::form_div(hoturl("search"), array("method" => "get", "divclass" => "nowrap"))
         . "<input type='text' name='q' value=\""
         . htmlspecialchars($forwhat) . "\" size='$size' /> &nbsp;"
         . Ht::submit("go", "Search")
@@ -187,12 +194,7 @@ to the search results.  On many pages, you can press “<code>j</code>” or
 }
 
 function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
-    global $rowidx;
-    $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
-    echo "<tr class='k", ($rowidx % 2), "'>";
-    echo "<td class='srcaption nowrap'>", $caption, "</td>";
-    echo "<td class='sentry nowrap'>", _searchForm($search, $other, 36), "</td>";
-    echo "<td class='sentry'>", $explanation, "<span class='sep'></span></td></tr>\n";
+    _alternateRow($caption, _searchForm($search, $other, 36), $explanation);
 }
 
 function meaningful_round_name() {
@@ -211,9 +213,9 @@ function searchQuickref() {
     if ($Conf->subBlindNever())
         $aunote = "";
     else if (!$Conf->subBlindAlways())
-        $aunote = "<br /><span class='hint'>Search only examines visible fields.  For example, PC member searches do not examine anonymous authors.</span>";
+        $aunote = "<br /><span class='hint'>Search uses fields visible to the searcher. For example, PC member searches do not examine anonymous authors.</span>";
     else
-        $aunote = "<br /><span class='hint'>Search only examines visible fields.  For example, PC member searches do not examine authors.</span>";
+        $aunote = "<br /><span class='hint'>Search uses fields visible to the searcher. For example, PC member searches do not examine authors.</span>";
 
     // does a reviewer tag exist?
     $retag = "";
@@ -225,7 +227,7 @@ function searchQuickref() {
     }
 
     echo '<h2 class="helppage">Search keywords</h2>', "\n";
-    echo "<table>\n";
+    echo "<table class=\"helppage\">\n";
     _searchQuickrefRow("Basics", "", "all papers in the search category");
     _searchQuickrefRow("", "story", "“story” in title, abstract, authors$aunote");
     _searchQuickrefRow("", "119", "paper #119");
@@ -254,15 +256,15 @@ function searchQuickref() {
     _searchQuickrefRow("", "-#discuss", "not tagged “discuss”");
     _searchQuickrefRow("", "order:discuss", "tagged “discuss”, sort by tag order (“rorder:” for reverse order)");
     _searchQuickrefRow("", "#disc*", "matches any tag that <em>starts with</em> “disc”");
-    _searchQuickrefRow("Reviews", "re:fdabek", "“fdabek” in reviewer name/email");
-    if ($retag) {
-        _searchQuickrefRow("", "re:$retag", "has a reviewer tagged “" . $retag . "”");
-        _searchQuickrefRow("", "re:\"$retag\"", "“" . $retag . "” in reviewer name/email");
-    }
+
+    _searchQuickrefRow("Reviews", "re:me", "you are a reviewer");
+    _searchQuickrefRow("", "re:fdabek", "“fdabek” in reviewer name/email");
+    if ($retag)
+        _searchQuickrefRow("", "re:#$retag", "has a reviewer tagged “#" . $retag . "”");
     _searchQuickrefRow("", "cre:fdabek", "“fdabek” (in reviewer name/email) has completed a review");
     _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
     if ($retag)
-        _searchQuickrefRow("", "re:$retag>1", "at least two reviewers (assigned and/or completed) tagged “" . $retag . "”");
+        _searchQuickrefRow("", "re:#$retag>1", "at least two reviewers (assigned and/or completed) tagged “#" . $retag . "”");
     _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
     _searchQuickrefRow("", "ire:>0", "at least one incomplete review");
     _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (“cpri:”, “ipri:”, and reviewer name/email also work)");
@@ -314,7 +316,7 @@ function searchQuickref() {
         _searchQuickrefRow("", "$r->abbreviation:$r->typical_score", "other abbreviations accepted");
         if (count($farr[0]) > 1) {
             $r2 = $farr[0][1];
-            _searchQuickrefRow("", "$r2->abbreviation:$r2->typical_score", "other fields accepted (here, $r2->name_html)");
+            _searchQuickrefRow("", strtolower($r2->abbreviation) . ":$r2->typical_score", "other fields accepted (here, $r2->name_html)");
         }
         if (isset($r->typical_score_range)) {
             _searchQuickrefRow("", "$r->abbreviation:$r->typical_score0..$r->typical_score", "completed reviews’ $r->name_html scores are in the $r->typical_score0&ndash;$r->typical_score range<br /><small>(all scores between $r->typical_score0 and $r->typical_score)</small>");
@@ -345,8 +347,12 @@ function searchQuickref() {
 
     _searchQuickrefRow("Display", "show:tags show:conflicts", "show tags and PC conflicts in the results");
     _searchQuickrefRow("", "hide:title", "hide title in the results");
-    _searchQuickrefRow("", "show:(max(ovemer))", "show a <a href=\"" . hoturl("help", "t=formulas") . "\">formula</a>");
-    _searchQuickrefRow("", "sort:ovemer", "sort by overall merit score");
+    if (count($farr[0])) {
+        $r = $farr[0][0];
+        _searchQuickrefRow("", "show:max($r->abbreviation)", "show a <a href=\"" . hoturl("help", "t=formulas") . "\">formula</a>");
+        _searchQuickrefRow("", "sort:$r->abbreviation", "sort by score");
+        _searchQuickrefRow("", "sort:\"$r->abbreviation variance\"", "sort by score variance");
+    }
     _searchQuickrefRow("", "sort:-status", "sort by reverse status");
     _searchQuickrefRow("", "edit:#discuss", "edit the values for tag “#discuss”");
     _searchQuickrefRow("", "1-5 THEN 6-10 show:cc", "columnar display");
@@ -944,7 +950,7 @@ For example, search for <a href=\"" . hoturl("search", "q=show%3Amax%28OveMer%29
 
     _subhead("Expressions", "
 <p>Formula expressions are built from the following parts:</p>");
-    echo "<table>";
+    echo "<table class=\"helppage\">";
     _alternateRow("Arithmetic", "2", "Numbers");
     _alternateRow("", "true, false", "Booleans");
     _alternateRow("", "<em>e</em> + <em>e</em>, <em>e</em> - <em>e</em>", "Addition, subtraction");
@@ -984,7 +990,7 @@ maximum reviewer expertise.</p>
 
 <p>The top-level value of a formula expression cannot be a raw review score.
 Use an aggregate function to calculate a property over all review scores.</p>");
-    echo "<table>";
+    echo "<table class=\"helppage\">";
     $rowidx = null;
     _alternateRow("Aggregates", "max(<em>e</em>), min(<em>e</em>)", "Maximum, minimum");
     _alternateRow("", "count(<em>e</em>)", "Number of reviews where <em>e</em> is not null or false");

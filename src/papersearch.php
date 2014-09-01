@@ -581,10 +581,19 @@ class PaperSearch {
                 return array($this->cid);
         }
 
+        $needtag = $negtag = false;
+        $tag = strtolower($word);
+        if (substr($tag, 0, 1) === "-" && !$quoted) {
+            $needtag = $negtag = true;
+            $tag = substr($tag, 1);
+        }
+        if (substr($tag, 0, 1) === "#" && !$quoted) {
+            $needtag = true;
+            $tag = substr($tag, 1);
+        }
+
         if (!$quoted && $this->amPC) {
             $pctags = pcTags();
-            $negtag = $word[0] == "-";
-            $tag = strtolower($negtag ? substr($word, 1) : $word);
             if (isset($pctags[$tag])) {
                 $ids = self::_pcContactIdsWithTag($tag);
                 if ($negtag && $pc_only)
@@ -593,10 +602,11 @@ class PaperSearch {
                     return $this->add_contact_match("\2contactId" . sql_not_in_numeric_set($ids));
                 else
                     return $ids;
-            }
+            } else if ($needtag)
+                $this->warn("no such PC tag “" . htmlspecialchars($tag) . "”");
         }
 
-        if ($limited)
+        if ($needtag || $limited)
             return array(-1);
         else
             return $this->add_contact_match(sqlq_for_like($word), $pc_only);
@@ -722,7 +732,7 @@ class PaperSearch {
             $rt |= self::F_ALLOWCOMMENT;
         if ($ctype == "aucmt")
             $rt |= self::F_AUTHORCOMMENT;
-        if ($m[0] !== "" && $m[0][0] == "#") {
+        if (substr($m[0], 0, 1) === "#") {
             $tag = $this->_check_tag(substr($m[0], 1), false);
             if ($tag !== false) {
                 $rt |= ($this->privChair ? 0 : self::F_NONCONFLICT) | self::F_XVIEW;
@@ -733,11 +743,13 @@ class PaperSearch {
                 $qt[] = $term;
             } else
                 $qt[] = new SearchTerm("f");
-        } else {
-            $contacts = ($m[0] == "" ? null : $contacts = $this->_reviewerMatcher($m[0], $quoted, false));
-            $value = new SearchReviewValue($m[1], $contacts);
-            $qt[] = new SearchTerm("cmt", $rt | self::F_XVIEW, $value);
+            if ($tag === false || $tag === "none" || $tag === "any"
+                || !($pctags = pcTags()) || !isset($pctags[strtolower($tag)]))
+                return;
         }
+        $contacts = ($m[0] == "" ? null : $contacts = $this->_reviewerMatcher($m[0], $quoted, false));
+        $value = new SearchReviewValue($m[1], $contacts);
+        $qt[] = new SearchTerm("cmt", $rt | self::F_XVIEW, $value);
     }
 
     function _searchReviews($word, $rf, $field, &$qt, $quoted,

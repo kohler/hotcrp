@@ -801,11 +801,6 @@ td.rxcaption {
 	text-align: right;
 	padding: 3px 0.5em 3px 0;
 }
-td.srcaption {
-	text-align: right;
-	padding: 3px 0.75em;
-	font-weight: bold;
-}
 td.sentry {
 	padding: 3px 0.75em;
 }
@@ -871,7 +866,7 @@ td h2, td h3 {
 
 
 /* settings */
-h3.settings, h3.helppage {
+h3.settings, h3.helppage, h4.helppage {
 	color: #565d91;
 }
 h2.helppage {
@@ -882,6 +877,9 @@ h3.settings, h3.helppage {
 }
 h3.settings:first-child, h3.helppage:first-child {
 	margin-top: 0.5em;
+}
+h4.helppage {
+	margin: 0.8em 0 0;
 }
 table#foldtag_color th {
 	text-align: left;
@@ -918,6 +916,12 @@ div.helppage_content {
 }
 div.helppagetext {
 	max-width: 42em;
+}
+table.helppage {
+	margin-left: -0.75em;
+}
+table.helppage td.sentry form div.nowrap {
+	margin-left: -1px;
 }
 ul.compact {
 	margin-top: 0.5em;
