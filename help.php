@@ -8,15 +8,15 @@ require_once("src/initweb.php");
 $topicTitles = array("topics" => array("Help topics"),
                      "chair" => array("Chair’s guide", "How to run a conference using HotCRP."),
                      "search" => array("Search", "About paper searching."),
-                     "keywords" => array("Search keywords", "Quick reference to search keywords and search syntax."),
+                     "keywords" => array("Search keywords", "Quick reference to search keywords and syntax."),
                      "tags" => array("Tags", "How to use tags to define paper sets and discussion orders."),
                      "tracks" => array("Tracks", "How tags can control PC access to papers."),
                      "scoresort" => array("Sorting scores", "How scores are sorted in paper lists."),
-                     "revround" => array("Review rounds", "Defining review rounds."),
-                     "revrate" => array("Review ratings", "Rating reviews."),
-                     "votetags" => array("Voting", "Voting for papers."),
-                     "ranking" => array("Ranking", "Ranking papers using tags."),
-                     "formulas" => array("Formulas", "Creating score formulas."));
+                     "revround" => array("Review rounds", "Review rounds are sets of reviews with optionally different deadlines."),
+                     "revrate" => array("Review ratings", "Rating the quality of reviews."),
+                     "votetags" => array("Voting", "PC members can vote for papers using tags."),
+                     "ranking" => array("Ranking", "PC members can rank papers using tags."),
+                     "formulas" => array("Formulas", "Create and display formulas in search orders."));
 
 if (!isset($_REQUEST["t"])
     && preg_match(',\A/(\w+)\z,i', Navigation::path()))
@@ -62,11 +62,13 @@ function _subhead($head, $entry) {
 
 function topics() {
     global $topicTitles;
-    echo "<table>";
+    echo '<h2 class="helppage">Help topics</h2>', "\n";
+    echo "<dl>\n";
     foreach ($topicTitles as $tid => $tt)
         if ($tid !== "topics")
-            _alternateRow('<a href="' . hoturl("help", "t=$tid") . '">' . $tt[0] . '</a>', $tt[1]);
-    echo "</table>";
+            echo '<dt><strong><a href="', hoturl("help", "t=$tid"), '">',
+                $tt[0], '</a></strong></dt><dd>', $tt[1], '</dd>', "\n";
+    echo "</dl>\n";
 }
 
 
@@ -222,6 +224,7 @@ function searchQuickref() {
                 $retag = $m[1];
     }
 
+    echo '<h2 class="helppage">Search keywords</h2>', "\n";
     echo "<table>\n";
     _searchQuickrefRow("Basics", "", "all papers in the search category");
     _searchQuickrefRow("", "story", "“story” in title, abstract, authors$aunote");
@@ -1297,23 +1300,20 @@ manager’s identity.</p>");
 
 
 
-if ($topic !== "topics") {
-    echo '<table class="helppage_topiccontainer">',
-        '<tr><td class="helppage_topiclist">',
-        '<div class="helppage_topiclist">';
-    foreach ($topicTitles as $tid => $tt)
-        if ($tid === $topic)
-            echo '<div class="helppage_topic_on">', $tt[0], '</div>';
-        else {
-            echo '<div class="helppage_topic">',
-                '<a href="', hoturl("help", "t=$tid"), '">', $tt[0], '</a>',
-                '</div>';
-            if ($tid === "topics")
-                echo '<div class="g"></div>';
-        }
-    echo '</div></td><td class="helppage_content">';
-    Ht::stash_script("jQuery(\".helppage_topic\").click(divclick)");
+echo '<div class="helppage_topiccontainer">',
+    '<div class="helppage_topiclist">';
+foreach ($topicTitles as $tid => $tt) {
+    if ($tid === $topic)
+        echo '<div class="helppage_topic_on">', $tt[0], '</div>';
+    else
+        echo '<div class="helppage_topic">',
+            '<a href="', hoturl("help", "t=$tid"), '">', $tt[0], '</a>',
+            '</div>';
+    if ($tid === "topics")
+        echo '<div class="g"></div>';
 }
+echo '</div></div><div class="helppage_content">';
+Ht::stash_script("jQuery(\".helppage_topic\").click(divclick)");
 
 if ($topic == "topics")
     topics();
@@ -1340,8 +1340,7 @@ else if ($topic == "formulas")
 else if ($topic == "chair")
     chair();
 
-if ($topic !== "topics")
-    echo "</td></tr></table>\n";
+echo "</div>\n";
 
 
 $Conf->footer();

@@ -871,7 +871,7 @@ td h2, td h3 {
 
 
 /* settings */
-h2.helppage, h3.settings, h3.helppage {
+h3.settings, h3.helppage {
 	color: #565d91;
 }
 h2.helppage {
@@ -891,35 +891,29 @@ table#foldtag_color th {
 
 
 /* help pages */
-table.helppage_topiccontainer {
-	margin-left: -12px;
-}
-td.helppage_topiclist {
+div.helppage_topiccontainer {
+	width: 140px;
 	font-size: smaller;
+	float: left;
+	box-shadow: 0 1px 5px #46678c;
+	border-radius: 2px;
 }
 div.helppage_topiclist {
-	width: 11em;
-	background: #fffdf0;
-	border-top: 1px solid #ccb7a3;
-	border-right: 1px solid #ccb7a3;
-	border-bottom: 1px solid #ccb7a3;
-	padding: 6px 12px;
+	padding: 6px 0;
 }
 div.helppage_topic {
-	padding: 3px 0 3px 9px;
+	padding: 3px 8px 3px 16px;
 	cursor: pointer;
 }
 div.helppage_topic_on {
 	font-weight: bold;
-	background: white;
-	padding: 2px 13px 2px 8px;
-	border-top: 2px solid gray;
-	border-left: 1px solid gray;
-	border-bottom: 2px solid gray;
-	margin-right: -13px;
+	background: #e6e1cf;
+	background: linear-gradient(to bottom, rgba(230,225,207,0), #e6e1cf 4px, #e6e1cf 50%, transparent 50%),
+		linear-gradient(to top, rgba(230,225,207,0), #e6e1cf 4px, #e6e1cf 50%, transparent 50%);
+	padding: 4px 8px 4px 16px;
 }
-td.helppage_content {
-	padding-left: 24px;
+div.helppage_content {
+	margin-left: 164px;
 	padding-bottom: 2em;
 }
 div.helppagetext {
