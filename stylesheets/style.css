@@ -871,12 +871,17 @@ td h2, td h3 {
 
 
 /* settings */
-h3.settings {
+h2.helppage, h3.settings, h3.helppage {
 	color: #565d91;
-	margin-bottom: 0.5em;
 }
-h3.settings.g {
-	margin-top: 2em;
+h2.helppage {
+	font-size: 140%;
+}
+h3.settings, h3.helppage {
+	margin: 2em 0 0.5em;
+}
+h3.settings:first-child, h3.helppage:first-child {
+	margin-top: 0.5em;
 }
 table#foldtag_color th {
 	text-align: left;
@@ -886,6 +891,40 @@ table#foldtag_color th {
 
 
 /* help pages */
+table.helppage_topiccontainer {
+	margin-left: -12px;
+}
+td.helppage_topiclist {
+	font-size: smaller;
+}
+div.helppage_topiclist {
+	width: 11em;
+	background: #fffdf0;
+	border-top: 1px solid #ccb7a3;
+	border-right: 1px solid #ccb7a3;
+	border-bottom: 1px solid #ccb7a3;
+	padding: 6px 12px;
+}
+div.helppage_topic {
+	padding: 3px 0 3px 9px;
+	cursor: pointer;
+}
+div.helppage_topic_on {
+	font-weight: bold;
+	background: white;
+	padding: 2px 13px 2px 8px;
+	border-top: 2px solid gray;
+	border-left: 1px solid gray;
+	border-bottom: 2px solid gray;
+	margin-right: -13px;
+}
+td.helppage_content {
+	padding-left: 24px;
+	padding-bottom: 2em;
+}
+div.helppagetext {
+	max-width: 42em;
+}
 ul.compact {
 	margin-top: 0.5em;
 	margin-bottom: 0;

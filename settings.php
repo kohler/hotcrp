@@ -2092,6 +2092,7 @@ if (!function_exists("imagecreate"))
 
 echo "<div class='aahc'>";
 doActionArea(true);
+echo "<div>";
 
 if ($Group == "info")
     doInfoGroup();
@@ -2115,6 +2116,7 @@ else {
     doDecGroup();
 }
 
+echo "</div>";
 doActionArea(false);
 echo "</div></div></td></tr>
 </table></div></form>\n";

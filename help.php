@@ -5,18 +5,18 @@
 
 require_once("src/initweb.php");
 
-$topicTitles = array("topics" => "Help topics",
-                     "keywords" => "Search keywords",
-                     "search" => "Search",
-                     "tags" => "Tags",
-                     "tracks" => "Tracks",
-                     "revround" => "Review rounds",
-                     "revrate" => "Review ratings",
-                     "votetags" => "Voting tags",
-                     "scoresort" => "Sorting scores",
-                     "ranking" => "Paper ranking",
-                     "formulas" => "Formulas",
-                     "chair" => "Chair’s guide");
+$topicTitles = array("topics" => array("Help topics"),
+                     "chair" => array("Chair’s guide", "How to run a conference using HotCRP."),
+                     "search" => array("Search", "About paper searching."),
+                     "keywords" => array("Search keywords", "Quick reference to search keywords and search syntax."),
+                     "tags" => array("Tags", "How to use tags to define paper sets and discussion orders."),
+                     "tracks" => array("Tracks", "How tags can control PC access to papers."),
+                     "scoresort" => array("Sorting scores", "How scores are sorted in paper lists."),
+                     "revround" => array("Review rounds", "Defining review rounds."),
+                     "revrate" => array("Review ratings", "Rating reviews."),
+                     "votetags" => array("Voting", "Voting for papers."),
+                     "ranking" => array("Ranking", "Ranking papers using tags."),
+                     "formulas" => array("Formulas", "Creating score formulas."));
 
 if (!isset($_REQUEST["t"])
     && preg_match(',\A/(\w+)\z,i', Navigation::path()))
@@ -27,20 +27,10 @@ if ($topic == "syntax")
 if (!isset($topicTitles[$topic]))
     $topic = "topics";
 
-$abar = "<div class='vbar'><table class='vbar'><tr><td id='vbartabs'><table><tr>\n";
-$abar .= actionTab("Help topics", hoturl("help", "t=topics"), $topic == "topics");
-if ($topic == "search" || $topic == "keywords")
-    $abar .= actionTab("Search help", hoturl("help", "t=search"), $topic == "search");
-if ($topic == "search" || $topic == "keywords")
-    $abar .= actionTab("Search keywords", hoturl("help", "t=keywords"), $topic == "keywords");
-if ($topic != "topics" && $topic != "search" && $topic != "keywords")
-    $abar .= actionTab($topicTitles[$topic], hoturl("help", "t=$topic"), true);
-$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
-
 if ($topic == "topics")
-    $Conf->header("Help", null, $abar);
+    $Conf->header("Help");
 else
-    $Conf->header("<a href='" . hoturl("help") . "'>Help</a>", null, $abar);
+    $Conf->header("<a href='" . hoturl("help") . "'>Help</a>");
 
 
 function _alternateRow($caption, $entry, $next = null) {
@@ -57,20 +47,25 @@ function _alternateRow($caption, $entry, $next = null) {
     echo "</tr>\n";
 }
 
+function _subhead_contain($close = false) {
+    echo $close ? "</div>\n" : "<div class=\"helppage\">\n";
+}
+
+function _subhead($head, $entry) {
+    global $nsubhead;
+    echo (isset($nsubhead) ? '<h3' : '<h2'),
+        ' class="helppage">', $head, "</h3>\n",
+        '<div class="helppagetext">', $entry, "</div>\n";
+    $nsubhead = @($nsubhead + 1);
+}
+
 
 function topics() {
+    global $topicTitles;
     echo "<table>";
-    _alternateRow("<a href='" . hoturl("help", "t=chair") . "'>Chair’s guide</a>", "How to run a conference using HotCRP.");
-    _alternateRow("<a href='" . hoturl("help", "t=search") . "'>Search</a>", "About paper searching.");
-    _alternateRow("<a href='" . hoturl("help", "t=keywords") . "'>Search keywords</a>", "Quick reference to search keywords and search syntax.");
-    _alternateRow("<a href='" . hoturl("help", "t=tags") . "'>Tags</a>", "How to use tags to define paper sets and discussion orders.");
-    _alternateRow("<a href='" . hoturl("help", "t=scoresort") . "'>Sorting scores</a>", "How scores are sorted in paper lists.");
-    _alternateRow("<a href='" . hoturl("help", "t=tracks") . "'>Tracks</a>", "Defining tracks.");
-    _alternateRow("<a href='" . hoturl("help", "t=revround") . "'>Review rounds</a>", "Defining review rounds.");
-    _alternateRow("<a href='" . hoturl("help", "t=revrate") . "'>Review ratings</a>", "Rating reviews.");
-    _alternateRow("<a href='" . hoturl("help", "t=votetags") . "'>Voting tags</a>", "Voting for papers.");
-    _alternateRow("<a href='" . hoturl("help", "t=ranking") . "'>Paper ranking</a>", "Ranking papers using tags.");
-    _alternateRow("<a href='" . hoturl("help", "t=formulas") . "'>Formulas</a>", "Creating score formulas.");
+    foreach ($topicTitles as $tid => $tt)
+        if ($tid !== "topics")
+            _alternateRow('<a href="' . hoturl("help", "t=$tid") . '">' . $tt[0] . '</a>', $tt[1]);
     echo "</table>";
 }
 
@@ -88,10 +83,10 @@ function _searchForm($forwhat, $other = null, $size = 20) {
 }
 
 function search() {
-    echo "<table>";
-    _alternateRow("Search basics", "
-All HotCRP paper lists are obtained through search, search syntax is flexible,
-and it’s possible to download all matching papers and/or reviews at once.
+    _subhead_contain();
+    _subhead("Search", "
+<p>All HotCRP paper lists are obtained through search, search syntax is flexible,
+and it’s possible to download all matching papers and/or reviews at once.</p>
 
 <p>Some useful hints for PC members and chairs:</p>
 
@@ -107,10 +102,10 @@ and it’s possible to download all matching papers and/or reviews at once.
  from paper to paper.</li>
 <li>On search results pages, shift-click checkboxes to
  select paper ranges.</li>
-</ul>
-");
-    _alternateRow("How to search", "
-The default search box returns papers that match
+</ul>");
+
+    _subhead("How to search", "
+<p>The default search box returns papers that match
 <em>all</em> of the space-separated terms you enter.
 To search for words that <em>start</em> with
 a prefix, try “term*”.
@@ -119,7 +114,7 @@ type “term1 OR term2”.
 To search for papers that <em>don’t</em> match a term,
 try “-term”.  Or select
 <a href='" . hoturl("search", "opt=1") . "'>Advanced search</a>
-and use “With <b>any</b> of the words” and “<b>Without</b> the words.”
+and use “With <b>any</b> of the words” and “<b>Without</b> the words.”</p>
 
 <p>You can search in several paper classes, depending on your role in the
 conference. Options include:</p>
@@ -143,11 +138,12 @@ authors, reviewer names, and numbers of reviewers.  For example,
 “ti:foo” means “search for ‘foo’ in paper
 titles.”  Keywords are listed in the
 <a href='" . hoturl("help", "t=keywords") . "'>search keywords reference</a>.</p>");
-    _alternateRow("Search results", "
-Click on a paper number or title to jump to that paper.
+
+    _subhead("Search results", "
+<p>Click on a paper number or title to jump to that paper.
 Search matches are <span class='match'>highlighted</span> on paper screens.
 Once on a paper screen use <a href='#quicklinks'>quicklinks</a>
-to navigate through the rest of the search matches.
+to navigate through the rest of the search matches.</p>
 
 <p>Underneath the paper list is the action area:</p>
 
@@ -171,22 +167,21 @@ You can:</p>
 the checkboxes, or use the “select all” link.
 The easiest way to tag a set of papers is
 to enter their numbers in the search box, search, “select all,” and add the
-tag.</p>
-");
-    _alternateRow("<a name='quicklinks'>Quicksearch<br />and quicklinks</a>", "
-Most screens have a quicksearch box in the upper right corner:<br />
+tag.</p>");
+
+    _subhead("<a name='quicklinks'>Quicksearch and quicklinks</a>", "
+<p>Most screens have a quicksearch box in the upper right corner:<br />
 " . Ht::img("quicksearchex.png", "[Quicksearch box]") . "<br />
 This box supports the full search syntax.  Enter
 a paper number, or search terms that match exactly
-one paper, to go directly to that paper.
+one paper, to go directly to that paper.</p>
 
 <p>Paper screens have quicklinks that step through search results:<br />
 " . Ht::img("pageresultsex.png", "[Quicklinks]") . "<br />
 Click on the search description (here, “Submitted papers search”) to return
 to the search results.  On many pages, you can press “<code>j</code>” or
-“<code>k</code>” to go to the previous or next paper in the list.</p>
-");
-    echo "</table>\n";
+“<code>k</code>” to go to the previous or next paper in the list.</p>");
+    _subhead_contain(true);
 }
 
 function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
@@ -402,21 +397,21 @@ function tags() {
         }
     }
 
-    echo "<table>";
-    _alternateRow("Tag basics", "
-PC members and administrators can attach tag names to papers.
+    _subhead_contain();
+    _subhead("Tags", "
+<p>PC members and administrators can attach tag names to papers.
 Papers can have many tags, and you can invent new tags on the fly.
 Tags are never shown to authors$conflictmsg1.
 It’s easy to add and remove tags and to list all papers with a given tag,
 and <em>ordered</em> tags preserve a particular paper order.
-Tags also affect color highlighting in paper lists.
+Tags also affect color highlighting in paper lists.</p>
 
 <p><em>Twiddle tags</em>, with names like “#~tag”, are visible only
 to their creators.  Tags with two twiddles, such as “#~~tag”, are
 visible only to PC chairs.  All other tags are visible to the entire PC.</p>");
 
-    _alternateRow("Using tags", "
-Here are some example ways to use tags.
+    _subhead("Using tags", "
+<p>Here are some example ways to use tags.</p>
 
 <ul>
 <li><strong>Avoid discussing low-ranked submissions at the PC meeting.</strong>
@@ -459,23 +454,24 @@ Here are some example ways to use tags.
  using decision selectors or, perhaps, “#accept” and
  “#reject” tags.</li>
 
-</ul>
-");
-    _alternateRow("Finding tags", "
-A paper’s tags are shown like this:
+</ul>");
+
+    _subhead("Finding tags", "
+<p>A paper’s tags are shown like this:</p>
 
 <p>" . Ht::img("extagsnone.png", "[Tag list on review screen]") . "</p>
 
-To find all papers with tag “#discuss”:&nbsp; " . _searchForm("#discuss") . "
+<p>To find all papers with tag “#discuss”:&nbsp; " . _searchForm("#discuss") . "</p>
 
 <p>Tags are only shown to PC members and administrators.
 $conflictmsg3$setting
 Additionally, twiddle tags, which have names like “#~tag”, are
 visible only to their creators; each PC member has an independent set.
 Tags are not case sensitive.</p>");
-    _alternateRow("<a name='changing'>Changing tags</a>", "
-To change a paper’s tags, click the Tags box’s " . Ht::img("edit.png", "[Edit]") . "&nbsp;Edit
-link, then enter one or more alphanumeric tags separated by spaces.
+
+    _subhead("<a name='changing'>Changing tags</a>", "
+<p>To change a paper’s tags, click the Tags box’s " . Ht::img("edit.png", "[Edit]") . "&nbsp;Edit
+link, then enter one or more alphanumeric tags separated by spaces.</p>
 
 <p>" . Ht::img("extagsset.png", "[Tag entry on review screen]") . "</p>
 
@@ -495,8 +491,9 @@ assignment page</a>.</p>
 
 <p>Although any PC member can view or search
 most tags, certain tags may be changed only by PC chairs$chairtags.  $setting</p>");
-    _alternateRow("Tag values<br />and discussion orders", "
-Tags have optional per-paper numeric values, which are displayed as
+
+    _subhead("Tag values and discussion orders", "
+<p>Tags have optional per-paper numeric values, which are displayed as
 “tag#100”.  Searching for a tag with “<a
 href='" . hoturl("search", "q=order:tag") . "'>order:tag</a>” will
 return the papers sorted by the tag value.  This is useful, for example, for
@@ -504,7 +501,7 @@ PC meeting discussion orders.  Change the order by editing the tag values.
 Search for specific values with search terms like “<a
 href='" . hoturl("search", "q=%23discuss%232") . "'>#discuss#2</a>”
 or “<a
-href='" . hoturl("search", "q=%23discuss%3E1") . "'>#discuss>1</a>”.
+href='" . hoturl("search", "q=%23discuss%3E1") . "'>#discuss>1</a>”.</p>
 
 <p>It’s common to assign increasing tag values to a set of papers.  Do this
 using the <a href='" . hoturl("search") . "'>search screen</a>.  Search for the
@@ -527,8 +524,9 @@ conflicted paper.)  The <b>Define gapless order</b> action assigns
 strictly sequential values, like “#tag#1”,
 “#tag#2”, “#tag#3”, “#tag#4”.
 <b>Define order</b> is better for most purposes.</p>");
-    _alternateRow("Tag colors", "
-The tag names “red”, “orange”, “yellow”,
+
+    _subhead("Tag colors", "
+<p>The tag names “red”, “orange”, “yellow”,
 “green”, “blue”, “purple”, and
 “gray” act as highlight colors. For example, papers tagged with
 “#red” will appear red in paper lists (for people who can see that
@@ -538,30 +536,31 @@ others’. Other styles are available; try
 href='" . hoturl("settings", "group=tags") . "'>associate other tags with colors</a>
 so that, for example, “<a
 href='" . hoturl("search", "q=%23reject") . "'>#reject</a>” papers show up
-as gray.");
-    echo "</table>\n";
+as gray.</p>");
+    _subhead_contain(true);
 }
 
 
 function tracks() {
     global $Conf, $Me;
 
-    echo "<table>";
-    _alternateRow("Track basics", "
-Tracks control which PC members can view and review
+    _subhead_contain();
+    _subhead("Tracks", "
+<p>Tracks control which PC members can view and review
 specific papers. Tracks are managed through the <a href=\"" . hoturl("help", "t=tags") . "\">tags system</a>.
 Without tracks, all PC members are treated equally.
 With tracks, PC members with different tags can have different rights to
-view or review papers, depending on the papers’ tags.
+view or review papers, depending on the papers’ tags.</p>
 
 <p>Set up tracks on the <a href=\"" . hoturl("settings", "group=tags#tracks") . "\">Settings &gt;
 Reviews</a> page.</p>");
-    _alternateRow("Examples", "
-An <em>external review committee</em> is a subset of the PC that may bid on
+
+    _subhead("Examples", "
+<p>An <em>external review committee</em> is a subset of the PC that may bid on
 papers to review, and may be assigned reviews (using, for example, the
 <a href=\"" . hoturl("autoassign") . "\">autoassignment tool</a>), but may
 not review papers they were not assigned, and may not view reviews except
-for papers they have reviewed. To set this up:
+for papers they have reviewed. To set this up:</p>
 
 <ul>
 <li>Give external review committee members the “erc” tag.</li>
@@ -583,15 +582,16 @@ papers. To set this up:</p>
 <li>For papers not on other tracks, for all permissions, select
   “PC members without tag: pcrc”.</li>
 </ul>");
-    _alternateRow("Understanding permissions", "
-Tracks only restrict permissions.
+
+    _subhead("Understanding permissions", "
+<p>Tracks only restrict permissions.
 For example, when
 the “PC members can review <strong>any</strong> submitted paper”
 setting is off, <em>no</em> PC member can enter an unassigned review,
 no matter what the track settings say.
 It can be useful to “act as” a member of the PC to check what permissions
-are actually live.");
-    echo "</table>\n";
+are actually live.</p>");
+    _subhead_contain(true);
 }
 
 
@@ -599,20 +599,20 @@ are actually live.");
 function revround() {
     global $Conf, $Me;
 
-    echo "<table>";
-    _alternateRow("Review round basics", "
-Many conferences divide reviews into multiple <em>rounds</em>.
+    _subhead_contain();
+    _subhead("Review rounds", "
+<p>Many conferences divide reviews into multiple <em>rounds</em>.
 Chairs label assignments in each round with names, such as
 “R1” or “lastround”.
 (We suggest very short names like “R1”.)
 Rounds are purely informational; different rounds have the same review form.
 To search for any paper with a round “R2” review assignment, <a href='" . hoturl("search", "q=round:R2") . "'>search for “round:R2”</a>.
-To list a PC member’s round “R1” review assignments, <a href='" . hoturl("search", "q=re:membername+round:R1") . "'>search for “re:membername round:R1”</a>.");
+To list a PC member’s round “R1” review assignments, <a href='" . hoturl("search", "q=re:membername+round:R1") . "'>search for “re:membername round:R1”</a>.</p>");
 
-    _alternateRow("Assigning rounds", "
-New assignments are marked by default with the round defined in
+    _subhead("Assigning rounds", "
+<p>New assignments are marked by default with the round defined in
 <a href='" . hoturl("settings", "group=reviews#rounds") . "'>review settings</a>.
-The automatic and bulk assignment pages also let you set a review round.");
+The automatic and bulk assignment pages also let you set a review round.</p>");
 
     // get current tag settings
     if ($Me->isPC) {
@@ -640,29 +640,26 @@ The automatic and bulk assignment pages also let you set a review round.");
             $texts[] = "The following review rounds are currently in use: " . commajoin($rounds) . ".";
         else if (!count($texts))
             $texts[] = "So far no review rounds have been defined.";
-        _alternateRow("Round status", join(" ", $texts));
+        _subhead("Round status", join(" ", $texts));
     }
-
-    echo "</table>\n";
+    _subhead_contain(true);
 }
 
 
 function revrate() {
     global $Conf, $Me;
 
-    echo "<table>";
-    _alternateRow("Review ratings basics", "
-PC members and, optionally, external reviewers can rate one another’s
+    _subhead_contain();
+    _subhead("Review ratings", "
+<p>PC members and, optionally, external reviewers can rate one another’s
 reviews.  We hope this feedback will help reviewers improve the quality of
-their reviews.  The interface appears above each visible review:
+their reviews.  The interface appears above each visible review:</p>
 
-<div class='g'></div>
-
-<div class='rev_rating'>
+<p><div class='rev_rating'>
   How helpful is this review? &nbsp;<form class><div class=\"inline\">"
                   . Ht::select("rating", ReviewForm::$rating_types, "n")
                   . "</div></form>
-</div>
+</div></p>
 
 <p>When rating a review, please consider its value for both the program
   committee and the authors.  Helpful reviews are specific, clear, technically
@@ -701,35 +698,35 @@ To find all reviews with positive ratings,
 <a href='" . hoturl("search", "q=re:any+rate:%2B") . "'>search for “re:any&nbsp;rate:+”</a>.
 You may also search for reviews with specific ratings; for instance,
 <a href='" . hoturl("search", "q=rate:helpful") . "'>search for “rate:helpful”</a>.</p>");
+
     if ($Conf->setting("rev_ratings") == REV_RATINGS_PC)
         $what = "only PC members";
     else if ($Conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
         $what = "PC members and external reviewers";
     else
         $what = "no one";
-    _alternateRow("Settings", "
-Chairs set how ratings work on the <a
-href='" . hoturl("settings", "group=reviews") . "'>review settings
-page</a>." . ($Me->is_reviewer() ? "  Currently, $what can rate reviews." : ""));
-    _alternateRow("Visibility", "
-A review’s ratings are visible to any unconflicted PC members who can see
+    _subhead("Settings", "
+<p>Chairs set how ratings work on the <a href=\"" . hoturl("settings", "group=reviews") . "\">review settings
+page</a>.", ($Me->is_reviewer() ? " Currently, $what can rate reviews." : ""), "</p>");
+
+    _subhead("Visibility", "
+<p>A review’s ratings are visible to any unconflicted PC members who can see
 the review, but HotCRP tries to hide ratings from review authors if they
 could figure out who assigned the rating: if only one PC member could
 rate a review, then that PC member’s rating is hidden from the review
-author.");
-
-    echo "</table>\n";
+author.</p>");
+    _subhead_contain(true);
 }
 
 
 function scoresort() {
     global $Conf, $Me;
 
-    echo "<table>";
-    _alternateRow("Sorting scores", "
-Some paper search results include columns with score graphs.  Click on a score
-column heading to sort the paper list using that score.  Search &gt; Display
-options changes how scores are sorted.  There are five choices:
+    _subhead_contain();
+    _subhead("Sorting scores", "
+<p>Some paper search results include columns with score graphs. Click on a score
+column heading to sort the paper list using that score. Search &gt; Display
+options changes how scores are sorted.  There are five choices:</p>
 
 <dl>
 
@@ -758,21 +755,20 @@ measure of differences of opinion).</dd>
 darker colored square.</dd>
 
 </dl>");
-
-    echo "</table>\n";
+    _subhead_contain(true);
 }
 
 
 function showvotetags() {
     global $Conf, $Me;
 
-    echo "<table>";
-    _alternateRow("Voting tags basics", "
-Some conferences have PC members vote for papers.
+    _subhead_contain();
+    _subhead("Voting", "
+<p>Some conferences have PC members vote for papers.
 Each PC member is assigned a vote allotment, and can distribute that allotment
 arbitrarily among unconflicted papers.
 The PC’s aggregated vote totals might help determine
-which papers to discuss.
+which papers to discuss.</p>
 
 <p>HotCRP supports voting through the <a href='" . hoturl("help", "t=tags") . "'>tags system</a>.
 The chair can <a href='" . hoturl("settings", "group=tags") . "'>define a set of voting tags</a> and allotments" . _currentVoteTags() . ".
@@ -804,20 +800,19 @@ in the search results (or set up a
 Hover to learn how the PC voted:</p>
 
 <p>" . Ht::img("extagvotehover.png", "[Hovering over a voting tag]") . "</p>");
-
-    echo "</table>\n";
+    _subhead_contain(true);
 }
 
 
 function showranking() {
     global $Conf, $Me;
 
-    echo "<table>";
-    _alternateRow("Ranking basics", "
-Paper ranking is an alternate method to extract the PC’s preference order for
+    _subhead_contain();
+    _subhead("Ranking", "
+<p>Paper ranking is an alternate method to extract the PC’s preference order for
 submitted papers.  Each PC member ranks the submitted papers, and a voting
 algorithm, <a href='http://en.wikipedia.org/wiki/Schulze_method'>the Schulze
-method</a> by default, combines these rankings into a global preference order.
+method</a> by default, combines these rankings into a global preference order.</p>
 
 <p>HotCRP supports ranking through the <a
 href='" . hoturl("help", "t=tags") . "'>tags system</a>.  The chair chooses
@@ -896,23 +891,21 @@ X	11	Analyzing Scatter/Gather I/O Using Encrypted Epistemologies
  Searching for “order:~rank” returns the user’s personal ranking;
  administrators can search for
  “order:<i>pcname</i>~rank” to see a PC member’s ranking.
- Once a global ranking is assigned, “order:rank” will show it.</p>
-");
-
-    echo "</table>\n";
+ Once a global ranking is assigned, “order:rank” will show it.</p>");
+    _subhead_contain(true);
 }
 
 
 function showformulas() {
-    global $Conf, $Me;
+    global $Conf, $Me, $rowidx;
 
-    echo "<table>";
-    _alternateRow("Formula basics", "
-Program committee members and administrators can display <em>formulas</em>
+    _subhead_contain();
+    _subhead("Formulas", "
+<p>Program committee members and administrators can display <em>formulas</em>
 that calculate properties of paper scores&mdash;for instance, the
 standard deviation of papers’ Overall merit scores, or average Overall
 merit among reviewers with high Reviewer expertise.
-Formula values become display options that show up on paper search screens.
+Formula values become display options that show up on paper search screens.</p>
 
 <p>Add new formulas using <a
 href=\"" . hoturl("search", "q=&amp;tab=formulas") . "\">Search &gt; Display options
@@ -936,9 +929,11 @@ Confidence score with choices X, Y, and Z):</p>
 <blockquote>count(confidence=X)</blockquote>
 
 <p>You can also name a formula as part of a search.
-For example, search for <a href=\"" . hoturl("search", "q=show%3Amax%28OveMer%29") . "\">show:max(OveMer)</a>.</p>
+For example, search for <a href=\"" . hoturl("search", "q=show%3Amax%28OveMer%29") . "\">show:max(OveMer)</a>.</p>");
 
+    _subhead("Expressions", "
 <p>Formula expressions are built from the following parts:</p>");
+    echo "<table>";
     _alternateRow("Arithmetic", "2", "Numbers");
     _alternateRow("", "true, false", "Booleans");
     _alternateRow("", "<em>e</em> + <em>e</em>, <em>e</em> - <em>e</em>", "Addition, subtraction");
@@ -962,10 +957,13 @@ For example, search for <a href=\"" . hoturl("search", "q=show%3Amax%28OveMer%29
     _alternateRow("", "isexternal", "True for external reviews");
     _alternateRow("Review preferences", "pref", "Review preference");
     _alternateRow("", "prefexp", "Predicted expertise");
-    _alternateRow("Aggregate functions", "Aggregate functions calculate a
+    echo "</table>\n";
+
+    _subhead("Aggregate functions", "
+<p>Aggregate functions calculate a
 value based on all of a paper’s visible reviews.  For instance,
 “max(OveMer)” would return the maximum Overall merit score
-assigned to a paper.
+assigned to a paper.</p>
 
 <p>An aggregate function’s argument is calculated once per visible review.
 For instance, “max(OveMer/RevExp)” calculates the maximum value of
@@ -975,7 +973,9 @@ maximum reviewer expertise.</p>
 
 <p>The top-level value of a formula expression cannot be a raw review score.
 Use an aggregate function to calculate a property over all review scores.</p>");
-    _alternateRow("", "max(<em>e</em>), min(<em>e</em>)", "Maximum, minimum");
+    echo "<table>";
+    $rowidx = null;
+    _alternateRow("Aggregates", "max(<em>e</em>), min(<em>e</em>)", "Maximum, minimum");
     _alternateRow("", "count(<em>e</em>)", "Number of reviews where <em>e</em> is not null or false");
     _alternateRow("", "sum(<em>e</em>)", "Sum");
     _alternateRow("", "avg(<em>e</em>)", "Average");
@@ -985,15 +985,17 @@ Use an aggregate function to calculate a property over all review scores.</p>");
     _alternateRow("", "stddev_pop(<em>e</em>), var_pop(<em>e</em>)", "Population standard deviation, population variance");
     _alternateRow("", "any(<em>e</em>)", "True if any of the reviews have <em>e</em> true");
     _alternateRow("", "all(<em>e</em>)", "True if all of the reviews have <em>e</em> true");
-
     echo "</table>\n";
+
+    _subhead_contain(true);
 }
 
 
 function chair() {
-    echo "<table>";
-    _alternateRow("Submission time", "
-Follow these steps to prepare to accept paper submissions.
+    _subhead_contain();
+    _subhead("Chair’s guide", "");
+    _subhead("Submission time", "
+<p>Follow these steps to prepare to accept paper submissions.</p>
 
 <ol>
 
@@ -1057,8 +1059,9 @@ Follow these steps to prepare to accept paper submissions.
   listed deadline.</p></li>
 
 </ol>");
-    _alternateRow("Assignments", "
-After the submission deadline has passed:
+
+    _subhead("Assignments", "
+<p>After the submission deadline has passed:</p>
 
 <ol>
 
@@ -1123,14 +1126,14 @@ After the submission deadline has passed:
 <li><p><strong><a href='" . hoturl("settings", "group=reviews") . "'>Open the site
   for reviewing.</a></strong></p></li>
 
-</ol>
-");
-    _alternateRow("Chair conflicts", "
-Chairs and system administrators can access any information stored in the
+</ol>");
+
+    _subhead("Chair conflicts", "
+<p>Chairs and system administrators can access any information stored in the
 conference system, including reviewer identities for conflicted papers.
 It is easiest to simply accept such conflicts as a fact of life. Chairs
 who can’t handle conflicts fairly shouldn’t be chairs. However, HotCRP
-does offer other mechanisms for conflicted reviews.
+does offer other mechanisms for conflicted reviews.</p>
 
 <p>The key step is to pick a PC member to manage the reviewing and
 discussion process for the relevant papers. This PC member is called the
@@ -1165,10 +1168,9 @@ database or its logs.
 For even more privacy, a trusted manager can collect
 offline review forms via email and upload them using
 review tokens; then even web server access logs store only the
-manager’s identity.</p>
+manager’s identity.</p>");
 
-");
-    _alternateRow("Before the meeting", "
+    _subhead("Before the meeting", "
 <ol>
 
 <li><p><strong><a href='" . hoturl("settings", "group=dec") . "'>Collect
@@ -1225,9 +1227,9 @@ manager’s identity.</p>
   Internet explodes and you can’t reach HotCRP from the meeting
   place.</p></li>
 
-</ol>
-");
-    _alternateRow("At the meeting", "
+</ol>");
+
+    _subhead("At the meeting", "
 <ol>
 
 <li><p>The meeting tracker can keep PC members coordinated. Turn it on
@@ -1250,9 +1252,9 @@ manager’s identity.</p>
   href='" . hoturl("paper") . "'>paper by paper</a> or <a
   href='" . hoturl("autoassign", "t=acc") . "'>automatically</a>.</p></li>
 
-</ol>
-");
-    _alternateRow("After the meeting", "
+</ol>");
+
+    _subhead("After the meeting", "
 <ol>
 
 <li><p><strong><a
@@ -1281,12 +1283,29 @@ manager’s identity.</p>
   all final versions as a <tt>.zip</tt> archive</a>.  (The submitted
   versions are archived for reference.)</p></li>
 
-</ol>
-");
-    echo "</table>\n";
+</ol>");
+    _subhead_contain(true);
 }
 
 
+
+if ($topic !== "topics") {
+    echo '<table class="helppage_topiccontainer">',
+        '<tr><td class="helppage_topiclist">',
+        '<div class="helppage_topiclist">';
+    foreach ($topicTitles as $tid => $tt)
+        if ($tid === $topic)
+            echo '<div class="helppage_topic_on">', $tt[0], '</div>';
+        else {
+            echo '<div class="helppage_topic">',
+                '<a href="', hoturl("help", "t=$tid"), '">', $tt[0], '</a>',
+                '</div>';
+            if ($tid === "topics")
+                echo '<div class="g"></div>';
+        }
+    echo '</div></td><td class="helppage_content">';
+    Ht::stash_script("jQuery(\".helppage_topic\").click(divclick)");
+}
 
 if ($topic == "topics")
     topics();
@@ -1312,5 +1331,9 @@ else if ($topic == "formulas")
     showformulas();
 else if ($topic == "chair")
     chair();
+
+if ($topic !== "topics")
+    echo "</td></tr></table>\n";
+
 
 $Conf->footer();

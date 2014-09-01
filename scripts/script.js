@@ -666,6 +666,14 @@ function aufoldup(event) {
     return false;
 }
 
+function divclick(event) {
+    var j = jQuery(this), a = j.find("a")[0];
+    if (a && event.target !== a) {
+        a.click();
+        event_prevent(event);
+    }
+}
+
 function crpfocus(id, subfocus, seltype) {
     var selt = $$(id);
     if (selt && subfocus)
