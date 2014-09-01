@@ -417,6 +417,10 @@ function hoturl_absolute_nodefaults($page, $options = null) {
     return $url;
 }
 
+function hoturl_site_relative_raw($page, $options = null) {
+    return htmlspecialchars_decode(hoturl_site_relative($page, $options));
+}
+
 function hoturl_raw($page, $options = null) {
     return htmlspecialchars_decode(hoturl($page, $options));
 }

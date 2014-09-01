@@ -168,7 +168,7 @@ $Conf->infoMsg($Conf->message_html("revprefdescription"));
 
 // search
 $search = new PaperSearch($Me, array("t" => "rable",
-                                     "urlbase" => hoturl_site_relative("reviewprefs", "reviewer=$reviewer"),
+                                     "urlbase" => hoturl_site_relative_raw("reviewprefs", "reviewer=$reviewer"),
                                      "q" => defval($_REQUEST, "q", ""),
                                      "reviewer" => $reviewer));
 $pl = new PaperList($search, array("sort" => true, "list" => true, "foldtype" => "pf", "reviewer" => $reviewer));

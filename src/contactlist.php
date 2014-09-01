@@ -820,7 +820,7 @@ class ContactList extends BaseList {
         if ($this->listNumber) {
             $l = SessionList::create("u/" . $this->limit, $ids,
                                      ($listtitle ? $listtitle : "Users"),
-                                     "users$ConfSiteSuffix?t=$this->limit");
+                                     hoturl_site_relative_raw("users", "t=$this->limit"));
             SessionList::change($this->listNumber, $l);
         }
 

@@ -413,10 +413,12 @@ class PaperSearch {
         if (isset($opt["urlbase"]))
             $this->urlbase = $opt["urlbase"];
         else {
-            $this->urlbase = hoturl_site_relative("search", "t=" . urlencode($this->limitName));
+            $this->urlbase = hoturl_site_relative_raw("search", "t=" . urlencode($this->limitName));
             if ($qtype != "n")
                 $this->urlbase .= "&qt=" . urlencode($qtype);
         }
+        if (strpos($this->urlbase, "&amp;") !== false)
+            trigger_error(caller_landmark() . " PaperSearch::urlbase should be a raw URL", E_USER_NOTICE);
 
         $this->_reviewer = defval($opt, "reviewer", false);
         $this->_reviewer_fixed = !!$this->_reviewer;
@@ -2812,7 +2814,7 @@ class PaperSearch {
         return $x;
     }
 
-    function url_site_relative($q = null) {
+    function url_site_relative_raw($q = null) {
         $url = $this->urlbase;
         if ($q === null)
             $q = $this->q;
@@ -2894,7 +2896,7 @@ class PaperSearch {
     function create_session_list_object($ids, $listname, $sort = "") {
         $l = SessionList::create($this->listId($sort), $ids,
                                  $this->description($listname),
-                                 $this->url_site_relative());
+                                 $this->url_site_relative_raw());
         if ($this->matchPreg)
             $l->matchPreg = $this->matchPreg;
         return $l;

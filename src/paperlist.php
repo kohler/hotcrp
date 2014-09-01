@@ -1074,7 +1074,7 @@ class PaperList extends BaseList {
         } else if (count($rows) == 0) {
             if (($altq = $this->search->alternate_query())) {
                 $altqh = htmlspecialchars($altq);
-                $url = $this->search->url_site_relative($altq);
+                $url = $this->search->url_site_relative_raw($altq);
                 if (substr($url, 0, 5) == "search")
                     $altqh = "<a href=\"" . $ConfSiteBase . htmlspecialchars($url) . "\">" . $altqh . "</a>";
                 return "No matching papers. Did you mean “${altqh}”?";
@@ -1134,7 +1134,7 @@ class PaperList extends BaseList {
         }
 
         // header cells
-        $url = $this->search->url_site_relative();
+        $url = $this->search->url_site_relative_raw();
         if (!defval($options, "noheader")) {
             $colhead .= " <thead>\n  <tr class=\"pl_headrow\">\n";
             $ord = 0;

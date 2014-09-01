@@ -602,7 +602,7 @@ if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
 <div class='g'></div>";
 
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"],
-                                         "urlbase" => hoturl_site_relative("autoassign")));
+                                         "urlbase" => hoturl_site_relative_raw("autoassign")));
     $plist = new PaperList($search);
     $plist->display .= " reviewers ";
     $plist->papersel = array_fill_keys($papersel, 1);
