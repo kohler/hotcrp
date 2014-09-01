@@ -238,7 +238,6 @@ function searchQuickref() {
     _searchQuickrefRow("", "ve*", "words that <em>start with</em> “ve” in title, abstract, authors");
     _searchQuickrefRow("", "*me*", "words that <em>contain</em> “me” in title, abstract, authors");
     _searchQuickrefRow("", "very THEN new", "like “very OR new”, but papers matching “very” appear earlier in the sorting order");
-    _searchQuickrefRow("", "1-5 THEN 6-10 show:compactcolumns", "columnar display");
     _searchQuickrefRow("Title", "ti:flexible", "title contains “flexible”");
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains “very novel”");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains “poletto”");
@@ -340,6 +339,15 @@ function searchQuickref() {
         _searchQuickrefRow($t, "$r->abbreviation:finger", "other abbreviations accepted");
         _searchQuickrefRow($t, "$r->abbreviation:any", "at least one completed review has text in the $r->name_html field");
     }
+
+    _searchQuickrefRow("Display", "show:tags show:conflicts", "show tags and PC conflicts in the results");
+    _searchQuickrefRow("", "hide:title", "hide title in the results");
+    _searchQuickrefRow("", "show:(max(ovemer))", "show a <a href=\"" . hoturl("help", "t=formulas") . "\">formula</a>");
+    _searchQuickrefRow("", "sort:ovemer", "sort by overall merit score");
+    _searchQuickrefRow("", "sort:-status", "sort by reverse status");
+    _searchQuickrefRow("", "edit:#discuss", "edit the values for tag “#discuss”");
+    _searchQuickrefRow("", "1-5 THEN 6-10 show:cc", "columnar display");
+
     echo "</table>\n";
 }
 

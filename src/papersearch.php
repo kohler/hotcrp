@@ -1148,12 +1148,11 @@ class PaperSearch {
         $words = array();
         $bypos = false;
         while ($text !== "") {
-            preg_match(',\A([^-+\s\(]+|[-+])(.*)\z,s', $text, $m);
-            if ($m[2] !== "" && $m[2][0] === "(") {
-                $pos = self::find_end_balanced_parens($m[2]);
-                $m[1] .= substr($m[2], 0, $pos);
-                $m[2] = substr($m[2], $pos);
-            }
+            if (substr($text, 0, 1) === "(") {
+                $pos = self::find_end_balanced_parens($text);
+                $m = array("", substr($text, 0, $pos), substr($text, $pos));
+            } else
+                preg_match(',\A([^-+\s\(]+|[-+])(.*)\z,s', $text, $m);
             $words[] = $m[1];
             $text = ltrim($m[2]);
             if ($m[1] == "by" && $bypos === false)
@@ -1364,7 +1363,7 @@ class PaperSearch {
             $views = array();
             $a = ($keyword == "hide" ? false : ($editing ? "edit" : true));
             $word = simplify_whitespace($word);
-            if ($word[0] == "-" && !$sorting)
+            if (substr($word, 0, 1) == "-" && !$sorting)
                 list($a, $word) = array(false, substr($word, 1));
             if ($word[0] == "#") {
                 if ($editing)
