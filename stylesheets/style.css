@@ -2044,6 +2044,8 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	box-shadow: 0 0 5px #46678c;
 	-moz-box-shadow: 0 0 5px #46678c;
 	-webkit-box-shadow: 0 0 5px #46678c;
+	z-index: 1000;
+	color: black;
 }
 #taghelp_p {
 	top: 0%;
