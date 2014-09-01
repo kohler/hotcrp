@@ -659,7 +659,7 @@ their reviews.  The interface appears above each visible review:
 <div class='g'></div>
 
 <div class='rev_rating'>
-  How helpful is this review? &nbsp;<form><div>"
+  How helpful is this review? &nbsp;<form class><div class=\"inline\">"
                   . Ht::select("rating", ReviewForm::$rating_types, "n")
                   . "</div></form>
 </div>
