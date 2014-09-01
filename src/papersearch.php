@@ -1137,12 +1137,15 @@ class PaperSearch {
                       "count" => "C", "counts" => "C", "av" => "A",
                       "ave" => "A", "average" => "A", "med" => "E",
                       "median" => "E", "var" => "V", "variance" => "V",
-                      "max-min" => "D", "my" => "Y", "score" => "",
-                      "-" => "down", "+" => "up");
+                      "max-min" => "D", "my" => "Y", "score" => "");
 
         $text = simplify_whitespace($text);
         $sort = (object) array("type" => null, "field" => null, "reverse" => null,
                                "score" => null, "empty" => $text == "");
+        if (($ch1 = substr($text, 0, 1)) === "-" || $ch1 === "+") {
+            $sort->reverse = $ch1 === "-";
+            $text = ltrim(substr($text, 1));
+        }
 
         // separate text into words
         $words = array();
@@ -1152,7 +1155,7 @@ class PaperSearch {
                 $pos = self::find_end_balanced_parens($text);
                 $m = array("", substr($text, 0, $pos), substr($text, $pos));
             } else
-                preg_match(',\A([^-+\s\(]+|[-+])(.*)\z,s', $text, $m);
+                preg_match(',\A([^\s\(]+)(.*)\z,s', $text, $m);
             $words[] = $m[1];
             $text = ltrim($m[2]);
             if ($m[1] == "by" && $bypos === false)
