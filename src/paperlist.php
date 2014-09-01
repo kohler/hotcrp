@@ -84,21 +84,17 @@ class PaperList extends BaseList {
             $code .= "if ((\$x = \$a->_then_sort_info - \$b->_then_sort_info)) return \$x < 0 ? -1 : 1;\n";
         }
 
-        $magic_sort_info = array();
-        foreach ($this->sorters as $s) {
-            $magic_sort_info[] = $s->field;
-            $s->field->sort_prepare($this, $rows);
-            $rev = ($s->reverse && count($magic_sort_info) > 1 ? "-" : "");
-            $code .= "\$x = \$x ? \$x : $rev\$magic_sort_info["
-                . (count($magic_sort_info) - 1) . "]->"
-                . $s->field->sorter . "(\$a, \$b);\n";
+        $magic_sort_info = $this->sorters;
+        foreach ($this->sorters as $i => $s) {
+            $s->field->sort_prepare($this, $rows, $s);
+            $rev = ($s->reverse ? "-" : "");
+            $code .= "if (!\$x) { \$s = \$magic_sort_info[$i]; "
+                . "\$x = $rev\$s->field->" . $s->field->sorter
+                . "(\$a, \$b, \$s); }\n";
         }
 
-        $code .= "\$x = \$x ? \$x : \$a->paperId - \$b->paperId;\n";
-        if ($this->sorters[0]->reverse)
-            $code .= "return \$x > 0 ? -1 : (\$x == 0 ? 0 : 1);\n";
-        else
-            $code .= "return \$x < 0 ? -1 : (\$x == 0 ? 0 : 1);\n";
+        $code .= "if (!\$x) \$x = \$a->paperId - \$b->paperId;\n";
+        $code .= "return \$x < 0 ? -1 : (\$x == 0 ? 0 : 1);\n";
 
         usort($rows, create_function("\$a, \$b", $code));
         unset($magic_sort_info);
@@ -1004,8 +1000,8 @@ class PaperList extends BaseList {
                     } else if ($s->type) {
                         if ($this->contact->canViewTags(null)
                             && ($tagger = new Tagger)
-                            && $tagger->check($s->type)
-                            && ($result = $Conf->qe("select paperId from PaperTag where tag='" . sqlq($s->type) . "' limit 1"))
+                            && ($tag = $tagger->check($s->type))
+                            && ($result = $Conf->qe("select paperId from PaperTag where tag='" . sqlq($tag) . "' limit 1"))
                             && edb_nrows($result))
                             $this->search->warn("Unrecognized sort “" . htmlspecialchars($s->type) . "”. Did you mean “sort:#" . htmlspecialchars($s->type) . "”?");
                         else
@@ -1180,7 +1176,7 @@ class PaperList extends BaseList {
                           || $fdef->name == "edit" . $this->sorters[0]->type)
                          && $sortUrl)
                         || $defsortname == $this->sorters[0]->type))
-                    $colhead .= '<a class="pl_sort_def' . ($this->sorters[0]->reverse ? "_rev" : "") . '" rel="nofollow" title="Reverse sort" href="' . $sortUrl . urlencode($this->sorters[0]->type . "," . ($this->sorters[0]->reverse ? "n" : "r")) . '">' . $ftext . "</a>";
+                    $colhead .= '<a class="pl_sort_def' . ($this->sorters[0]->reverse ? "_rev" : "") . '" rel="nofollow" title="Reverse sort" href="' . $sortUrl . urlencode($this->sorters[0]->type . ($this->sorters[0]->reverse ? "" : " reverse")) . '">' . $ftext . "</a>";
                 else if ($fdef->sorter && $sortUrl)
                     $colhead .= $q . urlencode($fdef->name) . "\">" . $ftext . "</a>";
                 else if ($defsortname)

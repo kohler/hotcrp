@@ -474,13 +474,12 @@ class Tagger {
         if (!$this->contact->privChair) {
             $nexttags = array();
             foreach ($tags as $tag) {
-                if ($this->is_chair($tag))
+                if ($this->is_chair($tag)) {
+                    defappend($Error["tags"], "Only the chair can change tag “" . htmlspecialchars(self::base($tag)) . "”.<br />\n");
                     $badtags[] = $tag;
-                else
+                } else
                     $nexttags[] = $tag;
             }
-            if (count($nexttags) != count($tags))
-                defappend($Error["tags"], "Tag “" . htmlspecialchars(self::base($badtags[0])) . "” can only be changed by the chair.<br />\n");
             $tags = $nexttags;
         }
 
@@ -493,9 +492,11 @@ class Tagger {
                 $base = self::base($tag);
                 $lbase = strtolower($base);
                 $twiddle = strpos($base, "~");
-                if ($this->is_vote($base))
+                if ($this->is_vote($base)) {
+                    $baseview = htmlspecialchars($base);
+                    defappend($Error["tags"], "The shared tag “{$baseview}” keeps track of vote totals and cannot be modified.  Use the private tag “~{$baseview}” to change your vote (for instance, “~{$baseview}#1” is one vote).<br />\n");
                     $badtags[] = $tag;
-                else if ($twiddle > 0 && $this->is_vote(substr($base, $twiddle + 1))) {
+                } else if ($twiddle > 0 && $this->is_vote(substr($base, $twiddle + 1))) {
                     if (isset($vchanges[$lbase])) // only one vote per tag
                         $multivote++;
                     else {
@@ -508,10 +509,6 @@ class Tagger {
                 } else
                     $nexttags[] = $tag;
             }
-            if (count($nexttags) + $multivote != count($tags)) {
-                $t = htmlspecialchars(self::base($badtags[count($badtags) - 1]));
-                defappend($Error["tags"], "The shared tag “${t}” keeps track of vote totals and cannot be modified.  Use the private tag “~${t}” to change your vote (for instance, “~${t}#1” is one vote).<br />\n");
-            }
             $tags = $nexttags;
         }
 
@@ -519,14 +516,12 @@ class Tagger {
         if (!$this->contact->privChair && $this->has_rank()) {
             $nexttags = array();
             foreach ($tags as $tag) {
-                if ($this->is_rank($tag))
+                if ($this->is_rank($tag)) {
+                    $baseview = htmlspecialchars(self::base($tag));
+                    defappend($Error["tags"], "The shared tag “{$baseview}” keeps track of the global ranking and cannot be modified.  Use the private tag “~{$baseview}” to change your ranking.<br />\n");
                     $badtags[] = $tag;
-                else
+                } else
                     $nexttags[] = $tag;
-            }
-            if (count($nexttags) != count($tags)) {
-                $t = htmlspecialchars(self::base($badtags[count($badtags) - 1]));
-                defappend($Error["tags"], "The shared tag “${t}” keeps track of the global ranking and cannot be modified.  Use the private tag “~${t}” to change your ranking.<br />\n");
             }
             $tags = $nexttags;
         }
@@ -645,7 +640,8 @@ class Tagger {
                     // check vote totals
                     if (isset($vchanges[$lbase])) {
                         if ($index > $vchanges[$lbase]) {
-                            $vreduced[substr($lbase, strpos($base, "~"))] = true;
+                            $vmarker = substr($lbase, strpos($base, "~"));
+                            $vreduced[$vmarker] = @max($vreduced[$vmarker], $index - $vchanges[$lbase]);
                             $index = $vchanges[$lbase];
                         } else if ($index < 0) // no negative votes, smarty
                             $index = 0;
@@ -756,16 +752,11 @@ class Tagger {
         $Conf->qe("unlock tables");
 
         // complain about reduced tags
-        if (count($vreduced) > 0) {
-            ksort($vreduced);
-            $vtext = array();
-            $q = "";
+        if (count($vreduced) > 0)
             foreach ($vreduced as $k => $v) {
-                $vtext[] = "<a href=\"" . hoturl("search", "q=rorder:$k&amp;showtags=1") . "\">" . htmlspecialchars($k) . "</a>";
-                $q .= ($q === "" ? "" : "+") . "rorder:$k";
+                $href = hoturl("search", "q=" . urlencode("edit:#$k sort:-#$k"));
+                defappend($Error["tags"], "You exhausted your allotment for “<a href=\"$href\">#" . htmlspecialchars($k) . "</a>”, so your vote was reduced by $v. You may want to <a href=\"$href\">examine your votes</a>.");
             }
-            defappend($Error["tags"], "You exhausted your vote allotment for " . commajoin($vtext) . ".  You may want to change <a href=\"" . hoturl("search", "q=$q&amp;showtags=1") . "\">your other votes</a> and try again.<br />\n");
-        }
 
         $modeexplanation = array("so" => "define order", "ao" => "add to order", "sos" => "define gapless order", "sor" => "define random order", "aos" => "add to gapless order", "d" => "remove", "da" => "clear twiddle", "s" => "define", "a" => "add", "p" => "set");
         $this->contact->log_activity("Tag " . $modeexplanation[$mode] . ": " . join(", ", $tags), $pids);

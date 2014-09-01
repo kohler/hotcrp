@@ -2073,6 +2073,12 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	background-color: rgba(246, 244, 189, 0.88);
 	border: 1px solid #b8af25;
 }
+.bubble.errorbubble {
+	max-width: 20em;
+	background-color: rgba(255, 238, 238, 0.88);
+	border: 2px solid red;
+	font-size: smaller;
+}
 .bubble > .bubcontent {
 	margin: 2px 0;
 }
@@ -2084,8 +2090,14 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 .bubtail0.l, .bubtail0.r {
 	border-color: transparent #b8af25;
 }
+.bubtail0.errorbubble.l, .bubtail0.errorbubble.r {
+	border-color: transparent red;
+}
 .bubtail1.l, .bubtail1.r {
 	border-color: transparent rgba(246, 244, 189, 0.9);
+}
+.bubtail1.errorbubble.l, .bubtail1.errorbubble.r {
+	border-color: transparent rgba(255, 238, 238, 0.9);
 }
 .bubtail0.l {
 	left: -10px;

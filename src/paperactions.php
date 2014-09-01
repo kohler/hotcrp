@@ -210,9 +210,9 @@ class PaperActions {
             $tagger = new Tagger;
             if (isset($_REQUEST["tags"]))
                 $tagger->save($prow->paperId, $_REQUEST["tags"], "p");
-            if (isset($_REQUEST["addtags"]))
+            if (@trim($_REQUEST["addtags"]) !== "")
                 $tagger->save($prow->paperId, $_REQUEST["addtags"], "a");
-            if (isset($_REQUEST["deltags"]))
+            if (@trim($_REQUEST["deltags"]) !== "")
                 $tagger->save($prow->paperId, $_REQUEST["deltags"], "d");
             $prow->load_tags();
             $tags_edit_text = $tagger->unparse($tagger->editable($prow->paperTags));

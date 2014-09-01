@@ -1047,6 +1047,14 @@ function setajaxcheck(elt, rv) {
             make_outline_flasher(elt, "0, 200, 0");
         else
             elt.style.outline = "5px solid red";
+        if (rv.error) {
+            var bub = make_bubble(rv.error, "errorbubble");
+            bub.color("red");
+            bub.near(elt);
+            jQuery(elt).one("input change", function () {
+                bub.remove();
+            });
+        }
     }
 }
 
@@ -1751,8 +1759,9 @@ return function () {
 })();
 
 
-function make_bubble(content) {
-    var bubdiv = $("<div class='bubble'><div class='bubtail0 r'></div><div class='bubcontent'></div><div class='bubtail1 r'></div></div>")[0], dir = "r";
+function make_bubble(content, bubclass) {
+    bubclass = bubclass ? " " + bubclass : "";
+    var bubdiv = $('<div class="bubble' + bubclass + '"><div class="bubtail0' + bubclass + ' r"></div><div class="bubcontent"></div><div class="bubtail1' + bubclass + ' r"></div></div>')[0], dir = "r";
     $("body")[0].appendChild(bubdiv);
 
     function position_tail() {
@@ -1775,16 +1784,22 @@ function make_bubble(content) {
             bubdiv.style.left = Math.floor(x) + "px";
             bubdiv.style.top = Math.floor(y) + "px";
         },
+        near: function (elt) {
+            var pos = $(elt).geometry(true);
+            this.show(pos.left - 8, (pos.top + pos.bottom) / 2);
+        },
         remove: function () {
-            bubdiv.parentElement.removeChild(bubdiv);
-            bubdiv = null;
+            if (bubdiv) {
+                bubdiv.parentElement.removeChild(bubdiv);
+                bubdiv = null;
+            }
         },
         color: function (color) {
             var ch = bubdiv.childNodes;
             color = (color ? " " + color : "");
-            bubdiv.className = "bubble" + color;
-            ch[0].className = "bubtail0 " + dir + color;
-            ch[2].className = "bubtail1 " + dir + color;
+            bubdiv.className = "bubble" + bubclass + color;
+            ch[0].className = "bubtail0 " + dir + bubclass + color;
+            ch[2].className = "bubtail1 " + dir + bubclass + color;
         },
         content: function (content) {
             var n = bubdiv.childNodes[1];

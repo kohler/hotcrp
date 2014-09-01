@@ -1378,18 +1378,11 @@ class PaperSearch {
             $views = array();
             $a = ($keyword == "hide" ? false : ($editing ? "edit" : true));
             $word = simplify_whitespace($word);
-            if (substr($word, 0, 1) == "-" && !$sorting)
+            $ch1 = substr($word, 0, 1);
+            if ($ch1 === "-" && !$sorting)
                 list($a, $word) = array(false, substr($word, 1));
-            if ($word[0] == "#") {
-                if ($editing)
-                    $word = "tagval:" . substr($word, 1);
-                else
-                    $word = "tag:" . substr($word, 1);
-            }
             $wtype = $word;
-            if (preg_match('/\A(.*?)[#]/', $wtype, $m))
-                $wtype = $m[1];
-            else if ($sorting) {
+            if ($sorting) {
                 $sort = self::parse_sorter($wtype);
                 $wtype = $sort->type;
             }

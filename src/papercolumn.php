@@ -48,7 +48,7 @@ class PaperColumn extends Column {
     public function analyze($pl, &$rows) {
     }
 
-    public function sort_prepare($pl, &$rows) {
+    public function sort_prepare($pl, &$rows, $sorter) {
     }
     public function id_sorter($a, $b) {
         return $a->paperId - $b->paperId;
@@ -172,7 +172,7 @@ class StatusPaperColumn extends PaperColumn {
                             array("cssname" => "status", "sorter" => "status_sorter"));
         $this->is_long = $is_long;
     }
-    public function sort_prepare($pl, &$rows) {
+    public function sort_prepare($pl, &$rows, $sorter) {
         $force = $pl->search->limitName != "a" && $pl->contact->privChair;
         foreach ($rows as $row)
             $row->_status_sort_info = ($pl->contact->canViewDecision($row, $force) ? $row->outcome : -10000);
@@ -217,7 +217,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
         return $pl->contact->is_reviewer() || $this->auview
             || $pl->contact->privChair;
     }
-    public function sort_prepare($pl, &$rows) {
+    public function sort_prepare($pl, &$rows, $sorter) {
         foreach ($rows as $row)
             $row->_review_status_sort_info = !$this->content_empty($pl, $row);
     }
@@ -439,7 +439,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
         } else
             $this->xreviewer = false;
     }
-    public function sort_prepare($pl, &$rows) {
+    public function sort_prepare($pl, &$rows, $sorter) {
         if (!$this->xreviewer) {
             foreach ($rows as $row) {
                 $row->_reviewer_type_sort_info = $row->reviewType;
@@ -850,6 +850,7 @@ class TagPaperColumn extends PaperColumn {
     protected $dtag;
     protected $ctag;
     protected $editable = false;
+    static private $sortf_ctr = 0;
     public function __construct($name, $tag, $is_value) {
         parent::__construct($name, Column::VIEW_COLUMN, array("sorter" => "tag_sorter"));
         $this->dtag = $tag;
@@ -857,7 +858,7 @@ class TagPaperColumn extends PaperColumn {
         $this->cssname = ($this->is_value ? "tagval" : "tag");
     }
     public function make_field($name) {
-        $p = strpos($name, ":");
+        $p = strpos($name, ":") ? : strpos($name, "#");
         return parent::register(new TagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
     public function prepare($pl, &$queryOptions, $visible) {
@@ -876,21 +877,25 @@ class TagPaperColumn extends PaperColumn {
         else
             return (int) substr($row->paperTags, $p + strlen($this->ctag));
     }
-    public function sort_prepare($pl, &$rows) {
+    public function sort_prepare($pl, &$rows, $sorter) {
         global $Conf;
-        $this->ctag_sorter = $sorter = "_tag_sort_info." . $this->ctag;
+        $sorter->sortf = $sortf = "_tag_sort_info." . self::$sortf_ctr;
+        ++self::$sortf_ctr;
         $careful = !$pl->contact->privChair
             && $Conf->setting("tag_seeall") <= 0;
+        $unviewable = $empty = $sorter->reverse ? -2147483647 : 2147483647;
+        if ($this->editable)
+            $empty = $sorter->reverse ? -2147483646 : 2147483646;
         foreach ($rows as $row)
             if ($careful && !$pl->contact->canViewTags($row, true))
-                $row->$sorter = 2147483647;
-            else if (($row->$sorter = $this->_tag_value($row)) === null)
-                $row->$sorter = 2147483646 + !$this->editable;
+                $row->$sortf = $unviewable;
+            else if (($row->$sortf = $this->_tag_value($row)) === null)
+                $row->$sortf = $empty;
     }
-    public function tag_sorter($a, $b) {
-        $sorter = $this->ctag_sorter;
-        return $a->$sorter < $b->$sorter ? -1 :
-            ($a->$sorter == $b->$sorter ? 0 : 1);
+    public function tag_sorter($a, $b, $sorter) {
+        $sortf = $sorter->sortf;
+        return $a->$sortf < $b->$sortf ? -1 :
+            ($a->$sortf == $b->$sortf ? 0 : 1);
     }
     public function header($pl, $row, $ordinal) {
         return "#$this->dtag";
@@ -923,7 +928,7 @@ class EditTagPaperColumn extends TagPaperColumn {
         $this->editable = true;
     }
     public function make_field($name) {
-        $p = strpos($name, ":");
+        $p = strpos($name, ":") ? : strpos($name, "#");
         return parent::register(new EditTagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
     public function prepare($pl, &$queryOptions, $visible) {
@@ -1007,7 +1012,7 @@ class ScorePaperColumn extends PaperColumn {
         }
         return true;
     }
-    public function sort_prepare($pl, &$rows) {
+    public function sort_prepare($pl, &$rows, $sorter) {
         $scoreName = $this->score . "Scores";
         $view_score = $this->form_field->view_score;
         foreach ($rows as $row)
@@ -1098,7 +1103,7 @@ class FormulaPaperColumn extends PaperColumn {
         Formula::add_query_options($queryOptions, $expr, $pl->contact);
         return true;
     }
-    public function sort_prepare($pl, &$rows) {
+    public function sort_prepare($pl, &$rows, $sorter) {
         $formulaf = $this->formula_function;
         $this->formula_sorter = $sorter = "_formula_sort_info." . $this->formula->name;
         foreach ($rows as $row)
@@ -1206,7 +1211,7 @@ class SearchSortPaperColumn extends PaperColumn {
         parent::__construct("searchsort", Column::VIEW_NONE,
                             array("sorter" => "search_sort_sorter"));
     }
-    public function sort_prepare($pl, &$rows) {
+    public function sort_prepare($pl, &$rows, $sorter) {
         $sortInfo = array();
         foreach ($pl->search->numbered_papers() as $k => $v)
             if (!isset($sortInfo[$v]))
@@ -1232,7 +1237,7 @@ class TagOrderSortPaperColumn extends PaperColumn {
             $queryOptions["tagIndex"][] = $x->tag;
         return true;
     }
-    public function sort_prepare($pl, &$rows) {
+    public function sort_prepare($pl, &$rows, $sorter) {
         global $Conf;
         $careful = !$pl->contact->privChair
             && $Conf->setting("tag_seeall") <= 0;
@@ -1360,6 +1365,8 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("tagval:", new TagPaperColumn(null, null, true));
     PaperColumn::register_factory("edittag:", new EditTagPaperColumn(null, null, false));
     PaperColumn::register_factory("edittagval:", new EditTagPaperColumn(null, null, true));
+    PaperColumn::register_factory("#", new TagPaperColumn(null, null, true));
+    PaperColumn::register_factory("edit#", new EditTagPaperColumn(null, null, true));
 
     $rf = reviewForm();
     $score = null;
