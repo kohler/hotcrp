@@ -2002,6 +2002,8 @@ class Conference {
         $huser = (object) array();
         if ($Me && $Me->email)
             $huser->email = $Me->email;
+        if ($Me && $Me->is_pclike())
+            $huser->is_pclike = true;
         $this->scriptStuff .= ";hotcrp_user=" . json_encode($huser);
 
         $pid = @$_REQUEST["paperId"];
@@ -2025,8 +2027,6 @@ class Conference {
         if ($trackerowner)
             $this->scriptStuff .= ";hotcrp_deadlines.tracker(0)";
 
-        if ($Me && $Me->isPC)
-            $this->scriptStuff .= ";alltags.url=\"" . hoturl("search", "alltags=1") . "\"";
         $this->scriptStuff .= "</script>";
 
         // If browser owns tracker, send it the script immediately

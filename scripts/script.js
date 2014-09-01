@@ -1554,9 +1554,9 @@ function getcb(v) {
     cb && cb(a);
 }
 return function (callback) {
-    if (!status && alltags.url) {
+    if (!status && hotcrp_user.is_pclike) {
         status = 1;
-        Miniajax.get(alltags.url, getcb);
+        Miniajax.get(hoturl("search", "alltags=1"), getcb);
     }
     if (status == 1)
         cb = add_callback(cb, callback);
