@@ -81,7 +81,7 @@ class PaperList extends BaseList {
         if (($thenmap = $this->search->thenmap)) {
             foreach ($rows as $row)
                 $row->_then_sort_info = $thenmap[$row->paperId];
-            $code .= "\$x = \$x ? \$x : \$a->_then_sort_info - \$b->_then_sort_info;\n";
+            $code .= "if ((\$x = \$a->_then_sort_info - \$b->_then_sort_info)) return \$x < 0 ? -1 : 1;\n";
         }
 
         $magic_sort_info = array();

@@ -325,6 +325,13 @@ class PaperSearch {
         "sort" => "sort", "showsort" => "showsort",
         "sortshow" => "showsort", "editsort" => "editsort",
         "sortedit" => "editsort");
+    static private $_noheading_keywords = array(
+        "HEADING" => "HEADING", "heading" => "HEADING",
+        "show" => "show", "VIEW" => "show", "view" => "show",
+        "hide" => "hide", "edit" => "edit",
+        "sort" => "sort", "showsort" => "showsort",
+        "sortshow" => "showsort", "editsort" => "editsort",
+        "sortedit" => "editsort");
 
 
     function __construct($me, $opt) {
@@ -1130,7 +1137,8 @@ class PaperSearch {
                       "count" => "C", "counts" => "C", "av" => "A",
                       "ave" => "A", "average" => "A", "med" => "E",
                       "median" => "E", "var" => "V", "variance" => "V",
-                      "max-min" => "D", "my" => "Y", "score" => "");
+                      "max-min" => "D", "my" => "Y", "score" => "",
+                      "-" => "down", "+" => "up");
 
         $text = simplify_whitespace($text);
         $sort = (object) array("type" => null, "field" => null, "reverse" => null,
@@ -1140,7 +1148,7 @@ class PaperSearch {
         $words = array();
         $bypos = false;
         while ($text !== "") {
-            preg_match(',\A([^\s\(]*)(.*)\z,s', $text, $m);
+            preg_match(',\A([^-+\s\(]+|[-+])(.*)\z,s', $text, $m);
             if ($m[2] !== "" && $m[2][0] === "(") {
                 $pos = self::find_end_balanced_parens($m[2]);
                 $m[1] .= substr($m[2], 0, $pos);
@@ -1356,7 +1364,7 @@ class PaperSearch {
             $views = array();
             $a = ($keyword == "hide" ? false : ($editing ? "edit" : true));
             $word = simplify_whitespace($word);
-            if ($word[0] == "-")
+            if ($word[0] == "-" && !$sorting)
                 list($a, $word) = array(false, substr($word, 1));
             if ($word[0] == "#") {
                 if ($editing)
@@ -1508,7 +1516,7 @@ class PaperSearch {
                     $curqe = $this->_searchQueryWord($word, true);
                     // Don't include 'show:' in headings.
                     if (($colon = strpos($word, ":")) !== false
-                        && @self::$_keywords[substr($word, 0, $colon)] === "show") {
+                        && @self::$_noheading_keywords[substr($word, 0, $colon)]) {
                         $headstr .= substr($xstr, 0, -strlen($str));
                         $xstr = $nextstr;
                     }
