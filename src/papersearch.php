@@ -75,7 +75,7 @@ class SearchTerm {
         if (!$float1 || !$float2)
             return $float1 ? $float1 : $float2;
         else
-            return array_merge_recursive($float1, $float2);
+            return array_replace_recursive($float1, $float2);
     }
     static function extract_float(&$float, $qe) {
         if (!isset($float))
