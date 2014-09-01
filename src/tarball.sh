@@ -119,6 +119,7 @@ src/contactlist.php
 src/distoptions.php
 src/formula.php
 src/helpers.php
+src/homepage.php
 src/hotcrpdocument.php
 src/init.php
 src/initweb.php
