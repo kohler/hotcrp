@@ -292,7 +292,7 @@ class PaperActions {
         while (($row = edb_row($result))) {
             $twiddle = strpos($row[0], "~");
             if ($twiddle === false
-                || ($twiddle == 0 && $row[0][1] == "~"))
+                || ($twiddle == 0 && $row[0][1] == "~" && $Me->privChair))
                 $tags[] = $row[0];
             else if ($twiddle > 0 && substr($row[0], 0, $twiddle) == $Me->contactId)
                 $tags[] = substr($row[0], $twiddle);
