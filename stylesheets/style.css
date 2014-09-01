@@ -1032,6 +1032,9 @@ input.textlite-tt, textarea.tt {
 .reviewtext, div#popup_ref textarea {
 	width: 99%;
 }
+.reviewtext {
+	max-width: 40em;
+}
 textarea[name=comment] {
 	min-height: 5em;
 }
@@ -1566,6 +1569,12 @@ hr {
 	height: 1px;
 	color: #9999cc; /* for IE6 */
 	background-color: #9999cc;
+}
+hr.c {
+	margin: 0;
+	border: 0 none;
+	height: 0;
+	clear: both;
 }
 div.msgpg { /* message-paper gap */
 	margin: 2ex 0;
@@ -2393,19 +2402,20 @@ div.response div.cmtg div.xinfo {
 	background: linear-gradient(to bottom, rgba(255,221,193,0), rgba(255,221,193,0.4) 4px, rgba(255,221,193,0.4) 50%, transparent 50%),
 		linear-gradient(to top, rgba(255,221,193,0), rgba(255,221,193,0.4) 4px, rgba(255,221,193,0.4) 50%, transparent 50%);
 }
-div.cmtv div.aa {
-	margin: 0.2em -12px 0;
+div.aab {
+	margin: 0.2em -12px 8px;
 	padding: 0.5em 12px;
 	background: none;
 	border-radius: 0;
 }
-div.cmtv div.aahc.alert div.aa {
+div.aahc.alert div.aab {
 	background: #ffaaaa;
 	background: linear-gradient(to bottom, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 50%, transparent 50%),
 		linear-gradient(to top, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 50%, transparent 50%);
 }
 div.revtext, div.cmttext {
 	white-space: pre-wrap;
+	max-width: 40em;
 }
 div#foldaddcomment div.cmtv {
 	padding-bottom: 0;

@@ -347,5 +347,5 @@ if ($reviewer > 0) {
         "</div></div></form></div>\n";
 }
 
-echo "<div class='clear'></div>";
+echo '<hr class="c" />';
 $Conf->footer();

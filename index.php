@@ -629,5 +629,5 @@ if ($Me->has_email() && $Conf->setting("rev_tokens"))
     reviewTokenGroup(true);
 
 
-echo "<div class='clear'></div>\n";
+echo "<hr class=\"c\" />\n";
 $Conf->footer();

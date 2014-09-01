@@ -166,7 +166,7 @@ class PaperTable {
         if (isset($Error[$what]) || isset($Warning[$what]))
             $c .= " error";
         return $c . '"><span class="papfn">' . $name
-            . '</span><div class="clear"></div></div>';
+            . '</span><hr class="c" /></div>';
     }
 
     private function papt($what, $name, $extra = array()) {
@@ -225,7 +225,7 @@ class PaperTable {
                 . Ht::img("edit.png", "[Edit]", "bmabs")
                 . "</span>&nbsp;<u class=\"x\">Edit</u></a></span>";
         }
-        $c .= "<div class=\"clear\"></div></div>";
+        $c .= "<hr class=\"c\" /></div>";
         return $c;
     }
 
@@ -669,7 +669,7 @@ class PaperTable {
             echo '</span>';
         if (!$viewable || $this->allFolded)
             echo '</a>';
-        echo '</span><div class="clear"></div></div>';
+        echo '</span><hr class="c" /></div>';
 
         // contents
         $inauthors = "";
@@ -758,10 +758,10 @@ class PaperTable {
             // display it
             $folded = $showAllOptions && !$Me->canViewPaperOption($this->prow, $o, false);
             if (@$o->highlight || @$o->near_submission) {
-                $x = "<div class='pgsm" . ($folded ? " fx8" : "") . "'>"
-                    . "<div class='papt'><span class='papfn'>"
+                $x = '<div class="pgsm' . ($folded ? " fx8" : "") . '">'
+                    . '<div class="papt"><span class="papfn">'
                     . ($show_on ? $on : $ox) . "</span>"
-                    . "<div class='clear'></div></div>";
+                    . '<hr class="c" /></div>';
                 if ($show_on && $ox !== true)
                     $x .= "<div class='pavb'>" . $ox . "</div>";
                 $xoptionhtml[] = $x . "</div>\n";
@@ -865,12 +865,12 @@ class PaperTable {
             "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
             '><span class="papfn"><a class="q" href="#" ',
             "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
-            ' title="Edit contacts">', expander(true), 'Contacts</a></span><div class="clear"></div></div>',
+            ' title="Edit contacts">', expander(true), 'Contacts</a></span><hr class="c" /></div>',
             '<div class="papt fx0',
             (@$Error["contactAuthor"] ? " error" : ""),
             '"><span class="papfn">',
             ($always_unfold ? "" : expander(false)),
-            'Contacts</span><div class="clear"></div></div>';
+            'Contacts</span><hr class="c" /></div>';
 
         // Non-editable version
         echo '<div class="papv fn0">';
@@ -1760,7 +1760,7 @@ class PaperTable {
             if ($canAssign)
                 $this->_paptabTabLink("Assign", hoturl("assign", "p=$prow->paperId"), "assign18.png", $this->mode == "assign");
 
-            echo "<div class='clear'></div></div></div>\n";
+            echo "<hr class=\"c\" /></div></div>\n";
         }
 
         // paper number

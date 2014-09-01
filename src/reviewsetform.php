@@ -172,7 +172,7 @@ function rf_show() {
          . '</div><div class="f-ix">'
          .   '<div class="f-c">Visibility</div>'
          .   Ht::select('authorView_$', array("author" => "Authors &amp; reviewers", "pc" => "Reviewers only", "admin" => "Administrators only"), array("class" => "reviewfield_authorView", "id" => 'authorView_$'))
-         . '</div><div class="clear"></div></div>'
+         . '</div><hr class="c" /></div>'
          . '<div class="f-i errloc_description_$ fx">'
          .   '<div class="f-c">Description</div>'
          .   Ht::textarea('description_$', null, array("class" => "reviewtext", "rows" => 6, "id" => 'description_$'))

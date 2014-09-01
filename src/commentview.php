@@ -176,7 +176,7 @@ class CommentView {
                 $cmtvis = "<span class='cmtvis'>($x)</span>";
         }
         echo '<span class="cmtfn">', join(' <span class="barsep">&nbsp;|&nbsp;</span> ', $cmtfn), '</span>',
-            $cmtvis, '<div class="clear"></div>';
+            $cmtvis, '<hr class="c" />';
     }
 
     function show($prow, $crow, $useRequest, $editMode, $foldnew = true) {
@@ -302,7 +302,7 @@ class CommentView {
         $Conf->footerScript("docmtvis('.cmtvistable')");
 
         // actions
-        echo "<div class=\"clear\"></div>\n";
+        echo "<hr class=\"c\" />\n";
         $buttons = array();
         if (!$Me->timeReview($prow, null) && !$Conf->setting("cmt_always")) {
             $whyNot = array("deadline" => "pcrev_hard");
@@ -315,7 +315,7 @@ class CommentView {
             $buttons[] = Ht::submit("deletecomment", "Delete comment");
         } else
             $buttons[] = Ht::js_button("Cancel", "cancel_comment()");
-        echo Ht::actions($buttons, null);
+        echo Ht::actions($buttons, array("class" => "aab"));
 
         echo "</div></div></form></div>\n\n";
     }

@@ -258,11 +258,26 @@ class Ht {
             . '</textarea>';
     }
 
-    static function actions($actions, $js = null, $extra = "") {
+    static function actions($actions, $js = array(), $extra_text = "") {
         if (!count($actions))
             return "";
-        $t = "<div class=\"aa\"" . self::extra($js) . ">";
-        if (count($actions) > 1 || is_array($actions[0])) {
+        $js = $js ? : array();
+        if (!isset($js["class"]))
+            $js["class"] = "aa";
+        $t = "<div" . self::extra($js) . ">";
+        if ($js["class"] === "aab") {
+            foreach ($actions as $a) {
+                $t .= '<div class="aabut">';
+                if (is_array($a)) {
+                    $t .= $a[0];
+                    if (count($a) > 1)
+                        $t .= '<br><span class="hint">' . $a[1] . '</span>';
+                } else
+                    $t .= $a;
+                $t .= '</div>';
+            }
+            $t .= '<hr class="c">';
+        } else if (count($actions) > 1 || is_array($actions[0])) {
             $t .= "<table class=\"pt_buttons\"><tr>";
             $explains = 0;
             foreach ($actions as $a) {
@@ -288,7 +303,7 @@ class Ht {
             $t .= "</table>";
         } else
             $t .= $actions[0];
-        return $t . $extra . "</div>\n";
+        return $t . $extra_text . "</div>\n";
     }
 
     static function pre($html) {

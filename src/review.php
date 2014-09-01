@@ -472,10 +472,10 @@ class ReviewForm {
             $x .= "<div class='revt";
             if (isset($ReviewFormError[$field]))
                 $x .= " error";
-            $x .= "'>" . $c . "<div class='clear'></div></div>";
+            $x .= "'>" . $c . '<hr class="c" /></div>';
             if ($f->description)
-                $x .= "<div class='revhint'>" . $f->description . "</div>\n";
-            $x .= "<div class='revev'>";
+                $x .= '<div class="revhint">' . $f->description . "</div>\n";
+            $x .= '<div class="revev">';
             if ($f->has_options) {
                 $x .= "<select name='$field' onchange='hiliter(this)'>\n";
                 if (!$f->parse_value($fval, true))
@@ -1239,7 +1239,7 @@ $blind\n";
                 $x .= "<div class='rvr'>";
             else
                 $x .= "<div class='rvb'>";
-            $x .= "<div class='rv rv_$field'><div class='revt'>" . $c . "<div class='clear'></div>"
+            $x .= '<div class="rv rv_' . $field . '"><div class="revt">' . $c . '<hr class="c" />'
                 . '</div><div class="revv">';
             if ($f->has_options) {
                 if (!$fval || !isset($f->options[$fval]))
@@ -1254,7 +1254,7 @@ $blind\n";
                 $x .= '<div class="revtext">' . link_urls(htmlspecialchars($fval)) . '</div>';
             $x .= "</div></div></div>";
             if ($disp & self::WEB_RIGHT)
-                $x .= "<div class='clear'></div>";
+                $x .= '<hr class="c" />';
             if (!($disp & self::WEB_LEFT))
                 $x .= "</div>\n";
         }
@@ -1351,7 +1351,7 @@ $blind\n";
         if (defval($options, "editmessage"))
             echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
 
-        echo "<div class='clear'></div></div><div class=\"revcard_body\">",
+        echo '<hr class="c" /></div><div class="revcard_body">',
             $this->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow)),
             "</div></div>\n\n";
     }
@@ -1512,7 +1512,7 @@ $blind\n";
             echo "<div class='hint'>You didn’t write this review, but as an administrator you can still make changes.</div>\n";
 
         // download?
-        echo '<div class="clear"></div>';
+        echo '<hr class="c" />';
         echo "<table class='revoff'><tr>
       <td><span class='revfn'>Offline reviewing</span></td>
       <td>Upload form: &nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />
@@ -1531,7 +1531,7 @@ $blind\n";
         echo '<div class="revcard_body">';
         if ($Me->timeReview($prow, $rrow) || $admin) {
             $buttons = $this->_review_buttons($prow, $rrow, "top", $reviewPostLink);
-            echo Ht::actions($buttons, array("style" => "margin-top:0"));
+            echo Ht::actions($buttons, array("class" => "aab", "style" => "margin-top:0"));
         }
 
         // blind?
@@ -1539,7 +1539,7 @@ $blind\n";
             echo "<div class='revt'><span class='revfn'>",
                 Ht::checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))),
                 "&nbsp;", Ht::label("Anonymous review"),
-                "</span><div class='clear'></div></div>\n",
+                "</span><hr class=\"c\" /></div>\n",
                 "<div class='revhint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won&rsquo;t know who wrote the review).</div>\n",
                 "<div class='g'></div>\n";
         }
@@ -1550,7 +1550,7 @@ $blind\n";
         // review actions
         if ($Me->timeReview($prow, $rrow) || $admin) {
             $buttons = $this->_review_buttons($prow, $rrow, "bottom", $reviewPostLink);
-            echo Ht::actions($buttons);
+            echo Ht::actions($buttons, array("class" => "aab"));
             if ($rrow && $rrow->reviewSubmitted && !$admin)
                 echo "<div class='hint'>Only administrators can remove or unsubmit the review at this point.</div>";
         }

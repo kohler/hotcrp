@@ -487,7 +487,7 @@ if ($Me->canAdminister($prow)) {
     echo '<div class="papcard_sep"></div>',
         Ht::form($loginUrl, array("id" => "ass")), '<div class="aahc">',
         "<div class='papt'><span class='papfn'>PC review assignments</span>",
-        "<div class='clear'></div></div>",
+        '<hr class="c" /></div>',
         "<div class='paphint'>Review preferences display as &ldquo;P#&rdquo;";
     if ($Conf->has_topics())
         echo ", topic scores as &ldquo;T#&rdquo;";
@@ -612,7 +612,7 @@ echo "<div class='f-i'><div class='f-ix'>
 </div><div class='f-ix'>
   <div class='f-c", (isset($Error["email"]) ? " error" : ""), "'>Email</div>
   <div class='f-e'><input type='text' name='email' value=\"", htmlspecialchars(defval($_REQUEST, "email", "")), "\" size='28' tabindex='1' /></div>
-</div><div class='clear'></div></div>\n\n";
+</div><hr class=\"c\" /></div>\n\n";
 
 // reason area
 $null_mailer = new Mailer(null, null);
@@ -621,7 +621,7 @@ if (strpos($reqbody["body"], "%REASON%") !== false) {
     echo "<div class='f-i'>
   <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
   <div class='f-e'><textarea class='papertext' name='reason' rows='2' cols='60' tabindex='1'>", htmlspecialchars(defval($_REQUEST, "reason", "")), "</textarea></div>
-<div class='clear'></div></div>\n\n";
+<hr class=\"c\" /></div>\n\n";
 }
 
 echo "<div class='f-i'>\n",

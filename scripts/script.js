@@ -1186,7 +1186,7 @@ function fill_editing(hc, cj) {
         hc.pop();
 
         // actions
-        hc.push('<div class="clear"></div><div class="aa" style="margin-bottom:0">', '<div class="clear"></div></div>');
+        hc.push('<div class="clear"></div><div class="aab" style="margin-bottom:0">', '<hr class="c" /></div>');
         hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Save</button>' + bnote + '</div>');
         hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
         if (!cj.is_new) {
@@ -1197,7 +1197,7 @@ function fill_editing(hc, cj) {
         // actions
         // XXX allowAdminister
         hc.push('<input type="hidden" name="response" value="1" />');
-        hc.push('<div class="clear"></div><div class="aa" style="margin-bottom:0">', '<div class="clear"></div></div>');
+        hc.push('<div class="clear"></div><div class="aab" style="margin-bottom:0">', '<div class="clear"></div></div>');
         if (cj.is_new || cj.draft)
             hc.push('<div class="aabut"><button type="button" name="savedraft">Save draft</button>' + bnote + '</div>');
         hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Submit</button>' + bnote + '</div>');

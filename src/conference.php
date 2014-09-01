@@ -2094,7 +2094,7 @@ class Conference {
 
         echo "</div></div>\n";
 
-        echo "  <div class='clear'></div>\n";
+        echo "  <hr class=\"c\" />\n";
 
         echo $actionBar;
 
@@ -2158,7 +2158,7 @@ class Conference {
             } else
                 echo "<!-- Version ", HOTCRP_VERSION, " -->";
         }
-        echo "</div>\n  <div class='clear'></div></div>\n";
+        echo "</div>\n  <hr class=\"c\" /></div>\n";
         echo $this->scriptStuff, Ht::take_stash(), "</body>\n</html>\n";
         $this->scriptStuff = "";
     }

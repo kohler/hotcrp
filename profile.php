@@ -483,7 +483,7 @@ function echofield($type, $classname, $captiontext, $entrytext) {
     echo "<div class='", fcclass($classname), "'>", $captiontext, "</div>",
         "<div class='", feclass($classname), "'>", $entrytext, "</div></div>\n";
     if ($type > 2)
-        echo "<div class='clear'></div></div>\n";
+        echo '<hr class="c" />', "</div>\n";
 }
 
 function textinput($name, $value, $size, $id = false, $password = false) {
@@ -598,7 +598,7 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
     echofield(3, false, "ZIP/Postal code", textinput("zipCode", crpformvalue("zipCode"), 12));
     echofield(0, false, "Country", Countries::selector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : $Acct->country)));
     echofield(1, false, "Phone <span class='f-cx'>(optional)</span>", textinput("voicePhoneNumber", crpformvalue("voicePhoneNumber"), 24));
-    echo "<div class='clear'></div></div>\n";
+    echo '<hr class="c" /></div>', "\n";
 }
 
 
@@ -642,7 +642,7 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
         }
         echo "</div>\n";
     }
-    echo '  <div class="clear"></div>';
+    echo '  <hr class="c" />';
     echo "</div></div>\n\n";
 }
 

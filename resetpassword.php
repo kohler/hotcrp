@@ -102,5 +102,5 @@ echo "</div>
 <hr class='home' /></div>\n";
 $Conf->footerScript("crpfocus(\"login\", null, 2)");
 
-echo "<div class='clear'></div>\n";
+echo '<hr class="c" />', "\n";
 $Conf->footer();
