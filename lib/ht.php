@@ -64,7 +64,7 @@ class Ht {
                 $hpos = strlen($action);
             foreach (preg_split('/(?:&amp;|&)/', substr($action, $qpos + 1, $hpos - $qpos - 1)) as $m)
                 if (($eqpos = strpos($m, "=")) !== false)
-                    $div .= '<input type="hidden" name="' . substr($m, 0, $eqpos) . '" value="' . substr($m, $eqpos + 1) . '" />';
+                    $div .= '<input type="hidden" name="' . substr($m, 0, $eqpos) . '" value="' . urldecode(substr($m, $eqpos + 1)) . '" />';
             $action = substr($action, 0, $qpos) . substr($action, $hpos);
         }
         return self::form($action, $extra) . $div;
