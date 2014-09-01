@@ -1033,7 +1033,7 @@ input.textlite-tt, textarea.tt {
 	width: 99%;
 }
 .reviewtext {
-	max-width: 40em;
+	max-width: 42em;
 }
 textarea[name=comment] {
 	min-height: 5em;
@@ -2415,7 +2415,7 @@ div.aahc.alert div.aab {
 }
 div.revtext, div.cmttext {
 	white-space: pre-wrap;
-	max-width: 40em;
+	max-width: 42em;
 }
 div#foldaddcomment div.cmtv {
 	padding-bottom: 0;
