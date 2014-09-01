@@ -1459,7 +1459,7 @@ span.pl_rownum {
 	color: #333333;
 }
 td.pl_id, td.pl_topicscore, td.pl_revpref,
-td.pl_desirability, td.pl_formula {
+td.pl_desirability, td.pl_tag, td.pl_formula {
 	text-align: right;
 	padding-left: 0.4em;
 	padding-right: 0.4em;
