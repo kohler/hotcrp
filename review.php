@@ -297,7 +297,7 @@ function refuseReview() {
     $reason = defval($_REQUEST, "reason", "");
     if ($reason == "Optional explanation")
         $reason = "";
-    $result = $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($rrow->paperId, $rrow->contactId, $rrow->requestedBy, '" . sqlqtrim($reason) . "')");
+    $result = $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($rrow->paperId, $rrow->contactId, $rrow->requestedBy, '" . sqlq(trim($reason)) . "')");
     if (!$result)
         return;
 

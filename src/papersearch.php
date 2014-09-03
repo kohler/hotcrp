@@ -1313,6 +1313,8 @@ class PaperSearch {
                 $qt[] = new SearchTerm("pf", 0, array("timeSubmitted", ">0"));
             else if (strcasecmp($word, "unsubmitted") == 0 || strcasecmp($word, "unsubmit") == 0 || strcasecmp($word, "unsub") == 0)
                 $qt[] = new SearchTerm("pf", 0, array("timeSubmitted", "<=0", "timeWithdrawn", "<=0"));
+            else if (strcasecmp($word, "active") == 0)
+                $qt[] = new SearchTerm("pf", 0, array("timeWithdrawn", "<=0"));
             else
                 $this->_search_decision($word, $qt, $quoted, true);
         }

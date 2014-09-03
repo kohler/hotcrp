@@ -243,8 +243,8 @@ function checkMail($send) {
             . "', emailBody='" . sqlq($_REQUEST["emailBody"]) . "'";
         if ($Conf->sversion >= 79)
             $q .= ", q='" . sqlq($_REQUEST["q"]) . "', t='" . sqlq($_REQUEST["t"]) . "'";
-        if ($Conf->q("insert into MailLog set $q"))
-            $mailId = " #" . $Conf->lastInsertId();
+        if (($result = Dbl::real_query("insert into MailLog set $q")))
+            $mailId = " #" . $result->insert_id;
         $Me->log_activity("Sending mail$mailId \"$subject\"");
     }
     $emailBody = $_REQUEST["emailBody"];

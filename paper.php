@@ -133,8 +133,8 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
         if ($Conf->sversion >= 44 && $reason != "")
             $q .= ", withdrawReason='" . sqlq($reason) . "'";
         $Conf->qe($q . " where paperId=$paperId");
-        $result = $Conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId");
-        $numreviews = edb_nrows_affected($result);
+        $result = Dbl::qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId");
+        $numreviews = $result ? $result->affected_rows : false;
         $Conf->updatePapersubSetting(false);
         loadRows();
 
@@ -606,11 +606,11 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     if (!$newPaper)
         $Conf->qe("update Paper set " . join(", ", $q) . " where paperId=$paperId and timeWithdrawn<=0");
     else {
-        if (!($result = $Conf->qe("insert into Paper set " . join(", ", $q)))) {
+        if (!($result = Dbl::real_qe("insert into Paper set " . join(", ", $q)))) {
             $Conf->errorMsg("Could not create paper.");
             return false;
         }
-        if (!($result = $Conf->lastInsertId()))
+        if (!($result = $result->insert_id))
             return false;
         $paperId = $_REQUEST["p"] = $_REQUEST["paperId"] = $result;
     }

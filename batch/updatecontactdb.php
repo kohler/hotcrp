@@ -16,7 +16,7 @@ if (!@$Opt["contactdb_dsn"]) {
     exit(1);
 }
 
-$result = edb_ql($Conf->dblink, "select ContactInfo.contactId, email from ContactInfo
+$result = Dbl::ql($Conf->dblink, "select ContactInfo.contactId, email from ContactInfo
     left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")
     left join PaperReview on (PaperReview.contactId=ContactInfo.contactId)
     where roles!=0 or PaperConflict.conflictType is not null

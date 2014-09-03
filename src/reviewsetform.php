@@ -122,8 +122,8 @@ function rf_update() {
         $Conf->save_setting("review_form", 1, $nrfj);
         foreach ($nrfj as $fid => $fj)
             if (@$fj->position && @$fj->options) {
-                $result = $Conf->qe("update PaperReview set $fid=0 where $fid>" . count($fj->options));
-                if (edb_nrows_affected($result) > 0)
+                $result = Dbl::real_qe("update PaperReview set $fid=0 where $fid>" . count($fj->options));
+                if ($result && $result->affected_rows > 0)
                     $scoreModified[] = htmlspecialchars($fj->name);
             }
         foreach ($rf->fmap as $fid => $f) {

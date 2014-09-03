@@ -29,21 +29,21 @@ $sig = $s3d->signature("https://examplebucket.s3.amazonaws.com?lifecycle",
                        array());
 assert_eqq($sig["signature"], "fea454ca298b7da1c68078a5d1bdbfbbe0d65c699e0f91ac7a200a0136783543");
 
-// edb_format_query tests
-assert_eqq(edb_format_query("Hello"), "Hello");
-assert_eqq(edb_format_query("Hello??"), "Hello?");
-assert_eqq(edb_format_query("Hello????"), "Hello??");
-assert_eqq(edb_format_query("select ?, ?, ?, ?s, ?s, ?s, ?",
-                            1, "a", null, 2, "b", null, 3),
+// Dbl::format_query tests
+assert_eqq(Dbl::format_query("Hello"), "Hello");
+assert_eqq(Dbl::format_query("Hello??"), "Hello?");
+assert_eqq(Dbl::format_query("Hello????"), "Hello??");
+assert_eqq(Dbl::format_query("select ?, ?, ?, ?s, ?s, ?s, ?",
+                             1, "a", null, 2, "b", null, 3),
            "select 1, 'a', NULL, 2, b, , 3");
-assert_eqq(edb_format_query("select ?, ?, ?, ?s, ?s, ?s, ?",
-                            array(1, "a", null, 2, "b", null, 3)),
+assert_eqq(Dbl::format_query("select ?, ?, ?, ?s, ?s, ?s, ?",
+                             array(1, "a", null, 2, "b", null, 3)),
            "select 1, 'a', NULL, 2, b, , 3");
-assert_eqq(edb_format_query("select ?{2}, ?{1}, ?, ?s, ?s, ?s, ?",
-                            array(1, "a", null, 2, "b", null, 3)),
+assert_eqq(Dbl::format_query("select ?{2}, ?{1}, ?, ?s, ?s, ?s, ?",
+                             array(1, "a", null, 2, "b", null, 3)),
            "select 'a', 1, NULL, 2, b, , 3");
-assert_eqq(edb_format_query("select ?{2}, ?{1}, ?{ab}, ?{2}s, ?{1}s, ?{ab}s, ?",
-                            array(1, "a", "ab" => "Woah", "Leftover")),
+assert_eqq(Dbl::format_query("select ?{2}, ?{1}, ?{ab}, ?{2}s, ?{1}s, ?{ab}s, ?",
+                             array(1, "a", "ab" => "Woah", "Leftover")),
            "select 'a', 1, 'Woah', a, 1, Woah, 'Leftover'");
 
 echo "* Tests complete.\n";

@@ -59,7 +59,7 @@ function multiconference_fail($tried_db) {
     if (@$Opt["maintenance"])
         /* do nothing */;
     else if ($tried_db && (!@$Opt["multiconference"] || !@$Opt["include"] || !@$Opt["missing"]))
-        $errors[] = "Error: Unable to connect to database " . Conference::sanitize_dsn($Conf->dsn);
+        $errors[] = "Error: Unable to connect to database " . Dbl::sanitize_dsn($Conf->dsn);
     else if (!@$Opt["loaded"] && defined("HOTCRP_OPTIONS"))
         $errors[] = "Error: Unable to load options file `" . HOTCRP_OPTIONS . "`";
     else if (!@$Opt["loaded"])

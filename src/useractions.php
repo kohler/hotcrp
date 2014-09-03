@@ -23,8 +23,8 @@ class UserActions {
 
     static function disable($ids, $contact) {
         global $Conf;
-        $result = $Conf->qe("update ContactInfo set disabled=1 where contactId" . sql_in_numeric_set($ids) . " and contactId!=" . $contact->contactId);
-        if ($result && edb_nrows_affected($result))
+        $result = Dbl::qe("update ContactInfo set disabled=1 where contactId" . sql_in_numeric_set($ids) . " and contactId!=" . $contact->contactId);
+        if ($result && $result->affected_rows)
             return (object) array("ok" => true);
         else if ($result)
             return (object) array("ok" => true, "warnings" => array("Those accounts were already disabled."));
@@ -35,8 +35,8 @@ class UserActions {
     static function enable($ids, $contact) {
         global $Conf;
         $result = $Conf->qe("update ContactInfo set disabled=1 where contactId" . sql_in_numeric_set($ids) . " and password='' and contactId!=" . $contact->contactId);
-        $result = $Conf->qe("update ContactInfo set disabled=0 where contactId" . sql_in_numeric_set($ids) . " and contactId!=" . $contact->contactId);
-        if ($result && edb_nrows_affected($result))
+        $result = Dbl::qe("update ContactInfo set disabled=0 where contactId" . sql_in_numeric_set($ids) . " and contactId!=" . $contact->contactId);
+        if ($result && $result->affected_rows)
             return self::modify_password_mail("password='' and contactId!=" . $contact->contactId, true, "create", $ids);
         else if ($result)
             return (object) array("ok" => true, "warnings" => array("Those accounts were already enabled."));

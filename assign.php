@@ -332,17 +332,17 @@ function createAnonymousReview() {
         $row = edb_row($result);
         $reqId = $row[0];
     } else {
-        $result = $Conf->qe("insert into ContactInfo (firstName, lastName, email, affiliation, password, creationTime) values ('Jane Q.', 'Public', '" . sqlq($contactemail) . "', 'Unaffiliated', '', $Now)");
+        $result = Dbl::qe("insert into ContactInfo set firstName='Jane Q.', lastName='Public', email=?, affiliation='Unaffiliated', password='', creationTime=$Now", $contactemail);
         if (!$result)
             return $result;
-        $reqId = $Conf->lastInsertId();
+        $reqId = $result->insert_id;
     }
 
     // store the review request
     $reviewId = $Me->assign_paper($prow->paperId, null, $reqId, REVIEW_EXTERNAL,
                                   array("mark_notify" => true, "token" => true));
     if ($reviewId) {
-        $result = edb_ql("select reviewToken from PaperReview where reviewId=$reviewId");
+        $result = Dbl::ql("select reviewToken from PaperReview where reviewId=$reviewId");
         $row = edb_row($result);
         $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId. The review token is " . encode_token((int) $row[0]) . ".");
     }

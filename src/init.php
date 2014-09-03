@@ -130,6 +130,7 @@ set_path_variables();
 // Load code
 require_once("$ConfSitePATH/lib/base.php");
 require_once("$ConfSitePATH/lib/redirect.php");
+require_once("$ConfSitePATH/lib/dbl.php");
 require_once("$ConfSitePATH/src/helpers.php");
 require_once("$ConfSitePATH/src/conference.php");
 require_once("$ConfSitePATH/src/contact.php");
@@ -265,7 +266,7 @@ ini_set("memory_limit", defval($Opt, "memoryLimit", "128M"));
 // Create the conference
 global $Conf;
 if (!@$Conf)
-    $Conf = new Conference(Conference::make_dsn($Opt));
+    $Conf = new Conference(Dbl::make_dsn($Opt));
 if (!$Conf->dblink) {
     require_once("$ConfSitePATH/src/multiconference.php");
     multiconference_fail(true);

@@ -663,14 +663,15 @@ class PaperStatus {
                 $q[] = "size=0,mimetype='',sha1='',timestamp=0";
 
             if ($pj->id) {
-                $result = $Conf->qe("update Paper set " . join(",", $q) . " where paperId=$pj->id");
-                if (edb_nrows_affected($result) === 0
+                $result = Dbl::real_qe("update Paper set " . join(",", $q) . " where paperId=$pj->id");
+                if ($result
+                    && $result->affected_rows === 0
                     && edb_nrows($Conf->qe("select paperId from Paper where paperId=$pj->id")) === 0)
                     $result = $Conf->qe("insert into Paper set paperId=$pj->id, " . join(",", $q));
             } else {
-                $result = $Conf->qe("insert into Paper set " . join(",", $q));
+                $result = Dbl::real_qe("insert into Paper set " . join(",", $q));
                 if (!$result
-                    || !($pj->id = $Conf->lastInsertId()))
+                    || !($pj->id = $result->insert_id))
                     return $this->set_error(false, "Could not create paper.");
                 if (count($this->uploaded_documents))
                     $Conf->qe("update PaperStorage set paperId=$pj->id where paperStorageId in (" . join(",", $this->uploaded_documents) . ")");

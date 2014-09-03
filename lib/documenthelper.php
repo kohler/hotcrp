@@ -174,7 +174,7 @@ class DocumentHelper {
             $q = "update $table set " . join(",", $a) . " where $idcol='" . sqlq($cols[$idcol]);
         else
             $q = "insert into $table set " . join(",", $a);
-        if (!($result = $Conf->q($q))) {
+        if (!($result = Dbl::real_query($q))) {
             set_error_html($doc, $Conf->db_error_html(true, $while));
             return;
         }
@@ -182,7 +182,7 @@ class DocumentHelper {
         if (isset($cols[$idcol]))
             $doc->$idcol = $cols[$idcol];
         else {
-            $doc->$idcol = $Conf->lastInsertId(true);
+            $doc->$idcol = $result->insert_id;
             if (!$doc->$idcol) {
                 set_error_html($doc, $Conf->db_error_html(true, $while));
                 $OK = false;

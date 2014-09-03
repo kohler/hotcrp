@@ -34,7 +34,7 @@ if (@$_REQUEST["checktracker"]) {
 }
 if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb())) {
     $dl["conflist"] = array();
-    $result = edb_ql($cdb, "select c.confid, siteclass, shortName, url
+    $result = Dbl::ql($cdb, "select c.confid, siteclass, shortName, url
         from Roles r join Conferences c on (c.confid=r.confid)
         join ContactInfo u on (u.contactDbId=r.contactDbId)
         where u.email=? order by r.updated_at desc", $Me->email);

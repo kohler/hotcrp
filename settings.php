@@ -1086,7 +1086,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
         // contactdb may need to hear about changes to shortName
         if (array_key_exists("opt.shortName", $Values)
             && @$Opt["contactdb_dsn"] && ($cdb = Contact::contactdb()))
-            edb_ql($cdb, "update Conferences set shortName=? where dbName=?", $Opt["shortName"], $Opt["dbName"]);
+            Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $Opt["shortName"], $Opt["dbName"]);
     }
 
     // report errors
@@ -1736,7 +1736,7 @@ function doRevGroup() {
     else
         $round_value = $selector[$current_round_value] = $current_round_value;
 
-    $round_map = edb_map(edb_ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
+    $round_map = edb_map(Dbl::ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
 
     $dl = $Conf->deadlines();
     $print_round0 = true;

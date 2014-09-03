@@ -44,79 +44,15 @@ class Conference {
         global $Opt;
         // unpack dsn, connect to database, load current settings
         if (($this->dsn = $dsn))
-            list($this->dblink, $Opt["dbName"]) = self::connect_dsn($this->dsn);
+            list($this->dblink, $Opt["dbName"]) = Dbl::connect_dsn($this->dsn);
         if (!@$Opt["confid"])
             $Opt["confid"] = @$Opt["dbName"];
-        if ($this->dblink)
+        if ($this->dblink) {
+            Dbl::set_default_dblink($this->dblink);
+            Dbl::set_error_handler(array($this, "query_error_handler"));
             $this->load_settings();
-        else
+        } else
             $this->crosscheck_options();
-    }
-
-    static function make_dsn($opt) {
-        if (isset($opt["dsn"])) {
-            if (is_string($opt["dsn"]))
-                return $opt["dsn"];
-        } else {
-            list($user, $password, $host, $name) =
-                array(@$opt["dbUser"], @$opt["dbPassword"], @$opt["dbHost"], @$opt["dbName"]);
-            $user = ($user !== null ? $user : $name);
-            $password = ($password !== null ? $password : $name);
-            $host = ($host !== null ? $host : "localhost");
-            if (is_string($user) && is_string($password) && is_string($host) && is_string($name))
-                return "mysql://" . urlencode($user) . ":" . urlencode($password) . "@" . urlencode($host) . "/" . urlencode($name);
-        }
-        return null;
-    }
-
-    static function sanitize_dsn($dsn) {
-        return preg_replace('{\A(\w+://[^/:]*:)[^\@/]+([\@/])}', '$1PASSWORD$2', $dsn);
-    }
-
-    static function connect_dsn($dsn) {
-        global $Opt;
-
-        $dbhost = $dbuser = $dbpass = $dbname = $dbport = $dbsocket = null;
-        if ($dsn && preg_match('|^mysql://([^:@/]*)/(.*)|', $dsn, $m)) {
-            $dbhost = urldecode($m[1]);
-            $dbname = urldecode($m[2]);
-        } else if ($dsn && preg_match('|^mysql://([^:@/]*)@([^/]*)/(.*)|', $dsn, $m)) {
-            $dbhost = urldecode($m[2]);
-            $dbuser = urldecode($m[1]);
-            $dbname = urldecode($m[3]);
-        } else if ($dsn && preg_match('|^mysql://([^:@/]*):([^@/]*)@([^/]*)/(.*)|', $dsn, $m)) {
-            $dbhost = urldecode($m[3]);
-            $dbuser = urldecode($m[1]);
-            $dbpass = urldecode($m[2]);
-            $dbname = urldecode($m[4]);
-        } else
-            return array(null, null);
-
-        if ($dbhost === null)
-            $dbhost = ini_get("mysqli.default_host");
-        if ($dbuser === null)
-            $dbuser = ini_get("mysqli.default_user");
-        if ($dbpass === null)
-            $dbpass = ini_get("mysqli.default_pw");
-        if ($dbport === null)
-            $dbport = ini_get("mysqli.default_port");
-        if ($dbsocket === null && @$Opt["dbSocket"])
-            $dbsocket = $Opt["dbSocket"];
-        else if ($dbsocket === null)
-            $dbsocket = ini_get("mysqli.default_socket");
-
-        $dblink = new mysqli($dbhost, $dbuser, $dbpass, "", $dbport, $dbsocket);
-        if ($dblink && !mysqli_connect_errno()) {
-            // disallow reserved databases
-            if ($dbname == "mysql" || substr($dbname, -7) === "_schema") {
-                $dblink->close();
-                $dblink = null;
-            } else if ($dblink->select_db($dbname))
-                $dblink->set_charset("utf8");
-        } else
-            $dblink = null;
-
-        return array($dblink, $dbname);
     }
 
 
@@ -191,8 +127,8 @@ class Conference {
             && defval($this->settings, "__capability_gc", 0) < $Now - 86400) {
             foreach (array($this->dblink, Contact::contactdb()) as $db)
                 if ($db) {
-                    edb_ql($db, "delete from Capability where timeExpires>0 and timeExpires<$Now");
-                    edb_ql($db, "delete from CapabilityMap where timeExpires>0 and timeExpires<$Now");
+                    Dbl::ql($db, "delete from Capability where timeExpires>0 and timeExpires<$Now");
+                    Dbl::ql($db, "delete from CapabilityMap where timeExpires>0 and timeExpires<$Now");
                 }
             $this->q("insert into Settings (name, value) values ('__capability_gc', $Now) on duplicate key update value=values(value)");
             $this->settings["__capability_gc"] = $Now;
@@ -643,17 +579,14 @@ class Conference {
         return $result;
     }
 
-    function db_error_html($getdb = true, $while = "", $suggestRetry = true) {
+    function db_error_html($getdb = true, $while = "") {
         global $Opt;
         $text = "<p>Database error";
         if ($while)
             $text .= " $while";
         if ($getdb)
             $text .= ": " . htmlspecialchars($this->dblink->error);
-        $text .= "</p>";
-        if ($suggestRetry)
-            $text .= "\n<p>Please try again or contact us at " . Text::user_html(Contact::site_contact()) . ".</p>";
-        return $text;
+        return $text . "</p>";
     }
 
     function db_error_text($getdb = true, $while = "") {
@@ -665,6 +598,15 @@ class Conference {
         return $text;
     }
 
+    function query_error_handler($dblink, $query) {
+        global $OK;
+        if (PHP_SAPI == "cli")
+            fwrite(STDERR, caller_landmark("/^(?:Dbl::|Conference::q)/") . ": database error: $dblink->error in $query\n");
+        else
+            $this->errorMsg($this->db_error_html(true, Ht::pre_text_wrap($query)));
+        $OK = false;
+    }
+
     function qe($query, $while = "", $suggestRetry = false) {
         global $OK;
         if ($while || $suggestRetry)
@@ -672,22 +614,9 @@ class Conference {
         $result = $this->dblink->query($query);
         if ($result === false) {
             if (PHP_SAPI == "cli")
-                fwrite(STDERR, caller_landmark() . ": " . $this->db_error_text(true, "$while ($query)") . "\n");
+                fwrite(STDERR, caller_landmark() . ": " . $this->db_error_text(true, "[$query]") . "\n");
             else
-                $this->errorMsg($this->db_error_html(true, $while . " (" . htmlspecialchars($query) . ")", $suggestRetry));
-            $OK = false;
-        }
-        return $result;
-    }
-
-    function lastInsertId($ignore_errors = false) {
-        global $OK;
-        $result = $this->dblink->insert_id;
-        if (!$result && !$ignore_errors) {
-            if (PHP_SAPI == "cli")
-                fwrite(STDERR, caller_landmark() . ": " . $this->db_error_text($result === false) . "\n");
-            else
-                $this->errorMsg($this->db_error_html($result === false));
+                $this->errorMsg($this->db_error_html(true, Ht::pre_text_wrap($query)));
             $OK = false;
         }
         return $result;

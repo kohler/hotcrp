@@ -105,12 +105,12 @@ class CommentSave {
             $q .= " where commentId=$crow->commentId";
         }
 
-        $result = $Conf->qe($q);
+        $result = Dbl::real_qe($q);
         if (!$result)
             return false;
 
         // comment ID
-        $cid = $crow ? $crow->commentId : $Conf->lastInsertId();
+        $cid = $crow ? $crow->commentId : $result->insert_id;
         if (!$cid)
             return false;
         $contact->log_activity("Comment $cid " . ($text !== "" ? "saved" : "deleted"), $prow->paperId);

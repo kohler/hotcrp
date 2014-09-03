@@ -283,14 +283,14 @@ class Contact {
         if (self::$contactdb_dblink === false) {
             self::$contactdb_dblink = null;
             if (@$Opt["contactdb_dsn"])
-                list(self::$contactdb_dblink, $dbname) = Conference::connect_dsn($Opt["contactdb_dsn"]);
+                list(self::$contactdb_dblink, $dbname) = Dbl::connect_dsn($Opt["contactdb_dsn"]);
         }
         return self::$contactdb_dblink;
     }
 
     static public function contactdb_find_by_email($email) {
         if (($cdb = self::contactdb())
-            && ($result = edb_ql($cdb, "select * from ContactInfo where email=?", $email))
+            && ($result = Dbl::ql($cdb, "select * from ContactInfo where email=?", $email))
             && ($row = $result->fetch_object()))
             return new Contact($row);
         else
@@ -299,7 +299,7 @@ class Contact {
 
     static public function contactdb_find_by_id($cid) {
         if (($cdb = self::contactdb())
-            && ($result = edb_ql($cdb, "select * from ContactInfo where contactDbId=?", $cid))
+            && ($result = Dbl::ql($cdb, "select * from ContactInfo where contactDbId=?", $cid))
             && ($row = $result->fetch_object()))
             return new Contact($row);
         else
@@ -310,20 +310,20 @@ class Contact {
         global $Opt, $Now;
         if (!($dblink = self::contactdb()) || !$this->has_database_account())
             return false;
-        $idquery = edb_format_query($dblink, "select ContactInfo.contactDbId, Conferences.confid, roles
+        $idquery = Dbl::format_query($dblink, "select ContactInfo.contactDbId, Conferences.confid, roles
             from ContactInfo join Conferences
             left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)
             where email=? and `dbname`=?", $this->email, $Opt["dbName"]);
         $result = $dblink->query($idquery);
         $row = edb_row($result);
         if (!$row) {
-            $result = edb_ql($dblink, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation);
+            $result = Dbl::ql($dblink, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation);
             $result = $dblink->query($idquery);
             $row = edb_row($result);
         }
 
         if ($row && (int) $row[2] != $this->all_roles()) {
-            $result = edb_ql($dblink, "insert into Roles set contactDbId=?, confid=?, roles=?, updated_at=? on duplicate key update roles=values(roles), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), $Now);
+            $result = Dbl::ql($dblink, "insert into Roles set contactDbId=?, confid=?, roles=?, updated_at=? on duplicate key update roles=values(roles), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), $Now);
             return !!$result;
         } else
             return false;
@@ -700,11 +700,11 @@ class Contact {
             $q .= ", creationTime=$Now";
         } else
             $q .= " where contactId=" . $this->contactId;
-        $result = $Conf->qe($q);
+        $result = Dbl::real_qe($Conf->dblink, $q);
         if (!$result)
             return $result;
         if ($inserting)
-            $this->contactId = $Conf->lastInsertId();
+            $this->contactId = $result->insert_id;
         $Conf->ql("delete from ContactAddress where contactId=$this->contactId");
         if ($this->addressLine1 || $this->addressLine2 || $this->city
             || $this->state || $this->zipCode || $this->country) {
@@ -714,7 +714,7 @@ class Contact {
 
         // add to contact database
         if (@$Opt["contactdb_dsn"] && ($cdb = self::contactdb())) {
-            edb_ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=values(firstName), lastName=values(lastName), affiliation=values(affiliation)",
+            Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=values(firstName), lastName=values(lastName), affiliation=values(affiliation)",
                    $this->firstName, $this->lastName, $this->email, $this->affiliation);
             if ($this->password_plaintext
                 && ($cdb_user = self::contactdb_find_by_email($this->email))
@@ -871,10 +871,10 @@ class Contact {
                 $qa .= ",$k";
                 $qb .= ",'" . sqlq($reg->$k) . "'";
             }
-        $result = $Conf->ql("insert into ContactInfo ($qa) values ($qb)");
+        $result = Dbl::real_ql("insert into ContactInfo ($qa) values ($qb)");
         if (!$result)
             return false;
-        $cid = (int) $Conf->lastInsertId();
+        $cid = (int) $result->insert_id;
         if (!$cid)
             return false;
 
@@ -2269,9 +2269,9 @@ class Contact {
         $this->passwordTime = $Now;
         // save possibly-encrypted password
         if ($save && $this->contactId)
-            edb_ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
+            Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
         if ($save && $this->contactDbId)
-            edb_ql(self::contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $this->password, $this->passwordTime, $this->contactDbId);
+            Dbl::ql(self::contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $this->password, $this->passwordTime, $this->contactDbId);
     }
 
     static function random_password($length = 14) {
@@ -2374,7 +2374,7 @@ class Contact {
         else
             return $rrow ? $rrow->reviewId : 0;
 
-        if (!$Conf->qe($q))
+        if (!($result = Dbl::real_qe($q)))
             return false;
 
         if ($q[0] == "d") {
@@ -2384,7 +2384,7 @@ class Contact {
             $msg = "Changed " . $reviewTypeName[$rrow->reviewType] . " review to " . $reviewTypeName[$type];
         else {
             $msg = "Added " . $reviewTypeName[$type] . " review";
-            $reviewId = $Conf->lastInsertId();
+            $reviewId = $result->insert_id;
         }
         $Conf->log($msg . " by " . $this->email, $reviewer_cid, $pid);
 
@@ -2404,7 +2404,7 @@ class Contact {
             if ($this->contactId)
                 $Conf->ql("update ContactInfo set lastLogin=$Now where contactId=" . $this->contactId);
             if ($this->contactDbId)
-                edb_ql(self::contactdb(), "update ContactInfo set activity_at=$Now where contactDbId=$this->contactDbId");
+                Dbl::ql(self::contactdb(), "update ContactInfo set activity_at=$Now where contactDbId=$this->contactDbId");
         }
     }
 
