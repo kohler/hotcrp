@@ -62,7 +62,7 @@ $Conf->header("Review Assignments", "assignpc", $abar);
 
 
 $pcm = pcMembers();
-$reviewer = rcvtint($_REQUEST["reviewer"]);
+$reviewer = cvtint(@$_REQUEST["reviewer"]);
 if ($reviewer <= 0)
     $reviewer = $Me->contactId;
 if ($reviewer <= 0 || !@$pcm[$reviewer])

@@ -161,13 +161,13 @@ function checkRequest(&$atype, &$reviewtype, $save) {
 
     if ($save)
         /* no check */;
-    else if ($atype == "rev" && rcvtint($_REQUEST["revct"], -1) <= 0) {
+    else if ($atype == "rev" && cvtint(@$_REQUEST["revct"], -1) <= 0) {
         $Error["rev"] = true;
         return $Conf->errorMsg("Enter the number of reviews you want to assign.");
-    } else if ($atype == "revadd" && rcvtint($_REQUEST["revaddct"], -1) <= 0) {
+    } else if ($atype == "revadd" && cvtint(@$_REQUEST["revaddct"], -1) <= 0) {
         $Error["revadd"] = true;
         return $Conf->errorMsg("You must assign at least one review.");
-    } else if ($atype == "revpc" && rcvtint($_REQUEST["revpcct"], -1) <= 0) {
+    } else if ($atype == "revpc" && cvtint(@$_REQUEST["revpcct"], -1) <= 0) {
         $Error["revpc"] = true;
         return $Conf->errorMsg("You must assign at least one review.");
     }
@@ -366,12 +366,12 @@ function doAssign() {
     $papers = array();
     $loadlimit = null;
     if ($atype == "revadd")
-        $papers = array_fill_keys($papersel, rcvtint($_REQUEST["revaddct"]));
+        $papers = array_fill_keys($papersel, cvtint(@$_REQUEST["revaddct"]));
     else if ($atype == "revpc") {
-        $loadlimit = rcvtint($_REQUEST["revpcct"]);
+        $loadlimit = cvtint(@$_REQUEST["revpcct"]);
         $papers = array_fill_keys($papersel, ceil((count($pcm) * $loadlimit) / count($papersel)));
     } else if ($atype == "rev") {
-        $papers = array_fill_keys($papersel, rcvtint($_REQUEST["revct"]));
+        $papers = array_fill_keys($papersel, cvtint(@$_REQUEST["revct"]));
         $result = $Conf->qe("select paperId, count(reviewId) from PaperReview where reviewType=$reviewtype group by paperId");
         while (($row = edb_row($result)))
             if (isset($papers[$row[0]]))

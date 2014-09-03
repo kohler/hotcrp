@@ -30,7 +30,7 @@ function set_error_html($x, $error_html = null) {
 // string helpers
 
 function cvtint($value, $default = -1) {
-    $v = trim($value);
+    $v = trim((string) $value);
     if (is_numeric($v)) {
         $ival = intval($v);
         if ($ival == floatval($v))
@@ -40,14 +40,10 @@ function cvtint($value, $default = -1) {
 }
 
 function cvtnum($value, $default = -1) {
-    $v = trim($value);
+    $v = trim((string) $value);
     if (is_numeric($v))
         return floatval($v);
     return $default;
-}
-
-function rcvtint(&$value, $default = -1) {
-    return (isset($value) ? cvtint($value, $default) : $default);
 }
 
 function mkarray($value) {
@@ -619,7 +615,7 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
     $list = false;
     $CurrentList = 0;
     if (isset($_REQUEST["ls"])
-        && ($listno = rcvtint($_REQUEST["ls"])) > 0
+        && ($listno = cvtint(@$_REQUEST["ls"])) > 0
         && ($xlist = SessionList::lookup($listno))
         && str_starts_with($xlist->listid, $listtype)
         && (!@$xlist->cid || $xlist->cid == ($Me ? $Me->contactId : 0))) {

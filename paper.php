@@ -291,7 +291,7 @@ function request_differences($prow, $isfinal) {
     // topics
     $result = $Conf->q("select TopicArea.topicId, PaperTopic.paperId from TopicArea left join PaperTopic on PaperTopic.paperId=$prow->paperId and PaperTopic.topicId=TopicArea.topicId");
     while (($row = edb_row($result)))
-        if (($row[1] > 0) != (rcvtint($_REQUEST["top$row[0]"]) > 0))
+        if (($row[1] > 0) != (cvtint(@$_REQUEST["top$row[0]"]) > 0))
             $diffs["topics"] = true;
 
     // options

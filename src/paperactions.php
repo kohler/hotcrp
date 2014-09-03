@@ -9,7 +9,7 @@ class PaperActions {
         global $Conf, $Me, $Error, $OK;
         $ajax = defval($_REQUEST, "ajax", false);
         if ($Me->canSetOutcome($prow)) {
-            $o = rcvtint($_REQUEST["decision"]);
+            $o = cvtint(@$_REQUEST["decision"]);
             $outcomes = $Conf->outcome_map();
             if (isset($outcomes[$o])) {
                 $result = $Conf->qe("update Paper set outcome=$o where paperId=$prow->paperId");
@@ -50,7 +50,7 @@ class PaperActions {
         global $Conf, $Me, $Error, $OK;
         $ajax = defval($_REQUEST, "ajax", false);
         if (!$Me->allowAdminister($prow)
-            || ($contactId = rcvtint($_REQUEST["reviewer"])) <= 0)
+            || ($contactId = cvtint(@$_REQUEST["reviewer"])) <= 0)
             $contactId = $Me->contactId;
         if (isset($_REQUEST["revpref"]) && ($v = parse_preference($_REQUEST["revpref"]))) {
             if (self::save_review_preferences(array(array($prow->paperId, $contactId, $v[0], $v[1]))))
@@ -135,7 +135,7 @@ class PaperActions {
         global $Conf, $Me, $OK;
         $ajax = defval($_REQUEST, "ajax", 0);
         $cid = $Me->contactId;
-        if ($Me->privChair && ($x = rcvtint($_REQUEST["contactId"])) > 0)
+        if ($Me->privChair && ($x = cvtint(@$_REQUEST["contactId"])) > 0)
             $cid = $x;
         saveWatchPreference($prow->paperId, $cid, WATCHTYPE_COMMENT, defval($_REQUEST, "follow"));
         if ($OK)

@@ -79,7 +79,7 @@ function rf_update() {
         if (@$_REQUEST["removed_$fid"] == "1")
             $pos = 0;
         else
-            $pos = rcvtint($_REQUEST["order_$fid"]);
+            $pos = cvtint(@$_REQUEST["order_$fid"]);
         if ($pos > 0 && $sn == ""
             && trim(defval($_REQUEST, "description_$fid", "")) == ""
             && trim(defval($_REQUEST, "options_$fid", "")) == "")

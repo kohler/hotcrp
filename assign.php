@@ -411,9 +411,9 @@ if (isset($_REQUEST["deny"]) && $Me->allowAdminister($prow) && check_post()
 
 // add primary or secondary reviewer
 if (isset($_REQUEST["addpc"]) && $Me->allowAdminister($prow) && check_post()) {
-    if (($pcid = rcvtint($_REQUEST["pcid"])) <= 0)
+    if (($pcid = cvtint(@$_REQUEST["pcid"])) <= 0)
         $Conf->errorMsg("Enter a PC member.");
-    else if (($pctype = rcvtint($_REQUEST["pctype"])) == REVIEW_PRIMARY
+    else if (($pctype = cvtint(@$_REQUEST["pctype"])) == REVIEW_PRIMARY
              || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC) {
         $Me->assign_paper($prow->paperId, findRrow($pcid), $pcid, $pctype);
         $Conf->updateRevTokensSetting(false);

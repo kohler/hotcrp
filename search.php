@@ -620,7 +620,7 @@ function downloadRevpref($extended) {
     global $Conf, $Me, $Opt, $papersel, $paperselmap;
     // maybe download preferences for someone else
     $Rev = $Me;
-    if (($rev = rcvtint($_REQUEST["reviewer"])) > 0 && $Me->privChair) {
+    if (($rev = cvtint(@$_REQUEST["reviewer"])) > 0 && $Me->privChair) {
         if (!($Rev = Contact::find_by_id($rev)))
             return $Conf->errorMsg("No such reviewer");
     }
@@ -841,7 +841,7 @@ if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != ""
     if (!$Me->canSetOutcome(null))
         $Conf->errorMsg("You cannot set paper decisions.");
     else {
-        $o = rcvtint($_REQUEST["decision"]);
+        $o = cvtint(@$_REQUEST["decision"]);
         $outcome_map = $Conf->outcome_map();
         if (isset($outcome_map[$o])) {
             $Conf->qe("update Paper set outcome=$o where " . paperselPredicate($papersel));

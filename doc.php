@@ -17,9 +17,9 @@ $need_docid = false;
 $docid = null;
 
 if (isset($_REQUEST["p"]))
-    $paperId = rcvtint($_REQUEST["p"]);
+    $paperId = cvtint(@$_REQUEST["p"]);
 else if (isset($_REQUEST["paperId"]))
-    $paperId = rcvtint($_REQUEST["paperId"]);
+    $paperId = cvtint(@$_REQUEST["paperId"]);
 else {
     $s = $orig_s = preg_replace(',\A/*,', "", Navigation::path());
     if (str_starts_with($s, $Opt["downloadPrefix"]))
@@ -66,7 +66,7 @@ if (!isset($Error) && $need_docid && !$docid)
 // Actually download paper.
 if (!isset($Error)) {
     session_write_close();      // to allow concurrent clicks
-    if ($Conf->downloadPaper($prow, rcvtint($_REQUEST["save"]) > 0, $documentType, $docid))
+    if ($Conf->downloadPaper($prow, cvtint(@$_REQUEST["save"]) > 0, $documentType, $docid))
         exit;
 }
 

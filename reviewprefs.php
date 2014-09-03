@@ -7,7 +7,7 @@ require_once("src/initweb.php");
 require_once("src/papersearch.php");
 if (!$Me->privChair && !$Me->isPC)
     $Me->escape();
-$reviewer = rcvtint($_REQUEST["reviewer"]);
+$reviewer = cvtint(@$_REQUEST["reviewer"]);
 if ($reviewer <= 0 || !$Me->privChair)
     $reviewer = $Me->contactId;
 
