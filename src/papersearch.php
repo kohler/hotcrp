@@ -2713,9 +2713,9 @@ class PaperSearch {
         global $Conf;
         $limit = $this->limitName;
         if (($limit == "s" || $limit == "act")
-            && $this->q == "re:me")
+            && $this->q === "re:me")
             $limit = "r";
-        else if ($this->q)
+        else if ($this->q !== "")
             return true;
         if ($Conf->has_tracks()) {
             if (!$this->privChair || $limit == "rable")
