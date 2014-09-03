@@ -369,8 +369,8 @@ class ContactList extends BaseList {
             $rids = explode(",", $row->reviewIds);
             $ords = explode(",", $row->reviewOrdinals);
             $spids = $pids;
-            ksort($spids, SORT_NUMERIC);
-            $extra = "&amp;ls=" . urlencode("p/s/" . join(" ", array_keys($spids)));
+            sort($spids, SORT_NUMERIC);
+            $extra = "&amp;ls=" . urlencode("p/s/" . join(" ", $spids));
             $m = array();
             for ($i = 0; $i != count($pids); ++$i) {
                 if ($ords[$i])
