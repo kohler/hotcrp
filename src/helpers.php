@@ -504,16 +504,6 @@ function authorTable($aus, $viewAs = null) {
     return $out;
 }
 
-function highlightMatch($match, $text, &$n = null) {
-    if ($match == "") {
-        $n = 0;
-        return $text;
-    }
-    if ($match[0] != "{")
-        $match = "{(" . $match . ")}i";
-    return preg_replace($match, "<span class='match'>\$1</span>", $text, -1, $n);
-}
-
 function decorateNumber($n) {
     if ($n < 0)
         return "&#8722;" . (-$n);
@@ -931,25 +921,6 @@ function wordWrapIndent($text, $info, $indent = 18, $totWidth = 75, $rjinfo = tr
 function link_urls($html) {
     return preg_replace('@((?:https?|ftp)://(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;&])(["().,:;]*)(?=[\s<>&]|\z)@s',
                         '<a href="$1" rel="noreferrer">$1</a>$2', $html);
-}
-
-function htmlFold($text, $maxWords) {
-    global $foldId;
-
-    if (strlen($text) < $maxWords * 7)
-        return $text;
-    $words = preg_split('/\\s+/', $text);
-    if (count($words) < $maxWords)
-        return $text;
-
-    $x = join(" ", array_slice($words, 0, $maxWords));
-
-    $fid = (isset($foldId) ? $foldId : 1);
-    $foldId = $fid + 1;
-
-    $x .= "<span id='fold$fid' class='foldc'><span class='fn'> ... </span><a class='fn' href='javascript:void fold($fid, 0)'>[More]</a><span class='fx'> " . join(" ", array_slice($words, $maxWords)) . " </span><a class='fx' href='javascript:void fold($fid, 1)'>[Less]</a></span>";
-
-    return $x;
 }
 
 function ini_get_bytes($varname) {
