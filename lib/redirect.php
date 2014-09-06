@@ -23,7 +23,8 @@ function make_session_name($n) {
     global $Opt;
     if (($n === "" || $n === null || $n === true) && @$Opt["dbName"])
         $n = $Opt["dbName"];
-    $n = preg_replace(',\*|\$\{confid\}|\$confid\b,', $Opt["confid"], $n);
+    if (@$Opt["confid"])
+        $n = preg_replace(',\*|\$\{confid\}|\$confid\b,', $Opt["confid"], $n);
     return preg_replace_callback(',[^A-Ya-z0-9],', "session_name_fixer", $n);
 }
 
@@ -55,7 +56,7 @@ function ensure_session() {
     session_name($sn);
     session_cache_limiter("");
     if (isset($_COOKIE[$sn]) && !preg_match(';\A[-a-zA-Z0-9,]{1,128}\z;', $_COOKIE[$sn])) {
-        error_log("unexpected session ID <" . $_COOKIE[$sn] . "> for conference " . $Opt["confid"]);
+        error_log("unexpected session ID <" . $_COOKIE[$sn] . ">");
         unset($_COOKIE[$sn]);
     }
     session_start();
