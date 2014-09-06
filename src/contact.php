@@ -947,7 +947,7 @@ class Contact {
 
     static function email_by_id($id) {
         global $Conf;
-        $result = $Conf->qe("select email from ContactInfo where id=" . (int) $id);
+        $result = $Conf->qe("select email from ContactInfo where contactId=" . (int) $id);
         $row = edb_row($result);
         return $row ? $row[0] : false;
     }
