@@ -387,7 +387,7 @@ class Mailer {
                 return $this->_expandContact($shep, "EMAIL");
         }
 
-        if ($what == "%REVIEWAUTHOR%" && $this->contacts["reviewer"]) {
+        if ($what == "%REVIEWAUTHOR%" && @$this->contacts["reviewer"]) {
             if ($Conf->is_review_blind($this->rrow)
                 && !@$this->permissionContact->privChair
                 && (!isset($this->permissionContact->canViewReviewerIdentity)
