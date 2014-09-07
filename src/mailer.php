@@ -173,6 +173,26 @@ class Mailer {
         return $t;
     }
 
+    private function _expand_reviewer($type) {
+        global $Conf;
+        if (!($c = @$this->contacts["reviewer"]))
+            return false;
+        if ($this->row
+            && $this->rrow
+            && $Conf->is_review_blind($this->rrow)
+            && !@$this->permissionContact->privChair
+            && (!isset($this->permissionContact->canViewReviewerIdentity)
+                || !$this->permissionContact->canViewReviewerIdentity($this->row, $this->rrow, false))) {
+            if ($isbool)
+                return false;
+            else if ($this->expansionType == self::EXPAND_EMAIL)
+                return "<hidden>";
+            else
+                return "Hidden for blind review";
+        }
+        return $this->_expandContact($c, $type);
+    }
+
     private function tagger()  {
         if (!$this->_tagger)
             $this->_tagger = new Tagger($this->permissionContact);
@@ -280,7 +300,11 @@ class Mailer {
 
         if (preg_match('/\A%(OTHER|REQUESTER|REVIEWER|)(CONTACT|NAME|EMAIL|FIRST|LAST)%\z/', $what, $m)) {
             $which = ($m[1] == "" ? 0 : strtolower($m[1]));
-            if (($c = @$this->contacts[$which]))
+            if ($which === "reviewer") {
+                $x = $this->_expand_reviewer($m[2]);
+                if ($x !== false || $isbool)
+                    return $x;
+            } else if (($c = @$this->contacts[$which]))
                 return $this->_expandContact($c, $m[2]);
             else if ($isbool)
                 return false;
@@ -387,21 +411,8 @@ class Mailer {
                 return $this->_expandContact($shep, "EMAIL");
         }
 
-        if ($what == "%REVIEWAUTHOR%" && @$this->contacts["reviewer"]) {
-            if ($Conf->is_review_blind($this->rrow)
-                && !@$this->permissionContact->privChair
-                && (!isset($this->permissionContact->canViewReviewerIdentity)
-                    || !$this->permissionContact->canViewReviewerIdentity($this->row, $this->rrow, false))) {
-                if ($isbool)
-                    return false;
-                else if ($this->expansionType == self::EXPAND_EMAIL)
-                    return "<hidden>";
-                else
-                    return "Hidden for blind review";
-            }
-            return $this->_expandContact($this->contacts["reviewer"], "CONTACT");
-        }
-
+        if ($what == "%REVIEWAUTHOR%" && @$this->contacts["reviewer"])
+            return $this->_expand_reviewer("CONTACT");
         if ($what == "%REVIEWS%")
             return $this->get_reviews(false);
         if ($what == "%COMMENTS%")

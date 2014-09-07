@@ -160,7 +160,7 @@ Thank you,
      array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER% declined",
            "body" => "Dear %NAME%,
 
-%REVIEWERCONTACT% cannot complete the review of %CONFNAME% paper #%NUMBER% that you requested. %IF(REASON)%They gave the following reason: %REASON% %ENDIF%You may want to find an alternate reviewer.
+%REVIEWERCONTACT% cannot complete the review you requested of %CONFNAME% paper #%NUMBER%. %IF(REASON)%They gave the following reason: %REASON% %ENDIF%You may want to find an alternate reviewer.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
