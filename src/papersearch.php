@@ -2909,36 +2909,6 @@ class PaperSearch {
                                                  null, $sort);
     }
 
-    static function parsePapersel() {
-        global $Me, $papersel, $paperselmap;
-        if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
-            $_REQUEST["p"] = $_REQUEST["pap"];
-        if (isset($_REQUEST["p"]) && $_REQUEST["p"] == "all") {
-            $s = new PaperSearch($Me, $_REQUEST);
-            $_REQUEST["p"] = $s->paperList();
-        }
-        if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
-            $_REQUEST["p"] = preg_split('/\s+/', $_REQUEST["p"]);
-        if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"])) {
-            $papersel = array();
-            $paperselmap = array();
-            foreach ($_REQUEST["p"] as $p)
-                if (($p = cvtint($p)) > 0 && !isset($paperselmap[$p])) {
-                    $paperselmap[$p] = count($papersel);
-                    $papersel[] = $p;
-                }
-            if (count($papersel) == 0) {
-                unset($papersel);
-                unset($paperselmap);
-            }
-        }
-    }
-
-    static function clearPaperselRequest() {
-        unset($_REQUEST["p"]);
-        unset($_REQUEST["pap"]);
-    }
-
     static function searchTypes($me) {
         global $Conf;
         $tOpt = array();

@@ -78,20 +78,18 @@ if (isset($_REQUEST["update"]) && check_post())
 
 
 // Select papers
-if (isset($_REQUEST["setpaprevpref"]) || isset($_REQUEST["get"])) {
-    PaperSearch::parsePapersel();
-    if (!isset($papersel))
-        $Conf->errorMsg("No papers selected.");
-}
-PaperSearch::clearPaperselRequest();
+if ((isset($_REQUEST["setpaprevpref"]) || isset($_REQUEST["get"]))
+    && !SearchActions::parse_requested_selection($Me))
+    $Conf->errorMsg("No papers selected.");
+SearchActions::clear_requested_selection();
 
 
 // Set multiple paper preferences
-if (isset($_REQUEST["setpaprevpref"]) && isset($papersel) && check_post()) {
+if (isset($_REQUEST["setpaprevpref"]) && SearchActions::any() && check_post()) {
     if (!parse_preference($_REQUEST["paprevpref"]))
         $Conf->errorMsg("Preferences must be small positive or negative integers.");
     else {
-        foreach ($papersel as $p)
+        foreach (SearchActions::selection() as $p)
             $_REQUEST["revpref$p"] = $_REQUEST["paprevpref"];
         savePreferences($reviewer);
     }
@@ -143,7 +141,7 @@ else if (isset($_REQUEST["upload"]))
 
 
 // Search actions
-if (isset($_REQUEST["get"]) && isset($papersel)) {
+if (isset($_REQUEST["get"]) && SearchActions::any()) {
     include("search.php");
     exit;
 }

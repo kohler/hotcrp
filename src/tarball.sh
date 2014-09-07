@@ -143,6 +143,7 @@ src/reviewsetform.php
 src/reviewtable.php
 src/sample.pdf
 src/schema.sql
+src/searchactions.php
 src/trackercomet.js
 src/updateschema.php
 src/useractions.php
