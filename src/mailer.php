@@ -173,7 +173,7 @@ class Mailer {
         return $t;
     }
 
-    private function _expand_reviewer($type) {
+    private function _expand_reviewer($type, $isbool) {
         global $Conf;
         if (!($c = @$this->contacts["reviewer"]))
             return false;
@@ -301,7 +301,7 @@ class Mailer {
         if (preg_match('/\A%(OTHER|REQUESTER|REVIEWER|)(CONTACT|NAME|EMAIL|FIRST|LAST)%\z/', $what, $m)) {
             $which = ($m[1] == "" ? 0 : strtolower($m[1]));
             if ($which === "reviewer") {
-                $x = $this->_expand_reviewer($m[2]);
+                $x = $this->_expand_reviewer($m[2], $isbool);
                 if ($x !== false || $isbool)
                     return $x;
             } else if (($c = @$this->contacts[$which]))
@@ -412,7 +412,7 @@ class Mailer {
         }
 
         if ($what == "%REVIEWAUTHOR%" && @$this->contacts["reviewer"])
-            return $this->_expand_reviewer("CONTACT");
+            return $this->_expand_reviewer("CONTACT", $isbool);
         if ($what == "%REVIEWS%")
             return $this->get_reviews(false);
         if ($what == "%COMMENTS%")
