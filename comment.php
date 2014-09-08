@@ -71,13 +71,18 @@ function saveComment($text, $is_response) {
     $what = ($is_response ? "Response" : "Comment");
 
     $confirm = false;
-    if ($next_crow === false) {
-        if ($is_response) {
-            $result = $Conf->qe("select commentId from PaperComment where paperId=$prow->paperId and (commentType&" . COMMENTTYPE_RESPONSE . ")!=0");
-            if (($next_crow = edb_orow($result)))
-                $confirm = "<div class='xmerror'>This response was entered concurrently by another user.</div>";
-        }
-    } else if ($next_crow && $is_response && ($next_crow->commentType & COMMENTTYPE_DRAFT)) {
+    if ($next_crow === false && $is_response) {
+        $crows = $Conf->comment_rows($Conf->comment_query("paperId=$prow->paperId and (commentType&" . COMMENTTYPE_RESPONSE . ")!=0"), $Me);
+        reset($crows);
+        $cur_response = @current($crows);
+        if ($cur_response && $cur_response->comment == $text)
+            $next_crow = $cur_response;
+        else
+            $confirm = '<div class="xmerror">A response was entered concurrently by another user. Reload to see it.</div>';
+    }
+    if ($next_crow === false)
+        /* nada */;
+    else if ($next_crow && $is_response && ($next_crow->commentType & COMMENTTYPE_DRAFT)) {
         $deadline = $Conf->printableTimeSetting("resp_done");
         if ($deadline != "N/A")
             $extratext = " You have until $deadline to submit the response.";
@@ -93,7 +98,7 @@ function saveComment($text, $is_response) {
 
     if (@$_REQUEST["ajax"]) {
         $cv = new CommentView;
-        $j = array("ok" => true);
+        $j = array("ok" => $next_crow !== false);
         if (@$next_crow) {
             $cv = new CommentView;
             $j["cmt"] = $cv->json($prow, $next_crow);
