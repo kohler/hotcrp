@@ -2949,6 +2949,7 @@ function settings_add_track() {
     jQuery("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\"></div>");
     j = jQuery("#trackgroup" + i);
     j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
+    hiliter_children(j);
     j = j.find("input[hottemptext]");
     for (i = 0; i != j.length; ++i)
         mktemptext(j[i].id, j[i].getAttribute("hottemptext"));

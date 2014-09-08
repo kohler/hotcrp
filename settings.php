@@ -1878,7 +1878,7 @@ function do_track($trackname, $tnum) {
     do_track_permission("viewrev", "Who can view reviews?", $tnum, $t);
     do_track_permission("assrev", "Who can be assigned a review?", $tnum, $t);
     do_track_permission("unassrev", "Who can review without an assignment?", $tnum, $t);
-    echo "</table></div>";
+    echo "</table></div>\n\n";
 }
 
 function doTagsGroup() {
@@ -1953,7 +1953,8 @@ function doTagsGroup() {
 
     echo '<h3 class="settings g">Tracks</h3>', "\n";
     echo "<div class='hint'>Tracks control the PC members allowed to view or review different sets of papers. &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
-        "<div class='smg'></div>";
+        Ht::hidden("has_tracks", 1),
+        "<div class=\"smg\"></div>\n";
     do_track("", 0);
     $tracknum = 2;
     if (($trackj = $Conf->setting_json("tracks")))
