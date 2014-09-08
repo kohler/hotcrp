@@ -343,8 +343,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
             $a = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;c=$cid[0]#$cid[1]") . '" class="xx"';
         else
             $a = "<a href=\"#$cid[1]\" class=\"xx\"";
-        if (PaperTable::JSCOMMENTS)
-            $a .= ' onclick="return papercomment.edit_response()"';
+        $a .= ' onclick="return papercomment.edit_response()"';
         $x = $a . ">" . Ht::img("comment24.png", "[$cid[2] response]", "dlimg") . "&nbsp;<u>";
         if ($conflictType >= CONFLICT_AUTHOR)
             $x .= "<strong>$cid[2] response</strong></u></a>";

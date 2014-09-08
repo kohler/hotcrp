@@ -1072,14 +1072,6 @@ function open_new_comment(sethash) {
     return false;
 }
 
-function cancel_comment() {
-    var x = $$("commentnew"), ta;
-    ta = x ? x.getElementsByTagName("textarea") : null;
-    if (ta && ta.length)
-        ta[0].blur();
-    fold(x, 1);
-}
-
 function link_urls(t) {
     var re = /((?:https?|ftp):\/\/(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;&])(["().,:;]*)(?=[\s<>&]|$)/g;
     return t.replace(re, function (m, a, b) {
