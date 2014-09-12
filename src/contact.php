@@ -2314,7 +2314,8 @@ class Contact {
         else if ($this->password_type == 0
                  && (!@$Opt["safePasswords"]
                      || (is_int($Opt["safePasswords"]) && $Opt["safePasswords"] <= 1)
-                     || $sendtype != "forgot"))
+                     || $sendtype != "forgot")
+                 && $this->password !== "*")
             $template = "@accountinfo";
         else {
             $capmgr = $Conf->capability_manager($this);
