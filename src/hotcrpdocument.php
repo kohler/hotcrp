@@ -226,7 +226,8 @@ class HotCRPDocument {
             $ok = true;
         }
 
-        if (!$ok && ($s3 = self::s3_document())) {
+        if (!$ok && ($s3 = self::s3_document())
+            && ($filename = self::s3_filename($doc))) {
             $filename = self::s3_filename($doc);
             $content = $s3->load($filename);
             if ($content !== "" && $content !== null) {
