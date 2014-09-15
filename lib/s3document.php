@@ -139,7 +139,7 @@ class S3Document {
     private function http_headers($filename, $method, $args) {
         list($content, $content_type, $user_data) =
             array(@$args["content"], @$args["content_type"], @$args["user_data"]);
-        $content_empty = $content === false || $content === "" || $content === null;
+        $content_empty = (string) $content === "";
         $url = "https://$this->s3_bucket.s3.amazonaws.com/$filename";
         $hdr = array("method" => $method,
                      "Date" => gmdate("D, d M Y H:i:s GMT", $this->fixed_time ? : time()));
@@ -178,6 +178,12 @@ class S3Document {
     private function run_once($filename, $method, $args) {
         $this->status = $this->status_text = null;
         $this->response_headers = $this->user_data = array();
+        if ((string) $filename === "") {
+            $this->status = 404;
+            $this->status_text = "Filename missing";
+            return;
+        }
+
         list($url, $hdr) = $this->http_headers($filename, $method, $args);
         $context = stream_context_create(array("http" => $hdr));
         if (($stream = fopen($url, "r", false, $context))) {
