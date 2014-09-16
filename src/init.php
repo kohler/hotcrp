@@ -127,13 +127,6 @@ set_path_variables();
 
 
 // Load code
-require_once("$ConfSitePATH/lib/base.php");
-require_once("$ConfSitePATH/lib/redirect.php");
-require_once("$ConfSitePATH/lib/dbl.php");
-require_once("$ConfSitePATH/src/helpers.php");
-require_once("$ConfSitePATH/src/conference.php");
-require_once("$ConfSitePATH/src/contact.php");
-
 function __autoload($class_name) {
     global $ConfSitePATH, $ConfAutoloads;
     if (!@$ConfAutoloads)
@@ -182,6 +175,13 @@ function __autoload($class_name) {
     if (($f = @$ConfAutoloads[$class_name]))
         require_once("$ConfSitePATH/$f");
 }
+
+require_once("$ConfSitePATH/lib/base.php");
+require_once("$ConfSitePATH/lib/redirect.php");
+require_once("$ConfSitePATH/lib/dbl.php");
+require_once("$ConfSitePATH/src/helpers.php");
+require_once("$ConfSitePATH/src/conference.php");
+require_once("$ConfSitePATH/src/contact.php");
 
 
 // Set locale to C (so that, e.g., strtolower() on UTF-8 data doesn't explode)
