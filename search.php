@@ -53,18 +53,6 @@ if (!SearchActions::any()) {
     SearchActions::clear_requested_selection();
 }
 
-function papersel_all_selected($papersel) {
-    global $Me;
-    $Search = new PaperSearch($Me, $_REQUEST);
-    $searchlist = $Search->paperList();
-    if (count($searchlist) !== count($papersel))
-        return false;
-    sort($searchlist);
-    $sorted_papersel = $papersel;
-    sort($sorted_papersel);
-    return join(" ", $searchlist) === join(" ", $sorted_papersel);
-}
-
 function cleanAjaxResponse(&$response, $type) {
     foreach (SearchActions::selection() as $pid)
         if (!isset($response[$type . $pid]))
@@ -890,7 +878,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
 if (isset($_REQUEST["sendmail"]) && SearchActions::any()) {
     if ($Me->privChair) {
         $r = (in_array($_REQUEST["recipients"], array("au", "rev")) ? $_REQUEST["recipients"] : "all");
-        if (papersel_all_selected(SearchActions::selection()))
+        if (SearchActions::selection_equals_search(new PaperSearch($Me, $_REQUEST)))
             $x = "q=" . urlencode($_REQUEST["q"]) . "&plimit=1";
         else
             $x = "p=" . join("+", SearchActions::selection());

@@ -6,7 +6,6 @@
 class SearchActions {
 
     static public $sel = array();
-    static public $selmap = array();
 
     static function any() {
         return count(self::$sel);
@@ -21,16 +20,13 @@ class SearchActions {
     }
 
     static function set_selection($papers) {
-        self::$sel = self::$selmap = array();
+        self::$sel = $selmap = array();
         foreach ($papers as $pid)
-            if (($pid = cvtint($pid)) > 0 && !isset(self::$selmap[$pid])) {
-                self::$selmap[$pid] = count(self::$sel);
-                self::$sel[] = $pid;
-            }
+            if (($pid = cvtint($pid)) > 0 && !isset($selmap[$pid]))
+                self::$sel[] = $selmap[$pid] = $pid;
     }
 
     static function parse_requested_selection($user) {
-        global $papersel, $paperselmap;
         if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
             $_REQUEST["p"] = $_REQUEST["pap"];
         if (isset($_REQUEST["p"]) && $_REQUEST["p"] == "all") {
@@ -47,6 +43,17 @@ class SearchActions {
     static function clear_requested_selection() {
         unset($_REQUEST["p"], $_REQUEST["pap"], $_GET["p"], $_GET["pap"],
               $_POST["p"], $_POST["pap"]);
+    }
+
+    static function selection_equals_search($search) {
+        if ($search instanceof PaperSearch)
+            $search = $search->paperList();
+        if (count($search) !== count(self::$sel))
+            return false;
+        sort($search);
+        $sel = self::$sel;
+        sort($sel);
+        return join(" ", $search) === join(" ", $sel);
     }
 
     static function sql_predicate() {
