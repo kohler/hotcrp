@@ -540,11 +540,12 @@ if ($getaction == "contact" && $Me->privChair && SearchActions::any()) {
 // download current assignments
 if ($getaction == "pcassignments" && $Me->privChair && SearchActions::any()) {
     // Note that this is chair only
-    $result = $Conf->qe("select paperId, reviewType, reviewRound, email, firstName, lastName
+    $result = $Conf->qe("select Paper.paperId, reviewType, reviewRound, email, firstName, lastName, title
 	from PaperReview
 	join ContactInfo using (contactId)
-	where reviewType>=" . REVIEW_PC . " and paperId" . SearchActions::sql_predicate() . "
-	order by reviewRound, timeRequested");
+	join Paper on (Paper.paperId=PaperReview.paperId)
+	where reviewType>=" . REVIEW_PC . " and PaperReview.paperId" . SearchActions::sql_predicate() . "
+	order by reviewRound, paperId, email");
     $texts = array();
     $round = null;
     $round_list = $Conf->round_list();
@@ -563,12 +564,13 @@ if ($getaction == "pcassignments" && $Me->privChair && SearchActions::any()) {
         $texts[] = array("paper" => $row->paperId,
                          "action" => $reviewnames[$row->reviewType],
                          "email" => $row->email,
-                         "name" => trim("$row->firstName $row->lastName"),
-                         "round" => $round_name);
+                         "round" => $round_name,
+                         "title" => $row->title);
     }
-    $header = array("paper", "action", "email", "name");
+    $header = array("paper", "action", "email");
     if ($any_round)
         $header[] = "round";
+    $header[] = "title";
     downloadCSV($texts, $header, "pcassignments", array("selection" => $header));
     exit;
 }
