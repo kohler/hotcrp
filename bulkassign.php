@@ -147,7 +147,11 @@ if (count($Conf->round_list()) > 1 || $rev_roundtag)
         'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(no name)"),
         ' &nbsp;<span class="barsep">|</span>&nbsp; <a href="', hoturl("settings", "group=reviews#rounds"), '">Configure rounds</a>';
 
-echo '<div class="g"></div>', Ht::submit("Upload"), "</div></div></form>
+echo '<div class="g"></div>', Ht::submit("Upload"), "</div>";
+
+echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "t=s&q=&get=pcassignments&p=all"), '">Download current PC assignments</a></div>';
+
+echo "</div></form>
 
 <hr style='margin-top:1em' />
 

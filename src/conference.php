@@ -400,6 +400,17 @@ class Conference {
         return "";
     }
 
+    static function round_name_error($rname) {
+        if ((string) $rname === "")
+            return "Empty round name.";
+        else if (!strcasecmp($rname, "none") || !strcasecmp($rname, "any"))
+            return "Round name $rname is reserved.";
+        else if (!preg_match('/^[a-zA-Z0-9]+$/', $rname))
+            return "Round names can only contain letters and numbers.";
+        else
+            return false;
+    }
+
     function current_round($add = false) {
         return $this->round_number(@$this->settingTexts["rev_roundtag"], $add);
     }

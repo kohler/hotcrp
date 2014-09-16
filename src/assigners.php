@@ -207,11 +207,17 @@ class ReviewAssigner extends Assigner {
         }
     }
     function apply($pid, $contact, $req, $state, $defaults) {
-        $round = @$req["round"];
-        if ($round === null && $this->type > 0 && @$defaults["round"])
-            $round = $defaults["round"];
-        if ($round && !preg_match('/\A[a-zA-Z0-9]+\z/', $round))
-            return "review round “" . htmlspecialchars($round) . "” should contain only letters and numbers";
+        $rname = @$req["round"];
+        if ($rname === null && $this->type > 0 && @$defaults["round"])
+            $rname = $defaults["round"];
+        if ($rname && ($rerror = Conference::round_name_error($rname)))
+            return $rerror;
+        else if ($rname && strcasecmp($rname, "none") == 0)
+            $rname = "";
+        else if ($rname && strcasecmp($rname, "any") != 0)
+            /* keep that round name */;
+        else
+            $rname = null;
         $rtype = $this->type;
         if ($rtype == REVIEW_EXTERNAL && $contact->is_pc_member())
             $rtype = REVIEW_PC;
@@ -220,16 +226,17 @@ class ReviewAssigner extends Assigner {
         // remove existing review
         $revmatch = array("type" => "review", "pid" => $pid,
                           "cid" => $contact ? $contact->contactId : null);
-        if (!$rtype && @$req["round"] && $round !== "")
-            $revmatch["_round"] = $round === "none" ? "" : $round;
+        if (!$rtype && @$req["round"] && $rname !== null)
+            $revmatch["_round"] = $rname;
         $matches = $state->remove($revmatch);
 
         if ($rtype) {
             // add new review or reclassify old one
             $revmatch["_rtype"] = $rtype;
             if (count($matches) && @$req["round"] === null)
-                $round = $matches[0]["_round"];
-            $revmatch["_round"] = $round === "none" ? "" : $round;
+                $rname = $matches[0]["_round"];
+            if ($rname !== null)
+                $revmatch["_round"] = $rname;
             if (count($matches))
                 $revmatch["_rsubmitted"] = $matches[0]["_rsubmitted"];
             if ($rtype == REVIEW_EXTERNAL && !count($matches)
@@ -669,6 +676,10 @@ class AssignmentSet {
             return $this->error($csv->lineno(), "empty file");
 
         // check for header
+        if (array_search("paper", $req) === false
+            && (($i = array_search("pid", $req)) !== false
+                || ($i = array_search("paperId", $req)) !== false))
+            $req[$i] = "paper";
         if (array_search("action", $req) !== false
             || array_search("paper", $req) !== false)
             $csv->set_header($req);

@@ -537,6 +537,43 @@ if ($getaction == "contact" && $Me->privChair && SearchActions::any()) {
 }
 
 
+// download current assignments
+if ($getaction == "pcassignments" && $Me->privChair && SearchActions::any()) {
+    // Note that this is chair only
+    $result = $Conf->qe("select paperId, reviewType, reviewRound, email, firstName, lastName
+	from PaperReview
+	join ContactInfo using (contactId)
+	where reviewType>=" . REVIEW_PC . " and paperId" . SearchActions::sql_predicate() . "
+	order by reviewRound, timeRequested");
+    $texts = array();
+    $round = null;
+    $round_list = $Conf->round_list();
+    $any_round = false;
+    $reviewnames = array(REVIEW_PC => "pcreview", REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary");
+    while (($row = edb_orow($result))) {
+        if ($round !== (int) $row->reviewRound) {
+            if ($round !== null)
+                $texts[] = array();
+            $round = (int) $row->reviewRound;
+            $round_name = $round ? $round_list[$round] : "none";
+            $any_round = $any_round || $round != 0;
+            $texts[] = array("paper" => "all", "action" => "clearreview",
+                             "email" => "#pc", "round" => $round_name);
+        }
+        $texts[] = array("paper" => $row->paperId,
+                         "action" => $reviewnames[$row->reviewType],
+                         "email" => $row->email,
+                         "name" => trim("$row->firstName $row->lastName"),
+                         "round" => $round_name);
+    }
+    $header = array("paper", "action", "email", "name");
+    if ($any_round)
+        $header[] = "round";
+    downloadCSV($texts, $header, "pcassignments", array("selection" => $header));
+    exit;
+}
+
+
 // download scores and, maybe, anonymity for selected papers
 if ($getaction == "scores" && $Me->isPC && SearchActions::any()) {
     $rf = reviewForm();

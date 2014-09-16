@@ -336,6 +336,8 @@ class PaperList extends BaseList {
                 $sel_opt["rev"] = "All reviews";
                 $sel_opt["revz"] = "All reviews (zip)";
             }
+            if ($this->contact->privChair)
+                $sel_opt["pcassignments"] = "PC assignments";
         }
         if ($this->contact->privChair)
             $sel_opt["authors"] = "Authors &amp; contacts";

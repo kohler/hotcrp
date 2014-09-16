@@ -776,13 +776,10 @@ function save_rounds($set) {
                 if ($round_deleted === null && !isset($_POST["roundname_0"])
                     && $i < $_POST["oldroundcount"])
                     $round_deleted = $i;
-            } else if (!strcasecmp($rname, "none") || !strcasecmp($rname, "any")) {
-                $Error[] = "Round name $rname is reserved.";
-                $Highlight["roundname_$i"] = true;
             } else if ($rname === "")
                 /* ignore */;
-            else if (!preg_match('/^[a-zA-Z0-9]*$/', $rname)) {
-                $Error[] = "Review round names can only contain letters and numbers.";
+            else if (($rerror = Conference::round_name_error($rname))) {
+                $Error[] = $rerror;
                 $Highlight["roundname_$i"] = true;
             } else if ($i == 0)
                 $roundname0 = $rname;
