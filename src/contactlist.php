@@ -225,7 +225,7 @@ class ContactList extends BaseList {
         case self::FIELD_AFFILIATION_ROW:
             return "Affiliation";
         case self::FIELD_LASTVISIT:
-            return "Last activity";
+            return '<span class="hastitle" title="Includes paper changes, review updates, and profile changes">Last update</span>';
         case self::FIELD_HIGHTOPICS:
             return "High-interest topics";
         case self::FIELD_LOWTOPICS:
