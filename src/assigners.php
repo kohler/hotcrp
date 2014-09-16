@@ -210,13 +210,12 @@ class ReviewAssigner extends Assigner {
         $rname = @$req["round"];
         if ($rname === null && $this->type > 0 && @$defaults["round"])
             $rname = $defaults["round"];
-        if ($rname && ($rerror = Conference::round_name_error($rname)))
-            return $rerror;
-        else if ($rname && strcasecmp($rname, "none") == 0)
+        if ($rname && strcasecmp($rname, "none") == 0)
             $rname = "";
-        else if ($rname && strcasecmp($rname, "any") != 0)
-            /* keep that round name */;
-        else
+        else if ($rname && (strcasecmp($rname, "any") != 0 || $this->type > 0)) {
+            if (($rerror = Conference::round_name_error($rname)))
+                return $rerror;
+        } else
             $rname = null;
         $rtype = $this->type;
         if ($rtype == REVIEW_EXTERNAL && $contact->is_pc_member())
