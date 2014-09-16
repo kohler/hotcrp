@@ -22,8 +22,6 @@ define("CONFLICT_CHAIRMARK", 8);
 define("CONFLICT_AUTHOR", 9);
 define("CONFLICT_CONTACTAUTHOR", 10);
 
-define("TAG_MAXLEN", 40);
-
 // User explicitly set notification preference (only in PaperWatch.watch)
 define("WATCHSHIFT_EXPLICIT", 0);
 // Notify if author, reviewer, commenter
@@ -83,6 +81,7 @@ define("COMMENTTYPE_VISIBILITY", 0xFFF0000);
 
 define("TAG_REGEX", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*');
 define("TAG_REGEX_OPTVALUE", '~?~?[a-zA-Z!@*_:.][-a-zA-Z0-9!@*_:.\/]*([#=](-\d)?\d*)?');
+define("TAG_MAXLEN", 40);
 
 define("CAPTYPE_RESETPASSWORD", 1);
 define("CAPTYPE_CHANGEEMAIL", 2);
@@ -159,6 +158,7 @@ function __autoload($class_name) {
                                "MeetingTracker" => "src/meetingtracker.php",
                                "Message" => "lib/message.php",
                                "Mimetype" => "lib/mimetype.php",
+                               "Multiconference" => "src/multiconference.php",
                                "PaperActions" => "src/paperactions.php",
                                "PaperColumn" => "src/papercolumn.php",
                                "PaperInfo" => "src/paperinfo.php",
@@ -247,17 +247,13 @@ if (!@$Opt["loaded"]) {
                || (@include "$ConfSitePATH/conf/options.inc") !== false
                || (@include "$ConfSitePATH/Code/options.inc") !== false)
         $Opt["loaded"] = true;
-    if (@$Opt["multiconference"]) {
-        require_once("$ConfSitePATH/src/multiconference.php");
-        multiconference_init();
-    }
+    if (@$Opt["multiconference"])
+        Multiconference::init();
     if (@$Opt["include"])
         read_included_options($ConfSitePATH, $Opt["include"]);
 }
-if (!@$Opt["loaded"] || @$Opt["missing"]) {
-    require_once("$ConfSitePATH/src/multiconference.php");
-    multiconference_fail(false);
-}
+if (!@$Opt["loaded"] || @$Opt["missing"])
+    Multiconference::fail_bad_options();
 
 
 // Allow lots of memory
@@ -268,7 +264,5 @@ ini_set("memory_limit", defval($Opt, "memoryLimit", "128M"));
 global $Conf;
 if (!@$Conf)
     $Conf = new Conference(Dbl::make_dsn($Opt));
-if (!$Conf->dblink) {
-    require_once("$ConfSitePATH/src/multiconference.php");
-    multiconference_fail(true);
-}
+if (!$Conf->dblink)
+    Multiconference::fail_bad_database();
