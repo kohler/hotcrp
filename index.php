@@ -5,10 +5,15 @@
 
 require_once("src/initweb.php");
 if (Navigation::page() !== "index") {
-    if (is_readable(Navigation::page() . ".php")
+    $page = Navigation::page();
+    if (is_readable("$page.php")
         /* The following is paranoia (currently can't happen): */
-        && strpos(Navigation::page(), "/") === false) {
-        include(Navigation::page() . ".php");
+        && strpos($page, "/") === false) {
+        include("$page.php");
+        exit;
+    } else if ($page == "images" || $page == "scripts" || $page == "stylesheets") {
+        $_REQUEST["file"] = $page . Navigation::path();
+        include("cacheable.php");
         exit;
     } else
         go(hoturl("index"));
