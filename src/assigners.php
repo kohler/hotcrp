@@ -166,11 +166,13 @@ class Assigner {
     function contact_set() {
         return "pc";
     }
-    function allow_contact_type($type) {
+    function allow_special_contact($cclass) {
         return false;
     }
     function account(&$countbycid, $nrev) {
         $countbycid[$this->cid] = @+$countbycid[$this->cid] + 1;
+    }
+    function add_locks(&$locks) {
     }
 }
 class ReviewAssigner extends Assigner {
@@ -193,8 +195,8 @@ class ReviewAssigner extends Assigner {
         else
             return false;
     }
-    function allow_contact_type($type) {
-        return $this->type == 0 && $type != "none";
+    function allow_special_contact($cclass) {
+        return $this->type == 0 && $cclass != "none";
     }
     function load_state($state) {
         global $Conf;
@@ -282,6 +284,9 @@ class ReviewAssigner extends Assigner {
             }
         }
     }
+    function add_locks(&$locks) {
+        $locks["PaperReview"] = $locks["PaperReviewRefused"] = $locks["Settings"] = "write";
+    }
     function execute($who) {
         global $Conf;
         $result = $Conf->qe("select contactId, paperId, reviewId, reviewType, reviewModified from PaperReview where paperId=$this->pid and contactId=$this->cid");
@@ -301,8 +306,8 @@ class LeadAssigner extends Assigner {
         $this->type = $type;
         $this->isadd = $isadd;
     }
-    function allow_contact_type($type) {
-        return $type == "none" || !$this->isadd;
+    function allow_special_contact($cclass) {
+        return !$this->isadd || $cclass == "none";
     }
     function load_state($state) {
         global $Conf;
@@ -331,6 +336,9 @@ class LeadAssigner extends Assigner {
             $t = "remove $t as $this->type";
         return $t;
     }
+    function add_locks(&$locks) {
+        $locks["Paper"] = "write";
+    }
     function execute($who) {
         global $Conf;
         if ($this->isadd)
@@ -347,8 +355,8 @@ class ConflictAssigner extends Assigner {
         parent::__construct($pid, $contact);
         $this->ctype = $ctype;
     }
-    function allow_contact_type($type) {
-        return $type == "conflict" || ($type == "any" && !$this->ctype);
+    function allow_special_contact($cclass) {
+        return $cclass == "conflict" || ($cclass == "any" && !$this->ctype);
     }
     function load_state($state) {
         global $Conf;
@@ -377,6 +385,9 @@ class ConflictAssigner extends Assigner {
             $t .= "(remove conflict)";
         return $t;
     }
+    function add_locks(&$locks) {
+        $locks["PaperConflict"] = "write";
+    }
     function execute($who) {
         global $Conf;
         if ($this->ctype)
@@ -386,6 +397,7 @@ class ConflictAssigner extends Assigner {
     }
 }
 class TagAssigner extends Assigner {
+    const TYPE = "tag";
     private $isadd;
     private $tag;
     private $index;
@@ -397,17 +409,17 @@ class TagAssigner extends Assigner {
         $this->index = $index;
         $this->tagger = $tagger;
     }
-    function allow_contact_type($type) {
+    function allow_special_contact($cclass) {
         return true;
     }
     function load_state($state) {
         global $Conf;
         $result = $Conf->qe("select paperId, tag, tagIndex from PaperTag");
         while (($row = edb_row($result)))
-            $state->load(array("type" => "tag", "pid" => $row[0], "tag" => $row[1], "_index" => $row[2]));
+            $state->load(array("type" => self::TYPE, "pid" => $row[0], "tag" => $row[1], "_index" => $row[2]));
     }
     function apply($pid, $contact, $req, $state, $defaults) {
-        $state->load_type("tag", $this);
+        $state->load_type(self::TYPE, $this);
         if (!($tagger = $state->extra("tagger"))) {
             $tagger = new Tagger($state->contact);
             $state->set_extra("tagger", $tagger);
@@ -433,10 +445,10 @@ class TagAssigner extends Assigner {
             return "Index “" . htmlspecialchars($req["index"]) . "” should be an integer.";
         // save assignment
         if ($this->isadd === "set" && !$state->set_extra("tag.$tag", true))
-            $state->remove(array("type" => "tag", "tag" => $tag));
-        $state->remove(array("type" => "tag", "pid" => $pid, "tag" => $tag, "_index" => ($this->isadd ? null : $index)));
+            $state->remove(array("type" => self::TYPE, "tag" => $tag));
+        $state->remove(array("type" => self::TYPE, "pid" => $pid, "tag" => $tag, "_index" => ($this->isadd ? null : $index)));
         if ($this->isadd && $index !== "none")
-            $state->add(array("type" => "tag", "pid" => $pid, "tag" => $tag, "_index" => ($index ? $index : 0)));
+            $state->add(array("type" => self::TYPE, "pid" => $pid, "tag" => $tag, "_index" => ($index ? $index : 0)));
     }
     function realize($old, $new, $cmap, $state) {
         $x = $new ? $new : $old;
@@ -454,12 +466,83 @@ class TagAssigner extends Assigner {
             $t = "add $t";
         return $t;
     }
+    function add_locks(&$locks) {
+        $locks["PaperTag"] = "write";
+    }
     function execute($who) {
         global $Conf;
         if ($this->index === null)
             $this->tagger->save($this->pid, $this->tag, "d");
         else
             $this->tagger->save($this->pid, $this->tag . "#" . $this->index, "a");
+    }
+}
+class PreferenceAssigner extends Assigner {
+    const TYPE = "pref";
+    private $pref;
+    private $exp;
+    function __construct($pid, $contact, $pref, $exp) {
+        parent::__construct($pid, $contact);
+        $this->pref = $pref;
+        $this->exp = $exp;
+    }
+    function allow_special_contact($cclass) {
+        return $cclass == "conflict";
+    }
+    function load_state($state) {
+        global $Conf;
+        $result = $Conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
+        while (($row = edb_row($result)))
+            $state->load(array("type" => self::TYPE, "pid" => $row[0], "cid" => $row[1], "_pref" => $row[2], "_exp" => $row[3]));
+    }
+    function apply($pid, $contact, $req, $state, $defaults) {
+        $state->load_type(self::TYPE, $this);
+
+        foreach (array("preference", "pref", "revpref") as $k)
+            if (($pref = @$req[$k]) !== null)
+                break;
+        if ($pref === null)
+            return "Missing preference";
+        $pref = @trim($pref);
+        if ($pref == "" || $pref == "none")
+            $ppref = array(0, null);
+        else if (($ppref = parse_preference($pref)) === null)
+            return "Invalid preference “" . htmlspecialchars($pref) . "”";
+
+        foreach (array("expertise", "revexp") as $k)
+            if (($exp = @$req[$k]) !== null)
+                break;
+        if ($exp && ($exp = trim($exp)) !== "") {
+            if (($pexp = parse_preference($exp)) === null || $pexp[0])
+                return "Invalid expertise “" . htmlspecialchars($exp) . "”";
+            $ppref[1] = $pexp[1];
+        }
+
+        $state->remove(array("type" => self::TYPE, "pid" => $pid, "cid" => $contact->contactId ? : null));
+        if ($ppref[0] || $ppref[1] !== null)
+            $state->add(array("type" => self::TYPE, "pid" => $pid, "cid" => $contact->contactId ? : null, "_pref" => $ppref[0], "_exp" => $ppref[1]));
+    }
+    function realize($old, $new, $cmap, $state) {
+        $x = $new ? $new : $old;
+        return new PreferenceAssigner($x["pid"], $cmap->get_id($x["cid"]), $new ? $new["_pref"] : 0, $new ? $new["_exp"] : null);
+    }
+    function unparse_display() {
+        if (!$this->cid)
+            return "remove all preferences";
+        return Text::name_html($this->contact) . " " . unparse_preference_span(array($this->pref, $this->exp));
+    }
+    function add_locks(&$locks) {
+        $locks["PaperReviewPreference"] = "write";
+    }
+    function execute($who) {
+        global $Conf;
+        if (!$this->pref && $this->exp === null)
+            Dbl::qe("delete from PaperReviewPreference where paperId=? and contactId=?", $this->pid, $this->cid);
+        else
+            Dbl::qe("insert into PaperReviewPreference
+                set paperId=?, contactId=?, preference=?, expertise=?
+                on duplicate key update preference=values(preference), expertise=values(expertise)",
+                    $this->pid, $this->cid, $this->pref, $this->exp);
     }
 }
 
@@ -484,6 +567,9 @@ Assigner::register("tag", new TagAssigner(0, true, null, 0));
 Assigner::register("settag", new TagAssigner(0, "set", null, 0));
 Assigner::register("notag", new TagAssigner(0, false, null, 0));
 Assigner::register("cleartag", new TagAssigner(0, false, null, 0));
+Assigner::register("preference", new PreferenceAssigner(0, null, 0, null));
+Assigner::register("pref", new PreferenceAssigner(0, null, 0, null));
+Assigner::register("revpref", new PreferenceAssigner(0, null, 0, null));
 
 class AssignmentSet {
     private $assigners = array();
@@ -609,12 +695,12 @@ class AssignmentSet {
                 return $result;
             }
         }
-        // perhaps absent contact is OK
-        if (!$lemail && !$first && !$last && $assigner->allow_contact_type("absent"))
+        // perhaps missing contact is OK
+        if (!$lemail && !$first && !$last && $assigner->allow_special_contact("missing"))
             return array(null);
         // perhaps "none" or "any" is OK
         if ($special === "none" || $special === "any") {
-            if (!$assigner->allow_contact_type($special)) {
+            if (!$assigner->allow_special_contact($special)) {
                 $this->error($csv->lineno(), "“{$special}” not allowed here");
                 return false;
             }
@@ -665,8 +751,6 @@ class AssignmentSet {
     function parse($text, $filename = null, $defaults = null) {
         if ($defaults === null)
             $defaults = array();
-        if (!isset($defaults["action"]))
-            $defaults["action"] = "<missing>";
         $this->filename = $filename;
 
         $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
@@ -680,6 +764,7 @@ class AssignmentSet {
                 || ($i = array_search("paperId", $req)) !== false))
             $req[$i] = "paper";
         if (array_search("action", $req) !== false
+            || array_search("assignment", $req) !== false
             || array_search("paper", $req) !== false)
             $csv->set_header($req);
         else {
@@ -692,14 +777,18 @@ class AssignmentSet {
                 $csv->set_header(array("paper", "action", "user", "round"));
             $csv->unshift($req);
         }
-        if (array_search("action", $csv->header()) === false
-            && array_search("tag", $csv->header()) !== false)
+        $has_action = array_search("action", $csv->header()) !== false
+            || array_search("assignment", $csv->header()) !== false;
+        if (!$has_action && array_search("tag", $csv->header()) !== false)
             $defaults["action"] = "tag";
-        if (array_search("action", $csv->header()) === false
-            && !@$defaults["action"])
-            return $this->error($csv->lineno(), "“action” column missing");
+        if (!$has_action && array_search("preference", $csv->header()) !== false)
+            $defaults["action"] = "preference";
+        if (!$has_action && !@$defaults["action"])
+            return $this->error($csv->lineno(), "“assignment” column missing");
         if (array_search("paper", $csv->header()) === false)
             return $this->error($csv->lineno(), "“paper” column missing");
+        if (!isset($defaults["action"]))
+            $defaults["action"] = "<missing>";
 
         // set up PC mappings
         $pcm = pcMembers();
@@ -745,11 +834,12 @@ class AssignmentSet {
             }
 
             // check action
-            if (($action = @$req["action"]) === null)
+            if (($action = @$req["assignment"]) === null
+                && ($action = @$req["action"]) === null)
                 $action = $defaults["action"];
             $action = strtolower(trim($action));
             if (!($assigner = Assigner::find($action))) {
-                $this->error($csv->lineno(), "unknown action “" . htmlspecialchars($req["action"]) . "”");
+                $this->error($csv->lineno(), "unknown action “" . htmlspecialchars($action) . "”");
                 continue;
             }
 
@@ -763,7 +853,7 @@ class AssignmentSet {
                 foreach ($contacts as $contact) {
                     if ($contact && @$contact->contactId > 0 && !$this->override
                         && @$this->conflict[$p][$contact->contactId]
-                        && !$assigner->allow_contact_type("conflict"))
+                        && !$assigner->allow_special_contact("conflict"))
                         $this->error($csv->lineno(), Text::user_html_nolink($contact) . " has a conflict with paper #$p");
                     else if (($err = $assigner->apply($p, $contact, $req, $this->astate, $defaults)))
                         $this->error($csv->lineno(), $err);
@@ -880,7 +970,11 @@ class AssignmentSet {
         }
 
         // create new contacts outside the lock
-        foreach ($this->assigners as $assigner)
+        $locks = array("ContactInfo" => "read", "PCMember" => "read",
+                       "ChairAssistant" => "read", "Chair" => "read",
+                       "ActionLog" => "write", "Paper" => "read",
+                       "PaperConflict" => "read");
+        foreach ($this->assigners as $assigner) {
             if ($assigner->contact->contactId < 0) {
                 $c = $this->cmap->get_email($assigner->contact->email);
                 if ($c->contactId < 0) {
@@ -891,9 +985,14 @@ class AssignmentSet {
                 $assigner->contact = $c;
                 $assigner->cid = $c->contactId;
             }
+            $assigner->add_locks($locks);
+        }
 
         // execute assignments
-        $Conf->qe("lock tables ContactInfo read, PCMember read, ChairAssistant read, Chair read, PaperReview write, PaperReviewRefused write, Paper write, PaperConflict write, ActionLog write, Settings write, PaperTag write");
+        $tables = array();
+        foreach ($locks as $t => $type)
+            $tables[] = "$t $type";
+        $Conf->qe("lock tables " . join(", ", $tables));
 
         foreach ($this->assigners as $assigner)
             $assigner->execute($this->contact);

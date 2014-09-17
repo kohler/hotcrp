@@ -1160,7 +1160,8 @@ function downloadText($text, $filename, $inline = false) {
 }
 
 function parse_preference($n) {
-    if (preg_match(',\A\s*(-+|\++|[-+]?\d+(?:\.\d*)?|)\s*([xyz]|)\s*\z,i', $n, $m)) {
+    $n = trim($n);
+    if (preg_match(',\A(-+|\++|[-+]?\d+(?:\.\d*)?|)\s*([xyz]|)\z,i', $n, $m)) {
         if ($m[1] === "")
             $p = 0;
         else if (is_numeric($m[1])) {
@@ -1180,6 +1181,10 @@ function parse_preference($n) {
     } else if (strpos($n, "\xE2") !== false)
         // Translate UTF-8 for minus sign into a real minus sign ;)
         return parse_preference(str_replace("\xE2\x88\x92", '-', $n));
+    else if (strcasecmp($n, "none") == 0 || strcasecmp($n, "n/a") == 0)
+        return array(0, null);
+    else if (strcasecmp($n, "conflict") == 0)
+        return array(-100, null);
     else
         return null;
 }
@@ -1211,7 +1216,7 @@ function unparse_preference_span($preference) {
     if ($preference[0] < 0 || (!$preference[0] && @($preference[2] < 0)))
         $type = -1;
     $t = "";
-    if ($preference[0] || $preference[1])
+    if ($preference[0] || $preference[1] !== null)
         $t .= "P" . decorateNumber($preference[0]) . unparse_expertise($preference[1]);
     if (@$preference[2])
         $t .= ($t ? " " : "") . "T" . decorateNumber($preference[2]);

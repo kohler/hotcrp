@@ -112,7 +112,7 @@ echo Ht::form_div(hoturl_post("bulkassign", "upload=1"));
 echo '<input type="file" name="uploadfile" accept="text/plain,text/csv" size="30" />',
     '<div style="margin:0.5em 0">';
 
-echo 'Default action:&nbsp; assign&nbsp; ',
+echo 'By default, assign&nbsp; ',
     Ht::select("default_action", array("primary" => "primary reviews",
                                        "secondary" => "secondary reviews",
                                        "pcreview" => "optional PC reviews",
@@ -121,7 +121,8 @@ echo 'Default action:&nbsp; assign&nbsp; ',
                                        "lead" => "discussion leads",
                                        "shepherd" => "shepherds",
                                        "tag" => "add tags",
-                                       "settag" => "replace tags"),
+                                       "settag" => "replace tags",
+                                       "preference" => "reviewer preferences"),
                defval($_REQUEST, "default_action", "primary"),
                array("id" => "tsel", "onchange" => "fold(\"email\",this.value!=\"review\")")),
     '<div class="g"></div>', "\n";
@@ -163,7 +164,7 @@ they are applied.</p>
 
 <p>A simple example:</p>
 
-<pre class='entryexample'>paper,action,email
+<pre class='entryexample'>paper,assignment,email
 1,primary,man@alice.org
 2,secondary,slugger@manny.com
 1,primary,slugger@manny.com</pre>
@@ -175,7 +176,7 @@ members, or if they have conflicts with their assigned papers.</p>
 
 <p>A more complex example:</p>
 
-<pre class='entryexample'>paper,action,email,round
+<pre class='entryexample'>paper,assignment,email,round
 all,clearreview,all,R2
 1,primary,man@alice.org,R2
 10,primary,slugger@manny.com,R2
@@ -192,7 +193,7 @@ file as a unit. If file makes no overall changes to the current
 state, the upload process does nothing. For instance, if a file
 removes an active assignment and then restores it, the assignment is left alone.</p>
 
-<p>Actions are:</p>
+<p>Assignment types are:</p>
 
 <dl>
 <dt><code>primary</code>, <code>secondary</code>, <code>pcreview</code></dt>
@@ -219,22 +220,26 @@ review into a PC review).</dd>
 <dt><code>lead</code></dt>
 <dd>Set the discussion lead. The <code>email</code>, <code>name</code>,
 and/or <code>user</code> columns locate the PC user. To clear the discussion lead,
-use email <code>none</code> or action <code>clearlead</code>.</dd>
+use email <code>none</code> or assignment type <code>clearlead</code>.</dd>
 
 <dt><code>shepherd</code></dt>
 <dd>Set the shepherd. The <code>email</code>, <code>name</code>,
 and/or <code>user</code> columns locate the PC user. To clear the shepherd,
-use email <code>none</code> or action <code>clearshepherd</code>.</dd>
+use email <code>none</code> or assignment type <code>clearshepherd</code>.</dd>
 
 <dt><code>conflict</code></dt>
 <dd>Mark a PC conflict. The <code>email</code>, <code>name</code>,
 and/or <code>user</code> columns locate the PC user. To clear a conflict,
-use action <code>clearconflict</code>.</dd>
+use assignment type <code>clearconflict</code>.</dd>
 
 <dt><code>tag</code></dt>
 <dd>Add a tag. The <code>tag</code> column names the tag and the optional
 <code>value</code> column sets the tag value.
-To clear a tag, use action <code>cleartag</code> or value <code>none</code>.</dd>
+To clear a tag, use assignment type <code>cleartag</code> or value <code>none</code>.</dd>
+
+<dt><code>preference</code></dt>
+<dd>Set reviewer preference and expertise. The <code>preference</code> column
+gives the preference value.</dd>
 </dl>\n";
 
 $Conf->footerScript("fold('email',\$\$('tsel').value!='review')");
