@@ -209,16 +209,16 @@ class ReviewAssigner extends Assigner {
         }
     }
     function apply($pid, $contact, $req, $state, $defaults) {
-        $rname = @$req["round"];
-        if ($rname === null && $this->type > 0 && @$defaults["round"])
-            $rname = $defaults["round"];
-        if ($rname && strcasecmp($rname, "none") == 0)
-            $rname = "";
-        else if ($rname && (strcasecmp($rname, "any") != 0 || $this->type > 0)) {
-            if (($rerror = Conference::round_name_error($rname)))
+        $roundname = @$req["round"];
+        if ($roundname === null && $this->type > 0 && @$defaults["round"])
+            $roundname = $defaults["round"];
+        if ($roundname && strcasecmp($roundname, "none") == 0)
+            $roundname = "";
+        else if ($roundname && (strcasecmp($roundname, "any") != 0 || $this->type > 0)) {
+            if (($rerror = Conference::round_name_error($roundname)))
                 return $rerror;
         } else
-            $rname = null;
+            $roundname = null;
         $rtype = $this->type;
         if ($rtype == REVIEW_EXTERNAL && $contact->is_pc_member())
             $rtype = REVIEW_PC;
@@ -227,17 +227,16 @@ class ReviewAssigner extends Assigner {
         // remove existing review
         $revmatch = array("type" => "review", "pid" => $pid,
                           "cid" => $contact ? $contact->contactId : null);
-        if (!$rtype && @$req["round"] && $rname !== null)
-            $revmatch["_round"] = $rname;
+        if (!$rtype && @$req["round"] && $roundname !== null)
+            $revmatch["_round"] = $roundname;
         $matches = $state->remove($revmatch);
 
         if ($rtype) {
             // add new review or reclassify old one
             $revmatch["_rtype"] = $rtype;
-            if (count($matches) && @$req["round"] === null)
-                $rname = $matches[0]["_round"];
-            if ($rname !== null)
-                $revmatch["_round"] = $rname;
+            if (count($matches) && $roundname === null)
+                $roundname = $matches[0]["_round"];
+            $revmatch["_round"] = $roundname;
             if (count($matches))
                 $revmatch["_rsubmitted"] = $matches[0]["_rsubmitted"];
             if ($rtype == REVIEW_EXTERNAL && !count($matches)
