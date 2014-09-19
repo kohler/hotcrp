@@ -151,19 +151,17 @@ function hoturl_defaults($options = array()) {
 function hoturl_site_relative($page, $options = null) {
     global $ConfSiteSuffix, $Opt, $Me, $paperTable, $CurrentList, $_hoturl_defaults;
     $t = $page . $ConfSiteSuffix;
-    // see also redirectSelf
+    // parse options, separate anchor; see also redirectSelf
+    $anchor = "";
     if ($options && is_array($options)) {
         $x = "";
         foreach ($options as $k => $v)
             if ($v !== null && $k !== "anchor")
                 $x .= ($x === "" ? "" : "&amp;") . $k . "=" . urlencode($v);
-        if (isset($options["anchor"]))
-            $x .= "#" . urlencode($options["anchor"]);
+            else if ($v !== null)
+                $anchor = "#" . urlencode($v);
         $options = $x;
-    }
-    // anchor
-    $anchor = "";
-    if (preg_match('/\A(.*?)(#.*)\z/', $options, $m))
+    } else if (preg_match('/\A(.*?)(#.*)\z/', $options, $m))
         list($options, $anchor) = array($m[1], $m[2]);
     // append defaults
     $are = '/\A(|.*?(?:&|&amp;))';
