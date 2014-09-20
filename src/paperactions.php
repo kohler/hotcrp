@@ -9,16 +9,16 @@ class PaperActions {
         global $Conf, $Me, $Error, $OK;
         $ajax = defval($_REQUEST, "ajax", false);
         if ($Me->canSetOutcome($prow)) {
-            $o = cvtint(@$_REQUEST["decision"]);
-            $outcomes = $Conf->outcome_map();
-            if (isset($outcomes[$o])) {
-                $result = $Conf->qe("update Paper set outcome=$o where paperId=$prow->paperId");
+            $dnum = cvtint(@$_REQUEST["decision"]);
+            $decs = $Conf->decision_map();
+            if (isset($decs[$dnum])) {
+                $result = $Conf->qe("update Paper set outcome=$dnum where paperId=$prow->paperId");
                 if ($result && $ajax)
                     $Conf->confirmMsg("Saved");
                 else if ($result)
-                    $Conf->confirmMsg("Decision for paper #$prow->paperId set to " . htmlspecialchars($outcomes[$o]) . ".");
-                if ($o > 0 || $prow->outcome > 0)
-                    $Conf->updatePaperaccSetting($o > 0);
+                    $Conf->confirmMsg("Decision for paper #$prow->paperId set to " . htmlspecialchars($decs[$dnum]) . ".");
+                if ($dnum > 0 || $prow->outcome > 0)
+                    $Conf->updatePaperaccSetting($dnum > 0);
             } else {
                 $Conf->errorMsg("Bad decision value.");
                 $Error["decision"] = true;

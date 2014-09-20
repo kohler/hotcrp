@@ -852,8 +852,8 @@ if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != ""
         $Conf->errorMsg("You cannot set paper decisions.");
     else {
         $o = cvtint(@$_REQUEST["decision"]);
-        $outcome_map = $Conf->outcome_map();
-        if (isset($outcome_map[$o])) {
+        $decision_map = $Conf->decision_map();
+        if (isset($decision_map[$o])) {
             $Conf->qe("update Paper set outcome=$o where paperId" . SearchActions::sql_predicate());
             $Conf->updatePaperaccSetting($o > 0);
             redirectSelf(array("atab" => "decide", "decision" => $o));

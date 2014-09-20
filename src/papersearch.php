@@ -671,7 +671,7 @@ class PaperSearch {
         else if (!$quoted && strcasecmp($word, "any") == 0)
             $value = "!=0";
         else {
-            $value = matchValue($Conf->outcome_map(), $word, true);
+            $value = matchValue($Conf->decision_map(), $word, true);
             if (count($value) == 0) {
                 $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a " . ($allow_status ? "decision or status." : "decision."));
                 $value[] = -10000000;

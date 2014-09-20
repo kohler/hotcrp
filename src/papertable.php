@@ -1355,12 +1355,11 @@ class PaperTable {
             Ht::hidden("setdecision", 1);
         if (isset($_REQUEST["forceShow"]))
             echo Ht::hidden("forceShow", $_REQUEST["forceShow"] ? 1 : 0);
-        $outcomes = $Conf->outcome_map();
         echo decisionSelector($this->prow->outcome, null, " onchange='dosubmitstripselector(\"decision\")' id='folddecision_d'"),
             " ", Ht::submit("Save", array("class" => "fx7")),
             " <span id='decisionformresult'></span>",
             "</div></form><p class='fn odname'>",
-            $outcomes[$this->prow->outcome],
+            htmlspecialchars($Conf->decision_name($this->prow->outcome)),
             "</p></div></div>\n";
         $Conf->footerScript("Miniajax.onload(\"decisionform\")");
     }

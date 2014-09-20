@@ -21,6 +21,7 @@ class Conference {
     private $rounds = null;
     private $tracks = null;
     private $_track_tags = null;
+    private $_decisions = null;
     public $dsn = null;
 
     const BLIND_NEVER = 0;
@@ -188,6 +189,9 @@ class Conference {
                     $this->_track_tags[] = $k;
         } else
             $this->tracks = $this->_track_tags = null;
+
+        // clear decisions cache
+        $this->_decisions = null;
     }
 
     private function crosscheck_options() {
@@ -269,11 +273,26 @@ class Conference {
         return (is_string($x) ? json_decode($x) : $x);
     }
 
-    function outcome_map() {
-        $x = @$this->settingTexts["outcome_map"];
-        if (is_string($x))
-            $x = $this->settingTexts["outcome_map"] = json_decode($x, true);
-        return (is_array($x) ? $x : array());
+    function decision_map() {
+        if ($this->_decisions === null) {
+            $this->_decisions = array();
+            if (@($j = $this->settingTexts["outcome_map"])
+                && @($j = json_decode($j, true))
+                && is_array($j))
+                $this->_decisions = $j;
+            $this->_decisions[0] = "Unspecified";
+        }
+        return $this->_decisions;
+    }
+
+    static function decision_name_error($dname) {
+        $dname = simplify_whitespace($dname);
+        if ((string) $dname === "")
+            return "Empty decision name.";
+        else if (preg_match(',\A(?:yes|no|any|none|unknown|unspecified)\z,i', $dname))
+            return "Decision name “{$dname}” is reserved.";
+        else
+            return false;
     }
 
     function topic_map() {

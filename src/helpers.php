@@ -1226,16 +1226,14 @@ function unparse_preference_span($preference) {
 function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
     global $Conf;
     $text = "<select" . ($id === null ? "" : " id='$id'") . " name='decision'$extra>\n";
-    $outcomeMap = $Conf->outcome_map();
-    if (!isset($outcomeMap[$curOutcome]))
+    $decs = $Conf->decision_map();
+    if (!isset($decs[$curOutcome]))
         $curOutcome = null;
-    $outcomes = array_keys($outcomeMap);
-    sort($outcomes);
-    $outcomes = array_unique(array_merge(array(0), $outcomes));
+    $outcomes = array_keys($decs);
     if ($curOutcome === null)
         $text .= "    <option value='' selected='selected'><b>Set decision...</b></option>\n";
-    foreach ($outcomes as $key)
-        $text .= "    <option value='$key'" . ($curOutcome == $key && $curOutcome !== null ? " selected='selected'" : "") . ">" . htmlspecialchars($outcomeMap[$key]) . "</option>\n";
+    foreach ($decs as $dnum => $dname)
+        $text .= "    <option value='$dnum'" . ($curOutcome == $dnum && $curOutcome !== null ? " selected='selected'" : "") . ">" . htmlspecialchars($dname) . "</option>\n";
     return $text . "  </select>";
 }
 

@@ -294,10 +294,13 @@ function searchQuickref() {
     _searchQuickrefRow("", "status:withdrawn", "paper has been withdrawn", "t=all");
     _searchQuickrefRow("", "has:final", "final copy uploaded");
 
-    foreach ($Conf->outcome_map() as $dec)
-        $dec = simplify_whitespace(strtolower($dec));
-    $qdec = (strpos($dec, " ") !== false ? "\"$dec\"" : $dec);
-    _searchQuickrefRow("Decision", "dec:$qdec", "decision is “" . $dec . "” (partial matches OK)");
+    foreach ($Conf->decision_map() as $dnum => $dname)
+        if ($dnum)
+            break;
+    $qdname = strtolower($dname);
+    if (strpos($qdname, " ") !== false)
+        $qdname = "\"$qdname\"";
+    _searchQuickrefRow("Decision", "dec:$qdname", "decision is “" . htmlspecialchars($dname) . "” (partial matches OK)");
     _searchQuickrefRow("", "dec:yes", "one of the accept decisions");
     _searchQuickrefRow("", "dec:no", "one of the reject decisions");
     _searchQuickrefRow("", "dec:any", "decision specified");

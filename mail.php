@@ -99,7 +99,7 @@ function contactQuery($type) {
     else if ($type == "unsub")
         $where[] = "Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0";
     else if (substr($type, 0, 4) == "dec:") {
-        foreach ($Conf->outcome_map() as $num => $what)
+        foreach ($Conf->decision_map() as $num => $what)
             if (strcasecmp($what, substr($type, 4)) == 0) {
                 $where[] = "Paper.timeSubmitted>0 and Paper.outcome=$num";
                 break;
@@ -389,14 +389,14 @@ if (defval($_REQUEST, "loadtmpl")) {
     if (isset($template["mailtool_search_type"]))
         $_REQUEST["t"] = $template["mailtool_search_type"];
     if ($_REQUEST["recipients"] == "dec:no") {
-        $outcomes = $Conf->outcome_map();
+        $outcomes = $Conf->decision_map();
         $x = min(array_keys($outcomes));
         foreach ($noutcome as $o => $n)
             if ($o < 0 && $n > defval($noutcome, $x))
                 $x = $o;
         $_REQUEST["recipients"] = "dec:" . $outcomes[$x];
     } else if ($_REQUEST["recipients"] == "dec:yes") {
-        $outcomes = $Conf->outcome_map();
+        $outcomes = $Conf->decision_map();
         $x = max(array_keys($outcomes));
         foreach ($noutcome as $o => $n)
             if ($o > 0 && $n > defval($noutcome, $x))
@@ -414,7 +414,7 @@ if ($Me->privChair) {
     $recip["au"] = "All contact authors";
     $recip["s"] = "Contact authors of submitted papers";
     $recip["unsub"] = "Contact authors of unsubmitted papers";
-    foreach ($Conf->outcome_map() as $num => $what) {
+    foreach ($Conf->decision_map() as $num => $what) {
         $name = "dec:$what";
         if ($num && (defval($noutcome, $num) > 0
                      || defval($_REQUEST, "recipients", "") == $name))

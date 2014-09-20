@@ -2145,11 +2145,12 @@ class Contact {
         if ($row->timeWithdrawn > 0)
             return array("pstat_with", "Withdrawn");
         else if (@$row->outcome && $this->canViewDecision($row, $forceShow)) {
-            if (!($data = @self::$status_info_cache[$row->outcome])) {
+            $data = @self::$status_info_cache[$row->outcome];
+            if (!$data) {
                 $decclass = ($row->outcome > 0 ? "pstat_decyes" : "pstat_decno");
 
-                $outcomes = $Conf->outcome_map();
-                $decname = @$outcomes[$row->outcome];
+                $decs = $Conf->decision_map();
+                $decname = @$decs[$row->outcome];
                 if ($decname) {
                     $trdecname = preg_replace('/[^-.\w]/', '', $decname);
                     if ($trdecname != "")
