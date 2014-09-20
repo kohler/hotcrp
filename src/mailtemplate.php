@@ -268,7 +268,7 @@ Contact %ADMIN% with any questions or concerns.
      "acceptnotify" =>
      array("mailtool_name" => "Accept notification",
            "mailtool_priority" => 10,
-           "mailtool_recipients" => "dec:yes",
+           "mailtool_recipients" => "somedec:yes",
            "subject" => "[%CONFSHORTNAME%] Accepted paper #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 
@@ -292,7 +292,7 @@ Contact %ADMIN% with any questions or concerns.
      "rejectnotify" =>
      array("mailtool_name" => "Reject notification",
            "mailtool_priority" => 11,
-           "mailtool_recipients" => "dec:no",
+           "mailtool_recipients" => "somedec:no",
            "subject" => "[%CONFSHORTNAME%] Rejected paper #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 

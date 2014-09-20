@@ -124,6 +124,7 @@ src/homepage.php
 src/hotcrpdocument.php
 src/init.php
 src/initweb.php
+src/mailclasses.php
 src/mailer.php
 src/mailtemplate.php
 src/meetingtracker.php

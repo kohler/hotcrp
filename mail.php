@@ -5,6 +5,7 @@
 
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
+require_once("src/mailclasses.php");
 if (!$Me->privChair && !$Me->isPC)
     $Me->escape();
 $checkReviewNeedsSubmit = false;
@@ -84,88 +85,6 @@ else
 
 $subjectPrefix = "[" . $Opt["shortName"] . "] ";
 
-function contactQuery($type) {
-    global $Conf, $Me, $papersel, $checkReviewNeedsSubmit;
-    $contactInfo = "firstName, lastName, email, password, roles, ContactInfo.contactId, (PCMember.contactId is not null) as isPC, preferredEmail";
-    $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.shepherdContactId, Paper.capVersion, Paper.managerContactId";
-
-    // paper limit
-    $where = array();
-    if ($type != "pc" && substr($type, 0, 3) != "pc:" && $type != "all" && isset($papersel))
-        $where[] = "Paper.paperId in (" . join(", ", $papersel) . ")";
-
-    if ($type == "s")
-        $where[] = "Paper.timeSubmitted>0";
-    else if ($type == "unsub")
-        $where[] = "Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0";
-    else if (substr($type, 0, 4) == "dec:") {
-        foreach ($Conf->decision_map() as $num => $what)
-            if (strcasecmp($what, substr($type, 4)) == 0) {
-                $where[] = "Paper.timeSubmitted>0 and Paper.outcome=$num";
-                break;
-            }
-        if (!count($where))
-            return "";
-    }
-
-    // reviewer limit
-    if ($type == "myuncextrev")
-        $type = "uncmyextrev";
-    $isreview = false;
-    if (preg_match('_\A(new|unc|c|)(pc|ext|myext|)rev\z_', $type, $m)) {
-        $isreview = true;
-        // Submission status
-        if ($m[1] == "c")
-            $where[] = "PaperReview.reviewSubmitted>0";
-        else if ($m[1] == "unc" || $m[1] == "new")
-            $where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0";
-        if ($m[1] == "new")
-            $where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
-        // Withdrawn papers may not count
-        if ($m[1] == "unc" || $m[1] == "new")
-            $where[] = "Paper.timeSubmitted>0";
-        else if ($m[1] == "")
-            $where[] = "(Paper.timeSubmitted>0 or PaperReview.reviewSubmitted>0)";
-        // Review type
-        if ($m[2] == "ext" || $m[2] == "myext")
-            $where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
-        else if ($m[2] == "pc")
-            $where[] = "PaperReview.reviewType>" . REVIEW_EXTERNAL;
-        if ($m[2] == "myext")
-            $where[] = "PaperReview.requestedBy=" . $Me->contactId;
-    }
-
-    // build query
-    if ($type == "all") {
-        $q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo left join PCMember using (contactId)";
-        $orderby = "email";
-    } else if ($type == "pc" || substr($type, 0, 3) == "pc:") {
-        $q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo join PCMember using (contactId)";
-        $orderby = "email";
-        if ($type != "pc")
-            $where[] = "ContactInfo.contactTags like '% " . sqlq_for_like(substr($type, 3)) . " %'";
-    } else if ($isreview) {
-        $q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
-        $orderby = "email, Paper.paperId";
-    } else if ($type == "lead" || $type == "shepherd") {
-        $q = "select $contactInfo, conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from Paper join ContactInfo on (ContactInfo.contactId=Paper.${type}ContactId) left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
-        $orderby = "email, Paper.paperId";
-    } else {
-        if (!$Conf->timeAuthorViewReviews(true) && $Conf->timeAuthorViewReviews()) {
-            $qa = ", reviewNeedsSubmit";
-            $qb = " left join (select contactId, max(reviewNeedsSubmit) as reviewNeedsSubmit from PaperReview group by PaperReview.contactId) as PaperReview using (contactId)";
-            $checkReviewNeedsSubmit = true;
-        } else
-            $qa = $qb = "";
-        $q = "select $contactInfo$qa, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId)$qb left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
-        $where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
-        $orderby = "email, Paper.paperId";
-    }
-
-    $where[] = "email not regexp '^anonymous[0-9]*\$'";
-    return $q . " where " . join(" and ", $where) . " order by " . $orderby;
-}
-
 function checkMailPrologue($send) {
     global $Conf, $Me, $recip;
     echo Ht::form_div(hoturl_post("mail"));
@@ -200,7 +119,7 @@ function checkMailPrologue($send) {
             "<div class='fn fx2 warning'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div>",
             "<div id='mailwarnings'></div>",
             "<div class='fx info'>Verify that the mails look correct, then select “Send” to send the checked mails.<br />",
-            "Mailing to:&nbsp;", $recip[$_REQUEST["recipients"]], "<span id='mailinfo'></span>";
+            "Mailing to:&nbsp;", $recip->unparse(), "<span id='mailinfo'></span>";
         if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $_REQUEST["recipients"])
             && defval($_REQUEST, "plimit") && $_REQUEST["q"] !== "")
             echo "<br />Paper selection:&nbsp;", htmlspecialchars($_REQUEST["q"]);
@@ -224,7 +143,7 @@ function echo_mailinfo($mcount, $mrecipients, $mpapers) {
 function checkMail($send) {
     global $Conf, $Opt, $Me, $Error, $subjectPrefix, $recip,
         $checkReviewNeedsSubmit, $mailer_options;
-    $q = contactQuery($_REQUEST["recipients"]);
+    $q = $recip->query();
     if (!$q)
         return $Conf->errorMsg("Bad recipients value");
     $result = $Conf->qe($q);
@@ -350,7 +269,7 @@ function checkMail($send) {
     echo_mailinfo($mcount, $mrecipients, $mpapers);
 
     if (!$any && !count($preperrors))
-        return $Conf->errorMsg("No users match “" . $recip[$_REQUEST["recipients"]] . "” for that search.");
+        return $Conf->errorMsg("No users match “" . $recip->unparse() . "” for that search.");
     else if (!$any)
         return false;
     else if (!$send) {
@@ -388,68 +307,13 @@ if (defval($_REQUEST, "loadtmpl")) {
     $_REQUEST["recipients"] = defval($template, "mailtool_recipients", "s");
     if (isset($template["mailtool_search_type"]))
         $_REQUEST["t"] = $template["mailtool_search_type"];
-    if ($_REQUEST["recipients"] == "dec:no") {
-        $outcomes = $Conf->decision_map();
-        $x = min(array_keys($outcomes));
-        foreach ($noutcome as $o => $n)
-            if ($o < 0 && $n > defval($noutcome, $x))
-                $x = $o;
-        $_REQUEST["recipients"] = "dec:" . $outcomes[$x];
-    } else if ($_REQUEST["recipients"] == "dec:yes") {
-        $outcomes = $Conf->decision_map();
-        $x = max(array_keys($outcomes));
-        foreach ($noutcome as $o => $n)
-            if ($o > 0 && $n > defval($noutcome, $x))
-                $x = $o;
-        $_REQUEST["recipients"] = "dec:" . $outcomes[$x];
-    }
     $_REQUEST["subject"] = $nullMailer->expand($template["subject"]);
     $_REQUEST["emailBody"] = $nullMailer->expand($template["body"]);
 }
 
 
 // Set recipients list, now that template is loaded
-$recip = array();
-if ($Me->privChair) {
-    $recip["au"] = "All contact authors";
-    $recip["s"] = "Contact authors of submitted papers";
-    $recip["unsub"] = "Contact authors of unsubmitted papers";
-    foreach ($Conf->decision_map() as $num => $what) {
-        $name = "dec:$what";
-        if ($num && (defval($noutcome, $num) > 0
-                     || defval($_REQUEST, "recipients", "") == $name))
-            $recip[$name] = "Contact authors of " . htmlspecialchars($what) . " papers";
-    }
-    $recip["rev"] = "Reviewers";
-    $recip["crev"] = "Reviewers with complete reviews";
-    $recip["uncrev"] = "Reviewers with incomplete reviews";
-    $recip["pcrev"] = "PC reviewers";
-    $recip["uncpcrev"] = "PC reviewers with incomplete reviews";
-    $result = $Conf->q("select paperId from PaperReview where reviewType>=" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0");
-    if (edb_nrows($result) > 0)
-        $recip["newpcrev"] = "PC reviewers with new review assignments";
-    $recip["extrev"] = "External reviewers";
-    $recip["uncextrev"] = "External reviewers with incomplete reviews";
-    if ($anyLead)
-        $recip["lead"] = "Discussion leads";
-    if ($anyShepherd)
-        $recip["shepherd"] = "Shepherds";
-}
-$recip["myextrev"] = "Your requested reviewers";
-$recip["uncmyextrev"] = "Your requested reviewers with incomplete reviews";
-$recip["pc"] = "Program committee";
-if (count($pctags)) {
-    foreach ($pctags as $t)
-        if ($t != "pc")
-            $recip["pc:$t"] = "PC members tagged &ldquo;$t&rdquo;";
-}
-if ($Me->privChair)
-    $recip["all"] = "All users";
-
-if (@$_REQUEST["recipients"] == "myuncextrev")
-    $_REQUEST["recipients"] = "uncmyextrev";
-if (!isset($_REQUEST["recipients"]) || !isset($recip[$_REQUEST["recipients"]]))
-    $_REQUEST["recipients"] = key($recip);
+$recip = new MailRecipients($Me, @$_REQUEST["recipients"]);
 
 
 // Set subject and body if necessary
@@ -527,7 +391,7 @@ echo Ht::select("template", $tmpl, $_REQUEST["template"], array("onchange" => "h
 
 <div class='mail' style='float:left;margin:4px 1em 12px 0'><table>
  <tr><td class='mhnp'>To:</td><td class='mhdd'>",
-    Ht::select("recipients", $recip, $_REQUEST["recipients"], array("id" => "recipients", "onchange" => "setmailpsel(this)")),
+    $recip->selectors(),
     "<div class='g'></div>\n";
 
 // paper selection

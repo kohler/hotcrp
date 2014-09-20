@@ -285,6 +285,15 @@ class Conference {
         return $this->_decisions;
     }
 
+    function decision_name($dnum) {
+        if ($this->_decisions === null)
+            $this->decision_map();
+        if (($dname = @$this->_decisions[$dnum]))
+            return $dname;
+        else
+            return false;
+    }
+
     static function decision_name_error($dname) {
         $dname = simplify_whitespace($dname);
         if ((string) $dname === "")
