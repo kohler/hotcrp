@@ -270,7 +270,7 @@ Contact %ADMIN% with any questions or concerns.
            "mailtool_priority" => 10,
            "mailtool_recipients" => "somedec:yes",
            "subject" => "[%CONFSHORTNAME%] Accepted paper #%NUMBER% %TITLEHINT%",
-           "body" => "Dear %NAME%,
+           "body" => "Dear author(s),
 
 The %CONFNAME% program committee is delighted to inform you that your paper #%NUMBER% has been accepted to appear in the conference.
 
@@ -294,7 +294,7 @@ Contact %ADMIN% with any questions or concerns.
            "mailtool_priority" => 11,
            "mailtool_recipients" => "somedec:no",
            "subject" => "[%CONFSHORTNAME%] Rejected paper #%NUMBER% %TITLEHINT%",
-           "body" => "Dear %NAME%,
+           "body" => "Dear author(s),
 
 The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER% was rejected, and will not appear in the conference.
 

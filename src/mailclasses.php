@@ -169,10 +169,10 @@ class MailRecipients {
                 $where[] = "ContactInfo.contactTags like '% " . sqlq_for_like(substr($this->type, 3)) . " %'";
         } else if ($isreview) {
             $q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
-            $orderby = "email, Paper.paperId";
+            $orderby = "Paper.paperId, email";
         } else if ($this->type == "lead" || $this->type == "shepherd") {
             $q = "select $contactInfo, conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from Paper join ContactInfo on (ContactInfo.contactId=Paper.${type}ContactId) left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
-            $orderby = "email, Paper.paperId";
+            $orderby = "Paper.paperId, email";
         } else {
             if (!$Conf->timeAuthorViewReviews(true) && $Conf->timeAuthorViewReviews()) {
                 $qa = ", reviewNeedsSubmit";
@@ -182,7 +182,7 @@ class MailRecipients {
                 $qa = $qb = "";
             $q = "select $contactInfo$qa, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId)$qb left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
             $where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
-            $orderby = "email, Paper.paperId";
+            $orderby = "Paper.paperId, email";
         }
 
         $where[] = "email not regexp '^anonymous[0-9]*\$'";

@@ -2326,7 +2326,7 @@ class Contact {
         }
 
         $prep = Mailer::prepareToSend($template, null, $this, $rest);
-        if ($prep["allowEmail"] || !$sensitive
+        if ($prep->sendable || !$sensitive
             || @$Opt["debugShowSensitiveEmail"]) {
             Mailer::sendPrepared($prep);
             return $template;

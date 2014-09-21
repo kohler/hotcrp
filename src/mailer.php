@@ -71,8 +71,8 @@ class Mailer {
     const EXPAND_HEADER = 1;
     const EXPAND_EMAIL = 2;
 
-    public static $mailHeaders = array("cc" => "Cc", "bcc" => "Bcc",
-                                       "replyto" => "Reply-To");
+    public static $email_fields = array("to" => "To", "cc" => "Cc", "bcc" => "Bcc",
+                                        "reply-to" => "Reply-To");
 
     private $row;
     private $recipient;
@@ -382,6 +382,7 @@ class Mailer {
             return $this->reviewNumber;
         if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
             if (!@$this->permissionContact->is_site_contact
+                && !$this->permissionContact->actAuthorView($this->row)
                 && !$this->permissionContact->canViewAuthors($this->row, false))
                 return ($isbool ? false : "Hidden for blind review");
             cleanAuthor($this->row);
@@ -601,7 +602,7 @@ class Mailer {
         $oldExpansionType = $this->expansionType;
         $width = 100000;
         if ($field == "to" || $field == "cc" || $field == "bcc"
-            || $field == "replyto")
+            || $field == "reply-to")
             $this->expansionType = self::EXPAND_EMAIL;
         else if ($field != "body" && $field != "")
             $this->expansionType = self::EXPAND_HEADER;
@@ -664,20 +665,18 @@ class Mailer {
         return $this->expand(self::getTemplate($templateName, $default));
     }
 
-    static function prepareToSend($template, $row, $recipient, &$rest = array()) {
+    static function prepareToSend($template, $row, $recipient, $rest = array()) {
         global $Conf, $mailTemplates;
 
         // look up template
         if (is_string($template) && $template[0] == "@")
             $template = self::getTemplate(substr($template, 1));
         // add rest fields to template for expansion
-        foreach (self::$mailHeaders as $f => $x)
-            if (isset($rest[$f]))
-                $template[$f] = $rest[$f];
-            else if (isset($template[$f]))
-                $rest[$f] = $template[$f];
+        foreach (self::$email_fields as $lcfield => $field)
+            if (isset($rest[$lcfield]))
+                $template[$lcfield] = $rest[$lcfield];
 
-        if (!isset($rest["emailTo"]) || !$rest["emailTo"])
+        if (!@$rest["emailTo"])
             $emailTo = $recipient;
         else if (is_string($rest["emailTo"]))
             $emailTo = (object) array("email" => $rest["emailTo"]);
@@ -698,36 +697,53 @@ class Mailer {
         // expand the template
         $mailer = new Mailer($row, $recipient, $rest);
         $m = $mailer->expand($template);
-        $m["subject"] = substr(Mailer::mimeHeader("Subject: ", $m["subject"]), 9);
-        $m["to"] = $emailTo->email;
-        $m["allowEmail"] = $Conf->allowEmailTo($m["to"]);
-        $hdr = Mailer::mimeEmailHeader("To: ", Text::user_email_to($emailTo));
-        $m["fullTo"] = substr($hdr, 4);
+
+        // create preparation
+        $prep = (object) array();
+        $prep->subject = substr(self::mimeHeader("Subject: ", $m["subject"]), 9);
+        $prep->body = $m["body"];
+        $prep->to = $m["to"] = Text::user_email_to($emailTo);
+        $prep->sendable = $Conf->allowEmailTo($emailTo->email);
 
         // parse headers
-        $headers = "MIME-Version: 1.0" . HOTCRP_EOL . "Content-Type: text/plain; charset=utf-8" . HOTCRP_EOL . $hdr . HOTCRP_EOL;
-        foreach (self::$mailHeaders as $n => $h)
-            if (isset($m[$n]) && $m[$n] != "" && $m[$n] != "<none>") {
-                $hdr = Mailer::mimeEmailHeader($h . ": ", $m[$n]);
-                if ($hdr === false) {
-                    if (isset($rest["error"]))
-                        $rest["error"] = $n;
-                    else
-                        $Conf->errorMsg("$h “<tt>" . htmlspecialchars($m[$n]) . "</tt>” isn't a valid email list.");
-                    return false;
+        $headers = array("mime-version" => "MIME-Version: 1.0" . HOTCRP_EOL,
+                         "content-type" => "Content-Type: text/plain; charset=utf-8" . HOTCRP_EOL);
+        foreach (self::$email_fields as $lcfield => $field)
+            if (($text = (string) @$m[$lcfield]) !== "" && $text !== "<none>") {
+                if (($hdr = Mailer::mimeEmailHeader($field . ": ", $text)))
+                    $headers[$lcfield] = $hdr . HOTCRP_EOL;
+                else {
+                    $prep->errors[$lcfield] = $text;
+                    if (!@$rest["no_error_quit"])
+                        $Conf->errorMsg("$field destination “<tt>" . htmlspecialchars($text) . "</tt>” isn't a valid email list.");
                 }
-                $m[$n] = substr($hdr, strlen($h) + 2);
-                $headers .= $hdr . HOTCRP_EOL;
-            } else
-                unset($m[$n]);
-        $m["headers"] = $headers;
+            }
+        $prep->headers = $headers;
 
-        return $m;
+        if (@$prep->errors && !@$rest["no_error_quit"])
+            return false;
+        else
+            return $prep;
     }
 
-    static function sendPrepared($preparation) {
+    static function sendPrepared($prep) {
         global $Conf, $Opt;
-        if ($preparation["allowEmail"]) {
+
+        // create a valid To: header
+        $headers = $prep->headers;
+        $to = $prep->to;
+        if (is_array($to))
+            $to = join(", ", $to);
+        $to = self::mimeEmailHeader("To: ", $to);
+        if (strpos($to, HOTCRP_EOL) === false) {
+            unset($headers["to"]);
+            $to = substr($to, 4);
+        } else {
+            $headers["to"] = $to;
+            $to = "";
+        }
+
+        if ($prep->sendable) {
             // set sendmail parameters
             $extra = defval($Opt, "sendmailParam", "");
             if (isset($Opt["emailSender"])) {
@@ -735,32 +751,22 @@ class Mailer {
                 if (!isset($Opt["sendmailParam"]))
                     $extra = "-f" . escapeshellarg($Opt["emailSender"]);
             }
-
-            // try to extract a valid To: header
-            $to = $preparation["to"];
-            $headers = $preparation["headers"];
-            $eollen = strlen(HOTCRP_EOL);
-            if (($topos = strpos($headers, HOTCRP_EOL . "To: ")) !== false
-                && ($nlpos = strpos($headers, HOTCRP_EOL, $topos + 1)) !== false
-                && ($nlpos + $eollen == strlen($headers) || !ctype_space($headers[$nlpos + $eollen]))) {
-                $tovalpos = $topos + $eollen + 4;
-                $to = substr($headers, $tovalpos, $nlpos - $tovalpos);
-                $headers = substr($headers, 0, $topos) . substr($headers, $nlpos);
-            } else if ($topos !== false)
-                $to = "";
-
             if (!@$Opt["emailFromHeader"])
                 $Opt["emailFromHeader"] = Mailer::mimeEmailHeader("From: ", $Opt["emailFrom"]);
-            return mail($to, $preparation["subject"], $preparation["body"], $headers . $Opt["emailFromHeader"], $extra);
+            return mail($to, $prep->subject, $prep->body, join("", $headers) . $Opt["emailFromHeader"], $extra);
+
         } else if (!$Opt["sendEmail"]
-                   && !preg_match('/\Aanonymous\d*\z/', $preparation["to"]))
-            return $Conf->infoMsg("<pre>" . htmlspecialchars("To: " . $preparation["to"] . "\n" . $preparation["headers"] . "Subject: " . $preparation["subject"] . "\n\n" . $preparation["body"]) . "</pre>");
+                   && !preg_match('/\Aanonymous\d*\z/', $to)) {
+            $text = ($to ? "To: $to\r\n" : "") . join("", array_slice($headers, 2))
+                . "Subject: $prep->subject\r\n\r\n" . $prep->body;
+            return $Conf->infoMsg("<pre>" . htmlspecialchars($text) . "</pre>");
+        }
     }
 
     static function send($template, $row, $recipient, $rest = array()) {
         if (!defval($recipient, "disabled")
-            && ($preparation = self::prepareToSend($template, $row, $recipient, $rest)))
-            self::sendPrepared($preparation);
+            && ($prep = self::prepareToSend($template, $row, $recipient, $rest)))
+            self::sendPrepared($prep);
     }
 
     static function send_contacts($template, $row, $rest = array()) {
