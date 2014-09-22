@@ -180,7 +180,7 @@ class MailSender {
             $prep->body = "Dear " . $m[1] . (count($prep->to) == 1 ? "" : "s") . $m[2];
     }
 
-    private function send_prep($prep, $mailer) {
+    private function send_prep($prep) {
         global $Conf, $Opt;
 
         $cbkey = "c" . join("_", $prep->contacts) . "p" . $prep->paperId;
