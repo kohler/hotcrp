@@ -433,7 +433,7 @@ if (isset($_REQUEST["monreq"])) {
     else {
         echo "<h2>Requested reviews</h2>\n\n", $ptext, "<div class='info'>";
         if ($plist->any->need_review)
-            echo "Some of your requested external reviewers have not completed their reviews.  To send them an email reminder, check the text below and then select &ldquo;Prepare mail.&rdquo;  You'll get a chance to review the emails and select specific reviewers to remind.";
+            echo "Some of your requested external reviewers have not completed their reviews.  To send them an email reminder, check the text below and then select &ldquo;Prepare mail.&rdquo;  You’ll get a chance to review the emails and select specific reviewers to remind.";
         else
             echo "All of your requested external reviewers have completed their reviews.  <a href='", hoturl("index"), "'>Return home</a>";
         echo "</div>\n";
@@ -533,7 +533,7 @@ if ($Me->privChair) {
 
 
 echo "<div class='aa' style='clear:both'>\n",
-    Ht::submit("Prepare mail"), " &nbsp; <span class='hint'>You'll be able to review the mails before they are sent.</span>
+    Ht::submit("Prepare mail"), " &nbsp; <span class='hint'>You’ll be able to review the mails before they are sent.</span>
 </div>
 
 
