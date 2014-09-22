@@ -21,6 +21,7 @@ class HotCRPMailer extends Mailer {
 
 
     function __construct($recipient = null, $row = null, $rest = array()) {
+        parent::__construct();
         $this->reset($recipient, $row, $rest);
     }
 

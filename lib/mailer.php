@@ -36,6 +36,10 @@ class Mailer {
 
     protected $_unexpanded = array();
 
+    function __construct() {
+    }
+
+
     function expand_user($contact, $out) {
         $r = Text::analyze_name($contact);
         if (is_object($contact) && defval($contact, "preferredEmail", "") != "")
