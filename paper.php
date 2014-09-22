@@ -808,7 +808,7 @@ if ((@$_REQUEST["update"] || @$_REQUEST["submitfinal"])
 }
 
 if (isset($_REQUEST["updatecontacts"]) && check_post() && !$newPaper) {
-    if (!$Me->canAdminister($prow) && !$Me->actAuthorView($prow)) {
+    if (!$Me->can_administer($prow) && !$Me->actAuthorView($prow)) {
         $Conf->errorMsg(whyNotText(array("permission" => 1), "update contacts for"));
     } else if (($contact_changes = check_contacts($prow))
                && save_contacts($prow->paperId, $contact_changes, false)) {
@@ -880,7 +880,7 @@ if ($paperTable->mode == "pe") {
     $editable = $newPaper || $Me->canUpdatePaper($prow, $whyNot, true);
     if ($prow && $prow->outcome > 0 && $Conf->collectFinalPapers()
         && (($Conf->timeAuthorViewDecision() && $Conf->timeSubmitFinalPaper())
-            || $Me->allowAdminister($prow)))
+            || $Me->allow_administer($prow)))
         $editable = "f";
 } else
     $editable = false;

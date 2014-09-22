@@ -1066,7 +1066,7 @@ class Contact {
             return isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
     }
 
-    public function allowAdminister($prow) {
+    public function allow_administer($prow) {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->allow_administer;
@@ -1084,7 +1084,7 @@ class Contact {
                 || ($acct && $this->contactId > 0 && $this->contactId == $acct->contactId);
     }
 
-    public function canAdminister($prow, $forceShow = null) {
+    public function can_administer($prow, $forceShow = null) {
         if ($prow) {
             $rights = $this->rights($prow, $forceShow);
             return $rights->can_administer;
@@ -1354,11 +1354,11 @@ class Contact {
             || $this->canViewDecision($prow, $forceShow);
     }
 
-    function allowViewAuthors($prow, &$whyNot = null) {
-        return $this->canViewAuthors($prow, true, $whyNot);
+    function allow_view_authors($prow, &$whyNot = null) {
+        return $this->can_view_authors($prow, true, $whyNot);
     }
 
-    function canViewAuthors($prow, $forceShow = null, &$whyNot = null) {
+    function can_view_authors($prow, $forceShow = null, &$whyNot = null) {
         global $Conf;
         // fetch paper
         if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
@@ -1413,7 +1413,7 @@ class Contact {
                     || !$oview
                     || $oview == "rev"
                     || ($oview == "nonblind"
-                        && $this->canViewAuthors($prow, $forceShow)))))
+                        && $this->can_view_authors($prow, $forceShow)))))
             return true;
         $whyNot["permission"] = 1;
         return false;
@@ -1901,7 +1901,7 @@ class Contact {
         if ($crow && !isset($crow->commentType))
             setCommentType($crow);
         if ($crow->commentType & COMMENTTYPE_RESPONSE)
-            return $this->canViewAuthors($prow, $forceShow);
+            return $this->can_view_authors($prow, $forceShow);
         $crow_contactId = 0;
         if ($crow && isset($crow->commentContactId))
             $crow_contactId = $crow->commentContactId;
@@ -1992,7 +1992,7 @@ class Contact {
     }
 
     function canSetOutcome($prow) {
-        return $this->canAdminister($prow);
+        return $this->can_administer($prow);
     }
 
 

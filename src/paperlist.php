@@ -207,7 +207,7 @@ class PaperList extends BaseList {
     public function maybeConflict($row, $text, $visible) {
         if ($visible)
             return $text;
-        else if ($this->contact->allowAdminister($row))
+        else if ($this->contact->allow_administer($row))
             return self::wrapChairConflict($text);
         else
             return "";
@@ -743,7 +743,7 @@ class PaperList extends BaseList {
                     $tc = "";
                 else if ($fdef->name != "authors")
                     $tc = " fx" . $fdef->foldable;
-                else if ($this->contact->canViewAuthors($row, false)) {
+                else if ($this->contact->can_view_authors($row, false)) {
                     $tc = " fx1";
                     $this->any->openau = true;
                 } else {

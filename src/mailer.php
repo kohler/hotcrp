@@ -383,7 +383,7 @@ class Mailer {
         if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
             if (!@$this->permissionContact->is_site_contact
                 && !$this->permissionContact->actAuthorView($this->row)
-                && !$this->permissionContact->canViewAuthors($this->row, false))
+                && !$this->permissionContact->can_view_authors($this->row, false))
                 return ($isbool ? false : "Hidden for blind review");
             cleanAuthor($this->row);
             return rtrim($this->row->authorInformation);
@@ -790,10 +790,10 @@ class Mailer {
         }
 
         $row->replace_contact_info_map($contact_info_map);
-        if ($Me->allowAdminister($row) && !$row->has_author($Me)
+        if ($Me->allow_administer($row) && !$row->has_author($Me)
             && count($contacts)) {
             $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
-            if (isset($rest["infoNames"]) && $Me->allowAdminister($row))
+            if (isset($rest["infoNames"]) && $Me->allow_administer($row))
                 $contactsmsg = pluralx($contacts, "contact") . ", " . commajoin($contacts);
             else
                 $contactsmsg = "contact(s)";
@@ -828,7 +828,7 @@ class Mailer {
         }
 
         $row->replace_contact_info_map($contact_info_map);
-        if ($Me->allowAdminister($row) && !$row->has_author($Me)
+        if ($Me->allow_administer($row) && !$row->has_author($Me)
             && count($contacts)) {
             $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
             $Conf->infoMsg("Sent email to paper #{$row->paperId}’s " . pluralx($contacts, "reviewer") . ", " . commajoin($contacts) . $endmsg);

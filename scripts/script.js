@@ -1201,7 +1201,7 @@ function fill_editing(hc, cj) {
         }
     } else {
         // actions
-        // XXX allowAdminister
+        // XXX allow_administer
         hc.push('<input type="hidden" name="response" value="1" />');
         hc.push('<div class="clear"></div><div class="aab" style="margin-bottom:0">', '<div class="clear"></div></div>');
         if (cj.is_new || cj.draft)

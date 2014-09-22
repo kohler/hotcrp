@@ -92,7 +92,7 @@ class PaperStatus {
             $pj->updated_at = (int) $prow->timestamp;
 
         $can_view_authors = !$this->contact
-            || $this->contact->canViewAuthors($prow, $this->forceShow);
+            || $this->contact->can_view_authors($prow, $this->forceShow);
         if ($can_view_authors) {
             $contacts = array();
             foreach ($prow->contacts(true) as $id => $conf)

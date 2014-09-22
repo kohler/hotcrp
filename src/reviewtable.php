@@ -19,8 +19,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = 0;
     $conflictType = $Me->view_conflict_type($prow);
-    $allow_admin = $Me->allowAdminister($prow);
-    $admin = $Me->canAdminister($prow);
+    $allow_aadmin = $Me->allowAdminister($prow);
+    $admin = $Me->can_administer($prow);
     $hideUnviewable = ($conflictType > 0 && !$admin)
         || (!$Me->actPC($prow) && !$Conf->setting("extrev_view"));
     $colorizer = ($Me->actPC($prow) ? new Tagger : null);
@@ -242,8 +242,8 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     global $Conf, $Me;
 
     $conflictType = $Me->view_conflict_type($prow);
-    $allow_admin = $Me->allowAdminister($prow);
-    $admin = $Me->canAdminister($prow);
+    $allow_aadmin = $Me->allowAdminister($prow);
+    $admin = $Me->can_administer($prow);
     $xsep = ' <span class="barsep">&nbsp;|&nbsp;</span> ';
 
     $nvisible = 0;
@@ -293,7 +293,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 
     // edit paper
     if ($mode != "pe" && $prow->conflictType >= CONFLICT_AUTHOR
-        && !$Me->canAdminister($prow)) {
+        && !$Me->can_administer($prow)) {
         $x = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;m=pe") . '" class="xx">'
             . Ht::img("edit24.png", "[Edit paper]", "dlimg") . "&nbsp;<u><strong>Edit paper</strong></u></a>";
         $t .= ($t == "" ? "" : $xsep) . $x;
@@ -333,7 +333,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 
     // new response
     if ($mode != "assign" && $Conf->timeAuthorRespond()
-        && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->allowAdminister($prow))) {
+        && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->allow_administer($prow))) {
         $cid = array("response", "response", "Add");
         if ($crows)
             foreach ($crows as $cr)

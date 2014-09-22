@@ -194,13 +194,13 @@ class StatusPaperColumn extends PaperColumn {
         if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0
             && $pl->contact->canViewDecision($row))
             $pl->any->need_final = true;
-        $status_info = $pl->contact->paper_status_info($row, $pl->search->limitName != "a" && $pl->contact->allowAdminister($row));
+        $status_info = $pl->contact->paper_status_info($row, $pl->search->limitName != "a" && $pl->contact->allow_administer($row));
         if (!$this->is_long && $status_info[0] == "pstat_sub")
             return "";
         return "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span>";
     }
     public function text($pl, $row) {
-        $status_info = $pl->contact->paper_status_info($row, $pl->search->limitName != "a" && $pl->contact->allowAdminister($row));
+        $status_info = $pl->contact->paper_status_info($row, $pl->search->limitName != "a" && $pl->contact->allow_administer($row));
         return $status_info[1];
     }
 }
@@ -237,7 +237,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
         return "<col width='0*' />";
     }
     public function content_empty($pl, $row) {
-        return !($pl->contact->allowAdminister($row)
+        return !($pl->contact->allow_administer($row)
                  || ($pl->contact->isPC && ($row->conflictType == 0 || $this->auview))
                  || $row->reviewType > 0
                  || ($row->conflictType >= CONFLICT_AUTHOR && $this->auview));
@@ -289,7 +289,7 @@ class AuthorsPaperColumn extends PaperColumn {
         return $affaus;
     }
     public function content($pl, $row) {
-        if (!$pl->contact->canViewAuthors($row, true))
+        if (!$pl->contact->can_view_authors($row, true))
             return "";
         cleanAuthor($row);
         $aus = array();
@@ -321,7 +321,7 @@ class AuthorsPaperColumn extends PaperColumn {
         }
     }
     public function text($pl, $row) {
-        if (!$pl->contact->canViewAuthors($row, true))
+        if (!$pl->contact->can_view_authors($row, true))
             return "";
         cleanAuthor($row);
         if ($this->aufull) {
@@ -352,7 +352,7 @@ class CollabPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return ($row->collaborators == ""
                 || strcasecmp($row->collaborators, "None") == 0
-                || !$pl->contact->canViewAuthors($row, true));
+                || !$pl->contact->can_view_authors($row, true));
     }
     public function content($pl, $row) {
         $x = "";
@@ -428,7 +428,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
             $result = $Conf->qe("select Paper.paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, reviewBlind, PaperReview.contactId reviewContactId, requestedBy, reviewToken, reviewRound, conflictType from Paper left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=" . $pl->search->reviewer_cid() . ") left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $pl->search->reviewer_cid() . ") where Paper.paperId in (" . join(",", array_keys($by_pid)) . ") and (PaperReview.contactId is not null or PaperConflict.contactId is not null)");
             while (($xrow = edb_orow($result))) {
                 $prow = $by_pid[$xrow->paperId];
-                if ($pl->contact->allowAdminister($prow)
+                if ($pl->contact->allow_administer($prow)
                     || $pl->contact->canViewReviewerIdentity($prow, $xrow, true)
                     || ($pl->contact->privChair
                         && $xrow->conflictType > 0
@@ -564,7 +564,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         return "Assignment";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->allowAdminister($row);
+        return !$pl->contact->allow_administer($row);
     }
     public function content($pl, $row) {
         if ($row->reviewerConflictType >= CONFLICT_AUTHOR)
@@ -674,7 +674,7 @@ class PreferencePaperColumn extends PaperColumn {
         $pref = unparse_preference($row);
         if ($pl->reviewer
             && $pl->reviewer != $pl->contact->contactId
-            && !$pl->contact->allowAdminister($row))
+            && !$pl->contact->allow_administer($row))
             return "N/A";
         else if (!$this->editable)
             return $pref;
@@ -706,7 +706,7 @@ class PreferenceListPaperColumn extends PaperColumn {
         return "Preferences";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->allowAdminister($row);
+        return !$pl->contact->allow_administer($row);
     }
     public function content($pl, $row) {
         $prefs = PaperList::_rowPreferences($row);
@@ -1046,7 +1046,7 @@ class ScorePaperColumn extends PaperColumn {
     public function content($pl, $row) {
         $allowed = $pl->contact->canViewReview($row, $this->form_field->view_score, false);
         $fname = $this->score . "Scores";
-        if (($allowed || $pl->contact->allowAdminister($row))
+        if (($allow_ad || $pl->contact->allowAdminister($row))
             && $row->$fname) {
             $t = $this->form_field->unparse_graph($row->$fname, 1, defval($row, $this->score));
             if (!$allowed)
@@ -1131,7 +1131,7 @@ class FormulaPaperColumn extends PaperColumn {
     public function content($pl, $row) {
         $formulaf = $this->formula_function;
         $t = $formulaf($row, $pl->contact, "h");
-        if ($row->conflictType > 0 && $pl->contact->allowAdminister($row))
+        if ($row->conflictType > 0 && $pl->contact->allow_administer($row))
             return "<span class='fn5'>$t</span><span class='fx5'>"
                 . $formulaf($row, $pl->contact, "h", true) . "</span>";
         else

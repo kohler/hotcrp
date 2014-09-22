@@ -584,7 +584,7 @@ class ReviewForm {
         global $Conf, $Opt;
         $submit = defval($req, "ready", false) && !defval($req, "unready", false)
             && (!$rrow || !$rrow->reviewSubmitted);
-        $admin = $contact->allowAdminister($prow);
+        $admin = $contact->allow_administer($prow);
 
         if (!$contact->timeReview($prow, $rrow)
             && (!isset($req['override']) || !$admin))
@@ -1310,7 +1310,7 @@ $blind\n";
                         $options["nsubraters"]++;
             }
             $visibleRatings = ($rrow->contactId != $Me->contactId
-                    || $Me->canAdminister($prow) || $options["nsubraters"] > 2
+                    || $Me->can_administer($prow) || $options["nsubraters"] > 2
                     || $Conf->timePCViewAllReviews()
                     || strpos($rrow->allRatings, ",") !== false);
         }
@@ -1394,7 +1394,7 @@ $blind\n";
         } else
             $buttons[] = Ht::submit("submitreview", "Save changes", array("class" => "bb"));
 
-        if ($rrow && $type == "bottom" && $Me->allowAdminister($prow)) {
+        if ($rrow && $type == "bottom" && $Me->allow_administer($prow)) {
             $buttons[] = "";
             if ($submitted)
                 $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)");
@@ -1423,7 +1423,7 @@ $blind\n";
         $reviewLinkArgs = "p=$prow->paperId" . ($rrow ? "&amp;r=$reviewOrdinal" : "") . "&amp;m=re";
         $reviewPostLink = hoturl_post("review", $reviewLinkArgs);
         $reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1");
-        $admin = $Me->allowAdminister($prow);
+        $admin = $Me->allow_administer($prow);
 
         if ($editmode) {
             echo Ht::form($reviewPostLink, array("class" => "revcard")),

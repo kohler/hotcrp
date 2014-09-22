@@ -118,7 +118,7 @@ if ($getaction == "abstract" && SearchActions::any() && defval($_REQUEST, "ajax"
             $text .= wordWrapIndent($prow->title, $n, $l) . "\n";
             $text .= "---------------------------------------------------------------------------\n";
             $l = strlen($text);
-            if ($Me->canViewAuthors($prow, $_REQUEST["t"] == "a")) {
+            if ($Me->can_view_authors($prow, $_REQUEST["t"] == "a")) {
                 cleanAuthor($prow);
                 $text .= wordWrapIndent($prow->authorInformation, "Authors: ", 14) . "\n";
             }
@@ -422,7 +422,7 @@ if ($getaction == "authors" && SearchActions::any()
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection())));
     $texts = array();
     while (($prow = PaperInfo::fetch($result, $Me))) {
-        if (!$Me->canViewAuthors($prow, true))
+        if (!$Me->can_view_authors($prow, true))
             continue;
         cleanAuthor($prow);
         foreach ($prow->authorTable as $au) {
@@ -648,7 +648,7 @@ function downloadRevpref($extended) {
             $t .= "," . unparse_preference($prow);
         $t .= "," . $prow->title . "\n";
         if ($extended) {
-            if ($Rev->canViewAuthors($prow, false)) {
+            if ($Rev->can_view_authors($prow, false)) {
                 cleanAuthor($prow);
                 $t .= wordWrapIndent($prow->authorInformation, "#  Authors: ", "#           ");
             }

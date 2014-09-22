@@ -174,7 +174,7 @@ function hoturl_site_relative($page, $options = null) {
     $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
     if (@$paperTable && $paperTable->prow && $is_paper_page
         && preg_match($are . 'p=' . $paperTable->prow->paperId . $zre, $options)
-        && $Me->canAdminister($paperTable->prow)
+        && $Me->can_administer($paperTable->prow)
         && $paperTable->prow->has_conflict($Me)
         && !preg_match($are . 'forceShow=/', $options))
         $options .= "&amp;forceShow=1";

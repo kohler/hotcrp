@@ -39,19 +39,19 @@ function check_paper1($paper1) {
     assert(!$user_kohler->canViewPaper($paper1));
     assert(!$user_nobody->canViewPaper($paper1));
 
-    assert($user_chair->allowAdminister($paper1));
-    assert(!$user_estrin->allowAdminister($paper1));
-    assert(!$user_marina->allowAdminister($paper1));
-    assert(!$user_van->allowAdminister($paper1));
-    assert(!$user_kohler->allowAdminister($paper1));
-    assert(!$user_nobody->allowAdminister($paper1));
+    assert($user_chair->allow_administer($paper1));
+    assert(!$user_estrin->allow_administer($paper1));
+    assert(!$user_marina->allow_administer($paper1));
+    assert(!$user_van->allow_administer($paper1));
+    assert(!$user_kohler->allow_administer($paper1));
+    assert(!$user_nobody->allow_administer($paper1));
 
-    assert($user_chair->canAdminister($paper1));
-    assert(!$user_estrin->canAdminister($paper1));
-    assert(!$user_marina->canAdminister($paper1));
-    assert(!$user_van->canAdminister($paper1));
-    assert(!$user_kohler->canAdminister($paper1));
-    assert(!$user_nobody->canAdminister($paper1));
+    assert($user_chair->can_administer($paper1));
+    assert(!$user_estrin->can_administer($paper1));
+    assert(!$user_marina->can_administer($paper1));
+    assert(!$user_van->can_administer($paper1));
+    assert(!$user_kohler->can_administer($paper1));
+    assert(!$user_nobody->can_administer($paper1));
 
     assert($user_chair->canViewTags($paper1));
     assert(!$user_estrin->canViewTags($paper1));
@@ -78,8 +78,8 @@ assert(!$user_capability->canViewPaper($paper1));
 $user_capability->apply_capability_text($Conf->capability_text($paper1, "a"));
 assert(!$user_capability->contactId);
 assert($user_capability->canViewPaper($paper1));
-assert(!$user_capability->allowAdminister($paper1));
-assert(!$user_capability->canAdminister($paper1));
+assert(!$user_capability->allow_administer($paper1));
+assert(!$user_capability->can_administer($paper1));
 assert(!$user_capability->canViewTags($paper1));
 assert(!$user_capability->canUpdatePaper($paper1));
 
@@ -95,9 +95,9 @@ assert(!$user_nobody->canUpdatePaper($paper1));
 
 // role assignment works
 $paper18 = $Conf->paperRow(18, $user_mgbaker);
-assert($user_shenker->canAdminister($paper18));
-assert(!$user_mgbaker->canAdminister($paper1));
-assert(!$user_mgbaker->canAdminister($paper18));
+assert($user_shenker->can_administer($paper18));
+assert(!$user_mgbaker->can_administer($paper1));
+assert(!$user_mgbaker->can_administer($paper18));
 
 // author derivation works
 assert($user_mgbaker->actAuthorView($paper18));

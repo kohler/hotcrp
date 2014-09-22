@@ -24,7 +24,7 @@ class PaperActions {
                 $Error["decision"] = true;
             }
         } else
-            $Conf->errorMsg("You can’t set the decision for paper #$prow->paperId." . ($Me->allowAdminister($prow) ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : ""));
+            $Conf->errorMsg("You can’t set the decision for paper #$prow->paperId." . ($Me->allow_administer($prow) ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : ""));
         if ($ajax)
             $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "decision")));
     }
@@ -49,7 +49,7 @@ class PaperActions {
     static function setReviewPreference($prow) {
         global $Conf, $Me, $Error, $OK;
         $ajax = defval($_REQUEST, "ajax", false);
-        if (!$Me->allowAdminister($prow)
+        if (!$Me->allow_administer($prow)
             || ($contactId = cvtint(@$_REQUEST["reviewer"])) <= 0)
             $contactId = $Me->contactId;
         if (isset($_REQUEST["revpref"]) && ($v = parse_preference($_REQUEST["revpref"]))) {
@@ -157,7 +157,7 @@ class PaperActions {
         else
             $pc = null;
 
-        if ($type == "manager" ? !$contact->privChair : !$contact->canAdminister($prow)) {
+        if ($type == "manager" ? !$contact->privChair : !$contact->can_administer($prow)) {
             $Conf->errorMsg("You don’t have permission to set the $type.");
             $Error[$type] = true;
         } else if ($pc === 0
@@ -219,7 +219,7 @@ class PaperActions {
             $tags_view_html = $tagger->unparse_link_viewable($prow->paperTags, false, !$prow->has_conflict($Me));
             $tags_color = $tagger->color_classes($prow->paperTags);
         } else
-            $Error["tags"] = "You can’t set tags for paper #$prow->paperId." . ($Me->allowAdminister($prow) ? " (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
+            $Error["tags"] = "You can’t set tags for paper #$prow->paperId." . ($Me->allow_administer($prow) ? " (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
         if ($ajax && $OK && !isset($Error["tags"]))
             $Conf->ajaxExit(array("ok" => true, "tags_edit_text" => $tags_edit_text, "tags_view_html" => $tags_view_html, "tags_color" => $tags_color));
         else if ($ajax)
@@ -279,7 +279,7 @@ class PaperActions {
         $ajax = defval($_REQUEST, "ajax", false);
         $q = "select distinct tag from PaperTag t";
         $where = array();
-        if (!$Me->allowAdminister(null)) {
+        if (!$Me->allow_administer(null)) {
             $q .= " left join PaperConflict pc on (pc.paperId=t.paperId and pc.contactId=$Me->contactId)";
             $where[] = "coalesce(pc.conflictType,0)<=0";
         }

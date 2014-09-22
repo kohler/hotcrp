@@ -2292,7 +2292,7 @@ class PaperSearch {
                 return false;
             if (($t->type == "au" || $t->type == "au_cid" || $t->type == "co"
                  || $t->type == "conflict")
-                && !$this->contact->allowViewAuthors($row))
+                && !$this->contact->allow_view_authors($row))
                 return false;
             if ($t->type == "pf" && $t->value[0] == "outcome"
                 && !$this->contact->canViewDecision($row, true))
