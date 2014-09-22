@@ -242,7 +242,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     global $Conf, $Me;
 
     $conflictType = $Me->view_conflict_type($prow);
-    $allow_aadmin = $Me->allow_administer($prow);
+    $allow_admin = $Me->allow_administer($prow);
     $admin = $Me->can_administer($prow);
     $xsep = ' <span class="barsep">&nbsp;|&nbsp;</span> ';
 
@@ -333,7 +333,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 
     // new response
     if ($mode != "assign" && $Conf->timeAuthorRespond()
-        && ($prow->conflictType >= CONFLICT_AUTHOR || $Me->allow_administer($prow))) {
+        && ($prow->conflictType >= CONFLICT_AUTHOR || $allow_admin)) {
         $cid = array("response", "response", "Add");
         if ($crows)
             foreach ($crows as $cr)
