@@ -217,17 +217,20 @@ function save_user($cj, $user_status) {
         else if (!validate_email($cj->email))
             return $user_status->set_error("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
         if (!$newProfile && !$Me->privChair) {
+            $old_preferredEmail = $Acct->preferredEmail;
+            $Acct->preferredEmail = $cj->email;
             $capmgr = $Conf->capability_manager($Acct);
-            $rest = array("emailTo" => $cj->email,
-                          "capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("user" => $Acct, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $cj->email)))));
-            $prep = Mailer::prepareToSend("@changeemail", null, $Acct, $rest);
+            $rest = array("capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("user" => $Acct, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $cj->email)))));
+            $mailer = new HotCRPMailer($Acct, null, $rest);
+            $prep = $mailer->make_preparation("@changeemail", $rest);
             if ($prep->sendable) {
-                Mailer::sendPrepared($prep);
-                $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($cj->email) . " to check that the address works. Use the link it contains to confirm your email change request.");
+                Mailer::send_preparation($prep);
+                $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($cj->email) . ". Use the link it contains to confirm your email change request.");
             } else
                 $Conf->errorMsg("Mail cannot be sent to " . htmlspecialchars($cj->email) . " at this time. Your email address was unchanged.");
             // Save changes *except* for new email, by restoring old email.
             $cj->email = $Acct->email;
+            $Acct->preferredEmail = $old_preferredEmail;
         }
     }
 

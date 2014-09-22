@@ -92,6 +92,7 @@ lib/ht.php
 lib/json.php
 lib/ldaplogin.php
 lib/login.php
+lib/mailer.php
 lib/message.php
 lib/mimetype.php
 lib/navigation.php
@@ -122,10 +123,10 @@ src/helpers.php
 src/homeadmin.php
 src/homepage.php
 src/hotcrpdocument.php
+src/hotcrpmailer.php
 src/init.php
 src/initweb.php
 src/mailclasses.php
-src/mailer.php
 src/mailtemplate.php
 src/meetingtracker.php
 src/messages.csv

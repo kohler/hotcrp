@@ -140,13 +140,13 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
 
         // email contact authors themselves
         if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
-            Mailer::send_contacts(($prow->conflictType >= CONFLICT_AUTHOR ? "@authorwithdraw" : "@adminwithdraw"),
-                                       $prow, array("reason" => $reason, "infoNames" => 1));
+            HotCRPMailer::send_contacts(($prow->conflictType >= CONFLICT_AUTHOR ? "@authorwithdraw" : "@adminwithdraw"),
+                                        $prow, array("reason" => $reason, "infoNames" => 1));
 
         // email reviewers
         if (($numreviews > 0 && $Conf->time_review_open())
             || $prow->startedReviewCount > 0)
-            Mailer::send_reviewers("@withdrawreviewer", $prow, array("reason" => $reason));
+            HotCRPMailer::send_reviewers("@withdrawreviewer", $prow, array("reason" => $reason));
 
         // remove voting tags so people don't have phantom votes
         $tagger = new Tagger;
@@ -478,7 +478,7 @@ function report_update_paper_errors() {
 // send watch messages
 function final_submit_watch_callback($prow, $minic) {
     if ($minic->canViewPaper($prow))
-        Mailer::send("@finalsubmitnotify", $prow, $minic);
+        HotCRPMailer::send_to($minic, "@finalsubmitnotify", $prow);
 }
 
 function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
@@ -758,7 +758,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
             $options["reason"] = $_REQUEST["emailNote"];
         if ($notes !== "")
             $options["notes"] = preg_replace(",</?(?:span.*?|strong)>,", "", $notes) . "\n\n";
-        Mailer::send_contacts($template, $prow, $options);
+        HotCRPMailer::send_contacts($template, $prow, $options);
     }
 
     // other mail confirmations
@@ -830,7 +830,7 @@ if (isset($_REQUEST["delete"]) && check_post()) {
     else {
         // mail first, before contact info goes away
         if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
-            Mailer::send_contacts("@deletepaper", $prow, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
+            HotCRPMailer::send_contacts("@deletepaper", $prow, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
         // XXX email self?
 
         $error = false;

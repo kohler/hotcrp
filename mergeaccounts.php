@@ -46,9 +46,9 @@ if (isset($_REQUEST["merge"]) && check_post()) {
                 $_SESSION["trueuser"]->email = $Me->email;
             }
 
-            Mailer::send("@mergeaccount", null, $MiniMe,
-                         array("cc" => Text::user_email_to($Me),
-                               "other_contact" => $Me));
+            HotCRPMailer::send_to($MiniMe, "@mergeaccount", null,
+                                  array("cc" => Text::user_email_to($Me),
+                                        "other_contact" => $Me));
 
             // Now, scan through all the tables that possibly
             // specify a contactID and change it from their 2nd

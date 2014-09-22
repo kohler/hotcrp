@@ -110,9 +110,9 @@ function retractRequest($email, $prow, $confirm = true) {
     // send confirmation email, if the review site is open
     if ($Conf->time_review_open() && $row) {
         $Reviewer = Contact::make($row);
-        Mailer::send("@retractrequest", $prow, $Reviewer,
-                     array("requester_contact" => $Me,
-                           "cc" => Text::user_email_to($Me)));
+        HotCRPMailer::send_to($Reviewer, "@retractrequest", $prow,
+                              array("requester_contact" => $Me,
+                                    "cc" => Text::user_email_to($Me)));
     }
 
     // confirmation message
@@ -258,10 +258,10 @@ function requestReview($email) {
     $Conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1");
 
     // send confirmation email
-    Mailer::send("@requestreview", $prow, $Them,
-                 array("requester_contact" => $Requester,
-                       "other_contact" => $Requester, // backwards compat
-                       "reason" => $reason));
+    HotCRPMailer::send_to($Them, "@requestreview", $prow,
+                          array("requester_contact" => $Requester,
+                                "other_contact" => $Requester, // backwards compat
+                                "reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
@@ -289,12 +289,12 @@ function proposeReview($email) {
         values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->contactId, '" . sqlq(trim($_REQUEST["reason"])) . "') on duplicate key update paperId=paperId");
 
     // send confirmation email
-    Mailer::send_manager("@proposereview", $prow,
-                         array("permissionContact" => $Me,
-                               "cc" => Text::user_email_to($Me),
-                               "requester_contact" => $Me,
-                               "reviewer_contact" => (object) array("fullName" => $name, "email" => $email),
-                               "reason" => $reason));
+    HotCRPMailer::send_manager("@proposereview", $prow,
+                               array("permissionContact" => $Me,
+                                     "cc" => Text::user_email_to($Me),
+                                     "requester_contact" => $Me,
+                                     "reviewer_contact" => (object) array("fullName" => $name, "email" => $email),
+                                     "reason" => $reason));
 
     // confirmation message
     $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");
@@ -397,8 +397,8 @@ if (isset($_REQUEST["deny"]) && $Me->allow_administer($prow) && check_post()
             $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')");
 
         // send anticonfirmation email
-        Mailer::send("@denyreviewrequest", $prow, $Requester,
-                     array("reviewer_contact" => (object) array("fullName" => trim(defval($_REQUEST, "name", "")), "email" => $email)));
+        HotCRPMailer::send_to($Requester, "@denyreviewrequest", $prow,
+                              array("reviewer_contact" => (object) array("fullName" => trim(defval($_REQUEST, "name", "")), "email" => $email)));
 
         $Conf->confirmMsg("Proposed reviewer denied.");
     } else
@@ -615,8 +615,8 @@ echo "<div class='f-i'><div class='f-ix'>
 </div><hr class=\"c\" /></div>\n\n";
 
 // reason area
-$null_mailer = new Mailer(null, null);
-$reqbody = $null_mailer->expandTemplate("requestreview", false);
+$null_mailer = new HotCRPMailer;
+$reqbody = $null_mailer->expand_template("requestreview", false);
 if (strpos($reqbody["body"], "%REASON%") !== false) {
     echo "<div class='f-i'>
   <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>

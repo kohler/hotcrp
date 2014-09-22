@@ -40,8 +40,7 @@ if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
 
 // mailer
 $mailer_options = array("requester_contact" => $Me);
-$nullMailer = new Mailer(null, null, $mailer_options);
-$nullMailer->width = 10000000;
+$null_mailer = new HotCRPMailer(null, null, array_merge(array("width" => false), $mailer_options));
 
 // template options
 if (isset($_REQUEST["monreq"]))
@@ -115,6 +114,8 @@ class MailSender {
 
     private function echo_prologue() {
         global $Conf, $Me;
+        if ($this->started)
+            return;
         echo Ht::form_div(hoturl_post("mail"));
         foreach (array("recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit") as $x)
             if (isset($_REQUEST[$x]))
@@ -179,19 +180,18 @@ class MailSender {
             $prep->body = "Dear " . $m[1] . (count($prep->to) == 1 ? "" : "s") . $m[2];
     }
 
-    private function send_prep($prep) {
+    private function send_prep($prep, $mailer) {
         global $Conf, $Opt;
 
         $cbkey = "c" . join("_", $prep->contacts) . "p" . $prep->paperId;
         if ($this->sending && !defval($_REQUEST, $cbkey))
             return;
-        if (!$this->started)
-            $this->echo_prologue();
+        $this->echo_prologue();
 
         self::fix_body($prep);
         ++$this->mcount;
         if ($this->sending) {
-            Mailer::sendPrepared($prep);
+            Mailer::send_preparation($prep);
             foreach ($prep->contacts as $cid)
                 $Conf->log("Account was sent mail" . $this->mailid_text, $cid, $prep->paperId);
         }
@@ -201,14 +201,15 @@ class MailSender {
         if (@$prep->sensitive) {
             $show_prep = $prep->sensitive;
             $show_prep->to = $prep->to;
-            $show_prep->headers["to"] = "To: " . join(", ", $prep->to);
             self::fix_body($show_prep);
         }
 
         echo '<div class="mail"><table>';
         $nprintrows = 0;
         foreach (array("to", "cc", "bcc", "reply-to", "subject") as $k) {
-            if ($k[0] === "s" && @$show_prep->$k)
+            if ($k == "to")
+                $line = "To: " . join(", ", $show_prep->to);
+            else if ($k == "subject")
                 $line = "Subject: " . $show_prep->$k;
             else
                 $line = @$show_prep->headers[$k];
@@ -225,7 +226,7 @@ class MailSender {
                 $v = substr($line, strlen($k) + 2);
                 echo '<td class="mhnp">', substr($line, 0, strlen($k)), ":</td>",
                     '<td class="mhdp">',
-                    htmlspecialchars(Mailer::mimeHeaderUnquote($v)),
+                    htmlspecialchars(MimeText::decode_header($v)),
                     "</td></tr>\n";
             }
         }
@@ -293,8 +294,9 @@ class MailSender {
 
         $template = array("subject" => $subject, "body" => $emailBody);
         $rest = array("cc" => $_REQUEST["cc"], "reply-to" => $_REQUEST["replyto"],
-                      "no_error_quit" => true, "mstate" => new MailerState());
+                      "no_error_quit" => true);
         $rest = array_merge($rest, $mailer_options);
+        $mailer = new HotCRPMailer;
         $fake_prep = (object) array("subject" => "", "body" => "", "to" => array(),
                                     "paperId" => -1, "contactId" => array(), "fake" => 1);
         $last_prep = $fake_prep;
@@ -312,7 +314,8 @@ class MailSender {
 
             $contact = Contact::make($row);
             $rest["hideReviews"] = $checkReviewNeedsSubmit && $row->reviewNeedsSubmit;
-            $prep = Mailer::prepareToSend($template, $row, $contact, $rest);
+            $mailer->reset($contact, $row, $rest);
+            $prep = $mailer->make_preparation($template, $rest);
 
             if (@$prep->errors) {
                 foreach ($prep->errors as $lcfield => $hline) {
@@ -326,15 +329,16 @@ class MailSender {
             } else if ($this->process_prep($prep, $last_prep, $row)) {
                 if ((!$Me->privChair || @$Opt["chairHidePasswords"])
                     && !@$last_prep->sensitive) {
-                    $rest["sensitivity"] = "display";
-                    $last_prep->sensitive = Mailer::prepareToSend($template, $row, $contact, $rest);
-                    unset($rest["sensitivity"]);
+                    $srest = array_merge($rest, array("sensitivity" => "display"));
+                    $mailer->reset($contact, $row, $srest);
+                    $last_prep->sensitive = $mailer->make_preparation($template, $srest);
                 }
             }
 
-            if ($nwarnings != $rest["mstate"]->nwarnings()) {
-                $nwarnings = $rest["mstate"]->nwarnings();
-                echo "<div id='foldmailwarn$nwarnings' class='hidden'><div class='warning'>", join("<br />", $rest["mstate"]->warnings()), "</div></div>";
+            if ($nwarnings != $mailer->nwarnings()) {
+                $this->echo_prologue();
+                $nwarnings = $mailer->nwarnings();
+                echo "<div id='foldmailwarn$nwarnings' class='hidden'><div class='warning'>", join("<br />", $mailer->warnings()), "</div></div>";
                 $Conf->echoScript("\$\$('mailwarnings').innerHTML = \$\$('foldmailwarn$nwarnings').innerHTML;");
             }
             if ($this->sending && $revinform !== null)
@@ -386,8 +390,8 @@ if (defval($_REQUEST, "loadtmpl")) {
     $_REQUEST["recipients"] = defval($template, "mailtool_recipients", "s");
     if (isset($template["mailtool_search_type"]))
         $_REQUEST["t"] = $template["mailtool_search_type"];
-    $_REQUEST["subject"] = $nullMailer->expand($template["subject"]);
-    $_REQUEST["emailBody"] = $nullMailer->expand($template["body"]);
+    $_REQUEST["subject"] = $null_mailer->expand($template["subject"]);
+    $_REQUEST["emailBody"] = $null_mailer->expand($template["body"]);
 }
 
 
@@ -397,9 +401,9 @@ $recip = new MailRecipients($Me, @$_REQUEST["recipients"]);
 
 // Set subject and body if necessary
 if (!isset($_REQUEST["subject"]))
-    $_REQUEST["subject"] = $nullMailer->expand($mailTemplates["genericmailtool"]["subject"]);
+    $_REQUEST["subject"] = $null_mailer->expand($mailTemplates["genericmailtool"]["subject"]);
 if (!isset($_REQUEST["emailBody"]))
-    $_REQUEST["emailBody"] = $nullMailer->expand($mailTemplates["genericmailtool"]["body"]);
+    $_REQUEST["emailBody"] = $null_mailer->expand($mailTemplates["genericmailtool"]["body"]);
 if (substr($_REQUEST["subject"], 0, strlen($subjectPrefix)) == $subjectPrefix)
     $_REQUEST["subject"] = substr($_REQUEST["subject"], strlen($subjectPrefix));
 if (isset($_REQUEST["cc"]) && $Me->privChair)

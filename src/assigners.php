@@ -293,7 +293,7 @@ class ReviewAssigner extends Assigner {
         if ($this->notify) {
             $reviewer = Contact::find_by_id($this->cid);
             $prow = $Conf->paperRow(array("paperId" => $this->pid, "reviewer" => $this->cid), $reviewer);
-            Mailer::send($this->notify, $prow, $reviewer);
+            HotCRPMailer::send_to($reviewer, $this->notify, $prow);
         }
     }
 }

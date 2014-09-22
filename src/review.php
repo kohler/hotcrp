@@ -576,8 +576,8 @@ class ReviewForm {
     function review_watch_callback($prow, $minic) {
         if ($prow->conflictType == 0
             && $minic->canViewReview($prow, $this->mailer_info["rrow"], false))
-            Mailer::send($this->mailer_info["template"], $prow, $minic,
-                         $this->mailer_info);
+            HotCRPMailer::send_to($minic, $this->mailer_info["template"], $prow,
+                                  $this->mailer_info);
     }
 
     function save_review($req, $rrow, $prow, $contact, &$tf = null) {
@@ -732,7 +732,7 @@ class ReviewForm {
                           "reviewer_contact" => $submitter,
                           "reviewNumber" => $prow->paperId . unparseReviewOrdinal($notify_rrow->reviewOrdinal));
             if ($Conf->timeEmailChairAboutReview())
-                Mailer::send_manager($tmpl, $prow, $rest);
+                HotCRPMailer::send_manager($tmpl, $prow, $rest);
             if ($diff_view_score >= VIEWSCORE_PC) {
                 $this->mailer_info = $rest;
                 genericWatch($prow, WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
@@ -744,7 +744,7 @@ class ReviewForm {
                     $rest["infoMsg"] .= " Reviewer anonymity was preserved.";
                     unset($rest["reviewer_contact"]);
                 }
-                Mailer::send_contacts($tmpl, $prow, $rest);
+                HotCRPMailer::send_contacts($tmpl, $prow, $rest);
             }
         }
 

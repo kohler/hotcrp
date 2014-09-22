@@ -8,10 +8,10 @@ require_once("src/papersearch.php");
 require_once("src/assigners.php");
 if (!$Me->privChair)
     $Me->escape();
-$nullMailer = new Mailer(null, null, array("requester_contact" => $Me,
-                                           "other_contact" => $Me /* backwards compat */,
-                                           "reason" => ""));
-$nullMailer->width = 10000000;
+$null_mailer = new HotCRPMailer(null, null, array("requester_contact" => $Me,
+                                                  "other_contact" => $Me /* backwards compat */,
+                                                  "reason" => "",
+                                                  "width" => false));
 $Error = $Warning = array();
 
 
@@ -131,7 +131,7 @@ if (!isset($_REQUEST["rev_roundtag"]))
     $rev_roundtag = $Conf->setting_data("rev_roundtag");
 else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
     $rev_roundtag = "";
-$requestreview_template = $nullMailer->expandTemplate("requestreview");
+$requestreview_template = $null_mailer->expand_template("requestreview");
 echo Ht::hidden("requestreview_subject", $requestreview_template["subject"]);
 if (isset($_REQUEST["requestreview_body"]))
     $t = $_REQUEST["requestreview_body"];

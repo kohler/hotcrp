@@ -2325,10 +2325,11 @@ class Contact {
             $template = "@resetpassword";
         }
 
-        $prep = Mailer::prepareToSend($template, null, $this, $rest);
+        $mailer = new HotCRPMailer($this, null, $rest);
+        $prep = $mailer->make_preparation($template, $rest);
         if ($prep->sendable || !$sensitive
             || @$Opt["debugShowSensitiveEmail"]) {
-            Mailer::sendPrepared($prep);
+            Mailer::send_preparation($prep);
             return $template;
         } else {
             $Conf->errorMsg("Mail cannot be sent to " . htmlspecialchars($this->email) . " at this time.");

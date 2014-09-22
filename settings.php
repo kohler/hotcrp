@@ -110,12 +110,10 @@ function unparseGrace($v) {
 }
 
 function expandMailTemplate($name, $default) {
-    global $nullMailer;
-    if (!isset($nullMailer)) {
-        $nullMailer = new Mailer(null, null);
-        $nullMailer->width = 10000000;
-    }
-    return $nullMailer->expandTemplate($name, $default);
+    global $null_mailer;
+    if (!isset($null_mailer))
+        $null_mailer = new HotCRPMailer(null, null, array("width" => false));
+    return $null_mailer->expand_template($name, $default);
 }
 
 function unparse_setting_error($info, $text) {
@@ -172,9 +170,9 @@ function parseValue($name, $info) {
         $v = simplify_whitespace($v);
         return ($v == "" && !$opt_value ? 0 : array(0, $v));
     } else if ($info->type === "emailheader") {
-        $v = Mailer::mimeEmailHeader("", $v);
+        $v = MimeText::encode_email_header("", $v);
         if ($v !== false)
-            return ($v == "" && !$opt_value ? 0 : array(0, Mailer::mimeHeaderUnquote($v)));
+            return ($v == "" && !$opt_value ? 0 : array(0, MimeText::decode_header($v)));
         else
             $err = unparse_setting_error($info, "Invalid email header.");
     } else if ($info->type === "emailstring") {

@@ -47,7 +47,7 @@ Contact %ADMIN% with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Password reset request",
            "body" => "Dear %NAME%,
 
-We have received a request to reset the password for your account on the %CONFNAME% submissions site. If you made this request, please use the following link to create a new password. The link is only valid for 3 days from the time this email was sent.
+We received a request to reset the password for your account on the %CONFNAME% submissions site. If you made this request, please use the following link to create a new password. The link will work for 3 days.
 
 %URL%/resetpassword%PHP%/%CAPABILITY%
 
@@ -61,7 +61,7 @@ Contact %ADMIN% with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Email change request",
            "body" => "Dear %NAME%,
 
-We have received a request to change the email address for your account on the %CONFNAME% submissions site. If you made this request, please use the following link to update your account to use %EMAIL%. The link is only valid for 3 days from the time this email was sent.
+We received a request to change the email address for your account on the %CONFNAME% submissions site. If you made this request, please use the following link to update your account to use %EMAIL%. The link will work for 3 days.
 
 %URL%/profile%PHP%?changeemail=%CAPABILITY%
 
@@ -93,12 +93,7 @@ On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% would like to 
 
 If you are willing to review this paper, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))% Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%
 
-Once you've decided, please take a moment to accept or decline this review request by using one of these links. You may also contact %REQUESTERNAME% directly or decline the review using the conference site.
-
-      Accept: %URL(review, p=%NUMBER%&accept=1&%LOGINURLPARTS%)%
-     Decline: %URL(review, p=%NUMBER%&decline=1&%LOGINURLPARTS%)%
-
-For reference, your account information is as follows.
+Your account information is as follows.
 
         Site: %URL%/
        Email: %EMAIL%
@@ -107,6 +102,11 @@ For reference, your account information is as follows.
 Or use the link below to sign in.
 
 %LOGINURL%
+
+Once you've decided, please take a moment to accept or decline this review request by using one of these links. You may also contact %REQUESTERNAME% directly or decline the review using the conference site.
+
+      Accept: %URL(review, p=%NUMBER%&accept=1&%LOGINURLPARTS%)%
+     Decline: %URL(review, p=%NUMBER%&decline=1&%LOGINURLPARTS%)%
 
 Contact %ADMIN% with any questions or concerns.
 

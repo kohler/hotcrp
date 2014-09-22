@@ -65,8 +65,7 @@ $Opt["dbName"] = "FIXME";
 //                   HotCRP.
 //   sendmailParam   Extra parameters to be passed to PHP's mail() function.
 //                   If your system's mailer is not sendmail, you may need to
-//                   change the default value; see src/mailtemplate.php,
-//                   sendPrepared().
+//                   change the default value; see src/mailer.php.
 //   postfixEOL      Set to true if your system mailer is UNIX Postfix and
 //                   HotCRP mail has garbled headers, particularly for long or
 //                   non-ASCII subject lines. (The symptom is that some mail
