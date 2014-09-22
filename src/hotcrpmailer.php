@@ -175,8 +175,8 @@ class HotCRPMailer extends Mailer {
             } else
                 $rev = "ext";
             $what = "%DEADLINE(" . $rev . "rev_soft)%";
-            $len = strlen($what);
         }
+        $len = strlen($what);
         if ($len > 12 && substr($what, 0, 10) == "%DEADLINE(" && substr($what, $len - 2) == ")%") {
             $inner = substr($what, 10, $len - 12);
             if ($isbool)
@@ -276,8 +276,9 @@ class HotCRPMailer extends Mailer {
             return $this->get_reviews();
         if ($what == "%COMMENTS%")
             return $this->get_comments(null);
-        else if ($len > 12 && substr($what, 0, 10) == "%COMMENTS("
-                 && substr($what, $len - 2) == ")%") {
+        $len = strlen($what);
+        if ($len > 12 && substr($what, 0, 10) == "%COMMENTS("
+            && substr($what, $len - 2) == ")%") {
             if (($t = $this->tagger()->check(substr($what, 10, $len - 12), Tagger::NOVALUE)))
                 return $this->get_comments($t);
         }
