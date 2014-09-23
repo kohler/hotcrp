@@ -217,7 +217,7 @@ function hoturl_site_relative($page, $options = null) {
 function hoturl($page, $options = null) {
     global $ConfSiteBase, $ConfSiteSuffix;
     $t = hoturl_site_relative($page, $options);
-    if ($page !== "index")
+    if ($page !== "index" || substr($t, 5 + strlen($ConfSiteSuffix), 1) == "/")
         return $ConfSiteBase . $t;
     else {
         $trail = substr($t, 5 + strlen($ConfSiteSuffix));
