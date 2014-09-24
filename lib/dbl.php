@@ -205,6 +205,14 @@ function edb_rows($result) {
     return $x;
 }
 
+// array of all first columns as arrays
+function edb_first_columns($result) {
+    $x = array();
+    while ($result && ($row = $result->fetch_row()))
+        $x[] = $row[0];
+    return $x;
+}
+
 // map of all rows
 function edb_map($result) {
     $x = array();
