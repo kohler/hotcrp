@@ -35,8 +35,7 @@ class HotCRPMailer extends Mailer {
         $this->row = $row;
         foreach (array("width", "sensitivity", "reason", "adminupdate", "notes",
                        "rrow", "reviewNumber", "comment_row", "hideReviews", "capability") as $k)
-            if (($v = @$rest[$k]) !== null)
-                $this->$k = $v;
+            $this->$k = @$rest[$k];
         // Fix width
         if ($this->width === null)
             $this->width = 75;
