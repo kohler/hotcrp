@@ -895,32 +895,6 @@ function tabLength($text, $all) {
     return $len;
 }
 
-function wordWrapIndent($text, $info, $indent = 18, $totWidth = 75, $rjinfo = true) {
-    if (is_int($indent)) {
-        $indentlen = $indent;
-        $indent = str_pad("", $indent);
-    } else
-        $indentlen = strlen($indent);
-
-    $out = "";
-    while ($text != "" && ctype_space($text[0])) {
-        $out .= $text[0];
-        $text = substr($text, 1);
-    }
-
-    $out .= preg_replace("/^(?!\\Z)/m", $indent, wordwrap($text, $totWidth - $indentlen));
-    if (strlen($info) <= $indentlen) {
-        $info = str_pad($info, $indentlen, " ", ($rjinfo ? STR_PAD_LEFT : STR_PAD_RIGHT));
-        return $info . substr($out, $indentlen);
-    } else
-        return $info . "\n" . $out;
-}
-
-function link_urls($html) {
-    return preg_replace('@((?:https?|ftp)://(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;&])(["().,:;]*)(?=[\s<>&]|\z)@s',
-                        '<a href="$1" rel="noreferrer">$1</a>$2', $html);
-}
-
 function ini_get_bytes($varname) {
     // from PHP manual
     $val = trim(ini_get($varname));

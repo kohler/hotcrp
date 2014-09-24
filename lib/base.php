@@ -29,6 +29,29 @@ function simplify_whitespace($x) {
     return trim(preg_replace('/\s+/', " ", $x));
 }
 
+function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75,
+                          $prefix_right_justify = true) {
+    if (is_int($indent)) {
+        $indentlen = $indent;
+        $indent = str_pad("", $indent);
+    } else
+        $indentlen = strlen($indent);
+
+    $out = "";
+    while ($text != "" && ctype_space($text[0])) {
+        $out .= $text[0];
+        $text = substr($text, 1);
+    }
+
+    $out .= preg_replace("/^(?!\\Z)/m", $indent, wordwrap($text, $totWidth - $indentlen));
+    if (strlen($prefix) <= $indentlen) {
+        $prefix = str_pad($prefix, $indentlen, " ",
+                          ($prefix_right_justify ? STR_PAD_LEFT : STR_PAD_RIGHT));
+        return $prefix . substr($out, $indentlen);
+    } else
+        return $prefix . "\n" . $out;
+}
+
 
 // email and MIME helpers
 

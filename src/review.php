@@ -810,7 +810,7 @@ class ReviewForm {
         if ($myReview && $rrow && defval($rrow, "reviewEditVersion"))
             $x .= "==+== Version " . $rrow->reviewEditVersion . "\n";
         if (!$myReview && $prow)
-            $x .= wordWrapIndent($prow->title, "==-== Paper: ", "==-==        ") . "\n";
+            $x .= prefix_word_wrap("==-== Paper: ", $prow->title, "==-==        ") . "\n";
         if ($contact->canViewReviewerIdentity($prow, $rrow, null)) {
             if ($rrow && isset($rrow->reviewFirstName))
                 $x .= "==+== Reviewer: " . Text::user_text($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
@@ -828,7 +828,7 @@ class ReviewForm {
             else
                 $x .= "\n==+== Paper Number\n\n(Enter paper number here)\n";
             if ($prow)
-                $x .= wordWrapIndent($prow->title, "==-== Title: ", "==-==        ") . "\n";
+                $x .= prefix_word_wrap("==-== Title: ", $prow->title, "==-==        ") . "\n";
             $x .= "
 ==+== Review Readiness
 ==-== Enter \"Ready\" if the review is ready for others to see:
@@ -881,13 +881,13 @@ $blind\n";
                 $d = cleannl($f->description);
                 if (strpbrk($d, "&<") !== false)
                     $d = self::cleanDescription($d);
-                $x .= wordWrapIndent($d, "==-==    ", "==-==    ");
+                $x .= prefix_word_wrap("==-==    ", $d, "==-==    ");
             }
             if ($f->has_options && $myReview) {
                 $first = true;
                 foreach ($f->options as $num => $value) {
                     $y = ($first ? "==-== Choices: " : "==-==          ") . "$num. ";
-                    $x .= wordWrapIndent($value, $y, str_pad("==-==", strlen($y))) . "\n";
+                    $x .= prefix_word_wrap($y, $value, str_pad("==-==", strlen($y))) . "\n";
                     $first = false;
                 }
                 if ($f->option_letter)
@@ -905,7 +905,7 @@ $blind\n";
     static function unparse_title_text($prow, &$l) {
         $n = "Paper #" . $prow->paperId . ": ";
         $l = max(14, (int) ((75.5 - strlen(UnicodeHelper::deaccent($prow->title)) - strlen($n)) / 2) + strlen($n));
-        return wordWrapIndent($prow->title, $n, $l) . "\n";
+        return prefix_word_wrap($n, $prow->title, $l) . "\n";
     }
 
     function prettyTextForm($prow, $rrow, $contact, $alwaysAuthorView = true) {
@@ -939,7 +939,7 @@ $blind\n";
                 $n = Text::user_text($rrow);
             else
                 continue;
-            $x .= wordWrapIndent($n, "Reviewer: ", $l) . "\n";
+            $x .= prefix_word_wrap("Reviewer: ", $n, $l) . "\n";
         }
         $x .= "---------------------------------------------------------------------------\n\n";
 
@@ -967,9 +967,9 @@ $blind\n";
                 if (!$lastNumeric)
                     $x .= "\n";
                 if (strlen($sn) > 38 + strlen($fval))
-                    $x .= $sn . "\n" . wordWrapIndent($y, $fval . ". ", 39 + strlen($fval)) . "\n";
+                    $x .= $sn . "\n" . prefix_word_wrap($fval . ". ", $y, 39 + strlen($fval)) . "\n";
                 else
-                    $x .= wordWrapIndent($y, $sn . " " . $fval . ". ", 39 + strlen($fval)) . "\n";
+                    $x .= prefix_word_wrap($sn . " " . $fval . ". ", $y, 39 + strlen($fval)) . "\n";
                 $lastNumeric = true;
             } else {
                 $n = "===== " . $f->name . " =====";
@@ -1250,7 +1250,7 @@ $blind\n";
                         . "</span>";
                 }
             } else
-                $x .= '<div class="revtext">' . link_urls(htmlspecialchars($fval)) . '</div>';
+                $x .= '<div class="revtext">' . Ht::link_urls(htmlspecialchars($fval)) . '</div>';
             $x .= "</div></div></div>";
             if ($disp & self::WEB_RIGHT)
                 $x .= '<hr class="c" />';

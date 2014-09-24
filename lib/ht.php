@@ -353,6 +353,11 @@ class Ht {
                          . $content . ($form ? $form : "") . "</div>");
     }
 
+    static function link_urls($html) {
+        return preg_replace('@((?:https?|ftp)://(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;&])(["().,:;]*)(?=[\s<>&]|\z)@s',
+                            '<a href="$1" rel="noreferrer">$1</a>$2', $html);
+    }
+
     static function mark_stash($uniqueid) {
         $marked = @self::$_stash_map[$uniqueid];
         self::$_stash_map[$uniqueid] = true;

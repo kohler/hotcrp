@@ -732,7 +732,7 @@ class PaperTable {
                 $ox = htmlspecialchars($oa->data);
                 if (@($o->display_space > 1))
                     $ox = nl2br($ox);
-                $ox = link_urls($ox);
+                $ox = Ht::link_urls($ox);
             } else if ($o->type == "attachments") {
                 $ox = array();
                 foreach ($oa->values as $docid)

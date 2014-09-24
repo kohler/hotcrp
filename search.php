@@ -115,16 +115,16 @@ if ($getaction == "abstract" && SearchActions::any() && defval($_REQUEST, "ajax"
             $text = "===========================================================================\n";
             $n = "Paper #" . $prow->paperId . ": ";
             $l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
-            $text .= wordWrapIndent($prow->title, $n, $l) . "\n";
+            $text .= prefix_word_wrap($n, $prow->title, $l) . "\n";
             $text .= "---------------------------------------------------------------------------\n";
             $l = strlen($text);
             if ($Me->can_view_authors($prow, $_REQUEST["t"] == "a")) {
                 cleanAuthor($prow);
-                $text .= wordWrapIndent($prow->authorInformation, "Authors: ", 14) . "\n";
+                $text .= prefix_word_wrap("Authors: ", $prow->authorInformation, 14) . "\n";
             }
             if ($prow->topicIds != "") {
                 $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
-                $text .= wordWrapIndent(substr($tt, 2), "Topics: ", 14) . "\n";
+                $text .= prefix_word_wrap("Topics: ", substr($tt, 2), 14) . "\n";
             }
             if ($l != strlen($text))
                 $text .= "---------------------------------------------------------------------------\n";
@@ -203,7 +203,7 @@ function downloadReviews(&$texts, &$errors) {
         $text = $header;
         if (count($warnings) && $getforms) {
             foreach ($warnings as $w)
-                $text .= wordWrapIndent(whyNotToText($w) . "\n", "==-== ", "==-== ");
+                $text .= prefix_word_wrap("==-== ", whyNotToText($w) . "\n", "==-== ");
             $text .= "\n";
         } else if (count($warnings))
             $text .= join("\n", $warnings) . "\n\n";
@@ -246,7 +246,7 @@ if (($getaction == "revform" || $getaction == "revformz")
                 $t = whyNotText($whyNot, "review");
                 $errors[$t] = false;
                 if (!isset($whyNot["deadline"]))
-                    defappend($texts[$row->paperId], wordWrapIndent(strtoupper(whyNotToText($t)) . "\n\n", "==-== ", "==-== "));
+                    defappend($texts[$row->paperId], prefix_word_wrap("==-== ", strtoupper(whyNotToText($t)) . "\n\n", "==-== "));
             }
             $rf = ReviewForm::get($row);
             defappend($texts[$row->paperId], $rf->textForm($row, $row, $Me, null) . "\n");
@@ -650,12 +650,12 @@ function downloadRevpref($extended) {
         if ($extended) {
             if ($Rev->can_view_authors($prow, false)) {
                 cleanAuthor($prow);
-                $t .= wordWrapIndent($prow->authorInformation, "#  Authors: ", "#           ");
+                $t .= prefix_word_wrap("#  Authors: ", $prow->authorInformation, "#           ");
             }
-            $t .= wordWrapIndent(rtrim($prow->abstract), "# Abstract: ", "#           ") . "\n";
+            $t .= prefix_word_wrap("# Abstract: ", rtrim($prow->abstract), "#           ") . "\n";
             if ($prow->topicIds != "") {
                 $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
-                $t .= wordWrapIndent(substr($tt, 2), "#   Topics: ", "#           ") . "\n";
+                $t .= prefix_word_wrap("#   Topics: ", substr($tt, 2), "#           ") . "\n";
             }
             $t .= "\n";
         }
