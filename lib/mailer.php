@@ -87,7 +87,7 @@ class Mailer {
     }
 
     function expandvar($what, $isbool = false) {
-        global $Conf, $ConfSiteSuffix, $Opt;
+        global $ConfSiteSuffix, $Opt;
         $len = strlen($what);
 
         // generic expansions: OPT, URLENC
@@ -367,10 +367,12 @@ class Mailer {
     static function get_template($templateName, $default = false) {
         global $Conf, $mailTemplates;
         $m = $mailTemplates[$templateName];
-        if (!$default && ($t = $Conf->setting_data("mailsubj_" . $templateName)) !== false)
-            $m["subject"] = $t;
-        if (!$default && ($t = $Conf->setting_data("mailbody_" . $templateName)) !== false)
-            $m["body"] = $t;
+        if (!$default && $Conf) {
+            if (($t = $Conf->setting_data("mailsubj_" . $templateName)) !== false)
+                $m["subject"] = $t;
+            if (($t = $Conf->setting_data("mailbody_" . $templateName)) !== false)
+                $m["body"] = $t;
+        }
         return $m;
     }
 
@@ -378,6 +380,13 @@ class Mailer {
         return $this->expand(self::get_template($templateName, $default));
     }
 
+
+    static function allow_send($email) {
+        global $Opt;
+        return $Opt["sendEmail"]
+            && ($at = strpos($email, "@")) !== false
+            && substr($email, $at) != "@_.com";
+    }
 
     function make_preparation($template, $rest = array()) {
         global $Conf;
@@ -407,7 +416,7 @@ class Mailer {
                     $recipient->$k = $this->recipient->$k;
         }
         $prep->to = $m["to"] = Text::user_email_to($recipient);
-        $prep->sendable = $Conf->allowEmailTo($recipient->email);
+        $prep->sendable = self::allow_send($recipient->email);
 
         // parse headers
         $headers = array("mime-version" => "MIME-Version: 1.0" . MAILER_EOL,

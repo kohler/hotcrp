@@ -10,7 +10,6 @@ if (!$Me->privChair && !$Me->isPC)
     $Me->escape();
 $checkReviewNeedsSubmit = false;
 $Error = $Warning = array();
-$pctags = pcTags();
 
 // load mail from log
 if (isset($_REQUEST["fromlog"]) && ctype_digit($_REQUEST["fromlog"])

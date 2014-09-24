@@ -2197,14 +2197,6 @@ class Conference {
     // Miscellaneous
     //
 
-    function allowEmailTo($email) {
-        global $Opt;
-        return $Opt["sendEmail"]
-            && ($at = strpos($email, "@")) !== false
-            && substr($email, $at) != "@_.com";
-    }
-
-
     public function capability_manager($for) {
         global $Opt;
         if (@$Opt["contactdb_dsn"]

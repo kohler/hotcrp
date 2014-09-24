@@ -261,7 +261,7 @@ class LoginHelper {
         if (defval($Conf->settings, "setupPhase", false))
             return self::first_user($user, $msg);
 
-        if ($Conf->allowEmailTo($user->email))
+        if (Mailer::allow_send($user->email))
             $msg .= " A password has been emailed to you.  Return here when you receive it to complete the registration process.  If you don’t receive the email, check your spam folders and verify that you entered the correct address.";
         else {
             if ($Opt["sendEmail"])
