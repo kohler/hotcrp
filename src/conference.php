@@ -1958,10 +1958,9 @@ class Conference {
         $this->header_head($title);
         echo "</head><body", ($id ? " id='$id'" : ""), ($Me ? " onload='hotcrp_load()'" : ""), ">\n";
 
-        $this->scriptStuff .= "<script>"
-            . "hotcrp_base=\"$ConfSiteBase\""
-            . ";hotcrp_postvalue=\"" . post_value() . "\""
-            . ";hotcrp_suffix=\"" . $ConfSiteSuffix . "\"";
+        $this->scriptStuff .= "<script>hotcrp_base=\"$ConfSiteBase\";hotcrp_suffix=\"$ConfSiteSuffix\"";
+        if (session_id() !== "")
+            $this->scriptStuff .= ";hotcrp_postvalue=\"" . post_value() . "\"";
         if (@$CurrentList
             && ($list = SessionList::lookup($CurrentList)))
             $this->scriptStuff .= ";hotcrp_list={num:$CurrentList,id:\"" . addcslashes($list->listid, "\n\r\\\"/") . "\"}";
