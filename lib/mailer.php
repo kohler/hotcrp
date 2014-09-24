@@ -23,20 +23,32 @@ class Mailer {
     public static $email_fields = array("to" => "To", "cc" => "Cc", "bcc" => "Bcc",
                                         "reply-to" => "Reply-To");
 
-    protected $width = 75;
-    protected $expansionType = null;
-    protected $sensitivity = null;
-
     protected $recipient = null;
 
+    protected $width = 75;
+    protected $sensitivity = null;
     protected $reason = null;
     protected $adminupdate = null;
     protected $notes = null;
     public $capability = null;
 
+    protected $expansionType = null;
+
     protected $_unexpanded = array();
 
-    function __construct() {
+    function __construct($recipient = null, $settings = array()) {
+        $this->reset($recipient, $settings);
+    }
+
+    function reset($recipient = null, $settings = array()) {
+        $this->recipient = $recipient;
+        foreach (array("width", "sensitivity", "reason", "adminupdate", "notes",
+                       "capability") as $k)
+            $this->$k = @$settings[$k];
+        if ($this->width === null)
+            $this->width = 75;
+        else if (!$this->width)
+            $this->width = 10000000;
     }
 
 

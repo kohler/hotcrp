@@ -21,26 +21,19 @@ class HotCRPMailer extends Mailer {
 
 
     function __construct($recipient = null, $row = null, $rest = array()) {
-        parent::__construct();
         $this->reset($recipient, $row, $rest);
     }
 
     function reset($recipient = null, $row = null, $rest = array()) {
         global $Me, $Opt;
-        $this->recipient = $recipient;
+        parent::reset($recipient, $rest);
         $this->permissionContact = defval($rest, "permissionContact", $recipient);
         foreach (array("requester", "reviewer", "other") as $k)
             if (($v = @$rest[$k . "_contact"]))
                 $this->contacts[$k] = $v;
         $this->row = $row;
-        foreach (array("width", "sensitivity", "reason", "adminupdate", "notes",
-                       "rrow", "reviewNumber", "comment_row", "hideReviews", "capability") as $k)
+        foreach (array("rrow", "reviewNumber", "comment_row", "hideReviews") as $k)
             $this->$k = @$rest[$k];
-        // Fix width
-        if ($this->width === null)
-            $this->width = 75;
-        else if (!$this->width)
-            $this->width = 10000000;
         if ($this->reviewNumber === null)
             $this->reviewNumber = "";
         // Do not put passwords in email that is cc'd elsewhere
