@@ -19,7 +19,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = 0;
     $conflictType = $Me->view_conflict_type($prow);
-    $allow_aadmin = $Me->allow_administer($prow);
+    $allow_admin = $Me->allow_administer($prow);
     $admin = $Me->can_administer($prow);
     $hideUnviewable = ($conflictType > 0 && !$admin)
         || (!$Me->actPC($prow) && !$Conf->setting("extrev_view"));
