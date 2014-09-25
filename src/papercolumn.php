@@ -1046,7 +1046,7 @@ class ScorePaperColumn extends PaperColumn {
     public function content($pl, $row) {
         $allowed = $pl->contact->canViewReview($row, $this->form_field->view_score, false);
         $fname = $this->score . "Scores";
-        if (($allow_ad || $pl->contact->allow_administer($row))
+        if (($allowed || $pl->contact->allow_administer($row))
             && $row->$fname) {
             $t = $this->form_field->unparse_graph($row->$fname, 1, defval($row, $this->score));
             if (!$allowed)
