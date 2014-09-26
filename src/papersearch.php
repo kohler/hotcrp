@@ -2782,7 +2782,7 @@ class PaperSearch {
         return false;
     }
 
-    static private function numbered_papers() {
+    function numbered_papers() {
         $q = $this->q;
         $ss_recursion = array();
         while (1) {
