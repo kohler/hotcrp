@@ -1212,6 +1212,18 @@ class PaperSearch {
                 $a->$k = $b->$k;
     }
 
+    private static function _expand_saved_search($word, $recursion) {
+        global $Conf;
+        if (isset($recursion[$word]))
+            return false;
+        $t = $Conf->setting_data("ss:" . $word, "");
+        $search = json_decode($t);
+        if ($search && is_object($search) && isset($search->q))
+            return $search->q;
+        else
+            return null;
+    }
+
     function _searchQueryWord($word, $report_error) {
         global $Conf;
 
@@ -1359,23 +1371,19 @@ class PaperSearch {
         if ($keyword ? $keyword == "has" : isset($this->fields["has"]))
             $this->_searchHas($word, $qt, $quoted);
         if ($keyword ? $keyword == "ss" : isset($this->fields["ss"])) {
-            $t = $Conf->setting_data("ss:" . $word, "");
-            $search = json_decode($t);
-            $qe = null;
-            if (isset($this->_ssRecursion[$word]))
+            if (($nextq = self::_expand_saved_search($word, $this->_ssRecursion))) {
+                $this->_ssRecursion[$word] = true;
+                $qe = $this->_searchQueryType($nextq);
+                unset($this->_ssRecursion[$word]);
+            } else
+                $qe = null;
+            if (!$qe && $searchq === false)
                 $this->warn("Saved search “" . htmlspecialchars($word) . "” is incorrectly defined in terms of itself.");
-            else if ($t == "")
-                $this->warn("There is no saved search called “" . htmlspecialchars($word) . "”.");
-            else {
-                if ($search && is_object($search) && isset($search->q)) {
-                    $this->_ssRecursion[$word] = true;
-                    $qe = $this->_searchQueryType($search->q);
-                    unset($this->_ssRecursion[$word]);
-                }
-                if (!$qe)
-                    $this->warn("The “" . htmlspecialchars($word) . "” saved search is defined incorrectly.");
-            }
-            $qt[] = ($qe ? $qe : new SearchTerm("f"));
+            else if (!$qe && !$Conf->setting_data("ss:$word"))
+                $this->warn("There is no “" . htmlspecialchars($word) . "” saved search.");
+            else if (!$qe)
+                $this->warn("The “" . htmlspecialchars($word) . "” saved search is defined incorrectly.");
+            $qt[] = ($qe ? : new SearchTerm("f"));
         }
         if ($keyword == "HEADING") {
             if (($heading = simplify_whitespace($word)) != "")
@@ -2774,23 +2782,31 @@ class PaperSearch {
         return false;
     }
 
-    function numbered_papers() {
-        if (preg_match('/\A\s*#?\d[-#\d\s]*\z/s', $this->q)) {
-            $a = array();
-            foreach (preg_split('/\s+/', $this->q) as $word) {
-                if ($word[0] == "#" && preg_match('/\A#\d+(?:-#?\d+)?/', $word))
-                    $word = substr($word, 1);
-                if (ctype_digit($word))
-                    $a[$word] = (int) $word;
-                else if (preg_match('/\A(\d+)-#?(\d+)\z/s', $word, $m)) {
-                    foreach (range($m[1], $m[2]) as $num)
-                        $a[$num] = $num;
-                } else
-                    return null;
-            }
-            return array_values($a);
-        } else
-            return null;
+    static private function numbered_papers() {
+        $q = $this->q;
+        $ss_recursion = array();
+        while (1) {
+            if (preg_match('/\A\s*#?\d[-#\d\s]*\z/s', $q)) {
+                $a = array();
+                foreach (preg_split('/\s+/', $q) as $word) {
+                    if ($word[0] == "#" && preg_match('/\A#\d+(?:-#?\d+)?/', $word))
+                        $word = substr($word, 1);
+                    if (ctype_digit($word))
+                        $a[$word] = (int) $word;
+                    else if (preg_match('/\A(\d+)-#?(\d+)\z/s', $word, $m)) {
+                        foreach (range($m[1], $m[2]) as $num)
+                            $a[$num] = $num;
+                    } else
+                        return null;
+                }
+                return array_values($a);
+            } else if (preg_match('/\A(\w+):"?([^"\s]+)"?\z/', $q, $m)
+                       && @self::$_keywords[$m[1]] == "ss") {
+                $q = self::_expand_saved_search($m[2], $ss_recursion);
+                $ss_recursion[$m[1]] = true;
+            } else
+                return null;
+        }
     }
 
     function alternate_query() {
