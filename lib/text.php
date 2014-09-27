@@ -299,7 +299,7 @@ class Text {
                 }
         for ($i = 0; $i < count($s); ++$i)
             if (($i % 2) && $s[$i] != "")
-                $s[$i] = "<span class='match'>" . htmlspecialchars($s[$i]) . "</span>";
+                $s[$i] = '<span class="match">' . htmlspecialchars($s[$i]) . "</span>";
             else
                 $s[$i] = htmlspecialchars($s[$i]);
         return join("", $s);
