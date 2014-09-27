@@ -279,13 +279,16 @@ class Text {
             $flags = "i";
         }
 
-        if ($match[0] != "{")
-            $match = "{(" . $match . ")}" . $flags;
-        $s = preg_split($match, $mtext, -1, PREG_SPLIT_DELIM_CAPTURE);
-        if (sizeof($s) == 1)
+        $s = false;
+        if ($match != "") {
+            if ($match[0] != "{")
+                $match = "{(" . $match . ")}" . $flags;
+            $s = preg_split($match, $mtext, -1, PREG_SPLIT_DELIM_CAPTURE);
+        }
+        if (!$s || count($s) == 1)
             return htmlspecialchars($text);
-        $n = (int) (count($s) / 2);
 
+        $n = (int) (count($s) / 2);
         if ($offsetmap)
             for ($i = $b = $o = 0; $i < count($s); ++$i)
                 if ($s[$i] !== "") {
