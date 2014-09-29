@@ -314,10 +314,16 @@ class DocumentHelper {
             && @$doc->content_base64)
             $doc->content = base64_decode($doc->content_base64);
         if ((@$doc->content === null || @$doc->content === false)
+            && @$doc->file)
+            $doc->content = @file_get_contents($doc->file);
+        if ((@$doc->content === null || @$doc->content === false)
             && @$doc->filestore)
             $doc->content = @file_get_contents($doc->filestore);
         if (@$doc->content === null || @$doc->content === false)
             $docclass->load_content($doc);
+        if ((@$doc->content === null || @$doc->content === false)
+            && (@$doc->file || @$doc->filestore))
+            set_error_html($doc, "File " . (@$doc->file ? : $doc->filestore) . " not readable.");
     }
 
     static function store($docclass, $doc, $docinfo) {
@@ -377,7 +383,8 @@ class DocumentHelper {
         if (is_object($upload)) {
             $doc = clone $upload;
             self::prepare_content($docclass, $doc);
-            if (@$doc->content === null || $doc->content === false || $doc->content === "")
+            if ((@$doc->content === null || $doc->content === false || $doc->content === "")
+                && !@$doc->error_html)
                 set_error_html($doc, "The uploaded file was empty.");
         } else
             $doc = self::file_upload_json($upload);
@@ -414,6 +421,11 @@ class DocumentHelper {
     }
 
     static function load($docclass, $doc) {
+        if (is_string(@$docj->content)
+            || is_string(@$docj->content_base64)
+            || (is_string(@$doc->file) && is_readable($doc->file))
+            || (is_string(@$doc->filestore) && is_readable($doc->filestore)))
+            return true;
         $fsinfo = self::_filestore($docclass, $doc, null);
         if ($fsinfo && is_readable($fsinfo[1])) {
             $doc->filestore = $fsinfo[1];

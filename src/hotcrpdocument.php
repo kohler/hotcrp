@@ -137,12 +137,17 @@ class HotCRPDocument {
         }
         $s3 = self::s3_document();
         $dtype = isset($doc->documentType) ? $doc->documentType : $this->dtype;
-        $meta = json_encode(array("conf" => $Opt["dbName"],
-                                  "pid" => (int) $docinfo->paperId,
-                                  "dtype" => (int) $dtype));
+        $meta = array("conf" => $Opt["dbName"],
+                      "pid" => (int) $docinfo->paperId,
+                      "dtype" => (int) $dtype);
+        if (@$doc->filter) {
+            $meta["filtertype"] = (int) $doc->filter;
+            if (@$doc->original_sha1)
+                $meta["original_sha1"] = $doc->original_sha1;
+        }
         $filename = self::s3_filename($doc);
         $s3->save($filename, $doc->content, $doc->mimetype,
-                  array("hotcrp" => $meta));
+                  array("hotcrp" => json_encode($meta)));
         if ($s3->status != 200)
             error_log("S3 error: POST $filename: $s3->status $s3->status_text " . json_encode($s3->response_headers));
         return $s3->status == 200;
@@ -176,6 +181,16 @@ class HotCRPDocument {
             $columns["infoJson"] = json_encode($doc->metadata);
         if ($Conf->sversion >= 74 && @$doc->size)
             $columns["size"] = $doc->size;
+        if ($Conf->sversion >= 82) {
+            if (@$doc->filterType)
+                $columns["filterType"] = $doc->filterType;
+            else if (@$doc->filter)
+                $columns["filterType"] = $doc->filter;
+            if (@$doc->originalStorageId)
+                $columns["originalStorageId"] = $doc->filterType;
+            else if (@$doc->original_id)
+                $columns["originalStorageId"] = $doc->original_id;
+        }
         return array("PaperStorage", "paperStorageId", $columns,
                      @$Opt["dbNoPapers"] ? null : "paper");
     }

@@ -1231,7 +1231,7 @@ class Conference {
         if (is_object($contact))
             $contactId = $contact->contactId;
         else {
-            $contactId = $contact;
+            $contactId = (int) $contact;
             $contact = null;
         }
         if (isset($options["reviewer"]) && is_object($options["reviewer"]))
@@ -1503,11 +1503,11 @@ class Conference {
     function paperRow($sel, $contact, &$whyNot = null) {
         $whyNot = array();
         if (!is_array($sel))
-            $sel = array('paperId' => $sel);
-        if (isset($sel['paperId']))
-            $whyNot['paperId'] = $sel['paperId'];
-        if (isset($sel['reviewId']))
-            $whyNot['reviewId'] = $sel['reviewId'];
+            $sel = array("paperId" => $sel);
+        if (isset($sel["paperId"]))
+            $whyNot["paperId"] = $sel["paperId"];
+        if (isset($sel["reviewId"]))
+            $whyNot["reviewId"] = $sel["reviewId"];
 
         if (isset($sel['paperId']) && cvtint($sel['paperId']) < 0)
             $whyNot['invalidId'] = 'paper';
