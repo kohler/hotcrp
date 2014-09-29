@@ -78,10 +78,16 @@ class Contact {
         if (isset($user->contactDbId))
             $this->contactDbId = (int) $user->contactDbId;
         foreach (array("firstName", "lastName", "email", "preferredEmail", "affiliation",
-                       "voicePhoneNumber", "collaborators", "addressLine1", "addressLine2",
+                       "voicePhoneNumber", "addressLine1", "addressLine2",
                        "city", "state", "zipCode", "country") as $k)
             if (isset($user->$k))
                 $this->$k = simplify_whitespace($user->$k);
+        if (isset($user->collaborators)) {
+            $this->collaborators = "";
+            foreach (preg_split('/[\r\n]+/', $user->collaborators) as $c)
+                if (($c = simplify_whitespace($c)) !== "")
+                    $this->collaborators .= "$c\n";
+        }
         self::set_sorter($this);
         if (isset($user->password))
             $this->set_encoded_password($user->password);
