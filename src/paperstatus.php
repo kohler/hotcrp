@@ -70,7 +70,7 @@ class PaperStatus {
             return null;
 
         $pj = (object) array();
-        $pj->id = $prow->paperId;
+        $pj->id = (int) $prow->paperId;
         $pj->title = $prow->title;
 
         if ($prow->timeWithdrawn > 0) {
