@@ -149,5 +149,10 @@ function caller_landmark($position = 1, $skipfunction_re = null) {
             break;
         ++$position;
     }
-    return $trace[$position]["file"] . ":" . $trace[$position]["line"] . ":" . $trace[$position]["function"];
+    if (($pi = @$trace[$position]) && @$pi["file"])
+        return $pi["file"] . ":" . $pi["line"] . ":" . $pi["function"];
+    else if ($pi)
+        return $pi["function"];
+    else
+        return "<unknown>";
 }
