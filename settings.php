@@ -519,7 +519,8 @@ function save_decisions($set) {
         $dec_revmap = array();
         foreach ($_POST as $k => &$dname)
             if (str_starts_with($k, "dec")
-                && ($k === "decn" || ($dnum = cvtint(substr($k, 3), 0)))) {
+                && ($k === "decn" || ($dnum = cvtint(substr($k, 3), 0)))
+                && ($k !== "decn" || trim($dname) !== "")) {
                 $dname = simplify_whitespace($dname);
                 if (($derror = Conference::decision_name_error($dname))) {
                     $Error[] = htmlspecialchars($derror);
