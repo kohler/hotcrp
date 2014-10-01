@@ -1261,6 +1261,7 @@ class Conference {
                 PaperReview.reviewNeedsSubmit,
                 PaperReview.reviewOrdinal,
                 PaperReview.reviewBlind,
+                PaperReview.reviewToken,
                 PaperReview.contactId as reviewContactId,
                 PaperReview.requestedBy,
                 max($myPaperReview.reviewType) as myReviewType,
