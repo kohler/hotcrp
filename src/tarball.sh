@@ -1,7 +1,7 @@
-export VERSION=2.92
+export VERSION=2.93
 
 # check that schema.sql and updateschema.php agree on schema version
-updatenum=`grep 'settings.*allowPaperOption.*=' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/;.*//'`
+updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*, *//;s/[;)].*//'`
 schemanum=`grep 'allowPaperOption' src/schema.sql | sed 's/.*, *//;s/).*//'`
 if [ "$updatenum" != "$schemanum" ]; then
     echo "error: allowPaperOption schema number in src/schema.sql ($schemanum)" 1>&2
@@ -42,6 +42,7 @@ mkdistdir () {
 mkdistdir <<EOF
 
 .htaccess
+.user.ini
 LICENSE
 NEWS
 README.md
@@ -73,8 +74,13 @@ settings.php
 users.php
 
 batch/.htaccess
+batch/adddoc.php
+batch/addusers.php
 batch/killinactivedoc.php
-batch/s3upload.php
+batch/s3check.php
+batch/s3transfer.php
+batch/savepapers.php
+batch/updatecontactdb.php
 
 conf/.htaccess
 
@@ -87,7 +93,9 @@ lib/countries.php
 lib/createdb.sh
 lib/csv.php
 lib/dbhelper.sh
+lib/dbl.php
 lib/documenthelper.php
+lib/getopt.php
 lib/ht.php
 lib/json.php
 lib/ldaplogin.php
@@ -110,6 +118,7 @@ src/.htaccess
 src/assigners.php
 src/banal
 src/baselist.php
+src/capability.php
 src/checkformat.php
 src/commentsave.php
 src/commentview.php
@@ -147,6 +156,7 @@ src/reviewtable.php
 src/sample.pdf
 src/schema.sql
 src/searchactions.php
+src/settinginfo.json
 src/trackercomet.js
 src/updateschema.php
 src/useractions.php
@@ -238,6 +248,7 @@ images/viewas.png
 
 scripts/.htaccess
 scripts/jquery-1.11.1.min.js
+scripts/jquery-1.11.1.min.map
 scripts/script.js
 scripts/supersleight.js
 

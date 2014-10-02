@@ -1,8 +1,47 @@
 HotCRP NEWS
 
+Version 2.93   2.Oct.2014
+
+* Improve autoassigner to spread out user unhappiness.
+
+* Improve appearance and behavior. For example, edit comments in place
+  via Javascript.
+
+* Improve search. Add many new search keywords. Allow `show:FORMULA`
+  to show a new formula; for example `show:max(ovemer)`.
+
+* Per-round review deadlines.
+
+* Reviewer preference expertise is available for formulas.
+
+* Support clickthrough reviewing terms.
+
+* Fix bugs.
+
+* Support Comet tracker: https://github.com/kohler/hotcrp-comet
+
+* Add some batch scripts. E.g., `php batch/s3transfer.php` uploads
+  documents to S3.
+
+* Render score charts in Javascript via canvas.
+
+* Download JSON information about papers, then upload it via `php
+  batch/savepapers.php`.
+
+* Support NGINX/php-fpm.
+
+* Allow sharing a session variable among conferences on the same
+  server.
+
+* Thanks to Aaron Gember, Todd Millstein, Dan Wallach, Vivek Pai,
+  Hyojin Sung, Rakesh Komuravelli, David Walker, Shriram
+  Krishnamurthi, Nickolai Zeldovich, Michele Nelson, `mutax`, Fred
+  Douglis, and others.
+
+
 Version 2.92   13.May.2014
 
-* Bug fixes for bugs reported by Shriram Krishnamurthy, Aditya Akella,
+* Bug fixes for bugs reported by Shriram Krishnamurthi, Aditya Akella,
   Yoshi Kohno, Garth Gibson.
 
 
