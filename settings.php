@@ -216,7 +216,7 @@ function save_tags($set, $what) {
             if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
                 $vs[$t] = true;
             else if ($t !== "") {
-                $Error[] = "Chair-only tag “" . htmlspecialchars($t) . "” contains odd characters.";
+                $Error[] = "Chair-only tag: " . $tagger->error_html;
                 $Highlight["tag_chair"] = true;
             }
         $v = array(count($vs), join(" ", array_keys($vs)));
@@ -234,7 +234,7 @@ function save_tags($set, $what) {
                     $t = $m[1] . "#1";
                 $vs[] = $t;
             } else if ($t !== "") {
-                $Error[] = "Voting tag “" . htmlspecialchars($t) . "” contains odd characters.";
+                $Error[] = "Voting tag: " . $tagger->error_html;
                 $Highlight["tag_vote"] = true;
             }
         $v = array(count($vs), join(" ", $vs));
@@ -260,7 +260,7 @@ function save_tags($set, $what) {
             while (($row = edb_row($result))) {
                 $who = substr($row[1], 0, strpos($row[1], "~"));
                 if ($row[2] < 0) {
-                    $Error[] = "Removed " . Text::user_html($pcm[$who]) . "'s negative &ldquo;$base&rdquo; vote for paper #$row[0].";
+                    $Error[] = "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for paper #$row[0].";
                     $negative = true;
                 } else {
                     $pvals[$row[0]] = defval($pvals, $row[0], 0) + $row[2];
@@ -291,7 +291,7 @@ function save_tags($set, $what) {
             if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
                 $vs[] = $t;
             else if ($t !== "") {
-                $Error[] = "Rank tag “" . htmlspecialchars($t) . "” contains odd characters.";
+                $Error[] = "Rank tag: " . $tagger->error_html;
                 $Highlight["tag_rank"] = true;
             }
         if (count($vs) > 1) {
@@ -315,7 +315,7 @@ function save_tags($set, $what) {
                     if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
                         $vs[] = $t . "=" . $k;
                     else if ($t !== "") {
-                        $Error[] = ucfirst($k) . " color tag “" . htmlspecialchars($t) . "” contains odd characters.";
+                        $Error[] = ucfirst($k) . " color tag: " . $tagger->error_html;
                         $Highlight["tag_color_" . $k] = true;
                     }
             }
@@ -738,7 +738,10 @@ function save_tracks($set) {
             continue;
         else if (!$tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)
                  || ($trackname === "_" && $i != 1)) {
-            $Error[] = "Track name “" . htmlspecialchars($trackname) . "” contains odd characters.";
+            if ($trackname !== "_")
+                $Error[] = "Track name: " . $tagger->error_html;
+            else
+                $Error[] = "Track name “_” is reserved.";
             $Highlight["name_track$i"] = $Highlight["tracks"] = true;
             continue;
         }
@@ -753,7 +756,7 @@ function save_tracks($set) {
                 } else if ($tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
                     $t->$type = $ttype . $ttag;
                 else {
-                    $Error[] = "Tag “" . htmlspecialchars($ttag) . "” contains odd characters.";
+                    $Error[] = $tagger->error_html;
                     $Highlight["${type}_track$i"] = $Highlight["tracks"] = true;
                 }
             }
