@@ -320,6 +320,7 @@ class PaperTable {
                 if (@$o->near_submission
                     && $o->is_document()
                     && $prow
+                    && $Me->can_view_paper_option($prow, $o)
                     && ($oa = $prow->option($id))
                     && $oa->value > 1
                     && ($d = paperDocumentData($prow, $id, $oa->value))) {
