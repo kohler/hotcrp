@@ -272,6 +272,7 @@ echo Ht::form_div(hoturl_post("reviewprefs", "reviewer=$reviewer" . (defval($_RE
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1),
     "<div class='pltable_full_ctr'>\n",
+    '<noscript><div style="text-align:center">', Ht::submit("update", "Save changes"), '</div></noscript>',
     $pl_text,
     "</div></div></form>\n";
 
