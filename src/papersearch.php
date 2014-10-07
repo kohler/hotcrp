@@ -2306,7 +2306,7 @@ class PaperSearch {
                 && !$this->contact->canViewDecision($row, true))
                 return false;
             if ($t->type == "option"
-                && !$this->contact->canViewPaperOption($row, $t->value[0], true))
+                && !$this->contact->can_view_paper_option($row, $t->value[0], true))
                 return false;
             if ($t->type == "re" && ($fieldname = $t->link)
                 && !isset($row->$fieldname)) {

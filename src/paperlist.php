@@ -152,7 +152,7 @@ class PaperList extends BaseList {
             $finaltitle = null;
             $row->documentType = DTYPE_SUBMISSION;
         }
-        if ($row->size == 0 || !$this->contact->canDownloadPaper($row))
+        if ($row->size == 0 || !$this->contact->can_view_pdf($row))
             return "";
         if ($row->documentType == DTYPE_FINAL)
             $this->any->final = true;

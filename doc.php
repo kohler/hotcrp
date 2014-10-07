@@ -55,10 +55,10 @@ else {
 if (!isset($Error)
     && !($prow = $Conf->paperRow($paperId, $Me, $whyNot)))
     $Error = whyNotText($whyNot, "view");
-if (!isset($Error) && !$Me->canDownloadPaper($prow, $whyNot))
+if (!isset($Error) && !$Me->can_view_pdf($prow, $whyNot))
     $Error = whyNotText($whyNot, "view");
 if (!isset($Error) && $documentType > 0
-    && !$Me->canViewPaperOption($prow, $documentType, true))
+    && !$Me->can_view_paper_option($prow, $documentType, true))
     $Error = "You don’t have permission to view this document.";
 if (!isset($Error) && $need_docid && !$docid)
     $Error = "No such attachment.";

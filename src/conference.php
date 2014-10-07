@@ -948,13 +948,13 @@ class Conference {
     function timeReviewerViewAcceptedAuthors() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
     }
-    function timePCViewPaper($prow, $download) {
+    function timePCViewPaper($prow, $pdf) {
         if ($prow->timeWithdrawn > 0)
             return false;
         else if ($prow->timeSubmitted > 0)
             return true;
         else
-            return !$download && $this->can_pc_see_all_submissions();
+            return !$pdf && $this->can_pc_see_all_submissions();
     }
     function timeReviewerViewSubmittedPaper() {
         return true;
@@ -1035,7 +1035,7 @@ class Conference {
             "select paperStorageId from PaperComment where paperStorageId>1");
         $document_option_ids = array();
         foreach (PaperOption::option_list() as $id => $o)
-            if ($o->value_is_document())
+            if ($o->has_document())
                 $document_option_ids[] = $id;
         if (count($document_option_ids))
             $q[] = "select value from PaperOption where optionId in ("

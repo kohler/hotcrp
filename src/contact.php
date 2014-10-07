@@ -1111,7 +1111,7 @@ class Contact {
         return $rights->view_conflict_type;
     }
 
-    public function actAuthorView($prow, $download = false) {
+    public function actAuthorView($prow) {
         $rights = $this->rights($prow);
         return $rights->act_author_view;
     }
@@ -1292,7 +1292,7 @@ class Contact {
         return false;
     }
 
-    function canViewPaper($prow, &$whyNot = null, $download = false) {
+    function canViewPaper($prow, &$whyNot = null, $pdf = false) {
         global $Conf;
         // fetch paper
         if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
@@ -1303,7 +1303,7 @@ class Contact {
             || ($rights->review_type
                 && $Conf->timeReviewerViewSubmittedPaper())
             || ($rights->allow_pc_broad
-                && $Conf->timePCViewPaper($prow, $download)))
+                && $Conf->timePCViewPaper($prow, $pdf)))
             return true;
         // collect failure reasons
         if (!$rights->allow_author_view
@@ -1317,7 +1317,7 @@ class Contact {
         else if ($prow->timeSubmitted <= 0)
             $whyNot["notSubmitted"] = 1;
         if ($rights->allow_pc_broad
-            && !$Conf->timePCViewPaper($prow, $download))
+            && !$Conf->timePCViewPaper($prow, $pdf))
             $whyNot["deadline"] = "sub_sub";
         else if ($rights->review_type
                  && !$Conf->timeReviewerViewSubmittedPaper())
@@ -1329,7 +1329,7 @@ class Contact {
         return false;
     }
 
-    function canDownloadPaper($prow, &$whyNot = null) {
+    function can_view_pdf($prow, &$whyNot = null) {
         return $this->canViewPaper($prow, $whyNot, true);
     }
 
@@ -1396,8 +1396,8 @@ class Contact {
         return false;
     }
 
-    function canViewPaperOption($prow, $opt, $forceShow = null,
-                                &$whyNot = null) {
+    function can_view_paper_option($prow, $opt, $forceShow = null,
+                                   &$whyNot = null) {
         global $Conf;
         // fetch paper
         if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
@@ -1413,8 +1413,8 @@ class Contact {
         $oview = @$opt->visibility;
         if ($rights->act_author_view
             || (($rights->allow_administer
-                 || $rights->allow_pc_broad
-                 || $rights->review_type)
+                 || $rights->review_type
+                 || $rights->allow_pc_broad)
                 && (($oview == "admin" && $rights->allow_administer)
                     || !$oview
                     || $oview == "rev"

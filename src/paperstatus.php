@@ -131,14 +131,14 @@ class PaperStatus {
             $pj->topics = (object) $topics;
 
         if ($prow->paperStorageId > 1
-            && (!$this->contact || $this->contact->canDownloadPaper($prow))
+            && (!$this->contact || $this->contact->can_view_pdf($prow))
             && ($doc = $this->document_to_json($prow, DTYPE_SUBMISSION,
                                                (int) $prow->paperStorageId,
                                                $args)))
             $pj->submission = $doc;
 
         if ($prow->finalPaperStorageId > 1
-            && (!$this->contact || $this->contact->canDownloadPaper($prow))
+            && (!$this->contact || $this->contact->can_view_pdf($prow))
             && ($doc = $this->document_to_json($prow, DTYPE_FINAL,
                                                (int) $prow->finalPaperStorageId,
                                                $args)))
@@ -153,7 +153,7 @@ class PaperStatus {
             foreach ($prow->options() as $oa) {
                 $o = $oa->option;
                 if ($this->contact
-                    && !$this->contact->canViewPaperOption($prow, $o, $this->forceShow))
+                    && !$this->contact->can_view_paper_option($prow, $o, $this->forceShow))
                     continue;
                 $okey = $this->export_ids ? $o->id : $o->abbr;
                 if ($o->type == "checkbox" && $oa->value)
@@ -343,7 +343,7 @@ class PaperStatus {
             } else if ($o->type == "text") {
                 if (!is_string($oa))
                     $this->set_error("opt$id", htmlspecialchars($o->name) . ": Option should be a text string.");
-            } else if ($o->type == "attachments" || $o->is_document()) {
+            } else if ($o->has_document()) {
                 if ($o->is_document() && !is_object($oa))
                     $oa = null;
                 $oa = $oa && !is_array($oa) ? array($oa) : $oa;

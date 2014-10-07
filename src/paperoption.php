@@ -128,7 +128,7 @@ class PaperOption {
             || $this->type == "video";
     }
 
-    function value_is_document() {
+    function has_document() {
         return $this->is_document() || $this->type == "attachments";
     }
 

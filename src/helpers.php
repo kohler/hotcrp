@@ -425,7 +425,7 @@ function paperDocumentData($prow, $documentType = DTYPE_SUBMISSION, $paperStorag
 function paperDownload($prow, $final = false) {
     global $Conf, $Me;
     // don't let PC download papers in progress
-    if ($prow->timeSubmitted <= 0 && !$Me->canDownloadPaper($prow))
+    if ($prow->timeSubmitted <= 0 && !$Me->can_view_pdf($prow))
         return "";
     $doc = paperDocumentData($prow, $final ? DTYPE_FINAL : DTYPE_SUBMISSION);
     return $doc ? documentDownload($doc) : "";
