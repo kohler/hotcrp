@@ -745,22 +745,26 @@ function save_tracks($set) {
             continue;
         }
         $t = (object) array();
-        foreach (array("view", "viewrev", "assrev", "unassrev") as $type)
+        foreach (array("view", "viewpdf", "viewrev", "assrev", "unassrev") as $type)
             if (($ttype = defval($_POST, "${type}_track$i", "")) == "+"
                 || $ttype == "-") {
                 $ttag = trim(defval($_POST, "${type}tag_track$i", ""));
                 if ($ttag === "" || $ttag === "(tag)") {
                     $Error[] = "Tag missing for track setting.";
                     $Highlight["${type}_track$i"] = $Highlight["tracks"] = true;
-                } else if ($tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
+                } else if (($ttype == "+" && strcasecmp($ttag, "none") == 0)
+                           || $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
                     $t->$type = $ttype . $ttag;
                 else {
                     $Error[] = $tagger->error_html;
                     $Highlight["${type}_track$i"] = $Highlight["tracks"] = true;
                 }
-            }
+            } else if ($ttype == "none")
+                $t->$type = "+none";
         if (count((array) $t) || @$tracks->_)
             $tracks->$trackname = $t;
+        if (@$t->viewpdf && $t->viewpdf != @$t->unassrev && @$t->unassrev != "+none")
+            $Warning[] = ($trackname === "_" ? "Default track" : "Track “{$trackname}”") . ": Generally, a track that restricts PDF visibility should restrict the “self-assign papers” right in the same way.";
     }
     if (count((array) $tracks))
         $Values["tracks"] = array(1, json_encode($tracks));
@@ -1852,22 +1856,26 @@ function doRfoGroup() {
 // Tags and tracks
 function do_track_permission($type, $question, $tnum, $thistrack) {
     global $Conf, $Error;
+    $tclass = $ttag = "";
     if (count($Error) > 0) {
         $tclass = defval($_POST, "${type}_track$tnum", "");
         $ttag = defval($_POST, "${type}tag_track$tnum", "");
     } else if ($thistrack && @$thistrack->$type) {
-        $tclass = substr($thistrack->$type, 0, 1);
-        $ttag = substr($thistrack->$type, 1);
-    } else
-        $tclass = $ttag = "";
+        if ($thistrack->$type == "+none")
+            $tclass = "none";
+        else {
+            $tclass = substr($thistrack->$type, 0, 1);
+            $ttag = substr($thistrack->$type, 1);
+        }
+    }
 
-    echo "<tr hotcrp_fold=\"1\" class=\"fold", ($tclass == "" ? "c" : "o"), "\">",
+    echo "<tr hotcrp_fold=\"1\" class=\"fold", ($tclass == "" || $tclass == "none" ? "c" : "o"), "\">",
         "<td class=\"lxcaption\">",
         setting_label("${type}_track$tnum", $question, "${type}_track$tnum"),
         "</td>",
         "<td>",
-        Ht::select("${type}_track$tnum", array("" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag"), $tclass,
-                   array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0})")),
+        Ht::select("${type}_track$tnum", array("" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"), $tclass,
+                   array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})")),
         " &nbsp;",
         Ht::entry("${type}tag_track$tnum", $ttag,
                   array("class" => "fx",
@@ -1892,9 +1900,10 @@ function do_track($trackname, $tnum) {
     $t = $t && $trackname !== "" ? @$t->$trackname : null;
     echo "<table style=\"margin-left:1.5em;margin-bottom:0.5em\">";
     do_track_permission("view", "Who can view these papers?", $tnum, $t);
+    do_track_permission("viewpdf", "Who can view PDFs?<br><span class=\"hint\">Assigned reviewers can always view PDFs.</span>", $tnum, $t);
     do_track_permission("viewrev", "Who can view reviews?", $tnum, $t);
     do_track_permission("assrev", "Who can be assigned a review?", $tnum, $t);
-    do_track_permission("unassrev", "Who can review without an assignment?", $tnum, $t);
+    do_track_permission("unassrev", "Who can self-assign a review?", $tnum, $t);
     echo "</table></div>\n\n";
 }
 

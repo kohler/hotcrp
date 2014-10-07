@@ -1303,7 +1303,8 @@ class Contact {
             || ($rights->review_type
                 && $Conf->timeReviewerViewSubmittedPaper())
             || ($rights->allow_pc_broad
-                && $Conf->timePCViewPaper($prow, $pdf)))
+                && $Conf->timePCViewPaper($prow, $pdf)
+                && (!$pdf || $Conf->check_tracks($prow, $this, "viewpdf"))))
             return true;
         // collect failure reasons
         if (!$rights->allow_author_view
@@ -1419,7 +1420,11 @@ class Contact {
                     || !$oview
                     || $oview == "rev"
                     || ($oview == "nonblind"
-                        && $this->can_view_authors($prow, $forceShow)))))
+                        && $this->can_view_authors($prow, $forceShow)))
+                && ($rights->allow_administer
+                    || $rights->review_type
+                    || !$opt->has_document()
+                    || $Conf->check_tracks($prow, $this, "viewpdf"))))
             return true;
         $whyNot["permission"] = 1;
         return false;
