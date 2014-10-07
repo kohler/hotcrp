@@ -1104,8 +1104,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
     }
 
     // report errors
+    $msgs = array();
     if (count($Error) > 0 || count($Warning) > 0) {
-        $msgs = array();
         $any_errors = false;
         foreach ($Error as $m)
             if ($m && $m !== true && $m !== 1)
@@ -1124,6 +1124,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
     ReviewForm::clear_cache();
     if (count($Error) == 0) {
         $Conf->save_session("settings_highlight", $Highlight);
+        if (!count($msgs))
+            $Conf->confirmMsg("Changes saved.");
         redirectSelf();
     }
 } else if ($Group == "rfo")
