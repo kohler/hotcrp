@@ -343,6 +343,12 @@ span.error, span.merror {
 span.hastitle {
 	border-bottom: 1px dotted #777777;
 }
+div.multimessage > div {
+	margin-top: 0.5em;
+}
+div.multimessage > div:first-child {
+	margin-top: 0;
+}
 
 
 /* Tab links, as in search form */
