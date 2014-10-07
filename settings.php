@@ -14,8 +14,7 @@ if (!isset($_REQUEST["group"])
 
 $Highlight = $Conf->session("settings_highlight", array());
 $Conf->save_session("settings_highlight", null);
-$Error = array();
-$Values = array();
+$Error = $Warning = $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST” <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
 $TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small|dim";
 
@@ -578,7 +577,7 @@ function save_decisions($set) {
 }
 
 function save_banal($set) {
-    global $Conf, $Values, $Highlight, $Error, $ConfSitePATH;
+    global $Conf, $Values, $Highlight, $Error, $Warning, $ConfSitePATH;
     if ($set)
         return true;
     if (!isset($_POST["sub_banal"])) {
@@ -721,12 +720,12 @@ function save_banal($set) {
             | CheckFormat::ERR_TEXTBLOCK | CheckFormat::ERR_BODYFONTSIZE
             | CheckFormat::ERR_BODYLEADING;
         if ($s1 != 2 || $e1 != 0 || $s2 != 1 || ($e2 & $want_e2) != $want_e2)
-            $Conf->warnMsg("Running the automated paper checker on a sample PDF file produced unexpected results.  Check that your <code>pdftohtml</code> package is up to date.  You may want to disable the automated checker for now. (Internal error information: $s1 $e1 $s2 $e2)");
+            $Warning[] = "Running the automated paper checker on a sample PDF file produced unexpected results.  Check that your <code>pdftohtml</code> package is up to date.  You may want to disable the automated checker for now. (Internal error information: $s1 $e1 $s2 $e2)";
     }
 }
 
 function save_tracks($set) {
-    global $Values, $Error, $Highlight;
+    global $Values, $Error, $Warning, $Highlight;
     if ($set)
         return true;
     $tagger = new Tagger;
@@ -1012,11 +1011,11 @@ if (isset($_REQUEST["update"]) && check_post()) {
     if (value("resp_open") > 0
         && value("au_seerev", -1) <= 0
         && value("resp_done", $Now + 1) > $Now)
-        $Conf->warnMsg("Authors are allowed to respond to the reviews, but authors can’t see the reviews.  This seems odd.");
+        $Warning[] = "Authors are allowed to respond to the reviews, but authors can’t see the reviews.  This seems odd.";
     if (value("sub_freeze", -1) == 0
         && value("sub_open") > 0
         && value("sub_sub") <= 0)
-        $Conf->warnMsg("You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This seems odd.  You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.");
+        $Warning[] = "You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This seems odd.  You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.";
     if (value("sub_open", 1) <= 0
         && $Conf->setting("sub_open") > 0
         && value_or_setting("sub_sub") <= 0)
@@ -1026,7 +1025,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
         if (value($deadline) > $Now
             && value($deadline) != $Conf->setting($deadline)
             && value_or_setting("rev_open") <= 0) {
-            $Conf->warnMsg("Review deadline set. You may also want to open the site for reviewing.");
+            $Warning[] = "Review deadline set. You may also want to open the site for reviewing.";
             $Highlight["rev_open"] = true;
             break;
         }
@@ -1034,14 +1033,14 @@ if (isset($_REQUEST["update"]) && check_post()) {
         && $Conf->setting("pcrev_soft") > 0
         && $Now < $Conf->setting("pcrev_soft")
         && count($Error) == 0)
-        $Conf->warnMsg("Authors can now see reviews and comments although it is before the review deadline.  This is sometimes unintentional.");
+        $Warning[] = "Authors can now see reviews and comments although it is before the review deadline.  This is sometimes unintentional.";
     if (value("final_open")
         && (!value("final_done") || value("final_done") > $Now)
         && value_or_setting("seedec") != Conference::SEEDEC_ALL)
-        $Conf->warnMsg("The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”");
+        $Warning[] = "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”";
     if (value("seedec") == Conference::SEEDEC_ALL
         && value_or_setting("au_seerev") == AU_SEEREV_NO)
-        $Conf->warnMsg("Authors can see decisions, but not reviews. This is sometimes unintentional.");
+        $Warning[] = "Authors can see decisions, but not reviews. This is sometimes unintentional.";
     if (has_value("msg.clickthrough_submit"))
         $Values["clickthrough_submit"] = null;
 
@@ -1101,13 +1100,20 @@ if (isset($_REQUEST["update"]) && check_post()) {
     }
 
     // report errors
-    if (count($Error) > 0) {
-        $filter_error = array();
-        foreach ($Error as $e)
-            if ($e !== true && $e !== 1)
-                $filter_error[] = $e;
-        if (count($filter_error))
-            $Conf->errorMsg(join("<br />\n", $filter_error));
+    if (count($Error) > 0 || count($Warning) > 0) {
+        $msgs = array();
+        $any_errors = false;
+        foreach ($Error as $m)
+            if ($m && $m !== true && $m !== 1)
+                $msgs[] = $any_errors = $m;
+        foreach ($Warning as $m)
+            if ($m && $m !== true && $m !== 1)
+                $msgs[] = "Warning: " . $m;
+        $mt = '<div class="multimessage"><div>' . join('</div><div>', $msgs) . '</div></div>';
+        if (count($msgs) && $any_errors)
+            $Conf->errorMsg($mt);
+        else if (count($msgs))
+            $Conf->warnMsg($mt);
     }
 
     // update the review form in case it's changed
@@ -2097,10 +2103,6 @@ foreach (array("info" => "Conference information",
     echo "</td></tr>";
 }
 echo "</table></td><td class='top'><div class='lht'>";
-
-// Good to warn multiple times about GD
-if (!function_exists("imagecreate"))
-    $Conf->warnMsg("Your PHP installation appears to lack GD support, which is required for drawing graphs.  You may want to fix this problem and restart Apache.", true);
 
 echo "<div class='aahc'>";
 doActionArea(true);
