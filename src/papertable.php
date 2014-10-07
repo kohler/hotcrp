@@ -318,16 +318,17 @@ class PaperTable {
 
             foreach (PaperOption::option_list() as $id => $o)
                 if (@$o->near_submission
-                    && $o->is_document()
+                    && $o->has_document()
                     && $prow
                     && $Me->can_view_paper_option($prow, $o)
-                    && ($oa = $prow->option($id))
-                    && $oa->value > 1
-                    && ($d = paperDocumentData($prow, $id, $oa->value))) {
-                    $pdfs[] = "<span class='papfn'>"
-                        . htmlspecialchars($o->name)
-                        . "</span>: &nbsp;"
-                        . documentDownload($d, count($pdfs) ? "dlimgsp" : "dlimg");
+                    && ($oa = $prow->option($id))) {
+                    foreach ($oa->values as $docid)
+                        if ($docid > 1 && ($d = paperDocumentData($prow, $id, $docid))) {
+                            $name = '<span class="papfn">' . htmlspecialchars($o->name) . '</span>';
+                            if ($o->type == "attachments")
+                                $name .= "/" . htmlspecialchars($d->filename);
+                            $pdfs[] = documentDownload($d, count($pdfs) ? "dlimgsp" : "dlimg", $name);
+                        }
                 }
 
             if ($prow->finalPaperStorageId > 1
@@ -742,7 +743,7 @@ class PaperTable {
                         $ox[] = documentDownload($doc, "sdlimg", htmlspecialchars($doc->filename));
                     }
                 $ox = join("<br />\n", $ox);
-            } else if ($o->is_document() && $oa->value) {
+            } else if ($o->is_document() && $oa->value > 1) {
                 $show_on = false;
                 if ($o->type == "pdf")
                     /* make fake document */

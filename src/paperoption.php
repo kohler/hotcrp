@@ -201,8 +201,8 @@ class PaperOption {
                     while (($row = edb_row($result)))
                         $optdata[$row[0] . "." . $row[1]] = $row[2];
                 }
+                $ox->values = $optsel[$o->id];
                 if ($o->takes_multiple()) {
-                    $ox->values = $optsel[$o->id];
                     if ($o->needs_data()) {
                         $ox->data = array();
                         foreach ($ox->values as $v)
