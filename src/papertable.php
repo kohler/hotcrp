@@ -759,7 +759,7 @@ class PaperTable {
             $folded = $showAllOptions && !$Me->can_view_paper_option($this->prow, $o, false);
             if (@$o->highlight || @$o->near_submission) {
                 $x = '<div class="pgsm' . ($folded ? " fx8" : "") . '">'
-                    . '<div class="papt"><span class="papfn">'
+                    . '<div class="pavt"><span class="papfn">'
                     . ($show_on ? $on : $ox) . "</span>"
                     . '<hr class="c" /></div>';
                 if ($show_on && $ox !== true)
