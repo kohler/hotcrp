@@ -56,8 +56,11 @@ class Navigation {
         }
 
         if ($is_index) {
-            if (preg_match(',\A(.*/)index(?:[.]php)?\z,i', $sitepage, $m))
+            if (preg_match(',\A(.*/)(index(?:[.]php)?)\z,i', $sitepage, $m)) {
                 $sitepage = $m[1];
+                if (self::$path && self::$path !== "/")
+                    self::$path = "/" . $m[2] . self::$path;
+            }
             $site = $sitepage;
             if (preg_match(',\A/([^/]+?)(?:[.]php)?(|/.*)\z,', self::$path, $m)) {
                 $site .= "/";
