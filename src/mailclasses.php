@@ -8,8 +8,11 @@ class MailRecipients {
     private $contact;
     private $type;
     private $sel;
+    private $papersel;
+    public $newrev_since = 0;
+    public $error = false;
 
-    function __construct($contact, $type) {
+    function __construct($contact, $type, $papersel, $newrev_since) {
         global $Conf;
         $this->contact = $contact;
 
@@ -90,6 +93,20 @@ class MailRecipients {
             $this->type = "uncmyextrev";
         else
             $this->type = key($this->sel);
+
+        $this->papersel = $papersel;
+
+        if ($this->type == "newpcrev") {
+            $t = @trim($newrev_since);
+            if ($t == "" || strtoupper($t) == "N/A" || $t == "0")
+                $this->newrev_since = 0;
+            else if (($this->newrev_since = $Conf->parse_time($t)) !== false)
+                /* OK */;
+            else {
+                $Conf->errorMsg("Invalid date.");
+                $this->error = true;
+            }
+        }
     }
 
     function selectors() {
@@ -101,15 +118,15 @@ class MailRecipients {
     }
 
     function query() {
-        global $Conf, $papersel, $checkReviewNeedsSubmit;
+        global $Conf, $checkReviewNeedsSubmit;
         $contactInfo = "firstName, lastName, email, password, roles, ContactInfo.contactId, (PCMember.contactId is not null) as isPC, preferredEmail";
         $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.shepherdContactId, Paper.capVersion, Paper.managerContactId";
 
         // paper limit
         $where = array();
         if ($this->type != "pc" && substr($this->type, 0, 3) != "pc:"
-            && $this->type != "all" && isset($papersel))
-            $where[] = "Paper.paperId in (" . join(", ", $papersel) . ")";
+            && $this->type != "all" && isset($this->papersel))
+            $where[] = "Paper.paperId in (" . join(",", $this->papersel) . ")";
 
         if ($this->type == "s")
             $where[] = "Paper.timeSubmitted>0";
@@ -144,6 +161,8 @@ class MailRecipients {
                 $where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0";
             if ($m[1] == "new")
                 $where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
+            if ($this->newrev_since)
+                $where[] = "PaperReview.timeRequested>=$this->newrev_since";
             // Withdrawn papers may not count
             if ($m[1] == "unc" || $m[1] == "new")
                 $where[] = "Paper.timeSubmitted>0";

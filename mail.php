@@ -116,7 +116,7 @@ class MailSender {
         if ($this->started)
             return;
         echo Ht::form_div(hoturl_post("mail"));
-        foreach (array("recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit") as $x)
+        foreach (array("recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit", "newrev_since") as $x)
             if (isset($_REQUEST[$x]))
                 echo Ht::hidden($x, $_REQUEST[$x]);
         if ($this->sending) {
@@ -313,6 +313,7 @@ class MailSender {
 
             $contact = Contact::make($row);
             $rest["hideReviews"] = $checkReviewNeedsSubmit && $row->reviewNeedsSubmit;
+            $rest["newrev_since"] = $this->recip->newrev_since;
             $mailer->reset($contact, $row, $rest);
             $prep = $mailer->make_preparation($template, $rest);
 
@@ -395,7 +396,8 @@ if (defval($_REQUEST, "loadtmpl")) {
 
 
 // Set recipients list, now that template is loaded
-$recip = new MailRecipients($Me, @$_REQUEST["recipients"]);
+$recip = new MailRecipients($Me, @$_REQUEST["recipients"], $papersel,
+                            @$_REQUEST["newrev_since"]);
 
 
 // Set subject and body if necessary
@@ -420,11 +422,11 @@ else
 // Check or send
 if (defval($_REQUEST, "loadtmpl"))
     /* do nothing */;
-else if (defval($_REQUEST, "check") && check_post())
+else if (defval($_REQUEST, "check") && !$recip->error && check_post())
     MailSender::check($recip);
 else if (defval($_REQUEST, "cancel"))
     /* do nothing */;
-else if (defval($_REQUEST, "send") && check_post())
+else if (defval($_REQUEST, "send") && !$recip->error && check_post())
     MailSender::send($recip);
 
 
@@ -471,33 +473,46 @@ echo Ht::select("template", $tmpl, $_REQUEST["template"], array("onchange" => "h
  <span class='hint'>Templates are mail texts tailored for common conference tasks.</span>
 </div>
 
-<div class='mail' style='float:left;margin:4px 1em 12px 0'><table>
- <tr><td class='mhnp'>To:</td><td class='mhdd'>",
+<div class='mail' style='float:left;margin:4px 1em 12px 0'><table>\n";
+
+// ** TO
+echo '<tr><td class="mhnp">To:</td><td class="mhdd">',
     $recip->selectors(),
     "<div class='g'></div>\n";
 
 // paper selection
-echo "<div id='foldpsel' class='fold8c fold9o'><table class='fx9'><tr><td>",
+echo '<div id="foldpsel" class="fold8c fold9o fold10c">';
+echo '<table class="fx9"><tr><td>',
     Ht::checkbox("plimit", 1, isset($_REQUEST["plimit"]),
                   array("id" => "plimit",
                         "onchange" => "fold('psel', !this.checked, 8)")),
     "&nbsp;</td><td>", Ht::label("Choose individual papers", "plimit");
-$Conf->footerScript("fold(\"psel\",!\$\$(\"plimit\").checked,8);"
-                    . "setmailpsel(\$\$(\"recipients\"))");
-echo "<span class='fx8'>:</span><br />
-<div class='fx8'>";
+echo "<span class='fx8'>:</span><br /><div class='fx8'>";
 $q = defval($_REQUEST, "q", "(All)");
 $q = ($q == "" ? "(All)" : $q);
 echo "Search&nbsp; <input id='q' class='",
     ($q == "(All)" ? "temptext" : "temptextoff"),
     "' type='text' size='36' name='q' value=\"", htmlspecialchars($q), "\" title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
     Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "t")),
-    "</div>
-   </td></tr></table>
-<div class='g fx9'></div></div></td>
-</tr>\n";
+    "</div></td></tr></table>\n";
+
+echo '<div class="fx10" style="margin-top:0.35em">';
+if (!@$_REQUEST["newrev_since"] && ($t = $Conf->setting("pcrev_informtime")))
+    $_REQUEST["newrev_since"] = $Conf->parseableTime($t, true);
+echo 'Assignments since:&nbsp; ',
+    Ht::entry("newrev_since", @$_REQUEST["newrev_since"],
+              array("hottemptext" => "(all)", "size" => 30)),
+    '</div>';
+
+echo '<div class="fx9 g"></div></div>';
+
+$Conf->footerScript("fold(\"psel\",!\$\$(\"plimit\").checked,8);"
+                    . "setmailpsel(\$\$(\"recipients\"))");
+
+echo "</td></tr>\n";
 $Conf->footerScript("mktemptext('q','(All)')");
 
+// ** CC, REPLY-TO
 if ($Me->privChair) {
     foreach (Mailer::$email_fields as $lcfield => $field)
         if ($lcfield !== "to" && $lcfield !== "bcc") {
@@ -511,6 +526,7 @@ if ($Me->privChair) {
         }
 }
 
+// ** SUBJECT
 echo "  <tr><td class='mhnp'>Subject:</td><td class='mhdp'>",
     "<tt>[", htmlspecialchars($Opt["shortName"]), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td></tr>
 

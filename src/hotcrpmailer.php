@@ -13,6 +13,7 @@ class HotCRPMailer extends Mailer {
     protected $reviewNumber = "";
     protected $comment_row = null;
     protected $hideReviews = false;
+    protected $newrev_since = false;
 
     protected $_tagger = null;
     protected $_statistics = null;
@@ -32,7 +33,8 @@ class HotCRPMailer extends Mailer {
             if (($v = @$rest[$k . "_contact"]))
                 $this->contacts[$k] = $v;
         $this->row = $row;
-        foreach (array("rrow", "reviewNumber", "comment_row", "hideReviews") as $k)
+        foreach (array("rrow", "reviewNumber", "comment_row", "hideReviews",
+                       "newrev_since") as $k)
             $this->$k = @$rest[$k];
         if ($this->reviewNumber === null)
             $this->reviewNumber = "";
@@ -122,10 +124,13 @@ class HotCRPMailer extends Mailer {
 
     private function get_new_assignments($contact) {
         global $Conf;
+        $since = "";
+        if ($this->newrev_since)
+            $since = " and r.timeRequested>=$this->newrev_since";
         $result = $Conf->qe("select r.paperId, p.title
                 from PaperReview r join Paper p using (paperId)
                 where r.contactId=" . $contact->contactId . "
-                and r.timeRequested>r.timeRequestNotified
+                and r.timeRequested>r.timeRequestNotified$since
                 and r.reviewSubmitted is null and r.reviewNeedsSubmit!=0
                 order by r.paperId");
         $text = "";

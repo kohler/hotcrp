@@ -2760,8 +2760,8 @@ function save_tags() {
 
 // mail
 function setmailpsel(sel) {
-    var dofold = !!sel.value.match(/^(?:pc$|pc:|all$)/);
-    fold("psel", dofold, 9);
+    fold("psel", !!sel.value.match(/^(?:pc$|pc:|all$)/), 9);
+    fold("psel", !sel.value.match(/^new.*rev$/), 10);
 }
 
 
