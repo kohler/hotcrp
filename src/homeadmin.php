@@ -52,7 +52,7 @@ function admin_home_messages() {
         $assigntime = $Conf->setting("pcrev_assigntime");
         $result = $Conf->qe("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1");
         if (edb_nrows($result))
-            $m[] = "PC review assignments have changed. You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>. <a href=\"" . hoturl_post("index", "clearnewpcrev=$assigntime") . "\">(Clear&nbsp;this&nbsp;message)</a>";
+            $m[] = "PC review assignments have changed.&nbsp; <a href=\"" . hoturl("mail", "template=newpcrev") . "\">Send review assignment notifications</a> &nbsp;<span class=\"barsep\">|</span>&nbsp; <a href=\"" . hoturl_post("index", "clearnewpcrev=$assigntime") . "\">Mark as notified</a>";
         else
             $Conf->save_setting("pcrev_informtime", $assigntime);
     }
