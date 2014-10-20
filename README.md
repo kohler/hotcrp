@@ -203,7 +203,7 @@ For instance:
                                              ^^^^^^^^
                                            conference ID
 
-The conference ID can only contain characters in [-_.A-Za-z0-9], and
+The conference ID can only contain characters in `[-_.A-Za-z0-9]`, and
 it must not start with a period. HotCRP will check for funny
 conference IDs and replace them with `__invalid__`.
 
