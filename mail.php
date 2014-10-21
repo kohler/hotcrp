@@ -396,7 +396,7 @@ if (defval($_REQUEST, "loadtmpl")) {
 
 
 // Set recipients list, now that template is loaded
-$recip = new MailRecipients($Me, @$_REQUEST["recipients"], $papersel,
+$recip = new MailRecipients($Me, @$_REQUEST["recipients"], @$papersel,
                             @$_REQUEST["newrev_since"]);
 
 
