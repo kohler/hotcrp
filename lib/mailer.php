@@ -462,9 +462,9 @@ class Mailer {
         $to = MimeText::encode_email_header("To: ", $to);
         if (strpos($to, MAILER_EOL) === false) {
             unset($headers["to"]);
-            $to = substr($to, 4);
+            $to = substr($to, 4); // skip "To: "
         } else {
-            $headers["to"] = $to;
+            $headers["to"] = $to . MAILER_EOL;
             $to = "";
         }
 
@@ -482,7 +482,8 @@ class Mailer {
 
         } else if (!$Opt["sendEmail"]
                    && !preg_match('/\Aanonymous\d*\z/', $to)) {
-            $text = ($to ? "To: $to\r\n" : "") . join("", array_slice($headers, 2))
+            unset($headers["mime-version"], $headers["content-type"]);
+            $text = ($to ? "To: $to\r\n" : "") . join("", $headers)
                 . "Subject: $prep->subject\r\n\r\n" . $prep->body;
             return $Conf->infoMsg("<pre>" . htmlspecialchars($text) . "</pre>");
         }
