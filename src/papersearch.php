@@ -1377,7 +1377,7 @@ class PaperSearch {
                 unset($this->_ssRecursion[$word]);
             } else
                 $qe = null;
-            if (!$qe && $searchq === false)
+            if (!$qe && $nextq === false)
                 $this->warn("Saved search “" . htmlspecialchars($word) . "” is incorrectly defined in terms of itself.");
             else if (!$qe && !$Conf->setting_data("ss:$word"))
                 $this->warn("There is no “" . htmlspecialchars($word) . "” saved search.");
