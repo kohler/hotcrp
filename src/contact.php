@@ -1299,7 +1299,8 @@ class Contact {
             return false;
         $rights = $this->rights($prow, "any");
         // policy
-        if ($rights->allow_author_view
+        if ($this->privChair
+            || $rights->allow_author_view
             || ($rights->review_type
                 && $Conf->timeReviewerViewSubmittedPaper())
             || ($rights->allow_pc_broad
