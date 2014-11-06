@@ -761,7 +761,7 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
     global $Conf;
 
     $q = "select ContactInfo.contactId, firstName, lastName, email,
-                password, roles, defaultWatch,
+                password, contactTags, roles, defaultWatch,
                 PaperReview.reviewType myReviewType,
                 PaperReview.reviewSubmitted myReviewSubmitted,
                 PaperReview.reviewNeedsSubmit myReviewNeedsSubmit,

@@ -1596,11 +1596,10 @@ class Conference {
                 return null;
             }
         }
-        $contactTags = "ContactInfo.contactTags";
 
         $q = "select PaperReview.*,
                 ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.roles as contactRoles,
-                $contactTags,
+                ContactInfo.contactTags,
                 ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail";
         if (isset($selector["ratings"]))
             $q .= ",
