@@ -142,7 +142,7 @@ class UserStatus {
         // Regularize names
         $name = Text::analyze_name($cj);
         foreach (array("firstName", "lastName", "email") as $k)
-            if (isset($name->$k))
+            if ($name->$k !== "" && $name->$k !== false)
                 $cj->$k = $name->$k;
 
         // Canonicalize keys
