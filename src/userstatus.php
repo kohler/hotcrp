@@ -147,6 +147,7 @@ class UserStatus {
 
         // Canonicalize keys
         foreach (array("preferredEmail" => "preferred_email",
+                       "institution" => "affiliation",
                        "voicePhoneNumber" => "phone",
                        "addressLine1" => "address",
                        "zipCode" => "zip", "postal_code" => "zip") as $x => $y)

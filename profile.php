@@ -657,13 +657,14 @@ if ($newProfile) {
     echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", 2),
         "</td><td><a href=\"#\" onclick=\"return fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
         "<tr class='fx2'><td></td><td>",
-        "<p>Upload a CSV file with one line per account. The header must define an <code>email</code> field. Other fields can include <code>name</code>, <code>first</code>, <code>last</code>, and <code>affiliation</code>.  Each new account’s role and PC information is set from the form below.  Example:</p>\n",
+        "<p>Upload a CSV file with one line per account. The header must define an <code>email</code> field. Other fields can include <code>name</code>, <code>first</code>, <code>last</code>, and <code>affiliation</code>. Example:</p>\n",
         "<pre class='entryexample'>
-name,email,affiliation
-John Adams,john@earbox.org,UC Berkeley
+name,email,affiliation,roles
+John Adams,john@earbox.org,UC Berkeley,pc
 \"Adams, John Quincy\",quincy@whitehouse.gov
 </pre>\n",
-        "<div class='g'></div>Upload: <input type='file' name='bulk' size='30' />",
+        '<p>If you don’t give a <code>roles</code> column, role information is set from the form below.</p>',
+        "<p><input type='file' name='bulk' size='30' /></p>",
         "</td></tr></table></div>\n\n";
 }
 
