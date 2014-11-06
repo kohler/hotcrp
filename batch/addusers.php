@@ -8,7 +8,7 @@ if (isset($arg["h"]) || isset($arg["help"])
     || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
     $status = isset($arg["h"]) || isset($arg["help"]) ? 0 : 1;
     fwrite($status ? STDERR : STDOUT,
-           "Usage: php batch/addusers.php [-n CONFID] [--modify] [--no-email] [JSONFILE | -e JSON]\n");
+           "Usage: php batch/addusers.php [-n CONFID] [--modify] [--no-email] [JSONFILE | CSVFILE | -e JSON]\n");
     exit($status);
 }
 if (isset($arg["modify"]))
