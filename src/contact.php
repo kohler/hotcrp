@@ -96,8 +96,10 @@ class Contact {
         foreach (array("defaultWatch", "passwordTime") as $k)
             if (isset($user->$k))
                 $this->$k = (int) $user->$k;
-        if (isset($user->contactTags))
+        if (property_exists($user, "contactTags"))
             $this->contactTags = $user->contactTags;
+        else
+            $this->contactTags = false;
         if (isset($user->activity_at))
             $this->activity_at = (int) $user->activity_at;
         else if (isset($user->lastLogin))
@@ -399,7 +401,13 @@ class Contact {
     }
 
     function has_tag($t) {
-        return $this->contactTags && strpos($this->contactTags, " $t ") !== false;
+        if ($this->contactTags)
+            return strpos($this->contactTags, " $t ") !== false;
+        if ($this->contactTags === false) {
+            trigger_error(caller_landmark(1, "/^Conference::/") . ": Contact $this->email contactTags missing");
+            $this->contactTags = null;
+        }
+        return false;
     }
 
     function update_cached_roles() {
