@@ -304,6 +304,7 @@ class UserStatus {
 
     function save($cj, $old_user = null, $actor = null) {
         global $Conf, $Now;
+        assert(is_object($cj));
 
         if (is_int(@$cj->id) && $cj->id && !$old_user)
             $old_user = Contact::find_by_id($cj->id);
