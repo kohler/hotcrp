@@ -25,6 +25,9 @@ class ContactList extends BaseList {
     const FIELD_LEADS = 13;
     const FIELD_SHEPHERDS = 14;
     const FIELD_TAGS = 15;
+    const FIELD_COLLABORATORS = 16;
+
+    public static $folds = array("topics", "aff", "tags", "collab");
 
     var $showHeader;
     var $sortField;
@@ -35,9 +38,7 @@ class ContactList extends BaseList {
     var $contact;
     var $scoreMax;
     var $limit;
-    var $haveAffrow;
-    var $haveTopics;
-    var $haveTags;
+    public $have_folds = array();
     var $rf;
     var $listNumber;
     var $contactLinkArgs;
@@ -56,7 +57,6 @@ class ContactList extends BaseList {
         else
             $this->sortField = null;
         $this->sortable = $sortable;
-        $this->haveAffrow = $this->haveTopics = $this->haveTags = null;
         $this->rf = reviewForm();
 
         $this->contact = $contact;
@@ -78,10 +78,8 @@ class ContactList extends BaseList {
             && $fieldId != self::FIELD_AFFILIATION
             && $fieldId != self::FIELD_AFFILIATION_ROW)
             return false;
-        if ($fieldId == self::FIELD_HIGHTOPICS || $fieldId == self::FIELD_LOWTOPICS) {
-            $queryOptions['topics'] = true;
-            $this->haveTopics = true;
-        }
+        if ($fieldId == self::FIELD_HIGHTOPICS || $fieldId == self::FIELD_LOWTOPICS)
+            $this->have_folds["topics"] = $queryOptions["topics"] = true;
         if ($fieldId == self::FIELD_REVIEWS)
             $queryOptions["reviews"] = true;
         if ($fieldId == self::FIELD_LEADS)
@@ -98,9 +96,11 @@ class ContactList extends BaseList {
         if ($fieldId == self::FIELD_REVIEW_PAPERS)
             $queryOptions["repapers"] = $queryOptions["reviews"] = true;
         if ($fieldId == self::FIELD_AFFILIATION_ROW)
-            $this->haveAffrow = true;
+            $this->have_folds["aff"] = true;
         if ($fieldId == self::FIELD_TAGS)
-            $this->haveTags = true;
+            $this->have_folds["tags"] = true;
+        if ($fieldId == self::FIELD_COLLABORATORS)
+            $this->have_folds["collab"] = true;
         if (self::_normalizeField($fieldId) == self::FIELD_SCORE) {
             // XXX scoresOk
             $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
@@ -246,6 +246,8 @@ class ContactList extends BaseList {
             return "Assigned papers";
         case self::FIELD_TAGS:
             return "Tags";
+        case self::FIELD_COLLABORATORS:
+            return "Collaborators";
         case self::FIELD_SCORE: {
             $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
             return $this->rf->field($scoreName)->web_abbreviation();
@@ -393,6 +395,18 @@ class ContactList extends BaseList {
                     $t = trim(preg_replace('/ [\d~]+~\S+/', '', $t));
             }
             return trim($t);
+        case self::FIELD_COLLABORATORS:
+            if (!$this->contact->isPC || !($row->roles & Contact::ROLE_PC))
+                return "";
+            $t = array();
+            foreach (explode("\n", $row->collaborators) as $collab) {
+                if (preg_match(',\A(.*?)\s*(\(.*\))\s*\z,', $collab, $m))
+                    $t[] = '<span class="nw">' . htmlspecialchars($m[1])
+                        . ' <span class="auaff">' . htmlspecialchars($m[2]) . '</span></span>';
+                else if (($collab = trim($collab)) !== "" && strcasecmp($collab, "None"))
+                    $t[] = '<span class="nw">' . htmlspecialchars($collab) . '</span>';
+            }
+            return join("; ", $t);
         case self::FIELD_SCORE:
             if (!($row->roles & Contact::ROLE_PC)
                 && !$this->contact->privChair
@@ -426,24 +440,24 @@ class ContactList extends BaseList {
         case "pc":
         case "admin":
         case "pcadmin":
-            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_LEADS, self::FIELD_SHEPHERDS));
+            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_LEADS, self::FIELD_SHEPHERDS));
         case "pcadminx":
-            return array($listname, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS);
+            return array($listname, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS);
           case "re":
           case "resub":
-            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS));
+            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS));
           case "ext":
           case "extsub":
-            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
+            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
           case "req":
-            return $this->addScores(array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
+            return $this->addScores(array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
           case "au":
           case "aurej":
           case "auacc":
           case "auuns":
-            return array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
+            return array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_PAPERS, self::FIELD_COLLABORATORS);
           case "all":
-            return array("all", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_PAPERS);
+            return array("all", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_PAPERS, self::FIELD_COLLABORATORS);
           default:
             return null;
         }
@@ -748,18 +762,11 @@ class ContactList extends BaseList {
         }
 
         $foldclasses = array();
-        if ($this->haveAffrow !== null) {
-            $this->haveAffrow = strpos(displayOptionsSet("ppldisplay"), " aff ") !== false;
-            $foldclasses[] = ($this->haveAffrow ? "fold2o" : "fold2c");
-        }
-        if ($this->haveTopics !== null) {
-            $this->haveTopics = strpos(displayOptionsSet("ppldisplay"), " topics ") !== false;
-            $foldclasses[] = ($this->haveTopics ? "fold1o" : "fold1c");
-        }
-        if ($this->haveTags !== null) {
-            $this->haveTags = strpos(displayOptionsSet("ppldisplay"), " tags ") !== false;
-            $foldclasses[] = ($this->haveTags ? "fold3o" : "fold3c");
-        }
+        foreach (self::$folds as $k => $fold)
+            if (@$this->have_folds[$fold] !== null) {
+                $this->have_folds[$fold] = strpos(displayOptionsSet("ppldisplay"), " $fold ") !== false;
+                $foldclasses[] = "fold" . ($k + 1) . ($this->have_folds[$fold] ? "o" : "c");
+            }
 
         $x = "<table id=\"foldppl\" class=\"ppltable plt_" . htmlspecialchars($listname);
         if ($foldclasses)
@@ -867,5 +874,6 @@ $contactListFields = array(
         ContactList::FIELD_SCORE => array('score', 1, 1),
         ContactList::FIELD_LEADS => array('revstat', 1, 1),
         ContactList::FIELD_SHEPHERDS => array('revstat', 1, 1),
-        ContactList::FIELD_TAGS => array('tags', 5, 0)
+        ContactList::FIELD_TAGS => array('tags', 5, 0),
+        ContactList::FIELD_COLLABORATORS => array('collab', 6, 0)
         );

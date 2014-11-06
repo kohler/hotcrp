@@ -216,9 +216,8 @@ if ($Me->privChair && @$_REQUEST["modifygo"] && check_post() && isset($papersel)
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {
     $Conf->save_session("ppldisplay", "");
-    displayOptionsSet("ppldisplay", "aff", defval($_REQUEST, "showaff", 0));
-    displayOptionsSet("ppldisplay", "topics", defval($_REQUEST, "showtop", 0));
-    displayOptionsSet("ppldisplay", "tags", defval($_REQUEST, "showtags", 0));
+    foreach (ContactList::$folds as $key)
+        displayOptionsSet("ppldisplay", $key, defval($_REQUEST, "show$key", 0));
     $Conf->save_session("pplscores", 0);
 }
 if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
@@ -270,21 +269,13 @@ if (count($tOpt) > 1) {
     echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
     $Conf->footerScript('foldmap.ppl={"aff":2,"tags":3,"topics":1};');
-    if ($pl->haveAffrow !== null) {
-        echo Ht::checkbox("showaff", 1, $pl->haveAffrow,
-                           array("onchange" => "fold('ppl',!this.checked,'aff')")),
-            "&nbsp;", Ht::label("Affiliations"), "<br />\n";
-    }
-    if ($pl->haveTags !== null) {
-        echo Ht::checkbox("showtags", 1, $pl->haveTags,
-                           array("onchange" => "fold('ppl',!this.checked,'tags')")),
-            "&nbsp;", Ht::label("Tags"), "<br />\n";
-    }
-    if ($pl->haveTopics !== null) {
-        echo Ht::checkbox("showtop", 1, $pl->haveTopics,
-                           array("onchange" => "fold('ppl',!this.checked,'topics')")),
-            "&nbsp;", Ht::label("Topic interests"), "<br />\n";
-    }
+    foreach (array("aff" => "Affiliations", "collab" => "Collaborators",
+                   "tags" => "Tags", "topics" => "Topics") as $fold => $text)
+        if (@$pl->have_folds[$fold] !== null) {
+            echo Ht::checkbox("show$fold", 1, $pl->have_folds[$fold],
+                               array("onchange" => "fold('ppl',!this.checked,'$fold')")),
+                "&nbsp;", Ht::label($text), "<br />\n";
+        }
     echo "</td>";
     if (isset($pl->scoreMax)) {
         echo "<td class='pad'>";
