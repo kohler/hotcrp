@@ -32,7 +32,7 @@ function handle_settinginfo($text, $f) {
 
 if (($setting_include = @$Opt["settinginfo_include"])) {
     $setting_include = is_array($setting_include) ? $setting_include : array($setting_include);
-    foreach ($settinginfo_include as $k => $si) {
+    foreach ($setting_include as $k => $si) {
         if (preg_match(',\A\s*\{\s*\",s', $si))
             handle_settinginfo($si, $k);
         else
