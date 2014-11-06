@@ -30,10 +30,9 @@ function handle_settinginfo($text, $f) {
         trigger_error("settinginfo_include($f) parse error: " . json_last_error_msg());
 }
 
-if (@$Opt["settinginfo_include"]) {
-    $setting_include = $Opt["settinginfo_include"];
+if (($setting_include = @$Opt["settinginfo_include"])) {
     $setting_include = is_array($setting_include) ? $setting_include : array($setting_include);
-    foreach (@$Opt["settinginfo_include"] as $k => $si) {
+    foreach ($settinginfo_include as $k => $si) {
         if (preg_match(',\A\s*\{\s*\",s', $si))
             handle_settinginfo($si, $k);
         else
