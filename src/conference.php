@@ -900,7 +900,8 @@ class Conference {
         return $s == AU_SEEREV_ALWAYS || ($s > 0 && !$reviewsOutstanding);
     }
     function timeAuthorRespond() {
-        return $this->deadlinesBetween("resp_open", "resp_done", "resp_grace");
+        return $this->deadlinesBetween("resp_open", "resp_done", "resp_grace")
+            && $this->timeAuthorViewReviews();
     }
     function timeAuthorViewDecision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;

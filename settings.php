@@ -1026,11 +1026,11 @@ if (isset($_REQUEST["update"]) && check_post()) {
     if (value("resp_open") > 0
         && value("au_seerev", -1) <= 0
         && value("resp_done", $Now + 1) > $Now)
-        $Warning[] = "Authors are allowed to respond to the reviews, but authors can’t see the reviews.  This seems odd.";
+        $Warning[] = "The site will collect responses once you allow authors to see the reviews.";
     if (value("sub_freeze", -1) == 0
         && value("sub_open") > 0
         && value("sub_sub") <= 0)
-        $Warning[] = "You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This seems odd.  You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.";
+        $Warning[] = "You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This is sometimes unintentional.  You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.";
     if (value("sub_open", 1) <= 0
         && $Conf->setting("sub_open") > 0
         && value_or_setting("sub_sub") <= 0)
