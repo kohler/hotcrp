@@ -20,15 +20,26 @@ $TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small|dim
 
 // read setting information
 $SettingInfo = json_decode(file_get_contents("$ConfSitePATH/src/settinginfo.json"), true);
+
+function handle_settinginfo($text, $f) {
+    global $SettingInfo;
+    $j = json_decode($text, true);
+    if (is_array($j))
+        $SettingInfo = array_replace_recursive($SettingInfo, $j);
+    else if (json_last_error() !== JSON_ERROR_NONE)
+        trigger_error("settinginfo_include($f) parse error: " . json_last_error_msg());
+}
+
 if (@$Opt["settinginfo_include"])
-    foreach (expand_includes($ConfSitePATH, $Opt["settinginfo_include"]) as $f)
-        if (($x = file_get_contents($f))) {
-            $x = json_decode($x, true);
-            if (is_array($x))
-                $SettingInfo = array_replace_recursive($SettingInfo, $x);
-            else if (json_last_error() !== JSON_ERROR_NONE)
-                trigger_error("settinginfo_include($f) parse error: " . json_last_error_msg());
-        }
+    foreach (@$Opt["settinginfo_include"] as $k => $si) {
+        if (preg_match(',\A\s*\{\s*\",s', $si))
+            handle_settinginfo($si, $k);
+        else
+            foreach (expand_includes($ConfSitePATH, $si) as $f)
+                if (($x = file_get_contents($f)))
+                    handle_settinginfo($x, $f);
+    }
+
 $SettingInfo = array_to_object_recursive($SettingInfo);
 
 // maybe set $Opt["contactName"] and $Opt["contactEmail"]
