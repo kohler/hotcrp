@@ -1223,7 +1223,7 @@ function doRadio($name, $varr) {
         $x = 0;
     echo "<table>\n";
     foreach ($varr as $k => $text) {
-        echo "<tr><td class='nowrap'>", Ht::radio($name, $k, $k == $x, setting_js($name)),
+        echo "<tr><td class='nowrap'>", Ht::radio($name, $k, $k == $x, setting_js($name, array("id" => "{$name}_{$k}"))),
             "&nbsp;</td><td>";
         if (is_array($text))
             echo setting_label($name, $text[0], true), "<br /><small>", $text[1], "</small>";
