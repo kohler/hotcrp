@@ -30,7 +30,7 @@ if (isset($arg["e"])) {
 if ($content === false) {
     fwrite(STDERR, "$file: Read error\n");
     exit(1);
-} else if (!preg_match(',\A\s*\{,i', $content)) {
+} else if (!preg_match(',\A\s*[\[\{],i', $content)) {
     $csv = new CsvParser($content);
     $csv->set_comment_chars("#%");
     $line = $csv->next();
