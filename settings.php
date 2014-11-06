@@ -1325,7 +1325,7 @@ function doAccGroup() {
 
     echo "<h3 class=\"settings g\">Program committee &amp; system administrators</h3>";
 
-    echo "<p><a href='", hoturl("profile", "u=new"), "' class='button'>Create account</a> &nbsp;|&nbsp; ",
+    echo "<p><a href='", hoturl("profile", "u=new&amp;role=pc"), "' class='button'>Create PC account</a> &nbsp;|&nbsp; ",
         "Select a user’s name to edit a profile.</p>\n";
     $pl = new ContactList($Me, false);
     echo $pl->text("pcadminx", hoturl("users", "t=pcadmin"));

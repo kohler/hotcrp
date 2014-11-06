@@ -546,6 +546,9 @@ if ($useRequest) {
 else
     $formcj = $UserStatus->user_to_json($Acct);
 $pcrole = @($formcj->roles->chair) ? "chair" : (@($formcj->roles->pc) ? "pc" : "no");
+if (!$useRequest && $Me->privChair && $newProfile
+    && (@$_REQUEST["role"] == "chair" || @$_REQUEST["role"] == "pc"))
+    $pcrole = $_REQUEST["role"];
 
 
 $params = array();
