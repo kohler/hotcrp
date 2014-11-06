@@ -805,6 +805,7 @@ class Conference {
         }
         if (@$Opt["dateFormatTimezoneRemover"])
             $d = preg_replace($Opt["dateFormatTimezoneRemover"], " ", $d);
+        $d = preg_replace('/\butc([-+])/i', 'GMT$1', $d);
         return strtotime($d, $reference);
     }
 

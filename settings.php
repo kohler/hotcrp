@@ -15,7 +15,7 @@ if (!isset($_REQUEST["group"])
 $Highlight = $Conf->session("settings_highlight", array());
 $Conf->save_session("settings_highlight", null);
 $Error = $Warning = $Values = array();
-$DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST” <a href='http://www.gnu.org/software/tar/manual/html_section/Date-input-formats.html'>(more examples)</a>";
+$DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST”, “2014-10-31 00:00 UTC-1100” <a href='http://php.net/manual/en/datetime.formats.php'>(more examples)</a>";
 $TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small|dim";
 
 // read setting information
