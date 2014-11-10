@@ -119,7 +119,7 @@ class MailRecipients {
 
     function query() {
         global $Conf, $checkReviewNeedsSubmit;
-        $contactInfo = "firstName, lastName, email, password, roles, ContactInfo.contactId, (PCMember.contactId is not null) as isPC, preferredEmail";
+        $contactInfo = "ContactInfo.contactId, firstName, lastName, email, password, roles, (PCMember.contactId is not null) as isPC, contactTags, preferredEmail";
         $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.shepherdContactId, Paper.capVersion, Paper.managerContactId";
 
         // paper limit
