@@ -150,6 +150,7 @@ if (isset($_REQUEST["saveassignment"]) && check_post()
     $assignset = new AssignmentSet($Me, false);
     $assignset->parse($_POST["file"], @$_POST["filename"],
                       assignment_defaults(), "keep_browser_alive");
+    $assignset->execute();
     finish_browser_alive();
 }
 
