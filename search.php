@@ -312,7 +312,6 @@ function tagaction() {
             $source_tag = (substr($tag, 0, 2) == "~~" ? substr($tag, 2) : $tag);
         if ($tagger->check($tag, Tagger::NOPRIVATE | Tagger::NOVALUE)
             && $tagger->check($source_tag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
-            ini_set("max_execution_time", 1200);
             $r = new PaperRank($source_tag, $tag, $papers,
                                defval($_REQUEST, "tagcr_gapless"),
                                "Search", "search");

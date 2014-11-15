@@ -314,6 +314,7 @@ class PaperRank {
             // set new state as old state, using reference to avoid expensive copy
             $stateDist =& $newStateDist;
             unset($newStateDist);  // gotta love PHP; if we don't do this the initialization of $newStateDist will clobber $stateDist
+            set_time_limit(30);
         }
 
         // extract ranks from stationary distribution
@@ -558,6 +559,7 @@ class PaperRank {
         while (count($stack)) {
             $this->_schulzeStep($stack);
             $this->_info();
+            set_time_limit(30);
         }
 
         // correct output rankings for papers with no input rankings
@@ -647,8 +649,10 @@ class PaperRank {
         $this->_info();
 
         // recurse on the non-Schwartz set
-        if (count($nonschwartz) != 0)
+        if (count($nonschwartz) != 0) {
+            set_time_limit(30);
             $this->_civsrpStep($nonschwartz, $defeat);
+        }
     }
 
     function civsrp() {

@@ -185,6 +185,7 @@ class MailSender {
         $cbkey = "c" . join("_", $prep->contacts) . "p" . $prep->paperId;
         if ($this->sending && !defval($_REQUEST, $cbkey))
             return;
+        set_time_limit(30);
         $this->echo_prologue();
 
         self::fix_body($prep);
