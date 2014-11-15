@@ -4,8 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class AssignmentState {
-    private $olds = array();
-    private $news = array();
+    private $st = array();
     private $loaded = array();
     private $extra = array();
     public $contact;
@@ -18,41 +17,25 @@ class AssignmentState {
             $loader->load_state($this);
         }
     }
-    private function pos($x, $k) {
-        if ($k === null)
-            return 0;
-        $l = 0;
-        $r = count($x);
-        while ($l < $r) {
-            $m = $l + ($r - $l) / 2;
-            $cid = @$x[$m]["cid"];
-            if ($cid === null || $k <= $cid)
-                $r = $m;
-            else
-                $l = $m + 1;
-        }
-        return $l;
+    private function pidstate($pid) {
+        if (!isset($this->st[$pid]))
+            $this->st[$pid] = (object) array("olds" => array(),
+                                             "news" => array(),
+                                             "sorted" => false);
+        return $this->st[$pid];
     }
     public function load($x) {
         assert(isset($x["pid"]));
-        $pid = $x["pid"];
-        $k = isset($x["cid"]) ? $x["cid"] : "_";
-        if (!isset($this->olds[$pid]))
-            $this->olds[$pid] = $this->news[$pid] = array();
-        $this->olds[$pid][$k][] = $x;
-        $this->news[$pid][$k][] = $x;
+        $st = $this->pidstate($x["pid"]);
+        $st->olds[] = $x;
+        $st->news[] = $x;
+        $st->sorted = false;
     }
     private function pid_keys($q) {
         if (isset($q["pid"]))
             return array($q["pid"]);
         else
-            return array_keys($this->news);
-    }
-    private function cid_keys($q, &$bypid) {
-        if (isset($q["cid"]))
-            return array($q["cid"]);
-        else
-            return array_keys($bypid);
+            return array_keys($this->st);
     }
     public function match($x, $q) {
         foreach ($q as $k => $v) {
@@ -68,23 +51,47 @@ class AssignmentState {
         }
         return true;
     }
+    static public function sorter($a, $b) {
+        $x = $a && isset($a["cid"]) ? $a["cid"] : null;
+        $y = $b && isset($b["cid"]) ? $b["cid"] : null;
+        return $x === $y ? 0 : ($x === null || $x < $y ? -1 : 1);
+    }
+    private function pos($st, $k) {
+        if (!$st->sorted) {
+            usort($st->news, "AssignmentState::sorter");
+            $st->sorted = true;
+        }
+        $l = 0;
+        $r = count($st->news);
+        $T = microtime(true);
+        while ($l < $r) {
+            $m = $l + (int) (($r - $l) >> 1);
+            $cid = @$st->news[$m]["cid"];
+            if ($cid === null || $k <= $cid)
+                $r = $m;
+            else
+                $l = $m + 1;
+        }
+        return $l;
+    }
     private function query_remove($q, $remove) {
         $res = array();
         foreach ($this->pid_keys($q) as $pid) {
-            $bypid =& $this->news[$pid];
-            foreach ($this->cid_keys($q, $bypid) as $k) {
-                if (!isset($bypid[$k]))
-                    continue;
-                $byk =& $bypid[$k];
-                for ($i = 0; $i != count($byk); ++$i)
-                    if ($this->match($byk[$i], $q)) {
-                        $res[] = $byk[$i];
-                        if ($remove) {
-                            array_splice($byk, $i, 1);
-                            --$i;
-                        }
-                    }
+            $st = $this->pidstate($pid);
+            if (is_int(@$q["cid"])) {
+                $l = $this->pos($st, $q["cid"]);
+                $r = $this->pos($st, $q["cid"] + 1);
+            } else {
+                $l = 0;
+                $r = count($st->news);
             }
+            for ($i = $l; $i != $r; ++$i)
+                if (!@$st->news[$i]["#"]
+                    && $this->match($st->news[$i], $q)) {
+                    $res[] = $st->news[$i];
+                    if ($remove)
+                        $st->news[$i]["#"] = true;
+                }
         }
         return $res;
     }
@@ -96,39 +103,37 @@ class AssignmentState {
     }
     public function add($x) {
         assert(isset($x["pid"]));
-        $k = isset($x["cid"]) ? $x["cid"] : "_";
-        $this->news[$x["pid"]][$k][] = $x;
+        $st = $this->pidstate($x["pid"]);
+        if ($st->sorted) {
+            $k = is_int(@$x["cid"]) ? $x["cid"] : null;
+            $pos = $this->pos($st, $k);
+            if ($pos < count($st->news) && @$st->news[$pos]["#"])
+                $st->news[$pos] = $x;
+            else
+                array_splice($st->news, $pos, 0, array($x));
+        } else
+            $st->news[] = $x;
     }
     public function diff() {
         $diff = array();
-        $N= 0;
-        foreach ($this->news as $pid => $bypid) {
-            if (++$N < 10) {
-                error_log(json_encode($bypid));
-                error_log(json_encode($this->olds[$pid]));
-                error_log(json_encode($keys));
-                echo htmlspecialchars(json_encode($keys));
+        foreach ($this->st as $pid => $st) {
+            $news = $st->news;
+            foreach ($st->olds as $ox) {
+                for ($i = 0; $i != count($news); ++$i)
+                    if (!@$news[$i]["#"]
+                        && $this->match_keys($ox, $news[$i])) {
+                        if (!$this->match($ox, $news[$i]))
+                            @($diff[$pid][] = array($ox, $news[$i]));
+                        array_splice($news, $i, 1);
+                        $i = false;
+                        break;
+                    }
+                if ($i !== false)
+                    @($diff[$pid][] = array($ox, null));
             }
-            foreach ($bypid as $k => $byk) {
-                if (isset($this->olds[$pid]) && isset($this->olds[$pid][$k]))
-                    $olds = $this->olds[$pid][$k];
-                else
-                    $olds = array();
-                foreach ($olds as $ox) {
-                    for ($i = 0; $i != count($byk); ++$i)
-                        if ($this->match_keys($ox, $byk[$i])) {
-                            if (!$this->match($ox, $byk[$i]))
-                                @($diff[$pid][] = array($ox, $byk[$i]));
-                            array_splice($byk, $i, 1);
-                            $i = false;
-                            break;
-                        }
-                    if ($i !== false)
-                        @($diff[$pid][] = array($ox, null));
-                }
-                foreach ($byk as $nx)
+            foreach ($news as $nx)
+                if (!@$nx["#"])
                     @($diff[$pid][] = array(null, $nx));
-            }
         }
         return $diff;
     }
@@ -522,8 +527,6 @@ class PreferenceAssigner extends Assigner {
     const TYPE = "pref";
     private $pref;
     private $exp;
-    public static $T0 = 0;
-    public static $T1 = 0;
     function __construct($pid, $contact, $pref, $exp) {
         parent::__construct($pid, $contact);
         $this->pref = $pref;
@@ -561,13 +564,9 @@ class PreferenceAssigner extends Assigner {
             $ppref[1] = $pexp[1];
         }
 
-        $T = microtime(true);
         $state->remove(array("type" => self::TYPE, "pid" => $pid, "cid" => $contact->contactId ? : null));
-        $TP = microtime(true);
-        self::$T0 += $TP - $T;
         if ($ppref[0] || $ppref[1] !== null)
             $state->add(array("type" => self::TYPE, "pid" => $pid, "cid" => $contact->contactId ? : null, "_pref" => $ppref[0], "_exp" => $ppref[1]));
-        self::$T1 += microtime(true) - $TP;
     }
     function realize($old, $new, $cmap, $state) {
         $x = $new ? $new : $old;
@@ -848,12 +847,9 @@ class AssignmentSet {
 
         // parse file
         $N = 0;
-        $T0 = $T1 = $T2 = 0;
-        $T = microtime(true);
         while (($req = $csv->next()) !== false) {
             // parse paper
-            if (++$N % 30 == 0) error_log("reading $pfield / $T0 $T1 $T2 / " . PreferenceAssigner::$T0 . " / " . PreferenceAssigner::$T1);
-            if ($N % 30 == 0)
+            if (++$N % 100 == 0)
                 set_time_limit(30);
             $pfield = @trim($req["paper"]);
             if ($pfield !== "" && ctype_digit($pfield))
@@ -895,17 +891,11 @@ class AssignmentSet {
                 $this->error($csv->lineno(), "unknown action “" . htmlspecialchars($action) . "”");
                 continue;
             }
-            $TP = microtime(true);
-            $T0 += $TP - $T;
-            $T = $TP;
 
             // clean user parts
             $contacts = $this->lookup_users($req, $pc_by_email, $assigner, $csv);
             if ($contacts === false)
                 continue;
-            $TP = microtime(true);
-            $T1 += $TP - $T;
-            $T = $TP;
 
             // check conflicts and perform assignment
             foreach ($npids as $p)
@@ -917,21 +907,15 @@ class AssignmentSet {
                     else if (($err = $assigner->apply($p, $contact, $req, $this->astate, $defaults)))
                         $this->error($csv->lineno(), $err);
                 }
-            $TP = microtime(true);
-            $T2 += $TP - $T;
-            $T = $TP;
         }
 
         // create assigners for difference
-        error_log("examining dif");
         foreach ($this->astate->diff() as $pid => $difflist)
             foreach ($difflist as $diff) {
                 $x = $diff[1] ? $diff[1] : $diff[0];
                 $assigner = Assigner::find($x["type"]);
                 $this->assigners[] = $assigner->realize($diff[0], $diff[1], $this->cmap, $this->astate);
             }
-
-        error_log("done");
     }
 
     function echo_unparse_display($papersel = null) {
