@@ -254,9 +254,9 @@ class PaperInfo {
         if ($this->allReviewerPreference !== "" && $this->allReviewerPreference !== null) {
             $p = preg_split('/[ ,]/', $this->allReviewerPreference);
             for ($i = 0; $i < count($p); $i += 3) {
-                if ($p[$i+1] != "0" || $p[$i+2] != ".")
-                    $x[(int) $p[$i]] = array((int) $p[$i+1],
-                                             $p[$i+2] == "." ? null : (int) $p[$i+2]);
+                if (@$p[$i+1] != "0" || @$p[$i+2] != ".")
+                    $x[(int) $p[$i]] = array((int) @$p[$i+1],
+                                             @$p[$i+2] == "." ? null : (int) @$p[$i+2]);
             }
         }
         return $x;
