@@ -1179,7 +1179,7 @@ function unparse_preference($preference, $expertise = null) {
     return $preference . unparse_expertise($expertise);
 }
 
-function unparse_preference_span($preference) {
+function unparse_preference_span($preference, $always = false) {
     if (is_object($preference))
         $preference = array(@$preference->reviewerPreference,
                             @$preference->reviewerExpertise,
@@ -1188,7 +1188,7 @@ function unparse_preference_span($preference) {
     if ($preference[0] < 0 || (!$preference[0] && @($preference[2] < 0)))
         $type = -1;
     $t = "";
-    if ($preference[0] || $preference[1] !== null)
+    if ($preference[0] || $preference[1] !== null || $always)
         $t .= "P" . decorateNumber($preference[0]) . unparse_expertise($preference[1]);
     if (@$preference[2])
         $t .= ($t ? " " : "") . "T" . decorateNumber($preference[2]);

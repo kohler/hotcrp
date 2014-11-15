@@ -575,7 +575,7 @@ class PreferenceAssigner extends Assigner {
     function unparse_display() {
         if (!$this->cid)
             return "remove all preferences";
-        return Text::name_html($this->contact) . " " . unparse_preference_span(array($this->pref, $this->exp));
+        return Text::name_html($this->contact) . " " . unparse_preference_span(array($this->pref, $this->exp), true);
     }
     function add_locks(&$locks) {
         $locks["PaperReviewPreference"] = "write";
