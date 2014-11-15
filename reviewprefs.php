@@ -202,6 +202,11 @@ if ($Me->privChair) {
         if (!@$prefcount[$id])
             $revopt[$id] .= " (no preferences)";
     }
+    if (!isset($revopt[$reviewer])) {
+        if ($reviewer != $Me->contactId)
+            trigger_error("reviewprefs.php: bad reviewer");
+        $revopt[$reviewer] = Text::name_html($Me) . " (not on PC)";
+    }
 
     echo Ht::select("reviewer", $revopt, $reviewer, array("onchange" => "\$\$(\"redisplayform\").submit()")),
         "<div class='g'></div></td></tr>\n";
