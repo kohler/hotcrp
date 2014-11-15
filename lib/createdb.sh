@@ -139,8 +139,10 @@ grants=`echo 'show grants;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS | grep
 if ! $force && test -z "$grants"; then
     echo 1>&2
     echo "* This account doesn't appear to have the privilege to create MySQL databases." 1>&2
-    echo "* Try 'sudo $PROG' and/or supply '--user' and '--password' options." 1>&2
-    echo "* If you think this message is in error, run '$PROG --force'." 1>&2
+    echo "* Try \`sudo $PROG\` and/or supply \`--user\` and \`--password\` options." 1>&2
+    echo "* If you think this message is in error, run \`$PROG --force\`." 1>&2
+    test -n "$FLAGS" &&
+        echo "* Or try different flags; you passed \`$FLAGS\`." 1>&2
     echo 1>&2
     exit 1
 fi
