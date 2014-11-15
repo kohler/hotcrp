@@ -20,20 +20,23 @@ class CsvParser {
         $a = preg_split('/([\r\n])/', $str, 0, PREG_SPLIT_DELIM_CAPTURE);
         $n = count($a);
         $b = array();
+        $last_lineend = false;
         for ($i = 0; $i < $n; ) {
             $t = $a[$i];
             if ($t != "\n" && $t != "\r")
                 ++$i;
             else
                 $t = "";
-            if ($i < $n && $a[$i] == "\r") {
-                $t .= $a[$i];
+            $lineend = ($i == $n ? false : $a[$i]);
+            if ($lineend == "\n" && $last_lineend == "\r" && $t == "") {
+                $b[count($b) - 1] .= $lineend;
+                ++$i;
+                continue;
+            } else if ($lineend == "\n" || $lineend == "\r") {
+                $t .= $lineend;
                 ++$i;
             }
-            if ($i < $n && $a[$i] == "\n") {
-                $t .= $a[$i];
-                ++$i;
-            }
+            $last_lineend = $lineend;
             $b[] = $t;
         }
         $this->lines = $b;
