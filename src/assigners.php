@@ -794,7 +794,7 @@ class AssignmentSet {
         return array($contact);
     }
 
-    function parse($text, $filename = null, $defaults = null) {
+    function parse($text, $filename = null, $defaults = null, $alertf = null) {
         if ($defaults === null)
             $defaults = array();
         $this->filename = $filename;
@@ -849,8 +849,10 @@ class AssignmentSet {
         $N = 0;
         while (($req = $csv->next()) !== false) {
             // parse paper
-            if (++$N % 100 == 0)
+            if (++$N % 100 == 0) {
+                call_user_func($alertf, $csv->lineno());
                 set_time_limit(30);
+            }
             $pfield = @trim($req["paper"]);
             if ($pfield !== "" && ctype_digit($pfield))
                 $pids = array(intval($pfield));
