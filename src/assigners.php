@@ -619,7 +619,7 @@ Assigner::register("revpref", new PreferenceAssigner(0, null, 0, null));
 
 class AssignmentSet {
     private $assigners = array();
-    private $filename;
+    public $filename;
     private $errors = array();
     private $my_conflicts = null;
     private $contact;
@@ -850,7 +850,7 @@ class AssignmentSet {
         while (($req = $csv->next()) !== false) {
             // parse paper
             if (++$N % 100 == 0) {
-                call_user_func($alertf, $csv->lineno());
+                call_user_func($alertf, $this, $csv->lineno(), $req);
                 set_time_limit(30);
             }
             $pfield = @trim($req["paper"]);
@@ -910,6 +910,8 @@ class AssignmentSet {
                         $this->error($csv->lineno(), $err);
                 }
         }
+        if ($alertf)
+            call_user_func($alertf, $this, $csv->lineno(), false);
 
         // create assigners for difference
         foreach ($this->astate->diff() as $pid => $difflist)

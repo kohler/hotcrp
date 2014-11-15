@@ -1597,7 +1597,7 @@ div.confirm div.parseerr p {
 div.bigid {
 	padding: 0 0 0 3em;
 }
-div.parseerr span.lineno {
+span.lineno {
 	font-style: italic;
 	font-size: smaller;
 }

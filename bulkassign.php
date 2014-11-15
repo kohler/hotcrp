@@ -30,21 +30,29 @@ function assignment_defaults() {
 
 $csv_lineno = 0;
 $csv_preparing = false;
-function keep_browser_alive($lineno) {
+function keep_browser_alive($assignset, $lineno, $line) {
     global $Conf, $csv_lineno, $csv_preparing;
     $csv_lineno = $lineno;
     if ($lineno >= 1000) {
-        flush();
-        while (@ob_end_flush());
-            /* skip */;
-        if ($lineno >= 1000 && !$csv_preparing) {
+        if (!$csv_preparing) {
             echo "<div id='foldmail' class='foldc fold2o'>",
                 "<div class='fn fx2 merror'>Preparing assignments.<br /><span id='mailcount'></span></div>",
                 "</div>";
             $csv_preparing = true;
         }
-        if ($csv_preparing)
-            $Conf->echoScript("\$\$('mailcount').innerHTML=\"Processing line $lineno\";");
+        if ($assignset->filename)
+            $text = "<span class='lineno'>"
+                . htmlspecialchars($assignset->filename) . ":$lineno:</span>";
+        else
+            $text = "<span class='lineno'>line $lineno:</span>";
+        if ($line === false)
+            $text .= " processing";
+        else
+            $text .= " <code>" . htmlspecialchars(join(",", $line)) . "</code>";
+        $Conf->echoScript("\$\$('mailcount').innerHTML=\"$text\";");
+        flush();
+        while (@ob_end_flush());
+            /* skip */;
     }
 }
 
@@ -58,8 +66,8 @@ function finish_browser_alive() {
 if (isset($_REQUEST["saveassignment"]) && check_post()) {
     if (isset($_REQUEST["cancel"]))
         redirectSelf();
-    else if (isset($_REQUEST["file"])
-             && @$_REQUEST["assignment_size_estimate"] < 1000) {
+    else if (isset($_POST["file"])
+             && @$_POST["assignment_size_estimate"] < 1000) {
         $assignset = new AssignmentSet($Me, false);
         $assignset->parse($_REQUEST["file"], @$_REQUEST["filename"],
                           assignment_defaults());
@@ -138,9 +146,9 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
 }
 
 if (isset($_REQUEST["saveassignment"]) && check_post()
-    && isset($_REQUEST["file"]) && @$_REQUEST["assignment_size_estimate"] >= 1000) {
+    && isset($_POST["file"]) && @$_POST["assignment_size_estimate"] >= 1000) {
     $assignset = new AssignmentSet($Me, false);
-    $assignset->parse($_REQUEST["file"], @$_REQUEST["filename"],
+    $assignset->parse($_POST["file"], @$_POST["filename"],
                       assignment_defaults(), "keep_browser_alive");
     finish_browser_alive();
 }
