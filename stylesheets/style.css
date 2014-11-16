@@ -1700,7 +1700,7 @@ tr.purpletag, tr.graytag, tr.whitetag {
 }
 tr.redtag > td, tr.orangetag > td, tr.yellowtag > td, tr.greentag > td,
 tr.bluetag > td, tr.purpletag > td, tr.graytag > td, tr.whitetag > td {
-	background-color: none;
+	background-color: inherit;
 }
 .redtag, .redtag.psc {
 	background-color: #ffd8d8;
