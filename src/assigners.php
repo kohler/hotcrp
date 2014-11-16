@@ -383,16 +383,12 @@ class LeadAssigner extends Assigner {
         return $t;
     }
     function add_locks(&$locks) {
-        $locks["Paper"] = "write";
+        $locks["Paper"] = $locks["Settings"] = "write";
     }
     function execute($who) {
-        global $Conf;
-        if ($this->isadd)
-            $Conf->qe("update Paper set " . $this->type . "ContactId=$this->cid where paperId=$this->pid");
-        else if ($this->cid)
-            $Conf->qe("update Paper set " . $this->type . "ContactId=0 where paperId=$this->pid and " . $this->type . "ContactId=$this->cid");
-        else
-            $Conf->qe("update Paper set " . $this->type . "ContactId=0 where paperId=$this->pid");
+        $who->assign_paper_pc($this->pid, $this->type,
+                              $this->isadd ? $this->cid : 0,
+                              $this->isadd || !$this->cid ? array() : array("old_cid" => $this->cid));
     }
 }
 class ConflictAssigner extends Assigner {

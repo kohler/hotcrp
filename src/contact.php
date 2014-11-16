@@ -2420,6 +2420,43 @@ class Contact {
         return $reviewId;
     }
 
+    function assign_paper_pc($pids, $type, $reviewer, $extra = array()) {
+        global $Conf;
+
+        // check arguments
+        assert($type == "lead" || $type == "shepherd" || $type == "manager");
+        if ($reviewer)
+            $revcid = is_object($reviewer) ? $reviewer->contactId : $reviewer;
+        else
+            $revcid = 0;
+        assert(is_int($revcid));
+        if (!is_array($pids))
+            $pids = array($pids);
+        $px = array();
+        foreach ($pids as $p) {
+            assert((is_object($p) && is_numeric($p->paperId)) || is_numeric($p));
+            $px[] = (int) (is_object($p) ? $p->paperId : $p);
+        }
+
+        // make assignments
+        if (isset($extra["old_cid"]))
+            $result = Dbl::qe("update Paper set {$type}ContactId=? where paperId" . sql_in_numeric_set($px) . " and {$type}ContactId=?", $revcid, $extra["old_cid"]);
+        else
+            $result = Dbl::qe("update Paper set {$type}ContactId=? where paperId" . sql_in_numeric_set($px), $revcid);
+
+        // log, update settings
+        if ($result && $result->affected_rows) {
+            $this->log_activity_for($revcid, "Set $type", $px);
+            if ($type == "lead" && !$revcid != !$Conf->setting("paperlead"))
+                $Conf->update_paperlead_setting();
+            if ($type == "manager" && !$revcid != !$Conf->setting("papermanager"))
+                $Conf->update_papermanager_setting();
+            return true;
+        } else
+            return false;
+    }
+
+
     function mark_activity() {
         global $Conf, $Now;
         if (!$this->activity_at || $this->activity_at < $Now) {
@@ -2435,6 +2472,12 @@ class Contact {
         global $Conf;
         $this->mark_activity();
         $Conf->log($text, $this, $paperId);
+    }
+
+    function log_activity_for($user, $text, $paperId = null) {
+        global $Conf;
+        $this->mark_activity();
+        $Conf->log($text . " by $this->email", $user, $paperId);
     }
 
 }

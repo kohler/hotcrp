@@ -162,18 +162,7 @@ class PaperActions {
             $Error[$type] = true;
         } else if ($pc === 0
                    || ($pc && $pc->isPC && $pc->allow_review_assignment($prow))) {
-            $contactId = ($pc === 0 ? 0 : $pc->contactId);
-            $field = $type . "ContactId";
-            if ($contactId != $prow->$field) {
-                $Conf->qe("update Paper set $field=$contactId where paperId=$prow->paperId");
-                if (!$contactId != !$Conf->setting("paperlead"))
-                    $Conf->update_paperlead_setting();
-                if (!$contactId != !$Conf->setting("papermanager"))
-                    $Conf->update_papermanager_setting();
-                if ($OK)
-                    $Conf->log("Set $type to " . ($pc ? $pc->email : "none"),
-                               $contact, $prow->paperId);
-            }
+            $contact->assign_paper_pc($prow, $type, $pc);
             if ($OK && $ajax)
                 $Conf->confirmMsg("Saved");
         } else if ($pc) {
