@@ -125,8 +125,12 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
             $Conf->infoMsg("If this assignment looks OK to you, select “Save assignment” to apply it. (You can always alter the assignment afterwards.)");
             $assignset->echo_unparse_display();
 
+            list($atypes, $apids) = $assignset->types_and_papers(true);
             echo '<div class="g"></div>',
-                Ht::form(hoturl_post("bulkassign", "saveassignment=1")),
+                Ht::form(hoturl_post("bulkassign",
+                                     array("saveassignment" => 1,
+                                           "assigntypes" => join(" ", $atypes),
+                                           "assignpids" => join(" ", $apids)))),
                 '<div class="aahc"><div class="aa">',
                 Ht::submit("Save assignment"),
                 ' &nbsp;', Ht::submit("cancel", "Cancel"),
