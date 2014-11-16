@@ -2,7 +2,8 @@
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix, hotcrp_list, hotcrp_urldefaults, hotcrp_status, hotcrp_user;
+var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix,
+    hotcrp_list, hotcrp_urldefaults, hotcrp_status, hotcrp_user;
 
 function $$(id) {
     return document.getElementById(id);
@@ -29,6 +30,55 @@ function serialize_object(x) {
     } else
         return "";
 }
+
+function hoturl_clean(x, page_component) {
+    var m;
+    if (x.o && (m = x.o.match(new RegExp("^(.*)(?:^|&)" + page_component + "(?:&|$)(.*)$")))) {
+        x.t += "/" + m[2];
+        x.o = m[1] + (m[1] && m[3] ? "&" : "") + m[3];
+    }
+}
+
+function hoturl(page, options) {
+    var k, t, a, m, x;
+    options = serialize_object(options);
+    x = {t: hotcrp_base + page + hotcrp_suffix, o: serialize_object(options)};
+    if (page === "paper" || page === "review")
+        hoturl_clean(x, "p=(\\d+)");
+    else if (page === "help")
+        hoturl_clean(x, "t=(\\w+)");
+    if (x.o && hotcrp_list
+        && (m = x.o.match(/^(.*(?:^|&)ls=)([^&]*)((?:&|$).*)$/))
+        && hotcrp_list.id == decodeURIComponent(m[2]))
+        x.o = m[1] + hotcrp_list.num + m[3];
+    a = [];
+    if (hotcrp_urldefaults)
+        a.push(serialize_object(hotcrp_urldefaults));
+    if (x.o)
+        a.push(x.o);
+    if (a.length)
+        x.t += "?" + a.join("&");
+    return x.t;
+}
+
+function hoturl_post(page, options) {
+    options = serialize_object(options);
+    options += (options ? "&" : "") + "post=" + hotcrp_postvalue;
+    return hoturl(page, options);
+}
+
+(function () {
+    var old_onerror = window.onerror, nerrors_logged = 0;
+    window.onerror = function (errormsg, url, lineno) {
+        if (++nerrors_logged <= 10)
+            jQuery.ajax({
+                url: hoturl("deadlines", "jserror=1&ajax=1"),
+                type: "POST",
+                data: {"error": errormsg, "url": url, "lineno": lineno}
+            });
+        return old_onerror ? old_onerror.apply(this, arguments) : false;
+    };
+})();
 
 jQuery.fn.extend({
     geometry: function (outer) {
@@ -172,41 +222,6 @@ return setLocalTime;
 })();
 
 
-function hoturl_clean(x, page_component) {
-    var m;
-    if (x.o && (m = x.o.match(new RegExp("^(.*)(?:^|&)" + page_component + "(?:&|$)(.*)$")))) {
-        x.t += "/" + m[2];
-        x.o = m[1] + (m[1] && m[3] ? "&" : "") + m[3];
-    }
-}
-
-function hoturl(page, options) {
-    var k, t, a, m, x;
-    options = serialize_object(options);
-    x = {t: hotcrp_base + page + hotcrp_suffix, o: serialize_object(options)};
-    if (page === "paper" || page === "review")
-        hoturl_clean(x, "p=(\\d+)");
-    else if (page === "help")
-        hoturl_clean(x, "t=(\\w+)");
-    if (x.o && hotcrp_list
-        && (m = x.o.match(/^(.*(?:^|&)ls=)([^&]*)((?:&|$).*)$/))
-        && hotcrp_list.id == decodeURIComponent(m[2]))
-        x.o = m[1] + hotcrp_list.num + m[3];
-    a = [];
-    if (hotcrp_urldefaults)
-        a.push(serialize_object(hotcrp_urldefaults));
-    if (x.o)
-        a.push(x.o);
-    if (a.length)
-        x.t += "?" + a.join("&");
-    return x.t;
-}
-
-function hoturl_post(page, options) {
-    options = serialize_object(options);
-    options += (options ? "&" : "") + "post=" + hotcrp_postvalue;
-    return hoturl(page, options);
-}
 
 function text_to_html(text) {
     var n = document.createElement("div");

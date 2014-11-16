@@ -43,6 +43,16 @@ if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb()))
         $dl["conflist"][] = $row;
     }
 }
+if (@$_REQUEST["jserror"]) {
+    $url = defval($_REQUEST, "url", "<unknown>");
+    if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m))
+        $url = $m[1];
+    if (isset($_REQUEST["lineno"]))
+        $url .= ":" . $_REQUEST["lineno"];
+    if ($Me->email)
+        $_REQUEST["error"] .= ", user $Me->email";
+    error_log("JS error: $url: " . $_REQUEST["error"]);
+}
 if (@$_REQUEST["ajax"]) {
     $dl["ok"] = true;
     $Conf->ajaxExit($dl);

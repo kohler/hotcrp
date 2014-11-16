@@ -13,7 +13,7 @@ class Conference {
     private $deadline_cache = null;
 
     private $save_messages = true;
-    var $headerPrinted = 0;
+    var $headerPrinted = false;
     private $_save_logs = false;
 
     private $scriptStuff = "";
@@ -1066,7 +1066,7 @@ class Conference {
     }
 
     function storePaper($uploadId, $prow, $final) {
-        global $ConfSiteSuffix, $Opt;
+        global $Opt;
         $paperId = (is_numeric($prow) ? $prow : $prow->paperId);
 
         $doc = $this->storeDocument($uploadId, $paperId, $final ? DTYPE_FINAL : DTYPE_SUBMISSION);
@@ -1897,10 +1897,10 @@ class Conference {
         echo "\" />\n";
     }
 
-    function header_head($title) {
-        global $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH, $Opt;
-        if (!$this->headerPrinted) {
-            echo "<!DOCTYPE html>
+    private function header_head($title) {
+        global $Me, $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH,
+            $Opt, $CurrentList;
+        echo "<!DOCTYPE html>
 <html>
 <head>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
@@ -1908,66 +1908,45 @@ class Conference {
 <meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />
 <meta http-equiv=\"Content-Language\" content=\"en\" />
 <meta name=\"google\" content=\"notranslate\" />\n";
-            if (strstr($title, "<") !== false)
-                $title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
+        if (strstr($title, "<") !== false)
+            $title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
 
-            if (isset($Opt["fontScript"]))
-                echo $Opt["fontScript"];
+        if (isset($Opt["fontScript"]))
+            echo $Opt["fontScript"];
 
-            $this->header_css_link("stylesheets/style.css");
-            if (isset($Opt["stylesheets"]))
-                foreach ($Opt["stylesheets"] as $css)
-                    $this->header_css_link($css);
+        $this->header_css_link("stylesheets/style.css");
+        if (isset($Opt["stylesheets"]))
+            foreach ($Opt["stylesheets"] as $css)
+                $this->header_css_link($css);
 
-            // favicon
-            if (($favicon = defval($Opt, "favicon", "images/review24.png"))) {
-                if (strpos($favicon, "://") === false && $favicon[0] != "/") {
-                    if (@$Opt["assetsURL"] && substr($favicon, 0, 7) === "images/")
-                        $favicon = $Opt["assetsURL"] . $favicon;
-                    else
-                        $favicon = $ConfSiteBase . $favicon;
-                }
-                if (substr($favicon, -4) == ".png")
-                    echo "<link rel=\"icon\" type=\"image/png\" href=\"$favicon\" />\n";
-                else if (substr($favicon, -4) == ".ico")
-                    echo "<link rel=\"shortcut icon\" href=\"$favicon\" />\n";
-                else if (substr($favicon, -4) == ".gif")
-                    echo "<link rel=\"icon\" type=\"image/gif\" href=\"$favicon\" />\n";
+        // favicon
+        if (($favicon = defval($Opt, "favicon", "images/review24.png"))) {
+            if (strpos($favicon, "://") === false && $favicon[0] != "/") {
+                if (@$Opt["assetsURL"] && substr($favicon, 0, 7) === "images/")
+                    $favicon = $Opt["assetsURL"] . $favicon;
                 else
-                    echo "<link rel=\"icon\" href=\"$favicon\" />\n";
+                    $favicon = $ConfSiteBase . $favicon;
             }
-
-            if (isset($Opt["jqueryURL"]))
-                $jquery = $Opt["jqueryURL"];
-            else if (@$Opt["jqueryCDN"])
-                $jquery = "//code.jquery.com/jquery-1.11.1.min.js";
+            if (substr($favicon, -4) == ".png")
+                echo "<link rel=\"icon\" type=\"image/png\" href=\"$favicon\" />\n";
+            else if (substr($favicon, -4) == ".ico")
+                echo "<link rel=\"shortcut icon\" href=\"$favicon\" />\n";
+            else if (substr($favicon, -4) == ".gif")
+                echo "<link rel=\"icon\" type=\"image/gif\" href=\"$favicon\" />\n";
             else
-                $jquery = $Opt["assetsURL"] . "scripts/jquery-1.11.1.min.js";
-            $this->scriptStuff = Ht::script_file($jquery) . "\n";
-
-            if (@$Opt["strictJavascript"])
-                $this->scriptStuff .= Ht::script_file($Opt["assetsURL"] . "cacheable.php?file=scripts/script.js&strictjs=1&mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
-            else
-                $this->scriptStuff .= Ht::script_file($Opt["assetsURL"] . "scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
-
-            $this->scriptStuff .= "<!--[if lte IE 6]> " . Ht::script_file($Opt["assetsURL"] . "scripts/supersleight.js") . " <![endif]-->\n";
-
-            echo "<title>", $title, " - ", htmlspecialchars($Opt["shortName"]), "</title>\n";
-            $this->headerPrinted = 1;
+                echo "<link rel=\"icon\" href=\"$favicon\" />\n";
         }
-    }
 
-    function header($title, $id = "", $actionBar = null, $showTitle = true) {
-        global $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH, $Me, $Now, $Opt,
-            $CurrentList;
-        if ($this->headerPrinted >= 2)
-            return;
-        if ($actionBar === null)
-            $actionBar = actionBar();
+        // jQuery
+        if (isset($Opt["jqueryURL"]))
+            $jquery = $Opt["jqueryURL"];
+        else if (@$Opt["jqueryCDN"])
+            $jquery = "//code.jquery.com/jquery-1.11.1.min.js";
+        else
+            $jquery = $Opt["assetsURL"] . "scripts/jquery-1.11.1.min.js";
+        $this->scriptStuff = Ht::script_file($jquery) . "\n";
 
-        $this->header_head($title);
-        echo "</head><body", ($id ? " id='$id'" : ""), ($Me ? " onload='hotcrp_load()'" : ""), ">\n";
-
+        // Javascript settings to set before script.js
         $this->scriptStuff .= "<script>hotcrp_base=\"$ConfSiteBase\";hotcrp_suffix=\"$ConfSiteSuffix\"";
         if (session_id() !== "")
             $this->scriptStuff .= ";hotcrp_postvalue=\"" . post_value() . "\"";
@@ -1987,23 +1966,52 @@ class Conference {
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
         if ($pid)
             $this->scriptStuff .= ";hotcrp_paperid=$pid";
+        $this->scriptStuff .= "</script>\n";
 
-        // JavaScript's timezone offsets are the negative of PHP's
-        $this->scriptStuff .= ";hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . (@$Opt["time24hour"] ? 1 : 0) . ")";
+        // script.js
+        if (@$Opt["strictJavascript"])
+            $this->scriptStuff .= Ht::script_file($Opt["assetsURL"] . "cacheable.php?file=scripts/script.js&strictjs=1&mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
+        else
+            $this->scriptStuff .= Ht::script_file($Opt["assetsURL"] . "scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
 
+        $this->scriptStuff .= "<!--[if lte IE 6]> " . Ht::script_file($Opt["assetsURL"] . "scripts/supersleight.js") . " <![endif]-->\n";
+
+        echo "<title>", $title, " - ", htmlspecialchars($Opt["shortName"]),
+            "</title>\n</head>\n";
+    }
+
+    function header($title, $id = "", $actionBar = null, $showTitle = true) {
+        global $ConfSiteBase, $ConfSitePATH, $Me, $Now, $Opt;
+        if ($this->headerPrinted)
+            return;
+        if ($actionBar === null)
+            $actionBar = actionBar();
+
+        // <head>
+        $this->header_head($title);
+
+        // <body>
+        echo "<body", ($id ? " id='$id'" : ""), ($Me ? " onload='hotcrp_load()'" : ""), ">\n";
+
+        // on load of script.js
+        $this->scriptStuff .= "<script>";
+
+        // initial load (JS's timezone offsets are negative of PHP's)
+        $this->scriptStuff .= "hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . (@$Opt["time24hour"] ? 1 : 0) . ")";
+
+        // deadlines settings
         if ($Me) {
             $dl = $Me->my_deadlines();
             $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($dl) . ")";
         } else
             $dl = array();
 
-        // Register meeting tracker
+        // meeting tracker
         $trackerowner = $Me && $Me->privChair
             && ($trackerstate = $this->setting_json("tracker"))
             && $trackerstate->sessionid == session_id();
         if ($trackerowner)
             $this->scriptStuff .= ";hotcrp_deadlines.tracker(0)";
-
         $this->scriptStuff .= "</script>";
 
         // If browser owns tracker, send it the script immediately
@@ -2087,7 +2095,7 @@ class Conference {
         $this->save_messages = false;
         echo "</div>\n";
 
-        $this->headerPrinted = 2;
+        $this->headerPrinted = true;
         echo "</div>\n<div class='body'>\n";
 
         // Callback for version warnings
