@@ -14,6 +14,7 @@ class Conference {
 
     private $save_messages = true;
     var $headerPrinted = 0;
+    private $_save_logs = false;
 
     private $scriptStuff = "";
     private $usertimeId = 1;
@@ -2177,27 +2178,49 @@ class Conference {
     // Action recording
     //
 
-    function log($text, $who, $paperId = null) {
-        if (!is_array($paperId))
-            $paperId = $paperId ? array($paperId) : array();
-        foreach ($paperId as &$p)
-            if (is_object($p))
-                $p = $p->paperId;
-        if (count($paperId) == 0)
-            $paperId = "null";
-        else if (count($paperId) == 1)
-            $paperId = $paperId[0];
-        else {
-            $text .= " (papers " . join(", ", $paperId) . ")";
-            $paperId = "null";
+    function save_logs($on) {
+        if ($on && $this->_save_logs === false)
+            $this->_save_logs = array();
+        else if (!$on && $this->_save_logs !== false) {
+            $x = $this->_save_logs;
+            $this->_save_logs = false;
+            foreach ($x as $cid_text => $pids) {
+                $pos = strpos($cid_text, "|");
+                $this->log(substr($cid_text, $pos + 1),
+                           substr($cid_text, 0, $pos), $pids);
+            }
         }
+    }
 
+    function log($text, $who, $pids = null) {
         if (!$who)
             $who = 0;
         else if (!is_numeric($who))
             $who = $who->contactId;
 
-        $this->q("insert into ActionLog (ipaddr, contactId, paperId, action) values ('" . sqlq(@$_SERVER["REMOTE_ADDR"]) . "', " . (int) $who . ", $paperId, '" . sqlq(substr($text, 0, 4096)) . "')");
+        if (is_object($pids))
+            $pids = array($pids->paperId);
+        else if (!is_array($pids))
+            $pids = $pids > 0 ? array($pids) : array();
+        $ps = array();
+        foreach ($pids as $p)
+            $ps[] = is_object($p) ? $p->paperId : $p;
+
+        if ($this->_save_logs !== false) {
+            foreach ($ps as $p)
+                $this->_save_logs["$who|$text"][] = $p;
+            return;
+        }
+
+        if (count($ps) == 0)
+            $ps = "null";
+        else if (count($ps) == 1)
+            $ps = $ps[0];
+        else {
+            $text .= " (papers " . join(", ", $ps) . ")";
+            $ps = "null";
+        }
+        $this->q("insert into ActionLog (ipaddr, contactId, paperId, action) values ('" . sqlq(@$_SERVER["REMOTE_ADDR"]) . "', " . (int) $who . ", $ps, '" . sqlq(substr($text, 0, 4096)) . "')");
     }
 
 

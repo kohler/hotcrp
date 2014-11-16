@@ -1023,8 +1023,8 @@ class AssignmentSet {
         // create new contacts outside the lock
         $locks = array("ContactInfo" => "read", "PCMember" => "read",
                        "ChairAssistant" => "read", "Chair" => "read",
-                       "ActionLog" => "write", "Paper" => "read",
-                       "PaperConflict" => "read");
+                       "Paper" => "read", "PaperConflict" => "read");
+        $Conf->save_logs(true);
         foreach ($this->assigners as $assigner) {
             if ($assigner->contact->contactId < 0) {
                 $c = $this->cmap->get_email($assigner->contact->email);
@@ -1049,6 +1049,7 @@ class AssignmentSet {
             $assigner->execute($this->contact);
 
         $Conf->qe("unlock tables");
+        $Conf->save_logs(false);
 
         // confirmation message
         if ($Conf->setting("pcrev_assigntime") == $Now)
