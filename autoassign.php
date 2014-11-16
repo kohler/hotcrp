@@ -730,11 +730,8 @@ $badPairSelector = null;
 
 function bpSelector($i, $which) {
     global $numBadPairs, $badPairSelector, $pcm;
-    if (!$badPairSelector) {
-        $badPairSelector = array("0" => "(PC member)");
-        foreach ($pcm as $pc)
-            $badPairSelector[$pc->contactId] = Text::name_html($pc);
-    }
+    if (!$badPairSelector)
+        $badPairSelector = pc_members_selector_options("(PC member)");
     $selected = ($i <= $_REQUEST["bpcount"] ? defval($_REQUEST, "bp$which$i") : "0");
     if ($selected && isset($badPairSelector[$selected]))
         $numBadPairs = max($i, $numBadPairs);

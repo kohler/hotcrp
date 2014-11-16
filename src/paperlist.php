@@ -445,13 +445,9 @@ class PaperList extends BaseList {
                               defval($_REQUEST, "marktype"),
                               array("id" => "plact${nlll}_d",
                                     "onchange" => "plactions_dofold()"))
-                . "<span class='fx'> &nbsp;for &nbsp;";
-            $pc = pcMembers();
-            $sel_opt = array();
-            foreach ($pc as $id => $row)
-                $sel_opt[htmlspecialchars($row->email)] = Text::name_html($row);
-            $t .= Ht::select("markpc", $sel_opt, defval($_REQUEST, "markpc"),
-                              array("id" => "markpc"))
+                . '<span class="fx"> &nbsp;<span id="atab_assign_for">for</span> &nbsp;';
+            $t .= Ht::select("markpc", pc_members_selector_options(false),
+                             defval($_REQUEST, "markpc"), array("id" => "markpc"))
                 . "</span> &nbsp;" . Ht::submit("setassign", "Go");
             $t .= "</td>";
             $nlll++;

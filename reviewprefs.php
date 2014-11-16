@@ -7,9 +7,31 @@ require_once("src/initweb.php");
 require_once("src/papersearch.php");
 if (!$Me->privChair && !$Me->isPC)
     $Me->escape();
-$reviewer = cvtint(@$_REQUEST["reviewer"]);
-if ($reviewer <= 0 || !$Me->privChair)
-    $reviewer = $Me->contactId;
+
+// set reviewer
+$reviewer = $Me->contactId;
+$reviewer_name = $Me->email;
+$incorrect_reviewer = false;
+if (@$_REQUEST["reviewer"] && $Me->privChair
+    && $_REQUEST["reviewer"] !== $Me->email
+    && $_REQUEST["reviewer"] !== $Me->contactId) {
+    $incorrect_reviewer = true;
+    foreach (pcMembers() as $pcm)
+        if ($pcm->email === $_REQUEST["reviewer"]
+            || (string) $pcm->contactId === $_REQUEST["reviewer"]) {
+            $reviewer = $pcm->contactId;
+            $reviewer_name = $pcm->email;
+            $incorrect_reviewer = false;
+        }
+} else if (!@$_REQUEST["reviewer"] && !($Me->roles & Contact::ROLE_PC)) {
+    foreach (pcMembers() as $pcm) {
+        $reviewer = $pcm->contactId;
+        $reviewer_name = $pcm->email;
+        break;
+    }
+}
+if ($incorrect_reviewer)
+    $Conf->errorMsg("Reviewer " . htmlspecialchars($_REQUEST["reviewer"]) . " is not on the PC.");
 
 // choose a sensible default action (if someone presses enter on a form element)
 if (isset($_REQUEST["default"]) && isset($_REQUEST["defaultact"])
@@ -25,8 +47,12 @@ if ((defval($_REQUEST, "get") == "revpref" || defval($_REQUEST, "get") == "revpr
 
 
 // Update preferences
-function savePreferences($reviewer) {
-    global $Conf, $Me, $OK;
+function savePreferences() {
+    global $Conf, $Me, $OK, $reviewer, $incorrect_reviewer;
+    if ($incorrect_reviewer) {
+        $Conf->errorMsg("Preferences not saved.");
+        return;
+    }
 
     $setting = array();
     $error = false;
@@ -74,7 +100,7 @@ function savePreferences($reviewer) {
     }
 }
 if (isset($_REQUEST["update"]) && check_post())
-    savePreferences($reviewer);
+    savePreferences();
 
 
 // Select papers
@@ -91,7 +117,7 @@ if (isset($_REQUEST["setpaprevpref"]) && SearchActions::any() && check_post()) {
     else {
         foreach (SearchActions::selection() as $p)
             $_REQUEST["revpref$p"] = $_REQUEST["paprevpref"];
-        savePreferences($reviewer);
+        savePreferences();
     }
 }
 
@@ -131,7 +157,7 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     if (count($errors) > 0)
         $Conf->errorMsg("There were some errors while parsing the uploaded preferences file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>");
     if ($successes > 0)
-        savePreferences($reviewer);
+        savePreferences();
 }
 if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"])
     && check_post())
@@ -196,19 +222,15 @@ if ($Me->privChair) {
     while (($row = edb_row($result)))
         $prefcount[$row[0]] = $row[1];
 
-    $revopt = array();
-    foreach (pcMembers() as $id => $pcm) {
-        $revopt[$id] = Text::name_html($pcm);
-        if (!@$prefcount[$id])
-            $revopt[$id] .= " (no preferences)";
-    }
-    if (!isset($revopt[$reviewer])) {
-        if ($reviewer != $Me->contactId)
-            trigger_error("reviewprefs.php: bad reviewer");
-        $revopt[$reviewer] = Text::name_html($Me) . " (not on PC)";
-    }
+    $revopt = pc_members_selector_options(false);
+    foreach (pcMembers() as $pcm)
+        if (!@$prefcount[$pcm->contactId])
+            $revopt[htmlspecialchars($pcm->email)] .= " (no preferences)";
+    if (!isset($revopt[htmlspecialchars($reviewer_name)]))
+        $revopt[htmlspecialchars($reviewer_name)] = Text::name_html($Me) . " (not on PC)";
 
-    echo Ht::select("reviewer", $revopt, $reviewer, array("onchange" => "\$\$(\"redisplayform\").submit()")),
+    echo Ht::select("reviewer", $revopt, htmlspecialchars($reviewer_name),
+                    array("onchange" => "\$\$(\"redisplayform\").submit()")),
         "<div class='g'></div></td></tr>\n";
 }
 

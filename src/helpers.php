@@ -1260,6 +1260,17 @@ function pcByEmail($email) {
     return null;
 }
 
+function pc_members_selector_options($include_none) {
+    global $Opt;
+    $sel = array();
+    if ($include_none)
+        $sel["0"] = is_string($include_none) ? $include_none : "None";
+    $textarg = array("lastFirst" => @$Opt["sortByLastName"]);
+    foreach (pcMembers() as $p)
+        $sel[htmlspecialchars($p->email)] = Text::name_html($p, $textarg);
+    return $sel;
+}
+
 function review_type_icon($revtype, $unfinished = null, $title = null) {
     static $revtypemap = array(-3 => array("&minus;", "Refused"),
                                -2 => array("A", "Author"),
