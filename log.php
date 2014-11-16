@@ -7,12 +7,15 @@ require_once("src/initweb.php");
 if (!$Me->privChair)
     $Me->escape();
 
+list($DEFAULT_COUNT, $MAX_COUNT) = array(50, 200);
+
 if (defval($_REQUEST, "page", "") == "earliest")
     $page = false;
 else if (($page = cvtint(@$_REQUEST["page"], -1)) <= 0)
     $page = 1;
 if (($count = cvtint(@$_REQUEST["n"], -1)) <= 0)
-    $count = 25;
+    $count = $DEFAULT_COUNT;
+$count = min($count, $MAX_COUNT);
 if (($offset = cvtint(@$_REQUEST["offset"], -1)) < 0 || $offset >= $count)
     $offset = 0;
 if ($offset == 0 || $page == 1) {
@@ -30,7 +33,7 @@ $Eclass["q"] = $Eclass["pap"] = $Eclass["acct"] = $Eclass["n"] = $Eclass["date"]
 $_REQUEST["q"] = trim(defval($_REQUEST, "q", ""));
 $_REQUEST["pap"] = trim(defval($_REQUEST, "pap", ""));
 $_REQUEST["acct"] = trim(defval($_REQUEST, "acct", ""));
-$_REQUEST["n"] = trim(defval($_REQUEST, "n", "25"));
+$_REQUEST["n"] = trim(defval($_REQUEST, "n", "$DEFAULT_COUNT"));
 $_REQUEST["date"] = trim(defval($_REQUEST, "date", "now"));
 
 if ($_REQUEST["pap"] && !preg_match('/\A(?:#?\d+(?:-#?\d+)?[\s,]+)+\z/', $_REQUEST["pap"] . " ")) {
@@ -87,7 +90,7 @@ if (($str = $_REQUEST["q"])) {
 if (($count = cvtint(@$_REQUEST["n"])) <= 0) {
     $Conf->errorMsg("\"Show <i>n</i> records\" requires a number greater than 0.");
     $Eclass["n"] = " error";
-    $count = 25;
+    $count = $DEFAULT_COUNT;
 }
 
 $firstDate = false;
@@ -114,7 +117,7 @@ function searchbar() {
   <td class='lentry'><input type='text' size='40' name='acct' value=\"", htmlspecialchars(defval($_REQUEST, "acct", "")), "\" /></td>
 </tr><tr>
   <td class='lxcaption", $Eclass['n'], "'>Show</td>
-  <td class='lentry", $Eclass['n'], "'><input type='text' size='3' name='n' value=\"", htmlspecialchars($_REQUEST["n"]), "\" /> &nbsp;records at a time</td>
+  <td class='lentry", $Eclass['n'], "'><input type='text' size='4' name='n' value=\"", htmlspecialchars($_REQUEST["n"]), "\" /> &nbsp;records at a time</td>
 </tr><tr>
   <td class='lxcaption", $Eclass['date'], "'>Starting at</td>
   <td class='lentry", $Eclass['date'], "'><input type='text' size='40' name='date' value=\"", htmlspecialchars($_REQUEST["date"]), "\" /></td>
@@ -157,7 +160,7 @@ function searchbar() {
 
 $query = "select logId, unix_timestamp(time) as timestamp, "
     . " ipaddr, contactId, action, firstName, lastName, email, paperId "
-    . " from ActionLog join ContactInfo using (contactId)";
+    . " from ActionLog left join ContactInfo using (contactId)";
 if (count($wheres))
     $query .= " where " . join(" and ", $wheres);
 $query .= " order by logId desc";
@@ -211,8 +214,12 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
             . Text::user_html_nolink($row) . "</a>";
         if ($row->contactId !== $Me->contactId)
             $t .= "&nbsp;" . viewas_link($row);
-    } else
+    } else if ($row->firstName || $row->lastName)
         $t .= Text::user_html_nolink($row);
+    else if ($row->contactId)
+        $t .= "[Deleted account $row->contactId]";
+    else
+        $t .= "[None]";
     $t .= "</td><td class=\"al_act\">";
 
     $act = $row->action;
