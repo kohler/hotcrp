@@ -123,7 +123,7 @@ function searchbar() {
   <td class='lentry", $Eclass['date'], "'><input type='text' size='40' name='date' value=\"", htmlspecialchars($_REQUEST["date"]), "\" /></td>
 </tr></table></div></form>";
 
-    if ($nrows > 0 || $page > 1) {
+    if ($nrows > $count || $page > 1) {
         $urls = array();
         $_REQUEST["offset"] = $offset;
         foreach (array("q", "pap", "acct", "n", "offset") as $x)
@@ -153,8 +153,9 @@ function searchbar() {
         echo "</div></td><td id='oldest'><div>";
         if ($nrows > $count)
             echo "&nbsp;&nbsp;|&nbsp; <a href='$url&amp;page=earliest'><strong>Oldest</strong></a>";
-        echo "</div></td></tr></table><div class='g'></div>\n";
+        echo "</div></td></tr></table>";
     }
+    echo "<div class='g'></div>\n";
 }
 
 
