@@ -850,7 +850,8 @@ class AssignmentSet {
         while (($req = $csv->next()) !== false) {
             // parse paper
             if (++$N % 100 == 0) {
-                call_user_func($alertf, $this, $csv->lineno(), $req);
+                if ($alertf)
+                    call_user_func($alertf, $this, $csv->lineno(), $req);
                 set_time_limit(30);
             }
             $pfield = @trim($req["paper"]);
