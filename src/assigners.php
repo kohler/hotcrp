@@ -883,7 +883,8 @@ class AssignmentSet {
 
             // check action
             if (($action = @$req["assignment"]) === null
-                && ($action = @$req["action"]) === null)
+                && ($action = @$req["action"]) === null
+                && ($action = @$req["type"]) === null)
                 $action = $defaults["action"];
             $action = strtolower(trim($action));
             if (!($assigner = Assigner::find($action))) {
