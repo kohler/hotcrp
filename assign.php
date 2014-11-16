@@ -166,7 +166,7 @@ function pcAssignments() {
                 || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC)
             && ($pctype == 0
                 || $pcm[$row->contactId]->allow_review_assignment($prow)))
-            $Me->assign_paper($prow->paperId, $row, $row->contactId, $pctype);
+            $Me->assign_review($prow->paperId, $row, $row->contactId, $pctype);
     }
 }
 
@@ -251,8 +251,8 @@ function requestReview($email) {
     }
 
     // store the review request
-    $Me->assign_paper($prow->paperId, null, $Them->contactId, REVIEW_EXTERNAL,
-                      array("mark_notify" => true));
+    $Me->assign_review($prow->paperId, null, $Them->contactId,
+                       REVIEW_EXTERNAL, array("mark_notify" => true));
 
     // mark secondary as delegated
     $Conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1");
@@ -339,8 +339,8 @@ function createAnonymousReview() {
     }
 
     // store the review request
-    $reviewId = $Me->assign_paper($prow->paperId, null, $reqId, REVIEW_EXTERNAL,
-                                  array("mark_notify" => true, "token" => true));
+    $reviewId = $Me->assign_review($prow->paperId, null, $reqId, REVIEW_EXTERNAL,
+                                   array("mark_notify" => true, "token" => true));
     if ($reviewId) {
         $result = Dbl::ql("select reviewToken from PaperReview where reviewId=$reviewId");
         $row = edb_row($result);
@@ -415,7 +415,7 @@ if (isset($_REQUEST["addpc"]) && $Me->allow_administer($prow) && check_post()) {
         $Conf->errorMsg("Enter a PC member.");
     else if (($pctype = cvtint(@$_REQUEST["pctype"])) == REVIEW_PRIMARY
              || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC) {
-        $Me->assign_paper($prow->paperId, findRrow($pcid), $pcid, $pctype);
+        $Me->assign_review($prow->paperId, findRrow($pcid), $pcid, $pctype);
         $Conf->updateRevTokensSetting(false);
     }
     loadRows();

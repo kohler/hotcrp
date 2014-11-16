@@ -2368,7 +2368,7 @@ class Contact {
         }
     }
 
-    function assign_paper($pid, $rrow, $reviewer_cid, $type, $extra = array()) {
+    function assign_review($pid, $rrow, $reviewer_cid, $type, $extra = array()) {
         global $Conf, $Now, $reviewTypeName;
         $reviewId = $rrow ? $rrow->reviewId : 0;
 

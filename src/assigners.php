@@ -336,7 +336,7 @@ class ReviewAssigner extends Assigner {
     function execute($who) {
         global $Conf;
         $result = $Conf->qe("select contactId, paperId, reviewId, reviewType, reviewModified from PaperReview where paperId=$this->pid and contactId=$this->cid");
-        $who->assign_paper($this->pid, edb_orow($result), $this->cid, $this->type);
+        $who->assign_review($this->pid, edb_orow($result), $this->cid, $this->type);
         if ($this->notify) {
             $reviewer = Contact::find_by_id($this->cid);
             $prow = $Conf->paperRow(array("paperId" => $this->pid, "reviewer" => $this->cid), $reviewer);
