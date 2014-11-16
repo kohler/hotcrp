@@ -846,27 +846,31 @@ return function (name, elt) {
 
 
 function plactions_dofold() {
-    var elt = $$("placttagtype"), folded, x, i;
-    if (elt) {
-        folded = elt.selectedIndex < 0 || elt.options[elt.selectedIndex].value != "cr";
-        fold("placttags", folded, 99);
-        if (folded)
+    var $j, val, sel;
+    // Tags > Calculate rank subform
+    $j = jQuery("#placttagtype");
+    if ($j.length) {
+        fold("placttags", $j.val() != "cr", 99);
+        if ($j.val() != "cr")
             fold("placttags", true);
-        else if ((elt = $$("sel"))) {
-            if ((elt.tagcr_source && elt.tagcr_source.value != "")
-                || (elt.tagcr_method && elt.tagcr_method.selectedIndex >= 0
-                    && elt.tagcr_method.options[elt.tagcr_method.selectedIndex].value != "schulze")
-                || (elt.tagcr_gapless && elt.tagcr_gapless.checked))
-                fold("placttags", false);
-        }
+        else if (jQuery("#sel [name='tagcr_source']").val()
+                 || jQuery("#sel [name='tagcr_method']").val() != "schulze"
+                 || jQuery("#sel [name='tagcr_gapless']").is(":checked"))
+            fold("placttags", false);
     }
-    if ((elt = $$("foldass"))) {
-        x = elt.getElementsByTagName("select");
-        for (i = 0; i < x.length; ++i)
-            if (x[i].name == "marktype") {
-                folded = x[i].selectedIndex < 0 || x[i].options[x[i].selectedIndex].value.charAt(0) == "x";
-                fold("ass", folded);
-            }
+    // Assign > "for [USER]"
+    if (jQuery("#foldass").length) {
+        val = jQuery("#foldass select[name='marktype']").val();
+        fold("ass", !!(val && val == "auto"));
+        sel = jQuery("#foldass select[name='markpc']");
+        if (val == "lead" || val == "shepherd") {
+            jQuery("#atab_assign_for").html("to");
+            if (!sel.find("option[value='0']").length)
+                sel.prepend('<option value="0">None</option>');
+        } else {
+            jQuery("#atab_assign_for").html("for");
+            sel.find("option[value='0']").remove();
+        }
     }
 }
 

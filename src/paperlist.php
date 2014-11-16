@@ -392,7 +392,7 @@ class PaperList extends BaseList {
             if (isset($_REQUEST["tagact"]) || $this->atab == "tags")
                 $whichlll = $nlll;
             $t .= $barsep;
-            $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Tag</a></td><td class='lld$nlll nowrap'><table id='foldplacttags' class='foldc fold99c'><tr><td><b>:</b><a class='help' href='" . hoturl("help", "t=tags") . "' target='_blank' title='Learn more'>?</a> &nbsp;";
+            $t .= "<td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Tag</a></td><td class='lld$nlll nowrap'><table id='foldplacttags' class='foldc fold99c'><tr><td><b>:</b> &nbsp;";
             $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order");
             $tagextra = array("id" => "placttagtype");
             if ($this->contact->privChair) {
@@ -405,9 +405,8 @@ class PaperList extends BaseList {
             $t .= Ht::select("tagtype", $tagopt, defval($_REQUEST, "tagtype"),
                               $tagextra) . " &nbsp;";
             if ($this->contact->privChair) {
-                $t .= "<span class='fx99'><a href='#' onclick=\"return fold('placttags')\">"
-                    . Ht::img("_.gif", "More...", "expander")
-                    . "</a>&nbsp;</span></td><td>";
+                $t .= '<span class="fx99"><a class="q" href="#" onclick="return fold(\'placttags\')">'
+                    . expander(null, 0) . '</a></span></td><td>';
             }
             $t .= "tag<span class='fn99'>(s)</span> &nbsp;<input id='plact${nlll}_d' type='text' name='tag' value=\"" . htmlspecialchars(defval($_REQUEST, "tag", "")) . "\"' size='15' onfocus='autosub(\"tagact\",this)' /> &nbsp;"
                 . Ht::submit("tagact", "Go");
@@ -433,15 +432,18 @@ class PaperList extends BaseList {
             $t .= "<td class='lll$nlll'><a href=\"" . selfHref(array("atab" => "assign")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Assign</a></td><td id='foldass' class='lld$nlll foldo'><b>:</b> &nbsp;";
             $want_plactions_dofold = true;
             $t .= Ht::select("marktype",
-                              array("xauto" => "Automatic assignments",
+                              array("auto" => "Automatic assignments",
                                     "zzz1" => null,
-                                    "conflict" => "Mark conflict",
-                                    "unconflict" => "Remove conflict",
+                                    "conflict" => "Conflict",
+                                    "unconflict" => "No conflict",
+                                    "zzz2" => null,
+                                    "assign" . REVIEW_PRIMARY => "Primary review",
+                                    "assign" . REVIEW_SECONDARY => "Secondary review",
+                                    "assign" . REVIEW_PC => "Optional review",
+                                    "assign0" => "Clear review",
                                     "zzz3" => null,
-                                    "assign" . REVIEW_PRIMARY => "Assign primary review",
-                                    "assign" . REVIEW_SECONDARY => "Assign secondary review",
-                                    "assign" . REVIEW_PC => "Assign optional review",
-                                    "assign0" => "Unassign reviews"),
+                                    "lead" => "Discussion lead",
+                                    "shepherd" => "Shepherd"),
                               defval($_REQUEST, "marktype"),
                               array("id" => "plact${nlll}_d",
                                     "onchange" => "plactions_dofold()"))
