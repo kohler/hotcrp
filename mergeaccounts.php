@@ -37,7 +37,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
             go(hoturl("index"));
         } else if (!$MiniMe->contactId || !$Me->contactId)
             $MergeError = "Internal error.";
-        } else {
+        else {
             // Do they prefer the account they named?
             if (defval($_REQUEST, 'prefer')) {
                 $mm = $Me;

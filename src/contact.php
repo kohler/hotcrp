@@ -2462,7 +2462,7 @@ class Contact {
         if (!$this->activity_at || $this->activity_at < $Now) {
             $this->activity_at = $Now;
             if ($this->contactId)
-                $Conf->ql("update ContactInfo set lastLogin=$Now where contactId=" . $this->contactId);
+                Dbl::ql("update ContactInfo set lastLogin=$Now where contactId=$this->contactId");
             if ($this->contactDbId)
                 Dbl::ql(self::contactdb(), "update ContactInfo set activity_at=$Now where contactDbId=$this->contactDbId");
         }
