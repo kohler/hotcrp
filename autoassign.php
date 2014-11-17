@@ -422,6 +422,7 @@ function doAssign() {
 
         // traverse preferences in descending order until encountering an
         // assignable paper
+        $pg = null;
         while ($pref_groups[$pc] && ($pg = current($pref_groups[$pc]))) {
             // skip if no papers left
             if (!count($pg->pids)) {
