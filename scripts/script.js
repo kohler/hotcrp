@@ -2472,7 +2472,7 @@ function getorpost(method, url, callback, timeout) {
             callback(null);
     };
     req.open(method, url);
-    req.send();
+    req.send(null); /* old Firefox needs an arg */
     return false;
 };
 Miniajax.get = function (url, callback, timeout) {
