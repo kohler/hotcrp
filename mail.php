@@ -164,15 +164,19 @@ class MailSender {
         $this->started = true;
     }
 
-    private function echo_mailinfo() {
+    private function echo_mailinfo($nrows_done, $nrows_left) {
         global $Conf;
+        if (!$this->started)
+            $this->echo_prologue();
+        $s = "\$\$('mailcount').innerHTML=\"" . round(100 * $nrows_done / $nrows_left) . "% done.\";";
         if (!$this->sending) {
             $m = plural($this->mcount, "mail") . ", "
                 . plural($this->mrecipients, "recipient");
             if (count($this->mpapers) != 0)
                 $m .= ", " . plural($this->mpapers, "paper");
-            $Conf->echoScript("\$\$('mailinfo').innerHTML=\" <span class='barsep'>|</span> " . $m . "\";");
+            $s .= "\$\$('mailinfo').innerHTML=\" <span class='barsep'>|</span> " . $m . "\";";
         }
+        $Conf->echoScript($s);
     }
 
     private static function fix_body($prep) {
@@ -308,10 +312,6 @@ class MailSender {
         $revinform = ($_REQUEST["recipients"] == "newpcrev" ? array() : null);
         while (($row = PaperInfo::fetch($result, $Me))) {
             ++$nrows_done;
-            if ($nrows_done % 5 == 0) {
-                $Conf->echoScript("\$\$('mailcount').innerHTML=\"" . round(100 * $nrows_done / $nrows_left) . "% done.\";");
-                $this->echo_mailinfo();
-            }
 
             $contact = Contact::make($row);
             $rest["hideReviews"] = $checkReviewNeedsSubmit && $row->reviewNeedsSubmit;
@@ -337,18 +337,21 @@ class MailSender {
                 }
             }
 
+            if ($nwarnings != $mailer->nwarnings() || $nrows_done % 5 == 0)
+                $this->echo_mailinfo($nrows_done, $nrows_left);
             if ($nwarnings != $mailer->nwarnings()) {
                 $this->echo_prologue();
                 $nwarnings = $mailer->nwarnings();
                 echo "<div id='foldmailwarn$nwarnings' class='hidden'><div class='warning'>", join("<br />", $mailer->warnings()), "</div></div>";
                 $Conf->echoScript("\$\$('mailwarnings').innerHTML = \$\$('foldmailwarn$nwarnings').innerHTML;");
             }
+
             if ($this->sending && $revinform !== null)
                 $revinform[] = "(paperId=$row->paperId and contactId=$row->contactId)";
         }
 
         $this->process_prep($fake_prep, $last_prep, (object) array("paperId" => -1));
-        $this->echo_mailinfo();
+        $this->echo_mailinfo($nrows_done, $nrows_left);
 
         if (!$this->started && !count($preperrors))
             return $Conf->errorMsg("No users match “" . $this->recip->unparse() . "” for that search.");
