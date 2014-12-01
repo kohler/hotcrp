@@ -3,7 +3,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix,
-    hotcrp_list, hotcrp_urldefaults, hotcrp_status, hotcrp_user;
+    hotcrp_list, hotcrp_urldefaults, hotcrp_status, hotcrp_user,
+    hotcrp_want_override_conflict;
 
 function $$(id) {
     return document.getElementById(id);
@@ -1288,6 +1289,7 @@ function save_editor(elt, action, really) {
     }
     var url = hoturl_post("comment", "p=" + hotcrp_paperid + "&c=" + x.id + "&ajax=1&"
                           + (really ? "override=1&" : "")
+                          + (hotcrp_want_override_conflict ? "forceShow=1&" : "")
                           + action + (x.cj.response ? "response" : "comment") + "=1");
     jQuery.post(url, x.j.find("form").serialize(), function (data, textStatus, jqxhr) {
         var x_new = x.id === "new" || x.id === "newresponse";

@@ -1966,6 +1966,9 @@ class Conference {
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
         if ($pid)
             $this->scriptStuff .= ";hotcrp_paperid=$pid";
+        if ($pid && $Me && $Me->privChair
+            && ($forceShow = @$_REQUEST["forceShow"]) && $forceShow != "0")
+            $this->scriptStuff .= ";hotcrp_want_override_conflict=true";
         $this->scriptStuff .= "</script>\n";
 
         // script.js
