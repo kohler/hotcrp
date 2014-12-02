@@ -353,6 +353,7 @@ function doAssign() {
     foreach ($pcm as $pc => $pcval) {
         arsort($prefs[$pc]);
         $last_group = null;
+        $pref_groups[$pc] = array();
         foreach ($prefs[$pc] as $pid => $pref)
             if (!$last_group || $pref != $last_group->pref) {
                 $last_group = (object) array("pref" => $pref, "pids" => array($pid));
