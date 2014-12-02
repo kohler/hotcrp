@@ -2427,7 +2427,7 @@ Miniajax.submit = function (formname, callback, timeout) {
         clearTimeout(timer);
         if (req.status == 200) {
             resultelt.innerHTML = "";
-            var rv = JSON.parse(req.responseText);
+            var rv = jQuery.parseJSON(req.responseText);
             callback(rv);
             if (rv.ok)
                 hiliter(form, true);
@@ -2469,7 +2469,7 @@ function getorpost(method, url, callback, timeout) {
             return;
         clearTimeout(timer);
         if (req.status == 200)
-            callback(JSON.parse(req.responseText));
+            callback(jQuery.parseJSON(req.responseText));
         else
             callback(null);
     };
