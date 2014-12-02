@@ -442,13 +442,20 @@ class ReviewerTypePaperColumn extends PaperColumn {
     public function sort_prepare($pl, &$rows, $sorter) {
         if (!$this->xreviewer) {
             foreach ($rows as $row) {
-                $row->_reviewer_type_sort_info = $row->reviewType;
+                $row->_reviewer_type_sort_info = 2 * $row->reviewType;
                 if (!$row->_reviewer_type_sort_info && $row->conflictType)
                     $row->_reviewer_type_sort_info = -$row->conflictType;
+                else if ($row->reviewType > 0 && !$row->reviewSubmitted)
+                    $row->_reviewer_type_sort_info += 1;
             }
         } else {
             foreach ($rows as $row)
-                $row->_reviewer_type_sort_info = isset($row->_xreviewer) ? $row->_xreviewer->reviewType : 0;
+                if (isset($row->_xreviewer)) {
+                    $row->_reviewer_type_sort_info = 2 * $row->_xreviewer->reviewType;
+                    if (!$row->_xreviewer->reviewSubmitted)
+                        $row->_reviewer_type_sort_info += 1;
+                } else
+                    $row->_reviewer_type_sort_info = 0;
         }
     }
     public function reviewer_type_sorter($a, $b) {
