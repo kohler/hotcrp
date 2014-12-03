@@ -199,6 +199,7 @@ class LoginHelper {
         unset($_SESSION["testsession"]);
         $_SESSION["trueuser"] = (object) array("contactId" => $user->contactId, "dsn" => $Conf->dsn, "email" => $user->email);
         $Conf->save_session("freshlogin", true);
+        $Conf->save_session("password_reset", null);
 
         if (isset($_REQUEST["go"]))
             $where = $_REQUEST["go"];

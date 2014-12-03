@@ -166,8 +166,8 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
     $confname = $Opt["longName"];
     if ($Opt["shortName"] && $Opt["shortName"] != $Opt["longName"])
         $confname .= " (" . $Opt["shortName"] . ")";
-    echo "<div class='homegrp'>
-Welcome to the ", htmlspecialchars($confname), " submissions site.
+    echo '<div class="homegrp">
+Welcome to the ', htmlspecialchars($confname), " submissions site.
 Sign in to submit or review papers.";
     if (isset($Opt["conferenceSite"]))
         echo " For general information about ", htmlspecialchars($Opt["shortName"]), ", see <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">the conference site</a>.";
@@ -176,37 +176,35 @@ Sign in to submit or review papers.";
 <hr class='home' />
 <div class='homegrp' id='homeacct'>\n",
         Ht::form(hoturl_post("index")),
-        "<div class=\"f-contain\">";
+        '<div class="f-contain">';
     if ($Me->is_empty() || isset($_REQUEST["signin"]))
         echo Ht::hidden("testsession", 1);
     if (@$Opt["contactdb_dsn"] && @$Opt["contactdb_loginFormHeading"])
         echo $Opt["contactdb_loginFormHeading"];
-    if (($password_reset = $Conf->session("password_reset")))
+    $password_reset = $Conf->session("password_reset");
+    if ($password_reset && $password_reset->time < $Now - 900) {
+        $password_reset = null;
         $Conf->save_session("password_reset", null);
-    echo "<div class='f-ii'>
-  <div class='f-c", $email_class, "'>",
+    }
+    echo '<div class="f-ii">
+  <div class="f-c', $email_class, '">',
         (isset($Opt["ldapLogin"]) ? "Username" : "Email"),
-        "</div>
-  <div class='f-e", $email_class, "'><input",
-        ($passwordFocus ? "" : " id='login_d'"),
-        " type='text' name='email' size='36' tabindex='1' ";
-    if (isset($_REQUEST["email"]))
-        echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" ";
-    else if ($password_reset)
-        echo "value=\"", htmlspecialchars($password_reset->email), "\" ";
-    echo " /></div>
+        '</div>
+  <div class="f-e', $email_class, '">',
+        Ht::entry("email", (isset($_REQUEST["email"]) ? $_REQUEST["email"] : ($password_reset ? $password_reset->email : "")),
+                  array("size" => 36, "tabindex" => 1,
+                        "id" => ($passwordFocus || $password_reset ? null : "login_d"))),
+        '</div>
 </div>
-<div class='f-i'>
-  <div class='f-c", $password_class, "'>Password</div>
-  <div class='f-e'><input",
-        ($passwordFocus ? " id='login_d'" : ""),
-        " type='password' name='password' size='36' tabindex='1'";
+<div class="f-i">
+  <div class="f-c', $password_class, '">Password</div>
+  <div class="f-e">',
+        Ht::password("password", "",
+                     array("size" => 36, "tabindex" => 1,
+                           "id" => ($passwordFocus ? "login_d" : null))),
+        "</div>\n</div>\n";
     if ($password_reset)
-        echo " value=\"", htmlspecialchars($password_reset->password), "\"";
-    else
-        echo " value=\"\"";
-    echo " /></div>
-</div>\n";
+        $Conf->echoScript("jQuery(function(){jQuery(\"#homeacct input[name=password]\").val(" . json_encode($password_reset->password) . ")})");
     if (isset($Opt["ldapLogin"]))
         echo Ht::hidden("action", "login");
     else {
