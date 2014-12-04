@@ -433,8 +433,10 @@ function reload() {
 
 function run_comet() {
     if (dl.tracker_poll && !dl.tracker_poll_corrected
-        && !/^(?:https?:|\/)/.test(dl.tracker_poll))
+        && !/^(?:https?:|\/)/.test(dl.tracker_poll)) {
         dl.tracker_poll = hotcrp_base + dl.tracker_poll;
+        dl.tracker_poll_corrected = true;
+    }
     if (dl.tracker_poll && !tracker_comet_at) {
         tracker_comet_at = (new Date).getTime();
         jQuery.ajax({
