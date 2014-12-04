@@ -8,6 +8,9 @@ require_once("src/initweb.php");
 // *** NB If you change this script, also change the logic in index.php ***
 // *** that hides the link when there are no deadlines to show.         ***
 
+if (@$_REQUEST["key"] && isset($Opt["buzzerkey"]) && $Opt["buzzerkey"] == $_REQUEST["key"])
+    $Me = Contact::site_contact();
+
 if (@$_REQUEST["track"] && $Me->privChair && check_post()) {
     // arguments: IDENTIFIER LISTNUM [POSITION] -OR- stop
     if ($_REQUEST["track"] == "stop")
