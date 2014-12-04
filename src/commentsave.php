@@ -110,10 +110,10 @@ class CommentSave {
             return false;
 
         // comment ID
-        $cid = $crow ? $crow->commentId : $result->insert_id;
-        if (!$cid)
+        $cmtid = $crow ? $crow->commentId : $result->insert_id;
+        if (!$cmtid)
             return false;
-        $contact->log_activity("Comment $cid " . ($text !== "" ? "saved" : "deleted"), $prow->paperId);
+        $contact->log_activity("Comment $cmtid " . ($text !== "" ? "saved" : "deleted"), $prow->paperId);
         // maybe adjust ordinal
         if ((!$crow || !$crow->ordinal
              || ($crow->commentType >= COMMENTTYPE_AUTHOR) != ($ctype >= COMMENTTYPE_AUTHOR))
@@ -128,15 +128,15 @@ class CommentSave {
                 $q .= "commentType>=" . COMMENTTYPE_AUTHOR;
             else
                 $q .= "commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR;
-            $q .= " and commentId!=$cid)
+            $q .= " and commentId!=$cmtid)
 	     where Paper.paperId=$prow->paperId group by Paper.paperId) t
 	set ordinal=greatest(t.commentCount+1,t.maxOrdinal+1)
-	where commentId=$cid";
+	where commentId=$cmtid";
             $Conf->qe($q);
         }
         if ($text !== "") {
-            $crows = $Conf->comment_rows($Conf->comment_query("commentId=$cid"), $contact);
-            if ((self::$crow = @$crows[$cid])
+            $crows = $Conf->comment_rows($Conf->comment_query("commentId=$cmtid"), $contact);
+            if ((self::$crow = @$crows[$cmtid])
                 && self::$crow->timeNotified == self::$crow->timeModified)
                 genericWatch($prow, WATCHTYPE_COMMENT, "CommentSave::watch_callback", $contact);
             return self::$crow;

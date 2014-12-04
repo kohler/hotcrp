@@ -8,7 +8,6 @@ require_once("src/initweb.php");
 require_once("src/papertable.php");
 if ($Me->is_empty())
     $Me->escape();
-$useRequest = isset($_REQUEST["after_login"]);
 
 
 // header
@@ -97,7 +96,6 @@ function saveComment($text, $is_response) {
         $Conf->confirmMsg("$what deleted.");
 
     if (@$_REQUEST["ajax"]) {
-        $cv = new CommentView;
         $j = array("ok" => $next_crow !== false);
         if (@$next_crow) {
             $cv = new CommentView;
@@ -129,7 +127,6 @@ else if ((@$_REQUEST["submitcomment"] || @$_REQUEST["submitresponse"] || @$_REQU
         saveComment($text, true);
     if (@$_REQUEST["ajax"])
         $Conf->ajaxExit(array("ok" => false));
-    $useRequest = true;
 } else if (@$_REQUEST["submitcomment"]) {
     $text = @rtrim($_REQUEST["comment"]);
     if (!$Me->canSubmitComment($prow, $crow, $whyNot))
@@ -140,7 +137,6 @@ else if ((@$_REQUEST["submitcomment"] || @$_REQUEST["submitresponse"] || @$_REQU
         saveComment($text, false);
     if (@$_REQUEST["ajax"])
         $Conf->ajaxExit(array("ok" => false));
-    $useRequest = true;
 } else if ((@$_REQUEST["deletecomment"] || @$_REQUEST["deleteresponse"]) && $crow) {
     if (!$Me->canSubmitComment($prow, $crow, $whyNot))
         $Conf->errorMsg(whyNotText($whyNot, "comment on"));
@@ -148,7 +144,6 @@ else if ((@$_REQUEST["submitcomment"] || @$_REQUEST["submitresponse"] || @$_REQU
         saveComment("", ($crow->commentType & COMMENTTYPE_RESPONSE) != 0);
     if (@$_REQUEST["ajax"])
         $Conf->ajaxExit(array("ok" => false));
-    $useRequest = true;
 } else if (@$_REQUEST["cancel"] && $crow)
     $_REQUEST["noedit"] = 1;
 
