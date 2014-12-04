@@ -313,7 +313,7 @@ function window_trackerstate() {
     var trackerstate = null;
     if (window.sessionStorage) {
         trackerstate = sessionStorage.getItem("hotcrp_tracker");
-        trackerstate = trackerstate && JSON.parse(trackerstate);
+        trackerstate = trackerstate && jQuery.parseJSON(trackerstate);
     }
     return trackerstate;
 }
@@ -2538,7 +2538,7 @@ function check_version(url, versionstr) {
         }
     }
     function updatecb(json) {
-        if (json && json.updates && JSON.stringify)
+        if (json && json.updates && window.JSON && JSON.stringify)
             Miniajax.get(hotcrp_base + "checkupdates.php?data="
                          + encodeURIComponent(JSON.stringify(json)),
                          updateverifycb);
@@ -2550,7 +2550,7 @@ function check_version(url, versionstr) {
     try {
         if (window.localStorage
             && localStorage.hotcrp_version_check
-            && (x = JSON.parse(localStorage.hotcrp_version_check))
+            && (x = jQuery.parseJSON(localStorage.hotcrp_version_check))
             && x.at >= (new Date).getTime() - 600000 /* 10 minutes */
             && x.version == versionstr)
             return;
