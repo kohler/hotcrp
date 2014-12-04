@@ -784,7 +784,7 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
     while (($row = edb_orow($result))) {
         if ($row->contactId == $lastContactId
             || ($contact && $row->contactId == $contact->contactId)
-            || preg_match('/\Aanonymous\d*\z/', $row->email))
+            || Contact::is_anonymous_email($row->email))
             continue;
         $lastContactId = $row->contactId;
 

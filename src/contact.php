@@ -383,6 +383,15 @@ class Contact {
         return !!$this->email;
     }
 
+    static function is_anonymous_email($email) {
+        // see also PaperSearch, Mailer
+        return preg_match('/\Aanonymous\d*\z/', $email);
+    }
+
+    function is_anonymous_user() {
+        return $this->email && self::is_anonymous_email($this->email);
+    }
+
     function has_database_account() {
         return $this->contactId > 0;
     }
@@ -2425,8 +2434,11 @@ class Contact {
 
         if ($q[0] == "i")
             $Conf->ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
+        // Mark rev_tokens setting for future update by
+        // updateRevTokensSetting
         if ($rrow && @$rrow->reviewToken && $type <= 0)
             $Conf->settings["rev_tokens"] = -1;
+        // Set pcrev_assigntime
         if ($q[0] == "i" && $type >= REVIEW_PC && $Conf->setting("pcrev_assigntime", 0) < $Now)
             $Conf->save_setting("pcrev_assigntime", $Now);
         return $reviewId;
@@ -2473,7 +2485,7 @@ class Contact {
         global $Conf, $Now;
         if (!$this->activity_at || $this->activity_at < $Now) {
             $this->activity_at = $Now;
-            if ($this->contactId)
+            if ($this->contactId && !$this->is_anonymous_user())
                 Dbl::ql("update ContactInfo set lastLogin=$Now where contactId=$this->contactId");
             if ($this->contactDbId)
                 Dbl::ql(self::contactdb(), "update ContactInfo set activity_at=$Now where contactDbId=$this->contactDbId");
@@ -2483,13 +2495,15 @@ class Contact {
     function log_activity($text, $paperId = null) {
         global $Conf;
         $this->mark_activity();
-        $Conf->log($text, $this, $paperId);
+        if (!$this->is_anonymous_user())
+            $Conf->log($text, $this, $paperId);
     }
 
     function log_activity_for($user, $text, $paperId = null) {
         global $Conf;
         $this->mark_activity();
-        $Conf->log($text . " by $this->email", $user, $paperId);
+        if (!$this->is_anonymous_user())
+            $Conf->log($text . " by $this->email", $user, $paperId);
     }
 
 }

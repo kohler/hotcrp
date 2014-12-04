@@ -89,7 +89,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         if (!$Me->canViewReviewerIdentity($prow, $rr, null)) {
             $t .= ($x ? "<td>$x</td>" : '<td class="empty"></td>');
         } else {
-            if (!$showtoken || !preg_match('/^anonymous\d*$/', $rr->email)) {
+            if (!$showtoken || !Contact::is_anonymous_email($rr->email)) {
                 if ($mode == "assign")
                     $n = Text::user_html($rr);
                 else

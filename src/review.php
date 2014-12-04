@@ -1462,7 +1462,7 @@ $blind\n";
         $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
         $showtoken = $rrow && $rrow->reviewToken && $Me->canReview($prow, $rrow);
         if ($rrow && $Me->canViewReviewerIdentity($prow, $rrow, null)
-            && (!$showtoken || !preg_match('/^anonymous\d*$/', $rrow->email))) {
+            && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
             echo $sep, ($rrow->reviewBlind ? "[" : ""), "by ", Text::user_html($rrow), ($rrow->reviewBlind ? "]" : "");
             $sep = $xsep;
         }
