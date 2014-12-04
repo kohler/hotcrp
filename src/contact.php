@@ -1779,7 +1779,8 @@ class Contact {
                     && (!$submit || self::override_deadlines())))
             && (!$crow
                 || $crow->contactId == $this->contactId
-                || $crow->contactId == $rights->review_token_cid
+                || ($crow->contactId == $rights->review_token_cid
+                    && $rights->review_token_cid)
                 || $rights->allow_administer))
             return true;
         // collect failure reasons
@@ -1828,7 +1829,8 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         // policy
         if ($crow_contactId == $this->contactId        // wrote this comment
-            || $crow_contactId == $rights->review_token_cid
+            || ($crow_contactId == $rights->review_token_cid
+                && $rights->review_token_cid)
             || $rights->can_administer
             || ($rights->act_author_view
                 && $ctype >= COMMENTTYPE_AUTHOR
