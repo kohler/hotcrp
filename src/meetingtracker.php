@@ -106,13 +106,15 @@ class MeetingTracker {
                 $p->pid = (int) $row->paperId;
                 $p->title = $row->title;
             }
-            if ($row->managerContactId == $acct->contactId)
+            if ($acct->contactId > 0
+                && $row->managerContactId == $acct->contactId)
                 $p->is_manager = true;
             if ($row->reviewType)
                 $p->is_reviewer = true;
             if ($row->conflictType)
                 $p->is_conflict = true;
-            if ($row->leadContactId == $acct->contactId)
+            if ($acct->contactId > 0
+                && $row->leadContactId == $acct->contactId)
                 $p->is_lead = true;
         }
 
