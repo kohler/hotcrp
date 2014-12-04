@@ -115,6 +115,7 @@ lib/unicodehelper.php
 lib/xlsx.php
 
 src/.htaccess
+src/api.php
 src/assigners.php
 src/banal
 src/baselist.php

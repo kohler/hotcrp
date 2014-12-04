@@ -73,7 +73,7 @@ function hoturl_post(page, options) {
     window.onerror = function (errormsg, url, lineno) {
         if (++nerrors_logged <= 10)
             jQuery.ajax({
-                url: hoturl("deadlines", "jserror=1&ajax=1"),
+                url: hoturl("api", "jserror=1"),
                 type: "POST",
                 data: {"error": errormsg, "url": url, "lineno": lineno}
             });
@@ -428,7 +428,7 @@ function display_tracker() {
 function reload() {
     clearTimeout(reload_timeout);
     reload_timeout = null;
-    Miniajax.get(hoturl("deadlines", "ajax=1"), hotcrp_deadlines, 10000);
+    Miniajax.get(hoturl("api", "deadlines=1"), hotcrp_deadlines, 10000);
 }
 
 function run_comet() {
@@ -500,7 +500,7 @@ hotcrp_deadlines.init = function (dlx) {
 hotcrp_deadlines.tracker = function (start) {
     var trackerstate, list = "";
     if (start < 0)
-        Miniajax.post(hoturl_post("deadlines", "track=stop&ajax=1"),
+        Miniajax.post(hoturl_post("api", "track=stop"),
                       hotcrp_deadlines, 10000);
     if (!window.sessionStorage || !window.JSON || start < 0)
         return false;
@@ -516,7 +516,7 @@ hotcrp_deadlines.tracker = function (start) {
         trackerstate = trackerstate[1] + "%20" + encodeURIComponent(list);
         if (hotcrp_paperid)
             trackerstate += "%20" + encodeURIComponent(hotcrp_paperid);
-        Miniajax.post(hoturl_post("deadlines", "track=" + trackerstate + "&ajax=1"),
+        Miniajax.post(hoturl_post("api", "track=" + trackerstate),
                       hotcrp_deadlines, 10000);
     }
     return false;
