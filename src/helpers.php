@@ -815,11 +815,17 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
         }
     }
 
+    // save my current contact info map -- we are replacing it with another
+    // map that lacks review token information and so forth
+    $cimap = $prow->replace_contact_info_map(array());
+
     foreach ($watchers as $row) {
         $minic = Contact::make($row);
         $prow->assign_contact_info($row, $row->contactId);
         call_user_func($callback, $prow, $minic);
     }
+
+    $prow->replace_contact_info_map($cimap);
 }
 
 
