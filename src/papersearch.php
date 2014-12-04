@@ -2604,6 +2604,8 @@ class PaperSearch {
                     $qm = "(" . substr($cm->sql, 1) . ")";
                 else if (($pos = strpos($cm->sql, "@")) !== false)
                     $qm = "(email like '" . substr($cm->sql, 0, $pos + 1) . "%" . substr($cm->sql, $pos + 1) . "%')";
+                else if (strcasecmp($cm->sql, "anonymous") == 0)
+                    $qm = "(email regexp '^anonymous[0-9]*\$')";
                 else if (preg_match('/\A(.*?)\s*([,\s])\s*(.*)\z/', $cm->sql, $m)) {
                     if ($m[2] == ",")
                         $qm = "(firstName like '" . trim($m[3]) . "%' and lastName like '" . trim($m[1]) . "%')";
