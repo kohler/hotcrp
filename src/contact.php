@@ -421,6 +421,7 @@ class Contact {
         global $Conf;
 
         // Load from database
+        $result = null;
         if ($this->contactId > 0) {
             $qr = "";
             if ($this->review_tokens_)
@@ -432,9 +433,8 @@ class Contact {
                 left join PaperConflict conf on (conf.contactId=c.contactId)
                 left join PaperReview r on (r.contactId=c.contactId$qr)
                 where c.contactId=$this->contactId group by c.contactId");
-            $row = edb_row($result);
-        } else
-            $row = null;
+        }
+        $row = edb_row($result);
         $this->is_author_ = $row && $row[0] >= CONFLICT_AUTHOR;
         $this->has_review_ = $row && $row[1] > 0;
         $this->has_outstanding_review_ = $row && $row[2] > 0;
@@ -482,11 +482,10 @@ class Contact {
     function is_requester() {
         global $Conf;
         if (!isset($this->is_requester_)) {
-            if ($this->contactId > 0) {
+            $result = null;
+            if ($this->contactId > 0)
                 $result = Dbl::qe("select requestedBy from PaperReview where requestedBy=? and contactId!=? limit 1", $this->contactId, $this->contactId);
-                $row = edb_row($result);
-            } else
-                $row = null;
+            $row = edb_row($result);
             $this->is_requester_ = $row && $row[0] > 1;
         }
         return $this->is_requester_;
@@ -495,7 +494,9 @@ class Contact {
     function is_discussion_lead() {
         global $Conf;
         if (!isset($this->is_lead_)) {
-            $result = $Conf->qe("select paperId from Paper where leadContactId=$this->contactId limit 1");
+            $result = null;
+            if ($this->contactId > 0)
+                $result = $Conf->qe("select paperId from Paper where leadContactId=$this->contactId limit 1");
             $this->is_lead_ = edb_nrows($result) > 0;
         }
         return $this->is_lead_;
@@ -504,7 +505,9 @@ class Contact {
     function is_manager() {
         global $Conf;
         if (!isset($this->is_manager_)) {
-            $result = $Conf->qe("select paperId from Paper where managerContactId=$this->contactId limit 1");
+            $result = null;
+            if ($this->contactId > 0)
+                $result = $Conf->qe("select paperId from Paper where managerContactId=$this->contactId limit 1");
             $this->is_manager_ = edb_nrows($result) > 0;
         }
         return $this->is_manager_;
