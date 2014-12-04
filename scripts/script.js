@@ -232,8 +232,7 @@ function text_to_html(text) {
 
 window.hotcrp_deadlines = (function () {
 var dl, dlname, dltime, has_tracker, had_tracker_at,
-    redisplay_timeout, reload_timeout, tracker_timer,
-    tracker_comet_at, tracker_comet_stop_until, tracker_comet_errors = 0;
+    redisplay_timeout, reload_timeout, tracker_timer;
 
 function redisplay_main() {
     redisplay_timeout = null;
@@ -431,40 +430,54 @@ function reload() {
     Miniajax.get(hoturl("api", "deadlines=1"), hotcrp_deadlines, 10000);
 }
 
-function run_comet() {
+
+// Comet tracker
+var comet_sent_at, comet_stop_until, comet_nerrors = 0;
+
+function comet_tracker() {
+    // exit early if no tracker_poll, or if stopped, or outstanding
+    if (!dl.tracker_poll
+        || (comet_stop_until && comet_stop_until < (new Date).getTime()))
+        return false;
+    else if (comet_sent_at)
+        return true;
+
+    // correct tracker_poll URL to be a full URL if necessary
     if (dl.tracker_poll && !dl.tracker_poll_corrected
         && !/^(?:https?:|\/)/.test(dl.tracker_poll)) {
         dl.tracker_poll = hotcrp_base + dl.tracker_poll;
         dl.tracker_poll_corrected = true;
     }
-    if (dl.tracker_poll && !tracker_comet_at) {
-        tracker_comet_at = (new Date).getTime();
-        jQuery.ajax({
-            url: dl.tracker_poll,
-            timeout: 300000,
-            dataType: "json",
-            complete: function (xhr, status) {
-                var now = (new Date).getTime(), delta = now - tracker_comet_at;
-                tracker_comet_at = null;
-                // Assume errors after long delays are actually timeouts
-                // (Chrome shuts down long polls sometimes)
-                if (status == "error" && delta > 100000)
-                    status = "timeout";
-                if (status == "success" && xhr.status == 200) {
-                    tracker_comet_errors = tracker_comet_stop_until = 0;
-                    reload();
-                } else if (status == "timeout")
-                    run_comet();
-                else if (++tracker_comet_errors % 3)
-                    setTimeout(run_comet, 128 << Math.min(tracker_comet_errors, 12));
-                else {
-                    tracker_comet_stop_until = now + 10000 * Math.min(tracker_comet_errors, 60);
-                    reload();
-                }
+
+    // make a new request
+    comet_sent_at = (new Date).getTime();
+    jQuery.ajax({
+        url: dl.tracker_poll,
+        timeout: 300000,
+        dataType: "json",
+        complete: function (xhr, status) {
+            var now = (new Date).getTime(), delta = now - comet_sent_at;
+            comet_sent_at = null;
+            // Assume errors after long delays are actually timeouts
+            // (Chrome shuts down long polls sometimes)
+            if (status == "error" && delta > 100000)
+                status = "timeout";
+            if (status == "success" && xhr.status == 200) {
+                comet_nerrors = comet_stop_until = 0;
+                reload();
+            } else if (status == "timeout")
+                comet_tracker();
+            else if (++comet_nerrors % 3)
+                setTimeout(comet_tracker, 128 << Math.min(comet_nerrors, 12));
+            else {
+                comet_stop_until = now + 10000 * Math.min(comet_nerrors, 60);
+                reload();
             }
-        });
-    }
+        }
+    });
+    return true;
 }
+
 
 function hotcrp_deadlines(dlx, is_initial) {
     var t;
@@ -478,10 +491,8 @@ function hotcrp_deadlines(dlx, is_initial) {
     if (!reload_timeout) {
         if (is_initial && $$("clock_drift_container"))
             t = 10;
-        else if (had_tracker_at && dl.tracker_poll
-                 && (!tracker_comet_stop_until
-                     || tracker_comet_stop_until >= (new Date).getTime()))
-            run_comet();
+        else if (had_tracker_at && comet_tracker())
+            /* skip */;
         else if (had_tracker_at && dl.load - had_tracker_at < 1200000)
             t = 10000;
         else if (dlname && (!dltime || dltime - dl.load <= 120))
