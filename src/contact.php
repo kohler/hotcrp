@@ -482,9 +482,11 @@ class Contact {
     function is_requester() {
         global $Conf;
         if (!isset($this->is_requester_)) {
-            $result = $Conf->qe("select epr.requestedBy from PaperReview epr
-                where epr.requestedBy=$this->contactId limit 1");
-            $row = edb_row($result);
+            if ($this->contactId > 0) {
+                $result = Dbl::qe("select requestedBy from PaperReview where requestedBy=? and contactId!=? limit 1", $this->contactId, $this->contactId);
+                $row = edb_row($result);
+            } else
+                $row = null;
             $this->is_requester_ = $row && $row[0] > 1;
         }
         return $this->is_requester_;
