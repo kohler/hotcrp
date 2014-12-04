@@ -4,40 +4,44 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperContactInfo {
-    public $conflict_type;
-    public $review_type;
-    public $review_submitted;
-    public $review_needs_submit;
+    public $conflict_type = 0;
+    public $review_type = 0;
+    public $review_submitted = null;
+    public $review_needs_submit = 1;
+    public $review_token_cid = null;
 
     function __construct() {
     }
 
-    static function load($pid, $cid) {
-        global $Conf;
-        if ($cid)
-            $result = $Conf->qe("select conflictType as conflict_type,
+    static function load($pid, $cid, $rev_tokens = null) {
+        $result = null;
+        if ($cid) {
+            $review_matcher = array("PaperReview.contactId=$cid");
+            if ($rev_tokens && count($rev_tokens))
+                $review_matcher[] = "PaperReview.reviewToken in (" . join(",", $rev_tokens) . ")";
+            $result = Dbl::real_qe("select conflictType as conflict_type,
                 reviewType as review_type,
                 reviewSubmitted as review_submitted,
-                reviewNeedsSubmit as review_needs_submit
+                reviewNeedsSubmit as review_needs_submit,
+                PaperReview.contactId as review_token_cid
                 from (select $pid paperId) crap
                 left join PaperConflict on (PaperConflict.paperId=crap.paperId and PaperConflict.contactId=$cid)
-                left join PaperReview on (PaperReview.paperId=crap.paperId and PaperReview.contactId=$cid)");
-        else
-            $result = null;
-        if (!$result || !($ci = $result->fetch_object("PaperContactInfo"))) {
-            $ci = new PaperContactInfo;
-            $ci->conflict_type = $ci->review_type = 0;
-            $ci->review_needs_submit = 1;
-        } else {
+                left join PaperReview on (PaperReview.paperId=crap.paperId and (" . join(" or ", $review_matcher) . "))");
+        }
+        if ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
             $ci->conflict_type = (int) $ci->conflict_type;
             $ci->review_type = (int) $ci->review_type;
             $ci->review_submitted = (int) $ci->review_submitted;
             $ci->review_needs_submit = (int) $ci->review_needs_submit;
-        }
+            $ci->review_token_cid = (int) $ci->review_token_cid;
+            if ($ci->review_token_cid == $cid)
+                $ci->review_token_cid = null;
+        } else
+            $ci = new PaperContactInfo;
         return $ci;
     }
 
-    static function load_my($object) {
+    static function load_my($object, $cid) {
         $ci = new PaperContactInfo;
         if (property_exists($object, "conflictType"))
             $ci->conflict_type = (int) $object->conflictType;
@@ -47,6 +51,9 @@ class PaperContactInfo {
             $ci->review_submitted = (int) $object->myReviewSubmitted;
         if (property_exists($object, "myReviewNeedsSubmit"))
             $ci->review_needs_submit = (int) $object->myReviewNeedsSubmit;
+        if (property_exists($object, "myReviewContactId")
+            && $object->myReviewContactId != $cid)
+            $ci->review_token_cid = (int) $object->myReviewContactId;
         return $ci;
     }
 }
@@ -79,15 +86,18 @@ class PaperInfo {
     }
 
     public function contact_info($contact = null) {
-        global $Conf, $Me;
+        global $Me;
         if (!$contact)
-            $contact = $Me->contactId;
-        else if (is_object($contact))
+            $contact = $Me;
+        $rev_tokens = null;
+        if (is_object($contact)) {
+            $rev_tokens = $contact->review_tokens();
             $contact = $contact->contactId;
+        }
         $ci = @$this->contact_info_[$contact];
         if (!$ci)
             $ci = $this->contact_info_[$contact] =
-                PaperContactInfo::load($this->paperId, $contact);
+                PaperContactInfo::load($this->paperId, $contact, $rev_tokens);
         return $ci;
     }
 
@@ -98,7 +108,7 @@ class PaperInfo {
     }
 
     public function assign_contact_info($row, $cid) {
-        $this->contact_info_[$cid] = PaperContactInfo::load_my($row);
+        $this->contact_info_[$cid] = PaperContactInfo::load_my($row, $cid);
     }
 
     public function conflict_type($contact = null) {
@@ -136,8 +146,7 @@ class PaperInfo {
     }
 
     public function load_tags() {
-        global $Conf;
-        $result = $Conf->qe("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=$this->paperId group by paperId");
+        $result = Dbl::real_qe("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=$this->paperId group by paperId");
         $this->paperTags = "";
         if (($row = edb_row($result)) && $row[0] !== null)
             $this->paperTags = $row[0];
@@ -167,8 +176,7 @@ class PaperInfo {
     }
 
     private function load_topics() {
-        global $Conf;
-        $result = $Conf->qe("select group_concat(topicId) from PaperTopic where paperId=$this->paperId");
+        $result = Dbl::real_qe("select group_concat(topicId) from PaperTopic where paperId=$this->paperId");
         $row = edb_row($result);
         $this->topicIds = $row ? $row[0] : "";
     }

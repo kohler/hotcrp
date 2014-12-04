@@ -640,9 +640,7 @@ class ReviewForm {
         }
 
         // check whether used a review token
-        $usedReviewToken = $rrow && $rrow->reviewToken
-            && ($tokens = $contact->review_tokens())
-            && array_search($rrow->reviewToken, $tokens) !== false;
+        $usedReviewToken = $contact->review_token_cid($prow, $rrow);
 
         // blind? reviewer type? edit version?
         $reviewBlind = $Conf->is_review_blind(!!@$req["blind"]);
@@ -1460,7 +1458,7 @@ $blind\n";
 
         $open = $sep = " <span class='revinfo'>";
         $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
-        $showtoken = $rrow && $rrow->reviewToken && $Me->canReview($prow, $rrow);
+        $showtoken = $rrow && $Me->review_token_cid($prow, $rrow);
         if ($rrow && $Me->canViewReviewerIdentity($prow, $rrow, null)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
             echo $sep, ($rrow->reviewBlind ? "[" : ""), "by ", Text::user_html($rrow), ($rrow->reviewBlind ? "]" : "");

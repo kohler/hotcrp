@@ -584,6 +584,19 @@ class Contact {
         return $this->review_tokens_ ? $this->review_tokens_ : array();
     }
 
+    function review_token_cid($prow, $rrow = null) {
+        if (!$this->review_tokens_)
+            return null;
+        if (!$rrow) {
+            $ci = $prow->contact_info($this);
+            return $ci->review_token_cid;
+        } else if ($rrow->reviewToken
+                   && array_search($rrow->reviewToken, $this->review_tokens_) !== false)
+            return (int) $rrow->contactId;
+        else
+            return null;
+    }
+
     function change_review_token($token, $on) {
         global $Conf;
         assert($token !== false || $on === false);
@@ -1468,8 +1481,11 @@ class Contact {
         else if (isset($rrow->contactId))
             $rrow_contactId = $rrow->contactId;
         return $rrow_contactId == $this->contactId
-            || ($this->review_tokens_ && array_search($rrow->reviewToken, $this->review_tokens_) !== false)
-            || ($rrow->requestedBy == $this->contactId && $rrow->reviewType == REVIEW_EXTERNAL && $Conf->setting("pcrev_editdelegate"));
+            || ($this->review_tokens_
+                && array_search($rrow->reviewToken, $this->review_tokens_) !== false)
+            || ($rrow->requestedBy == $this->contactId
+                && $rrow->reviewType == REVIEW_EXTERNAL
+                && $Conf->setting("pcrev_editdelegate"));
     }
 
     public function canCountReview($prow, $rrow, $forceShow) {
@@ -1763,6 +1779,7 @@ class Contact {
                     && (!$submit || self::override_deadlines())))
             && (!$crow
                 || $crow->contactId == $this->contactId
+                || $crow->contactId == $rights->review_token_cid
                 || $rights->allow_administer))
             return true;
         // collect failure reasons
@@ -1811,6 +1828,7 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         // policy
         if ($crow_contactId == $this->contactId        // wrote this comment
+            || $crow_contactId == $rights->review_token_cid
             || $rights->can_administer
             || ($rights->act_author_view
                 && $ctype >= COMMENTTYPE_AUTHOR
