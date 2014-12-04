@@ -44,7 +44,8 @@ function loadRows() {
             || ($cid == "response" && ($row->commentType & COMMENTTYPE_RESPONSE)))
             $crow = $row;
     }
-    if ($cid != "xxx" && !$crow && $cid != "response" && $cid != "new" && $cid != "newresponse")
+    if ($cid != "xxx" && !$crow && $cid != "response"
+        && $cid != "new" && $cid != "newresponse")
         errorMsgExit("That comment does not exist.");
     if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
         $Error = array();
@@ -61,12 +62,20 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 // update comment action
 function saveComment($text, $is_response) {
     global $Me, $Conf, $prow, $crow;
+
+    // If I have a review token for this paper, save under that anonymous user.
+    $user = $Me;
+    if ((!$crow || $crow->contactId != $Me->contactId)
+        && ($cid = $Me->review_token_cid($prow))
+        && (!$crow || $crow->contactId == $cid))
+        $user = Contact::find_by_id($cid);
+
     $req = array("visibility" => @$_REQUEST["visibility"],
                  "submit" => $is_response && @$_REQUEST["submitresponse"],
                  "text" => $text,
                  "tags" => @$_REQUEST["commenttags"],
                  "blind" => @$_REQUEST["blind"]);
-    $next_crow = CommentSave::save($req, $prow, $crow, $Me, $is_response);
+    $next_crow = CommentSave::save($req, $prow, $crow, $user, $is_response);
     $what = ($is_response ? "Response" : "Comment");
 
     $confirm = false;
