@@ -121,6 +121,8 @@ class Contact {
             $this->has_review_ = $user->has_review;
         if (isset($user->has_outstanding_review))
             $this->has_outstanding_review_ = $user->has_outstanding_review;
+        if (isset($user->is_site_contact))
+            $this->is_site_contact = $user->is_site_contact;
     }
 
     // begin changing contactId to cid
@@ -177,9 +179,10 @@ class Contact {
                 $Opt["contactEmail"] = $row->email;
             }
         }
-        return (object) array("fullName" => $Opt["contactName"],
-                              "email" => $Opt["contactEmail"],
-                              "privChair" => 1, "is_site_contact" => 1);
+        return new Contact((object) array("fullName" => $Opt["contactName"],
+                                          "email" => $Opt["contactEmail"],
+                                          "privChair" => 1, "isPC" => 1,
+                                          "is_site_contact" => 1));
     }
 
     private function assign_roles($roles) {
