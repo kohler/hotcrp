@@ -181,8 +181,10 @@ class Contact {
         }
         return new Contact((object) array("fullName" => $Opt["contactName"],
                                           "email" => $Opt["contactEmail"],
-                                          "privChair" => 1, "isPC" => 1,
-                                          "is_site_contact" => 1));
+                                          "isChair" => true,
+                                          "isPC" => true,
+                                          "is_site_contact" => true,
+                                          "contactTags" => null));
     }
 
     private function assign_roles($roles) {
