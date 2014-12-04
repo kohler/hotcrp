@@ -2176,6 +2176,8 @@ class Conference {
             header("Content-Type: text/plain");
         else
             header("Content-Type: application/json");
+        if (check_post())
+            header("Access-Control-Allow-Origin: *");
         echo json_encode($values);
     }
 
