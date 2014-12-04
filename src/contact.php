@@ -2026,15 +2026,17 @@ class Contact {
 
     function my_rounds() {
         global $Conf;
+        $rounds = array();
         $where = array();
         if ($this->contactId)
             $where[] = "contactId=" . $this->contactId;
         if (($tokens = $this->review_tokens()))
             $where[] = "reviewToken in (" . join(",", $tokens) . ")";
-        $result = $Conf->qe("select distinct reviewRound from PaperReview where " . join(" or ", $where));
-        $rounds = array();
-        while (($row = edb_row($result)))
-            $rounds[] = +$row[0];
+        if (count($where)) {
+            $result = $Conf->qe("select distinct reviewRound from PaperReview where " . join(" or ", $where));
+            while (($row = edb_row($result)))
+                $rounds[] = +$row[0];
+        }
         sort($rounds);
         return $rounds;
     }
