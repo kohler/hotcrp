@@ -170,8 +170,10 @@ class MeetingTracker {
     }
 
     static function tracker_status($tracker) {
-        if ($tracker)
+        if ($tracker && @$tracker->position_at)
             return $tracker->trackerid . "@" . $tracker->position_at;
+        else if ($tracker)
+            return $tracker->trackerid;
         else
             return "off";
     }
