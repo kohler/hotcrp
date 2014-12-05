@@ -461,7 +461,7 @@ var comet_store_timeout, comet_store_listen_key;
 var comet_store_owned_key, comet_store_refresh_interval;
 
 function comet_store_check(now) {
-    if (!window.localStorage || !dl.tracker_poll)
+    if (!window.localStorage || !dl.tracker_poll || comet_store_owned_key)
         return false;
     var key = "hotcrp-comet " + dl.tracker_poll,
         value = localStorage.getItem(key);
