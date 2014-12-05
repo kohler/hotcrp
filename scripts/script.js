@@ -476,7 +476,7 @@ function comet_store_check(now) {
 }
 
 function comet_store_listen(e) {
-    var j, ee = e.originalEvent;;
+    var j, ee = e.originalEvent;
     if (ee.key == comet_store_listen_key
         && !(ee.newValue && (j = jQuery.parseJSON(ee.newValue))
              && j.update_at && j.update_at >= (new Date).getTime() - 10000))
