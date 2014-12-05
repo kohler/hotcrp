@@ -29,8 +29,6 @@ if (@$_REQUEST["track"] && $Me->privChair && check_post()) {
 
 $j = $Me->my_deadlines();
 
-if (@$j["tracker"]) /* microsecond time precision is called for :) */
-    $j["now"] = microtime(true);
 if (@$j["tracker"] && $Me->privChair && @$_REQUEST["pc_conflicts"])
     MeetingTracker::status_add_pc_conflicts($j["tracker"]);
 if (@$_REQUEST["checktracker"]) {
@@ -62,4 +60,6 @@ if (@$_REQUEST["jserror"]) {
 }
 
 $j["ok"] = true;
+if (@$j["tracker"]) /* microsecond time precision is called for! */
+    $j["now"] = microtime(true);
 $Conf->ajaxExit($j);

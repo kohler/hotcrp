@@ -25,14 +25,13 @@ class MeetingTracker {
         ensure_session();
         if (preg_match('/\A[1-9][0-9]*\z/', $trackerid))
             $trackerid = (int) $trackerid;
-        $micronow = microtime(true);
         $tracker = (object) array("trackerid" => $trackerid,
                                   "listid" => $list->listid,
                                   "ids" => $list->ids,
                                   "url" => $list->url,
                                   "description" => $list->description,
-                                  "start_at" => $micronow,
-                                  "position_at" => $micronow,
+                                  "start_at" => $Now,
+                                  "position_at" => $Now,
                                   "owner" => $Me->contactId,
                                   "sessionid" => session_id(),
                                   "position" => $position);

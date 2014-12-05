@@ -370,27 +370,25 @@ function tracker_paper_columns(idx, paper) {
     return t + x.join(" &nbsp;&#183;&nbsp; ") + '</td>';
 }
 
-function tracker_elapsed(now) {
-    var sec, min, t;
-    now /= 1000;
-    if (dl.tracker && dl.tracker.position_at) {
-        sec = Math.round(now - (dl.tracker.position_at + (dl.load - dl.now)));
-        if (sec >= 3600)
-            return sprintf("%d:%02d:%02d", sec / 3600, (sec / 60) % 60, sec % 60);
-        else
-            return sprintf("%d:%02d", sec / 60, sec % 60);
-    } else
-        return null;
-}
-
 function tracker_show_elapsed() {
-    var e = $$("trackerelapsed"), t;
-    if (e && (t = tracker_elapsed((new Date).getTime())))
-        e.innerHTML = t;
-    else {
-        clearInterval(tracker_timer);
+    if (tracker_timer) {
+        clearTimeout(tracker_timer);
         tracker_timer = null;
     }
+    if (!dl.tracker || !dl.tracker.position_at)
+        return;
+
+    var now = (new Date).getTime() / 1000;
+    var delta = now - (dl.tracker.position_at + dl.load - dl.now);
+    var s = Math.round(delta);
+    if (s >= 3600)
+        s = sprintf("%d:%02d:%02d", s/3600, (s/60) % 60, s % 60);
+    else
+        s = sprintf("%d:%02d", s/60, s % 60);
+    jQuery("#trackerelapsed").html(s);
+
+    tracker_timer = setTimeout(tracker_show_elapsed,
+                               1000 - (delta * 1000) % 1000);
 }
 
 function display_tracker() {
@@ -435,11 +433,8 @@ function display_tracker() {
 
     if (dl.is_admin)
         t += '<div style="float:right"><a class="btn btn-transparent" href="#" onclick="return hotcrp_deadlines.tracker(-1)" title="Stop meeting tracker">x</a></div>';
-    if ((i = tracker_elapsed(now))) {
-        t += '<div style="float:right" id="trackerelapsed">' + i + "</div>";
-        if (!tracker_timer)
-            tracker_timer = setInterval(tracker_show_elapsed, 1000);
-    }
+    if (dl.tracker && dl.tracker.position_at)
+        t += '<div style="float:right" id="trackerelapsed"></div>';
     if (!dl.tracker.papers || !dl.tracker.papers[0]) {
         t += "<a href=\"" + hotcrp_base + dl.tracker.url + "\">Discussion list</a>";
     } else {
@@ -450,6 +445,8 @@ function display_tracker() {
         t += "</tr></tbody></table>";
     }
     mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
+    if (dl.tracker && dl.tracker.position_at)
+        tracker_show_elapsed();
     mnspace.style.height = mne.offsetHeight + "px";
 
     has_tracker = true;
