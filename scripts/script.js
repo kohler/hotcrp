@@ -458,14 +458,37 @@ function tracker(start) {
 
 // Comet tracker
 var comet_sent_at, comet_stop_until, comet_nerrors = 0;
+var comet_store_timeout, comet_store_listen_key;
+var comet_store_owned_key, comet_store_refresh_interval;
+
+function comet_store_check(now) {
+    if (!window.localStorage || !dl.tracker_poll)
+        return false;
+    var key = "hotcrp-comet " + dl.tracker_poll,
+        value = localStorage.getItem(key);
+    if (value && (value = jQuery.parseJSON(value))
+        && value.update_at && value.update_at >= now - 10000)
+        return true;
+    $(window).on("storage", comet_store_listen);
+    comet_store_listen_key = key;
+    comet_store_timeout = setTimeout(comet_tracker, 5000);
+}
+
+function comet_store_listen(e) {
+    var j;
+    if (e.key == comet_store_listen_key
+        && !(e.newValue && (j = jQuery.parseJSON(e.newValue))
+             && j.update_at && j.update_at >= (new Date).getTime() - 10000))
+        reload();
+}
+
+function comet_store_refresh() {
+    localStorage.setItem(comet_store_owned_key,
+                         JSON.stringify({update_at: (new Date).getTime()}));
+}
 
 function comet_tracker() {
-    // exit early if no tracker_poll, or if stopped, or outstanding
-    if (!dl.tracker_poll
-        || (comet_stop_until && comet_stop_until < (new Date).getTime()))
-        return false;
-    else if (comet_sent_at)
-        return true;
+    var now = (new Date).getTime();
 
     // correct tracker_poll URL to be a full URL if necessary
     if (dl.tracker_poll && !dl.tracker_poll_corrected
@@ -474,8 +497,36 @@ function comet_tracker() {
         dl.tracker_poll_corrected = true;
     }
 
-    // make a new request
-    comet_sent_at = (new Date).getTime();
+    // kill storage listeners
+    if (comet_store_timeout) {
+        clearTimeout(comet_store_timeout);
+        comet_store_timeout = null;
+    }
+    if (comet_store_listen_key) {
+        $(window).off("storage", comet_store_listen);
+        comet_store_listen_key = null;
+    }
+    if (comet_store_owned_key
+        && (!dl.tracker_poll || comet_store_owned_key != "hotcrp-comet " + dl.tracker_poll)) {
+        localStorage.removeItem(comet_store_owned_key);
+        clearInterval(comet_store_refresh_interval);
+        comet_store_owned_key = comet_store_refresh_interval = null;
+    }
+
+    // exit early if no tracker_poll or stopped
+    if (!dl.tracker_poll || (comet_stop_until && comet_stop_until < now))
+        return false;
+    if (comet_sent_at || comet_store_check(now))
+        return true;
+
+    // make the request
+    comet_sent_at = now;
+    if (window.localStorage && window.JSON) {
+        comet_store_owned_key = "hotcrp-comet " + dl.tracker_poll;
+        comet_store_refresh();
+        comet_store_refresh_interval = setInterval(comet_store_refresh, 5000);
+    }
+
     jQuery.ajax({
         url: dl.tracker_poll,
         timeout: 300000,
@@ -504,8 +555,7 @@ function comet_tracker() {
 }
 
 
-// main function
-
+// deadline loading
 function load(dlx, is_initial) {
     var t;
     if (dlx)
