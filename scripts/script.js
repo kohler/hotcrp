@@ -74,7 +74,7 @@ function hoturl_post(page, options) {
         if (++nerrors_logged <= 10)
             jQuery.ajax({
                 url: hoturl("api", "jserror=1"),
-                type: "POST",
+                type: "POST", cache: false,
                 data: {"error": errormsg, "url": url, "lineno": lineno}
             });
         return old_onerror ? old_onerror.apply(this, arguments) : false;
@@ -446,11 +446,10 @@ function tracker(start) {
     if (trackerstate) {
         if (hotcrp_list)
             list = hotcrp_list.num || hotcrp_list.id;
-        trackerstate = trackerstate[1] + "%20" + encodeURIComponent(list);
+        var req = trackerstate[1] + "%20" + encodeURIComponent(list);
         if (hotcrp_paperid)
-            trackerstate += "%20" + encodeURIComponent(hotcrp_paperid);
-        Miniajax.post(hoturl_post("api", "track=" + trackerstate),
-                      load, 10000);
+            req += "%20" + encodeURIComponent(hotcrp_paperid);
+        Miniajax.post(hoturl_post("api", "track=" + req), load, 10000);
     }
     return false;
 }
@@ -536,7 +535,7 @@ function comet_tracker() {
 
     jQuery.ajax({
         url: dl.tracker_poll,
-        timeout: 300000,
+        timeout: 300000, cache: false,
         dataType: "json",
         complete: function (xhr, status) {
             var now = (new Date).getTime(), delta = now - comet_sent_at;
@@ -1747,7 +1746,7 @@ function rp_focus() {
 function rp_change() {
     var self = this, whichpaper = this.name.substr(7);
     jQuery.ajax({
-        type: "POST", url: prefurl,
+        url: prefurl, type: "POST", cache: false,
         data: {"ajax": 1, "p": whichpaper, "revpref": self.value},
         dataType: "json",
         success: function (rv) {
