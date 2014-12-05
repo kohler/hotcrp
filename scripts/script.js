@@ -4,7 +4,7 @@
 
 var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix,
     hotcrp_list, hotcrp_urldefaults, hotcrp_status, hotcrp_user,
-    hotcrp_want_override_conflict;
+    hotcrp_want_override_conflict, hotcrp_absolute_base;
 
 function $$(id) {
     return document.getElementById(id);
@@ -67,6 +67,26 @@ function hoturl_post(page, options) {
     options += (options ? "&" : "") + "post=" + hotcrp_postvalue;
     return hoturl(page, options);
 }
+
+function hoturl_absolute_base() {
+    if (!hotcrp_absolute_base) {
+        var x = "", base = hotcrp_base, loc = window.location;
+        if (!/^[a-z]:\/\//.test(base))
+            x = loc.protocol;
+        if (x && !/^\/\//.test(base))
+            x += "//" + loc.host + (loc.port ? ":" + loc.port : "");
+        if (x && !/^\//.test(base)) {
+            x = (x + loc.pathname).replace(/\/[^\/]+$/, "/");
+            while (base.substring(0, 3) == "../") {
+                x = x.replace(/\/[^\/]*\/$/, "/");
+                base = base.substring(3);
+            }
+        }
+        hotcrp_absolute_base = x + base;
+    }
+    return hotcrp_absolute_base;
+}
+
 
 (function () {
     var old_onerror = window.onerror, nerrors_logged = 0;
@@ -460,11 +480,18 @@ var comet_sent_at, comet_stop_until, comet_nerrors = 0;
 var comet_store_timeout, comet_store_listen_key;
 var comet_store_owned_key, comet_store_refresh_interval;
 
-function comet_store_check(now) {
-    if (!window.localStorage || !dl.tracker_poll || comet_store_owned_key)
+function comet_store_key() {
+    if (window.localStorage && hoturl_absolute_base())
+        return "hotcrp-comet " + hoturl_absolute_base() + " " + dl.tracker_poll;
+    else
         return false;
-    var key = "hotcrp-comet " + dl.tracker_poll,
-        value = localStorage.getItem(key);
+}
+
+function comet_store_check(now) {
+    var key = comet_store_key();
+    if (!key || comet_store_owned_key)
+        return false;
+    var value = localStorage.getItem(key);
     if (value && (value = jQuery.parseJSON(value))
         && value.update_at && value.update_at >= now - 10000) {
         jQuery(window).on("storage", comet_store_listen);
@@ -516,8 +543,7 @@ function comet_tracker() {
         jQuery(window).off("storage", comet_store_listen);
         comet_store_listen_key = null;
     }
-    if (comet_store_owned_key
-        && !(dl.tracker_poll && comet_store_owned_key == "hotcrp-comet " + dl.tracker_poll))
+    if (comet_store_owned_key && comet_store_owned_key == comet_store_key())
         comet_store_cancel();
 
     // exit early if no tracker_poll or stopped
@@ -529,7 +555,7 @@ function comet_tracker() {
     // make the request
     comet_sent_at = at;
     if (window.localStorage && window.JSON) {
-        comet_store_owned_key = "hotcrp-comet " + dl.tracker_poll;
+        comet_store_owned_key = comet_store_key();
         comet_store_refresh();
         comet_store_refresh_interval = setInterval(comet_store_refresh, 5000);
     }
