@@ -68,22 +68,29 @@ function hoturl_post(page, options) {
     return hoturl(page, options);
 }
 
-function hoturl_absolute_base() {
-    if (!hotcrp_absolute_base) {
-        var x = "", base = hotcrp_base, loc = window.location;
-        if (!/^[a-z]:\/\//.test(base))
-            x = loc.protocol;
-        if (x && !/^\/\//.test(base))
-            x += "//" + loc.host + (loc.port ? ":" + loc.port : "");
-        if (x && !/^\//.test(base)) {
-            x = (x + loc.pathname).replace(/\/[^\/]+$/, "/");
-            while (base.substring(0, 3) == "../") {
-                x = x.replace(/\/[^\/]*\/$/, "/");
-                base = base.substring(3);
-            }
+function url_absolute(url, loc) {
+    var x = "", m;
+    loc = loc || window.location.href;
+    if (!/^\w+:\/\//.test(url)
+        && (m = loc.match(/^(\w+:)/)))
+        x = m[1];
+    if (x && !/^\/\//.test(url)
+        && (m = loc.match(/^\w+:(\/\/[^\/]+)/)))
+        x += m[1];
+    if (x && !/^\//.test(url)
+        && (m = loc.match(/^\w+:\/\/[^\/]+(\/[^?#]*)/))) {
+        x = (x + m[1]).replace(/\/[^\/]+$/, "/");
+        while (url.substring(0, 3) == "../") {
+            x = x.replace(/\/[^\/]*\/$/, "/");
+            url = url.substring(3);
         }
-        hotcrp_absolute_base = x + base;
     }
+    return x + url;
+}
+
+function hoturl_absolute_base() {
+    if (!hotcrp_absolute_base)
+        hotcrp_absolute_base = url_absolute(hotcrp_base);
     return hotcrp_absolute_base;
 }
 
@@ -254,8 +261,7 @@ function text_to_html(text) {
 window.hotcrp_deadlines = (function () {
 var dl, dlname, dltime, reload_timeout, redisplay_timeout;
 
-// display deadlines
-
+// deadline display
 function display_main(is_initial) {
     // this logic is repeated in the back end
     var s = "", amt, what = null, x, subtype,
@@ -332,7 +338,6 @@ function redisplay_main() {
 
 
 // tracker
-
 var has_tracker, had_tracker_at, tracker_timer;
 
 function window_trackerstate() {
@@ -481,8 +486,8 @@ var comet_store_timeout, comet_store_listen_key;
 var comet_store_owned_key, comet_store_refresh_interval;
 
 function comet_store_key() {
-    if (window.localStorage && hoturl_absolute_base())
-        return "hotcrp-comet " + hoturl_absolute_base() + " " + dl.tracker_poll;
+    if (window.localStorage && dl.tracker_poll)
+        return "hotcrp-comet " + dl.tracker_poll;
     else
         return false;
 }
@@ -530,7 +535,7 @@ function comet_tracker() {
     // correct tracker_poll URL to be a full URL if necessary
     if (dl.tracker_poll && !dl.tracker_poll_corrected
         && !/^(?:https?:|\/)/.test(dl.tracker_poll)) {
-        dl.tracker_poll = hotcrp_base + dl.tracker_poll;
+        dl.tracker_poll = url_absolute(dl.tracker_poll, hoturl_absolute_base());
         dl.tracker_poll_corrected = true;
     }
 
