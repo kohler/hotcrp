@@ -230,17 +230,14 @@ function text_to_html(text) {
     return n.innerHTML;
 }
 
+
 window.hotcrp_deadlines = (function () {
-var dl, dlname, dltime, has_tracker, had_tracker_at,
-    redisplay_timeout, reload_timeout, tracker_timer;
+var dl, dlname, dltime, reload_timeout, redisplay_timeout;
 
-function redisplay_main() {
-    redisplay_timeout = null;
-    display_main();
-}
+// display deadlines
 
-// this logic is repeated in the back end
 function display_main(is_initial) {
+    // this logic is repeated in the back end
     var s = "", amt, what = null, x, subtype,
         browser_now = (new Date).getTime() / 1000,
         time_since_load = browser_now - +dl.load,
@@ -307,6 +304,16 @@ function display_main(is_initial) {
             redisplay_timeout = setTimeout(redisplay_main, 15000);
     }
 }
+
+function redisplay_main() {
+    redisplay_timeout = null;
+    display_main();
+}
+
+
+// tracker
+
+var has_tracker, had_tracker_at, tracker_timer;
 
 function window_trackerstate() {
     var trackerstate = null;
@@ -424,10 +431,28 @@ function display_tracker() {
     had_tracker_at = now;
 }
 
-function reload() {
-    clearTimeout(reload_timeout);
-    reload_timeout = null;
-    Miniajax.get(hoturl("api", "deadlines=1"), hotcrp_deadlines, 10000);
+function tracker(start) {
+    var trackerstate, list = "";
+    if (start < 0)
+        Miniajax.post(hoturl_post("api", "track=stop"), load, 10000);
+    if (!window.sessionStorage || !window.JSON || start < 0)
+        return false;
+    trackerstate = window_trackerstate();
+    if (start && (!trackerstate || trackerstate[0] != hotcrp_base)) {
+        trackerstate = [hotcrp_base, Math.floor(Math.random() * 100000)];
+        sessionStorage.setItem("hotcrp_tracker", JSON.stringify(trackerstate));
+    } else if (trackerstate && trackerstate[0] != hotcrp_base)
+        trackerstate = null;
+    if (trackerstate) {
+        if (hotcrp_list)
+            list = hotcrp_list.num || hotcrp_list.id;
+        trackerstate = trackerstate[1] + "%20" + encodeURIComponent(list);
+        if (hotcrp_paperid)
+            trackerstate += "%20" + encodeURIComponent(hotcrp_paperid);
+        Miniajax.post(hoturl_post("api", "track=" + trackerstate),
+                      load, 10000);
+    }
+    return false;
 }
 
 
@@ -479,7 +504,9 @@ function comet_tracker() {
 }
 
 
-function hotcrp_deadlines(dlx, is_initial) {
+// main function
+
+function load(dlx, is_initial) {
     var t;
     if (dlx)
         window.hotcrp_status = dl = dlx;
@@ -506,36 +533,16 @@ function hotcrp_deadlines(dlx, is_initial) {
     }
 }
 
-hotcrp_deadlines.init = function (dlx) {
-    hotcrp_deadlines(dlx, true);
-};
+function reload() {
+    clearTimeout(reload_timeout);
+    reload_timeout = null;
+    Miniajax.get(hoturl("api", "deadlines=1"), load, 10000);
+}
 
-hotcrp_deadlines.tracker = function (start) {
-    var trackerstate, list = "";
-    if (start < 0)
-        Miniajax.post(hoturl_post("api", "track=stop"),
-                      hotcrp_deadlines, 10000);
-    if (!window.sessionStorage || !window.JSON || start < 0)
-        return false;
-    trackerstate = window_trackerstate();
-    if (start && (!trackerstate || trackerstate[0] != hotcrp_base)) {
-        trackerstate = [hotcrp_base, Math.floor(Math.random() * 100000)];
-        sessionStorage.setItem("hotcrp_tracker", JSON.stringify(trackerstate));
-    } else if (trackerstate && trackerstate[0] != hotcrp_base)
-        trackerstate = null;
-    if (trackerstate) {
-        if (hotcrp_list)
-            list = hotcrp_list.num || hotcrp_list.id;
-        trackerstate = trackerstate[1] + "%20" + encodeURIComponent(list);
-        if (hotcrp_paperid)
-            trackerstate += "%20" + encodeURIComponent(hotcrp_paperid);
-        Miniajax.post(hoturl_post("api", "track=" + trackerstate),
-                      hotcrp_deadlines, 10000);
-    }
-    return false;
+return {
+    init: function (dlx) { load(dlx, true); },
+    tracker: tracker
 };
-
-return hotcrp_deadlines;
 })();
 
 
