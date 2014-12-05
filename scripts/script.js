@@ -467,17 +467,19 @@ function comet_store_check(now) {
     var key = "hotcrp-comet " + dl.tracker_poll,
         value = localStorage.getItem(key);
     if (value && (value = jQuery.parseJSON(value))
-        && value.update_at && value.update_at >= now - 10000)
+        && value.update_at && value.update_at >= now - 10000) {
+        jQuery(window).on("storage", comet_store_listen);
+        comet_store_listen_key = key;
+        comet_store_timeout = setTimeout(comet_tracker, 5000);
         return true;
-    $(window).on("storage", comet_store_listen);
-    comet_store_listen_key = key;
-    comet_store_timeout = setTimeout(comet_tracker, 5000);
+    } else
+        return false;
 }
 
 function comet_store_listen(e) {
-    var j;
-    if (e.key == comet_store_listen_key
-        && !(e.newValue && (j = jQuery.parseJSON(e.newValue))
+    var j, ee = e.originalEvent;;
+    if (ee.key == comet_store_listen_key
+        && !(ee.newValue && (j = jQuery.parseJSON(ee.newValue))
              && j.update_at && j.update_at >= (new Date).getTime() - 10000))
         reload();
 }
@@ -486,6 +488,11 @@ function comet_store_refresh() {
     localStorage.setItem(comet_store_owned_key,
                          JSON.stringify({update_at: (new Date).getTime()}));
 }
+
+jQuery(window).on("unload", function () {
+        if (comet_store_owned_key)
+            localStorage.removeItem(comet_store_owned_key);
+    });
 
 function comet_tracker() {
     var now = (new Date).getTime();
@@ -503,11 +510,11 @@ function comet_tracker() {
         comet_store_timeout = null;
     }
     if (comet_store_listen_key) {
-        $(window).off("storage", comet_store_listen);
+        jQuery(window).off("storage", comet_store_listen);
         comet_store_listen_key = null;
     }
     if (comet_store_owned_key
-        && (!dl.tracker_poll || comet_store_owned_key != "hotcrp-comet " + dl.tracker_poll)) {
+        && !(dl.tracker_poll && comet_store_owned_key == "hotcrp-comet " + dl.tracker_poll)) {
         localStorage.removeItem(comet_store_owned_key);
         clearInterval(comet_store_refresh_interval);
         comet_store_owned_key = comet_store_refresh_interval = null;
@@ -557,7 +564,6 @@ function comet_tracker() {
 
 // deadline loading
 function load(dlx, is_initial) {
-    var t;
     if (dlx)
         window.hotcrp_status = dl = dlx;
     if (!dl.load)
@@ -566,6 +572,7 @@ function load(dlx, is_initial) {
     if (dl.tracker || has_tracker)
         display_tracker();
     if (!reload_timeout) {
+        var t;
         if (is_initial && $$("clock_drift_container"))
             t = 10;
         else if (had_tracker_at && comet_tracker())
