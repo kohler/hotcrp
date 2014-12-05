@@ -488,10 +488,14 @@ function comet_store_refresh() {
                          JSON.stringify({update_at: (new Date).getTime()}));
 }
 
-jQuery(window).on("unload", function () {
-        if (comet_store_owned_key)
-            localStorage.removeItem(comet_store_owned_key);
-    });
+function comet_store_cancel() {
+    if (comet_store_owned_key) {
+        localStorage.removeItem(comet_store_owned_key);
+        clearInterval(comet_store_refresh_interval);
+        comet_store_owned_key = comet_store_refresh_interval = null;
+    }
+}
+jQuery(window).on("unload", comet_store_cancel);
 
 function comet_tracker() {
     var at = (new Date).getTime();
@@ -513,11 +517,8 @@ function comet_tracker() {
         comet_store_listen_key = null;
     }
     if (comet_store_owned_key
-        && !(dl.tracker_poll && comet_store_owned_key == "hotcrp-comet " + dl.tracker_poll)) {
-        localStorage.removeItem(comet_store_owned_key);
-        clearInterval(comet_store_refresh_interval);
-        comet_store_owned_key = comet_store_refresh_interval = null;
-    }
+        && !(dl.tracker_poll && comet_store_owned_key == "hotcrp-comet " + dl.tracker_poll))
+        comet_store_cancel();
 
     // exit early if no tracker_poll or stopped
     if (!dl.tracker_poll || (comet_stop_until && comet_stop_until < at))
