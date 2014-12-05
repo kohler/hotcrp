@@ -494,7 +494,7 @@ jQuery(window).on("unload", function () {
     });
 
 function comet_tracker() {
-    var now = (new Date).getTime();
+    var at = (new Date).getTime();
 
     // correct tracker_poll URL to be a full URL if necessary
     if (dl.tracker_poll && !dl.tracker_poll_corrected
@@ -520,43 +520,54 @@ function comet_tracker() {
     }
 
     // exit early if no tracker_poll or stopped
-    if (!dl.tracker_poll || (comet_stop_until && comet_stop_until < now))
+    if (!dl.tracker_poll || (comet_stop_until && comet_stop_until < at))
         return false;
-    if (comet_sent_at || comet_store_check(now))
+    if (comet_sent_at || comet_store_check(at))
         return true;
 
     // make the request
-    comet_sent_at = now;
+    comet_sent_at = at;
     if (window.localStorage && window.JSON) {
         comet_store_owned_key = "hotcrp-comet " + dl.tracker_poll;
         comet_store_refresh();
         comet_store_refresh_interval = setInterval(comet_store_refresh, 5000);
     }
 
+    function complete(xhr, status) {
+        var now = (new Date).getTime();
+        if (comet_sent_at != at)
+            return;
+        comet_sent_at = null;
+        // Assume errors after long delays are actually timeouts
+        // (Chrome shuts down long polls sometimes)
+        if (status == "error" && now - at > 100000)
+            status = "timeout";
+        if (status == "success" && xhr.status == 200) {
+            comet_nerrors = comet_stop_until = 0;
+            reload();
+        } else if (status == "timeout")
+            comet_tracker();
+        else if (++comet_nerrors % 3)
+            setTimeout(comet_tracker, 128 << Math.min(comet_nerrors, 12));
+        else {
+            comet_stop_until = now + 10000 * Math.min(comet_nerrors, 60);
+            reload();
+        }
+    }
+
+    function timeout() {
+        if (comet_sent_at != at)
+            return;
+        comet_sent_at = null;
+        comet_tracker();
+    }
+
     jQuery.ajax({
         url: dl.tracker_poll,
-        timeout: 300000, cache: false,
-        dataType: "json",
-        complete: function (xhr, status) {
-            var now = (new Date).getTime(), delta = now - comet_sent_at;
-            comet_sent_at = null;
-            // Assume errors after long delays are actually timeouts
-            // (Chrome shuts down long polls sometimes)
-            if (status == "error" && delta > 100000)
-                status = "timeout";
-            if (status == "success" && xhr.status == 200) {
-                comet_nerrors = comet_stop_until = 0;
-                reload();
-            } else if (status == "timeout")
-                comet_tracker();
-            else if (++comet_nerrors % 3)
-                setTimeout(comet_tracker, 128 << Math.min(comet_nerrors, 12));
-            else {
-                comet_stop_until = now + 10000 * Math.min(comet_nerrors, 60);
-                reload();
-            }
-        }
+        timeout: 300000, cache: false, dataType: "json",
+        complete: complete
     });
+    setTimeout(timeout, 240000);
     return true;
 }
 
