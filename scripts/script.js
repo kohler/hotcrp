@@ -556,19 +556,11 @@ function comet_tracker() {
         }
     }
 
-    function timeout() {
-        if (comet_sent_at != at)
-            return;
-        comet_sent_at = null;
-        comet_tracker();
-    }
-
     jQuery.ajax({
         url: dl.tracker_poll,
         timeout: 300000, cache: false, dataType: "json",
         complete: complete
     });
-    setTimeout(timeout, 240000);
     return true;
 }
 
