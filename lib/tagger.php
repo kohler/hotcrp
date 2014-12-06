@@ -169,11 +169,12 @@ class Tagger {
 
 
     private function analyze_colors() {
-        $re = "{(?:\\A| )";
-        if ($this->contact)
-            $re .= "(?:" . $this->contact->contactId . "~"
-                . ($this->contact->privChair ? "|~~" : "") ."|)";
-        $re .= "(red|orange|yellow|green|blue|purple|violet|grey|gray|white|dim|bold|italic|big|small";
+        $re = "{(?:\\A| )(?:";
+        if ($this->contact->contactId > 0)
+            $re .= $this->contact->contactId . "~|";
+        if ($this->contact->privChair)
+            $re .= "~~|";
+        $re .= ")(red|orange|yellow|green|blue|purple|violet|grey|gray|white|dim|bold|italic|big|small";
         $this->color_tagmap = $this->defined_tags();
         foreach ($this->color_tagmap as $v)
             if ($v->colors)
@@ -235,13 +236,14 @@ class Tagger {
     }
 
     public function check($tag, $flags = 0) {
-        if ($this->contact && !$this->contact->privChair)
+        if (!$this->contact->privChair)
             $flags |= self::NOCHAIR;
         if ($tag[0] == "#")
             $tag = substr($tag, 1);
         if (($this->error_html = self::analyze($tag, $flags)))
             return false;
-        else if ($tag[0] == "~" && $tag[1] != "~")
+        else if ($tag[0] == "~" && $tag[1] != "~"
+                 && $this->contact->contactId > 0)
             return $this->contact->contactId . $tag;
         else
             return $tag;
@@ -263,7 +265,10 @@ class Tagger {
 
     public function viewable($tags) {
         if (strpos($tags, "~") !== false) {
-            $re = "{ (?:(?!" . $this->contact->contactId . "~)\\d+~";
+            $re = "{ (?:";
+            if ($this->contact->contactId > 0)
+                $re .= "(?!" . $this->contactId . "~)";
+            $re .= "\\d+~";
             if (!$this->contact->privChair)
                 $re .= "|~+";
             $tags = trim(preg_replace($re . ")\\S+}", "", " $tags "));
@@ -276,7 +281,8 @@ class Tagger {
         if ($tags != "") {
             $bad = array();
             foreach ($this->defined_tags() as $v)
-                if ($v->vote || (($v->chair || $v->rank) && !$this->contact->privChair))
+                if ($v->vote || (($v->chair || $v->rank)
+                                 && !$this->contact->privChair))
                     $bad[] = $v->tag;
             $tags = trim(preg_replace("{ (?:" . join("|", $bad) . ")(?:#-?\\d*)? }i", " ", " $tags "));
         }
@@ -289,7 +295,8 @@ class Tagger {
         if (is_array($tags))
             $tags = join(" ", $tags);
         $tags = str_replace("#0 ", " ", " $tags ");
-        $tags = str_replace(" " . $this->contact->contactId . "~", " ~", $tags);
+        if ($this->contact->contactId > 0)
+            $tags = str_replace(" " . $this->contact->contactId . "~", " ~", $tags);
         return trim($tags);
     }
 
@@ -302,9 +309,12 @@ class Tagger {
     private function trim_for_sort($x) {
         if ($x[0] == "#")
             $x = substr($x, 1);
-        if ($x[0] == "~" && $x[1] != "~")
-            $x = ($this->contact ? $this->contact->contactId : "0") . $x;
-        else if ($x[0] == "~")
+        if ($x[0] == "~" && $x[1] != "~") {
+            if ($this->contact && $this->contact->contactId > 0)
+                $x = $this->contact->contactId . $x;
+            else
+                $x = "0" . $x;
+        } else if ($x[0] == "~")
             $x = ";" . $x;
         return $x;
     }
@@ -444,9 +454,12 @@ class Tagger {
     function save($pids, $tagtext, $mode) {
         global $Conf, $Error;
         list($table, $pidcol) = array("PaperTag", "paperId");
+        $cid = $this->contact->contactId > 0 ? $this->contact->contactId : 0;
+        $mytagprefix = $cid . "~";
+
+        // check chairness
         if (!is_array($pids))
             $pids = array($pids);
-        $mytagprefix = $this->contact->contactId . "~";
 
         // check modes
         if ($mode == "da" && !$this->contact->privChair)
@@ -561,7 +574,7 @@ class Tagger {
                 if (!$this->contact->privChair) {
                     foreach ($this->chair_tags() as $ct => $x)
                         if ($ct[0] == '~')
-                            $q .= " and tag!='" . $this->contact->contactId . sqlq($ct) . "'";
+                            $q .= " and tag!='" . $cid . sqlq($ct) . "'";
                         else
                             $q .= " and tag!='" . sqlq($ct) . "'";
                 }
