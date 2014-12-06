@@ -63,7 +63,6 @@ class AssignmentState {
         }
         $l = 0;
         $r = count($st->news);
-        $T = microtime(true);
         while ($l < $r) {
             $m = $l + (int) (($r - $l) >> 1);
             $cid = @$st->news[$m]["cid"];
