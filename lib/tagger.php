@@ -20,7 +20,7 @@ class TagMap implements ArrayAccess, IteratorAggregate {
         $loffset = strtolower($offset);
         if (!isset($this->storage[$loffset])) {
             $n = (object) array("tag" => $offset, "chair" => false, "vote" => false, "rank" => false, "colors" => null);
-            if (!Tagger::basic_check($loffset))
+            if (!TagInfo::basic_check($loffset))
                 return $n;
             $this->storage[$loffset] = $n;
             $this->sorted = false;
@@ -52,7 +52,7 @@ class TagMap implements ArrayAccess, IteratorAggregate {
     }
 }
 
-class Tagger {
+class TagInfo {
 
     const ALLOWRESERVED = 1;
     const NOPRIVATE = 2;
@@ -60,22 +60,8 @@ class Tagger {
     const NOCHAIR = 8;
     const ALLOWSTAR = 16;
 
-    public $error_html = false;
-    private $contact = null;
-    private $color_re = null;
-    private $color_tagmap = null;
-
-    private static $main_tagmap = null;
-    private static $value_increment_map = array(1, 1, 1, 1, 1, 2, 2, 2, 3, 4);
-    private static $canonical_colors =
-        array("violet" => "purple", "grey" => "gray");
-
-
-    public function __construct($contact = null) {
-        global $Me;
-        $this->contact = ($contact ? $contact : $Me);
-    }
-
+    private static $tagmap = null;
+    private static $colorre = null;
 
     public static function base($tag) {
         if ($tag && (($pos = strpos($tag, "#")) > 0
@@ -109,96 +95,129 @@ class Tagger {
             && preg_match('{\A' . TAG_REGEX . '\z}', $tag);
     }
 
-
-    public function defined_tags() {
-        self::$main_tagmap || self::make_tagmap();
-        return self::$main_tagmap;
+    private static function make_tagmap() {
+        global $Conf;
+        self::$tagmap = $map = new TagMap;
+        if (!$Conf)
+            return $map;
+        $ct = $Conf->setting_data("tag_chair", "");
+        foreach (preg_split('/\s+/', $ct) as $t)
+            if ($t != "" && !$map[self::base($t)]->chair) {
+                $map[self::base($t)]->chair = true;
+                ++$map->nchair;
+            }
+        foreach ($Conf->track_tags() as $t)
+            if (!$map[self::base($t)]->chair) {
+                $map[self::base($t)]->chair = true;
+                ++$map->nchair;
+            }
+        $vt = $Conf->setting_data("tag_vote", "");
+        if ($vt != "")
+            foreach (preg_split('/\s+/', $vt) as $t)
+                if ($t != "") {
+                    list($b, $v) = self::split_index($t);
+                    $map[$b]->vote = ($v ? $v : 1);
+                    ++$map->nvote;
+                }
+        $rt = $Conf->setting_data("tag_rank", "");
+        if ($rt != "")
+            foreach (preg_split('/\s+/', $rt) as $t) {
+                $map[self::base($t)]->rank = true;
+                ++$map->nrank;
+            }
+        $ct = $Conf->setting_data("tag_color", "");
+        if ($ct != "")
+            foreach (explode(" ", $ct) as $k)
+                if ($k != "" && ($p = strpos($k, "=")) !== false)
+                    arrayappend($map[substr($k, 0, $p)]->colors,
+                                self::canonical_color(substr($k, $p + 1)));
+        return $map;
     }
 
-
-    public function has_vote() {
-        return $this->defined_tags()->nvote;
+    public static function defined_tags() {
+        return self::$tagmap ? self::$tagmap : self::make_tagmap();
     }
 
-    public function has_rank() {
-        return $this->defined_tags()->nrank;
+    public static function invalidate_defined_tags() {
+        self::$tagmap = self::$colorre = null;
     }
 
+    public static function has_vote() {
+        return self::defined_tags()->nvote;
+    }
 
-    public function is_chair($tag) {
+    public static function has_rank() {
+        return self::defined_tags()->nrank;
+    }
+
+    public static function is_chair($tag) {
         if ($tag[0] == "~")
             return $tag[1] == "~";
-        $dt = $this->defined_tags();
+        $dt = self::defined_tags();
         $t = $dt->check(self::base($tag));
         return $t && $t->chair;
     }
 
-    public function chair_tags() {
-        return $this->defined_tags()->tag_array("chair");
+    public static function chair_tags() {
+        return self::defined_tags()->tag_array("chair");
     }
 
-
-    public function is_vote($tag) {
-        $dt = $this->defined_tags();
+    public static function is_vote($tag) {
+        $dt = self::defined_tags();
         $t = $dt->check(self::base($tag));
         return $t && $t->vote;
     }
 
-    public function vote_tags() {
-        $dt = $this->defined_tags();
+    public static function vote_tags() {
+        $dt = self::defined_tags();
         return $dt->nvote ? $dt->tag_array("vote") : array();
     }
 
-    public function vote_setting($tag) {
-        $dt = $this->defined_tags();
+    public static function vote_setting($tag) {
+        $dt = self::defined_tags();
         $t = $dt->check(self::base($tag));
         return $t && $t->vote > 0 ? $t->vote : 0;
     }
 
-
-    public function is_rank($tag) {
-        $dt = $this->defined_tags();
+    public static function is_rank($tag) {
+        $dt = self::defined_tags();
         $t = $dt->check(self::base($tag));
         return $t && $t->rank;
     }
 
-    public function rank_tags() {
-        $dt = $this->defined_tags();
+    public static function rank_tags() {
+        $dt = self::defined_tags();
         return $dt->nrank ? $dt->tag_array("rank") : array();
     }
 
-
-    private function analyze_colors() {
-        $re = "{(?:\\A| )(?:";
-        if ($this->contact->contactId > 0)
-            $re .= $this->contact->contactId . "~|";
-        if ($this->contact->privChair)
-            $re .= "~~|";
-        $re .= ")(red|orange|yellow|green|blue|purple|violet|grey|gray|white|dim|bold|italic|big|small";
-        $this->color_tagmap = $this->defined_tags();
-        foreach ($this->color_tagmap as $v)
-            if ($v->colors)
-                $re .= "|" . $v->tag;
-        $this->color_re = $re . ")(?=\\z|[# ])}";
-    }
-
     public static function canonical_color($tag) {
-        if (isset(self::$canonical_colors[$tag]))
-            return self::$canonical_colors[$tag];
+        if (strcasecmp($tag, "violet") == 0)
+            return "purple";
+        else if (strcasecmp($tag, "grey") == 0)
+            return "gray";
         else
             return $tag;
     }
 
-    public function color_classes($tags) {
+    public static function color_regex() {
+        if (!self::$colorre) {
+            $re = "{(?:\\A| )(?:\\d*~|~~|)(red|orange|yellow|green|blue|purple|violet|grey|gray|white|dim|bold|italic|big|small";
+            foreach (self::defined_tags() as $v)
+                if ($v->colors)
+                    $re .= "|" . $v->tag;
+            self::$colorre = $re . ")(?=\\z|[# ])}";
+        }
+        return self::$colorre;
+    }
+
+    public static function color_classes($tags) {
         if (is_array($tags))
             $tags = join(" ", $tags);
         if (!$tags || $tags === " ")
             return "";
-        $dt = $this->defined_tags();
-        if ($dt != $this->color_tagmap)
-            $this->analyze_colors();
-        if (!preg_match_all($this->color_re, strtolower($tags), $m))
+        if (!preg_match_all(self::color_regex(), strtolower($tags), $m))
             return false;
+        $dt = self::defined_tags();
         $classes = array();
         foreach ($m[1] as $tag)
             if (($t = $dt->check($tag)) && $t->colors) {
@@ -209,10 +228,40 @@ class Tagger {
         return join(" ", $classes);
     }
 
-    public static function class_has_colors($classes) {
+    public static function classes_have_colors($classes) {
         return preg_match('_\b(?:\A|\s)(?:red|orange|yellow|green|blue|purple|gray|white|dim)tag(?:\z|\s)_', $classes);
     }
 
+
+    private static $value_increment_map = array(1, 1, 1, 1, 1, 2, 2, 2, 3, 4);
+
+    public static function value_increment($mode) {
+        if (strlen($mode) == 2)
+            return self::$value_increment_map[mt_rand(0, 9)];
+        else
+            return 1;
+    }
+
+}
+
+class Tagger {
+
+    const ALLOWRESERVED = 1;
+    const NOPRIVATE = 2;
+    const NOVALUE = 4;
+    const NOCHAIR = 8;
+    const ALLOWSTAR = 16;
+
+    public $error_html = false;
+    private $contact = null;
+    private $_contactId = 0;
+
+    public function __construct($contact = null) {
+        global $Me;
+        $this->contact = ($contact ? $contact : $Me);
+        if ($this->contact && $this->contact->contactId > 0)
+            $this->_contactId = $this->contact->contactId;
+    }
 
     private static function analyze($tag, $flags) {
         if ($tag == "")
@@ -236,15 +285,14 @@ class Tagger {
     }
 
     public function check($tag, $flags = 0) {
-        if (!$this->contact->privChair)
+        if (!($this->contact && $this->contact->privChair))
             $flags |= self::NOCHAIR;
         if ($tag[0] == "#")
             $tag = substr($tag, 1);
         if (($this->error_html = self::analyze($tag, $flags)))
             return false;
-        else if ($tag[0] == "~" && $tag[1] != "~"
-                 && $this->contact->contactId > 0)
-            return $this->contact->contactId . $tag;
+        else if ($tag[0] == "~" && $tag[1] != "~" && $this->_contactId)
+            return $this->_contactId . $tag;
         else
             return $tag;
     }
@@ -254,7 +302,7 @@ class Tagger {
             return VIEWSCORE_FALSE;
         else if (($pos = strpos($tag, "~")) !== false) {
             if (($pos == 0 && $tag[1] === "~")
-                || substr($tag, 0, $pos) != $this->contact->contactId)
+                || substr($tag, 0, $pos) != $this->_contactId)
                 return VIEWSCORE_ADMINONLY;
             else
                 return VIEWSCORE_REVIEWERONLY;
@@ -266,10 +314,10 @@ class Tagger {
     public function viewable($tags) {
         if (strpos($tags, "~") !== false) {
             $re = "{ (?:";
-            if ($this->contact->contactId > 0)
-                $re .= "(?!" . $this->contactId . "~)";
+            if ($this->_contactId)
+                $re .= "(?!" . $this->_contactId . "~)";
             $re .= "\\d+~";
-            if (!$this->contact->privChair)
+            if (!($this->contact && $this->contact->privChair))
                 $re .= "|~+";
             $tags = trim(preg_replace($re . ")\\S+}", "", " $tags "));
         }
@@ -280,9 +328,10 @@ class Tagger {
         $tags = $this->viewable($tags);
         if ($tags != "") {
             $bad = array();
-            foreach ($this->defined_tags() as $v)
-                if ($v->vote || (($v->chair || $v->rank)
-                                 && !$this->contact->privChair))
+            foreach (TagInfo::defined_tags() as $v)
+                if ($v->vote
+                    || (($v->chair || $v->rank)
+                        && !($this->contact && $this->contact->privChair)))
                     $bad[] = $v->tag;
             $tags = trim(preg_replace("{ (?:" . join("|", $bad) . ")(?:#-?\\d*)? }i", " ", " $tags "));
         }
@@ -295,8 +344,8 @@ class Tagger {
         if (is_array($tags))
             $tags = join(" ", $tags);
         $tags = str_replace("#0 ", " ", " $tags ");
-        if ($this->contact->contactId > 0)
-            $tags = str_replace(" " . $this->contact->contactId . "~", " ~", $tags);
+        if ($this->_contactId)
+            $tags = str_replace(" " . $this->_contactId . "~", " ~", $tags);
         return trim($tags);
     }
 
@@ -309,12 +358,9 @@ class Tagger {
     private function trim_for_sort($x) {
         if ($x[0] == "#")
             $x = substr($x, 1);
-        if ($x[0] == "~" && $x[1] != "~") {
-            if ($this->contact && $this->contact->contactId > 0)
-                $x = $this->contact->contactId . $x;
-            else
-                $x = "0" . $x;
-        } else if ($x[0] == "~")
+        if ($x[0] == "~" && $x[1] != "~")
+            $x = $this->_contactId . $x;
+        else if ($x[0] == "~")
             $x = ";" . $x;
         return $x;
     }
@@ -327,15 +373,17 @@ class Tagger {
         usort($tags, array($this, "sorter"));
     }
 
-    public function unparse_link_viewable($tags, $highlight = false, $votereport = false) {
-        $vtags = $this->unparse($this->viewable($tags));
+    public function unparse_and_link($viewable, $alltags, $highlight = false,
+                                     $votereport = false) {
+        $vtags = $this->unparse($viewable);
         if ($vtags == "")
             return "";
 
         // track votes for vote report
-        $dt = $this->defined_tags();
+        $dt = TagInfo::defined_tags();
         if ($votereport && $dt->nvote) {
-            preg_match_all('{ (\d+)~(\S+)#([1-9]\d*)}', strtolower(" $tags"), $m, PREG_SET_ORDER);
+            preg_match_all('{ (\d+)~(\S+)#([1-9]\d*)}',
+                           strtolower(" $alltags"), $m, PREG_SET_ORDER);
             $vote = array();
             foreach ($m as $x)
                 $vote[$x[2]][$x[1]] = (int) $x[3];
@@ -357,10 +405,10 @@ class Tagger {
             }
 
         foreach (preg_split('/\s+/', $vtags) as $tag) {
-            if (!($base = Tagger::base($tag)))
+            if (!($base = TagInfo::base($tag)))
                 continue;
             $lbase = strtolower($base);
-            if ($this->is_vote($lbase)) {
+            if (TagInfo::is_vote($lbase)) {
                 $v = array();
                 if ($votereport)
                     foreach (pcMembers() as $pcm)
@@ -368,7 +416,7 @@ class Tagger {
                             $v[] = Text::name_html($pcm) . ($count > 1 ? " ($count)" : "");
                 $title = ($v ? "PC votes: " . join(", ", $v) : "Vote search");
                 $link = "rorder:";
-            } else if ($base[0] === "~" && $this->is_vote(substr($lbase, 1))) {
+            } else if ($base[0] === "~" && TagInfo::is_vote(substr($lbase, 1))) {
                 $title = "Vote search";
                 $link = "rorder:";
             } else {
@@ -390,56 +438,6 @@ class Tagger {
     }
 
 
-    private static function make_tagmap() {
-        global $Conf;
-        self::$main_tagmap = $map = new TagMap;
-        if (!$Conf)
-            return;
-        $ct = $Conf->setting("tag_chair") ? $Conf->setting_data("tag_chair", "") : "";
-        foreach (preg_split('/\s+/', $ct) as $t)
-            if ($t != "" && !$map[self::base($t)]->chair) {
-                $map[self::base($t)]->chair = true;
-                ++$map->nchair;
-            }
-        foreach ($Conf->track_tags() as $t)
-            if (!$map[self::base($t)]->chair) {
-                $map[self::base($t)]->chair = true;
-                ++$map->nchair;
-            }
-        $vt = $Conf->setting("tag_vote") ? $Conf->setting_data("tag_vote", "") : "";
-        if ($vt != "")
-            foreach (preg_split('/\s+/', $vt) as $t)
-                if ($t != "") {
-                    list($b, $v) = self::split_index($t);
-                    $map[$b]->vote = ($v ? $v : 1);
-                    ++$map->nvote;
-                }
-        $rt = $Conf->setting("tag_rank") ? $Conf->setting_data("tag_rank", "") : "";
-        if ($rt != "")
-            foreach (preg_split('/\s+/', $rt) as $t) {
-                $map[self::base($t)]->rank = true;
-                ++$map->nrank;
-            }
-        $ct = $Conf->setting_data("tag_color", "");
-        if ($ct != "")
-            foreach (explode(" ", $ct) as $k)
-                if ($k != "" && ($p = strpos($k, "=")) !== false)
-                    arrayappend($map[substr($k, 0, $p)]->colors,
-                                self::canonical_color(substr($k, $p + 1)));
-    }
-
-    public static function invalidate_defined_tags() {
-        self::$main_tagmap = null;
-    }
-
-
-    public static function value_increment($mode) {
-        if (strlen($mode) == 2)
-            return self::$value_increment_map[mt_rand(0, 9)];
-        else
-            return 1;
-    }
-
     // $mode is one of:
     //   p -- set all tags (= delete all tags from $pids, then add tags in $tagtext)
     //   a -- add
@@ -454,8 +452,7 @@ class Tagger {
     function save($pids, $tagtext, $mode) {
         global $Conf, $Error;
         list($table, $pidcol) = array("PaperTag", "paperId");
-        $cid = $this->contact->contactId > 0 ? $this->contact->contactId : 0;
-        $mytagprefix = $cid . "~";
+        $mytagprefix = $this->_contactId . "~";
 
         // check chairness
         if (!is_array($pids))
@@ -487,8 +484,8 @@ class Tagger {
         if (!$this->contact->privChair) {
             $nexttags = array();
             foreach ($tags as $tag) {
-                if ($this->is_chair($tag)) {
-                    defappend($Error["tags"], "Only the chair can change tag “" . htmlspecialchars(self::base($tag)) . "”.<br />\n");
+                if (TagInfo::is_chair($tag)) {
+                    defappend($Error["tags"], "Only the chair can change tag “" . htmlspecialchars(TagInfo::base($tag)) . "”.<br />\n");
                     $badtags[] = $tag;
                 } else
                     $nexttags[] = $tag;
@@ -498,18 +495,18 @@ class Tagger {
 
         // check vote tags
         $vchanges = array();
-        if ($this->has_vote()) {
+        if (TagInfo::has_vote()) {
             $nexttags = array();
             $multivote = 0;
             foreach ($tags as $tag) {
-                $base = self::base($tag);
+                $base = TagInfo::base($tag);
                 $lbase = strtolower($base);
                 $twiddle = strpos($base, "~");
-                if ($this->is_vote($base)) {
+                if (TagInfo::is_vote($base)) {
                     $baseview = htmlspecialchars($base);
                     defappend($Error["tags"], "The shared tag “{$baseview}” keeps track of vote totals and cannot be modified.  Use the private tag “~{$baseview}” to change your vote (for instance, “~{$baseview}#1” is one vote).<br />\n");
                     $badtags[] = $tag;
-                } else if ($twiddle > 0 && $this->is_vote(substr($base, $twiddle + 1))) {
+                } else if ($twiddle > 0 && TagInfo::is_vote(substr($base, $twiddle + 1))) {
                     if (isset($vchanges[$lbase])) // only one vote per tag
                         $multivote++;
                     else {
@@ -526,11 +523,11 @@ class Tagger {
         }
 
         // check rank tag
-        if (!$this->contact->privChair && $this->has_rank()) {
+        if (!$this->contact->privChair && TagInfo::has_rank()) {
             $nexttags = array();
             foreach ($tags as $tag) {
-                if ($this->is_rank($tag)) {
-                    $baseview = htmlspecialchars(self::base($tag));
+                if (TagInfo::is_rank($tag)) {
+                    $baseview = htmlspecialchars(TagInfo::base($tag));
                     defappend($Error["tags"], "The shared tag “{$baseview}” keeps track of the global ranking and cannot be modified.  Use the private tag “~{$baseview}” to change your ranking.<br />\n");
                     $badtags[] = $tag;
                 } else
@@ -557,7 +554,7 @@ class Tagger {
             $dels = array();
             if ($mode != "p") {
                 foreach ($tags as $tag) {
-                    $ts = self::split_index($tag);
+                    $ts = TagInfo::split_index($tag);
                     $qx = "";
                     if ($ts[1] !== false && ($mode == "d" || $mode == "da"))
                         $qx = " and tagIndex=$ts[1]";
@@ -572,9 +569,9 @@ class Tagger {
                 $q .= " and (" . join(" or ", $dels) . ")";
             } else {
                 if (!$this->contact->privChair) {
-                    foreach ($this->chair_tags() as $ct => $x)
+                    foreach (TagInfo::chair_tags() as $ct => $x)
                         if ($ct[0] == '~')
-                            $q .= " and tag!='" . $cid . sqlq($ct) . "'";
+                            $q .= " and tag!='" . $this->_contactId . sqlq($ct) . "'";
                         else
                             $q .= " and tag!='" . sqlq($ct) . "'";
                 }
@@ -591,7 +588,7 @@ class Tagger {
             $q = "";
             foreach ($vchanges as $base => &$val) {
                 $q .= ($q === "" ? "" : ",") . "'" . sqlq($base) . "'";
-                $val = $this->vote_setting(substr($base, strpos($base, "~") + 1));
+                $val = TagInfo::vote_setting(substr($base, strpos($base, "~") + 1));
             }
             unset($val);
             if ($mode != "p")   // must delete old versions for correct totals
@@ -609,7 +606,7 @@ class Tagger {
         $modeOrdered = ($mode == "so" || $mode == "ao" || $mode == "sos"
                         || $mode == "sor" || $mode == "aos");
         foreach ($tags as $tag) {
-            $base = self::base($tag);
+            $base = TagInfo::base($tag);
             $lbase = strtolower($base);
             if (strlen($base) + 1 < strlen($tag)) {
                 $tagIndex[$lbase] = $explicitIndex[$lbase] =
@@ -617,9 +614,9 @@ class Tagger {
             } else if (strlen($base) + 1 == strlen($tag) || $modeOrdered) {
                 $result = $Conf->qe("select max(tagIndex) from $table where tag='" . sqlq($base) . "'");
                 if (($row = edb_row($result)))
-                    $tagIndex[$lbase] = $row[0] + self::value_increment($mode);
+                    $tagIndex[$lbase] = $row[0] + TagInfo::value_increment($mode);
                 else
-                    $tagIndex[$lbase] = self::value_increment($mode);
+                    $tagIndex[$lbase] = TagInfo::value_increment($mode);
             }
         }
 
@@ -644,12 +641,12 @@ class Tagger {
                 if ($mode == "sor")
                     shuffle($pids);
                 foreach ($pids as $pid) {
-                    $base = self::base($tag);
+                    $base = TagInfo::base($tag);
                     $lbase = strtolower($base);
                     // choose index, bump running index in ordered mode
                     $index = defval($tagIndex, $lbase, 0);
                     if ($modeOrdered)
-                        $tagIndex[$lbase] += self::value_increment($mode);
+                        $tagIndex[$lbase] += TagInfo::value_increment($mode);
                     // check vote totals
                     if (isset($vchanges[$lbase])) {
                         if ($index > $vchanges[$lbase]) {
@@ -683,7 +680,7 @@ class Tagger {
                         $thisq = "($p[0], '" . sqlq($base) . "', " . $tagIndex[$lbase] . "), ";
                         $q_keepnew .= $thisq;
                         if ($last === null || $last != $p[1])
-                            $tagIndex[$lbase] += self::value_increment($mode);
+                            $tagIndex[$lbase] += TagInfo::value_increment($mode);
                         $last = $p[1];
                     } else
                         break;
@@ -698,13 +695,13 @@ class Tagger {
         }
 
         // update vote totals
-        if (count($vchanges) > 0 || ($this->has_vote() && $mode == "p")) {
+        if (count($vchanges) > 0 || (TagInfo::has_vote() && $mode == "p")) {
             // Can't "insert from ... select ..." or "create temporary table"
             // because those unlock tables implicitly.
 
             // Find relevant vote tags.
             if ($mode == "p")
-                $myvtags = array_keys($this->vote_tags());
+                $myvtags = array_keys(TagInfo::vote_tags());
             else {
                 $myvtags = array();
                 foreach ($vchanges as $tag => $val) {

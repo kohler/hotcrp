@@ -688,9 +688,11 @@ class PaperList extends BaseList {
 
         $rstate->ids[] = (int) $row->paperId;
         $trclass = "k" . $rstate->colorindex;
-        if (@$row->paperTags && $this->contact->canViewTags($row, true)
-            && ($m = $this->tagger->color_classes($row->paperTags))) {
-            if ($this->tagger->class_has_colors($m)) {
+        if (@$row->paperTags
+            && $this->contact->canViewTags($row, true)
+            && ($viewable = $this->tagger->viewable($row->paperTags))
+            && ($m = TagInfo::color_classes($viewable))) {
+            if (TagInfo::classes_have_colors($m)) {
                 $rstate->hascolors = true;
                 $trclass = $m;
             } else

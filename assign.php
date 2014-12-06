@@ -501,7 +501,6 @@ if ($Me->can_administer($prow)) {
 
     echo "</div><div class='papv' style='padding-left:0'>";
 
-    $colorizer = new Tagger;
     $pctexts = array();
     foreach (pcMembers() as $pc) {
         $p = $pcx[$pc->contactId];
@@ -509,7 +508,7 @@ if ($Me->can_administer($prow)) {
             continue;
 
         // first, name and assignment
-        $color = $colorizer->color_classes($pc->all_contact_tags());
+        $color = TagInfo::color_classes($pc->all_contact_tags());
         $color = ($color ? " class='${color}'" : "");
         $pctext = "      <tr$color>";
         if ($p->conflictType >= CONFLICT_AUTHOR) {

@@ -204,9 +204,11 @@ class PaperActions {
             if (@trim($_REQUEST["deltags"]) !== "")
                 $tagger->save($prow->paperId, $_REQUEST["deltags"], "d");
             $prow->load_tags();
-            $tags_edit_text = $tagger->unparse($tagger->editable($prow->paperTags));
-            $tags_view_html = $tagger->unparse_link_viewable($prow->paperTags, false, !$prow->has_conflict($Me));
-            $tags_color = $tagger->color_classes($prow->paperTags);
+            $editable = $tagger->editable($prow->paperTags);
+            $tags_edit_text = $tagger->unparse($editable);
+            $viewable = $tagger->viewable($prow->paperTags);
+            $tags_view_html = $tagger->unparse_and_link($viewable, $prow->paperTags, false, !$prow->has_conflict($Me));
+            $tags_color = TagInfo::color_classes($viewable);
         } else
             $Error["tags"] = "You can’t set tags for paper #$prow->paperId." . ($Me->allow_administer($prow) ? " (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
         if ($ajax && $OK && !isset($Error["tags"]))
@@ -226,8 +228,7 @@ class PaperActions {
         $ajax = defval($_REQUEST, "ajax", false);
         $r = "";
         if ($Me->canViewTags($prow)) {
-            $tagger = new Tagger();
-            if (($vt = $tagger->vote_tags())) {
+            if (($vt = TagInfo::vote_tags())) {
                 $q = "";
                 $mytagprefix = $Me->contactId . "~";
                 $cur_votes = array();

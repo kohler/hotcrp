@@ -1248,12 +1248,10 @@ if ($pl) {
     if ($Me->isPC && $pl->any->tags) {
         $opt = array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair));
         displayOptionCheckbox("tags", 1, "Tags", $opt);
-        if ($Me->privChair) {
-            $tagger = new Tagger;
-            foreach ($tagger->defined_tags() as $t)
+        if ($Me->privChair)
+            foreach (TagInfo::defined_tags() as $t)
                 if ($t->vote || $t->rank)
                     displayOptionCheckbox("tagrep_" . preg_replace('/\W+/', '_', $t->tag), 1, "“" . $t->tag . "” tag report", $opt);
-        }
     }
 
     // Row numbers

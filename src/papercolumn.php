@@ -844,10 +844,12 @@ class TagListPaperColumn extends PaperColumn {
         return !$pl->contact->canViewTags($row, true);
     }
     public function content($pl, $row) {
-        if (($t = $row->paperTags) !== "")
-            $t = $pl->tagger->unparse_link_viewable($row->paperTags,
-                                                    $pl->search->orderTags,
-                                                    $row->conflictType <= 0);
+        if (($t = $row->paperTags) !== "") {
+            $viewable = $pl->tagger->viewable($row->paperTags);
+            $t = $pl->tagger->unparse_and_link($viewable, $row->paperTags,
+                                               $pl->search->orderTags,
+                                               $row->conflictType <= 0);
+        }
         return $t;
     }
 }
@@ -1399,9 +1401,9 @@ function initialize_paper_columns() {
     }
 
     $tagger = new Tagger;
-    if ($Conf && ($tagger->has_vote() || $tagger->has_rank())) {
+    if ($Conf && (TagInfo::has_vote() || TagInfo::has_rank())) {
         $vt = array();
-        foreach ($tagger->defined_tags() as $v)
+        foreach (TagInfo::defined_tags() as $v)
             if ($v->vote || $v->rank)
                 $vt[] = $v->tag;
         foreach ($vt as $n)

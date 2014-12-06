@@ -707,10 +707,9 @@ $pcm = pcMembers();
 $nrev = AssignmentSet::count_reviews();
 $nrev->pset = AssignmentSet::count_reviews($papersel);
 $pcdesc = array();
-$colorizer = new Tagger;
 foreach ($pcm as $id => $p) {
     $count = count($pcdesc) + 1;
-    $color = $colorizer->color_classes($p->all_contact_tags());
+    $color = TagInfo::color_classes($p->all_contact_tags());
     $color = ($color ? " class='${color}'" : "");
     $c = "<tr$color><td class='pctbl'>"
         . Ht::checkbox("pcs[]", $id, isset($pcsel[$id]),

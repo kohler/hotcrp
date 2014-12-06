@@ -90,8 +90,8 @@ class CommentView {
             if (!$this->tagger)
                 $this->tagger = new Tagger;
             if (($tags = $this->tagger->viewable($crow->commentTags)))
-                $cj->tags = Tagger::split($tags);
-            if ($tags && ($cc = $this->tagger->color_classes($tags)))
+                $cj->tags = TagInfo::split($tags);
+            if ($tags && ($cc = TagInfo::color_classes($tags)))
                 $cj->color_classes = $cc;
         }
 

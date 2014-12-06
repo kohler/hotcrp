@@ -149,10 +149,9 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
             HotCRPMailer::send_reviewers("@withdrawreviewer", $prow, array("reason" => $reason));
 
         // remove voting tags so people don't have phantom votes
-        $tagger = new Tagger;
-        if ($tagger->has_vote()) {
+        if (TagInfo::has_vote()) {
             $q = array();
-            foreach ($tagger->vote_tags() as $t => $v)
+            foreach (TagInfo::vote_tags() as $t => $v)
                 $q[] = "tag='" . sqlq($t) . "' or tag like '%~" . sqlq_for_like($t) . "'";
             $Conf->qe("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")");
         }

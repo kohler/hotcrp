@@ -73,7 +73,7 @@ class PaperRank {
     }
 
     private function _nextRank() {
-        $this->currank += Tagger::value_increment($this->ordertype);
+        $this->currank += TagInfo::value_increment($this->ordertype);
         return $this->currank;
     }
 

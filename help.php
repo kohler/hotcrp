@@ -365,10 +365,9 @@ function searchQuickref() {
 
 
 function _currentVoteTags() {
-    $tagger = new Tagger;
-    if ($tagger->has_vote()) {
+    if (TagInfo::has_vote()) {
         $votetags = " (currently ";
-        foreach ($tagger->vote_tags() as $tag => $v)
+        foreach (TagInfo::vote_tags() as $tag => $v)
             $votetags .= "“<a href=\"" . hoturl("search", "q=rorder:$tag") . "\">$tag</a>”, ";
         return substr($votetags, 0, strlen($votetags) - 2) . ")";
     } else
@@ -376,8 +375,7 @@ function _currentVoteTags() {
 }
 
 function _singleVoteTag() {
-    $tagger = new Tagger;
-    $vt = $tagger->vote_tags();
+    $vt = TagInfo::vote_tags();
     return count($vt) ? key($vt) : "vote";
 }
 
@@ -393,8 +391,7 @@ function tags() {
     $setting = "";
 
     if ($Me->isPC) {
-        $tagger = new Tagger;
-        $ct = array_keys($tagger->chair_tags());
+        $ct = array_keys(TagInfo::chair_tags());
         if (count($ct)) {
             sort($ct);
             $chairtags = " (currently ";

@@ -697,9 +697,7 @@ class ContactList extends BaseList {
 
         // collect row data
         $this->count = 0;
-        $colorizer = null;
-        if ($this->contact->isPC)
-            $colorizer = new Tagger($this->contact);
+        $show_colors = $this->contact->isPC;
 
         $anyData = array();
         $body = '';
@@ -711,9 +709,9 @@ class ContactList extends BaseList {
                 continue;
 
             $trclass = "k" . ($this->count % 2);
-            if ($colorizer) {
+            if ($this->contact->isPC) {
                 $tags = Contact::roles_all_contact_tags($row->roles, $row->contactTags);
-                if (($c = $colorizer->color_classes($tags)))
+                if (($c = TagInfo::color_classes($tags)))
                     $trclass .= " " . $c;
             }
             if ($row->disabled)

@@ -23,7 +23,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $admin = $Me->can_administer($prow);
     $hideUnviewable = ($conflictType > 0 && !$admin)
         || (!$Me->actPC($prow) && !$Conf->setting("extrev_view"));
-    $colorizer = ($Me->actPC($prow) ? new Tagger : null);
+    $show_colors = $Me->actPC($prow);
     $xsep = ' <span class="barsep">&nbsp;|&nbsp;</span> ';
     $want_scores = $mode != "assign" && $mode != "edit" && $mode != "re";
     $score_header = array();
@@ -106,9 +106,9 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 && ($rr->requestedBy == $Me->contactId || $admin))
                 $t .= ' ' . _retract_review_request_form($prow, $rr);
             $t .= "</td>";
-            if ($colorizer && (@$rr->contactRoles || @$rr->contactTags)) {
+            if ($show_colors && (@$rr->contactRoles || @$rr->contactTags)) {
                 $tags = Contact::roles_all_contact_tags(@$rr->contactRoles, @$rr->contactTags);
-                if (($color = $colorizer->color_classes($tags)))
+                if (($color = TagInfo::color_classes($tags)))
                     $tclass = $color;
             }
         }

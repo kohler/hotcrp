@@ -167,6 +167,7 @@ function __autoload($class_name) {
                                "ReviewForm" => "src/review.php",
                                "S3Document" => "lib/s3document.php",
                                "SearchActions" => "src/searchactions.php",
+                               "TagInfo" => "lib/tagger.php",
                                "Tagger" => "lib/tagger.php",
                                "Text" => "lib/text.php",
                                "UnicodeHelper" => "lib/unicodehelper.php",
