@@ -204,7 +204,7 @@ class PaperActions {
             if (@trim($_REQUEST["deltags"]) !== "")
                 $tagger->save($prow->paperId, $_REQUEST["deltags"], "d");
             $prow->load_tags();
-            $editable = $tagger->editable($prow->paperTags);
+            $editable = $tagger->paper_editable($prow);
             $tags_edit_text = $tagger->unparse($editable);
             $viewable = $tagger->viewable($prow->paperTags);
             $tags_view_html = $tagger->unparse_and_link($viewable, $prow->paperTags, false, !$prow->has_conflict($Me));

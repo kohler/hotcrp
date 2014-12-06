@@ -1322,10 +1322,13 @@ class PaperTable {
                 echo "</div>";
                 if (isset($Error["tags"]))
                     echo "<div class='xmerror'>", $Error["tags"], "</div>";
+                $editable = $tags;
+                if ($this->prow)
+                    $editable = $tagger->paper_editable($this->prow);
                 echo "<div style='position:relative'>",
                     "<div id='taghelp_p' class='taghelp_p'></div>",
                     "<textarea id='foldtags_d' cols='20' rows='4' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>",
-                    $tagger->unparse($tagger->editable($tags)),
+                    $tagger->unparse($editable),
                     "</textarea></div>",
                     "<div style='padding:1ex 0;text-align:right'>",
                     Ht::hidden("settags", "1"),

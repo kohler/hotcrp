@@ -324,16 +324,21 @@ class Tagger {
         return $tags;
     }
 
-    public function editable($tags) {
-        $tags = $this->viewable($tags);
+    public function paper_editable($prow) {
+        $tags = $this->viewable($prow->all_tags_text());
         if ($tags != "") {
-            $bad = array();
-            foreach (TagInfo::defined_tags() as $v)
-                if ($v->vote
-                    || (($v->chair || $v->rank)
-                        && !($this->contact && $this->contact->privChair)))
-                    $bad[] = $v->tag;
-            $tags = trim(preg_replace("{ (?:" . join("|", $bad) . ")(?:#-?\\d*)? }i", " ", " $tags "));
+            $privChair = $this->contact
+                && $this->contact->allow_administer($prow);
+            $dt = TagInfo::defined_tags();
+            $etags = array();
+            foreach (explode(" ", $tags) as $t)
+                if (!($t === ""
+                      || (($v = $dt->check(TagInfo::base($t)))
+                          && ($v->vote
+                              || ($v->chair && !$privChair)
+                              || ($v->rank && !$privChair)))))
+                    $etags[] = $t;
+            $tags = join(" ", $etags);
         }
         return $tags;
     }
