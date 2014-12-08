@@ -228,6 +228,11 @@ class Formula {
             if (!($e = self::_parse_expr($t, self::$_operators["u$op"])))
                 return null;
             $e = FormulaExpr::make($op, $e);
+        } else if (preg_match('/\Anot([\s(].*|)\z/i', $t, $m)) {
+            $t = $m[2];
+            if (!($e = self::_parse_expr($t, self::$_operators["u!"])))
+                return null;
+            $e = FormulaExpr::make("!", $e);
         } else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
             $e = FormulaExpr::make("", $m[1] + 0.0);
             $t = $m[2];
@@ -286,16 +291,22 @@ class Formula {
             return null;
 
         while (1) {
-            if (($t = ltrim($t)) === ""
-                || !preg_match(self::BINARY_OPERATOR_REGEX, $t, $m))
+            if (($t = ltrim($t)) === "")
+                return $e;
+            else if (preg_match(self::BINARY_OPERATOR_REGEX, $t, $m)) {
+                $op = $m[0] === "=" ? "==" : $m[0];
+                $tn = substr($t, strlen($m[0]));
+            } else if (preg_match('/\A(and|or)([\s(].*|)\z/i', $t, $m)) {
+                $op = strlen($m[1]) == 3 ? "&&" : "||";
+                $tn = $m[2];
+            } else
                 return $e;
 
-            $op = $m[0] === "=" ? "==" : $m[0];
             $opprec = self::$_operators[$op];
             if ($opprec < $level)
                 return $e;
 
-            $t = substr($t, strlen($m[0]));
+            $t = $tn;
             if (!($e2 = self::_parse_expr($t, $opprec == 12 ? $opprec : $opprec + 1)))
                 return null;
 
