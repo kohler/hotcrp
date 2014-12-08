@@ -1144,13 +1144,22 @@ class PaperSearch {
     }
 
     static private function find_end_balanced_parens($str) {
-        $pcount = 0;
+        $pcount = $quote = 0;
         for ($pos = 0; $pos < strlen($str)
-                 && (!ctype_space($str[$pos]) || $pcount); ++$pos)
-            if ($str[$pos] === "(")
+                 && (!ctype_space($str[$pos]) || $pcount || $quote); ++$pos) {
+            $ch = $str[$pos];
+            if ($quote) {
+                if ($ch === "\\" && $pos + 1 < strlen($str))
+                    ++$pos;
+                else if ($ch === "\"")
+                    $quote = 0;
+            } else if ($ch === "\"")
+                $quote = 1;
+            else if ($ch === "(" || $ch === "[" || $ch === "{")
                 ++$pcount;
-            else if ($str[$pos] === ")")
+            else if ($ch === ")" || $ch === "]" || $ch === "}")
                 --$pcount;
+        }
         return $pos;
     }
 
