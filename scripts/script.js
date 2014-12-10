@@ -1349,7 +1349,7 @@ function fill_editing(hc, cj) {
 
 function activate_editing(j, cj) {
     var elt;
-    j.find("textarea").text(cj.text);
+    j.find("textarea").text(cj.text).autogrow();
     j.find("input[name=commenttags]").val((cj.tags || []).join(" "));
     if ((elt = j.find("input[name=visibility][value=" + (cj.visibility || "rev") + "]")[0]))
         elt.checked = true;
