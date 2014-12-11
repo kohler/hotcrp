@@ -46,7 +46,7 @@ if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb()))
         $j["conflist"][] = $row;
     }
 }
-if (@$_REQUEST["jserror"]) {
+if (@$_REQUEST["jserror"] && @$_REQUEST["error"]) {
     $url = defval($_REQUEST, "url", "");
     if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m))
         $url = $m[1];
