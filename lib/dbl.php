@@ -78,7 +78,7 @@ class Dbl {
     }
 
     static function default_error_handler($dblink, $query) {
-        $landmark = caller_landmark("/^Dbl::/");
+        $landmark = caller_landmark(1, "/^Dbl::/");
         trigger_error("$landmark: database error: $dblink->error in $query");
     }
 
