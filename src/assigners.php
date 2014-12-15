@@ -1038,6 +1038,9 @@ class AssignmentSet {
             return false;
         }
 
+        // mark activity now to avoid DB errors later
+        $this->contact->mark_activity();
+
         // create new contacts outside the lock
         $locks = array("ContactInfo" => "read", "PCMember" => "read",
                        "ChairAssistant" => "read", "Chair" => "read",
