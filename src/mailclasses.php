@@ -190,7 +190,7 @@ class MailRecipients {
             $q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
             $orderby = "Paper.paperId, email";
         } else if ($this->type == "lead" || $this->type == "shepherd") {
-            $q = "select $contactInfo, conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from Paper join ContactInfo on (ContactInfo.contactId=Paper.${type}ContactId) left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
+            $q = "select $contactInfo, conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from Paper join ContactInfo on (ContactInfo.contactId=Paper.{$this->type}ContactId) left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
             $orderby = "Paper.paperId, email";
         } else {
             if (!$Conf->timeAuthorViewReviews(true) && $Conf->timeAuthorViewReviews()) {
