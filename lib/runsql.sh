@@ -33,10 +33,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
     --show-password=*)
         test -z "$mode" || usage
-	pwuser="`echo "+$1" | sed 's/^[^=]*=//'`"; mode=showpw;;
+        pwuser="`echo "+$1" | sed 's/^[^=]*=//'`"; mode=showpw;;
     --show-password)
-	test "$#" -gt 1 -a -z "$mode" || usage
-	pwuser="$2"; shift; mode=showpw;;
+        test "$#" -gt 1 -a -z "$mode" || usage
+        pwuser="$2"; shift; mode=showpw;;
     --set-password)
         test "$#" -gt 1 -a -z "$mode" || usage
         pwuser="$2"; pwvalue="$3"; shift; shift; mode=setpw;;
@@ -45,10 +45,10 @@ while [ $# -gt 0 ]; do
         makeuser="$2"; mode=makeuser; shift;;
     --show-opt=*|--show-option=*)
         test -z "$mode" || usage
-	optname="`echo "+$1" | sed 's/^[^=]*=//'`"; mode=showopt;;
+        optname="`echo "+$1" | sed 's/^[^=]*=//'`"; mode=showopt;;
     --show-opt|--show-option)
-	test "$#" -gt 1 -a -z "$mode" || usage
-	optname="$2"; shift; mode=showopt;;
+        test "$#" -gt 1 -a -z "$mode" || usage
+        optname="$2"; shift; mode=showopt;;
     -c|--co|--con|--conf|--confi|--config|-c*|--co=*|--con=*|--conf=*|--confi=*|--config=*)
         parse_common_argument "$@";;
     -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)

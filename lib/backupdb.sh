@@ -28,7 +28,7 @@ while [ $# -gt 0 ]; do
         parse_common_argument "$@";;
     --max_allowed_packet=*)
         max_allowed_packet="`echo "$1" | sed 's/^[^=]*=//'`";;
-    -*)	FLAGS="$FLAGS $1";;
+    -*) FLAGS="$FLAGS $1";;
     *)  if [ -z "$output" ]; then
             output="$1"
         else
@@ -67,12 +67,12 @@ fi
 
 database_dump () {
     if $pc; then
-	eval "$MYSQLDUMP $FLAGS $myargs $dbname --where='(roles & 7) != 0' ContactInfo"
-	pcs=`echo 'select group_concat(contactId) from ContactInfo where (roles & 7) != 0' | eval "$MYSQL $myargs $FLAGS -N $dbname"`
-	eval "$MYSQLDUMP $myargs $FLAGS --where='contactId in ($pcs)' $dbname ContactAddress"
-	eval "$MYSQLDUMP $myargs $FLAGS $dbname PCMember Chair ChairAssistant Settings ChairTag TopicArea"
+        eval "$MYSQLDUMP $FLAGS $myargs $dbname --where='(roles & 7) != 0' ContactInfo"
+        pcs=`echo 'select group_concat(contactId) from ContactInfo where (roles & 7) != 0' | eval "$MYSQL $myargs $FLAGS -N $dbname"`
+        eval "$MYSQLDUMP $myargs $FLAGS --where='contactId in ($pcs)' $dbname ContactAddress"
+        eval "$MYSQLDUMP $myargs $FLAGS $dbname PCMember Chair ChairAssistant Settings ChairTag TopicArea"
     else
-	eval "$MYSQLDUMP $myargs $FLAGS $dbname"
+        eval "$MYSQLDUMP $myargs $FLAGS $dbname"
     fi
     echo
     echo "--"

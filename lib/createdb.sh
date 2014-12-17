@@ -69,13 +69,13 @@ while [ $# -gt 0 ]; do
     shift=1
     case "$1" in
     -p|--pas|--pass|--passw|--passwo|--passwor|--password)
-	needpassword=true;;
+        needpassword=true;;
     -u|--us|--use|--user)
         MYCREATEDB_USER="$2"; shift;;
     -u*)
         MYCREATEDB_USER="`echo "$1" | sed s/^-u//`";;
     --u=*|--us=*|--use=*|--user=*)
-	MYCREATEDB_USER="`echo "$1" | sed 's/^[^=]*=//'`";;
+        MYCREATEDB_USER="`echo "$1" | sed 's/^[^=]*=//'`";;
     -p*)
         PASSWORD="`echo "$1" | sed s/^-p//`";;
     --pas=*|--pass=*|--passw=*|--passwo=*|--passwor=*|--password=*)
@@ -85,7 +85,7 @@ while [ $# -gt 0 ]; do
     --dbuser=*)
         set_dbuserpass "`echo "$1" | sed 's/^[^=]*=//'`";;
     --he|--hel|--help)
-	help;;
+        help;;
     --force)
         force=true;;
     --batch)
@@ -105,9 +105,9 @@ while [ $# -gt 0 ]; do
     --no-setup-phase)
         setup_phase="grep -v 'setupPhase'";;
     -*)
-	FLAGS="$FLAGS '$1'";;
+        FLAGS="$FLAGS '$1'";;
     *)
-	if [ -z "$DBNAME" ]; then DBNAME="$1"; else usage; fi;;
+        if [ -z "$DBNAME" ]; then DBNAME="$1"; else usage; fi;;
     esac
     shift $shift
 done
@@ -191,32 +191,32 @@ while true; do
         exit 1
     elif [ -z "$DBNAME" ]; then
         echo_n "Enter database name (NO SPACES)"
-	test -n "$default_dbname" && echo_n " [default $default_dbname]"
-	echo_n ": "
-	read -r DBNAME
+        test -n "$default_dbname" && echo_n " [default $default_dbname]"
+        echo_n ": "
+        read -r DBNAME
     elif ! $batch; then
-	echo "Database: $DBNAME"
+        echo "Database: $DBNAME"
     fi
 
     test -z "$DBNAME" -a -n "$default_dbname" && DBNAME="$default_dbname"
     x="`echo_dbname | tr -d a-zA-Z0-9_.-`"
     c="`echo_dbname | wc -c`"
     if test -z "$DBNAME"; then
-	echo "* Quitting." 1>&2
-	exit 1
+        echo "* Quitting." 1>&2
+        exit 1
     elif test -n "$x"; then
-	echo "* The database name must only contain characters in [-.a-zA-Z0-9_]." 1>&2
+        echo "* The database name must only contain characters in [-.a-zA-Z0-9_]." 1>&2
     elif test "$c" -gt 64; then
-	echo "* The database name can be at most 64 characters long." 1>&2
+        echo "* The database name can be at most 64 characters long." 1>&2
     elif ! $dbuser_existing && test "$c" -gt 16; then
-	echo "* Database user names can be at most 16 characters long." 1>&2
+        echo "* Database user names can be at most 16 characters long." 1>&2
         echo "* Either choose a shorter database name, or use --dbuser." 1>&2
     elif test "`echo "$DBNAME" | head -c 1`" = "."; then
-	echo "* The database name must not start with a period." 1>&2
+        echo "* The database name must not start with a period." 1>&2
     elif test "$DBNAME" = mysql || expr "$DBNAME" : '.*_schema$' >/dev/null; then
-	echo "* Database name '$DBNAME' is reserved." 1>&2
+        echo "* Database name '$DBNAME' is reserved." 1>&2
     else
-	break
+        break
     fi
 
     DBNAME=
@@ -297,10 +297,10 @@ if [ "$dbexists" = 0 -o \( "$userexists" = 0 -a "$dbuser_existing" != true \) ];
     test "$userexists" = 0 -a "$dbuser_existing" != true && echo "* A user named '$DBUSER' already exists!" 1>&2
     while ! $replace; do
         batch_fail
-	echo_n "Replace? [Y/n] "
-	read createdbuser
-	expr "$createdbuser" : "[ynqYNQ].*" >/dev/null && break
-	test -z "$createdbuser" && break
+        echo_n "Replace? [Y/n] "
+        read createdbuser
+        expr "$createdbuser" : "[ynqYNQ].*" >/dev/null && break
+        test -z "$createdbuser" && break
     done
     expr "$createdbuser" : "[qQ].*" >/dev/null && echo "Exiting" && exit 0
     expr "$createdbuser" : "[nN].*" >/dev/null || createdbuser=y
@@ -312,8 +312,8 @@ echo
 if [ "$createdb" = y ]; then
     $qecho "Creating $DBNAME database..."
     if [ "$dbexists" = 0 ]; then
-	$qecho "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS -f drop $DBNAME"
-	eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS -f drop $DBNAME || exit 1
+        $qecho "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS -f drop $DBNAME"
+        eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS -f drop $DBNAME || exit 1
         eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
 DELETE FROM db WHERE db='$DBNAME';
 FLUSH PRIVILEGES;
@@ -460,12 +460,12 @@ __EOF__
 is_group_member () {
     u="$1"; g="$2"
     if test -x /usr/bin/dsmemberutil; then
-	if expr "$u" : '[0-9]*$' >/dev/null; then ua="-u"; else ua="-U"; fi
-	if expr "$g" : '[0-9]*$' >/dev/null; then ga="-g"; else ga="-G"; fi
-	/usr/bin/dsmemberutil checkmembership $ua "$u" $ga "$g" 2>/dev/null | grep "is a member" >/dev/null
+        if expr "$u" : '[0-9]*$' >/dev/null; then ua="-u"; else ua="-U"; fi
+        if expr "$g" : '[0-9]*$' >/dev/null; then ga="-g"; else ga="-G"; fi
+        /usr/bin/dsmemberutil checkmembership $ua "$u" $ga "$g" 2>/dev/null | grep "is a member" >/dev/null
     else
-	members="`grep "^$group" /etc/group | sed 's/.*:.*:.*:/,/'`"
-	echo "$members," | grep ",$u," >/dev/null
+        members="`grep "^$group" /etc/group | sed 's/.*:.*:.*:/,/'`"
+        echo "$members," | grep ",$u," >/dev/null
     fi
 }
 
@@ -486,8 +486,8 @@ elif [ -r "${SRCDIR}${distoptions_file}" -o -n "$minimal_options" ]; then
     $qecho "Creating $expected_options..."
     create_options > "$expected_options"
     if [ -n "$SUDO_USER" ]; then
-	$qecho + chown $SUDO_USER "$expected_options"
-	chown $SUDO_USER "$expected_options"
+        $qecho + chown $SUDO_USER "$expected_options"
+        chown $SUDO_USER "$expected_options"
     fi
     chmod o-rwx "$expected_options"
     current_options="$expected_options"
@@ -504,20 +504,20 @@ if test -n "$current_options"; then
     httpd_user="`ps axho user,comm | grep -E 'httpd|apache' | uniq | grep -v root | awk 'END {if ($1) print $1}'`"
 
     if test -z "$httpd_user"; then
-	echo
-	echo "* The $current_options file contains sensitive data."
-	echo "* You may need to change its group so the Web server can read it."
-	echo
+        echo
+        echo "* The $current_options file contains sensitive data."
+        echo "* You may need to change its group so the Web server can read it."
+        echo
     elif ! is_group_member "$httpd_user" "$group"; then
-	if [ -n "$SUDO_USER" ] && chgrp "$httpd_user" "$current_options" 2>/dev/null; then
-	    $qecho "Making $current_options readable by the Web server..."
-	    $qecho + chgrp "$httpd_user" "$current_options"
-	else
-	    echo
-	    echo "* The $current_options file contains important data, but the Web server"
-	    echo "* cannot read it. Use 'chgrp GROUP $current_options' to change its group."
-	    echo
-	fi
+        if [ -n "$SUDO_USER" ] && chgrp "$httpd_user" "$current_options" 2>/dev/null; then
+            $qecho "Making $current_options readable by the Web server..."
+            $qecho + chgrp "$httpd_user" "$current_options"
+        else
+            echo
+            echo "* The $current_options file contains important data, but the Web server"
+            echo "* cannot read it. Use 'chgrp GROUP $current_options' to change its group."
+            echo
+        fi
     fi
 fi
 

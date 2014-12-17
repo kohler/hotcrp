@@ -28,8 +28,8 @@ while [ $# -gt 0 ]; do
         parse_common_argument "$@";;
     --max_allowed_packet=*)
         max_allowed_packet="`echo "$1" | sed 's/^[^=]*=//'`";;
-    -*)	FLAGS="$FLAGS $1";;
-    *)	if [ -z "$input" ]; then input="$1"; else usage; fi;;
+    -*) FLAGS="$FLAGS $1";;
+    *)  if [ -z "$input" ]; then input="$1"; else usage; fi;;
     esac
     shift $shift
 done

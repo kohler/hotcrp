@@ -3,8 +3,8 @@
 ## Distributed under an MIT-like license; see LICENSE
 
 echo_n () {
-	# suns can't echo -n, and Mac OS X can't echo "x\c"
-	echo "$@" | tr -d '
+        # suns can't echo -n, and Mac OS X can't echo "x\c"
+        echo "$@" | tr -d '
 '
 }
 
@@ -27,17 +27,17 @@ sub unslash ($) {
    while ($a ne "") {
       if ($a =~ m|\A\\|) {
          if ($a =~ m|\A\\([0-7]{1,3})(.*)\z|s) {
-	    $b .= chr(oct($1));
-	    $a = $2;
-	 } elsif ($a =~ m |\A\\([nrftvb])(.*)\z|s) {
-	    $b .= eval("\"\\$1\"");
-	    $a = $2;
-	 } else {
-	    $b .= substr($a, 1, 1);
-	    $a = substr($a, 2);
-	 }
+            $b .= chr(oct($1));
+            $a = $2;
+         } elsif ($a =~ m|\A\\([nrftvb])(.*)\z|s) {
+            $b .= eval("\"\\$1\"");
+            $a = $2;
+         } else {
+            $b .= substr($a, 1, 1);
+            $a = substr($a, 2);
+         }
       } else {
-	 $b .= substr($a, 0, 1);
+         $b .= substr($a, 0, 1);
          $a = substr($a, 1);
       }
    }
