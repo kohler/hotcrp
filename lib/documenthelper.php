@@ -174,7 +174,7 @@ class DocumentHelper {
             $q = "update $table set " . join(",", $a) . " where $idcol='" . sqlq($cols[$idcol]);
         else
             $q = "insert into $table set " . join(",", $a);
-        if (!($result = Dbl::real_query($q))) {
+        if (!($result = Dbl::raw_query($q))) {
             set_error_html($doc, $Conf->db_error_html(true, $while));
             return;
         }

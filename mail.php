@@ -292,7 +292,7 @@ class MailSender {
                 . "', emailBody='" . sqlq($_REQUEST["emailBody"]) . "'";
             if ($Conf->sversion >= 79)
                 $q .= ", q='" . sqlq($_REQUEST["q"]) . "', t='" . sqlq($_REQUEST["t"]) . "'";
-            if (($log_result = Dbl::real_query("insert into MailLog set $q")))
+            if (($log_result = Dbl::raw_query("insert into MailLog set $q")))
                 $this->mailid_text = " #" . $log_result->insert_id;
             $Me->log_activity("Sending mail$this->mailid_text \"$subject\"");
         }

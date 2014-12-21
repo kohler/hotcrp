@@ -105,7 +105,7 @@ class CommentSave {
             $q .= " where commentId=$crow->commentId";
         }
 
-        $result = Dbl::real_qe($q);
+        $result = Dbl::raw_qe($q);
         if (!$result)
             return false;
 

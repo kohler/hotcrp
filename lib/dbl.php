@@ -82,12 +82,12 @@ class Dbl {
         trigger_error("$landmark: database error: $dblink->error in $query");
     }
 
-    static private function query_args($args, $is_real) {
+    static private function query_args($args, $is_raw) {
         if (count($args) === 1 && is_array($args[0]))
             $args = $args[0];
         $argpos = is_string($args[0]) ? 0 : 1;
         $dblink = $argpos ? $args[0] : self::$default_dblink;
-        if ($is_real && count($args) > 2)
+        if ($is_raw && count($args) > 2)
             trigger_error(caller_landmark(1, "/^Dbl::/") . ": too many arguments");
         if (count($args) === $argpos + 1)
             return array($dblink, $args[$argpos], array());
@@ -144,9 +144,9 @@ class Dbl {
         return $qstr;
     }
 
-    static private function do_query($args, $is_real, $logmode) {
-        $args = self::query_args($args, $is_real);
-        if (!$is_real)
+    static private function do_query($args, $is_raw, $logmode) {
+        $args = self::query_args($args, $is_raw);
+        if (!$is_raw)
             $args[1] = self::format_query($args);
         $result = $args[0]->query($args[1]);
         if ($result === true)
@@ -165,7 +165,7 @@ class Dbl {
         return self::do_query(func_get_args(), false, 0);
     }
 
-    static function real_query(/* [$dblink,] $qstr */) {
+    static function raw_query(/* [$dblink,] $qstr */) {
         return self::do_query(func_get_args(), true, 0);
     }
 
@@ -173,7 +173,7 @@ class Dbl {
         return self::do_query(func_get_args(), false, 1);
     }
 
-    static function real_ql(/* [$dblink,] $qstr */) {
+    static function raw_ql(/* [$dblink,] $qstr */) {
         return self::do_query(func_get_args(), true, 1);
     }
 
@@ -181,7 +181,7 @@ class Dbl {
         return self::do_query(func_get_args(), false, 2);
     }
 
-    static function real_qe(/* [$dblink,] $qstr */) {
+    static function raw_qe(/* [$dblink,] $qstr */) {
         return self::do_query(func_get_args(), true, 2);
     }
 

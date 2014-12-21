@@ -746,7 +746,7 @@ class Contact {
             $q .= ", creationTime=$Now";
         } else
             $q .= " where contactId=" . $this->contactId;
-        $result = Dbl::real_qe($Conf->dblink, $q);
+        $result = Dbl::raw_qe($Conf->dblink, $q);
         if (!$result)
             return $result;
         if ($inserting)
@@ -917,7 +917,7 @@ class Contact {
                 $qa .= ",$k";
                 $qb .= ",'" . sqlq($reg->$k) . "'";
             }
-        $result = Dbl::real_ql("insert into ContactInfo ($qa) values ($qb)");
+        $result = Dbl::raw_ql("insert into ContactInfo ($qa) values ($qb)");
         if (!$result)
             return false;
         $cid = (int) $result->insert_id;
@@ -2438,7 +2438,7 @@ class Contact {
         else
             return $rrow ? $rrow->reviewId : 0;
 
-        if (!($result = Dbl::real_qe($q)))
+        if (!($result = Dbl::raw_qe($q)))
             return false;
 
         if ($q[0] == "d") {
