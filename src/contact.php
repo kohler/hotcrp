@@ -717,27 +717,26 @@ class Contact {
         global $Conf, $Now, $Opt;
         $this->trim();
         $inserting = !$this->contactId;
-        $qf = array();
+        $qf = $qv = array();
         foreach (array("firstName", "lastName", "email", "affiliation",
                        "voicePhoneNumber", "password", "collaborators",
-                       "roles", "defaultWatch", "passwordTime") as $k)
-            $qf[] = "$k='" . sqlq($this->$k) . "'";
-        if ($this->preferredEmail != "")
-            $qf[] = "preferredEmail='" . sqlq($this->preferredEmail) . "'";
-        else
-            $qf[] = "preferredEmail=null";
-        if ($this->contactTags)
-            $qf[] = "contactTags='" . sqlq($this->contactTags) . "'";
-        else
-            $qf[] = "contactTags=null";
+                       "roles", "defaultWatch", "passwordTime") as $k) {
+            $qf[] = "$k=?";
+            $qv[] = $this->$k;
+        }
+        $qf[] = "preferredEmail=?";
+        $qv[] = $this->preferredEmail != "" ? $this->preferredEmail : null;
+        $qf[] = "contactTags=?";
+        $qv[] = $this->contactTags ? : null;
         $qf[] = "disabled=" . ($this->disabled ? 1 : 0);
         if ($Conf->sversion >= 71) {
-            if (!$this->data_)
-                $qf[] = "data=NULL";
-            else if (is_string($this->data_))
-                $qf[] = "data='" . sqlq($this->data_) . "'";
+            $qf[] = "data=?";
+            if (!$this->data_ || is_string($this->data_))
+                $qv[] = $this->data_ ? : null;
             else if (is_object($this->data_))
-                $qf[] = "data='" . sqlq(json_encode($this->data_)) . "'";
+                $qv[] = json_encode($this->data_);
+            else
+                $qv[] = null;
         }
         $q = ($inserting ? "insert into" : "update")
             . " ContactInfo set " . join(", ", $qf);
@@ -746,17 +745,16 @@ class Contact {
             $q .= ", creationTime=$Now";
         } else
             $q .= " where contactId=" . $this->contactId;
-        $result = Dbl::raw_qe($Conf->dblink, $q);
+        $result = Dbl::qe($Conf->dblink, $q, $qv);
         if (!$result)
             return $result;
         if ($inserting)
             $this->contactId = $result->insert_id;
         $Conf->ql("delete from ContactAddress where contactId=$this->contactId");
         if ($this->addressLine1 || $this->addressLine2 || $this->city
-            || $this->state || $this->zipCode || $this->country) {
-            $query = "insert into ContactAddress (contactId, addressLine1, addressLine2, city, state, zipCode, country) values ($this->contactId, '" . sqlq($this->addressLine1) . "', '" . sqlq($this->addressLine2) . "', '" . sqlq($this->city) . "', '" . sqlq($this->state) . "', '" . sqlq($this->zipCode) . "', '" . sqlq($this->country) . "')";
-            $result = $Conf->qe($query);
-        }
+            || $this->state || $this->zipCode || $this->country)
+            $result = Dbl::qe($Conf->dblink, "insert into ContactAddress set contactId=?, addressLine1=?, addressLine2=?, city=?, state=?, zipCode=?, country=?",
+                              $this->contactId, $this->addressLine1, $this->addressLine2, $this->city, $this->state, $this->zipCode, $this->country);
 
         // add to contact database
         if (@$Opt["contactdb_dsn"] && ($cdb = self::contactdb())) {
@@ -909,15 +907,15 @@ class Contact {
         $best_email = @$reg->preferredEmail ? $reg->preferredEmail : $email;
         $authored_papers = Contact::email_authored_papers($best_email, $reg);
 
-        // Set up query
-        $qa = "email, password, creationTime";
-        $qb = "'" . sqlq($email) . "','" . sqlq($this->password) . "',$Now";
+        // Insert
+        $qf = array("email=?, password=?, creationTime=$Now");
+        $qv = array($email, $this->password);
         foreach ($reg_keys as $k)
             if (isset($reg->$k)) {
-                $qa .= ",$k";
-                $qb .= ",'" . sqlq($reg->$k) . "'";
+                $qf[] = "$k=?";
+                $qv[] = $reg->$k;
             }
-        $result = Dbl::raw_ql("insert into ContactInfo ($qa) values ($qb)");
+        $result = Dbl::ql("insert into ContactInfo set " . join(", ", $qf), $qv);
         if (!$result)
             return false;
         $cid = (int) $result->insert_id;
