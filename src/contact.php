@@ -75,6 +75,7 @@ class Contact {
         if (isset($user->contactId)
             && (!isset($user->dsn) || $user->dsn === $Conf->dsn))
             $this->contactId = (int) $user->contactId;
+        $this->cid = $this->contactId;
         if (isset($user->contactDbId))
             $this->contactDbId = (int) $user->contactDbId;
         foreach (array("firstName", "lastName", "email", "preferredEmail", "affiliation",
@@ -135,7 +136,7 @@ class Contact {
 
     public function __set($name, $value) {
         if ($name == "cid")
-            $this->contactId = $value;
+            $this->contactId = $this->cid = $value;
         else
             $this->$name = $value;
     }
@@ -676,6 +677,7 @@ class Contact {
 
     private function trim() {
         $this->contactId = (int) trim($this->contactId);
+        $this->cid = $this->contactId;
         $this->firstName = simplify_whitespace($this->firstName);
         $this->lastName = simplify_whitespace($this->lastName);
         foreach (array("email", "preferredEmail", "affiliation",
@@ -749,7 +751,7 @@ class Contact {
         if (!$result)
             return $result;
         if ($inserting)
-            $this->contactId = $result->insert_id;
+            $this->contactId = $this->cid = $result->insert_id;
         $Conf->ql("delete from ContactAddress where contactId=$this->contactId");
         if ($this->addressLine1 || $this->addressLine2 || $this->city
             || $this->state || $this->zipCode || $this->country)
