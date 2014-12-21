@@ -879,13 +879,13 @@ class PaperTable {
             if (@$au[4]) {
                 echo '<span class="autblentry_long">', Text::user_html($au);
                 if ($Me->privChair && $au[4] != $Me->contactId)
-                    echo '&nbsp;', viewas_link($au[2], $au);
+                    echo '&nbsp;', actas_link($au[2], $au);
                 echo '</span><br />';
             }
         foreach ($contacts as $au) {
             echo '<span class="autblentry_long">', Text::user_html($au);
             if ($Me->privChair && $au->contactId != $Me->contactId)
-                echo '&nbsp;', viewas_link($au);
+                echo '&nbsp;', actas_link($au);
             echo '</span><br />';
         }
         echo '</div>';

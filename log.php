@@ -214,7 +214,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
         $t .= "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email)) . "\">"
             . Text::user_html_nolink($row) . "</a>";
         if ($row->contactId !== $Me->contactId)
-            $t .= "&nbsp;" . viewas_link($row);
+            $t .= "&nbsp;" . actas_link($row);
     } else if ($row->firstName || $row->lastName)
         $t .= Text::user_html_nolink($row);
     else if ($row->contactId)

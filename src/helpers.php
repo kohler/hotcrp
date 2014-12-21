@@ -473,7 +473,7 @@ function topicTable($prow, $active = 0) {
     return $out . "</td></tr></table>";
 }
 
-function viewas_link($cid, $contact = null) {
+function actas_link($cid, $contact = null) {
     global $Conf;
     $contact = !$contact && is_object($cid) ? $cid : $contact;
     $cid = is_object($contact) ? $cid->email : $cid;
@@ -495,7 +495,7 @@ function authorTable($aus, $viewAs = null) {
                 $out .= "<span class='autblentry'>";
             $out .= $au;
             if ($viewAs !== null && is_array($aux) && count($aux) >= 2 && $viewAs->email != $aux[2] && $viewAs->privChair)
-                $out .= " " . viewas_link($aux[2], $aux);
+                $out .= " " . actas_link($aux[2], $aux);
             $out .= "</span> ";
         }
     }
