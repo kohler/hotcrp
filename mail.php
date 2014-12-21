@@ -119,6 +119,7 @@ class MailSender {
         foreach (array("recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit", "newrev_since") as $x)
             if (isset($_REQUEST[$x]))
                 echo Ht::hidden($x, $_REQUEST[$x]);
+        $recipients = defval($_REQUEST, "recipients", "");
         if ($this->sending) {
             echo "<div id='foldmail' class='foldc fold2c'>",
                 "<div class='fn fx2 merror'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br /><span id='mailcount'></span></div>",
@@ -141,7 +142,7 @@ class MailSender {
                     echo "<div class='warning'>Mails to users who have not completed their own reviews will not include reviews or comments. (<a href='", hoturl("settings", "group=dec"), "' class='nowrap'>Change the setting</a>)</div>\n";
             }
             if (isset($_REQUEST["emailBody"]) && $Me->privChair
-                && substr($_REQUEST["recipients"], 0, 4) == "dec:") {
+                && substr($recipients, 0, 4) == "dec:") {
                 if (!$Conf->timeAuthorViewDecision())
                     echo "<div class='warning'>You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (<a href='", hoturl("settings", "group=dec"), "' class='nowrap'>Change this setting</a>)</div>\n";
             }
@@ -151,7 +152,7 @@ class MailSender {
                 "<div class='fx info'>Verify that the mails look correct, then select “Send” to send the checked mails.<br />",
                 "Mailing to:&nbsp;", $this->recip->unparse(),
                 "<span id='mailinfo'></span>";
-            if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $_REQUEST["recipients"])
+            if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $recipients)
                 && defval($_REQUEST, "plimit") && $_REQUEST["q"] !== "")
                 echo "<br />Paper selection:&nbsp;", htmlspecialchars($_REQUEST["q"]);
             echo "</div><div class='aa fx'>", Ht::submit("send", "Send"),
