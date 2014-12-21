@@ -72,10 +72,12 @@ class Contact {
 
     private function merge($user) {
         global $Conf;
-        if (isset($user->contactId)
-            && (!isset($user->dsn) || $user->dsn === $Conf->dsn))
-            $this->contactId = (int) $user->contactId;
-        $this->cid = $this->contactId;
+        if (!isset($user->dsn) || $user->dsn == $Conf->dsn) {
+            if (isset($user->contactId))
+                $this->contactId = $this->cid = (int) $user->contactId;
+            //else if (isset($user->cid))
+            //    $this->contactId = $this->cid = (int) $user->cid;
+        }
         if (isset($user->contactDbId))
             $this->contactDbId = (int) $user->contactDbId;
         foreach (array("firstName", "lastName", "email", "preferredEmail", "affiliation",
