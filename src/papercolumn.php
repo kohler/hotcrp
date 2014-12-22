@@ -844,13 +844,12 @@ class TagListPaperColumn extends PaperColumn {
         return !$pl->contact->canViewTags($row, true);
     }
     public function content($pl, $row) {
-        if (($t = $row->paperTags) !== "") {
-            $viewable = $pl->tagger->viewable($row->paperTags);
-            $t = $pl->tagger->unparse_and_link($viewable, $row->paperTags,
-                                               $pl->search->orderTags,
-                                               $row->conflictType <= 0);
-        }
-        return $t;
+        if ((string) $row->paperTags === "")
+            return "";
+        $viewable = $pl->tagger->viewable($row->paperTags);
+        return $pl->tagger->unparse_and_link($viewable, $row->paperTags,
+                                             $pl->search->orderTags,
+                                             $row->conflictType <= 0);
     }
 }
 
