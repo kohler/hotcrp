@@ -84,8 +84,8 @@ class Contact {
             $name = $user;
         else
             $name = Text::analyze_name($user);
-        $this->firstName = @$name->firstName;
-        $this->lastName = @$name->lastName;
+        $this->firstName = (string) @$name->firstName;
+        $this->lastName = (string) @$name->lastName;
         foreach (array("email", "preferredEmail", "affiliation",
                        "voicePhoneNumber", "addressLine1", "addressLine2",
                        "city", "state", "zipCode", "country") as $k)
