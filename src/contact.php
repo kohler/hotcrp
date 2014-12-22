@@ -80,7 +80,13 @@ class Contact {
         }
         if (isset($user->contactDbId))
             $this->contactDbId = (int) $user->contactDbId;
-        foreach (array("firstName", "lastName", "email", "preferredEmail", "affiliation",
+        if (isset($user->firstName) && isset($user->lastName))
+            $name = $user;
+        else
+            $name = Text::analyze_name($user);
+        $this->firstName = @$name->firstName;
+        $this->lastName = @$name->lastName;
+        foreach (array("email", "preferredEmail", "affiliation",
                        "voicePhoneNumber", "addressLine1", "addressLine2",
                        "city", "state", "zipCode", "country") as $k)
             if (isset($user->$k))
