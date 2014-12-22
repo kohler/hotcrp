@@ -648,7 +648,7 @@ class Conference {
     function query_error_handler($dblink, $query) {
         global $OK;
         if (PHP_SAPI == "cli")
-            fwrite(STDERR, caller_landmark("/^(?:Dbl::|Conference::q)/") . ": database error: $dblink->error in $query\n");
+            fwrite(STDERR, caller_landmark(1, "/^(?:Dbl::|Conference::q|call_user_func)/") . ": database error: $dblink->error in $query\n");
         else
             $this->errorMsg($this->db_error_html(true, Ht::pre_text_wrap($query)));
         $OK = false;
