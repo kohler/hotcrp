@@ -94,29 +94,21 @@ class HotCRPMailer extends Mailer {
 
     private function get_comments($tag) {
         global $Conf;
-        if ($this->hideReviews
-            || ($tag && $Conf->sversion < 68)
-            || ($this->comment_row && $tag
-                && stripos($this->comment_row->commentTags, " $tag ") === false))
+        if ($this->hideReviews)
+            return "";
+        $crows = $this->comment_row ? array($this->comment_row) : $this->row->all_comments();
+        if (!count($crows))
             return "";
 
         // save old au_seerev setting, and reset it so authors can see them.
         $old_au_seerev = $Conf->setting("au_seerev");
         $Conf->settings["au_seerev"] = AU_SEEREV_ALWAYS;
 
-        if ($this->comment_row)
-            $crows = array($this->comment_row);
-        else {
-            $where = "paperId=" . $this->row->paperId;
-            if ($tag)
-                $where .= " and commentTags like '% " . sqlq_for_like($tag) . " %'";
-            $crows = $Conf->comment_rows($Conf->comment_query($where), $this->permissionContact);
-        }
-
         $text = "";
         foreach ($crows as $crow)
-            if ($this->permissionContact->canViewComment($this->row, $crow, false))
-                $text .= CommentView::unparse_text($this->row, $crow, $this->permissionContact) . "\n";
+            if ((!$tag || ($crow->commentTags && stripos($crow->commentTags, " $tag ") !== false))
+                && $this->permissionContact->canViewComment($this->row, $crow, false))
+                $text .= $crow->unparse_text($this->permissionContact) . "\n";
 
         $Conf->settings["au_seerev"] = $old_au_seerev;
         return $text;

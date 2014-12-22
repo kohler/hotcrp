@@ -75,50 +75,48 @@ function saveComment($text, $is_response) {
                  "text" => $text,
                  "tags" => @$_REQUEST["commenttags"],
                  "blind" => @$_REQUEST["blind"]);
-    $next_crow = CommentSave::save($req, $prow, $crow, $user, $is_response);
+    if ($is_response && !$crow)
+        $cinfo = new CommentInfo(COMMENTTYPE_RESPONSE, $prow);
+    else
+        $cinfo = new CommentInfo($crow, $prow);
+    $ok = $cinfo->save($req, $user);
     $what = ($is_response ? "Response" : "Comment");
 
     $confirm = false;
-    if ($next_crow === false && $is_response) {
+    if (!$ok && $is_response) {
         $crows = $Conf->comment_rows($Conf->comment_query("paperId=$prow->paperId and (commentType&" . COMMENTTYPE_RESPONSE . ")!=0"), $Me);
         reset($crows);
         $cur_response = @current($crows);
-        if ($cur_response && $cur_response->comment == $text)
-            $next_crow = $cur_response;
-        else
+        if ($cur_response && $cur_response->comment == $text) {
+            $cinfo = $cur_response;
+            $ok = true;
+        } else
             $confirm = '<div class="xmerror">A response was entered concurrently by another user. Reload to see it.</div>';
     }
-    if ($next_crow === false)
+    if (!$ok)
         /* nada */;
-    else if ($next_crow && $is_response && ($next_crow->commentType & COMMENTTYPE_DRAFT)) {
-        $deadline = $Conf->printableTimeSetting("resp_done");
-        if ($deadline != "N/A")
-            $extratext = " You have until $deadline to submit the response.";
+    else if ($is_response && (!$cinfo->commentId || ($cinfo->commentType & COMMENTTYPE_DRAFT))) {
+        $confirm = '<div class="xwarning">';
+        if ($cinfo->commentId)
+            $confirm .= 'Response saved. <strong>This draft response will not be shown to reviewers.</strong>';
         else
-            $extratext = "";
-        $confirm = "<div class='xwarning'>$what saved. <strong>This draft response will not be shown to reviewers.</strong>$extratext</div>";
-    } else if ($next_crow)
-        $confirm = "<div class='xconfirm'>$what submitted.</div>";
-    else if (@$_REQUEST["ajax"])
-        $confirm = "<div class='xconfirm'>$what deleted.</div>";
+            $confirm .= 'Response deleted.';
+        if (($dl = $Conf->printableTimeSetting("resp_done")) != "N/A")
+            $confirm .= " You have until $deadline to submit the response.";
+        $confirm .= '</div>';
+    } else if ($is_response)
+        $confirm = '<div class="xconfirm">Response submitted.</div>';
+    else if ($cinfo->commentId)
+        $confirm = '<div class="xconfirm">Comment saved.</div>';
     else
-        $Conf->confirmMsg("$what deleted.");
+        $confirm = '<div class="xconfirm">Comment deleted.</div>';
 
-    if (@$_REQUEST["ajax"]) {
-        $j = array("ok" => $next_crow !== false);
-        if (@$next_crow) {
-            $cv = new CommentView;
-            $j["cmt"] = $cv->json($prow, $next_crow);
-        }
-        if ($confirm)
-            $j["msg"] = $confirm;
-        $Conf->ajaxExit($j);
-    } else {
-        $x = array("p" => $prow->paperId, "c" => null, "noedit" => null, "ls" => @$_REQUEST["ls"]);
-        if ($next_crow)
-            $x["anchor"] = "comment$next_crow->commentId";
-        go(hoturl("paper", $x));
-    }
+    $j = array("ok" => $ok);
+    if ($cinfo->commentId)
+        $j["cmt"] = $cinfo->unparse_json($Me);
+    if ($confirm)
+        $j["msg"] = $confirm;
+    $Conf->ajaxExit($j);
 }
 
 if (!check_post())

@@ -276,8 +276,10 @@ if (($getaction == "rev" || $getaction == "revz") && SearchActions::any()) {
 
     $crows = $Conf->comment_rows($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "allComments" => 1, "reviewerName" => 1)), $Me);
     foreach ($crows as $row)
-        if ($Me->canViewComment($row, $row, null))
-            defappend($texts[$row->paperId], CommentView::unparse_text($row, $row, $Me) . "\n");
+        if ($Me->canViewComment($row, $row, null)) {
+            $crow = new CommentInfo($row, $row);
+            defappend($texts[$row->paperId], $crow->unparse_text($Me) . "\n");
+        }
 
     downloadReviews($texts, $errors);
 }

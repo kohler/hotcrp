@@ -121,8 +121,7 @@ src/banal
 src/baselist.php
 src/capability.php
 src/checkformat.php
-src/commentsave.php
-src/commentview.php
+src/commentinfo.php
 src/conference.php
 src/conflict.php
 src/contact.php

@@ -259,7 +259,7 @@ function downloadForm($editable) {
         $paperTable->resolveComments();
         foreach ($paperTable->crows as $cr)
             if ($Me->canViewComment($prow, $cr, false))
-                $text .= CommentView::unparse_text($prow, $cr, $Me) . "\n";
+                $text .= $cr->unparse_text($Me, true) . "\n";
     }
     if (!$text)
         return $Conf->errorMsg(whyNotText($whyNot, "review"));

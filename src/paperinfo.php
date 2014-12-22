@@ -67,23 +67,30 @@ class PaperInfo {
                 $this->$k = $v;
         if ($contact && (property_exists($this, "conflictType")
                          || property_exists($this, "myReviewType"))) {
-            $cid = is_object($contact) ? $contact->contactId : $contact;
+            if ($contact === true)
+                $cid = property_exists($this, "contactId") ? $this->contactId : null;
+            else
+                $cid = is_object($contact) ? $contact->contactId : $contact;
             $this->assign_contact_info($this, $cid);
         }
     }
 
     static public function fetch($result, $contact) {
-        $pi = $result ? $result->fetch_object("PaperInfo") : null;
-        if ($pi && (property_exists($pi, "conflictType")
-                    || property_exists($pi, "myReviewType"))) {
-            if ($contact === true)
-                $cid = property_exists($pi, "contactId") ? $pi->contactId : null;
-            else
-                $cid = is_object($contact) ? $contact->contactId : $contact;
-            $pi->assign_contact_info($pi, $cid);
-        }
-        return $pi;
+        return $result ? $result->fetch_object("PaperInfo", array(null, $contact)) : null;
     }
+
+    static public function table_name() {
+        return "Paper";
+    }
+
+    static public function id_column() {
+        return "paperId";
+    }
+
+    static public function comment_table_name() {
+        return "PaperComment";
+    }
+
 
     public function contact_info($contact = null) {
         global $Me;
@@ -293,5 +300,25 @@ class PaperInfo {
         if (!property_exists($this, "option_array"))
             PaperOption::parse_paper_options($this);
         return @$this->option_array[$id];
+    }
+
+    public function fetch_comments($where) {
+        $result = Dbl::qe("select PaperComment.*, firstName reviewFirstName, lastName reviewLastName, email reviewEmail
+            from PaperComment join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
+            where $where order by commentId");
+        $comments = array();
+        while (($c = CommentInfo::fetch($result, $this)))
+            $comments[$c->commentId] = $c;
+        return $comments;
+    }
+
+    public function load_comments() {
+        $this->comment_array = $this->fetch_comments("PaperComment.paperId=$this->paperId");
+    }
+
+    public function all_comments() {
+        if (!property_exists($this, "comment_array"))
+            $this->load_comments();
+        return $this->comment_array;
     }
 }

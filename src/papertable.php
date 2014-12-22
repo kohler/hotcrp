@@ -1990,25 +1990,25 @@ class PaperTable {
     }
 
     function paptabComments() {
-        global $Conf, $Me, $useRequest;
+        global $Conf, $Me;
         $prow = $this->prow;
 
         // show comments as well
         if ((count($this->mycrows) || $Me->canComment($prow, null) || $Conf->timeAuthorRespond())
             && !$this->allreviewslink) {
-            $cv = new CommentView;
+            $cv = new CommentViewState;
             $s = "";
             $nresponse = 0;
             foreach ($this->mycrows as $cr) {
                 $nresponse = $nresponse || ($cr->commentType & COMMENTTYPE_RESPONSE);
-                $s .= "papercomment.add(" . json_encode($cv->json($prow, $cr)) . ");\n";
+                $s .= "papercomment.add(" . json_encode($cr->unparse_json($Me, $cv)) . ");\n";
             }
             if ($Me->canComment($prow, null))
                 $s .= "papercomment.add({is_new:true,editable:true});\n";
             if (!$nresponse && $Conf->timeAuthorRespond() && $prow->has_author($Me))
                 $s .= "papercomment.add({is_new:true,editable:true,response:true},true);\n";
             echo '<div id="cmtcontainer"></div>';
-            CommentView::echo_script($prow);
+            CommentInfo::echo_script($prow);
             $Conf->echoScript($s);
         }
     }
@@ -2256,17 +2256,13 @@ class PaperTable {
 
     function resolveComments() {
         global $Conf, $Me;
+        $this->crows = $this->mycrows = array();
         if ($this->prow) {
-            $this->crows = $Conf->comment_rows
-                ("select PaperComment.*, firstName, lastName, email
-                from PaperComment join ContactInfo using (contactId)
-                where paperId=" . $this->prow->paperId . " order by commentId", $Me);
-            $this->mycrows = array();
-            foreach ($this->crows as $crow)
+            $this->crows = $this->prow->all_comments();
+            foreach ($this->crows as $cid => $crow)
                 if ($Me->canViewComment($this->prow, $crow, null))
-                    $this->mycrows[] = $crow;
-        } else
-            $this->crows = $this->mycrows = array();
+                    $this->mycrows[$cid] = $crow;
+        }
     }
 
     function fixReviewMode() {

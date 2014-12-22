@@ -455,7 +455,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
             foreach ($entries as $which => $xr) {
                 $tr_class = "k" . ($which % 2) . ($which >= 10 ? " fx21" : "");
                 if ($xr->isComment)
-                    echo CommentView::commentFlowEntry($Me, $xr, $tr_class);
+                    echo CommentInfo::unparse_flow_entry($xr, $Me, $tr_class);
                 else {
                     $rf = ReviewForm::get($xr);
                     echo $rf->reviewFlowEntry($Me, $xr, $tr_class);

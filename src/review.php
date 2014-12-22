@@ -1560,7 +1560,7 @@ $blind\n";
 
 
     function reviewFlowEntry($contact, $rrow, $trclass) {
-        // See also CommentView::commentFlowEntry
+        // See also CommentInfo::unparse_flow_entry
         global $Conf;
         $barsep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
         $a = "<a href='" . hoturl("paper", "p=$rrow->paperId#review" . unparseReviewOrdinal($rrow)) . "'";

@@ -154,9 +154,9 @@ $j = $pl->text_json("id");
 assert(join(";", array_keys($j)) == "1");
 
 // check comment identity
-$comment1 = CommentSave::save(array("text" => "test", "visibility" => "a", "blind" => false),
-                              $paper1, null, $user_mgbaker, false);
-assert($comment1);
+$comment1 = new CommentInfo(null, $paper1);
+$c1ok = $comment1->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
+assert($c1ok);
 assert(!$user_van->canViewComment($paper1, $comment1, false));
 assert(!$user_van->canViewCommentIdentity($paper1, $comment1, false));
 $Conf->save_setting("au_seerev", AU_SEEREV_ALWAYS);
@@ -165,9 +165,8 @@ assert(!$user_van->canViewCommentIdentity($paper1, $comment1, false));
 $Conf->save_setting("rev_blind", Conference::BLIND_OPTIONAL);
 assert($user_van->canViewComment($paper1, $comment1, false));
 assert(!$user_van->canViewCommentIdentity($paper1, $comment1, false));
-$comment1 = CommentSave::save(array("text" => "test", "visibility" => "a", "blind" => false),
-                              $paper1, null, $user_mgbaker, false);
-assert($comment1);
+$c1ok = $comment1->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
+assert($c1ok);
 assert($user_van->canViewCommentIdentity($paper1, $comment1, false));
 $Conf->save_setting("rev_blind", null);
 assert(!$user_van->canViewCommentIdentity($paper1, $comment1, false));
