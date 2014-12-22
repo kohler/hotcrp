@@ -1223,7 +1223,7 @@ function pcMembers() {
     if (!@$PcMembersCache
         || $Conf->setting("pc") <= 0
         || $PcMembersCache[0] < $Conf->setting("pc")
-        || $PcMembersCache[2] != @$Opt["sortByLastName"]) {
+        || $PcMembersCache[1] != @$Opt["sortByLastName"]) {
         $pc = array();
         $result = $Conf->q("select firstName, lastName, affiliation, email, ContactInfo.contactId contactId, roles, contactTags, disabled from ContactInfo join PCMember using (contactId)");
         $by_name_text = array();
@@ -1243,9 +1243,9 @@ function pcMembers() {
             $row->sort_position = $order;
             ++$order;
         }
-        $PcMembersCache = array($Conf->setting("pc"), $pc, @$Opt["sortByLastName"]);
+        $PcMembersCache = array($Conf->setting("pc"), @$Opt["sortByLastName"], $pc);
     }
-    return $PcMembersCache[1];
+    return $PcMembersCache[2];
 }
 
 function pcTags() {
