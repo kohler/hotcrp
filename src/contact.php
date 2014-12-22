@@ -2493,7 +2493,7 @@ class Contact {
         // log, update settings
         if ($result && $result->affected_rows) {
             $this->log_activity_for($revcid, "Set $type", $px);
-            if ($type == "lead" && !$revcid != !$Conf->setting("paperlead"))
+            if (($type == "lead" || $type == "shepherd") && !$revcid != !$Conf->setting("paperlead"))
                 $Conf->update_paperlead_setting();
             if ($type == "manager" && !$revcid != !$Conf->setting("papermanager"))
                 $Conf->update_papermanager_setting();
