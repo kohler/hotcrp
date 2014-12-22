@@ -172,13 +172,14 @@ function hoturl_site_relative($page, $options = null) {
                 $options .= "&amp;" . $k . "=" . $v;
     // append forceShow to links to same paper if appropriate
     $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
-    if (@$paperTable && $paperTable->prow && $is_paper_page
+    if ($is_paper_page && @$paperTable && $paperTable->prow
         && preg_match($are . 'p=' . $paperTable->prow->paperId . $zre, $options)
         && $Me->can_administer($paperTable->prow)
         && $paperTable->prow->has_conflict($Me)
         && !preg_match($are . 'forceShow=/', $options))
         $options .= "&amp;forceShow=1";
-    if (@$paperTable && $paperTable->prow && $is_paper_page
+    // append list links if appropriate
+    if ($is_paper_page && @$paperTable && $paperTable->prow
         && @$CurrentList && $CurrentList > 0
         && !preg_match($are . 'ls=/', $options))
         $options .= "&amp;ls=$CurrentList";
