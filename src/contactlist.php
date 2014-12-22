@@ -442,7 +442,7 @@ class ContactList extends BaseList {
         case "pcadmin":
             return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_LEADS, self::FIELD_SHEPHERDS));
         case "pcadminx":
-            return array($listname, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS);
+            return array($listname, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS);
           case "re":
           case "resub":
             return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS));
@@ -625,8 +625,6 @@ class ContactList extends BaseList {
             return NULL;
 
         // fetch data
-        if (edb_nrows($result) == 0)
-            return array();
         $rows = array();
         while (($row = edb_orow($result)))
             $rows[] = $row;
@@ -709,7 +707,7 @@ class ContactList extends BaseList {
                 continue;
 
             $trclass = "k" . ($this->count % 2);
-            if ($this->contact->isPC) {
+            if ($show_colors) {
                 $tags = Contact::roles_all_contact_tags($row->roles, $row->contactTags);
                 if (($c = TagInfo::color_classes($tags)))
                     $trclass .= " " . $c;
