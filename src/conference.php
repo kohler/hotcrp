@@ -1559,8 +1559,6 @@ class Conference {
         $result = $this->qe($q);
         $crows = array();
         while (($row = PaperInfo::fetch($result, $contact))) {
-            if (!isset($row->commentType))
-                setCommentType($row);
             $crows[$row->commentId] = $row;
             if (isset($row->commentContactId))
                 $cid = $row->commentContactId;

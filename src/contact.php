@@ -1766,9 +1766,6 @@ class Contact {
 
     function canComment($prow, $crow, &$whyNot = null, $submit = false) {
         global $Conf;
-        // load comment type
-        if ($crow && !isset($crow->commentType))
-            setCommentType($crow);
         // check whether this is a response
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
             return $this->canRespond($prow, $crow, $whyNot, $submit);
@@ -1823,8 +1820,6 @@ class Contact {
         // fetch paper
         if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
             return false;
-        if ($crow && !isset($crow->commentType))
-            setCommentType($crow);
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
         $crow_contactId = 0;
         if ($crow && isset($crow->commentContactId))
@@ -1965,8 +1960,6 @@ class Contact {
 
     function canViewCommentIdentity($prow, $crow, $forceShow) {
         global $Conf;
-        if ($crow && !isset($crow->commentType))
-            setCommentType($crow);
         if ($crow->commentType & COMMENTTYPE_RESPONSE)
             return $this->can_view_authors($prow, $forceShow);
         $crow_contactId = 0;
