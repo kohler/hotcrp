@@ -2878,7 +2878,7 @@ function save_tags() {
         jQuery("#foldtags .xmerror").remove();
         if (rv.ok) {
             jQuery("#foldtags .pscopen")[0].className = "pscopen " + (rv.tags_color || "");
-            jQuery("#foldtags .psv .fn").html(rv.tags_view_html);
+            jQuery("#foldtags .psv .fn").html(rv.tags_view_html == "" ? "None" : rv.tags_view_html);
             jQuery("#foldtags textarea").val(rv.tags_edit_text);
             fold("tags", true);
         } else
