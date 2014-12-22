@@ -114,8 +114,6 @@ function saveComment($text, $is_response) {
             $j["msg"] = $confirm;
         $Conf->ajaxExit($j);
     } else {
-        if ($confirm && $next_crow)
-            $Conf->save_session_array("comment_msgs", $next_crow->commentId, $confirm);
         $x = array("p" => $prow->paperId, "c" => null, "noedit" => null, "ls" => @$_REQUEST["ls"]);
         if ($next_crow)
             $x["anchor"] = "comment$next_crow->commentId";
