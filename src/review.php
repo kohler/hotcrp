@@ -900,12 +900,6 @@ $blind\n";
         return $x . "\n==+== Scratchpad (for unsaved private notes)\n\n==+== End Review\n";
     }
 
-    static function unparse_title_text($prow, &$l) {
-        $n = "Paper #" . $prow->paperId . ": ";
-        $l = max(14, (int) ((75.5 - strlen(UnicodeHelper::deaccent($prow->title)) - strlen($n)) / 2) + strlen($n));
-        return prefix_word_wrap($n, $prow->title, $l) . "\n";
-    }
-
     function prettyTextForm($prow, $rrow, $contact, $alwaysAuthorView = true) {
         global $Conf, $Opt;
 
@@ -929,7 +923,7 @@ $blind\n";
             $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
         }
         $x .= "---------------------------------------------------------------------------\n";
-        $x .= self::unparse_title_text($prow, $l);
+        $x .= $prow->pretty_text_title();
         if ($rrow && $contact->canViewReviewerIdentity($prow, $rrow, false)) {
             if (isset($rrow->reviewFirstName))
                 $n = Text::user_text($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
@@ -937,7 +931,7 @@ $blind\n";
                 $n = Text::user_text($rrow);
             else
                 continue;
-            $x .= prefix_word_wrap("Reviewer: ", $n, $l) . "\n";
+            $x .= prefix_word_wrap("Reviewer: ", $n, $prow->pretty_text_title_indent()) . "\n";
         }
         $x .= "---------------------------------------------------------------------------\n\n";
 

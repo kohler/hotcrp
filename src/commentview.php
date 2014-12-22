@@ -147,7 +147,7 @@ class CommentView {
         if ($contact->canViewCommentIdentity($prow, $crow, false))
             $n .= " by " . Text::user_text(self::user($crow));
         $x .= str_pad($n, (int) (37.5 + strlen(UnicodeHelper::deaccent($n)) / 2), " ", STR_PAD_LEFT) . "\n";
-        $x .= ReviewForm::unparse_title_text($prow, $l);
+        $x .= $prow->pretty_text_title();
         // $n = "Updated " . $Conf->printableTime($crow->timeModified);
         // $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
         $x .= "---------------------------------------------------------------------------\n";

@@ -111,6 +111,19 @@ class PaperInfo {
         $this->contact_info_[$cid] = PaperContactInfo::load_my($row, $cid);
     }
 
+    public function pretty_text_title_indent($width = 75) {
+        $n = "Paper #{$this->paperId}: ";
+        $vistitle = UnicodeHelper::deaccent($this->title);
+        $l = (int) (($width + 0.5 - strlen($vistitle) - strlen($n)) / 2);
+        return max(14, $l + strlen($n));
+    }
+
+    public function pretty_text_title($width = 75) {
+        $l = $this->pretty_text_title_indent($width);
+        return prefix_word_wrap("Paper #{$this->paperId}: ",
+                                $this->title, $l) . "\n";
+    }
+
     public function conflict_type($contact = null) {
         $ci = $this->contact_info($contact);
         return $ci ? $ci->conflict_type : 0;
