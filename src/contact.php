@@ -14,7 +14,7 @@ class Contact {
     var $email = "";
     var $preferredEmail = "";
     var $sorter = "";
-    var $affiliation;
+    var $affiliation = "";
     var $collaborators;
     var $voicePhoneNumber;
     var $password = "";
@@ -769,7 +769,7 @@ class Contact {
         // add to contact database
         if (@$Opt["contactdb_dsn"] && ($cdb = self::contactdb())) {
             Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=values(firstName), lastName=values(lastName), affiliation=values(affiliation)",
-                   $this->firstName, $this->lastName, $this->email, $this->affiliation);
+                    $this->firstName, $this->lastName, $this->email, $this->affiliation);
             if ($this->password_plaintext
                 && ($cdb_user = self::contactdb_find_by_email($this->email))
                 && !$cdb_user->password
