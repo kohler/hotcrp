@@ -40,16 +40,29 @@ if ($Me->is_empty() || isset($_REQUEST["signin"]))
     $_SESSION["testsession"] = true;
 
 // perhaps redirect through account
-if ($Me->has_database_account() && $Conf->session("freshlogin") === true) {
-    $needti = false;
-    if ($Me->is_pc_member() && !$Me->has_review()) {
-        $result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
-        $needti = ($row = edb_row($result)) && $row[0] && !$row[1];
+function need_profile_redirect($user) {
+    global $Conf, $Opt;
+    if (!@$user->firstName && !@$user->lastName)
+        return true;
+    if (@$Opt["noProfileRedirect"])
+        return false;
+    if (!$user->affiliation)
+        return true;
+    if ($user->is_pc_member() && !$user->has_review()) {
+        if (!$user->collaborators)
+            return true;
+        $tmap = $Conf->topic_map();
+        if (count($tmap)
+            && ($result = Dbl::q("select count(topicId) from TopicInterest where contactId=$user->contactId"))
+            && ($row = edb_row($result))
+            && !$row[0])
+            return true;
     }
-    if (!($Me->firstName || $Me->lastName)
-        || !$Me->affiliation
-        || ($Me->is_pc_member() && !$Me->collaborators)
-        || $needti) {
+    return false;
+}
+
+if ($Me->has_database_account() && $Conf->session("freshlogin") === true) {
+    if (need_profile_redirect($Me)) {
         $Conf->save_session("freshlogin", "redirect");
         go(hoturl("profile", "redirect=1"));
     } else
