@@ -993,15 +993,13 @@ class Contact {
     }
 
     static function id_by_email($email) {
-        global $Conf;
-        $result = $Conf->qe("select contactId from ContactInfo where email='" . sqlq(trim($email)) . "'");
+        $result = Dbl::qe("select contactId from ContactInfo where email=?", trim($email));
         $row = edb_row($result);
         return $row ? $row[0] : false;
     }
 
     static function email_by_id($id) {
-        global $Conf;
-        $result = $Conf->qe("select email from ContactInfo where contactId=" . (int) $id);
+        $result = Dbl::qe("select email from ContactInfo where contactId=" . (int) $id);
         $row = edb_row($result);
         return $row ? $row[0] : false;
     }
