@@ -169,6 +169,14 @@ class Dbl {
         return self::do_query(func_get_args(), true, 0);
     }
 
+    static function q(/* [$dblink,] $qstr, ... */) {
+        return self::do_query(func_get_args(), false, 0);
+    }
+
+    static function raw_q(/* [$dblink,] $qstr */) {
+        return self::do_query(func_get_args(), true, 0);
+    }
+
     static function ql(/* [$dblink,] $qstr, ... */) {
         return self::do_query(func_get_args(), false, 1);
     }
