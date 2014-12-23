@@ -143,7 +143,7 @@ class HotCRPMailer extends Mailer {
 
     function infer_user_name($r, $contact) {
         // If user hasn't entered a name, try to infer it from author records
-        if ($this->row) {
+        if ($this->row && $this->row->paperId > 0) {
             $e1 = (string) @$contact->email;
             $e2 = (string) @$contact->preferredEmail;
             cleanAuthor($this->row);
