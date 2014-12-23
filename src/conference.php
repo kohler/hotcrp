@@ -244,7 +244,9 @@ class Conference {
         Ht::$img_base = $Opt["assetsURL"] . "images/";
 
         // set docstore from filestore
-        if (!@$Opt["docstore"] && @$Opt["filestore"]) {
+        if (@$Opt["docstore"] === true)
+            $Opt["docstore"] = "docs";
+        else if (!@$Opt["docstore"] && @$Opt["filestore"]) {
             if (($Opt["docstore"] = $Opt["filestore"]) === true)
                 $Opt["docstore"] = "filestore";
             $Opt["docstoreSubdir"] = @$Opt["filestoreSubdir"];
