@@ -53,7 +53,7 @@ function need_profile_redirect($user) {
             return true;
         $tmap = $Conf->topic_map();
         if (count($tmap)
-            && ($result = Dbl::q("select count(topicId) from TopicInterest where contactId=$user->contactId"))
+            && ($result = Dbl::qe("select count(topicId) from TopicInterest where contactId=$user->contactId"))
             && ($row = edb_row($result))
             && !$row[0])
             return true;
