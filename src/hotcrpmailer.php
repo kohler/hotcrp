@@ -25,6 +25,10 @@ class HotCRPMailer extends Mailer {
         $this->reset($recipient, $row, $rest);
     }
 
+    static private function make_reviewer_contact($x) {
+        return (object) array("email" => @$x->reviewEmail, "firstName" => @$x->reviewFirstName, "lastName" => @$x->reviewLastName);
+    }
+
     function reset($recipient = null, $row = null, $rest = array()) {
         global $Me, $Opt;
         parent::reset($recipient, $rest);
@@ -38,6 +42,11 @@ class HotCRPMailer extends Mailer {
             $this->$k = @$rest[$k];
         if ($this->reviewNumber === null)
             $this->reviewNumber = "";
+        // Infer reviewer contac from rrow/comment_row
+        if (!@$this->contacts["reviewer"] && $this->rrow && @$this->rrow->reviewEmail)
+            $this->contacts["reviewer"] = self::make_reviewer_contact($this->rrow);
+        else if (!@$this->contacts["reviewer"] && $this->comment_row && @$this->comment_row->reviewEmail)
+            $this->contacts["reviewer"] = self::make_reviewer_contact($this->comment_row);
         // Do not put passwords in email that is cc'd elsewhere
         if ((!$Me || !$Me->privChair || @$Opt["chairHidePasswords"])
             && (@$rest["cc"] || @$rest["bcc"])
