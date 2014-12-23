@@ -242,7 +242,8 @@ echo "<tr><td class='lxcaption'><strong>Show:</strong> &nbsp;",
     "</td><td colspan='2' class='lentry'>";
 $sep = "";
 $loadforms = "";
-if (!$Conf->subBlindAlways()) {
+if (!$Conf->subBlindAlways()
+    && ($Conf->subBlindNever() || $pl->any->openau)) {
     echo $sep,
         Ht::checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
                       array("disabled" => (!$Conf->subBlindNever() && !$pl->any->openau),
