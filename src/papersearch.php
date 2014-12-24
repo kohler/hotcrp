@@ -2292,7 +2292,7 @@ class PaperSearch {
     // Check the results of the query, reducing the possibly conservative
     // overestimate produced by the database to a precise result.
 
-    private function _clauseTermCheckFlags($t, &$row) {
+    private function _clauseTermCheckFlags($t, $row) {
         $flags = $t->flags;
         if (($flags & self::F_AUTHOR)
             && !$this->contact->actAuthorView($row))
@@ -2363,7 +2363,7 @@ class PaperSearch {
         return true;
     }
 
-    function _clauseTermCheckField(&$t, &$row) {
+    function _clauseTermCheckField($t, $row) {
         $field = $t->link;
         if (!$this->_clauseTermCheckFlags($t, $row)
             || $row->$field == "")
@@ -2388,14 +2388,18 @@ class PaperSearch {
             return !!preg_match('{' . $t->preg_raw . '}i', $row->$field);
     }
 
-    function _clauseTermCheck(&$t, &$row) {
+    function _clauseTermCheck($t, $row) {
         $tt = $t->type;
 
         // collect columns
         if ($tt == "ti" || $tt == "ab" || $tt == "au" || $tt == "co")
             return $this->_clauseTermCheckField($t, $row);
-        else if ($tt == "re" || $tt == "conflict" || $tt == "revpref"
-                 || $tt == "cmt" || $tt == "cmttag") {
+        else if ($tt == "au_cid") {
+            assert(is_array($t->value));
+            return $this->_clauseTermCheckFlags($t, $row)
+                && $row->{$t->link} != 0;
+        } else if ($tt == "re" || $tt == "conflict" || $tt == "revpref"
+                   || $tt == "cmt" || $tt == "cmttag") {
             if (!$this->_clauseTermCheckFlags($t, $row))
                 return false;
             else {
