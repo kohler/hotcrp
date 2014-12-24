@@ -396,7 +396,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     else if ($Me->privChair)
         echo "  <span class='hint'>As an administrator, you may review <a href='", hoturl("search", "q=&amp;t=s"), "'>any submitted paper</a>.</span><br />\n";
 
-    if (($myrow || $Me->privChair) && $npc)
+    if ($myrow)
         echo "</div>\n<div id='foldre' class='homegrp foldo'>";
 
     // Actions
