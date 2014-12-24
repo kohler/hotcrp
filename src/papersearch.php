@@ -2468,8 +2468,10 @@ class PaperSearch {
             return false;
         else if ($tt == "t")
             return true;
-        else
+        else {
+            error_log("PaperSearch::_clauseTermCheck: $tt defaults, correctness unlikely");
             return true;
+        }
     }
 
 
