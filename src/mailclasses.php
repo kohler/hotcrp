@@ -118,7 +118,7 @@ class MailRecipients {
         return $this->sel[$this->type];
     }
 
-    function query() {
+    function query($paper_sensitive) {
         global $Conf, $checkReviewNeedsSubmit;
         $cols = array();
         $where = array("email not regexp '^anonymous[0-9]*\$'");
@@ -160,25 +160,21 @@ class MailRecipients {
         // build query
         if ($this->type == "all") {
             $needpaper = $needconflict = $needreview = false;
-            $orderby = "email";
         } else if ($this->type == "pc" || substr($this->type, 0, 3) == "pc:") {
             $needpaper = $needconflict = $needreview = false;
             $joins[] = "join PCMember using (contactId)";
             if ($this->type != "pc")
                 $where[] = "ContactInfo.contactTags like '% " . sqlq_for_like(substr($this->type, 3)) . " %'";
-            $orderby = "email";
         } else if ($revmatch) {
             $needpaper = $needreview = true;
             $needconflict = false;
             $joins[] = "join Paper";
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId)";
             $where[] = "Paper.paperId=PaperReview.paperId";
-            $orderby = "Paper.paperId, email";
         } else if ($this->type == "lead" || $this->type == "shepherd") {
             $needpaper = $needconflict = $needreview = true;
             $joins[] = "join Paper on (Paper.{$this->type}ContactId=ContactInfo.contactId)";
             $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId)";
-            $orderby = "Paper.paperId, email";
         } else {
             $needpaper = $needconflict = true;
             $needreview = false;
@@ -189,7 +185,6 @@ class MailRecipients {
             }
             $joins[] = "join Paper";
             $where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
-            $orderby = "Paper.paperId, email";
         }
 
         // reviewer match
@@ -238,8 +233,15 @@ class MailRecipients {
             $q .= ", PaperReview.reviewType, PaperReview.reviewType as myReviewType";
         if ($needconflict)
             $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId)";
-        return $q . "\nfrom " . join("\n", $joins) . "\nwhere "
-            . join("\n    and ", $where) . "\norder by $orderby";
+        $q .= "\nfrom " . join("\n", $joins) . "\nwhere "
+            . join("\n    and ", $where) . "\norder by ";
+        if (!$needpaper)
+            $q .= "email";
+        else if ($paper_sensitive)
+            $q .= "Paper.paperId, email";
+        else
+            $q .= "email, Paper.paperId";
+        return $q;
     }
 
 }

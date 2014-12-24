@@ -161,9 +161,9 @@ class HotCRPMailer extends Mailer {
     function expandvar_generic($what, $isbool) {
         global $Conf, $Opt;
         if ($what == "%REVIEWDEADLINE%") {
-            if (@$this->row->reviewType > 0)
+            if ($this->row && @$this->row->reviewType > 0)
                 $rev = ($this->row->reviewType >= REVIEW_PC ? "pc" : "ext");
-            else if (isset($this->row->roles))
+            else if ($this->row && isset($this->row->roles))
                 $rev = ($this->row->roles & Contact::ROLE_PCLIKE ? "pc" : "ext");
             else if ($Conf->setting("pcrev_soft") != $Conf->setting("extrev_soft")) {
                 if ($isbool && ($Conf->setting("pcrev_soft") > 0) == ($Conf->setting("extrev_soft") > 0))

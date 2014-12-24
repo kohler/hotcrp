@@ -245,12 +245,16 @@ class MailSender {
     }
 
     private function process_prep($prep, &$last_prep, $row) {
-        global $Me, $Opt;
-        $mail_differs = ($prep->subject != $last_prep->subject
-                         || $prep->body != $last_prep->body
-                         || @$prep->headers["cc"] != @$last_prep->headers["cc"]
-                         || @$prep->headers["reply-to"] != @$last_prep->headers["reply-to"]
-                         || $row->paperId != $last_prep->paperId);
+        // Don't combine senders if anything differs. Also, don't combine
+        // mails from different papers, unless those mails are to the same
+        // person.
+        $mail_differs = $prep->subject != $last_prep->subject
+            || $prep->body != $last_prep->body
+            || @$prep->headers["cc"] != @$last_prep->headers["cc"]
+            || @$prep->headers["reply-to"] != @$last_prep->headers["reply-to"]
+            || ($row->paperId != $last_prep->paperId
+                && (count($last_prep->contacts) != 1
+                    || $last_prep->to[0] !== $prep->to));
         $prep_to = $prep->to;
 
         if ($mail_differs) {
@@ -274,16 +278,27 @@ class MailSender {
     private function run() {
         global $Conf, $Opt, $Me, $Error, $subjectPrefix,
             $checkReviewNeedsSubmit, $mailer_options;
-        $q = $this->recip->query();
+
+        $subject = trim(defval($_REQUEST, "subject", ""));
+        if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
+            $subject = $subjectPrefix . $subject;
+        $emailBody = $_REQUEST["emailBody"];
+        $template = array("subject" => $subject, "body" => $emailBody);
+        $rest = array("cc" => $_REQUEST["cc"], "reply-to" => $_REQUEST["replyto"], "no_error_quit" => true);
+        $rest = array_merge($rest, $mailer_options);
+
+        // test whether this mail is paper-sensitive
+        $mailer = new HotCRPMailer($Me, null, $rest);
+        $prep = $mailer->make_preparation($template, $rest);
+        $paper_sensitive = preg_match('/%[A-Z0-9]+[(%]/', $prep->subject . $prep->body);
+
+        $q = $this->recip->query($paper_sensitive);
         if (!$q)
             return $Conf->errorMsg("Bad recipients value");
         $result = $Conf->qe($q);
         if (!$result)
             return;
 
-        $subject = trim(defval($_REQUEST, "subject", ""));
-        if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
-            $subject = $subjectPrefix . $subject;
         if ($this->sending) {
             $q = "recipients='" . sqlq($_REQUEST["recipients"])
                 . "', cc='" . sqlq($_REQUEST["cc"])
@@ -296,12 +311,7 @@ class MailSender {
                 $this->mailid_text = " #" . $log_result->insert_id;
             $Me->log_activity("Sending mail$this->mailid_text \"$subject\"");
         }
-        $emailBody = $_REQUEST["emailBody"];
 
-        $template = array("subject" => $subject, "body" => $emailBody);
-        $rest = array("cc" => $_REQUEST["cc"], "reply-to" => $_REQUEST["replyto"],
-                      "no_error_quit" => true);
-        $rest = array_merge($rest, $mailer_options);
         $mailer = new HotCRPMailer;
         $fake_prep = (object) array("subject" => "", "body" => "", "to" => array(),
                                     "paperId" => -1, "contactId" => array(), "fake" => 1);
