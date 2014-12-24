@@ -56,6 +56,7 @@ class MailRecipients {
             $this->sel["rev"] = "Reviewers";
             $this->sel["crev"] = "Reviewers with complete reviews";
             $this->sel["uncrev"] = "Reviewers with incomplete reviews";
+            $this->sel["allcrev"] = "Reviewers with no incomplete reviews";
             $this->sel["pcrev"] = "PC reviewers";
             $this->sel["uncpcrev"] = "PC reviewers with incomplete reviews";
 
@@ -119,11 +120,11 @@ class MailRecipients {
 
     function query() {
         global $Conf, $checkReviewNeedsSubmit;
-        $contactInfo = "ContactInfo.contactId, firstName, lastName, email, password, roles, (PCMember.contactId is not null) as isPC, contactTags, preferredEmail";
-        $paperInfo = "Paper.paperId, Paper.title, Paper.abstract, Paper.authorInformation, Paper.outcome, Paper.blind, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.shepherdContactId, Paper.capVersion, Paper.managerContactId";
+        $cols = array();
+        $where = array("email not regexp '^anonymous[0-9]*\$'");
+        $joins = array("ContactInfo");
 
         // paper limit
-        $where = array();
         if ($this->type != "pc" && substr($this->type, 0, 3) != "pc:"
             && $this->type != "all" && isset($this->papersel))
             $where[] = "Paper.paperId in (" . join(",", $this->papersel) . ")";
@@ -141,71 +142,104 @@ class MailRecipients {
         else if ($this->type == "dec:no")
             $where[] = "Paper.timeSubmitted>0 and Paper.outcome<0";
         else if (substr($this->type, 0, 4) == "dec:") {
+            $nw = count($where);
             foreach ($Conf->decision_map() as $dnum => $dname)
                 if (strcasecmp($dname, substr($this->type, 4)) == 0) {
                     $where[] = "Paper.timeSubmitted>0 and Paper.outcome=$dnum";
                     break;
                 }
-            if (!count($where))
+            if (count($where) == $nw)
                 return false;
         }
 
         // reviewer limit
-        $isreview = false;
-        if (preg_match('_\A(new|unc|c|)(pc|ext|myext|)rev\z_', $this->type, $m)) {
-            $isreview = true;
-            // Submission status
-            if ($m[1] == "c")
-                $where[] = "PaperReview.reviewSubmitted>0";
-            else if ($m[1] == "unc" || $m[1] == "new")
-                $where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0";
-            if ($m[1] == "new")
-                $where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
-            if ($this->newrev_since)
-                $where[] = "PaperReview.timeRequested>=$this->newrev_since";
-            // Withdrawn papers may not count
-            if ($m[1] == "unc" || $m[1] == "new")
-                $where[] = "Paper.timeSubmitted>0";
-            else if ($m[1] == "")
-                $where[] = "(Paper.timeSubmitted>0 or PaperReview.reviewSubmitted>0)";
-            // Review type
-            if ($m[2] == "ext" || $m[2] == "myext")
-                $where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
-            else if ($m[2] == "pc")
-                $where[] = "PaperReview.reviewType>" . REVIEW_EXTERNAL;
-            if ($m[2] == "myext")
-                $where[] = "PaperReview.requestedBy=" . $this->contact->contactId;
-        }
+        if (!preg_match('_\A(new|unc|c|allc|)(pc|ext|myext|)rev\z_',
+                        $this->type, $revmatch))
+            $revmatch = false;
 
         // build query
         if ($this->type == "all") {
-            $q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo left join PCMember using (contactId)";
+            $needpaper = $needconflict = $needreview = false;
             $orderby = "email";
         } else if ($this->type == "pc" || substr($this->type, 0, 3) == "pc:") {
-            $q = "select $contactInfo, 0 as conflictType, -1 as paperId from ContactInfo join PCMember using (contactId)";
-            $orderby = "email";
+            $needpaper = $needconflict = $needreview = false;
+            $joins[] = "join PCMember using (contactId)";
             if ($this->type != "pc")
                 $where[] = "ContactInfo.contactTags like '% " . sqlq_for_like(substr($this->type, 3)) . " %'";
-        } else if ($isreview) {
-            $q = "select $contactInfo, 0 as conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from PaperReview join Paper using (paperId) join ContactInfo using (contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
+            $orderby = "email";
+        } else if ($revmatch) {
+            $needpaper = $needreview = true;
+            $needconflict = false;
+            $joins[] = "join Paper";
+            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId)";
+            $where[] = "Paper.paperId=PaperReview.paperId";
             $orderby = "Paper.paperId, email";
         } else if ($this->type == "lead" || $this->type == "shepherd") {
-            $q = "select $contactInfo, conflictType, $paperInfo, PaperReview.reviewType, PaperReview.reviewType as myReviewType from Paper join ContactInfo on (ContactInfo.contactId=Paper.{$this->type}ContactId) left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId) left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId) left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
+            $needpaper = $needconflict = $needreview = true;
+            $joins[] = "join Paper on (Paper.{$this->type}ContactId=ContactInfo.contactId)";
+            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId)";
             $orderby = "Paper.paperId, email";
         } else {
+            $needpaper = $needconflict = true;
+            $needreview = false;
             if (!$Conf->timeAuthorViewReviews(true) && $Conf->timeAuthorViewReviews()) {
-                $qa = ", reviewNeedsSubmit";
-                $qb = " left join (select contactId, max(reviewNeedsSubmit) as reviewNeedsSubmit from PaperReview group by PaperReview.contactId) as PaperReview using (contactId)";
+                $cols[] = "reviewNeedsSubmit";
+                $joins[] = "left join (select contactId, max(reviewNeedsSubmit) as reviewNeedsSubmit from PaperReview group by PaperReview.contactId) as PaperReview using (contactId)";
                 $checkReviewNeedsSubmit = true;
-            } else
-                $qa = $qb = "";
-            $q = "select $contactInfo$qa, PaperConflict.conflictType, $paperInfo, 0 as myReviewType from Paper left join PaperConflict using (paperId) join ContactInfo using (contactId)$qb left join PCMember on (PCMember.contactId=ContactInfo.contactId)";
+            }
+            $joins[] = "join Paper";
             $where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
             $orderby = "Paper.paperId, email";
         }
 
-        $where[] = "email not regexp '^anonymous[0-9]*\$'";
-        return $q . " where " . join(" and ", $where) . " order by " . $orderby;
+        // reviewer match
+        if ($revmatch) {
+            // Submission status
+            if ($revmatch[1] == "c")
+                $where[] = "PaperReview.reviewSubmitted>0";
+            else if ($revmatch[1] == "unc" || $revmatch[1] == "new")
+                $where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0";
+            if ($revmatch[1] == "new")
+                $where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
+            if ($revmatch[1] == "allc") {
+                $joins[] = "left join (select contactId, max(reviewNeedsSubmit) anyReviewNeedsSubmit from PaperReview group by contactId) AllReviews on (AllReviews.contactId=ContactInfo.contactId)";
+                $where[] = "AllReviews.anyReviewNeedsSubmit<=0";
+            }
+            if ($this->newrev_since)
+                $where[] = "PaperReview.timeRequested>=$this->newrev_since";
+            // Withdrawn papers may not count
+            if ($revmatch[1] == "unc" || $revmatch[1] == "new")
+                $where[] = "Paper.timeSubmitted>0";
+            else if ($revmatch[1] == "")
+                $where[] = "(Paper.timeSubmitted>0 or PaperReview.reviewSubmitted>0)";
+            // Review type
+            if ($revmatch[2] == "ext" || $revmatch[2] == "myext")
+                $where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
+            else if ($revmatch[2] == "pc")
+                $where[] = "PaperReview.reviewType>" . REVIEW_EXTERNAL;
+            if ($revmatch[2] == "myext")
+                $where[] = "PaperReview.requestedBy=" . $this->contact->contactId;
+        }
+
+        // query construction
+        $q = "select ContactInfo.contactId, firstName, lastName, email,
+            password, roles, ((roles&". Contact::ROLE_PC .")!=0) as isPC,
+            contactTags, preferredEmail, "
+            . ($needconflict ? "PaperConflict.conflictType" : "0 as conflictType");
+        if ($needpaper)
+            $q .= ", Paper.paperId, Paper.title, Paper.abstract,
+                Paper.authorInformation, Paper.outcome, Paper.blind,
+                Paper.timeSubmitted, Paper.timeWithdrawn,
+                Paper.shepherdContactId, Paper.capVersion,
+                Paper.managerContactId";
+        else
+            $q .= ", -1 as paperId";
+        if ($needreview)
+            $q .= ", PaperReview.reviewType, PaperReview.reviewType as myReviewType";
+        if ($needconflict)
+            $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId)";
+        return $q . "\nfrom " . join("\n", $joins) . "\nwhere "
+            . join("\n    and ", $where) . "\norder by $orderby";
     }
 
 }
