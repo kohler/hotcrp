@@ -99,7 +99,7 @@ class MailRecipients {
 
         if ($this->type == "newpcrev") {
             $t = @trim($newrev_since);
-            if ($t == "" || strtoupper($t) == "N/A" || $t == "0")
+            if (preg_match(',\A(?:|n/a|[(]?all[)]?|0)\z,i', $t))
                 $this->newrev_since = 0;
             else if (($this->newrev_since = $Conf->parse_time($t)) !== false)
                 /* OK */;
