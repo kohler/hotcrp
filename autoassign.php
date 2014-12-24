@@ -376,7 +376,7 @@ function doAssign() {
         $result = $Conf->qe("select paperId, count(reviewId) from PaperReview where reviewType=$reviewtype group by paperId");
         while (($row = edb_row($result)))
             if (isset($papers[$row[0]]))
-                $papers[$row[0]] -= $row[1];
+                $papers[$row[0]] = max($papers[$row[0]] - $row[1], 0);
     } else if ($atype == "lead" || $atype == "shepherd") {
         $papers = array();
         $xpapers = array_fill_keys($papersel, 1);
@@ -439,7 +439,7 @@ function doAssign() {
             if (!isset($papers[$pid]) || $prefs[$pc][$pid] < -1000000)
                 continue;
             // skip if already completely assigned
-            if ($papers[$pid] == 0
+            if ($papers[$pid] <= 0
                 || (isset($badpairs[$pc]) && !noBadPair($pc, $pid, $prefs))) {
                 ++$pref_nextdist[$pc];
                 continue;
