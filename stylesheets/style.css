@@ -1240,19 +1240,6 @@ img.timestamp12 {
 	background-position: -40px -11px;
 }
 
-img.expander {
-	background-image: url(../images/sprite.png?2);
-	width: 9px;
-	height: 9px;
-	border: 0 none;
-}
-.foldc img.expander {
-	background-position: -11px 0;
-}
-.foldo img.expander {
-	background-position: -21px 0;
-}
-
 table.topicinterest tr td.ti_interest, table.topicinterest tr th {
 	padding-right: 1px;
 	white-space: nowrap;
