@@ -2650,7 +2650,7 @@ class PaperSearch {
         $q = "select ";
         foreach ($sqi->columns as $colname => $value)
             $q .= $value . " " . $colname . ", ";
-        $q = substr($q, 0, strlen($q) - 2) . " from ";
+        $q = substr($q, 0, strlen($q) - 2) . "\n    from ";
         foreach ($sqi->tables as $tabname => $value)
             if (!$value)
                 $q .= $tabname;
@@ -2658,12 +2658,12 @@ class PaperSearch {
                 $joiners = array("$tabname.paperId=Paper.paperId");
                 for ($i = 2; $i < count($value); ++$i)
                     $joiners[] = $value[$i];
-                $q .= " " . $value[0] . " " . $value[1] . " as " . $tabname
-                    . " on (" . join(" and ", $joiners) . ")";
+                $q .= "\n    " . $value[0] . " " . $value[1] . " as " . $tabname
+                    . " on (" . join("\n        and ", $joiners) . ")";
             }
         if (count($filters))
-            $q .= " where " . join(" and ", $filters);
-        $q .= " group by Paper.paperId";
+            $q .= "\n    where " . join("\n        and ", $filters);
+        $q .= "\n    group by Paper.paperId";
 
         // clean up contact matches
         if (count($this->contact_match))
