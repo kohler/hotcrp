@@ -13,7 +13,7 @@ class MailRecipients {
     public $error = false;
 
     function __construct($contact, $type, $papersel, $newrev_since) {
-        global $Conf;
+        global $Conf, $Now;
         $this->contact = $contact;
 
         $this->sel = array();
@@ -101,9 +101,10 @@ class MailRecipients {
             $t = @trim($newrev_since);
             if (preg_match(',\A(?:|n/a|[(]?all[)]?|0)\z,i', $t))
                 $this->newrev_since = 0;
-            else if (($this->newrev_since = $Conf->parse_time($t)) !== false)
-                /* OK */;
-            else {
+            else if (($this->newrev_since = $Conf->parse_time($t)) !== false) {
+                if ($this->newrev_since > $Now)
+                    $Conf->warnMsg("That time is in the future.");
+            } else {
                 $Conf->errorMsg("Invalid date.");
                 $this->error = true;
             }
@@ -115,7 +116,11 @@ class MailRecipients {
     }
 
     function unparse() {
-        return $this->sel[$this->type];
+        global $Conf;
+        $t = $this->sel[$this->type];
+        if ($this->type == "newpcrev" && $this->newrev_since)
+            $t .= " since " . htmlspecialchars($Conf->parseableTime($this->newrev_since, false));
+        return $t;
     }
 
     function query($paper_sensitive) {
