@@ -628,7 +628,7 @@ echo "</div>\n";
 
 // action
 echo divClass("ass"), "<h3>Action</h3>", divClass("rev");
-doRadio("a", "rev", "Ensure each paper has <i>at least</i>");
+doRadio("a", "rev", "Ensure each selected paper has <i>at least</i>");
 echo "&nbsp; <input type='text' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ";
 doSelect("revtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
 echo "&nbsp; review(s)</div>\n";
@@ -638,7 +638,7 @@ doRadio("a", "revadd", "Assign");
 echo "&nbsp; <input type='text' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ",
     "<i>additional</i>&nbsp; ";
 doSelect("revaddtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
-echo "&nbsp; review(s) per paper</div>\n";
+echo "&nbsp; review(s) per selected paper</div>\n";
 
 echo divClass("revpc");
 doRadio("a", "revpc", "Assign each PC member");
