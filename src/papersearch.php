@@ -1982,9 +1982,9 @@ class PaperSearch {
         $q = array();
         $this->_clauseTermSetFlags($t, $sqi, $q);
 
-        if ($value == "none" && !$compar)
+        if ($value === "none" && !$compar)
             list($compar, $value) = array("=0", "");
-        else if (($value == "" || $value == "any") && !$compar)
+        else if (($value === "" || $value === "any") && !$compar)
             list($compar, $value) = array(">0", "");
         else if (!$compar || $compar == ">=1")
             $compar = ">0";
