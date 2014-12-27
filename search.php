@@ -1013,18 +1013,21 @@ function saveformulas() {
             $ok = $Conf->errorMsg("Please enter a name for your new formula.");
         else if ($expr == "")
             $ok = $Conf->errorMsg("Please enter a definition for your new formula.");
-        else if (!($paperexpr = Formula::parse($expr)))
-            $ok = false;        /* errors already generated */
         else {
-            $exprViewScore = Formula::expression_view_score($paperexpr, $Me);
-            if ($exprViewScore <= $Me->viewReviewFieldsScore(null, true))
-                $ok = $Conf->errorMsg("The expression &ldquo;" . htmlspecialchars($expr) . "&rdquo; refers to paper properties that you aren't allowed to view.  Please define a different expression.");
-            else if ($fdef->formulaId == "n") {
-                $changes[] = "insert into Formula (name, heading, headingTitle, expression, authorView, createdBy, timeModified) values ('" . sqlq($name) . "', '', '', '" . sqlq($expr) . "', $exprViewScore, " . ($Me->privChair ? -$Me->contactId : $Me->contactId) . ", " . time() . ")";
-                if (!$Conf->setting("formulas"))
-                    $changes[] = "insert into Settings (name, value) values ('formulas', 1) on duplicate key update value=1";
-            } else
-                $changes[] = "update Formula set name='" . sqlq($name) . "', expression='" . sqlq($expr) . "', authorView=$exprViewScore, timeModified=" . time() . " where formulaId=$fdef->formulaId";
+            $formula = new Formula($expr);
+            if (!$formula->check())
+                $ok = $Conf->errorMsg($formula->error_html());
+            else {
+                $exprViewScore = $formula->view_score($Me);
+                if ($exprViewScore <= $Me->viewReviewFieldsScore(null, true))
+                    $ok = $Conf->errorMsg("The expression &ldquo;" . htmlspecialchars($expr) . "&rdquo; refers to paper properties that you aren't allowed to view.  Please define a different expression.");
+                else if ($fdef->formulaId == "n") {
+                    $changes[] = "insert into Formula (name, heading, headingTitle, expression, authorView, createdBy, timeModified) values ('" . sqlq($name) . "', '', '', '" . sqlq($expr) . "', $exprViewScore, " . ($Me->privChair ? -$Me->contactId : $Me->contactId) . ", " . time() . ")";
+                    if (!$Conf->setting("formulas"))
+                        $changes[] = "insert into Settings (name, value) values ('formulas', 1) on duplicate key update value=1";
+                } else
+                    $changes[] = "update Formula set name='" . sqlq($name) . "', expression='" . sqlq($expr) . "', authorView=$exprViewScore, timeModified=" . time() . " where formulaId=$fdef->formulaId";
+            }
         }
     }
 

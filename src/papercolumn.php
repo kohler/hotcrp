@@ -1088,9 +1088,9 @@ class FormulaPaperColumn extends PaperColumn {
             if ($col->formula->name == $name)
                 return $col;
         if (strpos($name, "(") !== false
-            && ($fexpr = Formula::parse($name, true))) {
-            $fdef = new FormulaPaperColumn("formulax" . (count(self::$registered) + 1),
-                                           new FormulaInfo($name, $fexpr));
+            && ($formula = new Formula($name))
+            && $formula->check()) {
+            $fdef = new FormulaPaperColumn("formulax" . (count(self::$registered) + 1), $formula);
             self::register($fdef);
             return $fdef;
         }
@@ -1103,12 +1103,11 @@ class FormulaPaperColumn extends PaperColumn {
             && $pl->search->limitName != "a")
             $revView = $pl->contact->viewReviewFieldsScore(null, true);
         if (!$pl->scoresOk
-            || $this->formula->authorView <= $revView)
+            || !$this->formula->check()
+            || $this->formula->base_view_score() <= $revView)
             return false;
-        if (!($expr = Formula::parse($this->formula->expression, true)))
-            return false;
-        $this->formula_function = Formula::compile_function($expr, $pl->contact);
-        Formula::add_query_options($queryOptions, $expr, $pl->contact);
+        $this->formula_function = $this->formula->compile_function($pl->contact);
+        $this->formula->add_query_options($queryOptions, $pl->contact);
         return true;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
@@ -1389,7 +1388,7 @@ function initialize_paper_columns() {
     $formula = null;
     if ($Conf && $Conf->setting("formulas")) {
         $result = $Conf->q("select * from Formula order by lower(name)");
-        while (($row = edb_orow($result))) {
+        while ($result && ($row = $result->fetch_object("Formula"))) {
             $fid = $row->formulaId;
             $formula = new FormulaPaperColumn("formula$fid", $row);
             FormulaPaperColumn::register($formula);

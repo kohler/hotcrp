@@ -124,6 +124,18 @@ class FormulaExpr {
 
 class Formula {
 
+    public $formulaId = null;
+    public $name = null;
+    public $heading = "";
+    public $headingTitle = "";
+    public $expression = null;
+    public $authorView = null;
+    public $createdBy = 0;
+    public $timeModified = 0;
+
+    private $_parse = null;
+    private $_error_html = null;
+
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|=|[=!]=|<[<=]?|>[>=]?)/';
 
     private static $_operators = array(
@@ -142,46 +154,69 @@ class Formula {
         "?:" => 0
     );
 
-    static function parse($t, $no_errors = false) {
-        global $Conf;
-        $in_text = $t;
-        $e = self::_parse_ternary($t);
-        $errors = array();
-        if ($t !== "" || !$e) {
-            $prefix = substr($in_text, 0, strlen($in_text) - strlen($t));
-            $errors[] = "Parse error in formula “" . htmlspecialchars($prefix) . "&nbsp;<span style='color:red'>&larr;</span>&nbsp;" . htmlspecialchars(substr($in_text, strlen($prefix))) . "”.";
-        } else if ($e->agg === "mix")
-            $errors[] = "Illegal formula: can’t mix scores and preferences in the same aggregate function.";
-        else if ($e->agg)
-            $errors[] = "Illegal formula: can’t return a raw score, use an aggregate function.";
-        else if (($x = $e->resolve_scores()))
-            $errors[] = "Illegal formula: can’t resolve “" . htmlspecialchars($x) . "” to a score.";
-        else {
-            //$Conf->infoMsg(Ht::pre_text($e));
-            $e->text = $in_text;
-            $e->set_format();
-        }
-        if (!$no_errors)
-            foreach ($errors as $e)
-                $Conf->errorMsg($e);
-        return count($errors) ? null : $e;
+
+    public function __construct(/* $fexpr */) {
+        $args = func_get_args();
+        if (is_object(@$args[0])) {
+            foreach ($args as $k => $v)
+                $this->$k = $v;
+        } else if (is_string(@$args[0]))
+            $this->expression = $args[0];
     }
 
-    static function _parse_ternary(&$t) {
-        $e = self::_parse_expr($t, 0);
+
+    /* parsing */
+
+    public function check() {
+        if ($this->_parse !== null)
+            return !!$this->_parse;
+
+        $t = $this->expression;
+        $e = $this->_parse_ternary($t);
+        if ($t !== "" || !$e) {
+            $prefix = substr($this->expression, 0, strlen($this->expression) - strlen($t));
+            $this->_error_html = "Parse error in formula “" . htmlspecialchars($prefix) . "&nbsp;<span style='color:red'>&larr;</span>&nbsp;" . htmlspecialchars(substr($this->expression, strlen($prefix))) . "”.";
+        } else if ($e->agg === "mix")
+            $this->_error_html = "Illegal formula: can’t mix scores and preferences in the same aggregate function.";
+        else if ($e->agg)
+            $this->_error_html = "Illegal formula: can’t return a raw score, use an aggregate function.";
+        else if (($x = $e->resolve_scores()))
+            $this->_error_html = "Illegal formula: can’t resolve “" . htmlspecialchars($x) . "” to a score.";
+        else {
+            $e->text = $this->expression;
+            $e->set_format();
+        }
+        $this->_parse = (count($this->_error_html) ? false : $e);
+        if ($this->authorView === null) {
+            if ($this->_parse) {
+                global $Me;
+                $this->authorView = $this->view_score($Me);
+            } else
+                $this->authorView = VIEWSCORE_FALSE;
+        }
+        return !!$this->_parse;
+    }
+
+    public function error_html() {
+        $this->check();
+        return $this->_error_html;
+    }
+
+    private function _parse_ternary(&$t) {
+        $e = $this->_parse_expr($t, 0);
         if (!$e || ($t = ltrim($t)) === "" || $t[0] !== "?")
             return $e;
         $t = substr($t, 1);
-        if (($e1 = self::_parse_ternary($t)) !== null)
+        if (($e1 = $this->_parse_ternary($t)) !== null)
             if (($t = ltrim($t)) !== "" && $t[0] === ":") {
                 $t = substr($t, 1);
-                if (($e2 = self::_parse_ternary($t)))
+                if (($e2 = $this->_parse_ternary($t)))
                     return FormulaExpr::make("?:", $e, $e1, $e2);
             }
         return null;
     }
 
-    static function _parse_function($op, &$t, $is_aggregate) {
+    private function _parse_function($op, &$t, $is_aggregate) {
         $t = ltrim($t);
         $e = FormulaExpr::make($op);
 
@@ -189,7 +224,7 @@ class Formula {
         if ($t !== "" && $t[0] === "(") {
             while (1) {
                 $t = substr($t, 1);
-                if (!($e2 = self::_parse_ternary($t)))
+                if (!($e2 = $this->_parse_ternary($t)))
                     return null;
                 $e->add($e2);
                 $t = ltrim($t);
@@ -199,7 +234,7 @@ class Formula {
                     return null;
             }
             $t = substr($t, 1);
-        } else if (($e2 = self::_parse_expr($t, self::$_operators["u+"])))
+        } else if (($e2 = $this->_parse_expr($t, self::$_operators["u+"])))
             $e->add($e2);
         else
             return null;
@@ -211,13 +246,13 @@ class Formula {
         return $e;
     }
 
-    static function _parse_expr(&$t, $level) {
+    private function _parse_expr(&$t, $level) {
         if (($t = ltrim($t)) === "")
             return null;
 
         if ($t[0] === "(") {
             $t = substr($t, 1);
-            $e = self::_parse_ternary($t);
+            $e = $this->_parse_ternary($t);
             $t = ltrim($t);
             if (!$e || $t[0] !== ")")
                 return null;
@@ -225,12 +260,12 @@ class Formula {
         } else if ($t[0] === "-" || $t[0] === "+" || $t[0] === "!") {
             $op = $t[0];
             $t = substr($t, 1);
-            if (!($e = self::_parse_expr($t, self::$_operators["u$op"])))
+            if (!($e = $this->_parse_expr($t, self::$_operators["u$op"])))
                 return null;
             $e = FormulaExpr::make($op, $e);
         } else if (preg_match('/\Anot([\s(].*|)\z/i', $t, $m)) {
             $t = $m[2];
-            if (!($e = self::_parse_expr($t, self::$_operators["u!"])))
+            if (!($e = $this->_parse_expr($t, self::$_operators["u!"])))
                 return null;
             $e = FormulaExpr::make("!", $e);
         } else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
@@ -249,11 +284,11 @@ class Formula {
             $t = $m[2];
         } else if (preg_match('/\A(all|any|avg|count|min|max|std(?:dev(?:_pop|_samp)?)?|sum|var(?:iance|_pop|_samp)?|wavg)\b(.*)\z/s', $t, $m)) {
             $t = $m[2];
-            if (!($e = self::_parse_function($m[1], $t, true)))
+            if (!($e = $this->_parse_function($m[1], $t, true)))
                 return null;
         } else if (preg_match('/\A(greatest|least)\b(.*)\z/s', $t, $m)) {
             $t = $m[2];
-            if (!($e = self::_parse_function($m[1], $t, false)))
+            if (!($e = $this->_parse_function($m[1], $t, false)))
                 return null;
         } else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
             $e = FormulaExpr::make("", "null");
@@ -307,7 +342,7 @@ class Formula {
                 return $e;
 
             $t = $tn;
-            if (!($e2 = self::_parse_expr($t, $opprec == 12 ? $opprec : $opprec + 1)))
+            if (!($e2 = $this->_parse_expr($t, $opprec == 12 ? $opprec : $opprec + 1)))
                 return null;
 
             $e = FormulaExpr::make($op, $e, $e2);
@@ -315,7 +350,9 @@ class Formula {
     }
 
 
-    static function _addgtemp($state, $expr, $name) {
+    /* compilation */
+
+    private static function _addgtemp($state, $expr, $name) {
         if (isset($state->gtmp[$name]))
             return $state->gtmp[$name];
         $tname = "\$tg" . count($state->gtmp);
@@ -324,7 +361,7 @@ class Formula {
         return $tname;
     }
 
-    static function _addltemp($state, $expr = "null", $always_var = false) {
+    private static function _addltemp($state, $expr = "null", $always_var = false) {
         if (!$always_var && preg_match('/\A(?:[\d.]+|\$\w+|null)\z/', $expr))
             return $expr;
         $tname = "\$t" . $state->lprefix . "_" . count($state->lstmt);
@@ -332,7 +369,7 @@ class Formula {
         return $tname;
     }
 
-    static function _addnumscores($state) {
+    private static function _addnumscores($state) {
         if (!isset($state->gtmp["numscores"])) {
             $state->gtmp["numscores"] = "\$numScores";
             $state->gstmt[] = "\$numScores = (\$forceShow || \$contact->canViewReview(\$prow, null, false) ? \$prow->numScores : 0);";
@@ -340,7 +377,7 @@ class Formula {
         return "\$numScores";
     }
 
-    static function _addreviewprefs($state) {
+    private static function _addreviewprefs($state) {
         if (!isset($state->gtmp["allrevprefs"])) {
             $state->gtmp["allrevprefs"] = "\$allrevprefs";
             $state->gstmt[] = "\$allrevprefs = (\$forceShow || \$contact->canViewReview(\$prow, null, false) ? \$prow->reviewer_preferences() : array());";
@@ -348,8 +385,7 @@ class Formula {
         return "\$allrevprefs";
     }
 
-    static function _compilereviewloop($state, $initial_value, $combiner, $e,
-                                       $type = "int") {
+    private static function _compilereviewloop($state, $initial_value, $combiner, $e, $type = "int") {
         $t_result = self::_addltemp($state, $initial_value, true);
         $combiner = str_replace("~r~", $t_result, $combiner);
 
@@ -393,7 +429,7 @@ class Formula {
         return $t_result;
     }
 
-    static function _compile($state, $e) {
+    private static function _compile($state, $e) {
         $op = $e->op;
         if ($op == "")
             return $e->args[0];
@@ -511,10 +547,11 @@ class Formula {
         return "null";
     }
 
-    static function compile_function_body($e, $contact) {
+    public function compile_function_body($contact) {
         global $Conf;
+        $this->check();
         $state = new FormulaCompileState($contact);
-        $expr = self::_compile($state, $e);
+        $expr = self::_compile($state, $this->_parse);
 
         $t = join("\n  ", $state->gstmt)
             . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
@@ -543,21 +580,22 @@ class Formula {
     return ($x === true ? 1 : $x);
   else
     return $x;' . "\n";
-        //$Conf->infoMsg(Ht::pre_text("function (\$prow) {\n  /* $e->text */\n  $t}\n"));
+        //$Conf->infoMsg(Ht::pre_text("function (\$prow) {\n  /* $this->expression */\n  $t}\n"));
         return $t;
     }
 
-    static function compile_function($e, $contact) {
-        return create_function("\$prow, \$contact, \$format = null, \$forceShow = false", self::compile_function_body($e, $contact));
+    public function compile_function($contact) {
+        return create_function("\$prow, \$contact, \$format = null, \$forceShow = false", $this->compile_function_body($contact));
     }
 
-    static function add_query_options(&$queryOptions, $e, $contact) {
+    public function add_query_options(&$queryOptions, $contact) {
+        $this->check();
         $state = new FormulaCompileState($contact);
         $state->queryOptions =& $queryOptions;
-        self::_compile($state, $e);
+        self::_compile($state, $this->_parse);
     }
 
-    static function expression_view_score($e, $contact) {
+    private static function expression_view_score($e, $contact) {
         $op = $e->op;
         if ($op == "")
             return VIEWSCORE_AUTHOR;
@@ -587,26 +625,15 @@ class Formula {
         return $score;
     }
 
-}
-
-class FormulaInfo {
-    public $name;
-    public $heading = "";
-    public $headingTitle = "";
-    public $expression;
-    public $authorView;
-
-    public function __construct($name, $fexpr) {
-        global $Me;
-        $this->name = $name;
-        if (is_string($fexpr))
-            $fexpr = Formula::parse($fexpr, true);
-        if (!$fexpr) {
-            $this->expression = "";
-            $this->authorView = VIEWSCORE_FALSE;
-        } else {
-            $this->expression = $fexpr->text;
-            $this->authorView = Formula::expression_view_score($fexpr, $Me);
-        }
+    public function base_view_score() {
+        if ($this->authorView === null)
+            $this->check();
+        return $this->authorView;
     }
+
+    public function view_score($contact) {
+        $this->check();
+        return self::expression_view_score($this->_parse, $contact);
+    }
+
 }
