@@ -1578,9 +1578,9 @@ echo "</tr></table></td></tr>
 
 
 if ($pl) {
-    if (count($Search->warnings)) {
+    if (count($Search->warnings) || count($pl->error_html)) {
         echo "<div class='maintabsep'></div>\n";
-        $Conf->warnMsg(join("<br />\n", $Search->warnings));
+        $Conf->warnMsg(join("<br />\n", array_merge($Search->warnings, $pl->error_html)));
     }
 
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";

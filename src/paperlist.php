@@ -9,13 +9,13 @@ require_once("$ConfSitePATH/src/baselist.php");
 class PaperList extends BaseList {
 
     // creator can set to change behavior
-    public $papersel;
+    public $papersel = null;
     public $display;
 
     // columns access
-    public $sorters;
+    public $sorters = array();
     public $contact;
-    public $scoresOk;
+    public $scoresOk = false;
     public $search;
     public $tagger;
     public $reviewer;
@@ -35,13 +35,13 @@ class PaperList extends BaseList {
     public $count;
     public $ids;
     public $any;
+    public $error_html = array();
 
     function __construct($search, $args = array()) {
         global $Conf;
         $this->search = $search;
 
         $this->sortable = !!@$args["sort"];
-        $this->sorters = array();
         if ($this->sortable && is_string($args["sort"]))
             $this->sorters[] = BaseList::parse_sorter($args["sort"]);
         else if ($this->sortable && isset($_REQUEST["sort"]))
@@ -60,8 +60,6 @@ class PaperList extends BaseList {
         } else
             $this->listNumber = 0;
 
-        $this->scoresOk = false;
-        $this->papersel = null;
         if (is_string(defval($args, "display", null)))
             $this->display = " " . $args["display"] . " ";
         else {
@@ -939,10 +937,16 @@ class PaperList extends BaseList {
         foreach ($this->viewmap as $k => $v)
             if (!isset($specials[$k])) {
                 $f = null;
+                $err = new PaperColumnErrors;
                 if ($v === "edit")
                     $f = PaperColumn::lookup("edit$k");
                 if (!$f)
-                    $f = PaperColumn::lookup($k);
+                    $f = PaperColumn::lookup($k, $err);
+                if (!$f && count($err->error_html)) {
+                    $err->error_html[0] = "Can’t show “" . htmlspecialchars($k) . "”: " . $err->error_html[0];
+                    $this->error_html = array_merge($this->error_html, $err->error_html);
+                } else if (!$f)
+                    $this->error_html[] = "No such column “" . htmlspecialchars($k) . "”.";
                 if ($f && $f->name != $k)
                     $viewmap_add[$f->name] = $v;
                 foreach ($field_list as $ff)

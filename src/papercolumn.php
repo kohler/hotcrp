@@ -3,6 +3,19 @@
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class PaperColumnErrors {
+    public $error_html = array();
+    public $priority = null;
+    public function add($error_html, $priority) {
+        if ($this->priority === null || $this->priority < $priority) {
+            $this->error_html = array();
+            $this->priority = $priority;
+        }
+        if ($this->priority == $priority)
+            $this->error_html[] = $error_html;
+    }
+}
+
 class PaperColumn extends Column {
     static private $by_name = array();
     static private $factories = array();
@@ -15,12 +28,12 @@ class PaperColumn extends Column {
         return defval(self::$by_name, $name, null);
     }
 
-    public static function lookup($name) {
+    public static function lookup($name, $errors = null) {
         if (isset(self::$by_name[$name]))
             return self::$by_name[$name];
         foreach (self::$factories as $f)
             if (str_starts_with(strtolower($name), $f[0])
-                && ($x = $f[1]->make_field($name)))
+                && ($x = $f[1]->make_field($name, $errors)))
                 return $x;
         return null;
     }
@@ -865,7 +878,7 @@ class TagPaperColumn extends PaperColumn {
         $this->is_value = $is_value;
         $this->cssname = ($this->is_value ? "tagval" : "tag");
     }
-    public function make_field($name) {
+    public function make_field($name, $errors) {
         $p = strpos($name, ":") ? : strpos($name, "#");
         return parent::register(new TagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
@@ -935,7 +948,7 @@ class EditTagPaperColumn extends TagPaperColumn {
         $this->cssname = ($this->is_value ? "edittagval" : "edittag");
         $this->editable = true;
     }
-    public function make_field($name) {
+    public function make_field($name, $errors) {
         $p = strpos($name, ":") ? : strpos($name, "#");
         return parent::register(new EditTagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
@@ -995,7 +1008,7 @@ class ScorePaperColumn extends PaperColumn {
             ksort(self::$registered);
         }
     }
-    public function make_field($name) {
+    public function make_field($name, $errors) {
         $rf = reviewForm();
         if ((($f = $rf->field($name))
              || (($name = $rf->unabbreviateField($name))
@@ -1083,18 +1096,21 @@ class FormulaPaperColumn extends PaperColumn {
         PaperColumn::register($fdef);
         self::$registered[] = $fdef;
     }
-    public function make_field($name) {
+    public function make_field($name, $errors) {
         foreach (self::$registered as $col)
             if ($col->formula->name == $name)
                 return $col;
-        if (strpos($name, "(") !== false
-            && ($formula = new Formula($name))
-            && $formula->check()) {
-            $fdef = new FormulaPaperColumn("formulax" . (count(self::$registered) + 1), $formula);
-            self::register($fdef);
-            return $fdef;
+        if (strpos($name, "(") === false || substr($name, 0, 4) === "edit")
+            return null;
+        $formula = new Formula($name);
+        if (!$formula->check()) {
+            if ($errors)
+                $errors->add($formula->error_html(), 1);
+            return null;
         }
-        return null;
+        $fdef = new FormulaPaperColumn("formulax" . (count(self::$registered) + 1), $formula);
+        self::register($fdef);
+        return $fdef;
     }
     public function prepare($pl, &$queryOptions, $visible) {
         global $ConfSitePATH;

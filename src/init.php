@@ -156,6 +156,7 @@ function __autoload($class_name) {
                                "Multiconference" => "src/multiconference.php",
                                "PaperActions" => "src/paperactions.php",
                                "PaperColumn" => "src/papercolumn.php",
+                               "PaperColumnErrors" => "src/papercolumn.php",
                                "PaperInfo" => "src/paperinfo.php",
                                "PaperList" => "src/paperlist.php",
                                "PaperOption" => "src/paperoption.php",
