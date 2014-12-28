@@ -1138,10 +1138,7 @@ class FormulaPaperColumn extends PaperColumn {
             : ($a->$sorter == $b->$sorter ? 0 : 1);
     }
     public function header($pl, $row, $ordinal) {
-        if ($this->formula->heading == "")
-            $x = $this->formula->name;
-        else
-            $x = $this->formula->heading;
+        $x = $this->formula->column_header();
         if ($this->formula->headingTitle
             && $this->formula->headingTitle != $x)
             return "<span class=\"hastitle\" title=\"" . htmlspecialchars($this->formula->headingTitle) . "\">" . htmlspecialchars($x) . "</span>";

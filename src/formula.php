@@ -649,4 +649,8 @@ class Formula {
         return self::expression_view_score($this->_parse, $contact);
     }
 
+    public function column_header() {
+        return $this->heading ? : ($this->name ? : $this->expression);
+    }
+
 }
