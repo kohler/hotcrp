@@ -138,20 +138,29 @@ class Formula {
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|=|[=!]=|<[<=]?|>[>=]?)/';
 
-    private static $_operators = array(
-        "**" => 12,
-        "u+" => 11, "u-" => 11, "u!" => 11,
-        "*" => 10, "/" => 10, "%" => 10,
-        "+" => 9, "-" => 9,
-        "<<" => 8, ">>" => 8,
-        "<" => 7, ">" => 7, "<=" => 7, ">=" => 7,
-        "==" => 6, "!=" => 6,
-        "&" => 5,
-        "^" => 4,
-        "|" => 3,
+    private static $_opprec = array(
+        "**" => 13,
+        "u+" => 12, "u-" => 12, "u!" => 12,
+        "*" => 11, "/" => 11, "%" => 11,
+        "+" => 10, "-" => 10,
+        "<<" => 9, ">>" => 9,
+        "<" => 8, ">" => 8, "<=" => 8, ">=" => 8,
+        "=" => 7, "==" => 7, "!=" => 7,
+        "&" => 6,
+        "^" => 5,
+        "|" => 4,
+        ":" => 3,
         "&&" => 2,
         "||" => 1,
         "?:" => 0
+    );
+
+    private static $_oprassoc = array(
+        "**" => true
+    );
+
+    private static $_oprewrite = array(
+        "=" => "==", ":" => "=="
     );
 
 
@@ -172,10 +181,10 @@ class Formula {
             return !!$this->_parse;
 
         $t = $this->expression;
-        $e = $this->_parse_ternary($t);
+        $e = $this->_parse_ternary($t, false);
         if ($t !== "" || !$e) {
             $prefix = substr($this->expression, 0, strlen($this->expression) - strlen($t));
-            $this->_error_html = "Parse error in formula “" . htmlspecialchars($prefix) . "&nbsp;<span style='color:red'>&larr;</span>&nbsp;" . htmlspecialchars(substr($this->expression, strlen($prefix))) . "”.";
+            $this->_error_html = "Parse error in formula “" . htmlspecialchars($prefix) . "&nbsp;<span style='color:red'>&rarr;</span>&nbsp;" . htmlspecialchars(substr($this->expression, strlen($prefix))) . "”.";
         } else if ($e->agg === "mix")
             $this->_error_html = "Illegal formula: can’t mix scores and preferences in the same aggregate function.";
         else if ($e->agg)
@@ -202,15 +211,15 @@ class Formula {
         return $this->_error_html;
     }
 
-    private function _parse_ternary(&$t) {
-        $e = $this->_parse_expr($t, 0);
+    private function _parse_ternary(&$t, $in_qc) {
+        $e = $this->_parse_expr($t, 0, $in_qc);
         if (!$e || ($t = ltrim($t)) === "" || $t[0] !== "?")
             return $e;
         $t = substr($t, 1);
-        if (($e1 = $this->_parse_ternary($t)) !== null)
+        if (($e1 = $this->_parse_ternary($t, true)) !== null)
             if (($t = ltrim($t)) !== "" && $t[0] === ":") {
                 $t = substr($t, 1);
-                if (($e2 = $this->_parse_ternary($t)))
+                if (($e2 = $this->_parse_ternary($t, $in_qc)))
                     return FormulaExpr::make("?:", $e, $e1, $e2);
             }
         return null;
@@ -224,7 +233,7 @@ class Formula {
         if ($t !== "" && $t[0] === "(") {
             while (1) {
                 $t = substr($t, 1);
-                if (!($e2 = $this->_parse_ternary($t)))
+                if (!($e2 = $this->_parse_ternary($t, false)))
                     return null;
                 $e->add($e2);
                 $t = ltrim($t);
@@ -234,7 +243,7 @@ class Formula {
                     return null;
             }
             $t = substr($t, 1);
-        } else if (($e2 = $this->_parse_expr($t, self::$_operators["u+"])))
+        } else if (($e2 = $this->_parse_expr($t, self::$_opprec["u+"], false)))
             $e->add($e2);
         else
             return null;
@@ -246,13 +255,13 @@ class Formula {
         return $e;
     }
 
-    private function _parse_expr(&$t, $level) {
+    private function _parse_expr(&$t, $level, $in_qc) {
         if (($t = ltrim($t)) === "")
             return null;
 
         if ($t[0] === "(") {
             $t = substr($t, 1);
-            $e = $this->_parse_ternary($t);
+            $e = $this->_parse_ternary($t, false);
             $t = ltrim($t);
             if (!$e || $t[0] !== ")")
                 return null;
@@ -260,12 +269,12 @@ class Formula {
         } else if ($t[0] === "-" || $t[0] === "+" || $t[0] === "!") {
             $op = $t[0];
             $t = substr($t, 1);
-            if (!($e = $this->_parse_expr($t, self::$_operators["u$op"])))
+            if (!($e = $this->_parse_expr($t, self::$_opprec["u$op"], $in_qc)))
                 return null;
             $e = FormulaExpr::make($op, $e);
         } else if (preg_match('/\Anot([\s(].*|)\z/i', $t, $m)) {
             $t = $m[2];
-            if (!($e = $this->_parse_expr($t, self::$_operators["u!"])))
+            if (!($e = $this->_parse_expr($t, self::$_opprec["u!"], $in_qc)))
                 return null;
             $e = FormulaExpr::make("!", $e);
         } else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
@@ -329,22 +338,26 @@ class Formula {
             if (($t = ltrim($t)) === "")
                 return $e;
             else if (preg_match(self::BINARY_OPERATOR_REGEX, $t, $m)) {
-                $op = $m[0] === "=" ? "==" : $m[0];
+                $op = $m[0];
                 $tn = substr($t, strlen($m[0]));
             } else if (preg_match('/\A(and|or)([\s(].*|)\z/i', $t, $m)) {
                 $op = strlen($m[1]) == 3 ? "&&" : "||";
                 $tn = $m[2];
+            } else if (!$in_qc && substr($t, 0, 1) === ":") {
+                $op = ":";
+                $tn = substr($t, 1);
             } else
                 return $e;
 
-            $opprec = self::$_operators[$op];
+            $opprec = self::$_opprec[$op];
             if ($opprec < $level)
                 return $e;
 
             $t = $tn;
-            if (!($e2 = $this->_parse_expr($t, $opprec == 12 ? $opprec : $opprec + 1)))
+            if (!($e2 = $this->_parse_expr($t, self::$_oprassoc[$op] ? $opprec : $opprec + 1, $in_qc)))
                 return null;
 
+            $op = @self::$_oprewrite[$op] ? : $op;
             $e = FormulaExpr::make($op, $e, $e2);
         }
     }
@@ -485,7 +498,7 @@ class Formula {
             return "($t ? $tt : $tf)";
         }
 
-        if (count($e->args) == 1 && isset(self::$_operators["u$op"])) {
+        if (count($e->args) == 1 && isset(self::$_opprec["u$op"])) {
             $t = self::_addltemp($state, self::_compile($state, $e->args[0]));
             if ($op == "!")
                 return "$op$t";
@@ -493,7 +506,7 @@ class Formula {
                 return "($t === null ? $t : $op$t)";
         }
 
-        if (count($e->args) == 2 && isset(self::$_operators[$op])) {
+        if (count($e->args) == 2 && isset(self::$_opprec[$op])) {
             $t1 = self::_addltemp($state, self::_compile($state, $e->args[0]));
             $t2 = self::_addltemp($state, self::_compile($state, $e->args[1]));
             if ($op == "&&")
