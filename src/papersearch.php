@@ -2466,7 +2466,7 @@ class PaperSearch {
             return false;
         } else if ($tt == "f")
             return false;
-        else if ($tt == "t")
+        else if ($tt == "t" || $tt == "float")
             return true;
         else {
             error_log("PaperSearch::_clauseTermCheck: $tt defaults, correctness unlikely");
