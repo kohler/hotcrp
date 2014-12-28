@@ -4,25 +4,46 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class FormulaCompileState {
-    var $contact;
-    var $gtmp;
-    var $ltmp;
-    var $gstmt;
-    var $lstmt;
-    var $lprefix;
-    var $maxlprefix;
-    var $indent;
-    var $queryOptions;
+    public $contact;
+    public $gtmp = array();
+    public $gstmt = array();
+    public $lstmt = array();
+    public $lprefix = 0;
+    public $maxlprefix = 0;
+    public $indent = 2;
+    public $queryOptions = array();
 
     function __construct($contact) {
         $this->contact = $contact;
-        $this->gtmp = array();
-        $this->gstmt = array();
-        $this->lstmt = array();
-        $this->lprefix = 0;
-        $this->maxlprefix = 0;
-        $this->indent = 2;
-        $this->queryOptions = array();
+    }
+    function _addgtemp($name, $expr) {
+        if (($tname = @$this->gtmp[$name]) === null) {
+            $tname = "\$tg" . count($this->gtmp);
+            $this->gstmt[] = "$tname = $expr;";
+            $this->gtmp[$name] = $tname;
+        }
+        return $tname;
+    }
+    function _addltemp($expr = "null", $always_var = false) {
+        if (!$always_var && preg_match('/\A(?:[\d.]+|\$\w+|null)\z/', $expr))
+            return $expr;
+        $tname = "\$t" . $this->lprefix . "_" . count($this->lstmt);
+        $this->lstmt[] = "$tname = $expr;";
+        return $tname;
+    }
+    function _addnumscores() {
+        if (!isset($this->gtmp["numscores"])) {
+            $this->gtmp["numscores"] = "\$numScores";
+            $this->gstmt[] = "\$numScores = (\$forceShow || \$contact->canViewReview(\$prow, null, false) ? \$prow->numScores : 0);";
+        }
+        return "\$numScores";
+    }
+    function _addreviewprefs() {
+        if (!isset($this->gtmp["allrevprefs"])) {
+            $this->gtmp["allrevprefs"] = "\$allrevprefs";
+            $this->gstmt[] = "\$allrevprefs = (\$forceShow || \$contact->canViewReview(\$prow, null, false) ? \$prow->reviewer_preferences() : array());";
+        }
+        return "\$allrevprefs";
     }
 }
 
@@ -365,41 +386,8 @@ class Formula {
 
     /* compilation */
 
-    private static function _addgtemp($state, $expr, $name) {
-        if (isset($state->gtmp[$name]))
-            return $state->gtmp[$name];
-        $tname = "\$tg" . count($state->gtmp);
-        $state->gstmt[] = "$tname = $expr;";
-        $state->gtmp[$name] = $tname;
-        return $tname;
-    }
-
-    private static function _addltemp($state, $expr = "null", $always_var = false) {
-        if (!$always_var && preg_match('/\A(?:[\d.]+|\$\w+|null)\z/', $expr))
-            return $expr;
-        $tname = "\$t" . $state->lprefix . "_" . count($state->lstmt);
-        $state->lstmt[] = "$tname = $expr;";
-        return $tname;
-    }
-
-    private static function _addnumscores($state) {
-        if (!isset($state->gtmp["numscores"])) {
-            $state->gtmp["numscores"] = "\$numScores";
-            $state->gstmt[] = "\$numScores = (\$forceShow || \$contact->canViewReview(\$prow, null, false) ? \$prow->numScores : 0);";
-        }
-        return "\$numScores";
-    }
-
-    private static function _addreviewprefs($state) {
-        if (!isset($state->gtmp["allrevprefs"])) {
-            $state->gtmp["allrevprefs"] = "\$allrevprefs";
-            $state->gstmt[] = "\$allrevprefs = (\$forceShow || \$contact->canViewReview(\$prow, null, false) ? \$prow->reviewer_preferences() : array());";
-        }
-        return "\$allrevprefs";
-    }
-
     private static function _compilereviewloop($state, $initial_value, $combiner, $e, $type = "int") {
-        $t_result = self::_addltemp($state, $initial_value, true);
+        $t_result = $state->_addltemp($initial_value, true);
         $combiner = str_replace("~r~", $t_result, $combiner);
 
         $save_lprefix = $state->lprefix;
@@ -413,10 +401,10 @@ class Formula {
             $loopval2 = self::_compile($state, $e->args[1]);
         $state->indent -= 2;
 
-        $t_loop = self::_addltemp($state, $loopval);
+        $t_loop = $state->_addltemp($loopval);
         $combiner = str_replace("~l~", $t_loop, $combiner);
         if (count($e->args) == 2) {
-            $t_loop2 = self::_addltemp($state, $loopval2);
+            $t_loop2 = $state->_addltemp($loopval2);
             $combiner = str_replace("~l2~", $t_loop2, $combiner);
         }
         $state->lstmt[] = "$t_result = $combiner;";
@@ -424,10 +412,10 @@ class Formula {
         $t_looper = "\$ri_" . $state->lprefix;
         $indent = "\n" . str_pad("", $state->indent + 2);
         if ($e->args[0]->agg === true) {
-            $t_bound = self::_addnumscores($state);
+            $t_bound = $state->_addnumscores();
             $loop = "for ($t_looper = 0; $t_looper < $t_bound; ++$t_looper)";
         } else {
-            $t_bound = self::_addreviewprefs($state);
+            $t_bound = $state->_addreviewprefs();
             $loop = "foreach ($t_bound as $t_looper)";
         }
         $loop .= " {" . $indent . join($indent, $state->lstmt) . "\n" . str_pad("", $state->indent) . "}\n";
@@ -451,9 +439,9 @@ class Formula {
             $state->queryOptions["tags"] = true;
             $tagger = new Tagger($state->contact);
             $e_tag = $tagger->check($e->args[0]);
-            $t_tags = self::_addgtemp($state, "(\$forceShow || \$contact->canViewTags(\$prow, true) ? \$prow->paperTags : '')", "tags");
-            $t_tagpos = self::_addgtemp($state, "strpos($t_tags, \" $e_tag#\")", "tagpos " . $e->args[0]);
-            $t_tagval = self::_addgtemp($state, "($t_tagpos === false ? null : (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . "))", "tagval " . $e->args[0]);
+            $t_tags = $state->_addgtemp("tags", "(\$forceShow || \$contact->canViewTags(\$prow, true) ? \$prow->paperTags : '')");
+            $t_tagpos = $state->_addgtemp("tagpos {$e->args[0]}", "strpos($t_tags, \" $e_tag#\")");
+            $t_tagval = $state->_addgtemp("tagval {$e->args[0]}", "($t_tagpos === false ? null : (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . "))");
             if ($op == "tag")
                 return "($t_tagval !== null)";
             else
@@ -466,7 +454,7 @@ class Formula {
                 $t_f = "null";
             else {
                 $state->queryOptions["reviewTypes"] = true;
-                $t_f = "(" . self::_addgtemp($state, "explode(',', \$prow->reviewTypes)", "rev type") . "[\$ri_" . $state->lprefix . "]==" . $e->args[0] . ")";
+                $t_f = "(" . $state->_addgtemp("rev type", "explode(',', \$prow->reviewTypes)") . "[\$ri_" . $state->lprefix . "]==" . $e->args[0] . ")";
             }
             return $t_f;
         }
@@ -479,7 +467,7 @@ class Formula {
             if (!isset($state->queryOptions["scores"]))
                 $state->queryOptions["scores"] = array();
             $state->queryOptions["scores"][$f->id] = true;
-            $t_f = self::_addgtemp($state, "explode(',', \$prow->{$f->id}Scores)", "rev $f->id") . "[\$ri_" . $state->lprefix . "]";
+            $t_f = $state->_addgtemp("rev $f->id", "explode(',', \$prow->{$f->id}Scores)") . "[\$ri_" . $state->lprefix . "]";
             return "($t_f == 0 ? null : (int) $t_f)";
         }
 
@@ -492,14 +480,14 @@ class Formula {
         }
 
         if ($op == "?:") {
-            $t = self::_addltemp($state, self::_compile($state, $e->args[0]));
-            $tt = self::_addltemp($state, self::_compile($state, $e->args[1]));
-            $tf = self::_addltemp($state, self::_compile($state, $e->args[2]));
+            $t = $state->_addltemp(self::_compile($state, $e->args[0]));
+            $tt = $state->_addltemp(self::_compile($state, $e->args[1]));
+            $tf = $state->_addltemp(self::_compile($state, $e->args[2]));
             return "($t ? $tt : $tf)";
         }
 
         if (count($e->args) == 1 && isset(self::$_opprec["u$op"])) {
-            $t = self::_addltemp($state, self::_compile($state, $e->args[0]));
+            $t = $state->_addltemp(self::_compile($state, $e->args[0]));
             if ($op == "!")
                 return "$op$t";
             else
@@ -507,8 +495,8 @@ class Formula {
         }
 
         if (count($e->args) == 2 && isset(self::$_opprec[$op])) {
-            $t1 = self::_addltemp($state, self::_compile($state, $e->args[0]));
-            $t2 = self::_addltemp($state, self::_compile($state, $e->args[1]));
+            $t1 = $state->_addltemp(self::_compile($state, $e->args[0]));
+            $t2 = $state->_addltemp(self::_compile($state, $e->args[1]));
             if ($op == "&&")
                 return "($t1 ? $t2 : $t1)";
             else if ($op == "||")
