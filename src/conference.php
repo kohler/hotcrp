@@ -91,7 +91,7 @@ class Conference {
             $OK = $oldOK;
         }
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 55)
+        if ($this->sversion < 56)
             $this->errorMsg("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
 
         // invalidate caches after loading from backup
@@ -1102,10 +1102,7 @@ class Conference {
         $q = "select p.paperId, s.mimetype, s.sha1, s.timestamp, ";
         if (!@$Opt["docstore"] && !is_array($prow))
             $q .= "s.paper as content, ";
-        $q .= "s.filename, ";
-        if ($this->sversion >= 55)
-            $q .= "s.infoJson, ";
-        $q .= "$documentType documentType, s.paperStorageId from Paper p";
+        $q .= "s.filename, s.infoJson, $documentType documentType, s.paperStorageId from Paper p";
         if ($docid)
             $sjoin = $docid;
         else if ($documentType == DTYPE_SUBMISSION)

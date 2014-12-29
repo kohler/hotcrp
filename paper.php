@@ -130,7 +130,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
         $reason = defval($_REQUEST, "reason", "");
         if ($reason == "" && $Me->privChair && defval($_REQUEST, "doemail") > 0)
             $reason = defval($_REQUEST, "emailNote", "");
-        if ($Conf->sversion >= 44 && $reason != "")
+        if ($reason != "")
             $q .= ", withdrawReason='" . sqlq($reason) . "'";
         $Conf->qe($q . " where paperId=$paperId");
         $result = Dbl::qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId");
@@ -163,10 +163,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
 }
 if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
     if ($Me->canRevivePaper($prow, $whyNot)) {
-        $q = "update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100," . time() . ",0)";
-        if ($Conf->sversion >= 44)
-            $q .= ", withdrawReason=null";
-        $Conf->qe($q . " where paperId=$paperId");
+        Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,0), withdrawReason=null where paperId=$paperId");
         $Conf->qe("update PaperReview set reviewNeedsSubmit=1 where paperId=$paperId and reviewSubmitted is null");
         $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
         $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
@@ -761,7 +758,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     }
 
     // other mail confirmations
-    if ($isSubmitFinal && $OK && !count($Error) && $Conf->sversion >= 36)
+    if ($isSubmitFinal && $OK && !count($Error))
         genericWatch($prow, WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback", $Me);
 
     $Me->log_activity($actiontext, $paperId);

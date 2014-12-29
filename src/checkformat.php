@@ -301,8 +301,8 @@ class CheckFormat {
         }
 
         // results
-        if ($documentId > 1 && $Conf->sversion >= 55)
-            $Conf->q("update PaperStorage set infoJson='{\"npages\":" . $this->pages . "}' where paperStorageId=$documentId");
+        if ($documentId > 1)
+            Dbl::q("update PaperStorage set infoJson='{\"npages\":" . $this->pages . "}' where paperStorageId=$documentId");
         if (count($pie) > 0) {
             $this->msg("warn", "This paper may violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
             return 1;

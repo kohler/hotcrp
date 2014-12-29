@@ -783,19 +783,17 @@ if ($getaction == "acmcms" && SearchActions::any() && $Me->privChair) {
     $xlsx->download_headers();
     $idq = "Paper.paperId" . SearchActions::sql_predicate();
 
-    // maybe analyze paper page counts
+    // analyze paper page counts
     $pagecount = array();
-    if ($Conf->sversion >= 55) {
-        $result = $Conf->qe("select Paper.paperId, ps.infoJson from Paper join PaperStorage ps on (ps.paperStorageId=Paper.finalPaperStorageId) where Paper.finalPaperStorageId>1 and $idq");
-        while (($row = edb_row($result)))
-            if ($row[1] && ($j = json_decode($row[1])) && isset($j->npages))
-                $pagecount[$row[0]] = $j->npages;
-            else {
-                $cf = new CheckFormat;
-                if ($cf->analyzePaper($row[0], true))
-                    $pagecount[$row[0]] = $cf->pages;
-            }
-    }
+    $result = $Conf->qe("select Paper.paperId, ps.infoJson from Paper join PaperStorage ps on (ps.paperStorageId=Paper.finalPaperStorageId) where Paper.finalPaperStorageId>1 and $idq");
+    while (($row = edb_row($result)))
+        if ($row[1] && ($j = json_decode($row[1])) && isset($j->npages))
+            $pagecount[$row[0]] = $j->npages;
+        else {
+            $cf = new CheckFormat;
+            if ($cf->analyzePaper($row[0], true))
+                $pagecount[$row[0]] = $cf->pages;
+        }
 
     // generate report
     $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper where $idq");
