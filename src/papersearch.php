@@ -278,10 +278,9 @@ class PaperSearch {
     var $headingmap = null;
     var $viewmap;
 
-    private $_matchTable = null;
+    private $_matches = null;
 
     static private $_sort_keywords = null;
-    static private $_table_number = 0;
 
     static private $_keywords = array("ti" => "ti", "title" => "ti",
         "ab" => "ab", "abstract" => "ab",
@@ -431,12 +430,6 @@ class PaperSearch {
 
         $this->_reviewer = defval($opt, "reviewer", false);
         $this->_reviewer_fixed = !!$this->_reviewer;
-    }
-
-    function __destruct() {
-        global $Conf;
-        if ($this->_matchTable)
-            $Conf->q("drop temporary table $this->_matchTable");
     }
 
     // begin changing contactId to cid
@@ -2479,17 +2472,13 @@ class PaperSearch {
 
     function _search() {
         global $Conf;
-        if ($this->_matchTable === false)
+        if ($this->_matches === false)
             return false;
-        assert($this->_matchTable === null);
-        $this->_matchTable = "PaperMatches_" . self::$_table_number;
-        ++self::$_table_number;
+        assert($this->_matches === null);
 
         if ($this->limitName == "x") {
-            if (!$Conf->qe("create temporary table $this->_matchTable select Paper.paperId from Paper where false"))
-                return ($this->_matchTable = false);
-            else
-                return true;
+            $this->_matches = array();
+            return true;
         }
 
         // parse and clean the query
@@ -2672,15 +2661,16 @@ class PaperSearch {
         //$Conf->infoMsg(Ht::pre_text_wrap($q));
 
         // actually perform query
-        if (!$Conf->qe("create temporary table $this->_matchTable $q"))
-            return ($this->_matchTable = false);
+        $result = Dbl::raw_qe($q);
+        if (!$result)
+            return ($this->_matches = false);
+        $this->_matches = array();
 
         // correct query, create thenmap and headingmap
         $this->thenmap = ($qe->type == "then" ? array() : null);
         $this->headingmap = array();
         if ($need_filter) {
             $delete = array();
-            $result = $Conf->qe("select * from $this->_matchTable");
             $qe_heading = $qe->get_float("heading");
             while (($row = PaperInfo::fetch($result, $this->cid))) {
                 if (!$this->contact->canViewPaper($row)
@@ -2695,8 +2685,9 @@ class PaperSearch {
                 } else
                     $x = !!$this->_clauseTermCheck($qe, $row);
                 if ($x === false)
-                    $delete[] = $row->paperId;
-                else if ($this->thenmap !== null) {
+                    continue;
+                $this->_matches[] = (int) $row->paperId;
+                if ($this->thenmap !== null) {
                     $this->thenmap[$row->paperId] = $x;
                     $qex = $qe->value[$x];
                     $this->headingmap[$row->paperId] =
@@ -2704,17 +2695,11 @@ class PaperSearch {
                 } else if ($qe_heading)
                     $this->headingmap[$row->paperId] = $qe_heading;
             }
-            if (count($delete)) {
-                $q = "delete from $this->_matchTable where paperId in (" . join(",", $delete) . ")";
-                //$Conf->infoMsg(nl2br(str_replace(" ", "&nbsp;", htmlspecialchars($q))));
-                if (!$Conf->qe($q)) {
-                    $Conf->q("drop temporary table $this->_matchTable");
-                    return ($this->_matchTable = false);
-                }
-            }
             if (!count($this->headingmap))
                 $this->headingmap = null;
-        }
+        } else
+            while (($row = $result->fetch_object()))
+                $this->_matches[] = (int) $row->paperId;
         $this->viewmap = $qe->get_float("view", array());
 
         // extract regular expressions and set _reviewer if the query is
@@ -2845,21 +2830,10 @@ class PaperSearch {
             || @$this->viewmap["sort"];
     }
 
-    function matchTable() {
-        if ($this->_matchTable === null)
-            $this->_search();
-        return $this->_matchTable;
-    }
-
     function paperList() {
-        global $Conf;
-        if (!$this->_matchTable && !$this->_search())
-            return array();
-        $x = array();
-        $result = $Conf->q("select paperId from $this->_matchTable");
-        while (($row = edb_row($result)))
-            $x[] = (int) $row[0];
-        return $x;
+        if ($this->_matches === null)
+            $this->_search();
+        return $this->_matches ? : array();
     }
 
     function url_site_relative_raw($q = null) {

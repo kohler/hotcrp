@@ -911,12 +911,9 @@ class PaperList extends BaseList {
             || $this->contact->is_reviewer()
             || $Conf->timeAuthorViewReviews();
 
-        $this->query_options = array("joins" => array());
-        if ($this->search->complexSearch($this->query_options)) {
-            if (!($table = $this->search->matchTable()))
-                return false;
-            $this->query_options["joins"][] = "join $table on (Paper.paperId=$table.paperId)";
-        }
+        $this->query_options = array();
+        if ($this->search->complexSearch($this->query_options))
+            $this->query_options["paperId"] = $this->search->paperList();
         // NB that actually processed the search, setting PaperSearch::viewmap
 
         $this->viewmap = new Qobject($this->search->viewmap);

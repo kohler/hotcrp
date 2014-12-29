@@ -1225,7 +1225,6 @@ class Conference {
         //   "reviewerName"     Include reviewer names
         //   "commenterName"    Include commenter names
         //   "reviewer" => $cid Include reviewerConflictType/reviewerReviewType
-        //   "joins"            Table(s) to join
         //   "tags"             Include paperTags
         //   "tagIndex" => $tag Include tagIndex of named tag
         //   "tagIndex" => tag array -- include tagIndex, tagIndex1, ...
@@ -1260,8 +1259,6 @@ class Conference {
         $where = array();
 
         $joins = array("Paper");
-        if (@$options["joins"])
-            $joins = array_merge($joins, $options["joins"]);
         if (@$options["reviewId"])
             $joins[] = "join PaperReview as ReviewSelector on (ReviewSelector.paperId=Paper.paperId)";
         if (@$options["commentId"])
