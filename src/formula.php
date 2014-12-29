@@ -34,7 +34,7 @@ class FormulaCompileState {
     function _addnumscores() {
         if (!isset($this->gtmp["numscores"])) {
             $this->gtmp["numscores"] = "\$numScores";
-            $this->gstmt[] = "\$numScores = (\$forceShow || \$contact->canViewReview(\$prow, null, false) ? \$prow->numScores : 0);";
+            $this->gstmt[] = "\$numScores = (\$forceShow || \$contact->canViewReview(\$prow, null, false) ? \$prow->reviewCount : 0);";
         }
         return "\$numScores";
     }
