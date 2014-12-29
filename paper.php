@@ -125,14 +125,10 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
 // withdraw and revive actions
 if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
     if ($Me->canWithdrawPaper($prow, $whyNot)) {
-        $q = "update Paper set timeWithdrawn=" . time()
-            . ", timeSubmitted=if(timeSubmitted>0,-100,0)";
         $reason = defval($_REQUEST, "reason", "");
         if ($reason == "" && $Me->privChair && defval($_REQUEST, "doemail") > 0)
             $reason = defval($_REQUEST, "emailNote", "");
-        if ($reason != "")
-            $q .= ", withdrawReason='" . sqlq($reason) . "'";
-        $Conf->qe($q . " where paperId=$paperId");
+        Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-100,0), withdrawReason=? where paperId=$paperId", $reason != "" ? $reason : null);
         $result = Dbl::qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId");
         $numreviews = $result ? $result->affected_rows : false;
         $Conf->updatePapersubSetting(false);

@@ -130,7 +130,7 @@ if (isset($_REQUEST["unsubmitreview"]) && $paperTable->editrrow
         else if ($row && $row[1])
             $needsSubmit = -1;
     }
-    $result = $Conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=$needsSubmit where reviewId=" . $paperTable->editrrow->reviewId);
+    $result = Dbl::qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=$needsSubmit where reviewId=" . $paperTable->editrrow->reviewId);
     $Conf->qe("unlock tables");
     if ($result) {
         $Me->log_activity("$editRrowLogname unsubmitted", $prow);
