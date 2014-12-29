@@ -59,7 +59,9 @@ class PaperContactInfo {
 }
 
 class PaperInfo {
-    private $contact_info_ = array();
+    private $_contact_info = array();
+    private $_score_array = array();
+    private $_score_info = array();
 
     function __construct($p = null, $contact = null) {
         if ($p)
@@ -101,21 +103,21 @@ class PaperInfo {
             $rev_tokens = $contact->review_tokens();
             $contact = $contact->contactId;
         }
-        $ci = @$this->contact_info_[$contact];
+        $ci = @$this->_contact_info[$contact];
         if (!$ci)
-            $ci = $this->contact_info_[$contact] =
+            $ci = $this->_contact_info[$contact] =
                 PaperContactInfo::load($this->paperId, $contact, $rev_tokens);
         return $ci;
     }
 
     public function replace_contact_info_map($cimap) {
-        $old_cimap = $this->contact_info_;
-        $this->contact_info_ = $cimap;
+        $old_cimap = $this->_contact_info;
+        $this->_contact_info = $cimap;
         return $old_cimap;
     }
 
     public function assign_contact_info($row, $cid) {
-        $this->contact_info_[$cid] = PaperContactInfo::load_my($row, $cid);
+        $this->_contact_info[$cid] = PaperContactInfo::load_my($row, $cid);
     }
 
     public function pretty_text_title_indent($width = 75) {
@@ -300,6 +302,34 @@ class PaperInfo {
         if (!property_exists($this, "option_array"))
             PaperOption::parse_paper_options($this);
         return @$this->option_array[$id];
+    }
+
+    public function load_scores($fids) {
+        $fids = mkarray($fids);
+        $result = Dbl::qe("select contactId, " . join(", ", $fids) . " from PaperReview where paperId=$this->paperId and reviewSubmitted>0");
+        foreach ($fids as $fid) {
+            $this->_score_array[$fid] = array();
+            $fname = "{$fid}Scores";
+            unset($this->$fname);
+        }
+        while ($result && ($row = $result->fetch_object()))
+            foreach ($fids as $fid)
+                $this->_score_array[$fid][$row->contactId] = $row->$fid;
+    }
+
+    public function scores($fid) {
+        if (!isset($this->_score_array[$fid])) {
+            $fname = "{$fid}Scores";
+            if (isset($this->reviewContactIds) && isset($this->$fname)) {
+                if ($this->$fname)
+                    $this->_score_array[$fid] = array_combine(explode(",", $this->reviewContactIds),
+                                                              explode(",", $this->$fname));
+                else
+                    $this->_score_array[$fid] = array();
+            } else
+                $this->load_scores($fid);
+        }
+        return $this->_score_array[$fid];
     }
 
     public function fetch_comments($where) {

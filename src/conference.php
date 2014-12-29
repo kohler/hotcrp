@@ -1293,12 +1293,7 @@ class Conference {
         else
             $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)";
 
-        $joins[] = "left join (select paperId, count(*) count from PaperReview where {$papersel}(reviewSubmitted or reviewNeedsSubmit>0) group by paperId) R_started on (R_started.paperId=Paper.paperId)";
-        $cols[] = "coalesce(R_started.count,0) startedReviewCount";
-
-        $joins[] = "left join PaperReview as AllReviews on (AllReviews.paperId=Paper.paperId)";
-        $cols[] = "count(AllReviews.reviewSubmitted) as reviewCount";
-
+        // my review
         $qr = "";
         if ($contact && ($tokens = $contact->review_tokens()))
             $qr = " or PaperReview.reviewToken in (" . join(", ", $tokens) . ")";
@@ -1315,6 +1310,29 @@ class Conference {
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId$x)";
         } else if (!@$options["author"])
             $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))";
+
+        // all reviews
+        $joins[] = "left join (select paperId, count(*) count from PaperReview where {$papersel}(reviewSubmitted or reviewNeedsSubmit>0) group by paperId) R_started on (R_started.paperId=Paper.paperId)";
+        $cols[] = "coalesce(R_started.count,0) startedReviewCount";
+
+        $j = "select paperId, count(*) count";
+        $cols[] = "coalesce(R_submitted.count,0) reviewCount";
+        if (@$options["scores"])
+            foreach ($options["scores"] as $fid) {
+                $cols[] = "R_submitted.{$fid}Scores";
+                if ($myPaperReview)
+                    $cols[] = "$myPaperReview.$fid";
+                $j .= ", group_concat($fid) {$fid}Scores";
+            }
+        if (@$options["reviewTypes"]) {
+            $cols[] = "R_submitted.reviewTypes";
+            $j .= ", group_concat(reviewType) reviewTypes";
+        }
+        if (@$options["reviewTypes"] || @$options["scores"]) {
+            $cols[] = "R_submitted.reviewContactIds";
+            $j .= ", group_concat(contactId) reviewContactIds";
+        }
+        $joins[] = "left join ($j from PaperReview where {$papersel}reviewSubmitted>0 group by paperId) R_submitted on (R_submitted.paperId=Paper.paperId)";
 
         // fields
         if (@$options["author"])
@@ -1342,24 +1360,6 @@ class Conference {
 
         if ($myPaperReview == "MyPaperReview")
             $joins[] = "left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$contactId)";
-
-        if (@$options["scores"] || @$options["reviewTypes"]) {
-            $j = "left join (select paperId";
-            if (@$options["scores"]) {
-                foreach ($options["scores"] as $field) {
-                    $cols[] = "PaperScores.{$field}Scores";
-                    if ($myPaperReview)
-                        $cols[] = "$myPaperReview.$field";
-                    $j .= ", group_concat($field) as {$field}Scores";
-                }
-            }
-            if (@$options["reviewTypes"]) {
-                $j .= ", group_concat(reviewType) as reviewTypes";
-                $cols[] = "PaperScores.reviewTypes";
-            }
-            $j .= " from PaperReview where reviewSubmitted>0 group by paperId) as PaperScores on (PaperScores.paperId=Paper.paperId)";
-            $joins[] = $j;
-        }
 
         if (@$options["topics"] || @$options["topicInterestScore"]) {
             $j = "left join (select paperId";

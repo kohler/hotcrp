@@ -167,6 +167,7 @@ function __autoload($class_name) {
                                "Qobject" => "lib/qobject.php",
                                "ReviewForm" => "src/review.php",
                                "S3Document" => "lib/s3document.php",
+                               "ScoreInfo" => "lib/scoreinfo.php",
                                "SearchActions" => "src/searchactions.php",
                                "TagInfo" => "lib/tagger.php",
                                "Tagger" => "lib/tagger.php",

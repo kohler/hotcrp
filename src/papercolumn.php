@@ -1036,24 +1036,31 @@ class ScorePaperColumn extends PaperColumn {
     public function sort_prepare($pl, &$rows, $sorter) {
         $scoreName = $this->score . "Scores";
         $view_score = $this->form_field->view_score;
+        $this->_sortinfo = $sortinfo = "_score_sort_info." . $this->score . $sorter->score;
+        $this->_avginfo = $avginfo = "_score_sort_avg." . $this->score;
+        $reviewer = $pl->reviewer_cid();
         foreach ($rows as $row)
-            if ($pl->contact->canViewReview($row, $view_score, null))
-                $pl->score_analyze($row, $scoreName, $this->max_score,
-                                   $pl->sorters[0]->score);
-            else
-                $pl->score_reset($row);
-        $this->_textual_sort =
-            ($pl->sorters[0]->score == "M" || $pl->sorters[0]->score == "C"
-             || $pl->sorters[0]->score == "Y");
+            if ($pl->contact->canViewReview($row, $view_score, null)) {
+                $scoreinfo = new ScoreInfo($row->scores($this->score));
+                $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $reviewer);
+                $row->$avginfo = $scoreinfo->average();
+            } else {
+                $row->$sortinfo = ScoreInfo::empty_sort_data($sorter->score);
+                $row->$avginfo = -1;
+            }
+        $this->_textual_sort = ScoreInfo::sort_by_strcmp($sorter->score);
     }
     public function score_sorter($a, $b) {
+        $sortinfo = $this->_sortinfo;
         if ($this->_textual_sort)
-            return strcmp($b->_sort_info, $a->_sort_info);
-        else {
-            $x = $b->_sort_info - $a->_sort_info;
-            $x = $x ? $x : $b->_sort_average - $a->_sort_average;
-            return $x < 0 ? -1 : ($x == 0 ? 0 : 1);
+            $x = strcmp($b->$sortinfo, $a->$sortinfo);
+        else
+            $x = $b->$sortinfo - $a->$sortinfo;
+        if (!$x) {
+            $avginfo = $this->_avginfo;
+            $x = $b->$avginfo - $a->$avginfo;
         }
+        return $x < 0 ? -1 : ($x == 0 ? 0 : 1);
     }
     public function header($pl, $row, $ordinal) {
         return $this->form_field->web_abbreviation();

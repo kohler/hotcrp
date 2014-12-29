@@ -168,34 +168,40 @@ class ContactList extends BaseList {
         return $x ? $x : self::_sortBase($a, $b);
     }
 
+    function _sortScores($a, $b) {
+        $x = $b->_sort_info - $a->_sort_info;
+        $x = $x ? : $b->_sort_avg - $a->_sort_avg;
+        return $x ? ($x < 0 ? -1 : 1) : self::_sortBase($a, $b);
+    }
+
     function _sort($rows) {
         global $Conf, $reviewScoreNames;
         switch (self::_normalizeField($this->sortField)) {
         case self::FIELD_EMAIL:
-            usort($rows, array("ContactList", "_sortEmail"));
+            usort($rows, array($this, "_sortEmail"));
             break;
         case self::FIELD_AFFILIATION:
         case self::FIELD_AFFILIATION_ROW:
-            usort($rows, array("ContactList", "_sortAffiliation"));
+            usort($rows, array($this, "_sortAffiliation"));
             break;
         case self::FIELD_LASTVISIT:
-            usort($rows, array("ContactList", "_sortLastVisit"));
+            usort($rows, array($this, "_sortLastVisit"));
             break;
         case self::FIELD_REVIEWS:
-            usort($rows, array("ContactList", "_sortReviews"));
+            usort($rows, array($this, "_sortReviews"));
             break;
         case self::FIELD_LEADS:
-            usort($rows, array("ContactList", "_sortLeads"));
+            usort($rows, array($this, "_sortLeads"));
             break;
         case self::FIELD_SHEPHERDS:
-            usort($rows, array("ContactList", "_sortShepherds"));
+            usort($rows, array($this, "_sortShepherds"));
             break;
         case self::FIELD_REVIEW_RATINGS:
-            usort($rows, array("ContactList", "_sortReviewRatings"));
+            usort($rows, array($this, "_sortReviewRatings"));
             break;
         case self::FIELD_PAPERS:
         case self::FIELD_REVIEW_PAPERS:
-            usort($rows, array("ContactList", "_sortPapers"));
+            usort($rows, array($this, "_sortPapers"));
             break;
         case self::FIELD_SCORE:
             $scoreName = $reviewScoreNames[$this->sortField - self::FIELD_SCORE];
@@ -203,9 +209,12 @@ class ContactList extends BaseList {
             $scoresort = $Conf->session("pplscoresort", "A");
             if ($scoresort != "A" && $scoresort != "V" && $scoresort != "D")
                 $scoresort = "A";
-            foreach ($rows as $row)
-                $this->score_analyze($row, $scoreName, $scoreMax, $scoresort);
-            $this->score_sort($rows, $scoresort);
+            foreach ($rows as $row) {
+                $scoreinfo = new ScoreInfo(@$row->$scoreName);
+                $row->_sort_info = $scoreinfo->sort_data($scoresort);
+                $row->_sort_avg = $scoreinfo->average();
+            }
+            usort($rows, array($this, "_sortScores"));
             break;
         }
         if ($this->reverseSort)
