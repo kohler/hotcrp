@@ -759,7 +759,7 @@ class ReviewerListPaperColumn extends PaperColumn {
         return "Reviewers";
     }
     public function content($pl, $row) {
-        $prefs = PaperList::_rowPreferences($row);
+        $prefs = $pl->contact->privChair ? PaperList::_rowPreferences($row) : array();
         $n = "";
         // see also search.php > getaction == "reviewers"
         if (isset($pl->review_list[$row->paperId])) {
