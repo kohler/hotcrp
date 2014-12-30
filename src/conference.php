@@ -1322,15 +1322,15 @@ class Conference {
                 $cols[] = "R_submitted.{$fid}Scores";
                 if ($myPaperReview)
                     $cols[] = "$myPaperReview.$fid";
-                $j .= ", group_concat($fid) {$fid}Scores";
+                $j .= ", group_concat($fid order by reviewId) {$fid}Scores";
             }
         if (@$options["reviewTypes"]) {
             $cols[] = "R_submitted.reviewTypes";
-            $j .= ", group_concat(reviewType) reviewTypes";
+            $j .= ", group_concat(reviewType order by reviewId) reviewTypes";
         }
         if (@$options["reviewTypes"] || @$options["scores"]) {
             $cols[] = "R_submitted.reviewContactIds";
-            $j .= ", group_concat(contactId) reviewContactIds";
+            $j .= ", group_concat(contactId order by reviewId) reviewContactIds";
         }
         $joins[] = "left join ($j from PaperReview where {$papersel}reviewSubmitted>0 group by paperId) R_submitted on (R_submitted.paperId=Paper.paperId)";
 

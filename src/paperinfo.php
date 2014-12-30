@@ -304,32 +304,55 @@ class PaperInfo {
         return @$this->option_array[$id];
     }
 
+    static public function score_aggregate_field($fid) {
+        if ($fid === "contactId")
+            return "reviewContactIds";
+        else if ($fid === "reviewType")
+            return "reviewTypes";
+        else
+            return "{$fid}Scores";
+    }
+
     public function load_scores($fids) {
         $fids = mkarray($fids);
-        $result = Dbl::qe("select contactId, " . join(", ", $fids) . " from PaperReview where paperId=$this->paperId and reviewSubmitted>0");
-        foreach ($fids as $fid) {
-            $this->_score_array[$fid] = array();
-            $fname = "{$fid}Scores";
-            unset($this->$fname);
+        $req = array();
+        foreach ($fids as $fid)
+            $req[] = "group_concat($fid order by reviewId) " . self::score_aggregate_field($fid);
+        $result = Dbl::qe("select " . join(", ", $req) . " from PaperReview where paperId=$this->paperId and reviewSubmitted>0");
+        $row = null;
+        if ($result)
+            $row = $result->fetch_row();
+        $row = $row ? : array();
+        foreach ($fids as $i => $fid) {
+            $k = self::score_aggregate_field($fid);
+            $this->$k = @$row[$i];
         }
-        while ($result && ($row = $result->fetch_object()))
-            foreach ($fids as $fid)
-                $this->_score_array[$fid][$row->contactId] = $row->$fid;
+    }
+
+    public function submitted_reviewers() {
+        if (!property_exists($this, "reviewContactIds"))
+            $this->load_scores("contactId");
+        return $this->reviewContactIds ? explode(",", $this->reviewContactIds) : array();
+    }
+
+    public function submitted_review_types() {
+        if (!property_exists($this, "reviewTypes"))
+            $this->load_scores(array("reviewType", "contactId"));
+        return $this->reviewTypes ? array_combine(explode(",", $this->reviewContactIds),
+                                                  explode(",", $this->reviewTypes)) : array();
     }
 
     public function scores($fid) {
-        if (!isset($this->_score_array[$fid])) {
-            $fname = "{$fid}Scores";
-            if (isset($this->reviewContactIds) && isset($this->$fname)) {
-                if ($this->$fname)
-                    $this->_score_array[$fid] = array_combine(explode(",", $this->reviewContactIds),
-                                                              explode(",", $this->$fname));
-                else
-                    $this->_score_array[$fid] = array();
-            } else
-                $this->load_scores($fid);
-        }
-        return $this->_score_array[$fid];
+        $fname = "{$fid}Scores";
+        if (!property_exists($this, $fname) || !property_exists($this, "reviewContactIds"))
+            $this->load_scores(array($fid, "contactId"));
+        return $this->$fname ? array_combine(explode(",", $this->reviewContactIds),
+                                             explode(",", $this->$fname)) : array();
+    }
+
+    public function score($fid, $cid) {
+        $s = $this->scores($fid);
+        return $s[$cid];
     }
 
     public function fetch_comments($where) {
