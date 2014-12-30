@@ -144,7 +144,7 @@ class FormulaExpr {
     }
     public function resolve_scores() {
         // comparison operators help us resolve
-        if (preg_match(',\A[<>=!]=?\z,', $this->op)
+        if (preg_match(',\A(?:[<>=!]=?|≤|≥|≠)\z,', $this->op)
             && count($this->args) === 2) {
             list($a0, $a1) = $this->args;
             if ($a0 instanceof FormulaExpr && $a0->op === "??")
@@ -176,7 +176,7 @@ class Formula {
     private $_parse = null;
     private $_error_html = null;
 
-    const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|=|[=!]=|<[<=]?|>[>=]?)/';
+    const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|=|[=!]=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
     private static $_opprec = array(
         "**" => 13,
@@ -184,8 +184,8 @@ class Formula {
         "*" => 11, "/" => 11, "%" => 11,
         "+" => 10, "-" => 10,
         "<<" => 9, ">>" => 9,
-        "<" => 8, ">" => 8, "<=" => 8, ">=" => 8,
-        "=" => 7, "==" => 7, "!=" => 7,
+        "<" => 8, ">" => 8, "<=" => 8, ">=" => 8, "≤" => 8, "≥" => 8,
+        "=" => 7, "==" => 7, "!=" => 7, "≠" => 7,
         "&" => 6,
         "^" => 5,
         "|" => 4,
@@ -200,7 +200,7 @@ class Formula {
     );
 
     private static $_oprewrite = array(
-        "=" => "==", ":" => "=="
+        "=" => "==", ":" => "==", "≤" => "<=", "≥" => ">=", "≠" => "!="
     );
 
 
@@ -391,10 +391,9 @@ class Formula {
                 return $e;
 
             $t = $tn;
+            $op = @self::$_oprewrite[$op] ? : $op;
             if (!($e2 = $this->_parse_expr($t, self::$_oprassoc[$op] ? $opprec : $opprec + 1, $in_qc)))
                 return null;
-
-            $op = @self::$_oprewrite[$op] ? : $op;
             $e = FormulaExpr::make($op, $e, $e2);
         }
     }
