@@ -26,6 +26,8 @@ class ContactList extends BaseList {
     const FIELD_SHEPHERDS = 14;
     const FIELD_TAGS = 15;
     const FIELD_COLLABORATORS = 16;
+    const FIELD_SCORE = 50;
+    const FIELD_NUMSCORES = 11;
 
     public static $folds = array("topics", "aff", "tags", "collab");
 

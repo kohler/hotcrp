@@ -5,19 +5,12 @@
 
 class BaseList {
 
-    const FIELD_SCORE = 50;
-    const FIELD_NUMSCORES = 11;
-
     static public $score_sorts = array("C" => "Counts",
                                        "A" => "Average",
                                        "E" => "Median",
                                        "V" => "Variance",
                                        "D" => "Max &minus; min",
                                        "Y" => "My score");
-
-    function _sortBase($a, $b) {
-        return $a->paperId - $b->paperId;
-    }
 
     public static function default_score_sort($nosession = false) {
         global $Conf, $Opt;
@@ -27,13 +20,6 @@ class BaseList {
             return $s;
         else
             return defval($Opt, "defaultScoreSort", "C");
-    }
-
-    private static function check_sorter(&$text, &$parts, $regex, $symbol) {
-        if (preg_match('/\A(|.*\s)' . $regex . '(\s.*|)\z/', $text, $m)) {
-            $parts[2] .= $symbol;
-            $text = simplify_whitespace($m[1] . $m[2]);
-        }
     }
 
     public static function parse_sorter($text) {
