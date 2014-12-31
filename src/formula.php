@@ -446,10 +446,10 @@ class Formula {
             $tagger = new Tagger($state->contact);
             $e_tag = $tagger->check($e->args[0]);
             $t_tags = $state->_addgtemp("tags", "(\$forceShow || \$contact->canViewTags(\$prow, true) ? \$prow->paperTags : '')");
-            $t_tagpos = $state->_addgtemp("tagpos {$e->args[0]}", "strpos($t_tags, \" $e_tag#\")");
-            $t_tagval = $state->_addgtemp("tagval {$e->args[0]}", "($t_tagpos === false ? null : (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . "))");
+            $t_tagpos = $state->_addgtemp("tagpos {$e->args[0]}", "stripos($t_tags, \" $e_tag#\")");
+            $t_tagval = $state->_addgtemp("tagval {$e->args[0]}", "($t_tagpos !== false ? (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : null)");
             if ($op == "tag")
-                return "($t_tagval !== null)";
+                return "($t_tagval !== 0 ? $t_tagval : true)";
             else
                 return $t_tagval;
         }

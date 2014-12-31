@@ -987,7 +987,7 @@ For example, search for <a href=\"" . hoturl("search", "q=show%3Amax%28OveMer%29
     _alternateRow("", "greatest(<em>e</em>, <em>e</em>, ...)", "Maximum");
     _alternateRow("", "least(<em>e</em>, <em>e</em>, ...)", "Minimum");
     _alternateRow("", "null", "The null value");
-    _alternateRow("Tags", "tag:<em>tagname</em>", "True if this paper has tag <em>tagname</em>");
+    _alternateRow("Tags", "#<em>tagname</em>", "True if this paper has tag <em>tagname</em>");
     _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or null if this paper doesn’t have that tag");
     _alternateRow("Reviews", "overall-merit", "This review’s Overall merit score");
     _alternateRow("", "OveMer", "Abbreviations are also accepted");
