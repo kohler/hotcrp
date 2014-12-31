@@ -2481,7 +2481,7 @@ class PaperSearch {
             return false;
         } else if ($tt == "f")
             return false;
-        else if ($tt == "t" || $tt == "float")
+        else if ($tt == "t" || $tt == "float" || $tt == "revadj")
             return true;
         else {
             error_log("PaperSearch::_clauseTermCheck: $tt defaults, correctness unlikely");
