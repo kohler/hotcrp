@@ -36,22 +36,27 @@ else
 function _alternateRow($caption, $entry, $next = null) {
     global $rowidx;
     if ($caption) {
+        $below = "";
+        if (is_array($caption))
+            list($caption, $below) = $caption;
         if (!preg_match('/<a/', $caption)) {
             $anchor = strtolower(preg_replace('/\W+/', "_", $caption));
             $caption = '<a class="qq" name="' . $anchor . '" href="#' . $anchor
                 . '">' . $caption . '</a>';
         }
         echo '<tr><td class="sentry nowrap" colspan="2">',
-            '<h4 class="helppage">', $caption, '</h4></td></tr>', "\n";
+            '<h4 class="helppage">', $caption, '</h4>', $below, '</td></tr>', "\n";
         $rowidx = null;
     }
-    $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
-    echo '<tr class="k', ($rowidx % 2), '">',
-        '<td class="sentry"', ($next === null ? ' colspan="2">' : ">"),
-        $entry, "</td>";
-    if ($next !== null)
-        echo '<td class="sentry">', $next, "</td>";
-    echo "</tr>\n";
+    if ($entry || $next) {
+        $rowidx = (isset($rowidx) ? $rowidx + 1 : 0);
+        echo '<tr class="k', ($rowidx % 2), '">',
+            '<td class="sentry"', ($next === null ? ' colspan="2">' : ">"),
+            $entry, "</td>";
+        if ($next !== null)
+            echo '<td class="sentry">', $next, "</td>";
+        echo "</tr>\n";
+    }
 }
 
 function _subhead_contain($close = false) {
@@ -346,6 +351,17 @@ function searchQuickref() {
         _searchQuickrefRow($t, "$r->abbreviation1:finger", "at least one completed review has “finger” in the $r->name_html field");
         _searchQuickrefRow($t, "$r->abbreviation:finger", "other abbreviations accepted");
         _searchQuickrefRow($t, "$r->abbreviation:any", "at least one completed review has text in the $r->name_html field");
+    }
+
+    if (count($farr[0])) {
+        $r = $farr[0][0];
+        _searchQuickrefRow("<a href=\"" . hoturl("help", "t=formulas") . "\">Formulas</a>",
+                           "formula:all($r->abbreviation=$r->typical_score)",
+                           "all reviews have $r->name_html score $r->typical_score<br />"
+                           . "<span class='hint'><a href=\"" . hoturl("help", "t=formulas") . "\">Formulas</a> can express complex numerical queries across review scores and preferences.</span>");
+        _searchQuickrefRow("", "f:all($r->abbreviation=$r->typical_score)", "“f” is shorthand for “formula”");
+        _searchQuickrefRow("", "formula:var($r->abbreviation)>0.5", "variance in $r->abbreviation is above 0.5");
+        _searchQuickrefRow("", "formula:any($r->abbreviation=$r->typical_score && pref<0)", "at least one reviewer had $r->name_html score $r->typical_score and review preference &lt; 0");
     }
 
     _searchQuickrefRow("Display", "show:tags show:conflicts", "show tags and PC conflicts in the results");
@@ -918,16 +934,22 @@ function showformulas() {
 
     _subhead_contain();
     _subhead("Formulas", "
-<p>Program committee members and administrators can display <em>formulas</em>
+<p>Program committee members and administrators can search and display <em>formulas</em>
 that calculate properties of paper scores&mdash;for instance, the
 standard deviation of papers’ Overall merit scores, or average Overall
-merit among reviewers with high Reviewer expertise.
-Formula values become display options that show up on paper search screens.</p>
+merit among reviewers with high Reviewer expertise.</p>
 
-<p>Add new formulas using <a
+<p>To display a formula, use a search term such as “<a href=\""
+             . hoturl("search", "q=show%3avar%28OveMer%29") . "\">show:var(OveMer)</a>” (show
+the variance in Overall merit scores).
+To search for a formula, use a search term such as “<a href=\""
+             . hoturl("search", "q=formula%3avar%28OveMer%29%3e0.5") . "\">formula:var(OveMer)>0.5</a>”
+(select papers with variance in Overall merit greater than 0.5).
+Or save formulas using <a
 href=\"" . hoturl("search", "q=&amp;tab=formulas") . "\">Search &gt; Display options
-&gt; Edit formulas</a>.  Each formula has a name and a definition.  The definition uses
-a familiar expression language.
+&gt; Edit formulas</a>.</p>
+
+<p>Formulas use a familiar expression language.
 For example, the following formula calculates a weighted average of the
 Overall merit score, where reviews are weighted proportional to the Reviewer
 expertise score (so low expertise has low weight):</p>
@@ -978,8 +1000,8 @@ For example, search for <a href=\"" . hoturl("search", "q=show%3Amax%28OveMer%29
 
     _subhead("Aggregate functions", "
 <p>Aggregate functions calculate a
-value based on all of a paper’s visible reviews.  For instance,
-“max(OveMer)” would return the maximum Overall merit score
+value based on all of a paper’s submitted reviews and/or review preferences.
+For instance, “max(OveMer)” would return the maximum Overall merit score
 assigned to a paper.</p>
 
 <p>An aggregate function’s argument is calculated once per visible review.

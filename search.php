@@ -1018,7 +1018,7 @@ function saveformulas() {
             else {
                 $exprViewScore = $formula->view_score($Me);
                 if ($exprViewScore <= $Me->viewReviewFieldsScore(null, true))
-                    $ok = $Conf->errorMsg("The expression &ldquo;" . htmlspecialchars($expr) . "&rdquo; refers to paper properties that you aren't allowed to view.  Please define a different expression.");
+                    $ok = $Conf->errorMsg("The expression “" . htmlspecialchars($expr) . "” refers to paper properties that you aren’t allowed to view.  Please define a different expression.");
                 else if ($fdef->formulaId == "n") {
                     $changes[] = "insert into Formula (name, heading, headingTitle, expression, authorView, createdBy, timeModified) values ('" . sqlq($name) . "', '', '', '" . sqlq($expr) . "', $exprViewScore, " . ($Me->privChair ? -$Me->contactId : $Me->contactId) . ", " . time() . ")";
                     if (!$Conf->setting("formulas"))

@@ -269,7 +269,8 @@ class PaperSearch {
     private $contact_match = array();
     private $noratings = false;
     private $interestingRatings = array();
-    private $needflags;
+    private $needflags = 0;
+    private $_query_options = array();
     private $reviewAdjust = false;
     private $_reviewAdjustError = false;
     private $_thenError = false;
@@ -327,6 +328,7 @@ class PaperSearch {
         "revpref" => "revpref", "pref" => "revpref",
         "repref" => "revpref",
         "ss" => "ss", "search" => "ss",
+        "formula" => "formula", "f" => "formula",
         "HEADING" => "HEADING", "heading" => "HEADING",
         "show" => "show", "VIEW" => "show", "view" => "show",
         "hide" => "hide", "edit" => "edit",
@@ -702,7 +704,6 @@ class PaperSearch {
     }
 
     function _searchReviewerConflict($word, &$qt, $quoted) {
-        global $Conf;
         $args = array();
         while (preg_match('/\A\s*#?(\d+)(?:-#?(\d+))?\s*,?\s*(.*)\z/s', $word, $m)) {
             $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
@@ -714,7 +715,7 @@ class PaperSearch {
             $this->warn("The <code>reconflict</code> keyword expects a list of paper numbers.");
             $qt[] = new SearchTerm("f");
         } else {
-            $result = $Conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")");
+            $result = Dbl::qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")");
             $contacts = array();
             while (($row = edb_row($result)))
                 $contacts[] = $row[0];
@@ -886,6 +887,16 @@ class PaperSearch {
         // this restriction below in clauseTermSetRevpref.
         $value = new SearchReviewValue($mx[0], $contacts, join(" and ", array_slice($mx, 1)));
         $qt[] = new SearchTerm("revpref", $this->privChair ? 0 : self::F_NONCONFLICT, $value);
+    }
+
+    private function _search_formula($word, &$qt, $quoted) {
+        $formula = new Formula($word);
+        if ($formula->check())
+            $qt[] = new SearchTerm("formula", self::F_XVIEW, $formula);
+        else {
+            $this->warn($formula->error_html());
+            $qt[] = new SearchTerm("f");
+        }
     }
 
     private function _check_tag($tagword, $allow_star) {
@@ -1375,6 +1386,8 @@ class PaperSearch {
             $this->_searchReviewRatings($word, $qt);
         if ($keyword ? $keyword == "has" : isset($this->fields["has"]))
             $this->_searchHas($word, $qt, $quoted);
+        if ($keyword == "formula")
+            $this->_search_formula($word, $qt, $quoted);
         if ($keyword ? $keyword == "ss" : isset($this->fields["ss"])) {
             if (($nextq = self::_expand_saved_search($word, $this->_ssRecursion))) {
                 $this->_ssRecursion[$word] = true;
@@ -1463,13 +1476,12 @@ class PaperSearch {
         }
 
         // "show:" may be followed by a parenthesized expression
-        $keyword = ($colon !== false ? substr($word, $colon) : "");
-        if (substr($str, 0, 1) === "(" && $colon !== false
-            && ($keyword = substr($word, 0, $colon)) !== ""
-            && ($keyword = @self::$_keywords[$keyword])
+        $keyword = ($colon !== false ? substr($word, 0, $colon) : "");
+        $keyword = @self::$_keywords[$keyword];
+        if (substr($str, 0, 1) === "(" && $keyword
             && substr($word, $colon + 1, 1) !== "\""
             && ($keyword === "show" || $keyword === "showsort"
-                || $keyword === "sort")) {
+                || $keyword === "sort" || $keyword === "formula")) {
             $pos = self::find_end_balanced_parens($str);
             $word .= substr($str, 0, $pos);
             $str = substr($str, $pos);
@@ -2252,6 +2264,13 @@ class PaperSearch {
             $t->link = $thistab . "_x";
             $q[] = $sqi->columns[$t->link];
             $f[] = "(" . join(" and ", $q) . ")";
+        } else if ($tt == "formula") {
+            $q = array("true");
+            $this->_clauseTermSetFlags($t, $sqi, $q);
+            $t->value->add_query_options($this->_query_options, $this->contact);
+            if (!$t->link)
+                $t->link = $t->value->compile_function($this->contact);
+            $f[] = "(" . join(" and ", $q) . ")";
         } else if ($tt == "not") {
             $ff = array();
             $sqi->negated = !$sqi->negated;
@@ -2445,6 +2464,9 @@ class PaperSearch {
                 else
                     return $row->$fieldname != 0;
             }
+        } else if ($tt == "formula") {
+            $formulaf = $t->link;
+            return !!$formulaf($row, $this->contact);
         } else if ($tt == "not") {
             return !$this->_clauseTermCheck($t->value, $row);
         } else if ($tt == "and" || $tt == "and2") {
@@ -2512,7 +2534,6 @@ class PaperSearch {
         $sqi->add_column("timeWithdrawn", "Paper.timeWithdrawn");
         $sqi->add_column("outcome", "Paper.outcome");
         $filters = array();
-        $this->needflags = 0;
         $this->_clauseTermSet($qe, $sqi, $filters);
         //$Conf->infoMsg(Ht::pre_text(var_export($filters, true)));
 
