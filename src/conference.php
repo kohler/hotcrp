@@ -1255,9 +1255,9 @@ class Conference {
 
         // paper selection
         $paperset = array();
-        if (@$options["paperId"])
+        if (isset($options["paperId"]))
             $paperset[] = self::_cvt_numeric_set($options["paperId"]);
-        if (@$options["reviewId"]) {
+        if (isset($options["reviewId"])) {
             if (is_numeric($options["reviewId"])) {
                 $result = Dbl::qe("select paperId from PaperReview where reviewId=" . $options["reviewId"]);
                 $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
@@ -1267,7 +1267,7 @@ class Conference {
             } else
                 $paperset[] = array();
         }
-        if (@$options["commentId"]) {
+        if (isset($options["commentId"])) {
             $result = Dbl::qe("select paperId from PaperComment where commentId" . sql_in_numeric_set(self::_cvt_numeric_set($options["commentId"])));
             $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
         }
