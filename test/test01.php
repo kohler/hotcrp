@@ -30,7 +30,7 @@ assert($user_chair->contactId != $user_estrin->contactId);
 // check permissions on paper
 function check_paper1($paper1) {
     global $user_chair, $user_estrin, $user_kohler, $user_marina, $user_van, $user_nobody;
-    assert($paper1 !== null);
+    assert_neqq($paper1, null);
 
     assert($user_chair->canViewPaper($paper1));
     assert($user_estrin->canViewPaper($paper1));
@@ -105,25 +105,25 @@ assert($user_mgbaker->actAuthorView($paper18));
 // simple search
 $pl = new PaperList(new PaperSearch($user_shenker, "au:berkeley"));
 $j = $pl->text_json("id title");
-assert(join(";", array_keys($j)) == "1;6;13;15");
+assert_eqq(join(";", array_keys($j)), "1;6;13;15");
 
 // sorting works
 $pl = new PaperList(new PaperSearch($user_shenker, "au:berkeley sort:title"));
 $j = $pl->text_json("id title");
-assert(join(";", array_keys($j)) == "15;13;1;6");
+assert_eqq(join(";", array_keys($j)), "15;13;1;6");
 
 // correct conflict information returned
 $pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18"),
                     array("reviewer" => $user_mgbaker));
 $j = $pl->text_json("id selconf");
-assert(join(";", array_keys($j)) == "1;2;3;4;5;15;16;17;18");
+assert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
 assert(!@$j[1]->selconf && !@$j[2]->selconf && @$j[3]->selconf && !@$j[4]->selconf && !@$j[5]->selconf
        && !@$j[15]->selconf && !@$j[16]->selconf && !@$j[17]->selconf && @$j[18]->selconf);
 
 $pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18"),
                     array("reviewer" => $user_jon));
 $j = $pl->text_json("id selconf");
-assert(join(";", array_keys($j)) == "1;2;3;4;5;15;16;17;18");
+assert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
 assert(!@$j[1]->selconf && !@$j[2]->selconf && !@$j[3]->selconf && !@$j[4]->selconf && !@$j[5]->selconf
        && !@$j[15]->selconf && !@$j[16]->selconf && @$j[17]->selconf && !@$j[18]->selconf);
 
@@ -141,7 +141,7 @@ $Conf->save_setting("rev_open", 1);
 $Conf->save_setting("pc_seeblindrev", 1);
 $pl = new PaperList(new PaperSearch($user_mgbaker, "re:varghese"));
 $j = $pl->text_json("id");
-assert(join(";", array_keys($j)) == "");
+assert_eqq(join(";", array_keys($j)), "");
 
 $revreq = array("overAllMerit" => 5, "reviewerQualification" => 4, "ready" => true);
 $rf = reviewForm();
@@ -151,7 +151,7 @@ $rf->save_review($revreq,
                  $user_mgbaker);
 $pl = new PaperList(new PaperSearch($user_mgbaker, "re:varghese"));
 $j = $pl->text_json("id");
-assert(join(";", array_keys($j)) == "1");
+assert_eqq(join(";", array_keys($j)), "1");
 
 // check comment identity
 $comment1 = new CommentInfo(null, $paper1);

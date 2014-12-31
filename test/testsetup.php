@@ -48,14 +48,14 @@ function assert_location() {
 
 function assert_eqq($a, $b) {
     if ($a !== $b)
-        trigger_error("Assertion failed, " . var_export($a, true) . " !== " . var_export($b, true)
-                      . assert_location(), E_USER_WARNING);
+        trigger_error("Assertion " . var_export($a, true) . " === " . var_export($b, true)
+                      . " failed" . assert_location(), E_USER_WARNING);
 }
 
 function assert_neqq($a, $b) {
     if ($a === $b)
-        trigger_error("Assertion failed, " . var_export($a, true) . " !== " . var_export($b, true)
-                      . assert_location(), E_USER_WARNING);
+        trigger_error("Assertion " . var_export($a, true) . " !== " . var_export($b, true)
+                      . " failed" . assert_location(), E_USER_WARNING);
 }
 
 echo "* Tests initialized.\n";
