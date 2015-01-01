@@ -1256,7 +1256,7 @@ table.reviewers, div.revnotes {
 	margin-bottom: 0.5em;
 }
 table.reviewers {
-	line-height: 120%;
+	line-height: 125%;
 	margin-left: -6px;
 }
 table.reviewers > tbody > tr > td:first-child {
@@ -2329,7 +2329,7 @@ div.revt {
 span.revfn {
 	float: left;
 }
-.revvis, .cmtvis {
+.revvis {
 	padding-left: 1em;
 	color: #999999;
 }
@@ -2431,11 +2431,14 @@ div.cmtcard_head span.cmtfn {
 }
 div.cmtg {
 	border-top: 1px solid #f7f1df;
-	padding: 5px 0;
+	padding: 8px 0;
 }
 div.cmtg:first-child {
 	border-top: 0 none;
-	padding: 0 0 5px;
+	padding-top: 0;
+}
+div.cmtg:last-child {
+	padding-bottom: 0;
 }
 span.cmtfn > span.barsep {
 	color: #eadeb7;
@@ -2449,8 +2452,13 @@ div.cmtadminvis {
 }
 div.cmtt {
 	font-size: smaller;
-	padding: 2px 0;
+	padding: 2px 0 6px;
 	color: #666666;
+}
+div.cmtt:after {
+	content: " ";
+	clear: both;
+	display: table;
 }
 div.cmtt div.floatright {
 	padding-left: 0.5em;
@@ -2499,11 +2507,23 @@ div.aahc.alert div.aab {
 div.revtext, div.cmttext {
 	white-space: pre-wrap;
 	max-width: 42em;
+	line-height: 125%;
 }
 div#foldaddcomment div.cmtv {
 	padding-bottom: 0;
 }
-span.cmtnumhead span.cmtnumat {
+.cmtnumhead {
+	float: left;
+	padding-right: 0.75em;
+}
+.cmtname, .cmttime, .cmttags, .cmtvis {
+	float: left;
+	padding-right: 1.5em;
+}
+.cmttime, .cmtvis {
+	color: #999999;
+}
+.cmtnumhead span.cmtnumat {
 	color: #aaaaaa;
 }
 div.cmtev {

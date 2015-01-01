@@ -1260,31 +1260,28 @@ var idctr = 0;
 function comment_identity_time(cj) {
     var t = [], res = [], x, i;
     if (cj.ordinal)
-        t.push('<span class="cmtnumhead"><a class="qq" href="#comment'
+        t.push('<div class="cmtnumhead"><a class="qq" href="#comment'
                + cj.cid + '"><span class="cmtnumat">@</span><span class="cmtnumnum">'
-               + cj.ordinal + '</span></a></span>');
+               + cj.ordinal + '</span></a></div>');
     if (cj.author && cj.author_hidden)
-        t.push('<span id="foldcid' + cj.cid + '" class="cmtname fold4c">'
+        t.push('<div id="foldcid' + cj.cid + '" class="cmtname fold4c">'
                + '<a class="q" href="#" onclick="return fold(\'cid' + cj.cid + '\',null,4)" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
-               + cj.author + '</span></span>');
+               + cj.author + '</span></div>');
     else if (cj.author && cj.blind && cj.visibility == "au")
-        t.push('<span class="cmtname">[' + cj.author + ']</span>');
+        t.push('<div class="cmtname">[' + cj.author + ']</div>');
     else if (cj.author)
-        t.push('<span class="cmtname">' + cj.author + '</span>');
+        t.push('<div class="cmtname">' + cj.author + '</div>');
     if (cj.modified_at)
-        t.push('<span class="cmttime">' + cj.modified_at_text + '</span>');
+        t.push('<div class="cmttime">' + cj.modified_at_text + '</div>');
     if (!cj.response && cj.tags) {
         x = [];
         for (i in cj.tags)
             x.push('<a class="qq" href="' + papercomment.commenttag_search_url.replace(/\$/g, encodeURIComponent(cj.tags[i])) + '">#' + cj.tags[i] + '</a>');
-        t.push(x.join(" "));
+        t.push('<div class="cmttags">' + x.join(" ") + '</div>');
     }
-    if (t.length)
-        res.push('<span class="cmtinfo cmtfn">' + t.join(' <span class="barsep">&nbsp;|&nbsp;</span> ') + '</span>');
     if (!cj.response && (i = vismap[cj.visibility]))
-        res.push('<span class="cmtinfo cmtvis">(' + i + ')</span>');
-    res.push('<div class="cmtinfo clear"></div>');
-    return res.join("");
+        t.push('<div class="cmtvis">(' + i + ')</div>');
+    return t.join("");
 }
 
 function make_visibility(hc, caption, value, label, rest) {
