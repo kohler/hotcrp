@@ -1778,87 +1778,115 @@ tr.pl.smalltag, tr.plx.smalltag {
 
 .redtag.orangetag, .redtag.orangetag.psc {
 	background-image: url(../images/tag_red_orange.png);
+	background-color: transparent;
 }
 .redtag.yellowtag, .redtag.yellowtag.psc {
 	background-image: url(../images/tag_red_yellow.png);
+	background-color: transparent;
 }
 .redtag.greentag, .redtag.greentag.psc {
 	background-image: url(../images/tag_red_green.png);
+	background-color: transparent;
 }
 .redtag.bluetag, .redtag.bluetag.psc {
 	background-image: url(../images/tag_red_blue.png);
+	background-color: transparent;
 }
 .redtag.purpletag, .redtag.purpletag.psc {
 	background-image: url(../images/tag_red_purple.png);
+	background-color: transparent;
 }
 .redtag.graytag, .redtag.graytag.psc {
 	background-image: url(../images/tag_red_gray.png);
+	background-color: transparent;
 }
 .redtag.whitetag, .redtag.whitetag.psc {
 	background-image: url(../images/tag_red_white.png);
+	background-color: transparent;
 }
 .orangetag.yellowtag, .orangetag.yellowtag.psc {
 	background-image: url(../images/tag_orange_yellow.png);
+	background-color: transparent;
 }
 .orangetag.greentag, .orangetag.greentag.psc {
 	background-image: url(../images/tag_orange_green.png);
+	background-color: transparent;
 }
 .orangetag.bluetag, .orangetag.bluetag.psc {
 	background-image: url(../images/tag_orange_blue.png);
+	background-color: transparent;
 }
 .orangetag.purpletag, .orangetag.purpletag.psc {
 	background-image: url(../images/tag_orange_purple.png);
+	background-color: transparent;
 }
 .orangetag.graytag, .orangetag.graytag.psc {
 	background-image: url(../images/tag_orange_gray.png);
+	background-color: transparent;
 }
 .orangetag.whitetag, .orangetag.whitetag.psc {
 	background-image: url(../images/tag_orange_white.png);
+	background-color: transparent;
 }
 .yellowtag.greentag, .yellowtag.greentag.psc {
 	background-image: url(../images/tag_yellow_green.png);
+	background-color: transparent;
 }
 .yellowtag.bluetag, .yellowtag.bluetag.psc {
 	background-image: url(../images/tag_yellow_blue.png);
+	background-color: transparent;
 }
 .yellowtag.purpletag, .yellowtag.purpletag.psc {
 	background-image: url(../images/tag_yellow_purple.png);
+	background-color: transparent;
 }
 .yellowtag.graytag, .yellowtag.graytag.psc {
 	background-image: url(../images/tag_yellow_gray.png);
+	background-color: transparent;
 }
 .yellowtag.whitetag, .yellowtag.whitetag.psc {
 	background-image: url(../images/tag_yellow_white.png);
+	background-color: transparent;
 }
 .greentag.bluetag, .greentag.bluetag.psc {
 	background-image: url(../images/tag_green_blue.png);
+	background-color: transparent;
 }
 .greentag.purpletag, .greentag.purpletag.psc {
 	background-image: url(../images/tag_green_purple.png);
+	background-color: transparent;
 }
 .greentag.graytag, .greentag.graytag.psc {
 	background-image: url(../images/tag_green_gray.png);
+	background-color: transparent;
 }
 .greentag.whitetag, .greentag.whitetag.psc {
 	background-image: url(../images/tag_green_white.png);
+	background-color: transparent;
 }
 .bluetag.purpletag, .bluetag.purpletag.psc {
 	background-image: url(../images/tag_blue_purple.png);
+	background-color: transparent;
 }
 .bluetag.graytag, .bluetag.graytag.psc {
 	background-image: url(../images/tag_blue_gray.png);
+	background-color: transparent;
 }
 .bluetag.whitetag, .bluetag.whitetag.psc {
 	background-image: url(../images/tag_blue_white.png);
+	background-color: transparent;
 }
 .purpletag.graytag, .purpletag.graytag.psc {
 	background-image: url(../images/tag_purple_gray.png);
+	background-color: transparent;
 }
 .purpletag.whitetag, .purpletag.whitetag.psc {
 	background-image: url(../images/tag_purple_white.png);
+	background-color: transparent;
 }
 .graytag.whitetag, .graytag.whitetag.psc {
 	background-image: url(../images/tag_gray_white.png);
+	background-color: transparent;
 }
 
 .graytext {
@@ -2461,8 +2489,8 @@ div.aab {
 }
 div.aahc.alert div.aab {
 	background: #ffaaaa;
-	background: linear-gradient(to bottom, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 50%, transparent 50%),
-		linear-gradient(to top, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 50%, transparent 50%);
+	background: linear-gradient(to bottom, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 51%, transparent 51%),
+		linear-gradient(to top, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 51%, transparent 51%);
 }
 div.revtext, div.cmttext {
 	white-space: pre-wrap;
