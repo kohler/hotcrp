@@ -297,7 +297,7 @@ class PaperList extends BaseList {
         return $t;
     }
 
-    private function _footer($ncol, $listname, $trclass, $extra) {
+    private function _footer($ncol, $listname, $rstate, $extra) {
         global $Conf;
         if ($this->count == 0)
             return "";
@@ -475,9 +475,9 @@ class PaperList extends BaseList {
             $Conf->footerScript("plactions_dofold()");
 
         // Linelinks container
-        $foot = " <tfoot>\n"
-            . "  <tr class='pl_footgap $trclass'><td colspan='$ncol'><div class='pl_footgap'></div></td></tr>\n"
-            . "  <tr class='pl_footrow'>\n";
+        $foot = " <tfoot"
+            . ($rstate->hascolors ? " class=\"pltable_colored\"" : "")
+            . ">\n  <tr class=\"pl_footrow\">\n";
         if ($this->viewmap->columns)
             $foot .= "    <td class='pl_footer' colspan='$ncol'>";
         else
@@ -875,10 +875,10 @@ class PaperList extends BaseList {
         $rownum_marker = "<span class=\"pl_rownum fx6\">";
         $rownum_len = strlen($rownum_marker);
         $nbody = array("<tr>");
-        $tbody = $rstate->hascolors ? ' class="pltable_colored"' : '';
+        $tbody_class = "pltable" . ($rstate->hascolors ? " pltable_colored" : "");
         for ($i = 1; $i < count($rstate->headingstart); ++$i) {
             $nbody[] = '<td class="pl_splitcol top" width="' . (100 / $rstate->split_ncol) . '%"><div class="pl_splitcol"><table width="100%">';
-            $nbody[] = $colhead . "  <tbody$tbody>\n";
+            $nbody[] = $colhead . "  <tbody class=\"$tbody_class\">\n";
             $number = 1;
             for ($j = $rstate->headingstart[$i - 1]; $j < $rstate->headingstart[$i]; ++$j) {
                 $x = $body[$j];
@@ -1193,9 +1193,7 @@ class PaperList extends BaseList {
                 $colhead .= "</th>\n";
             }
 
-            $colhead .= "  </tr>\n"
-                . "  <tr><td class='pl_headgap' colspan='$ncol'></td></tr>\n"
-                . " </thead>\n";
+            $colhead .= "  </tr>\n </thead>\n";
         }
 
         // table skeleton including fold classes
@@ -1212,23 +1210,23 @@ class PaperList extends BaseList {
         $exit = "</table>";
 
         // maybe make columns, maybe not
+        $tbody_class = "pltable";
         if ($this->viewmap->columns && count($rstate->ids)
             && $this->_column_split($rstate, $colhead, $body)) {
             $enter = '<div class="pl_splitcol_ctr_ctr"><div class="pl_splitcol_ctr">' . $enter;
             $exit = $exit . "</div></div>";
             $ncol = $rstate->split_ncol;
-            $tbody = "";
         } else {
             $enter .= $colhead;
-            $tbody = $rstate->hascolors ? ' class="pltable_colored"' : '';
+            $tbody_class .= $rstate->hascolors ? " pltable_colored" : "";
         }
 
         if ($fieldDef[0] instanceof SelectorPaperColumn
             && !defval($options, "nofooter"))
-            $enter .= $this->_footer($ncol, $listname, $rstate->last_trclass,
+            $enter .= $this->_footer($ncol, $listname, $rstate,
                                      defval($options, "footer_extra", ""));
 
-        $x = $enter . " <tbody$tbody>\n" . join("", $body) . " </tbody>\n" . $exit;
+        $x = $enter . " <tbody class=\"$tbody_class\">\n" . join("", $body) . " </tbody>\n" . $exit;
 
         // session variable to remember the list
         if ($this->listNumber) {

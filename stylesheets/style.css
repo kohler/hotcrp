@@ -1365,7 +1365,7 @@ table.pltable th, table.ppltable th, table.setreviewform th, table.auedittable t
 	padding-right: 0.125em;
 	vertical-align: bottom;
 }
-div.pl_splitcol, tr.pl_footgap.pl_splitcol > td {
+div.pl_splitcol {
 	padding-right: 1.5em;
 }
 div.pl_splitcol_ctr {
@@ -1431,8 +1431,9 @@ table.pltable th.pl_tagval {
 	text-align: right;
 	white-space: nowrap;
 }
-.pl_footselector {
+tr.pl_footrow > td.pl_footselector {
 	vertical-align: top;
+	padding-top: 0;
 	padding-right: 4px;
 }
 table.ppltable td.pl_sel,
@@ -1542,11 +1543,9 @@ tr.pl_headrow td, td.pl_footer, tr.pl_headrow th, tr.al_headrow th,
 table.setreviewform th, table.auedittable th {
 	font-size: smaller;
 }
-td.pl_footer {
+tr.pl_footrow > td {
+	border-top: 1px solid #ccb7a3; /* #9999cc; */
 	padding-top: 3px;
-}
-tr.pl_headgap td {
-	padding-top: 2px;
 }
 div.pl_footgap {
 	padding-top: 3px;
@@ -1675,10 +1674,16 @@ a.pl_sort_def_rev {
 tbody.pltable_colored > tr.pl {
 	border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
+tbody.pltable_colored > tr:first-child {
+	border-top: 0 none;
+}
+tbody.pltable > tr:last-child > td {
+	padding-bottom: 2px;
+}
 .k1 {
 	background-color: #f1f8fc;
 }
-tbody.pltable_colored > tr.k1 {
+tbody.pltable_colored > tr.k1, tfoot.pltable_colored > tr.k1 {
 	background-color: inherit;
 }
 tr.redtag, tr.orangetag, tr.yellowtag, tr.greentag, tr.bluetag,
