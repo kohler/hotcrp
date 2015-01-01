@@ -5,8 +5,8 @@
 
 /* page background */
 body {
-	font-family: verdana, tahoma, sans-serif;
-	font-size: 10.5pt; /* grep MAINSIZE */
+	font-family: "Helvetica Neue", Helvetica, Arial, verdana, tahoma, sans-serif;
+	font-size: 11pt; /* grep MAINSIZE */
 	color: black;
 	background-color: white;
 	margin: 0;
@@ -496,6 +496,9 @@ span.optvalue {
 table.center {
 	margin-left: auto;
 	margin-right: auto;
+}
+table.pltable {
+	line-height: 125%;
 }
 body#revpref table.pltable, body#accounts table.ppltable {
 	margin: 0 auto;
@@ -1253,6 +1256,7 @@ table.reviewers, div.revnotes {
 	margin-bottom: 0.5em;
 }
 table.reviewers {
+	line-height: 120%;
 	margin-left: -6px;
 }
 table.reviewers > tbody > tr > td:first-child {
@@ -2199,7 +2203,6 @@ div.papt {
 div.pavt {
 	margin: 0 -5px;
 	padding: 0.25em 5px;
-	background: #eaeaff; /*#ffeaee;*/
 }
 div.pavb {
 	padding: 2px 0 0 0;
@@ -2217,6 +2220,7 @@ body#paper_edit span.papfn {
 div.papt span.papfnh {
 	font-variant: normal;
 	font-weight: normal;
+	text-transform: none;
 	color: #555555;
 }
 div.papt span.hint {
@@ -2691,7 +2695,7 @@ div.scorehelpc, tr.aueditc td {
 	display: none;
 }
 div.scorehelpc span.rev_num, div.scorehelpo span.rev_num {
-	font-size: 10.5pt; /* MAINSIZE */
+	font-size: larger;
 }
 
 /* popup dialogs */
