@@ -476,10 +476,9 @@ class ReviewerTypePaperColumn extends PaperColumn {
     }
     public function header($pl, $row, $ordinal) {
         if ($this->xreviewer)
-            return "<span class='hastitle' title='Reviewer type'>"
-                . Text::name_html($this->xreviewer) . "<br />Review</span>";
+            return Text::name_html($this->xreviewer) . "<br />Review</span>";
         else
-            return "<span class='hastitle' title='Reviewer type'>Review</span>";
+            return "Review";
     }
     public function col() {
         return "<col width='0*' />";

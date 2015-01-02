@@ -1132,7 +1132,7 @@ function chair() {
   setting their preferences on the <a
   href='" . hoturl("paper") . "'>paper pages</a>.</p>
 
-  <p>If you'd like, you can collect review preferences before the submission
+  <p>If you’d like, you can collect review preferences before the submission
   deadline.  Select <a href='" . hoturl("settings", "group=sub") . "'>“PC can
   see <em>all registered papers</em> until submission deadline”</a>, which
   allows PC members to see abstracts for registered papers that haven’t yet
