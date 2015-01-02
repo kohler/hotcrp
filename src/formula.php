@@ -207,7 +207,7 @@ class Formula {
     public function __construct(/* $fexpr */) {
         $args = func_get_args();
         if (is_object(@$args[0])) {
-            foreach ($args as $k => $v)
+            foreach ($args[0] as $k => $v)
                 $this->$k = $v;
         } else if (is_string(@$args[0]))
             $this->expression = $args[0];
