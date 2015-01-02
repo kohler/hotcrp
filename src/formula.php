@@ -222,7 +222,9 @@ class Formula {
 
         $t = $this->expression;
         $e = $this->_parse_ternary($t, false);
-        if ($t !== "" || !$e) {
+        if ((string) $this->expression === "")
+            $this->_error_html = "Empty formula.";
+        else if ($t !== "" || !$e) {
             $prefix = substr($this->expression, 0, strlen($this->expression) - strlen($t));
             $this->_error_html = "Parse error in formula “" . htmlspecialchars($prefix) . "&nbsp;<span style='color:red'>&rarr;</span>&nbsp;" . htmlspecialchars(substr($this->expression, strlen($prefix))) . "”.";
         } else if ($e->aggt)

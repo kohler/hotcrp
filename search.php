@@ -1004,7 +1004,7 @@ function saveformulas() {
         if ($name == $fdef->name && $expr == $fdef->expression)
             /* do nothing */;
         else if (!$Me->privChair && $fdef->createdBy < 0)
-            $ok = $Conf->errorMsg("You can't change formula &ldquo;" . htmlspecialchars($fdef->name) . "&rdquo; because it was created by an administrator.");
+            $ok = $Conf->errorMsg("You can’t change formula “" . htmlspecialchars($fdef->name) . "” because it was created by an administrator.");
         else if (($name == "" || $expr == "") && $fdef->formulaId != "n")
             $changes[] = "delete from Formula where formulaId=$fdef->formulaId";
         else if ($name == "")
