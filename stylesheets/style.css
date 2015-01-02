@@ -1,4 +1,4 @@
-/* -*- mode: css; indent-tabs-mode: t -*- */
+/* -*- mode: css; indent-tabs-mode: t; css-indent-offset: 8 -*- */
 /* style.css -- HotCRP CSS styles */
 /* HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC */
 /* Distributed under an MIT-like license; see LICENSE */
@@ -14,11 +14,6 @@ body {
 
 
 /* header */
-#header {
-	background-image: url(../images/headgrad.png);
-	background-repeat: repeat-x;
-	background-position: top;
-}
 #header_right {
 	padding: 8px 12px 0 12px;
 	font-size: smaller;
@@ -35,12 +30,16 @@ body {
 #header_left_conf {
 	float: left;
 	padding: 0.2em 0.8em 0.3em 0.8em;
+	margin-left: 20px;
 	border-bottom: 2px solid #b2a584;
 	border-right: 1px solid #b2a584;
-	background-color: #ffffbb;
-	background-image: url(../images/homegrad.png);
+	background-color: #ffbbbb;
+	color: #f33360;
 	background-repeat: repeat-x;
 	background-position: bottom;
+}
+#header_left_conf a {
+	color: #f35380;
 }
 #header_left_page {
 	float: left;
