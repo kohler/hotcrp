@@ -1510,8 +1510,9 @@ table.ppltable td.pl_score {
 	padding-left: 0.2em;
 	padding-right: 0.2em;
 }
-tr.plx td {
-	font-size: smaller;
+tr.plx {
+	font-size: 85%;
+	line-height: 135%;
 }
 tr.plx h6 {
 	display: inline;

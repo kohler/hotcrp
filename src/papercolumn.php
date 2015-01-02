@@ -759,23 +759,23 @@ class ReviewerListPaperColumn extends PaperColumn {
         return "Reviewers";
     }
     public function content($pl, $row) {
-        $prefs = $pl->contact->privChair ? PaperList::_rowPreferences($row) : array();
-        $n = "";
         // see also search.php > getaction == "reviewers"
-        if (isset($pl->review_list[$row->paperId])) {
-            foreach ($pl->review_list[$row->paperId] as $xrow)
-                if ($xrow->lastName) {
-                    $ranal = $pl->_reviewAnalysis($xrow);
-                    $n .= ($n ? ", " : "");
-                    $n .= Text::name_html($xrow);
-                    if ($xrow->reviewType >= REVIEW_SECONDARY)
-                        $n .= "&nbsp;" . PaperList::_reviewIcon($xrow, $ranal, false);
-                    if (($pref = defval($prefs, $xrow->contactId, null)))
-                        $n .= unparse_preference_span($pref);
-                }
-            $n = $pl->maybeConflict($row, $n, $pl->contact->canViewReviewerIdentity($row, null, false));
-        }
-        return $n;
+        if (!isset($pl->review_list[$row->paperId]))
+            return "";
+        $x = array();
+        $prefs = $pl->contact->privChair ? PaperList::_rowPreferences($row) : array();
+        foreach ($pl->review_list[$row->paperId] as $xrow)
+            if ($xrow->lastName) {
+                $ranal = $pl->_reviewAnalysis($xrow);
+                $n = Text::name_html($xrow);
+                if ($xrow->reviewType >= REVIEW_SECONDARY)
+                    $n .= "&nbsp;" . PaperList::_reviewIcon($xrow, $ranal, false);
+                if (($pref = defval($prefs, $xrow->contactId, null)))
+                    $n .= unparse_preference_span($pref);
+                $x[] = '<span class="nw">' . $n . '</span>';
+            }
+        return $pl->maybeConflict($row, join(", ", $x),
+                                  $pl->contact->canViewReviewerIdentity($row, null, false));
     }
 }
 
