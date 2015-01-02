@@ -29,10 +29,11 @@ class PaperColumn extends Column {
     }
 
     public static function lookup($name, $errors = null) {
-        if (isset(self::$by_name[$name]))
-            return self::$by_name[$name];
+        $lname = strtolower($name);
+        if (isset(self::$by_name[$lname]))
+            return self::$by_name[$lname];
         foreach (self::$factories as $f)
-            if (str_starts_with(strtolower($name), $f[0])
+            if (str_starts_with($lname, $f[0])
                 && ($x = $f[1]->make_field($name, $errors)))
                 return $x;
         return null;
@@ -887,7 +888,7 @@ class TagPaperColumn extends PaperColumn {
         $tagger = new Tagger($pl->contact);
         if (!($ctag = $tagger->check($this->dtag, Tagger::NOVALUE)))
             return false;
-        $this->ctag = " $ctag#";
+        $this->ctag = strtolower(" $ctag#");
         $queryOptions["tags"] = 1;
         return true;
     }
@@ -1088,7 +1089,7 @@ class FormulaPaperColumn extends PaperColumn {
     private static $registered = array();
     public static $list = array();
     public function __construct($name, $formula) {
-        parent::__construct($name, Column::VIEW_COLUMN | Column::FOLDABLE,
+        parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE,
                             array("minimal" => true, "sorter" => "formula_sorter"));
         $this->cssname = "formula";
         $this->formula = $formula;
@@ -1104,7 +1105,7 @@ class FormulaPaperColumn extends PaperColumn {
     }
     public function make_field($name, $errors) {
         foreach (self::$registered as $col)
-            if ($col->formula->name == $name)
+            if (strcasecmp($col->formula->name, $name) == 0)
                 return $col;
         if (strpos($name, "(") === false || substr($name, 0, 4) === "edit")
             return null;
