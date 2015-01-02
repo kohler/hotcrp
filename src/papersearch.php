@@ -890,7 +890,12 @@ class PaperSearch {
     }
 
     private function _search_formula($word, &$qt, $quoted) {
-        $formula = new Formula($word);
+        if (preg_match('/\A[^(){}\[\]]+\z/', $word) && !$quoted
+            && ($result = Dbl::qe("select * from Formula where name=?", $word))
+            && ($row = $result->fetch_object()))
+            $formula = new Formula($row);
+        else
+            $formula = new Formula($word);
         if ($formula->check())
             $qt[] = new SearchTerm("formula", self::F_XVIEW, $formula);
         else {
