@@ -259,7 +259,6 @@ if (count($trs)) {
     <th class='pl_name'>Account</th>
     <th class='al_act'>Action</th>
   </tr></thead>
-  <tfoot><tr class='pl_footgap k", (count($trs) - 1) % 2, "'><td colspan='5'></td></tr></tfoot>
   <tbody>\n";
     for ($i = 0; $i < count($trs); ++$i)
         echo "    <tr class='k", $i % 2, " al'>", $trs[$i], "</tr>\n";

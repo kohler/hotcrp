@@ -1344,15 +1344,10 @@ div.aabutsep {
 	padding: 0 0.5em;
 }
 
-.pltable_full_ctr {
-	padding: 0.75em 0.5em;
-}
-.pltable_full, table.altable {
+/* other list tables */
+table.altable {
 	width: 100%;
 	position: relative;
-}
-.pl_titleextra a {
-	font-weight: normal;
 }
 #plact {
 	margin-top: 2px;
@@ -1363,21 +1358,12 @@ div.aabutsep {
 	padding-left: 1em;
 	float: right;
 }
-table.pltable th, table.ppltable th, table.setreviewform th, table.auedittable th {
+table.ppltable th, table.setreviewform th, table.auedittable th {
 	text-align: left;
 	padding-right: 0.125em;
 	vertical-align: bottom;
 }
-div.pl_splitcol {
-	padding-right: 1.5em;
-}
-div.pl_splitcol_ctr {
-	margin-right: -1.5em;
-}
-div.pl_splitcol_ctr_ctr {
-	overflow-x: hidden;
-}
-.pl_title, .pl_name, .pl_email, .pl_affiliation, .pl_text {
+.pl_name, .pl_email, .pl_affiliation {
 	padding-right: 1em;
 }
 .pl_activityicon {
@@ -1395,41 +1381,11 @@ div.pl_splitcol_ctr_ctr {
 	font-size: 90%;
 	white-space: nowrap;
 }
-table.pltable th.pl_topicscore {
-	text-align: center;
-	padding-left: 0.5em;
-	padding-right: 0.5em;
-}
-table.pltable th.pl_id,
-.pl_score, table.pltable th.pl_score, table.ppltable th.pl_score,
-table.altable th.pl_id,
-table.pltable th.pl_sel,
-table.pltable th.pl_selector, /* obsolete */
-table.pltable th.pl_confselector {
+.pl_score, table.ppltable th.pl_score,
+table.altable th.pl_id {
 	text-align: center;
 	white-space: nowrap;
 }
-table.pltable th.pl_revtype {
-	padding-left: 3px;
-	padding-right: 3px;
-}
-td.pl_revtype {
-	padding-left: 1.5em;
-	padding-right: 1.5em;
-	white-space: nowrap;
-}
-div.pl_revtype_round {
-	margin-right: -1.2em;
-}
-.pl_revstat,
-table.pltable th.pl_revstat,
-table.pltable th.pl_formula,
-table.pltable th.pl_tag,
-table.pltable th.pl_tagval {
-	text-align: center;
-}
-.pl_sel,
-.pl_selector, /* obsolete */
 .pl_footselector {
 	text-align: right;
 	white-space: nowrap;
@@ -1439,28 +1395,78 @@ tr.pl_footrow > td.pl_footselector {
 	padding-top: 0;
 	padding-right: 4px;
 }
-table.ppltable td.pl_sel,
-table.ppltable td.pl_selector /* obsolete */ {
+table.ppltable td.pl_sel {
 	padding-right: 3px;
 }
-.pl_confselector {
-	text-align: center;
+img.b {
+	vertical-align: text-bottom;
+}
+img.bm {
+	vertical-align: middle;
+	position: relative;
+	bottom: 1px;
+}
+img.bmabs {
+	position: absolute;
+	bottom: -2px;
+}
+td.pl_lastvisit, td.al_time {
+	padding-right: 1.25em;
+	font-size: smaller;
 	white-space: nowrap;
 }
-table.pltable th.pl_sel,
-table.pltable th.pl_selector /* obsolete */ {
-	padding-right: 0;
+td.pl_name,
+td.al_name {
+	white-space: nowrap;
 }
-span.pl_rownum {
+table.ppltable td.pl_score {
+	vertical-align: top;
 	font-size: smaller;
-	color: #333333;
+	padding-left: 0.2em;
+	padding-right: 0.2em;
 }
-td.pl_id, td.pl_topicscore, td.pl_revpref,
-td.pl_desirability, td.pl_tag, td.pl_tagval, td.pl_formula {
-	text-align: right;
-	padding-left: 0.4em;
-	padding-right: 0.4em;
+span.pcrole {
+	font-weight: bold;
+	font-size: smaller;
 }
+tr.al td {
+	padding-top: 2px;
+	padding-bottom: 2px;
+}
+tr.al td, tr.al_headrow th {
+	padding-left: 3px;
+	padding-right: 12px;
+}
+tr.al_headrow th {
+	text-align: left;
+	vertical-align: bottom;
+}
+tr.al_headrow th, table.setreviewform th {
+	border-bottom: 1px solid #999999;
+}
+tr.al_headrow th, table.setreviewform th, table.auedittable th {
+	font-size: smaller;
+}
+
+/* paper list tables geometry */
+.pltable_full_ctr {
+	padding: 0.75em 0.5em;
+}
+.pltable_full {
+	width: 100%;
+	position: relative;
+}
+
+div.plsplit_col {
+	padding-right: 1.5em;
+}
+div.plsplit_col_ctr {
+	margin-right: -1.5em;
+}
+div.plsplit_col_ctr_ctr {
+	overflow-x: hidden;
+}
+
 td.plheading {
 	text-align: center;
 	font-weight: bold;
@@ -1479,36 +1485,13 @@ td.plheading_blank {
 td.plheading_middle {
 	border-top: 1px solid #cccccc;
 }
-td.pl_title img, img.b {
-	vertical-align: text-bottom;
-}
-img.bm {
-	vertical-align: middle;
-	position: relative;
-	bottom: 1px;
-}
-img.bmabs {
-	position: absolute;
-	bottom: -2px;
-}
-td.pl_lastvisit, td.al_time {
-	padding-right: 1.25em;
+
+th.pl {
+	vertical-align: bottom;
 	font-size: smaller;
-	white-space: nowrap;
+	text-align: left;
 }
-td.pl_name,
-td.al_name,
-td.pl_assrev,
-td.pl_editrevpref,
-td.pl_edittagval {
-	white-space: nowrap;
-}
-table.ppltable td.pl_score {
-	vertical-align: top;
-	font-size: smaller;
-	padding-left: 0.2em;
-	padding-right: 0.2em;
-}
+
 tr.plx {
 	font-size: 85%;
 	line-height: 135%;
@@ -1521,42 +1504,75 @@ tr.plx h6 {
 	padding-right: 0.25em;
 	color: #555;
 }
+
+/* paper list tables */
+th.pl {
+	padding: 0 0.4em 0 0;
+}
+td.pl {
+	padding: 2px 0.4em 2px 0;
+}
+th.pl:first-child, td.pl:first-child {
+	padding-left: 0.4em;
+}
+
+td.pl.pl_title, td.pl.pl_text {
+	padding-right: 1em;
+}
+
+td.pl.pl_revtype {
+	padding-left: 1.5em;
+	padding-right: 1.5em;
+}
+div.pl_revtype_round {
+	margin-right: -1.2em;
+}
+
+th.pl_id, th.pl_sel, th.pl_confselector,
+th.pl_revtype, th.pl_revstat, th.pl_topicscore, th.pl_desirability,
+th.pl_score, th.pl_tag, th.pl_tagval, th.pl_formula {
+	text-align: center;
+}
+
+td.pl_id, td.pl_sel,
+td.pl_revpref, td.pl_topicscore, td.pl_desirability,
+td.pl_tag, td.pl_tagval, td.pl_formula {
+	text-align: right;
+}
+
+td.pl_revtype, td.pl_revstat, td.pl_confselector, td.pl_score {
+	text-align: center;
+}
+
+td.pl_id, td.pl_sel, td.pl_confselector,
+td.pl_revtype, td.pl_assrev, td.pl_editrevpref,
+td.pl_score, td.pl_tag, td.pl_tagval, td.pl_edittagval, td.pl_formula {
+	white-space: nowrap;
+}
+
+.pl_titleextra a {
+	font-weight: normal;
+}
+
+span.pl_rownum {
+	font-size: smaller;
+	color: #333333;
+}
+td.pl_title img {
+	vertical-align: text-bottom;
+}
 div.pl_autoassignment, div.pl_autoassignment h6 {
 	font-weight: bold;
 }
-span.pcrole {
-	font-weight: bold;
-	font-size: smaller;
-}
-tr.pl td, tr.al td {
-	padding-top: 2px;
-	padding-bottom: 2px;
-}
-tr.al td, tr.al_headrow th {
-	padding-left: 3px;
-	padding-right: 12px;
-}
-tr.al_headrow th {
-	text-align: left;
-	vertical-align: bottom;
-}
-tr.pl_headrow td, tr.pl_headrow th, tr.al_headrow th, table.setreviewform th {
+tr.pl_headrow td, tr.pl_headrow th {
 	border-bottom: 1px solid #999999;
 }
-tr.pl_headrow td, td.pl_footer, tr.pl_headrow th, tr.al_headrow th,
-table.setreviewform th, table.auedittable th {
+tr.pl_headrow td, td.pl_footer, tr.pl_headrow th {
 	font-size: smaller;
 }
 tr.pl_footrow > td {
 	border-top: 1px solid #ccb7a3; /* #9999cc; */
 	padding-top: 3px;
-}
-div.pl_footgap {
-	padding-top: 3px;
-	border-bottom: 1px solid #ccb7a3; /* #9999cc; */
-}
-tr.pl_splitcol > td > div.pl_footgap {
-	padding-top: 8px;
 }
 table.plt_reviewerHome tr.pl_headrow th {
 	border-bottom: none;

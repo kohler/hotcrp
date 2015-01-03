@@ -704,7 +704,7 @@ class PaperList extends BaseList {
         foreach ($fieldDef as $fdef) {
             if ($fdef->view != Column::VIEW_COLUMN)
                 continue;
-            $td = "    <td class=\"pl_$fdef->cssname";
+            $td = "    <td class=\"pl pl_$fdef->cssname";
             if ($fdef->foldable)
                 $td .= " fx$fdef->foldable";
             if ($fdef->content_empty($this, $row)) {
@@ -767,7 +767,7 @@ class PaperList extends BaseList {
             $t .= "  <tr class=\"plx $trclass\" hotcrpid=\"$row->paperId\">";
             if ($rstate->skipcallout > 0)
                 $t .= "<td colspan=\"$rstate->skipcallout\"></td>";
-            $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->skipcallout) . "\">$tt</td></tr>\n";
+            $t .= "<td class=\"plx\" colspan=\"" . ($rstate->ncol - $rstate->skipcallout) . "\">$tt</td></tr>\n";
         }
 
         return $t;
@@ -877,7 +877,7 @@ class PaperList extends BaseList {
         $nbody = array("<tr>");
         $tbody_class = "pltable" . ($rstate->hascolors ? " pltable_colored" : "");
         for ($i = 1; $i < count($rstate->headingstart); ++$i) {
-            $nbody[] = '<td class="pl_splitcol top" width="' . (100 / $rstate->split_ncol) . '%"><div class="pl_splitcol"><table width="100%">';
+            $nbody[] = '<td class="plsplit_col top" width="' . (100 / $rstate->split_ncol) . '%"><div class="plsplit_col"><table width="100%">';
             $nbody[] = $colhead . "  <tbody class=\"$tbody_class\">\n";
             $number = 1;
             for ($j = $rstate->headingstart[$i - 1]; $j < $rstate->headingstart[$i]; ++$j) {
@@ -897,7 +897,7 @@ class PaperList extends BaseList {
         $nbody[] = "</tr>";
 
         $body = $nbody;
-        $rstate->last_trclass = "pl_splitcol";
+        $rstate->last_trclass = "plsplit_col";
         return true;
     }
 
@@ -1139,7 +1139,7 @@ class PaperList extends BaseList {
         // header cells
         $url = $this->search->url_site_relative_raw();
         if (!defval($options, "noheader")) {
-            $colhead .= " <thead>\n  <tr class=\"pl_headrow\">\n";
+            $colhead .= " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">\n";
             $ord = 0;
             $titleextra = $this->_make_title_header_extra($rstate, $fieldDef,
                                                           defval($options, "header_links"));
@@ -1155,10 +1155,10 @@ class PaperList extends BaseList {
                 if ($fdef->view != Column::VIEW_COLUMN)
                     continue;
                 if (!$this->any[$fdef->name]) {
-                    $colhead .= "    <th class=\"pl_$fdef->cssname\"></th>\n";
+                    $colhead .= "    <th class=\"pl pl_$fdef->cssname\"></th>\n";
                     continue;
                 }
-                $colhead .= "    <th class=\"pl_$fdef->cssname";
+                $colhead .= "    <th class=\"pl pl_$fdef->cssname";
                 if ($fdef->foldable)
                     $colhead .= " fx" . $fdef->foldable;
                 $colhead .= "\">";
@@ -1213,7 +1213,7 @@ class PaperList extends BaseList {
         $tbody_class = "pltable";
         if ($this->viewmap->columns && count($rstate->ids)
             && $this->_column_split($rstate, $colhead, $body)) {
-            $enter = '<div class="pl_splitcol_ctr_ctr"><div class="pl_splitcol_ctr">' . $enter;
+            $enter = '<div class="plsplit_col_ctr_ctr"><div class="plsplit_col_ctr">' . $enter;
             $exit = $exit . "</div></div>";
             $ncol = $rstate->split_ncol;
         } else {
