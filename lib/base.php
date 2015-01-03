@@ -159,3 +159,15 @@ function caller_landmark($position = 1, $skipfunction_re = null) {
     else
         return "<unknown>";
 }
+
+
+// pcntl helpers
+
+if (!function_exists("pcntl_wifexited")) {
+    function pcntl_wifexited($status) {
+        return ($status & 0x7f) == 0;
+    }
+    function pcntl_wexitstatus($status) {
+        return ($status & 0xff00) >> 8;
+    }
+}
