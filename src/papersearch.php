@@ -2687,7 +2687,7 @@ class PaperSearch {
         //$Conf->infoMsg(Ht::pre_text_wrap($q));
 
         // actually perform query
-        $result = Dbl::raw_qe($q);
+        $result = Dbl::qe_raw($q);
         if (!$result)
             return ($this->_matches = false);
         $this->_matches = array();

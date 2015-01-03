@@ -2437,7 +2437,7 @@ class Contact {
         else
             return $rrow ? $rrow->reviewId : 0;
 
-        if (!($result = Dbl::raw_qe($q)))
+        if (!($result = Dbl::qe_raw($q)))
             return false;
 
         if ($q[0] == "d") {

@@ -751,13 +751,13 @@ class PaperStatus {
                 $q[] = "size=0,mimetype='',sha1='',timestamp=0";
 
             if ($pj->id) {
-                $result = Dbl::raw_qe("update Paper set " . join(",", $q) . " where paperId=$pj->id");
+                $result = Dbl::qe_raw("update Paper set " . join(",", $q) . " where paperId=$pj->id");
                 if ($result
                     && $result->affected_rows === 0
                     && edb_nrows($Conf->qe("select paperId from Paper where paperId=$pj->id")) === 0)
                     $result = $Conf->qe("insert into Paper set paperId=$pj->id, " . join(",", $q));
             } else {
-                $result = Dbl::raw_qe("insert into Paper set " . join(",", $q));
+                $result = Dbl::qe_raw("insert into Paper set " . join(",", $q));
                 if (!$result
                     || !($pj->id = $result->insert_id))
                     return $this->set_error(false, "Could not create paper.");

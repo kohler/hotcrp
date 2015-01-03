@@ -598,7 +598,7 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
     if (!$newPaper)
         $Conf->qe("update Paper set " . join(", ", $q) . " where paperId=$paperId and timeWithdrawn<=0");
     else {
-        if (!($result = Dbl::raw_qe("insert into Paper set " . join(", ", $q)))) {
+        if (!($result = Dbl::qe_raw("insert into Paper set " . join(", ", $q)))) {
             $Conf->errorMsg("Could not create paper.");
             return false;
         }

@@ -165,7 +165,7 @@ class Dbl {
         return self::do_query(func_get_args(), false, 0);
     }
 
-    static function raw_query(/* [$dblink,] $qstr */) {
+    static function query_raw(/* [$dblink,] $qstr */) {
         return self::do_query(func_get_args(), true, 0);
     }
 
@@ -173,7 +173,7 @@ class Dbl {
         return self::do_query(func_get_args(), false, 0);
     }
 
-    static function raw_q(/* [$dblink,] $qstr */) {
+    static function q_raw(/* [$dblink,] $qstr */) {
         return self::do_query(func_get_args(), true, 0);
     }
 
@@ -181,7 +181,7 @@ class Dbl {
         return self::do_query(func_get_args(), false, 1);
     }
 
-    static function raw_ql(/* [$dblink,] $qstr */) {
+    static function ql_raw(/* [$dblink,] $qstr */) {
         return self::do_query(func_get_args(), true, 1);
     }
 
@@ -189,7 +189,7 @@ class Dbl {
         return self::do_query(func_get_args(), false, 2);
     }
 
-    static function raw_qe(/* [$dblink,] $qstr */) {
+    static function qe_raw(/* [$dblink,] $qstr */) {
         return self::do_query(func_get_args(), true, 2);
     }
 
