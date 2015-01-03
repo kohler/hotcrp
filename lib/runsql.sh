@@ -92,7 +92,7 @@ exitval=0
 if test -n "$pwuser"; then
     pwuser="`echo "+$pwuser" | sed -e 's,^.,,' | sql_quote`"
     if test "$mode" = showpw; then
-        echo "select concat(email, ',', if(substr(password,1,1)=' ','<HASH>',password)) from ContactInfo where email like '$pwuser' and disabled=0" | eval "$MYSQL $myargs -N $FLAGS $dbname"
+        echo "select concat(email, ',', if(substr(password,1,1)=' ','<HASH>',coalesce(password,'<NULL>'))) from ContactInfo where email like '$pwuser' and disabled=0" | eval "$MYSQL $myargs -N $FLAGS $dbname"
     else
         showpwvalue=n
         if [ -z "$pwvalue" ]; then
