@@ -27,7 +27,7 @@ body {
 #maindeadline {
 	padding-top: 1px;
 }
-#header_left_conf {
+#header_site {
 	float: left;
 	padding: 0.2em 0.8em 0.3em 0.8em;
 	margin-left: 20px;
@@ -38,10 +38,10 @@ body {
 	background-repeat: repeat-x;
 	background-position: bottom;
 }
-#header_left_conf a {
+#header_site a {
 	color: #f35380;
 }
-#header_left_page {
+#header_page {
 	float: left;
 	padding: 0.2em 0 0 0.8em;
 }
@@ -109,15 +109,10 @@ table.vbar div.vbtab1y {
 	color: black;
 	font-weight: bold;
 }
-div#header_left a {
-	font-weight: normal;
-	text-decoration: none;
-}
 .vbtab a, td.quicklinks a {
 	text-decoration: none;
 }
-.vbtab a:hover, .vbtab1 a:hover, td.quicklinks a:hover,
-div#header_left a:hover {
+.vbtab a:hover, .vbtab1 a:hover, td.quicklinks a:hover {
 	text-decoration: underline;
 }
 td.gopaper {
@@ -1490,6 +1485,7 @@ th.pl {
 	vertical-align: bottom;
 	font-size: smaller;
 	text-align: left;
+	line-height: 125%;
 }
 
 tr.plx {
@@ -2039,10 +2035,10 @@ div.pscopen div.pst {
 	margin: 0 -2px;
 	padding: 0 2px;
 }
-span.psfn {
+span.pavfn, span.psfn {
 	color: #555555;
 }
-span.psfn a.q {
+span.pavfn a.q, span.psfn a.q {
 	color: #555555;
 }
 div.pst span.hint {
