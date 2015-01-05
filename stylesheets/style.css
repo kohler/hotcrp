@@ -14,6 +14,11 @@ body {
 
 
 /* header */
+#header {
+	background-image: url(../images/headgrad.png);
+	background-repeat: repeat-x;
+	background-position: top;
+}
 #header_right {
 	padding: 8px 12px 0 12px;
 	font-size: smaller;
@@ -30,16 +35,12 @@ body {
 #header_site {
 	float: left;
 	padding: 0.2em 0.8em 0.3em 0.8em;
-	margin-left: 20px;
 	border-bottom: 2px solid #b2a584;
 	border-right: 1px solid #b2a584;
-	background-color: #ffbbbb;
-	color: #f33360;
+	background-color: #ffffbb;
+	background-image: url(../images/homegrad.png);
 	background-repeat: repeat-x;
 	background-position: bottom;
-}
-#header_site a {
-	color: #f35380;
 }
 #header_page {
 	float: left;
