@@ -137,7 +137,16 @@ class Navigation {
         }
     }
 
-    public static function redirect_to($url) {
+    public static function make_site($site_url) {
+        if (substr($site_url, 0, 5) !== "index" || substr($site_url, 5, 1) === "/")
+            return self::$sitedir_relative . $site_url;
+        else {
+            $head = self::$sitedir_relative ? : self::$sitedir;
+            return $head . substr($site_url, 5);
+        }
+    }
+
+    public static function redirect($url) {
         $url = self::make_absolute($url);
         // Might have an HTML-encoded URL; decode at least &amp;.
         $url = str_replace("&amp;", "&", $url);
@@ -156,6 +165,10 @@ class Navigation {
         exit();
     }
 
+    public static function redirect_site($site_url) {
+        self::redirect(self::make_site($site_url));
+    }
+
     public static function redirect_http_to_https($allow_http_if_localhost = false) {
         if ((!@$_SERVER["HTTPS"] || $_SERVER["HTTPS"] == "off")
             && self::$protocol == "http://"
@@ -168,7 +181,7 @@ class Navigation {
             else
                 $x .= $_SERVER["HTTP_HOST"];
             $x .= self::$sitedir . self::$page . self::$php_suffix . self::$path . self::$query;
-            self::redirect_to($x);
+            self::redirect($x);
         }
     }
 

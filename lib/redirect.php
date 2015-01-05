@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 function go($url = false) {
-    Navigation::redirect_to($url);
+    Navigation::redirect($url);
 }
 
 function error_go($url, $message) {
