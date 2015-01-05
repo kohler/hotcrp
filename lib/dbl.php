@@ -2,6 +2,11 @@
 
 class Dbl {
 
+    const F_RAW = 1;
+    const F_APPLY = 2;
+    const F_LOG = 4;
+    const F_ERROR = 8;
+
     static public $logged_errors = 0;
     static public $default_dblink;
     static private $error_handler = "Dbl::default_error_handler";
@@ -82,23 +87,26 @@ class Dbl {
         trigger_error("$landmark: database error: $dblink->error in $query");
     }
 
-    static private function query_args($args, $is_raw) {
-        if (count($args) === 1 && is_array($args[0]))
-            $args = $args[0];
+    static private function query_args($args, $flags) {
         $argpos = is_string($args[0]) ? 0 : 1;
         $dblink = $argpos ? $args[0] : self::$default_dblink;
-        if ($is_raw && count($args) > 2)
-            trigger_error(caller_landmark(1, "/^Dbl::/") . ": too many arguments");
+        if ((($flags & self::F_RAW) && count($args) != $argpos + 1)
+            || (($flags & self::F_APPLY) && count($args) > $argpos + 2))
+            trigger_error(caller_landmark(1, "/^Dbl::/") . ": wrong number of arguments");
+        else if (($flags & self::F_APPLY) && @$args[$argpos + 1] && !is_array($args[$argpos + 1]))
+            trigger_error(caller_landmark(1, "/^Dbl::/") . ": argument is not array");
         if (count($args) === $argpos + 1)
             return array($dblink, $args[$argpos], array());
-        else if (count($args) === $argpos + 2 && is_array($args[$argpos + 1]))
+        else if ($flags & self::F_APPLY)
             return array($dblink, $args[$argpos], $args[$argpos + 1]);
-        else
+        else if (count($args) === $argpos + 2 && is_array($args[$argpos + 1])) {
+            error_log(caller_landmark(1, "/^Dbl::/") . ": unexpected argument array");
+            return array($dblink, $args[$argpos], $args[$argpos + 1]);
+        } else
             return array($dblink, $args[$argpos], array_slice($args, $argpos + 1));
     }
 
-    static function format_query(/* [$dblink,] $qstr, ... */) {
-        list($dblink, $qstr, $args) = self::query_args(func_get_args(), false);
+    static private function format_query_args($dblink, $qstr, $argv) {
         $original_qstr = $qstr;
         $strpos = $argpos = 0;
         $usedargs = array();
@@ -122,11 +130,11 @@ class Dbl {
                     ++$argpos;
                 $thisarg = $argpos;
             }
-            if (!array_key_exists($thisarg, $args))
+            if (!array_key_exists($thisarg, $argv))
                 trigger_error(caller_landmark(1, "/^Dbl::/") . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " not set");
             $usedargs[$thisarg] = true;
             // argument format
-            $arg = @$args[$thisarg];
+            $arg = @$argv[$thisarg];
             if ($nextch === "s") {
                 $arg = $dblink->real_escape_string($arg);
                 ++$nextpos;
@@ -144,53 +152,74 @@ class Dbl {
         return $qstr;
     }
 
-    static private function do_query($args, $is_raw, $logmode) {
-        $args = self::query_args($args, $is_raw);
-        if (!$is_raw)
-            $args[1] = self::format_query($args);
-        $result = $args[0]->query($args[1]);
+    static function format_query(/* [$dblink,] $qstr, ... */) {
+        list($dblink, $qstr, $argv) = self::query_args(func_get_args(), 0);
+        return self::format_query_args($dblink, $qstr, $argv);
+    }
+
+    static private function do_query($args, $flags) {
+        list($dblink, $qstr, $argv) = self::query_args($args, $flags);
+        if (!($flags & self::F_RAW))
+            $qstr = self::format_query_args($dblink, $qstr, $argv);
+        $result = $dblink->query($qstr);
         if ($result === true)
-            $result = $args[0];
-        else if ($result === false && $logmode) {
+            $result = $dblink;
+        else if ($result === false && ($flags & (self::F_LOG | self::F_ERROR))) {
             ++self::$logged_errors;
-            if ($logmode == 1)
-                error_log(caller_landmark() . ": database error: " . $args[0]->error . " in $args[1]");
+            if ($flags & self::F_ERROR)
+                call_user_func(self::$error_handler, $dblink, $qstr);
             else
-                call_user_func(self::$error_handler, $args[0], $args[1]);
+                error_log(caller_landmark() . ": database error: " . $dblink->error . " in $qstr");
         }
         return $result;
     }
 
     static function query(/* [$dblink,] $qstr, ... */) {
-        return self::do_query(func_get_args(), false, 0);
+        return self::do_query(func_get_args(), 0);
     }
 
     static function query_raw(/* [$dblink,] $qstr */) {
-        return self::do_query(func_get_args(), true, 0);
+        return self::do_query(func_get_args(), self::F_RAW);
+    }
+
+    static function query_apply(/* [$dblink,] $qstr, [$argv] */) {
+        return self::do_query(func_get_args(), self::F_APPLY);
     }
 
     static function q(/* [$dblink,] $qstr, ... */) {
-        return self::do_query(func_get_args(), false, 0);
+        return self::do_query(func_get_args(), 0);
     }
 
     static function q_raw(/* [$dblink,] $qstr */) {
-        return self::do_query(func_get_args(), true, 0);
+        return self::do_query(func_get_args(), self::F_RAW);
+    }
+
+    static function q_apply(/* [$dblink,] $qstr, [$argv] */) {
+        return self::do_query(func_get_args(), self::F_APPLY);
     }
 
     static function ql(/* [$dblink,] $qstr, ... */) {
-        return self::do_query(func_get_args(), false, 1);
+        return self::do_query(func_get_args(), self::F_LOG);
     }
 
     static function ql_raw(/* [$dblink,] $qstr */) {
-        return self::do_query(func_get_args(), true, 1);
+        return self::do_query(func_get_args(), self::F_RAW | self::F_LOG);
+    }
+
+    static function ql_apply(/* [$dblink,] $qstr, [$argv] */) {
+        return self::do_query(func_get_args(), self::F_APPLY | self::F_LOG);
     }
 
     static function qe(/* [$dblink,] $qstr, ... */) {
-        return self::do_query(func_get_args(), false, 2);
+        return self::do_query(func_get_args(), self::F_ERROR);
     }
 
     static function qe_raw(/* [$dblink,] $qstr */) {
-        return self::do_query(func_get_args(), true, 2);
+        return self::do_query(func_get_args(), self::F_RAW | self::F_ERROR);
+    }
+
+    static function qe_apply(/* [$dblink,] $qstr, [$argv] */) {
+        return self::do_query(func_get_args(), self::F_APPLY | self::F_ERROR);
     }
 
 }

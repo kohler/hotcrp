@@ -254,7 +254,7 @@ class CommentInfo {
             $qv[] = $ctags;
         }
 
-        $result = Dbl::qe($q, $qv);
+        $result = Dbl::qe_apply($q, $qv);
         if (!$result)
             return false;
         $cmtid = $this->commentId ? : $result->insert_id;

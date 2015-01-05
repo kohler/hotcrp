@@ -755,7 +755,7 @@ class Contact {
             $q .= ", creationTime=$Now";
         } else
             $q .= " where contactId=" . $this->contactId;
-        $result = Dbl::qe($Conf->dblink, $q, $qv);
+        $result = Dbl::qe_apply($Conf->dblink, $q, $qv);
         if (!$result)
             return $result;
         if ($inserting)
@@ -925,7 +925,7 @@ class Contact {
                 $qf[] = "$k=?";
                 $qv[] = $reg->$k;
             }
-        $result = Dbl::ql("insert into ContactInfo set " . join(", ", $qf), $qv);
+        $result = Dbl::ql_apply("insert into ContactInfo set " . join(", ", $qf), $qv);
         if (!$result)
             return false;
         $cid = (int) $result->insert_id;
