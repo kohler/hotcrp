@@ -314,7 +314,7 @@ class ContactList extends BaseList {
             $c = "";
             if ($fieldId == self::FIELD_SELECTOR_ON)
                 $c = " checked='checked'";
-            return "<input type='checkbox' class='cb' name='pap[]' value='$row->contactId' tabindex='1' id='psel$this->count' onclick='pselClick(event,this)' $c/>";
+            return "<input type='checkbox' class='cb' name='pap[]' value='$row->contactId' tabindex='1' id='psel$this->count' onclick='rangeclick(event,this)' $c/>";
         case self::FIELD_HIGHTOPICS:
         case self::FIELD_LOWTOPICS:
             if (!defval($row, "topicIds"))

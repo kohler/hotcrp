@@ -898,27 +898,37 @@ function paperselCheck() {
     return false;
 }
 
-var pselclick_last = {};
-function pselClick(evt, elt) {
-    var i, j, sel, name, thisnum;
-    if (!(i = elt.id.match(/^(.*?)(\d+)$/)))
-        return;
-    name = i[1];
-    thisnum = +i[2];
-    if (evt.shiftKey && pselclick_last[name]) {
-        if (pselclick_last[name] <= thisnum) {
-            i = pselclick_last[name];
-            j = thisnum - 1;
-        } else {
-            i = thisnum + 1;
-            j = pselclick_last[name];
-        }
-        for (; i <= j; i++) {
-            if ((sel = $$(name + i)))
-                sel.checked = elt.checked;
-        }
+function rangeclick(evt, elt, kind) {
+    elt = elt || this;
+    var jelt = jQuery(elt), jform = jelt.closest("form"), kindsearch;
+    if ((kind = kind || jelt.attr("rangetype")))
+        kindsearch = "[rangetype~='" + kind + "']";
+    else
+        kindsearch = "[name='" + elt.name + "']";
+    var cbs = jform.find("input[type=checkbox]" + kindsearch);
+
+    var lastelt = jform.data("rangeclick_last_" + kindsearch),
+        thispos, lastpos, i, j, x;
+    for (i = 0; i != cbs.length; ++i) {
+        if (cbs[i] == elt)
+            thispos = i;
+        if (cbs[i] == lastelt)
+            lastpos = i;
     }
-    pselclick_last[name] = thisnum;
+    jform.data("rangeclick_last_" + kindsearch, elt);
+
+    if (evt.shiftKey && lastelt) {
+        if (lastpos <= thispos) {
+            i = lastpos;
+            j = thispos - 1;
+        } else {
+            i = thispos + 1;
+            j = lastpos;
+        }
+        for (; i <= j; ++i)
+            cbs[i].checked = elt.checked;
+    }
+
     return true;
 }
 

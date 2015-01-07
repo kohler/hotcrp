@@ -143,15 +143,15 @@ class SelectorPaperColumn extends PaperColumn {
         $pl->any->sel = true;
         $c = "";
         if ($this->checked($pl, $row)) {
-            $c .= " checked='checked'";
+            $c .= ' checked="checked"';
             unset($row->folded);
         }
         if ($this->name == "selconf" && $row->reviewerConflictType >= CONFLICT_AUTHOR)
-            $c .= " disabled='disabled'";
+            $c .= ' disabled="disabled"';
         if ($this->name != "selconf")
-            $c .= " onclick='pselClick(event,this)'";
-        $t = "<span class=\"pl_rownum fx6\">" . $pl->count . ". </span>" . "<input type='checkbox' class='cb' name='pap[]' value='$row->paperId' tabindex='3' id='psel$pl->count' $c/>";
-        return $t;
+            $c .= ' onclick="rangeclick(event,this)"';
+        return '<span class="pl_rownum fx6">' . $pl->count . '. </span>'
+            . '<input type="checkbox" class="cb" name="pap[]" value="' . $row->paperId . '" tabindex="3" id="psel' . $pl->count . '" ' . $c . '/>';
     }
     public function text($pl, $row) {
         return $this->checked($pl, $row) ? "X" : "";

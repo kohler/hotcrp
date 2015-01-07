@@ -714,7 +714,7 @@ foreach ($pcm as $id => $p) {
     $c = "<tr$color><td class='pctbl'>"
         . Ht::checkbox("pcs[]", $id, isset($pcsel[$id]),
                         array("id" => "pcsel$count",
-                              "onclick" => "pselClick(event,this);\$\$('pctyp_sel').checked=true"))
+                              "onclick" => "rangeclick(event,this);\$\$('pctyp_sel').checked=true"))
         . "&nbsp;</td><td class='pctbname'>"
         . Ht::label(Text::name_html($p), "pcsel$count")
         . "</td></tr><tr$color><td class='pctbl'></td><td class='pctbnrev'>"
