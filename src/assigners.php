@@ -161,23 +161,21 @@ class AssignerContacts {
         return $c;
     }
     public function get_id($cid) {
-        global $Conf;
         if (!$cid)
             return self::make_none();
         if (isset($this->byid[$cid]))
             return $this->byid[$cid];
-        $result = $Conf->qe("select contactId, roles, email, firstName, lastName from ContactInfo where contactId='" . sqlq($cid) . "'");
+        $result = Dbl::qe("select contactId, roles, email, firstName, lastName from ContactInfo where contactId=?", $cid);
         if (!($c = edb_orow($result)))
             $c = (object) array("contactId" => $cid, "roles" => 0, "email" => "unknown contact $cid", "sorter" => "");
         return $this->store($c);
     }
     public function get_email($email) {
-        global $Conf;
         if (!$email)
             return self::make_none();
         if (isset($this->byemail[$email]))
             return $this->byemail[$email];
-        $result = $Conf->qe("select contactId, roles, email, firstName, lastName from ContactInfo where email='" . sqlq($email) . "'");
+        $result = Dbl::qe("select contactId, roles, email, firstName, lastName from ContactInfo where email=?", $email);
         if (!($c = edb_orow($result))) {
             $c = (object) array("contactId" => self::$next_fake_id, "roles" => 0, "email" => $email, "sorter" => $email);
             self::$next_fake_id -= 1;
@@ -249,13 +247,14 @@ class ReviewAssigner extends Assigner {
     }
     function load_state($state) {
         global $Conf;
-        $result = $Conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview");
+        $result = Dbl::qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview");
         while (($row = edb_row($result))) {
             $round = $Conf->round_name($row[3], false);
             $state->load(array("type" => "review", "pid" => +$row[0], "cid" => +$row[1],
                                "_rtype" => $row[2], "_round" => $round,
                                "_rsubmitted" => $row[4] > 0));
         }
+        Dbl::free($result);
     }
     function apply($pid, $contact, $req, $state, $defaults) {
         $roundname = @$req["round"];
@@ -337,8 +336,9 @@ class ReviewAssigner extends Assigner {
     }
     function execute($who) {
         global $Conf;
-        $result = $Conf->qe("select contactId, paperId, reviewId, reviewType, reviewModified from PaperReview where paperId=$this->pid and contactId=$this->cid");
+        $result = Dbl::qe("select contactId, paperId, reviewId, reviewType, reviewModified from PaperReview where paperId=$this->pid and contactId=$this->cid");
         $who->assign_review($this->pid, edb_orow($result), $this->cid, $this->rtype);
+        Dbl::free($result);
         if ($this->notify) {
             $reviewer = Contact::find_by_id($this->cid);
             $prow = $Conf->paperRow(array("paperId" => $this->pid, "reviewer" => $this->cid), $reviewer);
@@ -356,10 +356,10 @@ class LeadAssigner extends Assigner {
         return !$this->isadd || $cclass == "none";
     }
     function load_state($state) {
-        global $Conf;
-        $result = $Conf->qe("select paperId, " . $this->type . "ContactId from Paper where " . $this->type . "ContactId!=0");
+        $result = Dbl::qe("select paperId, " . $this->type . "ContactId from Paper where " . $this->type . "ContactId!=0");
         while (($row = edb_row($result)))
             $state->load(array("type" => $this->type, "pid" => +$row[0], "_cid" => +$row[1]));
+        Dbl::free($result);
     }
     function apply($pid, $contact, $req, $state, $defaults) {
         $state->load_type($this->type, $this);
@@ -401,10 +401,10 @@ class ConflictAssigner extends Assigner {
         return $cclass == "conflict" || ($cclass == "any" && !$this->ctype);
     }
     function load_state($state) {
-        global $Conf;
-        $result = $Conf->qe("select paperId, contactId, conflictType from PaperConflict where conflictType>0");
+        $result = Dbl::qe("select paperId, contactId, conflictType from PaperConflict where conflictType>0");
         while (($row = edb_row($result)))
             $state->load(array("type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]));
+        Dbl::free($result);
     }
     function apply($pid, $contact, $req, $state, $defaults) {
         $state->load_type("conflict", $this);
@@ -419,7 +419,6 @@ class ConflictAssigner extends Assigner {
         return new ConflictAssigner($x["pid"], $cmap->get_id($x["cid"]), $new ? $new["_ctype"] : 0);
     }
     function unparse_display() {
-        global $Conf;
         $t = Text::name_html($this->contact) . ' ';
         if ($this->ctype)
             $t .= review_type_icon(-1);
@@ -431,11 +430,10 @@ class ConflictAssigner extends Assigner {
         $locks["PaperConflict"] = "write";
     }
     function execute($who) {
-        global $Conf;
         if ($this->ctype)
-            $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($this->pid,$this->cid,$this->ctype) on duplicate key update conflictType=values(conflictType)");
+            Dbl::qe("insert into PaperConflict (paperId, contactId, conflictType) values ($this->pid,$this->cid,$this->ctype) on duplicate key update conflictType=values(conflictType)");
         else
-            $Conf->qe("delete from PaperConflict where paperId=$this->pid and contactId=$this->cid");
+            Dbl::qe("delete from PaperConflict where paperId=$this->pid and contactId=$this->cid");
     }
 }
 class TagAssigner extends Assigner {
@@ -454,10 +452,10 @@ class TagAssigner extends Assigner {
         return true;
     }
     function load_state($state) {
-        global $Conf;
-        $result = $Conf->qe("select paperId, tag, tagIndex from PaperTag");
+        $result = Dbl::qe("select paperId, tag, tagIndex from PaperTag");
         while (($row = edb_row($result)))
             $state->load(array("type" => $this->type, "pid" => +$row[0], "tag" => $row[1], "_index" => +$row[2]));
+        Dbl::free($result);
     }
     function apply($pid, $contact, $req, $state, $defaults) {
         $state->load_type($this->type, $this);
@@ -527,10 +525,10 @@ class PreferenceAssigner extends Assigner {
         return $cclass == "conflict";
     }
     function load_state($state) {
-        global $Conf;
-        $result = $Conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
+        $result = Dbl::qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
         while (($row = edb_row($result)))
             $state->load(array("type" => $this->type, "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => +$row[3]));
+        Dbl::free($result);
     }
     function apply($pid, $contact, $req, $state, $defaults) {
         $state->load_type($this->type, $this);
@@ -621,16 +619,16 @@ class AssignmentSet {
     private $reviewer_set = false;
 
     function __construct($contact, $override) {
-        global $Conf;
         $this->contact = $contact;
         $this->override = $override;
         $this->astate = new AssignmentState($contact);
         $this->cmap = new AssignerContacts;
 
         $this->papers = array();
-        $result = $Conf->qe("select paperId, timeSubmitted, timeWithdrawn from Paper");
+        $result = Dbl::qe("select paperId, timeSubmitted, timeWithdrawn from Paper");
         while (($row = edb_row($result)))
             $this->papers[$row[0]] = ($row[1]>0 ? 1 : ($row[2]>0 ? -1 : 0));
+        Dbl::free($result);
 
         $this->conflicts = array();
         $this->astate->load_type("conflict", Assigner::find("conflict"));
@@ -653,19 +651,18 @@ class AssignmentSet {
     }
 
     private static function contacts_by($what) {
-        global $Conf;
         $cb = array();
-        foreach (edb_orows($Conf->qe("select contactId, email, firstName, lastName, roles from ContactInfo")) as $c)
+        foreach (edb_orows(Dbl::qe("select contactId, email, firstName, lastName, roles from ContactInfo")) as $c)
             $cb[$c->$what] = $c;
         return $cb;
     }
 
     private function set_my_conflicts() {
-        global $Conf;
         $this->my_conflicts = array();
-        $result = $Conf->qe("select Paper.paperId, managerContactId from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId) where conflictType>0 and PaperConflict.contactId=" . $this->contact->contactId);
+        $result = Dbl::qe("select Paper.paperId, managerContactId from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId) where conflictType>0 and PaperConflict.contactId=" . $this->contact->contactId);
         while (($row = edb_row($result)))
             $this->my_conflicts[$row[0]] = ($row[1] ? $row[1] : true);
+        Dbl::free($result);
     }
 
     private static function apply_user_parts(&$req, $a) {
@@ -675,9 +672,8 @@ class AssignmentSet {
     }
 
     private function reviewer_set() {
-        global $Conf;
         if ($this->reviewer_set === false) {
-            $result = $Conf->qe("select ContactInfo.contactId, firstName, lastName, email, roles from ContactInfo left join PaperReview using (contactId) group by ContactInfo.contactId");
+            $result = Dbl::qe("select ContactInfo.contactId, firstName, lastName, email, roles from ContactInfo left join PaperReview using (contactId) group by ContactInfo.contactId");
             $this->reviewer_set = array();
             while (($row = edb_orow($result)))
                 $this->reviewer_set[$row->contactId] = $row;
@@ -1064,12 +1060,12 @@ class AssignmentSet {
         $tables = array();
         foreach ($locks as $t => $type)
             $tables[] = "$t $type";
-        $Conf->qe("lock tables " . join(", ", $tables));
+        Dbl::qe("lock tables " . join(", ", $tables));
 
         foreach ($this->assigners as $assigner)
             $assigner->execute($this->contact);
 
-        $Conf->qe("unlock tables");
+        Dbl::qe("unlock tables");
         $Conf->save_logs(false);
 
         // confirmation message
@@ -1085,7 +1081,6 @@ class AssignmentSet {
     }
 
     static function count_reviews($papers = null) {
-        global $Conf;
         $nrev = (object) array("any" => array(), "pri" => array(), "sec" => array());
         foreach (pcMembers() as $id => $pc)
             $nrev->any[$id] = $nrev->pri[$id] = $nrev->sec[$id] = 0;
@@ -1100,12 +1095,13 @@ class AssignmentSet {
             $q .= "where r.paperId" . sql_in_numeric_set($papers);
             $nrev->papers = $papers;
         }
-        $result = $Conf->qe($q . " group by pc.contactId");
+        $result = Dbl::qe($q . " group by pc.contactId");
         while (($row = edb_row($result))) {
             $nrev->any[$row[0]] = strlen($row[1]);
             $nrev->pri[$row[0]] = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
             $nrev->sec[$row[0]] = preg_match_all("|" . REVIEW_SECONDARY . "|", $row[1], $matches);
         }
+        Dbl::free($result);
         return $nrev;
     }
 
@@ -1134,7 +1130,6 @@ class AssignmentSet {
     }
 
     static function review_count_report($nrev, $pc, $prefix) {
-        global $Conf;
         $row1 = self::_review_count_report_one($nrev, $pc, "");
         if (defval($nrev->pset->any, $pc->contactId, 0) != defval($nrev->any, $pc->contactId, 0)) {
             $row2 = "<span class=\"dim\">$row1 total</span>";

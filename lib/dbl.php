@@ -222,6 +222,11 @@ class Dbl {
         return self::do_query(func_get_args(), self::F_APPLY | self::F_ERROR);
     }
 
+    static function free($result) {
+        if ($result && $result instanceof mysqli_result)
+            $result->close();
+    }
+
 }
 
 // number of rows returned by a select query, or 'false' if result is an error

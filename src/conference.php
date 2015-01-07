@@ -82,6 +82,7 @@ class Conference {
                 $Opt[$okey] = ($row[2] === null ? $row[1] : $row[2]);
             }
         }
+        Dbl::free($result);
 
         // update schema
         if ($this->settings["allowPaperOption"] < 82) {
