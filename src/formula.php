@@ -578,13 +578,13 @@ class Formula {
     else';
 
         // HTML format for output depends on type of output
-        if ($e->format === "revprefexp")
+        if ($this->_parse->format === "revprefexp")
             $t .= "\n      "
                 . 'return ReviewField::unparse_letter(91, $x + 2);';
-        else if ($e->format instanceof ReviewField
-                 && $e->format->option_letter)
+        else if ($this->_parse->format instanceof ReviewField
+                 && $this->_parse->format->option_letter)
             $t .= "\n      "
-                . 'return ReviewField::unparse_letter(' . $e->format->option_letter . ', $x);';
+                . 'return ReviewField::unparse_letter(' . $this->_parse->format->option_letter . ', $x);';
         else
             $t .= "\n      "
                 . 'return round($x * 100) / 100;';
