@@ -23,7 +23,7 @@ if (!isset($_REQUEST["p"]) && !isset($_REQUEST["paperId"])
     && preg_match(',\A/(?:new|\d+)\z,i', Navigation::path()))
     $_REQUEST["p"] = substr(Navigation::path(), 1);
 else if (!Navigation::path() && @$_REQUEST["p"] && ctype_digit($_REQUEST["p"])
-         && !@$Opt["disableSlashURLs"] && !check_post())
+         && !@$Opt["disableSlashUrls"] && !check_post())
     go(selfHref());
 
 

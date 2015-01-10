@@ -66,11 +66,11 @@ $Opt["dbName"] = "FIXME";
 //   sendmailParam   Extra parameters to be passed to PHP's mail() function.
 //                   If your system's mailer is not sendmail, you may need to
 //                   change the default value; see src/mailer.php.
-//   postfixEOL      Set to true if your system mailer is UNIX Postfix and
+//   postfixMailer   Set to true if your system mailer is UNIX Postfix and
 //                   HotCRP mail has garbled headers, particularly for long or
 //                   non-ASCII subject lines. (The symptom is that some mail
 //                   headers will appear as part of the message body.) It's
-//                   always safe to set postfixEOL to true, although the
+//                   always safe to set postfixMailer to true, although the
 //                   resulting mails may not be standards compliant.
 
 $Opt["contactName"] = "Your Name";
@@ -168,10 +168,10 @@ $Opt["disablePS"] = true;
 //   extraFooter     Extra HTML text shown at the bottom of every page, before
 //                   the HotCRP link. If set, should generally end with
 //                   " <span class='barsep'>|</span> ".
-//   assetsURL       URL prefix for assets (stylesheets/, scripts/, images/).
+//   assetsUrl       URL prefix for assets (stylesheets/, scripts/, images/).
 //                   Defaults to the conference installation.
-//   jqueryURL       URL for jQuery. Defaults to the local minified jquery.
-//   jqueryCDN       If true, use the jQuery CDN.
+//   jqueryUrl       URL for jQuery. Defaults to the local minified jquery.
+//   jqueryCdn       If true, use the jQuery CDN.
 //   redirectToHttps If set to true, then HotCRP will redirect all http
 //                   connections to https.
 //   allowLocalHttp  Only meaningful if redirectToHttps is set. If true, then
@@ -190,7 +190,7 @@ $Opt["disablePS"] = true;
 //                   on searchboxes.
 //   strictJavascript  If true, send Javascript over with "use strict" to
 //                   catch errors.
-//   disableCSV      Set to true if downloaded information files should be
+//   disableCsv      Set to true if downloaded information files should be
 //                   tab-separated rather than CSV.
 //   hideManager     If set, PC members are not shown paper managers.
 

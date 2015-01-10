@@ -237,12 +237,19 @@ class Conference {
             $Opt["paperSite"] = $Opt["defaultPaperSite"];
         $Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
 
-        // set assetsURL
-        if (!@$Opt["assetsURL"])
-            $Opt["assetsURL"] = $ConfSiteBase;
-        if ($Opt["assetsURL"] !== "" && !str_ends_with($Opt["assetsURL"], "/"))
-            $Opt["assetsURL"] .= "/";
-        Ht::$img_base = $Opt["assetsURL"] . "images/";
+        // option name updates (backwards compatibility)
+        foreach (array("disableSlashURLs" => "disableSlashUrls", "assetsURL" => "assetsUrl",
+                       "jqueryURL" => "jqueryUrl", "jqueryCDN" => "jqueryCdn",
+                       "disableCSV" => "disableCsv") as $kold => $knew)
+            if (isset($Opt[$kold]) && !isset($Opt[$knew]))
+                $Opt[$knew] = $Opt[$kold];
+
+        // set assetsUrl
+        if (!@$Opt["assetsUrl"])
+            $Opt["assetsUrl"] = $ConfSiteBase;
+        if ($Opt["assetsUrl"] !== "" && !str_ends_with($Opt["assetsUrl"], "/"))
+            $Opt["assetsUrl"] .= "/";
+        Ht::$img_base = $Opt["assetsUrl"] . "images/";
 
         // set docstore from filestore
         if (@$Opt["docstore"] === true)
@@ -1878,7 +1885,7 @@ class Conference {
         echo '<link rel="stylesheet" type="text/css" href="';
         if (str_starts_with($css, "stylesheets/")
             || !preg_match(',\A(?:https?:|/),i', $css))
-            echo $Opt["assetsURL"];
+            echo $Opt["assetsUrl"];
         echo $css;
         if (($mtime = @filemtime("$ConfSitePATH/$css")) !== false)
             echo "?mtime=", $mtime;
@@ -1910,8 +1917,8 @@ class Conference {
         // favicon
         if (($favicon = defval($Opt, "favicon", "images/review24.png"))) {
             if (strpos($favicon, "://") === false && $favicon[0] != "/") {
-                if (@$Opt["assetsURL"] && substr($favicon, 0, 7) === "images/")
-                    $favicon = $Opt["assetsURL"] . $favicon;
+                if (@$Opt["assetsUrl"] && substr($favicon, 0, 7) === "images/")
+                    $favicon = $Opt["assetsUrl"] . $favicon;
                 else
                     $favicon = $ConfSiteBase . $favicon;
             }
@@ -1926,12 +1933,12 @@ class Conference {
         }
 
         // jQuery
-        if (isset($Opt["jqueryURL"]))
-            $jquery = $Opt["jqueryURL"];
-        else if (@$Opt["jqueryCDN"])
+        if (isset($Opt["jqueryUrl"]))
+            $jquery = $Opt["jqueryUrl"];
+        else if (@$Opt["jqueryCdn"])
             $jquery = "//code.jquery.com/jquery-1.11.2.min.js";
         else
-            $jquery = $Opt["assetsURL"] . "scripts/jquery-1.11.2.min.js";
+            $jquery = $Opt["assetsUrl"] . "scripts/jquery-1.11.2.min.js";
         $this->scriptStuff = Ht::script_file($jquery) . "\n";
 
         // Javascript settings to set before script.js
@@ -1961,11 +1968,11 @@ class Conference {
 
         // script.js
         if (@$Opt["strictJavascript"])
-            $this->scriptStuff .= Ht::script_file($Opt["assetsURL"] . "cacheable.php?file=scripts/script.js&strictjs=1&mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
+            $this->scriptStuff .= Ht::script_file($Opt["assetsUrl"] . "cacheable.php?file=scripts/script.js&strictjs=1&mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
         else
-            $this->scriptStuff .= Ht::script_file($Opt["assetsURL"] . "scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
+            $this->scriptStuff .= Ht::script_file($Opt["assetsUrl"] . "scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
 
-        $this->scriptStuff .= "<!--[if lte IE 6]> " . Ht::script_file($Opt["assetsURL"] . "scripts/supersleight.js") . " <![endif]-->\n";
+        $this->scriptStuff .= "<!--[if lte IE 6]> " . Ht::script_file($Opt["assetsUrl"] . "scripts/supersleight.js") . " <![endif]-->\n";
 
         echo "<title>", $title, " - ", htmlspecialchars($Opt["shortName"]),
             "</title>\n</head>\n";

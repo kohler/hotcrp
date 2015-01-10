@@ -184,7 +184,7 @@ function hoturl_site_relative($page, $options = null) {
         && !preg_match($are . 'ls=/', $options))
         $options .= "&amp;ls=$CurrentList";
     // create slash-based URLs if appropriate
-    if ($options && !@$Opt["disableSlashURLs"]) {
+    if ($options && !@$Opt["disableSlashUrls"]) {
         if ($page == "review"
             && preg_match($are . 'r=(\d+[A-Z]+)' . $zre, $options, $m)) {
             $t .= "/" . $m[2];
@@ -1099,7 +1099,7 @@ function titleWords($title, $chars = 40) {
 
 function downloadCSV($info, $header, $filename, $options = array()) {
     global $Opt;
-    $iscsv = defval($options, "type", "csv") == "csv" && !isset($Opt["disableCSV"]);
+    $iscsv = defval($options, "type", "csv") == "csv" && !isset($Opt["disableCsv"]);
     $csvg = new CsvGenerator($iscsv ? CsvGenerator::TYPE_COMMA : CsvGenerator::TYPE_TAB);
     if ($header)
         $csvg->set_header($header, true);

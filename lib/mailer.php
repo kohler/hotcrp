@@ -5,12 +5,14 @@
 
 // set MAILER_EOL
 global $Opt;
-if (!isset($Opt["postfixEOL"]) || !$Opt["postfixEOL"])
+if (!isset($Opt["postfixMailer"]) && isset($Opt["postfixEOL"]))
+    $Opt["postfixMailer"] = $Opt["postfixEOL"];
+if (!isset($Opt["postfixMailer"]) || !$Opt["postfixMailer"])
     define("MAILER_EOL", "\r\n");
-else if ($Opt["postfixEOL"] === true)
+else if ($Opt["postfixMailer"] === true)
     define("MAILER_EOL", PHP_EOL);
 else
-    define("MAILER_EOL", $Opt["postfixEOL"]);
+    define("MAILER_EOL", $Opt["postfixMailer"]);
 
 class Mailer {
 
