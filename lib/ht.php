@@ -33,8 +33,10 @@ class Ht {
         return $x;
     }
 
-    static function script_file($src) {
-        return "<script src=\"" . htmlspecialchars($src) . "\"></script>";
+    static function script_file($src, $js = null) {
+        if ($js && @$js["crossorigin"] && !preg_match(',\A([a-z]+:)?//,', $src))
+            unset($js["crossorigin"]);
+        return '<script src="' . htmlspecialchars($src) . '"' . self::extra($js) . '></script>';
     }
 
     static function stylesheet_file($src) {

@@ -50,6 +50,7 @@ if (preg_match(',\A(?:images|scripts|stylesheets)(?:/[^./][^/]+)+\z,', $file)
         header("Content-Type: image/png");
     else
         fail();
+    header("Access-Control-Allow-Origin: *");
 } else
     fail();
 

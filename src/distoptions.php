@@ -170,6 +170,9 @@ $Opt["disablePS"] = true;
 //                   " <span class='barsep'>|</span> ".
 //   assetsUrl       URL prefix for assets (stylesheets/, scripts/, images/).
 //                   Defaults to the conference installation.
+//   scriptAssetsUrl URL prefix for script assets. Defaults to assetsURL,
+//                   except for browsers known to ignore `crossorigin`, where
+//                   it defaults to the conference installation.
 //   jqueryUrl       URL for jQuery. Defaults to the local minified jquery.
 //   jqueryCdn       If true, use the jQuery CDN.
 //   redirectToHttps If set to true, then HotCRP will redirect all http
@@ -188,8 +191,7 @@ $Opt["disablePS"] = true;
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
 //   noSearchAutocomplete  If set, do not implement Javascript autocompletion
 //                   on searchboxes.
-//   strictJavascript  If true, send Javascript over with "use strict" to
-//                   catch errors.
+//   strictJavascript  If true, send Javascript with "use strict".
 //   disableCsv      Set to true if downloaded information files should be
 //                   tab-separated rather than CSV.
 //   hideManager     If set, PC members are not shown paper managers.

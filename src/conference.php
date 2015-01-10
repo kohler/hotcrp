@@ -244,11 +244,16 @@ class Conference {
             if (isset($Opt[$kold]) && !isset($Opt[$knew]))
                 $Opt[$knew] = $Opt[$kold];
 
-        // set assetsUrl
-        if (!@$Opt["assetsUrl"])
+        // set assetsUrl and scriptAssetsUrl
+        if (!isset($Opt["scriptAssetsUrl"]) && isset($_SERVER["HTTP_USER_AGENT"])
+            && strpos($_SERVER["HTTP_USER_AGENT"], "MSIE") !== false)
+            $Opt["scriptAssetsUrl"] = $ConfSiteBase;
+        if (!isset($Opt["assetsUrl"]))
             $Opt["assetsUrl"] = $ConfSiteBase;
         if ($Opt["assetsUrl"] !== "" && !str_ends_with($Opt["assetsUrl"], "/"))
             $Opt["assetsUrl"] .= "/";
+        if (!isset($Opt["scriptAssetsUrl"]))
+            $Opt["scriptAssetsUrl"] = $Opt["assetsUrl"];
         Ht::$img_base = $Opt["assetsUrl"] . "images/";
 
         // set docstore from filestore
@@ -1938,8 +1943,8 @@ class Conference {
         else if (@$Opt["jqueryCdn"])
             $jquery = "//code.jquery.com/jquery-1.11.2.min.js";
         else
-            $jquery = $Opt["assetsUrl"] . "scripts/jquery-1.11.2.min.js";
-        $this->scriptStuff = Ht::script_file($jquery) . "\n";
+            $jquery = $Opt["scriptAssetsUrl"] . "scripts/jquery-1.11.2.min.js";
+        $this->scriptStuff = Ht::script_file($jquery, array("crossorigin" => "anonymous")) . "\n";
 
         // Javascript settings to set before script.js
         $this->scriptStuff .= "<script>hotcrp_base=\"$ConfSiteBase\";hotcrp_suffix=\"$ConfSiteSuffix\"";
@@ -1968,9 +1973,9 @@ class Conference {
 
         // script.js
         if (@$Opt["strictJavascript"])
-            $this->scriptStuff .= Ht::script_file($Opt["assetsUrl"] . "cacheable.php?file=scripts/script.js&strictjs=1&mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
+            $this->scriptStuff .= Ht::script_file($Opt["scriptAssetsUrl"] . "cacheable.php?file=scripts/script.js&strictjs=1&mtime=" . filemtime("$ConfSitePATH/scripts/script.js"), array("crossorigin" => "anonymous")) . "\n";
         else
-            $this->scriptStuff .= Ht::script_file($Opt["assetsUrl"] . "scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
+            $this->scriptStuff .= Ht::script_file($Opt["scriptAssetsUrl"] . "scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
 
         $this->scriptStuff .= "<!--[if lte IE 6]> " . Ht::script_file($Opt["assetsUrl"] . "scripts/supersleight.js") . " <![endif]-->\n";
 
