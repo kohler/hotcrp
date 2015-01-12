@@ -2759,7 +2759,7 @@ function plinfo(type, dofold, which) {
         make_callback(dofold, type, which)(aufull[!!dofold]);
     else if ((!dofold || type == "aufull") && plinfo.needload[type]) {
         // set up "loading" display
-        setTimeout(750, show_loading(type, which));
+        setTimeout(show_loading(type, which), 750);
 
         // initiate load
         if (type == "aufull") {
