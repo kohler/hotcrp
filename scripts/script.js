@@ -702,9 +702,7 @@ hotcrp_load.opencomment = function () {
         open_new_comment();
 };
 hotcrp_load.temptext = function () {
-    var i, j = jQuery("input[hottemptext]");
-    for (i = 0; i != j.length; ++i)
-        mktemptext(j[i], j[i].getAttribute("hottemptext"));
+    jQuery("input[hottemptext]").each(mktemptext);
 };
 
 
@@ -1162,7 +1160,10 @@ function blank() {
 }
 
 return function (e, text) {
-    if (typeof e === "string")
+    if (this instanceof HTMLInputElement) {
+        text = typeof e === "number" ? this.getAttribute("hottemptext") : e;
+        e = this;
+    } else if (typeof e === "string")
         e = $$(e);
     var onfocus = e.onfocus || blank, onblur = e.onblur || blank;
     e.onfocus = function (evt) {
@@ -1280,13 +1281,20 @@ HtmlCollector.prototype.push = function (open, close) {
 };
 HtmlCollector.prototype.pop = function (pos) {
     if (pos == null)
-        pos = this.open.length ? this.open.length - 1 : 0;
+        pos = Math.max(0, this.open.length - 1);
     while (this.open.length > pos) {
         this.html = this.open[this.open.length - 1] + this.html +
             this.close[this.open.length - 1];
         this.open.pop();
         this.close.pop();
     }
+};
+HtmlCollector.prototype.pop_n = function (n) {
+    this.pop(Math.max(0, this.open.length - n));
+};
+HtmlCollector.prototype.push_pop = function (text) {
+    this.html += text;
+    this.pop();
 };
 HtmlCollector.prototype.pop_kill = function (pos) {
     if (pos == null)
@@ -3127,9 +3135,7 @@ function settings_add_track() {
     j = jQuery("#trackgroup" + i);
     j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
     hiliter_children(j);
-    j = j.find("input[hottemptext]");
-    for (i = 0; i != j.length; ++i)
-        mktemptext(j[i].id, j[i].getAttribute("hottemptext"));
+    j.find("input[hottemptext]").each(mktemptext);
 }
 
 window.review_round_settings = (function () {
@@ -3153,9 +3159,7 @@ function add() {
     if (++added == 1 && i == 1)
         jQuery("div[hotroundnum=" + i + "] > :first-child").append('<div class="hint">Example name: “R1”</div>');
     jQuery("#rev_roundtag").append('<option value="#' + i + '" id="rev_roundtag_' + i + '">(new round)</option>');
-    j = jQuery("div[hotroundnum=" + i + "] input.temptext");
-    for (i = 0; i != j.length; ++i)
-        mktemptext(j[i].id, j[i].getAttribute("hottemptext"));
+    jQuery("div[hotroundnum=" + i + "] input.temptext").each(mktemptext);
     jQuery("#roundname_" + i).focus().on("input change", namechange);
 }
 
