@@ -12,7 +12,7 @@ function $$(id) {
 }
 
 window.escape_entities = (function () {
-    var re = /[&<>"]/g, rep = {"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"};
+    var re = /[&<>\"]/g, rep = {"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"};
     return function (s) {
         return s.replace(re, function (match) {
             return rep[match];
@@ -1212,7 +1212,7 @@ function open_new_comment(sethash) {
 }
 
 function link_urls(t) {
-    var re = /((?:https?|ftp):\/\/(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;&])(["().,:;]*)(?=[\s<>&]|$)/g;
+    var re = /((?:https?|ftp):\/\/(?:[^\s<>\"&]|&amp;)*[^\s<>\"().,:;&])([\"().,:;]*)(?=[\s<>&]|$)/g;
     return t.replace(re, function (m, a, b) {
         return '<a href="' + a + '" rel="noreferrer">' + a + '</a>' + b;
     });
