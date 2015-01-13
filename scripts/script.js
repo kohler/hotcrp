@@ -2,9 +2,10 @@
 // HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-var hotcrp_base, hotcrp_postvalue, hotcrp_paperid, hotcrp_suffix,
-    hotcrp_list, hotcrp_urldefaults, hotcrp_status, hotcrp_user,
-    hotcrp_want_override_conflict, hotcrp_absolute_base;
+var siteurl, siteurl_postvalue, siteurl_suffix, siteurl_defaults,
+    siteurl_absolute_base, hotcrp_paperid,
+    hotcrp_list, hotcrp_status, hotcrp_user,
+    hotcrp_want_override_conflict;
 
 function $$(id) {
     return document.getElementById(id);
@@ -43,7 +44,7 @@ function hoturl_clean(x, page_component) {
 function hoturl(page, options) {
     var k, t, a, m, x;
     options = serialize_object(options);
-    x = {t: hotcrp_base + page + hotcrp_suffix, o: serialize_object(options)};
+    x = {t: siteurl + page + siteurl_suffix, o: serialize_object(options)};
     if (page === "paper" || page === "review")
         hoturl_clean(x, "p=(\\d+)");
     else if (page === "help")
@@ -53,8 +54,8 @@ function hoturl(page, options) {
         && hotcrp_list.id == decodeURIComponent(m[2]))
         x.o = m[1] + hotcrp_list.num + m[3];
     a = [];
-    if (hotcrp_urldefaults)
-        a.push(serialize_object(hotcrp_urldefaults));
+    if (siteurl_defaults)
+        a.push(serialize_object(siteurl_defaults));
     if (x.o)
         a.push(x.o);
     if (a.length)
@@ -64,7 +65,7 @@ function hoturl(page, options) {
 
 function hoturl_post(page, options) {
     options = serialize_object(options);
-    options += (options ? "&" : "") + "post=" + hotcrp_postvalue;
+    options += (options ? "&" : "") + "post=" + siteurl_postvalue;
     return hoturl(page, options);
 }
 
@@ -89,9 +90,9 @@ function url_absolute(url, loc) {
 }
 
 function hoturl_absolute_base() {
-    if (!hotcrp_absolute_base)
-        hotcrp_absolute_base = url_absolute(hotcrp_base);
-    return hotcrp_absolute_base;
+    if (!siteurl_absolute_base)
+        siteurl_absolute_base = url_absolute(siteurl);
+    return siteurl_absolute_base;
 }
 
 
@@ -436,7 +437,7 @@ function display_tracker() {
     if (dl.tracker && dl.tracker.position_at)
         t += '<div style="float:right" id="trackerelapsed"></div>';
     if (!dl.tracker.papers || !dl.tracker.papers[0]) {
-        t += "<a href=\"" + hotcrp_base + dl.tracker.url + "\">Discussion list</a>";
+        t += "<a href=\"" + siteurl + dl.tracker.url + "\">Discussion list</a>";
     } else {
         t += "<table class=\"trackerinfo\"><tbody><tr><td rowspan=\"" + dl.tracker.papers.length + "\">";
         t += "</td>" + tracker_paper_columns(0, dl.tracker.papers[0]);
@@ -460,10 +461,10 @@ function tracker(start) {
     if (!window.sessionStorage || !window.JSON || start < 0)
         return false;
     trackerstate = window_trackerstate();
-    if (start && (!trackerstate || trackerstate[0] != hotcrp_base)) {
-        trackerstate = [hotcrp_base, Math.floor(Math.random() * 100000)];
+    if (start && (!trackerstate || trackerstate[0] != siteurl)) {
+        trackerstate = [siteurl, Math.floor(Math.random() * 100000)];
         sessionStorage.setItem("hotcrp_tracker", JSON.stringify(trackerstate));
-    } else if (trackerstate && trackerstate[0] != hotcrp_base)
+    } else if (trackerstate && trackerstate[0] != siteurl)
         trackerstate = null;
     if (trackerstate) {
         if (hotcrp_list)
@@ -2654,7 +2655,7 @@ function check_version(url, versionstr) {
     }
     function updatecb(json) {
         if (json && json.updates && window.JSON && JSON.stringify)
-            Miniajax.get(hotcrp_base + "checkupdates.php?data="
+            Miniajax.get(siteurl + "checkupdates.php?data="
                          + encodeURIComponent(JSON.stringify(json)),
                          updateverifycb);
         else if (json && json.status && window.localStorage)
@@ -2674,7 +2675,7 @@ function check_version(url, versionstr) {
     Miniajax.getjsonp(url + "&site=" + encodeURIComponent(window.location.toString()) + "&jsonp=?", updatecb, null);
 }
 check_version.ignore = function (id) {
-    Miniajax.get(hotcrp_base + "checkupdates.php?ignore=" + id, function () {}, null);
+    Miniajax.get(siteurl + "checkupdates.php?ignore=" + id, function () {}, null);
     var e = $$("softwareupdate_" + id);
     if (e)
         e.style.display = "none";

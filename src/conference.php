@@ -1947,14 +1947,14 @@ class Conference {
         $this->scriptStuff = Ht::script_file($jquery, array("crossorigin" => "anonymous")) . "\n";
 
         // Javascript settings to set before script.js
-        $this->scriptStuff .= "<script>hotcrp_base=\"$ConfSiteBase\";hotcrp_suffix=\"$ConfSiteSuffix\"";
+        $this->scriptStuff .= "<script>siteurl=\"$ConfSiteBase\";siteurl_suffix=\"$ConfSiteSuffix\"";
         if (session_id() !== "")
-            $this->scriptStuff .= ";hotcrp_postvalue=\"" . post_value() . "\"";
+            $this->scriptStuff .= ";siteurl_postvalue=\"" . post_value() . "\"";
         if (@$CurrentList
             && ($list = SessionList::lookup($CurrentList)))
             $this->scriptStuff .= ";hotcrp_list={num:$CurrentList,id:\"" . addcslashes($list->listid, "\n\r\\\"/") . "\"}";
         if (($urldefaults = hoturl_defaults()))
-            $this->scriptStuff .= ";hotcrp_urldefaults=" . json_encode($urldefaults);
+            $this->scriptStuff .= ";siteurl_defaults=" . json_encode($urldefaults);
         $huser = (object) array();
         if ($Me && $Me->email)
             $huser->email = $Me->email;
