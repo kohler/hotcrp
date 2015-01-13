@@ -14,6 +14,8 @@ function $$(id) {
 window.escape_entities = (function () {
     var re = /[&<>\"]/g, rep = {"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"};
     return function (s) {
+        if (s === null || typeof s === "number")
+            return s;
         return s.replace(re, function (match) {
             return rep[match];
         });
