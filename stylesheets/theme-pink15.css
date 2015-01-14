@@ -1,0 +1,82 @@
+/* -*- mode: css; indent-tabs-mode: t; css-indent-offset: 8 -*- */
+
+body {
+	background-color: #dce4e8;
+}
+body#paper_view, body#paper_edit,
+body#review, body#comment,
+body#assign {
+       background: #dce4e8;
+}
+
+#header {
+	background: none;
+}
+#header_right {
+	padding: 8px 20px 0 12px;
+}
+#header_site {
+	padding: 0.2em 0.6em 0.3em;
+	border-bottom: 8px solid #f33360;
+	border-right: 0 none;
+	margin-left: 20px;
+	background: #ffbbbb;
+	color: #f33360;
+}
+#header_site a {
+	color: #f33360;
+}
+
+div.nvbar {
+	padding: 0 20px;
+}
+div.body {
+	margin: 0 20px;
+}
+
+body#paper_view div.body, body#paper_edit div.body,
+body#review div.body, body#comment div.body,
+body#assign div.body, body#offline div.body {
+	margin: 0 22px 0 20px;
+}
+body#paper_view div#prebody, body#paper_edit div#prebody,
+body#review div#prebody, body#comment div#prebody,
+body#assign div#prebody {
+	background: none;
+}
+
+div.multimessage > div:first-child {
+	background: none;
+}
+
+tbody.pltable {
+	background: white;
+}
+.pltable_full_ctr {
+	padding: 0.75em 0;
+}
+th.pl {
+	padding: 2px 0.4em 2px 0;
+}
+div.psmodec {
+	left: -5px;
+}
+div.pban {
+	margin: 0 -22px 0 -20px;
+	padding: 0 22px 0 20px;
+}
+td.pboxi div.papnum, td.pboxi {
+	width: 13.3em;
+}
+div.pspcard_container {
+	margin-left: 0;
+}
+div.pavt {
+	padding: 0 5px;
+}
+div.papcard, div.pedcard {
+	margin: 0 0 0 13.3em;
+}
+div.notecard, div.revcard, div.cmtcard {
+	margin: 16px 0 0 13.3em;
+}
