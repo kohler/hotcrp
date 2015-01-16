@@ -1357,10 +1357,14 @@ function make_visibility(hc, caption, value, label, rest) {
             + '<td><label for="htctlcv' + value + idctr + '">' + label + '</label>' + (rest || "") + '</td></tr>');
 }
 
+function edit_allowed(cj) {
+    return cj.response ? hotcrp_status.resp_allowed : hotcrp_status.cmt_allowed;
+}
+
 function fill_editing(hc, cj) {
     var bnote = "";
     ++idctr;
-    if (cj.response ? !hotcrp_status.resp_allowed : !hotcrp_status.cmt_allowed)
+    if (!edit_allowed(cj))
         bnote = '<br><span class="hint">(admin only)</span>';
     hc.push('<form><div class="aahc">', '</div></form>');
     hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60"></textarea>');
@@ -1452,8 +1456,7 @@ function make_editor() {
 
 function save_editor(elt, action, really) {
     var x = analyze(elt);
-    if ((x.cj.response && !hotcrp_status.resp_allowed && !really)
-        || (!x.cj.response && !hotcrp_status.cmt_allowed && !really)) {
+    if (!edit_allowed(x.cj) && !really) {
         override_deadlines(elt, function () {
             save_editor(elt, action, true);
         });
@@ -1465,7 +1468,7 @@ function save_editor(elt, action, really) {
                           + action + (x.cj.response ? "response" : "comment") + "=1");
     jQuery.post(url, x.j.find("form").serialize(), function (data, textStatus, jqxhr) {
         var x_new = x.id === "new" || x.id === "newresponse";
-        var editing_response = x.cj.response && hotcrp_status.resp_allowed;
+        var editing_response = x.cj.response && edit_allowed(x.cj);
         if (data.ok && !data.cmt && !x_new)
             delete cmts[x.id];
         if (editing_response && data.ok && !data.cmt)
@@ -1526,7 +1529,7 @@ function fill(j, cj, editing, msg) {
         cj.response ? jQuery(t).prependTo(chead) : hc.push(t);
     }
     t = comment_identity_time(cj);
-    cj.response ? jQuery(t).appendTo(chead) : hc.push(t);
+    cj.response ? jQuery('<div class="cmtthead">' + t + '</div>').appendTo(chead) : hc.push(t);
     hc.pop_kill();
 
     // text

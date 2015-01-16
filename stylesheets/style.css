@@ -2437,7 +2437,7 @@ div.cmtcard_body {
 }
 div.cmtcard h3 {
 	display: inline;
-	padding: 0 0.5em 0 0;
+	padding: 0 1em 0 0;
 }
 div.cmtcard_head span.cmtfn {
 	font-size: smaller;
@@ -2462,6 +2462,10 @@ div.cmtadminvis, div.cmtcolor {
 }
 div.cmtadminvis {
 	background: #f3f3f3;
+}
+div.cmtthead {
+	display: inline-block;
+	font-size: smaller;
 }
 div.cmtt {
 	font-size: smaller;
@@ -2526,11 +2530,11 @@ div#foldaddcomment div.cmtv {
 	padding-bottom: 0;
 }
 .cmtnumhead {
-	float: left;
+	display: inline-block;
 	padding-right: 0.75em;
 }
 .cmtname, .cmttime, .cmttags, .cmtvis {
-	float: left;
+	display: inline-block;
 	padding-right: 1.5em;
 }
 .cmttime, .cmtvis {
