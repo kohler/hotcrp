@@ -18,7 +18,7 @@
     "msg.conflictdef": {"type": "htmlstring", "name": "Definition of conflict of interest"},
     "msg.finalsubmit": {"type": "htmlstring", "name": "Final paper submission message"},
     "msg.home": {"type": "htmlstring", "name": "Home page message"},
-    "msg.responseinstructions": {"type": "htmlstring", "name": "Authors’ response instructions"},
+    "msg.resp_instrux": {"type": "htmlstring", "name": "Authors’ response instructions"},
     "msg.revprefdescription": {"type": "htmlstring", "name": "Review preference instructions"},
     "opt.contactEmail": {"type": "emailstring", "optional": true, "name": "Email of site contact"},
     "opt.contactName": {"type": "simplestring", "name": "Name of site contact"},

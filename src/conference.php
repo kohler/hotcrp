@@ -85,7 +85,7 @@ class Conference {
         Dbl::free($result);
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 82) {
+        if ($this->settings["allowPaperOption"] < 83) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -143,6 +143,7 @@ class Conference {
 
     private function crosscheck_settings() {
         global $Opt;
+
         // enforce invariants
         foreach (array("pcrev_any", "extrev_view", "rev_notifychair") as $x)
             if (!isset($this->settings[$x]))
@@ -161,6 +162,8 @@ class Conference {
             $this->settings["pc_seeblindrev"] = 1;
             $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
         }
+
+        // rounds
         $this->rounds = array("");
         if (isset($this->settingTexts["tag_rounds"])) {
             foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r)
@@ -2258,7 +2261,7 @@ class Conference {
             $name = substr($name, 4);
         if ($name === "revprefdescription" && $this->has_topics())
             $name .= ".withtopics";
-        else if ($name === "responseinstructions" && $this->setting("resp_words", 500) > 0)
+        else if ($name === "resp_instrux" && $this->setting("resp_words", 500) > 0)
             $name .= ".wordlimit";
         return $name;
     }

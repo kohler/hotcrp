@@ -592,4 +592,7 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table PaperStorage add `filterType` int(3) DEFAULT NULL")
         && $Conf->ql("alter table PaperStorage add `originalStorageId` int(11) DEFAULT NULL"))
         update_schema_version($Conf, 82);
+    if ($Conf->settings["allowPaperOption"] == 82
+        && $Conf->ql("update Settings set name='msg.resp_instrux' where name='msg.responseinstructions'"))
+        update_schema_version($Conf, 83);
 }

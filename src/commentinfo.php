@@ -44,7 +44,7 @@ class CommentInfo {
                 if ($wordlimit > 0)
                     $t[] = "papercomment.resp_words=$wordlimit";
                 if ($Me->canRespond($prow, null))
-                    $t[] = "papercomment.responseinstructions=" . json_encode($Conf->message_html("responseinstructions", array("wordlimit" => $wordlimit)));
+                    $t[] = "papercomment.resp_instrux=" . json_encode($Conf->message_html("resp_instrux", array("wordlimit" => $wordlimit)));
                 if (!$prow->has_author($Me))
                     $t[] = "papercomment.nonauthor=true";
             }

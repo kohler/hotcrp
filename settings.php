@@ -2026,7 +2026,7 @@ function doDecGroup() {
     doTextRow("resp_words", array("Word limit", "This is a soft limit: authors may submit longer responses. 0 means no limit."), setting("resp_words", 500), 5, "lxcaption", "none");
     echo "</table>";
     echo "<div class='g'></div>";
-    do_message("msg.responseinstructions", "Instructions", 1, 3);
+    do_message("msg.resp_instrux", "Instructions", 1, 3);
     echo "</td></tr></table>";
     $Conf->footerScript("fold('auresp',!\$\$('cbresp_open').checked,2)");
 

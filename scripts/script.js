@@ -1546,8 +1546,8 @@ function fill(j, cj, editing, msg) {
     else if (cj.response && cj.draft && cj.text)
         hc.push('<div class="xwarning">This is a draft response. Reviewers won’t see it until you submit.</div>');
     hc.pop();
-    if (cj.response && editing && papercomment.responseinstructions)
-        hc.push('<div class="xinfo">' + papercomment.responseinstructions + '</div>');
+    if (cj.response && editing && papercomment.resp_instrux)
+        hc.push('<div class="xinfo">' + papercomment.resp_instrux + '</div>');
     if (cj.response && editing && papercomment.nonauthor)
         hc.push('<div class="xinfo">Although you aren’t a contact for this paper, as an administrator you can edit the authors’ response.</div>');
     else if (!cj.response && editing && cj.author_email && hotcrp_user.email
