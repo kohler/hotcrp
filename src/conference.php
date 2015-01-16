@@ -2272,7 +2272,7 @@ class Conference {
             $html = Message::default_html($name);
         if ($html && $expansions)
             foreach ($expansions as $k => $v)
-                $html = str_replace("%$k%", $v, $html);
+                $html = str_ireplace("%$k%", $v, $html);
         return $html ? $html : "";
     }
 
