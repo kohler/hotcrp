@@ -325,7 +325,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 
     // new comment
     if (!$allreviewslink && $mode != "assign" && $mode != "contact"
-        && $Me->canComment($prow, null)) {
+        && $Me->can_comment($prow, null)) {
         $x = "<a href=\"" . selfHref(array("c" => "new")) . '#commentnew" onclick="return open_new_comment(1)" class="xx">'
             . Ht::img("comment24.png", "[Add comment]", "dlimg") . "&nbsp;<u>Add comment</u></a>";
         $t .= ($t == "" ? "" : $xsep) . $x;

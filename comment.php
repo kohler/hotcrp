@@ -124,7 +124,7 @@ if (!check_post())
 else if ((@$_REQUEST["submitcomment"] || @$_REQUEST["submitresponse"] || @$_REQUEST["savedraftresponse"])
          && @$_REQUEST["response"]) {
     $text = @rtrim($_REQUEST["comment"]);
-    if (!$Me->canRespond($prow, $crow, $whyNot, true))
+    if (!$Me->can_respond($prow, $crow, $whyNot, true))
         $Conf->errorMsg(whyNotText($whyNot, "respond to reviews for"));
     else if ($text === "" && !$crow)
         $Conf->errorMsg("Enter a comment.");

@@ -299,6 +299,8 @@ class Conference {
         return (is_string($x) ? json_decode($x) : $x);
     }
 
+
+
     function decision_map() {
         if ($this->_decisions === null) {
             $this->_decisions = array();
@@ -329,6 +331,8 @@ class Conference {
         else
             return false;
     }
+
+
 
     function topic_map() {
         $x = @$this->settingTexts["topic_map"];
@@ -371,6 +375,8 @@ class Conference {
         return count($this->topic_map());
     }
 
+
+
     function review_form_json($round) {
         $key = $round ? "review_form.$round" : "review_form";
         $x = @$this->settingTexts[$key];
@@ -378,6 +384,8 @@ class Conference {
             $x = $this->settingTexts[$key] = json_decode($x);
         return is_object($x) ? $x : null;
     }
+
+
 
     function has_tracks() {
         return $this->tracks !== null;
@@ -436,6 +444,8 @@ class Conference {
         return true;
     }
 
+
+
     function has_rounds() {
         return count($this->rounds) > 1;
     }
@@ -483,6 +493,59 @@ class Conference {
         } else
             return 0;
     }
+
+
+
+    function has_resp_rounds() {
+        return isset($this->settingTexts["resp_rounds"]);
+    }
+
+    function resp_round_list() {
+        $r = array(1);
+        if (($x = @$this->settingTexts["resp_rounds"]))
+            $r = array_merge($r, explode(" ", $x));
+        return $r;
+    }
+
+    function resp_round_name($roundno, $expand) {
+        if ($roundno > 0) {
+            $x = explode(" ", (string) @$this->settingTexts["resp_rounds"]);
+            return @$x[$roundno - 1] ? : "?$roundno?" /* should not happen */;
+        }
+        return 1;
+    }
+
+    static function resp_round_name_error($rname) {
+        if ((string) $rname === "")
+            return "Empty round name.";
+        else if (!strcasecmp($rname, "none") || !strcasecmp($rname, "any"))
+            return "Round name $rname is reserved.";
+        else if (!preg_match('/^[a-zA-Z0-9]+$/', $rname))
+            return "Round names can only contain letters and numbers.";
+        else
+            return false;
+    }
+
+    function current_resp_round($add = false) { /* XXX */
+        return $this->round_number(@$this->settingTexts["rev_roundtag"], $add);
+    }
+
+    function resp_round_number($name, $add) { /* XXX */
+        if (!$name)
+            return 0;
+        for ($i = 1; $i != count($this->rounds); ++$i)
+            if (!strcasecmp($this->rounds[$i], $name))
+                return $i;
+        if ($add) {
+            $rtext = $this->setting_data("tag_rounds", "");
+            $rtext = ($rtext ? "$rtext$name " : " $name ");
+            $this->save_setting("tag_rounds", 1, $rtext);
+            return $this->round_number($name, false);
+        } else
+            return 0;
+    }
+
+
 
     function session($name, $defval = null) {
         if (isset($_SESSION[$this->dsn][$name]))

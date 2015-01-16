@@ -1762,11 +1762,11 @@ class Contact {
     }
 
 
-    function canComment($prow, $crow, &$whyNot = null, $submit = false) {
+    function can_comment($prow, $crow, &$whyNot = null, $submit = false) {
         global $Conf;
         // check whether this is a response
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
-            return $this->canRespond($prow, $crow, $whyNot, $submit);
+            return $this->can_respond($prow, $crow, $whyNot, $submit);
         // fetch paper
         if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
             return false;
@@ -1810,7 +1810,7 @@ class Contact {
     }
 
     function canSubmitComment($prow, $crow, &$whyNot = null) {
-        return $this->canComment($prow, $crow, $whyNot, true);
+        return $this->can_comment($prow, $crow, $whyNot, true);
     }
 
     function canViewComment($prow, $crow, $forceShow, &$whyNot = null) {
@@ -1869,7 +1869,7 @@ class Contact {
         return false;
     }
 
-    function canRespond($prow, $crow, &$whyNot = null, $submit = false) {
+    function can_respond($prow, $crow, &$whyNot = null, $submit = false) {
         global $Conf;
         // fetch paper
         if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))

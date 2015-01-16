@@ -43,7 +43,7 @@ class CommentInfo {
                 $wordlimit = $Conf->setting("resp_words", 500);
                 if ($wordlimit > 0)
                     $t[] = "papercomment.resp_words=$wordlimit";
-                if ($Me->canRespond($prow, null))
+                if ($Me->can_respond($prow, null))
                     $t[] = "papercomment.resp_instrux=" . json_encode($Conf->message_html("resp_instrux", array("wordlimit" => $wordlimit)));
                 if (!$prow->has_author($Me))
                     $t[] = "papercomment.nonauthor=true";
@@ -85,8 +85,8 @@ class CommentInfo {
         // placeholder for new comment
         if (!$this->commentId) {
             if ($this->commentType & COMMENTTYPE_RESPONSE
-                ? !$contact->canRespond($this->prow, null)
-                : !$contact->canComment($this->prow, null))
+                ? !$contact->can_respond($this->prow, null)
+                : !$contact->can_comment($this->prow, null))
                 return false;
             $cj = (object) array("is_new" => true, "editable" => true);
             if ($this->commentType & COMMENTTYPE_RESPONSE)
@@ -96,7 +96,7 @@ class CommentInfo {
 
         // otherwise, viewable comment
         $cj = (object) array("cid" => $this->commentId);
-        if ($contact->canComment($this->prow, $this))
+        if ($contact->can_comment($this->prow, $this))
             $cj->editable = true;
         $cj->ordinal = $this->_ordinal($viewstate);
         $cj->visibility = self::$visibility_map[$this->commentType & COMMENTTYPE_VISIBILITY];
