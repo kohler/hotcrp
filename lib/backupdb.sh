@@ -81,6 +81,11 @@ database_dump () {
     echo "INSERT INTO "'`Settings` (`name`,`value`)'" VALUES ('frombackup',UNIX_TIMESTAMP()) ON DUPLICATE KEY UPDATE value=greatest(value,values(value));"
 }
 
+get_sversion () {
+    cat
+    echo "select concat('insert into Settings (name, value) values (''', name, ''', ', value, ');') from Settings where name='sversion' or name='allowPaperOption';" | eval "$MYSQL $myargs $FLAGS -N $dbname"
+}
+
 echo + $MYSQLDUMP $myargs_redacted $FLAGS $echotail 1>&2
 if $structure; then
     eval "$MYSQLDUMP $myargs $FLAGS $dbname" | sed '/^LOCK/d
@@ -91,7 +96,7 @@ if $structure; then
 /^--$/N
 /^--.*-- Dumping data/N
 /^--.*-- Dumping data.*--/d
-/^-- Dump/d' | eval "$tailcmd"
+/^-- Dump/d' | get_sversion | eval "$tailcmd"
 else
     database_dump | eval "$tailcmd"
 fi
