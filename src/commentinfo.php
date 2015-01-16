@@ -203,7 +203,8 @@ class CommentInfo {
             $tagger = new Tagger($contact);
             $ctags = array();
             foreach ($m[0] as $text)
-                if (($text = $tagger->check($text, Tagger::NOVALUE)))
+                if (($text = $tagger->check($text, Tagger::NOVALUE))
+                    && !stri_ends_with($text, "response"))
                     $ctags[] = $text;
             $tagger->sort($ctags);
             $ctags = count($ctags) ? " " . join(" ", $ctags) . " " : null;

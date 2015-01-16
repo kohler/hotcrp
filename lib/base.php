@@ -15,6 +15,11 @@ function str_ends_with($haystack, $needle) {
     return $p >= 0 && substr($haystack, $p) === $needle;
 }
 
+function stri_ends_with($haystack, $needle) {
+    $p = strlen($haystack) - strlen($needle);
+    return $p >= 0 && strcasecmp(substr($haystack, $p), $needle) == 0;
+}
+
 function cleannl($text) {
     if (strpos($text, "\r") !== false) {
 	$text = str_replace("\r\n", "\n", $text);
