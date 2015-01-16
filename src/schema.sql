@@ -569,8 +569,10 @@ CREATE TABLE `TopicInterest` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
+
+
+insert into Settings (name, value) values ('allowPaperOption', 83);
 insert into Settings (name, value) values ('setupPhase', 1);
-insert into Settings (name, value) values ('allowPaperOption', 82);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
