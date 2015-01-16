@@ -2217,9 +2217,6 @@ div.pavt {
 	margin: 0 -5px;
 	padding: 0.25em 5px;
 }
-div.pavb {
-	padding: 2px 0 0 0;
-}
 span.papfn, span.pavfn, span.psfn, span.revfn {
 	font-variant: small-caps;
 	font-weight: bold;
@@ -2253,7 +2250,7 @@ div.papv {
 div.pg {
 	margin-top: 1em;
 }
-div.pg.pgtop {
+div.pg:first-child {
 	margin-top: 0;
 }
 div.pgsm {

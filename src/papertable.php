@@ -476,9 +476,9 @@ class PaperTable {
     }
 
     private function editable_abstract() {
-        echo "<div class='pg pgtop'>",
+        echo '<div class="pg">',
             $this->editable_papt("abstract", "Abstract"),
-            "<div class='papv abstract'>",
+            '<div class="papv abstract">',
             $this->entryData("abstract", "p"),
             "</div></div>\n\n";
     }
@@ -489,22 +489,22 @@ class PaperTable {
             $shortdata = trim(preg_replace(",</?p.*?>,", "\n", $data));
             $shortdata = preg_replace("/\\S+(<[^>]+)?\\Z/", "", utf8_substr($shortdata, 0, 180));
             if ($shortdata != "") { /* "" might happen if really long word */
-                echo "<div class='pg pgtop'>",
+                echo '<div class="pg">',
                     $this->papt("abstract", "Abstract",
                                 array("fold" => "paper", "foldnum" => 6,
                                       "foldsession" => "foldpaperb",
                                       "foldtitle" => "Toggle full abstract")),
-                    "<div class='pavb abstract'>",
-                    "<div class='fn6'>", $shortdata,
+                    '<div class="pavb abstract">',
+                    '<div class="fn6">', $shortdata,
                     " <a class='fn6' href='#' onclick='return fold(\"paper\",0,6)'>[more]</a>",
-                    "</div><div class='fx6'>", $data,
+                    '</div><div class="fx6">', $data,
                     "</div></div></div>\n\n";
                 return;
             }
         }
-        echo "<div class='pg pgtop'>",
+        echo '<div class="pg">',
             $this->papt("abstract", "Abstract"),
-            "<div class='pavb abstract'>", $data, "</div></div>\n\n";
+            '<div class="pavb abstract">', $data, "</div></div>\n\n";
     }
 
     private function editable_authors() {
@@ -637,9 +637,9 @@ class PaperTable {
 
         $viewable = $Me->can_view_authors($this->prow, false);
         if (!$viewable && !$Me->can_view_authors($this->prow, true)) {
-            echo "<div class='pg pgtop'>",
+            echo '<div class="pg">',
                 $this->papt("authorInformation", "Authors"),
-                "<div class='pavb'><i>Hidden for blind review</i></div>",
+                '<div class="pavb"><i>Hidden for blind review</i></div>',
                 "</div>\n\n";
             return;
         }
@@ -653,7 +653,7 @@ class PaperTable {
             $auname = "$auname (deblinded)";
 
         // header with folding
-        echo '<div class="pg pgtop">',
+        echo '<div class="pg">',
             '<div class="pavt childfold', (@$Error["authorInformation"] ? " error" : ""),
             '" onclick="return aufoldup(event)">',
             '<span class="pavfn">';
