@@ -64,8 +64,8 @@ class HotCRPMailer extends Mailer {
             && $this->rrow
             && $Conf->is_review_blind($this->rrow)
             && !@$this->permissionContact->privChair
-            && (!isset($this->permissionContact->canViewReviewerIdentity)
-                || !$this->permissionContact->canViewReviewerIdentity($this->row, $this->rrow, false))) {
+            && (!isset($this->permissionContact->can_view_review_identity)
+                || !$this->permissionContact->can_view_review_identity($this->row, $this->rrow, false))) {
             if ($isbool)
                 return false;
             else if ($this->expansionType == self::EXPAND_EMAIL)
@@ -116,7 +116,7 @@ class HotCRPMailer extends Mailer {
         $text = "";
         foreach ($crows as $crow)
             if ((!$tag || ($crow->commentTags && stripos($crow->commentTags, " $tag ") !== false))
-                && $this->permissionContact->canViewComment($this->row, $crow, false))
+                && $this->permissionContact->can_view_comment($this->row, $crow, false))
                 $text .= $crow->unparse_text($this->permissionContact) . "\n";
 
         $Conf->settings["au_seerev"] = $old_au_seerev;

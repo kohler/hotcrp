@@ -124,7 +124,7 @@ if (!check_post())
 else if ((@$_REQUEST["submitcomment"] || @$_REQUEST["submitresponse"] || @$_REQUEST["savedraftresponse"])
          && @$_REQUEST["response"]) {
     $text = @rtrim($_REQUEST["comment"]);
-    if (!$Me->can_respond($prow, $crow, $whyNot, true))
+    if (($whyNot = $Me->perm_respond($prow, $crow, true)))
         $Conf->errorMsg(whyNotText($whyNot, "respond to reviews for"));
     else if ($text === "" && !$crow)
         $Conf->errorMsg("Enter a comment.");
@@ -134,7 +134,7 @@ else if ((@$_REQUEST["submitcomment"] || @$_REQUEST["submitresponse"] || @$_REQU
         $Conf->ajaxExit(array("ok" => false));
 } else if (@$_REQUEST["submitcomment"]) {
     $text = @rtrim($_REQUEST["comment"]);
-    if (!$Me->canSubmitComment($prow, $crow, $whyNot))
+    if (($whyNot = $Me->perm_submit_comment($prow, $crow)))
         $Conf->errorMsg(whyNotText($whyNot, "comment on"));
     else if ($text === "" && !$crow)
         $Conf->errorMsg("Enter a comment.");
@@ -143,7 +143,7 @@ else if ((@$_REQUEST["submitcomment"] || @$_REQUEST["submitresponse"] || @$_REQU
     if (@$_REQUEST["ajax"])
         $Conf->ajaxExit(array("ok" => false));
 } else if ((@$_REQUEST["deletecomment"] || @$_REQUEST["deleteresponse"]) && $crow) {
-    if (!$Me->canSubmitComment($prow, $crow, $whyNot))
+    if (($whyNot = $Me->perm_submit_comment($prow, $crow)))
         $Conf->errorMsg(whyNotText($whyNot, "comment on"));
     else
         saveComment("", ($crow->commentType & COMMENTTYPE_RESPONSE) != 0);

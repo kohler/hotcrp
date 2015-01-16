@@ -98,7 +98,7 @@ if (isset($_REQUEST["uploadForm"])
         /* error already reported */;
     else if (isset($req['paperId']) && $req['paperId'] != $prow->paperId)
         $rf->tfError($tf, true, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.<br /><a class='button_small' href='" . hoturl("review", "p=" . $req['paperId']) . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='" . hoturl("offline") . "'>General review upload site</a>");
-    else if (!$Me->can_submit_review($prow, $paperTable->editrrow, $whyNot))
+    else if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow)))
         $rf->tfError($tf, true, whyNotText($whyNot, "review"));
     else {
         $req['paperId'] = $prow->paperId;
@@ -146,7 +146,7 @@ if (isset($_REQUEST["unsubmitreview"]) && $paperTable->editrrow
 // review rating action
 if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
     if (!$Me->can_rate_review($prow, $paperTable->rrow)
-        || !$Me->canViewReview($prow, $paperTable->rrow, null))
+        || !$Me->can_view_review($prow, $paperTable->rrow, null))
         $Conf->errorMsg("You can’t rate that review.");
     else if (!isset(ReviewForm::$rating_types[$_REQUEST["rating"]]))
         $Conf->errorMsg("Invalid rating.");
@@ -170,7 +170,7 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
 
 // update review action
 if (isset($_REQUEST["update"]) && check_post()) {
-    if (!$Me->can_submit_review($prow, $paperTable->editrrow, $whyNot)) {
+    if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow))) {
         $Conf->errorMsg(whyNotText($whyNot, "review"));
         $useRequest = true;
     } else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow)) {
@@ -246,11 +246,11 @@ function downloadForm($editable) {
     $text = "";
     foreach ($downrrows as $rr)
         if ($rr->reviewSubmitted
-            && $Me->canViewReview($prow, $rr, null, $whyNot))
+            && $Me->can_view_review($prow, $rr, null))
             $text .= downloadView($prow, $rr, $editable);
     foreach ($downrrows as $rr)
         if (!$rr->reviewSubmitted
-            && $Me->canViewReview($prow, $rr, null, $whyNot)
+            && $Me->can_view_review($prow, $rr, null)
             && ($explicit || $rr->reviewModified))
             $text .= downloadView($prow, $rr, $editable);
     if (count($downrrows) == 0)
@@ -258,11 +258,13 @@ function downloadForm($editable) {
     if (!$explicit) {
         $paperTable->resolveComments();
         foreach ($paperTable->crows as $cr)
-            if ($Me->canViewComment($prow, $cr, false))
+            if ($Me->can_view_comment($prow, $cr, false))
                 $text .= $cr->unparse_text($Me, true) . "\n";
     }
-    if (!$text)
-        return $Conf->errorMsg(whyNotText($whyNot, "review"));
+    if (!$text) {
+        $whyNot = $Me->perm_view_review($prow, null, null);
+        return $Conf->errorMsg(whyNotText($whyNot ? : array("fail" => 1), "review"));
+    }
     if ($editable)
         $text = ReviewForm::textFormHeader(count($downrrows) > 1, $Me->viewReviewFieldsScore($prow, null)) . $text;
     downloadText($text, "review-" . $prow->paperId, !$editable);
@@ -398,8 +400,8 @@ if (isset($_REQUEST["settags"]) && check_post()) {
 
 
 // can we view/edit reviews?
-$viewAny = $Me->canViewReview($prow, null, null, $whyNotView);
-$editAny = $Me->canReview($prow, null, $whyNotEdit);
+$viewAny = $Me->can_view_review($prow, null, null);
+$editAny = $Me->can_review($prow, null);
 
 
 // can we see any reviews?
@@ -407,7 +409,8 @@ if (!$viewAny && !$editAny) {
     if (($whyNotPaper = $Me->perm_view_paper($prow)))
         errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
-        $Conf->errorMsg("You can’t see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
+        $Conf->errorMsg("You can’t see the reviews for this paper. "
+                        . whyNotText($Me->perm_view_review($prow, null, null), "review"));
         go(hoturl("paper", "p=$prow->paperId"));
     }
 }
@@ -431,7 +434,7 @@ $paperTable->resolveComments();
 
 if (!$viewAny && !$editAny
     && (!$paperTable->rrow
-        || !$Me->canViewReview($prow, $paperTable->rrow, null)))
+        || !$Me->can_view_review($prow, $paperTable->rrow, null)))
     $paperTable->paptabEndWithReviewMessage();
 else if ($paperTable->mode == "r" && !$paperTable->rrow)
     $paperTable->paptabEndWithReviews();

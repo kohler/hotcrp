@@ -50,14 +50,14 @@ class FormulaCompileState {
     function _add_submitted_reviewers() {
         if (!isset($this->gtmp["submitted_reviewers"])) {
             $this->gtmp["submitted_reviewers"] = "\$submitted_reviewers";
-            $this->gstmt[] = "\$submitted_reviewers = (\$forceShow || \$contact->canViewReview(\$prow, null, false) ? \$prow->submitted_reviewers() : array());";
+            $this->gstmt[] = "\$submitted_reviewers = (\$forceShow || \$contact->can_view_review(\$prow, null, false) ? \$prow->submitted_reviewers() : array());";
         }
         return "\$submitted_reviewers";
     }
     function _add_review_prefs() {
         if (!isset($this->gtmp["allrevprefs"])) {
             $this->gtmp["allrevprefs"] = "\$allrevprefs";
-            $this->gstmt[] = "\$allrevprefs = (\$forceShow || \$contact->canViewReview(\$prow, null, false) ? \$prow->reviewer_preferences() : array());";
+            $this->gstmt[] = "\$allrevprefs = (\$forceShow || \$contact->can_view_review(\$prow, null, false) ? \$prow->reviewer_preferences() : array());";
         }
         return "\$allrevprefs";
     }
@@ -447,7 +447,7 @@ class Formula {
             $state->queryOptions["tags"] = true;
             $tagger = new Tagger($state->contact);
             $e_tag = $tagger->check($e->args[0]);
-            $t_tags = $state->_addgtemp("tags", "(\$forceShow || \$contact->canViewTags(\$prow, true) ? \$prow->paperTags : '')");
+            $t_tags = $state->_addgtemp("tags", "(\$forceShow || \$contact->can_view_tags(\$prow, true) ? \$prow->paperTags : '')");
             $t_tagpos = $state->_addgtemp("tagpos {$e->args[0]}", "stripos($t_tags, \" $e_tag#\")");
             $t_tagval = $state->_addgtemp("tagval {$e->args[0]}", "($t_tagpos !== false ? (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : null)");
             if ($op == "tag")

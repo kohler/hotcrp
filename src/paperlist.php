@@ -687,7 +687,7 @@ class PaperList extends BaseList {
         $rstate->ids[] = (int) $row->paperId;
         $trclass = "k" . $rstate->colorindex;
         if (@$row->paperTags
-            && $this->contact->canViewTags($row, true)
+            && $this->contact->can_view_tags($row, true)
             && ($viewable = $this->tagger->viewable($row->paperTags))
             && ($m = TagInfo::color_classes($viewable))) {
             if (TagInfo::classes_have_colors($m)) {
@@ -1001,7 +1001,7 @@ class PaperList extends BaseList {
                         else
                             $this->sorters[] = $last_sorter = $s;
                     } else if ($s->type) {
-                        if ($this->contact->canViewTags(null)
+                        if ($this->contact->can_view_tags(null)
                             && ($tagger = new Tagger)
                             && ($tag = $tagger->check($s->type))
                             && ($result = $Conf->qe("select paperId from PaperTag where tag='" . sqlq($tag) . "' limit 1"))
@@ -1061,7 +1061,7 @@ class PaperList extends BaseList {
         $field_list = $this->_prepare_columns($field_list);
 
         // make query; need tags for row coloring
-        if ($this->contact->canViewTags(null))
+        if ($this->contact->can_view_tags(null))
             $this->query_options["tags"] = 1;
 
         $rows = $this->_make_query($field_list);

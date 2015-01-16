@@ -2323,14 +2323,14 @@ class PaperSearch {
         if ($flags & self::F_XVIEW) {
             if (!$this->contact->can_view_paper($row))
                 return false;
-            if ($t->type == "tag" && !$this->contact->canViewTags($row, true))
+            if ($t->type == "tag" && !$this->contact->can_view_tags($row, true))
                 return false;
             if (($t->type == "au" || $t->type == "au_cid" || $t->type == "co"
                  || $t->type == "conflict")
                 && !$this->contact->allow_view_authors($row))
                 return false;
             if ($t->type == "pf" && $t->value[0] == "outcome"
-                && !$this->contact->canViewDecision($row, true))
+                && !$this->contact->can_view_decision($row, true))
                 return false;
             if ($t->type == "option"
                 && !$this->contact->can_view_paper_option($row, $t->value[0], true))
@@ -2344,10 +2344,10 @@ class PaperSearch {
                     if ($info != "") {
                         list($rrow->reviewId, $rrow->contactId, $rrow->reviewType, $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->requestedBy, $rrow->reviewToken, $rrow->reviewBlind) = explode(" ", $info);
                         if (($count_only
-                             ? $this->contact->canCountReview($row, $rrow, true)
-                             : $this->contact->canViewReview($row, $rrow, true))
+                             ? $this->contact->can_count_review($row, $rrow, true)
+                             : $this->contact->can_view_review($row, $rrow, true))
                             && (!$t->value->contactsql
-                                || $this->contact->canViewReviewerIdentity($row, $rrow, true))
+                                || $this->contact->can_view_review_identity($row, $rrow, true))
                             && (!isset($t->value->view_score)
                                 || $t->value->view_score > $this->contact->viewReviewFieldsScore($row, $rrow)))
                             ++$row->$fieldname;
@@ -2361,7 +2361,7 @@ class PaperSearch {
                 foreach (explode(",", defval($row, $fieldname . "_info", "")) as $info)
                     if ($info != "") {
                         list($crow->contactId, $crow->commentType) = explode(" ", $info);
-                        if ($this->contact->canViewComment($row, $crow, true))
+                        if ($this->contact->can_view_comment($row, $crow, true))
                             ++$row->$fieldname;
                     }
             }

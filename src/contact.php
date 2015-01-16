@@ -1184,9 +1184,9 @@ class Contact {
     }
 
     function perm_start_paper($override = null) {
-        return $this->can_start_paper($override)
-            ? null
-            : array("deadline" => "sub_reg", "override" => $this->privChair);
+        if ($this->can_start_paper($override))
+            return null;
+        return array("deadline" => "sub_reg", "override" => $this->privChair);
     }
 
     function can_edit_paper($prow) {
@@ -1404,14 +1404,14 @@ class Contact {
             return $rights->can_administer
                 || $prow->leadContactId == $this->contactId
                 || (($rights->allow_pc || $rights->allow_review)
-                    && $this->canViewReviewerIdentity($prow, null, $forceShow));
+                    && $this->can_view_review_identity($prow, null, $forceShow));
         } else
             return $this->privChair || $this->isPC;
     }
 
     function can_view_shepherd($prow, $forceShow = null) {
         return $this->actPC($prow, $forceShow)
-            || $this->canViewDecision($prow, $forceShow);
+            || $this->can_view_decision($prow, $forceShow);
     }
 
     function allow_view_authors($prow) {
@@ -1476,21 +1476,18 @@ class Contact {
                 && $Conf->setting("pcrev_editdelegate"));
     }
 
-    public function canCountReview($prow, $rrow, $forceShow) {
+    public function can_count_review($prow, $rrow, $forceShow) {
         if ($rrow && $rrow->reviewNeedsSubmit <= 0
             && $rrow->reviewSubmitted <= 0)
             return false;
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_administer
             || $rights->allow_pc
-            || $this->canViewReview($prow, $rrow, $forceShow);
+            || $this->can_view_review($prow, $rrow, $forceShow);
     }
 
-    function canViewReview($prow, $rrow, $forceShow, &$whyNot = null) {
+    public function can_view_review($prow, $rrow, $forceShow) {
         global $Conf;
-        // fetch paper
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
-            return false;
         if (is_int($rrow)) {
             $viewscore = $rrow;
             $rrow = null;
@@ -1499,8 +1496,7 @@ class Contact {
         $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
         $pc_seeallrev = $Conf->setting("pc_seeallrev");
         $rights = $this->rights($prow, $forceShow);
-        // policy
-        if ($rights->can_administer
+        return $rights->can_administer
             || (($prow->timeSubmitted > 0
                  || $rights->review_type
                  || $rights->allow_administer)
@@ -1527,9 +1523,17 @@ class Contact {
                     || ($rrow
                         && $rrow->paperId == $prow->paperId
                         && $this->ownReview($rrow)
-                        && $viewscore >= VIEWSCORE_REVIEWERONLY))))
-            return true;
-        // collect failure reasons
+                        && $viewscore >= VIEWSCORE_REVIEWERONLY)));
+    }
+
+    function perm_view_review($prow, $rrow, $forceShow) {
+        global $Conf;
+        if ($this->can_view_review($prow, $rrow, $forceShow))
+            return null;
+        $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
+        $pc_seeallrev = $Conf->setting("pc_seeallrev");
+        $rights = $this->rights($prow, $forceShow);
+        $whyNot = array("fail" => 1);
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         else if ($prow->timeSubmitted <= 0)
@@ -1537,35 +1541,35 @@ class Contact {
         else if (!$rights->act_author_view
                  && !$rights->allow_pc
                  && !$rights->review_type)
-            $whyNot['permission'] = 1;
+            $whyNot["permission"] = 1;
         else if ($rights->act_author_view
                  && $Conf->timeAuthorViewReviews()
                  && $this->has_outstanding_review()
                  && $this->has_review())
-            $whyNot['reviewsOutstanding'] = 1;
+            $whyNot["reviewsOutstanding"] = 1;
         else if ($rights->act_author_view
                  && !$rrowSubmitted)
-            $whyNot['permission'] = 1;
+            $whyNot["permission"] = 1;
         else if ($rights->act_author_view)
-            $whyNot['deadline'] = 'au_seerev';
+            $whyNot["deadline"] = "au_seerev";
         else if ($rights->view_conflict_type)
-            $whyNot['conflict'] = 1;
+            $whyNot["conflict"] = 1;
         else if (!$rights->allow_pc
                  && $prow->review_submitted($this))
-            $whyNot['externalReviewer'] = 1;
+            $whyNot["externalReviewer"] = 1;
         else if (!$rrowSubmitted)
-            $whyNot['reviewNotSubmitted'] = 1;
+            $whyNot["reviewNotSubmitted"] = 1;
         else if ($rights->allow_pc
                  && $pc_seeallrev == Conference::PCSEEREV_UNLESSANYINCOMPLETE
                  && $this->has_outstanding_review())
             $whyNot["reviewsOutstanding"] = 1;
         else if (!$Conf->time_review_open())
-            $whyNot['deadline'] = "rev_open";
+            $whyNot["deadline"] = "rev_open";
         else
             $whyNot["reviewNotComplete"] = 1;
         if ($rights->allow_administer)
-            $whyNot['forceShow'] = 1;
-        return false;
+            $whyNot["forceShow"] = 1;
+        return $whyNot;
     }
 
     function canRequestReview($prow, $time, &$whyNot = null) {
@@ -1618,12 +1622,10 @@ class Contact {
             return false;
     }
 
-    function allow_review_assignment_ignore_conflict($prow, &$whyNot = null) {
+    function allow_review_assignment_ignore_conflict($prow) {
         global $Conf;
         if (!$prow)
             return $this->isPC && $Conf->check_all_tracks($this, "assrev");
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
-            return false;
         $rights = $this->rights($prow);
         return $rights->allow_pc_broad
             && ($rights->review_type > 0
@@ -1631,35 +1633,43 @@ class Contact {
                 || $Conf->check_tracks($prow, $this, "assrev"));
     }
 
-    function allow_review_assignment($prow, &$whyNot = null) {
+    function allow_review_assignment($prow) {
         global $Conf;
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
-            return false;
         $rights = $this->rights($prow);
         return $rights->allow_pc
             && ($rights->allow_review
                 || $Conf->check_tracks($prow, $this, "assrev"));
     }
 
-    function canReview($prow, $rrow, &$whyNot = null, $submit = false) {
+    private function review_rights($prow, $rrow) {
+        $rights = $this->rights($prow);
+        $rrow_cid = 0;
+        if ($rrow) {
+            $my_review = $rights->can_administer || $this->ownReview($rrow);
+            if (isset($rrow->reviewContactId))
+                $rrow_cid = $rrow->reviewContactId;
+            else if (isset($rrow->contactId))
+                $rrow_cid = $rrow->contactId;
+        } else
+            $my_review = $rights->review_type > 0;
+        return array($rights, $my_review, $rrow_cid);
+    }
+
+    private function rights_my_review($rights, $rrow) {
+        if ($rrow)
+            return $rights->can_administer || $this->ownReview($rrow);
+        else
+            return $rights->review_type > 0;
+    }
+
+    function can_review($prow, $rrow, $submit = false) {
         global $Conf;
-        // fetch paper
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
-            return false;
         assert(!$rrow || $rrow->paperId == $prow->paperId);
         $rights = $this->rights($prow);
-        $rrow_contactId = 0;
-        if ($rrow) {
-            $myReview = $rights->can_administer || $this->ownReview($rrow);
-            if (isset($rrow->reviewContactId))
-                $rrow_contactId = $rrow->reviewContactId;
-            else if (isset($rrow->contactId))
-                $rrow_contactId = $rrow->contactId;
-        } else
-            $myReview = $rights->review_type > 0;
-        // policy
-        if (($myReview
-             && $Conf->time_review($rrow, $rights->allow_pc, true))
+        if ($submit && !$this->can_clickthrough("review"))
+            return false;
+        return ($this->rights_my_review($rights, $rrow)
+                && $Conf->time_review($rrow, $rights->allow_pc, true))
             || (!$rrow
                 && $prow->timeSubmitted > 0
                 && $rights->allow_review
@@ -1667,46 +1677,53 @@ class Contact {
                 && $Conf->time_review(null, true, true))
             || ($rights->can_administer
                 && ($prow->timeSubmitted > 0 || $rights->rights_force)
-                && (!$submit || $this->override_deadlines($rights))))
-            return true;
-        // collect failure reasons
-        // The "reviewNotAssigned" and "deadline" failure reasons are special.
-        // If either is set, the system will still allow review form download.
-        if ($rrow
-            && $rrow_contactId != $this->contactId
-            && !$rights->allow_administer)
-            $whyNot['differentReviewer'] = 1;
-        else if (!$rights->allow_pc && !$myReview)
-            $whyNot['permission'] = 1;
-        else if ($prow->timeWithdrawn > 0)
-            $whyNot['withdrawn'] = 1;
-        else if ($prow->timeSubmitted <= 0)
-            $whyNot['notSubmitted'] = 1;
-        else {
-            if ($rights->conflict_type && !$rights->can_administer)
-                $whyNot['conflict'] = 1;
-            else if ($rights->allow_review && !$myReview
-                     && (!$rrow || $rrow_contactId == $this->contactId))
-                $whyNot['reviewNotAssigned'] = 1;
-            else
-                $whyNot['deadline'] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
-            if ($rights->allow_administer
-                && ($rights->conflict_type || $prow->timeSubmitted <= 0))
-                $whyNot['chairMode'] = 1;
-            if ($rights->allow_administer && isset($whyNot['deadline']))
-                $whyNot['override'] = 1;
-        }
-        return false;
+                && (!$submit || $this->override_deadlines($rights)));
     }
 
-    function can_submit_review($prow, $rrow, &$whyNot = null) {
+    function perm_review($prow, $rrow, $submit = false) {
         global $Conf;
-        if ($this->canReview($prow, $rrow, $whyNot, true)) {
-            if ($this->can_clickthrough("review"))
-                return true;
-            $whyNot["clickthrough"] = 1;
+        if ($this->can_review($prow, $rrow, $submit))
+            return null;
+        $rights = $this->rights($prow);
+        $rrow_cid = 0;
+        if ($rrow && isset($rrow->reviewContactId))
+            $rrow_cid = $rrow->reviewContactId;
+        else if ($rrow && isset($rrow->contactId))
+            $rrow_cid = $rrow->contactId;
+        // The "reviewNotAssigned" and "deadline" failure reasons are special.
+        // If either is set, the system will still allow review form download.
+        $whyNot = array("fail" => 1);
+        if ($rrow && $rrow_cid != $this->contactId
+            && !$rights->allow_administer)
+            $whyNot["differentReviewer"] = 1;
+        else if (!$rights->allow_pc && !$this->rights_my_review($rights, $rrow))
+            $whyNot["permission"] = 1;
+        else if ($prow->timeWithdrawn > 0)
+            $whyNot["withdrawn"] = 1;
+        else if ($prow->timeSubmitted <= 0)
+            $whyNot["notSubmitted"] = 1;
+        else {
+            if ($rights->conflict_type && !$rights->can_administer)
+                $whyNot["conflict"] = 1;
+            else if ($rights->allow_review && !$this->rights_my_review($rights, $rrow)
+                     && (!$rrow || $rrow_contactId == $this->contactId))
+                $whyNot["reviewNotAssigned"] = 1;
+            else if ($this->can_review($prow, $rrow, false)
+                     && !$this->can_clickthrough("review"))
+                $whyNot["clickthrough"] = 1;
+            else
+                $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
+            if ($rights->allow_administer
+                && ($rights->conflict_type || $prow->timeSubmitted <= 0))
+                $whyNot["chairMode"] = 1;
+            if ($rights->allow_administer && isset($whyNot["deadline"]))
+                $whyNot["override"] = 1;
         }
-        return false;
+        return $whyNot;
+    }
+
+    function perm_submit_review($prow, $rrow) {
+        return $this->perm_review($prow, $rrow, true);
     }
 
     function can_clickthrough($ctype) {
@@ -1725,7 +1742,7 @@ class Contact {
         if ($rs != REV_RATINGS_PC && $rs != REV_RATINGS_PC_EXTERNAL)
             return false;
         $rights = $this->rights($prow);
-        return $this->canViewReview($prow, $rrow, null)
+        return $this->can_view_review($prow, $rrow, null)
             && ($rights->allow_pc || $rights->allow_review);
     }
 
@@ -1734,7 +1751,7 @@ class Contact {
             && !$this->ownReview($rrow);
     }
 
-    function canSetRank($prow, $forceShow = null) {
+    function can_set_rank($prow, $forceShow = null) {
         global $Conf;
         if (!$Conf->setting("tag_rank"))
             return false;
@@ -1743,17 +1760,12 @@ class Contact {
     }
 
 
-    function can_comment($prow, $crow, &$whyNot = null, $submit = false) {
+    function can_comment($prow, $crow, $submit = false) {
         global $Conf;
-        // check whether this is a response
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
-            return $this->can_respond($prow, $crow, $whyNot, $submit);
-        // fetch paper
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
-            return false;
+            return $this->can_respond($prow, $crow, $submit);
         $rights = $this->rights($prow);
-        // policy
-        if ($rights->allow_review
+        return $rights->allow_review
             && ($prow->timeSubmitted > 0
                 || $rights->review_type > 0
                 || ($rights->allow_administer && $rights->rights_force))
@@ -1765,40 +1777,85 @@ class Contact {
                 || $crow->contactId == $this->contactId
                 || ($crow->contactId == $rights->review_token_cid
                     && $rights->review_token_cid)
-                || $rights->allow_administer))
-            return true;
-        // collect failure reasons
+                || $rights->allow_administer);
+    }
+
+    function can_submit_comment($prow, $crow) {
+        return $this->can_comment($prow, $crow, true);
+    }
+
+    function perm_comment($prow, $crow, $submit = false) {
+        global $Conf;
+        if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
+            return $this->perm_respond($prow, $crow, $submit);
+        if ($this->can_comment($prow, $crow, $submit))
+            return null;
+        $rights = $this->rights($prow);
+        $whyNot = array("fail" => 1);
         if ($crow && $crow->contactId != $this->contactId
             && !$rights->allow_administer)
-            $whyNot['differentReviewer'] = 1;
+            $whyNot["differentReviewer"] = 1;
         else if (!$rights->allow_pc && !$rights->allow_review)
-            $whyNot['permission'] = 1;
+            $whyNot["permission"] = 1;
         else if ($prow->timeWithdrawn > 0)
-            $whyNot['withdrawn'] = 1;
+            $whyNot["withdrawn"] = 1;
         else if ($prow->timeSubmitted <= 0)
-            $whyNot['notSubmitted'] = 1;
+            $whyNot["notSubmitted"] = 1;
         else {
             if ($rights->conflict_type > 0)
-                $whyNot['conflict'] = 1;
+                $whyNot["conflict"] = 1;
             else
-                $whyNot['deadline'] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
+                $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
             if ($rights->allow_administer && $rights->conflict_type)
-                $whyNot['chairMode'] = 1;
+                $whyNot["chairMode"] = 1;
             if ($rights->allow_administer && isset($whyNot['deadline']))
-                $whyNot['override'] = 1;
+                $whyNot["override"] = 1;
         }
-        return false;
+        return $whyNot;
     }
 
-    function canSubmitComment($prow, $crow, &$whyNot = null) {
-        return $this->can_comment($prow, $crow, $whyNot, true);
+    function perm_submit_comment($prow, $crow) {
+        return $this->perm_comment($prow, $crow, true);
     }
 
-    function canViewComment($prow, $crow, $forceShow, &$whyNot = null) {
+    function can_respond($prow, $crow, $submit = false) {
         global $Conf;
-        // fetch paper
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
-            return false;
+        $rights = $this->rights($prow);
+        return $prow->timeSubmitted > 0
+            && ($rights->can_administer
+                || $rights->act_author)
+            && ($Conf->timeAuthorRespond()
+                || ($rights->allow_administer
+                    && (!$submit || $this->override_deadlines($rights))))
+            && (!$crow
+                || ($crow->commentType & COMMENTTYPE_RESPONSE));
+    }
+
+    function perm_respond($prow, $crow, $submit = false) {
+        global $Conf;
+        if ($this->can_respond($prow, $crow, $submit))
+            return null;
+        $rights = $this->rights($prow);
+        $whyNot = array("fail" => 1);
+        if (!$rights->allow_administer
+            && !$rights->act_author)
+            $whyNot["permission"] = 1;
+        else if ($prow->timeWithdrawn > 0)
+            $whyNot["withdrawn"] = 1;
+        else if ($prow->timeSubmitted <= 0)
+            $whyNot["notSubmitted"] = 1;
+        else {
+            $whyNot["deadline"] = "resp_done";
+            if ($rights->allow_administer && $rights->conflict_type)
+                $whyNot["chairMode"] = 1;
+            if ($rights->allow_administer)
+                $whyNot["override"] = 1;
+        }
+        return $whyNot;
+    }
+
+    function can_view_comment($prow, $crow, $forceShow) {
+        global $Conf;
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
         $crow_contactId = 0;
         if ($crow && isset($crow->commentContactId))
@@ -1809,8 +1866,7 @@ class Contact {
             && isset($crow->threadContacts[$this->contactId]))
             $thread_contactId = $this->contactId;
         $rights = $this->rights($prow, $forceShow);
-        // policy
-        if ($crow_contactId == $this->contactId        // wrote this comment
+        return $crow_contactId == $this->contactId        // wrote this comment
             || ($crow_contactId == $rights->review_token_cid
                 && $rights->review_token_cid)
             || $rights->can_administer
@@ -1821,67 +1877,13 @@ class Contact {
                         && !($ctype & COMMENTTYPE_DRAFT))))
             || (!$rights->view_conflict_type
                 && !($ctype & COMMENTTYPE_DRAFT)
-                && $this->canViewReview($prow, null, $forceShow)
+                && $this->can_view_review($prow, null, $forceShow)
                 && (($rights->allow_pc
                      && !$Conf->setting("pc_seeblindrev"))
                     || $prow->review_not_incomplete($this))
                 && ($rights->allow_pc
                     ? $ctype >= COMMENTTYPE_PCONLY
-                    : $ctype >= COMMENTTYPE_REVIEWER)))
-            return true;
-        // collect failure reasons
-        if ((!$rights->act_author_view && !$rights->allow_review)
-            || (!$rights->allow_administer
-                && ($ctype & COMMENTTYPE_VISIBILITY) == COMMENTTYPE_ADMINONLY))
-            $whyNot["permission"] = 1;
-        else if ($rights->act_author_view)
-            $whyNot["deadline"] = 'au_seerev';
-        else if ($rights->view_conflict_type)
-            $whyNot["conflict"] = 1;
-        else if (!$rights->allow_pc
-                 && !$rights->review_submitted)
-            $whyNot["externalReviewer"] = 1;
-        else if ($ctype & COMMENTTYPE_DRAFT)
-            $whyNot["responseNotReady"] = 1;
-        else
-            $whyNot["reviewNotComplete"] = 1;
-        if ($rights->allow_administer)
-            $whyNot["forceShow"] = 1;
-        return false;
-    }
-
-    function can_respond($prow, $crow, &$whyNot = null, $submit = false) {
-        global $Conf;
-        // fetch paper
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
-            return false;
-        $rights = $this->rights($prow);
-        // policy
-        if ($prow->timeSubmitted > 0
-            && ($rights->can_administer
-                || $rights->act_author)
-            && ($Conf->timeAuthorRespond()
-                || ($rights->allow_administer
-                    && (!$submit || $this->override_deadlines($rights))))
-            && (!$crow
-                || ($crow->commentType & COMMENTTYPE_RESPONSE)))
-            return true;
-        // collect failure reasons
-        if (!$rights->allow_administer
-            && !$rights->act_author)
-            $whyNot['permission'] = 1;
-        else if ($prow->timeWithdrawn > 0)
-            $whyNot['withdrawn'] = 1;
-        else if ($prow->timeSubmitted <= 0)
-            $whyNot['notSubmitted'] = 1;
-        else {
-            $whyNot['deadline'] = "resp_done";
-            if ($rights->allow_administer && $rights->conflict_type)
-                $whyNot['chairMode'] = 1;
-            if ($rights->allow_administer && isset($whyNot['deadline']))
-                $whyNot['override'] = 1;
-        }
-        return false;
+                    : $ctype >= COMMENTTYPE_REVIEWER));
     }
 
     function canViewCommentReviewWheres() {
@@ -1894,13 +1896,26 @@ class Contact {
                          . " or MyPaperReview.reviewId is not null)");
     }
 
-
-    function canEditContactAuthors($prow) {
-        $rights = $this->rights($prow);
-        return $rights->allow_administer || $prow->has_author($this);
+    function can_view_comment_identity($prow, $crow, $forceShow) {
+        global $Conf;
+        if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
+            return $this->can_view_authors($prow, $forceShow);
+        $crow_contactId = 0;
+        if ($crow && isset($crow->commentContactId))
+            $crow_contactId = $crow->commentContactId;
+        else if ($crow)
+            $crow_contactId = $crow->contactId;
+        $rights = $this->rights($prow, $forceShow);
+        return $rights->can_administer
+            || $crow_contactId == $this->contactId
+            || $rights->allow_pc
+            || ($rights->allow_review
+                && $Conf->settings["extrev_view"] >= 2)
+            || !$Conf->is_review_blind(!$crow || ($crow->commentType & COMMENTTYPE_BLIND) != 0);
     }
 
-    function canViewReviewerIdentity($prow, $rrow, $forceShow = null) {
+
+    function can_view_review_identity($prow, $rrow, $forceShow = null) {
         global $Conf;
         $rrow_contactId = 0;
         if ($rrow && isset($rrow->reviewContactId))
@@ -1908,7 +1923,7 @@ class Contact {
         else if ($rrow && isset($rrow->contactId))
             $rrow_contactId = $rrow->contactId;
         // If $prow === true or null, be permissive: return true
-        // iff there could exist a paper for which canViewReviewerIdentity
+        // iff there could exist a paper for which can_view_review_identity
         // is true.
         if (!$prow || $prow === true)
             $prow = new PaperInfo
@@ -1919,7 +1934,7 @@ class Contact {
                        "paperId" => 1, "timeSubmitted" => 1,
                        "paperBlind" => false, "outcome" => 1), $this);
         $rights = $this->rights($prow, $forceShow);
-        if ($rights->can_administer
+        return $rights->can_administer
             || ($rrow && ($rrow_contactId == $this->contactId
                           || $this->ownReview($rrow)
                           || ($rights->allow_pc
@@ -1927,49 +1942,29 @@ class Contact {
             || ($rights->allow_pc
                 && (!($pc_seeblindrev = $Conf->setting("pc_seeblindrev"))
                     || ($pc_seeblindrev == 2
-                        && $this->canViewReview($prow, $rrow, $forceShow))))
+                        && $this->can_view_review($prow, $rrow, $forceShow))))
             || ($rights->allow_review
                 && $prow->review_not_incomplete($this)
                 && ($rights->allow_pc
                     || $Conf->settings["extrev_view"] >= 2))
-            || !$Conf->is_review_blind($rrow))
-            return true;
-        return false;
+            || !$Conf->is_review_blind($rrow);
     }
 
-    function canViewCommentIdentity($prow, $crow, $forceShow) {
-        global $Conf;
-        if ($crow->commentType & COMMENTTYPE_RESPONSE)
-            return $this->can_view_authors($prow, $forceShow);
-        $crow_contactId = 0;
-        if ($crow && isset($crow->commentContactId))
-            $crow_contactId = $crow->commentContactId;
-        else if ($crow)
-            $crow_contactId = $crow->contactId;
-        $rights = $this->rights($prow, $forceShow);
-        if ($rights->can_administer
-            || $crow_contactId == $this->contactId
-            || $rights->allow_pc
-            || ($rights->allow_review
-                && $Conf->settings["extrev_view"] >= 2)
-            || !$Conf->is_review_blind(!$crow || ($crow->commentType & COMMENTTYPE_BLIND) != 0))
-            return true;
-        return false;
-    }
-
-    function canViewDecision($prow, $forceShow = null) {
+    function can_view_decision($prow, $forceShow = null) {
         global $Conf;
         $rights = $this->rights($prow, $forceShow);
-        if ($rights->can_administer
+        return $rights->can_administer
             || ($rights->act_author_view
                 && $Conf->timeAuthorViewDecision())
             || ($rights->allow_pc_broad
                 && $Conf->timePCViewDecision($rights->view_conflict_type > 0))
             || ($rights->review_type > 0
                 && $rights->review_submitted
-                && $Conf->timeReviewerViewDecision()))
-            return true;
-        return false;
+                && $Conf->timeReviewerViewDecision());
+    }
+
+    function can_set_decision($prow) {
+        return $this->can_administer($prow);
     }
 
     function viewReviewFieldsScore($prow, $rrow) {
@@ -1983,7 +1978,7 @@ class Contact {
         // Deadlines are not considered.
         // (!$prow && !$rrow) ==> return best case scores that can be seen.
         // (!$prow &&  $rrow) ==> return worst case scores that can be seen.
-        // ** See also canViewReview.
+        // ** See also can_view_review.
         if ($prow && $rrow && $this->ownReview($rrow))
             return VIEWSCORE_REVIEWERONLY - 1;
 
@@ -2009,29 +2004,21 @@ class Contact {
             return VIEWSCORE_REVIEWERONLY - 1;
     }
 
-    function canViewTags($prow, $forceShow = null) {
+    function can_view_tags($prow, $forceShow = null) {
         // see also PaperActions::all_tags
         global $Conf;
         if (!$prow)
             return $this->isPC;
-        else {
-            $rights = $this->rights($prow, $forceShow);
-            return $rights->allow_pc
-                || ($rights->allow_pc_broad && $Conf->setting("tag_seeall") > 0);
-        }
+        $rights = $this->rights($prow, $forceShow);
+        return $rights->allow_pc
+            || ($rights->allow_pc_broad && $Conf->setting("tag_seeall") > 0);
     }
 
-    function canSetTags($prow, $forceShow = null) {
+    function can_set_tags($prow, $forceShow = null) {
         if (!$prow)
             return $this->isPC;
-        else {
-            $rights = $this->rights($prow, $forceShow);
-            return $rights->allow_pc;
-        }
-    }
-
-    function canSetOutcome($prow) {
-        return $this->can_administer($prow);
+        $rights = $this->rights($prow, $forceShow);
+        return $rights->allow_pc;
     }
 
 
@@ -2185,7 +2172,7 @@ class Contact {
         global $Conf;
         if ($row->timeWithdrawn > 0)
             return array("pstat_with", "Withdrawn");
-        else if (@$row->outcome && $this->canViewDecision($row, $forceShow)) {
+        else if (@$row->outcome && $this->can_view_decision($row, $forceShow)) {
             $data = @self::$status_info_cache[$row->outcome];
             if (!$data) {
                 $decclass = ($row->outcome > 0 ? "pstat_decyes" : "pstat_decno");

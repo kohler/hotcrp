@@ -34,7 +34,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         $foundRrow += $highlight;
         if ($Me->ownReview($rr))
             $foundMyReview++;
-        $canView = $Me->canViewReview($prow, $rr, null);
+        $canView = $Me->can_view_review($prow, $rr, null);
 
         // skip unsubmitted reviews
         if (!$canView && $hideUnviewable) {
@@ -65,7 +65,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             $t .= "<td>$id</td>";
         else if ($rrow || $rr->reviewModified <= 0
                  || (($mode == "re" || $mode == "assign")
-                     && $Me->canReview($prow, $rr)))
+                     && $Me->can_review($prow, $rr)))
             $t .= '<td><a href="' . hoturl("review", "r=$rlink") . '">' . $id . '</a></td>';
         else if (Navigation::page() != "paper")
             $t .= '<td><a href="' . hoturl("paper", "p=$prow->paperId#review$rlink") . '">' . $id . '</a></td>';
@@ -85,8 +85,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             $x = "";
 
         // reviewer identity
-        $showtoken = $rr->reviewToken && $Me->canReview($prow, $rr);
-        if (!$Me->canViewReviewerIdentity($prow, $rr, null)) {
+        $showtoken = $rr->reviewToken && $Me->can_review($prow, $rr);
+        if (!$Me->can_view_review_identity($prow, $rr, null)) {
             $t .= ($x ? "<td>$x</td>" : '<td class="empty"></td>');
         } else {
             if (!$showtoken || !Contact::is_anonymous_email($rr->email)) {
@@ -206,7 +206,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     // unfinished review notification
     $notetxt = "";
     if ($conflictType >= CONFLICT_AUTHOR && !$admin && $notShown
-        && $Me->canViewReview($prow, null, null)) {
+        && $Me->can_view_review($prow, null, null)) {
         if ($notShown == 1)
             $t = "1 review remains outstanding.";
         else
@@ -250,7 +250,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     $myrr = null;
     if ($rrows)
         foreach ($rrows as $rr) {
-            if ($Me->canViewReview($prow, $rr, null))
+            if ($Me->can_view_review($prow, $rr, null))
                 $nvisible++;
             if ($rr->contactId == $Me->contactId
                 || (!$myrr && $Me->ownReview($rr)))
@@ -263,10 +263,10 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         $cids = array();
         $cnames = array();
         foreach ($crows as $cr)
-            if ($Me->canViewComment($prow, $cr, null)) {
+            if ($Me->can_view_comment($prow, $cr, null)) {
                 $cids[] = $cr->commentId;
                 $n = '<a class="nowrap" href="#comment' . $cr->commentId . '">';
-                if ($Me->canViewCommentIdentity($prow, $cr, null))
+                if ($Me->can_view_comment_identity($prow, $cr, null))
                     $n .= Text::abbrevname_html($cr->user());
                 else
                     $n .= "anonymous";
@@ -305,12 +305,12 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     else if ($myrr && $rrow != $myrr) {
         $myrlink = unparseReviewOrdinal($myrr);
         $a = '<a href="' . hoturl("review", "r=$myrlink") . '" class="xx">';
-        if ($Me->canReview($prow, $myrr))
+        if ($Me->can_review($prow, $myrr))
             $x = $a . Ht::img("review24.png", "[Edit review]", "dlimg") . "&nbsp;<u><b>Edit your review</b></u></a>";
         else
             $x = $a . Ht::img("review24.png", "[Your review]", "dlimg") . "&nbsp;<u><b>Your review</b></u></a>";
         $t .= ($t == "" ? "" : $xsep) . $x;
-    } else if (!$myrr && !$rrow && $Me->canReview($prow, null)) {
+    } else if (!$myrr && !$rrow && $Me->can_review($prow, null)) {
         $x = '<a href="' . hoturl("review", "p=$prow->paperId&amp;m=re") . '" class="xx">'
             . Ht::img("review24.png", "[Write review]", "dlimg") . "&nbsp;<u><b>Write review</b></u></a>";
         $t .= ($t == "" ? "" : $xsep) . $x;

@@ -189,7 +189,7 @@ class StatusPaperColumn extends PaperColumn {
     public function sort_prepare($pl, &$rows, $sorter) {
         $force = $pl->search->limitName != "a" && $pl->contact->privChair;
         foreach ($rows as $row)
-            $row->_status_sort_info = ($pl->contact->canViewDecision($row, $force) ? $row->outcome : -10000);
+            $row->_status_sort_info = ($pl->contact->can_view_decision($row, $force) ? $row->outcome : -10000);
     }
     public function status_sorter($a, $b) {
         $x = $b->_status_sort_info - $a->_status_sort_info;
@@ -203,10 +203,10 @@ class StatusPaperColumn extends PaperColumn {
     public function content($pl, $row) {
         if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
             $pl->any->need_submit = true;
-        if ($row->outcome > 0 && $pl->contact->canViewDecision($row))
+        if ($row->outcome > 0 && $pl->contact->can_view_decision($row))
             $pl->any->accepted = true;
         if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0
-            && $pl->contact->canViewDecision($row))
+            && $pl->contact->can_view_decision($row))
             $pl->any->need_final = true;
         $status_info = $pl->contact->paper_status_info($row, $pl->search->limitName != "a" && $pl->contact->allow_administer($row));
         if (!$this->is_long && $status_info[0] == "pstat_sub")
@@ -443,7 +443,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
             while (($xrow = edb_orow($result))) {
                 $prow = $by_pid[$xrow->paperId];
                 if ($pl->contact->allow_administer($prow)
-                    || $pl->contact->canViewReviewerIdentity($prow, $xrow, true)
+                    || $pl->contact->can_view_review_identity($prow, $xrow, true)
                     || ($pl->contact->privChair
                         && $xrow->conflictType > 0
                         && !$xrow->reviewType))
@@ -746,7 +746,7 @@ class ReviewerListPaperColumn extends PaperColumn {
         parent::__construct("reviewers", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
-        if (!$pl->contact->canViewReviewerIdentity(true, null, null))
+        if (!$pl->contact->can_view_review_identity(true, null, null))
             return false;
         if ($visible) {
             $queryOptions["reviewList"] = 1;
@@ -775,7 +775,7 @@ class ReviewerListPaperColumn extends PaperColumn {
                 $x[] = '<span class="nw">' . $n . '</span>';
             }
         return $pl->maybeConflict($row, join(", ", $x),
-                                  $pl->contact->canViewReviewerIdentity($row, null, false));
+                                  $pl->contact->can_view_review_identity($row, null, false));
     }
 }
 
@@ -844,7 +844,7 @@ class TagListPaperColumn extends PaperColumn {
         parent::__construct("tags", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
-        if (!$pl->contact->canViewTags(null))
+        if (!$pl->contact->can_view_tags(null))
             return false;
         if ($visible)
             $queryOptions["tags"] = 1;
@@ -854,7 +854,7 @@ class TagListPaperColumn extends PaperColumn {
         return "Tags";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->canViewTags($row, true);
+        return !$pl->contact->can_view_tags($row, true);
     }
     public function content($pl, $row) {
         if ((string) $row->paperTags === "")
@@ -883,7 +883,7 @@ class TagPaperColumn extends PaperColumn {
         return parent::register(new TagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
     public function prepare($pl, &$queryOptions, $visible) {
-        if (!$pl->contact->canViewTags(null))
+        if (!$pl->contact->can_view_tags(null))
             return false;
         $tagger = new Tagger($pl->contact);
         if (!($ctag = $tagger->check($this->dtag, Tagger::NOVALUE)))
@@ -908,7 +908,7 @@ class TagPaperColumn extends PaperColumn {
         if ($this->editable)
             $empty = $sorter->reverse ? -2147483646 : 2147483646;
         foreach ($rows as $row)
-            if ($careful && !$pl->contact->canViewTags($row, true))
+            if ($careful && !$pl->contact->can_view_tags($row, true))
                 $row->$sortf = $unviewable;
             else if (($row->$sortf = $this->_tag_value($row)) === null)
                 $row->$sortf = $empty;
@@ -922,7 +922,7 @@ class TagPaperColumn extends PaperColumn {
         return "#$this->dtag";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->canViewTags($row, true);
+        return !$pl->contact->can_view_tags($row, true);
     }
     public function content($pl, $row) {
         if (($v = $this->_tag_value($row)) === null)
@@ -1040,7 +1040,7 @@ class ScorePaperColumn extends PaperColumn {
         $this->_avginfo = $avginfo = "_score_sort_avg." . $this->score;
         $reviewer = $pl->reviewer_cid();
         foreach ($rows as $row)
-            if ($pl->contact->canViewReview($row, $view_score, null)) {
+            if ($pl->contact->can_view_review($row, $view_score, null)) {
                 $scoreinfo = new ScoreInfo($row->scores($this->score));
                 $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $reviewer);
                 $row->$avginfo = $scoreinfo->average();
@@ -1069,10 +1069,10 @@ class ScorePaperColumn extends PaperColumn {
         return "<col width='0*' />";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->canViewReview($row, $this->form_field->view_score, true);
+        return !$pl->contact->can_view_review($row, $this->form_field->view_score, true);
     }
     public function content($pl, $row) {
-        $allowed = $pl->contact->canViewReview($row, $this->form_field->view_score, false);
+        $allowed = $pl->contact->can_view_review($row, $this->form_field->view_score, false);
         $fname = $this->score . "Scores";
         if (($allowed || $pl->contact->allow_administer($row))
             && $row->$fname) {
@@ -1192,7 +1192,7 @@ class TagReportPaperColumn extends PaperColumn {
         return "“" . $this->tag . "” tag report";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->canViewTags($row, true);
+        return !$pl->contact->can_view_tags($row, true);
     }
     public function content($pl, $row) {
         if (($t = $row->paperTags) === "")
@@ -1274,7 +1274,7 @@ class TagOrderSortPaperColumn extends PaperColumn {
             $rev = $ot[$i]->reverse;
             foreach ($rows as $row) {
                 if ($row->$n === null
-                    || ($careful && !$pl->contact->canViewTags($row, true)))
+                    || ($careful && !$pl->contact->can_view_tags($row, true)))
                     $row->$n = 2147483647;
                 if ($rev)
                     $row->$n = -$row->$n;
@@ -1298,7 +1298,7 @@ class LeadPaperColumn extends PaperColumn {
         parent::__construct("lead", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
-        return $pl->contact->canViewReviewerIdentity(true, null, true);
+        return $pl->contact->can_view_review_identity(true, null, true);
     }
     public function header($pl, $row, $ordinal) {
         return "Discussion lead";

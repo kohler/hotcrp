@@ -29,8 +29,8 @@ if (isset($_REQUEST["uploadForm"])
     && check_post()) {
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
     while (($req = $rf->parseTextForm($tf))) {
-	if (($prow = $Conf->paperRow($req['paperId'], $Me, $whyNot))
-	    && $Me->can_submit_review($prow, null, $whyNot)) {
+	if (($prow = $Conf->paperRow($req["paperId"], $Me, $whyNot))
+	    && !($whyNot = $Me->perm_submit_review($prow, null))) {
 	    $rrow = $Conf->reviewRow(array("paperId" => $prow->paperId, "contactId" => $Me->contactId,
 					   "rev_tokens" => $Me->review_tokens(),
 					   "first" => true));
@@ -55,8 +55,8 @@ function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
     while (($row = PaperInfo::fetch($result, $Me)))
 	if ($settings[$row->paperId] !== null
 	    && !($settingrank
-		 ? $Me->canSetRank($row, true)
-		 : $Me->canSetTags($row, true))) {
+		 ? $Me->can_set_rank($row, true)
+		 : $Me->can_set_tags($row, true))) {
 	    $errors[$linenos[$row->paperId]] = "You cannot rank paper #$row->paperId. (" . ($Me->isPC?"PC":"npc") . $Me->contactId . $row->conflictType . ")";
 	    unset($settings[$row->paperId]);
 	} else if ($titles[$row->paperId] !== ""

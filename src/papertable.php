@@ -44,9 +44,9 @@ class PaperTable {
         }
 
         $ms = array();
-        if ($Me->canViewReview($prow, null, null))
+        if ($Me->can_view_review($prow, null, null))
             $ms["r"] = true;
-        if ($Me->canReview($prow, null))
+        if ($Me->can_review($prow, null))
             $ms["re"] = true;
         if ($prow->has_author($Me)
             && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
@@ -1297,7 +1297,7 @@ class PaperTable {
 
             $tx = $tagger->unparse_and_link($viewable, $tags, false,
                                             !$this->prow->has_conflict($Me));
-            $is_editable = $site && $Me->canSetTags($this->prow);
+            $is_editable = $site && $Me->can_set_tags($this->prow);
             $unfolded = $is_editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") == "tags");
 
             echo $this->_papstripBegin("tags", !$unfolded,
@@ -1693,9 +1693,9 @@ class PaperTable {
         if (($prow->managerContactId || ($Me->privChair && $this->mode == "assign"))
             && $Me->can_view_paper_manager($prow))
             $this->papstripManager($Me->privChair);
-        if ($Me->canViewTags($prow))
+        if ($Me->can_view_tags($prow))
             $this->papstripTags("review");
-        if ($Me->canSetRank($prow))
+        if ($Me->can_set_rank($prow))
             $this->papstripRank();
         $this->papstripWatch();
         if (($this->admin
@@ -1706,9 +1706,9 @@ class PaperTable {
         if ($Me->can_view_authors($prow, true) && !$this->editable)
             $this->papstripCollaborators();
 
-        $foldShepherd = $Me->canSetOutcome($prow) && $prow->outcome <= 0
+        $foldShepherd = $Me->can_set_decision($prow) && $prow->outcome <= 0
             && $prow->shepherdContactId == 0 && $this->mode != "assign";
-        if ($Me->canSetOutcome($prow))
+        if ($Me->can_set_decision($prow))
             $this->papstripOutcomeSelector();
         if ($Me->can_view_lead($prow))
             $this->papstripLead($this->mode == "assign");
@@ -1736,7 +1736,7 @@ class PaperTable {
 
         // what actions are supported?
         $canEdit = $Me->can_edit_paper($prow);
-        $canReview = $Me->canReview($prow, null);
+        $canReview = $Me->can_review($prow, null);
         $canAssign = $Me->can_administer($prow);
         $canHome = ($canEdit || $canAssign || $this->mode == "contact");
 
@@ -1946,7 +1946,7 @@ class PaperTable {
         $prow = $this->prow;
 
         if ($Me->is_admin_force()
-            && !$Me->canViewReview($prow, null, false))
+            && !$Me->can_view_review($prow, null, false))
             $this->_paptabSepContaining($this->_privilegeMessage());
         else if ($Me->contactId == $prow->managerContactId && !$Me->privChair
                  && $Me->contactId > 0)
@@ -1959,12 +1959,12 @@ class PaperTable {
         // text format link
         $viewable = array();
         foreach ($this->rrows as $rr)
-            if ($rr->reviewModified > 0 && $Me->canViewReview($prow, $rr, null)) {
+            if ($rr->reviewModified > 0 && $Me->can_view_review($prow, $rr, null)) {
                 $viewable[] = "reviews";
                 break;
             }
         foreach ($this->crows as $cr)
-            if ($Me->canViewComment($prow, $cr, null)) {
+            if ($Me->can_view_comment($prow, $cr, null)) {
                 $viewable[] = "comments";
                 break;
             }
@@ -1983,7 +1983,7 @@ class PaperTable {
             }
         foreach ($this->rrows as $rr)
             if (!$rr->reviewSubmitted && $rr->reviewModified > 0
-                && $Me->canViewReview($prow, $rr, null)) {
+                && $Me->can_view_review($prow, $rr, null)) {
                 $rf = ReviewForm::get($rr);
                 $rf->show($prow, $this->rrows, $rr, $opt);
             }
@@ -2016,8 +2016,8 @@ class PaperTable {
     function paptabEndWithReviewMessage() {
         global $Conf, $Me;
 
-        if (!$Me->canViewReview($this->prow, null, null, $whyNot)
-            && $this->rrows)
+        if ($this->rrows
+            && ($whyNot = $Me->perm_view_review($this->prow, null, null)))
             $this->_paptabSepContaining("You can’t see the reviews for this paper. " . whyNotText($whyNot, "review"));
 
         if ($this->mode != "pe")
@@ -2033,13 +2033,13 @@ class PaperTable {
         $actChair = $Me->can_administer($prow);
 
         // review messages
-        $viewall = $Me->canViewReview($prow, null, false, $whyNot);
+        $whyNot = $Me->perm_view_review($prow, null, false);
         $msgs = array();
         if (!$this->rrow && $this->prow->reviewType <= 0)
             $msgs[] = "You haven’t been assigned to review this paper, but you can review it anyway.";
-        if ($Me->is_admin_force() && !$viewall) {
+        if ($whyNot && $Me->is_admin_force()) {
             $msgs[] = $this->_privilegeMessage();
-        } else if (!$viewall && isset($whyNot["reviewNotComplete"])
+        } else if ($whyNot && isset($whyNot["reviewNotComplete"])
                    && ($Me->isPC || $Conf->setting("extrev_view"))) {
             $nother = 0;
             foreach ($this->rrows as $rr)
@@ -2076,7 +2076,7 @@ class PaperTable {
                 $opt["editmessage"] = "The <a href='" . hoturl("deadlines") . "'>review deadline</a> has passed, so the review can no longer be changed.$override";
             else
                 $opt["editmessage"] = "The site is not open for reviewing, so the review cannot be changed.$override";
-        } else if (!$Me->canReview($prow, $this->editrrow))
+        } else if (!$Me->can_review($prow, $this->editrrow))
             $opt["edit"] = false;
 
         $rf = ReviewForm::get($this->editrrow);
@@ -2208,7 +2208,7 @@ class PaperTable {
             $rrow = $Conf->reviewRow($sel);
         if (($whyNot = $Me->perm_view_paper($prow))
             || (!isset($_REQUEST["paperId"])
-                && !$Me->canViewReview($prow, $rrow, null)
+                && !$Me->can_view_review($prow, $rrow, null)
                 && !$Me->privChair)) {
             // Don't allow querier to probe review/comment<->paper mapping
             if (!isset($_REQUEST["paperId"]))
@@ -2260,7 +2260,7 @@ class PaperTable {
         if ($this->prow) {
             $this->crows = $this->prow->all_comments();
             foreach ($this->crows as $cid => $crow)
-                if ($Me->canViewComment($this->prow, $crow, null))
+                if ($Me->can_view_comment($this->prow, $crow, null))
                     $this->mycrows[$cid] = $crow;
         }
     }
@@ -2269,16 +2269,16 @@ class PaperTable {
         global $Conf, $Me;
         $prow = $this->prow;
         if ($this->mode == "re" && $this->rrow
-            && !$Me->canReview($prow, $this->rrow, $whyNot, false)
+            && !$Me->can_review($prow, $this->rrow, false)
             && ($this->rrow->contactId != $Me->contactId
                 || $this->rrow->reviewSubmitted))
             $this->mode = "r";
         if ($this->mode == "r" && $this->rrow
-            && !$Me->canViewReview($prow, $this->rrow, null))
+            && !$Me->can_view_review($prow, $this->rrow, null))
             $this->rrow = $this->editrrow = null;
         if ($this->mode == "r" && !$this->rrow && !$this->editrrow
-            && !$Me->canViewReview($prow, $this->rrow, null)
-            && $Me->canReview($prow, $this->rrow, $whyNot, false))  {
+            && !$Me->can_view_review($prow, $this->rrow, null)
+            && $Me->can_review($prow, $this->rrow, false))  {
             $this->mode = "re";
             foreach ($this->rrows as $rr)
                 if ($rr->contactId == $Me->contactId

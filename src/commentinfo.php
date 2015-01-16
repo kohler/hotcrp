@@ -79,14 +79,12 @@ class CommentInfo {
 
     public function unparse_json($contact, $viewstate = null) {
         global $Conf;
-        if ($this->commentId && !$contact->canViewComment($this->prow, $this, null))
+        if ($this->commentId && !$contact->can_view_comment($this->prow, $this, null))
             return false;
 
         // placeholder for new comment
         if (!$this->commentId) {
-            if ($this->commentType & COMMENTTYPE_RESPONSE
-                ? !$contact->can_respond($this->prow, null)
-                : !$contact->can_comment($this->prow, null))
+            if (!$contact->can_comment($this->prow, $this))
                 return false;
             $cj = (object) array("is_new" => true, "editable" => true);
             if ($this->commentType & COMMENTTYPE_RESPONSE)
@@ -117,8 +115,8 @@ class CommentInfo {
         }
 
         // identity and time
-        $idable = $contact->canViewCommentIdentity($this->prow, $this, null);
-        $idable_override = $idable || $contact->canViewCommentIdentity($this->prow, $this, true);
+        $idable = $contact->can_view_comment_identity($this->prow, $this, null);
+        $idable_override = $idable || $contact->can_view_comment_identity($this->prow, $this, true);
         if ($idable || $idable_override) {
             $user = $this->user();
             $cj->author = Text::user_html($user);
@@ -139,7 +137,7 @@ class CommentInfo {
     public function unparse_text($contact, $no_title = false) {
         $x = "===========================================================================\n";
         $n = ($this->commentType & COMMENTTYPE_RESPONSE ? "Response" : "Comment");
-        if ($contact->canViewCommentIdentity($this->prow, $this, false))
+        if ($contact->can_view_comment_identity($this->prow, $this, false))
             $n .= " by " . Text::user_text($this->user());
         $x .= str_pad($n, (int) (37.5 + strlen(UnicodeHelper::deaccent($n)) / 2), " ", STR_PAD_LEFT) . "\n";
         if (!$no_title)
@@ -160,7 +158,7 @@ class CommentInfo {
         if (strlen($crow->shortTitle) != strlen($crow->title))
             $t .= "...";
         $t .= "</a>";
-        if ($contact->canViewCommentIdentity($crow, $crow, false))
+        if ($contact->can_view_comment_identity($crow, $crow, false))
             $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>comment by</span> " . Text::user_html(self::_user($crow));
         $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>posted</span> " . $Conf->parseableTime($crow->timeModified, false);
         $t .= "</small><br /><a class='q'" . substr($a, 3)
@@ -314,7 +312,7 @@ class CommentInfo {
             $tmpl = "@responsenotify";
         else
             $tmpl = "@commentnotify";
-        if ($minic->canViewComment($prow, self::$watching, false)
+        if ($minic->can_view_comment($prow, self::$watching, false)
             // Don't send notifications about draft responses to the chair,
             // even though the chair can see draft responses.
             && ($tmpl !== "@responsedraftnotify" || $minic->actAuthorView($prow)))

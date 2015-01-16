@@ -8,7 +8,7 @@ class PaperActions {
     static function setDecision($prow) {
         global $Conf, $Me, $Error, $OK;
         $ajax = defval($_REQUEST, "ajax", false);
-        if ($Me->canSetOutcome($prow)) {
+        if ($Me->can_set_decision($prow)) {
             $dnum = cvtint(@$_REQUEST["decision"]);
             $decs = $Conf->decision_map();
             if (isset($decs[$dnum])) {
@@ -72,7 +72,7 @@ class PaperActions {
         global $Conf, $Me, $Error, $OK;
         $ajax = defval($_REQUEST, "ajax", false);
         $tag = $Conf->setting_data("tag_rank", "");
-        if (!$Me->canSetRank($prow)) {
+        if (!$Me->can_set_rank($prow)) {
             $Conf->errorMsg("You don’t have permission to rank this paper.");
             $Error["rank"] = true;
         } else if (isset($_REQUEST["rank"])) {
@@ -107,7 +107,7 @@ class PaperActions {
         global $Conf, $Me, $Error, $OK;
         $ajax = defval($_REQUEST, "ajax", false);
         $tag = $Conf->setting_data("tag_rank", "");
-        if (!$Me->canSetRank($prow)) {
+        if (!$Me->can_set_rank($prow)) {
             $Conf->errorMsg("You don’t have permission to rank this paper.");
             $Error["rank"] = true;
         } else {
@@ -195,7 +195,7 @@ class PaperActions {
         if (isset($_REQUEST["cancelsettags"]))
             return;
         $ajax = @$_REQUEST["ajax"];
-        if ($Me->canSetTags($prow)) {
+        if ($Me->can_set_tags($prow)) {
             $tagger = new Tagger;
             if (isset($_REQUEST["tags"]))
                 $tagger->save($prow->paperId, $_REQUEST["tags"], "p");
@@ -227,7 +227,7 @@ class PaperActions {
         global $Conf, $Me, $Error, $OK;
         $ajax = defval($_REQUEST, "ajax", false);
         $r = "";
-        if ($Me->canViewTags($prow)) {
+        if ($Me->can_view_tags($prow)) {
             if (($vt = TagInfo::vote_tags())) {
                 $q = "";
                 $mytagprefix = $Me->contactId . "~";

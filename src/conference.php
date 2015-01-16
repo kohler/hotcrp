@@ -1851,7 +1851,7 @@ class Conference {
             if ($curcr)
                 /* do nothing */;
             else if (($curcr = array_pop($crows))) {
-                if (!$contact->canViewComment($curcr, $curcr, false)) {
+                if (!$contact->can_view_comment($curcr, $curcr, false)) {
                     $curcr = null;
                     continue;
                 }
@@ -1868,7 +1868,7 @@ class Conference {
             if ($currr)
                 /* do nothing */;
             else if (($currr = array_pop($rrows))) {
-                if (!$contact->canViewReview($currr, $currr, false)) {
+                if (!$contact->can_view_review($currr, $currr, false)) {
                     $currr = null;
                     continue;
                 }

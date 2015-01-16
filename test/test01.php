@@ -53,12 +53,12 @@ function check_paper1($paper1) {
     assert(!$user_kohler->can_administer($paper1));
     assert(!$user_nobody->can_administer($paper1));
 
-    assert($user_chair->canViewTags($paper1));
-    assert(!$user_estrin->canViewTags($paper1));
-    assert($user_marina->canViewTags($paper1));
-    assert(!$user_van->canViewTags($paper1));
-    assert(!$user_kohler->canViewTags($paper1));
-    assert(!$user_nobody->canViewTags($paper1));
+    assert($user_chair->can_view_tags($paper1));
+    assert(!$user_estrin->can_view_tags($paper1));
+    assert($user_marina->can_view_tags($paper1));
+    assert(!$user_van->can_view_tags($paper1));
+    assert(!$user_kohler->can_view_tags($paper1));
+    assert(!$user_nobody->can_view_tags($paper1));
 
     assert($user_chair->can_update_paper($paper1));
     assert($user_estrin->can_update_paper($paper1));
@@ -80,7 +80,7 @@ assert(!$user_capability->contactId);
 assert($user_capability->can_view_paper($paper1));
 assert(!$user_capability->allow_administer($paper1));
 assert(!$user_capability->can_administer($paper1));
-assert(!$user_capability->canViewTags($paper1));
+assert(!$user_capability->can_view_tags($paper1));
 assert(!$user_capability->can_update_paper($paper1));
 
 // change submission date
@@ -157,19 +157,19 @@ assert_eqq(join(";", array_keys($j)), "1");
 $comment1 = new CommentInfo(null, $paper1);
 $c1ok = $comment1->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
 assert($c1ok);
-assert(!$user_van->canViewComment($paper1, $comment1, false));
-assert(!$user_van->canViewCommentIdentity($paper1, $comment1, false));
+assert(!$user_van->can_view_comment($paper1, $comment1, false));
+assert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
 $Conf->save_setting("au_seerev", AU_SEEREV_ALWAYS);
-assert($user_van->canViewComment($paper1, $comment1, false));
-assert(!$user_van->canViewCommentIdentity($paper1, $comment1, false));
+assert($user_van->can_view_comment($paper1, $comment1, false));
+assert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
 $Conf->save_setting("rev_blind", Conference::BLIND_OPTIONAL);
-assert($user_van->canViewComment($paper1, $comment1, false));
-assert(!$user_van->canViewCommentIdentity($paper1, $comment1, false));
+assert($user_van->can_view_comment($paper1, $comment1, false));
+assert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
 $c1ok = $comment1->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
 assert($c1ok);
-assert($user_van->canViewCommentIdentity($paper1, $comment1, false));
+assert($user_van->can_view_comment_identity($paper1, $comment1, false));
 $Conf->save_setting("rev_blind", null);
-assert(!$user_van->canViewCommentIdentity($paper1, $comment1, false));
+assert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
 $Conf->save_setting("au_seerev", AU_SEEREV_NO);
 
 // set up some tags and tracks
