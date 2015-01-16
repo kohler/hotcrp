@@ -75,7 +75,7 @@ if (($getaction == "paper" || $getaction == "final"
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection())));
     $downloads = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
-        if (!$Me->canViewPaper($row, $whyNot, true))
+        if (($whyNot = $Me->permViewPaper($row, true)))
             $Conf->errorMsg(whyNotText($whyNot, "view"));
         else
             $downloads[] = $row->paperId;
@@ -109,7 +109,7 @@ if ($getaction == "abstract" && SearchActions::any() && defval($_REQUEST, "ajax"
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = PaperInfo::fetch($result, $Me)) {
-        if (!$Me->canViewPaper($prow, $whyNot))
+        if (($whyNot = $Me->perm_view_paper($prow)))
             $Conf->errorMsg(whyNotText($whyNot, "view"));
         else {
             $text = "===========================================================================\n";
@@ -712,7 +712,7 @@ if ($getaction == "topics" && SearchActions::any()) {
     $tomap = $Conf->topic_order_map();
 
     while (($row = PaperInfo::fetch($result, $Me))) {
-        if (!$Me->canViewPaper($row))
+        if (!$Me->can_view_paper($row))
             continue;
         $out = array();
         $topicIds = ($row->topicIds == "" ? "x" : $row->topicIds);

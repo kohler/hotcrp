@@ -55,7 +55,7 @@ else {
 if (!isset($Error)
     && !($prow = $Conf->paperRow($paperId, $Me, $whyNot)))
     $Error = whyNotText($whyNot, "view");
-if (!isset($Error) && !$Me->can_view_pdf($prow, $whyNot))
+if (!isset($Error) && ($whyNot = $Me->perm_view_pdf($prow)))
     $Error = whyNotText($whyNot, "view");
 if (!isset($Error) && $documentType > 0
     && !$Me->can_view_paper_option($prow, $documentType, true))

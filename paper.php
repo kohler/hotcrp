@@ -9,7 +9,7 @@ require_once("src/papertable.php");
 if ($Me->is_empty())
     $Me->escape();
 if (@$_REQUEST["update"] && check_post() && !$Me->has_database_account()
-    && $Me->canStartPaper())
+    && $Me->can_start_paper())
     $Me = $Me->activate_database_account();
 $useRequest = isset($_REQUEST["after_login"]);
 foreach (array("emailNote", "reason") as $x)
@@ -469,7 +469,7 @@ function report_update_paper_errors() {
 
 // send watch messages
 function final_submit_watch_callback($prow, $minic) {
-    if ($minic->canViewPaper($prow))
+    if ($minic->can_view_paper($prow))
         HotCRPMailer::send_to($minic, "@finalsubmitnotify", $prow);
 }
 
@@ -770,18 +770,18 @@ if ((@$_REQUEST["update"] || @$_REQUEST["submitfinal"])
 
     // check deadlines
     if ($newPaper)
-        // we know that canStartPaper implies canFinalizePaper
-        $ok = $Me->canStartPaper($whyNot);
+        // we know that can_start_paper implies can_finalize_paper
+        $whyNot = $Me->perm_start_paper();
     else if (@$_REQUEST["submitfinal"])
-        $ok = $Me->canSubmitFinalPaper($prow, $whyNot);
+        $whyNot = $Me->perm_submit_final_paper($prow);
     else {
-        $ok = $Me->canUpdatePaper($prow, $whyNot);
-        if (!$ok && @$_REQUEST["submitpaper"] && !count($diffs))
-            $ok = $Me->canFinalizePaper($prow, $whyNot);
+        $whyNot = $Me->perm_update_paper($prow);
+        if ($whyNot && @$_REQUEST["submitpaper"] && !count($diffs))
+            $whyNot = $Me->perm_finalize_paper($prow);
     }
 
     // actually update
-    if ($ok) {
+    if (!$whyNot) {
         if (update_paper($Me, !!@$_REQUEST["submitpaper"],
                          !!@$_REQUEST["submitfinal"], $diffs))
             redirectSelf(array("p" => $paperId, "m" => "pe"));
@@ -869,7 +869,7 @@ confHeader();
 
 // prepare paper table
 if ($paperTable->mode == "pe") {
-    $editable = $newPaper || $Me->canUpdatePaper($prow, $whyNot, true);
+    $editable = $newPaper || $Me->can_update_paper($prow, true);
     if ($prow && $prow->outcome > 0 && $Conf->collectFinalPapers()
         && (($Conf->timeAuthorViewDecision() && $Conf->timeSubmitFinalPaper())
             || $Me->allow_administer($prow)))

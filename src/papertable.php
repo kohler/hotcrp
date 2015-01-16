@@ -51,7 +51,7 @@ class PaperTable {
         if ($prow->has_author($Me)
             && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
             $ms["pe"] = true;
-        if ($Me->canViewPaper($prow))
+        if ($Me->can_view_paper($prow))
             $ms["p"] = true;
         if ($prow->has_author($Me)
             || $Me->allow_administer($prow))
@@ -1527,7 +1527,7 @@ class PaperTable {
             if ($Me->canRevivePaper($prow))
                 $m .= '<div class="xwarning">This paper has been withdrawn, but you can still revive it.' . $this->deadlineSettingIs("sub_update") . '</div>';
         } else if ($has_author && $prow->timeSubmitted <= 0) {
-            if ($Me->canUpdatePaper($prow)) {
+            if ($Me->can_update_paper($prow)) {
                 $m .= '<div class="xwarning">';
                 if ($Conf->setting("sub_freeze"))
                     $m .= "A final version of this paper must be submitted before it can be reviewed.";
@@ -1536,13 +1536,13 @@ class PaperTable {
                 else
                     $m .= "The paper is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
                 $m .= $this->deadlineSettingIs("sub_update") . "</div>";
-            } else if ($Me->canFinalizePaper($prow))
+            } else if ($Me->can_finalize_paper($prow))
                 $m .= '<div class="xwarning">Unless the paper is submitted, it will not be reviewed. You cannot make any changes as the <a href="' . hoturl("deadlines") . '">deadline</a> has passed, but the current version can be still be submitted.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message() . '</div>';
             else if ($Conf->deadlinesBetween("", "sub_sub", "sub_grace"))
                 $m .= '<div class="xwarning">The site is not open for submission updates at the moment.' . $this->_override_message() . '</div>';
             else
                 $m .= '<div class="xwarning">The <a href="' . hoturl("deadlines") . '">deadline</a> for submitting this paper has passed. The paper will not be reviewed.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message() . '</div>';
-        } else if ($has_author && $Me->canUpdatePaper($prow)) {
+        } else if ($has_author && $Me->can_update_paper($prow)) {
             if ($this->mode == "pe")
                 $m .= '<div class="xconfirm">This paper is ready and will be considered for review. You can still make changes if necessary.' . $this->deadlineSettingIs("sub_update") . '</div>';
         } else if ($has_author
@@ -1589,21 +1589,21 @@ class PaperTable {
             // check whether we can save
             if ($this->canUploadFinal) {
                 $updater = "submitfinal";
-                $can_update = $Me->canSubmitFinalPaper($prow, $whyNot, false);
+                $whyNot = $Me->perm_submit_final_paper($prow, false);
             } else if ($prow) {
                 $updater = "update";
-                $can_update = $Me->canUpdatePaper($prow, $whyNot, false);
+                $whyNot = $Me->perm_update_paper($prow, false);
             } else {
                 $updater = "update";
-                $can_update = $Me->canStartPaper($whyNot, false);
+                $whyNot = $Me->perm_start_paper(false);
             }
             // pay attention only to the deadline
-            if (!$can_update && @$whyNot["deadline"])
+            if ($whyNot && @$whyNot["deadline"])
                 $whyNot = array("deadline" => $whyNot["deadline"]);
-            else if (!$can_update)
-                $can_update = true;
+            else
+                $whyNot = null;
             // produce button
-            if ($can_update)
+            if (!$whyNot)
                 $buttons[] = array(Ht::submit($updater, "Save changes", array("class" => "bb")), "");
             else if ($this->admin)
                 $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", array("hotoverridetext" => whyNotText($whyNot, $prow ? "update" : "register"), "hotoverridesubmit" => $updater)), "(admin only)");
@@ -1735,7 +1735,7 @@ class PaperTable {
         $prow = $this->prow;
 
         // what actions are supported?
-        $canEdit = $Me->canEditPaper($prow);
+        $canEdit = $Me->can_edit_paper($prow);
         $canReview = $Me->canReview($prow, null);
         $canAssign = $Me->can_administer($prow);
         $canHome = ($canEdit || $canAssign || $this->mode == "contact");
@@ -1805,7 +1805,7 @@ class PaperTable {
         $spacer = "<div class='g'></div>\n\n";
         echo $form, "<div class='aahc'>";
         $this->canUploadFinal = $prow && $prow->outcome > 0
-            && ($Me->canSubmitFinalPaper($prow, $whyNot, true)
+            && (!($whyNot = $Me->perm_submit_final_paper($prow, true))
                 || @$whyNot["deadline"] == "final_done");
 
         if (($m = $this->editMessage()))
@@ -2206,7 +2206,7 @@ class PaperTable {
         $rrow = null;
         if (isset($sel["reviewId"]))
             $rrow = $Conf->reviewRow($sel);
-        if (!$Me->canViewPaper($prow, $whyNot)
+        if (($whyNot = $Me->perm_view_paper($prow))
             || (!isset($_REQUEST["paperId"])
                 && !$Me->canViewReview($prow, $rrow, null)
                 && !$Me->privChair)) {

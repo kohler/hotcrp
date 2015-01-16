@@ -66,7 +66,7 @@ class PaperStatus {
 
     function row_to_json($prow, $args = array()) {
         global $Conf;
-        if (!$prow || ($this->contact && !$this->contact->canViewPaper($prow)))
+        if (!$prow || ($this->contact && !$this->contact->can_view_paper($prow)))
             return null;
 
         $pj = (object) array();

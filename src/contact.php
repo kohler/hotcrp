@@ -1111,8 +1111,12 @@ class Contact {
         return $ci;
     }
 
-    static public function override_deadlines($override = null) {
-        if ($override !== null)
+    public function override_deadlines($rights, $override = null) {
+        if ($rights && $rights instanceof PaperInfo)
+            $rights = $this->rights($rights);
+        if ($rights ? !$rights->allow_administer : !$this->privChair)
+            return false;
+        else if ($override !== null)
             return !!$override;
         else
             return isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
@@ -1174,37 +1178,37 @@ class Contact {
             return $only_if_complex ? false : $m[0];
     }
 
-    function canStartPaper(&$whyNot = null, $override = null) {
+    function can_start_paper($override = null) {
         global $Conf;
-        $whyNot = array();
-        if ($Conf->timeStartPaper()
-            || ($this->privChair && self::override_deadlines($override)))
-            return true;
-        $whyNot["deadline"] = "sub_reg";
-        if ($this->privChair)
-            $whyNot["override"] = 1;
-        return false;
+        return $Conf->timeStartPaper() || $this->override_deadlines(null, $override);
     }
 
-    function canEditPaper($prow, &$whyNot = null) {
+    function perm_start_paper($override = null) {
+        return $this->can_start_paper($override)
+            ? null
+            : array("deadline" => "sub_reg", "override" => $this->privChair);
+    }
+
+    function can_edit_paper($prow) {
         $rights = $this->rights($prow, "any");
         return $rights->allow_administer || $prow->has_author($this);
     }
 
-    function canUpdatePaper($prow, &$whyNot = null, $override = null) {
+    function can_update_paper($prow, $override = null) {
         global $Conf;
-        // fetch paper
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
-            return false;
         $rights = $this->rights($prow, "any");
-        $override = $rights->allow_administer && self::override_deadlines($override);
-        // policy
-        if ($rights->allow_author
+        return $rights->allow_author
             && $prow->timeWithdrawn <= 0
             && ($prow->outcome >= 0 || !$Conf->timeAuthorViewDecision())
-            && ($Conf->timeUpdatePaper($prow) || $override))
-            return true;
-        // collect failure reasons
+            && ($Conf->timeUpdatePaper($prow) || $this->override_deadlines($rights, $override));
+    }
+
+    function perm_update_paper($prow, $override = null) {
+        global $Conf;
+        if ($this->can_update_paper($prow, $override))
+            return null;
+        $rights = $this->rights($prow, "any");
+        $whyNot = array("fail" => 1);
         if (!$rights->allow_author && $rights->allow_author_view)
             $whyNot["signin"] = 1;
         else if (!$rights->allow_author)
@@ -1213,28 +1217,29 @@ class Contact {
             $whyNot["withdrawn"] = 1;
         if ($Conf->timeAuthorViewDecision() && $prow->outcome < 0)
             $whyNot["rejected"] = 1;
-        if ($prow->timeSubmitted > 0 && $Conf->setting('sub_freeze') > 0)
+        if ($prow->timeSubmitted > 0 && $Conf->setting("sub_freeze") > 0)
             $whyNot["updateSubmitted"] = 1;
-        if (!$Conf->timeUpdatePaper($prow) && !$override)
+        if (!$Conf->timeUpdatePaper($prow) && !$this->override_deadlines($rights, $override))
             $whyNot["deadline"] = "sub_update";
         if ($rights->allow_administer)
             $whyNot["override"] = 1;
-        return false;
+        return $whyNot;
     }
 
-    function canFinalizePaper($prow, &$whyNot = null) {
+    function can_finalize_paper($prow) {
         global $Conf;
-        // fetch paper
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
-            return false;
         $rights = $this->rights($prow, "any");
-        // policy
-        if ($rights->allow_author
+        return $rights->allow_author
             && $prow->timeWithdrawn <= 0
-            && ($Conf->timeFinalizePaper($prow)
-                || ($rights->allow_administer && self::override_deadlines())))
-            return true;
-        // collect failure reasons
+            && ($Conf->timeFinalizePaper($prow) || $this->override_deadlines($rights));
+    }
+
+    function perm_finalize_paper($prow) {
+        global $Conf;
+        if ($this->can_finalize_paper($prow))
+            return null;
+        $rights = $this->rights($prow, "any");
+        $whyNot = array("fail" => 1);
         if (!$rights->allow_author && $rights->allow_author_view)
             $whyNot["signin"] = 1;
         else if (!$rights->allow_author)
@@ -1243,12 +1248,11 @@ class Contact {
             $whyNot["withdrawn"] = 1;
         if ($prow->timeSubmitted > 0)
             $whyNot["updateSubmitted"] = 1;
-        if (!$Conf->timeFinalizePaper($prow)
-            && !($rights->allow_administer && self::override_deadlines()))
+        if (!$Conf->timeFinalizePaper($prow) && !$this->override_deadlines($rights))
             $whyNot["deadline"] = "finalizePaperSubmission";
         if ($rights->allow_administer)
             $whyNot["override"] = 1;
-        return false;
+        return $whyNot;
     }
 
     function canWithdrawPaper($prow, &$whyNot = null, $override = null) {
@@ -1256,11 +1260,10 @@ class Contact {
         if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
             return false;
         $rights = $this->rights($prow, "any");
-        $override = $rights->allow_administer && self::override_deadlines($override);
         // policy
         if ($rights->allow_author
             && $prow->timeWithdrawn <= 0
-            && ($override || $prow->outcome == 0))
+            && ($prow->outcome == 0 || $this->override_deadlines($rights, $override)))
             return true;
         // collect failure reasons
         if ($prow->timeWithdrawn > 0)
@@ -1269,7 +1272,7 @@ class Contact {
             $whyNot["signin"] = 1;
         else if (!$rights->allow_author)
             $whyNot["author"] = 1;
-        else if ($prow->outcome != 0 && !$override)
+        else if ($prow->outcome != 0 && !$this->override_deadlines($rights, $override))
             $whyNot["decided"] = 1;
         if ($rights->allow_administer)
             $whyNot["override"] = 1;
@@ -1285,8 +1288,7 @@ class Contact {
         // policy
         if ($rights->allow_author
             && $prow->timeWithdrawn > 0
-            && ($Conf->timeUpdatePaper($prow)
-                || ($rights->allow_administer && self::override_deadlines())))
+            && ($Conf->timeUpdatePaper($prow) || $this->override_deadlines($rights)))
             return true;
         // collect failure reasons
         if (!$rights->allow_author && $rights->allow_author_view)
@@ -1295,30 +1297,30 @@ class Contact {
             $whyNot["author"] = 1;
         if ($prow->timeWithdrawn <= 0)
             $whyNot["notWithdrawn"] = 1;
-        if (!$Conf->timeUpdatePaper($prow)
-            && !($rights->allow_administer && self::override_deadlines()))
+        if (!$Conf->timeUpdatePaper($prow) && !$this->override_deadlines($rights))
             $whyNot["deadline"] = "sub_update";
         if ($rights->allow_administer)
             $whyNot["override"] = 1;
         return false;
     }
 
-    function canSubmitFinalPaper($prow, &$whyNot = null, $override = null) {
+    function can_submit_final_paper($prow, $override = null) {
         global $Conf;
-        // fetch paper
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
-            return false;
         $rights = $this->rights($prow, "any");
-        $override = $rights->allow_administer && self::override_deadlines($override);
-        // policy
-        if ($rights->allow_author
+        return $rights->allow_author
             && $Conf->collectFinalPapers()
             && $prow->timeWithdrawn <= 0
             && $prow->outcome > 0
             && $Conf->timeAuthorViewDecision()
-            && ($Conf->timeSubmitFinalPaper() || $override))
-            return true;
-        // collect failure reasons
+            && ($Conf->timeSubmitFinalPaper() || $this->override_deadlines($rights, $override));
+    }
+
+    function perm_submit_final_paper($prow, $override = null) {
+        global $Conf;
+        if ($this->can_submit_final_paper($prow, $override))
+            return null;
+        $rights = $this->rights($prow, "any");
+        $whyNot = array("fail" => 1);
         if (!$rights->allow_author && $rights->allow_author_view)
             $whyNot["signin"] = 1;
         else if (!$rights->allow_author)
@@ -1329,37 +1331,37 @@ class Contact {
         if (!$Conf->timeAuthorViewDecision()
             || $prow->outcome <= 0)
             $whyNot["rejected"] = 1;
-        else  if (!$Conf->collectFinalPapers())
+        else if (!$Conf->collectFinalPapers())
             $whyNot["deadline"] = "final_open";
-        else if (!$Conf->timeSubmitFinalPaper() && !$override)
+        else if (!$Conf->timeSubmitFinalPaper() && !$this->override_deadlines($rights, $override))
             $whyNot["deadline"] = "final_done";
         if ($rights->allow_administer)
             $whyNot["override"] = 1;
-        return false;
+        return $whyNot;
     }
 
-    function canViewPaper($prow, &$whyNot = null, $pdf = false) {
+    function can_view_paper($prow, $pdf = false) {
         global $Conf;
-        // fetch paper
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
-            return false;
         $rights = $this->rights($prow, "any");
-        // policy
-        if ($this->privChair
+        return $this->privChair
             || $rights->allow_author_view
             || ($rights->review_type
                 && $Conf->timeReviewerViewSubmittedPaper())
             || ($rights->allow_pc_broad
                 && $Conf->timePCViewPaper($prow, $pdf)
-                && (!$pdf || $Conf->check_tracks($prow, $this, "viewpdf"))))
-            return true;
-        // collect failure reasons
+                && (!$pdf || $Conf->check_tracks($prow, $this, "viewpdf")));
+    }
+
+    function perm_view_paper($prow, $pdf = false) {
+        global $Conf;
+        if ($this->can_view_paper($prow, $pdf))
+            return null;
+        $rights = $this->rights($prow, "any");
         if (!$rights->allow_author_view
             && !$rights->review_type
-            && !$rights->allow_pc_broad) {
-            $whyNot["permission"] = 1;
-            return false;
-        }
+            && !$rights->allow_pc_broad)
+            return array("permission" => 1);
+        $whyNot = array("fail" => 1);
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         else if ($prow->timeSubmitted <= 0)
@@ -1374,11 +1376,15 @@ class Contact {
              && !$rights->review_type)
             || count($whyNot) == 1)
             $whyNot["permission"] = 1;
-        return false;
+        return $whyNot;
     }
 
-    function can_view_pdf($prow, &$whyNot = null) {
-        return $this->canViewPaper($prow, $whyNot, true);
+    function can_view_pdf($prow) {
+        return $this->can_view_paper($prow, true);
+    }
+
+    function perm_view_pdf($prow) {
+        return $this->perm_view_paper($prow, true);
     }
 
     function can_view_paper_manager($prow) {
@@ -1408,58 +1414,37 @@ class Contact {
             || $this->canViewDecision($prow, $forceShow);
     }
 
-    function allow_view_authors($prow, &$whyNot = null) {
-        return $this->can_view_authors($prow, true, $whyNot);
+    function allow_view_authors($prow) {
+        return $this->can_view_authors($prow, true);
     }
 
-    function can_view_authors($prow, $forceShow = null, &$whyNot = null) {
+    /* NB caller must check can_view_paper() */
+    function can_view_authors($prow, $forceShow = null) {
         global $Conf;
-        // fetch paper
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
-            return false;
-        // policy
         $rights = $this->rights($prow, $forceShow);
-        if (($rights->nonblind
-             && $prow->timeSubmitted > 0
-             && ($rights->allow_pc_broad
-                 || ($rights->review_type
-                     && $Conf->timeReviewerViewSubmittedPaper())))
+        return ($rights->nonblind
+                && $prow->timeSubmitted > 0
+                && ($rights->allow_pc_broad
+                    || ($rights->review_type
+                        && $Conf->timeReviewerViewSubmittedPaper())))
             || ($rights->nonblind
                 && $prow->timeWithdrawn <= 0
                 && $rights->allow_pc_broad
                 && $Conf->can_pc_see_all_submissions())
             || ($rights->allow_administer
                 ? $rights->nonblind || $rights->rights_force /* chair can't see blind authors unless forceShow */
-                : $rights->act_author_view))
-            return true;
-        // collect failure reasons
-        if ($prow->timeWithdrawn > 0)
-            $whyNot["withdrawn"] = 1;
-        else if ($prow->timeSubmitted <= 0)
-            $whyNot["notSubmitted"] = 1;
-        else if ($rights->allow_pc_broad || $rights->review_type)
-            $whyNot["blindSubmission"] = 1;
-        else
-            $whyNot["permission"] = 1;
-        return false;
+                : $rights->act_author_view);
     }
 
-    function can_view_paper_option($prow, $opt, $forceShow = null,
-                                   &$whyNot = null) {
+    function can_view_paper_option($prow, $opt, $forceShow = null) {
         global $Conf;
-        // fetch paper
-        if (!($prow = $this->_fetchPaperRow($prow, $whyNot)))
+        if (!is_object($opt) && !($opt = PaperOption::find($opt)))
             return false;
-        if (!is_object($opt) && !($opt = PaperOption::find($opt))) {
-            $whyNot["invalidId"] = "paper";
-            return false;
-        }
         $rights = $this->rights($prow, $forceShow);
-        // policy
-        if (!$this->canViewPaper($prow, $whyNot))
-            return false;       // $whyNot already set
+        if (!$this->can_view_paper($prow))
+            return false;
         $oview = @$opt->visibility;
-        if ($rights->act_author_view
+        return $rights->act_author_view
             || (($rights->allow_administer
                  || $rights->review_type
                  || $rights->allow_pc_broad)
@@ -1471,10 +1456,7 @@ class Contact {
                 && ($rights->allow_administer
                     || $rights->review_type
                     || !$opt->has_document()
-                    || $Conf->check_tracks($prow, $this, "viewpdf"))))
-            return true;
-        $whyNot["permission"] = 1;
-        return false;
+                    || $Conf->check_tracks($prow, $this, "viewpdf")));
     }
 
     function ownReview($rrow) {
@@ -1597,8 +1579,7 @@ class Contact {
              || $rights->allow_administer)
             && (!$time
                 || $Conf->time_review(null, false, true)
-                || ($rights->allow_administer
-                    && self::override_deadlines())))
+                || $this->override_deadlines($rights)))
             return true;
         // collect failure reasons
         if ($rights->review_type < REVIEW_PC)
@@ -1686,7 +1667,7 @@ class Contact {
                 && $Conf->time_review(null, true, true))
             || ($rights->can_administer
                 && ($prow->timeSubmitted > 0 || $rights->rights_force)
-                && (!$submit || self::override_deadlines())))
+                && (!$submit || $this->override_deadlines($rights))))
             return true;
         // collect failure reasons
         // The "reviewNotAssigned" and "deadline" failure reasons are special.
@@ -1779,7 +1760,7 @@ class Contact {
             && ($Conf->setting("cmt_always") > 0
                 || $Conf->time_review(null, $rights->allow_pc, true)
                 || ($rights->allow_administer
-                    && (!$submit || self::override_deadlines())))
+                    && (!$submit || $this->override_deadlines($rights))))
             && (!$crow
                 || $crow->contactId == $this->contactId
                 || ($crow->contactId == $rights->review_token_cid
@@ -1881,7 +1862,7 @@ class Contact {
                 || $rights->act_author)
             && ($Conf->timeAuthorRespond()
                 || ($rights->allow_administer
-                    && (!$submit || self::override_deadlines())))
+                    && (!$submit || $this->override_deadlines($rights))))
             && (!$crow
                 || ($crow->commentType & COMMENTTYPE_RESPONSE)))
             return true;

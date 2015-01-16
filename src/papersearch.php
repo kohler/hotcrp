@@ -2321,7 +2321,7 @@ class PaperSearch {
         if (($flags & self::F_NONCONFLICT) && $row->conflictType)
             return false;
         if ($flags & self::F_XVIEW) {
-            if (!$this->contact->canViewPaper($row))
+            if (!$this->contact->can_view_paper($row))
                 return false;
             if ($t->type == "tag" && !$this->contact->canViewTags($row, true))
                 return false;
@@ -2699,7 +2699,7 @@ class PaperSearch {
             $delete = array();
             $qe_heading = $qe->get_float("heading");
             while (($row = PaperInfo::fetch($result, $this->cid))) {
-                if (!$this->contact->canViewPaper($row)
+                if (!$this->contact->can_view_paper($row)
                     || ($limit == "rable"
                         && !$limitcontact->allow_review_assignment_ignore_conflict($row)))
                     $x = false;

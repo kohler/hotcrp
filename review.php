@@ -404,7 +404,7 @@ $editAny = $Me->canReview($prow, null, $whyNotEdit);
 
 // can we see any reviews?
 if (!$viewAny && !$editAny) {
-    if (!$Me->canViewPaper($prow, $whyNotPaper))
+    if (($whyNotPaper = $Me->perm_view_paper($prow)))
         errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
         $Conf->errorMsg("You can’t see the reviews for this paper.  " . whyNotText($whyNotView, "review"));
