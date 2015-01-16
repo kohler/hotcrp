@@ -1398,7 +1398,7 @@ function fill_editing(hc, cj) {
     } else {
         // actions
         // XXX allow_administer
-        hc.push('<input type="hidden" name="response" value="1" />');
+        hc.push('<input type="hidden" name="response" value="' + cj.response + '" />');
         hc.push('<div class="clear"></div><div class="aab" style="margin-bottom:0">', '<div class="clear"></div></div>');
         if (cj.is_new || cj.draft)
             hc.push('<div class="aabut"><button type="button" name="savedraft">Save draft</button>' + bnote + '</div>');
@@ -1462,17 +1462,19 @@ function save_editor(elt, action, really) {
         });
         return;
     }
+    var ctype = x.cj.response ? "response=" + x.cj.response : "comment=1";
     var url = hoturl_post("comment", "p=" + hotcrp_paperid + "&c=" + x.id + "&ajax=1&"
                           + (really ? "override=1&" : "")
                           + (hotcrp_want_override_conflict ? "forceShow=1&" : "")
-                          + action + (x.cj.response ? "response" : "comment") + "=1");
+                          + action + ctype);
     jQuery.post(url, x.j.find("form").serialize(), function (data, textStatus, jqxhr) {
         var x_new = x.id === "new" || x.id === "newresponse";
         var editing_response = x.cj.response && edit_allowed(x.cj);
         if (data.ok && !data.cmt && !x_new)
             delete cmts[x.id];
         if (editing_response && data.ok && !data.cmt)
-            data.cmt = {is_new: true, response: true, editable: true, draft: true, cid: "newresponse"};
+            data.cmt = {is_new: true, response: x.cj.response, editable: true, draft: true,
+                        cid: "newresponse" + x.cj.response};
         if (data.ok && (x_new || (data.cmt && data.cmt.is_new)))
             x.j.closest(".cmtg")[0].id = "comment" + data.cmt.cid;
         if (!data.ok)
@@ -1505,7 +1507,7 @@ function cancel_editor() {
 
 function fill(j, cj, editing, msg) {
     var hc = new HtmlCollector, hcid = new HtmlCollector, cmtfn, textj, t, chead,
-        cid = cj.is_new ? "new" + (cj.response ? "response" : "") : cj.cid;
+        cid = cj.is_new ? "new" + (cj.response ? "response" + cj.response : "") : cj.cid;
     cmts[cid] = cj;
     if (cj.response) {
         chead = j.closest(".cmtcard").find(".cmtcard_head");
@@ -1520,9 +1522,13 @@ function fill(j, cj, editing, msg) {
 
     // header
     hc.push('<div class="cmtt">', '</div>');
-    if (cj.is_new && !editing)
-        hc.push('<h3><a class="q fn cmteditor" href="#">+&nbsp;' + (cj.response ? "Add Response" : "Add Comment") + '</a></h3>');
-    else if (cj.is_new && !cj.response)
+    if (cj.is_new && !editing) {
+        hc.push('<h3><a class="q fn cmteditor" href="#">+&nbsp;', '</a></h3>');
+        if (cj.response)
+            hc.push_pop(cj.response === 1 ? "Add Response" : "Add " + cj.response + " Response");
+        else
+            hc.push_pop("Add Comment");
+    } else if (cj.is_new && !cj.response)
         hc.push('<h3>Add Comment</h3>');
     else if (cj.editable && !editing) {
         t = '<div class="cmtinfo floatright"><a href="#" class="xx editor cmteditor"><u>Edit</u></a></div>';
@@ -1565,30 +1571,34 @@ function fill(j, cj, editing, msg) {
 }
 
 function add(cj, editing) {
-    var cid = cj.is_new ? "new" + (cj.response ? "response" : "") : cj.cid;
+    var cid = cj.is_new ? "new" + (cj.response ? "response" + cj.response : "") : cj.cid;
     var j = jQuery("#comment" + cid);
     if (!j.length) {
         if (!cmtcontainer || cj.response || cmtcontainer.hasClass("response")) {
             if (cj.response)
-                cmtcontainer = '<div class="cmtcard response"><div class="cmtcard_head"><h3>Response</h3></div>';
+                cmtcontainer = '<div class="cmtcard response response' + cj.response +
+                    '"><div class="cmtcard_head"><h3>' +
+                    (cj.response === 1 ? "Response" : cj.response + " Response") +
+                    '</h3></div>';
             else
                 cmtcontainer = '<div class="cmtcard"><div class="cmtcard_head"><h3>Comments</h3></div>';
             cmtcontainer = jQuery(cmtcontainer + '<div class="cmtcard_body"></div></div>');
             cmtcontainer.appendTo("#cmtcontainer");
         }
-        j = jQuery('<div id="comment' + cid + '" class="cmtg foldc"></div>');
+        j = jQuery('<div id="comment' + cid + '" class="cmtg"></div>');
         j.appendTo(cmtcontainer.find(".cmtcard_body"));
     }
     fill(j, cj, editing);
 }
 
-function edit_response() {
-    var j = jQuery(".response a.cmteditor");
+function edit_response(respround) {
+    respround = respround || 1;
+    var j = jQuery(".response" + respround + " a.cmteditor");
     if (j.length)
         j[0].click();
     else {
-        add({is_new: true, response: true, editable: true}, true);
-        setTimeout(function () { location.hash = "#commentnewresponse"; }, 0);
+        add({is_new: true, response: respround, editable: true}, true);
+        setTimeout(function () { location.hash = "#commentnewresponse" + respround; }, 0);
     }
     return false;
 }

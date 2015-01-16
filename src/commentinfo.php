@@ -90,7 +90,7 @@ class CommentInfo {
                 return false;
             $cj = (object) array("is_new" => true, "editable" => true);
             if ($this->commentType & COMMENTTYPE_RESPONSE)
-                $cj->response = true;
+                $cj->response = 1;
             return $cj;
         }
 
@@ -105,7 +105,7 @@ class CommentInfo {
         if ($this->commentType & COMMENTTYPE_DRAFT)
             $cj->draft = true;
         if ($this->commentType & COMMENTTYPE_RESPONSE)
-            $cj->response = true;
+            $cj->response = 1;
 
         // tags
         if (@$this->commentTags) {
