@@ -598,4 +598,7 @@ function updateSchema($Conf) {
     if ($Conf->settings["allowPaperOption"] == 83
         && $Conf->ql("alter table PaperComment add `commentRound` int(11) NOT NULL DEFAULT '0'"))
         update_schema_version($Conf, 84);
+    if ($Conf->settings["allowPaperOption"] == 84
+        && $Conf->ql("insert ignore into Settings (name, value) select 'resp_active', value from Settings where name='resp_open'"))
+        update_schema_version($Conf, 85);
 }

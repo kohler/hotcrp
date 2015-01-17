@@ -1007,7 +1007,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Values["sub_update"] = $Values["sub_sub"];
     // need to set 'resp_open' to a timestamp,
     // so we can join on later review changes
-    if (value("resp_open") > 0 && $Conf->setting("resp_open") <= 0)
+    if (value("resp_active") > 0 && $Conf->setting("resp_open") <= 0)
         $Values["resp_open"] = $Now;
     if (array_key_exists("opt.contactName", $Values)
         || array_key_exists("opt.contactEmail", $Values)) {
@@ -2016,7 +2016,7 @@ function doDecGroup() {
     doRadio("au_seerev", array(AU_SEEREV_NO => "No", AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they’ve completed any requested reviews"));
 
     echo "<div class='g'></div>\n<table id='foldauresp' class='fold2o'>";
-    doCheckbox('resp_open', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>", true, "void fold('auresp',!this.checked,2)");
+    doCheckbox('resp_active', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>", true, "void fold('auresp',!this.checked,2)");
     echo "<tr class='fx2'><td></td><td><table>";
     doDateRow('resp_done', 'Hard deadline', null, "lxcaption");
     doGraceRow('resp_grace', 'Grace period', "lxcaption");
@@ -2025,7 +2025,7 @@ function doDecGroup() {
     echo "<div class='g'></div>";
     do_message("msg.resp_instrux", "Instructions", 1, 3);
     echo "</td></tr></table>";
-    $Conf->footerScript("fold('auresp',!\$\$('cbresp_open').checked,2)");
+    $Conf->footerScript("fold('auresp',!\$\$('cbresp_active').checked,2)");
 
     echo "<div class='g'></div>\n<hr class='hr' />\n",
         "Who can see paper <b>decisions</b> (accept/reject)?<br />\n";

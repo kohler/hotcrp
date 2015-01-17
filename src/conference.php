@@ -85,7 +85,7 @@ class Conference {
         Dbl::free($result);
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 84) {
+        if ($this->settings["allowPaperOption"] < 85) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -463,12 +463,20 @@ class Conference {
         return $this->rounds;
     }
 
-    function round_name($roundno, $expand) {
+    function round_name($roundno, $expand = false) {
         if ($roundno > 0) {
-            if (($rtext = @$this->rounds[$roundno]) && $rtext !== ";")
-                return $rtext;
+            if (($rname = @$this->rounds[$roundno]) && $rname !== ";")
+                return $rname;
             else if ($expand)
                 return "?$roundno?"; /* should not happen */
+        }
+        return "";
+    }
+
+    function round_suffix($roundno) {
+        if ($roundno > 0) {
+            if (($rname = @$this->rounds[$roundno]) && $rname !== ";")
+                return "_$rname";
         }
         return "";
     }
@@ -517,12 +525,24 @@ class Conference {
         return $r;
     }
 
-    function resp_round_name($roundno, $expand) {
+    function resp_round_name($roundno, $expand = false) {
         if ($roundno > 0) {
             $x = explode(" ", (string) @$this->settingTexts["resp_rounds"]);
-            return @$x[$roundno - 1] ? : "?$roundno?" /* should not happen */;
+            if (($n = @$x[$roundno - 1]))
+                return $n;
+            else if ($expand)
+                return "?$roundno?"; /* should not happen */
         }
         return 1;
+    }
+
+    function resp_round_suffix($roundno) {
+        if ($roundno > 0) {
+            $x = explode(" ", (string) @$this->settingTexts["resp_rounds"]);
+            if (($n = @$x[$roundno - 1]))
+                return "_$n";
+        }
+        return "";
     }
 
     static function resp_round_name_error($rname) {
@@ -950,17 +970,19 @@ class Conference {
         return $s == AU_SEEREV_ALWAYS || ($s > 0 && !$reviewsOutstanding);
     }
     function time_author_respond($round = null) {
-        if (!$this->timeAuthorViewReviews())
+        if (!$this->timeAuthorViewReviews() || !$this->setting("resp_active"))
             return false;
         $rname = "";
         if ($round !== 0) {
             $rr = $this->resp_round_list();
             if ($round === null) {
+                $allowed = array();
                 foreach ($rr as $rname) {
                     $rname = ($rname !== 1 ? "_" . $rname : "");
                     if ($this->deadlinesBetween("resp_open$rname", "resp_done$rname", "resp_grace$rname"))
-                        return true;
+                        $allowed[] = $rname;
                 }
+                return count($allowed) ? $allowed : false;
             } else if (@$rr[$round])
                 $rname = "_" . $rr[$round];
         }

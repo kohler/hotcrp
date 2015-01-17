@@ -1824,11 +1824,11 @@ class Contact {
         return $prow->timeSubmitted > 0
             && ($rights->can_administer
                 || $rights->act_author)
-            && ($Conf->time_author_respond($crow ? (int) $crow->commentRound : null)
-                || ($rights->allow_administer
-                    && (!$submit || $this->override_deadlines($rights))))
             && (!$crow
-                || ($crow->commentType & COMMENTTYPE_RESPONSE));
+                || ($crow->commentType & COMMENTTYPE_RESPONSE))
+            && (($rights->allow_administer
+                 && (!$submit || $this->override_deadlines($rights)))
+                || $Conf->time_author_respond($crow ? (int) $crow->commentRound : null));
     }
 
     function perm_respond($prow, $crow, $submit = false) {
@@ -1845,7 +1845,7 @@ class Contact {
         else if ($prow->timeSubmitted <= 0)
             $whyNot["notSubmitted"] = 1;
         else {
-            $whyNot["deadline"] = "resp_done";
+            $whyNot["deadline"] = "resp_done" . $Conf->resp_round_suffix($crow ? (int) $crow->commentRound : 0);
             if ($rights->allow_administer && $rights->conflict_type)
                 $whyNot["chairMode"] = 1;
             if ($rights->allow_administer)
@@ -2049,12 +2049,12 @@ class Contact {
 
         // submissions
         $dl->sub = (object) array("open" => @+$set["sub_open"] > 0,
-                                  "sub" => @+$set["sub_sub"]);
+                                  "sub" => @+$set["sub_sub"],
+                                  "grace" => "sub_grace");
         if (@$set["sub_reg"] && $set["sub_reg"] != @$set["sub_update"])
             $dl->sub->reg = $set["sub_reg"];
         if (@$set["sub_update"] && $set["sub_update"] != @$set["sub_sub"])
             $dl->sub->update = $set["sub_update"];
-        $checkgrace = array("sub");
 
         $sb = $Conf->submission_blindness();
         if ($sb === Conference::BLIND_ALWAYS)
@@ -2065,10 +2065,22 @@ class Contact {
             $dl->sub->blind = "until-review";
 
         // responses
-        $dl->resp = (object) array("open" => @+$set["resp_open"] > 0,
-                                   "done" => @+$set["resp_done"]);
-        if ($dl->resp->open)
-            $checkgrace[] = "resp";
+        $resp_allowed = false;
+        if (@$set["resp_active"] > 0) {
+            $dl->resp_rounds = $dl->resp_roundsuf = array();
+            foreach ($Conf->resp_round_list() as $i => $rname) {
+                $dl->resp_rounds[] = $rname;
+                $isuf = $i ? "_$i" : "";
+                $dl->resp_roundsuf[] = $i ? ".$rname" : "";
+                $k = "resp" . ($i ? ".$rname" : "");
+                $dlresp = $dl->$k = (object) array("open" => @+$set["resp_open$isuf"],
+                                                   "done" => @+$set["resp_done$isuf"],
+                                                   "grace" => "resp_grace$isuf");
+                if (!$resp_allowed && $dlresp->open
+                    && (!$dlresp->done || $dlresp->done + @+$set[$dlresp->grace] >= $Now))
+                    $resp_allowed = true;
+            }
+        }
 
         // final copy deadlines
         if (@+$set["final_open"] > 0) {
@@ -2079,45 +2091,45 @@ class Contact {
                 $dl->final->done = @+$set["final_done"];
                 $dl->final->ishard = true;
             }
-            $checkgrace[] = "final";
+            $dl->final->grace = "final_grace";
         }
 
         // reviewer deadlines
         $revtypes = array();
         $rev_allowed = false;
-        if ($this->is_reviewer()) {
-            $dlrev = $dl->rev = (object) array("open" => @+$set["rev_open"] > 0);
+        if ($this->is_reviewer() && @$set["rev_open"] > 0) {
+            $rev_open = @+$set["rev_open"];
             $rounds = $this->my_rounds();
-            $dlrev->rounds = array();
-            $grace = $dlrev->open ? @$set["rev_grace"] : 0;
+            $dl->rev_rounds = $dl->rev_roundsuf = array();
+            $grace = $rev_open ? @$set["rev_grace"] : 0;
             foreach ($this->my_rounds() as $i) {
                 $round_name = $Conf->round_name($i, true);
-                $dlrev->rounds[] = $i ? $round_name : "";
-                $isuffix = $i ? "_$i" : "";
-                $osuffix = $i ? "_$round_name" : "";
+                $isuf = $i ? "_$i" : "";
+                $jsuf = $i ? ".$round_name" : "";
+                $dl->rev_rounds[] = $round_name;
+                $dl->rev_roundsuf[] = $jsuf;
                 foreach (array("pcrev", "extrev") as $rt) {
                     if ($rt == "pcrev" && !$this->isPC)
                         continue;
-                    list($s, $h) = array(@+$set["{$rt}_soft$isuffix"], @+$set["{$rt}_hard$isuffix"]);
-                    $k = $rt . $osuffix;
-                    $dlround = $dl->$k = (object) array("open" => $dlrev->open);
+                    list($s, $h) = array(@+$set["{$rt}_soft$isuf"], @+$set["{$rt}_hard$isuf"]);
+                    $k = $rt . $jsuf;
+                    $dlround = $dl->$k = (object) array("open" => $rev_open);
                     if ($h && ($h < $Now || $s < $Now)) {
                         $dlround->done = $h;
                         $dlround->ishard = true;
                     } else if ($s)
                         $dlround->done = $s;
-                    if (!@$set["{$rt}_hard$isuffix"]
-                        || $set["{$rt}_hard$isuffix"] + $grace >= $Now)
+                    if (!@$set["{$rt}_hard$isuf"] || $set["{$rt}_hard$isuf"] + $grace >= $Now)
                         $rev_allowed = true;
-                    $checkgrace[] = $k;
+                    $dlround->grace = "rev_grace";
                 }
             }
             // blindness
             $rb = $Conf->review_blindness();
             if ($rb === Conference::BLIND_ALWAYS)
-                $dlrev->blind = true;
+                $dl->rev_blind = true;
             else if ($rb === Conference::BLIND_OPTIONAL)
-                $dlrev->blind = "optional";
+                $dl->rev_blind = "optional";
             // can authors see reviews?
             if ($Conf->timeAuthorViewReviews())
                 $dl->au_allowseerev = true;
@@ -2126,15 +2138,15 @@ class Contact {
 
         // grace periods: give a minute's notice of an impending grace
         // period
-        foreach ($checkgrace as $type) {
-            $dlsub = $dl->$type;
-            if (@$dlsub->open && ($grace = @$set["{$type}_grace"]))
+        foreach (get_object_vars($dl) as $dlsub) {
+            if (@$dlsub->open && @$dlsub->grace && ($grace = @$set[$dlsub->grace]))
                 foreach (array("reg", "update", "sub", "done") as $k)
                     if (@$dlsub->$k && $dlsub->$k + 60 < $Now
                         && $dlsub->$k + $grace >= $Now) {
                         $kgrace = "{$k}_ingrace";
                         $dlsub->$kgrace = true;
                     }
+            unset($dlsub->grace);
         }
 
         // activeness
@@ -2142,7 +2154,7 @@ class Contact {
             $dl->rev_allowed = true;
         if (@$dl->rev_allowed || ($this->is_reviewer() && $Conf->setting("cmt_always") > 0))
             $dl->cmt_allowed = true;
-        if (@$dl->resp->open && (!@$dl->resp->done || $dl->resp->done >= $Now || @$dl->resp->done_ingrace))
+        if ($resp_allowed)
             $dl->resp_allowed = true;
 
         // add meeting tracker
