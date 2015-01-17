@@ -147,13 +147,12 @@ echo "<div class='homeinside'><div id='homeinfo'>
 // Any deadlines set?
 $sep = "";
 if ($Me->has_reportable_deadline())
-    echo "    <li><a href='", hoturl("deadlines"), "'>Deadlines</a></li>\n";
+    echo '    <li><a href="', hoturl("deadlines"), '">Deadlines</a></li>', "\n";
 echo "    <li><a href='", hoturl("users", "t=pc"), "'>Program committee</a></li>\n";
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo "    <li><a href='", $Opt['conferenceSite'], "'>Conference site</a></li>\n";
 if ($Conf->timeAuthorViewDecision()) {
-    $dl = $Conf->deadlines();
-    $dlt = max($dl["sub_sub"], $dl["sub_close"]);
+    $dlt = max(@$Conf->setting("sub_sub"), @$Conf->setting("sub_close"));
     $result = $Conf->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
     $n = $nyes = 0;
     while (($row = edb_row($result))) {

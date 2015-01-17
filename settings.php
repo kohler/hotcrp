@@ -152,10 +152,13 @@ function parseValue($name, $info) {
         return $v != "";
     else if ($info->type === "cdate" && $v == "1")
         return 1;
-    else if ($info->type === "date" || $info->type === "cdate") {
-        if ($v == "" || strtoupper($v) == "N/A" || strtoupper($v) == "SAME AS PC"
-            || $v == "0")
+    else if ($info->type === "date" || $info->type === "cdate"
+             || $info->type === "ndate") {
+        if ($v == "" || !strcasecmp($v, "N/A") || !strcasecmp($v, "same as PC")
+            || $v == "0" || ($info->type !== "ndate" && !strcasecmp($v, "none")))
             return -1;
+        else if (!strcasecmp($v, "none"))
+            return 0;
         else if (($v = $Conf->parse_time($v)) !== false)
             return $v;
         else
@@ -856,7 +859,7 @@ function save_rounds($set) {
                 $ndeadlines = 0;
                 foreach (Conference::$review_deadlines as $k) {
                     $v = parseValue($k . $isuffix, setting_info($k));
-                    $Values[$k . $osuffix] = $v <= 0 ? null : $v;
+                    $Values[$k . $osuffix] = $v < 0 ? null : $v;
                     $ndeadlines += $v > 0;
                 }
                 if ($ndeadlines == 0 && $osuffix)
@@ -1266,25 +1269,19 @@ function doEntry($name, $v, $size = 30, $temptext = "") {
     echo render_entry($name, $v, $size, $temptext);
 }
 
-function date_value($name, $othername = null, $temptext = "N/A") {
+function date_value($name, $temptext, $othername = null) {
     global $Conf, $Error;
     $x = setting($name);
     if ($x !== null && count($Error))
         return $x;
     if ($othername && setting($othername) == $x)
         return $temptext;
-    return $x <= 0 ? $temptext : $Conf->parseableTime($x, true);
-}
-
-function deadline_value($name, $othername = null, $temptext = "N/A") {
-    global $Conf, $Error;
-    if (count($Error) && isset($_POST[$name]))
-        return $_POST[$name];
-    $dl = $Conf->deadlines();
-    $x = @$dl[$name];
-    if ($othername && @$dl[$othername] == $x)
+    if ($temptext !== "N/A" && $temptext !== "none" && $x === 0)
+        return "none";
+    else if ($x <= 0)
         return $temptext;
-    return $x <= 0 ? $temptext : $Conf->parseableTime($x, true);
+    else
+        return $Conf->parseableTime($x, true);
 }
 
 function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
@@ -1296,7 +1293,7 @@ function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
             $text = array($text, $DateExplanation);
         $DateExplanation = "";
     }
-    doTextRow($name, $text, date_value($name, $othername), 30, $capclass, "N/A");
+    doTextRow($name, $text, date_value($name, "N/A", $othername), 30, $capclass, "N/A");
 }
 
 function doGraceRow($name, $text, $capclass = "lcaption") {
@@ -1718,15 +1715,15 @@ function echo_round($rnum, $nameval, $review_count, $deletable) {
     echo '<table style="margin-left:3em">';
     echo '<tr><td>', setting_label("pcrev_soft$entrysuf", "PC deadline"), ' &nbsp;</td>',
         '<td class="lentry" style="padding-right:3em">',
-        render_entry("pcrev_soft$entrysuf", deadline_value("pcrev_soft$dlsuf"), 28, "N/A"),
+        render_entry("pcrev_soft$entrysuf", date_value("pcrev_soft$dlsuf", "none"), 28, "none"),
         '</td><td class="lentry">', setting_label("pcrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
-        render_entry("pcrev_hard$entrysuf", deadline_value("pcrev_hard$dlsuf"), 28, "N/A"),
+        render_entry("pcrev_hard$entrysuf", date_value("pcrev_hard$dlsuf", "none"), 28, "none"),
         '</td></tr>';
     echo '<tr><td>', setting_label("extrev_soft$entrysuf", "External deadline"), ' &nbsp;</td>',
         '<td class="lentry" style="padding-right:3em">',
-        render_entry("extrev_soft$entrysuf", deadline_value("extrev_soft$dlsuf", "pcrev_soft$dlsuf", "same as PC"), 28, "same as PC"),
+        render_entry("extrev_soft$entrysuf", date_value("extrev_soft$dlsuf", "same as PC", "pcrev_soft$dlsuf"), 28, "same as PC"),
         '</td><td class="lentry">', setting_label("extrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
-        render_entry("extrev_hard$entrysuf", deadline_value("extrev_hard$dlsuf", "pcrev_hard$dlsuf", "same as PC"), 28, "same as PC"),
+        render_entry("extrev_hard$entrysuf", date_value("extrev_hard$dlsuf", "same as PC", "pcrev_hard$dlsuf"), 28, "same as PC"),
         '</td></tr>';
     echo '</table></div>', "\n";
 }
@@ -1775,12 +1772,12 @@ function doRevGroup() {
 
     $round_map = edb_map(Dbl::ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
 
-    $dl = $Conf->deadlines();
     $print_round0 = true;
     if ($round_value !== "#0" && $round_value !== ""
         && $current_round_value !== ""
         && (!count($Error) || isset($_POST["roundname_0"]))
-        && !$dl["pcrev_soft"] && !$dl["pcrev_hard"] && !$dl["extrev_soft"] && !$dl["extrev_hard"])
+        && !$Conf->setting("pcrev_soft") && !$Conf->setting("pcrev_hard")
+        && !$Conf->setting("extrev_soft") && !$Conf->setting("extrev_hard"))
         $print_round0 = false;
 
     $selector = array();

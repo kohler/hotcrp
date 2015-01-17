@@ -10,7 +10,7 @@ class Conference {
     var $settings;
     var $settingTexts;
     var $sversion;
-    private $deadline_cache = null;
+    private $_pc_seeall_cache = null;
 
     private $save_messages = true;
     var $headerPrinted = false;
@@ -68,7 +68,7 @@ class Conference {
         // load settings from database
         $this->settings = array();
         $this->settingTexts = array();
-        $this->deadline_cache = null;
+        $this->_pc_seeall_cache = null;
 
         $result = $this->q("select name, value, data from Settings");
         while ($result && ($row = $result->fetch_row())) {
@@ -85,7 +85,7 @@ class Conference {
         Dbl::free($result);
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 83) {
+        if ($this->settings["allowPaperOption"] < 84) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -145,7 +145,7 @@ class Conference {
         global $Opt;
 
         // enforce invariants
-        foreach (array("pcrev_any", "extrev_view", "rev_notifychair") as $x)
+        foreach (array("pcrev_any", "extrev_view") as $x)
             if (!isset($this->settings[$x]))
                 $this->settings[$x] = 0;
         if (!isset($this->settings["sub_blind"]))
@@ -169,6 +169,15 @@ class Conference {
             foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r)
                 if ($r != "")
                     $this->rounds[] = $r;
+        }
+
+        // review times
+        foreach ($this->rounds as $i => $rname) {
+            $suf = $i ? "_$i" : "";
+            if (!isset($this->settings["extrev_soft$suf"]) && isset($this->settings["pcrev_soft$suf"]))
+                $this->settings["extrev_soft$suf"] = $this->settings["pcrev_soft$suf"];
+            if (!isset($this->settings["extrev_hard$suf"]) && isset($this->settings["pcrev_hard$suf"]))
+                $this->settings["extrev_hard$suf"] = $this->settings["pcrev_hard$suf"];
         }
 
         // S3 settings
@@ -467,10 +476,11 @@ class Conference {
     static function round_name_error($rname) {
         if ((string) $rname === "")
             return "Empty round name.";
-        else if (!strcasecmp($rname, "none") || !strcasecmp($rname, "any"))
+        else if (!strcasecmp($rname, "none") || !strcasecmp($rname, "any")
+                 || stri_ends_with($rname, "response"))
             return "Round name $rname is reserved.";
-        else if (!preg_match('/^[a-zA-Z0-9]+$/', $rname))
-            return "Round names can only contain letters and numbers.";
+        else if (!preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $rname))
+            return "Round names must start with a letter and contain only letters and numbers.";
         else
             return false;
     }
@@ -518,29 +528,30 @@ class Conference {
     static function resp_round_name_error($rname) {
         if ((string) $rname === "")
             return "Empty round name.";
-        else if (!strcasecmp($rname, "none") || !strcasecmp($rname, "any"))
+        else if (!strcasecmp($rname, "none") || !strcasecmp($rname, "any")
+                 || !stri_ends_with($rname, "response"))
             return "Round name $rname is reserved.";
-        else if (!preg_match('/^[a-zA-Z0-9]+$/', $rname))
-            return "Round names can only contain letters and numbers.";
+        else if (!preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $rname))
+            return "Round names must start with a letter and contain letters and numbers.";
         else
             return false;
     }
 
     function current_resp_round($add = false) { /* XXX */
-        return $this->round_number(@$this->settingTexts["rev_roundtag"], $add);
+        return $this->resp_round_number(@$this->settingTexts["rev_roundtag"], $add);
     }
 
-    function resp_round_number($name, $add) { /* XXX */
-        if (!$name)
+    function resp_round_number($name, $add) {
+        if (!$name || $name === 1 || $name === "1" || $name === true)
             return 0;
-        for ($i = 1; $i != count($this->rounds); ++$i)
-            if (!strcasecmp($this->rounds[$i], $name))
-                return $i;
+        $rtext = (string) @$this->settingTexts["resp_rounds"];
+        foreach (explode(" ", $rtext) as $i => $x)
+            if (!strcasecmp($x, $name))
+                return $i + 1;
         if ($add) {
-            $rtext = $this->setting_data("tag_rounds", "");
-            $rtext = ($rtext ? "$rtext$name " : " $name ");
-            $this->save_setting("tag_rounds", 1, $rtext);
-            return $this->round_number($name, false);
+            $rtext = $rtext ? "$rtext $name" : $name;
+            $this->save_setting("resp_rounds", 1, $rtext);
+            return $this->resp_round_number($name, false);
         } else
             return 0;
     }
@@ -654,7 +665,7 @@ class Conference {
             }
         }
         if ($change) {
-            $this->deadline_cache = null;
+            $this->_pc_seeall_cache = null;
             $this->crosscheck_settings();
             if (str_starts_with($name, "opt."))
                 $this->crosscheck_options();
@@ -752,50 +763,6 @@ class Conference {
 
 
     // times
-
-    function deadlines() {
-        global $Now;
-        // Return all deadline-relevant settings as integers.
-        if (!$this->deadline_cache) {
-            $dl = array("now" => $Now);
-            // main deadlines
-            foreach (array("sub_open", "sub_reg", "sub_update", "sub_sub",
-                           "sub_close", "sub_grace",
-                           "resp_open", "resp_done", "resp_grace",
-                           "rev_open", "rev_grace",
-                           "final_open", "final_soft", "final_done",
-                           "final_grace") as $k)
-                $dl[$k] = @+$this->settings[$k];
-            // per-round review deadlines
-            foreach ($this->rounds as $i => $rname)
-                if (!$i || $rname !== ";") {
-                    $suffix = $i ? "_$i" : "";
-                    $ndeadlines = 0;
-                    foreach (self::$review_deadlines as $k) {
-                        $dl[$k . $suffix] = @+$this->settings[$k . $suffix];
-                        $ndeadlines += isset($this->settings[$k . $suffix]);
-                    }
-                    if ($i && $ndeadlines == 0)
-                        foreach (self::$review_deadlines as $k)
-                            $dl[$k . $suffix] = $dl[$k];
-                    if (!$i && !$dl["extrev_soft"] && !$dl["extrev_hard"]) {
-                        $dl["extrev_soft"] = $dl["pcrev_soft"];
-                        $dl["extrev_hard"] = $dl["pcrev_hard"];
-                    }
-                }
-            $this->deadline_cache = $dl;
-        }
-        return $this->deadline_cache;
-    }
-
-    function round_deadlines($roundnum) {
-        $dl = $this->deadlines();
-        $suffix = isset($dl["pcrev_soft_$roundnum"]) ? "_$roundnum" : "";
-        $dlx = array();
-        foreach (self::$review_deadlines as $k)
-            $dlx[$k] = $dl[$k . $suffix];
-        return $dlx;
-    }
 
     function printableInterval($amt) {
         if ($amt > 259200 /* 3 days */) {
@@ -936,26 +903,26 @@ class Conference {
     }
 
     function settingsAfter($name) {
-        $dl = $this->deadlines();
-        $t = defval($this->settings, $name, null);
-        return ($t !== null && $t > 0 && $t <= $dl["now"]);
+        global $Now;
+        $t = @$this->settings[$name];
+        return $t !== null && $t > 0 && $t <= $Now;
     }
     function deadlinesAfter($name, $grace = null) {
-        $dl = $this->deadlines();
-        $t = defval($dl, $name, null);
-        if ($t !== null && $t > 0 && $grace && isset($dl[$grace]))
-            $t += $dl[$grace];
-        return ($t !== null && $t > 0 && $t <= $dl["now"]);
+        global $Now;
+        $t = @$this->settings[$name];
+        if ($t !== null && $t > 0 && $grace && ($g = @$this->settings[$grace]))
+            $t += $grace;
+        return $t !== null && $t > 0 && $t <= $Now;
     }
     function deadlinesBetween($name1, $name2, $grace = null) {
-        $dl = $this->deadlines();
-        $t = @$dl[$name1];
-        if (($t === null || $t <= 0 || $t > $dl["now"]) && $name1)
+        global $Now;
+        $t = @$this->settings[$name1];
+        if (($t === null || $t <= 0 || $t > $Now) && $name1)
             return false;
-        $t = @$dl[$name2];
-        if ($t !== null && $t > 0 && $grace && isset($dl[$grace]))
-            $t += $dl[$grace];
-        return ($t === null || $t <= 0 || $t >= $dl["now"]);
+        $t = @$this->settings[$name2];
+        if ($t !== null && $t > 0 && $grace && ($g = @$this->settings[$grace]))
+            $t += $grace;
+        return $t === null || $t <= 0 || $t >= $Now;
     }
 
     function timeStartPaper() {
@@ -982,16 +949,30 @@ class Conference {
         $s = $this->setting("au_seerev");
         return $s == AU_SEEREV_ALWAYS || ($s > 0 && !$reviewsOutstanding);
     }
-    function timeAuthorRespond() {
-        return $this->deadlinesBetween("resp_open", "resp_done", "resp_grace")
-            && $this->timeAuthorViewReviews();
+    function time_author_respond($round = null) {
+        if (!$this->timeAuthorViewReviews())
+            return false;
+        $rname = "";
+        if ($round !== 0) {
+            $rr = $this->resp_round_list();
+            if ($round === null) {
+                foreach ($rr as $rname) {
+                    $rname = ($rname !== 1 ? "_" . $rname : "");
+                    if ($this->deadlinesBetween("resp_open$rname", "resp_done$rname", "resp_grace$rname"))
+                        return true;
+                }
+            } else if (@$rr[$round])
+                $rname = "_" . $rr[$round];
+        }
+        return $this->deadlinesBetween("resp_open$rname", "resp_done$rname", "resp_grace$rname");
     }
     function timeAuthorViewDecision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
     }
     function time_review_open() {
-        $dl = $this->deadlines();
-        return $dl["rev_open"] > 0 && $dl["now"] >= $dl["rev_open"];
+        global $Now;
+        $rev_open = @+$this->settings["rev_open"];
+        return 0 < $rev_open && $rev_open <= $Now;
     }
     function review_deadline($round, $isPC, $hard) {
         $dn = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
@@ -999,19 +980,20 @@ class Conference {
             $round = $this->current_round(false);
         else if (is_object($round))
             $round = $round->reviewRound ? : 0;
-        if ($round && ($dl = $this->deadlines()) && isset($dl["{$dn}_$round"]))
+        if ($round && isset($this->settings["{$dn}_$round"]))
             $dn .= "_$round";
         return $dn;
     }
     function missed_review_deadline($round, $isPC, $hard) {
-        $dl = $this->deadlines();
-        if (!($dl["rev_open"] > 0 && $dl["now"] >= $dl["rev_open"]))
+        global $Now;
+        $rev_open = @+$this->settings["rev_open"];
+        if (!(0 < $rev_open && $rev_open <= $Now))
             return "rev_open";
         $dn = $this->review_deadline($round, $isPC, $hard);
-        if (!$dl[$dn] || $dl["now"] <= $dl[$dn] + $dl["rev_grace"])
-            return false;
-        else
+        $dv = @+$this->settings[$dn];
+        if ($dv > 0 && $dv + @+$this->settings["rev_grace"] < $Now)
             return $dn;
+        return false;
     }
     function time_review($round, $isPC, $hard) {
         return !$this->missed_review_deadline($round, $isPC, $hard);
@@ -1051,7 +1033,7 @@ class Conference {
         return true;
     }
     function timeEmailChairAboutReview() {
-        return $this->settings['rev_notifychair'] > 0;
+        return @$this->settings["rev_notifychair"] > 0;
     }
 
     function submission_blindness() {
@@ -1088,15 +1070,12 @@ class Conference {
     }
 
     function can_pc_see_all_submissions() {
-        $dl = $this->deadlines();
-        $pc_seeall = @$dl["pc_seeall"];
-        if ($pc_seeall === null) {
-            $pc_seeall = @$this->settings["pc_seeall"] ? : 0;
-            if ($pc_seeall > 0 && !$this->timeFinalizePaper())
-                $pc_seeall = 0;
-            $this->deadline_cache["pc_seeall"] = $pc_seeall;
+        if ($this->_pc_seeall_cache === null) {
+            $this->_pc_seeall_cache = @$this->settings["pc_seeall"] ? : 0;
+            if ($this->_pc_seeall_cache > 0 && !$this->timeFinalizePaper())
+                $this->_pc_seeall_cache = 0;
         }
-        return $pc_seeall > 0;
+        return $this->_pc_seeall_cache > 0;
     }
 
 
@@ -2069,11 +2048,8 @@ class Conference {
         $this->scriptStuff .= "hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . (@$Opt["time24hour"] ? 1 : 0) . ")";
 
         // deadlines settings
-        if ($Me) {
-            $dl = $Me->my_deadlines();
-            $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($dl) . ")";
-        } else
-            $dl = array();
+        if ($Me)
+            $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($Me->my_deadlines()) . ")";
 
         // meeting tracker
         $trackerowner = $Me && $Me->privChair
@@ -2122,31 +2098,7 @@ class Conference {
             if (!$Me->is_empty() || isset($Opt["httpAuthLogin"]))
                 echo $xsep, '<a href="', hoturl_post("index", "signout=1"), '">Sign&nbsp;out</a>';
         }
-        echo "<div id='maindeadline' style='display:none'>";
-
-        // This is repeated in script.js:hotcrp_deadlines
-        $dlname = "";
-        $dltime = 0;
-        if (@$dl["sub_open"]) {
-            foreach (array("sub_reg" => "registration", "sub_update" => "update", "sub_sub" => "submission") as $subtype => $subname)
-                if (isset($dl["${subtype}_ingrace"]) || $Now <= defval($dl, $subtype, 0)) {
-                    $dlname = "Paper $subname deadline";
-                    $dltime = defval($dl, $subtype, 0);
-                    break;
-                }
-        }
-        if ($dlname) {
-            $s = "<a href=\"" . hoturl("deadlines") . "\">$dlname</a> ";
-            if (!$dltime || $dltime <= $Now)
-                $s .= "is NOW";
-            else
-                $s .= "in " . $this->printableInterval($dltime - $Now);
-            if (!$dltime || $dltime - $Now <= 180)
-                $s = "<span class='impending'>$s</span>";
-            echo $s;
-        }
-
-        echo "</div></div>\n";
+        echo '<div id="maindeadline" style="display:none"></div></div>', "\n";
 
         echo "  <hr class=\"c\" />\n";
 

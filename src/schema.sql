@@ -160,8 +160,8 @@ DROP TABLE IF EXISTS `MailLog`;
 CREATE TABLE `MailLog` (
   `mailId` int(11) NOT NULL AUTO_INCREMENT,
   `recipients` varchar(200) NOT NULL,
-  `q` varchar(4096),
-  `t` varchar(200),
+  `q` varchar(4096) DEFAULT NULL,
+  `t` varchar(200) DEFAULT NULL,
   `paperIds` text,
   `cc` text,
   `replyto` text,
@@ -242,6 +242,7 @@ CREATE TABLE `PaperComment` (
   `paperStorageId` int(11) NOT NULL DEFAULT '0',
   `ordinal` int(11) NOT NULL DEFAULT '0',
   `commentTags` varbinary(1024) DEFAULT NULL,
+  `commentRound` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
@@ -571,7 +572,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 83);
+insert into Settings (name, value) values ('allowPaperOption', 84);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

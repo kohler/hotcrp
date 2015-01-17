@@ -328,14 +328,13 @@ function display_main(is_initial) {
 
     dlname = "";
     dltime = 0;
-    if (dl.sub_open) {
-        x = {"sub_reg": "registration", "sub_update": "update",
-             "sub_sub": "submission"};
+    if (dl.sub.open) {
+        x = {reg: "registration", update: "update", sub: "submission"};
         for (subtype in x)
-            if (+dl.now <= +dl[subtype] ? now - 120 <= +dl[subtype]
-                : dl[subtype + "_ingrace"]) {
+            if (+dl.now <= +dl.sub[subtype] ? now - 120 <= +dl.sub[subtype]
+                : dl.sub[subtype + "_ingrace"]) {
                 dlname = "Paper " + x[subtype] + " deadline";
-                dltime = +dl[subtype];
+                dltime = +dl.sub[subtype];
                 break;
             }
     }
@@ -1375,9 +1374,9 @@ function fill_editing(hc, cj) {
         // visibility
         hc.push('<table class="cmtvistable fold2o">', '</table>');
         var lsuf = "", tsuf = "";
-        if (hotcrp_status.rev_blind === true)
+        if (hotcrp_status.rev.blind === true)
             lsuf = " (anonymous to authors)";
-        else if (hotcrp_status.rev_blind)
+        else if (hotcrp_status.rev.blind)
             tsuf = ' &nbsp; (<input type="checkbox" name="blind" value="1" tabindex="1" id="htctlcb' + idctr + '">&nbsp;' +
                 '<label for="htctlcb' + idctr + '">Anonymous to authors</label>)';
         tsuf += '<br><span class="fx2 hint">' + (hotcrp_status.au_allowseerev ? "Authors will be notified immediately." : "Authors cannot view comments at the moment.") + '</span>';

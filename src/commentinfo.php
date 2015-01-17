@@ -39,7 +39,7 @@ class CommentInfo {
         global $Conf, $Me;
         if (Ht::mark_stash("papercomment")) {
             $t = array("papercomment.commenttag_search_url=\"" . hoturl_raw("search", "q=cmt%3A%23\$") . "\"");
-            if ($Conf->timeAuthorRespond() || $Me->allow_administer($prow)) {
+            if ($Conf->time_author_respond() || $Me->allow_administer($prow)) {
                 $wordlimit = $Conf->setting("resp_words", 500);
                 if ($wordlimit > 0)
                     $t[] = "papercomment.resp_words=$wordlimit";

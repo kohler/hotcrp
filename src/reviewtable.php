@@ -332,7 +332,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     // new response
-    if ($mode != "assign" && $Conf->timeAuthorRespond()
+    if ($mode != "assign" && $Conf->time_author_respond()
         && ($prow->conflictType >= CONFLICT_AUTHOR || $allow_admin)) {
         $cid = array("response", "response", "Add");
         if ($crows)

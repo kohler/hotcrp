@@ -1994,7 +1994,8 @@ class PaperTable {
         $prow = $this->prow;
 
         // show comments as well
-        if ((count($this->mycrows) || $Me->can_comment($prow, null) || $Conf->timeAuthorRespond())
+        if ((count($this->mycrows) || $Me->can_comment($prow, null)
+             || $Conf->time_author_respond())
             && !$this->allreviewslink) {
             $cv = new CommentViewState;
             $s = "";
@@ -2005,8 +2006,8 @@ class PaperTable {
             }
             if ($Me->can_comment($prow, null))
                 $s .= "papercomment.add({is_new:true,editable:true});\n";
-            if (!$nresponse && $Conf->timeAuthorRespond() && $prow->has_author($Me))
-                $s .= "papercomment.add({is_new:true,editable:true,response:true},true);\n";
+            if (!$nresponse && $Conf->time_author_respond() && $prow->has_author($Me))
+                $s .= "papercomment.add({is_new:true,editable:true,response:1},true);\n";
             echo '<div id="cmtcontainer"></div>';
             CommentInfo::echo_script($prow);
             $Conf->echoScript($s);
