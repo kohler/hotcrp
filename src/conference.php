@@ -971,7 +971,7 @@ class Conference {
     }
     function time_author_respond($round = null) {
         if (!$this->timeAuthorViewReviews() || !$this->setting("resp_active"))
-            return false;
+            return $round === null ? array() : false;
         if ($round === null) {
             $allowed = array();
             foreach ($this->resp_round_list() as $i => $rname) {
