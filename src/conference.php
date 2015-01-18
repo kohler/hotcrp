@@ -1948,16 +1948,33 @@ class Conference {
     // Conference header, footer
     //
 
-    function header_css_link($css) {
+    function make_css_link($url) {
         global $ConfSitePATH, $Opt;
-        echo '<link rel="stylesheet" type="text/css" href="';
-        if (str_starts_with($css, "stylesheets/")
-            || !preg_match(',\A(?:https?:|/),i', $css))
-            echo $Opt["assetsUrl"];
-        echo $css;
-        if (($mtime = @filemtime("$ConfSitePATH/$css")) !== false)
-            echo "?mtime=", $mtime;
-        echo "\" />\n";
+        $t = '<link rel="stylesheet" type="text/css" href="';
+        if (str_starts_with($url, "stylesheets/")
+            || !preg_match(',\A(?:https?:|/),i', $url))
+            $t .= $Opt["assetsUrl"];
+        $t .= $url;
+        if (($mtime = @filemtime("$ConfSitePATH/$url")) !== false)
+            $t .= "?mtime=$mtime";
+        return $t . '" />';
+    }
+
+    function make_script_file($url, $no_strict = false) {
+        global $ConfSiteBase, $ConfSitePATH, $Opt;
+        if (str_starts_with($url, "scripts/")) {
+            $post = "";
+            if (($mtime = @filemtime("$ConfSitePATH/$url")) !== false)
+                $post = "mtime=$mtime";
+            if (@$Opt["strictJavascript"] && !$no_strict)
+                $url = $Opt["scriptAssetsUrl"] . "cacheable.php?file=" . urlencode($url)
+                    . "&strictjs=1" . ($post ? "&$post" : "");
+            else
+                $url = $Opt["scriptAssetsUrl"] . $url . ($post ? "?$post" : "");
+            if ($Opt["scriptAssetsUrl"] === $ConfSiteBase)
+                return Ht::script_file($url);
+        }
+        return Ht::script_file($url, array("crossorigin" => "anonymous"));
     }
 
     private function header_head($title) {
@@ -1977,10 +1994,10 @@ class Conference {
         if (isset($Opt["fontScript"]))
             echo $Opt["fontScript"];
 
-        $this->header_css_link("stylesheets/style.css");
+        echo $this->make_css_link("stylesheets/style.css"), "\n";
         if (isset($Opt["stylesheets"]))
             foreach ($Opt["stylesheets"] as $css)
-                $this->header_css_link($css);
+                echo $this->make_css_link($css), "\n";
 
         // favicon
         if (($favicon = defval($Opt, "favicon", "images/review24.png"))) {
@@ -2006,8 +2023,8 @@ class Conference {
         else if (@$Opt["jqueryCdn"])
             $jquery = "//code.jquery.com/jquery-1.11.2.min.js";
         else
-            $jquery = $Opt["scriptAssetsUrl"] . "scripts/jquery-1.11.2.min.js";
-        $this->scriptStuff = Ht::script_file($jquery, array("crossorigin" => "anonymous")) . "\n";
+            $jquery = "scripts/jquery-1.11.2.min.js";
+        $this->scriptStuff = $this->make_script_file($jquery, true) . "\n";
 
         // Javascript settings to set before script.js
         $this->scriptStuff .= "<script>siteurl=\"$ConfSiteBase\";siteurl_suffix=\"$ConfSiteSuffix\"";
@@ -2035,12 +2052,7 @@ class Conference {
         $this->scriptStuff .= "</script>\n";
 
         // script.js
-        if (@$Opt["strictJavascript"])
-            $this->scriptStuff .= Ht::script_file($Opt["scriptAssetsUrl"] . "cacheable.php?file=scripts/script.js&strictjs=1&mtime=" . filemtime("$ConfSitePATH/scripts/script.js"), array("crossorigin" => "anonymous")) . "\n";
-        else
-            $this->scriptStuff .= Ht::script_file($Opt["scriptAssetsUrl"] . "scripts/script.js?mtime=" . filemtime("$ConfSitePATH/scripts/script.js")) . "\n";
-
-        $this->scriptStuff .= "<!--[if lte IE 6]> " . Ht::script_file($Opt["assetsUrl"] . "scripts/supersleight.js") . " <![endif]-->\n";
+        $this->scriptStuff .= $this->make_script_file("scripts/script.js") . "\n";
 
         echo "<title>", $title, " - ", htmlspecialchars($Opt["shortName"]),
             "</title>\n</head>\n";

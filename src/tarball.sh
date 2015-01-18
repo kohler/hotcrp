@@ -250,7 +250,6 @@ scripts/.htaccess
 scripts/jquery-1.11.2.min.js
 scripts/jquery-1.11.2.min.map
 scripts/script.js
-scripts/supersleight.js
 
 stylesheets/.htaccess
 stylesheets/style.css
