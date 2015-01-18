@@ -979,7 +979,7 @@ class Conference {
                 if ($this->deadlinesBetween("resp_open$isuf", "resp_done$isuf", "resp_grace$isuf"))
                     $allowed[$i] = $rname;
             }
-            return count($allowed) ? $allowed : false;
+            return $allowed;
         }
         $isuf = $round ? "_$round" : "";
         return $this->deadlinesBetween("resp_open$isuf", "resp_done$isuf", "resp_grace$isuf");
