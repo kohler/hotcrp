@@ -673,7 +673,7 @@ function reload() {
     clearTimeout(reload_timeout);
     reload_timeout = null;
     var psuffix = hotcrp_paperid ? "&p=" + hotcrp_paperid : "";
-    Miniajax.get(hoturl("api", "deadlines=1" + psuffix, load, 10000);
+    Miniajax.get(hoturl("api", "deadlines=1" + psuffix), load, 10000);
 }
 
 return {
