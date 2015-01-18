@@ -915,7 +915,7 @@ function save_rounds($set) {
 
 function save_resp_rounds($set) {
     global $Conf, $Error, $Highlight, $Values;
-    if ($set || !value("resp_active"))
+    if ($set || !value_or_setting("resp_active"))
         return;
     $old_roundnames = $Conf->resp_round_list();
     $roundnames = array(1);
@@ -1033,6 +1033,14 @@ function value_or_setting($name) {
         return $Conf->setting($name);
 }
 
+function value_or_setting_data($name) {
+    global $Conf, $Values;
+    if (array_key_exists($name, $Values))
+        return is_array(@$Values[$name]) ? $Values[$name][1] : null;
+    else
+        return $Conf->setting_data($name);
+}
+
 if (isset($_REQUEST["update"]) && check_post()) {
     // parse settings
     foreach ($SettingInfo as $name => $info)
@@ -1059,6 +1067,16 @@ if (isset($_REQUEST["update"]) && check_post()) {
             && @($Opt["contactEmail"] === $Values["opt.contactEmail"][1]))
             $Values["opt.contactEmail"] = null;
     }
+    if (@$Values["resp_active"])
+        foreach (explode(" ", value_or_setting_data("resp_rounds")) as $i => $rname) {
+            $isuf = $i ? "_$i" : "";
+            if (@$Values["resp_open$isuf"] && @$Values["resp_done$isuf"]
+                && $Values["resp_done$isuf"] >= $Now
+                && $Values["resp_open$isuf"] > $Values["resp_done$isuf"]) {
+                $Error[] = unparse_setting_error($SettingInfo->resp_open, "Must come before " . setting_info("resp_done", "name") . ".");
+                $Highlight["resp_open$isuf"] = $Highlight["resp_done$isuf"] = true;
+            }
+        }
 
     // update 'papersub'
     if (isset($_POST["pc_seeall"])) {
@@ -1123,7 +1141,6 @@ if (isset($_REQUEST["update"]) && check_post()) {
                 doSpecial($n, true);
 
         $dv = $aq = $av = array();
-        error_log(join(", ", array_keys($Values)));
         foreach ($Values as $n => $v)
             if (!setting_info($n, "nodb")) {
                 $dv[] = $n;
@@ -1226,7 +1243,7 @@ function setting($name, $defval = null) {
     if (count($Error) > 0)
         return defval($_POST, $name, $defval);
     else
-        return defval($Conf->settings, $name, $defval);
+        return $Conf->setting($name, $defval);
 }
 
 function setting_data($name, $defval = "", $killval = "") {
@@ -2083,6 +2100,8 @@ function doDecGroup() {
         echo '"><table>';
         if ($i)
             doTextRow("resp_roundname$isuf", "Round name", $rname, 20, "lcaption");
+        if (setting("resp_open$isuf") === 1 && ($x = setting("resp_done$isuf")))
+            $Conf->settings["resp_open$isuf"] = $x - 7 * 86400;
         doDateRow("resp_open$isuf", "Start time", null, "lxcaption");
         doDateRow("resp_done$isuf", "Hard deadline", null, "lxcaption");
         doGraceRow("resp_grace$isuf", "Grace period", "lxcaption");
