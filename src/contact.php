@@ -2096,7 +2096,8 @@ class Contact {
         // reviewer deadlines
         $revtypes = array();
         if ($this->is_reviewer() && @$set["rev_open"] > 0) {
-            $rev_open = @+$set["rev_open"];
+            if (($rev_open = @+$set["rev_open"]))
+                $dl->rev->open = $rev_open;
             $dl->rev->rounds = array();
             $dl->rev->roundsuf = array();
             $grace = $rev_open ? @$set["rev_grace"] : 0;
@@ -2188,14 +2189,24 @@ class Contact {
     }
 
     function has_reportable_deadline() {
+        global $Now;
         $dl = $this->my_deadlines();
-        if (@$dl->sub->reg || @$dl->sub->update || @$dl->sub->sub
-            || ($dl->resp->open && @$dl->resp->done))
+        if (@$dl->sub->reg || @$dl->sub->update || @$dl->sub->sub)
             return true;
-        if (@$dl["rev_rounds"] && @$dl["rev_open"]) //xxx
-            foreach ($dl["rev_rounds"] as $rname) {
-                $suffix = $rname === "" ? "" : "_$rname";
-                if (@$dl["pcrev_done$suffix"] || @$dl["extrev_done$suffix"])
+        if (@$dl->resp)
+            foreach ($dl->resp->roundsuf as $rsuf) {
+                $dlk = "resp$rsuf";
+                $dlr = $dl->$dlk;
+                if (@$dlr->open && $dlr->open < $Now && @$dlr->done)
+                    return true;
+            }
+        if (@$dl->rev && @$dl->rev->open && $dl->rev->open < $Now)
+            foreach ($dl->rev->roundsuf as $rsuf) {
+                $dlk = "pcrev$rsuf";
+                if (@$dl->$dlk && $dl->$dlk->done)
+                    return true;
+                $dlk = "extrev$rsuf";
+                if (@$dl->$dlk && $dl->$dlk->done)
                     return true;
             }
         return false;

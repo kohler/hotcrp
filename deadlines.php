@@ -56,9 +56,19 @@ if (@$dl->sub->sub)
     printDeadline($dl, $dl->sub->sub, "Paper submission deadline",
                   "Papers must be submitted by this deadline to be reviewed.");
 
-if (@$dl->resp && $dl->resp->open && @$dl->resp->done)
-    printDeadline($dl, $dl->resp->done, "Response deadline",
-                  "This deadline controls when you can submit a response to the reviews.");
+if (@$dl->resp)
+    foreach ($dl->resp->rounds as $rname) {
+        $rkey = "resp" . ($rname === 1 ? "" : ".$rname");
+        $dlr = $dl->$rkey;
+        if ($dlr && @$dlr->open && $dlr->open <= $Now && @$dlr->done) {
+            if ($rname === 1)
+                printDeadline($dl, $dlr->done, "Response deadline",
+                              "You can submit responses to the reviews until this deadline.");
+            else
+                printDeadline($dl, $dlr->done, "$rname response deadline",
+                              "You can submit $rname responses to the reviews until this deadline.");
+        }
+    }
 
 if (@$dl->rev && @$dl->rev->open && @$dl->rev->rounds) {
     $dlbyround = array();
