@@ -24,7 +24,7 @@ if (@$_REQUEST["track"] && $Me->privChair && check_post()) {
     }
 }
 
-if ($_GET["p"] && ctype_digit($_GET["p"])) {
+if (@$_GET["p"] && ctype_digit($_GET["p"])) {
     $CurrentProw = $Conf->paperRow(array("paperId" => intval($_GET["p"])));
     if ($CurrentProw && !$Me->can_view_paper($CurrentProw))
         $CurrentProw = null;
