@@ -93,6 +93,10 @@ class Navigation {
             self::$php_suffix = "";
     }
 
+    public static function host() {
+        return @$_SERVER["HTTP_HOST"];
+    }
+
     public static function site_absolute($downcase_host = false) {
         $x = $downcase_host ? strtolower(self::$server) : self::$server;
         return $x . self::$sitedir;
@@ -102,8 +106,24 @@ class Navigation {
         return self::$sitedir;
     }
 
-    public static function site_relative() {
-        return self::$sitedir_relative;
+    public static function siteurl($url = null) {
+        $x = self::$sitedir_relative;
+        if (!$url)
+            return $x;
+        else if (substr($url, 0, 5) !== "index" || substr($url, 5, 1) === "/")
+            return $x . $url;
+        else
+            return ($x ? : self::$sitedir) . substr($url, 5);
+    }
+
+    public static function siteurl_path($url = null) {
+        $x = self::$sitedir;
+        if (!$url)
+            return $x;
+        else if (substr($url, 0, 5) !== "index" || substr($url, 5, 1) === "/")
+            return $x . $url;
+        else
+            return $x . substr($url, 5);
     }
 
     public static function page() {
@@ -112,6 +132,15 @@ class Navigation {
 
     public static function path() {
         return self::$path;
+    }
+
+    public static function path_component($n, $decoded = false) {
+        if (self::$path !== "") {
+            $p = explode("/", substr(self::$path, 1));
+            if ($n + 1 < count($p) || ($n + 1 == count($p) && $p[$n] !== ""))
+                return $decoded ? urldecode($p[$n]) : $p[$n];
+        }
+        return null;
     }
 
     public static function php_suffix() {
@@ -137,15 +166,6 @@ class Navigation {
         }
     }
 
-    public static function make_site($site_url) {
-        if (substr($site_url, 0, 5) !== "index" || substr($site_url, 5, 1) === "/")
-            return self::$sitedir_relative . $site_url;
-        else {
-            $head = self::$sitedir_relative ? : self::$sitedir;
-            return $head . substr($site_url, 5);
-        }
-    }
-
     public static function redirect($url) {
         $url = self::make_absolute($url);
         // Might have an HTML-encoded URL; decode at least &amp;.
@@ -166,7 +186,7 @@ class Navigation {
     }
 
     public static function redirect_site($site_url) {
-        self::redirect(self::make_site($site_url));
+        self::redirect(self::siteurl($site_url));
     }
 
     public static function redirect_http_to_https($allow_http_if_localhost = false) {
@@ -180,7 +200,7 @@ class Navigation {
                 $x .= "localhost";
             else
                 $x .= $_SERVER["HTTP_HOST"];
-            $x .= self::$sitedir . self::$page . self::$php_suffix . self::$path . self::$query;
+            $x .= self::siteurl_path(self::$page . self::$php_suffix . self::$path . self::$query);
             self::redirect($x);
         }
     }

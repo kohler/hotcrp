@@ -117,7 +117,7 @@ function set_path_variables() {
     require_once("$ConfSitePATH/lib/navigation.php");
     Navigation::analyze();
     if (@$ConfSiteBase === null)
-        $ConfSiteBase = Navigation::site_relative();
+        $ConfSiteBase = Navigation::siteurl();
     if (@$ConfSiteSuffix === null)
         $ConfSiteSuffix = Navigation::php_suffix();
 }
