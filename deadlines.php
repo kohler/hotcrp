@@ -56,7 +56,7 @@ if (@$dl->sub->sub)
     printDeadline($dl, $dl->sub->sub, "Paper submission deadline",
                   "Papers must be submitted by this deadline to be reviewed.");
 
-if ($dl->resp->open && @$dl->resp->done)
+if (@$dl->resp && $dl->resp->open && @$dl->resp->done)
     printDeadline($dl, $dl->resp->done, "Response deadline",
                   "This deadline controls when you can submit a response to the reviews.");
 
