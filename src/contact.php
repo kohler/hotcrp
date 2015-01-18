@@ -2075,7 +2075,7 @@ class Contact {
                 $dl->resp->rounds[] = $i ? $rname : 1;
                 $dl->resp->roundsuf[] = $i ? ".$rname" : "";
                 $k = "resp" . ($i ? ".$rname" : "");
-                $dlresp = $dl->$k = $dl->$k ? : (object) array();
+                $dlresp = $dl->$k = @$dl->$k ? : (object) array();
                 $isuf = $i ? "_$i" : "";
                 $dlresp->open = @+$set["resp_open$isuf"];
                 $dlresp->done = @+$set["resp_done$isuf"];

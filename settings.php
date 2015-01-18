@@ -945,7 +945,6 @@ function save_resp_rounds($set) {
             $Values["resp_words_$i"] = $v < 0 ? null : $v;
         if (($v = parse_value("msg.resp_instrux_$i", setting_info("msg.resp_instrux"))) !== null)
             $Values["msg.resp_instrux_$i"] = $v;
-        error_log("MSGJOINFNSAOINDISAN $i " . var_export($v, true));
     }
     if (count($roundnames) > 1)
         $Values["resp_rounds"] = array(1, join(" ", $roundnames));
