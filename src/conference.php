@@ -972,21 +972,17 @@ class Conference {
     function time_author_respond($round = null) {
         if (!$this->timeAuthorViewReviews() || !$this->setting("resp_active"))
             return false;
-        $rname = "";
-        if ($round !== 0) {
-            $rr = $this->resp_round_list();
-            if ($round === null) {
-                $allowed = array();
-                foreach ($rr as $rname) {
-                    $rname = ($rname !== 1 ? "_" . $rname : "");
-                    if ($this->deadlinesBetween("resp_open$rname", "resp_done$rname", "resp_grace$rname"))
-                        $allowed[] = $rname;
-                }
-                return count($allowed) ? $allowed : false;
-            } else if (@$rr[$round])
-                $rname = "_" . $rr[$round];
+        if ($round === null) {
+            $allowed = array();
+            foreach ($this->resp_round_list() as $i => $rname) {
+                $isuf = $i ? "_$i" : "";
+                if ($this->deadlinesBetween("resp_open$isuf", "resp_done$isuf", "resp_grace$isuf"))
+                    $allowed[$i] = $rname;
+            }
+            return count($allowed) ? $allowed : false;
         }
-        return $this->deadlinesBetween("resp_open$rname", "resp_done$rname", "resp_grace$rname");
+        $isuf = $round ? "_$round" : "";
+        return $this->deadlinesBetween("resp_open$isuf", "resp_done$isuf", "resp_grace$isuf");
     }
     function timeAuthorViewDecision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
@@ -2298,7 +2294,7 @@ class Conference {
             $name = substr($name, 4);
         if ($name === "revprefdescription" && $this->has_topics())
             $name .= ".withtopics";
-        else if ($name === "resp_instrux" && $this->setting("resp_words", 500) > 0)
+        else if (str_starts_with($name, "resp_instrux") && $this->setting("resp_words", 500) > 0)
             $name .= ".wordlimit";
         return $name;
     }
@@ -2313,7 +2309,7 @@ class Conference {
         if ($html && $expansions)
             foreach ($expansions as $k => $v)
                 $html = str_ireplace("%$k%", $v, $html);
-        return $html ? $html : "";
+        return $html;
     }
 
     public function message_default_html($name) {

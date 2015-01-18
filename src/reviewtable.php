@@ -270,9 +270,17 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                     $n .= Text::abbrevname_html($cr->user());
                 else
                     $n .= "anonymous";
-                if ($cr->commentType & COMMENTTYPE_RESPONSE)
-                    $n .= ($cr->commentType & COMMENTTYPE_DRAFT
-                           ? " (Response in progress)" : " (Response)");
+                if ($cr->commentType & COMMENTTYPE_RESPONSE) {
+                    $rname = $Conf->resp_round_name($cr->commentRound);
+                    if (($cr->commentType & COMMENTTYPE_DRAFT) && $rname !== 1)
+                        $n .= " (Draft $rname response)";
+                    else if ($cr->commentType & COMMENTTYPE_DRAFT)
+                        $n .= " (Draft response)";
+                    else if ($rname)
+                        $n .= " ($rname response)";
+                    else
+                        $n .= " (Response)";
+                }
                 $cnames[] = $n . "</a>";
             }
         if (count($cids) > 0)
@@ -332,25 +340,30 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     // new response
-    if ($mode != "assign" && $Conf->time_author_respond()
-        && ($prow->conflictType >= CONFLICT_AUTHOR || $allow_admin)) {
-        $cid = array("response", "response", "Add");
-        if ($crows)
-            foreach ($crows as $cr)
-                if ($cr->commentType & COMMENTTYPE_RESPONSE)
-                    $cid = array($cr->commentId, "comment$cr->commentId", "Edit");
-        if ($rrow || $conflictType < CONFLICT_AUTHOR)
-            $a = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;c=$cid[0]#$cid[1]") . '" class="xx"';
-        else
-            $a = "<a href=\"#$cid[1]\" class=\"xx\"";
-        $a .= ' onclick="return papercomment.edit_response()"';
-        $x = $a . ">" . Ht::img("comment24.png", "[$cid[2] response]", "dlimg") . "&nbsp;<u>";
-        if ($conflictType >= CONFLICT_AUTHOR)
-            $x .= "<strong>$cid[2] response</strong></u></a>";
-        else
-            $x .= "$cid[2] response</u></a>";
-        $t .= ($t == "" ? "" : $xsep) . $x;
-    }
+    if ($mode != "assign"
+        && ($prow->conflictType >= CONFLICT_AUTHOR || $allow_admin)
+        && ($rrounds = $Conf->time_author_respond()))
+        foreach ($rrounds as $i => $rname) {
+            $cid = array("response", "newresp_$rname", "Add");
+            if ($crows)
+                foreach ($crows as $cr)
+                    if (($cr->commentType & COMMENTTYPE_RESPONSE) && $cr->commentRound == $i) {
+                        $cid = array($cr->commentId, "comment$cr->commentId", "Edit");
+                        if ($cr->commentType & COMMENTTYPE_DRAFT)
+                            $cid[2] = "Edit draft";
+                    }
+            if ($rrow || $conflictType < CONFLICT_AUTHOR)
+                $x = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;c=$cid[0]#$cid[1]") . '"';
+            else
+                $x = '<a href="#' . $cid[1] . '"';
+            $x .= ' class="xx" onclick="return papercomment.edit_response(';
+            if ($i)
+                $x .= "'$rname'";
+            $x .= ')">' . Ht::img("comment24.png", "[$cid[2] response]", "dlimg") . "&nbsp;"
+                . ($conflictType >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
+                . $cid[2] . ($i ? " $rname" : "") . ' response</u></a>';
+            $t .= ($t == "" ? "" : $xsep) . $x;
+        }
 
     // override conflict
     if ($allow_admin && !$admin) {

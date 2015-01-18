@@ -2043,14 +2043,18 @@ class Contact {
         // Return cleaned deadline-relevant settings that this user can see.
         global $Conf, $Opt, $Now;
         $set = $Conf->settings;
-        $dl = (object) array("now" => $Now);
+        $dl = (object) array("now" => $Now,
+                             "sub" => (object) array(),
+                             "resp" => (object) array(),
+                             "rev" => (object) array(),
+                             "cmt" => (object) array());
         if ($this->privChair)
             $dl->is_admin = true;
 
         // submissions
-        $dl->sub = (object) array("open" => @+$set["sub_open"] > 0,
-                                  "sub" => @+$set["sub_sub"],
-                                  "grace" => "sub_grace");
+        $dl->sub->open = @+$set["sub_open"] > 0;
+        $dl->sub->sub = @+$set["sub_sub"];
+        $dl->sub->grace = "sub_grace";
         if (@$set["sub_reg"] && $set["sub_reg"] != @$set["sub_update"])
             $dl->sub->reg = $set["sub_reg"];
         if (@$set["sub_update"] && $set["sub_update"] != @$set["sub_sub"])
@@ -2065,20 +2069,20 @@ class Contact {
             $dl->sub->blind = "until-review";
 
         // responses
-        $resp_allowed = false;
         if (@$set["resp_active"] > 0) {
-            $dl->resp_rounds = $dl->resp_roundsuf = array();
+            $dl->resp->rounds = $dl->resp->roundsuf = array();
             foreach ($Conf->resp_round_list() as $i => $rname) {
-                $dl->resp_rounds[] = $rname;
+                $dl->resp->rounds[] = $rname;
                 $isuf = $i ? "_$i" : "";
-                $dl->resp_roundsuf[] = $i ? ".$rname" : "";
+                $dl->resp->roundsuf[] = $i ? ".$rname" : "";
                 $k = "resp" . ($i ? ".$rname" : "");
-                $dlresp = $dl->$k = (object) array("open" => @+$set["resp_open$isuf"],
-                                                   "done" => @+$set["resp_done$isuf"],
-                                                   "grace" => "resp_grace$isuf");
-                if (!$resp_allowed && $dlresp->open
+                $dlresp = $dl->$k = $dl->$k ? : (object) array();
+                $dlresp->open = @+$set["resp_open$isuf"];
+                $dlresp->done = @+$set["resp_done$isuf"];
+                $dlresp->grace = "resp_grace$isuf";
+                if ($dlresp->open
                     && (!$dlresp->done || $dlresp->done + @+$set[$dlresp->grace] >= $Now))
-                    $resp_allowed = true;
+                    $dl->resp->allowed = true;
             }
         }
 
@@ -2100,14 +2104,14 @@ class Contact {
         if ($this->is_reviewer() && @$set["rev_open"] > 0) {
             $rev_open = @+$set["rev_open"];
             $rounds = $this->my_rounds();
-            $dl->rev_rounds = $dl->rev_roundsuf = array();
+            $dl->rev->rounds = $dl->rev->roundsuf = array();
             $grace = $rev_open ? @$set["rev_grace"] : 0;
             foreach ($this->my_rounds() as $i) {
                 $round_name = $Conf->round_name($i, true);
                 $isuf = $i ? "_$i" : "";
                 $jsuf = $i ? ".$round_name" : "";
-                $dl->rev_rounds[] = $round_name;
-                $dl->rev_roundsuf[] = $jsuf;
+                $dl->rev->rounds[] = $round_name;
+                $dl->rev->roundsuf[] = $jsuf;
                 foreach (array("pcrev", "extrev") as $rt) {
                     if ($rt == "pcrev" && !$this->isPC)
                         continue;
@@ -2120,20 +2124,21 @@ class Contact {
                     } else if ($s)
                         $dlround->done = $s;
                     if (!@$set["{$rt}_hard$isuf"] || $set["{$rt}_hard$isuf"] + $grace >= $Now)
-                        $rev_allowed = true;
+                        $dl->rev->allowed = true;
                     $dlround->grace = "rev_grace";
                 }
             }
             // blindness
             $rb = $Conf->review_blindness();
             if ($rb === Conference::BLIND_ALWAYS)
-                $dl->rev_blind = true;
+                $dl->rev->blind = true;
             else if ($rb === Conference::BLIND_OPTIONAL)
-                $dl->rev_blind = "optional";
+                $dl->rev->blind = "optional";
             // can authors see reviews?
             if ($Conf->timeAuthorViewReviews())
                 $dl->au_allowseerev = true;
-            $rev_allowed = $rev_allowed || $this->can_review_any();
+            if ($this->can_review_any() && $Conf->time_review(null, true, true))
+                $dl->rev->allowed = true;
         }
 
         // grace periods: give a minute's notice of an impending grace
@@ -2150,12 +2155,9 @@ class Contact {
         }
 
         // activeness
-        if ($rev_allowed)
-            $dl->rev_allowed = true;
-        if (@$dl->rev_allowed || ($this->is_reviewer() && $Conf->setting("cmt_always") > 0))
-            $dl->cmt_allowed = true;
-        if ($resp_allowed)
-            $dl->resp_allowed = true;
+        if (($dl->rev->allowed && $Conf->time_review(null, true, true))
+            || ($this->is_reviewer() && $Conf->setting("cmt_always") > 0))
+            $dl->cmt->allowed = true;
 
         // add meeting tracker
         $tracker = null;

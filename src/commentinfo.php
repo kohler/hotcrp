@@ -16,8 +16,6 @@ class CommentInfo {
 
 
     function __construct($x = null, $prow = null) {
-        if (is_int($x))
-            $this->commentType = $x;
         $this->merge(is_object($x) ? $x : null);
         $this->prow = $prow;
     }
@@ -28,6 +26,7 @@ class CommentInfo {
                 $this->$k = $v;
         $this->commentId = (int) @$this->commentId;
         $this->commentType = (int) @$this->commentType;
+        $this->commentRound = (int) @$this->commentRound;
     }
 
     static public function fetch($result, $prow) {
@@ -39,15 +38,24 @@ class CommentInfo {
         global $Conf, $Me;
         if (Ht::mark_stash("papercomment")) {
             $t = array("papercomment.commenttag_search_url=\"" . hoturl_raw("search", "q=cmt%3A%23\$") . "\"");
-            if ($Conf->time_author_respond() || $Me->allow_administer($prow)) {
-                $wordlimit = $Conf->setting("resp_words", 500);
-                if ($wordlimit > 0)
-                    $t[] = "papercomment.resp_words=$wordlimit";
-                if ($Me->can_respond($prow, null))
-                    $t[] = "papercomment.resp_instrux=" . json_encode($Conf->message_html("resp_instrux", array("wordlimit" => $wordlimit)));
-                if (!$prow->has_author($Me))
-                    $t[] = "papercomment.nonauthor=true";
-            }
+            if (!$prow->has_author($Me))
+                $t[] = "papercomment.nonauthor=true";
+            foreach ($Conf->resp_round_list() as $i => $rname)
+                if ($Conf->time_author_respond($i) || $Me->allow_administer($prow)) {
+                    $isuf = $i ? "_$i" : "";
+                    $wl = $Conf->setting("resp_words$isuf", 500);
+                    $ix = false;
+                    if ($Me->can_respond($prow, (object) array("commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i))) {
+                        if ($i)
+                            $ix = $Conf->message_html("resp_instrux_$i", array("wordlimit" => $wl));
+                        if ($ix === false)
+                            $ix = $Conf->message_html("resp_instrux", array("wordlimit" => $wl));
+                    }
+                    $j = array("words" => $wl);
+                    if ($ix !== false)
+                        $j["instrux"] = $ix;
+                    $t[] = "papercomment.set_resp_round(" . json_encode($rname) . "," . json_encode($j) . ")";
+                }
             $Conf->echoScript(join($t, ";"));
         }
     }
@@ -88,7 +96,7 @@ class CommentInfo {
                 return false;
             $cj = (object) array("is_new" => true, "editable" => true);
             if ($this->commentType & COMMENTTYPE_RESPONSE)
-                $cj->response = 1;
+                $cj->response = $Conf->resp_round_name($this->commentRound);
             return $cj;
         }
 
@@ -103,7 +111,7 @@ class CommentInfo {
         if ($this->commentType & COMMENTTYPE_DRAFT)
             $cj->draft = true;
         if ($this->commentType & COMMENTTYPE_RESPONSE)
-            $cj->response = 1;
+            $cj->response = $Conf->resp_round_name($this->commentRound);
 
         // tags
         if (@$this->commentTags) {
@@ -135,8 +143,14 @@ class CommentInfo {
     }
 
     public function unparse_text($contact, $no_title = false) {
+        global $Conf;
         $x = "===========================================================================\n";
-        $n = ($this->commentType & COMMENTTYPE_RESPONSE ? "Response" : "Comment");
+        if (!($this->commentType & COMMENTTYPE_RESPONSE))
+            $n = "Comment";
+        else if ($this->commentRound)
+            $n = $Conf->resp_round_name($this->commentRound) . " Response";
+        else
+            $n = "Response";
         if ($contact->can_view_comment_identity($this->prow, $this, false))
             $n .= " by " . Text::user_text($this->user());
         $x .= str_pad($n, (int) (37.5 + strlen(UnicodeHelper::deaccent($n)) / 2), " ", STR_PAD_LEFT) . "\n";
@@ -194,9 +208,11 @@ class CommentInfo {
             $ctype |= COMMENTTYPE_BLIND;
 
         // tags
-        if ($is_response)
+        if ($is_response) {
             $ctags = " response ";
-        else if (@$req->tags
+            if ($this->commentRound)
+                $ctags .= $Conf->resp_round_name($this->commentRound) . "response ";
+        } else if (@$req->tags
                  && preg_match_all(',\S+,', $req->tags, $m)) {
             $tagger = new Tagger($contact);
             $ctags = array();
@@ -228,12 +244,16 @@ class CommentInfo {
                 $qb[] = "?";
                 $qv[] = $ctags;
             }
+            if ($is_response) {
+                $qa[] = "commentRound";
+                $qb[] = $this->commentRound;
+            }
             $q = "insert into $Table (" . join(", ", $qa) . ") select " . join(", ", $qb) . "\n";
-            if ($ctype & COMMENTTYPE_RESPONSE) {
+            if ($is_response) {
                 // make sure there is exactly one response
                 $q .= " from (select $LinkTable.$LinkColumn, coalesce(commentId, 0) commentId
                 from $LinkTable
-                left join $Table on ($Table.$LinkColumn=$LinkTable.$LinkColumn and (commentType&" . COMMENTTYPE_RESPONSE . ")!=0)
+                left join $Table on ($Table.$LinkColumn=$LinkTable.$LinkColumn and (commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=$this->commentRound)
                 where $LinkTable.$LinkColumn={$this->prow->$LinkColumn} group by $LinkTable.$LinkColumn) t
         where t.commentId=0";
             }

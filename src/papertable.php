@@ -1999,15 +1999,19 @@ class PaperTable {
             && !$this->allreviewslink) {
             $cv = new CommentViewState;
             $s = "";
-            $nresponse = 0;
+            $needresp = array();
+            if ($prow->has_author($Me))
+                $needresp = $Conf->time_author_respond();
             foreach ($this->mycrows as $cr) {
-                $nresponse = $nresponse || ($cr->commentType & COMMENTTYPE_RESPONSE);
+                $cj = $cr->unparse_json($Me, $cv);
+                if ($cr->commentType & COMMENTTYPE_RESPONSE)
+                    unset($needresp[(int) @$cr->commentRound]);
                 $s .= "papercomment.add(" . json_encode($cr->unparse_json($Me, $cv)) . ");\n";
             }
             if ($Me->can_comment($prow, null))
                 $s .= "papercomment.add({is_new:true,editable:true});\n";
-            if (!$nresponse && $Conf->time_author_respond() && $prow->has_author($Me))
-                $s .= "papercomment.add({is_new:true,editable:true,response:1},true);\n";
+            foreach ($needresp as $i => $rname)
+                $s .= "papercomment.add({is_new:true,editable:true,response:" . ($i ? json_encode($rname) : 1) . "},true);\n";
             echo '<div id="cmtcontainer"></div>';
             CommentInfo::echo_script($prow);
             $Conf->echoScript($s);

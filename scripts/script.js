@@ -1295,7 +1295,7 @@ HtmlCollector.prototype.push_pop = function (text) {
     this.html += text;
     this.pop();
 };
-HtmlCollector.prototype.pop_kill = function (pos) {
+HtmlCollector.prototype.pop_collapse = function (pos) {
     if (pos == null)
         pos = this.open.length ? this.open.length - 1 : 0;
     while (this.open.length > pos) {
@@ -1321,7 +1321,7 @@ var vismap = {rev: "hidden from authors",
               pc: "shown only to PC reviewers",
               admin: "shown only to administrators"};
 var cmts = {}, cmtcontainer = null;
-var idctr = 0;
+var idctr = 0, resp_rounds = {};
 
 function comment_identity_time(cj) {
     var t = [], res = [], x, i;
@@ -1357,7 +1357,7 @@ function make_visibility(hc, caption, value, label, rest) {
 }
 
 function edit_allowed(cj) {
-    return cj.response ? hotcrp_status.resp_allowed : hotcrp_status.cmt_allowed;
+    return cj.response ? hotcrp_status.resp.allowed : hotcrp_status.cmt.allowed;
 }
 
 function fill_editing(hc, cj) {
@@ -1407,7 +1407,7 @@ function fill_editing(hc, cj) {
             hc.push('<div class="aabutsep">&nbsp;</div>');
             hc.push('<div class="aabut"><button type="button" name="delete">Delete response</button></div>');
         }
-        if (papercomment.resp_words > 0) {
+        if (resp_rounds[cj.response].words > 0) {
             hc.push('<div class="aabutsep">&nbsp;</div>');
             hc.push('<div class="aabut"><div class="words"></div></div>');
         }
@@ -1429,17 +1429,20 @@ function activate_editing(j, cj) {
     if ((cj.visibility || "rev") !== "au")
         fold(j.find(".cmtvistable")[0], true, 2);
     j.find("input[name=visibility]").on("change", docmtvis);
-    if (papercomment.resp_words > 0)
-        set_response_wc(j, papercomment.resp_words);
+    if (resp_rounds[cj.response].words > 0)
+        set_response_wc(j, resp_rounds[cj.response].words);
     hiliter_children(j);
 }
 
 function analyze(e) {
-    var j = jQuery(e).closest(".cmtg"), id;
+    var j = jQuery(e).closest(".cmtg"), cid;
     if (!j.length)
         j = jQuery(e).closest(".cmtcard").find(".cmtg");
-    id = j[0].id.substr(7);
-    return {j: j, id: id, cj: cmts[id]};
+    cid = j[0].id.substr(7);
+    if (/^\d+$/.test(cid))
+        return {j: j, cid: +cid, cj: cmts[cid]};
+    else
+        return {j: j, cid: cid, cj: cmts[cid], is_new: true};
 }
 
 function make_editor() {
@@ -1462,19 +1465,19 @@ function save_editor(elt, action, really) {
         return;
     }
     var ctype = x.cj.response ? "response=" + x.cj.response : "comment=1";
-    var url = hoturl_post("comment", "p=" + hotcrp_paperid + "&c=" + x.id + "&ajax=1&"
+    var url = hoturl_post("comment", "p=" + hotcrp_paperid
+                          + "&c=" + (x.is_new ? "new" : x.cid) + "&ajax=1&"
                           + (really ? "override=1&" : "")
                           + (hotcrp_want_override_conflict ? "forceShow=1&" : "")
                           + action + ctype);
     jQuery.post(url, x.j.find("form").serialize(), function (data, textStatus, jqxhr) {
-        var x_new = x.id === "new" || x.id === "newresponse";
         var editing_response = x.cj.response && edit_allowed(x.cj);
-        if (data.ok && !data.cmt && !x_new)
-            delete cmts[x.id];
+        if (data.ok && !data.cmt && !x.is_new)
+            delete cmts[x.cid];
         if (editing_response && data.ok && !data.cmt)
             data.cmt = {is_new: true, response: x.cj.response, editable: true, draft: true,
-                        cid: "newresponse" + x.cj.response};
-        if (data.ok && (x_new || (data.cmt && data.cmt.is_new)))
+                        cid: "newresp_" + x.cj.response};
+        if (data.ok && (x.is_new || (data.cmt && data.cmt.is_new)))
             x.j.closest(".cmtg")[0].id = "comment" + data.cmt.cid;
         if (!data.ok)
             x.j.find(".cmtmsg").html(data.error ? '<div class="xmerror">' + data.error + '</div>' : data.msg);
@@ -1482,8 +1485,6 @@ function save_editor(elt, action, really) {
             fill(x.j, data.cmt, editing_response, data.msg);
         else
             x.j.closest(".cmtg").html(data.msg);
-        if (x.id === "new" && data.ok && cmts["new"])
-            papercomment.add(cmts["new"]);
     });
 }
 
@@ -1504,9 +1505,13 @@ function cancel_editor() {
     fill(x.j, x.cj, false);
 }
 
+function cj_cid(cj) {
+    return cj.is_new ? "new" + (cj.response ? "resp_" + cj.response : "") : cj.cid;
+}
+
 function fill(j, cj, editing, msg) {
     var hc = new HtmlCollector, hcid = new HtmlCollector, cmtfn, textj, t, chead,
-        cid = cj.is_new ? "new" + (cj.response ? "response" + cj.response : "") : cj.cid;
+        cid = cj_cid(cj);
     cmts[cid] = cj;
     if (cj.response) {
         chead = j.closest(".cmtcard").find(".cmtcard_head");
@@ -1534,8 +1539,12 @@ function fill(j, cj, editing, msg) {
         cj.response ? jQuery(t).prependTo(chead) : hc.push(t);
     }
     t = comment_identity_time(cj);
-    cj.response ? jQuery('<div class="cmtthead">' + t + '</div>').appendTo(chead) : hc.push(t);
-    hc.pop_kill();
+    if (cj.response) {
+        chead.find(".cmtthead").remove();
+        chead.append('<div class="cmtthead">' + t + '</div>');
+    } else
+        hc.push(t);
+    hc.pop_collapse();
 
     // text
     hc.push('<div class="cmtv">', '</div>');
@@ -1545,8 +1554,8 @@ function fill(j, cj, editing, msg) {
     else if (cj.response && cj.draft && cj.text)
         hc.push('<div class="xwarning">This is a draft response. Reviewers won’t see it until you submit.</div>');
     hc.pop();
-    if (cj.response && editing && papercomment.resp_instrux)
-        hc.push('<div class="xinfo">' + papercomment.resp_instrux + '</div>');
+    if (cj.response && editing && resp_rounds[cj.response].instrux)
+        hc.push('<div class="xinfo">' + resp_rounds[cj.response].instrux + '</div>');
     if (cj.response && editing && papercomment.nonauthor)
         hc.push('<div class="xinfo">Although you aren’t a contact for this paper, as an administrator you can edit the authors’ response.</div>');
     else if (!cj.response && editing && cj.author_email && hotcrp_user.email
@@ -1570,12 +1579,11 @@ function fill(j, cj, editing, msg) {
 }
 
 function add(cj, editing) {
-    var cid = cj.is_new ? "new" + (cj.response ? "response" + cj.response : "") : cj.cid;
-    var j = jQuery("#comment" + cid);
+    var cid = cj_cid(cj), j = jQuery("#comment" + cid);
     if (!j.length) {
         if (!cmtcontainer || cj.response || cmtcontainer.hasClass("response")) {
             if (cj.response)
-                cmtcontainer = '<div class="cmtcard response response' + cj.response +
+                cmtcontainer = '<div class="cmtcard response responseround_' + cj.response +
                     '"><div class="cmtcard_head"><h3>' +
                     (cj.response === 1 ? "Response" : cj.response + " Response") +
                     '</h3></div>';
@@ -1587,22 +1595,34 @@ function add(cj, editing) {
         j = jQuery('<div id="comment' + cid + '" class="cmtg"></div>');
         j.appendTo(cmtcontainer.find(".cmtcard_body"));
     }
+    if (editing == null && cj.response && cj.draft && cj.editable)
+        editing = true;
     fill(j, cj, editing);
 }
 
 function edit_response(respround) {
     respround = respround || 1;
-    var j = jQuery(".response" + respround + " a.cmteditor");
+    var j = jQuery(".responseround_" + respround + " a.cmteditor");
     if (j.length)
         j[0].click();
     else {
-        add({is_new: true, response: respround, editable: true}, true);
-        setTimeout(function () { location.hash = "#commentnewresponse" + respround; }, 0);
+        j = jQuery(".responseround_" + respround + " textarea[name=comment]");
+        if (j.length) {
+            j[0].focus();
+            location.hash = "#" + j.closest("div.cmtg")[0].id;
+        } else {
+            add({is_new: true, response: respround, editable: true}, true);
+            setTimeout(function () { location.hash = "#commentnewresp_" + respround; }, 0);
+        }
     }
     return false;
 }
 
-return {add: add, edit_response: edit_response};
+function set_resp_round(rname, rinfo) {
+    resp_rounds[rname] = rinfo;
+}
+
+return {add: add, edit_response: edit_response, set_resp_round: set_resp_round};
 })();
 
 // quicklink shortcuts
