@@ -1845,7 +1845,9 @@ class Contact {
         else if ($prow->timeSubmitted <= 0)
             $whyNot["notSubmitted"] = 1;
         else {
-            $whyNot["deadline"] = "resp_done" . $Conf->resp_round_suffix($crow ? (int) $crow->commentRound : 0);
+            $whyNot["deadline"] = "resp_done";
+            if ($crow && (int) $crow->commentRound)
+                $whyNot["deadline"] .= "_" . $crow->commentRound;
             if ($rights->allow_administer && $rights->conflict_type)
                 $whyNot["chairMode"] = 1;
             if ($rights->allow_administer)
@@ -2070,7 +2072,7 @@ class Contact {
         if (@$set["resp_active"] > 0) {
             $dl->resp = (object) array("rounds" => array(), "roundsuf" => array());
             foreach ($Conf->resp_round_list() as $i => $rname) {
-                $dl->resp->rounds[] = $rname;
+                $dl->resp->rounds[] = $i ? $rname : 1;
                 $dl->resp->roundsuf[] = $i ? ".$rname" : "";
                 $k = "resp" . ($i ? ".$rname" : "");
                 $dlresp = $dl->$k = $dl->$k ? : (object) array();

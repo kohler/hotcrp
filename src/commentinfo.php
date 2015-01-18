@@ -54,7 +54,7 @@ class CommentInfo {
                     $j = array("words" => $wl);
                     if ($ix !== false)
                         $j["instrux"] = $ix;
-                    $t[] = "papercomment.set_resp_round(" . json_encode($rname) . "," . json_encode($j) . ")";
+                    $t[] = "papercomment.set_resp_round(" . json_encode($i ? $rname : 1) . "," . json_encode($j) . ")";
                 }
             $Conf->echoScript(join($t, ";"));
         }

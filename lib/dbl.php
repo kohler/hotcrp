@@ -135,7 +135,27 @@ class Dbl {
             $usedargs[$thisarg] = true;
             // argument format
             $arg = @$argv[$thisarg];
-            if ($nextch === "s") {
+            if ($nextch === "a" || $nextch === "A") {
+                if ($arg === null)
+                    $arg = array();
+                else if (is_int($arg) || is_string($arg))
+                    $arg = array($arg);
+                foreach ($arg as $x)
+                    if (!is_int($x) && !is_float($x)) {
+                        reset($arg);
+                        foreach ($arg as &$y)
+                            $y = "'" . $dblink->real_escape_string($y) . "'";
+                        unset($y);
+                        break;
+                    }
+                if (count($arg) === 0)
+                    $arg = ($nextch === "a" ? "=NULL" : " IS NOT NULL");
+                else if (count($arg) === 1)
+                    $arg = ($nextch === "a" ? "=" : "!=") . $arg[0];
+                else
+                    $arg = ($nextch === "a" ? " IN (" : " NOT IN (") . join(",", $arg) . ")";
+                ++$nextpos;
+            } else if ($nextch === "s") {
                 $arg = $dblink->real_escape_string($arg);
                 ++$nextpos;
             } else {

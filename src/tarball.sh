@@ -250,6 +250,7 @@ scripts/.htaccess
 scripts/jquery-1.11.2.min.js
 scripts/jquery-1.11.2.min.map
 scripts/script.js
+scripts/settings.js
 
 stylesheets/.htaccess
 stylesheets/style.css

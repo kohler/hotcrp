@@ -519,16 +519,16 @@ class Conference {
     }
 
     function resp_round_list() {
-        $r = array(1);
         if (($x = @$this->settingTexts["resp_rounds"]))
-            $r = array_merge($r, explode(" ", $x));
-        return $r;
+            return explode(" ", $x);
+        else
+            return array(1);
     }
 
     function resp_round_name($roundno, $expand = false) {
         if ($roundno > 0) {
             $x = explode(" ", (string) @$this->settingTexts["resp_rounds"]);
-            if (($n = @$x[$roundno - 1]))
+            if (($n = @$x[$roundno]))
                 return $n;
             else if ($expand)
                 return "?$roundno?"; /* should not happen */
@@ -536,21 +536,12 @@ class Conference {
         return 1;
     }
 
-    function resp_round_suffix($roundno) {
-        if ($roundno > 0) {
-            $x = explode(" ", (string) @$this->settingTexts["resp_rounds"]);
-            if (($n = @$x[$roundno - 1]))
-                return "_$n";
-        }
-        return "";
-    }
-
     static function resp_round_name_error($rname) {
         if ((string) $rname === "")
             return "Empty round name.";
         else if (!strcasecmp($rname, "none") || !strcasecmp($rname, "any")
-                 || !stri_ends_with($rname, "response"))
-            return "Round name $rname is reserved.";
+                 || !strcasecmp($rname, "main") || stri_ends_with($rname, "response"))
+            return "Round name “{$rname}” is reserved.";
         else if (!preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $rname))
             return "Round names must start with a letter and contain letters and numbers.";
         else
@@ -567,9 +558,9 @@ class Conference {
         $rtext = (string) @$this->settingTexts["resp_rounds"];
         foreach (explode(" ", $rtext) as $i => $x)
             if (!strcasecmp($x, $name))
-                return $i + 1;
+                return $i;
         if ($add) {
-            $rtext = $rtext ? "$rtext $name" : $name;
+            $rtext = ($rtext ? : "1") . " $name";
             $this->save_setting("resp_rounds", 1, $rtext);
             return $this->resp_round_number($name, false);
         } else
@@ -1101,7 +1092,8 @@ class Conference {
         if ($this->scriptStuff)
             echo $this->scriptStuff;
         $this->scriptStuff = "";
-        echo "<script>", $script, "</script>";
+        if ($script)
+            echo "<script>", $script, "</script>";
     }
 
     function footerScript($script, $uniqueid = null) {

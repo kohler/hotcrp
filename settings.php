@@ -136,11 +136,17 @@ function unparse_setting_error($info, $text) {
         return $text;
 }
 
-function parseValue($name, $info) {
+function parse_value($name, $info) {
     global $Conf, $Error, $Highlight, $Now, $Opt;
 
-    if (!isset($_POST[$name]))
-        return null;
+    if (!isset($_POST[$name])) {
+        $xname = str_replace(".", "_", $name);
+        if (isset($_POST[$xname]))
+            $_POST[$name] = $_POST[$xname];
+        else
+            return null;
+    }
+
     $v = trim($_POST[$name]);
     if (@$info->temptext && $info->temptext === $v)
         $v = "";
@@ -202,8 +208,8 @@ function parseValue($name, $info) {
     } else if ($info->type === "htmlstring") {
         if (($v = CleanHTML::clean($v, $err)) === false)
             $err = unparse_setting_error($info, $err);
-        else if (str_starts_with($name, "msg.")
-                 && $v === $Conf->message_default_html($name))
+        else if (@$info->message_default
+                 && $v === $Conf->message_default_html($info->message_default))
             return 0;
         else if ($v === $Conf->setting_data($name))
             return null;
@@ -744,7 +750,7 @@ function save_banal($set) {
 function save_tracks($set) {
     global $Values, $Error, $Warning, $Highlight;
     if ($set)
-        return true;
+        return;
     $tagger = new Tagger;
     $tracks = (object) array();
     $missing_tags = false;
@@ -791,118 +797,158 @@ function save_tracks($set) {
 
 function save_rounds($set) {
     global $Conf, $Values, $Error, $Highlight;
-    if (!$set && !isset($_POST["rev_roundtag"]))
+    if ($set)
+        return;
+    else if (!isset($_POST["rev_roundtag"])) {
         $Values["rev_roundtag"] = null;
-    else if (!$set) {
-        // round names
-        $roundnames = $roundnames_set = array();
-        $roundname0 = $round_deleted = null;
-        $Values["rev_round_changes"] = array();
-        for ($i = 0;
-             isset($_POST["roundname_$i"]) || isset($_POST["deleteround_$i"]) || !$i;
-             ++$i) {
-            $rname = @trim($_POST["roundname_$i"]);
-            if ($rname === "(no name)")
-                $rname = "";
-            if ((@$_POST["deleteround_$i"] || $rname === "") && $i) {
-                $roundnames[] = ";";
-                $Values["rev_round_changes"][] = array($i, 0);
-                if ($round_deleted === null && !isset($_POST["roundname_0"])
-                    && $i < $_POST["oldroundcount"])
-                    $round_deleted = $i;
-            } else if ($rname === "")
-                /* ignore */;
-            else if (($rerror = Conference::round_name_error($rname))) {
-                $Error[] = $rerror;
-                $Highlight["roundname_$i"] = true;
-            } else if ($i == 0)
-                $roundname0 = $rname;
-            else if (@$roundnames_set[strtolower($rname)]) {
-                $roundnames[] = ";";
-                $Values["rev_round_changes"][] = array($i, $roundnames_set[strtolower($rname)]);
-            } else {
-                $roundnames[] = $rname;
-                $roundnames_set[strtolower($rname)] = $i;
-            }
-        }
-        if ($roundname0 && !@$roundnames_set[strtolower($roundname0)]) {
-            $roundnames[] = $roundname0;
-            $roundnames_set[strtolower($roundname0)] = count($roundnames);
-        }
-        if ($roundname0)
-            array_unshift($Values["rev_round_changes"], array(0, $roundnames_set[strtolower($roundname0)]));
-
-        // round deadlines
-        foreach ($Conf->round_list() as $i => $rname) {
-            $suffix = $i ? "_$i" : "";
-            foreach (Conference::$review_deadlines as $k)
-                $Values[$k . $suffix] = null;
-        }
-        $rtransform = array();
-        if ($roundname0 && ($ri = $roundnames_set[strtolower($roundname0)])
-            && !isset($_POST["pcrev_soft_$ri"])) {
-            $rtransform[0] = "_$ri";
-            $rtransform[$ri] = false;
-        }
-        if ($round_deleted) {
-            $rtransform[$round_deleted] = "";
-            if (!isset($rtransform[0]))
-                $rtransform[0] = false;
-        }
-        for ($i = 0; $i < count($roundnames) + 1; ++$i)
-            if ((isset($rtransform[$i])
-                 || ($i ? $roundnames[$i - 1] !== ";" : !isset($_POST["deleteround_0"])))
-                && @$rtransform[$i] !== false) {
-                $isuffix = $i ? "_$i" : "";
-                if (($osuffix = @$rtransform[$i]) === null)
-                    $osuffix = $isuffix;
-                $ndeadlines = 0;
-                foreach (Conference::$review_deadlines as $k) {
-                    $v = parseValue($k . $isuffix, setting_info($k));
-                    $Values[$k . $osuffix] = $v < 0 ? null : $v;
-                    $ndeadlines += $v > 0;
-                }
-                if ($ndeadlines == 0 && $osuffix)
-                    $Values["pcrev_soft$osuffix"] = 0;
-                foreach (array("pcrev_", "extrev_") as $k) {
-                    list($soft, $hard) = array("{$k}soft$osuffix", "{$k}hard$osuffix");
-                    if (!@$Values[$soft] && @$Values[$hard])
-                        $Values[$soft] = $Values[$hard];
-                    else if (@$Values[$hard] && @$Values[$soft] > $Values[$hard]) {
-                        $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
-                        $Error[] = setting_info("{$k}soft", "name") . $desc . ": Must come before " . setting_info("{$k}hard", "name") . ".";
-                        $Highlight[$soft] = $Highlight[$hard] = true;
-                    }
-                }
-            }
-
-        // round list (save after deadlines processing)
-        while (count($roundnames) && $roundnames[count($roundnames) - 1] === ";")
-            array_pop($roundnames);
-        if (count($roundnames))
-            $Values["tag_rounds"] = array(1, join(" ", $roundnames));
-        else
-            $Values["tag_rounds"] = null;
-
-        // default round
-        $t = trim($_POST["rev_roundtag"]);
-        $Values["rev_roundtag"] = null;
-        if ($t === "" || strtolower($t) === "(none)" || strtolower($t) === "(no name)")
-            /* do nothing */;
-        else if ($t === "#0") {
-            if ($roundname0)
-                $Values["rev_roundtag"] = array(1, $roundname0);
-        } else if (preg_match('/^#[1-9][0-9]*$/', $t)) {
-            $rname = @$roundnames[substr($t, 1) - 1];
-            if ($rname && $rname !== ";")
-                $Values["rev_roundtag"] = array(1, $rname);
-        } else if (preg_match('/^[a-zA-Z0-9]+$/', $t))
-            $Values["rev_roundtag"] = array(1, $t);
-        else {
-            $Error[] = "The review round must contain only letters and numbers.";
-            $Highlight["rev_roundtag"] = true;
+        return;
+    }
+    // round names
+    $roundnames = $roundnames_set = array();
+    $roundname0 = $round_deleted = null;
+    $Values["rev_round_changes"] = array();
+    for ($i = 0;
+         isset($_POST["roundname_$i"]) || isset($_POST["deleteround_$i"]) || !$i;
+         ++$i) {
+        $rname = @trim($_POST["roundname_$i"]);
+        if ($rname === "(no name)")
+            $rname = "";
+        if ((@$_POST["deleteround_$i"] || $rname === "") && $i) {
+            $roundnames[] = ";";
+            $Values["rev_round_changes"][] = array($i, 0);
+            if ($round_deleted === null && !isset($_POST["roundname_0"])
+                && $i < $_POST["oldroundcount"])
+                $round_deleted = $i;
+        } else if ($rname === "")
+            /* ignore */;
+        else if (($rerror = Conference::round_name_error($rname))) {
+            $Error[] = $rerror;
+            $Highlight["roundname_$i"] = true;
+        } else if ($i == 0)
+            $roundname0 = $rname;
+        else if (@$roundnames_set[strtolower($rname)]) {
+            $roundnames[] = ";";
+            $Values["rev_round_changes"][] = array($i, $roundnames_set[strtolower($rname)]);
+        } else {
+            $roundnames[] = $rname;
+            $roundnames_set[strtolower($rname)] = $i;
         }
     }
+    if ($roundname0 && !@$roundnames_set[strtolower($roundname0)]) {
+        $roundnames[] = $roundname0;
+        $roundnames_set[strtolower($roundname0)] = count($roundnames);
+    }
+    if ($roundname0)
+        array_unshift($Values["rev_round_changes"], array(0, $roundnames_set[strtolower($roundname0)]));
+
+    // round deadlines
+    foreach ($Conf->round_list() as $i => $rname) {
+        $suffix = $i ? "_$i" : "";
+        foreach (Conference::$review_deadlines as $k)
+            $Values[$k . $suffix] = null;
+    }
+    $rtransform = array();
+    if ($roundname0 && ($ri = $roundnames_set[strtolower($roundname0)])
+        && !isset($_POST["pcrev_soft_$ri"])) {
+        $rtransform[0] = "_$ri";
+        $rtransform[$ri] = false;
+    }
+    if ($round_deleted) {
+        $rtransform[$round_deleted] = "";
+        if (!isset($rtransform[0]))
+            $rtransform[0] = false;
+    }
+    for ($i = 0; $i < count($roundnames) + 1; ++$i)
+        if ((isset($rtransform[$i])
+             || ($i ? $roundnames[$i - 1] !== ";" : !isset($_POST["deleteround_0"])))
+            && @$rtransform[$i] !== false) {
+            $isuffix = $i ? "_$i" : "";
+            if (($osuffix = @$rtransform[$i]) === null)
+                $osuffix = $isuffix;
+            $ndeadlines = 0;
+            foreach (Conference::$review_deadlines as $k) {
+                $v = parse_value($k . $isuffix, setting_info($k));
+                $Values[$k . $osuffix] = $v < 0 ? null : $v;
+                $ndeadlines += $v > 0;
+            }
+            if ($ndeadlines == 0 && $osuffix)
+                $Values["pcrev_soft$osuffix"] = 0;
+            foreach (array("pcrev_", "extrev_") as $k) {
+                list($soft, $hard) = array("{$k}soft$osuffix", "{$k}hard$osuffix");
+                if (!@$Values[$soft] && @$Values[$hard])
+                    $Values[$soft] = $Values[$hard];
+                else if (@$Values[$hard] && @$Values[$soft] > $Values[$hard]) {
+                    $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
+                    $Error[] = setting_info("{$k}soft", "name") . $desc . ": Must come before " . setting_info("{$k}hard", "name") . ".";
+                    $Highlight[$soft] = $Highlight[$hard] = true;
+                }
+            }
+        }
+
+    // round list (save after deadlines processing)
+    while (count($roundnames) && $roundnames[count($roundnames) - 1] === ";")
+        array_pop($roundnames);
+    if (count($roundnames))
+        $Values["tag_rounds"] = array(1, join(" ", $roundnames));
+    else
+        $Values["tag_rounds"] = null;
+
+    // default round
+    $t = trim($_POST["rev_roundtag"]);
+    $Values["rev_roundtag"] = null;
+    if ($t === "" || strtolower($t) === "(none)" || strtolower($t) === "(no name)")
+        /* do nothing */;
+    else if ($t === "#0") {
+        if ($roundname0)
+            $Values["rev_roundtag"] = array(1, $roundname0);
+    } else if (preg_match('/^#[1-9][0-9]*$/', $t)) {
+        $rname = @$roundnames[substr($t, 1) - 1];
+        if ($rname && $rname !== ";")
+            $Values["rev_roundtag"] = array(1, $rname);
+    } else if (!($rerror = Conference::round_name_error($t)))
+        $Values["rev_roundtag"] = array(1, $t);
+    else {
+        $Error[] = $rerror;
+        $Highlight["rev_roundtag"] = true;
+    }
+}
+
+function save_resp_rounds($set) {
+    global $Conf, $Error, $Highlight, $Values;
+    if ($set || !value("resp_active"))
+        return;
+    $old_roundnames = $Conf->resp_round_list();
+    $roundnames = array(1);
+    $roundnames_set = array();
+    for ($i = 1; isset($_POST["resp_roundname_$i"]); ++$i) {
+        $rname = @trim($_POST["resp_roundname_$i"]);
+        if ($rname === "" && @$old_roundnames[$i])
+            $rname = $old_roundnames[$i];
+        if ($rname === "")
+            continue;
+        else if (($rerror = Conference::resp_round_name_error($rname))) {
+            $Error[] = $rerror;
+            $Highlight["resp_roundname_$i"] = true;
+        } else if (@$roundnames_set[strtolower($rname)]) {
+            $Error[] = "Response round name “" . htmlspecialchars($rname) . "” has already been used.";
+            $Highlight["resp_roundname_$i"] = true;
+        } else {
+            $roundnames[] = $rname;
+            $roundnames_set[strtolower($rname)] = $i;
+        }
+
+        if (($v = parse_value("resp_open_$i", setting_info("resp_open"))) !== null)
+            $Values["resp_open_$i"] = $v < 0 ? null : $v;
+        if (($v = parse_value("resp_done_$i", setting_info("resp_done"))) !== null)
+            $Values["resp_done_$i"] = $v < 0 ? null : $v;
+        if (($v = parse_value("resp_words_$i", setting_info("resp_words"))) !== null)
+            $Values["resp_words_$i"] = $v < 0 ? null : $v;
+        if (($v = parse_value("msg.resp_instrux_$i", setting_info("msg.resp_instrux"))) !== null)
+            $Values["msg.resp_instrux_$i"] = $v;
+        error_log("MSGJOINFNSAOINDISAN $i " . var_export($v, true));
+    }
+    if (count($roundnames) > 1)
+        $Values["resp_rounds"] = array(1, join(" ", $roundnames));
 }
 
 function doSpecial($name, $set) {
@@ -927,6 +973,8 @@ function doSpecial($name, $set) {
         save_rounds($set);
     else if ($name == "tracks")
         save_tracks($set);
+    else if ($name == "resp_rounds")
+        save_resp_rounds($set);
 }
 
 function truthy($x) {
@@ -934,16 +982,13 @@ function truthy($x) {
              || $x === "" || $x === "0" || $x === "false");
 }
 
-function accountValue($name, $info) {
+function account_value($name, $info) {
     global $Values, $Error, $Highlight;
     $xname = str_replace(".", "_", $name);
-    if (isset($_POST[$xname]) && !isset($_POST[$name]))
-        $_POST[$name] = $_POST[$xname];
-
     if (@$info->type === "special")
         $has_value = truthy(@$_POST["has_$xname"]);
     else
-        $has_value = isset($_POST[$name])
+        $has_value = isset($_POST[$xname])
             || ((@$info->type === "cdate" || @$info->type === "checkbox")
                 && truthy(@$_POST["has_$xname"]));
 
@@ -953,7 +998,7 @@ function accountValue($name, $info) {
     else if ($has_value && $info->type === "special")
         doSpecial($name, false);
     else if ($has_value) {
-        $v = parseValue($name, $info);
+        $v = parse_value($name, $info);
         if ($v === null) {
             if ($info->type !== "cdate" && $info->type !== "checkbox")
                 return;
@@ -992,7 +1037,7 @@ function value_or_setting($name) {
 if (isset($_REQUEST["update"]) && check_post()) {
     // parse settings
     foreach ($SettingInfo as $name => $info)
-        accountValue($name, $info);
+        account_value($name, $info);
 
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "final_soft" => "final_done")
@@ -1005,10 +1050,6 @@ if (isset($_REQUEST["update"]) && check_post()) {
         }
     if (array_key_exists("sub_sub", $Values))
         $Values["sub_update"] = $Values["sub_sub"];
-    // need to set 'resp_open' to a timestamp,
-    // so we can join on later review changes
-    if (value("resp_active") > 0 && $Conf->setting("resp_open") <= 0)
-        $Values["resp_open"] = $Now;
     if (array_key_exists("opt.contactName", $Values)
         || array_key_exists("opt.contactEmail", $Values)) {
         $site_contact = Contact::site_contact();
@@ -1082,10 +1123,11 @@ if (isset($_REQUEST["update"]) && check_post()) {
             if (setting_info($n, "type") == "special")
                 doSpecial($n, true);
 
-        $dq = $aq = "";
+        $dv = $aq = $av = array();
+        error_log(join(", ", array_keys($Values)));
         foreach ($Values as $n => $v)
             if (!setting_info($n, "nodb")) {
-                $dq .= " or name='$n'";
+                $dv[] = $n;
                 if (substr($n, 0, 4) === "opt.") {
                     $okey = substr($n, 4);
                     $oldv = (array_key_exists($okey, $OptOverride) ? $OptOverride[$okey] : @$Opt[$okey]);
@@ -1095,15 +1137,18 @@ if (isset($_REQUEST["update"]) && check_post()) {
                     else if (!array_key_exists($okey, $OptOverride))
                         $OptOverride[$okey] = $oldv;
                 }
-                if (is_array($v))
-                    $aq .= ", ('$n', '" . sqlq($v[0]) . "', '" . sqlq($v[1]) . "')";
-                else if ($v !== null)
-                    $aq .= ", ('$n', '" . sqlq($v) . "', null)";
+                if (is_array($v)) {
+                    $aq[] = "(?, ?, ?)";
+                    array_push($av, $n, $v[0], $v[1]);
+                } else if ($v !== null) {
+                    $aq[] = "(?, ?, null)";
+                    array_push($av, $n, $v);
+                }
             }
-        if (strlen($dq))
-            $Conf->qe("delete from Settings where " . substr($dq, 4));
-        if (strlen($aq))
-            $Conf->qe("insert into Settings (name, value, data) values " . substr($aq, 2));
+        if (count($dv))
+            Dbl::qe_apply("delete from Settings where name?a", array($dv));
+        if (count($aq))
+            Dbl::qe_apply("insert into Settings (name, value, data) values " . join(",", $aq), $av);
 
         $Conf->qe("unlock tables");
         $Me->log_activity("Updated settings group '$Group'");
@@ -1149,10 +1194,6 @@ if (isset($_REQUEST["update"]) && check_post()) {
     rf_update();
 if (isset($_REQUEST["cancel"]) && check_post())
     redirectSelf();
-
-
-// header and script
-$Conf->header("Settings", "settings", actionBar());
 
 
 function setting_js($name, $extra = array()) {
@@ -1215,7 +1256,7 @@ function opt_data($name, $defval = "", $killval = "") {
 
 function doCheckbox($name, $text, $tr = false, $js = null) {
     $x = setting($name);
-    echo ($tr ? "<tr><td class='nowrap'>" : ""),
+    echo ($tr ? '<tr><td class="nw">' : ""),
         Ht::hidden("has_$name", 1),
         Ht::checkbox($name, 1, $x !== null && $x > 0, setting_js($name, array("onchange" => $js, "id" => "cb$name"))),
         "&nbsp;", ($tr ? "</td><td>" : ""),
@@ -1229,7 +1270,7 @@ function doRadio($name, $varr) {
         $x = 0;
     echo "<table>\n";
     foreach ($varr as $k => $text) {
-        echo "<tr><td class='nowrap'>", Ht::radio($name, $k, $k == $x, setting_js($name, array("id" => "{$name}_{$k}"))),
+        echo '<tr><td class="nw">', Ht::radio($name, $k, $k == $x, setting_js($name, array("id" => "{$name}_{$k}"))),
             "&nbsp;</td><td>";
         if (is_array($text))
             echo setting_label($name, $text[0], true), "<br /><small>", $text[1], "</small>";
@@ -1241,7 +1282,7 @@ function doRadio($name, $varr) {
 }
 
 function doSelect($name, $nametext, $varr, $tr = false) {
-    echo ($tr ? "<tr><td class='nowrap lcaption'>" : ""),
+    echo ($tr ? '<tr><td class="lcaption nw">' : ""),
         setting_label($name, $nametext),
         ($tr ? "</td><td class='lentry'>" : ": &nbsp;"),
         Ht::select($name, $varr, setting($name), setting_js($name)),
@@ -1256,11 +1297,11 @@ function doTextRow($name, $text, $v, $size = 30,
                    $capclass = "lcaption", $tempText = "") {
     global $Conf;
     $nametext = (is_array($text) ? $text[0] : $text);
-    echo "<tr><td class='$capclass nowrap'>", setting_label($name, $nametext), "</td><td class='lentry'>",
-        render_entry($name, $v, $size, $tempText);
-    if (is_array($text) && isset($text[2]))
+    echo '<tr><td class="', $capclass, ' nw">', setting_label($name, $nametext),
+        '</td><td class="lentry">', render_entry($name, $v, $size, $tempText);
+    if (is_array($text) && @$text[2])
         echo $text[2];
-    if (is_array($text) && $text[1])
+    if (is_array($text) && @$text[1])
         echo "<br /><span class='hint'>", $text[1], "</span>";
     echo "</td></tr>\n";
 }
@@ -1280,6 +1321,8 @@ function date_value($name, $temptext, $othername = null) {
         return "none";
     else if ($x <= 0)
         return $temptext;
+    else if ($x == 1)
+        return "now";
     else
         return $Conf->parseableTime($x, true);
 }
@@ -1315,7 +1358,7 @@ function doActionArea($top) {
 
 // Accounts
 function doAccGroup() {
-    global $Conf, $Me, $belowHr;
+    global $Conf, $Me;
 
     if (setting("acct_addr"))
         doCheckbox("acct_addr", "Collect users’ addresses and phone numbers");
@@ -1331,7 +1374,10 @@ function doAccGroup() {
 // Messages
 function do_message($name, $description, $type, $rows = 10, $hint = "") {
     global $Conf;
-    $default = $Conf->message_default_html($name);
+    $defaultname = $name;
+    if (is_array($name))
+        list($name, $defaultname) = $name;
+    $default = $Conf->message_default_html($defaultname);
     $current = setting_data($name, $default);
     echo '<div class="fold', ($current == $default ? "c" : "o"),
         '" hotcrp_fold="yes">',
@@ -2011,20 +2057,46 @@ function doTagsGroup() {
 function doDecGroup() {
     global $Conf, $Highlight, $Error;
 
-    // doCheckbox('au_seerev', '<b>Authors can see reviews</b>');
     echo "Can <b>authors see reviews and comments</b> for their papers?<br />";
     doRadio("au_seerev", array(AU_SEEREV_NO => "No", AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they’ve completed any requested reviews"));
 
-    echo "<div class='g'></div>\n<table id='foldauresp' class='fold2o'>";
+    // Authors' response
+    echo '<div class="g"></div><table id="foldauresp" class="fold2o">';
     doCheckbox('resp_active', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>", true, "void fold('auresp',!this.checked,2)");
-    echo "<tr class='fx2'><td></td><td><table>";
-    doDateRow('resp_done', 'Hard deadline', null, "lxcaption");
-    doGraceRow('resp_grace', 'Grace period', "lxcaption");
-    doTextRow("resp_words", array("Word limit", "This is a soft limit: authors may submit longer responses. 0 means no limit."), setting("resp_words", 500), 5, "lxcaption", "none");
-    echo "</table>";
-    echo "<div class='g'></div>";
-    do_message("msg.resp_instrux", "Instructions", 1, 3);
-    echo "</td></tr></table>";
+    echo '<tr class="fx2"><td></td><td><div id="auresparea">',
+        Ht::hidden("has_resp_rounds", 1);
+
+    // Response rounds
+    if (count($Error)) {
+        $rrounds = array(1);
+        for ($i = 1; isset($_POST["resp_roundname_$i"]); ++$i)
+            $rrounds[$i] = $_POST["resp_roundname_$i"];
+    } else
+        $rrounds = $Conf->resp_round_list();
+    $rrounds["n"] = "";
+    foreach ($rrounds as $i => $rname) {
+        $isuf = $i ? "_$i" : "";
+        echo '<div id="response', $isuf;
+        if ($i)
+            echo '" style="padding-top:1em';
+        if ($i === "n")
+            echo ';display:none';
+        echo '"><table>';
+        if ($i)
+            doTextRow("resp_roundname$isuf", "Round name", $rname, 20, "lcaption");
+        doDateRow("resp_open$isuf", "Start time", null, "lxcaption");
+        doDateRow("resp_done$isuf", "Hard deadline", null, "lxcaption");
+        doGraceRow("resp_grace$isuf", "Grace period", "lxcaption");
+        doTextRow("resp_words$isuf", array("Word limit", $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit."),
+                  setting("resp_words$isuf", 500), 5, "lxcaption", "none");
+        echo '</table><div style="padding-top:4px">';
+        do_message(array("msg.resp_instrux$isuf", "msg.resp_instrux"), "Instructions", 1, 3);
+        echo '</div></div>', "\n";
+    }
+
+    echo '</div><div style="padding-top:1em">',
+        Ht::js_button("Add response round", "settings_add_resp_round()"),
+        '</div></div></td></tr></table>';
     $Conf->footerScript("fold('auresp',!\$\$('cbresp_active').checked,2)");
 
     echo "<div class='g'></div>\n<hr class='hr' />\n",
@@ -2054,11 +2126,11 @@ function doDecGroup() {
         if ($k) {
             if (count($Error) > 0)
                 $v = defval($_POST, "dec$k", $v);
-            echo "<tr>$caption<td class='lentry nowrap'>",
-                "<input type='text' name='dec$k' value=\"", htmlspecialchars($v), "\" size='35' />",
+            echo "<tr>", $caption, '<td class="lentry nw">',
+                Ht::entry("dec$k", $v, array("size" => 35)),
                 " &nbsp; ", ($k > 0 ? "Accept class" : "Reject class"), "</td>";
             if (isset($decs_pcount[$k]) && $decs_pcount[$k])
-                echo "<td class='lentry nowrap'>", plural($decs_pcount[$k], "paper"), "</td>";
+                echo '<td class="lentry nw">', plural($decs_pcount[$k], "paper"), "</td>";
             echo "</tr>\n";
             $caption = "";
         }
@@ -2070,25 +2142,25 @@ function doDecGroup() {
         $v = defval($_POST, "decn", $v);
         $vclass = defval($_POST, "dtypn", $vclass);
     }
-    echo "<tr><td class='lcaption'>",
+    echo '<tr><td class="lcaption">',
         setting_label("decn", "New decision type"),
-        "<br /></td>",
-        "<td class='lentry nowrap'>",
+        '<br /></td>',
+        '<td class="lentry nw">',
         Ht::hidden("has_decisions", 1),
-        "<input type='text' name='decn' value=\"", htmlspecialchars($v), "\" size='35' /> &nbsp; ",
+        Ht::entry("decn", $v, array("size" => 35)), ' &nbsp; ',
         Ht::select("dtypn", array(1 => "Accept class", -1 => "Reject class"), $vclass),
         "<br /><small>Examples: “Accepted as short paper”, “Early reject”</small>",
         "</td></tr>";
     if (defval($Highlight, "decn"))
-        echo "<tr><td></td><td class='lentry nowrap'>",
+        echo '<tr><td></td><td class="lentry nw">',
             Ht::checkbox("decn_confirm", 1, false),
-            "&nbsp;<span class='error'>", Ht::label("Confirm"), "</span></td></tr>";
+            '&nbsp;<span class="error">', Ht::label("Confirm"), "</span></td></tr>";
     echo "</table>\n";
 
     // Final versions
     echo "<h3 class=\"settings g\">Final versions</h3>\n";
-    echo "<table id='foldfinal' class='fold2o'>";
-    doCheckbox('final_open', "<b>Collect final versions of accepted papers<span class='fx'>:</span></b>", true, "void fold('final',!this.checked,2)");
+    echo '<table id="foldfinal" class="fold2o">';
+    doCheckbox('final_open', '<b>Collect final versions of accepted papers<span class="fx">:</span></b>', true, "void fold('final',!this.checked,2)");
     echo "<tr class='fx2'><td></td><td><table>";
     doDateRow("final_soft", "Deadline", "final_done", "lxcaption");
     doDateRow("final_done", "Hard deadline", null, "lxcaption");
@@ -2101,7 +2173,11 @@ function doDecGroup() {
     $Conf->footerScript("fold('final',!\$\$('cbfinal_open').checked)");
 }
 
-$belowHr = true;
+
+
+$Conf->header("Settings", "settings", actionBar());
+$Conf->echoScript(""); // clear out other script references
+echo $Conf->make_script_file("scripts/settings.js"), "\n";
 
 echo Ht::form(hoturl_post("settings"), array("id" => "settingsform")), "<div>",
     Ht::hidden("group", $Group);
