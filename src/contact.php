@@ -2039,15 +2039,13 @@ class Contact {
         return $rounds;
     }
 
-    function my_deadlines() {
+    function my_deadlines($prows = null) {
         // Return cleaned deadline-relevant settings that this user can see.
         global $Conf, $Opt, $Now;
         $set = $Conf->settings;
         $dl = (object) array("now" => $Now,
                              "sub" => (object) array(),
-                             "resp" => (object) array(),
-                             "rev" => (object) array(),
-                             "cmt" => (object) array());
+                             "rev" => (object) array());
         if ($this->privChair)
             $dl->is_admin = true;
 
@@ -2070,19 +2068,16 @@ class Contact {
 
         // responses
         if (@$set["resp_active"] > 0) {
-            $dl->resp->rounds = $dl->resp->roundsuf = array();
+            $dl->resp = (object) array("rounds" => array(), "roundsuf" => array());
             foreach ($Conf->resp_round_list() as $i => $rname) {
                 $dl->resp->rounds[] = $rname;
-                $isuf = $i ? "_$i" : "";
                 $dl->resp->roundsuf[] = $i ? ".$rname" : "";
                 $k = "resp" . ($i ? ".$rname" : "");
                 $dlresp = $dl->$k = $dl->$k ? : (object) array();
+                $isuf = $i ? "_$i" : "";
                 $dlresp->open = @+$set["resp_open$isuf"];
                 $dlresp->done = @+$set["resp_done$isuf"];
                 $dlresp->grace = "resp_grace$isuf";
-                if ($dlresp->open
-                    && (!$dlresp->done || $dlresp->done + @+$set[$dlresp->grace] >= $Now))
-                    $dl->resp->allowed = true;
             }
         }
 
@@ -2100,11 +2095,10 @@ class Contact {
 
         // reviewer deadlines
         $revtypes = array();
-        $rev_allowed = false;
         if ($this->is_reviewer() && @$set["rev_open"] > 0) {
             $rev_open = @+$set["rev_open"];
-            $rounds = $this->my_rounds();
-            $dl->rev->rounds = $dl->rev->roundsuf = array();
+            $dl->rev->rounds = array();
+            $dl->rev->roundsuf = array();
             $grace = $rev_open ? @$set["rev_grace"] : 0;
             foreach ($this->my_rounds() as $i) {
                 $round_name = $Conf->round_name($i, true);
@@ -2123,8 +2117,6 @@ class Contact {
                         $dlround->ishard = true;
                     } else if ($s)
                         $dlround->done = $s;
-                    if (!@$set["{$rt}_hard$isuf"] || $set["{$rt}_hard$isuf"] + $grace >= $Now)
-                        $dl->rev->allowed = true;
                     $dlround->grace = "rev_grace";
                 }
             }
@@ -2137,8 +2129,6 @@ class Contact {
             // can authors see reviews?
             if ($Conf->timeAuthorViewReviews())
                 $dl->au_allowseerev = true;
-            if ($this->can_review_any() && $Conf->time_review(null, true, true))
-                $dl->rev->allowed = true;
         }
 
         // grace periods: give a minute's notice of an impending grace
@@ -2154,11 +2144,6 @@ class Contact {
             unset($dlsub->grace);
         }
 
-        // activeness
-        if (($dl->rev->allowed && $Conf->time_review(null, true, true))
-            || ($this->is_reviewer() && $Conf->setting("cmt_always") > 0))
-            $dl->cmt->allowed = true;
-
         // add meeting tracker
         $tracker = null;
         if ($this->isPC && $Conf->setting("tracker")
@@ -2168,6 +2153,36 @@ class Contact {
             $dl->tracker_poll = $Opt["trackerCometSite"]
                 . "?conference=" . urlencode(Navigation::site_absolute(true))
                 . "&poll=" . urlencode(MeetingTracker::tracker_status($tracker));
+
+        // permissions
+        if ($prows) {
+            if (is_object($prows))
+                $prows = array($prows);
+            $dl->perm = array();
+            foreach ($prows as $prow) {
+                if (!$this->can_view_paper($prow))
+                    continue;
+                $perm = $dl->perm[$prow->paperId] = (object) array();
+                $admin = $this->allow_administer($prow);
+                if ($admin)
+                    $perm->allow_administer = true;
+                if ($this->can_review($prow, null, false))
+                    $perm->can_review = true;
+                if ($this->can_comment($prow, null, true))
+                    $perm->can_comment = true;
+                else if ($admin && $this->can_comment($prow, null, false))
+                    $perm->can_comment = "override";
+                if ($dl->resp)
+                    foreach ($Conf->resp_round_list() as $i => $rname) {
+                        $crow = (object) array("commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i);
+                        $k = "can_respond" . ($i ? ".$rname" : "");
+                        if ($this->can_respond($prow, $crow, true))
+                            $perm->$k = true;
+                        else if ($admin && $this->can_respond($prow, $crow, false))
+                            $perm->$k = "override";
+                    }
+            }
+        }
 
         return $dl;
     }

@@ -54,8 +54,9 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $prow, $paperTable, $editRrowLogname, $Error;
-    if (!($prow = PaperTable::paperRow($whyNot)))
+    global $Conf, $Me, $CurrentProw, $prow, $paperTable, $editRrowLogname, $Error;
+    $CurrentProw = $prow = PaperTable::paperRow($whyNot);
+    if (!$prow)
         errorMsgExit(whyNotText($whyNot, "view"));
     $paperTable = new PaperTable($prow);
     $paperTable->resolveReview();

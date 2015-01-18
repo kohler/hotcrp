@@ -86,19 +86,17 @@ define("TAG_MAXLEN", 40);
 define("CAPTYPE_RESETPASSWORD", 1);
 define("CAPTYPE_CHANGEEMAIL", 2);
 
-global $CurrentList;
-$CurrentList = 0;
-
 global $reviewScoreNames;
 $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
                           "grammar", "reviewerQualification", "potential",
                           "fixability", "interestToCommunity", "longevity",
                           "likelyPresentation", "suitableForShort");
 
-global $OK;
+global $OK, $Now, $CurrentList, $CurrentProw;
 $OK = 1;
-global $Now;
 $Now = time();
+$CurrentList = 0;
+$CurrentProw = null;
 
 global $allowedSessionVars;
 $allowedSessionVars = array("foldpapera", "foldpaperp", "foldpaperb",

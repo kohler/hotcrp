@@ -33,8 +33,9 @@ function errorMsgExit($msg) {
 
 // grab paper row
 function loadRows() {
-    global $prow, $rrows, $Conf, $Me;
-    if (!($prow = PaperTable::paperRow($whyNot)))
+    global $prow, $CurrentProw, $rrows, $Conf, $Me;
+    $CurrentProw = $prow = PaperTable::paperRow($whyNot);
+    if (!$prow)
         errorMsgExit(whyNotText($whyNot, "view"));
     if (!$Me->canRequestReview($prow, false, $whyNot)) {
         $wnt = whyNotText($whyNot, "request reviews for");

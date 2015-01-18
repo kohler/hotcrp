@@ -2047,7 +2047,7 @@ class Conference {
     }
 
     function header($title, $id = "", $actionBar = null, $showTitle = true) {
-        global $ConfSiteBase, $ConfSitePATH, $Me, $Now, $Opt;
+        global $ConfSiteBase, $ConfSitePATH, $CurrentProw, $Me, $Now, $Opt;
         if ($this->headerPrinted)
             return;
         if ($actionBar === null)
@@ -2067,7 +2067,7 @@ class Conference {
 
         // deadlines settings
         if ($Me)
-            $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($Me->my_deadlines()) . ")";
+            $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($Me->my_deadlines($CurrentProw)) . ")";
 
         // meeting tracker
         $trackerowner = $Me && $Me->privChair

@@ -672,7 +672,8 @@ function load(dlx, is_initial) {
 function reload() {
     clearTimeout(reload_timeout);
     reload_timeout = null;
-    Miniajax.get(hoturl("api", "deadlines=1"), load, 10000);
+    var psuffix = hotcrp_paperid ? "&p=" + hotcrp_paperid : "";
+    Miniajax.get(hoturl("api", "deadlines=1" + psuffix, load, 10000);
 }
 
 return {
@@ -1357,7 +1358,11 @@ function make_visibility(hc, caption, value, label, rest) {
 }
 
 function edit_allowed(cj) {
-    return cj.response ? hotcrp_status.resp.allowed : hotcrp_status.cmt.allowed;
+    if (cj.response) {
+        var k = "can_respond" + (cj.response === 1 ? "" : "." + cj.response);
+        return hotcrp_status.perm[hotcrp_paperid][k] === true;
+    } else
+        return hotcrp_status.perm[hotcrp_paperid].can_comment === true;
 }
 
 function fill_editing(hc, cj) {
@@ -1429,7 +1434,7 @@ function activate_editing(j, cj) {
     if ((cj.visibility || "rev") !== "au")
         fold(j.find(".cmtvistable")[0], true, 2);
     j.find("input[name=visibility]").on("change", docmtvis);
-    if (resp_rounds[cj.response].words > 0)
+    if (cj.response && resp_rounds[cj.response].words > 0)
         set_response_wc(j, resp_rounds[cj.response].words);
     hiliter_children(j);
 }
@@ -1485,6 +1490,8 @@ function save_editor(elt, action, really) {
             fill(x.j, data.cmt, editing_response, data.msg);
         else
             x.j.closest(".cmtg").html(data.msg);
+        if (x.cid === "new" && data.ok && cmts["new"])
+            papercomment.add(cmts["new"]);
     });
 }
 
