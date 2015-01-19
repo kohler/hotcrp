@@ -1496,7 +1496,7 @@ function analyze(e) {
     var j = jQuery(e).closest(".cmtg"), cid;
     if (!j.length)
         j = jQuery(e).closest(".cmtcard").find(".cmtg");
-    cid = j[0].id.substr(7);
+    cid = j.closest(".cmtid")[0].id.substr(7);
     if (/^\d+$/.test(cid))
         return {j: j, cid: +cid, cj: cmts[cid]};
     else
@@ -1536,7 +1536,7 @@ function save_editor(elt, action, really) {
             data.cmt = {is_new: true, response: x.cj.response, editable: true, draft: true,
                         cid: "newresp_" + x.cj.response};
         if (data.ok && (x.is_new || (data.cmt && data.cmt.is_new)))
-            x.j.closest(".cmtg")[0].id = "comment" + data.cmt.cid;
+            x.j.closest(".cmtid")[0].id = "comment" + data.cmt.cid;
         if (!data.ok)
             x.j.find(".cmtmsg").html(data.error ? '<div class="xmerror">' + data.error + '</div>' : data.msg);
         else if (data.cmt)
@@ -1653,7 +1653,8 @@ function add(cj, editing) {
     if (!j.length) {
         if (!cmtcontainer || cj.response || cmtcontainer.hasClass("response")) {
             if (cj.response)
-                cmtcontainer = '<div class="cmtcard response responseround_' + cj.response +
+                cmtcontainer = '<div id="comment' + cid +
+                    '" class="cmtcard cmtid response responseround_' + cj.response +
                     '"><div class="cmtcard_head"><h3>' +
                     (cj.response === 1 ? "Response" : cj.response + " Response") +
                     '</h3></div>';
@@ -1662,7 +1663,10 @@ function add(cj, editing) {
             cmtcontainer = jQuery(cmtcontainer + '<div class="cmtcard_body"></div></div>');
             cmtcontainer.appendTo("#cmtcontainer");
         }
-        j = jQuery('<div id="comment' + cid + '" class="cmtg"></div>');
+        if (cj.response)
+            j = jQuery('<div class="cmtg"></div>');
+        else
+            j = jQuery('<div id="comment' + cid + '" class="cmtg cmtid"></div>');
         j.appendTo(cmtcontainer.find(".cmtcard_body"));
     }
     if (editing == null && cj.response && cj.draft && cj.editable)
@@ -1679,7 +1683,7 @@ function edit_response(respround) {
         j = jQuery(".responseround_" + respround + " textarea[name=comment]");
         if (j.length) {
             j[0].focus();
-            location.hash = "#" + j.closest("div.cmtg")[0].id;
+            location.hash = "#" + j.closest("div.cmtid")[0].id;
         } else {
             add({is_new: true, response: respround, editable: true}, true);
             setTimeout(function () { location.hash = "#commentnewresp_" + respround; }, 0);
