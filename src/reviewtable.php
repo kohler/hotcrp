@@ -265,26 +265,26 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         foreach ($crows as $cr)
             if ($Me->can_view_comment($prow, $cr, null)) {
                 $cids[] = $cr->commentId;
-                $n = '<a class="nowrap" href="#comment' . $cr->commentId . '">';
                 if ($Me->can_view_comment_identity($prow, $cr, null))
-                    $n .= Text::abbrevname_html($cr->user());
+                    $n = Text::abbrevname_html($cr->user());
                 else
-                    $n .= "anonymous";
+                    $n = "anonymous";
                 if ($cr->commentType & COMMENTTYPE_RESPONSE) {
                     $rname = $Conf->resp_round_name($cr->commentRound);
+                    $n = ($n === "anonymous" ? "" : " ($n)");
                     if (($cr->commentType & COMMENTTYPE_DRAFT) && $rname !== 1)
-                        $n .= " (Draft $rname response)";
+                        $n = "<i>Draft $rname Response</i>$n";
                     else if ($cr->commentType & COMMENTTYPE_DRAFT)
-                        $n .= " (Draft response)";
+                        $n = "<i>Draft Response</i>$n";
                     else if ($rname !== 1)
-                        $n .= " ($rname response)";
+                        $n = "<i>$rname Response</i>$n";
                     else
-                        $n .= " (Response)";
+                        $n = "<i>Response</i>$n";
                 }
-                $cnames[] = $n . "</a>";
+                $cnames[] = '<a class="nw" href="#comment' . $cr->commentId . '">' . $n . '</a>';
             }
         if (count($cids) > 0)
-            $pret = '<div class="revnotes"><a href="#comment' . $cids[0] . '"><strong>' . plural(count($cids), "Comment") . "</strong></a> by " . join(", ", $cnames) . "</div>";
+            $pret = '<div class="revnotes"><a href="#comment' . $cids[0] . '"><strong>' . plural(count($cids), "Comment") . "</strong></a>: " . join(", ", $cnames) . "</div>";
     }
 
     $t = "";
