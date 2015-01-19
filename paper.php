@@ -797,7 +797,7 @@ if ((@$_REQUEST["update"] || @$_REQUEST["submitfinal"])
     }
 
     // use request?
-    $useRequest = ($ok || $Me->privChair);
+    $useRequest = (!$whyNot || $Me->privChair);
 }
 
 if (isset($_REQUEST["updatecontacts"]) && check_post() && !$newPaper) {
