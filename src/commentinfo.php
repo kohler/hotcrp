@@ -203,7 +203,7 @@ class CommentInfo {
             $ctype = $this->commentType;
         else // $req->visibility == "r" || $req->visibility == "rev"
             $ctype = COMMENTTYPE_REVIEWER;
-        if ($is_response ? $prow->blind : $Conf->is_review_blind(!!@$req->blind))
+        if ($is_response ? $this->prow->blind : $Conf->is_review_blind(!!@$req->blind))
             $ctype |= COMMENTTYPE_BLIND;
 
         // tags
