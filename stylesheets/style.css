@@ -1009,6 +1009,9 @@ div.error textarea, td.error textarea, tr.error > td textarea,
 span.error {
 	color: #ff0000;
 }
+.dimerror, .wordsovertext {
+	color: #9c4848;
+}
 
 
 div.helpside {

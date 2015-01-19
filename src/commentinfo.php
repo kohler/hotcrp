@@ -40,22 +40,21 @@ class CommentInfo {
             $t = array("papercomment.commenttag_search_url=\"" . hoturl_raw("search", "q=cmt%3A%23\$") . "\"");
             if (!$prow->has_author($Me))
                 $t[] = "papercomment.nonauthor=true";
-            foreach ($Conf->resp_round_list() as $i => $rname)
-                if ($Conf->time_author_respond($i) || $Me->allow_administer($prow)) {
-                    $isuf = $i ? "_$i" : "";
-                    $wl = $Conf->setting("resp_words$isuf", 500);
-                    $ix = false;
-                    if ($Me->can_respond($prow, (object) array("commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i))) {
-                        if ($i)
-                            $ix = $Conf->message_html("resp_instrux_$i", array("wordlimit" => $wl));
-                        if ($ix === false)
-                            $ix = $Conf->message_html("resp_instrux", array("wordlimit" => $wl));
-                    }
-                    $j = array("words" => $wl);
+            foreach ($Conf->resp_round_list() as $i => $rname) {
+                $isuf = $i ? "_$i" : "";
+                $wl = $Conf->setting("resp_words$isuf", 500);
+                $j = array("words" => $wl);
+                $ix = false;
+                if ($Me->can_respond($prow, (object) array("commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i))) {
+                    if ($i)
+                        $ix = $Conf->message_html("resp_instrux_$i", array("wordlimit" => $wl));
+                    if ($ix === false)
+                        $ix = $Conf->message_html("resp_instrux", array("wordlimit" => $wl));
                     if ($ix !== false)
                         $j["instrux"] = $ix;
-                    $t[] = "papercomment.set_resp_round(" . json_encode($i ? $rname : 1) . "," . json_encode($j) . ")";
                 }
+                $t[] = "papercomment.set_resp_round(" . json_encode($i ? $rname : 1) . "," . json_encode($j) . ")";
+            }
             $Conf->echoScript(join($t, ";"));
         }
     }

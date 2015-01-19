@@ -1633,13 +1633,13 @@ function fill(j, cj, editing, msg) {
     else {
         textj = j.find(".cmttext").text(cj.text);
         (cj.response ? chead.parent() : j).find("a.cmteditor").click(make_editor);
-        if (cj.response && (wlimit = resp_rounds[cj.response].words) > 0) {
+        if (cj.response && resp_rounds[cj.response] && (wlimit = resp_rounds[cj.response].words) > 0) {
             var wc = count_words(cj.text);
             if (wc > wlimit) {
                 chead.append('<div class="cmtthead words wordsover">' + plural(wc, "word") + '</div>');
                 wc = count_words_split(cj.text, wlimit);
                 textj.text(wc[0]);
-                textj.append('<span class="error"></span>').find(".error").text(wc[1]);
+                textj.append('<span class="wordsovertext"></span>').find(".wordsovertext").text(wc[1]);
             } else
                 chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');
         }
