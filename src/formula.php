@@ -394,7 +394,7 @@ class Formula {
 
             $t = $tn;
             $op = @self::$_oprewrite[$op] ? : $op;
-            if (!($e2 = $this->_parse_expr($t, self::$_oprassoc[$op] ? $opprec : $opprec + 1, $in_qc)))
+            if (!($e2 = $this->_parse_expr($t, @self::$_oprassoc[$op] ? $opprec : $opprec + 1, $in_qc)))
                 return null;
             $e = FormulaExpr::make($op, $e, $e2);
         }
