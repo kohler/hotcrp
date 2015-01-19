@@ -1460,13 +1460,13 @@ function visibility_change() {
 }
 
 function count_words(text) {
-    return (text.match(/\S+/g) || []).length;
+    return ((text || "").match(/\S+/g) || []).length;
 }
 
 function count_words_split(text, wlimit) {
     var re = new RegExp("^((?:\\s*\\S+){" + wlimit + "}\\s*)([\\s\\S]*)$"),
-        m = re.exec(text);
-    return m ? [m[1], m[2]] : [text, ""];
+        m = re.exec(text || "");
+    return m ? [m[1], m[2]] : [text || "", ""];
 }
 
 function make_update_words(jq, wlimit) {
