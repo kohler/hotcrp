@@ -128,6 +128,28 @@ jQuery.fn.extend({
     }
 });
 
+function plural_noun(n, what) {
+    if (jQuery.isArray(n))
+        n = n.length;
+    if (n == 1)
+        return what;
+    if (what == "this")
+        return "these";
+    if (/^.*?(?:s|sh|ch|[bcdfgjklmnpqrstvxz][oy])$/.test(what)) {
+        if (what.substr(-1) == "y")
+            return what.substr(0, what.length - 1) + "ies";
+        else
+            return what + "es";
+    } else
+        return what + "s";
+}
+
+function plural(n, what) {
+    if (jQuery.isArray(n))
+        n = n.length;
+    return n + " " + plural_noun(n, what);
+}
+
 function ordinal(n) {
     if (n >= 1 && n <= 3)
         return n + ["st", "nd", "rd"][Math.floor(n - 1)];
@@ -1419,6 +1441,37 @@ function fill_editing(hc, cj) {
     }
 }
 
+function visibility_change() {
+    var j = jQuery(this).closest(".cmtvistable"),
+        dofold = !j.find("input[name=visibility][value=au]").is(":checked");
+    fold(j[0], dofold, 2);
+}
+
+function count_words(text) {
+    return (text.match(/\S+/g) || []).length;
+}
+
+function count_words_split(text, wlimit) {
+    var re = new RegExp("^((?:\\s*\\S+){" + wlimit + "}\\s*)([\\s\\S]*)$"),
+        m = re.exec(text);
+    return m ? [m[1], m[2]] : [text, ""];
+}
+
+function make_update_words(jq, wlimit) {
+    var wce = jq.find(".words")[0];
+    function setwc(event) {
+        var wc = count_words(this.value), wct;
+        wce.className = "words" + (wlimit < wc ? " wordsover" :
+                                   (wlimit * 0.9 < wc ? " wordsclose" : ""));
+        if (wlimit < wc)
+            wce.innerHTML = plural(wc - wlimit, "word") + " over";
+        else
+            wce.innerHTML = plural(wlimit - wc, "word") + " left";
+    }
+    if (wce)
+        jq.find("textarea").on("input", setwc).each(setwc);
+}
+
 function activate_editing(j, cj) {
     var elt;
     j.find("textarea").text(cj.text).autogrow();
@@ -1433,9 +1486,9 @@ function activate_editing(j, cj) {
     j.find("button[name=savedraft]").click(savedraft_editor);
     if ((cj.visibility || "rev") !== "au")
         fold(j.find(".cmtvistable")[0], true, 2);
-    j.find("input[name=visibility]").on("change", docmtvis);
+    j.find("input[name=visibility]").on("change", visibility_change);
     if (cj.response && resp_rounds[cj.response].words > 0)
-        set_response_wc(j, resp_rounds[cj.response].words);
+        make_update_words(j, resp_rounds[cj.response].words);
     hiliter_children(j);
 }
 
@@ -1518,7 +1571,7 @@ function cj_cid(cj) {
 
 function fill(j, cj, editing, msg) {
     var hc = new HtmlCollector, hcid = new HtmlCollector, cmtfn, textj, t, chead,
-        cid = cj_cid(cj);
+        wlimit, cid = cj_cid(cj);
     cmts[cid] = cj;
     if (cj.response) {
         chead = j.closest(".cmtcard").find(".cmtcard_head");
@@ -1579,8 +1632,18 @@ function fill(j, cj, editing, msg) {
         activate_editing(j, cj);
     else {
         textj = j.find(".cmttext").text(cj.text);
-        textj.html(link_urls(textj.html()));
         (cj.response ? chead.parent() : j).find("a.cmteditor").click(make_editor);
+        if (cj.response && (wlimit = resp_rounds[cj.response].words) > 0) {
+            var wc = count_words(cj.text);
+            if (wc > wlimit) {
+                chead.append('<div class="cmtthead words wordsover">' + plural(wc, "word") + '</div>');
+                wc = count_words_split(cj.text, wlimit);
+                textj.text(wc[0]);
+                textj.append('<span class="error"></span>').find(".error").text(wc[1]);
+            } else
+                chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');
+        }
+        textj.html(link_urls(textj.html()));
     }
     return j;
 }
@@ -2626,7 +2689,7 @@ Miniajax.submit = function (formname, callback, timeout) {
     // set request
     var timer = setTimeout(function () {
                                req.abort();
-                               resultelt.innerHTML = "<span class='error'>Network timeout. Please try again.</span>";
+                               resultelt.innerHTML = "<span class='merror'>Network timeout. Please try again.</span>";
                                form.onsubmit = "";
                                fold(form, 0, 7);
                            }, timeout);
@@ -2643,7 +2706,7 @@ Miniajax.submit = function (formname, callback, timeout) {
             if (rv.ok)
                 hiliter(form, true);
         } else {
-            resultelt.innerHTML = "<span class='error'>Network error. Please try again.</span>";
+            resultelt.innerHTML = "<span class='merror'>Network error. Please try again.</span>";
             form.onsubmit = "";
             fold(form, 0, 7);
         }
@@ -2948,32 +3011,6 @@ function doremovedocument(elt) {
     fold("removable_" + name);
     hiliter(elt);
     return false;
-}
-
-function docmtvis(hilite) {
-    hilite = this ? this : hilite;
-    jQuery(hilite).each(function () {
-        var j = jQuery(this).closest(".cmtvistable"),
-            dofold = !j.find("input[name=visibility][value=au]").is(":checked");
-        fold(j[0], dofold, 2);
-    });
-    if (hilite instanceof Node)
-        hiliter(hilite);
-}
-
-function set_response_wc(jq, wordlimit) {
-    var wce = jq.find(".words")[0];
-    function setwc(event) {
-        var wc = (this.value.match(/\S+/g) || []).length, wct;
-        wce.className = "words" + (wordlimit < wc ? " wordsover" :
-                                   (wordlimit * 0.9 < wc ? " wordsclose" : ""));
-        if (wordlimit < wc)
-            wce.innerHTML = (wc - wordlimit) + " word" + (wc - wordlimit == 1 ? "" : "s") + " over";
-        else
-            wce.innerHTML = (wordlimit - wc) + " word" + (wordlimit - wc == 1 ? "" : "s") + " left";
-    }
-    if (wce)
-        jq.find("textarea").on("input", setwc).each(setwc);
 }
 
 function save_tags() {

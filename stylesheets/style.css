@@ -331,7 +331,7 @@ span.confirm {
 	font-style: italic;
 	color: #006600;
 }
-span.error, span.merror {
+span.merror {
 	font-style: italic;
 	color: #660000;
 }
