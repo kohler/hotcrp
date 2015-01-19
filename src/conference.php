@@ -875,7 +875,7 @@ class Conference {
             $t .= $preadjust;
         if ($useradjust) {
             $sp = strpos($useradjust, " ");
-            $t .= "<$useradjust class='usertime' id='usertime$this->usertimeId' style='display:none'></" . ($sp ? substr($useradjust, 0, $sp) : $useradjust) . ">";
+            $t .= "<$useradjust class=\"usertime\" id=\"usertime$this->usertimeId\" style=\"display:none\"></" . ($sp ? substr($useradjust, 0, $sp) : $useradjust) . ">";
             Ht::stash_script("setLocalTime('usertime$this->usertimeId',$value)");
             ++$this->usertimeId;
         }

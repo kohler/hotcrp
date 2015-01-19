@@ -234,62 +234,74 @@ function sprintf(fmt) {
 }
 
 var strftime = (function () {
-        function pad(num, str, n) {
-            str += num.toString();
-            return str.length <= n ? str : str.substr(str.length - n);
+    function pad(num, str, n) {
+        str += num.toString();
+        return str.length <= n ? str : str.substr(str.length - n);
+    }
+    var unparsers = {
+        a: function (d) { return (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])[d.getDay()]; },
+        A: function (d) { return (["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])[d.getDay()]; },
+        d: function (d) { return pad(d.getDate(), "0", 2); },
+        e: function (d, alt) { return pad(d.getDate(), alt ? "" : " ", 2); },
+        u: function (d) { return d.getDay() || 7; },
+        w: function (d) { return d.getDay(); },
+        b: function (d) { return (["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])[d.getMonth()]; },
+        B: function (d) { return (["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"])[d.getMonth()]; },
+        h: function (d) { return unparsers.b(d); },
+        m: function (d) { return pad(d.getMonth() + 1, "0", 2); },
+        y: function (d) { return d.getFullYear() % 100; },
+        Y: function (d) { return d.getFullYear(); },
+        H: function (d) { return pad(d.getHours(), "0", 2); },
+        k: function (d, alt) { return pad(d.getHours(), alt ? "" : " ", 2); },
+        I: function (d) { return pad(d.getHours() % 12 || 12, "0", 2); },
+        l: function (d, alt) { return pad(d.getHours() % 12 || 12, alt ? "" : " ", 2); },
+        M: function (d) { return pad(d.getMinutes(), "0", 2); },
+        p: function (d) { return d.getHours() < 12 ? "AM" : "PM"; },
+        P: function (d) { return d.getHours() < 12 ? "am" : "pm"; },
+        r: function (d, alt) {
+            if (alt && d.getSeconds())
+                return strftime("%#l:%M:%S%P", d);
+            else if (alt && d.getMinutes())
+                return strftime("%#l:%M%P", d);
+            else if (alt)
+                return strftime("%#l%P", d);
+            else
+                return strftime("%I:%M:%S %p", d);
+        },
+        R: function (d, alt) {
+            if (alt && d.getSeconds())
+                return strftime("%H:%M:%S", d);
+            else
+                return strftime("%H:%M", d);
+        },
+        S: function (d) { return pad(d.getSeconds(), "0", 2); },
+        T: function (d) { return strftime("%H:%M:%S", d); },
+        /* XXX z Z */
+        D: function (d) { return strftime("%m/%d/%y", d); },
+        F: function (d) { return strftime("%Y-%m-%d", d); },
+        s: function (d) { return Math.trunc(d.getTime() / 1000); },
+        n: function (d) { return "\n"; },
+        t: function (d) { return "\t"; },
+        "%": function (d) { return "%"; }
+    };
+    return function(fmt, d) {
+        var words = fmt.split(/(%#?\S)/), wordno, word, alt, f, t = "";
+        if (d == null)
+            d = new Date;
+        else if (typeof d == "number")
+            d = new Date(d * 1000);
+        for (wordno = 0; wordno != words.length; ++wordno) {
+            word = words[wordno];
+            alt = word.charAt(1) == "#";
+            if (word.charAt(0) == "%"
+                && (f = unparsers[word.charAt(1 + alt)]))
+                t += f(d, alt);
+            else
+                t += word;
         }
-        var unparsers = {
-            a: function (d) { return (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])[d.getDay()]; },
-            A: function (d) { return (["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])[d.getDay()]; },
-            d: function (d) { return pad(d.getDate(), "0", 2); },
-            e: function (d, alt) { return pad(d.getDate(), alt ? "" : " ", 2); },
-            u: function (d) { return d.getDay() || 7; },
-            w: function (d) { return d.getDay(); },
-            b: function (d) { return (["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])[d.getMonth()]; },
-            B: function (d) { return (["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"])[d.getMonth()]; },
-            h: function (d) { return unparsers.b(d); },
-            m: function (d) { return pad(d.getMonth() + 1, "0", 2); },
-            y: function (d) { return d.getFullYear() % 100; },
-            Y: function (d) { return d.getFullYear(); },
-            H: function (d) { return pad(d.getHours(), "0", 2); },
-            k: function (d, alt) { return pad(d.getHours(), alt ? "" : " ", 2); },
-            I: function (d) { return pad(d.getHours() % 12 || 12, "0", 2); },
-            l: function (d) { return pad(d.getHours() % 12 || 12, " ", 2); },
-            M: function (d) { return pad(d.getMinutes(), "0", 2); },
-            p: function (d) { return d.getHours() < 12 ? "AM" : "PM"; },
-            P: function (d) { return d.getHours() < 12 ? "am" : "pm"; },
-            r: function (d) { return strftime("%I:%M:%S %p", d); },
-            R: function (d) { return strftime("%H:%M", d); },
-            S: function (d) { return pad(d.getSeconds(), "0", 2); },
-            T: function (d) { return strftime("%H:%M:%S", d); },
-            N: function (d) { return strftime(d.getSeconds() ? "%M:%S" : "%M", d); },
-            /* XXX z Z */
-            D: function (d) { return strftime("%m/%d/%y", d); },
-            F: function (d) { return strftime("%Y-%m-%d", d); },
-            s: function (d) { return Math.trunc(d.getTime() / 1000); },
-            n: function (d) { return "\n"; },
-            t: function (d) { return "\t"; },
-            "%": function (d) { return "%"; }
-        };
-        return function(fmt, d) {
-            var words = fmt.split(/(%#?[aAdejuwUVWbBhmCgGyYHkIlMpPrRSTXzZDFsnt%])/), wordno, word,
-                alt, t = "";
-            if (d == null)
-                d = new Date;
-            else if (typeof d == "number")
-                d = new Date(d * 1000);
-            for (wordno = 0; wordno != words.length; ++wordno) {
-                word = words[wordno];
-                if (word.charAt(0) != "%")
-                    t += word;
-                else {
-                    alt = word.charAt(1) == "#";
-                    t += unparsers[word.charAt(1 + alt)](d, alt);
-                }
-            }
-            return t;
-        };
-    })();
+        return t;
+    };
+})();
 
 window.setLocalTime = (function () {
 var servhr24, showdifference = false;
@@ -300,9 +312,9 @@ function setLocalTime(elt, servtime) {
     if (elt && showdifference) {
         d = new Date(servtime * 1000);
         if (servhr24)
-            s = strftime("%A %#e %b %Y %#k:%N%P your time");
+            s = strftime("%A %#e %b %Y %#R your time", d);
         else
-            s = strftime("%A %#e %b %Y %H:%N your time");
+            s = strftime("%A %#e %b %Y %#r your time", d);
         if (elt.tagName.toUpperCase() == "SPAN") {
             elt.innerHTML = " (" + s + ")";
             elt.style.display = "inline";
