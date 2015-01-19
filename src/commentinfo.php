@@ -146,8 +146,8 @@ class CommentInfo {
         $x = "===========================================================================\n";
         if (!($this->commentType & COMMENTTYPE_RESPONSE))
             $n = "Comment";
-        else if ($this->commentRound)
-            $n = $Conf->resp_round_name($this->commentRound) . " Response";
+        else if (($rname = $Conf->resp_round_text($this->commentRound)))
+            $n = "$rname Response";
         else
             $n = "Response";
         if ($contact->can_view_comment_identity($this->prow, $this, false))
@@ -209,8 +209,8 @@ class CommentInfo {
         // tags
         if ($is_response) {
             $ctags = " response ";
-            if ($this->commentRound)
-                $ctags .= $Conf->resp_round_name($this->commentRound) . "response ";
+            if (($rname = $Conf->resp_round_name($this->commentRound)) != "1")
+                $ctags .= "{$rname}response ";
         } else if (@$req->tags
                  && preg_match_all(',\S+,', $req->tags, $m)) {
             $tagger = new Tagger($contact);

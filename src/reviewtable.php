@@ -272,11 +272,11 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                 if ($cr->commentType & COMMENTTYPE_RESPONSE) {
                     $rname = $Conf->resp_round_name($cr->commentRound);
                     $n = ($n === "anonymous" ? "" : " ($n)");
-                    if (($cr->commentType & COMMENTTYPE_DRAFT) && $rname !== 1)
+                    if (($cr->commentType & COMMENTTYPE_DRAFT) && $rname != "1")
                         $n = "<i>Draft $rname Response</i>$n";
                     else if ($cr->commentType & COMMENTTYPE_DRAFT)
                         $n = "<i>Draft Response</i>$n";
-                    else if ($rname !== 1)
+                    else if ($rname != "1")
                         $n = "<i>$rname Response</i>$n";
                     else
                         $n = "<i>Response</i>$n";

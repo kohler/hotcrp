@@ -514,10 +514,6 @@ class Conference {
 
 
 
-    function has_resp_rounds() {
-        return isset($this->settingTexts["resp_rounds"]);
-    }
-
     function resp_round_list() {
         if (($x = @$this->settingTexts["resp_rounds"]))
             return explode(" ", $x);
@@ -525,22 +521,25 @@ class Conference {
             return array(1);
     }
 
-    function resp_round_name($roundno, $expand = false) {
-        if ($roundno > 0) {
-            $x = explode(" ", (string) @$this->settingTexts["resp_rounds"]);
-            if (($n = @$x[$roundno]))
+    function resp_round_name($rnum) {
+        if (($x = @$this->settingTexts["resp_rounds"])) {
+            $x = explode(" ", $x);
+            if (($n = @$x[$rnum]))
                 return $n;
-            else if ($expand)
-                return "?$roundno?"; /* should not happen */
         }
-        return 1;
+        return "1";
+    }
+
+    function resp_round_text($rnum) {
+        $rname = $this->resp_round_name($rnum);
+        return $rname == "1" ? "" : $rname;
     }
 
     static function resp_round_name_error($rname) {
         if ((string) $rname === "")
             return "Empty round name.";
         else if (!strcasecmp($rname, "none") || !strcasecmp($rname, "any")
-                 || !strcasecmp($rname, "main") || stri_ends_with($rname, "response"))
+                 || stri_ends_with($rname, "response"))
             return "Round name “{$rname}” is reserved.";
         else if (!preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $rname))
             return "Round names must start with a letter and contain letters and numbers.";
@@ -548,23 +547,15 @@ class Conference {
             return false;
     }
 
-    function current_resp_round($add = false) { /* XXX */
-        return $this->resp_round_number(@$this->settingTexts["rev_roundtag"], $add);
-    }
-
-    function resp_round_number($name, $add) {
-        if (!$name || $name === 1 || $name === "1" || $name === true)
+    function resp_round_number($rname) {
+        if (!$rname || $rname === 1 || $rname === "1" || $rname === true
+            || !strcasecmp($rname, "none"))
             return 0;
         $rtext = (string) @$this->settingTexts["resp_rounds"];
         foreach (explode(" ", $rtext) as $i => $x)
-            if (!strcasecmp($x, $name))
+            if (!strcasecmp($x, $rname))
                 return $i;
-        if ($add) {
-            $rtext = ($rtext ? : "1") . " $name";
-            $this->save_setting("resp_rounds", 1, $rtext);
-            return $this->resp_round_number($name, false);
-        } else
-            return 0;
+        return false;
     }
 
 

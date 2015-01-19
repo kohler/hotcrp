@@ -110,9 +110,10 @@ function save_comment($text, $is_response, $roundnum) {
         if (($dl = $Conf->printableTimeSetting("resp_done$isuf")) != "N/A")
             $confirm .= " You have until $dl to submit the response.";
         $confirm .= '</div>';
-    } else if ($is_response)
-        $confirm = '<div class="xconfirm">' . ($roundnum ? $Conf->resp_round_name($roundnum) . " response" : "Response") . ' submitted.</div>';
-    else if ($cinfo->commentId)
+    } else if ($is_response) {
+        $rname = $Conf->resp_round_text($roundnum);
+        $confirm = '<div class="xconfirm">' . ($rname ? "$rname response" : "Response") . ' submitted.</div>';
+    } else if ($cinfo->commentId)
         $confirm = '<div class="xconfirm">Comment saved.</div>';
     else
         $confirm = '<div class="xconfirm">Comment deleted.</div>';
@@ -128,9 +129,10 @@ function save_comment($text, $is_response, $roundnum) {
 function handle_response() {
     global $Conf, $Me, $prow, $crow;
     $rname = @trim($_REQUEST["response"]);
-    $rnum = $Conf->resp_round_number($rname, false);
-    if (!$rnum && $rname && $rname !== "1")
+    $rnum = $Conf->resp_round_number($rname);
+    if ($rnum === false && $rname)
         return $Conf->errorMsg("No such response round “" . htmlspecialchars($rname) . "”.");
+    $rnum = (int) $rnum;
     if ($crow && @(int) $crow->commentRound !== $rnum) {
         $Conf->warnMsg("Attempt to change response round ignored.");
         $rnum = @+$crow->commentRound;

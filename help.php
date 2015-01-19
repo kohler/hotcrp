@@ -282,7 +282,12 @@ function searchQuickref() {
     _searchQuickrefRow("", "cmt:>=3", "at least <em>three</em> visible reviewer comments");
     _searchQuickrefRow("", "has:aucmt", "at least one reviewer comment visible to authors");
     _searchQuickrefRow("", "cmt:sylvia", "“sylvia” (in name/email) wrote at least one visible comment; can combine with counts, use reviewer tags");
-    _searchQuickrefRow("", "has:response", "has author’s response");
+    $rnames = $Conf->resp_round_list();
+    if (count($rnames) > 1) {
+        _searchQuickrefRow("", "has:response", "has an author’s response");
+        _searchQuickrefRow("", "has:{$rnames[1]}response", "has $rnames[1] response");
+    } else
+        _searchQuickrefRow("", "has:response", "has author’s response");
     _searchQuickrefRow("", "anycmt:>1", "at least two visible comments, possibly <em>including</em> author’s response");
     _searchQuickrefRow("Leads", "lead:fdabek", "“fdabek” (in name/email) is discussion lead");
     _searchQuickrefRow("", "lead:none", "no assigned discussion lead");

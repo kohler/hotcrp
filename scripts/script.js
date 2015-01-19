@@ -1381,7 +1381,7 @@ function make_visibility(hc, caption, value, label, rest) {
 
 function edit_allowed(cj) {
     if (cj.response) {
-        var k = "can_respond" + (cj.response === 1 ? "" : "." + cj.response);
+        var k = "can_respond" + (cj.response == "1" ? "" : "." + cj.response);
         return hotcrp_status.perm[hotcrp_paperid][k] === true;
     } else
         return hotcrp_status.perm[hotcrp_paperid].can_comment === true;
@@ -1589,7 +1589,7 @@ function fill(j, cj, editing, msg) {
     if (cj.is_new && !editing) {
         hc.push('<h3><a class="q fn cmteditor" href="#">+&nbsp;', '</a></h3>');
         if (cj.response)
-            hc.push_pop(cj.response === 1 ? "Add Response" : "Add " + cj.response + " Response");
+            hc.push_pop(cj.response == "1" ? "Add Response" : "Add " + cj.response + " Response");
         else
             hc.push_pop("Add Comment");
     } else if (cj.is_new && !cj.response)
@@ -1656,7 +1656,7 @@ function add(cj, editing) {
                 cmtcontainer = '<div id="comment' + cid +
                     '" class="cmtcard cmtid response responseround_' + cj.response +
                     '"><div class="cmtcard_head"><h3>' +
-                    (cj.response === 1 ? "Response" : cj.response + " Response") +
+                    (cj.response == "1" ? "Response" : cj.response + " Response") +
                     '</h3></div>';
             else
                 cmtcontainer = '<div class="cmtcard"><div class="cmtcard_head"><h3>Comments</h3></div>';

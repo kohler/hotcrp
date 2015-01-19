@@ -248,4 +248,5 @@ function settings_add_resp_round() {
     hiliter_children(j);
     j.find("input[hottemptext]").each(mktemptext);
     j.find("textarea").css({height: "auto"}).autogrow().val(jQuery("#response_n textarea").val());
+    return false;
 }

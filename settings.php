@@ -918,8 +918,23 @@ function save_resp_rounds($set) {
     if ($set || !value_or_setting("resp_active"))
         return;
     $old_roundnames = $Conf->resp_round_list();
-    $roundnames = array(1);
+    $roundnames = array();
     $roundnames_set = array();
+
+    if (isset($_POST["resp_roundname"])) {
+        $rname = @trim($_POST["resp_roundname"]);
+        if ($rname === "" || $rname === "none" || $rname === "1")
+            $roundnames[] = 1;
+        else if (($rerror = Conference::resp_round_name_error($rname))) {
+            $Error[] = $rerror;
+            $Highlight["resp_roundname"] = true;
+        } else {
+            $roundnames[] = $rname;
+            $roundnames_set[strtolower($rname)] = 0;
+        }
+    } else
+        $roundnames[] = 1;
+
     for ($i = 1; isset($_POST["resp_roundname_$i"]); ++$i) {
         $rname = @trim($_POST["resp_roundname_$i"]);
         if ($rname === "" && @$old_roundnames[$i])
@@ -929,7 +944,7 @@ function save_resp_rounds($set) {
         else if (($rerror = Conference::resp_round_name_error($rname))) {
             $Error[] = $rerror;
             $Highlight["resp_roundname_$i"] = true;
-        } else if (@$roundnames_set[strtolower($rname)]) {
+        } else if (@$roundnames_set[strtolower($rname)] !== null) {
             $Error[] = "Response round name “" . htmlspecialchars($rname) . "” has already been used.";
             $Highlight["resp_roundname_$i"] = true;
         } else {
@@ -946,8 +961,11 @@ function save_resp_rounds($set) {
         if (($v = parse_value("msg.resp_instrux_$i", setting_info("msg.resp_instrux"))) !== null)
             $Values["msg.resp_instrux_$i"] = $v;
     }
-    if (count($roundnames) > 1)
+
+    if (count($roundnames) > 1 || $roundnames[0] !== 1)
         $Values["resp_rounds"] = array(1, join(" ", $roundnames));
+    else
+        $Values["resp_rounds"] = 0;
 }
 
 function doSpecial($name, $set) {
@@ -2098,8 +2116,11 @@ function doDecGroup() {
         if ($i === "n")
             echo ';display:none';
         echo '"><table>';
-        if ($i)
-            doTextRow("resp_roundname$isuf", "Round name", $rname, 20, "lcaption");
+        if (!$i) {
+            $rname = $rname == "1" ? "none" : $rname;
+            doTextRow("resp_roundname$isuf", "Response name", $rname, 20, "lxcaption", "none");
+        } else
+            doTextRow("resp_roundname$isuf", "Response name", $rname, 20, "lxcaption");
         if (setting("resp_open$isuf") === 1 && ($x = setting("resp_done$isuf")))
             $Conf->settings["resp_open$isuf"] = $x - 7 * 86400;
         doDateRow("resp_open$isuf", "Start time", null, "lxcaption");
@@ -2113,7 +2134,7 @@ function doDecGroup() {
     }
 
     echo '</div><div style="padding-top:1em">',
-        Ht::js_button("Add response round", "settings_add_resp_round()"),
+        '<a href="#" onclick="return settings_add_resp_round()">Add response round</a>',
         '</div></div></td></tr></table>';
     $Conf->footerScript("fold('auresp',!\$\$('cbresp_active').checked,2)");
 
