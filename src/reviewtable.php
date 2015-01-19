@@ -276,7 +276,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                         $n .= " (Draft $rname response)";
                     else if ($cr->commentType & COMMENTTYPE_DRAFT)
                         $n .= " (Draft response)";
-                    else if ($rname)
+                    else if ($rname !== 1)
                         $n .= " ($rname response)";
                     else
                         $n .= " (Response)";
