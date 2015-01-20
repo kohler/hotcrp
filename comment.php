@@ -93,7 +93,7 @@ function save_comment($text, $is_response, $roundnum) {
         reset($crows);
         $cur_response = @current($crows);
         if ($cur_response && $cur_response->comment == $text) {
-            $cinfo = $cur_response;
+            $cinfo = new CommentInfo($cur_response, $prow);
             $ok = true;
         } else
             $confirm = '<div class="xmerror">A response was entered concurrently by another user. Reload to see it.</div>';
