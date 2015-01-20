@@ -1486,7 +1486,7 @@ function make_update_words(jq, wlimit) {
 
 function activate_editing(j, cj) {
     var elt;
-    j.find("textarea").text(cj.text).autogrow();
+    j.find("textarea").text(cj.text || "").autogrow();
     j.find("input[name=commenttags]").val((cj.tags || []).join(" "));
     if ((elt = j.find("input[name=visibility][value=" + (cj.visibility || "rev") + "]")[0]))
         elt.checked = true;
@@ -1643,7 +1643,7 @@ function fill(j, cj, editing, msg) {
     if (editing)
         activate_editing(j, cj);
     else {
-        textj = j.find(".cmttext").text(cj.text);
+        textj = j.find(".cmttext").text(cj.text || "");
         (cj.response ? chead.parent() : j).find("a.cmteditor").click(make_editor);
         if (cj.response && resp_rounds[cj.response] && (wlimit = resp_rounds[cj.response].words) > 0) {
             var wc = count_words(cj.text);
