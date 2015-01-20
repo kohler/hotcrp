@@ -75,7 +75,7 @@ if (($getaction == "paper" || $getaction == "final"
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection())));
     $downloads = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
-        if (($whyNot = $Me->permViewPaper($row, true)))
+        if (($whyNot = $Me->perm_view_paper($row, true)))
             $Conf->errorMsg(whyNotText($whyNot, "view"));
         else
             $downloads[] = $row->paperId;
