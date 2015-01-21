@@ -1503,7 +1503,7 @@ class PaperSearch {
         if (($colon = strpos($word, ":")) > 0) {
             $x = substr($word, 0, $colon);
             if (strpos($x, '"') === false)
-                $keyword = @self::$_keywords[$keyword] ? : $x;
+                $keyword = @self::$_keywords[$x] ? : $x;
         }
 
         // allow a space after a keyword
