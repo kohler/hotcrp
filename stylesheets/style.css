@@ -1507,7 +1507,7 @@ tr.plx h6 {
 
 /* paper list tables */
 th.pl {
-	padding: 0 0.4em 0 0;
+	padding: 2px 0.4em 2px 0;
 }
 td.pl {
 	padding: 2px 0.4em 2px 0;
@@ -1516,8 +1516,16 @@ th.pl:first-child, td.pl:first-child {
 	padding-left: 0.4em;
 }
 
-td.pl.pl_title, td.pl.pl_text {
+td.pl.pl_title, td.pl.pl_text, td.pl.pls {
 	padding-right: 1em;
+}
+
+td.pl.plboldsp, td.pl.plsp {
+	padding-right: 2em;
+}
+
+td.pl.pls:last-child {
+	padding-right: 0.4em;
 }
 
 td.pl.pl_revtype {
@@ -1528,19 +1536,23 @@ div.pl_revtype_round {
 	margin-right: -1.2em;
 }
 
-th.pl_id, th.pl_sel, th.pl_confselector,
+th.plc, th.pl_id, th.pl_sel, th.pl_confselector,
 th.pl_revtype, th.pl_revstat, th.pl_topicscore, th.pl_desirability,
 th.pl_score, th.pl_tag, th.pl_tagval, th.pl_formula {
 	text-align: center;
 }
 
-td.pl_id, td.pl_sel,
+th.plr {
+	text-align: right;
+}
+
+td.plr, td.pl_id, td.pl_sel,
 td.pl_revpref, td.pl_topicscore, td.pl_desirability,
 td.pl_tag, td.pl_tagval, td.pl_formula {
 	text-align: right;
 }
 
-td.pl_revtype, td.pl_revstat, td.pl_confselector, td.pl_score {
+td.plc, td.pl_revtype, td.pl_revstat, td.pl_confselector, td.pl_score {
 	text-align: center;
 }
 
@@ -1548,6 +1560,17 @@ td.pl_id, td.pl_sel, td.pl_confselector,
 td.pl_revtype, td.pl_assrev, td.pl_editrevpref,
 td.pl_score, td.pl_tag, td.pl_tagval, td.pl_edittagval, td.pl_formula {
 	white-space: nowrap;
+}
+
+td.plboldsp {
+	font-weight: bold;
+}
+
+td.plred {
+	color: #ff0000;
+}
+td.plgreen {
+	color: #00cc00;
 }
 
 .pl_titleextra a {

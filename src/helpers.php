@@ -194,7 +194,7 @@ function hoturl_site_relative($page, $options = null) {
         } else if (($is_paper_page
                     && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $options, $m))
                    || ($page == "profile"
-                       && preg_match($are . 'u=([^&]+)' . $zre, $options, $m))
+                       && preg_match($are . 'u=([^&?]+)' . $zre, $options, $m))
                    || ($page == "help"
                        && preg_match($are . 't=(\w+)' . $zre, $options, $m))
                    || ($page == "settings"
