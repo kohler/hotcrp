@@ -91,7 +91,7 @@ class Ht {
         $optgroup = "";
         foreach ($opt as $value => $info) {
             if (is_array($info) && $info[0] == "optgroup")
-                $info = (object) array("type" => "optgroup", "label" => $info[1]);
+                $info = (object) array("type" => "optgroup", "label" => @$info[1]);
             else if (is_string($info)) {
                 $info = (object) array("label" => $info);
                 if (is_array($disabled) && isset($disabled[$value]))
@@ -103,8 +103,12 @@ class Ht {
             if ($info === null)
                 $x .= '<option disabled="disabled"></option>';
             else if (isset($info->type) && $info->type == "optgroup") {
-                $x .= $optgroup . '<optgroup label="' . htmlspecialchars($info->label) . '">';
-                $optgroup = "</optgroup>";
+                $x .= $optgroup;
+                if ($info->label) {
+                    $x .= '<optgroup label="' . htmlspecialchars($info->label) . '">';
+                    $optgroup = "</optgroup>";
+                } else
+                    $optgroup = "";
             } else {
                 $x .= '<option value="' . $value . '"';
                 if (strcmp($value, $selected) == 0)
