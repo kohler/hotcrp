@@ -35,6 +35,14 @@ function serialize_object(x) {
         return "";
 }
 
+function bind_append(f, args) {
+    return function () {
+        var a = Array.prototype.slice.call(arguments);
+        a.push.apply(a, args);
+        return f.apply(this, a);
+    };
+}
+
 function hoturl_clean(x, page_component) {
     var m;
     if (x.o && (m = x.o.match(new RegExp("^(.*)(?:^|&)" + page_component + "(?:&|$)(.*)$")))) {
