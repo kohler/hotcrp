@@ -670,7 +670,7 @@ class Contact {
         self::merge_data_object($this->data_->$key, $value, false);
         $new = $this->encode_data();
         if ($old !== $new)
-            $Conf->qe("update ContactInfo set data=" . ($this->data_ ? "'" . sqlq($new) . "'" : $new) . " where contactId=" . $this->contactId);
+            Dbl::qe("update ContactInfo set data=? where contactId=$this->contactId", $new);
     }
 
     function merge_and_save_data($data) {
@@ -680,7 +680,7 @@ class Contact {
         self::merge_data_object($this->data_, (object) $data, true);
         $new = $this->encode_data();
         if ($old !== $new)
-            $Conf->qe("update ContactInfo set data=" . ($this->data_ ? "'" . sqlq($new) . "'" : $new) . " where contactId=" . $this->contactId);
+            Dbl::qe("update ContactInfo set data=? where contactId=$this->contactId", $new);
     }
 
     private function trim() {
