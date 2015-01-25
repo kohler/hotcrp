@@ -1202,7 +1202,8 @@ function blank() {
 }
 
 return function (e, text) {
-    if ("tagName" in this && this.tagName.toUpperCase() == "INPUT") {
+    if (typeof this === "object" && typeof this.tagName === "string"
+        && this.tagName.toUpperCase() == "INPUT") {
         text = typeof e === "number" ? this.getAttribute("hottemptext") : e;
         e = this;
     } else if (typeof e === "string")
