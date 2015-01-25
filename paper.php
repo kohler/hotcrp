@@ -125,7 +125,7 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
 
 // withdraw and revive actions
 if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
-    if ($Me->canWithdrawPaper($prow, $whyNot)) {
+    if (!($whyNot = $Me->perm_withdraw_paper($prow))) {
         $reason = defval($_REQUEST, "reason", "");
         if ($reason == "" && $Me->privChair && defval($_REQUEST, "doemail") > 0)
             $reason = defval($_REQUEST, "emailNote", "");
@@ -159,7 +159,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
         $Conf->errorMsg(whyNotText($whyNot, "withdraw"));
 }
 if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
-    if ($Me->canRevivePaper($prow, $whyNot)) {
+    if (!($whyNot = $Me->perm_revive_paper($prow))) {
         Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,0), withdrawReason=null where paperId=$paperId");
         $Conf->qe("update PaperReview set reviewNeedsSubmit=1 where paperId=$paperId and reviewSubmitted is null");
         $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);

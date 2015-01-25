@@ -1524,7 +1524,7 @@ class PaperTable {
         if ($has_author && $prow->outcome < 0 && $Conf->timeAuthorViewDecision())
             $m .= '<div class="xwarning">This paper was not accepted.</div>';
         else if ($has_author && $prow->timeWithdrawn > 0) {
-            if ($Me->canRevivePaper($prow))
+            if ($Me->can_revive_paper($prow))
                 $m .= '<div class="xwarning">This paper has been withdrawn, but you can still revive it.' . $this->deadlineSettingIs("sub_update") . '</div>';
         } else if ($has_author && $prow->timeSubmitted <= 0) {
             if ($Me->can_update_paper($prow)) {
@@ -1554,7 +1554,7 @@ class PaperTable {
             $override2 = ($this->admin ? " As an administrator, you can update the paper anyway." : "");
             if ($this->mode == "pe") {
                 $m .= '<div class="xinfo">This paper is under review and can’t be changed, but you can change its contacts';
-                if ($Me->canWithdrawPaper($prow))
+                if ($Me->can_withdraw_paper($prow))
                     $m .= ' or withdraw it from consideration';
                 $m .= ".$override2</div>";
             }
@@ -1614,7 +1614,7 @@ class PaperTable {
         }
 
         // withdraw button
-        if (!$prow || !$Me->canWithdrawPaper($prow, $whyNot, true))
+        if (!$prow || !$Me->can_withdraw_paper($prow, true))
             $b = null;
         else if ($prow->timeSubmitted <= 0)
             $b = Ht::submit("withdraw", "Withdraw paper");
@@ -1625,7 +1625,7 @@ class PaperTable {
                 && !$Conf->timeFinalizePaper($prow))
                 $admins = "Only administrators can undo this step.";
             $override = "";
-            if (!$Me->canWithdrawPaper($prow))
+            if (!$Me->can_withdraw_paper($prow))
                 $override = "<div>" . Ht::checkbox("override", array("id" => "dialog_override")) . "&nbsp;"
                     . Ht::label("Override deadlines") . "</div>";
             $Conf->footerHtml("<div id='popup_w' class='popupc'>
@@ -1642,7 +1642,7 @@ class PaperTable {
             $Conf->footerScript("mktemptext('withdrawreason','Optional explanation')");
         }
         if ($b) {
-            if (!$Me->canWithdrawPaper($prow))
+            if (!$Me->can_withdraw_paper($prow))
                 $b = array($b, "(admin only)");
             $buttons[] = $b;
         }
@@ -2034,7 +2034,7 @@ class PaperTable {
     function paptabEndWithEditableReview() {
         global $Conf, $Me;
         $prow = $this->prow;
-        $actPC = $Me->actPC($prow);
+        $act_pc = $Me->act_pc($prow);
         $actChair = $Me->can_administer($prow);
 
         // review messages
@@ -2048,7 +2048,7 @@ class PaperTable {
                    && ($Me->isPC || $Conf->setting("extrev_view"))) {
             $nother = 0;
             foreach ($this->rrows as $rr)
-                if (!$Me->ownReview($rr) && $rr->reviewSubmitted)
+                if (!$Me->is_my_review($rr) && $rr->reviewSubmitted)
                     $nother++;
             if ($nother > 0)
                 $msgs[] = "You’ll be able to see " . plural($nother, "other review") . " once you complete your own.";
@@ -2068,8 +2068,8 @@ class PaperTable {
         $opt = array("edit" => $this->mode == "re");
 
         if ($this->editrrow
-            && ($Me->ownReview($this->editrrow) || $actChair)
-            && !$Conf->time_review($this->editrrow, $actPC, true)) {
+            && ($Me->is_my_review($this->editrrow) || $actChair)
+            && !$Conf->time_review($this->editrrow, $act_pc, true)) {
             if ($actChair)
                 $override = " As an administrator, you can override this deadline.";
             else {
@@ -2248,7 +2248,7 @@ class PaperTable {
                     $this->rrow = $rr;
             }
             if ($rr->contactId == $Me->contactId
-                || (!$myrrow && $Me->ownReview($rr)))
+                || (!$myrrow && $Me->is_my_review($rr)))
                 $myrrow = $rr;
         }
 
@@ -2287,7 +2287,7 @@ class PaperTable {
             $this->mode = "re";
             foreach ($this->rrows as $rr)
                 if ($rr->contactId == $Me->contactId
-                    || (!$this->editrrow && $Me->ownReview($rr)))
+                    || (!$this->editrrow && $Me->is_my_review($rr)))
                     $this->editrrow = $rr;
         }
         if ($this->mode == "r" && $prow && !count($this->rrows)

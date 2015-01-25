@@ -1921,7 +1921,7 @@ class Conference {
 
     function errorMsgExit($text) {
         if ($text)
-            $this->msg($text, 'merror');
+            $this->msg($text, "merror");
         $this->footer();
         exit;
     }

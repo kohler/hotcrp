@@ -22,8 +22,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $allow_admin = $Me->allow_administer($prow);
     $admin = $Me->can_administer($prow);
     $hideUnviewable = ($conflictType > 0 && !$admin)
-        || (!$Me->actPC($prow) && !$Conf->setting("extrev_view"));
-    $show_colors = $Me->actPC($prow);
+        || (!$Me->act_pc($prow) && !$Conf->setting("extrev_view"));
+    $show_colors = $Me->can_view_reviewer_tags($prow);
     $xsep = ' <span class="barsep">&nbsp;|&nbsp;</span> ';
     $want_scores = $mode != "assign" && $mode != "edit" && $mode != "re";
     $score_header = array();
@@ -32,7 +32,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     foreach ($rrows as $rr) {
         $highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
         $foundRrow += $highlight;
-        if ($Me->ownReview($rr))
+        if ($Me->is_my_review($rr))
             $foundMyReview++;
         $canView = $Me->can_view_review($prow, $rr, null);
 
@@ -253,7 +253,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
             if ($Me->can_view_review($prow, $rr, null))
                 $nvisible++;
             if ($rr->contactId == $Me->contactId
-                || (!$myrr && $Me->ownReview($rr)))
+                || (!$myrr && $Me->is_my_review($rr)))
                 $myrr = $rr;
         }
 
@@ -325,7 +325,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     // review assignments
-    if ($mode != "assign" && $Me->canRequestReview($prow, true)) {
+    if ($mode != "assign" && $Me->can_request_review($prow, true)) {
         $x = '<a href="' . hoturl("assign", "p=$prow->paperId") . '" class="xx">'
             . Ht::img("assign24.png", "[Assign]", "dlimg") . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
         $t .= ($t == "" ? "" : $xsep) . $x;

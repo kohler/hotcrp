@@ -1372,7 +1372,7 @@ $blind\n";
         }
 
         $submitted = $rrow && $rrow->reviewSubmitted;
-        if (!$Conf->time_review($rrow, $Me->actPC($prow, true), true)) {
+        if (!$Conf->time_review($rrow, $Me->act_pc($prow, true), true)) {
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
             $override_text = whyNotText($whyNot, "review");
             if (!$submitted) {
@@ -1500,7 +1500,7 @@ $blind\n";
         }
 
         // message?
-        if ($rrow && !$Me->ownReview($rrow) && $admin)
+        if ($rrow && !$Me->is_my_review($rrow) && $admin)
             echo "<div class='hint'>You didn’t write this review, but as an administrator you can still make changes.</div>\n";
 
         // download?
