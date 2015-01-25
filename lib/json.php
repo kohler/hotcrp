@@ -1,6 +1,6 @@
 <?php
 // json.php -- HotCRP JSON function replacements (if PHP JSON not available)
-// HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 @define("JSON_ERROR_NONE", 0);

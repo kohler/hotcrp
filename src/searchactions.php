@@ -1,6 +1,6 @@
 <?php
 // searchactions.php -- HotCRP helper class for paper search actions
-// HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 class SearchActions {

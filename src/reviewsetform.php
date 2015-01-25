@@ -1,6 +1,6 @@
 <?php
 // src/reviewsetform.php -- HotCRP review form definition page
-// HotCRP is Copyright (c) 2006-2014 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $review_form_setting_prefixes;
