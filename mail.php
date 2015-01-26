@@ -300,9 +300,10 @@ class MailSender {
         $result = $Conf->qe($q);
         if (!$result)
             return;
+        $recipients = defval($_REQUEST, "recipients", "");
 
         if ($this->sending) {
-            $q = "recipients='" . sqlq($_REQUEST["recipients"])
+            $q = "recipients='" . sqlq($recipients)
                 . "', cc='" . sqlq($_REQUEST["cc"])
                 . "', replyto='" . sqlq($_REQUEST["replyto"])
                 . "', subject='" . sqlq($_REQUEST["subject"])
@@ -322,7 +323,7 @@ class MailSender {
         $nrows_left = edb_nrows($result);
         $nwarnings = 0;
         $preperrors = array();
-        $revinform = ($_REQUEST["recipients"] == "newpcrev" ? array() : null);
+        $revinform = ($recipients == "newpcrev" ? array() : null);
         while (($row = PaperInfo::fetch($result, $Me))) {
             ++$nrows_done;
 
