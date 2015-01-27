@@ -84,25 +84,6 @@ if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
     exit;
 }
 
-if ($getaction == "address" && isset($papersel) && $Me->isPC) {
-    $result = $Conf->qe("select firstName first, lastName last, email, affiliation,
-        voicePhoneNumber phone,
-        addressLine1 address1, addressLine2 address2, city, state, zipCode zip, country
-        from ContactInfo
-        left join ContactAddress using (contactId)
-        where " . paperselPredicate($papersel) . " order by lastName, firstName, email");
-    $people = edb_orows($result);
-    $phone = false;
-    foreach ($people as $p)
-        $phone = $phone || $p->phone;
-    $header = array("first", "last", "email", "address1", "address2",
-                    "city", "state", "zip", "country");
-    if ($phone)
-        $header[] = "phone";
-    downloadCSV($people, $header, "addresses", array("selection" => true));
-    exit;
-}
-
 function urlencode_matches($m) {
     return urlencode($m[0]);
 }
@@ -112,11 +93,9 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
     $result = $Conf->qe("select firstName first, lastName last, email,
         preferredEmail preferred_email, affiliation,
         voicePhoneNumber phone,
-        addressLine1 address1, addressLine2 address2, city, state, zipCode zip, country,
         collaborators, defaultWatch, roles, disabled, contactTags tags, data,
         group_concat(concat(topicId,':'," . $Conf->query_topic_interest() . ")) topic_interest
         from ContactInfo
-        left join ContactAddress on (ContactAddress.contactId=ContactInfo.contactId)
         left join TopicInterest on (TopicInterest.contactId=ContactInfo.contactId and TopicInterest.interest is not null)
         where " . paperselPredicate($papersel) . "
         group by ContactInfo.contactId order by lastName, firstName, email");
@@ -134,8 +113,6 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
             $has->disabled = true;
         if ($row->tags && ($row->tags = trim($row->tags)))
             $has->tags = true;
-        if ($row->address1 || $row->address2 || $row->city || $row->state || $row->zip || $row->country)
-            $has->address = true;
         if ($row->topic_interest
             && preg_match_all('|(\d+):(-?\d+)|', $row->topic_interest, $m, PREG_SET_ORDER)) {
             foreach ($m as $x)
@@ -178,8 +155,6 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
     array_push($header, "affiliation", "collaborators", "follow");
     if (@$has->phone)
         $header[] = "phone";
-    if (@$has->address)
-        array_push($header, "address1", "address2", "city", "state", "zip", "country");
     $selection = $header;
     foreach ($topics as $id => $tn)
         if (isset($has->topics[$id])) {

@@ -26,14 +26,6 @@ class Contact {
     private $data_ = null;
     var $defaultWatch = WATCH_COMMENT;
 
-    // Address information (loaded separately)
-    public $addressLine1 = false;
-    public $addressLine2;
-    public $city;
-    public $state;
-    public $zipCode;
-    public $country;
-
     // Roles
     const ROLE_PC = 1;
     const ROLE_ADMIN = 2;
@@ -86,9 +78,7 @@ class Contact {
             $name = Text::analyze_name($user);
         $this->firstName = (string) @$name->firstName;
         $this->lastName = (string) @$name->lastName;
-        foreach (array("email", "preferredEmail", "affiliation",
-                       "voicePhoneNumber", "addressLine1", "addressLine2",
-                       "city", "state", "zipCode", "country") as $k)
+        foreach (array("email", "preferredEmail", "affiliation", "voicePhoneNumber") as $k)
             if (isset($user->$k))
                 $this->$k = simplify_whitespace($user->$k);
         if (isset($user->collaborators)) {
@@ -440,11 +430,6 @@ class Contact {
         return self::roles_all_contact_tags($this->roles, $this->contactTags);
     }
 
-    static function _addressKeys() {
-        return array("addressLine1", "addressLine2", "city", "state",
-                     "zipCode", "country");
-    }
-
     function change_capability($pid, $c, $on) {
         global $Conf;
         if (!$this->capabilities)
@@ -524,10 +509,7 @@ class Contact {
         $this->cid = $this->contactId;
         $this->firstName = simplify_whitespace($this->firstName);
         $this->lastName = simplify_whitespace($this->lastName);
-        foreach (array("email", "preferredEmail", "affiliation",
-                       "voicePhoneNumber", "addressLine1", "addressLine2", "city", "state",
-                       "zipCode", "country")
-                 as $k)
+        foreach (array("email", "preferredEmail", "affiliation", "voicePhoneNumber") as $k)
             if ($this->$k)
                 $this->$k = trim($this->$k);
         self::set_sorter($this);
@@ -596,11 +578,6 @@ class Contact {
             return $result;
         if ($inserting)
             $this->contactId = $this->cid = $result->insert_id;
-        Dbl::ql($Conf->dblink, "delete from ContactAddress where contactId=$this->contactId");
-        if ($this->addressLine1 || $this->addressLine2 || $this->city
-            || $this->state || $this->zipCode || $this->country)
-            $result = Dbl::qe($Conf->dblink, "insert into ContactAddress set contactId=?, addressLine1=?, addressLine2=?, city=?, state=?, zipCode=?, country=?",
-                              $this->contactId, $this->addressLine1, $this->addressLine2, $this->city, $this->state, $this->zipCode, $this->country);
 
         // add to contact database
         if (@$Opt["contactdb_dsn"] && ($cdb = self::contactdb())) {
@@ -801,16 +778,6 @@ class Contact {
             $Conf->log("Created account ($Me->email)", $this);
         else
             $Conf->log("Created account", $this);
-    }
-
-    function load_address() {
-        global $Conf;
-        if ($this->addressLine1 === false && $this->contactId) {
-            $result = Dbl::ql("select * from ContactAddress where contactId=$this->contactId");
-            $row = edb_orow($result);
-            foreach (self::_addressKeys() as $k)
-                $this->$k = @($row->$k);
-        }
     }
 
     static function id_by_email($email) {

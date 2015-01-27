@@ -82,8 +82,6 @@ if (!$Acct
     redirectSelf();
 }
 
-$Acct->load_address();
-
 if (($Acct->contactId != $Me->contactId || !$Me->has_database_account())
     && $Acct->has_email()
     && !$Acct->firstName && !$Acct->lastName && !$Acct->affiliation
@@ -445,16 +443,24 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
     }
 }
 
-function crpformvalue($val, $field = null) {
+function value($key, $value) {
+    global $useRequest;
+    if ($useRequest && isset($_REQUEST[$key]))
+        return htmlspecialchars($_REQUEST[$key]);
+    else
+        return $value ? htmlspecialchars($value) : "";
+}
+
+function contact_value($key, $field = null) {
     global $Acct, $useRequest;
-    if ($useRequest && isset($_REQUEST[$val]))
-        return htmlspecialchars($_REQUEST[$val]);
+    if ($useRequest && isset($_REQUEST[$key]))
+        return htmlspecialchars($_REQUEST[$key]);
     else if ($field == "password" && $Acct->password_type != 0)
         return "";
-    else if ($val == "contactTags")
+    else if ($key == "contactTags")
         return htmlspecialchars($Acct->all_contact_tags());
     else if ($field !== false) {
-        $v = $field ? $Acct->$field : $Acct->$val;
+        $v = $field ? $Acct->$field : $Acct->$key;
         return htmlspecialchars($v === null ? "" : $v);
     } else
         return "";
@@ -577,31 +583,31 @@ echo "<table id='foldaccount' class='form foldc ",
   <td class='entry'><div class='f-contain'>\n\n";
 
 if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
-    echofield(0, "uemail", "Email", textinput("uemail", crpformvalue("uemail", "email"), 52, "account_d"));
+    echofield(0, "uemail", "Email", textinput("uemail", contact_value("uemail", "email"), 52, "account_d"));
 else if (!$newProfile) {
-    echofield(0, "uemail", "Username", crpformvalue("uemail", "email"));
-    echofield(0, "preferredEmail", "Email", textinput("preferredEmail", crpformvalue("preferredEmail"), 52, "account_d"));
+    echofield(0, "uemail", "Username", contact_value("uemail", "email"));
+    echofield(0, "preferredEmail", "Email", textinput("preferredEmail", contact_value("preferredEmail"), 52, "account_d"));
 } else {
-    echofield(0, "uemail", "Username", textinput("newUsername", crpformvalue("newUsername", false), 52, "account_d"));
-    echofield(0, "preferredEmail", "Email", textinput("preferredEmail", crpformvalue("preferredEmail"), 52));
+    echofield(0, "uemail", "Username", textinput("newUsername", contact_value("newUsername", false), 52, "account_d"));
+    echofield(0, "preferredEmail", "Email", textinput("preferredEmail", contact_value("preferredEmail"), 52));
 }
 
-echofield(1, "firstName", "First&nbsp;name", textinput("firstName", crpformvalue("firstName"), 24));
-echofield(3, "lastName", "Last&nbsp;name", textinput("lastName", crpformvalue("lastName"), 24));
-echofield(0, "affiliation", "Affiliation", textinput("affiliation", crpformvalue("affiliation"), 52));
+echofield(1, "firstName", "First&nbsp;name", textinput("firstName", contact_value("firstName"), 24));
+echofield(3, "lastName", "Last&nbsp;name", textinput("lastName", contact_value("lastName"), 24));
+echofield(0, "affiliation", "Affiliation", textinput("affiliation", contact_value("affiliation"), 52));
 
 
-$any_address = @($Acct->addressLine1 || $Acct->addressLine2 || $Acct->city
-                 || $Acct->state || $Acct->zipCode || $Acct->country);
+$data = $Acct->data();
+$any_address = $data && @($data->address || $data->city || $data->state || $data->zip || $data->country);
 if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
     echo "<div style='margin-top:20px'></div>\n";
-    echofield(0, false, "Address line 1", textinput("addressLine1", crpformvalue("addressLine1"), 52));
-    echofield(0, false, "Address line 2", textinput("addressLine2", crpformvalue("addressLine2"), 52));
-    echofield(0, false, "City", textinput("city", crpformvalue("city"), 52));
-    echofield(1, false, "State/Province/Region", textinput("state", crpformvalue("state"), 24));
-    echofield(3, false, "ZIP/Postal code", textinput("zipCode", crpformvalue("zipCode"), 12));
-    echofield(0, false, "Country", Countries::selector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : $Acct->country)));
-    echofield(1, false, "Phone <span class='f-cx'>(optional)</span>", textinput("voicePhoneNumber", crpformvalue("voicePhoneNumber"), 24));
+    echofield(0, false, "Address line 1", textinput("addressLine1", value("addressLine1", @$data->address ? @$data->address[0] : null), 52));
+    echofield(0, false, "Address line 2", textinput("addressLine2", value("addressLine2", @$data->address ? @$data->address[1] : null), 52));
+    echofield(0, false, "City", textinput("city", value("city", @$data->city), 52));
+    echofield(1, false, "State/Province/Region", textinput("state", value("state", @$data->state), 24));
+    echofield(3, false, "ZIP/Postal code", textinput("zipCode", value("zipCode", @$data->zip), 12));
+    echofield(0, false, "Country", Countries::selector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : @$data->country)));
+    echofield(1, false, "Phone <span class='f-cx'>(optional)</span>", textinput("voicePhoneNumber", contact_value("voicePhoneNumber"), 24));
     echo '<hr class="c" /></div>', "\n";
 }
 
@@ -627,7 +633,7 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
   <div class="', fcclass("password"), '">New password</div>
   <div class="', feclass("password"), '">', Ht::password("upassword", "", array("size" => 24, "class" => "fn"));
     if ($Me->privChair && $Acct->password_type == 0)
-        echo Ht::entry("upasswordt", crpformvalue("upasswordt", "password"), array("size" => 24, "class" => "fx"));
+        echo Ht::entry("upasswordt", contact_value("upasswordt", "password"), array("size" => 24, "class" => "fx"));
     echo '</div>
 </div><div class="fn f-ix">
   <div class="', fcclass("password"), '">Repeat new password</div>
@@ -718,7 +724,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     We use this information when assigning reviews.
     For example: &ldquo;<tt>Ping Yen Zhang (INRIA)</tt>&rdquo;
     or, for a whole institution, &ldquo;<tt>INRIA</tt>&rdquo;.</div>
-    <textarea name='collaborators' rows='5' cols='50'>", crpformvalue("collaborators"), "</textarea></td>
+    <textarea name='collaborators' rows='5' cols='50'>", contact_value("collaborators"), "</textarea></td>
 </tr>\n\n";
 
     $topics = $Conf->topic_map();

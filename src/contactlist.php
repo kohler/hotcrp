@@ -484,8 +484,7 @@ class ContactList extends BaseList {
         $t .= "    <td id='pplact' class='pl_footer linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
         // Begin linelinks
-        $types = array("nameemail" => "Names and emails",
-                       "address" => "Addresses");
+        $types = array("nameemail" => "Names and emails");
         if ($this->contact->privChair)
             $types["pcinfo"] = "PC info";
         $t .= "<span class='lll1'><a href='#' onclick='return crpfocus(\"pplact\",1)'>Download</a></span><span class='lld1'><b>:</b> &nbsp;"

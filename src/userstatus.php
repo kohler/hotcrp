@@ -48,18 +48,9 @@ class UserStatus {
         if ($user->disabled)
             $cj->disabled = true;
 
-        $user->load_address();
-        $address = array();
-        if (@$user->addressLine1 !== null && $user->addressLine1 !== "")
-            $address[] = $user->addressLine1;
-        if (@$user->addressLine2 !== null && $user->addressLine2 !== "")
-            $address[] = $user->addressLine2;
-        if (count($address))
-            $cj->address = $address;
-        foreach (array("city" => "city", "state" => "state", "zipCode" => "zip",
-                       "country" => "country") as $uk => $jk)
-            if (@$user->$uk !== null && $user->$uk !== "")
-                $cj->$jk = $user->$uk;
+        foreach (array("address", "city", "state", "zip", "country") as $k)
+            if (($x = $user->data($k)))
+                $cj->$k = $x;
 
         if ($user->roles) {
             $cj->roles = (object) array();
@@ -332,8 +323,7 @@ class UserStatus {
             $aupapers = Contact::email_authored_papers($cj->email, $cj);
 
         foreach (array("firstName", "lastName", "email", "affiliation",
-                       "collaborators", "password", "city", "state",
-                       "country") as $k)
+                       "collaborators", "password") as $k)
             if (isset($cj->$k))
                 $user->$k = $cj->$k;
         if (isset($cj->phone))
@@ -342,12 +332,13 @@ class UserStatus {
             $user->change_password($cj->password_plaintext, false);
         if (!$user->password && !Contact::external_login())
             $user->password = $user->password_plaintext = Contact::random_password();
-        if (isset($cj->zip))
-            $user->zipCode = $cj->zip;
-        if (isset($cj->address)) {
-            $user->addressLine1 = defval($cj->address, 0, "");
-            $user->addressLine2 = defval($cj->address, 1, "");
-        }
+
+        $data = (object) array();
+        foreach (array("address", "city", "state", "zip", "country") as $k)
+            if (($x = @$cj->$k))
+                $data->$k = $x;
+        $user->merge_data($data);
+
         if (isset($cj->follow)) {
             $user->defaultWatch = 0;
             if (@$cj->follow->reviews)
