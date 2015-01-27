@@ -542,8 +542,6 @@ class ContactList extends BaseList {
             $pq .= ",\n\tgroup_concat(PaperConflict.paperId) as paperIds";
 
         $pq .= "\n      from ContactInfo u\n";
-        if ($this->limit == "pc")
-            $pq .= "\tjoin PCMember on (PCMember.contactId=u.contactId)\n";
         if (isset($queryOptions['topics']))
             $pq .= "    left join (select contactId, group_concat(topicId) as topicIds, group_concat(interest) as topicInterest
                 from TopicInterest
@@ -620,6 +618,8 @@ class ContactList extends BaseList {
         $mainwhere = array();
         if (isset($queryOptions["where"]))
             $mainwhere[] = $queryOptions["where"];
+        if ($this->limit == "pc")
+            $mainwhere[] = "(u.roles&" . Contact::ROLE_PC . ")!=0";
         if ($this->limit == "admin")
             $mainwhere[] = "(u.roles&" . (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR) . ")!=0";
         if ($this->limit == "pcadmin" || $this->limit == "pcadminx")

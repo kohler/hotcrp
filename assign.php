@@ -135,20 +135,19 @@ function pcAssignments() {
     global $Conf, $Me, $prow;
     $pcm = pcMembers();
 
-    $where = "";
-    if (isset($_REQUEST["reviewer"])) {
-        if (isset($pcm[$_REQUEST["reviewer"]]))
-            $where = "where PCMember.contactId='" . $_REQUEST["reviewer"] . "'";
-    }
+    $where = array("(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0");
+    if (@$_REQUEST["reviewer"] && isset($pcm[$_REQUEST["reviewer"]]))
+        $where[] = "ContactInfo.contactId='" . $_REQUEST["reviewer"] . "'";
 
     $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write, Settings write");
 
     // don't record separate PC conflicts on author conflicts
-    $result = $Conf->qe("select PCMember.contactId,
+    $result = $Conf->qe("select ContactInfo.contactId,
         PaperConflict.conflictType, reviewType, reviewModified, reviewId
-        from PCMember
-        left join PaperConflict on (PaperConflict.contactId=PCMember.contactId and PaperConflict.paperId=$prow->paperId)
-        left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId) $where");
+        from ContactInfo
+        left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId)
+        left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$prow->paperId)
+        where " . join(" and ", $where));
     while (($row = edb_orow($result))) {
         $pctype = defval($_REQUEST, "pcs$row->contactId", 0);
         if ($row->conflictType >= CONFLICT_AUTHOR)
@@ -464,7 +463,7 @@ if ($t != "")
 // PC assignments
 if ($Me->can_administer($prow)) {
     $expertise = $Conf->sversion >= 69 ? "expertise" : "NULL";
-    $result = $Conf->qe("select PCMember.contactId,
+    $result = $Conf->qe("select ContactInfo.contactId,
         PaperConflict.conflictType,
         PaperReview.reviewType,
         coalesce(preference, 0) as reviewerPreference,
@@ -472,14 +471,15 @@ if ($Me->can_administer($prow)) {
         coalesce(allReviews,'') as allReviews,
         coalesce(PaperTopics.topicInterestScore,0) as topicInterestScore,
         coalesce(PRR.paperId,0) as refused
-        from PCMember
-        left join PaperConflict on (PaperConflict.contactId=PCMember.contactId and PaperConflict.paperId=$prow->paperId)
-        left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.paperId=$prow->paperId)
-        left join PaperReviewPreference on (PaperReviewPreference.contactId=PCMember.contactId and PaperReviewPreference.paperId=$prow->paperId)
-        left join (select PaperReview.contactId, group_concat(reviewType separator '') as allReviews from PaperReview join Paper on (Paper.paperId=PaperReview.paperId and timeWithdrawn<=0) group by PaperReview.contactId) as AllReviews on (AllReviews.contactId=PCMember.contactId)
-        left join (select contactId, sum(" . $Conf->query_topic_interest_score() . ") as topicInterestScore from PaperTopic join TopicInterest using (topicId) where paperId=$prow->paperId group by contactId) as PaperTopics on (PaperTopics.contactId=PCMember.contactId)
-        left join PaperReviewRefused PRR on (PRR.paperId=$prow->paperId and PRR.contactId=PCMember.contactId)
-        group by PCMember.contactId");
+        from ContactInfo
+        left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId)
+        left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$prow->paperId)
+        left join PaperReviewPreference on (PaperReviewPreference.contactId=ContactInfo.contactId and PaperReviewPreference.paperId=$prow->paperId)
+        left join (select PaperReview.contactId, group_concat(reviewType separator '') as allReviews from PaperReview join Paper on (Paper.paperId=PaperReview.paperId and timeWithdrawn<=0) group by PaperReview.contactId) as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
+        left join (select contactId, sum(" . $Conf->query_topic_interest_score() . ") as topicInterestScore from PaperTopic join TopicInterest using (topicId) where paperId=$prow->paperId group by contactId) as PaperTopics on (PaperTopics.contactId=ContactInfo.contactId)
+        left join PaperReviewRefused PRR on (PRR.paperId=$prow->paperId and PRR.contactId=ContactInfo.contactId)
+        where (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0
+        group by ContactInfo.contactId");
     $pcx = array();
     while (($row = edb_orow($result)))
         $pcx[$row->contactId] = $row;

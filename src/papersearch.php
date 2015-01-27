@@ -2679,14 +2679,13 @@ class PaperSearch {
                 } else
                     $qm = "(firstName like '%$cm->sql%' or lastName like '%$cm->sql%' or email like '%$cm->sql%')";
                 if ($cm->pc_only)
-                    $qm = "($qm and PCMember.contactId is not null)";
+                    $qm = "($qm and (roles&" . Contact::ROLE_PC . ")!=0)";
                 $qterm[] = $qm;
                 $cm->ids = array();
             }
             $q = "select ContactInfo.contactId, "
                 . (count($qterm) == 1 ? "true" : join(", ", $qterm))
-                . " from ContactInfo left join PCMember using (contactId)"
-                . " where " . join(" or ", $qterm);
+                . " from ContactInfo where " . join(" or ", $qterm);
             //$Conf->infoMsg(Ht::pre_text_wrap($q));
             $result = $Conf->q($q);
             while (($row = edb_row($result)))

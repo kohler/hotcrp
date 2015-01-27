@@ -167,7 +167,7 @@ class MailRecipients {
             $needpaper = $needconflict = $needreview = false;
         } else if ($this->type == "pc" || substr($this->type, 0, 3) == "pc:") {
             $needpaper = $needconflict = $needreview = false;
-            $joins[] = "join PCMember using (contactId)";
+            $where[] = "(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0";
             if ($this->type != "pc")
                 $where[] = "ContactInfo.contactTags like '% " . sqlq_for_like(substr($this->type, 3)) . " %'";
         } else if ($revmatch) {

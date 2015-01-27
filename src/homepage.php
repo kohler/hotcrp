@@ -330,9 +330,10 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     if ($Me->isPC || $Me->privChair) {
         $result = $Conf->qe("select count(reviewId) num_submitted,
 	group_concat(overAllMerit) scores
-	from PCMember
-	left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.reviewSubmitted is not null)
-	group by PCMember.contactId");
+	from ContactInfo
+	left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted is not null)
+        where (roles&" . Contact::ROLE_PC . ")!=0
+	group by ContactInfo.contactId");
         while (($row = edb_row($result))) {
             ++$npc;
             if ($row[0]) {

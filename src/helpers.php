@@ -559,7 +559,7 @@ function _tryNewList($opt, $listtype, $sort = null) {
         $searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
         $q = "select email from ContactInfo";
         if ($searchtype == "pc")
-            $q .= " join PCMember using (contactId)";
+            $q .= " where (roles&" . Contact::ROLE_PC . ")!=0";
         $result = $Conf->ql("$q order by lastName, firstName, email");
         $a = array();
         while (($row = edb_row($result)))
@@ -1207,7 +1207,7 @@ function pcMembers() {
         || $PcMembersCache[0] < $Conf->setting("pc")
         || $PcMembersCache[1] != @$Opt["sortByLastName"]) {
         $pc = array();
-        $result = $Conf->q("select firstName, lastName, affiliation, email, ContactInfo.contactId contactId, roles, contactTags, disabled from ContactInfo join PCMember using (contactId)");
+        $result = $Conf->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
         $by_name_text = array();
         while (($row = edb_orow($result))) {
             $row = Contact::make($row);

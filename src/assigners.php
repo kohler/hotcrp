@@ -1085,17 +1085,17 @@ class AssignmentSet {
         foreach (pcMembers() as $id => $pc)
             $nrev->any[$id] = $nrev->pri[$id] = $nrev->sec[$id] = 0;
 
-        $q = "select pc.contactId, group_concat(r.reviewType separator '')
-                from PCMember pc
-                left join PaperReview r on (r.contactId=pc.contactId)\n\t\t";
+        $q = "select c.contactId, group_concat(r.reviewType separator '')
+                from ContactInfo c
+                left join PaperReview r on (r.contactId=c.contactId)\n\t\t";
         if (!$papers)
             $q .= "left join Paper p on (p.paperId=r.paperId)
-                where p.paperId is null or p.timeWithdrawn<=0";
+                where (p.paperId is null or p.timeWithdrawn<=0)";
         else {
             $q .= "where r.paperId" . sql_in_numeric_set($papers);
             $nrev->papers = $papers;
         }
-        $result = Dbl::qe($q . " group by pc.contactId");
+        $result = Dbl::qe($q . " and (c.roles&" . Contact::ROLE_PC . ")!=0 group by c.contactId");
         while (($row = edb_row($result))) {
             $nrev->any[$row[0]] = strlen($row[1]);
             $nrev->pri[$row[0]] = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);

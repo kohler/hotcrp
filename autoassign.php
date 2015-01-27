@@ -260,14 +260,16 @@ function doAssign() {
     $load = array_fill_keys(array_keys($pcm), 0);
     if (defval($_REQUEST, "balance", "new") != "new" && $atype != "revpc") {
         if ($atype == "rev" || $atype == "revadd")
-            $result = $Conf->qe("select PCMember.contactId, count(reviewId)
-                from PCMember left join PaperReview on (PaperReview.contactId=PCMember.contactId and PaperReview.reviewType=$reviewtype)
-                group by PCMember.contactId");
+            $result = $Conf->qe("select ContactInfo.contactId, count(reviewId)
+                from ContactInfo left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType=$reviewtype)
+                where (roles&" . Contact::ROLE_PC . ")!=0
+                group by ContactInfo.contactId");
         else
-            $result = $Conf->qe("select PCMember.contactId, count(paperId)
-                from PCMember left join Paper on (Paper.${atype}ContactId=PCMember.contactId)
+            $result = $Conf->qe("select ContactInfo.contactId, count(paperId)
+                from ContactInfo left join Paper on (Paper.${atype}ContactId=ContactInfo.contactId)
                 where not (paperId in (" . join(",", $papersel) . "))
-                group by PCMember.contactId");
+                and (roles&" . Contact::ROLE_PC . ")!=0
+                group by ContactInfo.contactId");
         while (($row = edb_row($result)))
             $load[$row[0]] = $row[1] + 0;
     }
@@ -283,7 +285,7 @@ function doAssign() {
             $score = "PaperReview." . substr($score, 1);
     } else
         $score = "PaperReview.overAllMerit";
-    $result = $Conf->qe("select Paper.paperId, PCMember.contactId,
+    $result = $Conf->qe("select Paper.paperId, ContactInfo.contactId,
         coalesce(PaperConflict.conflictType, 0) as conflictType,
         coalesce(PaperReviewPreference.preference, 0) as preference,
         coalesce(PaperReview.reviewType, 0) as myReviewType,
@@ -293,18 +295,20 @@ function doAssign() {
         topicInterestScore,
         coalesce(PRR.contactId, 0) as refused,
         Paper.managerContactId
-        from Paper join PCMember
-        left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PCMember.contactId=PaperConflict.contactId)
-        left join PaperReviewPreference on (Paper.paperId=PaperReviewPreference.paperId and PCMember.contactId=PaperReviewPreference.contactId)
-        left join PaperReview on (Paper.paperId=PaperReview.paperId and PCMember.contactId=PaperReview.contactId)
-        left join (select paperId, PCMember.contactId,
-                sum(" . $Conf->query_topic_interest_score() . ") as topicInterestScore
-                from PaperTopic join PCMember
-                join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId)
-                group by paperId, PCMember.contactId) as PaperTopics on (Paper.paperId=PaperTopics.paperId and PCMember.contactId=PaperTopics.contactId)
-        left join PaperReviewRefused PRR on (Paper.paperId=PRR.paperId and PCMember.contactId=PRR.contactId)
-        where Paper.paperId" . sql_in_numeric_set($papersel) . "
-        group by Paper.paperId, PCMember.contactId");
+    from Paper join ContactInfo
+    left join PaperConflict on (Paper.paperId=PaperConflict.paperId and ContactInfo.contactId=PaperConflict.contactId)
+    left join PaperReviewPreference on (Paper.paperId=PaperReviewPreference.paperId and ContactInfo.contactId=PaperReviewPreference.contactId)
+    left join PaperReview on (Paper.paperId=PaperReview.paperId and ContactInfo.contactId=PaperReview.contactId)
+    left join (select paperId, ContactInfo.contactId,
+               sum(" . $Conf->query_topic_interest_score() . ") as topicInterestScore
+           from PaperTopic join ContactInfo
+           join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId)
+           where (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0
+           group by paperId, ContactInfo.contactId) as PaperTopics on (Paper.paperId=PaperTopics.paperId and ContactInfo.contactId=PaperTopics.contactId)
+    left join PaperReviewRefused PRR on (Paper.paperId=PRR.paperId and ContactInfo.contactId=PRR.contactId)
+    where Paper.paperId" . sql_in_numeric_set($papersel) . "
+        and (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0
+    group by Paper.paperId, ContactInfo.contactId");
 
     if ($atype == "rev" || $atype == "revadd" || $atype == "revpc") {
         while (($row = PaperInfo::fetch($result, true))) {

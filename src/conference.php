@@ -1712,7 +1712,7 @@ class Conference {
     function preferenceConflictQuery($type, $extra) {
         $q = "select PRP.paperId, PRP.contactId, PRP.preference
                 from PaperReviewPreference PRP
-                join PCMember PCM on (PCM.contactId=PRP.contactId)
+                join ContactInfo c on (c.contactId=PRP.contactId and (c.roles&" . Contact::ROLE_PC . ")!=0)
                 join Paper P on (P.paperId=PRP.paperId)
                 left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId)
                 where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0
