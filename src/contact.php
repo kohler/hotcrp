@@ -174,15 +174,10 @@ class Contact {
     }
 
     static public function site_contact() {
-        global $Conf, $Opt;
+        global $Opt;
         if (!@$Opt["contactEmail"] || $Opt["contactEmail"] == "you@example.com") {
-            $result = $Conf->ql("select firstName, lastName, email from ContactInfo join Chair using (contactId) limit 1");
-            $row = edb_orow($result);
-            if (!$row) {
-                $result = $Conf->ql("select firstName, lastName, email from ContactInfo join ChairAssistant using (contactId) limit 1");
-                $row = edb_orow($result);
-            }
-            if ($row) {
+            $result = Dbl::ql("select firstName, lastName, email from ContactInfo where (roles&" . (self::ROLE_CHAIR | self::ROLE_ADMIN) . ")!=0 order by (roles&" . self::ROLE_CHAIR . ") desc limit 1");
+            if ($result && ($row = $result->fetch_object())) {
                 $Opt["defaultSiteContact"] = true;
                 $Opt["contactName"] = Text::name_text($row);
                 $Opt["contactEmail"] = $row->email;
@@ -688,7 +683,7 @@ class Contact {
             }
         // ensure there's at least one system administrator
         if ($diff & self::ROLE_ADMIN) {
-            $result = $Conf->qe("select contactId from ChairAssistant");
+            $result = $Conf->qe("select contactId from ContactInfo where (roles&" . self::ROLE_ADMIN . ")!=0");
             if (edb_nrows($result) == 0) {
                 $Conf->qe("insert into ChairAssistant (contactId) values ($this->contactId)");
                 $new_roles |= self::ROLE_ADMIN;
