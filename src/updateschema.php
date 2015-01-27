@@ -136,6 +136,25 @@ function update_schema_create_options($Conf) {
     return $Conf->save_setting("options", 1, $opsj);
 }
 
+function update_schema_transfer_address($Conf) {
+    $result = $Conf->ql("select * from ContactAddress");
+    while (($row = edb_orow($result)))
+        if (($c = Contact::find_by_id($row->contactId))) {
+            $x = (object) array();
+            if ($row->addressLine1 || $row->addressLine2)
+                $x->address = array();
+            foreach (array("addressLine1", "addressLine2") as $k)
+                if ($row->$k)
+                    $x->address[] = $row->$k;
+            foreach (array("city" => "city", "state" => "state",
+                           "zipCode" => "zip", "country" => "country") as $k => $v)
+                if ($row->$k)
+                    $x->$v = $row->$k;
+            $c->merge_and_save_data($x);
+        }
+    return true;
+}
+
 function update_schema_version($Conf, $n) {
     if ($Conf->ql("update Settings set value=$n where name='allowPaperOption'")) {
         $Conf->settings["allowPaperOption"] = $n;
@@ -606,4 +625,7 @@ function updateSchema($Conf) {
         && $Conf->ql("DROP TABLE IF EXISTS `ChairAssistant`")
         && $Conf->ql("DROP TABLE IF EXISTS `Chair`"))
         update_schema_version($Conf, 86);
+    if ($Conf->settings["allowPaperOption"] == 86
+        && update_schema_transfer_address($Conf))
+        update_schema_version($Conf, 87);
 }

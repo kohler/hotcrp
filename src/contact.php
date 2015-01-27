@@ -113,8 +113,8 @@ class Contact {
             $this->activity_at = (int) $user->activity_at;
         else if (isset($user->lastLogin))
             $this->activity_at = (int) $user->lastLogin;
-        if (isset($user->data))
-            $this->data_ = $user->data ? : (object) $user->data;
+        if (isset($user->data) && $user->data)
+            $this->data_ = array_to_object_recursive($user->data);
         if (isset($user->roles) || isset($user->isPC) || isset($user->isAssistant)
             || isset($user->isChair)) {
             $roles = (int) @$user->roles;
@@ -480,8 +480,10 @@ class Contact {
     }
 
     private function make_data() {
-        if ($this->data_ && is_string($this->data_))
+        if (is_string($this->data_))
             $this->data_ = json_decode($this->data_);
+        if (!$this->data_)
+            $this->data_ = (object) array();
     }
 
     function data($key = null) {
@@ -499,33 +501,19 @@ class Contact {
             return null;
     }
 
-    static private function merge_data_object(&$data, $value, $merge) {
-        if ($value === null)
-            unset($data);
-        else if ($merge && (is_array($value) || is_object($value))) {
-            if (!$data)
-                $data = (object) array();
-            foreach ($value as $k => $v)
-                self::merge_data_object($data->$k, $v, $merge);
-        } else
-            $data = $value;
+    function save_data($key, $value) {
+        $this->merge_and_save_data((object) array($key => array_to_object_recursive($value)));
     }
 
-    function save_data($key, $value) {
-        global $Conf;
+    function merge_data($data) {
         $this->make_data();
-        $old = $this->encode_data();
-        self::merge_data_object($this->data_->$key, $value, false);
-        $new = $this->encode_data();
-        if ($old !== $new)
-            Dbl::qe("update ContactInfo set data=? where contactId=$this->contactId", $new);
+        object_replace_recursive($this->data_, array_to_object_recursive($data));
     }
 
     function merge_and_save_data($data) {
-        global $Conf;
         $this->make_data();
         $old = $this->encode_data();
-        self::merge_data_object($this->data_, (object) $data, true);
+        object_replace_recursive($this->data_, array_to_object_recursive($data));
         $new = $this->encode_data();
         if ($old !== $new)
             Dbl::qe("update ContactInfo set data=? where contactId=$this->contactId", $new);
