@@ -608,7 +608,7 @@ class Contact {
             return $result;
         if ($inserting)
             $this->contactId = $this->cid = $result->insert_id;
-        $Conf->ql("delete from ContactAddress where contactId=$this->contactId");
+        Dbl::ql($Conf->dblink, "delete from ContactAddress where contactId=$this->contactId");
         if ($this->addressLine1 || $this->addressLine2 || $this->city
             || $this->state || $this->zipCode || $this->country)
             $result = Dbl::qe($Conf->dblink, "insert into ContactAddress set contactId=?, addressLine1=?, addressLine2=?, city=?, state=?, zipCode=?, country=?",
@@ -630,9 +630,8 @@ class Contact {
     }
 
     static function email_authored_papers($email, $reg) {
-        global $Conf;
         $aupapers = array();
-        $result = $Conf->q("select paperId, authorInformation from Paper where authorInformation like '%\t" . sqlq_for_like($email) . "\t%'");
+        $result = Dbl::q("select paperId, authorInformation from Paper where authorInformation like '%\t" . sqlq_for_like($email) . "\t%'");
         while (($row = edb_orow($result))) {
             cleanAuthor($row);
             foreach ($row->authorTable as $au)
@@ -651,12 +650,11 @@ class Contact {
     }
 
     function save_authored_papers($aupapers) {
-        global $Conf;
         if (count($aupapers) && $this->contactId) {
             $q = array();
             foreach ($aupapers as $pid)
                 $q[] = "($pid, $this->contactId, " . CONFLICT_AUTHOR . ")";
-            $Conf->ql("insert into PaperConflict (paperId, contactId, conflictType) values " . join(", ", $q) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
+            Dbl::ql("insert into PaperConflict (paperId, contactId, conflictType) values " . join(", ", $q) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
         }
     }
 
@@ -679,16 +677,15 @@ class Contact {
                 $Conf->log("Removed as $type$actor_email", $this);
         // save the roles bits
         if ($old_roles != $new_roles) {
-            $Conf->qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
+            Dbl::qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
             $this->assign_roles($new_roles);
         }
         return $old_roles != $new_roles;
     }
 
     private function load_by_query($where) {
-        global $Conf;
-        $result = $Conf->q("select ContactInfo.* from ContactInfo where $where");
-        if (($row = edb_orow($result))) {
+        $result = Dbl::q("select ContactInfo.* from ContactInfo where $where");
+        if ($result && ($row = $result->fetch_object())) {
             $this->merge($row);
             return true;
         } else
@@ -821,7 +818,7 @@ class Contact {
     function load_address() {
         global $Conf;
         if ($this->addressLine1 === false && $this->contactId) {
-            $result = $Conf->ql("select * from ContactAddress where contactId=$this->contactId");
+            $result = Dbl::ql("select * from ContactAddress where contactId=$this->contactId");
             $row = edb_orow($result);
             foreach (self::_addressKeys() as $k)
                 $this->$k = @($row->$k);
@@ -1053,7 +1050,7 @@ class Contact {
             $qr = "";
             if ($this->review_tokens_)
                 $qr = " or r.reviewToken in (" . join(",", $this->review_tokens_) . ")";
-            $result = $Conf->qe("select max(conf.conflictType),
+            $result = Dbl::qe("select max(conf.conflictType),
                 r.contactId as reviewer,
                 max(r.reviewNeedsSubmit) as reviewNeedsSubmit
                 from ContactInfo c
@@ -1123,7 +1120,7 @@ class Contact {
         if (!isset($this->is_lead_)) {
             $result = null;
             if ($this->contactId > 0)
-                $result = $Conf->qe("select paperId from Paper where leadContactId=$this->contactId limit 1");
+                $result = Dbl::qe("select paperId from Paper where leadContactId=$this->contactId limit 1");
             $this->is_lead_ = edb_nrows($result) > 0;
         }
         return $this->is_lead_;
@@ -1134,7 +1131,7 @@ class Contact {
         if (!isset($this->is_manager_)) {
             $result = null;
             if ($this->contactId > 0)
-                $result = $Conf->qe("select paperId from Paper where managerContactId=$this->contactId limit 1");
+                $result = Dbl::qe("select paperId from Paper where managerContactId=$this->contactId limit 1");
             $this->is_manager_ = edb_nrows($result) > 0;
         }
         return $this->is_manager_;
@@ -1852,7 +1849,6 @@ class Contact {
     }
 
     function perm_review($prow, $rrow, $submit = false) {
-        global $Conf;
         if ($this->can_review($prow, $rrow, $submit))
             return null;
         $rights = $this->rights($prow);
@@ -1956,7 +1952,6 @@ class Contact {
     }
 
     function perm_comment($prow, $crow, $submit = false) {
-        global $Conf;
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
             return $this->perm_respond($prow, $crow, $submit);
         if ($this->can_comment($prow, $crow, $submit))
@@ -2003,7 +1998,6 @@ class Contact {
     }
 
     function perm_respond($prow, $crow, $submit = false) {
-        global $Conf;
         if ($this->can_respond($prow, $crow, $submit))
             return null;
         $rights = $this->rights($prow);
@@ -2202,7 +2196,6 @@ class Contact {
     // deadlines
 
     function my_rounds() {
-        global $Conf;
         $rounds = array();
         $where = array();
         if ($this->contactId)
@@ -2210,7 +2203,7 @@ class Contact {
         if (($tokens = $this->review_tokens()))
             $where[] = "reviewToken in (" . join(",", $tokens) . ")";
         if (count($where)) {
-            $result = $Conf->qe("select distinct reviewRound from PaperReview where " . join(" or ", $where));
+            $result = Dbl::qe("select distinct reviewRound from PaperReview where " . join(" or ", $where));
             while (($row = edb_row($result)))
                 $rounds[] = +$row[0];
         }
@@ -2423,10 +2416,9 @@ class Contact {
 
 
     private static function unassigned_review_token() {
-        global $Conf;
         while (1) {
             $token = mt_rand(1, 2000000000);
-            $result = $Conf->qe("select reviewId from PaperReview where reviewToken=$token");
+            $result = Dbl::qe("select reviewId from PaperReview where reviewToken=$token");
             if (edb_nrows($result) == 0)
                 return ", reviewToken=$token";
         }
@@ -2476,7 +2468,7 @@ class Contact {
         $Conf->log($msg . " by " . $this->email, $reviewer_cid, $pid);
 
         if ($q[0] == "i")
-            $Conf->ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
+            Dbl::ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
         // Mark rev_tokens setting for future update by
         // updateRevTokensSetting
         if ($rrow && @$rrow->reviewToken && $type <= 0)
