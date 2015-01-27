@@ -601,4 +601,9 @@ function updateSchema($Conf) {
     if ($Conf->settings["allowPaperOption"] == 84
         && $Conf->ql("insert ignore into Settings (name, value) select 'resp_active', value from Settings where name='resp_open'"))
         update_schema_version($Conf, 85);
+    if ($Conf->settings["allowPaperOption"] == 85
+        && $Conf->ql("DROP TABLE IF EXISTS `PCMember`")
+        && $Conf->ql("DROP TABLE IF EXISTS `ChairAssistant`")
+        && $Conf->ql("DROP TABLE IF EXISTS `Chair`"))
+        update_schema_version($Conf, 86);
 }

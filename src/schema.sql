@@ -53,30 +53,6 @@ CREATE TABLE `CapabilityMap` (
 
 
 --
--- Table structure for table `Chair`
---
-
-DROP TABLE IF EXISTS `Chair`;
-CREATE TABLE `Chair` (
-  `contactId` int(11) NOT NULL,
-  UNIQUE KEY `contactId` (`contactId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
-
-
---
--- Table structure for table `ChairAssistant`
---
-
-DROP TABLE IF EXISTS `ChairAssistant`;
-CREATE TABLE `ChairAssistant` (
-  `contactId` int(11) NOT NULL,
-  UNIQUE KEY `contactId` (`contactId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
-
-
---
 -- Table structure for table `ContactAddress`
 --
 
@@ -168,18 +144,6 @@ CREATE TABLE `MailLog` (
   `subject` text,
   `emailBody` text,
   PRIMARY KEY (`mailId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
-
-
---
--- Table structure for table `PCMember`
---
-
-DROP TABLE IF EXISTS `PCMember`;
-CREATE TABLE `PCMember` (
-  `contactId` int(11) NOT NULL,
-  UNIQUE KEY `contactId` (`contactId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
@@ -572,7 +536,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 85);
+insert into Settings (name, value) values ('allowPaperOption', 86);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
