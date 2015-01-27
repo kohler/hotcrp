@@ -53,24 +53,6 @@ CREATE TABLE `CapabilityMap` (
 
 
 --
--- Table structure for table `ContactAddress`
---
-
-DROP TABLE IF EXISTS `ContactAddress`;
-CREATE TABLE `ContactAddress` (
-  `contactId` int(11) NOT NULL,
-  `addressLine1` varchar(2048) NOT NULL,
-  `addressLine2` varchar(2048) NOT NULL,
-  `city` varchar(2048) NOT NULL,
-  `state` varchar(2048) NOT NULL,
-  `zipCode` varchar(2048) NOT NULL,
-  `country` varchar(2048) NOT NULL,
-  UNIQUE KEY `contactId` (`contactId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
-
-
---
 -- Table structure for table `ContactInfo`
 --
 
@@ -536,7 +518,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 86);
+insert into Settings (name, value) values ('allowPaperOption', 88);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

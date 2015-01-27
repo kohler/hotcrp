@@ -628,4 +628,7 @@ function updateSchema($Conf) {
     if ($Conf->settings["allowPaperOption"] == 86
         && update_schema_transfer_address($Conf))
         update_schema_version($Conf, 87);
+    if ($Conf->settings["allowPaperOption"] == 87
+        && $Conf->ql("DROP TABLE IF EXISTS `ContactAddress`"))
+        update_schema_version($Conf, 88);
 }
