@@ -58,7 +58,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
             $oldid = $MiniMe->contactId;
             $newid = $Me->contactId;
 
-            $Conf->q("lock tables Paper write, ContactInfo write, PaperConflict write, PCMember write, ChairAssistant write, Chair write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewArchive write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write, ContactAddress write, PaperWatch write, ReviewRating write");
+            $Conf->q("lock tables Paper write, ContactInfo write, PaperConflict write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewArchive write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write, ContactAddress write, PaperWatch write, ReviewRating write");
 
             crpmergeone("Paper", "leadContactId", $oldid, $newid);
             crpmergeone("Paper", "shepherdContactId", $oldid, $newid);
@@ -83,9 +83,6 @@ if (isset($_REQUEST["merge"]) && check_post()) {
                 $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($values, 2) . " on duplicate key update conflictType=greatest(conflictType, values(conflictType))");
             $Conf->qe("delete from PaperConflict where contactId=$oldid");
 
-            crpmergeoneignore("PCMember", "contactId", $oldid, $newid);
-            crpmergeoneignore("ChairAssistant", "contactId", $oldid, $newid);
-            crpmergeoneignore("Chair", "contactId", $oldid, $newid);
             if (($MiniMe->roles | $Me->roles) != $Me->roles) {
                 $Me->roles |= $MiniMe->roles;
                 $Conf->qe("update ContactInfo set roles=$Me->roles where contactId=$Me->contactId");

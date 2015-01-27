@@ -139,7 +139,7 @@ function pcAssignments() {
     if (@$_REQUEST["reviewer"] && isset($pcm[$_REQUEST["reviewer"]]))
         $where[] = "ContactInfo.contactId='" . $_REQUEST["reviewer"] . "'";
 
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperConflict write, PCMember read, ContactInfo read, ActionLog write, Settings write");
+    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperConflict write, ContactInfo read, ActionLog write, Settings write");
 
     // don't record separate PC conflicts on author conflicts
     $result = $Conf->qe("select ContactInfo.contactId,

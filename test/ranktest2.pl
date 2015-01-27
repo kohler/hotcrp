@@ -25,16 +25,12 @@ if ($ARGV[0] =~ /^--voteengine$/) {
 }
 
 print "delete from ContactInfo;\n";
-print "delete from PCMember;\n";
-print "delete from Chair;\n";
 print "delete from Paper;\n";
 print "delete from PaperReview;\n";
 print "delete from PaperConflict;\n";
 print "delete from PaperTag;\n";
 
 print "insert into ContactInfo (contactId, firstName, lastName, email, password, collaborators, creationTime, roles) values (1, 'Janette', 'Chair', 'chair\@_.com', 'chair', 'None', $now, 7);\n";
-print "insert into PCMember (contactId) values (1);\n";
-print "insert into Chair (contactId) values (1);\n";
 
 print "insert into Settings (name, value, data) values ('rev_open', $now, null), ('tag_rank', 1, 'r') on duplicate key update value=values(value), data=values(data);\n";
 
@@ -57,7 +53,6 @@ while (<DATA>) {
     my(@x) = split(//);
     last if /^RATINGS/;
     print "insert into ContactInfo (contactId, firstName, lastName, email, password, collaborators, creationTime, roles) values ($voternum, 'Jane', 'Voter" . ($voternum - $voterdelta) . "', 'comm" . ($voternum - $voterdelta) . "\@_.com', 'x', 'None', $now, 1) on duplicate key update firstName=firstName;\n";
-    print "insert into PCMember (contactId) values ($voternum) on duplicate key update contactId=contactId;\n";
     for ($i = 0; $i < @x; ++$i) {
 	if ($x[$i] ne 'x') {
 	    die "VOTE FOR BAD PAPER " . ($i+1) if !$papers[$i+1];

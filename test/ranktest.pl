@@ -25,14 +25,11 @@ if ($ARGV[0] =~ /^--voteengine$/) {
 }
 
 print "insert into ContactInfo (contactId, firstName, lastName, email, password, collaborators, creationTime, roles) values (1, 'Janette', 'Chair', 'chair\@_.com', 'x', 'None', $now, 7) on duplicate key update email=email;\n";
-print "insert into PCMember (contactId) values (1) on duplicate key update contactId=contactId;\n";
-print "insert into Chair (contactId) values (1) on duplicate key update contactId=contactId;\n";
 
 print "insert into Settings (name, value, data) values ('rev_open', $now, null), ('tag_rank', 1, 'r') on duplicate key update value=values(value), data=values(data);\n";
 
 for ($i = 2; $i <= 30; ++$i) {
     print "insert into ContactInfo (contactId, firstName, lastName, email, password, collaborators, creationTime, roles) values ($i, 'Jody', 'Comm$i', 'comm$i\@_.com', 'x', 'None', $now, 1) on duplicate key update firstName=firstName;\n";
-    print "insert into PCMember (contactId) values ($i) on duplicate key update contactId=contactId;\n";
 }
 
 while (<DATA>) {

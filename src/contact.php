@@ -663,38 +663,26 @@ class Contact {
     function save_roles($new_roles, $actor) {
         global $Conf;
         $old_roles = $this->roles;
-        // change the roles tables and log
-        $tables = self::ROLE_PC | self::ROLE_ADMIN | self::ROLE_CHAIR;
-        $actor_email = ($actor ? " by $actor->email" : "");
-        $diff = 0;
-        foreach (array(self::ROLE_PC => "PCMember",
-                       self::ROLE_ADMIN => "ChairAssistant",
-                       self::ROLE_CHAIR => "Chair") as $role => $tablename)
-            if (($new_roles & $role) && !($old_roles & $role)) {
-                if ($tables & $role)
-                    $Conf->qe("insert into $tablename (contactId) values ($this->contactId)");
-                $Conf->log("Added as $tablename$actor_email", $this);
-                $diff |= $role;
-            } else if (!($new_roles & $role) && ($old_roles & $role)) {
-                if ($tables & $role)
-                    $Conf->qe("delete from $tablename where contactId=$this->contactId");
-                $Conf->log("Removed as $tablename$actor_email", $this);
-                $diff |= $role;
-            }
         // ensure there's at least one system administrator
-        if ($diff & self::ROLE_ADMIN) {
-            $result = $Conf->qe("select contactId from ContactInfo where (roles&" . self::ROLE_ADMIN . ")!=0");
-            if (edb_nrows($result) == 0) {
-                $Conf->qe("insert into ChairAssistant (contactId) values ($this->contactId)");
-                $new_roles |= self::ROLE_ADMIN;
-            }
-        }
+        if (!($new_roles & self::ROLE_ADMIN) && ($old_roles & self::ROLE_ADMIN)
+            && !(($result = Dbl::qe("select contactId from ContactInfo where (roles&" . self::ROLE_ADMIN . ")!=0 and contactId!=" . $this->contactId . " limit 1"))
+                 && edb_nrows($result) > 0))
+            $new_roles |= self::ROLE_ADMIN;
+        // log role change
+        $actor_email = ($actor ? " by $actor->email" : "");
+        foreach (array(self::ROLE_PC => "pc",
+                       self::ROLE_ADMIN => "sysadmin",
+                       self::ROLE_CHAIR => "chair") as $role => $type)
+            if (($new_roles & $role) && !($old_roles & $role))
+                $Conf->log("Added as $type$actor_email", $this);
+            else if (!($new_roles & $role) && ($old_roles & $role))
+                $Conf->log("Removed as $type$actor_email", $this);
         // save the roles bits
-        if ($diff) {
+        if ($old_roles != $new_roles) {
             $Conf->qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
             $this->assign_roles($new_roles);
         }
-        return $diff != 0;
+        return $old_roles != $new_roles;
     }
 
     private function load_by_query($where) {

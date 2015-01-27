@@ -1038,9 +1038,7 @@ class AssignmentSet {
         $this->contact->mark_activity();
 
         // create new contacts outside the lock
-        $locks = array("ContactInfo" => "read", "PCMember" => "read",
-                       "ChairAssistant" => "read", "Chair" => "read",
-                       "Paper" => "read", "PaperConflict" => "read");
+        $locks = array("ContactInfo" => "read", "Paper" => "read", "PaperConflict" => "read");
         $Conf->save_logs(true);
         foreach ($this->assigners as $assigner) {
             if ($assigner->contact->contactId < 0) {
