@@ -7,8 +7,25 @@ export LC_ALL=C LC_CTYPE=C LC_COLLATE=C CONFNAME=
 if ! expr "$0" : '.*[/]' >/dev/null; then LIBDIR=./
 else LIBDIR=`echo "$0" | sed 's,^\(.*/\)[^/]*$,\1,'`; fi
 . ${LIBDIR}dbhelper.sh
-
 export PROG=$0
+
+help () {
+    echo "${LIBDIR}backupdb.sh backs up HotCRP MySQL databases."
+    echo
+    echo "Usage: ${LIBDIR}backupdb.sh [-c CONFIG] [-n CONFNAME] [-z] [--schema | --pc]"
+    echo "                       [MYSQL-OPTIONS] [OUTFILE]"
+    echo
+    echo "Options:"
+    echo "  -c, --config=CONFIG     Configuration file is CONFIG [conf/options.php]."
+    echo "  -n, --name=CONFNAME     Conference ID is CONFNAME."
+    echo "  -z                      Compress backup."
+    echo "      --schema            Output schema (no database data)."
+    echo "      --pc                Back up only PC-relevant information."
+    echo
+    echo "MYSQL-OPTIONS are sent to mysqldump."
+    exit
+}
+
 export FLAGS=
 structure=false
 pc=false
@@ -28,11 +45,12 @@ while [ $# -gt 0 ]; do
         parse_common_argument "$@";;
     --max_allowed_packet=*)
         max_allowed_packet="`echo "$1" | sed 's/^[^=]*=//'`";;
+    --help) help;;
     -*) FLAGS="$FLAGS $1";;
     *)  if [ -z "$output" ]; then
             output="$1"
         else
-            echo "Usage: $PROG [-c CONFIGFILE] [-n CONFNAME] [--schema] [--pc] [-z] [MYSQL-OPTIONS] [OUTPUT]" 1>&2; exit 1
+            echo "Usage: $PROG [-c CONFIGFILE] [-n CONFNAME] [--schema|--pc] [-z] [MYSQL-OPTIONS] [OUTPUT]" 1>&2; exit 1
         fi;;
     esac
     shift $shift
@@ -69,7 +87,7 @@ database_dump () {
     if $pc; then
         eval "$MYSQLDUMP $FLAGS $myargs $dbname --where='(roles & 7) != 0' ContactInfo"
         pcs=`echo 'select group_concat(contactId) from ContactInfo where (roles & 7) != 0' | eval "$MYSQL $myargs $FLAGS -N $dbname"`
-        eval "$MYSQLDUMP $myargs $FLAGS --where='contactId in ($pcs)' $dbname ContactAddress"
+        eval "$MYSQLDUMP $myargs $FLAGS --where='contactId in ($pcs)' $dbname TopicInterest"
         eval "$MYSQLDUMP $myargs $FLAGS $dbname Settings TopicArea"
     else
         eval "$MYSQLDUMP $myargs $FLAGS $dbname"

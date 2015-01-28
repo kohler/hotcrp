@@ -11,7 +11,7 @@ export PROG=$0
 
 usage () {
     if [ -z "$1" ]; then status=1; else status=$1; fi
-    echo "Usage: $PROG [-c CONFIGFILE] [MYSQL-OPTIONS]
+    echo "Usage: $PROG [-n CONFNAME | -c CONFIGFILE] [MYSQL-OPTIONS]
        $PROG --show-password EMAIL
        $PROG --set-password EMAIL [PASSWORD]
        $PROG --create-user EMAIL [COLUMN=VALUE...]" |
@@ -31,10 +31,10 @@ options_file=
 while [ $# -gt 0 ]; do
     shift=1
     case "$1" in
-    --show-password=*)
+    --show-password=*|--show-p=*|--show-pa=*|--show-pas=*|--show-pas=*|--show-pass=*|--show-passw=*|--show-passwo=*|--show-passwor=*)
         test -z "$mode" || usage
         pwuser="`echo "+$1" | sed 's/^[^=]*=//'`"; mode=showpw;;
-    --show-password)
+    --show-password|--show-p|--show-pa|--show-pas|--show-pass|--show-passw|--show-passwo|--show-passwor)
         test "$#" -gt 1 -a -z "$mode" || usage
         pwuser="$2"; shift; mode=showpw;;
     --set-password)

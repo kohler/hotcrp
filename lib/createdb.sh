@@ -11,7 +11,7 @@ else LIBDIR=`echo "$0" | sed 's,^\(.*/\)[^/]*$,\1,'`; fi
 help () {
     echo "${LIBDIR}createdb.sh performs MySQL database setup for HotCRP."
     echo
-    echo "Usage: ${LIBDIR}createdb.sh [-c CONFIGFILE] [-n CONFNAME] [MYSQLOPTIONS] [DBNAME]"
+    echo "Usage: ${LIBDIR}createdb.sh [-c CONFIG] [MYSQLOPTIONS] [DBNAME]"
     echo
     echo "Options:"
     echo "  -c, --config=CONFIG     Configuration file is CONFIG [conf/options.php]."
