@@ -464,8 +464,8 @@ class Conference {
     }
 
     function round0_defined() {
-        return !$this->setting("pcrev_soft") && !$this->setting("pcrev_hard")
-            && !$this->setting("extrev_soft") && !$this->setting("extrev_hard");
+        return $this->setting("pcrev_soft") || $this->setting("pcrev_hard")
+            || $this->setting("extrev_soft") || $this->setting("extrev_hard");
     }
 
     function round_name($roundno, $expand = false) {
