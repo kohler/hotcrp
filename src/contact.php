@@ -2150,22 +2150,6 @@ class Contact {
 
     // deadlines
 
-    function my_rounds() {
-        $rounds = array();
-        $where = array();
-        if ($this->contactId)
-            $where[] = "contactId=" . $this->contactId;
-        if (($tokens = $this->review_tokens()))
-            $where[] = "reviewToken in (" . join(",", $tokens) . ")";
-        if (count($where)) {
-            $result = Dbl::qe("select distinct reviewRound from PaperReview where " . join(" or ", $where));
-            while (($row = edb_row($result)))
-                $rounds[] = +$row[0];
-        }
-        sort($rounds);
-        return $rounds;
-    }
-
     function my_deadlines($prows = null) {
         // Return cleaned deadline-relevant settings that this user can see.
         global $Conf, $Opt, $Now;
@@ -2228,11 +2212,13 @@ class Contact {
             $dl->rev->rounds = array();
             $dl->rev->roundsuf = array();
             $grace = $rev_open ? @$set["rev_grace"] : 0;
-            foreach ($this->my_rounds() as $i) {
-                $round_name = $Conf->round_name($i, true);
+            $cur_round = $Conf->current_round_name();
+            foreach ($Conf->round_list() as $i => $round_name) {
+                if ($round_name === ";" && ($i || !$Conf->round0_defined()))
+                    continue;
                 $isuf = $i ? "_$i" : "";
                 $jsuf = $i ? ".$round_name" : "";
-                $dl->rev->rounds[] = $round_name;
+                $dl->rev->rounds[] = $i ? $round_name : 0;
                 $dl->rev->roundsuf[] = $jsuf;
                 foreach (array("pcrev", "extrev") as $rt) {
                     if ($rt == "pcrev" && !$this->isPC)
@@ -2247,7 +2233,11 @@ class Contact {
                         $dlround->done = $s;
                     $dlround->grace = "rev_grace";
                 }
+                if ($cur_round == $round_name)
+                    $cur_round = false;
             }
+            if ($this->privChair && $cur_round)
+                $dl->rev->rounds[] = $cur_round;
             // blindness
             $rb = $Conf->review_blindness();
             if ($rb === Conference::BLIND_ALWAYS)

@@ -463,6 +463,11 @@ class Conference {
         return $this->rounds;
     }
 
+    function round0_defined() {
+        return !$this->setting("pcrev_soft") && !$this->setting("pcrev_hard")
+            && !$this->setting("extrev_soft") && !$this->setting("extrev_hard");
+    }
+
     function round_name($roundno, $expand = false) {
         if ($roundno > 0) {
             if (($rname = @$this->rounds[$roundno]) && $rname !== ";")
@@ -491,6 +496,10 @@ class Conference {
             return "Round names must start with a letter and contain only letters and numbers.";
         else
             return false;
+    }
+
+    function current_round_name() {
+        return @$this->settingTexts["rev_roundtag"];
     }
 
     function current_round($add = false) {

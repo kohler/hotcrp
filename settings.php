@@ -1856,8 +1856,7 @@ function doRevGroup() {
     if ($round_value !== "#0" && $round_value !== ""
         && $current_round_value !== ""
         && (!count($Error) || isset($_POST["roundname_0"]))
-        && !$Conf->setting("pcrev_soft") && !$Conf->setting("pcrev_hard")
-        && !$Conf->setting("extrev_soft") && !$Conf->setting("extrev_hard"))
+        && !$Conf->round0_defined())
         $print_round0 = false;
 
     $selector = array();
