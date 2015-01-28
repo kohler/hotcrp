@@ -415,7 +415,7 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
         if (count($tracks->soleAuthor))
             $Conf->errorMsg("This user can’t be deleted since they are sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional paper contacts.");
         else {
-            foreach (array("ContactInfo", "ContactAddress",
+            foreach (array("ContactInfo",
                            "PaperComment", "PaperConflict", "PaperReview",
                            "PaperReviewPreference", "PaperReviewRefused",
                            "PaperWatch", "ReviewRating", "TopicInterest")

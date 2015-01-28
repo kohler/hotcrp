@@ -58,7 +58,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
             $oldid = $MiniMe->contactId;
             $newid = $Me->contactId;
 
-            $Conf->q("lock tables Paper write, ContactInfo write, PaperConflict write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewArchive write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write, ContactAddress write, PaperWatch write, ReviewRating write");
+            $Conf->q("lock tables Paper write, ContactInfo write, PaperConflict write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewArchive write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write, PaperWatch write, ReviewRating write");
 
             crpmergeone("Paper", "leadContactId", $oldid, $newid);
             crpmergeone("Paper", "shepherdContactId", $oldid, $newid);
@@ -113,8 +113,6 @@ if (isset($_REQUEST["merge"]) && check_post()) {
             // Remove the old contact record
             if ($MergeError == "") {
                 if (!$Conf->q("delete from ContactInfo where contactId=$oldid"))
-                    $MergeError .= $Conf->db_error_html(true);
-                if (!$Conf->q("delete from ContactAddress where contactId=$oldid"))
                     $MergeError .= $Conf->db_error_html(true);
             }
 
