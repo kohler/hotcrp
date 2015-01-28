@@ -5,7 +5,8 @@
 
 function _retract_review_request_form($prow, $rr) {
     return '<small>'
-        . Ht::form_div(hoturl_post("assign", "p=$prow->paperId"))
+        . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
+        . '<div class="inline">'
         . Ht::hidden("retract", $rr->email)
         . Ht::submit("Retract", array("title" => "Retract this review request", "style" => "font-size:smaller"))
         . '</div></form></small>';
