@@ -1454,7 +1454,7 @@ $blind\n";
         $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
         $showtoken = $rrow && $Me->review_token_cid($prow, $rrow);
         $type = "";
-        if ($Me->can_view_review_round($prow, $rrow, null)) {
+        if ($rrow && $Me->can_view_review_round($prow, $rrow, null)) {
             $type = review_type_icon($rrow->reviewType);
             if ($rrow->reviewRound > 0 && $Me->can_view_review_round($prow, $rrow, null))
                 $type .= "&nbsp;<span class=\"revround\" title=\"Review round\">"
