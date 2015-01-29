@@ -1184,10 +1184,9 @@ span.asspref-1 {
 	display: inline-block;
 	width: 0.75em;
         height: 0.75em;
-	line-height: 0.75em;
         border-width: 1px;
         position: relative;
-	bottom: -0.1em;
+	bottom: -0.125em;
 }
 .rt4, .rt4n, .rt3, .rt3n, .rt2, .rt2n {
 	background-color: #ffffbb;
@@ -1213,7 +1212,8 @@ span.asspref-1 {
 	width: 100%;
 	height: 100%;
         font-family: "Helvetica Neue", Helvetica, verdana, tahoma, sans-serif;
-	font-size: 70%;
+	font-size: 62.5%;
+	line-height: 125%;
 	text-align: center;
 }
 
