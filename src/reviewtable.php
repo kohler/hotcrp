@@ -78,7 +78,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             $x = "";
         else if ($rr->reviewType > 0) {
             $x = review_type_icon($rr->reviewType);
-            if ($rr->reviewRound > 0)
+            if ($rr->reviewRound > 0 && $Me->can_view_review_round($prow, $rr))
                 $x .= '&nbsp;<span class="revround" title="Review round">'
                     . htmlspecialchars($Conf->round_name($rr->reviewRound, true))
                     . "</span>";

@@ -1284,7 +1284,7 @@ $blind\n";
         return $x;
     }
 
-    function _showWebDisplayBody($prow, $rrows, $rrow, $reviewOrdinal, &$options) {
+    private function _showWebDisplayBody($prow, $rrows, $rrow, $reviewOrdinal, &$options) {
         global $Conf, $Me;
 
         // Do not show rating counts if rater identity is unambiguous.
@@ -1453,9 +1453,21 @@ $blind\n";
         $open = $sep = " <span class='revinfo'>";
         $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
         $showtoken = $rrow && $Me->review_token_cid($prow, $rrow);
+        $type = "";
+        if ($Me->can_view_review_round($prow, $rrow, null)) {
+            $type = review_type_icon($rrow->reviewType);
+            if ($rrow->reviewRound > 0 && $Me->can_view_review_round($prow, $rrow, null))
+                $type .= "&nbsp;<span class=\"revround\" title=\"Review round\">"
+                    . htmlspecialchars($Conf->round_name($rrow->reviewRound, true))
+                    . "</span>";
+        }
         if ($rrow && $Me->can_view_review_identity($prow, $rrow, null)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
-            echo $sep, ($rrow->reviewBlind ? "[" : ""), "by ", Text::user_html($rrow), ($rrow->reviewBlind ? "]" : "");
+            echo $sep, ($rrow->reviewBlind ? "[" : ""), Text::user_html($rrow),
+                ($rrow->reviewBlind ? "]" : ""), " &nbsp;", $type;
+            $sep = $xsep;
+        } else if ($type) {
+            echo $sep, $type;
             $sep = $xsep;
         }
         if ($showtoken) {
@@ -1478,31 +1490,6 @@ $blind\n";
         if (defval($options, "editmessage"))
             echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
 
-        // delegate?
-        if ($rrow && !$rrow->reviewSubmitted
-            && $rrow->contactId == $Me->contactId
-            && $rrow->reviewType == REVIEW_SECONDARY) {
-            echo "\n<div class='rev_del'>";
-
-            $ndelegated = 0;
-            foreach ($rrows as $rr)
-                if ($rr->reviewType == REVIEW_EXTERNAL
-                    && $rr->requestedBy == $rrow->contactId)
-                    $ndelegated++;
-
-            if ($ndelegated == 0)
-                echo "As a secondary reviewer, you can <a href=\"", hoturl("assign", "p=$rrow->paperId"), "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete the review yourself.";
-            else if ($rrow->reviewNeedsSubmit == 0)
-                echo "A delegated external reviewer has submitted their review, but you can still complete your own if you’d like.";
-            else
-                echo "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete the review yourself.";
-            echo "</div>\n";
-        }
-
-        // message?
-        if ($rrow && !$Me->is_my_review($rrow) && $admin)
-            echo "<div class='hint'>You didn’t write this review, but as an administrator you can still make changes.</div>\n";
-
         // download?
         echo '<hr class="c" />';
         echo "<table class='revoff'><tr>
@@ -1519,8 +1506,35 @@ $blind\n";
         // ready?
         $ready = ($useRequest ? defval($_REQUEST, "ready") : !($rrow && $rrow->reviewModified && !$rrow->reviewSubmitted));
 
-        // top save changes button
+        // review card
         echo '<div class="revcard_body">';
+
+        // administrator?
+        if ($rrow && !$Me->is_my_review($rrow) && $admin)
+            echo "<div class=\"xinfo\">This isn’t your review, but as an administrator you can still make changes.</div>\n";
+
+        // delegate?
+        if ($rrow && !$rrow->reviewSubmitted
+            && $rrow->contactId == $Me->contactId
+            && $rrow->reviewType == REVIEW_SECONDARY) {
+            echo "<div class=\"xinfo\">";
+
+            $ndelegated = 0;
+            foreach ($rrows as $rr)
+                if ($rr->reviewType == REVIEW_EXTERNAL
+                    && $rr->requestedBy == $rrow->contactId)
+                    $ndelegated++;
+
+            if ($ndelegated == 0)
+                echo "As a secondary reviewer, you can <a href=\"", hoturl("assign", "p=$rrow->paperId"), "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete this review yourself.";
+            else if ($rrow->reviewNeedsSubmit == 0)
+                echo "A delegated external reviewer has submitted their review, but you can still complete your own if you’d like.";
+            else
+                echo "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete this review yourself.";
+            echo "</div>\n";
+        }
+
+        // top save changes
         if ($Me->timeReview($prow, $rrow) || $admin) {
             $buttons = $this->_review_buttons($prow, $rrow, "top", $reviewPostLink);
             echo Ht::actions($buttons, array("class" => "aab", "style" => "margin-top:0"));

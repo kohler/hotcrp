@@ -1693,6 +1693,42 @@ class Contact {
         return $whyNot;
     }
 
+    function can_view_review_identity($prow, $rrow, $forceShow = null) {
+        global $Conf;
+        // If $prow === true or null, be permissive: return true
+        // iff there could exist a paper for which can_view_review_identity
+        // is true.
+        if (!$prow || $prow === true)
+            $prow = new PaperInfo
+                (array("conflictType" => 0, "managerContactId" => 0,
+                       "myReviewType" => ($this->is_reviewer() ? 1 : 0),
+                       "myReviewSubmitted" => 1,
+                       "myReviewNeedsSubmit" => 0,
+                       "paperId" => 1, "timeSubmitted" => 1,
+                       "paperBlind" => false, "outcome" => 1), $this);
+        $rights = $this->rights($prow, $forceShow);
+        return $rights->can_administer
+            || ($rrow && ($this->is_my_review($rrow)
+                          || ($rights->allow_pc
+                              && @$rrow->requestedBy == $this->contactId)))
+            || ($rights->allow_pc
+                && (!($pc_seeblindrev = $Conf->setting("pc_seeblindrev"))
+                    || ($pc_seeblindrev == 2
+                        && $this->can_view_review($prow, $rrow, $forceShow))))
+            || ($rights->allow_review
+                && $prow->review_not_incomplete($this)
+                && ($rights->allow_pc
+                    || $Conf->settings["extrev_view"] >= 2))
+            || !$Conf->is_review_blind($rrow);
+    }
+
+    function can_view_review_round($prow, $rrow, $forceShow = null) {
+        $rights = $this->rights($prow, $forceShow);
+        return $rights->can_administer
+            || $rights->allow_pc
+            || $rights->allow_review;
+    }
+
     function can_request_review($prow, $check_time) {
         global $Conf;
         $rights = $this->rights($prow);
@@ -2036,41 +2072,6 @@ class Contact {
             || !$Conf->is_review_blind(!$crow || ($crow->commentType & COMMENTTYPE_BLIND) != 0);
     }
 
-
-    function can_view_review_identity($prow, $rrow, $forceShow = null) {
-        global $Conf;
-        $rrow_contactId = 0;
-        if ($rrow && isset($rrow->reviewContactId))
-            $rrow_contactId = $rrow->reviewContactId;
-        else if ($rrow && isset($rrow->contactId))
-            $rrow_contactId = $rrow->contactId;
-        // If $prow === true or null, be permissive: return true
-        // iff there could exist a paper for which can_view_review_identity
-        // is true.
-        if (!$prow || $prow === true)
-            $prow = new PaperInfo
-                (array("conflictType" => 0, "managerContactId" => 0,
-                       "myReviewType" => ($this->is_reviewer() ? 1 : 0),
-                       "myReviewSubmitted" => 1,
-                       "myReviewNeedsSubmit" => 0,
-                       "paperId" => 1, "timeSubmitted" => 1,
-                       "paperBlind" => false, "outcome" => 1), $this);
-        $rights = $this->rights($prow, $forceShow);
-        return $rights->can_administer
-            || ($rrow && ($rrow_contactId == $this->contactId
-                          || $this->is_my_review($rrow)
-                          || ($rights->allow_pc
-                              && @$rrow->requestedBy == $this->contactId)))
-            || ($rights->allow_pc
-                && (!($pc_seeblindrev = $Conf->setting("pc_seeblindrev"))
-                    || ($pc_seeblindrev == 2
-                        && $this->can_view_review($prow, $rrow, $forceShow))))
-            || ($rights->allow_review
-                && $prow->review_not_incomplete($this)
-                && ($rights->allow_pc
-                    || $Conf->settings["extrev_view"] >= 2))
-            || !$Conf->is_review_blind($rrow);
-    }
 
     function can_view_decision($prow, $forceShow = null) {
         global $Conf;
