@@ -119,7 +119,7 @@ class Text {
         $r = self::analyze_name_args($a);
         $e = htmlspecialchars($r->email);
         if ($e && strpos($e, "@") !== false)
-            $e = "&lt;<a href=\"mailto:$e\">$e</a>&gt;";
+            $e = "&lt;<a class=\"maillink\" href=\"mailto:$e\">$e</a>&gt;";
         else if ($e)
             $e = "&lt;$e&gt;";
         if ($r->name)

@@ -133,14 +133,14 @@ td.spanner {
 a.q, a.qx, a.u {
 	color: black;
 }
-a.qq, a.uu {
+a.qq, a.uu, a.maillink {
 	color: inherit;
 }
-a.q, a.qq, a.qx, a.x, a.xx, u.x, .noul {
+a.q, a.qq, a.qx, a.x, a.xx, a.maillink, u.x, .noul {
 	text-decoration: none;
 }
-a.q:hover, a.qq:hover, a.qx:hover u.x, a.x:hover, a.xx:hover u.x, .ul,
-.childfold:hover a.q {
+a.q:hover, a.qq:hover, a.qx:hover u.x, a.x:hover, a.xx:hover u.x,
+.childfold:hover a.q, a.maillink:hover, .ul {
 	text-decoration: underline;
 }
 a.small {
