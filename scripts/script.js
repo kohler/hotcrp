@@ -1129,6 +1129,14 @@ function selassign(elt, which) {
     }
 }
 
+function save_review_round(elt) {
+    var form = jQuery(elt).closest("form");
+    jQuery.post(form[0].action,
+                form.serialize() + "&ajax=1",
+                function (data, status, jqxhr) {
+                });
+}
+
 
 // clickthrough
 function handle_clickthrough(form) {

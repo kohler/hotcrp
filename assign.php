@@ -47,10 +47,18 @@ function loadRows() {
     $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
 }
 
-function findRrow($contactId) {
+function rrow_by_contactid($contactId) {
     global $rrows;
     foreach ($rrows as $rr)
         if ($rr->contactId == $contactId)
+            return $rr;
+    return null;
+}
+
+function rrow_by_reviewid($rid) {
+    global $rrows;
+    foreach ($rrows as $rr)
+        if ($rr->reviewId == $rid)
             return $rr;
     return null;
 }
@@ -128,6 +136,30 @@ if (isset($_REQUEST["retract"]) && check_post()) {
     redirectSelf();
     loadRows();
 }
+
+
+function handle_set_round() {
+    global $Conf, $Me, $prow, $rrows;
+
+    // check permissions
+    if (!@$_REQUEST["r"] || !($rr = rrow_by_reviewid($_REQUEST["r"])))
+        $Conf->ajaxExit(array("ok" => false, "error" => "No such review."));
+    if (!$Me->can_administer($prow))
+        $Conf->ajaxExit(array("ok" => false, "error" => "Permission denied."));
+    $rname = trim((string) $_POST["round"]);
+    if (!$rname || $rname == "default")
+        $rname = "";
+    else if (($err = Conference::round_name_error($rname)))
+        $Conf->ajaxExit(array("ok" => false, "error" => $err));
+
+    // assign round
+    $rnum = $Conf->round_number($rname, true);
+    Dbl::qe("update PaperReview set reviewRound=$rnum where reviewId=$rr->reviewId");
+    $Conf->ajaxExit(array("ok" => true));
+}
+
+if (isset($_GET["setround"]) && check_post())
+    handle_set_round();
 
 
 // change PC assignments
@@ -415,7 +447,7 @@ if (isset($_REQUEST["addpc"]) && $Me->allow_administer($prow) && check_post()) {
         $Conf->errorMsg("Enter a PC member.");
     else if (($pctype = cvtint(@$_REQUEST["pctype"])) == REVIEW_PRIMARY
              || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC) {
-        $Me->assign_review($prow->paperId, findRrow($pcid), $pcid, $pctype);
+        $Me->assign_review($prow->paperId, rrow_by_contactid($pcid), $pcid, $pctype);
         $Conf->updateRevTokensSetting(false);
     }
     loadRows();

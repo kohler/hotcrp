@@ -3,12 +3,47 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+function _review_table_actas($rr) {
+    global $Me;
+    if (!@$rr->contactId || $rr->contactId == $Me->contactId)
+        return "";
+    return ' <a href="' . selfHref(array("actas" => $rr->email)) . '">'
+        . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($rr)))
+        . "</a>";
+}
+
+function _review_table_round_selector($prow, $rr) {
+    global $Conf;
+    $rlist = $Conf->round_list();
+    if (count($rlist) == 1)
+        return "";
+    if (count($rlist) == 2 && !$Conf->round0_defined())
+        return '&nbsp;<span class="revround" title="Review round">'
+            . htmlspecialchars($Conf->round_name($rr->reviewRound, true))
+            . "</span>";
+    $sel = array();
+    foreach ($rlist as $rnum => $rname)
+        if ($rnum == 0 && $Conf->round0_defined())
+            $sel["default"] = "default";
+        else if ($rnum && $rname !== ";")
+            $sel[$rname] = $rname;
+    $crname = $Conf->current_round_name();
+    if ($crname && !@$sel[$crname])
+        $sel[$crname] = $crname;
+    return '&nbsp;'
+        . Ht::form(hoturl_post("assign", "p={$prow->paperId}&amp;r={$rr->reviewId}&amp;setround=1"))
+        . '<div class="inline">'
+        . Ht::select("round", $sel, $rr->reviewRound ? $Conf->round_name($rr->reviewRound) : "default",
+                     array("onchange" => "save_review_round(this)", "title" => "Set review round"))
+        . '</div></form>';
+}
+
 function _retract_review_request_form($prow, $rr) {
     return '<small>'
         . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
         . '<div class="inline">'
         . Ht::hidden("retract", $rr->email)
-        . Ht::submit("Retract", array("title" => "Retract this review request", "style" => "font-size:smaller"))
+        . Ht::submit("Retract review", array("title" => "Retract this review request", "style" => "font-size:smaller"))
         . '</div></form></small>';
 }
 
@@ -27,6 +62,9 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $show_colors = $Me->can_view_reviewer_tags($prow);
     $xsep = ' <span class="barsep">&nbsp;|&nbsp;</span> ';
     $want_scores = $mode != "assign" && $mode != "edit" && $mode != "re";
+    $want_requested_by = false;
+    $want_retract = false;
+    $pcm = pcMembers();
     $score_header = array();
 
     // actual rows
@@ -75,38 +113,34 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
         // primary/secondary glyph
         if ($conflictType > 0 && !$admin)
-            $x = "";
+            $rtype = "";
         else if ($rr->reviewType > 0) {
-            $x = review_type_icon($rr->reviewType);
-            if ($rr->reviewRound > 0 && $Me->can_view_review_round($prow, $rr))
-                $x .= '&nbsp;<span class="revround" title="Review round">'
+            $rtype = review_type_icon($rr->reviewType);
+            if ($admin && $mode == "assign")
+                $rtype .= _review_table_round_selector($prow, $rr);
+            else if ($rr->reviewRound > 0 && $Me->can_view_review_round($prow, $rr))
+                $rtype .= '&nbsp;<span class="revround" title="Review round">'
                     . htmlspecialchars($Conf->round_name($rr->reviewRound, true))
                     . "</span>";
         } else
-            $x = "";
+            $rtype = "";
 
         // reviewer identity
         $showtoken = $rr->reviewToken && $Me->can_review($prow, $rr);
         if (!$Me->can_view_review_identity($prow, $rr, null)) {
-            $t .= ($x ? "<td>$x</td>" : '<td class="empty"></td>');
+            $t .= ($rtype ? "<td>$rtype</td>" : '<td class="empty"></td>');
         } else {
             if (!$showtoken || !Contact::is_anonymous_email($rr->email)) {
+                $u = @$pcm[$rr->contactId] ? : $rr;
                 if ($mode == "assign")
                     $n = Text::user_html($rr);
                 else
                     $n = Text::name_html($rr);
             } else
                 $n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
-            $t .= "<td>" . $n . ($x ? " $x" : "");
-            if ($allow_admin && $rr->email != $Me->email)
-                $t .= " <a href=\"" . selfHref(array("actas" => $rr->email)) . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($rr))) . "</a>";
-            if ($mode == "assign"
-                && ($conflictType <= 0 || $admin)
-                && $rr->reviewType == REVIEW_EXTERNAL
-                && $rr->reviewModified <= 0
-                && ($rr->requestedBy == $Me->contactId || $admin))
-                $t .= ' ' . _retract_review_request_form($prow, $rr);
-            $t .= "</td>";
+            if ($allow_admin)
+                $n .= _review_table_actas($rr);
+            $t .= "<td>" . $n . ($rtype ? " $rtype" : "") . "</td>";
             if ($show_colors && (@$rr->contactRoles || @$rr->contactTags)) {
                 $tags = Contact::roles_all_contact_tags(@$rr->contactRoles, @$rr->contactTags);
                 if (($color = TagInfo::color_classes($tags)))
@@ -115,20 +149,30 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         }
 
         // requester
-        $reqt = "";
+        if ($mode == "assign") {
+            if (($conflictType <= 0 || $admin)
+                && $rr->reviewType == REVIEW_EXTERNAL
+                && !$showtoken) {
+                $t .= '<td style="font-size:smaller">';
+                if ($rr->requestedBy == $Me->contactId)
+                    $t .= "you";
+                else {
+                    $u = @$pcm[$rr->requestedBy] ? : array($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
+                    $t .= Text::user_html($u);
+                }
+                $t .= '</td>';
+                $want_requested_by = true;
+            } else
+                $t .= '<td class="empty"></td>';
+        }
+
+        // actions
         if ($mode == "assign"
             && ($conflictType <= 0 || $admin)
             && $rr->reviewType == REVIEW_EXTERNAL
-            && !$showtoken) {
-            $reqt = '<td class="empty"></td>'
-                . '<td style="font-size:smaller" colspan="2">—'
-                . 'requested by ';
-            if ($rr->reqEmail == $Me->email)
-                $reqt .= 'you';
-            else
-                $reqt .= Text::user_html($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
-            $reqt .= '</td>';
-        }
+            && $rr->reviewModified <= 0
+            && ($rr->requestedBy == $Me->contactId || $admin))
+            $t .= '<td>' . _retract_review_request_form($prow, $rr) . '</td>';
 
         // scores
         $scores = array();
@@ -150,15 +194,10 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         }
 
         // affix
-        if (!$rr->reviewSubmitted) {
+        if (!$rr->reviewSubmitted)
             $nonsubrev[] = array($tclass, $t, $scores);
-            if ($reqt)
-                $nonsubrev[] = array($tclass, $reqt);
-        } else {
+        else
             $subrev[] = array($tclass, $t, $scores);
-            if ($reqt)
-                $subrev[] = array($tclass, $reqt);
-        }
     }
 
     // proposed review rows
@@ -171,37 +210,41 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
             // reviewer identity
             $t .= "<td>" . Text::user_html($rr);
+            if ($allow_admin)
+                $t .= _review_table_actas($rr);
+            $t .= "</td>";
+
+            // requester
+            if ($conflictType <= 0 || $admin) {
+                $t .= '<td style="font-size:smaller">';
+                if ($rr->requestedBy == $Me->contactId)
+                    $t .= "you";
+                else {
+                    $u = @$pcm[$rr->requestedBy] ? : array($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
+                    $t .= Text::user_html($u);
+                }
+                $t .= '</td>';
+                $want_requested_by = true;
+            }
+
+            $t .= '<td>';
             if ($admin)
-                $t .= ' <small>'
-                    . Ht::form_div(hoturl_post("assign", "p=$prow->paperId"))
+                $t .= '<small>'
+                    . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
+                    . '<div class="inline">'
                     . Ht::hidden("name", $rr->name)
                     . Ht::hidden("email", $rr->email)
                     . Ht::hidden("reason", $rr->reason)
-                    . Ht::submit("add", "Approve", array("style" => "font-size:smaller"))
+                    . Ht::submit("add", "Approve review", array("style" => "font-size:smaller"))
                     . ' '
-                    . Ht::submit("deny", "Deny", array("style" => "font-size:smaller"))
+                    . Ht::submit("deny", "Deny request", array("style" => "font-size:smaller"))
                     . '</div></form>';
             else if ($rr->reqEmail == $Me->email)
-                $t .= " " . _retract_review_request_form($prow, $rr);
+                $t .= _retract_review_request_form($prow, $rr);
             $t .= '</td>';
-
-            // requester
-            $reqt = "";
-            if ($conflictType <= 0 || $admin) {
-                $reqt = '<td class="empty"></td>'
-                    . '<td style="font-size:smaller" colspan="2">—'
-                    . 'requested by ';
-                if ($rr->reqEmail == $Me->email)
-                    $reqt .= 'you';
-                else
-                    $reqt .= Text::user_html($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
-                $reqt .= '</td>';
-            }
 
             // affix
             $nonsubrev[] = array("", $t);
-            if ($reqt)
-                $nonsubrev[] = array("", $reqt);
         }
 
     // unfinished review notification
@@ -219,6 +262,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     // completion
     if (count($nonsubrev) + count($subrev)) {
         $t = "<table class=\"reviewers\">\n";
+        if ($want_requested_by)
+            array_unshift($score_header, '<th class="revsl">Requester</th>');
         if (count($score_header))
             $t .= '<tr><td class="empty" colspan="2"></td>'
                 . join("", $score_header) . "</tr>\n";

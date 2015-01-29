@@ -1270,6 +1270,10 @@ table.reviewers th {
 	font-size: smaller;
 	padding: 0 0.25em;
 }
+table.reviewers th.revsl {
+	padding-left: 0;
+	text-align: left;
+}
 table.reviewers td.highlight {
 	padding-right: 0.25em;
 }

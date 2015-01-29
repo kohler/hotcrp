@@ -11,6 +11,7 @@ class Conference {
     var $settingTexts;
     var $sversion;
     private $_pc_seeall_cache = null;
+    private $_round0_defined_cache = null;
 
     private $save_messages = true;
     var $headerPrinted = false;
@@ -68,7 +69,6 @@ class Conference {
         // load settings from database
         $this->settings = array();
         $this->settingTexts = array();
-        $this->_pc_seeall_cache = null;
 
         $result = $this->q("select name, value, data from Settings");
         while ($result && ($row = $result->fetch_row())) {
@@ -198,8 +198,10 @@ class Conference {
         if (@($j = $this->settingTexts["tracks"]))
             $this->crosscheck_track_settings($j);
 
-        // clear decisions cache
+        // clear caches
         $this->_decisions = null;
+        $this->_pc_seeall_cache = null;
+        $this->_round0_defined_cache = null;
     }
 
     private function crosscheck_track_settings($j) {
@@ -464,8 +466,15 @@ class Conference {
     }
 
     function round0_defined() {
-        return $this->setting("pcrev_soft") || $this->setting("pcrev_hard")
-            || $this->setting("extrev_soft") || $this->setting("extrev_hard");
+        if ($this->_round0_defined_cache === null) {
+            $this->_round0_defined_cache = $this->setting("pcrev_soft") || $this->setting("pcrev_hard")
+                || $this->setting("extrev_soft") || $this->setting("extrev_hard");
+            if (!$this->_round0_defined_cache) {
+                $result = Dbl::qe("select reviewId from PaperReview where reviewRound=0 limit 1");
+                $this->_round0_defined_cache = $result && $result->num_rows;
+            }
+        }
+        return $this->_round0_defined_cache;
     }
 
     function round_name($roundno, $expand = false) {
@@ -489,8 +498,7 @@ class Conference {
     static function round_name_error($rname) {
         if ((string) $rname === "")
             return "Empty round name.";
-        else if (!strcasecmp($rname, "none") || !strcasecmp($rname, "any")
-                 || stri_ends_with($rname, "response"))
+        else if (preg_match('/\A(?:none|any|default|.*response)\z/i', $rname))
             return "Round name $rname is reserved.";
         else if (!preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $rname))
             return "Round names must start with a letter and contain only letters and numbers.";
@@ -507,7 +515,7 @@ class Conference {
     }
 
     function round_number($name, $add) {
-        if (!$name)
+        if (!$name || !strcasecmp($name, "default"))
             return 0;
         for ($i = 1; $i != count($this->rounds); ++$i)
             if (!strcasecmp($this->rounds[$i], $name))
@@ -676,7 +684,6 @@ class Conference {
             }
         }
         if ($change) {
-            $this->_pc_seeall_cache = null;
             $this->crosscheck_settings();
             if (str_starts_with($name, "opt."))
                 $this->crosscheck_options();
@@ -700,8 +707,10 @@ class Conference {
         }
         if (!$caches || isset($caches["paperOption"]))
             PaperOption::invalidate_option_list();
-        if (!$caches || isset($caches["rf"]))
+        if (!$caches || isset($caches["rf"])) {
             ReviewForm::clear_cache();
+            $this->_round0_defined_cache = null;
+        }
         $ok = true;
         if (count($inserts))
             $ok = $ok && ($this->qe("insert into Settings (name, value) values " . join(",", $inserts) . " on duplicate key update value=values(value)") !== false);
