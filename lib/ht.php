@@ -92,7 +92,7 @@ class Ht {
         foreach ($opt as $value => $info) {
             if (is_array($info) && $info[0] == "optgroup")
                 $info = (object) array("type" => "optgroup", "label" => @$info[1]);
-            else if (is_string($info)) {
+            else if (is_scalar($info)) {
                 $info = (object) array("label" => $info);
                 if (is_array($disabled) && isset($disabled[$value]))
                     $info->disabled = $disabled[$value];
