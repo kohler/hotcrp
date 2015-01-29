@@ -1781,7 +1781,7 @@ class Contact {
             return false;
     }
 
-    function allow_review_assignment_ignore_conflict($prow) {
+    function can_accept_review_assignment_ignore_conflict($prow) {
         global $Conf;
         if (!$prow)
             return $this->isPC && $Conf->check_all_tracks($this, "assrev");
@@ -1792,7 +1792,7 @@ class Contact {
                 || $Conf->check_tracks($prow, $this, "assrev"));
     }
 
-    function allow_review_assignment($prow) {
+    function can_accept_review_assignment($prow) {
         global $Conf;
         $rights = $this->rights($prow);
         return $rights->allow_pc

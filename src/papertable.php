@@ -1715,7 +1715,7 @@ class PaperTable {
         if ($Me->can_view_shepherd($prow))
             $this->papstripShepherd($this->mode == "assign", $foldShepherd);
 
-        if ($Me->allow_review_assignment($prow)
+        if ($Me->can_accept_review_assignment($prow)
             && $Conf->timePCReviewPreferences()
             && ($Me->roles & (Contact::ROLE_PC | Contact::ROLE_CHAIR)))
             $this->papstripReviewPreference();

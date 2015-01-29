@@ -2579,7 +2579,7 @@ class PaperSearch {
         // status limitation parts
         if ($limit == "rable") {
             $limitcontact = $this->_reviewer_fixed ? $this->reviewer() : $this->contact;
-            if ($limitcontact->allow_review_assignment_ignore_conflict(null))
+            if ($limitcontact->can_accept_review_assignment_ignore_conflict(null))
                 $limit = $Conf->can_pc_see_all_submissions() ? "act" : "s";
             else if (!$limitcontact->isPC)
                 $limit = "r";
@@ -2734,7 +2734,7 @@ class PaperSearch {
             while (($row = PaperInfo::fetch($result, $this->cid))) {
                 if (!$this->contact->can_view_paper($row)
                     || ($limit == "rable"
-                        && !$limitcontact->allow_review_assignment_ignore_conflict($row)))
+                        && !$limitcontact->can_accept_review_assignment_ignore_conflict($row)))
                     $x = false;
                 else if ($this->thenmap !== null) {
                     $x = false;

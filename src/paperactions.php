@@ -161,7 +161,7 @@ class PaperActions {
             $Conf->errorMsg("You don’t have permission to set the $type.");
             $Error[$type] = true;
         } else if ($pc === 0
-                   || ($pc && $pc->isPC && $pc->allow_review_assignment($prow))) {
+                   || ($pc && $pc->isPC && $pc->can_accept_review_assignment($prow))) {
             $contact->assign_paper_pc($prow, $type, $pc);
             if ($OK && $ajax)
                 $Conf->confirmMsg("Saved");

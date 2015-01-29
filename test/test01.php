@@ -178,7 +178,7 @@ $tagger->save(array(3, 9, 13, 17), "green", "a");
 $Conf->save_setting("tracks", 1, "{\"green\":{\"assrev\":\"-red\"}}");
 $paper17 = $Conf->paperRow(17, $user_jon);
 assert(!$Conf->check_tracks($paper17, $user_jon, "assrev"));
-assert(!$user_jon->allow_review_assignment_ignore_conflict($paper17));
+assert(!$user_jon->can_accept_review_assignment_ignore_conflict($paper17));
 
 // check shepherd search visibility
 $paper11 = $Conf->paperRow(11, $user_chair);

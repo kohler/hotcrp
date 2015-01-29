@@ -165,7 +165,7 @@ function pcAssignments() {
             && ($pctype == 0 || $pctype == REVIEW_PRIMARY
                 || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC)
             && ($pctype == 0
-                || $pcm[$row->contactId]->allow_review_assignment($prow)))
+                || $pcm[$row->contactId]->can_accept_review_assignment($prow)))
             $Me->assign_review($prow->paperId, $row, $row->contactId, $pctype);
     }
 }
@@ -505,7 +505,7 @@ if ($Me->can_administer($prow)) {
     $pctexts = array();
     foreach (pcMembers() as $pc) {
         $p = $pcx[$pc->contactId];
-        if (!$pc->allow_review_assignment_ignore_conflict($prow))
+        if (!$pc->can_accept_review_assignment_ignore_conflict($prow))
             continue;
 
         // first, name and assignment
