@@ -639,7 +639,7 @@ function comet_tracker() {
         comet_store_cancel();
 
     // exit early if no tracker_poll or stopped
-    if (!dl.tracker_poll || (comet_stop_until && comet_stop_until < at))
+    if (!dl.tracker_poll || (comet_stop_until && comet_stop_until >= at))
         return false;
     if (comet_sent_at || comet_store_check(at))
         return true;
@@ -654,19 +654,19 @@ function comet_tracker() {
 
     function complete(xhr, status) {
         var now = (new Date).getTime();
-        if (comet_sent_at != at)
-            return;
-        comet_sent_at = null;
         // Assume errors after long delays are actually timeouts
         // (Chrome shuts down long polls sometimes)
         if (status == "error" && now - at > 100000)
             status = "timeout";
+        if (comet_sent_at != at)
+            return;
+        comet_sent_at = null;
         if (status == "success" && xhr.status == 200) {
             comet_nerrors = comet_stop_until = 0;
             reload();
         } else if (status == "timeout")
             comet_tracker();
-        else if (++comet_nerrors % 3)
+        else if (++comet_nerrors < 3)
             setTimeout(comet_tracker, 128 << Math.min(comet_nerrors, 12));
         else {
             comet_stop_until = now + 10000 * Math.min(comet_nerrors, 60);
