@@ -43,6 +43,10 @@ function bind_append(f, args) {
     };
 }
 
+function hoturl_add(url, component) {
+    return url + (url.indexOf("?") < 0 ? "?" : "&") + component;
+}
+
 function hoturl_clean(x, page_component) {
     var m;
     if (x.o && (m = x.o.match(new RegExp("^(.*)(?:^|&)" + page_component + "(?:&|$)(.*)$")))) {
@@ -568,7 +572,7 @@ function tracker(start) {
 
 
 // Comet tracker
-var comet_sent_at, comet_stop_until, comet_nerrors = 0;
+var comet_sent_at, comet_stop_until, comet_nerrors = 0, comet_nsuccess = 0;
 var comet_store_timeout, comet_store_listen_key;
 var comet_store_owned_key, comet_store_refresh_interval;
 
@@ -617,7 +621,8 @@ function comet_store_cancel() {
 jQuery(window).on("unload", comet_store_cancel);
 
 function comet_tracker() {
-    var at = (new Date).getTime();
+    var at = (new Date).getTime(),
+        timeout = (comet_nsuccess ? 298000 : 1000 + Math.random() * 1000);
 
     // correct tracker_poll URL to be a full URL if necessary
     if (dl.tracker_poll && !dl.tracker_poll_corrected
@@ -654,17 +659,16 @@ function comet_tracker() {
 
     function complete(xhr, status) {
         var now = (new Date).getTime();
-        // Assume errors after long delays are actually timeouts
-        // (Chrome shuts down long polls sometimes)
-        if (status == "error" && now - at > 100000)
-            status = "timeout";
         if (comet_sent_at != at)
             return;
         comet_sent_at = null;
         if (status == "success" && xhr.status == 200) {
             comet_nerrors = comet_stop_until = 0;
+            ++comet_nsuccess;
             reload();
-        } else if (status == "timeout")
+        } else if (now - at > 100000)
+            // errors after long delays are likely timeouts -- nginx
+            // or Chrome shut down the long poll
             comet_tracker();
         else if (++comet_nerrors < 3)
             setTimeout(comet_tracker, 128 << Math.min(comet_nerrors, 12));
@@ -675,8 +679,8 @@ function comet_tracker() {
     }
 
     jQuery.ajax({
-        url: dl.tracker_poll,
-        timeout: 300000, cache: false, dataType: "json",
+        url: hoturl_add(dl.tracker_poll, "timeout=" + timeout),
+        timeout: timeout + 2000, cache: false, dataType: "json",
         complete: complete
     });
     return true;
