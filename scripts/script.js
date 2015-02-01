@@ -622,7 +622,7 @@ jQuery(window).on("unload", comet_store_cancel);
 
 function comet_tracker() {
     var at = (new Date).getTime(),
-        timeout = (comet_nsuccess ? 298000 : 1000 + Math.random() * 1000);
+        timeout = (comet_nsuccess ? 298000 : Math.floor(1000 + Math.random() * 1000));
 
     // correct tracker_poll URL to be a full URL if necessary
     if (dl.tracker_poll && !dl.tracker_poll_corrected
