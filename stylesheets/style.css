@@ -737,7 +737,7 @@ td.caption.final {
 tr.topspace td.caption {
 	padding: 7px 0.5em 3px 4px;
 }
-tr.id td.caption, table.comment tr.id td.caption {
+tr.id td.caption {
 	border: 0 none;
 	background: #ffffff;
 	color: black;
@@ -749,33 +749,11 @@ tr.last td.caption {
 	border-bottom: 1px solid #ccb7a3; /* #9999cc; */
 }
 
-table.review td.caption {
-	background: none;
-	border: none;
-}
-
-table.comment td.caption {
-	background: none;
-	border: none;
-	/* background: #f4f6ff;
-	border-left: 1px solid #a3bfcc; /* #9999cc;
-	border-right: 1px solid #a3bfcc; /* #9999cc; */
-}
-table.comment td.caption.initial {
-	border-top: 1px solid #a3bfcc; /* #9999cc; */
-}
-table.comment td.caption.final {
-	border-bottom: 1px solid #a3bfcc; /* #9999cc; */
-}
-
 td.entry, th.entry {
 	padding: 2px 1em 4px 0.5em;
 }
 tr.last td.entry {
 	padding: 0 1em 0 0.5em;
-}
-tr.pt_abstract td.entry {
-	font-size: 85%;
 }
 tr.rev_reviewers_hdr td.entry {
 	padding: 1px 1em 3px 0.5em;
@@ -783,7 +761,7 @@ tr.rev_reviewers_hdr td.entry {
 
 
 /* Other types of captions and entries */
-table.paper, table.review, table.comment, table.settings {
+table.paper, table.settings {
 	width: 100%;
 	position: relative;
 }
@@ -818,9 +796,6 @@ th.lxcaption, td.lxcaption {
 td.mcaption {
 	text-align: right;
 	padding-right: 1em;
-}
-table.review, table.comment {
-	margin-top: 0.5em;
 }
 td.leftentry {
 	width: 18em;
