@@ -327,7 +327,10 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                     else
                         $n = "<i>Response</i>$n";
                 }
-                $cnames[] = '<a class="nw" href="#comment' . $cr->commentId . '">' . $n . '</a>';
+                $tclass = "cmtlink";
+                if ($cr->commentTags && ($color = TagInfo::color_classes($cr->commentTags)))
+                    $tclass .= " cmtlinkcolor $color";
+                $cnames[] = '<a class="' . $tclass . '" href="#comment' . $cr->commentId . '">' . $n . '</a>';
             }
         if (count($cids) > 0)
             $pret = '<div class="revnotes"><a href="#comment' . $cids[0] . '"><strong>' . plural(count($cids), "Comment") . "</strong></a>: " . join(", ", $cnames) . "</div>";
