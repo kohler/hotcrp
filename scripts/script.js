@@ -354,27 +354,28 @@ function text_to_html(text) {
 
 
 var wstorage;
-if (window.localStorage && window.JSON)
-    wstorage = function (is_session, key, value) {
-        var err;
-        try {
-            var s = is_session ? window.sessionStorage : window.localStorage;
-            if (typeof key === "undefined")
-                return !!s;
-            else if (typeof value === "undefined")
-                return s.getItem(key);
-            else if (value === null)
-                return s.removeItem(key);
-            else if (typeof value === "object")
-                return s.setItem(key, JSON.stringify(value));
-            else
-                return s.setItem(key, value);
-        } catch (err) {
-            return false;
-        }
-    };
-else
-    wstorage = function () { return false; };
+try {
+    if (window.localStorage && window.JSON)
+        wstorage = function (is_session, key, value) {
+            try {
+                var s = is_session ? window.sessionStorage : window.localStorage;
+                if (typeof key === "undefined")
+                    return !!s;
+                else if (typeof value === "undefined")
+                    return s.getItem(key);
+                else if (value === null)
+                    return s.removeItem(key);
+                else if (typeof value === "object")
+                    return s.setItem(key, JSON.stringify(value));
+                else
+                    return s.setItem(key, value);
+            } catch (err) {
+                return false;
+            }
+        };
+} finally {
+    wstorage = wstorage || function () { return false; };
+}
 wstorage.json = function (is_session, key) {
     var x = wstorage(is_session, key);
     return x ? jQuery.parseJSON(x) : false;
