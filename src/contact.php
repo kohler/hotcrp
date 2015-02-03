@@ -2269,6 +2269,7 @@ class Contact {
             && ($tracker = MeetingTracker::status($this))) {
             $dl->tracker = $tracker;
             $dl->tracker_status = MeetingTracker::tracker_status($tracker);
+            $dl->now = microtime(true);
         }
         if ($this->isPC && @$Opt["trackerCometSite"])
             $dl->tracker_site = $Opt["trackerCometSite"]

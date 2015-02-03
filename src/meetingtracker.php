@@ -41,6 +41,8 @@ class MeetingTracker {
             if ($old_tracker->listid == $tracker->listid
                 && $old_tracker->position == $tracker->position)
                 $tracker->position_at = $old_tracker->position_at;
+            else if ($old_tracker->position_at == $tracker->position_at)
+                $tracker->position_at = microtime(true);
         }
         self::save($tracker);
         self::contact_tracker_comet($tracker);
