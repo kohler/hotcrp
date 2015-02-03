@@ -437,7 +437,7 @@ var has_tracker, had_tracker_at, tracker_timer;
 function window_trackerstate() {
     var trackerstate = null;
     if (window.sessionStorage) {
-        trackerstate = sessionStorage.getItem("hotcrp_tracker");
+        trackerstate = sessionStorage.getItem("hotcrp-tracking");
         trackerstate = trackerstate && jQuery.parseJSON(trackerstate);
     }
     return trackerstate;
@@ -500,7 +500,7 @@ function display_tracker() {
         if (mnspace)
             mnspace.parentNode.removeChild(mnspace);
         if (window_trackerstate())
-            sessionStorage.removeItem("hotcrp_tracker");
+            sessionStorage.removeItem("hotcrp-tracking");
         has_tracker = false;
         return;
     }
@@ -556,7 +556,7 @@ function tracker(start) {
     trackerstate = window_trackerstate();
     if (start && (!trackerstate || trackerstate[0] != siteurl)) {
         trackerstate = [siteurl, Math.floor(Math.random() * 100000)];
-        sessionStorage.setItem("hotcrp_tracker", JSON.stringify(trackerstate));
+        sessionStorage.setItem("hotcrp-tracking", JSON.stringify(trackerstate));
     } else if (trackerstate && trackerstate[0] != siteurl)
         trackerstate = null;
     if (trackerstate) {
@@ -573,89 +573,93 @@ function tracker(start) {
 
 // Comet tracker
 var comet_sent_at, comet_stop_until, comet_nerrors = 0, comet_nsuccess = 0;
-var comet_store_timeout, comet_store_listen_key;
-var comet_store_owned_key, comet_store_refresh_interval;
 
-function comet_store_key() {
-    if (window.localStorage && dl.tracker_poll)
-        return "hotcrp-comet " + dl.tracker_poll;
-    else
-        return false;
-}
+var comet_store = (function () {
+    var stored_at, refresh_to;
+    if (!window.localStorage || !window.JSON)
+        return function () { return false; };
 
-function comet_store_check(now) {
-    var key = comet_store_key();
-    if (!key || comet_store_owned_key)
-        return false;
-    var value = localStorage.getItem(key);
-    if (value && (value = jQuery.parseJSON(value))
-        && value.update_at && value.update_at >= now - 10000) {
-        jQuery(window).on("storage", comet_store_listen);
-        comet_store_listen_key = key;
-        comet_store_timeout = setTimeout(comet_tracker, 5000);
-        return true;
-    } else
-        return false;
-}
-
-function comet_store_listen(e) {
-    var j, ee = e.originalEvent;
-    if (ee.key == comet_store_listen_key
-        && !(ee.newValue && (j = jQuery.parseJSON(ee.newValue))
-             && j.update_at && j.update_at >= (new Date).getTime() - 10000))
-        reload();
-}
-
-function comet_store_refresh() {
-    localStorage.setItem(comet_store_owned_key,
-                         JSON.stringify({update_at: (new Date).getTime()}));
-}
-
-function comet_store_cancel() {
-    if (comet_store_owned_key) {
-        localStorage.removeItem(comet_store_owned_key);
-        clearInterval(comet_store_refresh_interval);
-        comet_store_owned_key = comet_store_refresh_interval = null;
+    function site_key() {
+        return "hotcrp-comet " + hoturl_absolute_base();
     }
-}
-jQuery(window).on("unload", comet_store_cancel);
+    function make_site_value(v) {
+        var x = v && jQuery.parseJSON(v);
+        if (!x || typeof x !== "object")
+            x = {};
+        if (!x.updated_at || x.updated_at + 10 < (new Date).getTime() / 1000
+            || (x.tracker_status != dl.tracker_status && x.at < dl.now))
+            x.expired = true;
+        else if (x.tracker_status != dl.tracker_status)
+            x.fresh = true;
+        else if (x.at == stored_at)
+            x.owned = true;
+        else
+            x.same = true;
+        return x;
+    }
+    function site_value() {
+        return make_site_value(localStorage.getItem(site_key()));
+    }
+    function site_store() {
+        stored_at = dl.now;
+        localStorage.setItem(site_key(), JSON.stringify({at: stored_at, tracker_status: dl.tracker_status,
+                                                         updated_at: (new Date).getTime() / 1000}));
+        setTimeout(function () {
+            if (comet_sent_at)
+                site_store();
+        }, 5000);
+    }
+    jQuery(window).on("storage", function (e) {
+        var x, ee = e.originalEvent;
+        if (dl.tracker_site && ee.key == site_key()) {
+            var x = make_site_value(ee.newValue);
+            if (x.expired || x.fresh)
+                reload();
+        }
+    });
+    function refresh() {
+        if (!s(0))
+            reload();
+    }
+    function s(action) {
+        var x = site_value();
+        if (action > 0 && (x.expired || x.owned))
+            site_store();
+        if (!action) {
+            clearTimeout(refresh_to);
+            if (x.same) {
+                refresh_to = setTimeout(refresh, 5000);
+                return true;
+            } else
+                return (refresh_to = false);
+        }
+        if (action < 0 && x.owned)
+            localStorage.removeItem(site_key());
+    }
+    return s;
+})();
+
+jQuery(window).on("unload", function () { comet_store(-1); });
 
 function comet_tracker() {
     var at = (new Date).getTime(),
         timeout = (comet_nsuccess ? 298000 : Math.floor(1000 + Math.random() * 1000));
 
-    // correct tracker_poll URL to be a full URL if necessary
-    if (dl.tracker_poll && !dl.tracker_poll_corrected
-        && !/^(?:https?:|\/)/.test(dl.tracker_poll)) {
-        dl.tracker_poll = url_absolute(dl.tracker_poll, hoturl_absolute_base());
-        dl.tracker_poll_corrected = true;
+    // correct tracker_site URL to be a full URL if necessary
+    if (dl.tracker_site && !dl.tracker_site_corrected
+        && !/^(?:https?:|\/)/.test(dl.tracker_site)) {
+        dl.tracker_site = url_absolute(dl.tracker_site, hoturl_absolute_base());
+        dl.tracker_site_corrected = true;
     }
 
-    // kill storage listeners
-    if (comet_store_timeout) {
-        clearTimeout(comet_store_timeout);
-        comet_store_timeout = null;
-    }
-    if (comet_store_listen_key) {
-        jQuery(window).off("storage", comet_store_listen);
-        comet_store_listen_key = null;
-    }
-    if (comet_store_owned_key && comet_store_owned_key == comet_store_key())
-        comet_store_cancel();
-
-    // exit early if no tracker_poll or stopped
-    if (!dl.tracker_poll || (comet_stop_until && comet_stop_until >= at))
-        return false;
-    if (comet_sent_at || comet_store_check(at))
+    // exit early if already waiting, or another tab is waiting, or stopped
+    if (comet_sent_at || comet_store(0))
         return true;
+    if (!dl.tracker_site || (comet_stop_until && comet_stop_until >= at))
+        return false;
 
     // make the request
     comet_sent_at = at;
-    if (window.localStorage && window.JSON) {
-        comet_store_owned_key = comet_store_key();
-        comet_store_refresh();
-        comet_store_refresh_interval = setInterval(comet_store_refresh, 5000);
-    }
 
     function complete(xhr, status) {
         var now = (new Date).getTime();
@@ -670,16 +674,17 @@ function comet_tracker() {
             // errors after long delays are likely timeouts -- nginx
             // or Chrome shut down the long poll
             comet_tracker();
-        else if (++comet_nerrors < 3)
+        else if (++comet_nerrors < 3) {
             setTimeout(comet_tracker, 128 << Math.min(comet_nerrors, 12));
-        else {
+            comet_store(-1);
+        } else {
             comet_stop_until = now + 10000 * Math.min(comet_nerrors, 60);
             reload();
         }
     }
 
     jQuery.ajax({
-        url: hoturl_add(dl.tracker_poll, "timeout=" + timeout),
+        url: hoturl_add(dl.tracker_site, "poll=" + encodeURIComponent(dl.tracker_status || "off") + "&timeout=" + timeout),
         timeout: timeout + 2000, cache: false, dataType: "json",
         complete: complete
     });
@@ -696,6 +701,8 @@ function load(dlx, is_initial) {
     display_main(is_initial);
     if (dl.tracker || has_tracker)
         display_tracker();
+    if (had_tracker_at)
+        comet_store(1);
     if (!reload_timeout) {
         var t;
         if (is_initial && $$("clock_drift_container"))

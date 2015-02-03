@@ -2266,12 +2266,13 @@ class Contact {
         // add meeting tracker
         $tracker = null;
         if ($this->isPC && $Conf->setting("tracker")
-            && ($tracker = MeetingTracker::status($this)))
+            && ($tracker = MeetingTracker::status($this))) {
             $dl->tracker = $tracker;
-        if ($this->isPC && @$Opt["trackerCometSite"] && $tracker)
-            $dl->tracker_poll = $Opt["trackerCometSite"]
-                . "?conference=" . urlencode(Navigation::site_absolute(true))
-                . "&poll=" . urlencode(MeetingTracker::tracker_status($tracker));
+            $dl->tracker_status = MeetingTracker::tracker_status($tracker);
+        }
+        if ($this->isPC && @$Opt["trackerCometSite"])
+            $dl->tracker_site = $Opt["trackerCometSite"]
+                . "?conference=" . urlencode(Navigation::site_absolute(true));
 
         // permissions
         if ($prows) {
