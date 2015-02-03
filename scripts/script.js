@@ -353,6 +353,34 @@ function text_to_html(text) {
 }
 
 
+var wstorage;
+if (window.localStorage && window.JSON)
+    wstorage = function (is_session, key, value) {
+        var err;
+        try {
+            var s = is_session ? window.sessionStorage : window.localStorage;
+            if (typeof key === "undefined")
+                return !!s;
+            else if (typeof value === "undefined")
+                return s.getItem(key);
+            else if (value === null)
+                return s.removeItem(key);
+            else if (typeof value === "object")
+                return s.setItem(key, JSON.stringify(value));
+            else
+                return s.setItem(key, value);
+        } catch (err) {
+            return false;
+        }
+    };
+else
+    wstorage = function () { return false; };
+wstorage.json = function (is_session, key) {
+    var x = wstorage(is_session, key);
+    return x ? jQuery.parseJSON(x) : false;
+};
+
+
 window.hotcrp_deadlines = (function () {
 var dl, dlname, dltime, reload_timeout, redisplay_timeout;
 
@@ -435,12 +463,7 @@ function redisplay_main() {
 var has_tracker, had_tracker_at, tracker_timer;
 
 function window_trackerstate() {
-    var trackerstate = null;
-    if (window.sessionStorage) {
-        trackerstate = sessionStorage.getItem("hotcrp-tracking");
-        trackerstate = trackerstate && jQuery.parseJSON(trackerstate);
-    }
-    return trackerstate;
+    return wstorage.json(true, "hotcrp-tracking");
 }
 
 var tracker_map = [["is_manager", "Administrator"],
@@ -500,7 +523,7 @@ function display_tracker() {
         if (mnspace)
             mnspace.parentNode.removeChild(mnspace);
         if (window_trackerstate())
-            sessionStorage.removeItem("hotcrp-tracking");
+            wstorage(true, "hotcrp-tracking", null);
         has_tracker = false;
         return;
     }
@@ -551,12 +574,12 @@ function tracker(start) {
     var trackerstate, list = "";
     if (start < 0)
         Miniajax.post(hoturl_post("api", "track=stop"), load, 10000);
-    if (!window.sessionStorage || !window.JSON || start < 0)
+    if (!wstorage() || start < 0)
         return false;
     trackerstate = window_trackerstate();
     if (start && (!trackerstate || trackerstate[0] != siteurl)) {
         trackerstate = [siteurl, Math.floor(Math.random() * 100000)];
-        sessionStorage.setItem("hotcrp-tracking", JSON.stringify(trackerstate));
+        wstorage(true, "hotcrp-tracking", trackerstate);
     } else if (trackerstate && trackerstate[0] != siteurl)
         trackerstate = null;
     if (trackerstate) {
@@ -576,7 +599,7 @@ var comet_sent_at, comet_stop_until, comet_nerrors = 0, comet_nsuccess = 0;
 
 var comet_store = (function () {
     var stored_at, refresh_to;
-    if (!window.localStorage || !window.JSON)
+    if (!wstorage())
         return function () { return false; };
 
     function site_key() {
@@ -598,12 +621,12 @@ var comet_store = (function () {
         return x;
     }
     function site_value() {
-        return make_site_value(localStorage.getItem(site_key()));
+        return make_site_value(wstorage(false, site_key()));
     }
     function site_store() {
         stored_at = dl.now;
-        localStorage.setItem(site_key(), JSON.stringify({at: stored_at, tracker_status: dl.tracker_status,
-                                                         updated_at: (new Date).getTime() / 1000}));
+        wstorage(false, site_key(), {at: stored_at, tracker_status: dl.tracker_status,
+                                     updated_at: (new Date).getTime() / 1000});
         setTimeout(function () {
             if (comet_sent_at)
                 site_store();
@@ -634,7 +657,7 @@ var comet_store = (function () {
                 return (refresh_to = false);
         }
         if (action < 0 && x.owned)
-            localStorage.removeItem(site_key());
+            wstorage(false, site_key(), null);
     }
     return s;
 })();
@@ -2856,19 +2879,15 @@ function check_version(url, versionstr) {
         }
     }
     function updatecb(json) {
-        if (json && json.updates && window.JSON && JSON.stringify)
+        if (json && json.updates && window.JSON)
             Miniajax.get(siteurl + "checkupdates.php?data="
                          + encodeURIComponent(JSON.stringify(json)),
                          updateverifycb);
-        else if (json && json.status && window.localStorage)
-            window.localStorage.hotcrp_version_check = JSON.stringify({
-                at: (new Date).getTime(), version: versionstr
-            });
+        else if (json && json.status)
+            wstorage(false, "hotcrp_version_check", {at: (new Date).getTime(), version: versionstr});
     }
     try {
-        if (window.localStorage
-            && localStorage.hotcrp_version_check
-            && (x = jQuery.parseJSON(localStorage.hotcrp_version_check))
+        if ((x = wstorage.json(false, "hotcrp_version_check"))
             && x.at >= (new Date).getTime() - 600000 /* 10 minutes */
             && x.version == versionstr)
             return;
