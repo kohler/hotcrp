@@ -112,13 +112,18 @@ function hoturl_absolute_base() {
 
 (function () {
     var old_onerror = window.onerror, nerrors_logged = 0;
-    window.onerror = function (errormsg, url, lineno) {
-        if (++nerrors_logged <= 10)
+    window.onerror = function (errormsg, url, lineno, colno, error) {
+        if (++nerrors_logged <= 10) {
+            var x = {"error": errormsg, "url": url, "lineno": lineno};
+            if (colno)
+                x.colno = colno;
+            if (error && error.stack)
+                x.stack = error.stack;
             jQuery.ajax({
                 url: hoturl("api", "jserror=1"),
-                type: "POST", cache: false,
-                data: {"error": errormsg, "url": url, "lineno": lineno}
+                type: "POST", cache: false, data: x
             });
+        }
         return old_onerror ? old_onerror.apply(this, arguments) : false;
     };
 })();

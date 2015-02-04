@@ -56,11 +56,31 @@ if (@$_REQUEST["jserror"] && @$_REQUEST["error"]) {
         $url = $m[1];
     if (isset($_REQUEST["lineno"]) && $_REQUEST["lineno"] != "0")
         $url .= ":" . $_REQUEST["lineno"];
+    if (isset($_REQUEST["colno"]) && $_REQUEST["colno"] != "0")
+        $url .= ":" . $_REQUEST["colno"];
     if ($url != "")
         $url .= ": ";
+    $errormsg = trim($_REQUEST["error"]);
+    $suffix = "";
     if ($Me->email)
-        $_REQUEST["error"] .= ", user $Me->email";
-    error_log("JS error: $url" . $_REQUEST["error"]);
+        $suffix .= ", user $Me->email";
+    error_log("JS error: $url$errormsg$suffix");
+    if (isset($_REQUEST["stack"])) {
+        $stack = array();
+        foreach (explode("\n", $_REQUEST["stack"]) as $line) {
+            $line = trim($line);
+            if ($line === "" || $line === $errormsg || "Uncaught $line" === $errormsg)
+                continue;
+            if (preg_match('/\Aat (\S+) \((\S+)\)/', $line, $m))
+                $line = $m[1] . "@" . $m[2];
+            else if (substr($line, 0, 1) === "@")
+                $line = substr($line, 1);
+            else if (substr($line, 0, 3) === "at ")
+                $line = substr($line, 3);
+            $stack[] = $line;
+        }
+        error_log("JS error: {$url}via " . join(" ", $stack));
+    }
 }
 
 $j->ok = true;
