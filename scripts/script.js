@@ -353,7 +353,7 @@ function text_to_html(text) {
 }
 
 
-var wstorage;
+var wstorage = function () { return false; };
 try {
     if (window.localStorage && window.JSON)
         wstorage = function (is_session, key, value) {
@@ -373,8 +373,7 @@ try {
                 return false;
             }
         };
-} finally {
-    wstorage = wstorage || function () { return false; };
+} catch (err) {
 }
 wstorage.json = function (is_session, key) {
     var x = wstorage(is_session, key);
