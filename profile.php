@@ -300,7 +300,7 @@ function parseBulkFile($text, $filename) {
 
         $ustatus = new UserStatus;
         if (($saved_user = save_user($cj, $ustatus)))
-            $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">"
+            $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">"
                 . Text::user_html_nolink($saved_user) . "</a>";
         else
             foreach ($ustatus->error_messages() as $e)
@@ -343,7 +343,7 @@ else if (isset($_REQUEST["register"]) && $newProfile
         $Conf->errorMsg("<div>" . join("</div><div style='margin-top:0.5em'>", $UserStatus->error_messages()) . "</div>");
     else {
         if ($newProfile)
-            $Conf->confirmMsg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($Acct->email)) . "\">" . Text::user_html_nolink($Acct) . "</a>. A password has been emailed to that address. You may now create another account.");
+            $Conf->confirmMsg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . Text::user_html_nolink($saved_user) . "</a>. A password has been emailed to that address. You may now create another account.");
         else {
             $Conf->confirmMsg("Account profile updated.");
             if ($Acct->contactId == $Me->contactId)
