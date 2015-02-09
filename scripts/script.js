@@ -1413,9 +1413,10 @@ var vismap = {rev: "hidden from authors",
               admin: "shown only to administrators"};
 var cmts = {}, cmtcontainer = null;
 var idctr = 0, resp_rounds = {};
+var detwiddle = new RegExp("^" + (hotcrp_user.cid ? hotcrp_user.cid : "") + "~");
 
 function comment_identity_time(cj) {
-    var t = [], res = [], x, i;
+    var t = [], res = [], x, i, tag;
     if (cj.ordinal)
         t.push('<div class="cmtnumhead"><a class="qq" href="#comment'
                + cj.cid + '"><span class="cmtnumat">@</span><span class="cmtnumnum">'
@@ -1432,8 +1433,10 @@ function comment_identity_time(cj) {
         t.push('<div class="cmttime">' + cj.modified_at_text + '</div>');
     if (!cj.response && cj.tags) {
         x = [];
-        for (i in cj.tags)
-            x.push('<a class="qq" href="' + papercomment.commenttag_search_url.replace(/\$/g, encodeURIComponent(cj.tags[i])) + '">#' + cj.tags[i] + '</a>');
+        for (i in cj.tags) {
+            tag = cj.tags[i].replace(detwiddle, "~");
+            x.push('<a class="qq" href="' + papercomment.commenttag_search_url.replace(/\$/g, encodeURIComponent(tag)) + '">#' + tag + '</a>');
+        }
         t.push('<div class="cmttags">' + x.join(" ") + '</div>');
     }
     if (!cj.response && (i = vismap[cj.visibility]))
@@ -1541,9 +1544,11 @@ function make_update_words(jq, wlimit) {
 }
 
 function activate_editing(j, cj) {
-    var elt;
+    var elt, tags = [], i;
     j.find("textarea").text(cj.text || "").autogrow();
-    j.find("input[name=commenttags]").val((cj.tags || []).join(" "));
+    for (i in cj.tags || [])
+        tags.push(cj.tags[i].replace(detwiddle, "~"));
+    j.find("input[name=commenttags]").val(tags.join(" "));
     if ((elt = j.find("input[name=visibility][value=" + (cj.visibility || "rev") + "]")[0]))
         elt.checked = true;
     if ((elt = j.find("input[name=blind]")[0]) && (!cj.visibility || cj.blind))

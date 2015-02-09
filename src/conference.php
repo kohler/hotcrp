@@ -2041,6 +2041,8 @@ class Conference {
             $huser->email = $Me->email;
         if ($Me && $Me->is_pclike())
             $huser->is_pclike = true;
+        if ($Me && $Me->has_database_account())
+            $huser->cid = $Me->contactId;
         $this->scriptStuff .= ";hotcrp_user=" . json_encode($huser);
 
         $pid = @$_REQUEST["paperId"];
