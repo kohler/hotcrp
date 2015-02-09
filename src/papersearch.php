@@ -133,6 +133,10 @@ class SearchReviewValue {
     public $allowed = 0;
     public $view_score;
 
+    static public $opmap = array("=" => 2, "==" => 2, "!" => 5, "!=" => 5, "≠" => 5,
+                                 "<" => 1, "<=" => 3, "≤" => 3, "≥" => 6, ">=" => 6, ">" => 4);
+    static public $oparray = array(false, "<", "=", "<=", ">", "!=", ">=", false);
+
     function __construct($countexpr, $contacts = null, $fieldsql = null,
                          $view_score = null) {
         $this->countexpr = $countexpr;
@@ -142,13 +146,8 @@ class SearchReviewValue {
             $this->contactsql = sql_in_numeric_set($contacts);
         $this->_contactset = $contacts;
         $this->fieldsql = $fieldsql;
-        if (preg_match('/\A([!<>]?=|[<>])(-?\d+)\z/', $countexpr, $m)) {
-            if ($m[1] == "!=" || $m[1] == ">" || $m[1] == ">=")
-                $this->allowed |= 4;
-            if ($m[1] == "=" || $m[1] == ">=" || $m[1] == "<=")
-                $this->allowed |= 2;
-            if ($m[1] == "!=" || $m[1] == "<" || $m[1] == "<=")
-                $this->allowed |= 1;
+        if (preg_match('/\A([=!<>]=?|≠|≤|≥)(-?\d+)\z/', $countexpr, $m)) {
+            $this->allowed |= self::$opmap[$m[1]];
             $this->compar = (int) $m[2];
         }
         $this->view_score = $view_score;
@@ -169,15 +168,10 @@ class SearchReviewValue {
     }
     static function negateCountexpr($countexpr) {
         $t = new SearchReviewValue($countexpr);
-        if ($t->allowed) {
-            $x = array("", "<", "=", "<=", ">", "!=", ">=");
-            return $x[$t->allowed ^ 7] . $t->compar;
-        } else
+        if ($t->allowed)
+            return self::$oparray[$t->allowed ^ 7] . $t->compar;
+        else
             return $countexpr;
-    }
-    function onlyContact($contactid) {
-        return is_array($this->_contactset) && count($this->_contactset) == 1
-            && $this->_contactset[0] == $contactid;
     }
     function restrictContact($contactid) {
         if (!$this->_contactset)
@@ -195,6 +189,15 @@ class SearchReviewValue {
     }
     static function any() {
         return new SearchReviewValue(">0", null);
+    }
+    static function canonical_comparator($text) {
+        $text = trim($text);
+        if (($x = self::$opmap[$text]))
+            return self::$oparray[$x];
+        else if ($text === "")
+            return "=";
+        else
+            return false;
     }
 }
 
@@ -512,16 +515,6 @@ class PaperSearch {
             $this->_searchField($word, "au", $qt);
     }
 
-    static function _cleanCompar($compar) {
-        $compar = trim($compar);
-        if ($compar == "" || $compar == "==")
-            return "=";
-        else if ($compar == "!")
-            return "!=";
-        else
-            return $compar;
-    }
-
     static function _matchCompar($text, $quoted) {
         $text = trim($text);
         if (($text == "any" || $text == "" || $text == "yes") && !$quoted)
@@ -530,8 +523,8 @@ class PaperSearch {
             return array("", "=0");
         else if (ctype_digit($text))
             return array("", "=" . $text);
-        else if (preg_match('/\A(.*?)([<>!]|[<>!=]?=)\s*(\d+)\z/s', $text, $m))
-            return array($m[1], self::_cleanCompar($m[2]) . $m[3]);
+        else if (preg_match('/\A(.*?)([=!<>]=?|≠|≤|≥)\s*(\d+)\z/s', $text, $m))
+            return array($m[1], SearchReviewValue::canonical_comparator($m[2]) . $m[3]);
         else
             return array($text, ">0");
     }
@@ -543,16 +536,6 @@ class PaperSearch {
             return "t";
         else
             return null;
-    }
-
-    static function _typeCompar($compar, $value, $type) {
-        $compar = self::_cleanCompar($compar);
-        if ($value == 0 && $compar == "<")
-            return array("f", null);
-        else if ($value == 0 && $compar == ">=")
-            return array("t", null);
-        else
-            return array($type, $compar . $value);
     }
 
     private static function _pcContactIdsWithTag($tag) {
@@ -797,7 +780,7 @@ class PaperSearch {
         $contactword = "";
         $f = $rf->field($field);
 
-        if (preg_match('/\A(.+?[^:=<>!])([:=<>!])(.*)\z/s', $word, $m)
+        if (preg_match('/\A(.+?[^:=<>!])([:=<>!]|≠|≤|≥)(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
             $contacts = $this->_reviewerMatcher($m[1], $quoted, false);
             $word = ($m[2] == ":" ? $m[3] : $m[2] . $m[3]);
@@ -809,10 +792,10 @@ class PaperSearch {
                 $value = "$field>0";
             else if ($word == "none")
                 $value = "$field=0";
-            else if (preg_match('/\A(\d*?)([<>]?=?)?\s*([A-Za-z]|\d+)\z/s', $word, $m)) {
+            else if (preg_match('/\A(\d*?)([=!<>]=?|≠|≤|≥)?\s*([A-Za-z]|\d+)\z/s', $word, $m)) {
                 if ($m[1] == "")
                     $m[1] = 1;
-                $m[2] = self::_cleanCompar($m[2]);
+                $m[2] = SearchReviewValue::canonical_comparator($m[2]);
                 if ($f->option_letter != (ctype_digit($m[3]) == false))
                     $value = "$field=-1"; // XXX
                 else {
@@ -882,14 +865,14 @@ class PaperSearch {
 
     private function _search_revpref($word, &$qt, $quoted) {
         $contacts = null;
-        if (preg_match('/\A(.*?[^:=<>!])([:=<>!])(.*)\z/s', $word, $m)
+        if (preg_match('/\A(.*?[^:=<>!])([:=!<>]|≠|≤|≥)(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
             $contacts = $this->_reviewerMatcher($m[1], $quoted, true,
                                                 !$this->privChair);
             $word = ($m[2] == ":" ? $m[3] : $m[2] . $m[3]);
         }
 
-        if (!preg_match(',\A(\d*)\s*([<>!]|[<>!=]?=|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
+        if (!preg_match(',\A(\d*)\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
             || ($m[1] === "" && $m[3] === "" && $m[4] === "")) {
             $qt[] = new SearchTerm("f");
             return;
@@ -900,7 +883,7 @@ class PaperSearch {
         else if ($m[2] === "")
             list($m[1], $m[3]) = array("1", $m[1]);
         $mx = array((int) $m[1] ? ">=" . $m[1] : "=0");
-        $compar = self::_cleanCompar($m[2]);
+        $compar = SearchReviewValue::canonical_comparator($m[2]);
         if ($m[3] !== "")
             $mx[] = "preference" . $compar . $m[3];
         if ($m[4] !== "")
@@ -976,11 +959,11 @@ class PaperSearch {
                 return;
         }
 
-        if (preg_match('/\A([^#<>!=]+)(#?)([<>!=]?=?)(-?\d+)\z/', $word, $m)
+        if (preg_match('/\A([^#=!<>]+)(#?)([=!<>]=?|≠|≤|≥|)(-?\d+)\z/', $word, $m)
             && $m[1] != "any" && $m[1] != "none"
             && ($m[2] != "" || $m[3] != "")) {
             $tagword = $m[1];
-            $compar = self::_cleanCompar($m[3]) . $m[4];
+            $compar = SearchReviewValue::canonical_comparator($m[3]) . $m[4];
         } else {
             $tagword = $word;
             $compar = null;
@@ -1014,11 +997,11 @@ class PaperSearch {
     }
 
     function _search_options($word, &$qt, $report_error) {
-        if (preg_match('/\A(.*?)([:#][<>!=]?=?|[<>!=]=?)(.*)\z/', $word, $m)) {
+        if (preg_match('/\A(.*?)([:#](?:[=!<>]=?|≠|≤|≥|)|[=!<>]=?|≠|≤|≥)(.*)\z/', $word, $m)) {
             $oname = $m[1];
             if ($m[2][0] == ":" || $m[2][0] == "#")
                 $m[2] = substr($m[2], 1);
-            $ocompar = self::_cleanCompar($m[2]);
+            $ocompar = SearchReviewValue::canonical_comparator($m[2]);
             $oval = strtolower(simplify_whitespace($m[3]));
         } else {
             $oname = $word;
@@ -1137,7 +1120,7 @@ class PaperSearch {
     private function _searchReviewRatings($word, &$qt) {
         global $Conf;
         $this->reviewAdjust = true;
-        if (preg_match('/\A(.+?)\s*(|[<>!=]?=?)\s*(\d*)\z/', $word, $m)
+        if (preg_match('/\A(.+?)\s*(|[=!<>]=?|≠|≤|≥)\s*(\d*)\z/', $word, $m)
             && ($m[3] !== "" || $m[2] === "")
             && $Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
             // adjust counts
@@ -1148,7 +1131,7 @@ class PaperSearch {
             if ($m[2] === "")
                 $m[2] = ($m[3] == 0 ? "=" : ">=");
             else
-                $m[2] = self::_cleanCompar($m[2]);
+                $m[2] = SearchReviewValue::canonical_comparator($m[2]);
             $nqt = count($qt);
 
             // resolve rating type
@@ -1293,7 +1276,7 @@ class PaperSearch {
             return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
         } else if (substr($word, 0, 1) == "#") {
             $re = '/\A#' . ($this->privChair ? '(?:[\w@.]+~)?' : '')
-                . TAG_REGEX_OPTVALUE . '[#<>!=\d]*\z/';
+                . TAG_REGEX_OPTVALUE . '[#=!<>\d]*\z/';
             if (preg_match($re, $word, $m)) {
                 $qe = $this->_searchQueryWord("tag:" . $word, false);
                 if (!$qe->isfalse())
@@ -1302,7 +1285,7 @@ class PaperSearch {
         }
 
         // Allow searches like "ovemer>2"; parse as "ovemer:>2".
-        if (preg_match('/\A([-_A-Za-z0-9]+)([<>!=]=?[^:]+)\z/', $word, $m)) {
+        if (preg_match('/\A([-_A-Za-z0-9]+)((?:[=!<>]=?|≠|≤|≥)[^:]+)\z/', $word, $m)) {
             $qe = $this->_searchQueryWord($m[1] . ":" . $m[2], false);
             if (!$qe->isfalse())
                 return $qe;
