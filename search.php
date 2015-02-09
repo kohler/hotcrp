@@ -682,12 +682,17 @@ function downloadAllRevpref() {
     $result = $Conf->qe($q);
     $texts = array();
     $pc = pcMembers();
+    $has_conflict = false;
     while (($prow = PaperInfo::fetch($result, $Me))) {
         $out = array();
         foreach (array_intersect_key($prow->reviewer_preferences(), $pc) as $pcid => $pref)
             $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, unparse_preference($pref));
-        foreach (array_intersect_key($prow->conflicts(), $pc) as $pcid => $conf)
-            $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, "conflict");
+        foreach (array_intersect_key($prow->conflicts(), $pc) as $pcid => $conf) {
+            $k = $pc[$pcid]->sorter;
+            if (!isset($out[$k]))
+                $out[$k] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, "");
+            $out[$k][] = $has_conflict = "conflict";
+        }
         if (count($out)) {
             ksort($out);
             arrayappend($texts[$prow->paperId], $out);
@@ -695,7 +700,10 @@ function downloadAllRevpref() {
     }
 
     if (count($texts)) {
-        downloadCSV(SearchActions::reorder($texts), array("paper", "title", "name", "email", "preference"), "allprefs");
+        $headers = array("paper", "title", "name", "email", "preference");
+        if ($has_conflict)
+            $headers[] = "conflict";
+        downloadCSV(SearchActions::reorder($texts), $headers, "allprefs");
         exit;
     }
 }
