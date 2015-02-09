@@ -1463,7 +1463,7 @@ function fill_editing(hc, cj) {
     ++idctr;
     if (!edit_allowed(cj))
         bnote = '<br><span class="hint">(admin only)</span>';
-    hc.push('<form><div class="aahc">', '</div></form>');
+    hc.push('<form><div class="aahc" style="font-weight:normal;font-style:normal">', '</div></form>');
     hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60"></textarea>');
     if (!cj.response) {
         // tags
