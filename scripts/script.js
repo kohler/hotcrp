@@ -1554,6 +1554,7 @@ function activate_editing(j, cj) {
     if ((elt = j.find("input[name=blind]")[0]) && (!cj.visibility || cj.blind))
         elt.checked = true;
     j.find("button[name=submit]").click(submit_editor);
+    j.find("form").on("submit", submit_editor);
     j.find("button[name=cancel]").click(cancel_editor);
     j.find("button[name=delete]").click(delete_editor);
     j.find("button[name=savedraft]").click(savedraft_editor);
@@ -1621,8 +1622,9 @@ function save_editor(elt, action, really) {
     });
 }
 
-function submit_editor() {
+function submit_editor(evt) {
     save_editor(this, "submit");
+    return false;
 }
 
 function savedraft_editor() {
