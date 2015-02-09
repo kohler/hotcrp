@@ -631,4 +631,11 @@ function updateSchema($Conf) {
     if ($Conf->settings["allowPaperOption"] == 87
         && $Conf->ql("DROP TABLE IF EXISTS `ContactAddress`"))
         update_schema_version($Conf, 88);
+    if ($Conf->settings["allowPaperOption"] == 88
+        && $Conf->ql("alter table ContactInfo drop key `name`")
+        && $Conf->ql("alter table ContactInfo drop key `affiliation`")
+        && $Conf->ql("alter table ContactInfo drop key `email_3`")
+        && $Conf->ql("alter table ContactInfo drop key `firstName_2`")
+        && $Conf->ql("alter table ContactInfo drop key `lastName`"))
+        update_schema_version($Conf, 89);
 }

@@ -80,12 +80,7 @@ CREATE TABLE `ContactInfo` (
   UNIQUE KEY `contactId` (`contactId`),
   UNIQUE KEY `contactIdRoles` (`contactId`,`roles`),
   UNIQUE KEY `email` (`email`),
-  KEY `fullName` (`lastName`,`firstName`,`email`),
-  FULLTEXT KEY `name` (`lastName`,`firstName`,`email`),
-  FULLTEXT KEY `affiliation` (`affiliation`),
-  FULLTEXT KEY `email_3` (`email`),
-  FULLTEXT KEY `firstName_2` (`firstName`),
-  FULLTEXT KEY `lastName` (`lastName`)
+  KEY `fullName` (`lastName`,`firstName`,`email`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
@@ -518,7 +513,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 88);
+insert into Settings (name, value) values ('allowPaperOption', 89);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
