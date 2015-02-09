@@ -1171,9 +1171,9 @@ class PaperList extends BaseList {
                     $defsortname = null;
 
                 if ($defsortname == "tagordersort")
-                    $ftext = "<span class='hastitle' title='Sort by tag order'>#</span>";
+                    $ftext = '<span class="hastitle" title="Sort by tag order">#</span>';
                 else if ($defsortname == "searchsort")
-                    $ftext = "<span class='hastitle' title='Sort by search term order'>#</span>";
+                    $ftext = '<span class="hastitle" title="Sort by search term order">#</span>';
                 if (count($this->sorters)
                     && ((($fdef->name == $this->sorters[0]->type
                           || $fdef->name == "edit" . $this->sorters[0]->type)
