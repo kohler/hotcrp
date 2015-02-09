@@ -1678,19 +1678,17 @@ td.setrev_shortName input {
 a.pl_sort {
 	color: black;
 }
-a.pl_sort_def {
+a.pl_sort_def, a.pl_sort_def_rev {
 	padding-right: 11px;
 	margin-right: 0.4em;
-	background: url(../images/sortdown.png) 100% 75% no-repeat;
 	text-decoration: none;
 	color: #660000;
 }
+a.pl_sort_def {
+	background: url(../images/sortdown.png) 100% 75% no-repeat;
+}
 a.pl_sort_def_rev {
-	padding-right: 11px;
-	margin-right: 0.4em;
 	background: url(../images/sortup.png) 100% 75% no-repeat;
-	text-decoration: none;
-	color: #660000;
 }
 
 tbody.pltable_colored > tr.pl {
