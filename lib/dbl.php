@@ -65,9 +65,12 @@ class Dbl {
             $dbsocket = ini_get("mysqli.default_socket");
 
         $dblink = new mysqli($dbhost, $dbuser, $dbpass, "", $dbport, $dbsocket);
-        if ($dblink && !mysqli_connect_errno() && $dblink->select_db($dbname))
+        if ($dblink && !mysqli_connect_errno() && $dblink->select_db($dbname)) {
             $dblink->set_charset("utf8");
-        else if ($dblink) {
+            // The necessity of the following line is explosively terrible
+            // (the default is 1024/!?))(U#*@$%&!U
+            $dblink->query("set group_concat_max_len=4294967295");
+        } else if ($dblink) {
             $dblink->close();
             $dblink = null;
         }
