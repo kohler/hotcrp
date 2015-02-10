@@ -9,8 +9,9 @@ class Contact {
     public $contactId = 0;
     public $contactDbId = 0;
     private $cid;               // for forward compatibility
-    var $firstName = "";
-    var $lastName = "";
+    public $firstName = "";
+    public $lastName = "";
+    public $unaccentedName = "";
     var $email = "";
     var $preferredEmail = "";
     var $sorter = "";
@@ -78,6 +79,12 @@ class Contact {
             $name = Text::analyze_name($user);
         $this->firstName = (string) @$name->firstName;
         $this->lastName = (string) @$name->lastName;
+        if (isset($user->unaccentedName))
+            $this->unaccentedName = $user->unaccentedName;
+        else if (isset($name->unaccentedName))
+            $this->unaccentedName = $name->unaccentedName;
+        else
+            $this->unaccentedName = Text::unaccented_name($name);
         foreach (array("email", "preferredEmail", "affiliation", "voicePhoneNumber") as $k)
             if (isset($user->$k))
                 $this->$k = simplify_whitespace($user->$k);
@@ -146,8 +153,10 @@ class Contact {
                 $c->sorter = trim("$m[1] $c->firstName $m[0] $c->email");
             else
                 $c->sorter = trim("$c->lastName $c->firstName $c->email");
+            if (preg_match('/[\x80-\xFF]/', $c->sorter))
+                $c->sorter = UnicodeHelper::deaccent($c->sorter);
         } else
-            $c->sorter = trim("$c->firstName $c->lastName $c->email");
+            $c->sorter = trim("$c->unaccentedName $c->email");
     }
 
     static public function compare($a, $b) {
@@ -509,6 +518,7 @@ class Contact {
         $this->cid = $this->contactId;
         $this->firstName = simplify_whitespace($this->firstName);
         $this->lastName = simplify_whitespace($this->lastName);
+        $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
         foreach (array("email", "preferredEmail", "affiliation", "voicePhoneNumber") as $k)
             if ($this->$k)
                 $this->$k = trim($this->$k);
@@ -551,6 +561,10 @@ class Contact {
                        "roles", "defaultWatch", "passwordTime") as $k) {
             $qf[] = "$k=?";
             $qv[] = $this->$k;
+        }
+        if ($Conf->sversion >= 90) {
+            $qf[] = "unaccentedName=?";
+            $qv[] = $this->unaccentedName;
         }
         $qf[] = "preferredEmail=?";
         $qv[] = $this->preferredEmail != "" ? $this->preferredEmail : null;
@@ -680,11 +694,14 @@ class Contact {
         $reg = (object) ($reg === true ? array() : $reg);
         $reg_keys = array("firstName", "lastName", "affiliation", "collaborators",
                           "voicePhoneNumber", "preferredEmail");
+        if ($Conf->sversion >= 90)
+            $reg_keys[] = "unaccentedName";
 
         // Set up registration
         $name = Text::analyze_name($reg);
         $reg->firstName = $name->firstName;
         $reg->lastName = $name->lastName;
+        $reg->unaccentedName = $name->unaccentedName;
 
         // Combine with information from contact database
         $cdb_user = null;

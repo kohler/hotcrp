@@ -41,8 +41,8 @@ class Text {
             return null;
     }
 
-    static function analyze_name_args($args) {
-        $ret = (object) array();
+    static function analyze_name_args($args, $ret = null) {
+        $ret = $ret ? : (object) array();
         $delta = 0;
         foreach ($args as $i => $v) {
             if (is_string($v) || is_bool($v)) {
@@ -76,7 +76,7 @@ class Text {
         foreach (self::$defaults as $k => $v)
             if (@$ret->$k === null)
                 $ret->$k = $v;
-        if ($ret->name && !$ret->firstName && !$ret->lastName)
+        if ($ret->name && $ret->firstName === "" && $ret->lastName === "")
             list($ret->firstName, $ret->lastName) =
                 self::split_name($ret->name);
         if ($ret->withMiddle && $ret->middleName) {
@@ -89,24 +89,29 @@ class Text {
             $ret->firstName = trim($ret->firstName . " " . $m[0]);
             $ret->lastName = $m[1];
         }
-        if (!$ret->lastName || !$ret->firstName)
+        if ($ret->lastName === "" || $ret->firstName === "")
             $ret->name = $ret->firstName . $ret->lastName;
         else if (@$ret->lastFirst)
             $ret->name = $ret->lastName . ", " . $ret->firstName;
         else
             $ret->name = $ret->firstName . " " . $ret->lastName;
+        if ($ret->lastName === "" || $ret->firstName === "")
+            $x = $ret->firstName . $ret->lastName;
+        else
+            $x = $ret->firstName . " " . $ret->lastName;
+        if (preg_match('/[\x80-\xFF]/', $x))
+            $x = UnicodeHelper::deaccent($x);
+        $ret->unaccentedName = $x;
         return $ret;
     }
 
     static function analyze_name(/* ... */) {
-        $a = func_get_args();
-        return self::analyze_name_args($a);
+        return self::analyze_name_args(func_get_args());
     }
 
     static function user_text(/* ... */) {
         // was contactText
-        $a = func_get_args();
-        $r = self::analyze_name_args($a);
+        $r = self::analyze_name_args(func_get_args());
         if ($r->name && $r->email)
             return "$r->name <$r->email>";
         else
@@ -115,8 +120,7 @@ class Text {
 
     static function user_html(/* ... */) {
         // was contactHtml
-        $a = func_get_args();
-        $r = self::analyze_name_args($a);
+        $r = self::analyze_name_args(func_get_args());
         $e = htmlspecialchars($r->email);
         if ($e && strpos($e, "@") !== false)
             $e = "&lt;<a class=\"maillink\" href=\"mailto:$e\">$e</a>&gt;";
@@ -129,8 +133,7 @@ class Text {
     }
 
     static function user_html_nolink(/* ... */) {
-        $a = func_get_args();
-        $r = self::analyze_name_args($a);
+        $r = self::analyze_name_args(func_get_args());
         if (($e = $r->email))
             $e = "&lt;" . htmlspecialchars($e) . "&gt;";
         if ($r->name)
@@ -141,8 +144,7 @@ class Text {
 
     static function name_text(/* ... */) {
         // was contactNameText
-        $a = func_get_args();
-        $r = self::analyze_name_args($a);
+        $r = self::analyze_name_args(func_get_args());
 	if ($r->nameAmbiguous && $r->name && $r->email)
             return "$r->name <$r->email>";
         else
@@ -151,15 +153,13 @@ class Text {
 
     static function name_html(/* ... */) {
         // was contactNameHtml
-        $a = func_get_args();
-        $x = call_user_func_array("Text::name_text", $a);
+        $x = call_user_func_array("Text::name_text", func_get_args());
         return htmlspecialchars($x);
     }
 
     static function user_email_to(/* ... */) {
         // was contactEmailTo
-        $a = func_get_args();
-        $r = self::analyze_name_args($a);
+        $r = self::analyze_name_args(func_get_args());
         if (!($e = $r->email))
             $e = "none";
         if (($n = $r->name)) {
@@ -185,8 +185,7 @@ class Text {
     }
 
     static function abbrevname_text(/* ... */) {
-        $a = func_get_args();
-        $r = self::analyze_name_args($a);
+        $r = self::analyze_name_args(func_get_args());
         $u = "";
         if ($r->lastName) {
             $t = $r->lastName;
@@ -201,8 +200,7 @@ class Text {
 
     static function abbrevname_html(/* ... */) {
         // was abbreviateNameHtml
-        $a = func_get_args();
-        $x = call_user_func_array("Text::abbrevname_text", $a);
+        $x = call_user_func_array("Text::abbrevname_text", func_get_args());
         return htmlspecialchars($x);
     }
 
@@ -236,6 +234,11 @@ class Text {
             return array($first, $last);
         } else
             return array("", trim($name));
+    }
+
+    public static function unaccented_name(/* ... */) {
+        $x = self::analyze_name_args(func_get_args());
+        return $x->unaccentedName;
     }
 
     public static function word_regex($word) {

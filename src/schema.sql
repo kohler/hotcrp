@@ -61,6 +61,7 @@ CREATE TABLE `ContactInfo` (
   `contactId` int(11) NOT NULL AUTO_INCREMENT,
   `firstName` varchar(60) NOT NULL DEFAULT '',
   `lastName` varchar(60) NOT NULL DEFAULT '',
+  `unaccentedName` varchar(120) NOT NULL DEFAULT '',
   `email` varchar(120) NOT NULL,
   `preferredEmail` varchar(120) DEFAULT NULL,
   `affiliation` varchar(2048) NOT NULL DEFAULT '',
@@ -513,7 +514,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 89);
+insert into Settings (name, value) values ('allowPaperOption', 90);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

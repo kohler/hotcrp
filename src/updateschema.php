@@ -155,6 +155,29 @@ function update_schema_transfer_address($Conf) {
     return true;
 }
 
+function update_schema_unaccented_name($Conf) {
+    if (!$Conf->ql("alter table ContactInfo add `unaccentedName` varchar(120) NOT NULL DEFAULT ''"))
+        return false;
+
+    $result = $Conf->ql("select contactId, firstName, lastName from ContactInfo");
+    if (!$result)
+        return false;
+
+    $qs = $qv = array();
+    while ($result && ($x = $result->fetch_row())) {
+        $qs[] = "update ContactInfo set unaccentedName=? where contactId=$x[0]";
+        $qv[] = Text::unaccented_name($x[1], $x[2]);
+    }
+    Dbl::free($result);
+
+    $q = Dbl::format_query_apply($Conf->dblink, join(";", $qs), $qv);
+    if (!$Conf->dblink->multi_query($q))
+        return false;
+    while ($Conf->dblink->next_result())
+        /* do nothing */;
+    return true;
+}
+
 function update_schema_version($Conf, $n) {
     if ($Conf->ql("update Settings set value=$n where name='allowPaperOption'")) {
         $Conf->settings["allowPaperOption"] = $n;
@@ -638,4 +661,7 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table ContactInfo drop key `firstName_2`")
         && $Conf->ql("alter table ContactInfo drop key `lastName`"))
         update_schema_version($Conf, 89);
+    if ($Conf->settings["allowPaperOption"] == 89
+        && update_schema_unaccented_name($Conf))
+        update_schema_version($Conf, 90);
 }

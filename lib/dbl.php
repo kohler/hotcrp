@@ -180,6 +180,11 @@ class Dbl {
         return self::format_query_args($dblink, $qstr, $argv);
     }
 
+    static function format_query_apply(/* [$dblink,] $qstr, [$argv] */) {
+        list($dblink, $qstr, $argv) = self::query_args(func_get_args(), self::F_APPLY);
+        return self::format_query_args($dblink, $qstr, $argv);
+    }
+
     static private function do_query($args, $flags) {
         list($dblink, $qstr, $argv) = self::query_args($args, $flags);
         if (!($flags & self::F_RAW))
