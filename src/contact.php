@@ -57,6 +57,8 @@ class Contact {
     public function __construct($trueuser = null) {
         if ($trueuser)
             $this->merge($trueuser);
+        else if ($this->contactId || $this->contactDbId)
+            $this->db_load();
     }
 
     static public function make($o) {
@@ -129,6 +131,26 @@ class Contact {
             $this->has_outstanding_review_ = $user->has_outstanding_review;
         if (isset($user->is_site_contact))
             $this->is_site_contact = $user->is_site_contact;
+    }
+
+    private function db_load() {
+        $this->contactId = $this->cid = (int) $this->contactId;
+        $this->contactDbId = (int) $this->contactDbId;
+        if ($this->unaccentedName === "")
+            $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
+        self::set_sorter($this);
+        if ($this->password)
+            $this->set_encoded_password($this->password);
+        if (isset($this->disabled))
+            $this->disabled = !!$this->disabled;
+        foreach (array("defaultWatch", "passwordTime") as $k)
+            $this->$k = (int) $this->$k;
+        if (!$this->activity_at && isset($this->lastLogin))
+            $this->activity_at = (int) $this->lastLogin;
+        if (isset($this->data) && $this->data)
+            $this->data_ = array_to_object_recursive($this->data);
+        if (isset($this->roles))
+            $this->assign_roles((int) $this->roles);
     }
 
     // begin changing contactId to cid
@@ -305,19 +327,17 @@ class Contact {
     static public function contactdb_find_by_email($email) {
         if (($cdb = self::contactdb())
             && ($result = Dbl::ql($cdb, "select * from ContactInfo where email=?", $email))
-            && ($row = $result->fetch_object()))
-            return new Contact($row);
-        else
-            return null;
+            && ($acct = $result->fetch_object("Contact")))
+            return $acct;
+        return null;
     }
 
     static public function contactdb_find_by_id($cid) {
         if (($cdb = self::contactdb())
             && ($result = Dbl::ql($cdb, "select * from ContactInfo where contactDbId=?", $cid))
-            && ($row = $result->fetch_object()))
-            return new Contact($row);
-        else
-            return null;
+            && ($acct = $result->fetch_object("Contact")))
+            return $acct;
+        return null;
     }
 
     public function contactdb_update() {
@@ -672,10 +692,8 @@ class Contact {
     }
 
     static function find_by_id($cid) {
-        $acct = new Contact;
-        if (!$acct->load_by_query("ContactInfo.contactId=" . (int) $cid))
-            return null;
-        return $acct;
+        $result = Dbl::qe("select ContactInfo.* from ContactInfo where contactId=?", $cid);
+        return $result ? $result->fetch_object("Contact") : null;
     }
 
     static function safe_registration($reg) {
@@ -762,18 +780,20 @@ class Contact {
     }
 
     static function find_by_email($email, $reg = false, $send = false) {
-        global $Conf, $Me, $Now;
-        $acct = new Contact;
+        global $Conf, $Me;
 
         // Lookup by email
         $email = trim($email ? $email : "");
-        if ($email != ""
-            && $acct->load_by_query("ContactInfo.email='" . sqlq($email) . "'"))
-            return $acct;
+        if ($email != "") {
+            $result = Dbl::qe("select ContactInfo.* from ContactInfo where email=?", $email);
+            if (($acct = $result ? $result->fetch_object("Contact") : null))
+                return $acct;
+        }
 
         // Not found: register
         if (!$reg || !validate_email($email))
             return null;
+        $acct = new Contact;
         $ok = $acct->register_by_email($email, $reg);
 
         // Log

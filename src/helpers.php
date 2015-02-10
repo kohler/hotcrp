@@ -1209,8 +1209,7 @@ function pcMembers() {
         $pc = array();
         $result = $Conf->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
         $by_name_text = array();
-        while (($row = edb_orow($result))) {
-            $row = Contact::make($row);
+        while ($result && ($row = $result->fetch_object("Contact"))) {
             $pc[$row->contactId] = $row;
             if ($row->firstName || $row->lastName) {
                 $name_text = Text::name_text($row);
