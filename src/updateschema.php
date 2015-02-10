@@ -173,8 +173,10 @@ function update_schema_unaccented_name($Conf) {
     $q = Dbl::format_query_apply($Conf->dblink, join(";", $qs), $qv);
     if (!$Conf->dblink->multi_query($q))
         return false;
-    while ($Conf->dblink->next_result())
-        /* do nothing */;
+    do {
+        if ($result = $Conf->dblink->store_result())
+            $result->free();
+    } while ($Conf->dblink->more_results() && $Conf->dblink->next_result());
     return true;
 }
 
