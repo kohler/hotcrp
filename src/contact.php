@@ -1833,7 +1833,8 @@ class Contact {
         global $Conf;
         $rights = $this->rights($prow);
         return $rights->allow_pc
-            && ($rights->allow_review
+            && ($rights->review_type > 0
+                || $rights->allow_administer
                 || $Conf->check_tracks($prow, $this, "assrev"));
     }
 
