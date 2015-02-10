@@ -175,10 +175,13 @@ class Contact {
                 $c->sorter = trim("$m[1] $c->firstName $m[0] $c->email");
             else
                 $c->sorter = trim("$c->lastName $c->firstName $c->email");
-            if (preg_match('/[\x80-\xFF]/', $c->sorter))
-                $c->sorter = UnicodeHelper::deaccent($c->sorter);
-        } else
+        } else if (isset($c->unaccentedName)) {
             $c->sorter = trim("$c->unaccentedName $c->email");
+            return;
+        } else
+            $c->sorter = trim("$c->firstName $c->lastName $c->email");
+        if (preg_match('/[\x80-\xFF]/', $c->sorter))
+            $c->sorter = UnicodeHelper::deaccent($c->sorter);
     }
 
     static public function compare($a, $b) {
