@@ -1209,6 +1209,7 @@ function pcMembers() {
         $pc = array();
         $result = $Conf->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
         $by_name_text = array();
+        $pctags = array("pc" => "pc");
         while ($result && ($row = $result->fetch_object("Contact"))) {
             $pc[$row->contactId] = $row;
             if ($row->firstName || $row->lastName) {
@@ -1217,28 +1218,27 @@ function pcMembers() {
                     $row->nameAmbiguous = $by_name_text[$name_text]->nameAmbiguous = true;
                 $by_name_text[$name_text] = $row;
             }
+            if ($row->contactTags)
+                foreach (explode(" ", $row->contactTags) as $t)
+                    if ($t !== "")
+                        $pctags[strtolower($t)] = $t;
         }
         uasort($pc, "Contact::compare");
+        ksort($pctags);
         $order = 0;
         foreach ($pc as $row) {
             $row->sort_position = $order;
             ++$order;
         }
-        $PcMembersCache = array($Conf->setting("pc"), @$Opt["sortByLastName"], $pc);
+        $PcMembersCache = array($Conf->setting("pc"), @$Opt["sortByLastName"], $pc, $pctags);
     }
     return $PcMembersCache[2];
 }
 
 function pcTags() {
-    $tags = array("pc" => "pc");
-    foreach (pcMembers() as $pc)
-        if (isset($pc->contactTags) && $pc->contactTags) {
-            foreach (explode(" ", $pc->contactTags) as $t)
-                if ($t !== "")
-                    $tags[strtolower($t)] = $t;
-        }
-    ksort($tags);
-    return $tags;
+    global $PcMembersCache;
+    pcMembers();
+    return $PcMembersCache[3];
 }
 
 function pcByEmail($email) {
