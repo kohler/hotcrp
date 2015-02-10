@@ -153,12 +153,17 @@ class SearchReviewValue {
         $this->view_score = $view_score;
     }
     function test($n) {
-        if ($n > $this->compar)
-            return ($this->allowed & 4) != 0;
-        else if ($n == $this->compar)
-            return ($this->allowed & 2) != 0;
+        return self::compare($n, $this->allowed, $this->compar);
+    }
+    static function compare($x, $compar, $y) {
+        if (!is_int($compar))
+            $compar = self::$opmap[$compar];
+        if ($x > $y)
+            return ($compar & 4) != 0;
+        else if ($x == $y)
+            return ($compar & 2) != 0;
         else
-            return ($this->allowed & 1) != 0;
+            return ($compar & 1) != 0;
     }
     public function conservative_countexpr() {
         if ($this->allowed & 1)
@@ -166,7 +171,7 @@ class SearchReviewValue {
         else
             return ($this->allowed & 2 ? ">=" : ">") . $this->compar;
     }
-    static function negateCountexpr($countexpr) {
+    static function negate_countexpr($countexpr) {
         $t = new SearchReviewValue($countexpr);
         if ($t->allowed)
             return self::$oparray[$t->allowed ^ 7] . $t->compar;
@@ -221,14 +226,144 @@ class SearchQueryInfo {
     }
 }
 
-class SearchContactMatch {
-    public $sql;
-    public $pc_only;
-    public $ids = null;
+class ContactSearchSet {
+    const F_SQL = 1;
+    const F_TAG = 2;
+    const F_PC = 4;
+    const F_QUOTED = 8;
 
-    public function __construct($sql, $pc_only = false) {
-        $this->sql = $sql;
-        $this->pc_only = $pc_only;
+    public $type;
+    public $text;
+    public $me_cid;
+    public $ids = false;
+    public $warn_html = false;
+
+    public function __construct($type, $text, $cid) {
+        $this->type = $type;
+        $this->text = $text;
+        $this->me_cid = $cid;
+        if ($this->type & self::F_SQL) {
+            $result = Dbl::qe("select contactId from ContactInfo where $text");
+            $this->ids = edb_first_columns($result);
+        }
+        if ($this->ids === false && (!($this->type & self::F_QUOTED) || $this->text == ""))
+            $this->ids = $this->check_simple_pc();
+        if ($this->ids === false && !($this->type & self::F_QUOTED) && ($this->type & self::F_TAG))
+            $this->ids = $this->check_pc_tag();
+        if ($this->ids === false)
+            $this->ids = $this->load();
+    }
+    private function check_simple_pc() {
+        if ($this->text == "" || strcasecmp($this->text, "pc") == 0)
+            return array_keys(pcMembers());
+        else if (strcasecmp($this->text, "me") == 0)
+            return array($this->me_cid);
+        return false;
+    }
+    private function check_pc_tag() {
+        $need = $neg = false;
+        $x = strtolower($this->text);
+        if (substr($x, 0, 1) === "-") {
+            $need = $neg = true;
+            $x = substr($x, 1);
+        }
+        if (substr($x, 0, 1) === "#") {
+            $need = true;
+            $x = substr($x, 1);
+        }
+
+        $pctags = pcTags();
+        if (isset($pctags[$x])) {
+            $a = array();
+            foreach (pcMembers() as $cid => $pc)
+                if (stripos($pc->contactTags, " $x ") !== false)
+                    $a[] = $cid;
+            if ($neg && ($this->type & self::F_PC))
+                return array_diff(array_keys(pcMembers()), $a);
+            else if (!$neg)
+                return $a;
+            else {
+                $result = Dbl::qe("select contactId from ContactInfo where contactId ?A", $a);
+                return edb_first_columns($result);
+            }
+        }
+
+        if ($need) {
+            $this->warn_html = "No such PC tag “" . htmlspecialchars($this->text) . "”.";
+            return array();
+        } else
+            return false;
+    }
+    private function load() {
+        if (strcasecmp($this->text, "anonymous") == 0) {
+            $result = Dbl::qe_raw("select contactId from ContactInfo where email regexp '^anonymous[0-9]*\$'");
+            return edb_first_columns($result);
+        }
+
+        // split name components
+        list($f, $l, $e) = Text::split_name($this->text, true);
+        if ($f === "" && $l === "" && strpos($e, "@") === false)
+            $n = $e;
+        else
+            $n = trim($f . " " . $l);
+
+        // generalize email
+        $estar = $e && strpos($e, "*") !== false;
+        if ($e && !$estar) {
+            if (preg_match('/\A(.*)@(.*?)((?:[.](?:com|net|edu|org|us|uk|fr|be|jp|cn))?)\z/', $e, $m))
+                $e = ($m[1] === "" ? "*" : $m[1]) . "@*" . $m[2] . ($m[3] ? : "*");
+            else
+                $e = "*$e*";
+        }
+
+        // contact database if not restricted to PC
+        $result = null;
+        if (!($this->type & self::F_PC)) {
+            $q = array();
+            if ($n !== "") {
+                $x = sqlq_for_like(UnicodeHelper::deaccent($n));
+                $q[] = "unaccentedName like '%" . preg_replace('/[\s*]+/', "%", $x) . "%'";
+            }
+            if ($e !== "") {
+                $x = sqlq_for_like($e);
+                $q[] = "email like '" . preg_replace('/[\s*]+/', "%", $x) . "'";
+            }
+            $result = Dbl::qe_raw("select firstName, lastName, unaccentedName, email, contactId from ContactInfo where " . join(" or ", $q));
+            $cs = array();
+            while ($result && ($row = $result->fetch_object("Contact")))
+                $cs[$row->contactId] = $row;
+        } else
+            $cs = pcMembers();
+
+        // filter results
+        $nreg = $ereg = null;
+        if ($n !== "")
+            $nreg = PaperSearch::analyze_field_preg($n);
+        if ($e !== "" && $estar)
+            $ereg = '{\A' . str_replace('\*', '.*', preg_quote($e)) . '\z}i';
+        else if ($e !== "") {
+            $ereg = str_replace('@\*', '@(?:|.*[.])', preg_quote($e));
+            $ereg = preg_replace('/\A\\\\\*/', '(?:.*[@.]|)', $ereg);
+            $ereg = '{\A' . preg_replace('/\\\\\*$/', '(?:[@.].*|)', $ereg) . '\z}i';
+        }
+
+        $ids = array();
+        foreach ($cs as $id => $acct)
+            if ($ereg && preg_match($ereg, $acct->email)) {
+                // exact email match trumps all else
+                if (strcasecmp($e, $acct->email) == 0)
+                    return array($id);
+                $ids[] = $id;
+            } else if ($nreg) {
+                $n = $acct->firstName === "" || $acct->lastName === "" ? "" : " ";
+                $n = $acct->firstName . $n . $acct->lastName;
+                if (PaperSearch::match_field_preg($nreg, $n, $acct->unaccentedName))
+                    $ids[] = $id;
+            }
+
+        if ($result)
+            Dbl::free($result);
+        return $ids;
     }
 }
 
@@ -465,12 +600,12 @@ class PaperSearch {
     // including "and", "or", and "not" expressions (which point at other
     // expressions).
 
-    static function _analyze_field_preg($t) {
-        if (is_object($t))
-            $word = $t->value;
+    static public function analyze_field_preg($reg) {
+        if (is_object($reg))
+            $word = $reg->value;
         else {
-            $word = $t;
-            $t = (object) array();
+            $word = $reg;
+            $reg = (object) array();
         }
 
         $word = preg_quote(preg_replace('/\s+/', " ", $word));
@@ -480,17 +615,26 @@ class PaperSearch {
         }
 
         if (preg_match("/[\x80-\xFF]/", $word))
-            $t->preg_utf8 = Text::utf8_word_regex($word);
+            $reg->preg_utf8 = Text::utf8_word_regex($word);
         else {
-            $t->preg_raw = Text::word_regex($word);
-            $t->preg_utf8 = Text::utf8_word_regex($word);
+            $reg->preg_raw = Text::word_regex($word);
+            $reg->preg_utf8 = Text::utf8_word_regex($word);
         }
-        return $t;
+        return $reg;
+    }
+
+    static public function match_field_preg($reg, $raw, $deacc) {
+        if (!isset($reg->preg_raw))
+            return !!preg_match('{' . $reg->preg_utf8 . '}ui', $raw);
+        else if ($deacc)
+            return !!preg_match('{' . $reg->preg_utf8 . '}ui', $deacc);
+        else
+            return !!preg_match('{' . $reg->preg_raw . '}i', $raw);
     }
 
     private function _searchField($word, $rtype, &$qt) {
         if (!is_array($word))
-            $extra = array("regex" => array($rtype, self::_analyze_field_preg($word)));
+            $extra = array("regex" => array($rtype, self::analyze_field_preg($word)));
         else
             $extra = null;
 
@@ -548,57 +692,31 @@ class PaperSearch {
         return $a;
     }
 
-    private function add_contact_match($sql, $pc_only = false) {
-        $ncm = count($this->contact_match);
-        $sql = simplify_whitespace($sql);
-        if (!$ncm || $this->contact_match[$ncm - 1]->sql !== $sql
-            || $this->contact_match[$ncm - 1]->pc_only !== $pc_only) {
-            $this->contact_match[] = new SearchContactMatch($sql, $pc_only);
-            ++$ncm;
-        }
-        return "\1" . ($ncm - 1) . "\1";
+    private function make_contact_match($type, $text, $me_cid) {
+        foreach ($this->contact_match as $i => $cm)
+            if ($cm->type === $type && $cm->text === $text
+                && $cm->me_cid === $me_cid)
+                return $cm;
+        return $this->contact_match[] = new ContactSearchSet($type, $text, $me_cid);
     }
 
     private function _reviewerMatcher($word, $quoted, $pc_only,
                                       $limited = false) {
-        if (!$quoted && ($word == "" || strcasecmp($word, "pc") == 0))
-            return array_keys(pcMembers());
-        else if (!$quoted && strcasecmp($word, "me") == 0) {
-            if ($this->_reviewer_fixed)
-                return array($this->reviewer_cid());
-            else
-                return array($this->cid);
-        }
-
-        $needtag = $negtag = false;
-        $tag = strtolower($word);
-        if (substr($tag, 0, 1) === "-" && !$quoted) {
-            $needtag = $negtag = true;
-            $tag = substr($tag, 1);
-        }
-        if (substr($tag, 0, 1) === "#" && !$quoted) {
-            $needtag = true;
-            $tag = substr($tag, 1);
-        }
-
-        if (!$quoted && $this->amPC) {
-            $pctags = pcTags();
-            if (isset($pctags[$tag])) {
-                $ids = self::_pcContactIdsWithTag($tag);
-                if ($negtag && $pc_only)
-                    return array_diff(array_keys(pcMembers()), $ids);
-                else if ($negtag)
-                    return $this->add_contact_match("\2contactId" . sql_not_in_numeric_set($ids));
-                else
-                    return $ids;
-            } else if ($needtag)
-                $this->warn("no such PC tag “" . htmlspecialchars($tag) . "”");
-        }
-
-        if ($needtag || $limited)
-            return array(-1);
+        $type = 0;
+        if ($pc_only)
+            $type |= ContactSearchSet::F_PC;
+        if ($quoted)
+            $type |= ContactSearchSet::F_QUOTED;
+        if (!$quoted && $this->amPC)
+            $type |= ContactSearchSet::F_TAG;
+        $me_cid = $this->_reviewer_fixed ? $this->reviewer_cid() : $this->cid;
+        $scm = $this->make_contact_match($type, $word, $me_cid);
+        if ($scm->warn_html)
+            $this->warn($scm->warn_html);
+        if (count($scm->ids))
+            return $scm->ids;
         else
-            return $this->add_contact_match(sqlq_for_like($word), $pc_only);
+            return array(-1);
     }
 
     private function _one_pc_matcher($text, $quoted) {
@@ -894,7 +1012,7 @@ class PaperSearch {
         $scratch = new SearchReviewValue($mx[1]);
         if ($scratch->test(0))
             foreach ($mx as &$mxv)
-                $mxv = SearchReviewValue::negateCountexpr($mxv);
+                $mxv = SearchReviewValue::negate_countexpr($mxv);
 
         // PC members can only search their own preferences; we enforce
         // this restriction below in clauseTermSetRevpref.
@@ -921,14 +1039,14 @@ class PaperSearch {
         $twiddle = strpos($tagword, "~");
         if ($this->privChair && $twiddle > 0) {
             $c = substr($tagword, 0, $twiddle);
-            if ($c === "me")
+            if (strcasecmp($c, "me") == 0)
                 $twiddlecid = $this->cid;
             else
                 $twiddlecid = matchContact(pcMembers(), null, null, $c);
             if ($twiddlecid == -2)
-                $this->warn("“" . htmlspecialchars($c) . "” matches no PC member.");
+                $this->warn("“" . htmlspecialchars($c) . "” doesn’t match a PC email.");
             else if ($twiddlecid <= 0)
-                $this->warn("“" . htmlspecialchars($c) . "” matches more than one PC member; be more specific to disambiguate.");
+                $this->warn("“" . htmlspecialchars($c) . "” matches more than one PC email; be more specific to disambiguate.");
             $tagword = substr($tagword, $twiddle);
         } else if ($twiddle === 0)
             $twiddlecid = ($tagword[1] === "~" ? "" : $this->cid);
@@ -1935,11 +2053,6 @@ class PaperSearch {
                 $v = $qe->value->contactsql;
                 if ($v[0] == "=")
                     $this->_reviewer = (int) substr($v, 1);
-                else if ($v[0] == "\1") {
-                    $v = (int) substr($v, 1, strpos($v, "\1", 1) - 1);
-                    if (count($this->contact_match[$v]->ids) == 1)
-                        $this->_reviewer = $this->contact_match[$v]->ids[0];
-                }
             } else
                 $this->_reviewer = null;
         }
@@ -2412,14 +2525,8 @@ class PaperSearch {
         }
 
         if (!isset($t->preg_utf8))
-            self::_analyze_field_preg($t);
-
-        if (!isset($t->preg_raw))
-            return !!preg_match('{' . $t->preg_utf8 . '}ui', $row->$field);
-        else if ($row->$field_deaccent)
-            return !!preg_match('{' . $t->preg_utf8 . '}ui', $row->$field_deaccent);
-        else
-            return !!preg_match('{' . $t->preg_raw . '}i', $row->$field);
+            self::analyze_field_preg($t);
+        return self::match_field_preg($t, $row->$field, $row->$field_deaccent);
     }
 
     function _clauseTermCheck($t, $row) {
@@ -2469,8 +2576,6 @@ class PaperSearch {
                         $ans = $row->$fieldname < substr($expr, 1);
                     else if ($expr[0] == '>')
                         $ans = $row->$fieldname > substr($expr, 1);
-                    else if ($expr[0] == "\1")
-                        $ans = array_search($row->$fieldname, $this->contact_match[substr($expr, 1, strpos($expr, "\1", 1) - 1)]->ids) !== false;
                     else
                         $ans = false;
                 }
@@ -2644,39 +2749,6 @@ class PaperSearch {
                 $sqi->add_column("paperBlind", "Paper.blind");
         }
 
-        // search contacts
-        if (count($this->contact_match)) {
-            $qterm = array();
-            foreach ($this->contact_match as $cm) {
-                if ($cm->sql[0] == "\2")
-                    $qm = "(" . substr($cm->sql, 1) . ")";
-                else if (($pos = strpos($cm->sql, "@")) !== false)
-                    $qm = "(email like '" . substr($cm->sql, 0, $pos + 1) . "%" . substr($cm->sql, $pos + 1) . "%')";
-                else if (strcasecmp($cm->sql, "anonymous") == 0)
-                    $qm = "(email regexp '^anonymous[0-9]*\$')";
-                else if (preg_match('/\A(.*?)\s*([,\s])\s*(.*)\z/', $cm->sql, $m)) {
-                    if ($m[2] == ",")
-                        $qm = "(firstName like '" . trim($m[3]) . "%' and lastName like '" . trim($m[1]) . "%')";
-                    else
-                        $qm = "(concat(firstName, ' ', lastName) like '%$cm->sql%')";
-                } else
-                    $qm = "(firstName like '%$cm->sql%' or lastName like '%$cm->sql%' or email like '%$cm->sql%')";
-                if ($cm->pc_only)
-                    $qm = "($qm and (roles&" . Contact::ROLE_PC . ")!=0)";
-                $qterm[] = $qm;
-                $cm->ids = array();
-            }
-            $q = "select ContactInfo.contactId, "
-                . (count($qterm) == 1 ? "true" : join(", ", $qterm))
-                . " from ContactInfo where " . join(" or ", $qterm);
-            //$Conf->infoMsg(Ht::pre_text_wrap($q));
-            $result = $Conf->q($q);
-            while (($row = edb_row($result)))
-                for ($i = 0; $i < count($this->contact_match); ++$i)
-                    if ($row[$i + 1])
-                        $this->contact_match[$i]->ids[] = (int) $row[0];
-        }
-
         // create query
         $q = "select ";
         foreach ($sqi->columns as $colname => $value)
@@ -2696,10 +2768,6 @@ class PaperSearch {
             $q .= "\n    where " . join("\n        and ", $filters);
         $q .= "\n    group by Paper.paperId";
 
-        // clean up contact matches
-        if (count($this->contact_match))
-            for ($i = 0; $i < count($this->contact_match); $i++)
-                $q = str_replace("\1$i\1", sql_in_numeric_set($this->contact_match[$i]->ids), $q);
         //$Conf->infoMsg(Ht::pre_text_wrap($q));
 
         // actually perform query

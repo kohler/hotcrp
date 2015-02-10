@@ -206,34 +206,35 @@ class Text {
 
     static function split_name($name, $with_email = false) {
         $name = simplify_whitespace($name);
+        $ret = array("", "");
         if ($with_email) {
+            $ret[2] = "";
             if (preg_match('%^\s*\"?(.*?)\"?\s*<([^<>]+)>\s*$%', $name, $m)
                 || preg_match('%^\s*\"(.*)\"\s+(\S+)\s*$%', $name, $m))
-                return array_merge(self::split_name($m[1]), array($m[2]));
+                list($name, $ret[2]) = array($m[1], $m[2]);
             else if (!preg_match('%^\s*(.*?)\s+(\S+)\s*$%', $name, $m))
                 return array("", "", trim($name));
-            else if (strpos($m[1], "@") !== false
-                     && strpos($m[2], "@") === false)
-                return array_merge(self::split_name($m[2]), array($m[1]));
-            else
-                return array_merge(self::split_name($m[1]), array($m[2]));
+            else if (strpos($m[2], "@") !== false)
+                list($name, $ret[2]) = array($m[1], $m[2]);
+            else if (strpos($m[1], "@") !== false)
+                list($name, $ret[2]) = array($m[2], $m[1]);
         }
 
         if (($p1 = strrpos($name, ",")) !== false) {
             $first = trim(substr($name, $p1 + 1));
-            if (!preg_match('@^(Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Esquire|Junior|Senior|Jr.?|Sr.?|I+)$@i', $first))
-                return array($first, trim(substr($name, 0, $p1)));
+            if (!preg_match('@^(Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Esquire|Junior|Senior|Jr.?|Sr.?|I+)$@i', $first)) {
+                list($ret[0], $ret[1]) = array($first, trim(substr($name, 0, $p1)));
+                return $ret;
+            }
         }
         if (preg_match('@[^\s,]+(\s+Jr\.?|\s+Sr\.?|\s+i+|\s+Ph\.?D\.?|\s+M\.?[SD]\.?)?(,.*)?\s*$@i', $name, $m)) {
-            $first = trim(substr($name, 0, strlen($name) - strlen($m[0])));
-            $last = trim($m[0]);
-            if (preg_match('@^(\S.*?)\s+(v[oa]n|d[eu])$@i', $first, $m)) {
-                $first = $m[1];
-                $last = $m[2] . " " . $last;
-            }
-            return array($first, $last);
+            $ret[0] = trim(substr($name, 0, strlen($name) - strlen($m[0])));
+            $ret[1] = trim($m[0]);
+            if (preg_match('@^(\S.*?)\s+(v[oa]n|d[eu])$@i', $ret[0], $m))
+                list($ret[0], $ret[1]) = array($m[1], $m[2] . " " . $ret[1]);
         } else
-            return array("", trim($name));
+            $ret[1] = trim($name);
+        return $ret;
     }
 
     public static function unaccented_name(/* ... */) {
