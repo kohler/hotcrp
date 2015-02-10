@@ -136,7 +136,7 @@ function __autoload($class_name) {
                                "CommentInfo" => "src/commentinfo.php",
                                "CommentViewState" => "src/commentinfo.php",
                                "Conflict" => "src/conflict.php",
-                               "ContactSearchSet" => "src/papersearch.php",
+                               "ContactSearch" => "src/papersearch.php",
                                "Countries" => "lib/countries.php",
                                "CsvGenerator" => "lib/csv.php",
                                "CsvParser" => "lib/csv.php",

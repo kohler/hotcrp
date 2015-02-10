@@ -1235,10 +1235,13 @@ function pcMembers() {
     return $PcMembersCache[2];
 }
 
-function pcTags() {
+function pcTags($tag = null) {
     global $PcMembersCache;
     pcMembers();
-    return $PcMembersCache[3];
+    if ($tag === null)
+        return $PcMembersCache[3];
+    else
+        return isset($PcMembersCache[3][strtolower($tag)]);
 }
 
 function pcByEmail($email) {

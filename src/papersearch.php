@@ -133,7 +133,7 @@ class SearchReviewValue {
     public $allowed = 0;
     public $view_score;
 
-    static public $opmap = array("=" => 2, "==" => 2, "!" => 5, "!=" => 5, "≠" => 5,
+    static public $opmap = array("#" => 2, "=" => 2, "==" => 2, "!" => 5, "!=" => 5, "≠" => 5,
                                  "<" => 1, "<=" => 3, "≤" => 3, "≥" => 6, ">=" => 6, ">" => 4);
     static public $oparray = array(false, "<", "=", "<=", ">", "!=", ">=", false);
 
@@ -226,7 +226,7 @@ class SearchQueryInfo {
     }
 }
 
-class ContactSearchSet {
+class ContactSearch {
     const F_SQL = 1;
     const F_TAG = 2;
     const F_PC = 4;
@@ -252,6 +252,13 @@ class ContactSearchSet {
             $this->ids = $this->check_pc_tag();
         if ($this->ids === false)
             $this->ids = $this->load();
+    }
+    static function lookup($type, $text, $cid) {
+        $css = new ContactSearch($type, $text, $cid);
+        return $css->ids;
+    }
+    static function lookup_pc($text, $cid) {
+        return self::lookup(self::F_PC | self::F_TAG, $text, $cid);
     }
     private function check_simple_pc() {
         if ($this->text == "" || strcasecmp($this->text, "pc") == 0)
@@ -295,7 +302,8 @@ class ContactSearchSet {
             return false;
     }
     private function load() {
-        if (strcasecmp($this->text, "anonymous") == 0) {
+        if (strcasecmp($this->text, "anonymous") == 0
+            && !($this->type & self::F_PC)) {
             $result = Dbl::qe_raw("select contactId from ContactInfo where email regexp '^anonymous[0-9]*\$'");
             return edb_first_columns($result);
         }
@@ -697,18 +705,18 @@ class PaperSearch {
             if ($cm->type === $type && $cm->text === $text
                 && $cm->me_cid === $me_cid)
                 return $cm;
-        return $this->contact_match[] = new ContactSearchSet($type, $text, $me_cid);
+        return $this->contact_match[] = new ContactSearch($type, $text, $me_cid);
     }
 
     private function _reviewerMatcher($word, $quoted, $pc_only,
                                       $limited = false) {
         $type = 0;
         if ($pc_only)
-            $type |= ContactSearchSet::F_PC;
+            $type |= ContactSearch::F_PC;
         if ($quoted)
-            $type |= ContactSearchSet::F_QUOTED;
+            $type |= ContactSearch::F_QUOTED;
         if (!$quoted && $this->amPC)
-            $type |= ContactSearchSet::F_TAG;
+            $type |= ContactSearch::F_TAG;
         $me_cid = $this->_reviewer_fixed ? $this->reviewer_cid() : $this->cid;
         $scm = $this->make_contact_match($type, $word, $me_cid);
         if ($scm->warn_html)
@@ -824,6 +832,16 @@ class PaperSearch {
         }
     }
 
+    private function _search_comment_tag($rt, $tag, $rvalue, $round, &$qt) {
+        $value = new SearchReviewValue($rvalue, $tag !== "none" ? $tag : "any");
+        $term = new SearchTerm("cmttag", $rt, $value);
+        if ($round !== null)
+            $term->commentRound = $round;
+        if ($tag === "none")
+            $term = SearchTerm::combine("not", $term);
+        $qt[] = $term;
+    }
+
     function _search_comment($word, $ctype, &$qt, $quoted) {
         global $Conf;
         $m = self::_matchCompar($word, $quoted);
@@ -866,20 +884,15 @@ class PaperSearch {
         if ($ctype == "aucmt")
             $rt |= self::F_AUTHORCOMMENT;
         if (substr($m[0], 0, 1) === "#") {
-            $tag = $this->_check_tag(substr($m[0], 1), false);
-            if ($tag !== false) {
-                $rt |= ($this->privChair ? 0 : self::F_NONCONFLICT) | self::F_XVIEW;
-                $value = new SearchReviewValue($m[1], $tag !== "none" ? $tag : "any");
-                $term = new SearchTerm("cmttag", $rt, $value);
-                if ($round !== null)
-                    $term->commentRound = $round;
-                if ($tag === "none")
-                    $term = SearchTerm::combine("not", $term);
-                $qt[] = $term;
-            } else
+            $rt |= ($this->privChair ? 0 : self::F_NONCONFLICT) | self::F_XVIEW;
+            $tags = $this->_expand_tag(substr($m[0], 1), false);
+            foreach ($tags as $tag)
+                $this->_search_comment_tag($rt, $tag, $m[1], $round, $qt);
+            if (!count($tags)) {
                 $qt[] = new SearchTerm("f");
-            if ($tag === false || $tag === "none" || $tag === "any"
-                || !($pctags = pcTags()) || !isset($pctags[strtolower($tag)]))
+                return;
+            } else if (count($tags) !== 1 || $tags[0] === "none" || $tags[0] === "any"
+                       || !pcTags($tags[0]))
                 return;
         }
         $contacts = ($m[0] == "" ? null : $contacts = $this->_reviewerMatcher($m[0], $quoted, false));
@@ -1035,34 +1048,51 @@ class PaperSearch {
         }
     }
 
-    private function _check_tag($tagword, $allow_star) {
+    private function _expand_tag($tagword, $allow_star) {
+        // see also TagAssigner
+        $ret = array("");
         $twiddle = strpos($tagword, "~");
-        if ($this->privChair && $twiddle > 0) {
-            $c = substr($tagword, 0, $twiddle);
-            if (strcasecmp($c, "me") == 0)
-                $twiddlecid = $this->cid;
-            else
-                $twiddlecid = matchContact(pcMembers(), null, null, $c);
-            if ($twiddlecid == -2)
+        if ($this->privChair && $twiddle > 0 && !ctype_digit(substr($tagword, 0, $twiddle))) {
+            $ret = ContactSearch::lookup_pc(substr($tagword, 0, $twiddle), $this->cid);
+            if (count($ret) == 0)
                 $this->warn("“" . htmlspecialchars($c) . "” doesn’t match a PC email.");
-            else if ($twiddlecid <= 0)
-                $this->warn("“" . htmlspecialchars($c) . "” matches more than one PC email; be more specific to disambiguate.");
             $tagword = substr($tagword, $twiddle);
-        } else if ($twiddle === 0)
-            $twiddlecid = ($tagword[1] === "~" ? "" : $this->cid);
-        else
-            $twiddlecid = "";
+        } else if ($twiddle === 0 && $tagword[1] !== "~")
+            $ret[0] = $this->cid;
 
         $tagger = new Tagger($this->contact);
-        if ($tagger->check("#" . $tagword, Tagger::ALLOWRESERVED | Tagger::NOVALUE | ($allow_star ? Tagger::ALLOWSTAR : 0)))
-            return $twiddlecid . $tagword;
-        else {
+        if (!$tagger->check("#" . $tagword, Tagger::ALLOWRESERVED | Tagger::NOVALUE | ($allow_star ? Tagger::ALLOWSTAR : 0))) {
             $this->warn($tagger->error_html);
-            return false;
+            $ret = array();
+        }
+        foreach ($ret as &$x)
+            $x .= $tagword;
+        return $ret;
+    }
+
+    private function _search_one_tag($value, $keyword, $compar, &$qt) {
+        $extra = null;
+        if ($keyword == "order" || $keyword == "rorder" || !$keyword)
+            $extra = array("tagorder" => (object) array("tag" => $value, "reverse" => $keyword == "rorder"));
+        if (($starpos = strpos($value, "*")) !== false) {
+            $value = "\3 like '" . str_replace("*", "%", sqlq_for_like($value)) . "'";
+            if ($starpos == 0)
+                $value .= " and \3 not like '%~%'";
+        }
+        if ($compar)
+            $value = array($value, $compar);
+
+        if ($value !== "any" && $value !== "none")
+            $qt[] = new SearchTerm("tag", self::F_XVIEW, $value, $extra);
+        else {
+            $term = new SearchTerm("tag", self::F_XVIEW, "\3 is not null and (\3 not like '%~%' or \3 like '" . $this->cid . "~%'" . ($this->privChair ? " or \3 like '~~%'" : "") . ")", $extra);
+            if ($value === "none")
+                $term = SearchTerm::combine("not", $term);
+            $qt[] = $term;
         }
     }
 
-    function _searchTags($word, $keyword, &$qt) {
+    private function _search_tags($word, $keyword, &$qt) {
         global $Conf;
         if ($word[0] == "#")
             $word = substr($word, 1);
@@ -1087,31 +1117,11 @@ class PaperSearch {
             $compar = null;
         }
 
-        $value = $this->_check_tag($tagword, $keyword == "tag");
-        if ($value === false) {
+        $xtags = $this->_expand_tag($tagword, $keyword == "tag");
+        foreach ($xtags as $tag)
+            $this->_search_one_tag($tag, $keyword, $compar, $qt);
+        if (count($xtags) == 0)
             $qt[] = new SearchTerm("f");
-            return;
-        }
-
-        $extra = null;
-        if ($keyword == "order" || $keyword == "rorder" || !$keyword)
-            $extra = array("tagorder" => (object) array("tag" => $value, "reverse" => $keyword == "rorder"));
-        if (($starpos = strpos($value, "*")) !== false) {
-            $value = "\3 like '" . str_replace("*", "%", sqlq_for_like($value)) . "'";
-            if ($starpos == 0)
-                $value .= " and \3 not like '%~%'";
-        }
-        if ($compar)
-            $value = array($value, $compar);
-
-        if ($value !== "any" && $value !== "none")
-            $qt[] = new SearchTerm("tag", self::F_XVIEW, $value, $extra);
-        else {
-            $term = new SearchTerm("tag", self::F_XVIEW, "\3 is not null and (\3 not like '%~%' or \3 like '" . $this->cid . "~%'" . ($this->privChair ? " or \3 like '~~%'" : "") . ")", $extra);
-            if ($value === "none")
-                $term = SearchTerm::combine("not", $term);
-            $qt[] = $term;
-        }
     }
 
     function _search_options($word, &$qt, $report_error) {
@@ -1460,7 +1470,7 @@ class PaperSearch {
             }
         if (($keyword ? $keyword == "tag" : isset($this->fields["tag"]))
             || $keyword == "order" || $keyword == "rorder")
-            $this->_searchTags($word, $keyword, $qt);
+            $this->_search_tags($word, $keyword, $qt);
         if ($keyword == "topic") {
             $type = "topic";
             $value = null;
