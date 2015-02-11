@@ -1,0 +1,2 @@
+scripts/*.min.js -diff
+scripts/*.map -diff
