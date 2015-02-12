@@ -166,6 +166,7 @@ class AssignerContacts {
         $result = Dbl::qe("select contactId, roles, email, firstName, lastName from ContactInfo where contactId=?", $cid);
         if (!($c = edb_orow($result)))
             $c = (object) array("contactId" => $cid, "roles" => 0, "email" => "unknown contact $cid", "sorter" => "");
+        Dbl::free($result);
         return $this->store($c);
     }
     public function get_email($email) {
@@ -178,6 +179,7 @@ class AssignerContacts {
             $c = (object) array("contactId" => self::$next_fake_id, "roles" => 0, "email" => $email, "sorter" => $email);
             self::$next_fake_id -= 1;
         }
+        Dbl::free($result);
         return $this->store($c);
     }
     public function email_registered($email) {
@@ -840,11 +842,11 @@ class AssignmentSet {
             $tags = pcTags();
             $tag = $special[0] == "#" ? substr($special, 1) : $special;
             if (isset($tags[$tag]) || $tag === "pc") {
-                $result = array();
+                $ret = array();
                 foreach ($pc_by_email as $pc)
                     if ($tag === "pc" || $pc->has_tag($tag))
-                        $result[] = $pc;
-                return $result;
+                        $ret[] = $pc;
+                return $ret;
             }
         }
         // perhaps missing contact is OK
@@ -857,11 +859,11 @@ class AssignmentSet {
             return array((object) array("roles" => 0, "contactId" => null, "email" => $special, "sorter" => ""));
         } else if (($special === "ext" || $special === "external")
                    && $assigner->contact_set() === "reviewers") {
-            $result = array();
+            $ret = array();
             foreach ($this->reviewer_set() as $u)
                 if (!$u->is_pc_member())
-                    $result[] = $u;
-            return $result;
+                    $ret[] = $u;
+            return $ret;
         }
         // check PC list
         $cset = $assigner->contact_set();
@@ -983,7 +985,7 @@ class AssignmentSet {
                     continue;
                 }
             } else {
-                $this->error($csv->lineno(), "bad paper column");
+                $this->error($csv->lineno(), "Bad paper column");
                 continue;
             }
 
