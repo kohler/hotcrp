@@ -1107,7 +1107,7 @@ class PaperSearch {
                 return;
         }
 
-        if (preg_match('/\A([^#=!<>]+)(#?)([=!<>]=?|≠|≤|≥|)(-?\d+)\z/', $word, $m)
+        if (preg_match('/\A([^#=!<>\x80-\xFF]+)(#?)([=!<>]=?|≠|≤|≥|)(-?\d+)\z/', $word, $m)
             && $m[1] != "any" && $m[1] != "none"
             && ($m[2] != "" || $m[3] != "")) {
             $tagword = $m[1];
@@ -1404,7 +1404,7 @@ class PaperSearch {
             return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
         } else if (substr($word, 0, 1) == "#") {
             $re = '/\A#' . ($this->privChair ? '(?:[\w@.]+~)?' : '')
-                . TAG_REGEX_OPTVALUE . '[#=!<>\d]*\z/';
+                . TAG_REGEX_OPTVALUE . '(?:[#=!<>\d]|≠|≤|≥)*\z/';
             if (preg_match($re, $word, $m)) {
                 $qe = $this->_searchQueryWord("tag:" . $word, false);
                 if (!$qe->isfalse())
