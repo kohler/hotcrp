@@ -42,20 +42,30 @@ $assignset->parse($json->assignments_1, null, null);
 $assignset->execute();
 
 function assert_location() {
-    $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-    return " in " . $bt[1]["file"] . " on line " . $bt[1]["line"];
+    return caller_landmark(",^assert,");
 }
 
 function assert_eqq($a, $b) {
     if ($a !== $b)
         trigger_error("Assertion " . var_export($a, true) . " === " . var_export($b, true)
-                      . " failed" . assert_location(), E_USER_WARNING);
+                      . " failed at " . assert_location() . "\n", E_USER_WARNING);
 }
 
 function assert_neqq($a, $b) {
     if ($a === $b)
         trigger_error("Assertion " . var_export($a, true) . " !== " . var_export($b, true)
-                      . " failed" . assert_location(), E_USER_WARNING);
+                      . " failed at " . assert_location() . "\n", E_USER_WARNING);
+}
+
+function search_json($user, $text, $cols = "id") {
+    $pl = new PaperList(new PaperSearch($user, $text));
+    return $pl->text_json("id");
+}
+
+function assert_search_papers($user, $text, $result) {
+    if (is_array($result))
+        $result = join(" ", $result);
+    assert_eqq(join(" ", array_keys(search_json($user, $text))), $result);
 }
 
 echo "* Tests initialized.\n";

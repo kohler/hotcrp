@@ -108,9 +108,7 @@ $j = $pl->text_json("id title");
 assert_eqq(join(";", array_keys($j)), "1;6;13;15");
 
 // sorting works
-$pl = new PaperList(new PaperSearch($user_shenker, "au:berkeley sort:title"));
-$j = $pl->text_json("id title");
-assert_eqq(join(";", array_keys($j)), "15;13;1;6");
+assert_search_papers($user_shenker, "au:berkeley sort:title", "15 13 1 6");
 
 // correct conflict information returned
 $pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18"),
@@ -127,21 +125,15 @@ assert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
 assert(!@$j[1]->selconf && !@$j[2]->selconf && !@$j[3]->selconf && !@$j[4]->selconf && !@$j[5]->selconf
        && !@$j[15]->selconf && !@$j[16]->selconf && @$j[17]->selconf && !@$j[18]->selconf);
 
-$pl = new PaperList(new PaperSearch($user_shenker, "re:estrin"));
-$j = $pl->text_json("id");
-assert(join(";", array_keys($j)) == "4;8;18");
+assert_search_papers($user_shenker, "re:estrin", "4 8 18");
 
 // normals don't see conflicted reviews
-$pl = new PaperList(new PaperSearch($user_mgbaker, "re:estrin"));
-$j = $pl->text_json("id");
-assert(join(";", array_keys($j)) == "4;8");
+assert_search_papers($user_mgbaker, "re:estrin", "4 8");
 
 // make reviewer identity anonymous until review completion
 $Conf->save_setting("rev_open", 1);
 $Conf->save_setting("pc_seeblindrev", 1);
-$pl = new PaperList(new PaperSearch($user_mgbaker, "re:varghese"));
-$j = $pl->text_json("id");
-assert_eqq(join(";", array_keys($j)), "");
+assert_search_papers($user_mgbaker, "re:varghese", "");
 
 $revreq = array("overAllMerit" => 5, "reviewerQualification" => 4, "ready" => true);
 $rf = reviewForm();
@@ -149,9 +141,7 @@ $rf->save_review($revreq,
                  $Conf->reviewRow(array("paperId" => 1, "contactId" => $user_mgbaker->contactId)),
                  $Conf->paperRow(1, $user_mgbaker),
                  $user_mgbaker);
-$pl = new PaperList(new PaperSearch($user_mgbaker, "re:varghese"));
-$j = $pl->text_json("id");
-assert_eqq(join(";", array_keys($j)), "1");
+assert_search_papers($user_mgbaker, "re:varghese", "1");
 
 // check comment identity
 $comment1 = new CommentInfo(null, $paper1);
@@ -179,17 +169,31 @@ $Conf->save_setting("tracks", 1, "{\"green\":{\"assrev\":\"-red\"}}");
 $paper17 = $Conf->paperRow(17, $user_jon);
 assert(!$Conf->check_tracks($paper17, $user_jon, "assrev"));
 assert(!$user_jon->can_accept_review_assignment_ignore_conflict($paper17));
+assert(!$user_jon->can_accept_review_assignment($paper17));
 
 // check shepherd search visibility
 $paper11 = $Conf->paperRow(11, $user_chair);
 $paper12 = $Conf->paperRow(12, $user_chair);
 assert(PaperActions::set_shepherd($paper11, $user_estrin, $user_chair));
 assert(PaperActions::set_shepherd($paper12, $user_estrin, $user_chair));
-$pl = new PaperList(new PaperSearch($user_chair, "shep:any"));
-$j = $pl->text_json("id");
-assert_eqq(join(";", array_keys($j)), "11;12");
-$pl = new PaperList(new PaperSearch($user_shenker, "shep:any"));
-$j = $pl->text_json("id");
-assert_eqq(join(";", array_keys($j)), "11;12");
+assert_search_papers($user_chair, "shep:any", "11 12");
+assert_search_papers($user_shenker, "shep:any", "11 12");
+
+// tag searches
+assert_search_papers($user_chair, "#green", "3 9 13 17");
+Dbl::qe("insert into PaperTag (paperId,tag,tagIndex) values (1,?,10), (1,?,5), (2,?,3)",
+        $user_jon->cid . "~vote", $user_marina->cid . "~vote", $user_marina->cid . "~vote");
+assert_search_papers($user_jon, "#~vote", "1");
+assert_search_papers($user_jon, "#~vote≥10", "1");
+assert_search_papers($user_jon, "#~vote>10", "");
+assert_search_papers($user_jon, "#~vote=10", "1");
+assert_search_papers($user_jon, "#~vote<10", "");
+assert_search_papers($user_marina, "#~vote", "1 2");
+assert_search_papers($user_marina, "#~vote≥5", "1");
+assert_search_papers($user_marina, "#~vote>5", "");
+assert_search_papers($user_marina, "#~vote=5", "1");
+assert_search_papers($user_marina, "#~vote<5", "2");
+assert_search_papers($user_chair, "#marina~vote", "1 2");
+assert_search_papers($user_chair, "#red~vote", "1");
 
 echo "* Tests complete.\n";
