@@ -255,6 +255,16 @@ class Dbl {
             $result->close();
     }
 
+    // array of all first columns
+    static function fetch_first_columns($result) {
+        $x = array();
+        while ($result && ($row = $result->fetch_row()))
+            $x[] = $row[0];
+        if ($result)
+            $result->close();
+        return $x;
+    }
+
 }
 
 // number of rows returned by a select query, or 'false' if result is an error

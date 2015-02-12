@@ -244,7 +244,7 @@ class ContactSearch {
         $this->me_cid = $cid;
         if ($this->type & self::F_SQL) {
             $result = Dbl::qe("select contactId from ContactInfo where $text");
-            $this->ids = edb_first_columns($result);
+            $this->ids = Dbl::fetch_first_columns($result);
         }
         if ($this->ids === false && (!($this->type & self::F_QUOTED) || $this->text == ""))
             $this->ids = $this->check_simple_pc();
@@ -291,7 +291,7 @@ class ContactSearch {
                 return $a;
             else {
                 $result = Dbl::qe("select contactId from ContactInfo where contactId ?A", $a);
-                return edb_first_columns($result);
+                return Dbl::fetch_first_columns($result);
             }
         }
 
@@ -305,7 +305,7 @@ class ContactSearch {
         if (strcasecmp($this->text, "anonymous") == 0
             && !($this->type & self::F_PC)) {
             $result = Dbl::qe_raw("select contactId from ContactInfo where email regexp '^anonymous[0-9]*\$'");
-            return edb_first_columns($result);
+            return Dbl::fetch_first_columns($result);
         }
 
         // split name components
@@ -825,9 +825,7 @@ class PaperSearch {
             $qt[] = new SearchTerm("f");
         } else {
             $result = Dbl::qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")");
-            $contacts = array();
-            while (($row = edb_row($result)))
-                $contacts[] = $row[0];
+            $contacts = Dbl::fetch_first_columns($result);
             $qt[] = new SearchTerm("conflict", 0, new SearchReviewValue(">0", $contacts));
         }
     }
@@ -1036,9 +1034,10 @@ class PaperSearch {
     private function _search_formula($word, &$qt, $quoted) {
         if (preg_match('/\A[^(){}\[\]]+\z/', $word) && !$quoted
             && ($result = Dbl::qe("select * from Formula where name=?", $word))
-            && ($row = $result->fetch_object()))
+            && ($row = $result->fetch_object())) {
             $formula = new Formula($row);
-        else
+            Dbl::free($result);
+        } else
             $formula = new Formula($word);
         if ($formula->check())
             $qt[] = new SearchTerm("formula", self::F_XVIEW, $formula);
@@ -2189,16 +2188,14 @@ class PaperSearch {
             $npr_constraint = "true";
         // This query supposedly returns those reviewIds whose ratings
         // are not visible to the current querier
-        $result = $Conf->q("select MPR.reviewId
+        $result = Dbl::qe("select MPR.reviewId
         from PaperReview as MPR
         left join (select paperId, count(reviewId) as numReviews from PaperReview where $npr_constraint and reviewNeedsSubmit<=0 group by paperId) as NPR on (NPR.paperId=MPR.paperId)
         left join (select paperId, count(rating) as numRatings from PaperReview join ReviewRating using (reviewId) group by paperId) as NRR on (NRR.paperId=MPR.paperId)
         where MPR.contactId=$contactId
         and numReviews<=2
         and numRatings<=2");
-        while (($row = edb_row($result)))
-            $noratings[] = $row[0];
-        return $noratings;
+        return Dbl::fetch_first_columns($result);
     }
 
     private function _clauseTermSetRating(&$reviewtable, &$where, $rate) {
@@ -2821,6 +2818,7 @@ class PaperSearch {
             while (($row = $result->fetch_object()))
                 $this->_matches[] = (int) $row->paperId;
         $this->viewmap = $qe->get_float("view", array());
+        Dbl::free($result);
 
         // extract regular expressions and set _reviewer if the query is
         // about exactly one reviewer, and warn about contradictions
@@ -2933,12 +2931,12 @@ class PaperSearch {
     }
 
     function alternate_query() {
-        global $Conf;
         if ($this->q !== "" && $this->q[0] !== "#"
             && preg_match('/\A' . TAG_REGEX . '\z/', $this->q)) {
-            if ($this->q[0] === "~"
-                || (($result = $Conf->qe("select paperId from PaperTag where tag='" . sqlq($this->q) . "' limit 1"))
-                    && edb_row($result)))
+            if ($this->q[0] === "~")
+                return "#" . $this->q;
+            $result = Dbl::qe("select paperId from PaperTag where tag=? limit 1", $this->q);
+            if (count(Dbl::fetch_first_columns($result)))
                 return "#" . $this->q;
         }
         return false;

@@ -1575,7 +1575,9 @@ class Conference {
     }
 
     function paperRow($sel, $contact, &$whyNot = null) {
+        $ret = null;
         $whyNot = array();
+
         if (!is_array($sel))
             $sel = array("paperId" => $sel);
         if (isset($sel["paperId"]))
@@ -1593,14 +1595,16 @@ class Conference {
             $result = $this->q($q);
 
             if (!$result)
-                $whyNot['dbError'] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);
-            else if (edb_nrows($result) == 0)
-                $whyNot['noPaper'] = 1;
+                $whyNot["dbError"] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);
+            else if ($result->num_rows == 0)
+                $whyNot["noPaper"] = 1;
             else
-                return PaperInfo::fetch($result, $contact);
+                $ret = PaperInfo::fetch($result, $contact);
+
+            Dbl::free($result);
         }
 
-        return null;
+        return $ret;
     }
 
     function review_rows($q, $contact) {
@@ -1608,6 +1612,7 @@ class Conference {
         $rrows = array();
         while (($row = PaperInfo::fetch($result, $contact)))
             $rrows[$row->reviewId] = $row;
+        Dbl::free($result);
         return $rrows;
     }
 
@@ -1632,6 +1637,7 @@ class Conference {
             $row->threadHead = $r->commentId;
             $r->threadContacts[$cid] = 1;
         }
+        Dbl::free($result);
         foreach ($crows as $row)
             if ($row->threadHead != $row->commentId)
                 $row->threadContacts = $crows[$row->threadHead]->threadContacts;
@@ -1714,6 +1720,7 @@ class Conference {
         $x = array();
         while (($row = edb_orow($result)))
             $x[] = $row;
+        Dbl::free($result);
 
         if (isset($selector["array"]))
             return $x;
