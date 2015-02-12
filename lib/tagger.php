@@ -179,6 +179,15 @@ class TagInfo {
         return $t && $t->vote > 0 ? $t->vote : 0;
     }
 
+    public static function vote_base($tag) {
+        $dt = self::defined_tags();
+        if (!$dt->nvote || ($twiddle = strpos($tag, "~")) === false)
+            return false;
+        $tbase = substr(self::base($tag), $twiddle + 1);
+        $t = $dt->check($tbase);
+        return $t && $t->vote ? $tbase : false;
+    }
+
     public static function is_rank($tag) {
         $dt = self::defined_tags();
         $t = $dt->check(self::base($tag));

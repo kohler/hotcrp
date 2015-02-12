@@ -196,4 +196,20 @@ assert_search_papers($user_marina, "#~vote<5", "2");
 assert_search_papers($user_chair, "#marina~vote", "1 2");
 assert_search_papers($user_chair, "#red~vote", "1");
 
+// assign some tags using AssignmentSet interface
+$assignset = new AssignmentSet($Admin, true);
+$assignset->parse("paper,action,tag,index
+1-9,tag,g*#clear
+2,tag,green,1\n");
+assert_search_papers($user_chair, "#green", "3 9 13 17");
+$assignset->execute();
+assert_search_papers($user_chair, "#green", "2 13 17");
+
+$assignset = new AssignmentSet($Admin, true);
+$assignset->parse("paper,action,tag,index
+1,tag,~vote,clear
+2,tag,marina~vote,clear\n");
+$assignset->execute();
+assert_search_papers($user_chair, "#any~vote", "1");
+
 echo "* Tests complete.\n";

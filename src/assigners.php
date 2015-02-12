@@ -37,6 +37,8 @@ class AssignmentState {
     public $contact;
     public $tagger = null;
     public $lineno = null;
+    public $defaults = array();
+    public $prows = array();
     public function __construct($contact) {
         $this->contact = $contact;
     }
@@ -205,6 +207,9 @@ class Assigner {
     static function find($n) {
         return @self::$assigners[$n];
     }
+    function allow($user) {
+        return $user->privChair;
+    }
     function contact_set() {
         return "pc";
     }
@@ -256,10 +261,10 @@ class ReviewAssigner extends Assigner {
         }
         Dbl::free($result);
     }
-    function apply($pid, $contact, $req, $state, $defaults) {
+    function apply($pid, $contact, $req, $state) {
         $roundname = @$req["round"];
-        if ($roundname === null && $this->rtype > 0 && @$defaults["round"])
-            $roundname = $defaults["round"];
+        if ($roundname === null && $this->rtype > 0 && @$state->defaults["round"])
+            $roundname = $state->defaults["round"];
         if ($roundname && strcasecmp($roundname, "none") == 0)
             $roundname = "";
         else if ($roundname && (strcasecmp($roundname, "any") != 0 || $this->rtype > 0)) {
@@ -288,8 +293,8 @@ class ReviewAssigner extends Assigner {
             if (count($matches))
                 $revmatch["_rsubmitted"] = $matches[0]["_rsubmitted"];
             if ($rtype == REVIEW_EXTERNAL && !count($matches)
-                && @$defaults["extrev_notify"])
-                $revmatch["_notify"] = $defaults["extrev_notify"];
+                && @$state->defaults["extrev_notify"])
+                $revmatch["_notify"] = $state->defaults["extrev_notify"];
             $state->add($revmatch);
         } else
             // do not remove submitted reviews
@@ -297,7 +302,7 @@ class ReviewAssigner extends Assigner {
                 if ($r["_rsubmitted"])
                     $state->add($r);
     }
-    function realize($prow, $item, $cmap, $state) {
+    function realize($item, $cmap, $state) {
         return new ReviewAssigner($item["pid"], $cmap->get_id($item["cid"]),
                                   $item->deleted() ? 0 : $item["_rtype"],
                                   $item["_round"],
@@ -365,14 +370,14 @@ class LeadAssigner extends Assigner {
             $state->load(array("type" => $this->type, "pid" => +$row[0], "_cid" => +$row[1]));
         Dbl::free($result);
     }
-    function apply($pid, $contact, $req, $state, $defaults) {
+    function apply($pid, $contact, $req, $state) {
         $state->load_type($this->type, $this);
         $remcid = $this->isadd || !$contact->contactId ? null : $contact->contactId;
         $state->remove(array("type" => $this->type, "pid" => $pid, "_cid" => $remcid));
         if ($this->isadd && $contact->contactId)
             $state->add(array("type" => $this->type, "pid" => $pid, "_cid" => $contact->contactId));
     }
-    function realize($prow, $item, $cmap, $state) {
+    function realize($item, $cmap, $state) {
         return new LeadAssigner($item["type"], $item["pid"], $cmap->get_id($item["_cid"]),
                                 !$item->deleted());
     }
@@ -414,7 +419,7 @@ class ConflictAssigner extends Assigner {
             $state->load(array("type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]));
         Dbl::free($result);
     }
-    function apply($pid, $contact, $req, $state, $defaults) {
+    function apply($pid, $contact, $req, $state) {
         $state->load_type("conflict", $this);
         $res = $state->remove(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId));
         if (count($res) && $res[0]["_ctype"] >= CONFLICT_AUTHOR)
@@ -422,7 +427,7 @@ class ConflictAssigner extends Assigner {
         else if ($this->ctype)
             $state->add(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId, "_ctype" => $this->ctype));
     }
-    function realize($prow, $item, $cmap, $state) {
+    function realize($item, $cmap, $state) {
         return new ConflictAssigner($item["pid"], $cmap->get_id($item["cid"]),
                                     $item->deleted() ? 0 : $item["_ctype"]);
     }
@@ -444,6 +449,10 @@ class ConflictAssigner extends Assigner {
             Dbl::qe("delete from PaperConflict where paperId=$this->pid and contactId=$this->cid");
     }
 }
+
+// index "next" => take a step
+// index "seq" or "seqnext" => take a sequential step
+
 class TagAssigner extends Assigner {
     private $isadd;
     private $tag;
@@ -456,50 +465,158 @@ class TagAssigner extends Assigner {
         $this->index = $index;
         $this->tagger = $tagger;
     }
+    function allow($user) {
+        return $user->isPC;
+    }
     function allow_special_contact($cclass) {
         return true;
     }
     function load_keys() {
-        return array("pid", "tag");
+        return array("pid", "ltag");
     }
     function load_state($state) {
         $result = Dbl::qe("select paperId, tag, tagIndex from PaperTag");
         while (($row = edb_row($result)))
-            $state->load(array("type" => $this->type, "pid" => +$row[0], "tag" => $row[1], "_index" => +$row[2]));
+            $state->load(array("type" => $this->type, "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => +$row[2]));
         Dbl::free($result);
         $state->tagger = new Tagger($state->contact);
     }
-    function apply($pid, $contact, $req, $state, $defaults) {
+    function apply($pid, $contact, $req, $state) {
         $state->load_type($this->type, $this);
         if (!($tag = @$req["tag"]))
-            return "tag missing";
-        else if (!($tag = $state->tagger->check($tag)))
-            return $state->tagger->error_html;
-        else if (!$state->contact->privChair && TagInfo::is_chair($tag))
-            return "Tag “" . htmlspecialchars($tag) . "” can only be changed by the chair.";
-        // index parsing
-        $index = @$req["index"];
-        if ($index === null)
-            $index = @$req["value"];
-        if (is_string($index))
-            $index = trim(strtolower($index));
-        if ($index === "clear")
-            $index = "none";
-        if ($index === "" || (!$this->isadd && ($index === "any" || $index === "all" || $index === "none")))
-            $index = null;
-        if ($index !== null && $index !== "none" && ($index = cvtint($index, null)) === null)
-            return "Index “" . htmlspecialchars($req["index"]) . "” should be an integer.";
+            return "missing tag";
+
+        // index argument
+        $xindex = @$req["index"];
+        if ($xindex === null)
+            $xindex = @$req["value"];
+        if ($xindex !== null && ($xindex = trim($xindex)) !== "") {
+            $tag = preg_replace(',\A(#?.+)(?:[=!<>]=?|#|≠|≤|≥)(?:|-?\d+|any|all|none|clear)\z,i', '$1', $tag);
+            if (!preg_match(',\A(?:[=!<>]=?|#|≠|≤|≥),i', $xindex))
+                $xindex = "#" . $xindex;
+            $tag .= $xindex;
+        }
+
+        // tag parsing; see also PaperSearch::_check_tag
+        if (!preg_match(',\A#?(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)(|[=<>]=?|!=|[#≠≤≥])(|-?\d+|any|all|none|clear)\z,i', $tag, $m)
+            || ($m[3] && !$m[4]))
+            return "Invalid tag “". htmlspecialchars($tag) . "”.";
+        if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0)
+            $m[1] = ($contact && $contact->contactId ? : $state->contact->contactId) . "~";
+        // ignore attempts to change vote tags
+        if (!$m[1] && TagInfo::is_vote($m[2]))
+            return;
+
+        // add and remove use different paths
+        $isadd = $this->isadd && $m[4] !== "none" && $m[4] !== "clear";
+        if ($isadd && strpos($tag, "*") !== false)
+            return "Tag wildcards aren’t allowed when adding tags.";
+        if (!$isadd)
+            return $this->apply_remove($pid, $contact, $req, $state, $m);
+
+        // resolve twiddle portion
+        if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
+            $c = substr($m[1], 0, strlen($m[1]) - 1);
+            $twiddlecids = ContactSearch::lookup_pc($c, $state->contact->contactId);
+            if (count($twiddlecids) == 0)
+                return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
+            else if (count($twiddlecids) > 0)
+                return "“" . htmlspecialchars($c) . "” matches more than one PC member; be more specific to disambiguate.";
+            $m[1] = $twiddlecids[0] . "~";
+        }
+
+        // resolve tag portion
+        if (preg_match(',\A(?:none|any|all)\z,i', $m[2]))
+            return "Tag “{$tag}” is reserved.";
+
+        // resolve index portion
+        if ($m[3] && $m[3] != "#" && $m[3] != "=" && $m[3] != "==")
+            return "“" . htmlspecialchars($m[3]) . "” isn’t allowed when adding tags.";
+        $index = $m[3] ? cvtint($m[4], 0) : 0;
+
         // save assignment
-        if ($this->isadd === "set" && !$state->set_extra("tag.$tag", true))
-            $state->remove(array("type" => $this->type, "tag" => $tag));
-        $state->remove(array("type" => $this->type, "pid" => $pid, "tag" => $tag, "_index" => ($this->isadd ? null : $index)));
-        if ($this->isadd && $index !== "none")
-            $state->add(array("type" => $this->type, "pid" => $pid, "tag" => $tag, "_index" => ($index ? $index : 0)));
+        $tag = $m[1] . $m[2];
+        $ltag = strtolower($tag);
+        if ($this->isadd === "set" && !$state->set_extra("tag.$ltag", true))
+            $state->remove(array("type" => $this->type, "ltag" => $ltag));
+        $state->add(array("type" => $this->type, "pid" => $pid, "ltag" => $ltag, "_tag" => $tag, "_index" => $index));
+        if (($vtag = TagInfo::vote_base($tag)))
+            $this->account_votes($pid, $vtag, $state);
     }
-    function realize($prow, $item, $cmap, $state) {
-        if (!$state->contact->privChair && TagInfo::is_chair($item["tag"]))
-            return "Tag “" . htmlspecialchars($tag) . "” can only be changed by the chair.";
-        return new TagAssigner($item["pid"], true, $item["tag"],
+    private function apply_remove($pid, $contact, $req, $state, $m) {
+        // resolve twiddle portion
+        if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
+            $c = substr($m[1], 0, strlen($m[1]) - 1);
+            $twiddlecids = ContactSearch::lookup_pc($c, $state->contact->contactId);
+            if (count($twiddlecids) == 0)
+                return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
+            else if (count($twiddlecids) == 1)
+                $m[1] = $twiddlecids[0] . "~";
+            else
+                $m[1] = "(?:" . join("|", $twiddlecids) . ")~";
+        }
+
+        // resolve tag portion
+        if (strcasecmp($m[2], "none") == 0)
+            return;
+        else if (strcasecmp($m[2], "any") == 0 || strcasecmp($m[2], "all") == 0)
+            $m[2] = "[^~]*";
+        else
+            $m[2] = str_replace("\\*", "[^~]*", preg_quote($m[2]));
+
+        // resolve index comparator
+        if (preg_match(',\A(?:any|all|none|clear)\z,i', $m[4]))
+            $m[3] = $m[4] = "";
+        else {
+            if ($m[3] == "#")
+                $m[3] = "=";
+            $m[4] = cvtint($m[4], 0);
+        }
+
+        // query
+        $tag = $m[1] . $m[2];
+        $search_ltag = !preg_match(',[*(],', $tag) ? strtolower($tag) : null;
+        $res = $state->query(array("type" => "tag", "pid" => $pid, "ltag" => $search_ltag));
+        $tag_re = '{\A' . $tag . '\z}i';
+        $vote_adjustments = array();
+        foreach ($res as $x)
+            if (preg_match($tag_re, $x["ltag"])
+                && (!$m[3] || SearchReviewValue::compare($x["_index"], $m[3], $m[4]))
+                && !TagInfo::is_vote($x["ltag"])) {
+                $state->remove($x);
+                if (($v = TagInfo::vote_base($x["ltag"])))
+                    $vote_adjustments[$x["_tag"]] = true;
+            }
+        foreach ($vote_adjustments as $vtag => $v)
+            $this->account_votes($pid, $vtag, $state);
+    }
+    private function account_votes($pid, $vtag, $state) {
+        $res = $state->query(array("type" => "tag", "pid" => $pid));
+        $tag_re = '{\A\d+~' . preg_quote($vtag) . '\z}i';
+        $total = 0;
+        foreach ($res as $x)
+            if (preg_match($tag_re, $x["ltag"]))
+                $total += $x["_index"];
+        if ($total)
+            $state->add(array("type" => $this->type, "pid" => $pid, "ltag" => strtolower($vtag), "_tag" => $vtag, "_index" => $total));
+        else
+            $state->remove(array("type" => $this->type, "pid" => $pid, "ltag" => strtolower($vtag)));
+    }
+    function realize($item, $cmap, $state) {
+        $prow = $state->prows[$item["pid"]];
+        $is_admin = $state->contact->can_administer($prow);
+        $tag = $item["_tag"];
+        // only admin can change chair-only tags
+        if (!$is_admin && TagInfo::is_chair($tag))
+            throw new Exception("Tag #" . htmlspecialchars($tag) . " can only be changed by administrators.");
+        // not admin, change other twiddle tag => ignore for security
+        if (!$is_admin && strpos($tag, "~") !== false) {
+            $cid = $state->contact->contactId;
+            if (substr($tag, 0, strlen($cid) + 1) != $cid . "~")
+                return null;
+        }
+        // actually assign
+        return new TagAssigner($item["pid"], true, $item["_tag"],
                                $item->deleted() ? null : $item["_index"],
                                $state->tagger);
     }
@@ -518,9 +635,10 @@ class TagAssigner extends Assigner {
     }
     function execute($who) {
         if ($this->index === null)
-            $this->tagger->save($this->pid, $this->tag, "d");
+            Dbl::qe("delete from PaperTag where paperId=? and tag=?", $this->pid, $this->tag);
         else
-            $this->tagger->save($this->pid, $this->tag . "#" . $this->index, "a");
+            Dbl::qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tagIndex=values(tagIndex)", $this->pid, $this->tag, $this->index);
+        $who->log_activity("Tag " . ($this->index === null ? "remove" : "set") . ": $this->tag", $this->pid);
     }
 }
 
@@ -544,7 +662,7 @@ class PreferenceAssigner extends Assigner {
             $state->load(array("type" => $this->type, "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => +$row[3]));
         Dbl::free($result);
     }
-    function apply($pid, $contact, $req, $state, $defaults) {
+    function apply($pid, $contact, $req, $state) {
         $state->load_type($this->type, $this);
 
         foreach (array("preference", "pref", "revpref") as $k)
@@ -571,7 +689,7 @@ class PreferenceAssigner extends Assigner {
         if ($ppref[0] || $ppref[1] !== null)
             $state->add(array("type" => $this->type, "pid" => $pid, "cid" => $contact->contactId, "_pref" => $ppref[0], "_exp" => $ppref[1]));
     }
-    function realize($prow, $item, $cmap, $state) {
+    function realize($item, $cmap, $state) {
         return new PreferenceAssigner($item["pid"], $cmap->get_id($item["cid"]),
                                       $item->deleted() ? 0 : $item["_pref"],
                                       $item->deleted() ? null : $item["_exp"]);
@@ -627,7 +745,6 @@ class AssignmentSet {
     private $my_conflicts = null;
     private $contact;
     private $override;
-    private $papers;
     private $conflicts;
     private $astate;
     private $cmap;
@@ -638,12 +755,6 @@ class AssignmentSet {
         $this->override = $override;
         $this->astate = new AssignmentState($contact);
         $this->cmap = new AssignerContacts;
-
-        $this->papers = array();
-        $result = Dbl::qe("select paperId, timeSubmitted, timeWithdrawn from Paper");
-        while (($row = edb_row($result)))
-            $this->papers[$row[0]] = ($row[1]>0 ? 1 : ($row[2]>0 ? -1 : 0));
-        Dbl::free($result);
 
         $this->conflicts = array();
         $this->astate->load_type("conflict", Assigner::find("conflict"));
@@ -688,21 +799,17 @@ class AssignmentSet {
 
     private function reviewer_set() {
         if ($this->reviewer_set === false) {
-            $result = Dbl::qe("select ContactInfo.contactId, firstName, lastName, email, roles from ContactInfo left join PaperReview using (contactId) group by ContactInfo.contactId");
+            $result = Dbl::qe("select ContactInfo.contactId, firstName, lastName, unaccentedName, email, roles, contactTags from ContactInfo left join PaperReview using (contactId) group by ContactInfo.contactId");
             $this->reviewer_set = array();
             while (($row = edb_orow($result)))
                 $this->reviewer_set[$row->contactId] = $row;
+            Dbl::free($result);
         }
         return $this->reviewer_set;
     }
 
     private function lookup_users(&$req, $pc_by_email, $assigner, $csv) {
         // move all usable identification data to email, firstName, lastName
-        foreach (array("first" => "firstName", "last" => "lastName",
-                       "firstname" => "firstName", "lastname" => "lastName")
-                 as $k1 => $k2)
-            if (isset($req[$k1]) && !isset($req[$k2]))
-                $req[$k2] = $req[$k1];
         if (isset($req["name"]))
             self::apply_user_parts($req, Text::split_name($req["name"]));
         if (isset($req["user"]) && strpos($req["user"], " ") === false) {
@@ -745,10 +852,8 @@ class AssignmentSet {
             return array(null);
         // perhaps "none" or "any" is OK
         if ($special === "none" || $special === "any") {
-            if (!$assigner->allow_special_contact($special)) {
-                $this->error($csv->lineno(), "“{$special}” not allowed here");
-                return false;
-            }
+            if (!$assigner->allow_special_contact($special))
+                return $this->error($csv->lineno(), "“{$special}” not allowed here");
             return array((object) array("roles" => 0, "contactId" => null, "email" => $special, "sorter" => ""));
         } else if (($special === "ext" || $special === "external")
                    && $assigner->contact_set() === "reviewers") {
@@ -775,16 +880,12 @@ class AssignmentSet {
             return array($cset[$cid]);
         }
         // create contact
-        if (!$email) {
-            $this->error($csv->lineno(), "missing email address");
-            return false;
-        }
+        if (!$email)
+            return $this->error($csv->lineno(), "missing email address");
         $contact = $this->cmap->get_email($email);
         if ($contact->contactId < 0) {
-            if (!validate_email($email)) {
-                $this->error($csv->lineno(), "email address “" . htmlspecialchars($email) . "” is invalid");
-                return false;
-            }
+            if (!validate_email($email))
+                return $this->error($csv->lineno(), "email address “" . htmlspecialchars($email) . "” is invalid");
             if (!isset($contact->firstName) && @$req["firstName"])
                 $contact->firstName = $req["firstName"];
             if (!isset($contact->lastName) && @$req["lastName"])
@@ -793,27 +894,15 @@ class AssignmentSet {
         return array($contact);
     }
 
-    function parse($text, $filename = null, $defaults = null, $alertf = null) {
-        global $Conf;
-        if ($defaults === null)
-            $defaults = array();
-        $this->filename = $filename;
+    static private function is_csv_header($req) {
+        foreach (array("action", "assignment", "paper", "pid", "paperId") as $k)
+            if (array_search($k, $req) !== false)
+                return true;
+        return false;
+    }
 
-        $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
-        $csv->set_comment_chars("%#");
-        if (!($req = $csv->next()))
-            return $this->error($csv->lineno(), "empty file");
-
-        // check for header
-        if (array_search("paper", $req) === false
-            && (($i = array_search("pid", $req)) !== false
-                || ($i = array_search("paperId", $req)) !== false))
-            $req[$i] = "paper";
-        if (array_search("action", $req) !== false
-            || array_search("assignment", $req) !== false
-            || array_search("paper", $req) !== false)
-            $csv->set_header($req);
-        else {
+    private function install_csv_header($csv, $req) {
+        if (!self::is_csv_header($req)) {
             if (count($req) == 3
                 && (!$req[2] || strpos($req[2], "@") !== false))
                 $csv->set_header(array("paper", "name", "email"));
@@ -822,19 +911,43 @@ class AssignmentSet {
             else
                 $csv->set_header(array("paper", "action", "user", "round"));
             $csv->unshift($req);
+        } else {
+            $cleans = array("paper", "pid", "paper", "paperId",
+                            "firstName", "first", "lastName", "last",
+                            "firstName", "firstname", "lastName", "lastname");
+            for ($i = 0; $i < count($cleans); $i += 2)
+                if (array_search($cleans[$i], $req) === false
+                    && ($j = array_search($cleans[$i + 1], $req)) !== false)
+                    $req[$j] = $cleans[$i];
+            $csv->set_header($req);
         }
+
         $has_action = array_search("action", $csv->header()) !== false
             || array_search("assignment", $csv->header()) !== false;
         if (!$has_action && array_search("tag", $csv->header()) !== false)
-            $defaults["action"] = "tag";
+            $this->astate->defaults["action"] = "tag";
         if (!$has_action && array_search("preference", $csv->header()) !== false)
-            $defaults["action"] = "preference";
+            $this->astate->defaults["action"] = "preference";
         if (!$has_action && !@$defaults["action"])
             return $this->error($csv->lineno(), "“assignment” column missing");
         if (array_search("paper", $csv->header()) === false)
             return $this->error($csv->lineno(), "“paper” column missing");
-        if (!isset($defaults["action"]))
-            $defaults["action"] = "<missing>";
+        if (!isset($this->astate->defaults["action"]))
+            $this->astate->defaults["action"] = "<missing>";
+        return true;
+    }
+
+    function parse($text, $filename = null, $defaults = null, $alertf = null) {
+        global $Conf;
+        $this->filename = $filename;
+        $this->astate->defaults = $defaults ? : array();
+
+        $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
+        $csv->set_comment_chars("%#");
+        if (!($req = $csv->next()))
+            return $this->error($csv->lineno(), "empty file");
+        if (!$this->install_csv_header($csv, $req))
+            return false;
 
         // set up PC mappings
         $pcm = pcMembers();
@@ -846,14 +959,15 @@ class AssignmentSet {
         $searches = array();
 
         // parse file
-        $N = 0;
         while (($req = $csv->next()) !== false) {
-            // parse paper
-            if (++$N % 100 == 0) {
+            $this->astate->lineno = $csv->lineno();
+            if ($csv->lineno() % 100 == 0) {
                 if ($alertf)
                     call_user_func($alertf, $this, $csv->lineno(), $req);
                 set_time_limit(30);
             }
+
+            // parse paper
             $pfield = @trim($req["paper"]);
             if ($pfield !== "" && ctype_digit($pfield))
                 $pids = array(intval($pfield));
@@ -865,7 +979,7 @@ class AssignmentSet {
                         $this->error($csv->lineno(), $w);
                 }
                 if (!count($pids)) {
-                    $this->error($csv->lineno(), "no papers match “" . htmlspecialchars($pfield) . "”");
+                    $this->error($csv->lineno(), "No papers match “" . htmlspecialchars($pfield) . "”");
                     continue;
                 }
             } else {
@@ -873,26 +987,44 @@ class AssignmentSet {
                 continue;
             }
 
+            // fetch missing papers
+            $fetch_pids = array();
+            foreach ($pids as $p)
+                if (!isset($this->astate->prows[$p]))
+                    $fetch_pids[] = $p;
+            if (count($fetch_pids)) {
+                $q = $Conf->paperQuery($this->contact, array("paperId" => $fetch_pids));
+                $result = Dbl::qe_raw($q);
+                while ($result && ($prow = PaperInfo::fetch($result, $this->contact)))
+                    $this->astate->prows[$prow->paperId] = $prow;
+                Dbl::free($result);
+            }
+
             // check papers
             $npids = array();
             foreach ($pids as $p) {
-                if (isset($this->papers[$p])
-                    && ($this->papers[$p] > 0 || $this->override))
+                $prow = @$this->astate->prows[$p];
+                if ($prow && ($prow->timeSubmitted > 0 || $this->override))
                     $npids[] = $p;
-                else if (!isset($this->papers[$p]))
-                    $this->error($csv->lineno(), "paper $p does not exist");
+                else if (!$prow)
+                    $this->error($csv->lineno(), "Paper $p does not exist");
+                else if ($prow->timeWithdrawn > 0)
+                    $this->error($csv->lineno(), "Paper $p has been withdrawn");
                 else
-                    $this->error($csv->lineno(), $this->papers[$p] < 0 ? "paper $p has been withdrawn" : "paper $p was never submitted");
+                    $this->error($csv->lineno(), "Paper $p was never submitted");
             }
 
             // check action
             if (($action = @$req["assignment"]) === null
                 && ($action = @$req["action"]) === null
                 && ($action = @$req["type"]) === null)
-                $action = $defaults["action"];
+                $action = $this->astate->defaults["action"];
             $action = strtolower(trim($action));
             if (!($assigner = Assigner::find($action))) {
-                $this->error($csv->lineno(), "unknown action “" . htmlspecialchars($action) . "”");
+                $this->error($csv->lineno(), "Unknown action “" . htmlspecialchars($action) . "”");
+                continue;
+            } else if (!$assigner->allow($this->contact)) {
+                $this->error($csv->lineno(), "Permission error");
                 continue;
             }
 
@@ -908,33 +1040,24 @@ class AssignmentSet {
                         && @$this->conflict[$p][$contact->contactId]
                         && !$assigner->allow_special_contact("conflict"))
                         $this->error($csv->lineno(), Text::user_html_nolink($contact) . " has a conflict with paper #$p");
-                    else if (($err = $assigner->apply($p, $contact, $req, $this->astate, $defaults)))
+                    else if (($err = $assigner->apply($p, $contact, $req, $this->astate)))
                         $this->error($csv->lineno(), $err);
                 }
         }
         if ($alertf)
             call_user_func($alertf, $this, $csv->lineno(), false);
 
-        // look up papers in difference
-        $adiff = $this->astate->diff();
-        $q = $Conf->paperQuery($this->contact, array("paperId" => array_keys($adiff)));
-        $result = Dbl::q($q);
-        $prows = array();
-        while ($result && ($prow = PaperInfo::fetch($result, $this->contact)))
-            $prows[$prow->paperId] = $prow;
-
         // create assigners for difference
-        foreach ($adiff as $pid => $difflist) {
-            $prow = $prows[$pid];
+        foreach ($this->astate->diff() as $pid => $difflist)
             foreach ($difflist as $item) {
                 $assigner = Assigner::find($item["type"]);
                 try {
-                    $this->assigners[] = $assigner->realize($prow, $item, $this->cmap, $this->astate);
+                    if (($a = $assigner->realize($item, $this->cmap, $this->astate)))
+                        $this->assigners[] = $a;
                 } catch (Exception $e) {
                     $this->error($item->lineno, $e->getMessage());
                 }
             }
-        }
     }
 
     function types_and_papers($compress_pids = false) {
@@ -1070,7 +1193,7 @@ class AssignmentSet {
         $locks = array("ContactInfo" => "read", "Paper" => "read", "PaperConflict" => "read");
         $Conf->save_logs(true);
         foreach ($this->assigners as $assigner) {
-            if ($assigner->contact->contactId < 0) {
+            if ($assigner->contact && $assigner->contact->contactId < 0) {
                 $c = $this->cmap->get_email($assigner->contact->email);
                 if ($c->contactId < 0) {
                     // XXX assume that never fails:

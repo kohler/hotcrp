@@ -261,7 +261,9 @@ class ContactSearch {
         return self::lookup(self::F_PC | self::F_TAG, $text, $cid);
     }
     private function check_simple_pc() {
-        if ($this->text == "" || strcasecmp($this->text, "pc") == 0)
+        if ($this->text == ""
+            || strcasecmp($this->text, "pc") == 0
+            || (strcasecmp($this->text, "any") == 0 && ($this->type & self::F_PC)))
             return array_keys(pcMembers());
         else if (strcasecmp($this->text, "me") == 0)
             return array($this->me_cid);
