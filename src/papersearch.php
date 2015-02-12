@@ -133,8 +133,10 @@ class SearchReviewValue {
     public $allowed = 0;
     public $view_score;
 
-    static public $opmap = array("#" => 2, "=" => 2, "==" => 2, "!" => 5, "!=" => 5, "≠" => 5,
-                                 "<" => 1, "<=" => 3, "≤" => 3, "≥" => 6, ">=" => 6, ">" => 4);
+    static public $opmap = array("" => 2, "#" => 2, "=" => 2, "==" => 2,
+                                 "!" => 5, "!=" => 5, "≠" => 5,
+                                 "<" => 1, "<=" => 3, "≤" => 3,
+                                 "≥" => 6, ">=" => 6, ">" => 4);
     static public $oparray = array(false, "<", "=", "<=", ">", "!=", ">=", false);
 
     function __construct($countexpr, $contacts = null, $fieldsql = null,
@@ -199,8 +201,6 @@ class SearchReviewValue {
         $text = trim($text);
         if (($x = self::$opmap[$text]))
             return self::$oparray[$x];
-        else if ($text === "")
-            return "=";
         else
             return false;
     }
