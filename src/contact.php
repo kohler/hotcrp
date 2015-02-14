@@ -2364,10 +2364,10 @@ class Contact {
         if (@$dl->rev && @$dl->rev->open && $dl->rev->open < $Now)
             foreach ($dl->rev->roundsuf as $rsuf) {
                 $dlk = "pcrev$rsuf";
-                if (@$dl->$dlk && $dl->$dlk->done)
+                if (@$dl->$dlk && @$dl->$dlk->done)
                     return true;
                 $dlk = "extrev$rsuf";
-                if (@$dl->$dlk && $dl->$dlk->done)
+                if (@$dl->$dlk && @$dl->$dlk->done)
                     return true;
             }
         return false;
