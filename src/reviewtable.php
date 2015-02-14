@@ -393,25 +393,25 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         && ($prow->conflictType >= CONFLICT_AUTHOR || $allow_admin)
         && ($rrounds = $Conf->time_author_respond()))
         foreach ($rrounds as $i => $rname) {
-            $cid = array("response", "newresp_$rname", "Add");
+            $cid = array("newresp_$rname", "Add");
             if ($crows)
                 foreach ($crows as $cr)
                     if (($cr->commentType & COMMENTTYPE_RESPONSE) && $cr->commentRound == $i) {
-                        $cid = array($cr->commentId, "comment$cr->commentId", "Edit");
+                        $cid = array("comment$cr->commentId", "Edit");
                         if ($cr->commentType & COMMENTTYPE_DRAFT)
-                            $cid[2] = "Edit draft";
+                            $cid[1] = "Edit draft";
                     }
             if ($rrow || $conflictType < CONFLICT_AUTHOR)
-                $x = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;c=$cid[0]#$cid[1]") . '"';
+                $x = '<a href="' . hoturl("paper", "p=$prow->paperId#$cid[0]") . '"';
             else
-                $x = '<a href="#' . $cid[1]
+                $x = '<a href="#' . $cid[0]
                     . '" onclick="return papercomment.edit_response('
                     . ($i ? "'$rname'" : "")
                     . ')"';
             $x .= ' class="xx">'
-                . Ht::img("comment24.png", "[$cid[2] response]", "dlimg") . "&nbsp;"
+                . Ht::img("comment24.png", "[$cid[1] response]", "dlimg") . "&nbsp;"
                 . ($conflictType >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
-                . $cid[2] . ($i ? " $rname" : "") . ' response</u></a>';
+                . $cid[1] . ($i ? " $rname" : "") . ' response</u></a>';
             $t .= ($t == "" ? "" : $xsep) . $x;
         }
 
