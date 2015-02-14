@@ -142,6 +142,14 @@ jQuery.fn.extend({
             x.bottom = x.top + x.height;
         }
         return x;
+    },
+    scrollIntoView: function () {
+        var p = this.geometry(), w = jQuery(window).geometry();
+        if (p.top < w.top)
+            this[0].scrollIntoView();
+        else if (p.bottom > w.bottom)
+            this[0].scrollIntoView(false);
+        return this;
     }
 });
 
@@ -1362,7 +1370,10 @@ function open_new_comment(sethash) {
     ta = x ? x.getElementsByTagName("textarea") : null;
     if (ta && ta.length) {
         fold(x, 0);
-        setTimeout(function () { ta[0].focus(); }, 0);
+        setTimeout(function () {
+            var j = jQuery("#commentnew").scrollIntoView();
+            j.find("textarea")[0].focus();
+        }, 0);
     } else if ((ta = jQuery(x).find("a.cmteditor")[0]))
         ta.click();
     if (sethash)
@@ -1604,7 +1615,7 @@ function make_editor() {
     te.focus();
     if (te.setSelectionRange)
         te.setSelectionRange(te.value.length, te.value.length);
-    // XXX scroll to fit comment on screen
+    x.j.scrollIntoView();
     return false;
 }
 
