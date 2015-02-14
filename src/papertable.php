@@ -2059,11 +2059,6 @@ class PaperTable {
         // links
         $this->_paptabReviewLinks(true, $this->editrrow, "");
 
-        // maybe clickthrough
-        $clickthrough_close = "";
-        if (!$Me->can_clickthrough("review"))
-            self::echo_review_clickthrough();
-
         // review form, possibly with deadline warning
         $opt = array("edit" => $this->mode == "re");
 
@@ -2083,6 +2078,10 @@ class PaperTable {
                 $opt["editmessage"] = "The site is not open for reviewing, so the review cannot be changed.$override";
         } else if (!$Me->can_review($prow, $this->editrrow))
             $opt["edit"] = false;
+
+        // maybe clickthrough
+        if ($opt["edit"] && !$Me->can_clickthrough("review"))
+            self::echo_review_clickthrough();
 
         $rf = ReviewForm::get($this->editrrow);
         $rf->show($prow, $this->rrows, $this->editrrow, $opt);
