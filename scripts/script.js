@@ -1643,6 +1643,7 @@ function save_editor(elt, action, really) {
 }
 
 function submit_editor(evt) {
+    evt.preventDefault();
     save_editor(this, "submit");
     return false;
 }
