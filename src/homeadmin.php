@@ -27,12 +27,12 @@ function admin_home_messages() {
         $m[] = $errmarker . "MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.";
     // Conference names
     if (@$Opt["shortNameDefaulted"])
-        $m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the conference abbreviation</a> to a short name for your conference, such as “OSDI ’14”.";
+        $m[] = "<a href=\"" . hoturl("settings", "group=info") . "\">Set the conference abbreviation</a> to a short name for your conference, such as “OSDI ’14”.";
     else if (simplify_whitespace($Opt["shortName"]) != $Opt["shortName"])
-        $m[] = "The <a href=\"" . hoturl("settings", "group=msg") . "\">conference abbreviation</a> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more).";
+        $m[] = "The <a href=\"" . hoturl("settings", "group=info") . "\">conference abbreviation</a> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more).";
     $site_contact = Contact::site_contact();
     if (!$site_contact->email || $site_contact->email == "you@example.com")
-        $m[] = "<a href=\"" . hoturl("settings", "group=msg") . "\">Set the conference contact’s name and email</a> so submitters can reach someone if things go wrong.";
+        $m[] = "<a href=\"" . hoturl("settings", "group=info") . "\">Set the conference contact’s name and email</a> so submitters can reach someone if things go wrong.";
     // Backwards compatibility
     if (@$Conf->setting_data("clickthrough_submit")) // delete 12/2014
         $m[] = "You need to recreate the <a href=\"" . hoturl("settings", "group=msg") . "\">clickthrough submission terms</a>.";
