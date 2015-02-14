@@ -404,11 +404,12 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
             if ($rrow || $conflictType < CONFLICT_AUTHOR)
                 $x = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;c=$cid[0]#$cid[1]") . '"';
             else
-                $x = '<a href="#' . $cid[1] . '"';
-            $x .= ' class="xx" onclick="return papercomment.edit_response(';
-            if ($i)
-                $x .= "'$rname'";
-            $x .= ')">' . Ht::img("comment24.png", "[$cid[2] response]", "dlimg") . "&nbsp;"
+                $x = '<a href="#' . $cid[1]
+                    . '" onclick="return papercomment.edit_response('
+                    . ($i ? "'$rname'" : "")
+                    . ')"';
+            $x .= ' class="xx">'
+                . Ht::img("comment24.png", "[$cid[2] response]", "dlimg") . "&nbsp;"
                 . ($conflictType >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
                 . $cid[2] . ($i ? " $rname" : "") . ' response</u></a>';
             $t .= ($t == "" ? "" : $xsep) . $x;
