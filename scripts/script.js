@@ -205,6 +205,28 @@ function event_prevent(evt) {
         evt.returnValue = false;
 }
 
+var event_key = (function () {
+var key_map = {"Spacebar": " ", "Esc": "Escape"},
+    code_map = {"13": "Enter", "27": "Escape"};
+return function (evt) {
+    if (evt.key != null)
+        return key_map[evt.key] || evt.key;
+    var code = evt.charCode || evt.keyCode;
+    if (code)
+        return code_map[code] || String.fromCharCode(code);
+    else
+        return "";
+};
+})();
+
+function event_modkey(evt) {
+    return (evt.shiftKey ? 1 : 0) + (evt.ctrlKey ? 2 : 0) + (evt.altKey ? 4 : 0) + (evt.metaKey ? 8 : 0);
+}
+event_modkey.SHIFT = 1;
+event_modkey.CTRL = 2;
+event_modkey.ALT = 4;
+event_modkey.META = 8;
+
 function sprintf(fmt) {
     var words = fmt.split(/(%(?:%|-?\d*(?:[.]\d*)?[sdefgoxX]))/), wordno, word,
         arg, argno, conv, pad, t = "";
@@ -942,11 +964,10 @@ function crpfocus(id, subfocus, seltype) {
     return !(selt || felt);
 }
 
-function crpSubmitKeyFilter(elt, event) {
-    var e = event || window.event;
-    var code = e.charCode || e.keyCode;
+function crpSubmitKeyFilter(elt, e) {
+    e = e || window.event;
     var form;
-    if (e.ctrlKey || e.altKey || e.shiftKey || code != 13)
+    if (event_modkey(e) || event_key(e) != "Enter")
         return true;
     form = elt;
     while (form && form.tagName && form.tagName.toUpperCase() != "FORM")
@@ -1073,10 +1094,9 @@ window.autosub = (function () {
 var current;
 
 function autosub_kp(event) {
-    var code, form, inputs, i;
+    var form, inputs, i;
     event = event || window.event;
-    code = event.charCode || event.keyCode;
-    if (code != 13 || event.ctrlKey || event.altKey || event.shiftKey)
+    if (event_modkey(event) || event_key(event) != "Enter")
         return true;
     else if (current === false)
         return false;
@@ -1774,10 +1794,11 @@ function set_resp_round(rname, rinfo) {
 return {add: add, edit_response: edit_response, set_resp_round: set_resp_round};
 })();
 
+
 // quicklink shortcuts
-function quicklink_shortcut(evt, code) {
+function quicklink_shortcut(evt, key) {
     // find the quicklink, reject if not found
-    var a = $$("quicklink_" + (code == 106 ? "prev" : "next")), f;
+    var a = $$("quicklink_" + (key == "j" ? "prev" : "next")), f;
     if (a && a.focus) {
         // focus (for visual feedback), call callback
         a.focus();
@@ -1816,13 +1837,13 @@ function shortcut(top_elt) {
     var self, keys = {};
 
     function keypress(evt) {
-        var code, a, f, target, x, i, j;
+        var key, a, f, target, x, i, j;
         // IE compatibility
         evt = evt || window.event;
-        code = evt.charCode || evt.keyCode;
+        key = event_key(evt);
         target = evt.target || evt.srcElement;
         // reject modified keys, interesting targets
-        if (code == 0 || evt.altKey || evt.ctrlKey || evt.metaKey
+        if (!key || evt.altKey || evt.ctrlKey || evt.metaKey
             || (target && target.tagName && target != top_elt
                 && (x = target.tagName.toUpperCase())
                 && (x == "TEXTAREA"
@@ -1841,7 +1862,7 @@ function shortcut(top_elt) {
                     return true;
             }
         // call function
-        if (!keys[code] || !keys[code](evt, code))
+        if (!keys[key] || !keys[key](evt, key))
             return true;
         // done
         if (evt.preventDefault)
@@ -1852,17 +1873,17 @@ function shortcut(top_elt) {
     }
 
 
-    function add(code, f) {
+    function add(key, f) {
         if (arguments.length > 2)
             f = bind_append(f, Array.prototype.slice.call(arguments, 2));
-        if (code != null)
-            keys[code] = f;
+        if (key)
+            keys[key] = f;
         else {
-            add(106 /* j */, quicklink_shortcut);
-            add(107 /* k */, quicklink_shortcut);
+            add("j", quicklink_shortcut);
+            add("k", quicklink_shortcut);
             if (top_elt == document) {
-                add(99 /* c */, comment_shortcut);
-                add(103 /* g */, gopaper_shortcut);
+                add("c", comment_shortcut);
+                add("g", gopaper_shortcut);
             }
         }
         return self;
@@ -1987,10 +2008,10 @@ function taghelp(elt, report_elt, cleanf) {
 
     function kp(evt) {
         evt = evt || window.event;
-        if ((evt.charCode || evt.keyCode) == 27) {
+        if (event_key(evt) == "Esc") {
             hiding = true;
             report_elt.style.display = "none";
-        } else if ((evt.charCode || evt.keyCode) && !hiding)
+        } else if (event_key(evt) && !hiding)
             setTimeout(display, 1);
         return true;
     }
@@ -2037,9 +2058,9 @@ function rp_change() {
     });
 }
 
-function rp_keypress(event) {
-    var e = event || window.event, code = e.charCode || e.keyCode;
-    if (e.ctrlKey || e.altKey || e.shiftKey || code != 13)
+function rp_keypress(e) {
+    e = e || window.event;
+    if (event_modkey(e) || event_key(e) != "Enter")
         return true;
     else {
         rp_change.apply(this);
@@ -2241,8 +2262,7 @@ function tag_onclick() {
 
 function tag_keypress(evt) {
     evt = evt || window.event;
-    var code = evt.charCode || evt.keyCode;
-    if (evt.ctrlKey || evt.altKey || evt.shiftKey || code != 13)
+    if (event_modkey(evt) || event_key(evt) != "Enter")
         return true;
     else {
         this.onchange();
