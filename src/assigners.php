@@ -553,7 +553,7 @@ class TagAssigner extends Assigner {
             $twiddlecids = ContactSearch::lookup_pc($c, $state->contact->contactId);
             if (count($twiddlecids) == 0)
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
-            else if (count($twiddlecids) > 0)
+            else if (count($twiddlecids) > 1)
                 return "“" . htmlspecialchars($c) . "” matches more than one PC member; be more specific to disambiguate.";
             $m[1] = $twiddlecids[0] . "~";
         }
