@@ -68,4 +68,9 @@ function assert_search_papers($user, $text, $result) {
     assert_eqq(join(" ", array_keys(search_json($user, $text))), $result);
 }
 
+function assert_query($q, $b) {
+    $result = Dbl::qe_raw($q);
+    assert_eqq(join("\n", edb_first_columns($result)), $b);
+}
+
 echo "* Tests initialized.\n";

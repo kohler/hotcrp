@@ -749,7 +749,9 @@ class PreferenceAssigner extends Assigner {
     }
 }
 
+Assigner::register("pri", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
 Assigner::register("primary", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
+Assigner::register("sec", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
 Assigner::register("secondary", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
 Assigner::register("pcreview", new ReviewAssigner(0, null, REVIEW_PC, ""));
 Assigner::register("review", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
@@ -804,6 +806,10 @@ class AssignmentSet {
         return false;
     }
 
+    public function has_errors() {
+        return count($this->errors_) > 0;
+    }
+
     public function errors_html($linenos = false) {
         $es = array();
         foreach ($this->errors_ as $e) {
@@ -825,6 +831,12 @@ class AssignmentSet {
             $es[] = $t;
         }
         return $es;
+    }
+
+    public function report_errors() {
+        global $Conf;
+        if (count($this->errors_))
+            $Conf->errorMsg('Assignment errors: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div> Please correct these errors and try again.');
     }
 
     private static function req_user_html($req) {
@@ -1218,25 +1230,17 @@ class AssignmentSet {
         echo "</table></td></tr></table>\n";
     }
 
-    function report_errors() {
-        global $Conf;
-        if (count($this->errors_)) {
-            $Conf->errorMsg('Assignment errors: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div> Please correct these errors and try again.');
-            return true;
-        } else
-            return false;
-    }
-
     function is_empty() {
         return count($this->assigners) == 0;
     }
 
-    function execute() {
+    function execute($report_errors = false) {
         global $Conf, $Now;
-        if ($this->report_errors())
-            return false;
-        else if (!count($this->assigners)) {
-            $Conf->warnMsg("Nothing to assign.");
+        if (count($this->errors_) || !count($this->assigners)) {
+            if ($report_errors && count($this->errors_))
+                $this->report_errors();
+            else if ($report_errors)
+                $Conf->warnMsg("Nothing to assign.");
             return false;
         }
 

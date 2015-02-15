@@ -71,7 +71,7 @@ if (isset($_REQUEST["saveassignment"]) && check_post()) {
         $assignset = new AssignmentSet($Me, false);
         $assignset->parse($_REQUEST["file"], @$_REQUEST["filename"],
                           assignment_defaults());
-        if ($assignset->execute())
+        if ($assignset->execute(true))
             redirectSelf();
     }
 }
@@ -116,8 +116,8 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
         $defaults = assignment_defaults();
         $assignset->parse($text, $_FILES["uploadfile"]["name"], $defaults, "keep_browser_alive");
         finish_browser_alive();
-        if ($assignset->report_errors())
-            /* do nothing */;
+        if ($assignset->has_errors())
+            $assignset->report_errors();
         else if ($assignset->is_empty())
             $Conf->warnMsg("That assignment file makes no changes.");
         else {
@@ -154,7 +154,7 @@ if (isset($_REQUEST["saveassignment"]) && check_post()
     $assignset = new AssignmentSet($Me, false);
     $assignset->parse($_POST["file"], @$_POST["filename"],
                       assignment_defaults(), "keep_browser_alive");
-    $assignset->execute();
+    $assignset->execute(true);
     finish_browser_alive();
 }
 

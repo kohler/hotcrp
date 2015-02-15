@@ -495,7 +495,7 @@ else if (@$_REQUEST["saveassignment"] && @$_REQUEST["submit"]
          && isset($_REQUEST["assignment"]) && check_post()) {
     $assignset = new AssignmentSet($Me, true);
     $assignset->parse($_REQUEST["assignment"]);
-    $assignset->execute();
+    $assignset->execute(true);
 }
 
 
