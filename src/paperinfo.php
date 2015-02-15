@@ -234,7 +234,6 @@ class PaperInfo {
     }
 
     public function conflicts($email = false) {
-        global $Conf;
         if ($email ? !@$this->conflicts_email_ : !isset($this->conflicts_)) {
             $this->conflicts_ = array();
             if (!$email && isset($this->allConflictType)) {
@@ -242,9 +241,9 @@ class PaperInfo {
                 foreach (explode(",", $this->allConflictType) as $x)
                     $vals[] = explode(" ", $x);
             } else if (!$email)
-                $vals = edb_rows($Conf->qe("select contactId, conflictType from PaperConflict where paperId=$this->paperId"));
+                $vals = edb_rows(Dbl::qe("select contactId, conflictType from PaperConflict where paperId=$this->paperId"));
             else {
-                $vals = edb_rows($Conf->qe("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId"));
+                $vals = edb_rows(Dbl::qe("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId"));
                 $this->conflicts_email_ = true;
             }
             foreach ($vals as $v)

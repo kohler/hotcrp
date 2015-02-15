@@ -282,6 +282,7 @@ function edb_rows($result) {
     $x = array();
     while ($result && ($row = $result->fetch_row()))
         $x[] = $row;
+    Dbl::free($result);
     return $x;
 }
 
@@ -290,6 +291,7 @@ function edb_first_columns($result) {
     $x = array();
     while ($result && ($row = $result->fetch_row()))
         $x[] = $row[0];
+    Dbl::free($result);
     return $x;
 }
 
@@ -298,6 +300,7 @@ function edb_map($result) {
     $x = array();
     while ($result && ($row = $result->fetch_row()))
         $x[$row[0]] = (count($row) == 2 ? $row[1] : array_slice($row, 1));
+    Dbl::free($result);
     return $x;
 }
 
@@ -311,6 +314,7 @@ function edb_orows($result) {
     $x = array();
     while ($result && ($row = $result->fetch_object()))
         $x[] = $row;
+    Dbl::free($result);
     return $x;
 }
 
