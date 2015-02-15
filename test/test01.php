@@ -20,6 +20,7 @@ $user_van = Contact::find_by_email("van@ee.lbl.gov"); // none
 $user_mgbaker = Contact::find_by_email("mgbaker@cs.stanford.edu"); // pc
 $user_shenker = Contact::find_by_email("shenker@parc.xerox.com"); // pc, chair
 $user_jon = Contact::find_by_email("jon@cs.ucl.ac.uk"); // pc, red
+$user_varghese = Contact::find_by_email("varghese@ccrc.wustl.edu"); // pc
 $user_nobody = new Contact;
 
 // users are different
@@ -229,15 +230,42 @@ assert_eqq(join("\n", $assignset->errors_text()), "You have a conflict with pape
 
 $assignset = new AssignmentSet($user_estrin, false);
 $assignset->parse("paper,tag\n2,fart\n");
-assert(!$assignset->has_errors());
-$assignset->execute();
+assert($assignset->execute());
 assert_search_papers($user_chair, "#fart", "2");
 
 $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,tag\n1,#fart\n");
-assert(!$assignset->has_errors());
-$assignset->execute();
+assert($assignset->execute());
 assert_search_papers($user_chair, "#fart", "1 2");
 assert_search_papers($user_estrin, "#fart", "2");
+
+// check twiddle tags
+$assignset = new AssignmentSet($Admin, false);
+$assignset->parse("paper,tag\n1,~fart\n1,~~fart\n1,varghese~fart\n1,mjh~fart\n");
+assert($assignset->execute());
+$paper1->load_tags();
+assert_eqq(join(" ", paper_tag_normalize($paper1)),
+           "fart chair~fart mjh~fart varghese~fart jon~vote#10 marina~vote#5 ~~fart");
+
+$assignset = new AssignmentSet($Admin, false);
+$assignset->parse("paper,tag\n1,all#none\n");
+assert($assignset->execute());
+$paper1->load_tags();
+assert_eqq(join(" ", paper_tag_normalize($paper1)),
+           "mjh~fart varghese~fart jon~vote#10 marina~vote#5");
+
+$assignset = new AssignmentSet($Admin, false);
+$assignset->parse("paper,tag\n1,fart\n");
+assert($assignset->execute());
+$paper1->load_tags();
+assert_eqq(join(" ", paper_tag_normalize($paper1)),
+           "fart mjh~fart varghese~fart jon~vote#10 marina~vote#5");
+
+$assignset = new AssignmentSet($user_varghese, false);
+$assignset->parse("paper,tag\n1,all#clear\n");
+assert($assignset->execute());
+$paper1->load_tags();
+assert_eqq(join(" ", paper_tag_normalize($paper1)),
+           "mjh~fart jon~vote#10 marina~vote#5");
 
 echo "* Tests complete.\n";

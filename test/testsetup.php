@@ -73,4 +73,36 @@ function assert_query($q, $b) {
     assert_eqq(join("\n", edb_first_columns($result)), $b);
 }
 
+function tag_normalize_compare($a, $b) {
+    $a_twiddle = strpos($a, "~");
+    $b_twiddle = strpos($b, "~");
+    $ax = ($a_twiddle > 0 ? substr($a, $a_twiddle + 1) : $a);
+    $bx = ($b_twiddle > 0 ? substr($b, $b_twiddle + 1) : $b);
+    if (($cmp = strcasecmp($ax, $bx)) == 0) {
+        if (($a_twiddle > 0) != ($b_twiddle > 0))
+            $cmp = ($a_twiddle > 0 ? 1 : -1);
+        else
+            $cmp = strcasecmp($a, $b);
+    }
+    return $cmp;
+}
+
+function paper_tag_normalize($prow) {
+    $t = array();
+    $pcm = pcMembers();
+    foreach (explode(" ", $prow->all_tags_text()) as $tag) {
+        if (($twiddle = strpos($tag, "~")) > 0
+            && ($c = @$pcm[substr($tag, 0, $twiddle)])) {
+            $at = strpos($c->email, "@");
+            $tag = ($at ? substr($c->email, 0, $at) : $c->email) . substr($tag, $twiddle);
+        }
+        if (strlen($tag) > 2 && substr($tag, strlen($tag) - 2) == "#0")
+            $tag = substr($tag, 0, strlen($tag) - 2);
+        if ($tag)
+            $t[] = $tag;
+    }
+    usort($t, "tag_normalize_compare");
+    return $t;
+}
+
 echo "* Tests initialized.\n";
