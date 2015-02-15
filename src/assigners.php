@@ -593,10 +593,12 @@ class TagAssigner extends Assigner {
         if (strcasecmp($m[2], "none") == 0)
             return;
         else if (strcasecmp($m[2], "any") == 0 || strcasecmp($m[2], "all") == 0) {
-            if ($state->contact->privChair && !$m[1])
-                $m[2] = "(?:~~|)[^~]*";
-            else
+            if ($m[1])
                 $m[2] = "[^~]*";
+            else if ($state->contact->privChair)
+                $m[2] = "(?:~~|" . $state->contact->contactId . "~|)[^~]*";
+            else
+                $m[2] = "(?:" . $state->contact->contactId . "~|)[^~]*";
         } else
             $m[2] = str_replace("\\*", "[^~]*", preg_quote($m[2]));
 
