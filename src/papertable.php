@@ -1260,7 +1260,7 @@ class PaperTable {
                 Ht::hidden("set$type", 1);
             $Conf->footerScript("Miniajax.onload(\"${type}form\")");
 
-            $sel = pc_members_selector_options(true);
+            $sel = pc_members_selector_options(true, $this->prow, $value);
             echo Ht::select($type, $sel,
                             ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
                             array("onchange" => "dosubmitstripselector('${type}')", "id" => "fold${type}_d")),
