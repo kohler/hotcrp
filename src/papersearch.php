@@ -231,17 +231,20 @@ class ContactSearch {
     const F_TAG = 2;
     const F_PC = 4;
     const F_QUOTED = 8;
+    const F_NOUSER = 16;
 
     public $type;
     public $text;
     public $me_cid;
+    private $cset = null;
     public $ids = false;
     public $warn_html = false;
 
-    public function __construct($type, $text, $cid) {
+    public function __construct($type, $text, $cid, $cset = null) {
         $this->type = $type;
         $this->text = $text;
         $this->me_cid = $cid;
+        $this->cset = $cset;
         if ($this->type & self::F_SQL) {
             $result = Dbl::qe("select contactId from ContactInfo where $text");
             $this->ids = Dbl::fetch_first_columns($result);
@@ -250,8 +253,8 @@ class ContactSearch {
             $this->ids = $this->check_simple_pc();
         if ($this->ids === false && !($this->type & self::F_QUOTED) && ($this->type & self::F_TAG))
             $this->ids = $this->check_pc_tag();
-        if ($this->ids === false)
-            $this->ids = $this->load();
+        if ($this->ids === false && !($this->type & self::F_NOUSER))
+            $this->ids = $this->check_user();
     }
     static function lookup($type, $text, $cid) {
         $css = new ContactSearch($type, $text, $cid);
@@ -259,6 +262,12 @@ class ContactSearch {
     }
     static function lookup_pc($text, $cid) {
         return self::lookup(self::F_PC | self::F_TAG, $text, $cid);
+    }
+    static function lookup_special($text, $cid) {
+        return self::lookup(self::F_PC | self::F_TAG | self::F_NOUSER, $text, $cid);
+    }
+    static function lookup_cset($text, $cid, $cset) {
+        return self::lookup(0, $text, $cid, $cset);
     }
     private function check_simple_pc() {
         if ($this->text == ""
@@ -303,8 +312,9 @@ class ContactSearch {
         } else
             return false;
     }
-    private function load() {
+    private function check_user() {
         if (strcasecmp($this->text, "anonymous") == 0
+            && !$this->cset
             && !($this->type & self::F_PC)) {
             $result = Dbl::qe_raw("select contactId from ContactInfo where email regexp '^anonymous[0-9]*\$'");
             return Dbl::fetch_first_columns($result);
@@ -326,9 +336,13 @@ class ContactSearch {
                 $e = "*$e*";
         }
 
-        // contact database if not restricted to PC
+        // contact database if not restricted to PC or cset
         $result = null;
-        if (!($this->type & self::F_PC)) {
+        if ($this->cset)
+            $cs = $this->cset;
+        else if ($this->type & self::F_PC)
+            $cs = pcMembers();
+        else {
             $q = array();
             if ($n !== "") {
                 $x = sqlq_for_like(UnicodeHelper::deaccent($n));
@@ -342,8 +356,7 @@ class ContactSearch {
             $cs = array();
             while ($result && ($row = $result->fetch_object("Contact")))
                 $cs[$row->contactId] = $row;
-        } else
-            $cs = pcMembers();
+        }
 
         // filter results
         $nreg = $ereg = null;

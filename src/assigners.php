@@ -839,15 +839,9 @@ class AssignmentSet {
             return array($contact);
         // check for PC tag
         if (!$first && $special && (!$lemail || !$last)) {
-            $tags = pcTags();
-            $tag = $special[0] == "#" ? substr($special, 1) : $special;
-            if (isset($tags[$tag]) || $tag === "pc") {
-                $ret = array();
-                foreach ($pc_by_email as $pc)
-                    if ($tag === "pc" || $pc->has_tag($tag))
-                        $ret[] = $pc;
+            $ret = ContactSearch::lookup_special($special, $this->contact->contactId);
+            if ($ret !== false)
                 return $ret;
-            }
         }
         // perhaps missing contact is OK
         if (!$lemail && !$first && !$last && $assigner->allow_special_contact("missing"))
@@ -872,14 +866,20 @@ class AssignmentSet {
         else if ($cset === "reviewers")
             $cset = $this->reviewer_set();
         if ($cset) {
-            $cid = matchContact($cset, $first, $last, $email);
-            if ($cid == -2)
+            if ($first && $last)
+                $text = "$last, $first <$email>";
+            else if ($first || $last)
+                $text = "$last$first <$email>";
+            else
+                $text = "<$email>";
+            $ret = ContactSearch::lookup_cset($text, $cset);
+            if (count($ret) == 1)
+                return $ret;
+            if (count($ret) == 0)
                 $this->error($csv->lineno(), "no user matches “" . self::req_user_html($req) . "”");
-            else if ($cid <= 0)
+            else
                 $this->error($csv->lineno(), "“" . self::req_user_html($req) . "” matches more than one user, use an email address to disambiguate");
-            if ($cid <= 0)
-                return false;
-            return array($cset[$cid]);
+            return false;
         }
         // create contact
         if (!$email)

@@ -126,15 +126,15 @@ function setTagIndexes() {
 	} else if ($RealMe->privChair && preg_match('/\A\s*<\s*([^<>]*?(|<[^<>]*>))\s*>\s*\z/', $l, $m)) {
 	    if (count($settings) && $Me)
 		saveTagIndexes($tag, $settings, $titles, $linenos, $errors);
-	    list($firstName, $lastName, $email) = Text::split_name($m[1], true);
-	    if (($cid = matchContact(pcMembers(), $firstName, $lastName, $email)) <= 0
-                || !($Me = Contact::find_by_id($cid))) {
-		if ($cid == -2 || $cid > 0)
-		    $errors[$lineno] = htmlspecialchars(trim("$firstName $lastName <$email>")) . " matches no PC member";
-		else
-		    $errors[$lineno] = htmlspecialchars(trim("$firstName $lastName <$email>")) . " matches more than one PC member, give a full email address to disambiguate";
-		$Me = null;
-	    }
+            $ret = ContactSearch::lookup_pc($m[1], $RealMe->contactId);
+            $Me = null;
+            if (count($ret) == 1) {
+                $pcm = pcMembers();
+                $Me = $pcm[$ret[0]];
+            } else if (count($ret) == 0)
+                $errors[$lineno] = htmlspecialchars($m[1]) . " matches no PC member";
+            else
+                $errors[$lineno] = htmlspecialchars($m[1]) . " matches more than one PC member, give a full email address to disambiguate";
 	} else if (trim($l) !== "")
 	    $errors[$lineno] = "Syntax error";
 	++$lineno;
