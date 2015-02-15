@@ -262,10 +262,10 @@ assert_eqq(join(" ", paper_tag_normalize($paper1)),
            "fart mjh~fart varghese~fart jon~vote#10 marina~vote#5");
 
 $assignset = new AssignmentSet($user_varghese, false);
-$assignset->parse("paper,tag\n1,all#clear\n");
+$assignset->parse("paper,tag\n1,all#clear\n1,~green\n");
 assert($assignset->execute());
 $paper1->load_tags();
 assert_eqq(join(" ", paper_tag_normalize($paper1)),
-           "mjh~fart jon~vote#10 marina~vote#5");
+           "mjh~fart varghese~green jon~vote#10 marina~vote#5");
 
 echo "* Tests complete.\n";
