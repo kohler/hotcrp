@@ -36,14 +36,14 @@ assert_eqq(Dbl::format_query("Hello????"), "Hello??");
 assert_eqq(Dbl::format_query("select ?, ?, ?, ?s, ?s, ?s, ?",
                              1, "a", null, 2, "b", null, 3),
            "select 1, 'a', NULL, 2, b, , 3");
-assert_eqq(Dbl::format_query("select ?, ?, ?, ?s, ?s, ?s, ?",
-                             array(1, "a", null, 2, "b", null, 3)),
+assert_eqq(Dbl::format_query_apply("select ?, ?, ?, ?s, ?s, ?s, ?",
+                                   array(1, "a", null, 2, "b", null, 3)),
            "select 1, 'a', NULL, 2, b, , 3");
-assert_eqq(Dbl::format_query("select ?{2}, ?{1}, ?, ?s, ?s, ?s, ?",
-                             array(1, "a", null, 2, "b", null, 3)),
+assert_eqq(Dbl::format_query_apply("select ?{2}, ?{1}, ?, ?s, ?s, ?s, ?",
+                                   array(1, "a", null, 2, "b", null, 3)),
            "select 'a', 1, NULL, 2, b, , 3");
-assert_eqq(Dbl::format_query("select ?{2}, ?{1}, ?{ab}, ?{2}s, ?{1}s, ?{ab}s, ?",
-                             array(1, "a", "ab" => "Woah", "Leftover")),
+assert_eqq(Dbl::format_query_apply("select ?{2}, ?{1}, ?{ab}, ?{2}s, ?{1}s, ?{ab}s, ?",
+                                   array(1, "a", "ab" => "Woah", "Leftover")),
            "select 'a', 1, 'Woah', a, 1, Woah, 'Leftover'");
 
 echo "* Tests complete.\n";
