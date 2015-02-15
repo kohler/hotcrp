@@ -1002,7 +1002,7 @@ class AssignmentSet {
             $this->astate->defaults["action"] = "tag";
         if (!$has_action && array_search("preference", $csv->header()) !== false)
             $this->astate->defaults["action"] = "preference";
-        if (!$has_action && !@$defaults["action"])
+        if (!$has_action && !@$this->astate->defaults["action"])
             return $this->error($csv->lineno(), "“assignment” column missing");
         if (array_search("paper", $csv->header()) === false)
             return $this->error($csv->lineno(), "“paper” column missing");
