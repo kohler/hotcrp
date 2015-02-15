@@ -651,6 +651,9 @@ class TagAssigner extends Assigner {
             if (substr($tag, 0, strlen($cid) + 1) != $cid . "~")
                 return null;
         }
+        // conflict, cannot set
+        if (!$is_admin && !$state->contact->can_set_tags($prow))
+            throw new Exception("You have a conflict with paper #$prow->paperId.");
         // actually assign
         return new TagAssigner($item["pid"], true, $item["_tag"],
                                $item->deleted() ? null : $item["_index"],

@@ -220,4 +220,24 @@ assert_eqq(join("\n", $assignset->errors_text()), "Deborah Estrin <estrin@usc.ed
 $assignset->execute();
 assert_query("select email from PaperReview r join ContactInfo c on (c.contactId=r.contactId) where paperId=1 order by email", "mgbaker@cs.stanford.edu\nmjh@isi.edu\nvarghese@ccrc.wustl.edu");
 
+assert_search_papers($user_chair, "#fart", "");
+$assignset = new AssignmentSet($user_estrin, false);
+$assignset->parse("paper,tag
+1,fart
+2,fart\n");
+assert_eqq(join("\n", $assignset->errors_text()), "You have a conflict with paper #1.");
+
+$assignset = new AssignmentSet($user_estrin, false);
+$assignset->parse("paper,tag\n2,fart\n");
+assert(!$assignset->has_errors());
+$assignset->execute();
+assert_search_papers($user_chair, "#fart", "2");
+
+$assignset = new AssignmentSet($Admin, false);
+$assignset->parse("paper,tag\n1,#fart\n");
+assert(!$assignset->has_errors());
+$assignset->execute();
+assert_search_papers($user_chair, "#fart", "1 2");
+assert_search_papers($user_estrin, "#fart", "2");
+
 echo "* Tests complete.\n";
