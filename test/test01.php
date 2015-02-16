@@ -210,6 +210,7 @@ $assignset = new AssignmentSet($Admin, true);
 $assignset->parse("paper,action,tag,index
 1,tag,~vote,clear
 2,tag,marina~vote,clear\n");
+assert_eqq(join("\n", $assignset->errors_text()), "");
 $assignset->execute();
 assert_search_papers($user_chair, "#any~vote", "1");
 

@@ -529,13 +529,21 @@ class TagAssigner extends Assigner {
         }
 
         // tag parsing; see also PaperSearch::_check_tag
-        if (!preg_match(',\A#?(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)(|[=!<>]=?|#|≠|≤|≥)(|[^=!<>#].*)\z,i', $tag, $m)
-            || ($m[3] === "" && $m[4]))
-            return "Invalid tag “". htmlspecialchars($tag) . "” $m[3]) ($m[4].";
+        if ($tag[0] === "#")
+            $tag = substr($tag, 1);
+        $m = array(null, "", "", "", "");
+        if (preg_match(',\A(.*?)([=!<>]=?|#|≠|≤|≥)(.*?)\z,', $tag, $xm))
+            list($xtag, $m[3], $m[4]) = array($xm[1], $xm[2], $xm[3]);
+        else
+            $xtag = $tag;
+        if (!preg_match(',\A(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)\z,i', $xtag, $xm))
+            return "Invalid tag “" . htmlspecialchars($xtag) . "”.";
         else if ($m[3] && !$m[4])
             return "Index missing.";
         else if ($m[3] && !preg_match(',\A(-?\d+|any|all|none|clear)\z,', $m[4]))
             return "Index must be an integer.";
+        else
+            list($m[1], $m[2]) = array($xm[1], $xm[2]);
         if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0)
             $m[1] = ($contact && $contact->contactId ? : $state->contact->contactId) . "~";
         // ignore attempts to change vote tags
