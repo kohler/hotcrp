@@ -452,7 +452,7 @@ visible only to PC chairs.  All other tags are visible to the entire PC.</p>");
 <p>Here are some example ways to use tags.</p>
 
 <ul>
-<li><strong>Avoid discussing low-ranked submissions at the PC meeting.</strong>
+<li><strong>Skip low-ranked submissions at the PC meeting.</strong>
  Mark low-ranked submissions with tag “#nodiscuss”, then ask the PC to
  <a href='" . hoturl("search", "q=%23nodiscuss") . "'>search for “#nodiscuss”</a>
  (<a href='" . hoturl("search", "q=tag:nodiscuss") . "'>“tag:nodiscuss”</a> also works).
