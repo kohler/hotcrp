@@ -568,8 +568,6 @@ class TagAssigner extends Assigner {
         // save assignment
         $tag = $m[1] . $m[2];
         $ltag = strtolower($tag);
-        if ($this->isadd === "set" && !$state->set_extra("tag.$ltag", true))
-            $state->remove(array("type" => $this->type, "ltag" => $ltag));
         $state->add(array("type" => $this->type, "pid" => $pid, "ltag" => $ltag,
                           "_tag" => $tag, "_index" => $index));
         if (($vtag = TagInfo::vote_base($tag)))
@@ -771,7 +769,6 @@ Assigner::register("conflict", new ConflictAssigner(0, null, CONFLICT_CHAIRMARK)
 Assigner::register("noconflict", new ConflictAssigner(0, null, 0));
 Assigner::register("clearconflict", new ConflictAssigner(0, null, 0));
 Assigner::register("tag", new TagAssigner(0, true, null, 0));
-Assigner::register("settag", new TagAssigner(0, "set", null, 0));
 Assigner::register("notag", new TagAssigner(0, false, null, 0));
 Assigner::register("cleartag", new TagAssigner(0, false, null, 0));
 Assigner::register("preference", new PreferenceAssigner(0, null, 0, null));
