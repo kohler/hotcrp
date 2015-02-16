@@ -532,7 +532,7 @@ class TagAssigner extends Assigner {
 
         // tag parsing; see also PaperSearch::_check_tag
         if (!preg_match(',\A#?(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)(|[=<>]=?|!=|[#≠≤≥])(|-?\d+|any|all|none|clear)\z,i', $tag, $m)
-            || ($m[3] && !$m[4]))
+            || ($m[3] && $m[4] === ""))
             return "Invalid tag “". htmlspecialchars($tag) . "”.";
         if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0)
             $m[1] = ($contact && $contact->contactId ? : $state->contact->contactId) . "~";
