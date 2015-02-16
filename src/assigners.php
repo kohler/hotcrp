@@ -28,17 +28,20 @@ class AssignmentItem implements ArrayAccess {
     public function deleted() {
         return $this->after === false;
     }
+    public function modified() {
+        return $this->after !== null;
+    }
 }
 
 class AssignmentState {
     private $st = array();
     private $types = array();
-    private $extra = array();
     public $contact;
     public $override;
     public $lineno = null;
     public $defaults = array();
     public $prows = array();
+    public $finishers = array();
     public function __construct($contact, $override) {
         $this->contact = $contact;
         $this->override = $override;
@@ -85,10 +88,11 @@ class AssignmentState {
         }
         return true;
     }
-    private function do_query_remove($item, $q, $remove, &$res) {
+    private function do_query_remove($item, $q, $remove, &$res, $modified) {
         if ($item
-            && $item->after !== false
-            && self::match($item->after ? : $item->before, $q)) {
+            && !$item->deleted()
+            && self::match($item->after ? : $item->before, $q)
+            && ($modified === null || $item->modified() === $modified)) {
             $res[] = $item->after ? : $item->before;
             if ($remove) {
                 $item->after = false;
@@ -96,23 +100,26 @@ class AssignmentState {
             }
         }
     }
-    private function query_remove($q, $remove) {
+    private function query_remove($q, $remove, $modified) {
         $res = array();
         foreach ($this->pid_keys($q) as $pid) {
             $st = $this->pidstate($pid);
             if (($k = $this->extract_key($q)))
-                $this->do_query_remove(@$st->items[$k], $q, $remove, $res);
+                $this->do_query_remove(@$st->items[$k], $q, $remove, $res, $modified);
             else
                 foreach ($st->items as $item)
-                    $this->do_query_remove($item, $q, $remove, $res);
+                    $this->do_query_remove($item, $q, $remove, $res, $modified);
         }
         return $res;
     }
     public function query($q) {
-        return $this->query_remove($q, false);
+        return $this->query_remove($q, false, null);
     }
     public function remove($q) {
-        return $this->query_remove($q, true);
+        return $this->query_remove($q, true, null);
+    }
+    public function query_unmodified($q) {
+        return $this->query_remove($q, false, false);
     }
     public function add($x) {
         $k = $this->extract_key($x);
@@ -135,13 +142,27 @@ class AssignmentState {
         }
         return $diff;
     }
-    public function extra($key) {
-        return @$this->extra[$key];
+    public function prow($pid) {
+        if (!@($p = $this->prows[$pid])) {
+            $this->fetch_prows($pid);
+            $p = $this->prows[$pid];
+        }
+        return $p;
     }
-    public function set_extra($key, $value) {
-        $old = @$this->extra[$key];
-        $this->extra[$key] = $value;
-        return $old;
+    public function fetch_prows($pids) {
+        global $Conf;
+        $pids = is_array($pids) ? $pids : array($pids);
+        $fetch_pids = array();
+        foreach ($pids as $p)
+            if (!isset($this->prows[$p]))
+                $fetch_pids[] = $p;
+        if (count($fetch_pids)) {
+            $q = $Conf->paperQuery($this->contact, array("paperId" => $fetch_pids));
+            $result = Dbl::qe_raw($q);
+            while ($result && ($prow = PaperInfo::fetch($result, $this->contact)))
+                $this->prows[$prow->paperId] = $prow;
+            Dbl::free($result);
+        }
     }
 }
 
@@ -487,7 +508,48 @@ class ConflictAssigner extends Assigner {
 // index "next" => take a step
 // index "seq" or "seqnext" => take a sequential step
 
+class NextTagAssigner {
+    private $tag;
+    public $pidindex = array();
+    private $first_index;
+    private $next_index;
+    function __construct($state, $tag, $index, $isseq) {
+        $this->tag = $tag;
+        $ltag = strtolower($tag);
+        $res = $state->query(array("type" => "tag", "ltag" => $ltag));
+        foreach ($res as $x)
+            $this->pidindex[$x["pid"]] = $x["_index"];
+        if ($index === null) {
+            $indexes = array_values($this->pidindex);
+            sort($indexes);
+            $index = count($indexes) ? $indexes[count($indexes) - 1] : 0;
+            $index += ($isseq ? 1 : self::$value_increment_map[mt_rand(0, 9)]);
+        }
+        $this->first_index = $this->next_index = $index;
+    }
+    private static $value_increment_map = array(1, 1, 1, 1, 1, 2, 2, 2, 3, 4);
+    public function next_index($isseq) {
+        $index = $this->next_index;
+        $this->next_index += ($isseq ? 1 : self::$value_increment_map[mt_rand(0, 9)]);
+        return $index;
+    }
+    public function apply($state) {
+        $ltag = strtolower($this->tag);
+        $delta = $this->next_index - $this->first_index;
+        foreach ($this->pidindex as $pid => $index)
+            if ($index >= $this->first_index && $delta) {
+                $x = $state->query_unmodified(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
+                if (count($x))
+                    $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
+                                      "_tag" => $this->tag, "_index" => $index + $delta,
+                                      "_override" => true));
+            }
+    }
+}
+
 class TagAssigner extends Assigner {
+    const NEXT = 1;
+    const NEXTSEQ = 2;
     private $isadd;
     private $tag;
     private $index;
@@ -509,11 +571,11 @@ class TagAssigner extends Assigner {
     function load_state($state) {
         $result = Dbl::qe("select paperId, tag, tagIndex from PaperTag");
         while (($row = edb_row($result)))
-            $state->load(array("type" => $this->type, "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => +$row[2]));
+            $state->load(array("type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => +$row[2]));
         Dbl::free($result);
     }
     function apply($pid, $contact, $req, $state) {
-        $state->load_type($this->type, $this);
+        $state->load_type("tag", $this);
         if (!($tag = @$req["tag"]))
             return "missing tag";
 
@@ -555,7 +617,7 @@ class TagAssigner extends Assigner {
         if ($isadd && strpos($tag, "*") !== false)
             return "Tag wildcards aren’t allowed when adding tags.";
         if (!$isadd)
-            return $this->apply_remove($pid, $contact, $req, $state, $m);
+            return $this->apply_remove($pid, $contact, $state, $m);
 
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
@@ -571,22 +633,35 @@ class TagAssigner extends Assigner {
         // resolve tag portion
         if (preg_match(',\A(?:none|any|all)\z,i', $m[2]))
             return "Tag “{$tag}” is reserved.";
+        $tag = $m[1] . $m[2];
 
         // resolve index portion
         if ($m[3] && $m[3] != "#" && $m[3] != "=" && $m[3] != "==")
             return "“" . htmlspecialchars($m[3]) . "” isn’t allowed when adding tags.";
-        $index = $m[3] ? cvtint($m[4], 0) : 0;
+        if ($this->isadd === self::NEXT || $this->isadd === self::NEXTSEQ)
+            $index = $this->apply_next_index($pid, $tag, $state, $m);
+        else
+            $index = $m[3] ? cvtint($m[4], 0) : 0;
 
         // save assignment
-        $tag = $m[1] . $m[2];
-        $ltag = strtolower($tag);
-        $state->add(array("type" => $this->type, "pid" => $pid, "ltag" => $ltag,
+        $state->add(array("type" => "tag", "pid" => $pid, "ltag" => strtolower($tag),
                           "_tag" => $tag, "_index" => $index));
         if (($vtag = TagInfo::vote_base($tag)))
             $this->account_votes($pid, $vtag, $state);
     }
-    private function apply_remove($pid, $contact, $req, $state, $m) {
-        $prow = $state->prows[$pid];
+    private function apply_next_index($pid, $tag, $state, $m) {
+        $ltag = strtolower($tag);
+        $index = cvtint($m[3] ? $m[4] : null, null);
+        if (!($fin = @$state->finishers["seqtag $ltag"]))
+            $fin = $state->finishers["seqtag $ltag"] =
+                new NextTagAssigner($state, $tag, $index, $this->isadd == self::NEXTSEQ);
+        else
+            /* XXX warn if non-null  */;
+        unset($fin->pidindex[$pid]);
+        return $fin->next_index($this->isadd == self::NEXTSEQ);
+    }
+    private function apply_remove($pid, $contact, $state, $m) {
+        $prow = $state->prow($pid);
 
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
@@ -648,10 +723,10 @@ class TagAssigner extends Assigner {
         foreach ($res as $x)
             if (preg_match($tag_re, $x["ltag"]))
                 $total += $x["_index"];
-        $state->add(array("type" => $this->type, "pid" => $pid, "ltag" => strtolower($vtag), "_tag" => $vtag, "_index" => $total, "_vote" => true));
+        $state->add(array("type" => "tag", "pid" => $pid, "ltag" => strtolower($vtag), "_tag" => $vtag, "_index" => $total, "_vote" => true));
     }
     function realize($item, $cmap, $state) {
-        $prow = $state->prows[$item["pid"]];
+        $prow = $state->prow($item["pid"]);
         $is_admin = $state->contact->can_administer($prow);
         $tag = $item["_tag"];
         $previndex = $item->before ? $item->before["_index"] : null;
@@ -659,6 +734,8 @@ class TagAssigner extends Assigner {
         // check permissions
         if ($item["_vote"])
             $index = $index ? : null;
+        else if ($item["_override"])
+            /* always assign index */;
         else if (($whyNot = $state->contact->perm_change_tag($prow, $item["ltag"],
                                                              $previndex, $index, $state->override))) {
             if (@$whyNot["otherTwiddleTag"])
@@ -783,6 +860,9 @@ Assigner::register("clearconflict", new ConflictAssigner(0, null, 0));
 Assigner::register("tag", new TagAssigner(0, true, null, 0));
 Assigner::register("notag", new TagAssigner(0, false, null, 0));
 Assigner::register("cleartag", new TagAssigner(0, false, null, 0));
+Assigner::register("nexttag", new TagAssigner(0, TagAssigner::NEXT, null, 0));
+Assigner::register("seqnexttag", new TagAssigner(0, TagAssigner::NEXTSEQ, null, 0));
+Assigner::register("nextseqtag", new TagAssigner(0, TagAssigner::NEXTSEQ, null, 0));
 Assigner::register("preference", new PreferenceAssigner(0, null, 0, null));
 Assigner::register("pref", new PreferenceAssigner(0, null, 0, null));
 Assigner::register("revpref", new PreferenceAssigner(0, null, 0, null));
@@ -1066,20 +1146,8 @@ class AssignmentSet {
                 continue;
             }
 
-            // fetch missing papers
-            $fetch_pids = array();
-            foreach ($pids as $p)
-                if (!isset($this->astate->prows[$p]))
-                    $fetch_pids[] = $p;
-            if (count($fetch_pids)) {
-                $q = $Conf->paperQuery($this->contact, array("paperId" => $fetch_pids));
-                $result = Dbl::qe_raw($q);
-                while ($result && ($prow = PaperInfo::fetch($result, $this->contact)))
-                    $this->astate->prows[$prow->paperId] = $prow;
-                Dbl::free($result);
-            }
-
             // check papers
+            $this->astate->fetch_prows($pids);
             $npids = array();
             foreach ($pids as $p) {
                 $prow = @$this->astate->prows[$p];
@@ -1125,6 +1193,10 @@ class AssignmentSet {
         }
         if ($alertf)
             call_user_func($alertf, $this, $csv->lineno(), false);
+
+        // call finishers
+        foreach ($this->astate->finishers as $fin)
+            $fin->apply($this->astate);
 
         // create assigners for difference
         foreach ($this->astate->diff() as $pid => $difflist)

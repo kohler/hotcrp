@@ -269,4 +269,21 @@ $paper1->load_tags();
 assert_eqq(join(" ", paper_tag_normalize($paper1)),
            "mjh~fart varghese~green jon~vote#10 marina~vote#5");
 
+$assignset = new AssignmentSet($Admin, true);
+$assignset->parse("paper,tag\nall,fart#clear\n1,fart#4\n2,fart#5\n3,fart#6\n");
+assert($assignset->execute());
+assert_search_papers($user_chair, "order:fart", "1 2 3");
+assert_eqq(search_text_col($user_chair, "order:fart", "tagval:fart"), "1 4\n2 5\n3 6\n");
+
+$assignset = new AssignmentSet($Admin, true);
+$assignset->parse("action,paper,tag\nnexttag,6,fart\nnexttag,5,fart\nnexttag,4,fart\n");
+assert($assignset->execute());
+assert_search_papers($user_chair, "order:fart", "1 2 3 6 5 4");
+
+$assignset = new AssignmentSet($Admin, true);
+$assignset->parse("action,paper,tag\nseqnexttag,7,fart#3\nseqnexttag,8,fart\n");
+assert($assignset->execute());
+assert_search_papers($user_chair, "order:fart", "7 8 1 2 3 6 5 4");
+
+
 echo "* Tests complete.\n";

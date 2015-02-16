@@ -59,7 +59,15 @@ function assert_neqq($a, $b) {
 
 function search_json($user, $text, $cols = "id") {
     $pl = new PaperList(new PaperSearch($user, $text));
-    return $pl->text_json("id");
+    return $pl->text_json($cols);
+}
+
+function search_text_col($user, $text, $col = "id") {
+    $pl = new PaperList(new PaperSearch($user, $text));
+    $x = array();
+    foreach ($pl->text_json($col) as $pid => $p)
+        $x[] = $pid . " " . $p->$col . "\n";
+    return join("", $x);
 }
 
 function assert_search_papers($user, $text, $result) {
