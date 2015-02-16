@@ -1239,12 +1239,12 @@ class AssignmentSet {
         return count($this->assigners) == 0;
     }
 
-    function execute($report_errors = false) {
+    function execute($verbose = false) {
         global $Conf, $Now;
         if (count($this->errors_) || !count($this->assigners)) {
-            if ($report_errors && count($this->errors_))
+            if ($verbose && count($this->errors_))
                 $this->report_errors();
-            else if ($report_errors)
+            else if ($verbose)
                 $Conf->warnMsg("Nothing to assign.");
             return count($this->errors_) == 0; // true means no errors
         }
@@ -1276,10 +1276,12 @@ class AssignmentSet {
         $Conf->save_logs(false);
 
         // confirmation message
-        if ($Conf->setting("pcrev_assigntime") == $Now)
-            $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
-        else
-            $Conf->confirmMsg("Assignments saved!");
+        if ($verbose) {
+            if ($Conf->setting("pcrev_assigntime") == $Now)
+                $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
+            else
+                $Conf->confirmMsg("Assignments saved!");
+        }
 
         // clean up
         $Conf->updateRevTokensSetting(false);

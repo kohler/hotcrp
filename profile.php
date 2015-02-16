@@ -421,17 +421,10 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
                            "PaperWatch", "ReviewRating", "TopicInterest")
                      as $table)
                 $Conf->qe("delete from $table where contactId=$Acct->contactId");
-            // tags are special because of voting tags, so go through Tagger
-            $result = $Conf->qe("select paperId, tag from PaperTag where tag like '" . $Acct->contactId . "~%'");
-            $pids = $tags = array();
-            while (($row = edb_row($result))) {
-                $pids[$row[0]] = 1;
-                $tags[substr($row[1], strlen($Acct->contactId))] = 1;
-            }
-            if (count($pids) > 0) {
-                $tagger = new Tagger($Acct);
-                $tagger->save(array_keys($pids), join(" ", array_keys($tags)), "d");
-            }
+            // delete twiddle tags
+            $assigner = new AssignmentSet($Me, true);
+            $assigner->parse("paper,tag\nall,{$Acct->contactId}~all#clear\n");
+            $assigner->execute();
             // clear caches
             if ($Acct->isPC || $Acct->privChair)
                 $Conf->invalidateCaches(array("pc" => 1));
