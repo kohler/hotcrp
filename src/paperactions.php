@@ -195,31 +195,42 @@ class PaperActions {
         if (isset($_REQUEST["cancelsettags"]))
             return;
         $ajax = @$_REQUEST["ajax"];
-        if ($Me->can_set_tags($prow)) {
-            $tagger = new Tagger;
-            if (isset($_REQUEST["tags"]))
-                $tagger->save($prow->paperId, $_REQUEST["tags"], "p");
-            if (@trim($_REQUEST["addtags"]) !== "")
-                $tagger->save($prow->paperId, $_REQUEST["addtags"], "a");
-            if (@trim($_REQUEST["deltags"]) !== "")
-                $tagger->save($prow->paperId, $_REQUEST["deltags"], "d");
-            $prow->load_tags();
-            $editable = $tagger->paper_editable($prow);
-            $tags_edit_text = $tagger->unparse($editable);
-            $viewable = $tagger->viewable($prow->paperTags);
-            $tags_view_html = $tagger->unparse_and_link($viewable, $prow->paperTags, false, !$prow->has_conflict($Me));
-            $tags_color = TagInfo::color_classes($viewable);
-        } else
-            $Error["tags"] = "You can’t set tags for paper #$prow->paperId." . ($Me->allow_administer($prow) ? " (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : "");
-        if ($ajax && $OK && !isset($Error["tags"]))
+
+        // save tags using assigner
+        $x = array("paper,tag");
+        if (isset($_REQUEST["tags"])) {
+            $x[] = "$prow->paperId,all#clear";
+            foreach (TagInfo::split($_REQUEST["tags"]) as $t)
+                $x[] = "$prow->paperId," . CsvGenerator::quote($t);
+        }
+        foreach (TagInfo::split((string) @$_REQUEST["addtags"]) as $t)
+            $x[] = "$prow->paperId," . CsvGenerator::quote($t);
+        foreach (TagInfo::split((string) @$_REQUEST["deltags"]) as $t)
+            $x[] = "$prow->paperId," . CsvGenerator::quote($t . "#clear");
+        $assigner = new AssignmentSet($Me, $Me->is_admin_force());
+        $assigner->parse(join("\n", $x));
+        $error = join("<br>", $assigner->errors_html());
+        $ok = $assigner->execute();
+
+        // load results
+        $prow->load_tags();
+        $tagger = new Tagger;
+        $editable = $tagger->paper_editable($prow);
+        $tags_edit_text = $tagger->unparse($editable);
+        $viewable = $tagger->viewable($prow->paperTags);
+        $tags_view_html = $tagger->unparse_and_link($viewable, $prow->paperTags, false, !$prow->has_conflict($Me));
+        $tags_color = TagInfo::color_classes($viewable);
+
+        // exit
+        if ($ajax && $ok)
             $Conf->ajaxExit(array("ok" => true, "tags_edit_text" => $tags_edit_text, "tags_view_html" => $tags_view_html, "tags_color" => $tags_color));
         else if ($ajax)
-            $Conf->ajaxExit(array("ok" => false, "error" => defval($Error, "tags", "")));
-        if (isset($Error) && isset($Error["tags"])) {
-            $Error["paperId"] = $prow->paperId;
-            $_SESSION["redirect_error"] = $Error;
+            $Conf->ajaxExit(array("ok" => false, "error" => $error));
+        else {
+            if ($error)
+                $_SESSION["redirect_error"] = array("paperId" => $prow->paperId, "tags" => $error);
+            redirectSelf();
         }
-        redirectSelf();
         // NB normally redirectSelf() does not return
     }
 

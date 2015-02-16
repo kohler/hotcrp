@@ -83,11 +83,8 @@ class TagInfo {
     }
 
     public static function split($taglist) {
-        $a = array();
-        foreach (explode(" ", $taglist) as $t)
-            if ($t !== "")
-                $a[] = $t;
-        return $a;
+        preg_match_all(',\S+,', $taglist, $m);
+        return $m[0];
     }
 
     public static function basic_check($tag) {
@@ -136,6 +133,11 @@ class TagInfo {
 
     public static function defined_tags() {
         return self::$tagmap ? self::$tagmap : self::make_tagmap();
+    }
+
+    public static function defined_tag($tag) {
+        $dt = self::defined_tags();
+        return $dt->check(self::base($tag));
     }
 
     public static function invalidate_defined_tags() {

@@ -2185,6 +2185,56 @@ class Contact {
         return $rights->allow_pc;
     }
 
+    function can_change_tag($prow, $tag, $previndex, $index, $forceShow = null) {
+        $rights = $this->rights($prow, $forceShow);
+        if ($rights->can_administer)
+            return true;
+        else if (!$rights->allow_pc)
+            return false;
+        $tag = TagInfo::base($tag);
+        $twiddle = strpos($tag, "~");
+        if (($twiddle === 0 && $tag[1] === "~")
+            || ($twiddle > 0 && substr($tag, 0, $twiddle) != $this->contactId))
+            return false;
+        else if ($twiddle !== false) {
+            $t = TagInfo::defined_tag(substr($tag, $twiddle + 1));
+            return !($t && $t->vote && $index < 0);
+        } else {
+            $t = TagInfo::defined_tag($tag);
+            return !($t && ($t->chair || $t->vote || $t->rank));
+        }
+    }
+
+    function perm_change_tag($prow, $tag, $previndex, $index, $forceShow = null) {
+        if ($this->can_change_tag($prow, $tag, $previndex, $index, $forceShow))
+            return null;
+        $rights = $this->rights($prow, $forceShow);
+        $whyNot = array("fail" => 1, "tag" => $tag, "paperId" => $prow->paperId);
+        if (!$this->isPC)
+            $whyNot["permission"] = true;
+        else if ($rights->conflict_type > 0) {
+            $whyNot["conflict"] = true;
+            if ($rights->allow_administer)
+                $whyNot["override"] = true;
+        } else {
+            $tag = TagInfo::base($tag);
+            $twiddle = strpos($tag, "~");
+            if (($twiddle === 0 && $tag[1] === "~")
+                || ($twiddle > 0 && substr($tag, 0, $twiddle) != $this->contactId))
+                $whyNot["otherTwiddleTag"] = true;
+            else if ($twiddle !== false)
+                $whyNot["voteTagNegative"] = true;
+            else {
+                $t = TagInfo::defined_tag($tag);
+                if ($t && $t->vote)
+                    $whyNot["voteTag"] = true;
+                else
+                    $whyNot["chairTag"] = true;
+            }
+        }
+        return $whyNot;
+    }
+
     function can_view_reviewer_tags($prow) {
         return $this->act_pc($prow);
     }

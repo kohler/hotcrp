@@ -916,9 +916,9 @@ function whyNotText($whyNot, $action) {
         $text .= "No such paper" . ($paperId < 0 ? "" : " #$paperId") . ". ";
     if (isset($whyNot['noReview']))
         $text .= "No such review" . ($reviewId < 0 ? "" : " #$reviewId") . ". ";
-    if (isset($whyNot['dbError']))
-        $text .= $whyNot['dbError'] . " ";
-    if (isset($whyNot['permission']))
+    if (isset($whyNot["dbError"]))
+        $text .= $whyNot["dbError"] . " ";
+    if (isset($whyNot["permission"]))
         $text .= "You don’t have permission to $action $thisPaper. ";
     if (isset($whyNot["signin"]))
         $text .= "You must sign in to $action $thisPaper. ";
@@ -1000,6 +1000,14 @@ function whyNotText($whyNot, $action) {
         $text .= "If you know a valid review token, enter it above to edit that review. ";
     if (@$whyNot["clickthrough"])
         $text .= "You can’t do that until you agree to the current terms. ";
+    if (@$whyNot["otherTwiddleTag"])
+        $text .= "Tag “#" . htmlspecialchars($whyNot["tag"]) . "” doesn’t belong to you. ";
+    if (@$whyNot["chairTag"])
+        $text .= "Tag “#" . htmlspecialchars($whyNot["tag"]) . "” can only be set by administrators. ";
+    if (@$whyNot["voteTag"])
+        $text .= "The voting tag “#" . htmlspecialchars($whyNot["tag"]) . "” shouldn’t be changed directly. To vote for this paper, change the “#~" . htmlspecialchars($whyNot["tag"]) . "” tag. ";
+    if (@$whyNot["voteTagNegative"])
+        $text .= "Negative votes aren’t allowed. ";
     // finish it off
     if (isset($whyNot['chairMode']))
         $text .= "(<a class='nowrap' href=\"" . selfHref(array("forceShow" => 1)) . "\">" . ucfirst($action) . " the paper anyway</a>) ";

@@ -35,12 +35,13 @@ class AssignmentState {
     private $types = array();
     private $extra = array();
     public $contact;
-    public $tagger = null;
+    public $override;
     public $lineno = null;
     public $defaults = array();
     public $prows = array();
-    public function __construct($contact) {
+    public function __construct($contact, $override) {
         $this->contact = $contact;
+        $this->override = $override;
     }
     public function load_type($type, $loader) {
         if (!isset($this->types[$type])) {
@@ -490,13 +491,11 @@ class TagAssigner extends Assigner {
     private $isadd;
     private $tag;
     private $index;
-    private $tagger;
-    function __construct($pid, $isadd, $tag, $index, $tagger = null) {
+    function __construct($pid, $isadd, $tag, $index) {
         parent::__construct("tag", $pid, null);
         $this->isadd = $isadd;
         $this->tag = $tag;
         $this->index = $index;
-        $this->tagger = $tagger;
     }
     function allow($user) {
         return $user->isPC;
@@ -512,7 +511,6 @@ class TagAssigner extends Assigner {
         while (($row = edb_row($result)))
             $state->load(array("type" => $this->type, "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => +$row[2]));
         Dbl::free($result);
-        $state->tagger = new Tagger($state->contact);
     }
     function apply($pid, $contact, $req, $state) {
         $state->load_type($this->type, $this);
@@ -572,11 +570,14 @@ class TagAssigner extends Assigner {
         $ltag = strtolower($tag);
         if ($this->isadd === "set" && !$state->set_extra("tag.$ltag", true))
             $state->remove(array("type" => $this->type, "ltag" => $ltag));
-        $state->add(array("type" => $this->type, "pid" => $pid, "ltag" => $ltag, "_tag" => $tag, "_index" => $index));
+        $state->add(array("type" => $this->type, "pid" => $pid, "ltag" => $ltag,
+                          "_tag" => $tag, "_index" => $index));
         if (($vtag = TagInfo::vote_base($tag)))
             $this->account_votes($pid, $vtag, $state);
     }
     private function apply_remove($pid, $contact, $req, $state, $m) {
+        $prow = $state->prows[$pid];
+
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
@@ -620,10 +621,12 @@ class TagAssigner extends Assigner {
         foreach ($res as $x)
             if (preg_match($tag_re, $x["ltag"])
                 && (!$m[3] || SearchReviewValue::compare($x["_index"], $m[3], $m[4]))
-                && !TagInfo::is_vote($x["ltag"])) {
+                && ($search_ltag
+                    || $state->contact->can_change_tag($prow, $x["ltag"],
+                                                       $x["_index"], null, $state->override))) {
                 $state->remove($x);
                 if (($v = TagInfo::vote_base($x["ltag"])))
-                    $vote_adjustments[$x["_tag"]] = true;
+                    $vote_adjustments[$v] = true;
             }
         foreach ($vote_adjustments as $vtag => $v)
             $this->account_votes($pid, $vtag, $state);
@@ -635,31 +638,25 @@ class TagAssigner extends Assigner {
         foreach ($res as $x)
             if (preg_match($tag_re, $x["ltag"]))
                 $total += $x["_index"];
-        if ($total)
-            $state->add(array("type" => $this->type, "pid" => $pid, "ltag" => strtolower($vtag), "_tag" => $vtag, "_index" => $total));
-        else
-            $state->remove(array("type" => $this->type, "pid" => $pid, "ltag" => strtolower($vtag)));
+        $state->add(array("type" => $this->type, "pid" => $pid, "ltag" => strtolower($vtag), "_tag" => $vtag, "_index" => $total, "_vote" => true));
     }
     function realize($item, $cmap, $state) {
         $prow = $state->prows[$item["pid"]];
         $is_admin = $state->contact->can_administer($prow);
         $tag = $item["_tag"];
-        // only admin can change chair-only tags
-        if (!$is_admin && TagInfo::is_chair($tag))
-            throw new Exception("Tag #" . htmlspecialchars($tag) . " can only be changed by administrators.");
-        // not admin, change other twiddle tag => ignore for security
-        if (!$is_admin && strpos($tag, "~") !== false) {
-            $cid = $state->contact->contactId;
-            if (substr($tag, 0, strlen($cid) + 1) != $cid . "~")
+        $previndex = $item->before ? $item->before["_index"] : null;
+        $index = $item->deleted() ? null : $item["_index"];
+        // check permissions
+        if ($item["_vote"])
+            $index = $index ? : null;
+        else if (($whyNot = $state->contact->perm_change_tag($prow, $item["ltag"],
+                                                             $previndex, $index, $state->override))) {
+            if (@$whyNot["otherTwiddleTag"])
                 return null;
+            throw new Exception(whyNotText($whyNot, $index === null ? "remove tag" : "set tag"));
         }
-        // conflict, cannot set
-        if (!$is_admin && !$state->contact->can_set_tags($prow))
-            throw new Exception("You have a conflict with paper #$prow->paperId.");
         // actually assign
-        return new TagAssigner($item["pid"], true, $item["_tag"],
-                               $item->deleted() ? null : $item["_index"],
-                               $state->tagger);
+        return new TagAssigner($item["pid"], true, $item["_tag"], $index);
     }
     function unparse_display() {
         $t = "#" . htmlspecialchars($this->tag);
@@ -792,10 +789,10 @@ class AssignmentSet {
     private $cmap;
     private $reviewer_set = false;
 
-    function __construct($contact, $override) {
+    function __construct($contact, $override = null) {
         $this->contact = $contact;
         $this->override = $override;
-        $this->astate = new AssignmentState($contact);
+        $this->astate = new AssignmentState($contact, $override);
         $this->cmap = new AssignerContacts;
     }
 
@@ -1246,7 +1243,7 @@ class AssignmentSet {
                 $this->report_errors();
             else if ($report_errors)
                 $Conf->warnMsg("Nothing to assign.");
-            return false;
+            return count($this->errors_) == 0; // true means no errors
         }
 
         // mark activity now to avoid DB errors later
