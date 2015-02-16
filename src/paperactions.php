@@ -68,41 +68,6 @@ class PaperActions {
                                   "value" => $v));
     }
 
-    static function setRank($prow) {
-        global $Conf, $Me, $Error, $OK;
-        $ajax = defval($_REQUEST, "ajax", false);
-        $tag = $Conf->setting_data("tag_rank", "");
-        if (!$tag || !$Me->can_change_tag($prow, "~$tag", null, 1)) {
-            $Conf->errorMsg("You don’t have permission to rank this paper.");
-            $Error["rank"] = true;
-        } else if (isset($_REQUEST["rank"])) {
-            $rank = trim($_REQUEST["rank"]);
-            if ($rank === "" || strcasecmp($rank, "none") == 0)
-                $rank = null;
-            else
-                $rank = cvtint($rank, false);
-            if ($rank === false) {
-                $Conf->errorMsg("Rank must be an integer or “none”.");
-                $Error["rank"] = true;
-            } else {
-                $mytag = $Me->contactId . "~" . $tag;
-                if ($rank === null)
-                    $result = $Conf->qe("delete from PaperTag where paperId=$prow->paperId and tag='" . sqlq($mytag) . "'");
-                else
-                    $result = $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values ($prow->paperId, '" . sqlq($mytag) . "', $rank) on duplicate key update tagIndex=values(tagIndex)");
-                if ($result)
-                    $Conf->confirmMsg($ajax ? "Saved" : "Rank saved.");
-                else
-                    $Error["rank"] = true;
-            }
-        } else {
-            $Conf->errorMsg("Rank missing.");
-            $Error["rank"] = true;
-        }
-        if ($ajax)
-            $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "rank")));
-    }
-
     static function rankContext($prow) {
         global $Conf, $Me, $Error, $OK;
         $ajax = defval($_REQUEST, "ajax", false);

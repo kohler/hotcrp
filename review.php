@@ -378,10 +378,6 @@ if (isset($_REQUEST["setrevpref"]) && check_post()) {
     PaperActions::setReviewPreference($prow);
     loadRows();
 }
-if (isset($_REQUEST["setrank"]) && check_post()) {
-    PaperActions::setRank($prow);
-    loadRows();
-}
 if (isset($_REQUEST["setlead"]) && check_post()) {
     PaperActions::set_lead($prow, @$_REQUEST["lead"], $Me, @$_REQUEST["ajax"]);
     loadRows();
