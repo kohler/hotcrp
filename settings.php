@@ -918,22 +918,21 @@ function save_resp_rounds($set) {
     if ($set || !value_or_setting("resp_active"))
         return;
     $old_roundnames = $Conf->resp_round_list();
-    $roundnames = array();
+    $roundnames = array(1);
     $roundnames_set = array();
 
     if (isset($_POST["resp_roundname"])) {
         $rname = @trim($_POST["resp_roundname"]);
         if ($rname === "" || $rname === "none" || $rname === "1")
-            $roundnames[] = 1;
+            /* do nothing */;
         else if (($rerror = Conference::resp_round_name_error($rname))) {
             $Error[] = $rerror;
             $Highlight["resp_roundname"] = true;
         } else {
-            $roundnames[] = $rname;
+            $roundnames[0] = $rname;
             $roundnames_set[strtolower($rname)] = 0;
         }
-    } else
-        $roundnames[] = 1;
+    }
 
     for ($i = 1; isset($_POST["resp_roundname_$i"]); ++$i) {
         $rname = @trim($_POST["resp_roundname_$i"]);
