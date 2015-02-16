@@ -72,7 +72,7 @@ class PaperActions {
         global $Conf, $Me, $Error, $OK;
         $ajax = defval($_REQUEST, "ajax", false);
         $tag = $Conf->setting_data("tag_rank", "");
-        if (!$Me->can_set_rank($prow)) {
+        if (!$tag || !$Me->can_change_tag($prow, "~$tag", null, 1)) {
             $Conf->errorMsg("You don’t have permission to rank this paper.");
             $Error["rank"] = true;
         } else if (isset($_REQUEST["rank"])) {
@@ -107,7 +107,7 @@ class PaperActions {
         global $Conf, $Me, $Error, $OK;
         $ajax = defval($_REQUEST, "ajax", false);
         $tag = $Conf->setting_data("tag_rank", "");
-        if (!$Me->can_set_rank($prow)) {
+        if (!$tag || !$Me->can_change_tag($prow, "~$tag", null, 1)) {
             $Conf->errorMsg("You don’t have permission to rank this paper.");
             $Error["rank"] = true;
         } else {
@@ -223,7 +223,10 @@ class PaperActions {
 
         // exit
         if ($ajax && $ok)
-            $Conf->ajaxExit(array("ok" => true, "tags_edit_text" => $tags_edit_text, "tags_view_html" => $tags_view_html, "tags_color" => $tags_color));
+            $Conf->ajaxExit(array("ok" => true, "tags" => TagInfo::split($viewable),
+                                  "tags_edit_text" => $tags_edit_text,
+                                  "tags_view_html" => $tags_view_html,
+                                  "tags_color" => $tags_color));
         else if ($ajax)
             $Conf->ajaxExit(array("ok" => false, "error" => $error));
         else {

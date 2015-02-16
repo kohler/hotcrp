@@ -47,17 +47,14 @@ if (isset($_REQUEST["uploadForm"])
 
 
 // upload tag indexes action
-function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
+function saveTagIndexes($tag, $filename, &$settings, &$titles, &$linenos, &$errors) {
     global $Conf, $Me, $Error;
 
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => array_keys($settings))));
-    $settingrank = ($Conf->setting("tag_rank") && $tag == "~" . $Conf->setting_data("tag_rank"));
     while (($row = PaperInfo::fetch($result, $Me)))
 	if ($settings[$row->paperId] !== null
-	    && !($settingrank
-		 ? $Me->can_set_rank($row, true)
-		 : $Me->can_set_tags($row, true))) {
-	    $errors[$linenos[$row->paperId]] = "You cannot rank paper #$row->paperId. (" . ($Me->isPC?"PC":"npc") . $Me->contactId . $row->conflictType . ")";
+            && !$Me->can_change_tag($row, $tag, null, 1)) {
+	    $errors[$linenos[$row->paperId]] = "You cannot rank paper #$row->paperId.";
 	    unset($settings[$row->paperId]);
 	} else if ($titles[$row->paperId] !== ""
 		   && strcmp($row->title, $titles[$row->paperId]) != 0
@@ -67,11 +64,13 @@ function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
     if (!$tag)
 	defappend($Error["tags"], "No tag defined");
     else if (count($settings)) {
-        $tagger = new Tagger;
-	$tagger->save(array_keys($settings), $tag, "d");
-	foreach ($settings as $pid => $value)
-	    if ($value !== null)
-		$tagger->save($pid, $tag . "#" . $value, "a");
+        $x = array("paper,tag,lineno");
+        foreach ($settings as $pid => $value)
+            $x[] = "$pid,$tag#" . ($value === null ? "clear" : $value) . "," . $linenos[$pid];
+        $assigner = new AssignmentSet($Me);
+        $assigner->parse(join("\n", $x) . "\n", $filename);
+        $assigner->report_errors();
+        $assigner->execute();
     }
 
     $settings = $titles = $linenos = array();
@@ -79,17 +78,17 @@ function saveTagIndexes($tag, &$settings, &$titles, &$linenos, &$errors) {
 
 function setTagIndexes() {
     global $Conf, $Me, $Error;
+    $filename = null;
     if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["file"])) {
 	if (($text = file_get_contents($_FILES["file"]["tmp_name"])) === false) {
 	    $Conf->errorMsg("Internal error: cannot read file.");
 	    return;
 	}
-	$filename = htmlspecialchars($_FILES["file"]["name"]) . ":";
+	$filename = $_FILES["file"]["name"]);
     } else if (!($text = defval($_REQUEST, "data"))) {
 	$Conf->errorMsg("Choose a file first.");
 	return;
-    } else
-	$filename = "line ";
+    }
 
     $RealMe = $Me;
     $tagger = new Tagger;
@@ -125,7 +124,7 @@ function setTagIndexes() {
 	    $linenos[$m[2]] = $lineno;
 	} else if ($RealMe->privChair && preg_match('/\A\s*<\s*([^<>]*?(|<[^<>]*>))\s*>\s*\z/', $l, $m)) {
 	    if (count($settings) && $Me)
-		saveTagIndexes($tag, $settings, $titles, $linenos, $errors);
+		saveTagIndexes($tag, $filename, $settings, $titles, $linenos, $errors);
             $ret = ContactSearch::lookup_pc($m[1], $RealMe->contactId);
             $Me = null;
             if (count($ret) == 1) {
@@ -141,14 +140,15 @@ function setTagIndexes() {
     }
 
     if (count($settings) && $Me)
-	saveTagIndexes($tag, $settings, $titles, $linenos, $errors);
+	saveTagIndexes($tag, $filename, $settings, $titles, $linenos, $errors);
     $Me = $RealMe;
 
     if (count($errors)) {
 	ksort($errors);
-	$Error["tags"] = "";
-	foreach ($errors as $lineno => $error)
-	    $Error["tags"] .= $filename . $lineno . ": " . $error . "<br />\n";
+        if ($filename)
+            foreach ($errors as $lineno => &$error)
+                $error = '<span class="lineno">' . htmlspecialchars($filename) . ':' . $lineno . ':</span> ' . $error;
+        $Error["tags"] = '<div class="parseerr"><p>' . join("</p>\n<p>", $errors) . '</p></div>';
     }
     if (isset($Error["tags"]))
 	$Conf->errorMsg($Error["tags"]);

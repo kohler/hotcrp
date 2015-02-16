@@ -371,8 +371,7 @@ if ($getaction == "rank" && SearchActions::any() && defval($_REQUEST, "tag")
         $real = "";
         $null = "\n";
         while (($row = PaperInfo::fetch($result, $Me)))
-            if ($settingrank ? $Me->can_set_rank($row)
-                : $Me->can_set_tags($row, true)) {
+            if ($Me->can_change_tag($row, $tag, null, 1)) {
                 if ($row->tagIndex === null)
                     $null .= "X\t$row->paperId\t$row->title\n";
                 else if ($real === "" || $lastIndex == $row->tagIndex - 1)

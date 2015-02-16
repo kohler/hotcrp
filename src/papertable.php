@@ -1397,30 +1397,34 @@ class PaperTable {
             $rp = "";
 
         // rank context form
-        $Conf->footerHtml(Ht::form_div(hoturl_post("paper", "p=" . $this->prow->paperId), array("id" => "rankctxform", "class" => "fold7c", "onsubmit" => "return Miniajax.submit('rankctxform')", "divclass" => "aahc"))
+        $Conf->footerHtml(Ht::form_div(hoturl_post("paper", "p=" . $this->prow->paperId),
+                                       array("id" => "rankctxform", "class" => "fold7c",
+                                             "onsubmit" => "return Miniajax.submit('rankctxform')",
+                                             "divclass" => "aahc"))
                           . Ht::hidden("rankctx", 1) . "</div></form>");
 
         echo $this->_papstripBegin("rank", true, "fold2c"),
             $this->papt("rank", "Your rank", array("type" => "ps", "editfolder" => "rank")),
             "<div class='psv'>",
-            Ht::form_div(hoturl_post("review", "p=" . $this->prow->paperId), array("id" => "rankform", "class" => "fx fold7c", "onsubmit" => "return Miniajax.submit('rankform')")),
-            Ht::hidden("setrank", 1);
+            Ht::form_div("", array("id" => "rankform", "class" => "fx", "hotcrp_tag" => "~$tag",
+                                   "onsubmit" => "return false"));
         if (isset($_REQUEST["forceShow"]))
             echo Ht::hidden("forceShow", $_REQUEST["forceShow"] ? 1 : 0);
-        echo "<input id='foldrank_d' type='text' size='4' name='rank' value=\"$rp\" onchange='Miniajax.submit(\"rankform\")' tabindex='1' />",
-            " ", Ht::submit("Save", array("class" => "fx7")),
+        echo Ht::entry("tagindex", $rp,
+                       array("id" => "foldrank_d", "size" => 4, "tabindex" => 1,
+                             "onchange" => "save_tag_index(this)",
+                             "hotcrp_tag_indexof" => "~$tag")),
             " <span id='rankformresult'></span>",
-            " <div class='hint'><strong>Tip:</strong> <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>Search “editsort:#~${tag}”</a> to drag and drop your ranking, or <a href='", hoturl("offline"), "'>use offline reviewing</a> to rank many papers at once.</div>",
+            " <div class='hint'><strong>Tip:</strong> <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>Search “editsort:#~{$tag}”</a> to drag and drop your ranking, or <a href='", hoturl("offline"), "'>use offline reviewing</a> to rank many papers at once.</div>",
             "</div></form>",
-            "<div class='fn'>",
-            ($rp === "" ? "None" : $rp);
+            '<div class="fn">',
+            '<span hotcrp_tag_indexof="~', $tag, '">', ($rp === "" ? "None" : $rp), '</span>';
         if ($rp != "")
             echo " <span class='fn2'>&nbsp; <a href='#' onclick='fold(\"rank\", 0, 2);return void Miniajax.submit(\"rankctxform\")'>(context)</a></span>";
         echo " &nbsp; <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>(all)</a>";
         echo "</div>",
             "<div id='rankctxformresult' class='fx2'>Loading...</div>",
             "</div></div>\n";
-        $Conf->footerScript("Miniajax.onload(\"rankform\")");
     }
 
     private function papstripWatch() {
@@ -1695,7 +1699,8 @@ class PaperTable {
             $this->papstripManager($Me->privChair);
         if ($Me->can_view_tags($prow))
             $this->papstripTags("review");
-        if ($Me->can_set_rank($prow))
+        if (($rank_tag = $Conf->setting_data("tag_rank"))
+            && $Me->can_change_tag($prow, "~$rank_tag", null, 1))
             $this->papstripRank();
         $this->papstripWatch();
         if (($this->admin

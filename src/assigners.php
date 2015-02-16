@@ -529,9 +529,13 @@ class TagAssigner extends Assigner {
         }
 
         // tag parsing; see also PaperSearch::_check_tag
-        if (!preg_match(',\A#?(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)(|[=<>]=?|!=|[#≠≤≥])(|-?\d+|any|all|none|clear)\z,i', $tag, $m)
-            || ($m[3] && $m[4] === ""))
-            return "Invalid tag “". htmlspecialchars($tag) . "”.";
+        if (!preg_match(',\A#?(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)(|[=!<>]=?|#|≠|≤|≥)(|[^=!<>#].*)\z,i', $tag, $m)
+            || ($m[3] === "" && $m[4]))
+            return "Invalid tag “". htmlspecialchars($tag) . "” $m[3]) ($m[4].";
+        else if ($m[3] && !$m[4])
+            return "Index missing.";
+        else if ($m[3] && !preg_match(',\A(-?\d+|any|all|none|clear)\z,', $m[4]))
+            return "Index must be an integer.";
         if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0)
             $m[1] = ($contact && $contact->contactId ? : $state->contact->contactId) . "~";
         // ignore attempts to change vote tags
@@ -789,6 +793,8 @@ class AssignmentSet {
     function __construct($contact, $override = null) {
         $this->contact = $contact;
         $this->override = $override;
+        if ($this->override === null)
+            $this->override = $this->contact->is_admin_force();
         $this->astate = new AssignmentState($contact, $override);
         $this->cmap = new AssignerContacts;
     }

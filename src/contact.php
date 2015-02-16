@@ -1950,14 +1950,6 @@ class Contact {
             && !$this->is_my_review($rrow);
     }
 
-    function can_set_rank($prow, $forceShow = null) {
-        global $Conf;
-        if (!$Conf->setting("tag_rank"))
-            return false;
-        $rights = $this->rights($prow, $forceShow);
-        return $rights->allow_review;
-    }
-
 
     function can_comment($prow, $crow, $submit = false) {
         global $Conf;

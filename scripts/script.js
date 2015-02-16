@@ -3124,13 +3124,46 @@ function save_tags() {
     return Miniajax.submit("tagform", function (rv) {
         jQuery("#foldtags .xmerror").remove();
         if (rv.ok) {
-            jQuery("#foldtags .pscopen")[0].className = "pscopen " + (rv.tags_color || "");
-            jQuery("#foldtags .psv .fn").html(rv.tags_view_html == "" ? "None" : rv.tags_view_html);
-            jQuery("#foldtags textarea").val(rv.tags_edit_text);
             fold("tags", true);
+            save_tags.success(rv);
         } else
-            jQuery("#papstriptagsedit").prepend("<div class='xmerror'>" + rv.error + "</div>"); 
+            jQuery("#papstriptagsedit").prepend('<div class="xmerror">' + rv.error + "</div>");
     });
+}
+save_tags.success = function (data) {
+    jQuery("#foldtags .pscopen")[0].className = "pscopen " + (data.tags_color || "");
+    jQuery("#foldtags .psv .fn").html(data.tags_view_html == "" ? "None" : data.tags_view_html);
+    if (!jQuery("#foldtags textarea").is(":visible"))
+        jQuery("#foldtags textarea").val(data.tags_edit_text);
+    jQuery("[hotcrp_tag_indexof]").each(function () {
+        var j = jQuery(this), res = j.is("input") ? "" : "None",
+            t = j.attr("hotcrp_tag_indexof") + "#", i;
+        if (t.charAt(0) == "~" && t.charAt(1) != "~")
+            t = hotcrp_user.cid + t;
+        for (i = 0; i != data.tags.length; ++i)
+            if (data.tags[i].substr(0, t.length) == t)
+                res = data.tags[i].substr(t.length);
+        j.is("input") ? j.val(res) : j.text(res);
+    });
+};
+
+function save_tag_index(e) {
+    var j = jQuery(e).closest("form"), tag = j.attr("hotcrp_tag"),
+        index = jQuery.trim(j.find("input[name='tagindex']").val());
+    jQuery.ajax({
+        url: hoturl_post("paper", "p=" + hotcrp_paperid + "&settags=1&ajax=1"),
+        type: "POST", cache: false,
+        data: {"addtags": tag + "#" + (index == "" ? "clear" : index)},
+        success: function (data) {
+            j.find(".xconfirm, .xmerror").remove();
+            if (data.ok) {
+                save_tags.success(data);
+                foldup(j[0]);
+            } else
+                jQuery('<div class="xmerror"></div>').html(data.error).prependTo(j);
+        }
+    });
+    return false;
 }
 
 
