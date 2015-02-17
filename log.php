@@ -206,6 +206,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
         }
     }
 
+    $act = $row->action;
     $t = "<td class='pl_id'>" . htmlspecialchars($row->logId) . "</td>"
         . "<td class='al_time'>" . $Conf->printableTimeShort($row->timestamp) . "</td>"
         . "<td class='al_ip'>" . htmlspecialchars($row->ipaddr) . "</td>"
@@ -219,11 +220,15 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
         $t .= Text::user_html_nolink($row);
     else if ($row->contactId)
         $t .= "[Deleted account $row->contactId]";
-    else
-        $t .= "[None]";
+    else {
+        if (preg_match(',\A(.*)<([^>]*@[^>]*)>\s*(.*)\z,', $act)) {
+            $t .= htmlspecialchars($m[2]);
+            $act = $m[1] . $m[3];
+        } else
+            $t .= "[None]";
+    }
     $t .= "</td><td class=\"al_act\">";
 
-    $act = $row->action;
     if (preg_match('/^Review (\d+)/', $act, $m)) {
         $t .= "<a href=\"" . hoturl("review", "r=$m[1]") . "\">Review " . $m[1] . "</a>";
         $act = substr($act, strlen($m[0]));

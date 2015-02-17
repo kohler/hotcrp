@@ -2266,8 +2266,11 @@ class Conference {
     function log($text, $who, $pids = null) {
         if (!$who)
             $who = 0;
-        else if (!is_numeric($who))
+        else if (!is_numeric($who)) {
+            if ($who->email && !$who->contactId)
+                $text .= " <{$who->email}>";
             $who = $who->contactId;
+        }
 
         if (is_object($pids))
             $pids = array($pids->paperId);
