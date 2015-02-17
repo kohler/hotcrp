@@ -1036,7 +1036,7 @@ class AssignmentSet {
                 $text = "$last$first <$email>";
             else
                 $text = "<$email>";
-            $ret = ContactSearch::lookup_cset($text, $cset);
+            $ret = ContactSearch::lookup_cset($text, $this->contact->cid, $cset);
             if (count($ret) == 1)
                 return $ret;
             if (count($ret) == 0)
