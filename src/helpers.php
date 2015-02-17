@@ -927,7 +927,7 @@ function whyNotText($whyNot, $action) {
     if (isset($whyNot['notWithdrawn']))
         $text .= ucfirst($thisPaper) . " has not been withdrawn. ";
     if (isset($whyNot['notSubmitted']))
-        $text .= ucfirst($thisPaper) . " was never officially submitted. ";
+        $text .= ucfirst($thisPaper) . " is not submitted. ";
     if (isset($whyNot["rejected"]))
         $text .= ucfirst($thisPaper) . " was not accepted for publication. ";
     if (isset($whyNot["decided"]))

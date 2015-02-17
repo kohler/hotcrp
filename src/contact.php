@@ -2178,10 +2178,12 @@ class Contact {
     }
 
     function can_change_tag($prow, $tag, $previndex, $index, $forceShow = null) {
+        global $Conf;
         $rights = $this->rights($prow, $forceShow);
         if ($rights->can_administer)
             return true;
-        else if (!$rights->allow_pc)
+        else if (!$rights->allow_pc
+                 || !$Conf->timePCViewPaper($prow, false))
             return false;
         $tag = TagInfo::base($tag);
         $twiddle = strpos($tag, "~");
@@ -2198,6 +2200,7 @@ class Contact {
     }
 
     function perm_change_tag($prow, $tag, $previndex, $index, $forceShow = null) {
+        global $Conf;
         if ($this->can_change_tag($prow, $tag, $previndex, $index, $forceShow))
             return null;
         $rights = $this->rights($prow, $forceShow);
@@ -2208,6 +2211,11 @@ class Contact {
             $whyNot["conflict"] = true;
             if ($rights->allow_administer)
                 $whyNot["override"] = true;
+        } else if (!$Conf->timePCViewPaper($prow, false)) {
+            if ($prow->timeWithdrawn > 0)
+                $whyNot["withdrawn"] = true;
+            else
+                $whyNot["notSubmitted"] = true;
         } else {
             $tag = TagInfo::base($tag);
             $twiddle = strpos($tag, "~");

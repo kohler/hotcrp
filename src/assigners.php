@@ -262,8 +262,15 @@ class Assigner {
     static function find($n) {
         return @self::$assigners[$n];
     }
-    function allow($user) {
-        return $user->privChair;
+    function check_paper($user, $prow) {
+        if (!$user->privChair)
+            return "Permission error.";
+        else if ($prow->timeWithdrawn > 0)
+            return "Paper $prow->paperId has been withdrawn.";
+        else if ($prow->timeSubmitted <= 0)
+            return "Paper $prow->paperId is not submitted.";
+        else
+            return true;
     }
     function contact_set() {
         return "pc";
@@ -559,8 +566,11 @@ class TagAssigner extends Assigner {
         $this->tag = $tag;
         $this->index = $index;
     }
-    function allow($user) {
-        return $user->isPC;
+    function check_paper($user, $prow) {
+        if (($whyNot = $user->perm_change_tag($prow, "any", null, 1)))
+            return whyNotText($whyNot, "change tag");
+        else
+            return true;
     }
     function allow_special_contact($cclass) {
         return true;
@@ -910,7 +920,8 @@ class AssignmentSet {
             if ($linenos && $e[0])
                 $t = '<span class="lineno">' . htmlspecialchars($e[0])
                     . ':' . $e[1] . ':</span> ' . $t;
-            $es[] = $t;
+            if (!count($es) || $es[count($es) - 1] !== $t)
+                $es[] = $t;
         }
         return $es;
     }
@@ -921,7 +932,8 @@ class AssignmentSet {
             $t = htmlspecialchars_decode(preg_replace(',<(?:[^\'">]|\'[^\']*\'|"[^"]*")*>,', "", $e[2]));
             if ($linenos && $e[2])
                 $t = $e[0] . ':' . $e[1] . ': ' . $t;
-            $es[] = $t;
+            if (!count($es) || $es[count($es) - 1] !== $t)
+                $es[] = $t;
         }
         return $es;
     }
@@ -1146,21 +1158,6 @@ class AssignmentSet {
                 continue;
             }
 
-            // check papers
-            $this->astate->fetch_prows($pids);
-            $npids = array();
-            foreach ($pids as $p) {
-                $prow = @$this->astate->prows[$p];
-                if ($prow && ($prow->timeSubmitted > 0 || $this->override))
-                    $npids[] = $p;
-                else if (!$prow)
-                    $this->error($csv->lineno(), "Paper $p does not exist");
-                else if ($prow->timeWithdrawn > 0)
-                    $this->error($csv->lineno(), "Paper $p has been withdrawn");
-                else
-                    $this->error($csv->lineno(), "Paper $p was never submitted");
-            }
-
             // check action
             if (($action = @$req["assignment"]) === null
                 && ($action = @$req["action"]) === null
@@ -1170,26 +1167,37 @@ class AssignmentSet {
             if (!($assigner = Assigner::find($action))) {
                 $this->error($csv->lineno(), "Unknown action “" . htmlspecialchars($action) . "”");
                 continue;
-            } else if (!$assigner->allow($this->contact)) {
-                $this->error($csv->lineno(), "Permission error");
-                continue;
             }
 
-            // clean user parts
+            // clean user parts, fetch papers
             $contacts = $this->lookup_users($req, $assigner, $csv);
             if ($contacts === false)
                 continue;
+            $this->astate->fetch_prows($pids);
 
             // check conflicts and perform assignment
-            foreach ($npids as $p)
+            foreach ($pids as $p) {
+                $prow = @$this->astate->prows[$p];
+                if (!$prow) {
+                    $this->error($csv->lineno(), "Paper $p does not exist");
+                    continue;
+                }
+                $err = $assigner->check_paper($this->contact, $prow);
+                if (!$err || is_string($err)) {
+                    if (is_string($err))
+                        $this->error($csv->lineno(), $err);
+                    continue;
+                }
+
                 foreach ($contacts as $contact) {
                     if ($contact && @$contact->contactId > 0 && !$this->override
-                        && $this->astate->prows[$p]->has_conflict($contact)
+                        && $prow->has_conflict($contact)
                         && !$assigner->allow_special_contact("conflict"))
                         $this->error($csv->lineno(), Text::user_html_nolink($contact) . " has a conflict with paper #$p");
                     else if (($err = $assigner->apply($p, $contact, $req, $this->astate)))
                         $this->error($csv->lineno(), $err);
                 }
+            }
         }
         if ($alertf)
             call_user_func($alertf, $this, $csv->lineno(), false);
