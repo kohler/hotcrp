@@ -238,45 +238,46 @@ class ContactSearch {
     public $me_cid;
     private $cset = null;
     public $ids = false;
+    private $only_pc = false;
+    private $contacts = false;
     public $warn_html = false;
 
     public function __construct($type, $text, $cid, $cset = null) {
         $this->type = $type;
         $this->text = $text;
-        $this->me_cid = $cid;
+        $this->me_cid = is_object($cid) ? $cid->contactId : $cid;
         $this->cset = $cset;
         if ($this->type & self::F_SQL) {
             $result = Dbl::qe("select contactId from ContactInfo where $text");
             $this->ids = Dbl::fetch_first_columns($result);
         }
         if ($this->ids === false && (!($this->type & self::F_QUOTED) || $this->text == ""))
-            $this->ids = $this->check_simple_pc();
+            $this->ids = $this->check_simple();
         if ($this->ids === false && !($this->type & self::F_QUOTED) && ($this->type & self::F_TAG))
             $this->ids = $this->check_pc_tag();
         if ($this->ids === false && !($this->type & self::F_NOUSER))
             $this->ids = $this->check_user();
     }
-    static function lookup($type, $text, $cid) {
-        $css = new ContactSearch($type, $text, $cid);
-        return $css->ids;
+    static function make_pc($text, $cid) {
+        return new ContactSearch(self::F_PC | self::F_TAG, $text, $cid);
     }
-    static function lookup_pc($text, $cid) {
-        return self::lookup(self::F_PC | self::F_TAG, $text, $cid);
+    static function make_special($text, $cid) {
+        return new ContactSearch(self::F_PC | self::F_TAG | self::F_NOUSER, $text, $cid);
     }
-    static function lookup_special($text, $cid) {
-        return self::lookup(self::F_PC | self::F_TAG | self::F_NOUSER, $text, $cid);
+    static function make_cset($text, $cid, $cset) {
+        return new ContactSearch(0, $text, $cid, $cset);
     }
-    static function lookup_cset($text, $cid, $cset) {
-        return self::lookup(0, $text, $cid, $cset);
-    }
-    private function check_simple_pc() {
+    private function check_simple() {
         if ($this->text == ""
             || strcasecmp($this->text, "pc") == 0
             || (strcasecmp($this->text, "any") == 0 && ($this->type & self::F_PC)))
             return array_keys(pcMembers());
-        else if (strcasecmp($this->text, "me") == 0)
+        else if (strcasecmp($this->text, "me") == 0
+                 && (!($this->type & self::F_PC)
+                     || (($pcm = pcMembers()) && isset($pcm[$this->me_cid]))))
             return array($this->me_cid);
-        return false;
+        else
+            return false;
     }
     private function check_pc_tag() {
         $need = $neg = false;
@@ -304,9 +305,7 @@ class ContactSearch {
                 $result = Dbl::qe("select contactId from ContactInfo where contactId ?A", $a);
                 return Dbl::fetch_first_columns($result);
             }
-        }
-
-        if ($need) {
+        } else if ($need) {
             $this->warn_html = "No such PC tag “" . htmlspecialchars($this->text) . "”.";
             return array();
         } else
@@ -352,7 +351,7 @@ class ContactSearch {
                 $x = sqlq_for_like($e);
                 $q[] = "email like '" . preg_replace('/[\s*]+/', "%", $x) . "'";
             }
-            $result = Dbl::qe_raw("select firstName, lastName, unaccentedName, email, contactId from ContactInfo where " . join(" or ", $q));
+            $result = Dbl::qe_raw("select firstName, lastName, unaccentedName, email, contactId, roles from ContactInfo where " . join(" or ", $q));
             $cs = array();
             while ($result && ($row = $result->fetch_object("Contact")))
                 $cs[$row->contactId] = $row;
@@ -387,6 +386,27 @@ class ContactSearch {
         if ($result)
             Dbl::free($result);
         return $ids;
+    }
+    public function contacts() {
+        global $Me;
+        if ($this->contacts === false) {
+            $this->contacts = array();
+            $pcm = pcMembers();
+            foreach ($this->ids as $cid)
+                if ($this->cset && ($p = @$this->cset[$cid]))
+                    $this->contacts[] = $p;
+                else if (($p = @$pcm[$cid]))
+                    $this->contacts[] = $p;
+                else if ($Me->contactId == $cid)
+                    $this->contacts[] = $Me;
+                else
+                    $this->contacts[] = Contact::find_by_id($cid);
+        }
+        return $this->contacts;
+    }
+    public function contact($i) {
+        $this->contacts();
+        return @$this->contacts[$i];
     }
 }
 
@@ -1067,7 +1087,7 @@ class PaperSearch {
         $ret = array("");
         $twiddle = strpos($tagword, "~");
         if ($this->privChair && $twiddle > 0 && !ctype_digit(substr($tagword, 0, $twiddle))) {
-            $ret = ContactSearch::lookup_pc(substr($tagword, 0, $twiddle), $this->cid);
+            $ret = ContactSearch::make_pc(substr($tagword, 0, $twiddle), $this->cid)->ids;
             if (count($ret) == 0)
                 $this->warn("“" . htmlspecialchars($c) . "” doesn’t match a PC email.");
             $tagword = substr($tagword, $twiddle);

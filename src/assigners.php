@@ -622,7 +622,7 @@ class TagAssigner extends Assigner {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::lookup_pc($c, $state->contact->contactId);
+            $twiddlecids = ContactSearch::make_pc($c, $state->contact->contactId)->ids;
             if (count($twiddlecids) == 0)
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) > 1)
@@ -666,7 +666,7 @@ class TagAssigner extends Assigner {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::lookup_pc($c, $state->contact->contactId);
+            $twiddlecids = ContactSearch::make_pc($c, $state->contact->contactId)->ids;
             if (count($twiddlecids) == 0)
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) == 1)
@@ -1001,9 +1001,9 @@ class AssignmentSet {
 
         // check special: "pc", "me", PC tag, "none", "any", "external"
         if ($special && !$first && (!$lemail || !$last)) {
-            $ret = ContactSearch::lookup_special($special, $this->contact->contactId);
-            if ($ret !== false)
-                return $ret;
+            $ret = ContactSearch::make_special($special, $this->contact->contactId);
+            if ($ret->ids !== false)
+                return $ret->contacts();
         }
         if ($special === "none" || $special === "any") {
             if (!$assigner->allow_special_contact($special))
@@ -1036,10 +1036,10 @@ class AssignmentSet {
                 $text = "$last$first <$email>";
             else
                 $text = "<$email>";
-            $ret = ContactSearch::lookup_cset($text, $this->contact->cid, $cset);
-            if (count($ret) == 1)
-                return $ret;
-            if (count($ret) == 0)
+            $ret = ContactSearch::make_cset($text, $this->contact->cid, $cset);
+            if (count($ret->ids) == 1)
+                return $ret->contacts();
+            else if (count($ret->ids) == 0)
                 $this->error($csv->lineno(), "No user matches “" . self::req_user_html($req) . "”.");
             else
                 $this->error($csv->lineno(), "“" . self::req_user_html($req) . "” matches more than one user, use a full email address to disambiguate.");

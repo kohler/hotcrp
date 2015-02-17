@@ -125,12 +125,11 @@ function setTagIndexes() {
 	} else if ($RealMe->privChair && preg_match('/\A\s*<\s*([^<>]*?(|<[^<>]*>))\s*>\s*\z/', $l, $m)) {
 	    if (count($settings) && $Me)
 		saveTagIndexes($tag, $filename, $settings, $titles, $linenos, $errors);
-            $ret = ContactSearch::lookup_pc($m[1], $RealMe->contactId);
+            $ret = ContactSearch::make_pc($m[1], $RealMe);
             $Me = null;
-            if (count($ret) == 1) {
-                $pcm = pcMembers();
-                $Me = $pcm[$ret[0]];
-            } else if (count($ret) == 0)
+            if (count($ret->ids) == 1)
+                $Me = $ret->contact(0);
+            else if (count($ret->ids) == 0)
                 $errors[$lineno] = htmlspecialchars($m[1]) . " matches no PC member";
             else
                 $errors[$lineno] = htmlspecialchars($m[1]) . " matches more than one PC member, give a full email address to disambiguate";
