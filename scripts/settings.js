@@ -138,7 +138,8 @@ function fill_field(fid, fieldj) {
     $("#description_" + fid).val(fieldj.description || "");
     $("#authorView_" + fid).val(fieldj.view_score || "pc");
     $("#options_" + fid).val(options_to_text(fieldj));
-    $("#removed_" + fid).val(fieldj.position ? 0 : 1);
+    if (!fieldj.selector)
+        $("#removed_" + fid).val(fieldj.position ? 0 : 1);
     check_change(fid);
     return false;
 }
