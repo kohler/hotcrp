@@ -504,7 +504,7 @@ class PaperSearch {
         "conflict" => "conflict", "conf" => "conflict",
         "reconflict" => "reconflict", "reconf" => "reconflict",
         "pcconflict" => "pcconflict", "pcconf" => "pcconflict",
-        "status" => "status", "has" => "has",
+        "status" => "status", "has" => "has", "is" => "is",
         "rating" => "rate", "rate" => "rate",
         "revpref" => "revpref", "pref" => "revpref",
         "repref" => "revpref",
@@ -1526,7 +1526,7 @@ class PaperSearch {
         }
         if ($keyword == "option")
             $this->_search_options($word, $qt, true);
-        if ($keyword == "status") {
+        if ($keyword == "status" || $keyword == "is") {
             if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
                 $qt[] = new SearchTerm("pf", 0, array("timeWithdrawn", ">0"));
             else if (strcasecmp($word, "submitted") == 0 || strcasecmp($word, "submit") == 0 || strcasecmp($word, "sub") == 0)
