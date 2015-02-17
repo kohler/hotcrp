@@ -84,7 +84,7 @@ function setTagIndexes() {
 	    $Conf->errorMsg("Internal error: cannot read file.");
 	    return;
 	}
-	$filename = $_FILES["file"]["name"]);
+	$filename = @$_FILES["file"]["name"];
     } else if (!($text = defval($_REQUEST, "data"))) {
 	$Conf->errorMsg("Choose a file first.");
 	return;
