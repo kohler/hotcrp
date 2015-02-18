@@ -133,9 +133,9 @@ class SelectorPaperColumn extends PaperColumn {
         return "<col width='0*' />";
     }
     private function checked($pl, $row) {
-        return ($this->name == "selon"
-                || ($this->name == "selconf" && $row->reviewerConflictType > 0))
-            && (!$pl->papersel || defval($pl->papersel, $row->paperId, 1));
+        $def = ($this->name == "selon"
+                || ($this->name == "selconf" && $row->reviewerConflictType > 0));
+        return $pl->papersel ? defval($pl->papersel, $row->paperId, $def) : $def;
     }
     public function content($pl, $row) {
         if ($this->name == "selunlessconf" && $row->reviewerConflictType)

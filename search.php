@@ -1140,6 +1140,11 @@ $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, array("sort" => true, "list" => true,
                                        "display" => defval($_REQUEST, "display")));
+    if (check_post()) {
+        $pl->papersel = array();
+        foreach (SearchActions::selection() as $pid)
+            $pl->papersel[$pid] = 1;
+    }
     $pl_text = $pl->text($Search->limitName, array("class" => "pltable_full",
                                                    "attributes" => array("hotcrp_foldsession" => 'pldisplay.$')));
     $pldisplay = $pl->display;
