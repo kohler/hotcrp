@@ -153,7 +153,7 @@ class CsvParser {
                         $line .= $this->lines[$this->pos];
                         ++$this->pos;
                         $linelen = self::linelen($line);
-                    } else if ($line[$pos + 1] == "\"")
+                    } else if (@$line[$pos + 1] == "\"")
                         ++$pos;
                     else
                         break;
