@@ -1009,9 +1009,11 @@ function whyNotText($whyNot, $action) {
     if (@$whyNot["voteTagNegative"])
         $text .= "Negative votes aren’t allowed. ";
     // finish it off
-    if (isset($whyNot['chairMode']))
+    if (isset($whyNot["chairMode"]))
         $text .= "(<a class='nowrap' href=\"" . selfHref(array("forceShow" => 1)) . "\">" . ucfirst($action) . " the paper anyway</a>) ";
-    if (isset($whyNot['forceShow']))
+    if (isset($whyNot["forceShow"]) && $whyNot["forceShow"] === true)
+        $text .= "(As an administrator, you can override your conflict.) ";
+    else if (isset($whyNot["forceShow"]))
         $text .= "(<a class='nowrap' href=\"". selfHref(array("forceShow" => 1)) . "\">Override conflict</a>) ";
     if ($text && $action == "view")
         $text .= "Enter a paper number above, or <a href='" . hoturl("search", "q=") . "'>list the papers you can view</a>. ";

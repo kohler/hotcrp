@@ -130,6 +130,7 @@ class AssignmentState {
             $item = $st->items[$k] = new AssignmentItem(false);
         $item->after = $x;
         $item->lineno = $this->lineno;
+        return $item;
     }
     public function diff() {
         $diff = array();
@@ -262,7 +263,7 @@ class Assigner {
     static function find($n) {
         return @self::$assigners[$n];
     }
-    function check_paper($user, $prow) {
+    function check_paper($user, $prow, $state) {
         if (!$user->privChair)
             return "Permission error.";
         else if ($prow->timeWithdrawn > 0)
@@ -566,8 +567,8 @@ class TagAssigner extends Assigner {
         $this->tag = $tag;
         $this->index = $index;
     }
-    function check_paper($user, $prow) {
-        if (($whyNot = $user->perm_change_tag($prow, "any", null, 1)))
+    function check_paper($user, $prow, $state) {
+        if (($whyNot = $user->perm_change_tag($prow, "any", null, 1, $state->override)))
             return whyNotText($whyNot, "change tag");
         else
             return true;
@@ -651,22 +652,25 @@ class TagAssigner extends Assigner {
         if ($this->isadd === self::NEXT || $this->isadd === self::NEXTSEQ)
             $index = $this->apply_next_index($pid, $tag, $state, $m);
         else
-            $index = $m[3] ? cvtint($m[4], 0) : 0;
+            $index = $m[3] ? cvtint($m[4], 0) : null;
 
         // save assignment
-        $state->add(array("type" => "tag", "pid" => $pid, "ltag" => strtolower($tag),
-                          "_tag" => $tag, "_index" => $index));
+        $ltag = strtolower($tag);
+        if ($index === null
+            && ($x = $state->query(array("type" => "tag", "pid" => $pid, "ltag" => $ltag))))
+            $index = $x[0]["_index"];
+        $item = $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
+                                  "_tag" => $tag, "_index" => $index ? : 0));
         if (($vtag = TagInfo::vote_base($tag)))
             $this->account_votes($pid, $vtag, $state);
     }
     private function apply_next_index($pid, $tag, $state, $m) {
         $ltag = strtolower($tag);
         $index = cvtint($m[3] ? $m[4] : null, null);
+        // NB ignore $index on second & subsequent nexttag assignments
         if (!($fin = @$state->finishers["seqtag $ltag"]))
             $fin = $state->finishers["seqtag $ltag"] =
                 new NextTagAssigner($state, $tag, $index, $this->isadd == self::NEXTSEQ);
-        else
-            /* XXX warn if non-null  */;
         unset($fin->pidindex[$pid]);
         return $fin->next_index($this->isadd == self::NEXTSEQ);
     }
@@ -750,7 +754,16 @@ class TagAssigner extends Assigner {
                                                              $previndex, $index, $state->override))) {
             if (@$whyNot["otherTwiddleTag"])
                 return null;
-            throw new Exception(whyNotText($whyNot, $index === null ? "remove tag" : "set tag"));
+            if ($index === null)
+                $what = "Remove #";
+            else if ($previndex === null)
+                $what = "Add #";
+            else
+                $what = "Update #";
+            $what .= $item["_tag"];
+            if ($index)
+                $what .= "#$index";
+            throw new Exception($what . ": " . whyNotText($whyNot, "tag"));
         }
         // actually assign
         return new TagAssigner($item["pid"], true, $item["_tag"], $index);
@@ -1140,9 +1153,11 @@ class AssignmentSet {
 
             // parse paper
             $pfield = @trim($req["paper"]);
-            if ($pfield !== "" && ctype_digit($pfield))
+            $pfield_straight = false;
+            if ($pfield !== "" && ctype_digit($pfield)) {
                 $pids = array(intval($pfield));
-            else if ($pfield !== "") {
+                $pfield_straight = true;
+            } else if ($pfield !== "") {
                 if (!($pids = @$searches[$pfield])) {
                     $search = new PaperSearch($this->contact, $pfield);
                     $pids = $searches[$pfield] = $search->paperList();
@@ -1182,9 +1197,9 @@ class AssignmentSet {
                     $this->error($csv->lineno(), "Paper $p does not exist");
                     continue;
                 }
-                $err = $assigner->check_paper($this->contact, $prow);
+                $err = $assigner->check_paper($this->contact, $prow, $this->astate);
                 if (!$err || is_string($err)) {
-                    if (is_string($err))
+                    if ($pfield_straight && is_string($err))
                         $this->error($csv->lineno(), $err);
                     continue;
                 }

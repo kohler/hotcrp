@@ -2210,7 +2210,7 @@ class Contact {
         else if ($rights->conflict_type > 0) {
             $whyNot["conflict"] = true;
             if ($rights->allow_administer)
-                $whyNot["override"] = true;
+                $whyNot["forceShow"] = true;
         } else if (!$Conf->timePCViewPaper($prow, false)) {
             if ($prow->timeWithdrawn > 0)
                 $whyNot["withdrawn"] = true;

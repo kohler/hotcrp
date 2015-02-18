@@ -291,39 +291,62 @@ function tagaction() {
 
     $errors = array();
     $papers = SearchActions::selection();
-    if (!$Me->privChair) {
-        $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => $papers)));
-        while (($row = PaperInfo::fetch($result, $Me)))
-            if ($row->conflictType > 0) {
-                $errors[] = "You have a conflict with paper #" . $row->paperId . " and cannot change its tags.";
-                $papers = array_diff($papers, array($row->paperId));
-            }
-    }
-
-    if (count($errors))
-        $Conf->errorMsg(join("<br/>", $errors));
 
     $act = $_REQUEST["tagtype"];
-    $tag = $_REQUEST["tag"];
-    $tagger = new Tagger;
-    if (count($papers) && ($act == "a" || $act == "d" || $act == "s" || $act == "so" || $act == "ao" || $act == "sos" || $act == "sor" || $act == "aos" || $act == "da"))
-        $tagger->save($papers, $tag, $act);
-    else if (count($papers) && $act == "cr" && $Me->privChair) {
+    $tagreq = trim(str_replace(",", " ", (string) $_REQUEST["tag"]));
+    $tags = preg_split(';\s+;', $tagreq);
+
+    if ($act == "da") {
+        $otags = $tags;
+        foreach ($otags as $t)
+            $tags[] = "all~" . preg_replace(',\A.*~([^~]+)\z', '$1', $t);
+        $act = "d";
+    } else if ($act == "sor")
+        shuffle($papers);
+
+    $x = array("action,paper,tag\n");
+    if ($act == "s" || $act == "so" || $act == "sos" || $act == "sor")
+        foreach ($tags as $t)
+            $x[] = "cleartag,all," . TagInfo::base($t) . "\n";
+    if ($act == "s" || $act == "a")
+        $action = "tag";
+    else if ($act == "d")
+        $action = "cleartag";
+    else if ($act == "so" || $act == "sor" || $act == "ao")
+        $action = "nexttag";
+    else if ($act == "sos" || $act == "aos")
+        $action = "seqnexttag";
+    else
+        $action = null;
+
+    if (count($papers) && $action) {
+        foreach ($papers as $p) {
+            foreach ($tags as $t)
+                $x[] = "$action,$p,$t\n";
+        }
+        $assignset = new AssignmentSet($Me, $Me->privChair);
+        $assignset->parse(join("", $x));
+        if (($error = join("<br>", $assignset->errors_html())))
+            $Error["tags"] = "Your tag assignments weren’t changed:<br>$error";
+        $assignset->execute();
+    } else if (count($papers) && $act == "cr" && $Me->privChair) {
         $source_tag = trim(defval($_REQUEST, "tagcr_source", ""));
         if ($source_tag == "")
-            $source_tag = (substr($tag, 0, 2) == "~~" ? substr($tag, 2) : $tag);
-        if ($tagger->check($tag, Tagger::NOPRIVATE | Tagger::NOVALUE)
+            $source_tag = (substr($tagreq, 0, 2) == "~~" ? substr($tagreq, 2) : $tagreq);
+        $tagger = new Tagger;
+        if ($tagger->check($tagreq, Tagger::NOPRIVATE | Tagger::NOVALUE)
             && $tagger->check($source_tag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
-            $r = new PaperRank($source_tag, $tag, $papers,
+            $r = new PaperRank($source_tag, $tagreq, $papers,
                                defval($_REQUEST, "tagcr_gapless"),
                                "Search", "search");
             $r->run(defval($_REQUEST, "tagcr_method"));
             $r->save();
             if ($_REQUEST["q"] === "")
-                $_REQUEST["q"] = "order:$tag";
+                $_REQUEST["q"] = "order:$tagreq";
         } else
             defappend($Error["tags"], $tagger->error_html . "<br />\n");
     }
+
     if (isset($Error["tags"]))
         $Conf->errorMsg($Error["tags"]);
     if (!$Conf->headerPrinted && defval($_REQUEST, "ajax"))
