@@ -1482,7 +1482,7 @@ function doSubGroup() {
     echo "<strong>Blind submission:</strong> Are author names hidden from reviewers?<br />\n";
     doRadio("sub_blind", array(Conference::BLIND_ALWAYS => "Yes—submissions are anonymous",
                                Conference::BLIND_NEVER => "No—author names are visible to reviewers",
-                               Conference::BLIND_UNTILREVIEW => "Blind until review—author names become visible after review submission",
+                               Conference::BLIND_UNTILREVIEW => "Blind until review—reviewers can see author names after submitting a review",
                                Conference::BLIND_OPTIONAL => "Depends—authors decide whether to expose their names"));
 
     echo "<div class='g'></div>\n<table>\n";
