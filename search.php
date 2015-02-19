@@ -319,6 +319,7 @@ function tagaction() {
     else
         $action = null;
 
+    $success = true;
     if (count($papers) && $action) {
         foreach ($papers as $p) {
             foreach ($tags as $t)
@@ -326,9 +327,14 @@ function tagaction() {
         }
         $assignset = new AssignmentSet($Me, $Me->privChair);
         $assignset->parse(join("", $x));
-        if (($error = join("<br>", $assignset->errors_html())))
-            $Error["tags"] = "Your tag assignments weren’t changed:<br>$error";
-        $assignset->execute();
+        if (($error = join("<br>", $assignset->errors_html()))) {
+            if ($assignset->has_assigners()) {
+                $Conf->warnMsg("Some tag assignments were ignored:<br>$error");
+                $assignset->clear_errors();
+            } else
+                $Conf->errorMsg($error);
+        }
+        $success = $assignset->execute();
     } else if (count($papers) && $act == "cr" && $Me->privChair) {
         $source_tag = trim(defval($_REQUEST, "tagcr_source", ""));
         if ($source_tag == "")
@@ -343,15 +349,15 @@ function tagaction() {
             $r->save();
             if ($_REQUEST["q"] === "")
                 $_REQUEST["q"] = "order:$tagreq";
-        } else
-            defappend($Error["tags"], $tagger->error_html . "<br />\n");
+        } else {
+            $Conf->errorMsg($tagger->error_html);
+            $success = false;
+        }
     }
 
-    if (isset($Error["tags"]))
-        $Conf->errorMsg($Error["tags"]);
     if (!$Conf->headerPrinted && defval($_REQUEST, "ajax"))
-        $Conf->ajaxExit(array("ok" => !isset($Error["tags"])));
-    else if (!$Conf->headerPrinted && !isset($Error["tags"])) {
+        $Conf->ajaxExit(array("ok" => $success));
+    else if (!$Conf->headerPrinted && $success) {
         $args = array();
         foreach (array("tag", "tagtype", "tagact", "tagcr_method", "tagcr_source", "tagcr_gapless") as $arg)
             if (isset($_REQUEST[$arg]))

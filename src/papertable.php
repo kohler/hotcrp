@@ -1297,7 +1297,7 @@ class PaperTable {
 
             $tx = $tagger->unparse_and_link($viewable, $tags, false,
                                             !$this->prow->has_conflict($Me));
-            $is_editable = $site && $Me->can_set_tags($this->prow);
+            $is_editable = $site && $Me->can_change_some_tag($this->prow);
             $unfolded = $is_editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") == "tags");
 
             echo $this->_papstripBegin("tags", !$unfolded,

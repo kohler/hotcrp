@@ -2170,13 +2170,6 @@ class Contact {
             || ($rights->allow_pc_broad && $Conf->setting("tag_seeall") > 0);
     }
 
-    function can_set_tags($prow, $forceShow = null) {
-        if (!$prow)
-            return $this->isPC;
-        $rights = $this->rights($prow, $forceShow);
-        return $rights->allow_pc;
-    }
-
     function can_change_tag($prow, $tag, $previndex, $index, $forceShow = null) {
         global $Conf;
         $rights = $this->rights($prow, $forceShow);
@@ -2185,6 +2178,8 @@ class Contact {
         else if (!$rights->allow_pc
                  || !$Conf->timePCViewPaper($prow, false))
             return false;
+        else if (!$tag)
+            return true;
         $tag = TagInfo::base($tag);
         $twiddle = strpos($tag, "~");
         if (($twiddle === 0 && $tag[1] === "~")
@@ -2233,6 +2228,14 @@ class Contact {
             }
         }
         return $whyNot;
+    }
+
+    function can_change_some_tag($prow, $forceShow = null) {
+        return $this->can_change_tag($prow, null, null, null, $forceShow);
+    }
+
+    function perm_change_some_tag($prow, $forceShow = null) {
+        return $this->perm_change_tag($prow, null, null, null, $forceShow);
     }
 
     function can_view_reviewer_tags($prow) {

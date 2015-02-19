@@ -568,7 +568,7 @@ class TagAssigner extends Assigner {
         $this->index = $index;
     }
     function check_paper($user, $prow, $state) {
-        if (($whyNot = $user->perm_change_tag($prow, "any", null, 1, $state->override)))
+        if (($whyNot = $user->perm_change_some_tag($prow, $state->override)))
             return whyNotText($whyNot, "change tag");
         else
             return true;
@@ -910,6 +910,18 @@ class AssignmentSet {
         $this->cmap = new AssignerContacts;
     }
 
+    public function has_assigners() {
+        return count($this->assigners) > 0;
+    }
+
+    public function has_errors() {
+        return count($this->errors_) > 0;
+    }
+
+    public function clear_errors() {
+        $this->errors_ = array();
+    }
+
     private function error($lineno, $message) {
         $e = array($this->filename, $lineno, $message);
         if (($n = count($this->errors_) - 1) >= 0
@@ -920,10 +932,6 @@ class AssignmentSet {
         else
             $this->errors_[] = $e;
         return false;
-    }
-
-    public function has_errors() {
-        return count($this->errors_) > 0;
     }
 
     public function errors_html($linenos = false) {
