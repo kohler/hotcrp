@@ -4,6 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Mimetype {
+    const TXT = 1;
+    const PDF = 2;
 
     static $tmap = array();
     static $alltypes = array();
@@ -88,8 +90,8 @@ class Mimetype {
 
 }
 
-Mimetype::register("text/plain", "txt", 1, "text");
-Mimetype::register("application/pdf", "pdf", 2, "PDF");
+Mimetype::register("text/plain", "txt", Mimetype::TXT, "text");
+Mimetype::register("application/pdf", "pdf", Mimetype::PDF, "PDF");
 Mimetype::register("application/postscript", "ps", 3, "PostScript");
 Mimetype::register("application/vnd.ms-powerpoint", "ppt", 4, "PowerPoint");
 Mimetype::register("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx", 5, "PowerPoint");

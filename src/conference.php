@@ -1224,7 +1224,7 @@ class Conference {
         $docs = array();
         while (($doc = $this->document_row($result, $documentType))) {
             if (!$doc->mimetype)
-                $doc->mimetype = MIMETYPEID_PDF;
+                $doc->mimetype = Mimetype::PDF;
             $doc->filename = HotCRPDocument::filename($doc);
             $docs[] = $doc;
         }

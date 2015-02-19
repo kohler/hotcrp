@@ -50,9 +50,6 @@ define("DTYPE_SUBMISSION", 0);
 define("DTYPE_FINAL", -1);
 define("DTYPE_COMMENT", -2);
 
-define("MIMETYPEID_TXT", 1);
-define("MIMETYPEID_PDF", 2);
-
 define("OPTIONTYPE_CHECKBOX", 0);
 define("OPTIONTYPE_SELECTOR", 1); /* see also script.js:doopttype */
 define("OPTIONTYPE_NUMERIC", 2);
