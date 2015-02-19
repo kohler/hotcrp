@@ -83,6 +83,8 @@ define("TAG_MAXLEN", 40);
 define("CAPTYPE_RESETPASSWORD", 1);
 define("CAPTYPE_CHANGEEMAIL", 2);
 
+define("ALWAYS_OVERRIDE", 9999);
+
 global $reviewScoreNames;
 $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
                           "grammar", "reviewerQualification", "potential",

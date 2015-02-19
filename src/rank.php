@@ -44,9 +44,6 @@ class PaperRank {
         } else
             $this->papershuffle = array();
 
-        // delete global ranks
-        $Conf->qe("delete from PaperTag where tag='" . sqlq($dest_tag) . "'");
-
         // load current ranks: $userrank maps user => [rank, paper]
         $result = $Conf->qe("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($source_tag) . "' and paperId in (" . join(",", $papersel) . ")");
         $len = strlen($source_tag) + 1;
@@ -720,17 +717,12 @@ class PaperRank {
 
 
     // save calculated ranks
-    function save() {
-        global $Conf, $Me;
-        $sqltag = sqlq($this->dest_tag);
-        $values = array();
+    function apply($assignset) {
+        $assignset->push_override(ALWAYS_OVERRIDE);
+        $assignset->apply(array("paper" => "all", "action" => "cleartag", "tag" => $this->dest_tag));
         foreach ($this->rank as $p => $rank)
-            $values[] = "($p, '$sqltag', $rank)";
-        $result = $Conf->qe("insert into PaperTag (paperId, tag, tagIndex) values " . join(", ", $values));
-        if ($result) {
-            $Conf->confirmMsg("Ranks saved.");
-            $Me->log_activity("Tag calculate rank: " . $this->dest_tag, array_keys($this->rank));
-        }
+            $assignset->apply(array("paper" => $p, "action" => "tag", "tag" => $this->dest_tag, "index" => $rank));
+        $assignset->pop_override();
     }
 
 }

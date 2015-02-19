@@ -7,6 +7,7 @@ class AssignmentItem implements ArrayAccess {
     public $before;
     public $after = null;
     public $lineno = null;
+    public $override = null;
     public function __construct($before) {
         $this->before = $before;
     }
@@ -97,6 +98,7 @@ class AssignmentState {
             if ($remove) {
                 $item->after = false;
                 $item->lineno = $this->lineno;
+                $item->override = $this->override;
             }
         }
     }
@@ -130,6 +132,7 @@ class AssignmentState {
             $item = $st->items[$k] = new AssignmentItem(false);
         $item->after = $x;
         $item->lineno = $this->lineno;
+        $item->override = $this->override;
         return $item;
     }
     public function diff() {
@@ -547,10 +550,11 @@ class NextTagAssigner {
         foreach ($this->pidindex as $pid => $index)
             if ($index >= $this->first_index && $delta) {
                 $x = $state->query_unmodified(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
-                if (count($x))
-                    $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
-                                      "_tag" => $this->tag, "_index" => $index + $delta,
-                                      "_override" => true));
+                if (count($x)) {
+                    $item = $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
+                                              "_tag" => $this->tag, "_index" => $index + $delta));
+                    $item->override = ALWAYS_OVERRIDE;
+                }
             }
     }
 }
@@ -659,8 +663,8 @@ class TagAssigner extends Assigner {
         if ($index === null
             && ($x = $state->query(array("type" => "tag", "pid" => $pid, "ltag" => $ltag))))
             $index = $x[0]["_index"];
-        $item = $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
-                                  "_tag" => $tag, "_index" => $index ? : 0));
+        $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
+                          "_tag" => $tag, "_index" => $index ? : 0));
         if (($vtag = TagInfo::vote_base($tag)))
             $this->account_votes($pid, $vtag, $state);
     }
@@ -736,8 +740,9 @@ class TagAssigner extends Assigner {
         $total = 0;
         foreach ($res as $x)
             if (preg_match($tag_re, $x["ltag"]))
-                $total += $x["_index"];
-        $state->add(array("type" => "tag", "pid" => $pid, "ltag" => strtolower($vtag), "_tag" => $vtag, "_index" => $total, "_vote" => true));
+                $total += (int) $x["_index"];
+        $state->add(array("type" => "tag", "pid" => $pid, "ltag" => strtolower($vtag),
+                          "_tag" => $vtag, "_index" => $total, "_vote" => true));
     }
     function realize($item, $cmap, $state) {
         $prow = $state->prow($item["pid"]);
@@ -748,10 +753,8 @@ class TagAssigner extends Assigner {
         // check permissions
         if ($item["_vote"])
             $index = $index ? : null;
-        else if ($item["_override"])
-            /* always assign index */;
         else if (($whyNot = $state->contact->perm_change_tag($prow, $item["ltag"],
-                                                             $previndex, $index, $state->override))) {
+                                                             $previndex, $index, $item->override))) {
             if (@$whyNot["otherTwiddleTag"])
                 return null;
             if ($index === null)
@@ -896,18 +899,30 @@ class AssignmentSet {
     private $errors_ = array();
     private $my_conflicts = null;
     private $contact;
-    private $override;
+    private $override_stack = array();
     private $astate;
     private $cmap;
+    private $searches = array();
     private $reviewer_set = false;
 
     function __construct($contact, $override = null) {
         $this->contact = $contact;
-        $this->override = $override;
-        if ($this->override === null)
-            $this->override = $this->contact->is_admin_force();
+        if ($override === null)
+            $override = $this->contact->is_admin_force();
         $this->astate = new AssignmentState($contact, $override);
         $this->cmap = new AssignerContacts;
+    }
+
+    public function push_override($override) {
+        if ($override === null)
+            $override = $this->contact->is_admin_force();
+        $this->override_stack[] = $this->astate->override;
+        $this->astate->override = $override;
+    }
+
+    public function pop_override() {
+        if (count($this->override_stack))
+            $this->astate->override = array_pop($this->override_stack);
     }
 
     public function has_assigners() {
@@ -922,7 +937,13 @@ class AssignmentSet {
         $this->errors_ = array();
     }
 
-    private function error($lineno, $message) {
+    // error(message) OR error(lineno, message)
+    public function error($message, $message1 = null) {
+        if (is_int($message) && is_string($message1)) {
+            $lineno = $message;
+            $message = $message1;
+        } else
+            $lineno = $this->astate->lineno;
         $e = array($this->filename, $lineno, $message);
         if (($n = count($this->errors_) - 1) >= 0
             && $this->errors_[$n][0] == $e[0]
@@ -938,7 +959,7 @@ class AssignmentSet {
         $es = array();
         foreach ($this->errors_ as $e) {
             $t = $e[2];
-            if ($linenos && $e[0])
+            if ($linenos && $e[0] && $e[1])
                 $t = '<span class="lineno">' . htmlspecialchars($e[0])
                     . ':' . $e[1] . ':</span> ' . $t;
             if (!count($es) || $es[count($es) - 1] !== $t)
@@ -1001,7 +1022,7 @@ class AssignmentSet {
         return $this->reviewer_set;
     }
 
-    private function lookup_users(&$req, $assigner, $csv) {
+    private function lookup_users(&$req, $assigner) {
         // move all usable identification data to email, firstName, lastName
         if (isset($req["name"]))
             self::apply_user_parts($req, Text::split_name($req["name"]));
@@ -1029,7 +1050,7 @@ class AssignmentSet {
             if ($assigner->allow_special_contact("missing"))
                 return array(null);
             else
-                return $this->error($csv->lineno(), "User missing.");
+                return $this->error("User missing.");
         }
 
         // check special: "pc", "me", PC tag, "none", "any", "external"
@@ -1040,7 +1061,7 @@ class AssignmentSet {
         }
         if ($special === "none" || $special === "any") {
             if (!$assigner->allow_special_contact($special))
-                return $this->error($csv->lineno(), "“{$special}” not allowed here");
+                return $this->error("“{$special}” not allowed here");
             return array((object) array("roles" => 0, "contactId" => null, "email" => $special, "sorter" => ""));
         }
         if (($special === "ext" || $special === "external")
@@ -1073,19 +1094,19 @@ class AssignmentSet {
             if (count($ret->ids) == 1)
                 return $ret->contacts();
             else if (count($ret->ids) == 0)
-                $this->error($csv->lineno(), "No user matches “" . self::req_user_html($req) . "”.");
+                $this->error("No user matches “" . self::req_user_html($req) . "”.");
             else
-                $this->error($csv->lineno(), "“" . self::req_user_html($req) . "” matches more than one user, use a full email address to disambiguate.");
+                $this->error("“" . self::req_user_html($req) . "” matches more than one user, use a full email address to disambiguate.");
             return false;
         }
 
         // create contact
         if (!$email)
-            return $this->error($csv->lineno(), "Missing email address");
+            return $this->error("Missing email address");
         $contact = $this->cmap->make_email($email);
         if ($contact->contactId < 0) {
             if (!validate_email($email))
-                return $this->error($csv->lineno(), "Email address “" . htmlspecialchars($email) . "” is invalid.");
+                return $this->error("Email address “" . htmlspecialchars($email) . "” is invalid.");
             if (!isset($contact->firstName) && @$req["firstName"])
                 $contact->firstName = $req["firstName"];
             if (!isset($contact->lastName) && @$req["lastName"])
@@ -1141,7 +1162,6 @@ class AssignmentSet {
         global $Conf;
         $this->filename = $filename;
         $this->astate->defaults = $defaults ? : array();
-        $searches = array();
 
         $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
         $csv->set_comment_chars("%#");
@@ -1158,73 +1178,80 @@ class AssignmentSet {
                     call_user_func($alertf, $this, $csv->lineno(), $req);
                 set_time_limit(30);
             }
-
-            // parse paper
-            $pfield = @trim($req["paper"]);
-            $pfield_straight = false;
-            if ($pfield !== "" && ctype_digit($pfield)) {
-                $pids = array(intval($pfield));
-                $pfield_straight = true;
-            } else if ($pfield !== "") {
-                if (!($pids = @$searches[$pfield])) {
-                    $search = new PaperSearch($this->contact, $pfield);
-                    $pids = $searches[$pfield] = $search->paperList();
-                    foreach ($search->warnings as $w)
-                        $this->error($csv->lineno(), $w);
-                }
-                if (!count($pids)) {
-                    $this->error($csv->lineno(), "No papers match “" . htmlspecialchars($pfield) . "”");
-                    continue;
-                }
-            } else {
-                $this->error($csv->lineno(), "Bad paper column");
-                continue;
-            }
-
-            // check action
-            if (($action = @$req["assignment"]) === null
-                && ($action = @$req["action"]) === null
-                && ($action = @$req["type"]) === null)
-                $action = $this->astate->defaults["action"];
-            $action = strtolower(trim($action));
-            if (!($assigner = Assigner::find($action))) {
-                $this->error($csv->lineno(), "Unknown action “" . htmlspecialchars($action) . "”");
-                continue;
-            }
-
-            // clean user parts, fetch papers
-            $contacts = $this->lookup_users($req, $assigner, $csv);
-            if ($contacts === false)
-                continue;
-            $this->astate->fetch_prows($pids);
-
-            // check conflicts and perform assignment
-            foreach ($pids as $p) {
-                $prow = @$this->astate->prows[$p];
-                if (!$prow) {
-                    $this->error($csv->lineno(), "Paper $p does not exist");
-                    continue;
-                }
-                $err = $assigner->check_paper($this->contact, $prow, $this->astate);
-                if (!$err || is_string($err)) {
-                    if ($pfield_straight && is_string($err))
-                        $this->error($csv->lineno(), $err);
-                    continue;
-                }
-
-                foreach ($contacts as $contact) {
-                    if ($contact && @$contact->contactId > 0 && !$this->override
-                        && $prow->has_conflict($contact)
-                        && !$assigner->allow_special_contact("conflict"))
-                        $this->error($csv->lineno(), Text::user_html_nolink($contact) . " has a conflict with paper #$p");
-                    else if (($err = $assigner->apply($p, $contact, $req, $this->astate)))
-                        $this->error($csv->lineno(), $err);
-                }
-            }
+            $this->apply($req);
         }
         if ($alertf)
             call_user_func($alertf, $this, $csv->lineno(), false);
 
+        $this->finish();
+    }
+
+    function apply($req) {
+        // parse paper
+        $pfield = @trim($req["paper"]);
+        $pfield_straight = false;
+        if ($pfield !== "" && ctype_digit($pfield)) {
+            $pids = array(intval($pfield));
+            $pfield_straight = true;
+        } else if ($pfield !== "") {
+            if (!($pids = @$this->searches[$pfield])) {
+                $search = new PaperSearch($this->contact, $pfield);
+                $pids = $this->searches[$pfield] = $search->paperList();
+                foreach ($search->warnings as $w)
+                    $this->error($w);
+            }
+            if (!count($pids))
+                return $this->error("No papers match “" . htmlspecialchars($pfield) . "”");
+        } else
+            return $this->error("Bad paper column");
+
+        // check action
+        if (($action = @$req["action"]) === null
+            && ($action = @$req["assignment"]) === null
+            && ($action = @$req["type"]) === null)
+            $action = $this->astate->defaults["action"];
+        $action = strtolower(trim($action));
+        if (!($assigner = Assigner::find($action)))
+            return $this->error("Unknown action “" . htmlspecialchars($action) . "”");
+
+        // clean user parts, fetch papers
+        $contacts = $this->lookup_users($req, $assigner);
+        if ($contacts === false)
+            return false;
+        $this->astate->fetch_prows($pids);
+
+        // check conflicts and perform assignment
+        $any_success = false;
+        foreach ($pids as $p) {
+            $prow = @$this->astate->prows[$p];
+            if (!$prow) {
+                $this->error("Paper $p does not exist");
+                continue;
+            }
+            $err = $assigner->check_paper($this->contact, $prow, $this->astate);
+            if (!$err || is_string($err)) {
+                if ($pfield_straight && is_string($err))
+                    $this->error($err);
+                continue;
+            }
+
+            foreach ($contacts as $contact) {
+                if ($contact && @$contact->contactId > 0
+                    && !$this->astate->override
+                    && $prow->has_conflict($contact)
+                    && !$assigner->allow_special_contact("conflict"))
+                    $this->error(Text::user_html_nolink($contact) . " has a conflict with paper #$p");
+                else if (($err = $assigner->apply($p, $contact, $req, $this->astate)))
+                    $this->error($err);
+                else
+                    $any_success = true;
+            }
+        }
+
+        return $any_success;
+    }
+
+    function finish() {
         // call finishers
         foreach ($this->astate->finishers as $fin)
             $fin->apply($this->astate);

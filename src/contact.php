@@ -2173,7 +2173,7 @@ class Contact {
     function can_change_tag($prow, $tag, $previndex, $index, $forceShow = null) {
         global $Conf;
         $rights = $this->rights($prow, $forceShow);
-        if ($rights->can_administer)
+        if ($rights->can_administer || $forceShow === ALWAYS_OVERRIDE)
             return true;
         else if (!$rights->allow_pc
                  || !$Conf->timePCViewPaper($prow, false))
