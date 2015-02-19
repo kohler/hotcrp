@@ -164,8 +164,7 @@ assert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
 $Conf->save_setting("au_seerev", AU_SEEREV_NO);
 
 // set up some tags and tracks
-$tagger = new Tagger($user_chair);
-$tagger->save(array(3, 9, 13, 17), "green", "a");
+AssignmentSet::run($user_chair, "paper,tag\n3 9 13 17,green\n", true);
 $Conf->save_setting("tracks", 1, "{\"green\":{\"assrev\":\"-red\"}}");
 $paper17 = $Conf->paperRow(17, $user_jon);
 assert(!$Conf->check_tracks($paper17, $user_jon, "assrev"));

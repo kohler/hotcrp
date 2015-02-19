@@ -1490,6 +1490,12 @@ class AssignmentSet {
         else
             return $prefix . $row1;
     }
+
+    public static function run($contact, $text, $forceShow = null) {
+        $aset = new AssignmentSet($contact, $forceShow);
+        $aset->parse($text);
+        return $aset->execute();
+    }
 }
 
 
