@@ -589,7 +589,7 @@ class TagAssigner extends Assigner {
     function apply($pid, $contact, $req, $state) {
         $state->load_type("tag", $this);
         if (!($tag = @$req["tag"]))
-            return "missing tag";
+            return "Tag missing.";
 
         // index argument
         $xindex = @$req["index"];
@@ -622,7 +622,7 @@ class TagAssigner extends Assigner {
             $m[1] = ($contact && $contact->contactId ? : $state->contact->contactId) . "~";
         // ignore attempts to change vote tags
         if (!$m[1] && TagInfo::is_vote($m[2]))
-            return;
+            return false;
 
         // add and remove use different paths
         $isadd = $this->isadd && $m[4] !== "none" && $m[4] !== "clear";

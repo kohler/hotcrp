@@ -344,18 +344,20 @@ function tagaction() {
         } else
             $assignset->error($tagger->error_html);
     }
-    if (($error = join("<br>", $assignset->errors_html()))) {
+    if (($errors = join("<br>", $assignset->errors_html()))) {
         if ($assignset->has_assigners()) {
-            $Conf->warnMsg("Some tag assignments were ignored:<br>$error");
+            $Conf->warnMsg("Some tag assignments were ignored:<br>$errors");
             $assignset->clear_errors();
         } else
-            $Conf->errorMsg($error);
+            $Conf->errorMsg($errors);
     }
     $success = $assignset->execute();
 
     if (!$Conf->headerPrinted && defval($_REQUEST, "ajax"))
         $Conf->ajaxExit(array("ok" => $success));
     else if (!$Conf->headerPrinted && $success) {
+        if (!$errors)
+            $Conf->confirmMsg("Tags saved.");
         $args = array();
         foreach (array("tag", "tagtype", "tagact", "tagcr_method", "tagcr_source", "tagcr_gapless") as $arg)
             if (isset($_REQUEST[$arg]))
