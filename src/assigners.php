@@ -516,9 +516,6 @@ class ConflictAssigner extends Assigner {
     }
 }
 
-// index "next" => take a step
-// index "seq" or "seqnext" => take a sequential step
-
 class NextTagAssigner {
     private $tag;
     public $pidindex = array();
