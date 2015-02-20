@@ -102,10 +102,7 @@ class Dbl {
             return array($dblink, $args[$argpos], array());
         else if ($flags & self::F_APPLY)
             return array($dblink, $args[$argpos], $args[$argpos + 1]);
-        else if (count($args) === $argpos + 2 && is_array($args[$argpos + 1])) {
-            error_log(caller_landmark(1, "/^Dbl::/") . ": unexpected argument array");
-            return array($dblink, $args[$argpos], $args[$argpos + 1]);
-        } else
+        else
             return array($dblink, $args[$argpos], array_slice($args, $argpos + 1));
     }
 
