@@ -1309,16 +1309,24 @@ class PaperTable {
                 echo Ht::form_div(hoturl_post($site, "p=" . $this->prow->paperId), array("id" => "tagform", "onsubmit" => "return save_tags()"));
 
             echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($is_editable ? "tags" : 0))),
-                "<div class='psv' style='position:relative'>";
+                '<div class="psv" style="position:relative">';
             if ($is_editable) {
                 // tag report form
                 $Conf->footerHtml(Ht::form(hoturl_post("paper", "p=" . $this->prow->paperId . "&amp;tagreport=1"), array("id" => "tagreportform", "onsubmit" => "return Miniajax.submit('tagreportform')"))
                                   . "</form>");
+                $treport = PaperActions::tag_report($this->prow);
 
-                echo "<div class='fn'>", ($tx == "" ? "None" : $tx),
-                    "</div><div id='papstriptagsedit' class='fx'><div id='tagreportformresult'>";
-                if ($unfolded)
-                    echo PaperActions::tagReport($this->prow, true);
+                // uneditable
+                echo '<div class="fn">';
+                if ($treport->warnings)
+                    echo '<div class="xwarning">', join("<br>", $treport->warnings), '</div>';
+                echo ($tx == "" ? "None" : $tx), '</div>';
+
+                echo "<div id='papstriptagsedit' class='fx'><div id='tagreportformresult'>";
+                if ($treport->warnings)
+                    echo '<div class="xwarning">', join("<br>", $treport->warnings), '</div>';
+                if ($treport->messages)
+                    echo '<div class="xinfo">', join("<br>", $treport->messages), '</div>';
                 echo "</div>";
                 if (isset($Error["tags"]))
                     echo "<div class='xmerror'>", $Error["tags"], "</div>";
@@ -1413,12 +1421,14 @@ class PaperTable {
         echo Ht::entry("tagindex", $rp,
                        array("id" => "foldrank_d", "size" => 4, "tabindex" => 1,
                              "onchange" => "save_tag_index(this)",
+                             "class" => "has_hotcrp_tag_indexof",
                              "hotcrp_tag_indexof" => "~$tag")),
             " <span id='rankformresult'></span>",
             " <div class='hint'><strong>Tip:</strong> <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>Search “editsort:#~{$tag}”</a> to drag and drop your ranking, or <a href='", hoturl("offline"), "'>use offline reviewing</a> to rank many papers at once.</div>",
             "</div></form>",
             '<div class="fn">',
-            '<span hotcrp_tag_indexof="~', $tag, '">', ($rp === "" ? "None" : $rp), '</span>';
+            '<span class="has_hotcrp_tag_indexof" hotcrp_tag_indexof="~', $tag, '">',
+            ($rp === "" ? "None" : $rp), '</span>';
         if ($rp != "")
             echo " <span class='fn2'>&nbsp; <a href='#' onclick='fold(\"rank\", 0, 2);return void Miniajax.submit(\"rankctxform\")'>(context)</a></span>";
         echo " &nbsp; <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>(all)</a>";

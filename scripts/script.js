@@ -3133,9 +3133,11 @@ function save_tags() {
 save_tags.success = function (data) {
     jQuery("#foldtags .pscopen")[0].className = "pscopen " + (data.tags_color || "");
     jQuery("#foldtags .psv .fn").html(data.tags_view_html == "" ? "None" : data.tags_view_html);
+    if (data.response)
+        jQuery("#foldtags .psv .fn").prepend(data.response);
     if (!jQuery("#foldtags textarea").is(":visible"))
         jQuery("#foldtags textarea").val(data.tags_edit_text);
-    jQuery("[hotcrp_tag_indexof]").each(function () {
+    jQuery(".has_hotcrp_tag_indexof").each(function () {
         var j = jQuery(this), res = j.is("input") ? "" : "None",
             t = j.attr("hotcrp_tag_indexof") + "#", i;
         if (t.charAt(0) == "~" && t.charAt(1) != "~")

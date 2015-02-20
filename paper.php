@@ -847,8 +847,14 @@ if (isset($_REQUEST["settags"]) && check_post()) {
     PaperActions::setTags($prow);
     loadRows();
 }
-if (isset($_REQUEST["tagreport"]) && check_post())
-    PaperActions::tagReport($prow);
+if (isset($_REQUEST["tagreport"]) && check_post()) {
+    $treport = PaperActions::tag_report($prow);
+    if (count($treport->warnings))
+        $Conf->warnMsg(join("<br>", $treport->warnings));
+    if (count($treport->messages))
+        $Conf->infoMsg(join("<br>", $treport->messages));
+    $Conf->ajaxExit(array("ok" => $treport->ok), true);
+}
 
 
 // correct modes

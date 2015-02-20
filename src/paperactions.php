@@ -187,12 +187,15 @@ class PaperActions {
         $tags_color = TagInfo::color_classes($viewable);
 
         // exit
-        if ($ajax && $ok)
+        if ($ajax && $ok) {
+            $treport = self::tag_report($prow);
+            if ($treport->warnings)
+                $Conf->warnMsg(join("<br>", $treport->warnings));
             $Conf->ajaxExit(array("ok" => true, "tags" => TagInfo::split($viewable),
                                   "tags_edit_text" => $tags_edit_text,
                                   "tags_view_html" => $tags_view_html,
-                                  "tags_color" => $tags_color));
-        else if ($ajax)
+                                  "tags_color" => $tags_color), true);
+        } else if ($ajax)
             $Conf->ajaxExit(array("ok" => false, "error" => $error));
         else {
             if ($error)
@@ -202,43 +205,37 @@ class PaperActions {
         // NB normally redirectSelf() does not return
     }
 
-    static function tagReport($prow, $return = false) {
-        global $Conf, $Me, $Error, $OK;
-        $ajax = defval($_REQUEST, "ajax", false);
-        $r = "";
-        if ($Me->can_view_tags($prow)) {
-            if (($vt = TagInfo::vote_tags())) {
-                $q = "";
-                $mytagprefix = $Me->contactId . "~";
-                $cur_votes = array();
-                foreach ($vt as $tag => $v) {
-                    $q .= ($q === "" ? "" : ", ") . "'$mytagprefix" . sqlq($tag) . "'";
-                    $cur_votes[strtolower($tag)] = 0;
-                }
-                $result = $Conf->qe("select tag, sum(tagIndex) from PaperTag where tag in ($q) group by tag");
-                while (($row = edb_row($result))) {
-                    $lbase = strtolower($row[0]);
-                    $cur_votes[substr($lbase, strlen($mytagprefix))] += $row[1];
-                }
-                ksort($vt);
-                foreach ($vt as $tag => $v) {
-                    $lbase = strtolower($tag);
-                    if ($cur_votes[$lbase] < $v)
-                        $r .= ($r === "" ? "" : ", ") . "<a class='q' href=\"" . hoturl("search", "q=rorder:~$tag&amp;showtags=1") . "\">~$tag</a>#" . ($v - $cur_votes[$lbase]);
-                }
-                if ($r !== "")
-                    $r = "Unallocated <a href='" . hoturl("help", "t=votetags") . "'>votes</a>: $r";
+    static function tag_report($prow) {
+        global $Me;
+        if (!$Me->can_view_tags($prow))
+            return (object) array("ok" => false);
+        $ret = (object) array("ok" => true, "warnings" => array(), "messages" => array());
+        if (($vt = TagInfo::vote_tags())) {
+            $myprefix = $Me->contactId . "~";
+            $qv = $myvotes = array();
+            foreach ($vt as $tag => $v) {
+                $qv[] = $myprefix . $tag;
+                $myvotes[strtolower($tag)] = 0;
             }
-        } else {
-            $Conf->errorMsg("You can’t view tags for paper #$prow->paperId.");
-            $Error["tags"] = true;
+            $result = Dbl::qe("select tag, sum(tagIndex) from PaperTag where tag ?a group by tag", $qv);
+            while (($row = edb_row($result))) {
+                $lbase = strtolower(substr($row[0], strlen($myprefix)));
+                $myvotes[$lbase] += +$row[1];
+            }
+            foreach ($vt as $tag => $vlim) {
+                $lbase = strtolower($tag);
+                if ($myvotes[$lbase] < $vlim)
+                    $vlo[] = '<a class="q" href="' . hoturl("search", "q=editsort:-%23~$tag") . '">~' . $tag . '</a>#' . ($vlim - $myvotes[$lbase]);
+                else if ($myvotes[$lbase] > $vlim
+                         && $prow->has_tag($myprefix . $tag))
+                    $vhi[] = '<span class="nw"><a class="q" href="' . hoturl("search", "q=sort:-%23~$tag+edit:%23~$tag") . '">~' . $tag . '</a> (' . ($myvotes[$lbase] - $vlim) . " over)</span>";
+            }
+            if (count($vlo))
+                $ret->messages[] = 'Remaining <a class="q" href="' . hoturl("help", "t=votetags") . '">votes</a>: ' . join(", ", $vlo);
+            if (count($vhi))
+                $ret->warnings[] = 'Overallocated <a class="q" href="' . hoturl("help", "t=votetags") . '">votes</a>: ' . join(", ", $vhi);
         }
-        if ($return)
-            return $r !== "" ? "<div class='xconfirm'>$r</div>" : "";
-        else if ($r !== "")
-            $Conf->confirmMsg($r);
-        if ($ajax)
-            $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "tags")), true);
+        return $ret;
     }
 
     static function all_tags($papersel = null) {
