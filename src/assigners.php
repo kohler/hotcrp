@@ -754,16 +754,7 @@ class TagAssigner extends Assigner {
                                                              $previndex, $index, $item->override))) {
             if (@$whyNot["otherTwiddleTag"])
                 return null;
-            if ($index === null)
-                $what = "Remove #";
-            else if ($previndex === null)
-                $what = "Add #";
-            else
-                $what = "Update #";
-            $what .= $item["_tag"];
-            if ($index)
-                $what .= "#$index";
-            throw new Exception($what . ": " . whyNotText($whyNot, "tag"));
+            throw new Exception(whyNotText($whyNot, "tag"));
         }
         // actually assign
         return new TagAssigner($item["pid"], true, $item["_tag"], $index);
