@@ -178,14 +178,14 @@ class PaperInfo {
         if (!property_exists($this, "paperTags"))
             $this->load_tags();
         return $this->paperTags !== ""
-            && strpos($this->paperTags, " $tag#") !== false;
+            && stripos($this->paperTags, " $tag#") !== false;
     }
 
     public function tag_value($tag) {
         if (!property_exists($this, "paperTags"))
             $this->load_tags();
         if ($this->paperTags !== ""
-            && ($pos = strpos($this->paperTags, " $tag#")) !== false)
+            && ($pos = stripos($this->paperTags, " $tag#")) !== false)
             return (int) substr($this->paperTags, $pos + strlen($tag) + 2);
         else
             return false;
