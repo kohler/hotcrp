@@ -295,7 +295,7 @@ class UserStatus {
 
 
     function save($cj, $old_user = null, $actor = null) {
-        global $Conf, $Now;
+        global $Conf, $Me, $Now;
         assert(is_object($cj));
 
         if (is_int(@$cj->id) && $cj->id && !$old_user)
@@ -395,6 +395,9 @@ class UserStatus {
 
         if (!$old_user || !$old_user->has_database_account())
             $user->mark_create(!$this->no_email, false);
+        $actor = $actor ? : $Me;
+        if ($actor && $user->contactId == $actor->contactId)
+            $user->mark_activity();
         return $user;
     }
 
