@@ -221,7 +221,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
     else if ($row->contactId)
         $t .= "[Deleted account $row->contactId]";
     else {
-        if (preg_match(',\A(.*)<([^>]*@[^>]*)>\s*(.*)\z,', $act)) {
+        if (preg_match(',\A(.*)<([^>]*@[^>]*)>\s*(.*)\z,', $act, $m)) {
             $t .= htmlspecialchars($m[2]);
             $act = $m[1] . $m[3];
         } else
