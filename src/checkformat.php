@@ -307,7 +307,7 @@ class CheckFormat {
             $this->msg("warn", "This paper may violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
             return 1;
         } else {
-            $this->msg("confirm", "Congratulations, this paper appears to comply with the basic submission format requirements.  However, there may be requirements that the automated checker doesn’t check.  You should verify yourself that your paper meets all stated requirements.");
+            $this->msg("confirm", "Congratulations, this paper seems to comply with the basic submission format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure that the paper is correctly formatted.");
             return 2;
         }
     }
