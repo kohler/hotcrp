@@ -110,6 +110,17 @@ function hoturl_absolute_base() {
 }
 
 
+function log_jserror(errormsg, error) {
+    if (typeof errormsg === "string")
+        errormsg = {"error": errormsg};
+    if (error && error.stack)
+        errormsg.stack = error.stack;
+    jQuery.ajax({
+        url: hoturl("api", "jserror=1"),
+        type: "POST", cache: false, data: x
+    });
+}
+
 (function () {
     var old_onerror = window.onerror, nerrors_logged = 0;
     window.onerror = function (errormsg, url, lineno, colno, error) {
@@ -117,12 +128,7 @@ function hoturl_absolute_base() {
             var x = {"error": errormsg, "url": url, "lineno": lineno};
             if (colno)
                 x.colno = colno;
-            if (error && error.stack)
-                x.stack = error.stack;
-            jQuery.ajax({
-                url: hoturl("api", "jserror=1"),
-                type: "POST", cache: false, data: x
-            });
+            log_jserror(x, error);
         }
         return old_onerror ? old_onerror.apply(this, arguments) : false;
     };
@@ -3058,7 +3064,9 @@ function savedisplayoptions() {
 
 function docheckformat(dt) {    // NB must return void
     var form = $$("checkformatform" + dt);
-    if (form.onsubmit) {
+    if (!form)
+        log_jserror({error: "bad checkformatform", dt: dt});
+    else if (form.onsubmit) {
         fold("checkformat" + dt, 0);
         Miniajax.submit("checkformatform" + dt, null, 10000);
     }
