@@ -1664,7 +1664,7 @@ class PaperTable {
         return $buttons;
     }
 
-    function echoActions() {
+    function echoActions($top) {
         global $Conf, $Me;
         $prow = $this->prow;
 
@@ -1683,7 +1683,7 @@ class PaperTable {
         }
 
         echo Ht::actions($buttons);
-        if ($this->admin) {
+        if ($this->admin && !$top) {
             $v = defval($_REQUEST, "emailNote", "");
             echo "  <div class='g'></div>\n  <table>\n",
                 "    <tr><td>",
@@ -1830,6 +1830,7 @@ class PaperTable {
             return;
         }
 
+        $this->echoActions(true);
         $this->editable_title();
         $this->editable_submission(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0);
         $this->editable_options(array("near_submission" => true));
@@ -1861,7 +1862,7 @@ class PaperTable {
 
         // Submit button
         echo $spacer;
-        $this->echoActions();
+        $this->echoActions(false);
 
         echo "</div></form>";
         Ht::stash_script("jQuery('textarea.papertext').autogrow()");
@@ -1918,7 +1919,7 @@ class PaperTable {
             echo $form;
             if ($prow->timeSubmitted > 0)
                 $this->editable_contact_author(true);
-            $this->echoActions();
+            $this->echoActions(false);
             echo "</form>";
         } else if (!$this->editable && $Me->actAuthorView($prow) && !$Me->contactId) {
             echo '<div class="papcard_sep"></div>',
