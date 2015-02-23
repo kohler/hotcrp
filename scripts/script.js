@@ -3336,7 +3336,7 @@ function scorechart1() {
 
 return function (j) {
     if (j == null)
-        j = $("[hotcrpscorechart]");
+        j = $(".scorechart");
     j.each(scorechart1);
 }
 })(jQuery);
