@@ -286,7 +286,7 @@ class PaperTable {
         if ($sha1)
             $t[] = "<span class='nowrap' title='SHA-1 checksum'>" . Ht::img("_.gif", "SHA-1", array("class" => "checksum12", "title" => "SHA-1 checksum")) . " " . bin2hex($sha1) . "</span>";
         if (count($t) > 0)
-            return "<span class='hint'>" . join(" &nbsp;<span class='barsep'>|</span>&nbsp; ", $t) . "</span>";
+            return "<span class='hint'>" . join(" <span class='barsep'>·</span> ", $t) . "</span>";
         else
             return "";
     }
@@ -418,7 +418,7 @@ class PaperTable {
                 $uploader .= ";form.submitpaper.disabled=false";
             $uploader .= "' />";
             if ($doc && $optionType)
-                $uploader .= " &nbsp;<span class='barsep'>|</span>&nbsp; "
+                $uploader .= " <span class='barsep'>·</span> "
                     . "<a id='remover_$inputid' href='#remover_$inputid' onclick='return doremovedocument(this)'>Delete</a>";
             $uploader .= "</span>";
             if ($doc && $optionType)
@@ -1343,7 +1343,7 @@ class PaperTable {
                     Ht::submit("cancelsettags", "Cancel", array("class" => "bsm", "onclick" => "return fold('tags',1)")),
                     " &nbsp;", Ht::submit("Save", array("class" => "bsm")),
                     "</div>",
-                    "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> &nbsp;<span class='barsep'>|</span>&nbsp; <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
+                    "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> <span class='barsep'>·</span> <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
                     "</div>";
                 $Conf->footerScript("taghelp(\"foldtags_d\",\"taghelp_p\",taghelp_tset)");
             } else

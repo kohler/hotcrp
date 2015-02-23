@@ -531,7 +531,7 @@ if ($Me->can_administer($prow)) {
     if (count($Conf->round_list()) > 1 || $rev_roundtag)
         echo "<br />", Ht::hidden("rev_roundtag", $rev_roundtag),
             'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(no name)"),
-            ' &nbsp;<span class="barsep">|</span>&nbsp; <a href="', hoturl("settings", "group=reviews#rounds"), '">Configure rounds</a>';
+            ' <span class="barsep">·</span> <a href="', hoturl("settings", "group=reviews#rounds"), '">Configure rounds</a>';
 
     echo "</div><div class='papv' style='padding-left:0'>";
 

@@ -172,8 +172,8 @@ class CommentInfo {
             $t .= "...";
         $t .= "</a>";
         if ($contact->can_view_comment_identity($crow, $crow, false))
-            $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>comment by</span> " . Text::user_html(self::_user($crow));
-        $t .= " &nbsp;<span class='barsep'>|</span>&nbsp; <span class='hint'>posted</span> " . $Conf->parseableTime($crow->timeModified, false);
+            $t .= " <span class='barsep'>·</span> <span class='hint'>comment by</span> " . Text::user_html(self::_user($crow));
+        $t .= " <span class='barsep'>·</span> <span class='hint'>posted</span> " . $Conf->parseableTime($crow->timeModified, false);
         $t .= "</small><br /><a class='q'" . substr($a, 3)
             . ">" . htmlspecialchars($crow->shortComment);
         if (strlen($crow->shortComment) < strlen($crow->comment))

@@ -195,7 +195,7 @@ class PaperList extends BaseList {
     }
 
     static function wrapChairConflict($text) {
-        return "<span class='fn5'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Override conflicts</a></span><span class='fx5'>$text</span>";
+        return "<span class='fn5'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>·</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Override conflicts</a></span><span class='fx5'>$text</span>";
     }
 
     public function reviewer_cid() {
@@ -302,7 +302,7 @@ class PaperList extends BaseList {
         if ($this->count == 0)
             return "";
 
-        $barsep = "    <td>&nbsp;<span class='barsep'>&nbsp;|&nbsp;</span>&nbsp;</td>\n";
+        $barsep = "    <td>&nbsp;<span class='barsep'>·</span>&nbsp;</td>\n";
         $nlll = 1;
         $revpref = ($listname == "editReviewPreference");
         $whichlll = 1;

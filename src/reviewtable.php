@@ -60,7 +60,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     $hideUnviewable = ($conflictType > 0 && !$admin)
         || (!$Me->act_pc($prow) && !$Conf->setting("extrev_view"));
     $show_colors = $Me->can_view_reviewer_tags($prow);
-    $xsep = ' <span class="barsep">&nbsp;|&nbsp;</span> ';
+    $xsep = ' <span class="barsep">·</span> ';
     $want_scores = $mode != "assign" && $mode != "edit" && $mode != "re";
     $want_requested_by = false;
     $want_retract = false;
@@ -290,7 +290,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     $conflictType = $Me->view_conflict_type($prow);
     $allow_admin = $Me->allow_administer($prow);
     $admin = $Me->can_administer($prow);
-    $xsep = ' <span class="barsep">&nbsp;|&nbsp;</span> ';
+    $xsep = ' <span class="barsep">·</span> ';
 
     $nvisible = 0;
     $myrr = null;

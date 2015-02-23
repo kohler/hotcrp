@@ -2113,7 +2113,7 @@ class Conference {
         echo "</h1></div><div id='header_right'>";
         if ($Me && !$Me->is_empty()) {
             // profile link
-            $xsep = ' <span class="barsep">&nbsp;|&nbsp;</span> ';
+            $xsep = ' <span class="barsep">·</span> ';
             if ($Me->has_email()) {
                 echo '<a class="q" href="', hoturl("profile"), '"><strong>',
                     htmlspecialchars($Me->email),

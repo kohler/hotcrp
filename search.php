@@ -1414,7 +1414,7 @@ echo Ht::select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 </tr>
 <tr>
   <td class='lxcaption'></td>
-  <td><span style='font-size: x-small'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a></span></td>
+  <td><span style='font-size: x-small'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>·</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a></span></td>
 </tr></table></div></form>";
 
 echo "</div>";
@@ -1452,7 +1452,7 @@ if ($Me->isPC || $Me->privChair) {
                 echo "<a href=\"", hoturl("search", "q=ss%3A" . urlencode($sn) . $arest), "\">", htmlspecialchars($sn), "</a><div class='fx' style='padding-bottom:0.5ex;font-size:smaller'>",
                     "Definition: “<a href=\"", hoturl("search", "q=" . urlencode(defval($sv, "q", "")) . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
                 if ($Me->privChair || !defval($sv, "owner") || $sv->owner == $Me->contactId)
-                    echo " &nbsp;<span class='barsep'>|</span>&nbsp; ",
+                    echo " <span class='barsep'>·</span> ",
                         "<a href=\"", selfHref(array("deletesearch" => 1, "ssname" => $sn, "post" => post_value())), "\">Delete</a>";
                 echo "</div></td></tr></table>";
                 ++$n;

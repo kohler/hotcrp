@@ -201,7 +201,7 @@ echo "<div id='foldemail' class='foldo'><table class='fx'>
 if (count($Conf->round_list()) > 1 || $rev_roundtag)
     echo Ht::hidden("rev_roundtag", $rev_roundtag),
         'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(no name)"),
-        ' &nbsp;<span class="barsep">|</span>&nbsp; <a href="', hoturl("settings", "group=reviews#rounds"), '">Configure rounds</a>';
+        ' <span class="barsep">·</span> <a href="', hoturl("settings", "group=reviews#rounds"), '">Configure rounds</a>';
 
 echo '<div class="g"></div>', Ht::submit("Upload"), "</div>";
 

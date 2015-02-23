@@ -492,7 +492,7 @@ class ContactList extends BaseList {
             . "&nbsp; " . Ht::submit("getgo", "Go", array("class" => "bsm"))
             . "</span>";
 
-        $barsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
+        $barsep = " <span class='barsep'>·</span> ";
         if ($this->contact->privChair) {
             $t .= $barsep;
             $t .= "<span class='lll3'><a href='#' onclick='return crpfocus(\"pplact\",3)'>Modify</a></span><span class='lld3'><b>:</b> &nbsp;";

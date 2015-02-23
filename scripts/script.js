@@ -2664,7 +2664,7 @@ function makeratingajax(form, id) {
     form.onsubmit = function () {
         return Miniajax.submit(id, function (rv) {
                 if ((ee = $$(id + "result")) && rv.result)
-                    ee.innerHTML = " &nbsp;<span class='barsep'>|</span>&nbsp; " + rv.result;
+                    ee.innerHTML = " <span class='barsep'>·</span> " + rv.result;
             });
     };
     selects = form.getElementsByTagName("select");

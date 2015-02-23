@@ -59,7 +59,7 @@ if ($Me->privChair && isset($_REQUEST["data"])
             if (isset($update["to"]) && is_string($update["to"])) {
                 $m .= "<div class='bigid'>First unaffected commit: " . htmlspecialchars($update["to"]);
                 if ($errid)
-                    $m .= " &nbsp;<span class='barsep'>|</span>&nbsp; "
+                    $m .= " <span class='barsep'>·</span> "
                         . "<a href='#' onclick='return check_version.ignore(\"$errid\")'>Ignore for two days</a>";
                 $m .= "</div>";
             }

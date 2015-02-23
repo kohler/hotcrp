@@ -175,7 +175,7 @@ class MailSender {
                 . plural($this->mrecipients, "recipient");
             if (count($this->mpapers) != 0)
                 $m .= ", " . plural($this->mpapers, "paper");
-            $s .= "\$\$('mailinfo').innerHTML=\" <span class='barsep'>|</span> " . $m . "\";";
+            $s .= "\$\$('mailinfo').innerHTML=\" <span class='barsep'>·</span> " . $m . "\";";
         }
         $Conf->echoScript($s);
     }

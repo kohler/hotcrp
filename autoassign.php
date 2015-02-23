@@ -656,7 +656,7 @@ if (count($Conf->round_list()) > 1 || $rev_roundtag) {
     echo divClass("rev_roundtag"), Ht::hidden("rev_roundtag", $rev_roundtag);
     echo "<input style='visibility: hidden' type='radio' class='cb' name='a' value='rev_roundtag' disabled='disabled' />&nbsp;";
     echo '<span class="hint">Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(no name)"),
-        ' &nbsp;<span class="barsep">|</span>&nbsp; <a href="', hoturl("settings", "group=reviews"), '">Configure rounds</a></span>';
+        ' <span class="barsep">·</span> <a href="', hoturl("settings", "group=reviews"), '">Configure rounds</a></span>';
 }
 echo "<div class='g'></div>\n";
 

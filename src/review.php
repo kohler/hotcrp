@@ -1320,7 +1320,7 @@ $blind\n";
                     if (isset(self::$rating_types[$type]))
                         $ratearr[] = $count . " &ldquo;" . htmlspecialchars(self::$rating_types[$type]) . "&rdquo;";
                 echo join(", ", $ratearr), "</span>";
-                $ratesep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+                $ratesep = " <span class='barsep'>·</span> ";
             }
             if ($rrow->contactId != $Me->contactId) {
                 $ratinglink = hoturl_post("review", "r=$reviewOrdinal" . (isset($_REQUEST["reviewId"]) ? "" : "&amp;allr=1"));
@@ -1336,7 +1336,7 @@ $blind\n";
                     $options["ratingsajax"] = true;
                 }
             }
-            echo " &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=revrate"), "'>What is this?</a></div>";
+            echo " <span class='barsep'>·</span> <a href='", hoturl("help", "t=revrate"), "'>What is this?</a></div>";
         }
 
         if (defval($options, "editmessage"))
@@ -1451,7 +1451,7 @@ $blind\n";
         echo "</h3>\n";
 
         $open = $sep = " <span class='revinfo'>";
-        $xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
+        $xsep = " <span class='barsep'>·</span> ";
         $showtoken = $rrow && $Me->review_token_cid($prow, $rrow);
         $type = "";
         if ($rrow && $Me->can_view_review_round($prow, $rrow, null)) {
@@ -1499,7 +1499,7 @@ $blind\n";
     </tr><tr>
       <td></td>
       <td><a href='$reviewDownloadLink'>Download form</a>
-      &nbsp;<span class='barsep'>|</span>&nbsp;
+      <span class='barsep'>·</span>
       <span class='hint'><strong>Tip:</strong> Use <a href='", hoturl("search"), "'>Search</a> or <a href='", hoturl("offline"), "'>Offline reviewing</a> to download or upload many forms at once.</span></td>
     </tr></table></div>\n";
 
@@ -1576,7 +1576,7 @@ $blind\n";
     function reviewFlowEntry($contact, $rrow, $trclass) {
         // See also CommentInfo::unparse_flow_entry
         global $Conf;
-        $barsep = " &nbsp;<span class='barsep'>|</span>&nbsp; ";
+        $barsep = " <span class='barsep'>·</span> ";
         $a = "<a href='" . hoturl("paper", "p=$rrow->paperId#review" . unparseReviewOrdinal($rrow)) . "'";
         $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a . ">"
             . Ht::img("review24.png", "[Review]", "dlimg")

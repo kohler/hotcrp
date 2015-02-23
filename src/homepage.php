@@ -112,7 +112,7 @@ if ($Me->privChair)
 
 $title = ($Me->is_empty() || isset($_REQUEST["signin"]) ? "Sign in" : "Home");
 $Conf->header($title, "home", actionBar());
-$xsep = " <span class='barsep'>&nbsp;|&nbsp;</span> ";
+$xsep = " <span class='barsep'>·</span> ";
 
 if ($Me->privChair)
     echo "<div id='clock_drift_container'></div>";
@@ -258,7 +258,7 @@ if ($homelist) {
         PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; ", Ht::submit("Search"),
         "    <div id='taghelp_homeq' class='taghelp_s'></div>
-    <div style='font-size:85%'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a> <span class='barsep'>&nbsp;|&nbsp;</span> <a href='", hoturl("search", "tab=advanced"), "'>Advanced search</a></div>
+    <div style='font-size:85%'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>·</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a> <span class='barsep'>·</span> <a href='", hoturl("search", "tab=advanced"), "'>Advanced search</a></div>
   </div></form>
   </td></tr></table>
 </div>

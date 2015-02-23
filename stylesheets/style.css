@@ -147,7 +147,8 @@ a.small {
 	font-size: smaller;
 }
 span.barsep {
-	color: #b4b4df;
+	opacity: 0.8;
+	padding: 0 0.5em;
 }
 a.editor {
 	background: url(../images/edit.png) 0px 50% no-repeat;

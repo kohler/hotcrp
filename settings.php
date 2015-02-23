@@ -2029,7 +2029,7 @@ function doTagsGroup() {
     }
     echo "<td>", Ht::hidden("has_tag_vote", 1);
     doEntry("tag_vote", $v, 40);
-    echo "<br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
+    echo "<br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. <span class='barsep'>·</span> <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", setting_label("tag_rank", "Ranking tag"), "</td>";
     if (count($Error) > 0)
@@ -2038,7 +2038,7 @@ function doTagsGroup() {
         $v = $Conf->setting_data("tag_rank", "");
     echo "<td>", Ht::hidden("has_tag_rank", 1);
     doEntry("tag_rank", $v, 40);
-    echo "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. &nbsp;<span class='barsep'>|</span>&nbsp; <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
+    echo "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
     echo "</table>";
 
     echo "<div class='g'></div>\n";
@@ -2073,7 +2073,7 @@ function doTagsGroup() {
 
 
     echo '<h3 class="settings g">Tracks</h3>', "\n";
-    echo "<div class='hint'>Tracks control the PC members allowed to view or review different sets of papers. &nbsp;<span class='barsep'>|</span>&nbsp; <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
+    echo "<div class='hint'>Tracks control the PC members allowed to view or review different sets of papers. <span class='barsep'>·</span> <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
         Ht::hidden("has_tracks", 1),
         "<div class=\"smg\"></div>\n";
     do_track("", 0);
