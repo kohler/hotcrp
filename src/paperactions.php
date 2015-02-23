@@ -222,6 +222,7 @@ class PaperActions {
                 $lbase = strtolower(substr($row[0], strlen($myprefix)));
                 $myvotes[$lbase] += +$row[1];
             }
+            $vlo = $vhi = array();
             foreach ($vt as $tag => $vlim) {
                 $lbase = strtolower($tag);
                 if ($myvotes[$lbase] < $vlim)
