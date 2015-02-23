@@ -671,6 +671,9 @@ span.expander > span.in0 {
 	border: 1px solid black;
 	color: black;
 }
+.btn.btn-closer {
+	line-height: 85%;
+}
 
 /* checkboxes */
 input.cbx {
@@ -2594,8 +2597,17 @@ div.aabut .words {
 	background: rgba(255, 100, 100, 0.9);
 }
 #tracker .trackerholder {
-	padding: 0.5em 1em;
+	padding: 0.5em 1em 0.5em 0.8em;
         border-bottom: 2px solid rgba(0, 0, 0, 0.5);
+}
+#trackerlogo {
+	float: left;
+	padding-right: 10px;
+}
+#trackerlogo:before {
+	content: "\261e";
+	font-size: 300%;
+	line-height: 24px;
 }
 #tracker .tracker1, #tracker .tracker2, #tracker .tracker3,
 #tracker .tracker4, #tracker .tracker5 {

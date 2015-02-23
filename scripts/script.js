@@ -589,8 +589,9 @@ function display_tracker() {
     else
         mne.className = (pid && pid != hotcrp_paperid ? "nomatch" : "match");
 
+    t += '<div id="trackerlogo"></div>';
     if (dl.is_admin)
-        t += '<div style="float:right"><a class="btn btn-transparent" href="#" onclick="return hotcrp_deadlines.tracker(-1)" title="Stop meeting tracker">x</a></div>';
+        t += '<div style="float:right"><a class="btn btn-transparent btn-closer" href="#" onclick="return hotcrp_deadlines.tracker(-1)" title="Stop meeting tracker">x</a></div>';
     if (dl.tracker && dl.tracker.position_at)
         t += '<div style="float:right" id="trackerelapsed"></div>';
     if (!dl.tracker.papers || !dl.tracker.papers[0]) {
