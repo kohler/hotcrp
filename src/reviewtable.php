@@ -269,12 +269,14 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 . join("", $score_header) . "</tr>\n";
         foreach (array_merge($subrev, $nonsubrev) as $r) {
             $t .= '<tr' . ($r[0] ? " class=\"$r[0]\"" : "") . '>' . $r[1];
-            if (@$r[2])
+            if (@$r[2]) {
                 foreach ($score_header as $fid => $header_needed)
                     if ($header_needed) {
                         $x = @$r[2][$fid];
                         $t .= $x ? : "<td class=\"revscore rs_$fid\"></td>";
                     }
+            } else if (count($score_header))
+                $t .= '<td colspan="' . count($score_header) . '"></td>';
             $t .= "</tr>\n";
         }
         return $t . "</table>\n" . $notetxt;
