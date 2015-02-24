@@ -2136,7 +2136,7 @@ function doDecGroup() {
     }
 
     echo '</div><div style="padding-top:1em">',
-        '<a href="#" onclick="return settings_add_resp_round()">Add response round</a>',
+        '<button type="button" onclick="settings_add_resp_round()">Add response round</button>',
         '</div></div></td></tr></table>';
     $Conf->footerScript("fold('auresp',!\$\$('cbresp_active').checked,2)");
 
