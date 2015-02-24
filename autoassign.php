@@ -272,6 +272,7 @@ function doAssign() {
                 group by ContactInfo.contactId");
         while (($row = edb_row($result)))
             $load[$row[0]] = $row[1] + 0;
+        Dbl::free($result);
     }
 
     // get preferences
@@ -285,7 +286,8 @@ function doAssign() {
             $score = "PaperReview." . substr($score, 1);
     } else
         $score = "PaperReview.overAllMerit";
-    $result = $Conf->qe("select Paper.paperId, ContactInfo.contactId,
+
+    $query = "select Paper.paperId, ? contactId,
         coalesce(PaperConflict.conflictType, 0) as conflictType,
         coalesce(PaperReviewPreference.preference, 0) as preference,
         coalesce(PaperReview.reviewType, 0) as myReviewType,
@@ -295,60 +297,66 @@ function doAssign() {
         topicInterestScore,
         coalesce(PRR.contactId, 0) as refused,
         Paper.managerContactId
-    from Paper join ContactInfo
-    left join PaperConflict on (Paper.paperId=PaperConflict.paperId and ContactInfo.contactId=PaperConflict.contactId)
-    left join PaperReviewPreference on (Paper.paperId=PaperReviewPreference.paperId and ContactInfo.contactId=PaperReviewPreference.contactId)
-    left join PaperReview on (Paper.paperId=PaperReview.paperId and ContactInfo.contactId=PaperReview.contactId)
-    left join (select paperId, ContactInfo.contactId,
+    from Paper
+    left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=?)
+    left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=?)
+    left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=?)
+    left join (select paperId,
                sum(" . $Conf->query_topic_interest_score() . ") as topicInterestScore
-           from PaperTopic join ContactInfo
-           join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId)
-           where (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0
-           group by paperId, ContactInfo.contactId) as PaperTopics on (Paper.paperId=PaperTopics.paperId and ContactInfo.contactId=PaperTopics.contactId)
-    left join PaperReviewRefused PRR on (Paper.paperId=PRR.paperId and ContactInfo.contactId=PRR.contactId)
-    where Paper.paperId" . sql_in_numeric_set($papersel) . "
-        and (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0
-    group by Paper.paperId, ContactInfo.contactId");
+           from PaperTopic
+           join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=?)
+           group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)
+    left join PaperReviewRefused PRR on (PRR.paperId=Paper.paperId and PRR.contactId=?)
+    where Paper.paperId ?a
+    group by Paper.paperId";
 
-    if ($atype == "rev" || $atype == "revadd" || $atype == "revpc") {
-        while (($row = PaperInfo::fetch($result, true))) {
-            $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
-            if ($row->conflictType > 0
-                || $row->myReviewType > 0
-                || $row->refused > 0
-                || !@$pcm[$row->contactId]
-                || !$pcm[$row->contactId]->can_accept_review_assignment($row))
-                $prefs[$row->contactId][$row->paperId] = -1000001;
-            else
-                $prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
-        }
-    } else {
-        $scoredir = (substr(defval($_REQUEST, "${atype}score", "x"), 0, 1) == "-" ? -1 : 1);
-        // First, collect score extremes
-        $scoreextreme = array();
-        $rows = array();
-        while (($row = edb_orow($result))) {
-            $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
-            if ($row->conflictType > 0 || $row->myReviewType == 0
-                || $row->myReviewSubmitted == 0 || $row->reviewScore == 0)
-                /* ignore row */;
-            else {
-                if (!isset($scoreextreme[$row->paperId])
-                    || $scoredir * $row->reviewScore > $scoredir * $scoreextreme[$row->paperId])
-                    $scoreextreme[$row->paperId] = $row->reviewScore;
-                $rows[] = $row;
+    foreach ($pcm as $cid => $pc) {
+        $result = Dbl::qe($query, $cid, $cid, $cid, $cid, $cid, $cid, $papersel);
+
+        if ($atype == "rev" || $atype == "revadd" || $atype == "revpc") {
+            while (($row = PaperInfo::fetch($result, true))) {
+                $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
+                if ($row->conflictType > 0
+                    || $row->myReviewType > 0
+                    || $row->refused > 0
+                    || !$pc->can_accept_review_assignment($row))
+                    $prefs[$row->contactId][$row->paperId] = -1000001;
+                else
+                    $prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
             }
+        } else {
+            $scoredir = (substr(defval($_REQUEST, "${atype}score", "x"), 0, 1) == "-" ? -1 : 1);
+            // First, collect score extremes
+            $scoreextreme = array();
+            $rows = array();
+            while (($row = edb_orow($result))) {
+                $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
+                if ($row->conflictType > 0
+                    || $row->myReviewType == 0
+                    || $row->myReviewSubmitted == 0
+                    || $row->reviewScore == 0)
+                    /* ignore row */;
+                else {
+                    if (!isset($scoreextreme[$row->paperId])
+                        || $scoredir * $row->reviewScore > $scoredir * $scoreextreme[$row->paperId])
+                        $scoreextreme[$row->paperId] = $row->reviewScore;
+                    $rows[] = $row;
+                }
+            }
+            // Then, collect preferences; ignore score differences farther
+            // than 1 score away from the relevant extreme
+            foreach ($rows as $row) {
+                $scoredifference = $scoredir * ($row->reviewScore - $scoreextreme[$row->paperId]);
+                if ($scoredifference >= -1)
+                    $prefs[$row->contactId][$row->paperId] = max($scoredifference * 1001 + max(min($row->preference, 1000), -1000) + ($row->topicInterestScore / 100), -1000000);
+            }
+            $badpairs = array(); // bad pairs only relevant for reviews,
+                                 // not discussion leads or shepherds
+            unset($rows);        // don't need the memory any more
         }
-        // Then, collect preferences; ignore score differences farther
-        // than 1 score away from the relevant extreme
-        foreach ($rows as $row) {
-            $scoredifference = $scoredir * ($row->reviewScore - $scoreextreme[$row->paperId]);
-            if ($scoredifference >= -1)
-                $prefs[$row->contactId][$row->paperId] = max($scoredifference * 1001 + max(min($row->preference, 1000), -1000) + ($row->topicInterestScore / 100), -1000000);
-        }
-        $badpairs = array();    // bad pairs only relevant for reviews,
-                                // not discussion leads or shepherds
-        unset($rows);           // don't need the memory any more
+
+        Dbl::free($result);
+        set_time_limit(30);
     }
 
     // sort preferences
@@ -381,6 +389,7 @@ function doAssign() {
         while (($row = edb_row($result)))
             if (isset($papers[$row[0]]))
                 $papers[$row[0]] = max($papers[$row[0]] - $row[1], 0);
+        Dbl::free($result);
     } else if ($atype == "lead" || $atype == "shepherd") {
         $papers = array();
         $xpapers = array_fill_keys($papersel, 1);
@@ -388,6 +397,7 @@ function doAssign() {
         while (($row = edb_row($result)))
             if (isset($xpapers[$row[0]]))
                 $papers[$row[0]] = 1;
+        Dbl::free($result);
     } else
         assert(false);
 
