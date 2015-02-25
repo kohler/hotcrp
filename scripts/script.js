@@ -28,7 +28,7 @@ function serialize_object(x) {
     else if (x) {
         var k, v, a = [];
         for (k in x)
-            if ((v = x[k]) !== null)
+            if ((v = x[k]) != null)
                 a.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
         return a.join("&");
     } else
