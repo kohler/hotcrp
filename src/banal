@@ -26,6 +26,8 @@
 
 use Data::Dumper;
 use File::Basename;
+use File::Temp;
+my($FILE);
 
 sub usage {
     print <<EOF;
@@ -1298,7 +1300,7 @@ sub parse_p2h_fonts ($$) {
 	}
 	$page->{doc}->{fonts}{$1} = $font;
 
-	$line = <FILE>;
+	$line = <$FILE>;
     }
 
     return $line;
@@ -1351,7 +1353,7 @@ sub parse_p2h_text ($$) {
 	unless ($line =~ /<text top=\"(-?\d+)\" left=\"(-?\d+)\" width=\"(-?\d+)\" height=\"(-?\d+)\" font=\"(-?\d+)\"/) {
 	    # if we didn't match a <text>, then it should be an end of page or <image>
             if ($line =~ /<image/) {
-                $line = <FILE>;
+                $line = <$FILE>;
                 next;
             }
 	    unless ($line =~ /<\/page>/) {
@@ -1381,7 +1383,7 @@ sub parse_p2h_text ($$) {
 	if ($1 < 0 || $2 < 0 ||
 	    ($1 > $page->{pagedata}->{pagebb}->{height}) ||
 	    ($2 > $page->{pagedata}->{pagebb}->{width})) {
-	    $line = <FILE>;
+	    $line = <$FILE>;
 	    next;
 	}
 
@@ -1396,13 +1398,13 @@ sub parse_p2h_text ($$) {
 
 	# embedded newlines will split <text>...</text> across multiple lines
 	if ($line !~ /<\/text>/) {
-	    while ($line = <FILE>) {
+	    while ($line = <$FILE>) {
 		print "$banal_filename: skipping: $line" if ($debug_parse);
 		last if ($line  =~/<\/text>/);
 	    }
 	}
 
-	$line = <FILE>;
+	$line = <$FILE>;
     }
 
 
@@ -1421,18 +1423,30 @@ sub parse_p2h_page ($) {
     my ($doc) = @_;
 
     # assume we've just read the header
-    $line = <FILE>;
+    $line = <$FILE>;
 
     # skip any error strings embedded between pages
     while (check_p2h_error ($line)) {
 	print "$banal_filename: skipping p2h error string: $line" if ($debug_parse);
-	$line = <FILE>;
+	$line = <$FILE>;
+    }
+
+    if ($line !~ /<page/ && $line =~ /<outline>/) {
+        my($nout) = 0;
+        while (1) {
+            ++$nout if $line =~ /<outline>/;
+            --$nout if $line =~ /<\/outline>/;
+            last if $nout == 0;
+            $line = <$FILE>;
+        }
+        $line = <$FILE> if $line =~ /<\/outline>\s*$/;
     }
 
     unless ($line =~ /<page number=\"(\d+)\" position=\"([A-Za-z0-9]+\") top=\"(\d+)\" left=\"(\d+)\" height=\"(\d+)\" width=\"(\d+)\"/) {
 	return '' if ($line =~ /<\/pdf2xml/);
 	print "$banal_filename: Error: \"<page ...\" node expected for page ", $doc->{npages} + 1, "\n";
-	print "-> '$line'";
+        chomp $line;
+	print "-> '$line'\n";
 	return '';
     }
 
@@ -1463,7 +1477,7 @@ sub parse_p2h_page ($) {
     };
 
     # check for optional fontspecs at start of page
-    $line = <FILE>;
+    $line = <$FILE>;
     if ($line =~ /<fontspec/) {
 	$line = parse_p2h_fonts ($line, $page);
     } elsif ($debug_parse) {
@@ -1486,7 +1500,7 @@ sub parse_p2h_page ($) {
 sub parse_p2h_header ($) {
     my ($doc) = @_;
 
-    while (<FILE>) {
+    while (<$FILE>) {
 	return 1 if (/<pdf2xml/);
     }
     return 0;
@@ -1610,9 +1624,15 @@ sub banal_file ($$) {
     }
 }
 
+sub shell_quote ($) {
+    my($s) = @_;
+    $s =~ s/\'/\'\"\'\"\'/g;
+    return "'$s'";
+}
+
 sub banal_open_input ($) {
     my ($fname) = @_;
-    my ($base, $ext, $cmd);
+    my ($base, $ext, $cmd, $oname);
 
     if ($fname =~ /(.+)\.(.+)/) {
 	($base, $ext) = ($1, $2);
@@ -1622,17 +1642,19 @@ sub banal_open_input ($) {
     }
 
     # 2>&1
-    if ($ext =~ /[pP][dD][fF]/) {
+    if ($ext =~ /^pdf$/i) {
+        ($FILE, $oname) = File::Temp::tempfile("banalXXXXX", UNLINK => 1, SUFFIX => ".xml", TMPDIR => 1);
 	$zoomarg = "-zoom $zoom";
-	$cmd = "$pdftohtml -stdout -enc UTF-8 -xml -i $zoomarg $fname 2>/dev/null |";
+	$cmd = "$pdftohtml -enc UTF-8 -xml -i $zoomarg " . shell_quote($fname) . " " . shell_quote($oname) . " 2>&1";
 	print STDERR "$cmd\n" if ($debug_pdftohtml);
 
-	unless (open (FILE, $cmd)) {
+        my($ignore_output) = `$cmd`;
+	unless (-s $FILE) {
 	    print STDERR "$fname: Error: Failed to open file.\n";
 	    return 0;
 	}
-    } elsif ($ext =~ /[xX][mM][lL]/) {
-	unless (open (FILE, "$fname")) {
+    } elsif ($ext =~ /^xml$/i) {
+	unless (open ($FILE, "$fname")) {
 	    print STDERR "$fname: Error: Failed to open file.\n";
 	    return 0;
 	}
