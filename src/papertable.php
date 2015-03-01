@@ -459,7 +459,7 @@ class PaperTable {
             else
                 echo Ht::label("The paper is ready for review.");
             echo "</td></tr></table></div>\n";
-            $Conf->footerScript("hotcrp_onload.push(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
+            $Conf->footerScript("jQuery(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
         } else if ($documentType == DTYPE_FINAL)
             echo Ht::hidden("submitpaper", 1);
 

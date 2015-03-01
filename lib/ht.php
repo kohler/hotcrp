@@ -234,7 +234,7 @@ class Ht {
             if ($value === null || $value === "")
                 $value = $temp;
             $temp = ' hottemptext="' . htmlspecialchars($temp) . '"';
-            self::stash_script("hotcrp_load(hotcrp_load.temptext)", "temptext");
+            self::stash_script("jQuery(hotcrp_load.temptext)", "temptext");
         } else
             $temp = "";
         unset($js["hottemptext"]);

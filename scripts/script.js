@@ -812,26 +812,11 @@ return {
 })();
 
 
-var hotcrp_onload = [];
-function hotcrp_load(arg) {
-    var x;
-    if (!arg)
-        for (x = 0; x < hotcrp_onload.length; ++x)
-            hotcrp_onload[x]();
-    else if (typeof arg === "string")
-        hotcrp_onload.push(hotcrp_load[arg]);
-    else
-        hotcrp_onload.push(arg);
-}
-hotcrp_load.time = function (servzone, hr24) {
-    setLocalTime.initialize(servzone, hr24);
-};
-hotcrp_load.opencomment = function () {
-    if (location.hash.match(/^\#?commentnew$/))
-        open_new_comment();
-};
-hotcrp_load.temptext = function () {
-    jQuery("input[hottemptext]").each(mktemptext);
+var hotcrp_load = {
+    time: setLocalTime.initialize,
+    temptext: function () {
+        jQuery("input[hottemptext]").each(mktemptext);
+    }
 };
 
 

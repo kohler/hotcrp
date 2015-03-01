@@ -2079,7 +2079,7 @@ class Conference {
         $this->header_head($title);
 
         // <body>
-        echo "<body", ($id ? " id='$id'" : ""), ($Me ? " onload='hotcrp_load()'" : ""), ">\n";
+        echo "<body", ($id ? " id=\"$id\"" : ""), ">\n";
 
         // on load of script.js
         $this->scriptStuff .= "<script>";
