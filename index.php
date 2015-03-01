@@ -19,4 +19,4 @@ if (Navigation::page() !== "index") {
         go(hoturl("index"));
 }
 
-require_once("src/homepage.php");
+require_once("pages/home.php");

@@ -1,5 +1,5 @@
 <?php
-// homeadmin.php -- HotCRP home page administrative messages
+// adminhome.php -- HotCRP home page administrative messages
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 

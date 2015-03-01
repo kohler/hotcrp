@@ -1,9 +1,7 @@
 <?php
-// homepage.php -- HotCRP home page
+// home.php -- HotCRP home page
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
-
-require_once("papersearch.php");
 
 $email_class = "";
 $password_class = "";
@@ -107,7 +105,7 @@ if (isset($_REQUEST["cleartokens"]))
 
 
 if ($Me->privChair)
-    require_once("homeadmin.php");
+    require_once("adminhome.php");
 
 
 $title = ($Me->is_empty() || isset($_REQUEST["signin"]) ? "Sign in" : "Home");

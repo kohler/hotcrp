@@ -46,6 +46,7 @@ mkdistdir <<EOF
 LICENSE
 NEWS
 README.md
+api.php
 assign.php
 autoassign.php
 bulkassign.php
@@ -114,8 +115,11 @@ lib/text.php
 lib/unicodehelper.php
 lib/xlsx.php
 
+pages/.htaccess
+pages/adminhome.php
+pages/home.php
+
 src/.htaccess
-src/api.php
 src/assigners.php
 src/banal
 src/baselist.php
@@ -129,8 +133,6 @@ src/contactlist.php
 src/distoptions.php
 src/formula.php
 src/helpers.php
-src/homeadmin.php
-src/homepage.php
 src/hotcrpdocument.php
 src/hotcrpmailer.php
 src/init.php
