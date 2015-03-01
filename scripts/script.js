@@ -26,11 +26,15 @@ function serialize_object(x) {
     if (typeof x === "string")
         return x;
     else if (x) {
-        var k, v, a = [];
+        var k, v, a = [], anchor = "";
         for (k in x)
-            if ((v = x[k]) != null)
-                a.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
-        return a.join("&");
+            if ((v = x[k]) != null) {
+                if (k === "anchor")
+                    anchor = "#" + encodeURIComponent(v);
+                else
+                    a.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
+            }
+        return a.join("&") + anchor;
     } else
         return "";
 }
@@ -56,9 +60,12 @@ function hoturl_clean(x, page_component) {
 }
 
 function hoturl(page, options) {
-    var k, t, a, m, x;
-    options = serialize_object(options);
+    var k, t, a, m, x, anchor;
     x = {t: siteurl + page + siteurl_suffix, o: serialize_object(options)};
+    if ((m = x.o.match(/^(.*?)(#.*)$/))) {
+        x.o = m[1];
+        anchor = m[2];
+    }
     if (page === "paper" || page === "review")
         hoturl_clean(x, "p=(\\d+)");
     else if (page === "help")
@@ -74,7 +81,7 @@ function hoturl(page, options) {
         a.push(x.o);
     if (a.length)
         x.t += "?" + a.join("&");
-    return x.t;
+    return x.t + (anchor || "");
 }
 
 function hoturl_post(page, options) {
