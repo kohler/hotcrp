@@ -159,7 +159,6 @@ src/sample.pdf
 src/schema.sql
 src/searchactions.php
 src/settinginfo.json
-src/trackercomet.js
 src/updateschema.php
 src/useractions.php
 src/userstatus.php
