@@ -116,8 +116,8 @@ function log_jserror(errormsg, error) {
     if (error && error.stack)
         errormsg.stack = error.stack;
     jQuery.ajax({
-        url: hoturl("api", "jserror=1"),
-        type: "POST", cache: false, data: x
+        url: hoturl("api", "fn=jserror"),
+        type: "POST", cache: false, data: errormsg
     });
 }
 
