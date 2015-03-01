@@ -3,8 +3,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 var siteurl, siteurl_postvalue, siteurl_suffix, siteurl_defaults,
-    siteurl_absolute_base, hotcrp_paperid,
-    hotcrp_list, hotcrp_status, hotcrp_user,
+    siteurl_absolute_base,
+    hotcrp_paperid, hotcrp_list, hotcrp_status, hotcrp_user,
     hotcrp_want_override_conflict;
 
 function $$(id) {
@@ -143,6 +143,7 @@ function log_jserror(errormsg, error) {
     };
 })();
 
+
 jQuery.fn.extend({
     geometry: function (outer) {
         var x;
@@ -167,6 +168,7 @@ jQuery.fn.extend({
         return this;
     }
 });
+
 
 function plural_noun(n, what) {
     if (jQuery.isArray(n))

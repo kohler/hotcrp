@@ -265,6 +265,10 @@ function hoturl_post_raw($page, $options = null) {
     return htmlspecialchars_decode(hoturl_post($page, $options));
 }
 
+function hoturl_absolute_raw($page, $options = null) {
+    return htmlspecialchars_decode(hoturl_absolute($page, $options));
+}
+
 
 function fileUploaded(&$var) {
     global $Conf;
@@ -289,7 +293,7 @@ function fileUploaded(&$var) {
 }
 
 function selfHref($extra = array(), $options = null) {
-    global $CurrentList, $ConfSiteSuffix, $Opt;
+    global $CurrentList, $Opt;
     // clean parameters from pathinfo URLs
     foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
         if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
@@ -554,7 +558,7 @@ class SessionList {
 }
 
 function _tryNewList($opt, $listtype, $sort = null) {
-    global $Conf, $ConfSiteSuffix, $Me;
+    global $Conf, $Me;
     if ($listtype == "u" && $Me->privChair) {
         $searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
         $q = "select email from ContactInfo";
@@ -566,7 +570,7 @@ function _tryNewList($opt, $listtype, $sort = null) {
             $a[] = $row[0];
         return SessionList::create("u/" . $searchtype, $a,
                                    ($searchtype == "pc" ? "Program committee" : "Users"),
-                                   "users$ConfSiteSuffix?t=$searchtype");
+                                   hoturl_site_relative_raw("users", "t=$searchtype"));
     } else {
         $search = new PaperSearch($Me, $opt);
         $x = $search->session_list_object($sort);

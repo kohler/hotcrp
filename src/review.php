@@ -764,14 +764,14 @@ class ReviewForm {
 
 
     static function textFormHeader($type, $editable) {
-        global $Conf, $ConfSiteSuffix, $Opt;
+        global $Conf, $Opt;
 
         $x = "==+== " . $Opt["shortName"] . " Paper Review";
         if ($editable) {
             $x .= " Form" . ($type === true ? "s" : "") . "\n";
             $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
 ==-== For further guidance, or to upload this file when you are done, go to:
-==-== " . $Opt["paperSite"] . "/offline$ConfSiteSuffix\n\n";
+==-== " . hoturl_absolute_raw("offline") . "\n\n";
         } else
             $x .= ($type === true ? "s\n\n" : "\n\n");
         return $x;

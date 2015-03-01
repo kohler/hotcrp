@@ -642,7 +642,7 @@ class ContactList extends BaseList {
     }
 
     function text($listname, $url, $listtitle = "", $foldsession = null) {
-        global $Conf, $ConfSiteSuffix, $contactListFields;
+        global $Conf, $contactListFields;
 
         // PC tags
         $queryOptions = array();
