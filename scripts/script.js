@@ -70,6 +70,8 @@ function hoturl(page, options) {
         hoturl_clean(x, "p=(\\d+)");
     else if (page === "help")
         hoturl_clean(x, "t=(\\w+)");
+    else if (page === "api")
+        hoturl_clean(x, "fn=(\\w+)");
     if (x.o && hotcrp_list
         && (m = x.o.match(/^(.*(?:^|&)ls=)([^&]*)((?:&|$).*)$/))
         && hotcrp_list.id == decodeURIComponent(m[2]))
@@ -622,7 +624,7 @@ function display_tracker() {
 function tracker(start) {
     var trackerstate, list = "";
     if (start < 0)
-        Miniajax.post(hoturl_post("api", "track=stop"), load, 10000);
+        Miniajax.post(hoturl_post("api", "fn=track&track=stop"), load, 10000);
     if (!wstorage() || start < 0)
         return false;
     trackerstate = window_trackerstate();
@@ -637,7 +639,7 @@ function tracker(start) {
         var req = trackerstate[1] + "%20" + encodeURIComponent(list);
         if (hotcrp_paperid)
             req += "%20" + encodeURIComponent(hotcrp_paperid);
-        Miniajax.post(hoturl_post("api", "track=" + req), load, 10000);
+        Miniajax.post(hoturl_post("api", "fn=track&track=" + req), load, 10000);
     }
     return false;
 }
@@ -798,7 +800,7 @@ function reload() {
     clearTimeout(reload_timeout);
     reload_timeout = null;
     var psuffix = hotcrp_paperid ? "&p=" + hotcrp_paperid : "";
-    Miniajax.get(hoturl("api", "deadlines=1" + psuffix), load, 10000);
+    Miniajax.get(hoturl("api", "fn=deadlines" + psuffix), load, 10000);
 }
 
 return {

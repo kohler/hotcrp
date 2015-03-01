@@ -5,10 +5,56 @@
 
 require_once("src/initweb.php");
 
+// backward compatibility
+if (!isset($_GET["fn"])) {
+    if (Navigation::path_component(0))
+        $_GET["fn"] = Navigation::path_component(0);
+    else if (isset($_GET["jserror"]))
+        $_GET["fn"] = "jserror";
+    else if (isset($_GET["track"]))
+        $_GET["fn"] = "track";
+    else
+        $_GET["fn"] = "deadlines";
+}
+
 if (@$_REQUEST["key"] && isset($Opt["buzzerkey"]) && $Opt["buzzerkey"] == $_REQUEST["key"])
     $Me = Contact::site_contact();
 
-if (@$_REQUEST["track"] && $Me->privChair && check_post()) {
+if (@$_GET["fn"] == "jserror") {
+    $url = defval($_REQUEST, "url", "");
+    if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m))
+        $url = $m[1];
+    if (isset($_REQUEST["lineno"]) && $_REQUEST["lineno"] != "0")
+        $url .= ":" . $_REQUEST["lineno"];
+    if (isset($_REQUEST["colno"]) && $_REQUEST["colno"] != "0")
+        $url .= ":" . $_REQUEST["colno"];
+    if ($url != "")
+        $url .= ": ";
+    $errormsg = trim((string) @$_REQUEST["error"]);
+    if ($errormsg) {
+        $suffix = ($Me->email ? ", user $Me->email" : "");
+        error_log("JS error: $url$errormsg$suffix");
+        if (isset($_REQUEST["stack"])) {
+            $stack = array();
+            foreach (explode("\n", $_REQUEST["stack"]) as $line) {
+                $line = trim($line);
+                if ($line === "" || $line === $errormsg || "Uncaught $line" === $errormsg)
+                    continue;
+                if (preg_match('/\Aat (\S+) \((\S+)\)/', $line, $m))
+                    $line = $m[1] . "@" . $m[2];
+                else if (substr($line, 0, 1) === "@")
+                    $line = substr($line, 1);
+                else if (substr($line, 0, 3) === "at ")
+                    $line = substr($line, 3);
+                $stack[] = $line;
+            }
+            error_log("JS error: {$url}via " . join(" ", $stack));
+        }
+    }
+    $Conf->ajaxExit(array("ok" => true));
+}
+
+if (@$_GET["fn"] == "track" && $Me->privChair && check_post()) {
     // arguments: IDENTIFIER LISTNUM [POSITION] -OR- stop
     if ($_REQUEST["track"] == "stop")
         MeetingTracker::clear();
@@ -32,7 +78,6 @@ if (@$_GET["p"] && ctype_digit($_GET["p"])) {
 
 
 $j = $Me->my_deadlines($CurrentProw);
-
 if (@$j->tracker && $Me->privChair && @$_REQUEST["pc_conflicts"])
     MeetingTracker::status_add_pc_conflicts($j->tracker);
 if (@$_REQUEST["checktracker"]) {
@@ -48,38 +93,6 @@ if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb()))
     while (($row = edb_orow($result))) {
         $row->confid = (int) $row->confid;
         $j->conflist[] = $row;
-    }
-}
-if (@$_REQUEST["jserror"] && @$_REQUEST["error"]) {
-    $url = defval($_REQUEST, "url", "");
-    if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m))
-        $url = $m[1];
-    if (isset($_REQUEST["lineno"]) && $_REQUEST["lineno"] != "0")
-        $url .= ":" . $_REQUEST["lineno"];
-    if (isset($_REQUEST["colno"]) && $_REQUEST["colno"] != "0")
-        $url .= ":" . $_REQUEST["colno"];
-    if ($url != "")
-        $url .= ": ";
-    $errormsg = trim($_REQUEST["error"]);
-    $suffix = "";
-    if ($Me->email)
-        $suffix .= ", user $Me->email";
-    error_log("JS error: $url$errormsg$suffix");
-    if (isset($_REQUEST["stack"])) {
-        $stack = array();
-        foreach (explode("\n", $_REQUEST["stack"]) as $line) {
-            $line = trim($line);
-            if ($line === "" || $line === $errormsg || "Uncaught $line" === $errormsg)
-                continue;
-            if (preg_match('/\Aat (\S+) \((\S+)\)/', $line, $m))
-                $line = $m[1] . "@" . $m[2];
-            else if (substr($line, 0, 1) === "@")
-                $line = substr($line, 1);
-            else if (substr($line, 0, 3) === "at ")
-                $line = substr($line, 3);
-            $stack[] = $line;
-        }
-        error_log("JS error: {$url}via " . join(" ", $stack));
     }
 }
 
