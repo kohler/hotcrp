@@ -143,6 +143,25 @@ class Navigation {
         return null;
     }
 
+    public static function path_suffix($n) {
+        if (self::$path !== "") {
+            $p = 0;
+            while ($n > 0 && ($p = strpos(self::$path, "/", $p + 1)))
+                --$n;
+            if ($p !== false)
+                return substr(self::$path, $p);
+        }
+        return "";
+    }
+
+    public static function set_page($page) {
+        return (self::$page = $page);
+    }
+
+    public static function set_path($path) {
+        return (self::$path = $path);
+    }
+
     public static function php_suffix() {
         return self::$php_suffix;
     }
