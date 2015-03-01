@@ -9,11 +9,6 @@ require_once("src/initweb.php");
 // *** that hides the link when there are no deadlines to show.         ***
 
 $dl = $Me->my_deadlines();
-
-if (@$_REQUEST["checktracker"]) {
-    $tracker = @$dl->tracker ? $dl->tracker : $Conf->setting_json("tracker");
-    $dl->tracker_status = MeetingTracker::tracker_status($tracker);
-}
 if (@$_REQUEST["ajax"]) {
     $dl->ok = true;
     $Conf->ajaxExit($dl);

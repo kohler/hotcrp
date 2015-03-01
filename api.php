@@ -80,10 +80,6 @@ if (@$_GET["p"] && ctype_digit($_GET["p"])) {
 $j = $Me->my_deadlines($CurrentProw);
 if (@$j->tracker && $Me->privChair && @$_REQUEST["pc_conflicts"])
     MeetingTracker::status_add_pc_conflicts($j->tracker);
-if (@$_REQUEST["checktracker"]) {
-    $tracker = @$j->tracker ? : $Conf->setting_json("tracker");
-    $j->tracker_status = MeetingTracker::tracker_status($tracker);
-}
 if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb())) {
     $j->conflist = array();
     $result = Dbl::ql($cdb, "select c.confid, siteclass, shortName, url
@@ -97,6 +93,4 @@ if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb()))
 }
 
 $j->ok = true;
-if (@$j->tracker) /* microsecond time precision is called for! */
-    $j->now = microtime(true);
 $Conf->ajaxExit($j);
