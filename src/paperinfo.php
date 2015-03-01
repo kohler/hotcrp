@@ -38,6 +38,7 @@ class PaperContactInfo {
                 $ci->review_token_cid = null;
         } else
             $ci = new PaperContactInfo;
+        Dbl::free($result);
         return $ci;
     }
 
@@ -172,6 +173,7 @@ class PaperInfo {
         $this->paperTags = "";
         if (($row = edb_row($result)) && $row[0] !== null)
             $this->paperTags = $row[0];
+        Dbl::free($result);
     }
 
     public function has_tag($tag) {
@@ -201,6 +203,7 @@ class PaperInfo {
         $result = Dbl::qe_raw("select group_concat(topicId) from PaperTopic where paperId=$this->paperId");
         $row = edb_row($result);
         $this->topicIds = $row ? $row[0] : "";
+        Dbl::free($result);
     }
 
     public function topics() {
@@ -303,6 +306,22 @@ class PaperInfo {
         return @$this->option_array[$id];
     }
 
+    public function num_reviews_submitted() {
+        if (!property_exists($this, "reviewCount")) {
+            $rows = edb_rows(Dbl::qe("select count(*) from PaperReview where paperId=$this->paperId and reviewSubmitted>0"));
+            $this->reviewCount = @$rows[0][0];
+        }
+        return $this->reviewCount;
+    }
+
+    public function num_reviews_started() {
+        if (!property_exists($this, "startedReviewCount")) {
+            $rows = edb_rows(Dbl::qe("select count(*) from PaperReview where paperId=$this->paperId and (reviewSubmitted or reviewNeedsSubmit>0)"));
+            $this->startedReviewCount = @$rows[0][0];
+        }
+        return $this->startedReviewCount;
+    }
+
     static public function score_aggregate_field($fid) {
         if ($fid === "contactId")
             return "reviewContactIds";
@@ -318,14 +337,13 @@ class PaperInfo {
         foreach ($fids as $fid)
             $req[] = "group_concat($fid order by reviewId) " . self::score_aggregate_field($fid);
         $result = Dbl::qe("select " . join(", ", $req) . " from PaperReview where paperId=$this->paperId and reviewSubmitted>0");
-        $row = null;
-        if ($result)
-            $row = $result->fetch_row();
+        $row = $result ? $result->fetch_row() : null;
         $row = $row ? : array();
         foreach ($fids as $i => $fid) {
             $k = self::score_aggregate_field($fid);
             $this->$k = @$row[$i];
         }
+        Dbl::free($result);
     }
 
     public function submitted_reviewers() {
@@ -361,6 +379,7 @@ class PaperInfo {
         $comments = array();
         while (($c = CommentInfo::fetch($result, $this)))
             $comments[$c->commentId] = $c;
+        Dbl::free($result);
         return $comments;
     }
 

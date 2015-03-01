@@ -138,7 +138,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
 
         // email reviewers
         if (($numreviews > 0 && $Conf->time_review_open())
-            || $prow->startedReviewCount > 0)
+            || $prow->num_reviews_started() > 0)
             HotCRPMailer::send_reviewers("@withdrawreviewer", $prow, array("reason" => $reason));
 
         // remove voting tags so people don't have phantom votes

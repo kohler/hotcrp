@@ -1389,8 +1389,10 @@ class Conference {
             $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))";
 
         // all reviews
-        $joins[] = "left join (select paperId, count(*) count from PaperReview where {$papersel}(reviewSubmitted or reviewNeedsSubmit>0) group by paperId) R_started on (R_started.paperId=Paper.paperId)";
-        $cols[] = "coalesce(R_started.count,0) startedReviewCount";
+        if (@$options["startedReviewCount"]) {
+            $joins[] = "left join (select paperId, count(*) count from PaperReview where {$papersel}(reviewSubmitted or reviewNeedsSubmit>0) group by paperId) R_started on (R_started.paperId=Paper.paperId)";
+            $cols[] = "coalesce(R_started.count,0) startedReviewCount";
+        }
 
         $j = "select paperId, count(*) count";
         $cols[] = "coalesce(R_submitted.count,0) reviewCount";

@@ -228,8 +228,12 @@ class ReviewStatusPaperColumn extends PaperColumn {
         $this->auview = $Conf->timeAuthorViewReviews();
     }
     public function prepare($pl, &$queryOptions, $visible) {
-        return $pl->contact->is_reviewer() || $this->auview
-            || $pl->contact->privChair;
+        if ($pl->contact->is_reviewer() || $this->auview
+            || $pl->contact->privChair) {
+            $queryOptions["startedReviewCount"] = true;
+            return true;
+        } else
+            return false;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
         foreach ($rows as $row)
@@ -239,8 +243,8 @@ class ReviewStatusPaperColumn extends PaperColumn {
         $av = ($a->_review_status_sort_info ? $a->reviewCount : 2147483647);
         $bv = ($b->_review_status_sort_info ? $b->reviewCount : 2147483647);
         if ($av == $bv) {
-            $av = ($a->_review_status_sort_info ? $a->startedReviewCount : 2147483647);
-            $bv = ($b->_review_status_sort_info ? $b->startedReviewCount : 2147483647);
+            $av = ($a->_review_status_sort_info ? $a->num_reviews_started() : 2147483647);
+            $bv = ($b->_review_status_sort_info ? $b->num_reviews_started() : 2147483647);
         }
         return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
     }
@@ -257,16 +261,14 @@ class ReviewStatusPaperColumn extends PaperColumn {
                  || ($row->conflictType >= CONFLICT_AUTHOR && $this->auview));
     }
     public function content($pl, $row) {
-        if ($row->reviewCount != $row->startedReviewCount)
-            return "<b>$row->reviewCount</b>/$row->startedReviewCount";
-        else
-            return "<b>$row->reviewCount</b>";
+        $done = $row->reviewCount;
+        $started = $row->num_reviews_started();
+        return "<b>$done</b>" . ($done == $started ? "" : "/$started");
     }
     public function text($pl, $row) {
-        if ($row->reviewCount != $row->startedReviewCount)
-            return "$row->reviewCount/$row->startedReviewCount";
-        else
-            return $row->reviewCount;
+        $done = $row->reviewCount;
+        $started = $row->num_reviews_started();
+        return $done . ($done == $started ? "" : "/$started");
     }
 }
 
