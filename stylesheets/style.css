@@ -2610,6 +2610,9 @@ div.aabut .words {
 	font-size: 300%;
 	line-height: 24px;
 }
+.trackerinfo {
+	line-height: 125%;
+}
 #tracker .tracker1, #tracker .tracker2, #tracker .tracker3,
 #tracker .tracker4, #tracker .tracker5 {
 	padding-top: 2px;
@@ -2618,11 +2621,11 @@ div.aabut .words {
 #tracker .tracker4, #tracker .tracker5 {
 	font-size: smaller;
 }
-#tracker .trackerdesc {
+.trackerdesc {
 	font-weight: bold;
         padding-right: 0.5em;
 }
-#tracker .trackerpid {
+.trackerpid {
 	text-align: right;
 	padding-right: 0.5em;
 }
@@ -2634,6 +2637,26 @@ div.aabut .words {
 	font-weight: bold;
         padding: 0 1em 0 0.5em;
         opacity: 0.5;
+        text-align: right;
+}
+
+#trackertable {
+	line-height: 125%;
+}
+#trackertable > table {
+	width: 100%;
+}
+.trackertable0 {
+	background: #00ff00;
+}
+td.trackertable {
+	padding: 0.25em 0.5em 0.25em 0;
+}
+td.trackertable.trackerdesc {
+	padding-left: 0.5em;
+}
+td.trackertable.trackertitle {
+	padding: 0.25em 2em 0.25em 0;
 }
 
 /* mail */

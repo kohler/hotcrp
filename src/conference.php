@@ -2082,7 +2082,7 @@ class Conference {
         echo "<body", ($id ? " id=\"$id\"" : ""), ">\n";
 
         // on load of script.js
-        $this->scriptStuff .= "<script>";
+        $this->scriptStuff .= Ht::take_stash() . "<script>";
 
         // initial load (JS's timezone offsets are negative of PHP's)
         $this->scriptStuff .= "hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . (@$Opt["time24hour"] ? 1 : 0) . ")";
@@ -2098,10 +2098,6 @@ class Conference {
         if ($trackerowner)
             $this->scriptStuff .= ";hotcrp_deadlines.tracker(0)";
         $this->scriptStuff .= "</script>";
-
-        // If browser owns tracker, send it the script immediately
-        if ($trackerowner)
-            $this->echoScript("");
 
         echo "<div id='prebody'>\n";
 
@@ -2158,6 +2154,10 @@ class Conference {
 
         $this->headerPrinted = true;
         echo "</div>\n<div class='body'>\n";
+
+        // If browser owns tracker, send it the script immediately
+        if ($trackerowner)
+            $this->echoScript("");
 
         // Callback for version warnings
         if ($Me && $Me->privChair

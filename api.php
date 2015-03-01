@@ -77,9 +77,9 @@ if (@$_GET["p"] && ctype_digit($_GET["p"])) {
 }
 
 
+if ($Me->privChair && @$_REQUEST["pc_conflicts"])
+    MeetingTracker::set_pc_conflicts(true);
 $j = $Me->my_deadlines($CurrentProw);
-if (@$j->tracker && $Me->privChair && @$_REQUEST["pc_conflicts"])
-    MeetingTracker::status_add_pc_conflicts($j->tracker);
 if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb())) {
     $j->conflist = array();
     $result = Dbl::ql($cdb, "select c.confid, siteclass, shortName, url

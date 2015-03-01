@@ -48,6 +48,8 @@ if (preg_match(',\A(?:images|scripts|stylesheets)(?:/[^./][^/]+)+\z,', $file)
         header("Content-Type: image/jpeg");
     else if ($s == ".png")
         header("Content-Type: image/png");
+    else if ($s == ".mp3")
+        header("Content-Type: audio/mpeg");
     else
         fail();
     header("Access-Control-Allow-Origin: *");

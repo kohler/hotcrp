@@ -5,7 +5,11 @@
 
 class MeetingTracker {
 
-    const PCCONFLICTS = 1;
+    static private $pc_conflicts = false;
+
+    static function set_pc_conflicts($on) {
+        self::$pc_conflicts = $on;
+    }
 
     static function lookup() {
         global $Conf;
@@ -125,7 +129,7 @@ class MeetingTracker {
             $status->papers[] = $papers[$pid];
     }
 
-    static function status($acct) {
+    static private function basic_status($acct) {
         global $Conf, $Opt, $Now;
         $tracker = $Conf->setting_json("tracker");
         if (!$tracker || !$acct->isPC)
@@ -148,27 +152,35 @@ class MeetingTracker {
         return $status;
     }
 
-    static function status_add_pc_conflicts($status) {
-        global $Conf;
+    static private function status_add_pc_conflicts($status, $acct) {
         $pids = array();
         foreach ($status->papers as $p)
-            if ($p->pid)
+            if ($p->pid && $acct->privChair) {
                 $pids[] = $p->pid;
+                $p->pc_conflicts = array();
+            }
+        if (!count($pids))
+            return;
 
+        $pcm = pcMembers();
+        $result = Dbl::qe("select paperId, contactId from PaperConflict where paperId ?a and conflictType>0", $pids);
         $confs = array();
-        if (count($pids)) {
-            $pcm = pcMembers();
-            $result = $Conf->qe("select paperId, contactId from PaperConflict where paperId" . sql_in_numeric_set($pids) . " and conflictType>0");
-            while (($row = edb_row($result)))
-                if (($pc = @$pcm[$row[1]]))
-                    $confs[(int) $row[0]][$pc->sort_position] = (object) array("email" => $pc->email, "name" => Text::name_text($pc));
-        }
+        while (($row = edb_row($result)))
+            if (($pc = @$pcm[$row[1]]))
+                $confs[(int) $row[0]][$pc->sort_position] = (object) array("email" => $pc->email, "name" => Text::name_text($pc));
 
         foreach ($status->papers as $p)
             if ($p->pid && @$confs[$p->pid]) {
                 ksort($confs[$p->pid]);
                 $p->pc_conflicts = array_values($confs[$p->pid]);
             }
+    }
+
+    static function status($acct) {
+        $status = self::basic_status($acct);
+        if ($status && self::$pc_conflicts && @$status->papers)
+            self::status_add_pc_conflicts($status, $acct);
+        return $status;
     }
 
     static function tracker_status($tracker) {

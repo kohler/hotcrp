@@ -525,12 +525,12 @@ var tracker_map = [["is_manager", "Administrator"],
 
 function tracker_paper_columns(idx, paper) {
     var url = hoturl("paper", {p: paper.pid, ls: dl.tracker.listid}), i, x = [], title;
-    var t = '<td class="tracker' + idx + ' trackerdesc">';
+    var t = '<td class="trackerdesc">';
     t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
-    t += '</td><td class="tracker' + idx + ' trackerpid">';
+    t += '</td><td class="trackerpid">';
     if (paper.pid)
         t += '<a href="' + escape_entities(url) + '">#' + paper.pid + '</a>';
-    t += '</td><td class="tracker' + idx + ' trackerbody">';
+    t += '</td><td class="trackerbody">';
     if (paper.title)
         x.push('<a href="' + url + '">' + text_to_html(paper.title) + '</a>');
     for (i = 0; i != tracker_map.length; ++i)
@@ -551,9 +551,9 @@ function tracker_show_elapsed() {
     var delta = now - (dl.tracker.position_at + dl.load - dl.now);
     var s = Math.round(delta);
     if (s >= 3600)
-        s = sprintf("%d:%02d:%02d", s/3600, (s/60) % 60, s % 60);
+        s = sprintf("%d:%02d:%02d", s/3600, (s/60)%60, s%60);
     else
-        s = sprintf("%d:%02d", s/60, s % 60);
+        s = sprintf("%d:%02d", s/60, s%60);
     jQuery("#trackerelapsed").html(s);
 
     tracker_timer = setTimeout(tracker_show_elapsed,
@@ -608,10 +608,10 @@ function display_tracker() {
     if (!dl.tracker.papers || !dl.tracker.papers[0]) {
         t += "<a href=\"" + siteurl + dl.tracker.url + "\">Discussion list</a>";
     } else {
-        t += "<table class=\"trackerinfo\"><tbody><tr><td rowspan=\"" + dl.tracker.papers.length + "\">";
+        t += "<table class=\"trackerinfo\"><tbody><tr class=\"tracker0\"><td rowspan=\"" + dl.tracker.papers.length + "\">";
         t += "</td>" + tracker_paper_columns(0, dl.tracker.papers[0]);
         for (i = 1; i < dl.tracker.papers.length; ++i)
-            t += "</tr><tr>" + tracker_paper_columns(i, dl.tracker.papers[i]);
+            t += "</tr><tr class=\"tracker" + i + "\">" + tracker_paper_columns(i, dl.tracker.papers[i]);
         t += "</tr></tbody></table>";
     }
     mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
@@ -774,8 +774,13 @@ function load(dlx, is_initial) {
         window.hotcrp_status = dl = dlx;
     if (!dl.load)
         dl.load = (new Date).getTime() / 1000;
+    has_tracker = !!dl.tracker;
+    if (dl.tracker)
+        had_tracker_at = dl.load;
     display_main(is_initial);
-    if (dl.tracker || has_tracker)
+    var evt = jQuery.Event("hotcrp_deadlines");
+    jQuery(window).trigger(evt, [dl]);
+    if (!evt.isDefaultPrevented() && had_tracker_at)
         display_tracker();
     if (had_tracker_at)
         comet_store(1);
@@ -801,13 +806,17 @@ function load(dlx, is_initial) {
 function reload() {
     clearTimeout(reload_timeout);
     reload_timeout = null;
-    var psuffix = hotcrp_paperid ? "&p=" + hotcrp_paperid : "";
-    Miniajax.get(hoturl("api", "fn=deadlines" + psuffix), load, 10000);
+    var options = hotcrp_deadlines.options || {};
+    if (hotcrp_deadlines)
+        options.p = hotcrp_paperid;
+    options.fn = "deadlines";
+    Miniajax.get(hoturl("api", options), load, 10000);
 }
 
 return {
     init: function (dlx) { load(dlx, true); },
-    tracker: tracker
+    tracker: tracker,
+    tracker_show_elapsed: tracker_show_elapsed
 };
 })();
 
