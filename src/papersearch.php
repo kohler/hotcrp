@@ -2497,9 +2497,11 @@ class PaperSearch {
                 return false;
             if ($t->type == "tag" && !$this->contact->can_view_tags($row, true))
                 return false;
-            if (($t->type == "au" || $t->type == "au_cid" || $t->type == "co"
-                 || $t->type == "conflict")
-                && !$this->contact->allow_view_authors($row))
+            if (($t->type == "au" || $t->type == "au_cid" || $t->type == "co")
+                && !$this->contact->can_view_authors($row, true))
+                return false;
+            if ($t->type == "conflict"
+                && !$this->contact->can_view_pc_conflicts($row, true))
                 return false;
             if ($t->type == "pf" && $t->value[0] == "outcome"
                 && !$this->contact->can_view_decision($row, true))

@@ -1575,10 +1575,6 @@ class Contact {
             || $this->can_view_decision($prow, $forceShow);
     }
 
-    function allow_view_authors($prow) {
-        return $this->can_view_authors($prow, true);
-    }
-
     /* NB caller must check can_view_paper() */
     function can_view_authors($prow, $forceShow = null) {
         global $Conf;
@@ -1595,6 +1591,14 @@ class Contact {
             || ($rights->allow_administer
                 ? $rights->nonblind || $rights->rights_force /* chair can't see blind authors unless forceShow */
                 : $rights->act_author_view);
+    }
+
+    function can_view_pc_conflicts($prow, $forceShow = null) {
+        $rights = $this->rights($prow, $forceShow);
+        return $rights->allow_administer
+            || $rights->act_author_view
+            || (($rights->allow_pc_broad || $rights->potential_reviewer)
+                && $this->can_view_authors($prow, $forceShow));
     }
 
     function can_view_paper_option($prow, $opt, $forceShow = null) {
