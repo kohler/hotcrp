@@ -373,8 +373,10 @@ class ContactSearch {
         foreach ($cs as $id => $acct)
             if ($ereg && preg_match($ereg, $acct->email)) {
                 // exact email match trumps all else
-                if (strcasecmp($e, $acct->email) == 0)
-                    return array($id);
+                if (strcasecmp($e, $acct->email) == 0) {
+                    $ids = array($id);
+                    break;
+                }
                 $ids[] = $id;
             } else if ($nreg) {
                 $n = $acct->firstName === "" || $acct->lastName === "" ? "" : " ";
@@ -383,8 +385,7 @@ class ContactSearch {
                     $ids[] = $id;
             }
 
-        if ($result)
-            Dbl::free($result);
+        Dbl::free($result);
         return $ids;
     }
     public function contacts() {
