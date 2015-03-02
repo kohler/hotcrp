@@ -2202,7 +2202,7 @@ class Conference {
         echo "</div>\n", // class='body'
             "<div id='footer'>\n  <div id='footer_crp'>",
             defval($Opt, "extraFooter", ""),
-            "<a href='http://read.seas.harvard.edu/~kohler/hotcrp/'>HotCRP</a> Conference Management Software";
+            "<a href='http://read.seas.harvard.edu/~kohler/hotcrp/'>HotCRP</a>";
         if (!defval($Opt, "noFooterVersion", 0)) {
             if ($Me && $Me->privChair) {
                 echo " v", HOTCRP_VERSION;
