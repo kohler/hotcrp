@@ -2786,12 +2786,14 @@ class PaperSearch {
                         || $limit == "rable");
         if ($need_filter) {
             $sqi->add_manager_column();
-            if ($Conf->has_track_tags()) {
-                $sqi->add_table("PaperTags", array("left join", "(select paperId, group_concat(' ', tag, '#', tagIndex separator '') as paperTags from PaperTag group by paperId)"));
-                $sqi->add_column("paperTags", "PaperTags.paperTags");
-            }
             if ($Conf->setting("sub_blind") == Conference::BLIND_OPTIONAL)
                 $sqi->add_column("paperBlind", "Paper.blind");
+        }
+
+        if (($need_filter && $Conf->has_track_tags())
+            || @$this->_query_options["tags"]) {
+            $sqi->add_table("PaperTags", array("left join", "(select paperId, group_concat(' ', tag, '#', tagIndex separator '') as paperTags from PaperTag group by paperId)"));
+            $sqi->add_column("paperTags", "PaperTags.paperTags");
         }
 
         // create query
