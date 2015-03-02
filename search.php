@@ -569,33 +569,39 @@ if ($getaction == "contact" && $Me->privChair && SearchActions::any()) {
 // download current assignments
 if ($getaction == "pcassignments" && $Me->privChair && SearchActions::any()) {
     // Note that this is chair only
-    $result = $Conf->qe("select Paper.paperId, reviewType, reviewRound, email, firstName, lastName, title
-	from PaperReview
-	join ContactInfo using (contactId)
-	join Paper on (Paper.paperId=PaperReview.paperId)
-	where reviewType>=" . REVIEW_PC . " and PaperReview.paperId" . SearchActions::sql_predicate() . "
-	order by reviewRound, paperId, email");
-    $texts = array();
-    $round = null;
+    $pcm = pcMembers();
     $round_list = $Conf->round_list();
-    $any_round = false;
     $reviewnames = array(REVIEW_PC => "pcreview", REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary");
-    while (($row = edb_orow($result))) {
-        if ($round !== (int) $row->reviewRound) {
-            if ($round !== null)
-                $texts[] = array();
-            $round = (int) $row->reviewRound;
-            $round_name = $round ? $round_list[$round] : "none";
-            $any_round = $any_round || $round != 0;
-            $texts[] = array("paper" => "all", "action" => "clearreview",
-                             "email" => "#pc", "round" => $round_name);
+    $any_round = false;
+    $texts = array();
+    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "assignments" => 1)));
+    while (($prow = PaperInfo::fetch($result, $Me)))
+        if (!$Me->allow_administer($prow)) {
+            $texts[] = array();
+            $texts[] = array("paper" => $prow->paperId,
+                             "action" => "none",
+                             "title" => "You cannot override your conflict with this paper");
+        } else if ($prow->assignmentContactIds) {
+            $texts[] = array();
+            $texts[] = array("paper" => $prow->paperId,
+                             "action" => "clearreview",
+                             "email" => "#pc",
+                             "round" => "any",
+                             "title" => $prow->title);
+            $cids = explode(",", $prow->assignmentContactIds);
+            $rtypes = explode(",", $prow->assignmentReviewTypes);
+            $rrounds = explode(",", $prow->assignmentReviewRounds);
+            for ($i = 0; $i < count($cids); ++$i)
+                if (($pc = $pcm[$cids[$i]]) && $rtypes[$i] >= REVIEW_PC) {
+                    $round = (int) $rrounds[$i];
+                    $round_name = $round ? $round_list[$round] : "none";
+                    $any_round = $any_round || $round != 0;
+                    $texts[] = array("paper" => $prow->paperId,
+                                     "action" => $reviewnames[$rtypes[$i]],
+                                     "email" => $pc->email,
+                                     "round" => $round_name);
+                }
         }
-        $texts[] = array("paper" => $row->paperId,
-                         "action" => $reviewnames[$row->reviewType],
-                         "email" => $row->email,
-                         "round" => $round_name,
-                         "title" => $row->title);
-    }
     $header = array("paper", "action", "email");
     if ($any_round)
         $header[] = "round";

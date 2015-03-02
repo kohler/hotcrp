@@ -1306,6 +1306,7 @@ class Conference {
         //   "topics"
         //   "options"
         //   "scores" => array(fields to score)
+        //   "assignments"
         //   "order" => $sql    $sql is SQL 'order by' clause (or empty)
 
         $reviewerQuery = isset($options["myReviews"]) || isset($options["allReviews"]) || isset($options["myReviewRequests"]) || isset($options["myReviewsOpt"]) || isset($options["myOutstandingReviews"]);
@@ -1388,12 +1389,13 @@ class Conference {
         } else if (!@$options["author"])
             $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))";
 
-        // all reviews
+        // started reviews
         if (@$options["startedReviewCount"]) {
             $joins[] = "left join (select paperId, count(*) count from PaperReview where {$papersel}(reviewSubmitted or reviewNeedsSubmit>0) group by paperId) R_started on (R_started.paperId=Paper.paperId)";
             $cols[] = "coalesce(R_started.count,0) startedReviewCount";
         }
 
+        // submitted reviews
         $j = "select paperId, count(*) count";
         $cols[] = "coalesce(R_submitted.count,0) reviewCount";
         if (@$options["scores"])
@@ -1412,6 +1414,13 @@ class Conference {
             $j .= ", group_concat(contactId order by reviewId) reviewContactIds";
         }
         $joins[] = "left join ($j from PaperReview where {$papersel}reviewSubmitted>0 group by paperId) R_submitted on (R_submitted.paperId=Paper.paperId)";
+
+        // assignments
+        if (@$options["assignments"]) {
+            $j = "select paperId, group_concat(contactId order by reviewId) assignmentContactIds, group_concat(reviewType order by reviewId) assignmentReviewTypes, group_concat(reviewRound order by reviewId) assignmentReviewRounds";
+            $cols[] = "Ass.assignmentContactIds, Ass.assignmentReviewTypes, Ass.assignmentReviewRounds";
+            $joins[] = "left join ($j from PaperReview where {$papersel}true group by paperId) Ass on (Ass.paperId=Paper.paperId)";
+        }
 
         // fields
         if (@$options["author"])
