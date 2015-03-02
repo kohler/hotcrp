@@ -279,13 +279,30 @@ class Assigner {
     function contact_set() {
         return "pc";
     }
-    function allow_special_contact($cclass) {
+    function allow_special_contact($cclass, $prow, $contact) {
         return false;
     }
     function account(&$countbycid, $nrev) {
         $countbycid[$this->cid] = @+$countbycid[$this->cid] + 1;
     }
     function add_locks(&$locks) {
+    }
+}
+
+class NullAssigner extends Assigner {
+    function __construct() {
+        parent::__construct("none", 0, 0);
+    }
+    function check_paper($user, $prow, $state) {
+        return true;
+    }
+    function contact_set() {
+        return false;
+    }
+    function allow_special_contact($cclass, $prow, $contact) {
+        return true;
+    }
+    function apply($pid, $contact, $req, $state) {
     }
 }
 
@@ -310,8 +327,9 @@ class ReviewAssigner extends Assigner {
         else
             return false;
     }
-    function allow_special_contact($cclass) {
-        return $this->rtype == 0 && $cclass != "none";
+    function allow_special_contact($cclass, $prow, $contact) {
+        return ($this->rtype == 0 && $cclass != "none")
+            || ($cclass == "conflict" && $prow->has_review($contact));
     }
     function load_keys() {
         return array("pid", "cid");
@@ -424,7 +442,7 @@ class LeadAssigner extends Assigner {
         parent::__construct($type, $pid, $contact);
         $this->isadd = $isadd;
     }
-    function allow_special_contact($cclass) {
+    function allow_special_contact($cclass, $prow, $contact) {
         return !$this->isadd || $cclass == "none";
     }
     function load_keys() {
@@ -473,7 +491,7 @@ class ConflictAssigner extends Assigner {
         parent::__construct("conflict", $pid, $contact);
         $this->ctype = $ctype;
     }
-    function allow_special_contact($cclass) {
+    function allow_special_contact($cclass, $prow, $contact) {
         return $cclass == "conflict" || ($cclass == "any" && !$this->ctype);
     }
     function load_keys() {
@@ -574,7 +592,7 @@ class TagAssigner extends Assigner {
         else
             return true;
     }
-    function allow_special_contact($cclass) {
+    function allow_special_contact($cclass, $prow, $contact) {
         return true;
     }
     function load_keys() {
@@ -789,7 +807,7 @@ class PreferenceAssigner extends Assigner {
         $this->pref = $pref;
         $this->exp = $exp;
     }
-    function allow_special_contact($cclass) {
+    function allow_special_contact($cclass, $prow, $contact) {
         return $cclass == "conflict";
     }
     function load_keys() {
@@ -852,6 +870,8 @@ class PreferenceAssigner extends Assigner {
     }
 }
 
+Assigner::register("none", new NullAssigner);
+Assigner::register("null", new NullAssigner);
 Assigner::register("pri", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
 Assigner::register("primary", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
 Assigner::register("sec", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
@@ -1035,7 +1055,7 @@ class AssignmentSet {
 
         // check missing contact
         if (!$first && !$last && !$lemail) {
-            if ($assigner->allow_special_contact("missing"))
+            if ($assigner->allow_special_contact("missing", null, null))
                 return array(null);
             else
                 return $this->error("User missing.");
@@ -1048,7 +1068,7 @@ class AssignmentSet {
                 return $ret->contacts();
         }
         if ($special === "none" || $special === "any") {
-            if (!$assigner->allow_special_contact($special))
+            if (!$assigner->allow_special_contact($special, null, null))
                 return $this->error("“{$special}” not allowed here");
             return array((object) array("roles" => 0, "contactId" => null, "email" => $special, "sorter" => ""));
         }
@@ -1227,7 +1247,7 @@ class AssignmentSet {
                 if ($contact && @$contact->contactId > 0
                     && !$this->astate->override
                     && $prow->has_conflict($contact)
-                    && !$assigner->allow_special_contact("conflict"))
+                    && !$assigner->allow_special_contact("conflict", $prow, $contact))
                     $this->error(Text::user_html_nolink($contact) . " has a conflict with paper #$p");
                 else if (($err = $assigner->apply($p, $contact, $req, $this->astate)))
                     $this->error($err);
