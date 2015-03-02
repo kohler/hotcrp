@@ -694,7 +694,7 @@ var comet_store = (function () {
     }
     jQuery(window).on("storage", function (e) {
         var x, ee = e.originalEvent;
-        if (dl.tracker_site && ee.key == site_key()) {
+        if (dl && dl.tracker_site && ee.key == site_key()) {
             var x = make_site_value(ee.newValue);
             if (x.expired || x.fresh)
                 reload();
