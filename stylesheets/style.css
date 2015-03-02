@@ -2747,6 +2747,16 @@ td.mhcb {
 .hidden {
 	display: none;
 }
+.foldc:hover .fhn_ib, .foldo:hover .fhx_ib {
+	display: inline-block;
+}
+.foldc:hover .fhn_b, .foldo:hover .fhx_b {
+	display: block;
+}
+.foldc:hover .fhx_ib, .foldo:hover .fhn_ib,
+.foldc:hover .fhx_b, .foldo:hover .fhn_b {
+	display: none;
+}
 
 /* score help */
 a.scorehelp {

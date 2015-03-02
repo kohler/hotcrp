@@ -13,7 +13,7 @@ if ($Me->privChair) {
 }
 
 // header and script
-Ht::stash_script('var buzzer_status = "off";
+Ht::stash_script('var buzzer_status = "off", buzzer_muted = false;
 function trackertable_paper_row(hc, idx, paper) {
     hc.push("<tr class=\\"trackertable" + idx + "\\">", "<\\/tr>");
     hc.push("<td class=\\"trackertable trackerdesc\\">", "<\\/td>");
@@ -60,9 +60,13 @@ function trackertable() {
     if (dl.tracker && dl.tracker.position != null)
         hotcrp_deadlines.tracker_show_elapsed();
     if (buzzer_status != "off" && (dl.tracker_status || "off") != "off"
-        && buzzer_status != dl.tracker_status)
+        && buzzer_status != dl.tracker_status && !buzzer_muted)
         jQuery("#buzzer")[0].play();
     buzzer_status = dl.tracker_status || "off";
+}
+function trackertable_mute(elt) {
+    fold(elt);
+    buzzer_muted = jQuery(elt).hasClass("foldo");
 }
 jQuery(window).on("hotcrp_deadlines", function (evt, dl) {
     evt.preventDefault();
@@ -72,5 +76,20 @@ $Conf->header("Discussion status", "buzzerpage", actionBar());
 
 echo "<div id=\"trackertable\"></div>";
 echo "<audio id=\"buzzer\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>";
+
+echo '<button type="button" class="foldc" style="margin-top:3em;width:7.5em" onclick="trackertable_mute(this)">
+<svg id="soundicon" class="fn fhx_ib" width="1.5em" height="1.5em" viewBox="0 0 75 75">
+ <polygon id="soundicon1" points="39.389,13.769 22.235,28.606 6,28.606 6,47.699 21.989,47.699 39.389,62.75 39.389,13.769" style="stroke:#111111;stroke-width:5;stroke-linejoin:round;fill:#111111;" />
+ <path id="soundicon2" d="M 48.128,49.03 C 50.057,45.934 51.19,42.291 51.19,38.377 C 51.19,34.399 50.026,30.703 48.043,27.577" style="fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round"/>
+ <path id="soundicon3" d="M 55.082,20.537 C 58.777,25.523 60.966,31.694 60.966,38.377 C 60.966,44.998 58.815,51.115 55.178,56.076" style="fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round"/>
+ <path id="soundicon4" d="M 61.71,62.611 C 66.977,55.945 70.128,47.531 70.128,38.378 C 70.128,29.161 66.936,20.696 61.609,14.01" style="fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round"/>
+</svg>';
+echo '<svg id="muteicon" class="fx fhn_ib" width="1.5em" height="1.5em" viewBox="0 0 75 75">
+ <polygon id="muteicon1" points="39.389,13.769 22.235,28.606 6,28.606 6,47.699 21.989,47.699 39.389,62.75 39.389,13.769" style="stroke:#111111;stroke-width:5;stroke-linejoin:round;fill:#111111;" />
+ <path id="muteicon2" d="M 48.651772,50.269646 69.395223,25.971024" style="fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round"/>
+ <path id="muteicon3" d="M 69.395223,50.269646 48.651772,25.971024" style="fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round" />
+</svg>';
+echo '<span class="hidden fhn_ib" style="position:relative;bottom:3px">&nbsp;Mute</span>';
+echo '<span class="hidden fhx_ib" style="position:relative;bottom:3px">&nbsp;Unmute</span></button>';
 
 $Conf->footer();
