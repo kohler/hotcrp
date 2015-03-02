@@ -512,7 +512,7 @@ function redisplay_main() {
 
 
 // tracker
-var has_tracker, had_tracker_at, tracker_timer;
+var has_tracker, had_tracker_at, tracker_timer, tracker_refresher;
 
 function window_trackerstate() {
     return wstorage.json(true, "hotcrp-tracking");
@@ -625,8 +625,13 @@ function display_tracker() {
 
 function tracker(start) {
     var trackerstate, list = "";
-    if (start < 0)
+    if (start < 0) {
         Miniajax.post(hoturl_post("api", "fn=track&track=stop"), load, 10000);
+        if (tracker_refresher) {
+            clearInterval(tracker_refresher);
+            tracker_refresher = null;
+        }
+    }
     if (!wstorage() || start < 0)
         return false;
     trackerstate = window_trackerstate();
@@ -640,8 +645,10 @@ function tracker(start) {
             list = hotcrp_list.num || hotcrp_list.id;
         var req = trackerstate[1] + "%20" + encodeURIComponent(list);
         if (hotcrp_paperid)
-            req += "%20" + encodeURIComponent(hotcrp_paperid);
+            req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
         Miniajax.post(hoturl_post("api", "fn=track&track=" + req), load, 10000);
+        if (!tracker_refresher)
+            tracker_refresher = setInterval(tracker, 70000);
     }
     return false;
 }

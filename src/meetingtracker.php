@@ -36,11 +36,14 @@ class MeetingTracker {
                                   "description" => $list->description,
                                   "start_at" => $Now,
                                   "position_at" => $Now,
+                                  "update_at" => $Now,
                                   "owner" => $Me->contactId,
                                   "sessionid" => session_id(),
                                   "position" => $position);
         $old_tracker = $Conf->setting_json("tracker");
-        if ($old_tracker && $old_tracker->trackerid == $tracker->trackerid) {
+        if ($old_tracker
+            && $old_tracker->trackerid == $tracker->trackerid
+            && $old_tracker->update_at >= $Now - 150) {
             $tracker->start_at = $old_tracker->start_at;
             if ($old_tracker->listid == $tracker->listid
                 && $old_tracker->position == $tracker->position)
@@ -132,7 +135,7 @@ class MeetingTracker {
     static private function basic_status($acct) {
         global $Conf, $Opt, $Now;
         $tracker = $Conf->setting_json("tracker");
-        if (!$tracker || !$acct->isPC)
+        if (!$tracker || !$acct->isPC || $tracker->update_at < $Now - 150)
             return false;
         if (($status = $Conf->session("tracker"))
             && $status->trackerid == $tracker->trackerid

@@ -57,7 +57,7 @@ function trackertable() {
             trackertable_paper_row(hc, i, dl.tracker.papers[i]);
     }
     jQuery("#trackertable").html(hc.render());
-    if (dl.tracker && dl.tracker.position)
+    if (dl.tracker && dl.tracker.position != null)
         hotcrp_deadlines.tracker_show_elapsed();
     if (buzzer_status != "off" && (dl.tracker_status || "off") != "off"
         && buzzer_status != dl.tracker_status)
