@@ -447,7 +447,7 @@ class Formula {
             $state->queryOptions["tags"] = true;
             $tagger = new Tagger($state->contact);
             $e_tag = $tagger->check($e->args[0]);
-            $t_tags = $state->_addgtemp("tags", "(\$forceShow || \$contact->can_view_tags(\$prow, true) ? \$prow->paperTags : '')");
+            $t_tags = $state->_addgtemp("tags", "(\$forceShow || \$contact->can_view_tags(\$prow, true) ? \$prow->all_tags_text() : '')");
             $t_tagpos = $state->_addgtemp("tagpos {$e->args[0]}", "stripos($t_tags, \" $e_tag#\")");
             $t_tagval = $state->_addgtemp("tagval {$e->args[0]}", "($t_tagpos !== false ? (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : null)");
             if ($op == "tag")
