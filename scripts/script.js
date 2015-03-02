@@ -569,7 +569,7 @@ function display_tracker() {
     if ((e = $$("trackerconnectbtn")))
         e.className = (mytracker ? "btn btn-danger" : "btn btn-default");
 
-    if (mne && !dl.tracker) {
+    if (!dl.tracker) {
         if (mne)
             mne.parentNode.removeChild(mne);
         if (mnspace)
