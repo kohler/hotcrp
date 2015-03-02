@@ -2179,32 +2179,86 @@ return function () {
 
 function make_bubble(content, bubclass) {
     bubclass = bubclass ? " " + bubclass : "";
-    var bubdiv = $('<div class="bubble' + bubclass + '"><div class="bubtail0' + bubclass + ' r"></div><div class="bubcontent"></div><div class="bubtail1' + bubclass + ' r"></div></div>')[0], dir = "r";
+    var bubdiv = $('<div class="bubble' + bubclass + '"><div class="bubtail0 dir1' + bubclass + '"></div><div class="bubcontent"></div><div class="bubtail1 dir1' + bubclass + '"></div></div>')[0],
+        bubch = bubdiv.childNodes,
+        dir = 1;
     $("body")[0].appendChild(bubdiv);
 
+    function to_rgba(c) {
+        var m = c.match(/^rgb\((.*)\)$/);
+        return m ? "rgba(" + m[1] + ", 1)" : c;
+    }
+
+    function recolor() {
+        var yc, i;
+        for (i = 0; i < 3; i += 2)
+            bubch[i].style.borderLeftColor = bubch[i].style.borderRightColor =
+            bubch[i].style.borderTopColor = bubch[i].style.borderBottomColor = "transparent";
+
+        yc = to_rgba($(bubdiv).css("backgroundColor")).replace(/([\d.]+)\)/, function (s, p1) {
+            return (0.75 * p1 + 0.25) + ")";
+        });
+        var m = ["Top", "Right", "Bottom", "Left"];
+        bubch[0].style["border" + m[dir ^ 2] + "Color"] = $(bubdiv).css("border" + m[dir] + "Color");
+        bubch[2].style["border" + m[dir ^ 2] + "Color"] = yc;
+    }
+    recolor();
+
     function position_tail() {
-        var ch = bubdiv.childNodes, x, y;
-        var pos = $(bubdiv).geometry(true), tailpos = $(ch[0]).geometry(true);
-        if (dir == "r" || dir == "l")
+        var x, y, pos = $(bubdiv).geometry(true), tailpos = $(bubch[0]).geometry(true);
+        if (dir & 1)
             y = Math.floor((pos.height - tailpos.height) / 2);
-        if (x != null)
-            ch[0].style.left = ch[2].style.left = x + "px";
-        if (y != null)
-            ch[0].style.top = ch[2].style.top = y + "px";
+        else
+            x = Math.floor((pos.width - tailpos.width) / 2);
+        bubch[0].style.left = bubch[2].style.left = (x == null ? "" : x + "px");
+        bubch[0].style.top = bubch[2].style.top = (y == null ? "" : y + "px");
+    }
+
+    function set_direction(xdir) {
+        xdir = {"0": 0, "1": 1, "2": 2, "3": 3, "t": 0, "l": 3, "r": 1, "b": 2}[xdir];
+        if (dir != xdir) {
+            dir = xdir;
+            bubch[0].className = "bubtail0 dir" + dir + bubclass;
+            bubch[2].className = "bubtail1 dir" + dir + bubclass;
+            recolor();
+        }
     }
 
     var bubble = {
         show: function (x, y) {
             var pos = $(bubdiv).geometry(true);
-            if (dir == "r")
-                x -= pos.width, y -= pos.height / 2;
-            bubdiv.style.visibility = "visible";
+            if (dir & 1)
+                y -= pos.height / 2;
+            else
+                x -= pos.width / 2;
+            if (dir == 1)
+                x -= pos.width;
+            if (dir == 2)
+                y -= pos.height;
             bubdiv.style.left = Math.floor(x) + "px";
             bubdiv.style.top = Math.floor(y) + "px";
+            position_tail();
+            bubdiv.style.visibility = "visible";
         },
-        near: function (elt) {
-            var pos = $(elt).geometry(true);
-            this.show(pos.left - 8, (pos.top + pos.bottom) / 2);
+        near: function (elt, dir) {
+            var epos = $(elt).geometry(true),
+                bpos = $(bubdiv).geometry(true),
+                wpos = $(window).geometry();
+            if (dir == null) {
+                if (wpos.right - epos.right > epos.left - wpos.left)
+                    dir = 3;
+                else
+                    dir = 1;
+            }
+            set_direction(dir);
+            if (dir == 3)
+                bubble.show(epos.right + 6, (epos.top + epos.bottom) / 2);
+            else if (dir == 1)
+                bubble.show(epos.left - 6, (epos.top + epos.bottom) / 2);
+            else if (dir == 0)
+                bubble.show((epos.left + epos.right) / 2, epos.bottom + 6);
+            else
+                bubble.show((epos.left + epos.right) / 2, epos.top - 6);
         },
         remove: function () {
             if (bubdiv) {
@@ -2213,11 +2267,11 @@ function make_bubble(content, bubclass) {
             }
         },
         color: function (color) {
-            var ch = bubdiv.childNodes;
             color = (color ? " " + color : "");
             bubdiv.className = "bubble" + bubclass + color;
-            ch[0].className = "bubtail0 " + dir + bubclass + color;
-            ch[2].className = "bubtail1 " + dir + bubclass + color;
+            bubch[0].className = "bubtail0 dir" + dir + bubclass + color;
+            bubch[2].className = "bubtail1 dir" + dir + bubclass + color;
+            recolor();
         },
         content: function (content) {
             var n = bubdiv.childNodes[1];

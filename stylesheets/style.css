@@ -2140,45 +2140,44 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	position: absolute;
 	border-style: solid;
 	width: 0;
+	height: 0;
 }
-.bubtail0.l, .bubtail0.r {
-	border-color: transparent #b8af25;
-}
-.bubtail0.errorbubble.l, .bubtail0.errorbubble.r {
-	border-color: transparent red;
-}
-.bubtail1.l, .bubtail1.r {
-	border-color: transparent rgba(246, 244, 189, 0.9);
-}
-.bubtail1.errorbubble.l, .bubtail1.errorbubble.r {
-	border-color: transparent rgba(255, 238, 238, 0.9);
-}
-.bubtail0.l {
+.bubtail0.dir3 {
 	left: -10px;
-	border-width: 9px 9px 0 0;
+	border-width: 5px 9px 5px 0;
 }
-.bubtail1.l {
+.bubtail1.dir3 {
 	left: -8px;
-	border-width: 8px 8px 0 0;
+	border-width: 5px 8px 5px 0;
 }
-.bubtail0.r {
+.bubtail0.dir1 {
 	right: -10px;
 	border-width: 5px 0 5px 9px;
 }
-.bubtail1.r {
+.bubtail1.dir1 {
 	right: -8px;
 	border-width: 5px 0 5px 8px;
+}
+.bubtail0.dir0 {
+	top: -10px;
+	border-width: 0 5px 9px 5px;
+}
+.bubtail1.dir0 {
+	top: -8px;
+	border-width: 0 5px 8px 5px;
+}
+.bubtail0.dir2 {
+	bottom: -10px;
+	border-width: 9px 5px 0 5px;
+}
+.bubtail1.dir2 {
+	bottom: -8px;
+	border-width: 8px 5px 0 5px;
 }
 
 .bubble.gray {
 	background-color: rgba(246, 246, 246, 0.88);
 	border: 1px solid #b8b8b8;
-}
-.bubtail0.l.gray, .bubtail0.r.gray {
-	border-color: transparent #b8b8b8;
-}
-.bubtail1.l.gray, .bubtail1.r.gray {
-	border-color: transparent rgba(246, 246, 246, 0.9);
 }
 
 /* ranks */
