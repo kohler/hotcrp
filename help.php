@@ -967,13 +967,10 @@ weights low expertise just slightly less than high expertise.</p>
 <blockquote>wavg(OveMer, RevExp < 3 ? 0.8 : 1)</blockquote>
 
 <p>Formulas work better for numeric scores, but you can use them
-for alphabetical scores; for instance, this should work (assuming a
-Confidence score with choices X, Y, and Z):</p>
+for alphabetical scores; for instance, assuming a
+Confidence score with choices X, Y, and Z:</p>
 
-<blockquote>count(confidence=X)</blockquote>
-
-<p>You can also name a formula as part of a search.
-For example, search for <a href=\"" . hoturl("search", "q=show%3Amax%28OveMer%29") . "\">show:max(OveMer)</a>.</p>");
+<blockquote>count(confidence=X)</blockquote>");
 
     _subhead("Expressions", "
 <p>Formula expressions are built from the following parts:</p>");
@@ -994,7 +991,7 @@ For example, search for <a href=\"" . hoturl("search", "q=show%3Amax%28OveMer%29
     _alternateRow("", "null", "The null value");
     _alternateRow("Tags", "#<em>tagname</em>", "True if this paper has tag <em>tagname</em>");
     _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or null if this paper doesn’t have that tag");
-    _alternateRow("Reviews", "overall-merit", "This review’s Overall merit score");
+    _alternateRow("Submitted reviews", "overall-merit", "This review’s Overall merit score");
     _alternateRow("", "OveMer", "Abbreviations are also accepted");
     _alternateRow("", "isprimary", "True for primary reviews");
     _alternateRow("", "issecondary", "True for secondary reviews");
