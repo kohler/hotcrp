@@ -1105,26 +1105,22 @@ class PaperSearch {
         return $ret;
     }
 
-    private function _search_one_tag($value, $keyword, $compar, &$qt) {
+    private function _search_one_tag($value, $keyword, $targs, &$qt) {
         $extra = null;
         if ($keyword == "order" || $keyword == "rorder" || !$keyword)
             $extra = array("tagorder" => (object) array("tag" => $value, "reverse" => $keyword == "rorder"));
         if (($starpos = strpos($value, "*")) !== false) {
-            $value = "\3 like '" . str_replace("*", "%", sqlq_for_like($value)) . "'";
+            $targs[0] = "\3 like '" . str_replace("*", "%", sqlq_for_like($value)) . "'";
             if ($starpos == 0)
-                $value .= " and \3 not like '%~%'";
-        }
-        if ($compar)
-            $value = array($value, $compar);
-
-        if ($value !== "any" && $value !== "none")
-            $qt[] = new SearchTerm("tag", self::F_XVIEW, $value, $extra);
-        else {
-            $term = new SearchTerm("tag", self::F_XVIEW, "\3 is not null and (\3 not like '%~%' or \3 like '" . $this->cid . "~%'" . ($this->privChair ? " or \3 like '~~%'" : "") . ")", $extra);
-            if ($value === "none")
-                $term = SearchTerm::combine("not", $term);
-            $qt[] = $term;
-        }
+                $targs[0] .= " and \3 not like '%~%'";
+        } else if ($value === "any" || $value === "none")
+            $targs[0] = "\3 is not null and (\3 not like '%~%' or \3 like '{$this->cid}~%'" . ($this->privChair ? " or \3 like '~~%'" : "") . ")";
+        else
+            $targs[0] = $value;
+        $term = new SearchTerm("tag", self::F_XVIEW, $targs, $extra);
+        if ($value === "none")
+            $term = SearchTerm::negate($term);
+        $qt[] = $term;
     }
 
     private function _search_tags($word, $keyword, &$qt) {
@@ -1142,14 +1138,17 @@ class PaperSearch {
                 return;
         }
 
-        if (preg_match('/\A([^#=!<>\x80-\xFF]+)(#?)([=!<>]=?|≠|≤|≥|)(-?\d+)\z/', $word, $m)
+        if (preg_match('/\A([^#=!<>\x80-\xFF]+)(?:#|=)(-?\d+)(?:\.\.\.?|-)(-?\d+)\z/', $word, $m)) {
+            $tagword = $m[1];
+            $compar = array(null, ">=" . $m[2], "<=" . $m[3]);
+        } else if (preg_match('/\A([^#=!<>\x80-\xFF]+)(#?)([=!<>]=?|≠|≤|≥|)(-?\d+)\z/', $word, $m)
             && $m[1] != "any" && $m[1] != "none"
             && ($m[2] != "" || $m[3] != "")) {
             $tagword = $m[1];
-            $compar = SearchReviewValue::canonical_comparator($m[3]) . $m[4];
+            $compar = array(null, SearchReviewValue::canonical_comparator($m[3]) . $m[4]);
         } else {
             $tagword = $word;
-            $compar = null;
+            $compar = array(null);
         }
 
         $xtags = $this->_expand_tag($tagword, $keyword == "tag");
@@ -1439,7 +1438,7 @@ class PaperSearch {
             return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
         } else if (substr($word, 0, 1) == "#") {
             $re = '/\A#' . ($this->privChair ? '(?:[\w@.]+~)?' : '')
-                . TAG_REGEX_OPTVALUE . '(?:[#=!<>\d]|≠|≤|≥)*\z/';
+                . TAG_REGEX_OPTVALUE . '(?:[-#=!<>\d.]|≠|≤|≥)*\z/';
             if (preg_match($re, $word, $m)) {
                 $qe = $this->_searchQueryWord("tag:" . $word, false);
                 if (!$qe->isfalse())
@@ -2420,13 +2419,12 @@ class PaperSearch {
             $f[] = "(" . join(" and ", $q) . ")";
             for ($i = 0; $i < count($t->value); $i += 2)
                 $sqi->add_column($t->value[$i], "Paper." . $t->value[$i]);
-        } else if ($tt == "tag" && is_array($t->value)) {
-            $this->_clauseTermSetTable($t, $t->value[0], null, "Tag",
-                                       "PaperTag", "tag", " and %.tagIndex" . $t->value[1],
-                                       $sqi, $f);
         } else if ($tt == "tag") {
-            $this->_clauseTermSetTable($t, $t->value, null, "Tag",
-                                       "PaperTag", "tag", "",
+            $extra = "";
+            for ($i = 1; $i < count($t->value); ++$i)
+                $extra .= " and %.tagIndex" . $t->value[$i];
+            $this->_clauseTermSetTable($t, $t->value[0], null, "Tag",
+                                       "PaperTag", "tag", $extra,
                                        $sqi, $f);
         } else if ($tt == "topic") {
             $this->_clauseTermSetTable($t, $t->value, null, "Topic",
@@ -2631,7 +2629,7 @@ class PaperSearch {
                 return false;
             else {
                 $fieldname = $t->link;
-                if (is_string($t->value) && $t->value == "none")
+                if ($t->value[0] == "none")
                     return $row->$fieldname == 0;
                 else
                     return $row->$fieldname != 0;
