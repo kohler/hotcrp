@@ -393,7 +393,7 @@ class Contact {
                               $_REQUEST["testcap"], $m, PREG_SET_ORDER)) {
             foreach ($m as $mm) {
                 $c = ($mm[3] == "a" ? self::CAP_AUTHORVIEW : 0);
-                $this->change_capability($mm[2], $c, $mm[1] != "-");
+                $this->change_capability((int) $mm[2], $c, $mm[1] !== "-");
             }
             unset($_REQUEST["testcap"]);
         }
@@ -462,22 +462,30 @@ class Contact {
         return self::roles_all_contact_tags($this->roles, $this->contactTags);
     }
 
-    function change_capability($pid, $c, $on) {
+    function capability($pid) {
+        $caps = $this->capabilities ? : array();
+        return @$caps[$pid] ? : 0;
+    }
+
+    function change_capability($pid, $c, $on = null) {
         global $Conf;
         if (!$this->capabilities)
             $this->capabilities = array();
-        $oldval = @$cap[$pid] ? $cap[$pid] : 0;
-        $newval = ($oldval | ($on ? $c : 0)) & ~($on ? 0 : $c);
-        if ($newval != $oldval) {
+        $oldval = @$this->capabilities[$pid] ? : 0;
+        if ($on === null)
+            $newval = ($c != null ? $c : 0);
+        else
+            $newval = ($oldval | ($on ? $c : 0)) & ~($on ? 0 : $c);
+        if ($newval !== $oldval) {
             ++$this->rights_version_;
-            if ($newval != 0)
+            if ($newval !== 0)
                 $this->capabilities[$pid] = $newval;
             else
                 unset($this->capabilities[$pid]);
         }
         if (!count($this->capabilities))
             $this->capabilities = null;
-        if ($this->activated_ && $newval != $oldval)
+        if ($this->activated_ && $newval !== $oldval)
             $Conf->save_session("capabilities", $this->capabilities);
         return $newval != $oldval;
     }
@@ -2363,13 +2371,15 @@ class Contact {
 
         // add meeting tracker
         $tracker = null;
-        if ($this->isPC && $Conf->setting("tracker")
+        if (($this->isPC || @$this->is_tracker_kiosk)
+            && $Conf->setting("tracker")
             && ($tracker = MeetingTracker::status($this))) {
             $dl->tracker = $tracker;
             $dl->tracker_status = MeetingTracker::tracker_status($tracker);
             $dl->now = microtime(true);
         }
-        if ($this->isPC && @$Opt["trackerCometSite"])
+        if (($this->isPC || @$this->is_tracker_kiosk)
+            && @$Opt["trackerCometSite"])
             $dl->tracker_site = $Opt["trackerCometSite"]
                 . "?conference=" . urlencode(Navigation::site_absolute(true));
 

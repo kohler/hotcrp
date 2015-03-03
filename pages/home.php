@@ -7,26 +7,28 @@ $email_class = "";
 $password_class = "";
 
 // signin links
-if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
-    && ($Me->is_empty() || check_post())) {
-    if ($Me->email === $_REQUEST["email"])
-        unset($_REQUEST["email"], $_REQUEST["password"]);
-    else {
-        $_REQUEST["action"] = defval($_REQUEST, "action", "login");
-        $_REQUEST["signin"] = defval($_REQUEST, "signin", "go");
-    }
+// auto-signin when email & password set
+if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])) {
+    $_REQUEST["action"] = defval($_REQUEST, "action", "login");
+    $_REQUEST["signin"] = defval($_REQUEST, "signin", "go");
 }
-
-if ((isset($_REQUEST["email"]) && isset($_REQUEST["password"])
-     && isset($_REQUEST["signin"]) && !isset($Opt["httpAuthLogin"]))
-    || (isset($_REQUEST["signout"]) && check_post()))
-    LoginHelper::logout();
-
+// CSRF protection: ignore unvalidated signin/signout for known users
+if (!$Me->is_empty() && !check_post())
+    unset($_REQUEST["signout"]);
+if ($Me->has_email()
+    && (!check_post() || strcasecmp($Me->email, @trim($_REQUEST["email"])) == 0))
+    unset($_REQUEST["signin"]);
+if (!isset($_REQUEST["email"]) || !isset($_REQUEST["action"]))
+    unset($_REQUEST["signin"]);
+// signout
+if (isset($_REQUEST["signout"]))
+    LoginHelper::logout(true);
+else if (isset($_REQUEST["signin"]) && !isset($Opt["httpAuthLogin"]))
+    LoginHelper::logout(false);
+// signin
 if (isset($Opt["httpAuthLogin"]))
     LoginHelper::check_http_auth();
-else if (isset($_REQUEST["email"])
-         && isset($_REQUEST["action"])
-         && isset($_REQUEST["signin"]))
+else if (isset($_REQUEST["signin"]))
     LoginHelper::check_login();
 else if ((isset($_REQUEST["signin"]) || isset($_REQUEST["signout"]))
          && isset($_REQUEST["post"]))

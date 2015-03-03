@@ -5,12 +5,6 @@
 
 class MeetingTracker {
 
-    static private $pc_conflicts = false;
-
-    static function set_pc_conflicts($on) {
-        self::$pc_conflicts = $on;
-    }
-
     static function lookup() {
         global $Conf;
         return $Conf->setting_json("tracker");
@@ -103,15 +97,25 @@ class MeetingTracker {
             $status->position_at = $tracker->position_at;
         $pids = array_slice($tracker->ids, $tracker->position, 3);
 
-        $result = $Conf->qe("select p.paperId, p.title, p.leadContactId, p.managerContactId, r.reviewType, conf.conflictType
+        $pc_conflicts = $acct->privChair || @$acct->is_tracker_kiosk;
+        $col = $j = "";
+        if ($pc_conflicts) {
+            $col = ", allconfs.conflictIds";
+            $j = "left join (select paperId, group_concat(contactId) conflictIds from PaperConflict where paperId in (" . join(",", $pids) . ") group by paperId) allconfs on (allconfs.paperId=p.paperId)\n\t\t";
+            $pcm = pcMembers();
+        }
+
+        $result = $Conf->qe("select p.paperId, p.title, p.leadContactId, p.managerContactId, r.reviewType, conf.conflictType{$col}
             from Paper p
             left join PaperReview r on (r.paperId=p.paperId and r.contactId=$acct->contactId)
             left join PaperConflict conf on (conf.paperId=p.paperId and conf.contactId=$acct->contactId)
-            where p.paperId in (" . join(",", $pids) . ")");
+            ${j}where p.paperId in (" . join(",", $pids) . ")");
+
         $papers = array();
         while (($row = edb_orow($result))) {
             $papers[$row->paperId] = $p = (object) array();
-            if ($acct->privChair || !$row->conflictType || !@$status->hide_conflicts) {
+            if (($acct->privChair || !$row->conflictType || !@$status->hide_conflicts)
+                && (!@$acct->is_tracker_kiosk || @$acct->tracker_kiosk_show_papers)) {
                 $p->pid = (int) $row->paperId;
                 $p->title = $row->title;
             }
@@ -125,17 +129,27 @@ class MeetingTracker {
             if ($acct->contactId > 0
                 && $row->leadContactId == $acct->contactId)
                 $p->is_lead = true;
+            if ($pc_conflicts) {
+                $p->pc_conflicts = array();
+                foreach (explode(",", (string) $row->conflictIds) as $cid)
+                    if (($pc = @$pcm[$cid]))
+                        $p->pc_conflicts[$pc->sort_position] = (object) array("email" => $pc->email, "name" => Text::name_text($pc));
+                ksort($p->pc_conflicts);
+                $p->pc_conflicts = array_values($p->pc_conflicts);
+            }
         }
 
+        Dbl::free($result);
         $status->papers = array();
         foreach ($pids as $pid)
             $status->papers[] = $papers[$pid];
     }
 
-    static private function basic_status($acct) {
+    static function status($acct) {
         global $Conf, $Opt, $Now;
         $tracker = $Conf->setting_json("tracker");
-        if (!$tracker || !$acct->isPC || $tracker->update_at < $Now - 150)
+        if (!$tracker || $tracker->update_at < $Now - 150
+            || (!$acct->isPC && !@$acct->is_tracker_kiosk))
             return false;
         if (($status = $Conf->session("tracker"))
             && $status->trackerid == $tracker->trackerid
@@ -152,37 +166,6 @@ class MeetingTracker {
         if ($status->position !== false)
             self::status_papers($status, $tracker, $acct);
         $Conf->save_session("tracker", $status);
-        return $status;
-    }
-
-    static private function status_add_pc_conflicts($status, $acct) {
-        $pids = array();
-        foreach ($status->papers as $p)
-            if ($p->pid && $acct->privChair) {
-                $pids[] = $p->pid;
-                $p->pc_conflicts = array();
-            }
-        if (!count($pids))
-            return;
-
-        $pcm = pcMembers();
-        $result = Dbl::qe("select paperId, contactId from PaperConflict where paperId ?a and conflictType>0", $pids);
-        $confs = array();
-        while (($row = edb_row($result)))
-            if (($pc = @$pcm[$row[1]]))
-                $confs[(int) $row[0]][$pc->sort_position] = (object) array("email" => $pc->email, "name" => Text::name_text($pc));
-
-        foreach ($status->papers as $p)
-            if ($p->pid && @$confs[$p->pid]) {
-                ksort($confs[$p->pid]);
-                $p->pc_conflicts = array_values($confs[$p->pid]);
-            }
-    }
-
-    static function status($acct) {
-        $status = self::basic_status($acct);
-        if ($status && self::$pc_conflicts && @$status->papers)
-            self::status_add_pc_conflicts($status, $acct);
         return $status;
     }
 

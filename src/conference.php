@@ -2149,7 +2149,8 @@ class Conference {
 
         echo "  <hr class=\"c\" />\n";
 
-        echo $actionBar;
+        if ($actionBar)
+            echo $actionBar;
 
         echo "</div>\n<div id=\"initialmsgs\">\n";
         if (@$Opt["maintenance"])

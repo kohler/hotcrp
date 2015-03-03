@@ -5,27 +5,27 @@
 
 class LoginHelper {
 
-    static function logout() {
+    static function logout($explicit) {
         global $Me, $Conf, $Opt;
-        if (!$Me->is_empty() && isset($_REQUEST["signout"])
-            && !isset($Opt["httpAuthLogin"]))
+        if (!$Me->is_empty() && $explicit && !isset($Opt["httpAuthLogin"]))
             $Conf->confirmMsg("You have been signed out. Thanks for using the system.");
-        $Me = new Contact;
         unset($_SESSION["trueuser"]);
         unset($_SESSION["last_actas"]);
         // clear all conference session info, except maybe capabilities
         $capabilities = $Conf->session("capabilities");
         unset($_SESSION[$Conf->dsn]);
-        if (!isset($_REQUEST["signout"]) && $capabilities)
+        if (!$explicit && $capabilities)
             $Conf->save_session("capabilities", $capabilities);
         unset($_SESSION["user"]); // backwards compatibility
-        if (isset($_REQUEST["signout"])) {
+        if ($explicit) {
             unset($_SESSION["login_bounce"]);
             if (isset($Opt["httpAuthLogin"])) {
                 $_SESSION["reauth"] = true;
                 go("");
             }
         }
+        $Me = new Contact;
+        $Me = $Me->activate();
     }
 
     static function http_auth_check() {

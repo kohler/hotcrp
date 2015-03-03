@@ -22,6 +22,19 @@ if ($_GET["fn"] == "trackerstatus") { // used by hotcrp-comet
     $Conf->ajaxExit(array("tracker_status" => MeetingTracker::tracker_status($tracker), "ok" => true));
 }
 
+if ($_GET["fn"] == "deadlines" && !$Me->has_database_account()
+    && ($key = $Me->capability("tracker_kiosk"))) {
+    $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
+    if ($kiosks->$key && $kiosks->$key->update_at >= $Now - 604800) {
+        if ($kiosks->$key->update_at < $Now - 86400) {
+            $kiosks->$key->update_at = $Now;
+            $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
+        }
+        $Me->is_tracker_kiosk = true;
+        $Me->tracker_kiosk_show_papers = $kiosks->$key->show_papers;
+    }
+}
+
 if (@$_GET["fn"] == "jserror") {
     $url = defval($_REQUEST, "url", "");
     if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m))
@@ -79,8 +92,6 @@ if (@$_GET["p"] && ctype_digit($_GET["p"])) {
 }
 
 
-if ($Me->privChair && @$_REQUEST["pc_conflicts"])
-    MeetingTracker::set_pc_conflicts(true);
 $j = $Me->my_deadlines($CurrentProw);
 if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb())) {
     $j->conflist = array();
