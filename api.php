@@ -17,8 +17,10 @@ if (!isset($_GET["fn"])) {
         $_GET["fn"] = "deadlines";
 }
 
-if (@$_REQUEST["key"] && isset($Opt["buzzerkey"]) && $Opt["buzzerkey"] == $_REQUEST["key"])
-    $Me = Contact::site_contact();
+if ($_GET["fn"] == "trackerstatus") { // used by hotcrp-comet
+    $tracker = MeetingTracker::lookup();
+    $Conf->ajaxExit(array("tracker_status" => MeetingTracker::tracker_status($tracker), "ok" => true));
+}
 
 if (@$_GET["fn"] == "jserror") {
     $url = defval($_REQUEST, "url", "");
