@@ -49,6 +49,7 @@ class FormulaCompileState {
     }
     function _add_submitted_reviewers() {
         if (!isset($this->gtmp["submitted_reviewers"])) {
+            $this->queryOptions["reviewContactIds"] = true;
             $this->gtmp["submitted_reviewers"] = "\$submitted_reviewers";
             $this->gstmt[] = "\$submitted_reviewers = (\$forceShow || \$contact->can_view_review(\$prow, null, false) ? \$prow->submitted_reviewers() : array());";
         }
@@ -226,7 +227,7 @@ class Formula {
             $this->_error_html = "Empty formula.";
         else if ($t !== "" || !$e) {
             $prefix = substr($this->expression, 0, strlen($this->expression) - strlen($t));
-            $this->_error_html = "Parse error in formula “" . htmlspecialchars($prefix) . "&nbsp;<span style='color:red'>&rarr;</span>&nbsp;" . htmlspecialchars(substr($this->expression, strlen($prefix))) . "”.";
+            $this->_error_html = "Parse error in formula “" . htmlspecialchars($prefix) . "<span style='color:red;text-decoration:underline'>" . htmlspecialchars(substr($this->expression, strlen($prefix))) . "</span>”.";
         } else if ($e->aggt)
             $this->_error_html = "Illegal formula: can’t return a raw score, use an aggregate function.";
         else if (($x = $e->resolve_scores()))
@@ -462,7 +463,7 @@ class Formula {
                 $t_f = "null";
             else {
                 $state->queryOptions["reviewTypes"] = true;
-                $t_f = "(" . $state->_addgtemp("revtypes", "explode(',', \$prow->reviewTypes)") . "[~i~]==" . $e->args[0] . ")";
+                $t_f = "(" . $state->_addgtemp("revtypes", "\$prow->submitted_review_types()") . "[~i~]==" . $e->args[0] . ")";
             }
             return $t_f;
         }
@@ -474,7 +475,7 @@ class Formula {
                 return "null";
             if (!isset($state->queryOptions["scores"]))
                 $state->queryOptions["scores"] = array();
-            $state->queryOptions["scores"][$f->id] = true;
+            $state->queryOptions["scores"][$f->id] = $f->id;
             $t_f = $state->_addgtemp($f->id, "\$prow->scores(\"{$f->id}\")") . "[~i~]";
             return "((int) @$t_f ? : null)";
         }

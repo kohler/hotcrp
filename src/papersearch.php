@@ -2790,10 +2790,24 @@ class PaperSearch {
                 $sqi->add_column("paperBlind", "Paper.blind");
         }
 
+        // XXX some of this should be shared with paperQuery
         if (($need_filter && $Conf->has_track_tags())
             || @$this->_query_options["tags"]) {
             $sqi->add_table("PaperTags", array("left join", "(select paperId, group_concat(' ', tag, '#', tagIndex separator '') as paperTags from PaperTag group by paperId)"));
             $sqi->add_column("paperTags", "PaperTags.paperTags");
+        }
+        if (@$this->_query_options["scores"] || @$this->_query_options["reviewTypes"] || @$this->_query_options["reviewContactIds"]) {
+            $j = "group_concat(contactId order by reviewId) reviewContactIds";
+            $sqi->add_column("reviewContactIds", "R_submitted.reviewContactIds");
+            if (@$this->_query_options["reviewTypes"]) {
+                $j .= ", group_concat(reviewType order by reviewId) reviewTypes";
+                $sqi->add_column("reviewTypes", "R_submitted.reviewTypes");
+            }
+            foreach (@$this->_query_options["scores"] ? : array() as $f) {
+                $j .= ", group_concat($f order by reviewId) {$f}Scores";
+                $sqi->add_column("{$f}Scores", "R_submitted.{$f}Scores");
+            }
+            $sqi->add_table("R_submitted", array("left join", "(select paperId, $j from PaperReview where reviewSubmitted>0 group by paperId)"));
         }
 
         // create query
