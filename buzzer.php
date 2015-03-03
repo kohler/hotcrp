@@ -88,8 +88,12 @@ function trackertable() {
     if (dl.tracker && dl.tracker.position != null)
         hotcrp_deadlines.tracker_show_elapsed();
     if (buzzer_status != "off" && (dl.tracker_status || "off") != "off"
-        && buzzer_status != dl.tracker_status && !buzzer_muted)
-        jQuery("#buzzer")[0].play();
+        && buzzer_status != dl.tracker_status && !buzzer_muted) {
+        var sound = jQuery("#buzzer")[0];
+        sound.pause();
+        sound.currentTime = 0;
+        sound.play();
+    }
     buzzer_status = dl.tracker_status || "off";
 }
 function trackertable_mute(elt) {
