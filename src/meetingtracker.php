@@ -107,8 +107,8 @@ class MeetingTracker {
 
         $result = $Conf->qe("select p.paperId, p.title, p.leadContactId, p.managerContactId, r.reviewType, conf.conflictType{$col}
             from Paper p
-            left join PaperReview r on (r.paperId=p.paperId and r.contactId=$acct->contactId)
-            left join PaperConflict conf on (conf.paperId=p.paperId and conf.contactId=$acct->contactId)
+            left join PaperReview r on (r.paperId=p.paperId and " . ($acct->contactId ? "r.contactId=$acct->contactId" : "false") . ")
+            left join PaperConflict conf on (conf.paperId=p.paperId and " . ($acct->contactId ? "conf.contactId=$acct->contactId" : "false") . ")
             ${j}where p.paperId in (" . join(",", $pids) . ")");
 
         $papers = array();
