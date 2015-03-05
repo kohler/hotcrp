@@ -119,15 +119,26 @@ function hoturl_absolute_base() {
 }
 
 
-function log_jserror(errormsg, error) {
-    if (typeof errormsg === "string")
+function log_jserror(errormsg, error, noconsole) {
+    if (!error && errormsg instanceof Error) {
+        error = errormsg;
+        errormsg = {"error": error.toString()};
+    } else if (typeof errormsg === "string")
         errormsg = {"error": errormsg};
+    if (error && error.fileName && !errormsg.url)
+        errormsg.url = error.fileName;
+    if (error && error.lineNumber && !errormsg.lineno)
+        errormsg.lineno = error.lineNumber;
+    if (error && error.columnNumber && !errormsg.colno)
+        errormsg.colno = error.columnNumber;
     if (error && error.stack)
         errormsg.stack = error.stack;
     jQuery.ajax({
         url: hoturl("api", "fn=jserror"),
         type: "POST", cache: false, data: errormsg
     });
+    if (error && !noconsole && typeof console === "object" && console.error)
+        console.error(errormsg.error);
 }
 
 (function () {
@@ -137,7 +148,7 @@ function log_jserror(errormsg, error) {
             var x = {"error": errormsg, "url": url, "lineno": lineno};
             if (colno)
                 x.colno = colno;
-            log_jserror(x, error);
+            log_jserror(x, error, true);
         }
         return old_onerror ? old_onerror.apply(this, arguments) : false;
     };
@@ -2879,15 +2890,21 @@ Miniajax.submit = function (formname, callback, timeout) {
                            }, timeout);
 
     req.onreadystatechange = function () {
-        var i;
+        var i, j;
         if (req.readyState != 4)
             return;
         clearTimeout(timer);
-        if (req.status == 200) {
+        if (req.status == 200)
+            try {
+                j = jQuery.parseJSON(req.responseText);
+            } catch (err) {
+                err.message += " [" + form.action + "]";
+                log_jserror(err);
+            }
+        if (j) {
             resultelt.innerHTML = "";
-            var rv = jQuery.parseJSON(req.responseText);
-            callback(rv);
-            if (rv.ok)
+            callback(j);
+            if (j.ok)
                 hiliter(form, true);
         } else {
             resultelt.innerHTML = "<span class='merror'>Network error. Please try again.</span>";
@@ -2923,13 +2940,18 @@ function getorpost(method, url, callback, timeout) {
             callback(null);
         }, timeout ? timeout : 4000);
     req.onreadystatechange = function () {
+        var j = null;
         if (req.readyState != 4)
             return;
         clearTimeout(timer);
         if (req.status == 200)
-            callback(jQuery.parseJSON(req.responseText));
-        else
-            callback(null);
+            try {
+                j = jQuery.parseJSON(req.responseText);
+            } catch (err) {
+                err.message += " [" + url + "]";
+                log_jserror(err);
+            }
+        callback(j);
     };
     req.open(method, url);
     req.send(null); /* old Firefox needs an arg */
