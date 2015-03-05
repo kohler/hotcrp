@@ -1271,7 +1271,7 @@ class Contact {
                     && $ci->review_type > 0
                     && $ci->review_submitted > 0)
                 || ($prow->outcome > 0
-                    && $ci->allow_review
+                    && ($isPC || $ci->allow_review)
                     && $Conf->timeReviewerViewAcceptedAuthors());
         }
         return $ci;
