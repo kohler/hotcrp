@@ -872,9 +872,9 @@ if ($getaction == "acmcms" && SearchActions::any() && $Me->privChair) {
 
 
 // download status JSON for selected papers
-if ($getaction == "metajson" && SearchActions::any() && $Me->privChair) {
+if ($getaction == "json" && SearchActions::any() && $Me->privChair) {
     $pj = array();
-    $ps = new PaperStatus(array("contact" => $Me));
+    $ps = new PaperStatus(array("contact" => $Me, "forceShow" => true));
     foreach (SearchActions::selection() as $pid)
         $pj[] = $ps->load($pid);
     if (count($pj) == 1)
