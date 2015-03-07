@@ -2936,12 +2936,14 @@ Miniajax.submit = function (formname, callback, timeout) {
 function getorpost(method, url, callback, timeout) {
     callback = callback || function () {};
     var req = newRequest(), timer = setTimeout(function () {
+            timer = null; // tell handler that request is aborted
             req.abort();
             callback(null);
         }, timeout ? timeout : 4000);
     req.onreadystatechange = function () {
         var j = null;
-        if (req.readyState != 4)
+        // IE will throw if we access XHR properties after abort()
+        if (!timer || req.readyState != 4)
             return;
         clearTimeout(timer);
         if (req.status == 200)
