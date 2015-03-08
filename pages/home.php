@@ -184,9 +184,9 @@ Sign in to submit or review papers.";
     if (isset($Opt["conferenceSite"]))
         echo " For general information about ", htmlspecialchars($Opt["shortName"]), ", see <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">the conference site</a>.";
     $passwordFocus = ($email_class == "" && $password_class != "");
-    echo "</div>
-<hr class='home' />
-<div class='homegrp' id='homeacct'>\n",
+    echo '</div>
+<hr class="home" />
+<div class="homegrp foldo" id="homeacct">',
         Ht::form(hoturl_post("index")),
         '<div class="f-contain">';
     if ($Me->is_empty() || isset($_REQUEST["signin"]))
@@ -204,33 +204,39 @@ Sign in to submit or review papers.";
         '</div>
   <div class="f-e', $email_class, '">',
         Ht::entry("email", (isset($_REQUEST["email"]) ? $_REQUEST["email"] : ($password_reset ? $password_reset->email : "")),
-                  array("size" => 36, "tabindex" => 1,
-                        "id" => ($passwordFocus || $password_reset ? null : "login_d"))),
+                  array("size" => 36, "tabindex" => 1, "id" => "signin_email")),
         '</div>
 </div>
-<div class="f-i">
+<div class="f-i fx">
   <div class="f-c', $password_class, '">Password</div>
   <div class="f-e">',
         Ht::password("password", "",
-                     array("size" => 36, "tabindex" => 1,
-                           "id" => ($passwordFocus ? "login_d" : null))),
+                     array("size" => 36, "tabindex" => 1, "id" => "signin_password")),
         "</div>\n</div>\n";
     if ($password_reset)
-        $Conf->echoScript("jQuery(function(){jQuery(\"#homeacct input[name=password]\").val(" . json_encode($password_reset->password) . ")})");
+        $Conf->echoScript("jQuery(function(){jQuery(\"#signin_password\").val(" . json_encode($password_reset->password) . ")})");
     if (isset($Opt["ldapLogin"]))
         echo Ht::hidden("action", "login");
     else {
         echo "<div class='f-i'>\n  ",
-            Ht::radio("action", "login", true, array("tabindex" => 2)),
+            Ht::radio("action", "login", true, array("tabindex" => 2, "id" => "signin_action_login")),
             "&nbsp;", Ht::label("<b>Sign me in</b>"), "<br />\n";
         echo Ht::radio("action", "forgot", false, array("tabindex" => 2)),
             "&nbsp;", Ht::label("I forgot my password"), "<br />\n";
         echo Ht::radio("action", "new", false, array("tabindex" => 2)),
-            "&nbsp;", Ht::label("I’m a new user and want to create an account using this email address");
+            "&nbsp;", Ht::label("I’m a new user and want to create an account");
         echo "\n</div>\n";
+        $Conf->footerScript("function login_type() {
+    var act = jQuery(\"#homeacct input[name=action]:checked\")[0] || jQuery(\"#signin_action_login\");
+    fold(\"homeacct\", act.value != \"login\");
+    var felt = act.value != \"login\" || !jQuery(\"#signin_email\").val().length;
+    jQuery(\"#signin_\" + (felt ? \"email\" : \"password\"))[0].focus();
+    jQuery(\"#signin_signin\")[0].value = {\"login\":\"Sign in\",\"forgot\":\"Reset password\",\"new\":\"Create account\"}[act.value];
+}
+jQuery(\"#homeacct input[name='action']\").on('click',login_type);jQuery(login_type)");
     }
     echo "<div class='f-i'>",
-        Ht::submit("signin", "Sign in", array("tabindex" => 1)),
+        Ht::submit("signin", "Sign in", array("tabindex" => 1, "id" => "signin_signin")),
         "</div></div></form>
 <hr class='home' /></div>\n";
     $Conf->footerScript("crpfocus(\"login\", null, 2)");
