@@ -298,15 +298,20 @@ class UserStatus {
         global $Conf, $Me, $Now;
         assert(is_object($cj));
 
-        if (is_int(@$cj->id) && $cj->id && !$old_user)
+        if (!$old_user && is_int(@$cj->id) && $cj->id)
             $old_user = Contact::find_by_id($cj->id);
-        else if (is_string(@$cj->email) && $cj->email && !$old_user)
+        else if (!$old_user && is_string(@$cj->email) && $cj->email)
             $old_user = Contact::find_by_email($cj->email);
         if (!@$cj->id)
             $cj->id = $old_user ? $old_user->contactId : "new";
         if ($cj->id !== "new" && $old_user && $cj->id != $old_user->contactId) {
             $this->set_error("id", "Saving user with different ID");
             return false;
+        }
+        if (!$old_user && is_string(@$cj->email) && $cj->email) {
+            $old_user = Contact::contactdb_find_by_email($cj->email);
+            if ($old_user && @$old_user->disable_shared_password)
+                unset($old_user->password);
         }
 
         $this->normalize($cj, $old_user);
@@ -328,7 +333,9 @@ class UserStatus {
                 $user->$k = $cj->$k;
         if (isset($cj->phone))
             $user->voicePhoneNumber = $cj->phone;
-        if (!isset($cj->password) && isset($cj->password_plaintext))
+        if (isset($cj->password))
+            $user->set_encoded_password($cj->password);
+        else if (isset($cj->password_plaintext))
             $user->change_password($cj->password_plaintext, false);
         if (!$user->password && !Contact::external_login())
             $user->password = $user->password_plaintext = Contact::random_password();
