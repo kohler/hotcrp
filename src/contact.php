@@ -858,7 +858,7 @@ class Contact {
     }
 
     public static function valid_password($password) {
-        return $password != "" && trim($password) === $password
+        return $password && trim($password) === $password
             && $password !== "*";
     }
 
