@@ -341,53 +341,10 @@ if [ "$createdbuser" = y ]; then
     eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1    
 DELETE FROM db WHERE db='$DBNAME' AND User='$DBUSER';
 
-INSERT INTO db SET
-    Host='127.0.0.1',
-    Db='$DBNAME',
-    User='$DBUSER',
-    Select_priv='Y',
-    Insert_priv='Y',
-    Update_priv='Y',
-    Delete_priv='Y',
-    Create_priv='Y',
-    Drop_priv='Y',
-    Index_priv='Y',
-    References_priv='Y',
-    Alter_priv='Y',
-    Lock_tables_priv='Y',
-    Create_tmp_table_priv='Y';
-
-INSERT INTO db SET
-    Host='localhost.localdomain',
-    Db='$DBNAME',
-    User='$DBUSER',
-    Select_priv='Y',
-    Insert_priv='Y',
-    Update_priv='Y',
-    Delete_priv='Y',
-    Create_priv='Y',
-    Drop_priv='Y',
-    Index_priv='Y',
-    References_priv='Y',
-    Alter_priv='Y',
-    Lock_tables_priv='Y',
-    Create_tmp_table_priv='Y';
-
-INSERT INTO db SET
-    Host='localhost',
-    Db='$DBNAME',
-    User='$DBUSER',
-    Select_priv='Y',
-    Insert_priv='Y',
-    Update_priv='Y',
-    Delete_priv='Y',
-    Create_priv='Y',
-    Drop_priv='Y',
-    Index_priv='Y',
-    References_priv='Y',
-    Alter_priv='Y',
-    Lock_tables_priv='Y',
-    Create_tmp_table_priv='Y';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX,
+    REFERENCES, ALTER, LOCK TABLES, CREATE TEMPORARY TABLES
+    ON $DBNAME.*
+    TO '$DBUSER'@'localhost', '$DBUSER'@'127.0.0.1', '$DBUSER'@'localhost.localdomain';
 
 __EOF__
 ##
