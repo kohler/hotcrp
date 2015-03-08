@@ -51,7 +51,7 @@ We received a request to reset the password for your account on the %CONFNAME% s
 
 %URL%/resetpassword%PHP%/%CAPABILITY%
 
-If you did not make this request, please ignore this email.
+If you did not make this request, it's safe to ignore this email.
 
 Contact %ADMIN% with any questions or concerns.
 
@@ -85,7 +85,7 @@ Contact %ADMIN% with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER%",
            "body" => "Dear %NAME%,
 
-On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% would like to solicit your help with the review of %CONFNAME% paper #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
+On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% has asked you to review %CONFNAME% paper #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
