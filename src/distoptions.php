@@ -100,13 +100,14 @@ $Opt["emailSender"] = null;
 
 // USER PASSWORDS
 //
-//   safePasswords   If true, the database stores cryptographic hashes
-//                   of user passwords according to security best
-//                   practices. If false, the database stores
-//                   user passwords in plaintext. If set to the integer 2,
-//                   existing plaintext passwords are opportunistically
-//                   upgraded to hashes. Randomly-generated passwords
-//                   are initially stored in plaintext.
+//   safePasswords   Controls how passwords are stored in the database. If
+//                   false, passwords are stored in plaintext; if true, user-
+//                   chosen passwords are stored as cryptographic hashes with
+//                   random salts, which are less vulnerable to cracking.
+//                   True is the default. Randomly-generated passwords, such
+//                   as those generated for new accounts, are stored in
+//                   plaintext for usability reasons. Set safePasswords to 2
+//                   to opportunistically upgrade these passwords to hashes.
 //   passwordHmacKey  Secret key used for password HMAC.
 //   passwordHmacKeyid  If a secret key is compromised, change
 //                   passwordHmacKeyid to switch keys. Defaults to 0.

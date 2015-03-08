@@ -920,14 +920,14 @@ class Contact {
             && !str_starts_with($this->password, $expected_prefix . " ");
     }
 
-    public function change_password($new_password, $save) {
+    public function change_password($new_password, $save, $plaintext = false) {
         global $Conf, $Opt, $Now;
         // set password fields
         $this->password_type = 0;
-        if ($new_password && $this->check_password_encryption(true))
-            $this->password_type = 1;
         if (!$new_password)
             $new_password = self::random_password();
+        else if (!$plaintext && $this->check_password_encryption(true))
+            $this->password_type = 1;
         $this->password_plaintext = $new_password;
         if ($this->password_type == 1) {
             $keyid = $this->preferred_password_keyid();

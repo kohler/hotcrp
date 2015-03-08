@@ -31,21 +31,22 @@ if (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]))
 $Me = new Contact;
 
 $password_class = "";
-if (isset($_REQUEST["go"]) && check_post()) {
-    if (defval($_REQUEST, "useauto") == "y")
-        $_REQUEST["upassword"] = $_REQUEST["upassword2"] = $_REQUEST["autopassword"];
-    if (!isset($_REQUEST["upassword"]) || $_REQUEST["upassword"] == "")
+if (isset($_POST["go"]) && check_post()) {
+    $_POST["password"] = trim((string) @$_POST["password"]);
+    $_POST["password2"] = trim((string) @$_POST["password2"]);
+    if ($_POST["password"] == "")
         $Conf->errorMsg("You must enter a password.");
-    else if ($_REQUEST["upassword"] !== $_REQUEST["upassword2"])
+    else if ($_POST["password"] !== $_POST["password2"])
         $Conf->errorMsg("The two passwords you entered did not match.");
-    else if (!Contact::valid_password($_REQUEST["upassword"]))
+    else if (!Contact::valid_password($_POST["password"]))
         $Conf->errorMsg("Invalid password.");
     else {
-        $Acct->change_password($_REQUEST["upassword"], true);
+        $Acct->change_password($_POST["password"], true,
+                               $_POST["password"] === @$_POST["autopassword"]);
         $Acct->log_activity("Reset password");
         $Conf->confirmMsg("Your password has been changed. You may now sign in to the conference site.");
         $capmgr->delete($capdata);
-        $Conf->save_session("password_reset", (object) array("time" => $Now, "email" => $Acct->email, "password" => $_REQUEST["upassword"]));
+        $Conf->save_session("password_reset", (object) array("time" => $Now, "email" => $Acct->email, "password" => $_POST["password"]));
         go(hoturl("index"));
     }
     $password_class = " error";
@@ -53,13 +54,11 @@ if (isset($_REQUEST["go"]) && check_post()) {
 
 $Conf->header("Reset Password", "resetpassword", null);
 
-if (!isset($_REQUEST["autopassword"])
-    || trim($_REQUEST["autopassword"]) != $_REQUEST["autopassword"]
-    || strlen($_REQUEST["autopassword"]) < 16
-    || !preg_match("/\\A[-0-9A-Za-z@_+=]*\\z/", $_REQUEST["autopassword"]))
-    $_REQUEST["autopassword"] = Contact::random_password();
-if (!isset($_REQUEST["useauto"]) || $_REQUEST["useauto"] != "n")
-    $_REQUEST["useauto"] = "y";
+if (!isset($_POST["autopassword"])
+    || trim($_POST["autopassword"]) != $_POST["autopassword"]
+    || strlen($_POST["autopassword"]) < 16
+    || !preg_match("/\\A[-0-9A-Za-z@_+=]*\\z/", $_POST["autopassword"]))
+    $_POST["autopassword"] = Contact::random_password();
 
 $confname = $Opt["longName"];
 if ($Opt["shortName"] && $Opt["shortName"] != $Opt["longName"])
@@ -75,29 +74,23 @@ echo "</div>
     Ht::form(hoturl_post("resetpassword")),
     '<div class="f-contain">',
     Ht::hidden("resetcap", $_REQUEST["resetcap"]),
-    Ht::hidden("autopassword", $_REQUEST["autopassword"]),
-    "<p>This form will reset the password for <b>", htmlspecialchars($Acct->email), "</b>. Use our suggested replacement password, or choose your own.</p>
-<table>
-  <tr><td>",
-    Ht::radio("useauto", "y", null),
-    "&nbsp;</td><td>", Ht::label("Use password <tt>" . htmlspecialchars($_REQUEST["autopassword"]) . "</tt>"),
-    "</td></tr>
-  <tr><td>",
-    Ht::radio("useauto", "n", null, array("id" => "usemy", "onclick" => "x=\$\$(\"login_d\");if(document.activeElement!=x)x.focus()")),
-    "&nbsp;</td><td style='padding-top:1em'>", Ht::label("Use this password:"), "</td></tr>
-  <tr><td></td><td><div class='f-i'>
-  <div class='f-c", $password_class, "'>Password</div>
-  <div class='f-e'><input id='login_d' type='password' name='upassword' size='36' tabindex='1' value='' onkeypress='if(!((x=\$\$(\"usemy\")).checked)) x.click()' /></div>
+    Ht::hidden("autopassword", $_POST["autopassword"]),
+    "<p>Use this form to reset your password. You may want to use the random password we’ve chosen.</p>";
+echo '<table style="margin-bottom:2em">',
+    '<tr><td class="lcaption">Your email</td><td>', htmlspecialchars($Acct->email), '</td></tr>
+<tr><td class="lcaption">Suggested password</td><td>', htmlspecialchars($_POST["autopassword"]), '</td></tr></table>';
+//Our suggested replacement password password for <b>", htmlspecialchars($Acct->email), "</b>. Use our suggested replacement password, or choose your own.</p>",
+echo '<div class="f-i">
+  <div class="f-c', $password_class, '">New password</div>
+  <div class="f-e">', Ht::password("password", "", array("id" => "login_d", "tabindex" => 1, "size" => 36)), '</div>
 </div>
-<div class='f-i'>
-  <div class='f-c", $password_class, "'>Password (again)</div>
-  <div class='f-e'><input id='login_d' type='password' name='upassword2' size='36' tabindex='1' value='' /></div>
-</div></td></tr>
-<tr><td colspan='2' style='padding-top:1em'>
-<div class='f-i'>",
+<div class="f-i">
+  <div class="f-c', $password_class, '">New password (again)</div>
+  <div class="f-e">', Ht::password("password2", "", array("tabindex" => 1, "size" => 36)), '</div>
+</div>
+<div class="f-i" style="margin-top:2em">',
     Ht::submit("go", "Reset password", array("tabindex" => 1)),
-    "</div></td>
-</tr></table>
+    "</div>
 </div></form>
 <hr class='home' /></div>\n";
 $Conf->footerScript("crpfocus(\"login\", null, 2)");
