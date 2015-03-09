@@ -1508,6 +1508,7 @@ class PaperTable {
     private function _edit_message_new_paper() {
         global $Conf;
         $startDeadline = $this->deadlineSettingIs("sub_reg");
+        $msg = "";
         if (!$Conf->timeStartPaper()) {
             if ($Conf->setting("sub_open") <= 0)
                 $msg = "You can’t register new papers because the conference site has not been opened for submissions." . $this->_override_message();
@@ -1516,16 +1517,18 @@ class PaperTable {
             if (!$this->admin) {
                 $this->quit = true;
                 return '<div class="merror">' . $msg . '</div>';
-            } else
-                return '<div class="xinfo">' . $msg . '</div>';
-        } else {
-            $msg = '<div class="xinfo">Enter information about your paper. ';
-            if ($startDeadline && !$Conf->setting("sub_freeze"))
-                $msg .= "You can make changes until the deadline, but thereafter ";
-            else
-                $msg .= "You don’t have to upload the paper itself right away, but ";
-            return "{$msg}incomplete submissions will not be considered.$startDeadline</div>";
+            }
+            $msg = '<div class="xinfo">' . $msg . '</div>';
         }
+        $msg .= '<div class="xinfo">Enter information about your paper. ';
+        if ($startDeadline && !$Conf->setting("sub_freeze"))
+            $msg .= "You can make changes until the deadline, but thereafter ";
+        else
+            $msg .= "You don’t have to upload the paper itself right away, but ";
+        $msg .= "incomplete submissions will not be considered.$startDeadline</div>";
+        if (($v = $Conf->message_html("submit")))
+            $msg .= '<div class="xinfo">' . $v . '</div>';
+        return $msg;
     }
 
     private function editMessage() {
@@ -1577,6 +1580,8 @@ class PaperTable {
             $m .= "<div class='xinfo'>This paper was accepted, but authors can’t view paper decisions yet. Once decisions are visible, the system will allow accepted authors to upload final versions.</div>";
         else
             $m .= '<div class="xinfo">You aren’t a contact for this paper, but as an administrator you can still make changes.</div>';
+        if ($Me->can_update_paper($prow, true) && ($v = $Conf->message_html("submit")))
+            $m .= '<div class="xinfo">' . $v . '</div>';
         return $m;
     }
 

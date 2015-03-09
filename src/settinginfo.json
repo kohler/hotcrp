@@ -20,6 +20,7 @@
     "msg.home": {"type": "htmlstring", "name": "Home page message", "message_default": "msg.home"},
     "msg.resp_instrux": {"type": "htmlstring", "name": "Authors’ response instructions", "message_default": "msg.resp_instrux"},
     "msg.revprefdescription": {"type": "htmlstring", "name": "Review preference instructions", "message_default": "msg.revprefdescription"},
+    "msg.submit": {"type": "htmlstring", "name": "Paper submission message", "message_default": "msg.submit"},
     "opt.contactEmail": {"type": "emailstring", "optional": true, "name": "Email of site contact"},
     "opt.contactName": {"type": "simplestring", "name": "Name of site contact"},
     "opt.emailCc": {"type": "emailheader", "name": "Default Cc for reviewer email", "temptext": "(none)"},

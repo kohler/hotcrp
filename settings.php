@@ -1466,6 +1466,8 @@ function doMsgGroup() {
     do_message("msg.home", "Home page message", 0);
     do_message("msg.clickthrough_submit", "Clickthrough submission terms", 0, 10,
                "<div class=\"hint fx\">Users must “accept” these terms to edit or submit a paper. Use HTML and include a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
+    do_message("msg.submit", "Submission message", 0, 5,
+               "<div class=\"hint fx\">This message will appear on paper editing pages.</div>");
     do_message("msg.clickthrough_review", "Clickthrough reviewing terms", 0, 10,
                "<div class=\"hint fx\">Users must “accept” these terms to edit a review. Use HTML and include a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
     do_message("msg.conflictdef", "Definition of conflict of interest", 0, 5);
